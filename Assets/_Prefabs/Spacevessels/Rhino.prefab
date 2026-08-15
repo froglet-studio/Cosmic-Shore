@@ -2309,7 +2309,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  GlobalObjectIdHash: 234294682
+  GlobalObjectIdHash: 2990694141
   InScenePlacedSourceGlobalObjectIdHash: 3922501974
   DeferredDespawnTick: 0
   Ownership: 1
@@ -2489,6 +2489,7 @@ MonoBehaviour:
   MaxBoostMultiplier: 5
   BoostDecayRate: 0.1
   singleTriggerDrift: 0
+  holdSpeedWhileDrifting: 0
   DriftDamping: 0
   boostChanged: {fileID: 0}
   MinimumSpeed: 0
@@ -2505,6 +2506,7 @@ MonoBehaviour:
   YawScaler: 90
   RollScaler: 90
   RotationThrottleScaler: 0
+  restrictedTurnMultiplier: 3
 --- !u!114 &874579555101021522
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2610,6 +2612,7 @@ MonoBehaviour:
   seekPlayers: 0
   playerSeekUpdateInterval: 0.5
   playerReacquireInterval: 0.1
+  massClusterRetargetInterval: 1.5
   abilities:
   - Ability: {fileID: 11400000, guid: 0c9c1d521f39e7048b82825ae4fce5bc, type: 2}
     Duration: 0
@@ -2668,11 +2671,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 25dd04a558b7f8947ad81c90dc14c5df, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  vesselPrismController: {fileID: 874579555101021522}
-  driftTrailAction: {fileID: 0}
-  config: {fileID: 11400000, guid: 7bdf308b6685d7646bb57265f899033f, type: 2}
-  energyResourceIndex: 0
-  view: {fileID: 7955211723655855840}
   elementBars: {fileID: 0}
 --- !u!114 &3953285837003103147
 MonoBehaviour:
@@ -2783,6 +2781,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   baseView: {fileID: 7033107979473629901}
+  _iconSetSwitcher: {fileID: 0}
   view: {fileID: 7033107979473629901}
   growSkimmerExecutor: {fileID: 5087576590319522259}
   rhinoCrystalExplosionEvent: {fileID: 11400000, guid: 1fbf77fcd936a8f4f840e07af36d8504,
@@ -7983,7 +7982,7 @@ Transform:
   m_LocalPosition: {x: 0.6987663, y: 0.5452841, z: 1.1722252}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
-  m_Children:
+  m_Children: []
   m_Father: {fileID: 5928382658856804067}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &8108485245893028616
@@ -14254,19 +14253,13 @@ RectTransform:
     type: 3}
   m_PrefabInstance: {fileID: 2754590152818896375}
   m_PrefabAsset: {fileID: 0}
---- !u!1 &4634953772157888635 stripped
-GameObject:
-  m_CorrespondingSourceObject: {fileID: 7379408300357240204, guid: 2656b477a4af7304180e65f2848a84b3,
-    type: 3}
-  m_PrefabInstance: {fileID: 2754590152818896375}
-  m_PrefabAsset: {fileID: 0}
 --- !u!114 &7033107979473629901 stripped
 MonoBehaviour:
   m_CorrespondingSourceObject: {fileID: 5161366343835098938, guid: 2656b477a4af7304180e65f2848a84b3,
     type: 3}
   m_PrefabInstance: {fileID: 2754590152818896375}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 4634953772157888635}
+  m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: d6e5753c294347a1966bc06a0e2e0424, type: 3}
@@ -14275,12 +14268,6 @@ MonoBehaviour:
 --- !u!224 &7432981132668097167 stripped
 RectTransform:
   m_CorrespondingSourceObject: {fileID: 4691912791296311160, guid: 2656b477a4af7304180e65f2848a84b3,
-    type: 3}
-  m_PrefabInstance: {fileID: 2754590152818896375}
-  m_PrefabAsset: {fileID: 0}
---- !u!224 &8599908183405914023 stripped
-RectTransform:
-  m_CorrespondingSourceObject: {fileID: 5864610081205471824, guid: 2656b477a4af7304180e65f2848a84b3,
     type: 3}
   m_PrefabInstance: {fileID: 2754590152818896375}
   m_PrefabAsset: {fileID: 0}

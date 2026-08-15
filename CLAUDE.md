@@ -63,11 +63,30 @@ outcome is optimization, not life). Use the `/ecology` skill for any change here
   predation. It routes through the same sealed `Fauna.Die`, so the crystal drop and the wither
   are not bypassable. A subclass may override to add bookkeeping first (the worm colony re-links
   its chain), but an override that lets a creature survive losing its whole body breaks the rule.
-- **Starvation = wither-to-crystal.** A starving (or predated) creature withers from its extremity
-  spindles inward — a shark's fins / a brittlestar's arms evaporate *before* the core body
-  (farthest-from-centre first, emergent from geometry) — and leaves a collectible elemental crystal.
-  It **does not vanish** (the continuity law above). **Mass is conserved** (the "self-sustaining
-  economy" that makes the system NASA-credible). Sealed into `Fauna.Die` so no fauna can bypass it.
+- **Starvation = wither-to-crystal, and a joust is that wither RUN BACKWARDS.** A starving creature
+  withers from its extremity spindles inward — a shark's fins / a brittlestar's arms evaporate
+  *before* the core body (farthest-from-the-heart first, emergent from geometry) — and the heart is
+  the LAST thing standing, so its crystal becomes collectable by any vessel only when the wither
+  reaches the core. A **jousted** lifeform (the Squirrel's Crystal Joust, flora and fauna alike)
+  runs the identical geometry in the opposite direction: it never detonates, the heart is freed at
+  the strike and **auto-collected by the jouster**
+  (`ElementalCrystalImpactor.CollectBy`), and the spindles unravel *from the heart outward* around
+  the hole it left. Both leave the body prisms standing as a **skeleton** — ordinary cell mass the
+  food web then grazes, so a creature's frame is conserved instead of dying with its husk (before
+  this only the heart survived a death, which was passive mass removal hiding inside a death
+  animation). Predation is neither: a devoured body suctions into the mouth, because there the mass
+  transfers to the eater. The carrier is `LifeformDeathStyle` (`Withered`/`Jousted`/`Consumed`),
+  stamped by the killing force and read by the death animation; the ordered wither is only possible
+  because `Spindle.IsolateForOrderedWither` first breaks the parent/child couplings that make
+  `ForceWither` recurse and make destroying a spindle destroy its children. It **does not vanish**
+  (the continuity law above). **Mass is conserved** (the "self-sustaining economy" that makes the
+  system NASA-credible). Sealed into `Fauna.Die`, which releases the heart outright unless a
+  subclass opts into a progressive wither (`DefersHeartRelease`) — and that deferral is safe only
+  because it is TWO-stage: `Crystal.DetachHeartToCell` re-homes the crystal onto the cell at the
+  *top* of the death while leaving it `IsEmbedded` (still uncollectable, still the heart the wither
+  unravels around), so an interrupted wither can never destroy it with the husk and every later exit
+  (`RemoveHusk`, `OnDestroy`) is a real recovery. The worm colony is deliberately excluded from the
+  skeleton (its capitals carry danger prisms). Full record: `Docs/ECOSYSTEM.md §26`.
 - **Volume is the spine.** Phase, dominant domain, prey, HUD all key off per-domain **VOLUME**
   (`Cell.LiveVolume`), not prism count. Count is a rare frenzy/perf backstop only.
   **Node control is the NUCLEUS**: in a cell with a nucleus, `DominantDomain` reads only the
@@ -210,8 +229,8 @@ Do not snapshot domain at component-creation time. Either subscribe to `Player.N
 - **Camera**: Custom plain-transform rigs — `CustomCameraController` (gameplay) + `MainMenuCameraController`/`MenuCameraConfigSO` (menu) — with per-vessel `CameraSettingsSO` assets. Cinemachine 3.1.2 remains installed for tool scenes only (Recording Studio); the menu and gameplay cameras do not use it
 - **VFX**: VFX Graph 17.0.4, custom HLSL shaders, Shader Graph
 - **Input**: Unity Input System 1.14.2 with strategy pattern (`IInputStrategy` → platform-specific implementations)
-- **Audio**: Wwise integration
-- **Haptics**: NiceVibrations for mobile/gamepad haptics. **Two everyday feels**, both local-human-pilot-only (skim-pulse reward + prism-punish thud), plus **one rare alert shake** fenced to match-changing events (only Ribcage's two progress-milestone rungs today); everything else is silent. See `Docs/HAPTICS.md`.
+- **Audio**: FMOD Studio (`Assets/Plugins/FMOD`, `FMODUnity`) — every sound is an inspector-exposed `EventReference`, never a hardcoded/temp event. See "Audio (FMOD)" under Architecture Patterns. (An `Assets/Wwise/` folder survives from an earlier middleware evaluation and is **inert** — no first-party code references `AkSoundEngine`; do not author new audio against it.)
+- **Haptics**: NiceVibrations for mobile/gamepad haptics. **Two everyday feels**, both local-human-pilot-only (skim-pulse reward + prism-punish thud), plus **one rare alert shake** fenced to match-changing events (only Ribcage's two progress-milestone rungs today) and **one continuous spray buzz** fenced to a held full-auto trigger (only the Sparrow's guns today), which climbs in strength and cadence as accuracy decays and sits at the BOTTOM of the priority order (`alert > punish > skim > spray`) so a texture can never cut off an event; everything else is silent. See `Docs/HAPTICS.md`.
 - **Animation**: Timeline 1.8.9, DOTween for procedural animation
 - **DI**: Reflex (`com.gustavopsantos.reflex` 14.1.0) for dependency injection
 - **Performance**: Unity Jobs + Burst Compiler, Adaptive Performance 5.1.6, DOTS Entities 1.4.2 (installed, incremental adoption)
@@ -250,7 +269,7 @@ Assets/
 │   │   ├── Instrumentation/   # AnalyticsServiceFacade (UGS Analytics, single writer)
 │   │   ├── Runtime/           # Dialogue runtime (DialogueManager, models, views, helpers)
 │   │   ├── RewindSystem/      # Rewind/replay functionality
-│   │   ├── Audio/             # Wwise audio management
+│   │   ├── Audio/             # AudioSystem (FMOD events + legacy music AudioSources)
 │   │   ├── LoadOut/           # Vessel loadout configuration
 │   │   ├── CallToAction/      # Promotional/CTA system
 │   │   ├── Squads/            # Squad management
@@ -291,7 +310,7 @@ Assets/
 ├── _Graphics/, _Models/, _Audio/, _Animations/
 ├── FTUE/                      # First-Time User Experience / Tutorial system
 ├── Plugins/                   # Obvious.Soap, Demigiant (DOTween), NativeShare, etc.
-├── Wwise/                     # Audio middleware
+├── Wwise/                     # Legacy middleware evaluation — INERT, no first-party refs (audio is FMOD, at Plugins/FMOD)
 ├── PlayFabSDK/                # Backend SDK (legacy)
 ├── NiceVibrations/            # Haptic feedback
 └── SerializeInterface/        # Custom [RequireInterface] attribute support
@@ -392,22 +411,41 @@ All in `Assets/_Scenes/Multiplayer Scenes/`.
 
 #### GameModes Enum (`Assets/_Scripts/Data/Enums/GameModes.cs`)
 
-41 game modes with explicit numeric IDs (highest is `DogFight(41)`; IDs 7 and 31 are skipped). Single-player: `Elimination(1)` through `ProtectMission(27)` — except `Rampage(2)`, repurposed as a multiplayer party game (the destruction race, Scurry's destructive analog; see `_Scripts/Controller/Arcade/RAMPAGE.md`). Multiplayer: `Rampage(2)`, `MultiplayerFreestyle(28)`, `MultiplayerCellularDuel(29)`, `Multiplayer2v2CoOpVsAI(30)`, `MultiplayerWildlifeBlitzGame(32)`, `HexRace(33)`, `MultiplayerJoust(34)`, `MultiplayerCrystalCapture(35)`, `AstroLeague(37)`, `NucleusRush(38)`, `Ribcage(39)`, `WildlifeLiberation(40)`, `DogFight(41)`. Meta-mode: `Tournament(36)` — the session-level meta that chains HexRace → Joust → Crystal Capture back-to-back via sequential `Single` loads (see `Docs/TournamentSystem/ARCHITECTURE.md`). `AstroLeague(37)` is hypersea soccer **played with a sword** — a **Rhino-only** standalone domain minigame in which the ball resolves a contact ON THE BLADE (`SkimmerSwingKinematics`: the bounce normal comes off the point of the sword that touched and the strike speed is that point's true velocity, so a swung tip fires the payload far harder than the hull, with an extra tip bonus on top). Its cell is also the reference case for **`Cell.NucleusIsControlZone = false`** — a mode that repurposes the nucleus as PLAY GEOMETRY must declare it is not a claim, or the nucleus' fauna-sanctuary rule makes every prism in the arena inedible and the food web silently does nothing (see `Docs/ECOSYSTEM.md §25`) — and for **`Cell.FaunaExclusionRadius`**, the inner-wall mirror of the cell fauna pen, which holds the cleanup crew outside the court until the volume phase ladder says the pitch is crowded. See `_Scripts/Controller/Arcade/ASTROLEAGUE.md`. `NucleusRush(38)` (display name "Brood Rush") is the nucleus-control fauna-wave race (see `_Scripts/Controller/Arcade/NUCLEUSRUSH.md`). `Ribcage(39)` (display name "Peel the Cage") is the Rhino-only cage race — first domain to DESTROY 2000 hostile prisms wins (`ScoringMetric.PrismsDestroyed`, the same metric and target as Rampage). The arena IS the objective: a **layered orange** of hollow prism-bone shells added INWARD from a fixed 360u outer radius, woven OPEN at the surface (~94u x 98u cells) and progressively TIGHTER inward (~22u at the core), with every rib x hoop cell split by a diagonal so the openings are TRIANGLES and every rind inside the outermost TILTED onto its own axis (`SpawnableRibcage.ShellTilts`, min 34 deg apart) so the dense polar caps never stack radially. **Intensity is how many rinds you peel** — 2..5 shells (10,620 / 14,731 / 17,992 / 20,153 prisms) selected the platform way, one `CellConfigDataSO` per intensity via `CellTypeChoiceOptions.IntensityWise`, each pointing at a `SpawnableRibcage` prefab variant whose `shellCount` differs and carrying ITS OWN PhaseThresholds. Every bar is a one-hit PLAIN prism except the sparse danger traps; nothing is shielded or super-shielded. No fauna — the mode's former leader-pinned brood ladder was removed, though every platform capability it used is kept (see `_Scripts/Controller/Arcade/RIBCAGE.md`). Meta sentinel: `Random(0)`. Note: IDs 7 and 31 are skipped — 7 was the retired standalone arcade Freestyle game (freestyle now lives in Menu_Main as the lava lamp; see "Lava-Lamp Mode"), 31 was never assigned. Do not reuse either ID.
+41 game modes with explicit numeric IDs (highest is `DogFight(41)`; IDs 7 and 31 are skipped). Single-player: `Elimination(1)` through `ProtectMission(27)` — except `Rampage(2)`, repurposed as a multiplayer party game (the **Dolphin-only** destruction race, Scurry's destructive analog; see `_Scripts/Controller/Arcade/RAMPAGE.md`). Multiplayer: `Rampage(2)`, `MultiplayerFreestyle(28)`, `MultiplayerCellularDuel(29)`, `Multiplayer2v2CoOpVsAI(30)`, `MultiplayerWildlifeBlitzGame(32)`, `HexRace(33)`, `MultiplayerJoust(34)`, `MultiplayerCrystalCapture(35)`, `AstroLeague(37)`, `NucleusRush(38)`, `Ribcage(39)`, `WildlifeLiberation(40)`, `DogFight(41)`. Meta-mode: `Tournament(36)` — the session-level meta that chains HexRace → Joust → Crystal Capture back-to-back via sequential `Single` loads (see `Docs/TournamentSystem/ARCHITECTURE.md`). `AstroLeague(37)` is hypersea soccer **played with a sword** — a **Rhino-only** standalone domain minigame in which the ball resolves a contact ON THE BLADE (`SkimmerSwingKinematics`: the bounce normal comes off the point of the sword that touched and the strike speed is that point's true velocity, so a swung tip fires the payload far harder than the hull, with an extra tip bonus on top). Its cell is also the reference case for **`Cell.NucleusIsControlZone = false`** — a mode that repurposes the nucleus as PLAY GEOMETRY must declare it is not a claim, or the nucleus' fauna-sanctuary rule makes every prism in the arena inedible and the food web silently does nothing (see `Docs/ECOSYSTEM.md §25`) — and for **`Cell.FaunaExclusionRadius`**, the inner-wall mirror of the cell fauna pen, which holds the cleanup crew outside the court until the volume phase ladder says the pitch is crowded. See `_Scripts/Controller/Arcade/ASTROLEAGUE.md`. `NucleusRush(38)` (display name "Brood Rush") is the nucleus-control fauna-wave race (see `_Scripts/Controller/Arcade/NUCLEUSRUSH.md`). `Rampage(2)` is the **Dolphin-only** demolition race — first domain to DESTROY 2000 hostile prisms wins (`ScoringMetric.PrismsDestroyed`). It is the mode that turns a VESSEL'S PRIVATE ECONOMY into a contested object: the Dolphin banks blast energy **only by skimming** and discharges it **only on a crystal**, so a belt of cacti and other breakable flora rings the membrane (five species on staggered planting shells at 0.76-0.94 of the membrane radius, core left open) and the arena carries a SCARCE supply of neutral crystals respawning in the nucleus — graze to charge, race for a crystal, aim at the thickest forest, fire a 2400-long cone whose GAPE is the energy you banked. Mixed rosters are excluded for a structural reason, not exclusivity: any vessel that can shoot without a crystal ignores the prize and it stops being worth fighting over for anyone. Five general rules came out of it, all platform-wide (`Docs/ECOSYSTEM.md §27`): (1) **a flora planting band is measured from the CELL CENTRE, not the crystal** — all three `Flora.Plant` implementations dispersed around `cellData.CrystalTransform` while `ResolvePlantRadius` and every docstring said "a fraction of the cell's membrane radius"; the two agree only while a mode's crystals sit in the core (now `Flora.ResolvePlantCenter`); (2) **a species plants in a volume-uniform BAND, not on a shell** (`Flora.plantRadiusCellFractionMin`, default 0 = legacy single shell) — a shell's space grows as r², so a uniform-in-radius draw crowds the inner edge and leaves the rest of the cell empty; the band's inner edge is CLAMPED outside the nucleus in code, because nucleus mass is the territorial claim, is excluded from the fauna targeting grids, and shares its volume with the crystal respawn; (3) **the omni-crystal respawn volume IS the nucleus, and no scene may override it** — `CrystalManager.GetAnchorlessSpawnRadius` resolves nucleus → `noNucleusSpawnRadius` (a fallback for a cell with NO nucleus, e.g. Dog Fight's Boneyard) → crystal `SphereRadius`; the nucleus is the visible marker of the cell's core, and a crystal that respawns elsewhere makes that marker a lie. A mode that wants a different crystal volume RESIZES ITS NUCLEUS (a `CellConfigDataSO` pointing at a resized `NucleusPrefab`), which moves both together; (4) **a cell whose prisms are not nominal must author its volume ladder, never inherit the `count x 16` derivation** — a cactus leaf is 5x5x3 = 75 volume, 4.7x nominal before the level spread multiplies it again, so the inherited thresholds were an order of magnitude too low and would have pinned the cell at Frenzy with planting frozen and a sparse arena that never regrew. (5) **environment mass is hostile by COLOUR, and it is credited by whoever SIMULATES the attacker** — `StatsManager` recorded prism destruction server-only on the stated assumption that "a prism sits at the same place on the server", which is true of a TRAIL (laid from replicated vessel motion) and false of flora/fauna (`CellNetworkSync`: every peer runs its own spawner off local `Random` rolls), so a client scored nothing for the entire living world and could only ever score off the other pilot's trail. Fixed with `Player.ReportEnvironmentPrismDestroyed_ServerRpc` — the third instance of the same owner-detects-server-records round-trip as `ReportFaunaKill_ServerRpc`/`ReportCombatHit_ServerRpc` — plus `StatsManager.OwnsAttacker`, which stops the server double-crediting environment kills it saw a REMOTE player make. `PrismStats` now carries the prism's `OwnDomain` so unrostered mass is friendly iff it wears the attacker's colour (`Domains.Blue` stays hostile to all), applying to the world the rule trails always had. Its corollary: a crystal collection resolves server-only, so the collecting pilot's own vessel effects (blast, resource spend, elemental level) never ran on their machine — `CrystalManager.ReplayVesselCrystalEffects` replays them on the vessel's OWNER while the server keeps sole authority over collection, respawn and stats. It also moved the AI's DRIFT look-direction off a flat 180-degree flip and onto a hostile-mass cluster from `Cell.GetExplosionTarget` (the fauna hunting query), platform-wide — and records the corollary that a mode whose objective is a crystal must NOT install an `AIPilot.SetExternalTargetProvider` hook, because that overrides crystal seeking outright. It has **4 intensities** the platform way (`CellTypeChoiceOptions.IntensityWise` over four `CellConfigDataSO`s, list order = intensity), and **intensity here is SCARCITY, not size**: the forest is IDENTICAL at all four levels (9,830 seeded prisms — the already-play-tested arena), while the crystals fall (**2x players / players / players-1 (min 1) / exactly 1**) and the wildlife climbs (**1x / 2x / 3x / 4x**). The crystal is the Dolphin's only blast trigger, so the count IS how contested cashing out is; the forest was tried as the axis first and thinning it just made a smaller arena. Four general capabilities came with the two passes (`Docs/ECOSYSTEM.md §28`, `§29`): (a) **`SpawnProfileSO.FloraPopulationScale` / `FloraPlantBudgetScale`** let a cell scale its whole forest without forking the per-species assets — apply them in BOTH spawners or they are dead code in the very modes that need them, since `IntensityWise` also swaps `RandomLifeSpawner` for `IntensityWiseLifeSpawner`; (b) a fix for a race that was ALREADY LIVE in every IntensityWise scene — **`Cell.AssignConfig` is sticky and its intensity arrives only in the config ClientRpc**, while a client's cell bootstraps off its first crystal ~600 ms earlier, so the client silently built intensity 1's arena for the whole match. `GameDataSO.GameConfigSynced` now gates the choice, and the deferral was made retryable (`InitilizePostFirstCellItem` used to latch on its first line, which would have left a deferred cell with no spawner at all); (c) **`SpawnProfileSO.FaunaPopulationScale`**, the fauna twin of (a) — it multiplies a species' `InitialSpawnCount`, `PopulationSize` AND `MaxLivePopulation`, because the CAP is what bounds a standing population and a scalar that moved only the floors is clamped away above ~1.5x and reads as doing nothing. Fauna has FOUR producers, not two (both spawners, `Fauna.TryReproduce`, the freestyle `Microscene` conveyor), so the resolution lives on the **Cell** — `Cell.ResolveFaunaPopulation` / `ResolveFaunaCap` / `IsFaunaAtCap`, the one object every producer already holds, and there is now no direct read of `cfg.MaxLivePopulation` outside the config and the profile. It gates PRODUCTION only; nothing is culled to meet a lowered scale; and (d) **`CrystalManager.CrystalCountMode.IntensityScaled`** — `max(1, round(players x CrystalsPerPlayer) + ExtraCrystals)` per intensity, list order = intensity. It needs NO `GameConfigSynced` gate (unlike (b)) because both intensity readers are server-side and clients receive the count as the replicated slot-list length — the difference between a value a client computes and one it receives. See `_Scripts/Controller/Arcade/RAMPAGE.md`. `Ribcage(39)` (display name "Peel the Cage") is the Rhino-only cage race — first domain to DESTROY 2000 hostile prisms wins (the same metric and target as Rampage). The arena IS the objective: a **layered orange** of hollow prism-bone shells added INWARD from a fixed 360u outer radius, woven OPEN at the surface (~94u x 98u cells) and progressively TIGHTER inward (~22u at the core), with every rib x hoop cell split by a diagonal so the openings are TRIANGLES and every rind inside the outermost TILTED onto its own axis (`SpawnableRibcage.ShellTilts`, min 34 deg apart) so the dense polar caps never stack radially. **Intensity is how many rinds you peel** — 2..5 shells (10,620 / 14,731 / 17,992 / 20,153 prisms) selected the platform way, one `CellConfigDataSO` per intensity via `CellTypeChoiceOptions.IntensityWise`, each pointing at a `SpawnableRibcage` prefab variant whose `shellCount` differs and carrying ITS OWN PhaseThresholds. Every bar is a one-hit PLAIN prism except the sparse danger traps; nothing is shielded or super-shielded. No fauna — the mode's former leader-pinned brood ladder was removed, though every platform capability it used is kept (see `_Scripts/Controller/Arcade/RIBCAGE.md`). Meta sentinel: `Random(0)`. Note: IDs 7 and 31 are skipped — 7 was the retired standalone arcade Freestyle game (freestyle now lives in Menu_Main as the lava lamp; see "Lava-Lamp Mode"), 31 was never assigned. Do not reuse either ID.
 
 `DogFight(41)` is the **Sparrow-only gun duel** — 2-4 pilots hunt each other through the
 **Boneyard**, an apocalyptic wreck-field of hollow hulks and rubble canyons built for close
 encounters and hiding places (inspired by Scurry's intensity-4 Atlantis, and its opposite: a
-world that fell rather than grew). A **bullet hit scores 1**, a **missile hit scores 50** (direct
-strike OR caught in the blast, latched so one rocket can only pay once), and the first **DOMAIN**
-to the point target (default 120) wins. Its metric, `ScoringMetric.CombatPoints`, is the
-platform's first whose source is **vessel-vs-vessel gunnery** rather than prisms, crystals or the
-ecology — and the weighting lives in the mode's own `ScoringRuleSO.PointsForCombatHit` (0
-everywhere else), so hits are COUNTED platform-wide and SCORED only here. It is a TEAM race and
-not a free-for-all for a structural reason: `Projectile.DisallowImpactOnVessel` refuses own-domain
-contact, so two players sharing a domain could not fight at all — domains ARE the sides. Shipping
-it also gave `AOEConicSkyBurst.prefab` the explosion container it never had, so a skyburst's
-BLAST can now reach a pilot instead of only its direct hit. See
-`_Scripts/Controller/Arcade/DOGFIGHT.md`.
+world that fell rather than grew). A **bullet hit scores 1** — BOTH of the Sparrow's direct-fire
+modes, full-auto rounds and turret-stance prism rounds, since they are one weapon class — a
+**missile hit scores 50** (direct strike OR caught in the blast, latched so one rocket can only
+pay once), and the first **DOMAIN** to the point target (default 90) wins. Its metric,
+`ScoringMetric.CombatPoints`, is the platform's first whose source is **vessel-vs-vessel gunnery**
+rather than prisms, crystals or the ecology — and the weighting lives in the mode's own
+`ScoringRuleSO.PointsForCombatHit` (0 everywhere else), so hits are COUNTED platform-wide and
+SCORED only here. It is a TEAM race and not a free-for-all for a structural reason:
+`Projectile.DisallowImpactOnVessel` refuses own-domain contact, so two players sharing a domain
+could not fight at all — domains ARE the sides. Shipping it also gave `AOEConicSkyBurst.prefab`
+the explosion container it never had, so a skyburst's BLAST can now reach a pilot instead of only
+its direct hit. Two tuning lessons are recorded there and generalize: (1) **a comeback rate is a
+function of the target** — `bonusLevels = deficit x rate`, so `ComebackRatePerScoreDeficit`
+survived a 500 → 120 → 90 target change and quietly became worth 0.2 of a level, and the generator
+now FAILS if a quarter-of-target deficit buys under one whole element level (the mode leans on
+this: Mass stretches the Sparrow's fired prisms **and now their hit sphere too**, so the trailing
+side's rounds both look and land bigger — the other three rise with it, because equal-elements is
+the law, and Mass is simply the only one wired to that vessel's gun output); (2) **a cell with NO
+NUCLEUS must author `CrystalManager.anchorlessSpawnRadius`** — that field falls back to the
+nucleus radius, so without it every omni crystal falls through to its own `SphereRadius` and
+spawns on the arena's exact centre, where a big faceted sphere reads as the objective (it was
+mistaken for an Astro League ball). The fix is the radius, never switching the crystal off.
+Two further lessons came out of its first playtest and are recorded there: (3) **a weapon is born
+at its MUZZLE, so a muzzle transform is gameplay, not decoration** — the Sparrow carries a
+separate gun pair per fire mode and the turret's had drifted to `z = 15.13` against the bullets'
+`1.30`, so every turret round spawned 15 units past a close-range target and the whole fire mode
+did nothing, with correctly-wired scoring; and (4) **an AI break-off must be a LATCHED decision,
+not a function of the enemy's current position** — recomputing the escape point each frame makes
+it flip the instant the AI passes its target, which welds the two ships into a grinding circle
+and hides every standoff weapon the AI owns. See `_Scripts/Controller/Arcade/DOGFIGHT.md`.
 
 `WildlifeLiberation(40)` is the **Sparrow-only hunt** — three concentric cages at 1050 / 600 / 200 pen three tiers of wildlife (a very heavy swarm of small creatures outside, much bigger ones in the middle room, the biggest and toughest in the core), plus a fourth tier loose in the open water outside the outer cage where players spawn; the first **DOMAIN** to 250 summed kills wins. It is an ordinary domain race and that is deliberate: a per-PLAYER (free-for-all) winner shipped here briefly and was **reverted**, because the mode seats up to four players while the platform has only three playable domains, so a full lobby always has teammates and a per-individual winner bypasses every domain surface (winner banner, HUD panels, scoreboard ordering, `ResolvePlacementOrder`). Do not re-derive it. Its metric, `ScoringMetric.LifeformsKilled`, is the first whose source is the ECOLOGY rather than prisms or crystals — and the first that needs an RPC, because fauna are client-local so a client's kill is invisible to the server (`Player.ReportFaunaKill_ServerRpc`; the round-trip stays correct once fauna network sync lands). Shipping it made **every creature in the game killable by shooting its body prisms** (previously only the worm colony was — see `Docs/ECOSYSTEM.md §24`) and generalized the cell's single fauna pen into a per-species BAND. See `_Scripts/Controller/Arcade/WILDLIFE_LIBERATION.md`.
 
@@ -439,7 +477,7 @@ MiniGameControllerBase (abstract, NetworkBehaviour)
         ├── AstroLeagueController             — hypersea soccer (Rhino-only, sword strikes), server-simulated ball, golden goal
         ├── NucleusRushController             — nucleus-control fauna-wave race, brood scoring
         ├── RibcageController                 — Rhino-only layered-cage race ("Peel the Cage")
-        └── RampageController                 — destruction race (Scurry's destructive analog), prisms-destroyed scoring
+        └── RampageController                 — Dolphin-only destruction race (Scurry's destructive analog), prisms-destroyed scoring
         └── WildlifeLiberationController       — Sparrow-only three-cage hunt, ecology-scored (creatures killed)
         └── DogFightController                  — Sparrow-only gun duel in the Boneyard; first DOMAIN to the gunnery-point target
 ```
@@ -480,7 +518,7 @@ MiniGameControllerBase (abstract, NetworkBehaviour)
 | `CRYSTAL_CAPTURE.md` | `_Scripts/Controller/Arcade/` | Crystal Capture game mode technical reference |
 | `JOUST.md` | `_Scripts/Controller/Arcade/` | Joust game mode technical reference |
 | `ASTROLEAGUE.md` | `_Scripts/Controller/Arcade/` | Astro League game mode technical reference |
-| `RAMPAGE.md` | `_Scripts/Controller/Arcade/` | Rampage game mode technical reference (multiplayer destruction race) |
+| `RAMPAGE.md` | `_Scripts/Controller/Arcade/` | Rampage technical reference (Dolphin-only demolition race). **Read before touching flora planting dispersal or a cell's volume phase thresholds** — this mode moved the planting shell onto the cell centre platform-wide and is the worked example of authoring a volume ladder for a cell whose prisms are not nominal size. |
 | `RIBCAGE.md` | `_Scripts/Controller/Arcade/` | Ribcage / "Peel the Cage" technical reference (Rhino-only cage-breaking race; the layered-orange intensity model, the open-weave generator, the shielded-mass targeting-grid rule, and the record of the removed fauna ladder) |
 | `DOGFIGHT.md` | `_Scripts/Controller/Arcade/` | Dog Fight technical reference (Sparrow-only gun duel). **Read before touching the combat-hit path, the Sparrow's weapon effect containers, or the skyburst's AOE prefabs** — this mode added the platform's first vessel-vs-vessel scoring metric and gave the skyburst's conic blast the explosion container it never had (so a rocket's blast can now reach a pilot at all). Also documents why the mode is a TEAM race rather than a free-for-all: teammates cannot damage each other, so domains ARE the sides. |
 | `WILDLIFE_LIBERATION.md` | `_Scripts/Controller/Arcade/` | Wildlife Liberation technical reference (Sparrow-only three-cage hunt). **Read before touching the fauna kill path or the per-species containment bands** — this mode made every creature in the game shootable, and generalized the cell's single fauna pen into a per-species annulus. Also documents why a per-player (free-for-all) winner was tried here and reverted, the client-local-fauna kill RPC, and the very-heavy collider budget. |
@@ -894,8 +932,8 @@ Platform-agnostic input via `Assets/_Scripts/Controller/IO/`:
 
 - `IInputStrategy` — interface for all input handlers
 - `BaseInputStrategy` — shared logic
-- `KeyboardMouseInputStrategy`, `GamepadInputStrategy`, `TouchInputStrategy` — platform-specific implementations
-- `InputController` — manages active strategy and input state
+- `GamepadInputStrategy`, `TouchInputStrategy`, `KeyboardInputStrategy` (dual-WASD, the **desktop default**), `DualMouseInputStrategy` (opt-in two-mice flight) — platform-specific implementations. `KeyboardInputStrategy` maps two digital "sticks" (WASD left, P/;/L/' right; Left/Right Shift = the two triggers) and mixes them through `DualStickMix` (the yaw/pitch/speed/roll formulas shared with — and unit-tested against — `GamepadInputStrategy.Reparameterize`). The legacy `KeyboardMouseInputStrategy` remains in the project but is no longer selected.
+- `InputController` — manages active strategy and input state. Flight input is gated on `Player.IsLocalPilot` (AI and remote `Player` replicas carry an `InputController` but must not consume local WASD/sticks).
 - `IInputStatus` / `InputStatus` — input state container
 - Input strategies are swappable per platform/context at runtime
 
@@ -933,6 +971,26 @@ standalone skimmer objects do not). Detail:
 `_Scripts/Controller/Vessel/R_VesselActions/DOLPHIN_ENERGY_ECONOMY.md` §5.
 
 **Danger prisms are not safe to their own domain (locked design).** `IsDangerous` effects apply to every vessel that touches the prism, regardless of domain — friendly fire included (the fire-trail action literally sets `IsDangerous` from a `FriendlyFire` flag). Danger-prism effect SOs must not gate on domain. **Danger is mutually exclusive with BOTH shield tiers**: `PrismStateManager.MakeDangerous` clears `IsShielded` AND `IsSuperShielded` (and disengages the shield visuals), just as `ActivateSuperShield` clears `IsDangerous` — a danger prism carrying a stale super-shield flag is invulnerable and kills any AOE explosion that touches it. `Prism.ResetState` also clears `IsSuperShielded` on pool reuse (no spawner requests super-shield pre-`Initialize`; it is always engaged post-spawn). This is what makes danger trails a risk/reward surface: a danger trail grants 10x skim energy (`SkimmerBoostPrismEffect.dangerEnergyMultiplier`, gated behind the skimming vessel's Charge level-5 "Live Wire" upgrade — below it danger skims pay base energy) but slams its owner on contact — volume-independent full-stop slow at the danger max (`VesselChangeSpeedByPrismEffectSO`: `maxSlowStrength * dangerSlowMultiplier`), all-element decaying debuff for 4s (`VesselElementalDebuffByDangerPrismEffectSO`), and boost reset. (The Sparrow's own overheat danger trail was retired with its overheat mechanic; the `EnableDangerMode` machinery survives for a future caller. The one thing that can deny a danger prism's bite is the general **elemental-debuff immunity** state — `ResourceSystem.IsElementallyImmune`, held by the Sparrow while boosting at Time 5 and by the Serpent while stopped — and it denies ONLY the elemental drain: the slow, the input mute and the boost reset still land. It is a gate inside `ApplyElementalEffect`, not a domain exception, so the locked law is intact.)
+**The slow half of that punishment is PER-VESSEL WIRING, not a platform given** — it only happens
+if the vessel's `VesselImpactorDataContainerSO.vesselPrismEffects` actually contains a
+`VesselChangeSpeedByPrismEffectSO`, and for most of the fleet's life most vessels did not. The
+Dolphin had an authored `DolphinVesselChangeSpeedByPrism` asset referenced by **no** container, and
+the Sparrow — the only vessel Dog Fight flies — had neither asset nor entry, so neither took a speed
+penalty from any prism, danger ribs included. Three shipped docs asserted the slow anyway
+(`DOLPHIN_ENERGY_ECONOMY.md`'s drift-hold clause, `SPARROW_AFTERBURNER.md`'s ward step, and
+`DOGFIGHT.md`'s danger-rib paragraph) because a vessel that simply never slows reads as a vessel
+that is fast, and because a correctly-designed passthrough — the immunity gate really does leave
+`ModifyThrottle` alone — looks verified even when nothing is being pushed through it. **Wiring
+status is therefore a thing to CHECK, never to assume**: Squirrel / Dolphin / Sparrow / Manta carry
+it and are pinned to one shared tuning (`speedModifierDuration 1`, `massScaling 0.1`,
+`maxSlowStrength 0.5`, `dangerSlowMultiplier 3`, `dangerSlowDurationMultiplier 3` — a prism should
+read the same whichever hull hits it, so moving one asset off these numbers un-shares the fleet's
+collision read); **Rhino and Serpent still have no speed effect at all** and are the open item.
+Note also that a *name* is not evidence of a slow: `SparrowDebuffByRhinoDangerPrismEffectSO` carries
+a `vesselSlowedByRhinoDangerPrismEvent` field and a "Slow Viewer Integration" header, and only ever
+muted an input.
+
+**A prism's DEATH VISUAL wears the palette of the TIER it was wearing, never just its domain.** The dying prism's `PrismKind` rides `PrismEventData.Kind` — stamped by `Prism.Explode`/`Implode` from `PrismKinds.Of` *before* the destruction pass — and both the batched debris path and the pooled fallback tint from `SO_ColorSet.GetPrismKindColors`, the ONE composition `ThemeManager` also paints the live block materials with (`ThemeManager.PaintPrismTier`). Before this, debris was tinted from the domain alone at the PLAIN tier, so a danger prism — a frosty shielded base under the hot domain-independent danger rim — shattered into ordinary domain-coloured debris and read as a plain prism dying; shielded/super-shielded mass had the same defect on a devastating hit. **Never re-inline a tier's colour pair** at either consumer, and never fix a debris colour on the per-domain `SO_MaterialSet.ExplodingBlockMaterial` copies — nothing draws with those (`PrismDebris` reads mesh+material off the pool prefab and overrides colour PER ENTITY, which is also why a mixed-tier burst is still ONE batch and one draw: the tier must never become a reason to split a batch or swap a material). Danger alone also detonates HARDER — `PrismExplosion.DetonationGain`, authored as `dangerDetonationMultiplier` on `PrismExplosion.prefab` (1.6, set 1 for palette-only) — and that gain scales debris speed, shatter rate and the clamp band as ONE quantity, per the AOE-impulse contract above. Detail: `Docs/PALETTE.md §2.1`, `Docs/PRISM_ANIMATION.md §4.6`.
 
 **AOE blast impulse — `Inertia` only reaches the screen with a ceiling of its own.** Every
 explosion entry point (`ExplosionImpactor.ProcessBatchFrame` / `ProcessBatchConeFrame` /
@@ -956,6 +1014,85 @@ the Burst resolve and the Physics-trigger fallback (`ExecuteCommonPrismCommands`
 mass at the same speed with or without the spatial index. Detail: `Docs/SPATIAL_INDEX.md` § "Impulse".
 
 **Forcefield Crackle (Skimmer)**: `SkimmerForcefieldCracklePrismEffectSO` (at `_Scripts/Controller/ImpactEffects/EffectsSO/Skimmer Prism Effects/`) is a shader-driven alternative to `SkimmerFXPrismEffectSO` that visualizes the Skimmer's invisible sphere collider on prism impacts. It computes the impact point via `Collider.ClosestPoint` between the prism box and skimmer sphere, projects it onto the sphere surface, and forwards the event (position + duration + intensity + radius) to a `ForcefieldCrackleController` MonoBehaviour on the vessel (`_Scripts/Controller/Vessel/ForcefieldCrackleController.cs`). The controller owns all visual parameters (colors, arc density/sharpness, ring thickness, ripple speed, fresnel) as serialized fields and feeds a ring buffer of up to 16 simultaneous impacts to the shader via MaterialPropertyBlock arrays each frame. `[ExecuteAlways]` allows edit-mode preview via `ForcefieldCrackleControllerEditor` (at `_Scripts/Editor/`). The shader's custom-function HLSL file `ForcefieldCrackle.hlsl` (at `Assets/Materials/Graphs/`) uses FBM-based electrical arcs with expanding wavefronts on a geodesic distance metric so arcs follow the sphere's curvature. All three code files use the `CosmicShore.Gameplay` namespace.
+
+### Audio (FMOD) — every sound is an exposed, editable field (LOCKED convention)
+
+FMOD Studio is the audio middleware (`FMODUnity`, `Assets/Plugins/FMOD`). The rule below is not a
+style preference — it is what makes the game's audio *authorable by whoever owns audio*, without a
+programmer, a recompile, or a merge.
+
+> **Every noise anything makes must be an inspector-exposed `EventReference` on the prefab/component
+> (or SO) that makes it.** If a sound exists, an audio designer must be able to find it in the
+> component view of the thing that produces it, and swap it — without touching code, and without
+> hunting for which shared category it borrowed.
+
+**Corollaries — all three are load-bearing:**
+
+1. **Never plug in a "temp" event.** Do not point a new sound at a borrowed/placeholder FMOD event
+   just to hear something. Ship the `[SerializeField] EventReference` **empty** and let it be
+   silent — an empty slot is a visible, greppable TODO in the inspector; a temp event is an
+   invisible one that survives to release and gets mistaken for an intentional sound. FMOD's
+   `EventReference.IsNull` makes an empty slot a clean no-op, and `AudioSystem` already warns once
+   per unwired category (`warnOnUnwiredCategory`) rather than failing. Follow that pattern: check
+   `IsNull`, return, optionally warn once — never substitute another event.
+2. **Every ship ability gets its own dedicated FMOD event field** — boost, gun fire, drift, shield,
+   turret, missile, ability start/stop, whatever. One field per ability per distinct sound (a
+   start/stop or charge/release ability gets a field for each). Do **not** route a new ability
+   through an existing `GameplaySFXCategory` because it is "close enough" — sharing a category means
+   two abilities can never be tuned independently, which is exactly what the audio owner needs.
+3. **The sound is a trigger's payload, not an implicit side effect.** When something should sound on
+   contact, the collider/trigger that detects the contact is where the `EventReference` lives and is
+   played from. Same for a state change: the component that owns the state plays its own field.
+
+**How to add a sound (the shape to copy):**
+
+```csharp
+[Header("Audio")]
+[SerializeField, Tooltip("FMOD event played when this ability fires. Leave empty for silence.")]
+EventReference fireEvent;
+
+// at the trigger / state change:
+if (!fireEvent.IsNull)
+    audioSystem.PlaySFXEvent(fireEvent, transform.position);   // spatialized
+```
+
+Play through `AudioSystem` (`PlaySFXEvent` / `PlaySFXEventAttached`) or
+`FMODOneShotVolumeHelper` — **never** `RuntimeManager.PlayOneShot` directly, which has no
+per-instance volume and therefore ignores the SFX slider when the bus fails to resolve
+(`_Scripts/Controller/FX/FMODOneShotVolumeHelper.cs` documents why). For a **looping/continuous**
+sound (engine, drift, ambient, creature loop) use a `StudioEventEmitter` on the prefab — again with
+the event exposed — or a small controller that owns its own `EventReference` field, like
+`ShipAudioController`, `DriftAudioController`, `ProximityBoostAudioController`,
+`FloraAmbientAudioController`.
+
+**The two tiers, and which to use:**
+
+| Tier | What it is | Use when |
+|---|---|---|
+| **Per-prefab field** (preferred) | `[SerializeField] EventReference` on the component that makes the noise; edited in that prefab's component view | The sound belongs to a *specific thing* — a vessel ability, a projectile, a trigger volume, a creature, a toy, a UI widget with its own voice |
+| **Central category** | `AudioSystem.PlayGameplaySFX(GameplaySFXCategory.X)` / `PlayMenuAudio(MenuAudioCategory.X)`, wired once on the AudioSystem GameObject | The sound is genuinely *shared platform-wide* and must stay identical everywhere — prism destruction, crystal collect, generic vessel impact, menu clicks |
+
+Both tiers keep the event in an inspector slot; they differ only in *where* the slot lives. If you
+find yourself adding a `GameplaySFXCategory` member for one vessel's one ability, that is the signal
+you wanted a per-prefab field instead. **Existing ability call sites that pass a shared category
+(`BoostActionSO` → `BoostActivate`, `DriftActionSO` → `DriftStart`/`DriftEnd`) are the legacy shape**
+— when you touch one, give it its own `EventReference` field (falling back to the category only when
+the field is empty) rather than adding another category consumer.
+
+Data-driven variants override the same way — a config SO carries the `EventReference` and stamps it
+onto the emitter at spawn (`FaunaConfigurationSO.OverrideAudio` + `AudioLoopEvent` →
+`Fauna`'s `StudioEventEmitter`), so a species can be re-voiced or silenced from its asset.
+
+**Anti-patterns:**
+
+- A hardcoded `RuntimeManager.PlayOneShot("event:/some path")` or any string event path in code
+  (first-party code is currently clean of this — keep it that way)
+- A new sound wired to an unrelated existing event "for now"
+- A sound that can only be changed by editing C# or by finding one shared enum member
+- An `AudioClip` + `AudioSource` for a *new* gameplay sound — the Unity AudioSource path is legacy
+  (music, plus stragglers like `IconEmitter` and `AudioSystem.PlaySFXClip`) and is being retired;
+  new SFX is FMOD
+- Adding an if-null-guard *fallback to another event*. Guard for silence, never for substitution
 
 ### Multiplayer / Netcode
 
@@ -2114,7 +2251,7 @@ scale bump** with a one-shot unlock punch.
   | vessel | map | icons | order | uniform | hints |
   |---|---|---|---|---|---|
   | Squirrel | complete | 4/4 | ✅ | ✅ | ✅ bound |
-  | Sparrow | 4/4 named, **3/4 upgrades** (Time re-scoped 2026-08: indefinite boost, base roll, Elemental Ward. **Mass L5 is an OPEN DESIGN SLOT** since 2026-08: its Shielded Prisms upgrade moved to Space 5 so one gate transforms both fire modes — bullets pierce, turret prisms arrive shielded. Do not refill it without sign-off) | 4/4 | ✅ | ✅ | ⚠ no switcher on its HUD |
+  | Sparrow | 4/4 named, **4/4 upgrades** (Time re-scoped 2026-08: indefinite boost, base roll, Elemental Ward. **Mass L5 = Shielded Prisms again** — it briefly moved to Space 5 in 2026-08 round 4 and was returned by design sign-off on 2026-08-13, settling the split: **MASS owns the SUBSTANCE of what you fire** (turret prism stretch, in-flight round growth, armour) and **SPACE owns its REACH** (range, and pierce on both fire modes)) | 4/4 | ✅ | ✅ | ⚠ no switcher on its HUD |
   | Dolphin | complete | 4/4 | ✅ | ✅ | ⚠ no switcher on its HUD |
   | Manta | 3/4 named, 0/4 upgrades | 0/4 | — | — | n/a |
   | Rhino | 1/4 named, 0/4 upgrades | 0/4 | — | — | n/a |
@@ -2128,6 +2265,24 @@ scale bump** with a one-shot unlock punch.
   lands on the jaw halves, not on the row's (fully transparent) Time icon, so it never collides
   with the upgrade path. Reading it as an upgrade tint is the mistake to avoid.
   Mechanics: `_Scripts/Controller/Vessel/R_VesselActions/DOLPHIN_ENERGY_ECONOMY.md`.
+  **Since 2026-08-14 its Charge ability is PASSIVE and its Space ability owns the right
+  trigger** — crystal seeding runs on a cooldown loop that plants team crystals in the cell's
+  CYTOPLASM (volume-uniform across the band, never inside the nucleus, and at the live cap the
+  clock PAUSES rather than culling — not creating mass is allowed, aging it out is not), which
+  freed RT for the **Echo Sight**: hold it and every prism inside the crystal blast's live
+  destruction volume lights up. It touches nothing but photons — no camera write, no speed
+  change, nothing replicated. (A zoomed first-person view was built alongside it and **cut**:
+  it would have needed the speed tunnel to grow a public FOV-home surface for one vessel's view
+  effect, and the highlight carries the ability on its own. If it is ever revisited, the one
+  safe shape — move the tunnel's HOME, never `Camera.fieldOfView`, which a live tunnel
+  overwrites every frame and then bakes in permanently as the home it restores to — is recorded
+  in `DOLPHIN_CRYSTAL_SEEDING.md` §2.) One general lesson: **a passive ability is bound to no
+  input event, so `CollectBoundActions` can never resolve its SO** — wire the config directly on
+  the executor; the binding sweep is a fallback, not the path.
+  The prism highlight is the second citizen of the §4.7 global-uniform shape
+  (`Docs/PRISM_ANIMATION.md` §4.7.1) — five globals per frame, zero per-prism CPU, and the
+  previewed volume is built by the same helper the detonation uses so the two cannot drift.
+  Detail: `_Scripts/Controller/Vessel/R_VesselActions/DOLPHIN_CRYSTAL_SEEDING.md`.
 
   Manta / Rhino / Serpent are blocked on **design, not wiring**: their
   `ElementalAbilityMapSO` entries are still `(open design slot)` with `Input = 0` and no
@@ -2178,6 +2333,7 @@ All game code lives under `CosmicShore.*` with 8 primary namespaces:
 | Impact effects | `ImpactorBase` + 11 impactor types, 20+ Effect SO types | `_Scripts/Controller/ImpactEffects/` |
 | Swing kinematics | `SkimmerSwingKinematics` (rigid-body velocity of any point on a skimmer that MOVES relative to its vessel — the Rhino's sword: `v = v_vessel + omega_vessel x r + R * v_rel`, every rate differentiated in the VESSEL's frame so translation/teleports can't leak in; `ClosestBladePoint`/`NormalizedAlongBlade` recover WHICH part of the blade a contact landed on, hilt/tip derived from the pivot, never authored) + `SkimmerSwingKinematicsConfigSO`; composed into impacts by `PrismEffectHelper.ContactVelocity` so a destroyed prism gets the velocity of the part that hit it (a tip strike, not the hull). Skimmers without the component collapse to the previous `Course * Speed` exactly. The magnitude survives to the screen via `PrismEffectHelper.DamageProportional`, which hands the debris velocity over **as final** — `Prism.Explode` passes it through untouched (the supplied `DebrisSpeedLimit` marks it) instead of applying the legacy `/ prismProperties.volume`. **That divide is dead code**: `SetupDestruction` disables the scale animator before reading the volume, `GetCurrentVolume()` returns 0 once disabled, so `Max(0,1)` pins the divisor to exactly 1 for every prism — the legacy gain is just `inertia`. Never pre-multiply by volume expecting it to cancel; the leftover is a straight volume multiplier that damps small prisms (a Rhino trail sliver is ~0.75) and pins large ones to the ceiling. Opt-in per effect (`proportionalDebris`) — on for the sword AND the hull (`VesselDamagePrismEffectSO`), since every vessel's `Inertia` is 1 and the legacy hull formula therefore landed under the clamp's FLOOR, making every ram produce an identical 30 u/s; with both proportional a hull hit and a parked-sword hit at the same velocity now impart the same magnitude. Debris ships at **1/3** the physical read via one tuning group that must move together — `restitution` + `debrisSpeedLimit` on the three damage SOs, `debrisRestitution` + `Inertia` on `AOEExplosion` (the **AOE blasts** joined the group; see below), and `minSpeed`/`maxSpeed` on `PrismExplosion.prefab` (the band also carries the clamp-bound legacy paths, so the retune is uniform). On the three damage SOs `inertia` is NOT the lever — proportional paths ignore it and legacy paths are saturated — but on an AOE blast running `proportionalDebris` it IS the single lever: the blast supplies its OWN ceiling, so `Inertia` scales throw AND shatter linearly, and `debrisRestitution x Inertia = 1` holds the pre-existing shatter rate. `restitution` also drives the shatter rate, so shatter violence tracks impact force. A parked sword must add exactly zero, so elongation (ambient shield scaling, +15/-5 u/s at the tip) defaults off, `restDeadbandSpeed` zeroes sub-threshold residue (which rectifies upward, `|v+n|>|v|`), and `AngularVelocity` reads the angle off the quaternion's vector part via `atan2` — `ToAngleAxis`/`acos` returns exactly zero below ~0.01 deg/frame in float32 and drops slow vessel rotation. See `_Scripts/Controller/Vessel/R_VesselActions/RHINO_SHIELD_SWIPE.md` § "Swing velocity model" | `_Scripts/Controller/Vessel/`, `_Scripts/Controller/ImpactEffects/EffectsSO/Helpers/` |
 | Forcefield crackle | `SkimmerForcefieldCracklePrismEffectSO` (computes impact points via `Collider.ClosestPoint`), `ForcefieldCrackleController` (`[ExecuteAlways]`, 16-impact ring buffer + MaterialPropertyBlock arrays, owns all visual params), `ForcefieldCrackle.hlsl` (FBM electrical arcs on geodesic sphere), `ForcefieldCrackleControllerEditor` (edit-mode preview) | `_Scripts/Controller/ImpactEffects/EffectsSO/Skimmer Prism Effects/`, `_Scripts/Controller/Vessel/`, `Assets/Materials/Graphs/`, `_Scripts/Editor/` |
+| Charge crystal | `ChargeCrystal.shader` + `ChargeCrystal.hlsl` (URP unlit **opaque**: static faceted body + plasma discharge that crackles vertex-to-vertex along **crease edges only**, in the forcefield-crackle visual language) and `CrystalEdgeArcMeshBaker` + `CrystalEdgeArcs` (bake the crease data a fragment shader cannot derive — barycentric basis, signed edge heights in model-radius fractions, per-edge hash + direction flag — once per source mesh, **shared**). **This crystal is STATIC: its spread is the model's** (`ChargeCrystalExport1_7-11-25.fbx` = 60 disjoint pentagonal extruded prisms, 420 faces, 900 edges). It must NOT go back on the generic `CrystalGraph`, which is the *exploding* crystal shader — vertex `_spread` along the normal + a Cosine-Time spin + stacked overlay blends, which double-applies the spread and clips the colour. Two traps recorded in the source: 120 of the 300 side quads are **non-planar** (5.21°, vs a 57.5° shallowest real dihedral), so diagonals are identified structurally rather than by a tight angle test; and the vertex-terminal glow must be gated on the bolt, because its corner metric has wedge-shaped level sets and an always-on term draws permanent starbursts. Honours `_opacity` so `FadeIn` still blooms it in (continuity of existence) — spent as screen-door **coverage**, not blending, per `Docs/PRISM_ANIMATION.md` §4.7. Source mesh needs Read/Write enabled. **Only the CHARGE crystal moved**: `SpaceCrystalMaterial` (plus the domain/fake crystals) is still on `CrystalGraph` and may carry the same model-vs-shader mismatch — check whether its model already encodes its own spread before assuming the shader should add one. Note also that `FadeIn` ends its bloom with `MaterialPropertyBlock.Clear()`, which wipes any `Crystal.ApplyColorSetTint` override on the same renderer — pre-existing, affects every crystal, ordering-dependent | `_Graphics/Materials/Graphs/`, `_Scripts/Utility/`, `_Scripts/Controller/Environment/FlowField/` |
 | Camera | `CustomCameraController`, `VesselCameraCustomizer`, `CameraSettingsSO`, `ICameraController`, `ICameraConfigurator` | `_Scripts/Controller/Camera/` |
 | Vessel HUD | `IVesselHUDController`, `IVesselHUDView`, per-vessel controllers & views (Sparrow, Squirrel, Serpent, Manta, Rhino, Dolphin) | `_Scripts/UI/Controller/`, `_Scripts/UI/View/`, `_Scripts/UI/Interfaces/` |
 | Elemental bars | `ElementalBarsView` (5-petal flower per element), `ElementalBarsConfigSO` (shared colour/sprite/juice spec), `ElementalBarsController` (per-vessel driver), `ElementalPetalBarWirer` (editor setup) | `_Scripts/UI/View/`, `_Scripts/ScriptableObjects/`, `_Scripts/Controller/Vessel/`, `_Scripts/Editor/` |
@@ -2206,7 +2362,7 @@ All game code lives under `CosmicShore.*` with 8 primary namespaces:
 | Party / Invite | `HostConnectionService` (presence lobby + party sessions, single-writer to `HostConnectionDataSO`), `PartyInviteController` (Netcode host↔client transitions), `FriendsInitializer` (Friends service bridge) | `_Scripts/Controller/Party/` |
 | Party UI | `ArcadeLobbyList` (4-slot party panel; per-slot kick ✕ for host) + `FriendInfoSlot` (single slot), `FriendsListPanel` (Online + Requests), `OnlineInfoEntry` (online row = invite button; "IN YOUR PARTY" + cancel-✕/kick states), `RequestInfoEntry` (accept/decline), `PartyInviteNotificationPanel` (bottom-left global invite popup) | `_Scripts/UI/Elements/` (`PartyInviteNotificationPanel` in `_Scripts/UI/Screens/`) |
 | Menu scene controller | `MainMenuController` (sub-state machine: None→Initializing→Ready→LaunchingGame), `MainMenuState` enum | `_Scripts/System/`, `_Scripts/Data/Enums/` |
-| Audio | `AudioSystem` (DI singleton), `ScriptableEventGameplaySFX` / `EventListenerGameplaySFX` (decoupled gameplay SFX via SOAP) | `_Scripts/System/Audio/`, `_Scripts/ScriptableObjects/SOAP/ScriptableGameplaySFX/` |
+| Audio (FMOD) | `AudioSystem` (DI singleton; inspector-wired `EventReference` per `MenuAudioCategory` / `GameplaySFXCategory`, SFX-bus volume, per-category throttle), `FMODOneShotVolumeHelper` (slider-respecting one-shots — use instead of `RuntimeManager.PlayOneShot`), continuous emitters `ShipAudioController` / `DriftAudioController` / `ProximityBoostAudioController` / `FloraAmbientAudioController`, `ScriptableEventGameplaySFX` / `EventListenerGameplaySFX` (decoupled gameplay SFX via SOAP). **Every sound is an exposed `EventReference` field — never a temp/borrowed event; every ship ability gets its own field.** See "Audio (FMOD)" under Architecture Patterns | `_Scripts/System/Audio/`, `_Scripts/Controller/FX/`, `_Scripts/Controller/Vessel/Audio/`, `_Scripts/ScriptableObjects/SOAP/ScriptableGameplaySFX/` |
 | App systems | Favorites, LoadOut, Quest, Rewind, Squads, UserAction, UserJourney, Xp, Ads, IAP, DailyChallenge, TrainingGameProgress | `_Scripts/System/` |
 | ScriptableObjects | `SO_Vessel`, `SO_Captain`, `SO_Game`, `SO_ArcadeGame`, `SO_Element`, `SO_Mission`, etc. | `_Scripts/ScriptableObjects/` |
 
@@ -2231,6 +2387,8 @@ All game code lives under `CosmicShore.*` with 8 primary namespaces:
 - Swapping a prism's `MeshFilter` mesh (or its `MeshRenderer` materials) directly to restyle it — **prisms draw through the instanced companion entity (`PrismRenderService`), so a GameObject-local swap renders NOTHING**: the companion keeps drawing the plain box while your new mesh sits on a renderer that isn't drawing (exactly how the stellated super-shield first shipped invisible). Any per-prism visual override must hand rendering across explicitly: `Prism.SetExoticVisualActive(true)` while showing per-prism-unique geometry (engage morphs, shatter overlays), then `Prism.SetRenderMeshOverride(sharedMesh)` + `SetExoticVisualActive(false)` once the geometry settles to something shareable (fetch it from the quantized-geometry caches — `OctahedronMeshGenerator.GetSharedShieldMesh` / `StellatedOctahedronMeshGenerator.GetSharedShieldMesh` — so same-size prisms batch as ONE mesh instead of a per-prism draw-call storm), and `ClearRenderMeshOverride()` + `SetExoticVisualActive(false)` on the way back (including pool-return `OnDisable`). `PrismOctahedronShield` and `PrismStellatedOctahedronShield` are the reference implementations. **Two corollaries an exotic visual must respect** (`Docs/PRISM_ANIMATION.md` §4.5, learned the hard way from §3.8 #10): (1) taking over *rendering* must never suppress companion-entity *creation* — clock stamps are one-shot, so a prism with no entity at the instant it is stamped loses that animation permanently; entity existence and entity visibility are separate concerns, and the transient morph mesh must never be registered with Entities Graphics (it mints a `BatchMeshID` per prism) — read the batchable geometry from `Prism.EffectiveRenderMesh()`/`SyncRenderMesh()`; (2) a visual state applied while `!Prism.IsCreationComplete` is part of the prism's BIRTH, not a transition on live mass — it snaps (`PrismStateManager.IsBirthTransition`), because the grow-in bloom already carries continuity of existence and a morph there is invisible by construction while costing draw calls, per-frame mesh rebuilds, and one SFX per prism laid
 - **Any multiframe CPU update that animates a prism** — per-frame/per-tick writes of a prism's transform scale, colors, shader parameters, positions, or morph meshes to play out a visual transition (coroutines, DOTween, UniTask loops, manager passes, per-frame `SetPropertyBlock`/`SetComponentData`). **The clock-material law (`Docs/PRISM_ANIMATION.md`, LOCKED)**: prism animation is a pool-pull whose material accepts initial conditions, ONE stamp of those conditions (start time, rate/duration, endpoints — per-instance Hybrid-Per-Instance properties), the GPU runs the course off the shader clock with zero further CPU writes, and ONE scheduled swap to the end-state prism at the analytically-known end frame (`PrismTimerManager`-class scheduler, never per-frame progress polling). Colliders and gameplay state (spatial index, volume, state flags) go to their FINAL values at the START of the animation — only photons animate. Interruptions re-stamp (current value is analytic). **STRICT: there is no legacy fallback tier** — never reintroduce a CPU animation path "just until the shader is wired"; an unwired graph fails loud (`PrismClockDiagnostics`) and snaps, which is the intended forcing function. If a visual seems impossible to express as `f(clock, initial conditions)`, that's a design discussion (live gameplay data vs. animation — see the doc), not a license for a per-frame loop
 - Per-object coroutines at scale — use centralized timer/manager systems (see Prism Performance Audit)
+- **A sound that isn't an inspector-exposed `EventReference` on the thing that makes it** — a hardcoded FMOD event path in code, a "temp" event plugged in so something is audible, a new ability routed through an existing `GameplaySFXCategory` because it's close enough, or a new gameplay sound built on `AudioClip` + `AudioSource`. Every noise must be findable and swappable in the component view of its own prefab, and every ship ability needs its own dedicated event field. Guard an empty reference for **silence**, never for substitution. See "Audio (FMOD)" under Architecture Patterns
+- `RuntimeManager.PlayOneShot` / `PlayOneShotAttached` directly — they take no per-instance volume, so the sound ignores the in-game SFX slider whenever the FMOD bus fails to resolve. Go through `AudioSystem.PlaySFXEvent` / `PlaySFXEventAttached` or `FMODOneShotVolumeHelper`
 - **Guarding `using UnityEngine;` (or any using an unguarded declaration needs) behind `#if UNITY_EDITOR` / `#if DEVELOPMENT_BUILD`.** A guard must cover a self-consistent unit: if the class declaration is outside the guard, everything it depends on must be too. `#if UNITY_EDITOR\nusing UnityEngine;\n#endif` above an unguarded `class Foo : MonoBehaviour` compiles fine in the Editor and in Development builds, then fails the **Release** player build with `CS0246: 'MonoBehaviour' could not be found` — which is the automated build, not yours. Likewise, never touch the `UnityEditor` namespace outside `#if UNITY_EDITOR` in a file that isn't under an `Editor/` folder. Run `python3 Tools/Build/check_conditional_compilation.py` (~1s, no Unity needed) before committing any guarded script. Full rules + the two safe patterns: `Docs/CONDITIONAL_COMPILATION.md`
 - A per-vessel component that drives the gameplay camera's FOV or the Panini override — the speed tunnel is a PLATFORM LAW driven by the single static `VesselSpeedTunnel` (`Docs/SPEED_TUNNEL.md`). `PostProcessingManager.SetSpeedTunnelPanini` is one global override with no ref-counting, so a second writer silently stomps the first and an outgoing vessel's teardown releases the incoming vessel's effect mid-swap. Bind platform-wide vessel behaviour in `VesselController.Initialize` under `IsLocalPilot`, never on a prefab
 - New spatial queries against prisms via `Physics.OverlapSphere` / `Physics.CheckBox`, or building a new grid/registry/octree over prisms — `PrismSpatialIndex` is THE canonical spatial index of prism mass (occupancy, AOE, proximity). Physics queries are also structurally blind to fresh prisms (colliders disabled for the first 0.6s after spawn). Add new query shapes to `PrismSpatialIndex` instead — see `Docs/SPATIAL_INDEX.md`
@@ -2402,6 +2560,7 @@ Do not guess at performance problems. Profile first.
 - Leave TODO comments as a substitute for completing the work
 - Generate code that compiles but ignores the established architecture patterns above
 - Add if-null guards on SOAP ScriptableEvent serialized fields — fail loud
+- Plug a placeholder/temp FMOD event into a new sound, or hardcode an event path in code. Add the `[SerializeField] EventReference` (per ability, per trigger, per emitter), ship it **empty**, and say so — an unwired slot is a visible TODO; a temp event is one nobody ever finds
 - Use `renderer.material` when `renderer.sharedMaterial` + MaterialPropertyBlock works
 
 ## Design Philosophy: Favor Emergent Systems Over Bespoke Solutions

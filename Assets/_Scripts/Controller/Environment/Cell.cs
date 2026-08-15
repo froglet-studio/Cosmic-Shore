@@ -9,6 +9,7 @@ using CosmicShore.Utility;
 using CosmicShore.Utility.PerformanceBenchmark;
 using Reflex.Attributes;
 using Unity.Collections;
+using Unity.Netcode;
 using Unity.Jobs;
 using Unity.Profiling;
 using UnityEngine;
@@ -1273,6 +1274,47 @@ namespace CosmicShore.Gameplay
         public IReadOnlyList<Fauna> LiveFauna => liveFauna;
 
         /// <summary>
+        /// THIS CELL's take on an authored fauna population number - a seed count
+        /// (<c>InitialSpawnCount</c> / <c>PopulationSize</c>) or the hard cap
+        /// (<c>MaxLivePopulation</c>) - after its SpawnProfile's
+        /// <see cref="SpawnProfileSO.FaunaPopulationScale"/>. A cell with no profile, or the
+        /// default scale of 1, returns the authored number untouched, so every biome that
+        /// authors nothing is bit-for-bit unchanged.
+        ///
+        /// <para><b>Every producer must ask the CELL, never the config.</b> There are four
+        /// (<c>RandomLifeSpawner</c>, <c>IntensityWiseLifeSpawner</c>, <c>Fauna.TryReproduce</c>
+        /// and the freestyle <c>Microscene</c> conveyor), and which SPAWNER a biome runs is
+        /// decided by an unrelated field - <c>CellTypeChoiceOptions.IntensityWise</c> silently
+        /// swaps the class - so a density rule implemented in one spawner is dead code in
+        /// exactly the modes that asked for it. The cell is the one thing all four already
+        /// hold. A fifth producer that asks here gets the scalar for free; one that reads
+        /// <c>cfg.MaxLivePopulation</c> directly silently opts a species out of it.</para>
+        /// </summary>
+        public int ResolveFaunaPopulation(int authored)
+        {
+            var profile = cellConfigData ? cellConfigData.SpawnProfile : null;
+            return profile ? profile.ScaleFaunaPopulation(authored) : authored;
+        }
+
+        /// <summary>
+        /// This cell's live cap for a species: <see cref="FaunaConfigurationSO.MaxLivePopulation"/>
+        /// through <see cref="ResolveFaunaPopulation"/>. 0 stays 0 (uncapped).
+        /// </summary>
+        public int ResolveFaunaCap(FaunaConfigurationSO config) =>
+            config ? ResolveFaunaPopulation(config.MaxLivePopulation) : 0;
+
+        /// <summary>
+        /// True when this species is already at or over this cell's live cap - the one place
+        /// the "cap" comparison is written, so a producer cannot accidentally test the
+        /// unscaled authored number. An uncapped species (0) is never full.
+        /// </summary>
+        public bool IsFaunaAtCap(FaunaConfigurationSO config)
+        {
+            int cap = ResolveFaunaCap(config);
+            return cap > 0 && GetLiveFaunaCount(config) >= cap;
+        }
+
+        /// <summary>
         /// Live herbivores still eligible as prey - the prey signal for predator
         /// seeding (a real herbivore count, not the prism-mass proxy).
         /// </summary>
@@ -1328,6 +1370,17 @@ namespace CosmicShore.Gameplay
             DomainFaunaBuffSystem.EnsureExists(gameObject, gameData, runtime);
 
             AssignConfig();
+
+            // AssignConfig can decline (a client that cannot yet know its intensity - see
+            // IntensityChoiceReady). Everything below dereferences the config, so bail and let
+            // OnInitializeGame - which fires on EVERY peer a full second after the config
+            // broadcast - run this again with an answer.
+            if (!cellConfigData)
+            {
+                postInitDeferred = true;
+                return;
+            }
+
             // SpawnVisuals must run before SetupDensityGrids: the density grids
             // are now sized to the cell's membrane radius, and MembraneRadius
             // reads the membrane GameObject that SpawnVisuals instantiates.
@@ -1344,22 +1397,40 @@ namespace CosmicShore.Gameplay
             ResetVolumes();
 
             UpdateCellStats();
+
+            // Finish a bootstrap the first-crystal path had to defer while it waited for the
+            // config. Without this the cell would have a config but no cytoplasm and no spawner.
+            if (postInitDeferred) InitilizePostFirstCellItem();
         }
         
         void InitilizePostFirstCellItem()
         {
-            postInitilized = true;
             if (!cellConfigData)
             {
                 CSDebug.LogWarning($"[Cell {ID}] Crystal spawned before Cell Initialized. Attempting lazy init.");
                 Initialize();
-                if (!cellConfigData) return;
+
+                // Still no config - AssignConfig deferred an IntensityWise choice it could not
+                // make yet. Do NOT latch postInitilized here: that is what made the deferral
+                // permanent, leaving the cell with no spawner and no cytoplasm for the match.
+                if (!cellConfigData)
+                {
+                    postInitDeferred = true;
+                    return;
+                }
             }
+
+            postInitilized = true;
+            postInitDeferred = false;
 
             SpawnCytoplasm();
             ApplyModifiers();
             StartSpawnerForMode();
         }
+
+        // Set when the first-crystal bootstrap ran before this peer could choose a config.
+        // Initialize() (OnInitializeGame, a full second after the config broadcast) finishes it.
+        bool postInitDeferred;
 
         void OnCellItemUpdated()
         {
@@ -1384,10 +1455,21 @@ namespace CosmicShore.Gameplay
                 return;
             }
 
+            // A connected CLIENT derives its IntensityWise index from a value only the server can
+            // send it, and the choice above is STICKY - so choosing early is choosing wrong,
+            // permanently. Bail without latching; the caller retries (see postInitDeferred).
+            if (!IntensityChoiceReady)
+            {
+                CSDebug.LogWarning($"[Cell {ID}] IntensityWise config choice DEFERRED - the " +
+                    "server's game config has not replicated to this client yet. Retrying on " +
+                    "OnInitializeGame.");
+                return;
+            }
+
             var index = cellTypeChoiceOptions switch
             {
                 CellTypeChoiceOptions.Random => Random.Range(0, CellConfigs.Count),
-                CellTypeChoiceOptions.IntensityWise => Mathf.Clamp(gameData.SelectedIntensity.Value - 1, 0, CellConfigs.Count - 1),
+                CellTypeChoiceOptions.IntensityWise => IntensityIndex(),
                 CellTypeChoiceOptions.EnvironmentFree => FirstEnvironmentFreeIndex(),
                 _ => 0
             };
@@ -1403,6 +1485,41 @@ namespace CosmicShore.Gameplay
             var assigned = CellConfigs[index];
             if (assigned && assigned.SpawnProfile)
                 FaunaReleaseTier = assigned.SpawnProfile.InitialFaunaReleaseTier;
+        }
+
+        /// <summary>
+        /// May this cell make its (sticky, unrepeatable) config choice yet? Only IntensityWise
+        /// depends on replicated state; Random and EnvironmentFree are answerable from local data
+        /// alone, and a server, a single-player scene or a scene with no NetworkManager is
+        /// authoritative by definition.
+        ///
+        /// See <see cref="GameDataSO.GameConfigSynced"/> for what goes wrong without this: a
+        /// client's cell bootstraps off its first crystal, which can beat the config broadcast, and
+        /// silently builds a different intensity's arena than the host for the whole match.
+        /// </summary>
+        bool IntensityChoiceReady =>
+            cellTypeChoiceOptions != CellTypeChoiceOptions.IntensityWise
+            || gameData == null
+            || gameData.GameConfigSynced
+            || NetworkManager.Singleton == null
+            || !NetworkManager.Singleton.IsListening
+            || NetworkManager.Singleton.IsServer;
+
+        /// <summary>
+        /// The <c>CellConfigs</c> index for the selected intensity, floored at 1 and fail-loud on
+        /// over-run. The floor matters because the intensity SOAP asset defaults to 0 (so a scene
+        /// opened directly in the editor asks for index -1), and the warning matters because the
+        /// clamp is otherwise silent - a mode whose SO_ArcadeGame offers four intensities but whose
+        /// cell authors two would quietly serve the same arena for 3 and 4.
+        /// </summary>
+        int IntensityIndex()
+        {
+            int intensity = Mathf.Max(1, gameData.SelectedIntensity.Value);
+            if (intensity > CellConfigs.Count)
+                CSDebug.LogWarning($"[Cell {ID}] Intensity {intensity} selected but only " +
+                    $"{CellConfigs.Count} CellConfigs are authored - clamping to the last. " +
+                    "Author one config per SO_ArcadeGame.MaxIntensity.");
+            return Mathf.Clamp(intensity - 1, 0, CellConfigs.Count - 1);
         }
 
         /// <summary>

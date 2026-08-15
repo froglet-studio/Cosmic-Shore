@@ -1,0 +1,37 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e8d8aa5d835249798a256e18f2f7d912, type: 3}
+  m_Name: Rampage Spawn Profile 1
+  m_EditorClassIdentifier:
+  FloraExcludeLocalDomain: 0
+  FloraSpawnVolumeCeiling: 12000
+  FloraInitialDelaySeconds: 0
+  FloraSpawnIntervalSeconds: 0
+  FloraPopulationScale: 1.0
+  FloraPlantBudgetScale: 1.0
+  SupportedFloras:
+  - {fileID: 11400000, guid: f9232fe099904e69b63d12f1b0e28717, type: 2}
+  - {fileID: 11400000, guid: 5b18cd2b2ac647e48b78dd3e8e155f02, type: 2}
+  - {fileID: 11400000, guid: 77428610f484433586d594663b70385a, type: 2}
+  - {fileID: 11400000, guid: 8514fbd281c347f0bea06cbc1db3a9c4, type: 2}
+  - {fileID: 11400000, guid: c189b76be353421a9d7efae8ecb6cee0, type: 2}
+  FaunaExcludeLocalDomain: 0
+  InitialFaunaSpawnWaitTime: 10
+  FaunaSpawnVolumeThreshold: 1
+  FaunaPopulationScale: 1.0
+  BaseFaunaSpawnTime: 30
+  FaunaFoodFloor: 5
+  FaunaInitialDelaySeconds: 0
+  FaunaSpawnIntervalSeconds: 1
+  SupportedFaunas:
+  - {fileID: 11400000, guid: 178e4d83e2fd4a4bae1ab253d7766ea7, type: 2}
+  - {fileID: 11400000, guid: fb217959401746e1b09cac81ffce665b, type: 2}

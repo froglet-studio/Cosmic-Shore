@@ -15,7 +15,47 @@ The Dolphin has **two** resources and they are not the same thing:
 | slot | name | who writes it | passive gain |
 |---|---|---|---|
 | 0 | **Energy** | skim / prism ram / crystal impact | none |
-| 1 | **Boost** | `ChargeBoostActionExecutor` only | none |
+| 1 | **Boost** | `ChargeBoostActionExecutor` + the prism ram | none |
+
+**A prism ram costs HALF of BOTH meters.** Energy and Boost are separate resources with separate
+sinks, but they share one punish: fly into mass and you lose half of everything you banked. The
+two halves are authored as two effects in `DolphinImpactorDataContainer.vesselPrismEffects`
+(`DolphinVesselChangeResourceByPrismEffect` on slot 0, `DolphinVesselChangeBoostByPrismEffect`
+on slot 1), each with its own `retainedFraction` (0.5) so they can be tuned apart if the ram
+turns out to bite harder on one than the other.
+
+### A ram also costs SPEED — on the fleet's terms, not the Dolphin's
+
+The Dolphin shipped with **no `VesselChangeSpeedByPrismEffectSO` in its chain at all**, so a
+prism collision — danger prism included — did nothing whatsoever to its speed. The asset existed
+(`DolphinVesselChangeSpeedByPrism`, authored at `duration 0.5` / `maxSlowStrength 0.8`) and was
+referenced by no container: authored once, never wired, and invisible because a vessel that
+simply doesn't slow reads as a vessel that's fast.
+
+It now carries the **Squirrel's exact numbers**, because a prism is a prism and the collision
+read should not depend on which hull hit it:
+
+| | normal prism | danger prism |
+|---|---|---|
+| slow strength | `min(volume × 0.1, 0.5)` | `0.5 × 3` → clamps to a **full stop** |
+| recovery | **1 s**, linear back to full throttle | **3 s**, linear |
+
+`massScaling: 0.1` against `maxSlowStrength: 0.5` means anything of volume ≥ 5 saturates, so in
+practice a normal prism halves the throttle for a second and a danger prism parks you for three.
+Both recover linearly from full strength (`VesselTransformer.ApplyThrottleModifiers` lerps the
+modifier back to 1 across its duration) — the bite is instant, the climb out is not.
+
+Two properties come free with the shared effect and are the reason to use it rather than author
+a Dolphin-specific slow:
+
+- **Your own trail doesn't brake you** — `VesselChangeSpeedByPrismEffectSO` skips non-danger
+  prisms of your own domain. You skim your own mass, you don't plow through it.
+- **Danger is not safe to its own domain** (locked design), so the full stop lands on the owner
+  of the danger trail exactly as hard as on anyone else.
+
+The Dolphin does **not** take the Squirrel's `VesselResetBoostPrismEffect` (which zeroes boost
+outright). Its boost punish is the halving above — a deliberately different, gentler design for
+a vessel whose boost is bought with drift-seconds rather than picked up.
 
 **Energy** is banked by skimming and spent in ONE shot on a crystal:
 
@@ -155,6 +195,106 @@ discharge, and cancelling that task only throws *inside* the loop — it never r
 that restores the speed. Without the clear, anyone who drifted twice in a row kept a partial
 boost multiplier permanently.
 
+### A ram halves the boost — and the meter is only half of "the boost"
+
+`DolphinVesselChangeBoostByPrismEffect` scales resource slot 1 by `retainedFraction`, and that
+alone would barely be felt mid-boost, because the meter is not the only thing driving the speed.
+`CurrentBoostAmount()` above multiplies **two** terms during a discharge and only one of them
+re-reads the meter:
+
+| term | who writes it | re-reads the meter? |
+|---|---|---|
+| `BoostMultiplier` | the discharge loop, every 0.1 s tick | **yes** — self-corrects |
+| `ChargedBoostCharge` | pinned at the value the CHARGE ended on | **no** — never read again |
+
+`BoostMultiplier` therefore needs nothing: halving the meter halves it on the next tick, for
+free. The **pinned snapshot does** — left alone it keeps paying full price on half the product,
+and nothing ever re-reads it, so a ram mid-boost would barely be felt. The effect scales it by
+the same fraction, which is exact without any reference to `ChargeBoostActionSO`: the term is
+`1 + (maxBoostMultiplier − 1) × meter`, so scaling the meter by `f` is scaling its distance
+above 1 by `f`. It is scaled **only while `IsChargedBoostDischarging`** — the one state
+`CurrentBoostAmount` reads it in; outside a discharge it is stale bookkeeping that the next
+`BeginCharge` overwrites anyway.
+
+**`BoostMultiplier` is deliberately never written by this effect**, and that is not an
+optimization — it is a serialized, *authored* field on `VesselStatus` (4 on the Dolphin) that
+boost sources fall back to when they don't write it themselves (`BoostActionSO` only flips
+`IsBoosting`; `VesselResetBoostPrismEffectSO` restores it to an authored base). Scaling it in
+place would ratchet that authored number toward 1 a little further on every ram, permanently,
+with nothing in the game to restore it — a creeping nerf disguised as a punish. The meter is
+the only durable thing a ram may touch.
+
+**Ramming while still DRIFTING is repaid, and that is intended.** The charge loop is running, so
+it refills the halved meter from where the ram left it and re-derives `ChargedBoostCharge` along
+the way — a ram taken mid-drift costs the pilot drift-*seconds*, not a bank. The pilot is still
+doing the thing that banks boost; there is no reason for the meter to stay punched while they do
+it. The punish is durable in the two states that matter: mid-discharge (below) and between
+boosts, where nothing refills it.
+
+Concretely, ramming at the peak of a full discharge: meter 1 → 0.5, `ChargedBoostCharge`
+2.259 → 1.630 immediately, `BoostMultiplier` 2.259 → 1.630 within one 0.1 s tick — speed factor
+5.10 → 2.66, and the discharge runs out in half the time it had left. The HUD's boost ring
+follows for free: `Resource.CurrentAmount`'s setter always raises `OnResourceChange`, which is
+what `DolphinVesselHUDController.PushDriftBoost` binds to, so the ring drops on the ram whether
+the executor or an impact effect wrote the meter.
+
+### The drift is a momentum-preserving slide — the whole velocity is frozen, not just its direction
+
+The Dolphin authors `driftDamping: 0` (`DolphinDriftAction.asset`), so its drift already froze the
+velocity's **direction**: `MoveShip` stops re-pointing `Course` at `transform.forward` and flies the
+heading the vessel carried in while the hull rotates freely on top of it. Its **magnitude** kept
+moving, though — `AdvanceSpeed` went on tracking `ComputeThrottleTarget()` every frame, so the
+throttle stick (and any boost state change) still stretched and shrank the slide underneath the
+locked heading. Half a lock reads as a bug, not a mechanic.
+
+`VesselTransformer.holdSpeedWhileDrifting` (authored **on** for the Dolphin, off for every other
+vessel) closes the other half:
+
+| | before | now |
+|---|---|---|
+| velocity direction | locked at drift start (`driftDamping: 0`) | unchanged |
+| velocity magnitude | throttle-driven, live | **latched at drift start, held for the drift** |
+| throttle during drift | drives speed | **inert** — the target is still computed, it just never reaches `speed` |
+
+Mechanically: `BeginDrift` → `RefreshDriftSpeedHold()` latches the current smoothed cruise `speed`
+on the **rising edge** of the hold, and `AdvanceSpeed` pins `speed` to that value until `EndDrift`
+releases it. The pin sits in `AdvanceSpeed` rather than in `ComputeThrottleTarget` because
+`AdvanceSpeed` is the one path *every* transformer's `MoveShip` runs through — a subclass that
+overrides the target (`SingleStickVesselTransformer`) is covered without knowing drift exists.
+
+Four things are deliberately **outside** the hold:
+
+- **`throttleMultiplier`** (the `ModifyThrottle` channel) stays live, so a danger prism's full-stop
+  slow bites a drifting Dolphin exactly as hard as a flying one. Danger prisms are not safe to
+  anybody (locked design) and a drift is not a shield. Mechanically this is `MoveShip` applying
+  `speed * throttleMultiplier` *after* `AdvanceSpeed`'s `_driftSpeedHeld` early-return, so the
+  hold pins the cruise speed and the modifier still scales the frame's output.
+  **This clause was aspirational until the speed effect was wired (§1).** The hold was built to
+  leave the channel live, but nothing on the Dolphin was calling `ModifyThrottle` on a prism
+  collision, so "the vessel still slows mid-drift" could not have been observed — a good reminder
+  that a correctly-designed passthrough proves nothing if no one is pushing anything through it.
+- **`velocityShift`** (the `ModifyVelocity` channel) stays live — knockback, dodges and AOE impulses
+  still displace a drifting vessel.
+- **`_speedTrackingRate`** is untouched, so a ramp boost mid-ramp resumes on release instead of
+  being silently swallowed by the pinned value.
+- **The release**, not the ease-out. `EndDrift` hands the throttle back the instant the pilot lets
+  go — the same instant `BeginDischarge` starts, which has to be able to accelerate immediately.
+  (The non-gamepad course ease-out keeps easing after that; only the speed unlocks early.)
+
+The hold is **binary**, while the course lock is analog (`driftAmount = clamp01(triggerSum)`): on a
+gamepad the speed latches the moment the left trigger crosses the deadzone, at which point the
+course is only fractionally locked. That is the deliberate simple reading of "lock the magnitude";
+if a feathered trigger ends up wanting a feathered lock, the blend point is
+`RefreshDriftSpeedHold` → `AdvanceSpeed` (`Lerp(target, held, driftAmount)`), not a new field.
+
+**Known consequence — the drift now carries boost speed.** `BeginCharge` kills `BoostMultiplier` /
+`IsBoosting` at the top of every drift, so before this change re-drifting during a discharge bled
+the boost speed away over the next second. Now that speed is what gets latched: drift → release →
+re-drift *at the peak of the discharge* pins the vessel near **357** for as long as the drift is
+held, while banking the next boost. If that reads as a ratchet in play, the fix is a ceiling on the
+captured value (clamp `_heldDriftSpeed` to the unboosted cruise target, 78), not the removal of the
+hold — but it is a real balance change and wants a play-test before it is decided.
+
 ---
 
 ## 3. The hull reads out the blast
@@ -210,7 +350,7 @@ re-deriving the layout.
 
 | slot | icon | shows |
 |---|---|---|
-| Charge | omni-crystal + carry pips | crystals in hand, the carry limit, and the recharge fill |
+| Charge | omni-crystal + yield pips | the seeding recharge, and how many crystals the next cycle plants |
 | Mass | the vessel's own 11-step boost ring | the boost banked by drifting |
 | Space | cone-blast icon + tally | prisms the last cone claimed |
 | Time | the vessel's own jaw silhouettes | banked energy, as a gape — **lime when full** |
@@ -224,9 +364,13 @@ Two conventions this HUD deviates on, both deliberate:
   this vessel has**, which is why `SetDriftBoost` writes nothing but the ring's sprite: any
   per-event transform write on an icon wipes the bump.
 
-A **pip stands for a SAVED crystal** — one carried beyond the first, which the main icon
-already represents. So an un-upgraded Dolphin shows no pips at all, and the mini crystal
-appearing *is* Twin Seed becoming visible.
+A **pip stands for an EXTRA crystal in the seeding cycle** — one beyond the first, which the
+main icon already represents. So an un-upgraded Dolphin shows no pips at all, and the mini
+crystal appearing *is* Twin Seed becoming visible.
+
+*(Crystal seeding went PASSIVE on 2026-08-14 — nothing is carried any more, so the pips moved
+from "crystals in hand" to "crystals per cycle" and the main icon became a pure recharge fill.
+Mechanic: `DOLPHIN_CRYSTAL_SEEDING.md`.)*
 
 ### Why the boost ring writes nothing but its sprite
 
@@ -318,15 +462,27 @@ Play Menu_Main, enter freestyle on the Dolphin.
 | cross ~85% energy | Time icon's jaws start blending white → lime; solid lime at full |
 | ram a prism at full | gape halves AND the jaws drop back to white |
 | ram a prism | gape halves |
+| bank a full boost ring, then ram a prism before releasing | ring drops to half a step-for-step; the following release peaks near cruise+half, not 357 |
+| ram a prism at the PEAK of a discharge | speed drops within a tick, and the boost runs out in half the time it had left |
+| ram a prism with an empty boost ring | nothing happens to speed — half of zero is zero |
+| ram a prism WHILE holding the drift | ring drops, then climbs again from there — the ram cost drift-seconds, not the bank |
+| ram prisms repeatedly, then trigger any OTHER boost source | it is as strong as it ever was — a ram scales the meter, never the vessel's authored `boostMultiplier` |
 | hit a crystal | blast fires, gape snaps back to the 4.76° rest, Space icon flashes with a prism count |
 | blast at full energy | destruction is a FAN — wide across the jaw plane, narrow across the beam |
 | full throttle, no boost | `VesselStatus.Speed` settles at **78** (was 60) |
+| drift at cruise, then work the throttle stick | speed does **not** move — heading swings, magnitude is pinned at the value it had when the drift began |
+| drift from a slow crawl | it stays a slow crawl for the whole drift (the lock is "hold what you had", not "hold top speed") |
+| release the drift | throttle authority returns immediately and speed resumes tracking (into the boost discharge) |
+| ram a danger prism mid-drift | the vessel still slows — `throttleMultiplier` is outside the hold |
+| ram an opposing normal prism | throttle drops to ~half instantly, climbs back over **1 s** — same feel as the Squirrel |
+| ram a DANGER prism | **dead stop**, climbing back over **3 s** — same feel as the Squirrel, and it lands on the danger trail's owner too |
+| ram your OWN (non-danger) trail | no braking at all — own-domain prisms are skipped |
 | hold drift | boost ring steps up; release → speed rises then decays; ring empties |
 | hold drift from empty to full | ring fills in **~3.6 s** (was 4) |
 | release a full meter | speed peaks near **357** and takes **~2.5 s** to fall back (was 210 / 2 s) |
 | fly straight without drifting | ring does **not** climb |
-| drift, release, drift again | speed returns to normal — no stuck multiplier |
-| Charge to level 5 | second crystal pip appears; two crystals plantable back to back |
+| drift, release, drift again, then release and fly straight | speed settles back to the ordinary 78 cruise — no stuck boost multiplier. (Note the second drift now HOLDS whatever the discharge had reached; the thing under test is that nothing is stuck once you stop drifting.) |
+| Charge to level 5 | second crystal pip appears; each seeding cycle now plants two crystals (`DOLPHIN_CRYSTAL_SEEDING.md`) |
 
 The **vessel silhouette** that used to sit in this HUD is gone — it had been dead since its driver
 (`SilhouetteController`) became `ElementalBarsController`, but the GameObjects survived in 13 vessel
@@ -337,7 +493,11 @@ family (`GameCanvas.prefab`, `Panels/MiniGameHUD.prefab`, `Panels/VesselHUD.pref
 place: they hold no renderers, and `GameCanvas` is the shared prefab of `Docs/GAMECANVAS.md`.
 
 Knobs, in order of likely tuning: `DolphinSkimmerChangeResourceByPrismEffect._resourceAmount`
-(skim gain), `ChargeBoostAction.chargeTimeToFull` / `dischargeTimeToEmpty` /
+(skim gain), `DolphinVesselChangeResourceByPrismEffect.retainedFraction` /
+`DolphinVesselChangeBoostByPrismEffect.retainedFraction` (how hard a ram bites each meter),
+`DolphinVesselChangeSpeedByPrism.maxSlowStrength` / `speedModifierDuration` (**currently pinned
+to the Squirrel's values on purpose — moving either un-shares the fleet's collision read**),
+`ChargeBoostAction.chargeTimeToFull` / `dischargeTimeToEmpty` /
 `maxBoostMultiplier`, `DeployTeamCrystalAction.cooldown` / `minCooldown`,
 `DolphinVesselExplosionByCrystalEffect._min/_max/_coreExplosionScale` (**then `MinJawAngle` /
 `MaxJawAngle`** — `_coreExplosionScale` is the only one of the three that does NOT move a jaw

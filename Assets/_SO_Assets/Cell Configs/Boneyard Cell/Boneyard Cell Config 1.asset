@@ -13,9 +13,9 @@ MonoBehaviour:
   m_Name: Boneyard Cell Config 1
   m_EditorClassIdentifier:
   CellName: Boneyard
-  Description: The Dog Fight arena at intensity 1 - 12746 prisms of wreckage
-    inside r=520: 6 hollow hulks to hide in, 9 leaning spires,
-    4 girder cages, 3 broken overpasses, and 61 danger traps on the torn
+  Description: The Dog Fight arena at intensity 1 - 9043 prisms of wreckage
+    inside r=520: 4 hollow hulks to hide in, 6 leaning spires,
+    3 girder cages, 2 broken overpasses, and 43 danger traps on the torn
     ends and around the reactor, scattered into debris fields with an open centre.
     Cover, never an objective - shooting it scores nothing. NO NUCLEUS by design.
     PhaseThresholds ride THIS intensity's own baseline; regenerate with
@@ -32,11 +32,11 @@ MonoBehaviour:
   EnvironmentIntensity: 1
   SenseRadiusOverride: 1200
   PhaseThresholds:
-    RestlessEnter: 13446
-    RestlessExit: 13246
-    FrenzyEnter: 16346
-    FrenzyExit: 15746
-    RestlessEnterVolume: 862165
-    RestlessExitVolume: 858965
-    FrenzyEnterVolume: 908565
-    FrenzyExitVolume: 898965
+    RestlessEnter: 9743
+    RestlessExit: 9543
+    FrenzyEnter: 12643
+    FrenzyExit: 12043
+    RestlessEnterVolume: 612691
+    RestlessExitVolume: 609491
+    FrenzyEnterVolume: 659091
+    FrenzyExitVolume: 649491

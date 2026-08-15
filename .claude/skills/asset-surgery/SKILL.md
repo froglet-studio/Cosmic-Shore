@@ -304,6 +304,30 @@ its GameObject lists it in `m_Component`.
   outright — a cone's apex is the axis end with ONE unique (x,z), the base is
   the end with a ring of them. This is how a claim like "the apex sits at the
   container origin" gets PROVEN instead of assumed from a comment.
+- **Read an authored FBX directly — a binary FBX is ~60 lines of Python.** The `.asset`
+  recipe above only reaches meshes Unity has already serialized; the SOURCE model
+  answers questions no imported copy can (how many polygons, what SHAPE are they, are
+  the faces planar, is it one solid or many, what did the artist actually build). Format:
+  a 27-byte header (`Kaydara FBX Binary`, version at offset 23), then nested node records
+  — `end, nprops, proplen` (u32 triple below version 7500, u64 above), a length-prefixed
+  name, then properties typed by a single char: `CBYIFDL` are scalars, `fdlib` are arrays
+  with an `(len, encoding, bytes)` header and `encoding == 1` meaning **zlib-deflated**,
+  `SR` are length-prefixed blobs. Read `Objects/Geometry` → `Vertices` (flat xyz) and
+  `PolygonVertexIndex` (a **negative index terminates a polygon**, and its real value is
+  `-i - 1`); `LayerElementMaterial/Materials` gives per-polygon submesh assignment,
+  `LayerElementNormal` its mapping mode (`ByPolygon` + one normal per face = hard-edged).
+  Connected components over shared indices tell you it is 60 disjoint 10-vertex prisms
+  rather than one shell — which is the fact that decides whether a shader should be
+  adding a "spread" at all.
+- **Do not assume an authored polygon is PLANAR — measure it, and never decide "same
+  face" from a tight angle threshold.** 120 of 300 quads on one crystal were twisted by
+  5.21°, so a 1° coplanarity test misread 120 triangulation diagonals as real edges and
+  drew a wireframe effect straight across face interiors. Decide face identity
+  STRUCTURALLY: two triangles cut from one imported face reference the very same vertex
+  INDICES, while across a face boundary they cannot (the importer split them by normal).
+  Keep an angle test only as a backstop, and size it by measuring BOTH populations first
+  — intra-face deviation (5.21°) against the shallowest genuine dihedral (57.5°) leaves a
+  50° window, and picking from inside a measured gap is not the same act as guessing 1°.
 
 ## 4. Technique: C# verification — get a real compiler first
 
@@ -330,15 +354,26 @@ of which compiled clean and shipped):
    `.cs` files building a `type → namespace` map — and, once the harness is
    fixed, prove it by deleting the `using` again and watching it fail.
 2. **Desugar what mcs 6.8 (C# 7.x) cannot parse but Unity (C# 9) can** — in a
-   THROWAWAY COPY, never the real file: target-typed `new(...)` → `new T(...)`,
-   `x is A or B` → `(x == A || x == B)`, `x ??= y` → `x = x ?? y`, property
-   patterns `x is { Y: true }` → `x != null && x.Y`, switch EXPRESSIONS → ternary
-   chains, `async UniTaskVoid` → `async void` (mcs lacks the AsyncMethodBuilder
-   plumbing), and — the one that says "Internal compiler error … type pattern
-   matching" instead of a sane message — **type-pattern `switch` STATEMENTS**
-   (`case VesselImpactor shipImpactor:`) → an `as`-cast if/else chain (mcs never
-   implemented them at all). Assert zero bare `new(` remain, or the parse dies at
+   THROWAWAY COPY, never the real file. The full list this project has needed
+   (2026-08, ecology death-path branch — every one of them showed up in ordinary
+   gameplay files, so budget for all of them up front):
+
+   | C# 8/9 form | Desugar to | Note |
+   |---|---|---|
+   | `T x = new(...)` | `T x = new T(...)` | regex on the *declaration* line |
+   | `f.field = new() { … }` | `f.field = new T { … }` | no declared type on the line — the declaration regex MISSES it, so grep for surviving bare `new(` separately |
+   | `x ??= expr;` | `if ((object)x == null) x = expr;` | anchor the regex to statement form; a **trailing `// comment`** or a **multi-line lambda RHS** defeats a naive `(.+);$` and both occur in this repo |
+   | `x is { A: true }` | `(x != null)` | property pattern |
+   | `if (x is not T y) return;` | `var y = x as T; if (y == null) return;` | a blanket `is not` → `!=` replace **corrupts** this into a syntax error — handle the declaration form FIRST |
+   | `v = k switch { A => a, _ => b };` | `if`/`else if` chain | switch *expression*; grep `` switch$ `` to find them |
+   | `async UniTaskVoid M()` | `async void M()` | mcs lacks the AsyncMethodBuilder plumbing |
+   | `switch (x) { case T y: … }` | `as`-cast `if`/`else` chain | type-pattern switch STATEMENT — mcs never implemented it and reports `error CS0589: Internal compiler error during parsing … type pattern matching`, which names nothing useful |
+
+   Assert zero bare `new(` remain, and re-grep after desugaring — the parse dies at
    the first one and every later error is cascade noise that will waste your time.
+   **Cascade discipline generally**: one unparsed construct produces a dozen
+   "Unexpected symbol `?`" and "cannot be used before it is declared" errors far
+   from the real cause. Fix the FIRST error and recompile; never triage the list.
 3. `mcs -target:library -langversion:latest -out:/dev/null Stubs.cs <files>`.
 4. Ignore a `CS0436` warning about a type you stubbed that Mono's BCL also has
    (e.g. `System.HashCode`) — harness artifact, not a finding.
@@ -567,6 +602,22 @@ SUBS = [(r"\[unroll\]", ""),          # HLSL loop attribute
 - **Keep the substitution list short, listed, and auditable.** Every constant and every
   expression must pass through untouched — those are what you are verifying. If the list
   starts growing, you are rewriting the shader, not testing it.
+- **Build with `-Wall` and treat every warning as a finding, because C++'s scalar
+  overloads are not HLSL's.** `abs()` on a scalar float resolves to C's INTEGER `abs`
+  unless you supply a float overload, so the harness silently truncates `abs(0.004)` to
+  `0` and you go tuning a shader against a render that never ran your math. Same class:
+  `std::min`/`std::max` are type-strict and reject `max(someFloat, 1e-8)` outright (that
+  one at least fails loudly). Define HLSL-shaped `abs`/`min`/`max` in the shim, and
+  `#undef`/restore them after the `#include` so the harness's own C++ still compiles.
+- **Rasterize the REAL geometry, not a test surface.** §4.5b's advice to render "in situ"
+  goes further for a shader bound to one authored model: parse the source mesh (trap
+  above), run the actual bake the runtime will run, and feed the shipped entry point per
+  fragment through a ~60-line triangle rasterizer (project, screen bbox, 2D barycentrics,
+  1/w perspective correction, depth buffer). Then a claim like "the arcs only run along
+  crease edges" is something you LOOK at, and a claim like "it is not blown out" is a
+  census (mean linear output, % of covered pixels over 1.0/2.0/4.0) rather than an
+  opinion. Re-render after any later edit and `cmp` the output: byte-identical proves the
+  edit was surface-neutral, which is exactly what you want to assert about a refactor.
 - **Stub the URP built-ins** (`_WorldSpaceCameraPos`, `_ScreenParams`, `_Time`,
   `UNITY_MATRIX_V`, `TransformWorldToHClip`) as file-scope globals in the shim. Then the
   entry point compiles too, not just the leaf functions.
@@ -642,7 +693,73 @@ read**. The lesson generalizes:
   "Shielded…" whose `IsShielded` flag was actually `0`. Recover the geometry,
   fix the defects, and say which was which in the commit.
 
+## 4.8 Technique: headless FBX interrogation (takes, bones, curves, scale, mesh bounds)
+
+An FBX is a parseable binary, not a black box you must open Unity to ask about. The format
+(`Kaydara FBX Binary`, version at byte 23; ≥7500 uses u64 record headers, below u32) is a tree
+of named records with typed properties; arrays (`f d i l b`) carry an `(alen, encoding, clen)`
+header and are zlib-per-array when `encoding=1`. A ~60-line recursive parser answers questions
+that would otherwise cost a round-trip to a human at the editor:
+
+- **Which bones does each animation take actually move?** Walk `Objects` for typed ids
+  (`AnimationStack`/`AnimationLayer`/`AnimationCurveNode`/`AnimationCurve`/`Model`), walk
+  `Connections` (`C` records: OO/OP src→dst), then per stack: layer → curve nodes → `OP` edges
+  to `Model` names. Decompress each curve's `KeyValueFloat`/`KeyTime` and report ranges —
+  constant curves are baked filler; the moving bone is the animation. This is how "Missile
+  Launch 1 = RIGHT bay (`b_Missile.R`), departs 0.4s, peaks 0.64s of 0.88s" was established
+  as fact instead of assumption. `KeyTime` is in KTime ticks: divide by 46,186,158,000/s.
+- **Will a donor clip retarget onto another model's rig?** Provable statically: (1) bone NAME
+  sets equal (`strings -n 3 file.fbx | grep '^b_'` is the quick first pass; the parser for
+  rigor); (2) same armature/root object name, since Unity binds clip curves by transform PATH
+  relative to the animator root; (3) the **numeric scale product matches** — read
+  `GlobalSettings.UnitScaleFactor` from the FBX AND `globalScale`/`useFileScale` from the
+  `.meta`, then compare products (SparrowModel1: FBX-unit 100 × meta 1; SparrowModel4:
+  FBX-unit 1 × meta 100 — equal, so translation curves land 1:1). Curves targeting nodes the
+  target model lacks simply never bind — harmless.
+- **Rest poses / pivot positions** without a scene: `Model` records' `Properties70 → P` entries
+  for `Lcl Translation/Rotation/Scaling` give every bone's authored rest TRS (how the bay-bone
+  positions and the 0.2034 armature scale were read).
+- **Mesh size and orientation**: decompress `Geometry → Vertices`, take bounds; identify a
+  mesh's "nose" by comparing cross-section extents near each end of its long axis (the
+  radially-symmetric end is the nose, the asymmetric one is the fins).
+
 ## 5. Traps learned the hard way (check these BEFORE debugging for an hour)
+
+- **Renaming a Unity SERIALIZED FIELD must sweep `Tools/**.py` too, not just C# + scenes +
+  prefabs.** This repo authors scene/prefab YAML from Python generators
+  (`Tools/Build/author_*_assets.py`), and several of them both WRITE and VALIDATE a field by
+  literal name. Rename the C# field, migrate every scene, and the generator still emits the OLD
+  key — so the next person who re-runs it silently reverts your change, and the generator's own
+  `--check` "passes" while validating a name nothing reads any more. Sweep:
+  `grep -rn '<oldFieldName>' Assets/ Tools/ Docs/`, and treat a hit in `Tools/` as a caller, not
+  a comment. (Cost here: `anchorlessSpawnRadius` → `noNucleusSpawnRadius` was clean in the C#
+  and all three scenes, and left `author_dogfight_assets.py` writing the dead name.)
+- **A generator that CLONES a live scene as its donor rots the moment the donor changes.**
+  `author_dogfight_assets.py` clones `MinigameRampage.unity` and asserts on the donor's exact
+  field blocks; a rework of Rampage made it permanently un-runnable. That is the correct end
+  state for a one-shot migration — but say so **in the file**, or the next reader spends an hour
+  trying to satisfy asserts that describe a scene that no longer exists.
+
+- **Unity's FBX importer derives subasset fileIDs from OBJECT NAMES, so two different FBX
+  files that share object names mint the SAME local fileIDs.** Two consequences, one good,
+  one a false-alarm generator. Good: a prefab's `m_Modifications` against model A's instance
+  survive re-pointing the instance to model B when the node names match (the branch swap of
+  SparrowModel1→SparrowModel4 worked this way), and a mesh reference like
+  `{fileID: -3416553540687559647, guid: <fbx>}` is reproducible by committing the same FBX +
+  `.meta` — no editor import needed to know the id. False alarm: grepping the repo for a bare
+  local fileID to find "external references" hits every sibling asset that shares lineage
+  (seven projectile prefabs all declare their own `&6972185831030386429`) — a REAL cross-asset
+  reference must carry the target's `guid:` on the same line, so grep for the guid, not the id.
+- **The deliverable you were asked to integrate may exist only on an abandoned remote branch.**
+  Local clones here are shallow and single-branch: `git log --all --grep` + `git ls-remote origin`
+  to find the branch, `git fetch origin <branch>`, then extract exact assets with
+  `git show '<branch>:<path>' > file` and byte-verify (`md5sum` vs `git show | md5sum`).
+  Keep the original `.meta` GUIDs so every reference authored against the asset on that branch
+  (animator states by clip internalID, prefab mesh refs) resolves without rewiring — and diff
+  the branch's version of any SHARED file against trunk's before adopting it wholesale: adopt
+  only when the base is byte-identical and the diff is purely additive (the Sparrow animator
+  controller was; the Sparrow prefab was NOT — it had swapped the visible model, which trunk
+  must not).
 
 - **`$` in a .NET regex does NOT match before `\r`, so every line-anchored pattern
   fails on a Windows checkout.** In multiline mode `$` matches before the `\n` but
@@ -812,6 +929,29 @@ read**. The lesson generalizes:
   `git checkout HEAD -- <file>` when the file was already committed — which is
   another reason to commit before scripted edits.
 
+- **`re.S` + `.*?` over a whole Unity YAML file matches ACROSS documents, and the wrong
+  match still validates.** "Find the MeshFilter whose `m_Mesh` guid is X, then take its
+  `m_GameObject`" written as one `re.S` pattern latches onto the FIRST `MeshFilter:` in the
+  file and lazily extends until it finds guid X *in some later document* — so it returns the
+  wrong GameObject with total confidence. This is nastier than it sounds: the component gets
+  attached to a real object, the fileID resolves, the dangling-reference self-check passes,
+  the diff looks tidy, and the only symptom is a runtime behaviour that never fires. **Any
+  predicate about "a document that contains A and B" must be evaluated WITHIN one document**
+  — split first (see the newline trap below), then filter. And assert the cardinality you
+  expect (`len(matches) == 1`) rather than taking `[0]`; a per-document filter that finds two
+  MeshFilters on the crystal mesh is telling you something a `.search()` would have hidden.
+  While you are there, print the human-readable NAME of the object you resolved
+  (`m_Name`) — "attached to GameObject 2842750437815966001" is unreviewable, "attached to
+  `chargeShell`" catches this bug by eye in one second.
+- **Replacing a SHADER is an API change: sweep for every property the old one exposed.**
+  Shader properties are a public surface driven from C# by string name
+  (`Shader.PropertyToID`, `SetFloat`, `SetColor`, MaterialPropertyBlock), and dropping one
+  fails **silently** — no compile error, no warning, the write just goes nowhere. Before
+  swapping a material onto a new shader, list the old shader's properties (for a
+  `.shadergraph`, §2a's dump) and grep the repo for each name. A charge-crystal rewrite
+  dropped `_opacity`, which `FadeIn.cs` drives through a property block; nothing would have
+  errored, the crystal would simply have POPPED into existence — breaking a platform-wide
+  law with a green build. Decide per property: reimplement it, or prove nothing writes it.
 - **Splitting Unity YAML on `--- !u!` and rejoining DOUBLES the newline — silently, in every
   document.** `^--- !u!(\d+) &(\d+)( stripped)?$` is line-anchored, so `$` matches BEFORE the
   `\n` and `match.end()` points AT it: the body slice `txt[m.end():end]` already STARTS with

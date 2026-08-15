@@ -892,6 +892,21 @@ Rules for anything added to this carrier:
   carries no completion-callback machinery: fire-and-forget is not a limitation here, it
   is the whole live contract. The stamp still carries `GrowDelay` so the shader contract
   stays complete if a grow producer ever lands.
+- **A death visual wears the palette of the TIER the prism was wearing, not just its
+  domain** (2026-08-13). The dying prism's `PrismKind` rides `PrismEventData.Kind`
+  (stamped in `Prism.Explode` / `Implode` from `PrismKinds.Of` *before* the destruction
+  pass, so no later step can rewrite the flags out from under it) and both
+  `PrismFactory.TryGetTeamColors` and `ConfigureForTeam` resolve their pair from
+  `SO_ColorSet.GetPrismKindColors` — the same composition `ThemeManager` paints the live
+  prism with. Before this, debris was always tinted at the PLAIN tier, so a danger prism
+  shattered into ordinary domain-coloured debris (`Docs/PALETTE.md §2.1`). **This is free
+  on the batch**: colour is already a per-entity override, so a mixed-tier burst stays one
+  `em.Instantiate` and one draw — the tier must never become a reason to split a batch or
+  to swap the material, which would cost a prototype per tier. Danger also carries a
+  DYNAMICS difference, `PrismExplosion.DetonationGain` (authored on the pool prefab as
+  `dangerDetonationMultiplier`), applied identically on both routes; it scales the debris
+  speed, the shatter rate and the clamp band together, because those are one quantity on
+  this contract.
 
 **The death path is now split by markers.** `AOE.ResolveDamage` wraps a whole drain, so
 everything a death did landed in one unattributable self-time bucket. `Prism` now emits
@@ -1535,6 +1550,40 @@ still carried an override for a `prismLayer` field the script no longer had. Rem
 also removes 3 trigger colliders + 3 kinematic Rigidbodies from the vessel fleet
 (Rhino/Dolphin/Serpent) and the `OnTriggerStay` traffic they generated against every prism
 they overlapped.
+
+### 4.7.1 The second citizen of §4.7 — the Dolphin's Echo Sight (shipped 2026-08-14)
+
+The corridor is a platform LAW; this is not. It is one vessel's ability, held on a trigger and off
+for everyone else. It is recorded here because it is the **second** use of §4.7's sanctioned shape,
+and it demonstrates the shape generalises: a view-dependent prism visual that is a *feature* rather
+than a law still gets exactly one global-uniform publisher and zero per-prism CPU.
+
+While the Dolphin's pilot holds the sight, every prism standing inside the volume its next crystal
+blast would sweep lights up. `PrismDestructionSight` publishes five globals per frame (apex, sweep
+axis, gape axis, `(height, coreRadiusPerUnitDepth, halfLengthPerUnitDepth)`, strength);
+`PrismDestructionSight.hlsl` runs the containment test per fragment, spliced into BlockGraph and
+ExplodingBlockGraph by `Tools/Shaders/wire_prism_destruction_sight.py` — the same census the
+corridor covers, for the same reason (a prism material that cannot light up is a hole in a
+targeting aid).
+
+Three properties worth carrying to the next one:
+
+- **The tested volume is not re-derived.** `ExplosionHelper.TryResolveConicVolume` builds it from
+  the authored scales, the live energy read and the Space multiplier the *detonation* uses, and the
+  HLSL transcribes `AOEConicSweepQueryJob.Execute` literally, capsule-segment clamp included. A
+  preview carrying its own copy of that arithmetic drifts the first time anyone retunes a scale, and
+  a targeting aid that lies is worse than none.
+- **It ADDS light, it does not tint.** Replacing colour lands in the domain palette's space and
+  reads as "this prism changed team"; adding reads as "this one is lit up", which no tier's palette
+  means. The prism graphs are Unlit and carry no Emission block, so additive-into-BaseColor is how
+  emission is expressed — which is why it splices exactly like `PrismOcclusionFade`, taking the
+  graph's own value in and handing the composed value back rather than overwriting.
+- **It composes with the corridor for free.** The corridor dissolves *coverage*, not colour, so a
+  highlighted prism standing in the corridor thins out like its neighbours instead of punching
+  through the ship. Two §4.7 consumers on the same graph do not interact, because they write
+  different channels of the same surface description.
+
+Mechanic and tuning: `_Scripts/Controller/Vessel/R_VesselActions/DOLPHIN_CRYSTAL_SEEDING.md`.
 
 ## 5. Migration tracker (the deduplicated work list)
 

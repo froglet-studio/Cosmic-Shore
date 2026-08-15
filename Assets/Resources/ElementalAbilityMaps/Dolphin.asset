@@ -16,19 +16,21 @@ MonoBehaviour:
   entries:
   - Element: 1
     AbilityLabel: Crystal Seeding
-    AbilityDescription: Charge shortens the recharge between team crystals (authored
-      on DeployTeamCrystalActionSO.cooldownMultiplierAtFullCharge, x0.5 at level 10;
-      the generic map multiplier stays 1.0 so it does not also move the charge-boost
-      peak); at level 5 the Dolphin carries a SECOND crystal and can plant two back
-      to back.
-    Input: 1
+    AbilityDescription: PASSIVE - no input. A cooldown runs continuously and each time
+      it completes the Dolphin seeds a team crystal at a random point in the cell's
+      CYTOPLASM (the shell between nucleus and membrane), then restarts immediately.
+      Charge shortens that recharge (authored on
+      DeployTeamCrystalActionSO.cooldownMultiplierAtFullCharge, x0.5 at level 10; the
+      generic map multiplier stays 1.0 so it does not also move the charge-boost
+      peak); at level 5 each cycle seeds TWO crystals instead of one.
+    Input: 0
     MultiplierAtFullLevel: 1
     MinMultiplier: 1
     UnlockLevel: 5
     RelockBelowLevel: 4
     LatchPolicy: 0
     UpgradeLabel: Twin Seed
-    UpgradeDescription: Carry two team crystals at once instead of one.
+    UpgradeDescription: Every seeding plants two team crystals instead of one.
   - Element: 2
     AbilityLabel: Drift Trail
     AbilityDescription: Mass raises the VOLUME of each drift prism (authored as the
@@ -45,13 +47,17 @@ MonoBehaviour:
     UpgradeLabel: Hard Wake
     UpgradeDescription: Drift prisms arrive shielded (one-hit ablative armour).
   - Element: 3
-    AbilityLabel: Cone Blast
-    AbilityDescription: Space carries the crystal-impact cone further down-range
-      (authored on VesselExplosionByCrystalEffectSO._heightMultiplierAtFullSpace, x2
-      at level 10; the cone's ANGLE is set by skim energy, not by Space, so the two
-      shape the blast independently); at level 5 the blast stops eating the pilot's
+    AbilityLabel: Echo Obliteration
+    AbilityDescription: The crystal-impact cone, plus the ECHO SIGHT that aims it -
+      hold the right trigger to drop into a zoomed first-person view in which every
+      prism inside the blast's current destruction volume lights up. Space carries
+      that cone further down-range (authored on
+      VesselExplosionByCrystalEffectSO._heightMultiplierAtFullSpace, x2 at level 10;
+      the cone's ANGLE is set by skim energy, not by Space, so the two shape the
+      blast independently) - and the sight is how that reach becomes legible, which
+      is why the two share this slot. At level 5 the blast stops eating the pilot's
       own domain.
-    Input: 0
+    Input: 1
     MultiplierAtFullLevel: 1
     MinMultiplier: 1
     UnlockLevel: 5

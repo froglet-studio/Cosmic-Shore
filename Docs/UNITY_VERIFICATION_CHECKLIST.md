@@ -86,6 +86,235 @@ raise cautiously) · tracer size is NOT in the config: tune `widthMultiplier` / 
 `RhinoSwordBladeTracer0..4` TrailRenderers (hairline 0.5 / 0.15) · swipe recovery 0.35 s @
 engage threshold 0.4 (`RhinoShieldSwipeConfig.asset`) · sword mount y 9.38 → −1.
 
+### 🔴 Sparrow rounds grow as they fly + MASS-5 shield restore (`claude/sparrow-spread-haptics-qizbwf`)
+
+Authored without a Unity compile or play-test. Answers *"the only thing that has felt fun was
+huge projectiles"* by making huge projectiles **earned**: rounds now leave the muzzle at their
+authored size and **swell across the flight** — 3× at resting Mass, 6× at Mass 10, linear in
+level and extrapolated to 1.5× / 7.5× at the ends of the [-5, 15] band. Bullets and turret shots
+alike (the turret adopts it through `bulletAction`). The visual and the swept hit radius are
+scaled by the same factor every frame, so the round-6 honesty rule (hit radius = visible
+cross-section +10%) holds at every instant.
+
+**Also an element re-split, by design sign-off:** the Shielded Prisms upgrade returns from
+SPACE 5 to **MASS 5** (`FiredPrismState.ShieldedAtSpace5` → `ShieldedAtMass5`, same enum value 3
+so the asset is unchanged), leaving SPACE 5 as **pierce only, on both fire modes**. MASS owns the
+substance of what you fire; SPACE owns its reach. The Sparrow's map is 4/4 upgrades again.
+Full record: `_Scripts/Controller/Vessel/R_VesselActions/SPARROW_SPRAY_ACCURACY.md` ▸ "Round 3".
+
+**Verify in editor:**
+
+1. **Rounds visibly fatten in flight.** Fire at an empty stretch and watch a tracer from muzzle
+   to end of life — it should leave thin and arrive noticeably fat. This is the headline.
+2. **Length does NOT grow.** Only the cross-section scales; if tracers turn into enormous
+   needles, the growth is being applied uniformly.
+3. **What you see is what you hit.** A round should destroy prisms at about its *visible* width
+   at that moment in flight — not a swath wider than the tracer, and not a thread through the
+   middle of a fat bolt.
+4. **Mass changes it.** Collect Mass crystals and re-fire: the swell should get dramatically
+   stronger (6× at Mass 10 ≈ the old oversized-collider feel). Drain Mass and it should get
+   punier.
+5. **MASS 5 now shields turret prisms.** Below Mass 5 fired prisms are plain; at 5+ they arrive
+   with the octahedron armour and the wider hit sphere. **Space 5 must no longer shield them** —
+   it should only make shots pierce.
+6. **Pierce is still SPACE 5**, on both fire modes.
+7. **No other projectile changed.** Manta rounds, skyburst missiles: `SetFlightGrowth` defaults
+   to 1 and only the Sparrow's two fire paths pass anything else.
+8. **Asset import.** `FullAutoAction.asset` shows **Round Growth (MASS)** with 3 / 6;
+   `FullAutoBlockShootAction.asset`'s *Fired Prism State* still reads the 4th enum entry, now
+   labelled **Shielded At Mass 5**.
+
+**First-pass tuning:** `growthFactorAtRestingMass` **3**, `growthFactorAtFullMass` **6** — both on
+`FullAutoAction.asset`. Author both to 1 to disable growth entirely.
+
+---
+
+### 🔴 Projectile tunneling — swept prism collision (`claude/sparrow-spread-haptics-qizbwf`)
+
+Authored without a Unity compile or play-test, and the headline change of the branch's second
+pass. **A projectile is a teleport, not a sweep**: `Projectile.MoveProjectileAsync` writes
+`position += Velocity·Δt` and PhysX samples the discrete trigger once per physics step, so a
+Sparrow round at its base 375 u/s tested only **~26% of its own flight path** (~3% at high SPACE,
+and it halves again at 30 fps). Prisms in the gaps were passed straight through, silently. That is
+why the guns could not clear a small area, and why oversizing the collider "fixed" it — a
+12-diameter ball closes a 6.25 u per-frame step.
+
+Fixed with `PrismSpatialIndex.QuerySegment` (the swept counterpart of `QuerySphere`) driving
+`Projectile.sweptPrismDetection`, which takes **sole** ownership of prism contact — the trigger's
+prism case is suppressed so nothing double-dispatches. Hits dispatch nearest-first, and the round
+is moved to each contact point before its impact fires. Opt-in per prefab, enabled on
+`SparrowProjectile.prefab` and `Sparrow Projectile Prism.prefab` only. Full record:
+`_Scripts/Controller/Vessel/R_VesselActions/SPARROW_SPRAY_ACCURACY.md` ▸ "Round 2".
+
+**Verify in editor — this is the item that matters most:**
+
+1. **A held burst now clears a small area.** Point at a dense patch of prisms and hold fire:
+   everything in the beam's path should die, not a scattered subset. This was the whole report.
+2. **No double damage.** Prisms must not die at ~2× the expected rate or show doubled hit VFX —
+   that would mean the trigger suppression missed and both paths are dispatching.
+3. **Pierce still gates on SPACE.** Below SPACE 5 a round must stop at the **first** prism along
+   its path (not one further down the line) and, in Turret Stance, leave its prism right there.
+   At SPACE 5+ it must cut through several in a line.
+4. **Range is unchanged.** The sweep must not make shots die early — a round that hits nothing
+   still travels its full ~72 u at SPACE 0.
+5. **Turret prisms anchor at the impact point**, not at max range, when a shot is stopped early.
+6. **Profiler.** ~54 concurrent bullets each run one `QuerySegment` per frame. Watch for a new
+   cost in the projectile path under a sustained hold; the segment AABB is thin so it should be
+   small, but it is new per-frame work.
+7. **Nothing else changed.** Manta / missile / other projectiles have `sweptPrismDetection` off
+   and must behave exactly as before.
+
+---
+
+### 🔴 Sparrow spray accuracy — fire rate, decaying-accuracy cone, escalating haptic (`claude/sparrow-spread-haptics-qizbwf`)
+
+Authored without a Unity compile or play-test. The Sparrow's full-auto guns now fire at **90
+volleys/s (180 rounds/s)** and lose accuracy while the trigger is held: a cone opens from 0° to a
+**1.5° half-angle cap** over ~1.6 s after a **0.12 s** grace window, each round deflected to a
+hash-sampled point inside it, and a **new fourth haptic feel** buzzes with rising strength and
+cadence as it opens. Releasing the trigger resets accuracy completely. Both fire loops were also
+converted from a frame-quantized `UniTask.Delay` to a time accumulator, without which the authored
+rate would silently have been `min(rate, framerate)`. The Turret Stance inherits all of it through
+the existing `bulletAction` parity. Full mechanics + files + tuning:
+`_Scripts/Controller/Vessel/R_VesselActions/SPARROW_SPRAY_ACCURACY.md` (which also carries the
+full 13-step verification list); `Docs/HAPTICS.md` records the policy exception.
+
+**Hand-authored asset YAML — check these import clean first:**
+
+- `_SO_Assets/VesselActions/Sparrow/FullAutoAction.asset` — new **Accuracy** foldout with 7 fields;
+  `Firing Rate` reads **90**.
+- `_Prefabs/Spacevessels/Sparrow.prefab` — a **GunSprayAccuracy** child under `VesselActions` with
+  the script resolved (not "missing"), listed as the **5th** entry in
+  `ActionExecutorRegistry._executors`; the two pool managers show the resized capacities.
+- Three new `.cs.meta` + one `.md.meta` were hand-written with generated GUIDs — Unity must not
+  report duplicate-GUID or re-import them as new assets.
+
+**Verify in editor (headline items — the full list is in the design doc):**
+
+1. **Tap vs hold.** Tapped bursts are a tight line; a held burst visibly fans into a narrow cone
+   (1.5° is subtle by design now) and then **stops** widening. Release and re-pull → dead-on again immediately.
+2. **Stance flip is not a free reset.** Open the cone fully while flying, then toggle Turret Stance
+   (input 6) **without releasing fire** — prisms must start laying at the *open* cone. This is the
+   one-frame deferred reset in `GunSprayAccuracy.LateUpdate`; if it regressed, the prisms come out
+   in a tight line.
+3. **Frame-rate independence.** Cap the editor to 30 fps and confirm both the stream density AND
+   the destruction rate are unchanged. Before this pass both would have halved.
+4. **Haptic ramp — needs a gamepad or a device.** A bare desktop editor has no motors, so "I feel
+   nothing" there is *not* evidence about the wiring. With a pad: light buzz from round one,
+   climbing in strength and rate for ~1.6 s. Ramming a prism mid-spray must still produce a clean
+   punish thud through it.
+5. **No hitching on a 10 s hold**, either fire mode, profiler open.
+
+**First-pass tuning (starting points — expect a balancing pass):**
+
+| Knob | Asset | Value |
+|---|---|---|
+| `firingRate` | `FullAutoAction.asset` | 90 volleys/s (was 30) |
+| `spread.onsetSeconds` | `FullAutoAction.asset` | 0.12 |
+| `spread.growthDegreesPerSecond` | `FullAutoAction.asset` | 1.0 |
+| `spread.maxHalfAngleDegrees` | `FullAutoAction.asset` | 1.5 |
+| `spread.distributionBias` | `FullAutoAction.asset` | 0.5 (uniform disc; 1.0 = dense core) |
+| `spread.hapticFloor01` | `FullAutoAction.asset` | 0.15 |
+| `spread.hapticIntervalAtRest / AtMaxSpread` | `FullAutoAction.asset` | 0.10 / 0.045 s |
+
+**Two knock-on effects to judge, not bugs:**
+
+- **Turret stance now lays ~180 prisms/s** of permanent mass (was 60). `firingRate` is the single
+  lever and it moves the guns too — do **not** add a turret-only divisor.
+- **Dog Fight pace changes a lot** — 3× the rounds downrange *and* each one now tests its whole
+  path, so landed hits/s rise by considerably more than 3×. Expect the 120-point target to need
+  raising; it is authored in FrogletTools ▸ Game Modes ▸ End Game Conditions, so that needs no
+  code change.
+### 🔴 Dolphin drift holds its velocity — throttle disabled for the drift (`claude/dolphin-drift-velocity-e62z2c`)
+
+Authored without a Unity compile or play-test. The Dolphin's drift already locked the velocity's
+DIRECTION (`DolphinDriftAction.driftDamping: 0`); its magnitude kept tracking the throttle. New
+`VesselTransformer.holdSpeedWhileDrifting` (authored **on** in `Dolphin.prefab`, off everywhere
+else) latches the cruise speed at drift start and pins it in `AdvanceSpeed` until the drift is
+released, so the throttle is inert for the drift's duration. Mechanics + what is deliberately
+left outside the hold: `_Scripts/Controller/Vessel/R_VesselActions/DOLPHIN_ENERGY_ECONOMY.md` §2.
+
+**Verify in editor (Menu_Main freestyle on the Dolphin, or any Dolphin scene):**
+
+1. **The field is there and on.** Dolphin prefab → `VesselTransformer` → **Hold Speed While
+   Drifting** is ticked. Squirrel / Rhino / Manta prefabs show it **unticked** (the field is new,
+   so their drift must be unchanged).
+2. **Magnitude locks.** Fly at part throttle, start the drift, then sweep the throttle stick end
+   to end: `VesselStatus.Speed` (DiagnosticsHUD, or a debug watch on the transformer) must not
+   move. Heading still swings with the stick.
+3. **It holds what you had, not a constant.** Repeat from a crawl and from full throttle — the
+   held value differs each time and equals the speed at the moment the drift engaged.
+4. **Release restores authority.** Let go: speed resumes tracking immediately, and the boost
+   discharge accelerates as before (~357 peak off a full meter, ~2.5 s decay).
+5. **Danger prisms still bite.** Ram a danger prism mid-drift — the vessel must still slam to the
+   danger slow. `throttleMultiplier` is outside the hold by design; if a drifting Dolphin shrugs
+   it off, the hold has been applied one layer too late.
+6. **No stuck lock.** Drift → end the turn / replay / swap vessels mid-drift → fly again: the
+   throttle works. (`ResetTransformer` clears the latch; this is the "cancelled UniTask never
+   runs its tail" failure class, so it wants an explicit check.)
+7. **Squirrel regression.** Swap to the Squirrel and drift: its racing drift must still be
+   throttle-modulated exactly as before.
+8. **MPPM two-client.** Host + one client, both flying Dolphins: a remote peer's drift must look
+   the same on both machines (the action replays on every peer, so the hold runs on the replica
+   too — a divergence here shows as the remote ship's speed visibly disagreeing during a drift).
+
+**First-pass tuning:** none — the hold has no numbers. The one open balance question is the
+boost carry recorded in `DOLPHIN_ENERGY_ECONOMY.md` §2: re-drifting at the peak of a discharge
+now pins the vessel near 357 while it banks the next boost. If that ratchets in play, clamp the
+captured value to the unboosted cruise target (78) in `RefreshDriftSpeedHold`.
+
+---
+
+### 🔴 Sparrow Skyburst Missile Bay — bay-open animation + bay-anchored missile launch (`claude/sparrow-missile-bay-78fxi4`)
+
+Authored without a Unity compile or play-test. The Sparrow's skyburst now fires the model's
+own bay missiles: press → bay-open clip on a new additive animator layer, 0.2 s later the
+projectile (now the extracted `Sparrow Missile.fbx` model, not the wedge polyhedron) spawns at
+the live `b_Missile.R`/`.L` bone pose. Right bay fires first (`Missile Launch 1`), left bay
+last. Full mechanics + files + tuning:
+`_Scripts/Controller/Vessel/R_VesselActions/SPARROW_SKYBURST_BAY.md`.
+
+**Verify in editor (any Sparrow scene — DogFight or Wildlife Liberation; also fine in Menu
+freestyle after swapping to the Sparrow):**
+
+1. **Import sanity.** `Assets/_Models/Sparrow Missile.fbx` and
+   `Assets/_Models/Vessel Models/SparrowModel4.fbx` import clean (no console errors).
+   `SparrowAnimatorController` shows a second layer **Missile Launching** whose two states
+   reference model4's `Missile Launch 1/2` clips (not `None (Motion)`).
+2. **Donor clip binds to model1's rig.** Enter play mode as Sparrow, fire the skyburst
+   (right trigger ability), and watch the hull: the bay doors under the fuselage open and a
+   bay missile visibly ejects, then the bay closes. If nothing moves, the cross-FBX path
+   binding failed — open the two Missile Launch clips in the Animation window on the
+   SparrowModel1 hierarchy and check for yellow (missing) bindings. That is the one piece of
+   this change that only the editor can prove.
+3. **Seam.** The live projectile should appear just as the animated missile clears the hull
+   (launchDelaySeconds 0.2 on `SkyBurstGunAction.asset`). If the projectile pops before the
+   doors part, raise toward 0.26; if the animated missile visibly retracts before the
+   projectile exists, lower toward 0.16.
+4. **Sides alternate.** With full ammo (2 missiles): first shot ejects the RIGHT bay missile
+   and the projectile emerges from the right bay; second shot the LEFT. Console must show no
+   `could not find missile bay bone` warning (that warning = name lookup failed, spawn fell
+   back to the old Gun Point).
+5. **Projectile look.** The skyburst in flight is the missile model, nose along velocity
+   (not broadside, not the wedge). Its exhaust particle sizing may need a pass — it was
+   tuned against the ~15 u wedge.
+6. **No flight-feel drift.** Normal flying, boosting, pitch/yaw/roll animation identical to
+   before (the component swapped `MantaAnimationContoller` → `SparrowAnimationController`
+   with the same driving math; `hasBoost` stays 1).
+7. **No puppetry fights.** While the bay clip plays during hard maneuvers, wings/tail must
+   not snap (the layer is additive and the takes hold rest values on every other bone).
+8. **Turn end / vessel swap mid-delay.** Fire and immediately end the turn (or swap vessels
+   in menu freestyle): no projectile appears afterward, no NRE (pending launch is cancelled;
+   ammo stays spent — the missile was committed at the press).
+9. **Gameplay hitbox unchanged.** SkyBurstProjectile root scale is still 1 and the
+   SphereCollider still 0.85 — only the visual moved to the `MissileVisual` child.
+
+**First-pass tuning:** `launchDelaySeconds` 0.2 · `MissileVisual.localScale` 2 (≈1.7 u world
+missile at ProjectileScale 10 — sized to the bay missile) · animator state speed 2.5.
+
+**Flagged, deliberately NOT changed:** the skyburst direct-hit sphere (world radius 8.5) now
+visibly dwarfs its ~1.7 u visual; the old 15 u wedge masked it. `0.85 × ProjectileScale 10`
+looks emergent rather than authored — DogFight balance call for Garrett.
 ### 🔴 Sparrow Turret Stance — two flight visualizations, still-nothing hardening (`claude/sparrow-prism-attack-hg6n78`)
 
 Authored without a Unity compile or play-test. The stance STILL showed nothing after the
@@ -165,7 +394,9 @@ tightening as it flies; ordinary prisms (trail/environment) must render unchange
 `wire_prism_flight_clock.py --check` + Validate Clock Wiring (BlockGraph now requires
 `PrismFlightSqrDistance`).
 
-**Playtest round 4 (2026-08-10):** shield onto SPACE 5, bullet-sized hit spheres:
+**Playtest round 4 (2026-08-10):** shield onto SPACE 5, bullet-sized hit spheres.
+**⚠ The shield half of this entry is SUPERSEDED** — it returned to MASS 5 on 2026-08-13
+(`ShieldedAtMass5`); verify against the newest entry at the top of this file, not this one:
 
 - `firedPrismState: ShieldedAtSpace5` — regular prisms below SPACE 5, shielded at 5+, same
   gate as pierce. Verify the flip at the SPACE-5 unlock: below, plain prisms that stop at
@@ -546,9 +777,10 @@ Mechanics + full knob list: `_Scripts/Controller/Vessel/R_VesselActions/DOLPHIN_
 4. **Crystal impact.** The cone fires, energy empties, the jaws snap shut, and the Space
    icon flashes with a prism count. At Space L5 the cone must stop damaging your own
    domain's prisms.
-5. **Charge L5.** A second crystal pip appears and two team crystals can be planted back
-   to back. The deploy preview must be tinted your domain, and bloom/wither rather than
-   pop (continuity of existence).
+5. **Charge L5.** A second crystal pip appears. *(Superseded 2026-08-14: crystal seeding
+   is now PASSIVE — there is no deploy preview to tint, and Twin Seed means two crystals
+   per seeding cycle rather than two carried. Verify against the Dolphin entry at the end
+   of this file instead.)*
 6. **MPPM two-client:** the L5 upgrade effects are gated on the replicated
    `IsUpgradeActive`, so confirm both peers agree on Clean Blast and Twin Seed.
 
@@ -646,3 +878,52 @@ reimported any of it yet.
 - `Dolphin.prefab`'s `ElementalBarsController` has **no `elementBars` key**, so the element
   flowers are created at runtime via `CreateDefaultElementBars()` (which logs a warning).
   Fix with FrogletTools > Vessels > *Bake Elemental Petal Bars Into All Vessel HUDs*.
+
+---
+
+## ✅ Dolphin — passive crystal seeding + Echo Sight (2026-08-14, VERIFIED IN EDITOR)
+
+Branch `claude/dolphin-crystal-spawn-rework-feqrxc`. **Play-tested by Garrett on 2026-08-14 —
+seeding, the highlight and the HUD all confirmed working in the editor.** The steps below are
+retained as the regression list for anyone touching this again. Full detail + tuning table:
+`Assets/_Scripts/Controller/Vessel/R_VesselActions/DOLPHIN_CRYSTAL_SEEDING.md` §6.
+
+Still UNVERIFIED, because a single-editor play-test cannot reach them:
+**the MPPM two-client row (9)** — that a remote Dolphin's sight stays local and that Twin Seed
+agrees across peers — and **the live-cap row (3)**, which needs ~4 minutes of uninterrupted
+seeding at the shipped 30 s cooldown to reach `maxLiveSeeded: 8`.
+
+**What landed.** Charge's crystal seeding became PASSIVE (a cooldown loop seeding team crystals
+into the cell's cytoplasm), freeing the right trigger for Space's new **Echo Sight** — hold it and
+every prism inside the crystal blast's live destruction volume lights up. The sight touches nothing
+but photons: no camera write, no FOV change, nothing replicated. (A zoomed first-person view was
+built alongside it and cut; the speed tunnel is untouched by this branch.)
+
+**Import first** (kept for anyone re-running this from a clean checkout). Two shader graphs were edited out-of-editor
+(`Tools/Shaders/wire_prism_destruction_sight.py` → BlockGraph, ExplodingBlockGraph). They need a
+Unity import pass to regenerate their shaders. An unimported graph shows **no highlight and no
+error**, so check this before concluding the sight is broken.
+
+1. **Compile clean**, then FrogletTools > Vessels > **Audit Vessel Ability Rows** → Dolphin still
+   map complete, 4/4 icons, order ✅.
+2. Freestyle on the Dolphin, idle one cooldown → a team crystal blooms in somewhere in the
+   cytoplasm and the Charge slot punches. Over several cycles they should spread through the
+   shell, **not** cluster near the nucleus, and **never** land inside it.
+3. Let `maxLiveSeeded` (8) fill → seeding stops and **no crystal disappears**. Collect one →
+   seeding resumes. (A crystal vanishing here is a conserved-mass violation, not a tuning issue.)
+4. Charge to L5 → the mini crystal pip appears and each cycle plants two.
+5. **Hold RT** → prisms in the blast volume light warm, and the camera does **not** move and the
+   FOV does **not** change. Release → the highlight fades over ~0.3 s rather than snapping off.
+   Swap vessel mid-sight → no stuck highlight.
+7. Skim to full, hold RT → the highlighted volume is a **fan** (wide across the jaw plane, narrow
+   across the beam), matching the hull's jaws. Ram a prism → it narrows to match.
+8. Take a crystal while sighting → the blast destroys what the sight was showing.
+9. MPPM ×2 → a remote Dolphin holding RT looks normal; the sight is local-only.
+
+**If holding RT does nothing at all**, check `blastEffect` is assigned on the Dolphin prefab's
+`EchoSightActionExecutor` — unassigned is silent.
+
+**Known limitations shipped deliberately** (see the doc's §7): seeded crystals are local-only
+(`TeamCrystal.prefab` has no NetworkObject, matching the previous hold-to-plant scope), and the
+sight ignores Space L5 "Clean Blast" friendly fire — it highlights everything geometrically inside
+the volume.

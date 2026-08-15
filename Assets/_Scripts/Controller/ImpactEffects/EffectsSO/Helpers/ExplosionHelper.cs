@@ -6,6 +6,28 @@ using UnityEngine;
 using CosmicShore.Data;
 namespace CosmicShore.Gameplay
 {
+    /// <summary>
+    /// The world-space volume a conic blast sweeps, in the form its containment test wants:
+    /// an apex, a sweep axis, the gape axis the capsule extends along, and the capsule's radius
+    /// and half-length expressed PER UNIT DEPTH so both open out with the cone.
+    ///
+    /// A point p is inside iff, with <c>rel = p - Apex</c> and <c>s = dot(rel, Axis)</c> in
+    /// <c>[0, Height]</c>, the distance from p to the cross-section's segment
+    /// (<c>±TanGapePerUnit·s</c> along <see cref="GapeAxis"/>) is at most
+    /// <c>TanCorePerUnit·s</c> — the point-to-SEGMENT distance a CapsuleCollider uses, which is
+    /// what makes the ends round. Mirrors <c>AOEConicSweepQueryJob.Execute</c> exactly.
+    /// </summary>
+    public struct BlastVolume
+    {
+        public Vector3 Apex;
+        public Vector3 Axis;
+        public Vector3 GapeAxis;
+        public float Height;
+        public float TanCorePerUnit;
+        public float TanGapePerUnit;
+        public bool IsValid;
+    }
+
     public static class ExplosionHelper
     {
         // ---------- Public API ----------
@@ -135,6 +157,76 @@ namespace CosmicShore.Gameplay
         /// which AOEConicExplosion reads as "no override, keep what the prefab says". Scaling from
         /// the prefab's own number keeps the art the source of the cone's baseline shape.
         /// </summary>
+        /// <summary>
+        /// The world-space volume a conic blast would sweep if it detonated RIGHT NOW — the shape
+        /// a preview has to draw to be honest about the ability.
+        ///
+        /// Built from exactly the same authored numbers, the same resource read and the same
+        /// <paramref name="sizeMultiplier"/> as <see cref="CreateExplosion"/> above, and returned
+        /// in the form the Burst sweep query tests against (apex + axis + gape axis + the two
+        /// tangents per unit depth, see <c>AOEConicSweepQueryJob</c>). One construction of the
+        /// blast's shape, two consumers — a preview computed from a private copy of this arithmetic
+        /// would drift the first time anyone retuned a scale.
+        /// </summary>
+        public static bool TryResolveConicVolume(
+            AOEExplosion[] aoePrefabs,
+            IVesselStatus ss,
+            float minExplosionScale,
+            float maxExplosionScale,
+            int resourceIndex,
+            Vector3 localOffset,
+            float sizeMultiplier,
+            float coreExplosionScale,
+            out BlastVolume volume)
+        {
+            volume = default;
+
+            var cone = FindCone(aoePrefabs);
+            if (cone == null || ss?.ShipTransform == null) return false;
+
+            float size = Mathf.Max(0.01f, sizeMultiplier);
+            float height = cone.AuthoredHeight * size;
+            if (height <= 0f) return false;
+
+            float maxScale = ComputeScaleForShip(ss, minExplosionScale, maxExplosionScale, resourceIndex) * size;
+            float coreScale = (coreExplosionScale > 0f ? coreExplosionScale : minExplosionScale) * size;
+
+            // Same clamp AOEConicExplosion.Initialize applies: the core can never exceed the base,
+            // and a caller that authors none collapses the capsule to a plain circular cone.
+            coreScale = coreScale > 0f ? Mathf.Min(coreScale, maxScale) : maxScale;
+
+            var shipTransform = ss.ShipTransform;
+
+            // The blast is spawned at the ship's rotation, so the gape axis is the authored
+            // container-local direction taken into the ship's frame, with any component along the
+            // sweep axis removed - exactly what AOEConicExplosion does to build _gapeAxisWorld.
+            Vector3 axis = shipTransform.forward;
+            Vector3 gape = shipTransform.TransformDirection(cone.AuthoredGapeAxis);
+            gape -= axis * Vector3.Dot(gape, axis);
+            gape = gape.sqrMagnitude > 1e-8f ? gape.normalized : shipTransform.up;
+
+            volume = new BlastVolume
+            {
+                Apex = shipTransform.position + shipTransform.TransformDirection(localOffset),
+                Axis = axis,
+                GapeAxis = gape,
+                Height = height,
+                TanCorePerUnit = (coreScale * 0.5f) / height,
+                TanGapePerUnit = ((maxScale - coreScale) * 0.5f) / height,
+                IsValid = true,
+            };
+            return true;
+        }
+
+        static AOEConicExplosion FindCone(AOEExplosion[] prefabs)
+        {
+            if (prefabs == null) return null;
+            foreach (var prefab in prefabs)
+                if (prefab is AOEConicExplosion cone)
+                    return cone;
+            return null;
+        }
+
         static float AuthoredConeHeight(AOEExplosion[] prefabs)
         {
             if (prefabs == null) return 0f;
