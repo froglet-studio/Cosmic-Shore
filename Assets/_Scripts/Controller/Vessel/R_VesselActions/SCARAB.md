@@ -87,6 +87,43 @@ Four element-mapped abilities — **Ball · Switch · Juke · Throttle** — plu
 
 ## 3. Control model
 
+### 3.0 The hull, and the camera behind it
+
+**The model is the Scarab's own.** It shipped instancing `SparrowModel1.fbx` and was
+indistinguishable from the Sparrow in flight. `ScarabHullBuilder` (on the `ScarabHull` child of
+the vessel prefab) now generates the ship procedurally — the beetle silhouette, which nothing
+else in the fleet shares:
+
+| part | submesh | what it is |
+|---|---|---|
+| Carapace | **1 — domain** | Two wing cases split by a real seam groove, widest behind the middle |
+| Horn | **1 — domain** | The clypeal spike, swept up and forward. The single most identifying feature |
+| Head shield | 0 — chassis | The flat clypeus a scarab pushes with, tilted nose-down |
+| Belly | 0 — chassis | Shallow keel, deepest on the centreline |
+| Legs | 0 — chassis | Six tapered struts, three a side, splayed out and back |
+
+901 vertices / 1,552 triangles, built once at `Awake`. The two-submesh split is the fleet's
+material contract, not decoration: `ShipHelper.ApplyShipMaterial` paints a MeshRenderer hull on
+**slot 1**, so the carapace and horn have to be submesh 1 or the domain colour lands on the
+underside. Proportions are authored (`length` 9 × `width` 7.2 × dome 2.6) and the mesh is FITTED
+to them after assembly — the head shield and horn are otherwise purely additive and the vessel
+comes out ~40% longer than authored, which is not cosmetic: the occlusion corridor and the
+speed-tunnel camera both size themselves off the hull's circumscribing radius (5.37 as shipped).
+
+**Why procedural rather than a different FBX.** The model hangs off the vessel as a
+`PrefabInstance` of the Sparrow FBX carrying ~40 per-child modifications plus stripped references
+from the vessel root — the hull GameObject that owns the vessel's BoxCollider and ImpactCollider,
+the Animator, several transforms. Repointing that instance's guid at another FBX dangles every one
+of them (the failure `Docs/GAMECANVAS.md` records for hard-copied prefabs). So the legacy instance
+stays with its colliders and rig wiring intact and only its **renderers** are switched off;
+`ScarabHullBuilder` draws the ship. Disabled renderers are also excluded from the corridor's hull
+measurement, so the corridor re-sizes to the new hull with nothing authored. When real Scarab art
+lands it replaces the builder, not the scaffolding.
+
+**Camera.** `ScarabCameraSettingsSO.followOffset` is `{0, 0, -50}` — directly behind the vessel,
+like every other vessel in the fleet. It was cloned from the Sparrow, which is the *only* vessel
+carrying a vertical offset (`y: 10`); that lift was never intended here.
+
 ### 3.1 Input plumbing (ground truth the scheme rides on)
 
 The gamepad naming trap first: on gamepad, `InputEvents.LeftStickAction (2)` / `RightStickAction

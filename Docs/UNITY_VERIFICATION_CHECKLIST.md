@@ -148,6 +148,15 @@ speed (×1 → ×1.5) + **Snap Dash** at L5 (double-tap RT). The right-stick das
 cooldown**; only the blast riding it is paced.
 
 **Verify in editor (in order):**
+0. **The hull and the camera (new 2026-08-15).** Open the prefab: a `ScarabHull` child now carries
+   `ScarabHullBuilder`; right-click the component ▸ **Rebuild Hull** to see the mesh without
+   entering play mode. In flight the Scarab must read as a BEETLE — domed shell with a seam down
+   the middle, a forward horn, six legs — and the inherited Sparrow mesh must be invisible (its
+   renderers are disabled at build time; its GameObjects stay, because the vessel's BoxCollider and
+   ImpactCollider live on them, so collisions must still work). The domain colour must land on the
+   CARAPACE and horn (submesh 1), not the underside. Camera sits directly behind with **no vertical
+   lift** — `followOffset {0, 0, -50}`; the old `y: 10` was inherited from the Sparrow, the only
+   vessel that carries one.
 1. **Open `Assets/_Prefabs/Spacevessels/Scarab.prefab` and SAVE it** — this is load-bearing, not
    a smoke test: the clone carries Sparrow's `NetworkObject.GlobalObjectIdHash` until the editor
    re-serializes it, and two registered network prefabs sharing a hash collide. Open, confirm no
