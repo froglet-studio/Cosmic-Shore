@@ -3732,6 +3732,16 @@ a colour is a rate in linear HDR, so a gain brightens without shifting hue, and 
 would read as a *different* crystal (`Docs/PALETTE.md`). No new FMOD event was added — the pickup now
 reaches the shared `CrystalCollect` category it always should have.
 
+**The flare composes with the omni/elemental brightness split** (the CTA-lime pass that landed
+alongside this branch): `ApplyCaptureVisual` scales whatever the crystal currently *wears*, and an
+elemental's resting colour is now the CTA dimmed by `EnvironmentColors.ElementalCrystalDimming`
+(0.45). So a captured elemental flares 3× **relative to itself** — which is the ratio the eye reads
+over a 0.44 s beat — peaking at ~1.35× the CTA, i.e. just above the omni's resting brightness rather
+than the 3× absolute the gain was first chosen against. That is the intended relationship (a crystal
+being taken briefly outshines the hero pickup), but it means `flareGain` and
+`ElementalCrystalDimming` are coupled: **move one and re-judge the other.** Both scale RGB only
+through the shared `Color.ScaleRGB`, so neither can shift hue.
+
 **And that reach was itself broken, on far more than this branch's path.** `Crystal.PlayExplosionAudio`
 guarded on its `[Inject] AudioSystem` field, which is null on **every crystal that was not part of a
 loaded scene**: a lifeform's heart is `Instantiate`d by the cell's spawners, and *nothing* under
