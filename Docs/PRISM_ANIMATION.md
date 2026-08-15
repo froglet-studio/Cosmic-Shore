@@ -1585,6 +1585,89 @@ Three properties worth carrying to the next one:
 
 Mechanic and tuning: `_Scripts/Controller/Vessel/R_VesselActions/DOLPHIN_CRYSTAL_SEEDING.md`.
 
+### 4.8 The super-shield deflection jiggle (shipped 2026-08-15, C14)
+
+Super-shielded mass is **fully invulnerable** — `Prism.Damage`, `Prism.Consume`, the Burst AOE
+resolve and the physics-fallback AOE all bail on it, and `devastate: true` does not override that
+(it only bypasses the *shielded* tier). The consequence was that a hit on super-shielded mass had
+**no visual consequence of its own**: the impactor's sparks and SFX fired, the prism did not move,
+and the deflection read as the shot having missed. This is that deflection, made legible.
+
+**It is §1 ANIMATION, so it is a per-instance STAMP — not §4.7's global uniform.** The distinction
+is the one §4.7 draws in its own words: a corridor fade is *view-dependent*, changing every frame
+for every prism as the camera and ship move, and therefore can never be a stamp. A deflection is
+the opposite — it is fully determined at the instant of the hit, so it belongs to the §1 animation
+category and rides `_PrismClock` + three Hybrid-Per-Instance properties. The precedents to copy
+here are C5 (`PrismFlightClock`) and B1 (`PrismGrowScale`), never `PrismOcclusionFade`.
+
+**The motion is a struck body's free precession, applied per FACE.** Each face rotates about the
+prism's **object origin** — so the stella's outer spike tips wag far while the core barely moves,
+which is what makes it read as jiggly rather than as a rigid nudge — by an angle `amplitude ×
+envelope(t)`, about an axis that lies on a cone about that face's own normal. The axis
+**precesses** around the normal and **nutates** (the cone half-angle breathes between 0 and π/2),
+at deliberately non-commensurate rates, so the face alternates between an in-plane twist and a
+maximum tip while the tip direction revolves, and the pattern never repeats inside one deflection.
+
+**Three things about it are worth not re-deriving:**
+
+- **The randomness needs no stamped seed and no mesh channel.** Prism meshes are hard-edged — the
+  box is 24 verts / 6 distinct normals, the super-shield stella 72 / 24, because
+  `StellatedOctahedronMeshGenerator` splits per face for its own normals — so the object-space
+  **normal IS the face id**. The object-to-world translation is a free per-prism seed (so a track
+  lining under one blast does not shimmer in lockstep), and `StartTime` re-rolls every hit. This
+  matters because **the stella carries neither tangents nor UVs**: the tangent basis is built
+  branchlessly from the normal alone (Duff et al. 2017), never read from the vertex stream, where
+  it would be zero.
+- **The rotation happens in the locally-ISOTROPIC frame** (`position × objectScale`), because
+  prisms are non-uniformly scaled — a trail slab is long and thin — and an object-space rotation
+  seen through that scale is a shear that wags the long axis far more than the others. The normal
+  is carried through the same frame *inverted*, because a normal transforms by the inverse
+  transpose. This is the same correction `RotateFacesAlongAxis` already applies to the shatter
+  spin on ExplodingBlockGraph, and the effect composes with it: on that graph the jiggle takes the
+  shatter's rotated position and normal as its inputs rather than replacing them.
+- **The envelope reaches EXACTLY zero at `t = Duration`** (the `(1 − u)` factor is what guarantees
+  it), so the scheduled `ClearJiggleStamp` is invisible and a stamp that never gets cleared is a
+  permanent no-op rather than a prism stuck mid-wobble.
+
+**One gate, not four.** The `IsSuperShielded` early-return previously existed as four independent
+copies — `Prism.Damage`, `Prism.Consume`, `PrismSpatialIndex.ResolveExplosionHit` and
+`ExplosionImpactor.ExecuteCommonPrismCommands`. All four now route through
+**`Prism.AbsorbSuperShieldHit(impactSpeed)`**, which returns true when the prism absorbs the hit.
+A per-call-site copy is a rule you can forget to apply at the next damage source; route every new
+one here. Note the AOE path still keeps its own `PrismFlags.IsSuperShielded` read, because that
+flag is also what sets `shouldContinue = false` and stops the blast expanding past the layer.
+
+**Gameplay is untouched.** No collider, volume, spatial registration, shell state, domain or state
+flag changes — which is exactly why it is safe to fire from *inside* an invulnerability gate.
+
+**Two scope calls, recorded so they are not mistaken for omissions.** (1) `PrismTeamManager.Steal`
+carries a fifth `IsSuperShielded` early-return and is deliberately NOT routed here: a steal is a
+different verb — an attempt to change ownership, not a hit that could have destroyed the mass — and
+on every vessel whose skimmer container carries `SkimmerDamagePrismEffectSO` the same contact
+already reaches `Prism.Damage`, so routing it too would only double-fire into the rate limit.
+(2) The AstroLeague ball/field sweeps and `Fauna.IsShieldedMass` read the flag to *skip*
+super-shielded mass before any hit is dispatched; those are filters, not gates, and there is no
+deflection to show. **A SKIM does deflect**, because a skimmer contact runs the full
+`SkimmerPrismEffectSO` chain at the stella surface and `SkimmerDamagePrismEffectSO` funnels into
+`Prism.Damage`. That is intended — the shield reacting to a skim is the same event class — but it
+means a vessel riding a super-shielded track lining wobbles each prism it passes (once per prism
+per pass, bounded by `minSecondsBetweenStamps`). If that reads as too busy on the Skim Race /
+Astro League lining, the dial is `minTiltDegrees`, not a new exception.
+
+**Costs.** Zero per-frame CPU: one stamp per hit (rate-limited per prism, default 0.12 s — a swept
+piercing projectile re-dispatches the same prism every frame it overlaps, a drone swarm re-queues
+its meal every behaviour tick, and N concurrent blasts each resolve independently, so without the
+gate a prism under fire would restart its envelope before it could visibly move and read as
+*frozen*), one scheduled clear, and one `RenderBounds` reset+expand. The envelope padding is
+`radius × maxTilt × 1.25`; the 1.25 is measured, not guessed — a clang harness over the shipped
+HLSL puts peak displacement at **0.991 × radius × amplitude**.
+
+**Tuning** is `PrismSuperShieldJiggleConfigSO` (`Resources/PrismSuperShieldJiggleConfig`): duration,
+the tilt floor/ceiling and the impact speed that reaches the ceiling, both wobble rates, and the
+spam gate. The *curve shape* stays in the HLSL, matching how C5 splits feel from easing.
+
+---
+
 ## 5. Migration tracker (the deduplicated work list)
 
 Phase A — infrastructure (everything else rides on it):
@@ -1622,6 +1705,7 @@ Phase C — rogue paths & ecosystem visuals (each is standalone):
 | C12 | `PrismImplosion` watchdog → scheduler; orphan cleanup; `SkimFxRunner` stretch beam review; `CloakSeedWall` dead code removal | ◐ 2026-08-01: `TrailBlockBufferManager` deleted; `TrailViewer` removed from Urchin.prefab + deleted (D2, 2026-08-02); watchdog / SkimFxRunner / CloakSeedWall pending |
 | C13a | Environment-laid prisms miss the clock path (the live repro: `grow:SpawnablePrism (Clone)`) | ✅ FIXED 2026-08-02 — root cause was NOT the raw-`Instantiate` lay: the shield engage-morph held `_exoticVisualActive` across the creation reveal, so `EnsureRenderEntity` was skipped at the exact instant the one-shot grow stamp fired. Fixed by §4.5 (a) entity existence ⊥ visibility + stamp-site self-heal + fact-based diagnosis, and (b) the birth rule (spawn-time shields snap). §3.8 #10 has the full anatomy. Pooling is orthogonal — a pooled prism with a `Shielded` kind failed identically; `BoostRingBuilder` only escaped because it defers shield kinds to `onGrown` |
 | C13b | Environment lay pooling: `PrismTrailBuilder.LayOne` → pooled pull with final domain material (kills the `Domains.Blue` → domain spawn repaint) | ☐ not started — still worth doing on its own merits (spawn repaint, alloc churn), but it is NOT a clock-path fix. Note the pools are `maxSize`-bounded and environment mass is never released, so a naive pool-through would either destroy conserved mass on release or instantiate forever; it needs its own environment-prefab pool design |
+| C14 | Super-shielded prisms absorb hits SILENTLY — a deflection reads as a miss | ✅ SHIPPED 2026-08-15 — new `PrismJiggleClock` (HLSL) + `_JiggleStartTime`/`_JiggleDuration`/`_JiggleParams` (Hybrid Per Instance, wired into **both** live-prism graphs by `Tools/Shaders/wire_prism_jiggle_clock.py`) + `PrismRenderService.StampJiggle`/`ClearJiggleStamp` + `PrismSuperShieldJiggle` (the stamp site) + `PrismSuperShieldJiggleConfigSO` (the feel). Each FACE wobbles about the prism's object origin on an axis that PRECESSES about that face's own normal and NUTATES, decaying to exactly zero at `Duration` so the scheduled clear is invisible. Per-face and per-prism randomness is derived on the GPU from the face normal and the object-to-world translation — no seed stamped, no mesh channel authored, which matters because the super-shield stella carries neither tangents nor UVs (the tangent basis is built from the normal alone). **Not** the §4.7 global-uniform shape: this is §1 animation, not a view-dependent value. The four invulnerability gates that used to each carry their own `IsSuperShielded` early-return now route through ONE `Prism.AbsorbSuperShieldHit`. Design + the measured envelope: §4.8 |
 
 Phase D — lock-in:
 

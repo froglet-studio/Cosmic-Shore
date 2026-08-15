@@ -279,9 +279,12 @@ namespace CosmicShore.Gameplay
             // physically blocked by the shield: destroy the explosion VFX so
             // it doesn't visibly expand through the prism, and skip all
             // damage / steal / shield-decay state changes. Mirrors the
-            // PrismSpatialIndex Burst path. Ways to break super-shields will
-            // be added later as targeted opt-in mechanics.
-            if (prism.prismProperties.IsSuperShielded)
+            // PrismSpatialIndex Burst path — including its deflection stamp,
+            // routed through the same shared gate, so the shield rocks on
+            // both paths and this one cannot drift silently out of parity.
+            // Ways to break super-shields will be added later as targeted
+            // opt-in mechanics.
+            if (prism.AbsorbSuperShieldHit(impactVector.magnitude))
             {
                 Destroy(gameObject);
                 return;

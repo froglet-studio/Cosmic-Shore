@@ -217,4 +217,38 @@ namespace CosmicShore.ECS
     {
         public float3 Value;
     }
+
+    // -- Prism set: super-shield deflection jiggle (Docs/PRISM_ANIMATION.md §5 C14) --
+    // A SUPER-SHIELDED prism that absorbed a hit without being destroyed
+    // (Prism.AbsorbSuperShieldHit). The vertex stage wobbles each face about the prism's
+    // object origin on a precessing, nutating axis and settles to exactly zero at
+    // Duration. Duration 0 = unstamped = identity, which is every prism that has never
+    // deflected anything.
+    //
+    // Three properties, not four: the per-face and per-prism randomness is derived on the
+    // GPU from the face normal and the object-to-world translation, so no seed needs
+    // stamping and no mesh channel needs authoring.
+
+    [MaterialProperty("_JiggleStartTime")]
+    public struct PrismJiggleStartTimeOverride : IComponentData
+    {
+        public float Value;
+    }
+
+    [MaterialProperty("_JiggleDuration")]
+    public struct PrismJiggleDurationOverride : IComponentData
+    {
+        public float Value;
+    }
+
+    /// (peak tilt in RADIANS, precession rate rad/s, nutation rate rad/s). Packed into one
+    /// float3 because the prism graphs carry Vector1 and Vector3 property donors and no
+    /// Vector4 one — synthesising a property type neither graph contains is exactly the
+    /// hand-authored schema the asset-surgery protocol forbids (same ruling as
+    /// PrismDestructionSight's five globals).
+    [MaterialProperty("_JiggleParams")]
+    public struct PrismJiggleParamsOverride : IComponentData
+    {
+        public float3 Value;
+    }
 }

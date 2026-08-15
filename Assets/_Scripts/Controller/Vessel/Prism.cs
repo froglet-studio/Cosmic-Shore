@@ -1239,11 +1239,7 @@ namespace CosmicShore.Gameplay
                            float debrisSpeedLimit = 0f)
         {
             if (destroyed) return;
-            // Super-shielded prisms are fully invulnerable. No damage source
-            // currently breaks them; ways to break them will be added later.
-            // The impactor's other effect SOs (sparks, sound) still fire on
-            // OnTriggerEnter, so the hit reads visually without state change.
-            if (prismProperties.IsSuperShielded) return;
+            if (AbsorbSuperShieldHit(impactVector.magnitude)) return;
             if (prismProperties.IsShielded && !devastate)
                 DeactivateShields();
             else
@@ -1255,8 +1251,11 @@ namespace CosmicShore.Gameplay
 
         public void Consume(Transform target, Domains domain, string playerName, bool devastate = false, bool byCreature = false)
         {
+            // A consume carries no impact vector — only the suction sink — so the deflection
+            // is stamped at the floor magnitude rather than derived from a direction that
+            // describes where the mass was being pulled, not how hard it was struck.
             if (destroyed) return;
-            if (prismProperties.IsSuperShielded) return;
+            if (AbsorbSuperShieldHit(0f)) return;
             if (prismProperties.IsShielded && !devastate)
                 DeactivateShields();
             else
@@ -1264,6 +1263,40 @@ namespace CosmicShore.Gameplay
                 _destroyedByCreature = byCreature;
                 Implode(target, domain, playerName, devastate);
             }
+        }
+
+        // Per-prism rate-limit slot for the deflection jiggle, owned here because the state is
+        // one float per prism and PrismSuperShieldJiggle would otherwise need a dictionary
+        // keyed by instance id. Absolute clock time; a pooled reuse inherits a value far in
+        // the past, which correctly reads as "no recent deflection".
+        float _lastSuperShieldJiggleTime = float.NegativeInfinity;
+
+        /// <summary>
+        /// THE super-shield invulnerability gate. Returns true when this prism absorbs the hit
+        /// — the caller must then do nothing else to it.
+        ///
+        /// Super-shielded prisms are fully invulnerable. No damage source currently breaks
+        /// them; ways to break them will be added later as targeted opt-in mechanics. The
+        /// impactor's other effect SOs (sparks, sound) still fire, and since this method also
+        /// stamps the deflection wobble, the hit now reads as a DEFLECTION rather than as a
+        /// miss — with no state change of any kind (Docs/PRISM_ANIMATION.md §5 C14).
+        ///
+        /// This exists as ONE method because the check previously existed as four independent
+        /// copies — <see cref="Damage"/>, <see cref="Consume"/>,
+        /// <c>PrismSpatialIndex.ResolveExplosionHit</c> and
+        /// <c>ExplosionImpactor.ExecuteCommonPrismCommands</c> — and a per-call-site copy is a
+        /// rule you can forget to apply at the next damage source. Route every new one here.
+        /// </summary>
+        /// <param name="impactSpeed">
+        /// Magnitude of the impact in world units/second, used only to size the wobble. Pass 0
+        /// where the hit site cannot describe its own magnitude; the deflection still reads, at
+        /// the configured floor.
+        /// </param>
+        public bool AbsorbSuperShieldHit(float impactSpeed)
+        {
+            if (prismProperties is not { IsSuperShielded: true }) return false;
+            PrismSuperShieldJiggle.TryStamp(this, impactSpeed, ref _lastSuperShieldJiggleTime);
+            return true;
         }
 
         // State Management Methods

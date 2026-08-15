@@ -38,9 +38,10 @@ namespace CosmicShore.Editor
                     "_ColorStartTime", "_ColorDuration",
                     "_StartBrightColor", "_StartDarkColor", "_StartSpread",
                     "_FlightStartTime", "_FlightDuration", "_FlightVelocity",
+                    "_JiggleStartTime", "_JiggleDuration", "_JiggleParams",
                 },
                 OptionalProps = new string[0],
-                Purpose = "grow-in bloom (PrismGrowScale, vertex) + color/state transitions (PrismColorLerp, fragment) + ballistic flight (PrismFlightClock, vertex)",
+                Purpose = "grow-in bloom (PrismGrowScale, vertex) + color/state transitions (PrismColorLerp, fragment) + ballistic flight (PrismFlightClock, vertex) + super-shield deflection jiggle (PrismJiggleClock, vertex)",
             },
             new GraphSpec
             {
@@ -55,9 +56,10 @@ namespace CosmicShore.Editor
                     "_ColorStartTime", "_ColorDuration",
                     "_StartBrightColor", "_StartDarkColor", "_StartSpread",
                     "_FlightStartTime", "_FlightDuration", "_FlightVelocity",
+                    "_JiggleStartTime", "_JiggleDuration", "_JiggleParams",
                 },
                 OptionalProps = new string[0],
-                Purpose = "explosion debris flight/shatter/fade (PrismExplosionClock) + transparent live prism bloom/color/flight",
+                Purpose = "explosion debris flight/shatter/fade (PrismExplosionClock) + transparent live prism bloom/color/flight/deflection",
             },
             new GraphSpec
             {
@@ -139,10 +141,14 @@ namespace CosmicShore.Editor
                 // camera distance that replaced the pivot-based SqrDistanceSubGraph feed
                 // (a flying prism's pivot is parked at the flight end point, so the
                 // distance-driven spread read full-range for the whole flight).
+                // Both live-prism graphs also carry PrismJiggleClock — the super-shield
+                // deflection wobble. Super-shielded mass binds the team block material
+                // (BlockGraph) or, when transparent, TransparentPrismMaterial, which rests
+                // on ExplodingBlockGraph — so wiring only one leaves half of it silent.
                 string[] extraFunctions = spec.GraphName == "BlockGraph"
-                    ? new[] { "PrismColorLerp", "PrismFlightClock", "PrismFlightSqrDistance" }
+                    ? new[] { "PrismColorLerp", "PrismFlightClock", "PrismFlightSqrDistance", "PrismJiggleClock" }
                     : spec.GraphName == "ExplodingBlockGraph"
-                        ? new[] { "PrismGrowScale", "PrismColorLerp", "PrismFlightClock" }
+                        ? new[] { "PrismGrowScale", "PrismColorLerp", "PrismFlightClock", "PrismJiggleClock" }
                         : new string[0];
                 foreach (var fn in extraFunctions)
                 {
