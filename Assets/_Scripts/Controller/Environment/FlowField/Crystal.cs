@@ -8,6 +8,7 @@ using Reflex.Attributes;
 using Unity.Collections;
 using UnityEngine;
 using CosmicShore.Data;
+using CosmicShore.ScriptableObjects; // EnvironmentColorSetExtensions.ScaleRGB
 namespace CosmicShore.Gameplay
 {
     [System.Serializable]
@@ -105,38 +106,12 @@ namespace CosmicShore.Gameplay
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
         static void ResetRegistry() => s_active.Clear();
 
-        // The models' bloom (FadeIn) writes the SAME per-renderer property block the
-        // collectability tint lives on, and clears it when it finishes - a block cannot drop a
-        // single key. So claim co-ownership and re-assert the tint on the frame the bloom ends.
-        // Without this every crystal settled onto its authored MATERIAL colour a few seconds
-        // after spawning, which is why a living lifeform's heart read as the lime free-pickup
-        // (Charge and Time author lime materials) instead of the neutral blue it resolves to.
-        readonly List<FadeIn> _tintCoOwnedFades = new();
-
-        protected virtual void Awake()
-        {
-            // Only claim the block when a tint can actually be resolved - an unthemed crystal
-            // writes nothing, and co-ownership costs FadeIn a read-back per frame.
-            if (!_themeManagerData || crystalModels == null) return;
-
-            foreach (var modelData in crystalModels)
-            {
-                if (modelData?.model == null) continue;
-                if (!modelData.model.TryGetComponent<FadeIn>(out var fade)) continue;
-                fade.FadeCompleted += HandleModelFadeCompleted;
-                _tintCoOwnedFades.Add(fade);
-            }
-        }
-
         protected virtual void OnDestroy()
         {
-            foreach (var fade in _tintCoOwnedFades)
-                if (fade) fade.FadeCompleted -= HandleModelFadeCompleted;
-            _tintCoOwnedFades.Clear();
+            // Pair every PrismTimerManager.ScheduleAction with a cancel (see the tint transition
+            // block below) - the manager does not deduplicate per owner.
             PrismTimerManager.Instance?.CancelScheduledActions(this);
         }
-
-        void HandleModelFadeCompleted() => ApplyColorSetTint();
 
         protected virtual void OnEnable()
         {
@@ -205,6 +180,17 @@ namespace CosmicShore.Gameplay
             if (colors.EnvironmentColors == null) return false;
             bright = colors.EnvironmentColors.BrightCTA;
             dull = colors.EnvironmentColors.DarkCTA;
+
+            // The OMNI is the hero pickup and wears the CTA at full strength; the four
+            // elementals ride the same lime, dimmed, so the omni is the brightest crystal
+            // on screen. Brightness is the ONLY difference - a scalar cannot move the hue,
+            // so all five stay in one lime family by construction.
+            if (crystalProperties.IsElemental)
+            {
+                float dim = colors.EnvironmentColors.ElementalCrystalDimming;
+                bright = bright.ScaleRGB(dim);
+                dull = dull.ScaleRGB(dim);
+            }
             return true;
         }
 
@@ -212,7 +198,7 @@ namespace CosmicShore.Gameplay
         /// Paints all crystal models with the current state's pair immediately. No-op when the
         /// theme container or color set is unwired.
         ///
-        /// This is the RE-ASSERT path - a birth, a bloom finishing, a material lerp settling -
+        /// This is the RE-ASSERT path - a birth, a domain preview, a material lerp settling -
         /// where the pair being written is the one already showing, so there is nothing to
         /// travel. A state change the player should SEE goes through
         /// <see cref="TransitionColorSetTint"/> instead.
@@ -222,10 +208,9 @@ namespace CosmicShore.Gameplay
             if (!TryResolveTintColors(out var bright, out var dull)) return;
 
             // A transition already heading for this pair owns the block, so do not snap it to the
-            // end - but DO re-assert what is on screen, because the caller may be here precisely
-            // because the block was cleared out from under it (a model's bloom finishing). The
-            // other re-asserts that land mid-flight: Start, one frame after ActivateCrystal
-            // enables the component, and the material lerp reaching its tail.
+            // end - re-assert what is on screen instead. Two re-asserts land mid-flight: Start,
+            // one frame after ActivateCrystal enables the component, and the material lerp
+            // reaching its tail.
             if (_tintTransitionActive && bright == _tintToBright && dull == _tintToDull)
             {
                 if (TryGetDisplayedTint(out var liveBright, out var liveDull))
@@ -270,8 +255,8 @@ namespace CosmicShore.Gameplay
         //
         // It differs from the prism path in ONE respect, deliberately. A prism hands the
         // interpolation to the GPU because thousands animate at once and its graphs carry the
-        // clock wiring; the five crystal shaders (four of them large graphs) carry none, so a
-        // crystal's pair is pushed from the CPU. That is bounded by the crystals actually
+        // clock wiring; the crystal shaders carry none (Docs/PALETTE.md section 2.2 audits all
+        // of them), so a crystal's pair is pushed from the CPU. That is bounded by the crystals actually
         // TRANSITIONING - a heart changes colour once, when it dies - and is strictly cheaper
         // than the cloned-material lerp it runs alongside. The scheduled settle is what makes
         // the end state independent of the driver: interrupt the coroutine and the crystal still

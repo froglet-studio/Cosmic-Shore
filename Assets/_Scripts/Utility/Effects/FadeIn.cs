@@ -1,4 +1,3 @@
-using System;
 using System.Collections;
 using UnityEngine;
 
@@ -7,19 +6,18 @@ namespace CosmicShore.Utility
     /// <summary>
     /// Fades a renderer in by driving its shader's _opacity through a
     /// MaterialPropertyBlock — no material clone, no per-frame GetComponent.
-    /// The override is cleared once the fade completes so material swaps
-    /// (crystal activation, domain changes) always show their authored opacity.
     ///
-    /// This component owns exactly ONE property (_opacity), but a property block belongs to the
-    /// RENDERER, not to the component that writes it — so it must never assume the block is its
-    /// own. It merges into whatever is already there on every write, and raises
-    /// <see cref="FadeCompleted"/> after the clear so a co-owner can put its overrides back
-    /// (MaterialPropertyBlock cannot drop a single key, so Clear takes the whole block with it).
+    /// Every write COMPOSES with the block already on the renderer instead of replacing it.
+    /// This is load-bearing, not tidiness: <see cref="CosmicShore.Gameplay.Crystal"/> paints the
+    /// free-pickup lime through a property block on these same renderers, and this component used
+    /// to own a private block it pushed wholesale (wiping the tint at the START of the fade) and
+    /// then Clear() at the end (wiping it again, permanently). Every crystal in the game therefore
+    /// settled back to its authored material colour and the CTA lime was never seen. Composing also
+    /// makes the two writers order-independent, so it no longer matters whether Crystal.Start or
+    /// FadeIn.Start runs first.
     ///
-    /// Crystal.ApplyColorSetTint is the co-owner that made this necessary. Before the merge, the
-    /// bloom wiped every crystal's collectability tint — a living lifeform's heart is blue, a free
-    /// pickup is the lime CTA — and the crystal fell back to its authored material colour, which
-    /// is why Charge and Time hearts read lime while their lifeform was still alive.
+    /// The fade override is retired by restoring the MATERIAL's own authored opacity rather than by
+    /// clearing the block — same end state for _opacity, without discarding anyone else's overrides.
     /// </summary>
     public class FadeIn : MonoBehaviour
     {
@@ -30,21 +28,6 @@ namespace CosmicShore.Utility
         Renderer _renderer;
         MaterialPropertyBlock _mpb;
         Coroutine fadeInCoroutine;
-
-        /// <summary>
-        /// Raised on the frame the bloom finishes, immediately after the _opacity override is
-        /// dropped. Anything that keeps its OWN override on this renderer must subscribe and
-        /// re-apply here — the clear that ends the fade cannot spare it.
-        /// </summary>
-        public event Action FadeCompleted;
-
-        /// <summary>
-        /// True when something else also writes this renderer's property block — it announced
-        /// itself by subscribing to <see cref="FadeCompleted"/>. Only then does the bloom pay for
-        /// a read-back per frame; a renderer this component owns outright keeps the cheap path,
-        /// which matters because a single prefab can carry thousands of these blooming at once.
-        /// </summary>
-        bool HasBlockCoOwner => FadeCompleted != null;
 
         void Awake()
         {
@@ -61,7 +44,7 @@ namespace CosmicShore.Utility
         {
             // Zero the opacity before starting the coroutine so there is no
             // one-frame flash at full opacity.
-            WriteOpacity(0f);
+            SetOpacity(0f);
 
             if (fadeInCoroutine != null)
                 StopCoroutine(fadeInCoroutine);
@@ -78,29 +61,20 @@ namespace CosmicShore.Utility
                 yield return null;
                 fadeInRate *= 1.00f + Time.deltaTime;
                 opacity += fadeInRate;
-                WriteOpacity(opacity);
+                SetOpacity(opacity);
             }
 
-            // Drop the override so the material's own opacity wins from here on.
-            _mpb.Clear();
-            _renderer.SetPropertyBlock(_mpb);
+            // Retire the fade by handing _opacity back to the material's authored value, rather
+            // than Clear()ing the block — a Clear would also discard the crystal's colour tint.
+            var mat = _renderer.sharedMaterial;
+            SetOpacity(mat && mat.HasProperty(OpacityID) ? mat.GetFloat(OpacityID) : 1f);
             fadeInCoroutine = null;
-
-            // ...and hand the block back to its other owners, since the clear above took
-            // their overrides with it.
-            FadeCompleted?.Invoke();
         }
 
-        /// <summary>
-        /// Read-modify-write of the shared per-renderer block. The read-back is what keeps a
-        /// co-owner's overrides alive across the whole bloom rather than only until this
-        /// component's next frame.
-        /// </summary>
-        void WriteOpacity(float opacity)
+        /// <summary>Writes _opacity ON TOP of whatever block the renderer already carries.</summary>
+        void SetOpacity(float opacity)
         {
-            if (HasBlockCoOwner)
-                _renderer.GetPropertyBlock(_mpb);
-
+            _renderer.GetPropertyBlock(_mpb);
             _mpb.SetFloat(OpacityID, opacity);
             _renderer.SetPropertyBlock(_mpb);
         }
