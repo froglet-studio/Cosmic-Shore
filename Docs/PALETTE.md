@@ -432,6 +432,32 @@ Machine validation covers structure and colorimetry; only a playtest covers *loo
    domain where a regression would surface first. Also confirm a gold danger prism is not
    confusable with a gold *plain* prism at speed — both now carry a hot rim, but they sit
    35° apart in hue and 40 apart in chroma (`#FF1214` against `#FFAB25`).
+2c. Get all five **crystals** on screen together (§2.2). Easiest producers:
+   - **Menu_Main freestyle** — the omni crystal plus whatever the cell's lifeforms drop.
+   - **Dog Fight / Rampage** — omni crystals respawn continuously in the nucleus, and
+     Rampage's four intensities change how many are out at once.
+   - **Wildlife Blitz / Wildlife Liberation** — elemental hearts drop as lifeforms die,
+     which is the cheapest way to see all four elementals next to each other.
+
+   Confirm, in this order — the first is the one that has never worked before:
+   a. **Every crystal is lime.** Before this change none of them were (the omni read
+      blue-white/green, Space blue-white, Time blue, only Charge lime), because `FadeIn`
+      wiped the tint. If any crystal still shows its old colour, the fade is winning
+      again — check that nothing else pushes a whole `MaterialPropertyBlock` onto that
+      renderer.
+   b. **The omni is clearly the brightest**, at distance especially — it is the only
+      crystal whose *body* sits at the bloom ceiling. Target is roughly 6:1 bloom against
+      an elemental; if they read the same, suspect `ElementalCrystalDimming` did not load
+      (it is a NEW field — an old serialized copy of the asset simply will not have it,
+      and it will silently take the 0.45 C# initializer, which is the intended value
+      anyway, so this failing means something overrode it).
+   c. **The four elementals are still legible**, not black. They sit just above the bloom
+      threshold by design; if they read as dead olive lumps, raise the dimming toward
+      0.55 (see the table in §2.2 — the knob is steep, 0.05 is a real step).
+   d. **Hue is unchanged across all five.** They must differ only in brightness. Any hue
+      drift means something is scaling the pair non-uniformly, or a channel is clipping
+      past 1.0 (tonemapping is None — there is no shoulder to absorb it).
+
 3. For **Ruby** and **Gold**, confirm: the prism's facets and silhouette read clearly
    (the base→rim separation is visible), and the shielded prism is obviously distinct
    from an unshielded prism of the same domain.
