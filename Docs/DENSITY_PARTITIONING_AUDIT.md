@@ -99,6 +99,14 @@ Every active consumer of the density API as of this branch. (Auditing this list 
 | **AIPilot** | `AIPilot.cs:406` *(commented out)* | `cell.GetExplosionTarget(activeCell.ControllingTeam)` | Was: "pick a target near the winning team's mass." Currently disabled. | Single point (when re-enabled). |
 | **TestHarnessOctreeDensitySearch** | `TestHarnessOctreeDensitySearch.cs:36-38` | `cell.GetExplosionTarget(t)` for each team | Smoke-test prints. | N/A — diagnostic. |
 
+> **Update (2026-08-15) — one consumer retired.** The **ShardToggleAction** row above is now
+> historical: the Dolphin's shard toggle was removed (superseded by Echo Sight), and
+> `ShardToggleAction.cs`, `ShardToggleActionSO`, `ShardToggleActionExecutor` and `ShardFieldBus`
+> are deleted, so that file/line reference no longer resolves. **Six** active consumers of
+> `GetExplosionTarget` / `GetDensestRegionAnyDomain` remain. The counts in the observations and
+> API sketch below are left **as audited** per the reading note at the top of this document —
+> read "seven callers" and "worms and shards" as the state at audit time.
+
 ### Observations from the consumer audit
 
 1. **Every active consumer wants exactly one Vector3.** "Top-K" and "gradient field" are speculative future needs the audit shouldn't over-design for. Three similar lines is better than a premature abstraction (CLAUDE.md).
