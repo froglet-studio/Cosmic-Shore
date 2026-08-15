@@ -320,23 +320,30 @@ branches and both non-obvious:
 >
 > Decide which visual is wanted before starting.
 >
-> Sites: stamp at `Cell.RetireWorldIntoSuctionRoot` (`Cell.cs:2042-2091`) — note it
-> re-parents the environment as ONE container at `:2050-2052`, so a per-prism stamp
-> needs an explicit `GetComponentsInChildren<Prism>` there (or reuse the walk
-> `ReleaseRetiredWorld` already does at `:2020`). Delete the per-frame root
-> `localScale` write at `Cell.cs:1936-1943`, keeping a plain wall-clock wait for
-> `duration`. **Keep** `ReleaseRetiredWorld`'s 500/frame destroy cadence
-> (`:2015-2031`) — that is gameplay de-registration, state not photons.
+> Sites — all in `Assets/_Scripts/Controller/Environment/Cell.cs`. **Line numbers
+> are a hint, the symbol is the anchor**: this file shifted 22 lines under this
+> doc during the very session that wrote it, so re-grep before trusting a number.
+> - **Stamp at** `RetireWorldIntoSuctionRoot` (`:2058-2107`) — note it re-parents
+>   the authored environment as ONE container (`:2066-2067`), so a per-prism stamp
+>   needs an explicit `GetComponentsInChildren<Prism>` there, or reuse the walk
+>   `ReleaseRetiredWorld` already does (`:2036`).
+> - **Delete** the per-frame root `localScale` write — the `while (elapsed <
+>   duration)` suction loop at `:1951-1959`, writing at `:1957`. Keep a plain
+>   wall-clock wait for `duration`.
+> - **Keep** `ReleaseRetiredWorld`'s drain cadence (`:2031-2041`, `const int
+>   PrismsPerFrame = 500` at `:2035`) — that is gameplay de-registration, state
+>   not photons.
 >
 > Three things not to miss: pair any suction stamp with `ResetBoundsToMesh` +
 > `EncapsulateBoundsPoint(objectPoint(cellCentre), padding)` — copy the shape at
 > `PrismImplosion.cs:315-320`, it is the same culling bug class as explosions; add
-> `ClearSuctionClockStamp` coverage for the pooled prisms returned at
-> `Cell.cs:1946-1954` (`ClearPrismStamps` does not include it); and note the
-> retiring root also carries **non-prism** objects (membrane / nucleus / cytoplasm
-> / lifeform bodies, `:2079-2087`) that ride the root transform correctly today —
-> removing the root animation removes their suction, so either keep the root scale
-> for those and stamp only prisms, or give them their own transition.
+> `ClearSuctionClockStamp` coverage for the pooled prisms returned to their pool at
+> `Cell.cs:1964-1971` (`ClearPrismStamps` does not include it); and note the
+> retiring root also carries **non-prism** objects — membrane / nucleus /
+> cytoplasm are re-parented onto it at `Cell.cs:2099-2104`, and lifeform bodies
+> just above — which ride the root transform correctly today. Removing the root
+> animation removes their suction, so either keep the root scale for those and
+> stamp only prisms, or give them their own transition.
 >
 > Test: swap cells at the Cell Selector — smooth behind the veil, zero
 > `[PrismClock]` errors, and the old world genuinely converges rather than
@@ -376,9 +383,9 @@ branches and both non-obvious:
 >
 > **(4) `Prism.HoldColliderAtFullSize` — the premise "colliders are final-at-start
 > now" is false on this very path.** ⚠ `HoldColliderAtFullSizeCoroutine`
-> (`Prism.cs:298-337`) writes `transform.localScale` (`:322`) **and**
-> `blockCollider.size` (`:324-327`) inside `while (!destroyed && blockCollider) {
-> … yield return null; }` — it is itself a surviving per-frame prism-transform
+> (`Prism.cs:298-331`) writes `transform.localScale` (`:323`) **and**
+> `blockCollider.size` (`:325-328`) inside `while (!destroyed && blockCollider)`
+> (`:302`, yielding at `:330`) — it is itself a surviving per-frame prism-transform
 > writer, which makes it *more* worth removing, not less. There is exactly **one**
 > live caller, `BoostRingBuilder.cs:115` (the other six hits are comments/doc
 > prose). Deleting it means replacing two things that caller depends on: a
