@@ -27,9 +27,13 @@ namespace CosmicShore.Editor
                 var go = AssetDatabase.LoadAssetAtPath<GameObject>(path);
                 if (!go) continue;
 
-                // A "lifeform" prefab carries a LifeForm (flora) or a LightFauna (creature fauna).
-                bool isLifeForm = go.GetComponentInChildren<LifeForm>(true) ||
-                                  go.GetComponentInChildren<LightFauna>(true);
+                // A "lifeform" prefab carries anything implementing ILifeFormEntity - the shared
+                // interface on BOTH branches of the hierarchy (LifeForm -> Flora, and
+                // Fauna -> LightFauna / Boid). Testing concrete types here is what previously
+                // let the Boid branch through unchecked: LightFauna and Boid are SIBLINGS under
+                // Fauna, not parent/child, so a LightFauna test silently skipped every Boid
+                // prefab (TadPoleFauna, TermiteDrone) and reported a clean bill it never verified.
+                bool isLifeForm = go.GetComponentInChildren<ILifeFormEntity>(true) != null;
                 if (!isLifeForm) continue;
 
                 checkedCount++;

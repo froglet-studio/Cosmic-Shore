@@ -22,7 +22,7 @@ MonoBehaviour:
     type: 3}
   crystalCollectionEffects:
   - {fileID: 11400000, guid: 0ac04a748b4c4ad8825e811431df45f4, type: 2}
-  omniCrystalPrefab: {fileID: 0}
+  omniCrystalPrefab: {fileID: 5535990081244205891, guid: 54802b89e00a0ed4281025fa5e770811, type: 3}
   maxCrystalsPerScene: 6
   palette:
     MonoWeight: 2.5

@@ -253,6 +253,75 @@ missile at ProjectileScale 10 — sized to the bay missile) · animator state sp
 visibly dwarfs its ~1.7 u visual; the old 15 u wedge masked it. `0.85 × ProjectileScale 10`
 looks emergent rather than authored — DogFight balance call for Garrett.
 
+### 🔴 Editor-tool output discharged by asset surgery (`claude/ship-safeguards-tool-cleanup-fn6lk6`)
+
+Three editor tools' output was authored **programmatically** (per `/asset-surgery`) instead of
+by clicking the menu item, so none of it has been through a Unity import. Every edit was
+validate-before-write (parse whole file → assert the edit landed → assert reference closure →
+only then write), but a clean import is still the gate.
+
+**Verify in editor (one pass covers all of it):**
+
+1. **Open the project, watch the console.** Zero errors, and no "Missing (Mono Script)" rows in
+   any of: the **11** crystal prefabs under `_Prefabs/Environment` (incl.
+   `Spawners/SpawnedSegments` and `BigCrystalVariant`), `_Prefabs/Spacevessels/Sparrow.prefab`.
+   *(Eleven prefabs carry the `Crystal` guid; ten needed stripping — `BigCrystalVariant.prefab`
+   is a VARIANT of `Crystal.prefab` with no AudioSource doc of its own, so it inherits the strip.)*
+2. **Crystal AudioSource strip** — all 1,017 `AudioSource` components removed from the 10
+   `Crystal`-carrying prefabs (1,008 of them inlined in `SpawnedSegments.prefab`). The premise:
+   `Crystal.PlayExplosionAudio` routes through `AudioSystem.PlayGameplaySFX`, not a per-prefab
+   source. **Verify:** collect a crystal in-game — the SFX must still play.
+   *(The one-shot `StripCrystalAudioSourceTool` was retired in the same branch; recover with
+   `git show <pre-deletion sha> -- Assets/_Scripts/Editor/StripCrystalAudioSourceTool.cs`.)*
+3. **Sparrow elemental petal bars** — 88 documents authored (4 `*_Flower` containers + 20 petals),
+   donor-cloned from `SquirrelHUDVariant.prefab`'s wirer output. **Verify:** open
+   `Sparrow.prefab`, confirm four 5-petal flowers render grey at the wirer's default row
+   (x = −156/−52/52/156). **Repositioning them per Sparrow's HUD layout is expected** — the
+   defaults are the tool's, not a design.
+4. **`Toy_Conveyor.omniCrystalPrefab`** — wired to the `Crystal` component on `Crystal.prefab`'s
+   root GameObject. **Verify:** fly the Wanderway toy; ~16% of scenes should carry the big
+   body-collected omni crystal (`MicroscenePalette.OmniCrystalChance` = 0.16).
+   *(History, corrected: `a0b32006` did set this and `c8e0dae6` ("pushing automatic unity changes")
+   byte-reverted it — but NEITHER commit is an ancestor of `bleeding-edge`. On the mainline the
+   field has been `{fileID: 0}` since it was introduced at `bac3d4b7`, so this is a never-wired
+   field rather than a run-then-clobber regression the mainline lost.)*
+
+**Also fixed in that branch, code-only (no editor step, but worth a look on review):**
+
+- `CanvasUpgradeProcessor` had **no nested-prefab guard**: upgrading a canvas re-scaled any
+  already-×2.4 nested fragment to **×5.76**. Now skips logged instances' internals while still
+  scaling their root RectTransform (whose overrides live in the parent canvas's units). This
+  **unblocks the last canvas migration target**, `_Prefabs/CORE/GameCanvas.prefab` — open it in
+  Prefab Stage, `FrogletTools > Interface > Canvas Upgrader`, Scan → **Dry Run** and confirm the
+  report says it SKIPS the internals of nested already-upgraded fragments (e.g.
+  `EndGameStatsPanel`) before applying.
+- `LifeFormCrystalValidator` filtered on `LifeForm || LightFauna`, but `LightFauna` and `Boid`
+  are **siblings** under `Fauna` — so every `Boid` prefab was skipped and the tool reported a
+  clean bill it never verified. Now filters on `ILifeFormEntity`. **A composition-aware static run
+  finds 13 prefabs flagged — and NO live-path gap, so there is no element to pick:**
+  the 4 worm prefabs (`WormColony`, `WormHead/Body/TailSegment`) are **exempt by the locked ruling**
+  in `Docs/ECOSYSTEM.md` §23.3 — the `Worm Colony Charge/Mass/Space/Time` configs carry the element
+  and `Fauna.ProvisionHeart` provisions the capitals at runtime, and CLAUDE.md explicitly says not
+  to give a heartless body segment a crystal; the 7 under `Populations/` are the **dead path**
+  (0 references from any spawn/cell config — `Docs/ECOSYSTEM.md` §7, the `Cell.fauna2` field no
+  longer exists); `Termite.prefab` is a **vessel**, false-positived because
+  `BoidController : BoidManager : Fauna`; and `TermiteDrone.prefab` is spawned only by
+  `BoidController.SpawnDrone` on the unimplemented Termite vessel (raw `Instantiate`, never
+  `Fauna.Initialize`, so no config element). **There is no `worm.prefab`.** The element for real
+  fauna is authored on the `FaunaConfigurationSO`, never on the prefab. The remaining option is
+  cosmetic: teach the validator to skip vessel-borne `Fauna` and composite body-parts so a clean
+  run means something.
+- `ToastNotificationSetup` wrote its settings asset to `Assets/_SO_Assets/` while
+  `AddManagerToScene` read from `Assets/Resources/`. Since `ToastNotificationAPI` uses
+  `Resources.Load`, the write path was invisible to the shipping game. Both now share one
+  `SettingsPath` under `Resources/`.
+
+**Still owed a human, unrelated to the surgery:** the **prefab** half of the Raycast Target
+Audit (`Docs/PERFORMANCE_OPTIMIZATION.md` Task 2 — the scene half landed at `9c5dd537`), and a
+decision on whether `BenchmarkResults/PrismExplosion/*.json` exists locally with both
+`legacy-cpu` and `gpu-clock` runs (if not, PR #642's A/B numbers were never measured).
+`BenchmarkResults/` is gitignored, so only a human at the machine can answer that.
+
 ### 🔴 Sparrow Turret Stance — two flight visualizations, still-nothing hardening (`claude/sparrow-prism-attack-hg6n78`)
 
 Authored without a Unity compile or play-test. The stance STILL showed nothing after the
