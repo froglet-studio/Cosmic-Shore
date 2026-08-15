@@ -120,6 +120,11 @@ namespace CosmicShore.Gameplay
             var spinners = crystal.GetComponentsInChildren<CosmicShore.UI.JustRotate>(true);
             foreach (var spinner in spinners) spinner.canRotate = false;
 
+            // And the tint block is ours: a collectability cross-fade still in flight (a jousted
+            // heart is freed and auto-collected in the same beat, so it always is) would fight the
+            // flare frame by frame. This freezes it at the displayed colour and flares from there.
+            crystal.BeginCaptureVisual();
+
             // The Space crystal's blendshape pulse rides ALONG the flight now instead of being
             // awaited after it (that tail was 0.6s of a full-size crystal parked on the hull).
             PlayCollectAnimators(crystal);

@@ -3666,7 +3666,60 @@ rides the Burst density grid rather than physics. No new colliders, no new queri
 **Crystals:** at most `2 × players` = 8 at intensity 1, each a single trigger collider.
 
 
-## 30. The crystal capture — a pickup is a beat, not a journey (Aug 2026)
+## 30. A living heart is BLUE, and the crossing to lime TRAVELS (Aug 2026)
+
+**The rule (it was never in doubt): a crystal's ELEMENT is its shape, its COLOUR is who may
+collect it.** `Crystal.ApplyColorSetTint` resolves one of three pairs from the live `SO_ColorSet`
+and writes them per renderer through a `MaterialPropertyBlock`:
+
+| State | Pair | Reads as |
+|---|---|---|
+| domain-owned (Jade/Ruby/Gold) | that domain's `BrightCrystalColor` / `DullCrystalColor` | only that domain collects |
+| **embedded lifeform heart** (`Crystal.IsEmbedded`) | `BlueColors.BrightCrystalColor` / `DullCrystalColor` | **blue** — it is alive, nobody collects it |
+| free pickup (drop / omni / cell) | `EnvironmentColors.BrightCTA` / `DarkCTA`, elementals dimmed | **lime** — anyone collects it |
+
+**None of it reached the screen until 2026-08-15**, because `FadeIn` — which every crystal model
+carries, and which is what blooms a crystal into existence per the continuity law — drove
+`_opacity` through the *same* per-renderer block and ended the bloom by clearing it. That is
+diagnosed and fixed in `Docs/PALETTE.md §2.2` (a palette-wide defect: no crystal in the game ever
+showed its resolved colour). What it cost the ECOLOGY specifically is worth recording, because the
+symptom was asymmetric and therefore invisible: the fallback was each prefab's authored material,
+and of the four elemental crystals Mass and Space author the *Blue* material and looked correct
+**by accident**, while `ChargeCrystalMaterial` is literally the CTA pair and Time's Fringe
+materials carry a lime dull face. Species assets are split evenly across the four elements — 21
+each — so **half the ecosystem's living hearts advertised themselves as free pickups**, and the
+half that worked gave no signal anything was wrong.
+
+### 30.1 The crossing is a state change, so it travels
+
+The blue→lime crossing at `ActivateCrystal` is the pickup affordance: it is the moment the §26
+wither reaches the core, or the moment a joust frees the heart, and it says *you can take this
+now*. It runs the same clock-stamped shape as a prism domain change
+(`MaterialPropertyAnimator.ClockColorTransition`, `Docs/PRISM_ANIMATION.md`) — the state goes
+final at the start (the crystal is collectable the instant it drops; colour is only how it reads),
+the start pair is stamped once against `PrismClock`, the pairs between are computed analytically
+from that stamp, and `PrismTimerManager` fires ONE settle at the analytically-known end, which is
+what makes the final colour independent of the driver. Duration is
+`Crystal.colorTransitionSeconds`, 0.8 s to match the prism transition.
+
+Three rules it depends on, each a bug first — full contract in `Docs/PALETTE.md §2.3`:
+
+- **Paint the flip explicitly.** `ActivateCrystal` repaints itself rather than leaving it to
+  `Start` (which fires only because a heart's `Crystal` component is authored **disabled**) or to
+  the material lerp's tail (skipped outright when a model has no target material). Rely on either
+  and a collectable crystal keeps wearing heart blue.
+- **Read the start pair BEFORE anything disturbs it** — before `EmbeddedIn` is cleared and before
+  any material lerp drops the block.
+- **A cleared block no longer describes the screen**, so `ClearColorSetTint` forgets the resting
+  pair.
+
+### 30.2 Collider budget
+
+**Zero.** Colours only — no colliders, no spatial queries, no spawn or consumption behaviour, no
+change to what is edible or steerable. The per-frame cost is one property-block write per model
+for the 0.8 s a crystal is actually crossing, and only crystals cross.
+
+## 31. The crystal capture — a pickup is a beat, not a journey (Aug 2026)
 
 **Prompter's ask, verbatim in shape:** *"when elemental crystals are captured it looks terrible, and
 takes far too long. we need a more satisfying capture effect."*
@@ -3688,7 +3741,7 @@ the whole food web pays out — and it was the weakest frame in the game. What s
 
 Total: **3.6 s** for the Space crystal, **3.0 s** for the other three, ending in a pop-out.
 
-### 30.1 The shape of a capture
+### 31.1 The shape of a capture
 
 Three beats, and the beats are what make it read as a grab rather than a drag. All feel lives in
 **one** asset — `Resources/CrystalCaptureConfig` (`CrystalCaptureConfigSO`) — because a per-prefab
@@ -3721,7 +3774,7 @@ Three rules came out of it and generalize:
    screen-door coverage by the crystal shaders, so it composes with the project's
    dither-not-blend transparency rather than introducing a second kind of fade.
 
-### 30.2 What it composes with, and what it does not add
+### 31.2 What it composes with, and what it does not add
 
 Nothing new was invented. The burst is `Crystal.Explode`, the existing pooled spent-husk path
 (`SpentCrystalPoolManager` → `Impact`), which the elemental crystals were already authored for —
@@ -3763,7 +3816,7 @@ The `moveToVesselDuration` / `easeMoveToVessel` fields were removed from the imp
 now-dead serialized keys stripped from the 15 prefabs that authored them — a value that is read by
 nothing but still shows in the inspector is worse than no field at all.
 
-### 30.3 Collider budget
+### 31.3 Collider budget
 
 **Zero.** No collider is created; the capture *disables* the crystal's own trigger at contact (as it
 always did) and the husk burst is the pre-existing pooled `Impact` path with no colliders at all. The
@@ -3772,12 +3825,12 @@ per-frame cost is one transform write + one MaterialPropertyBlock write on a sin
 Prisms are untouched, so the clock-material law (`Docs/PRISM_ANIMATION.md`) is not in scope: a
 crystal is a handful of objects, not the 2,000-instance surface that law exists to protect.
 
-### 30.4 In-editor verification (the human is the gate)
+### 31.4 In-editor verification (the human is the gate)
 
 1. Any scene with fauna — Wildlife Blitz is the fastest. Kill a creature and skim its dropped heart.
    The capture must complete in **under half a second**, ending in a husk burst at your hull with the
    `CrystalCollect` sound. Nothing should linger on the ship. (That sound is a **regression test** as
-   much as a feature — it never played for a lifeform drop before this branch; see §30.2.)
+   much as a feature — it never played for a lifeform drop before this branch; see §31.2.)
 2. Do it at **top speed** (Squirrel, boosting). The crystal must land *on* the ship, not trail behind
    it — that is the test the old 3-second lerp failed.
 3. Do it on a **Space** crystal specifically: its blendshape pulse now runs *alongside* the flight,

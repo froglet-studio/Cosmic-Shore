@@ -161,6 +161,52 @@ fade by restoring the material's own `_opacity` instead of clearing the block. B
 now order-independent. **Never push a whole property block onto a renderer another system also
 tints**; read-modify-write it.
 
+### 2.3 A crystal's state CHANGE travels — the heart's blue → lime crossing (2026-08-15)
+
+§2.2 defines what each state is painted with. This is what happens **between** two of them.
+
+The change that matters is the lifeform heart: blue while it lives, the lime CTA once
+`ActivateCrystal` drops it. That crossing is the pickup affordance — it is the moment the §26
+wither reaches the core, or a joust frees the heart — so it **travels** rather than snapping,
+running the same shape as a prism domain change
+(`MaterialPropertyAnimator.ClockColorTransition`, `Docs/PRISM_ANIMATION.md`):
+
+- the **state goes final at the start** — the crystal is collectable the instant it drops;
+  colour is only how it *reads*;
+- the start pair is **stamped once** against `PrismClock`;
+- every pair in between is computed **analytically** from that stamp rather than accumulated, on
+  the same smoothstep the prism lerp uses;
+- `PrismTimerManager` fires **one** settle at the analytically-known end, which is what makes the
+  final colour independent of the driver;
+- an interruption **re-stamps from the analytic current**, so a second state change mid-fade
+  departs from what is actually on screen.
+
+Duration is `Crystal.colorTransitionSeconds` (0.8 s, matching the prism transition; 0 snaps).
+
+**Three rules fall out, and each was a bug first.**
+
+1. **Paint the flip explicitly.** `ActivateCrystal` repaints itself rather than leaving it to
+   `Start` (which only fires because a heart's `Crystal` component is authored **disabled**) or to
+   the material lerp's tail (skipped outright when a model has no target material). Rely on either
+   and a collectable crystal keeps wearing heart blue.
+2. **Read the start pair BEFORE anything disturbs it.** `ActivateCrystal` captures it on its first
+   line: clearing `EmbeddedIn` changes what the state resolves to, and each material lerp drops
+   the block on its way in. Read it later and Charge and Time — whose inactive material *is* the
+   lime one — would start already-lime and travel nowhere. Exactly the ordering constraint
+   `MaterialPropertyAnimator` documents when it reads start colours before binding the end-state
+   material.
+3. **A cleared block no longer describes the screen.** `ClearColorSetTint` forgets the resting
+   pair, or a later cross-fade departs from a colour that has not been displayed since the clear.
+
+`ApplyColorSetTint` is the RE-ASSERT path by contrast (a birth, a domain preview, a material lerp
+settling): it writes the current state's pair immediately, and will not snap a live transition to
+its end.
+
+One deliberate difference from the prism path: a prism hands the interpolation to the GPU because
+thousands animate at once and its graphs carry the clock wiring. The crystal shaders carry none
+(§2.2 audits them), so a crystal's pair is pushed from the CPU — bounded by the crystals
+actually *transitioning*, and cheaper than the cloned-material lerp it runs alongside.
+
 ## 3. The colour-space rule (this is the trap)
 
 The project is **Linear** (`ProjectSettings/ProjectSettings.asset: m_ActiveColorSpace: 1`)
@@ -458,6 +504,19 @@ Machine validation covers structure and colorimetry; only a playtest covers *loo
       drift means something is scaling the pair non-uniformly, or a channel is clipping
       past 1.0 (tonemapping is None — there is no shoulder to absorb it).
 
+2d. Check the **heart crossing** (§2.3) — note it is the one crystal that must NOT be lime:
+   a living lifeform's heart wears the blue-white neutral, and only a *free* crystal is lime.
+   - Fly a cell with wildlife (Menu\_Main freestyle, Wildlife Blitz). Confirm every living
+     lifeform's heart is **blue** — check a **Charge** and a **Time** species specifically
+     (`Arbor Flora Charge`, `Tadpole Fauna Time`): their materials are the lime ones, so
+     they are the two that fail first if the tint is lost again.
+   - Kill one and watch the heart **ease** blue → lime over ~0.8 s rather than flicking.
+     Tune on the crystal prefab's **Color Transition Seconds** (0 snaps).
+   - Kill one **during its bloom** (within the first ~3 s of the lifeform spawning) to
+     confirm the crossing and `FadeIn` coexist — both write the same block.
+   - A heart stuck part-way between blue and lime means the settle never fired: check that
+     a `PrismTimerManager` exists in the scene.
+
 3. For **Ruby** and **Gold**, confirm: the prism's facets and silhouette read clearly
    (the base→rim separation is visible), and the shielded prism is obviously distinct
    from an unshielded prism of the same domain.
@@ -518,3 +577,20 @@ Machine validation covers structure and colorimetry; only a playtest covers *loo
 - The `Outside`/`Inside` field names are misleading (§2). Renaming them is a broad,
   GUID-safe but wide-reaching refactor across `SO_ColorSet` + `ThemeManager` + every
   colour set asset — worth doing, not worth bundling with a palette tune.
+- **The crystal crossing (§2.3) interpolates on the CPU because the crystal shaders carry no
+  clock wiring.** The prism path hands the same job to the GPU: `_ColorStartTime` +
+  `_ColorDuration` + the start pair as per-instance properties, and the graph does
+  `lerp(from, to, smoothstep(...))` itself (`MaterialPropertyAnimator.ClockColorTransition`,
+  `Docs/PRISM_ANIMATION.md §4.1`). Wiring it into the crystal graphs would delete the CPU
+  driver outright and make the crossing free. It is real work — `ShepardGraph` (259 nodes),
+  `CrystalGraph` (270), `InverseDynamicFresnelGraph` (135), `DynamicFresnelGraph` (75), plus
+  the hand-written `ChargeCrystal.shader`, which is the easy one — and it is
+  `/asset-surgery` §2 territory (ShaderGraph JSON synthesis), not hand-editing. Worth its own
+  change with its own playtest; the CPU driver is bounded by crystals actually transitioning,
+  so there is no urgency.
+- **`ChangeDomain`'s theft-decay path still snaps.** `ChangeDomain(Domains.Blue)` lerps the
+  MATERIAL back to `defaultMaterial` over 2 s and then the tail `ApplyColorSetTint()` snaps to
+  the CTA lime, because the two do not settle on the same colour. Pre-existing, and not fixed
+  by §2.3 (which only covers `ActivateCrystal`). The fix is the same mechanism — capture the
+  displayed pair before the material lerp starts and cross-fade the tint alongside it — but it
+  needs the theft path play-tested, which nothing currently exercises often.

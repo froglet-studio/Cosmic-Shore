@@ -23,6 +23,54 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Shield morphs → GPU; the last CPU prism ticker deleted (`claude/octahedron-shield-gpu-morph-4nnw1s`)
+
+Authored without a Unity compile or play-test. The octahedron shield's engage bloom and its
+disengage shatter — and the stellated super-shield's pair — were the last per-frame CPU prism
+animation: `PrismOctahedronShieldManager` ticked every morphing shield and each one REBUILT A
+MESH per frame, on the un-batched GameObject renderer. Both are now `f(clock, stamp)`
+(`Docs/PRISM_ANIMATION.md` §4.8, §5 B4) and **the manager is deleted**, which completes Phase B
+of the clock-material migration.
+
+The mesh generators bake each vertex's own **face centroid** into TEXCOORD1, so the cache-shared
+**settled** shield mesh is also the morph mesh: `SetRenderMeshOverride(sharedMesh)` at engage is
+now the only render call, `SetExoticVisualActive` is never driven true again, and same-size
+shields stay in ONE batch through the whole animation. The shatter overlay's per-prism child
+GameObject is replaced by batched pure-entity debris (`PrismShieldShatter`), and is deliberately
+no longer cancelled on re-engage — deleting visible shards mid-flight breaks continuity of
+existence. `AnimationCurve.EaseInOut(0,0,1,1)` is exactly `smoothstep` (zero end tangents), so every
+shield whose component is added at runtime is reproduced exactly and the curve fields are
+retired. **Two prefabs are a deliberate exception**: `BlueBlock.prefab` (live in three
+multiplayer scenes) and `OctahedronShieldTest.prefab` serialize a hand-altered curve with end
+tangents 2 — fast-slow-fast, up to 0.192 from smoothstep — and now ease like the fleet. If
+BlueBlock's shield bloom reads differently from the others, that is this, and it is expected.
+
+**Editor risk specific to this change**: the graphs were edited as JSON out of the editor
+(`Tools/Shaders/wire_prism_shield_morph.py`), so the first thing to confirm is that BlockGraph
+and ExplodingBlockGraph still import clean. A shield that appears full-size with no bloom is
+un-imported wiring, and it now says so via `WarnUnwiredMaterial` on `_ShieldMorphDuration`.
+
+**Verify in editor** — the six-step playtest is written out in
+`Docs/PRISM_CLOCK_WIRING_CHECKLIST.md` ▸ **Phase 9**, with a symptom→cause table. In short:
+
+1. Asset-only gates first: `python3 Tools/Shaders/wire_prism_shield_morph.py --check`, the
+   `PrismShieldMorphTests` edit-mode suite, and `FrogletTools > Ecology > Prism Animation >
+   Validate Clock Wiring` (both graphs now require the four `_ShieldMorph*` properties +
+   the `PrismShieldMorph` node).
+2. Open both graphs — no import errors; `ShieldMorphStartTime/Duration/Direction/Offset` on the
+   Blackboard. Recovery: `git checkout` the graphs and re-run the script.
+3. Skim a trail to shield a prism (bloom), let the shield expire (shatter). Then the Skim Race /
+   Astro League track for the stellated tier.
+4. Watch draw calls with many shields morphing at once — the whole point is that they do not
+   scale with the number of *animating* shields.
+5. Pool reuse and the birth snap (pre-shielded environment prisms) are steps 5–6 of Phase 9;
+   a stale stamp on a reused prism is loud and unmistakable.
+
+`OctahedronShieldTest.prefab` + its tester still work as the isolated rig: the host has no
+`Prism`, so the bloom stamps onto the MeshRenderer's MaterialPropertyBlock instead of an entity
+— one write, same shader.
+
+---
 ### 🔴 Rhino Energy Sword v3 — energize ritual as the supershield key + authored FX pass (`claude/energy-sword-v3-rework-20q3uh`)
 
 Authored without a Unity compile or play-test (mcs-compiled with stubs, capsule crackle HLSL
@@ -85,6 +133,8 @@ vs `energizedColor` = `SO_ColorSet.Danger` red (state reads as HUE) · `visibili
 raise cautiously) · tracer size is NOT in the config: tune `widthMultiplier` / `time` on the
 `RhinoSwordBladeTracer0..4` TrailRenderers (hairline 0.5 / 0.15) · swipe recovery 0.35 s @
 engage threshold 0.4 (`RhinoShieldSwipeConfig.asset`) · sword mount y 9.38 → −1.
+
+---
 
 ### 🔴 Sparrow rounds grow as they fly + MASS-5 shield restore (`claude/sparrow-spread-haptics-qizbwf`)
 
