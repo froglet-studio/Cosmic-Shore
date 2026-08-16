@@ -23,13 +23,38 @@ namespace CosmicShore.Gameplay
         public TrailFollowerDirection Direction { get { return direction; } }
 
         /// <summary>
-        /// The travel direction LATCHED at attach - the way the vessel was flying when it
-        /// touched the ribbon. The pilot's signed throttle is interpreted RELATIVE to this
-        /// (<see cref="SetRideSign"/>: push = keep going that way, pull = back up), which is
-        /// what makes reversal stable: a latched decision the stick flips, never a per-frame
-        /// recomputation that can flap (the AI break-off lesson, again).
+        /// The projected point ON the trail's centerline for the current index + lerp. The
+        /// follower deliberately does NOT write the vessel's transform: the ride composes the
+        /// hull's position from this point plus an orbit offset around the ribbon (the
+        /// transformer owns that), so the kernel stays a pure 1D projection.
         /// </summary>
-        TrailFollowerDirection attachDirection;
+        public Vector3 CenterlinePoint { get; private set; }
+
+        /// <summary>The live travel heading along the ribbon - what `VesselStatus.Course`
+        /// is set to. Flips with <see cref="Direction"/>.</summary>
+        public Vector3 TravelHeading { get; private set; }
+
+        /// <summary>
+        /// The ribbon's axis at the current block in INDEX ORDER (toward the head), central
+        /// difference. Trail prisms are authored with Z parallel to the trail, and this is
+        /// that axis read from the geometry - a STABLE reference that never flips with travel
+        /// direction, which is what makes it safe to resolve the pilot's facing against
+        /// (dot(vessel.forward, IndexOrderHeading)) every frame: unlike Course, it cannot
+        /// feed back on the decision it informs.
+        /// </summary>
+        public Vector3 IndexOrderHeading
+        {
+            get
+            {
+                if (attachedTrail == null) return Vector3.forward;
+                var list = attachedTrail.TrailList;
+                int last = list.Count - 1;
+                if (last < 1) return Vector3.forward;
+                Vector3 h = list[Mathf.Min(attachedBlockIndex + 1, last)].transform.position
+                          - list[Mathf.Max(attachedBlockIndex - 1, 0)].transform.position;
+                return h.sqrMagnitude > 1e-6f ? h.normalized : Vector3.forward;
+            }
+        }
 
         [SerializeField] float FriendlyTerrainSpeed;
         [SerializeField] float HostileTerrainSpeed;
@@ -81,8 +106,11 @@ namespace CosmicShore.Gameplay
             attachedBlockIndex = index;
             attachedTrail.OnOldestRemoved += HandleOldestRemoved;
 
-            // LATCH the travel direction from the vessel's own motion: ride the way you were
-            // flying. Central difference so a latch on the terminal block still has a heading.
+            // Seed the initial direction from the vessel's own motion - the ride's first frames
+            // continue the way you were flying. (Per frame thereafter the transformer resolves
+            // direction from the pilot's FACING against IndexOrderHeading, the scheme the
+            // original Urchin used.) Central difference so a latch on the terminal block still
+            // has a heading.
             var list = attachedTrail.TrailList;
             int last = list.Count - 1;
             Vector3 heading = list[Mathf.Min(index + 1, last)].transform.position
@@ -90,7 +118,6 @@ namespace CosmicShore.Gameplay
             direction = heading.sqrMagnitude > 1e-6f && Vector3.Dot(vesselData.Course, heading) < 0f
                 ? TrailFollowerDirection.Backward
                 : TrailFollowerDirection.Forward;
-            attachDirection = direction;
 
             // Seed the lerp from where the vessel ACTUALLY touched, projected onto the segment
             // ahead - percent 0 snapped every latch back to the block's start, a visible
@@ -105,20 +132,18 @@ namespace CosmicShore.Gameplay
                     percentTowardNextBlock = Mathf.Clamp01(
                         Vector3.Dot(transform.position - list[attachedBlockIndex].transform.position, segment) / segSq);
             }
-            return true;
-        }
 
-        /// <summary>
-        /// The pilot's signed throttle, mapped onto the LATCHED attach direction: +1 rides the
-        /// way the vessel was flying when it latched, -1 backs up. Idempotent per frame
-        /// (<see cref="SetDirection"/> early-outs when unchanged), so the transformer can state
-        /// the desired sign every frame without ever flapping the ride.
-        /// </summary>
-        public void SetRideSign(int sign)
-        {
-            SetDirection(sign >= 0
-                ? attachDirection
-                : (TrailFollowerDirection)(-(int)attachDirection));
+            // Seed the centerline read so the transformer can compose a position on the very
+            // first ride frame (and while parked before the first move).
+            int seedNext = Mathf.Clamp(attachedBlockIndex + (int)direction, 0, last);
+            CenterlinePoint = Vector3.Lerp(
+                list[attachedBlockIndex].transform.position,
+                list[seedNext].transform.position,
+                percentTowardNextBlock);
+            TravelHeading = heading.sqrMagnitude > 1e-6f
+                ? heading.normalized * (int)direction
+                : Vector3.forward;
+            return true;
         }
 
         public void Detach()
@@ -211,7 +236,11 @@ namespace CosmicShore.Gameplay
                 return;
             }
 
-            transform.position = projected;
+            // The kernel publishes the CENTERLINE point; the transformer composes the hull's
+            // actual position from it (centerline + orbit offset around the ribbon). Writing
+            // transform.position here would pin the hull to the centerline and make the orbit
+            // impossible.
+            CenterlinePoint = projected;
             percentTowardNextBlock = newPercent;
 
             if (newAttachedBlockIndex != attachedBlockIndex)
@@ -225,6 +254,7 @@ namespace CosmicShore.Gameplay
                 if (vesselData.VesselTransformer is GunVesselTransformer gunTransformer)
                     gunTransformer.FinalBlockSlideEffects();
             }
+            TravelHeading = course;
             vesselData.Course = course;
         }
 

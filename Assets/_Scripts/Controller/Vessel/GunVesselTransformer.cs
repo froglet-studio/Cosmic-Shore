@@ -10,16 +10,19 @@ namespace CosmicShore.Gameplay
     /// then a RIDE whose form follows the prismscape's DIMENSION
     /// (<see cref="PrismscapeDimension"/>):
     ///
-    ///  * 1D trail  → SLIDE along the ribbon (<see cref="TrailFollower"/>). Steering is the
-    ///    trail's geometry; the pilot owns only a signed throttle - push to keep riding the
-    ///    direction latched at attach, pull to back up - while the hull eases into line with
-    ///    the ribbon (trail prisms are authored with Z parallel to the trail).
+    ///  * 1D trail  → GRIND the ribbon (<see cref="TrailFollower"/> is the centerline
+    ///    kernel). Trail prisms are authored with Z PARALLEL to the trail, and every control
+    ///    maps onto that axis: throttle is signed speed along it (forward/reverse resolved
+    ///    from the pilot's facing against the ribbon - the original Urchin's dot-product
+    ///    scheme), ROLL carries the hull around it (an orbit at the attach radius), and
+    ///    pitch/yaw stay free so the pilot can AIM while riding.
     ///  * 2D surface (and the boundary of a 3D volume, which is locally the same thing) →
-    ///    ROLL across the aggregate surface (<see cref="BlockscapeFollower"/>). Gyroid and
-    ///    Schwarz-P flora are the canonical case: their prisms are authored with Z orthogonal
-    ///    to the surface, so the ride follows a smoothed plane over those normals and the
-    ///    pilot keeps full steering while the belly eases onto the surface. The rider must
-    ///    never feel a prism's edges or the gaps between prisms.
+    ///    ROLL across the aggregate surface, marble-madness style
+    ///    (<see cref="BlockscapeFollower"/>). Gyroid and Schwarz-P prisms are authored with Z
+    ///    ORTHOGONAL to the surface, so the ride follows a smoothed plane over those normals
+    ///    with momentum, the belly eased onto the surface - and running off a sheet's edge
+    ///    WRAPS around the rim onto the other side. The rider must never feel a prism's edges
+    ///    or the gaps between prisms.
     ///
     /// Attaching is two flags and no reparenting - <c>VesselAttachPrismEffectSO</c> sets
     /// <see cref="IVesselStatus.IsAttached"/> and <c>.AttachedPrism</c> on contact, this
@@ -67,10 +70,22 @@ namespace CosmicShore.Gameplay
                  "the direction latched at attach, pull below it to back up.")]
         [SerializeField] float throttleRestPosition = 0.5f;
 
-        [Tooltip("How quickly the hull turns to lie along the ribbon while sliding a trail " +
-                 "(1/s, exponential). Trail prisms are authored with Z parallel to the trail; " +
-                 "this eases the vessel's forward onto the travel heading.")]
-        [SerializeField] float trailAlignRate = 4f;
+        [Tooltip("How fast roll input carries the hull AROUND the ribbon while riding a trail " +
+                 "(degrees/second at full stick). The 1D ride's roll axis IS the trail.")]
+        [SerializeField] float orbitDegreesPerSecond = 180f;
+
+        [Tooltip("Minimum orbit radius around the trail centerline (world units). The attach " +
+                 "distance is kept when larger, so you grind at the height you latched on.")]
+        [SerializeField] float minOrbitRadius = 2.5f;
+
+        [Tooltip("How quickly the hull's up twists to point radially OUT from the ribbon " +
+                 "(1/s, exponential). Twist only - pitch/yaw stay the pilot's, for aiming.")]
+        [SerializeField] float trailUpAlignRate = 4f;
+
+        [Tooltip("Facing hysteresis: |dot(forward, ribbon axis)| must exceed this before the " +
+                 "ride's forward/backward mapping re-latches. Prevents micro-flapping while " +
+                 "the pilot aims near broadside.")]
+        [SerializeField] float facingDeadband = 0.15f;
 
         [Tooltip("How quickly the hull's belly eases onto the surface normal while rolling a " +
                  "2D prismscape (1/s, exponential). A minimal-twist correction on top of the " +
@@ -79,6 +94,16 @@ namespace CosmicShore.Gameplay
 
         bool attached = false;
         CameraManager cameraManager;
+
+        // ---- 1D orbit state: the hull grinds AROUND the ribbon at a radius. ----
+        /// <summary>Unit radial from the centerline to the hull, kept perpendicular to the
+        /// ribbon axis by parallel transport each frame (so curves don't kink the grind).</summary>
+        Vector3 _orbitRadial = Vector3.up;
+        float _orbitRadius;
+        /// <summary>+1 when the nose agrees with <see cref="TrailFollower.IndexOrderHeading"/>.
+        /// Re-latched only outside <see cref="facingDeadband"/> - hysteresis, so aiming near
+        /// broadside cannot flap the throttle mapping.</summary>
+        int _facingSign = 1;
 
         [SerializeField] int ammoIndex = 0;
 
@@ -165,6 +190,17 @@ namespace CosmicShore.Gameplay
             {
                 if (!trailFollower || !trailFollower.Attach(prism)) return false;
                 _rideMode = RideMode.Trail;
+
+                // Seed the orbit from where the hull actually latched: radius = attach
+                // distance from the centerline (floored), radial = that offset made
+                // perpendicular to the ribbon axis, facing = the nose's current agreement
+                // with the ribbon's index-order axis.
+                Vector3 axis = trailFollower.IndexOrderHeading;
+                Vector3 offset = transform.position - trailFollower.CenterlinePoint;
+                Vector3 radial = offset - axis * Vector3.Dot(offset, axis);
+                _orbitRadius = Mathf.Max(minOrbitRadius, radial.magnitude);
+                _orbitRadial = radial.sqrMagnitude > 1e-4f ? radial.normalized : PerpendicularTo(axis);
+                _facingSign = Vector3.Dot(transform.forward, axis) >= 0f ? 1 : -1;
                 return true;
             }
 
@@ -200,27 +236,61 @@ namespace CosmicShore.Gameplay
 
             if (_rideMode == RideMode.Trail)
             {
-                // Signed throttle maps onto the direction LATCHED at attach (the way the vessel
-                // was flying when it touched the ribbon): push keeps going, pull backs up.
-                // SetRideSign is idempotent, so stating it every frame can never flap the ride
-                // - unlike deriving direction from dot(forward, Course), which oscillated the
-                // moment the ribbon curved 90 degrees away from the (un-rotated) hull and
-                // teleported the rider a block per flip.
-                if (moving) trailFollower.SetRideSign(throttle > 0f ? 1 : -1);
-                trailFollower.Throttle = Mathf.Abs(throttle);
+                // ---- The rail grind. Throttle = signed speed along the ribbon, ROLL = orbit
+                // around it, pitch/yaw = free aim. Each control maps onto the 1D prismscape's
+                // own geometry (trail prisms are authored with Z parallel to the trail). ----
 
-                if (moving) trailFollower.RideTheTrail();   // writes Speed + Course
-                else VesselStatus.Speed = 0f;
+                // Which way is "forward"? The pilot's FACING against the ribbon's stable
+                // index-order axis - the original Urchin's scheme. The axis never flips with
+                // travel (unlike Course), so there is no feedback loop; the hysteresis band
+                // keeps an aim near broadside from flapping the mapping.
+                Vector3 axis = trailFollower.IndexOrderHeading;
+                float facingDot = Vector3.Dot(transform.forward, axis);
+                if (Mathf.Abs(facingDot) > facingDeadband)
+                    _facingSign = facingDot >= 0f ? 1 : -1;
 
-                // Lie along the ribbon: trail prisms are authored with Z parallel to the
-                // trail, and Course is the live travel heading - ease the hull's forward onto
-                // it (minimal twist, current up preserved).
-                var course = VesselStatus.Course;
-                if (course.sqrMagnitude > 1e-4f &&
-                    SafeLookRotation.TryGet(course, transform.up, out var alongRibbon, this, logError: false))
+                if (moving)
                 {
+                    int travelSign = throttle > 0f ? _facingSign : -_facingSign;
+                    trailFollower.SetDirection(travelSign > 0
+                        ? TrailFollowerDirection.Forward
+                        : TrailFollowerDirection.Backward);
+                    trailFollower.Throttle = Mathf.Abs(throttle);
+                    trailFollower.RideTheTrail();           // advances CenterlinePoint, writes Speed + Course
+                }
+                else
+                {
+                    VesselStatus.Speed = 0f;
+                }
+
+                // Orbit: keep the radial perpendicular to the (curving) axis by parallel
+                // transport, then let roll input carry it around the ribbon. The extra
+                // _facingSign keeps the pilot's roll handedness: rolling right moves YOUR
+                // right whichever way you face along the trail.
+                _orbitRadial -= axis * Vector3.Dot(_orbitRadial, axis);
+                _orbitRadial = _orbitRadial.sqrMagnitude > 1e-6f ? _orbitRadial.normalized : PerpendicularTo(axis);
+                float rollInput = InputStatus != null ? InputStatus.YDiff : 0f;
+                if (Mathf.Abs(rollInput) > 0.01f)
+                    _orbitRadial = Quaternion.AngleAxis(
+                        rollInput * orbitDegreesPerSecond * _facingSign * dt, axis) * _orbitRadial;
+
+                transform.position = trailFollower.CenterlinePoint + _orbitRadial * _orbitRadius;
+
+                // Attitude: the pilot AIMS - pitch and yaw run exactly as in free flight. The
+                // roll input is consumed by the orbit above, so no Roll() pass; instead the
+                // hull's up is twist-aligned radially OUT from the ribbon (forward preserved),
+                // which is what sells "grinding around the rail".
+                Pitch();
+                Yaw();
+                Vector3 steeredForward = accumulatedRotation * Vector3.forward;
+                Vector3 targetUp = _orbitRadial - steeredForward * Vector3.Dot(_orbitRadial, steeredForward);
+                if (targetUp.sqrMagnitude > 1e-6f)
+                {
+                    targetUp.Normalize();
+                    Vector3 steeredUp = accumulatedRotation * Vector3.up;
+                    Quaternion twist = Quaternion.FromToRotation(steeredUp, targetUp);
                     accumulatedRotation = Quaternion.Slerp(
-                        accumulatedRotation, alongRibbon, 1f - Mathf.Exp(-trailAlignRate * dt));
+                        Quaternion.identity, twist, 1f - Mathf.Exp(-trailUpAlignRate * dt)) * accumulatedRotation;
                 }
             }
             else
@@ -242,9 +312,12 @@ namespace CosmicShore.Gameplay
                 accumulatedRotation = Quaternion.Slerp(
                     Quaternion.identity, belly, 1f - Mathf.Exp(-surfaceAlignRate * dt)) * accumulatedRotation;
 
-                surfaceFollower.Throttle = throttle;        // SIGNED: pull backs up along the surface
-                if (moving) surfaceFollower.RideTheTrail(); // writes Speed
-                else VesselStatus.Speed = 0f;
+                // SIGNED throttle (pull backs up along the surface), zeroed inside the
+                // deadband. The follower ticks EVERY frame regardless: a marble released
+                // mid-roll glides to rest through its inertia model - a hard stop here would
+                // delete the momentum that makes the ride read as rolling.
+                surfaceFollower.Throttle = moving ? throttle : 0f;
+                surfaceFollower.RideTheTrail();             // writes Speed (momentum magnitude)
             }
 
             // Apply the ride attitude the same way free flight's RotateShip applies input
@@ -260,6 +333,15 @@ namespace CosmicShore.Gameplay
             AdvanceSpeed(VesselStatus.Speed);
 
             SlideActions();
+        }
+
+        /// <summary>Any unit vector perpendicular to <paramref name="axis"/> - the orbit
+        /// radial's degenerate-case fallback.</summary>
+        static Vector3 PerpendicularTo(Vector3 axis)
+        {
+            Vector3 p = Vector3.Cross(axis, Vector3.up);
+            if (p.sqrMagnitude < 1e-4f) p = Vector3.Cross(axis, Vector3.right);
+            return p.sqrMagnitude > 1e-6f ? p.normalized : Vector3.up;
         }
 
         /// <summary>

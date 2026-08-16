@@ -27,13 +27,22 @@ an r² patch, a solid like an r³ ball, so the count separates them. Never physi
 per-frame.
 
 The Urchin flies normally until it touches a prism. Then it **latches on** and
-`GunVesselTransformer` routes the ride by the prismscape's dimension: on a **trail**, steering
-becomes the ribbon's geometry — the hull eases into line with the ribbon and the pilot keeps
-only a signed throttle (push to keep riding the direction latched at attach, pull to back up);
-on a **surface**, the pilot keeps full steering and rolls along a smoothed continuous plane over
-the prisms' authored normals, belly eased onto the surface. Either way, every prism visited pays
-the same rule: your own **grows**, an enemy's is **stolen**, a destroyed one is **restored**,
-and riding recharges spike ammo (doubled over shielded prisms).
+`GunVesselTransformer` routes the ride by the prismscape's dimension — and the two rides run
+**different logic on purpose**, because each dimension has a different relationship with the
+z-axis of the prisms that compose it (trail prisms: z PARALLEL to the trail; surface prisms: z
+ORTHOGONAL to the surface):
+
+- On a **trail** the ride is a **rail grind**: throttle is signed speed up and down the ribbon
+  (forward/reverse resolved from the pilot's facing against the trail axis — the dot-product
+  scheme the original Urchin used), **roll carries the hull AROUND the trail** (an orbit at the
+  attach radius), and **pitch/yaw stay free so the pilot can aim** while riding.
+- On a **surface** the ride is **marble madness**: momentum-carrying rolling on a smoothed
+  continuous plane over the prisms' authored normals, belly eased onto the surface, and running
+  off a sheet's **edge wraps the rider around the rim onto the other side**.
+
+Either way, every prism visited pays the same rule: your own **grows**, an enemy's is
+**stolen**, a destroyed one is **restored**, and riding recharges spike ammo (doubled over
+shielded prisms).
 
 Attaching is **two flags and no reparenting**:
 
@@ -219,11 +228,49 @@ stops within one frame-step of the end, bookkeeping untouched) and holds directi
 continues the instant the trail grows a new head block or the pilot pulls the other way.
 
 **4. Ride attitude is now applied the way free flight applies it.** The ride writes
-`accumulatedRotation` (easing the hull's forward onto the live travel heading — trail prisms
-are authored with **Z parallel to the trail**, so the vessel lies along the ribbon) and applies
-it with the same `Quaternion.Slerp(transform.rotation, accumulatedRotation, LERP_AMOUNT · dt)`
-as `RotateShip`. Ride boundaries sync `accumulatedRotation = transform.rotation` in both
-directions, so no input backlog fires as an uncommanded turn at attach or detach.
+`accumulatedRotation` and applies it with the same
+`Quaternion.Slerp(transform.rotation, accumulatedRotation, LERP_AMOUNT · dt)` as `RotateShip`.
+Ride boundaries sync `accumulatedRotation = transform.rotation` in both directions, so no input
+backlog fires as an uncommanded turn at attach or detach.
+
+## The rail grind (round 5): each ride's controls map onto its prismscape's z-axis
+
+Round 4 made the rides smooth; playtest feedback set the FEEL, and it demanded **different
+logic per dimension** — cohesive to the player, but built on each prismscape's own relationship
+with its prisms' z-axis.
+
+**The 1D grind.** Round 4's "hull eases onto the travel heading + direction latched at attach"
+is replaced:
+
+- **Throttle = signed speed** up and down the ribbon. Forward/reverse is resolved from the
+  pilot's FACING — `dot(vessel.forward, IndexOrderHeading)` — the scheme the original Urchin
+  used, and it worked because the reference is the ribbon's **index-order axis**, which never
+  flips with travel. (Round 3 failed doing "the same thing" against `Course`, which DOES flip
+  with travel and fed back on the decision. Same dot product, opposite stability.) A hysteresis
+  band (`facingDeadband`) keeps an aim near broadside from flapping the mapping.
+- **Roll ORBITS the hull around the trail.** The rider sits at the radius it latched on at
+  (`minOrbitRadius` floor), on a radial kept perpendicular to the curving axis by parallel
+  transport; roll input carries it around the ribbon (`orbitDegreesPerSecond`, handedness
+  corrected by facing so "roll right" always moves YOUR right). `TrailFollower` became a pure
+  centerline kernel to allow this: it publishes `CenterlinePoint`/`TravelHeading` and no longer
+  writes the transform — the transformer composes `position = centerline + radial × radius`.
+- **Pitch and yaw stay free** — the pilot AIMS while riding (the ride carries you; the spikes
+  are why you're here). The only attitude the ride imposes is a twist: up eased radially OUT
+  from the ribbon (`trailUpAlignRate`), forward untouched.
+
+**The 2D marble.** Two additions to the round-4 plane model:
+
+- **Momentum** (`surfaceInertiaRate`): the surface velocity CHASES the steered target instead
+  of being it — release glides to rest, turns carve arcs, reversing swings through a stop. The
+  stored velocity is re-projected onto the tangent plane each frame so momentum follows the
+  surface as it curves, and the follower ticks every frame (a hard park would delete the glide).
+- **Rim wrap** (`rimWrapMargin`): past the sheet's boundary — no nearer prism took over and the
+  rider is outside the ground's in-plane footprint — the target normal blends toward the radial
+  from the RIM POINT and the hover anchor becomes that rim point, so the floor swings around
+  the edge at hover distance and the rider rolls onto the far side, where the authored normal
+  takes over again. The two frames meet continuously at the rim (the anchor difference is
+  purely in-plane). One blend, no special-case wrap code — and it composes: a large hole in a
+  sheet wraps the rider around the hole's lip, which is exactly what a marble does.
 
 ## The 2D roll: a smoothed plane over AUTHORED normals — never boxes
 
@@ -329,8 +376,8 @@ restore the previous pilot's colliders onto the new one at an arbitrary moment.
 | Attach effect (the two flags + guns) | `ImpactEffects/EffectsSO/Vessel Prism Effects/VesselAttachPrismEffectSO.cs` |
 | The attach guard (**platform**) | `ImpactEffects/EffectsSO/Vessel Prism Effects/VesselDamagePrismEffectSO.cs` — `skipWhileAttached` |
 | Flight model / topology routing / payoff | `Controller/Vessel/GunVesselTransformer.cs` — `MoveShip`, `TryBeginRide`, `Slide`, `ReadThrottle`, `SlideActions`, `ApplyPrismscapePayoff` |
-| The 1D ride kernel (slide ALONG) | `Controller/Vessel/TrailFollower.cs` — `Attach` (bool; latches `attachDirection` + seeds the lerp), `SetRideSign`, `SetDirection` (range-clamped), `RideTheTrail` (parks at open-ribbon ends), live `Domain` |
-| The 2D ride kernel (roll ACROSS) | `Controller/Vessel/BlockscapeFollower.cs` — smoothed plane over authored normals (prism Z ⊥ surface), hover spring, gap coasting, `OnPrismCrossed`, `SurfaceNormal` |
+| The 1D centerline kernel | `Controller/Vessel/TrailFollower.cs` — `Attach` (bool; seeds direction + lerp from the touch), `CenterlinePoint`/`TravelHeading`/`IndexOrderHeading` (publishes, never writes the transform), `SetDirection` (range-clamped), `RideTheTrail` (parks at open-ribbon ends), live `Domain` |
+| The 2D ride kernel (marble) | `Controller/Vessel/BlockscapeFollower.cs` — smoothed plane over authored normals (prism Z ⊥ surface), momentum (`surfaceInertiaRate`), hover spring, gap coasting, rim wrap (`ResolveSurfaceFrame`), `OnPrismCrossed`, `SurfaceNormal` |
 | The dimension ladder | `Data/Enums/PrismscapeDimension.cs` — Singleton 0 / Trail 1 / Surface 2 / Volume 3 |
 | The topology classifier | `Controller/Vessel/PrismscapeTopology.cs` — `DimensionOf`, QuerySphere census |
 | The head-reflection fix | `Controller/Vessel/Trail.cs` — `IndexSafetyCheck` non-loop branch |
@@ -350,12 +397,17 @@ restore the previous pilot's colliders onto the new one at an arbitrary moment.
 | `ammoIndex` | `Urchin.prefab` `GunVesselTransformer` | 0 — the same slot the spike volley spends |
 | `throttleDeadband` | `GunVesselTransformer` (C# default **0.1**) | Signed throttle below this magnitude parks the rider. Never let it reach 0: `RideTheTrail` divides by `Throttle × speed`, and XDiff idles NEAR its rest, never exactly on it. |
 | `throttleRestPosition` | `GunVesselTransformer` (C# default **0.5**) | The XDiff value that reads as neutral — XDiff RESTS AT 0.5 (`GamepadInputStrategy`). Push above to keep riding the latched direction, pull below to back up. |
-| `trailAlignRate` | `GunVesselTransformer` (C# default **4**) | 1/s exponential ease of the hull's forward onto the ribbon's travel heading while sliding. |
+| `orbitDegreesPerSecond` | `GunVesselTransformer` (C# default **180**) | How fast full roll stick carries the hull around the ribbon while grinding. |
+| `minOrbitRadius` | `GunVesselTransformer` (C# default **2.5**) | Floor on the grind radius; the attach distance is kept when larger. |
+| `trailUpAlignRate` | `GunVesselTransformer` (C# default **4**) | 1/s twist of the hull's up radially OUT from the ribbon — forward untouched (aim is the pilot's). |
+| `facingDeadband` | `GunVesselTransformer` (C# default **0.15**) | \|dot(forward, ribbon axis)\| must exceed this before the throttle's forward/reverse mapping re-latches. |
 | `surfaceAlignRate` | `GunVesselTransformer` (C# default **3**) | 1/s exponential ease of the hull's belly onto the surface normal while rolling — on top of the pilot's steering, never instead of it. |
 | `hoverHeight` | `BlockscapeFollower` (C# default **2**) | World-unit hover above the ground prism's mid-plane, along the smoothed normal. |
-| `normalTrackingRate` | `BlockscapeFollower` (C# default **5**) | 1/s ease of the ridden plane toward the ground's authored normal. **This IS the surface feel**: low = long arcs that round off the facets, high = tight tracking. |
+| `normalTrackingRate` | `BlockscapeFollower` (C# default **5**) | 1/s ease of the ridden plane toward the target normal. **This IS the surface feel**: low = long arcs that round off the facets, high = tight tracking. |
 | `hoverTrackingRate` | `BlockscapeFollower` (C# default **5**) | 1/s ease of hover error. Soft so prism-to-prism height steps read as swell, not bumps. |
 | `groundSearchRadiusScale` | `BlockscapeFollower` (C# default **2.5**) | Ground search radius in multiples of the ground prism's largest extent. Big enough to bridge lattice gaps, small enough not to grab the far wall of a channel. |
+| `surfaceInertiaRate` | `BlockscapeFollower` (C# default **4**) | 1/s chase of the steered velocity — the marble's WEIGHT. Low = long glides and drifting arcs, high = direct control. |
+| `rimWrapMargin` | `BlockscapeFollower` (C# default **1**) | How far past the ground's footprint (× its largest extent) the rim wrap completes. |
 | `ghostSecondsAtRestingTime` / `AtFullTime` | `UrchinSlipAction.asset` | 0.6 → 1.6. `GhostSecondsForLevel` is linear in level, anchored at 0 and 10, **extrapolated** across `[-5, 15]`, floored at 0. |
 | `detachImpulse` | `UrchinSlipAction.asset` | **0** — off. Raise if a detach should visibly leave the ribbon rather than sliding off it. |
 | `armGunsOnAttach` | `VesselAttachPrismEffect.asset` | on |
@@ -409,21 +461,24 @@ Nothing below can be checked without play mode.
    vessel should snap onto the ribbon, the camera should pull in, and the stick should stop
    steering — you follow the trail's curve. **The prism you touched must still be there**; a prism
    that explodes on contact means `skipWhileAttached` is not taking effect.
-7. **Move — and it must be SMOOTH.** Push the speed axis: the vessel glides along the ribbon in
-   one dimension, and the hull turns to lie along the trail (Z parallel) within a beat. No
-   jitter, no per-prism hitching, no attitude snap at attach or detach. If it stutters, suspect
-   direction flapping first — direction must come from the latch (`SetRideSign`), never from a
-   per-frame facing dot.
-8. **Reverse.** Pull the speed axis below rest: the vessel backs down the ribbon (it turns to
-   face the new travel direction over the align ease). Push: forward again. At the trail's HEAD
-   the rider parks and resumes the moment new prisms are laid — no bouncing, no oscillation.
-8b. **Roll a surface — and it must feel CONTINUOUS.** Fly into a gyroid or Schwarz-P shell: the
-   vessel latches (console: `Riding a Surface prismscape`), the belly eases onto the surface,
-   and steering stays fully live. Rolling across the shell must read as one smooth curved
-   floor: **no edges, no bumps at prism boundaries, no dips over gaps** (holes are coasted on
-   the last plane). The payoff runs per prism visited — watch the domain convert under you as
-   you roll. If the ride facets or bumps, lower `normalTrackingRate` / `hoverTrackingRate`
-   before touching anything structural.
+7. **Grind — and it must be SMOOTH and 1-DIMENSIONAL.** Push the speed axis: the vessel slides
+   along the ribbon at the radius it latched on at. No jitter, no per-prism hitching, no
+   attitude snap at attach or detach. Aim around with pitch/yaw while sliding — moving and
+   aiming are independent. Aim DOWN-trail and push: you slide the way you face. Aim UP-trail
+   (turn past broadside) and push: you now slide the other way — facing decides forward.
+8. **Reverse and orbit.** Pull the speed axis below rest: the vessel backs down the ribbon
+   without turning. Hold roll: the hull orbits AROUND the ribbon (up stays pointed away from
+   the trail), and rolling right moves your right whichever way you face. At the trail's HEAD
+   the rider parks and resumes the moment new prisms are laid — no bouncing.
+8b. **Roll a surface — marble madness.** Fly into a gyroid or Schwarz-P shell: the vessel
+   latches (console: `Riding a Surface prismscape`), the belly eases onto the surface, steering
+   stays fully live, and the ride carries MOMENTUM — release the stick and you glide to rest;
+   turn hard and you carve an arc. The shell must read as one smooth curved floor: **no edges,
+   no bumps at prism boundaries, no dips over gaps**. Roll off the sheet's outer edge: the
+   vessel **wraps around the rim onto the other side** and keeps rolling. The payoff runs per
+   prism visited — watch the domain convert under you. If the ride facets or bumps, lower
+   `normalTrackingRate` / `hoverTrackingRate`; if it feels heavy or floaty, tune
+   `surfaceInertiaRate`.
 9. **The payoff runs.** Riding **your own** trail, the prisms you cross should visibly **grow**.
    Riding an **enemy's**, they should change to your domain as you pass. If neither happens but
    you are moving, the transformer resolved `BlockscapeFollower` instead of `TrailFollower`.

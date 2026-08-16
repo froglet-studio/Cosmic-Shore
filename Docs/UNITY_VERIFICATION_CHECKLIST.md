@@ -133,8 +133,36 @@ ride is smooth rolling on a continuous curved surface (gyroid/Schwarz prisms are
 Round-4 verify (detail in `URCHIN_TRAIL_RIDER.md` steps 7/8/8b): the slide is SMOOTH — hull
 lies along the ribbon, no jitter, reverse turns the vessel around, the head parks and resumes;
 the roll is CONTINUOUS — belly on the surface, steering live, no facets/bumps/edge feel, holes
-coasted. Feel dials: `trailAlignRate`/`surfaceAlignRate` (transformer),
-`normalTrackingRate`/`hoverTrackingRate`/`hoverHeight` (BlockscapeFollower).
+coasted.
+
+**ROUND 5 (2026-08-16, design pass on round 4).** Feedback: good start, but each ride needs its
+OWN logic, keyed to its prismscape's z-axis relationship (trail prisms: z parallel; surface
+prisms: z orthogonal) — and the 2D ride wants marble-madness vibes with wrap-around at edges.
+What landed:
+
+- **The 1D ride is a RAIL GRIND**: throttle = signed speed along the ribbon; forward/reverse
+  from the pilot's FACING via `dot(forward, IndexOrderHeading)` — the original Urchin's
+  dot-product scheme, stable because the index-order axis (unlike Course) never flips with
+  travel, plus a `facingDeadband` hysteresis; **roll ORBITS the hull around the trail** at the
+  attach radius (parallel-transported radial, handedness corrected by facing); **pitch/yaw stay
+  free for aiming**; the only imposed attitude is a twist easing up radially out.
+  `TrailFollower` became a pure centerline kernel (`CenterlinePoint`/`TravelHeading`, no
+  transform writes) and the transformer composes `position = centerline + radial × radius`.
+  Round 4's latched-at-attach throttle mapping and forward-onto-Course alignment are replaced.
+- **The 2D ride is a MARBLE**: surface velocity now CHASES the steered target
+  (`surfaceInertiaRate`) — release glides, turns carve, momentum re-projected onto the curving
+  plane each frame, follower ticks every frame so the glide survives the deadband; and past a
+  sheet's boundary the target normal blends toward the radial from the RIM POINT with the hover
+  anchor moving to that rim point — the floor swings around the edge at hover distance and the
+  rider **wraps onto the far side** (holes wrap around their lip the same way; the two frames
+  meet continuously at the rim).
+
+Round-5 verify (detail in `URCHIN_TRAIL_RIDER.md` steps 7/8/8b): grind = slide/aim independent,
+facing decides forward, roll orbits the ribbon, head parks; marble = momentum glide + carve,
+rolling off a sheet's edge wraps around the rim onto the other side. Feel dials:
+`orbitDegreesPerSecond`/`minOrbitRadius`/`trailUpAlignRate`/`facingDeadband`/`surfaceAlignRate`
+(transformer), `normalTrackingRate`/`hoverTrackingRate`/`hoverHeight`/`surfaceInertiaRate`/
+`rimWrapMargin` (BlockscapeFollower).
 
 Full mechanics, historical record and follow-ups:
 `_Scripts/Controller/Vessel/R_VesselActions/URCHIN_CHAIN_SPIKES.md` and `URCHIN_TRAIL_RIDER.md`.
