@@ -609,6 +609,36 @@ Also: assert the spatial invariants the design claims. "Nothing inside the
 nucleus control radius" is one line over the emitted points, and it caught that
 the SHIPPED build had 89% of its mass in there.
 
+**Trap: a validated SIMULATION does not validate the SHIPPED CONSTANTS — verify
+the file, and never derive one row from another.** A measured table can be proven
+end-to-end offline and still ship wrong, because between the measurement and the
+asset there is a TRANSCRIPTION, and that step is invisible to both the sim and
+code review. The gyroid octagon tables (2026-08-16) were validated as rotation
+*matrices* — 273-plant colony, zero overlaps, bijective on the reference lattice —
+then hand-carried into C# as *quaternions* with only the first of four block types
+pasted from the emit; the other three were filled in by a plausible mirror-symmetry
+ansatz. The conjugation does not act on `LookRotation` frames that way, so 12 of 16
+seed rotations were wrong by up to 179°, and it cost five playtests, because each
+plant was internally perfect and only the JOINS were wrong.
+
+Two rules fall out, and they generalise to any generated-constant pipeline:
+
+1. **Write a verifier that parses the SHIPPED artifact** (not the intermediate
+   JSON, not the sim's own state) and re-proves it against a fresh reference walk —
+   including the representation you converted into. Yes, this means re-implementing
+   the engine's quaternion convention; that is the point, since the conversion is
+   exactly what was never checked. `Tools/Build/verify_gyroid_octagon_tables.py` is
+   the worked example, and it turned a five-playtest hunt into one command.
+2. **Delete the transcription step.** Make the measuring tool emit the finished
+   target-language block, ready to paste verbatim, and assert per-entry
+   self-consistency as it prints (each emitted pose must reproduce the quantity it
+   is supposed to encode). Emit exact measured samples, never an *average* of
+   rotations — an averaged-then-orthonormalised matrix is where a det −1 reflection
+   hides.
+
+Symmetry shortcuts are the specific temptation: they look like insight, they halve
+the work, and a chiral structure punishes them silently.
+
 ## 4.5b Technique: offline simulation of a FRAGMENT SHADER
 
 Origin: the prism occlusion corridor (2026-08-04). §4.5 covers deterministic

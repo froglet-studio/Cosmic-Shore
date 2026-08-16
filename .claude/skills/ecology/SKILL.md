@@ -59,6 +59,15 @@ what the carve-out silently broke — see the traps below.
 
 ## 2.6 Prism / trail traps (each of these cost real time)
 
+- **Static bookkeeping outlives the world it describes.** A `static` registry/claim book/
+  frontier that coordinates a population survives every cell teardown — `Cell.ResetCell`,
+  `Initialize`, and the Cell-Selector world swap all destroy the lifeforms and leave the
+  static state standing, so the NEXT world inherits the dead one's entries and acts on
+  coordinates that no longer contain anything. Anything a lifeform's own `OnDestroy`
+  releases is fine (that self-heals); anything only the POPULATION owns must be dropped by
+  the **cell**, at all three reset sites. Key it by `(Cell, species)` rather than species
+  alone — one cell resetting must not wipe another's book, and it is usually also the fix
+  for a second bug, since per-cell clocks/periods were being shared too.
 - **`CellTypeChoiceOptions.IntensityWise` silently swaps the SPAWNER class.**
   `Cell.StartSpawnerForMode` picks `IntensityWiseLifeSpawner` for every IntensityWise cell and
   `RandomLifeSpawner` for everyone else. Any spawn-loop feature (a density scalar, a gate, a
@@ -204,6 +213,27 @@ see `Docs/ECOSYSTEM.md` §13 + §18.1). An authored environment sitting in the
 nucleus hands `DominantDomain` to whatever colour it favours before anyone flies.
 That defect shipped undetected in Caldera (89% of its mass) until a one-line
 check over the point cloud found it.
+
+### 4.6 "It stopped growing" — prove WHICH gate binds before you turn a dial
+
+A population that stops has at least three ceilings — the species cap
+(`MaxLivePopulation`), the cell's **Frenzy volume ladder** (which freezes planting AND
+growth), and the count backstop — and the symptom is identical for all three. Compute
+which one binds before touching anything, or you will ship dead tuning: a change to a
+dial the run never reaches, which reads in-game as "my fix did nothing".
+
+The arithmetic is cheap and offline. Per-prism volume is `LeafSize.x*y*z` **times the
+level spread** — `LeafScalePerLevel` applies per axis, so it is `scale³` per level
+(1.15 → ×1.52 each level, ×2.74 averaged over levels 1-5), and that factor is the one
+everybody forgets. Multiply by the settled prisms per plant, then by the seed floor, and
+compare to `FrenzyEnterVolume` *before* the first birth.
+
+This has bitten twice, and both times the prisms were far from the nominal 16: Rampage's
+cactus leaves (75, §27) and the Blob cell's Mass gyroid (110 = 6.9× nominal, ×2.74 again
+from levels — its seeded floor alone was 87% of Frenzy, while its population cap sat 19×
+further out, `Docs/ECOSYSTEM.md` §32.7). **A cell whose prisms are not nominal-sized must
+author its ladder against measured volume**, and when a colony stalls, reach for the
+ladder first and the population dial last.
 
 ## 5. Hand back verification — you cannot run Unity; the human is the gate
 - State the exact in-editor steps to verify, the scene to test, and the precise SO knobs to tune.
