@@ -3916,12 +3916,15 @@ through the same accessor for the same reason.
 
 ### 32.2 The gyroid: one plant became a colony, and the frontier does the connecting
 
-> **Superseded in part by §32.7 (same branch, second pass).** The 27-prism BFS-patch unit cell
+> **Superseded in part by §32.7 (same branch, later passes).** The 27-prism BFS-patch unit cell
 > and the single-donor frontier handoff described below shipped first; the octagon colony —
 > crystal at the centre of each danger-prism ring, territory ownership, table-driven
-> reproduction into every free neighbouring ring — replaced them the same week, after the
-> user supplied the tiling design. The measured bond-table geometry below is still the
-> foundation everything §32.7 does is computed from.
+> reproduction — replaced them the same week, after the user supplied the tiling design, and a
+> later pass moved reproduction itself from the PER-PLANT quota described below to a
+> POPULATION cycle (one birth per fauna wave, random open octagon). For a lattice species the
+> `GrowthPerOffspring` / `OffspringPerBirth` / `ReproductionCooldownSeconds` machinery below is
+> therefore inert — it still governs every NON-lattice flora. The measured bond-table geometry
+> below is still the foundation everything §32.7 does is computed from.
 
 The gyroid was one plant that grew forever — a single `AssembledFlora` crystallising a minimal
 surface out of 1,500 bonded prisms, carrying **one** heart. It is now a **population of unit cells**,
@@ -3959,17 +3962,25 @@ Two consequences worth stating:
 ### 32.3 What the conversion preserves, and what it costs
 
 Numbers are authored by `Tools/Build/author_flora_populations.py` (`--check` verifies the assets
-still match the model), not by hand. The lattice rule is `cap = old_single_plant_budget / 27`, so
-**total prism mass is preserved to within a rounding step** — Blob's Mass gyroid goes from 1 plant ×
-1500 to 56 plants × 27 = 1,512. Leaf size and the level spread are untouched, so **per-prism volume
-is unchanged and no cell's volume phase ladder needs re-authoring.** That is the claim the arithmetic
-is there to make checkable.
+still match the model), not by hand. The lattice rule is `cap = old_single_plant_budget / 24` (the
+octagon patch — it was `/ 27`, the BFS unit cell, before §32.7), so **total prism mass is preserved
+to within a rounding step and a clamp** — Blob's Mass gyroid goes from 1 plant × 1500 to 60 plants ×
+24 = 1,440 (its unclamped cap would be 63). Leaf size and the level spread are untouched, so
+**per-prism volume is unchanged.**
+
+> **One later correction (§32.7 seventh pass):** this section originally added "and no cell's
+> volume phase ladder needs re-authoring". That was true of the CONVERSION and false of the
+> colony: preserving per-prism volume says nothing about the ladder being right in the first
+> place, and Blob's was set so low that its seeded floor alone was 87% of Frenzy. Blob's ladder
+> is now authored ×5. Per-prism volume is still unchanged by anything in this section.
 
 **The cost is crystals, and it is the collider line to watch.** Every plant is a lifeform, so it
 carries one heart whose collider is always on and is *not* phase-LOD culled (§21.6). Blob's three
-gyroid species go from **3 crystals to 123** at cap (56 + 37 + 30); Blob's profile is shared by the
+gyroid species go from **3 crystals to 135** at cap (60 + 42 + 33); Blob's profile is shared by the
 freestyle seven, so the same figure applies to Caldera / Daedala / Geode / Orrery / Ourobor / Yggdra
-/ Zephyr. Against the masterplan's ~1,500-collider per-cell target that is ~8%, and
+/ Zephyr. The cap is a backstop, not a prediction — with Blob's ×5 ladder the cell reaches Frenzy
+at **~69 plants**, which is the figure to hold against the budget. Against the masterplan's
+~1,500-collider per-cell target that is ~5% realized (~9% at the cap), and
 `MaxLivePopulation` is the dial — the authoring script clamps every species to
 `MAX_PLANTS_PER_SPECIES = 60` for exactly this reason. Prism colliders are unchanged in count.
 
@@ -3980,7 +3991,7 @@ That is the food web finally having a visible effect on the cell's canopy rather
 
 *(Watch on the first playtest: `GyroidFlora.prefab` authors `minHealthBlocks: 5`, so a plant dies with
 5 prisms still standing and `LifeForm.DestroyStructure` detonates them. At 1,500 prisms that leak was
-0.3% of a plant; at 27 it is 18%. It is pre-existing behaviour and out of scope here, but if the
+0.3% of a plant; at 24 it is 21%. It is pre-existing behaviour and out of scope here, but if the
 colony visibly loses mass over a long session, that is where it is going — the fix is
 `minHealthBlocks: 0`, not a change to the population model.)*
 
@@ -3988,7 +3999,8 @@ colony visibly loses mass over a long session, that is where it is going — the
 
 - **Prism colliders: unchanged.** Mass is preserved by construction (§32.3); the same prisms are
   simply owned by more plants.
-- **Crystal colliders: +120 per gyroid cell** (3 → 123 at cap), +~1 per plant elsewhere. Bounded by
+- **Crystal colliders: +132 per gyroid cell at the cap** (3 → 135), ~66 realized under Blob's
+  ×5 volume ladder (§32.7), +~1 per plant elsewhere. Bounded by
   `MaxLivePopulation`, clamped to ≤ 60 per species by the authoring script, and scaled with the rest
   by `SpawnProfileSO.FloraPopulationScale` (which now moves the floor **and** the cap — a scalar that
   moved only the floor would be clamped away by the cap and read as doing nothing, §29.2).
@@ -3998,7 +4010,10 @@ colony visibly loses mass over a long session, that is where it is going — the
   by crystal proximity — banned by `Docs/SPATIAL_INDEX.md`, and structurally blind besides, since
   prism colliders are disabled for the first 0.6 s after spawn.)
 - **Per-frame CPU:** one `TryReproduce` call per plant per grow tick, which fails on the first
-  integer compare for any species that authors no reproduction.
+  integer compare for any species that authors no reproduction. A lattice plant additionally runs
+  `TickOctagonPopulation` per grow tick: a bool, a clock compare, and — once in its life, on the
+  tick it matures — one projection of its ring through the neighbour tables. The reproduction
+  cycle itself is one dictionary lookup per plant per tick and a random pop once per fauna wave.
 
 ### 32.5 Invariant review (the rulings, recorded)
 
@@ -4021,28 +4036,29 @@ colony visibly loses mass over a long session, that is where it is going — the
   function anywhere; offspring inherit their founder's variant pick (element + hatch level), and
   in-world level-ups are not inherited, matching §17 and the fauna rule.
 
-### 32.6 In-editor verification (the human is the gate — NOT yet run)
+### 32.6 In-editor verification (the human is the gate)
 
-1. **Menu_Main (the lava lamp).** Fly the freestyle vessel. The gyroids must still read as gyroids —
-   a continuous minimal surface — not as a scatter of disconnected fragments. This is the single
-   most important check: if the surface is broken, the frontier handoff is misaligned and
-   `AssembledFlora.TryResolveOffspringPlacement` is the place to look.
-2. **Count the crystals.** Expect the cell to fill toward ~123 gyroid hearts (56 Mass / 37 Time /
-   30 Space) rather than 3. If that reads as too busy, lower `MaxLivePopulation` on the three
-   `Blob * Gyroid Flora Config Data` assets — do not change the unit cell.
-3. **Watch a colony seed.** A plant should complete its 27-prism cell and then a NEW plant should
-   bloom at the next lattice site (not at a random offset). `ReproductionCooldownSeconds: 5` paces it.
-4. **Graze test.** Let the tadpoles work a patch. A grazed unit cell should die, drop its crystal,
-   and neighbours should colonise the hole within a few grow periods. Nothing should vanish without
-   being eaten.
+**Status: RUN, across five Menu_Main playtests (2026-08-15/16).** Steps 1-3 below passed on the
+final pass — the surface reads as one continuous gyroid, daughters mate with their parents, and
+each completed window holds exactly one non-growing crystal. The numbers in this section are the
+ORIGINAL unit-cell model's; the shipped model is the octagon colony (§32.7), whose own verification
+steps and heartbeat decode live at the end of that section — **use those.** Steps 4-7 here were
+NOT re-run after the octagon conversion and remain open:
+
+4. **Graze test.** Let the tadpoles work a patch. A grazed octagon should die, drop its crystal,
+   and the population should recolonise the hole (its centre returns to the claim book on death,
+   and neighbouring plants re-offer it). Nothing should vanish without being eaten.
 5. **Wildlife Blitz Cell 4** — the same three species under `IntensityWiseLifeSpawner`. This is the
    check that the seeder change landed in *both* spawner classes; if Cell 4's gyroids behave
-   differently from Blob's, one of them is running the other code path.
-6. **Hesperides** — the gyroid topiary is now 7 small plants instead of one 190-prism specimen.
+   differently from Blob's, one of them is running the other code path. **Note Cell 4 did NOT get
+   the ×5 volume ladder** (that was authored on Blob alone, §32.7 seventh pass), so its colonies
+   will still stop at the old ceiling — expected, not a defect.
+6. **Hesperides** — the gyroid topiary is now 8 small plants instead of one 190-prism specimen.
    Confirm it still reads as topiary in the garden.
-7. Re-run `python3 Tools/Build/author_flora_populations.py --check` after any asset tuning, and
-   `FrogletTools ▸ Validation ▸ Validate Lifeform Crystals` (every unit cell is a lifeform now, so
-   the one-crystal rule is being asserted far more often than before).
+7. Re-run `python3 Tools/Build/author_flora_populations.py --check` after any asset tuning,
+   `python3 Tools/Build/verify_gyroid_octagon_tables.py` after any bond-table or octagon-table
+   edit, and `FrogletTools ▸ Validation ▸ Validate Lifeform Crystals` (every octagon is a lifeform
+   now, so the one-crystal rule is being asserted far more often than before).
 
 ### 32.7 The octagon colony — a crystal in every window (Aug 2026, second pass)
 

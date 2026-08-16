@@ -1216,6 +1216,12 @@ namespace CosmicShore.Gameplay
             liveFaunaCounts.Clear();
             liveFloraCounts.Clear();
             liveFauna.Clear();
+            // The gyroid colony's frontier is a POPULATION-level book of open octagons, so it
+            // outlives any individual plant by design - which means only the cell can retire it.
+            // Left behind, the next world grown here inherits the dead one's sites and plants
+            // daughters into lattice that no longer exists (the Cell Selector swaps worlds in
+            // the very scene this colony ships in). Keyed by cell, so this touches no other.
+            GyroidColonyFrontier.Clear(this);
             phase = CellPhase.Calm;
 
             if (spawnedCytoplasm)
@@ -1449,6 +1455,12 @@ namespace CosmicShore.Gameplay
             liveFaunaCounts.Clear();
             liveFloraCounts.Clear();
             liveFauna.Clear();
+            // The gyroid colony's frontier is a POPULATION-level book of open octagons, so it
+            // outlives any individual plant by design - which means only the cell can retire it.
+            // Left behind, the next world grown here inherits the dead one's sites and plants
+            // daughters into lattice that no longer exists (the Cell Selector swaps worlds in
+            // the very scene this colony ships in). Keyed by cell, so this touches no other.
+            GyroidColonyFrontier.Clear(this);
             phase = CellPhase.Calm;
 
             // Bind runtime -> this cell
@@ -2058,6 +2070,12 @@ namespace CosmicShore.Gameplay
             liveFaunaCounts.Clear();
             liveFloraCounts.Clear();
             liveFauna.Clear();
+            // The gyroid colony's frontier is a POPULATION-level book of open octagons, so it
+            // outlives any individual plant by design - which means only the cell can retire it.
+            // Left behind, the next world grown here inherits the dead one's sites and plants
+            // daughters into lattice that no longer exists (the Cell Selector swaps worlds in
+            // the very scene this colony ships in). Keyed by cell, so this touches no other.
+            GyroidColonyFrontier.Clear(this);
             phase = CellPhase.Calm;
             _nucleusControlRadiusSqr = 0f;
 

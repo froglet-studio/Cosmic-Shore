@@ -21,7 +21,7 @@ MonoBehaviour:
   PopulationSize: 4
   MaxLivePopulation: 60
   GrowthPerOffspring: 22
-  OffspringPerBirth: 8
+  OffspringPerBirth: 1
   ReproductionCooldownSeconds: 5
   MaturityFraction: 0.5
   OffspringSpread: 40

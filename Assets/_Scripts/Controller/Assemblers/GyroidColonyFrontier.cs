@@ -39,12 +39,20 @@ namespace CosmicShore.Gameplay
             public float NextCycleAt;   // 0 = unanchored; the first tick anchors it
         }
 
-        static readonly Dictionary<FloraConfigurationSO, Book> books = new();
+        /// <summary>
+        /// Keyed by CELL as well as species, for two independent reasons: the reproduction clock
+        /// is the CELL's fauna-wave period (two cells with different profiles would otherwise
+        /// fight over one clock), and a cell that tears its life down (<c>Cell.ResetCell</c>, a
+        /// Cell-Selector world swap) must be able to drop ITS sites without silencing another
+        /// cell's colony of the same species - which, since contribution is one-shot per plant,
+        /// would be permanent.
+        /// </summary>
+        static readonly Dictionary<(Cell, FloraConfigurationSO), Book> books = new();
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
         static void ResetForDomainReload() => books.Clear();
 
-        /// <summary>Open frontier sites across every species' book - for the colony heartbeat.</summary>
+        /// <summary>Open frontier sites across every book - for the colony heartbeat.</summary>
         public static int TotalCount
         {
             get
@@ -55,21 +63,36 @@ namespace CosmicShore.Gameplay
             }
         }
 
-        public static int Count(FloraConfigurationSO species) =>
-            species && books.TryGetValue(species, out var book) ? book.Entries.Count : 0;
+        public static int Count(Cell cell, FloraConfigurationSO species) =>
+            cell && species && books.TryGetValue((cell, species), out var book) ? book.Entries.Count : 0;
+
+        /// <summary>
+        /// Drops every frontier site belonging to <paramref name="cell"/> - called where the cell
+        /// destroys or abandons its lifeforms. Without it the NEXT world grown in this cell
+        /// inherits the dead one's open sites and plants daughters into lattice that no longer
+        /// exists (the Cell Selector swaps worlds in the very scene this colony ships in).
+        /// </summary>
+        public static void Clear(Cell cell)
+        {
+            if (!cell) return;
+            var doomed = new List<(Cell, FloraConfigurationSO)>();
+            foreach (var key in books.Keys)
+                if (key.Item1 == cell) doomed.Add(key);
+            for (int i = 0; i < doomed.Count; i++) books.Remove(doomed[i]);
+        }
 
         /// <summary>
         /// Offers one unclaimed neighbouring octagon to the population. Deduped against the
         /// claim book and against entries already offered (multiple plants border the same
         /// octagon, so the same centre arrives from several mature contributors).
         /// </summary>
-        public static void Contribute(FloraConfigurationSO species, Vector3 center,
+        public static void Contribute(Cell cell, FloraConfigurationSO species, Vector3 center,
             GyroidGrowthInfo seed, AssembledFlora contributor)
         {
-            if (!species || seed == null || !contributor) return;
+            if (!cell || !species || seed == null || !contributor) return;
             if (GyroidOctagonRegistry.IsClaimed(center)) return;
 
-            var book = GetBook(species);
+            var book = GetBook(cell, species);
             float dedupeSqr = GyroidOctagonData.CenterDedupeRadius * GyroidOctagonData.CenterDedupeRadius;
             for (int i = 0; i < book.Entries.Count; i++)
                 if ((book.Entries[i].Center - center).sqrMagnitude < dedupeSqr)
@@ -85,10 +108,10 @@ namespace CosmicShore.Gameplay
         /// cycles during a long hold (Frenzy, timeScale 0) are skipped, never burst-fired:
         /// the clock advances by whole periods until it leads now.
         /// </summary>
-        public static bool TryBeginCycle(FloraConfigurationSO species, float period, float stagger)
+        public static bool TryBeginCycle(Cell cell, FloraConfigurationSO species, float period, float stagger)
         {
-            if (!species || period <= 0f) return false;
-            var book = GetBook(species);
+            if (!cell || !species || period <= 0f) return false;
+            var book = GetBook(cell, species);
             if (book.NextCycleAt <= 0f)
             {
                 book.NextCycleAt = Time.time + period + stagger;
@@ -100,10 +123,11 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>Removes and returns a uniformly random entry (swap-remove). False when empty.</summary>
-        public static bool TryPopRandom(FloraConfigurationSO species, out Entry entry)
+        public static bool TryPopRandom(Cell cell, FloraConfigurationSO species, out Entry entry)
         {
             entry = null;
-            if (!species || !books.TryGetValue(species, out var book) || book.Entries.Count == 0)
+            if (!cell || !species || !books.TryGetValue((cell, species), out var book) ||
+                book.Entries.Count == 0)
                 return false;
             int i = Random.Range(0, book.Entries.Count);
             entry = book.Entries[i];
@@ -112,10 +136,10 @@ namespace CosmicShore.Gameplay
             return true;
         }
 
-        static Book GetBook(FloraConfigurationSO species)
+        static Book GetBook(Cell cell, FloraConfigurationSO species)
         {
-            if (!books.TryGetValue(species, out var book))
-                books[species] = book = new Book();
+            if (!books.TryGetValue((cell, species), out var book))
+                books[(cell, species)] = book = new Book();
             return book;
         }
     }

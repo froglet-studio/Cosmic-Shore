@@ -797,7 +797,9 @@ namespace CosmicShore.Gameplay
         /// </summary>
         void TickOctagonPopulation()
         {
-            if (!SourceConfig) return;   // toy/microscene clones grow, but coordinate nothing
+            // No lineage (a toy clone, a microscene release) or no cell = grows, coordinates
+            // nothing. Both are required: the frontier book is keyed by (cell, species).
+            if (!SourceConfig || !cell) return;
 
             if (!_frontierContributed && OctagonMature && _ringMembers.Count > 0)
             {
@@ -807,10 +809,10 @@ namespace CosmicShore.Gameplay
 
             // The cell's fauna wave period is the ecosystem heartbeat; a cell with no spawn
             // profile falls back to the platform default rather than never reproducing.
-            float period = cell ? cell.CurrentFaunaSpawnPeriod : 0f;
+            float period = cell.CurrentFaunaSpawnPeriod;
             if (period <= 0f) period = 30f;
 
-            if (!GyroidColonyFrontier.TryBeginCycle(SourceConfig, period, PopulationCycleStagger))
+            if (!GyroidColonyFrontier.TryBeginCycle(cell, SourceConfig, period, PopulationCycleStagger))
                 return;
 
             // Production gates checked BEFORE popping, so a capped or Frenzy-frozen colony
@@ -821,7 +823,7 @@ namespace CosmicShore.Gameplay
             // One BIRTH per cycle; stale entries (claimed since offered, misaligned-frame
             // conflicts) are discarded along the way - each is a point lookup against the
             // claim book, not a mass sweep.
-            while (GyroidColonyFrontier.TryPopRandom(SourceConfig, out var entry))
+            while (GyroidColonyFrontier.TryPopRandom(cell, SourceConfig, out var entry))
             {
                 if (GyroidOctagonRegistry.IsClaimed(entry.Center)) continue;
 
@@ -852,7 +854,7 @@ namespace CosmicShore.Gameplay
                     Vector3 center = member.Position + member.Rotation * neighbors[n].Center;
                     if (GyroidOctagonRegistry.IsClaimed(center)) continue;
 
-                    GyroidColonyFrontier.Contribute(SourceConfig, center, new GyroidGrowthInfo
+                    GyroidColonyFrontier.Contribute(cell, SourceConfig, center, new GyroidGrowthInfo
                     {
                         CanGrow = true,
                         Position = member.Position + member.Rotation * neighbors[n].SeedPosition,
@@ -865,7 +867,7 @@ namespace CosmicShore.Gameplay
             }
 
             CSDebug.Log($"[GyroidColony] MATURE {name}: prisms={healthTracker.Count} " +
-                        $"ring={_ringMembers.Count} - frontier now {GyroidColonyFrontier.Count(SourceConfig)} open sites");
+                        $"ring={_ringMembers.Count} - frontier now {GyroidColonyFrontier.Count(cell, SourceConfig)} open sites");
         }
 
         /// <summary>
@@ -928,7 +930,7 @@ namespace CosmicShore.Gameplay
                 GyroidColonyDiagnostics.Births++;
                 CSDebug.Log($"[GyroidColony] BIRTH #{GyroidColonyDiagnostics.Births} donor {name}: " +
                             $"daughter at {center} seed {seed.BlockType} " +
-                            $"(frontier {GyroidColonyFrontier.Count(SourceConfig)} open)");
+                            $"(frontier {GyroidColonyFrontier.Count(cell, SourceConfig)} open)");
             }
             else
             {

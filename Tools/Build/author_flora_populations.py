@@ -97,12 +97,17 @@ LATTICE_PREFABS = {"GyroidFlora.prefab"}
 # ownership gate, not this budget, is the real bound - see AssembledFlora.OwnsLatticeSite).
 LATTICE_BUDGET = 30
 
-# A full lattice plant reproduces as it completes (armed quota retries every grow tick), and
-# plants into EVERY free neighbouring octagon each birth - "check the neighbouring centres,
-# plant in all of them" (each ring prism sees 4 neighbours; 8 per birth covers the ring's
-# whole neighbourhood in one round).
+# INERT for lattice species since reproduction became a POPULATION event (Docs/ECOSYSTEM.md
+# §32.7, organic-growth pass): the colony births ONE plant per fauna-wave period at a random
+# open octagon from GyroidColonyFrontier, so the per-plant quota/cooldown/per-birth fields are
+# never what decides a lattice birth - AssembledFlora's placement override only ever returns a
+# site the population cycle staged. They are still WRITTEN (a species that ever falls back to
+# the per-plant path must carry sane values, and 'unset' is not a state a serialized int has),
+# but the real cadence dial is the cell profile's BaseFaunaSpawnTime. Per-birth is 1 to match
+# what the colony actually does; the retired value was 8 ("plant into every free neighbouring
+# octagon at once"), which is precisely the breadth-first shell the population model replaced.
 LATTICE_QUOTA = 22
-LATTICE_OFFSPRING_PER_BIRTH = 8
+LATTICE_OFFSPRING_PER_BIRTH = 1
 
 # Hand-authored test-cell configs the model must NOT manage. Empty since the Gyroid Lab was
 # retired (2026-08-16): a deliberately uncapped, guardrail-free laboratory cell answers
