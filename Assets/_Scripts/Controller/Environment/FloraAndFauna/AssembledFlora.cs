@@ -36,6 +36,28 @@ namespace CosmicShore.Gameplay
         public static int SeededDaughterPrisms;
         public static int UnreservedSpawns;
 
+        // Lattice-defect auditor (the "twinning" hunt): a healthy gyroid's closest prism pair
+        // is 6.6u apart, and TryReserve blocks within ~3.1u - so a NEW site with an existing
+        // prism 3.1-5.5u away is a misaligned lattice domain being born. Counted separately
+        // for GROWN sites (bond-table continuation - drift/seam defects) and daughter SEED
+        // sites (the E-table handoff - a bad handoff twins a whole subtree), because that
+        // split is what points at the faulty mechanism.
+        public static int GrownSiteDefects;
+        public static int SeedSiteDefects;
+        public static int RotationFallbacks;
+        public static float MaxRingCoherenceError;
+        const int DefectLogLimit = 24;
+        static int _defectLogs;
+
+        public static void ReportDefect(string kind, Vector3 position, string owner)
+        {
+            if (_defectLogs >= DefectLogLimit) return;
+            _defectLogs++;
+            CSDebug.LogWarning($"[GyroidColony] LATTICE DEFECT ({kind}) at {position} by {owner} - " +
+                               $"an existing prism sits 3.1-5.5u away (healthy minimum is 6.6u). " +
+                               $"({_defectLogs}/{DefectLogLimit} logged)");
+        }
+
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
         static void Reset()
         {
@@ -46,12 +68,19 @@ namespace CosmicShore.Gameplay
             GrownPrisms = 0;
             SeededDaughterPrisms = 0;
             UnreservedSpawns = 0;
+            GrownSiteDefects = 0;
+            SeedSiteDefects = 0;
+            RotationFallbacks = 0;
+            MaxRingCoherenceError = 0f;
+            _defectLogs = 0;
         }
 
         public static string Summary =>
             $"claims={GyroidOctagonRegistry.ClaimCount} births={Births} heldByMaturity={BirthsHeldByMaturity} " +
             $"grown={GrownPrisms} seeded={SeededDaughterPrisms} foreignDeclines={DeclinedForeignSites} " +
-            $"mintsBlocked={ReseedMintsBlocked} UNRESERVED={UnreservedSpawns} prismsPerCrystal={(GyroidOctagonRegistry.ClaimCount > 0 ? (float)(GrownPrisms + SeededDaughterPrisms) / GyroidOctagonRegistry.ClaimCount : 0f):F1}";
+            $"mintsBlocked={ReseedMintsBlocked} UNRESERVED={UnreservedSpawns} " +
+            $"DEFECTS grown={GrownSiteDefects} seed={SeedSiteDefects} rotFallbacks={RotationFallbacks} " +
+            $"ringErrMax={MaxRingCoherenceError:F2} prismsPerCrystal={(GyroidOctagonRegistry.ClaimCount > 0 ? (float)(GrownPrisms + SeededDaughterPrisms) / GyroidOctagonRegistry.ClaimCount : 0f):F1}";
     }
 
     /// <summary>
@@ -260,6 +289,20 @@ namespace CosmicShore.Gameplay
                     (branch.assembler as GyroidAssembler)?.DeclineGrowthSite(gyroidInfo.Site);
                     GyroidColonyDiagnostics.DeclinedForeignSites++;
                     continue;
+                }
+
+                // Lattice-defect audit: TryReserve (inside GetGrowthInfo) already proved no
+                // prism within ~3.1u, so one within 5.5u means this site belongs to a lattice
+                // domain MISALIGNED with an existing one - a twin being born. Audit-only:
+                // the site still grows, because the defect's shape is the diagnosis.
+                if (OctagonMode && growthInfo.CanGrow)
+                {
+                    var idx = PrismSpatialIndex.Instance;
+                    if (idx != null && idx.IsAvailable && idx.IsAnyPrismWithin(growthInfo.Position, 5.5f))
+                    {
+                        GyroidColonyDiagnostics.GrownSiteDefects++;
+                        GyroidColonyDiagnostics.ReportDefect("grown", growthInfo.Position, name);
+                    }
                 }
 
                 pendingSpawns.Enqueue(new GrowOrder { parent = branch, info = growthInfo, decidedAt = Time.time });
@@ -496,9 +539,16 @@ namespace CosmicShore.Gameplay
             }
 
             float dedupe = GyroidOctagonData.CenterDedupeRadius;
-            if ((center - _octagonCenter.Value).sqrMagnitude < dedupe * dedupe &&
-                _ringMembers.Count < 8)
+            float err = (center - _octagonCenter.Value).magnitude;
+            if (err < dedupe && _ringMembers.Count < 8)
+            {
                 _ringMembers.Add(new RingMember { Position = position, Rotation = rotation, Type = type });
+                // Coherence telemetry: on a healthy lattice every ring member's computed centre
+                // lands within ~1u of the claimed centre. A growing max here means frames are
+                // drifting apart - the precursor of the visible twinning.
+                if (err > GyroidColonyDiagnostics.MaxRingCoherenceError)
+                    GyroidColonyDiagnostics.MaxRingCoherenceError = err;
+            }
         }
 
         /// <summary>
@@ -695,6 +745,16 @@ namespace CosmicShore.Gameplay
                     {
                         GyroidOctagonRegistry.Release(center, this);
                         continue;
+                    }
+
+                    // Lattice-defect audit, seed flavour: a prism 3.1-5.5u from the handed-off
+                    // seed site means the E-table projection from this ring member disagrees
+                    // with the lattice already standing there - the handoff is minting a twin.
+                    if (spatialIndex != null && spatialIndex.IsAvailable &&
+                        spatialIndex.IsAnyPrismWithin(seedPos, 5.5f))
+                    {
+                        GyroidColonyDiagnostics.SeedSiteDefects++;
+                        GyroidColonyDiagnostics.ReportDefect("seed", seedPos, name);
                     }
 
                     _pendingOffspringCenter = center;
