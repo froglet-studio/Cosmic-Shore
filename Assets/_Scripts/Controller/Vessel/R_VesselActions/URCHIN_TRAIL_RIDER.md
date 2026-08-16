@@ -233,6 +233,40 @@ continues the instant the trail grows a new head block or the pilot pulls the ot
 Ride boundaries sync `accumulatedRotation = transform.rotation` in both directions, so no input
 backlog fires as an uncommanded turn at attach or detach.
 
+## Trail membership was never stamped (round 6): the wake's blocks belonged to NOTHING
+
+Round-6 playtest asked the right question: "check whether vessels that leave two trails are
+properly leaving two separate trails — it feels like it might incorrectly be 2 trails in 1."
+The twin ribbons WERE always two separate `Trail` objects (`VesselPrismController.Trail` +
+`Trail2`, split when `Gap != 0`) — but **no wake prism was ever a member of either**:
+`CreateBlock` called `trail.Add(prism)` yet nothing set `prism.Trail`, and the only stamper in
+the codebase was the spawnable builder. Worse, **pool reuse preserved the stale reference**: a
+prism that once served a spawnable lay kept that dead container into its wake life. So a wake
+block either had NO container (fresh instance — the attach effect's null-Trail gate refused it
+with an error) or a STALE one (the gate passed against the WRONG ribbon, `GetBlockIndex`
+returned −1, and the ride followed garbage). Every earlier round's 1D misbehaviour had this
+under it, and the census misreading the un-containered twin-ribbon blob as one *Surface* is
+exactly the "2 trails in 1" feel.
+
+Three changes close it, and they are a set:
+
+1. **`Prism.ResetState` clears trail membership** (`Trail` + the `prismProperties.Trail`
+   mirror) — membership never survives into a new pooled life.
+2. **`Prism.AssignTrail(trail)`** is the ONE stamping API, and its contract is *call it AFTER
+   `Initialize`* (the reset would wipe an earlier stamp). Both layers comply:
+   `PrismTrailBuilder.ConfigureLaid` (moved after `Initialize`) and
+   `VesselPrismController.CreateBlock` (now stamps at all).
+3. **`VesselAttachPrismEffectSO` dropped its null-Trail refusal** — a container-less prism is
+   still a prismscape (flora shell → Surface, lone block → Singleton) and the ride ROUTING
+   decides how it is ridden; the old gate silently made every container-less prism in the game
+   unattachable while logging an error for an ordinary contact.
+
+The same round retuned the wake's GEOMETRY so the two ribbons read as two:
+`BaseScale (10,5,5) → (10,2.5,4)` and `Gap 1 → 6` — block width is `BaseScale.x/2 − Gap/2`, so
+each ribbon is now a 2-wide, 2.5-tall, 4-long lane with a **6-unit clear gap** (was 4.5-wide
+slabs a sliver apart, visually one 10-wide slab). And the ride camera came in to **half
+distance** (`UrchinCameraSettingsSO`: followOffset z −40 → −20, dynamic band 30/50 → 15/25).
+
 ## The rail grind (round 5): each ride's controls map onto its prismscape's z-axis
 
 Round 4 made the rides smooth; playtest feedback set the FEEL, and it demanded **different

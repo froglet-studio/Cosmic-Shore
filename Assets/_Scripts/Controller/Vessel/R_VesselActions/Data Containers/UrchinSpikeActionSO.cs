@@ -33,6 +33,27 @@ namespace CosmicShore.Gameplay
                  "the volley repeats while held.")]
         [SerializeField] bool repeatWhileHeld = true;
 
+        [Header("Pattern shape")]
+        [Tooltip("Spherical only: total spikes in the SHIP'S OWN volley (the golden-spiral " +
+                 "count). The hull historically carried 18 authored ShootPoint ports (mirrored " +
+                 "~36 across the ship); the spiral supersedes them with an even sphere and no " +
+                 "gaps. Chain children keep their budgeted energy-derived counts. 0 = legacy " +
+                 "energy-derived count for the ship volley too.")]
+        [SerializeField, Range(0, 64)] int barrageSpikeCount = 36;
+
+        [Tooltip("ConcentricRings only: rings per blast. Ring r sits at coneHalfAngle*r/rings " +
+                 "and carries spikesPerRing*r spikes, alternate rings staggered to fill gaps.")]
+        [SerializeField, Range(1, 5)] int ringCount = 3;
+
+        [Tooltip("ConcentricRings only: spikes in the innermost ring (outer rings scale up).")]
+        [SerializeField, Range(2, 12)] int spikesPerRing = 6;
+
+        [Tooltip("ConcentricRings only: cone half-angle of the OUTERMOST ring, degrees.")]
+        [SerializeField, Range(5f, 80f)] float coneHalfAngleDegrees = 25f;
+
+        [Tooltip("ConcentricRings only: also fire one spike straight down the aim axis.")]
+        [SerializeField] bool centerSpike = true;
+
         [Header("Cost")]
         [SerializeField] int ammoIndex = 0;
 
@@ -75,6 +96,11 @@ namespace CosmicShore.Gameplay
         public float ProjectileSpeed => projectileSpeed;
         public float ProjectileTime => projectileTime;
         public float ProjectileScale => projectileScale;
+        public int BarrageSpikeCount => barrageSpikeCount;
+        public int RingCount => ringCount;
+        public int SpikesPerRing => spikesPerRing;
+        public float ConeHalfAngleDegrees => coneHalfAngleDegrees;
+        public bool CenterSpike => centerSpike;
 
         /// <summary>
         /// SPACE -> reach. The authored muzzle speed scaled by the vessel's live Space

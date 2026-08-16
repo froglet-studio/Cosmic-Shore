@@ -164,6 +164,44 @@ rolling off a sheet's edge wraps around the rim onto the other side. Feel dials:
 (transformer), `normalTrackingRate`/`hoverTrackingRate`/`hoverHeight`/`surfaceInertiaRate`/
 `rimWrapMargin` (BlockscapeFollower).
 
+**ROUND 6 (2026-08-16).** Playtest verdict: the gyroid roll "felt better than ever"; the 1D
+ride still wrong, with the right question attached — "check whether vessels that leave two
+trails are properly leaving two separate trails... it feels like it might incorrectly be 2
+trails in 1" — plus: smaller trail prisms, wider twin gap, camera at half distance, chains to
+generation 4, the ring-shotgun volley back, and a far denser omni barrage. What landed:
+
+- **THE structural find: wake prisms were never members of their trail.** `CreateBlock` did
+  `trail.Add(prism)` but nothing set `prism.Trail` (the only stamper was the spawnable
+  builder), and **pool reuse preserved the stale reference** — so a wake block either had no
+  container (the attach effect's null-Trail gate refused it, with an error) or a DEAD
+  spawnable's container (the gate passed against the wrong ribbon, `GetBlockIndex` = −1, ride
+  followed garbage; the census read the un-containered twin-ribbon blob as one *Surface* —
+  the literal "2 trails in 1" feel, marble-rolling on trail prisms whose z points ALONG the
+  ribbon). Fix is a set: `Prism.ResetState` clears membership (Trail + properties mirror);
+  `Prism.AssignTrail` is the one stamping API, called AFTER Initialize by BOTH layers
+  (builder reordered; wake spawner now stamps at all); the attach effect dropped its
+  null-Trail refusal (container-less prisms are legitimate Singleton/Surface prismscapes —
+  routing decides).
+- **Wake geometry**: `BaseScale (10,5,5) → (10,2.5,4)`, `Gap 1 → 6` — two clearly separate
+  2-wide lanes with a 6u clear gap (was 4.5-wide slabs 1u apart). **Camera**:
+  `UrchinCameraSettingsSO` followOffset z −40 → −20, dynamic band 30/50 → 15/25.
+- **Chains at generation 4** (both spike assets' `generationsAtFullCharge`), with
+  `ChainReactionBudget.VolleysPerFrame` 4 → 6 (frame ceiling ≤ 84 chain spikes) so depth
+  reads as a rolling cascade; territory conversion stays the primary brake.
+- **The volley is a ring SHOTGUN again**: `FiringPatterns.ConcentricRings` +
+  `Gun.FireRingBlast` — 3 staggered rings in a 25° cone + center spike = 37/pull, one blast
+  per pull from the hull, zero RNG (peer-identical by construction).
+- **The barrage is dense**: `barrageSpikeCount` 36 golden-spiral points for the ship's own
+  volley at ANY depth (was 4 tetrahedral at depth 0); chain children keep energy-derived
+  counts. The 2023 hull's 18 authored ShootPoint port vectors were recovered from the old
+  prefab and are recorded in `URCHIN_CHAIN_SPIKES.md`; the spiral supersedes them.
+
+Round-6 verify: fly the Urchin, lay trail — two visibly separate thin ribbons; attach to one
+and grind IT (not a phantom blob); camera noticeably closer. Volley: shotgun rings that chain
+deep at high Charge. Barrage: a dense full sphere. Watch the console for chain-budget drop
+reports under sustained deep cascades — expected under stress, but constant reporting at
+casual play means the budget wants another look.
+
 Full mechanics, historical record and follow-ups:
 `_Scripts/Controller/Vessel/R_VesselActions/URCHIN_CHAIN_SPIKES.md` and `URCHIN_TRAIL_RIDER.md`.
 Element map: `Docs/ElementalAbilitySystem/FLEET_MAPS.md` §2 Urchin.

@@ -301,6 +301,14 @@ namespace CosmicShore.Gameplay
             prism.prismProperties.Index = (ushort)trail.TrailList.IndexOf(prism);
             prism.Initialize(vesselStatus.PlayerName);
 
+            // AFTER Initialize (pool-reuse reset clears membership - AssignTrail's contract).
+            // This stamp is what makes a wake block a member of ITS ribbon: without it every
+            // wake prism either had NO container (fresh instance - the attach gate refused it)
+            // or a STALE one from a previous pooled life (the gate passed against the wrong
+            // ribbon and the ride followed garbage). The twin trails were always two separate
+            // Trail objects; this is what finally lets a rider see that.
+            prism.AssignTrail(trail);
+
             // Events
             OnBlockSpawned?.Invoke(prism);
         }

@@ -24,13 +24,14 @@ namespace CosmicShore.Gameplay
             }
 
             var trailBlock = prismProperties.prism;
+            if (!trailBlock) return;
 
-            if (trailBlock.Trail == null)
-            {
-                CSDebug.LogError("VesselAttachPrismEffectSO called with null data or Trail.");
-                return;
-            }
-
+            // No Trail gate here - deliberately. A prism without a container is still a
+            // prismscape (a flora shell, a lone block: Surface / Singleton), and the RIDE
+            // routing (GunVesselTransformer.TryBeginRide via PrismscapeTopology) is what
+            // decides how - or whether - it is ridden. The old null-Trail refusal predates
+            // the dimension ladder and silently made every container-less prism in the game
+            // unattachable, while logging an error for what is a perfectly ordinary contact.
             vesselStatus.IsAttached = true;
             vesselStatus.AttachedPrism = trailBlock;
 

@@ -9,6 +9,11 @@ namespace CosmicShore.Gameplay
     {
         Default = 0,
         Spherical = 1,
+        /// <summary>Shotgun blast: concentric rings of projectiles around the aim axis
+        /// (<see cref="Gun.FireRingBlast"/>). Ring geometry is the CALLER's config - a caller
+        /// selecting this pattern invokes FireRingBlast directly with its authored ring shape;
+        /// FireGun itself falls back to a single aimed shot for this value.</summary>
+        ConcentricRings = 2,
     }
 
     public class Gun : MonoBehaviour
@@ -70,7 +75,8 @@ namespace CosmicShore.Gameplay
             FiringPatterns firingPattern = FiringPatterns.Default,
             int energy = 0, bool detachAfterSpawn = false,
             bool stopOnFirstPrismImpact = false, bool spareOwnDomain = false,
-            Vector3? aimDirection = null, float flightGrowthFactor = 1f)
+            Vector3? aimDirection = null, float flightGrowthFactor = 1f,
+            int sphericalPoints = 0)
         {
             if (_onCooldown && !ignoreCooldown) return;
 
@@ -78,7 +84,7 @@ namespace CosmicShore.Gameplay
             {
                 case FiringPatterns.Spherical:
                     FireSpherical(containerTransform, speed, inheritedVelocity,
-                        projectileScale, projectileTime, charge, energy);
+                        projectileScale, projectileTime, charge, energy, sphericalPoints);
                     break;
 
                 default:
@@ -115,6 +121,54 @@ namespace CosmicShore.Gameplay
         }
         #endregion
 
+        /// <summary>
+        /// Shotgun blast: concentric rings of projectiles around the aim axis (the
+        /// container's forward), plus an optional spike straight down the middle. Ring r of
+        /// <paramref name="rings"/> sits at cone angle <c>coneHalfAngleDegrees * r / rings</c>
+        /// and carries <c>spikesPerFirstRing * r</c> projectiles, with alternate rings phase-
+        /// staggered so the blast fills its own gaps. Fully deterministic by construction
+        /// (no RNG draw at all), so every peer fires the identical fan.
+        /// Rate limiting is the CALLER's (the Urchin executor owns an owed-seconds loop), so
+        /// the gun's own cooldown is bypassed exactly as the executor's other calls do.
+        /// </summary>
+        public void FireRingBlast(
+            Transform containerTransform,
+            float speed,
+            Vector3 inheritedVelocity,
+            float projectileScale,
+            float projectileTime,
+            float charge,
+            int energy,
+            int rings,
+            int spikesPerFirstRing,
+            float coneHalfAngleDegrees,
+            bool centerSpike)
+        {
+            Vector3 aim = containerTransform.forward;
+            Vector3 perp = Vector3.Cross(aim, Vector3.up);
+            if (perp.sqrMagnitude < 1e-4f) perp = Vector3.Cross(aim, Vector3.right);
+            perp.Normalize();
+
+            if (centerSpike)
+                FireSingle(containerTransform, speed, inheritedVelocity,
+                    projectileScale, aim * sideLength, projectileTime, charge, energy, aim);
+
+            for (int r = 1; r <= rings; r++)
+            {
+                float coneAngle = coneHalfAngleDegrees * r / rings;
+                int count = Mathf.Max(1, spikesPerFirstRing * r);
+                float phase = (r % 2) * (180f / count); // stagger alternate rings
+
+                Vector3 rim = Quaternion.AngleAxis(coneAngle, perp) * aim;
+                for (int i = 0; i < count; i++)
+                {
+                    Vector3 dir = Quaternion.AngleAxis(360f * i / count + phase, aim) * rim;
+                    FireSingle(containerTransform, speed, inheritedVelocity,
+                        projectileScale, dir * sideLength, projectileTime, charge, energy, dir);
+                }
+            }
+        }
+
         #region Firing Implementations
         private void FireSpherical(
             Transform containerTransform,
@@ -123,9 +177,10 @@ namespace CosmicShore.Gameplay
             float projectileScale,
             float projectileTime,
             float charge,
-            int energy)
+            int energy,
+            int pointsOverride = 0)
         {
-            if (energy == 0) // tetrahedral pattern
+            if (energy == 0 && pointsOverride <= 0) // tetrahedral pattern
             {
                 Vector3[] tetrahedralVertices =
                 {
@@ -145,7 +200,12 @@ namespace CosmicShore.Gameplay
             }
             else // Golden Spiral method
             {
-                int points = 2 * (energy + 3);
+                // pointsOverride: the TOP-LEVEL barrage's density is the caller's to author
+                // (the Urchin fires a dense sphere with no gaps - historically 18 authored
+                // ShootPoint ports mirrored across the hull; the spiral supersedes them).
+                // Chain children keep the energy-derived budget so a cascade's population
+                // stays bounded by depth.
+                int points = pointsOverride > 0 ? pointsOverride : 2 * (energy + 3);
                 float phi = Mathf.PI * (3 - Mathf.Sqrt(5)); // golden angle
 
                 // DETERMINISTIC, not Random.rotation. Every peer runs this volley (button

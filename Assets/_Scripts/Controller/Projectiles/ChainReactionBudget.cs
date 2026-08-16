@@ -37,16 +37,20 @@ namespace CosmicShore.Gameplay
     {
         /// <summary>
         /// Volleys allowed to fire across all cascades in one frame. Each volley is up to
-        /// <c>2 * (generation + 3)</c> spikes, so at the shipped depth of 2 one frame can add
-        /// at most <c>4 x 10 = 40</c> live trigger colliders from chaining.
+        /// <c>2 * (generation + 3)</c> spikes, so at the shipped depth of 4 one frame can add
+        /// at most <c>6 x 14 = 84</c> live trigger colliders from chaining.
         ///
         /// The depth ladder this bounds, worst case per SEEDED hit (every child finding fresh
         /// enemy mass): depth 1 -> 8 spikes, depth 2 -> 90, depth 3 -> 1,092, depth 4 -> 15,302.
-        /// Depth 2 is what ships. Real counts run far below the worst case because a converted
-        /// prism stops accepting spikes, but a collider budget has to survive the worst case
-        /// rather than the average one.
+        /// **Depth 4 is what ships** (round 6: "dial up the recursive explosions") — which is
+        /// exactly why this ceiling exists: the cascade's TOTAL population is unbounded in
+        /// theory and bounded in practice by territory conversion, while its FRAME cost is
+        /// bounded here regardless. Raised 4 -> 6 alongside the depth change so a deep cascade
+        /// reads as a rolling barrage rather than a trickle of dropped branches. Real counts
+        /// run far below the worst case because a converted prism stops accepting spikes, but
+        /// a collider budget has to survive the worst case rather than the average one.
         /// </summary>
-        public static int VolleysPerFrame = 4;
+        public static int VolleysPerFrame = 6;
 
         /// <summary>Total volleys dropped by the ceiling since load — a diagnostics read.</summary>
         public static int DroppedVolleys { get; private set; }

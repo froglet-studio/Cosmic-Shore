@@ -2325,7 +2325,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _onPrismSpawnedEventChannel: {fileID: 11400000, guid: 765004a68c88ffb439febbdf47d892db, type: 2}
   skimmer: {fileID: 874579554510349383}
-  BaseScale: {x: 10, y: 5, z: 5}
+  BaseScale: {x: 10, y: 2.5, z: 4}
   prismType: 0
   initialWavelength: 10
   minWavelength: 7
@@ -2335,7 +2335,7 @@ MonoBehaviour:
   waitTillOutsideSkimmer: 1
   shielded: 0
   offset: 0
-  Gap: 1
+  Gap: 6
   MinimumGap: 1
   TargetScale: {x: 0, y: 0, z: 0}
   spawnerEnabled: 1

@@ -185,15 +185,41 @@ ability a private copy of the other's dial.
 
 | | **Spike Volley** (SPACE, `RightStickAction`) | **Spike Barrage** (CHARGE, `LeftStickAction`) |
 |---|---|---|
-| Pattern | `Default` — aimed, one spike per muzzle | `Spherical` — golden-spiral omni burst from the hull |
+| Pattern | `ConcentricRings` — a SHOTGUN: rings of spikes around the aim, one blast per pull | `Spherical` — dense golden-spiral omni burst from the hull |
+| Shape | 3 rings at r/3 of a 25° cone, 6·r spikes each, staggered + 1 center = **37/pull** | **36** spikes, gapless sphere (chain children keep energy-derived counts) |
 | Repeat | while held, `firingRate` 3/s | one-shot per press, `firingRate` 1/s |
 | Ammo | 0.15 per volley | **free** (0) |
 | Muzzle speed | 60 × SPACE multiplier | 40 × SPACE multiplier |
-| Depth at Charge 0 → 10 | **1 → 2** | 0 → 1 |
+| Depth at Charge 0 → 10 | **1 → 4** | 0 → **4** |
 | L5 | SPACE "Deep Cascade" — `ChainRangeFalloff` becomes 1 | CHARGE "Overcharge" — `chainsOnChargeUpgrade` floors depth at 1 |
 
-The barrage is free and is paid for by its **shallower cascade**; Overcharge is what turns it from
-a wide steal into a chain, and that is the whole of its upgrade.
+**Round 6 dialed the weapon up** ("dial up the recursive explosions") — this is the shotgun the
+old build had, restored deliberately rather than archaeologically:
+
+- **The generation limit is 4** — both assets' `generationsAtFullCharge` moved to the clamp
+  ceiling, so a full-Charge cascade runs the deepest depth the pool tiers and clamp were sized
+  for. `ChainReactionBudget.VolleysPerFrame` rose 4 → 6 alongside it, so a deep cascade reads
+  as a rolling barrage rather than a trickle of dropped branches; the frame ceiling (≤ 6×14 =
+  84 chain spikes/frame) is what makes the depth affordable, and territory conversion remains
+  the primary brake.
+- **The volley is the shotgun**: `Gun.FireRingBlast` — concentric rings around the aim axis,
+  ring r of R at cone angle `coneHalfAngle·r/R` with `spikesPerRing·r` spikes, alternate rings
+  phase-staggered so the blast fills its own gaps, plus a center spike. One blast per pull from
+  the hull (not per muzzle — two overlapping fans double the count and blur the ring read).
+  Fully deterministic by construction: no RNG draw at all, so every peer fires the identical
+  fan. Rate limiting stays the executor's owed-seconds loop.
+- **The barrage is dense**: the ship's own volley fires `barrageSpikeCount` (36) spiral points
+  regardless of depth (previously `2·(energy+3)` — at depth 0 that was FOUR tetrahedral
+  spikes). Chain children keep the energy-derived counts, so a cascade's population stays
+  bounded by depth. The hull historically carried **18 authored ShootPoint port objects**
+  (recovered from the 2023 prefab: left-half + midline positions on a ~0.2-radius model
+  sphere, mirrored ≈36 across the ship — e.g. `(0, 0.2, -0.02)`, `(-0.17, 0.07, 0.08)`,
+  `(-0.08, -0.18, -0.02)`…); the golden spiral supersedes them with an even sphere and no
+  gaps, which is the "we can do better now" half of the request.
+
+The barrage stays free and is paid for by its **resting depth of 0**; Overcharge is what turns
+it from a wide steal into a chain at rest, and full Charge now takes both abilities to the
+ceiling.
 
 **The aimed volley's first shot does not consume a generation and the barrage's does.**
 `FiringPatterns.Default` routes to `FireSingle`, which stamps `energy` unchanged, so the muzzle
@@ -252,8 +278,10 @@ checked once per tick, so the two cases are not conflated into one early return.
 |---|---|---|
 | `dwellSeconds` / `fadeSeconds` | `ProjectileEmbedPrismEffect.asset` | 1.25 / 0.35 — pure look; the steal and the volley have both already happened. `fadeSeconds` must stay above 0 (continuity of existence). |
 | `requireDomainChange` | `ProjectileChainFirePrismEffect.asset` | 1 — off makes shielded mass cost the cascade a generation for no territory |
-| `VolleysPerFrame` | `ChainReactionBudget` (static, code) | **4**, global across all cascades. At the shipped depth of 2 a volley is 10 spikes, so one frame's chain contribution is bounded at **40** live trigger colliders. Raise for reach, lower for frame cost. |
-| `generationsAtRestingCharge` / `generationsAtFullCharge` | the two spike action assets | volley **1 → 2** · barrage 0 → 1. Depths 3 and 4 are fully supported by the SO and deliberately **unshipped** — see the collider budget below. `GenerationsForLevel` is linear in level, anchored at 0 and 10, extrapolated across the element system's `[-5, 15]` band, then clamped to **[0, 4]** — the range the pool tiers and the frame budget are sized for. |
+| `VolleysPerFrame` | `ChainReactionBudget` (static, code) | **6**, global across all cascades (round 6: raised from 4 with the depth). At depth 4 a chain volley is up to 14 spikes, so one frame's chain contribution is bounded at **84** live trigger colliders. Raise for reach, lower for frame cost. |
+| `generationsAtRestingCharge` / `generationsAtFullCharge` | the two spike action assets | volley **1 → 4** · barrage 0 → **4** (round 6: "their generation limit should be 4"). `GenerationsForLevel` is linear in level, anchored at 0 and 10, extrapolated across the element system's `[-5, 15]` band, then clamped to **[0, 4]** — the range the pool tiers and the frame budget are sized for. |
+| `barrageSpikeCount` | both spike action assets (Spherical only) | **36** — the ship's own golden-spiral density; 0 = legacy energy-derived count |
+| `ringCount` / `spikesPerRing` / `coneHalfAngleDegrees` / `centerSpike` | both spike action assets (ConcentricRings only) | **3 / 6 / 25° / on** → 37 spikes per pull |
 | `generationRangeFalloff` | both spike action assets | 0.75. Clamped `[0.05, 1]` by `SetChainRangeFalloff`. 1 = the SPACE-5 upgrade. |
 | `chainsOnChargeUpgrade` | barrage asset only | 1 — the CHARGE-5 floor of one generation |
 | `ammoCost` / `firingRate` | the two spike action assets | 0.15 @ 3/s · 0 @ 1/s |
@@ -284,18 +312,21 @@ Those are **worst cases in the sense of "every child lands on hostile mass"**, w
 makes nearly unreachable: each generation converts what it hits, so the next generation is fired
 into ground that already wears its own domain.
 
-**The shipped ceiling is depth 2** (the volley at Charge 10). Depth 3 was authored first and is
-indefensible against a per-cell collider budget already sitting at 3–4k against a 1,500 target:
-one seeded hit is 1,092 spikes in the worst case. Depths 3 and 4 remain supported by the SO and
-deliberately unshipped. Real counts run far below the worst case, because a converted prism stops
-accepting spikes — but a budget has to survive the worst case, not the average one.
+**The shipped ceiling is depth 4** (round 6 — the design call "dial up the recursive
+explosions. their generation limit should be 4" supersedes the depth-2 conservatism this section
+originally argued for; the earlier reasoning is kept below because it is why the OTHER limits
+exist and are load-bearing). A depth-4 seeded hit is 15,302 spikes in the *theoretical* worst
+case, which no frame ever pays: the total is spread across frames by brake 3, capped in
+concurrency by the pools, and collapsed in practice by brake 1 — each generation converts what
+it hits, so the next fires into friendly ground. What depth 4 actually buys is a LONGER rolling
+cascade, not a bigger instantaneous one.
 
 The real bound on *concurrent* colliders is the product of three independent limits, and it is
 worth knowing which one is doing the work when the cascade feels wrong:
 
-- **Brake 3** caps volleys at **4/frame** globally. At the shipped depth of 2 a volley is 10
-  spikes, so one frame's chain contribution is bounded at **40** colliders across every Urchin in
-  the match.
+- **Brake 3** caps volleys at **6/frame** globally (raised from 4 with the depth change). At
+  depth 4 a chain volley is up to 14 spikes, so one frame's chain contribution is bounded at
+  **84** colliders across every Urchin in the match.
 - **Pool depth** caps live spikes outright (`GenericPoolManager.maxSize` on each tier's
   `ProjectilePoolManager`). A cascade that exhausts a tier stops on a factory miss, which is a
   *hard* stop and not a graceful one.

@@ -175,9 +175,22 @@ namespace CosmicShore.Gameplay
 
             if (so.FiringPattern == FiringPatterns.Spherical)
             {
+                // The ship's own barrage fires at the authored density (a dense, gapless
+                // sphere); chain children keep their budgeted energy-derived counts.
                 gun.FireGun(barrageOrigin ? barrageOrigin : transform, speed, inherited,
                             so.ProjectileScale, true, so.ProjectileTime, 0,
-                            FiringPatterns.Spherical, generations);
+                            FiringPatterns.Spherical, generations,
+                            sphericalPoints: so.BarrageSpikeCount);
+            }
+            else if (so.FiringPattern == FiringPatterns.ConcentricRings)
+            {
+                // The shotgun: ONE blast per pull, concentric rings around the vessel's aim.
+                // Fired from the hull (barrageOrigin), not per muzzle - two overlapping fans
+                // would double the spike count and blur the ring read.
+                gun.FireRingBlast(barrageOrigin ? barrageOrigin : transform, speed, inherited,
+                                  so.ProjectileScale, so.ProjectileTime, 0, generations,
+                                  so.RingCount, so.SpikesPerRing, so.ConeHalfAngleDegrees,
+                                  so.CenterSpike);
             }
             else
             {
