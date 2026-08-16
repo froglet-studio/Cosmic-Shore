@@ -36,11 +36,12 @@ namespace CosmicShore.Gameplay
         public static int SeededDaughterPrisms;
         public static int UnreservedSpawns;
 
-        // Lattice-defect auditor (the "twinning" hunt): a healthy gyroid's closest prism pair
-        // is 6.6u apart, and TryReserve blocks within ~3.1u - so a NEW site with an existing
-        // prism 3.1-5.5u away is a misaligned lattice domain being born. Counted separately
-        // for GROWN sites (bond-table continuation - drift/seam defects) and daughter SEED
-        // sites (the E-table handoff - a bad handoff twins a whole subtree), because that
+        // Lattice-misalignment gate (born as the "twinning" auditor): a healthy gyroid's
+        // closest prism pair is 6.6u apart, and TryReserve blocks within ~3.1u - so a NEW site
+        // with an existing prism 3.1-5.5u away is a misaligned lattice domain being born. Such
+        // sites are now DECLINED (misaligned colonies stop at a clean interface instead of
+        // interpenetrating); these count what was blocked, split by GROWN sites (bond-table
+        // continuation) and daughter SEED sites (the neighbour-table handoff), because that
         // split is what points at the faulty mechanism.
         public static int GrownSiteDefects;
         public static int SeedSiteDefects;
@@ -53,8 +54,9 @@ namespace CosmicShore.Gameplay
         {
             if (_defectLogs >= DefectLogLimit) return;
             _defectLogs++;
-            CSDebug.LogWarning($"[GyroidColony] LATTICE DEFECT ({kind}) at {position} by {owner} - " +
-                               $"an existing prism sits 3.1-5.5u away (healthy minimum is 6.6u). " +
+            CSDebug.LogWarning($"[GyroidColony] LATTICE MISALIGNMENT ({kind}) at {position} by {owner} - " +
+                               $"an existing prism sits 3.1-5.5u away (healthy minimum is 6.6u), " +
+                               $"so the site was declined rather than grown. " +
                                $"({_defectLogs}/{DefectLogLimit} logged)");
         }
 
@@ -71,15 +73,32 @@ namespace CosmicShore.Gameplay
             GrownSiteDefects = 0;
             SeedSiteDefects = 0;
             RotationFallbacks = 0;
+            RingPoisonRejected = 0;
+            IncoherentHandoffs = 0;
             MaxRingCoherenceError = 0f;
+            MaxSeedHandoffError = 0f;
             _defectLogs = 0;
         }
+
+        /// <summary>Danger prisms whose self-computed centre landed in the poison band
+        /// (coherent-membership tolerance .. claim-dedupe radius) of a plant's claimed centre -
+        /// a MISALIGNED lattice frame knocking on a ring. Rejected from membership.</summary>
+        public static int RingPoisonRejected;
+
+        /// <summary>Daughter seed handoffs whose seed pose failed to recompute the adopted
+        /// centre (> 1u). Non-zero means the neighbour tables (or their composition) are wrong
+        /// IN-ENGINE - the defect class that shipped as the z-mirror table corruption.</summary>
+        public static int IncoherentHandoffs;
+
+        /// <summary>Worst daughter seed-handoff centre error observed (healthy &lt; 0.1u).</summary>
+        public static float MaxSeedHandoffError;
 
         public static string Summary =>
             $"claims={GyroidOctagonRegistry.ClaimCount} births={Births} heldByMaturity={BirthsHeldByMaturity} " +
             $"grown={GrownPrisms} seeded={SeededDaughterPrisms} foreignDeclines={DeclinedForeignSites} " +
             $"mintsBlocked={ReseedMintsBlocked} UNRESERVED={UnreservedSpawns} " +
-            $"DEFECTS grown={GrownSiteDefects} seed={SeedSiteDefects} rotFallbacks={RotationFallbacks} " +
+            $"BLOCKED grown={GrownSiteDefects} seed={SeedSiteDefects} poison={RingPoisonRejected} " +
+            $"HANDOFF bad={IncoherentHandoffs} errMax={MaxSeedHandoffError:F2} rotFallbacks={RotationFallbacks} " +
             $"ringErrMax={MaxRingCoherenceError:F2} prismsPerCrystal={(GyroidOctagonRegistry.ClaimCount > 0 ? (float)(GrownPrisms + SeededDaughterPrisms) / GyroidOctagonRegistry.ClaimCount : 0f):F1}";
     }
 
@@ -300,17 +319,24 @@ namespace CosmicShore.Gameplay
                     continue;
                 }
 
-                // Lattice-defect audit: TryReserve (inside GetGrowthInfo) already proved no
-                // prism within ~3.1u, so one within 5.5u means this site belongs to a lattice
-                // domain MISALIGNED with an existing one - a twin being born. Audit-only:
-                // the site still grows, because the defect's shape is the diagnosis.
+                // Lattice-misalignment GATE: TryReserve (inside GetGrowthInfo) already proved
+                // no prism within ~3.1u, and a coherent lattice's closest non-bonded pair is
+                // 6.6u - so mass within 5.5u of this site belongs to a lattice frame MISALIGNED
+                // with this plant's (an independent founder, a toy planting). Growing it would
+                // mint a visible twin, so the site is DECLINED like a foreign one: colonies
+                // that cannot mate stop at a clean interface instead of interpenetrating.
+                // (Was audit-only for one playtest, which attributed the defect geography.)
                 if (OctagonMode && growthInfo.CanGrow)
                 {
                     var idx = PrismSpatialIndex.Instance;
                     if (idx != null && idx.IsAvailable && idx.IsAnyPrismWithin(growthInfo.Position, 5.5f))
                     {
                         GyroidColonyDiagnostics.GrownSiteDefects++;
-                        GyroidColonyDiagnostics.ReportDefect("grown", growthInfo.Position, name);
+                        GyroidColonyDiagnostics.ReportDefect("grown-blocked", growthInfo.Position, name);
+                        if (growthInfo is GyroidGrowthInfo gi)
+                            (branch.assembler as GyroidAssembler)?.DeclineGrowthSite(gi.Site);
+                        idx.ReleaseReservation(growthInfo.Position);
+                        continue;
                     }
                 }
 
@@ -550,23 +576,35 @@ namespace CosmicShore.Gameplay
                 _ringMembers.Add(new RingMember { Position = position, Rotation = rotation, Type = type });
                 // A discovered (not inherited) centre marks a FOUNDER - it takes on the colony
                 // heartbeat. Invoke (not a coroutine) so Die's StopAllCoroutines can't silence
-                // the report while the husk lingers.
+                // the report while the husk lingers. lineage=False names a TOY planting (the
+                // Lifeform Matrix stations spawn AssembledFlora clones with no species config)
+                // - every founder is an independent lattice FRAME, and frames that were never
+                // projected from one another cannot mate, so knowing where each frame came
+                // from is the first question of any "colonies don't match up" report.
                 CSDebug.Log($"[GyroidColony] FOUNDER {name} claimed centre {center} " +
-                            $"(prism {type} at {position})");
+                            $"(prism {type} at {position}, lineage={(SourceConfig ? SourceConfig.name : "NONE/toy")})");
                 InvokeRepeating(nameof(LogColonyHeartbeat), 5f, 5f);
                 return;
             }
 
-            float dedupe = GyroidOctagonData.CenterDedupeRadius;
             float err = (center - _octagonCenter.Value).magnitude;
-            if (err < dedupe && _ringMembers.Count < 8)
+            if (err < GyroidOctagonData.RingMemberToleranceRadius && _ringMembers.Count < 8)
             {
                 _ringMembers.Add(new RingMember { Position = position, Rotation = rotation, Type = type });
-                // Coherence telemetry: on a healthy lattice every ring member's computed centre
-                // lands within ~1u of the claimed centre. A growing max here means frames are
-                // drifting apart - the precursor of the visible twinning.
+                // Coherence telemetry: a genuine ring member computes the claimed centre to
+                // well under 1u (measured founder coherence 0.08). A growing max here means
+                // frames are drifting apart - the precursor of visible twinning.
                 if (err > GyroidColonyDiagnostics.MaxRingCoherenceError)
                     GyroidColonyDiagnostics.MaxRingCoherenceError = err;
+            }
+            else if (err < GyroidOctagonData.CenterDedupeRadius)
+            {
+                // The poison band: near enough to be "this octagon" by claim-identity
+                // standards, far too incoherent to be a real member (the fifth Lab playtest
+                // admitted one at 11.79u and reproduction then projected the neighbour tables
+                // from a foreign frame - a chimera lineage). Membership is a COHERENCE test;
+                // this prism is a misaligned lattice's mass and defines no frame here.
+                GyroidColonyDiagnostics.RingPoisonRejected++;
             }
         }
 
@@ -776,14 +814,19 @@ namespace CosmicShore.Gameplay
                         continue;
                     }
 
-                    // Lattice-defect audit, seed flavour: a prism 3.1-5.5u from the handed-off
-                    // seed site means the E-table projection from this ring member disagrees
-                    // with the lattice already standing there - the handoff is minting a twin.
+                    // Lattice-misalignment GATE, seed flavour: a prism 3.1-5.5u from the
+                    // handed-off seed site means the projected octagon disagrees with mass
+                    // already standing there - a misaligned frame's territory. A daughter
+                    // seeded onto it would twin her whole subtree, so the birth is SKIPPED:
+                    // claim and reservation released, next candidate tried.
                     if (spatialIndex != null && spatialIndex.IsAvailable &&
                         spatialIndex.IsAnyPrismWithin(seedPos, 5.5f))
                     {
                         GyroidColonyDiagnostics.SeedSiteDefects++;
-                        GyroidColonyDiagnostics.ReportDefect("seed", seedPos, name);
+                        GyroidColonyDiagnostics.ReportDefect("seed-blocked", seedPos, name);
+                        GyroidOctagonRegistry.Release(center, this);
+                        spatialIndex.ReleaseReservation(seedPos);
+                        continue;
                     }
 
                     _pendingOffspringCenter = center;
@@ -1015,6 +1058,32 @@ namespace CosmicShore.Gameplay
                     if (OctagonMode && _seedGrowth is GyroidGrowthInfo sg)
                     {
                         RegisterDangerPrism(sg.BlockType, _seedGrowth.Position, _seedGrowth.Rotation);
+                        // Handoff coherence assert: the seed pose must recompute the centre
+                        // this daughter ADOPTED, because they were projected from the same
+                        // parent frame through the same measured tables. A miss here is not a
+                        // runtime accident - it means the tables (or their composition) are
+                        // wrong IN-ENGINE, the exact defect class that shipped as the z-mirror
+                        // corruption of GyroidOctagonData (12 of 16 seed rotations wrong by up
+                        // to 179 deg; every daughter seeded through them twinned her subtree).
+                        // Loud and first-birth-fast, so a future table regression cannot cost
+                        // another five playtests.
+                        if (_octagonCenter.HasValue &&
+                            GyroidOctagonData.TryGetOwnCenterOffset(sg.BlockType, out var ownOff))
+                        {
+                            float handoffErr = Vector3.Distance(
+                                _seedGrowth.Position + _seedGrowth.Rotation * ownOff,
+                                _octagonCenter.Value);
+                            if (handoffErr > GyroidColonyDiagnostics.MaxSeedHandoffError)
+                                GyroidColonyDiagnostics.MaxSeedHandoffError = handoffErr;
+                            if (handoffErr > 1f)
+                            {
+                                GyroidColonyDiagnostics.IncoherentHandoffs++;
+                                CSDebug.LogError($"[GyroidColony] INCOHERENT SEED HANDOFF: {name} " +
+                                    $"seed {sg.BlockType} recomputes its centre {handoffErr:F2}u away " +
+                                    $"from the adopted centre - GyroidOctagonData's tables are wrong " +
+                                    $"in-engine (regenerate: Tools/Build/measure_gyroid_octagons.py)");
+                            }
+                        }
                         GyroidColonyDiagnostics.SeededDaughterPrisms++;
                         _lastGrowthTime = Time.time;
                     }

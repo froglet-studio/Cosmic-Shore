@@ -4208,14 +4208,53 @@ Unity-runtime interaction the simulation could not see. Two responses shipped:
    flavours, plus `OnDestroy`). Reserve-failure still means "someone real is there" - that
    is what makes marking-bonded-on-failure correct again.
 
+**Fifth playtest (2026-08-16): the auditor attributed it - a CHIRALITY corruption in the
+baked tables, plus frame-poisoned rings.** The heartbeat read `DEFECTS grown=482 seed=140
+ringErrMax=11.79` with `claims=3` before any birth, and the user's diagnosis ("there is
+subtle chirality at play... double check everything is the correct handedness") was exactly
+right. The numeric end-to-end check (reconstruct daughter seed poses from the BAKED C#
+quaternions under Unity's exact composition, then test them against the reference lattice)
+convicted the table: **12 of the 16 baked `SeedRotation` quaternions - all of the EG, EsD
+and GEs rows - were never the measurement.** When the emitted table was transcribed into
+`GyroidOctagonData.cs`, only the DE row came from the emit; the other three types were
+constructed by a z-mirror symmetry ansatz (centres z-negated, quaternions (x,w)-negated).
+The gyroid's enantiomer conjugation does NOT act on the LookRotation frames that way, so
+seed rotations were wrong by up to 179° - a daughter seeded through DE mated perfectly,
+one seeded through the other three types grew an internally-perfect lattice that could not
+mate with its parent ("good looking lifeforms not matching up with other good looking
+lifeforms"). The simulation had validated the measured MATRICES; the quaternion bake was
+the one unvalidated link. Resolution, four parts:
+
+1. **The table is re-baked from the verified emit** - all 16 entries measured, none derived.
+   Re-running the end-to-end check against the shipped file: self-centre coherence 0.01u,
+   every seed pose lands on a reference-lattice prism (worst 0.37u / 0.74°), subtrees mate
+   to 0.63u. `Tools/Build/measure_gyroid_octagons.py` now emits the COMPLETE C# block
+   itself (exact per-class sample poses - never averaged rotations, where a det -1
+   reflection can hide - with quaternions and a per-entry self-centre assertion), so
+   regeneration is paste-verbatim and hand-derivation has no step left to slip into.
+2. **A daughter asserts her handoff at birth** (`IncoherentHandoffs` / `MaxSeedHandoffError`
+   in the heartbeat): her seed pose must recompute the centre she adopted to <1u, else a
+   loud error names the table. A future table regression costs one birth, not five playtests.
+3. **Ring membership is a COHERENCE test** (`GyroidOctagonData.RingMemberToleranceRadius`,
+   2.5u), separate from claim identity (`CenterDedupeRadius`, 12u). The playtest recorded an
+   11.79u admission - a foreign-frame danger prism joining a ring, whose pose reproduction
+   then projected the neighbour tables from: a chimera lineage. Poison-band admissions are
+   now rejected and counted (`RingPoisonRejected`).
+4. **The misalignment auditor became a GATE**: a grow decision or daughter seed site with
+   standing mass 3.1-5.5u away (coherent minimum is 6.6u) is DECLINED - reservation and
+   claim released - instead of grown. Lattice frames that were never projected from one
+   another cannot mate (`claims=3` before any birth = three independent founders, the third
+   playtest's centre chaos ball), so where independent frames meet, the colonies now stop
+   at a clean interface instead of interpenetrating. The FOUNDER log names each frame's
+   origin (`lineage=` config, or `NONE/toy` for a Lifeform Matrix planting).
+
 In-editor verification (the human is the gate): enter freestyle in Menu_Main, fly the Cell
 Selector toy, pick **Gyroid Lab**. Watch: (1) the founder's first danger prism moves the
 crystal to the ring centre; (2) the surface grows as ONE continuous gyroid with no doubled
 prisms; (3) each completed ring's window holds exactly one crystal, none of them growing;
-(4) daughters bloom at neighbouring windows and knit seamlessly; (5) it never stops. Read the
-heartbeat's `DEFECTS` clause: `seed=` dominant → the E-table handoff as computed in Unity;
-`grown=` dominant at plant boundaries → frame drift seams; `ringErrMax` growing with colony
-radius → progressive decoherence; `UNRESERVED` non-zero → the spatial index was unavailable
-and growth ran unchecked. If the surface fragments, the seed-pose handoff is misaligned —
-`GyroidOctagonData` and `AssembledFlora.TryResolveOctagonOffspring` are the places to look.
-Regenerate the tables with `Tools/Build/measure_gyroid_octagons.py`.
+(4) daughters bloom at neighbouring windows and knit seamlessly; (5) it never stops. Read
+the heartbeat: `HANDOFF bad=` MUST stay 0 (non-zero = the tables are wrong in-engine -
+regenerate with `Tools/Build/measure_gyroid_octagons.py` and paste its emit verbatim);
+`BLOCKED grown/seed` and `poison` count misaligned-frame contacts (expected only where
+independent founders' colonies meet); `ringErrMax` should sit well under 1; `UNRESERVED`
+non-zero → the spatial index was unavailable and growth ran unchecked.

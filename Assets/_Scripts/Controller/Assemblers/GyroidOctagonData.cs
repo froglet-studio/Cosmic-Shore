@@ -66,6 +66,18 @@ namespace CosmicShore.Gameplay
         public const float CenterDedupeRadius = 12f;
 
         /// <summary>
+        /// How close a danger prism's SELF-COMPUTED centre must land to a plant's claimed centre
+        /// for that prism to join the plant's ring. A genuine ring member computes its centre to
+        /// well under 1u (measured founder coherence 0.08); a danger prism from a MISALIGNED
+        /// lattice frame (an independent founder, a toy planting) can land anywhere up to the
+        /// dedupe radius. The fifth Lab playtest recorded an 11.79u admission - a foreign-frame
+        /// prism poisoning a ring, whose pose reproduction then projected the neighbour tables
+        /// from, planting daughters in the foreign frame. Membership is a COHERENCE test, and
+        /// must be far tighter than claim identity (CenterDedupeRadius).
+        /// </summary>
+        public const float RingMemberToleranceRadius = 2.5f;
+
+        /// <summary>
         /// The farthest any prism of an octagon's 24-prism patch sits from the octagon centre
         /// (measured max 25.84). The ownership gate refuses growth beyond this.
         /// </summary>
@@ -91,6 +103,15 @@ namespace CosmicShore.Gameplay
             { GyroidBlockType.GEs, new Vector3(-9.6143f, 0.1610f, -2.6946f) },
         };
 
+        // Every row below is a MEASUREMENT pasted verbatim from the emit of
+        // Tools/Build/measure_gyroid_octagons.py - never a symmetry construction. The first
+        // shipped version filled the EG/EsD/GEs rows from the DE/EG measurements by a z-mirror
+        // ansatz (centres z-negated, quaternions (x,w)-negated); the gyroid's enantiomer
+        // conjugation does NOT act on the LookRotation frames that way, so 12 of 16 seed
+        // rotations were wrong by up to 179 deg - daughters seeded through those rows grew
+        // internally-perfect lattices that could not mate with their parents (the "twinning"
+        // playtests). The regeneration script now asserts self-centre coherence on the values
+        // it prints; do not hand-derive any row from another.
         static readonly Dictionary<GyroidBlockType, OctagonNeighbor[]> Neighbors = new()
         {
             { GyroidBlockType.DE, new[]
@@ -102,24 +123,24 @@ namespace CosmicShore.Gameplay
                 } },
             { GyroidBlockType.EG, new[]
                 {
-                    new OctagonNeighbor(new Vector3(26.7364f, -0.1734f, -4.7729f), new Vector3(17.0325f, -0.6394f, -3.3230f), new Quaternion(0.706593f, -0.020536f, 0.706980f, -0.024420f), GyroidBlockType.EG),
-                    new OctagonNeighbor(new Vector3(-13.7387f, 22.9612f, 26.4111f), new Vector3(-13.9767f, 17.0561f, 17.8210f), new Quaternion(-0.223970f, 0.529710f, -0.302267f, 0.760081f), GyroidBlockType.EsD),
-                    new OctagonNeighbor(new Vector3(-16.2932f, -36.1611f, -5.2242f), new Vector3(-11.2954f, -26.6316f, -4.7480f), new Quaternion(-0.061706f, -0.235717f, 0.826063f, 0.508281f), GyroidBlockType.EsD),
-                    new OctagonNeighbor(new Vector3(-36.2270f, 12.7841f, -23.9740f), new Vector3(-27.7069f, 8.4148f, -19.5136f), new Quaternion(0.653435f, 0.253352f, -0.302862f, 0.645774f), GyroidBlockType.EG),
+                    new OctagonNeighbor(new Vector3(26.7410f, -0.1713f, -4.7677f), new Vector3(17.2671f, 0.7072f, -1.4970f), new Quaternion(0.076997f, 0.191470f, 0.978474f, -0.000000f), GyroidBlockType.EG),
+                    new OctagonNeighbor(new Vector3(-13.7433f, 22.9609f, 26.4131f), new Vector3(-13.9584f, 18.6030f, 17.3395f), new Quaternion(0.147854f, 0.465907f, -0.500247f, 0.714719f), GyroidBlockType.EsD),
+                    new OctagonNeighbor(new Vector3(-16.2897f, -36.1594f, -5.2223f), new Vector3(-12.2222f, -26.9543f, -5.5216f), new Quaternion(-0.418360f, -0.356812f, 0.500254f, 0.668884f), GyroidBlockType.EsD),
+                    new OctagonNeighbor(new Vector3(-36.2347f, 12.7814f, -23.9665f), new Vector3(-30.6069f, 7.0722f, -17.8873f), new Quaternion(0.581656f, -0.400125f, 0.032563f, 0.707471f), GyroidBlockType.EG),
                 } },
             { GyroidBlockType.EsD, new[]
                 {
-                    new OctagonNeighbor(new Vector3(-13.7376f, 22.9599f, -26.4102f), new Vector3(-13.9756f, 17.0549f, -17.8202f), new Quaternion(0.223963f, 0.529712f, -0.302265f, -0.760082f), GyroidBlockType.EG),
-                    new OctagonNeighbor(new Vector3(26.7343f, -0.1723f, 4.7716f), new Vector3(17.0304f, -0.6383f, 3.3218f), new Quaternion(-0.706594f, -0.020536f, 0.706978f, 0.024419f), GyroidBlockType.EsD),
-                    new OctagonNeighbor(new Vector3(-16.2921f, -36.1663f, 5.2253f), new Vector3(-11.2942f, -26.6363f, 4.7489f), new Quaternion(0.061707f, -0.235716f, 0.826064f, -0.508280f), GyroidBlockType.EG),
-                    new OctagonNeighbor(new Vector3(-36.2325f, 12.7846f, 23.9776f), new Vector3(-27.7124f, 8.4152f, 19.5171f), new Quaternion(-0.653436f, 0.253352f, -0.302862f, -0.645773f), GyroidBlockType.EsD),
+                    new OctagonNeighbor(new Vector3(-13.7432f, 22.9573f, -26.4120f), new Vector3(-13.9655f, 18.5955f, -17.3485f), new Quaternion(-0.147793f, -0.465886f, -0.500247f, 0.714745f), GyroidBlockType.EG),
+                    new OctagonNeighbor(new Vector3(26.7334f, -0.1743f, 4.7722f), new Vector3(17.2537f, 0.6961f, 1.4939f), new Quaternion(-0.077000f, -0.191444f, 0.978478f, 0.000000f), GyroidBlockType.EsD),
+                    new OctagonNeighbor(new Vector3(-16.2929f, -36.1669f, 5.2340f), new Vector3(-12.2262f, -26.9690f, 5.5219f), new Quaternion(0.418440f, 0.356924f, 0.500193f, 0.668820f), GyroidBlockType.EG),
+                    new OctagonNeighbor(new Vector3(-36.2314f, 12.7834f, 23.9777f), new Vector3(-30.6086f, 7.0690f, 17.8867f), new Quaternion(-0.581617f, 0.400266f, 0.032410f, 0.707431f), GyroidBlockType.EsD),
                 } },
             { GyroidBlockType.GEs, new[]
                 {
-                    new OctagonNeighbor(new Vector3(-42.8776f, -13.0721f, 5.5350f), new Vector3(-33.1783f, -12.0606f, 3.0567f), new Quaternion(-0.691788f, 0.019690f, 0.185680f, -0.697541f), GyroidBlockType.EsD),
-                    new OctagonNeighbor(new Vector3(-17.5474f, 17.4485f, -34.1218f), new Vector3(-18.0281f, 12.9576f, -25.1240f), new Quaternion(0.150401f, 0.627901f, -0.190090f, -0.739585f), GyroidBlockType.EG),
-                    new OctagonNeighbor(new Vector3(10.7357f, -29.5559f, 4.5064f), new Vector3(6.5551f, -20.3970f, 4.6006f), new Quaternion(0.122622f, -0.350533f, 0.796572f, -0.477037f), GyroidBlockType.EG),
-                    new OctagonNeighbor(new Vector3(11.2337f, 25.8383f, 13.2937f), new Vector3(6.1809f, 20.1719f, 6.6923f), new Quaternion(-0.196263f, 0.193196f, 0.860423f, 0.428752f), GyroidBlockType.EsD),
+                    new OctagonNeighbor(new Vector3(-42.8756f, -13.0708f, 5.5427f), new Vector3(-33.1720f, -12.0618f, 3.0550f), new Quaternion(-0.691745f, -0.019610f, 0.185685f, 0.697586f), GyroidBlockType.EsD),
+                    new OctagonNeighbor(new Vector3(-17.5542f, 17.4525f, -34.1210f), new Vector3(-18.0296f, 12.9556f, -25.1335f), new Quaternion(0.150457f, -0.627775f, -0.189999f, 0.739704f), GyroidBlockType.EG),
+                    new OctagonNeighbor(new Vector3(10.7408f, -29.5572f, 4.5150f), new Vector3(6.5676f, -20.4031f, 4.6011f), new Quaternion(0.122638f, 0.350629f, 0.796571f, 0.476963f), GyroidBlockType.EG),
+                    new OctagonNeighbor(new Vector3(11.2342f, 25.8373f, 13.2938f), new Vector3(6.1866f, 20.1613f, 6.6851f), new Quaternion(-0.196213f, -0.193167f, 0.860404f, -0.428825f), GyroidBlockType.EsD),
                 } },
         };
 

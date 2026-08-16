@@ -23,6 +23,14 @@ complete octagon - Docs/ECOSYSTEM.md §32.7).
 
 Run this after ANY edit to the bond table - the tables in GyroidOctagonData.cs are measurements
 of that table, and drift between them is a silent break these assertions exist to catch.
+
+After pasting the emit into GyroidOctagonData.cs, run Tools/Build/verify_gyroid_octagon_tables.py:
+it re-parses the SHIPPED file and proves, against a freshly walked reference lattice, that every
+baked seed pose (quaternions included - the link the colony simulation never exercised) recomputes
+its own centre, lands on a real lattice prism in position AND rotation, and grows a subtree that
+mates with the reference. The first shipped table failed all three for 12 of 16 entries (the
+z-mirror chirality corruption, Docs/ECOSYSTEM.md §32.7 fifth playtest); the verifier is what makes
+that class of transcription error a one-command catch instead of a five-playtest hunt.
 """
 import sys, os
 sys.path.insert(0, os.path.dirname(__file__))
@@ -134,8 +142,44 @@ for tk in ('DE', 'EG', 'EsD', 'GEs'):
 
 full = [k for k, c in enumerate(octs) if all(len(und.get(i, ())) == 4 for i in c)]
 from scipy.cluster.hierarchy import fcluster, linkage
-print('\nE: neighbour classes (centres + seed poses) - see the emit in the session scratchpad;')
-print('   per-type there must be exactly 4, each with seed purity 1.0:')
+
+def m2q(M):
+    """Rotation matrix (columns right/up/forward, Unity LookRotation basis) -> Unity
+    quaternion (x, y, z, w). Standard Hamilton conversion - valid ONLY for a proper
+    rotation, which the caller asserts (det +1). A reflection fed through this silently
+    produces garbage, which is exactly how a handedness slip becomes a shipped defect."""
+    M = np.array(M)
+    t = np.trace(M)
+    if t > 0:
+        s = np.sqrt(t + 1) * 2; w = s / 4
+        x = (M[2, 1] - M[1, 2]) / s; y = (M[0, 2] - M[2, 0]) / s; z = (M[1, 0] - M[0, 1]) / s
+    else:
+        i = np.argmax(np.diag(M))
+        if i == 0:
+            s = np.sqrt(1 + M[0, 0] - M[1, 1] - M[2, 2]) * 2
+            w = (M[2, 1] - M[1, 2]) / s; x = s / 4; y = (M[0, 1] + M[1, 0]) / s; z = (M[0, 2] + M[2, 0]) / s
+        elif i == 1:
+            s = np.sqrt(1 + M[1, 1] - M[0, 0] - M[2, 2]) * 2
+            w = (M[0, 2] - M[2, 0]) / s; x = (M[0, 1] + M[1, 0]) / s; y = s / 4; z = (M[1, 2] + M[2, 1]) / s
+        else:
+            s = np.sqrt(1 + M[2, 2] - M[0, 0] - M[1, 1]) * 2
+            w = (M[1, 0] - M[0, 1]) / s; x = (M[0, 2] + M[2, 0]) / s; y = (M[1, 2] + M[2, 1]) / s; z = s / 4
+    return x, y, z, w
+
+def v3(v):
+    return f'new Vector3({v[0]:.4f}f, {v[1]:.4f}f, {v[2]:.4f}f)'
+
+# E: per danger type, cluster the neighbour-centre offsets into the 4 classes, then emit ONE
+# EXACT measured sample per class (the one nearest the class's mean centre) - never an
+# averaged rotation. Averaged-then-orthonormalized matrices are where a reflection (det -1)
+# can sneak in, and per-sample poses are proper rotations by construction. Every emitted
+# entry is asserted self-consistent: seedPos + R_seed @ B[seedType] must land on the class
+# centre - the exact recomputation AssembledFlora.RegisterDangerPrism performs daughter-side.
+print('\nE: neighbour classes - COMPLETE emit below; paste both dictionaries into')
+print('   GyroidOctagonData.cs verbatim (never hand-derive one row from another):\n')
+Bmean = {tk: np.array(B[tk]).mean(0) for tk in ('DE', 'EG', 'EsD', 'GEs')}
+print('        static readonly Dictionary<GyroidBlockType, OctagonNeighbor[]> Neighbors = new()')
+print('        {')
 for tk in ('DE', 'EG', 'EsD', 'GEs'):
     rows = []
     for k in full:
@@ -150,11 +194,22 @@ for tk in ('DE', 'EG', 'EsD', 'GEs'):
     cl = fcluster(linkage(co, 'single'), 2.5, criterion='distance')
     stable = [ci for ci in range(1, cl.max() + 1) if (cl == ci).sum() >= 6]
     assert len(stable) == 4, f'{tk}: expected 4 neighbour classes, got {len(stable)}'
+    print(f'            {{ GyroidBlockType.{tk}, new[]')
+    print('                {')
     for ci in stable:
         sel = [rows[x] for x in np.nonzero(cl == ci)[0]]
-        cm = np.mean([s[0] for s in sel], axis=0)
-        sp = np.mean([s[1] for s in sel], axis=0)
         st = collections.Counter(s[3] for s in sel).most_common(1)[0]
         assert st[1] == len(sel), f'{tk}: seed type not pure'
-        print(f'    {tk} -> ctr ({cm[0]:7.2f},{cm[1]:7.2f},{cm[2]:7.2f})  seed {st[0]} at ({sp[0]:6.2f},{sp[1]:6.2f},{sp[2]:6.2f})')
-print('\nAll assertions passed - GyroidOctagonData.cs tables are reproducible from the bond table.')
+        cm = np.mean([s[0] for s in sel], axis=0)
+        rep = min(sel, key=lambda s: np.linalg.norm(s[0] - cm))   # exact sample, no averaging
+        ctr, sp, sR, stype = rep
+        assert np.linalg.det(sR) > 0.99, f'{tk}: seed rotation not a proper rotation'
+        err = np.linalg.norm(sp + sR.dot(Bmean[stype]) - ctr)
+        assert err < 0.5, f'{tk}: emitted seed pose does not recompute its centre (err {err:.2f}u)'
+        x, y, z, w = m2q(sR)
+        print(f'                    new OctagonNeighbor({v3(ctr)}, {v3(sp)}, '
+              f'new Quaternion({x:.6f}f, {y:.6f}f, {z:.6f}f, {w:.6f}f), GyroidBlockType.{stype}),')
+    print('                } },')
+print('        };')
+print('\nAll assertions passed - every emitted seed pose recomputes its own centre '
+      '(the daughter-side coherence check), and the tables are reproducible from the bond table.')
