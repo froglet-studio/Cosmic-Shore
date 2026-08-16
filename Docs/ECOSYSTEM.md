@@ -4172,11 +4172,50 @@ path that can double-fill a site at scale; now counted (`UNRESERVED` in the hear
 a non-zero count alongside overlapping prisms is the diagnosis and the fix is index
 availability, not growth logic.
 
+**Fourth playtest (2026-08-15): growth pacing confirmed excellent; lattice "twinning"
+defects.** Fully-formed plants now beget fully-formed plants, but the surface showed defects
+"like twinning in crystallography" - prisms reading as ~90° misrotated, errors compounding,
+and crystals appearing outside some octagonal rings. Offline analysis exonerated the
+mathematical suspects (LookRotation degeneracy margins ≥0.9999 across all 48 bond entries;
+float32 walk bit-equivalent to float64; `ToGlobal` is scale-free; the quaternion bake in the
+E-table verified against Unity's convention branch by branch), so the defect enters through a
+Unity-runtime interaction the simulation could not see. Two responses shipped:
+
+1. **The lattice-defect auditor** (`GyroidColonyDiagnostics`): every grow decision and every
+   daughter seed handoff is checked for a prism 3.1-5.5u away (TryReserve already cleared
+   ~3.1u; the healthy lattice's minimum non-bonded spacing is 6.6u, so a hit means a
+   misaligned lattice domain being minted), counted separately for GROWN sites (bond-table
+   continuation - drift or seam defects) and SEED sites (the E-table handoff - one bad
+   handoff twins a whole subtree), with the first 24 logged at their world positions.
+   `MaxRingCoherenceError` tracks the worst computed-vs-claimed ring-centre disagreement
+   (healthy < 1u), and `RotationFallbacks` counts `SafeLookRotation` failures (offline says
+   the table never produces one, so non-zero fingers a post-spawn transform write). All in
+   the 5s colony heartbeat line.
+
+2. **The orphan-reservation seam race - found by reading, fixed to match the sim.** The
+   validated colony simulation used perfect-information reservations; Unity's had a 5s TTL,
+   and three paths abandoned live reservations into it. The systematic one: the ownership
+   gate DECLINES a foreign boundary site with the reservation `GetGrowthInfo` just made
+   still live. The site's true owner - a sister plant growing at 0.1-1s cadence - probes the
+   same world position within the window with near-certainty, its `TryReserve` fails, and
+   `GetGrowthInfo` treats reserve-failure as "occupied for real": the owner's bond site is
+   marked bonded PERMANENTLY. Roughly every seam site whose first prober was the non-owner
+   became a lasting hole - missing danger prisms, open ring arcs, and crystals apparently
+   sitting outside their octagons, concentrated exactly where plants meet. All abandoning
+   paths now release explicitly: the decline itself, an age-dropped grow order (which
+   otherwise fails against its OWN stale claim on re-decision), a died plant's pending
+   queue, and a stranded offspring seed (both the octagon and the generic donated-growth
+   flavours, plus `OnDestroy`). Reserve-failure still means "someone real is there" - that
+   is what makes marking-bonded-on-failure correct again.
+
 In-editor verification (the human is the gate): enter freestyle in Menu_Main, fly the Cell
 Selector toy, pick **Gyroid Lab**. Watch: (1) the founder's first danger prism moves the
 crystal to the ring centre; (2) the surface grows as ONE continuous gyroid with no doubled
 prisms; (3) each completed ring's window holds exactly one crystal, none of them growing;
-(4) daughters bloom at neighbouring windows and knit seamlessly; (5) it never stops. If the
-surface fragments, the seed-pose handoff is misaligned — `GyroidOctagonData` and
-`AssembledFlora.TryResolveOctagonOffspring` are the places to look. Regenerate the tables
-with `Tools/Build/measure_gyroid_octagons.py`.
+(4) daughters bloom at neighbouring windows and knit seamlessly; (5) it never stops. Read the
+heartbeat's `DEFECTS` clause: `seed=` dominant → the E-table handoff as computed in Unity;
+`grown=` dominant at plant boundaries → frame drift seams; `ringErrMax` growing with colony
+radius → progressive decoherence; `UNRESERVED` non-zero → the spatial index was unavailable
+and growth ran unchecked. If the surface fragments, the seed-pose handoff is misaligned —
+`GyroidOctagonData` and `AssembledFlora.TryResolveOctagonOffspring` are the places to look.
+Regenerate the tables with `Tools/Build/measure_gyroid_octagons.py`.

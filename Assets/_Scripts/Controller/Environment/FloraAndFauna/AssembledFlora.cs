@@ -281,12 +281,21 @@ namespace CosmicShore.Gameplay
                 // Octagon colony: a site in a NEIGHBOURING plant's territory is not this
                 // plant's to grow - that plant lays the same world position from its own
                 // lattice. Decline marks the bond site filled so the branch moves on instead
-                // of re-offering it every tick; the site's fresh reservation lapses on its
-                // TTL, the standard skip-after-claim path.
+                // of re-offering it every tick. The reservation GetGrowthInfo just made is
+                // released HERE, not left to its TTL: the owner's frontier reaches this same
+                // world site within seconds (grow cadence 0.1-1s vs a 5s TTL), its TryReserve
+                // fails against the orphan, and GetGrowthInfo treats reserve-failure as
+                // 'occupied for real' - permanently bonding the owner's site. Left in place,
+                // that race punched a lasting hole at roughly every seam site the NON-owner
+                // probed first: missing danger prisms, open ring arcs, crystals apparently
+                // outside their octagons (the fifth Lab playtest). The validated colony sim
+                // had perfect-information reservations - this release is what makes Unity
+                // match the model that was proven correct.
                 if (OctagonMode && growthInfo is GyroidGrowthInfo gyroidInfo &&
                     !OwnsLatticeSite(gyroidInfo.Position))
                 {
                     (branch.assembler as GyroidAssembler)?.DeclineGrowthSite(gyroidInfo.Site);
+                    PrismSpatialIndex.Instance?.ReleaseReservation(gyroidInfo.Position);
                     GyroidColonyDiagnostics.DeclinedForeignSites++;
                     continue;
                 }
@@ -340,9 +349,16 @@ namespace CosmicShore.Gameplay
             {
                 var order = pendingSpawns.Dequeue();
 
-                // Claim lapsed during a long hold — drop it (see MaxOrderAgeSeconds);
-                // the next grow tick re-decides this branch.
-                if (Time.time - order.decidedAt > MaxOrderAgeSeconds) continue;
+                // Order held too long (see MaxOrderAgeSeconds) — drop it, and release its
+                // reservation NOW rather than letting it lapse: the next grow tick re-decides
+                // this branch, offers the same site, and would fail TryReserve against its OWN
+                // stale claim — GetGrowthInfo then marks the site permanently bonded, so a
+                // long Frenzy hold would quietly kill every site that had an order pending.
+                if (Time.time - order.decidedAt > MaxOrderAgeSeconds)
+                {
+                    PrismSpatialIndex.Instance?.ReleaseReservation(order.info.Position);
+                    continue;
+                }
 
                 ExecuteGrowOrder(order);
                 spawned++;
@@ -357,9 +373,12 @@ namespace CosmicShore.Gameplay
             // executing pending orders through its wither window: a fresh spindle
             // registering on the corpse stalls DieCoroutine's empty-tracker wait
             // (zombie flora), and a child parented under an evaporating spindle is
-            // hard-destroyed with it (a pop-out). Claimed sites release via the
-            // reservation TTL, same as any skipped-after-claim site.
-            pendingSpawns.Clear();
+            // hard-destroyed with it (a pop-out). Claimed sites are released as the
+            // queue drains - an orphan reservation blocks a neighbour's TryReserve for
+            // its whole TTL, and that neighbour's reserve-failure permanently bonds
+            // the site (see the decline path in Grow).
+            while (pendingSpawns.Count > 0)
+                PrismSpatialIndex.Instance?.ReleaseReservation(pendingSpawns.Dequeue().info.Position);
             base.Die(killerName);
         }
 
@@ -646,6 +665,11 @@ namespace CosmicShore.Gameplay
             position = default;
             rotation = default;
             up = null;
+            // A donated order stranded by a failed spawn (ConfigureOffspring never consumed
+            // it) leaves its reservation live - release it, or the donor's own re-decision of
+            // that site fails against its own claim and permanently bonds the site.
+            if (_donatedGrowth != null)
+                PrismSpatialIndex.Instance?.ReleaseReservation(_donatedGrowth.Position);
             _donatedGrowth = null;
 
             if (activeBranches.Count == 0) return false;
@@ -695,11 +719,16 @@ namespace CosmicShore.Gameplay
             rotation = default;
             up = null;
 
-            // A claim stranded by a failed spawn (host torn down mid-birth) would block that
-            // octagon forever - release it before claiming a new one.
+            // A claim stranded by a failed spawn (cap hit between placement and SpawnFlora,
+            // host torn down mid-birth) would block that octagon forever - release it before
+            // claiming a new one. Its seed-site reservation is stranded with it (on success
+            // ConfigureOffspring consumed both), and an orphan reservation permanently bonds
+            // whichever frontier probes the site inside its TTL - release that too.
             if (_hasPendingOffspringClaim)
             {
                 GyroidOctagonRegistry.Release(_pendingOffspringCenter, this);
+                if (_pendingOffspringSeed != null)
+                    PrismSpatialIndex.Instance?.ReleaseReservation(_pendingOffspringSeed.Position);
                 _hasPendingOffspringClaim = false;
             }
 
@@ -817,7 +846,11 @@ namespace CosmicShore.Gameplay
             if (_octagonCenter.HasValue)
                 GyroidOctagonRegistry.Release(_octagonCenter.Value, this);
             if (_hasPendingOffspringClaim)
+            {
                 GyroidOctagonRegistry.Release(_pendingOffspringCenter, this);
+                if (_pendingOffspringSeed != null)
+                    PrismSpatialIndex.Instance?.ReleaseReservation(_pendingOffspringSeed.Position);
+            }
             base.OnDestroy();
         }
 

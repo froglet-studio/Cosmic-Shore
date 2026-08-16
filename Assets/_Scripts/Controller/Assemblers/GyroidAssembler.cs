@@ -625,7 +625,14 @@ namespace CosmicShore.Gameplay
             Vector3 up = mate.DeltaUp.x * transform.right + mate.DeltaUp.y * transform.up + mate.DeltaUp.z * transform.forward + transform.up;
 
             if (!SafeLookRotation.TryGet(forward, up, out var targetRotation, mate.Mate ? mate.Mate.gameObject : gameObject))
+            {
+                // A degenerate basis means this prism keeps whatever rotation it already had -
+                // exactly the "90 degrees off" twin the colony auditor hunts. Offline analysis
+                // says the bond table never produces one (margins >= 0.9999), so a non-zero
+                // count here fingers a post-spawn transform write corrupting the parent frame.
+                GyroidColonyDiagnostics.RotationFallbacks++;
                 return mate.Mate ? mate.Mate.transform.rotation : transform.rotation;
+            }
 
             return targetRotation;
         }
