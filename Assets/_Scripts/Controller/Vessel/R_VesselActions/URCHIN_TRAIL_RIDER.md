@@ -291,6 +291,41 @@ nothing upstream changed. Wake prisms' z genuinely points down the trail
 (`blockRotation = transform.rotation` at lay time), so the authored-z invariant the dimension
 ladder rests on holds for every wake ribbon.
 
+## Holes and junctions (round 8): a damaged trail still rides, and trails FORK
+
+**Trail integrity over missing prisms.** A DESTROYED prism still rides — its object stays in
+place as a restorable skeleton, the walk's geometry is intact, and the payoff restores it in
+passing. What used to break the ride was a real hole (a null entry at teardown, a pooled-away
+object) — `Project`/`LookAhead` dereferenced it — and destroyed mass halted the slide anyway,
+because `DestroyedTerrainSpeed` was authored 10 against a friendly 150. Both closed:
+
+- The walks now **BRIDGE holes**: `Trail.IsRidable` (non-null + active — destroyed-in-place
+  passes), `TryStepRidable` (one ridable step with the same wrap/reflect end semantics, so the
+  park logic still hears reflections), and every step in `Project`/`LookAhead` routes through
+  it. A missing prism splices out of the ribbon: the segment spans the survivors, the spline's
+  outer control points fall back to the segment endpoints (`ControlBlockPosition`), and a walk
+  that runs out of survivors parks on the last one instead of throwing.
+- `DestroyedTerrainSpeed` on `Urchin.prefab` is now **150** (both followers) — riding across a
+  destroyed stretch keeps pace, and the payoff re-builds the ribbon under you as you cross.
+
+**Junctions.** When an Urchin attaches, the wake it was laying ends at the meeting point — a
+junction, spatially. And any two trails crossing in space are one too. The rule (authored per
+the design: *"travel down the trail fork that it is more oriented toward — larger dot
+product"*): on every block crossing the ride probes around the ridden block
+(`PrismSpatialIndex.QuerySphere`, `junctionSearchRadiusScale` × the block's extent — never
+physics) for prisms of a DIFFERENT 1D container; if a crossing ribbon's heading
+(`Trail.HeadingAt`) runs more along the pilot's forward than the current ribbon's axis does —
+by at least `junctionSwitchMargin`, the hysteresis that stops flip-flopping while lingering at
+a junction — the ride FORKS: `Attach` to the crossing block, `SeedTrailRide` re-seeds orbit +
+facing from where the hull stands, so the switch is positionally continuous. Aim down the
+branch you want as you approach; the ride takes it. The probe runs once per block crossing,
+after the walk returns (forking mid-walk would corrupt the walk's state), and only ribbons are
+fork targets (a gyroid passing nearby is not a "branch").
+
+A wide fork seeds a wide orbit radius (the new centerline starts several units away), so the
+grind radius now **settles** toward `minOrbitRadius` at `orbitRadiusSettleRate` — imperceptible
+on a normal ride, and what reels the rider in onto the new rail after a fork.
+
 ## The rail grind (round 5): each ride's controls map onto its prismscape's z-axis
 
 Round 4 made the rides smooth; playtest feedback set the FEEL, and it demanded **different
@@ -449,7 +484,10 @@ restore the previous pilot's colliders onto the new one at an arbitrary moment.
 
 | Knob | Where | Value |
 |---|---|---|
-| `FriendlyTerrainSpeed` / `HostileTerrainSpeed` / `DestroyedTerrainSpeed` | `Urchin.prefab` — `TrailFollower` AND `BlockscapeFollower` | **150 / 10 / 10** on both. The 15× gap is what Slipstream buys. Both trios are now LIVE — the `TrailFollower` one prices the 1D slide, the `BlockscapeFollower` one the 2D roll. Keep them matched unless the roll should price differently. |
+| `FriendlyTerrainSpeed` / `HostileTerrainSpeed` / `DestroyedTerrainSpeed` | `Urchin.prefab` — `TrailFollower` AND `BlockscapeFollower` | **150 / 10 / 150** on both. The 15× hostile gap is what Slipstream buys. Destroyed = friendly pace (round 8): a hole must not halt the slide — the payoff restores the ribbon as you cross it. Keep the trios matched unless the roll should price differently. |
+| `junctionSearchRadiusScale` | `GunVesselTransformer` (C# default **4**) | Junction probe radius, × the ridden block's largest extent. Spans the gap where a wake's head meets the trail it attached to. |
+| `junctionSwitchMargin` | `GunVesselTransformer` (C# default **0.1**) | How much better aligned a crossing ribbon must be before the ride forks. Hysteresis. |
+| `orbitRadiusSettleRate` | `GunVesselTransformer` (C# default **1.5**) | u/s reel-in of the grind radius toward `minOrbitRadius` — matters after a wide fork. |
 | `growthAmount` | `Urchin.prefab` `GunVesselTransformer` | `ElementalFloat`, element **Mass**, Min 0.6 → Max 1.2, `Value` 1 |
 | `rechargeRate` | `Urchin.prefab` `GunVesselTransformer` | 0.1 ammo/s, **×2** on a shielded prism |
 | `ammoIndex` | `Urchin.prefab` `GunVesselTransformer` | 0 — the same slot the spike volley spends |

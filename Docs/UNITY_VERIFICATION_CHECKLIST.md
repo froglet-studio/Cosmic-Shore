@@ -223,6 +223,28 @@ Round-7 verify: grind a trail at full throttle — NO per-prism tick, position A
 smoothly through block centres like a rail slide; fire the shotgun at cruise speed — the fan
 travels with the ship (rings hold shape relative to the pilot) in a visibly tighter cone.
 
+**ROUND 8 (2026-08-16, "this was a huge improvement").** Two features on the now-working grind:
+
+- **Trail integrity over missing prisms.** Destroyed-in-place prisms already rode (transforms
+  intact, payoff restores them) — but a real hole (null at teardown, pooled-away object) broke
+  the walks, and `DestroyedTerrainSpeed: 10` halted the slide to a crawl over every destroyed
+  stretch. Now: `Trail.IsRidable` + `TryStepRidable` bridge holes in `Project`/`LookAhead`
+  (same wrap/reflect end semantics, so parking still works; spline control points fall back to
+  segment endpoints; a walk with no survivors parks instead of throwing), and
+  `DestroyedTerrainSpeed` is 150 on both followers — holes keep pace and get rebuilt under
+  the payoff as you cross.
+- **Junctions.** On every block crossing the ride probes (`QuerySphere`,
+  `junctionSearchRadiusScale`×extent) for a DIFFERENT 1D container passing nearby; if its
+  heading runs more along the pilot's forward than the current ribbon's axis (by
+  `junctionSwitchMargin` hysteresis), the ride FORKS onto it (`Attach` + `SeedTrailRide` —
+  positionally continuous), then the grind radius settles in (`orbitRadiusSettleRate`). Aim
+  down the branch you want; the ride takes it. Ribbons only — a nearby gyroid is not a fork.
+
+Round-8 verify: blow holes in a ridden trail (spike it, fly a Dolphin through it) then grind
+across — full pace, no snap, prisms restore under you. Attach to a trail your wake meets: ride
+back to the meeting point aiming down your wake — the ride forks onto it; aim along the
+original trail instead — it keeps straight. Linger at a junction — no flip-flopping.
+
 Full mechanics, historical record and follow-ups:
 `_Scripts/Controller/Vessel/R_VesselActions/URCHIN_CHAIN_SPIKES.md` and `URCHIN_TRAIL_RIDER.md`.
 Element map: `Docs/ElementalAbilitySystem/FLEET_MAPS.md` §2 Urchin.

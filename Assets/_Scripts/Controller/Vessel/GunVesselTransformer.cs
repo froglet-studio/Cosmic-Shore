@@ -87,6 +87,23 @@ namespace CosmicShore.Gameplay
                  "the pilot aims near broadside.")]
         [SerializeField] float facingDeadband = 0.15f;
 
+        [Header("Junctions")]
+        [Tooltip("How far around the ridden block the ride looks for ANOTHER trail's prisms " +
+                 "when it crosses a block (a junction probe), in multiples of the ridden " +
+                 "prism's largest extent. Big enough to span the gap where a wake's head meets " +
+                 "the trail it attached to.")]
+        [SerializeField] float junctionSearchRadiusScale = 4f;
+
+        [Tooltip("How much better aligned (|dot| with the pilot's forward) a crossing trail " +
+                 "must be before the ride forks onto it. Hysteresis - zero would flip-flop " +
+                 "the rider at every junction it lingers near.")]
+        [SerializeField] float junctionSwitchMargin = 0.1f;
+
+        [Tooltip("The grind radius eases toward minOrbitRadius at this rate (world units/s) - " +
+                 "reels the rider in onto the rail, and matters most after a wide junction " +
+                 "fork, where the new centerline starts several units away.")]
+        [SerializeField] float orbitRadiusSettleRate = 1.5f;
+
         [Tooltip("How quickly the hull's belly eases onto the surface normal while rolling a " +
                  "2D prismscape (1/s, exponential). A minimal-twist correction on top of the " +
                  "pilot's steering, never a replacement for it.")]
@@ -104,6 +121,13 @@ namespace CosmicShore.Gameplay
         /// Re-latched only outside <see cref="facingDeadband"/> - hysteresis, so aiming near
         /// broadside cannot flap the throttle mapping.</summary>
         int _facingSign = 1;
+
+        /// <summary>Set on each block crossing; the junction probe runs once per crossing,
+        /// AFTER RideTheTrail returns (forking mid-walk would corrupt the walk's state).</summary>
+        bool _junctionCheckQueued;
+
+        // Main-thread only, like every QuerySphere consumer.
+        static readonly System.Collections.Generic.List<Prism> s_junctionCandidates = new(32);
 
         [SerializeField] int ammoIndex = 0;
 
@@ -190,17 +214,7 @@ namespace CosmicShore.Gameplay
             {
                 if (!trailFollower || !trailFollower.Attach(prism)) return false;
                 _rideMode = RideMode.Trail;
-
-                // Seed the orbit from where the hull actually latched: radius = attach
-                // distance from the centerline (floored), radial = that offset made
-                // perpendicular to the ribbon axis, facing = the nose's current agreement
-                // with the ribbon's index-order axis.
-                Vector3 axis = trailFollower.IndexOrderHeading;
-                Vector3 offset = transform.position - trailFollower.CenterlinePoint;
-                Vector3 radial = offset - axis * Vector3.Dot(offset, axis);
-                _orbitRadius = Mathf.Max(minOrbitRadius, radial.magnitude);
-                _orbitRadial = radial.sqrMagnitude > 1e-4f ? radial.normalized : PerpendicularTo(axis);
-                _facingSign = Vector3.Dot(transform.forward, axis) >= 0f ? 1 : -1;
+                SeedTrailRide();
                 return true;
             }
 
@@ -214,6 +228,69 @@ namespace CosmicShore.Gameplay
             _rideMode = RideMode.Surface;
             CSDebug.Log($"[GunVesselTransformer] Riding a {dimension} prismscape.");
             return true;
+        }
+
+        /// <summary>
+        /// Seed the grind from where the hull actually stands: radius = distance from the
+        /// centerline (floored at minOrbitRadius), radial = that offset made perpendicular to
+        /// the ribbon axis, facing = the nose's current agreement with the index-order axis.
+        /// Runs at ride begin AND at every junction fork - both are "a new rail from here".
+        /// </summary>
+        void SeedTrailRide()
+        {
+            Vector3 axis = trailFollower.IndexOrderHeading;
+            Vector3 offset = transform.position - trailFollower.CenterlinePoint;
+            Vector3 radial = offset - axis * Vector3.Dot(offset, axis);
+            _orbitRadius = Mathf.Max(minOrbitRadius, radial.magnitude);
+            _orbitRadial = radial.sqrMagnitude > 1e-4f ? radial.normalized : PerpendicularTo(axis);
+            _facingSign = Vector3.Dot(transform.forward, axis) >= 0f ? 1 : -1;
+        }
+
+        /// <summary>
+        /// The junction rule: when the ride crosses a block, look for ANOTHER trail passing
+        /// nearby; if one runs MORE ALONG the pilot's facing than the current ribbon does
+        /// (larger |dot|, beyond a hysteresis margin), fork onto it. This is what makes a
+        /// wake that meets another trail into a real junction - ride to the meeting point
+        /// aiming down the branch you want, and the ride takes it.
+        /// </summary>
+        void TryForkAtJunction()
+        {
+            var index = PrismSpatialIndex.Instance;
+            if (!index || !index.IsAvailable) return;
+
+            var current = trailFollower.AttachedPrism;
+            if (!current) return;
+            var currentTrail = current.Trail;
+
+            float currentAlign = Mathf.Abs(Vector3.Dot(transform.forward, trailFollower.IndexOrderHeading));
+
+            var s = current.transform.lossyScale;
+            float extent = Mathf.Max(Mathf.Abs(s.x), Mathf.Max(Mathf.Abs(s.y), Mathf.Abs(s.z)));
+            float radius = Mathf.Max(1f, extent) * junctionSearchRadiusScale;
+
+            index.QuerySphere(trailFollower.CenterlinePoint, radius, s_junctionCandidates);
+
+            Prism best = null;
+            float bestAlign = currentAlign + junctionSwitchMargin;
+            for (int i = 0; i < s_junctionCandidates.Count; i++)
+            {
+                var candidate = s_junctionCandidates[i];
+                if (!candidate || candidate.Trail == null || candidate.Trail == currentTrail) continue;
+                if (candidate.Trail.Dimension != PrismscapeDimension.Trail) continue; // fork onto RIBBONS only
+
+                Vector3 branch = candidate.Trail.HeadingAt(candidate.Trail.GetBlockIndex(candidate));
+                if (branch.sqrMagnitude < 1e-6f) continue;
+
+                float align = Mathf.Abs(Vector3.Dot(transform.forward, branch));
+                if (align > bestAlign)
+                {
+                    bestAlign = align;
+                    best = candidate;
+                }
+            }
+
+            if (!best || !trailFollower.Attach(best)) return;
+            SeedTrailRide();
         }
 
         void EndRide()
@@ -262,6 +339,19 @@ namespace CosmicShore.Gameplay
                 {
                     VesselStatus.Speed = 0f;
                 }
+
+                // Junction probe, once per block crossing, AFTER the walk (forking mid-walk
+                // would corrupt the walk's own state).
+                if (_junctionCheckQueued)
+                {
+                    _junctionCheckQueued = false;
+                    TryForkAtJunction();
+                    axis = trailFollower.IndexOrderHeading; // a fork changes the rail under us
+                }
+
+                // Reel the grind in toward the rail - imperceptible on a normal ride, and
+                // what brings the rider home after a wide junction fork.
+                _orbitRadius = Mathf.MoveTowards(_orbitRadius, minOrbitRadius, orbitRadiusSettleRate * dt);
 
                 // Orbit: keep the radial perpendicular to the (curving) axis by parallel
                 // transport, then let roll input carry it around the ribbon. The extra
@@ -410,7 +500,9 @@ namespace CosmicShore.Gameplay
         /// <summary>Kept as <see cref="TrailFollower"/>'s callback surface.</summary>
         public void FinalBlockSlideEffects()
         {
-            if (trailFollower) ApplyPrismscapePayoff(trailFollower.AttachedPrism);
+            if (!trailFollower) return;
+            ApplyPrismscapePayoff(trailFollower.AttachedPrism);
+            _junctionCheckQueued = true;
         }
     }
 }

@@ -47,12 +47,8 @@ namespace CosmicShore.Gameplay
             get
             {
                 if (attachedTrail == null) return Vector3.forward;
-                var list = attachedTrail.TrailList;
-                int last = list.Count - 1;
-                if (last < 1) return Vector3.forward;
-                Vector3 h = list[Mathf.Min(attachedBlockIndex + 1, last)].transform.position
-                          - list[Mathf.Max(attachedBlockIndex - 1, 0)].transform.position;
-                return h.sqrMagnitude > 1e-6f ? h.normalized : Vector3.forward;
+                Vector3 h = attachedTrail.HeadingAt(attachedBlockIndex);
+                return h.sqrMagnitude > 1e-6f ? h : Vector3.forward;
             }
         }
 

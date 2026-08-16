@@ -2445,7 +2445,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   FriendlyTerrainSpeed: 150
   HostileTerrainSpeed: 10
-  DestroyedTerrainSpeed: 10
+  DestroyedTerrainSpeed: 150
   Throttle: 0
 --- !u!114 &7081412522392871879
 MonoBehaviour:
@@ -2461,7 +2461,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   FriendlyTerrainSpeed: 150
   HostileTerrainSpeed: 10
-  DestroyedTerrainSpeed: 10
+  DestroyedTerrainSpeed: 150
   Throttle: 0
 --- !u!114 &4235613159111207255
 MonoBehaviour:
