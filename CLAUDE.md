@@ -144,12 +144,22 @@ outcome is optimization, not life). Use the `/ecology` skill for any change here
   (8 danger ÷ the ⅓ danger fraction, exact). `GyroidOctagonData` carries the measured constants
   (own-centre offset per danger type; four neighbouring rings per type with a deterministic seed
   pose each), `GyroidOctagonRegistry` is the claim book, `AssembledFlora.OwnsLatticeSite` is the
-  territory gate that makes plants TILE the surface instead of racing over it, and reproduction
-  plants a daughter at every unclaimed neighbouring ring centre with a real member of that ring as
-  her first prism. **Nothing in the code describes a gyroid**; the superstructure is emergent from
+  territory gate that makes plants TILE the surface instead of racing over it, and **reproduction
+  is a POPULATION event**: a plant that COMPLETES its growth contributes its unclaimed
+  neighbouring ring centres (full seed poses included) to `GyroidColonyFrontier`, and the whole
+  population births exactly ONE daughter per fauna-wave period (`Cell.CurrentFaunaSpawnPeriod`,
+  frame-staggered) at a uniformly RANDOM frontier site — random choice across every complete
+  plant is what de-spheres the colony into the old single-gyroid's organic wander, now at the
+  level of whole flora, and one-at-a-time from the main thread means no race by construction.
+  Per-birth validation is a point lookup against the claim book, never a per-prism sweep.
+  **Nothing in the code describes a gyroid**; the superstructure is emergent from
   local continuation — proven by simulating the exact algorithm (273 plants from one founder: a
   single connected gyroid, zero overlaps, bijective on the reference lattice, one crystal per
-  octagon). Mass is preserved (`cap × 24 ≈ the old single-plant budget`); the cost is **crystals**
+  octagon). Every table row is a MEASUREMENT pasted verbatim from the emit — the one shipped
+  symmetry shortcut (z-mirroring DE/EG rows into GEs/EsD) twinned 12 of 16 seed rotations by up
+  to 179° and cost five playtests; `Tools/Build/verify_gyroid_octagon_tables.py` now proves the
+  SHIPPED file against a fresh reference walk, and a daughter asserts her handoff at birth.
+  Mass is preserved (`cap × 24 ≈ the old single-plant budget`); the cost is **crystals**
   (one always-on heart collider per octagon), and `MaxLivePopulation` is the dial. Numbers are
   authored by `Tools/Build/author_flora_populations.py` (`--check`), never by hand; the tables
   regenerate via `Tools/Build/measure_gyroid_octagons.py`. The **Gyroid Lab** cell (Menu_Main's

@@ -29,7 +29,6 @@ namespace CosmicShore.Gameplay
     public static class GyroidColonyDiagnostics
     {
         public static int Births;
-        public static int BirthsHeldByMaturity;
         public static int ReseedMintsBlocked;
         public static int DeclinedForeignSites;
         public static int GrownPrisms;
@@ -64,7 +63,6 @@ namespace CosmicShore.Gameplay
         static void Reset()
         {
             Births = 0;
-            BirthsHeldByMaturity = 0;
             ReseedMintsBlocked = 0;
             DeclinedForeignSites = 0;
             GrownPrisms = 0;
@@ -94,7 +92,7 @@ namespace CosmicShore.Gameplay
         public static float MaxSeedHandoffError;
 
         public static string Summary =>
-            $"claims={GyroidOctagonRegistry.ClaimCount} births={Births} heldByMaturity={BirthsHeldByMaturity} " +
+            $"claims={GyroidOctagonRegistry.ClaimCount} births={Births} frontier={GyroidColonyFrontier.TotalCount} " +
             $"grown={GrownPrisms} seeded={SeededDaughterPrisms} foreignDeclines={DeclinedForeignSites} " +
             $"mintsBlocked={ReseedMintsBlocked} UNRESERVED={UnreservedSpawns} " +
             $"BLOCKED grown={GrownSiteDefects} seed={SeedSiteDefects} poison={RingPoisonRejected} " +
@@ -226,6 +224,12 @@ namespace CosmicShore.Gameplay
 
         public override void Grow()
         {
+            // Population duties run BEFORE the early returns below, because the plants that
+            // matter most to reproduction are exactly the ones those returns retire from
+            // growing: a complete plant (budget-full, branchless) must still contribute its
+            // frontier once and keep a hand on the population's reproduction clock.
+            if (OctagonMode) TickOctagonPopulation();
+
             // Live-prism budget: the flora can hold at most maxTotalSpawnedObjects LIVE
             // prisms. Consumption frees budget, so a grazed flora regrows. (Was: a
             // lifetime spawn counter that never decremented - a fully-grown flora could
@@ -742,14 +746,14 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// The octagon colony's reproduction: project the measured neighbour table from every
-        /// ring prism this plant has grown, and take the first neighbouring octagon that is
-        /// UNCLAIMED and whose seed site is free. The daughter is planted with her root (and
-        /// crystal) at that octagon's CENTRE and her first prism at a real member of its ring -
-        /// "calculate where the neighbouring crystals belong, check if one is already there,
-        /// and plant where there is not". One candidate per call; the base's per-birth loop
-        /// (OffspringPerBirth) drains as many as this tick may plant, and the armed quota
-        /// retries the rest on later ticks.
+        /// The octagon colony's placement is STAGED, never searched: reproduction is a
+        /// POPULATION event (see <see cref="TickOctagonPopulation"/>) - the colony pops one
+        /// random frontier octagon per cycle and <see cref="TrySpawnFrontierDaughter"/> stages
+        /// the validated claim + seed on the lineage donor before spawning through the one
+        /// canonical path. This override just hands the staged target back to that path. A
+        /// plant with nothing staged has nothing to place, which is also what makes the
+        /// per-plant quota machinery (<c>Flora.TryReproduce</c>) harmlessly inert for octagon
+        /// colonies: its quota arms and stays armed, but placement always declines it.
         /// </summary>
         bool TryResolveOctagonOffspring(out Vector3 position, out Quaternion rotation, out Vector3? up)
         {
@@ -757,32 +761,87 @@ namespace CosmicShore.Gameplay
             rotation = default;
             up = null;
 
-            // A claim stranded by a failed spawn (cap hit between placement and SpawnFlora,
-            // host torn down mid-birth) would block that octagon forever - release it before
-            // claiming a new one. Its seed-site reservation is stranded with it (on success
-            // ConfigureOffspring consumed both), and an orphan reservation permanently bonds
-            // whichever frontier probes the site inside its TTL - release that too.
-            if (_hasPendingOffspringClaim)
+            if (!_hasPendingOffspringClaim || _pendingOffspringSeed == null) return false;
+
+            position = _pendingOffspringCenter;
+            rotation = _pendingOffspringSeed.Rotation;
+            return true;
+        }
+
+        // "A few frames" behind the fauna wave boundary, so the colony's birth never lands on
+        // the same frame as a wave's instantiation burst.
+        const float PopulationCycleStagger = 0.35f;
+
+        // One-shot: a plant contributes its frontier to the population book exactly once, at
+        // the moment it first reads as fully grown.
+        bool _frontierContributed;
+
+        /// <summary>
+        /// The population-level reproduction drive (Docs/ECOSYSTEM.md §32.7, organic-growth
+        /// pass), run from every octagon plant's grow tick. Two duties:
+        ///
+        /// <para><b>Contribute:</b> the first tick on which this plant reads as FULLY GROWN
+        /// (<see cref="OctagonMature"/>), it offers every unclaimed neighbouring ring centre -
+        /// with the full seed pose projected from its own measured ring - to
+        /// <see cref="GyroidColonyFrontier"/>. Completing growth is what earns a place in the
+        /// reproduction pool, so only complete lifeforms ever parent.</para>
+        ///
+        /// <para><b>Cycle:</b> the whole population births ONE new lifeform per cycle, and the
+        /// cycle rides the cell's fauna-wave cadence (<see cref="Cell.CurrentFaunaSpawnPeriod"/>,
+        /// staggered a few frames so births never share a frame with a wave burst). The chosen
+        /// site is a UNIFORMLY RANDOM pop across every complete plant's frontier - which is
+        /// what de-spheres the colony: growth wanders organically the way the old single-plant
+        /// gyroid wandered prism by prism, now at the level of whole flora. Any plant's tick
+        /// may cross the clock boundary; the first one owns the cycle (main-thread, one at a
+        /// time - no race by construction).</para>
+        /// </summary>
+        void TickOctagonPopulation()
+        {
+            if (!SourceConfig) return;   // toy/microscene clones grow, but coordinate nothing
+
+            if (!_frontierContributed && OctagonMature && _ringMembers.Count > 0)
             {
-                GyroidOctagonRegistry.Release(_pendingOffspringCenter, this);
-                if (_pendingOffspringSeed != null)
-                    PrismSpatialIndex.Instance?.ReleaseReservation(_pendingOffspringSeed.Position);
-                _hasPendingOffspringClaim = false;
+                ContributeFrontier();
+                _frontierContributed = true;
             }
 
-            if (!_octagonCenter.HasValue || _ringMembers.Count == 0) return false;
+            // The cell's fauna wave period is the ecosystem heartbeat; a cell with no spawn
+            // profile falls back to the platform default rather than never reproducing.
+            float period = cell ? cell.CurrentFaunaSpawnPeriod : 0f;
+            if (period <= 0f) period = 30f;
 
-            // A gyroid reproduces only when it has FULLY GROWN all its spindles and health
-            // prisms (see OctagonMature). The quota may have been banked long before - the
-            // armed retry simply waits here until the plant's own frontier is done.
-            if (!OctagonMature)
+            if (!GyroidColonyFrontier.TryBeginCycle(SourceConfig, period, PopulationCycleStagger))
+                return;
+
+            // Production gates checked BEFORE popping, so a capped or Frenzy-frozen colony
+            // skips the cycle without burning frontier entries (nothing is culled, nothing is
+            // lost - the sites are simply still there next cycle).
+            if (cell && (!cell.FloraPlantingEnabled || cell.IsFloraAtCap(SourceConfig))) return;
+
+            // One BIRTH per cycle; stale entries (claimed since offered, misaligned-frame
+            // conflicts) are discarded along the way - each is a point lookup against the
+            // claim book, not a mass sweep.
+            while (GyroidColonyFrontier.TryPopRandom(SourceConfig, out var entry))
             {
-                GyroidColonyDiagnostics.BirthsHeldByMaturity++;
-                return false;
+                if (GyroidOctagonRegistry.IsClaimed(entry.Center)) continue;
+
+                // The contributor is the lineage donor. If the food web took it since it
+                // offered this site, the site is still real lattice - the ticking plant
+                // stands in as donor ("the chosen one can seed off ANY complete plant").
+                var donor = entry.Contributor ? entry.Contributor : this;
+                if (donor.TrySpawnFrontierDaughter(entry.Center, entry.Seed)) break;
             }
+        }
 
-            var spatialIndex = PrismSpatialIndex.EnsureInstance();
-
+        /// <summary>
+        /// Projects the measured neighbour table from every ring prism this plant grew and
+        /// offers each unclaimed neighbouring octagon - centre plus the full seed pose of one
+        /// real member of that ring - to the population's frontier book. "Calculate where the
+        /// neighbouring crystals belong, check whether one is already there, and remember
+        /// where there is not."
+        /// </summary>
+        void ContributeFrontier()
+        {
             for (int m = 0; m < _ringMembers.Count; m++)
             {
                 var member = _ringMembers[m];
@@ -793,65 +852,95 @@ namespace CosmicShore.Gameplay
                     Vector3 center = member.Position + member.Rotation * neighbors[n].Center;
                     if (GyroidOctagonRegistry.IsClaimed(center)) continue;
 
-                    Vector3 seedPos = member.Position + member.Rotation * neighbors[n].SeedPosition;
-                    Quaternion seedRot = member.Rotation * neighbors[n].SeedRotation;
-
-                    // Claim the centre FIRST - it is released on any later failure. The seed
-                    // reservation must come second: a reservation abandoned on a lost claim
-                    // race would sit until its TTL, and every neighbouring branch that probes
-                    // the site meanwhile marks it PERMANENTLY skipped (GetGrowthInfo treats a
-                    // reserve-failure as 'occupied for real') - a transient race would punch a
-                    // lasting hole in the surface.
-                    if (!GyroidOctagonRegistry.TryClaim(center, this)) continue;
-
-                    // The seed site must be free mass-wise too (a boundary prism this plant
-                    // already grew can sit exactly there). TryReserve doubles as the check and
-                    // the claim - the daughter's first prism consumes it on register.
-                    if (spatialIndex != null && spatialIndex.IsAvailable &&
-                        !spatialIndex.TryReserve(seedPos, 3f))
-                    {
-                        GyroidOctagonRegistry.Release(center, this);
-                        continue;
-                    }
-
-                    // Lattice-misalignment GATE, seed flavour: a prism 3.1-5.5u from the
-                    // handed-off seed site means the projected octagon disagrees with mass
-                    // already standing there - a misaligned frame's territory. A daughter
-                    // seeded onto it would twin her whole subtree, so the birth is SKIPPED:
-                    // claim and reservation released, next candidate tried.
-                    if (spatialIndex != null && spatialIndex.IsAvailable &&
-                        spatialIndex.IsAnyPrismWithin(seedPos, 5.5f))
-                    {
-                        GyroidColonyDiagnostics.SeedSiteDefects++;
-                        GyroidColonyDiagnostics.ReportDefect("seed-blocked", seedPos, name);
-                        GyroidOctagonRegistry.Release(center, this);
-                        spatialIndex.ReleaseReservation(seedPos);
-                        continue;
-                    }
-
-                    _pendingOffspringCenter = center;
-                    _hasPendingOffspringClaim = true;
-                    GyroidColonyDiagnostics.Births++;
-                    CSDebug.Log($"[GyroidColony] BIRTH #{GyroidColonyDiagnostics.Births} by {name}: " +
-                                $"prisms={healthTracker.Count} ring={_ringMembers.Count} " +
-                                $"idle={_idleGrowTicks} -> daughter at {center} seed {neighbors[n].SeedType}");
-                    _pendingOffspringSeed = new GyroidGrowthInfo
+                    GyroidColonyFrontier.Contribute(SourceConfig, center, new GyroidGrowthInfo
                     {
                         CanGrow = true,
-                        Position = seedPos,
-                        Rotation = seedRot,
+                        Position = member.Position + member.Rotation * neighbors[n].SeedPosition,
+                        Rotation = member.Rotation * neighbors[n].SeedRotation,
                         BlockType = neighbors[n].SeedType,
                         IsDangerous = true,
                         Depth = depth,
-                    };
-
-                    position = center;
-                    rotation = seedRot;
-                    return true;
+                    }, this);
                 }
             }
 
-            return false;
+            CSDebug.Log($"[GyroidColony] MATURE {name}: prisms={healthTracker.Count} " +
+                        $"ring={_ringMembers.Count} - frontier now {GyroidColonyFrontier.Count(SourceConfig)} open sites");
+        }
+
+        /// <summary>
+        /// Executes the population's chosen birth on THIS plant as lineage donor: claims the
+        /// octagon centre, reserves + misalignment-gates the seed site, stages the handoff and
+        /// spawns the daughter through the one canonical spawn path. All-or-nothing - any
+        /// failure releases everything it took (an orphan claim or reservation punches
+        /// permanent holes, see the decline path in Grow). Returns false so the cycle may try
+        /// another candidate.
+        /// </summary>
+        public bool TrySpawnFrontierDaughter(Vector3 center, GyroidGrowthInfo seed)
+        {
+            if (seed == null) return false;
+
+            // Claim the centre FIRST - released on any later failure. The seed reservation
+            // must come second: a reservation abandoned on a lost claim would sit until its
+            // TTL, permanently bonding every frontier that probes the site meanwhile.
+            if (!GyroidOctagonRegistry.TryClaim(center, this)) return false;
+
+            var spatialIndex = PrismSpatialIndex.EnsureInstance();
+            if (spatialIndex != null && spatialIndex.IsAvailable)
+            {
+                // The seed site must be free mass-wise (a boundary prism can sit exactly
+                // there). TryReserve doubles as the check and the claim - the daughter's
+                // first prism consumes it on register.
+                if (!spatialIndex.TryReserve(seed.Position, 3f))
+                {
+                    GyroidOctagonRegistry.Release(center, this);
+                    return false;
+                }
+
+                // Lattice-misalignment GATE, seed flavour: standing mass 3.1-5.5u from the
+                // seed site is a MISALIGNED frame's territory (coherent minimum is 6.6u) - a
+                // daughter seeded onto it would twin her whole subtree.
+                if (spatialIndex.IsAnyPrismWithin(seed.Position, 5.5f))
+                {
+                    GyroidColonyDiagnostics.SeedSiteDefects++;
+                    GyroidColonyDiagnostics.ReportDefect("seed-blocked", seed.Position, name);
+                    GyroidOctagonRegistry.Release(center, this);
+                    spatialIndex.ReleaseReservation(seed.Position);
+                    return false;
+                }
+            }
+
+            _pendingOffspringCenter = center;
+            _hasPendingOffspringClaim = true;
+            _pendingOffspringSeed = new GyroidGrowthInfo
+            {
+                CanGrow = true,
+                Position = seed.Position,
+                Rotation = seed.Rotation,
+                BlockType = seed.BlockType,
+                IsDangerous = true,
+                Depth = depth,
+            };
+
+            bool born = TrySpawnOneOffspring();
+            if (born)
+            {
+                GyroidColonyDiagnostics.Births++;
+                CSDebug.Log($"[GyroidColony] BIRTH #{GyroidColonyDiagnostics.Births} donor {name}: " +
+                            $"daughter at {center} seed {seed.BlockType} " +
+                            $"(frontier {GyroidColonyFrontier.Count(SourceConfig)} open)");
+            }
+            else
+            {
+                // SpawnFlora refused (cap raced shut, planting froze, prefab torn down) -
+                // release everything this attempt took so nothing strands.
+                GyroidOctagonRegistry.Release(center, this);
+                if (spatialIndex != null && spatialIndex.IsAvailable)
+                    spatialIndex.ReleaseReservation(seed.Position);
+                _pendingOffspringSeed = null;
+                _hasPendingOffspringClaim = false;
+            }
+            return born;
         }
 
         /// <summary>

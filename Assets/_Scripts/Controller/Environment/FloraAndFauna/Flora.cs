@@ -351,6 +351,25 @@ namespace CosmicShore.Gameplay
             _growthSinceBirth = 0;
         }
 
+        /// <summary>
+        /// Spawns exactly ONE offspring right now, subject only to the universal production
+        /// gates (the Frenzy planting freeze and the cell cap). This is the entry point for a
+        /// POPULATION-coordinated reproduction model - the gyroid octagon colony's
+        /// one-birth-per-cycle (Docs/ECOSYSTEM.md §32.7) - where WHEN and WHERE to reproduce
+        /// is decided at the population level rather than by this plant's own growth quota.
+        /// The per-plant quota path (<see cref="TryReproduce"/>) is untouched for species
+        /// that reproduce individually.
+        /// </summary>
+        protected bool TrySpawnOneOffspring()
+        {
+            var cfg = sourceConfig;
+            var host = hostCell;
+            if (!cfg || !host || !cfg.FloraPrefab) return false;
+            if (cell && !cell.FloraPlantingEnabled) return false;
+            if (host.IsFloraAtCap(cfg)) return false;
+            return SpawnOffspring(host, cfg);
+        }
+
         bool SpawnOffspring(Cell host, FloraConfigurationSO cfg)
         {
             if (!TryResolveOffspringPlacement(out var position, out var rotation, out var up))

@@ -4248,13 +4248,47 @@ the one unvalidated link. Resolution, four parts:
    at a clean interface instead of interpenetrating. The FOUNDER log names each frame's
    origin (`lineage=` config, or `NONE/toy` for a Lifeform Matrix planting).
 
+**Sixth pass (2026-08-16, chirality confirmed fixed): reproduction became a POPULATION
+event - the organic-growth model.** With the lattice mating correctly ("everything is
+perfect now"), the per-plant reproduction drive was retired for the octagon colony: every
+mature plant independently planting all its neighbours produced a breadth-first spherical
+wavefront, where the old single-plant gyroid grew organically - wandering prism by prism.
+The colony now wanders the same way at the level of whole flora:
+
+- **Completing growth earns a place in the reproduction pool.** The first grow tick on
+  which a plant reads fully grown (`OctagonMature`), it contributes every unclaimed
+  neighbouring ring centre - with the full seed pose projected from its measured ring - to
+  **`GyroidColonyFrontier`**, the population's per-species book of open octagons (deduped
+  against the claim book and against duplicate offers; several plants border the same
+  window).
+- **One new lifeform for the whole population per cycle.** The cycle rides the cell's
+  fauna-wave cadence (`Cell.CurrentFaunaSpawnPeriod` - the ecosystem's one heartbeat),
+  staggered ~0.35s so a birth never shares a frame with a wave's instantiation burst. Any
+  living plant's grow tick may cross the clock boundary; the first one owns the cycle -
+  main-thread, one at a time, **no race by construction**. Missed cycles under a hold
+  (Frenzy, cap) are skipped, never burst-fired, and skipping burns no frontier entries.
+- **The site is a uniformly random pop across every complete plant's frontier** - the
+  de-sphering. The popped entry's contributor is the lineage donor (domain + variant breed
+  true); if the food web took it since it offered, the ticking plant stands in - "the
+  chosen one can seed off ANY complete plant". Validation per birth is a point lookup
+  against the crystal claim book plus the one seed-site reservation + misalignment gate -
+  a rare, cheap event, not a per-prism occupancy sweep.
+- The per-plant quota machinery (`Flora.TryReproduce`) is untouched for every other
+  species and harmlessly inert here: octagon placement only ever returns a target staged
+  by the population cycle (`TrySpawnFrontierDaughter` → `Flora.TrySpawnOneOffspring`, the
+  new one-offspring entry point that still passes the universal Frenzy + cap gates).
+  `GrowthPerOffspring` / `OffspringPerBirth` / `ReproductionCooldownSeconds` no longer
+  drive this species; the cadence dial is the spawn profile's `BaseFaunaSpawnTime`.
+
 In-editor verification (the human is the gate): enter freestyle in Menu_Main, fly the Cell
 Selector toy, pick **Gyroid Lab**. Watch: (1) the founder's first danger prism moves the
-crystal to the ring centre; (2) the surface grows as ONE continuous gyroid with no doubled
-prisms; (3) each completed ring's window holds exactly one crystal, none of them growing;
-(4) daughters bloom at neighbouring windows and knit seamlessly; (5) it never stops. Read
-the heartbeat: `HANDOFF bad=` MUST stay 0 (non-zero = the tables are wrong in-engine -
-regenerate with `Tools/Build/measure_gyroid_octagons.py` and paste its emit verbatim);
-`BLOCKED grown/seed` and `poison` count misaligned-frame contacts (expected only where
-independent founders' colonies meet); `ringErrMax` should sit well under 1; `UNRESERVED`
-non-zero → the spatial index was unavailable and growth ran unchecked.
+crystal to the ring centre; (2) ONE new plant blooms per fauna-wave period, at a random
+edge of the colony - the surface should visibly WANDER, not inflate as a ball; (3) the
+surface stays ONE continuous gyroid with no doubled prisms, a non-growing crystal in each
+completed window; (4) it never stops. Read the heartbeat: `frontier=` is the population's
+open-site pool (grows by ~10-14 per maturation, shrinks by one per birth); `HANDOFF bad=`
+MUST stay 0 (non-zero = the tables are wrong in-engine - regenerate with
+`Tools/Build/measure_gyroid_octagons.py` and paste its emit verbatim); `BLOCKED grown/seed`
+and `poison` count misaligned-frame contacts (expected only where independent founders'
+colonies meet); `ringErrMax` should sit well under 1; `UNRESERVED` non-zero → the spatial
+index was unavailable and growth ran unchecked.
