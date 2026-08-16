@@ -3863,3 +3863,480 @@ crystal is a handful of objects, not the 2,000-instance surface that law exists 
 5. Tune by editing `Resources/CrystalCaptureConfig` **only**. If a capture feels wrong on one
    lifeform and right on another, that is a bug (something is sizing off world scale rather than
    crystal radii), not a reason to re-add a per-prefab duration.
+
+---
+
+## 32. Flora get POPULATIONS — and the gyroid becomes a colony (Aug 2026)
+
+Fauna have had a population pipeline since §6.1: a seed floor, a hard cap, and **reproduction as the
+actual driver** — a creature that feeds converts prey into offspring, and the food web bounds the
+result. Flora had none of it. A flora species had `InitialSpawnCount` and a plant period, and the
+spawner planted **one more plant every period, forever**, bounded only by the cell's Frenzy gate
+(`RandomLifeSpawner.SpawnFloraTypeLoop_Random`, `IntensityWiseLifeSpawner.SpawnFloraTypeLoop`).
+There was no per-species live count anywhere in the codebase — `Cell` tracked fauna only.
+
+This section adds the plant-side half, and converts the first species to it.
+
+### 32.1 Growth is a plant's feeding
+
+The one design question is what a plant's reproduction is *funded by*. A creature is funded by prey.
+A plant is funded by **growth**: the prisms it managed to lay into the space around it. That single
+choice is what makes the model work without breaking §0:
+
+> A plant at its live-prism budget **has stopped growing**, so it has stopped funding children. It
+> only funds another one after the food web grazes it and it regrows.
+
+So the population is bounded by **grazing**, exactly as the fauna population is bounded by
+starvation — and there is no decay clock, no lifespan, no TTL and nothing culled. A lowered cap
+stops *production*; it never removes a live plant.
+
+The knobs are on `FloraConfigurationSO` and mirror the fauna block field for field:
+
+| Flora | Fauna counterpart | Meaning |
+|---|---|---|
+| `PopulationSize` | same | seed floor — **0 keeps the legacy unbounded planting**, so the model is opt-in per species |
+| `MaxLivePopulation` | same | hard per-cell plant cap (a performance backstop) |
+| `GrowthPerOffspring` | `FeedsPerOffspring` | prisms grown per birth |
+| `OffspringPerBirth`, `ReproductionCooldownSeconds` | same | burst throttles |
+| `MaturityFraction` | *(no counterpart)* | fraction of its own budget a plant must hold to seed |
+| `OffspringSpread` | `OffspringSpawnJitter` (const) | how far a child is planted |
+
+`Flora.AssignLineage` / `SourceConfig` / `NotifyGrew` / `TryReproduce` mirror `Fauna`'s, and the
+decision lives in `FloraReproductionRules` (pure, engine-free, edit-mode tested) beside
+`FaunaReproductionRules`. The spawners are **demoted to seeders** in both classes — they now fill
+only the deficit below the floor, which is bootstrap plus recovery after the food web grazes a
+species out, so extinction is never permanent.
+
+**The cap resolves on the `Cell`, never on the config** (`Cell.ResolveFloraPopulation` /
+`ResolveFloraCap` / `IsFloraAtCap`) — the §29.2 rule, and flora needs it more than fauna did: there
+are **five** flora producers (both spawners, `Flora.TryReproduce`, the freestyle `Microscene`
+conveyor, the Lifeform Matrix toy). A cap honoured by one producer is two ceilings for one number.
+The initial-batch `FloraPopulationScale` scaling that both spawners used to inline was routed
+through the same accessor for the same reason.
+
+### 32.2 The gyroid: one plant became a colony, and the frontier does the connecting
+
+> **Superseded in part by §32.7 (same branch, later passes).** The 27-prism BFS-patch unit cell
+> and the single-donor frontier handoff described below shipped first; the octagon colony —
+> crystal at the centre of each danger-prism ring, territory ownership, table-driven
+> reproduction — replaced them the same week, after the user supplied the tiling design, and a
+> later pass moved reproduction itself from the PER-PLANT quota described below to a
+> POPULATION cycle (one birth per fauna wave, random open octagon). For a lattice species the
+> `GrowthPerOffspring` / `OffspringPerBirth` / `ReproductionCooldownSeconds` machinery below is
+> therefore inert — it still governs every NON-lattice flora. The measured bond-table geometry
+> below is still the foundation everything §32.7 does is computed from.
+
+The gyroid was one plant that grew forever — a single `AssembledFlora` crystallising a minimal
+surface out of 1,500 bonded prisms, carrying **one** heart. It is now a **population of unit cells**,
+each with its own crystal.
+
+The size is measured, not chosen by feel. Walking the assembler's own bond table (48 entries, 12
+block types) exactly as `AssembledFlora.PreviewGyroid` does: bonds are ~7.8u long, the smallest
+closed ring is 3 prisms (the doubled A–B strut junction) with the gyroid's characteristic 8/9/10
+rings above it, and the lattice is **BCC with a ~119.6u conventional cube ≈ 584 prisms**. Three bonds
+out from a seed is **27 prisms** and is the smallest patch containing **all twelve block types** —
+one of everything the assembler can say, ~40 × 42 × 12 world units. That is the unit cell.
+(A crystallographic primitive cell, ~292 prisms, is far too big to make a population out of.)
+
+**What makes the pieces add up to a gyroid is that reproduction reuses the growth frontier.**
+`AssembledFlora.TryResolveOffspringPlacement` does not scatter a child near its parent. It asks the
+parent's own assembler for a growth order — the same `GetGrowthInfo()` call, against the same bond
+table, with the same `PrismSpatialIndex.TryReserve` claim that stops two growers filling one site —
+and hands that exact position, rotation and `GyroidBlockType` to the daughter
+(`ConfigureOffspring` → `SeedFromGrowth` → `CreateNewAssembler`). The daughter's first prism lands
+precisely where the parent's next prism would have. **Nothing in the code describes a gyroid**; the
+superstructure is emergent from each plant continuing its parent's lattice, which is the whole
+point — a scripted superstructure would be the same class of cheat as a scripted fitness function.
+
+Two consequences worth stating:
+
+- **The daughter gets a FRESH depth budget.** `depth` used to be the lattice's global size bound;
+  now the per-plant prism budget bounds a plant and the **population cap** bounds the colony.
+  Inheriting the parent's remaining depth would make every generation smaller until the colony
+  stalled.
+- **A blocked plant stays ARMED.** A plant that has banked its quota but is blocked by the cap keeps
+  its quota (`Flora.TryReproduce` spends it only on a birth that happened). A full plant is never
+  re-armed by another growth tick, so without this it could never fill the gap left when a
+  neighbour is grazed out. With it, gap-filling is automatic.
+
+### 32.3 What the conversion preserves, and what it costs
+
+Numbers are authored by `Tools/Build/author_flora_populations.py` (`--check` verifies the assets
+still match the model), not by hand. The lattice rule is `cap = old_single_plant_budget / 24` (the
+octagon patch — it was `/ 27`, the BFS unit cell, before §32.7), so **total prism mass is preserved
+to within a rounding step and a clamp** — Blob's Mass gyroid goes from 1 plant × 1500 to 60 plants ×
+24 = 1,440 (its unclamped cap would be 63). Leaf size and the level spread are untouched, so
+**per-prism volume is unchanged.**
+
+> **One later correction (§32.7 seventh pass):** this section originally added "and no cell's
+> volume phase ladder needs re-authoring". That was true of the CONVERSION and false of the
+> colony: preserving per-prism volume says nothing about the ladder being right in the first
+> place, and Blob's was set so low that its seeded floor alone was 87% of Frenzy. Blob's ladder
+> is now authored ×5. Per-prism volume is still unchanged by anything in this section.
+
+**The cost is crystals, and it is the collider line to watch.** Every plant is a lifeform, so it
+carries one heart whose collider is always on and is *not* phase-LOD culled (§21.6). Blob's three
+gyroid species go from **3 crystals to 135** at cap (60 + 42 + 33); Blob's profile is shared by the
+freestyle seven, so the same figure applies to Caldera / Daedala / Geode / Orrery / Ourobor / Yggdra
+/ Zephyr. The cap is a backstop, not a prediction — with Blob's ×5 ladder the cell reaches Frenzy
+at **~69 plants**, which is the figure to hold against the budget. Against the masterplan's
+~1,500-collider per-cell target that is ~5% realized (~9% at the cap), and
+`MaxLivePopulation` is the dial — the authoring script clamps every species to
+`MAX_PLANTS_PER_SPECIES = 60` for exactly this reason. Prism colliders are unchanged in count.
+
+There is a real gameplay consequence, and it is the interesting one: a 27-prism plant can be grazed
+to death, where a 1,500-prism plant could only ever be dented. The gyroid becomes a **crop** — fauna
+clear a unit cell, it dies and drops its elemental crystal, and its neighbours colonise the hole.
+That is the food web finally having a visible effect on the cell's canopy rather than nibbling it.
+
+*(Watch on the first playtest: `GyroidFlora.prefab` authors `minHealthBlocks: 5`, so a plant dies with
+5 prisms still standing and `LifeForm.DestroyStructure` detonates them. At 1,500 prisms that leak was
+0.3% of a plant; at 24 it is 21%. It is pre-existing behaviour and out of scope here, but if the
+colony visibly loses mass over a long session, that is where it is going — the fix is
+`minHealthBlocks: 0`, not a change to the population model.)*
+
+### 32.4 Collider budget
+
+- **Prism colliders: unchanged.** Mass is preserved by construction (§32.3); the same prisms are
+  simply owned by more plants.
+- **Crystal colliders: +132 per gyroid cell at the cap** (3 → 135), ~66 realized under Blob's
+  ×5 volume ladder (§32.7), +~1 per plant elsewhere. Bounded by
+  `MaxLivePopulation`, clamped to ≤ 60 per species by the authoring script, and scaled with the rest
+  by `SpawnProfileSO.FloraPopulationScale` (which now moves the floor **and** the cap — a scalar that
+  moved only the floor would be clamped away by the cap and read as doing nothing, §29.2).
+- **No new queries.** Reproduction reuses the growth `TryReserve` the assembler already performed;
+  no `Physics.OverlapSphere` is added anywhere. (The 2026-04 attempt on
+  `claude/gyroid-seed-danger-prism-U3MnJ` used `Physics.OverlapSphere` to find a neighbouring flora
+  by crystal proximity — banned by `Docs/SPATIAL_INDEX.md`, and structurally blind besides, since
+  prism colliders are disabled for the first 0.6 s after spawn.)
+- **Per-frame CPU:** one `TryReproduce` call per plant per grow tick, which fails on the first
+  integer compare for any species that authors no reproduction. A lattice plant additionally runs
+  `TickOctagonPopulation` per grow tick: a bool, a clock compare, and — once in its life, on the
+  tick it matures — one projection of its ring through the neighbour tables. The reproduction
+  cycle itself is one dictionary lookup per plant per tick and a random pop once per fauna wave.
+
+### 32.5 Invariant review (the rulings, recorded)
+
+- **Mass is conserved / no imposed death** — nothing is removed. Reproduction only *creates*, and it
+  is gated on `Cell.FloraPlantingEnabled` so it freezes with planting at Frenzy. A cap stops
+  production; §0 explicitly permits gating production. Both retired growth-side cheats stay retired:
+  no regrowth pulse, no timed culler.
+- **Continuity of existence** — an offspring is an ordinary plant spawned through the one canonical
+  path (`CellLifeSpawnerBase.SpawnFlora`), so its prisms bloom in on the existing grow path. Nothing
+  new pops.
+- **No domain asymmetry** — the *spawner* still seeds uniformly across Jade/Ruby/Gold
+  (`PickRandomDomain`). Within a lineage a plant's children are its own colour, which is exactly the
+  fauna rule (§6.1) and not a per-domain bias.
+- **Every lifeform drops one elemental crystal** — each unit cell is a full lifeform with its own
+  heart. This is the invariant the change *leans into*: it is what the user asked for, and it is why
+  §32.3 states the crystal cost so plainly.
+- **Volume is the spine** — untouched. Prism count and per-prism volume are both preserved, so no
+  threshold moves.
+- **Endogenous selection only** — a colony survives by growing and dies by being eaten. No fitness
+  function anywhere; offspring inherit their founder's variant pick (element + hatch level), and
+  in-world level-ups are not inherited, matching §17 and the fauna rule.
+
+### 32.6 In-editor verification (the human is the gate)
+
+**Status: RUN, across five Menu_Main playtests (2026-08-15/16).** Steps 1-3 below passed on the
+final pass — the surface reads as one continuous gyroid, daughters mate with their parents, and
+each completed window holds exactly one non-growing crystal. The numbers in this section are the
+ORIGINAL unit-cell model's; the shipped model is the octagon colony (§32.7), whose own verification
+steps and heartbeat decode live at the end of that section — **use those.** Steps 4-7 here were
+NOT re-run after the octagon conversion and remain open:
+
+4. **Graze test.** Let the tadpoles work a patch. A grazed octagon should die, drop its crystal,
+   and the population should recolonise the hole (its centre returns to the claim book on death,
+   and neighbouring plants re-offer it). Nothing should vanish without being eaten.
+5. **Wildlife Blitz Cell 4** — the same three species under `IntensityWiseLifeSpawner`. This is the
+   check that the seeder change landed in *both* spawner classes; if Cell 4's gyroids behave
+   differently from Blob's, one of them is running the other code path. **Note Cell 4 did NOT get
+   the ×5 volume ladder** (that was authored on Blob alone, §32.7 seventh pass), so its colonies
+   will still stop at the old ceiling — expected, not a defect.
+6. **Hesperides** — the gyroid topiary is now 8 small plants instead of one 190-prism specimen.
+   Confirm it still reads as topiary in the garden.
+7. Re-run `python3 Tools/Build/author_flora_populations.py --check` after any asset tuning,
+   `python3 Tools/Build/verify_gyroid_octagon_tables.py` after any bond-table or octagon-table
+   edit, and `FrogletTools ▸ Validation ▸ Validate Lifeform Crystals` (every octagon is a lifeform
+   now, so the one-crystal rule is being asserted far more often than before).
+
+### 32.7 The octagon colony — a crystal in every window (Aug 2026, second pass)
+
+The first pass (§32.2) made the gyroid a population, but its unit was arbitrary — "3 bonds out
+from a seed" — and its reproduction handed a daughter one donor site. The design that replaced
+it came from the tiling itself:
+
+**The gyroid's 12 block types are a non-Euclidean tile** — 6 prisms and their 6 mirror images
+(the conjugate structure: DE↔EsD, EG↔GEs are the danger pairs). The four danger types close
+into rings of exactly **eight danger prisms** — measured, not assumed: the danger-only bond
+subgraph contains ONLY 8-cycles (120 of 120 in a 4,000-prism walk), each ring 2×DE + 2×EG +
+2×EsD + 2×GEs, radius 10.03u. Since danger types are 4 of 12 equidistributed types, each ring
+owns **24 prisms** of the surface: 8 ring + 16 between. Adjacent ring centres sit 35.9–42.4u
+apart, and each danger type sees exactly **four** neighbouring rings at fixed local offsets
+with a deterministic seed pose each (measured purity 1.00, position std ≤ 0.25u).
+
+> **The spec said 48 prisms per lifeform (4 tiles); the lattice says 24 (2 tiles).** This is
+> forced, not chosen: with a crystal in EVERY octagon and no overlapping prisms, prisms per
+> lifeform = total ÷ octagons = 8 ÷ ⅓ = 24 exactly. A 48-prism lifeform is only possible with
+> crystals in every OTHER octagon. The build follows the stronger constraints (crystal per
+> octagon, no overlap); flag if the other trade was meant.
+
+**A gyroid plant IS an octagon-owner.** Its crystal sits at the ring's centre and **never
+grows** (`crystalGrowth 0` + a code guard); its root is the centre, so "a crystal at local
+(0,0,0)". A founder discovers its centre from the first danger prism it grows
+(`GyroidOctagonData.TryGetOwnCenterOffset` — each danger type knows its ring centre in its own
+local frame) and claims it in `GyroidOctagonRegistry`; a daughter is handed hers, pre-claimed
+by the parent so siblings cannot race.
+
+**Territory makes the tiling.** A plant grows a site only if it lies within `TerritoryRadius`
+(26.5u) of its own centre AND no other claimed centre is meaningfully nearer
+(`AssembledFlora.OwnsLatticeSite`, epsilon 0.75 — boundary prisms sit EXACTLY equidistant, so
+both owners contest and the spatial-index reservation keeps whichever grew first; patches
+measure 22–28). A declined site is marked filled on the assembler
+(`GyroidAssembler.DeclineGrowthSite`) so the branch moves on — the neighbouring plant lays the
+same world position from its own lattice.
+
+**Reproduction is the neighbour table.** A full plant projects, from each ring prism it grew,
+the four neighbouring ring centres; for each UNCLAIMED one whose seed site is free it plants a
+daughter — root at that centre, first prism a real member of that ring, block type and pose
+from the table (`OctagonNeighbor`). "Calculate where the neighbouring crystals belong, check
+if one is already there, plant where there is not." `OffspringPerBirth 8` covers the whole
+neighbourhood per birth; the armed quota retries the rest.
+
+**Proof before Unity.** The exact algorithm (bond-table growth + ownership + registry +
+neighbour-table reproduction) was simulated end-to-end in Python: from one founder, 273 plants
+/ 5,547 prisms — a **single connected component**, **zero overlaps** (min pairwise distance
+7.17u vs 6.6u lattice minimum), **bijective on the reference lattice** (max deviation 0.74u at
+radius 95, no double-filled site), and **175 of 175 complete octagons holding exactly one
+claimed crystal centre**. Float drift off the bond table accumulates ~0.3u per 100u of lattice
+— absorbed by the reservation clear radius (~3.1u) out to radius ~1,000.
+
+**The Gyroid Lab was the test chamber, and is RETIRED (2026-08-16).** It was a Cell-Selector
+station on an environment-free config with every guardrail off — uncapped population, no
+fauna to graze the specimen, a phase ladder that could never reach Frenzy — so one founder
+colonised indefinitely and the growth rule could be watched in isolation. It earned its keep
+(it found the daughter-stall bug, the premature-reproduction cascade and the twinning
+geography below), and then it stopped being informative: **a cell with no gates only ever
+answers questions about itself.** Its last playtest read as a runaway shell precisely because
+guardrail-free was its whole design — while the same code in the shipped freestyle biome grew
+correctly. Removed from Menu_Main's `CellConfigs` and deleted; the shipped biomes are the
+honest test. If a future rule change needs a chamber again, `author_flora_populations.py`'s
+`EXCLUDE` hook is still there for it.
+
+**First playtest (2026-08-15) found the daughter-stall bug.** Daughters planted (crystal +
+seed prism visible) but never grew. Root cause: `CreateNewAssembler` ran
+`SetParent(spindle, worldPositionStays: false)` on the seed prism WITHOUT zeroing the locals —
+`worldPositionStays: false` keeps the local values, which at that point are the world
+coordinates `Instantiate` assigned, so the prism landed at `spindle.pos + spindle.rot × worldPos`
+(~2x its own distance from the origin, in empty space). The legacy code only ever worked
+because a spawner flora ran this while still parked at the cell centre (world ≈ 0, stale local
+≈ 0); an octagon daughter is created AT her centre, so her seed prism was thrown into space,
+the ownership gate declined every garbage site, and the plant reseed-looped forever.
+`ExecuteGrowOrder` always zeroed the locals; the fix copies it. The same fix repairs the
+Lifeform Matrix toy's pinned-station assembled flora, broken the same way for as long as the
+toy has existed. `Docs/PRISM_ANIMATION.md`-style lesson: a parenting call's semantics
+(`worldPositionStays`) are load-bearing — audit both spawn paths whenever one changes.
+
+**The Lab is tuned as a speed chamber** (same playtest's request): ONE **Time** gyroid
+(the fastest authored tempo, pushed further: GrowPeriod 0.1) seeded at the **cell centre** —
+the config removes its `NucleusPrefab`, because "never plant inside the nucleus" is exactly
+the clamp that keeps a plant off the centre, and a cell with no nucleus HAS no such zone (a
+supported state, §25.1's declaration, not a rule exception). Every pacing guard is opened in
+CONFIG, not on the shared prefab: `FloraVariantTuning` grew `ItemsPerGrow` / `RandomItems` /
+`MaxSpawnsPerFrame` overrides (sentinel -1 = keep prefab) so the Lab authors 8 / 0 / 3 while
+every other biome's plants keep the shipped pacing. Reproduction: quota 12 (plants colonise
+while half-grown, so the frontier expands ahead of completion), cooldown 0.25s, maturity 0,
+seeder delay 0. The Frenzy gate was already unreachable. Expansion is frontier-limited by
+design: interior plants complete and stop, so the active grower count tracks the colony's
+surface, not its volume.
+
+**Second playtest (2026-08-15): the crystal cloud, and the maturity gate.** With reproduction
+armed at quota 12 ("colonise while half-grown"), each half-grown plant minted 8
+crystal-bearing daughters per birth - the population octupled per ~half-second generation
+while growth lagged behind, and the cell filled with an exponential cloud of hearts and seed
+spindles far beyond any grown surface. The rule that fixes it is the one the playtest asked
+for: **a gyroid reproduces only when it has fully grown all its spindles and health prisms.**
+`AssembledFlora.OctagonMature` = a real patch (count ≥ 18) AND an exhausted frontier (a run of
+grow ticks that decided nothing, with no orders pending; budget-full ticks count as idle).
+Deliberately NOT a fixed prism count or ring-complete test - patch sizes legitimately vary
+22-28+, and a plant whose near ring-arc was pre-grown by its parent under the boundary epsilon
+would stall forever against either. The banked quota simply waits at the gate. Re-simulated
+with the exact rule: 167 plants / 3,301 prisms, 19.8 prisms per crystal (was a seed-plant
+flood), single connected lattice, zero overlaps, immature plants = exactly the one-generation
+frontier shell.
+
+**Third playtest (2026-08-15): "full size" means the BLOOM, and the overlap suspects.** Two
+observations: generations still cascaded before prisms reached full size, and real overlapping
+prisms accumulated at the centre. The first is a units mismatch now fixed: the maturity gate's
+frontier-idle test settles in fractions of a second (2 grow ticks), while a prism's grow-in
+bloom takes SECONDS (`Prism.growthRate` 0.01) - so a plant read as "fully grown" while every
+prism was mid-bloom. `FloraVariantTuning.MaturationSeconds` (default 4, Lab authors 5) now
+requires the plant's YOUNGEST prism to be older than the bloom before it may reproduce -
+fully-formed plants begetting fully-formed plants, paced to the animation the player watches.
+Three overlap/hole suspects were closed or instrumented in the same pass: (1) the claim/reserve
+ORDER in reproduction - a seed reservation abandoned on a lost claim race sat until TTL while
+every neighbouring branch that probed the site marked it PERMANENTLY skipped (reserve-fail
+reads as "occupied for real"), a transient race punching a lasting hole; centres now claim
+first and release on failure. (2) The founder's seed prism registered with the spatial index at
+its pre-`Plant()` position and was then dragged to the planting point - occupancy reads the
+STORED position, so its real location read as empty space another grower could fill
+(`NotifyPositionChanged` after the move; pre-dated this branch for every dispersed assembled
+flora). (3) `GetGrowthInfo` grows UNCHECKED when the spatial index is unavailable - the one
+path that can double-fill a site at scale; now counted (`UNRESERVED` in the heartbeat), because
+a non-zero count alongside overlapping prisms is the diagnosis and the fix is index
+availability, not growth logic.
+
+**Fourth playtest (2026-08-15): growth pacing confirmed excellent; lattice "twinning"
+defects.** Fully-formed plants now beget fully-formed plants, but the surface showed defects
+"like twinning in crystallography" - prisms reading as ~90° misrotated, errors compounding,
+and crystals appearing outside some octagonal rings. Offline analysis exonerated the
+mathematical suspects (LookRotation degeneracy margins ≥0.9999 across all 48 bond entries;
+float32 walk bit-equivalent to float64; `ToGlobal` is scale-free; the quaternion bake in the
+E-table verified against Unity's convention branch by branch), so the defect enters through a
+Unity-runtime interaction the simulation could not see. Two responses shipped:
+
+1. **The lattice-defect auditor** (`GyroidColonyDiagnostics`): every grow decision and every
+   daughter seed handoff is checked for a prism 3.1-5.5u away (TryReserve already cleared
+   ~3.1u; the healthy lattice's minimum non-bonded spacing is 6.6u, so a hit means a
+   misaligned lattice domain being minted), counted separately for GROWN sites (bond-table
+   continuation - drift or seam defects) and SEED sites (the E-table handoff - one bad
+   handoff twins a whole subtree), with the first 24 logged at their world positions.
+   `MaxRingCoherenceError` tracks the worst computed-vs-claimed ring-centre disagreement
+   (healthy < 1u), and `RotationFallbacks` counts `SafeLookRotation` failures (offline says
+   the table never produces one, so non-zero fingers a post-spawn transform write). All in
+   the 5s colony heartbeat line.
+
+2. **The orphan-reservation seam race - found by reading, fixed to match the sim.** The
+   validated colony simulation used perfect-information reservations; Unity's had a 5s TTL,
+   and three paths abandoned live reservations into it. The systematic one: the ownership
+   gate DECLINES a foreign boundary site with the reservation `GetGrowthInfo` just made
+   still live. The site's true owner - a sister plant growing at 0.1-1s cadence - probes the
+   same world position within the window with near-certainty, its `TryReserve` fails, and
+   `GetGrowthInfo` treats reserve-failure as "occupied for real": the owner's bond site is
+   marked bonded PERMANENTLY. Roughly every seam site whose first prober was the non-owner
+   became a lasting hole - missing danger prisms, open ring arcs, and crystals apparently
+   sitting outside their octagons, concentrated exactly where plants meet. All abandoning
+   paths now release explicitly: the decline itself, an age-dropped grow order (which
+   otherwise fails against its OWN stale claim on re-decision), a died plant's pending
+   queue, and a stranded offspring seed (both the octagon and the generic donated-growth
+   flavours, plus `OnDestroy`). Reserve-failure still means "someone real is there" - that
+   is what makes marking-bonded-on-failure correct again.
+
+**Fifth playtest (2026-08-16): the auditor attributed it - a CHIRALITY corruption in the
+baked tables, plus frame-poisoned rings.** The heartbeat read `DEFECTS grown=482 seed=140
+ringErrMax=11.79` with `claims=3` before any birth, and the user's diagnosis ("there is
+subtle chirality at play... double check everything is the correct handedness") was exactly
+right. The numeric end-to-end check (reconstruct daughter seed poses from the BAKED C#
+quaternions under Unity's exact composition, then test them against the reference lattice)
+convicted the table: **12 of the 16 baked `SeedRotation` quaternions - all of the EG, EsD
+and GEs rows - were never the measurement.** When the emitted table was transcribed into
+`GyroidOctagonData.cs`, only the DE row came from the emit; the other three types were
+constructed by a z-mirror symmetry ansatz (centres z-negated, quaternions (x,w)-negated).
+The gyroid's enantiomer conjugation does NOT act on the LookRotation frames that way, so
+seed rotations were wrong by up to 179° - a daughter seeded through DE mated perfectly,
+one seeded through the other three types grew an internally-perfect lattice that could not
+mate with its parent ("good looking lifeforms not matching up with other good looking
+lifeforms"). The simulation had validated the measured MATRICES; the quaternion bake was
+the one unvalidated link. Resolution, four parts:
+
+1. **The table is re-baked from the verified emit** - all 16 entries measured, none derived.
+   Re-running the end-to-end check against the shipped file: self-centre coherence 0.01u,
+   every seed pose lands on a reference-lattice prism (worst 0.37u / 0.74°), subtrees mate
+   to 0.63u. `Tools/Build/measure_gyroid_octagons.py` now emits the COMPLETE C# block
+   itself (exact per-class sample poses - never averaged rotations, where a det -1
+   reflection can hide - with quaternions and a per-entry self-centre assertion), so
+   regeneration is paste-verbatim and hand-derivation has no step left to slip into.
+2. **A daughter asserts her handoff at birth** (`IncoherentHandoffs` / `MaxSeedHandoffError`
+   in the heartbeat): her seed pose must recompute the centre she adopted to <1u, else a
+   loud error names the table. A future table regression costs one birth, not five playtests.
+3. **Ring membership is a COHERENCE test** (`GyroidOctagonData.RingMemberToleranceRadius`,
+   2.5u), separate from claim identity (`CenterDedupeRadius`, 12u). The playtest recorded an
+   11.79u admission - a foreign-frame danger prism joining a ring, whose pose reproduction
+   then projected the neighbour tables from: a chimera lineage. Poison-band admissions are
+   now rejected and counted (`RingPoisonRejected`).
+4. **The misalignment auditor became a GATE**: a grow decision or daughter seed site with
+   standing mass 3.1-5.5u away (coherent minimum is 6.6u) is DECLINED - reservation and
+   claim released - instead of grown. Lattice frames that were never projected from one
+   another cannot mate (`claims=3` before any birth = three independent founders, the third
+   playtest's centre chaos ball), so where independent frames meet, the colonies now stop
+   at a clean interface instead of interpenetrating. The FOUNDER log names each frame's
+   origin (`lineage=` config, or `NONE/toy` for a Lifeform Matrix planting).
+
+**Sixth pass (2026-08-16, chirality confirmed fixed): reproduction became a POPULATION
+event - the organic-growth model.** With the lattice mating correctly ("everything is
+perfect now"), the per-plant reproduction drive was retired for the octagon colony: every
+mature plant independently planting all its neighbours produced a breadth-first spherical
+wavefront, where the old single-plant gyroid grew organically - wandering prism by prism.
+The colony now wanders the same way at the level of whole flora:
+
+- **Completing growth earns a place in the reproduction pool.** The first grow tick on
+  which a plant reads fully grown (`OctagonMature`), it contributes every unclaimed
+  neighbouring ring centre - with the full seed pose projected from its measured ring - to
+  **`GyroidColonyFrontier`**, the population's per-species book of open octagons (deduped
+  against the claim book and against duplicate offers; several plants border the same
+  window).
+- **One new lifeform for the whole population per cycle.** The cycle rides the cell's
+  fauna-wave cadence (`Cell.CurrentFaunaSpawnPeriod` - the ecosystem's one heartbeat),
+  staggered ~0.35s so a birth never shares a frame with a wave's instantiation burst. Any
+  living plant's grow tick may cross the clock boundary; the first one owns the cycle -
+  main-thread, one at a time, **no race by construction**. Missed cycles under a hold
+  (Frenzy, cap) are skipped, never burst-fired, and skipping burns no frontier entries.
+- **The site is a uniformly random pop across every complete plant's frontier** - the
+  de-sphering. The popped entry's contributor is the lineage donor (domain + variant breed
+  true); if the food web took it since it offered, the ticking plant stands in - "the
+  chosen one can seed off ANY complete plant". Validation per birth is a point lookup
+  against the crystal claim book plus the one seed-site reservation + misalignment gate -
+  a rare, cheap event, not a per-prism occupancy sweep.
+- The per-plant quota machinery (`Flora.TryReproduce`) is untouched for every other
+  species and harmlessly inert here: octagon placement only ever returns a target staged
+  by the population cycle (`TrySpawnFrontierDaughter` → `Flora.TrySpawnOneOffspring`, the
+  new one-offspring entry point that still passes the universal Frenzy + cap gates).
+  `GrowthPerOffspring` / `OffspringPerBirth` / `ReproductionCooldownSeconds` no longer
+  drive this species; the cadence dial is the spawn profile's `BaseFaunaSpawnTime`.
+
+**Seventh pass (2026-08-16): the colony's ceiling is the CELL'S VOLUME LADDER, not its
+population cap.** With growth and mating both correct, the freestyle colonies still stopped
+early, and the instinct — raise `MaxLivePopulation` — would have been **dead tuning**. The
+arithmetic says why. The Blob cell (Menu_Main's freestyle / lava-lamp cell, and the Wanderway
+host) authored `FrenzyEnterVolume 57,600`, while its three gyroid species carry prisms far
+above the nominal 16: **Mass 7×4.5×3.5 = 110 volume (6.9× nominal)**, Time 45.9, Space 20,
+all multiplied again by the level spread (`LeafScalePerLevel 1.15` on each axis = ×1.52 per
+level; ×2.74 averaged over levels 1-5). One settled plant is therefore ~7,900 (Mass) /
+~3,300 (Time) / ~1,400 (Space) volume, so the **seeded floor alone — 4 founders × 3 species —
+is ~50,200 volume, 87% of the Frenzy threshold before a single birth.** The colony froze
+after roughly one wave. Its population caps (60/42/33 = 135 plants) sat ~19× further out and
+were never in play.
+
+The ladder is now authored ×5 (`RestlessEnterVolume 56,000` / exit 40,000,
+`FrenzyEnterVolume 288,000` / exit 240,000), which is ~69 plants and ~1,790 prisms of mixed
+colony — so the caps still sit above it and remain what they were designed to be, a crystal
+(collider) backstop rather than the growth bound. The count backstop moved 3,600 → 5,400
+(exit 3,000 → 4,500) for one reason only: the new volume ceiling filled entirely with the
+THINNEST gyroid species would be ~5,255 prisms, so a 3,600 count would have preempted the
+volume spine in that case; above ~5,400 is no longer the ladder, it is a runaway.
+**Collider impact:** ~69 crystals (one always-on heart collider each) where the cell
+previously reached ~14, and ~1,790 prisms where it reached ~360 — a lava-lamp-only change
+(Blob config; no other biome touched). Fauna aggression also becomes a real ladder here
+rather than a pin: the cell used to sit at Frenzy (Level2 berserk) from its seeded floor
+onward, and now climbs Calm → Restless → Frenzy as the colony actually fills.
+
+**The general rule, and it has now bitten twice** (Rampage's cactus leaves, §27; this):
+**a cell whose prisms are not nominal-sized must author its volume ladder against MEASURED
+prism volume, and the level spread is part of that measurement.** A species whose leaf is 7×
+nominal and whose levels multiply it another 2.7× reaches a count-derived ladder ~19× too
+early, and the symptom is never "the ladder is wrong" — it is "my population stopped growing",
+which sends you to the population dial, which is not connected.
+
+In-editor verification (the human is the gate): enter freestyle in Menu_Main (the lava lamp
+IS the test now). Watch: (1) the founder's first danger prism moves the
+crystal to the ring centre; (2) ONE new plant blooms per fauna-wave period, at a random
+edge of the colony - the surface should visibly WANDER, not inflate as a ball; (3) the
+surface stays ONE continuous gyroid with no doubled prisms, a non-growing crystal in each
+completed window; (4) growth continues to roughly 5× the old standing colony before the cell
+reaches Frenzy and freezes (an active force - grazing, a vessel ability - resumes it). Read the heartbeat: `frontier=` is the population's
+open-site pool (grows by ~10-14 per maturation, shrinks by one per birth); `HANDOFF bad=`
+MUST stay 0 (non-zero = the tables are wrong in-engine - regenerate with
+`Tools/Build/measure_gyroid_octagons.py` and paste its emit verbatim); `BLOCKED grown/seed`
+and `poison` count misaligned-frame contacts (expected only where independent founders'
+colonies meet); `ringErrMax` should sit well under 1; `UNRESERVED` non-zero → the spatial
+index was unavailable and growth ran unchecked.

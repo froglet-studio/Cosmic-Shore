@@ -123,6 +123,51 @@ outcome is optimization, not life). Use the `/ecology` skill for any change here
   the crystal chasing the ship. The reward (the element level) lands at CONTACT and so does
   `OnCrystalCollected`, the scoring event: **a mode's objective must never wait on a flourish**, and
   a flourish that outlasts its own payoff reads as lag. `Docs/ECOSYSTEM.md §31`.
+- **Flora have POPULATIONS too, and a plant's feeding is GROWTH.** Flora are not scenery that a
+  timer keeps extruding: like fauna they have a seed floor, a hard per-cell cap and **reproduction
+  as the population driver** (`FloraConfigurationSO.PopulationSize` / `MaxLivePopulation` /
+  `GrowthPerOffspring`, `Flora.TryReproduce`, `FloraReproductionRules`). The currency is the one
+  thing a plant actually earns — **prisms it grew** — which is what bounds the population with **no
+  imposed death**: a plant at its live-prism budget has stopped growing, so it has stopped funding
+  children, and it only funds another after the food web grazes it and it regrows. Both spawners are
+  demoted to **seeders** (fill the deficit below the floor; bootstrap + extinction recovery only);
+  `PopulationSize = 0` keeps the legacy unbounded planting so the model is opt-in per species. The
+  cap resolves on the **Cell** (`Cell.ResolveFloraPopulation` / `ResolveFloraCap` / `IsFloraAtCap`),
+  never off the config — flora has **five** producers (both spawners, reproduction, the freestyle
+  `Microscene` conveyor, the Lifeform Matrix toy) and a cap one producer skips is two ceilings for
+  one number. Reproduction is production, so it freezes with planting at Frenzy; a lowered cap stops
+  producing and never culls.
+  **A LATTICE species is an OCTAGON COLONY.** The gyroid is one plant no longer: its four danger
+  block types close into rings of exactly **eight danger prisms** (measured off the bond table —
+  the danger-only bond subgraph contains ONLY 8-cycles), and each ring is one lifeform — its
+  **crystal at the ring's centre, never growing**, its territory the **24-prism patch** around it
+  (8 danger ÷ the ⅓ danger fraction, exact). `GyroidOctagonData` carries the measured constants
+  (own-centre offset per danger type; four neighbouring rings per type with a deterministic seed
+  pose each), `GyroidOctagonRegistry` is the claim book, `AssembledFlora.OwnsLatticeSite` is the
+  territory gate that makes plants TILE the surface instead of racing over it, and **reproduction
+  is a POPULATION event**: a plant that COMPLETES its growth contributes its unclaimed
+  neighbouring ring centres (full seed poses included) to `GyroidColonyFrontier`, and the whole
+  population births exactly ONE daughter per fauna-wave period (`Cell.CurrentFaunaSpawnPeriod`,
+  frame-staggered) at a uniformly RANDOM frontier site — random choice across every complete
+  plant is what de-spheres the colony into the old single-gyroid's organic wander, now at the
+  level of whole flora, and one-at-a-time from the main thread means no race by construction.
+  Per-birth validation is a point lookup against the claim book, never a per-prism sweep.
+  **Nothing in the code describes a gyroid**; the superstructure is emergent from
+  local continuation — proven by simulating the exact algorithm (273 plants from one founder: a
+  single connected gyroid, zero overlaps, bijective on the reference lattice, one crystal per
+  octagon). Every table row is a MEASUREMENT pasted verbatim from the emit — the one shipped
+  symmetry shortcut (z-mirroring DE/EG rows into GEs/EsD) twinned 12 of 16 seed rotations by up
+  to 179° and cost five playtests; `Tools/Build/verify_gyroid_octagon_tables.py` now proves the
+  SHIPPED file against a fresh reference walk, and a daughter asserts her handoff at birth.
+  Mass is preserved (`cap × 24 ≈ the old single-plant budget`); the cost is **crystals**
+  (one always-on heart collider per octagon), and `MaxLivePopulation` is the dial. Numbers are
+  authored by `Tools/Build/author_flora_populations.py` (`--check`), never by hand; the tables
+  regenerate via `Tools/Build/measure_gyroid_octagons.py`. **A colony's ceiling is its CELL'S
+  VOLUME LADDER, not `MaxLivePopulation`** — the Blob (freestyle) cell's gyroid prisms are up to
+  **6.9× nominal volume** *before* the level spread multiplies them another ~2.7×, so its seeded
+  floor alone was 87% of `FrenzyEnterVolume` and the colony froze after one wave while its caps
+  sat 19× further out. Reach for the ladder, not the population dial (`Docs/ECOSYSTEM.md §32.7`
+  seventh pass). Full record: `Docs/ECOSYSTEM.md §32` (§32.7 the octagon colony).
 - **Territorial permanence.** Take a cell, leave, it stays yours — the claim fauna cannot touch.
   In nucleus cells the permanent claim is the **nucleus interior** (fauna never consume it);
   exterior canopy/trail is deliberately contested churn (voracious any-domain grazing). In

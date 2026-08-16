@@ -43,6 +43,10 @@ namespace CosmicShore.Gameplay
         [Tooltip("Maximum LIVE prisms this flora can hold. Consumption frees budget - a grazed " +
                  "plant regrows toward this cap instead of staying a permanent fragment.")]
         [SerializeField, Min(1)] int maxTotalSpawnedObjects = 400;
+
+        /// <summary>The live-prism budget this individual resolved to - the base reads it for
+        /// the reproduction maturity gate (see <see cref="Flora.PrismBudget"/>).</summary>
+        protected override int PrismBudget => maxTotalSpawnedObjects;
         [Tooltip("Tips advanced per grow tick.")]
         [SerializeField, Min(1)] int growthsPerTick = 3;
         [Tooltip("Instantiations executed per frame. The tick DECIDES (and claims sites); the " +
@@ -426,6 +430,8 @@ namespace CosmicShore.Gameplay
             _pendingPrismScale = order.scale;
             AddHealthBlock(leaf);
             leaf.Initialize("flora");
+            // Growth is this plant's feeding - see Flora.NotifyGrew.
+            NotifyGrew();
 
             if (!order.becomesTip) return;
 

@@ -1214,7 +1214,14 @@ namespace CosmicShore.Gameplay
             _replicatedDominantDomain = null;
             ResetVolumeAccounting();
             liveFaunaCounts.Clear();
+            liveFloraCounts.Clear();
             liveFauna.Clear();
+            // The gyroid colony's frontier is a POPULATION-level book of open octagons, so it
+            // outlives any individual plant by design - which means only the cell can retire it.
+            // Left behind, the next world grown here inherits the dead one's sites and plants
+            // daughters into lattice that no longer exists (the Cell Selector swaps worlds in
+            // the very scene this colony ships in). Keyed by cell, so this touches no other.
+            GyroidColonyFrontier.Clear(this);
             phase = CellPhase.Calm;
 
             if (spawnedCytoplasm)
@@ -1363,6 +1370,78 @@ namespace CosmicShore.Gameplay
             liveFauna.Remove(fauna);
         }
 
+        // ---------------------------------------------------------------------
+        //  Live FLORA registry - the plant-side twin of the fauna registry above,
+        //  and it exists for the same reason: flora now reproduce (Flora.TryReproduce),
+        //  so the periodic spawner is no longer the only producer and "how many plants
+        //  of this species are alive" has to be a fact the cell owns rather than
+        //  something a producer guesses. Plants register on Flora.AssignLineage (both
+        //  the spawner path and the reproduction path) and unregister in OnDestroy.
+        //  A plant spawned with no config (a toy clone, a microscene release) carries
+        //  no lineage and is invisible here - same rule fauna follow.
+        //  See Docs/ECOSYSTEM.md §32.
+        // ---------------------------------------------------------------------
+
+        readonly Dictionary<FloraConfigurationSO, int> liveFloraCounts = new();
+
+        /// <summary>Live plant count for the species defined by <paramref name="config"/> in this cell.</summary>
+        public int GetLiveFloraCount(FloraConfigurationSO config) =>
+            config && liveFloraCounts.TryGetValue(config, out int c) ? c : 0;
+
+        /// <summary>
+        /// THIS CELL's take on an authored flora population number - a seed count
+        /// (<c>InitialSpawnCount</c> / <c>PopulationSize</c>) or the hard cap
+        /// (<c>MaxLivePopulation</c>) - after its SpawnProfile's
+        /// <see cref="SpawnProfileSO.FloraPopulationScale"/>.
+        ///
+        /// <para><b>Every producer must ask the CELL, never the config</b> - the same rule, for
+        /// the same reason, as <see cref="ResolveFaunaPopulation"/>. Flora has FOUR producers
+        /// (<c>RandomLifeSpawner</c>, <c>IntensityWiseLifeSpawner</c>, <c>Flora.TryReproduce</c>
+        /// and the freestyle <c>Microscene</c> conveyor / Lifeform Matrix toy), and which
+        /// SPAWNER a biome runs is decided by an unrelated field - <c>CellTypeChoiceOptions</c>
+        /// <c>.IntensityWise</c> silently swaps the class - so a density rule implemented in one
+        /// producer is dead code in exactly the modes that asked for it. The cell is the one
+        /// thing all four already hold.</para>
+        /// </summary>
+        public int ResolveFloraPopulation(int authored)
+        {
+            var profile = cellConfigData ? cellConfigData.SpawnProfile : null;
+            return profile ? profile.ScaleFloraPopulation(authored) : authored;
+        }
+
+        /// <summary>
+        /// This cell's live cap for a flora species: <see cref="FloraConfigurationSO.MaxLivePopulation"/>
+        /// through <see cref="ResolveFloraPopulation"/>. 0 stays 0 (uncapped).
+        /// </summary>
+        public int ResolveFloraCap(FloraConfigurationSO config) =>
+            config ? ResolveFloraPopulation(config.MaxLivePopulation) : 0;
+
+        /// <summary>
+        /// True when this species is already at or over this cell's live plant cap - the one
+        /// place the "cap" comparison is written, so a producer cannot accidentally test the
+        /// unscaled authored number. An uncapped species (0) is never full.
+        /// </summary>
+        public bool IsFloraAtCap(FloraConfigurationSO config)
+        {
+            int cap = ResolveFloraCap(config);
+            return cap > 0 && GetLiveFloraCount(config) >= cap;
+        }
+
+        public void RegisterLiveFlora(Flora flora)
+        {
+            if (!flora || !flora.SourceConfig) return;
+            liveFloraCounts.TryGetValue(flora.SourceConfig, out int c);
+            liveFloraCounts[flora.SourceConfig] = c + 1;
+        }
+
+        public void UnregisterLiveFlora(Flora flora)
+        {
+            // `is null` guard only - see UnregisterLiveFauna.
+            if (flora is null || !flora.SourceConfig) return;
+            if (liveFloraCounts.TryGetValue(flora.SourceConfig, out int c) && c > 0)
+                liveFloraCounts[flora.SourceConfig] = c - 1;
+        }
+
         void Initialize()
         {
             spawnedLifeForms.Clear();
@@ -1374,7 +1453,14 @@ namespace CosmicShore.Gameplay
             _replicatedDominantDomain = null;
             ResetVolumeAccounting();
             liveFaunaCounts.Clear();
+            liveFloraCounts.Clear();
             liveFauna.Clear();
+            // The gyroid colony's frontier is a POPULATION-level book of open octagons, so it
+            // outlives any individual plant by design - which means only the cell can retire it.
+            // Left behind, the next world grown here inherits the dead one's sites and plants
+            // daughters into lattice that no longer exists (the Cell Selector swaps worlds in
+            // the very scene this colony ships in). Keyed by cell, so this touches no other.
+            GyroidColonyFrontier.Clear(this);
             phase = CellPhase.Calm;
 
             // Bind runtime -> this cell
@@ -1982,7 +2068,14 @@ namespace CosmicShore.Gameplay
             _replicatedDominantDomain = null;
             ResetVolumeAccounting();
             liveFaunaCounts.Clear();
+            liveFloraCounts.Clear();
             liveFauna.Clear();
+            // The gyroid colony's frontier is a POPULATION-level book of open octagons, so it
+            // outlives any individual plant by design - which means only the cell can retire it.
+            // Left behind, the next world grown here inherits the dead one's sites and plants
+            // daughters into lattice that no longer exists (the Cell Selector swaps worlds in
+            // the very scene this colony ships in). Keyed by cell, so this touches no other.
+            GyroidColonyFrontier.Clear(this);
             phase = CellPhase.Calm;
             _nucleusControlRadiusSqr = 0f;
 

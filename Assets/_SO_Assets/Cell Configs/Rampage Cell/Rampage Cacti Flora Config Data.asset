@@ -17,6 +17,13 @@ MonoBehaviour:
   InitialSpawnCount: 26
   OverrideDefaultPlantPeriod: 1
   NewPlantPeriod: 18
+  PopulationSize: 26
+  MaxLivePopulation: 39
+  GrowthPerOffspring: 56
+  OffspringPerBirth: 1
+  ReproductionCooldownSeconds: 5
+  MaturityFraction: 0.5
+  OffspringSpread: 60
   PreferredSites: 31
   Element: 0
   Variant:
