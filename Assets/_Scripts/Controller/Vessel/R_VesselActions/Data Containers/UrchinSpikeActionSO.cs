@@ -49,7 +49,7 @@ namespace CosmicShore.Gameplay
         [SerializeField, Range(2, 12)] int spikesPerRing = 6;
 
         [Tooltip("ConcentricRings only: cone half-angle of the OUTERMOST ring, degrees.")]
-        [SerializeField, Range(5f, 80f)] float coneHalfAngleDegrees = 25f;
+        [SerializeField, Range(5f, 80f)] float coneHalfAngleDegrees = 15f;
 
         [Tooltip("ConcentricRings only: also fire one spike straight down the aim axis.")]
         [SerializeField] bool centerSpike = true;

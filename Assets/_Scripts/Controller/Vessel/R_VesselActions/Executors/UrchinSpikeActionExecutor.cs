@@ -165,9 +165,11 @@ namespace CosmicShore.Gameplay
             gun.ChainRangeScale = rangeScale;
             gun.ChainRangeFalloff = so.ResolveRangeFalloff(_status);
 
-            // While riding a trail the vessel's course is the ribbon's, so spikes inherit the
-            // ride's forward rather than being left behind by it.
-            Vector3 inherited = _status != null && _status.IsAttached
+            // Spikes ALWAYS inherit the vessel's live velocity - free flight and rides alike.
+            // (This briefly inherited only while attached, which made every free-flight
+            // volley fire as if from a standing gun: at cruise speed the vessel outran its
+            // own shotgun's lateral spikes and the blast read as dropping behind the ship.)
+            Vector3 inherited = _status != null
                 ? _status.Course * _status.Speed
                 : Vector3.zero;
 

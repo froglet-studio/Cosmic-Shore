@@ -202,6 +202,27 @@ deep at high Charge. Barrage: a dense full sphere. Watch the console for chain-b
 reports under sustained deep cascades — expected under stress, but constant reporting at
 casual play means the budget wants another look.
 
+**ROUND 7 (2026-08-16).** Playtest: shotgun needed real velocity inheritance + tighter spread;
+the grind still jerked — "a jump to another prism and back again very quickly... at a
+periodicity that matches the prisms along the trail." That description was the diagnosis:
+
+- **`Trail.Project` lerped along a CHORD on every crossing frame.** The walk loop advanced
+  `startIndex`/`nextBlock` but never re-read `currentBlock`, so a frame that crossed a block
+  boundary measured — and lerped along — a two-segment chord from the frame's ORIGINAL block,
+  cutting the corner at a parameter computed against the wrong length; the next frame
+  re-derived cleanly and snapped back. One bad frame per crossing = the per-prism jerk. Fixed
+  with the missing `currentBlock = TrailList[startIndex]` inside the loop.
+- **The centerline is now a Catmull-Rom arc** through the block centres (position + heading;
+  bookkeeping stays segment-linear; outer control points wrap on loops, clamp at open ends) —
+  a straight lerp kinks direction at every block centre, the opposite of the rail-slide feel.
+- **Spikes always inherit the vessel's live velocity** — the executor passed inherited
+  velocity only while attached, so free-flight volleys fired as if from a standing gun and
+  dropped behind the ship at cruise. And the shotgun cone tightened 25° → 15°.
+
+Round-7 verify: grind a trail at full throttle — NO per-prism tick, position AND heading sweep
+smoothly through block centres like a rail slide; fire the shotgun at cruise speed — the fan
+travels with the ship (rings hold shape relative to the pilot) in a visibly tighter cone.
+
 Full mechanics, historical record and follow-ups:
 `_Scripts/Controller/Vessel/R_VesselActions/URCHIN_CHAIN_SPIKES.md` and `URCHIN_TRAIL_RIDER.md`.
 Element map: `Docs/ElementalAbilitySystem/FLEET_MAPS.md` §2 Urchin.

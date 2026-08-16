@@ -281,7 +281,14 @@ checked once per tick, so the two cases are not conflated into one early return.
 | `VolleysPerFrame` | `ChainReactionBudget` (static, code) | **6**, global across all cascades (round 6: raised from 4 with the depth). At depth 4 a chain volley is up to 14 spikes, so one frame's chain contribution is bounded at **84** live trigger colliders. Raise for reach, lower for frame cost. |
 | `generationsAtRestingCharge` / `generationsAtFullCharge` | the two spike action assets | volley **1 → 4** · barrage 0 → **4** (round 6: "their generation limit should be 4"). `GenerationsForLevel` is linear in level, anchored at 0 and 10, extrapolated across the element system's `[-5, 15]` band, then clamped to **[0, 4]** — the range the pool tiers and the frame budget are sized for. |
 | `barrageSpikeCount` | both spike action assets (Spherical only) | **36** — the ship's own golden-spiral density; 0 = legacy energy-derived count |
-| `ringCount` / `spikesPerRing` / `coneHalfAngleDegrees` / `centerSpike` | both spike action assets (ConcentricRings only) | **3 / 6 / 25° / on** → 37 spikes per pull |
+| `ringCount` / `spikesPerRing` / `coneHalfAngleDegrees` / `centerSpike` | both spike action assets (ConcentricRings only) | **3 / 6 / 15° / on** → 37 spikes per pull (cone tightened 25° → 15° in round 7: "bring the spread in") |
+
+**Spikes always inherit the vessel's live velocity** (round 7). The executor briefly passed
+`inheritedVelocity` only while attached to a trail, so every free-flight volley fired as if from
+a standing gun — at cruise speed the vessel outran its own shotgun's lateral spikes and the
+blast read as dropping behind the ship. `FireSingle` composes
+`Velocity = direction × speed + inherited`, so the fan now travels WITH the vessel and the rings
+hold their shape relative to the pilot.
 | `generationRangeFalloff` | both spike action assets | 0.75. Clamped `[0.05, 1]` by `SetChainRangeFalloff`. 1 = the SPACE-5 upgrade. |
 | `chainsOnChargeUpgrade` | barrage asset only | 1 — the CHARGE-5 floor of one generation |
 | `ammoCost` / `firingRate` | the two spike action assets | 0.15 @ 3/s · 0 @ 1/s |

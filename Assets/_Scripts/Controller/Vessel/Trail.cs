@@ -179,6 +179,16 @@ namespace CosmicShore.Gameplay
                 startIndex += incrementor;
                 (startIndex, incrementor) = IndexSafetyCheck(startIndex, incrementor, trailListCount);
 
+                // Re-read the segment's NEAR block. This line was missing for the walk's whole
+                // life: currentBlock stayed pinned at the frame's ORIGINAL block while
+                // nextBlock advanced, so any frame that crossed a boundary measured - and then
+                // LERPED ALONG - a chord from the original block to the new next block, cutting
+                // the corner at a parameter computed against the wrong length. The rider
+                // visibly jumped toward another prism for exactly one frame and snapped back
+                // when the next frame re-derived from (endIndex, finalLerp) - a jerk at
+                // precisely the trail's block periodicity.
+                currentBlock = TrailList[startIndex];
+
                 nextIndex += incrementor;
                 (nextIndex, incrementor) = IndexSafetyCheck(nextIndex, incrementor, trailListCount);
                 nextBlock = TrailList[nextIndex];
@@ -191,15 +201,62 @@ namespace CosmicShore.Gameplay
             var nextPosition = nextBlock.transform.position;
             var currentPosition = currentBlock.transform.position;
             Vector3 blockGap = nextPosition - currentPosition;
-           
+
             float gapMag = blockGap.magnitude; // one sqrt, reused by heading + finalLerp
-            heading = gapMag > 1e-5f ? blockGap / gapMag : Vector3.zero; // matches Vector3.normalized's 1e-5 zero-threshold
             endIndex = startIndex;
             finalLerp = 1 - overflow / gapMag;
 
             outDirection = (TrailFollowerDirection)incrementor;
 
-            return Vector3.Lerp(currentPosition, nextPosition, finalLerp);
+            // The projected point rides a CATMULL-ROM arc through the block centres rather
+            // than the raw polyline: a straight lerp is positionally continuous but kinks
+            // DIRECTION at every block centre, which at speed reads as a tick at the trail's
+            // block periodicity - the opposite of the rail-slide feel the 1D ride is for.
+            // Bookkeeping (endIndex + finalLerp) stays segment-linear; only the returned
+            // position and heading smooth. Outer control points clamp at an open ribbon's
+            // ends (P0==P1 degrades the arc to the segment, which is correct there).
+            Vector3 p0 = ControlBlockPosition(endIndex - incrementor, trailListCount);
+            Vector3 p3 = ControlBlockPosition(nextIndex + incrementor, trailListCount);
+
+            Vector3 tangent = CatmullRomTangent(p0, currentPosition, nextPosition, p3, finalLerp);
+            heading = tangent.sqrMagnitude > 1e-10f
+                ? tangent.normalized
+                : (gapMag > 1e-5f ? blockGap / gapMag : Vector3.zero);
+
+            return CatmullRom(p0, currentPosition, nextPosition, p3, finalLerp);
+        }
+
+        /// <summary>An OUTER spline control point: wraps on a loop, clamps on an open ribbon.</summary>
+        Vector3 ControlBlockPosition(int index, int count)
+        {
+            if (isLoop)
+            {
+                index %= count;
+                if (index < 0) index += count;
+            }
+            else
+            {
+                index = Mathf.Clamp(index, 0, count - 1);
+            }
+            return TrailList[index].transform.position;
+        }
+
+        static Vector3 CatmullRom(Vector3 p0, Vector3 p1, Vector3 p2, Vector3 p3, float t)
+        {
+            float t2 = t * t;
+            float t3 = t2 * t;
+            return 0.5f * ((2f * p1)
+                + (p2 - p0) * t
+                + (2f * p0 - 5f * p1 + 4f * p2 - p3) * t2
+                + (-p0 + 3f * p1 - 3f * p2 + p3) * t3);
+        }
+
+        static Vector3 CatmullRomTangent(Vector3 p0, Vector3 p1, Vector3 p2, Vector3 p3, float t)
+        {
+            float t2 = t * t;
+            return 0.5f * ((p2 - p0)
+                + 2f * (2f * p0 - 5f * p1 + 4f * p2 - p3) * t
+                + 3f * (-p0 + 3f * p1 - 3f * p2 + p3) * t2);
         }
 
         private (int, int) IndexSafetyCheck(int index, int incrementor, int maxRange)

@@ -267,6 +267,30 @@ each ribbon is now a 2-wide, 2.5-tall, 4-long lane with a **6-unit clear gap** (
 slabs a sliver apart, visually one 10-wide slab). And the ride camera came in to **half
 distance** (`UrchinCameraSettingsSO`: followOffset z −40 → −20, dynamic band 30/50 → 15/25).
 
+## The per-prism jerk (round 7): Project lerped along a CHORD on every crossing frame
+
+With membership fixed (round 6), the grind finally ran — and exposed a jerk that had been
+waiting under everything: *"a halting discontinuity where it displays a jump to another prism
+and back again very quickly... at a periodicity that matches the prisms along the trail."* That
+description IS the diagnosis. `Trail.Project`'s walk loop advanced `startIndex` and `nextBlock`
+but **never re-read `currentBlock`** — it stayed pinned at the frame's original block. On any
+frame whose step crossed a block boundary, the segment length was measured from the ORIGINAL
+block to the NEW next block (a two-segment chord), and the final position LERPED ALONG THAT
+CHORD, cutting the corner at a parameter computed against the wrong length. The next frame
+re-derived cleanly from `(endIndex, finalLerp)` and snapped back onto the true segment: one bad
+frame per crossing, at exactly the trail's block periodicity. Fixed with one line
+(`currentBlock = TrailList[startIndex]` inside the loop).
+
+The same pass upgraded the ride's geometry from polyline to **Catmull-Rom arc** through the
+block centres: a straight lerp is positionally continuous but kinks DIRECTION at every block
+centre, which at speed reads as a tick-tick-tick — the opposite of the rollerblade rail-slide
+feel the 1D ride is for. `Project` now returns position and heading evaluated on the spline
+(outer control points wrap on loops and clamp at an open ribbon's ends, where the arc correctly
+degrades to the segment); the `(endIndex, finalLerp)` bookkeeping stays segment-linear, so
+nothing upstream changed. Wake prisms' z genuinely points down the trail
+(`blockRotation = transform.rotation` at lay time), so the authored-z invariant the dimension
+ladder rests on holds for every wake ribbon.
+
 ## The rail grind (round 5): each ride's controls map onto its prismscape's z-axis
 
 Round 4 made the rides smooth; playtest feedback set the FEEL, and it demanded **different
