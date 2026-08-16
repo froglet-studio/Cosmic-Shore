@@ -162,9 +162,12 @@ outcome is optimization, not life). Use the `/ecology` skill for any change here
   Mass is preserved (`cap × 24 ≈ the old single-plant budget`); the cost is **crystals**
   (one always-on heart collider per octagon), and `MaxLivePopulation` is the dial. Numbers are
   authored by `Tools/Build/author_flora_populations.py` (`--check`), never by hand; the tables
-  regenerate via `Tools/Build/measure_gyroid_octagons.py`. The **Gyroid Lab** cell (Menu_Main's
-  Cell Selector, index 9) grows one uncapped colony indefinitely as the tuning chamber.
-  Full record: `Docs/ECOSYSTEM.md §32` (§32.7 the octagon colony).
+  regenerate via `Tools/Build/measure_gyroid_octagons.py`. **A colony's ceiling is its CELL'S
+  VOLUME LADDER, not `MaxLivePopulation`** — the Blob (freestyle) cell's gyroid prisms are up to
+  **6.9× nominal volume** *before* the level spread multiplies them another ~2.7×, so its seeded
+  floor alone was 87% of `FrenzyEnterVolume` and the colony froze after one wave while its caps
+  sat 19× further out. Reach for the ladder, not the population dial (`Docs/ECOSYSTEM.md §32.7`
+  seventh pass). Full record: `Docs/ECOSYSTEM.md §32` (§32.7 the octagon colony).
 - **Territorial permanence.** Take a cell, leave, it stays yours — the claim fauna cannot touch.
   In nucleus cells the permanent claim is the **nucleus interior** (fauna never consume it);
   exterior canopy/trail is deliberately contested churn (voracious any-domain grazing). In

@@ -19,9 +19,9 @@ namespace CosmicShore.Gameplay
 
     /// <summary>
     /// Colony-wide event counters for the gyroid octagon population, plus a 5s heartbeat the
-    /// FOUNDER logs. Diagnostics, not gameplay: the Gyroid Lab exists to observe this system,
-    /// and its second playtest produced a symptom (a crystal/spindle flood outrunning grown
-    /// prisms) that code reading alone could not attribute - so the decisive sites now report.
+    /// FOUNDER logs. Diagnostics, not gameplay: this colony's playtests kept producing symptoms
+    /// (a crystal/spindle flood outrunning grown prisms; "twinned" surfaces that would not mate)
+    /// which code reading alone could not attribute - so the decisive sites now report.
     /// Volume is naturally low (births and mints are rare events in a healthy colony; a SPAMMING
     /// counter in the console IS the diagnosis). Always compiled - plain CSDebug, no editor-only
     /// guards (Docs/CONDITIONAL_COMPILATION.md).
@@ -161,7 +161,7 @@ namespace CosmicShore.Gameplay
                     maxTotalSpawnedObjects * tuning.MaxTotalSpawnedObjectsScale + 0.5f));
 
             // Pacing overrides - the prefab's throttles are shared by every biome's plants,
-            // so a cell that wants speed (the Gyroid Lab) authors it in config instead.
+            // so a cell that wants a different pace authors it in config instead.
             if (tuning.ItemsPerGrow >= 1) itemsPerGrow = tuning.ItemsPerGrow;
             if (tuning.RandomItems >= 0) randomItems = tuning.RandomItems;
             if (tuning.MaxSpawnsPerFrame >= 1) maxSpawnsPerFrame = tuning.MaxSpawnsPerFrame;

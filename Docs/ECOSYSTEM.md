@@ -4095,19 +4095,17 @@ radius 95, no double-filled site), and **175 of 175 complete octagons holding ex
 claimed crystal centre**. Float drift off the bond table accumulates ~0.3u per 100u of lattice
 — absorbed by the reservation clear radius (~3.1u) out to radius ~1,000.
 
-**The Gyroid Lab** (`Assets/_SO_Assets/Cell Configs/Gyroid Lab Cell/`) is the test chamber:
-appended to Menu_Main's `CellConfigs` (index 9), so it appears in the freestyle **Cell
-Selector** as a labelled station ("Gyroid Lab" — environment-free configs get a station with
-no miniature). Fly it and the swap suctions the old world away, restarts the spawner on the
-lab profile, and ONE founder plants and colonises indefinitely: `PopulationSize 1`,
-`MaxLivePopulation 0` (uncapped — a laboratory, not a biome; excluded from
-`author_flora_populations.py`'s model by name), `ReproductionCooldownSeconds 2`, and phase
-thresholds that can never reach Frenzy (`FrenzyEnter 0` disables the count backstop;
-volume ladder authored at 999,999,999 — non-zero, so the all-zero default substitution never
-fires). No fauna, so nothing grazes the specimen. **Collider budget: deliberately unbounded**
-— every octagon is a crystal (always-on collider) and one octagon per 24 prisms means ~40
-crystals per 1,000 prisms; the cell exists to observe the colony, and the dial back to a
-bounded biome is `MaxLivePopulation`.
+**The Gyroid Lab was the test chamber, and is RETIRED (2026-08-16).** It was a Cell-Selector
+station on an environment-free config with every guardrail off — uncapped population, no
+fauna to graze the specimen, a phase ladder that could never reach Frenzy — so one founder
+colonised indefinitely and the growth rule could be watched in isolation. It earned its keep
+(it found the daughter-stall bug, the premature-reproduction cascade and the twinning
+geography below), and then it stopped being informative: **a cell with no gates only ever
+answers questions about itself.** Its last playtest read as a runaway shell precisely because
+guardrail-free was its whole design — while the same code in the shipped freestyle biome grew
+correctly. Removed from Menu_Main's `CellConfigs` and deleted; the shipped biomes are the
+honest test. If a future rule change needs a chamber again, `author_flora_populations.py`'s
+`EXCLUDE` hook is still there for it.
 
 **First playtest (2026-08-15) found the daughter-stall bug.** Daughters planted (crystal +
 seed prism visible) but never grew. Root cause: `CreateNewAssembler` ran
@@ -4280,12 +4278,46 @@ The colony now wanders the same way at the level of whole flora:
   `GrowthPerOffspring` / `OffspringPerBirth` / `ReproductionCooldownSeconds` no longer
   drive this species; the cadence dial is the spawn profile's `BaseFaunaSpawnTime`.
 
-In-editor verification (the human is the gate): enter freestyle in Menu_Main, fly the Cell
-Selector toy, pick **Gyroid Lab**. Watch: (1) the founder's first danger prism moves the
+**Seventh pass (2026-08-16): the colony's ceiling is the CELL'S VOLUME LADDER, not its
+population cap.** With growth and mating both correct, the freestyle colonies still stopped
+early, and the instinct — raise `MaxLivePopulation` — would have been **dead tuning**. The
+arithmetic says why. The Blob cell (Menu_Main's freestyle / lava-lamp cell, and the Wanderway
+host) authored `FrenzyEnterVolume 57,600`, while its three gyroid species carry prisms far
+above the nominal 16: **Mass 7×4.5×3.5 = 110 volume (6.9× nominal)**, Time 45.9, Space 20,
+all multiplied again by the level spread (`LeafScalePerLevel 1.15` on each axis = ×1.52 per
+level; ×2.74 averaged over levels 1-5). One settled plant is therefore ~7,900 (Mass) /
+~3,300 (Time) / ~1,400 (Space) volume, so the **seeded floor alone — 4 founders × 3 species —
+is ~50,200 volume, 87% of the Frenzy threshold before a single birth.** The colony froze
+after roughly one wave. Its population caps (60/42/33 = 135 plants) sat ~19× further out and
+were never in play.
+
+The ladder is now authored ×5 (`RestlessEnterVolume 56,000` / exit 40,000,
+`FrenzyEnterVolume 288,000` / exit 240,000), which is ~69 plants and ~1,790 prisms of mixed
+colony — so the caps still sit above it and remain what they were designed to be, a crystal
+(collider) backstop rather than the growth bound. The count backstop moved 3,600 → 5,400
+(exit 3,000 → 4,500) for one reason only: the new volume ceiling filled entirely with the
+THINNEST gyroid species would be ~5,255 prisms, so a 3,600 count would have preempted the
+volume spine in that case; above ~5,400 is no longer the ladder, it is a runaway.
+**Collider impact:** ~69 crystals (one always-on heart collider each) where the cell
+previously reached ~14, and ~1,790 prisms where it reached ~360 — a lava-lamp-only change
+(Blob config; no other biome touched). Fauna aggression also becomes a real ladder here
+rather than a pin: the cell used to sit at Frenzy (Level2 berserk) from its seeded floor
+onward, and now climbs Calm → Restless → Frenzy as the colony actually fills.
+
+**The general rule, and it has now bitten twice** (Rampage's cactus leaves, §27; this):
+**a cell whose prisms are not nominal-sized must author its volume ladder against MEASURED
+prism volume, and the level spread is part of that measurement.** A species whose leaf is 7×
+nominal and whose levels multiply it another 2.7× reaches a count-derived ladder ~19× too
+early, and the symptom is never "the ladder is wrong" — it is "my population stopped growing",
+which sends you to the population dial, which is not connected.
+
+In-editor verification (the human is the gate): enter freestyle in Menu_Main (the lava lamp
+IS the test now). Watch: (1) the founder's first danger prism moves the
 crystal to the ring centre; (2) ONE new plant blooms per fauna-wave period, at a random
 edge of the colony - the surface should visibly WANDER, not inflate as a ball; (3) the
 surface stays ONE continuous gyroid with no doubled prisms, a non-growing crystal in each
-completed window; (4) it never stops. Read the heartbeat: `frontier=` is the population's
+completed window; (4) growth continues to roughly 5× the old standing colony before the cell
+reaches Frenzy and freezes (an active force - grazing, a vessel ability - resumes it). Read the heartbeat: `frontier=` is the population's
 open-site pool (grows by ~10-14 per maturation, shrinks by one per birth); `HANDOFF bad=`
 MUST stay 0 (non-zero = the tables are wrong in-engine - regenerate with
 `Tools/Build/measure_gyroid_octagons.py` and paste its emit verbatim); `BLOCKED grown/seed`

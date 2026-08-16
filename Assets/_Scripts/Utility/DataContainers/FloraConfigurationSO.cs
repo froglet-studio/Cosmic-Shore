@@ -298,7 +298,7 @@ namespace CosmicShore.Utility
 
         [Tooltip("Growth decisions per grow tick (AssembledFlora.itemsPerGrow) - how many " +
                  "children a plant may decide in one tick. A pacing guard on the prefab; " +
-                 "exposed here so a cell that WANTS speed (the Gyroid Lab) can author it " +
+                 "exposed here so a cell that WANTS a different pace can author it " +
                  "without re-pacing every other biome's plants. -1 = keep prefab.")]
         public int ItemsPerGrow = -1;
 

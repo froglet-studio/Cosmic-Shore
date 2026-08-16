@@ -104,9 +104,11 @@ LATTICE_BUDGET = 30
 LATTICE_QUOTA = 22
 LATTICE_OFFSPRING_PER_BIRTH = 8
 
-# Hand-authored test-cell configs the model must NOT manage: the Gyroid Lab is deliberately
-# uncapped (MaxLivePopulation 0) with its own fast cooldown - a laboratory, not a biome.
-EXCLUDE = {"Gyroid Lab Flora Config Data"}
+# Hand-authored test-cell configs the model must NOT manage. Empty since the Gyroid Lab was
+# retired (2026-08-16): a deliberately uncapped, guardrail-free laboratory cell answers
+# questions about the growth RULE, and once the rule was right it only answered questions
+# about itself - the shipped biomes are the honest test. Keep the hook: the next lab goes here.
+EXCLUDE = set()
 
 # The AUTHORED single-plant budget each lattice config carried BEFORE the conversion. Recorded
 # explicitly rather than read back off the asset, because the conversion overwrites that value -
