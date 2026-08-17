@@ -81,10 +81,13 @@ QUOTA_MAX = 400         # ... but never so large that a big plant can never affo
 COOLDOWN = 5
 MATURITY = 0.5
 
-# Minimum seed floor for a LATTICE species. A colony inherits its founder's variant pick (element
-# + the level it seeded at), exactly as a fauna lineage does - so a species seeded from ONE plant
-# would grow a whole cell of one level and quietly waste the config's authored level spread. Four
-# independent founders keep several levels in the cell, and double as the extinction floor.
+# Minimum seed floor for a LATTICE species. A colony inherits its founder's variant pick (its
+# ELEMENT), exactly as a fauna lineage does - so a species seeded from ONE plant would grow a
+# whole cell of one element and quietly waste the config's authored element spread. Four
+# independent founders keep several elements in the cell, and double as the extinction floor.
+# (The pick used to carry a rolled spawn LEVEL too; that is retired - every plant seeds at
+# level 1 and earns the rest by reproducing, Docs/ECOSYSTEM.md §33 - so size variety inside a
+# colony now comes from which plants have bred, not from which founder they descend from.)
 LATTICE_MIN_FOUNDERS = 4
 
 # Species whose growth rule is a LATTICE: an offspring is handed a real bond site off the

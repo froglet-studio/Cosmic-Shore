@@ -183,11 +183,12 @@ namespace CosmicShore.Gameplay
             // Initialize - the leaf prism size and crystal lookup are consumed there.
             if (config)
             {
-                // One roll decides this plant's variant: which element it carries, the block
-                // that expresses that element, and the level it seeds at. With spread off the
-                // roll returns the config's authored Element / Variant / InitialLevel, so the
-                // legacy per-element-config path is unchanged. An OFFSPRING passes its parent's
-                // pick, which RollVariant returns verbatim - a lineage breeds true.
+                // One roll decides this plant's variant: which element it carries and the block
+                // that expresses that element. With spread off the roll returns the config's
+                // authored Element / Variant, so the legacy per-element-config path is
+                // unchanged. An OFFSPRING passes its parent's pick, which RollVariant returns
+                // verbatim - a lineage breeds true. The LEVEL is never rolled: every plant seeds
+                // at level 1 and earns the rest by reproducing (Docs/ECOSYSTEM.md §33).
                 var pick = config.RollVariant(inherit);
 
                 flora.ApplyElement(pick.Element);
@@ -206,7 +207,7 @@ namespace CosmicShore.Gameplay
                 if (config.TryBuildCellOverrideTuning(plantBudgetScale, out var cellOverrides))
                     flora.ApplyVariantTuning(cellOverrides);
 
-                flora.ApplyLevel(pick.Level, config.LeafScalePerLevel, config.CrystalScalePerLevel);
+                flora.ApplyLevel(pick.Level, config.LeafScalePerLevel);
 
                 // Lineage BEFORE Initialize, so the plant is already counted in the cell's
                 // per-species population by the time its first growth tick can try to seed an

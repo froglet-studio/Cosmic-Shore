@@ -21,8 +21,12 @@ namespace CosmicShore.Gameplay
     /// the skim-collect path executes, so a heart whose drop cannot repay the value grants
     /// nothing. The buff keys off Fauna.LiveHeart, which nulls at the exact ActivateCrystal
     /// moment the drop becomes collectible. Zero new tunables — the existing crystal knobs
-    /// (levelPerUnitScale, maxLevelGainPerCrystal, CrystalScalePerLevel, InitialLevel) govern
-    /// both sides.
+    /// govern both sides: levelPerUnitScale and maxLevelGainPerCrystal on the collect effect,
+    /// and the heart's world size, which is the ONE level curve on ElementalCrystalSet
+    /// (Docs/ECOSYSTEM.md §33) rather than a per-species number. That uniformity matters most
+    /// here: before it, a domain fielding tadpoles (heart world scale 0.7) drew a fraction of
+    /// the buff a domain fielding brittlestars (2.5) did for the same creature count, and
+    /// nobody had authored that difference on purpose.
     ///
     /// One system per scene, hosted by the first Cell to initialize (EnsureExists) so it runs
     /// wherever fauna live — game scenes and Menu_Main freestyle alike (one HyperSea, one rule

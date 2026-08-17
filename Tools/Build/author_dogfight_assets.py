@@ -586,6 +586,7 @@ for i in INTENSITIES:
   PopulationSize: {seed_pop}
   SpawnProbability: 1
   FeedsPerOffspring: 20
+  FeedsPerLevel: 40
   OffspringPerBirth: 1
   ReproductionCooldownSeconds: 12
   MaxLivePopulation: {cap_pop}
@@ -596,18 +597,12 @@ for i in INTENSITIES:
   Element: 0
   InitialLevel: 1
   BodyScalePerLevel: 1.15
-  CrystalScalePerLevel: 1.2
   LevelGrowSeconds: 1
   Variant:
     Enabled: 0
   SpreadElements: 1
   ElementPalette:
-{palette}  Levels:
-    Enabled: 0
-    MinLevel: 1
-    MaxLevel: 1
-    RarityFalloff: 2
-""")
+{palette}""")
     emit(f"{FOLDER}/Boneyard Scavenger {i}.asset.meta",
          asset_meta(G_ASSET[f"BoneyardScavenger{i}"]))
 

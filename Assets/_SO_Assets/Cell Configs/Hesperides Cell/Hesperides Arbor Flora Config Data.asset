@@ -35,15 +35,9 @@ MonoBehaviour:
     PlantRadiusCellFraction: 0.55
   InitialLevel: 1
   LeafScalePerLevel: 1.15
-  CrystalScalePerLevel: 1.2
   SpreadElements: 1
   ElementPalette:
   - {fileID: 11400000, guid: 8142092b395852d6b70857945eddf051, type: 2}
   - {fileID: 11400000, guid: 789fa0009f601288c6868e7d32c734f9, type: 2}
   - {fileID: 11400000, guid: e800b105afc6ed81fbbe4da2fc221c5d, type: 2}
   - {fileID: 11400000, guid: 636374a00e41c98762163631b2e60477, type: 2}
-  Levels:
-    Enabled: 1
-    MinLevel: 1
-    MaxLevel: 5
-    RarityFalloff: 2

@@ -37,18 +37,12 @@ MonoBehaviour:
     PlantRadiusCellFractionMin: -1
   InitialLevel: 1
   LeafScalePerLevel: 1.25
-  CrystalScalePerLevel: 1.2
   SpreadElements: 1
   ElementPalette:
   - {fileID: 11400000, guid: 25e619766581c4807de09c87fddf877c, type: 2}
   - {fileID: 11400000, guid: 10859a22ceb9349219eabe30541f5341, type: 2}
   - {fileID: 11400000, guid: f46966ea66e278b0ad293ccecc672c1d, type: 2}
   - {fileID: 11400000, guid: 6771e101fe9fa81ae0161ecbffc4c901, type: 2}
-  Levels:
-    Enabled: 1
-    MinLevel: 1
-    MaxLevel: 5
-    RarityFalloff: 1.6
   PlantRadiusCellFractionMaxOverride: 0.97
   PlantRadiusCellFractionMinOverride: 0.3
   MaxTotalSpawnedObjectsOverride: 190

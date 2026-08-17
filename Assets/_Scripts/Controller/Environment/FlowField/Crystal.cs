@@ -82,10 +82,16 @@ namespace CosmicShore.Gameplay
         /// Marks this crystal as a living lifeform's heart and enables its collider (inflated,
         /// so the joust reliably lands) so vessels can joust it. Called by lifeforms right
         /// after LifeFormCrystal.EnsureElementalCrystal.
+        ///
+        /// This is also where a heart gets its SIZE: every lifeform heart in the game passes
+        /// through here, so sizing it from the owner's level here is what makes the size a
+        /// function of level alone rather than of whatever scale each species' prefab happened
+        /// to author (Docs/ECOSYSTEM.md §33). Later level changes re-apply the same curve.
         /// </summary>
         public void SetEmbeddedIn(ILifeFormEntity owner)
         {
             EmbeddedIn = owner;
+            if (owner != null) LifeFormCrystal.ApplyLevelSize(this, owner.Level);
             var col = GetComponent<SphereCollider>();
             if (!col) return;
             if (_authoredColliderRadius < 0f) _authoredColliderRadius = col.radius;

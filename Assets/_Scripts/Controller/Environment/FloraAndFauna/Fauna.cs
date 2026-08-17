@@ -206,7 +206,28 @@ namespace CosmicShore.Gameplay
         protected void NotifyFed()
         {
             _lastFedTime = Time.time;
+            TryLevelUpFromFeeding();
             TryReproduce();
+        }
+
+        /// <summary>
+        /// <b>A creature earns its level by eating</b> (Docs/ECOSYSTEM.md §33). Every creature
+        /// hatches at level 1; a level costs <see cref="FaunaConfigurationSO.FeedsPerLevel"/>
+        /// feeds — deliberately a multiple of what an offspring costs, so a big creature is a
+        /// creature that has out-fed its siblings for a long time rather than one that won a
+        /// spawn roll. 0 on the config disables levelling for that species (the worm colony,
+        /// which funds its growth by segment instead).
+        ///
+        /// <para>Counted separately from the reproduction quota: a feed pays into both, and a
+        /// birth must not reset progress toward a level (or vice versa).</para>
+        /// </summary>
+        void TryLevelUpFromFeeding()
+        {
+            var cfg = sourceConfig;
+            if (!cfg || cfg.FeedsPerLevel <= 0 || Level >= MaxLifeformLevel) return;
+            if (++_feedsSinceLevel < cfg.FeedsPerLevel) return;
+            _feedsSinceLevel = 0;
+            LevelUp();
         }
 
         // -------------------------------------------------------------------
@@ -224,6 +245,7 @@ namespace CosmicShore.Gameplay
         LifeformVariantPick<FaunaVariantTuning>? _variantPick;
         bool lineageRegistered;
         int _feedsSinceBirth;
+        int _feedsSinceLevel;
         float _lastBirthTime = float.NegativeInfinity;
 
         // Offspring appear within this radius of the parent - far enough not to
@@ -428,12 +450,10 @@ namespace CosmicShore.Gameplay
         }
 
         Vector3 _levelBaseScale = Vector3.one;   // root scale at level 1 (captured on first level apply)
-        float _crystalBaseScale = 1f;            // crystal local scale at level 1
         bool _levelBaseCaptured;
         Coroutine _levelGrowRoutine;
 
         float BodyScalePerLevel => sourceConfig ? sourceConfig.BodyScalePerLevel : 1.15f;
-        float CrystalScalePerLevel => sourceConfig ? sourceConfig.CrystalScalePerLevel : 1.2f;
         float LevelGrowSeconds => sourceConfig ? sourceConfig.LevelGrowSeconds : 1f;
 
         /// <summary>
@@ -456,7 +476,6 @@ namespace CosmicShore.Gameplay
             if (!_levelBaseCaptured)
             {
                 _levelBaseScale = transform.localScale;
-                if (crystal) _crystalBaseScale = crystal.transform.localScale.x;
                 _levelBaseCaptured = true;
             }
 
@@ -474,18 +493,19 @@ namespace CosmicShore.Gameplay
             }
 
             // The heart grows with the level so the eventual death drop is a bigger powerup
-            // (crystal value reads lossyScale live at collect time - mass rewarded). The crystal
-            // is a child of the root, so divide the body growth back out of its LOCAL target.
+            // (crystal value reads lossyScale live at collect time - mass rewarded). Its size is
+            // the SHARED level curve, not this species' body scale: a shark's heart and a
+            // tadpole's are the same size at the same level (Docs/ECOSYSTEM.md §33). The
+            // animation therefore works in WORLD scale and divides out the parent chain every
+            // frame, which is also what holds the heart's size steady while the body grows
+            // underneath it.
             if (crystal)
             {
-                // The body grows by pow(BodyScalePerLevel, L-1), so the crystal's LOCAL target is
-                // its world target divided by the body growth (it lands at the world size wanted).
-                float worldTarget = _crystalBaseScale * Mathf.Pow(CrystalScalePerLevel, Level - 1);
-                float localTarget = worldTarget / Mathf.Pow(BodyScalePerLevel, Level - 1);
+                float worldTarget = LifeFormCrystal.WorldScaleForLevel(Level);
                 if (animate && isActiveAndEnabled && crystal.gameObject.activeInHierarchy)
-                    StartCoroutine(GrowCrystalWithPop(localTarget, LevelGrowSeconds));
+                    StartCoroutine(GrowCrystalWithPop(worldTarget, LevelGrowSeconds));
                 else
-                    crystal.transform.localScale = Vector3.one * localTarget;
+                    LifeFormCrystal.SetWorldScale(crystal, worldTarget);
             }
         }
 
@@ -549,37 +569,38 @@ namespace CosmicShore.Gameplay
         /// the first quarter of the animation, then settles - readable at flight speed, where a
         /// plain 20%-over-a-second ease is too subtle to notice. Still continuous (never pops in).
         /// </summary>
-        IEnumerator GrowCrystalWithPop(float localTarget, float seconds)
+        IEnumerator GrowCrystalWithPop(float worldTarget, float seconds)
         {
             if (!crystal) yield break;
             var t = crystal.transform;
-            float start = t.localScale.x;
-            float flare = localTarget * 1.6f;
+            float start = t.lossyScale.x;
+            float flare = worldTarget * 1.6f;
             float flareTime = Mathf.Max(0.05f, seconds * 0.25f);
             float settleTime = Mathf.Max(0.05f, seconds - flareTime);
 
             // Stop the moment the heart stops riding this body: ANY death reparents the crystal
-            // to the cell (ActivateCrystal, or StashHeart for a deferred release), where
-            // localTarget - computed to divide out the fauna body's scale - would land as the
-            // wrong WORLD scale. The drop keeps the world scale it had at death, which is exactly
-            // the value the domain buff was granting at that moment. The test is `_diedThisLife`
-            // rather than the embedded state, because a stashed heart is still embedded (that is
-            // what keeps it uncollectable) and would sail past an EmbeddedIn check.
+            // to the cell (ActivateCrystal, or StashHeart for a deferred release), and a write
+            // that divides out THIS body's scale would land as the wrong WORLD scale there. The
+            // drop keeps the world scale it had at death, which is exactly the value the domain
+            // buff was granting at that moment. The test is `_diedThisLife` rather than the
+            // embedded state, because a stashed heart is still embedded (that is what keeps it
+            // uncollectable) and would sail past an EmbeddedIn check.
             for (float e = 0f; e < flareTime; e += Time.deltaTime)
             {
                 if (!crystal || _diedThisLife || !ReferenceEquals(crystal.EmbeddedIn, this)) yield break;
-                t.localScale = Vector3.one * Mathf.Lerp(start, flare, e / flareTime);
+                LifeFormCrystal.SetWorldScale(crystal, Mathf.Lerp(start, flare, e / flareTime));
                 yield return null;
             }
             for (float e = 0f; e < settleTime; e += Time.deltaTime)
             {
                 if (!crystal || _diedThisLife || !ReferenceEquals(crystal.EmbeddedIn, this)) yield break;
                 float u = e / settleTime;
-                t.localScale = Vector3.one * Mathf.Lerp(flare, localTarget, u * u * (3f - 2f * u));
+                LifeFormCrystal.SetWorldScale(
+                    crystal, Mathf.Lerp(flare, worldTarget, u * u * (3f - 2f * u)));
                 yield return null;
             }
             if (crystal && !_diedThisLife && ReferenceEquals(crystal.EmbeddedIn, this))
-                t.localScale = Vector3.one * localTarget;
+                LifeFormCrystal.SetWorldScale(crystal, worldTarget);
         }
 
         IEnumerator GrowToScale(Vector3 target, float seconds)

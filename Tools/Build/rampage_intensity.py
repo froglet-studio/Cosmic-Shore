@@ -114,9 +114,25 @@ def round_half_up(x: float) -> int:
 
 
 def level_volume_multiplier(scale_per_level: float, falloff: float) -> float:
-    """Expected VOLUME multiplier of one prism under the level spread.
+    """Expected VOLUME multiplier of one prism across the level band.
 
     Level L has weight falloff^-(L-1) and linear scale s^(L-1), hence volume s^(3(L-1)).
+
+    WHAT THIS MODELS CHANGED (Docs/ECOSYSTEM.md §33). It used to be the SPAWN-TIME
+    distribution: `LifeformLevelSpread` rolled each plant a level at seeding, so the arena
+    was born at this multiplier and stayed there. The spread is retired - every plant now
+    seeds at level 1 and earns a level per birth - so:
+
+      * the SEEDED arena is this multiplier = 1.0 (a fresh Rampage forest is ~4.3x lighter in
+        volume than the number below at s=1.30, f=1.6, which is the shipped Rampage cactus);
+      * this figure is now a MATURE-forest CEILING - where a breeding, grazed forest tends
+        once its plants have reproduced a few times, weighted the same way because a plant's
+        chance of having reached level L falls off similarly.
+
+    That is why the ladder below is left as play-tested rather than re-derived: it now
+    describes the arena's settled state instead of its opening state, and booting lighter
+    is the safe direction (Frenzy - which freezes planting - arrives later, not sooner).
+    It DOES need an in-editor re-measure: see the note printed at the bottom of this tool.
     """
     weights = [falloff ** -(l - MIN_LEVEL) for l in range(MIN_LEVEL, MAX_LEVEL + 1)]
     vols = [scale_per_level ** (3 * (l - MIN_LEVEL)) for l in range(MIN_LEVEL, MAX_LEVEL + 1)]
@@ -428,6 +444,15 @@ def main() -> int:
 
     print("\nself-test OK: all four intensities reproduce the shipped, play-tested intensity-4 "
           "ladder, and the fauna ladder climbs from the authored population")
+
+    print("\nOPEN - RE-MEASURE THIS LADDER IN-EDITOR (Docs/ECOSYSTEM.md §33). The spawn-time "
+          "level spread\nis retired: every plant now seeds at level 1 and earns a level per "
+          "birth, so the volumes\nabove are the MATURE forest, and a freshly-seeded arena is "
+          "~4.3x lighter (the cactus runs\ns=1.30, f=1.6). Booting lighter is the safe "
+          "direction - Frenzy, which freezes planting,\narrives later, not sooner - so the "
+          "ladder is deliberately left as play-tested. Confirm with\nFrogletTools > Ecology > "
+          "Measure Cell Environment Baselines and retune Restless if the arena\nnow reads Calm "
+          "for too long after the whistle.")
 
     stale = emit(write=args.write)
     if args.write:
