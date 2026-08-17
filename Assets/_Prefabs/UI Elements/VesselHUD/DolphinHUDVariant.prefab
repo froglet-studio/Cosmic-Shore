@@ -283,18 +283,15 @@ MonoBehaviour:
   tintIconOnUpgrade: 0
   showUpgradeBadge: 0
   blastProfile: {fileID: 7710000000000000133}
-  profileRestColor: {r: 1, g: 1, b: 1, a: 0.55}
-  profileEngagedColor: {r: 1, g: 0.72, b: 0.34, a: 1}
+  profileRestColor: {r: 0.51, g: 0.51, b: 0.54, a: 1}
+  profileEngagedColor: {r: 0.96, g: 0.96, b: 1, a: 1}
   profileEngageDuration: 0.15
   crystalIcon: {fileID: 7710000000000000023}
-  crystalOmniColor: {r: 1, g: 1, b: 1, a: 1}
-  crystalTeamColor: {r: 1, g: 1, b: 1, a: 1}
+  crystalOmniColor: {r: 0.59, g: 0.92, b: 0.16, a: 1}
+  crystalTeamFallbackColor: {r: 1, g: 1, b: 1, a: 1}
   crystalArmedFlashColor: {r: 1, g: 1, b: 1, a: 1}
   jawUpper: {fileID: 7710000000000000091}
   jawLower: {fileID: 7710000000000000101}
-  reachFill: {fileID: 7710000000000000143}
-  reachColor: {r: 1, g: 1, b: 1, a: 0.35}
-  reachGlideDuration: 0.35
   blastCountText: {fileID: 7710000000000000063}
   driftBoostIcon: {fileID: 4926312112814601564}
   chargeSteps:
@@ -822,7 +819,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 0, y: -26}
+  m_AnchoredPosition: {x: 0, y: -20}
   m_SizeDelta: {x: 120, y: 30}
   m_Pivot: {x: 0.5, y: 1}
 --- !u!222 &7710000000000000062
@@ -1218,7 +1215,6 @@ RectTransform:
   m_Children:
   - {fileID: 7710000000000000091}
   - {fileID: 7710000000000000101}
-  - {fileID: 7710000000000000141}
   - {fileID: 7710000000000000061}
   m_Father: {fileID: 7710000000000000121}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
@@ -1359,7 +1355,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_Material: {fileID: 0}
-  m_Color: {r: 1, g: 1, b: 1, a: 0.55}
+  m_Color: {r: 0.51, g: 0.51, b: 0.54, a: 1}
   m_RaycastTarget: 0
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
@@ -1370,78 +1366,3 @@ MonoBehaviour:
   maxExtentFraction: 0.86
   minRadiusFraction: 0.06
   rotationDegrees: 90
---- !u!1 &7710000000000000140
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 7710000000000000141}
-  - component: {fileID: 7710000000000000142}
-  - component: {fileID: 7710000000000000143}
-  m_Layer: 5
-  m_Name: ReachBar
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!224 &7710000000000000141
-RectTransform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 7710000000000000140}
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 7710000000000000111}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0.5, y: 0.5}
-  m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: -32, y: -18}
-  m_SizeDelta: {x: 64, y: 3}
-  m_Pivot: {x: 0, y: 0.5}
---- !u!222 &7710000000000000142
-CanvasRenderer:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 7710000000000000140}
-  m_CullTransparentMesh: 1
---- !u!114 &7710000000000000143
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 7710000000000000140}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  m_Material: {fileID: 0}
-  m_Color: {r: 1, g: 1, b: 1, a: 0.35}
-  m_RaycastTarget: 0
-  m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
-  m_Maskable: 1
-  m_OnCullStateChanged:
-    m_PersistentCalls:
-      m_Calls: []
-  m_Sprite: {fileID: 0}
-  m_Type: 3
-  m_PreserveAspect: 0
-  m_FillCenter: 1
-  m_FillMethod: 0
-  m_FillAmount: 0
-  m_FillClockwise: 1
-  m_FillOrigin: 0
-  m_UseSpriteMesh: 0
-  m_PixelsPerUnitMultiplier: 1

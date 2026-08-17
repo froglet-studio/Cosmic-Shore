@@ -94,27 +94,35 @@ namespace CosmicShore.UI
 
             var color32 = color;
 
-            // Fan origin at the centre, so the stadium fills solid with no interior seams.
+            // Fan origin at the centre, so the stadium fills solid with no interior seams. The fan
+            // is only valid because a stadium is convex and the outline below is walked as one
+            // continuous loop — see the note on the angle sweep.
             vh.AddVert(centre, color32, Vector2.zero);
 
             int perCap = Mathf.Max(3, arcSegments);
             int total = perCap * 2;
 
-            // Walk the outline once: cap at +halfLength swinging through 180 degrees, then the cap
-            // at -halfLength swinging back. The two straight edges fall out of the walk for free.
+            // ONE continuous sweep from -90 to +270 degrees, measured from the +along axis, with the
+            // cap centre switching at the halfway point. That single monotonic angle is what makes
+            // the walk a real perimeter: each vertex is adjacent to the last, the two straight edges
+            // fall out of the cap-centre switch for free, and the fan triangulates a solid shape.
+            //
+            // Getting this wrong is not subtly wrong. An earlier version measured the caps from the
+            // ACROSS axis instead (cos on across, sin on along), which left the first cap at the far
+            // +along tip and started the second cap back near the middle — so the outline jumped
+            // straight across the shape and the fan rendered a bowtie with hollow wedges.
             for (int i = 0; i < total; i++)
             {
                 bool positiveCap = i < perCap;
                 int withinCap = positiveCap ? i : i - perCap;
 
-                // -90..+90 across each cap, measured from the 'across' axis.
                 float t = perCap == 1 ? 0f : withinCap / (float)(perCap - 1);
-                float theta = Mathf.Lerp(-Mathf.PI * 0.5f, Mathf.PI * 0.5f, t);
+                float phi = positiveCap
+                    ? Mathf.Lerp(-Mathf.PI * 0.5f, Mathf.PI * 0.5f, t)                  // right cap
+                    : Mathf.Lerp(Mathf.PI * 0.5f, Mathf.PI * 1.5f, t);                  // left cap
 
                 Vector2 capCentre = centre + along * (positiveCap ? halfLength : -halfLength);
-                Vector2 outward = positiveCap
-                    ? across * Mathf.Cos(theta) + along * Mathf.Sin(theta)
-                    : -across * Mathf.Cos(theta) - along * Mathf.Sin(theta);
+                Vector2 outward = along * Mathf.Cos(phi) + across * Mathf.Sin(phi);
 
                 vh.AddVert(capCentre + outward * radius, color32, Vector2.zero);
             }

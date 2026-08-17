@@ -212,7 +212,7 @@ complete, 4/4 icons, order ✅. Then play Menu_Main and enter freestyle on the D
 | Mass to level 5 | seeded crystals arrive in your DOMAIN's colours instead of the lime CTA, and a rival cannot collect them; the Mass slot's icon shifts to the team colour |
 | Charge to level 5, hold RT near another vessel | a vessel inside the blast volume brightens in its OWN domain colours and fades back out as the cone sweeps off it |
 | raise/lower Charge, hold RT | the Charge slot's generated profile fattens/thins; banking energy grows its overall extent |
-| raise Space | the subtle bar under the jaws lengthens |
+| hold and release RT | the Charge profile crosses grey -> white and back; it is a solid capsule at every charge, never a bowtie or hollow wedges |
 | **hold RT** | prisms inside the blast volume light up warm; the camera does **not** move and the FOV does **not** change |
 | release RT | the highlight fades out over ~0.3 s (it must not snap off) |
 | hold RT while accelerating hard | the speed tunnel behaves exactly as it always has — the sight is not involved in it at all |
@@ -344,7 +344,7 @@ Every slot now draws one dimension of the same weapon:
 |---|---|---|
 | **Charge** | `BlastProfileGraphic` — a generated stadium mesh: the blast's cross-section, radius from Charge, extent from energy. Warms to the sight's own colour while RT is held | NEW. The band's old blast sprite is retired; `ProfileIcon` is now a transparent container with the generated profile as its child, the same arrangement `JawIcon` uses |
 | **Mass** | the crystal recharge fill, tinted by the tier the next cycle will plant | moved from the Charge band; the two carry pips are **deleted** with Twin Seed |
-| **Space** | the jaw pair (gape = energy) + a subtle reach bar + the prism tally | jaws moved from the Time band; the tally moved onto its own row beneath them and was widened to 120px so a five-figure claim renders at full size |
+| **Space** | the jaw pair (gape = energy) + the prism tally | jaws moved from the Time band; the tally moved onto its own row beneath them and was widened to 120px so a five-figure claim renders at full size |
 | **Time** | the authored 11-step boost ring | moved from the Mass band |
 
 The profile is procedural rather than an authored sprite ladder for the same reason the preview
@@ -366,3 +366,65 @@ code (`FrogletTools > Vessels > Wire Dolphin Ability Row`).
 | Un-anchored elemental lerp | `ElementalScaling.MultiplierFromRest` |
 | CPU volume predicate | `ExplosionHelper.cs` ▸ `BlastVolume.Contains` |
 | Profile / reach readouts | `VesselExplosionByCrystalEffectSO.TryResolveProfile` / `TryResolveReach` / `MaxReach` |
+
+---
+
+## 9. 2026-08-17, second pass — colour becomes a language, and two things dropped
+
+### The Charge profile goes grey → white
+
+`ElementalBarsConfigSO` already owns a five-colour ladder that the petal flowers step through:
+fire (−1) · **grey (0)** · **white (1)** · blue (2) · lime (3). Grey and white are therefore already
+the HUD's words for *not in use* and *in use*, so the Echo Sight's profile reads from those two
+rather than from a colour authored for this one icon. The warm cast the shader paints on the world
+stays where it is — on the world; the cockpit says "engaged" in the vocabulary the rest of the HUD
+uses.
+
+Both endpoints keep a serialized fallback for a HUD with no config asset, but the config wins:
+`ResolveProfileColors` is the only writer, and `Docs/PALETTE.md`'s rule applies — never author a
+second copy of a palette colour.
+
+### The Mass slot goes lime → the pilot's DOMAIN colour
+
+The upgrade's whole point is that the seed becomes a *team* crystal, so the slot now says **which
+team**. Below Mass 5 it shows the lime CTA; at Mass 5 it shows that domain's `DullCrystalColor`.
+
+Two details are load-bearing:
+
+- **`DullCrystalColor`, not `BrightCrystalColor`.** At the crystal shaders' fresnel power the dull
+  colour paints ~93% of the crystal and the bright one is a ~2.5% hairline rim
+  (`Docs/PALETTE.md` §2.2). The dull colour is what the pilot actually sees standing in the cell, so
+  it is the one the icon must match.
+- **Resolved live, never snapshotted.** It comes off `GameDataSO.ThemeManagerData.ColorSet` — the
+  same path `MultiplayerHUD` and every other domain-tinted UI reads — and is re-read each push, so
+  the freestyle domain-changer toy re-colours the slot with it. CLAUDE.md is explicit that domain
+  must not be captured at component-creation time.
+
+### The Space reach bar is dropped
+
+The thin bar under the jaws is gone, along with `SetReachNormalized`, `TryResolveReach` and
+`MaxReach`. The Space slot communicates **angle and amount** — the gape the next blast will carry,
+and what the last one claimed — and nothing else. Reach only moves when the Space element moves, so
+the bar was a near-static line competing for attention with two live gauges. Space still scales the
+blast; it simply no longer has a gauge of its own, which is the correct trade for a slot that was
+trying to say three things at once.
+
+### The profile mesh was rendering a bowtie
+
+`BlastProfileGraphic.OnPopulateMesh` measured each end cap's sweep from the ACROSS axis (`cos` on
+across, `sin` on along). That put the first cap's last vertex at the far `+along` tip and the second
+cap's first vertex back near the middle of the shape, so the outline **jumped straight across the
+stadium** instead of walking its perimeter — and the centre fan then triangulated a bowtie with
+hollow wedges, which is exactly what the icon looked like.
+
+The fix is one continuous monotonic sweep from −90° to +270° measured from the `+along` axis, with
+the cap centre switching at the halfway point. Both straight edges fall out of that switch for free.
+Verified off-engine over five (L, R, rotation) combinations: the outline is convex and
+non-self-intersecting in every case, its area is within 2% of the exact stadium at ten segments per
+cap, and the largest step between consecutive vertices is exactly `2L` — the straight edge, which is
+what proves there is no jump across the interior.
+
+The general lesson, and the reason it was invisible until it was on screen: **a fan triangulation is
+only as good as the outline's ordering**, and a mis-ordered outline does not fail — it renders a
+plausible-looking wrong shape. A generated `MaskableGraphic` should be checked for a simple loop, not
+just for "vertices in roughly the right places".

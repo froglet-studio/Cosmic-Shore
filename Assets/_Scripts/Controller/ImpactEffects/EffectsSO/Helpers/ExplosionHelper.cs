@@ -275,13 +275,6 @@ namespace CosmicShore.Gameplay
             return true;
         }
 
-        /// <summary>
-        /// The first conic blast in a set, or null when it holds none. Public so a HUD can read the
-        /// cone's AUTHORED reach off the same prefab the detonation scales, rather than a second
-        /// copy of that number living in the cockpit.
-        /// </summary>
-        public static AOEConicExplosion FindConeIn(AOEExplosion[] prefabs) => FindCone(prefabs);
-
         static AOEConicExplosion FindCone(AOEExplosion[] prefabs)
         {
             if (prefabs == null) return null;

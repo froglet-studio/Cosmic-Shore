@@ -1,6 +1,9 @@
 using CosmicShore.Data;
 using CosmicShore.Gameplay;
+using CosmicShore.ScriptableObjects;
 using CosmicShore.UI;
+using CosmicShore.Utility;
+using Reflex.Attributes;
 using UnityEngine;
 
 namespace CosmicShore.Gameplay
@@ -10,7 +13,7 @@ namespace CosmicShore.Gameplay
     ///
     ///   Charge → Echo Sight:      the blast's cross-section profile, plus whether the sight is held
     ///   Mass   → crystal seeding: the recharge fill, and which crystal tier the next cycle plants
-    ///   Space  → cone blast:      the jaw gape, the reach bar, and what the last cone claimed
+    ///   Space  → cone blast:      the jaw gape, and what the last cone claimed
     ///   Time   → charge fill rate: the boost banked while drifting
     ///
     /// Energy is bound BY NAME rather than by index. It used to be an index, and the prefab had it
@@ -18,10 +21,17 @@ namespace CosmicShore.Gameplay
     /// which never raises OnResourceChanged, so the readout could not move even in principle. A
     /// name survives the resource list being reordered; the serialized index stays as the fallback.
     ///
-    /// <para>The blast PROFILE and the REACH are polled rather than event-driven, because both are
-    /// functions of an element level and the live energy meter at once and neither has a single
-    /// channel that fires on every input to them. Both pushes are guarded inside the view, so a
-    /// poll that finds nothing changed rebuilds nothing.</para>
+    /// <para>The blast PROFILE is polled rather than event-driven, because it is a function of an
+    /// element level and the live energy meter at once and neither has a single channel that fires on
+    /// every input to it. The push is guarded inside the view, so a poll that finds nothing changed
+    /// rebuilds nothing.</para>
+    ///
+    /// <para>The Mass slot's TEAM colour is the pilot's domain, resolved live off
+    /// <c>GameDataSO.ThemeManagerData.ColorSet</c> — the same path MultiplayerHUD and every other
+    /// domain-tinted UI reads, so the slot can never disagree with the rest of the HUD about what
+    /// colour a domain is. Live rather than cached because domain is not fixed for the match (the
+    /// freestyle domain-changer toy re-picks it) and CLAUDE.md is explicit that domain must not be
+    /// snapshotted at component-creation time.</para>
     /// </summary>
     public class DolphinVesselHUDController : VesselHUDController
     {
@@ -29,9 +39,9 @@ namespace CosmicShore.Gameplay
         [SerializeField] private DolphinVesselHUDView view;
 
         [Header("Blast readouts")]
-        [Tooltip("The crystal-impact blast whose profile the Charge slot draws and whose reach the " +
-                 "Space slot's bar measures. The SAME asset the vessel actually detonates and the " +
-                 "Echo Sight previews - never a HUD-local copy of those numbers.")]
+        [Tooltip("The crystal-impact blast whose cross-section the Charge slot draws. The SAME asset " +
+                 "the vessel actually detonates and the Echo Sight previews - never a HUD-local copy " +
+                 "of those numbers.")]
         [SerializeField] private VesselExplosionByCrystalEffectSO blastEffect;
 
         [Header("Resource Binding")]
@@ -43,6 +53,10 @@ namespace CosmicShore.Gameplay
         [Tooltip("Resource holding the boost charged while drifting (the Time icon's gauge).")]
         [SerializeField] private string driftBoostResourceName = "Boost";
         [SerializeField] private int driftBoostResourceIndex = 1;
+
+        // The palette. Injected rather than serialized so the slot reads the same ColorSet the rest
+        // of the HUD does; vessels DO get GameObjectInjector.InjectRecursive at spawn.
+        [Inject] GameDataSO _gameData;
 
         ResourceSystem _resources;
         IVesselStatus _status;
@@ -61,9 +75,6 @@ namespace CosmicShore.Gameplay
         // Last seeding count pushed to the view, so a passive seeding can be told from the first
         // frame after a bind. -1 means "not seeded yet", which never reads as a beat.
         int _lastSeedCount = -1;
-
-        // Cached so the reach bar's denominator is resolved once rather than per frame.
-        float _maxReach;
 
         // True only for a local human pilot's Dolphin - the one cockpit that actually gets drawn.
         bool _drawGauges;
@@ -122,8 +133,6 @@ namespace CosmicShore.Gameplay
             // zero: the blast is a short capsule even at rest.
             if (hull) view.SetJawAngleRange(hull.MinJawAngleDegrees, hull.MaxJawAngleDegrees);
 
-            _maxReach = blastEffect ? blastEffect.MaxReach : 0f;
-
             SeedFromResources();
         }
 
@@ -173,7 +182,6 @@ namespace CosmicShore.Gameplay
 
             PushCrystalSeeding();
             PushBlastProfile();
-            PushReach();
         }
 
         // Crystal seeding is PASSIVE: nothing is carried, so the slot shows the recharge fill (0 -> 1
@@ -184,7 +192,8 @@ namespace CosmicShore.Gameplay
 
             view.SetCrystalSeedState(
                 1f - _crystalExecutor.CooldownRemaining01,
-                _crystalExecutor.SeedsTeamCrystal);
+                _crystalExecutor.SeedsTeamCrystal,
+                ResolveDomainCrystalColor());
 
             // The pilot gives no input for this ability and may be facing anywhere when it fires,
             // so the planted beat is edge-detected off the executor's own counter and punched onto
@@ -209,14 +218,21 @@ namespace CosmicShore.Gameplay
             if (_sightExecutor) view.SetSightEngaged(_sightExecutor.IsEngaged);
         }
 
-        // Reach moves only when Space moves, so this is cheap and the view's own guard drops the
-        // unchanged pushes before they reach a tween.
-        void PushReach()
+        /// <summary>
+        /// The colour a TEAM-locked seed will actually wear once it is standing in the cell: this
+        /// pilot's domain crystal colour. <c>DullCrystalColor</c> rather than the bright one because
+        /// at the crystal shaders' fresnel power the dull colour paints ~93% of the crystal and the
+        /// bright one is a hairline rim (Docs/PALETTE.md §2.2) — so the dull colour IS what the pilot
+        /// sees out there, and the icon matching it is the whole point of the readout.
+        /// </summary>
+        Color ResolveDomainCrystalColor()
         {
-            if (!blastEffect || _status == null || _maxReach <= 0f) return;
-            if (!blastEffect.TryResolveReach(_status, out float reach, out _)) return;
+            var colorSet = _gameData?.ThemeManagerData?.ColorSet;
+            if (colorSet == null || _status == null) return Color.white;
 
-            view.SetReachNormalized(reach / _maxReach);
+            return colorSet.TryGetColorSetByDomain(_status.Domain, out var domainSet) && domainSet != null
+                ? domainSet.DullCrystalColor
+                : Color.white;
         }
 
         /// <summary>

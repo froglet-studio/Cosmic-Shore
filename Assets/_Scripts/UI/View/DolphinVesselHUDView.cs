@@ -17,13 +17,13 @@ namespace CosmicShore.UI
     ///
     ///   Charge → Echo Sight       (the blast PROFILE)      → "Pilot Echo"
     ///   Mass   → crystal seeding  (the recharge fill)      → "Claimed Seed"
-    ///   Space  → cone blast       (jaws + reach + tally)   → "Clean Blast"
+    ///   Space  → cone blast       (jaws + tally)           → "Clean Blast"
     ///   Time   → charge fill rate (the boost ring)         → "Live Current"
     ///
     /// <para><b>Every slot draws one dimension of the same weapon.</b> The Dolphin has essentially
     /// one offensive act — bank energy by skimming, fly into a crystal, release a cone — and the
     /// four elements each own one axis of it. So the row is not four unrelated gauges: Charge draws
-    /// the blast's cross-section, Space draws its gape and reach and what it took, Mass draws when
+    /// the blast's cross-section, Space draws its gape and what it took, Mass draws when
     /// the next crystal to trigger it arrives, and Time draws the boost that gets you there. Read
     /// left to right it is the whole weapon.</para>
     ///
@@ -33,11 +33,12 @@ namespace CosmicShore.UI
     /// tintIconOnUpgrade OFF on this prefab), and the local rest scales below are re-anchored on
     /// every upgrade flip so this view's own tweens can never wipe the bump.</para>
     ///
-    /// <para>The SPACE slot is the busiest by design: the jaws show the gape half-angle the next
-    /// blast will carry (the same angle the hull's own jaws open to), a subtle bar beneath them
-    /// shows how far down-range Space is currently carrying it, and the tally beneath that reports
-    /// what the last cone actually claimed. Angle, reach, result — the ability's whole story in one
-    /// column, with the tally given its own row so a five-figure claim has somewhere to go.</para>
+    /// <para>The SPACE slot shows exactly two things: the jaws open to the gape half-angle the next
+    /// blast will carry (the same angle the hull's own jaws open to), and the tally beneath them
+    /// reports what the last cone actually claimed — ANGLE and AMOUNT. A third readout for Space's
+    /// REACH was tried here as a thin bar under the jaws and dropped: reach only moves when the
+    /// element moves, so it was a near-static line competing with two live gauges, and the icon
+    /// says more by saying less.</para>
     ///
     /// Every reference is optional; an unwired slot is simply not drawn (opt-in rollout).
     /// </summary>
@@ -49,12 +50,12 @@ namespace CosmicShore.UI
                  "ChargeIcon (a transparent container), the same arrangement the jaw pair uses, so " +
                  "the row's upgrade badge and this gauge can never contest the same object.")]
         [SerializeField] private BlastProfileGraphic blastProfile;
-        [Tooltip("Colour the profile rests at while the sight is released.")]
-        [SerializeField] private Color profileRestColor = new(1f, 1f, 1f, 0.55f);
-        [Tooltip("Colour the profile reaches while the pilot is HOLDING the sight - the same warm " +
-                 "cast PrismDestructionSight.hlsl paints onto the mass out in the world, so the " +
-                 "cockpit and the highlight read as one ability.")]
-        [SerializeField] private Color profileEngagedColor = new(1f, 0.72f, 0.34f, 1f);
+        [Tooltip("Fallback colour the profile rests at while the sight is released. Normally " +
+                 "overridden by ElementalBarsConfigSO.greyColor - see ResolveProfileColors.")]
+        [SerializeField] private Color profileRestColor = new(0.51f, 0.51f, 0.54f, 1f);
+        [Tooltip("Fallback colour the profile reaches while the pilot is HOLDING the sight. " +
+                 "Normally overridden by ElementalBarsConfigSO.whiteColor.")]
+        [SerializeField] private Color profileEngagedColor = new(0.96f, 0.96f, 1f, 1f);
         [Tooltip("Seconds the profile takes to reach its engaged colour. Nothing snaps.")]
         [SerializeField, Min(0.01f)] private float profileEngageDuration = 0.15f;
 
@@ -64,17 +65,17 @@ namespace CosmicShore.UI
                  "The carry pips are RETIRED: the ability plants exactly one crystal per cycle at " +
                  "every level, and Mass 5 changes WHAT is planted rather than how many.")]
         [SerializeField] private Image crystalIcon;
-        [Tooltip("Colour of a seeding that will land as a free-for-all OMNI crystal - the lime CTA, " +
-                 "the same colour the crystal itself will wear standing in the cell " +
-                 "(Docs/PALETTE.md 2.2). Left as the shared bars config's lime when empty.")]
-        [SerializeField] private Color crystalOmniColor = Color.white;
-        [Tooltip("Colour of a seeding that will land TEAM-locked, once Mass 5 is active. This is " +
-                 "the one place the slot says which kind of crystal is coming.")]
-        [SerializeField] private Color crystalTeamColor = Color.white;
+        [Tooltip("Fallback colour of a seeding that will land as a free-for-all OMNI crystal. " +
+                 "Normally overridden by ElementalBarsConfigSO.limeColor - the lime CTA, the same " +
+                 "colour the crystal itself will wear standing in the cell (Docs/PALETTE.md 2.2).")]
+        [SerializeField] private Color crystalOmniColor = new(0.59f, 0.92f, 0.16f, 1f);
+        [Tooltip("Fallback for a TEAM-locked seeding, used only when no domain colour has been " +
+                 "pushed yet. The live colour is the PILOT'S DOMAIN, supplied by the controller.")]
+        [SerializeField] private Color crystalTeamFallbackColor = Color.white;
         [Tooltip("Flash colour when a seeding fires.")]
         [SerializeField] private Color crystalArmedFlashColor = Color.white;
 
-        // ---- Space: cone blast — gape, reach, tally -----------------------------------
+        // ---- Space: cone blast — gape and tally ---------------------------------------
         [Header("Space — cone blast (jaws)")]
         [Tooltip("Upper jaw half. Rotates open as energy banks, mirroring the hull's own jaws.")]
         [SerializeField] private RectTransform jawUpper;
@@ -94,21 +95,10 @@ namespace CosmicShore.UI
                  "top of the gape, which only moves ~1/150th of its range per skim.")]
         [SerializeField, Min(1f)] private float skimPunchScale = 1.3f;
 
-        [Header("Space — reach")]
-        [Tooltip("A deliberately SUBTLE horizontal bar under the jaws: how far down-range Space is " +
-                 "currently carrying the cone, as a fraction of the reach a maxed Space would buy. " +
-                 "Subtle because reach changes only when the element moves, so a loud gauge would " +
-                 "shout a number that is constant for minutes at a time.")]
-        [SerializeField] private Image reachFill;
-        [Tooltip("Colour of the reach bar. Alpha carries the subtlety - keep it low.")]
-        [SerializeField] private Color reachColor = new(1f, 1f, 1f, 0.35f);
-        [Tooltip("Seconds the reach bar takes to glide to a new length.")]
-        [SerializeField, Min(0.01f)] private float reachGlideDuration = 0.35f;
-
         [Header("Space — blast tally")]
-        [Tooltip("What the last cone destroyed. Sits on its OWN row beneath the jaws and the reach " +
-                 "bar so a four- or five-figure claim has room to render at full size rather than " +
-                 "auto-shrinking into the gape.")]
+        [Tooltip("What the last cone destroyed. Sits on its OWN row beneath the jaws so a four- or " +
+                 "five-figure claim has room to render at full size rather than auto-shrinking into " +
+                 "the gape.")]
         [SerializeField] private TMP_Text blastCountText;
         [SerializeField] private Color blastFlashColor = new(1f, 0.85f, 0.4f, 1f);
         [SerializeField] private Color blastRestColor = Color.white;
@@ -153,7 +143,7 @@ namespace CosmicShore.UI
         Tween _profileColorTween, _profileScaleTween;
         Tween _crystalScaleTween, _crystalColorTween;
         Tween _jawUpperTween, _jawLowerTween, _jawPunchTween, _jawColorTween;
-        Tween _reachTween, _blastColorTween;
+        Tween _blastColorTween;
 
         // The jaw halves' own Graphics. The row's Space icon is a fully transparent container, so
         // these two ARE the visible Space gauge and the only thing worth tinting.
@@ -162,11 +152,14 @@ namespace CosmicShore.UI
         float _jawArm01 = -1f;
         bool _warnedArmingUnavailable;
 
+        Color _profileRest;
+        Color _profileEngaged;
+
         float _blastCountTimer;
         float _currentJawAngle;
-        float _currentReach01 = -1f;
         bool _sightEngaged;
         bool _lastSeedsTeam;
+        Color _teamColor;
 
         public override void Initialize()
         {
@@ -174,11 +167,12 @@ namespace CosmicShore.UI
 
             ResolveBarsConfig();
 
+            ResolveProfileColors();
             if (blastProfile)
             {
                 _profileRestScale = AbilityIconRestScale(Element.Charge);
                 blastProfile.rectTransform.localScale = _profileRestScale;
-                blastProfile.color = profileRestColor;
+                blastProfile.color = _profileRest;
             }
             _sightEngaged = false;
 
@@ -187,7 +181,9 @@ namespace CosmicShore.UI
                 _crystalIconRestScale = AbilityIconRestScale(Element.Mass);
                 if (crystalIcon.type == Image.Type.Filled) crystalIcon.fillAmount = 0f;
             }
-            // -1 is impossible for a bool, so force the first push to paint rather than early-out.
+            // The domain colour arrives from the controller on the first push; until then a team
+            // seed would have nothing to paint with, so seed the fallback.
+            _teamColor = crystalTeamFallbackColor;
             _lastSeedsTeam = false;
             ApplyCrystalTierColor(false, immediate: true);
 
@@ -198,13 +194,6 @@ namespace CosmicShore.UI
             ResolveJawGraphics();
             _jawArm01 = -1f;             // a re-init must repaint, not early-out on a stale value
             ApplyJawArming(0f, immediate: true);
-
-            if (reachFill)
-            {
-                reachFill.color = reachColor;
-                if (reachFill.type == Image.Type.Filled) reachFill.fillAmount = 0f;
-            }
-            _currentReach01 = -1f;
 
             if (blastCountText)
             {
@@ -275,7 +264,7 @@ namespace CosmicShore.UI
 
             _profileColorTween?.Kill();
             _profileColorTween = blastProfile
-                .DOColor(engaged ? profileEngagedColor : profileRestColor, profileEngageDuration)
+                .DOColor(engaged ? _profileEngaged : _profileRest, profileEngageDuration)
                 .SetEase(Ease.OutQuad)
                 .SetLink(blastProfile.gameObject);
 
@@ -302,12 +291,18 @@ namespace CosmicShore.UI
         // The pips are gone with Twin Seed: the cycle plants exactly one crystal
         // at every level, and the upgrade changes its TIER, which the colour says.
         // ---------------------------------------------------------------
-        public void SetCrystalSeedState(float ready01, bool seedsTeamCrystal)
+        public void SetCrystalSeedState(float ready01, bool seedsTeamCrystal, Color teamColor)
         {
             if (crystalIcon && crystalIcon.type == Image.Type.Filled)
                 crystalIcon.fillAmount = Mathf.Clamp01(ready01);
 
-            if (seedsTeamCrystal != _lastSeedsTeam)
+            // The domain can change mid-match (the freestyle domain-changer toy), so a colour change
+            // repaints even when the tier did not - otherwise a re-domained pilot keeps showing the
+            // colour of a team their crystals no longer belong to.
+            bool colorMoved = seedsTeamCrystal && teamColor != _teamColor;
+            _teamColor = teamColor;
+
+            if (seedsTeamCrystal != _lastSeedsTeam || colorMoved)
                 ApplyCrystalTierColor(seedsTeamCrystal, immediate: false);
         }
 
@@ -362,13 +357,31 @@ namespace CosmicShore.UI
                 .SetLink(crystalIcon.gameObject);
         }
 
+        /// <summary>
+        /// A seeding wears the colour the CRYSTAL will wear once it is standing in the cell — lime
+        /// CTA while anyone can take it, the pilot's DOMAIN once Mass 5 locks it to them. The whole
+        /// point of the upgrade is that it makes a team crystal, so the slot says which team.
+        /// </summary>
         Color CrystalTierColor(bool seedsTeamCrystal)
         {
-            if (seedsTeamCrystal) return crystalTeamColor;
+            if (seedsTeamCrystal) return _teamColor;
 
             // The free-for-all seed wears the same lime a full element flower does, read from the
             // one shared config rather than authored a second time here.
             return barsConfig ? barsConfig.limeColor : crystalOmniColor;
+        }
+
+        /// <summary>
+        /// Grey while the sight is released, white while it is held — the shared palette's own
+        /// "0: not in use" and "1: in use" pair, the same two colours a petal steps through between
+        /// those levels. Read from <see cref="ElementalBarsConfigSO"/> rather than authored here so
+        /// idle-vs-active reads identically wherever the HUD says it.
+        /// </summary>
+        void ResolveProfileColors()
+        {
+            ResolveBarsConfig();
+            _profileRest = barsConfig ? barsConfig.greyColor : profileRestColor;
+            _profileEngaged = barsConfig ? barsConfig.whiteColor : profileEngagedColor;
         }
 
         // ---------------------------------------------------------------
@@ -394,37 +407,6 @@ namespace CosmicShore.UI
             // The jaws are the Space slot's icon now, so the blast's own beat lands on them - the
             // same pair that has been showing the gape it just spent.
             ReportSkim();
-        }
-
-        /// <summary>
-        /// How far down-range the cone reaches, as a fraction of the reach a maxed Space would buy.
-        /// Glides, because a reach change is an element change and those should read as a shift
-        /// rather than a jump.
-        /// </summary>
-        public void SetReachNormalized(float reach01)
-        {
-            if (!reachFill) return;
-
-            reach01 = Mathf.Clamp01(reach01);
-            if (Mathf.Abs(reach01 - _currentReach01) < 0.002f) return;
-
-            float from = _currentReach01 < 0f ? reach01 : _currentReach01;
-            _currentReach01 = reach01;
-
-            _reachTween?.Kill();
-
-            if (reachFill.type != Image.Type.Filled)
-            {
-                // Not a filled Image: scale it along X instead, so the bar still works with plain art.
-                _reachTween = DOVirtual.Float(from, reach01, reachGlideDuration,
-                        v => { if (reachFill) reachFill.rectTransform.localScale = new Vector3(v, 1f, 1f); })
-                    .SetEase(Ease.OutQuad).SetLink(reachFill.gameObject);
-                return;
-            }
-
-            _reachTween = DOVirtual.Float(from, reach01, reachGlideDuration,
-                    v => { if (reachFill) reachFill.fillAmount = v; })
-                .SetEase(Ease.OutQuad).SetLink(reachFill.gameObject);
         }
 
         void Update()
@@ -673,7 +655,6 @@ namespace CosmicShore.UI
             _jawLowerTween?.Kill();
             _jawPunchTween?.Kill();
             _jawColorTween?.Kill();
-            _reachTween?.Kill();
             _blastColorTween?.Kill();
         }
     }

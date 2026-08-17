@@ -2364,8 +2364,24 @@ scale bump** with a one-shot unlock punch.
   just no longer wired here). Its HUD row was re-cut to match: Charge draws a **procedural**
   blast-profile capsule (`BlastProfileGraphic` — a sprite ladder would quantize a continuous
   function of two live meters and silently stop matching the blast on the first retune), Mass the
-  seeding recharge tinted by the tier it will plant, Space the jaws plus a subtle reach bar and a
-  widened prism tally, Time the boost ring. Record:
+  seeding recharge, Space the jaws plus a widened prism tally, Time the boost ring. **Colour is a
+  LANGUAGE across that row, not per-icon decoration** (second pass, same day): the Charge profile
+  crosses the shared `ElementalBarsConfigSO` ladder's **grey → white** — already the HUD's words for
+  "not in use" / "in use", since a petal steps through exactly those two between levels 0 and 1 — and
+  the Mass slot crosses **lime → the pilot's own DOMAIN colour**, because the upgrade's whole point
+  is that the seed becomes a TEAM crystal, so the slot says which team. It uses the domain's
+  `DullCrystalColor` (at the crystal shaders' fresnel power the dull colour paints ~93% of the
+  crystal and the bright one is a 2.5% hairline, so the dull one is what the pilot actually sees out
+  there) resolved LIVE off `GameDataSO.ThemeManagerData.ColorSet` — the path every other
+  domain-tinted UI reads — so the domain-changer toy re-colours it and nothing is snapshotted at
+  component-creation time. A **Space reach bar was tried and dropped**: reach only moves when the
+  element moves, so a near-static line competed with two live gauges, and the slot says more by
+  saying only ANGLE and AMOUNT. One general lesson from the same pass: **a centre-fan triangulation
+  of a generated `MaskableGraphic` is only as good as its outline ORDERING** — the profile's caps
+  were swept from the wrong basis vector, so the outline jumped across the shape and the fan drew a
+  bowtie with hollow wedges; a mis-ordered outline does not fail, it renders a plausible wrong shape,
+  so check for a simple convex loop (area, and that no step between consecutive vertices crosses the
+  interior) rather than for "vertices roughly in the right places". Record:
   `_Scripts/Controller/Vessel/R_VesselActions/DOLPHIN_CRYSTAL_SEEDING.md` §8.
   Before that, **from 2026-08-14 its Charge ability was PASSIVE and its Space ability owned the
   right trigger** — crystal seeding runs on a cooldown loop that plants crystals in the cell's

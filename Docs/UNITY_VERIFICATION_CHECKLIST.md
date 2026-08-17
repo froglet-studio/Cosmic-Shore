@@ -46,8 +46,14 @@ record: `_Scripts/Controller/Vessel/R_VesselActions/DOLPHIN_CRYSTAL_SEEDING.md` 
 - **Mass no longer touches the trail.** `trailVolume` disabled, `massUpgradeShieldsTrail 0` on
   `Dolphin.prefab`.
 - **HUD row re-cut**: Charge = new procedural `BlastProfileGraphic`; Mass = crystal recharge (pips
-  deleted); Space = jaws + a subtle reach bar + a widened prism tally; Time = the boost ring.
-  Prefab YAML was hand-authored, and `DolphinHUDRowWirer` was re-cut to the same layout.
+  deleted); Space = jaws + a widened prism tally; Time = the boost ring. Prefab YAML was
+  hand-authored, and `DolphinHUDRowWirer` was re-cut to the same layout.
+- **Second pass (colour + subtraction).** The Charge profile crosses the shared palette's
+  **grey → white** (idle → in use) instead of a bespoke warm colour. The Mass slot crosses
+  **lime → the pilot's domain** `DullCrystalColor`, resolved live off
+  `GameDataSO.ThemeManagerData.ColorSet`. The Space **reach bar was dropped entirely** — that slot
+  says angle and amount only. And `BlastProfileGraphic`'s outline winding was fixed: it was
+  measuring the end caps from the wrong basis vector and rendering a bowtie.
 
 **Verify in editor**
 
@@ -59,14 +65,17 @@ record: `_Scripts/Controller/Vessel/R_VesselActions/DOLPHIN_CRYSTAL_SEEDING.md` 
    4/4 icons, order ✅.
 3. Open `DolphinHUDVariant.prefab`: four slots left→right must be ProfileButton, CrystalButton,
    JawButton, DriftButton. `CrystalPip0/1` should be **gone**.
-4. Freestyle on the Dolphin: the Charge slot draws a capsule that grows with banked energy; raising
-   Charge fattens and shortens it without changing its overall extent.
+4. Freestyle on the Dolphin: the Charge slot draws a **solid capsule** (not a bowtie, no hollow
+   wedges) that grows with banked energy; raising Charge fattens and shortens it without changing its
+   overall extent. It sits at the palette's grey when RT is released and crosses to white while held.
 5. **Hold RT** — prisms in the blast volume light warm as before. At Charge 5, another vessel that
    enters the cone brightens in its own domain colours and fades back out when the cone leaves it.
    Release RT and confirm every vessel returns to its exact prior brightness (no lingering glow).
 6. Swap vessel while holding RT — no vessel is left over-bright (`HardReset` → `ClearAll`).
-7. Idle a cooldown below Mass 5: the seeded crystal wears the **lime CTA** and a rival-domain
-   vessel can collect it. Raise Mass to 5: seeds arrive in your domain's colours and a rival cannot.
+7. Idle a cooldown below Mass 5: the seeded crystal wears the **lime CTA**, the Mass slot is lime,
+   and a rival-domain vessel can collect it. Raise Mass to 5: seeds arrive in your domain's colours,
+   the Mass slot crosses to that same domain colour, and a rival cannot collect them. Then use the
+   freestyle domain-changer toy — the slot must follow the new domain.
 8. Lay a drift trail: prisms are **not** shielded and do **not** grow with Mass.
 9. Fire a blast at a dense wall and confirm the tally under the jaws renders a 4–5 digit number at
    full size without auto-shrinking.
@@ -82,7 +91,6 @@ record: `_Scripts/Controller/Vessel/R_VesselActions/DOLPHIN_CRYSTAL_SEEDING.md` 
 | `vesselHighlightGain` | `Dolphin.prefab` ▸ `EchoSightActionExecutor` | 3.5 |
 | `vesselHighlightFadeSeconds` | " | 0.18 |
 | `maxExtentFraction` / `minRadiusFraction` | `DolphinHUDVariant` ▸ `Profile` | 0.86 / 0.06 |
-| reach bar alpha | `DolphinHUDVariant` ▸ `ReachBar` | 0.35 |
 
 **Known gap.** `_coreExplosionScale` (320) was authored as the blast's true thickness; it is now
 the mid-Charge value, so at rest the beam is 240 and at Charge 10 it is 480 (clamped to the base

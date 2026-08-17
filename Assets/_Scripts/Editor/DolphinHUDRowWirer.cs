@@ -19,7 +19,7 @@ namespace CosmicShore.Editor
     ///
     ///   Charge → ProfileIcon   (a generated blast-profile mesh) "Pilot Echo"
     ///   Mass   → CrystalIcon   (the seeding recharge fill)       "Claimed Seed"
-    ///   Space  → JawIcon       (jaw halves + reach bar + tally)  "Clean Blast"
+    ///   Space  → JawIcon       (jaw halves + a prism tally)      "Clean Blast"
     ///   Time   → Boost Display (the authored 11-step ring)       "Live Current"
     ///
     /// The Time slot is the Dolphin's PRE-EXISTING boost gauge, adopted into the row rather than
@@ -116,7 +116,6 @@ namespace CosmicShore.Editor
 
             var jawUpper = EnsureJawHalf(jaw.transform, "JawUpper");
             var jawLower = EnsureJawHalf(jaw.transform, "JawLower");
-            var reach = EnsureReachBar(jaw.transform);
             var blastText = EnsureBlastText(jaw.transform);
 
             var so = new SerializedObject(view);
@@ -126,12 +125,11 @@ namespace CosmicShore.Editor
             Bind(so, "blastCountText", blastText);
             Bind(so, "jawUpper", jawUpper);
             Bind(so, "jawLower", jawLower);
-            Bind(so, "reachFill", reach);
 
             // Every Dolphin icon is a live gauge, so colour is already spoken for, and these four
-            // are busy enough (generated profile, recharge wipe, jaw pair + reach + tally, stepped
-            // ring) that a corner badge just clutters them - the upgrade signal rides the persistent
-            // scale bump alone here.
+            // are busy enough (generated profile, recharge wipe, jaw pair + tally, stepped ring)
+            // that a corner badge just clutters them - the upgrade signal rides the persistent scale
+            // bump alone here.
             var tint = so.FindProperty("tintIconOnUpgrade");
             if (tint != null) tint.boolValue = false;
             var badge = so.FindProperty("showUpgradeBadge");
@@ -233,31 +231,6 @@ namespace CosmicShore.Editor
             return graphic;
         }
 
-        /// <summary>
-        /// The Space slot's reach bar: a thin left-filling sliver under the jaws. Deliberately small
-        /// and low-alpha — reach only moves when the Space element moves, so a loud gauge would
-        /// shout a number that is constant for minutes at a time.
-        /// </summary>
-        static Image EnsureReachBar(Transform parent)
-        {
-            var go = EnsureChild(parent, "ReachBar");
-            var image = go.GetComponent<Image>() ? go.GetComponent<Image>() : go.AddComponent<Image>();
-
-            var rect = go.GetComponent<RectTransform>();
-            rect.anchorMin = rect.anchorMax = new Vector2(0.5f, 0.5f);
-            rect.pivot = new Vector2(0f, 0.5f);
-            rect.sizeDelta = new Vector2(64f, 3f);
-            rect.anchoredPosition = new Vector2(-32f, -18f);
-
-            image.raycastTarget = false;
-            image.preserveAspect = false;
-            image.type = Image.Type.Filled;
-            image.fillMethod = Image.FillMethod.Horizontal;
-            image.fillOrigin = (int)Image.OriginHorizontal.Left;
-            image.color = new Color(1f, 1f, 1f, 0.35f);
-            return image;
-        }
-
         static RectTransform EnsureJawHalf(Transform parent, string name)
         {
             var go = EnsureChild(parent, name);
@@ -286,11 +259,11 @@ namespace CosmicShore.Editor
 
             var rect = go.GetComponent<RectTransform>();
             rect.anchorMin = rect.anchorMax = new Vector2(0.5f, 0.5f);
-            // Its own row beneath the jaws AND the reach bar, and wider than the icon, so a
-            // five-figure claim renders at full size instead of auto-shrinking into the gape.
+            // Its own row beneath the jaws, and wider than the icon, so a five-figure claim renders
+            // at full size instead of auto-shrinking into the gape.
             rect.pivot = new Vector2(0.5f, 1f);
             rect.sizeDelta = new Vector2(120f, 30f);
-            rect.anchoredPosition = new Vector2(0f, -26f);
+            rect.anchoredPosition = new Vector2(0f, -20f);
 
             text.alignment = TextAlignmentOptions.Center;
             text.fontSize = 22f;

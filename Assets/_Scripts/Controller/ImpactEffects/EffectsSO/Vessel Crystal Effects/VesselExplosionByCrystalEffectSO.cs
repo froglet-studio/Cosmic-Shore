@@ -123,8 +123,10 @@ namespace CosmicShore.Gameplay
         /// banking energy grows the profile and raising Charge rounds it out, and the two readings
         /// never fight for the same pixels.
         ///
-        /// Space is deliberately divided out of <paramref name="referenceExtent"/>: reach is the
-        /// SPACE slot's readout, and letting it also resize this icon would say the same thing twice.
+        /// Space is deliberately divided out of <paramref name="referenceExtent"/>. Space scales the
+        /// whole blast self-similarly, so leaving it in would make the icon grow with reach and this
+        /// slot would be showing Space's parameter instead of Charge's. Dividing it out keeps the
+        /// icon a readout of the two things it is for: extent from energy, roundness from Charge.
         /// </summary>
         public bool TryResolveProfile(IVesselStatus status, out float radius, out float halfLength,
                                       out float referenceExtent)
@@ -142,47 +144,6 @@ namespace CosmicShore.Gameplay
 
             referenceExtent = _maxExplosionScale * 0.5f * Mathf.Max(0.01f, sizeMultiplier);
             return referenceExtent > 0f;
-        }
-
-        /// <summary>
-        /// How far down-range the blast currently reaches, and the reach it would have at the
-        /// RESTING Space level — the pair the Space slot's range readout needs to say "you have
-        /// bought this much extra reach" rather than printing a bare world-unit number.
-        /// </summary>
-        public bool TryResolveReach(IVesselStatus status, out float reach, out float restingReach)
-        {
-            reach = restingReach = 0f;
-
-            var cone = ExplosionHelper.FindConeIn(_aoePrefabs);
-            if (cone == null || cone.AuthoredHeight <= 0f) return false;
-
-            restingReach = cone.AuthoredHeight;
-
-            float sizeMultiplier = 1f;
-            if (!Mathf.Approximately(_heightMultiplierAtFullSpace, 1f))
-                sizeMultiplier = ElementalScaling.Multiplier(status, Element.Space,
-                    _heightMultiplierAtFullSpace, _minHeightMultiplier);
-
-            reach = restingReach * Mathf.Max(0.01f, sizeMultiplier);
-            return true;
-        }
-
-        /// <summary>
-        /// The largest reach this blast can have — the authored cone at the Space multiplier's
-        /// ceiling. The range gauge normalizes against this so its fill means the same thing at
-        /// every moment of a match.
-        /// </summary>
-        public float MaxReach
-        {
-            get
-            {
-                var cone = ExplosionHelper.FindConeIn(_aoePrefabs);
-                if (cone == null) return 0f;
-
-                // Level 15 is the overcharge ceiling ResourceSystem clamps to, i.e. t = 1.5.
-                float ceiling = Mathf.LerpUnclamped(1f, _heightMultiplierAtFullSpace, 1.5f);
-                return cone.AuthoredHeight * Mathf.Max(1f, ceiling);
-            }
         }
 
         /// <summary>
