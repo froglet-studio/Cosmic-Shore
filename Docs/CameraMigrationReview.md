@@ -21,7 +21,7 @@ The defaults are measured from the legacy Cinemachine rig, which still exists (i
 
 | Legacy Cinemachine | Value | `MenuCameraConfigSO` |
 |---|---|---|
-| `Main Menu Follow Target` position | `(0, 0, -350)` | `lavaLampOrbitRadius` 350, `lavaLampStartDirection` (0,0,-1) |
+| `Main Menu Follow Target` position | `(0, 0, -350)` | `lavaLampStartDirection` (0,0,-1); `lavaLampOrbitRadius` **920**, see below |
 | `RotateAroundOrigin` speed / direction | 2, `(0, 1, -1)` | `lavaLampOrbitAxis` (0,1,-1), `lavaLampDegreesPerSecond` 2.83 (= 2·√2) |
 | `CinemachineFollow.FollowOffset` (WorldSpace) | `(0, 30, 0)` | `lavaLampHeightOffset` 30 |
 | `CinemachineFollow.PositionDamping` | 1 | `positionSmoothTime` 0.3 |
@@ -29,20 +29,47 @@ The defaults are measured from the legacy Cinemachine rig, which still exists (i
 | `CameraManager.LookAtCrystal` → `cellData.CrystalTransform` | — | `lavaLampAimAtCrystal` (resolved via `TryGetLocalCrystal`) |
 | Lens FOV | 60 | `fieldOfView` 0 (= match the player's gameplay FOV) |
 
-Two properties are worth knowing before retuning it:
+Three properties are worth knowing before retuning it:
 
 - **Why it reads as calm.** A lap takes ~127 s and the aim damping is ~2 s, so essentially all
-  on-screen motion belongs to the vessels, trails and crystals rather than the camera. At FOV 60,
-  radius 350 frames a vertical half-extent of 202 units at the cell centre — the nucleus (radius
-  200) sits almost exactly edge-to-edge, which is what put "the whole cell" on display. The camera
+  on-screen motion belongs to the vessels, trails and crystals rather than the camera. The camera
   is well inside the membrane (radius 1200), so nothing was ever removed to make this shot work.
-- **The orbit crosses the pole.** With the axis tilted 45°, the camera passes directly over the
-  cell centre once per lap (verified: `|dot(viewDir, up)|` reaches 1.0, and camera *y* sweeps
-  30 → 380). A from-scratch `LookRotation` would roll-flip there, so
-  `MenuCameraConfigSO.ComputeLookUpHint` eases the up-hint toward the orbit axis across a wide band
-  (27% of the lap), which the view direction holds a constant angle to and therefore never
-  parallels. Setting `lavaLampOrbitAxis` to `(0, 1, 0)` gives a flat equatorial orbit that avoids
-  the pole — and its roll — entirely.
+
+- **The radius is 920, not the legacy 350, because the NUCLEUS GREW.** Every other legacy value
+  transferred directly; this one could not. The nucleus is `Node2.fbx` (mesh half-extent 0.9798)
+  at `Nucleus.prefab` scale 400 — **world radius ≈ 392**, roughly double the ~200 it had in the
+  lava-lamp era. At FOV 60 the vertical half-extent framed at the cell centre is `R·tan30`, so:
+
+  | R | half-extent at centre | nucleus as % of it | note |
+  |---|---|---|---|
+  | 350 (legacy) | 202 | **194%** | camera is INSIDE the nucleus sphere; it overflows the frame ~2× |
+  | 686 | 396 | 99% | reproduces the legacy *framing* — nucleus edge-to-edge |
+  | **920 (shipped)** | 531 | 74% | whole nucleus plus a cytoplasm margin |
+
+  920 is set by the **toys**, not by framing: `ToyboxController` rings them at
+  `MembraneRadius × membraneFraction` = `1200 × 0.82` = **984** on the y=0 galactic plane, with a
+  42-unit trigger, so the nearest trigger surface reaches 942 toward the origin. Any `R < 942`
+  keeps the orbit clear of every toy at every orbit angle; 920 leaves 22 units of radial margin
+  (≈29 in 3D, since `lavaLampHeightOffset` lifts the orbit 30 above their plane). **Re-derive this
+  if the membrane radius, `membraneFraction`, or the trigger radius changes.**
+
+- **Roll is governed by INCLINATION, and the radius is only a weak lever.** With world-up as the
+  hint, `LookRotation` produces exactly zero roll — the camera's right vector stays horizontal —
+  right up until `ComputeLookUpHint`'s pole blend engages at `|dot(viewDir, up)| > 0.85`. Crystals
+  spawn anywhere in a ball of the nucleus radius (`CrystalManager.anchorlessSpawnRadius` 0 → 392),
+  so the worst case is the camera at peak latitude aiming at a crystal at the bottom of that ball:
+
+  | | R=350 | R=920 |
+  |---|---|---|
+  | worst-case verticality @45° | 0.938 | 0.855 |
+  | crystal's angular wander | unbounded (the ball extends past the orbit) | ±25° cone |
+
+  Moving out is what removes the *reported* failure — at 350 a crystal can spawn beside, above or
+  below the camera, so the aim can sweep through vertical; at 920 it is always bounded well below.
+  It does not quite remove the edge case, which grazes the threshold by 0.005 (≈1.5° of tilt).
+  **Inclination is the strong lever**: at R=920 the worst case is 0.821 at 40°, 0.783 at 35°,
+  0.742 at 30° — all clear of the blend, i.e. provably zero roll. `lavaLampOrbitAxis` is
+  `(tan i, 1, 0)`; the shipped 45° is `(1, 1, 0)`, and `(0.839, 1, 0)` is 40°.
 
 ## Key Files
 

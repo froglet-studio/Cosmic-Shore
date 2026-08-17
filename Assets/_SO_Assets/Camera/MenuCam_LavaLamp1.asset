@@ -18,7 +18,7 @@ MonoBehaviour:
   orbitRadius: 80
   orbitHeight: 28
   orbitDegreesPerSecond: 6
-  lavaLampOrbitRadius: 350
+  lavaLampOrbitRadius: 920
   lavaLampOrbitAxis: {x: 1, y: 1, z: 0}
   lavaLampDegreesPerSecond: 2.83
   lavaLampStartDirection: {x: 0, y: 0, z: -1}
