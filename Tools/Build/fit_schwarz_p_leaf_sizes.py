@@ -438,17 +438,16 @@ def assert_level_invariant(levels):
 
 
 # The Space prism's two free numbers, as RATIOS to the lattice's own prism spacing: how many
-# spacings the strut spans, and how thick it is relative to one.
+# spacings the strut spans, and how thick it is relative to one. Kept as ratios rather than as
+# world sizes so the strut can never drift away from the lattice it grows on.
 #
-# PROVENANCE, and why these are frozen literals rather than an import. They were derived from a
-# gyroid Space that had been widened to LatticeScale 1.667 and doubled to 45.92 x 0.45 - a pass
-# that produced these (approved) Schwarz numbers and, on the gyroid itself, a regression: the
-# widened lattice slipped out from under the gyroid's absolute misalignment gate and grew offset
-# parallel domains (Docs/ECOSYSTEM.md 33.8). The gyroid was reverted to its native lattice and
-# its fitter deleted, so there is no longer anything to import from. The ratios stay because the
-# Schwarz result was judged good on sight; they are now the Schwarz element's OWN constants.
-SPACE_SPANS = 45.92 / 13.05          # strut length in prism spacings
-SPACE_THICK_RATIO = 0.45 / 13.05     # cross-section in prism spacings
+# The world sizes they are authored to produce - 30.0 x 0.5 x 0.5 - are design-chosen, not
+# fitted: zero-overlap is the wrong objective for a strut (a strut short enough to clear every
+# neighbour reaches none of them and the structure reads as disconnected bars), so the length is
+# picked for how the skeleton reads and the crossings are accepted. Docs/ECOSYSTEM.md 33.7.
+SHIPPED_SPACE_SPACING = 8.7494      # measured; asserted against a fresh measurement below
+SPACE_SPANS = 30.0 / SHIPPED_SPACE_SPACING
+SPACE_THICK_RATIO = 0.5 / SHIPPED_SPACE_SPACING
 
 
 def space_leaf(space_spacing):
@@ -526,6 +525,11 @@ def main():
     sd = np.linalg.norm(sc[:, None, :] - sc[sic][None, :, :], axis=2)
     sd[sd < 1e-6] = np.inf
     space_spacing = float(np.mean(sd.min(axis=0)))
+    if abs(space_spacing - SHIPPED_SPACE_SPACING) > 0.01:
+        raise SystemExit(
+            f"SHIPPED_SPACE_SPACING is {SHIPPED_SPACE_SPACING}, the lattice measures "
+            f"{space_spacing:.4f}. The Space prism is authored as a ratio to that number, so a "
+            f"drift here silently re-sizes the strut - update the constant deliberately.")
     space = space_leaf(space_spacing)
 
     elements = [

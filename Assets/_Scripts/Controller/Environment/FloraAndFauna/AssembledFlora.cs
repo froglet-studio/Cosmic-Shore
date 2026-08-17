@@ -574,7 +574,6 @@ namespace CosmicShore.Gameplay
 
         float _latticeScaleOverride = -1f;
         float? _latticeScaleCached;
-        float? _latticeScaleCached;
 
         /// <summary>
         /// How far this element's lattice is stretched relative to the one the octagon tables

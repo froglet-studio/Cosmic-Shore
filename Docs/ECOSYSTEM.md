@@ -4679,7 +4679,7 @@ proves it on every run of the fitter rather than trusting the arithmetic.
 
 | | before this pass | after |
 |---|---|---|
-| **Schwarz P Space** | 13.4 × 0.7 × 0.7, 72 overlaps, level 2 | **30.79 × 0.30 × 0.30**, 103:1, 3.52 spans, spacing `5.25 → 8.75`, **level 2 / 36 sites, unchanged** |
+| **Schwarz P Space** | 13.4 × 0.7 × 0.7, 72 overlaps, level 2 | **30 × 0.5 × 0.5**, 60:1, 3.43 spans, spacing `5.25 → 8.75`, **level 2 / 36 sites, unchanged** |
 
 The prism is sized in multiples of its own lattice's spacing (`SPACE_SPANS`,
 `SPACE_THICK_RATIO` in `fit_schwarz_p_leaf_sizes.py`) rather than as absolute numbers, so the
@@ -4756,8 +4756,11 @@ unless the ordering holds and the ratio stays constant:
 
 **What shipped.** The strut is stretched on the native lattice to `30 × 1 × 1` and then the whole
 structure — prisms, spacing, and the spindles between them — is scaled **2×**, giving
-`60 × 2 × 2` at `LatticeScale 2` (separation 3 → 6, spacing 7.83 → 15.66). The span is **3.83
-spacings before and after**, which is the check that it is a pure scale-up rather than a reshape.
+`60 × 1 × 1` at `LatticeScale 2` (separation 3 → 6, spacing 7.83 → 15.66). The span is **3.83
+spacings before and after**, which is the check that the LENGTH is a pure scale-up rather than a
+reshape; the cross-section was then thinned by hand from the 2 a uniform scale would give to
+**1**, which is a deliberate reshape — Space is the skeletal element and a 60:1 needle reads
+thinner than a 30:1 bar at the same length.
 The octagon colony's populations are unchanged (`MaxTotalSpawnedObjects 30`, cap 33).
 
 **Spindles scale; crystals do not.** The spindle is visible branch geometry spanning the gap
@@ -4769,16 +4772,17 @@ spread out while each stays its authored size. It is also **gyroid-only** — th
 element's proportions were judged good at its shipped scale *with* unscaled spindles, and changing
 them now would regress an approved look for no request.
 
-**The volume consequence, which is real and is the open question.** A uniform 2× is an **8×
-per-prism volume**, and 20 → 30 adds another 1.5×: `20 → 240` per prism, `37.6 → 450.6` after the
-level spread. Against the Blob cell's `FrenzyEnterVolume 288,000`, this species' ceiling goes from
-**13% to 155%**. Caps were never the binding gate there (all species summed already exceed Frenzy,
-which is the documented design), so nothing stalls — but each Space prism now consumes ~12× more of
-the cell's volume budget, so the cell reaches Frenzy with fewer prisms overall and Space crowds out
-its neighbours. If the freestyle cell reads sparse or freezes early, the levers in order are the
-**cell's volume ladder** first and `MaxLivePopulation` last (§32.7 seventh pass, /ecology §4.6);
-neither was changed here, because cell pacing is a design call rather than a consequence of this
-one.
+**The volume consequence, and why the thin cross-section matters more than it looks.** A uniform
+2× would be an **8× per-prism volume**, which is what makes this the §4.6 trap: at `60 × 2 × 2` the
+prism is 240 units and the species' ceiling reaches **155%** of the Blob cell's
+`FrenzyEnterVolume 288,000` on its own. Holding the cross-section at **1** instead lands it at
+`60 × 1 × 1 = 60` per prism (**112.7** after the 1.88 level spread) and **39%** — heavier than the
+20 × 1 × 1 it replaced (13%), lighter than its own Mass sibling (71%), and comfortably inside the
+budget. A lattice species' thickness is therefore a *volume* dial with cubic leverage, not only a
+look dial: it is the cheapest correction available when a scale-up overshoots the ladder. If the
+freestyle cell still reads sparse or freezes early, the levers in order remain the **cell's volume
+ladder** first and `MaxLivePopulation` last (§32.7 seventh pass, /ecology §4.6); neither is changed
+here, because cell pacing is a design call rather than a consequence of this one.
 
 **The general rule.** A coherence tolerance written as an absolute distance is an *unstated
 dependency on the lattice it was measured against*. Before scaling any lattice, enumerate every

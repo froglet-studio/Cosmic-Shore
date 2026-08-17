@@ -223,8 +223,10 @@ outcome is optimization, not life). Use the `/ecology` skill for any change here
   assert the ordering rather than the values; **a prism only reads as STRETCHED against a lattice
   that stayed put** (scale both and it is just a bigger plant, so stretch on the native lattice
   FIRST, then scale); and **a uniform k× scale is a k³ VOLUME change** that lands straight on the
-  cell's Frenzy ladder (§4.6) — the Space gyroid's 2× took its ceiling from 13% to 155% of the Blob
-  cell's `FrenzyEnterVolume`. Spindles scale with the lattice (visible branch geometry spanning the
+  cell's Frenzy ladder (§4.6) — the Space gyroid's 2× would have taken its ceiling from 13% to
+  155% of the Blob cell's `FrenzyEnterVolume` at `60 × 2 × 2`, so its cross-section is held at 1
+  (`60 × 1 × 1`, 39%): a lattice prism's THICKNESS is a volume dial with cubic leverage and is the
+  cheapest correction when a scale-up overshoots the ladder. Spindles scale with the lattice (visible branch geometry spanning the
   gap); crystals deliberately do not. Full record: `Docs/ECOSYSTEM.md §33` (§33.5 the per-element
   prism fit, §33.7 the Schwarz P lattice, §33.8 the gyroid scale).
 - **Territorial permanence.** Take a cell, leave, it stays yours — the claim fauna cannot touch.
