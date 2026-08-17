@@ -206,10 +206,10 @@ namespace CosmicShore.Gameplay
                 maxTotalSpawnedObjects = Mathf.Max(1, Mathf.FloorToInt(
                     maxTotalSpawnedObjects * tuning.MaxTotalSpawnedObjectsScale + 0.5f));
 
-            // Per-element lattice spacing. Stored rather than applied here: the assemblers
+            // Per-element lattice scale. Stored rather than applied here: the assemblers
             // that need it do not exist yet (they are created per prism), so every creation
             // site pushes it - see ApplyLatticeSpacing.
-            if (tuning.SeparationDistance > 0f) _separationOverride = tuning.SeparationDistance;
+            if (tuning.LatticeScale > 0f) _latticeScaleOverride = tuning.LatticeScale;
 
             // Pacing overrides - the prefab's throttles are shared by every biome's plants,
             // so a cell that wants a different pace authors it in config instead.
@@ -571,7 +571,7 @@ namespace CosmicShore.Gameplay
         // by its parent under the boundary epsilon, and a ring-complete test the same.
         int _idleGrowTicks;
 
-        float _separationOverride = -1f;
+        float _latticeScaleOverride = -1f;
         float? _latticeScaleCached;
 
         /// <summary>
@@ -589,8 +589,14 @@ namespace CosmicShore.Gameplay
         /// <para>1 for every element that keeps the prefab's spacing, so this is inert for the
         /// three that do.</para>
         ///
+        /// <para>Read off the AUTHORED scale rather than the assembler, deliberately: the only
+        /// GyroidAssembler in reach here is the healthPrism PREFAB's, whose separationDistance
+        /// is the unscaled 3 - the scale is applied to each spawned instance. Asking the prefab
+        /// would therefore return 1 for a scaled element and silently defeat the whole
+        /// correction.</para>
+        ///
         /// <para>GYROID ONLY, and fenced to say so: the ratio is against a GyroidOctagonData
-        /// constant, so on a Schwarz P plant - whose own separation is a tile SUBDIVISION and
+        /// constant, so on a Schwarz P plant - whose lattice scale multiplies a tile PERIOD and
         /// is a different quantity entirely - the number would be meaningless. Every reader
         /// today is inside the octagon path; this makes a future one safe rather than subtly
         /// wrong.</para>
@@ -601,21 +607,21 @@ namespace CosmicShore.Gameplay
             {
                 if (_latticeScaleCached.HasValue) return _latticeScaleCached.Value;
                 if (!OctagonMode) { _latticeScaleCached = 1f; return 1f; }
-                float separation = _separationOverride > 0f ? _separationOverride
-                    : (healthPrism && healthPrism.TryGetComponent(out GyroidAssembler ga)
-                        ? ga.SeparationDistance : GyroidOctagonData.MeasuredSeparation);
-                _latticeScaleCached = separation / GyroidOctagonData.MeasuredSeparation;
+                float prefabSeparation = healthPrism && healthPrism.TryGetComponent(out GyroidAssembler ga)
+                    ? ga.SeparationDistance : GyroidOctagonData.MeasuredSeparation;
+                float authored = _latticeScaleOverride > 0f ? _latticeScaleOverride : 1f;
+                _latticeScaleCached = authored * prefabSeparation / GyroidOctagonData.MeasuredSeparation;
                 return _latticeScaleCached.Value;
             }
         }
 
-        /// <summary>Pushes this element's authored lattice spacing onto a freshly created
+        /// <summary>Pushes this element's authored lattice scale onto a freshly created
         /// assembler. Both species read it before their first growth probe.</summary>
         void ApplyLatticeSpacing(Assembler target)
         {
-            if (_separationOverride <= 0f || target == null) return;
-            if (target is GyroidAssembler gyroid) gyroid.SetSeparationDistance(_separationOverride);
-            else if (target is SchwarzPAssembler schwarz) schwarz.SetSeparationDistance(_separationOverride);
+            if (_latticeScaleOverride <= 0f || target == null) return;
+            if (target is GyroidAssembler gyroid) gyroid.ApplyLatticeScale(_latticeScaleOverride);
+            else if (target is SchwarzPAssembler schwarz) schwarz.ApplyLatticeScale(_latticeScaleOverride);
         }
 
         bool? _octagonModeCached;
@@ -1638,10 +1644,16 @@ namespace CosmicShore.Gameplay
 
             Vector3 scale = LeafSize != Vector3.zero ? LeafSize : Vector3.one;
 
+            // The prototypes here are the PREFAB's assemblers, which carry the unscaled
+            // spacing - the authored LatticeScale is applied to each spawned instance. Pass it
+            // in, or a scaled element previews its new prism on the old lattice (Space's 46u
+            // strut on a 7.8u gyroid reads as a solid block).
+            float latticeScale = _latticeScaleOverride > 0f ? _latticeScaleOverride : 1f;
+
             if (healthPrism.TryGetComponent(out GyroidAssembler gyroid))
-                return PreviewGyroid(gyroid, scale, budget, into);
+                return PreviewGyroid(gyroid, scale, budget, into, latticeScale);
             if (healthPrism.TryGetComponent(out SchwarzPAssembler schwarz))
-                return schwarz.TryPreviewLattice(budget, scale, into);
+                return schwarz.TryPreviewLattice(budget, scale, into, latticeScale);
             if (healthPrism.TryGetComponent(out WallAssembler wall))
                 return PreviewWall(wall, scale, budget, into);
 
@@ -1654,9 +1666,10 @@ namespace CosmicShore.Gameplay
             CornerSiteType.BottomLeft, CornerSiteType.BottomRight,
         };
 
-        static bool PreviewGyroid(GyroidAssembler prototype, Vector3 scale, int budget, List<SpawnPoint> into)
+        static bool PreviewGyroid(GyroidAssembler prototype, Vector3 scale, int budget,
+                                  List<SpawnPoint> into, float latticeScale = 1f)
         {
-            float separation = prototype.SeparationDistance;
+            float separation = prototype.SeparationDistance * Mathf.Max(latticeScale, 1e-4f);
             var frontier = new Queue<(Vector3 pos, Quaternion rot, GyroidBlockType type)>();
             var occupied = new HashSet<Vector3Int>();
 

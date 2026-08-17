@@ -201,17 +201,25 @@ outcome is optimization, not life). Use the `/ecology` skill for any change here
   the flush size and it interpenetrates itself (measured: 0 overlapping pairs at L1, 144 at
   L3, 212 at L5). **And a LONGER prism needs a WIDER LATTICE, not a thinner prism** — the
   bound on a strut is the neighbour along its own axis, so thinning buys ~2% (Schwarz) to ~7%
-  (gyroid) while `max clear strut ≈ 1.29 × spacing` (Schwarz tile) / `≈ 1.75 × spacing`
-  (gyroid) holds at every spacing tested. `FloraVariantTuning.SeparationDistance` (sentinel
-  **−1** = keep the prefab's) is that dial, pushed onto the assembler at all three creation
-  sites because both species read it BEFORE their first growth probe; it means a bond-offset
-  scale on the gyroid and a coarser TILE SUBDIVISION on Schwarz P. Its consequence is the
-  thing to remember: **every distance in `GyroidOctagonData` was measured at separation 3**
-  (`MeasuredSeparation`), so a widened gyroid must scale all seven of them by
-  `AssembledFlora.LatticeScale` or its founder computes a ring centre that does not exist —
-  and that property is fenced to `OctagonMode`, since on a Schwarz plant the ratio is between
-  two unrelated quantities. Full record: `Docs/ECOSYSTEM.md §33` (§33.5 the per-element prism
-  fit, §33.7 the per-element lattice).
+  (gyroid). `FloraVariantTuning.LatticeScale` (sentinel **−1** = keep the prefab's) is that
+  dial: it scales an element's whole lattice while keeping its **topology and prism count
+  identical to its elemental peers**, and is pushed onto the assembler at all three creation
+  sites because both species read it BEFORE their first growth probe. On the gyroid it scales
+  `separationDistance`; on Schwarz P it scales `periodScale` **and** `separationDistance`
+  TOGETHER — and together is the point, because `ResolveLevel` compares one against the other,
+  so scaling both leaves the subdivision invariant while scaling either alone silently ships a
+  DIFFERENT PLANT (Space landed on 6 sites per tile instead of 36 that way, and needed a
+  population override to paper over it). **Zero overlaps is not the objective for a strut** —
+  a strut short enough to clear every neighbour reaches none of them and reads as disconnected
+  bars; the crossings are the lattice closing up, they SATURATE (575 at 3.5 spans, unchanged at
+  4.6), and no thickness removes them since most are near-perpendicular. Measure that the cost
+  is bounded, don't fit it to zero. Two consequences to remember: **every distance in
+  `GyroidOctagonData` was measured at separation 3** (`MeasuredSeparation`), so a widened gyroid
+  must scale all seven by `AssembledFlora.LatticeScale` — which reads the AUTHORED scale, since
+  the only assembler in reach is the unscaled PREFAB's, and is fenced to `OctagonMode`; and
+  **any path reading a lattice field off a PROTOTYPE must be handed the scale too** (the flora
+  preview drew the new prism on the old lattice until it was). Full record:
+  `Docs/ECOSYSTEM.md §33` (§33.5 the per-element prism fit, §33.7 the per-element lattice).
 - **Territorial permanence.** Take a cell, leave, it stays yours — the claim fauna cannot touch.
   In nucleus cells the permanent claim is the **nucleus interior** (fauna never consume it);
   exterior canopy/trail is deliberately contested churn (voracious any-domain grazing). In

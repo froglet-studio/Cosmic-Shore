@@ -87,15 +87,18 @@ namespace CosmicShore.Gameplay
         public float SeparationDistance => separationDistance;
 
         /// <summary>
-        /// Per-element lattice spacing (FloraVariantTuning.SeparationDistance). Every bond
-        /// offset is scaled by this, so it widens the whole lattice rather than moving one
-        /// prism - and the octagon tables, which are measured at
-        /// <see cref="GyroidOctagonData.MeasuredSeparation"/>, must be scaled to match
-        /// (AssembledFlora.LatticeScale). Set before the plant's first growth probe.
+        /// Scales this element's whole lattice (FloraVariantTuning.LatticeScale). Every bond
+        /// offset is derived from <see cref="separationDistance"/>, so scaling that one number
+        /// moves every prism outward together - the TOPOLOGY and the prism COUNT are untouched,
+        /// only the distances change.
+        ///
+        /// <para>The octagon tables are measured at
+        /// <see cref="GyroidOctagonData.MeasuredSeparation"/> and must be scaled to match; that
+        /// is <c>AssembledFlora.LatticeScale</c>. Set before the plant's first growth probe.</para>
         /// </summary>
-        public void SetSeparationDistance(float value)
+        public void ApplyLatticeScale(float scale)
         {
-            if (value > 0f) separationDistance = value;
+            if (scale > 0f) separationDistance *= scale;
         }
         [SerializeField] int colliderTheshold = 1;
         [SerializeField] float radius = 40f;

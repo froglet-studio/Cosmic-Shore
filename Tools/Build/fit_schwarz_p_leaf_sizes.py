@@ -66,16 +66,19 @@ PERIOD_SCALE = 60.0
 SEPARATION_DISTANCE = 6.0
 WORLD_SCALE = PERIOD_SCALE / (2.0 * PI)
 
-# SPACE authors its OWN separation (FloraVariantTuning.SeparationDistance), which selects a
-# coarser subdivision of the SAME tile: 6 sites at 11.70 apart instead of 36 at 5.25. That is
-# the only way a longer strut gains clearance - measured, a prism on this lattice can reach
-# only ~1.16-1.29 of the site spacing before it overlaps a neighbour, and thinning it barely
-# helps (6.02 at thickness 0.70 vs 6.17 at 0.30, on the level-2 spacing). So a strut that
-# spans several spacings and a strut that clears its neighbours are mutually exclusive at a
-# fixed spacing; widening the lattice is what buys both. The tile does not grow, so the
-# colony's bounds are unchanged - only its skeleton thins.
-SPACE_SEPARATION = 11.7
-SPACE_THICKNESS = 0.44
+# SPACE scales its whole LATTICE (FloraVariantTuning.LatticeScale) rather than coarsening its
+# subdivision. periodScale and separationDistance move TOGETHER, so ResolveLevel's argmin - the
+# level - is invariant and the plant keeps its elemental peers' exact mesh: level 2, 36 sites per
+# tile, same bonds, same prism count. Only the distances grow.
+#
+# The earlier pass scaled separationDistance alone, which re-resolved to level 0 (6 sites) - a
+# structure with visibly fewer subdivisions. That is a DIFFERENT plant, not a bigger one, and it
+# is the thing this constant exists to prevent; assert_level_invariant() proves it every run.
+#
+# The prism itself is then derived from the GYROID Space's shipped proportions (imported, not
+# copied), so the element reads the same on both surfaces: the same spans-per-spacing and the
+# same thickness-per-spacing.
+SPACE_LATTICE_SCALE = 5.0 / 3.0
 
 
 # ----------------------------------------------------------------------------
@@ -94,11 +97,13 @@ def resolve_level(levels):
     return best
 
 
-def resolve_level_for(levels, separation):
+def resolve_level_for(levels, separation, world_scale=None):
     """ResolveLevel for an element that authors its own separationDistance."""
+    if world_scale is None:
+        world_scale = WORLD_SCALE
     best, best_err = 0, float("inf")
     for i, (mean_spacing, _) in enumerate(levels):
-        err = abs(mean_spacing * WORLD_SCALE - separation)
+        err = abs(mean_spacing * world_scale - separation)
         if err < best_err:
             best, best_err = i, err
     return best
@@ -119,9 +124,14 @@ def largest_clear_strut(centres, bases, is_central, thickness, hi=40.0, iteratio
     return (math.floor(lo * 100) / 100, thickness, thickness)
 
 
-def prism_frames(levels, level, radius=1):
+def prism_frames(levels, level, radius=1, world_scale=None):
     """Every prism of a (2r+1)^3 tile block, in world units: centre plus the
-    orthonormal basis Unity's LookRotation(normal, tangent) produces."""
+    orthonormal basis Unity's LookRotation(normal, tangent) produces.
+
+    world_scale defaults to the prefab's; an element that authors a LatticeScale passes
+    its own, which scales every POSITION and leaves every rotation alone."""
+    if world_scale is None:
+        world_scale = WORLD_SCALE
     offsets = [s[0] for s in levels[level][1]]
     tangents = [s[1] for s in levels[level][1]]
 
@@ -135,7 +145,7 @@ def prism_frames(levels, level, radius=1):
             ex = np.cross(t, n)
             ex /= np.linalg.norm(ex)
             ey = np.cross(n, ex)
-            centres.append(p * WORLD_SCALE)
+            centres.append(p * world_scale)
             bases.append(np.stack([ex, ey, n]))
             is_central.append(ijk == (0, 0, 0))
     return np.array(centres), np.array(bases), np.array(is_central)
@@ -348,7 +358,7 @@ def set_leaf_size_only(path, leaf):
     return path
 
 
-def write_variant(element, leaf, separation=None):
+def write_variant(element, leaf, lattice_scale=None):
     """Set ONLY the leaf size on the element asset's Variant block, leaving every other
     field at its sentinel.
 
@@ -378,8 +388,8 @@ def write_variant(element, leaf, separation=None):
             continue
         if name == "LeafSize":
             lines.append(f"    LeafSize: {{x: {leaf[0]:g}, y: {leaf[1]:g}, z: {leaf[2]:g}}}")
-        elif name == "SeparationDistance" and separation is not None:
-            lines.append(f"    SeparationDistance: {separation:g}")
+        elif name == "LatticeScale" and lattice_scale is not None:
+            lines.append(f"    LatticeScale: {lattice_scale:g}")
         elif name in existing:
             lines.append(f"    {name}: {existing[name]}")
         elif kind == "Vector3":
@@ -405,6 +415,42 @@ def write_variant(element, leaf, separation=None):
 
 
 # ----------------------------------------------------------------------------
+
+
+def assert_level_invariant(levels):
+    """Prove that scaling the lattice leaves the SUBDIVISION - and so the prism count and
+    the mesh topology - exactly as the peers'.
+
+    This is the whole contract of LatticeScale, and it is one line of arithmetic that is
+    easy to get wrong in the other direction: ResolveLevel compares
+    `MeanParamSpacing * periodScale / 2pi` against `separationDistance`, so scaling ONLY
+    separationDistance re-resolves to a coarser level (Space landed on level 0, 6 sites,
+    instead of its peers' level 2, 36) and quietly ships a different plant."""
+    peer = resolve_level(levels)
+    scaled = resolve_level_for(levels, SEPARATION_DISTANCE * SPACE_LATTICE_SCALE,
+                               world_scale=WORLD_SCALE * SPACE_LATTICE_SCALE)
+    if scaled != peer:
+        raise SystemExit(
+            f"LatticeScale {SPACE_LATTICE_SCALE:g} moves Space off its peers' subdivision "
+            f"(level {peer} -> {scaled}). periodScale and separationDistance must scale "
+            f"together or the plant changes topology instead of size.")
+    return peer
+
+
+def space_leaf(space_spacing):
+    """The Space prism, derived from the GYROID Space's proportions rather than re-fitted.
+
+    The brief is that Space reads the same on both surfaces, so the two free numbers are
+    taken as RATIOS to each lattice's own prism spacing: how many spacings the strut spans,
+    and how thick it is relative to one. Importing them from the gyroid fitter means the two
+    species cannot drift apart silently - the gyroid module asserts its own spacing constant
+    against a fresh walk on import-time use, so a change there fails loudly here."""
+    from fit_gyroid_space_strut import SPACE_LENGTH, SPACE_THICKNESS as G_THICK, SPACE_SPACING
+    spans = SPACE_LENGTH / SPACE_SPACING
+    thick_ratio = G_THICK / SPACE_SPACING
+    return (round(spans * space_spacing, 2),
+            round(thick_ratio * space_spacing, 2),
+            round(thick_ratio * space_spacing, 2))
 
 
 def main():
@@ -468,13 +514,14 @@ def main():
     golden = (1.0 + math.sqrt(5.0)) / 2.0
     pleasant = largest_clear(centres, bases, is_central, golden, thickness=1.0)
     chunky = largest_clear(centres, bases, is_central, 1.3, thickness=2.0)
-    # Space is fitted on ITS OWN level, at its own separation.
-    space_level = resolve_level_for(levels, SPACE_SEPARATION)
-    sc, sb, sic = prism_frames(levels, space_level)
-    space = largest_clear_strut(sc, sb, sic, SPACE_THICKNESS)
+    # Space keeps its PEERS' level and scales the whole lattice instead.
+    space_level = assert_level_invariant(levels)
+    space_world_scale = WORLD_SCALE * SPACE_LATTICE_SCALE
+    sc, sb, sic = prism_frames(levels, space_level, world_scale=space_world_scale)
     sd = np.linalg.norm(sc[:, None, :] - sc[sic][None, :, :], axis=2)
     sd[sd < 1e-6] = np.inf
     space_spacing = float(np.mean(sd.min(axis=0)))
+    space = space_leaf(space_spacing)
 
     elements = [
         ("Charge", pleasant, (86, 196, 232)),
@@ -493,8 +540,9 @@ def main():
         state = "flush, no overlaps" if pairs == 0 else \
                 f"{pairs} overlapping pairs, max penetration {worst:.2f}u"
         if name == "Space":
-            state += f"  [own lattice: sep {SPACE_SEPARATION:g} -> level {space_level}, " \
-                     f"{len(levels[space_level][1])} sites at {own_spacing:.2f}]"
+            state += f"  [lattice x{SPACE_LATTICE_SCALE:.4f}: level {space_level} " \
+                     f"(SAME as peers), {len(levels[space_level][1])} sites at " \
+                     f"{own_spacing:.2f}]"
         print(f"  {name:<7} {leaf[0]:5.2f} x {leaf[1]:4.2f} x {leaf[2]:4.2f}   "
               f"aspect {max(leaf[0], leaf[1]) / min(leaf[0], leaf[1]):4.1f}:1   "
               f"span {span:4.2f} spacings   coverage {cov:5.1%}   {state}")
@@ -521,7 +569,8 @@ def main():
     if args.write:
         print()
         for name, leaf, _ in elements:
-            p = write_variant(name, leaf, SPACE_SEPARATION if name == "Space" else None)
+            p = write_variant(name, leaf,
+                             SPACE_LATTICE_SCALE if name == "Space" else None)
             set_leaf_scale_per_level(p)
             set_crystal_scale_per_level(p)
             print(f"  wrote {p.relative_to(ROOT)}")

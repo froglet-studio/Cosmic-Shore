@@ -108,14 +108,12 @@ LATTICE_PATCH = {
     "SchwarzPFlora.prefab": (36, 36),                          # 36 owned, 36 budget - exact
 }
 
-# Per-CONFIG override, for an element that authors its own lattice spacing
-# (FloraVariantTuning.SeparationDistance). Space widens its lattice so its long strut has
-# clearance, which on the Schwarz P tile means a COARSER subdivision of the same tile -
-# 6 sites instead of 36 - so a Space plant owns 6 prisms, not 36. The tile is unchanged, so
-# the colony's bounds and its crystal count are unchanged; only the skeleton thins.
-LATTICE_PATCH_BY_CONFIG = {
-    "SchwarzP Flora Space": (6, 6),
-}
+# No per-CONFIG override is needed, and that is the point of FloraVariantTuning.LatticeScale.
+# Space authors a wider lattice, but it scales periodScale and separationDistance TOGETHER, so
+# SchwarzPTileData.ResolveLevel returns its peers' level unchanged: 36 sites per tile, the same
+# mesh, the same prism count. Only the distances grow. (An earlier pass scaled separation alone,
+# which re-resolved to 6 sites and did need an override here - that is exactly the topology
+# change LatticeScale exists to avoid, and the override going away is the evidence it worked.)
 
 # INERT for lattice species since reproduction became a POPULATION event (Docs/ECOSYSTEM.md
 # §32.7, organic-growth pass): the colony births ONE plant per fauna-wave period at a random
@@ -266,8 +264,7 @@ def plan(path, guids, defaults):
                 f"LATTICE_SOURCE_BUDGET (its authored MaxTotalSpawnedObjects) - the conversion "
                 f"overwrites that field, so it cannot be recovered from the asset.")
         old_budget = LATTICE_SOURCE_BUDGET[name]
-        patch, budget = LATTICE_PATCH_BY_CONFIG.get(
-            name, LATTICE_PATCH[prefab_name(path, guids)])
+        patch, budget = LATTICE_PATCH[prefab_name(path, guids)]
         # Same mass, many plants: this is the conversion, stated as arithmetic. The divisor is
         # the PATCH (what a plant actually settles at), so cap x patch = the old single-plant
         # mass.

@@ -173,16 +173,25 @@ namespace CosmicShore.Gameplay
         public SchwarzPSurfaceFrame Frame => frame;
 
         /// <summary>
-        /// Per-element lattice spacing (FloraVariantTuning.SeparationDistance). Here it selects
-        /// a coarser or finer SUBDIVISION of the same tile (<see cref="SchwarzPTileData.ResolveLevel"/>),
-        /// so raising it spreads fewer, wider-spaced prisms over an unchanged tile - the plant's
-        /// bounds do not inflate, only its skeleton thins. Read by the founder's
-        /// <see cref="EnsureSeeded"/>; every later prism inherits the level through the frame,
-        /// so this must be set before the plant's first growth probe.
+        /// Scales this element's whole lattice (FloraVariantTuning.LatticeScale), keeping its
+        /// TOPOLOGY and its prism COUNT exactly as its elemental peers'.
+        ///
+        /// <para>Both fields are scaled together, and that is the whole trick.
+        /// <see cref="SchwarzPTileData.ResolveLevel"/> picks the subdivision whose
+        /// <c>MeanParamSpacing x periodScale / 2pi</c> is nearest <see cref="separationDistance"/>,
+        /// so multiplying BOTH sides by the same factor leaves the argmin - the level - invariant
+        /// by construction, while every world distance scales. Scaling <c>separationDistance</c>
+        /// alone would instead re-resolve to a coarser level and change the mesh: 36 sites per
+        /// tile become 6, which is a different plant, not a bigger one.</para>
+        ///
+        /// <para>Read by the founder's <see cref="EnsureSeeded"/>; every later prism inherits the
+        /// frame, so this must be set before the plant's first growth probe.</para>
         /// </summary>
-        public void SetSeparationDistance(float value)
+        public void ApplyLatticeScale(float scale)
         {
-            if (value > 0f) separationDistance = value;
+            if (scale <= 0f) return;
+            separationDistance *= scale;
+            periodScale *= scale;
         }
 
         /// <summary>The tile this prism sits in - and, because a plant owns exactly one tile,
@@ -406,14 +415,22 @@ namespace CosmicShore.Gameplay
         /// <param name="budget">Maximum prisms to report.</param>
         /// <param name="tileScale">Prism scale to report for each site.</param>
         /// <param name="into">Receives local-space poses.</param>
-        public bool TryPreviewLattice(int budget, Vector3 tileScale, List<SpawnPoint> into)
+        public bool TryPreviewLattice(int budget, Vector3 tileScale, List<SpawnPoint> into,
+                                      float latticeScale = 1f)
         {
             if (into == null || budget <= 0) return false;
 
-            float worldScale = periodScale / SchwarzPTileData.ParamPeriod;
+            // This is the PREFAB's assembler, so its fields are unscaled; an element that
+            // authors a LatticeScale passes it here. Both fields scale together, exactly as
+            // ApplyLatticeScale does, so the previewed level matches the grown one.
+            float scale = Mathf.Max(latticeScale, 1e-4f);
+            float scaledPeriod = periodScale * scale;
+            float scaledSeparation = separationDistance * scale;
+
+            float worldScale = scaledPeriod / SchwarzPTileData.ParamPeriod;
             if (worldScale <= 1e-4f) return false;
 
-            int level = SchwarzPTileData.ResolveLevel(separationDistance, periodScale);
+            int level = SchwarzPTileData.ResolveLevel(scaledSeparation, scaledPeriod);
             Vector3 anchor = SchwarzPTileData.SiteParam(Vector3Int.zero, level, 0);
             Vector3 anchorNormal = SchwarzPTileData.SurfaceNormalParam(anchor);
             Vector3 anchorTangent = Orthogonalize(

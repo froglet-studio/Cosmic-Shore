@@ -57,8 +57,20 @@ ROOT = pathlib.Path(__file__).resolve().parents[2]
 BONDS = ROOT / "Assets/_Scripts/Controller/Assemblers/GyroidBondMateDataContainer.cs"
 
 MEASURED_SEPARATION = 3.0          # what GyroidOctagonData's distances were measured at
-SPACE_SEPARATION = 5.0             # what the Space element authors
+SPACE_LATTICE_SCALE = 5.0 / 3.0    # FloraVariantTuning.LatticeScale for Space
+SPACE_SEPARATION = MEASURED_SEPARATION * SPACE_LATTICE_SCALE
 SPACE_THICKNESS = 0.45
+
+# The strut is DOUBLE the longest zero-overlap length (22.96), by design sign-off: a strut
+# that clears every neighbour is a strut that reaches none of them, and the lattice read as
+# disconnected bars. The crossings are what close it up. They are also bounded - see
+# report_closure(), which is run on every invocation so the cost stays measured, not assumed.
+SPACE_LENGTH = 45.92
+
+# Measured prism spacing at SPACE_SEPARATION. Asserted against the walk on every run, so the
+# Schwarz P fit - which derives its own Space prism from these proportions - can import a
+# number that cannot silently drift from the lattice it describes.
+SPACE_SPACING = 13.05
 SITES = ("TopRight", "TopLeft", "BottomLeft", "BottomRight")
 
 # Every config whose Element is Space (3) and whose FloraPrefab is GyroidFlora.
@@ -206,8 +218,40 @@ def level_spread(table, separation, thickness, length, per_level, levels=(1, 3, 
     return out
 
 
-def author(leaf, separation):
-    """Set LeafSize + SeparationDistance on every Space gyroid config."""
+def report_closure(table, separation, thickness, lengths):
+    """What CLOSING the lattice costs: the crossings a long strut makes, and their depth.
+
+    Kept as a first-class report rather than a pass/fail gate, because zero-overlap is not
+    the objective here - a strut short enough to clear every neighbour reaches none of them,
+    and the structure reads as disconnected bars. What matters is that the cost is BOUNDED,
+    which it is: past ~2.6 spans the strut runs down an empty channel and hits nothing new.
+    """
+    nodes = walk(table, separation)
+    P = np.array([n[0] for n in nodes])
+    B = np.array([n[1].T for n in nodes])
+    D = np.linalg.norm(P[:, None, :] - P[None, :, :], axis=2)
+    np.fill_diagonal(D, np.inf)
+    spacing = float(D.min(axis=1).mean())
+    radius = np.linalg.norm(P - P.mean(axis=0), axis=1)
+    core = np.where(radius < np.percentile(radius, 45))[0]
+
+    rows = []
+    for length in lengths:
+        half = np.array([length, thickness, thickness]) * 0.5
+        reach = float(np.linalg.norm(half)) * 2.2
+        hits, worst = 0, 0.0
+        for i in core:
+            for j in np.where(D[i] < reach)[0]:
+                d = obb_penetration(P[i], B[i], half, P[j], B[j], half)
+                if d > 1e-6:
+                    hits += 1
+                    worst = max(worst, d)
+        rows.append((length, length / spacing, hits, worst))
+    return spacing, rows
+
+
+def author(leaf, scale):
+    """Set LeafSize + LatticeScale on every Space gyroid config."""
     written = []
     for rel in SPACE_CONFIGS:
         path = ROOT / rel
@@ -222,13 +266,15 @@ def author(leaf, separation):
                          text, count=1, flags=re.M)
         if n != 1:
             raise SystemExit(f"no LeafSize row in {path.name}")
-        if re.search(r"^    SeparationDistance: .*$", new, flags=re.M):
-            new = re.sub(r"^    SeparationDistance: .*$",
-                         f"    SeparationDistance: {separation:g}", new, count=1, flags=re.M)
+        # The previous pass authored an absolute SeparationDistance; retire any it left.
+        new = re.sub(r"^    SeparationDistance: .*\n", "", new, flags=re.M)
+        if re.search(r"^    LatticeScale: .*$", new, flags=re.M):
+            new = re.sub(r"^    LatticeScale: .*$",
+                         f"    LatticeScale: {scale:g}", new, count=1, flags=re.M)
         else:
             # Insert after GrowPeriod, matching FloraVariantTuning's declaration order.
             new, n = re.subn(r"^(    GrowPeriod: .*)$",
-                             rf"\1\n    SeparationDistance: {separation:g}",
+                             rf"\1\n    LatticeScale: {scale:g}",
                              new, count=1, flags=re.M)
             if n != 1:
                 raise SystemExit(f"no GrowPeriod anchor in {path.name}")
@@ -255,41 +301,57 @@ def main():
     print("=" * 78)
     print(f"{'sep':>5} {'spacing':>9} {'clear len':>10} {'spans':>6} {'aspect':>9}")
 
-    authored = None
+    measured_spacing = None
     for sep in (MEASURED_SEPARATION, 4.0, SPACE_SEPARATION, 6.0):
         spacing, length = clear_strut(table, sep, SPACE_THICKNESS)
-        if length is None:
-            print(f"{sep:>5.1f} {spacing:>9.2f}   (no clear fit)")
-            continue
         mark = ""
         if abs(sep - SPACE_SEPARATION) < 1e-6:
-            authored = (length, SPACE_THICKNESS, SPACE_THICKNESS)
-            mark = "   <- authored"
+            measured_spacing = spacing
+            mark = "   <- Space's lattice"
+        if length is None:
+            print(f"{sep:>5.1f} {spacing:>9.2f}   (no clear fit){mark}")
+            continue
         print(f"{sep:>5.1f} {spacing:>9.2f} {length:>10.2f} {length / spacing:>6.2f} "
               f"{length / SPACE_THICKNESS:>7.0f}:1{mark}")
 
-    if authored is None:
-        raise SystemExit("no clear strut at the authored separation")
+    # The Schwarz P fit imports SPACE_SPACING to derive its own Space prism from these
+    # proportions, so a drift between the constant and the lattice would silently mis-size
+    # a different species. Fail here instead.
+    if abs(measured_spacing - SPACE_SPACING) > 0.01:
+        raise SystemExit(f"SPACE_SPACING is {SPACE_SPACING}, the walk measures "
+                         f"{measured_spacing:.4f} - update the constant")
 
-    print(f"\n  Space  {authored[0]:g} x {authored[1]:g} x {authored[2]:g}   "
-          f"separationDistance {SPACE_SEPARATION:g}  "
-          f"(was 20 x 1 x 1 at 3, which interpenetrated 99% of its neighbours)")
-    print(f"  LatticeScale = {SPACE_SEPARATION / MEASURED_SEPARATION:.4f} - every "
-          f"GyroidOctagonData distance is multiplied by this for Space.")
+    leaf = (SPACE_LENGTH, SPACE_THICKNESS, SPACE_THICKNESS)
+    print(f"\n  Space  {leaf[0]:g} x {leaf[1]:g} x {leaf[2]:g}   "
+          f"LatticeScale {SPACE_LATTICE_SCALE:.4f} (separationDistance "
+          f"{MEASURED_SEPARATION:g} -> {SPACE_SEPARATION:g}, spacing {measured_spacing:.2f})")
+    print(f"  {SPACE_LENGTH / measured_spacing:.2f} spans, aspect "
+          f"{SPACE_LENGTH / SPACE_THICKNESS:.0f}:1")
+
+    print("\nCLOSURE - zero-overlap is NOT the objective; a bounded crossing count is")
+    spacing, rows = report_closure(table, SPACE_SEPARATION, SPACE_THICKNESS,
+                                   (22.96, 26.0, 34.0, SPACE_LENGTH, 60.0))
+    print(f"  {'length':>8} {'spans':>6} {'crossings':>10} {'worst':>7}")
+    for length, spans, hits, worst in rows:
+        mark = "   <- authored" if abs(length - SPACE_LENGTH) < 0.01 else ""
+        print(f"  {length:>8.2f} {spans:>6.2f} {hits:>10d} {worst:>7.3f}{mark}")
+    saturated = rows[-1][2] <= rows[-2][2]
+    print(f"  crossings stop growing past ~2.6 spans: {'yes' if saturated else 'NO - investigate'}")
+    if not saturated:
+        raise SystemExit("the crossing count is still climbing at 60u - the strut is not "
+                         "running down an empty channel and this fit is wrong")
 
     print("\nLEVEL SPREAD - the Blob cell rolls these at Levels 1..5")
     for per_level in (1.15, 1.0):
-        row = level_spread(table, SPACE_SEPARATION, SPACE_THICKNESS, authored[0], per_level)
+        row = level_spread(table, SPACE_SEPARATION, SPACE_THICKNESS, SPACE_LENGTH, per_level)
         cells = "   ".join(
-            f"L{lv}: {'clear' if n == 0 else f'{n} overlaps'} ({length:.1f}u)"
-            for lv, length, n in row)
+            f"L{lv}: {n} crossings ({length:.1f}u)" for lv, length, n in row)
         print(f"  LeafScalePerLevel {per_level:<6g} {cells}")
-    print("  -> a lattice species must pin it at 1: the prism size is the LATTICE's, "
-          "not the plant's")
+    print("  -> pinned at 1: the prism size is the LATTICE's, not the plant's")
 
     if args.write:
         print()
-        for p in author(authored, SPACE_SEPARATION):
+        for p in author(leaf, SPACE_LATTICE_SCALE):
             print(f"  wrote {p.relative_to(ROOT)}")
     return 0
 
