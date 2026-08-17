@@ -19,6 +19,56 @@ namespace CosmicShore.Utility
         public bool OverrideDefaultPlantPeriod;
         public int NewPlantPeriod = int.MaxValue;
 
+        [Header("Population (the flora twin of the fauna pipeline - Docs/ECOSYSTEM.md §32)")]
+        [Tooltip("SEED FLOOR for this species: the periodic spawner only tops the live plant " +
+                 "count back up to this (bootstrap + extinction recovery). Above the floor the " +
+                 "population is driven by the plants' own REPRODUCTION and bounded by grazing - " +
+                 "the food web, not the spawner.\n\n" +
+                 "0 (the default) keeps the LEGACY behaviour: the spawner plants one every plant " +
+                 "period forever, bounded only by the cell's Frenzy gate. Authoring it is how a " +
+                 "species opts into the population model.")]
+        [Min(0)] public int PopulationSize = 0;
+
+        [Tooltip("Hard per-cell cap on this species' live PLANT count. A PERFORMANCE backstop - " +
+                 "each plant is a lifeform, so it carries a heart crystal whose collider is " +
+                 "always on (Docs/ECOSYSTEM.md §21.6). Size it to the collider budget, not to " +
+                 "where you want the forest to sit; grazing is the real control. 0 = uncapped.\n\n" +
+                 "Scaled together with the seed floor by SpawnProfileSO.FloraPopulationScale - a " +
+                 "scalar that moved only the floor would be clamped away by the cap and read as " +
+                 "doing nothing.")]
+        [Min(0)] public int MaxLivePopulation = 0;
+
+        [Header("Reproduction - a plant funds its own offspring out of GROWTH")]
+        [Tooltip("Prisms this plant must GROW per offspring. Growth is a plant's feeding: it " +
+                 "converts the space it managed to grow into into population, exactly as a " +
+                 "creature converts prey. 0 = this species does not reproduce; the seed floor is " +
+                 "then its only source.\n\n" +
+                 "Set it at (or near) the plant's own live-prism budget and the species reads as " +
+                 "a colonizer: a plant completes itself, seeds one neighbour, and only funds " +
+                 "another after grazing forces it to regrow. Lower converts growth to population " +
+                 "faster.")]
+        [Min(0)] public int GrowthPerOffspring = 0;
+
+        [Tooltip("Offspring seeded per birth.")]
+        [Min(1)] public int OffspringPerBirth = 1;
+
+        [Tooltip("Minimum seconds between births per plant. Throttles a burst when a heavily " +
+                 "grazed plant regrows quickly.")]
+        [Min(0f)] public float ReproductionCooldownSeconds = 5f;
+
+        [Tooltip("Fraction of its OWN live-prism budget a plant must currently hold before it " +
+                 "may seed. Guards the case a pure growth quota cannot see: a plant grazed to a " +
+                 "stub has still ACCUMULATED its quota across several regrow cycles, and a " +
+                 "near-dead plant seeding a child reads wrong. 0 (default) = no maturity gate.")]
+        [Range(0f, 1f)] public float MaturityFraction = 0f;
+
+        [Tooltip("How far from its parent an offspring is planted, in world units, for species " +
+                 "whose growth rule has no opinion about where the next plant goes.\n\n" +
+                 "A LATTICE species ignores this: AssembledFlora hands the daughter the exact " +
+                 "bond site its own growth would have filled next, which is what makes many " +
+                 "small plants add up to one continuous gyroid (Docs/ECOSYSTEM.md §32.2).")]
+        [Min(0f)] public float OffspringSpread = 60f;
+
         [Tooltip("Ground this species prefers when the cell's authored environment prepared " +
                  "planting sites (a garden's beds, trellis feet, hanging baskets, pool rim). " +
                  "A preference, not a requirement: a garden with none of the preferred kinds " +
@@ -39,16 +89,19 @@ namespace CosmicShore.Utility
                  "prefabs. Leave Enabled off to keep the prefab as authored.")]
         public FloraVariantTuning Variant = new();
 
-        [Tooltip("Level (1..5) this flora spawns at - scales the leaf prisms and the crystal " +
-                 "below (level 5 always carries, and drops, the largest crystal).")]
+        [Tooltip("Level (1..5) this flora SEEDS at. Default 1, and level is otherwise EARNED " +
+                 "by reproducing - it is never ROLLED at spawn (Docs/ECOSYSTEM.md §33). " +
+                 "Authoring it above 1 is a deliberate MODE surface; no shipped flora does, and " +
+                 "the Lifeform Matrix bench is its only current caller.\n\n" +
+                 "NOTE: a species with GrowthPerOffspring = 0 does not reproduce, so it can " +
+                 "never level - it is a level-1 forest forever. Author reproduction if that " +
+                 "species is meant to show a size range.")]
         [Range(1, 5)] public int InitialLevel = 1;
 
-        [Tooltip("Leaf prism scale multiplier per level above 1.")]
+        [Tooltip("Leaf prism scale multiplier per level above 1. Leaves only - the heart's size " +
+                 "is the ONE shared curve on ElementalCrystalSet, so it is the same for every " +
+                 "species and element at a given level.")]
         [Min(1f)] public float LeafScalePerLevel = 1.15f;
-
-        [Tooltip("Crystal scale multiplier per level above 1 - the death-drop powerup grows " +
-                 "with level (mass rewarded, still conserved).")]
-        [Min(1f)] public float CrystalScalePerLevel = 1.2f;
 
         [Header("Variant spread - one config spans the element x level matrix")]
         [Tooltip("Roll the ELEMENT per spawn instead of planting this config's single element. " +
@@ -64,9 +117,11 @@ namespace CosmicShore.Utility
                  "on THIS config, so the cell keeps its own density tuning.")]
         public List<FloraConfigurationSO> ElementPalette = new();
 
-        [Tooltip("Spawn across a band of LEVELS instead of always InitialLevel. Level is a pure " +
-                 "scale curve (leaves + dropped crystal), so this costs no extra colliders.")]
-        public LifeformLevelSpread Levels = new();
+        // A LEVEL spread used to sit here too (LifeformLevelSpread: min/max/rarity-falloff),
+        // rolling each seeding somewhere in 1..5. It is retired: level is now earned by
+        // reproducing, so a rolled seed level would hand a plant the record of a life it has
+        // not lived (Docs/ECOSYSTEM.md §33, superseding §17's level half). Element spread above
+        // is untouched - an element is an identity, not an achievement.
 
         [Header("Cell-level overrides - applied AFTER the rolled variant, so they survive SpreadElements")]
         [Tooltip("OUTER edge of the planting band this cell wants for this species, as a fraction " +
@@ -182,7 +237,10 @@ namespace CosmicShore.Utility
                 }
             }
 
-            return new LifeformVariantPick<FloraVariantTuning>(element, tuning, Levels.Roll(InitialLevel));
+            // Level is NOT rolled - every plant seeds at this config's InitialLevel (1 in every
+            // shipped asset) and earns the rest by reproducing. Inherited picks return above, so
+            // an offspring likewise starts at 1: acquired growth is not heritable.
+            return new LifeformVariantPick<FloraVariantTuning>(element, tuning, InitialLevel);
         }
 
         FloraConfigurationSO RollPaletteSibling()
@@ -245,6 +303,29 @@ namespace CosmicShore.Utility
                  "because a nested serialized class can zero-initialize and 'budget 0' must never " +
                  "be something an absent key can mean.")]
         public float MaxTotalSpawnedObjectsScale = -1f;
+
+        [Tooltip("Growth decisions per grow tick (AssembledFlora.itemsPerGrow) - how many " +
+                 "children a plant may decide in one tick. A pacing guard on the prefab; " +
+                 "exposed here so a cell that WANTS a different pace can author it " +
+                 "without re-pacing every other biome's plants. -1 = keep prefab.")]
+        public int ItemsPerGrow = -1;
+
+        [Tooltip("Random skips per grow tick (AssembledFlora.randomItems) - stochastic " +
+                 "raggedness in the growth front. 0 = deterministic, every branch advances " +
+                 "every tick. -1 = keep prefab.")]
+        public int RandomItems = -1;
+
+        [Tooltip("Seconds the youngest prism must have been alive before a LATTICE plant may " +
+                 "reproduce - 'fully grown' includes the grow-in BLOOM, which takes seconds, " +
+                 "while the frontier-idle test alone settles in fractions of one. This is what " +
+                 "makes a colony read as fully-formed plants begetting fully-formed plants " +
+                 "instead of generations cascading mid-bloom. -1 = the code default (4s).")]
+        public float MaturationSeconds = -1f;
+
+        [Tooltip("Grow-order instantiations executed per frame (AssembledFlora." +
+                 "maxSpawnsPerFrame) - the frame-cost throttle on the decided-order drain. " +
+                 "-1 = keep prefab.")]
+        public int MaxSpawnsPerFrame = -1;
 
         [Tooltip("OUTER edge of the planting band, as a fraction of the cell membrane radius. " +
                  "-1 = keep prefab.")]

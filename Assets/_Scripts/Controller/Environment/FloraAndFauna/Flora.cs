@@ -205,20 +205,36 @@ namespace CosmicShore.Gameplay
                 plantRadiusCellFractionMin = Mathf.Clamp01(tuning.PlantRadiusCellFractionMin);
         }
 
+        /// <summary>
+        /// True when this species' prism SIZE is dictated by its growth rule rather than being
+        /// free, so LEVEL must not scale it. A LATTICE species is the case
+        /// (<see cref="AssembledFlora"/>): its neighbour offsets are a measured bond table in
+        /// absolute local units (<see cref="OctagonNeighbor"/>, <c>SeparationDistance</c>), and
+        /// <c>GyroidAssembler.Start</c> captures the prism's target scale once — so growing the
+        /// leaf mid-life lays prisms the table no longer describes. It cannot be fixed by making
+        /// the offsets scale-aware either: a plant's EARLIER prisms were laid at the old size,
+        /// and two prism sizes cannot tile one lattice.
+        ///
+        /// <para>Such a species still earns levels and still grows a bigger heart — only the
+        /// leaf half of the level curve is suppressed.</para>
+        /// </summary>
+        protected virtual bool PrismSizeFixedByGrowthRule => false;
+
         /// <summary>Flora level: leaf prisms grow with the level (crystal handled by base).</summary>
-        public override void ApplyLevel(int level, float bodyScalePerLevel, float crystalScalePerLevel)
+        public override void ApplyLevel(int level, float bodyScalePerLevel)
         {
-            base.ApplyLevel(level, bodyScalePerLevel, crystalScalePerLevel);
-            if (Level > 1)
+            base.ApplyLevel(level, bodyScalePerLevel);
+            if (Level > 1 && !PrismSizeFixedByGrowthRule)
                 leafSize *= Mathf.Pow(Mathf.Max(1f, bodyScalePerLevel), Level - 1);
         }
 
         /// <summary>In-world level-up: future leaves grow a step too (existing leaves keep their
-        /// size - growth flows through the normal spawn channel, nothing is re-scaled in place).</summary>
+        /// size - growth flows through the normal spawn channel, nothing is re-scaled in place).
+        /// A lattice species keeps its authored leaf - see <see cref="PrismSizeFixedByGrowthRule"/>.</summary>
         public override bool LevelUp()
         {
             if (!base.LevelUp()) return false;
-            leafSize *= BodyScalePerLevel;
+            if (!PrismSizeFixedByGrowthRule) leafSize *= BodyScalePerLevel;
             return true;
         }
 
@@ -235,6 +251,256 @@ namespace CosmicShore.Gameplay
             StartCoroutine(GrowCoroutine());
         }
 
+        // -------------------------------------------------------------------
+        //  Lineage + reproduction - the population driver (Docs/ECOSYSTEM.md §32).
+        //  The plant-side mirror of Fauna.AssignLineage / TryReproduce: the periodic
+        //  spawner is demoted to a SEEDER (it only tops a species back up to its floor)
+        //  and the standing forest is grown by the plants themselves and grazed back
+        //  down by the food web. A plant with no lineage (a toy clone, a microscene
+        //  release) never reproduces - same rule a manager-spawned fauna follows.
+        // -------------------------------------------------------------------
+
+        Cell hostCell;
+        FloraConfigurationSO sourceConfig;
+
+        // This individual's rolled variant (element + the block expressing it + level).
+        // Passed to offspring so a lineage breeds true instead of re-rolling per birth.
+        LifeformVariantPick<FloraVariantTuning>? _variantPick;
+        bool lineageRegistered;
+        int _growthSinceBirth;
+        float _lastBirthTime = float.NegativeInfinity;
+
+        /// <summary>The species config this plant was spawned from (null for toy/microscene plants).</summary>
+        public FloraConfigurationSO SourceConfig => sourceConfig;
+
+        /// <summary>
+        /// This plant's live-prism budget - what <see cref="FloraVariantTuning.MaxTotalSpawnedObjects"/>
+        /// resolved to on this individual. Each flora family owns its own field (they ship very
+        /// different budgets), so the base only needs to be able to READ it, for the maturity
+        /// gate. 0 = "this family has no budget", which skips the gate.
+        /// </summary>
+        protected virtual int PrismBudget => 0;
+
+        /// <summary>
+        /// Binds this plant to its species lineage: the cell whose population it belongs to and
+        /// the config that defines the species. Registers it in the cell's per-species live
+        /// count (unregistered in OnDestroy). Called by <c>CellLifeSpawnerBase.SpawnFlora</c> -
+        /// the one canonical spawn path every producer already routes through - and by a parent
+        /// for its offspring, since heredity is what lets reproduction recurse.
+        /// </summary>
+        public void AssignLineage(Cell host, FloraConfigurationSO config,
+            LifeformVariantPick<FloraVariantTuning>? inherit = null)
+        {
+            hostCell = host;
+            sourceConfig = config;
+            _variantPick = inherit;
+
+            if (host && config && !lineageRegistered)
+            {
+                host.RegisterLiveFlora(this);
+                lineageRegistered = true;
+            }
+        }
+
+        /// <summary>
+        /// A subclass calls this each time it actually grows prisms. <b>Growth is a plant's
+        /// feeding</b> (Docs/ECOSYSTEM.md §32): it is what converts space into population, the
+        /// way prey converts into population for a creature - so every grown prism advances the
+        /// birth counter. The decision itself is taken once per grow tick (see
+        /// <see cref="GrowCoroutine"/>), not per prism.
+        ///
+        /// <para><b>A new flora family must call this</b> at the point it actually lays a prism,
+        /// or its species can never reproduce. The consequence of forgetting is benign (that
+        /// family is simply seeder-driven, as every flora was before) - but it is silent.</para>
+        ///
+        /// <para>This is also what keeps the population bounded with NO imposed death: a plant
+        /// at its budget has stopped growing, so it has stopped funding children, and it only
+        /// funds another one after the food web grazes it and it regrows.</para>
+        /// </summary>
+        protected void NotifyGrew(int prisms = 1)
+        {
+            if (prisms > 0) _growthSinceBirth += prisms;
+        }
+
+        void TryReproduce()
+        {
+            var cfg = sourceConfig;
+            var host = hostCell;
+            if (!cfg || !host || cfg.GrowthPerOffspring <= 0 || !cfg.FloraPrefab) return;
+
+            // Reproduction is PRODUCTION, so it freezes with planting at Frenzy and resumes on
+            // its own when an active force (grazing, a vessel ability) brings the cell back
+            // under the hysteresis floor. Cell.FloraPlantingEnabled is the single source of
+            // truth - a new plant is a planting, whichever producer asked for it.
+            if (cell && !cell.FloraPlantingEnabled) return;
+
+            // The cap is the CELL's, not the config's: a biome that scales its forest
+            // (SpawnProfileSO.FloraPopulationScale) has to scale what reproduction may fill to,
+            // or the seeder and the plants would be working to two different ceilings.
+            if (!FloraReproductionRules.ShouldSeed(
+                    _growthSinceBirth, cfg.GrowthPerOffspring,
+                    Time.time - _lastBirthTime, cfg.ReproductionCooldownSeconds,
+                    healthTracker != null ? healthTracker.Count : 0, PrismBudget, cfg.MaturityFraction,
+                    host.GetLiveFloraCount(cfg), host.ResolveFloraCap(cfg)))
+                return;
+
+            int offspring = Mathf.Max(1, cfg.OffspringPerBirth);
+            int born = 0;
+            for (int i = 0; i < offspring; i++)
+            {
+                // Re-check the cap per birth so a multi-offspring birth can't overshoot the
+                // performance backstop.
+                if (host.IsFloraAtCap(cfg)) break;
+                if (!SpawnOffspring(host, cfg)) break;
+                born++;
+            }
+
+            // The quota is spent only by a birth that actually happened. A plant blocked by the
+            // cap - or by having nowhere to put a child - stays ARMED, which is the whole point:
+            // a full plant has stopped growing, so it will never be re-armed by another growth
+            // tick, and without this it could never fill the gap left when a neighbour is grazed
+            // out. Staying armed makes that gap-filling automatic and costs nothing (the check
+            // only re-runs when something grows).
+            if (born <= 0) return;
+
+            _lastBirthTime = Time.time;
+            _growthSinceBirth = 0;
+            NotifyReproduced();
+        }
+
+        /// <summary>
+        /// <b>A plant earns its level by reproducing</b> (Docs/ECOSYSTEM.md §33). Every flora is
+        /// born at level 1; each birth EVENT — not each offspring, so a multi-offspring birth is
+        /// still one rung — grows it a step, so a big plant is the visible record of a plant that
+        /// has successfully seeded the cell several times over, and a level-5 plant is the
+        /// matriarch of a line rather than a lucky spawn roll.
+        ///
+        /// <para>This keeps selection endogenous: level is not scored by a designer, it is what
+        /// survived long enough to breed four times. It is also self-braking against the volume
+        /// ladder — reproduction is production, so it freezes with planting at Frenzy, which
+        /// freezes levelling with it; and a plant at its prism budget has stopped growing, so
+        /// its bigger leaves only actually appear after the food web grazes it and it regrows.</para>
+        /// </summary>
+        void NotifyReproduced() => LevelUp();
+
+        /// <summary>
+        /// Spawns exactly ONE offspring right now, subject only to the universal production
+        /// gates (the Frenzy planting freeze and the cell cap). This is the entry point for a
+        /// POPULATION-coordinated reproduction model - the gyroid octagon colony's
+        /// one-birth-per-cycle (Docs/ECOSYSTEM.md §32.7) - where WHEN and WHERE to reproduce
+        /// is decided at the population level rather than by this plant's own growth quota.
+        /// The per-plant quota path (<see cref="TryReproduce"/>) is untouched for species
+        /// that reproduce individually.
+        /// </summary>
+        protected bool TrySpawnOneOffspring()
+        {
+            var cfg = sourceConfig;
+            var host = hostCell;
+            if (!cfg || !host || !cfg.FloraPrefab) return false;
+            if (cell && !cell.FloraPlantingEnabled) return false;
+            if (host.IsFloraAtCap(cfg)) return false;
+            if (!SpawnOffspring(host, cfg)) return false;
+
+            // Same earning rule as the per-plant quota path - a birth is a birth however the
+            // population decided to schedule it (the octagon colony's one-per-cycle drive).
+            NotifyReproduced();
+            return true;
+        }
+
+        bool SpawnOffspring(Cell host, FloraConfigurationSO cfg)
+        {
+            if (!TryResolveOffspringPlacement(out var position, out var rotation, out var up))
+                return false;
+
+            // Same lifecycle as a spawner planting: the ONE canonical spawn path applies the
+            // variant, the cell overrides and the level, then Initialize plants and starts
+            // growth - so an offspring is an ordinary plant of its species in every respect,
+            // including the bloom-in its prisms already animate (continuity of existence).
+            //
+            // The pinned position is what stops Plant() dispersing the child randomly across
+            // the membrane: a daughter belongs NEXT TO ITS PARENT, and for a lattice species it
+            // belongs at one exact bond site (see AssembledFlora.TryResolveOffspringPlacement).
+            //
+            // Heredity: the child inherits this plant's variant pick - its element and the level
+            // it seeded at - rather than rolling a fresh identity. In-world level-ups (the
+            // Shepherd joust) are NOT inherited: acquired growth is not heritable.
+            // Offspring inherit the parent's domain rather than re-rolling, and it is passed IN
+            // rather than applied after the fact: Initialize files the child's first prisms into
+            // the cell's per-domain grids on its way through, so a SetTeam afterwards would have
+            // binned them under a rolled colour first. Uniform seeding across the three domains
+            // stays the SPAWNER's job (the no-domain-asymmetry invariant); within a lineage a
+            // plant's children are its own colour, exactly as a creature's are.
+            var child = CellLifeSpawnerBase.SpawnFlora(
+                host, cfg.FloraPrefab, excludedDomain: null, config: cfg,
+                spawnPosition: position, spawnUp: up, spawnRotation: rotation,
+                inherit: _variantPick, preInitialize: ConfigureOffspring, domainOverride: domain);
+
+            if (!child) return false;
+            return true;
+        }
+
+        /// <summary>
+        /// Where this plant's next offspring goes. Default: a point at
+        /// <see cref="FloraConfigurationSO.OffspringSpread"/> from the parent, kept inside this
+        /// species' planting band (so a child can never be seeded into the nucleus, whose mass
+        /// the food web is deliberately never steered to). Rotation is unconstrained.
+        ///
+        /// <para>A species whose growth rule DOES have an opinion about where the next plant
+        /// belongs overrides this - <see cref="AssembledFlora"/> hands the daughter the exact
+        /// bond site its own lattice would have grown into next, which is what makes many small
+        /// plants add up to one continuous minimal surface.</para>
+        /// </summary>
+        /// <returns>False to skip this birth entirely (no site available).</returns>
+        protected virtual bool TryResolveOffspringPlacement(
+            out Vector3 position, out Quaternion rotation, out Vector3? up)
+        {
+            float spread = sourceConfig ? Mathf.Max(1f, sourceConfig.OffspringSpread) : 60f;
+            position = ClampToPlantingBand(transform.position + Random.onUnitSphere * spread);
+            rotation = transform.rotation;
+            up = null;
+            return true;
+        }
+
+        /// <summary>
+        /// Optional per-family setup applied to an offspring AFTER its variant/level are applied
+        /// and BEFORE <see cref="Initialize"/> - the window in which a plant's growth rule can be
+        /// seeded (see <see cref="AssembledFlora"/>, which programs the daughter's first
+        /// assembler so its lattice continues the parent's).
+        /// </summary>
+        protected virtual void ConfigureOffspring(Flora child) { }
+
+        /// <summary>
+        /// Pulls a point back into this species' planting band around the cell centre: never
+        /// inside the nucleus (that mass is the territorial claim, is excluded from the fauna
+        /// targeting grids, and shares its volume with the crystal respawn) and never outside
+        /// the band's outer edge, where <c>Cell.ContainsPosition</c> would reject the prisms.
+        /// Returns the point untouched when the species has no band authored.
+        /// </summary>
+        protected Vector3 ClampToPlantingBand(Vector3 point)
+        {
+            if (!cell || cell.MembraneRadius <= 0f) return point;
+
+            Vector3 centre = cell.transform.position;
+            float outer = plantRadiusCellFraction > 0f
+                ? cell.MembraneRadius * plantRadiusCellFraction
+                : cell.MembraneRadius;
+            float inner = Mathf.Min(cell.ExpectedNucleusWorldRadius, outer);
+
+            Vector3 offset = point - centre;
+            float d = offset.magnitude;
+            if (d > inner && d < outer) return point;
+            if (d < 0.001f) offset = Random.onUnitSphere * Mathf.Max(inner, 1f);
+            else offset = offset / d * Mathf.Clamp(d, inner, outer);
+            return centre + offset;
+        }
+
+        protected virtual void OnDestroy()
+        {
+            if (lineageRegistered && hostCell)
+                hostCell.UnregisterLiveFlora(this);
+            lineageRegistered = false;
+        }
+
         public override void RemoveHealthBlock(HealthPrism healthPrism, string killername = "")
         {
             base.RemoveHealthBlock(healthPrism);
@@ -248,6 +514,16 @@ namespace CosmicShore.Gameplay
                 if (isGrowing)
                 {
                     Grow();
+
+                    // Reproduction is decided once per grow tick rather than once per grown
+                    // prism: the quota itself is EARNED by growth (NotifyGrew), so this only
+                    // chooses when the decision is re-evaluated - and re-evaluating on the tick
+                    // is what lets a plant that banked its quota while the species was at its
+                    // cap fill the gap the moment a neighbour is grazed out. A plant with no
+                    // banked growth fails on the first compare, so an unauthored species pays
+                    // two int reads per tick and nothing else.
+                    TryReproduce();
+
                     yield return new WaitForSeconds(growPeriod);
                 }
                 else

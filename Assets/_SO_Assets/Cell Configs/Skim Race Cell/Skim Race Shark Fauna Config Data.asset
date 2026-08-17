@@ -16,3 +16,4 @@ MonoBehaviour:
   InitialSpawnCount: 2
   PopulationSize: 2
   SpawnProbability: 1
+  FeedsPerLevel: 25

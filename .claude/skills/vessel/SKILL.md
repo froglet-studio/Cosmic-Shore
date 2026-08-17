@@ -49,6 +49,10 @@ asset, the prefab, and the code are the record.** Before changing a vessel:
    including HUD icons that live in the **vessel** prefab, not the HUD variant (the Rhino's row
    was missed for exactly this reason), and `m_Modifications` overrides on nested prefabs.
 3. Run (or, since you cannot run Unity, reason from the source of) the fleet auditors:
+   **FrogletTools > Vessels > Wire Vessel Ability Row** (`VesselAbilityRowWirer` — builds or repairs
+   ANY vessel's four-icon row from nothing at the fleet-standard bands; idempotent, never touches
+   sprites, adopts authored gauges by name. This is the mechanical half of taking a vessel from 0/4
+   to 4/4 once its map is designed),
    **FrogletTools > Vessels > Audit Vessel Ability Rows**, **Audit Vessel Skimmers** and **Audit
    Vessel Elemental Morphs** — all asset-only, all reuse the exact runtime discovery code, so
    report and game cannot disagree.
@@ -266,6 +270,20 @@ applies to new abilities, new resources on the meter list, and anything that add
     in, which is usually neither state you wanted: legs meant to read gear-down-when-slow /
     tucked-at-speed need `Lerp(+hang, -tuck, speed01)`, not `splay * (1 - speed01)`.
     (Scarab hull, 2026-08-15.)
+
+25. **A named accessor that LOOKS like a geometry is often one factor of it.** Rules 4a/4b cover
+    an authored number that isn't the effective one; this is its sibling — a property whose name
+    promises the real dimension while its body carries only the base term, with the multipliers
+    applied at the *use* site. `VesselPrismController.TrailZScale` is `BaseScale.z` alone, but a
+    laid trail prism is `BaseScale.z × ZScaler × boostScale × ∛(MASS volume multiplier)`. The
+    `waitTillOutsideSkimmer` clearance delay divided by the accessor, so an upgraded vessel's
+    prism collider switched on while the prism was still inside the ship — and the symptom
+    ("I clip my own trail after upgrading") points at collision code, not at a scale accessor
+    three files away. **Read the accessor's BODY and compare it to the expression at the spawn
+    site**; if the spawn site multiplies and the accessor does not, the accessor is a base term
+    and every consumer sizing real geometry off it is wrong by the same factor. When you fix one,
+    document the accessor as a base term so the next reader does not re-adopt it.
+    (Self-trail contact, 2026-08-17.)
 
 ## 5. Audit, then hand back verification (you cannot run Unity; the human is the gate)
 

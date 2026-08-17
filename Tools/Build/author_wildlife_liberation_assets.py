@@ -428,6 +428,7 @@ for i in INTENSITIES:
   PopulationSize: {seed}
   SpawnProbability: 1
   FeedsPerOffspring: {feeds}
+  FeedsPerLevel: {feeds * 2}
   OffspringPerBirth: 1
   ReproductionCooldownSeconds: {cooldown}
   MaxLivePopulation: {cap}
@@ -438,16 +439,10 @@ for i in INTENSITIES:
   Element: 0
   InitialLevel: {level}
   BodyScalePerLevel: 1.15
-  CrystalScalePerLevel: 1.2
   LevelGrowSeconds: 1
 """ + (TADPOLE_VARIANT if species == "Tadpole" else PLAIN_VARIANT) + f"""  SpreadElements: 1
   ElementPalette:
-{palette}  Levels:
-    Enabled: 0
-    MinLevel: {level}
-    MaxLevel: {level}
-    RarityFalloff: 2
-""")
+{palette}""")
         emit(fauna_asset_path(species, room, i) + ".meta",
              asset_meta(G_ASSET[f"Fauna/{species}/{room}/{i}"]))
 

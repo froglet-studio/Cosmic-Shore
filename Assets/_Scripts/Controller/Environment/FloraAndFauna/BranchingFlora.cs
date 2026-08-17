@@ -22,6 +22,10 @@ namespace CosmicShore.Gameplay
         [Tooltip("Maximum LIVE prisms this flora can hold. Consumption frees budget - a grazed " +
                  "flora regrows toward this cap instead of staying a permanent un-growing fragment.")]
         [SerializeField] int maxTotalSpawnedObjects = 1000;
+
+        /// <summary>The live-prism budget this individual resolved to - the base reads it for
+        /// the reproduction maturity gate (see <see cref="Flora.PrismBudget"/>).</summary>
+        protected override int PrismBudget => maxTotalSpawnedObjects;
         [SerializeField] float leafChance = 0.05f;
         [SerializeField] float leafChanceIncrement = 0.01f;
 
@@ -178,6 +182,8 @@ namespace CosmicShore.Gameplay
                         var newHealthblock = newBranch.gameObject.GetComponent<HealthPrism>();
                         AddHealthBlock(newHealthblock);
                         newHealthblock.Initialize();
+                        // Growth is this plant's feeding - see Flora.NotifyGrew.
+                        NotifyGrew();
                         if (SecondarySpawn && !hasPlantedSecondary)
                         {
                             var distance = newHealthblock.transform.position - crystal.transform.position;

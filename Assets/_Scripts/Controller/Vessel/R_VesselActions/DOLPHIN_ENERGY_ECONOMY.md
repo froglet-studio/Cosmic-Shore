@@ -437,15 +437,15 @@ and the gape froze.
 
 Fleet-standard row (charge → mass → space → time, the same order as the element flowers), on
 the Squirrel's exact anchor bands. `DolphinHUDVariant.prefab` is authored;
-**FrogletTools > Vessels > Wire Dolphin Ability Row** re-binds a broken one without
+**FrogletTools > Vessels > Wire Vessel Ability Row** re-binds a broken one without
 re-deriving the layout.
 
 | slot | icon | shows |
 |---|---|---|
-| Charge | omni-crystal + yield pips | the seeding recharge, and how many crystals the next cycle plants |
-| Mass | the vessel's own 11-step boost ring | the boost banked by drifting |
-| Space | cone-blast icon + tally | prisms the last cone claimed |
-| Time | the vessel's own jaw silhouettes | banked energy, as a gape — **lime when full** |
+| Charge | a generated blast-PROFILE capsule + a two-line living tally | the next blast's cross-section (extent = energy, roundness = Charge), and what the last blast did to pilots and creatures |
+| Mass | omni-crystal icon | the seeding recharge, and — by colour — whether the next seed is a free-for-all crystal or a team-locked one |
+| Space | the vessel's own jaw silhouettes + a prism tally | banked energy, as a gape — **lime when full** — and prisms the last cone claimed |
+| Time | the vessel's own 11-step boost ring | the boost banked by drifting |
 
 Two conventions this HUD deviates on, both deliberate:
 
@@ -456,13 +456,12 @@ Two conventions this HUD deviates on, both deliberate:
   this vessel has**, which is why `SetDriftBoost` writes nothing but the ring's sprite: any
   per-event transform write on an icon wipes the bump.
 
-A **pip stands for an EXTRA crystal in the seeding cycle** — one beyond the first, which the
-main icon already represents. So an un-upgraded Dolphin shows no pips at all, and the mini
-crystal appearing *is* Twin Seed becoming visible.
-
-*(Crystal seeding went PASSIVE on 2026-08-14 — nothing is carried any more, so the pips moved
-from "crystals in hand" to "crystals per cycle" and the main icon became a pure recharge fill.
-Mechanic: `DOLPHIN_CRYSTAL_SEEDING.md`.)*
+*(The row above was re-cut on **2026-08-17**, when the whole elemental map was re-assigned so each
+element owns one orthogonal dimension of the single crystal-blast act. Charge took the Echo Sight
+and the blast's thickness, Mass took crystal seeding, Space narrowed to reach, and every slot moved
+band. The **carry/yield pips are retired** along with Twin Seed — the ability plants exactly one
+crystal per cycle at every level, and the Mass upgrade changes the crystal's TIER instead, which the
+slot says in colour. Full record: `DOLPHIN_CRYSTAL_SEEDING.md` §8–§12.)*
 
 ### Why the boost ring writes nothing but its sprite
 

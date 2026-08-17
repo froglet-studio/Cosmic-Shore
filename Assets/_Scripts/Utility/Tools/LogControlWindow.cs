@@ -19,6 +19,8 @@ namespace CosmicShore.Utility
         const string PrefWarningsEnabled = "CSDebug_WarningsEnabled";
         const string PrefErrorsEnabled = "CSDebug_ErrorsEnabled";
         const string PrefUnityLoggerEnabled = "CSDebug_UnityLoggerEnabled";
+        const string PrefVerboseChannels = "CSDebug_VerboseChannels";
+        const string PrefStackTracePrefix = "CSDebug_StackTrace_";
         const string PrefBootstrapScene = "Load Main_Menu Scene";
         const int Pad = 12;
 
@@ -403,6 +405,76 @@ namespace CosmicShore.Utility
             DrawLogToggle("Logs",     CSDebug.LogEnabled,      v => { CSDebug.LogEnabled = v; SavePrefs(); });
             DrawLogToggle("Warnings", CSDebug.WarningsEnabled, v => { CSDebug.WarningsEnabled = v; SavePrefs(); });
             DrawLogToggle("Errors",   CSDebug.ErrorsEnabled,   v => { CSDebug.ErrorsEnabled = v; SavePrefs(); });
+
+            GUILayout.Space(10);
+            DrawSubSectionLabel("Diagnostic Channels");
+
+            EditorGUILayout.BeginHorizontal();
+            GUILayout.Space(Pad);
+            EditorGUILayout.LabelField(
+                "Bring-up telemetry for a system that already works - off by default so a past " +
+                "development cycle's trace is neither console spam nor deleted knowledge. " +
+                "Requires \"Logs\" above to be on.",
+                EditorStyles.wordWrappedMiniLabel);
+            EditorGUILayout.EndHorizontal();
+
+            GUILayout.Space(4);
+
+            foreach (var channel in ChannelRows)
+                DrawLogToggle(
+                    channel.Label,
+                    (CSDebug.VerboseChannels & channel.Flag) != 0,
+                    v =>
+                    {
+                        if (v) CSDebug.VerboseChannels |= channel.Flag;
+                        else CSDebug.VerboseChannels &= ~channel.Flag;
+                        SavePrefs();
+                    });
+
+            GUILayout.Space(10);
+            DrawSubSectionLabel("Console Stack Traces");
+
+            EditorGUILayout.BeginHorizontal();
+            GUILayout.Space(Pad);
+            EditorGUILayout.LabelField(
+                "Full traces on an info log bury the message under ~40 lines of native Unity " +
+                "frames. ScriptOnly keeps the managed frames (and double-click-to-source); None " +
+                "drops the trace entirely. This is a live override - the project default lives " +
+                "in ProjectSettings and applies on the next Editor launch.",
+                EditorStyles.wordWrappedMiniLabel);
+            EditorGUILayout.EndHorizontal();
+
+            GUILayout.Space(4);
+
+            DrawStackTraceRow("Log", LogType.Log);
+            DrawStackTraceRow("Warning", LogType.Warning);
+            DrawStackTraceRow("Error", LogType.Error);
+            DrawStackTraceRow("Exception", LogType.Exception);
+        }
+
+        // Channels are listed here rather than reflected off the enum so each one carries a
+        // human label; adding a CSLogChannel member without a row here simply leaves it
+        // un-toggleable from the toolbox (and CSLogChannel's own doc comment says not to add
+        // one until real call sites use it).
+        static readonly (CSLogChannel Flag, string Label)[] ChannelRows =
+        {
+            (CSLogChannel.NetworkFlow,  "[FLOW-n] spawn / session flow"),
+            (CSLogChannel.GyroidColony, "[GyroidColony] lattice telemetry"),
+        };
+
+        void DrawStackTraceRow(string label, LogType type)
+        {
+            EditorGUILayout.BeginHorizontal();
+            GUILayout.Space(Pad);
+            EditorGUILayout.LabelField(label, _contentLabelStyle, GUILayout.Width(90));
+            var current = Application.GetStackTraceLogType(type);
+            var next = (StackTraceLogType)EditorGUILayout.EnumPopup(current);
+            if (next != current)
+            {
+                Application.SetStackTraceLogType(type, next);
+                EditorPrefs.SetInt(PrefStackTracePrefix + type, (int)next);
+            }
+            EditorGUILayout.EndHorizontal();
         }
 
         // ═════════════════════════════════════════════════════════════════════
@@ -1376,6 +1448,7 @@ namespace CosmicShore.Utility
             EditorPrefs.SetBool(PrefLogEnabled, CSDebug.LogEnabled);
             EditorPrefs.SetBool(PrefWarningsEnabled, CSDebug.WarningsEnabled);
             EditorPrefs.SetBool(PrefErrorsEnabled, CSDebug.ErrorsEnabled);
+            EditorPrefs.SetInt(PrefVerboseChannels, (int)CSDebug.VerboseChannels);
         }
 
         internal static void LoadPrefs()
@@ -1384,8 +1457,21 @@ namespace CosmicShore.Utility
             CSDebug.WarningsEnabled = EditorPrefs.GetBool(PrefWarningsEnabled, true);
             CSDebug.ErrorsEnabled = EditorPrefs.GetBool(PrefErrorsEnabled, true);
 
+            // Channels default to None so a fresh clone is quiet; the CSDebug static resets on
+            // every domain reload, which is why this runs from FrogletTools' [InitializeOnLoad]
+            // rather than only when the toolbox window is open.
+            CSDebug.VerboseChannels = (CSLogChannel)EditorPrefs.GetInt(PrefVerboseChannels, (int)CSLogChannel.None);
+
             if (EditorPrefs.HasKey(PrefUnityLoggerEnabled))
                 Debug.unityLogger.logEnabled = EditorPrefs.GetBool(PrefUnityLoggerEnabled, true);
+
+            // Stack-trace overrides are per-developer; the project default is in ProjectSettings.
+            foreach (LogType type in Enum.GetValues(typeof(LogType)))
+            {
+                string key = PrefStackTracePrefix + type;
+                if (EditorPrefs.HasKey(key))
+                    Application.SetStackTraceLogType(type, (StackTraceLogType)EditorPrefs.GetInt(key));
+            }
         }
     }
 }

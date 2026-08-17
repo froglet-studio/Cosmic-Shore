@@ -1546,7 +1546,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5bf98bef1c4b4178bc5562c99eaf0c12, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  crystalPrefab: {fileID: 2116889879390265659, guid: 922e4ca81ec32e9468c23c3a12a3c65c,
+  crystalPrefab: {fileID: 5535990081244205891, guid: 54802b89e00a0ed4281025fa5e770811,
+    type: 3}
+  upgradedCrystalPrefab: {fileID: 2116889879390265659, guid: 922e4ca81ec32e9468c23c3a12a3c65c,
     type: 3}
   config: {fileID: 11400000, guid: 205c7e57ccef34f4f858f04857f7c542, type: 2}
   OnMiniGameTurnEnd: {fileID: 11400000, guid: 91ea9101389ea884babdf61e446ced27, type: 2}
@@ -2209,12 +2211,12 @@ MonoBehaviour:
   waitTillOutsideSkimmer: 1
   shielded: 0
   trailVolume:
-    Enabled: 1
+    Enabled: 0
     Value: 1
     Min: 1
-    Max: 2.5
-    element: 2
-  massUpgradeShieldsTrail: 1
+    Max: 1
+    element: 0
+  massUpgradeShieldsTrail: 0
   offset: 0
   Gap: 1
   MinimumGap: 1
@@ -2456,7 +2458,11 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   baseView: {fileID: 117603555638778835}
   view: {fileID: 117603555638778835}
+  blastEffect: {fileID: 11400000, guid: 4392889d8d23e384ebeb710b68640072, type: 2}
+  energyResourceName: Energy
   energyResourceIndex: 0
+  driftBoostResourceName: Boost
+  driftBoostResourceIndex: 1
 --- !u!114 &5259057883249728580
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -3829,3 +3835,10 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   blastEffect: {fileID: 11400000, guid: 4392889d8d23e384ebeb710b68640072, type: 2}
+  vesselHighlightFadeSeconds: 0.18
+  vesselHighlightGain: 4
+  vesselHighlightSaturation: 0.85
+  vesselHaloScale: 2.4
+  vesselHaloMinScreenRadius: 0.055
+  vesselHaloIntensity: 1.4
+  vesselHaloEnabled: 1

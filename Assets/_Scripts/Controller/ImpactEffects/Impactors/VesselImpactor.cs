@@ -6,6 +6,7 @@ using UnityEngine;
 using UnityEngine.Serialization;
 using CosmicShore.Data;
 using CosmicShore.Gameplay;
+using CosmicShore.ScriptableObjects;
 using CosmicShore.Utility;
 namespace CosmicShore.Gameplay
 {
@@ -90,6 +91,17 @@ namespace CosmicShore.Gameplay
             switch (impactee)
             {
                 case PrismImpactor prismImpactee:
+                    // A pilot does not ram the ribbon still coming out of their own ship. Sits
+                    // above the SFX and the whole effect loop, because a self-ram used to cost
+                    // real gameplay: VesselDamagePrismEffect shreds your own fresh trail, and on
+                    // the Dolphin VesselChangeResourceByPrismEffect / ...ChangeBoostByPrismEffect
+                    // halve the skim energy and the charged boost you just banked — none of the
+                    // three carries a self-guard of its own (VesselChangeSpeedByPrismEffectSO's
+                    // is domain-scoped, which is a different, weaker rule). OWNER-scoped and
+                    // time-boxed, so another pilot's trail and this pilot's older trail still
+                    // hit exactly as before. See SelfTrailContactConfigSO.
+                    if (SelfTrailContactConfigSO.SuppressesHullContact(prismImpactee.Prism, Vessel?.VesselStatus))
+                        return;
                     // While a prism's engaged shell owns contact, the shell tier
                     // (PrismShellContactManager) dispatches this pair at the visible
                     // shell surface — suppress the box-trigger dispatch for the same

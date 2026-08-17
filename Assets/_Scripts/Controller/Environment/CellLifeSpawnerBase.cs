@@ -126,8 +126,34 @@ namespace CosmicShore.Gameplay
             return true;
         }
 
+        /// <param name="spawnRotation">
+        /// Orientation to instantiate at. Only a species whose growth rule is ORIENTED cares -
+        /// an <see cref="AssembledFlora"/> seeds its first prism at the flora's own rotation, so
+        /// a daughter continuing a parent's lattice must be born already aligned to it. Null
+        /// keeps the legacy identity rotation.
+        /// </param>
+        /// <param name="inherit">
+        /// A parent's variant pick, passed when this plant is an OFFSPRING: the lineage keeps
+        /// its element and the level it seeded at instead of re-rolling a fresh identity every
+        /// birth. Null rolls from the config, which with spread off is just the authored values.
+        /// </param>
+        /// <param name="preInitialize">
+        /// Per-family setup applied after the variant/level and BEFORE <c>Initialize</c> - the
+        /// only window in which a plant's growth rule can be seeded.
+        /// </param>
+        /// <param name="domainOverride">
+        /// Plant in THIS domain instead of rolling one. Used by reproduction, where a child is its
+        /// parent's colour (the fauna rule, §6.1) - and it must be applied HERE rather than with a
+        /// <c>SetTeam</c> after the fact, because <c>Initialize</c> files the plant's first prisms
+        /// into the cell's per-domain grids on the way through. The uniform Jade/Ruby/Gold roll is
+        /// still the SPAWNER's job, so the no-domain-asymmetry invariant is untouched.
+        /// </param>
         public static Flora SpawnFlora(Cell host, Flora floraPrefab, Domains? excludedDomain,
-            FloraConfigurationSO config = null, Vector3? spawnPosition = null, Vector3? spawnUp = null)
+            FloraConfigurationSO config = null, Vector3? spawnPosition = null, Vector3? spawnUp = null,
+            Quaternion? spawnRotation = null,
+            LifeformVariantPick<FloraVariantTuning>? inherit = null,
+            Action<Flora> preInitialize = null,
+            Domains? domainOverride = null)
         {
             if (!host || !floraPrefab) return null;
 
@@ -139,8 +165,8 @@ namespace CosmicShore.Gameplay
             LoadInsights.Count("Flora spawned during load");
 
             Vector3 pos = spawnPosition ?? host.transform.position;
-            var flora = UnityEngine.Object.Instantiate(floraPrefab, pos, Quaternion.identity);
-            flora.domain = PickRandomDomain(excludedDomain);
+            var flora = UnityEngine.Object.Instantiate(floraPrefab, pos, spawnRotation ?? Quaternion.identity);
+            flora.domain = domainOverride ?? PickRandomDomain(excludedDomain);
 
             // A caller-specified position PINS the planting spot - Plant() implementations
             // honor it instead of dispersing the flora across the cell (the Lifeform Matrix
@@ -157,11 +183,13 @@ namespace CosmicShore.Gameplay
             // Initialize - the leaf prism size and crystal lookup are consumed there.
             if (config)
             {
-                // One roll decides this plant's variant: which element it carries, the block
-                // that expresses that element, and the level it seeds at. With spread off the
-                // roll returns the config's authored Element / Variant / InitialLevel, so the
-                // legacy per-element-config path is unchanged.
-                var pick = config.RollVariant();
+                // One roll decides this plant's variant: which element it carries and the block
+                // that expresses that element. With spread off the roll returns the config's
+                // authored Element / Variant, so the legacy per-element-config path is
+                // unchanged. An OFFSPRING passes its parent's pick, which RollVariant returns
+                // verbatim - a lineage breeds true. The LEVEL is never rolled: every plant seeds
+                // at level 1 and earns the rest by reproducing (Docs/ECOSYSTEM.md §33).
+                var pick = config.RollVariant(inherit);
 
                 flora.ApplyElement(pick.Element);
                 if (pick.Tuning is { Enabled: true })
@@ -179,13 +207,54 @@ namespace CosmicShore.Gameplay
                 if (config.TryBuildCellOverrideTuning(plantBudgetScale, out var cellOverrides))
                     flora.ApplyVariantTuning(cellOverrides);
 
-                flora.ApplyLevel(pick.Level, config.LeafScalePerLevel, config.CrystalScalePerLevel);
+                flora.ApplyLevel(pick.Level, config.LeafScalePerLevel);
+
+                // Lineage BEFORE Initialize, so the plant is already counted in the cell's
+                // per-species population by the time its first growth tick can try to seed an
+                // offspring - otherwise a species could momentarily overshoot its own cap.
+                // Carries the pick it actually got, so its own offspring inherit that identity
+                // rather than the (possibly null) one passed in here.
+                flora.AssignLineage(host, config, pick);
             }
+
+            preInitialize?.Invoke(flora);
 
             flora.Initialize(host);
 
             RegisterSpawned(host, flora.gameObject);
             return flora;
+        }
+
+        /// <summary>
+        /// How many plants a periodic tick should seed - the flora seeder is a SEEDER, not the
+        /// population driver (Docs/ECOSYSTEM.md §32). A species that authors a seed floor is
+        /// topped back up to it and no further: bootstrap, plus recovery after the food web
+        /// grazes the species out, so extinction is never permanent. Above the floor the forest
+        /// is grown by the plants' own reproduction (<c>Flora.TryReproduce</c>) and bounded by
+        /// grazing.
+        ///
+        /// <para>A species that authors NO floor keeps the legacy behaviour exactly - one plant
+        /// per plant period, bounded only by the cell's Frenzy gate - so the population model is
+        /// opt-in per species rather than a silent re-tune of every biome.</para>
+        ///
+        /// <para>Seed floor AND cap come from the CELL, so a profile's <c>FloraPopulationScale</c>
+        /// moves both together; scaling the floor alone would be clamped away by the authored cap
+        /// and read as doing nothing (see <c>Cell.ResolveFloraPopulation</c>).</para>
+        ///
+        /// <para>It lives on the BASE, not on one spawner, for the same reason banded fauna
+        /// placement does - see the warning below. <c>CellTypeChoiceOptions.IntensityWise</c>
+        /// silently swaps which spawner a cell runs, so a population rule implemented in only one
+        /// of them is dead code in exactly the modes that asked for it.</para>
+        /// </summary>
+        public static int FloraSeedDeficit(Cell host, FloraConfigurationSO floraCfg)
+        {
+            if (!host || !floraCfg) return 0;
+            if (!FloraReproductionRules.HasPopulationModel(floraCfg.PopulationSize)) return 1;
+
+            return FloraReproductionRules.SeedSpawnCount(
+                host.GetLiveFloraCount(floraCfg),
+                host.ResolveFloraPopulation(floraCfg.PopulationSize),
+                host.ResolveFloraCap(floraCfg));
         }
 
         protected Fauna SpawnFauna(Cell host, Fauna faunaPrefab, Vector3 goal, Domains? excludedDomain)

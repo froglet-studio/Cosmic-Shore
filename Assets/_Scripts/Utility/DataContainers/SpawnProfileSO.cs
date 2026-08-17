@@ -21,8 +21,14 @@ namespace CosmicShore.Utility
         [Min(0f)] public float FloraSpawnIntervalSeconds;
 
         [Header("Density - the CELL's half of the flora split")]
-        [Tooltip("HOW MANY plants this cell seeds, as a multiplier on every species' " +
-                 "FloraConfigurationSO.InitialSpawnCount. 1 = exactly as authored.\n\n" +
+        [Tooltip("HOW MANY plants this cell carries, as a multiplier on every species' " +
+                 "FloraConfigurationSO.InitialSpawnCount, its PopulationSize seed floor AND its " +
+                 "MaxLivePopulation cap. 1 = exactly as authored.\n\n" +
+                 "It scales the CAP as well as the floors on purpose (same rule as " +
+                 "FaunaPopulationScale): the cap is what actually bounds a standing population, " +
+                 "so a scalar that moved only the seed counts would be clamped away above ~1.5x " +
+                 "and read as doing nothing. Scaling PRODUCTION is all it does - nothing is ever " +
+                 "culled to meet a lowered scale (Docs/ECOSYSTEM.md §0: no imposed death).\n\n" +
                  "This exists so a cell can scale its whole forest WITHOUT forking the per-species " +
                  "assets. A SpawnProfile is referenced from CellConfigDataSO, so it already forks " +
                  "per intensity for free under CellTypeChoiceOptions.IntensityWise - which makes " +
@@ -149,6 +155,33 @@ namespace CosmicShore.Utility
                 return authored;
 
             return Mathf.Max(1, Mathf.FloorToInt(authored * FaunaPopulationScale + 0.5f));
+        }
+
+        /// <summary>
+        /// This profile's take on an authored flora population number - a seed count
+        /// (<c>InitialSpawnCount</c> / <c>PopulationSize</c>) or the hard cap
+        /// (<c>MaxLivePopulation</c>) - scaled by <see cref="FloraPopulationScale"/>.
+        ///
+        /// <para>Read it through <c>Cell.ResolveFloraPopulation</c> rather than calling it
+        /// directly: every flora producer (both spawners, reproduction, the freestyle
+        /// conveyor) already holds the cell, and routing them all through one accessor is what
+        /// stops the scalar from being live in one producer and dead in the next.</para>
+        ///
+        /// <para><b>It scales the CAP as well as the floors on purpose</b>, exactly as the
+        /// fauna scalar does: <c>MaxLivePopulation</c> is what actually bounds a standing
+        /// population, so a scalar that moved only the seed counts would be clamped away above
+        /// ~1.5x and read as doing nothing. 0 passes through unchanged so "uncapped" stays
+        /// uncapped, and a non-positive scale is treated as 1 so an unauthored field can never
+        /// empty a biome. Rounds half UP explicitly - <c>Mathf.RoundToInt</c> is banker's
+        /// rounding.</para>
+        /// </summary>
+        public int ScaleFloraPopulation(int authored)
+        {
+            if (authored <= 0) return authored;
+            if (FloraPopulationScale <= 0f || Mathf.Approximately(FloraPopulationScale, 1f))
+                return authored;
+
+            return Mathf.Max(1, Mathf.FloorToInt(authored * FloraPopulationScale + 0.5f));
         }
     }
 }

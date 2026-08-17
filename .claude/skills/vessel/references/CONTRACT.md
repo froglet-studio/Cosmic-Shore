@@ -297,6 +297,21 @@ warning). Be exhaustive here; this is the contract's least-guarded clause.
   Serpent do); danger-prism effect SOs never gate on domain; shell-tier
   cooperation (`ShellOwnsContact` suppression + probe registration) must survive any collider
   rearrangement.
+- **There are THREE self-guard shapes, and picking the wrong one is silent.** (a) *Reference
+  compare* on `VesselStatus` — "me exactly" (vessel↔own-skimmer). (b) *Domain compare* — "my
+  team", which is what `Skimmer.affectSelf` and `VesselChangeSpeedByPrismEffectSO` use, and it is
+  a **trap** whenever the intent is per-pilot: switching it off also blinds the vessel to its
+  teammates' mass. (c) *Owner + age* — `prism.ownerID` against `VesselStatus.PlayerName` within a
+  grace of `prismProperties.TimeCreated`, i.e. "mass I am making right now"; this is the only
+  shape that can spare a pilot their own fresh trail while leaving every other pilot's trail (and
+  their own older trail) fully live. `SelfTrailContactConfigSO` owns it fleet-wide — route a new
+  self-rule through it rather than authoring a fourth shape.
+  Two facts that make (b) worse than it looks: **`affectSelf` is evaluated AFTER the skimmer
+  effect loop**, so it gates only `_skimStartTimes` bookkeeping and changes nothing for effects
+  (a vessel with `affectSelf = 0` still runs every skimmer prism effect on its own mass); and
+  `Prism` has **no vessel handle at all** — no `Prism.Vessel`, and `Prism.Trail` is null on
+  vessel-laid prisms — so `ownerID`/`PlayerName` strings are the only per-pilot identity
+  available. Prefer `ownerID`: it records who LAID it and a steal does not reassign it.
 - **Joust**: vessels participating in Joust wire a `VesselExplosionBySkimmerEffectSO` in their
   SKIMMER container's `vesselSkimmerEffectsSO` — `ExecuteJoustImpact` warns on every confirmed
   joust otherwise. The vessel-side `vesselSkimmerEffects` arrays are empty fleet-wide; authoring
