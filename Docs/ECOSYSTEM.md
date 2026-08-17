@@ -4763,14 +4763,30 @@ reshape; the cross-section was then thinned by hand from the 2 a uniform scale w
 thinner than a 30:1 bar at the same length.
 The octagon colony's populations are unchanged (`MaxTotalSpawnedObjects 30`, cap 33).
 
-**Spindles scale; crystals do not.** The spindle is visible branch geometry spanning the gap
-between two prisms, so a widened lattice with unscaled branches leaves them visibly short —
-`AssembledFlora.ScaleSpindleToLattice` applies the scale at both spawn sites, in LOCAL scale and
-*before* the prism is parented, or the prism would inherit it as a second scaling of its leaf.
-The crystal is deliberately excluded: octagon centres move apart with the lattice, so the hearts
-spread out while each stays its authored size. It is also **gyroid-only** — the Schwarz P Space
-element's proportions were judged good at its shipped scale *with* unscaled spindles, and changing
-them now would regress an approved look for no request.
+**Spindles scale; crystals do not — and the spindle scale goes on the CHILD, not the root.**
+The spindle is visible branch geometry spanning the gap between two prisms, so a widened lattice
+with unscaled branches leaves them visibly short. `AssembledFlora.ScaleSpindleToLattice` applies
+the scale at both spawn sites, to the spindle's own **children**.
+
+Putting it on the spindle root instead is a runaway, and it shipped for one build. Two facts make
+it so, either one sufficient: **spindles NEST** — every grown spindle is instantiated as a child
+of its parent branch's spindle (`Instantiate(spindle, order.parent.gameObject.transform)`), so a
+root scale multiplies down the whole chain as `scale^depth`, which at scale 2 and ten generations
+is 1024× — and **prisms parent to the spindle root**, so that compounding factor also multiplies
+every prism's authored `leafSize`, and the number in the config stops describing the prism at all.
+The result was prisms that grew visibly larger the further a branch got from its seed. Scaling the
+children is safe because a child is a leaf of that chain and prisms are never among them (the call
+happens before the prism is parented).
+
+The crystal is deliberately excluded from the scale entirely: octagon centres move apart with the
+lattice, so the hearts spread out while each stays its authored size. Spindle scaling is also
+**gyroid-only** — the Schwarz P Space element's proportions were judged good at its shipped scale
+*with* unscaled spindles, and changing them now would regress an approved look for no request.
+
+**The general rule.** Before scaling anything in a hierarchy, ask what else *inherits* that
+transform. A scale applied to a node that is both a parent of its own successors and a parent of
+the thing whose size is authored elsewhere is wrong twice over, and neither error shows up in a
+compile or in any static check — only in geometry, and only some distance from the seed.
 
 **The volume consequence, and why the thin cross-section matters more than it looks.** A uniform
 2× would be an **8× per-prism volume**, which is what makes this the §4.6 trap: at `60 × 2 × 2` the

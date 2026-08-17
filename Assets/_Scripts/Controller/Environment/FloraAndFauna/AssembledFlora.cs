@@ -636,14 +636,33 @@ namespace CosmicShore.Gameplay
         /// decides lattice coherence (see GyroidAssembler.ApplyLatticeScale - scaling the
         /// offsets alone is what grew offset parallel domains, Docs/ECOSYSTEM.md 33.8).</para>
         /// </summary>
-        /// <summary>The branch spans the gap between two prisms, so it scales with the gap.
-        /// Applied in LOCAL scale, before the prism is parented to it - the prism zeroes its own
-        /// local transform and would otherwise inherit this as a second scaling of its leaf.</summary>
+        /// <summary>
+        /// Scales the spindle's visible branch geometry with the lattice - the branch spans the
+        /// gap between two prisms, so a widened lattice leaves an unscaled one visibly short.
+        ///
+        /// <para>It scales the spindle's own CHILDREN, never the spindle root, and that is
+        /// load-bearing for two independent reasons:</para>
+        /// <list type="bullet">
+        /// <item><b>Spindles NEST.</b> Every grown spindle is instantiated as a child of its
+        /// parent branch's spindle, so scaling the root multiplies down the whole chain -
+        /// <c>scale^depth</c>. At scale 2 and ten generations deep that is 1024x, which is
+        /// exactly the runaway this replaced.</item>
+        /// <item><b>Prisms parent to the spindle ROOT.</b> A scaled root multiplies every
+        /// prism's authored <c>leafSize</c> on top of the compounding, so the leaf size in the
+        /// config would stop describing the prism at all.</item>
+        /// </list>
+        ///
+        /// <para>Called BEFORE the prism is parented, so the children walked here are only the
+        /// spindle prefab's own - the prism can never be caught by it.</para>
+        /// </summary>
         void ScaleSpindleToLattice(Spindle target)
         {
             float scale = SpindleLatticeScale;
             if (!target || Mathf.Approximately(scale, 1f)) return;
-            target.transform.localScale *= scale;
+
+            Transform root = target.transform;
+            for (int i = 0; i < root.childCount; i++)
+                root.GetChild(i).localScale *= scale;
         }
 
         void ApplyLatticeSpacing(Assembler target)
