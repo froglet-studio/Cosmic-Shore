@@ -459,8 +459,38 @@ Urchin hull opacity.**
   `BlueBaseVesselMaterial` is shared by nine vessels; this is a per-renderer slot-order fix on
   the Urchin prefab only.
 
+**ROUND 20 (2026-08-17) — the jade that survived a Ruby swap: BOTH of the Urchin's authored
+materials are domain-bearing.**
+
+- **`GreenAccentVesselMaterial` IS Jade, hardcoded.** Its `_Color2` (the fresnel rim, the part
+  that glows) is `(0, 0.7765, 1.4980)` = `JadeColors.ShipColor2 × 2` **exactly, to 7 decimals**;
+  `_Color1` matches ×2 on blue and one 8-bit step off on green. `ThemeManager` drives the live
+  ship material through those same two properties, so any slot wearing this material stays jade
+  on every domain — which is precisely what a Ruby pilot photographed.
+- **`BlueBaseVesselMaterial`'s rim is pure black** `(0,0,0)` — a base with no rim, which is the
+  round-17 "too transparent" report.
+- So neither authored material is a neutral the vessel should keep. `_domainReplacesMaterial`
+  became the **list** `_domainReplacesMaterials`, and the Urchin declares BOTH; every slot on all
+  13 renderers takes the domain colour. `Body`'s third material (`ScreenVesselMaterial`, a neutral
+  cockpit screen shared with Rhino/Dolphin) is untouched. No other vessel changes.
+- **The left gun has no model error.** Parsed `Urchan_Test.fbx` directly (binary FBX 7400): all 14
+  geometries declare materials in the SAME order `[Material.004, Material.009]` (`Body` adds
+  `Material.002`), mapped `ByPolygon`; mirrored halves match poly-for-poly (276/276, 400/400,
+  370/370 ×2, 324/324, 281/281); each of the 13 prefab renderers points at its own distinct mesh,
+  none shared. The one oddity is `ShootPoints` (`Sphere.041`) — a zero-polygon holder for the 18
+  historical firing ports, not wired into the prefab. The real anomaly was prefab authoring
+  (`ShroudLeft`'s two materials reversed vs its twelve siblings), already fixed; painting every
+  slot makes slot order unable to matter again.
+
+Round-20 verify: on the Urchin, change domain at the toy → **no cyan/jade survives anywhere on the
+hull** on Ruby or Gold; the whole ship reads in the new domain's colour, and nothing is
+see-through. Change back to Jade → it reads jade again (that one is not a no-op check: compare
+against Ruby first). Console: no `[VesselCustomization] '<part>' wears none of the vessel's domain
+materials` warning. Other vessels' hulls unchanged.
+
 **ROUND 19 (2026-08-17) — the domain colour is painted by IDENTITY, not by index; the shotgun
-fires from both guns with a tighter spread.**
+fires from both guns with a tighter spread.** *(The identity mechanism is right; round 20 found it
+needed to name TWO materials, not one.)*
 
 - **Round 18's domain fix was a no-op, and the reason generalises.** It restored the authored
   material order (`BlueBase` back to slot 0) *and* moved the index 1 → 0 in the same commit;

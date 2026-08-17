@@ -19,20 +19,20 @@ namespace CosmicShore.Gameplay
                  "Domain Replaces Material is set.")]
         [SerializeField] int _domainMaterialSlot = 1;
 
-        [Tooltip("OPTIONAL, and the robust way: name the authored material the domain colour " +
-                 "REPLACES, and every slot wearing it is repainted - whatever index it sits at " +
-                 "on each renderer. Use this when a vessel's submesh order is not consistent " +
-                 "across its parts (the Urchin ships one shroud with its two materials in the " +
-                 "opposite order to the other twelve), because an index cannot be right for " +
-                 "both. Leave empty to use the slot index above.")]
-        [SerializeField] Material _domainReplacesMaterial;
+        [Tooltip("OPTIONAL, and the robust way: name the authored material(s) the domain colour " +
+                 "REPLACES, and every slot wearing one is repainted - whatever index it sits at " +
+                 "on each renderer. Two reasons to prefer this over the slot index: a vessel " +
+                 "whose submesh order is not consistent across its parts (no single index can be " +
+                 "right for all of them), and a vessel whose art has MORE than one slot that " +
+                 "should carry the domain. Leave empty to use the slot index above.")]
+        [SerializeField] List<Material> _domainReplacesMaterials = new();
 
         /// <summary>
         /// Per-geometry slot indices the domain colour is painted into, resolved ONCE from the
         /// authored materials before the first paint. It has to be cached: after that paint the
-        /// slot no longer holds <see cref="_domainReplacesMaterial"/> (it holds the domain
-        /// material), so re-resolving on a later domain change would find nothing and the ship
-        /// would simply stop responding to its domain.
+        /// slot no longer holds any of <see cref="_domainReplacesMaterials"/> (it holds the
+        /// domain material), so re-resolving on a later domain change would find nothing and the
+        /// ship would simply stop responding to its domain.
         /// </summary>
         int[][] _domainSlots;
 
@@ -71,7 +71,7 @@ namespace CosmicShore.Gameplay
 
         void ApplyShipMaterial(Material material)
         {
-            if (!_domainReplacesMaterial)
+            if (!HasDomainMaterialIdentities())
             {
                 ShipHelper.ApplyShipMaterial(material, _shipGeometries, _domainMaterialSlot);
                 return;
@@ -81,9 +81,24 @@ namespace CosmicShore.Gameplay
             ShipHelper.ApplyShipMaterialToSlots(material, _shipGeometries, _domainSlots);
         }
 
+        bool HasDomainMaterialIdentities()
+        {
+            if (_domainReplacesMaterials == null) return false;
+            for (int i = 0; i < _domainReplacesMaterials.Count; i++)
+                if (_domainReplacesMaterials[i]) return true;
+            return false;
+        }
+
+        bool IsDomainMaterial(Material candidate)
+        {
+            for (int i = 0; i < _domainReplacesMaterials.Count; i++)
+                if (candidate == _domainReplacesMaterials[i]) return true;
+            return false;
+        }
+
         /// <summary>
-        /// Find, per geometry, every slot whose AUTHORED material is
-        /// <see cref="_domainReplacesMaterial"/>. Reads <c>sharedMaterials</c> deliberately -
+        /// Find, per geometry, every slot whose AUTHORED material is one of
+        /// <see cref="_domainReplacesMaterials"/>. Reads <c>sharedMaterials</c> deliberately -
         /// <c>materials</c> would instantiate a clone per slot and the identity comparison
         /// would then never match the asset.
         /// </summary>
@@ -101,12 +116,12 @@ namespace CosmicShore.Gameplay
                 {
                     var shared = renderer.sharedMaterials;
                     for (int slot = 0; slot < shared.Length; slot++)
-                        if (shared[slot] == _domainReplacesMaterial) slots.Add(slot);
+                        if (IsDomainMaterial(shared[slot])) slots.Add(slot);
 
                     if (slots.Count == 0)
                         CSDebug.LogWarning(
-                            $"[VesselCustomization] '{geometry.name}' wears none of " +
-                            $"'{_domainReplacesMaterial.name}', so it will never take the domain " +
+                            $"[VesselCustomization] '{geometry.name}' wears none of the " +
+                            "vessel's domain materials, so it will never take the domain " +
                             "colour. Check the prefab's material assignments.");
                 }
                 _domainSlots[i] = slots.ToArray();

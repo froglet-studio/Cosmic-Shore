@@ -345,6 +345,48 @@ A geometry wearing none of the named material warns once by name — an authorin
 otherwise invisible, because a part that simply never recolours looks like a part that is meant
 to be a fixed colour.
 
+### The jade that survived a Ruby swap: `GreenAccentVesselMaterial` IS Jade (round 20)
+
+Naming one material was still not enough, because **both** of the Urchin's authored materials are
+domain-bearing and neither is a legitimate neutral. Measured, not inferred:
+
+| | `_Color1` (base face) | `_Color2` (fresnel rim — the part that glows) |
+|---|---|---|
+| `GreenAccentVesselMaterial` | (0, 0.0941, 0.1882) | (0, **0.7765**, **1.4980**) |
+| `OriginalColorSetSO.JadeColors.ShipColor1/2` | (0, 0.0490, 0.0941) | (0, **0.3882**, **0.7490**) |
+| ratio | ×1.92, ×2.00 | **×2.00, ×2.00, exact to 7 dp** |
+
+`GreenAccentVesselMaterial` is the **Jade ship colour at 2× intensity, welded into the prefab** —
+`ThemeManager.GenerateDomainMaterialSet` drives the live ship material through the very same two
+properties (`ShipMaterial.SetColor("_Color1"/"_Color2", colorSet.ShipColor1/2)`). So every slot
+wearing it stays jade on every domain, which is exactly what a Ruby pilot saw. And
+`BlueBaseVesselMaterial`'s rim is **pure black** `(0, 0, 0)` — a base with no rim, which is why the
+parts wearing it read as see-through in round 17. Neither material is a colour the Urchin should
+keep, so `_domainReplacesMaterials` is a **list** and the Urchin declares both. Every slot on all
+thirteen renderers takes the domain colour; only `Body`'s third material (`ScreenVesselMaterial`,
+a neutral grey/blue cockpit screen shared with the Rhino and Dolphin) is left alone.
+
+The general rule this earns:
+
+> **Before deciding which slot "wears the domain", check whether the material you are leaving in
+> place is secretly one domain's colour.** A hardcoded palette entry and a neutral base look
+> identical in the inspector and are opposites at runtime. The test is one grep: compare the
+> material's authored colours against `SO_ColorSet`'s per-domain entries.
+
+**The Urchin FBX is clean — the left gun's "model error" is not a model error.** Parsed directly
+from `Urchan_Test.fbx` (binary FBX 7400): 14 `Geometry` records, and **every one declares its
+materials in the same order**, `[Material.004, Material.009]` (`Body` adds `Material.002`), with
+`LayerElementMaterial` mapped `ByPolygon`. The mirrored halves are exact — `SideShooters`/`.003`
+both 276 polys, `SideShooterHold`/`.003` both 400, `UpperJet`/`.003` and `LowerJet`/`.003` all 370,
+`UpperJetHold`/`.003` both 324, `LowerJetHold`/`.003` both 281 — and each of the 13 prefab
+renderers points at its own distinct mesh in that FBX, none shared. `Material.004` is the majority
+submesh on every part (~70–80% of polygons), which is why the *base* material dominates the
+silhouette. The only oddity is `ShootPoints` (`Sphere.041`), a **zero-polygon** mesh — the empty
+holder for the 18 historical firing-port objects, not wired into the prefab at all and harmless.
+The material-order anomaly that did exist was pure prefab authoring — `ShroudLeft` had its two
+materials reversed relative to its twelve siblings — and it is gone. Painting every slot makes the
+order unable to matter again.
+
 ## Each ribbon is its own trail; shielded and skewed prisms ride their envelope (round 17)
 
 **A gapped wake is now TWO SEPARATE SINGLE TRAILS.** You ride the ribbon you touched, on its
