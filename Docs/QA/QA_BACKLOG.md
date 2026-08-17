@@ -1,6 +1,6 @@
 # QA Backlog — untested development on `bleeding-edge`
 
-Generated: 2026-08-14 · Scan covers: up to `26fcc090` (PRs #583–#717) · **Owner of this file: the `/qa-backlog` skill — do not hand-edit.**
+Generated: 2026-08-17 · Scan covers: up to `eb85e1e3` (PRs #583–#737) · **Owner of this file: the `/qa-backlog` skill — do not hand-edit.**
 
 > Note (2026-08-11): `bleeding-edge` was briefly force-pushed back to `0e855b24` (dropping PRs #674–#679) and then restored — the current tip `b0cf4f0f` re-includes all of that work plus PRs #680/#681/#695/#696. No items were pruned. The `windows-build-failures` build-fix branch is validated by QA-BUILD-COMPILE on Windows and has no separate item.
 
@@ -108,7 +108,7 @@ Source: PRs #659, #639, #627, #641, #668, #651. These are NUnit suites authored 
 
 1. Window ▸ General ▸ Test Runner ▸ EditMode ▸ Run All.
 2. Record every failing test by name, plus the total pass/fail count.
-3. Specifically confirm these suites are present and green: `CellSpawnFormationTests`, `SkimmerSwingKinematicsTests`, `ShieldShellMathTests`, `VesselElementalMorphTests`, `VesselRigPartResolutionTests`, `SpeedTunnelLawTests`, `SettingsAutoDetectorTests`, `GeometryUtilsTests`, `PrismOcclusionCoverageTests`, `ShipModifierTests` (PR #679), `DisplayNameValidatorTests` (PR #674/display-name-validation), `PrismDeathVisualTierTests` (PR #715).
+3. Specifically confirm these suites are present and green: `CellSpawnFormationTests`, `SkimmerSwingKinematicsTests`, `ShieldShellMathTests`, `VesselElementalMorphTests`, `VesselRigPartResolutionTests`, `SpeedTunnelLawTests`, `SettingsAutoDetectorTests`, `GeometryUtilsTests`, `PrismOcclusionCoverageTests`, `ShipModifierTests` (PR #679), `DisplayNameValidatorTests` (PR #674/display-name-validation), `PrismDeathVisualTierTests` (PR #715), the super-shield jiggle suite (PR #730).
 
 PASS: all EditMode tests green and all nine suites present. FAIL: any red test (record the name + assertion message) or a suite that does not appear at all (means it did not compile into the test assembly).
 
@@ -696,6 +696,80 @@ Source: PR #715 (`danger-prisms-explosions`). Prism **death visuals now wear the
 
 PASS: compiles + `PrismDeathVisualTierTests` green; death visuals differ by tier; danger detonations reach farther; plain deaths unchanged. FAIL: compile/test failure · all deaths looking identical regardless of tier · danger detonation with no extra reach · missing/broken death VFX on any tier.
 
+### QA-RHINO-SWORD-V3 ⬜ — the energy-sword v3 rework
+Source: PR #726 (`energy-sword-v3-rework`, after `energy-sword-rework-retry`). A v3 rework of the Rhino's energy sword. Builds on the earlier sword work (QA-VESSEL-RHINO-SWORD, PR #639) — verify the new behaviour end-to-end. Reference: `_Scripts/Controller/Vessel/R_VesselActions/RHINO_SHIELD_SWIPE.md`.
+
+1. Project compiles; open `Rhino.prefab` — no missing scripts on the sword/skimmer.
+2. Rhino in freestyle: swing the sword and hit prisms — the swing/point-velocity, growth, and shield interaction behave per the v3 design (no dead sword, no stuck scale).
+3. Skim shielded/super-shielded track lining and confirm shell contacts still register (cross-check QA-SHELL-COLLISION).
+4. Clip your own just-laid trail — no self-collision (cross-check QA-VESSEL-SELF-TRAIL).
+5. Compare against the prior sword feel — the rework should read as intended, not a regression.
+
+PASS: compiles, prefab intact; the sword swings, grows and damages as designed in v3; shell contacts register; no self-trail collision; no dead/stuck sword. FAIL: missing scripts · a sword that doesn't swing/grow/damage · broken shell contacts · self-trail collision · an obvious regression from the prior sword.
+
+### QA-DOLPHIN-CRYSTAL-ENERGY-CLUSTER ⬜ — crystal-spawn rework, prism-collision energy, new skim effect
+Source: PRs #720 (`dolphin-crystal-spawn-rework`), #721 (`dolphin-prism-collision-energy`), #723 (`dolphin-skim-effect`). A themed cluster of Dolphin energy/crystal changes — do them in one Dolphin session. Related: QA-DOLPHIN-SKIM, QA-DOLPHIN-SKIM-ENERGY-CTA.
+
+1. Project compiles; Dolphin freestyle, no missing scripts.
+2. **Crystal spawn (#720):** trigger the Dolphin crystal — it spawns/blooms per the rework (not popping), fires its effect, and behaves as intended.
+3. **Prism-collision energy (#721):** ram/skim prism mass — the Dolphin banks energy from prism collision as designed; the HUD energy gauge moves accordingly.
+4. **Skim effect (#723):** skim prisms and confirm the new skim VFX renders (no magenta, no missing effect).
+5. Regression: normal flight/boost unaffected.
+
+PASS: compiles; crystal spawns/blooms and fires; prism-collision energy banks and the gauge tracks it; the new skim effect renders cleanly; no regressions. FAIL: missing scripts · crystal popping/not firing · no energy from prism collision or a stuck gauge · magenta/missing skim VFX · flight/boost regressed.
+
+### QA-PRISM-SHIELD-GPU-VISUALS ⬜ — octahedron-shield GPU morph + prism jiggle shader
+Source: PRs #729 (`octahedron-shield-gpu-morph`), #727 (`prism-jiggle-shader-effect`), #730 (`prism-super-shield-jiggle-tests`). GPU-driven shield morph + a prism "jiggle" shader effect, with a new EditMode jiggle test suite. Shader work → magenta risk on shielded prisms.
+
+1. Run the super-shield jiggle EditMode suite (PR #730; also under QA-EDITMODE-TESTS) — green.
+2. Get shielded + super-shielded prisms on screen (a cell with lifeforms, a HexRace/Skim track, or Astro League). If any prism is **magenta**, a shader failed — stop, FAIL.
+3. Watch a prism engage/disengage its shield — the octahedron shield morph now runs on the GPU; it should bloom/shatter smoothly, not snap or render the plain box (cross-check the exotic-visual handoff — a bare mesh swap renders nothing).
+4. Watch the jiggle effect on shielded prisms — it reads as a subtle animated jiggle, not a static or broken look.
+5. Confirm shielded collision still works (cross-check QA-SHELL-COLLISION).
+
+PASS: jiggle suite green; no magenta; shield morph runs on GPU and blooms/shatters smoothly; jiggle animates; shell collision intact. FAIL: a red test · magenta prisms · a shield that snaps, renders as the plain box, or renders nothing · a static/broken jiggle · broken shielded collision.
+
+### QA-ECOLOGY-GYROID-COLONY ⬜ — the gyroid octagon flora colony + Gyroid Lab
+Source: PR #734 (`flora-populations-gyroid`). A gyroid octagon flora colony ("a crystal in every window") with population-event reproduction (one birth per fauna-wave cycle from the colony frontier), a maturity gate (reproduce only once fully grown incl. bloom), colony diagnostics, a lattice-defect auditor, and a 5× ceiling raise. LOCKED ecology surface — verify against continuity/mass-conservation invariants. Reference: `Docs/ECOSYSTEM.md`.
+
+1. Project compiles; freestyle → Cell Selector → the gyroid colony cell (or Lifeform Matrix). It builds with no missing scripts.
+2. Watch the colony grow: plants mature, and **reproduction happens once per fauna-wave cycle** (a population event, not per-plant timers), popped from the frontier.
+3. Confirm a plant reproduces **only once fully grown** (maturity gate incl. the bloom) — no daughters spawning from immature plants.
+4. Watch for lattice defects — the octagon lattice should be clean (no permanent holes at plant boundaries, no chirality/z-mirror twins); the defect auditor should not scream.
+5. Continuity/mass: nothing pops in or out; growth withers/blooms; the colony ceiling behaves (grows toward the raised ceiling, doesn't freeze or explode).
+
+PASS: builds clean; population-event reproduction from mature plants; a clean lattice with no boundary holes or mirror twins; continuity of existence and mass conservation hold; the colony grows toward its ceiling. FAIL: missing scripts · per-plant timer reproduction or immature daughters · lattice holes / chirality twins / auditor errors · anything popping in/out · a frozen or runaway colony.
+
+### QA-ECOLOGY-CRYSTAL-LEVELING ⬜ — level is earned, heart size per level, crystal colours
+Source: PRs #737 (`crystal-sizing-lifeform-leveling`), #728 (`lifeform-crystal-colors`). Lifeform level is now EARNED (not always 1), a dropped heart is one size per level, Mass/Charge crystals got a model-size correction (and the Charge bump was reverted — measure not infer), and lifeform crystals carry per-element colours. LOCKED ecology surface. Reference: `Docs/ECOSYSTEM.md`.
+
+1. Project compiles; a cell with lifeforms builds clean.
+2. Kill creatures at different levels — the dropped heart's **size scales with the level** (a level-5 kill drops a visibly bigger crystal than a level-1).
+3. Confirm each element's crystal reads in its correct colour (Charge/Mass/Space/Time distinct), and Mass/Charge crystals are correctly sized (no oversized/undersized model).
+4. Confirm level is actually earned over time (a fresh creature isn't stuck at 1 forever, and isn't rolled/handed a level it didn't earn).
+
+PASS: compiles; heart size tracks level; per-element crystal colours correct; Mass/Charge model sizes corrected; level is earned. FAIL: uniform heart size regardless of level · wrong/duplicate crystal colours · a mis-sized Mass/Charge crystal · level stuck at 1 or handed unearned.
+
+### QA-VESSEL-SELF-TRAIL ⬜ — don't skim or ram your own trail while laying it
+Source: PR #736 (`vessel-self-trail-collision`). A vessel no longer skims or rams the trail it is actively laying (a self-collision grace while laying), scoped so the Rhino's signed-off self-farm still works. Impact-effects surface.
+
+1. Fly a tight loop/curve so you cross your own **just-laid** trail — no skim trigger, no ram/slow, no self-damage from the fresh trail.
+2. Confirm you CAN still interact with **older** trail (the grace is only for the trail being laid) once it's no longer fresh.
+3. Rhino specifically: its signed-off self-farm behaviour still works (it can still consume/interact with its own trail where intended).
+4. Other vessels: normal trail/prism interactions with non-self mass unchanged.
+
+PASS: no skim/ram/damage from the trail you're actively laying; older trail still interacts; the Rhino self-farm still works; interactions with other mass unchanged. FAIL: still colliding with/slowing on fresh self-trail · unable to interact with older trail · the Rhino self-farm broken · other-mass interactions changed.
+
+### QA-KEYBOARD-CONTROLS ⬜ — keyboard control scheme
+Source: PR #722 (`keyboard-controls`). A keyboard control scheme (input strategy). Verify on desktop with keyboard.
+
+1. Launch and take control of a vessel with the keyboard only (no gamepad).
+2. Confirm pitch/yaw/roll/throttle and the ability inputs (boost, drift, fire, etc.) all map to sensible keys and respond.
+3. Confirm menu/HUD navigation isn't double-driven or broken by the keyboard mapping.
+4. Plug in a gamepad mid-session (if available) — the input strategy switches cleanly.
+
+PASS: full vessel control from the keyboard with sensible mappings; abilities respond; no double-driven UI; gamepad hand-off works. FAIL: unmapped/broken controls · an ability with no key · keyboard driving the UI and the vessel at once · a broken device switch.
+
 ## Priority 2 — lower risk, cosmetic, or data-gathering
 
 ### QA-P2-SERPENT-SKIMMER ⬜ — Serpent's dead skimmer (known, unfixed)
@@ -754,6 +828,24 @@ Source: `quit-game-button` (`fabe7074`). The standalone `QuitGameButton.cs` was 
 3. Confirm nothing else in the settings panel regressed.
 
 PASS: the quit control is present in the settings panel and works with no missing scripts or exceptions; the rest of the panel is intact. FAIL: a missing button/script · a quit control that throws or does nothing · another settings control broken by the move.
+
+### QA-CRYSTAL-EFFECTS ⬜ — elemental crystal capture effect + omni-crystal bloom
+Source: PRs #725 (`elemental-crystal-capture-effect`), #724 (`omni-crystal-bloom`). Two crystal VFX: a capture effect when an elemental crystal is collected, and a bloom on the omni crystal. Cosmetic/visual.
+
+1. Collect an elemental crystal — a capture effect plays (no magenta, no missing VFX).
+2. Watch an omni crystal spawn/appear — it blooms in (continuity of existence), not popping.
+3. Confirm neither effect throws or leaves artifacts.
+
+PASS: the capture effect plays on collection and the omni crystal blooms in, both clean. FAIL: missing/magenta VFX · an omni crystal that pops · console errors from either effect.
+
+### QA-SPARROW-SPREAD-HAPTICS ⬜ — Sparrow spread + haptics
+Source: PR #719 (`sparrow-spread-haptics`). Sparrow shot spread plus haptic feedback. Haptics need a device/gamepad. Related: QA-HAPTICS.
+
+1. Sparrow freestyle: fire and observe the shot spread behaves as designed.
+2. On a device/gamepad, confirm the associated haptic fires with the spread and stays within the two-feel haptics policy (no buzz on silenced events).
+3. Regression: the two standard feels (skim pulse, prism thud) still behave (cross-check QA-HAPTICS).
+
+PASS: the spread reads as intended; the haptic fires appropriately on a device and respects the haptics policy; the standard feels are intact. FAIL: broken/absent spread · a haptic that fires on silenced events or not at all · a regression to the two standard feels.
 
 ## Not covered by this list
 
