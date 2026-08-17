@@ -55,6 +55,9 @@ namespace CosmicShore.ScriptableObjects
         /// <summary>Dog Fight point target used when <see cref="dogFightPointTarget"/> is 0 (auto/default).</summary>
         public const int DefaultDogFightPointTarget = 90;
 
+        /// <summary>Salvo hostile-prism target used when <see cref="salvoPrismTarget"/> is 0 (auto/default).</summary>
+        public const int DefaultSalvoPrismTarget = 1500;
+
         [Header("Live counts - used at runtime. 0 = auto/default (edit via FrogletTools > Game Modes > End Game Conditions)")]
         [Tooltip("HexRace crystals to end the race. 0 = auto-calc from the track waypoints.")]
         [Min(0)] public int hexRaceCrystalCount = 0;
@@ -95,6 +98,12 @@ namespace CosmicShore.ScriptableObjects
                  "0 = default (120).")]
         [Min(0)] public int dogFightPointTarget = 90;
 
+        [Tooltip("Salvo: hostile prisms (the Boneyard's wreckage, rival trails, fauna bodies) a " +
+                 "domain must destroy between them to win (race to N), summed across that " +
+                 "domain's players. Lower than Rampage's target because the Sparrow's salvos " +
+                 "are crystal-rationed. 0 = default (1500).")]
+        [Min(0)] public int salvoPrismTarget = 1500;
+
         [Header("Build baseline - what a shipping build uses. Set via the tool's \"Set Build Values\" button.")]
         [Min(0)] public int hexRaceCrystalCountBuild = 0;
         [Min(0)] public int crystalCaptureCrystalCountBuild = 20;
@@ -105,6 +114,7 @@ namespace CosmicShore.ScriptableObjects
         [Min(0)] public int ribcagePrismTargetBuild = 2000;
         [Min(0)] public int wildlifeKillTargetBuild = 250;
         [Min(0)] public int dogFightPointTargetBuild = 90;
+        [Min(0)] public int salvoPrismTargetBuild = 1500;
 
         [Tooltip("When on, a build first copies the Build baseline onto the Live counts, so test values are never shipped.")]
         public bool autoRestoreBuildValuesBeforeBuild = true;
@@ -181,6 +191,13 @@ namespace CosmicShore.ScriptableObjects
         /// </summary>
         public int GetDogFightPointTarget() => dogFightPointTarget > 0 ? dogFightPointTarget : DefaultDogFightPointTarget;
 
+        /// <summary>
+        /// Salvo prism target ("race to N" hostile prisms destroyed): the configured value when
+        /// &gt; 0, otherwise <see cref="DefaultSalvoPrismTarget"/>. Compared against a DOMAIN's
+        /// summed destruction count, so teammates pool.
+        /// </summary>
+        public int GetSalvoPrismTarget() => salvoPrismTarget > 0 ? salvoPrismTarget : DefaultSalvoPrismTarget;
+
         /// <summary>True when every Live count (used at runtime) already equals its Build baseline.</summary>
         public bool LiveMatchesBuild =>
             hexRaceCrystalCount == hexRaceCrystalCountBuild &&
@@ -191,7 +208,8 @@ namespace CosmicShore.ScriptableObjects
             rampagePrismTarget == rampagePrismTargetBuild &&
             ribcagePrismTarget == ribcagePrismTargetBuild &&
             wildlifeKillTarget == wildlifeKillTargetBuild &&
-            dogFightPointTarget == dogFightPointTargetBuild;
+            dogFightPointTarget == dogFightPointTargetBuild &&
+            salvoPrismTarget == salvoPrismTargetBuild;
 
         /// <summary>Copy the Build baseline onto the Live counts (build → live) - used by the build auto-restore.</summary>
         public void ApplyBuildValues()
@@ -205,6 +223,7 @@ namespace CosmicShore.ScriptableObjects
             ribcagePrismTarget = ribcagePrismTargetBuild;
             wildlifeKillTarget = wildlifeKillTargetBuild;
             dogFightPointTarget = dogFightPointTargetBuild;
+            salvoPrismTarget = salvoPrismTargetBuild;
         }
 
         /// <summary>Snapshot the current Live counts as the Build baseline (live → build) - used by "Set Build Values".</summary>
@@ -219,6 +238,7 @@ namespace CosmicShore.ScriptableObjects
             ribcagePrismTargetBuild = ribcagePrismTarget;
             wildlifeKillTargetBuild = wildlifeKillTarget;
             dogFightPointTargetBuild = dogFightPointTarget;
+            salvoPrismTargetBuild = salvoPrismTarget;
         }
     }
 }

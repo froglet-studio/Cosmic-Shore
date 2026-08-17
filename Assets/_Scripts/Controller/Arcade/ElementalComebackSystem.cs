@@ -123,6 +123,7 @@ namespace CosmicShore.Gameplay
                     return ScoreDifferenceSource.Goals;
                 case GameModes.Rampage: // Score lands only at game end - destruction is the live stat
                 case GameModes.Ribcage: // same: the race metric is hostile prisms destroyed
+                case GameModes.Salvo:   // same: the Sparrow demolition race
                     return ScoreDifferenceSource.PrismsDestroyed;
                 case GameModes.WildlifeLiberation: // Score lands only at game end - kills are the live stat
                     return ScoreDifferenceSource.LifeformsKilled;

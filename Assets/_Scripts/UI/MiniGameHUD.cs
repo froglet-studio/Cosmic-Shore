@@ -337,6 +337,11 @@ namespace CosmicShore.UI
                     return CreateProviderComponent<DogFightObjectiveProvider>("ObjectiveProvider_DogFight");
                 case GameModes.Rampage:
                     return CreateProviderComponent<RampageObjectiveProvider>("ObjectiveProvider_Rampage");
+                case GameModes.Salvo:
+                    // Same provider as Rampage on purpose: the arrow answers "where is the
+                    // nearest managed omni crystal", and in Salvo that crystal IS the missile
+                    // economy (the wingman reload), so it is the one thing worth pointing at.
+                    return CreateProviderComponent<RampageObjectiveProvider>("ObjectiveProvider_Salvo");
                 default:
                     return null;
             }
