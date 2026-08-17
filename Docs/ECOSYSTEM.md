@@ -4424,35 +4424,46 @@ world scale, a 5.7× spread nobody chose**, on a number that is read twice as ga
 
 ### The root scale is the gameplay number — per-element size lives BELOW it
 
-Uniform root scale is **not** uniform apparent size. The four elemental crystal prefabs render
-differently at the same root scale, and each carries its own correction on the model child
-below the root:
+Uniform root scale is **not** uniform apparent size. Each elemental crystal prefab carries a
+size correction on the model child below its root, and the four models are very different
+sizes in their own FBX units. Measured (FBX `Vertices` bounds normalized by
+`UnitScaleFactor` — Space's file is unit-1, the other three unit-100):
 
-| | model correction (child of the crystal root) | rendered vs. Space |
-|---|---|---|
-| Charge | 1.0 → **1.38** | was ~0.75× |
-| Mass | 1.0 → **1.38** | was ~0.75× |
-| Space | 1.34 (as shipped) | 1.0 |
-| Time | 1.42 (as shipped) | ~1.06× |
+| | Unity extent @ root 1 | authored child | apparent extent |
+|---|---|---|---|
+| Charge | 2.032 | 1.0 | 2.03 |
+| Mass | 1.960 | **1.0 → 1.38** | 1.96 → 2.70 |
+| Space | 1.565 | 1.34 | 2.10 |
+| Time | 1.377 | 1.42 | 1.96 |
 
-Charge and Mass shipped with **no** correction, so the uniform root scale rendered them ~30–42%
-smaller than Space and Time — reported from play as "blue mass crystals are super tiny" (blue =
-the embedded-heart state, §30). Their models are also structurally different: Space is one solid
-body inflated by a `_spread` of 0.15, while Mass is four nested shells animated by
-`ShepardGraph._ScaleDistance`, so no analytic mesh comparison predicts apparent size — only an
-eye does.
+**The finding that matters: those children exist precisely to equalize apparent EXTENT, and at
+1.0/1.0/1.34/1.42 all four already agreed within 7%.** So the code comment claiming "one scale
+convention" was right about the *outcome* and wrong about the *mechanism* — the convention is
+maintained by four per-element corrections, not by the models being alike.
 
-This is what the old per-species crystal scales had been quietly compensating for, which is why
-they looked arbitrary: the gyroid authored its **Mass** heart at 4.0 while every other flora
-authored **Space** at 3.0 — a 1.33 ratio that almost exactly cancels Space's 1.34 child.
+Mass was nonetheless reported from play as reading **"super tiny"** (blue = the embedded-heart
+state, §30) once the level curve normalized every heart to one root scale. Extent does not
+explain that, and the likely cause is **fill, not size**: Mass is four *concentric* shells of
+one mesh animated by `ShepardGraph._ScaleDistance`, so the visible shell spends most of its
+cycle well inside the envelope, where Space is one solid body inflated by a `_spread` of 0.15.
+Its child is set to **1.38 as a first eye-calibration answering the report** — deliberately
+larger in extent than its neighbours to compensate for reading thinner. **This one number is
+expected to need a playtest pass** (see follow-ups). Charge was briefly raised to 1.38 on the
+same inference and **reverted**: nothing was reported against it and the measurement says its
+1.0 was already correct.
 
-**The rule: a per-element size fix goes on that element's crystal PREFAB, on the child below the
-root — never on the root.** The root's world scale is read as gameplay twice
-(`SkimmerAdjustElementLevelByCrystalEffectSO`, `DomainFaunaBuffSystem`), so correcting a look on
-the root moves the reward with it and re-opens the per-element reward spread this section
-removed. Charge/Mass were set to 1.38, the midpoint of the two elements that were already
-eye-calibrated; if an element still reads wrong, move ITS child, and expect the other three to
-stay put.
+The inference that produced the original 1.38 is worth recording as a trap, because it looked
+strong and was confounded: the gyroid authored its **Mass** heart at 4.0 while every other
+flora authored **Space** at 3.0, a 1.33 ratio that almost exactly cancels Space's 1.34 child.
+But those are different plants at very different overall sizes, so the ratio is as easily a
+composition choice as a size correction. **A ratio between two authored numbers is not a
+measurement until you have controlled for what else differs between them.**
+
+**The rule regardless: a per-element size fix goes on that element's crystal PREFAB, on the
+child below the root — never on the root.** The root's world scale is read as gameplay twice
+(`SkimmerAdjustElementLevelByCrystalEffectSO`, `DomainFaunaBuffSystem`), so correcting a look
+on the root moves the reward with it and re-opens the per-element reward spread this section
+removed.
 
 ### Where the size is applied — the one gate
 

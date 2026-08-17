@@ -127,13 +127,17 @@ outcome is optimization, not life). Use the `/ecology` skill for any change here
   drags the heart along with a growing body, which is the coupling being removed), and do not
   compensate a sizing change by retuning `levelPerUnitScale`: it is shared with non-lifeform
   elemental crystals (the Wanderway conveyor, Dog Fight's arena scatter).
-  **Uniform root scale is NOT uniform apparent size, and the fix goes BELOW the root.** The four
-  elemental prefabs render differently at the same root scale, so each carries a model
-  correction on its child (Charge 1.38 / Mass 1.38 / Space 1.34 / Time 1.42 — Charge and Mass
-  shipped with none and rendered ~30-42% smaller, which is what the old per-species scales had
-  been silently compensating for). A per-element size fix belongs on that element's crystal
-  PREFAB child; putting it on the root moves the collect reward and the live domain fauna buff
-  with it, since both read the root's `lossyScale`. `Docs/ECOSYSTEM.md §33`.
+  **Uniform root scale is NOT uniform apparent size, and the fix goes BELOW the root.** Each
+  elemental prefab carries a size correction on its model child (Charge 1.0 / Mass 1.38 /
+  Space 1.34 / Time 1.42) because the four FBX models are very different sizes in their own
+  units — and those children exist to equalize apparent EXTENT, which at 1.0/1.0/1.34/1.42 they
+  already did within 7% (measured from FBX `Vertices` bounds normalized by `UnitScaleFactor`;
+  Space's file is unit-1, the others unit-100). Mass is raised to 1.38 anyway because it reads
+  thin rather than small — four concentric `ShepardGraph` shells vs Space's solid `_spread`
+  body — and that number is an eye-calibration pending playtest, not a measurement. A
+  per-element size fix belongs on that element's crystal PREFAB child; putting it on the root
+  moves the collect reward and the live domain fauna buff with it, since both read the root's
+  `lossyScale`. `Docs/ECOSYSTEM.md §33`.
   **Collecting one is a BEAT, not a journey** — snatch → suction → absorb in **0.44 s**, ending in
   the element's spent-crystal husk bursting into the vessel's wake (`Crystal.Explode`, the same
   payoff an omni pickup plays) and the crystal dissolving out on `_opacity` rather than being

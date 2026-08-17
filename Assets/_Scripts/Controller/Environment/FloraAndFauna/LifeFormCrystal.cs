@@ -37,17 +37,20 @@ namespace CosmicShore.Gameplay
         // the parent chain, so a heart carried by a body that is itself growing holds its size.
         //
         // THE ROOT SCALE IS THE GAMEPLAY NUMBER - a per-element SIZE fix never goes here.
-        // The four elemental prefabs do NOT render the same at the same root scale: each carries
-        // its own model correction on the child BELOW the root (Charge 1.38 / Mass 1.38 /
-        // Space 1.34 / Time 1.42), because their exported models are different sizes and Mass is
-        // four animated Shepard shells rather than one solid body. Charge and Mass shipped with
-        // NO correction, so a uniform root scale rendered them ~30-42% smaller than Space and
-        // Time - which is exactly what the old per-species scales had been quietly compensating
-        // for (the gyroid authored its Mass heart at 4.0 where every other flora authored Space
-        // at 3.0, a 1.33 ratio cancelling Space's 1.34 child). If an element still reads wrong,
-        // fix its crystal PREFAB's model child. Scaling the root instead would move the collect
-        // reward and the live domain fauna buff with it, both of which read the root's
-        // lossyScale - and re-open the per-element reward spread this whole system removed.
+        // The four exported crystal models are very different sizes in their own FBX units, so
+        // each prefab carries a correction on its model child BELOW the root (Charge 1.0 /
+        // Mass 1.38 / Space 1.34 / Time 1.42). Those children exist to equalize apparent
+        // EXTENT, and at 1.0/1.0/1.34/1.42 they already did so within 7% (measured off the FBX
+        // Vertices bounds normalized by UnitScaleFactor - Space's file is unit-1, the others
+        // unit-100). Mass is raised to 1.38 anyway because it was reported reading THIN rather
+        // than small: it is four concentric ShepardGraph shells whose visible shell sits well
+        // inside the envelope, where Space is one solid body inflated by _spread. That 1.38 is
+        // an eye-calibration pending a playtest, not a measurement.
+        //
+        // If an element reads wrong, fix ITS crystal PREFAB's model child. Scaling the root
+        // instead would move the collect reward and the live domain fauna buff with it, both of
+        // which read the root's lossyScale - re-opening the per-element reward spread this
+        // whole system removed.
 
         // Used only if Resources/ElementalCrystalSet is missing - the same misconfiguration the
         // provisioning paths below already report loudly. Mirrors the shipped asset's values.
