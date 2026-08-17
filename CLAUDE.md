@@ -2341,16 +2341,29 @@ scale bump** with a one-shot unlock punch.
   `Multiplier`: the default anchors at exactly 1 at the resting level so an element can only ADD
   to a vessel's baseline, and handing an element a parameter's whole RANGE means the authored
   value becomes what a MID-level vessel gets — a real, deliberate baseline change, not a bug.
-  Charge 5 ("Pilot Echo") extends the sight from mass to PILOTS: every vessel inside the same
-  volume brightens in its **own domain's colours** — `EchoSightVesselHighlighter` drives
-  `_ColorMultiplier` (the lever `VesselGraph` already exposes and `VesselAnimation` already uses
-  for its boost glow) from each material's own authored value via a per-material-index
-  MaterialPropertyBlock, so nothing is recoloured and a Ruby pilot can never read as Jade. **Per
-  -vessel CPU is correct there and would be a violation on prisms** — the prism half of the same
-  sight is a global uniform only because there are tens of thousands of them; a dozen vessels
-  already individually simulated, lit only while a trigger is held, is the ordinary tool. Both
-  halves share ONE predicate (`BlastVolume.Contains`, the CPU transcription of
-  `AOEConicSweepQueryJob`), so a highlighted vessel and the prisms around it light up together.
+  Charge 5 ("Pilot Echo") extends the sight from mass to PILOTS, and **a highlight competes with
+  everything else the same trigger lights up** — the first version only raised `_ColorMultiplier`
+  and was invisible in Rampage, because the sight lights all ~9,800 cactus prisms at once so
+  brightness was the one channel already saturated, and a hull tint says nothing at all about a
+  pilot standing BEHIND mass. It now marks a vessel two ways, each covering a case the other
+  cannot: the hull is driven to its own **saturated domain colour** (`_Color1`/`_Color2` as well as
+  `_ColorMultiplier`, lerped from each material's own authored values, so it is a shift and a Ruby
+  pilot can never read as Jade — HUE is what separates a ship from lit mass), and an additive
+  **halo** (`EchoSightHalo.shader` — a soft disc with a hard RING at the hull's silhouette) drawn
+  `ZTest Always` so it reads through prisms and in empty space. Three render states there are
+  load-bearing: `ZTest Always` (the only way "behind mass" can read), `Blend One One` (can only ADD
+  light, so it never darkens what it marks and never needs a sort order), `ZWrite Off` (can never
+  occlude the world). It is hand-written ShaderLab because Shader Graph cannot express "ignore the
+  depth buffer" on a URP Unlit target; it billboards in the VERTEX shader from the object origin so
+  the halo costs no per-frame CPU transform write and one shared unit quad serves every size (the
+  radius is a shader property, never a transform scale); and it is sized by
+  `PrismOcclusionCorridor.MeasureCircumscribedRadius`, the corridor's own hull measurement, so a new
+  vessel of any size is correct with nothing authored. **Per-vessel CPU is correct there and would
+  be a violation on prisms** — the prism half of the same sight is a global uniform only because
+  there are tens of thousands of them; a dozen vessels already individually simulated, lit only
+  while a trigger is held, is the ordinary tool. Both halves share ONE predicate
+  (`BlastVolume.Contains`, the CPU transcription of `AOEConicSweepQueryJob`), so a highlighted
+  vessel and the prisms around it light up together.
   **Mass took crystal seeding** off Charge (recharge multiplier renamed
   `cooldownMultiplierAtFullMass`), **Twin Seed is retired** — one crystal per cycle at every
   level — and Mass 5 ("Claimed Seed") changes the seed's TIER instead of its count: below it the
@@ -2364,17 +2377,35 @@ scale bump** with a one-shot unlock punch.
   just no longer wired here). Its HUD row was re-cut to match: Charge draws a **procedural**
   blast-profile capsule (`BlastProfileGraphic` — a sprite ladder would quantize a continuous
   function of two live meters and silently stop matching the blast on the first retune), Mass the
-  seeding recharge, Space the jaws plus a widened prism tally, Time the boost ring. **Colour is a
+  seeding recharge, Space the jaws plus a widened prism tally, Time the boost ring. **Space reports
+  what a blast did to MASS and Charge what it did to the LIVING** — pilots debuffed and creatures
+  killed, two stacked bare numbers in the prism tally's own grammar, told apart by palette colour
+  (pilots in `whiteColor`, the colour the engaged sight wears; creatures in `blueColor`, the
+  neutral-lifeform range a living heart already wears). The two counts arrive differently and the
+  asymmetry is the lesson: the blast can report PILOTS itself (`ExplosionImpactor` keeps a per-blast
+  vessel ledger, so a target loitering in a growing cone counts once, and `OnBlastResolved` now
+  carries a `BlastTally` struct so the next quantity is an added field rather than two silently
+  reordered ints), but it cannot report CREATURES — a creature dies when its last body prism is
+  destroyed and the ECOLOGY announces that several steps downstream
+  (`CellRuntimeDataSO.OnFaunaKilled`, carrying the killer's NAME), so fauna are counted over the
+  blast's own lifetime between the new `OnBlastBegan` and `OnBlastResolved`. That window is exact
+  only because the blast is the Dolphin's ONLY prism-destroying force, and two blasts overlapping
+  inside the 0.15 s cooldown would share a count — fine for a tally, **never** for scoring, which is
+  `StatsManager`'s job off the same channel. **Colour is a
   LANGUAGE across that row, not per-icon decoration** (second pass, same day): the Charge profile
   crosses the shared `ElementalBarsConfigSO` ladder's **grey → white** — already the HUD's words for
   "not in use" / "in use", since a petal steps through exactly those two between levels 0 and 1 — and
   the Mass slot crosses **lime → the pilot's own DOMAIN colour**, because the upgrade's whole point
-  is that the seed becomes a TEAM crystal, so the slot says which team. It uses the domain's
-  `DullCrystalColor` (at the crystal shaders' fresnel power the dull colour paints ~93% of the
-  crystal and the bright one is a 2.5% hairline, so the dull one is what the pilot actually sees out
-  there) resolved LIVE off `GameDataSO.ThemeManagerData.ColorSet` — the path every other
-  domain-tinted UI reads — so the domain-changer toy re-colours it and nothing is snapshotted at
-  component-creation time. A **Space reach bar was tried and dropped**: reach only moves when the
+  is that the seed becomes a TEAM crystal, so the slot says which team. It uses **`SO_ColorSet.GetDomainSignalColor`** — the domain UI colour with its
+  brightest channel driven to 1 — resolved LIVE off `GameDataSO.ThemeManagerData.ColorSet`, the path
+  every other domain-tinted UI reads, so the domain-changer toy re-colours it and nothing is
+  snapshotted at component-creation time. **A crystal colour is NOT a domain's UI colour**: the slot
+  first sampled `DullCrystalColor` on the sound reasoning that the icon should wear what the crystal
+  wears, and rendered BLACK — that field is authored `(0,0,0)` on Jade, Ruby AND Gold, which is right
+  on a faceted crystal (a near-black body with a bright fresnel rim) and unusable in UI, while
+  `BrightCrystalColor` tops out at value 0.75. The new accessor returns white for an unauthored
+  domain, because a colour accessor that can return black can make a UI element vanish, and a
+  vanished element reads as "not implemented" rather than as "mis-tinted" (`Docs/PALETTE.md` §2.4). A **Space reach bar was tried and dropped**: reach only moves when the
   element moves, so a near-static line competed with two live gauges, and the slot says more by
   saying only ANGLE and AMOUNT. One general lesson from the same pass: **a centre-fan triangulation
   of a generated `MaskableGraphic` is only as good as its outline ORDERING** — the profile's caps

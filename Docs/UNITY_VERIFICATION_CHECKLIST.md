@@ -49,11 +49,19 @@ record: `_Scripts/Controller/Vessel/R_VesselActions/DOLPHIN_CRYSTAL_SEEDING.md` 
   deleted); Space = jaws + a widened prism tally; Time = the boost ring. Prefab YAML was
   hand-authored, and `DolphinHUDRowWirer` was re-cut to the same layout.
 - **Second pass (colour + subtraction).** The Charge profile crosses the shared palette's
-  **grey → white** (idle → in use) instead of a bespoke warm colour. The Mass slot crosses
-  **lime → the pilot's domain** `DullCrystalColor`, resolved live off
-  `GameDataSO.ThemeManagerData.ColorSet`. The Space **reach bar was dropped entirely** — that slot
-  says angle and amount only. And `BlastProfileGraphic`'s outline winding was fixed: it was
-  measuring the end caps from the wrong basis vector and rendering a bowtie.
+  **grey → white** (idle → in use) instead of a bespoke warm colour. The Space **reach bar was
+  dropped entirely** — that slot says angle and amount only. And `BlastProfileGraphic`'s outline
+  winding was fixed: it was measuring the end caps from the wrong basis vector and rendering a bowtie.
+- **Third pass (all three from playtest).** (a) The Mass slot rendered **black** — `DullCrystalColor`
+  is authored (0,0,0) on Jade/Ruby/Gold in the live palette. Replaced with the new
+  `SO_ColorSet.GetDomainSignalColor` (domain UI colour, brightest channel driven to 1);
+  `Docs/PALETTE.md` §2.4. (b) **Pilot Echo was indistinguishable from the lit prisms in Rampage.**
+  Brightness was the one channel the ability itself had already saturated, so the hull is now driven
+  to its **saturated domain colour** (`_Color1`/`_Color2`) AND gets an additive **halo** — a disc with
+  a hard ring at the silhouette, drawn `ZTest Always` so it reads through mass and in empty space
+  (`_Graphics/Materials/Graphs/EchoSightHalo.shader` + `Resources/EchoSightHalo.mat`, both new,
+  hand-authored). (c) The Charge slot now reports **pilots debuffed** and **creatures killed** after
+  each blast, two stacked bare numbers in the Space tally's grammar, told apart by palette colour.
 
 **Verify in editor**
 
@@ -81,6 +89,23 @@ record: `_Scripts/Controller/Vessel/R_VesselActions/DOLPHIN_CRYSTAL_SEEDING.md` 
    full size without auto-shrinking.
 10. **MPPM two clients** — Pilot Echo is local-only presentation, but the unlock bit is replicated;
     confirm a remote Dolphin holding RT does not brighten anything on the other client.
+11. **The halo shader is the highest-risk item on this branch** — a hand-written ShaderLab pass that
+    no compiler here can check. Confirm `EchoSightHalo` compiles with no errors, and that
+    `Resources/EchoSightHalo.mat` resolves it (a magenta or invisible quad means it did not). Its
+    `.shader.meta` GUID is hand-minted (`6c2b9d4a…`) and the material references it by that GUID; if
+    Unity re-mints it, re-assign the shader on the material.
+12. **Halo through mass.** At Charge 5 in **Rampage** (the case that motivated it — ~9,800 cactus
+    prisms all lit at once): hold RT with a rival in the cone and confirm the halo reads (a) in open
+    space, (b) surrounded by lit prisms, (c) fully behind prisms. Confirm the ring lands on the hull's
+    silhouette rather than inside or well outside it, and that it never occludes anything (ZWrite is
+    off) or darkens the ship (additive).
+13. **Two rivals of different domains in one cone** must be tellable apart — each halo and hull wears
+    its OWN domain colour, never a shared highlight colour.
+14. **The living tally.** Fire a blast that catches a rival and some fauna: the Charge slot shows a
+    white pilot count and a blue creature count, both fading after ~2.5 s. Fire one that catches
+    neither and confirm both stay blank (no "0"). Then fire two blasts back to back inside the 0.15 s
+    cooldown — the fauna count may be shared between them; that is the documented window limitation,
+    not a bug to chase.
 
 **First-pass tuning (not settled)**
 
@@ -88,8 +113,12 @@ record: `_Scripts/Controller/Vessel/R_VesselActions/DOLPHIN_CRYSTAL_SEEDING.md` 
 |---|---|---|
 | `_coreMultiplierAtRestCharge` / `AtFullCharge` | `DolphinVesselExplosionByCrystalEffect` | 0.75 / 1.5 |
 | `_minCoreMultiplier` | " | 0.5 |
-| `vesselHighlightGain` | `Dolphin.prefab` ▸ `EchoSightActionExecutor` | 3.5 |
+| `vesselHighlightGain` | `Dolphin.prefab` ▸ `EchoSightActionExecutor` | 4 |
+| `vesselHighlightSaturation` | " | 0.85 |
+| `vesselHaloScale` | " | 2.4 (halo radius ÷ hull radius) |
+| `vesselHaloIntensity` | " | 1.4 |
 | `vesselHighlightFadeSeconds` | " | 0.18 |
+| `_RingWidth` / `_RingGain` / `_GlowFalloff` | `Resources/EchoSightHalo.mat` | 0.12 / 1.6 / 2.5 |
 | `maxExtentFraction` / `minRadiusFraction` | `DolphinHUDVariant` ▸ `Profile` | 0.86 / 0.06 |
 
 **Known gap.** `_coreExplosionScale` (320) was authored as the blast's true thickness; it is now

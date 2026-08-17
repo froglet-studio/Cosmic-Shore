@@ -17,7 +17,7 @@ namespace CosmicShore.Editor
     /// 80×80 <c>Icon</c>. The numbers below are lifted verbatim from SquirrelHUDVariant.prefab,
     /// which established them — change them here and you are changing the fleet, so don't.
     ///
-    ///   Charge → ProfileIcon   (a generated blast-profile mesh) "Pilot Echo"
+    ///   Charge → ProfileIcon   (generated profile + a living tally) "Pilot Echo"
     ///   Mass   → CrystalIcon   (the seeding recharge fill)       "Claimed Seed"
     ///   Space  → JawIcon       (jaw halves + a prism tally)      "Clean Blast"
     ///   Time   → Boost Display (the authored 11-step ring)       "Live Current"
@@ -109,6 +109,8 @@ namespace CosmicShore.Editor
             // The Charge slot's icon is a transparent CONTAINER; the generated profile is the gauge.
             MakeTransparentContainer(profile);
             var profileGraphic = EnsureProfile(profile.transform);
+            var pilotText = EnsureTallyText(profile.transform, "PilotCount", -18f);
+            var faunaText = EnsureTallyText(profile.transform, "FaunaCount", -44f);
 
             // The recharge wipe. (The boost ring steps through authored sprites instead.)
             crystal.type = Image.Type.Filled;
@@ -120,6 +122,8 @@ namespace CosmicShore.Editor
 
             var so = new SerializedObject(view);
             Bind(so, "blastProfile", profileGraphic);
+            Bind(so, "pilotCountText", pilotText);
+            Bind(so, "faunaCountText", faunaText);
             Bind(so, "crystalIcon", crystal);
             Bind(so, "driftBoostIcon", drift);
             Bind(so, "blastCountText", blastText);
@@ -249,6 +253,31 @@ namespace CosmicShore.Editor
             image.raycastTarget = false;
             image.preserveAspect = true;
             return rect;
+        }
+
+        /// <summary>
+        /// One of the Charge slot's two stacked tallies (pilots debuffed / creatures killed). Same
+        /// grammar as the Space slot's prism tally — a bare centred number — because the row should
+        /// read as one language; the two are told apart by COLOUR, which the view resolves from the
+        /// shared palette rather than from anything authored here.
+        /// </summary>
+        static TMP_Text EnsureTallyText(Transform parent, string name, float y)
+        {
+            var go = EnsureChild(parent, name);
+            var text = go.GetComponent<TextMeshProUGUI>();
+            if (!text) text = go.AddComponent<TextMeshProUGUI>();
+
+            var rect = go.GetComponent<RectTransform>();
+            rect.anchorMin = rect.anchorMax = new Vector2(0.5f, 0.5f);
+            rect.pivot = new Vector2(0.5f, 1f);
+            rect.sizeDelta = new Vector2(120f, 26f);
+            rect.anchoredPosition = new Vector2(0f, y);
+
+            text.alignment = TextAlignmentOptions.Center;
+            text.fontSize = 22f;
+            text.raycastTarget = false;
+            text.text = string.Empty;
+            return text;
         }
 
         static TMP_Text EnsureBlastText(Transform parent)

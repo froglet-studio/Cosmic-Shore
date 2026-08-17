@@ -15,7 +15,7 @@ namespace CosmicShore.UI
     /// time (the same order as the element flowers above them), each bound to the element that
     /// upgrades it:
     ///
-    ///   Charge → Echo Sight       (the blast PROFILE)      → "Pilot Echo"
+    ///   Charge → Echo Sight       (profile + living tally) → "Pilot Echo"
     ///   Mass   → crystal seeding  (the recharge fill)      → "Claimed Seed"
     ///   Space  → cone blast       (jaws + tally)           → "Clean Blast"
     ///   Time   → charge fill rate (the boost ring)         → "Live Current"
@@ -58,6 +58,24 @@ namespace CosmicShore.UI
         [SerializeField] private Color profileEngagedColor = new(0.96f, 0.96f, 1f, 1f);
         [Tooltip("Seconds the profile takes to reach its engaged colour. Nothing snaps.")]
         [SerializeField, Min(0.01f)] private float profileEngageDuration = 0.15f;
+
+        [Header("Charge — the living tally")]
+        [Tooltip("PILOTS the last blast debuffed. A bare number, exactly like the Space slot's prism " +
+                 "tally - the Charge slot reports what the blast did to the LIVING, Space what it did " +
+                 "to MASS.")]
+        [SerializeField] private TMP_Text pilotCountText;
+        [Tooltip("CREATURES the last blast killed. Bare number, sitting under the pilot count.")]
+        [SerializeField] private TMP_Text faunaCountText;
+        [Tooltip("Fallback colour for the pilot count. Normally overridden by the shared config's " +
+                 "whiteColor - the same white the engaged sight uses, because a pilot IS what the " +
+                 "sight is for.")]
+        [SerializeField] private Color pilotCountColor = new(0.96f, 0.96f, 1f, 1f);
+        [Tooltip("Fallback colour for the creature count. Normally overridden by the shared config's " +
+                 "blueColor - the palette's neutral-LIFEFORM range, the same blue-white a living " +
+                 "creature's uncollectable heart wears (Docs/PALETTE.md 2.2).")]
+        [SerializeField] private Color faunaCountColor = new(0.22f, 0.51f, 1f, 1f);
+        [Tooltip("Seconds the living tally stays up after a blast.")]
+        [SerializeField, Min(0.1f)] private float echoCountHoldSeconds = 2.5f;
 
         // ---- Mass: crystal seeding ----------------------------------------------------
         [Header("Mass — crystal seeding")]
@@ -143,7 +161,7 @@ namespace CosmicShore.UI
         Tween _profileColorTween, _profileScaleTween;
         Tween _crystalScaleTween, _crystalColorTween;
         Tween _jawUpperTween, _jawLowerTween, _jawPunchTween, _jawColorTween;
-        Tween _blastColorTween;
+        Tween _blastColorTween, _pilotColorTween, _faunaColorTween;
 
         // The jaw halves' own Graphics. The row's Space icon is a fully transparent container, so
         // these two ARE the visible Space gauge and the only thing worth tinting.
@@ -154,8 +172,11 @@ namespace CosmicShore.UI
 
         Color _profileRest;
         Color _profileEngaged;
+        Color _pilotRest;
+        Color _faunaRest;
 
         float _blastCountTimer;
+        float _echoCountTimer;
         float _currentJawAngle;
         bool _sightEngaged;
         bool _lastSeedsTeam;
@@ -201,6 +222,11 @@ namespace CosmicShore.UI
                 blastCountText.text = string.Empty;
             }
             _blastCountTimer = 0f;
+
+            ResolveTallyColors();
+            if (pilotCountText) { pilotCountText.color = _pilotRest; pilotCountText.text = string.Empty; }
+            if (faunaCountText) { faunaCountText.color = _faunaRest; faunaCountText.text = string.Empty; }
+            _echoCountTimer = 0f;
 
             // The ring's colour is authored art - never repainted from here.
             if (driftBoostIcon && driftBoostIcon.type == Image.Type.Filled)
@@ -411,9 +437,77 @@ namespace CosmicShore.UI
 
         void Update()
         {
-            if (_blastCountTimer <= 0f || !blastCountText) return;
-            _blastCountTimer -= Time.deltaTime;
-            if (_blastCountTimer <= 0f) blastCountText.text = string.Empty;
+            if (_blastCountTimer > 0f && blastCountText)
+            {
+                _blastCountTimer -= Time.deltaTime;
+                if (_blastCountTimer <= 0f) blastCountText.text = string.Empty;
+            }
+
+            if (_echoCountTimer > 0f)
+            {
+                _echoCountTimer -= Time.deltaTime;
+                if (_echoCountTimer <= 0f)
+                {
+                    if (pilotCountText) pilotCountText.text = string.Empty;
+                    if (faunaCountText) faunaCountText.text = string.Empty;
+                }
+            }
+        }
+
+        /// <summary>
+        /// What the last blast did to LIVING things: pilots caught and debuffed, creatures killed.
+        /// The Charge slot's counterpart to the Space slot's prism tally, and deliberately the same
+        /// grammar — bare numbers that flash and fade — so the row reads as one language.
+        ///
+        /// The two are told apart by COLOUR rather than by a label or a glyph: pilots wear the
+        /// palette's white (the colour the engaged sight itself wears, because a pilot is what the
+        /// sight is for) and creatures wear its blue (the neutral-lifeform range a living creature's
+        /// uncollectable heart already wears). A zero side is left blank rather than printing "0" —
+        /// an empty slot says "none" without competing for the eye.
+        /// </summary>
+        public void ReportEchoTally(int pilotsDebuffed, int faunaKilled)
+        {
+            bool anything = pilotsDebuffed > 0 || faunaKilled > 0;
+
+            if (pilotCountText)
+            {
+                pilotCountText.text = pilotsDebuffed > 0 ? pilotsDebuffed.ToString() : string.Empty;
+                if (pilotsDebuffed > 0) FlashTally(pilotCountText, _pilotRest, ref _pilotColorTween);
+            }
+
+            if (faunaCountText)
+            {
+                faunaCountText.text = faunaKilled > 0 ? faunaKilled.ToString() : string.Empty;
+                if (faunaKilled > 0) FlashTally(faunaCountText, _faunaRest, ref _faunaColorTween);
+            }
+
+            _echoCountTimer = anything ? echoCountHoldSeconds : 0f;
+        }
+
+        /// <summary>
+        /// Flash a tally to the blast's own flash colour and settle back to its resting colour.
+        /// DOVirtual rather than a DOColor extension: this project ships no DOTween TMP module, so
+        /// TMP_Text has no tween shortcut of its own.
+        /// </summary>
+        void FlashTally(TMP_Text text, Color rest, ref Tween tween)
+        {
+            tween?.Kill();
+            text.color = blastFlashColor;
+            tween = DOVirtual.Color(blastFlashColor, rest, colorTweenDuration,
+                    c => { if (text) text.color = c; })
+                .SetEase(Ease.OutQuad)
+                .SetLink(text.gameObject);
+        }
+
+        /// <summary>
+        /// The two tally colours, from the shared palette rather than authored here — same rule the
+        /// jaw arming and the profile follow.
+        /// </summary>
+        void ResolveTallyColors()
+        {
+            ResolveBarsConfig();
+            _pilotRest = barsConfig ? barsConfig.whiteColor : pilotCountColor;
+            _faunaRest = barsConfig ? barsConfig.blueColor : faunaCountColor;
         }
 
         // ---------------------------------------------------------------
@@ -656,6 +750,8 @@ namespace CosmicShore.UI
             _jawPunchTween?.Kill();
             _jawColorTween?.Kill();
             _blastColorTween?.Kill();
+            _pilotColorTween?.Kill();
+            _faunaColorTween?.Kill();
         }
     }
 }

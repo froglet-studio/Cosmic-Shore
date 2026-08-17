@@ -44,10 +44,24 @@ namespace CosmicShore.Gameplay
         [Tooltip("Seconds a VESSEL takes to bloom into / fade out of the highlight as the cone " +
                  "sweeps over it. Nothing pops.")]
         [SerializeField, Min(0.01f)] private float vesselHighlightFadeSeconds = 0.18f;
-        [Tooltip("Brightness gain applied to a highlighted vessel's OWN colours at full highlight. " +
-                 "It multiplies whatever each material already rests at, so the pilot lights up in " +
-                 "their domain rather than being recoloured.")]
-        [SerializeField, Min(1f)] private float vesselHighlightGain = 3.5f;
+        [Tooltip("Brightness gain applied to a highlighted vessel's own colours at full highlight. " +
+                 "It multiplies whatever each material already rests at, so an engine that rests " +
+                 "bright brightens further rather than being flattened.")]
+        [SerializeField, Min(1f)] private float vesselHighlightGain = 4f;
+        [Tooltip("How far the marked hull is driven to its SATURATED domain colour (0 = brightness " +
+                 "only). Brightness alone is not enough: the sight lights up the surrounding prisms " +
+                 "at the same time, so only HUE separates a marked ship from the lit mass around it.")]
+        [SerializeField, Range(0f, 1f)] private float vesselHighlightSaturation = 0.85f;
+        [Tooltip("Halo radius as a multiple of the target's own hull radius. The ring lands ON the " +
+                 "silhouette, so this also sets how far outside the hull the glow reaches.")]
+        [SerializeField, Min(1.05f)] private float vesselHaloScale = 2.4f;
+        [Tooltip("Peak additive strength of the halo. This is the ONLY part of the highlight that " +
+                 "reads when the target is behind mass (it draws with ZTest Always), so it is what " +
+                 "makes the ability work in a dense arena.")]
+        [SerializeField, Min(0f)] private float vesselHaloIntensity = 1.4f;
+        [Tooltip("Turn the halo off to leave the hull tint as the only mark. Off means a pilot " +
+                 "standing behind prisms cannot be seen at all - only do this to isolate a problem.")]
+        [SerializeField] private bool vesselHaloEnabled = true;
 
         // The player roster - the one live list of who is flying. Injected rather than searched:
         // vessels DO get GameObjectInjector.InjectRecursive at spawn, so this is populated by the
@@ -154,14 +168,28 @@ namespace CosmicShore.Gameplay
             if (!upgraded && _vesselHighlighter == null) return;
 
             _vesselHighlighter ??= new EchoSightVesselHighlighter(
-                vesselHighlightFadeSeconds, vesselHighlightGain);
+                vesselHighlightFadeSeconds, vesselHighlightGain, vesselHighlightSaturation,
+                vesselHaloScale, vesselHaloIntensity, vesselHaloEnabled);
 
             _vesselHighlighter.Tick(
                 upgraded ? _gameData?.Players : null,
                 _status?.Vessel,
                 volume,
                 upgraded ? strength01 : 0f,
-                Time.deltaTime);
+                Time.deltaTime,
+                ResolveDomainSignalColor);
+        }
+
+        /// <summary>
+        /// A vessel's own domain colour at full strength. Read live off the shared
+        /// <c>ColorSet</c> — the path every other domain-tinted surface reads — so two rivals in one
+        /// cone are tellable apart and the freestyle domain-changer toy re-colours a mark mid-flight.
+        /// </summary>
+        Color ResolveDomainSignalColor(IVessel vessel)
+        {
+            var colorSet = _gameData?.ThemeManagerData?.ColorSet;
+            var domain = vessel?.VesselStatus != null ? vessel.VesselStatus.Domain : Domains.Blue;
+            return colorSet != null ? colorSet.GetDomainSignalColor(domain) : Color.white;
         }
 
         void HardReset()

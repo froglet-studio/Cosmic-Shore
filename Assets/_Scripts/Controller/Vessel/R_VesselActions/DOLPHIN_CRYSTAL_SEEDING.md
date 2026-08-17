@@ -428,3 +428,113 @@ The general lesson, and the reason it was invisible until it was on screen: **a 
 only as good as the outline's ordering**, and a mis-ordered outline does not fail — it renders a
 plausible-looking wrong shape. A generated `MaskableGraphic` should be checked for a simple loop, not
 just for "vertices in roughly the right places".
+
+---
+
+## 10. 2026-08-17, third pass — the highlight has to actually find a pilot
+
+Three playtest findings, all of them cases where a change was *correct* and still did not work.
+
+### The Mass slot rendered black
+
+`DullCrystalColor` is authored **(0, 0, 0)** on Jade, Ruby and Gold in the live
+`OriginalColorSetSO`. §9 picked it on the reasoning that the icon should wear the colour the crystal
+wears, and that reasoning was sound — the near-black body with a bright fresnel rim is exactly what
+makes a faceted domain crystal read as a dark gem. It is simply not a colour a UI element can be.
+
+Fixed by adding **`SO_ColorSet.GetDomainSignalColor(domain)`** — the domain UI colour
+(`TrailHighlightColor`) with its brightest channel driven to 1, hue and saturation intact — and using
+it for the slot. Jade → (0.073, 1.0, 0.948), Ruby → (1.0, 0, 0.976), Gold → (1.0, 0.657, 0). It
+returns white for an unauthored domain, because an accessor that can return black is an accessor that
+can make a UI element vanish, and a vanished element reads as "not implemented". Full record and the
+per-domain table: `Docs/PALETTE.md` §2.4.
+
+### Pilot Echo was indistinguishable from the prisms
+
+Reported from Rampage, which is the worst case by construction: its arena is a forest of ~9,800
+cactus prisms, and the sight lights **all of them** at once. A rival brightened by `_ColorMultiplier`
+sat inside a brightened forest and read as more forest. And a pilot standing *behind* mass had no
+mark at all, because a hull tint cannot be seen through a prism.
+
+The generalisable mistake: **a highlight competes with everything else the same trigger lights up.**
+Brightness was the one channel already saturated by the ability itself, so it was the one channel
+that could not carry the signal. Two layers replace it, each covering a case the other cannot:
+
+1. **The hull is driven to its own SATURATED domain colour** — `_Color1` / `_Color2` (the pair
+   `VesselGraph` exposes) as well as `_ColorMultiplier`. HUE is what separates a ship from lit mass,
+   because the mass is already bright. Lerped from each material's own authored colours, so this is
+   still a *shift*, not an override, and it still cannot make a Ruby pilot read as Jade.
+2. **An additive halo drawn with `ZTest Always`** —
+   `_Graphics/Materials/Graphs/EchoSightHalo.shader`, a soft disc with a hard **ring** at the hull's
+   silhouette, in the same domain colour. This is the half that works through prisms and in empty
+   space. The ring matters as much as the glow: a ring is a shape nothing in the arena has, whereas a
+   glow among lit prisms is one more bright thing.
+
+Three properties of that shader's render state are load-bearing and none is decorative —
+`ZTest Always` (the only way "behind mass" can read), `Blend One One` (it can only add light, so it
+never darkens what it marks and never needs a correct sort order), `ZWrite Off` (it can never occlude
+the world it is drawn over). It is a hand-written `.shader` rather than a Shader Graph because Shader
+Graph cannot express "ignore the depth buffer" on a URP Unlit target, and because at 40 lines
+synthesising graph JSON would be the more fragile artefact.
+
+Two implementation notes worth keeping:
+
+- **The disc is billboarded in the VERTEX shader**, from the object origin in view space. So the halo
+  is parented to the target at local zero and costs *no* per-frame CPU transform write, the parent
+  vessel's rotation cannot tilt or foreshorten it, and one shared unit quad serves every halo at
+  every size (the radius is a shader property, never a transform scale — which is also why a parent
+  vessel's own scale cannot squash the circle).
+- **Its size is measured with `PrismOcclusionCorridor.MeasureCircumscribedRadius`**, the same helper
+  the occlusion corridor sizes itself with — hull-only, rotation-invariant, skinned meshes measured in
+  root-bone space. Reusing it means the halo is ship-sized on a new vessel of any size with nothing
+  authored, and it cannot disagree with the corridor about how big a hull is.
+
+The material is loaded from `Resources/EchoSightHalo.mat` rather than serialized on a prefab: the
+highlighter is a plain C# object with no inspector, and a Resources-referenced material also keeps
+the shader out of the build stripper's reach (an unreferenced shader is stripped, and `Shader.Find`
+would then return null in a player — an editor-only success).
+
+### The Charge slot now reports what the blast did to the LIVING
+
+Space says what the cone did to MASS; Charge says what it did to living things — **pilots debuffed**
+and **creatures killed**, as two stacked bare numbers in the same grammar as the prism tally. They
+are told apart by colour, from the shared palette: pilots in `whiteColor` (the colour the engaged
+sight itself wears, because a pilot is what the sight is for), creatures in `blueColor` (the
+neutral-lifeform range a living creature's uncollectable heart already wears). A zero side renders
+blank rather than "0".
+
+The two counts come from different places, and the asymmetry is the interesting part:
+
+- **Pilots** the blast can report itself. `ExplosionImpactor` grew a per-blast vessel ledger
+  (`_vesselsHit`, the same shape as `_crystalsHit`) recorded in `AcceptImpactee` after the
+  friendly-fire gate, so a target loitering inside a still-growing cone is counted **once** rather
+  than once per frame. `OnBlastResolved` now carries a `BlastTally` struct instead of a bare int — a
+  struct so the next quantity is an added field rather than a signature change that silently reorders
+  two ints at every call site.
+- **Creatures** it cannot. A creature dies when its last body prism is destroyed, and that death is
+  announced by the ECOLOGY several steps downstream (`CellRuntimeDataSO.OnFaunaKilled`, carrying the
+  killer's NAME). So fauna are counted over the blast's own lifetime: zeroed on the new
+  `ExplosionImpactor.OnBlastBegan`, read on `OnBlastResolved`. The window is exact in practice because
+  the blast is the Dolphin's only prism-destroying force; two blasts overlapping inside the 0.15 s
+  cooldown would share a count. **That is acceptable for a tally and for nothing else** — these
+  numbers must never be read for scoring, which is `StatsManager`'s job off the same channel.
+
+The kill filter compares `IPlayer.Name` against the channel's killer name — the exact comparison
+`StatsManager.LifeformKilled` makes, so the tally credits the same kills the scoreboard does with no
+second bookkeeping path to keep in sync. And `Fauna.Die` only publishes player-attributed deaths
+(starvation and predation are filtered there), so the food web can never inflate it.
+
+The kill channel is resolved from whichever cell the vessel is flying in
+(`Cell.FindCellContaining` → `FindNearestActiveCell` → `Cell.RuntimeData`), the same way the seeding
+executor resolves its cell — no per-prefab wiring, and a scene with no cell simply has no creatures
+to count. The unsubscribe detaches from the channel it *attached* to, never a freshly-resolved one,
+so a cell swap mid-flight cannot strand a subscription on the old cell's SO.
+
+### Files added
+
+| role | file |
+|---|---|
+| Halo shader | `_Graphics/Materials/Graphs/EchoSightHalo.shader` |
+| Halo material | `Resources/EchoSightHalo.mat` |
+| Domain signal colour | `SO_ColorSet.GetDomainSignalColor` |
+| Per-blast vessel ledger + tally struct | `ExplosionImpactor` (`_vesselsHit`, `BlastTally`, `OnBlastBegan`) |
