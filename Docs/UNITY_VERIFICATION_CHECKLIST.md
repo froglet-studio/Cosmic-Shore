@@ -47,7 +47,8 @@ record: `_Scripts/Controller/Vessel/R_VesselActions/DOLPHIN_CRYSTAL_SEEDING.md` 
   `Dolphin.prefab`.
 - **HUD row re-cut**: Charge = new procedural `BlastProfileGraphic`; Mass = crystal recharge (pips
   deleted); Space = jaws + a widened prism tally; Time = the boost ring. Prefab YAML was
-  hand-authored, and `DolphinHUDRowWirer` was re-cut to the same layout.
+  hand-authored, and the row wirer was re-cut to the same layout and generalized fleet-wide as
+  `VesselAbilityRowWirer` (`FrogletTools > Vessels > Wire Vessel Ability Row`).
 - **Second pass (colour + subtraction).** The Charge profile crosses the shared palette's
   **grey → white** (idle → in use) instead of a bespoke warm colour. The Space **reach bar was
   dropped entirely** — that slot says angle and amount only. And `BlastProfileGraphic`'s outline

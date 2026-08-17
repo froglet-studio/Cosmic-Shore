@@ -437,7 +437,7 @@ and the gape froze.
 
 Fleet-standard row (charge → mass → space → time, the same order as the element flowers), on
 the Squirrel's exact anchor bands. `DolphinHUDVariant.prefab` is authored;
-**FrogletTools > Vessels > Wire Dolphin Ability Row** re-binds a broken one without
+**FrogletTools > Vessels > Wire Vessel Ability Row** re-binds a broken one without
 re-deriving the layout.
 
 | slot | icon | shows |

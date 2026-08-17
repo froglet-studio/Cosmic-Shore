@@ -2506,7 +2506,14 @@ scale bump** with a one-shot unlock punch.
   `ElementalAbilityMapSO` entries are still `(open design slot)` with `Input = 0` and no
   `UpgradeLabel`, and their HUDs have 0–2 lower-right icons rather than four. Author the map
   (`Docs/ElementalAbilitySystem/FLEET_MAPS.md` §2 holds the un-approved proposals) and the icons
-  before wiring — do not invent an element→ability mapping to satisfy the audit.
+  before wiring — do not invent an element→ability mapping to satisfy the audit. Once the map
+  exists, the mechanical half is one click: **FrogletTools > Vessels > Wire Vessel Ability Row**
+  (`VesselAbilityRowWirer`) places the four buttons at the fleet-standard bands, creates a
+  `{Element}Icon` in each, and binds `abilityIcons` in `AbilityDisplayOrder` — on ANY vessel, from
+  nothing. It is idempotent (find-by-name, re-bind only) and never touches sprites, so it is a
+  repair path as well as a bring-up path. A slot whose gauge is authored art is ADOPTED by name
+  rather than re-created, and a vessel with its own live gauges adds a per-vessel step there (the
+  Dolphin's is the only one today).
 - Full reference: `Docs/ElementalAbilitySystem/ARCHITECTURE.md` §7.1. The `/vessel` skill
   encodes this contract (plus the rest of the per-vessel checklist) — use it for any vessel work.
 

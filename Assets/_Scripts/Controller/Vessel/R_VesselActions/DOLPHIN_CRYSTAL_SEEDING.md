@@ -358,8 +358,12 @@ by `VesselExplosionByCrystalEffectSO.TryResolveProfile`, which hands back radius
 the reference extent in one call so the icon can never mix a radius from one frame with a reference
 from another.
 
-`DolphinHUDRowWirer` was re-cut to the same layout, so the row still has exactly one definition in
-code (`FrogletTools > Vessels > Wire Dolphin Ability Row`).
+The row wirer was re-cut to the same layout AND generalized to the whole fleet —
+`VesselAbilityRowWirer` (`FrogletTools > Vessels > Wire Vessel Ability Row`). Nothing about the
+row's geometry was ever Dolphin-specific, and three vessels still report 0/4 icons, so pointing
+it at Manta/Rhino/Serpent builds their whole row from nothing. The Dolphin's gauges (profile
+capsule, tallies, jaws, adopted boost ring) stay as a per-vessel step the generic pass calls for
+this view type only.
 
 ### Files added
 

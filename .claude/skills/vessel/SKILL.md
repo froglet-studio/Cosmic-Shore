@@ -49,6 +49,10 @@ asset, the prefab, and the code are the record.** Before changing a vessel:
    including HUD icons that live in the **vessel** prefab, not the HUD variant (the Rhino's row
    was missed for exactly this reason), and `m_Modifications` overrides on nested prefabs.
 3. Run (or, since you cannot run Unity, reason from the source of) the fleet auditors:
+   **FrogletTools > Vessels > Wire Vessel Ability Row** (`VesselAbilityRowWirer` — builds or repairs
+   ANY vessel's four-icon row from nothing at the fleet-standard bands; idempotent, never touches
+   sprites, adopts authored gauges by name. This is the mechanical half of taking a vessel from 0/4
+   to 4/4 once its map is designed),
    **FrogletTools > Vessels > Audit Vessel Ability Rows**, **Audit Vessel Skimmers** and **Audit
    Vessel Elemental Morphs** — all asset-only, all reuse the exact runtime discovery code, so
    report and game cannot disagree.
