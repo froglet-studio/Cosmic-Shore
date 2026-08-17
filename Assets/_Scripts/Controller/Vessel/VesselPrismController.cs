@@ -301,14 +301,14 @@ namespace CosmicShore.Gameplay
             prism.prismProperties.Index = (ushort)trail.TrailList.IndexOf(prism);
             prism.Initialize(vesselStatus.PlayerName);
 
-            // Declare which side of the flown SPINE this ribbon sits on. The lay holds the
-            // ribbon's INNER EDGE at |halfGap| (xShift = halfWidth + |halfGap|), which is what
-            // keeps the gap between the pair constant as blocks change width - and which means
-            // the block CENTRES swing sideways whenever the width changes. A rider following
-            // centres therefore gets swerved around by its own trail's width changes, badly on
-            // a vessel whose block scale is dynamic (the Squirrel skim-widens 1x..5x).
-            // Trail.RidePoint uses this to recover the width-independent line.
+            // Declare the ribbon's lay offset from the flown SPINE - side and gap - so
+            // Trail.RidePoint can undo the WHOLE of it (xShift = width/2 + |halfGap|) and
+            // hand the ride the path the vessel's centre actually flew. Undoing only part
+            // leaves the ride on a line at fixed distance from the spine along each block's
+            // lay-time right, and a ROLLING layer (the Squirrel) braids that line into a
+            // helix around its flight path - the ride then orbits instead of sliding.
             trail.LateralAnchor = halfGap == 0f ? 0f : Mathf.Sign(halfGap);
+            trail.LateralHalfGap = Mathf.Abs(halfGap);
 
             // AFTER Initialize (pool-reuse reset clears membership - AssignTrail's contract).
             // This stamp is what makes a wake block a member of ITS ribbon: without it every

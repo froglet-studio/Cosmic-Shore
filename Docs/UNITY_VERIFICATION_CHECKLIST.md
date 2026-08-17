@@ -332,6 +332,30 @@ Round-11 verify: attach to a Squirrel trail and push forward → you continue th
 in, no swing; roll → the view spins around the rail and nothing fights the stick; pitch/yaw →
 free aim while the rail carries you.
 
+**ROUND 12 (2026-08-16) — "still orbiting like crazy": the RAIL was a helix; ride the SPINE.**
+Round 11's transformer was right and the ride still orbited, because the geometry it rode was a
+corkscrew. Every gapped block is laid at `spine + vesselRight × (width/2 + halfGap)` with the
+vessel's right AT LAY TIME — **roll included** — so a rolling layer (the Squirrel, constantly)
+braids each of its two ribbons into a HELIX around its flight path, radius ≥ ~9.6u (up to ~30u
+skim-widened). Every ride line at a fixed offset along each block's lay-time right inherits the
+helix — block centres (pre-round-9) and the inner edge (round 9's `RidePoint`) alike. Riding a
+9u+ helix at 150 u/s IS "orbiting like crazy", in every round so far, under every transformer.
+
+`Trail.RidePoint` now undoes the ENTIRE lay offset — `blockPos − blockRight × (width/2 +
+halfGap)` — recovering the SPINE the laying vessel's centre actually flew. Exact under full
+roll (the block's rotation preserves the lay-time right). `Trail.LateralHalfGap` joins
+`LateralAnchor` (both stamped by the spawner). Both ribbons of a pair map to the SAME spine —
+the pair is one wake, and you slide down the corridor between the twins, prisms streaming past
+on either side. `Attach` seeds via `RidePoint`/`HeadingAt` too (raw-position seeding would snap
+a lay-offset on the first moving frame). Accepted approximation: `LateralHalfGap` is
+trail-level, so a per-block `ApplyBoostGap` variance (boosting Sparrow) gets a slightly
+approximate spine mid-boost.
+
+Round-12 verify: lay a ROLLING trail with the Squirrel (hold roll while flying), then attach
+and ride it — the ride runs straight down the corridor between the braided ribbons, no orbit,
+no swing; attach to either ribbon of the pair → same road; the Urchin's own trail rides as
+before.
+
 Round-10 verify (`URCHIN_TRAIL_RIDER.md` steps 7/8/8a): release mid-grind → coasts to a stop;
 grind onto an enemy trail → brakes rather than snaps; latch on at speed holding forward →
 carries the speed, eases onto the rail, no sideways pop; full-speed run down a long ribbon → no

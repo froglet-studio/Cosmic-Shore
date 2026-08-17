@@ -292,6 +292,39 @@ nothing upstream changed. Wake prisms' z genuinely points down the trail
 (`blockRotation = transform.rotation` at lay time), so the authored-z invariant the dimension
 ladder rests on holds for every wake ribbon.
 
+## The helix (round 12): a rolling layer BRAIDS its ribbons — ride the spine
+
+Round 11 restored the right transformer and the ride still "orbited like crazy" — because the
+RAIL itself was a corkscrew. The lay places every gapped block at
+`spine + vesselRight × (width/2 + halfGap)` using the vessel's right **at lay time, roll
+included**. A vessel that rolls while flying — the Squirrel, constantly — therefore lays each
+of its two ribbons as a **helix braided around its flight path**, radius ≥ ~9.6u (up to ~30u
+skim-widened). Every ride line at a fixed offset from the spine along each block's lay-time
+right inherits that helix: the block centres (ridden before round 9) and the inner edge (what
+round 9's `RidePoint` chose as "the width-independent line") alike. Following a 9.25u-radius
+helix at 150 u/s IS orbiting like crazy — in every round so far, under every transformer.
+
+The fix is exact, not approximate: `RidePoint` now undoes the **entire** lay offset —
+`blockPos − blockRight × (width/2 + halfGap)` — recovering the SPINE, the path the laying
+vessel's own centre flew. Because the block's rotation preserves the lay-time right vector,
+the recovery holds under full roll: the spine is straight where the flight was straight,
+curved where it curved, and never braided. `Trail.LateralHalfGap` (stamped by the spawner
+alongside `LateralAnchor`) carries the gap half of the offset.
+
+Two consequences, both correct:
+
+- **Both ribbons of a pair map to the SAME spine.** The pair is one wake; whichever ribbon you
+  touch, the road is the path the vessel flew — you slide down the corridor between the twin
+  ribbons, prisms streaming past on either side. (The payoff still applies to the blocks of
+  the ribbon you attached to, as you pass them.)
+- **`Attach`'s seeding reads `RidePoint`/`HeadingAt` too**, never raw block positions —
+  seeding on the ribbon's helix while the ride runs on the spine was a lay-offset-sized snap
+  on the first moving frame.
+
+One approximation is accepted and recorded: `LateralHalfGap` is trail-level, so a spawner
+whose `ApplyBoostGap` varies the gap per block (a boosting Sparrow) gets a slightly
+approximate spine during the boost. The Squirrel and Urchin gaps are constant.
+
 ## Back to what shipped (round 11): the ride sits ON the trail, and the pilot owns attitude
 
 Playtest: *"I attached to a Squirrel trail and tried to go forward and it swung me around.

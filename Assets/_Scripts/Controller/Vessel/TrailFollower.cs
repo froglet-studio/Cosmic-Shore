@@ -110,12 +110,16 @@ namespace CosmicShore.Gameplay
             // Seed the initial direction from the vessel's own motion - the ride's first frames
             // continue the way you were flying. (Per frame thereafter the transformer resolves
             // direction from the pilot's FACING against IndexOrderHeading, the scheme the
-            // original Urchin used.) Central difference so a latch on the terminal block still
-            // has a heading.
+            // original Urchin used.)
+            //
+            // Every geometric read here goes through RidePoint - the SPINE the ride actually
+            // follows - never raw block positions. Seeding from raw positions while the ride
+            // runs on the spine put the seed on the ribbon's helix and the first moving frame
+            // on the spine: a lay-offset-sized snap (10u+ on a Squirrel) at the exact moment
+            // of contact.
             var list = attachedTrail.TrailList;
             int last = list.Count - 1;
-            Vector3 heading = list[Mathf.Min(index + 1, last)].transform.position
-                            - list[Mathf.Max(index - 1, 0)].transform.position;
+            Vector3 heading = attachedTrail.HeadingAt(index);
             direction = heading.sqrMagnitude > 1e-6f && Vector3.Dot(vesselData.Course, heading) < 0f
                 ? TrailFollowerDirection.Backward
                 : TrailFollowerDirection.Forward;
@@ -127,22 +131,23 @@ namespace CosmicShore.Gameplay
             int nextIndex = attachedBlockIndex + (int)direction;
             if (nextIndex >= 0 && nextIndex <= last)
             {
-                Vector3 segment = list[nextIndex].transform.position - list[attachedBlockIndex].transform.position;
+                Vector3 nearPoint = attachedTrail.RidePoint(list[attachedBlockIndex]);
+                Vector3 segment = attachedTrail.RidePoint(list[nextIndex]) - nearPoint;
                 float segSq = segment.sqrMagnitude;
                 if (segSq > 1e-6f)
                     percentTowardNextBlock = Mathf.Clamp01(
-                        Vector3.Dot(transform.position - list[attachedBlockIndex].transform.position, segment) / segSq);
+                        Vector3.Dot(transform.position - nearPoint, segment) / segSq);
             }
 
             // Seed the centerline read so the transformer can compose a position on the very
             // first ride frame (and while parked before the first move).
             int seedNext = Mathf.Clamp(attachedBlockIndex + (int)direction, 0, last);
             CenterlinePoint = Vector3.Lerp(
-                list[attachedBlockIndex].transform.position,
-                list[seedNext].transform.position,
+                attachedTrail.RidePoint(list[attachedBlockIndex]),
+                attachedTrail.RidePoint(list[seedNext]),
                 percentTowardNextBlock);
             TravelHeading = heading.sqrMagnitude > 1e-6f
-                ? heading.normalized * (int)direction
+                ? heading * (int)direction
                 : Vector3.forward;
 
             // Carry the arrival speed onto the rail. Starting the grind at a dead stop and

@@ -26,29 +26,39 @@ namespace CosmicShore.Gameplay
         public PrismscapeDimension Dimension { get; set; } = PrismscapeDimension.Trail;
 
         /// <summary>
-        /// Which way this ribbon's blocks are offset from the SPINE the vessel actually flew,
-        /// in units of each block's own HALF-WIDTH along its local +X: +1 / -1 for the two
-        /// ribbons of a gapped pair, 0 when the block centres ARE the spine (an ungapped wake,
-        /// and everything a spawnable lays). Declared by the layer, because only the layer
-        /// knows it - a prism cannot tell which of its faces points at its sibling ribbon.
-        ///
-        /// It exists because a gapped wake holds its INNER EDGE at a fixed offset
-        /// (<c>xShift = halfWidth + halfGap</c>), which is what keeps the gap between the two
-        /// ribbons constant while the blocks change width. The consequence is that the block
-        /// CENTRES swing sideways whenever the width changes - and a vessel whose block scale
-        /// is dynamic (the Squirrel widens its blocks as it skims, 1x..5x) therefore lays a
-        /// ribbon whose centreline snakes laterally by many units even in dead-straight flight.
-        /// Riding the centres reads as being swerved around on axes that have nothing to do
-        /// with the flight path. <see cref="RidePoint"/> is the fix: it recovers the
-        /// width-independent line, so the ride follows the path the vessel flew.
+        /// Which way this ribbon's blocks are offset from the SPINE the vessel actually flew:
+        /// +1 / -1 for the two ribbons of a gapped pair, 0 when the block centres ARE the
+        /// spine (an ungapped wake, and everything a spawnable lays). Declared by the layer,
+        /// because only the layer knows it - a prism cannot tell which of its faces points at
+        /// its sibling ribbon. <see cref="LateralHalfGap"/> carries the gap half of the same
+        /// declaration.
         /// </summary>
         public float LateralAnchor { get; set; }
 
+        /// <summary>Half the authored gap between the ribbon pair, world units - the constant
+        /// part of the lay offset (<c>xShift = width/2 + halfGap</c>).</summary>
+        public float LateralHalfGap { get; set; }
+
         /// <summary>
-        /// The point on <paramref name="p"/> the RIDE follows - its centre, corrected back onto
-        /// the ribbon's spine-side line by <see cref="LateralAnchor"/>. Reads the block's
-        /// AUTHORED width (<see cref="Prism.TargetScale"/>), not its live scale, so a block
-        /// that is still growing in does not drag the line with it.
+        /// The point on <paramref name="p"/> the RIDE follows: the block's centre corrected
+        /// back onto the SPINE - the path the laying vessel's own centre actually flew - by
+        /// undoing the ENTIRE lay offset, <c>right × (width/2 + halfGap)</c>.
+        ///
+        /// Undoing all of it (not just the width half) is what makes the ride survive a
+        /// ROLLING layer. Each block is laid at <c>spine + vesselRight × xShift</c> with the
+        /// vessel's right AT LAY TIME - roll included - so a vessel that rolls while flying
+        /// (the Squirrel, constantly) lays each ribbon as a HELIX braided around its flight
+        /// path, radius xShift (~10u and up on a Squirrel). Any ride line that keeps a fixed
+        /// distance from the spine along the block's right - the centres, the inner edge -
+        /// inherits that helix, and riding it at speed IS "orbiting like crazy". The spine is
+        /// the one line that is straight when the flight was straight, and because the block's
+        /// own rotation preserves the lay-time right vector, subtracting the full offset
+        /// recovers it EXACTLY, roll and all.
+        ///
+        /// Both ribbons of a pair map to the SAME spine, which is also correct: the pair is
+        /// one wake, and whichever ribbon you touch, the road is the path the vessel flew.
+        /// Reads the block's AUTHORED width (<see cref="Prism.TargetScale"/>), not its live
+        /// scale, so a block still growing in does not drag the line with it.
         /// </summary>
         public Vector3 RidePoint(Prism p)
         {
@@ -56,7 +66,7 @@ namespace CosmicShore.Gameplay
             if (LateralAnchor == 0f) return t.position;
             float width = p.TargetScale.x;
             if (width <= 0f) width = t.localScale.x;
-            return t.position - t.right * (width * 0.5f * LateralAnchor);
+            return t.position - t.right * (LateralAnchor * (width * 0.5f + LateralHalfGap));
         }
 
         bool isLoop;
