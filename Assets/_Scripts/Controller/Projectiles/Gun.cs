@@ -128,6 +128,9 @@ namespace CosmicShore.Gameplay
         /// and carries <c>spikesPerFirstRing * r</c> projectiles, with alternate rings phase-
         /// staggered so the blast fills its own gaps. Fully deterministic by construction
         /// (no RNG draw at all), so every peer fires the identical fan.
+        /// <paramref name="phaseOffsetDegrees"/> spins the whole fan about the aim axis - what a
+        /// caller firing one blast per muzzle uses to keep two overlapping fans from drawing
+        /// the same spokes twice.
         /// Rate limiting is the CALLER's (the Urchin executor owns an owed-seconds loop), so
         /// the gun's own cooldown is bypassed exactly as the executor's other calls do.
         /// </summary>
@@ -142,7 +145,8 @@ namespace CosmicShore.Gameplay
             int rings,
             int spikesPerFirstRing,
             float coneHalfAngleDegrees,
-            bool centerSpike)
+            bool centerSpike,
+            float phaseOffsetDegrees = 0f)
         {
             Vector3 aim = containerTransform.forward;
             Vector3 perp = Vector3.Cross(aim, Vector3.up);
@@ -157,7 +161,9 @@ namespace CosmicShore.Gameplay
             {
                 float coneAngle = coneHalfAngleDegrees * r / rings;
                 int count = Mathf.Max(1, spikesPerFirstRing * r);
-                float phase = (r % 2) * (180f / count); // stagger alternate rings
+                // Stagger alternate rings, then rotate the whole fan by the caller's offset so
+                // a multi-muzzle blast interleaves instead of two guns drawing the same spokes.
+                float phase = (r % 2) * (180f / count) + phaseOffsetDegrees;
 
                 Vector3 rim = Quaternion.AngleAxis(coneAngle, perp) * aim;
                 for (int i = 0; i < count; i++)

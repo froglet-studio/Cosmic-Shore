@@ -2590,6 +2590,8 @@ MonoBehaviour:
   - {fileID: 4981221834739771465}
   - {fileID: 7835283986601519113}
   _domainMaterialSlot: 0
+  _domainReplacesMaterial: {fileID: 2100000, guid: 54e78ce17120fe641904833c11bc1210,
+    type: 2}
 --- !u!114 &4248184753307651523
 MonoBehaviour:
   m_ObjectHideFlags: 0

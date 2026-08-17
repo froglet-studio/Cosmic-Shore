@@ -45,11 +45,15 @@ namespace CosmicShore.Gameplay
                  "and carries spikesPerRing*r spikes, alternate rings staggered to fill gaps.")]
         [SerializeField, Range(1, 5)] int ringCount = 3;
 
-        [Tooltip("ConcentricRings only: spikes in the innermost ring (outer rings scale up).")]
-        [SerializeField, Range(2, 12)] int spikesPerRing = 6;
+        [Tooltip("ConcentricRings only: spikes in the innermost ring (outer rings scale up). " +
+                 "Authored PER MUZZLE - the blast fires one fan from every muzzle, each spun " +
+                 "half a spoke off the last, so a two-gun vessel throws twice this and the two " +
+                 "fans interleave rather than overlap.")]
+        [SerializeField, Range(2, 12)] int spikesPerRing = 3;
 
-        [Tooltip("ConcentricRings only: cone half-angle of the OUTERMOST ring, degrees.")]
-        [SerializeField, Range(5f, 80f)] float coneHalfAngleDegrees = 15f;
+        [Tooltip("ConcentricRings only: cone half-angle of the OUTERMOST ring, degrees. Small " +
+                 "is the point - this is a shotgun aimed down the nose, not a spray.")]
+        [SerializeField, Range(2f, 80f)] float coneHalfAngleDegrees = 9f;
 
         [Tooltip("ConcentricRings only: also fire one spike straight down the aim axis.")]
         [SerializeField] bool centerSpike = true;

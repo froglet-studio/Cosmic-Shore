@@ -311,6 +311,40 @@ transparent base — nothing is see-through and nothing is mis-coloured.
 The slot is clamped to the renderer's material count, because a single-submesh renderer is legal
 art and painting its only slot is the sane reading of "wear the domain".
 
+### …and that fix was a NO-OP, because an index is the wrong handle (round 19)
+
+Round 18 did two things in one commit — restored the authored material order (`BlueBase` back to
+slot 0) **and** moved the index to 0 — and those two changes cancel exactly. The domain colour
+landed on the same submesh it had landed on before, so from the cockpit "changing domain did not
+swap the correct material": nothing had changed. It is worth stating the general lesson, because
+it is not specific to this vessel:
+
+> **Never move an ARRAY ORDER and the INDEX that reads it in the same change.** One of the two is
+> the fix; doing both is a rename. If you catch yourself editing both, you have not decided which
+> one is wrong.
+
+The durable repair is to stop indexing at all. `VesselCustomization._domainReplacesMaterial`
+(optional; empty keeps the slot-index path for the rest of the fleet) names the **authored
+material the domain colour replaces**, and `ResolveDomainSlots` finds every slot wearing it, per
+renderer, whatever index it sits at. That is what an index could never be right about here: the
+Urchin's `ShroudLeft` shipped with its two materials in the *opposite* order to its twelve
+siblings, so no single index paints all thirteen correctly — and the `Body` renderer carries a
+third material (`Screen`) besides. The Urchin declares `BlueBaseVesselMaterial`, which is also
+the transparent one, so identity painting removes the see-through hull and the mis-coloured hull
+with one statement.
+
+Two implementation details are load-bearing:
+
+- The slot map is resolved **once and cached**. After the first paint the slot no longer holds
+  the replaced material (it holds the domain material), so re-resolving on a later domain change
+  would find nothing and the vessel would silently stop responding to its domain.
+- `ResolveDomainSlots` reads `sharedMaterials`, not `materials`. `materials` instantiates a clone
+  per slot, and the identity comparison against the asset would then never match.
+
+A geometry wearing none of the named material warns once by name — an authoring mistake that is
+otherwise invisible, because a part that simply never recolours looks like a part that is meant
+to be a fixed colour.
+
 ## Each ribbon is its own trail; shielded and skewed prisms ride their envelope (round 17)
 
 **A gapped wake is now TWO SEPARATE SINGLE TRAILS.** You ride the ribbon you touched, on its

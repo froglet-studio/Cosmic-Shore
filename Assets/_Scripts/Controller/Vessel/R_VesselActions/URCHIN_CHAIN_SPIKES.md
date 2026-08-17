@@ -186,7 +186,7 @@ ability a private copy of the other's dial.
 | | **Spike Volley** (SPACE, `RightStickAction`) | **Spike Barrage** (CHARGE, `LeftStickAction`) |
 |---|---|---|
 | Pattern | `ConcentricRings` — a SHOTGUN: rings of spikes around the aim, one blast per pull | `Spherical` — dense golden-spiral omni burst from the hull |
-| Shape | 3 rings at r/3 of a 25° cone, 6·r spikes each, staggered + 1 center = **37/pull** | **36** spikes, gapless sphere (chain children keep energy-derived counts) |
+| Shape | 3 rings at r/3 of a **9°** cone, 3·r spikes each, staggered + 1 center, fired **from every muzzle** = 19 × 2 guns = **38/pull** | **36** spikes, gapless sphere (chain children keep energy-derived counts) |
 | Repeat | while held, `firingRate` 3/s | one-shot per press, `firingRate` 1/s |
 | Ammo | 0.15 per volley | **free** (0) |
 | Muzzle speed | 60 × SPACE multiplier | 40 × SPACE multiplier |
@@ -204,10 +204,17 @@ old build had, restored deliberately rather than archaeologically:
   the primary brake.
 - **The volley is the shotgun**: `Gun.FireRingBlast` — concentric rings around the aim axis,
   ring r of R at cone angle `coneHalfAngle·r/R` with `spikesPerRing·r` spikes, alternate rings
-  phase-staggered so the blast fills its own gaps, plus a center spike. One blast per pull from
-  the hull (not per muzzle — two overlapping fans double the count and blur the ring read).
-  Fully deterministic by construction: no RNG draw at all, so every peer fires the identical
-  fan. Rate limiting stays the executor's owed-seconds loop.
+  phase-staggered so the blast fills its own gaps, plus a center spike. Fully deterministic by
+  construction: no RNG draw at all, so every peer fires the identical fan. Rate limiting stays
+  the executor's owed-seconds loop.
+  **Round 10 moved it onto the guns** ("fire from both guns"): one fan per authored muzzle,
+  each spun by `360/spikesPerRing · i / muzzleCount` about the aim axis
+  (`FireRingBlast(phaseOffsetDegrees)`), so N guns *interleave* into one denser cone instead of
+  drawing N copies of the same spokes — which is the whole reason the earlier hull-origin
+  version existed. `spikesPerRing` is therefore authored **per muzzle** and was halved 6 → 3 in
+  the same pass, so the Urchin's two guns still throw ~38 spikes per pull rather than 74 into a
+  pool sized for 160. A vessel that grows a third gun gets a denser blast, which is the honest
+  reading of mounting another gun.
 - **The barrage is dense**: the ship's own volley fires `barrageSpikeCount` (36) spiral points
   regardless of depth (previously `2·(energy+3)` — at depth 0 that was FOUR tetrahedral
   spikes). Chain children keep the energy-derived counts, so a cascade's population stays
@@ -288,7 +295,7 @@ checked once per tick, so the two cases are not conflated into one early return.
 | `VolleysPerFrame` | `ChainReactionBudget` (static, code) | **6**, global across all cascades (round 6: raised from 4 with the depth). At depth 4 a chain volley is up to 14 spikes, so one frame's chain contribution is bounded at **84** live trigger colliders. Raise for reach, lower for frame cost. |
 | `generationsAtRestingCharge` / `generationsAtFullCharge` | the two spike action assets | volley **1 → 4** · barrage **1 → 4** (round 6: "their generation limit should be 4"). `GenerationsForLevel` is linear in level, anchored at 0 and 10, extrapolated across the element system's `[-5, 15]` band, then clamped to **[0, 4]** — the range the pool tiers and the frame budget are sized for. |
 | `barrageSpikeCount` | both spike action assets (Spherical only) | **36** — the ship's own golden-spiral density; 0 = legacy energy-derived count |
-| `ringCount` / `spikesPerRing` / `coneHalfAngleDegrees` / `centerSpike` | both spike action assets (ConcentricRings only) | **3 / 6 / 15° / on** → 37 spikes per pull (cone tightened 25° → 15° in round 7: "bring the spread in") |
+| `ringCount` / `spikesPerRing` / `coneHalfAngleDegrees` / `centerSpike` | both spike action assets (ConcentricRings only) | **3 / 3 / 9° / on** → 19 per muzzle × 2 muzzles = **38** spikes per pull. `spikesPerRing` is **per muzzle**. Cone tightened 25° → 15° (round 7) → 9° (round 10, "tighter spread"); `spikesPerRing` halved 6 → 3 in round 10 so moving the blast onto both guns did not double the live-spike count. |
 
 **Spikes always inherit the vessel's live velocity** (round 7). The executor briefly passed
 `inheritedVelocity` only while attached to a trail, so every free-flight volley fired as if from

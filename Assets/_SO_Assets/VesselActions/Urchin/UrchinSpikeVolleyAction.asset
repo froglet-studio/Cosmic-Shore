@@ -16,8 +16,8 @@ MonoBehaviour:
   repeatWhileHeld: 1
   barrageSpikeCount: 36
   ringCount: 3
-  spikesPerRing: 6
-  coneHalfAngleDegrees: 15
+  spikesPerRing: 3
+  coneHalfAngleDegrees: 9
   centerSpike: 1
   ammoIndex: 0
   ammoCost: 0.15

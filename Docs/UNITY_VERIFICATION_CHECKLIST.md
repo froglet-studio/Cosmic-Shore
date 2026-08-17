@@ -459,8 +459,43 @@ Urchin hull opacity.**
   `BlueBaseVesselMaterial` is shared by nine vessels; this is a per-renderer slot-order fix on
   the Urchin prefab only.
 
+**ROUND 19 (2026-08-17) — the domain colour is painted by IDENTITY, not by index; the shotgun
+fires from both guns with a tighter spread.**
+
+- **Round 18's domain fix was a no-op, and the reason generalises.** It restored the authored
+  material order (`BlueBase` back to slot 0) *and* moved the index 1 → 0 in the same commit;
+  those cancel exactly, so the domain colour landed on the same submesh as before and the
+  cockpit reading was "changing domain did not swap the correct material." **Never move an
+  array order and the index that reads it in one change** — one of the two is the fix, and
+  doing both is a rename.
+- **The durable repair drops the index.** New optional
+  `VesselCustomization._domainReplacesMaterial` names the AUTHORED material the domain colour
+  replaces; `ResolveDomainSlots` finds every slot wearing it per renderer (whatever index),
+  and `ShipHelper.ApplyShipMaterialToSlots` paints those. Empty = the existing slot-index path,
+  so **no other vessel changes**. The Urchin declares `BlueBaseVesselMaterial` — which is also
+  the transparent one, so this removes the see-through hull and the mis-coloured hull together,
+  and it is correct on `ShroudLeft` (authored in the opposite order to its twelve siblings) and
+  on `Body` (three materials) alike, which no single index can be.
+  The slot map is resolved ONCE and cached — after the first paint the slot holds the domain
+  material, so re-resolving would find nothing and the vessel would stop responding to its
+  domain. It reads `sharedMaterials` (not `materials`, which clones and would never match the
+  asset by identity). A geometry wearing none of the named material warns once, by name.
+- **The shotgun fires from every muzzle** (`ResolveMuzzles`), each fan spun by
+  `360/spikesPerRing · i / muzzleCount` about the aim axis via the new
+  `Gun.FireRingBlast(phaseOffsetDegrees)`, so two guns interleave into one denser cone instead
+  of drawing the same spokes twice. `spikesPerRing` is now authored PER MUZZLE and halved
+  6 → **3**, so the pull still throws ~38 spikes (2 × 19) rather than 74 into a 160-deep pool.
+- **Tighter spread**: `coneHalfAngleDegrees` 15° → **9°**.
+
+Round-19 verify: fly to the domain-changer toy on the Urchin and change domain → the **hull**
+recolours immediately (this is the check round 18 appeared to pass and did not); trim stays
+accent; nothing see-through. Other vessels' hulls unchanged. Pull the aimed trigger → spikes
+leave **both gun muzzles**, not the hull centre, and the fan is visibly narrower than before;
+count reads about the same density as round 18, not double. Console: no
+`[VesselCustomization] '<part>' wears none of 'BlueBaseVesselMaterial'` warning.
+
 **ROUND 18 (2026-08-17) — spike dwell x3; the omni barrage chains; domain colour on the right
-submesh.**
+submesh.** *(Superseded in part by round 19 — the domain-colour item below did not take effect.)*
 
 - **Embedded spikes persist 3x**: `ProjectileEmbedPrismEffect.dwellSeconds` 1.25 → **3.75**.
   Pure look — the steal and the child volley have both already happened by then.

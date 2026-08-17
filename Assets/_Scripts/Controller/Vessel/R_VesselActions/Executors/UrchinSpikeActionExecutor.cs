@@ -17,8 +17,10 @@ namespace CosmicShore.Gameplay
     /// </summary>
     public class UrchinSpikeActionExecutor : ShipActionExecutorBase
     {
-        [Tooltip("Muzzles for the AIMED volley. The omni barrage ignores these and fires from " +
-                 "the hull, which is what makes it read as the ship bristling rather than shooting.")]
+        [Tooltip("The vessel's gun muzzles. Both AIMED patterns fire from every one of them " +
+                 "(the single shot and the concentric-ring shotgun). Only the omni barrage " +
+                 "ignores them and fires from the hull, which is what makes that one read as " +
+                 "the ship bristling rather than shooting.")]
         [SerializeField] Transform[] muzzles;
 
         [Tooltip("The gun that spawns spikes. Its ProjectileFactory must be wired to a factory " +
@@ -186,13 +188,23 @@ namespace CosmicShore.Gameplay
             }
             else if (so.FiringPattern == FiringPatterns.ConcentricRings)
             {
-                // The shotgun: ONE blast per pull, concentric rings around the vessel's aim.
-                // Fired from the hull (barrageOrigin), not per muzzle - two overlapping fans
-                // would double the spike count and blur the ring read.
-                gun.FireRingBlast(barrageOrigin ? barrageOrigin : transform, speed, inherited,
-                                  so.ProjectileScale, so.ProjectileTime, 0, generations,
-                                  so.RingCount, so.SpikesPerRing, so.ConeHalfAngleDegrees,
-                                  so.CenterSpike);
+                // The shotgun: one blast per pull, from EVERY muzzle, so the pull reads as the
+                // ship's guns firing rather than the hull venting. Each muzzle's fan is spun by
+                // half a spoke relative to the last, so N guns interleave into one denser cone
+                // instead of N copies of the same spokes. The per-ring count is authored for
+                // ONE muzzle - a vessel that grows a third gun gets a denser blast, which is
+                // the intended reading of mounting another gun.
+                var barrels = ResolveMuzzles();
+                int spokes = Mathf.Max(1, so.SpikesPerRing);
+                for (int i = 0; i < barrels.Length; i++)
+                {
+                    if (!barrels[i]) continue;
+                    float phase = 360f / spokes * i / Mathf.Max(1, barrels.Length);
+                    gun.FireRingBlast(barrels[i], speed, inherited,
+                                      so.ProjectileScale, so.ProjectileTime, 0, generations,
+                                      so.RingCount, so.SpikesPerRing, so.ConeHalfAngleDegrees,
+                                      so.CenterSpike, phase);
+                }
             }
             else
             {
