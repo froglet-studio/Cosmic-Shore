@@ -229,6 +229,20 @@ outcome is optimization, not life). Use the `/ecology` skill for any change here
   cheapest correction when a scale-up overshoots the ladder. Spindles scale with the lattice (visible branch geometry spanning the
   gap); crystals deliberately do not. Full record: `Docs/ECOSYSTEM.md §33` (§33.5 the per-element
   prism fit, §33.7 the Schwarz P lattice, §33.8 the gyroid scale).
+- **An AUTHORED prism size widens its clamp; a GROWN one keeps it.**
+  `PrismScaleAnimator.SetTargetScale` clamps PER AXIS into `[minScale, maxScale]` — serialized
+  defaults `(0.5,0.5,0.5)`/`(10,10,10)`, which **363 of 404 prefabs** inherit unchanged — inside
+  the setter, with no log and no return value. So a config saying `60 x 1 x 1` produced a
+  `10 x 1 x 1` prism and *nothing reported the difference*: three passes of flora fitting
+  measured, argued about and shipped sizes the engine never used (`Docs/ECOSYSTEM.md §33.9`),
+  every Space strut rendered at 10 whatever was authored, and every cross-section under 0.5 was
+  clamped UP. Anything that STATES a size calls `Prism.AdmitTargetScale(size)` first
+  (`Flora.AddHealthBlock` and `PhyllotacticFlora.AddHealthBlock` do); anything that GROWS into
+  the bound via `Grow()` leaves it alone. The per-prefab version of this workaround already
+  existed (`SpawnablePrism` max 100, `Manta Prism` max x 40, `Dolphin Prism` max z 100), which is
+  why it was easy to miss. **General rule: a silent clamp inside a setter is indistinguishable
+  from a config that never applied, and it defeats every offline measurement — when a fitted size
+  does not read on screen, check what the engine actually STORED before re-fitting.**
 - **Territorial permanence.** Take a cell, leave, it stays yours — the claim fauna cannot touch.
   In nucleus cells the permanent claim is the **nucleus interior** (fauna never consume it);
   exterior canopy/trail is deliberately contested churn (voracious any-domain grazing). In

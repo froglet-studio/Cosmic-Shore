@@ -4807,3 +4807,72 @@ proportional or scale it, then assert the ORDERING between them rather than the 
 never needed this: its sameness test is an integer tile address, so no tolerance exists to
 invalidate.
 
+### 33.9 The clamp — an authored prism size was never reaching the screen (Aug 2026)
+
+Three passes of §33.5–§33.8 fitted, measured and argued about Space prism sizes. **None of
+them reached the engine.** Every one was silently trimmed to a 10-unit long axis.
+
+**The mechanism.** `PrismScaleAnimator.SetTargetScale` clamps PER AXIS into
+`[minScale, maxScale]`, whose serialized defaults are `(0.5,0.5,0.5)` and `(10,10,10)`:
+
+```csharp
+newTarget.x = Mathf.Clamp(newTarget.x, minScale.x, maxScale.x);   // and y, z
+```
+
+`Flora.AddHealthBlock` states `healthPrism.TargetScale = leafSize`, and `Prism.TargetScale`'s
+setter routes straight into that clamp. The flora health-prism prefabs
+(`MassGyroidBlock Variant` — which the Space flora also uses — and `SchwarzPBlock Variant`)
+carry no override, so the window is the default. An authored `60 × 1 × 1` at Level 2 is
+`69 × 1.15 × 1.15`, and `Clamp` returns exactly **`(10, 1.15, 1.15)`** — the value read off the
+live scene, to the float.
+
+**What it hid, which is the whole lesson.** The clamp is inside a setter, with no log, no
+warning and no return value. The config said 60 and the prism was 10, and *nothing anywhere
+reported the difference*:
+
+| authored | rendered | authored | rendered |
+|---|---|---|---|
+| 20 × 1 × 1 (pre-branch) | 10 × 1 × 1 | 60 × 2 × 2 | 10 × 2 × 2 |
+| 22.96 × 0.45 × 0.45 | 10 × **0.5** × **0.5** | 60 × 1 × 1 | 10 × 1 × 1 |
+| 45.92 × 0.45 × 0.45 | 10 × **0.5** × **0.5** | Schwarz 30.79 × 0.3 | 10 × **0.5** |
+
+Cross-sections under 0.5 were clamped **up**, so the "thin" struts were never thin either.
+Consequences that were all misread as other problems:
+
+- *"This pass didn't stretch the prisms"* — correct, and it could not. 22.96, 45.92 and 60 all
+  render identically. The only thing any of those passes changed on screen was lattice spacing.
+- *The wrong spacing* — the spacing was right; the prisms were pinned at 10 while the lattice
+  widened to 15.66, so the structure read as sparse and disconnected.
+- **Every overlap and volume measurement in §33.5–§33.8 was computed against geometry the
+  engine never used.** The OBB fits, the saturating crossing counts, the volume table — all
+  phantom. The numbers are correct *for the sizes named*; those sizes just were not what ran.
+
+**The fix, and its principle: a size that is AUTHORED widens the window; a size that is GROWN
+keeps it.** `PrismScaleAnimator.AdmitTargetScale(Vector3)` raises `maxScale` / lowers `minScale`
+to admit the target, and both flora paths (`Flora.AddHealthBlock`,
+`PhyllotacticFlora.AddHealthBlock`) call it before stating the size. Trail prisms, which grow
+into the bound through `Grow()`, are untouched — the bound is meaningful there.
+
+This is the general form of a workaround the project already had: `SpawnablePrism` and
+`ShieldedSpawnablePrism` serialize max **100**, `Manta Prism` max x **40**, `Dolphin Prism` max
+z **100**. The trap has been hit and patched per-prefab before; it was simply never applied to
+flora. **363 of 404 prefabs still fall through to `[0.5, 10]`.**
+
+**Corrected effective volumes** (with the level spread; §33.7's table was pre-clamp-fix):
+
+| | Charge | Mass | Space (was → now) | Time |
+|---|---|---|---|---|
+| **Gyroid** | 86.2 | 207.0 | **18.8 → 112.7** | 86.2 |
+| **Schwarz P** | 13.8 | 25.7 | **2.5 → 7.5** | 13.8 |
+
+**Not swept in.** About fifteen other call sites author `TargetScale` directly
+(`PrismTrailBuilder`, `Fauna` body prisms, the AOE block creators, `Microscene`,
+`PaintingRunner`, the `Spawnable*` environment builders). Most draw from the max-100 spawnable
+prefabs and are unaffected; changing them all would move geometry across many shipped modes on
+no evidence of a defect. Flagged, deliberately not touched.
+
+**The general rule.** A silent clamp inside a setter is indistinguishable from a config that
+was never applied — and it defeats every offline measurement, because the measurement models
+the authored number while the engine uses another. When a fitted size does not read on screen,
+verify what the engine actually stored **before** re-fitting: one look at the live Transform
+would have saved three passes of measuring phantom geometry.
