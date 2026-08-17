@@ -125,14 +125,14 @@ namespace CosmicShore.Gameplay
         {
             try
             {
-                Debug.Log($"<color=#00CED1>[FLOW-7] [MultiplayerMiniGameBase] InitializeAfterDelay - waiting {InitDelayMs}ms, IsServer={IsServer}</color>");
+                CSDebug.LogVerbose(CSLogChannel.NetworkFlow, $"<color=#00CED1>[FLOW-7] [MultiplayerMiniGameBase] InitializeAfterDelay - waiting {InitDelayMs}ms, IsServer={IsServer}</color>");
                 using (LoadInsights.Measure(LoadInsightCategory.ScriptedDelay,
                            $"InitDelayMs gate before InitializeGame ({InitDelayMs}ms)", isWait: true))
                 {
                     await UniTask.Delay(InitDelayMs, DelayType.UnscaledDeltaTime);
                 }
 
-                Debug.Log($"<color=#00CED1>[FLOW-7] [MultiplayerMiniGameBase] Calling gameData.InitializeGame(). Players.Count={gameData.Players.Count}</color>");
+                CSDebug.LogVerbose(CSLogChannel.NetworkFlow, $"<color=#00CED1>[FLOW-7] [MultiplayerMiniGameBase] Calling gameData.InitializeGame(). Players.Count={gameData.Players.Count}</color>");
                 using (LoadInsights.Measure(LoadInsightCategory.GameFlow,
                            "InitializeGame raise (inline listeners: cell, spawn adapters, HUD…)"))
                 {
@@ -149,7 +149,7 @@ namespace CosmicShore.Gameplay
 
                 if (!IsServer)
                 {
-                    Debug.Log("<color=#00CED1>[FLOW-7] [MultiplayerMiniGameBase] Not server, skipping session start + round setup</color>");
+                    CSDebug.LogVerbose(CSLogChannel.NetworkFlow, "<color=#00CED1>[FLOW-7] [MultiplayerMiniGameBase] Not server, skipping session start + round setup</color>");
                     return;
                 }
 
@@ -157,15 +157,15 @@ namespace CosmicShore.Gameplay
                 // Without this, the loading screen overlay persists because no
                 // scene-placed MultiplayerSetup fires InvokeSessionStarted().
                 // Safe: ApplicationStateMachine validates transitions and no-ops on invalid ones.
-                Debug.Log("<color=#00CED1>[FLOW-7] [MultiplayerMiniGameBase] Server: InvokeSessionStarted (AppState → InGame)</color>");
+                CSDebug.LogVerbose(CSLogChannel.NetworkFlow, "<color=#00CED1>[FLOW-7] [MultiplayerMiniGameBase] Server: InvokeSessionStarted (AppState → InGame)</color>");
                 gameData.InvokeSessionStarted();
 
-                Debug.Log("<color=#00CED1>[FLOW-7] [MultiplayerMiniGameBase] Server: SetupNewRound()</color>");
+                CSDebug.LogVerbose(CSLogChannel.NetworkFlow, "<color=#00CED1>[FLOW-7] [MultiplayerMiniGameBase] Server: SetupNewRound()</color>");
                 SetupNewRound();
             }
             catch (OperationCanceledException)
             {
-                Debug.Log("<color=#FFA500>[FLOW-7] [MultiplayerMiniGameBase] InitializeAfterDelay CANCELLED</color>");
+                CSDebug.LogVerbose(CSLogChannel.NetworkFlow, "<color=#FFA500>[FLOW-7] [MultiplayerMiniGameBase] InitializeAfterDelay CANCELLED</color>");
                 // Task was cancelled, ignore
             }
         }

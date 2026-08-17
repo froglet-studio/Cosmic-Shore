@@ -4223,6 +4223,14 @@ Unity-runtime interaction the simulation could not see. Two responses shipped:
    the table never produces one, so non-zero fingers a post-spawn transform write). All in
    the 5s colony heartbeat line.
 
+   > **The heartbeat is OPT-IN since Aug 2026** — a working colony repeating its census
+   > every 5s for the life of the scene is console spam, so it (and the FOUNDER / MATURE /
+   > BIRTH / bond-site lines) now emit only while `CSLogChannel.GyroidColony` is enabled in
+   > **FrogletTools > Toolbox > Logging**. Turn it on BEFORE any colony investigation; the
+   > counters accumulate regardless, so enabling mid-session still reports true totals.
+   > The defect WARNINGS are unaffected and always emit: `LATTICE MISALIGNMENT` (capped at
+   > 24), the once-per-plant reseed-mint block, and the `INCOHERENT SEED HANDOFF` error.
+
 2. **The orphan-reservation seam race - found by reading, fixed to match the sim.** The
    validated colony simulation used perfect-information reservations; Unity's had a 5s TTL,
    and three paths abandoned live reservations into it. The systematic one: the ownership
@@ -4344,7 +4352,9 @@ nominal and whose levels multiply it another 2.7× reaches a count-derived ladde
 early, and the symptom is never "the ladder is wrong" — it is "my population stopped growing",
 which sends you to the population dial, which is not connected.
 
-In-editor verification (the human is the gate): enter freestyle in Menu_Main (the lava lamp
+In-editor verification (the human is the gate): **first enable `CSLogChannel.GyroidColony`
+in FrogletTools > Toolbox > Logging** — the heartbeat this procedure reads is opt-in since
+Aug 2026 and is silent by default. Then enter freestyle in Menu_Main (the lava lamp
 IS the test now). Watch: (1) the founder's first danger prism moves the
 crystal to the ring centre; (2) ONE new plant blooms per fauna-wave period, at a random
 edge of the colony - the surface should visibly WANDER, not inflate as a ball; (3) the
