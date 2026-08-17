@@ -271,7 +271,7 @@ namespace CosmicShore.Gameplay
             if (!prism) return Vector3.zero;
 
             var t = prism.transform;
-            Vector3 axis = t.forward;                       // trail prisms: z runs down the trail
+            Vector3 axis = RibbonAxis();                    // the TRAIL's direction, not the prism's
 
             // The hull's own up, flattened across the trail. Degenerate only when the pilot is
             // aiming straight along the rail, where any perpendicular will do.
@@ -280,17 +280,31 @@ namespace CosmicShore.Gameplay
 
             Vector3 scale = prism.TargetScale;
             if (scale.x <= 0f || scale.y <= 0f) scale = t.localScale;
-            float halfX = Mathf.Abs(scale.x) * 0.5f;
-            float halfY = Mathf.Abs(scale.y) * 0.5f;
+            Vector3 half = new Vector3(Mathf.Abs(scale.x), Mathf.Abs(scale.y), Mathf.Abs(scale.z)) * 0.5f;
 
-            // radial is perpendicular to the prism's z, so its components on the prism's x and
-            // y axes are a unit 2-vector - the box formula applies exactly.
-            float u = Mathf.Abs(Vector3.Dot(radial, t.right));
-            float v = Mathf.Abs(Vector3.Dot(radial, t.up));
-            float faceX = u > 1e-4f ? halfX / u : float.MaxValue;
-            float faceY = v > 1e-4f ? halfY / v : float.MaxValue;
-            float surface = Mathf.Min(faceX, faceY);
-            if (surface > 1e4f) surface = Mathf.Max(halfX, halfY);
+            // Shielded mass is ridden as the CUBOID ITS SHELL IS NESTED IN. Both shield meshes
+            // are the box's circumscribing dual - vertices at CIRCUMSCRIBING_SCALE x the box's
+            // half-extents - so the factor is read from the generator rather than guessed, and
+            // a super-shielded prism's spikes are inside the same envelope.
+            var props = prism.prismProperties;
+            if (props != null && (props.IsShielded || props.IsSuperShielded))
+                half *= OctahedronMeshGenerator.CIRCUMSCRIBING_SCALE;
+
+            // The SUPPORT of the box along the radial: sum of each axis' half-extent times how
+            // much that axis leans along the radial. This is the box's silhouette envelope
+            // measured in the TRAIL's frame, which is what a rider going around it needs -
+            // a prism at a strange angle (a drift block yawed off the ribbon) then reads as
+            // effectively WIDER, exactly as its sweep along the trail makes it, and the rider
+            // clears it instead of clipping through a corner.
+            //
+            // Support rather than a literal trail-aligned AABB, because an AABB about an axis
+            // is not well defined without arbitrarily choosing which way is "up" around the
+            // trail - and the answer would change with that choice. The support needs no such
+            // choice, and reduces to exactly the box half-extent for a prism square to the
+            // ribbon (the Sparrow case is unchanged).
+            float surface = half.x * Mathf.Abs(Vector3.Dot(radial, t.right))
+                          + half.y * Mathf.Abs(Vector3.Dot(radial, t.up))
+                          + half.z * Mathf.Abs(Vector3.Dot(radial, t.forward));
 
             return radial * (surface + rideSurfaceClearance);
         }

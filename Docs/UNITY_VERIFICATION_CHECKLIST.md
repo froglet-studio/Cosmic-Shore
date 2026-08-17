@@ -436,6 +436,36 @@ Gapped wakes are unchanged in feel (their ride line is the corridor spine, so th
 small clearance within it). Camera: `UrchinCameraSettingsSO` followOffset z −20 → −6.67,
 dynamic band 15/25 → 5/8.33.
 
+**ROUND 17 (2026-08-17) — ribbons ride separately; shielded/skewed prisms ride their envelope;
+Urchin hull opacity.**
+
+- **A gapped wake is TWO SEPARATE SINGLE TRAILS.** The spine ride (rounds 12-13) is retired by
+  design call — consistency beats the corridor. `RidePoint` is the block's own centre;
+  `Prism.TrailLayOffset` + its spawner stamp are deleted. Accepted: a wake laid by a rolling
+  vessel is ridden as the helix it genuinely is.
+- **Shielded/super-shielded → the cuboid the shell nests in**: half-extents × 3, read from
+  `OctahedronMeshGenerator.CIRCUMSCRIBING_SCALE` (both shield meshes are the box's
+  circumscribing dual, so one factor covers both tiers).
+- **Skewed prisms → the SUPPORT envelope in the trail's frame**: `Σ halfᵢ·|axisᵢ·radial|`, so a
+  drift block yawed off the ribbon reads as effectively wider and the rider clears it. Support
+  rather than a trail-aligned AABB because an AABB about an axis needs an arbitrary "up" choice
+  and changes with it; support needs none, is continuous under roll, and reduces exactly to the
+  box half-extent for a square-on prism (Sparrow ride unchanged).
+- **Urchin hull opacity**: `VesselHelper.ApplyShipMaterial` paints slot **[1]** on a
+  MeshRenderer, so slot [0] keeps its authored material — and on the Urchin that was the
+  TRANSPARENT `BlueBaseVesselMaterial` on 12 of 13 renderers. Only `ShroudLeft` had the pair
+  reversed (opaque `GreenAccent` in slot 0), which is why one submodel looked right and the
+  rest looked see-through. All 13 now match ShroudLeft. **Materials were NOT edited** —
+  `BlueBaseVesselMaterial` is shared by nine vessels; this is a per-renderer slot-order fix on
+  the Urchin prefab only.
+
+Round-17 verify: attach to ONE ribbon of a Squirrel wake → you ride that ribbon's own prisms,
+not the corridor; the other ribbon is a separate trail you can attach to independently. Ride a
+SHIELDED trail → the ship clears the octahedron shells instead of passing through them. Ride a
+drift-laid (yawed) trail → the ship goes around the wider effective prism, no corner clipping.
+Look at the Urchin in the hangar/menu → the whole hull reads solid, matching the left shroud;
+no part is see-through. Other vessels' hulls unchanged.
+
 Round-16 verify: ride a SPARROW trail — the Urchin sits ON the prisms, not in them; roll and
 it walks around the trail's axis, belly always to the rail; roll continuously and it circles
 smoothly with no fight. Ride a wide flat trail — it hugs the broad face and stands off at the

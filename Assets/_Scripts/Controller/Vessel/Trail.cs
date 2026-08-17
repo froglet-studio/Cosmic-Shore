@@ -26,38 +26,21 @@ namespace CosmicShore.Gameplay
         public PrismscapeDimension Dimension { get; set; } = PrismscapeDimension.Trail;
 
         /// <summary>
-        /// The point on <paramref name="p"/> the RIDE follows: the block's centre corrected
-        /// back onto the SPINE - the path the laying vessel's own centre actually flew - by
-        /// subtracting the EXACT world-space offset the lay applied
-        /// (<see cref="Prism.TrailLayOffset"/>, stamped by the spawner).
+        /// The point on <paramref name="p"/> the RIDE follows: the block's own centre.
         ///
-        /// Why the stamp, and never a reconstruction from the block's own geometry - both
-        /// reconstructions have been tried here and both put the ride on a corkscrew:
+        /// A gapped wake's two ribbons are ridden as TWO SEPARATE SINGLE TRAILS - you ride the
+        /// one you touched, on its own prisms. An earlier pass rode the flight SPINE instead
+        /// (undoing each block's stamped lay offset), which put the rider in the corridor
+        /// between the twins; it read well, but a trail is a trail, and consistency across
+        /// every vessel's wake is worth more than the corridor. Riding the ribbon also means a
+        /// wake laid by a rolling vessel is ridden as the helix it actually is, which is
+        /// honest: the ride follows the mass the pilot laid.
         ///
-        ///  * A line at fixed distance along the block's right (the centres, the inner edge)
-        ///    inherits the layer's ROLL: each block is offset along the ship's right AT LAY
-        ///    TIME, so a rolling layer (the Squirrel, constantly) braids each ribbon into a
-        ///    HELIX around its flight path, radius ~10u and up. Riding it at speed IS
-        ///    "orbiting like crazy".
-        ///  * Undoing the offset along <c>block.right</c> fails differently: the offset rides
-        ///    the SHIP's right, but the block's ROTATION can be a travel-aligned override
-        ///    (drift and barrel-roll bridging prisms - `BlockRotationOverride`), so for
-        ///    exactly the blocks a drifting Squirrel lays, `block.right` is the wrong axis
-        ///    and the "recovered spine" bobs and swings ribbon to ribbon.
-        ///
-        /// The stamped vector is immune to both, and to width changes after the lay (the
-        /// payoff GROWS ridden blocks - a recovery that reads the live width would shift
-        /// under the rider as it pays). Both ribbons of a gapped pair map to the SAME spine,
-        /// which is correct: the pair is one wake, and whichever ribbon you touch, the road
-        /// is the path the vessel flew. Blocks with no stamp (spawnable lays, ungapped
-        /// wakes) ride their centres.
+        /// Kept as the ride's one geometry seam - everything (the walks, the spline control
+        /// points, Attach's seeding) reads the ride line through here, so what the ride
+        /// follows stays defined in exactly one place.
         /// </summary>
-        public Vector3 RidePoint(Prism p)
-        {
-            return p.TrailLayOffset.sqrMagnitude > 1e-8f
-                ? p.transform.position - p.TrailLayOffset
-                : p.transform.position;
-        }
+        public Vector3 RidePoint(Prism p) => p.transform.position;
 
         bool isLoop;
         public List<Prism> TrailList { get; }

@@ -292,6 +292,36 @@ nothing upstream changed. Wake prisms' z genuinely points down the trail
 (`blockRotation = transform.rotation` at lay time), so the authored-z invariant the dimension
 ladder rests on holds for every wake ribbon.
 
+## Each ribbon is its own trail; shielded and skewed prisms ride their envelope (round 17)
+
+**A gapped wake is now TWO SEPARATE SINGLE TRAILS.** You ride the ribbon you touched, on its
+own prisms. The spine ride (rounds 12-13: undo each block's stamped lay offset and ride the
+corridor between the twins) is retired by design call — it read well, but a trail is a trail,
+and consistency across every vessel's wake is worth more than the corridor. `RidePoint` is now
+simply the block's own centre, and `Prism.TrailLayOffset` and its spawner stamp are deleted
+with it (dead state on every prism otherwise). A consequence, accepted deliberately: a wake laid
+by a ROLLING vessel is ridden as the helix it actually is — which is honest, because the ride
+follows the mass the pilot laid.
+
+**Shielded mass is ridden as the cuboid its shell is nested in.** Both shield meshes are the
+box's *circumscribing dual* — vertices at `OctahedronMeshGenerator.CIRCUMSCRIBING_SCALE` (3×)
+the box's half-extents — so the ride scales the half-extents by that constant, read from the
+generator rather than guessed. A super-shielded prism's spikes are inside the same envelope, so
+one factor covers both tiers.
+
+**A prism at a strange angle is ridden as its silhouette envelope, measured in the TRAIL's
+frame.** The surface distance is now the box's SUPPORT along the radial —
+`Σ halfᵢ · |axisᵢ · radial|` over the prism's three axes — instead of a cross-section through
+its own x/y. A drift block yawed off the ribbon therefore reads as effectively WIDER, exactly
+as its sweep along the trail makes it, and the rider goes around it instead of clipping a
+corner.
+
+Support rather than a literal trail-aligned AABB, and the reason is worth keeping: an AABB
+*about an axis* is not well defined without arbitrarily choosing which way is "up" around the
+trail, and the answer changes with that choice. The support needs no such choice, is continuous
+as the pilot rolls, and reduces to exactly the box half-extent for a prism square to the ribbon
+— so the Sparrow's single-ribbon ride is unchanged.
+
 ## Ride the prism's SURFACE, and roll walks you around it (round 16)
 
 Riding a **Sparrow** trail — a SINGLE ribbon, laid with no gap because that vessel flies with

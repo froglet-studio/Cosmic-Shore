@@ -255,8 +255,8 @@ namespace CosmicShore.Gameplay
 
             // --- Position & Rotation ---
             float xShift = halfGap == 0 ? 0 : (scale.x / 2f + Mathf.Abs(halfGap)) * Mathf.Sign(halfGap);
-            Vector3 layOffset = vesselStatus.ShipTransform.right * xShift;
-            Vector3 pos = transform.position - vesselStatus.Course * offset + layOffset;
+            Vector3 pos = transform.position - vesselStatus.Course * offset
+                        + vesselStatus.ShipTransform.right * xShift;
             Quaternion rot = vesselStatus.blockRotation;
 
             // --- Ask factory to spawn Interactive prism (pooled) ---
@@ -314,15 +314,6 @@ namespace CosmicShore.Gameplay
             trail.Add(prism);
             prism.prismProperties.Index = (ushort)trail.TrailList.IndexOf(prism);
             prism.Initialize(vesselStatus.PlayerName);
-
-            // Stamp the EXACT world-space lay offset so Trail.RidePoint can undo it and hand
-            // the ride the SPINE - the path the vessel's centre actually flew. The stamp is
-            // the vector itself, never left to be reconstructed from the block's axes: the
-            // offset rides the SHIP's right while the block's rotation can be a
-            // travel-aligned override (drift/roll bridging prisms), and a rolling layer
-            // braids any reconstructed line into a helix around its flight path - the ride
-            // then orbits and bobs instead of sliding.
-            prism.TrailLayOffset = layOffset;
 
             // AFTER Initialize (pool-reuse reset clears membership - AssignTrail's contract).
             // This stamp is what makes a wake block a member of ITS ribbon: without it every
