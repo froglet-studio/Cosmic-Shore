@@ -3836,4 +3836,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   blastEffect: {fileID: 11400000, guid: 4392889d8d23e384ebeb710b68640072, type: 2}
   vesselHighlightFadeSeconds: 0.18
-  vesselHighlightGain: 3.5
+  vesselHighlightGain: 4
+  vesselHighlightSaturation: 0.85
+  vesselHaloScale: 2.4
+  vesselHaloMinScreenRadius: 0.055
+  vesselHaloIntensity: 1.4
+  vesselHaloEnabled: 1

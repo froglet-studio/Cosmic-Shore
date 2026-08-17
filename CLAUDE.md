@@ -2358,7 +2358,19 @@ scale bump** with a one-shot unlock punch.
   the halo costs no per-frame CPU transform write and one shared unit quad serves every size (the
   radius is a shader property, never a transform scale); and it is sized by
   `PrismOcclusionCorridor.MeasureCircumscribedRadius`, the corridor's own hull measurement, so a new
-  vessel of any size is correct with nothing authored. **Per-vessel CPU is correct there and would
+  vessel of any size is correct with nothing authored. **A locator must not obey perspective** — a
+  world-sized disc vanishes exactly when it is most needed, so the radius is
+  `max(what it subtends at this depth, a screen-space FLOOR)`: hull-sized and silhouette-tracing up
+  close, constant angular size past the crossover (measured 59 px at 1080p out to the 2400u max
+  reach, vs ~20 px before). That is why the offset is applied in CLIP space and pre-multiplied by
+  `w` — surviving the perspective divide is what turns a world size into a screen size — and why
+  the x offset carries the inverse aspect. The cost is that the ring stops tracing the silhouette at
+  range and becomes a reticle, which is the correct trade: the trace separates a ship from mass it is
+  tangled in (a close-range problem) while at range the job is only "there is a pilot over there".
+  **The sight's RANGE gate needs nothing added** — `BlastVolume.Height` is already the Space-scaled
+  cone reach and both consumers reject past it, and fauna/flora are already covered because a
+  creature's body prisms are `HealthPrism : Prism` and draw with the two graphs the sight is spliced
+  into; crystals are the one thing it does not reach (`DOLPHIN_CRYSTAL_SEEDING.md` §11). **Per-vessel CPU is correct there and would
   be a violation on prisms** — the prism half of the same sight is a global uniform only because
   there are tens of thousands of them; a dozen vessels already individually simulated, lit only
   while a trigger is held, is the ordinary tool. Both halves share ONE predicate

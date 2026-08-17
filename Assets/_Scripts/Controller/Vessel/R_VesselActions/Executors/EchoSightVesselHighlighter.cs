@@ -59,6 +59,7 @@ namespace CosmicShore.Gameplay
         static readonly int HaloColorId = Shader.PropertyToID("_HaloColor");
         static readonly int HaloIntensityId = Shader.PropertyToID("_Intensity");
         static readonly int HaloRadiusId = Shader.PropertyToID("_Radius");
+        static readonly int HaloMinScreenRadiusId = Shader.PropertyToID("_MinScreenRadius");
         static readonly int HaloRingPosId = Shader.PropertyToID("_RingPos");
 
         const string HaloMaterialResourcePath = "EchoSightHalo";
@@ -115,6 +116,7 @@ namespace CosmicShore.Gameplay
         readonly float _saturation;
         readonly float _haloScale;
         readonly float _haloIntensity;
+        readonly float _haloMinScreenRadius;
         readonly bool _haloEnabled;
 
         /// <param name="fadeSeconds">Seconds a vessel takes to bloom in / fade out of the highlight.</param>
@@ -122,15 +124,21 @@ namespace CosmicShore.Gameplay
         /// <param name="saturation">How far the hull is driven to its saturated domain colour (0-1).</param>
         /// <param name="haloScale">Halo radius as a multiple of the target's own hull radius.</param>
         /// <param name="haloIntensity">Peak additive strength of the halo.</param>
+        /// <param name="haloMinScreenRadius">
+        /// Floor on the halo's on-screen size, as a fraction of half the screen height. This is what
+        /// makes the mark distance-independent — see the shader's header note.
+        /// </param>
         /// <param name="haloEnabled">False leaves the hull tint as the only mark.</param>
         public EchoSightVesselHighlighter(float fadeSeconds, float gain, float saturation,
-                                          float haloScale, float haloIntensity, bool haloEnabled)
+                                          float haloScale, float haloIntensity,
+                                          float haloMinScreenRadius, bool haloEnabled)
         {
             _fadeSeconds = Mathf.Max(0.01f, fadeSeconds);
             _gain = Mathf.Max(1f, gain);
             _saturation = Mathf.Clamp01(saturation);
             _haloScale = Mathf.Max(1.05f, haloScale);
             _haloIntensity = Mathf.Max(0f, haloIntensity);
+            _haloMinScreenRadius = Mathf.Clamp(haloMinScreenRadius, 0f, 0.5f);
             _haloEnabled = haloEnabled;
         }
 
@@ -356,8 +364,17 @@ namespace CosmicShore.Gameplay
             _block.SetColor(HaloColorId, entry.DomainColor);
             _block.SetFloat(HaloIntensityId, _haloIntensity * entry.Blend);
             _block.SetFloat(HaloRadiusId, Mathf.Max(0.1f, entry.HullRadius * _haloScale));
-            // The ring sits ON the hull's silhouette, which is why the halo radius is expressed as a
-            // multiple of the hull radius: the ring position is just its reciprocal.
+
+            // The floor that stops the halo shrinking with distance. Applied in the shader rather
+            // than here because it depends on the target's DEPTH this frame, which the vertex stage
+            // already has and the CPU would have to recompute per camera.
+            _block.SetFloat(HaloMinScreenRadiusId, _haloMinScreenRadius);
+
+            // The ring sits ON the hull's silhouette while the world-sized disc is the larger of the
+            // two, which is why the halo radius is expressed as a multiple of the hull radius: the
+            // ring position is just its reciprocal. Once the screen floor takes over, the same
+            // fraction makes the ring a reticle AROUND the ship instead - deliberate, so the glyph
+            // looks identical at every distance (see the shader header).
             _block.SetFloat(HaloRingPosId, 1f / _haloScale);
             entry.Halo.SetPropertyBlock(_block);
         }

@@ -62,6 +62,12 @@ record: `_Scripts/Controller/Vessel/R_VesselActions/DOLPHIN_CRYSTAL_SEEDING.md` 
   (`_Graphics/Materials/Graphs/EchoSightHalo.shader` + `Resources/EchoSightHalo.mat`, both new,
   hand-authored). (c) The Charge slot now reports **pilots debuffed** and **creatures killed** after
   each blast, two stacked bare numbers in the Space tally's grammar, told apart by palette colour.
+- **Fourth pass.** The halo no longer shrinks with distance: its radius is
+  `max(world size at this depth, vesselHaloMinScreenRadius)` computed in the vertex shader, so past
+  ~750 u it holds a constant angular size (measured: 59 px diameter at 1080p, vs ~20 px before, at the
+  2400 u max reach). The offset moved from view space to CLIP space to do it. Also recorded: the
+  sight's range gate was already Space-driven and already covers fauna/flora — no change needed
+  there — with crystals the one thing it does not reach (`DOLPHIN_CRYSTAL_SEEDING.md` §11).
 
 **Verify in editor**
 
@@ -99,9 +105,14 @@ record: `_Scripts/Controller/Vessel/R_VesselActions/DOLPHIN_CRYSTAL_SEEDING.md` 
     space, (b) surrounded by lit prisms, (c) fully behind prisms. Confirm the ring lands on the hull's
     silhouette rather than inside or well outside it, and that it never occludes anything (ZWrite is
     off) or darkens the ship (additive).
-13. **Two rivals of different domains in one cone** must be tellable apart — each halo and hull wears
+13. **Halo at range.** Mark a rival across the arena (≥1000 u) and confirm the halo is clearly
+    visible and roughly the same on-screen size as one at 800 u — that is the floor working. Up close
+    the ring should still trace the hull's silhouette; at range it becomes a reticle around the ship,
+    which is intended. Check it stays CIRCULAR at a non-16:9 aspect (the shader carries an explicit
+    aspect correction) and that it does not jitter or pop at the crossover depth.
+14. **Two rivals of different domains in one cone** must be tellable apart — each halo and hull wears
     its OWN domain colour, never a shared highlight colour.
-14. **The living tally.** Fire a blast that catches a rival and some fauna: the Charge slot shows a
+15. **The living tally.** Fire a blast that catches a rival and some fauna: the Charge slot shows a
     white pilot count and a blue creature count, both fading after ~2.5 s. Fire one that catches
     neither and confirm both stay blank (no "0"). Then fire two blasts back to back inside the 0.15 s
     cooldown — the fauna count may be shared between them; that is the documented window limitation,
@@ -115,7 +126,8 @@ record: `_Scripts/Controller/Vessel/R_VesselActions/DOLPHIN_CRYSTAL_SEEDING.md` 
 | `_minCoreMultiplier` | " | 0.5 |
 | `vesselHighlightGain` | `Dolphin.prefab` ▸ `EchoSightActionExecutor` | 4 |
 | `vesselHighlightSaturation` | " | 0.85 |
-| `vesselHaloScale` | " | 2.4 (halo radius ÷ hull radius) |
+| `vesselHaloScale` | " | 2.4 (halo radius ÷ hull radius, close range) |
+| `vesselHaloMinScreenRadius` | " | 0.055 (≈59 px diameter at 1080p; the distance floor) |
 | `vesselHaloIntensity` | " | 1.4 |
 | `vesselHighlightFadeSeconds` | " | 0.18 |
 | `_RingWidth` / `_RingGain` / `_GlowFalloff` | `Resources/EchoSightHalo.mat` | 0.12 / 1.6 / 2.5 |

@@ -19,15 +19,29 @@
 //                   it never needs a correct sort order against the transparent queue.
 //   ZWrite Off    — it writes no depth, so it can never occlude the world it is drawn over.
 //
-// THE SHAPE. A camera-facing disc built in VIEW space from the object's origin, so the quad needs no
+// THE SHAPE. A camera-facing disc built from the object's origin in CLIP space, so the quad needs no
 // billboarding on the CPU and no per-frame transform write: the mesh is a unit quad, the transform
-// sits at the vessel's centre, and the vertex shader spreads the corners across the view plane. Two
+// sits at the vessel's centre, and the vertex shader spreads the corners across the screen. Two
 // terms compose:
 //   - a soft radial GLOW that falls off to the disc edge, which is what makes the target findable in
 //     empty space and legible through mass;
 //   - a hard RING at the hull's own silhouette radius, which is what keeps it readable when the
 //     target is surrounded by lit prisms — a ring is a shape nothing in the arena has, whereas a
 //     glow can be mistaken for one more bright prism.
+//
+// IT DOES NOT SHRINK WITH DISTANCE, which is the whole point of a locator. A world-sized disc obeys
+// perspective and so vanishes exactly when it is most needed — a rival across the arena is the case
+// the pilot cannot solve by looking harder. The radius is therefore
+// `max(what _Radius subtends at this depth, _MinScreenRadius)`: up close the disc is hull-sized and
+// its ring traces the silhouette, and past the crossover depth it holds a CONSTANT ANGULAR SIZE, so
+// a distant pilot is exactly as findable as a near one. Raise _MinScreenRadius past every practical
+// hull size to make it constant at all distances.
+//
+// One consequence to accept rather than fix: once the floor engages, the ring no longer lands on the
+// hull's silhouette — it becomes a reticle AROUND the ship. That is the correct trade. The silhouette
+// trace exists to separate a marked ship from mass it is tangled up in, which is a close-range
+// problem; at range the job is "there is a pilot over there", and a constant glyph does that better
+// than an accurate one too small to see.
 //
 // COLOUR is passed in per-instance and is the pilot's own SATURATED domain colour, so the halo says
 // who as well as where. Never a fixed highlight colour: two rivals in one cone must be tellable
@@ -44,6 +58,7 @@ Shader "CosmicShore/EchoSightHalo"
         [HDR] _HaloColor ("Halo Colour", Color) = (1, 1, 1, 1)
         _Intensity ("Intensity", Float) = 1
         _Radius ("Halo World Radius", Float) = 10
+        _MinScreenRadius ("Min Screen Radius (NDC half-height)", Range(0, 0.5)) = 0.055
         _RingPos ("Ring Position (0 centre .. 1 edge)", Range(0, 1)) = 0.45
         _RingWidth ("Ring Width", Range(0.01, 0.6)) = 0.12
         _RingGain ("Ring Gain", Float) = 1.6
@@ -92,6 +107,7 @@ Shader "CosmicShore/EchoSightHalo"
                 float4 _HaloColor;
                 float  _Intensity;
                 float  _Radius;
+                float  _MinScreenRadius;
                 float  _RingPos;
                 float  _RingWidth;
                 float  _RingGain;
@@ -105,14 +121,32 @@ Shader "CosmicShore/EchoSightHalo"
                 // The quad is authored in [-0.5, 0.5]; -1..1 is the convenient disc parameter.
                 float2 corner = input.positionOS.xy * 2.0;
 
-                // Billboard in VIEW space about the object's ORIGIN. Because the offset is applied
-                // after the view transform, the vessel's own rotation cannot tilt or foreshorten the
-                // disc, and the halo needs no CPU work per frame beyond riding its parent.
+                // Billboard about the object's ORIGIN, offsetting in CLIP space. Because the offset
+                // is applied after the projection, the vessel's own rotation cannot tilt or
+                // foreshorten the disc, its SCALE cannot squash it, and the halo needs no CPU work
+                // per frame beyond riding its parent.
                 float3 centreWS = TransformObjectToWorld(float3(0.0, 0.0, 0.0));
-                float3 centreVS = TransformWorldToView(centreWS);
-                float3 posVS    = centreVS + float3(corner * _Radius, 0.0);
+                float4 centreCS = TransformWorldToHClip(centreWS);
 
-                output.positionCS = TransformWViewToHClip(posVS);
+                // The NDC-y half-extent that _Radius world units subtends at this depth.
+                // UNITY_MATRIX_P._m11 is cot(fovY/2), so radius * m11 / w is exact rather than an
+                // approximation — and it tracks the speed tunnel's live FOV for free, because the
+                // projection matrix is where that effect lands.
+                float w = max(abs(centreCS.w), 1e-4);
+                float worldNdc = _Radius * UNITY_MATRIX_P._m11 / w;
+
+                // The floor is what makes the halo distance-independent. See the header note.
+                float r = max(worldNdc, _MinScreenRadius);
+
+                // NDC x and y both span -1..1 while x covers a wider field, so the x offset carries
+                // the inverse aspect or the disc renders as an ellipse.
+                float2 offset = float2(r * (_ScreenParams.y / _ScreenParams.x), r);
+
+                // Pre-multiplied by w so the offset SURVIVES the perspective divide — that is what
+                // turns it into a screen-space size instead of a world-space one.
+                centreCS.xy += corner * offset * centreCS.w;
+
+                output.positionCS = centreCS;
                 output.disc = corner;
                 return output;
             }

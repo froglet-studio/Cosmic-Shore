@@ -27,6 +27,7 @@ Material:
     m_Floats:
     - _GlowFalloff: 2.5
     - _Intensity: 1
+    - _MinScreenRadius: 0.055
     - _Radius: 10
     - _RingGain: 1.6
     - _RingPos: 0.45

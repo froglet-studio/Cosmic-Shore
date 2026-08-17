@@ -52,9 +52,16 @@ namespace CosmicShore.Gameplay
                  "only). Brightness alone is not enough: the sight lights up the surrounding prisms " +
                  "at the same time, so only HUE separates a marked ship from the lit mass around it.")]
         [SerializeField, Range(0f, 1f)] private float vesselHighlightSaturation = 0.85f;
-        [Tooltip("Halo radius as a multiple of the target's own hull radius. The ring lands ON the " +
-                 "silhouette, so this also sets how far outside the hull the glow reaches.")]
+        [Tooltip("Halo radius as a multiple of the target's own hull radius, used while the target is " +
+                 "close enough that this is the larger of the two sizes. The ring lands ON the " +
+                 "silhouette here, so this also sets how far outside the hull the glow reaches.")]
         [SerializeField, Min(1.05f)] private float vesselHaloScale = 2.4f;
+        [Tooltip("FLOOR on the halo's on-screen size, as a fraction of half the screen height. This " +
+                 "is what stops the halo shrinking with distance: past the depth where the hull-sized " +
+                 "disc would fall below it, the halo holds a constant angular size and a rival across " +
+                 "the arena stays exactly as findable as one alongside you. Raise it past every " +
+                 "practical hull size to make the halo the same size at ALL distances.")]
+        [SerializeField, Range(0f, 0.5f)] private float vesselHaloMinScreenRadius = 0.055f;
         [Tooltip("Peak additive strength of the halo. This is the ONLY part of the highlight that " +
                  "reads when the target is behind mass (it draws with ZTest Always), so it is what " +
                  "makes the ability work in a dense arena.")]
@@ -169,7 +176,7 @@ namespace CosmicShore.Gameplay
 
             _vesselHighlighter ??= new EchoSightVesselHighlighter(
                 vesselHighlightFadeSeconds, vesselHighlightGain, vesselHighlightSaturation,
-                vesselHaloScale, vesselHaloIntensity, vesselHaloEnabled);
+                vesselHaloScale, vesselHaloIntensity, vesselHaloMinScreenRadius, vesselHaloEnabled);
 
             _vesselHighlighter.Tick(
                 upgraded ? _gameData?.Players : null,

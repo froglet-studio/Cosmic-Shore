@@ -538,3 +538,76 @@ so a cell swap mid-flight cannot strand a subscription on the old cell's SO.
 | Halo material | `Resources/EchoSightHalo.mat` |
 | Domain signal colour | `SO_ColorSet.GetDomainSignalColor` |
 | Per-blast vessel ledger + tally struct | `ExplosionImpactor` (`_vesselsHit`, `BlastTally`, `OnBlastBegan`) |
+
+---
+
+## 11. 2026-08-17, fourth pass — the halo stops shrinking, and what the range gate already does
+
+### The halo is no longer a function of distance
+
+A world-sized disc obeys perspective, so it vanished exactly when it was most needed: a rival across
+the arena is the case a pilot cannot solve by looking harder. The halo's radius is now
+
+```
+r = max( what _Radius subtends in NDC at this depth , _MinScreenRadius )
+```
+
+computed in the vertex shader, which is why the offset moved from **view** space to **clip** space:
+pre-multiplying the corner offset by `w` makes it survive the perspective divide, turning a world
+size into a screen size. The world term uses `UNITY_MATRIX_P._m11` — `cot(fovY/2)`, so
+`radius · m11 / w` is the exact NDC half-extent rather than an approximation, and it tracks the speed
+tunnel's live FOV for free because the projection matrix is where that effect lands. The x offset
+carries the inverse aspect (`_ScreenParams.y / _ScreenParams.x`) or the disc renders as an ellipse.
+
+Measured off-engine at fovY 60°, hull radius 10, `haloScale` 2.4 (`_Radius` 24), floor 0.055, 1080p:
+
+| depth | world NDC | used | on-screen diameter | regime |
+|---|---|---|---|---|
+| 100 | 0.416 | 0.416 | 449 px | world (hull-sized, ring on the silhouette) |
+| 500 | 0.083 | 0.083 | 90 px | world |
+| **756** | 0.055 | 0.055 | 59 px | **crossover** |
+| 1000 | 0.042 | 0.055 | 59 px | floor (constant) |
+| 2400 | 0.017 | 0.055 | 59 px | floor — **3.2× larger than before** |
+
+2400 is the authored cone reach, i.e. the furthest a target can be and still be inside the blast at
+all. It used to draw at ~20 px there; it now holds 59. The aspect correction was checked numerically
+at the same time (x and y offsets subtend equal pixels — circular, not elliptical).
+
+**The one consequence to accept rather than fix:** once the floor engages the ring no longer lands on
+the hull's silhouette — it becomes a reticle *around* the ship. That is the right trade. The
+silhouette trace exists to separate a marked ship from mass it is tangled up in, which is a
+close-range problem; at range the job is "there is a pilot over there", and a constant glyph does
+that better than an accurate one too small to see. Keeping `_RingPos` a constant fraction of the disc
+also means the glyph looks identical at every distance.
+
+`vesselHaloMinScreenRadius` on the executor is the dial. Raise it past every practical hull size to
+make the halo the same size at **all** distances.
+
+### The range gate already exists, and it is already Space-driven
+
+Worth writing down because it looks like a missing feature and is not. Everything the sight
+highlights is already clipped to the blast's reach, and that reach is already the Space-scaled one:
+
+- `ExplosionHelper.TryResolveConicVolume` sets `Height = cone.AuthoredHeight × sizeMultiplier`, where
+  `sizeMultiplier` **is** the Space multiplier (`_heightMultiplierAtFullSpace`, ×2 at Space 10).
+- Both consumers of that volume reject anything past it: `PrismDestructionSight.hlsl` returns early on
+  `s <= 0 || s > height`, and `BlastVolume.Contains` (the vessel half) does the same. The near clip is
+  the apex, so mass *behind* the vessel is never lit either.
+- **Fauna and flora are already covered** by the prism half. A creature's body prisms are
+  `HealthPrism : Prism`, so they render with `BlockGraph` / `ExplodingBlockGraph` — the two graphs the
+  sight is spliced into — and light up like any other prism. There is no separate lifeform path to
+  add.
+
+And it is already cheap, which is the other half of the question. Per prism fragment with the sight
+UP: one dot for the axial band, one reject, then ~12 ALU for the segment distance. With the sight
+DOWN: **one compare** (`_PrismSightParams.x > 0`) and return. Zero per-prism CPU either way, no
+material swaps, no per-instance overrides, no change to the render queue, the batch, or the draw-call
+count — it is the §4.7 global-uniform shape, five `Shader.SetGlobalVector` calls per frame for the
+whole world.
+
+**The one real gap: CRYSTALS are not highlighted.** The sight is spliced into the two prism graphs
+only, and a crystal draws with `ChargeCrystal.shader` / `CrystalGraph`, which carry no sight node. So
+a lifeform's HEART stays dark while its body lights up, as do seeded crystals and omni pickups.
+Currently cosmetic — a creature's body is the bulk of its silhouette, so creatures do read — but if
+the heart's inconsistency ever matters, the fix is the same splice into the crystal graphs
+(`Tools/Shaders/wire_prism_destruction_sight.py` is the pattern), not a new mechanism.
