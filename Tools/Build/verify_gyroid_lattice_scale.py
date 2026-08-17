@@ -144,7 +144,7 @@ def main():
 
     failures = []
     baseline = None
-    for scale in (1.0, 1.5, 2.0, 3.0):
+    for scale in (1.0, 1.5, 2.0, 3.0, 4.0):
         sep = MEASURED_SEPARATION * scale
         P = walk(table, sep)
         D = np.linalg.norm(P[:, None, :] - P[None, :, :], axis=2)

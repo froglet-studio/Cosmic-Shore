@@ -4679,7 +4679,7 @@ proves it on every run of the fitter rather than trusting the arithmetic.
 
 | | before this pass | after |
 |---|---|---|
-| **Schwarz P Space** | 13.4 × 0.7 × 0.7, 72 overlaps, level 2 | **30 × 0.5 × 0.5**, 60:1, 3.43 spans, spacing `5.25 → 8.75`, **level 2 / 36 sites, unchanged** |
+| **Schwarz P Space** | 13.4 × 0.7 × 0.7, 72 overlaps, level 2 | **30 × 0.5 × 0.5**, 60:1, 1.14 spans, `LatticeScale 5` (spacing `5.25 → 26.25`), **level 2 / 36 sites, unchanged**, flush with no overlaps |
 
 The prism is sized in multiples of its own lattice's spacing (`SPACE_SPANS`,
 `SPACE_THICK_RATIO` in `fit_schwarz_p_leaf_sizes.py`) rather than as absolute numbers, so the
@@ -4756,7 +4756,7 @@ unless the ordering holds and the ratio stays constant:
 
 **What shipped.** The strut is stretched on the native lattice to `30 × 1 × 1` and then the whole
 structure — prisms, spacing, and the spindles between them — is scaled **2×**, giving
-`60 × 1 × 1` at `LatticeScale 2` (separation 3 → 6, spacing 7.83 → 15.66). The span is **3.83
+`60 × 1 × 1` at `LatticeScale 4` (separation 3 → 12, spacing 7.83 → 31.32). The span is **3.83
 spacings before and after**, which is the check that the LENGTH is a pure scale-up rather than a
 reshape; the cross-section was then thinned by hand from the 2 a uniform scale would give to
 **1**, which is a deliberate reshape — Space is the skeletal element and a 60:1 needle reads
@@ -4900,3 +4900,43 @@ was never applied — and it defeats every offline measurement, because the meas
 the authored number while the engine uses another. When a fitted size does not read on screen,
 verify what the engine actually stored **before** re-fitting: one look at the live Transform
 would have saved three passes of measuring phantom geometry.
+
+### 33.10 Spacing and prism size are INDEPENDENT dials (Aug 2026)
+
+The two Space elements were opened up: gyroid `LatticeScale 2 → 4` (spacing `15.66 → 31.32`) and
+Schwarz P `1.667 → 5` (spacing `8.75 → 26.25`), with **both prisms unchanged** at `60 × 1 × 1`
+and `30 × 0.5 × 0.5`. Spans fall accordingly — gyroid `3.83 → 1.92`, Schwarz `3.43 → 1.14` — and
+the Schwarz strut, which had 108 crossings, is now **flush with none**.
+
+**What this pass had to undo.** `fit_schwarz_p_leaf_sizes.py` sized the Space prism as RATIOS to
+its own lattice spacing (`SPACE_SPANS`, `SPACE_THICK_RATIO`), so the strut tracked the lattice
+automatically. That coupling was right while the two moved together and became actively wrong the
+moment they were tuned separately: tripling the spacing would have tripled the strut to
+`90 × 1.5 × 1.5` with nobody asking. It is now an authored `SPACE_LEAF = (30.0, 0.5, 0.5)`.
+
+**The rule.** Derive a value from another only while they are genuinely one decision. The moment
+a human tunes them independently, the derivation stops being a safeguard and becomes a silent
+edit — and it fires in the direction nobody is looking, because the field they *did* change looks
+correct afterwards.
+
+**Verified at the new scales, not assumed.** `verify_gyroid_lattice_scale.py` now covers scale 4
+and the ordering still holds with the ratio constant:
+
+| scale | sep | bond | reserve | gate | healthy | gate/healthy |
+|---|---|---|---|---|---|---|
+| 2.0 | 6.0 | 15.67 | 6.27 | 11.00 | 15.05 | 73% |
+| **4.0** | **12.0** | **31.35** | **12.54** | **22.00** | **30.10** | **73%** |
+
+`assert_level_invariant()` confirms Schwarz stays at level 2 / 36 sites at `k = 5`
+(`sep 30`, `period 300` → the argmin is unmoved), so topology and prism count are its peers'.
+`GyroidOctagonRegistry`'s deliberately-unscaled `CenterDedupeRadius` (12u) is still correctly
+bracketed at `k = 4`: distinct octagon centres are `35.87 × 4 = 143.5` apart, half of that is
+71.7, and drift is ~1–2u — and 12 remains under `BinSize` 17.935, so the 3³ scan still covers it
+(§33.8's stated bound was 0.67×–40×; 4 is inside it).
+
+**Mass is unchanged, footprint is not.** Prism sizes and counts did not move, so per-prism volume,
+the species ceilings and the cell's Frenzy ladder are all exactly as §33.9 left them. What grows is
+the **bounds**: a gyroid plant's octagon ring radius goes 20u → 40u and its territory 53u → 106u,
+and a Schwarz plant's tile goes 50u → 150u across. Same mass, spread over ~4× and ~3× the linear
+extent — worth an eye in the editor for plants reaching past the membrane or into the nucleus,
+which is a spatial question no offline check here answers.

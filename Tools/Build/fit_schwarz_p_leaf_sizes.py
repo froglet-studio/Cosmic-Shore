@@ -78,7 +78,7 @@ WORLD_SCALE = PERIOD_SCALE / (2.0 * PI)
 # The prism itself is then derived from the GYROID Space's shipped proportions (imported, not
 # copied), so the element reads the same on both surfaces: the same spans-per-spacing and the
 # same thickness-per-spacing.
-SPACE_LATTICE_SCALE = 5.0 / 3.0
+SPACE_LATTICE_SCALE = 5.0
 
 
 # ----------------------------------------------------------------------------
@@ -437,24 +437,24 @@ def assert_level_invariant(levels):
     return peer
 
 
-# The Space prism's two free numbers, as RATIOS to the lattice's own prism spacing: how many
-# spacings the strut spans, and how thick it is relative to one. Kept as ratios rather than as
-# world sizes so the strut can never drift away from the lattice it grows on.
+# The Space prism is AUTHORED OUTRIGHT, not derived from the lattice.
 #
-# The world sizes they are authored to produce - 30.0 x 0.5 x 0.5 - are design-chosen, not
-# fitted: zero-overlap is the wrong objective for a strut (a strut short enough to clear every
-# neighbour reaches none of them and the structure reads as disconnected bars), so the length is
-# picked for how the skeleton reads and the crossings are accepted. Docs/ECOSYSTEM.md 33.7.
-SHIPPED_SPACE_SPACING = 8.7494      # measured; asserted against a fresh measurement below
-SPACE_SPANS = 30.0 / SHIPPED_SPACE_SPACING
-SPACE_THICK_RATIO = 0.5 / SHIPPED_SPACE_SPACING
+# It used to be expressed as RATIOS to the prism spacing, so the strut tracked the lattice
+# automatically. That coupling is now actively wrong: prism size and lattice spacing are tuned
+# INDEPENDENTLY - the strut is picked for how the skeleton reads, the spacing for how open the
+# structure is - so a ratio silently re-sizes the prism every time the spacing moves. On the
+# spacing change that retired it, the ratio would have tripled this strut to 90 x 1.5 x 1.5
+# with nobody asking for it.
+#
+# Zero-overlap is likewise not the objective for a strut: one short enough to clear every
+# neighbour reaches none of them and reads as disconnected bars. Crossings are accepted, and
+# only REPORTED below. Docs/ECOSYSTEM.md 33.7.
+SPACE_LEAF = (30.0, 0.5, 0.5)
 
 
-def space_leaf(space_spacing):
-    """The Space prism: a strut sized in multiples of its own lattice's spacing."""
-    return (round(SPACE_SPANS * space_spacing, 2),
-            round(SPACE_THICK_RATIO * space_spacing, 2),
-            round(SPACE_THICK_RATIO * space_spacing, 2))
+def space_leaf():
+    """The Space prism: authored outright. See SPACE_LEAF."""
+    return SPACE_LEAF
 
 
 def main():
@@ -525,12 +525,7 @@ def main():
     sd = np.linalg.norm(sc[:, None, :] - sc[sic][None, :, :], axis=2)
     sd[sd < 1e-6] = np.inf
     space_spacing = float(np.mean(sd.min(axis=0)))
-    if abs(space_spacing - SHIPPED_SPACE_SPACING) > 0.01:
-        raise SystemExit(
-            f"SHIPPED_SPACE_SPACING is {SHIPPED_SPACE_SPACING}, the lattice measures "
-            f"{space_spacing:.4f}. The Space prism is authored as a ratio to that number, so a "
-            f"drift here silently re-sizes the strut - update the constant deliberately.")
-    space = space_leaf(space_spacing)
+    space = space_leaf()
 
     elements = [
         ("Charge", pleasant, (86, 196, 232)),
