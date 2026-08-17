@@ -306,6 +306,32 @@ The polish, all on the 1D grind:
   and eases in (clamping the seed — what the junction work did — teleported the hull sideways
   on contact).
 
+**ROUND 11 (2026-08-16) — the ride restored to what shipped years ago.** Playtest: attaching to
+a Squirrel trail and pushing forward "swung me around"; backward worked better; *"we had
+something years ago on the main branch that felt better than this."* Went and read it —
+`GunShipController.Slide` at `d895f329a`, intent named by `023d53cc7 "When attached move down
+the direction you are looking"`. The original is three lines: position is a lerp between block
+centres (**ON** the trail), the rotation lerp is **deliberately commented out** (attitude is
+never touched while sliding), and direction flips on `dot(forward, segment) < 0`.
+
+- **The positional orbit and the up-twist are REMOVED.** Both came from an over-literal reading
+  of round 5's "roll should rotate them around the trail" — but while riding, the hull's
+  forward IS the rail, so ordinary `Roll()` already spins the pilot around it. The imposed
+  twist fought the stick every frame and, on a curving ribbon (a Squirrel drift line — exactly
+  the test case), swung the hull bodily as the radial turned. `Roll()`/`Yaw()`/`Pitch()` now
+  all run exactly as in free flight, and position is the centreline plus a contact offset that
+  decays (`railSettleRate`).
+- **The forward/backward asymmetry was the facing seed.** It latched from `dot(nose, axis)` —
+  but you fly INTO a trail, so at contact the nose is across the ribbon, that dot is ~0 and its
+  sign is noise: push forward and you were as likely to be sent back the way you came. It now
+  seeds from the direction `Attach` latched, which comes from the vessel's **Course**.
+- Kept, because none of it fights the original: Catmull-Rom centreline (a smoother version of
+  the original's segment lerp), hole bridging, speed/throttle inertia, `RidePoint`, the payoff.
+
+Round-11 verify: attach to a Squirrel trail and push forward → you continue the way you flew
+in, no swing; roll → the view spins around the rail and nothing fights the stick; pitch/yaw →
+free aim while the rail carries you.
+
 Round-10 verify (`URCHIN_TRAIL_RIDER.md` steps 7/8/8a): release mid-grind → coasts to a stop;
 grind onto an enemy trail → brakes rather than snaps; latch on at speed holding forward →
 carries the speed, eases onto the rail, no sideways pop; full-speed run down a long ribbon → no

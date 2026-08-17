@@ -32,10 +32,11 @@ The Urchin flies normally until it touches a prism. Then it **latches on** and
 z-axis of the prisms that compose it (trail prisms: z PARALLEL to the trail; surface prisms: z
 ORTHOGONAL to the surface):
 
-- On a **trail** the ride is a **rail grind**: throttle is signed speed up and down the ribbon
-  (forward/reverse resolved from the pilot's facing against the trail axis — the dot-product
-  scheme the original Urchin used), **roll carries the hull AROUND the trail** (an orbit at the
-  attach radius), and **pitch/yaw stay free so the pilot can aim** while riding.
+- On a **trail** the ride is a **rail grind**: the hull sits ON the ribbon and its **attitude
+  is entirely the pilot's** — roll, yaw and pitch all run exactly as in free flight (rolling
+  spins you around the rail for free, because while riding your forward IS the rail). Only the
+  throttle is re-purposed: signed speed up and down the ribbon, forward/reverse resolved from
+  the pilot's facing against the trail axis — the dot-product scheme the original used.
 - On a **surface** the ride is **marble madness**: momentum-carrying rolling on a smoothed
   continuous plane over the prisms' authored normals, belly eased onto the surface, and running
   off a sheet's **edge wraps the rider around the rim onto the other side**.
@@ -291,6 +292,50 @@ nothing upstream changed. Wake prisms' z genuinely points down the trail
 (`blockRotation = transform.rotation` at lay time), so the authored-z invariant the dimension
 ladder rests on holds for every wake ribbon.
 
+## Back to what shipped (round 11): the ride sits ON the trail, and the pilot owns attitude
+
+Playtest: *"I attached to a Squirrel trail and tried to go forward and it swung me around.
+Backward worked better... we had something years ago on the main branch that felt better than
+this."* That was the signal to stop redesigning and go read the original, which is still in
+history — `GunShipController.Slide` at `d895f329a`, and the commit that named the intent,
+`023d53cc7 "When attached move down the direction you are looking"`.
+
+What the original did, in three lines that matter:
+
+```csharp
+transform.position = Vector3.Lerp(currentBlock.position, nextBlock.position, trailLerpAmount);
+// ...rotation lerp deliberately commented out - attitude is never touched while sliding...
+if (Vector3.Dot(transform.forward, distance) < 0) moveForward = !moveForward;
+```
+
+The hull rides **ON** the trail, its **attitude is never touched**, and the direction of travel
+is **where you are looking**. Two things I had built on top of that are now removed:
+
+- **The positional orbit** (ride at a radius, parallel-transport a radial, roll to carry it
+  around) — and
+- **the up-twist** that dragged the hull's up onto that radial every frame.
+
+Both came from an over-literal reading of round 5's *"roll should rotate them around the
+trail"*. While riding, the hull's forward IS the rail, so an **ordinary `Roll()` already spins
+the pilot around it** — the feature was free all along. The imposed twist instead fought the
+stick every frame, and on a curving ribbon (a Squirrel drift line, exactly the test case) the
+radial swung as the axis turned and took the hull bodily with it. `Roll()`, `Yaw()` and
+`Pitch()` now all run exactly as in free flight.
+
+**And the forward/backward asymmetry had its own cause.** `SeedTrailRide` latched the facing
+sign from `dot(nose, axis)` — but you fly INTO a trail, so at the instant of contact the nose
+is usually *across* the ribbon, that dot is near zero, and its sign is noise. Push forward and
+you were as likely to be sent back the way you came as onward; whichever way the coin landed,
+the other one "worked better". It now seeds from the direction the follower latched, which
+`Attach` takes from the vessel's **Course** — so push-forward-at-attach always means *keep
+going the way I was flying*, and the hysteresis band holds it until you genuinely turn to look
+the other way.
+
+Kept from the modern work, because none of it fights the original model: the Catmull-Rom
+centreline (a strictly smoother version of the original's segment lerp), hole bridging, the
+speed/throttle inertia, `RidePoint`'s width-independent line, the payoff, and a short
+`railSettleRate` ease so contact settles onto the rail rather than snapping to it.
+
 ## Polishing the grind (round 10): junctions OUT, weight IN
 
 Junctions are **removed** (see the round-8 entry for what was learned and kept). The ride now
@@ -318,14 +363,19 @@ other way, instead of an instant about-face at whatever speed you were doing. Th
 now ticked **every frame** rather than only while over the deadband, because it owns the ride's
 speed and therefore the coast; cutting the call at the deadband made release a hard stop.
 
-**3. The orbit frame rides the CONTINUOUS tangent.** `IndexOrderHeading` is a step function —
+**3. The axis read is CONTINUOUS.** *(Round 11 removed the orbit frame this originally served;
+`RibbonAxis()` survives and still matters, because it is what the facing dot is taken against.)*
+
+**3a.** `IndexOrderHeading` is a step function —
 it only changes when the block index changes — so parallel-transporting the orbit radial against
 it kicked the grind once per block, a tick at exactly the trail's periodicity (the same shape of
 defect as the round-7 chord bug, one layer up). `GunVesselTransformer.RibbonAxis()` prefers the
 follower's Catmull-Rom tangent (`TravelHeading`, continuous through crossings) re-expressed in
 index order, and falls back to the discrete axis when parked or degenerate.
 
-**4. Latching on carries your speed and never pops.** `Attach` seeds `_rideSpeed` from the
+**4. Latching on carries your speed and never pops.** *(The orbit-radius half is superseded by
+round 11's `railSettleRate`; the speed and throttle seeding stand, and the facing seed was
+corrected again in round 11 — it was still taken from the nose here.)* `Attach` seeds `_rideSpeed` from the
 vessel's arrival speed (starting the grind at a dead stop and ramping up brakes the pilot for
 latching on, which is backwards); `SeedTrailRide` seeds the grind throttle from the stick, so
 holding forward through a contact just keeps going. The orbit radius seeds at the hull's ACTUAL
@@ -439,7 +489,9 @@ is replaced:
   flips with travel. (Round 3 failed doing "the same thing" against `Course`, which DOES flip
   with travel and fed back on the decision. Same dot product, opposite stability.) A hysteresis
   band (`facingDeadband`) keeps an aim near broadside from flapping the mapping.
-- **Roll ORBITS the hull around the trail.** The rider sits at the radius it latched on at
+- **Roll ORBITS the hull around the trail.** *(SUPERSEDED in round 11 — the positional orbit
+  and its up-twist are removed; roll is now ordinary free-flight roll, which already spins the
+  pilot around the rail because their forward is the rail. The rest of this entry stands.)* The rider sits at the radius it latched on at
   (`minOrbitRadius` floor), on a radial kept perpendicular to the curving axis by parallel
   transport; roll input carries it around the ribbon (`orbitDegreesPerSecond`, handedness
   corrected by facing so "roll right" always moves YOUR right). `TrailFollower` became a pure
@@ -592,9 +644,7 @@ restore the previous pilot's colliders onto the new one at an arbitrary moment.
 | `ammoIndex` | `Urchin.prefab` `GunVesselTransformer` | 0 — the same slot the spike volley spends |
 | `throttleDeadband` | `GunVesselTransformer` (C# default **0.1**) | Signed throttle below this magnitude parks the rider. Never let it reach 0: `RideTheTrail` divides by `Throttle × speed`, and XDiff idles NEAR its rest, never exactly on it. |
 | `throttleRestPosition` | `GunVesselTransformer` (C# default **0.5**) | The XDiff value that reads as neutral — XDiff RESTS AT 0.5 (`GamepadInputStrategy`). Push above to keep riding the latched direction, pull below to back up. |
-| `orbitDegreesPerSecond` | `GunVesselTransformer` (C# default **180**) | How fast full roll stick carries the hull around the ribbon while grinding. |
-| `minOrbitRadius` | `GunVesselTransformer` (C# default **2.5**) | Floor on the grind radius; the attach distance is kept when larger. |
-| `trailUpAlignRate` | `GunVesselTransformer` (C# default **4**) | 1/s twist of the hull's up radially OUT from the ribbon — forward untouched (aim is the pilot's). |
+| `railSettleRate` | `GunVesselTransformer` (C# default **4**) | 1/s decay of the offset the hull had at contact. The ride sits ON the trail; this only stops attaching from snapping it there. |
 | `facingDeadband` | `GunVesselTransformer` (C# default **0.15**) | \|dot(forward, ribbon axis)\| must exceed this before the throttle's forward/reverse mapping re-latches. |
 | `surfaceAlignRate` | `GunVesselTransformer` (C# default **3**) | 1/s exponential ease of the hull's belly onto the surface normal while rolling — on top of the pilot's steering, never instead of it. |
 | `hoverHeight` | `BlockscapeFollower` (C# default **2**) | World-unit hover above the ground prism's mid-plane, along the smoothed normal. |
@@ -663,9 +713,9 @@ Nothing below can be checked without play mode.
    (turn past broadside) and push: you now slide the other way — facing decides forward.
 8. **Reverse and orbit.** Pull the speed axis below rest: the grind coasts down, passes
    through zero, and backs down the ribbon — a swing, never an about-face. Hold roll: the hull
-   orbits AROUND the ribbon (up stays pointed away from the trail), and rolling right moves
-   your right whichever way you face. At the trail's HEAD the rider parks and resumes the
-   moment new prisms are laid — no bouncing.
+   spins around the rail exactly as it would in free flight — nothing fights the stick, and
+   the hull does not get swung around on its own. At the trail's HEAD the rider parks and
+   resumes the moment new prisms are laid — no bouncing.
 8a. **The rail has weight (round 10).** Release the stick mid-grind: the ride COASTS to a stop
    rather than cutting dead. Grind from your own trail onto an enemy's: the 150→10 terrain
    change reads as braking, not a snap. Latch on at speed with the stick held forward: you
