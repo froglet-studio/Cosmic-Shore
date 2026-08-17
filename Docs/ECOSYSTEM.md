@@ -4647,3 +4647,123 @@ specimen, inert as a colony; raise its recorded source budget if it should sprea
 colony machinery is now duplicated between `OctagonMode` and `TileColonyMode`; the honest fix
 is one `ILatticeColony` abstraction, filed rather than done because the gyroid path had just
 shipped. (3) `minHealthBlocks: 5` was 0.6% of an 800-prism plant and is 14% of a 36-prism one.
+
+### 33.7 Space gets its own lattice — a clear strut needs a wider one (Aug 2026, fourth pass)
+
+Space is the skeletal element on both lattice species, and on both it was the one element
+whose prisms ran *through* their neighbours (§33.5 recorded that as deliberate: "it cannot
+span the lattice and avoid its neighbours at the same time"). The brief for this pass was
+higher aspect, a little more scale, **and the clearance to stop intersecting** — which is
+three things at once, and the first two make the third harder.
+
+**Why thinning cannot buy it.** The bound on a strut is the neighbour sitting along the
+strut's *own axis*, so shrinking the cross-section moves it almost not at all. Measured by
+binary-searching the longest zero-overlap strut:
+
+| lattice | at thickness 1.0 | at thickness ~0.45 | gain |
+|---|---|---|---|
+| gyroid (sep 3) | 12.48u | 13.37u | +7% |
+| Schwarz P (level 3) | 6.02u | 6.17u | +2% |
+
+So the length a strut can reach is a property of the **lattice**, not of the prism:
+
+    max clear strut  ≈  1.75 × prism spacing   (gyroid)
+    max clear strut  ≈  1.29 × prism spacing   (Schwarz P tile)
+
+Both ratios hold across every spacing tested (the gyroid measures 1.72 / 1.74 / 1.76 / 1.77
+at separations 3 / 4 / 5 / 6), which is the statement that the bound scales *with* the
+lattice. A longer clear strut therefore needs a **wider lattice** — and that is the new dial.
+
+**`FloraVariantTuning.SeparationDistance` — per-element lattice spacing.** Sentinel **−1**
+= keep the prefab's, exactly like every other field on that struct (§33.5: the keep sentinel
+is −1, never 0). `AssembledFlora.ApplyLatticeSpacing` pushes it onto a freshly created
+assembler at all three creation sites — founder, daughter, re-seed — because both species
+read it *before* their first growth probe and a value that arrives later is a value the
+seed never saw. It means a different thing on each species, which is the point:
+
+- **Gyroid** — a scale on every bond offset, so it widens the whole lattice.
+  `3 → 5` takes prism spacing `7.83 → 13.05`.
+- **Schwarz P** — a coarser SUBDIVISION of the same tile (`SchwarzPTileData.ResolveLevel`).
+  The plant's bounds do not inflate; its skeleton thins. `11.7` resolves to **level 0**:
+  6 sites per tile at 11.70 units, against level 3's 36 sites at 4.31.
+
+**The result.**
+
+| | before | after | lattice |
+|---|---|---|---|
+| **Gyroid Space** | 20 × 1 × 1, 20:1, **99% interpenetrating** (max 1.14u) | **22.96 × 0.45 × 0.45**, 51:1, 1.76 spans, **zero overlaps** | separation `3 → 5`, spacing `7.83 → 13.05` |
+| **Schwarz P Space** | 13.4 × 0.7 × 0.7, 19.1:1, **72 overlapping pairs** | **15.12 × 0.44 × 0.44**, 34.4:1, 1.29 spans, **zero overlaps** | separation `5.25 → 11.7`, level `3 → 0`, spacing `5.26 → 11.70` |
+
+Longer, far thinner, and clear — on both. Each is fitted to its *own* lattice by its own
+script (`Tools/Build/fit_gyroid_space_strut.py`, `fit_schwarz_p_leaf_sizes.py`), both walking
+the SHIPPED tables rather than a copy, and both authoring every producer.
+
+**`AssembledFlora.LatticeScale` — the consequence a widened gyroid drags with it.** Every
+length in `GyroidOctagonData` — the ring radius, the neighbouring octagon centres and seed
+positions, the territory radius, the membership and dedupe tolerances — is a world distance
+**measured at separationDistance 3** (`GyroidOctagonData.MeasuredSeparation`, now a named
+constant instead of an unstated assumption). An element that widens its lattice must widen
+all seven by the same ratio, or its founder computes a ring centre that does not exist, its
+ownership gate refuses its own sites, and its daughters are planted at a fraction of the
+right distance. `LatticeScale` is that ratio and is **1 for Charge / Mass / Time**, so the
+octagon colony that had just shipped (§32.7) is bit-for-bit unchanged for the three elements
+that keep the prefab's spacing. Rotations are scale-free and are used unmodified — the §32.7
+rule that a *rotation* is never the thing to adjust still holds.
+
+It is also **fenced to the gyroid**: the ratio is against a gyroid constant, while the
+override it reads is species-neutral, so on a Schwarz plant the number would be meaningless
+(11.7 / 3 = 3.9, a ratio between two unrelated quantities). `LatticeScale` returns 1 unless
+`OctagonMode`. Every reader today is already inside the octagon path; the gate is there so
+the next one is safe rather than subtly wrong.
+
+**The one distance that is deliberately NOT scaled.** `GyroidOctagonRegistry` is a single
+claim book shared by every colony in the scene, so it cannot carry a per-plant scale. It does
+not need one: its `CenterDedupeRadius` (12u) only has to separate the drift that makes two
+computations of the SAME centre disagree (~0.3u per 100u of lattice) from half the spacing
+between DISTINCT centres (17.9u at scale 1, **29.9u at Space's 1.667**), and 12 sits clear of
+both ends. The bound is now stated in the registry rather than assumed — an element below
+~0.67× would falsely dedupe distinct octagons, and one above ~40× would outgrow the radius
+with drift; either needs a per-query scale *and* a larger `BinSize`, since the 3³ bin scan only
+guarantees a search radius of one bin. Stating it is the whole point: an unwritten
+"measured at separation 3" is what made this pass necessary.
+
+**`LeafScalePerLevel` pinned at 1 on Space too — the §33.5 trap, re-measured.** It scales
+the prism and leaves `separationDistance` alone, so a fitted strut grows straight through a
+lattice that stays put. Measured on the new gyroid Space lattice: at the inherited **1.15**,
+`L1 clear → L3 513 overlaps → L5 1090 overlaps` (the strut reaches 40.2u against the 22.96
+that fits); at **1**, every level clear. The fitter now writes the pin itself, so the fit and
+the dial that would void it can no longer be authored apart.
+
+**What was deliberately NOT changed.** The other three gyroid elements are plates, not
+struts, and they already touch at Level 1 with their shipped sizes (Charge/Time 102
+overlapping pairs, Mass 199, both at separation 3 — measured this pass). That interlock is
+the shipped look the brief cited as the reference, so their sizes, spacing and
+`LeafScalePerLevel` are untouched. Only Space was held to a zero-overlap standard, because
+Space is the element where a bar passing through its neighbour reads as a mistake rather
+than as foliage.
+
+**The population consequence, which is the real cost.** A coarser Schwarz subdivision means
+a **smaller plant**: 6 prisms per plant instead of 36. `author_flora_populations.py` divides
+the recorded source budget by the per-plant prism count, so the cap rises to the
+`MAX_PLANTS_PER_SPECIES` ceiling of **60** (the other three elements sit at 22):
+
+    SchwarzP Flora Space   lattice   800->6   floor 4   cap 60   prisms@cap 360
+
+So Space trades prisms for **crystals** — 60 hearts against the other elements' 22, each an
+always-on collider, while its prism count at cap falls from 792 to 360. That is the same
+trade §32.7 recorded for the octagon colony, moved further in the same direction, and
+`MaxLivePopulation` is still the dial. Net collider change is roughly +38 crystals and −432
+prisms for that species.
+
+**Invariants.** Nothing here creates or removes mass on a clock: this is a *size and spacing*
+change to authored data plus one scale-aware read, so *mass is conserved*, *continuity of
+existence* (bloom / wither paths untouched), *one crystal per lifeform* (one plant, one tile
+or one ring, one heart) and *volume is the spine* all stand as §33.6 left them. A lowered
+prism count per plant lowers production only; nothing is culled to reach it.
+
+**Verification run for this pass.** `verify_schwarz_p_tile_tables.py` (the shipped table
+re-proved from the implicit function, all levels), `check_conditional_compilation.py` (1676
+files), `author_flora_populations.py --check`, and a Roslyn build of the shipped
+`SchwarzPTileData` / `SchwarzPAssembler` / `SchwarzPTileRegistry` / `SchwarzPColonyFrontier` /
+`GyroidOctagonData` against real-namespace stubs, with the `LatticeScale` block and every one
+of its call sites compiled verbatim.

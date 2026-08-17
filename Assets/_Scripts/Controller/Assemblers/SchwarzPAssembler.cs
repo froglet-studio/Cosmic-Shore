@@ -172,6 +172,19 @@ namespace CosmicShore.Gameplay
         /// <summary>The colony lattice this prism belongs to. Null until seeded.</summary>
         public SchwarzPSurfaceFrame Frame => frame;
 
+        /// <summary>
+        /// Per-element lattice spacing (FloraVariantTuning.SeparationDistance). Here it selects
+        /// a coarser or finer SUBDIVISION of the same tile (<see cref="SchwarzPTileData.ResolveLevel"/>),
+        /// so raising it spreads fewer, wider-spaced prisms over an unchanged tile - the plant's
+        /// bounds do not inflate, only its skeleton thins. Read by the founder's
+        /// <see cref="EnsureSeeded"/>; every later prism inherits the level through the frame,
+        /// so this must be set before the plant's first growth probe.
+        /// </summary>
+        public void SetSeparationDistance(float value)
+        {
+            if (value > 0f) separationDistance = value;
+        }
+
         /// <summary>The tile this prism sits in - and, because a plant owns exactly one tile,
         /// the tile of the whole plant.</summary>
         public Vector3Int Tile => tile;

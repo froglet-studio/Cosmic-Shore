@@ -19,6 +19,18 @@ namespace CosmicShore.Gameplay
     ///
     /// <para>Spatial hash with bin size = half the centre spacing; every query scans the 3³
     /// neighbouring bins, so lookups stay O(1) however large a colony grows.</para>
+    ///
+    /// <para>DELIBERATELY NOT SCALED by <c>AssembledFlora.LatticeScale</c>, unlike every other
+    /// GyroidOctagonData distance (Docs/ECOSYSTEM.md §33.7). This is one book shared by every
+    /// colony in the scene, so it cannot hold a per-plant scale - and it does not need one:
+    /// <c>CenterDedupeRadius</c> (12u) only has to sit between the drift that makes two
+    /// computations of the SAME centre disagree (~0.3u per 100u of lattice) and half the
+    /// spacing between DISTINCT centres (17.9u at scale 1, 29.9u at the Space element's
+    /// 1.667). It does, with room at both ends. A future element would break that only by
+    /// shrinking its lattice below ~0.67× (distinct octagons falsely deduping) or widening it
+    /// past ~40× (drift outgrowing the radius); scale the radius per query then, and raise
+    /// <see cref="BinSize"/> with it, since the 3³ scan only guarantees a search radius of
+    /// one bin.</para>
     /// </summary>
     public static class GyroidOctagonRegistry
     {

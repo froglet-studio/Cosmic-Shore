@@ -28,13 +28,14 @@ MonoBehaviour:
   Element: 3
   Variant:
     Enabled: 1
-    LeafSize: {x: 20, y: 1, z: 1}
+    LeafSize: {x: 22.96, y: 0.45, z: 0.45}
     GrowPeriod: 0.8
+    SeparationDistance: 5
     ShieldPeriod: 0
     MaxTotalSpawnedObjects: 30
     PlantRadiusCellFraction: 0.2
   InitialLevel: 1
-  LeafScalePerLevel: 1.15
+  LeafScalePerLevel: 1
   CrystalScalePerLevel: 1.2
   SpreadElements: 1
   ElementPalette:

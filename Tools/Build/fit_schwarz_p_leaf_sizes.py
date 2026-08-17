@@ -66,6 +66,17 @@ PERIOD_SCALE = 60.0
 SEPARATION_DISTANCE = 6.0
 WORLD_SCALE = PERIOD_SCALE / (2.0 * PI)
 
+# SPACE authors its OWN separation (FloraVariantTuning.SeparationDistance), which selects a
+# coarser subdivision of the SAME tile: 6 sites at 11.70 apart instead of 36 at 5.25. That is
+# the only way a longer strut gains clearance - measured, a prism on this lattice can reach
+# only ~1.16-1.29 of the site spacing before it overlaps a neighbour, and thinning it barely
+# helps (6.02 at thickness 0.70 vs 6.17 at 0.30, on the level-2 spacing). So a strut that
+# spans several spacings and a strut that clears its neighbours are mutually exclusive at a
+# fixed spacing; widening the lattice is what buys both. The tile does not grow, so the
+# colony's bounds are unchanged - only its skeleton thins.
+SPACE_SEPARATION = 11.7
+SPACE_THICKNESS = 0.44
+
 
 # ----------------------------------------------------------------------------
 # The prism frames
@@ -81,6 +92,31 @@ def resolve_level(levels):
         if err < best_err:
             best, best_err = i, err
     return best
+
+
+def resolve_level_for(levels, separation):
+    """ResolveLevel for an element that authors its own separationDistance."""
+    best, best_err = 0, float("inf")
+    for i, (mean_spacing, _) in enumerate(levels):
+        err = abs(mean_spacing * WORLD_SCALE - separation)
+        if err < best_err:
+            best, best_err = i, err
+    return best
+
+
+def largest_clear_strut(centres, bases, is_central, thickness, hi=40.0, iterations=24):
+    """Longest ZERO-overlap strut at a fixed square cross-section - the Space shape.
+    Distinct from largest_clear, which scales both footprint axes together."""
+    lo = 0.5
+    if measure_fit(centres, bases, is_central, (lo, thickness, thickness))[1] > 0:
+        return None
+    for _ in range(iterations):
+        mid = 0.5 * (lo + hi)
+        if measure_fit(centres, bases, is_central, (mid, thickness, thickness))[1] == 0:
+            lo = mid
+        else:
+            hi = mid
+    return (math.floor(lo * 100) / 100, thickness, thickness)
 
 
 def prism_frames(levels, level, radius=1):
@@ -312,7 +348,7 @@ def set_leaf_size_only(path, leaf):
     return path
 
 
-def write_variant(element, leaf):
+def write_variant(element, leaf, separation=None):
     """Set ONLY the leaf size on the element asset's Variant block, leaving every other
     field at its sentinel.
 
@@ -342,6 +378,8 @@ def write_variant(element, leaf):
             continue
         if name == "LeafSize":
             lines.append(f"    LeafSize: {{x: {leaf[0]:g}, y: {leaf[1]:g}, z: {leaf[2]:g}}}")
+        elif name == "SeparationDistance" and separation is not None:
+            lines.append(f"    SeparationDistance: {separation:g}")
         elif name in existing:
             lines.append(f"    {name}: {existing[name]}")
         elif kind == "Vector3":
@@ -430,7 +468,13 @@ def main():
     golden = (1.0 + math.sqrt(5.0)) / 2.0
     pleasant = largest_clear(centres, bases, is_central, golden, thickness=1.0)
     chunky = largest_clear(centres, bases, is_central, 1.3, thickness=2.0)
-    space = (round(spacing_mean * 2.56, 1), 0.7, 0.7)
+    # Space is fitted on ITS OWN level, at its own separation.
+    space_level = resolve_level_for(levels, SPACE_SEPARATION)
+    sc, sb, sic = prism_frames(levels, space_level)
+    space = largest_clear_strut(sc, sb, sic, SPACE_THICKNESS)
+    sd = np.linalg.norm(sc[:, None, :] - sc[sic][None, :, :], axis=2)
+    sd[sd < 1e-6] = np.inf
+    space_spacing = float(np.mean(sd.min(axis=0)))
 
     elements = [
         ("Charge", pleasant, (86, 196, 232)),
@@ -440,11 +484,17 @@ def main():
     ]
 
     for name, leaf, _ in elements:
-        worst, pairs = measure_fit(centres, bases, is_central, leaf)
-        cov = coverage(levels, level, leaf)
-        span = max(leaf[0], leaf[1]) / spacing_mean
+        own_level = space_level if name == "Space" else level
+        oc, ob, oic = (sc, sb, sic) if name == "Space" else (centres, bases, is_central)
+        own_spacing = space_spacing if name == "Space" else spacing_mean
+        worst, pairs = measure_fit(oc, ob, oic, leaf)
+        cov = coverage(levels, own_level, leaf)
+        span = max(leaf[0], leaf[1]) / own_spacing
         state = "flush, no overlaps" if pairs == 0 else \
                 f"{pairs} overlapping pairs, max penetration {worst:.2f}u"
+        if name == "Space":
+            state += f"  [own lattice: sep {SPACE_SEPARATION:g} -> level {space_level}, " \
+                     f"{len(levels[space_level][1])} sites at {own_spacing:.2f}]"
         print(f"  {name:<7} {leaf[0]:5.2f} x {leaf[1]:4.2f} x {leaf[2]:4.2f}   "
               f"aspect {max(leaf[0], leaf[1]) / min(leaf[0], leaf[1]):4.1f}:1   "
               f"span {span:4.2f} spacings   coverage {cov:5.1%}   {state}")
@@ -471,7 +521,7 @@ def main():
     if args.write:
         print()
         for name, leaf, _ in elements:
-            p = write_variant(name, leaf)
+            p = write_variant(name, leaf, SPACE_SEPARATION if name == "Space" else None)
             set_leaf_scale_per_level(p)
             set_crystal_scale_per_level(p)
             print(f"  wrote {p.relative_to(ROOT)}")

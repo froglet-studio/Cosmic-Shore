@@ -18,7 +18,7 @@ MonoBehaviour:
   OverrideDefaultPlantPeriod: 0
   NewPlantPeriod: 9999999
   PopulationSize: 4
-  MaxLivePopulation: 22
+  MaxLivePopulation: 60
   GrowthPerOffspring: 22
   OffspringPerBirth: 1
   ReproductionCooldownSeconds: 5
@@ -27,11 +27,12 @@ MonoBehaviour:
   Element: 3
   Variant:
     Enabled: 1
-    LeafSize: {x: 13.4, y: 0.7, z: 0.7}
+    LeafSize: {x: 15.12, y: 0.44, z: 0.44}
     GrowPeriod: -1
+    SeparationDistance: 11.7
     ShieldPeriod: -1
     WitherRingInterval: -1
-    MaxTotalSpawnedObjects: 36
+    MaxTotalSpawnedObjects: 6
     MaxTotalSpawnedObjectsScale: -1
     ItemsPerGrow: -1
     RandomItems: -1

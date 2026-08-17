@@ -53,7 +53,16 @@ namespace CosmicShore.Gameplay
     /// </summary>
     public static class GyroidOctagonData
     {
-        /// <summary>Octagon ring radius in world units at the shipped separationDistance (3).</summary>
+        /// <summary>
+        /// The separationDistance every distance in this file was MEASURED at. A plant whose
+        /// element authors a different one (FloraVariantTuning.SeparationDistance) scales the
+        /// whole lattice, so every length here scales with it - see
+        /// <c>AssembledFlora.LatticeScale</c>, which is the single place that ratio is formed.
+        /// Rotations do NOT scale and are used unchanged.
+        /// </summary>
+        public const float MeasuredSeparation = 3f;
+
+        /// <summary>Octagon ring radius in world units at <see cref="MeasuredSeparation"/>.</summary>
         public const float RingRadius = 10.03f;
 
         /// <summary>Closest spacing between adjacent octagon centres (measured min 35.87).</summary>

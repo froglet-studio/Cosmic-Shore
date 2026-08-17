@@ -206,6 +206,11 @@ namespace CosmicShore.Gameplay
                 maxTotalSpawnedObjects = Mathf.Max(1, Mathf.FloorToInt(
                     maxTotalSpawnedObjects * tuning.MaxTotalSpawnedObjectsScale + 0.5f));
 
+            // Per-element lattice spacing. Stored rather than applied here: the assemblers
+            // that need it do not exist yet (they are created per prism), so every creation
+            // site pushes it - see ApplyLatticeSpacing.
+            if (tuning.SeparationDistance > 0f) _separationOverride = tuning.SeparationDistance;
+
             // Pacing overrides - the prefab's throttles are shared by every biome's plants,
             // so a cell that wants a different pace authors it in config instead.
             if (tuning.ItemsPerGrow >= 1) itemsPerGrow = tuning.ItemsPerGrow;
@@ -473,6 +478,7 @@ namespace CosmicShore.Gameplay
             Branch newBranch = new Branch(newHealthPrism);
 
             var newAssembler = AssemblerFactory.ProgramAssembler(newHealthPrism.gameObject, growthInfo);
+            ApplyLatticeSpacing(newAssembler);
             if (newAssembler == null)
             {
                 CSDebug.LogError("Failed to create assembler");
@@ -564,6 +570,53 @@ namespace CosmicShore.Gameplay
         // (22-28): a fixed prism-count test would stall a plant whose near ring-arc was grown
         // by its parent under the boundary epsilon, and a ring-complete test the same.
         int _idleGrowTicks;
+
+        float _separationOverride = -1f;
+        float? _latticeScaleCached;
+
+        /// <summary>
+        /// How far this element's lattice is stretched relative to the one the octagon tables
+        /// were MEASURED on (<see cref="GyroidOctagonData.MeasuredSeparation"/>).
+        ///
+        /// <para>Every length in <see cref="GyroidOctagonData"/> - the ring radius, the
+        /// neighbouring centres and seed positions, the territory radius, the tolerances - is a
+        /// world distance measured at separationDistance 3, so an element that widens its
+        /// lattice must widen them all by the same ratio or its founder computes a ring centre
+        /// that does not exist, its ownership gate refuses its own sites, and its daughters are
+        /// planted at a fraction of the right distance. Rotations are scale-free and are used
+        /// unchanged.</para>
+        ///
+        /// <para>1 for every element that keeps the prefab's spacing, so this is inert for the
+        /// three that do.</para>
+        ///
+        /// <para>GYROID ONLY, and fenced to say so: the ratio is against a GyroidOctagonData
+        /// constant, so on a Schwarz P plant - whose own separation is a tile SUBDIVISION and
+        /// is a different quantity entirely - the number would be meaningless. Every reader
+        /// today is inside the octagon path; this makes a future one safe rather than subtly
+        /// wrong.</para>
+        /// </summary>
+        float LatticeScale
+        {
+            get
+            {
+                if (_latticeScaleCached.HasValue) return _latticeScaleCached.Value;
+                if (!OctagonMode) { _latticeScaleCached = 1f; return 1f; }
+                float separation = _separationOverride > 0f ? _separationOverride
+                    : (healthPrism && healthPrism.TryGetComponent(out GyroidAssembler ga)
+                        ? ga.SeparationDistance : GyroidOctagonData.MeasuredSeparation);
+                _latticeScaleCached = separation / GyroidOctagonData.MeasuredSeparation;
+                return _latticeScaleCached.Value;
+            }
+        }
+
+        /// <summary>Pushes this element's authored lattice spacing onto a freshly created
+        /// assembler. Both species read it before their first growth probe.</summary>
+        void ApplyLatticeSpacing(Assembler target)
+        {
+            if (_separationOverride <= 0f || target == null) return;
+            if (target is GyroidAssembler gyroid) gyroid.SetSeparationDistance(_separationOverride);
+            else if (target is SchwarzPAssembler schwarz) schwarz.SetSeparationDistance(_separationOverride);
+        }
 
         bool? _octagonModeCached;
 
@@ -885,6 +938,7 @@ namespace CosmicShore.Gameplay
         void RegisterDangerPrism(GyroidBlockType type, Vector3 position, Quaternion rotation)
         {
             if (!GyroidOctagonData.TryGetOwnCenterOffset(type, out var localOffset)) return;
+            localOffset *= LatticeScale;
 
             Vector3 center = position + rotation * localOffset;
 
@@ -911,7 +965,7 @@ namespace CosmicShore.Gameplay
             }
 
             float err = (center - _octagonCenter.Value).magnitude;
-            if (err < GyroidOctagonData.RingMemberToleranceRadius && _ringMembers.Count < 8)
+            if (err < GyroidOctagonData.RingMemberToleranceRadius * LatticeScale && _ringMembers.Count < 8)
             {
                 _ringMembers.Add(new RingMember { Position = position, Rotation = rotation, Type = type });
                 // Coherence telemetry: a genuine ring member computes the claimed centre to
@@ -920,7 +974,7 @@ namespace CosmicShore.Gameplay
                 if (err > GyroidColonyDiagnostics.MaxRingCoherenceError)
                     GyroidColonyDiagnostics.MaxRingCoherenceError = err;
             }
-            else if (err < GyroidOctagonData.CenterDedupeRadius)
+            else if (err < GyroidOctagonData.CenterDedupeRadius * LatticeScale)
             {
                 // The poison band: near enough to be "this octagon" by claim-identity
                 // standards, far too incoherent to be a real member (the fifth Lab playtest
@@ -972,11 +1026,11 @@ namespace CosmicShore.Gameplay
             if (!_octagonCenter.HasValue) return true;   // founder bootstrap: no territory yet
 
             float dMine = Vector3.Distance(site, _octagonCenter.Value);
-            if (dMine > GyroidOctagonData.TerritoryRadius) return false;
+            if (dMine > GyroidOctagonData.TerritoryRadius * LatticeScale) return false;
 
             float foreignSqr = GyroidOctagonRegistry.NearestForeignClaimSqr(site, this);
             if (foreignSqr >= float.MaxValue) return true;
-            return dMine <= Mathf.Sqrt(foreignSqr) + GyroidOctagonData.OwnershipEpsilon;
+            return dMine <= Mathf.Sqrt(foreignSqr) + GyroidOctagonData.OwnershipEpsilon * LatticeScale;
         }
 
         // -------------------------------------------------------------------
@@ -1172,13 +1226,13 @@ namespace CosmicShore.Gameplay
 
                 for (int n = 0; n < neighbors.Length; n++)
                 {
-                    Vector3 center = member.Position + member.Rotation * neighbors[n].Center;
+                    Vector3 center = member.Position + member.Rotation * (neighbors[n].Center * LatticeScale);
                     if (GyroidOctagonRegistry.IsClaimed(center)) continue;
 
                     GyroidColonyFrontier.Contribute(cell, SourceConfig, center, new GyroidGrowthInfo
                     {
                         CanGrow = true,
-                        Position = member.Position + member.Rotation * neighbors[n].SeedPosition,
+                        Position = member.Position + member.Rotation * (neighbors[n].SeedPosition * LatticeScale),
                         Rotation = member.Rotation * neighbors[n].SeedRotation,
                         BlockType = neighbors[n].SeedType,
                         IsDangerous = true,
@@ -1497,6 +1551,7 @@ namespace CosmicShore.Gameplay
             if (_seedGrowth != null)
             {
                 var seeded = AssemblerFactory.ProgramAssembler(newHealthPrism.gameObject, _seedGrowth);
+                ApplyLatticeSpacing(seeded);
                 if (seeded != null && _seedGrowth.IsDangerous)
                 {
                     newHealthPrism.MakeDangerous();
@@ -1517,7 +1572,7 @@ namespace CosmicShore.Gameplay
                             GyroidOctagonData.TryGetOwnCenterOffset(sg.BlockType, out var ownOff))
                         {
                             float handoffErr = Vector3.Distance(
-                                _seedGrowth.Position + _seedGrowth.Rotation * ownOff,
+                                _seedGrowth.Position + _seedGrowth.Rotation * (ownOff * LatticeScale),
                                 _octagonCenter.Value);
                             if (handoffErr > GyroidColonyDiagnostics.MaxSeedHandoffError)
                                 GyroidColonyDiagnostics.MaxSeedHandoffError = handoffErr;
@@ -1539,6 +1594,7 @@ namespace CosmicShore.Gameplay
             newHealthPrism.Initialize();
 
             Assembler newAssembler = newHealthPrism.GetComponent<Assembler>();
+            ApplyLatticeSpacing(newAssembler);   // founder: before its first growth probe
             newAssembler.Prism = newHealthPrism;
             newAssembler.Spindle = newSpindle;
 

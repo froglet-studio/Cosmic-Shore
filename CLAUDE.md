@@ -199,7 +199,19 @@ outcome is optimization, not life). Use the `/ecology` skill for any change here
   and **pin `LeafScalePerLevel` at 1**, because it scales the prism but not the lattice and
   the Blob cell rolls Levels 1..5 — at the inherited 1.15 a level-5 plant's prisms are 1.749×
   the flush size and it interpenetrates itself (measured: 0 overlapping pairs at L1, 144 at
-  L3, 212 at L5). Full record: `Docs/ECOSYSTEM.md §33` (§33.5 the per-element prism fit).
+  L3, 212 at L5). **And a LONGER prism needs a WIDER LATTICE, not a thinner prism** — the
+  bound on a strut is the neighbour along its own axis, so thinning buys ~2% (Schwarz) to ~7%
+  (gyroid) while `max clear strut ≈ 1.29 × spacing` (Schwarz tile) / `≈ 1.75 × spacing`
+  (gyroid) holds at every spacing tested. `FloraVariantTuning.SeparationDistance` (sentinel
+  **−1** = keep the prefab's) is that dial, pushed onto the assembler at all three creation
+  sites because both species read it BEFORE their first growth probe; it means a bond-offset
+  scale on the gyroid and a coarser TILE SUBDIVISION on Schwarz P. Its consequence is the
+  thing to remember: **every distance in `GyroidOctagonData` was measured at separation 3**
+  (`MeasuredSeparation`), so a widened gyroid must scale all seven of them by
+  `AssembledFlora.LatticeScale` or its founder computes a ring centre that does not exist —
+  and that property is fenced to `OctagonMode`, since on a Schwarz plant the ratio is between
+  two unrelated quantities. Full record: `Docs/ECOSYSTEM.md §33` (§33.5 the per-element prism
+  fit, §33.7 the per-element lattice).
 - **Territorial permanence.** Take a cell, leave, it stays yours — the claim fauna cannot touch.
   In nucleus cells the permanent claim is the **nucleus interior** (fauna never consume it);
   exterior canopy/trail is deliberately contested churn (voracious any-domain grazing). In

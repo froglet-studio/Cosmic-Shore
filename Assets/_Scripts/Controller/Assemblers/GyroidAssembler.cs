@@ -85,6 +85,18 @@ namespace CosmicShore.Gameplay
         /// <summary>Lattice spacing this assembler bonds at. Read-only, for pure PREVIEWS of
         /// the growth pattern (flora icons) that must never instantiate anything.</summary>
         public float SeparationDistance => separationDistance;
+
+        /// <summary>
+        /// Per-element lattice spacing (FloraVariantTuning.SeparationDistance). Every bond
+        /// offset is scaled by this, so it widens the whole lattice rather than moving one
+        /// prism - and the octagon tables, which are measured at
+        /// <see cref="GyroidOctagonData.MeasuredSeparation"/>, must be scaled to match
+        /// (AssembledFlora.LatticeScale). Set before the plant's first growth probe.
+        /// </summary>
+        public void SetSeparationDistance(float value)
+        {
+            if (value > 0f) separationDistance = value;
+        }
         [SerializeField] int colliderTheshold = 1;
         [SerializeField] float radius = 40f;
 

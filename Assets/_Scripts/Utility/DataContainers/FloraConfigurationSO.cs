@@ -272,6 +272,14 @@ namespace CosmicShore.Utility
                  "Space: 0.8). -1 = keep prefab.")]
         public float GrowPeriod = -1f;
 
+        [Tooltip("LATTICE species only: the assembler's separationDistance - how far apart this " +
+                 "element's prisms (and their spindles) sit. Raising it widens the whole lattice, " +
+                 "which is the only way a longer prism gains the clearance not to run through its " +
+                 "neighbours: on both surfaces a prism can only reach ~1.2-1.75 of the site " +
+                 "spacing before it overlaps, however thin it is made. The Space element uses it " +
+                 "to be skeletal. -1 = keep prefab. See Docs/ECOSYSTEM.md 33.7.")]
+        public float SeparationDistance = -1f;
+
         [Tooltip("Seconds between shield refreshes on the health prisms (the Charge gyroid " +
                  "ships shielded leaves at 1). -1 = keep prefab.")]
         public float ShieldPeriod = -1f;
