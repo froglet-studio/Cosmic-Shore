@@ -78,6 +78,12 @@ namespace CosmicShore.Gameplay
                  "distance is kept when larger, so you grind at the height you latched on.")]
         [SerializeField] float minOrbitRadius = 2.5f;
 
+        [Tooltip("Ceiling on the grind radius. The seed keeps the distance you latched on at, " +
+                 "which must still be bounded: a far attach - or a fork onto a ribbon several " +
+                 "block-widths away - would otherwise swing the hull around the rail at that " +
+                 "whole distance, which reads as being flung sideways rather than riding.")]
+        [SerializeField] float maxOrbitRadius = 8f;
+
         [Tooltip("How quickly the hull's up twists to point radially OUT from the ribbon " +
                  "(1/s, exponential). Twist only - pitch/yaw stay the pilot's, for aiming.")]
         [SerializeField] float trailUpAlignRate = 4f;
@@ -89,15 +95,22 @@ namespace CosmicShore.Gameplay
 
         [Header("Junctions")]
         [Tooltip("How far around the ridden block the ride looks for ANOTHER trail's prisms " +
-                 "when it crosses a block (a junction probe), in multiples of the ridden " +
-                 "prism's largest extent. Big enough to span the gap where a wake's head meets " +
-                 "the trail it attached to.")]
-        [SerializeField] float junctionSearchRadiusScale = 4f;
+                 "when it crosses a block (a junction probe), in WORLD UNITS. Deliberately not " +
+                 "scaled by the ridden prism's size: a vessel whose block scale is dynamic " +
+                 "(the Squirrel widens its blocks as it skims, up to ~40u) would otherwise " +
+                 "sweep a radius of a hundred-plus units and fork onto anything in the arena.")]
+        [SerializeField] float junctionSearchRadius = 12f;
 
         [Tooltip("How much better aligned (|dot| with the pilot's forward) a crossing trail " +
                  "must be before the ride forks onto it. Hysteresis - zero would flip-flop " +
                  "the rider at every junction it lingers near.")]
         [SerializeField] float junctionSwitchMargin = 0.1f;
+
+        [Tooltip("A candidate this parallel to the ridden ribbon (|dot| of the two headings) " +
+                 "is the SAME ROAD, not a fork - most importantly the vessel's own SECOND " +
+                 "ribbon, which runs alongside the first for its whole length. A junction is " +
+                 "a DIVERGENCE.")]
+        [SerializeField, Range(0.5f, 0.99f)] float junctionParallelThreshold = 0.9f;
 
         [Tooltip("The grind radius eases toward minOrbitRadius at this rate (world units/s) - " +
                  "reels the rider in onto the rail, and matters most after a wide junction " +
@@ -241,7 +254,7 @@ namespace CosmicShore.Gameplay
             Vector3 axis = trailFollower.IndexOrderHeading;
             Vector3 offset = transform.position - trailFollower.CenterlinePoint;
             Vector3 radial = offset - axis * Vector3.Dot(offset, axis);
-            _orbitRadius = Mathf.Max(minOrbitRadius, radial.magnitude);
+            _orbitRadius = Mathf.Clamp(radial.magnitude, minOrbitRadius, maxOrbitRadius);
             _orbitRadial = radial.sqrMagnitude > 1e-4f ? radial.normalized : PerpendicularTo(axis);
             _facingSign = Vector3.Dot(transform.forward, axis) >= 0f ? 1 : -1;
         }
@@ -262,13 +275,10 @@ namespace CosmicShore.Gameplay
             if (!current) return;
             var currentTrail = current.Trail;
 
-            float currentAlign = Mathf.Abs(Vector3.Dot(transform.forward, trailFollower.IndexOrderHeading));
+            Vector3 axis = trailFollower.IndexOrderHeading;
+            float currentAlign = Mathf.Abs(Vector3.Dot(transform.forward, axis));
 
-            var s = current.transform.lossyScale;
-            float extent = Mathf.Max(Mathf.Abs(s.x), Mathf.Max(Mathf.Abs(s.y), Mathf.Abs(s.z)));
-            float radius = Mathf.Max(1f, extent) * junctionSearchRadiusScale;
-
-            index.QuerySphere(trailFollower.CenterlinePoint, radius, s_junctionCandidates);
+            index.QuerySphere(trailFollower.CenterlinePoint, junctionSearchRadius, s_junctionCandidates);
 
             Prism best = null;
             float bestAlign = currentAlign + junctionSwitchMargin;
@@ -280,6 +290,14 @@ namespace CosmicShore.Gameplay
 
                 Vector3 branch = candidate.Trail.HeadingAt(candidate.Trail.GetBlockIndex(candidate));
                 if (branch.sqrMagnitude < 1e-6f) continue;
+
+                // A junction is a DIVERGENCE. A ribbon running parallel to the one being
+                // ridden is the same road - above all the vessel's OWN second ribbon, which
+                // runs alongside the first for its entire length and is therefore a candidate
+                // at every single block crossing. Without this test the ride ping-pongs
+                // between a vessel's two wake ribbons (the Squirrel lays its pair 19u apart,
+                // so each hop was a 19-unit sideways teleport onto a new centerline).
+                if (Mathf.Abs(Vector3.Dot(branch, axis)) > junctionParallelThreshold) continue;
 
                 float align = Mathf.Abs(Vector3.Dot(transform.forward, branch));
                 if (align > bestAlign)

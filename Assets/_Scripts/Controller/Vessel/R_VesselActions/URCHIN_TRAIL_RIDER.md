@@ -291,6 +291,61 @@ nothing upstream changed. Wake prisms' z genuinely points down the trail
 (`blockRotation = transform.rotation` at lay time), so the authored-z invariant the dimension
 ladder rests on holds for every wake ribbon.
 
+## Riding another vessel's wake (round 9): what the SQUIRREL exposed
+
+The Urchin's own wake is the easy case — constant block size, straight lay. Test-riding a
+**Squirrel** trail broke the ride ("moving me around on strange axes and between both trails"),
+and the trails themselves were fine: `Squirrel.prefab` authors `BaseScale.x 20` / `Gap 18.5`,
+which is two 0.75-wide ribbons 19.25 apart, laid into two separate `Trail` objects, correctly
+stamped. Every fault was in the RIDE, and all three came from the same blind spot — **the
+Urchin's wake is not a representative trail**:
+
+**1. A parallel ribbon is not a fork.** The junction probe accepted any nearby ribbon, and a
+vessel's own SECOND ribbon runs alongside the first for its entire length — so it was a
+candidate at every block crossing, and whichever of the pair happened to win the `|dot|`
+comparison took the rider. Each hop was a sideways teleport across the pair's gap (19u on a
+Squirrel). Fixed with `junctionParallelThreshold`: **a junction is a DIVERGENCE**, so a branch
+running parallel to the ridden ribbon is the same road and is skipped. This is what the rule
+was always missing — the round-8 wording ("fork onto the better-aligned trail") is only
+meaningful between trails that actually go different ways.
+
+**2. The probe radius was keyed off the ridden block's size.** `4 × largest extent` is
+harmless on an Urchin (blocks are a fixed 4u long) and absurd on a Squirrel, whose block scale
+is **dynamic** — `SetNormalizedXScale` (driven by skimming) and `SetDotProduct` (drift) against
+`maxBlockScale: 5` take blocks to ~40u wide and ~27u long, so the probe swept a **160-unit**
+radius and forked onto anything in the arena. It is now a plain world-unit
+`junctionSearchRadius` (12u): "another ribbon within reach", independent of what the ridden
+vessel's blocks happen to be doing.
+
+**3. The grind radius was unbounded.** `SeedTrailRide` keeps the distance you latched on at,
+which is right — but with no ceiling, a fork onto a ribbon 19u away seeded a 19u orbit and flung
+the hull around the new rail. Now clamped to `maxOrbitRadius` (8u), with the existing settle
+reeling it in.
+
+**4. A gapped wake's block CENTRES are not its spine — and the ride follows the spine now.**
+The lay holds each ribbon's INNER EDGE at a constant offset (`xShift = halfWidth + halfGap`),
+which is exactly what keeps the pair's gap constant while blocks change width. The corollary
+is that the block *centres* swing sideways whenever the width changes: a Squirrel skim-widening
+1×→5× moves its ribbon's centreline by ~20 units **in dead-straight flight**. Riding centres
+meant being swerved on axes with nothing to do with the flight path. `Trail.LateralAnchor`
+(declared by the layer — a prism cannot tell which of its faces points at its sibling) plus
+`Trail.RidePoint` recover the width-independent line, and every geometry read in `Project` /
+`LookAhead` / `HeadingAt` / the spline control points goes through it. The correction uses the
+block's own local right, which is the same axis the lay offset used, so it stays exact even
+when the hull is yawed (see below). `LateralAnchor` is 0 for ungapped wakes and for everything
+a spawnable lays, where the centres already ARE the spine.
+
+**Known, not changed: a drifting Squirrel's prisms are not axis-aligned to their trail.**
+Prisms lay with `blockRotation`, which is the vessel's rotation — and mid-drift the nose is
+yawed off the course, so those prisms' z points where the ship was POINTING, not down the
+ribbon. The platform already has the mechanism to correct it (`BlockRotationOverride`, which
+`BarrelRollController` and `ScarabJukeController` both set "so bridging trail prisms lay
+travel-aligned"); the drift simply does not use it. The 1D ride is immune — it derives its axis
+from the CURVE of block positions, never from prism rotation — so this is a visual/design call
+about what a drift line should look like, not a ride bug. Flagged here because the platform
+invariant is stated as *trail prisms have z down the trail*, and for the drift vessel that is
+currently false.
+
 ## Holes and junctions (round 8): a damaged trail still rides, and trails FORK
 
 **Trail integrity over missing prisms.** A DESTROYED prism still rides — its object stays in
@@ -485,8 +540,10 @@ restore the previous pilot's colliders onto the new one at an arbitrary moment.
 | Knob | Where | Value |
 |---|---|---|
 | `FriendlyTerrainSpeed` / `HostileTerrainSpeed` / `DestroyedTerrainSpeed` | `Urchin.prefab` — `TrailFollower` AND `BlockscapeFollower` | **150 / 10 / 150** on both. The 15× hostile gap is what Slipstream buys. Destroyed = friendly pace (round 8): a hole must not halt the slide — the payoff restores the ribbon as you cross it. Keep the trios matched unless the roll should price differently. |
-| `junctionSearchRadiusScale` | `GunVesselTransformer` (C# default **4**) | Junction probe radius, × the ridden block's largest extent. Spans the gap where a wake's head meets the trail it attached to. |
+| `junctionSearchRadius` | `GunVesselTransformer` (C# default **12**) | Junction probe radius in WORLD UNITS. Deliberately not scaled by the ridden block — a Squirrel's blocks reach ~40u and would sweep the arena. |
 | `junctionSwitchMargin` | `GunVesselTransformer` (C# default **0.1**) | How much better aligned a crossing ribbon must be before the ride forks. Hysteresis. |
+| `junctionParallelThreshold` | `GunVesselTransformer` (C# default **0.9**) | \|dot\| of the two headings above which a candidate is the SAME ROAD, not a fork — chiefly the vessel's own second ribbon. |
+| `maxOrbitRadius` | `GunVesselTransformer` (C# default **8**) | Ceiling on the grind radius, so a far attach or a wide fork cannot fling the hull around the rail. |
 | `orbitRadiusSettleRate` | `GunVesselTransformer` (C# default **1.5**) | u/s reel-in of the grind radius toward `minOrbitRadius` — matters after a wide fork. |
 | `growthAmount` | `Urchin.prefab` `GunVesselTransformer` | `ElementalFloat`, element **Mass**, Min 0.6 → Max 1.2, `Value` 1 |
 | `rechargeRate` | `Urchin.prefab` `GunVesselTransformer` | 0.1 ammo/s, **×2** on a shielded prism |

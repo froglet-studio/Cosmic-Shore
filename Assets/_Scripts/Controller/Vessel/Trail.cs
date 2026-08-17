@@ -25,6 +25,40 @@ namespace CosmicShore.Gameplay
         /// </summary>
         public PrismscapeDimension Dimension { get; set; } = PrismscapeDimension.Trail;
 
+        /// <summary>
+        /// Which way this ribbon's blocks are offset from the SPINE the vessel actually flew,
+        /// in units of each block's own HALF-WIDTH along its local +X: +1 / -1 for the two
+        /// ribbons of a gapped pair, 0 when the block centres ARE the spine (an ungapped wake,
+        /// and everything a spawnable lays). Declared by the layer, because only the layer
+        /// knows it - a prism cannot tell which of its faces points at its sibling ribbon.
+        ///
+        /// It exists because a gapped wake holds its INNER EDGE at a fixed offset
+        /// (<c>xShift = halfWidth + halfGap</c>), which is what keeps the gap between the two
+        /// ribbons constant while the blocks change width. The consequence is that the block
+        /// CENTRES swing sideways whenever the width changes - and a vessel whose block scale
+        /// is dynamic (the Squirrel widens its blocks as it skims, 1x..5x) therefore lays a
+        /// ribbon whose centreline snakes laterally by many units even in dead-straight flight.
+        /// Riding the centres reads as being swerved around on axes that have nothing to do
+        /// with the flight path. <see cref="RidePoint"/> is the fix: it recovers the
+        /// width-independent line, so the ride follows the path the vessel flew.
+        /// </summary>
+        public float LateralAnchor { get; set; }
+
+        /// <summary>
+        /// The point on <paramref name="p"/> the RIDE follows - its centre, corrected back onto
+        /// the ribbon's spine-side line by <see cref="LateralAnchor"/>. Reads the block's
+        /// AUTHORED width (<see cref="Prism.TargetScale"/>), not its live scale, so a block
+        /// that is still growing in does not drag the line with it.
+        /// </summary>
+        public Vector3 RidePoint(Prism p)
+        {
+            var t = p.transform;
+            if (LateralAnchor == 0f) return t.position;
+            float width = p.TargetScale.x;
+            if (width <= 0f) width = t.localScale.x;
+            return t.position - t.right * (width * 0.5f * LateralAnchor);
+        }
+
         bool isLoop;
         public List<Prism> TrailList { get; }
         Dictionary<Prism, ushort> trailBlockIndices;
@@ -157,7 +191,7 @@ namespace CosmicShore.Gameplay
             var a = TrailList[Mathf.Max(index - 1, 0)];
             var b = TrailList[Mathf.Min(index + 1, last)];
             if (!IsRidable(a) || !IsRidable(b)) return Vector3.zero;
-            Vector3 h = b.transform.position - a.transform.position;
+            Vector3 h = RidePoint(b) - RidePoint(a);
             return h.sqrMagnitude > 1e-6f ? h.normalized : Vector3.zero;
         }
 
@@ -188,7 +222,7 @@ namespace CosmicShore.Gameplay
             var nextBlock = TrailList[nextIndex];
 
             var lookAheadBlocks = new List<Prism> { currentBlock };
-            var distanceToNextBlock = Vector3.Magnitude(nextBlock.transform.position - currentBlock.transform.position) * (1 - lerp);
+            var distanceToNextBlock = Vector3.Magnitude(RidePoint(nextBlock) - RidePoint(currentBlock)) * (1 - lerp);
 
             while (distanceTravelled < distance)
             {
@@ -199,7 +233,7 @@ namespace CosmicShore.Gameplay
                 if (!TryStepRidable(ref nextIndex, ref incrementor, trailListCount)) break;
                 nextBlock = TrailList[nextIndex];
 
-                distanceToNextBlock = Vector3.Magnitude(nextBlock.transform.position - currentBlock.transform.position);
+                distanceToNextBlock = Vector3.Magnitude(RidePoint(nextBlock) - RidePoint(currentBlock));
             }
 
             return lookAheadBlocks;
@@ -238,7 +272,7 @@ namespace CosmicShore.Gameplay
                     outDirection = (TrailFollowerDirection)incrementor;
                     heading = Vector3.zero;
                     var pinned = TrailList[startIndex];
-                    return pinned ? pinned.transform.position : Vector3.zero;
+                    return pinned ? RidePoint(pinned) : Vector3.zero;
                 }
             }
             var currentBlock = TrailList[startIndex];
@@ -251,11 +285,11 @@ namespace CosmicShore.Gameplay
                 finalLerp = 0f;
                 outDirection = (TrailFollowerDirection)incrementor;
                 heading = Vector3.zero;
-                return currentBlock.transform.position;
+                return RidePoint(currentBlock);
             }
             var nextBlock = TrailList[nextIndex];
 
-            var distanceToNextBlock = Vector3.Magnitude(nextBlock.transform.position - currentBlock.transform.position) * (1 - initialLerp);
+            var distanceToNextBlock = Vector3.Magnitude(RidePoint(nextBlock) - RidePoint(currentBlock)) * (1 - initialLerp);
             distanceTravelled += distanceToNextBlock;
 
             while (distanceTravelled < distance)
@@ -276,17 +310,17 @@ namespace CosmicShore.Gameplay
                     finalLerp = 0f;
                     outDirection = (TrailFollowerDirection)incrementor;
                     heading = Vector3.zero;
-                    return currentBlock.transform.position;
+                    return RidePoint(currentBlock);
                 }
                 nextBlock = TrailList[nextIndex];
 
-                distanceToNextBlock = Vector3.Magnitude(nextBlock.transform.position - currentBlock.transform.position);
+                distanceToNextBlock = Vector3.Magnitude(RidePoint(nextBlock) - RidePoint(currentBlock));
                 distanceTravelled += distanceToNextBlock;
             }
 
             var overflow = distanceTravelled - distance;
-            var nextPosition = nextBlock.transform.position;
-            var currentPosition = currentBlock.transform.position;
+            var nextPosition = RidePoint(nextBlock);
+            var currentPosition = RidePoint(currentBlock);
             Vector3 blockGap = nextPosition - currentPosition;
 
             float gapMag = blockGap.magnitude; // one sqrt, reused by heading + finalLerp
@@ -330,7 +364,7 @@ namespace CosmicShore.Gameplay
                 index = Mathf.Clamp(index, 0, count - 1);
             }
             var block = TrailList[index];
-            return IsRidable(block) ? block.transform.position : fallback;
+            return IsRidable(block) ? RidePoint(block) : fallback;
         }
 
         static Vector3 CatmullRom(Vector3 p0, Vector3 p1, Vector3 p2, Vector3 p3, float t)

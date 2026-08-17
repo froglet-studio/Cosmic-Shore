@@ -245,6 +245,40 @@ across — full pace, no snap, prisms restore under you. Attach to a trail your 
 back to the meeting point aiming down your wake — the ride forks onto it; aim along the
 original trail instead — it keeps straight. Linger at a junction — no flip-flopping.
 
+**ROUND 9 (2026-08-16).** Riding a SQUIRREL trail was still wrong ("strange axes and between
+both trails"). Its trails are correct — `BaseScale.x 20` / `Gap 18.5` = two 0.75-wide ribbons
+19.25 apart in two separate `Trail` objects — and every fault was in the ride, all from the
+same blind spot: **the Urchin's own wake is not a representative trail**.
+
+- **A parallel ribbon is not a fork.** A vessel's second ribbon runs alongside the first for
+  its whole length, so it was a junction candidate at every crossing and the rider hopped the
+  pair's 19u gap repeatedly. `junctionParallelThreshold` (0.9): a junction is a DIVERGENCE.
+- **Probe radius keyed off block size → 160u on a Squirrel.** Its block scale is dynamic
+  (`SetNormalizedXScale` from skimming, `SetDotProduct` from drift, `maxBlockScale: 5` →
+  blocks ~40u wide), so `4 × largest extent` swept the arena. Now a flat
+  `junctionSearchRadius` (12 world units).
+- **Unbounded grind radius**: a fork onto a 19u-distant ribbon seeded a 19u orbit. Clamped by
+  `maxOrbitRadius` (8).
+- **A gapped wake's block CENTRES are not its spine.** The lay holds the inner edge at a fixed
+  offset (that is what keeps the gap constant as blocks widen), so the centres swing sideways
+  ~20u as a Squirrel skim-widens — in straight flight. `Trail.LateralAnchor` (declared by the
+  layer; a prism cannot tell which face points at its sibling) + `Trail.RidePoint` recover the
+  width-independent line, used by every geometry read in the walks. 0 for ungapped wakes and
+  all spawnable lays.
+
+**Finding, NOT changed — a drifting Squirrel's prisms are not axis-aligned to their trail.**
+Prisms lay with `blockRotation` = the vessel's rotation, so mid-drift they point where the ship
+was AIMED, not down the ribbon. The platform already has the fix mechanism
+(`BlockRotationOverride`, used by `BarrelRollController`/`ScarabJukeController` to lay
+travel-aligned bridging prisms); drift does not use it. The ride is immune (it takes its axis
+from the curve of block positions, never prism rotation), so this is a visual/design call —
+but it does mean the stated invariant "trail prisms have z down the trail" is currently false
+for the drift vessel.
+
+Round-9 verify: ride a Squirrel trail — no hopping between the pair, no lateral swerve as the
+Squirrel's blocks change width, no fling on attach. Ride an Urchin trail — unchanged from
+round 8. Cross a genuinely diverging trail while aiming down it — still forks.
+
 Full mechanics, historical record and follow-ups:
 `_Scripts/Controller/Vessel/R_VesselActions/URCHIN_CHAIN_SPIKES.md` and `URCHIN_TRAIL_RIDER.md`.
 Element map: `Docs/ElementalAbilitySystem/FLEET_MAPS.md` §2 Urchin.
