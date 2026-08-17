@@ -182,10 +182,12 @@ namespace CosmicShore.Gameplay
             {
                 InputDeviceType.Touch   => _touchOverrideActions,
                 InputDeviceType.Gamepad => _gamepadOverrideActions,
-                // DualMouse raises the same independent LeftStick/RightStick trigger events as the
-                // gamepad, so it shares the gamepad's per-trigger override mapping. Vessels with no
-                // gamepad overrides fall through to the shared mapping exactly as before.
+                // DualMouse and Keyboard raise the same LeftStick/RightStick trigger events as the
+                // gamepad (keyboard: Left Shift / Right Shift), so they share the gamepad's
+                // per-trigger override mapping. Vessels with no gamepad overrides fall through to
+                // the shared mapping exactly as before.
                 InputDeviceType.DualMouse => _gamepadOverrideActions,
+                InputDeviceType.Keyboard => _gamepadOverrideActions,
                 _                       => null
             };
         }

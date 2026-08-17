@@ -71,9 +71,20 @@ namespace CosmicShore.Core
         {
             if (vesselList == null) return;
 
+            // A reset returns the player to a FRESH ACCOUNT, not to a locked-out one: the
+            // starter vessel is not an unlock, so it survives.
+            var starters = new HashSet<string>();
             foreach (var vessel in vesselList.VesselList)
             {
                 if (vessel == null) continue;
+
+                if (vessel.OwnedFromStart)
+                {
+                    if (!string.IsNullOrWhiteSpace(vessel.Name))
+                        starters.Add(vessel.Name);
+                    continue;
+                }
+
                 vessel.Lock();
             }
 
@@ -83,10 +94,14 @@ namespace CosmicShore.Core
             if (ds?.HangarRepo != null)
             {
                 foreach (var name in new List<string>(ds.HangarRepo.Data.UnlockedVesselNames()))
-                    ds.HangarRepo.Data.LockVessel(name);
+                    if (!starters.Contains(name))
+                        ds.HangarRepo.Data.LockVessel(name);
 
                 ds.HangarRepo.Data.SelectedVessel = "";
                 ds.HangarRepo.MarkDirty();
+
+                // Re-seed starters and re-default SelectedVessel in one pass.
+                ds.SyncHangarToVessels();
             }
 
             OnUnlockStateChanged?.Invoke();

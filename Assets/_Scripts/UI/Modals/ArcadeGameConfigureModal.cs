@@ -1280,7 +1280,7 @@ namespace CosmicShore.UI
         /// </summary>
         public void OnStartGameClicked()
         {
-            Debug.Log("<color=#FFD700>[FLOW-2] [ArcadeConfigModal] OnStartGameClicked (confirming ready)</color>");
+            CSDebug.LogVerbose(CSLogChannel.NetworkFlow, "<color=#FFD700>[FLOW-2] [ArcadeConfigModal] OnStartGameClicked (confirming ready)</color>");
             audioSystem.PlayMenuAudio(MenuAudioCategory.Confirmed);
 
             // Show "Waiting for others..." and hide the Start button
@@ -1336,7 +1336,7 @@ namespace CosmicShore.UI
         /// </summary>
         void HandleAllPlayersReady()
         {
-            Debug.Log("<color=#FFD700>[FLOW-2] [ArcadeConfigModal] All players ready!</color>");
+            CSDebug.LogVerbose(CSLogChannel.NetworkFlow, "<color=#FFD700>[FLOW-2] [ArcadeConfigModal] All players ready!</color>");
 
             bool shouldLaunch = ShouldLocalPlayerLaunch(hostConnectionData, arcadeConfigSyncManager != null);
 
@@ -1353,7 +1353,7 @@ namespace CosmicShore.UI
             // scene load to the server's Netcode scene replication. Without
             // this, clients sit on the menu/modal with no transition visual
             // until the network scene load arrives.
-            Debug.Log($"<color=#FFD700>[FLOW-2] [ArcadeConfigModal] Calling gameData.InvokeGameLaunch() (launchAuthority={shouldLaunch})</color>");
+            CSDebug.LogVerbose(CSLogChannel.NetworkFlow, $"<color=#FFD700>[FLOW-2] [ArcadeConfigModal] Calling gameData.InvokeGameLaunch() (launchAuthority={shouldLaunch})</color>");
             gameData.InvokeGameLaunch();
 
             // Clear runtime state so it can't resurface after returning to menu
@@ -1383,7 +1383,9 @@ namespace CosmicShore.UI
             // Domain count - controls how many domains AI can be assigned to
             gameData.RequestedDomainCount = config.DomainCount;
 
-            Debug.Log($"<color=#FFD700>[FLOW-2] [ArcadeConfigModal] SyncAllGameDataForLaunch - " +
+            // No IsMultiplayer field in the trace: C5 retired SO_ArcadeGame.IsMultiplayer
+            // because every mode runs the networked single-host model.
+            CSDebug.LogVerbose(CSLogChannel.NetworkFlow, $"<color=#FFD700>[FLOW-2] [ArcadeConfigModal] SyncAllGameDataForLaunch - " +
                       $"Scene={selectedGame.SceneName}, Mode={selectedGame.Mode}, " +
                       $"HumanCount={humanCount}, ConfigPlayerCount={config.PlayerCount}, " +
                       $"AIBackfill={gameData.RequestedAIBackfillCount}, " +

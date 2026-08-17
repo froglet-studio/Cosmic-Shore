@@ -1,15 +1,27 @@
+using System;
 using System.Collections;
-using CosmicShore.Data;
 using CosmicShore.Utility;
 using UnityEngine;
 
 namespace CosmicShore.Gameplay
 {
     /// <summary>
-    /// TIME level-5 'Barrel Roll' (ElementalAbilityMapSO upgrade). One roll per BOOST press:
+    /// The Sparrow's strafing roll — a BASE part of the boost ability, available from level 0 with no
+    /// elemental unlock (it was the TIME level-5 upgrade until the boost redesign; TIME-5 is now the
+    /// elemental-debuff immunity held while boosting, see VesselElementalImmunity).
+    ///
+    /// One roll per BOOST press:
     /// while boosting with the stick at FULL deflection the vessel rolls once — holding the
     /// stick at the perimeter is fine (it never repeats; the next boost press grants the next
-    /// roll, and a stick already pinned at max when boost starts rolls immediately).
+    /// roll, and a stick already pinned at max when boost starts rolls immediately). That
+    /// once-per-press charge is what the boost ability icon displays
+    /// (<see cref="OnRollChargeChanged"/> → SparrowHUDView.SetRollCharge).
+    ///
+    /// It works IDENTICALLY in the stationary/turret stance. Boost gives no speed there —
+    /// VesselTransformer skips throttle and course travel while IsTranslationRestricted — but
+    /// the roll is still armed by the press and still strafes: its ModifyVelocity displacement
+    /// opts out of the restriction (ShipVelocityModifier.ignoresTranslationRestriction), making
+    /// it the stopped Sparrow's dodge. The stance itself is unchanged by rolling.
     /// Clockwise on the right half of the stick circle, counterclockwise on the left —
     /// animating the model about its
     /// forward axis while a ModifyVelocity displacement orthogonal to travel (direction picked
@@ -26,7 +38,7 @@ namespace CosmicShore.Gameplay
     ///
     /// Owner-driven: input polling only acts on the locally controlled vessel; the
     /// displacement replicates via the owner-authoritative NetworkTransform. Autopilot/AI
-    /// vessels never produce stick input, so the upgrade is inert for AI (trigger synthesis
+    /// vessels never produce stick input, so the roll is inert for AI (trigger synthesis
     /// is tracked in Docs/ElementalAbilitySystem/BACKLOG.md Phase 2.5).
     /// </summary>
     public class BarrelRollController : MonoBehaviour
@@ -68,6 +80,16 @@ namespace CosmicShore.Gameplay
         bool _rollArmed;
         Quaternion _visualRestRotation;
 
+        /// <summary>
+        /// Raised when the once-per-press roll charge is armed (true, on a fresh boost press) or spent
+        /// (false, the instant a roll triggers). The Sparrow HUD binds this to the boost ability icon's
+        /// charge ring, which is why the roll is legible without a heat gauge.
+        /// </summary>
+        public event Action<bool> OnRollChargeChanged;
+
+        /// <summary>True while a strafing roll is available on the current boost press.</summary>
+        public bool IsRollArmed => _rollArmed;
+
         void Awake()
         {
             _status = GetComponent<VesselStatus>();
@@ -83,15 +105,18 @@ namespace CosmicShore.Gameplay
             // rolls immediately, and holding it there never repeats (the next boost
             // press grants the next roll).
             bool boosting = _status.IsBoosting;
-            if (boosting && !_wasBoosting) _rollArmed = true;
+            if (boosting && !_wasBoosting) SetRollArmed(true);
             _wasBoosting = boosting;
 
             if (!_rollArmed || _rolling) return;
             if (!boosting) return;
             if (_status.AutoPilotEnabled) return;
-            if (_status.IsTranslationRestricted) return;
-            if (!_status.ElementalAbilityHandler.IsUpgradeActive(Element.Time)) return;
 
+            // NOTE: deliberately NOT gated on IsTranslationRestricted. Stopped, the boost
+            // gives no speed (VesselTransformer skips throttle/course travel) but the roll is
+            // still a roll — one per press, same as flying. It is the stationary Sparrow's only
+            // dodge, so the displacement is exempted from the restriction rather than dropped;
+            // see ShipVelocityModifier.ignoresTranslationRestriction.
             var input = _status.InputStatus;
             if (input == null) return;
 
@@ -112,18 +137,32 @@ namespace CosmicShore.Gameplay
             // The stick's deflection picks the orthogonal nudge direction (stick up =
             // nudge up), projected onto the plane orthogonal to travel so the
             // displacement never adds forward/backward speed.
+            //
+            // Stopped, Course is STALE — MoveShip is what refreshes it and it does not run
+            // while restricted, so it holds the heading from the moment the stance engaged
+            // while the turret has gone on rotating freely. Project on current facing there.
+            bool restricted = _status.IsTranslationRestricted;
             var ship = _status.ShipTransform ? _status.ShipTransform : transform;
             Vector3 nudge = ship.right * stick.x + ship.up * stick.y;
-            nudge = Vector3.ProjectOnPlane(nudge, _status.Course);
+            nudge = Vector3.ProjectOnPlane(nudge, restricted ? transform.forward : _status.Course);
             if (nudge.sqrMagnitude < 1e-4f)
                 nudge = ship.right * rollSign;
 
             CSDebug.Log($"[BarrelRoll] Triggered: {(rollSign > 0f ? "CW" : "CCW")}, " +
-                        $"stick ({stick.x:F2}, {stick.y:F2}), nudge dir {nudge.normalized}");
+                        $"stick ({stick.x:F2}, {stick.y:F2}), nudge dir {nudge.normalized}" +
+                        (restricted ? " (stopped — dodge)" : string.Empty));
 
-            _rollArmed = false;
-            transformer.ModifyVelocity(nudge.normalized * nudgeSpeed, rollDurationSeconds);
+            SetRollArmed(false);
+            transformer.ModifyVelocity(nudge.normalized * nudgeSpeed, rollDurationSeconds,
+                                       ignoresTranslationRestriction: true);
             StartCoroutine(RollRoutine(rollSign, transformer));
+        }
+
+        void SetRollArmed(bool armed)
+        {
+            if (armed == _rollArmed) return;
+            _rollArmed = armed;
+            OnRollChargeChanged?.Invoke(armed);
         }
 
         IEnumerator RollRoutine(float rollSign, VesselTransformer transformer)
@@ -164,11 +203,20 @@ namespace CosmicShore.Gameplay
                         transform.forward);
 
                 // Bridging prisms: orient along the actual travel direction each frame while
-                // the displacement is live.
-                var travel = _status.Speed * _status.Course + transformer.VelocityShift;
-                transformer.BlockRotationOverride = travel.sqrMagnitude > 1e-4f
-                    ? Quaternion.LookRotation(travel.normalized, transform.up)
-                    : null;
+                // the displacement is live. Skipped while stopped — the stance has already
+                // stopped the spawner, so there is no trail to bridge, and Speed/Course are
+                // both stale there (see the projection note above).
+                if (_status.IsTranslationRestricted)
+                {
+                    transformer.BlockRotationOverride = null;
+                }
+                else
+                {
+                    var travel = _status.Speed * _status.Course + transformer.VelocityShift;
+                    transformer.BlockRotationOverride = travel.sqrMagnitude > 1e-4f
+                        ? Quaternion.LookRotation(travel.normalized, transform.up)
+                        : null;
+                }
 
                 yield return null;
             }
@@ -195,6 +243,11 @@ namespace CosmicShore.Gameplay
             if (rollVisualTarget && _rolling)
                 rollVisualTarget.localRotation = _visualRestRotation;
             _rolling = false;
+
+            // A re-enabled vessel must not inherit a stale charge — the next boost PRESS arms it,
+            // and the HUD re-seeds from IsRollArmed at init.
+            _wasBoosting = false;
+            SetRollArmed(false);
         }
     }
 }

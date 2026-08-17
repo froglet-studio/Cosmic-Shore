@@ -441,3 +441,106 @@ dissolves it). B16 (ghost joust toasts / unrecorded client-observed jousts) fixe
 2026-07-16 — code-complete, engine verification pending (see B16's verification
 steps). B17 (blitz DNF reveal header) fixed 2026-07-20 via `GameDataSO.HasNoWinner` — engine
 verification pending (see B17's verification steps). No other open read-through findings remain.
+
+### B18 — 🟢 Non-host players started every match with the PREVIOUS game's score (unhealable mirror drift)
+
+**Symptom (reported repeatedly, reproduced by the reporter every time).** Start a multiplayer
+game, play another one, then launch a third — *"every other person except the host had different
+scores from the beginning"*. The host always read 0. Not dependent on exiting a game mid-way (the
+reporter confirmed it happens without that).
+
+**Root cause — the "except the host" is the whole clue.** Every `RoundStats` stat setter writes
+BOTH halves, but the network half only on the server:
+
+```csharp
+set {
+    _hostilePrismsDestroyedLocal = value;                          // always
+    if (IsSpawned && IsServer) n_HostilePrismsDestroyed.Value = value;   // server only
+}
+```
+
+So on a client, anything that assigns a stat locally moves the mirror **without** moving the
+authoritative value. The common case is every mode's end-of-game snapshot
+(`SyncFinalScores_ClientRpc` assigns `stat.Score` / `stat.HostilePrismsDestroyed` / … on clients);
+`ResetStatsDataForReplay` inside `ResetForReplay_ClientRpc` and `StatsManager` running on a client
+before its `OnNetworkSpawn` clears `_allowRecord` do the same.
+
+The drift is then **unhealable by replication**: a `NetworkVariable` raises `OnValueChanged` only
+when the value actually CHANGES, so once the server's value and the client's mirror have both
+settled — server 0, client 842 — the server writing 0 again is a no-op and the stale mirror
+survives into the next game, and the next. The host is immune because its setters write the mirror
+and the NetworkVariable together.
+
+This is why the two earlier fixes were not enough: making the per-scene reset unconditional
+(`ServerPlayerVesselInitializer`, see the branch) and zeroing at game start
+(`MiniGameControllerBase.ZeroStatsForGameStartOnce`) both do the right thing on the SERVER — but
+neither can reach a client mirror that the server's own writes cannot move.
+
+**Fix.** `RoundStats.SyncLocalMirrorsFromNetwork()` — the initial-pull block from `OnNetworkSpawn`,
+extracted and made callable — re-derives every local mirror from the replicated values.
+`Player.InitializeForMultiplayerMode` calls it at every scene entry (it runs once per player per
+scene on EVERY peer), so a client can never carry a diverged mirror across a game boundary.
+`OnNetworkSpawn` now calls the same method, so there is one definition of "pull the truth".
+
+**Rule for anyone writing a mode.** Assigning a stat inside a `ClientRpc` sets that peer's mirror
+only. It is fine as a display convenience at game end, but it makes the client authoritative-looking
+and wrong; anything that must survive into the next game has to come from the server's
+`NetworkVariable`, and the mirror has to be re-based on scene entry.
+
+**Verification.** The setter, the NetworkVariable change-only semantics and both peers were modelled
+and compiled: the model reproduces the bug (client stuck at 842 while the host reads 0), shows
+server re-writes failing to heal it, and shows `SyncLocalMirrorsFromNetwork` fixing it without
+clobbering a live mid-game value. Engine verification pending.
+
+---
+
+### B19 — a client scored nothing for ENVIRONMENT mass (flora, fauna, laid structure)
+
+**Symptom.** 2-player Rampage: the host scored off everything; the client could only ever score
+off the **other pilot's trail**, never off a cactus it flew through and shattered. In a mode whose
+entire score is destroyed environment mass, the client was effectively playing a slot machine —
+whatever the *server's* own physics happened to knock over got credited to them instead.
+
+**Root cause, and it is platform-wide.** `StatsManager` records prism destruction **server-only**
+(`_allowRecord`), and its own doc comments state the justification twice:
+
+> "a prism sits at the same place on the server, so the server's own physics sees a client's ram
+> and records it"
+
+That is true of a TRAIL prism — laid from replicated vessel motion, so both peers have one in the
+same place, which is exactly why trail kills were the one thing that worked. It is **false** of
+flora and fauna, and `CellNetworkSync`'s class doc has always said so: *"Flora and fauna spawning
+is non-deterministic per-side (each client runs its own IntensityWiseLifeSpawner with local
+Random.value rolls)."* The server's copy of the cactus the client just shredded is somewhere else
+entirely, so nothing was recorded anywhere.
+
+**Fix.** `Player.ReportEnvironmentPrismDestroyed_ServerRpc` — the third instance of the same
+owner-detects → server-records round-trip as `ReportFaunaKill_ServerRpc` (fauna have no
+NetworkObject) and `ReportCombatHit_ServerRpc` (projectiles are not networked). Identity comes from
+RPC ownership, never a name string.
+
+The other half is **who must NOT credit**: `StatsManager.OwnsAttacker` lets the server credit only
+players it simulates (its own + every AI, both server-owned NetworkObjects) and DROP environment
+kills it observed a remote player make. Rostered victims are untouched and stay server-recorded.
+Each kill lands exactly once on both paths.
+
+**Rule.** Server-only stat recording is correct only for things that exist identically on every
+peer. Before adding one, ask what the stat's SOURCE is: a trail (replicated motion — fine), or a
+per-peer simulation (flora, fauna, projectiles — needs the owner round-trip).
+
+### B20 — environment mass was hostile to EVERY domain, including its own colour
+
+**Symptom / cause.** The only hostility test in `StatsManager.PrismDestroyed` was the owner-name /
+roster comparison. Flora, fauna bodies and laid cell structure carry non-roster owner names, so
+they fell to the `else` branch and counted as hostile to everyone — including the third of a
+mixed-domain forest wearing the destroying pilot's own colour. Domain was decoration.
+
+**Fix.** `PrismStats` carries the destroyed prism's `OwnDomain`, and
+`StatsManager.IsFriendlyEnvironmentPrism` applies to the world the rule trails always had — **your
+own colour is worth nothing** — with `Domains.Blue` (the "no team" sentinel) staying hostile to
+everyone so neutral structure still scores. Ribcage rides the same metric and is unaffected in
+practice: its cage is painted across the full triad plus Blue joints, so a team still reaches a
+2,000 target out of ~10,620 prisms.
+
+**Verification.** Both are compile-by-inspection + traced call paths; engine verification pending
+(MPPM, 1 host + 1 client — see RAMPAGE.md's checklist).

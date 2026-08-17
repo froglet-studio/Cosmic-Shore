@@ -169,11 +169,12 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// Death = wither (or devour), never a pop. The sealed <see cref="Fauna.Die"/> has
-        /// already dropped this creature's elemental crystal (mass conserved). Starvation
-        /// withers the body from its extremities inward; a predation death with a devour
-        /// target instead BREAKS the body apart and suctions it into the predator's mouth —
-        /// both FADE out of existence rather than vanishing (the platform-wide continuity
+        /// Death = wither (or devour), never a pop. Starvation and a joust both WITHER — the
+        /// soft tissue evaporates spindle by spindle and the body prisms are left behind as a
+        /// skeleton (mass conserved) — differing only in the direction the wither travels; a
+        /// predation death with a devour target instead BREAKS the body apart and suctions it
+        /// into the predator's mouth, because there the mass transfers to the eater. Every
+        /// exit FADES out of existence rather than vanishing (the platform-wide continuity
         /// rule). Only the husk is removed, after the body is gone.
         /// </summary>
         protected override void OnDeath(string killerName = "")
@@ -188,8 +189,21 @@ namespace CosmicShore.Gameplay
                 RemoveHusk(); // can't animate while inactive (scene teardown) - remove directly
         }
 
+        /// <summary>
+        /// This creature's heart waits for its wither: an outside-in death spends the body
+        /// from the extremities and the heart is the LAST thing standing, so it only becomes
+        /// collectable once the wither reaches it. <see cref="Fauna.Die"/> still releases it
+        /// outright for every other style, and <see cref="RemoveHusk"/> is the terminal that
+        /// guarantees it either way.
+        /// </summary>
+        protected override bool DefersHeartRelease => true;
+
         void RemoveHusk()
         {
+            // Terminal for every LightFauna death path — the guaranteed release point for a
+            // deferred heart (an interrupted wither must not swallow the crystal). Idempotent.
+            ReleaseHeart();
+
             if (LightFaunaManager)
                 LightFaunaManager.RemoveFauna(this);
             else
@@ -197,48 +211,64 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// Collapses the body one spindle ring at a time, FARTHEST-from-centre first, so the
-        /// creature visibly withers inward (a shark's fins / a brittlestar's arms evaporate
-        /// before the core body - emergent from geometry, no per-prefab special-casing). Reuses
-        /// the same <see cref="Spindle.ForceWither"/> evaporation flora use on death; a body
-        /// with no spindle structure falls back to suctioning its prisms inward. Honors the
-        /// continuity rule (nothing disappears instantly), then removes the spent husk.
+        /// Withers the soft tissue one spindle ring at a time and leaves the body prisms
+        /// standing as a skeleton (Docs/ECOSYSTEM.md §26). The DIRECTION is the death itself,
+        /// and the two are exact mirrors around the heart:
+        ///
+        ///   • starvation (and any ordinary death) travels FARTHEST-FROM-THE-HEART FIRST — a
+        ///     shark's fins / a brittlestar's arms evaporate before the core body, emergent
+        ///     from geometry with no per-prefab special-casing — and the heart, the last thing
+        ///     left, becomes collectable by ANY vessel when the wither finally reaches it.
+        ///   • a joust travels NEAREST-THE-HEART FIRST: the jouster already took the heart, so
+        ///     the body comes apart around the hole it left and unravels outward.
+        ///
+        /// Both reuse the same <see cref="Spindle.ForceWither"/> evaporation flora use, and
+        /// both honor the continuity rule — the tissue fades, the frame stays.
         /// </summary>
         IEnumerator WitherCoroutine()
         {
             float interval = data && data.witherRingInterval > 0f ? data.witherRingInterval : 0.25f;
+            bool fromHeartOutward = DeathStyle == LifeformDeathStyle.Jousted;
 
-            var spindles = GetComponentsInChildren<Spindle>(true)
-                .Where(s => s)
-                .OrderByDescending(s => (s.transform.position - transform.position).sqrMagnitude)
-                .ToList();
+            // Where the wither is measured from. Captured NOW: a jousted heart has already
+            // been freed and is flying to the pilot who took it, so reading it later would
+            // sort the rings against a moving point.
+            Vector3 heart = crystal ? crystal.transform.position : transform.position;
 
-            if (spindles.Count > 0)
+            // Isolate before anything else — withering one spindle must not cascade into its
+            // children or destroy them with its GameObject, and handing its prisms to the
+            // skeleton must not evaporate it out of turn. See Spindle.IsolateForOrderedWither.
+            var spindles = GetComponentsInChildren<Spindle>(true).Where(s => s).ToList();
+            for (int i = 0; i < spindles.Count; i++)
+                spindles[i].IsolateForOrderedWither(transform);
+
+            // The frame stays in the world. Must precede the wither: a body prism is parented
+            // to a spindle, so evaporating spindles first would destroy the skeleton's mass.
+            LeaveSkeleton();
+
+            spindles = fromHeartOutward
+                ? spindles.OrderBy(s => (s.transform.position - heart).sqrMagnitude).ToList()
+                : spindles.OrderByDescending(s => (s.transform.position - heart).sqrMagnitude).ToList();
+
+            for (int i = 0; i < spindles.Count; i++)
             {
-                // Outer rings first: by the time an inner ring's turn comes its children are
-                // already gone, so ForceWither just collapses that ring.
-                for (int i = 0; i < spindles.Count; i++)
-                {
-                    if (spindles[i]) spindles[i].ForceWither();
-                    if (interval > 0f) yield return new WaitForSeconds(interval);
-                    else yield return null;
-                }
+                if (spindles[i]) spindles[i].ForceWither();
+                if (interval > 0f) yield return new WaitForSeconds(interval);
+                else yield return null;
             }
-            else
-            {
-                // No spindle structure (e.g. a single-prism body) - suction the body prisms
-                // inward toward the centre so the body still leaves continuously, not instantly.
-                var prisms = GetComponentsInChildren<HealthPrism>(true)
-                    .Where(p => p)
-                    .OrderByDescending(p => (p.transform.position - transform.position).sqrMagnitude)
-                    .ToList();
-                for (int i = 0; i < prisms.Count; i++)
-                {
-                    if (prisms[i]) prisms[i].Consume(transform, domain, PLAYER_NAME, true, true);
-                    if (interval > 0f) yield return new WaitForSeconds(interval);
-                    else yield return null;
-                }
-            }
+
+            // The wither has reached the core: on the outside-in death this is the moment the
+            // heart is exposed and becomes collectable by any vessel. (A joust released it at
+            // the strike, so this is a no-op there.)
+            ReleaseHeart();
+
+            // Let the last ring finish evaporating before the husk goes — destroying the root
+            // takes any still-fading spindle with it, which is a pop. Spindles destroy
+            // themselves when their fade completes; the deadline means a stalled fade can
+            // never leak an immortal husk (same guard the worm colony uses).
+            float deadline = Time.time + 5f;
+            while (Time.time < deadline && GetComponentInChildren<Spindle>(true))
+                yield return null;
 
             RemoveHusk();
         }
@@ -393,7 +423,7 @@ namespace CosmicShore.Gameplay
             // despawns, so the live population self-bounds to available prey (Docs/ECOSYSTEM.md §6).
             if (IsStarving)
             {
-                Die("starvation");
+                Die(StarvationKiller);
                 return;
             }
 
@@ -706,11 +736,11 @@ namespace CosmicShore.Gameplay
             {
                 if (!hp.LifeForm) return false;
                 return cell != null
-                    ? cell.IsPreyForHerbivore(prism.transform.position, domain, hp.LifeForm.domain)
+                    ? IsPreyForMe(prism.transform.position, hp.LifeForm.domain)
                     : hp.LifeForm.domain != domain;
             }
             return cell != null
-                ? cell.IsPreyForHerbivore(prism.transform.position, domain, prism.Domain)
+                ? IsPreyForMe(prism.transform.position, prism.Domain)
                 : prism.Domain != domain;
         }
 

@@ -1,16 +1,20 @@
 # Camera Migration Review
 
-This document tracks the migration to the Cinemachine-based camera system. Updated March 2026 to reflect current file paths after the `_Scripts/Game/` → `_Scripts/Controller/` reorganization.
+This document tracks the camera system's migrations. Updated March 2026 to reflect current file paths after the `_Scripts/Game/` → `_Scripts/Controller/` reorganization; updated August 2026 for the Menu_Main move OFF Cinemachine.
 
 ## Architecture
 
-The camera system uses **Cinemachine 3.1.2** with per-vessel `CameraSettingsSO` ScriptableObject assets. Vessels apply their settings through `VesselCameraCustomizer` via the `ICameraConfigurator` interface. Runtime cameras implement `ICameraController` to consume settings directly. `CameraManager` (DI singleton) manages the overall camera lifecycle and provides utility methods like `SnapPlayerCameraToTarget()` and `SetupEndCameraFollow()`.
+Gameplay cameras are plain-`Camera` rigs driven by `CustomCameraController`, with per-vessel `CameraSettingsSO` ScriptableObject assets. Vessels apply their settings through `VesselCameraCustomizer` via the `ICameraConfigurator` interface. Runtime cameras implement `ICameraController` to consume settings directly. `CameraManager` (DI singleton) manages the overall camera lifecycle and provides utility methods like `SnapPlayerCameraToTarget()`.
+
+**Menu_Main no longer uses Cinemachine.** `MainMenuCameraController` drives the scene's main camera transform directly through a set of `MenuCameraConfigSO` configurations (orbit / cinematic trail / tight chase / top-down pan). Every configuration frames the LOCAL VESSEL — a config carries framing, smoothing, lens, and blend duration only; there is no target field, so a menu camera cannot be authored to point at anything else. Transitions to/from the gameplay camera blend between two live, vessel-anchored endpoints (the menu rig pose and the exact pose `CustomCameraController.SnapToTarget` computes), so the blend rides the moving AI vessel instead of chasing it through world space. The `CinemachineBrain` was removed from Menu_Main's scene camera; the legacy `CM Main Menu` vCam in `CameraManager.prefab` is kept permanently inactive (`CameraManager.SetMainMenuCameraActive` now deactivates it) pending a future prefab cleanup.
 
 ## Key Files
 
 | File | Location | Purpose |
 |---|---|---|
-| `CustomCameraController.cs` | `Assets/_Scripts/Controller/Camera/` | Runtime camera controller: input, zoom, Cinemachine integration |
+| `CustomCameraController.cs` | `Assets/_Scripts/Controller/Camera/` | Runtime gameplay camera controller (follow/zoom/shake) — the player cam |
+| `MainMenuCameraController.cs` | `Assets/_Scripts/Controller/Camera/` | Menu_Main camera rig + freestyle transition blends (no Cinemachine) |
+| `MenuCameraConfigSO.cs` | `Assets/_Scripts/Controller/Camera/` | Menu camera configuration asset (rig kind, framing, smoothing, blend duration); instances in `Assets/_SO_Assets/Camera/MenuCam_*.asset` |
 | `VesselCameraCustomizer.cs` | `Assets/_Scripts/Controller/Vessel/` | Per-vessel camera setting application (formerly `ShipCameraCustomizer`) |
 | `CameraSettingsSO.cs` | `Assets/_Scripts/Controller/Camera/` | ScriptableObject with per-vessel camera values (follow distance, FOV, damping, etc.) |
 | `ICameraController.cs` | `Assets/_Scripts/Controller/Camera/` | Interface implemented by camera controllers |
@@ -28,7 +32,7 @@ Each vessel class has its own `CameraSettingsSO` asset instance, allowing design
 
 ## Multiplayer Camera Behavior
 
-In multiplayer (including Menu_Main with party members), each client has its own independent Cinemachine camera following its own vessel. No camera state is synced across the network — each client controls their own camera independently. `MenuCrystalClickHandler` retargets the Cinemachine vCam between the crystal target (menu mode) and the vessel follow target (freestyle mode) using Cinemachine priorities.
+In multiplayer (including Menu_Main with party members), each client has its own independent camera following its own vessel. No camera state is synced across the network — each client controls their own camera independently. `MenuCrystalClickHandler` raises the freestyle transition SOAP events; `MainMenuCameraController` reacts by blending the scene camera between the active `MenuCameraConfigSO` framing and the gameplay camera pose, then hands off to / takes over from `CameraManager`'s player cam.
 
 ## Integration Notes
 

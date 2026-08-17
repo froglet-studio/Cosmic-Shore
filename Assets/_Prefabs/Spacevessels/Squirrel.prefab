@@ -906,6 +906,9 @@ MonoBehaviour:
   MaxBoostMultiplier: 5
   BoostDecayRate: 0.3
   singleTriggerDrift: 1
+  vectorFlightModel: 1
+  driftOvershootCeiling: 1.25
+  driftThrottlePolicy: 0
   DriftDamping: 0
   boostChanged: {fileID: 11400000, guid: 15e07b33eab9e2e47b84bb74fb591a3f, type: 2}
   MinimumSpeed: 0
@@ -1227,7 +1230,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   baseView: {fileID: 2341971144827708807}
-  silhouette: {fileID: 6013884537839217096}
   view: {fileID: 2341971144827708807}
   boostChanged: {fileID: 11400000, guid: 15e07b33eab9e2e47b84bb74fb591a3f, type: 2}
   joustCollisionEvent: {fileID: 11400000, guid: b1b4489f28448cf42b63f4b38789ab90,
@@ -2289,11 +2291,6 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
-    - target: {fileID: 1711082895709183961, guid: c1572db06ad4244469ad3f25d86940b8,
-        type: 3}
-      propertyPath: m_IsActive
-      value: 0
-      objectReference: {fileID: 0}
     - target: {fileID: 2092273636776193303, guid: c1572db06ad4244469ad3f25d86940b8,
         type: 3}
       propertyPath: m_Name
@@ -2303,46 +2300,6 @@ PrefabInstance:
         type: 3}
       propertyPath: m_AnchoredPosition.y
       value: 2.600006
-      objectReference: {fileID: 0}
-    - target: {fileID: 3199778778423215108, guid: c1572db06ad4244469ad3f25d86940b8,
-        type: 3}
-      propertyPath: m_AnchorMax.x
-      value: 0.086979166
-      objectReference: {fileID: 0}
-    - target: {fileID: 3199778778423215108, guid: c1572db06ad4244469ad3f25d86940b8,
-        type: 3}
-      propertyPath: m_AnchorMax.y
-      value: 0.7722222
-      objectReference: {fileID: 0}
-    - target: {fileID: 3199778778423215108, guid: c1572db06ad4244469ad3f25d86940b8,
-        type: 3}
-      propertyPath: m_AnchorMin.x
-      value: 0.034895834
-      objectReference: {fileID: 0}
-    - target: {fileID: 3199778778423215108, guid: c1572db06ad4244469ad3f25d86940b8,
-        type: 3}
-      propertyPath: m_AnchorMin.y
-      value: 0.6796296
-      objectReference: {fileID: 0}
-    - target: {fileID: 3199778778423215108, guid: c1572db06ad4244469ad3f25d86940b8,
-        type: 3}
-      propertyPath: m_SizeDelta.x
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 3199778778423215108, guid: c1572db06ad4244469ad3f25d86940b8,
-        type: 3}
-      propertyPath: m_SizeDelta.y
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 3199778778423215108, guid: c1572db06ad4244469ad3f25d86940b8,
-        type: 3}
-      propertyPath: m_AnchoredPosition.x
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 3199778778423215108, guid: c1572db06ad4244469ad3f25d86940b8,
-        type: 3}
-      propertyPath: m_AnchoredPosition.y
-      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 3562127641477033886, guid: c1572db06ad4244469ad3f25d86940b8,
         type: 3}

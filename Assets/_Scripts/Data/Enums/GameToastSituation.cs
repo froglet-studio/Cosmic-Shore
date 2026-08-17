@@ -32,7 +32,7 @@ namespace CosmicShore.Data
         BroodWaveScored = 40,
 
         // Ribcage ("Peel the Cage")
-        // {0}=leading domain, {1}=that domain's bars smashed, {2}=destruction target
+        // {0}=leading domain, {1}=that domain's prisms destroyed, {2}=destruction target
         // Values 50/51 were RibcageBroodReleased/RibcagePackReleased when the mode ran a fauna
         // ladder; the fauna were removed from the level and the same two rungs now mark pure
         // race progress. Renamed rather than retired because no GameToastConfigSO authors them
@@ -40,5 +40,16 @@ namespace CosmicShore.Data
         RibcageQuarterPeeled = 50,   // leader is a quarter of the way to the target
         RibcageHalfPeeled = 51,      // leader is halfway
         RibcageLeaderChanged = 52,   // the lead changes hands after a milestone
+
+        // Wildlife Liberation. {0} = player name, {1} = kills, {2} = target.
+        WildlifeHuntQuarter = 53,    // the leading hunter is a quarter of the way to the target
+        WildlifeHuntHalf = 54,       // the leading hunter is halfway
+        WildlifeLeadChanged = 55,    // the lead changes hands after a milestone
+        WildlifeCoreBreached = 56,   // a hunter has reached the innermost room ({0} = player name)
+
+        // Dog Fight. {0} = leading domain, {1} = that domain's points, {2} = point target.
+        DogFightQuarterDown = 57,    // the leading domain is a quarter of the way to the target
+        DogFightHalfDown = 58,       // the leading domain is halfway
+        DogFightLeadChanged = 59,    // the lead changes hands after a milestone
     }
 }

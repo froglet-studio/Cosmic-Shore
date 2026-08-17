@@ -36,17 +36,49 @@ namespace CosmicShore.Gameplay
                  "fills and a crystal impact spends.")]
         [SerializeField] int JawResourceIndex;
 
+        [Tooltip("Jaw gape in degrees at EMPTY energy, per jaw. The blast is a CAPSULE, not a " +
+                 "sphere, even at rest — it already reaches atan((minExplosionScale / 2) / cone " +
+                 "height) across the gape — so the jaws must not read fully closed. Today that is " +
+                 "atan((400 / 2) / 2400) = 4.76 degrees.")]
+        [SerializeField] float MinJawAngle = 4.7636f;
+
         [Tooltip("Jaw gape in degrees at FULL energy, per jaw. This is the hull's copy of the " +
-                 "blast readout, so it MUST equal the crystal-impact cone's HALF-ANGLE at full " +
-                 "energy: atan((maxExplosionScale / 2) / cone height). Today that is " +
-                 "atan((1600 / 2) / 2400) = 18.43 degrees — DolphinVesselExplosionByCrystalEffect's " +
+                 "blast readout, so it MUST equal the crystal-impact blast's gape HALF-ANGLE at " +
+                 "full energy: atan((maxExplosionScale / 2) / cone height). Today that is " +
+                 "atan((2080 / 2) / 2400) = 23.43 degrees — DolphinVesselExplosionByCrystalEffect's " +
                  "_maxExplosionScale over AOEConicExplosion.prefab's height. Space scales both " +
                  "together, so the angle is invariant; change either number and this must follow.")]
-        [SerializeField] float MaxJawAngle = 18.435f;
+        [SerializeField] float MaxJawAngle = 23.4287f;
 
         /// <summary>Jaw gape in degrees at full energy - the HUD's jaw icon mirrors this so the
         /// cockpit and the hull never disagree about how wide the next blast will be.</summary>
         public float MaxJawAngleDegrees => MaxJawAngle;
+
+        /// <summary>Jaw gape in degrees at empty energy - the blast's resting gape, which is NOT
+        /// zero. The HUD's jaw icon mirrors this for the same reason as the maximum.</summary>
+        public float MinJawAngleDegrees => MinJawAngle;
+
+        /// <summary>
+        /// The EXACT gape half-angle at normalized energy <paramref name="t"/>, shared by the hull
+        /// and the HUD icon so they cannot draw the same quantity two different ways.
+        ///
+        /// The blast's tip extent is LINEAR in energy (it lerps minExplosionScale → maxExplosionScale)
+        /// while the angle is its arctangent, so lerping the ANGLES is wrong in between — that was a
+        /// standing approximation here, worth up to a few degrees mid-charge. Lerping the TANGENTS
+        /// and taking the arctangent is exact, and needs nothing but the two authored angles:
+        ///
+        ///     tan(angle(t)) = lerp(min, max, t) / (2 * coneHeight)
+        ///                   = lerp(tan(minAngle), tan(maxAngle), t)
+        ///
+        /// so no dependency on the impact-effect SO is introduced to get it right.
+        /// </summary>
+        public static float GapeAngleAt(float t, float minDegrees, float maxDegrees)
+        {
+            t = Mathf.Clamp01(t);
+            float tan = Mathf.Lerp(Mathf.Tan(minDegrees * Mathf.Deg2Rad),
+                                   Mathf.Tan(maxDegrees * Mathf.Deg2Rad), t);
+            return Mathf.Atan(tan) * Mathf.Rad2Deg;
+        }
 
         // Bone names of the rigged dolphin model (dolphin_shapekey_with_animations.fbx), which was
         // authored FOR this script: six jets (top/middle/bottom x l/r), two jaws and two wings.
@@ -247,15 +279,21 @@ namespace CosmicShore.Gameplay
         // authored jaw angle on 'jaw.u'/'jaw.b'.
         //
         // This is the Dolphin's energy meter rendered on the HULL: the gape IS the width of the
-        // cone the next crystal impact will release, so a pilot can read their blast without
-        // looking at the HUD (which shows the same angle on its Time icon, taking its maximum from
-        // MaxJawAngleDegrees so the two can never disagree). MaxJawAngle must equal the cone's
-        // half-angle at full energy - atan((maxExplosionScale / 2) / coneHeight) on
-        // VesselExplosionByCrystalEffectSO + the AOEConicExplosion prefab - or the hull lies about
-        // the blast. It was 21 degrees against an 18.43-degree cone until this was measured.
+        // blast the next crystal impact will release, so a pilot can read their blast without
+        // looking at the HUD (which shows the same angle on its Time icon, taking its range from
+        // MinJawAngleDegrees/MaxJawAngleDegrees so the two can never disagree). The two angles must
+        // equal the blast's gape half-angle at empty and full energy -
+        // atan((min|maxExplosionScale / 2) / coneHeight) on VesselExplosionByCrystalEffectSO + the
+        // AOEConicExplosion prefab - or the hull lies about the blast. It was 21 degrees against an
+        // 18.43-degree cone until this was measured.
+        //
+        // Since the blast became a CAPSULE sweep, the jaws are not just a matched number: the blast
+        // extends along the very axis these jaws open across, so the hull's silhouette IS the
+        // blast's silhouette in that plane - including at rest, where the blast is a short capsule
+        // and the jaws therefore sit slightly open rather than shut.
         private void calculateBlastAngle(float currentAmmo)
         {
-            float angle = MaxJawAngle * Mathf.Clamp01(currentAmmo);
+            float angle = GapeAngleAt(currentAmmo, MinJawAngle, MaxJawAngle);
             if (topJaw) topJaw.localRotation = Quaternion.Euler(-angle, 0, 0) * RestRotationOf(topJaw);
             if (bottomJaw) bottomJaw.localRotation = Quaternion.Euler(angle, 0, 0) * RestRotationOf(bottomJaw);
         }

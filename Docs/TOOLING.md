@@ -228,13 +228,15 @@ their paths do not start with `FrogletTools/`.
 | Game Modes | End Game Conditions | The one place win conditions are authored for the domain modes. |
 | Build | Windows x64 (Release / Development), Reveal Build Folder | Player builds. |
 | Ecology | Prism Animation ▸ Validate Clock Wiring / Auto-Wire Clock Properties | The clock-material law gate. |
+| Ecology | Prism Animation ▸ **Occlusion Dither Lab** | The occlusion corridor's unit shape, live — kernel + scale dials driven as shader globals **while the game runs**, a preview that IS the shipped GPU code, a Measure button that runs the corridor's own |coverage − alpha| admission rule against the shipped baseline, and Bake to write the result back into `PrismOcclusionCorridor.hlsl`. Keeper (re-runnable), but it writes source, so it draws the ship panel. See `Docs/PRISM_ANIMATION.md` §4.7. |
 | Ecology | Measure Cell Environment Baselines | Per-cell prism baselines the phase thresholds ride on. |
 | Validation | Validate Lifeform Crystals | Every lifeform drops exactly one elemental crystal. |
 | Vessels | Audit Vessel Ability Rows / Elemental Morphs, Wire & Bake Petal Bars, Plan Rig Swap | Vessel HUD + model wiring. |
 | Performance | Performance Benchmark, Prism Grid Benchmark, Texture Memory, Scene Object Counter | Frame cost and memory. |
 | Scene Setup | Setup Freestyle Toybox, Setup Prism Grid Explosion Scene | Scene scaffolding. |
 | Interface | Canvas Upgrader, Raycast Target Audit, Toast Notification setup | UI authoring. |
-| Misc | Toolbox | Logging levels, scene shortcuts, runtime switches. |
+| Misc | Toolbox ▸ Logging | Log levels, **diagnostic channels**, and console stack-trace depth. Channels (`CSLogChannel`) carry a finished system's BRING-UP telemetry — `[FLOW-n]` spawn/session flow, `[GyroidColony]` lattice — and default to OFF, so the trace stays in the tree as knowledge without spamming the console; turn one on before investigating that system. Warnings and errors never sit on a channel. Reader only — writes `EditorPrefs`, never assets, so no ship panel. |
+| Misc | Toolbox | Scene shortcuts, runtime switches, quest/crystal/UGS debug tabs. |
 
 ---
 

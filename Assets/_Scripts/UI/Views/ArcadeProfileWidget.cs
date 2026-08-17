@@ -1,5 +1,7 @@
 using CosmicShore.ScriptableObjects;
 using CosmicShore.UI;
+using CosmicShore.Utility;
+using Cysharp.Threading.Tasks;
 using Reflex.Attributes;
 using TMPro;
 using UnityEngine;
@@ -130,17 +132,32 @@ namespace CosmicShore.UI
         {
             _isEditing = false;
 
-            string newName = usernameInputField ? usernameInputField.text?.Trim() : string.Empty;
+            string newName = usernameInputField ? usernameInputField.text : string.Empty;
+            SaveUsernameAsync(newName).Forget();
+        }
 
-            if (!string.IsNullOrEmpty(newName) && newName.Length >= 3 && newName.Length <= 25)
+        async UniTaskVoid SaveUsernameAsync(string newName)
+        {
+            // Full rule set (length, characters, profanity, duplicates) lives in
+            // PlayerDataService.TrySetDisplayNameAsync. A rejected name simply leaves
+            // the current profile name in place; RefreshProfile restores the label.
+            var localCheck = DisplayNameValidator.Validate(newName);
+            if (localCheck.IsValid && playerDataService != null)
             {
-                // SetDisplayName works as soon as the service exists (CurrentProfile
-                // is created in Awake). Cloud save is handled internally via debounce.
-                if (playerDataService != null)
-                    playerDataService.SetDisplayName(newName);
+                var result = await playerDataService.TrySetDisplayNameAsync(newName);
+                if (!result.IsValid)
+                    CSDebug.LogWarning($"[ArcadeProfileWidget] Display name rejected: {result.Message}");
+            }
+            else if (!localCheck.IsValid)
+            {
+                CSDebug.LogWarning($"[ArcadeProfileWidget] Display name rejected: {localCheck.Message}");
             }
 
-            // Restore display mode
+            RestoreUsernameDisplayMode();
+        }
+
+        void RestoreUsernameDisplayMode()
+        {
             if (usernameText)
                 usernameText.gameObject.SetActive(true);
 

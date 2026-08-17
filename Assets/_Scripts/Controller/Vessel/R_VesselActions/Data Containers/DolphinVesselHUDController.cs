@@ -46,6 +46,10 @@ namespace CosmicShore.Gameplay
         // and the prism-ram halving. Seeded to +inf so the initial seed can never read as a skim.
         float _lastEnergy = float.PositiveInfinity;
 
+        // Last seeding count pushed to the view, so a passive seeding can be told from the first
+        // frame after a bind. -1 means "not seeded yet", which never reads as a beat.
+        int _lastSeedCount = -1;
+
         // True only for a local human pilot's Dolphin - the one cockpit that actually gets drawn.
         bool _drawGauges;
 
@@ -62,6 +66,7 @@ namespace CosmicShore.Gameplay
             // stale true would let OnEnable resume driving a hidden HUD.
             _drawGauges = false;
             _lastEnergy = float.PositiveInfinity; // a re-init's seed is not a skim either
+            _lastSeedCount = -1;                  // ...and a re-init's crystal count is not a seeding
             Unbind();
 
             if (_resources == null || view == null) return;
@@ -91,10 +96,11 @@ namespace CosmicShore.Gameplay
                 ? vesselStatus.Vessel.Transform.GetComponentInChildren<DeployTeamCrystalActionExecutor>(true)
                 : null;
 
-            // One source for the gape: the HULL's authored max angle. The cockpit jaws and the ship's
-            // own jaws are showing the same thing - the half-angle of the next blast - so they must
-            // not drift apart through two separately-authored numbers.
-            if (hull) view.SetMaxJawAngle(hull.MaxJawAngleDegrees);
+            // One source for the gape: the HULL's authored angle RANGE. The cockpit jaws and the
+            // ship's own jaws are showing the same thing - the gape half-angle of the next blast -
+            // so they must not drift apart through separately-authored numbers. The minimum is not
+            // zero: the blast is a short capsule even at rest.
+            if (hull) view.SetJawAngleRange(hull.MinJawAngleDegrees, hull.MaxJawAngleDegrees);
 
             SeedFromResources();
         }
@@ -143,12 +149,21 @@ namespace CosmicShore.Gameplay
         {
             if (!view || _crystalExecutor == null) return;
 
-            // Crystals in hand, the carry limit (2 once Twin Seed lands) and the recharge fill,
-            // which grows 0 -> 1 as the next slot arms.
-            view.SetCrystalState(
-                _crystalExecutor.ChargesAvailable,
-                _crystalExecutor.MaxCharges,
+            // Crystal seeding is PASSIVE: nothing is carried, so the slot shows the cycle's yield
+            // (2 once Twin Seed lands) and the recharge fill, which grows 0 -> 1 as the next
+            // seeding arms.
+            view.SetCrystalSeedState(
+                _crystalExecutor.SeedsPerCycle,
                 1f - _crystalExecutor.CooldownRemaining01);
+
+            // The pilot gives no input for this ability and may be facing anywhere when it fires,
+            // so the planted beat is edge-detected off the executor's own counter and punched onto
+            // the slot. Seeded to the live value at bind so the first frame is never a false beat -
+            // the same guard _lastEnergy uses for the skim.
+            int seeds = _crystalExecutor.SeedCount;
+            if (_lastSeedCount >= 0 && seeds > _lastSeedCount)
+                view.PulseCrystalSeeded();
+            _lastSeedCount = seeds;
         }
 
         /// <summary>

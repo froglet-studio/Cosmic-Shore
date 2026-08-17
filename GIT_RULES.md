@@ -14,16 +14,26 @@ Our goals:
 
 ## 1. Branching Model
 
-### 1.1 Main Branches
+### 1.1 Long-lived Branches
 
-- `main`
-  - Always **stable & releasable**
-  - No direct pushes. Changes come **only via Pull Requests**.
-- `release/*` (optional)
-  - For preparing releases (store submissions, milestone builds, etc.)
-  - E.g. `release/2025.12.0`
+> **Full detail, including the build schedule, lives in
+> [`Docs/BRANCHING_AND_RELEASE.md`](Docs/BRANCHING_AND_RELEASE.md).** This is the
+> short version. If the two ever disagree, that document wins.
 
-> If in doubt, target `main` with your PR.
+| Branch | What it is | Who writes to it |
+|---|---|---|
+| `bleeding-edge` | **Trunk.** Where all development lands, and the repository default branch. Internal build every Friday. | Everyone, via PR |
+| `development` | What testers get. Test build every 3 weeks. | Receives from `bleeding-edge` only |
+| `master` | What players get. Release builds only. | Receives from `development` only |
+| `build/android`, `build/windows` | Robot-owned snapshots that Unity Build Automation reads. | **The promotion workflow only** |
+
+Work flows one direction: `bleeding-edge` → `development` → `master`. Nothing
+flows back up, and `development` and `master` never take their own commits. That
+is what keeps every promotion a fast-forward.
+
+> **If in doubt, target `bleeding-edge` with your PR.**
+
+There is no `main` branch in this repository. Do not create one.
 
 ---
 
@@ -49,12 +59,18 @@ Short-lived branches for actual work:
 
 > One logical task per branch. If you feel like "this branch is doing 5 different things", split it.
 
+**Agent-created branches.** Claude Code and Codex open branches named
+`claude/<description>-<id>` and `codex/<description>`. These are the majority of
+branches in the repository. They follow the same rules as any other short-lived
+branch: one logical task, PR into `bleeding-edge`, deleted after merge. Do not
+rename them to `feature/*`; the prefix is how you tell at a glance who opened it.
+
 ---
 
 ### 1.3 Branch Checklist (Before Push)
 
 - [ ] Branch name follows `type/area-short-description`
-- [ ] Branch is based on **latest `main`**
+- [ ] Branch is based on **latest `bleeding-edge`**
 - [ ] Only **one logical feature/fix/chore** in this branch  
 - [ ] No temporary test scenes / PlayGround scenes that aren’t intended to be kept
 
@@ -169,7 +185,7 @@ Notes:
 
 ## 3. Pull Requests
 
-All changes to `main` must go through **Pull Requests**.
+All changes to `bleeding-edge` must go through **Pull Requests**.
 
 ### 3.1 PR Titles
 
@@ -248,8 +264,8 @@ If UI or gameplay changed, attach:
 
 Before assigning reviewers:
 
-- [ ] Branch is up-to-date with `main`  
-      (`git fetch` + `git rebase origin/main` preferred)
+- [ ] Branch is up-to-date with `bleeding-edge`  
+      (`git fetch` + `git rebase origin/bleeding-edge` preferred)
 - [ ] No merge conflicts
 - [ ] Project builds locally in Unity
 - [ ] Manual testing done (and documented in PR)
@@ -312,14 +328,38 @@ Goal: Make future Cosmic Shore devs feel confident reading this code.
 
 ## 4. Merge Strategy
 
-- No direct merges to `main` without PR.
+### Feature branches into `bleeding-edge`
+
+- No direct pushes to `bleeding-edge` without a PR.
 - Default merge method: **Squash and merge**.
   - Resulting commit message should be meaningful, e.g.:
     ```text
     feat: add swap-tray powerup to arcade mode
     ```
-- Keep history **linear and clean**. Avoid long chains of “Merge branch 'main' into …” when possible:
-  - Prefer `git fetch` + `git rebase origin/main` in your feature branch before pushing.
+- Keep history **linear and clean**. Prefer `git fetch` + `git rebase origin/bleeding-edge`
+  in your feature branch before pushing, rather than merging `bleeding-edge` back into it
+  repeatedly.
+
+### Promotion merges: **never squash**
+
+Moving `bleeding-edge` into `development`, or `development` into `master`, is a
+different operation and the rule above is **inverted**.
+
+Squashing a promotion replaces the branch with one fresh commit that has no link
+to the history it came from. The target then no longer contains the source's
+commits, so it stops being a fast-forward, and every future promotion becomes a
+real merge that conflicts. That is precisely how `master` and `development` ended
+up 3000 commits adrift and needing a rescue.
+
+| Merging | Method |
+|---|---|
+| Feature branch → `bleeding-edge` | **Squash and merge** |
+| `bleeding-edge` → `development` | **Merge commit**, or a local fast-forward |
+| `development` → `master` | **Merge commit**, or a local fast-forward |
+
+A promotion should never present conflicts. If one does, something has committed
+directly to `development` or `master`, and *that* is the bug. Do not resolve the
+conflicts; find the stray commit. See `Docs/BRANCHING_AND_RELEASE.md` §6 R6.
 
 ---
 

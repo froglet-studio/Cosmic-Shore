@@ -181,9 +181,10 @@ for k, p in SCRIPT_PATHS.items():
 
 
 # ── 2. SpawnableRibcage prefabs - ONE VARIANT PER INTENSITY ─────────────────
-# The layered orange: variant i builds i concentric rinds inward from the fixed outer
-# shell. Same script, same seed, only shellCount differs - so the four arenas are the
-# same cage with more to peel, and BuildParameterHash keeps their caches distinct.
+# The layered orange: variant for intensity i builds SHELLS_FOR_INTENSITY[i] concentric
+# rinds inward from the fixed outer shell (2/3/4/5 - intensity 1 is ALREADY layered, since
+# one shell cannot reach the ~10k prism budget without closing the outer weave). Same script,
+# same seed, only shellCount differs, and BuildParameterHash keeps their caches distinct.
 for i in INTENSITIES:
     emit(f"Assets/_Prefabs/Spawnables/SpawnableRibcage{i}.prefab", f"""%YAML 1.1
 %TAG !u! tag:unity3d.com,2011:
@@ -242,7 +243,7 @@ MonoBehaviour:
   density: 1
   spawnClearRadius: 0
   spawnClearPoints: []
-  shellCount: {i}
+  shellCount: {budget.shells_for_intensity(i)}
 """)
     emit(f"Assets/_Prefabs/Spawnables/SpawnableRibcage{i}.prefab.meta",
          prefab_meta(G_ASSET[f"SpawnableRibcage{i}.prefab"]))
@@ -296,7 +297,7 @@ emit("Assets/_SO_Assets/Games/ArcadeGameRibcage.asset.meta", asset_meta(G_ASSET[
 # still there - re-adding the brood is a data change here, not a code change.
 #
 # Each intensity gets its OWN CellConfigDataSO because PhaseThresholds must ride ITS OWN
-# baseline: a four-rind cage starts at ~15.7k prisms and a one-rind cage at ~5.5k, so a
+# baseline: a five-rind cage starts at ~20.2k prisms and a two-rind cage at ~10.6k, so a
 # shared threshold block would put three of the four arenas in the wrong phase from frame
 # one. Cell.AssignConfig picks by CellTypeChoiceOptions.IntensityWise (index = intensity-1).
 emit("Assets/_SO_Assets/Cell Configs/Ribcage Cell.meta", meta(guid("folder/RibcageCell"), folder=True))
@@ -304,10 +305,11 @@ emit("Assets/_SO_Assets/Cell Configs/Ribcage Cell.meta", meta(guid("folder/Ribca
 for i in INTENSITIES:
     n, v, danger = budget.cumulative(i)
     th = budget.phase_thresholds(n, v)
-    radii = " / ".join(f"{budget.shell_radius(k):.0f}" for k in range(i))
+    shells = budget.shells_for_intensity(i)
+    radii = " / ".join(f"{budget.shell_radius(k):.0f}" for k in range(shells))
     emit(f"Assets/_SO_Assets/Cell Configs/Ribcage Cell/Ribcage Cell Config {i}.asset",
          HEADER_FOR(EXISTING["CellConfigDataSO"], f"Ribcage Cell Config {i}") + f"""  CellName: Ribcage
-  Description: The cage cell at intensity {i} - {i} concentric rind(s) of prism bone at
+  Description: The cage cell at intensity {i} - {shells} concentric rinds of prism bone at
     radius {radii}, {n} prisms in total. NO NUCLEUS by design, and no fauna. PhaseThresholds
     ride THIS intensity's own baseline; regenerate with Tools/Build/author_ribcage_assets.py
     after any geometry change rather than hand-editing.
@@ -406,7 +408,10 @@ scene = scene.replace(OLD_CELL, NEW_CELL)
 # 6d. Spawn OUTSIDE the cage. The donor's four authored transforms sit at +/-50 - deep inside
 # the cage, so players started penned in with the brood. Switch the initializer to the
 # computed cell spawn ring (CellSpawnFormation: symmetric, all facing the cell) with a radius
-# FLOOR, because this cell has no nucleus for the ring to measure off. SPAWN_RING_RADIUS sits
+# FLOOR, because this cell has no nucleus for the ring to measure off. spawnFormation 1 =
+# EquatorialRing: everyone on ONE horizontal circle like Joust, so nobody is dropped on a pole -
+# a latitude-hoop cage is densest where the ribs converge, and the default tetrahedral spread
+# would hand two of four players a much harder approach. SPAWN_RING_RADIUS sits
 # well outside the cage (CAGE_RADIUS) and well inside the membrane (1200), giving a clear run
 # at the bone.
 OLD_SPAWN = """  playerSpawnPoints:
@@ -423,6 +428,7 @@ NEW_SPAWN = f"""  playerSpawnPoints:
   - {{fileID: 1564881929}}
   arrangeSpawnPointsAroundCell: 1
   spawnDistanceOutsideNucleus: 40
+  spawnFormation: 1
   spawnRingRadiusFloor: {SPAWN_RING_RADIUS}
   cellData: {{fileID: 11400000, guid: {EXISTING['RuntimeCellData']}, type: 2}}
   preSpawnDelayMs: 200

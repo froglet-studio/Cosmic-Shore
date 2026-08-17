@@ -332,19 +332,41 @@ namespace CosmicShore.Core
         //  Username Setup (button handler)
         // ──────────────────────────────────────────────
 
+        /// <summary>
+        /// True from the moment a submit is accepted until it either fails (retryable) or
+        /// navigation begins. Disabling the button alone was not enough: the finally below
+        /// re-enabled it on the SUCCESS path too, so it became clickable again during the
+        /// scene transition and a second click issued a second name claim and a second
+        /// profile save against a scene that was already leaving.
+        /// </summary>
+        bool _usernameSubmitInFlight;
+
         void OnConfirmUsernameClicked()
         {
+            if (_usernameSubmitInFlight) return;
             OnConfirmUsernameAsync(_cts?.Token ?? CancellationToken.None).Forget();
         }
 
         async UniTaskVoid OnConfirmUsernameAsync(CancellationToken ct)
         {
-            string username = usernameInputField ? usernameInputField.text?.Trim() : string.Empty;
+            if (_usernameSubmitInFlight) return;
+            _usernameSubmitInFlight = true;
 
-            if (string.IsNullOrEmpty(username) || username.Length < 3 || username.Length > 25)
+            // Cleared on every path that leaves the player able to try again. NOT cleared once
+            // navigation starts - there is no going back to this screen.
+            bool navigatingAway = false;
+
+            string username = usernameInputField ? usernameInputField.text : string.Empty;
+
+            // Local rules first (length, characters, profanity) - instant feedback with
+            // no service round-trip. The service call below re-validates and adds the
+            // global duplicate check.
+            var localCheck = DisplayNameValidator.Validate(username);
+            if (!localCheck.IsValid)
             {
                 if (usernameStatusText)
-                    usernameStatusText.text = "Username must be between 3 and 25 characters.";
+                    usernameStatusText.text = localCheck.Message;
+                _usernameSubmitInFlight = false;
                 return;
             }
 
@@ -352,19 +374,20 @@ namespace CosmicShore.Core
 
             try
             {
-                if (_playerDataService != null && _playerDataService.IsInitialized)
-                    _playerDataService.SetDisplayName(username);
-
-                try
+                if (_playerDataService != null)
                 {
-                    await AuthenticationService.Instance.UpdatePlayerNameAsync(username)
-                        .AsUniTask().AttachExternalCancellation(ct);
-                }
-                catch (Exception ex)
-                {
-                    CSDebug.LogWarning($"[AuthScene] UpdatePlayerNameAsync failed (non-critical): {ex.Message}");
+                    var result = await _playerDataService.TrySetDisplayNameAsync(username)
+                        .AttachExternalCancellation(ct);
+
+                    if (!result.IsValid)
+                    {
+                        if (usernameStatusText)
+                            usernameStatusText.text = result.Message;
+                        return;
+                    }
                 }
 
+                navigatingAway = true;
                 NavigateToMainMenu();
             }
             catch (OperationCanceledException) { /* scene destroyed */ }
@@ -376,7 +399,13 @@ namespace CosmicShore.Core
             }
             finally
             {
-                if (confirmUsernameButton) confirmUsernameButton.interactable = true;
+                // Only hand the button back when the player is still here to press it.
+                // Re-enabling during the scene transition is what allowed the second click.
+                if (!navigatingAway)
+                {
+                    _usernameSubmitInFlight = false;
+                    if (confirmUsernameButton) confirmUsernameButton.interactable = true;
+                }
             }
         }
 

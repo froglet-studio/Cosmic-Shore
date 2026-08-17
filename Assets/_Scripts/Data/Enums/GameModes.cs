@@ -72,12 +72,27 @@ namespace CosmicShore.Data
         // Rampage). Intensity is how many rinds you peel. See
         // _Scripts/Controller/Arcade/RIBCAGE.md.
         Ribcage = 39,
-        // Benchmark (40): the Settings > Run Benchmark stress-test context - not an
+        // WildlifeLiberation (40): the Sparrow-only hunt. Three concentric cages at 1050 / 600
+        // / 200 pen three tiers of wildlife - a huge swarm of small creatures in the outer
+        // room, much bigger ones in the middle, the biggest and toughest in the core. Break in
+        // and shoot; first PLAYER (not domain - this one is a free-for-all) to the kill target
+        // wins. See _Scripts/Controller/Arcade/WILDLIFE_LIBERATION.md.
+        WildlifeLiberation = 40,
+        // DogFight (41): the Sparrow-only gun duel. Two to four pilots hunt each other through
+        // the Boneyard - a wrecked world of hollow hulks and rubble canyons built for close
+        // encounters and hiding places. A bullet hit scores 1, a missile hit (direct strike or
+        // caught in the blast) scores 50, and the first DOMAIN to the point target wins. The
+        // only mode whose score comes from vessel-vs-vessel gunnery. See
+        // _Scripts/Controller/Arcade/DOGFIGHT.md.
+        DogFight = 41,
+        // Benchmark (42): the Settings > Run Benchmark stress-test context - not an
         // arcade mode (no card, no scoring, endless). Set by BenchmarkSceneLauncher so
         // mode-keyed consumers (presence/connecting-panel display, comeback default,
         // HUD objective default) resolve honestly instead of borrowing a retired id.
-        // (Authored as 39 on Ys-bleeding-edge; moved to 40 on the merge with
-        // bleeding-edge, which had already shipped Ribcage at 39 in serialized data.)
-        Benchmark = 40,
+        // (Authored as 39 on Ys-bleeding-edge, then 40; landed at 42 on the merge with
+        // bleeding-edge, which had already shipped Ribcage at 39, WildlifeLiberation at
+        // 40 and DogFight at 41. Benchmark is set in code only - no serialized asset
+        // carries the id - so the renumber is safe.)
+        Benchmark = 42,
     }
 }

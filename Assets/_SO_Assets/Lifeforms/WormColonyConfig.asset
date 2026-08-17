@@ -1,0 +1,66 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4970807dd09f4a669ec489d0d7b90263, type: 3}
+  m_Name: WormColonyConfig
+  m_EditorClassIdentifier: 
+  SpawnSegmentCount: 8
+  SegmentSpacing: 8.4
+  KaijuScale: 3
+  TaperPerSegment: 0.9
+  HeadGapMultiplier: 2.56
+  TailGapMultiplier: 1.79
+  MaxSegmentsPerWorm: 16
+  CruiseSpeed: 18
+  TurnDegreesPerSecond: 40
+  FollowSharpness: 5
+  RotationSharpness: 4
+  UndulationYawDegrees: 12
+  UndulationFrequency: 2.2
+  UndulationPhaseStep: 0.9
+  SpeedByAggression:
+  - 1
+  - 1.25
+  - 1.6
+  CadenceByAggression:
+  - 1
+  - 0.7
+  - 0.45
+  ColonySeparationRadius: 160
+  ColonySeparationWeight: 2.5
+  BehaviorTickSeconds: 1.5
+  MouthRadius: 28
+  FaunaBiteRange: 34
+  MaxBitesPerTick: 6
+  FeedsPerSegment: 24
+  SegmentBloomSeconds: 2
+  EndRegrowSeconds: 18
+  RegrownEndElement: 2
+  StarvationShedIntervalSeconds: 12
+  AggroRadius: 220
+  StrikeRange: 90
+  PursuitSpeedMultiplier: 1.45
+  PursuitTurnMultiplier: 2
+  HuntIntervalSeconds: 26
+  HuntDurationSeconds: 12
+  TelegraphSeconds: 1.2
+  TelegraphAmplitudeMultiplier: 2.5
+  LungeSpeed: 70
+  LungeArriveRadius: 10
+  LungeMaxSeconds: 2.5
+  RecoverSeconds: 2.5
+  RecoverSpeedFraction: 0.35
+  TailWhipRadius: 45
+  TailWhipSeconds: 1.5
+  TailWhipCooldownSeconds: 8
+  WhipLateralAmplitude: 5
+  WhipFrequency: 7
+  WhipSegmentCount: 3

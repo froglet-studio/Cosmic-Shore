@@ -1,3 +1,4 @@
+using System;
 using UnityEngine;
 
 namespace CosmicShore.Core
@@ -8,6 +9,13 @@ namespace CosmicShore.Core
     /// This is the <c>flight_time_seconds</c> the instrumentation team asked for, and it also
     /// feeds the per-vessel, per-mode and lifetime totals in Cloud Save.
     /// See Docs/Analytics/DATA_ARCHITECTURE.md §5.
+    ///
+    /// It measures TWO kinds of flying, because there are two. A game has a countdown, turns
+    /// and an end; Menu_Main's freestyle (the lava lamp - one system, two names) has none of
+    /// them, and never raises <c>GameDataSO.StartTurn</c>. Both are the player holding the
+    /// stick, so both count toward lifetime and per-vessel totals - the second gate below is
+    /// what stops menu flight from being invisible. They are accumulated separately so a
+    /// freestyle segment can never contaminate a game's <see cref="LastGameSeconds"/>.
     ///
     /// Both obvious implementations are wrong, which is why this class exists:
     ///  - <c>Time.realtimeSinceStartup</c> (what the old <c>duration_seconds</c> uses) counts
@@ -20,8 +28,9 @@ namespace CosmicShore.Core
     /// suspended, so it is the correct base clock.
     ///
     /// There is no Update: the clock integrates on state transitions only, so it costs nothing
-    /// per frame. A segment is open only while the turn is running, the game is not paused, and
-    /// the app is in the foreground.
+    /// per frame. The game segment is open only while the turn is running, the game is not
+    /// paused, and the app is in the foreground; the freestyle segment is the same minus the
+    /// turn gate.
     /// </summary>
     public static class FlightClock
     {
@@ -34,8 +43,28 @@ namespace CosmicShore.Core
         static float _segmentStartUnscaled;
         static float _accumulated;
 
+        static bool _freestyleActive;
+        static bool _freestyleSegmentOpen;
+        static float _freestyleSegmentStartUnscaled;
+
+        /// <summary>
+        /// Raised with the seconds of each completed freestyle segment. A segment closes on
+        /// leaving freestyle, on pause, and on backgrounding - the last one deliberately, so a
+        /// mobile app killed while suspended has already banked the time it earned.
+        /// Subscribers must be additive: several segments make up one visit to freestyle.
+        /// </summary>
+        public static event Action<float> OnFreestyleSegmentCompleted;
+
         /// <summary>Flight seconds accumulated so far in the current game.</summary>
         public static float CurrentGameSeconds => _accumulated + OpenSegmentSeconds();
+
+        /// <summary>Seconds banked so far in the freestyle segment currently open (0 when none is).</summary>
+        public static float CurrentFreestyleSeconds => OpenFreestyleSegmentSeconds();
+
+        /// <summary>Total freestyle seconds measured this run. Diagnostics only - not persisted from here.</summary>
+        public static float SessionFreestyleSeconds { get; private set; }
+
+        public static bool IsFreestyleActive => _freestyleActive;
 
         /// <summary>
         /// Flight seconds for the most recently completed game. Valid from the moment
@@ -60,9 +89,12 @@ namespace CosmicShore.Core
         {
             // Domain reload may be disabled in the editor, so clear any carried-over state.
             _gameActive = _turnRunning = _paused = _backgrounded = _segmentOpen = false;
+            _freestyleActive = _freestyleSegmentOpen = false;
             _accumulated = 0f;
             LastGameSeconds = 0f;
+            SessionFreestyleSeconds = 0f;
             CompletedGameSequence = 0;
+            OnFreestyleSegmentCompleted = null;
 
             PauseSystem.OnGamePaused -= HandleGamePaused;
             PauseSystem.OnGameResumed -= HandleGameResumed;
@@ -131,22 +163,44 @@ namespace CosmicShore.Core
             _accumulated = 0f;
         }
 
+        /// <summary>
+        /// Called from <c>MenuCrystalClickHandler</c> the moment the player takes the stick in
+        /// Menu_Main. There is no countdown and no turn here, so this is the freestyle
+        /// equivalent of <see cref="OnTurnStarted"/>.
+        /// </summary>
+        public static void OnFreestyleEntered()
+        {
+            _freestyleActive = true;
+            UpdateFreestyleSegment();
+        }
+
+        /// <summary>
+        /// Called when the player hands the vessel back to autopilot, and from the handler's
+        /// OnDestroy so leaving Menu_Main banks the time instead of dropping it.
+        /// Idempotent - a second call with no segment open does nothing.
+        /// </summary>
+        public static void OnFreestyleExited()
+        {
+            _freestyleActive = false;
+            UpdateFreestyleSegment();
+        }
+
         static void HandleGamePaused()
         {
             _paused = true;
-            UpdateSegment();
+            UpdateAllSegments();
         }
 
         static void HandleGameResumed()
         {
             _paused = false;
-            UpdateSegment();
+            UpdateAllSegments();
         }
 
         static void HandleAppPaused(bool paused)
         {
             _backgrounded = paused;
-            UpdateSegment();
+            UpdateAllSegments();
         }
 
         static void HandleAppFocusChanged(bool hasFocus)
@@ -154,7 +208,13 @@ namespace CosmicShore.Core
             // Desktop does not raise OnApplicationPause when the window loses focus, so focus
             // is the only signal there that the player has stopped flying.
             _backgrounded = !hasFocus;
+            UpdateAllSegments();
+        }
+
+        static void UpdateAllSegments()
+        {
             UpdateSegment();
+            UpdateFreestyleSegment();
         }
 
         /// <summary>Opens or closes the accumulating segment to match the current gate state.</summary>
@@ -177,7 +237,38 @@ namespace CosmicShore.Core
             }
         }
 
+        /// <summary>
+        /// Same integrator for freestyle, minus the turn gate. Publishes on close rather than
+        /// accumulating to a "last visit" value: freestyle has no end event to read one at.
+        /// </summary>
+        static void UpdateFreestyleSegment()
+        {
+            bool shouldRun = _freestyleActive && !_paused && !_backgrounded;
+
+            if (shouldRun == _freestyleSegmentOpen)
+                return;
+
+            if (shouldRun)
+            {
+                _freestyleSegmentStartUnscaled = Time.unscaledTime;
+                _freestyleSegmentOpen = true;
+                return;
+            }
+
+            float seconds = Mathf.Max(0f, Time.unscaledTime - _freestyleSegmentStartUnscaled);
+            _freestyleSegmentOpen = false;
+
+            if (seconds <= 0f)
+                return;
+
+            SessionFreestyleSeconds += seconds;
+            OnFreestyleSegmentCompleted?.Invoke(seconds);
+        }
+
         static float OpenSegmentSeconds() =>
             _segmentOpen ? Mathf.Max(0f, Time.unscaledTime - _segmentStartUnscaled) : 0f;
+
+        static float OpenFreestyleSegmentSeconds() =>
+            _freestyleSegmentOpen ? Mathf.Max(0f, Time.unscaledTime - _freestyleSegmentStartUnscaled) : 0f;
     }
 }

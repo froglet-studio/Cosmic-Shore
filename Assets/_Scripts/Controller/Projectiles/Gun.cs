@@ -43,7 +43,8 @@ namespace CosmicShore.Gameplay
             float charge = 0,
             FiringPatterns firingPattern = FiringPatterns.Default,
             int energy = 0, bool detachAfterSpawn = false,
-            bool stopOnFirstPrismImpact = false, bool spareOwnDomain = false)
+            bool stopOnFirstPrismImpact = false, bool spareOwnDomain = false,
+            Vector3? aimDirection = null, float flightGrowthFactor = 1f)
         {
             if (_onCooldown && !ignoreCooldown) return;
 
@@ -55,9 +56,12 @@ namespace CosmicShore.Gameplay
                     break;
 
                 default:
+                    // aimDirection lets a caller deflect the shot off the muzzle's forward —
+                    // the accuracy-decay cone (GunSprayAccuracy) is the only user today. The gun
+                    // itself owns no spread policy and rolls no dice: it is handed a direction.
                     FireSingle(containerTransform, speed, inheritedVelocity,
-                        projectileScale, Vector3.zero, projectileTime, charge, energy, null, detachAfterSpawn,
-                        stopOnFirstPrismImpact, spareOwnDomain);
+                        projectileScale, Vector3.zero, projectileTime, charge, energy, aimDirection, detachAfterSpawn,
+                        stopOnFirstPrismImpact, spareOwnDomain, flightGrowthFactor);
                     break;
             }
 
@@ -149,7 +153,8 @@ namespace CosmicShore.Gameplay
             Vector3? customDirection = null,
             bool detachAfterSpawn = false,
             bool stopOnFirstPrismImpact = false,
-            bool spareOwnDomain = false)
+            bool spareOwnDomain = false,
+            float flightGrowthFactor = 1f)
         {
             if (_vesselStatus == null)
             {
@@ -178,6 +183,11 @@ namespace CosmicShore.Gameplay
                 stopOnFirstPrismImpact, spareOwnDomain);
 
             projectile.transform.localScale = projectileScale * projectile.InitialScale;
+
+            // MASS in-flight growth: set BEFORE launch, which is where the round captures the
+            // scale it will grow from. The gun owns no growth policy - it is handed a factor.
+            projectile.SetFlightGrowth(flightGrowthFactor);
+
             projectile.Velocity = direction * speed + inheritedVelocity;
             projectile.LaunchProjectile(projectileTime);
 

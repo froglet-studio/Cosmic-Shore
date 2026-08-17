@@ -29,14 +29,14 @@ namespace CosmicShore.Core
         /// (opt-in: do not collect), 1 = granted, 0 = denied. Written by the consent
         /// dialog and the Settings opt-out toggle via <see cref="SetConsent"/>.
         /// </summary>
-        const string ConsentPrefKey = "AnalyticsConsent";
+        public const string ConsentPrefKey = "AnalyticsConsent";
 
         /// <summary>
         /// PlayerPrefs key for the COPPA age gate. Tri-state: ABSENT = not asked,
         /// 1 = age-eligible (13+), 0 = under-13 (never collect). Written by the age
         /// gate via <see cref="SetAgeEligible"/> / <see cref="SubmitBirthYear"/>.
         /// </summary>
-        const string AgeGatePrefKey = "AnalyticsAgeEligible";
+        public const string AgeGatePrefKey = "AnalyticsAgeEligible";
 
         /// <summary>Minimum age (years) to be eligible for analytics collection (COPPA).</summary>
         const int MinimumAge = 13;
@@ -84,6 +84,8 @@ namespace CosmicShore.Core
         bool _menuReadyThisSession;
         bool _freestyleEnteredThisSession;
         int _consecutiveLosses;
+        int _droppedEvents;
+        bool _warnedNotCollecting;
 
         AuthenticationData AuthData => _authVariable.Value;
         NetworkMonitorData NetworkData => _networkVariable.Value;
@@ -131,7 +133,7 @@ namespace CosmicShore.Core
             var postHogConfig = Resources.Load<PostHogConfigSO>("PostHogConfig");
             if (postHogConfig != null && postHogConfig.Enabled)
             {
-                _postHogSink = new PostHogAnalyticsSink(postHogConfig, Log);
+                _postHogSink = new PostHogAnalyticsSink(postHogConfig, Log, BuildSinkEnvelope);
                 _sinks.Add(_postHogSink);
             }
 
@@ -142,7 +144,6 @@ namespace CosmicShore.Core
             _gameData.OnMiniGameEnd.OnRaised += HandleMiniGameEnd;
             _lifecycleEvents.OnAppPaused.OnRaised += HandleAppPaused;
             _lifecycleEvents.OnAppQuitting.OnRaised += HandleAppQuitting;
-            AdsSystem.AdLoaded += HandleAdLoaded;
             TryWireUiActions();
 
             // Crash capture follows the same opt-in gate as analytics. Applied here so a returning
@@ -312,15 +313,14 @@ namespace CosmicShore.Core
         {
             if (!_collecting)
             {
-                Log($"Dropped '{eventName}' - collection not active.");
+                _droppedEvents++;
+                WarnNotCollectingOnce(eventName);
                 return;
             }
 
             var payload = parameters != null
                 ? new Dictionary<string, object>(parameters)
                 : new Dictionary<string, object>();
-
-            AddCommonEnvelope(payload);
 
             foreach (var sink in _sinks)
                 sink.RecordEvent(eventName, payload);
@@ -329,19 +329,60 @@ namespace CosmicShore.Core
         }
 
         /// <summary>
-        /// Fields present on EVERY event, so any two events can be joined without a lookup:
-        /// who, which build, which platform, and when by the client's clock.
+        /// Says out loud, once, why events are going nowhere.
+        ///
+        /// Collection is opt-in: both the COPPA age gate and consent default to denied, so an
+        /// unanswered privacy flow silently drops every event before it reaches any sink - both
+        /// UGS and PostHog go quiet at once, which looks like a backend or key problem and is
+        /// not. That failure has already cost this project one debugging session, so it warns
+        /// rather than whispering behind a verbose-logging flag.
         /// </summary>
-        void AddCommonEnvelope(IDictionary<string, object> payload)
+        void WarnNotCollectingOnce(string eventName)
         {
-            payload["player_id"] = ResolveDistinctId();
-            payload["app_version"] = Application.version;
-            payload["platform"] = Application.platform.ToString();
-            payload["schema_version"] = EventSchemaVersion;
+            if (_warnedNotCollecting)
+                return;
 
-            if (!payload.ContainsKey("timestamp_utc_ms"))
-                AddCompletionTimestamp(payload);
+            _warnedNotCollecting = true;
+
+            string why = !AgeChecked ? "the age gate has not been answered"
+                : !AgeEligible ? "the player is not age-eligible (under 13)"
+                : !ConsentDecided ? "consent has not been answered"
+                : !ConsentGranted ? "consent was declined"
+                : !_signedIn ? "UGS sign-in has not completed"
+                : !_isConnected ? "there is no network connection"
+                : "collection has not started yet";
+
+            Debug.LogWarning(
+                $"[Analytics] DROPPING EVENTS - {why}. Nothing will reach UGS or PostHog until this " +
+                $"is resolved. First dropped event: '{eventName}'. " +
+                (NeedsPrivacyFlow
+                    ? "No privacy consent UI is reachable in this scene; in the editor use " +
+                      "FrogletTools > Services > Analytics Consent (Dev) to grant it."
+                    : "Check AnalyticsServiceFacade.StartCollectionIfReady."));
         }
+
+        /// <summary>Events dropped because collection was not active. 0 is the healthy value.</summary>
+        public int DroppedEventCount => _droppedEvents;
+
+        /// <summary>
+        /// Identity + build context that PostHog has no way to collect on its own.
+        ///
+        /// This is deliberately NOT applied to every event in the facade. UGS Analytics
+        /// already auto-collects the player id, platform and app version as core data, and it
+        /// validates every custom parameter against a schema hand-created in the dashboard
+        /// Event Manager - where events and parameters, once created, can never be deleted and
+        /// count against a 1,500-per-environment cap. Stamping six redundant fields onto 28
+        /// events would have cost 168 permanent, unnecessary schema rows for data UGS already
+        /// has. So the envelope is a PostHog concern and lives in the PostHog sink.
+        /// See Docs/Analytics/DATA_ARCHITECTURE.md §7.1.
+        /// </summary>
+        public IDictionary<string, object> BuildSinkEnvelope() => new Dictionary<string, object>
+        {
+            ["player_id"] = ResolveDistinctId(),
+            ["app_version"] = Application.version,
+            ["platform"] = Application.platform.ToString(),
+            ["schema_version"] = EventSchemaVersion
+        };
 
         /// <summary>
         /// The canonical identity: the UGS player id. Immutable, and the same key as Cloud
@@ -684,7 +725,6 @@ namespace CosmicShore.Core
             });
         }
 
-        void HandleAdLoaded() => RecordEvent(UGSKeys.EventAdImpression);
 
         #endregion
 

@@ -340,6 +340,60 @@ namespace CosmicShore.Gameplay
                 EmitElementLevel(element);
         }
 
+        /********************************************/
+        /*  ELEMENTAL DEBUFF IMMUNITY (general)     */
+        /********************************************/
+
+        // Every buff/debuff in the game routes through ApplyElementalEffect (CLAUDE.md, Elementals
+        // fundamental), so ONE gate there is the whole of "immune to elemental debuffs". The state is
+        // deliberately vessel-agnostic and source-keyed: any system can hold it, holders cannot clear
+        // each other's grant, and nothing about it is Sparrow- or Serpent-specific. The shared
+        // declarative driver is VesselElementalImmunity; read the state through
+        // IVesselStatus.IsElementallyImmune.
+        //
+        // Scope: it blocks NEGATIVE effects only - buffs still land while immune - and it PREVENTS new
+        // debuffs rather than cleansing live ones (a cleanse would make the state a spammable purge
+        // instead of a shield; live debuffs keep decaying on their own).
+        //
+        // NOT gated: AdjustLevel. That is the persistent crystal/comeback progression writer, not the
+        // debuff channel; collecting a crystal is a player action, not something to be immune to.
+        readonly HashSet<UnityEngine.Object> _debuffImmunityGrants = new();
+
+        /// <summary>True while at least one system holds elemental-debuff immunity on this vessel.</summary>
+        public bool IsElementallyImmune
+        {
+            get
+            {
+                if (_debuffImmunityGrants.Count == 0) return false;
+                // A destroyed grantor cannot hold immunity (safety net for a holder that never revoked).
+                _debuffImmunityGrants.RemoveWhere(o => !o);
+                return _debuffImmunityGrants.Count > 0;
+            }
+        }
+
+        /// <summary>Raised when the immunity state flips on or off, for HUD / VFX consumers.</summary>
+        public event Action<bool> OnElementalImmunityChanged;
+
+        /// <summary>
+        /// Grant or revoke elemental-debuff immunity from ONE source. Source-keyed rather than a bare
+        /// bool so two concurrent holders (e.g. an ability and a mode) can't stomp each other; the
+        /// vessel is immune while any grant stands. Pass the granting component as
+        /// <paramref name="source"/> and revoke it in that component's OnDisable/OnDestroy.
+        /// </summary>
+        public void SetElementalDebuffImmunity(UnityEngine.Object source, bool immune)
+        {
+            if (!source) return;
+
+            bool wasImmune = IsElementallyImmune;
+
+            if (immune) _debuffImmunityGrants.Add(source);
+            else        _debuffImmunityGrants.Remove(source);
+
+            bool nowImmune = IsElementallyImmune;
+            if (nowImmune != wasImmune)
+                OnElementalImmunityChanged?.Invoke(nowImmune);
+        }
+
         /// <summary>
         /// Standardized elemental buff/debuff. Positive <paramref name="magnitude"/> buffs the
         /// element, negative debuffs it - the two are fully symmetric.
@@ -347,9 +401,14 @@ namespace CosmicShore.Gameplay
         /// linearly back to zero over <paramref name="duration"/> seconds, leaving the base level
         /// untouched so persistent progress (crystals, comeback, etc.) is preserved.</para>
         /// <para><paramref name="duration"/> &lt;= 0 → permanent: added straight to the base level.</para>
+        /// <para>Negative magnitudes are dropped entirely while
+        /// <see cref="IsElementallyImmune"/> - see the immunity block above.</para>
         /// </summary>
         public void ApplyElementalEffect(Element element, float magnitude, float duration)
         {
+            // The one gate for the general elemental-debuff immunity state. Buffs are unaffected.
+            if (magnitude < 0f && IsElementallyImmune) return;
+
             if (duration <= 0f)
             {
                 AdjustLevel(element, magnitude);

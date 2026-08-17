@@ -83,11 +83,11 @@ namespace CosmicShore.Gameplay
             // check both firing before the first call completes).
             if (_hostStartInProgress)
             {
-                Debug.Log("<color=#00FFFF>[FLOW-1] [MultiplayerSetup] EnsureHostStarted SKIPPED (already in progress)</color>");
+                CSDebug.LogVerbose(CSLogChannel.NetworkFlow, "<color=#00FFFF>[FLOW-1] [MultiplayerSetup] EnsureHostStarted SKIPPED (already in progress)</color>");
                 return;
             }
             _hostStartInProgress = true;
-            Debug.Log("<color=#00FFFF>[FLOW-1] [MultiplayerSetup] EnsureHostStarted START</color>");
+            CSDebug.LogVerbose(CSLogChannel.NetworkFlow, "<color=#00FFFF>[FLOW-1] [MultiplayerSetup] EnsureHostStarted START</color>");
 
             try
             {
@@ -114,12 +114,12 @@ namespace CosmicShore.Gameplay
                     nm.ConnectionApprovalCallback += OnConnectionApprovalCallback;
                     nm.OnClientDisconnectCallback += OnClientDisconnect;
                     nm.OnTransportFailure         += OnTransportFailure;
-                    Debug.Log("<color=#00FFFF>[FLOW-1] [MultiplayerSetup] Wired Netcode callbacks to NetworkManager</color>");
+                    CSDebug.LogVerbose(CSLogChannel.NetworkFlow, "<color=#00FFFF>[FLOW-1] [MultiplayerSetup] Wired Netcode callbacks to NetworkManager</color>");
                 }
 
                 if (nm.IsListening)
                 {
-                    Debug.Log("<color=#00FFFF>[FLOW-1] [MultiplayerSetup] Network already running (IsListening=true), skipping StartHost</color>");
+                    CSDebug.LogVerbose(CSLogChannel.NetworkFlow, "<color=#00FFFF>[FLOW-1] [MultiplayerSetup] Network already running (IsListening=true), skipping StartHost</color>");
                     CSDebug.Log("[MultiplayerSetup] Network already running.");
                     return;
                 }
@@ -146,7 +146,7 @@ namespace CosmicShore.Gameplay
                 // Relay-backed party session (via CreateSessionAsync + WithRelayNetwork).
                 // AuthenticationSceneController.EnsureHostStartedAsync provides a local
                 // host fallback if the Relay allocation times out.
-                Debug.Log("<color=#00FFFF>[FLOW-1] [MultiplayerSetup] Callbacks wired. Waiting for HostConnectionService to start Relay host.</color>");
+                CSDebug.LogVerbose(CSLogChannel.NetworkFlow, "<color=#00FFFF>[FLOW-1] [MultiplayerSetup] Callbacks wired. Waiting for HostConnectionService to start Relay host.</color>");
                 CSDebug.Log("[MultiplayerSetup] Callbacks wired. Waiting for HostConnectionService to start Relay host.");
             }
             finally

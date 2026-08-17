@@ -43,13 +43,14 @@ namespace CosmicShore.Gameplay
 
         [SerializeField, Tooltip("Fallback transition duration, used when no MainMenuCameraController " +
                                  "is assigned (or for initial warm-up). When a controller is wired " +
-                                 "below, its per-mode ActiveTransitionDuration takes precedence.")]
+                                 "below, its per-config ActiveTransitionDuration takes precedence.")]
         float cameraTransitionDuration = 2f;
 
         [SerializeField, Tooltip("Camera controller on the Game GameObject. If assigned, its " +
-                                 "ActiveTransitionDuration (per-mode) is used so CrystalOrbit reads " +
-                                 "~2s while VesselFollow / VesselChaseTight / VesselFixedAim read " +
-                                 "~0.5s. Leave null to always use the fallback duration above.")]
+                                 "ActiveTransitionDuration (from the active MenuCameraConfigSO's " +
+                                 "blendDuration) is used, so distant framings read long (~1.5-2s) " +
+                                 "while close chase framings read short (~0.7s). Leave null to " +
+                                 "always use the fallback duration above.")]
         MainMenuCameraController cameraController;
 
         [SerializeField, Tooltip("Keep player input paused until after the camera blend completes. " +
@@ -75,13 +76,37 @@ namespace CosmicShore.Gameplay
         {
             _cts = new CancellationTokenSource();
             _isTransitioning = false; // Reset in case a previous transition was cancelled mid-flight
+
+            // This handler is the only thing that knows the player has taken the stick in the
+            // menu, and it is the only thing with the live local vessel to attribute that time
+            // to - so it both drives the freestyle clock and banks what the clock measures.
+            FlightClock.OnFreestyleSegmentCompleted -= HandleFreestyleSegmentCompleted;
+            FlightClock.OnFreestyleSegmentCompleted += HandleFreestyleSegmentCompleted;
         }
 
         void OnDisable()
         {
+            // Leaving Menu_Main mid-flight must bank the time, not drop it. Closing the segment
+            // first means the handler below still sees the vessel it was flown in.
+            FlightClock.OnFreestyleExited();
+            FlightClock.OnFreestyleSegmentCompleted -= HandleFreestyleSegmentCompleted;
+
             _cts?.Cancel();
             _cts?.Dispose();
             _cts = null;
+        }
+
+        /// <summary>
+        /// Menu freestyle is real flight time - see Docs/Analytics/DATA_ARCHITECTURE.md §5.
+        /// Attributed to the vessel being flown right now, which is not necessarily the one the
+        /// segment started in: the vessel-changer toy can swap mid-visit, and each swap is
+        /// bracketed by a pause that closes the segment, so each vessel keeps its own share.
+        /// </summary>
+        void HandleFreestyleSegmentCompleted(float seconds)
+        {
+            var vesselType = gameData?.LocalPlayer?.Vessel?.VesselStatus?.VesselType;
+            UGSStatsManager.Instance?.ReportFreestyleFlight(
+                seconds, vesselType?.ToString() ?? string.Empty);
         }
 
         void Start()
@@ -135,7 +160,10 @@ namespace CosmicShore.Gameplay
             // no erratic AI steering, no stray player input - producing the "forward only
             // during transition" feel that keeps the camera blend reading cleanly.
             if (!lockInputDuringEnterTransition)
+            {
                 player.InputController.SetPause(false);
+                FlightClock.OnFreestyleEntered();
+            }
 
             _isInFreestyle = true;
 
@@ -156,8 +184,12 @@ namespace CosmicShore.Gameplay
                               ignoreTimeScale: true, cancellationToken: ct));
 
             // Release control to the player once the camera has settled.
+            // The flight clock starts wherever control does - the blend is not flight time.
             if (lockInputDuringEnterTransition)
+            {
                 player.InputController.SetPause(false);
+                FlightClock.OnFreestyleEntered();
+            }
 
             freestyleEvents.OnGameStateTransitionEnd.Raise();
             _isTransitioning = false;
@@ -172,9 +204,13 @@ namespace CosmicShore.Gameplay
             player.InputController.SetPause(true);
             player.Vessel.ToggleAIPilot(true);
 
+            // Control is gone as of the line above, so the segment closes here - not after the
+            // blend. Banking it now also means the vessel it is attributed to is still current.
+            FlightClock.OnFreestyleExited();
+
             // Raise SOAP event early so the camera blend starts immediately.
-            // Camera controller captures CM PlayerCam position as a static snapshot,
-            // then blends back to orbit - runs in parallel with the UI fade.
+            // The camera controller freezes the CM PlayerCam framing in the vessel's local
+            // frame and eases back to the menu framing - runs in parallel with the UI fade.
             freestyleEvents.OnMenuStateTransitionStart.Raise();
 
             // Run UI fade and camera transition duration in parallel.

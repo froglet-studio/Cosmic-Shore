@@ -40,7 +40,14 @@ namespace CosmicShore.Utility
         private Transform _convergenceTransform;
 
         internal Vector3 TargetPosition { get; private set; }
-        internal float Duration => implosionDuration;
+        internal float Duration => EffectiveDuration;
+
+        // Per-effect duration override (StartGrow's optional parameter — the Sparrow
+        // turret rides the grow as a flight visual, so it must last one bullet
+        // lifetime). 0 = the authored implosionDuration. Cleared on disable so pool
+        // reuse never inherits it.
+        float _durationOverride;
+        float EffectiveDuration => _durationOverride > 0f ? _durationOverride : implosionDuration;
 
         /// <summary>Authored suction length — PrismDebris reads it off the pool prefab
         /// so the batched entity path animates for exactly as long as the pooled one
@@ -180,6 +187,7 @@ namespace CosmicShore.Utility
             // Pool return / scene teardown may bypass CompleteEffect - never carry a target
             // reference (possibly a destroyed transform) across pool reuse.
             _convergenceTransform = null;
+            _durationOverride = 0f;
 
             IsActive = false;
 
@@ -240,9 +248,17 @@ namespace CosmicShore.Utility
             StampClockStrict(direction: 1f, delay: 0f, location: targetPos);
         }
 
-        /// <summary> Start grow (shader: 1 -> 0). </summary>
-        public void StartGrow(Transform ownerTransform)
+        /// <summary>
+        /// Start grow (shader: 1 -> 0) — the reverse suction: faces stream OUT of the
+        /// (moving) owner point into the prism's rest shape.
+        /// </summary>
+        /// <param name="durationOverride">Seconds for the build-up; &lt;= 0 keeps the
+        /// authored implosionDuration. The Sparrow turret passes its bullet lifetime so
+        /// the last face lands exactly as the shot arrives.</param>
+        public void StartGrow(Transform ownerTransform, float durationOverride = 0f)
         {
+            _durationOverride = durationOverride > 0f ? durationOverride : 0f;
+
             if (!prismRenderer || mpb == null)
             {
                 CSDebug.LogError("[PrismImplosion] Missing required components, cannot start grow.");
@@ -265,7 +281,11 @@ namespace CosmicShore.Utility
 
             // Clock-material path — reverse suction (1 → 0) with the grow delay
             // baked into the stamp; same moving-target exception as StartImplosion.
-            StampClockStrict(direction: -1f, delay: growDelay, location: startPosition);
+            // A caller that supplies its own duration wants exact timing (the turret's
+            // flight visual), so the authored pre-delay is dropped with it.
+            StampClockStrict(direction: -1f,
+                delay: _durationOverride > 0f ? 0f : growDelay,
+                location: startPosition);
         }
 
         static readonly int SuctionStartTimeId = Shader.PropertyToID("_SuctionStartTime");
@@ -285,7 +305,7 @@ namespace CosmicShore.Utility
                     PrismClockDiagnostics.WarnUnwiredMaterial(mat, "_SuctionStartTime", this);
 
                 if (PrismRenderService.StampSuctionClock(in RenderHandle,
-                        PrismClock.Now, implosionDuration, direction, delay,
+                        PrismClock.Now, EffectiveDuration, direction, delay,
                         new Unity.Mathematics.float3(location.x, location.y, location.z)))
                 {
                     // Culling envelope: vertices lerp toward _Location, so bounds
@@ -311,7 +331,7 @@ namespace CosmicShore.Utility
 
             var timers = PrismTimerManager.EnsureInstance();
             timers.CancelScheduledActions(this);
-            timers.ScheduleAction(this, delay + implosionDuration, OnEffectComplete);
+            timers.ScheduleAction(this, delay + EffectiveDuration, OnEffectComplete);
         }
 
         /// <summary>
@@ -425,11 +445,11 @@ namespace CosmicShore.Utility
             // an IsActive-only check. Tracking via Time.time (set in OnEnable as a
             // backstop, refreshed in StartImplosion / StartGrow) is the only signal
             // that survives all the state-reset failure modes.
-            if (Time.time - _activatedAtTime <= implosionDuration * WatchdogDurationMultiplier) return;
+            if (Time.time - _activatedAtTime <= EffectiveDuration * WatchdogDurationMultiplier) return;
 
             CSDebug.LogWarning($"[PrismImplosion] Watchdog force-completed '{name}' " +
                                $"at world {transform.position} after {Time.time - _activatedAtTime:F2}s " +
-                               $"(duration={implosionDuration}, IsActive={IsActive}, target={TargetPosition}). " +
+                               $"(duration={EffectiveDuration}, IsActive={IsActive}, target={TargetPosition}). " +
                                "Likely cause: OnReturnToPool subscription was lost or duplicated.");
             OnEffectComplete();
         }

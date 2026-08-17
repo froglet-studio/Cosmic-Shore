@@ -55,3 +55,4 @@ MonoBehaviour:
   UnlockedByDefault: 1
   UnlockCost: 0
   isLocked: 0
+  ownedFromStart: 1

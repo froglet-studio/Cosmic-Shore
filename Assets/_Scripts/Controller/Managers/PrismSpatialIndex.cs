@@ -318,7 +318,7 @@ namespace CosmicShore.Gameplay
 
     /// <summary>
     /// Burst-compiled spatial query for the CONIC explosion: an exact test against
-    /// the rendered cone, sliced into the axial slab this frame newly covers.
+    /// the swept blast, sliced into the axial slab this frame newly covers.
     ///
     /// Why not a sphere. The conic explosion used to derive one ball per frame
     /// riding the cone's leading base plane. That family of balls is *tangent* to
@@ -330,13 +330,23 @@ namespace CosmicShore.Gameplay
     /// super-shielded prism outside the cone abort the blast).
     ///
     /// The slab test has none of that. Slice [SliceMin, SliceMax] is the axial
-    /// interval between the previous frame's cone height and this frame's, so the
-    /// union over the explosion's frames is EXACTLY the swept cone - no gaps at any
-    /// frame rate, no over-reach, and the damage volume is by construction the
-    /// volume the player sees (the cone is self-similar, so TanHalfAngle =
-    /// baseRadius/height is invariant as it grows).
+    /// interval between the previous frame's height and this frame's, so the union
+    /// over the explosion's frames is EXACTLY the swept solid - no gaps at any
+    /// frame rate and no over-reach.
     ///
-    /// Apex is both the cone origin and the blast origin, so the apex-relative
+    /// The cross-section is a CAPSULE (a 2D stadium), not a disc: a circle of the
+    /// CORE radius swept along <see cref="GapeAxis"/>, the axis the emitting vessel's
+    /// jaws open across. Both are self-similar in the axial depth s, so the two
+    /// tangents below are invariant for the whole blast:
+    ///
+    ///     core half-width  = CoreTanHalfAngle * s      (never grows with charge)
+    ///     gape half-length = TanGapePerUnit   * s      (all of what charge buys)
+    ///
+    /// Their sum is the rendered cone's base radius, so the capsule is inscribed in
+    /// the visible cone and touches it exactly along the gape axis. TanGapePerUnit
+    /// == 0 collapses this to the original circular cone test, term for term.
+    ///
+    /// Apex is both the blast origin and the sweep origin, so the apex-relative
     /// vector the containment test already computed doubles as the impact direction.
     /// </summary>
     [BurstCompile]
@@ -344,10 +354,12 @@ namespace CosmicShore.Gameplay
     {
         [ReadOnly] public NativeArray<PrismSpatialData> Prisms;
         [ReadOnly] public float3 Apex;
-        [ReadOnly] public float3 Axis;         // unit vector, cone opening direction
-        [ReadOnly] public float SliceMin;      // axial distance already swept (previous frame's height)
-        [ReadOnly] public float SliceMax;      // this frame's cone height
-        [ReadOnly] public float TanHalfAngle;  // baseRadius / height - invariant as the cone grows
+        [ReadOnly] public float3 Axis;             // unit vector, blast opening direction
+        [ReadOnly] public float3 GapeAxis;         // unit vector perpendicular to Axis - the capsule's long axis
+        [ReadOnly] public float SliceMin;          // axial distance already swept (previous frame's height)
+        [ReadOnly] public float SliceMax;          // this frame's height
+        [ReadOnly] public float CoreTanHalfAngle;  // coreRadius / height - the capsule's RADIUS per unit depth
+        [ReadOnly] public float TanGapePerUnit;    // (baseRadius - coreRadius) / height - its HALF-LENGTH per unit depth
 
         public NativeList<AOEHit>.ParallelWriter Hits;
 
@@ -364,10 +376,17 @@ namespace CosmicShore.Gameplay
             float s = math.dot(rel, Axis);
             if (s < SliceMin || s > SliceMax) return;
 
-            // Radial band: inside the cone's cross-section at that depth.
+            // Capsule band: distance from the cross-section's SEGMENT, not from the
+            // axis. Clamping onto the segment first is what makes the ends round -
+            // the same point-to-segment distance a CapsuleCollider uses, so the Burst
+            // volume and the trigger volume are the same shape by construction.
             float3 radial = rel - Axis * s;
-            float maxRadius = TanHalfAngle * s;
-            if (math.lengthsq(radial) > maxRadius * maxRadius) return;
+            float halfLength = TanGapePerUnit * s;
+            float along = math.dot(radial, GapeAxis);
+            float3 offAxis = radial - GapeAxis * math.clamp(along, -halfLength, halfLength);
+
+            float coreRadius = CoreTanHalfAngle * s;
+            if (math.lengthsq(offAxis) > coreRadius * coreRadius) return;
 
             // Impact direction radiates from the apex - reuse rel, no extra work.
             float3 dir = rel * math.rsqrt(math.max(math.lengthsq(rel), 1e-12f));
@@ -902,6 +921,88 @@ namespace CosmicShore.Gameplay
                 } while (_buckets.TryGetNextValue(out idx, ref it));
             }
             return results.Count;
+        }
+
+        /// <summary>
+        /// The SWEPT counterpart of <see cref="QuerySphere"/>: gathers every LIVE prism whose
+        /// centre lies within <paramref name="radius"/> of the SEGMENT
+        /// <paramref name="a"/>→<paramref name="b"/>, i.e. inside a capsule.
+        ///
+        /// This exists because a fast projectile is a **teleport, not a sweep**:
+        /// <c>Projectile.MoveProjectileAsync</c> advances the transform by
+        /// <c>Velocity·Δt</c> each frame, and PhysX samples that discrete trigger once per
+        /// physics step. A Sparrow round at its base 375 u/s covers 6.25 u per frame behind a
+        /// 1.65-diameter hit sphere, so **~74% of its path is never tested** — and at high
+        /// SPACE (3375 u/s) that becomes ~97%. Prisms in the gaps are silently passed
+        /// through, which reads in play as a gun that cannot clear a small area no matter how
+        /// much you shoot. Querying the segment restores full path coverage without inflating
+        /// the projectile.
+        ///
+        /// Same conventions as <see cref="QuerySphere"/>: results are cleared first, the test
+        /// is against the prism's CENTRE (callers wanting contact against a prism's extent
+        /// must add their own allowance and refine), the snapshot is unordered and entries can
+        /// be destroyed by the caller's own side effects mid-iteration, and it is main-thread
+        /// only with no allocation given a reused list.
+        ///
+        /// A degenerate segment (a == b) reduces to exactly <see cref="QuerySphere"/>.
+        /// </summary>
+        public int QuerySegment(Vector3 a, Vector3 b, float radius, List<Prism> results)
+        {
+            results.Clear();
+            if (!_buckets.IsCreated || _highWaterMark == 0) return 0;
+
+            float3 p0 = a;
+            float3 ab = (float3)b - p0;
+            float abLenSq = math.lengthsq(ab);
+            float radiusSq = radius * radius;
+
+            // The capsule's AABB — thin in the two axes across the flight, so the bucket walk
+            // stays cheap even on a long step.
+            float3 lo = math.min(p0, (float3)b) - radius;
+            float3 hi = math.max(p0, (float3)b) + radius;
+            int3 min = (int3)math.floor(lo / BucketSizeMeters);
+            int3 max = (int3)math.floor(hi / BucketSizeMeters);
+
+            if (BucketWalkCostsMoreThanLinearScan(min, max))
+            {
+                for (int i = 0; i < _highWaterMark; i++)
+                {
+                    var s = _spatial[i];
+                    if ((s.Flags & PrismFlags.JobSkipMask) != PrismFlags.JobPassValue) continue;
+                    if (DistanceToSegmentSq(s.Position, p0, ab, abLenSq) > radiusSq) continue;
+                    var prism = _prisms[i];
+                    if (prism) results.Add(prism);
+                }
+                return results.Count;
+            }
+
+            for (int x = min.x; x <= max.x; x++)
+            for (int y = min.y; y <= max.y; y++)
+            for (int z = min.z; z <= max.z; z++)
+            {
+                if (!_buckets.TryGetFirstValue(new int3(x, y, z), out int idx, out var it))
+                    continue;
+                do
+                {
+                    var s = _spatial[idx];
+                    if ((s.Flags & PrismFlags.JobSkipMask) != PrismFlags.JobPassValue) continue;
+                    if (DistanceToSegmentSq(s.Position, p0, ab, abLenSq) > radiusSq) continue;
+                    var prism = _prisms[idx];
+                    if (prism) results.Add(prism);
+                } while (_buckets.TryGetNextValue(out idx, ref it));
+            }
+            return results.Count;
+        }
+
+        /// <summary>
+        /// Squared distance from <paramref name="p"/> to the segment starting at
+        /// <paramref name="a"/> with direction/length <paramref name="ab"/> — the same
+        /// point-to-segment metric a CapsuleCollider uses, clamped to the endpoints.
+        /// </summary>
+        public static float DistanceToSegmentSq(float3 p, float3 a, float3 ab, float abLenSq)
+        {
+            float t = abLenSq > 1e-8f ? math.saturate(math.dot(p - a, ab) / abLenSq) : 0f;
+            return math.distancesq(p, a + ab * t);
         }
 
         #endregion
@@ -1612,6 +1713,21 @@ namespace CosmicShore.Gameplay
                 RefileCellClassification(index);
         }
 
+        /// <summary>
+        /// Re-files a prism whose OWNERSHIP changed. The one caller today is
+        /// <see cref="HealthPrism.LeaveAsSkeleton"/>: a fauna body prism left behind as a
+        /// dead creature's skeleton stops being body tissue, so it must graduate from
+        /// volume-only mass to full environment mass (targeting grids, per-domain counts,
+        /// prey) - otherwise the food web can neither see nor eat what the creature left.
+        /// Same shape and same tolerance as the super-shield re-file in
+        /// <see cref="UpdateShieldState"/>.
+        /// </summary>
+        public void NotifyOwnershipChanged(int index)
+        {
+            if (index < 0 || index >= _highWaterMark) return;
+            RefileCellClassification(index);
+        }
+
         public void UpdateDomain(int index, int domain)
         {
             if (!_damage.IsCreated) return;
@@ -1900,21 +2016,27 @@ namespace CosmicShore.Gameplay
         /// <summary>
         /// Batch AOE damage for the CONIC explosion. Phase 1 runs
         /// <see cref="AOEConicSweepQueryJob"/> over the axial slab
-        /// [<paramref name="sliceMin"/>, <paramref name="sliceMax"/>] the cone newly
+        /// [<paramref name="sliceMin"/>, <paramref name="sliceMax"/>] the blast newly
         /// covers this frame; phase 2 is the shared resolve pass. The interval is
         /// CLOSED at both ends on purpose - consecutive slabs share an endpoint, so
         /// no prism can fall between them; the alreadyHit claim dedupes the overlap.
         ///
-        /// Unlike the spherical path there is no separate blast origin - the cone's
-        /// apex is the emission point, and the slabs tile the swept cone exactly, so
+        /// The cross-section is a capsule: <paramref name="tanCoreHalfAngle"/> is its
+        /// radius per unit depth and <paramref name="tanGapePerUnit"/> its half-length
+        /// per unit depth along <paramref name="gapeAxis"/> (0 = a plain circular cone).
+        ///
+        /// Unlike the spherical path there is no separate blast origin - the sweep's
+        /// apex is the emission point, and the slabs tile the swept solid exactly, so
         /// coverage is frame-rate independent and never reaches past the visible tip.
         /// </summary>
         public bool ProcessExplosionConeFrame(
             Vector3 apex,
             Vector3 axis,
+            Vector3 gapeAxis,
             float sliceMin,
             float sliceMax,
-            float tanHalfAngle,
+            float tanCoreHalfAngle,
+            float tanGapePerUnit,
             in ExplosionImpulse impulse,
             Domains explosionDomain,
             bool affectSelf,
@@ -1932,7 +2054,7 @@ namespace CosmicShore.Gameplay
             // this explosion's debt and need no query at all to resolve. Fall through
             // to the shared resolve pass with an empty hit list instead of returning.
             bool queryable = _highWaterMark > 0 && _spatial.IsCreated
-                             && sliceMax > 0f && tanHalfAngle > 0f;
+                             && sliceMax > 0f && tanCoreHalfAngle > 0f;
 
             _aoeHits.Clear();
             if (!queryable)
@@ -1945,14 +2067,26 @@ namespace CosmicShore.Gameplay
 
             using (s_burstJobSchedule.Auto())
             {
+                float3 sweepAxis = math.normalizesafe((float3)axis, new float3(0f, 0f, 1f));
+
+                // Re-orthogonalise the gape axis against the sweep axis here rather than
+                // trusting the caller: any on-axis component would tilt the capsule out of
+                // the cross-section plane and the slabs would stop tiling the swept solid.
+                float3 gape = (float3)gapeAxis;
+                gape -= sweepAxis * math.dot(gape, sweepAxis);
+                gape = math.normalizesafe(gape, math.normalizesafe(
+                    math.cross(sweepAxis, new float3(0f, 1f, 0f)), new float3(1f, 0f, 0f)));
+
                 var job = new AOEConicSweepQueryJob
                 {
                     Prisms = _spatial,
                     Apex = (float3)apex,
-                    Axis = math.normalizesafe((float3)axis, new float3(0f, 0f, 1f)),
+                    Axis = sweepAxis,
+                    GapeAxis = gape,
                     SliceMin = math.max(sliceMin, 0f),
                     SliceMax = sliceMax,
-                    TanHalfAngle = tanHalfAngle,
+                    CoreTanHalfAngle = tanCoreHalfAngle,
+                    TanGapePerUnit = math.max(tanGapePerUnit, 0f),
                     Hits = _aoeHits.AsParallelWriter()
                 };
 
@@ -2099,8 +2233,16 @@ namespace CosmicShore.Gameplay
             // stops the explosion expanding past this layer) but cause no
             // damage and no state change. Ways to break super-shields will
             // be added later as targeted opt-in mechanics.
+            //
+            // The blast is not silent, though: the shared gate stamps the
+            // deflection wobble (Prism.AbsorbSuperShieldHit), so the shield
+            // visibly rocks instead of the explosion stopping dead against
+            // nothing. Magnitude is Speed x Inertia — the impact vector's
+            // length, without building the vector or taking its root.
+            // Photons only; every gameplay consequence below is still skipped.
             if ((flags & PrismFlags.IsSuperShielded) != 0)
             {
+                prism.AbsorbSuperShieldHit(impulse.Speed * impulse.Inertia);
                 shouldContinue = false;
                 return false;
             }

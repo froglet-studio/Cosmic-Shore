@@ -13,9 +13,10 @@ MonoBehaviour:
   m_Name: SparrowImpactorDataContainer
   m_EditorClassIdentifier: 
   vesselPrismEffects:
-  - {fileID: 11400000, guid: 0eeacb2160b3fdd4c8ab9e7ec37b0371, type: 2}
+  - {fileID: 11400000, guid: 66cae311ef174118a0fcefec37c858c7, type: 2}
   - {fileID: 11400000, guid: ca2d1be3880b82941a0465a1f7e45280, type: 2}
   - {fileID: 11400000, guid: 4da62d4eefe03594ba35027dd537aff0, type: 2}
+  - {fileID: 11400000, guid: d47be97bcb5f4728b66a427ce0b4179c, type: 2}
   - {fileID: 11400000, guid: 5fc2331a92e0b9a4b92f1d03c99669f5, type: 2}
   - {fileID: 11400000, guid: c7ccaca885824b24b716b12148d77ce1, type: 2}
   vesselCrystalEffects:

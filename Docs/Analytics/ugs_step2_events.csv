@@ -1,0 +1,29 @@
+event_name,event_description,parameters_to_assign
+game_started,A game begins: fires once when the countdown ends and players are given control. Menu freestyle never raises it.,ai_count game_mode intensity invite_triggered is_multiplayer match_id party_id player_count player_count_ai player_count_human player_ids vessel_class
+game_completed,"A game ends. Carries flight time, wall-clock duration and the match grouping keys.",ai_count duration_seconds flight_time_seconds game_mode intensity is_multiplayer match_id party_id player_count player_won timestamp_utc_iso timestamp_utc_ms vessel_class
+session_ended,The app was paused or quit. One per session.,app_state last_ui_action reason
+play_again_pressed,The player pressed Play Again on the end-of-game scoreboard.,
+ui_action,"A tracked UI interaction, such as menu navigation or a button press.",action_label action_type action_value
+ad_impression,An ad finished loading and was shown to the player.,
+game_first_launched,"First ever launch on this device. Fires once, guarded by a device-local flag.",
+menu_ready,The main menu became fully interactive and the player can act.,is_first seconds_since_launch
+freestyle_entered,"The player took manual control of the menu vessel, entering freestyle flight.",is_first seconds_since_launch
+mode_unlocked,A game mode became available to the player through progression.,game_mode
+intensity_unlocked,A new intensity tier became available for a game mode.,game_mode intensity
+setting_changed,The player changed a setting in the options menu.,seconds_since_launch setting value
+crystals_earned,"Crystals were credited to the player, from any source.",amount balance source
+crystals_spent,"Crystals were debited from the player, for any purchase.",amount balance source
+crystal_spend_blocked,A purchase was attempted with an insufficient balance. The economy starvation signal.,amount balance item
+vessel_unlocked,"A vessel was unlocked, whether purchased with crystals or granted.",balance cost vessel
+crystal_balance_snapshot,"The player's crystal balance at session end, for hoarding versus spending analysis.",balance
+friend_request_sent,The player sent a friend request to another player.,target_id
+friend_request_received,The player received a friend request from another player.,from_id
+friend_added,A friendship was established after a request was accepted.,friend_id
+party_invite_sent,The player invited another player to their party.,target_id
+party_invite_received,The player received a party invite.,host_id
+party_joined,The player successfully joined another player's party.,
+minigame_favorited,The player favorited or unfavorited a minigame.,favorited game_mode
+share_triggered,The player used the native share sheet to share something from the game.,game_mode
+quest_completed,The player completed a quest and claimed its reward.,quest shard_value
+repeated_game_fail,The player lost several games in a row. A frustration and churn-risk signal.,fail_count game_mode
+cloud_save_failed,A Cloud Save write exhausted all retries while online. Backend health signal.,key

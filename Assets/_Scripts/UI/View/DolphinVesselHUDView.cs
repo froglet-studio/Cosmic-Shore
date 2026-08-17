@@ -1,5 +1,8 @@
 using System.Collections.Generic;
 using CosmicShore.Data;
+using CosmicShore.Gameplay;
+using CosmicShore.ScriptableObjects;
+using CosmicShore.Utility;
 using DG.Tweening;
 using TMPro;
 using UnityEngine;
@@ -12,7 +15,7 @@ namespace CosmicShore.UI
     /// time (the same order as the element flowers above them), each bound to the element that
     /// upgrades it:
     ///
-    ///   Charge → crystal seeding (crystalIcon + the carry pips)   → "Twin Seed"
+    ///   Charge → crystal seeding (crystalIcon + the yield pips)   → "Twin Seed"
     ///   Mass   → drift trail     (the authored boost ring)         → "Hard Wake"
     ///   Space  → cone blast      (blastIcon)                      → "Clean Blast"
     ///   Time   → skim energy     (the jaw pair)                   → "Live Current"
@@ -38,10 +41,10 @@ namespace CosmicShore.UI
         [Header("Charge — crystal seeding")]
         [Tooltip("The ability icon. If its Image type is Filled it doubles as the recharge wipe.")]
         [SerializeField] private Image crystalIcon;
-        [Tooltip("One pip per SAVED crystal - a crystal carried beyond the first, which the main " +
-                 "icon already stands for. So an un-upgraded Dolphin shows none, and the mini " +
-                 "crystal appearing IS Twin Seed becoming visible. Pips past the carry limit are " +
-                 "hidden outright, so the slot reads capacity as well as stock.")]
+        [Tooltip("One pip per EXTRA crystal in a seeding cycle - a crystal beyond the first, which " +
+                 "the main icon already stands for. So an un-upgraded Dolphin shows none, and the " +
+                 "mini crystal appearing IS Twin Seed becoming visible. Pips past the current yield " +
+                 "are hidden outright, so the slot reads the cycle's whole output.")]
         [SerializeField] private List<Image> crystalPips = new();
         [Tooltip("Pip sprite for a crystal that is LOADED - the omni crystal's active art.")]
         [SerializeField] private Sprite crystalPipFilled;
@@ -81,15 +84,33 @@ namespace CosmicShore.UI
         [SerializeField] private RectTransform jawUpper;
         [Tooltip("Lower jaw half. Rotates the opposite way by the same angle.")]
         [SerializeField] private RectTransform jawLower;
+        [Tooltip("Gape in degrees PER JAW at EMPTY energy. NOT zero: the blast is a short capsule " +
+                 "at rest, so the jaws start slightly open. Keep equal to RiptideAnimation's " +
+                 "MinJawAngle — the controller overwrites this from the hull at Initialize.")]
+        [SerializeField] private float minJawAngle = 4.7636f;
         [Tooltip("Gape in degrees PER JAW at full energy. Keep equal to RiptideAnimation's " +
                  "MaxJawAngle so the cockpit and the hull agree about the width of the next blast.")]
-        [SerializeField] private float maxJawAngle = 21f;
+        [SerializeField] private float maxJawAngle = 23.4287f;
         [Tooltip("Seconds the jaws take to glide to a new gape. Energy steps arrive per skim, so " +
                  "this is what keeps the readout from stuttering.")]
         [SerializeField, Min(0.01f)] private float jawGlideDuration = 0.12f;
         [Tooltip("Scale punch on the jaw pair each time a skim banks energy — the per-skim beat on " +
-                 "top of the gape, which only moves ~1/10th of its range per skim.")]
+                 "top of the gape, which only moves ~1/150th of its range per skim.")]
         [SerializeField, Min(1f)] private float skimPunchScale = 1.3f;
+
+        [Header("Time — the full-energy CTA")]
+        [Tooltip("Colour the jaws rest at. Matches the authored art (white); the CTA lime is " +
+                 "blended over it as the bank approaches full.")]
+        [SerializeField] private Color jawRestColor = Color.white;
+        [Tooltip("Normalized energy at which the jaws BEGIN turning lime; at 1.0 they are solid " +
+                 "lime. Deliberately not a hard switch at full — a bank takes ~150 skims, so a " +
+                 "binary flip would pop on one skim and drop off the instant you ram a prism.")]
+        [SerializeField, Range(0f, 0.99f)] private float jawArmingThreshold = 0.85f;
+        [Tooltip("Shared colour spec. The armed colour is its limeColor — the SAME lime a maxed " +
+                 "element flower shows, so 'this is full' reads identically across the HUD. " +
+                 "Loaded from Resources when left empty; never author a second copy of the colour.")]
+        [SerializeField] private ElementalBarsConfigSO barsConfig;
+        [SerializeField] private string barsConfigResourcePath = "ElementalBarsConfig";
         [Header("Icon juice")]
         [SerializeField] private float iconPunchScale = 1.35f;
         [SerializeField] private float iconPunchDuration = 0.25f;
@@ -103,7 +124,14 @@ namespace CosmicShore.UI
 
         Tween _crystalScaleTween, _crystalColorTween;
         Tween _blastScaleTween, _blastColorTween;
-        Tween _jawUpperTween, _jawLowerTween, _jawPunchTween;
+        Tween _jawUpperTween, _jawLowerTween, _jawPunchTween, _jawColorTween;
+
+        // The jaw halves' own Graphics. The row's Time icon (JawIcon) is a fully transparent
+        // container, so these two ARE the visible Time gauge and the only thing worth tinting.
+        Graphic _jawUpperGraphic, _jawLowerGraphic;
+        Color _jawArmedColor = Color.white;
+        float _jawArm01 = -1f;
+        bool _warnedArmingUnavailable;
 
         float _blastCountTimer;
         int _lastChargesShown = -1;
@@ -130,7 +158,12 @@ namespace CosmicShore.UI
             }
 
             if (jawUpper) _jawRestScale = AbilityIconRestScale(Element.Time);
-            SetJawAngleImmediate(0f);
+            // Empty energy is the MIN gape, not a shut jaw - the blast is a short capsule at rest.
+            SetJawAngleImmediate(minJawAngle);
+
+            ResolveJawGraphics();
+            _jawArm01 = -1f;             // a re-init must repaint, not early-out on a stale value
+            ApplyJawArming(0f, immediate: true);
 
             if (blastCountText) blastCountText.text = string.Empty;
 
@@ -152,7 +185,7 @@ namespace CosmicShore.UI
             {
                 case Element.Charge:
                     _crystalIconRestScale = rest;
-                    _lastChargesShown = -1; // the carry limit just moved - repaint the pip row
+                    _lastChargesShown = -1; // the seed yield just moved - repaint the pip row
                     break;
                 // Mass needs no re-anchor: nothing in this view writes the boost ring's scale, so
                 // the base class's bump is never contested.
@@ -165,58 +198,61 @@ namespace CosmicShore.UI
         }
 
         // ---------------------------------------------------------------
-        // Charge: crystal seeding. charges = crystals in hand, maxCharges =
-        // the carry limit (2 once Charge's level-5 upgrade is active), and
-        // ready01 fills 0 -> 1 as the next slot recharges.
+        // Charge: crystal seeding — a PASSIVE ability. Nothing is ever carried,
+        // so the icon is a pure recharge fill (0 -> 1 as the next seeding arms)
+        // and the pips show the YIELD: how many crystals the next cycle plants.
+        //
+        // seedsPerCycle is 1 normally and 2 once Twin Seed (Charge L5) lands.
         // ---------------------------------------------------------------
-        public void SetCrystalState(int charges, int maxCharges, float ready01)
+        public void SetCrystalSeedState(int seedsPerCycle, float ready01)
         {
             ready01 = Mathf.Clamp01(ready01);
 
+            // The ability plants itself, so "how full is the clock" is the only thing the main
+            // icon can honestly say. It is never pinned to 1 by a held charge any more.
             if (crystalIcon && crystalIcon.type == Image.Type.Filled)
-                crystalIcon.fillAmount = charges > 0 ? 1f : ready01;
+                crystalIcon.fillAmount = ready01;
 
             for (int i = 0; i < crystalPips.Count; i++)
             {
                 var pip = crystalPips[i];
                 if (!pip) continue;
 
-                // A pip stands for a SAVED crystal - one carried beyond the first, which the main
-                // icon already represents. So pip[i] is charge i+2, and an un-upgraded Dolphin
-                // (limit 1) shows no pips at all: the mini crystal IS the Twin Seed upgrade made
+                // A pip stands for an EXTRA crystal in the cycle - one beyond the first, which the
+                // main icon already represents. So pip[i] is seed i+2, and an un-upgraded Dolphin
+                // (yield 1) shows no pips at all: the mini crystal appearing IS Twin Seed becoming
                 // visible, not a second copy of the ability icon.
-                int chargeShown = i + 2;
-                bool withinLimit = chargeShown <= maxCharges;
-                if (pip.gameObject.activeSelf != withinLimit) pip.gameObject.SetActive(withinLimit);
-                if (!withinLimit) continue;
+                int seedShown = i + 2;
+                bool withinYield = seedShown <= seedsPerCycle;
+                if (pip.gameObject.activeSelf != withinYield) pip.gameObject.SetActive(withinYield);
+                if (!withinYield) continue;
 
-                bool loaded = chargeShown <= charges;
-
-                // The omni crystal ships its own loaded/empty art, so swap the sprite when both are
-                // authored and only fall back to tinting a single sprite when they are not.
+                // Every shown pip is part of the coming cycle, so it rides the same recharge fill
+                // as the main icon rather than a per-slot one - there are no per-slot clocks now.
                 if (crystalPipFilled && crystalPipEmpty)
                 {
-                    pip.sprite = loaded ? crystalPipFilled : crystalPipEmpty;
+                    pip.sprite = crystalPipFilled;
                     pip.color = Color.white;
                 }
                 else
                 {
-                    pip.color = loaded ? crystalReadyColor : crystalChargingColor;
+                    pip.color = crystalReadyColor;
                 }
 
-                // The slot currently recharging shows its progress when it can.
-                if (!loaded && chargeShown == charges + 1 && pip.type == Image.Type.Filled)
-                    pip.fillAmount = ready01;
-                else if (pip.type == Image.Type.Filled)
-                    pip.fillAmount = loaded ? 1f : 0f;
+                if (pip.type == Image.Type.Filled) pip.fillAmount = ready01;
             }
 
-            if (_lastChargesShown >= 0 && charges > _lastChargesShown)
-                JuiceCrystalArmed();
-            _lastChargesShown = charges;
+            _lastChargesShown = seedsPerCycle;
         }
 
-        /// <summary>A crystal finished recharging: punch and flash the slot armed.</summary>
+        /// <summary>
+        /// A cycle just fired and crystals were planted out in the cytoplasm. The pilot gave no
+        /// input and may be looking anywhere, so the slot punches to say it happened — this is the
+        /// only notification the passive ability has.
+        /// </summary>
+        public void PulseCrystalSeeded() => JuiceCrystalArmed();
+
+        /// <summary>A seeding fired: punch and flash the slot.</summary>
         void JuiceCrystalArmed()
         {
             if (!crystalIcon) return;
@@ -317,8 +353,78 @@ namespace CosmicShore.UI
         /// arrives in per-skim steps.</summary>
         public void SetEnergyNormalized(float norm01)
         {
-            norm01 = Mathf.Clamp01(norm01);
-            SetJawAngle(maxJawAngle * norm01);
+            // Same exact curve the hull uses (RiptideAnimation.GapeAngleAt): the blast's tip extent
+            // is linear in energy but the ANGLE is its arctangent, so lerping the angles would put
+            // the cockpit and the hull a few degrees apart mid-charge.
+            SetJawAngle(RiptideAnimation.GapeAngleAt(norm01, minJawAngle, maxJawAngle));
+            ApplyJawArming(norm01, immediate: false);
+        }
+
+        /// <summary>
+        /// Caches the jaw halves' Graphics and the armed colour. The lime is read from the shared
+        /// <see cref="ElementalBarsConfigSO"/> rather than authored here, so the "this is maxed"
+        /// green is literally the same value a full element flower shows — never a second copy that
+        /// can drift. Both failure modes degrade to "the jaws never arm", which is invisible, so
+        /// each one says so once and names the fix.
+        /// </summary>
+        void ResolveJawGraphics()
+        {
+            _jawUpperGraphic = jawUpper ? jawUpper.GetComponent<Graphic>() : null;
+            _jawLowerGraphic = jawLower ? jawLower.GetComponent<Graphic>() : null;
+
+            if (!barsConfig) barsConfig = Resources.Load<ElementalBarsConfigSO>(barsConfigResourcePath);
+            _jawArmedColor = barsConfig ? barsConfig.limeColor : jawRestColor;
+
+            if (_warnedArmingUnavailable) return;
+
+            if (!barsConfig)
+            {
+                _warnedArmingUnavailable = true;
+                CSDebug.LogWarning($"[DolphinVesselHUDView] '{name}' found no ElementalBarsConfigSO at " +
+                                   $"Resources/{barsConfigResourcePath}, so the jaw gauge will never turn " +
+                                   "lime at full energy. Assign barsConfig on the HUD prefab, or restore " +
+                                   "the asset - the armed colour is deliberately not authored here.");
+            }
+            else if ((jawUpper || jawLower) && !_jawUpperGraphic && !_jawLowerGraphic)
+            {
+                _warnedArmingUnavailable = true;
+                CSDebug.LogWarning($"[DolphinVesselHUDView] '{name}' has jaw RectTransforms wired but " +
+                                   "neither carries a Graphic, so the full-energy lime cannot be drawn. " +
+                                   "Point jawUpper/jawLower at the Image objects (JawUpper/JawLower).");
+            }
+        }
+
+        /// <summary>
+        /// Blends the jaws from their rest colour to the CTA lime over the last
+        /// (1 - <see cref="jawArmingThreshold"/>) of the bank, so a full meter reads as "fire this"
+        /// at a glance. This is the ONE colour writer on the jaw pair: the row's upgrade tint is off
+        /// on this HUD (every icon is a live gauge) and it targets JawIcon, not these halves — so
+        /// the gauge colour and the upgrade signal can never contest each other.
+        /// </summary>
+        void ApplyJawArming(float norm01, bool immediate)
+        {
+            if (!_jawUpperGraphic && !_jawLowerGraphic) return;
+
+            float span = Mathf.Max(1e-4f, 1f - jawArmingThreshold);
+            float arm = Mathf.Clamp01((Mathf.Clamp01(norm01) - jawArmingThreshold) / span);
+            if (!immediate && Mathf.Approximately(arm, _jawArm01)) return;
+            _jawArm01 = arm;
+
+            var target = Color.Lerp(jawRestColor, _jawArmedColor, arm);
+            _jawColorTween?.Kill();
+
+            if (immediate) { WriteJawColor(target); return; }
+
+            var from = _jawUpperGraphic ? _jawUpperGraphic.color : _jawLowerGraphic.color;
+            _jawColorTween = DOVirtual.Color(from, target, colorTweenDuration, WriteJawColor)
+                .SetEase(Ease.OutQuad)
+                .SetLink(jawUpper ? jawUpper.gameObject : jawLower.gameObject);
+        }
+
+        void WriteJawColor(Color c)
+        {
+            if (_jawUpperGraphic) _jawUpperGraphic.color = c;
+            if (_jawLowerGraphic) _jawLowerGraphic.color = c;
         }
 
         /// <summary>
@@ -400,14 +506,16 @@ namespace CosmicShore.UI
         }
 
         /// <summary>
-        /// Adopts the HULL's authored gape as this icon's maximum, so the cockpit jaws and the
-        /// ship's own jaws open by the same angle — they are showing the same quantity (the
-        /// half-angle of the next blast) and must not drift apart through two authored numbers.
+        /// Adopts the HULL's authored gape RANGE, so the cockpit jaws and the ship's own jaws open
+        /// by the same angle at every charge — they are showing the same quantity (the gape
+        /// half-angle of the next blast) and must not drift apart through separately-authored
+        /// numbers. The minimum is not zero: the blast is a short capsule at rest.
         /// </summary>
-        public void SetMaxJawAngle(float degrees)
+        public void SetJawAngleRange(float minDegrees, float maxDegrees)
         {
-            if (degrees <= 0f) return;
-            maxJawAngle = degrees;
+            if (maxDegrees <= 0f) return;
+            maxJawAngle = maxDegrees;
+            minJawAngle = Mathf.Clamp(minDegrees, 0f, maxDegrees);
         }
 
         // ---------------------------------------------------------------
@@ -453,6 +561,7 @@ namespace CosmicShore.UI
             _jawUpperTween?.Kill();
             _jawLowerTween?.Kill();
             _jawPunchTween?.Kill();
+            _jawColorTween?.Kill();
         }
     }
 }
