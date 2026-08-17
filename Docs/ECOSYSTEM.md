@@ -4871,6 +4871,30 @@ flora. **363 of 404 prefabs still fall through to `[0.5, 10]`.**
 prefabs and are unaffected; changing them all would move geometry across many shipped modes on
 no evidence of a defect. Flagged, deliberately not touched.
 
+**The history, which closes the loop on "six months ago it was great".** `SpaceGyroidBlock
+Variant.prefab` exists and overrides exactly one property: **`maxScale.x = 20`** — authored so a
+20-unit Space needle would survive the clamp. **Nothing references it any more.** The Space flora
+runs on `MassGyroidBlock Variant.prefab`, which carries no such override. So the element rendered
+at its full 20 until a per-element-prefab → config consolidation moved it onto the Mass block, at
+which point the needle silently halved to 10 and stayed there. That regression predates this
+branch entirely, and `AdmitTargetScale` is the general form of what that retired prefab did by
+hand — the per-prefab override is no longer needed by anything.
+
+**A second instance of the same ordering mistake.** `GyroidAssembler.ConvertBlock` assigned
+`prism.TargetScale = scale` and only *then* `prism.MaxScale = Prism.MaxScale` — widening after the
+clamp had already bitten, so a converted prism was pinned at the victim's own ceiling however long
+the lattice's prisms are. Fixed to widen first (and it now uses `AdmitTargetScale`, which also
+lowers `minScale` — the bare `MaxScale` assignment never did, so a thin lattice prism was clamped
+up regardless). Not on the flora growth path (`ConvertBlock` is reached only from
+`FindClosestMate` under `StartBonding`, which `AssembledFlora` never calls), so this was latent
+rather than active — but it is the same bug and would have bitten the first caller that hit it.
+
+**One more thing worth knowing when authoring these configs.** The Blob Space gyroid config has
+`SpreadElements` ON with a 4-asset `ElementPalette`, so the `Variant` that actually reaches the
+plant is the palette SIBLING's — `Assets/_SO_Assets/Lifeforms/Gyroid Flora Space.asset` — not the
+cell config's own `Variant` block. Editing only the cell config would be a silent no-op. Author
+both (the fitters do).
+
 **The general rule.** A silent clamp inside a setter is indistinguishable from a config that
 was never applied — and it defeats every offline measurement, because the measurement models
 the authored number while the engine uses another. When a fitted size does not read on screen,

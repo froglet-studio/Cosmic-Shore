@@ -605,8 +605,15 @@ namespace CosmicShore.Gameplay
             {
                 healthPrism.Reparent(Prism.transform.parent);
             }
-            prism.TargetScale = scale;
+            // Widen BEFORE stating the size, not after: TargetScale's setter clamps per axis
+            // into the VICTIM's own [minScale, maxScale] (default 0.5..10), so assigning first
+            // and raising MaxScale second lets the clamp bite and the widening arrive too late
+            // to undo it - a converted prism would be pinned at 10 however long this lattice's
+            // prisms are. AdmitTargetScale also lowers minScale, which the plain MaxScale
+            // assignment never did, so a thin lattice prism survives too.
             prism.MaxScale = Prism.MaxScale;
+            prism.AdmitTargetScale(scale);
+            prism.TargetScale = scale;
             prism.GrowthVector = Prism.GrowthVector;
             prism.Steal(Prism.PlayerName, Prism.Domain);
             prism.ChangeSize();
