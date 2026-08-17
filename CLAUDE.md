@@ -2442,7 +2442,17 @@ scale bump** with a one-shot unlock punch.
   the executor; the binding sweep is a fallback, not the path.
   The prism highlight is the second citizen of the §4.7 global-uniform shape
   (`Docs/PRISM_ANIMATION.md` §4.7.1) — five globals per frame, zero per-prism CPU, and the
-  previewed volume is built by the same helper the detonation uses so the two cannot drift.
+  previewed volume is built by the same helper the detonation uses so the two cannot drift. **It
+  lights WHOLE prisms, and that is a correctness fix rather than a look preference**: the volume test
+  samples the prism's own ORIGIN (from the object matrix, the idiom `PrismClockAnimation.hlsl`
+  already uses) because `AOEConicSweepQueryJob` tests exactly one point per prism and destroys the
+  whole prism — a per-fragment test paints the geometric intersection, which is a shape the blast
+  does not operate on. It is also cheaper: the branch can no longer diverge across a prism. **A
+  highlight's colour has to stay out of the palette's language** — the cast was a warm amber
+  precisely because no tier owns warm, and moving it to a pale cool blue (2026-08-17, at gain 1.15 →
+  0.70) enters the shielded tier's neighbourhood, so it is held clear by being DESATURATED (S 0.55 vs
+  a tier's 0.9+) and by a gain low enough that the prism's own tier shows through the cast; if a lit
+  shielded prism ever reads as a tier change, lower the gain before touching the hue.
   Detail: `_Scripts/Controller/Vessel/R_VesselActions/DOLPHIN_CRYSTAL_SEEDING.md`.
 
   Manta / Rhino / Serpent are blocked on **design, not wiring**: their

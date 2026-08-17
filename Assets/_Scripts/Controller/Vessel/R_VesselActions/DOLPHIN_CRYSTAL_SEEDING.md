@@ -611,3 +611,58 @@ a lifeform's HEART stays dark while its body lights up, as do seeded crystals an
 Currently cosmetic — a creature's body is the bulk of its silhouette, so creatures do read — but if
 the heart's inconsistency ever matters, the fix is the same splice into the crystal graphs
 (`Tools/Shaders/wire_prism_destruction_sight.py` is the pattern), not a new mechanism.
+
+---
+
+## 12. 2026-08-17, fifth pass — the prism half: dimmer, cooler, and WHOLE prisms
+
+### Whole prisms light up, and that is a correctness fix
+
+The sight's volume test is now evaluated **once per prism**, at the prism's own origin read from the
+object matrix, instead of once per fragment.
+
+This started as a look request and turned out to be the more accurate behaviour.
+`AOEConicSweepQueryJob.Execute` tests `p.Position` — **one point per prism** — and destroys the whole
+prism if that point is inside. The per-fragment test was painting the *geometric intersection* of the
+volume with each prism's surface, so the sight was drawing a shape the blast does not operate on: it
+showed half a prism lit that the blast would remove entirely. Per-prism sampling makes the preview
+select exactly the prisms the damage will, and makes the zone's boundary read as the jagged,
+prism-granular edge the damage boundary actually is.
+
+It is also not more expensive: the object matrix is already resident, so an interpolated `float3`
+read becomes three matrix element reads, and the branch — which previously could diverge across a
+prism near the boundary — is now coherent across the whole prism by construction. The idiom
+(`GetObjectToWorldMatrix()._m03/_m13/_m23`, guarded on `SHADERGRAPH_PREVIEW`) is copied verbatim from
+`PrismClockAnimation.hlsl`, which already uses it in the same two graphs.
+
+`PRISM_SIGHT_WHOLE_PRISM 0` restores per-fragment painting. `PositionWS` stays in the node signature
+as that fallback's sample point and is live on the graph either way — the occlusion corridor node
+next door consumes the same Position node.
+
+**One known imprecision, debris only.** A flying chunk's visual position is integrated in the VERTEX
+stage from its stamped velocity (`PrismFlightClock`), so its object origin is where it *spawned*, not
+where it currently is. A chunk therefore lights according to the prism it came from. Transient,
+already fading, and arguably the more meaningful answer — not worth solving.
+
+### Dimmer and cooler
+
+| | before | after |
+|---|---|---|
+| `PRISM_SIGHT_COLOR` | `(1.00, 0.72, 0.34)` — warm amber, H 32° S 0.66 | `(0.45, 0.70, 1.00)` — pale cool blue, H 209° S 0.55 |
+| `PRISM_SIGHT_GAIN` | 1.15 | 0.70 |
+
+The gain cut is larger than it looks like it needs to be, for two compounding reasons: the old amber
+drove the RED channel to `1.15 × 1.0 = 1.15` at full fill, which clips on essentially any prism and
+is precisely what "washed out" means; and lighting whole prisms lights strictly *more* screen area
+than partial-intersection painting did, so holding the old gain would have washed out harder than
+before. At the new values the peak add is `0.7 × (0.45, 0.70, 1.0) = (0.32, 0.49, 0.70)` — enough to
+read as lit, low enough that the prism's own tier colour still shows through.
+
+**The hue carries a risk the amber did not, and it is worth stating.** Warm was originally chosen
+because no palette tier owns warm, so "lit by the sight" could never be misread as "this mass is
+shielded / danger / another team". Cool is a busier neighbourhood: the shielded tier is frosty and
+Jade's base face is a deep blue. Two things keep it clear — the cast is deliberately **desaturated**
+(S 0.55, where a tier colour at this lightness runs 0.9+), and the lower gain leaves the underlying
+tier visible rather than flooding it. If a lit shielded prism ever starts reading as a tier change,
+**lower the gain before touching the hue** (`Docs/PALETTE.md` — the tier colours are the language;
+do not borrow their space).

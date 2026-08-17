@@ -68,6 +68,11 @@ record: `_Scripts/Controller/Vessel/R_VesselActions/DOLPHIN_CRYSTAL_SEEDING.md` 
   2400 u max reach). The offset moved from view space to CLIP space to do it. Also recorded: the
   sight's range gate was already Space-driven and already covers fauna/flora — no change needed
   there — with crystals the one thing it does not reach (`DOLPHIN_CRYSTAL_SEEDING.md` §11).
+- **Fifth pass — the PRISM half.** The sight now samples its volume **once per prism** (object
+  origin) instead of per fragment, so a prism lights up WHOLE. That matches
+  `AOEConicSweepQueryJob`, which tests one point per prism and destroys the whole prism — the
+  per-fragment version was painting a shape the blast does not operate on. Colour went warm amber
+  → pale cool blue `(0.45, 0.70, 1.0)` and gain 1.15 → 0.70 (`DOLPHIN_CRYSTAL_SEEDING.md` §12).
 
 **Verify in editor**
 
@@ -112,7 +117,19 @@ record: `_Scripts/Controller/Vessel/R_VesselActions/DOLPHIN_CRYSTAL_SEEDING.md` 
     aspect correction) and that it does not jitter or pop at the crossover depth.
 14. **Two rivals of different domains in one cone** must be tellable apart — each halo and hull wears
     its OWN domain colour, never a shared highlight colour.
-15. **The living tally.** Fire a blast that catches a rival and some fauna: the Charge slot shows a
+15. **The prism half.** Hold RT near a wall of prisms: each prism must be lit ALL-OR-NOTHING with a
+    jagged prism-granular boundary, never a smooth cut across a prism's face. This is the item most
+    likely to fail to compile — it reads the object matrix in the FRAGMENT stage, which is supported
+    but is not proven elsewhere in this project (the one precedent, `PrismClockAnimation`'s jiggle, is
+    vertex-stage). A silent failure mode to watch for under DOTS instancing: if the instance ID is not
+    set up in the fragment, EVERY prism would light off one instance's origin — i.e. all or none light
+    together regardless of where the cone points. If that happens, set `PRISM_SIGHT_WHOLE_PRISM 0` to
+    fall back and report it.
+16. **Sight brightness/hue.** Prisms should read as *lit*, not washed to white, with their tier
+    colours still visible through the cast. Check a SHIELDED prism specifically — the frosty tier is
+    the one the new cool hue could be confused with. If it reads as a tier change, lower
+    `PRISM_SIGHT_GAIN` rather than changing the hue.
+17. **The living tally.** Fire a blast that catches a rival and some fauna: the Charge slot shows a
     white pilot count and a blue creature count, both fading after ~2.5 s. Fire one that catches
     neither and confirm both stay blank (no "0"). Then fire two blasts back to back inside the 0.15 s
     cooldown — the fauna count may be shared between them; that is the documented window limitation,
