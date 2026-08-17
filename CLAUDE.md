@@ -196,16 +196,23 @@ outcome is optimization, not life). Use the `/ecology` skill for any change here
 - **Endogenous selection only.** When evolution lands, fitness is **survival itself**
   (starvation/predation/reproduction cost), never a designer-scored fitness function — the line
   between artificial life and a mere optimizer, identical to "don't cheat emergence."
-  **LEVEL is the first place this bites, and it is now EARNED, never rolled.** Every lifeform
-  is born at level 1; a plant earns a level per reproduction EVENT (`Flora.NotifyReproduced`,
+  **LEVEL is the first place this bites, and it is now EARNED, never ROLLED.** Nothing picks a
+  level at random; an ordinary spawn is level 1 (`InitialLevel` stays a deliberate MODE surface —
+  Wildlife Liberation authors its per-cage tiers there, and the Lifeform Matrix bench its band).
+  A plant earns a level per reproduction EVENT (`Flora.NotifyReproduced`,
   wired to both reproduction paths), a creature earns one per `FaunaConfigurationSO.FeedsPerLevel`
   feeds (`Fauna.NotifyFed`, on a counter separate from the reproduction quota — a feed pays into
   both and a birth must not reset progress toward a level; authored at 2× `FeedsPerOffspring`).
   The spawn-time `LifeformLevelSpread` roll is **deleted** — do not reintroduce it: handing a
   lifeform the record of a life it has not lived is the same mistake as a scripted fitness
   function. Acquired growth stays non-heritable (offspring inherit the ELEMENT and start at 1).
-  Two consequences to carry: a flora species with `GrowthPerOffspring = 0` cannot breed and so
-  is a level-1 forest forever (only 29 of 85 flora configs breed today), and a cell whose ladder
+  **A LATTICE species levels but does NOT grow its leaf** (`Flora.PrismSizeFixedByGrowthRule`,
+  true on `AssembledFlora`): gyroid/SchwarzP/wall bond at offsets measured in absolute local
+  units, so a leaf that grows mid-life lays prisms the CI-verified bond table no longer
+  describes — and the plant's earlier prisms are still the old size, so two prism sizes cannot
+  tile one lattice. Three consequences to carry: that one; a flora species with
+  `GrowthPerOffspring = 0` cannot breed and so
+  is a level-1 forest forever (only 29 of 85 flora configs breed today); and a cell whose ladder
   was authored against the old spread's expected volume multiplier now boots that much lighter
   (Rampage: 4.3×, deliberately left as play-tested since Frenzy arriving LATER is the safe
   direction — `Tools/Build/rampage_intensity.py` prints the re-measure note). `Docs/ECOSYSTEM.md §33`.

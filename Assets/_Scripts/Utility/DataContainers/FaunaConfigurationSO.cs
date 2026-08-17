@@ -83,10 +83,14 @@ namespace CosmicShore.Utility
                  "provisioned from ElementalCrystalSet at lineage assignment.")]
         public Element Element = Element.None;
 
-        [Tooltip("Level (1..5) this species HATCHES at. Leave at 1: level is EARNED by feeding " +
-                 "(FeedsPerLevel), not rolled at spawn (Docs/ECOSYSTEM.md §33). The field " +
-                 "survives for the Lifeform Matrix bench, which spawns a chosen level so a " +
-                 "tuner can see the whole band without playing a session out.")]
+        [Tooltip("Level (1..5) this species HATCHES at. Default 1, and level is otherwise " +
+                 "EARNED by feeding (FeedsPerLevel) - it is never ROLLED at spawn " +
+                 "(Docs/ECOSYSTEM.md §33). Authoring it above 1 is a deliberate MODE surface, " +
+                 "not a tuning default: Wildlife Liberation escalates creature size per cage " +
+                 "(middle room 2, core worms 3, core sharks 5) because its rooms have to read " +
+                 "as tiers the moment a hunt starts, which nothing earned can deliver. The " +
+                 "Lifeform Matrix bench also sets it, to show the whole band without playing a " +
+                 "session out. If you are authoring an ordinary biome, leave it at 1.")]
         [Range(1, 5)] public int InitialLevel = 1;
 
         [Tooltip("Uniform body scale multiplier per level above 1 (level 5 = this^4). Body only " +

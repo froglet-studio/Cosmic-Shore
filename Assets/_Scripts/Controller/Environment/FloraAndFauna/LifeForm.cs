@@ -57,9 +57,11 @@ namespace CosmicShore.Gameplay
         public Element Element => crystal ? crystal.crystalProperties.Element : Element.None;
 
         /// <summary>
-        /// Elemental contract: this lifeform's level (1..5). <b>Every lifeform is born at level
-        /// 1</b> — level is EARNED, never rolled at spawn (Docs/ECOSYSTEM.md §33): a plant earns
-        /// a level by reproducing, a creature by feeding a significant amount.
+        /// Elemental contract: this lifeform's level (1..5). <b>Level is EARNED, and never
+        /// ROLLED</b> (Docs/ECOSYSTEM.md §33): a plant earns a level by reproducing, a creature
+        /// by feeding a significant amount, and an ordinary spawn starts at 1. A MODE may still
+        /// author a higher hatch level deliberately (Wildlife Liberation's per-cage tiers) —
+        /// what is gone is the dice.
         /// </summary>
         public int Level { get; protected set; } = 1;
 
@@ -69,9 +71,9 @@ namespace CosmicShore.Gameplay
         /// element); Flora also scales its leaf prisms. Call BEFORE Initialize - it spawns AT
         /// size, nothing pops mid-life.
         ///
-        /// <para>The ordinary spawn path passes level 1; anything above it comes from an
-        /// authoring surface (the Lifeform Matrix bench spawns a chosen level so a tuner can
-        /// see the whole band without playing a session out).</para>
+        /// <para>The ordinary spawn path passes level 1; anything above it is authored
+        /// deliberately — Wildlife Liberation's cage tiers, and the Lifeform Matrix bench,
+        /// which spawns a chosen level so a tuner can see the whole band.</para>
         /// </summary>
         public virtual void ApplyLevel(int level, float bodyScalePerLevel)
         {

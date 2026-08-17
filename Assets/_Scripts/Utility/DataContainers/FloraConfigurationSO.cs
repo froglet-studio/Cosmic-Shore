@@ -89,10 +89,10 @@ namespace CosmicShore.Utility
                  "prefabs. Leave Enabled off to keep the prefab as authored.")]
         public FloraVariantTuning Variant = new();
 
-        [Tooltip("Level (1..5) this flora SEEDS at. Leave at 1: level is EARNED by reproducing " +
-                 "(Docs/ECOSYSTEM.md §33), not rolled at spawn. The field survives for the " +
-                 "Lifeform Matrix bench, which plants a chosen level so a tuner can see the " +
-                 "whole band without playing a session out.\n\n" +
+        [Tooltip("Level (1..5) this flora SEEDS at. Default 1, and level is otherwise EARNED " +
+                 "by reproducing - it is never ROLLED at spawn (Docs/ECOSYSTEM.md §33). " +
+                 "Authoring it above 1 is a deliberate MODE surface; no shipped flora does, and " +
+                 "the Lifeform Matrix bench is its only current caller.\n\n" +
                  "NOTE: a species with GrowthPerOffspring = 0 does not reproduce, so it can " +
                  "never level - it is a level-1 forest forever. Author reproduction if that " +
                  "species is meant to show a size range.")]

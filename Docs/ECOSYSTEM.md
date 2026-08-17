@@ -4385,9 +4385,16 @@ world scale, a 5.7× spread nobody chose**, on a number that is read twice as ga
 
 ### The rule now
 
-- **Every lifeform is born at level 1.** No spawn-level roll exists; `LifeformLevelSpread` is
-  deleted. `InitialLevel` survives on both config SOs at 1, for the Lifeform Matrix bench,
-  which spawns a chosen level so a tuner can see the whole band without playing a session out.
+- **Level is never ROLLED, and an ordinary spawn is level 1.** `LifeformLevelSpread` is
+  deleted; nothing anywhere picks a level at random. `InitialLevel` survives on both config SOs,
+  defaulting to 1 — and it is now a **deliberate mode-authoring surface** rather than a tuning
+  default. Two callers use it above 1, both on purpose:
+  **Wildlife Liberation** escalates creature size per cage (middle room 2, core worms 3, core
+  sharks 5, in 16 configs), because its three rooms have to read as tiers the moment the hunt
+  starts and nothing *earned* can deliver that at t=0; and the **Lifeform Matrix bench**, which
+  spawns a chosen level so a tuner can see the whole band without playing a session out.
+  The distinction that matters is dice vs. intent: a rolled level is a lifeform being handed a
+  life it did not live, while an authored one is a designer stating what the room contains.
 - **A LATTICE species levels but does not grow its leaf.** `Flora.PrismSizeFixedByGrowthRule`
   (false by default, **true** on `AssembledFlora` — gyroid / SchwarzP / wall) suppresses the
   leaf half of the level curve. Those species bond at offsets measured in ABSOLUTE local units
@@ -4530,14 +4537,20 @@ Menu_Main freestyle (Blob cell) is the fastest read:
 1. **Uniform size** — kill a tadpole, a shark and a gyroid flora in one session and compare the
    dropped crystals. They should be indistinguishable in size (3.5 world scale), where the
    tadpole's used to be visibly a fifth of the gyroid's.
-2. **Everything is born small** — watch a fauna wave spawn. No conspicuously large newcomers;
-   every creature hatches at the same size.
+2. **Everything is born small** — watch a fauna wave spawn in an ORDINARY biome (Blob,
+   Rampage, Wildlife Blitz). No conspicuously large newcomers; every creature hatches at the
+   same size. Wildlife Liberation is the deliberate exception: its middle room and core should
+   still spawn visibly bigger creatures (authored `InitialLevel` 2/3/5), and confirming that
+   still reads as three tiers is its own check.
 3. **Feeding grows a creature** — follow one grazer. After `FeedsPerLevel` consumes (32 for the
    Blob forager, 40 for the Blob tadpole) it should visibly bloom a step, heart included, with
    the overshoot flare. Confirm it never pops.
-4. **Breeding grows a plant** — watch a gyroid colony. A plant that completes a birth should
-   step up; the daughter starts at level 1. Over a long session the colony should show a size
-   gradient with the founders largest.
+4. **Breeding grows a plant** — watch a colony. A plant that completes a birth steps up and
+   its HEART grows; the daughter starts at level 1. For a LATTICE species (gyroid, SchwarzP,
+   wall) the leaf prisms must stay exactly the authored size no matter how many times the plant
+   has bred — a colony whose prisms drift apart in size is `PrismSizeFixedByGrowthRule`
+   failing, and the surface will overlap or gap. Non-lattice flora (phyllotactic, branching)
+   SHOULD show a size gradient with the founders largest.
 5. **The reward tracks** — collect a level-1 heart and a levelled one and confirm the element
    flowers move further on the second.
 6. Re-run `FrogletTools ▸ Validation ▸ Validate Lifeform Crystals` (no prefab changed, but the
