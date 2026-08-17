@@ -884,8 +884,9 @@ namespace CosmicShore.Gameplay
                 }
             }
 
-            CSDebug.Log($"[GyroidColony] MATURE {name}: prisms={healthTracker.Count} " +
-                        $"ring={_ringMembers.Count} - frontier now {GyroidColonyFrontier.Count(cell, SourceConfig)} open sites");
+            CSDebug.LogVerbose(CSLogChannel.GyroidColony,
+                $"[GyroidColony] MATURE {name}: prisms={healthTracker.Count} " +
+                $"ring={_ringMembers.Count} - frontier now {GyroidColonyFrontier.Count(cell, SourceConfig)} open sites");
         }
 
         /// <summary>
@@ -946,9 +947,10 @@ namespace CosmicShore.Gameplay
             if (born)
             {
                 GyroidColonyDiagnostics.Births++;
-                CSDebug.Log($"[GyroidColony] BIRTH #{GyroidColonyDiagnostics.Births} donor {name}: " +
-                            $"daughter at {center} seed {seed.BlockType} " +
-                            $"(frontier {GyroidColonyFrontier.Count(cell, SourceConfig)} open)");
+                CSDebug.LogVerbose(CSLogChannel.GyroidColony,
+                    $"[GyroidColony] BIRTH #{GyroidColonyDiagnostics.Births} donor {name}: " +
+                    $"daughter at {center} seed {seed.BlockType} " +
+                    $"(frontier {GyroidColonyFrontier.Count(cell, SourceConfig)} open)");
             }
             else
             {
@@ -1006,6 +1008,9 @@ namespace CosmicShore.Gameplay
             base.OnDestroy();
         }
 
+        /// <summary>Latches the once-per-plant reseed-block warning in ReseedBranches.</summary>
+        bool _warnedReseedMintBlocked;
+
         /// <summary>
         /// Re-sprout growth branches from surviving prisms - each surviving prism still
         /// carries its Assembler, so wrapping it in a Branch puts it back in the grow
@@ -1032,9 +1037,20 @@ namespace CosmicShore.Gameplay
                 if (OctagonMode)
                 {
                     GyroidColonyDiagnostics.ReseedMintsBlocked++;
-                    CSDebug.LogWarning($"[GyroidColony] {name}: ZERO surviving prisms with a live " +
-                                       $"tracker (count={(healthTracker != null ? healthTracker.Count : -1)}) - " +
-                                       $"off-lattice reseed mint BLOCKED");
+                    // ONCE per plant, not once per grow tick. The block above says exactly why:
+                    // a prismless octagon plant cannot die on its own, so it re-enters this
+                    // branch every tick for the rest of the scene - and a WARNING outranks both
+                    // the info tier and the channel gate, so nothing downstream can quiet it.
+                    // The running total stays visible either way via ReseedMintsBlocked, which
+                    // the colony heartbeat reports.
+                    if (!_warnedReseedMintBlocked)
+                    {
+                        _warnedReseedMintBlocked = true;
+                        CSDebug.LogWarning($"[GyroidColony] {name}: ZERO surviving prisms with a live " +
+                                           $"tracker (count={(healthTracker != null ? healthTracker.Count : -1)}) - " +
+                                           $"off-lattice reseed mint BLOCKED (further occurrences on this " +
+                                           $"plant are counted, not logged)");
+                    }
                     return;
                 }
                 CreateNewAssembler();
@@ -1121,7 +1137,7 @@ namespace CosmicShore.Gameplay
 
         public Assembler CreateNewAssembler()
         {
-            CSDebug.Log("New Assembler");
+            CSDebug.LogVerbose(CSLogChannel.GyroidColony, $"[GyroidColony] {name}: new assembler");
             var newSpindle = AddSpindle();
 
             // A SEEDED plant's first prism lands at the exact pose its parent's lattice
