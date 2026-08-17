@@ -23,9 +23,9 @@ namespace CosmicShore.Gameplay
     ///    ROLL across the aggregate surface, marble-madness style
     ///    (<see cref="BlockscapeFollower"/>). Gyroid and Schwarz-P prisms are authored with Z
     ///    ORTHOGONAL to the surface, so the ride follows a smoothed plane over those normals
-    ///    with momentum, the belly eased onto the surface - and running off a sheet's edge
-    ///    WRAPS around the rim onto the other side. The rider must never feel a prism's edges
-    ///    or the gaps between prisms.
+    ///    with momentum - and running off a sheet's edge WRAPS around the rim onto the other
+    ///    side. Attitude is the PILOT'S here too: the surface constrains POSITION, never
+    ///    aim. The rider must never feel a prism's edges or the gaps between prisms.
     ///
     /// Attaching is two flags and no reparenting - <c>VesselAttachPrismEffectSO</c> sets
     /// <see cref="IVesselStatus.IsAttached"/> and <c>.AttachedPrism</c> on contact, this
@@ -91,11 +91,6 @@ namespace CosmicShore.Gameplay
                  "swing through zero, and a friendly->hostile prism transition read as a " +
                  "deceleration instead of a 15x speed snap.")]
         [SerializeField] float trailInertiaRate = 6f;
-
-        [Tooltip("How quickly the hull's belly eases onto the surface normal while rolling a " +
-                 "2D prismscape (1/s, exponential). A minimal-twist correction on top of the " +
-                 "pilot's steering, never a replacement for it.")]
-        [SerializeField] float surfaceAlignRate = 3f;
 
         bool attached = false;
         CameraManager cameraManager;
@@ -192,6 +187,14 @@ namespace CosmicShore.Gameplay
             // never shape evidence. The topology read resolves the layer's declared dimension
             // (Trail.Dimension) or, container-less, a spatial census.
             var dimension = PrismscapeTopology.DimensionOf(prism);
+
+            // 0D is NOT rideable. A lone prism has no extent to travel along, and letting one
+            // be attachable is how a mis-stamped ribbon (a ring whose prisms lost their
+            // container, say) got ridden as a SURFACE - the marble on trail prisms, with its
+            // along-z "normal" and free ribbon-hopping. Refusing here means such a prism reads
+            // as ordinary mass and the vessel simply flies on; a genuine singleton is rare by
+            // construction, since almost all prisms belong to a 1D or 2D lay.
+            if (dimension == PrismscapeDimension.Singleton) return false;
 
             if (dimension == PrismscapeDimension.Trail)
             {
@@ -355,14 +358,14 @@ namespace CosmicShore.Gameplay
                 Yaw();
                 Pitch();
 
-                // Ease the belly onto the ridden surface: the minimal rotation taking the
-                // steered attitude's up onto the smoothed normal, blended in gently ON TOP of
-                // the pilot's steering so it reads as the surface holding the vessel, never as
-                // the stick fighting back.
-                var steeredUp = accumulatedRotation * Vector3.up;
-                var belly = Quaternion.FromToRotation(steeredUp, surfaceFollower.SurfaceNormal);
-                accumulatedRotation = Quaternion.Slerp(
-                    Quaternion.identity, belly, 1f - Mathf.Exp(-surfaceAlignRate * dt)) * accumulatedRotation;
+                // NO belly alignment. Easing the hull's up onto the surface normal was a
+                // per-frame torque the pilot had to hold against - it restricted pitch and
+                // roll to the plane and fought the camera, so you could not look and shoot
+                // where you pleased. The SURFACE CONSTRAINS POSITION, NEVER ATTITUDE - the
+                // same rule the 1D grind arrived at (round 11), for the same reason. Motion
+                // still follows the plane, because the crawl direction is the steered forward
+                // PROJECTED onto it; aim freely and you simply travel by the component that
+                // lies along the surface.
 
                 // SIGNED throttle (pull backs up along the surface), zeroed inside the
                 // deadband. The follower ticks EVERY frame regardless: a marble released

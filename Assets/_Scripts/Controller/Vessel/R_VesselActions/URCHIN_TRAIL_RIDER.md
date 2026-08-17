@@ -292,6 +292,39 @@ nothing upstream changed. Wake prisms' z genuinely points down the trail
 (`blockRotation = transform.rotation` at lay time), so the authored-z invariant the dimension
 ladder rests on holds for every wake ribbon.
 
+## Rings loop, 0D is not rideable, 2D stops fighting your aim (round 15)
+
+Playtest: *"best yet — I could ride both my own and the Squirrel's trail great"*, with three
+follow-ups. All three turned out to be one root cause plus two rules.
+
+**Rings were being ridden as Singletons — and six other lay paths were silently broken too.**
+Round 13's pool-reuse clear in `ResetState` established that trail membership is stamped AFTER
+`Initialize`. Six of the nine lay sites in the project stamped it BEFORE — `BoostRingBuilder`
+(the Squirrel's crystal ring), `SpawnableFlower`, `SpawnableCord`, `SpawnableDartBoard`,
+`SpawnableRaceTrack` and `SpawnableWaypointTrack` — so every prism they laid came out
+container-less, classified by census as a 0D Singleton, and routed to the MARBLE. That is the
+"strange behavior" on a ring, and it was a real regression well beyond the Urchin: the HexRace
+waypoint track and race track lost their `Trail` too, which `Skimmer` and
+`SkimmerAlignPrismEffectSO` both read for trail alignment. All six now call
+`Prism.AssignTrail` after `Initialize`.
+
+**A ring is a LOOP.** `SpawnableRings` and `SpawnableDartBoard` now build `new Trail(isLoop:
+true)`, so the walks wrap by modulo instead of reflecting at a phantom end and a rider circles
+indefinitely in either direction. (Ray-shaped AOEs — `AOERadialBlocks`,
+`AOEDangerHemisphereBlocks` — stay open, correctly: a spoke has two ends.)
+
+**0D is not rideable.** `TryBeginRide` refuses `Singleton` outright, so the vessel flies on and
+the prism reads as ordinary mass. A lone prism has no extent to travel along, and — as the ring
+showed — allowing it is how a mis-stamped ribbon gets ridden as a surface. Genuine singletons
+are rare by construction; almost every prism belongs to a 1D or 2D lay.
+
+**2D no longer fights the pilot's aim.** The belly-onto-normal ease is removed. It was a
+per-frame torque the pilot had to hold against, restricting pitch and roll to the plane and
+fighting the camera — you could not look and shoot where you pleased. **The surface constrains
+POSITION, never attitude**, exactly the rule the 1D grind arrived at in round 11 and for the
+same reason. Motion still follows the plane, because the crawl direction is the steered forward
+PROJECTED onto it: aim freely and you travel by the component that lies along the surface.
+
 ## The wake outlives its vessel (round 14): the REAL Squirrel-trail bug all along
 
 Round 13's stamp made the Urchin's own trail ride well — and the Squirrel trail was STILL
@@ -737,7 +770,6 @@ restore the previous pilot's colliders onto the new one at an arbitrary moment.
 | `throttleRestPosition` | `GunVesselTransformer` (C# default **0.5**) | The XDiff value that reads as neutral — XDiff RESTS AT 0.5 (`GamepadInputStrategy`). Push above to keep riding the latched direction, pull below to back up. |
 | `railSettleRate` | `GunVesselTransformer` (C# default **4**) | 1/s decay of the offset the hull had at contact. The ride sits ON the trail; this only stops attaching from snapping it there. |
 | `facingFlipThreshold` | `GunVesselTransformer` (C# default **0.35**) | TRUE hysteresis: the forward/reverse mapping flips only when the aim crosses past broadside the OTHER way by this much. Widen if a bend still flaps direction. |
-| `surfaceAlignRate` | `GunVesselTransformer` (C# default **3**) | 1/s exponential ease of the hull's belly onto the surface normal while rolling — on top of the pilot's steering, never instead of it. |
 | `hoverHeight` | `BlockscapeFollower` (C# default **2**) | World-unit hover above the ground prism's mid-plane, along the smoothed normal. |
 | `normalTrackingRate` | `BlockscapeFollower` (C# default **5**) | 1/s ease of the ridden plane toward the target normal. **This IS the surface feel**: low = long arcs that round off the facets, high = tight tracking. |
 | `hoverTrackingRate` | `BlockscapeFollower` (C# default **5**) | 1/s ease of hover error. Soft so prism-to-prism height steps read as swell, not bumps. |

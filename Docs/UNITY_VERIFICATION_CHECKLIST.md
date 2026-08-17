@@ -399,6 +399,32 @@ ride.
   forward/reverse mapping flips only when the aim crosses well past broadside the OTHER way,
   so a bend sweeping the axis under a steady nose holds direction instead of flapping.
 
+**ROUND 15 (2026-08-17) — rings loop; 0D unattachable; 2D stops fighting aim.** Playtest: "best
+yet — I could ride both my own and the Squirrel's trail great", with three follow-ups.
+
+- **Six lay paths were stamping trail membership BEFORE `Initialize`**, which round 13's
+  pool-reuse clear wipes — so their prisms came out container-less, censused as 0D Singletons,
+  and routed to the MARBLE. That is the ring's "strange behavior", and it was a **regression
+  beyond the Urchin**: `SpawnableWaypointTrack` and `SpawnableRaceTrack` (HexRace) lost their
+  `Trail` too, which `Skimmer` and `SkimmerAlignPrismEffectSO` read for trail alignment. All
+  six — `BoostRingBuilder`, `SpawnableFlower`, `SpawnableCord`, `SpawnableDartBoard`,
+  `SpawnableRaceTrack`, `SpawnableWaypointTrack` — now call `AssignTrail` after `Initialize`.
+  **Regression-check the HexRace track and any skimmer trail-alignment.**
+- **Rings are LOOPS**: `SpawnableRings` + `SpawnableDartBoard` build `new Trail(isLoop: true)`,
+  so walks wrap by modulo and a rider circles indefinitely either way. Ray-shaped AOEs stay
+  open (a spoke has two ends).
+- **0D is not rideable**: `TryBeginRide` refuses Singleton; the vessel flies on.
+- **2D no longer fights aim**: the belly-onto-normal ease is REMOVED (with `surfaceAlignRate`).
+  The surface constrains POSITION, never attitude — the round-11 rule, now applied to both
+  dimensions. Motion still follows the plane (crawl direction is the steered forward projected
+  onto it).
+
+Round-15 verify: Squirrel-hit-crystal ring → the Urchin rides it as a LOOP, forward and
+backward, round and round, never rolling onto it as a surface. Fly at an isolated prism → no
+attach. Ride a gyroid → pitch/roll/aim are completely free, camera never fights, and you can
+shoot where you please while rolling. HexRace: skimmer trail alignment on the waypoint track
+still works.
+
 Round-14 verify: fly the Squirrel STRAIGHT to the vessel changer, swap to Urchin, attach to
 the Squirrel trail — it now rides as a TRAIL (clean 1D slide down the spine, no marble
 flailing, no ribbon-hopping, no shielding both trails). Ride the Urchin's own trail around a
