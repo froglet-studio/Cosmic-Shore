@@ -2090,7 +2090,7 @@ Per-vessel HUD controllers (`IVesselHUDController` implementors):
 | Rhino | `RhinoHUDController` | `RhinoHUDView` |
 | Serpent | `SerpentHUDController` | `SerpentHUDView` |
 | Sparrow | `SparrowHUDController` | `SparrowHUDView` |
-| Dolphin | — | `DolphinHUDView` |
+| Dolphin | `DolphinVesselHUDController` | `DolphinVesselHUDView` |
 | Squirrel | — | `SquirrelHUDView` |
 
 HUD prefab variants at `_Prefabs/UI Elements/VesselHUD/` (e.g., `MantaHUDVariant.prefab`, `DolphinHUDVariant.prefab`).
@@ -2370,13 +2370,111 @@ scale bump** with a one-shot unlock punch.
   The Dolphin deliberately runs with **both** `tintIconOnUpgrade` and `showUpgradeBadge` off —
   all four of its icons are live gauges, so the persistent scale bump is its only upgrade
   signal, which is why nothing in `DolphinVesselHUDView` writes an icon transform per event.
-  Its Time slot **does** tint — the jaw pair blends to `ElementalBarsConfigSO.limeColor` over
+  Its Space slot **does** tint — the jaw pair blends to `ElementalBarsConfigSO.limeColor` over
   the top 15% of banked skim energy — but that is a GAUGE colour carrying gauge meaning, and it
-  lands on the jaw halves, not on the row's (fully transparent) Time icon, so it never collides
+  lands on the jaw halves, not on the row's (fully transparent) Space icon, so it never collides
   with the upgrade path. Reading it as an upgrade tint is the mistake to avoid.
   Mechanics: `_Scripts/Controller/Vessel/R_VesselActions/DOLPHIN_ENERGY_ECONOMY.md`.
-  **Since 2026-08-14 its Charge ability is PASSIVE and its Space ability owns the right
-  trigger** — crystal seeding runs on a cooldown loop that plants team crystals in the cell's
+  **Since 2026-08-17 the whole map is cut around ONE weapon**, because the Dolphin has
+  essentially one offensive act — bank energy by skimming, fly into a crystal, release a cone —
+  and each element now owns one ORTHOGONAL DIMENSION of it, so the four-icon row reads left to
+  right as the whole weapon: **energy → gape · Charge → thickness · Space → reach · Mass → when
+  the next crystal arrives · Time → the boost that gets you there**. Charge owns the **Echo
+  Sight** (RT) *and* the blast's capsule DIAMETER (`0.75x` the authored core at rest rising to
+  `1.5x` at level 10) — the profile you are widening is the profile the sight draws — and since
+  `halfLength + radius` is always `maxScale / 2`, Charge does not enlarge the blast, it
+  REDISTRIBUTES its extent, trading a long thin fan for a short fat capsule. That pair is the
+  fleet's first use of **`ElementalScaling.MultiplierFromRest`**, the opt-in un-anchored twin of
+  `Multiplier`: the default anchors at exactly 1 at the resting level so an element can only ADD
+  to a vessel's baseline, and handing an element a parameter's whole RANGE means the authored
+  value becomes what a MID-level vessel gets — a real, deliberate baseline change, not a bug.
+  Charge 5 ("Pilot Echo") extends the sight from mass to PILOTS, and **a highlight competes with
+  everything else the same trigger lights up** — the first version only raised `_ColorMultiplier`
+  and was invisible in Rampage, because the sight lights all ~9,800 cactus prisms at once so
+  brightness was the one channel already saturated, and a hull tint says nothing at all about a
+  pilot standing BEHIND mass. It now marks a vessel two ways, each covering a case the other
+  cannot: the hull is driven to its own **saturated domain colour** (`_Color1`/`_Color2` as well as
+  `_ColorMultiplier`, lerped from each material's own authored values, so it is a shift and a Ruby
+  pilot can never read as Jade — HUE is what separates a ship from lit mass), and an additive
+  **halo** (`EchoSightHalo.shader` — a soft disc with a hard RING at the hull's silhouette) drawn
+  `ZTest Always` so it reads through prisms and in empty space. Three render states there are
+  load-bearing: `ZTest Always` (the only way "behind mass" can read), `Blend One One` (can only ADD
+  light, so it never darkens what it marks and never needs a sort order), `ZWrite Off` (can never
+  occlude the world). It is hand-written ShaderLab because Shader Graph cannot express "ignore the
+  depth buffer" on a URP Unlit target; it billboards in the VERTEX shader from the object origin so
+  the halo costs no per-frame CPU transform write and one shared unit quad serves every size (the
+  radius is a shader property, never a transform scale); and it is sized by
+  `PrismOcclusionCorridor.MeasureCircumscribedRadius`, the corridor's own hull measurement, so a new
+  vessel of any size is correct with nothing authored. **A locator must not obey perspective** — a
+  world-sized disc vanishes exactly when it is most needed, so the radius is
+  `max(what it subtends at this depth, a screen-space FLOOR)`: hull-sized and silhouette-tracing up
+  close, constant angular size past the crossover (measured 59 px at 1080p out to the 2400u max
+  reach, vs ~20 px before). That is why the offset is applied in CLIP space and pre-multiplied by
+  `w` — surviving the perspective divide is what turns a world size into a screen size — and why
+  the x offset carries the inverse aspect. The cost is that the ring stops tracing the silhouette at
+  range and becomes a reticle, which is the correct trade: the trace separates a ship from mass it is
+  tangled in (a close-range problem) while at range the job is only "there is a pilot over there".
+  **The sight's RANGE gate needs nothing added** — `BlastVolume.Height` is already the Space-scaled
+  cone reach and both consumers reject past it, and fauna/flora are already covered because a
+  creature's body prisms are `HealthPrism : Prism` and draw with the two graphs the sight is spliced
+  into; crystals are the one thing it does not reach (`DOLPHIN_CRYSTAL_SEEDING.md` §11). **Per-vessel CPU is correct there and would
+  be a violation on prisms** — the prism half of the same sight is a global uniform only because
+  there are tens of thousands of them; a dozen vessels already individually simulated, lit only
+  while a trigger is held, is the ordinary tool. Both halves share ONE predicate
+  (`BlastVolume.Contains`, the CPU transcription of `AOEConicSweepQueryJob`), so a highlighted
+  vessel and the prisms around it light up together.
+  **Mass took crystal seeding** off Charge (recharge multiplier renamed
+  `cooldownMultiplierAtFullMass`), **Twin Seed is retired** — one crystal per cycle at every
+  level — and Mass 5 ("Claimed Seed") changes the seed's TIER instead of its count: below it the
+  seed is a free-for-all OMNI crystal wearing the lime CTA, so your own ammunition stands in open
+  space for whoever reaches it first; at Mass 5 it lands TEAM-locked. Both halves of that gate
+  move together — the prefab swap (`OmniCrystalImpactor` → `TeamCrystalImpactor`) AND the
+  `ownDomain` stamp, which is simultaneously `Crystal.CanBeCollected`'s gate and what
+  `ResolveActivationMaterial` paints from, so a crystal always LOOKS exactly as collectable as it
+  is (`Docs/PALETTE.md` §2.2). **Mass gave up the trail entirely** (`trailVolume` disabled,
+  `massUpgradeShieldsTrail` off — the machinery stays, it is the Squirrel's Heavy Trail, it is
+  just no longer wired here). Its HUD row was re-cut to match: Charge draws a **procedural**
+  blast-profile capsule (`BlastProfileGraphic` — a sprite ladder would quantize a continuous
+  function of two live meters and silently stop matching the blast on the first retune), Mass the
+  seeding recharge, Space the jaws plus a widened prism tally, Time the boost ring. **Space reports
+  what a blast did to MASS and Charge what it did to the LIVING** — pilots debuffed and creatures
+  killed, two stacked bare numbers in the prism tally's own grammar, told apart by palette colour
+  (pilots in `whiteColor`, the colour the engaged sight wears; creatures in `blueColor`, the
+  neutral-lifeform range a living heart already wears). The two counts arrive differently and the
+  asymmetry is the lesson: the blast can report PILOTS itself (`ExplosionImpactor` keeps a per-blast
+  vessel ledger, so a target loitering in a growing cone counts once, and `OnBlastResolved` now
+  carries a `BlastTally` struct so the next quantity is an added field rather than two silently
+  reordered ints), but it cannot report CREATURES — a creature dies when its last body prism is
+  destroyed and the ECOLOGY announces that several steps downstream
+  (`CellRuntimeDataSO.OnFaunaKilled`, carrying the killer's NAME), so fauna are counted over the
+  blast's own lifetime between the new `OnBlastBegan` and `OnBlastResolved`. That window is exact
+  only because the blast is the Dolphin's ONLY prism-destroying force, and two blasts overlapping
+  inside the 0.15 s cooldown would share a count — fine for a tally, **never** for scoring, which is
+  `StatsManager`'s job off the same channel. **Colour is a
+  LANGUAGE across that row, not per-icon decoration** (second pass, same day): the Charge profile
+  crosses the shared `ElementalBarsConfigSO` ladder's **grey → white** — already the HUD's words for
+  "not in use" / "in use", since a petal steps through exactly those two between levels 0 and 1 — and
+  the Mass slot crosses **lime → the pilot's own DOMAIN colour**, because the upgrade's whole point
+  is that the seed becomes a TEAM crystal, so the slot says which team. It uses **`SO_ColorSet.GetDomainSignalColor`** — the domain UI colour with its
+  brightest channel driven to 1 — resolved LIVE off `GameDataSO.ThemeManagerData.ColorSet`, the path
+  every other domain-tinted UI reads, so the domain-changer toy re-colours it and nothing is
+  snapshotted at component-creation time. **A crystal colour is NOT a domain's UI colour**: the slot
+  first sampled `DullCrystalColor` on the sound reasoning that the icon should wear what the crystal
+  wears, and rendered BLACK — that field is authored `(0,0,0)` on Jade, Ruby AND Gold, which is right
+  on a faceted crystal (a near-black body with a bright fresnel rim) and unusable in UI, while
+  `BrightCrystalColor` tops out at value 0.75. The new accessor returns white for an unauthored
+  domain, because a colour accessor that can return black can make a UI element vanish, and a
+  vanished element reads as "not implemented" rather than as "mis-tinted" (`Docs/PALETTE.md` §2.4). A **Space reach bar was tried and dropped**: reach only moves when the
+  element moves, so a near-static line competed with two live gauges, and the slot says more by
+  saying only ANGLE and AMOUNT. One general lesson from the same pass: **a centre-fan triangulation
+  of a generated `MaskableGraphic` is only as good as its outline ORDERING** — the profile's caps
+  were swept from the wrong basis vector, so the outline jumped across the shape and the fan drew a
+  bowtie with hollow wedges; a mis-ordered outline does not fail, it renders a plausible wrong shape,
+  so check for a simple convex loop (area, and that no step between consecutive vertices crosses the
+  interior) rather than for "vertices roughly in the right places". Record:
+  `_Scripts/Controller/Vessel/R_VesselActions/DOLPHIN_CRYSTAL_SEEDING.md` §8.
+  Before that, **from 2026-08-14 its Charge ability was PASSIVE and its Space ability owned the
+  right trigger** — crystal seeding runs on a cooldown loop that plants crystals in the cell's
   CYTOPLASM (volume-uniform across the band, never inside the nucleus, and at the live cap the
   clock PAUSES rather than culling — not creating mass is allowed, aging it out is not), which
   freed RT for the **Echo Sight**: hold it and every prism inside the crystal blast's live
@@ -2391,14 +2489,31 @@ scale bump** with a one-shot unlock punch.
   the executor; the binding sweep is a fallback, not the path.
   The prism highlight is the second citizen of the §4.7 global-uniform shape
   (`Docs/PRISM_ANIMATION.md` §4.7.1) — five globals per frame, zero per-prism CPU, and the
-  previewed volume is built by the same helper the detonation uses so the two cannot drift.
+  previewed volume is built by the same helper the detonation uses so the two cannot drift. **It
+  lights WHOLE prisms, and that is a correctness fix rather than a look preference**: the volume test
+  samples the prism's own ORIGIN (from the object matrix, the idiom `PrismClockAnimation.hlsl`
+  already uses) because `AOEConicSweepQueryJob` tests exactly one point per prism and destroys the
+  whole prism — a per-fragment test paints the geometric intersection, which is a shape the blast
+  does not operate on. It is also cheaper: the branch can no longer diverge across a prism. **A
+  highlight's colour has to stay out of the palette's language** — the cast was a warm amber
+  precisely because no tier owns warm, and moving it to a pale cool blue (2026-08-17, at gain 1.15 →
+  0.70) enters the shielded tier's neighbourhood, so it is held clear by being DESATURATED (S 0.55 vs
+  a tier's 0.9+) and by a gain low enough that the prism's own tier shows through the cast; if a lit
+  shielded prism ever reads as a tier change, lower the gain before touching the hue.
   Detail: `_Scripts/Controller/Vessel/R_VesselActions/DOLPHIN_CRYSTAL_SEEDING.md`.
 
   Manta / Rhino / Serpent are blocked on **design, not wiring**: their
   `ElementalAbilityMapSO` entries are still `(open design slot)` with `Input = 0` and no
   `UpgradeLabel`, and their HUDs have 0–2 lower-right icons rather than four. Author the map
   (`Docs/ElementalAbilitySystem/FLEET_MAPS.md` §2 holds the un-approved proposals) and the icons
-  before wiring — do not invent an element→ability mapping to satisfy the audit.
+  before wiring — do not invent an element→ability mapping to satisfy the audit. Once the map
+  exists, the mechanical half is one click: **FrogletTools > Vessels > Wire Vessel Ability Row**
+  (`VesselAbilityRowWirer`) places the four buttons at the fleet-standard bands, creates a
+  `{Element}Icon` in each, and binds `abilityIcons` in `AbilityDisplayOrder` — on ANY vessel, from
+  nothing. It is idempotent (find-by-name, re-bind only) and never touches sprites, so it is a
+  repair path as well as a bring-up path. A slot whose gauge is authored art is ADOPTED by name
+  rather than re-created, and a vessel with its own live gauges adds a per-vessel step there (the
+  Dolphin's is the only one today).
 - Full reference: `Docs/ElementalAbilitySystem/ARCHITECTURE.md` §7.1. The `/vessel` skill
   encodes this contract (plus the rest of the per-vessel checklist) — use it for any vessel work.
 

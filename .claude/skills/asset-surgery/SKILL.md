@@ -680,6 +680,34 @@ the cell size, the jitter, or add animation, and the constants must be re-fitted
 the error silently returns. Verify the fit across the whole range you intend to use
 (here: rate 0 through t=400s).
 
+## 4.5b-geo Technique: prove GENERATED GEOMETRY against a closed form
+
+Origin: the Dolphin's `BlastProfileGraphic` and `EchoSightHalo` (2026-08-17). §4.5b samples a
+fragment function to judge a LOOK. This is its vertex-side sibling: when you generate a mesh, a
+UI outline, or a screen-space size in code you cannot run, transcribe the *same arithmetic* into
+Python and assert the properties the shape must have. It catches a class §4.5b cannot, because a
+wrong outline does not look noisy — **it renders a plausible WRONG SHAPE**, and reviewing the code
+that produced it tends to re-confirm the author's own mental model.
+
+The assertions that actually earn their keep, in the order they catch things:
+
+| Property | How to assert it | What it catches |
+|---|---|---|
+| **Simple, non-self-intersecting loop** | sign of `cross(p[i], p[i+1], p[i+2])` constant around the ring | an outline walked in the wrong ORDER — the killer, because a centre-fan over a mis-ordered loop draws a bowtie with hollow wedges and no error |
+| **Area vs the exact formula** | shoelace vs the closed form (a stadium is `πR² + 4LR`) | a whole dimension dropped or doubled; polygonal under-approximation shows as a clean few-% deficit that shrinks with segment count |
+| **Max step between consecutive vertices** | should equal a KNOWN edge of the shape | a jump across the interior — the direct signature of the ordering bug above |
+| **Aspect / units** | for screen-space math, assert x and y offsets subtend EQUAL PIXELS | an ellipse where a circle was intended (NDC x and y both span −1..1 over unequal pixel counts) |
+| **The regime table** | tabulate the output across the input range | a `max()`/`min()` crossover in the wrong place, or a floor that never engages |
+
+A worked instance: the stadium outline swept both end caps from the ACROSS basis vector instead
+of ALONG, which left cap one ending at the far tip and cap two starting near the middle. Convexity
+and max-step both failed instantly; area was 2% under the closed form at 10 segments per cap after
+the fix, which is exactly the expected polygonal deficit. The same script then tabulated the halo's
+angular size against depth and confirmed the constant-size floor engaged where intended.
+
+Cheap to write (~30 lines), and the table it prints is evidence you can paste straight into the
+doc and the PR.
+
 ## 4.5c Technique: COMPILE the shipped HLSL with clang (stronger than porting it)
 
 Origin: the occlusion corridor's triangle/shatter kernels (2026-08-06). §4.5b ports a
@@ -926,6 +954,25 @@ never prunes an unresolvable modification, so the inspector keeps showing a valu
   whitespace-only byte change on 15 prefabs is indistinguishable from a real edit in review.
 
 ## 5. Traps learned the hard way (check these BEFORE debugging for an hour)
+
+- **`HideFlags.HideAndDontSave` includes `DontUnloadUnusedAsset`, so a runtime-created Mesh or
+  Material with it LEAKS.** It is the reflexive flag for a procedurally-built helper object, and
+  on a GameObject it is fine (a child dies with its parent regardless). On an *asset-like* object —
+  `new Mesh`, `new Material` — it means the thing is never garbage collected AND never swept by
+  `Resources.UnloadUnusedAssets`, so one accumulates per owner instance, forever, across vessel
+  swaps and scene loads. The Echo Sight halo minted one quad Mesh per executor this way. Fix by
+  making it a **static shared** instance (correct anyway when the geometry is identical for every
+  user — size belongs in a shader property, not a transform scale), or by destroying it explicitly
+  in the owner's teardown. The flag is right for the shared one and wrong for the per-instance one.
+- **Anything that RESOLVES A CELL during the spawn chain must retry, not bind once.** CLAUDE.md
+  documents this for the nucleus radius; the same 800 ms window bites anything else that looks a
+  cell up at init. `Cell.Initialize` runs on `OnInitializeGame` behind `InitDelayMs` (1000 ms) while
+  vessels spawn at `preSpawnDelayMs` (200 ms), so `Cell.FindCellContaining` /
+  `FindNearestActiveCell` return **null** in a vessel component's `Initialize`. Binding a SOAP
+  channel there fails silently and stays failed for the whole match — a HUD tally reading zero
+  forever with nothing in the log. Resolve at USE time (the crystal seeding executor resolves per
+  seeding) or late-bind on the first event that needs it, and keep the unsubscribe pointed at the
+  channel you actually attached to so a mid-flight cell swap cannot strand it.
 
 - **A ratio between two authored numbers is not a measurement until you have controlled for
   what else differs between them.** Chasing "why does this element render smaller?", the
