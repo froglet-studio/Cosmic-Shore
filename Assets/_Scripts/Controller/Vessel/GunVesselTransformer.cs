@@ -86,6 +86,12 @@ namespace CosmicShore.Gameplay
                  "hull had at the moment of contact, so attaching never pops it sideways.")]
         [SerializeField] float railSettleRate = 4f;
 
+        [Tooltip("Extra clearance beyond the prism's surface while grinding, world units. The " +
+                 "ride solves the exact distance from the trail axis to the prism's FACE, so " +
+                 "this is only the hull's own half-thickness - raise it until the ship reads " +
+                 "as sitting ON the trail rather than sunk into it.")]
+        [SerializeField] float rideSurfaceClearance = 1.5f;
+
         [Tooltip("How quickly the grind speed chases the throttle (1/s, exponential) - the " +
                  "rail's WEIGHT. This is what makes letting go coast to a stop, a reversal " +
                  "swing through zero, and a friendly->hostile prism transition read as a " +
@@ -234,9 +240,59 @@ namespace CosmicShore.Gameplay
         /// </summary>
         void SeedTrailRide()
         {
-            _railOffset = transform.position - trailFollower.CenterlinePoint;
             _facingSign = (int)trailFollower.Direction;
             _grindThrottle = ReadThrottle();
+            _railOffset = transform.position - (trailFollower.CenterlinePoint + RideSurfaceOffset());
+        }
+
+        /// <summary>
+        /// The offset from the ride line out to the ridden prism's SURFACE - what keeps the
+        /// hull ON the trail instead of inside it. A single-ribbon wake (the Sparrow's, laid
+        /// with no gap to signal a one-thumb vessel) puts its block centres exactly on the ride
+        /// line, so riding the line bare buries the ship in every prism it passes through.
+        ///
+        /// WHICH WAY round the prism is the pilot's ROLL, and it costs no new state: the
+        /// direction is the hull's own UP, flattened across the trail. Roll the ship and its up
+        /// sweeps around its forward - which while riding IS the trail axis - so the ship walks
+        /// around the prism's z axis, belly always toward the rail. Attitude stays entirely the
+        /// pilot's (round 11) and POSITION follows from it, so nothing can fight the stick.
+        ///
+        /// HOW FAR is the exact box cross-section, not a constant: a prism is a scaled cube, so
+        /// the distance from its z axis to its face along a direction with axis-components
+        /// (u, v) is min(halfX/u, halfY/v). Riding a wide flat trail therefore sits close on
+        /// its broad faces and far out at its edges, exactly as a surface should.
+        ///
+        /// Reads TargetScale (authored), never the live scale, so a block still blooming in -
+        /// or one the payoff is GROWING under the rider - cannot drag the ship around.
+        /// </summary>
+        Vector3 RideSurfaceOffset()
+        {
+            var prism = trailFollower.AttachedPrism;
+            if (!prism) return Vector3.zero;
+
+            var t = prism.transform;
+            Vector3 axis = t.forward;                       // trail prisms: z runs down the trail
+
+            // The hull's own up, flattened across the trail. Degenerate only when the pilot is
+            // aiming straight along the rail, where any perpendicular will do.
+            Vector3 radial = transform.up - axis * Vector3.Dot(transform.up, axis);
+            radial = radial.sqrMagnitude > 1e-6f ? radial.normalized : t.up;
+
+            Vector3 scale = prism.TargetScale;
+            if (scale.x <= 0f || scale.y <= 0f) scale = t.localScale;
+            float halfX = Mathf.Abs(scale.x) * 0.5f;
+            float halfY = Mathf.Abs(scale.y) * 0.5f;
+
+            // radial is perpendicular to the prism's z, so its components on the prism's x and
+            // y axes are a unit 2-vector - the box formula applies exactly.
+            float u = Mathf.Abs(Vector3.Dot(radial, t.right));
+            float v = Mathf.Abs(Vector3.Dot(radial, t.up));
+            float faceX = u > 1e-4f ? halfX / u : float.MaxValue;
+            float faceY = v > 1e-4f ? halfY / v : float.MaxValue;
+            float surface = Mathf.Min(faceX, faceY);
+            if (surface > 1e4f) surface = Mathf.Max(halfX, halfY);
+
+            return radial * (surface + rideSurfaceClearance);
         }
 
         /// <summary>
@@ -342,11 +398,12 @@ namespace CosmicShore.Gameplay
                 Yaw();
                 Pitch();
 
-                // Position: ON the rail. The only thing between the hull and the centreline is
-                // the offset it had at the instant of contact, decayed away - so the ride
-                // settles onto the trail instead of snapping onto it.
+                // Position: on the prism's SURFACE, not buried in its middle. The only thing
+                // between the hull and that surface point is the offset it had at the instant
+                // of contact, decayed away - so the ride settles onto the trail rather than
+                // snapping onto it.
                 _railOffset = Vector3.Lerp(_railOffset, Vector3.zero, 1f - Mathf.Exp(-railSettleRate * dt));
-                transform.position = trailFollower.CenterlinePoint + _railOffset;
+                transform.position = trailFollower.CenterlinePoint + RideSurfaceOffset() + _railOffset;
             }
             else
             {

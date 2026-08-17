@@ -292,6 +292,37 @@ nothing upstream changed. Wake prisms' z genuinely points down the trail
 (`blockRotation = transform.rotation` at lay time), so the authored-z invariant the dimension
 ladder rests on holds for every wake ribbon.
 
+## Ride the prism's SURFACE, and roll walks you around it (round 16)
+
+Riding a **Sparrow** trail — a SINGLE ribbon, laid with no gap because that vessel flies with
+one thumb — put the Urchin *inside* every prism it passed through. A single-ribbon wake has no
+lay offset, so its block centres sit exactly on the ride line, and riding the line bare is
+riding through the mass.
+
+The ride now sits on the prism's **surface**, and the two halves of that are each derived
+rather than authored:
+
+- **Which way round** is the pilot's **roll**, at no cost in state: the radial is the hull's
+  own UP, flattened across the trail. Roll the ship and its up sweeps around its forward —
+  which while riding IS the trail axis — so the ship walks around the prism's z axis with its
+  belly always toward the rail. Attitude stays entirely the pilot's (the round-11 rule) and
+  POSITION follows from it, so this can never fight the stick the way the round-5 orbit did.
+- **How far** is the exact box cross-section, not a constant. A prism is a scaled cube, so the
+  distance from its z axis out to its face along a direction whose prism-x/prism-y components
+  are `(u, v)` is `min(halfX/u, halfY/v)`. A wide flat trail is therefore ridden close on its
+  broad faces and further out at its edges — which is what makes it read as a surface instead
+  of a radius. `rideSurfaceClearance` adds only the hull's own half-thickness on top.
+
+Scales come from `TargetScale` (authored), never the live scale, so a block still blooming in —
+or one the payoff is GROWING under the rider — cannot drag the ship around as it changes.
+
+On a GAPPED wake the ride line is the flight spine, which lies in the corridor between the twin
+ribbons rather than through any prism, so the same offset is a small clearance within that
+corridor and the twin ride is unchanged.
+
+The Urchin's ride camera also came in to **a third** of its distance
+(`UrchinCameraSettingsSO`: followOffset z −6.67, dynamic band 5 / 8.33).
+
 ## Rings loop, 0D is not rideable, 2D stops fighting your aim (round 15)
 
 Playtest: *"best yet — I could ride both my own and the Squirrel's trail great"*, with three
@@ -768,6 +799,7 @@ restore the previous pilot's colliders onto the new one at an arbitrary moment.
 | `ammoIndex` | `Urchin.prefab` `GunVesselTransformer` | 0 — the same slot the spike volley spends |
 | `throttleDeadband` | `GunVesselTransformer` (C# default **0.1**) | Signed throttle below this magnitude parks the rider. Never let it reach 0: `RideTheTrail` divides by `Throttle × speed`, and XDiff idles NEAR its rest, never exactly on it. |
 | `throttleRestPosition` | `GunVesselTransformer` (C# default **0.5**) | The XDiff value that reads as neutral — XDiff RESTS AT 0.5 (`GamepadInputStrategy`). Push above to keep riding the latched direction, pull below to back up. |
+| `rideSurfaceClearance` | `GunVesselTransformer` (C# default **1.5**) | Clearance beyond the prism's solved face distance — the hull's own half-thickness. Raise until the ship reads as ON the trail, not sunk in it. |
 | `railSettleRate` | `GunVesselTransformer` (C# default **4**) | 1/s decay of the offset the hull had at contact. The ride sits ON the trail; this only stops attaching from snapping it there. |
 | `facingFlipThreshold` | `GunVesselTransformer` (C# default **0.35**) | TRUE hysteresis: the forward/reverse mapping flips only when the aim crosses past broadside the OTHER way by this much. Widen if a bend still flaps direction. |
 | `hoverHeight` | `BlockscapeFollower` (C# default **2**) | World-unit hover above the ground prism's mid-plane, along the smoothed normal. |

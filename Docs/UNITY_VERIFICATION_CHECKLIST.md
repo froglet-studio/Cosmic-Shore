@@ -419,6 +419,28 @@ yet — I could ride both my own and the Squirrel's trail great", with three fol
   dimensions. Motion still follows the plane (crawl direction is the steered forward projected
   onto it).
 
+**ROUND 16 (2026-08-17) — ride the prism SURFACE; roll walks you around it; camera to 1/3.**
+A SPARROW trail is a single ribbon (no gap — that vessel flies with one thumb), so its block
+centres sit exactly on the ride line and riding the line bare put the Urchin INSIDE every
+prism. The ride now offsets out to the prism's surface, both halves derived:
+
+- **Which way**: the hull's own UP flattened across the trail. Rolling sweeps up around
+  forward — which while riding IS the trail axis — so the ship walks around the prism's z axis,
+  belly toward the rail. No new state, and it cannot fight the stick (attitude stays the
+  pilot's; position follows it).
+- **How far**: the exact box cross-section `min(halfX/u, halfY/v)` from the prism's authored
+  `TargetScale`, so a wide flat trail rides close on its broad faces and further at its edges.
+  `rideSurfaceClearance` (1.5) adds the hull's half-thickness.
+
+Gapped wakes are unchanged in feel (their ride line is the corridor spine, so the offset is a
+small clearance within it). Camera: `UrchinCameraSettingsSO` followOffset z −20 → −6.67,
+dynamic band 15/25 → 5/8.33.
+
+Round-16 verify: ride a SPARROW trail — the Urchin sits ON the prisms, not in them; roll and
+it walks around the trail's axis, belly always to the rail; roll continuously and it circles
+smoothly with no fight. Ride a wide flat trail — it hugs the broad face and stands off at the
+edges. Squirrel twin trail — unchanged. Camera sits noticeably closer.
+
 Round-15 verify: Squirrel-hit-crystal ring → the Urchin rides it as a LOOP, forward and
 backward, round and round, never rolling onto it as a surface. Fly at an isolated prism → no
 attach. Ride a gyroid → pitch/roll/aim are completely free, camera never fights, and you can

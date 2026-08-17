@@ -13,9 +13,9 @@ MonoBehaviour:
   m_Name: UrchinCameraSettingsSO
   m_EditorClassIdentifier:
   mode: 0
-  followOffset: {x: 0, y: 2.5, z: -20}
-  dynamicMinDistance: 15
-  dynamicMaxDistance: 25
+  followOffset: {x: 0, y: 0.83, z: -6.67}
+  dynamicMinDistance: 5
+  dynamicMaxDistance: 8.33
   followSmoothTime: 0.2
   rotationSmoothTime: 5
   disableSmoothing: 0
