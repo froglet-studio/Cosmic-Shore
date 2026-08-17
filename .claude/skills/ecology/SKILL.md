@@ -167,6 +167,19 @@ what the carve-out silently broke — see the traps below.
   couplings (and suspends `CheckForLife`, so handing a spindle's prisms away doesn't evaporate it
   out of turn). Detach body prisms BEFORE withering spindles — a body prism is parented to a
   spindle, so the wither would destroy the mass you meant to conserve. `Docs/ECOSYSTEM.md §26.3`.
+- **A per-lifeform SCALE curve must exempt any species whose geometry is a LATTICE.**
+  `Flora.LevelUp` grows `leafSize`, and `Flora.AddHealthBlock` stamps it onto every prism the
+  plant lays — but `AssembledFlora`'s families (gyroid, SchwarzP, wall) bond at offsets measured
+  in ABSOLUTE local units (`OctagonNeighbor.Center`/`SeedPosition`,
+  `GyroidAssembler.SeparationDistance`, captured once in `GyroidAssembler.Start`), so a leaf that
+  grows mid-life lays prisms the bond table no longer describes. Making the offsets scale-aware
+  does NOT fix it: the plant's earlier prisms are still the old size, and **two prism sizes
+  cannot tile one lattice**. Gate on `Flora.PrismSizeFixedByGrowthRule` (true on
+  `AssembledFlora`). The trap is that the worst-affected species is invisible from the feature
+  you are writing: making flora level on reproduction hits the gyroid octagon colony HARDEST,
+  because it is the family that reproduces most (one birth per fauna-wave period), so it would
+  have inflated fastest against a CI-verified geometry table. **Before adding any per-individual
+  scale curve, ask which species' geometry is authored in absolute units.**
 - **A prism that stops being body tissue must be RE-FILED, not just reparented.**
   `PrismSpatialIndex.ComputeEnvironmentMass` reads `HealthPrism.OwnerFauna` to keep a live swarm
   out of the targeting grids. Clear the owner without calling `NotifyOwnershipChanged` and the
