@@ -585,8 +585,18 @@ namespace CosmicShore.Gameplay
                 // - every founder is an independent lattice FRAME, and frames that were never
                 // projected from one another cannot mate, so knowing where each frame came
                 // from is the first question of any "colonies don't match up" report.
-                CSDebug.Log($"[GyroidColony] FOUNDER {name} claimed centre {center} " +
-                            $"(prism {type} at {position}, lineage={(SourceConfig ? SourceConfig.name : "NONE/toy")})");
+                //
+                // Both reports are BRING-UP telemetry: silent unless CSLogChannel.GyroidColony
+                // is on (FrogletTools > Toolbox > Logging), because a working colony repeating
+                // its census every 5s for the life of the scene is console spam. The heartbeat
+                // tick is still SCHEDULED unconditionally - it costs one no-op invoke per 5s per
+                // founder and buys a channel that can be flipped on mid-session, which is the
+                // only time anyone actually wants it. Coherence DEFECTS stay on the warning
+                // channel and always emit.
+                if (CSDebug.IsVerbose(CSLogChannel.GyroidColony))
+                    CSDebug.LogVerbose(CSLogChannel.GyroidColony,
+                        $"[GyroidColony] FOUNDER {name} claimed centre {center} " +
+                        $"(prism {type} at {position}, lineage={(SourceConfig ? SourceConfig.name : "NONE/toy")})");
                 InvokeRepeating(nameof(LogColonyHeartbeat), 5f, 5f);
                 return;
             }
@@ -632,12 +642,20 @@ namespace CosmicShore.Gameplay
             _idleGrowTicks >= 2 &&
             Time.time - _lastGrowthTime >= _maturationSeconds;
 
+        /// <summary>
+        /// The founder's 5s population census. Guarded rather than unscheduled so the channel
+        /// can be flipped in EITHER direction mid-session; the guard is what keeps the summary
+        /// string from being built while nobody is reading it.
+        /// </summary>
         void LogColonyHeartbeat()
         {
-            CSDebug.Log($"[GyroidColony] t={Time.time:F0}s {GyroidColonyDiagnostics.Summary} | " +
-                        $"founder: prisms={(healthTracker != null ? healthTracker.Count : -1)} " +
-                        $"ring={_ringMembers.Count} idle={_idleGrowTicks} " +
-                        $"branches={activeBranches.Count} pending={pendingSpawns.Count} mature={OctagonMature}");
+            if (!CSDebug.IsVerbose(CSLogChannel.GyroidColony)) return;
+
+            CSDebug.LogVerbose(CSLogChannel.GyroidColony,
+                $"[GyroidColony] t={Time.time:F0}s {GyroidColonyDiagnostics.Summary} | " +
+                $"founder: prisms={(healthTracker != null ? healthTracker.Count : -1)} " +
+                $"ring={_ringMembers.Count} idle={_idleGrowTicks} " +
+                $"branches={activeBranches.Count} pending={pendingSpawns.Count} mature={OctagonMature}");
         }
 
         /// <summary>
