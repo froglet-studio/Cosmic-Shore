@@ -64,6 +64,21 @@ Never duplicate an item that already exists (match on the `QA-...` id). Never re
 that is present in `ARCHIVE.md` unless a later merge genuinely re-opened that work — if so,
 note why in the item's Source line.
 
+## 2.5. Refresh the "⚡ Quick wins" section
+
+`QA_BACKLOG.md` opens with a hand-curated `## ⚡ Quick wins` block (before `## Priority 0`).
+Rewrite it every run to point at the ~5–8 **open** items (⬜, or an actionable 🟡) that are
+the fastest / lowest-effort to get a clean verdict on — asset-only checks, one-glance visual
+checks, a single short flight, an editor-window check. Rank by least effort, not by priority.
+
+- **Only list open items.** Drop anything now PASS (archived), 🔴, or ⛔ — never point a tester
+  at a dead/failed item as a "quick win".
+- Give each a half-line on *why* it's quick (what the one check is).
+- It lives before the first `### QA-` heading, so it is raw pass-through text the apply engine
+  never rewrites — you are its only maintainer. Keep it a bullet list (no `### QA-` headings, or
+  the engine will parse them as duplicate item sections).
+- Say in the block that it is refreshed each run and can lag reality by one submission.
+
 ## 3. Print the prioritised list
 
 After steps 1–2, print the current backlog top-down (P0 first), one line per item:

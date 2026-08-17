@@ -16,6 +16,23 @@ Every item below landed on a shared branch without ever being opened in Unity by
 * Keep the Console open with Error Pause off and Clear on Play off.
 * Unless an item says otherwise, "freestyle" means: launch to `Menu_Main`, tap the centre crystal to take control of the vessel.
 
+## ⚡ Quick wins — start here if you have a few minutes
+
+Hand-curated by `/qa-backlog` each run: open items that are the fastest / lowest-effort to get a
+clean verdict on (asset-only, one-glance, or a single short check). Not a priority ranking —
+the P0 gates below still matter more; this is just "what can I knock out quickly." Refreshed
+every run, so it can lag reality by one submission.
+
+1. **QA-CHARGE-CRYSTAL-SHADER** — load a scene with a charge crystal and look: magenta = FAIL, blooms-in with edge arcs = pass. Seconds.
+2. **QA-UI-QUIT-BUTTON** — open the in-game settings panel, click Quit. One control, one check.
+3. **QA-P2-LIFEFORM-MATRIX-MOONS** — one glance at the Lifeform Matrix bench: are the four crystal "moons" visible or swallowed by the sphere.
+4. **QA-VESSEL-SPARROW-ROLL** — fly the Sparrow into prisms at a couple of angles; does it roll (not deflect off course).
+5. **QA-CRYSTAL-EFFECTS** — collect an elemental crystal (capture effect) and watch an omni crystal appear (blooms in, not pops).
+6. **QA-DOLPHIN-SPEED-TUNE** — Dolphin freestyle, check three numbers: cruise ≈78, boost fill ≈3.6 s, peak ≈357.
+7. **QA-UI-MODAL-STACK** — open the Arcade configure modal, close it three ways (✕, background tap, Home), confirm nav still works.
+
+Editor-only, no play mode: **QA-PRISM-SHIELD-GPU-VISUALS** (run the jiggle test + glance for magenta) is nearly as cheap if you're already in the editor.
+
 ## Priority 0 — gates. Nothing below matters if these fail.
 
 ### QA-BUILD-COMPILE ⬜ — the project compiles, imports and boots
