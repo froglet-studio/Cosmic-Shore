@@ -459,6 +459,31 @@ Urchin hull opacity.**
   `BlueBaseVesselMaterial` is shared by nine vessels; this is a per-renderer slot-order fix on
   the Urchin prefab only.
 
+**ROUND 18 (2026-08-17) — spike dwell x3; the omni barrage chains; domain colour on the right
+submesh.**
+
+- **Embedded spikes persist 3x**: `ProjectileEmbedPrismEffect.dwellSeconds` 1.25 → **3.75**.
+  Pure look — the steal and the child volley have both already happened by then.
+- **The omni barrage never chain-reacted.** `FireSpherical` decremented `energy` before
+  spawning while the ring volley's `FireSingle` did not, so the barrage came out one tier
+  shallower from the same authored number — at its resting depth its spikes landed terminal.
+  The decrement is right for a chain HOP (it IS the depth ladder), so it is now conditioned,
+  not removed: `if (pointsOverride <= 0) energy--`. Only the ship's own volley authors a point
+  count; a hop never does. Barrage `generationsAtRestingCharge` 0 → **1** so both triggers
+  chain from rest.
+- **Domain colour was on the wrong submesh.** Platform contract (`ScarabHullBuilder`): a
+  MeshRenderer hull is painted on **slot 1** (submesh 0 = shared body, submesh 1 = domain). The
+  Urchin's FBX authors its submeshes the other way round. New
+  `VesselCustomization._domainMaterialSlot` (default 1 — **no other vessel changes**), passed
+  through to `VesselHelper.ApplyShipMaterial` and clamped to the renderer's slot count; the
+  Urchin declares **0** and its round-17 material swap is REVERTED to the authored order. Net:
+  domain colour on the hull, opaque accent showing elsewhere, nothing transparent.
+
+Round-18 verify: shoot a prism → spikes stand in it noticeably longer before fading. Fire the
+ALL-DIRECTIONS trigger at enemy mass → it chains like the aimed one does (raise Charge → deeper
+on both). Look at the Urchin → the HULL wears the domain colour (change domain at the toy and
+the hull changes), trim stays accent, nothing see-through. Other vessels' hulls unchanged.
+
 Round-17 verify: attach to ONE ribbon of a Squirrel wake → you ride that ribbon's own prisms,
 not the corridor; the other ribbon is a separate trail you can attach to independently. Ride a
 SHIELDED trail → the ship clears the octahedron shells instead of passing through them. Ride a

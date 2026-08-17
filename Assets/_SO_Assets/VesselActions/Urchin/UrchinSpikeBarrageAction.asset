@@ -20,7 +20,7 @@ MonoBehaviour:
   projectileSpeed: 40
   projectileTime: 2
   projectileScale: 1
-  generationsAtRestingCharge: 0
+  generationsAtRestingCharge: 1
   generationsAtFullCharge: 4
   generationRangeFalloff: 0.75
   chainsOnChargeUpgrade: 1

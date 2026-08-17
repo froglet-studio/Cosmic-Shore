@@ -13,6 +13,13 @@ namespace CosmicShore.Gameplay
         [SerializeField]
         List<GameObject> _shipGeometries;
 
+        [Tooltip("Which material slot on a MESH renderer wears the DOMAIN colour. The platform " +
+                 "contract is 1 (submesh 0 = shared body material, submesh 1 = the domain part), " +
+                 "and every vessel authored to it leaves this alone. Set 0 only when the FBX " +
+                 "authors its submeshes the other way round, so the domain lands on the hull " +
+                 "instead of on a trim detail.")]
+        [SerializeField] int _domainMaterialSlot = 1;
+
         IVesselStatus vesselStatus;
 
         public void Initialize(IVesselStatus vesselStatus)
@@ -47,7 +54,7 @@ namespace CosmicShore.Gameplay
         }
 
         void ApplyShipMaterial(Material material) =>
-            ShipHelper.ApplyShipMaterial(material, _shipGeometries);
+            ShipHelper.ApplyShipMaterial(material, _shipGeometries, _domainMaterialSlot);
 
         bool TryPassNullChecks(IVesselStatus vesselStatus)
         {

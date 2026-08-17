@@ -190,7 +190,7 @@ ability a private copy of the other's dial.
 | Repeat | while held, `firingRate` 3/s | one-shot per press, `firingRate` 1/s |
 | Ammo | 0.15 per volley | **free** (0) |
 | Muzzle speed | 60 × SPACE multiplier | 40 × SPACE multiplier |
-| Depth at Charge 0 → 10 | **1 → 4** | 0 → **4** |
+| Depth at Charge 0 → 10 | **1 → 4** | **1 → 4** |
 | L5 | SPACE "Deep Cascade" — `ChainRangeFalloff` becomes 1 | CHARGE "Overcharge" — `chainsOnChargeUpgrade` floors depth at 1 |
 
 **Round 6 dialed the weapon up** ("dial up the recursive explosions") — this is the shotgun the
@@ -217,16 +217,23 @@ old build had, restored deliberately rather than archaeologically:
   `(-0.08, -0.18, -0.02)`…); the golden spiral supersedes them with an even sphere and no
   gaps, which is the "we can do better now" half of the request.
 
-The barrage stays free and is paid for by its **resting depth of 0**; Overcharge is what turns
-it from a wide steal into a chain at rest, and full Charge now takes both abilities to the
-ceiling.
+The barrage stays free; what it pays instead is spread — 36 spikes over the whole sphere reach
+far less mass each than 37 down a 15° cone. Both triggers now chain from rest and both reach the
+ceiling at full Charge.
 
-**The aimed volley's first shot does not consume a generation and the barrage's does.**
-`FiringPatterns.Default` routes to `FireSingle`, which stamps `energy` unchanged, so the muzzle
-spike carries the full resolved depth. `FiringPatterns.Spherical` routes to `FireSpherical`, which
-decrements before spawning. That asymmetry is a property of the shared gun, not of the abilities;
-it is recorded rather than papered over, because the barrage's authored depths are chosen against
-it.
+**Both abilities' first shot now costs no generation — the asymmetry that silenced the barrage
+is fixed.** `FireSingle` (the ring volley's path) stamps `energy` unchanged, but `FireSpherical`
+decremented before spawning, so the omni barrage came out one tier shallower than the ring volley
+from the same authored number. At the barrage's shipped resting depth that meant its spikes landed
+**terminal** and it never chain-reacted at all — the reported "the one that shoots in all
+directions is not chain reacting".
+
+The decrement is still exactly right for a chain HOP (it *is* the depth ladder), so it is now
+conditioned rather than removed: `if (pointsOverride <= 0) energy--`. The ship's own volley is the
+only call that authors a point count, and a hop never does, so the override is the honest
+discriminator and no new argument was needed. With that, `generations` means the same thing for
+both triggers, and the barrage's `generationsAtRestingCharge` moved 0 → **1** so it chains from
+rest like the volley.
 
 Every element read is **live, per volley** — a crystal collected mid-hold changes the very next
 spike. Reach (`ResolveRangeScale` → `Multiplier(Element.Space)`) and its per-generation decay
@@ -276,10 +283,10 @@ checked once per tick, so the two cases are not conflated into one early return.
 
 | Knob | Where | Value |
 |---|---|---|
-| `dwellSeconds` / `fadeSeconds` | `ProjectileEmbedPrismEffect.asset` | 1.25 / 0.35 — pure look; the steal and the volley have both already happened. `fadeSeconds` must stay above 0 (continuity of existence). |
+| `dwellSeconds` / `fadeSeconds` | `ProjectileEmbedPrismEffect.asset` | **3.75** / 0.35 — pure look; the steal and the volley have both already happened, so this is free to be long. Tripled from 1.25 because a prism bristling with embedded spikes is worth looking at. `fadeSeconds` must stay above 0 (continuity of existence). |
 | `requireDomainChange` | `ProjectileChainFirePrismEffect.asset` | 1 — off makes shielded mass cost the cascade a generation for no territory |
 | `VolleysPerFrame` | `ChainReactionBudget` (static, code) | **6**, global across all cascades (round 6: raised from 4 with the depth). At depth 4 a chain volley is up to 14 spikes, so one frame's chain contribution is bounded at **84** live trigger colliders. Raise for reach, lower for frame cost. |
-| `generationsAtRestingCharge` / `generationsAtFullCharge` | the two spike action assets | volley **1 → 4** · barrage 0 → **4** (round 6: "their generation limit should be 4"). `GenerationsForLevel` is linear in level, anchored at 0 and 10, extrapolated across the element system's `[-5, 15]` band, then clamped to **[0, 4]** — the range the pool tiers and the frame budget are sized for. |
+| `generationsAtRestingCharge` / `generationsAtFullCharge` | the two spike action assets | volley **1 → 4** · barrage **1 → 4** (round 6: "their generation limit should be 4"). `GenerationsForLevel` is linear in level, anchored at 0 and 10, extrapolated across the element system's `[-5, 15]` band, then clamped to **[0, 4]** — the range the pool tiers and the frame budget are sized for. |
 | `barrageSpikeCount` | both spike action assets (Spherical only) | **36** — the ship's own golden-spiral density; 0 = legacy energy-derived count |
 | `ringCount` / `spikesPerRing` / `coneHalfAngleDegrees` / `centerSpike` | both spike action assets (ConcentricRings only) | **3 / 6 / 15° / on** → 37 spikes per pull (cone tightened 25° → 15° in round 7: "bring the spread in") |
 

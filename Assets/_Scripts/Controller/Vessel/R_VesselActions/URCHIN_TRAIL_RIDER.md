@@ -292,6 +292,25 @@ nothing upstream changed. Wake prisms' z genuinely points down the trail
 (`blockRotation = transform.rotation` at lay time), so the authored-z invariant the dimension
 ladder rests on holds for every wake ribbon.
 
+## The hull's domain colour was on the wrong submesh (round 18)
+
+Round 17 fixed the Urchin reading as see-through by swapping each renderer's two materials, so
+the opaque one sat in slot 0. That worked, but it treated the symptom. The platform contract is
+explicit (`ScarabHullBuilder`): **a MeshRenderer hull is painted on slot 1** — submesh 0 is the
+shared body material, submesh 1 is the part that wears the domain colour. The Urchin's FBX
+authors its submeshes the OTHER WAY ROUND, so the domain colour was landing on trim while the
+hull kept a fixed material — and swapping the slots only moved which material was the fixed one.
+
+`VesselCustomization._domainMaterialSlot` (default **1**, the contract) lets a vessel say which
+slot its art wears the domain on, and `VesselHelper.ApplyShipMaterial` takes it as a parameter
+(default 1, so no other vessel changes). The Urchin declares **0**, and its authored material
+order is restored to what the art shipped with. The result is both fixes at once: the domain
+colour lands on the hull, and the material left showing is the opaque accent rather than the
+transparent base — nothing is see-through and nothing is mis-coloured.
+
+The slot is clamped to the renderer's material count, because a single-submesh renderer is legal
+art and painting its only slot is the sane reading of "wear the domain".
+
 ## Each ribbon is its own trail; shielded and skewed prisms ride their envelope (round 17)
 
 **A gapped wake is now TWO SEPARATE SINGLE TRAILS.** You ride the ribbon you touched, on its

@@ -110,7 +110,16 @@ namespace CosmicShore.Gameplay
                 action.StopAction();
         }
 
-        public static void ApplyShipMaterial(Material shipMaterial, List<GameObject> shipGeometries)
+        /// <param name="meshRendererSlot">
+        /// Which material slot on a MESH renderer takes the domain colour. The platform
+        /// contract is slot <b>1</b> (submesh 0 = shared body material, submesh 1 = the part
+        /// that wears the domain - see <c>ScarabHullBuilder</c>'s material contract), and that
+        /// is the default. A vessel whose FBX authors its submeshes the other way round says
+        /// so on its own <see cref="VesselCustomization"/> rather than forcing the fleet's
+        /// contract to bend - the Urchin is the one that does.
+        /// </param>
+        public static void ApplyShipMaterial(Material shipMaterial, List<GameObject> shipGeometries,
+                                             int meshRendererSlot = 1)
         {
             if (shipMaterial == null)
                 return;
@@ -126,7 +135,9 @@ namespace CosmicShore.Gameplay
                 else if (shipGeometry.GetComponent<MeshRenderer>() != null)
                 {
                     var materials = shipGeometry.GetComponent<MeshRenderer>().materials;
-                    materials[1] = shipMaterial;
+                    // Clamp rather than throw: a renderer with a single submesh is legal art,
+                    // and painting its only slot is the sane reading of "wear the domain".
+                    materials[Mathf.Clamp(meshRendererSlot, 0, materials.Length - 1)] = shipMaterial;
                     shipGeometry.GetComponent<MeshRenderer>().materials = materials;
                 }
             }

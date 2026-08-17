@@ -220,7 +220,16 @@ namespace CosmicShore.Gameplay
                 // same prism fire the same pattern, so the cascade re-converges rather than
                 // drifting further apart with every generation.
                 var randomRotation = DeterministicOrientation(containerTransform.position, energy);
-                energy--;
+
+                // A CHAIN HOP spends a generation here - that decrement is the cascade's depth
+                // ladder. The SHIP'S OWN volley must not: `energy` is already the depth the
+                // pilot's CHARGE resolved, and spending one on the muzzle burst left the omni
+                // barrage one tier shallower than the ring volley from the same authored
+                // number - at the shipped resting depth that meant its spikes landed terminal
+                // and the barrage never chain-reacted at all. The ship's volley is exactly the
+                // call that authors a point count (`pointsOverride`); a hop never does, so the
+                // override is the honest discriminator and no new argument is needed.
+                if (pointsOverride <= 0) energy--;
 
                 for (int i = 0; i < points; i++)
                 {

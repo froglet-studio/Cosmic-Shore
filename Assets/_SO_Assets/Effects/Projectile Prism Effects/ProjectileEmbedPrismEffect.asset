@@ -12,5 +12,5 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: fe0aafc7b1a24921afba6e15ad10a2fa, type: 3}
   m_Name: ProjectileEmbedPrismEffect
   m_EditorClassIdentifier:
-  dwellSeconds: 1.25
+  dwellSeconds: 3.75
   fadeSeconds: 0.35
