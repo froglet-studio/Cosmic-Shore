@@ -49,12 +49,12 @@ namespace CosmicShore.Gameplay
         {
             if (!NetworkManager.Singleton.IsServer)
             {
-                CSDebug.Log("<color=#FF00FF>[FLOW-5AI] [ServerVesselInitWithAI] OnNetworkSpawn - NOT server, disabling</color>");
+                CSDebug.LogVerbose(CSLogChannel.NetworkFlow, "<color=#FF00FF>[FLOW-5AI] [ServerVesselInitWithAI] OnNetworkSpawn - NOT server, disabling</color>");
                 enabled = false;
                 return;
             }
 
-            CSDebug.Log($"<color=#FF00FF>[FLOW-5AI] [ServerVesselInitWithAI] OnNetworkSpawn - IsServer=true, RequestedAIBackfill={gameData.RequestedAIBackfillCount}, spawnAIOnServerReady={spawnAIOnServerReady}</color>");
+            CSDebug.LogVerbose(CSLogChannel.NetworkFlow, $"<color=#FF00FF>[FLOW-5AI] [ServerVesselInitWithAI] OnNetworkSpawn - IsServer=true, RequestedAIBackfill={gameData.RequestedAIBackfillCount}, spawnAIOnServerReady={spawnAIOnServerReady}</color>");
 
             // Set scene-specific spawn positions before AI spawning.
             // base.OnNetworkSpawn() also sets them, but AI spawns happen first
@@ -95,9 +95,9 @@ namespace CosmicShore.Gameplay
             {
                 try
                 {
-                    CSDebug.Log("<color=#FF00FF>[FLOW-5AI] [ServerVesselInitWithAI] Calling SpawnAIs()</color>");
+                    CSDebug.LogVerbose(CSLogChannel.NetworkFlow, "<color=#FF00FF>[FLOW-5AI] [ServerVesselInitWithAI] Calling SpawnAIs()</color>");
                     SpawnAIs(totalCounts, humanCounts);
-                    CSDebug.Log($"<color=#FF00FF>[FLOW-5AI] [ServerVesselInitWithAI] SpawnAIs() complete. gameData.Players.Count={gameData.Players.Count}</color>");
+                    CSDebug.LogVerbose(CSLogChannel.NetworkFlow, $"<color=#FF00FF>[FLOW-5AI] [ServerVesselInitWithAI] SpawnAIs() complete. gameData.Players.Count={gameData.Players.Count}</color>");
                 }
                 catch (System.Exception e)
                 {
@@ -116,7 +116,7 @@ namespace CosmicShore.Gameplay
                     aiMarked++;
                 }
             }
-            CSDebug.Log($"<color=#FF00FF>[FLOW-5AI] [ServerVesselInitWithAI] Marked {aiMarked} AI players as processed. Calling base.OnNetworkSpawn()</color>");
+            CSDebug.LogVerbose(CSLogChannel.NetworkFlow, $"<color=#FF00FF>[FLOW-5AI] [ServerVesselInitWithAI] Marked {aiMarked} AI players as processed. Calling base.OnNetworkSpawn()</color>");
 
             // Now subscribe (via base) and handle human players going forward
             base.OnNetworkSpawn();
@@ -132,10 +132,10 @@ namespace CosmicShore.Gameplay
             }
 
             int aiCount = gameData.RequestedAIBackfillCount;
-            CSDebug.Log($"<color=#FF00FF>[FLOW-5AI] [ServerVesselInitWithAI] SpawnAIs - aiCount={aiCount}, domainCount={gameData.RequestedDomainCount}, totals={string.Join(", ", totalCounts)}, humans={string.Join(", ", humanCounts)}</color>");
+            CSDebug.LogVerbose(CSLogChannel.NetworkFlow, $"<color=#FF00FF>[FLOW-5AI] [ServerVesselInitWithAI] SpawnAIs - aiCount={aiCount}, domainCount={gameData.RequestedDomainCount}, totals={string.Join(", ", totalCounts)}, humans={string.Join(", ", humanCounts)}</color>");
             if (aiCount <= 0)
             {
-                CSDebug.Log("<color=#FF00FF>[FLOW-5AI] [ServerVesselInitWithAI] No AI to spawn (aiCount <= 0)</color>");
+                CSDebug.LogVerbose(CSLogChannel.NetworkFlow, "<color=#FF00FF>[FLOW-5AI] [ServerVesselInitWithAI] No AI to spawn (aiCount <= 0)</color>");
                 return;
             }
 
@@ -182,6 +182,14 @@ namespace CosmicShore.Gameplay
                 var aiVesselType = hasTemplate ? aiInitializeDatas[i].vesselClass : VesselClassType.Random;
                 if (aiVesselType is VesselClassType.Any or VesselClassType.Random)
                     aiVesselType = PickAIVesselType();
+
+                // A restricted-vessel mode restricts the AI too. The AI's class comes from the
+                // scene's aiInitializeDatas (or the captain roll), neither of which knows the
+                // mode's rules - so a scene authored with the wrong template, or a captain roll
+                // in a single-vessel mode, would field opponents in an illegal hull. Same clamp
+                // and same authority as the human path (ResolveSpawnVesselType); no-op when the
+                // game authors no Vessels list.
+                aiVesselType = gameData.ClampVesselToGame(aiVesselType);
 
                 var aiName = tournament && i < tournamentData.TournamentAINames.Count
                     ? tournamentData.TournamentAINames[i]
@@ -272,7 +280,7 @@ namespace CosmicShore.Gameplay
                 humans.Add(player);
             }
 
-            CSDebug.Log($"<color=#FF00FF>[FLOW-5AI] GatherHumanPlayers: found {humans.Count} humans</color>");
+            CSDebug.LogVerbose(CSLogChannel.NetworkFlow, $"<color=#FF00FF>[FLOW-5AI] GatherHumanPlayers: found {humans.Count} humans</color>");
             return humans;
         }
 
@@ -313,10 +321,10 @@ namespace CosmicShore.Gameplay
                 humanCounts[assigned]++;
                 h.NetDomain.Value = assigned;
                 reassigned++;
-                CSDebug.Log($"<color=#FF00FF>[FLOW-5AI] NormalizeUnassignedHumans: assigned {h.NetName.Value} ({d}) → {assigned}</color>");
+                CSDebug.LogVerbose(CSLogChannel.NetworkFlow, $"<color=#FF00FF>[FLOW-5AI] NormalizeUnassignedHumans: assigned {h.NetName.Value} ({d}) → {assigned}</color>");
             }
 
-            CSDebug.Log($"<color=#FF00FF>[FLOW-5AI] NormalizeUnassignedHumans: {reassigned}/{humans.Count} humans reassigned, totals={string.Join(", ", totalCounts)}</color>");
+            CSDebug.LogVerbose(CSLogChannel.NetworkFlow, $"<color=#FF00FF>[FLOW-5AI] NormalizeUnassignedHumans: {reassigned}/{humans.Count} humans reassigned, totals={string.Join(", ", totalCounts)}</color>");
         }
 
         VesselClassType PickAIVesselType()
@@ -378,7 +386,15 @@ namespace CosmicShore.Gameplay
             var aiPilot = aiVesselNO.GetComponentInChildren<AIPilot>();
             if (aiPilot == null) return;
 
-            bool shouldSeekPlayers = gameData.GameMode == GameModes.MultiplayerJoust;
+            // Player-seek is for the modes whose OBJECTIVE is another pilot. Joust wants to
+            // sweep its skimmer past you; Dog Fight wants you in its gunsight - the steering
+            // need is identical (chase the live position of a chosen opponent), so the mode
+            // reuses AIPilot's existing opponent lock rather than growing a bespoke one. Dog
+            // Fight then layers a stand-off distance on top via its own external target
+            // provider, because a gun duel is not a ramming contest.
+            bool shouldSeekPlayers =
+                gameData.GameMode == GameModes.MultiplayerJoust ||
+                gameData.GameMode == GameModes.DogFight;
             float skill = Mathf.Clamp01(gameData.SelectedIntensity.Value * 0.25f);
             aiPilot.ConfigureForGameMode(gameData, shouldSeekPlayers, skill);
         }

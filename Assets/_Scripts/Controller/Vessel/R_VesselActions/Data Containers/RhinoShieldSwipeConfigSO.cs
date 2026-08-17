@@ -33,11 +33,37 @@ namespace CosmicShore.Gameplay
         [Tooltip("Return time after an event-driven release.")]
         [SerializeField] float returnSeconds = 0.3f;
 
+        [Header("Swipe Recovery (the LATERAL swipe only — never the chop, never damage)")]
+        [Tooltip("Seconds a swipe direction must recover after being released before it can sweep " +
+                 "again, so the sword has a swing rhythm instead of flapping. Each direction keeps " +
+                 "its own timer. ZERO while the blade is ENERGIZED (frenzy). This gates the POSE, " +
+                 "not the blade: the sword still cuts everything it touches the whole time, and the " +
+                 "chop/energize stance is never blocked — see RHINO_ENERGY_SWORD.md.")]
+        [SerializeField] float swipeCooldownSeconds = 0.35f;
+        [Tooltip("Difference magnitude a single trigger must reach for that direction to count as " +
+                 "having SWUNG (and so to owe a recovery when it releases). Below this the sword is " +
+                 "just drifting off centre and costs nothing.")]
+        [SerializeField, Range(0f, 1f)] float swipeEngageThreshold = 0.4f;
+
+        [Header("Energize Stance — gesture thresholds (RHINO_ENERGY_SWORD.md)")]
+        [Tooltip("Sum (left + right trigger, 0..2, from the replicated InputStatus mirrors so every " +
+                 "peer computes the same verdict) above which the blade is in the lower/chop stance — " +
+                 "the ENERGIZE gesture (the supershield key). ~1.5 requires both triggers meaningfully " +
+                 "pulled; binary devices (DualMouse) write 0/1 mirrors and reach 2 with both held.")]
+        [SerializeField, Range(0f, 2f)] float stanceSumThreshold = 1.5f;
+        [Tooltip("Difference magnitude below which the stance counts as centered (both triggers even). " +
+                 "Keeps a lopsided pull from reading as the energize stance.")]
+        [SerializeField, Range(0f, 1f)] float stanceCenterEpsilon = 0.4f;
+
         public float SwipeYawDegrees => swipeYawDegrees;
         public float SwipeRollDegrees => swipeRollDegrees;
         public float ChopPitchDegrees => chopPitchDegrees;
         public float AnalogSmoothingSeconds => analogSmoothingSeconds;
         public float SwipeOutSeconds => swipeOutSeconds;
         public float ReturnSeconds => returnSeconds;
+        public float StanceSumThreshold => stanceSumThreshold;
+        public float StanceCenterEpsilon => stanceCenterEpsilon;
+        public float SwipeCooldownSeconds => Mathf.Max(0f, swipeCooldownSeconds);
+        public float SwipeEngageThreshold => Mathf.Clamp01(swipeEngageThreshold);
     }
 }

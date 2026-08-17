@@ -36,7 +36,6 @@ namespace CosmicShore.Gameplay
             }
 
             float amount = _resourceAmount * scale;
-            CSDebug.Log($"<color=green> Resource amount changed to {amount}");
 
             if (_overrideAmount)
                 rs.SetResourceAmount(_resourceIndex, amount);

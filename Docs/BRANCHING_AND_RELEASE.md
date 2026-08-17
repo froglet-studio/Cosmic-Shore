@@ -1,301 +1,410 @@
-# Branching, Promotion and Release
+# Branching and Release
 
-How code gets from a developer's machine to a Thursday test build, what guards
-it on the way, and what still needs building.
+What each branch is for, when builds happen, and what to do when something
+breaks.
 
-Companion documents: `Docs/BUILD_AND_DELIVERY.md` (how a build is actually
-produced), `GIT_RULES.md` (commit and branch naming conventions).
-
----
-
-## 1. The branch model
-
-| Branch | Role | Who writes to it |
-|---|---|---|
-| `bleeding-edge` | **Trunk.** Where development happens, and the repository default branch. | Everyone, via PR |
-| `master` | The best known-good version at any time. Updated from trunk when trunk is worth keeping. | Merges from trunk only |
-| `development` | Currently a third parallel line. Intended to take over the trunk role later, see §6. | Everyone, via PR |
-| `build/android` | Disposable snapshot that UGS builds Android from. | **The promotion workflow only** |
-| `build/windows` | Disposable snapshot that UGS builds Windows from. | **The promotion workflow only** |
-
-Two rules matter more than the rest:
-
-**Nobody commits to `build/*`.** They are force-moved to a trunk commit every
-Thursday and hold no unique history. A commit landed on one is destroyed the
-following week, which means a bug "fixed" there comes straight back. Fix it on
-trunk and let the next promotion carry it.
-
-**Trunk is defined as the repository default branch, not by name.** The
-automation reads the default branch at run time. Nothing hardcodes
-`bleeding-edge`, so moving trunk later is a GitHub setting change and not a
-code change. See §6.
+> **Setting the pipeline up for the first time?** Follow
+> [`BUILD_PIPELINE_SETUP.md`](BUILD_PIPELINE_SETUP.md) — the click-by-click
+> checklist for GitHub, CI and UGS. This document is the reasoning behind it.
 
 ---
 
-## 2. How a change reaches a test build
+## 1. The four branches, in one line each
+
+| Branch | What it is |
+|---|---|
+| `bleeding-edge` | Where you work. All development lands here. |
+| `development` | What testers get. Updated from `bleeding-edge` when you decide a batch is worth testing. |
+| `master` | What players get. Release builds only. |
+| `build/android`, `build/windows` | Not branches you use. Robot-owned snapshots that Unity Build Automation reads. |
+
+Work flows one direction only:
 
 ```
-  developer branch
-        │  PR
-        ▼
-  bleeding-edge (trunk)  ──────────────┐
-        │                              │
-        │  Thursday 06:00 PT           │  layer 1: static validation
-        │  sync-build-branches.yml     │  runs BEFORE the refs move
-        ▼                              │
-  build/android, build/windows  ───────┤  layer 2: build-branch-ci.yml
-        │                              │  full static set + Unity compile
-        │  push webhook                │
-        ▼                              │
-  UGS Build Automation  ───────────────┘  layer 3: the real player build
-        │
-        ▼
-     testers
+   you write code
+        ↓
+   bleeding-edge  ──► internal build,  every Friday
+        ↓
+   development    ──► TEST build,      every 3 weeks on Wednesday
+        ↓
+   master         ──► release build,   when you ship
 ```
 
-### Defence in depth
+Nothing ever flows back up. `development` never gets its own commits; it only
+receives from `bleeding-edge`. `master` only receives from `development`.
 
-Each layer is cheaper and earlier than the one after it. The point is that a
-mistake gets caught by the cheapest layer that can see it.
+---
 
-| Layer | What | Cost | Catches |
+## 2. The three builds
+
+| Build | Source branch | When | Who sees it |
 |---|---|---|---|
-| 1. Pre-promotion validation | `Tools/CI/validate_project.py` over a 22 MB sparse checkout | seconds | Editor-only API in player code, and other mechanical breakage. **Blocks the promotion**, so a known-bad commit never reaches UGS. |
-| 2. Build branch CI | `build-branch-ci.yml` on push to `build/**` | seconds, or up to an hour with a Unity runner | The full static set, plus a real compile once a runner exists |
-| 3. UGS Thursday build | The actual Android and Windows player builds | tens of minutes | Everything else: shaders, assets, addressables, platform toolchains |
+| **Internal** | `bleeding-edge` | Every **Friday**, 06:00 PT | The team |
+| **Test** | `development` | Every **3 weeks**, **Wednesday**, 06:00 PT | Testers |
+| **Release** | `master` | When you decide | Players |
 
-### What layer 1 actually checks
+### Internal build (Friday)
 
-`Tools/CI/validate_project.py` needs no Unity install, which is what lets it run
-on every promotion. It catches the errors that have historically broken player
-builds here and are visible without compiling:
+UGS watches `bleeding-edge` directly. There is no snapshot branch and nothing
+gets promoted. You do not have to do anything for this build to happen.
 
-- **`editor-in-runtime`** *(blocking)*. Code reaching `UnityEditor` from a
-  player-visible line. `UnityEditor` does not exist in a player build, so this
-  is a hard failure at build time even though the editor compiles it happily.
-  This is the recurring "namespace error": it produced the commits *Move editor
-  scripts to Editor folder to fix player build errors* and *Fully qualify Editor
-  base class to avoid namespace conflict*. The check tracks `#if` / `#elif` /
-  `#else` / `#endif` nesting properly, so a correctly guarded editor script is
-  not flagged, and an `#if UNITY_EDITOR || UNITY_STANDALONE` is, because the
-  second arm still reaches a player.
-- **`monobehaviour-name`** *(warning)*. A MonoBehaviour whose class name does
-  not match its file name. Unity refuses to attach the component and the failure
-  surfaces later as a null in a scene. Warning rather than error because a file
-  holding several MonoBehaviours is a legitimate pattern.
-- **`meta`** *(warning)*. Orphan and missing `.meta` files, which is how GUID
-  churn and missing-script references start when several people share scenes.
+The only automation is `tag-internal-build.yml`, which writes a tag like
+`internal/2026-08-07` on whatever `bleeding-edge` pointed at when the slot
+opened. That tag is the point: `bleeding-edge` will have moved on by the time
+someone reports a problem, and without the tag there is no way back to the
+commit that was actually built.
 
-Run it locally before pushing anything structural:
+### Test build (every 3 weeks, Wednesday)
+
+This one is automated end to end by `sync-build-branches.yml`:
+
+1. Checks it is really 06:00 Pacific and really an on-cycle week.
+2. Runs static validation on `development`. **If that fails, it stops here** and
+   nothing is promoted.
+3. Force-moves `build/android` and `build/windows` to that commit.
+4. Tags it `testbuild/2026-08-12`.
+5. UGS sees the push and starts building.
+6. Comments the result on the tracking issue.
+
+**First run: Wednesday 12 August 2026.** Then every 21 days:
+
+| | |
+|---|---|
+| 12 Aug 2026 | 2 Sep 2026 |
+| 23 Sep 2026 | 14 Oct 2026 |
+| 4 Nov 2026 | 25 Nov 2026 |
+| 16 Dec 2026 | 6 Jan 2027 |
+
+To move testers to a newer batch, merge `bleeding-edge` into `development`
+before the Wednesday. That is the only manual step in the whole cycle.
+
+### Release build (master)
+
+**No automation today, on purpose.** Releases are rare and you want a human
+picking the exact commit. When the first real release approaches, see R5 in §6.
+
+---
+
+## 3. What you actually have to do
+
+**Every cycle:** merge `bleeding-edge` into `development` when a batch is ready
+for testers. That is it.
+
+**Once, during setup:**
+
+1. Point the UGS Android and Windows *test* targets at `build/android` and
+   `build/windows`, with auto-build on push.
+2. Point the UGS *internal* targets at `bleeding-edge`, on a Friday timer.
+3. Subscribe to the `build-promotion` tracking issue (§4).
+
+**Never:** commit to `build/android` or `build/windows`. They are force-moved
+every three weeks, so anything you put there is destroyed and the problem you
+fixed comes straight back. Fix it on `bleeding-edge` instead.
+
+> ### The build branches do not exist yet
+>
+> They are created by the first run of the promotion workflow, so you will not
+> find them in the branch list until then. That is expected, not a mistake.
+>
+> To create them now instead of waiting: **Actions → Promote test build → Run
+> workflow**, leaving `source_ref` blank. Manual runs skip both the clock and
+> the cycle check, so it will run immediately.
+
+### Runbook: promote `bleeding-edge` to `development`
+
+Do this before a Wednesday cycle when you want testers on a newer batch. Skip it
+and the cycle simply rebuilds what testers already have, which is a valid choice.
 
 ```bash
-python3 Tools/CI/validate_project.py          # all checks
-python3 Tools/CI/validate_project.py --list   # what it can check
-python3 Tools/CI/test_validate_project.py     # self-test, 16 cases
+git fetch origin
+git checkout development
+git merge --ff-only origin/bleeding-edge
+git push origin development
 ```
 
-Only `editor-in-runtime` can block. A gate that cries wolf gets switched off, so
-everything that can be intentional reports and gets out of the way.
+That is the whole operation. `--ff-only` is the safety catch, not a formality:
+it succeeds only if `development` has no commits of its own. **If it refuses,
+do not force it and do not merge manually.** Something has committed directly to
+`development`, which breaks the one-way rule, and that stray commit is the thing
+to find. See §6 R6.
+
+Verify before the cycle runs:
+
+```bash
+git diff --stat origin/development origin/bleeding-edge   # empty = in sync
+```
+
+Prefer the GitHub UI? Open a PR from `bleeding-edge` into `development` and use
+**Create a merge commit**. **Never squash a promotion** — it discards the shared
+history that makes the next one a fast-forward, which is exactly how these
+branches drifted 3000 commits apart before.
+
+### Runbook: cut a release
+
+There is no release automation yet (§6 R5), so this is deliberate and manual.
+Release from `development`, not `bleeding-edge`: `development` is the code that
+has actually been through a test build.
+
+1. **Pick the commit.** Normally `development`'s tip, and normally one that
+   testers have already been running for a cycle. If you need an older one, take
+   the `testbuild/YYYY-MM-DD` tag for the build QA signed off on.
+
+2. **Set the version.** Bump `bundleVersion` in `ProjectSettings/ProjectSettings.asset`
+   on `bleeding-edge` and let it flow down, rather than editing it on `master`,
+   which would give `master` a commit of its own and break the fast-forward rule.
+
+3. **Move `master`:**
+
+   ```bash
+   git fetch origin
+   git checkout master
+   git merge --ff-only origin/development
+   git push origin master
+   ```
+
+   Same `--ff-only` rule, same reasoning.
+
+4. **Tag it**, so the shipped build is recoverable after the branches move on:
+
+   ```bash
+   git tag -a v0.3.0 -m "Release 0.3.0"
+   git push origin v0.3.0
+   ```
+
+5. **Build from `master` in UGS**, manually. Until R1 lands, the tag is the only
+   link between what players are running and a commit, so do not skip step 4.
+
+6. **Store submission?** Do not build directly from `master` for a submission
+   that will sit in review for days while `master` may move. Cut
+   `release/<version>` from the tagged commit and build from that. See §6 R5.
+
+---
+
+## 4. How you find out something broke
+
+**One GitHub issue, labelled `build-promotion`.** Every test-build promotion
+comments on it, and its open/closed state is the signal:
+
+| Issue is | Means |
+|---|---|
+| **Closed** | Last promotion worked. Nothing to do. |
+| **Open** | Promotion failed. **The test build is stale or missing.** |
+
+Subscribe to that issue and you get an email every cycle. Successful runs
+comment too, which matters: a workflow that quietly stops firing otherwise
+looks exactly like a normal quiet week.
+
+Two things that will not notify you, so do not rely on them:
+
+- GitHub **disables scheduled workflows after 60 days** of no repository
+  activity. It emails first.
+- For scheduled workflows, GitHub's own failure email goes **only to whoever
+  last edited the cron line**, not to the repo watchers.
+
+---
+
+## 5. What stops a broken build reaching testers
+
+Three checks, cheapest first. The point is that each one catches what it can so
+the expensive ones are not the first to notice.
+
+| | Check | Runs | Takes | Blocks the build? |
+|---|---|---|---|---|
+| 1 | `validate_project.py` | Before the branches move | seconds | **Yes** |
+| 2 | `build-branch-ci.yml` | After they move | seconds, or ~1h with a Unity runner | No, reports |
+| 3 | UGS build | Last | 20-60 min | It is the build |
+
+### Check 1: what it actually looks for
+
+It needs no Unity install, which is why it can run on every promotion. It looks
+for mistakes that break a *player* build while compiling perfectly fine in the
+editor:
+
+**`UnityEditor` code reaching player code — blocks the promotion.** `UnityEditor`
+does not exist in a shipped game, so this is a hard failure at build time even
+though everything looks fine in the editor. This is the recurring one. It caused
+both *Move editor scripts to Editor folder to fix player build errors* and *Fully
+qualify Editor base class to avoid namespace conflict*.
+
+**A MonoBehaviour whose class name does not match its file name — warning only.**
+Unity refuses to attach the component and you find out later as a null in a
+scene. Warning rather than blocking, because one file holding several
+MonoBehaviours is a normal pattern.
+
+**Missing or orphaned `.meta` files — warning only.** How GUID churn and
+"missing script" errors start when several people share scenes.
+
+Only the first can stop a build. A check that cries wolf gets switched off.
+
+Run it yourself before pushing anything structural:
+
+```bash
+python3 Tools/CI/validate_project.py
+```
+
+### Check 3 is the real one
+
+Static checks cannot prove a build succeeds. They catch a specific set of known
+mistakes. Shaders, addressables, asset imports and platform toolchains are only
+proven by the UGS build itself.
 
 ### Autofix
 
-When layer 1 or 2 fails, `build-branch-ci.yml` runs an autofix job that reads
-`CLAUDE.md` and `.claude/skills/`, repairs the mechanical cases, and **opens a
-PR against trunk**. It never pushes to the build branch, for the reason in §1.
+If check 1 or 2 fails, `build-branch-ci.yml` can attempt the repair itself,
+reading `CLAUDE.md` and `.claude/skills/`, and open a PR **against
+`bleeding-edge`**. Never against a build branch, for the reason in §3.
 
-It is inert until `ANTHROPIC_API_KEY` is set as a repository secret, and it is
-deliberately scoped to mechanical fixes. If a failure is not one of the known
-classes it stops and explains rather than guessing.
-
----
-
-## 3. How you are notified
-
-**One tracking issue, labelled `build-promotion`.** Every promotion run comments
-on it, and its state is the health signal:
-
-- **Closed** means the last run succeeded.
-- **Open** means the pipeline needs attention and the Thursday build will be
-  stale or missing until it is fixed.
-
-So "is there an open `build-promotion` issue?" answers "is the pipeline broken?"
-at a glance, without opening the Actions tab.
-
-**Subscribe to that issue** (Watch on the issue itself). That is how the weekly
-report reaches your inbox. Every run comments, including successful ones, which
-matters more than it sounds: a workflow that silently stops firing otherwise
-looks exactly like a quiet week.
-
-The same report is written to the workflow run summary in the Actions tab.
-
-### The failure modes notifications will not cover
-
-- **GitHub disables scheduled workflows after 60 days of no repository
-  activity.** It emails first. This repo is active enough that it should not
-  arise, but if the cron ever stops for no visible reason, check this.
-- **Scheduled-workflow failure emails go only to whoever last edited the cron
-  line**, not to the repository watchers. Do not rely on that channel; rely on
-  the tracking issue.
+Inert until `ANTHROPIC_API_KEY` is set. It is scoped to mechanical fixes and
+stops rather than guessing if the failure is not one it recognises.
 
 ---
 
-## 4. Roadmap
+## 6. What is still missing
 
-Ordered by what actually bites first.
+Ordered by what hurts first.
 
-### R1. Make builds identifiable *(not started, highest value)*
+### R1. You cannot tell which build a tester is running
 
-**Problem.** `bundleVersion` is `0.2.0` on every branch, `AndroidBundleVersionCode`
-is a static `11`, and Standalone `buildNumber` is `0`. When a tester says "it
-crashed", there is no way to know what they ran. The `testbuild/YYYY-MM-DD` tags
-the promotion workflow writes get you from a date to a commit, but only if
-someone recorded the date accurately.
+**The problem.** `bundleVersion` is `0.2.0` on every branch, `AndroidBundleVersionCode`
+is stuck at `11`, Standalone `buildNumber` is `0`. When a tester says "it
+crashed", nothing in the build tells you what they ran. The `testbuild/` and
+`internal/` tags get you from a *date* to a commit, but only if someone wrote
+the date down correctly.
 
-**How.** Stamp the commit into the build and show it in game.
+**The fix.** Stamp the commit into the build and show it on screen.
 
-1. Generate a version file at build time. In
-   `Assets/_Scripts/Editor/Build/CosmicShoreBuildPipeline.cs`, before the build:
+1. In `Assets/_Scripts/Editor/Build/CosmicShoreBuildPipeline.cs`, before building:
 
    ```csharp
    var sha = Environment.GetEnvironmentVariable("BUILD_COMMIT_SHA") ?? "local";
    var stamp = $"{PlayerSettings.bundleVersion}+{sha[..Math.Min(8, sha.Length)]}";
-   // Android: a monotonically increasing code is required by Play
    PlayerSettings.Android.bundleVersionCode = int.Parse(
        Environment.GetEnvironmentVariable("BUILD_NUMBER") ?? "1");
-   // Write stamp into a Resources TextAsset the runtime can read
+   // write `stamp` into a Resources TextAsset the runtime can read
    ```
 
-2. Have UGS pass its build number through as `BUILD_NUMBER`, and the commit as
+2. Have UGS pass its build number as `BUILD_NUMBER` and the commit as
    `BUILD_COMMIT_SHA`.
-3. Display the stamp in a corner of the main menu and include it in crash
-   reports via `CrashReportingService`.
+3. Show the stamp in a corner of the main menu, and attach it to crash reports
+   via `CrashReportingService`.
 
-**Effort.** Half a day. Everything downstream (bug triage, crash grouping, "is
-this fixed in the build you have") depends on it.
+**Effort:** half a day. Bug triage, crash grouping and "is this fixed in your
+build" all depend on it.
 
-### R2. Branch hygiene *(not started)*
+### R2. 322 branches, 269 of them `claude/*`
 
-**Problem.** 322 remote branches, 269 of them `claude/*`. Finding a real branch
-means scrolling past hundreds of dead ones, and stale branches make it unclear
-what is in flight.
-
-**How.**
+**The fix.**
 
 1. Settings → General → Pull Requests → **Automatically delete head branches**.
-   Stops the bleeding immediately.
-2. Sweep what is already merged:
+   Stops it getting worse immediately.
+2. Clear the backlog:
 
    ```bash
    git fetch --prune origin
-   # list branches already contained in trunk
    git branch -r --merged origin/bleeding-edge \
      | grep -v -E 'bleeding-edge|master|development|build/' \
      | sed 's|origin/||'
    ```
 
-   Review that list, then delete in batches with
-   `git push origin --delete <branch>...`.
-3. For unmerged `claude/*` branches older than ~60 days, tag before deleting if
-   you want the work recoverable: `git tag archive/<name> origin/<name>`.
+   Review, then `git push origin --delete <branch>...` in batches.
+3. For unmerged branches older than ~60 days, tag before deleting if you want
+   them recoverable: `git tag archive/<name> origin/<name>`.
 
-**Effort.** One hour, mostly review.
+**Effort:** an hour, mostly reading the list.
 
-### R3. Protect the build branches *(not started)*
+### R3. Anyone can push to the build branches
 
-**Problem.** Nothing stops a person pushing to `build/android`. That work is
-destroyed on the next Thursday promotion, silently.
+**The fix.** Settings → Branches → ruleset targeting `build/*`:
 
-**How.** Settings → Branches → add a ruleset targeting `build/*`:
+- Restrict pushes to the GitHub Actions app only
+- Allow force pushes **for that actor** (promotion needs them)
+- Do not require PRs; the workflow pushes directly
 
-- Restrict who can push to the GitHub Actions app only
-- Allow force pushes **for that actor** (the promotion needs them)
-- Do not require PRs, since the workflow pushes directly
+**Effort:** ten minutes.
 
-**Effort.** Ten minutes.
+### R4. Nothing actually compiles before the UGS build
 
-### R4. Get a Unity runner, then turn on the green gate *(blocked on hardware)*
+**The problem.** `unity-ci.yml` is written but inert, because no runner is
+configured. Check 1 catches mechanical errors; only a real compile catches the
+rest. Today the first true compile of a cycle is the UGS build itself.
 
-**Problem.** `unity-ci.yml` is written but inert: no `UNITY_RUNNER_LABEL`, so
-nothing actually compiles. Layer 1 catches mechanical errors, but only a real
-compile catches the rest, and right now the first true compile of the week is
-the UGS build itself.
+**The fix.**
 
-**How.**
-
-1. Register the existing build box as a repository self-hosted runner. This is
-   the best fit: no license activation, no minute costs, and `Library/` stays
-   warm so builds are incremental. See `Docs/BUILD_AND_DELIVERY.md` §10 for the
-   alternatives and their trade-offs.
+1. Register the existing build box as a self-hosted runner. Best fit: no license
+   activation, no minute costs, and `Library/` stays warm so builds are
+   incremental. Alternatives in `Docs/BUILD_AND_DELIVERY.md` §10.
 2. Set repository variables `UNITY_RUNNER_LABEL` and `UNITY_PATH`. Both
-   `unity-ci.yml` and `build-branch-ci.yml` pick it up with no edits.
-3. Once the edit-mode suite is green on trunk, set
-   `BUILD_PROMOTION_REQUIRES_GREEN=true` so a red commit can no longer be
-   promoted at all.
+   `unity-ci.yml` and `build-branch-ci.yml` pick them up with no edits.
+3. Once the edit-mode suite is green, set `BUILD_PROMOTION_REQUIRES_GREEN=true`
+   so a red commit cannot be promoted at all.
 
-**Security note.** This repository is **public**. Do not attach a self-hosted
-runner without first requiring approval for outside-contributor workflow runs,
-or a fork PR will execute arbitrary code on the build machine.
+> **This repository is public.** Do not attach a self-hosted runner without first
+> requiring approval for outside-contributor workflow runs, or a fork PR can run
+> arbitrary code on the build machine.
 
-**Effort.** A day, mostly runner setup.
+**Effort:** a day, mostly runner setup.
 
-### R5. Separate cert from test *(not needed yet)*
+### R5. Release builds are entirely manual
 
-**Problem.** `build/*` is right for weekly QA, where the newest code wins. Store
-submission is the opposite: the build must be frozen while review runs, which
-can take days. Submitting from a branch that force-moves every Thursday means
-the submitted commit is gone by the time a reviewer asks about it.
+Fine for now. When the first store submission approaches, the shape to build is
+a `release/<version>` branch cut from a known-good `master` commit, with only
+submission blockers cherry-picked onto it. A store review can take days and the
+submitted commit must not move underneath it, which is exactly why `master`
+cannot be a branch that gets force-moved. `GIT_RULES.md` already anticipates
+`release/*`.
 
-**How.** When the first store submission approaches, cut `release/<version>`
-from a known-good trunk commit, build from that, and cherry-pick only
-submission blockers onto it. `GIT_RULES.md` already anticipates `release/*`.
+### R6. Why `master` and `development` were 3000 commits behind
 
-**Effort.** Nothing now. Decide before the first submission.
+**What happened.** `master` drifted **3188 commits** behind `bleeding-edge` and
+could not be merged normally: the input system had been restructured, audio had
+moved to FMOD, and Unity had gone from 6000.0.62f1 to 6000.3.17f1. `development`
+was 2772 behind. Both were fixed in August 2026 by taking `bleeding-edge`'s tree
+wholesale.
 
-### R6. Collapse the parallel trunks *(the underlying issue)*
+**Why it happened.** All three branches were accepting their own commits. Three
+lines each taking their own work will always diverge like that. It is a shape
+problem, not a merge problem.
 
-**Problem.** `master` drifted **3188 commits** behind `bleeding-edge`, to the
-point where merging normally was not possible: the input system had been
-restructured, audio had moved to FMOD, and the Unity version had moved from
-6000.0.62f1 to 6000.3.17f1. The August 2026 sync resolved it by taking trunk's
-tree wholesale. `development` is currently 208 commits down the same road.
+**How the model in §1 prevents it.** `development` and `master` only ever
+*receive*. Because they never accumulate unique commits, every update is a
+fast-forward, so they cannot drift and can never need rescuing again.
 
-That drift is not a merge problem, it is a shape problem. Three long-lived
-parallel lines, each accepting its own work, will always diverge like this.
-
-**How.** One trunk, short-lived branches off it, everything else strictly
-downstream:
-
-- Trunk takes all development.
-- `master` only ever **receives** from trunk. It never accumulates unique
-  commits, so it can always fast-forward and can never drift.
-- When `development` takes over the trunk role, make that switch explicit:
-  merge trunk into it, change the repository default branch on GitHub, and
-  retire the old trunk. The promotion workflow follows the default branch
-  automatically, so nothing in CI needs editing.
-- Anything with unique commits that is not trunk is a branch that will need
-  another 3000-commit rescue eventually. Either merge it or delete it.
-
-**Effort.** A conversation, then ongoing discipline.
+If you ever find yourself resolving conflicts merging `bleeding-edge` into
+`development`, something has committed directly to `development` and that is the
+bug to fix.
 
 ---
 
-## 5. Configuration reference
+## 7. Reference
 
-| Name | Kind | Used by | Purpose |
+### Files
+
+| File | What it does |
+|---|---|
+| `.github/workflows/sync-build-branches.yml` | Test build promotion, Wednesday every 3 weeks |
+| `.github/workflows/tag-internal-build.yml` | Tags `bleeding-edge` every Friday |
+| `.github/workflows/build-branch-ci.yml` | Verifies what landed on `build/**`, autofix |
+| `.github/workflows/unity-ci.yml` | Tiered compile verification (inert, needs a runner) |
+| `Tools/CI/validate_project.py` | The static checks |
+| `Tools/CI/test_validate_project.py` | Self-test for the above, 16 cases |
+
+### Settings
+
+| Name | Kind | Default | What it does |
 |---|---|---|---|
-| `BUILD_PROMOTION_REQUIRES_GREEN` | Repo variable | `sync-build-branches.yml` | `true` refuses to promote a commit whose check runs are red or absent. Leave unset until Unity CI runs, see R4. |
-| `UNITY_RUNNER_LABEL` | Repo variable | `unity-ci.yml`, `build-branch-ci.yml` | Runner label. While unset, every Unity job is **skipped** rather than queued. |
-| `UNITY_PATH` | Repo variable or runner env | same | Absolute path to the Unity 6000.3.17f1 executable. |
-| `UNITY_TESTS_BLOCKING` | Repo variable | `unity-ci.yml` | `false` downgrades edit-mode failures to warnings. Temporary measure only. |
-| `ANTHROPIC_API_KEY` | Repo secret | `build-branch-ci.yml` | Enables the autofix job. Inert while unset. |
+| `BUILD_SOURCE_BRANCH` | Variable | `development` | Which branch test builds come from |
+| `BUILD_PROMOTION_REQUIRES_GREEN` | Variable | off | Refuse to promote a commit with red or missing CI. Leave off until R4. |
+| `UNITY_RUNNER_LABEL` | Variable | unset | Runner for Unity jobs. While unset those jobs are **skipped**, not queued. |
+| `UNITY_PATH` | Variable | unset | Path to the Unity 6000.3.17f1 executable |
+| `ANTHROPIC_API_KEY` | Secret | unset | Enables autofix |
 
-### Workflows
+### Two things about scheduling
 
-| File | Trigger | Does |
-|---|---|---|
-| `sync-build-branches.yml` | Thursday 06:00 PT, or manual | Validates trunk, moves `build/*`, tags the build, reports to the tracking issue |
-| `build-branch-ci.yml` | Push to `build/**` | Full static set, Unity compile where available, autofix on failure |
-| `unity-ci.yml` | PR into trunk, nightly, weekly | Tiered compile and build verification |
+**Cron cannot say "every 3 weeks."** The workflow fires every Wednesday and
+counts days from the anchor date `2026-08-12`, proceeding only when that count
+divides by 21. Change the cadence by editing `CYCLE_ANCHOR` and `CYCLE_DAYS` at
+the top of the workflow.
 
-Scheduled workflows only fire from the **default branch**. A change to any cron
-here has no effect until it is merged to trunk.
+**Scheduled workflows only run from the default branch.** The default branch is
+`bleeding-edge`. Editing a cron on any other branch changes nothing until it
+merges there.

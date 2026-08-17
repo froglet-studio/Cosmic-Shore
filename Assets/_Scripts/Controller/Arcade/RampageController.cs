@@ -4,14 +4,42 @@ using CosmicShore.Data;
 namespace CosmicShore.Gameplay
 {
     /// <summary>
-    /// Rampage - the destructive analog of Crystal Capture ("Scurry"): every domain races to
-    /// destroy the prism target first (hostile prisms only - another domain's mass; shattering
-    /// your own trail is worthless). Structural clone of
-    /// <see cref="MultiplayerCrystalCaptureController"/>: 1 round / 1 turn, server-authoritative
-    /// winner detection in OnTurnEndedCustom, final results replicated by the shared
-    /// <see cref="MultiplayerDomainGamesController.SyncFinalResults"/> template.
+    /// Rampage - the **Dolphin-only** demolition race, and the destructive analog of Crystal
+    /// Capture ("Scurry"): every domain races to destroy the prism target first (hostile
+    /// prisms only - another domain's mass; shattering your own trail is worthless).
+    /// Structural clone of <see cref="MultiplayerCrystalCaptureController"/>: 1 round / 1 turn,
+    /// server-authoritative winner detection in OnTurnEndedCustom, final results replicated by
+    /// the shared <see cref="MultiplayerDomainGamesController.SyncFinalResults"/> template.
     /// The destruction stat itself auto-increments via StatsManager.PrismDestroyed (SOAP
     /// block-destroyed channel), so no per-event listener is needed here.
+    ///
+    /// <para><b>Why the Dolphin, and why ONE crystal.</b> The Dolphin's damage verb is not its
+    /// hull, it is the conic jaw blast - and that blast is armed by SKIMMING (150 skims fills
+    /// the Energy meter) and fired by touching a CRYSTAL, which spends the whole meter in one
+    /// shot (<c>DOLPHIN_ENERGY_ECONOMY.md</c> §1). So the vessel already contains the loop this
+    /// mode wants: graze the forest to charge, then cash the charge on the one crystal in the
+    /// arena. The arena carries exactly one (<c>fixedCrystalCount: 1</c>), which turns the
+    /// vessel's private economy into a contested object - including the denial play of taking
+    /// it empty to move it away from a fully-charged rival. Nothing here scripts that; it falls
+    /// out of the crystal being singular and the meter being spent on contact.</para>
+    ///
+    /// <para><b>The AI is the platform default, deliberately.</b> This controller installs NO
+    /// <c>AIPilot.SetExternalTargetProvider</c> hook: an AI pilot already seeks the nearest
+    /// collectible cell item, which in this arena is the one contested crystal, and already knows
+    /// to DRIFT once it has the crystal lined up - swinging its nose onto a cluster of hostile
+    /// mass (<see cref="Cell.GetExplosionTarget"/>, the fauna hunting query) while its course
+    /// stays locked on the prize. That is exactly the mode's loop, so a mode-local targeting brain
+    /// would be a second implementation of behaviour the platform already has. A two-phase
+    /// "graze until charged, then break for the crystal" provider was written here and REMOVED for
+    /// that reason - it overrode crystal seeking outright, which is the one thing the AI must not
+    /// stop doing.</para>
+    ///
+    /// <para>Vessel restriction is NOT enforced here - it is the platform's two-place clamp
+    /// (<c>GameDataSO.SyncFromArcadeGame</c> for the machine that pressed Start,
+    /// <c>ServerPlayerVesselInitializer.ResolveSpawnVesselType</c> server-side at spawn), fed by
+    /// the single entry in <c>ArcadeGameRampage.Vessels</c>. See
+    /// <see cref="DogFightController"/> / RIBCAGE.md for why the server clamp is the one that
+    /// matters in multiplayer.</para>
     /// </summary>
     public class RampageController : MultiplayerDomainGamesController
     {
@@ -20,14 +48,10 @@ namespace CosmicShore.Gameplay
         // serialized `rule:` key binding ambiguously. Drag RampageScoringRule.asset onto the
         // inherited Scoring slot; the base publishes it to gameData.ScoringRule on spawn.
 
-        [Header("AI")]
-        [Tooltip("The arena cell whose density grids the AI hunts - each AI's target is the " +
-                 "densest region of mass HOSTILE to its domain (the same query aggression-1 " +
-                 "fauna use), so the Rhino's ram scores on contact.")]
-        [SerializeField] Cell arenaCell;
-        [Tooltip("Seconds between AI mass-target refreshes. FindDensestRegion runs a Burst job, " +
-                 "so pilots sample on this cadence and fly at the cached point between samples.")]
-        [SerializeField, Min(0.25f)] float aiRetargetSeconds = 1.5f;
+        // No AI fields and no SetExternalTargetProvider hook: the Rhino-era arenaCell /
+        // aiRetargetSeconds pair went with ArmMassHunters when Rampage was rebuilt as the
+        // Dolphin's race (see the class doc). The end-game latch is the base template's
+        // FinalResultsSent - the mode-local _finalResultsSent it replaced is gone too.
 
         // Golf: winners carry their finish time, losers a DnfThreshold+remaining sentinel
         // (see RampageScoringRuleSO.AssignScores) - lower is better, like HexRace.
@@ -45,45 +69,6 @@ namespace CosmicShore.Gameplay
             base.OnNetworkSpawn();
             numberOfRounds = 1;
             numberOfTurnsPerRound = 1;
-        }
-
-        // ── AI mass hunters (server) ──────────────────────────────────────
-
-        protected override void OnCountdownTimerEnded()
-        {
-            if (!IsServer) return;
-            base.OnCountdownTimerEnded(); // ClientRpc: SetPlayersActive + StartTurn
-            ArmMassHunters();
-        }
-
-        /// <summary>
-        /// Points every AI pilot at the densest region of mass HOSTILE to its domain -
-        /// <see cref="Cell.GetExplosionTarget"/>, the same density-grid query aggression-1
-        /// fauna use (no physics queries, no parallel spatial store - see
-        /// Docs/SPATIAL_INDEX.md). Ramming through the cluster destroys it, so the AI
-        /// genuinely competes in the race. Mirrors Astro League's ArmStrikers pattern.
-        /// </summary>
-        void ArmMassHunters()
-        {
-            foreach (var p in gameData.Players)
-            {
-                if (p == null || !p.IsInitializedAsAI) continue;
-                var pilot = p.Vessel?.VesselStatus?.AIPilot;
-                if (pilot == null) continue;
-
-                var captured = p;
-                Vector3 cached = captured.Vessel.Transform.position;
-                float nextSample = 0f;
-                pilot.SetExternalTargetProvider(() =>
-                {
-                    if (arenaCell != null && Time.time >= nextSample)
-                    {
-                        nextSample = Time.time + aiRetargetSeconds;
-                        cached = arenaCell.GetExplosionTarget(captured.Domain);
-                    }
-                    return cached;
-                });
-            }
         }
 
         // ── Server-authoritative game end ─────────────────────────────────

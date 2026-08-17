@@ -104,7 +104,13 @@ namespace CosmicShore.Gameplay
                         OverrideMaterial    = req.OverrideMaterial,
                         AnnonymousExplosion = req.Anonymous,
                         SpawnPosition       = pos,
-                        SpawnRotation       = rot
+                        SpawnRotation       = rot,
+                        // Friendly fire is ON by default: the CHARGE level-5 'Domain-Safe
+                        // Skybursts' snapshot on the projectile (set at fire time) is the ONLY
+                        // thing that makes a detonation spare the shooter's own domain — so a
+                        // hit, timeout, mine, or vessel-strike detonation all honor one gate,
+                        // and the AOE prefabs' authored affectSelf never decides this path.
+                        AffectSelfOverride  = !proj.SpareOwnDomain
                     });
                     spawned.Detonate();
                 }

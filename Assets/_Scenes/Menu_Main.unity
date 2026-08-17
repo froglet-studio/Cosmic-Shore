@@ -3284,7 +3284,6 @@ GameObject:
   - component: {fileID: 989920296}
   - component: {fileID: 989920295}
   - component: {fileID: 989920297}
-  - component: {fileID: 989920299}
   m_Layer: 0
   m_Name: Camera
   m_TagString: MainCamera
@@ -3402,38 +3401,6 @@ MonoBehaviour:
     m_VarianceClampScale: 0.9
     m_ContrastAdaptiveSharpening: 0
   m_Version: 2
---- !u!114 &989920299
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 989920293}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 72ece51f2901e7445ab60da3685d6b5f, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  ShowDebugText: 0
-  ShowCameraFrustum: 1
-  IgnoreTimeScale: 0
-  WorldUpOverride: {fileID: 0}
-  ChannelMask: -1
-  UpdateMethod: 2
-  BlendUpdateMethod: 1
-  LensModeOverride:
-    Enabled: 0
-    DefaultMode: 2
-  DefaultBlend:
-    Style: 1
-    Time: 2
-    CustomCurve:
-      serializedVersion: 2
-      m_Curve: []
-      m_PreInfinity: 2
-      m_PostInfinity: 2
-      m_RotationOrder: 4
-  CustomBlends: {fileID: 0}
 --- !u!1001 &1024212008
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -4946,6 +4913,11 @@ MonoBehaviour:
   - {fileID: 673228694}
   - {fileID: 1419570605}
   - {fileID: 1867942830}
+  arrangeSpawnPointsAroundCell: 0
+  spawnDistanceOutsideNucleus: 40
+  spawnRingRadiusFloor: 0
+  spawnFormation: 0
+  cellData: {fileID: 0}
   preSpawnDelayMs: 200
   postSpawnDelayMs: 200
   menuVesselDomain: 1
@@ -4971,7 +4943,7 @@ MonoBehaviour:
   - {fileID: 1799603820}
   fadeDuration: 0.5
   cameraTransitionDuration: 2
-  cameraController: {fileID: 0}
+  cameraController: {fileID: 1486013853}
   lockInputDuringEnterTransition: 1
 --- !u!114 &1486013851
 MonoBehaviour:
@@ -5011,6 +4983,8 @@ MonoBehaviour:
   scaleCrystalPositionWithIntensity: 0
   intensityLevelData: {fileID: 11400000, guid: 490485287c38a2f4e9178566394efd69, type: 2}
   listOfCrystalPositions: []
+  anchorJitterRadius: 35
+  noNucleusSpawnRadius: 0
   crystalCountMode: 0
   fixedCrystalCount: 1
   extraCrystalsToSpawnBeyondPlayerCount: 0
@@ -5028,28 +5002,17 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 32a7a343565d3e743af4c0d44b8701bc, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _mode: 0
-  _crystalOrbitTransitionDuration: 2
-  _vesselFollowTransitionDuration: 0.5
-  _overrideBrainBlendForVesselModes: 1
-  _fovPunchDegrees: 3
-  _orbitRadius: 130
-  _orbitHeight: 30
-  _orbitSpeed: 5
-  _vesselFollowOffset: {x: 30, y: 50, z: -80}
-  _vesselFollowPositionDamping: 1
-  _vesselFollowRotationDamping: 1
-  _vesselFollowBindingMode: 5
-  _vesselChaseTightOffset: {x: 0, y: 50, z: -80}
-  _topDownHeight: 70
-  _topDownBackOffset: -12
-  _topDownPositionDamping: 1
-  _topDownRotationDamping: 0.6
+  _configs:
+  - {fileID: 11400000, guid: a86f6f157acd4ebb8caed642cefa92d4, type: 2}
+  - {fileID: 11400000, guid: 759eab19e07c4824b6418a854b008462, type: 2}
+  - {fileID: 11400000, guid: cf7de9697faf408b9da7ffac5395cdc1, type: 2}
+  - {fileID: 11400000, guid: 7c9e31e5244142db979a00c52028a4b5, type: 2}
+  _initialConfigIndex: 0
   _randomSwitchEnabled: 1
-  _randomSwitchModes: 00000000010000000200000003000000
   _randomSwitchIntervalMin: 20
   _randomSwitchIntervalMax: 30
-  _cellData: {fileID: 11400000, guid: 8d4e8398eedc76c4dadb8604f89b9e1b, type: 2}
+  _configGlideDuration: 3
+  _fallbackBlendDuration: 1.2
 --- !u!114 &1486013854
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -22706,7 +22669,7 @@ PrefabInstance:
     - target: {fileID: 434470711675463148, guid: 0b36fa278f9a30d4c8f44e846674c904,
         type: 3}
       propertyPath: m_SizeDelta.x
-      value: 0
+      value: -59.9187
       objectReference: {fileID: 0}
     - target: {fileID: 434470711675463148, guid: 0b36fa278f9a30d4c8f44e846674c904,
         type: 3}
@@ -22716,7 +22679,7 @@ PrefabInstance:
     - target: {fileID: 434470711675463148, guid: 0b36fa278f9a30d4c8f44e846674c904,
         type: 3}
       propertyPath: m_AnchoredPosition.x
-      value: 0
+      value: -254.18845
       objectReference: {fileID: 0}
     - target: {fileID: 434470711675463148, guid: 0b36fa278f9a30d4c8f44e846674c904,
         type: 3}
@@ -26396,7 +26359,7 @@ PrefabInstance:
     - target: {fileID: 4761935921297856879, guid: 0b36fa278f9a30d4c8f44e846674c904,
         type: 3}
       propertyPath: m_SizeDelta.x
-      value: 0
+      value: -59.9186
       objectReference: {fileID: 0}
     - target: {fileID: 4761935921297856879, guid: 0b36fa278f9a30d4c8f44e846674c904,
         type: 3}
@@ -26406,7 +26369,7 @@ PrefabInstance:
     - target: {fileID: 4761935921297856879, guid: 0b36fa278f9a30d4c8f44e846674c904,
         type: 3}
       propertyPath: m_AnchoredPosition.x
-      value: 0
+      value: -187.9523
       objectReference: {fileID: 0}
     - target: {fileID: 4761935921297856879, guid: 0b36fa278f9a30d4c8f44e846674c904,
         type: 3}
@@ -28796,7 +28759,7 @@ PrefabInstance:
     - target: {fileID: 7502409578437592786, guid: 0b36fa278f9a30d4c8f44e846674c904,
         type: 3}
       propertyPath: m_SizeDelta.x
-      value: 0.000030517578
+      value: -59.9186
       objectReference: {fileID: 0}
     - target: {fileID: 7502409578437592786, guid: 0b36fa278f9a30d4c8f44e846674c904,
         type: 3}
@@ -28806,7 +28769,7 @@ PrefabInstance:
     - target: {fileID: 7502409578437592786, guid: 0b36fa278f9a30d4c8f44e846674c904,
         type: 3}
       propertyPath: m_AnchoredPosition.x
-      value: 0
+      value: -121
       objectReference: {fileID: 0}
     - target: {fileID: 7502409578437592786, guid: 0b36fa278f9a30d4c8f44e846674c904,
         type: 3}
@@ -30323,6 +30286,11 @@ PrefabInstance:
       propertyPath: m_AnchoredPosition.y
       value: 61.676643
       objectReference: {fileID: 0}
+    - target: {fileID: 8880519059763811029, guid: 0b36fa278f9a30d4c8f44e846674c904,
+        type: 3}
+      propertyPath: quitGameButton
+      value: 
+      objectReference: {fileID: 680554985412321638}
     - target: {fileID: 8883172770853209374, guid: 0b36fa278f9a30d4c8f44e846674c904,
         type: 3}
       propertyPath: m_SizeDelta.x
@@ -30636,6 +30604,18 @@ RectTransform:
     type: 3}
   m_PrefabInstance: {fileID: 680554985412321635}
   m_PrefabAsset: {fileID: 0}
+--- !u!114 &680554985412321638 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 2126158085729231474, guid: 0b36fa278f9a30d4c8f44e846674c904,
+    type: 3}
+  m_PrefabInstance: {fileID: 680554985412321635}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4e29b1a8efbd4b44bb3f3716e73f07ff, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Button
 --- !u!1 &682024415980713642
 GameObject:
   m_ObjectHideFlags: 0
@@ -65984,12 +65964,9 @@ MonoBehaviour:
   IconEmitter: {fileID: 2104391206882412974}
   FreeButtonBackgroundSprite: {fileID: 21300000, guid: 6985e27142cd638409cf41fe7a5abe72,
     type: 3}
-  AdButtonBackgroundSprite: {fileID: 21300000, guid: ca4b6978517e0a14f807e8d22ab49248,
-    type: 3}
   ClockButtonBackgroundSprite: {fileID: 21300000, guid: 216b9611f3c0ebb4490a9f224ddb4953,
     type: 3}
   TimeRemaining: {fileID: 9098559969126680807}
-  adsManager: {fileID: 0}
   duration: 0.5
 --- !u!224 &3418730500816901411
 RectTransform:

@@ -6,7 +6,8 @@ namespace CosmicShore.ScriptableObjects
     /// <summary>
     /// SOAP event container for Menu_Main freestyle/menu state transitions.
     /// Raised by <see cref="Gameplay.MenuCrystalClickHandler"/> when the player
-    /// toggles between the menu camera (crystal revolve) and the freestyle vessel camera.
+    /// toggles between the menu camera (vessel-framing lava-lamp rig) and the
+    /// freestyle vessel camera.
     ///
     /// Consumers (ScreenSwitcher, MainMenuController, MainMenuCameraController,
     /// MenuMiniGameHUD, MenuVesselSelectionPanelController) subscribe to these

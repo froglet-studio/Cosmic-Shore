@@ -22,4 +22,3 @@ MonoBehaviour:
     Enabled: 0
   InitialLevel: 1
   LeafScalePerLevel: 1.15
-  CrystalScalePerLevel: 1.2

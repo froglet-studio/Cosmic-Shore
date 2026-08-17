@@ -1,0 +1,43 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a45b735af6c443a2886a0b0cc4aaecdf, type: 3}
+  m_Name: DisplayNameValidationConfig
+  m_EditorClassIdentifier:
+  minLength: 3
+  maxLength: 25
+  allowSpaces: 1
+  allowedSpecialCharacters: _-.
+  requireLetter: 1
+  enableProfanityFilter: 1
+  reservedNames:
+  - admin
+  - administrator
+  - moderator
+  - mod
+  - staff
+  - system
+  - server
+  - console
+  - official
+  - support
+  - developer
+  - gamemaster
+  - owner
+  - root
+  - froglet
+  - frogletinc
+  - cosmicshore
+  additionalBlockedAnywhere: []
+  additionalBlockedWholeWord: []
+  allowedNames: []
+  enableUniquenessCheck: 1
+  blockWhenUniquenessUnknown: 0

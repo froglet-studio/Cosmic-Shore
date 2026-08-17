@@ -126,8 +126,34 @@ namespace CosmicShore.Gameplay
             return true;
         }
 
+        /// <param name="spawnRotation">
+        /// Orientation to instantiate at. Only a species whose growth rule is ORIENTED cares -
+        /// an <see cref="AssembledFlora"/> seeds its first prism at the flora's own rotation, so
+        /// a daughter continuing a parent's lattice must be born already aligned to it. Null
+        /// keeps the legacy identity rotation.
+        /// </param>
+        /// <param name="inherit">
+        /// A parent's variant pick, passed when this plant is an OFFSPRING: the lineage keeps
+        /// its element and the level it seeded at instead of re-rolling a fresh identity every
+        /// birth. Null rolls from the config, which with spread off is just the authored values.
+        /// </param>
+        /// <param name="preInitialize">
+        /// Per-family setup applied after the variant/level and BEFORE <c>Initialize</c> - the
+        /// only window in which a plant's growth rule can be seeded.
+        /// </param>
+        /// <param name="domainOverride">
+        /// Plant in THIS domain instead of rolling one. Used by reproduction, where a child is its
+        /// parent's colour (the fauna rule, §6.1) - and it must be applied HERE rather than with a
+        /// <c>SetTeam</c> after the fact, because <c>Initialize</c> files the plant's first prisms
+        /// into the cell's per-domain grids on the way through. The uniform Jade/Ruby/Gold roll is
+        /// still the SPAWNER's job, so the no-domain-asymmetry invariant is untouched.
+        /// </param>
         public static Flora SpawnFlora(Cell host, Flora floraPrefab, Domains? excludedDomain,
-            FloraConfigurationSO config = null, Vector3? spawnPosition = null, Vector3? spawnUp = null)
+            FloraConfigurationSO config = null, Vector3? spawnPosition = null, Vector3? spawnUp = null,
+            Quaternion? spawnRotation = null,
+            LifeformVariantPick<FloraVariantTuning>? inherit = null,
+            Action<Flora> preInitialize = null,
+            Domains? domainOverride = null)
         {
             if (!host || !floraPrefab) return null;
 
@@ -139,8 +165,8 @@ namespace CosmicShore.Gameplay
             LoadInsights.Count("Flora spawned during load");
 
             Vector3 pos = spawnPosition ?? host.transform.position;
-            var flora = UnityEngine.Object.Instantiate(floraPrefab, pos, Quaternion.identity);
-            flora.domain = PickRandomDomain(excludedDomain);
+            var flora = UnityEngine.Object.Instantiate(floraPrefab, pos, spawnRotation ?? Quaternion.identity);
+            flora.domain = domainOverride ?? PickRandomDomain(excludedDomain);
 
             // A caller-specified position PINS the planting spot - Plant() implementations
             // honor it instead of dispersing the flora across the cell (the Lifeform Matrix
@@ -157,22 +183,78 @@ namespace CosmicShore.Gameplay
             // Initialize - the leaf prism size and crystal lookup are consumed there.
             if (config)
             {
-                // One roll decides this plant's variant: which element it carries, the block
-                // that expresses that element, and the level it seeds at. With spread off the
-                // roll returns the config's authored Element / Variant / InitialLevel, so the
-                // legacy per-element-config path is unchanged.
-                var pick = config.RollVariant();
+                // One roll decides this plant's variant: which element it carries and the block
+                // that expresses that element. With spread off the roll returns the config's
+                // authored Element / Variant, so the legacy per-element-config path is
+                // unchanged. An OFFSPRING passes its parent's pick, which RollVariant returns
+                // verbatim - a lineage breeds true. The LEVEL is never rolled: every plant seeds
+                // at level 1 and earns the rest by reproducing (Docs/ECOSYSTEM.md §33).
+                var pick = config.RollVariant(inherit);
 
                 flora.ApplyElement(pick.Element);
                 if (pick.Tuning is { Enabled: true })
                     flora.ApplyVariantTuning(pick.Tuning);
-                flora.ApplyLevel(pick.Level, config.LeafScalePerLevel, config.CrystalScalePerLevel);
+
+                // Cell-level overrides LAST, so they survive SpreadElements: the roll above may
+                // have replaced this config's whole Variant with a palette sibling's (the
+                // element's identity), but WHERE this cell plants the species and HOW BIG one
+                // plant may get are the cell's decisions, not the element's. The owning
+                // SpawnProfile's density scalar folds into the same block - one application
+                // path, so a scaled budget can never diverge from an overridden one.
+                var spawnProfile = host.Config ? host.Config.SpawnProfile : null;
+                float plantBudgetScale = spawnProfile ? spawnProfile.FloraPlantBudgetScale : 1f;
+
+                if (config.TryBuildCellOverrideTuning(plantBudgetScale, out var cellOverrides))
+                    flora.ApplyVariantTuning(cellOverrides);
+
+                flora.ApplyLevel(pick.Level, config.LeafScalePerLevel);
+
+                // Lineage BEFORE Initialize, so the plant is already counted in the cell's
+                // per-species population by the time its first growth tick can try to seed an
+                // offspring - otherwise a species could momentarily overshoot its own cap.
+                // Carries the pick it actually got, so its own offspring inherit that identity
+                // rather than the (possibly null) one passed in here.
+                flora.AssignLineage(host, config, pick);
             }
+
+            preInitialize?.Invoke(flora);
 
             flora.Initialize(host);
 
             RegisterSpawned(host, flora.gameObject);
             return flora;
+        }
+
+        /// <summary>
+        /// How many plants a periodic tick should seed - the flora seeder is a SEEDER, not the
+        /// population driver (Docs/ECOSYSTEM.md §32). A species that authors a seed floor is
+        /// topped back up to it and no further: bootstrap, plus recovery after the food web
+        /// grazes the species out, so extinction is never permanent. Above the floor the forest
+        /// is grown by the plants' own reproduction (<c>Flora.TryReproduce</c>) and bounded by
+        /// grazing.
+        ///
+        /// <para>A species that authors NO floor keeps the legacy behaviour exactly - one plant
+        /// per plant period, bounded only by the cell's Frenzy gate - so the population model is
+        /// opt-in per species rather than a silent re-tune of every biome.</para>
+        ///
+        /// <para>Seed floor AND cap come from the CELL, so a profile's <c>FloraPopulationScale</c>
+        /// moves both together; scaling the floor alone would be clamped away by the authored cap
+        /// and read as doing nothing (see <c>Cell.ResolveFloraPopulation</c>).</para>
+        ///
+        /// <para>It lives on the BASE, not on one spawner, for the same reason banded fauna
+        /// placement does - see the warning below. <c>CellTypeChoiceOptions.IntensityWise</c>
+        /// silently swaps which spawner a cell runs, so a population rule implemented in only one
+        /// of them is dead code in exactly the modes that asked for it.</para>
+        /// </summary>
+        public static int FloraSeedDeficit(Cell host, FloraConfigurationSO floraCfg)
+        {
+            if (!host || !floraCfg) return 0;
+            if (!FloraReproductionRules.HasPopulationModel(floraCfg.PopulationSize)) return 1;
+
+            return FloraReproductionRules.SeedSpawnCount(
+                host.GetLiveFloraCount(floraCfg),
+                host.ResolveFloraPopulation(floraCfg.PopulationSize),
+                host.ResolveFloraCap(floraCfg));
         }
 
         protected Fauna SpawnFauna(Cell host, Fauna faunaPrefab, Vector3 goal, Domains? excludedDomain)
@@ -224,6 +306,111 @@ namespace CosmicShore.Gameplay
 
             RegisterSpawned(host, pop.gameObject);
             return pop;
+        }
+
+        // ── Banded placement (shared by BOTH spawners - see the warning) ─────
+        //
+        // A species penned to a band (FaunaConfigurationSO.BandInner/BandOuterRadius) must be
+        // born INSIDE its band and SCATTERED across it. These live on the base, not on one
+        // spawner, because which spawner a cell uses is decided by an unrelated field:
+        // Cell.StartSpawnerForMode picks IntensityWiseLifeSpawner whenever the cell is on
+        // CellTypeChoiceOptions.IntensityWise - which is also the only way to vary a cell by
+        // intensity. So a mode that wants per-intensity cells AND penned fauna gets the
+        // intensity spawner whether it wanted it or not, and a band implemented in the other
+        // spawner is simply dead code. That shipped once: Wildlife Liberation's whole
+        // population spawned at the cell centre because the placement lived in
+        // RandomLifeSpawner and the cell was running IntensityWiseLifeSpawner.
+        //
+        // Both spawners now call SpawnFaunaBanded. Do not add a third spawn site that does not.
+
+        /// <summary>True when this species is penned to a band and needs banded placement.</summary>
+        protected static bool IsBanded(FaunaConfigurationSO cfg) => cfg && cfg.BandOuterRadius > 0f;
+
+        /// <summary>
+        /// A fresh point somewhere in a species' band - uniform in DIRECTION and uniform in
+        /// radius across the shell. Each call is independent, which is the point: it is what
+        /// spreads a population through its room instead of stacking it on one spot.
+        /// </summary>
+        protected static Vector3 RandomPointInBand(Cell host, FaunaConfigurationSO cfg)
+        {
+            float inner = Mathf.Min(cfg.BandInnerRadius, cfg.BandOuterRadius);
+            float outer = Mathf.Max(cfg.BandInnerRadius, cfg.BandOuterRadius);
+            return host.transform.position
+                   + UnityEngine.Random.onUnitSphere * UnityEngine.Random.Range(inner, outer);
+        }
+
+        /// <summary>
+        /// Projects a point into a species' band. Returns it unchanged for an unbanded species
+        /// (so the common path is one compare) or for a point already inside the band; a
+        /// degenerate input - the cell centre, which is what both the crystal fallback and
+        /// <c>GetDensestRegionAnyDomain</c> return before any mass exists - rolls a fresh point
+        /// rather than collapsing a whole population onto one radial.
+        /// </summary>
+        protected static Vector3 ClampToBand(Cell host, FaunaConfigurationSO cfg, Vector3 point)
+        {
+            if (!host || !IsBanded(cfg)) return point;
+
+            float inner = Mathf.Min(cfg.BandInnerRadius, cfg.BandOuterRadius);
+            float outer = Mathf.Max(cfg.BandInnerRadius, cfg.BandOuterRadius);
+
+            Vector3 centre = host.transform.position;
+            Vector3 offset = point - centre;
+            float d = offset.magnitude;
+
+            if (d < 1f) return RandomPointInBand(host, cfg);
+            if (d >= inner && d <= outer) return point;
+
+            // Land anywhere in the shell rather than pinned to whichever wall was nearest -
+            // a wave that all lands on one wall reads as a ring, not a population.
+            return centre + offset / d * UnityEngine.Random.Range(inner, outer);
+        }
+
+        /// <summary>How far a banded creature may be born from its own initial goal.</summary>
+        protected const float BandSpawnJitter = 40f;
+
+        /// <summary>
+        /// THE fauna spawn call for a species that may be banded. A banded species gets its own
+        /// per-creature point in its room for both spawn position and initial goal; an unbanded
+        /// one falls through to the caller's <paramref name="fallbackGoal"/> /
+        /// <paramref name="fallbackPosition"/> exactly as before, so every existing biome is
+        /// untouched.
+        /// </summary>
+        protected static Fauna SpawnFaunaBanded(Cell host, FaunaConfigurationSO cfg, Domains color,
+            Vector3 fallbackGoal, Vector3? fallbackPosition = null)
+        {
+            if (!host || !cfg || !cfg.FaunaPrefab) return null;
+
+            Vector3 goal = fallbackGoal;
+            Vector3? position = fallbackPosition;
+
+            if (IsBanded(cfg))
+            {
+                goal = RandomPointInBand(host, cfg);
+                // A short jitter off its own goal, re-projected, so a creature is not born
+                // exactly on the point it is already seeking.
+                position = ClampToBand(host, cfg,
+                    goal + UnityEngine.Random.insideUnitSphere * BandSpawnJitter);
+            }
+
+            // The CELL's own pen (outer containment + inner exclusion) applies to the birth
+            // POSITION too. Fauna.Goal clamps itself in its setter, but a creature born inside a
+            // closed pen would already be standing where it is not allowed to be - which reads as
+            // the pen leaking. Applied here, at the one spawn call both spawners share, for the
+            // same reason banded placement lives here (see the warning above). No-op for every
+            // biome that authors no pen.
+            if (host.FaunaExclusionRadius > 0f || host.FaunaContainmentRadius > 0f)
+            {
+                // No explicit position means "the cell centre", which is the one point a closed
+                // inner pen definitely forbids - so resolve it here rather than letting the
+                // default put the whole brood in the middle of the excluded zone.
+                Vector3 birth = position ?? (host.transform.position
+                    + UnityEngine.Random.onUnitSphere * Mathf.Max(1f, host.FaunaExclusionRadius));
+                position = host.ClampToFaunaContainment(birth, birth);
+            }
+
+            var fauna = SpawnFaunaWithDomain(host, cfg.FaunaPrefab, goal, color, position);
+            if (fauna) fauna.AssignLineage(host, cfg);
+            return fauna;
         }
 
         protected float GetControllingVolume(GameDataSO gameData) =>

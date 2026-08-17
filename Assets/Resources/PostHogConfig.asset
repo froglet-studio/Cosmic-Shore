@@ -12,9 +12,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 11c0fb0c9dca43aaa203149971b4dd2a, type: 3}
   m_Name: PostHogConfig
   m_EditorClassIdentifier: 
-  projectApiKey: 
-  host: https://us.i.posthog.com
+  projectApiKey: phc_qixNizMfgrorpZpQ4FQASdarEjDSVxLFfbAkU2fnVEim
+  host: https://eu.i.posthog.com
   batchSize: 20
   flushIntervalSeconds: 30
   maxQueuedEvents: 500
+  excludedEvents: []
   enabled: 1

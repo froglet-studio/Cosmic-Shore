@@ -15,8 +15,9 @@ MonoBehaviour:
   projectileShipEffects:
   - {fileID: 11400000, guid: 2e278df34f7acd385365a6522f8e7ddc, type: 2}
   - {fileID: 11400000, guid: b1c4870f9bbd480479d87eb7b71c7c54, type: 2}
+  - {fileID: 11400000, guid: 8dfe958648bfc804107e5f09e9ea7627, type: 2}
   projectilePrismEffects:
-  - {fileID: 11400000, guid: 4a7e177e7648c4f48afc533c7bb76c8b, type: 2}
+  - {fileID: 11400000, guid: 2564c4fefc3011b43a28e573899e7889, type: 2}
   projectileMineEffects:
   - {fileID: 11400000, guid: c5e5a7edf72873e4da8db16fdac85190, type: 2}
   projectileEndEffects: []

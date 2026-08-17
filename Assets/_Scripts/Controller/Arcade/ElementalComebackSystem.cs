@@ -39,6 +39,20 @@ namespace CosmicShore.Gameplay
             Goals,
             PrismsDestroyed,
             PrismsRemaining,
+            /// <summary>
+            /// Wildlife Liberation's fauna kills. Domain-aggregated like every other source
+            /// here - the mode is a domain race, so a player's deficit is their TEAM's deficit
+            /// against the leading colour. (A per-player variant of this source existed while
+            /// the mode was briefly a free-for-all and was removed with it.)
+            /// </summary>
+            LifeformsKilled,
+
+            /// <summary>
+            /// Dog Fight's weighted gunnery score. A team source like every entry above
+            /// LifeformsKilled - Dog Fight pools points per domain - so the trailing SIDE gets
+            /// the buff, not the trailing individual.
+            /// </summary>
+            CombatPoints,
         }
 
         [Header("Config")]
@@ -85,6 +99,12 @@ namespace CosmicShore.Gameplay
                 case GameModes.Rampage: // Score lands only at game end - destruction is the live stat
                 case GameModes.Ribcage: // same: the race metric is hostile prisms destroyed
                     system.differenceSource = ScoreDifferenceSource.PrismsDestroyed;
+                    break;
+                case GameModes.WildlifeLiberation: // Score lands only at game end - kills are the live stat
+                    system.differenceSource = ScoreDifferenceSource.LifeformsKilled;
+                    break;
+                case GameModes.DogFight: // Score lands only at game end - gunnery is the live stat
+                    system.differenceSource = ScoreDifferenceSource.CombatPoints;
                     break;
                 default:
                     system.differenceSource = ScoreDifferenceSource.Score;
@@ -377,6 +397,10 @@ namespace CosmicShore.Gameplay
                     return ScoringMetrics.SumByDomain(gameData, ScoringMetric.PrismsRemaining, domain);
                 case ScoreDifferenceSource.PrismsDestroyed:
                     return ScoringMetrics.SumByDomain(gameData, ScoringMetric.PrismsDestroyed, domain);
+                case ScoreDifferenceSource.CombatPoints:
+                    return ScoringMetrics.SumByDomain(gameData, ScoringMetric.CombatPoints, domain);
+                case ScoreDifferenceSource.LifeformsKilled:
+                    return ScoringMetrics.SumByDomain(gameData, ScoringMetric.LifeformsKilled, domain);
                 case ScoreDifferenceSource.Score:
                     float sum = 0f;
                     var list = gameData.RoundStatsList;
@@ -399,6 +423,8 @@ namespace CosmicShore.Gameplay
                 ScoreDifferenceSource.Goals => true,
                 ScoreDifferenceSource.PrismsDestroyed => true,
                 ScoreDifferenceSource.PrismsRemaining => true,
+                ScoreDifferenceSource.LifeformsKilled => true,
+                ScoreDifferenceSource.CombatPoints => true,
                 ScoreDifferenceSource.Score => !useGolfRules,
                 _ => !useGolfRules
             };

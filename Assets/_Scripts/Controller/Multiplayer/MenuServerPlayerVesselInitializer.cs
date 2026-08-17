@@ -47,6 +47,16 @@ namespace CosmicShore.Gameplay
         // so there is no leak.
         protected override bool DestroyVesselWithScene => false;
 
+        /// <summary>
+        /// Menu override: NO mode restriction. GameDataSO.AllowedVesselClasses deliberately
+        /// survives ResetRuntimeData (it is pre-launch config the game scene must still read), so
+        /// after playing a single-vessel mode it would still hold that mode's hull when the player
+        /// returns here - and the lava-lamp vessel would silently be clamped to it. The menu is
+        /// where you are ALLOWED to fly anything, so it takes the player's request verbatim.
+        /// </summary>
+        protected override VesselClassType ResolveSpawnVesselType(Player networkPlayer) =>
+            networkPlayer.NetDefaultVesselType.Value;
+
         protected override void OnNetworkSpawn()
         {
             base.OnNetworkSpawn();
@@ -234,8 +244,9 @@ namespace CosmicShore.Gameplay
             player.Vessel.ToggleAIPilot(true);
             player.InputController.SetPause(true);
 
-            // Camera setup is handled by MainMenuController.HandleMenuReady()
-            // which activates the CM Main Menu Cinemachine camera for menu state.
+            // Camera setup is handled by MainMenuCameraController on OnClientReady -
+            // it drives the Menu_Main scene camera directly (vessel-framing rig, no
+            // Cinemachine) once the pair is ready.
         }
     }
 }

@@ -41,6 +41,20 @@ namespace CosmicShore.Utility
         public ScriptableEventUlong OnPlayerNetworkSpawnedUlong;
         public ScriptableEventNoParam OnVesselNetworkSpawned;
         public ScriptableEventUlong OnPlayerPairInitialized;
+
+        /// <summary>
+        /// A vessel landed a shot on an opposing vessel. Raised by the combat-hit impact
+        /// effects on whichever machine simulated the shot (projectiles are local objects, so
+        /// that is the shooter's machine) and consumed by the single-writer
+        /// <c>StatsManager.CombatHitLanded</c>, which arbitrates server-vs-client attribution.
+        ///
+        /// It lives HERE rather than on the effect assets' own serialized field alone, or on a
+        /// field of StatsManager, because StatsManager already carries this object in every
+        /// scene - so gunnery records everywhere with nothing per-scene to wire, the same
+        /// reasoning that moved the fauna-kill channel onto CellRuntimeDataSO.
+        /// </summary>
+        public ScriptableEventCombatHitStats OnCombatHitLanded;
+
         public event Action<string, Domains> OnPlayerAdded;
 
         /// <summary>
@@ -72,6 +86,25 @@ namespace CosmicShore.Utility
         public bool IsDailyChallenge;
         public bool IsTraining;
         public bool IsMission;
+
+        /// <summary>
+        /// True once the AUTHORITATIVE game config exists on THIS peer: immediately on the server,
+        /// and on arrival of <c>MultiplayerMiniGameControllerBase.SyncGameConfigToClients_ClientRpc</c>
+        /// on a client.
+        ///
+        /// <para><see cref="Cell.AssignConfig"/> gates its IntensityWise choice on this, and must.
+        /// That choice reads <see cref="SelectedIntensity"/> - a value only the server can send a
+        /// client - and it is STICKY: the first pass latches <c>runtime.Config</c> and no later
+        /// correction can re-roll it. A client's cell bootstraps off its FIRST CRYSTAL
+        /// (<c>OnCellItemsUpdated</c> → lazy Initialize, ~400 ms after scene load), which can beat
+        /// the config broadcast; the SOAP variable's default is 0, so the clamp silently yields
+        /// index 0 and that client plays intensity 1's arena for the whole match while the host
+        /// plays the one that was chosen. Silent, not an error.</para>
+        ///
+        /// <c>[NonSerialized]</c> because it is per-session truth about replication, never
+        /// authored; cleared on every runtime reset so a replay or a new scene re-arms the gate.
+        /// </summary>
+        [NonSerialized] public bool GameConfigSynced;
 
         /// <summary>
         /// True while a Tournament session is in progress (set by
@@ -268,6 +301,31 @@ namespace CosmicShore.Utility
         [NonSerialized] public int PrismTargetCount;
 
         /// <summary>
+        /// The resolved fauna-kill target for the current Wildlife Liberation session - the
+        /// per-domain <see cref="IRoundStats.LifeformsKilled"/> SUM that ends the turn.
+        /// Published by <c>WildlifeKillTurnMonitor</c> in StartMonitor (server), synced to
+        /// clients via NetworkVariable.OnValueChanged. Read by
+        /// <see cref="CosmicShore.Gameplay.WildlifeLiberationScoringRuleSO"/> for the end
+        /// condition and the "remaining" readout. Reset in <see cref="ResetRuntimeData"/> and
+        /// <see cref="ResetRuntimeDataForReplay"/>.
+        /// </summary>
+        [NonSerialized] public int LifeformTargetCount;
+
+        /// <summary>
+        /// The resolved gunnery point target for the current Dog Fight session - the per-domain
+        /// <see cref="IRoundStats.CombatPoints"/> sum that ends the turn. Published by
+        /// <c>DogFightPointTurnMonitor</c> in StartMonitor (server), synced to clients via
+        /// NetworkVariable.OnValueChanged. Read by
+        /// <see cref="CosmicShore.Gameplay.DogFightScoringRuleSO"/> for the end condition and
+        /// the "remaining" readout. Reset in <see cref="ResetRuntimeData"/> and
+        /// <see cref="ResetRuntimeDataForReplay"/>.
+        ///
+        /// Unlike <see cref="LifeformTargetCount"/> this is a DOMAIN sum: Dog Fight is a team
+        /// race, so a wingman's rockets shorten your match.
+        /// </summary>
+        [NonSerialized] public int CombatPointTargetCount;
+
+        /// <summary>
         /// The active scoring strategy for the current mode, published by the mode's controller
         /// in OnNetworkSpawn (drag the matching <see cref="CosmicShore.Gameplay.ScoringRuleSO"/>
         /// asset onto the controller). Read by the network turn monitors for the end condition
@@ -293,7 +351,48 @@ namespace CosmicShore.Utility
             SceneName = game.SceneName;
             GameMode = game.Mode;
             ComebackRatePerScoreDeficit = game.ComebackRatePerScoreDeficit;
+
+            // Publish the mode's legal hulls BEFORE clamping, so the clamp and every later
+            // server-side check read the same list. Deliberately NOT cleared by
+            // ResetRuntimeData(): like RequestedAIBackfillCount this is pre-launch config that
+            // must survive SceneLoader.LoadSceneAsync() into the game scene, where the vessel
+            // spawner reads it.
+            AllowedVesselClasses.Clear();
+            if (game.Vessels != null)
+                for (int i = 0; i < game.Vessels.Count; i++)
+                    if (game.Vessels[i] != null)
+                        AllowedVesselClasses.Add(game.Vessels[i].Class);
+
             ClampSelectedVesselToGame(game);
+        }
+
+        /// <summary>
+        /// The vessel classes the CURRENT game permits (<see cref="SO_ArcadeGame.Vessels"/>),
+        /// published by <see cref="SyncFromArcadeGame"/>. Empty means "no restriction" - which is
+        /// also the state in Menu_Main before any game has been launched.
+        /// </summary>
+        public readonly List<VesselClassType> AllowedVesselClasses = new();
+
+        /// <summary>
+        /// Returns <paramref name="requested"/> when this game permits it, otherwise the game's
+        /// first authored vessel (for a single-vessel mode, THE mode's vessel). An empty
+        /// <see cref="AllowedVesselClasses"/> means no restriction and returns the input
+        /// unchanged, so this is safe to call from a shared spawn path.
+        ///
+        /// Exists because <see cref="selectedVesselClass"/> is NOT the whole story in
+        /// multiplayer: <c>Player.NetDefaultVesselType</c> is an OWNER-write NetworkVariable that
+        /// each client sets from its OWN local config (and from the menu's vessel-changer toy), so
+        /// a client walks into a restricted mode still wearing the hull it last flew. Clamping
+        /// only the launcher's selectedVesselClass fixed the host and left every client wrong -
+        /// which is why the SERVER re-clamps at spawn.
+        /// </summary>
+        public VesselClassType ClampVesselToGame(VesselClassType requested)
+        {
+            if (AllowedVesselClasses.Count == 0) return requested;
+            for (int i = 0; i < AllowedVesselClasses.Count; i++)
+                if (AllowedVesselClasses[i] == requested)
+                    return requested;
+            return AllowedVesselClasses[0];
         }
 
         /// <summary>
@@ -312,26 +411,17 @@ namespace CosmicShore.Utility
         /// </summary>
         void ClampSelectedVesselToGame(SO_ArcadeGame game)
         {
-            if (selectedVesselClass == null || game.Vessels == null || game.Vessels.Count == 0) return;
+            if (selectedVesselClass == null || AllowedVesselClasses.Count == 0) return;
 
             var current = selectedVesselClass.Value;
-            for (int i = 0; i < game.Vessels.Count; i++)
-                if (game.Vessels[i] != null && game.Vessels[i].Class == current)
-                    return; // already legal for this mode
+            var clamped = ClampVesselToGame(current);
+            if (clamped == current) return;
 
-            // Fall back to the game's first authored vessel - for a single-vessel mode that IS
-            // the mode's vessel; for a multi-vessel one it is the authored default.
-            for (int i = 0; i < game.Vessels.Count; i++)
-            {
-                if (game.Vessels[i] == null) continue;
-                var fallback = game.Vessels[i].Class;
-                Debug.Log($"<color=#FFD700>[GameDataSO] {game.Mode} does not allow {current}; " +
-                          $"clamping selected vessel to {fallback}.</color>");
-                selectedVesselClass.Value = fallback;
-                if (VesselClassSelectedIndex != null)
-                    VesselClassSelectedIndex.Value = (int)fallback;
-                return;
-            }
+            Debug.Log($"<color=#FFD700>[GameDataSO] {game.Mode} does not allow {current}; " +
+                      $"clamping selected vessel to {clamped}.</color>");
+            selectedVesselClass.Value = clamped;
+            if (VesselClassSelectedIndex != null)
+                VesselClassSelectedIndex.Value = (int)clamped;
         }
 
         /// <summary>
@@ -491,6 +581,7 @@ namespace CosmicShore.Utility
         public void ResetRuntimeData()
         {
             IsTurnRunning = false;
+            GameConfigSynced = false;
 
             // Scene teardown / mid-game exit: abandon the flight clock without publishing a
             // time, so an abandoned game cannot leak its seconds into the next one.
@@ -514,6 +605,8 @@ namespace CosmicShore.Utility
             JoustTargetCount = 0;
             GoalTargetCount = 0;
             PrismTargetCount = 0;
+            LifeformTargetCount = 0;
+            CombatPointTargetCount = 0;
             System.Array.Clear(_domainMetricSums, 0, _domainMetricSums.Length);
             // Note: RequestedAIBackfillCount and RequestedDomainCount are intentionally
             // NOT reset here. They are pre-launch config values set by
@@ -548,6 +641,7 @@ namespace CosmicShore.Utility
         void ResetRuntimeDataForReplay()
         {
             IsTurnRunning = false;
+            GameConfigSynced = false;
             FlightClock.AbortGame();
             TurnStartTime = 0f;
             RoundsPlayed = 0;
@@ -561,6 +655,8 @@ namespace CosmicShore.Utility
             JoustTargetCount = 0;
             GoalTargetCount = 0;
             PrismTargetCount = 0;
+            LifeformTargetCount = 0;
+            CombatPointTargetCount = 0;
             System.Array.Clear(_domainMetricSums, 0, _domainMetricSums.Length);
         }
 
@@ -571,11 +667,37 @@ namespace CosmicShore.Utility
                 CSDebug.LogError("Cannot Replay game mode, no round stats data found!");
                 return;
             }
-            
-            for (int i = 0, count = RoundStatsList.Count; i < count ; i++)
-            {
-                RoundStatsList[i].Cleanup();
-            }
+
+            CleanupAllRoundStats();
+        }
+
+        /// <summary>
+        /// Zero every player's stats at the moment a GAME starts (the first turn's countdown
+        /// ending), so nothing accrued during setup can be part of the score.
+        ///
+        /// This is needed because scoring is live from the moment the scene's StatsManager
+        /// network-spawns - there is no turn gate on <c>StatsManager</c> - while the window
+        /// between that and the first turn is long: the arena builds (Ribcage lays 10-20k prisms),
+        /// vessels spawn, and the countdown runs. Anything destroyed in that window used to land
+        /// in a player's score, so a match could visibly start with someone above zero.
+        ///
+        /// Deliberately called on EVERY peer, not just the server. The server's writes replicate,
+        /// but a NetworkVariable only raises OnValueChanged when the value actually CHANGES - so a
+        /// client whose local mirror had drifted (its StatsManager records until OnNetworkSpawn
+        /// flips _allowRecord off) would keep a stale non-zero readout that the server's zero
+        /// could never correct. Clearing locally on each peer closes that.
+        ///
+        /// Unlike <see cref="ResetStatsDataForReplay"/> an empty roster is NOT an error here:
+        /// a solo-with-no-AI scene legitimately reaches its first countdown with nothing to zero.
+        /// </summary>
+        public void ResetStatsForGameStart() => CleanupAllRoundStats();
+
+        void CleanupAllRoundStats()
+        {
+            if (RoundStatsList == null) return;
+
+            for (int i = 0, count = RoundStatsList.Count; i < count; i++)
+                RoundStatsList[i]?.Cleanup();
         }
         
         public void ResetAllData()

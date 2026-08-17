@@ -3,6 +3,7 @@ using System.Linq;
 using CosmicShore.Data;
 using DG.Tweening;
 using UnityEngine;
+using UnityEngine.Serialization;
 using UnityEngine.UI;
 
 namespace CosmicShore.UI
@@ -13,14 +14,32 @@ namespace CosmicShore.UI
         [SerializeField] private Sprite[] missileIcons;
         [SerializeField] private Image missileIcon;
 
-        [Header("Boost")]
-        [SerializeField] private Image boostFill;
-        [SerializeField] private Color boostNormalColor;
-        [SerializeField] private Color boostFullColor;
-        [SerializeField] private Color overheatingColor;
+        [Header("Strafing Roll Charge")]
+        [Tooltip("The ring on the boost ability icon. This is NOT a gauge — the boost has no heat and " +
+                 "no meter any more. It is a binary charge pip for the strafing roll: full = a roll is " +
+                 "available on this boost press, empty = it has been spent. The next boost press " +
+                 "re-arms it.")]
+        [FormerlySerializedAs("boostFill")]
+        [SerializeField] private Image rollChargeIndicator;
 
-        [Header("Boost Animation")]
-        [SerializeField] private float boostFillTweenDuration = 0.15f;
+        // NOTE: deliberately NOT [FormerlySerializedAs] off the retired boost-gauge colours - those
+        // were authored white / white / red, so inheriting them would paint "armed" and "spent"
+        // identically. The stale overrides are deleted from Sparrow.prefab; these are the record.
+        [Tooltip("Ring colour while a strafing roll is available.")]
+        [SerializeField] private Color rollArmedColor = new(0.55f, 0.9f, 1f, 1f);
+
+        [Tooltip("Ring colour once the roll has been spent (until the next boost press re-arms it).")]
+        [SerializeField] private Color rollSpentColor = new(0.35f, 0.4f, 0.45f, 0.5f);
+
+        [Header("Strafing Roll Animation")]
+        [Tooltip("Seconds the ring takes to wipe empty when the roll is spent / fill when re-armed. " +
+                 "Nothing pops in or out.")]
+        [FormerlySerializedAs("boostFillTweenDuration")]
+        [SerializeField] private float rollChargeTweenDuration = 0.15f;
+
+        [Tooltip("Scale punch played on the ring the instant a roll is spent, so the consume reads even " +
+                 "at the edge of vision.")]
+        [SerializeField] private float rollSpendPunchScale = 0.3f;
 
         [Header("Weapon Mode")]
         [SerializeField] private Image weaponModeIcon;
@@ -31,17 +50,20 @@ namespace CosmicShore.UI
         [SerializeField] private float blockedPulseDuration = 0.4f;
 
         readonly Dictionary<InputEvents, Tween> _blockTweens = new();
-        private Tween _boostFillTween;
+        private Tween _rollChargeTween;
+        private Tween _rollPunchTween;
 
         public override void Initialize()
         {
             if (missileIcon)
                 missileIcon.enabled = false;
 
-            if (boostFill)
+            if (rollChargeIndicator)
             {
-                boostFill.fillAmount = 0f;
-                boostFill.color = boostNormalColor;
+                // Spent until the first boost press arms it — SparrowHUDController re-seeds from
+                // BarrelRollController.IsRollArmed right after this.
+                rollChargeIndicator.fillAmount = 0f;
+                rollChargeIndicator.color = rollSpentColor;
             }
 
             if (weaponModeIcon)
@@ -87,25 +109,34 @@ namespace CosmicShore.UI
 
         #endregion
 
-        #region Boost / Heat
+        #region Strafing Roll Charge
 
-        public void SetBoostState(float heat01, bool overheated)
+        /// <summary>
+        /// Shows whether the strafing roll is available on the current boost press. Driven by
+        /// <see cref="CosmicShore.Gameplay.BarrelRollController.OnRollChargeChanged"/> — the boost
+        /// itself is indefinite and has nothing to meter, so this ring is a binary charge pip, not a
+        /// gauge: full = armed, empty = spent until the next boost press.
+        /// </summary>
+        public void SetRollCharge(bool armed)
         {
-            if (!boostFill) return;
+            if (!rollChargeIndicator) return;
 
-            var clamped = Mathf.Clamp01(heat01);
+            _rollChargeTween?.Kill();
+            _rollChargeTween = rollChargeIndicator
+                .DOFillAmount(armed ? 1f : 0f, rollChargeTweenDuration)
+                .SetEase(armed ? Ease.OutQuad : Ease.InQuad)
+                .SetLink(rollChargeIndicator.gameObject);
 
-            // Smooth fill interpolation instead of instant snap
-            _boostFillTween?.Kill();
-            _boostFillTween = boostFill.DOFillAmount(clamped, boostFillTweenDuration)
-                .SetEase(Ease.Linear);
+            rollChargeIndicator.color = armed ? rollArmedColor : rollSpentColor;
 
-            if (overheated)
-                boostFill.color = overheatingColor;
-            else if (Mathf.Approximately(clamped, 1f))
-                boostFill.color = boostFullColor;
-            else
-                boostFill.color = boostNormalColor;
+            // Spending the roll is the beat worth feeling; arming it rides the fill.
+            if (armed || rollSpendPunchScale <= 0f) return;
+
+            _rollPunchTween?.Kill();
+            rollChargeIndicator.rectTransform.localScale = Vector3.one;
+            _rollPunchTween = rollChargeIndicator.rectTransform
+                .DOPunchScale(Vector3.one * rollSpendPunchScale, rollChargeTweenDuration * 2f, 1, 0.5f)
+                .SetLink(rollChargeIndicator.gameObject);
         }
 
         #endregion
@@ -185,7 +216,8 @@ namespace CosmicShore.UI
         protected override void OnDestroy()
         {
             base.OnDestroy();
-            _boostFillTween?.Kill();
+            _rollChargeTween?.Kill();
+            _rollPunchTween?.Kill();
             foreach (var tween in _blockTweens.Values)
                 tween?.Kill();
             _blockTweens.Clear();

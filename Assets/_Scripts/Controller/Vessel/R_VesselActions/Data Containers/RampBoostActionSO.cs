@@ -9,9 +9,10 @@ namespace CosmicShore.Gameplay
     /// rate toward the boosted throttle target instead of the default exponential lerp,
     /// via <see cref="VesselTransformer.SetSpeedTrackingRate"/>. On release the speed
     /// returns to the input-driven throttle speed at a fast constant rate. The visual
-    /// sell (FOV + Panini quasi dolly zoom, proportional to live speed) is owned by
-    /// <see cref="SpeedTunnelEffectController"/>, which reads speed — so it tracks the
-    /// ramp up and the fast return automatically.
+    /// sell (FOV + Panini quasi dolly zoom, proportional to live speed) is owned by the
+    /// fleet-wide <c>VesselSpeedTunnel</c> platform law (Docs/SPEED_TUNNEL.md), which reads
+    /// speed — so it tracks the ramp up and the fast return automatically, and this action
+    /// neither wires nor knows about it.
     /// </summary>
     [CreateAssetMenu(fileName = "RampBoostAction", menuName = "ScriptableObjects/Vessel Actions/Ramp Boost")]
     public class RampBoostActionSO : ShipActionSO

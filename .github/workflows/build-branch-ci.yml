@@ -56,6 +56,36 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 1
+          # Do NOT clean: the default `git clean -ffdx` deletes Library/ and
+          # forces a full asset reimport on every run. Same reasoning as
+          # unity-ci.yml and bleeding-edge-guard.yml - including the untracked
+          # -file sweep those two carry, for the same reason.
+          clean: false
+
+      - name: Purge stale untracked files from the source tree
+        shell: bash
+        run: |
+          set -euo pipefail
+          # `git -c safe.directory='*'` is REQUIRED, not belt-and-braces.
+          # actions/checkout grants itself the safe.directory exception in a
+          # TEMPORARY global config (it overrides HOME for the duration of its
+          # own steps) and revokes it in post-job, so every later step runs
+          # under the real HOME with no exception at all. The workspace is owned
+          # by BUILTIN\Administrators while the runner service is
+          # NT AUTHORITY\NETWORK SERVICE, so bare git dies with
+          # "detected dubious ownership" and exit 128 - which is exactly how
+          # this step failed the first time it ran. Same trap that once killed
+          # `git rev-parse HEAD` here; the fix there was to stop calling git,
+          # and this step cannot. Scoped to the invocation, so nothing is
+          # written to the machine's global git config.
+          GIT=(git -c safe.directory='*')
+          "${GIT[@]}" clean -ffd --dry-run -- Assets Packages ProjectSettings | sed 's/^/::warning::stale file removed: /'
+          "${GIT[@]}" clean -ffd -- Assets Packages ProjectSettings
+
+          # Untracked, outside the swept paths, and uploaded with `if: always()`
+          # - so without this a run that fails before Unity starts publishes the
+          # previous run's results under this run's artifact name.
+          rm -f test-results.xml
 
       - name: Compile check
         shell: bash

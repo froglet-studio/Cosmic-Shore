@@ -4,55 +4,65 @@ using CosmicShore.Data;
 
 namespace CosmicShore.Gameplay
 {
+    /// <summary>
+    /// Keyboard-only dual-WASD flight. Two digital sticks mix with the same
+    /// XSum / YSum / XDiff / YDiff formulas as <see cref="GamepadInputStrategy"/>.
+    /// No mouse. No vessel-class special cases — drift and tube bind through
+    /// the existing stick/trigger events.
+    ///
+    /// Key → stick → mix → Squirrel feel
+    ///   W / S     left  +Y / -Y     YSum pitch (W+P = big pitch up, S+; = big pitch down)
+    ///   A / D     left  -X / +X     XSum yaw; with ' / L → XDiff speed (A+' fast, L+D slow)
+    ///   P / ;     right +Y / -Y     YDiff roll vs left Y (P+S roll left, W+; roll right)
+    ///   L / '     right -X / +X     (same mix as A / D)
+    ///   Left Shift  left trigger analog 1, LeftStickAction / OnlyLeftStickAction
+    ///               → Squirrel drift (prefab singleTriggerDrift; gamepad binds LeftStickAction)
+    ///   Right Shift right trigger press, RightStickAction / OnlyRightStickAction
+    ///               → Squirrel tube / prism ring (Begin on press; Commit is a no-op)
+    /// Neutral A/D/L/' → XDiff 0.5 cruise. InvertY / InvertThrottle apply after mix.
+    /// </summary>
     public class KeyboardInputStrategy : BaseInputStrategy
     {
-        // Smoothing for analog-like feel
-        private const float RAMP_SPEED = 8f;
-        private const float DEAD_ZONE = 0.05f;
+        private const float TriggerDeadzone = 0.05f;
 
-        // State tracking for effects
         private bool fullSpeedStraightEffectsStarted;
         private bool minimumSpeedStraightEffectsStarted;
 
-        // Virtual stick positions (smoothed)
-        private Vector2 leftStickCurrent;
-        private Vector2 rightStickCurrent;
+        private Vector2 leftStickRaw;
+        private Vector2 rightStickRaw;
 
-        // Target positions (raw key input)
-        private Vector2 leftStickTarget;
-        private Vector2 rightStickTarget;
-
-        // Button state tracking for press/release detection
-        private bool wasButton1Pressed;
-        private bool wasButton2Pressed;
-        private bool wasButton3Pressed;
-        private bool wasLeftTriggerPressed;
-        private bool wasRightTriggerPressed;
-        private bool wasFlipPressed;
+        private bool prevLeftTriggerActive;
+        private bool prevRightTriggerActive;
 
         public override void Initialize(IInputStatus inputStatus)
         {
             base.Initialize(inputStatus);
             ResetInput();
-            ResetSmoothingState();
+            ResetStrategyState();
         }
 
-        private void ResetSmoothingState()
+        public override void OnStrategyActivated()
         {
-            leftStickCurrent = Vector2.zero;
-            rightStickCurrent = Vector2.zero;
-            leftStickTarget = Vector2.zero;
-            rightStickTarget = Vector2.zero;
+            base.OnStrategyActivated();
+            ResetStrategyState();
+            inputStatus.ActiveInputDevice = InputDeviceType.Keyboard;
+        }
 
-            wasButton1Pressed = false;
-            wasButton2Pressed = false;
-            wasButton3Pressed = false;
-            wasLeftTriggerPressed = false;
-            wasRightTriggerPressed = false;
-            wasFlipPressed = false;
+        public override void OnStrategyDeactivated()
+        {
+            ReleaseHeldTriggers();
+            ReleaseSpeedEffects();
+            ResetInput();
+            ResetStrategyState();
+        }
 
-            fullSpeedStraightEffectsStarted = false;
-            minimumSpeedStraightEffectsStarted = false;
+        public override void OnPaused()
+        {
+            ReleaseHeldTriggers();
+            leftStickRaw = Vector2.zero;
+            rightStickRaw = Vector2.zero;
+            inputStatus.LeftTriggerAnalog = 0f;
+            inputStatus.RightTriggerAnalog = 0f;
         }
 
         public override void ProcessInput()
@@ -68,191 +78,148 @@ namespace CosmicShore.Gameplay
 
         private void ProcessStickInput(Keyboard keyboard)
         {
-            // Read target positions from keys (WASD for left stick)
-            leftStickTarget = new Vector2(
-                (keyboard.dKey.isPressed ? 1f : 0f) - (keyboard.aKey.isPressed ? 1f : 0f),
-                (keyboard.wKey.isPressed ? 1f : 0f) - (keyboard.sKey.isPressed ? 1f : 0f)
-            );
+            leftStickRaw = new Vector2(
+                Axis(keyboard.dKey.isPressed, keyboard.aKey.isPressed),
+                Axis(keyboard.wKey.isPressed, keyboard.sKey.isPressed));
 
-            // P;L' for right stick (shifted right from IJKL)
-            rightStickTarget = new Vector2(
-                (keyboard.quoteKey.isPressed ? 1f : 0f) - (keyboard.lKey.isPressed ? 1f : 0f),
-                (keyboard.pKey.isPressed ? 1f : 0f) - (keyboard.semicolonKey.isPressed ? 1f : 0f)
-            );
+            rightStickRaw = new Vector2(
+                Axis(keyboard.quoteKey.isPressed, keyboard.lKey.isPressed),
+                Axis(keyboard.pKey.isPressed, keyboard.semicolonKey.isPressed));
+        }
 
-            // Normalize diagonal inputs to prevent faster diagonal movement
-            if (leftStickTarget.sqrMagnitude > 1f)
-                leftStickTarget.Normalize();
-            if (rightStickTarget.sqrMagnitude > 1f)
-                rightStickTarget.Normalize();
-
-            // Smooth interpolation for analog-like feel
-            float deltaTime = Time.deltaTime;
-            leftStickCurrent = Vector2.Lerp(leftStickCurrent, leftStickTarget, RAMP_SPEED * deltaTime);
-            rightStickCurrent = Vector2.Lerp(rightStickCurrent, rightStickTarget, RAMP_SPEED * deltaTime);
-
-            // Apply dead zone
-            if (leftStickCurrent.sqrMagnitude < DEAD_ZONE * DEAD_ZONE)
-                leftStickCurrent = Vector2.zero;
-            if (rightStickCurrent.sqrMagnitude < DEAD_ZONE * DEAD_ZONE)
-                rightStickCurrent = Vector2.zero;
-
-            // Throttle: E key (binary like gamepad shoulder button)
-            inputStatus.Throttle = keyboard.eKey.isPressed ? 1f : 0f;
+        private static float Axis(bool positive, bool negative)
+        {
+            float value = 0f;
+            if (positive) value += 1f;
+            if (negative) value -= 1f;
+            return value;
         }
 
         private void ProcessButtonInput(Keyboard keyboard)
         {
-            // Button 1 - Spacebar (A/South on gamepad)
-            bool isButton1Pressed = keyboard.spaceKey.isPressed;
-            if (isButton1Pressed && !wasButton1Pressed)
+            if (keyboard.spaceKey.wasPressedThisFrame)
                 inputStatus.OnButtonPressed.Raise(InputEvents.Button1Action);
-            if (!isButton1Pressed && wasButton1Pressed)
+            if (keyboard.spaceKey.wasReleasedThisFrame)
                 inputStatus.OnButtonReleased.Raise(InputEvents.Button1Action);
-            wasButton1Pressed = isButton1Pressed;
 
-            // Button 2 - B key (B/East on gamepad)
-            bool isButton2Pressed = keyboard.bKey.isPressed;
-            if (isButton2Pressed && !wasButton2Pressed)
+            if (keyboard.bKey.wasPressedThisFrame)
                 inputStatus.OnButtonPressed.Raise(InputEvents.Button2Action);
-            if (!isButton2Pressed && wasButton2Pressed)
+            if (keyboard.bKey.wasReleasedThisFrame)
                 inputStatus.OnButtonReleased.Raise(InputEvents.Button2Action);
-            wasButton2Pressed = isButton2Pressed;
 
-            // Button 3 - N key (X/West on gamepad)
-            bool isButton3Pressed = keyboard.nKey.isPressed;
-            if (isButton3Pressed && !wasButton3Pressed)
+            if (keyboard.nKey.wasPressedThisFrame)
                 inputStatus.OnButtonPressed.Raise(InputEvents.Button3Action);
-            if (!isButton3Pressed && wasButton3Pressed)
+            if (keyboard.nKey.wasReleasedThisFrame)
                 inputStatus.OnButtonReleased.Raise(InputEvents.Button3Action);
-            wasButton3Pressed = isButton3Pressed;
 
-            // Flip Action - E key (Right Shoulder on gamepad)
-            bool isFlipPressed = keyboard.eKey.isPressed;
-            if (isFlipPressed && !wasFlipPressed)
+            if (keyboard.eKey.wasPressedThisFrame)
                 inputStatus.OnButtonPressed.Raise(InputEvents.FlipAction);
-            if (!isFlipPressed && wasFlipPressed)
+            if (keyboard.eKey.wasReleasedThisFrame)
                 inputStatus.OnButtonReleased.Raise(InputEvents.FlipAction);
-            wasFlipPressed = isFlipPressed;
 
+            inputStatus.Throttle = keyboard.eKey.isPressed ? 1f : 0f;
 
-            // Left/Right Trigger analog values (binary for keyboard)
-            inputStatus.LeftTriggerAnalog = keyboard.leftShiftKey.isPressed ? 1f : 0f;
-            inputStatus.RightTriggerAnalog = keyboard.rightShiftKey.isPressed ? 1f : 0f;
+            float leftTriggerValue = keyboard.leftShiftKey.isPressed ? 1f : 0f;
+            float rightTriggerValue = keyboard.rightShiftKey.isPressed ? 1f : 0f;
+            DispatchTriggers(leftTriggerValue, rightTriggerValue);
+        }
 
-            // Left Trigger - Left Shift
-            bool isLeftTriggerPressed = keyboard.leftShiftKey.isPressed;
-            bool leftJustPressed = isLeftTriggerPressed && !wasLeftTriggerPressed;
-            bool leftJustReleased = !isLeftTriggerPressed && wasLeftTriggerPressed;
+        private void DispatchTriggers(float leftTriggerValue, float rightTriggerValue)
+        {
+            inputStatus.LeftTriggerAnalog = leftTriggerValue;
+            inputStatus.RightTriggerAnalog = rightTriggerValue;
+
+            bool leftActive = leftTriggerValue > TriggerDeadzone;
+            bool rightActive = rightTriggerValue > TriggerDeadzone;
+
+            bool leftJustPressed = leftActive && !prevLeftTriggerActive;
+            bool leftJustReleased = !leftActive && prevLeftTriggerActive;
+            bool leftHeld = leftActive;
+
+            bool rightJustPressed = rightActive && !prevRightTriggerActive;
+            bool rightJustReleased = !rightActive && prevRightTriggerActive;
+            bool rightHeld = rightActive;
+
+            prevLeftTriggerActive = leftActive;
+            prevRightTriggerActive = rightActive;
 
             if (leftJustPressed)
                 inputStatus.OnButtonPressed.Raise(InputEvents.LeftStickAction);
             if (leftJustReleased)
                 inputStatus.OnButtonReleased.Raise(InputEvents.LeftStickAction);
-
-            // Right Trigger - Right Shift
-            bool isRightTriggerPressed = keyboard.rightShiftKey.isPressed;
-            bool rightJustPressed = isRightTriggerPressed && !wasRightTriggerPressed;
-            bool rightJustReleased = !isRightTriggerPressed && wasRightTriggerPressed;
-
             if (rightJustPressed)
                 inputStatus.OnButtonPressed.Raise(InputEvents.RightStickAction);
             if (rightJustReleased)
                 inputStatus.OnButtonReleased.Raise(InputEvents.RightStickAction);
 
-            // BothSticksAction Released
             if ((leftJustReleased && rightJustReleased)
-                || (leftJustReleased && isRightTriggerPressed)
-                || (rightJustReleased && isLeftTriggerPressed))
+                || (leftJustReleased && rightHeld)
+                || (rightJustReleased && leftHeld))
                 inputStatus.OnButtonReleased.Raise(InputEvents.BothSticksAction);
 
-            // OnlyLeftStickAction Released
-            if ((leftJustReleased && !isRightTriggerPressed)
-                || (rightJustPressed && isLeftTriggerPressed))
+            if ((leftJustReleased && !rightHeld)
+                || (rightJustPressed && leftHeld))
                 inputStatus.OnButtonReleased.Raise(InputEvents.OnlyLeftStickAction);
 
-            // OnlyRightStickAction Released
-            if ((rightJustReleased && !isLeftTriggerPressed)
-                || (leftJustPressed && isRightTriggerPressed))
+            if ((rightJustReleased && !leftHeld)
+                || (leftJustPressed && rightHeld))
                 inputStatus.OnButtonReleased.Raise(InputEvents.OnlyRightStickAction);
 
-            // OnlyLeftStickAction Pressed
-            if ((leftJustPressed && !isRightTriggerPressed)
-                || (rightJustReleased && isLeftTriggerPressed))
+            if ((leftJustPressed && !rightHeld)
+                || (rightJustReleased && leftHeld))
                 inputStatus.OnButtonPressed.Raise(InputEvents.OnlyLeftStickAction);
 
-            // OnlyRightStickAction Pressed
-            if ((rightJustPressed && !isLeftTriggerPressed)
-                || (leftJustReleased && isRightTriggerPressed))
+            if ((rightJustPressed && !leftHeld)
+                || (leftJustReleased && rightHeld))
                 inputStatus.OnButtonPressed.Raise(InputEvents.OnlyRightStickAction);
 
-            // BothSticksAction Pressed
             if ((leftJustPressed && rightJustPressed)
-                || (leftJustPressed && isRightTriggerPressed)
-                || (rightJustPressed && isLeftTriggerPressed))
+                || (leftJustPressed && rightHeld)
+                || (rightJustPressed && leftHeld))
                 inputStatus.OnButtonPressed.Raise(InputEvents.BothSticksAction);
-
-            // Update previous state
-            wasLeftTriggerPressed = isLeftTriggerPressed;
-            wasRightTriggerPressed = isRightTriggerPressed;
         }
 
         private void Reparameterize()
         {
-            // Calculate eased joystick positions
-            inputStatus.EasedLeftJoystickPosition = new Vector2(
-                Ease(2 * leftStickCurrent.x),
-                Ease(2 * leftStickCurrent.y)
-            );
-            inputStatus.EasedRightJoystickPosition = new Vector2(
-                Ease(2 * rightStickCurrent.x),
-                Ease(2 * rightStickCurrent.y)
-            );
+            var mix = DualStickMix.Mix(
+                leftStickRaw, rightStickRaw,
+                inputStatus.InvertYEnabled, inputStatus.InvertThrottleEnabled);
 
-            // Calculate sums and differences exactly as gamepad/touch input does
-            inputStatus.XSum = Ease(rightStickCurrent.x + leftStickCurrent.x);
-            inputStatus.YSum = -Ease(rightStickCurrent.y + leftStickCurrent.y);
-            inputStatus.XDiff = (rightStickCurrent.x - leftStickCurrent.x + 2) / 4;
-            inputStatus.YDiff = Ease(rightStickCurrent.y - leftStickCurrent.y);
-            
-            // Apply inversions AFTER calculations
-            if (inputStatus.InvertYEnabled)
-            {
-                inputStatus.YSum *= -1f;   // Invert pitch
-                inputStatus.YDiff *= -1f;  // Invert roll
-            }
-            
-            if (inputStatus.InvertThrottleEnabled)
-            {
-                inputStatus.XDiff = 1f - inputStatus.XDiff;  // Invert throttle/speed
-            }
+            inputStatus.EasedLeftJoystickPosition = mix.EasedLeft;
+            inputStatus.EasedRightJoystickPosition = mix.EasedRight;
+            inputStatus.RightNormalizedJoystickPosition = rightStickRaw;
+            inputStatus.LeftNormalizedJoystickPosition = leftStickRaw;
+            inputStatus.XSum = mix.XSum;
+            inputStatus.YSum = mix.YSum;
+            inputStatus.XDiff = mix.XDiff;
+            inputStatus.YDiff = mix.YDiff;
         }
 
         private void PerformSpeedAndDirectionalEffects()
         {
-            float threshold = 0.3f;
+            float threshold = .3f;
             float sumOfRotations = Mathf.Abs(inputStatus.YDiff) + Mathf.Abs(inputStatus.YSum) + Mathf.Abs(inputStatus.XSum);
-            float deviationFromFullSpeedStraight = (1 - inputStatus.XDiff) + sumOfRotations;
-            float deviationFromMinimumSpeedStraight = inputStatus.XDiff + sumOfRotations;
+            float DeviationFromFullSpeedStraight = (1 - inputStatus.XDiff) + sumOfRotations;
+            float DeviationFromMinimumSpeedStraight = inputStatus.XDiff + sumOfRotations;
 
-            if (deviationFromFullSpeedStraight < threshold && !fullSpeedStraightEffectsStarted)
+            if (DeviationFromFullSpeedStraight < threshold && !fullSpeedStraightEffectsStarted)
             {
                 fullSpeedStraightEffectsStarted = true;
                 inputStatus.OnButtonPressed.Raise(InputEvents.FullSpeedStraightAction);
             }
-            else if (deviationFromMinimumSpeedStraight < threshold && !minimumSpeedStraightEffectsStarted)
+            else if (DeviationFromMinimumSpeedStraight < threshold && !minimumSpeedStraightEffectsStarted)
             {
                 minimumSpeedStraightEffectsStarted = true;
                 inputStatus.OnButtonPressed.Raise(InputEvents.MinimumSpeedStraightAction);
             }
             else
             {
-                if (fullSpeedStraightEffectsStarted && deviationFromFullSpeedStraight > threshold)
+                if (fullSpeedStraightEffectsStarted && DeviationFromFullSpeedStraight > threshold)
                 {
                     fullSpeedStraightEffectsStarted = false;
                     inputStatus.OnButtonReleased.Raise(InputEvents.FullSpeedStraightAction);
                 }
-                if (minimumSpeedStraightEffectsStarted && deviationFromMinimumSpeedStraight > threshold)
+                if (minimumSpeedStraightEffectsStarted && DeviationFromMinimumSpeedStraight > threshold)
                 {
                     minimumSpeedStraightEffectsStarted = false;
                     inputStatus.OnButtonReleased.Raise(InputEvents.MinimumSpeedStraightAction);
@@ -260,15 +227,14 @@ namespace CosmicShore.Gameplay
             }
         }
 
-        public override void OnStrategyActivated()
+        private void ReleaseHeldTriggers()
         {
-            ResetSmoothingState();
-            inputStatus.ActiveInputDevice = InputDeviceType.Keyboard;
+            if (prevLeftTriggerActive || prevRightTriggerActive)
+                DispatchTriggers(0f, 0f);
         }
 
-        public override void OnStrategyDeactivated()
+        private void ReleaseSpeedEffects()
         {
-            // Stop any ongoing effects
             if (fullSpeedStraightEffectsStarted)
             {
                 fullSpeedStraightEffectsStarted = false;
@@ -281,18 +247,18 @@ namespace CosmicShore.Gameplay
             }
         }
 
-        public override void OnPaused()
+        private void ResetStrategyState()
         {
-            // Reset stick positions when paused to prevent drift
-            leftStickCurrent = Vector2.zero;
-            rightStickCurrent = Vector2.zero;
-            leftStickTarget = Vector2.zero;
-            rightStickTarget = Vector2.zero;
+            leftStickRaw = Vector2.zero;
+            rightStickRaw = Vector2.zero;
+            prevLeftTriggerActive = false;
+            prevRightTriggerActive = false;
+            fullSpeedStraightEffectsStarted = false;
+            minimumSpeedStraightEffectsStarted = false;
         }
 
         public override void SetPortrait(bool portrait)
         {
-            // Keyboard doesn't need to handle portrait mode changes
         }
     }
 }

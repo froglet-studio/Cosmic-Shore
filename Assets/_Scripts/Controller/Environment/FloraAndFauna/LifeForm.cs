@@ -1,5 +1,6 @@
 using System;
 using System.Collections;
+using System.Collections.Generic;
 using System.Linq;
 using CosmicShore.Core;
 using CosmicShore.Gameplay;
@@ -35,6 +36,12 @@ namespace CosmicShore.Gameplay
         [SerializeField] float shieldPeriod = 0;
         [SerializeField] private bool autoInitialize = true;
 
+        [Tooltip("Seconds between spindle rings on a JOUSTED death, where the structure " +
+                 "unravels from the heart outward instead of detonating (Docs/ECOSYSTEM.md §26). " +
+                 "The fauna counterpart is LightFaunaDataSO.witherRingInterval. 0 collapses the " +
+                 "whole body in a single frame, which reads as a pop - keep it above zero.")]
+        [SerializeField, Min(0.01f)] float witherRingInterval = 0.25f;
+
         [Header("Team")]
         [FormerlySerializedAs("Team")]
         public Domains domain;
@@ -49,30 +56,41 @@ namespace CosmicShore.Gameplay
         /// <summary>Elemental contract: the element this lifeform carries (its crystal's element).</summary>
         public Element Element => crystal ? crystal.crystalProperties.Element : Element.None;
 
-        /// <summary>Elemental contract: this lifeform's level (1..5), seeded from config at spawn.</summary>
+        /// <summary>
+        /// Elemental contract: this lifeform's level (1..5). <b>Level is EARNED, and never
+        /// ROLLED</b> (Docs/ECOSYSTEM.md §33): a plant earns a level by reproducing, a creature
+        /// by feeding a significant amount, and an ordinary spawn starts at 1. A MODE may still
+        /// author a higher hatch level deliberately (Wildlife Liberation's per-cage tiers) —
+        /// what is gone is the dice.
+        /// </summary>
         public int Level { get; protected set; } = 1;
 
         /// <summary>
-        /// Elemental contract: seeds the spawn level. Base scales the crystal (level 5 always
-        /// carries, and drops, the largest crystal); Flora also scales its leaf prisms. Call
-        /// BEFORE Initialize - it spawns AT size, nothing pops mid-life.
+        /// Elemental contract: seeds the spawn level. Sizes the heart from the shared level
+        /// curve (<see cref="LifeFormCrystal"/> — one size per level for every species and
+        /// element); Flora also scales its leaf prisms. Call BEFORE Initialize - it spawns AT
+        /// size, nothing pops mid-life.
+        ///
+        /// <para>The ordinary spawn path passes level 1; anything above it is authored
+        /// deliberately — Wildlife Liberation's cage tiers, and the Lifeform Matrix bench,
+        /// which spawns a chosen level so a tuner can see the whole band.</para>
         /// </summary>
-        public virtual void ApplyLevel(int level, float bodyScalePerLevel, float crystalScalePerLevel)
+        public virtual void ApplyLevel(int level, float bodyScalePerLevel)
         {
-            Level = Mathf.Clamp(level, 1, 5);
+            Level = Mathf.Clamp(level, 1, Fauna.MaxLifeformLevel);
             _bodyScalePerLevel = Mathf.Max(1f, bodyScalePerLevel);
-            _crystalScalePerLevel = Mathf.Max(1f, crystalScalePerLevel);
-            if (crystal && Level > 1)
-                crystal.transform.localScale *= Mathf.Pow(_crystalScalePerLevel, Level - 1);
+            // Resolve early: the spawner calls this BEFORE Initialize, so the field it assigns
+            // is not populated yet unless ApplyElement provisioned one.
+            if (!crystal) crystal = GetComponentInChildren<Crystal>(true);
+            LifeFormCrystal.ApplyLevelSize(crystal, Level);
         }
 
-        // Per-level factors remembered from ApplyLevel so in-world LevelUp uses the same curve.
+        // Per-level body factor remembered from ApplyLevel so in-world LevelUp uses the same
+        // curve. The crystal has no per-species factor - its size is the shared level curve.
         float _bodyScalePerLevel = 1.15f;
-        float _crystalScalePerLevel = 1.2f;
 
-        /// <summary>Per-level scale factors (config-seeded); Flora reads them in LevelUp.</summary>
+        /// <summary>Per-level body scale factor (config-seeded); Flora reads it in LevelUp.</summary>
         protected float BodyScalePerLevel => _bodyScalePerLevel;
-        protected float CrystalScalePerLevel => _crystalScalePerLevel;
 
         /// <summary>Rooted flora never travel - which makes them trivially joustable.</summary>
         public float CurrentSpeed => 0f;
@@ -80,25 +98,35 @@ namespace CosmicShore.Gameplay
         /// <summary>
         /// A faster vessel jousted this lifeform's heart: dies through the normal death path
         /// (wither via spindles, crystal drop - mass conserved, continuity honored). Idempotent.
+        ///
+        /// The style is stamped BEFORE the death runs because the death READS it: a joust does
+        /// not detonate the plant. The jouster took the heart, so the structure comes apart
+        /// FROM THE HEART OUTWARD and its prisms stay standing as a skeleton
+        /// (Docs/ECOSYSTEM.md §26).
         /// </summary>
         public bool Jousted(string killerName)
         {
             if (dying || isCleaningUp) return false;
             dying = true;
+            deathStyle = LifeformDeathStyle.Jousted;
             Die(killerName);
             return true;
         }
 
         /// <summary>
-        /// In-world level-up (the Squirrel Space-5 'Shepherd' joust on an ally). The crystal
-        /// grows a step; Flora also grows future leaves. Capped at level 5.
+        /// In-world level-up. For flora the earning event is <b>reproduction</b>
+        /// (<see cref="Flora"/>); the Squirrel Space-5 'Shepherd' joust on an ally also grants
+        /// one. The heart grows a step along the shared level curve; Flora also grows future
+        /// leaves. Capped at level 5.
         /// </summary>
         public virtual bool LevelUp()
         {
-            if (Level >= 5) return false;
+            if (Level >= Fauna.MaxLifeformLevel) return false;
             Level++;
+            // Grows, never pops (continuity of existence). The target is the LOCAL scale that
+            // lands the heart on this level's shared world size.
             if (crystal)
-                crystal.GrowCrystal(1f, crystal.transform.localScale.x * _crystalScalePerLevel);
+                crystal.GrowCrystal(1f, LifeFormCrystal.LocalScaleForLevel(crystal, Level));
             return true;
         }
 
@@ -124,6 +152,7 @@ namespace CosmicShore.Gameplay
         {
             if (tuning == null) return;
             if (tuning.ShieldPeriod >= 0f) shieldPeriod = tuning.ShieldPeriod;
+            if (tuning.WitherRingInterval > 0f) witherRingInterval = tuning.WitherRingInterval;
         }
 
         public static event Action<string, int> OnLifeFormDeath;
@@ -135,6 +164,11 @@ namespace CosmicShore.Gameplay
         // --- Internal state ---
         protected Crystal crystal;
         protected Cell cell;
+
+        // How this lifeform is coming apart - written by the force that killed it (today only
+        // Jousted, stamped in Jousted()). Everything else keeps the ordinary destruction.
+        LifeformDeathStyle deathStyle = LifeformDeathStyle.Withered;
+
         bool dying;
         bool isCleaningUp;
         bool initialized;
@@ -280,18 +314,82 @@ namespace CosmicShore.Gameplay
             if (!string.IsNullOrEmpty(killerName))
                 OnLifeFormDeath?.Invoke(killerName, cellId);
 
-            healthTracker.DamageAll(Domains.Blue);
-            spindleTracker.ForceWitherAll(gameObject);
-
             if (cell)
                 cell.UnregisterSpawnedObject(gameObject);
 
+            // Before the destruction step, so the ordered wither it may start survives.
             StopAllCoroutines();
+
+            if (deathStyle == LifeformDeathStyle.Jousted)
+                WitherToSkeleton();
+            else
+                DestroyStructure();
 
             if (gameObject.activeInHierarchy)
                 StartCoroutine(DieCoroutine(cellId));
             else if (!isCleaningUp)
                 Destroy(gameObject);
+        }
+
+        /// <summary>The ordinary flora death: the remaining structure blows apart where it stood.</summary>
+        void DestroyStructure()
+        {
+            healthTracker.DamageAll(Domains.Blue);
+            spindleTracker.ForceWitherAll(gameObject);
+        }
+
+        /// <summary>
+        /// The JOUSTED death (Docs/ECOSYSTEM.md §26): a vessel took this lifeform's heart, so
+        /// the plant does not detonate. Its prisms are left standing as a skeleton - the frame
+        /// of the thing that grew here, now ordinary cell mass the food web can graze - while
+        /// the soft tissue withers spindle by spindle FROM THE HEART OUTWARD, unravelling
+        /// around the hole the joust left. Exactly the mirror of the outside-in starvation
+        /// wither a creature does (see <see cref="LightFauna"/>).
+        ///
+        /// <see cref="DieCoroutine"/> is what waits for it: the husk is destroyed only once
+        /// every spindle has finished evaporating, so this needs no completion callback.
+        /// </summary>
+        void WitherToSkeleton()
+        {
+            // Where the wither starts. Read now — the heart was freed a few lines above and is
+            // already on its way to whoever took it.
+            Vector3 heart = crystal ? crystal.transform.position : transform.position;
+
+            // Isolate first: ForceWither recurses into child spindles and destroying a spindle
+            // destroys its children, either of which would collapse the plant in one step.
+            var spindles = GetComponentsInChildren<Spindle>(true).Where(s => s).ToList();
+            foreach (var sp in spindles)
+                sp.IsolateForOrderedWither(transform);
+
+            // The frame stays. Must precede the wither: a health prism is parented to a
+            // spindle, so evaporating spindles first would destroy the mass this conserves.
+            Transform skeletonParent = cell ? cell.transform : null;
+            foreach (var hp in GetComponentsInChildren<HealthPrism>(true))
+                if (hp && !hp.destroyed) hp.LeaveAsSkeleton(skeletonParent);
+
+            spindles.Sort((a, b) =>
+                (a.transform.position - heart).sqrMagnitude.CompareTo(
+                (b.transform.position - heart).sqrMagnitude));
+
+            // Can't animate while inactive (scene teardown) - the skeleton above already
+            // conserved the mass, so collapse what's left in one step rather than throwing.
+            if (!gameObject.activeInHierarchy)
+            {
+                foreach (var sp in spindles)
+                    if (sp) sp.ForceWither();
+                return;
+            }
+
+            StartCoroutine(WitherOutwardCoroutine(spindles));
+        }
+
+        IEnumerator WitherOutwardCoroutine(List<Spindle> orderedFromHeart)
+        {
+            for (int i = 0; i < orderedFromHeart.Count; i++)
+            {
+                if (orderedFromHeart[i]) orderedFromHeart[i].ForceWither();
+                yield return new WaitForSeconds(witherRingInterval);
+            }
         }
 
         IEnumerator DieCoroutine(int cellId)

@@ -11,25 +11,47 @@ Ribcage is the **Rhino-only cage race**. Domains race to be first to **destroy 2
 prisms**. The arena is a **layered orange** of prism bone — concentric hollow shells you scrape
 your way through — and the bone *is* the score, so breaking out and winning are the same act.
 
+> **Player-facing unit is PRISMS, never "bars".** The cage's structural pieces are bars in this
+> document and in the generator's comments, but every number a player reads counts PRISMS - the
+> scoreboard, the reveal, and any toast copy. Two words for one counter reads as two counters.
+
 **One axis.** Destruction is the race: `HostilePrismsDestroyed`, the same platform stat Rampage
 runs on and the same 2,000 target. Scoring mass is everything that is not your own team's laid
 trail — the cage (environment mass, non-roster owner ⇒ hostile whatever colour it wears) and rival
 trails. Your own and your teammates' trails never score, so there is no lay-and-smash farming loop.
 
-**Intensity is how many rinds you have to peel.** One shell at intensity 1, four at intensity 4,
-added *inward* from a fixed outer radius. This is not a controller feature: the Cell picks one
-`CellConfigDataSO` per intensity (`CellTypeChoiceOptions.IntensityWise`), each pointing at a
-`SpawnableRibcage` prefab variant with a different `shellCount`. See "Intensity" below.
+**Intensity is how many rinds you have to peel.** **Two** shells at intensity 1 rising to **five**
+at intensity 4, added *inward* from a fixed outer radius. This is not a controller feature: the
+Cell picks one `CellConfigDataSO` per intensity (`CellTypeChoiceOptions.IntensityWise`), each
+pointing at a `SpawnableRibcage` prefab variant with a different `shellCount`. Note intensity 1 is
+already layered — a single shell cannot reach the ~10k prism budget without closing the outer weave
+the design depends on. See "Intensity" below.
 
-- **The cage is the arena and the objective.** 5,471 / 9,902 / 13,316 / 15,690 prisms at one
-  through four shells, outer radius **360**, shells at **360 / 280 / 200 / 120**. Each shell is
-  twenty-six meridian ribs, thirteen latitude hoops, a woven cross-lattice, joints at every
-  crossing, and two polar crowns.
-- **The weave is deliberately OPEN.** The grille opening at the outer shell is ~**87u × 82u**
-  (squareness 1.07) — you fly between the bones freely, and the gaps are what let you *see* the
-  next rind waiting behind this one. Successive shells are rotated by a fraction of a rib spacing
-  (`ShellLonOffsets = {0, 0.5, 0.25, 0.75}`), so no two of the four align and there is no free
-  radial corridor straight through to the core.
+- **The cage is the arena and the objective.** 10,620 / 14,731 / 17,992 / 20,153 prisms at
+  intensity 1–4, outer radius **360**, shells at **360 / 295 / 230 / 165 / 100**. Each shell is
+  meridian ribs, latitude hoops, a diagonal through every cell, joints at every crossing, and two
+  polar crowns.
+- **The openings are TRIANGLES.** Every rib × hoop cell carries one diagonal, splitting the quad
+  into two triangles; the diagonal's lean alternates on a checkerboard so the result reads as a
+  truss rather than a uniform shear. (Before this, the cells were quads and read as rounded
+  "bubbles".)
+- **The outer weave is deliberately OPEN.** The cell at the outer shell is ~**94u × 98u** — you fly
+  between the bones freely, and the gaps are what let you *see* the next rind waiting behind this
+  one. Successive shells are rotated by a fraction of a rib spacing
+  (`ShellLonOffsets = {0, 0.5, 0.25, 0.75, 0.375}`), so no two align and there is no free radial
+  corridor straight through to the core.
+- **It gets denser the deeper you go.** Each shell inward carries `DensityStep` (1.05) times more
+  ribs and hoops than the one outside it, which compounds with the tightening that shrinking radius
+  already gives: cells run **94u → 74u → 56u → 37u → 22u**, a **4.3× tightening** from rind to
+  pith. The last layer is the hardest to slip through, not the easiest.
+- **Every inner rind is TILTED onto its own axis.** A latitude-hoop sphere is inherently densest at
+  its **poles**, where the ribs converge. If every rind shared world-up, that hard cap would stack
+  radially and the match would collapse into "everyone drills the top". `ShellTilts` leans each
+  shell inside the outermost onto a different axis — authored as (tilt from up, azimuth), currently
+  `(0,0) (34,0) (61,110) (48,215) (76,305)`, whose pole axes are **at least 34° apart** pairwise. So
+  no single approach stays cheap all the way to the core, and the shape twists as you peel it. The
+  outer shell stays untilted: the silhouette, the AI's aim point and the spawn ring are all defined
+  against it.
 - **Every bar is a ONE-hit prism.** All plain (`PrismKind.Plain`) except the danger traps. Nothing
   is `Shielded` and nothing is `SuperShielded` — a super-shielded prism is fully invulnerable
   (`Prism.Damage` returns early), so one in the cage would be permanently unbreakable mass and
@@ -53,19 +75,29 @@ added *inward* from a fixed outer radius. This is not a controller feature: the 
   cage-breakers
 - **Scoring**: `RibcageScoringRuleSO` (`metric = ScoringMetric.PrismsDestroyed`; golf-timed like
   HexRace/Scurry/Rampage) — winning-domain players `Score = finish time`, losers the
-  `GolfScoreSentinels` sentinel (displayed "N Bars Left")
+  `GolfScoreSentinels` sentinel (displayed "N Prisms Left")
 - **Turn monitor**: `RibcagePrismTurnMonitor` — resolves the destruction target from
   `EndConditionOverridesSO.GetRibcagePrismTarget()` (default **2000**, FrogletTools ▸ Game Modes ▸
   End Game Conditions — never a per-scene field), syncs it via NetworkVariable →
   `GameDataSO.PrismTargetCount`
 - **Domains**: `MinDomainsAllowed = 2` (like Joust), `MaxDomainsAllowed = 3`; players **2–4** with
   AI backfill
-- **Vessels**: **Rhino only** (`ArcadeGameRibcage.Vessels` has one entry). `SO_ArcadeGame.Vessels`
-  used to be only the UI's list of CHOICES — nothing validated the selection at launch, so a vessel
-  picked in an earlier game persisted into a mode that does not allow it (a Dolphin flew Ribcage
-  while its AI opponents correctly spawned Rhinos). `GameDataSO.SyncFromArcadeGame` now clamps
-  `selectedVesselClass` into the game's allowed set, so a single-vessel mode cannot be entered in
-  the wrong hull by ANY route — modal, rematch, or the Tournament chain.
+- **Vessels**: **Rhino only** (`ArcadeGameRibcage.Vessels` has one entry), enforced in **two**
+  places because one was not enough:
+  1. `GameDataSO.SyncFromArcadeGame` clamps `selectedVesselClass` into the game's allowed set. This
+     covers the machine that pressed Start, on every route (modal, rematch, Tournament chain).
+  2. `ServerPlayerVesselInitializer.ResolveSpawnVesselType` re-clamps **server-side at spawn**.
+     This is the one that matters in multiplayer: `Player.NetDefaultVesselType` is an OWNER-write
+     NetworkVariable that each client sets from its OWN local config and from the menu's
+     vessel-changer toy, so a client walked in still wearing the hull it last flew — and
+     `SyncFromArcadeGame` never runs on a client, while the config ClientRpc lands *after* the
+     spawn. Symptom: **the client flew a Dolphin in Rhino-only Ribcage** while the AI (whose class
+     comes from the scene's `aiInitializeDatas`) correctly spawned Rhinos. The server is the only
+     authority that sees every player's request and the mode's rules together, so the clamp belongs
+     there — the same principle as never writing domain state from client code. It also calls
+     `Player.ServerForceVesselType` so the replicated variable agrees with the hull that is flying.
+     `MenuServerPlayerVesselInitializer` overrides the hook to bypass it: the menu is unrestricted,
+     and `AllowedVesselClasses` deliberately survives `ResetRuntimeData`.
 - **Config**: `_SO_Assets/Games/ArcadeGameRibcage.asset` (registered in
   `GameLists/OrganicRematchGames.asset`, `ProgressionConfig.alwaysUnlockedModes`)
 
@@ -102,7 +134,7 @@ Cell.AssignConfig                                     [Cell.cs]
     → index = Clamp(gameData.SelectedIntensity - 1, 0, CellConfigs.Count - 1)
     → CellConfigs[index]   (Ribcage Cell Config 1..4, in that order)
         → EnvironmentPrefab = SpawnableRibcage{1..4}.prefab
-             → SpawnableRibcage.shellCount = 1..4
+             → SpawnableRibcage.shellCount = 2 / 3 / 4 / 5   (SHELLS_FOR_INTENSITY)
         → PhaseThresholds   = THAT intensity's own measured baseline
 ```
 
@@ -112,7 +144,7 @@ Three properties of this arrangement are load-bearing:
    stays a single constant, the AI's aim point needs no per-intensity case, the player spawn ring
    is unchanged, and the arena's outer silhouette is identical at every intensity.
 2. **Each intensity needs its OWN `CellConfigDataSO`** because `PhaseThresholds` must ride its own
-   baseline — a four-rind cage starts at ~15.7k prisms and a one-rind cage at ~5.5k, so one shared
+   baseline — a five-rind cage starts at ~20.2k prisms and a two-rind cage at ~10.6k, so one shared
    threshold block would put three of the four arenas in the wrong phase from frame one.
 3. **`shellCount` is inside `BuildParameterHash`**, so the four variants share one script without
    sharing a generation cache.
@@ -122,44 +154,48 @@ imports the model directly — the thresholds cannot drift from the geometry beh
 
 ## The cage
 
-`SpawnableRibcage : CellEnvironmentSpawnableBase`, outer radius **360**, shell gap **80**, seed 39,
+`SpawnableRibcage : CellEnvironmentSpawnableBase`, outer radius **360**, shell gap **65**, seed 39,
 deterministic per seed like every cell environment. Analytic budget
 (`Tools/Build/ribcage_budget.py`; confirm with FrogletTools ▸ Ecology ▸ Measure Cell Environment
 Baselines):
 
-| shell | radius | ribs | hoops | lattice | joints | crowns | danger | total | volume |
-|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|
-| 0 | 360 | 3,458 | 1,171 | 468 | 338 | 36 | 182 | **5,471** | 2,178,110 |
-| 1 | 280 | 2,678 | 911 | 468 | 338 | 36 | 140 | **4,431** | 1,729,549 |
-| 2 | 200 | 1,924 | 648 | 468 | 338 | 36 | 101 | **3,414** | 1,290,908 |
-| 3 | 120 | 1,144 | 388 | 468 | 338 | 36 | 60 | **2,374** | 842,347 |
+| shell | radius | ribs | hoops | cell | ribs | hoops | triangulation | joints | danger | total | volume |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| 0 | 360 | 24 | 11 | 94u x 98u | 3,024 | 979 | 1,104 | 264 | 168 | **5,575** | 2,212,100 |
+| 1 | 295 | 25 | 13 | 74u x 67u | 2,581 | 959 | 1,000 | 325 | 144 | **5,045** | 1,992,128 |
+| 2 | 230 | 26 | 13 | 56u x 52u | 2,094 | 747 | 780 | 338 | 116 | **4,111** | 1,619,565 |
+| 3 | 165 | 28 | 13 | 37u x 37u | 1,618 | 537 | 616 | 364 | 90 | **3,261** | 1,273,833 |
+| 4 | 100 | 29 | 13 | 22u x 23u | 1,017 | 327 | 348 | 377 | 56 | **2,161** | 836,574 |
 
 | intensity | shells | prisms | volume | danger |
 |---|---:|---:|---:|---:|
-| 1 | 1 | **5,471** | 2,178,110 | 182 |
-| 2 | 2 | **9,902** | 3,907,660 | 323 |
-| 3 | 3 | **13,316** | 5,198,568 | 424 |
-| 4 | 4 | **15,690** | 6,040,915 | 484 |
+| 1 | 2 | **10,620** | 4,204,228 | 312 |
+| 2 | 3 | **14,731** | 5,823,793 | 428 |
+| 3 | 4 | **17,992** | 7,097,626 | 518 |
+| 4 | 5 | **20,153** | 7,934,200 | 574 |
 
-Rib and hoop COUNTS are constant per shell while prism counts scale with circumference, so the
-openings tighten toward the core — which is what an orange's inner layers actually do, and it means
-the last rind is the hardest to slip through rather than the easiest.
+Rib and hoop counts *increase* inward by `DensityStep` while the radius shrinks, so cells tighten
+4.3× from rind to pith — which is what an orange's inner layers actually do, and it means the last
+rind is the hardest to slip through rather than the easiest.
 
 **Collider-budget impact — read this before tuning anything else.** One box collider per prism, so
-the cage *is* the collider count: 5,471 at intensity 1 rising to 15,690 at intensity 4, plus
-nothing else (no fauna, no flora in this cell).
+the cage *is* the collider count: **10,620 at intensity 1 rising to 20,153 at intensity 4**, plus
+nothing else (no fauna, no flora in this cell). These totals are an explicit product decision
+(requested 2026-08: "intensity 1 at 10000 … intensity 4 can have 20000"), not an accident of the
+geometry.
 
-- Intensity 1 is **~3.6× the masterplan's ≤1,500 per-cell target** but comfortably **under
-  Rampage's deliberate 10,000-prism arena gate** — and it is a **2.7× improvement** on the previous
-  single dense shell (14,977).
-- Intensity 4 is **~10×** the masterplan target and **~1.5× Rampage's gate**, i.e. about what the
-  old single shell cost. That cost is now opt-in per match rather than paid by everyone.
+- Intensity 1 is **~7× the masterplan's ≤1,500 per-cell target** and just above **Rampage's
+  deliberate 10,000-prism arena gate**.
+- Intensity 4 is **~13×** the masterplan target and **~2× Rampage's gate** — the heaviest arena in
+  the game by a clear margin.
 
-The open weave is what bought this: the same prism budget spread over four readable rinds instead
-of one solid sphere. Mitigations are the standing ones (collider-LOD by phase, no new physics
-queries anywhere — scoring rides the StatsManager SOAP channel and the AI aims analytically).
-**Measure on device before tuning.** The cheapest dial is `shellCount` (drop the top intensity),
-then `RibCount`, then `HoopCount`, then `BarStep`. Re-run **both** Python tools after any change.
+This is the branch's headline performance risk and it is now paid at EVERY intensity, not just the
+top one. Mitigations are the standing ones (collider-LOD by phase, no new physics queries anywhere
+— scoring rides the StatsManager SOAP channel and the AI aims analytically), and the mode's whole
+verb actively removes colliders as the match runs. **Measure on device before tuning.** Dials, in
+order of bluntness: `SHELLS_FOR_INTENSITY` (drop a rind), `BaseRibCount`/`BaseHoopCount` (the outer
+weave), `DensityStep` (the inward ramp), `StrutStep` (triangulation cost), `BarStep`. Re-run
+**both** Python tools after any change.
 
 ## Progress milestones
 
@@ -178,9 +214,17 @@ Toast copy is still unauthored, so **right now the shake IS the milestone feedba
 
 ## Spawning outside the cage
 
-Players start on the computed cell spawn ring (`CellSpawnFormation` — symmetric, all facing the
-cell), NOT on authored transforms: the donor scene's four points sat at ±50, deep inside the cage,
-so everyone started penned in.
+Players start on the computed cell spawn ring (`CellSpawnFormation`, all facing the cell), NOT on
+authored transforms: the donor scene's four points sat at ±50, deep inside the cage, so everyone
+started penned in.
+
+**The formation is `EquatorialRing`, not the default `Symmetric`** — everyone evenly spaced on one
+horizontal great circle, which for four players is the same 90° cross Joust authors by hand. This
+is a fairness requirement, not a style choice: the cage is densest at its poles, so the default
+tetrahedral spread would drop two of four players onto the hard cap and two onto open weave. On the
+ring every player gets the same approach. It is opt-in per scene
+(`ServerPlayerVesselInitializer.spawnFormation`), so Crystal Capture's sphere formation is
+untouched.
 
 The ring normally measures off the cell's nucleus radius, and Ribcage's cell deliberately has none
 — so it would have collapsed to the cell centre, i.e. the same bug.
@@ -218,11 +262,10 @@ auto-restore work like every other mode. The milestone rungs are fractions of it
 
 > **⚠ Pacing flag — 2,000 is inherited, not measured for this arena.** It was set when every bar was
 > a two-hit shielded prism in a 14,977-prism cage: ~4,000 hits, ~13% of the bone. The bars are now
-> one-hit and intensity 1 is 5,471 prisms, so the same target is ~2,000 hits and **~37% of the whole
-> arena** — roughly four times faster, against a much larger share of the cage. Expect intensity 1
-> to finish quickly and to leave the arena visibly stripped. This has not been playtested. It is one
-> editor field, and the milestones follow it automatically; a per-intensity target would need a
-> small change to `RibcagePrismTurnMonitor`.
+> one-hit, so the same target is ~2,000 hits — roughly **twice as fast** — against **~19% of
+> intensity 1's 10,620 prisms** and ~10% at intensity 4. Expect matches to run shorter than they
+> did. This has not been playtested. It is one editor field, and the milestones follow it
+> automatically; a per-intensity target would need a small change to `RibcagePrismTurnMonitor`.
 
 ## The fauna removal (2026-08)
 
@@ -302,52 +345,74 @@ YAML. `Tools/Build/ribcage_budget.py` is the cage's analytic budget model and th
 1. **Open** `MinigameRibcage.unity`. Every script reference resolves (no "Missing (Mono Script)"),
    the controller's inspector shows `rule` = RibcageScoringRule and the milestone fractions
    0.25 / 0.5, and the **Cell shows four configs with Cell Type Choice = Intensity Wise**.
-2. **Intensity picks the layers.** Launch at intensity 1 → one shell. Relaunch at intensity 4 →
-   four nested shells at 360 / 280 / 200 / 120. This is the headline check: if every intensity looks
-   the same, the Cell is not on `IntensityWise` or the configs are listed out of order.
-3. **Gaps are back.** The outer weave should read as an open ribcage (~87u × 82u openings), not a
-   solid sphere — you should be able to fly between the bones without touching them, and see the
-   next rind through the gaps.
-4. **No free corridor.** Line up on the centre from outside and fly straight in: the shells are
-   phase-offset, so you should meet bone rather than thread all four layers untouched.
-5. **Baseline confirm.** FrogletTools ▸ Ecology ▸ Measure Cell Environment Baselines should report
-   **5,471 / 9,902 / 13,316 / 15,690** prisms for intensities 1–4. If it disagrees, the generator and
-   `ribcage_budget.py` have drifted — fix both.
+2. **Intensity picks the layers.** Launch at intensity 1 → **two** shells. Relaunch at intensity 4
+   → **five** nested shells at 360 / 295 / 230 / 165 / 100. This is the headline check: if every
+   intensity looks the same, the Cell is not on `IntensityWise` or the configs are listed out of
+   order.
+3. **Openings are TRIANGLES, not bubbles.** Every cell should be crossed by a diagonal, with the
+   lean alternating cell to cell so it reads as a truss.
+4. **The weave tightens inward.** Outer cells ~94u; the innermost rind should be visibly the
+   tightest skin (~22u). If the core looks as open as the surface, `DensityStep` is not applying.
+4b. **Inner rinds are TILTED.** Each layer's dense polar cap should point a different way — fly a
+   full orbit and the cage should visibly twist as you look through it. If every rind's poles line
+   up at the top, `ShellTilts` is not being applied (check `ShellSpec.ToCell` is used by every
+   builder).
+5. **No free corridor.** Line up on the centre from outside and fly straight in: the shells are
+   phase-offset, so you should meet bone rather than thread every layer untouched.
+6. **Baseline confirm.** FrogletTools ▸ Ecology ▸ Measure Cell Environment Baselines should report
+   **10,620 / 14,731 / 17,992 / 20,153** prisms for intensities 1–4. If it disagrees, the generator
+   and `ribcage_budget.py` have drifted — fix both.
 6. **Bars are ONE hit.** Ram a rib: it shatters on first contact, no shield to shed, no octahedron.
    Then find a **danger** bar (distinct material): also one hit, but it full-stops you, debuffs all
    four elements for 4 s and resets boost.
 7. **No fauna.** Nothing should hatch, at any intensity, at any point in the match.
-8. **Rhino only.** Pick a different vessel in an earlier game, then launch Ribcage — you should spawn
-   a Rhino anyway, with a `clamping selected vessel` line in the log.
-9. **Spawn outside.** All players start on a ring ~576u out, facing the cage, with the whole cage
-   visible ahead — nobody starts inside it.
-10. **Smashing scores; laying does not.** The HUD domain sum should rise as you break bars and not at
+8. **Rhino only — SOLO.** Pick a different vessel in an earlier game, then launch Ribcage: you
+   should spawn a Rhino, with a `clamping selected vessel` line in the log.
+8b. **Rhino only — MULTIPLAYER (the regression that shipped).** Have the CLIENT fly a Dolphin in the
+   menu (vessel-changer toy), then have the host launch Ribcage. The client must spawn a **Rhino**,
+   with a `does not allow Dolphin; spawning Rhino instead` warning on the host. Then return to the
+   menu and confirm the client can pick a Dolphin again — the restriction must not leak out of the
+   game scene.
+9. **Spawn outside, on the equator.** All four players start on ONE horizontal circle ~576u out,
+   90° apart, facing the cage, with the whole cage visible ahead — nobody starts inside it, and
+   nobody starts above or below the arena staring at a dense polar cap. Also check Crystal Capture
+   still spawns on its sphere (tetrahedral) — that scene must be unchanged.
+10. **Everyone starts at 0.** In a real multiplayer lobby (host + at least one client), check
+    every score panel reads 0 **the instant the countdown ends** — including after a rematch and
+    after playing a previous game in the same session. Two independent causes were fixed here, so
+    check both: `RoundStats` lives on the PERSISTENT Player object (a missed per-scene reset
+    carries the last game's stats in), and `StatsManager` has **no turn gate** — it records from
+    the moment it network-spawns, so everything destroyed during the multi-second arena build and
+    the countdown used to land in someone's score. The authoritative guarantee is now
+    `MiniGameControllerBase.ZeroStatsForGameStartOnce`, which runs on every peer as the first turn
+    begins.
+11. **Smashing scores; laying does not.** The HUD domain sum should rise as you break bars and not at
     all from laying trail. Shatter one of your OWN team's trail prisms — the sum must not move; a
     rival's trail must.
-11. **Milestones.** When the leading domain reaches **500** destroyed the device should shake hard
+12. **Milestones.** When the leading domain reaches **500** destroyed the device should shake hard
     for ~1.2 s; again at **1,000**. Nothing else should change.
-12. **Win + scoreboard.** First domain to **2,000 destroyed** ends the turn; winners show a time,
-    losers "N Bars Left". Replay (scene reload) resets the milestones.
-13. **Pacing.** Time intensity 1 end to end — see the pacing flag under "End condition". If it
+13. **Win + scoreboard.** First domain to **2,000 destroyed** ends the turn; winners show a time,
+    losers "N Prisms Left". Replay (scene reload) resets the milestones.
+14. **Pacing.** Time intensity 1 end to end — see the pacing flag under "End condition". If it
     finishes in well under a minute, lower the target.
-14. **AI stays outside.** Watch an AI Rhino for a minute: it should orbit outside, cross the cage on
+15. **AI stays outside.** Watch an AI Rhino for a minute: it should orbit outside, cross the cage on
     transits, and only be inside briefly. If it settles inside, `AiStationStandoff` has been set ≤ 1.
-15. **Regression — the grid change.** Play **Skim Race** (intensity 3) and **Astro League**: fauna
+16. **Regression — the grid change.** Play **Skim Race** (intensity 3) and **Astro League**: fauna
     should behave normally and should no longer park against the super-shielded track / edge lining.
-16. **Collider telemetry** on device via DiagnosticsHUD / the Benchmark tool, at intensity 4 (the
-    worst case, 15,690).
+17. **Collider telemetry** on device via DiagnosticsHUD / the Benchmark tool, at intensity 4 (the
+    worst case, 20,153).
 
 ## Known limitations / follow-ups
 
 - **Toast copy is unauthored.** The three `GameToastSituation` values exist but no
   `GameToastConfigSO` authors a definition for them, so they are silently skipped (which is how a
-  mode opts out). Author a `GameToastConfig_Ribcage.asset` with `{0}`=domain, `{1}`=bars smashed,
-  `{2}`=target to make them visible.
+  mode opts out). Author a `GameToastConfig_Ribcage.asset` with `{0}`=domain, `{1}`=prisms
+  destroyed, `{2}`=target to make them visible.
 - **The 2,000 target is unmeasured for this arena** — see the pacing flag above. Most likely thing to
   need a change after the first playtest.
 - **No objective-arrow provider**: like Rampage, `MiniGameHUD.CreateObjectiveProviderForGameMode` has
   no Ribcage case — the cage surrounds you, so there is no single point to aim at.
-- **No UGS stats reporter yet** (a "most bars smashed" leaderboard is a clean follow-up), and no
+- **No UGS stats reporter yet** (a "most prisms destroyed" leaderboard is a clean follow-up), and no
   dedicated end-game controller — the shared scoreboard handles it.
 - **Danger bars are a first pass.** One in 19 rib prisms, evenly spread by a deterministic index walk
   with a per-shell phase offset. If they read as noise rather than as traps, cluster them instead

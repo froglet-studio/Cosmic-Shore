@@ -241,6 +241,37 @@ namespace CosmicShore.Core
             SaveHangar();
         }
 
+        /// <summary>
+        /// Banks one freestyle segment measured in Menu_Main. Menu flight has no game and no
+        /// turn, so it never reaches <see cref="ReportModeResult"/> or
+        /// <see cref="ReportVesselTelemetry"/> - but it is still the player at the stick, so it
+        /// counts toward the lifetime total and toward this vessel's "most hours played"
+        /// (<see cref="HangarCloudData.PreferredVessel"/>). It deliberately does NOT touch
+        /// GamesPlayed or GamesCompleted: no game was played.
+        /// </summary>
+        public void ReportFreestyleFlight(float seconds, string vesselTypeName)
+        {
+            if (!_isReady || seconds <= 0f) return;
+
+            PlayerDataService.Instance?.RecordFlightTime(seconds);
+
+            if (string.IsNullOrWhiteSpace(vesselTypeName)) return;
+
+            var record = _hangar.GetOrCreate(vesselTypeName);
+            if (record == null) return; // blank vessel name - authored-data bug, do not persist it
+
+            record.FlightTimeSeconds += seconds;
+            record.LastUsedUtcMs = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+
+            _hangar.RecomputePreferredVessel();
+            SaveHangar();
+
+            // Menu flight raises no game event, so without this the new totals would not reach
+            // PostHog until the next pause. Re-identifying is how menu time becomes visible
+            // there - it needs no new event name and no new parameter in the UGS Event Manager.
+            _analytics?.IdentifyPlayer();
+        }
+
         #endregion
 
         #region Internal

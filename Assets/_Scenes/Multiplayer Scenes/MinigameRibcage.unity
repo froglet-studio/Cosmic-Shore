@@ -1033,6 +1033,7 @@ MonoBehaviour:
   - {fileID: 1564881929}
   arrangeSpawnPointsAroundCell: 1
   spawnDistanceOutsideNucleus: 40
+  spawnFormation: 1
   spawnRingRadiusFloor: 576
   cellData: {fileID: 11400000, guid: 8d4e8398eedc76c4dadb8604f89b9e1b, type: 2}
   preSpawnDelayMs: 200
@@ -1120,6 +1121,7 @@ MonoBehaviour:
   - {fileID: 11400000, guid: f43c4cc32c5bae18a25a9047d2cdff06, type: 2}
   - {fileID: 11400000, guid: 6c76217c610119d0f2c76ea4c0858bf0, type: 2}
   - {fileID: 11400000, guid: 02bfa044b1857c9bba123e6dba4804fe, type: 2}
+  - {fileID: 11400000, guid: 625646f6d4907cb6faccc7ba32f37605, type: 2}
   cellTypeChoiceOptions: 1
   runtime: {fileID: 11400000, guid: 8d4e8398eedc76c4dadb8604f89b9e1b, type: 2}
   nucleusScaleMultiplier: 1

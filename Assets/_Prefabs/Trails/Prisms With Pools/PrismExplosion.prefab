@@ -102,6 +102,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   minSpeed: 10
   maxSpeed: 33.33
+  dangerDetonationMultiplier: 1.6
   _renderer: {fileID: 7076137217386601628}
 --- !u!114 &2634603227010755458
 MonoBehaviour:

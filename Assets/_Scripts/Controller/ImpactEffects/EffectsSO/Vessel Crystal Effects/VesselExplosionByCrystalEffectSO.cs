@@ -23,8 +23,19 @@ namespace CosmicShore.Gameplay
 
         [Header("Explosion Settings")]
         [SerializeField] private AOEExplosion[] _aoePrefabs;
+        [Tooltip("Blast size at EMPTY resource. On a CONIC blast this is its capsule LENGTH when " +
+                 "the resource is empty, not its width — see Core Explosion Scale.")]
         [SerializeField] private float _minExplosionScale;
+        [Tooltip("Blast size at FULL resource. On a CONIC blast this is its capsule LENGTH at full " +
+                 "charge, and also the rendered cone's base diameter, so the capsule's tips ride " +
+                 "the visible base circle.")]
         [SerializeField] private float _maxExplosionScale;
+        [Tooltip("CONIC blasts only. The capsule's DIAMETER — the width the blast keeps across the " +
+                 "beam at EVERY charge, while charge buys length along the vessel's gape axis. " +
+                 "Independent of Min Explosion Scale so an uncharged blast can already be a short " +
+                 "capsule instead of a sphere; leave 0 to fall back to Min (a sphere at rest). " +
+                 "Ignored by the spherical blast.")]
+        [SerializeField] private float _coreExplosionScale;
         [SerializeField] private int _resourceIndex;
         [SerializeField] private Material _aoeExplosionMaterial;
         [SerializeField] private Vector3 _spawnOffset = new Vector3(0, 0, -5f);
@@ -56,6 +67,33 @@ namespace CosmicShore.Gameplay
         // impactors are never retained by this static dictionary across scene loads.
         private static readonly Dictionary<int, float> _lastExplosionTimeByImpactor
             = new ();
+
+        /// <summary>
+        /// The volume this blast would sweep if <paramref name="status"/>'s vessel struck a crystal
+        /// right now — the shape the Dolphin's Echo Sight highlights.
+        ///
+        /// It reads THIS asset's authored scales and re-derives the Space multiplier the same way
+        /// <see cref="Execute"/> does, so a preview cannot drift from the detonation: retune a
+        /// scale, or move Space's reach, and both move together. Returns false for a vessel whose
+        /// blast is not conic (nothing to preview) or before the vessel has a transform.
+        /// </summary>
+        public bool TryResolveBlastVolume(IVesselStatus status, out BlastVolume volume)
+        {
+            volume = default;
+            if (status == null) return false;
+
+            float sizeMultiplier = 1f;
+            if (!Mathf.Approximately(_heightMultiplierAtFullSpace, 1f))
+                sizeMultiplier = ElementalScaling.Multiplier(status, Element.Space,
+                    _heightMultiplierAtFullSpace, _minHeightMultiplier);
+
+            return ExplosionHelper.TryResolveConicVolume(
+                _aoePrefabs, status,
+                _minExplosionScale, _maxExplosionScale,
+                _resourceIndex, _spawnOffset,
+                sizeMultiplier, _coreExplosionScale,
+                out volume);
+        }
 
         public override void Execute(VesselImpactor vesselImpactor, CrystalImpactData data)
         {
@@ -108,7 +146,8 @@ namespace CosmicShore.Gameplay
                 _resourceIndex,
                 _spawnOffset,
                 sizeMultiplier,
-                affectSelfOverride);
+                affectSelfOverride,
+                _coreExplosionScale);
 
             switch (vesselImpactor.Vessel.VesselStatus.VesselType)
             {

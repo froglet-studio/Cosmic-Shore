@@ -19,6 +19,8 @@ MonoBehaviour:
   nucleusRushWaveTarget: 3
   rampagePrismTarget: 2000
   ribcagePrismTarget: 2000
+  wildlifeKillTarget: 250
+  dogFightPointTarget: 90
   hexRaceCrystalCountBuild: 0
   crystalCaptureCrystalCountBuild: 20
   joustCountBuild: 3
@@ -26,4 +28,6 @@ MonoBehaviour:
   nucleusRushWaveTargetBuild: 3
   rampagePrismTargetBuild: 2000
   ribcagePrismTargetBuild: 2000
+  wildlifeKillTargetBuild: 250
+  dogFightPointTargetBuild: 90
   autoRestoreBuildValuesBeforeBuild: 1

@@ -23,33 +23,20 @@ runs with and drop below them proportionally to live speed.
   `SingleStickVesselTransformer`) honor tracking; `GunVesselTransformer` /
   `CommandVesselTransformer` have bespoke `MoveShip` paths and are untouched.
 
-## Visual model (SpeedTunnelEffectController, on the Rhino prefab root)
+## Visual model — the speed-tunnel PLATFORM LAW
 
-Drive signal = **measured `VesselStatus.Speed`**, not boost state — so the visual matches
-the ramp up and the fast return down symmetrically, with nothing to desync.
+The optical sell is **no longer part of the Rhino**. The speed tunnel is a fleet-wide platform
+law: every vessel's FOV + Panini respond to its own measured speed, from one static driver
+bound in `VesselController.Initialize`, with no per-vessel wiring anywhere. Behaviour, the
+absolute speed window, the home-values rule, tuning and verification all live in
+**`Docs/SPEED_TUNNEL.md`** — that is the single reference; do not re-describe it here.
 
-- `effect01 = InverseLerp(minEffectSpeed, maxEffectSpeed, Speed)`, lightly smoothed
-  (`responsiveness`/s) to round off teleports/resets.
-- **FOV**: home is captured from the live camera the frame the effect takes over
-  (never a settings default — see the home-values rule below), then
-  `fov = home − fovDrop × effect01` (floor-clamped 1°). The narrowing magnifies the frame
-  centre — telephoto push-in.
-- **Panini**: `PostProcessingManager.SetSpeedTunnelPanini(−paniniDrop × effect01)` — a
-  *signed offset* from the profile's own Panini state, captured as home the first time
-  the effect touches it (the GamePlay profile ships a shared baseline of **0.7**; the
-  tunnel relaxes it toward rectilinear). At 0 the exact home distance + active flag are
-  restored. The override lives on the volume's **instantiated** profile
-  (`Volume.profile`), so the profile asset is never mutated; the cache revalidates across
-  the ortho/perspective profile swap.
-- **Gating**: local human pilot only (`IsLocalUser && !IsInitializedAsAI`, and only once
-  `Player` is set — those are `IVesselStatus` default members routed through `Player`).
-  Remote/AI Rhinos never touch the local camera or the global volume. The effect tracks
-  which camera it pushed and restores that one if the active camera changes mid-effect
-  (end cam, death cam).
-
-**Home-values rule (do not regress):** the effect starts from whatever FOV/Panini the
-game is ACTUALLY running with and returns there exactly. Never anchor to a constant or a
-settings default — that reads as a snap onto foreign values the moment the boost engages.
+What that means for this action: the ramp boost wires nothing and knows nothing about the
+visual. It raises speed; the law reads speed. Because the drive signal is measured
+`VesselStatus.Speed` and not boost state, the tunnel tracks the constant-acceleration ramp UP
+and the fast return DOWN symmetrically, with nothing to keep in step. Retuning the ramp's speed
+numbers below therefore moves the Rhino's tunnel too — but retuning the *tunnel* moves the whole
+fleet, which is the point of it being a law.
 
 ## Tuning knobs
 
@@ -59,10 +46,10 @@ settings default — that reads as a snap onto foreign values the moment the boo
 | `accelerationPerSecond` | same asset | 70 (top in ~3.6s) |
 | `returnPerSecond` | same asset | 500 (~0.5s return) |
 | `engageSFX` | same asset | BoostActivate (13) |
-| `minEffectSpeed` / `maxEffectSpeed` | `SpeedTunnelEffectController` on Rhino prefab | 70 / 280 |
-| `fovDrop` | same component | 25° below home at full effect |
-| `paniniDrop` | same component | 0.5 below the 0.7 baseline |
-| `responsiveness` | same component | 12/s |
+
+The tunnel's own knobs are fleet-wide and live in `Resources/SpeedTunnelConfig.asset` — see
+`Docs/SPEED_TUNNEL.md` §3. They are deliberately NOT listed here: a copy in a per-vessel doc is
+how a platform law starts reading like a vessel feature again.
 
 ## In-editor verification
 
@@ -72,8 +59,9 @@ settings default — that reads as a snap onto foreign values the moment the boo
    BoostActivate SFX on engage; the view should progressively narrow (zoom-in) while the
    fisheye-ish Panini compression relaxes — tunnel vision proportional to speed.
 3. Break the line: speed returns to input speed in ~0.5s and the view relaxes back in
-   lockstep. **Confirm FOV and Panini land exactly on pre-boost values** (compare against
-   a non-Rhino vessel side by side).
+   lockstep. **Confirm FOV and Panini land exactly on pre-boost values.** (Note: every
+   vessel tunnels now, so there is no longer a tunnel-free vessel to compare against —
+   judge the return against the Rhino's own resting view.)
 4. Wobble in and out of the straight line rapidly — no snapping to foreign FOV/Panini
    values at any point (the home-values rule).
 5. Multiplayer sanity: a second client's Rhino boosting must not change YOUR camera or
@@ -82,12 +70,8 @@ settings default — that reads as a snap onto foreign values the moment the boo
 
 ## Follow-ups
 
-- Menu freestyle uses Cinemachine, so only the Panini half of the effect applies there
-  (no `CustomCameraController` to drive FOV on). Extend to the menu vCam if freestyle
-  parity matters.
-- The effect window (70–280) is hand-tuned against the default throttle constants
-  (`DefaultThrottleScaler` 50, `MinimumSpeed` 10). Modes that rescale throttle would need
-  the window retuned — or derived from `ComputeThrottleTarget` if that ever becomes a
-  maintenance burden.
+Tunnel-side follow-ups (menu Cinemachine, window tuning) moved to `Docs/SPEED_TUNNEL.md` §6
+with the rest of the law.
+
 - Engage SFX plays on every peer for remote Rhinos (pre-existing `BoostActivate`
   semantics, unchanged).

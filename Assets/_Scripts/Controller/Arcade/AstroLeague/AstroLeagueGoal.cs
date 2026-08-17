@@ -23,9 +23,11 @@ namespace CosmicShore.Gameplay
         [Tooltip("Match controller notified when the ball crosses this goal line (server only).")]
         [SerializeField] AstroLeagueController controller;
 
-        [Tooltip("Mouth radius (base / intensity-1). The ball must cross the goal plane within this " +
-                 "radius of the mouth center to count. Match the arena's goal-ring radius.")]
-        [SerializeField] float mouthRadius = 26f;
+        [Tooltip("LEGACY fallback mouth radius (base / intensity-1), used only when the controller " +
+                 "does not supply one. The shipping source is AstroLeagueSettingsSO.goalMouthRadius, " +
+                 "handed in by Configure - the same number the arena draws its portal rings at, so " +
+                 "the ring you aim at IS the mouth that scores. Do not tune this.")]
+        [SerializeField] float mouthRadius = 62f;
 
         public Domains DefendingDomain => defendingDomain;
         public Vector3 MouthCenter => transform.position;
@@ -56,11 +58,12 @@ namespace CosmicShore.Gameplay
         /// scores when its CENTER crosses the plane (not when its leading edge reaches a back wall).
         /// </summary>
         public void Configure(AstroLeagueBall ball, Vector3 arenaCenter, float scale,
-            Vector3? explicitInwardNormal = null, bool passThrough = false)
+            Vector3? explicitInwardNormal = null, bool passThrough = false, float baseMouthRadius = 0f)
         {
             _ball = ball;
             _scale = Mathf.Max(0.01f, scale);
             _passThrough = passThrough;
+            if (baseMouthRadius > 0f) mouthRadius = baseMouthRadius;
             if (explicitInwardNormal.HasValue && explicitInwardNormal.Value.sqrMagnitude > 1e-4f)
             {
                 _inwardNormal = explicitInwardNormal.Value.normalized;

@@ -1,34 +1,34 @@
-name: Sync build branches
+name: Promote test build
 
-# Promotes the trunk into the Unity Build Automation branches ahead of the
-# Thursday test build. UGS watches build/android and build/windows and starts
-# its own builds when it sees the push, so all this workflow has to do is move
-# those two refs and leave a paper trail behind.
+# Moves the test-build source into the Unity Build Automation branches, every
+# three weeks on Wednesday at 06:00 Pacific.
 #
-# The trunk is whatever the repository's DEFAULT BRANCH is at the time the
-# workflow runs. It is bleeding-edge today and is expected to become
-# development later; changing the default branch on GitHub is the only action
-# needed to move the pipeline over. Nothing here hardcodes a branch name.
+# Where this sits in the release model (full picture in
+# Docs/BRANCHING_AND_RELEASE.md):
+#
+#   bleeding-edge   internal build, weekly on Friday. UGS watches the branch
+#                   directly, so no promotion happens here. See
+#                   tag-internal-build.yml, which only tags it for traceability.
+#   development     TEST build, every three weeks on Wednesday. THIS workflow.
+#                   Promotes into build/android and build/windows.
+#   master          release builds only. Manual today, no automation.
 #
 # The refs are moved through the GitHub API rather than by checking the repo
 # out. Cosmic Shore is a ~2.7 GB Unity project and a full-history clone would
 # dominate the runtime for what is ultimately a two-pointer update.
-#
-# Reporting: every run comments on a single tracking issue, which is CLOSED
-# while the pipeline is healthy and REOPENED the moment a run fails. Watch that
-# one issue to get an email every Thursday. See Docs/BUILD_AND_DELIVERY.md §11.
 
 on:
   schedule:
-    # GitHub's scheduler runs on UTC and never observes daylight saving, but the
-    # build slot is 06:00 Pacific year round. 13:00 UTC is 06:00 PDT and 14:00
-    # UTC is 06:00 PST, so both fire every Thursday and the clock guard in the
-    # first step drops whichever one is an hour off on the day.
-    - cron: '0 13,14 * * 4'
+    # Fires every Wednesday. Two entries because GitHub's scheduler runs on UTC
+    # and never observes daylight saving: 13:00 UTC is 06:00 PDT and 14:00 UTC
+    # is 06:00 PST. The guard below drops whichever one is an hour off today,
+    # and also drops the two Wednesdays out of three that are not on cycle,
+    # since cron cannot express "every three weeks" on its own.
+    - cron: '0 13,14 * * 3'
   workflow_dispatch:
     inputs:
       source_ref:
-        description: Branch or commit SHA to promote. Blank uses the default branch.
+        description: Branch or SHA to promote. Blank uses the configured source branch.
         default: ''
         required: false
       targets:
@@ -44,40 +44,68 @@ permissions:
   contents: write   # move refs and tags
   issues: write     # write the run report
 
-# Never let a manual run and the Thursday run move the same refs at once.
 concurrency:
-  group: sync-build-branches
+  group: promote-test-build
   cancel-in-progress: false
 
 env:
   ANDROID_BRANCH: build/android
   WINDOWS_BRANCH: build/windows
+  # The three-week cycle is counted in whole days from this Wednesday.
+  CYCLE_ANCHOR: '2026-08-12'
+  CYCLE_DAYS: '21'
   REPORT_LABEL: build-promotion
-  REPORT_TITLE: Weekly build branch promotion
+  REPORT_TITLE: Test build promotion
 
 jobs:
-  sync:
+  promote:
     name: Promote to build branches
     runs-on: ubuntu-latest
     steps:
-      - name: Check the Pacific clock
+      - name: Is this run due?
         id: gate
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
+
           if [ "${{ github.event_name }}" != "schedule" ]; then
-            echo "Triggered manually; skipping the clock guard."
+            echo "Triggered manually; running regardless of day, hour and cycle."
             echo "proceed=true" >> "$GITHUB_OUTPUT"
             exit 0
           fi
-          hour=$(TZ=America/Los_Angeles date +%H)
-          if [ "$hour" = "06" ]; then
-            echo "06:00 in America/Los_Angeles. Proceeding."
-            echo "proceed=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "It is ${hour}:00 in America/Los_Angeles, not 06:00."
-            echo "This is the daylight-saving twin of today's real slot. Skipping."
-            echo "proceed=false" >> "$GITHUB_OUTPUT"
+
+          today=$(TZ=America/Los_Angeles date +%Y-%m-%d)
+          dow=$(TZ=America/Los_Angeles date +%u)                  # 3 = Wednesday
+          hour=$((10#$(TZ=America/Los_Angeles date +%H)))         # 10# so "08" is not read as octal
+
+          skip () { echo "$1 Skipping."; echo "proceed=false" >> "$GITHUB_OUTPUT"; exit 0; }
+
+          # Idempotency first, because it is what makes everything below safe to
+          # relax. The dated tag is the record that today's promotion already
+          # happened, so the daylight-saving twin, a retry, and any duplicate
+          # firing all land here and stop.
+          if gh api "repos/$GITHUB_REPOSITORY/git/ref/tags/testbuild/$today" >/dev/null 2>&1; then
+            skip "Already promoted on $today (tag testbuild/$today exists)."
           fi
+
+          [ "$dow" = "3" ] || skip "$today is not a Wednesday in America/Los_Angeles."
+
+          # >= 06, deliberately not == 06. GitHub's scheduler runs late under
+          # load, routinely by more than an hour: the first scheduled run of this
+          # workflow fired at 15:52 UTC against a 13:00 cron. An exact-hour test
+          # silently dropped it, and would drop a real promotion the same way.
+          # The tag check above is what stops the wider window running twice.
+          [ "$hour" -ge 6 ] || skip "It is ${hour}:00 in America/Los_Angeles; the 06:00 slot has not opened."
+
+          days=$(( ( $(date -u -d "$today" +%s) - $(date -u -d "$CYCLE_ANCHOR" +%s) ) / 86400 ))
+          [ "$days" -ge 0 ] || skip "$today is before the cycle anchor $CYCLE_ANCHOR."
+          if [ $(( days % CYCLE_DAYS )) -ne 0 ]; then
+            skip "$today is day $days of the cycle; next promotion in $(( CYCLE_DAYS - (days % CYCLE_DAYS) )) day(s)."
+          fi
+
+          echo "$today is on cycle (day $days) and the 06:00 slot has opened. Proceeding."
+          echo "proceed=true" >> "$GITHUB_OUTPUT"
 
       - name: Resolve source commit
         id: source
@@ -85,16 +113,13 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           INPUT_REF: ${{ github.event.inputs.source_ref }}
+          # Repository variable wins over the default, so the test-build source
+          # can be repointed without editing this file.
+          CONFIGURED: ${{ vars.BUILD_SOURCE_BRANCH }}
         run: |
           set -euo pipefail
-
-          # No explicit ref means "promote the trunk", and the trunk is defined
-          # as the repository default branch rather than a name baked in here.
           ref="${INPUT_REF:-}"
-          if [ -z "$ref" ]; then
-            ref=$(gh api "repos/$GITHUB_REPOSITORY" --jq .default_branch)
-            echo "No source_ref given; using the default branch '$ref'."
-          fi
+          [ -z "$ref" ] && ref="${CONFIGURED:-development}"
 
           if ! sha=$(gh api "repos/$GITHUB_REPOSITORY/commits/$ref" --jq .sha); then
             echo "::error::Could not resolve '$ref' to a commit in $GITHUB_REPOSITORY."
@@ -231,8 +256,8 @@ jobs:
           SHA: ${{ steps.source.outputs.sha }}
         run: |
           set -euo pipefail
-          # A single dated tag per weekly build, so a QA report that says
-          # "the Thursday build" resolves to an exact commit months later.
+          # A dated tag per test build, so a QA report naming a build date still
+          # resolves to an exact commit months later.
           tag="testbuild/$(TZ=America/Los_Angeles date +%Y-%m-%d)"
 
           if gh api "repos/$GITHUB_REPOSITORY/git/ref/tags/$tag" >/dev/null 2>&1; then
@@ -248,9 +273,6 @@ jobs:
           echo "" >> "$RUNNER_TEMP/report.md"
           echo "Tagged \`$tag\`." >> "$RUNNER_TEMP/report.md"
 
-      # ──────────────────────────────────────────────
-      #  Report. Runs whatever happened above.
-      # ──────────────────────────────────────────────
       - name: Report
         if: always() && steps.gate.outputs.proceed == 'true'
         env:
@@ -262,9 +284,9 @@ jobs:
 
           body="$RUNNER_TEMP/body.md"
           if [ "$STATUS" = "success" ]; then
-            echo "### Build branches promoted" > "$body"
+            echo "### Test build promoted" > "$body"
           else
-            echo "### Build branch promotion FAILED" > "$body"
+            echo "### Test build promotion FAILED" > "$body"
           fi
           echo "" >> "$body"
 
@@ -277,7 +299,7 @@ jobs:
           {
             echo ""
             if [ "$STATUS" != "success" ]; then
-              echo "**The Thursday test build will be stale or missing until this is fixed.**"
+              echo "**The test build will be stale or missing until this is fixed.**"
               echo ""
             fi
             echo "[Full log]($RUN_URL) · $(TZ=America/Los_Angeles date '+%Y-%m-%d %H:%M %Z')"
@@ -285,11 +307,11 @@ jobs:
 
           cat "$body" >> "$GITHUB_STEP_SUMMARY"
 
-          # The label is how the tracking issue is found again next week; the
+          # The label is how the tracking issue is found again next cycle; the
           # title is only cosmetic. Creating it is idempotent.
           gh api -X POST "repos/$GITHUB_REPOSITORY/labels" \
             -f name="$REPORT_LABEL" -f color="1d76db" \
-            -f description="Weekly build branch promotion reports" >/dev/null 2>&1 || true
+            -f description="Test build promotion reports" >/dev/null 2>&1 || true
 
           num=$(gh api "repos/$GITHUB_REPOSITORY/issues?state=all&labels=$REPORT_LABEL&per_page=1" \
             --jq '.[0].number // empty' 2>/dev/null || true)
@@ -307,7 +329,7 @@ jobs:
 
           # Issue state IS the health signal: closed means the last run was
           # good, open means the pipeline needs attention. Comments notify
-          # subscribers either way, so a healthy week is never silent.
+          # subscribers either way, so a healthy cycle is never silent.
           if [ "$STATUS" = "success" ]; then
             gh api -X PATCH "repos/$GITHUB_REPOSITORY/issues/$num" -f state=closed >/dev/null
             echo "Pipeline healthy; issue #$num closed."
@@ -319,5 +341,5 @@ jobs:
       - name: Report skipped run
         if: steps.gate.outputs.proceed != 'true'
         run: |
-          echo "Daylight-saving twin run; the real slot fires an hour away." \
+          echo "Not this Wednesday: either the daylight-saving twin, or an off-cycle week." \
             >> "$GITHUB_STEP_SUMMARY"
