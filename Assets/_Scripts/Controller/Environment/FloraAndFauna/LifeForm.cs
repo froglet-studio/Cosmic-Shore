@@ -56,30 +56,41 @@ namespace CosmicShore.Gameplay
         /// <summary>Elemental contract: the element this lifeform carries (its crystal's element).</summary>
         public Element Element => crystal ? crystal.crystalProperties.Element : Element.None;
 
-        /// <summary>Elemental contract: this lifeform's level (1..5), seeded from config at spawn.</summary>
+        /// <summary>
+        /// Elemental contract: this lifeform's level (1..5). <b>Level is EARNED, and never
+        /// ROLLED</b> (Docs/ECOSYSTEM.md §33): a plant earns a level by reproducing, a creature
+        /// by feeding a significant amount, and an ordinary spawn starts at 1. A MODE may still
+        /// author a higher hatch level deliberately (Wildlife Liberation's per-cage tiers) —
+        /// what is gone is the dice.
+        /// </summary>
         public int Level { get; protected set; } = 1;
 
         /// <summary>
-        /// Elemental contract: seeds the spawn level. Base scales the crystal (level 5 always
-        /// carries, and drops, the largest crystal); Flora also scales its leaf prisms. Call
-        /// BEFORE Initialize - it spawns AT size, nothing pops mid-life.
+        /// Elemental contract: seeds the spawn level. Sizes the heart from the shared level
+        /// curve (<see cref="LifeFormCrystal"/> — one size per level for every species and
+        /// element); Flora also scales its leaf prisms. Call BEFORE Initialize - it spawns AT
+        /// size, nothing pops mid-life.
+        ///
+        /// <para>The ordinary spawn path passes level 1; anything above it is authored
+        /// deliberately — Wildlife Liberation's cage tiers, and the Lifeform Matrix bench,
+        /// which spawns a chosen level so a tuner can see the whole band.</para>
         /// </summary>
-        public virtual void ApplyLevel(int level, float bodyScalePerLevel, float crystalScalePerLevel)
+        public virtual void ApplyLevel(int level, float bodyScalePerLevel)
         {
-            Level = Mathf.Clamp(level, 1, 5);
+            Level = Mathf.Clamp(level, 1, Fauna.MaxLifeformLevel);
             _bodyScalePerLevel = Mathf.Max(1f, bodyScalePerLevel);
-            _crystalScalePerLevel = Mathf.Max(1f, crystalScalePerLevel);
-            if (crystal && Level > 1)
-                crystal.transform.localScale *= Mathf.Pow(_crystalScalePerLevel, Level - 1);
+            // Resolve early: the spawner calls this BEFORE Initialize, so the field it assigns
+            // is not populated yet unless ApplyElement provisioned one.
+            if (!crystal) crystal = GetComponentInChildren<Crystal>(true);
+            LifeFormCrystal.ApplyLevelSize(crystal, Level);
         }
 
-        // Per-level factors remembered from ApplyLevel so in-world LevelUp uses the same curve.
+        // Per-level body factor remembered from ApplyLevel so in-world LevelUp uses the same
+        // curve. The crystal has no per-species factor - its size is the shared level curve.
         float _bodyScalePerLevel = 1.15f;
-        float _crystalScalePerLevel = 1.2f;
 
-        /// <summary>Per-level scale factors (config-seeded); Flora reads them in LevelUp.</summary>
+        /// <summary>Per-level body scale factor (config-seeded); Flora reads it in LevelUp.</summary>
         protected float BodyScalePerLevel => _bodyScalePerLevel;
-        protected float CrystalScalePerLevel => _crystalScalePerLevel;
 
         /// <summary>Rooted flora never travel - which makes them trivially joustable.</summary>
         public float CurrentSpeed => 0f;
@@ -103,15 +114,19 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// In-world level-up (the Squirrel Space-5 'Shepherd' joust on an ally). The crystal
-        /// grows a step; Flora also grows future leaves. Capped at level 5.
+        /// In-world level-up. For flora the earning event is <b>reproduction</b>
+        /// (<see cref="Flora"/>); the Squirrel Space-5 'Shepherd' joust on an ally also grants
+        /// one. The heart grows a step along the shared level curve; Flora also grows future
+        /// leaves. Capped at level 5.
         /// </summary>
         public virtual bool LevelUp()
         {
-            if (Level >= 5) return false;
+            if (Level >= Fauna.MaxLifeformLevel) return false;
             Level++;
+            // Grows, never pops (continuity of existence). The target is the LOCAL scale that
+            // lands the heart on this level's shared world size.
             if (crystal)
-                crystal.GrowCrystal(1f, crystal.transform.localScale.x * _crystalScalePerLevel);
+                crystal.GrowCrystal(1f, LifeFormCrystal.LocalScaleForLevel(crystal, Level));
             return true;
         }
 

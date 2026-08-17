@@ -451,5 +451,10 @@ On `RhinoSwordCrystalBurstEffect.asset`: `minExplosionScale` 60 · `maxExplosion
   super-shielded prism banks 0.12 while permanently devastating friendly hardened structure. If
   that reads as an exploit in play, add a same-domain skip on the energy bank (not on the
   damage) or gate the pop by domain.
+  **The self-trail contact grace does not change this** (`ImpactEffects/SELF_TRAIL_CONTACT.md`):
+  it is owner-scoped and lasts ~1 s from the moment a prism is laid, and the Rhino cannot come
+  about onto its own freshest ribbon inside that window — so the grace formally covers the sword
+  but never fires for it, and the self-farm loop above is intact. The guidance stands: skip the
+  ENERGY BANK, never the damage.
 - **Energize SFX:** a dedicated ignition sound via the `SkimmerSFXByCrystalEffectSO` template if
   the free-riding audio isn't enough.
