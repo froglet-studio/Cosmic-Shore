@@ -93,6 +93,17 @@ namespace CosmicShore.Gameplay
         /// the mass. Read-only on purpose: the controller owns what goes in.
         /// </summary>
         public Trail SecondaryTrail => Trail2;
+        /// <summary>
+        /// The AUTHORED z extent of a trail prism — <see cref="BaseScale"/>.z alone.
+        ///
+        /// **This is not the length a prism is actually laid at.** `CreateBlock` multiplies it by
+        /// `ZScaler`, the boost scale, and the cube-rooted MASS volume multiplier before spawning,
+        /// so on an upgraded vessel the real prism is materially longer than this. Sizing anything
+        /// geometric off this property is how the `waitTillOutsideSkimmer` clearance delay came to
+        /// turn a prism's collider on while it was still inside the ship; that call site now
+        /// measures the local `scale.z` instead, leaving this with no consumer in the controller.
+        /// Kept as public surface, but reach for the spawn-time `scale` if you need real geometry.
+        /// </summary>
         public float TrailZScale => BaseScale.z; // <- from BaseScale now
 
         // Guards on the waitTillOutsideSkimmer clearance delay (see CreateBlock). Neither is a

@@ -26,6 +26,11 @@ namespace CosmicShore.ScriptableObjects
     /// <see cref="VesselChangeResourceByPrismEffectSO"/> / <see cref="VesselChangeBoostByPrismEffectSO"/>,
     /// neither of which carries a self-guard.
     ///
+    /// The Rhino is NOT one of the cases this exists for: its sword's damage effect is equally
+    /// unguarded, so the grace formally applies to it, but the vessel cannot come about onto the
+    /// ribbon it just laid inside the window, so it never fires. Cutting your own OLDER trail to
+    /// bank sword energy is a signed-off design (RHINO_ENERGY_SWORD.md) and is untouched.
+    ///
     /// **The gate is OWNER-scoped and TIME-boxed — deliberately not domain-scoped.** The existing
     /// <c>Skimmer.affectSelf</c> flag compares DOMAINS, so switching it off would also blind a
     /// vessel to its teammates' trails, and it is evaluated after the effect loop anyway (it

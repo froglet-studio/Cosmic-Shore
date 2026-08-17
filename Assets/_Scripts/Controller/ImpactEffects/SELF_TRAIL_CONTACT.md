@@ -28,14 +28,21 @@ The consequences were gameplay, not cosmetics:
   `VesselChangeBoostByPrismEffectSO` each keep only `retainedFraction` (0.5) of the meter, so a
   self-ram cost **half the banked skim energy and half the charged boost** — plus
   `VesselDamagePrismEffect` shredding the pilot's own mass and an impact SFX to sell it.
-- The **Rhino**'s sword (`RhinoSkimmerDamagePrismEffect`, `affectSelf = 1`) ate its own ribbon as
-  it was laid.
+The **Rhino** is deliberately NOT in that list. `RhinoSkimmerDamagePrismEffect` carries no domain,
+owner or age guard either, so the grace does technically apply to its sword — but the Rhino cannot
+come about onto the ribbon it just laid inside a one-second window, so the gate never fires for it
+in practice. This matters because cutting your own trail to bank sword energy is a **signed-off
+design**, not a bug (`R_VesselActions/RHINO_ENERGY_SWORD.md` § "Friendly fire + self-farming"), and
+that doc's guidance — if self-farming ever reads as an exploit, skip the **energy bank**, never the
+damage — is unchanged by this branch.
 
 ## 2. Why the existing flags could not express it
 
 `Skimmer.affectSelf` compares **domains**, so switching it off also blinds a vessel to its
-teammates' trails — and it is evaluated *after* the skimmer effect loop anyway (`SkimmerImpactor`
-line ~284), where it gates only the `_skimStartTimes` bookkeeping. It changes nothing for effects.
+teammates' trails — and it is evaluated *after* the skimmer effect loop anyway (the
+`!skimmer.AffectSelf && prism.Domain == …` line at the tail of `SkimmerImpactor.AcceptImpactee`'s
+prism branch — grep the symbol, the line number moves), where it gates only the `_skimStartTimes`
+bookkeeping. It changes nothing for effects.
 
 `VesselChangeSpeedByPrismEffectSO` is the one vessel-prism effect with a self-guard, and it is the
 same domain compare — a weaker, different rule, and one every sibling effect in the container is
@@ -146,7 +153,8 @@ Unaffected (`: 0`): Manta, Termite, Squirrel, Falcon, Shrike, Serpent.
    trail from the moment it appears, gain energy normally, and be able to close to joust range.
    Then put both on the **same domain** and confirm the trailing pilot still skims the leader's
    ribbon — this is what a domain-scoped fix would have broken.
-5. **Rhino.** Confirm the sword no longer eats the trail directly behind it, and still destroys
-   opposing and environment mass on contact.
+5. **Rhino (regression check, not a new behaviour).** Cutting your own older trail must still bank
+   sword energy at the signed-off 0.04/prism — the grace is not expected to reach this vessel at
+   all, so any change here is a bug in the grace, not the intended effect.
 6. Console clean throughout; no NREs from the new `Resources.Load` path (delete the asset once and
    confirm the defaults still apply and the rule still holds).

@@ -52,8 +52,9 @@ ship; it now measures `scale.z` with a speed floor and a 2 s ceiling.
 5. **MPPM, two clients:** trailing pilot skims the leader's trail from the frame it appears and
    reaches joust range. Repeat with both on the SAME domain — still skims. (A domain-scoped fix
    would have broken this; it is the regression to watch for.)
-6. **Rhino:** sword no longer eats the ribbon directly behind it, still destroys opposing and
-   environment mass.
+6. **Rhino (regression check):** cutting your own older trail must STILL bank sword energy at the
+   signed-off 0.04/prism. The grace is not expected to reach this vessel — it cannot turn onto its
+   own freshest ribbon inside the window — so any change here is a bug in the grace.
 7. Delete the asset once and confirm the code defaults still apply and the rule still holds.
 
 **First-pass tuning** (starting points, not settled)
