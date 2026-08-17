@@ -141,6 +141,10 @@ thins out like its neighbours instead of punching through the ship.
 
 ## 3. What the HUD does now
 
+> **Superseded 2026-08-17 by §8 and §12.** Seeding moved to the MASS slot, the pips are deleted
+> with Twin Seed, and the Charge slot now carries the blast profile. The table below describes the
+> 2026-08-14 arrangement and is kept only as the record of that pass.
+
 The Charge slot's art is unchanged; only what it means moved.
 
 | | before | after |

@@ -108,8 +108,15 @@ namespace CosmicShore.Gameplay
 
         MaterialPropertyBlock _block;
         Material _haloMaterial;
-        Mesh _haloMesh;
         bool _haloUnavailableReported;
+
+        // ONE quad for every halo in the application, ever. It must be static: the mesh is built
+        // with HideAndDontSave (which includes DontUnloadUnusedAsset), so a per-highlighter mesh
+        // would survive its owner being destroyed AND survive Resources.UnloadUnusedAssets - one
+        // leaked Mesh per Dolphin spawn and per vessel swap, forever. Sharing it is also simply
+        // correct: the quad is identical for every halo, since the SIZE is a shader property rather
+        // than a transform scale.
+        static Mesh s_haloMesh;
 
         readonly float _fadeSeconds;
         readonly float _gain;
@@ -397,7 +404,7 @@ namespace CosmicShore.Gameplay
             go.transform.localScale = Vector3.one;
 
             var filter = go.AddComponent<MeshFilter>();
-            filter.sharedMesh = _haloMesh;
+            filter.sharedMesh = s_haloMesh;
 
             var renderer = go.AddComponent<MeshRenderer>();
             renderer.sharedMaterial = _haloMaterial;
@@ -412,7 +419,7 @@ namespace CosmicShore.Gameplay
 
         bool TryResolveHaloAssets()
         {
-            if (_haloMaterial && _haloMesh) return true;
+            if (_haloMaterial && s_haloMesh) return true;
 
             if (!_haloMaterial)
             {
@@ -435,15 +442,16 @@ namespace CosmicShore.Gameplay
                 }
             }
 
-            _haloMesh ??= BuildUnitQuad();
-            return _haloMaterial && _haloMesh;
+            if (!s_haloMesh) s_haloMesh = BuildUnitQuad();
+            return _haloMaterial && s_haloMesh;
         }
 
         /// <summary>
-        /// A unit quad in [-0.5, 0.5]. The shader spreads its corners across the view plane about the
+        /// A unit quad in [-0.5, 0.5]. The shader spreads its corners across the screen about the
         /// object origin, so this one mesh serves every halo at every size — the radius is a shader
         /// property, never a transform scale, which is what keeps the disc perfectly circular
-        /// regardless of the parent vessel's own scale.
+        /// regardless of the parent vessel's own scale. Built once for the application; see
+        /// <see cref="s_haloMesh"/> for why it must not be per-instance.
         /// </summary>
         static Mesh BuildUnitQuad()
         {

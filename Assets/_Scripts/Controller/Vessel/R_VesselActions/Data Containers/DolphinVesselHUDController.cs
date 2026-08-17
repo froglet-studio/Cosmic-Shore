@@ -193,7 +193,23 @@ namespace CosmicShore.Gameplay
         /// way the crystal seeding executor resolves its cell — containing cell first, nearest active
         /// cell as the fallback. Resolved rather than serialized so this works in every scene with
         /// nothing per-prefab to wire; a scene with no cell simply has no creatures to count.
+        ///
+        /// <para><b>It must be RETRIED, not resolved once at init.</b> <c>Cell.Initialize</c> runs on
+        /// <c>OnInitializeGame</c> behind <c>InitDelayMs</c> (1000 ms) while vessels spawn at
+        /// <c>preSpawnDelayMs</c> (200 ms), so at this controller's Initialize there is usually no
+        /// cell to find at all — binding once there would leave the creature tally reading zero for
+        /// the entire match, silently. This is the same spawn-chain race CLAUDE.md documents for
+        /// anything that reads the cell during spawn, and the crystal seeding executor sidesteps it
+        /// by resolving its cell per seeding. Here the retry hangs off
+        /// <see cref="HandleBlastBegan"/>: it is the moment the count is needed, it is rare, and by
+        /// then the cell has certainly booted.</para>
         /// </summary>
+        void EnsureFaunaKillChannel()
+        {
+            if (_faunaKillChannelOwner != null) return;
+            BindFaunaKillChannel();
+        }
+
         void BindFaunaKillChannel()
         {
             var origin = _status?.Vessel != null && _status.Vessel.Transform
@@ -355,6 +371,10 @@ namespace CosmicShore.Gameplay
         {
             if (vessel == null || _status?.Vessel == null) return;
             if (!ReferenceEquals(vessel, _status.Vessel)) return;
+
+            // Late-bind the ecology's kill channel if Initialize ran before the cell existed - see
+            // EnsureFaunaKillChannel. Cheap: it returns immediately once bound.
+            EnsureFaunaKillChannel();
 
             _faunaKilledThisBlast = 0;
             _blastWindowOpen = true;

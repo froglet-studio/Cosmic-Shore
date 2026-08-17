@@ -1237,12 +1237,14 @@ Mechanics + full knob list: `_Scripts/Controller/Vessel/R_VesselActions/DOLPHIN_
 4. **Crystal impact.** The cone fires, energy empties, the jaws snap shut, and the Space
    icon flashes with a prism count. At Space L5 the cone must stop damaging your own
    domain's prisms.
-5. **Charge L5.** A second crystal pip appears. *(Superseded 2026-08-14: crystal seeding
-   is now PASSIVE — there is no deploy preview to tint, and Twin Seed means two crystals
-   per seeding cycle rather than two carried. Verify against the Dolphin entry at the end
-   of this file instead.)*
+5. **Charge L5.** ~~A second crystal pip appears.~~ *(Superseded TWICE. 2026-08-14: seeding
+   went passive, so the pips became per-cycle yield rather than carried crystals. 2026-08-17:
+   **Twin Seed and the pips are retired outright** — seeding moved to MASS, plants exactly one
+   crystal per cycle at every level, and its L5 changes the crystal's TIER. Charge L5 is now
+   "Pilot Echo". Verify against the newest Dolphin entry at the TOP of this file.)*
 6. **MPPM two-client:** the L5 upgrade effects are gated on the replicated
-   `IsUpgradeActive`, so confirm both peers agree on Clean Blast and Twin Seed.
+   `IsUpgradeActive`, so confirm both peers agree — on Clean Blast and, since 2026-08-17,
+   Claimed Seed and Pilot Echo (Twin Seed no longer exists).
 
 **Hand-authored assets that have never had an editor import round-trip:** the Dolphin
 HUD variant's four-icon row, the Dolphin prefab's crackle overlay + controller, and
@@ -1349,7 +1351,7 @@ retained as the regression list for anyone touching this again. Full detail + tu
 `Assets/_Scripts/Controller/Vessel/R_VesselActions/DOLPHIN_CRYSTAL_SEEDING.md` §6.
 
 Still UNVERIFIED, because a single-editor play-test cannot reach them:
-**the MPPM two-client row (9)** — that a remote Dolphin's sight stays local and that Twin Seed
+**the MPPM two-client row (9)** — that a remote Dolphin's sight stays local and that the L5 upgrade
 agrees across peers — and **the live-cap row (3)**, which needs ~4 minutes of uninterrupted
 seeding at the shipped 30 s cooldown to reach `maxLiveSeeded: 8`.
 
