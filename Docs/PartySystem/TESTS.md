@@ -67,6 +67,32 @@ party, no invite.
 the only gate in this list that is cheap enough to run on every single commit,
 and it is the one that failed to exist when it was needed.
 
+## ⚠ Outstanding verification — roster-truth branch, merged 2026-08-06
+
+The roster-truth branch (`REFACTOR.md` § "Shipped — roster-truth pass") was merged
+into `Ys-bleeding-edge` on the owner's call, with positive but **not exhaustive**
+testing. Confirmed at merge: it compiles, the `EnsureRunningOnMainThread` errors
+are gone, and invite + accept + 4 VPs in one lobby work across multiple runs.
+
+These four were **not** run. None is known to be broken; they are simply unproven.
+Listed cheapest-first so they can be picked up in any spare five minutes. **Tick
+them off here as they are done** so the next person knows what is actually covered.
+
+| | Check | Cost | If it fails |
+|---|---|---|---|
+| ☐ 1 | **EditMode tests** — `Test Runner → EditMode → Run All`. 41 cases were added by that branch (`PartyRosterTests`, `PartyRosterEventTests`, `PartyLobbyKeysTests`) and have never been executed. | 2 min | Almost certainly a test bug, not a product bug — but they are the contract for the coalescing, the change-gate, the main-thread deferral and the frozen wire format, so a red one is worth reading carefully. |
+| ☐ 2 | **S11 — full party you are NOT in stays non-invitable** (below). **The highest-value item on this list.** The ordinary 4-in-one-party session does NOT exercise it: those rows render through `InYourParty`, a different branch entirely. | 5 min | A live bug in the newest code on the branch. `PARTY FULL` used to carry the "cannot invite them" rule implicitly; `5b36156e` moved it into a derived `targetPartyFull` in `OnlineInfoEntry.Populate`. If that derivation is wrong, you can invite into a full party and the send fails at the service. |
+| ☐ 3 | **Stress-1 / Stress-2 / Stress-3** (below). Required by `REFACTOR.md`'s per-commit gate for refactor commits; not run for this branch. | 15 min | Races and re-entrancy around rapid accept/leave. The branch added a push channel and changed the refresh error matrix, both of which are exercised hardest here. |
+| ☐ 4 | **C4's error-matrix branches** (`791c6d04`) — rate-limit, definite-session-gone, transient, on both the presence and party-session read paths. **Normal play never reaches these**; they only fire under UGS faults. This commit is also the one that never received an adversarial review (the reviewing agent failed twice). | hard | Misclassification during a party transition. Degrades rather than breaks — worst case a benign SDK fault is treated as definite and recreates a solo session mid-join. **This is the first commit to revert** if something odd surfaces later: it is self-contained, and its benefit (the publish surviving a voided read) is real but not urgent. |
+
+**How to provoke #4 if you want it covered.** Rate-limit is reachable by spamming
+invite/cancel until UGS 429s — you should see
+`Rate limited during refresh - backing off`, **not** a silently-absorbed benign
+skip. The precedence between those two is the subtle part of that commit
+(`../PresenceSystem/BUGS.md` B15 RC2). Definite-gone and transient are not
+practically reachable without fault injection; treat them as reviewed-by-reading
+until there is a reason to do more.
+
 ## Smoke gate — run on every commit
 
 ### S1. Accept invite (happy path)

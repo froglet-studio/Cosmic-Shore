@@ -32,7 +32,17 @@ Read B15 for the root-cause analysis; this is the change record.
 | — | `5b36156e` | Retire the `PARTY FULL` status; derive the invitability rule it was carrying. |
 
 **Verified 2026-08-06** by the owner across multiple 4-VP MPPM configurations:
-invite, accept, party formation and panel agreement all green.
+compiles, the `EnsureRunningOnMainThread` errors are gone, and invite, accept,
+party formation and cross-panel agreement are all green.
+
+**Merged into `Ys-bleeding-edge` on the owner's call with four checks
+deliberately outstanding** — EditMode tests, S11, the stress gate, and C4's
+error-matrix branches. They are listed with cost, failure mode and tick-boxes in
+`TESTS.md` § "⚠ Outstanding verification". None is known to be broken; they are
+unproven, not suspect. **S11 is the one worth doing first** — the ordinary
+4-in-one-party session does not exercise it. If something odd surfaces later,
+`791c6d04` (C4) is the first commit to revert: self-contained, never adversarially
+reviewed, and its benefit is real but not urgent.
 
 ### Read this before the next branch here
 
