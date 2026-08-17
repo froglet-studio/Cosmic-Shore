@@ -292,6 +292,43 @@ nothing upstream changed. Wake prisms' z genuinely points down the trail
 (`blockRotation = transform.rotation` at lay time), so the authored-z invariant the dimension
 ladder rests on holds for every wake ribbon.
 
+## The wake outlives its vessel (round 14): the REAL Squirrel-trail bug all along
+
+Round 13's stamp made the Urchin's own trail ride well — and the Squirrel trail was STILL
+chaos, even on dead-straight sections. That ruled out geometry entirely: the 1D follower on a
+straight ribbon cannot wander laterally no matter how wrong its offsets are. The chaos had the
+MARBLE's signature — and it was the marble.
+
+**`VesselPrismController.OnDisable()` called `ClearTrails()`.** The moment a vessel despawns —
+which is exactly what the vessel-changer swap does to the Squirrel — both its `Trail`
+containers were EMPTIED while every laid prism still pointed at them. From then on
+`DimensionOf` read `TrailList.Count ≤ 1` → Singleton → the ride routed onto the SURFACE
+follower: along-z "normals" on trail prisms (the exact inversion), hover spring fighting on
+that axis, nearest-ground hopping freely between BOTH ribbons, `OnPrismCrossed` paying and
+Mass-shielding every hop. Every reported Squirrel symptom across three rounds — "bobbing",
+"between trails", "shielding both trails", "even on a straight section" — was this one line,
+which is why every geometry fix helped the live-trail ride (the Urchin's own) and never
+touched the Squirrel's.
+
+The fix is the platform law applied to bookkeeping: **the wake OUTLIVES its vessel.** Mass is
+conserved — the prisms persist — so their container must persist as live structure too.
+
+- `OnDisable` no longer clears. The `Trail` objects are plain C# state kept alive by the
+  prisms that reference them; they die with their last prism, the correct lifetime.
+- Explicit resets that MEAN to drop bookkeeping (turn resets, the cell-swap drain) still call
+  `ClearTrails()` — and `Trail.Clear()` now **un-stamps membership first**, so even they leave
+  honest container-less prisms (classified by census), never members of an empty list. The lie
+  is unrepresentable.
+- `IsRidable` now also requires `p.Trail == this`: a persistent trail's list can accumulate
+  POOL-REUSED entries over a long session (a prism reborn elsewhere, its transform wherever
+  its new life put it), and membership is what tells a survivor from a phantom — reused
+  entries bridge as holes.
+
+The same round widened the bend buffer the playtest asked for: `facingFlipThreshold` (0.35)
+replaces the re-latch band — TRUE hysteresis, the forward/reverse mapping flips only when the
+aim crosses well past broadside the OTHER way, so a bend sweeping the axis under a steady nose
+holds the latched direction instead of flapping at the apex.
+
 ## The stamp (round 13): the spine cannot be RECONSTRUCTED — the lay must record it
 
 Round 12's spine recovery was right about the helix and wrong about the cure. Its claim —
@@ -699,7 +736,7 @@ restore the previous pilot's colliders onto the new one at an arbitrary moment.
 | `throttleDeadband` | `GunVesselTransformer` (C# default **0.1**) | Signed throttle below this magnitude parks the rider. Never let it reach 0: `RideTheTrail` divides by `Throttle × speed`, and XDiff idles NEAR its rest, never exactly on it. |
 | `throttleRestPosition` | `GunVesselTransformer` (C# default **0.5**) | The XDiff value that reads as neutral — XDiff RESTS AT 0.5 (`GamepadInputStrategy`). Push above to keep riding the latched direction, pull below to back up. |
 | `railSettleRate` | `GunVesselTransformer` (C# default **4**) | 1/s decay of the offset the hull had at contact. The ride sits ON the trail; this only stops attaching from snapping it there. |
-| `facingDeadband` | `GunVesselTransformer` (C# default **0.15**) | \|dot(forward, ribbon axis)\| must exceed this before the throttle's forward/reverse mapping re-latches. |
+| `facingFlipThreshold` | `GunVesselTransformer` (C# default **0.35**) | TRUE hysteresis: the forward/reverse mapping flips only when the aim crosses past broadside the OTHER way by this much. Widen if a bend still flaps direction. |
 | `surfaceAlignRate` | `GunVesselTransformer` (C# default **3**) | 1/s exponential ease of the hull's belly onto the surface normal while rolling — on top of the pilot's steering, never instead of it. |
 | `hoverHeight` | `BlockscapeFollower` (C# default **2**) | World-unit hover above the ground prism's mid-plane, along the smoothed normal. |
 | `normalTrackingRate` | `BlockscapeFollower` (C# default **5**) | 1/s ease of the ridden plane toward the target normal. **This IS the surface feel**: low = long arcs that round off the facets, high = tight tracking. |

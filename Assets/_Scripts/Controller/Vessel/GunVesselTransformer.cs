@@ -73,10 +73,13 @@ namespace CosmicShore.Gameplay
                  "the direction latched at attach, pull below it to back up.")]
         [SerializeField] float throttleRestPosition = 0.5f;
 
-        [Tooltip("Facing hysteresis: |dot(forward, ribbon axis)| must exceed this before the " +
-                 "ride's forward/backward mapping re-latches. Prevents micro-flapping while " +
-                 "the pilot aims near broadside.")]
-        [SerializeField] float facingDeadband = 0.15f;
+        [Tooltip("TRUE facing hysteresis: the forward/reverse mapping flips only when the " +
+                 "pilot's aim crosses to the OTHER side of broadside by at least this much " +
+                 "(dot with the ribbon axis). Around a bend the axis sweeps under a steady " +
+                 "nose and the dot wanders through zero - a plain re-latch band flipped the " +
+                 "ride's direction on every wander, a rapid back-and-forth jitter at the apex. " +
+                 "Inside the buffer the latched direction simply holds.")]
+        [SerializeField] float facingFlipThreshold = 0.35f;
 
         [Tooltip("How quickly the hull is drawn onto the rail after latching on (1/s, " +
                  "exponential). The ride sits ON the trail; this only eases the offset the " +
@@ -102,7 +105,7 @@ namespace CosmicShore.Gameplay
         Vector3 _railOffset;
 
         /// <summary>+1 when the nose agrees with <see cref="TrailFollower.IndexOrderHeading"/>.
-        /// Re-latched only outside <see cref="facingDeadband"/> - hysteresis, so aiming near
+        /// Flips only past <see cref="facingFlipThreshold"/> the other way - hysteresis, so aiming near
         /// broadside cannot flap the throttle mapping.</summary>
         int _facingSign = 1;
 
@@ -302,12 +305,15 @@ namespace CosmicShore.Gameplay
 
                 // Which way is "forward"? The pilot's FACING against the ribbon's stable
                 // index-order axis - the original's dot-product scheme. The axis never flips
-                // with travel (unlike Course), so there is no feedback loop; the hysteresis
-                // band keeps an aim near broadside from flapping the mapping.
+                // with travel (unlike Course), so there is no feedback loop. TRUE hysteresis:
+                // the mapping FLIPS only when the aim crosses well past broadside the other
+                // way; anywhere inside the buffer the latched direction holds, so a bend
+                // sweeping the axis under a steady nose cannot flap the ride.
                 Vector3 axis = RibbonAxis();
                 float facingDot = Vector3.Dot(transform.forward, axis);
-                if (Mathf.Abs(facingDot) > facingDeadband)
-                    _facingSign = facingDot >= 0f ? 1 : -1;
+                if (_facingSign > 0 ? facingDot < -facingFlipThreshold
+                                    : facingDot > facingFlipThreshold)
+                    _facingSign = -_facingSign;
 
                 // Direction only re-latches while the smoothed throttle is meaningfully off
                 // zero, which is what makes a reversal SWING THROUGH ZERO: the stick flips,

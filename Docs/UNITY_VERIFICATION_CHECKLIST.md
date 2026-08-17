@@ -377,6 +377,34 @@ Round-13 verify: fly the Squirrel and DRIFT + roll while laying, swap to the Urc
 that trail — the ride runs clean down the wake's spine, no bobbing, no crossing to the sibling
 ribbon, payoff only on the ribbon you ride. Straight-flight trails unchanged.
 
+**ROUND 14 (2026-08-17) — the REAL Squirrel bug: `OnDisable` orphaned the wake; plus true bend
+hysteresis.** Playtest: the Urchin's own trail rode well (bend jitter aside); the Squirrel's
+was still chaos even on DEAD-STRAIGHT sections — which ruled out geometry (the 1D follower on
+a straight ribbon cannot wander). The chaos was the MARBLE: `VesselPrismController.OnDisable`
+called `ClearTrails()`, so the vessel-changer swap EMPTIED the despawned Squirrel's Trail
+containers while every prism still pointed at them → `DimensionOf` read Count ≤ 1 → Singleton
+→ surface follower, whose along-z "normal" on trail prisms flung the hull everywhere, hopped
+nearest-ground between BOTH ribbons, and paid/shielded every hop. All three rounds of Squirrel
+symptoms were this one line; the geometry fixes were real but only ever reached the live-trail
+ride.
+
+- **The wake OUTLIVES its vessel** (mass is conserved — so must bookkeeping be): `OnDisable`
+  no longer clears; the Trail objects live as long as their prisms reference them. Explicit
+  resets (turn reset, cell drain) still clear — and `Trail.Clear()` now un-stamps membership
+  first, so even they leave honest container-less prisms, never members of an empty list.
+- **`IsRidable` requires membership** (`p.Trail == this`): persistent trails can accumulate
+  pool-REUSED entries over a session; membership tells a survivor from a phantom parked at its
+  new life's position — phantoms bridge as holes.
+- **`facingFlipThreshold` (0.35) replaces the re-latch band**: TRUE hysteresis — the
+  forward/reverse mapping flips only when the aim crosses well past broadside the OTHER way,
+  so a bend sweeping the axis under a steady nose holds direction instead of flapping.
+
+Round-14 verify: fly the Squirrel STRAIGHT to the vessel changer, swap to Urchin, attach to
+the Squirrel trail — it now rides as a TRAIL (clean 1D slide down the spine, no marble
+flailing, no ribbon-hopping, no shielding both trails). Ride the Urchin's own trail around a
+tight bend — direction holds through the apex, no rapid forward/back swapping. Turn-reset
+modes (any minigame turn end) still clear trails cleanly.
+
 Round-10 verify (`URCHIN_TRAIL_RIDER.md` steps 7/8/8a): release mid-grind → coasts to a stop;
 grind onto an enemy trail → brakes rather than snaps; latch on at speed holding forward →
 carries the speed, eases onto the rail, no sideways pop; full-speed run down a long ribbon → no

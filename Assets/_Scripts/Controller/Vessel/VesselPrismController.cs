@@ -101,8 +101,20 @@ namespace CosmicShore.Gameplay
         private void OnDisable()
         {
             StopSpawn();
-            ClearTrails();
-        }
+
+            // Deliberately NO ClearTrails() here. The wake OUTLIVES its vessel - mass is
+            // conserved, the prisms stay in the world, and a rider must still be able to ride
+            // them - so the Trail containers must stay live too. Clearing on disable emptied
+            // the lists while every laid prism still pointed at them, and "member of an empty
+            // container" reads as a one-block prismscape: the topology routed riders of any
+            // DESPAWNED vessel's trail (a swapped-away Squirrel's, always) onto the SURFACE
+            // follower, whose along-z "normal" on trail prisms flung the hull everywhere and
+            // whose nearest-ground search hopped it between both ribbons. The Trail objects
+            // are plain C# state kept alive by the prisms that reference them; they die with
+            // their last prism, which is the correct lifetime. Explicit resets that MEAN to
+            // drop the bookkeeping (a game-mode turn reset, the cell-swap drain) still call
+            // ClearTrails() themselves - and Clear() now un-stamps membership so even those
+            // leave honest container-less prisms behind, never members of an empty list.
 
         /// <summary>Initializes and starts spawning.</summary>
         public void Initialize(IVesselStatus vesselStatus)

@@ -128,9 +128,19 @@ namespace CosmicShore.Gameplay
 
         public void Clear()
         {
+            // Un-stamp membership FIRST: a prism left pointing at a cleared container is a
+            // lie ("member of an empty list") that the prismscape topology acts on - it reads
+            // as a one-block prismscape and routes riders onto the surface follower. After
+            // this, the prisms are honest container-less singletons and classify by census.
+            for (int i = 0; i < TrailList.Count; i++)
+            {
+                var block = TrailList[i];
+                if (block && block.Trail == this) block.AssignTrail(null);
+            }
+
             TrailList.Clear();
             trailBlockIndices.Clear();
-            
+
             // [Fix] Clear visual trail when logical trail clears
             if (TrailRenderer) TrailRenderer.Clear();
         }
@@ -145,11 +155,15 @@ namespace CosmicShore.Gameplay
         /// A block the ride can traverse. A DESTROYED prism still qualifies - its object stays
         /// in place as a restorable skeleton, so the geometry is intact and the rider can
         /// (and does, via the payoff) restore it in passing. What does NOT qualify is a hole:
-        /// a null entry (teardown) or a pooled-away object (inactive) - those the walks BRIDGE,
-        /// splicing the segment across to the next survivor so the ride stays continuous over
-        /// missing prisms.
+        /// a null entry (teardown), a pooled-away object (inactive), or a prism the pool has
+        /// REUSED into a new life elsewhere (its membership stamp no longer names this trail -
+        /// its transform is wherever its new life put it, and walking through it would fling
+        /// the ride across the map). Holes are BRIDGED: the walks splice the segment across to
+        /// the next survivor so the ride stays continuous over missing prisms. Membership
+        /// matters now that trails OUTLIVE their vessel - a persistent trail's list can
+        /// accumulate reused entries over a long session.
         /// </summary>
-        static bool IsRidable(Prism p) => p && p.gameObject.activeInHierarchy;
+        bool IsRidable(Prism p) => p && p.gameObject.activeInHierarchy && p.Trail == this;
 
         /// <summary>
         /// Advance <paramref name="index"/> one RIDABLE block along <paramref name="incrementor"/>,
