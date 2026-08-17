@@ -207,18 +207,26 @@ outcome is optimization, not life). Use the `/ecology` skill for any change here
   `separationDistance` together, which leaves `ResolveLevel`'s argmin — the subdivision — exactly
   invariant (scaling either alone silently ships a DIFFERENT PLANT: Space landed on 6 sites per
   tile instead of 36 that way), and a prism's identity is an integer tile address, so no tolerance
-  exists to invalidate. **The GYROID cannot be scaled and the attempt was reverted on sight**
-  (`Docs/ECOSYSTEM.md §33.8`): its coherence rides absolute separation-3 distances — the mate-snap
-  tolerance (0.3 compared against SQUARED distances, so 0.548u), the 40u mate-search radius, and
-  `AssembledFlora`'s lattice-misalignment gate `IsAnyPrismWithin(pos, 5.5f)` at both the grown- and
-  seed-site checks — so widening the lattice moved every real distance out from under the gate that
-  exists to catch twins, and the plant grew the offset parallel domains it was written to prevent.
-  Two rules come out of it: **a coherence tolerance written as an absolute distance is an unstated
-  dependency on the lattice it was measured against** (enumerate every snap/dedupe/reserve/
-  twin-detect test before scaling anything), and **a prism only reads as STRETCHED against a
-  lattice that stayed put** — scaling both cancels the stretch and just makes a bigger plant. Full
-  record: `Docs/ECOSYSTEM.md §33` (§33.5 the per-element prism fit, §33.7 the Schwarz P lattice,
-  §33.8 the gyroid dislocation).
+  exists to invalidate. **The GYROID took two attempts** (`Docs/ECOSYSTEM.md §33.8`): its coherence
+  rides distances written as ABSOLUTE world units sized at separation 3 — the mate-snap tolerance
+  (0.3, compared against SQUARED distances, so scale²), the 40u mate-search radius, the
+  reservation floor, and `AssembledFlora`'s lattice-misalignment gate (5.5u, at BOTH the grown-
+  and seed-site checks) — so scaling the bond offsets alone moved every real distance out from
+  under the gate that exists to catch twins, and the plant grew the offset parallel domains it was
+  written to prevent. Every constant was individually correct; the defect was a RELATIONSHIP, which
+  is why no static check saw it. `GyroidAssembler.ApplyLatticeScale` now moves the whole family
+  together, and the invariant asserted is the **ordering** `reserve < misalignment gate < healthy
+  closest pair` (constant 73% gate/healthy at every scale), proven over the shipped bond table by
+  `Tools/Build/verify_gyroid_lattice_scale.py`. Three rules come out of it: **a coherence tolerance
+  written as an absolute distance is an unstated dependency on the lattice it was measured
+  against** — enumerate every snap/dedupe/reserve/twin-detect test before scaling anything, and
+  assert the ordering rather than the values; **a prism only reads as STRETCHED against a lattice
+  that stayed put** (scale both and it is just a bigger plant, so stretch on the native lattice
+  FIRST, then scale); and **a uniform k× scale is a k³ VOLUME change** that lands straight on the
+  cell's Frenzy ladder (§4.6) — the Space gyroid's 2× took its ceiling from 13% to 155% of the Blob
+  cell's `FrenzyEnterVolume`. Spindles scale with the lattice (visible branch geometry spanning the
+  gap); crystals deliberately do not. Full record: `Docs/ECOSYSTEM.md §33` (§33.5 the per-element
+  prism fit, §33.7 the Schwarz P lattice, §33.8 the gyroid scale).
 - **Territorial permanence.** Take a cell, leave, it stays yours — the claim fauna cannot touch.
   In nucleus cells the permanent claim is the **nucleus interior** (fauna never consume it);
   exterior canopy/trail is deliberately contested churn (voracious any-domain grazing). In

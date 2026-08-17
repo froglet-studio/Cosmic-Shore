@@ -4658,8 +4658,8 @@ an element's whole lattice — every distance between prisms — while leaving t
 **topology and prism count identical to its elemental peers**. `AssembledFlora.ApplyLatticeSpacing`
 pushes it onto a freshly created assembler at all three creation sites (founder, daughter,
 re-seed), because the assembler reads it *before* its first growth probe and a value that arrives
-later is a value the seed never saw. **It is Schwarz P's alone** — see §33.8 for why the gyroid
-cannot have it.
+later is a value the seed never saw. Both species have it, but each scales a different thing and
+each is exact for its own reason — the gyroid's took two attempts, §33.8.
 
 On Schwarz P it scales `periodScale` **and** `separationDistance`, together, and *together* is the
 whole trick. `ResolveLevel` picks the subdivision whose `MeanParamSpacing × periodScale / 2π` is
@@ -4701,65 +4701,89 @@ exactly as §32.7 recorded.
 spine* all stand as §33.6 left them. A prism-count change per plant moves production only;
 nothing is culled.
 
-### 33.8 Why the GYROID cannot be scaled — the dislocation (Aug 2026, reverted same day)
+### 33.8 Scaling the gyroid — the dislocation, and what it took to fix (Aug 2026)
 
-The same pass widened the gyroid Space lattice to `LatticeScale 1.667` and doubled its strut to
-`45.92 × 0.45 × 0.45`. **It was reverted on sight**, and the reason generalises well past this
-element.
+The gyroid Space lattice was scaled, it grew **offset parallel surfaces**, it was reverted, and
+then it was done properly. The failure is the more useful half.
 
-**What was seen:** the prisms did not read as stretched, and the structure grew *offset parallel
-surfaces* — a dislocation, two lattice domains side by side out of register.
+**Attempt 1 — scale `separationDistance`, ship the dislocation.** Two things went wrong at once:
 
-**Why it did not look stretched.** Scaling the lattice *with* the prism cancels the stretch. The
-strut went from 2.56 spans to 3.52, but everything grew 1.667× together, so at any fixed viewing
-distance nothing was longer — it was the same plant, bigger. **A prism only reads as stretched
-against a lattice that stayed put**, which is exactly what the shipped `20 × 1 × 1` at separation
-3 does.
+*It did not look stretched.* Scaling the lattice *with* the prism cancels the stretch. The strut
+went 2.56 → 3.52 spans, but everything grew 1.667× together, so at any viewing distance nothing
+was longer — the same plant, bigger. **A prism only reads as stretched against a lattice that
+stayed put.**
 
-**Why it dislocated, and this is the finding to keep.** A gyroid plant's coherence is enforced by
-distances written in ABSOLUTE world units, every one of them sized against the
-separationDistance-3 lattice:
+*It dislocated.* A gyroid plant's coherence is decided by distances written in ABSOLUTE world
+units, every one sized against the separationDistance-3 lattice:
 
-| where | value | what it decides |
+| where | value at scale 1 | what it decides |
 |---|---|---|
-| `GyroidAssembler.snapDistance` | 0.3, compared to **squared** distances → 0.548u | whether an existing prism IS the one at this bond site, or a second one beside it |
-| `GyroidAssembler.radius` | 40u | how far the mate search looks for that prism at all |
-| `AssembledFlora` misalignment gate | `IsAnyPrismWithin(pos, 5.5f)`, at **both** the grown-site and seed-site checks | rejects a site whose neighbour belongs to a MISALIGNED frame (healthy closest pair is 6.6u) |
-| growth reservation `clearRadius` | `max(2f, 0.4 × bond length)` | the 2u floor is absolute; the rest scales |
+| `GyroidAssembler.snapDistance` | 0.3, compared to **squared** distances → 1.73u | is this prism THE one at my bond site, or a second one beside it |
+| `GyroidAssembler.radius` | 40u | how far the mate search looks for it at all |
+| `AssembledFlora.MisalignmentRadius` | 5.5u, at **both** the grown-site and seed-site checks | rejects a site whose neighbour belongs to a MISALIGNED frame |
+| reservation `clearRadius` floor | 2u | the floor under an otherwise-proportional radius |
 
-Scaling `separationDistance` moves every *real* distance out from under all of them at once. The
-misalignment gate is the one that bites: at 1.667× the healthy closest pair becomes 11.0u and a
-twin domain sits at roughly 5.5–9.2u, so **the gate that exists to catch twins stopped catching
-them** and the plant grew the domains it was written to prevent. Everything about the gate still
-looked correct — it was measured, commented, and firing — it was simply measuring the wrong
-lattice.
+Scaling only the bond offsets moved every *real* distance out from under all four at once. The
+misalignment gate is the one that bit: the healthy closest pair grew with the lattice while the
+gate did not, so **the gate written to catch twins stopped catching them** and the plant grew the
+domains it exists to prevent. Every constant was individually correct, measured and commented,
+and each still fired — the defect was a *relationship*, which is why no static check saw it.
 
-**The general rule.** A coherence tolerance expressed as an absolute distance is an *unstated
-dependency on the lattice it was measured against*. Scaling that lattice silently invalidates it,
-and the failure surfaces as geometry rather than as an error. Before scaling anything, enumerate
-the tolerances that decide *sameness* — snap, dedupe, reserve, twin-detect — and confirm each is
-either proportional or scaled with it. Schwarz P is safe because its "sameness" test is an
-**integer tile address**, not a distance, so no tolerance exists to invalidate.
+**Attempt 2 — scale the family, and assert the relationship.** `GyroidAssembler.ApplyLatticeScale`
+now moves all of them together: bond offsets via `separationDistance`, `radius` linearly,
+`snapDistance` by **scale²** (it is compared against squared distances, so that is what holds the
+same *linear* tolerance), the `clearRadius` floor, and — through `AssembledFlora.LatticeScale` —
+the octagon tables and the misalignment gate. The bare `5.5f` that appeared at two call sites is
+now the single `MisalignmentRadius` property, because a literal repeated at two sites is exactly
+how one of them gets missed.
 
-**What shipped instead.** The Space gyroid is back to the geometry it had before the branch —
-`20 × 1 × 1` on the native separation-3 lattice, `LeafScalePerLevel 1.15` — with the octagon
-colony's **populations kept** (`MaxTotalSpawnedObjects 30`, cap 33). The struts span 2.56 spacings
-at level 1 and up to 4.5 at level 5, interpenetrating by design: on this species the crossings are
-what read as a connected skeleton.
+The invariant that actually matters is an **ordering**, and it is asserted rather than assumed:
 
-`GyroidAssembler.ApplyLatticeScale` is **deleted**, and `ApplyLatticeSpacing` fails loud
-(`CSDebug.LogError`, once) if a gyroid config ever authors a `LatticeScale` — silently doing
-nothing would hide the mistake until a play test. The octagon tables' `* LatticeScale`
-multiplications are gone with it (they can only ever be ×1 now), leaving
-`GyroidOctagonData.MeasuredSeparation` as the documented statement that those distances were
-measured at 3. `Tools/Build/fit_gyroid_space_strut.py` is **deleted rather than kept as a record**:
-running it would re-author the reverted values, which makes it a landmine, and the measurements it
-produced are in this section instead.
+    reservation clearRadius  <  misalignment gate  <  healthy closest pair
 
-**A note on the objective it was fitted to.** That fitter chased *zero overlaps*, which is also
-wrong for this element: a strut short enough to clear every neighbour reaches none of them and
-reads as disconnected bars. Measured on the widened lattice, crossings saturated (0 at 1.76 spans,
-102 at 1.99, 574 at 2.61, and 575 from there to 4.6 spans, worst penetration 0.566u), and no
-thickness removed them — at 918:1 there were still 237, with 357 of the 575 near-perpendicular.
-The shipped native-lattice geometry simply accepts the crossings, as it always did.
+Below the gate a neighbour is a duplicate to reject; above the healthy pair everything is a
+legitimate neighbour. Drift the gate up and it rejects real growth; drift it down and twins are
+born. `Tools/Build/verify_gyroid_lattice_scale.py` walks the SHIPPED bond table at scales
+1 / 1.5 / 2 / 3, measures the healthy pair, reads the tolerances out of the shipped C#, and fails
+unless the ordering holds and the ratio stays constant:
+
+| scale | sep | bond | reserve | gate | healthy | gate/healthy |
+|---|---|---|---|---|---|---|
+| 1.0 | 3.0 | 7.84 | 3.13 | 5.50 | 7.52 | 73% |
+| 1.5 | 4.5 | 11.75 | 4.70 | 8.25 | 11.29 | 73% |
+| 2.0 | 6.0 | 15.67 | 6.27 | 11.00 | 15.05 | 73% |
+| 3.0 | 9.0 | 23.51 | 9.40 | 22.57 | 22.57 | 73% |
+
+**What shipped.** The strut is stretched on the native lattice to `30 × 1 × 1` and then the whole
+structure — prisms, spacing, and the spindles between them — is scaled **2×**, giving
+`60 × 2 × 2` at `LatticeScale 2` (separation 3 → 6, spacing 7.83 → 15.66). The span is **3.83
+spacings before and after**, which is the check that it is a pure scale-up rather than a reshape.
+The octagon colony's populations are unchanged (`MaxTotalSpawnedObjects 30`, cap 33).
+
+**Spindles scale; crystals do not.** The spindle is visible branch geometry spanning the gap
+between two prisms, so a widened lattice with unscaled branches leaves them visibly short —
+`AssembledFlora.ScaleSpindleToLattice` applies the scale at both spawn sites, in LOCAL scale and
+*before* the prism is parented, or the prism would inherit it as a second scaling of its leaf.
+The crystal is deliberately excluded: octagon centres move apart with the lattice, so the hearts
+spread out while each stays its authored size. It is also **gyroid-only** — the Schwarz P Space
+element's proportions were judged good at its shipped scale *with* unscaled spindles, and changing
+them now would regress an approved look for no request.
+
+**The volume consequence, which is real and is the open question.** A uniform 2× is an **8×
+per-prism volume**, and 20 → 30 adds another 1.5×: `20 → 240` per prism, `37.6 → 450.6` after the
+level spread. Against the Blob cell's `FrenzyEnterVolume 288,000`, this species' ceiling goes from
+**13% to 155%**. Caps were never the binding gate there (all species summed already exceed Frenzy,
+which is the documented design), so nothing stalls — but each Space prism now consumes ~12× more of
+the cell's volume budget, so the cell reaches Frenzy with fewer prisms overall and Space crowds out
+its neighbours. If the freestyle cell reads sparse or freezes early, the levers in order are the
+**cell's volume ladder** first and `MaxLivePopulation` last (§32.7 seventh pass, /ecology §4.6);
+neither was changed here, because cell pacing is a design call rather than a consequence of this
+one.
+
+**The general rule.** A coherence tolerance written as an absolute distance is an *unstated
+dependency on the lattice it was measured against*. Before scaling any lattice, enumerate every
+test that decides *sameness* — snap, dedupe, reserve, twin-detect — and either make it
+proportional or scale it, then assert the ORDERING between them rather than the values. Schwarz P
+never needed this: its sameness test is an integer tile address, so no tolerance exists to
+invalidate.
 
