@@ -473,14 +473,22 @@ namespace CosmicShore.Gameplay
         // this method generalize both of the methods above
         private GyroidBondMate FindClosestMate(Vector3 bondSite, CornerSiteType siteType)
         {
+            // Bond-site telemetry. This runs several times per prism GROWN, so it is both
+            // channel-gated and IsVerbose-guarded: the interpolated string must not be built
+            // while nobody is listening (a [Conditional] method still evaluates its arguments
+            // in the Editor). A 900-prism colony emitted thousands of these lines.
             if (preferedBlocks.Count > 0)
             {
-                CSDebug.Log($"GyroidAssembler: Preferred Block, Depth: {depth}");
+                if (CSDebug.IsVerbose(CSLogChannel.GyroidColony))
+                    CSDebug.LogVerbose(CSLogChannel.GyroidColony,
+                        $"[GyroidColony] {name}: preferred block, depth {depth}");
                 var mate = CreateGyroidBondMate(preferedBlocks.Dequeue(), BlockType, siteType);
                 return mate;
             }
 
-            CSDebug.Log($"GyroidAssembler: No Preferred Block, Depth: {depth}");
+            if (CSDebug.IsVerbose(CSLogChannel.GyroidColony))
+                CSDebug.LogVerbose(CSLogChannel.GyroidColony,
+                    $"[GyroidColony] {name}: no preferred block, depth {depth}");
 
             // Candidates come from the spatial index (the canonical prism population -
             // no physics broadphase, no per-collider GetComponent) plus a Mound-layer

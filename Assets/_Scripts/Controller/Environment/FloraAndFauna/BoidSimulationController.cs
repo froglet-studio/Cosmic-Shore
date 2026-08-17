@@ -75,7 +75,6 @@ namespace CosmicShore.Gameplay
                         goalDirection = Vector3.zero,
                         team = (int)block.Domain
                     };
-                    CSDebug.Log($"team {(int)block.Domain}");
 
                     // Add blockEntity to the entities list
                     entities.Add(blockEntity);
@@ -94,7 +93,6 @@ namespace CosmicShore.Gameplay
             for (int i = 0; i < numberOfBoids; i++)
             {
                 Vector3 spawnPosition = transform.position + Random.insideUnitSphere * spawnRadius;
-                CSDebug.Log("Instantiating boid number: " + i);
                 Prism newBoid = Instantiate(boidPrefab, spawnPosition, Quaternion.identity);
                 newBoid.transform.SetParent(transform);
                 newBoid.Initialize();

@@ -585,8 +585,18 @@ namespace CosmicShore.Gameplay
                 // - every founder is an independent lattice FRAME, and frames that were never
                 // projected from one another cannot mate, so knowing where each frame came
                 // from is the first question of any "colonies don't match up" report.
-                CSDebug.Log($"[GyroidColony] FOUNDER {name} claimed centre {center} " +
-                            $"(prism {type} at {position}, lineage={(SourceConfig ? SourceConfig.name : "NONE/toy")})");
+                //
+                // Both reports are BRING-UP telemetry: silent unless CSLogChannel.GyroidColony
+                // is on (FrogletTools > Toolbox > Logging), because a working colony repeating
+                // its census every 5s for the life of the scene is console spam. The heartbeat
+                // tick is still SCHEDULED unconditionally - it costs one no-op invoke per 5s per
+                // founder and buys a channel that can be flipped on mid-session, which is the
+                // only time anyone actually wants it. Coherence DEFECTS stay on the warning
+                // channel and always emit.
+                if (CSDebug.IsVerbose(CSLogChannel.GyroidColony))
+                    CSDebug.LogVerbose(CSLogChannel.GyroidColony,
+                        $"[GyroidColony] FOUNDER {name} claimed centre {center} " +
+                        $"(prism {type} at {position}, lineage={(SourceConfig ? SourceConfig.name : "NONE/toy")})");
                 InvokeRepeating(nameof(LogColonyHeartbeat), 5f, 5f);
                 return;
             }
@@ -632,12 +642,20 @@ namespace CosmicShore.Gameplay
             _idleGrowTicks >= 2 &&
             Time.time - _lastGrowthTime >= _maturationSeconds;
 
+        /// <summary>
+        /// The founder's 5s population census. Guarded rather than unscheduled so the channel
+        /// can be flipped in EITHER direction mid-session; the guard is what keeps the summary
+        /// string from being built while nobody is reading it.
+        /// </summary>
         void LogColonyHeartbeat()
         {
-            CSDebug.Log($"[GyroidColony] t={Time.time:F0}s {GyroidColonyDiagnostics.Summary} | " +
-                        $"founder: prisms={(healthTracker != null ? healthTracker.Count : -1)} " +
-                        $"ring={_ringMembers.Count} idle={_idleGrowTicks} " +
-                        $"branches={activeBranches.Count} pending={pendingSpawns.Count} mature={OctagonMature}");
+            if (!CSDebug.IsVerbose(CSLogChannel.GyroidColony)) return;
+
+            CSDebug.LogVerbose(CSLogChannel.GyroidColony,
+                $"[GyroidColony] t={Time.time:F0}s {GyroidColonyDiagnostics.Summary} | " +
+                $"founder: prisms={(healthTracker != null ? healthTracker.Count : -1)} " +
+                $"ring={_ringMembers.Count} idle={_idleGrowTicks} " +
+                $"branches={activeBranches.Count} pending={pendingSpawns.Count} mature={OctagonMature}");
         }
 
         /// <summary>
@@ -866,8 +884,9 @@ namespace CosmicShore.Gameplay
                 }
             }
 
-            CSDebug.Log($"[GyroidColony] MATURE {name}: prisms={healthTracker.Count} " +
-                        $"ring={_ringMembers.Count} - frontier now {GyroidColonyFrontier.Count(cell, SourceConfig)} open sites");
+            CSDebug.LogVerbose(CSLogChannel.GyroidColony,
+                $"[GyroidColony] MATURE {name}: prisms={healthTracker.Count} " +
+                $"ring={_ringMembers.Count} - frontier now {GyroidColonyFrontier.Count(cell, SourceConfig)} open sites");
         }
 
         /// <summary>
@@ -928,9 +947,10 @@ namespace CosmicShore.Gameplay
             if (born)
             {
                 GyroidColonyDiagnostics.Births++;
-                CSDebug.Log($"[GyroidColony] BIRTH #{GyroidColonyDiagnostics.Births} donor {name}: " +
-                            $"daughter at {center} seed {seed.BlockType} " +
-                            $"(frontier {GyroidColonyFrontier.Count(cell, SourceConfig)} open)");
+                CSDebug.LogVerbose(CSLogChannel.GyroidColony,
+                    $"[GyroidColony] BIRTH #{GyroidColonyDiagnostics.Births} donor {name}: " +
+                    $"daughter at {center} seed {seed.BlockType} " +
+                    $"(frontier {GyroidColonyFrontier.Count(cell, SourceConfig)} open)");
             }
             else
             {
@@ -988,6 +1008,9 @@ namespace CosmicShore.Gameplay
             base.OnDestroy();
         }
 
+        /// <summary>Latches the once-per-plant reseed-block warning in ReseedBranches.</summary>
+        bool _warnedReseedMintBlocked;
+
         /// <summary>
         /// Re-sprout growth branches from surviving prisms - each surviving prism still
         /// carries its Assembler, so wrapping it in a Branch puts it back in the grow
@@ -1014,9 +1037,20 @@ namespace CosmicShore.Gameplay
                 if (OctagonMode)
                 {
                     GyroidColonyDiagnostics.ReseedMintsBlocked++;
-                    CSDebug.LogWarning($"[GyroidColony] {name}: ZERO surviving prisms with a live " +
-                                       $"tracker (count={(healthTracker != null ? healthTracker.Count : -1)}) - " +
-                                       $"off-lattice reseed mint BLOCKED");
+                    // ONCE per plant, not once per grow tick. The block above says exactly why:
+                    // a prismless octagon plant cannot die on its own, so it re-enters this
+                    // branch every tick for the rest of the scene - and a WARNING outranks both
+                    // the info tier and the channel gate, so nothing downstream can quiet it.
+                    // The running total stays visible either way via ReseedMintsBlocked, which
+                    // the colony heartbeat reports.
+                    if (!_warnedReseedMintBlocked)
+                    {
+                        _warnedReseedMintBlocked = true;
+                        CSDebug.LogWarning($"[GyroidColony] {name}: ZERO surviving prisms with a live " +
+                                           $"tracker (count={(healthTracker != null ? healthTracker.Count : -1)}) - " +
+                                           $"off-lattice reseed mint BLOCKED (further occurrences on this " +
+                                           $"plant are counted, not logged)");
+                    }
                     return;
                 }
                 CreateNewAssembler();
@@ -1103,7 +1137,7 @@ namespace CosmicShore.Gameplay
 
         public Assembler CreateNewAssembler()
         {
-            CSDebug.Log("New Assembler");
+            CSDebug.LogVerbose(CSLogChannel.GyroidColony, $"[GyroidColony] {name}: new assembler");
             var newSpindle = AddSpindle();
 
             // A SEEDED plant's first prism lands at the exact pose its parent's lattice

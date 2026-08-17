@@ -185,7 +185,7 @@ namespace CosmicShore.Core
             PlayerPrefs.DeleteKey("ReturnToModal");
             PlayerPrefs.Save();
 
-            Debug.Log($"<color=#FF8C00>[FLOW-3] [SceneLoader] LaunchGame - Scene={gameData.SceneName}, Mode={gameData.GameMode}, " +
+            CSDebug.LogVerbose(CSLogChannel.NetworkFlow, $"<color=#FF8C00>[FLOW-3] [SceneLoader] LaunchGame - Scene={gameData.SceneName}, Mode={gameData.GameMode}, " +
                       $"IsMultiplayer={gameData.IsMultiplayerMode}, Vessel={gameData.selectedVesselClass.Value}, " +
                       $"Intensity={gameData.SelectedIntensity.Value}, PlayerCount={gameData.SelectedPlayerCount.Value}, " +
                       $"AIBackfill={gameData.RequestedAIBackfillCount}</color>");
@@ -205,7 +205,7 @@ namespace CosmicShore.Core
             // network load and destroys AI NetworkObjects before they can replicate.
             if (nm != null && nm.IsListening && !nm.IsServer)
             {
-                Debug.Log($"<color=#FF8C00>[FLOW-3] [SceneLoader] LaunchGame deferring scene load to server - " +
+                CSDebug.LogVerbose(CSLogChannel.NetworkFlow, $"<color=#FF8C00>[FLOW-3] [SceneLoader] LaunchGame deferring scene load to server - " +
                           $"IsListening={nm.IsListening}, IsServer={nm.IsServer}, IsClient={nm.IsClient}. " +
                           $"Server will replicate scene via Netcode.</color>");
                 LoadInsights.Mark("SceneLoader deferred scene load to server (client waits for Netcode scene pull)");
@@ -229,7 +229,7 @@ namespace CosmicShore.Core
 
         void FadeFromSplashOnReady()
         {
-            Debug.Log("<color=#FFFFFF><b>[FLOW-8] [SceneLoader] FadeFromSplashOnReady - OnClientReady fired!</b></color>");
+            CSDebug.LogVerbose(CSLogChannel.NetworkFlow, "<color=#FFFFFF><b>[FLOW-8] [SceneLoader] FadeFromSplashOnReady - OnClientReady fired!</b></color>");
             gameData.OnClientReady.OnRaised -= FadeFromSplashOnReady;
             FadeFromSplashWhenSettled().Forget();
         }
@@ -325,7 +325,7 @@ namespace CosmicShore.Core
 
         async UniTaskVoid LoadSceneAsync(string sceneName, float minSplashDwell = 0f)
         {
-            Debug.Log($"<color=#FF8C00>[FLOW-3] [SceneLoader] LoadSceneAsync - sceneName={sceneName}</color>");
+            CSDebug.LogVerbose(CSLogChannel.NetworkFlow, $"<color=#FF8C00>[FLOW-3] [SceneLoader] LoadSceneAsync - sceneName={sceneName}</color>");
             gameData.InvokeSceneTransition(false);
 
             var nm = NetworkManager.Singleton;

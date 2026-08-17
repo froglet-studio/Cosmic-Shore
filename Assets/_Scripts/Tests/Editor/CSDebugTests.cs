@@ -21,6 +21,7 @@ namespace CosmicShore.Tests
         {
             // Reset to known state before each test.
             CSDebug.LogLevel = CSLogLevel.All;
+            CSDebug.VerboseChannels = CSLogChannel.None;
         }
 
         [TearDown]
@@ -28,6 +29,7 @@ namespace CosmicShore.Tests
         {
             // Always restore to All after tests to not affect other test runs.
             CSDebug.LogLevel = CSLogLevel.All;
+            CSDebug.VerboseChannels = CSLogChannel.None;
         }
 
         #region LogLevel Presets
@@ -177,6 +179,63 @@ namespace CosmicShore.Tests
             Assert.IsFalse(CSDebug.LogEnabled);
             Assert.IsFalse(CSDebug.WarningsEnabled);
             Assert.IsFalse(CSDebug.ErrorsEnabled);
+        }
+
+        #endregion
+
+        #region Verbose Diagnostic Channels
+
+        // The point of the channel tier is that a finished system's bring-up trace survives in
+        // the tree without shouting. If the default ever drifts to anything but None, every
+        // converted [FLOW-n] / [GyroidColony] site starts spamming the console again on a fresh
+        // clone - which is the exact regression the tier was added to prevent.
+        [Test]
+        public void VerboseChannels_DefaultToNone()
+        {
+            Assert.AreEqual(CSLogChannel.None, CSDebug.VerboseChannels);
+            Assert.IsFalse(CSDebug.IsVerbose(CSLogChannel.NetworkFlow));
+            Assert.IsFalse(CSDebug.IsVerbose(CSLogChannel.GyroidColony));
+        }
+
+        [Test]
+        public void IsVerbose_TrueOnlyForEnabledChannel()
+        {
+            CSDebug.VerboseChannels = CSLogChannel.NetworkFlow;
+
+            Assert.IsTrue(CSDebug.IsVerbose(CSLogChannel.NetworkFlow));
+            Assert.IsFalse(CSDebug.IsVerbose(CSLogChannel.GyroidColony),
+                "Channels are independent flags - enabling one must not enable another.");
+        }
+
+        [Test]
+        public void IsVerbose_ChannelsCombine()
+        {
+            CSDebug.VerboseChannels = CSLogChannel.NetworkFlow | CSLogChannel.GyroidColony;
+
+            Assert.IsTrue(CSDebug.IsVerbose(CSLogChannel.NetworkFlow));
+            Assert.IsTrue(CSDebug.IsVerbose(CSLogChannel.GyroidColony));
+        }
+
+        // A channel is a SUBSET of the info tier, not a bypass of it: "Silent" in the toolbox
+        // (or a release build's stripped Log) must not leave a channel still emitting.
+        [Test]
+        public void IsVerbose_FalseWhenInfoLoggingIsOff()
+        {
+            CSDebug.VerboseChannels = CSLogChannel.All;
+            CSDebug.LogEnabled = false;
+
+            Assert.IsFalse(CSDebug.IsVerbose(CSLogChannel.NetworkFlow));
+            Assert.IsFalse(CSDebug.IsVerbose(CSLogChannel.GyroidColony));
+        }
+
+        [Test]
+        public void CSLogChannel_NoneIsZero_AndFlagsAreDistinct()
+        {
+            Assert.AreEqual(0, (int)CSLogChannel.None);
+            Assert.AreNotEqual(CSLogChannel.NetworkFlow, CSLogChannel.GyroidColony);
+            Assert.AreEqual(CSLogChannel.None,
+                CSLogChannel.NetworkFlow & CSLogChannel.GyroidColony,
+                "Channel values must be non-overlapping bit flags.");
         }
 
         #endregion
