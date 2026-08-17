@@ -67,7 +67,7 @@ MonoBehaviour:
   maxDepth: 50
   itemsPerGrow: 5
   randomItems: 2
-  crystalGrowth: 0.1
+  crystalGrowth: 0
   reseedBranchCount: 3
 --- !u!1001 &8186157953130318967
 PrefabInstance:

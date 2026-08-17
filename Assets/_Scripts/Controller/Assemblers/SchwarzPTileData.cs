@@ -126,15 +126,9 @@ namespace CosmicShore.Gameplay
 
         static readonly TileLevel[] LevelTable =
         {
-            // level 0: 1 sites, mean spacing 3.1416 rad (3.1416..3.1416)
-            new TileLevel(3.141593f, new[]
+            // level 0: 6 sites, mean spacing 1.2254 rad (1.2254..1.2254)
+            new TileLevel(1.225350f, new[]
             {
-                new TileSite(new Vector3(0.0000000f, 0.0000000f, 0.0000000f), new Vector3(0.7071068f, -0.7071068f, 0.0000000f)),
-            }),
-            // level 1: 7 sites, mean spacing 1.2439 rad (1.2254..1.3550)
-            new TileLevel(1.243870f, new[]
-            {
-                new TileSite(new Vector3(0.0000000f, 0.0000000f, 0.0000000f), new Vector3(0.7071068f, -0.7071068f, 0.0000000f)),
                 new TileSite(new Vector3(-0.9581211f, 0.9581211f, 0.0000000f), new Vector3(-0.7071068f, 0.7071068f, -0.0000000f)),
                 new TileSite(new Vector3(-0.9581211f, 0.0000000f, 0.9581211f), new Vector3(-0.7071068f, -0.0000000f, 0.7071068f)),
                 new TileSite(new Vector3(0.0000000f, -0.9581211f, 0.9581211f), new Vector3(-0.0000000f, -0.7071068f, 0.7071068f)),
@@ -142,10 +136,9 @@ namespace CosmicShore.Gameplay
                 new TileSite(new Vector3(0.9581211f, 0.0000000f, -0.9581211f), new Vector3(0.7071068f, -0.0000000f, -0.7071068f)),
                 new TileSite(new Vector3(0.0000000f, 0.9581211f, -0.9581211f), new Vector3(-0.0000000f, 0.7071068f, -0.7071068f)),
             }),
-            // level 2: 19 sites, mean spacing 0.7641 rad (0.6902..0.8250)
-            new TileLevel(0.764075f, new[]
+            // level 1: 18 sites, mean spacing 0.7607 rad (0.6902..0.8132)
+            new TileLevel(0.760692f, new[]
             {
-                new TileSite(new Vector3(0.0000000f, 0.0000000f, 0.0000000f), new Vector3(0.7071068f, -0.7071068f, 0.0000000f)),
                 new TileSite(new Vector3(-0.5833442f, 0.0000000f, 0.5833442f), new Vector3(-0.7071068f, -0.0000000f, 0.7071068f)),
                 new TileSite(new Vector3(0.0000000f, -0.5833442f, 0.5833442f), new Vector3(-0.0000000f, -0.7071068f, 0.7071068f)),
                 new TileSite(new Vector3(0.5833442f, -0.5833442f, 0.0000000f), new Vector3(0.7071068f, -0.7071068f, -0.0000000f)),
@@ -165,10 +158,9 @@ namespace CosmicShore.Gameplay
                 new TileSite(new Vector3(1.1814823f, 0.0000000f, -1.1814823f), new Vector3(0.7071068f, -0.0000000f, -0.7071068f)),
                 new TileSite(new Vector3(0.0000000f, 1.1814823f, -1.1814823f), new Vector3(-0.0000000f, 0.7071068f, -0.7071068f)),
             }),
-            // level 3: 37 sites, mean spacing 0.5511 rad (0.4888..0.5996)
-            new TileLevel(0.551089f, new[]
+            // level 2: 36 sites, mean spacing 0.5497 rad (0.4888..0.5950)
+            new TileLevel(0.549740f, new[]
             {
-                new TileSite(new Vector3(0.0000000f, 0.0000000f, 0.0000000f), new Vector3(0.7071068f, -0.7071068f, 0.0000000f)),
                 new TileSite(new Vector3(-0.4240066f, 0.0000000f, 0.4240066f), new Vector3(-0.7071068f, -0.0000000f, 0.7071068f)),
                 new TileSite(new Vector3(0.0000000f, -0.4240066f, 0.4240066f), new Vector3(-0.0000000f, -0.7071068f, 0.7071068f)),
                 new TileSite(new Vector3(0.4240066f, -0.4240066f, 0.0000000f), new Vector3(0.7071068f, -0.7071068f, 0.0000000f)),
@@ -206,10 +198,9 @@ namespace CosmicShore.Gameplay
                 new TileSite(new Vector3(0.0000000f, 1.2861609f, -1.2861609f), new Vector3(-0.0000000f, 0.7071068f, -0.7071068f)),
                 new TileSite(new Vector3(-1.2861609f, 1.2861609f, -0.0000000f), new Vector3(-0.7071068f, 0.7071068f, 0.0000000f)),
             }),
-            // level 4: 61 sites, mean spacing 0.4318 rad (0.3800..0.4610)
-            new TileLevel(0.431820f, new[]
+            // level 3: 60 sites, mean spacing 0.4313 rad (0.3800..0.4596)
+            new TileLevel(0.431332f, new[]
             {
-                new TileSite(new Vector3(0.0000000f, 0.0000000f, 0.0000000f), new Vector3(0.7071068f, -0.7071068f, 0.0000000f)),
                 new TileSite(new Vector3(-0.3260110f, -0.0000000f, 0.3260110f), new Vector3(-0.7071068f, -0.0000000f, 0.7071068f)),
                 new TileSite(new Vector3(-0.0000000f, -0.3260110f, 0.3260110f), new Vector3(-0.0000000f, -0.7071068f, 0.7071068f)),
                 new TileSite(new Vector3(0.3260110f, -0.3260110f, 0.0000000f), new Vector3(0.7071068f, -0.7071068f, 0.0000000f)),
@@ -271,10 +262,9 @@ namespace CosmicShore.Gameplay
                 new TileSite(new Vector3(1.3435042f, 0.0000000f, -1.3435042f), new Vector3(0.7071068f, 0.0000000f, -0.7071068f)),
                 new TileSite(new Vector3(0.0000000f, 1.3435042f, -1.3435042f), new Vector3(0.0000000f, 0.7071068f, -0.7071068f)),
             }),
-            // level 5: 91 sites, mean spacing 0.3554 rad (0.3111..0.3800)
-            new TileLevel(0.355424f, new[]
+            // level 4: 90 sites, mean spacing 0.3552 rad (0.3111..0.3800)
+            new TileLevel(0.355172f, new[]
             {
-                new TileSite(new Vector3(0.0000000f, 0.0000000f, 0.0000000f), new Vector3(0.7071068f, -0.7071068f, 0.0000000f)),
                 new TileSite(new Vector3(-0.2673885f, 0.2673885f, 0.0000000f), new Vector3(-0.7071068f, 0.7071068f, 0.0000000f)),
                 new TileSite(new Vector3(-0.2673885f, 0.0000000f, 0.2673885f), new Vector3(-0.7071068f, 0.0000000f, 0.7071068f)),
                 new TileSite(new Vector3(0.0000000f, -0.2673885f, 0.2673885f), new Vector3(0.0000000f, -0.7071068f, 0.7071068f)),

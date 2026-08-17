@@ -90,12 +90,23 @@ LATTICE_MIN_FOUNDERS = 4
 # Species whose growth rule is a LATTICE: an offspring is handed a real bond site off the
 # parent's own frontier (AssembledFlora.TryResolveOffspringPlacement), so many small plants
 # add up to one continuous minimal surface. Matched on the flora prefab.
-LATTICE_PREFABS = {"GyroidFlora.prefab"}
+LATTICE_PREFABS = {"GyroidFlora.prefab", "SchwarzPFlora.prefab"}
 
 # Per-plant budget for a lattice species: the 24-prism octagon patch plus headroom for the
 # boundary prisms the ownership epsilon lets a plant win (measured patches run 22-28; the
 # ownership gate, not this budget, is the real bound - see AssembledFlora.OwnsLatticeSite).
 LATTICE_BUDGET = 30
+
+# Per-species unit cell and per-plant budget. The two lattice species do NOT share these:
+# a gyroid plant owns a 24-prism octagon and is given 30 for the boundary prisms its
+# ownership epsilon lets it win, while a Schwarz P plant owns one TILE - an exact integer
+# partition of the surface (Docs/ECOSYSTEM.md 33) - so its patch is exactly
+# SchwarzPTileData.SiteCount(level) and it needs no headroom at all: there is no contested
+# boundary to win. 36 is the level the shipped separation 6 / periodScale 60 resolves to.
+LATTICE_PATCH = {
+    "GyroidFlora.prefab":   (OCTAGON_PATCH, LATTICE_BUDGET),   # 24 owned, 30 budget
+    "SchwarzPFlora.prefab": (36, 36),                          # 36 owned, 36 budget - exact
+}
 
 # INERT for lattice species since reproduction became a POPULATION event (Docs/ECOSYSTEM.md
 # §32.7, organic-growth pass): the colony births ONE plant per fauna-wave period at a random
@@ -132,6 +143,14 @@ LATTICE_SOURCE_BUDGET = {
     "Gyroid Flora Mass": 1500,
     "Gyroid Flora Space": 800,
     "Gyroid Flora Time": 1000,
+    # Schwarz P: the prefab's authored 800 (the four element assets keep the prefab value with
+    # the -1 sentinel, so 800 is what each of them actually ran with) and the topiary's 150.
+    "Blob SchwarzP Flora Config Data": 800,
+    "Hesperides SchwarzP Topiary Config Data": 150,
+    "SchwarzP Flora Charge": 800,
+    "SchwarzP Flora Mass": 800,
+    "SchwarzP Flora Space": 800,
+    "SchwarzP Flora Time": 800,
 }
 
 
@@ -238,10 +257,11 @@ def plan(path, guids, defaults):
                 f"LATTICE_SOURCE_BUDGET (its authored MaxTotalSpawnedObjects) - the conversion "
                 f"overwrites that field, so it cannot be recovered from the asset.")
         old_budget = LATTICE_SOURCE_BUDGET[name]
-        budget = LATTICE_BUDGET
+        patch, budget = LATTICE_PATCH[prefab_name(path, guids)]
         # Same mass, many plants: this is the conversion, stated as arithmetic. The divisor is
-        # the PATCH (what a plant actually settles at), so cap x 24 = the old single-plant mass.
-        cap = max(1, round(old_budget / OCTAGON_PATCH))
+        # the PATCH (what a plant actually settles at), so cap x patch = the old single-plant
+        # mass.
+        cap = max(1, round(old_budget / patch))
         quota = LATTICE_QUOTA
     else:
         budget = old_budget
@@ -293,7 +313,7 @@ def apply(path, p, check):
     # The lattice budget lives in the Variant block (the element's identity).
     if p["lattice"]:
         text = re.sub(r"(\n    MaxTotalSpawnedObjects: )-?\d+",
-                      rf"\g<1>{LATTICE_BUDGET}", text, count=1)
+                      rf"\g<1>{p['budget']}", text, count=1)
 
     if text == original:
         return False, None

@@ -276,6 +276,30 @@ def set_leaf_scale_per_level(path, value=1):
     return path
 
 
+def set_crystal_scale_per_level(path, value=1):
+    """The crystal seat is a HOLE of a measured size, so the crystal must not outgrow it.
+
+    This is the `LeafScalePerLevel` trap (§33.5) repeated for the heart. The flat point's
+    hole has a radius of one site spacing minus half a plate - about 4.2 world units - and
+    the authored crystal renders about 2x its root scale of 3. At the SO default
+    CrystalScalePerLevel of 1.2 the Blob cell's Levels 1..5 give root scales
+    3.00 / 3.60 / 4.32 / 5.18 / 6.22, so from level 3 up the heart bursts the window it is
+    supposed to sit in. Pinned at 1 for the same reason the leaf is: on a lattice species
+    the geometry owns the size, not the plant's level."""
+    text = path.read_text()
+    row = f"  CrystalScalePerLevel: {value:g}"
+    new, n = re.subn(r"^  CrystalScalePerLevel: .*$", row, text, count=1, flags=re.M)
+    if n == 0:
+        for anchor in (r"^  Levels:$", r"^  LeafScalePerLevel: .*$", r"^  InitialLevel: .*$"):
+            new, n = re.subn(anchor, row + "\n" + r"\g<0>", text, count=1, flags=re.M)
+            if n == 1:
+                break
+    if n != 1:
+        raise SystemExit(f"could not set CrystalScalePerLevel in {path.name}")
+    path.write_text(new)
+    return path
+
+
 def set_leaf_size_only(path, leaf):
     """Replace just the LeafSize row of an already-populated Variant block, so a cell's
     own decisions in that block (budget, planting radius, tempo) survive untouched."""
@@ -303,12 +327,23 @@ def write_variant(element, leaf):
     path = LIFEFORMS / f"SchwarzP Flora {element}.asset"
     text = path.read_text()
 
+    # PRESERVE every field this script does not own. author_flora_populations.py writes the
+    # per-plant budget (MaxTotalSpawnedObjects) into this same block, so emitting a blanket
+    # sentinel here would silently revert it depending on which script ran last - a run-order
+    # hazard rather than a bug, which is worse, because it only shows up when someone
+    # re-runs the fitter months later.
+    existing = dict(re.findall(r"^    (\w+): (.+)$",
+                               re.search(r"  Variant:\n((?:    [^\n]*\n)*)", text).group(1),
+                               re.M))
+
     lines = ["  Variant:", "    Enabled: 1"]
     for name, kind in variant_fields():
         if name == "Enabled":
             continue
         if name == "LeafSize":
             lines.append(f"    LeafSize: {{x: {leaf[0]:g}, y: {leaf[1]:g}, z: {leaf[2]:g}}}")
+        elif name in existing:
+            lines.append(f"    {name}: {existing[name]}")
         elif kind == "Vector3":
             lines.append(f"    {name}: {{x: 0, y: 0, z: 0}}")
         else:
@@ -438,6 +473,7 @@ def main():
         for name, leaf, _ in elements:
             p = write_variant(name, leaf)
             set_leaf_scale_per_level(p)
+            set_crystal_scale_per_level(p)
             print(f"  wrote {p.relative_to(ROOT)}")
 
         # The two CELL-level configs are producers too, and a fit applied to four of six
@@ -449,11 +485,13 @@ def main():
                              "/Hesperides SchwarzP Topiary Config Data.asset")
         set_leaf_size_only(hesperides, chunky)
         set_leaf_scale_per_level(hesperides)
+        set_crystal_scale_per_level(hesperides)
         print(f"  wrote {hesperides.relative_to(ROOT)}")
 
         blob = (ROOT / "Assets/_SO_Assets/Cell Configs/Blob Cell"
                        "/Blob SchwarzP Flora Config Data.asset")
         set_leaf_scale_per_level(blob)
+        set_crystal_scale_per_level(blob)
         print(f"  wrote {blob.relative_to(ROOT)}")
 
     return 0

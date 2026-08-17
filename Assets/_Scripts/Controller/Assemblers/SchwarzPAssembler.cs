@@ -52,6 +52,22 @@ namespace CosmicShore.Gameplay
         public float WorldSpacing;    // measured distance between neighbouring prisms
         public int Level;             // which subdivision of the tile this flora grows
 
+        /// <summary>
+        /// The cell this lattice was anchored in, stamped by the founding plant. The colony's
+        /// claim book is cleared per cell (a Cell-Selector world swap must drop ITS lattices
+        /// without silencing another cell's colony), and a frame is the only object that knows
+        /// which cell it belongs to.
+        /// </summary>
+        public Cell Cell;
+
+        /// <summary>
+        /// World position of a tile's flat point - where that tile's plant keeps its crystal.
+        /// Derived, never stored: a tile key is an exact integer address, so the centre is one
+        /// multiplication away and cannot drift out of step with the lattice that named it.
+        /// </summary>
+        public Vector3 TileCenterWorld(Vector3Int tile) =>
+            ToWorld(SchwarzPTileData.TileCenterParam(tile));
+
         struct Claim
         {
             public SchwarzPAssembler Occupant;
@@ -153,6 +169,45 @@ namespace CosmicShore.Gameplay
             set => depth = value;
         }
 
+        /// <summary>The colony lattice this prism belongs to. Null until seeded.</summary>
+        public SchwarzPSurfaceFrame Frame => frame;
+
+        /// <summary>The tile this prism sits in - and, because a plant owns exactly one tile,
+        /// the tile of the whole plant.</summary>
+        public Vector3Int Tile => tile;
+
+        /// <summary>Builds the growth order that seeds a NEW plant on <paramref name="tile"/> of
+        /// an existing lattice: its first prism at site 0, posed from the closed-form surface.
+        ///
+        /// <para>The gyroid has to carry a baked seed POSE through its frontier because its
+        /// lattice has no addressing - a site can only be described by where it is and how it
+        /// is turned, and a transcribed rotation is exactly what shipped wrong there
+        /// (Docs/ECOSYSTEM.md 32.7). A tile IS an address, so the daughter's seed is DERIVED at
+        /// birth from the same arithmetic her mother grows by, and there is nothing to
+        /// transcribe.</para></summary>
+        public static SchwarzPGrowthInfo BuildSeed(SchwarzPSurfaceFrame frame, Vector3Int tile, int depth)
+        {
+            if (frame == null) return null;
+
+            const int seedSite = 0;
+            Vector3 param = SchwarzPTileData.SiteParam(tile, frame.Level, seedSite);
+            Vector3 paramNormal = SchwarzPTileData.SurfaceNormalParam(param);
+            Vector3 paramTangent = SchwarzPTileData.SiteTangentParam(tile, frame.Level, seedSite);
+
+            return new SchwarzPGrowthInfo
+            {
+                CanGrow = true,
+                Position = frame.ToWorld(param),
+                Rotation = Quaternion.LookRotation(
+                    frame.ToWorldDirection(paramNormal),
+                    frame.ToWorldDirection(Orthogonalize(paramTangent, paramNormal))),
+                Depth = depth,
+                Frame = frame,
+                Tile = tile,
+                Site = seedSite
+            };
+        }
+
         void Start()
         {
             if (!Prism) Prism = GetComponent<Prism>();
@@ -178,8 +233,9 @@ namespace CosmicShore.Gameplay
             var bonds = SchwarzPTileData.GetBonds(frame.Level, site);
             for (int i = 0; i < bonds.Length; i++)
             {
-                if (!frame.IsOccupied(new SchwarzPSiteKey(
-                        SchwarzPTileData.NeighbourTile(tile, bonds[i].TileDelta), bonds[i].Site)))
+                var neighbour = SchwarzPTileData.NeighbourTile(tile, bonds[i].TileDelta);
+                if (neighbour != tile) continue;                  // another plant's tile
+                if (!frame.IsOccupied(new SchwarzPSiteKey(neighbour, bonds[i].Site)))
                     return false;
             }
             return true;
@@ -208,8 +264,19 @@ namespace CosmicShore.Gameplay
             {
                 var bond = bonds[(start + n) % bonds.Length];
                 Vector3Int neighbourTile = SchwarzPTileData.NeighbourTile(tile, bond.TileDelta);
-                var key = new SchwarzPSiteKey(neighbourTile, bond.Site);
 
+                // ONE PLANT = ONE TILE. A bond leading out of this prism's own tile belongs to
+                // a neighbouring plant, so the whole territory question is this line.
+                //
+                // The gyroid needs a distance heuristic for the same job - a territory radius,
+                // an ownership epsilon, and a scan for the nearest foreign claim - because its
+                // octagon is measured off a bond table and boundary prisms sit exactly
+                // equidistant between two owners (Docs/ECOSYSTEM.md 32.7). A tile is an exact
+                // integer partition, so a site belongs to exactly one plant and there is no
+                // boundary to contest.
+                if (neighbourTile != tile) continue;
+
+                var key = new SchwarzPSiteKey(neighbourTile, bond.Site);
                 if (frame.IsOccupied(key)) continue;
 
                 Vector3 param = SchwarzPTileData.SiteParam(neighbourTile, frame.Level, bond.Site);
@@ -270,10 +337,17 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// Anchors the tile lattice to the seed prism. The seed takes tile (0,0,0) site 0 -
-        /// the flat point at the tile's centre, where the surface's own 6-fold symmetry
-        /// sits - and its transform orients the whole surface: prism forward becomes the
-        /// surface normal there.
+        /// Anchors a NEW colony lattice on this prism - the founder path. The seed takes tile
+        /// (0,0,0) site 0 (the first site of the innermost shell; the tile's flat point is not
+        /// a prism site, it is where the plant keeps its crystal), and this transform orients
+        /// the whole surface: prism forward becomes the surface normal there.
+        ///
+        /// <para>Only a founder ever reaches this. A daughter is <see cref="Program"/>med with
+        /// her mother's frame BY REFERENCE, and this early-returns on a non-null frame - so an
+        /// entire lineage shares one lattice, one world anchor and one occupancy book, and two
+        /// plants of a colony cannot disagree about where a site is. That inheritance is the
+        /// whole colony: if a daughter ever reached here with a null frame she would anchor a
+        /// second, incommensurable lattice at her own transform.</para>
         /// </summary>
         void EnsureSeeded()
         {

@@ -186,6 +186,13 @@ def verify_level(index, mean_spacing, sites):
     check(margin > 1e-4, f"{tag}: every site is strictly inside its own cube",
           f"min margin {margin:.4f} rad")
 
+    # --- the flat point is the CRYSTAL's seat and must hold no prism. A site there
+    # would put a prism inside the heart, and the heart is what the wither unravels
+    # around (Docs/ECOSYSTEM.md 33.6).
+    to_centre = min(math.sqrt(sum(c * c for c in off)) for off in offsets)
+    check(to_centre > 1e-3, f"{tag}: the flat point carries no prism (it is the crystal seat)",
+          f"nearest site sits {to_centre:.4f} rad out")
+
     # --- closed under the site group
     canonical = [add(tile_center((0, 0, 0)), off) for off in offsets]
     drift = max(min(dist(apply_site_op(op, p), q) for q in canonical)
@@ -297,13 +304,14 @@ def main():
         verify_level(index, mean_spacing, sites)
         counts.append(len(sites))
 
-    # Site counts should be the CENTERED HEXAGONAL numbers 1 + 3n(n+1): the layout
-    # is hexagonal shells around the flat point, which is the arrangement the tile's
-    # own 6-fold symmetry admits. A count off this sequence means a shell came out
-    # incomplete - a real defect, and invisible in a spacing statistic.
-    hexagonal = [1 + 3 * n * (n + 1) for n in range(len(counts))]
+    # Site counts should be 3n(n+1) - the centered hexagonal numbers with the CENTRE
+    # REMOVED. The layout is complete hexagonal shells around the flat point (the
+    # arrangement the tile's own 6-fold symmetry admits), and the flat point itself is
+    # the plant's CRYSTAL seat, not a prism site. A count off this sequence means a
+    # shell came out incomplete - a real defect, and invisible in a spacing statistic.
+    hexagonal = [3 * (n + 2) * (n + 1) for n in range(len(counts))]
     check(counts == hexagonal,
-          "site counts are the centered hexagonal numbers (complete shells)",
+          "site counts are complete hexagonal shells, centre excluded",
           f"{counts}")
 
     # Levels must be ordered fine-to-coarse consistently, or ResolveLevel's

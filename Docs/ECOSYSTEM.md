@@ -4403,11 +4403,12 @@ group — including its own mirror image across each tile seam**. Uniform spacin
 and uniform spacing across a tile boundary therefore fall out of one computation, with nothing
 tuned for the seam (measured: seam-to-intra ratio **1.00×** at every level).
 
-Levels land on the **centered hexagonal numbers** — 1, 7, 19, 37, 61, 91 sites — because
-complete hexagonal shells are what the tile's 6-fold symmetry admits. `separationDistance`
-stays the authored field and now *selects* a level (`ResolveLevel`) rather than setting a step;
-at the shipped `SchwarzPFlora` (`separation 6`, `periodScale 60`) that is **level 3, 37 sites
-per tile at 5.26 world units** — so no asset needed re-authoring, and the orphaned
+Levels land on **complete hexagonal shells around the flat point** — 6, 18, 36, 60, 90 sites,
+i.e. `3n(n+1)`, the centered hexagonal numbers with the centre removed (the flat point is the
+plant's CRYSTAL seat, §33.6, not a prism site). `separationDistance` stays the authored field
+and now *selects* a level (`ResolveLevel`) rather than setting a step; at the shipped
+`SchwarzPFlora` (`separation 6`, `periodScale 60`) that is **level 2, 36 sites per tile at
+5.25 world units** — so no asset needed re-authoring, and the orphaned
 `overlapProbeScale: 0.45` already sitting in `SchwarzPBlock Variant.prefab` became a live field
 again.
 
@@ -4447,13 +4448,15 @@ output rather than hidden.)
   eaten), so a grazed plant regrows into its own wound. No decay, no timer, no cull.
 - **Continuity of existence.** Untouched — prisms still bloom in and wither out through the
   standard `AssembledFlora` path.
-- **Flora populations.** Untouched. Schwarz P is not a lattice-colony species (that is the
-  gyroid, §32.7); it keeps the ordinary per-plant budget and reseeding.
-- **Collider budget: unchanged, one-for-one.** The plant holds the same
+- **Flora populations.** *Superseded by §33.6* — Schwarz P became a lattice-colony species in
+  the pass that followed this one. At the time of writing it kept the ordinary per-plant
+  budget and reseeding.
+- **Collider budget: unchanged, one-for-one** *at this pass*. The plant held the same
   `maxTotalSpawnedObjects` live prisms with the same colliders; only *where* they are placed
-  changed. Site spacing moved 6 → 5.26 world units, so a full plant is slightly denser in
-  space but identical in count. The bond table is built once per level (~144k distance
-  computations at the largest level, lazily, cached) and never again.
+  changed. Site spacing moved 6 → 5.25 world units. The bond table is built once per level
+  (~144k distance computations at the largest level, lazily, cached) and never again.
+  (§33.6 restates the budget for the colony: prism colliders unchanged, crystal colliders
+  3 → 22 in Blob.)
 
 ### 33.4 Tooling and verification
 
@@ -4504,21 +4507,21 @@ still has *zero* overlaps:
 
 | aspect | x | y | coverage |
 |---|---|---|---|
-| 1.0 | 3.69 | 3.69 | 47.7% |
-| 1.3 | 4.30 | 3.31 | **49.9%** |
-| 1.618 | 4.72 | 2.92 | 48.3% |
-| 2.0 | 5.10 | 2.55 | 45.6% |
-| 3.4 | 5.61 | 1.65 | 32.4% |
-| 5.0 | 5.85 | 1.17 | 24.0% |
+| 1.0 | 3.69 | 3.69 | 46.4% |
+| 1.3 | 4.30 | 3.31 | **48.5%** |
+| 1.618 | 4.72 | 2.92 | 47.1% |
+| 2.0 | 5.10 | 2.55 | 44.3% |
+| 3.4 | 5.61 | 1.65 | 31.6% |
+| 5.0 | 5.85 | 1.17 | 23.3% |
 
 Coverage is broad and flat near square, so the aspect can be chosen for looks at almost
 no cost — which is what the four elements do:
 
 | element | leaf size | aspect | span | result |
 |---|---|---|---|---|
-| **Charge / Time** | **4.72 × 2.92 × 1** | 1.618:1 (golden) | 0.90 spacings | flush, **zero overlaps**, 48.3% coverage |
-| **Mass** | **4.09 × 3.14 × 2** | 1.3:1 | 0.78 | chunkier — squarer footprint, twice the slab; **zero overlaps**, 45.0% |
-| **Space** | **13.5 × 0.7 × 0.7** | 19.3:1 | 2.57 | the strut: skeletal, largest bounds, interpenetrating by design |
+| **Charge / Time** | **4.72 × 2.92 × 1** | 1.618:1 (golden) | 0.90 spacings | flush, **zero overlaps**, 47.0% coverage |
+| **Mass** | **4.09 × 3.14 × 2** | 1.3:1 | 0.78 | chunkier — squarer footprint, twice the slab; **zero overlaps**, 43.8% |
+| **Space** | **13.4 × 0.7 × 0.7** | 19.1:1 | 2.55 | the strut: skeletal, largest bounds, interpenetrating by design |
 
 Every plate is thin in z. The gyroid's Charge/Time runs a thickness of 0.19 spacings and
 its Mass 0.45; these are 0.19 and 0.38 — the same family. **Space is the one element that
@@ -4530,7 +4533,7 @@ skeletal, and it cannot do that and avoid its neighbours at the same time.
 multiplies the leaf by `LeafScalePerLevel^(Level-1)`, and the Blob cell rolls this species
 at **Levels 1..5**. It scales the *prism* but not the *lattice*, so at the inherited 1.15 a
 level-5 plant's prisms are **1.749×** the size fitted flush and the plant interpenetrates
-itself — measured at **144 overlapping pairs at level 3 and 212 at level 5**, against zero
+itself — measured at **144 overlapping pairs at level 3 and 204 at level 5**, against zero
 at level 1. Pinned to 1, every level is clear. Nothing is lost: the crystal still grows
 with level (`CrystalScalePerLevel`), and budget and lineage are untouched. **The prism size
 belongs to the lattice, not to the plant.**
@@ -4549,3 +4552,98 @@ Regenerate with `--render` for the preview sheet, `--write` to re-author. The wr
 class, because the keep-the-prefab sentinel is **−1**, not 0 — writing
 `MaxTotalSpawnedObjects: 0` would not mean "keep", it would set the plant's live-prism
 budget to zero and it would never grow a prism.
+
+### 33.6 The tile colony — one plant, one tile, one crystal (Aug 2026, third pass)
+
+The Schwarz P flora was one large plant sprawling across many tiles. It is now a **population
+of plants that each own exactly one tile** — the same conversion the gyroid got in §32.7, and
+the tile makes it markedly simpler.
+
+**The flat point is the crystal's seat.** Each tile's centre used to carry a prism; it now
+carries the plant's **heart**, one crystal per tile, never growing. The layouts were
+re-measured with the centre excluded, so a level is a set of complete hexagonal shells —
+**6, 18, 36, 60, 90** sites (`3n(n+1)`) — and the shipped flora resolves to **36 prisms per
+plant**. The hole this leaves is not incidental: the centre took part in the relaxation and was
+dropped afterwards, so the innermost shell sits where a real neighbour would hold it and the
+gap is crystal-sized by construction. `verify_schwarz_p_tile_tables.py` asserts the seat is
+empty at every level.
+
+**Territory is one line, because a tile is an exact integer address.** A plant owns tile `T`;
+a bond leading out of `T` belongs to its neighbour, and `SchwarzPAssembler.GetGrowthInfo`
+declines it. That is the whole ownership question. What the gyroid needs for the same job —
+and does *not* need here — is worth listing, because every item exists to paper over float
+drift in a lattice that has no addressing:
+
+| gyroid mechanism | why the tile colony has none |
+|---|---|
+| octagon discovery from danger prisms | a prism is stamped with its tile at birth |
+| `RingMemberToleranceRadius` (2.5u) | membership is an integer, not a coherence test |
+| the "poison band" (2.5–12u) | two plants either agree on an integer or are in different lattices |
+| `TerritoryRadius` (26.5u) | a site belongs to exactly one tile |
+| `OwnershipEpsilon` (0.75u) + contested boundary prisms | there is no boundary to contest |
+| `NearestForeignClaimSqr` spatial-hash scan | the claim book is a dictionary hit |
+| a baked seed **pose** carried through the frontier | the seed is *derived* at birth from the tile address |
+| the per-birth handoff-coherence assert | there is no transcribed rotation to be wrong |
+
+The claim book (`SchwarzPTileRegistry`) is therefore `Dictionary<(frame, tile), plant>` rather
+than a binned spatial hash, and a frontier entry is just `(frame, tile)`.
+
+**The lattice frame is the colony.** A founder anchors a `SchwarzPSurfaceFrame` on its own
+seed prism; every daughter is `Program`med with her mother's frame **by reference**, and
+`EnsureSeeded` early-returns on a non-null frame. So one lineage shares one world anchor, one
+level and one occupancy book, and two plants of a colony cannot disagree about where a site
+is — the gyroid needs a whole registry class to get a weaker version of that. Independent
+founders in one cell hold *different* frames and simply never collide in the book; their
+prisms still cannot overlap, because `PrismSpatialIndex.TryReserve` gates every site, exactly
+as it does for any two floras that meet.
+
+**Reproduction is a population event.** A plant that fills every site of its tile contributes
+its unclaimed **face-adjacent** tiles to `SchwarzPColonyFrontier`; the population then births
+**one** plant per fauna-wave period (`Cell.CurrentFaunaSpawnPeriod`) at a **uniformly random**
+open tile. Random choice across every complete plant is what de-spheres the colony — it
+wanders the way the old single plant wandered prism by prism, now at the level of whole flora.
+
+*Six neighbours, not twelve.* The bond graph also reaches six edge-diagonal tiles, which touch
+this one only at a 4-fold corner by a single bond. The {6,4} tiling's adjacency is the six
+shared **edges** — the six faces of the half-period cube — so the colony grows through faces
+and the surface it builds stays the tiling the tile is defined by. Iterating bonds blindly
+would have offered the diagonals too; that would be an accident, not a choice.
+
+**Completion is exact**, not a fudged prism count: every site of the tile occupied, plus the
+gyroid's pacing conjuncts (no queued orders, two idle ticks, the maturation window) so a plant
+does not parent mid-bloom. The gyroid's `PatchPrisms - 6` slack exists for a 22–28 patch
+spread that cannot happen here.
+
+**Mass is preserved, and the numbers are authored, never typed.**
+`Tools/Build/author_flora_populations.py` now carries both lattice species with **separate**
+unit cells (`LATTICE_PATCH`: gyroid 24 owned / 30 budget, Schwarz P **36 / 36** — exact, with
+no headroom, because there are no boundary prisms to win). Blob: `800 → 22 plants × 36 = 792`.
+Hesperides topiary: `150 → 4 × 36 = 144`.
+
+**Collider budget.** Prism colliders are **unchanged** — mass is preserved and they are still
+phase-LOD managed. The cost is **crystals**: one always-on heart collider per plant, so Blob
+goes **3 → 22** for this species (~9% of `MAX_PLANTS_PER_SPECIES`, which is the dial).
+Hesperides is unchanged at 4.
+
+**Two traps this pass fixed, both the §33.5 lesson repeated for other fields.**
+`SchwarzPFlora.prefab` authored `crystalGrowth: 0.1` and nothing gated it, so a Schwarz
+crystal grew **+0.1 every grow tick, unbounded, forever** — now gated in code *and* authored 0.
+And `CrystalScalePerLevel: 1.2` against Blob's Levels 1..5 gives crystal scales
+3.0 / 3.6 / 4.32 / 5.18 / 6.22 against a hole of about 4.2 units, so **from level 3 up the
+heart burst its own seat** — pinned at 1, exactly as `LeafScalePerLevel` was. On a lattice
+species the geometry owns the size; the plant's level does not.
+
+**Invariants.** *Mass conserved* — no timer, decay or culler; a lowered cap stops production
+and never culls; `cap × 36 ≈ the old budget`. *Continuity of existence* — daughters bloom
+through the standard spawn path, deaths use the existing wither. *One crystal per lifeform* —
+one plant, one tile, one heart, which is exactly what §23.3 requires. *Volume is the spine* —
+the Frenzy gates are checked before every production site, including the population cycle
+(before the pop, so a frozen colony burns no frontier entries). *Territorial permanence* — a
+claim is released only when the plant is destroyed, never by a clock.
+
+**Known follow-ups, deliberately not swept in.** (1) The Hesperides topiary lands at
+`floor = cap = 4`, so it is planted at its ceiling and never reproduces — correct for a clipped
+specimen, inert as a colony; raise its recorded source budget if it should spread. (2) The
+colony machinery is now duplicated between `OctagonMode` and `TileColonyMode`; the honest fix
+is one `ILatticeColony` abstraction, filed rather than done because the gyroid path had just
+shipped. (3) `minHealthBlocks: 5` was 0.6% of an 800-prism plant and is 14% of a 36-prism one.

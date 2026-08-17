@@ -732,7 +732,27 @@ def bonds(sites, factor=1.45):
 # Emit
 # ----------------------------------------------------------------------------
 
-LEVELS = (1, 2, 3, 4, 5, 6)
+# Ring counts to emit. Ring 1 would be the flat point alone, which is now the CRYSTAL
+# site and not a growth site, so it would emit an empty level.
+LEVELS = (2, 3, 4, 5, 6)
+
+
+def drop_center(sites):
+    """Strip the flat point from a relaxed layout.
+
+    The tile's centre is where the plant's CRYSTAL sits - one heart per tile, never
+    growing (Docs/ECOSYSTEM.md 33.6) - so it is not a prism site. It is dropped AFTER
+    the relaxation rather than excluded from it, deliberately: with the centre
+    participating, the innermost shell settles at the distance a real neighbour would
+    hold it, which leaves a correctly-sized hole for the crystal instead of a shell
+    collapsed into the middle.
+
+    Closure under the site group survives the drop, because the flat point is a FIXED
+    POINT of all twelve ops - removing it removes a whole orbit, never part of one."""
+    centre = min(range(len(sites)), key=lambda i: float(np.linalg.norm(sites[i] - CORNER_A)))
+    if float(np.linalg.norm(sites[centre] - CORNER_A)) > 1e-9:
+        raise RuntimeError("expected a site exactly on the flat point")
+    return np.delete(sites, centre, axis=0)
 
 
 def v3(p):
@@ -804,8 +824,9 @@ def main():
     # two numberings for one thing is how a doc ends up naming the wrong level.
     levels_data = {}
     for rings in LEVELS:
-        index = rings - 1
+        index = rings - 2
         sites, count = tile_sites(rings)
+        sites = drop_center(sites)          # the flat point is the crystal, not a prism
         stats = measure_layout(sites, fail, index)
         tangents = site_tangents(sites)
         levels_data[index] = (sites, tangents, stats)
