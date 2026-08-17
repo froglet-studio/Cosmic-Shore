@@ -267,6 +267,20 @@ applies to new abilities, new resources on the meter list, and anything that add
     tucked-at-speed need `Lerp(+hang, -tuck, speed01)`, not `splay * (1 - speed01)`.
     (Scarab hull, 2026-08-15.)
 
+25. **A named accessor that LOOKS like a geometry is often one factor of it.** Rules 4a/4b cover
+    an authored number that isn't the effective one; this is its sibling — a property whose name
+    promises the real dimension while its body carries only the base term, with the multipliers
+    applied at the *use* site. `VesselPrismController.TrailZScale` is `BaseScale.z` alone, but a
+    laid trail prism is `BaseScale.z × ZScaler × boostScale × ∛(MASS volume multiplier)`. The
+    `waitTillOutsideSkimmer` clearance delay divided by the accessor, so an upgraded vessel's
+    prism collider switched on while the prism was still inside the ship — and the symptom
+    ("I clip my own trail after upgrading") points at collision code, not at a scale accessor
+    three files away. **Read the accessor's BODY and compare it to the expression at the spawn
+    site**; if the spawn site multiplies and the accessor does not, the accessor is a base term
+    and every consumer sizing real geometry off it is wrong by the same factor. When you fix one,
+    document the accessor as a base term so the next reader does not re-adopt it.
+    (Self-trail contact, 2026-08-17.)
+
 ## 5. Audit, then hand back verification (you cannot run Unity; the human is the gate)
 
 - State which auditors to run and the expected result: **Audit Vessel Ability Rows**,

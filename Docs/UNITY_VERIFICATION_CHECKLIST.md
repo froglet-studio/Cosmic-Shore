@@ -23,6 +23,52 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Self-trail contact grace (`claude/vessel-self-trail-collision-tp01j3`)
+
+Authored without a Unity compile or play-test. A pilot's hull and skimmer now ignore a prism
+**that pilot laid** for `hullGraceSeconds` / `skimGraceSeconds` (both 1.0 s) after it was laid —
+owner-scoped and time-boxed, never domain-scoped, so another player's *and* a teammate's trail
+stay interactable from the frame they appear. New config `SelfTrailContactConfigSO` +
+`Assets/Resources/SelfTrailContactConfig.asset` (**both the .asset and its .meta were hand-authored
+as YAML — Unity has never imported them**). Guards added at the top of the prism branch in
+`VesselImpactor.AcceptImpactee` and `SkimmerImpactor.AcceptImpactee`, above the shell-ownership
+check. Companion geometry fix in `VesselPrismController.CreateBlock`: the `waitTillOutsideSkimmer`
+clearance delay measured `TrailZScale` (= `BaseScale.z`), omitting both `ZScaler` and the MASS
+volume multiplier, so upgraded vessels' colliders came on while the prism was still inside the
+ship; it now measures `scale.z` with a speed floor and a 2 s ceiling.
+
+**Verify in editor**
+
+1. Project imports clean — confirm `SelfTrailContactConfig.asset` resolves its script (not
+   "missing MonoBehaviour") and shows both grace fields at 1. A hand-written GUID pairing is the
+   single most likely thing to have gone wrong here.
+2. **Squirrel, freestyle:** drift a tight circle — Charge/boost must NOT climb off the ribbon you
+   are laying. Cross trail older than a second — skim energy resumes.
+3. **Dolphin:** bank skim energy, then drift the hull across your own fresh ribbon. Energy and
+   charged boost must NOT halve and there must be NO `VesselImpact` SFX. Against an *older* stretch
+   of your own trail it must still ram, sound, and cost you.
+4. **MASS 5 on the Squirrel** (Heavy Trail → shielded drift prisms) and repeat (2). This is the
+   case that proves the guard sits above the shell-ownership check.
+5. **MPPM, two clients:** trailing pilot skims the leader's trail from the frame it appears and
+   reaches joust range. Repeat with both on the SAME domain — still skims. (A domain-scoped fix
+   would have broken this; it is the regression to watch for.)
+6. **Rhino (regression check):** cutting your own older trail must STILL bank sword energy at the
+   signed-off 0.04/prism. The grace is not expected to reach this vessel — it cannot turn onto its
+   own freshest ribbon inside the window — so any change here is a bug in the grace.
+7. Delete the asset once and confirm the code defaults still apply and the rule still holds.
+
+**First-pass tuning** (starting points, not settled)
+
+| Knob | Value | Notes |
+|---|---|---|
+| `hullGraceSeconds` | 1.0 | Raise if vessels still clip their own ribbon mid-drift. |
+| `skimGraceSeconds` | 1.0 | Lower if self-skim feels dead coming out of a drift. |
+| `MaxClearanceWaitSeconds` | 2.0 | Const guard, not a dial — only reached at very low speed. |
+
+Full record: `Assets/_Scripts/Controller/ImpactEffects/SELF_TRAIL_CONTACT.md`.
+
+---
+
 ### 🔴 Shield morphs → GPU; the last CPU prism ticker deleted (`claude/octahedron-shield-gpu-morph-4nnw1s`)
 
 Authored without a Unity compile or play-test. The octahedron shield's engage bloom and its
