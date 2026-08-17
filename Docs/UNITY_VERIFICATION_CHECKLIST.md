@@ -136,6 +136,24 @@ record: `_Scripts/Controller/Vessel/R_VesselActions/DOLPHIN_CRYSTAL_SEEDING.md` 
     cooldown — the fauna count may be shared between them; that is the documented window limitation,
     not a bug to chase.
 
+**Verification matrix (what was actually verified, and how)**
+
+| System changed | Verified how | Result |
+|---|---|---|
+| `PrismDestructionSight.hlsl` (whole-prism sampling, colour, gain) | **clang compile + run of the shipped file** | Compiles. Deep-inside adds exactly `gain × blue × CORE_FILL`; outside-gape / behind-vessel / past-reach all add exactly 0 |
+| The sight's SPACE range gate | **clang run** — same prism at z=1500 with cone height 2400 vs 1200 | Lights at full reach, dark at half. The gate is real and Space-driven (was previously argued from reading the code) |
+| `EchoSightHalo.shader` | **clang compile + run of the extracted HLSLPROGRAM** | Compiles (found and fixed a non-portable `0.0h` half-literal). Crossover at 756 u, then a constant 59 px diameter to the 2400 u max reach; x/y pixel extents equal at every depth (circular, not elliptical) |
+| `BlastProfileGraphic` outline | **Off-engine Python sim** over 5 (L, R, rotation) cases | Convex, non-self-intersecting; area within 2% of the exact stadium at 10 segments/cap; max vertex step = 2L (the straight edge), proving no jump across the interior |
+| All 7 hand-authored YAML component blocks | **Mechanical key↔field parity** vs the C# classes and their bases | Zero unknown keys (the only "unknowns" are `MaskableGraphic`'s own package-side fields) |
+| `EchoSightHalo.mat` ↔ shader | **Set comparison** of Properties / material entries / CBUFFER members | All three sets identical — no property that fails to upload, none MPB-only |
+| New assets (4 GUIDs) | **GUID uniqueness + meta pairing + m_Script resolution sweep** | Each GUID appears in exactly one `.meta`; no orphan/missing metas; every unresolved `m_Script` in the changed prefabs is a pre-existing package script |
+| Deleted prefab sub-objects (pips ×2, ReachBar) | **Repo-wide fileID sweep** | Zero references anywhere |
+| Removed/renamed public members (12) | **Repo-wide grep per member** | Zero stragglers; every re-signed member's call sites migrated |
+| `VesselAbilityRowWirer` idempotency | **Tool constants diffed against the shipped prefab** | All four band pairs match to 1e-6; Dolphin slot names match the prefab — running it is a no-op |
+| Conditional-compilation guards | `Tools/Build/check_conditional_compilation.py` | OK (1676 files) |
+| **All C# on the branch** | **NOT COMPILED — impossible in this container** (no Unity managed DLLs, no `dotnet`/`mcs`/`csc`). Verified instead by mechanical symbol checking: every interface member dereferenced, every namespace, every call site, every serialized field name | Consistent, but **the editor is the compile gate** |
+| **Everything in play** (look, feel, tuning, DOTS-instanced fragment matrix) | **NOT VERIFIED** — steps 1–17 above are the gate | Human required |
+
 **First-pass tuning (not settled)**
 
 | knob | asset | value |
