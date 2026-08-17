@@ -670,3 +670,47 @@ Jade's base face is a deep blue. Two things keep it clear — the cast is delibe
 tier visible rather than flooding it. If a lit shielded prism ever starts reading as a tier change,
 **lower the gain before touching the hue** (`Docs/PALETTE.md` — the tier colours are the language;
 do not borrow their space).
+
+---
+
+## 13. Compiled and measured (2026-08-17, ship-deep)
+
+Both hand-written shader files were **compiled with clang and executed** — the shipped files from
+the repo, under a short listed substitution set, against a stubbed URP surface
+(`/asset-surgery` §4.5c). This is stronger than the numpy ports above: it validates the FILE, not a
+transcription of it. It immediately found one defect — `half4(..., 0.0h)` in the halo's fragment
+return, a half-literal suffix whose support is not portable across shader compilers and which buys
+nothing; now `0.0`.
+
+**The sight's volume gate, measured** (apex at origin, axis +z, gape +y, added light in blue):
+
+| prism origin | cone height | added light | |
+|---|---|---|---|
+| on-axis, z=500 | 2400 | 0.2450 | `gain 0.7 × blue 1.0 × CORE_FILL 0.35` exactly |
+| y=148, z=500 (on the gape segment) | 2400 | 0.2450 | clamped onto the segment → still deep inside |
+| y=200, z=500 (off the segment) | 2400 | **0** | outside the capsule radius |
+| z=−500 (behind the vessel) | 2400 | **0** | the apex near-clip |
+| z=3000 | 2400 | **0** | **past reach** |
+| z=1500 | **1200** (Space halved) | **0** | **the SPACE gate — the same point lights at full reach and goes dark at half** |
+
+The last two rows are the direct evidence for §11's claim that the range gate is real and is driven
+by Space. It was previously argued from reading the code; it is now measured.
+
+**The halo's distance independence, measured** (hull 10, `haloScale` 2.4, floor 0.055, 1920×1080):
+
+| depth | NDC x / y | pixels x / y | |
+|---|---|---|---|
+| 100 | 0.2338 / 0.4157 | 224.5 / 224.5 | circular, world-sized |
+| 500 | 0.0468 / 0.0831 | 44.9 / 44.9 | circular, world-sized |
+| 756 | 0.0309 / 0.0550 | 29.7 / 29.7 | crossover |
+| 1000 | 0.0309 / 0.0550 | 29.7 / 29.7 | **floor holding** |
+| 2400 | 0.0309 / 0.0550 | 29.7 / 29.7 | **floor holding** — 59 px diameter at max reach |
+
+Equal x/y pixel extents at every depth prove the aspect correction in the SHIPPED code, not just in
+the Python port. The fragment profile peaks at the ring (2.60 at `d = 1/2.4`) against 1.40 at the
+centre, so the ring is the brightest feature as designed.
+
+Harness: `clang++ -std=c++17 -Wall` over `PrismDestructionSight.hlsl` verbatim and the
+`EchoSightHalo` HLSLPROGRAM body, with `ext_vector_type` float2/3/4, HLSL-shaped
+`abs`/`min`/`max`/`pow`/`exp`, and stubs for `GetObjectToWorldMatrix` / `TransformObjectToWorld` /
+`TransformWorldToHClip` / `UNITY_MATRIX_P` / `_ScreenParams`.

@@ -168,7 +168,7 @@ Shader "CosmicShore/EchoSightHalo"
                 float amount = (glow + ring * _RingGain) * max(_Intensity, 0.0);
 
                 // Additive: alpha is unused by Blend One One, so the colour carries everything.
-                return half4(_HaloColor.rgb * amount, 0.0h);
+                return half4(_HaloColor.rgb * amount, 0.0);
             }
             ENDHLSL
         }
