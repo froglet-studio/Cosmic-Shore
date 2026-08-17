@@ -115,6 +115,7 @@ namespace CosmicShore.Gameplay
             // drop the bookkeeping (a game-mode turn reset, the cell-swap drain) still call
             // ClearTrails() themselves - and Clear() now un-stamps membership so even those
             // leave honest container-less prisms behind, never members of an empty list.
+        }
 
         /// <summary>Initializes and starts spawning.</summary>
         public void Initialize(IVesselStatus vesselStatus)
