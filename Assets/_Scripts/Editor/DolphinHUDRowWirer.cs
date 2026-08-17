@@ -17,15 +17,19 @@ namespace CosmicShore.Editor
     /// 80×80 <c>Icon</c>. The numbers below are lifted verbatim from SquirrelHUDVariant.prefab,
     /// which established them — change them here and you are changing the fleet, so don't.
     ///
-    ///   Charge → CrystalIcon   (+2 omni-crystal carry pips)  "Twin Seed"
-    ///   Mass   → Boost Display (the authored 11-step ring)    "Hard Wake"
-    ///   Space  → BlastIcon     (+ a prism tally)              "Clean Blast"
-    ///   Time   → JawIcon       (the vessel's own jaw halves)  "Live Current"
+    ///   Charge → ProfileIcon   (a generated blast-profile mesh) "Pilot Echo"
+    ///   Mass   → CrystalIcon   (the seeding recharge fill)       "Claimed Seed"
+    ///   Space  → JawIcon       (jaw halves + reach bar + tally)  "Clean Blast"
+    ///   Time   → Boost Display (the authored 11-step ring)       "Live Current"
     ///
-    /// The Mass slot is the Dolphin's PRE-EXISTING boost gauge, adopted into the row rather than
-    /// replaced. This tool never creates it — if 'Boost Display' is missing from the Mass band the
+    /// The Time slot is the Dolphin's PRE-EXISTING boost gauge, adopted into the row rather than
+    /// replaced. This tool never creates it — if 'Boost Display' is missing from the Time band the
     /// slot is left unbound and reported, because re-authoring that widget from scratch would throw
     /// away art the vessel already ships.
+    ///
+    /// The Charge slot's ProfileIcon is a TRANSPARENT container, the same arrangement JawIcon uses:
+    /// the visible gauge is its generated child, so the row's upgrade signal and the live readout
+    /// can never contest one object.
     ///
     /// Idempotent: it finds objects by name and only re-binds, so running it on the authored prefab
     /// changes nothing. Sprites are never touched — art is an authoring decision.
@@ -42,10 +46,10 @@ namespace CosmicShore.Editor
         const float BandYMax = 0.1665395f;
         static readonly (string slot, float xMin, float xMax)[] Bands =
         {
-            ("Crystal", 0.68481258f, 0.76293758f),
-            ("Drift",   0.75652886f, 0.83465386f),
-            ("Blast",   0.82824515f, 0.90637015f),
-            ("Jaw",     0.89996143f, 0.97808643f),
+            ("Profile", 0.68481258f, 0.76293758f),
+            ("Crystal", 0.75652886f, 0.83465386f),
+            ("Jaw",     0.82824515f, 0.90637015f),
+            ("Drift",   0.89996143f, 0.97808643f),
         };
 
         [MenuItem("FrogletTools/Vessels/Wire Dolphin Ability Row")]
@@ -86,44 +90,48 @@ namespace CosmicShore.Editor
                 brt.anchoredPosition = Vector2.zero;
                 brt.sizeDelta = Vector2.zero;
 
-                // Mass is the adopted boost ring, not a generated icon.
+                // Time is the adopted boost ring, not a generated icon.
                 icons[i] = slot == "Drift"
                     ? FindBoostRing(button.transform)
                     : EnsureIcon(button.transform, $"{slot}Icon");
             }
 
-            var crystal = icons[0];
-            var drift = icons[1];
-            var blast = icons[2];
-            var jaw = icons[3];
+            var profile = icons[0];
+            var crystal = icons[1];
+            var jaw = icons[2];
+            var drift = icons[3];
 
             if (!drift)
-                Debug.LogWarning("[DolphinHUDRowWirer] The Mass band has no 'Boost Display' — the " +
+                Debug.LogWarning("[DolphinHUDRowWirer] The Time band has no 'Boost Display' — the " +
                                  "boost ring is missing from this HUD. Restore it rather than " +
                                  "letting this tool draw a replacement.", view);
+
+            // The Charge slot's icon is a transparent CONTAINER; the generated profile is the gauge.
+            MakeTransparentContainer(profile);
+            var profileGraphic = EnsureProfile(profile.transform);
 
             // The recharge wipe. (The boost ring steps through authored sprites instead.)
             crystal.type = Image.Type.Filled;
             crystal.fillMethod = Image.FillMethod.Radial360;
 
-            var pip0 = EnsurePip(crystal.transform, "CrystalPip0", -18f);
-            var pip1 = EnsurePip(crystal.transform, "CrystalPip1", 18f);
             var jawUpper = EnsureJawHalf(jaw.transform, "JawUpper");
             var jawLower = EnsureJawHalf(jaw.transform, "JawLower");
-            var blastText = EnsureBlastText(blast.transform);
+            var reach = EnsureReachBar(jaw.transform);
+            var blastText = EnsureBlastText(jaw.transform);
 
             var so = new SerializedObject(view);
+            Bind(so, "blastProfile", profileGraphic);
             Bind(so, "crystalIcon", crystal);
-            BindList(so, "crystalPips", pip0, pip1);
             Bind(so, "driftBoostIcon", drift);
-            Bind(so, "blastIcon", blast);
             Bind(so, "blastCountText", blastText);
             Bind(so, "jawUpper", jawUpper);
             Bind(so, "jawLower", jawLower);
+            Bind(so, "reachFill", reach);
 
             // Every Dolphin icon is a live gauge, so colour is already spoken for, and these four
-            // are busy enough (pip row, stepped ring, tally, jaw pair) that a corner badge just
-            // clutters them - the upgrade signal rides the persistent scale bump alone here.
+            // are busy enough (generated profile, recharge wipe, jaw pair + reach + tally, stepped
+            // ring) that a corner badge just clutters them - the upgrade signal rides the persistent
+            // scale bump alone here.
             var tint = so.FindProperty("tintIconOnUpgrade");
             if (tint != null) tint.boolValue = false;
             var badge = so.FindProperty("showUpgradeBadge");
@@ -162,15 +170,6 @@ namespace CosmicShore.Editor
             if (prop != null) prop.objectReferenceValue = value;
         }
 
-        static void BindList(SerializedObject so, string field, params Object[] values)
-        {
-            var prop = so.FindProperty(field);
-            if (prop == null) return;
-            prop.arraySize = values.Length;
-            for (int i = 0; i < values.Length; i++)
-                prop.GetArrayElementAtIndex(i).objectReferenceValue = values[i];
-        }
-
         /// <summary>
         /// The adopted boost gauge's own Image — the stepped ring. Never created here: it is
         /// authored art with a nested glyph, so a missing one is a fault to report, not to paper
@@ -207,18 +206,55 @@ namespace CosmicShore.Editor
             return image;
         }
 
-        static Image EnsurePip(Transform parent, string name, float x)
+        /// <summary>
+        /// Strips a slot's icon back to an invisible container. Sprites are otherwise never touched
+        /// by this tool (art is an authoring decision) — the exception is a slot whose gauge is a
+        /// generated child, where a leftover sprite would draw UNDER the readout.
+        /// </summary>
+        static void MakeTransparentContainer(Image icon)
         {
-            var go = EnsureChild(parent, name);
+            if (!icon) return;
+            icon.sprite = null;
+            icon.type = Image.Type.Simple;
+            icon.color = new Color(1f, 1f, 1f, 0f);
+        }
+
+        static BlastProfileGraphic EnsureProfile(Transform parent)
+        {
+            var go = EnsureChild(parent, "Profile");
+            var graphic = go.GetComponent<BlastProfileGraphic>();
+            if (!graphic) graphic = go.AddComponent<BlastProfileGraphic>();
+
+            var rect = go.GetComponent<RectTransform>();
+            rect.anchorMin = rect.anchorMax = rect.pivot = new Vector2(0.5f, 0.5f);
+            rect.anchoredPosition = Vector2.zero;
+            rect.sizeDelta = new Vector2(IconSize * 0.9f, IconSize * 0.9f);
+            graphic.raycastTarget = false;
+            return graphic;
+        }
+
+        /// <summary>
+        /// The Space slot's reach bar: a thin left-filling sliver under the jaws. Deliberately small
+        /// and low-alpha — reach only moves when the Space element moves, so a loud gauge would
+        /// shout a number that is constant for minutes at a time.
+        /// </summary>
+        static Image EnsureReachBar(Transform parent)
+        {
+            var go = EnsureChild(parent, "ReachBar");
             var image = go.GetComponent<Image>() ? go.GetComponent<Image>() : go.AddComponent<Image>();
 
             var rect = go.GetComponent<RectTransform>();
             rect.anchorMin = rect.anchorMax = new Vector2(0.5f, 0.5f);
-            rect.pivot = new Vector2(0.5f, 0f);
-            rect.sizeDelta = new Vector2(22f, 22f);
-            rect.anchoredPosition = new Vector2(x, -14f);
+            rect.pivot = new Vector2(0f, 0.5f);
+            rect.sizeDelta = new Vector2(64f, 3f);
+            rect.anchoredPosition = new Vector2(-32f, -18f);
+
             image.raycastTarget = false;
-            image.preserveAspect = true;
+            image.preserveAspect = false;
+            image.type = Image.Type.Filled;
+            image.fillMethod = Image.FillMethod.Horizontal;
+            image.fillOrigin = (int)Image.OriginHorizontal.Left;
+            image.color = new Color(1f, 1f, 1f, 0.35f);
             return image;
         }
 
@@ -250,9 +286,11 @@ namespace CosmicShore.Editor
 
             var rect = go.GetComponent<RectTransform>();
             rect.anchorMin = rect.anchorMax = new Vector2(0.5f, 0.5f);
-            rect.pivot = new Vector2(0.5f, 0f);
-            rect.sizeDelta = new Vector2(IconSize, 28f);
-            rect.anchoredPosition = new Vector2(0f, -18f);
+            // Its own row beneath the jaws AND the reach bar, and wider than the icon, so a
+            // five-figure claim renders at full size instead of auto-shrinking into the gape.
+            rect.pivot = new Vector2(0.5f, 1f);
+            rect.sizeDelta = new Vector2(120f, 30f);
+            rect.anchoredPosition = new Vector2(0f, -26f);
 
             text.alignment = TextAlignmentOptions.Center;
             text.fontSize = 22f;

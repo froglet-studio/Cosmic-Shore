@@ -8,20 +8,31 @@ namespace CosmicShore.Gameplay
     /// <summary>
     /// Drives the Dolphin's four ability gauges. Element → icon, in the fleet order:
     ///
-    ///   Charge → crystal seeding: carry pips + the recharge fill, polled off the deploy executor
-    ///   Mass   → drift trail:     the boost banked while drifting
-    ///   Space  → cone blast:      a flash plus how many prisms the last cone claimed
-    ///   Time   → skim energy:     the jaw gape, which IS the width of the next blast
+    ///   Charge → Echo Sight:      the blast's cross-section profile, plus whether the sight is held
+    ///   Mass   → crystal seeding: the recharge fill, and which crystal tier the next cycle plants
+    ///   Space  → cone blast:      the jaw gape, the reach bar, and what the last cone claimed
+    ///   Time   → charge fill rate: the boost banked while drifting
     ///
     /// Energy is bound BY NAME rather than by index. It used to be an index, and the prefab had it
     /// pointing at Boost — a meter ChargeBoostActionExecutor writes through CurrentAmount directly,
     /// which never raises OnResourceChanged, so the readout could not move even in principle. A
     /// name survives the resource list being reordered; the serialized index stays as the fallback.
+    ///
+    /// <para>The blast PROFILE and the REACH are polled rather than event-driven, because both are
+    /// functions of an element level and the live energy meter at once and neither has a single
+    /// channel that fires on every input to them. Both pushes are guarded inside the view, so a
+    /// poll that finds nothing changed rebuilds nothing.</para>
     /// </summary>
     public class DolphinVesselHUDController : VesselHUDController
     {
         [Header("View")]
         [SerializeField] private DolphinVesselHUDView view;
+
+        [Header("Blast readouts")]
+        [Tooltip("The crystal-impact blast whose profile the Charge slot draws and whose reach the " +
+                 "Space slot's bar measures. The SAME asset the vessel actually detonates and the " +
+                 "Echo Sight previews - never a HUD-local copy of those numbers.")]
+        [SerializeField] private VesselExplosionByCrystalEffectSO blastEffect;
 
         [Header("Resource Binding")]
         [Tooltip("Resource that holds the skim ENERGY the jaws display. Matched by name first so a " +
@@ -29,13 +40,14 @@ namespace CosmicShore.Gameplay
         [SerializeField] private string energyResourceName = "Energy";
         [Tooltip("Fallback slot used only when no resource matches the name above.")]
         [SerializeField] private int energyResourceIndex;
-        [Tooltip("Resource holding the boost charged while drifting (the Mass icon's gauge).")]
+        [Tooltip("Resource holding the boost charged while drifting (the Time icon's gauge).")]
         [SerializeField] private string driftBoostResourceName = "Boost";
         [SerializeField] private int driftBoostResourceIndex = 1;
 
         ResourceSystem _resources;
         IVesselStatus _status;
         DeployTeamCrystalActionExecutor _crystalExecutor;
+        EchoSightActionExecutor _sightExecutor;
 
         int _energyIndex = -1;
         int _driftBoostIndex = -1;
@@ -49,6 +61,9 @@ namespace CosmicShore.Gameplay
         // Last seeding count pushed to the view, so a passive seeding can be told from the first
         // frame after a bind. -1 means "not seeded yet", which never reads as a beat.
         int _lastSeedCount = -1;
+
+        // Cached so the reach bar's denominator is resolved once rather than per frame.
+        float _maxReach;
 
         // True only for a local human pilot's Dolphin - the one cockpit that actually gets drawn.
         bool _drawGauges;
@@ -83,17 +98,22 @@ namespace CosmicShore.Gameplay
             _driftBoostIndex = ResolveResource(driftBoostResourceName, driftBoostResourceIndex);
 
             // base.Initialize already ran view.Initialize() on this same component - do not run it
-            // twice, it would reset the pip row and the jaw gape a second time.
+            // twice, it would reset the jaw gape and the crystal tint a second time.
 
             // A vessel swap re-runs Initialize on a live controller, so detach before attaching or
             // every handler fires twice and OnDisable's single -= only removes one of them.
             Rebind();
 
-            var hull = vesselStatus.Vessel?.Transform
-                ? vesselStatus.Vessel.Transform.GetComponentInChildren<RiptideAnimation>(true)
+            var vesselTransform = vesselStatus.Vessel?.Transform;
+            var hull = vesselTransform ? vesselTransform.GetComponentInChildren<RiptideAnimation>(true) : null;
+
+            // Both executors live on THIS vessel, so they are looked up on its own transform - never
+            // by type across the scene, which would silently bind another vessel's component.
+            _crystalExecutor = vesselTransform
+                ? vesselTransform.GetComponentInChildren<DeployTeamCrystalActionExecutor>(true)
                 : null;
-            _crystalExecutor = vesselStatus.Vessel?.Transform
-                ? vesselStatus.Vessel.Transform.GetComponentInChildren<DeployTeamCrystalActionExecutor>(true)
+            _sightExecutor = vesselTransform
+                ? vesselTransform.GetComponentInChildren<EchoSightActionExecutor>(true)
                 : null;
 
             // One source for the gape: the HULL's authored angle RANGE. The cockpit jaws and the
@@ -101,6 +121,8 @@ namespace CosmicShore.Gameplay
             // so they must not drift apart through separately-authored numbers. The minimum is not
             // zero: the blast is a short capsule even at rest.
             if (hull) view.SetJawAngleRange(hull.MinJawAngleDegrees, hull.MaxJawAngleDegrees);
+
+            _maxReach = blastEffect ? blastEffect.MaxReach : 0f;
 
             SeedFromResources();
         }
@@ -147,14 +169,22 @@ namespace CosmicShore.Gameplay
 
         void Update()
         {
-            if (!view || _crystalExecutor == null) return;
+            if (!view || !_drawGauges) return;
 
-            // Crystal seeding is PASSIVE: nothing is carried, so the slot shows the cycle's yield
-            // (2 once Twin Seed lands) and the recharge fill, which grows 0 -> 1 as the next
-            // seeding arms.
+            PushCrystalSeeding();
+            PushBlastProfile();
+            PushReach();
+        }
+
+        // Crystal seeding is PASSIVE: nothing is carried, so the slot shows the recharge fill (0 -> 1
+        // as the next seeding arms) and which crystal tier that cycle will plant.
+        void PushCrystalSeeding()
+        {
+            if (_crystalExecutor == null) return;
+
             view.SetCrystalSeedState(
-                _crystalExecutor.SeedsPerCycle,
-                1f - _crystalExecutor.CooldownRemaining01);
+                1f - _crystalExecutor.CooldownRemaining01,
+                _crystalExecutor.SeedsTeamCrystal);
 
             // The pilot gives no input for this ability and may be facing anywhere when it fires,
             // so the planted beat is edge-detected off the executor's own counter and punched onto
@@ -164,6 +194,29 @@ namespace CosmicShore.Gameplay
             if (_lastSeedCount >= 0 && seeds > _lastSeedCount)
                 view.PulseCrystalSeeded();
             _lastSeedCount = seeds;
+        }
+
+        // The Charge slot draws the blast's cross-section, which is a live function of BOTH the
+        // Charge level (thickness) and the energy meter (extent) - so it is polled rather than
+        // hung off either one's change event.
+        void PushBlastProfile()
+        {
+            if (!blastEffect || _status == null) return;
+
+            if (blastEffect.TryResolveProfile(_status, out var radius, out var halfLength, out var reference))
+                view.SetBlastProfile(radius, halfLength, reference);
+
+            if (_sightExecutor) view.SetSightEngaged(_sightExecutor.IsEngaged);
+        }
+
+        // Reach moves only when Space moves, so this is cheap and the view's own guard drops the
+        // unchanged pushes before they reach a tween.
+        void PushReach()
+        {
+            if (!blastEffect || _status == null || _maxReach <= 0f) return;
+            if (!blastEffect.TryResolveReach(_status, out float reach, out _)) return;
+
+            view.SetReachNormalized(reach / _maxReach);
         }
 
         /// <summary>

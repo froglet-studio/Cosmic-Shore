@@ -33,7 +33,7 @@ executor, replicated unlock bits, no new fundamentals).
 |---|---|
 | Sparrow | Space→gun range (9.0) · Time→boost speed (1.5, now on an **indefinite** boost — see §2 Sparrow) · Mass→turret prism stretch (2.5) **+ in-flight round growth (3× at rest → 6× at Mass 10, authored on `FullAutoAction.asset`)** · Charge→skyburst blast (asset range 100→170) |
 | Manta | Charge→overcharge detonation blast (1.75) · Mass→overcharge harvest capacity (1.75) · Space→Yawstery turn rate (1.6) |
-| Dolphin | Charge→charge-boost peak (1.5) · Time→charge fill rate (1.5) · Space→blast size + the Echo Sight on RT |
+| Dolphin | Charge→blast capsule THICKNESS (0.75× at rest → 1.5× at level 10) + the Echo Sight on RT · Mass→crystal-seeding recharge (0.5) · Space→blast reach (2.0) · Time→charge fill rate (1.5) |
 | Rhino | Mass→trail slab max size (1.5) |
 | Serpent | Time→boost duration (1.6) |
 | Squirrel | **All four LIVE (approved + shipped, see §2 Squirrel)**: Charge→skim energy per prism hit (map 2.0, read in `SkimmerBoostPrismEffectSO`) · Mass→trail prism VOLUME (authored `trailVolume` ElementalFloat 1→2.5 on `VesselPrismController`, cube-root per axis) · Space→skimmer reach (authored skimmer `Scale` ElementalFloat 15→30) · Time→boost-ring cooldown (authored `cooldownMultiplierAtFullTime` 0.5 on `SquirrelTubeActionSO`; the generic map Time multiplier stays 1.0 because `VesselTransformer` consumes it for boost speed). The former Time→top speed mapping was REMOVED (prefab `ThrottleScalerMultiplier` disabled) — one parameter per element. |
@@ -148,12 +148,39 @@ and the Echo Sight, added 2026-08-14 when the right trigger was freed).
 
 **2026-08-14 — the two abilities swapped which one carries an input.** Charge's crystal seeding
 became PASSIVE (a cooldown loop that seeds team crystals into the cell's cytoplasm), which freed
-the right trigger for Space's **Echo Sight**: hold it and every prism inside the blast's current
+the right trigger for the **Echo Sight**: hold it and every prism inside the blast's current
 destruction volume lights up (a zoomed first-person view shipped alongside it and was cut the same
-day — the highlight alone carries the ability and it leaves the speed tunnel untouched). Neither element→ability
-binding moved — Charge still owns the recharge, Space still owns the reach — only which of them
-has an input. Rationale, placement rules and the FOV-vs-speed-tunnel resolution:
-`DOLPHIN_CRYSTAL_SEEDING.md`.
+day — the highlight alone carries the ability and it leaves the speed tunnel untouched).
+Rationale, placement rules and the FOV-vs-speed-tunnel resolution: `DOLPHIN_CRYSTAL_SEEDING.md`.
+
+**2026-08-17 — the map was re-cut so each element owns one DIMENSION of the one weapon.** The
+Dolphin has essentially a single offensive act (bank energy by skimming, fly into a crystal,
+release a cone), so the elements were re-assigned to the orthogonal axes of that act rather than
+to four loosely-related mechanics:
+
+- **Charge took the Echo Sight AND the blast's THICKNESS** — the capsule's diameter across the
+  beam, 0.75× the authored core at the resting level rising to 1.5× at level 10
+  (`_coreMultiplierAtRestCharge` / `_coreMultiplierAtFullCharge`). Note this is the fleet's first
+  use of `ElementalScaling.MultiplierFromRest`: the pair does NOT anchor at 1 at rest, so the
+  authored core is what a MID-charge Dolphin fires and a fresh pilot's beam is deliberately
+  thinner. Sight and thickness share the slot because the profile you are widening is the profile
+  the sight draws. Its L5 became **Pilot Echo** (vessels inside the volume light up in their own
+  domain colour), replacing Twin Seed.
+- **Mass took crystal seeding** from Charge — the recharge multiplier moved with it
+  (`cooldownMultiplierAtFullMass`, `[FormerlySerializedAs]` on the old Charge name). Its L5 is
+  **Claimed Seed**: below it the seed is a free-for-all OMNI crystal wearing the lime CTA (your
+  own ammunition, standing in open space, for whoever reaches it first); at Mass 5 it lands
+  TEAM-locked. **Twin Seed is retired** — the yield is one crystal per cycle at every level.
+- **Mass gave up the trail entirely.** `trailVolume` is disabled and `massUpgradeShieldsTrail` is
+  off on `Dolphin.prefab`; the Dolphin no longer grows its drift prisms or shields them. (The
+  machinery stays — it is the Squirrel's Heavy Trail — it is simply no longer wired here.)
+- **Space narrowed to REACH only.** It still scales the blast self-similarly through
+  `_heightMultiplierAtFullSpace`; what changed is that Charge now moves the capsule diameter on
+  top of that, so the three elements own three orthogonal dimensions and none can steal what
+  another bought: **energy → gape · Charge → thickness · Space → reach**.
+- **Time is unchanged** (charge fill rate, Live Current).
+
+The HUD row was re-cut to match — see the table below and `DOLPHIN_CRYSTAL_SEEDING.md`.
 
 The Dolphin's spine is an ENERGY economy: skimming banks energy, hitting a prism halves it,
 and hitting a crystal spends it ALL at once to release a blast. Energy sets the blast's GAPE,
@@ -168,9 +195,9 @@ exact jaw-angle curve: `DOLPHIN_ENERGY_ECONOMY.md` §1 and §3.
 
 | Element | Quantitative (LIVE) | L5 upgrade (LIVE) |
 |---|---|---|
-| Charge | team-crystal recharge ×0.5 at level 10 (`DeployTeamCrystalActionSO.cooldownMultiplierAtFullCharge`, floored by `minCooldown`). The ability is **PASSIVE** since 2026-08-14 — no input; it seeds into the cell's cytoplasm on a loop, so this multiplier sets the seeding tempo and therefore the blast's tempo | **Twin Seed** — each seeding plants TWO team crystals instead of one (`upgradedSeedsPerCycle`). Was a CARRY limit until the ability went passive; nothing is carried now |
-| Mass | drift prism VOLUME (`trailVolume` ElementalFloat 1→2.5 on `VesselPrismController`, cube-root per axis) | **Hard Wake** — drift prisms arrive shielded, gated on `IsDrifting` (`massUpgradeShieldsTrail`, the Squirrel's Heavy Trail machinery) |
-| Space | crystal-impact blast SIZE ×2 at level 10 (`VesselExplosionByCrystalEffectSO._heightMultiplierAtFullSpace`). Scales the blast **self-similarly** — reach, capsule length AND capsule diameter together — because the angles ARE those over height, and energy owns the gape. Since 2026-08-14 this slot also carries the **Echo Sight** on the right trigger (`EchoSightActionSO`) — hold it and the blast's live destruction volume lights up on the mass standing in it, which is how Space's reach becomes legible | **Clean Blast** — the blast spares the pilot's own domain (`_spaceUpgradeSparesAllies` → `InitializeStruct.AffectSelfOverride`). Below the unlock the cone is indiscriminate, which is what makes sparing allies worth earning |
+| Charge | crystal-blast capsule **THICKNESS** — the width across the beam, `0.75×` the authored `_coreExplosionScale` at the resting level rising to `1.5×` at level 10 (`VesselExplosionByCrystalEffectSO._coreMultiplierAtRestCharge/_coreMultiplierAtFullCharge`, floored by `_minCoreMultiplier`). Total extent across the gape is set by ENERGY, so Charge does not enlarge the blast — it redistributes that extent, trading a long thin beam for a fat round one. Carries the **Echo Sight** on the right trigger (`EchoSightActionSO`) | **Pilot Echo** — the sight lights up VESSELS caught in the same volume, each brightened in its own domain's colours (`EchoSightVesselHighlighter` drives `_ColorMultiplier` on `VesselGraph`; `BlastVolume.Contains` is the CPU transcription of the same predicate the sweep job and the prism shader run) |
+| Mass | crystal-seeding recharge ×0.5 at level 10 (`DeployTeamCrystalActionSO.cooldownMultiplierAtFullMass`, floored by `minCooldown`). The ability is **PASSIVE** — no input; it seeds into the cell's cytoplasm on a loop, so this multiplier sets the seeding tempo and therefore the blast's tempo | **Claimed Seed** — the seed lands TEAM-locked instead of as a free-for-all omni crystal (`upgradedCrystalPrefab` = `TeamCrystal.prefab`, plus the `ownDomain` stamp that IS `Crystal.CanBeCollected`'s gate). Below it your ammunition is anyone's |
+| Space | crystal-impact blast **REACH** ×2 at level 10 (`VesselExplosionByCrystalEffectSO._heightMultiplierAtFullSpace`). Scales the blast self-similarly (reach and base diameter together) because the half-angle IS baseRadius/height; Charge's thickness multiplier composes on top of it and moves only the capsule diameter | **Clean Blast** — the blast spares the pilot's own domain (`_spaceUpgradeSparesAllies` → `InitializeStruct.AffectSelfOverride`). Below the unlock the cone is indiscriminate, which is what makes sparing allies worth earning |
 | Time | boost charge RATE while drifting ×1.5 at level 10 (`ChargeBoostActionSO.chargeRateMultiplierAtFullTime`) | **Live Current** — skimming a DANGER prism grants 3× energy (`SkimmerChangeResourceByPrismEffectSO._dangerBonusElement/_dangerBonusMultiplier`; the Squirrel's Live Wire shape — the risk was always there, the reward is now earned) |
 
 All four map `MultiplierAtFullLevel` are pinned to **1** — every scaling above is authored on its

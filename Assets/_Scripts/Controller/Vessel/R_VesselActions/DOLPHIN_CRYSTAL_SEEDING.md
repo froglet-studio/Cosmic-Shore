@@ -30,6 +30,11 @@ dropped the only reason to touch the speed tunnel's FOV at all. See §2.
 Charge still owns the recharge; Space still owns the reach. Neither element→ability binding moved —
 only which of them carries an input.
 
+> **Superseded 2026-08-17 by §8.** The element→ability bindings HAVE since moved: Charge took the
+> Echo Sight and the blast's thickness, Mass took crystal seeding, Space narrowed to reach, and the
+> HUD row was re-cut to match. §1 and §2 below still describe the mechanics correctly — read
+> "Charge owns the seeding" as "Mass owns the seeding", and see §8 for everything that changed.
+
 ---
 
 ## 1. Charge: passive crystal seeding
@@ -67,10 +72,11 @@ correct while the ability was on the right trigger, and dead the moment it becam
 now wired **directly** on the executor (`config`), with the binding sweep kept only as a fallback for
 a vessel that still lists the action against an input. A missing wire is visible in the inspector.
 
-### Twin Seed (Charge L5)
+### Twin Seed (Charge L5) — RETIRED 2026-08-17
 
-The upgrade used to raise a **carry** limit — meaningless once nothing is carried. It is now a
-**yield**: each seeding plants two crystals instead of one. The HUD art is unchanged; see §3.
+The upgrade used to raise a **carry** limit — meaningless once nothing is carried — and then became
+a **yield** of two crystals per cycle. Both are gone: the ability moved to Mass, whose L5 changes the
+crystal's TIER rather than its count (§8). One crystal per cycle at every level.
 
 ---
 
@@ -174,8 +180,10 @@ placement from the binding, so nothing is hand-positioned.
 | `cooldown` / `minCooldown` | `DeployTeamCrystalAction` | Seeding tempo, and therefore blast tempo |
 | `bandInnerFraction` / `bandOuterFraction` | " | Where in the cytoplasm crystals land (0..1 across nucleus→membrane) |
 | `maxLiveSeeded` | " | How many of this Dolphin's crystals may stand at once (0 = uncapped) |
-| `upgradedSeedsPerCycle` | " | Twin Seed's yield |
-| `cooldownMultiplierAtFullCharge` | " | Charge's grip on the recharge |
+| `cooldownMultiplierAtFullMass` | " | Mass's grip on the recharge (was `...AtFullCharge`; `[FormerlySerializedAs]` carries old assets over) |
+| `crystalPrefab` / `upgradedCrystalPrefab` | `Dolphin.prefab` ▸ `DeployTeamCrystalActionExecutor` | The omni seed and the Mass-5 team seed |
+| `_coreMultiplierAtRestCharge` / `_coreMultiplierAtFullCharge` / `_minCoreMultiplier` | `DolphinVesselExplosionByCrystalEffect` | Charge's grip on the blast's THICKNESS |
+| `vesselHighlightFadeSeconds` / `vesselHighlightGain` | `Dolphin.prefab` ▸ `EchoSightActionExecutor` | Pilot Echo's bloom time and brightness |
 | `transitionSeconds` | `EchoSightAction` | Highlight fade in/out |
 | `highlightStrength` | " | Peak highlight |
 | `PRISM_SIGHT_COLOR` / `_GAIN` / `_EDGE_POWER` / `_CORE_FILL` | `PrismDestructionSight.hlsl` | The highlight's look |
@@ -201,7 +209,10 @@ complete, 4/4 icons, order ✅. Then play Menu_Main and enter freestyle on the D
 | fly to the nucleus | no seeded crystal is ever inside it |
 | let `maxLiveSeeded` fill | seeding stops, the recharge fill sits at 0, and **no crystal disappears** |
 | collect one | seeding resumes |
-| Charge to level 5 | the mini crystal pip appears; each cycle now plants two |
+| Mass to level 5 | seeded crystals arrive in your DOMAIN's colours instead of the lime CTA, and a rival cannot collect them; the Mass slot's icon shifts to the team colour |
+| Charge to level 5, hold RT near another vessel | a vessel inside the blast volume brightens in its OWN domain colours and fades back out as the cone sweeps off it |
+| raise/lower Charge, hold RT | the Charge slot's generated profile fattens/thins; banking energy grows its overall extent |
+| raise Space | the subtle bar under the jaws lengthens |
 | **hold RT** | prisms inside the blast volume light up warm; the camera does **not** move and the FOV does **not** change |
 | release RT | the highlight fades out over ~0.3 s (it must not snap off) |
 | hold RT while accelerating hard | the speed tunnel behaves exactly as it always has — the sight is not involved in it at all |
@@ -234,3 +245,124 @@ no error), and whether `blastEffect` is actually assigned on the Dolphin's `Echo
 - **A zoomed sight view is still an open idea, not a rejected one.** It was cut to keep the speed
   tunnel untouched, not because it played badly — nobody has played it. If it comes back, §2 records
   the one way it can be built safely.
+
+---
+
+## 8. 2026-08-17 — the map re-cut around ONE weapon
+
+Design owner: Garrett. `Assets/Resources/ElementalAbilityMaps/Dolphin.asset` is the record.
+
+The Dolphin has essentially one offensive act: bank energy by skimming, fly into a crystal,
+release a cone. The previous map spread four loosely-related mechanics across the elements (a
+recharge, a trail, a blast, a fill rate); this one gives each element **one orthogonal dimension
+of that single act**, so the row reads left to right as the whole weapon.
+
+| element | ability | parameter | L5 |
+|---|---|---|---|
+| **Charge** | Echo Sight (RT) | blast capsule **THICKNESS**, `0.75×` → `1.5×` | **Pilot Echo** — vessels in the volume light up |
+| **Mass** | Crystal Seeding (passive) | recharge `×0.5` at level 10 | **Claimed Seed** — omni seed → team seed |
+| **Space** | Echo Obliteration (crystal impact) | **REACH** `×2` at level 10 | **Clean Blast** — spares own domain |
+| **Time** | Charge Fill Rate (drift) | boost fill `×1.5` at level 10 | **Live Current** — 3× energy on danger skims |
+
+### Charge → thickness, and the first un-anchored elemental multiplier
+
+`ElementalScaling.Multiplier` anchors at exactly 1 at the resting level, so an element can only
+ever ADD to a vessel's authored baseline. That is the right default and stays the default — but it
+means an element can never own a parameter's whole RANGE, only its upside. Charge → thickness is
+specified as 0.75× at rest and 1.5× at level 10, so it needed an explicit resting endpoint:
+`ElementalScaling.MultiplierFromRest(status, element, atRest, atFull, minMul)`.
+
+The consequence is deliberate and worth stating plainly: **the authored `_coreExplosionScale` is
+now what a MID-Charge Dolphin fires, and a fresh pilot's beam is thinner than the asset draws.**
+That is a real baseline change, not a bug.
+
+What Charge does NOT do is make the blast bigger. `halfLength + radius` is always `maxScale / 2` —
+the resource sets the profile's total extent across the gape and Charge only redistributes it. So
+banking energy grows the blast and raising Charge **rounds it out**, trading a long thin fan for a
+short fat capsule. Energy → gape · Charge → thickness · Space → reach: three dimensions, three
+owners, and none of them can steal what another one bought.
+
+### Pilot Echo (Charge L5) — the sight extended from mass to pilots
+
+While the trigger is held, every VESSEL standing inside the same volume brightens in its **own
+domain's colours**. Nothing is recoloured: `EchoSightVesselHighlighter` drives `_ColorMultiplier`,
+the brightness lever `VesselGraph.shadergraph` already exposes and `VesselAnimation` already uses
+for its boost glow, lerping from each material's **own** authored value. So an engine that rests at
+5 brightens from 5, a hull that rests at 1 brightens from 1, and a Ruby pilot can never read as
+Jade.
+
+Three things about it are load-bearing:
+
+- **The predicate is shared, not re-derived.** `BlastVolume.Contains` is the CPU transcription of
+  the test `AOEConicSweepQueryJob`, the capsule trigger and `PrismDestructionSight.hlsl` all run —
+  clamp onto the cross-section's segment, *then* measure distance, which is what makes the ends
+  round. It returns the same edge-weighted fill the shader uses, so a highlighted vessel and the
+  highlighted prisms around it brighten together.
+- **Per-vessel CPU is correct here and would not be on prisms.** The prism half of this sight is a
+  global uniform because there are tens of thousands of prisms (`Docs/PRISM_ANIMATION.md` §4.7).
+  There are at most a dozen vessels, they are already individually simulated, and this runs only
+  while a trigger is held — so a MaterialPropertyBlock per renderer is the ordinary tool. The
+  material is never cloned, and the block is written per material INDEX so a restore is exact.
+- **Release is a restore, not a fade to a guess.** `HardReset` (disable, vessel swap, re-init)
+  calls `ClearAll`, which drops every borrowed brightness immediately. A faded-but-unrestored
+  highlight would leave a rival permanently over-bright with nothing left running to fix it.
+
+Gated on `IsUpgradeActive(Element.Charge)`, not a raw level read: this is a thing other players see
+on their own hull.
+
+### Mass → seeding, and Claimed Seed
+
+The recharge multiplier moved from Charge to Mass verbatim (`cooldownMultiplierAtFullMass`, with
+`[FormerlySerializedAs]` so the shipped asset carries over). The L5 changed from a yield to a
+**tier**: below Mass 5 the seed is an ordinary omni crystal, above it a team crystal.
+
+Both halves of that gate move together and neither is decorative:
+
+- `upgradedCrystalPrefab` swaps `Crystal.prefab` (`OmniCrystalImpactor`) for `TeamCrystal.prefab`
+  (`TeamCrystalImpactor`), so the domain rejection happens inside the impact chain.
+- `crystal.ownDomain` is stamped `Domains.Blue` for the omni seed and the pilot's domain for the
+  team seed. That field IS `Crystal.CanBeCollected`'s gate *and* what
+  `Crystal.ResolveActivationMaterial` paints from, so the crystal looks exactly as collectable as
+  it is — the lime free-for-all CTA below the upgrade, the domain's crystal colours above it
+  (`Docs/PALETTE.md` §2.2: crystal colour signals **who may collect**).
+
+Resolved per seeding, never latched at init, so a Mass debuff immediately puts the pilot back to
+planting crystals anyone can take.
+
+### What Mass gave up
+
+`trailVolume` is disabled and `massUpgradeShieldsTrail` is off on `Dolphin.prefab`. The Dolphin no
+longer grows its drift prisms with Mass and no longer shields them. The machinery is untouched —
+it is the Squirrel's Heavy Trail and the Squirrel still uses it — it is simply no longer wired
+here.
+
+### The HUD row, re-cut
+
+Every slot now draws one dimension of the same weapon:
+
+| slot | gauge | what moved |
+|---|---|---|
+| **Charge** | `BlastProfileGraphic` — a generated stadium mesh: the blast's cross-section, radius from Charge, extent from energy. Warms to the sight's own colour while RT is held | NEW. The band's old blast sprite is retired; `ProfileIcon` is now a transparent container with the generated profile as its child, the same arrangement `JawIcon` uses |
+| **Mass** | the crystal recharge fill, tinted by the tier the next cycle will plant | moved from the Charge band; the two carry pips are **deleted** with Twin Seed |
+| **Space** | the jaw pair (gape = energy) + a subtle reach bar + the prism tally | jaws moved from the Time band; the tally moved onto its own row beneath them and was widened to 120px so a five-figure claim renders at full size |
+| **Time** | the authored 11-step boost ring | moved from the Mass band |
+
+The profile is procedural rather than an authored sprite ladder for the same reason the preview
+volume is not re-derived: it is a continuous function of two live meters, and a sprite ladder would
+quantize it and silently stop matching the blast the first time anyone retuned a scale. It is fed
+by `VesselExplosionByCrystalEffectSO.TryResolveProfile`, which hands back radius, half-length and
+the reference extent in one call so the icon can never mix a radius from one frame with a reference
+from another.
+
+`DolphinHUDRowWirer` was re-cut to the same layout, so the row still has exactly one definition in
+code (`FrogletTools > Vessels > Wire Dolphin Ability Row`).
+
+### Files added
+
+| role | file |
+|---|---|
+| Pilot Echo highlighter | `Executors/EchoSightVesselHighlighter.cs` |
+| Blast profile icon | `_Scripts/UI/View/BlastProfileGraphic.cs` |
+| Un-anchored elemental lerp | `ElementalScaling.MultiplierFromRest` |
+| CPU volume predicate | `ExplosionHelper.cs` ▸ `BlastVolume.Contains` |
+| Profile / reach readouts | `VesselExplosionByCrystalEffectSO.TryResolveProfile` / `TryResolveReach` / `MaxReach` |

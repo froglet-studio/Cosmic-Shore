@@ -14,10 +14,9 @@ MonoBehaviour:
   m_EditorClassIdentifier:
   cooldown: 30
   minCooldown: 4
-  upgradedSeedsPerCycle: 2
   bandInnerFraction: 0.1
   bandOuterFraction: 0.9
   cellessSeedRadius: 600
   maxLiveSeeded: 8
-  cooldownMultiplierAtFullCharge: 0.5
+  cooldownMultiplierAtFullMass: 0.5
   minCooldownMultiplier: 0.35

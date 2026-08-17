@@ -2323,13 +2323,52 @@ scale bump** with a one-shot unlock punch.
   The Dolphin deliberately runs with **both** `tintIconOnUpgrade` and `showUpgradeBadge` off —
   all four of its icons are live gauges, so the persistent scale bump is its only upgrade
   signal, which is why nothing in `DolphinVesselHUDView` writes an icon transform per event.
-  Its Time slot **does** tint — the jaw pair blends to `ElementalBarsConfigSO.limeColor` over
+  Its Space slot **does** tint — the jaw pair blends to `ElementalBarsConfigSO.limeColor` over
   the top 15% of banked skim energy — but that is a GAUGE colour carrying gauge meaning, and it
-  lands on the jaw halves, not on the row's (fully transparent) Time icon, so it never collides
+  lands on the jaw halves, not on the row's (fully transparent) Space icon, so it never collides
   with the upgrade path. Reading it as an upgrade tint is the mistake to avoid.
   Mechanics: `_Scripts/Controller/Vessel/R_VesselActions/DOLPHIN_ENERGY_ECONOMY.md`.
-  **Since 2026-08-14 its Charge ability is PASSIVE and its Space ability owns the right
-  trigger** — crystal seeding runs on a cooldown loop that plants team crystals in the cell's
+  **Since 2026-08-17 the whole map is cut around ONE weapon**, because the Dolphin has
+  essentially one offensive act — bank energy by skimming, fly into a crystal, release a cone —
+  and each element now owns one ORTHOGONAL DIMENSION of it, so the four-icon row reads left to
+  right as the whole weapon: **energy → gape · Charge → thickness · Space → reach · Mass → when
+  the next crystal arrives · Time → the boost that gets you there**. Charge owns the **Echo
+  Sight** (RT) *and* the blast's capsule DIAMETER (`0.75x` the authored core at rest rising to
+  `1.5x` at level 10) — the profile you are widening is the profile the sight draws — and since
+  `halfLength + radius` is always `maxScale / 2`, Charge does not enlarge the blast, it
+  REDISTRIBUTES its extent, trading a long thin fan for a short fat capsule. That pair is the
+  fleet's first use of **`ElementalScaling.MultiplierFromRest`**, the opt-in un-anchored twin of
+  `Multiplier`: the default anchors at exactly 1 at the resting level so an element can only ADD
+  to a vessel's baseline, and handing an element a parameter's whole RANGE means the authored
+  value becomes what a MID-level vessel gets — a real, deliberate baseline change, not a bug.
+  Charge 5 ("Pilot Echo") extends the sight from mass to PILOTS: every vessel inside the same
+  volume brightens in its **own domain's colours** — `EchoSightVesselHighlighter` drives
+  `_ColorMultiplier` (the lever `VesselGraph` already exposes and `VesselAnimation` already uses
+  for its boost glow) from each material's own authored value via a per-material-index
+  MaterialPropertyBlock, so nothing is recoloured and a Ruby pilot can never read as Jade. **Per
+  -vessel CPU is correct there and would be a violation on prisms** — the prism half of the same
+  sight is a global uniform only because there are tens of thousands of them; a dozen vessels
+  already individually simulated, lit only while a trigger is held, is the ordinary tool. Both
+  halves share ONE predicate (`BlastVolume.Contains`, the CPU transcription of
+  `AOEConicSweepQueryJob`), so a highlighted vessel and the prisms around it light up together.
+  **Mass took crystal seeding** off Charge (recharge multiplier renamed
+  `cooldownMultiplierAtFullMass`), **Twin Seed is retired** — one crystal per cycle at every
+  level — and Mass 5 ("Claimed Seed") changes the seed's TIER instead of its count: below it the
+  seed is a free-for-all OMNI crystal wearing the lime CTA, so your own ammunition stands in open
+  space for whoever reaches it first; at Mass 5 it lands TEAM-locked. Both halves of that gate
+  move together — the prefab swap (`OmniCrystalImpactor` → `TeamCrystalImpactor`) AND the
+  `ownDomain` stamp, which is simultaneously `Crystal.CanBeCollected`'s gate and what
+  `ResolveActivationMaterial` paints from, so a crystal always LOOKS exactly as collectable as it
+  is (`Docs/PALETTE.md` §2.2). **Mass gave up the trail entirely** (`trailVolume` disabled,
+  `massUpgradeShieldsTrail` off — the machinery stays, it is the Squirrel's Heavy Trail, it is
+  just no longer wired here). Its HUD row was re-cut to match: Charge draws a **procedural**
+  blast-profile capsule (`BlastProfileGraphic` — a sprite ladder would quantize a continuous
+  function of two live meters and silently stop matching the blast on the first retune), Mass the
+  seeding recharge tinted by the tier it will plant, Space the jaws plus a subtle reach bar and a
+  widened prism tally, Time the boost ring. Record:
+  `_Scripts/Controller/Vessel/R_VesselActions/DOLPHIN_CRYSTAL_SEEDING.md` §8.
+  Before that, **from 2026-08-14 its Charge ability was PASSIVE and its Space ability owned the
+  right trigger** — crystal seeding runs on a cooldown loop that plants crystals in the cell's
   CYTOPLASM (volume-uniform across the band, never inside the nucleus, and at the live cap the
   clock PAUSES rather than culling — not creating mass is allowed, aging it out is not), which
   freed RT for the **Echo Sight**: hold it and every prism inside the crystal blast's live

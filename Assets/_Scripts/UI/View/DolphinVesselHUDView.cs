@@ -15,71 +15,67 @@ namespace CosmicShore.UI
     /// time (the same order as the element flowers above them), each bound to the element that
     /// upgrades it:
     ///
-    ///   Charge → crystal seeding (crystalIcon + the yield pips)   → "Twin Seed"
-    ///   Mass   → drift trail     (the authored boost ring)         → "Hard Wake"
-    ///   Space  → cone blast      (blastIcon)                      → "Clean Blast"
-    ///   Time   → skim energy     (the jaw pair)                   → "Live Current"
+    ///   Charge → Echo Sight       (the blast PROFILE)      → "Pilot Echo"
+    ///   Mass   → crystal seeding  (the recharge fill)      → "Claimed Seed"
+    ///   Space  → cone blast       (jaws + reach + tally)   → "Clean Blast"
+    ///   Time   → charge fill rate (the boost ring)         → "Live Current"
     ///
-    /// Every one of those icons is a live gameplay gauge — a recharge fill, a boost meter, a blast
-    /// tally, a jaw gape — repainted per frame. So the upgrade signal is carried by the element
-    /// badge and a persistent scale bump rather than by icon colour (turn tintIconOnUpgrade OFF on
-    /// this prefab), and the local rest scales below are re-anchored on every upgrade flip so this
-    /// view's own tweens can never wipe the bump.
+    /// <para><b>Every slot draws one dimension of the same weapon.</b> The Dolphin has essentially
+    /// one offensive act — bank energy by skimming, fly into a crystal, release a cone — and the
+    /// four elements each own one axis of it. So the row is not four unrelated gauges: Charge draws
+    /// the blast's cross-section, Space draws its gape and reach and what it took, Mass draws when
+    /// the next crystal to trigger it arrives, and Time draws the boost that gets you there. Read
+    /// left to right it is the whole weapon.</para>
     ///
-    /// The MASS slot is the Dolphin's own pre-existing boost gauge — an authored 11-step ring
-    /// with the boost glyph nested inside it — folded into the row rather than replaced, so the
-    /// elemental badge and upgrade bump land on the gauge the pilot already watches.
+    /// <para>Every one of those icons is a live gameplay gauge — a generated profile mesh, a
+    /// recharge fill, a jaw gape, a boost ring — repainted per frame. So the upgrade signal is
+    /// carried by the element badge and a persistent scale bump rather than by icon colour (turn
+    /// tintIconOnUpgrade OFF on this prefab), and the local rest scales below are re-anchored on
+    /// every upgrade flip so this view's own tweens can never wipe the bump.</para>
     ///
-    /// The TIME icon is the answer to "how much energy have I banked": a pair of jaws (the vessel's
-    /// own isolated silhouettes) that open exactly as wide as the hull's do, because both show the
-    /// same thing — the half-angle of the cone the next crystal impact will release. Every
-    /// reference is optional; an unwired slot is simply not drawn (opt-in rollout).
+    /// <para>The SPACE slot is the busiest by design: the jaws show the gape half-angle the next
+    /// blast will carry (the same angle the hull's own jaws open to), a subtle bar beneath them
+    /// shows how far down-range Space is currently carrying it, and the tally beneath that reports
+    /// what the last cone actually claimed. Angle, reach, result — the ability's whole story in one
+    /// column, with the tally given its own row so a five-figure claim has somewhere to go.</para>
+    ///
+    /// Every reference is optional; an unwired slot is simply not drawn (opt-in rollout).
     /// </summary>
     public class DolphinVesselHUDView : VesselHUDView
     {
-        // ---- Charge: crystal seeding -------------------------------------------------
-        [Header("Charge — crystal seeding")]
-        [Tooltip("The ability icon. If its Image type is Filled it doubles as the recharge wipe.")]
+        // ---- Charge: Echo Sight, drawn as the blast profile ---------------------------
+        [Header("Charge — Echo Sight (blast profile)")]
+        [Tooltip("The generated cross-section of the next blast. Lives as a CHILD of the row's " +
+                 "ChargeIcon (a transparent container), the same arrangement the jaw pair uses, so " +
+                 "the row's upgrade badge and this gauge can never contest the same object.")]
+        [SerializeField] private BlastProfileGraphic blastProfile;
+        [Tooltip("Colour the profile rests at while the sight is released.")]
+        [SerializeField] private Color profileRestColor = new(1f, 1f, 1f, 0.55f);
+        [Tooltip("Colour the profile reaches while the pilot is HOLDING the sight - the same warm " +
+                 "cast PrismDestructionSight.hlsl paints onto the mass out in the world, so the " +
+                 "cockpit and the highlight read as one ability.")]
+        [SerializeField] private Color profileEngagedColor = new(1f, 0.72f, 0.34f, 1f);
+        [Tooltip("Seconds the profile takes to reach its engaged colour. Nothing snaps.")]
+        [SerializeField, Min(0.01f)] private float profileEngageDuration = 0.15f;
+
+        // ---- Mass: crystal seeding ----------------------------------------------------
+        [Header("Mass — crystal seeding")]
+        [Tooltip("The ability icon. If its Image type is Filled it doubles as the recharge wipe. " +
+                 "The carry pips are RETIRED: the ability plants exactly one crystal per cycle at " +
+                 "every level, and Mass 5 changes WHAT is planted rather than how many.")]
         [SerializeField] private Image crystalIcon;
-        [Tooltip("One pip per EXTRA crystal in a seeding cycle - a crystal beyond the first, which " +
-                 "the main icon already stands for. So an un-upgraded Dolphin shows none, and the " +
-                 "mini crystal appearing IS Twin Seed becoming visible. Pips past the current yield " +
-                 "are hidden outright, so the slot reads the cycle's whole output.")]
-        [SerializeField] private List<Image> crystalPips = new();
-        [Tooltip("Pip sprite for a crystal that is LOADED - the omni crystal's active art.")]
-        [SerializeField] private Sprite crystalPipFilled;
-        [Tooltip("Pip sprite for a slot still recharging - the omni crystal's inactive art. " +
-                 "Leave both empty to fall back to tinting one sprite with the colours below.")]
-        [SerializeField] private Sprite crystalPipEmpty;
-        [Tooltip("Pip colour for a crystal that is loaded and ready to plant.")]
-        [SerializeField] private Color crystalReadyColor = Color.white;
-        [Tooltip("Pip colour for a slot that is still recharging - reads as 'not available'.")]
-        [SerializeField] private Color crystalChargingColor = new(0.55f, 0.55f, 0.6f, 0.8f);
-        [Tooltip("Flash colour when a crystal finishes recharging and the slot arms.")]
+        [Tooltip("Colour of a seeding that will land as a free-for-all OMNI crystal - the lime CTA, " +
+                 "the same colour the crystal itself will wear standing in the cell " +
+                 "(Docs/PALETTE.md 2.2). Left as the shared bars config's lime when empty.")]
+        [SerializeField] private Color crystalOmniColor = Color.white;
+        [Tooltip("Colour of a seeding that will land TEAM-locked, once Mass 5 is active. This is " +
+                 "the one place the slot says which kind of crystal is coming.")]
+        [SerializeField] private Color crystalTeamColor = Color.white;
+        [Tooltip("Flash colour when a seeding fires.")]
         [SerializeField] private Color crystalArmedFlashColor = Color.white;
 
-        // ---- Mass: drift trail / boost charge ----------------------------------------
-        [Header("Mass — boost charged while drifting")]
-        [Tooltip("The boost gauge itself — the Dolphin's authored 11-step ring (Boost Display). " +
-                 "Bound as the Mass ability icon, so the upgrade bump lands on the gauge the pilot " +
-                 "is already watching. The ring encodes its own level by stepping through " +
-                 "chargeSteps below — this view writes NOTHING else on it (see SetDriftBoost).")]
-        [SerializeField] private Image driftBoostIcon;
-        [Tooltip("The 11 authored ring steps, ordered EMPTY → FULL. Driven by the boost meter.")]
-        [SerializeField] private List<Sprite> chargeSteps = new();
-
-        // ---- Space: cone blast --------------------------------------------------------
-        [Header("Space — cone blast")]
-        [SerializeField] private Image blastIcon;
-        [Tooltip("Optional tally of what the last cone destroyed.")]
-        [SerializeField] private TMP_Text blastCountText;
-        [SerializeField] private Color blastFlashColor = new(1f, 0.85f, 0.4f, 1f);
-        [SerializeField] private Color blastRestColor = Color.white;
-        [Tooltip("Seconds the blast tally stays up after a cone fires.")]
-        [SerializeField, Min(0.1f)] private float blastCountHoldSeconds = 2.5f;
-
-        // ---- Time: skim energy, drawn as jaws -----------------------------------------
-        [Header("Time — skim energy (jaws)")]
+        // ---- Space: cone blast — gape, reach, tally -----------------------------------
+        [Header("Space — cone blast (jaws)")]
         [Tooltip("Upper jaw half. Rotates open as energy banks, mirroring the hull's own jaws.")]
         [SerializeField] private RectTransform jawUpper;
         [Tooltip("Lower jaw half. Rotates the opposite way by the same angle.")]
@@ -98,7 +94,38 @@ namespace CosmicShore.UI
                  "top of the gape, which only moves ~1/150th of its range per skim.")]
         [SerializeField, Min(1f)] private float skimPunchScale = 1.3f;
 
-        [Header("Time — the full-energy CTA")]
+        [Header("Space — reach")]
+        [Tooltip("A deliberately SUBTLE horizontal bar under the jaws: how far down-range Space is " +
+                 "currently carrying the cone, as a fraction of the reach a maxed Space would buy. " +
+                 "Subtle because reach changes only when the element moves, so a loud gauge would " +
+                 "shout a number that is constant for minutes at a time.")]
+        [SerializeField] private Image reachFill;
+        [Tooltip("Colour of the reach bar. Alpha carries the subtlety - keep it low.")]
+        [SerializeField] private Color reachColor = new(1f, 1f, 1f, 0.35f);
+        [Tooltip("Seconds the reach bar takes to glide to a new length.")]
+        [SerializeField, Min(0.01f)] private float reachGlideDuration = 0.35f;
+
+        [Header("Space — blast tally")]
+        [Tooltip("What the last cone destroyed. Sits on its OWN row beneath the jaws and the reach " +
+                 "bar so a four- or five-figure claim has room to render at full size rather than " +
+                 "auto-shrinking into the gape.")]
+        [SerializeField] private TMP_Text blastCountText;
+        [SerializeField] private Color blastFlashColor = new(1f, 0.85f, 0.4f, 1f);
+        [SerializeField] private Color blastRestColor = Color.white;
+        [Tooltip("Seconds the blast tally stays up after a cone fires.")]
+        [SerializeField, Min(0.1f)] private float blastCountHoldSeconds = 2.5f;
+
+        // ---- Time: boost charged while drifting ---------------------------------------
+        [Header("Time — boost charged while drifting")]
+        [Tooltip("The boost gauge itself — the Dolphin's authored 11-step ring (Boost Display). " +
+                 "Bound as the Time ability icon, because Time is what sets how fast it fills. The " +
+                 "ring encodes its own level by stepping through chargeSteps below — this view " +
+                 "writes NOTHING else on it (see SetDriftBoost).")]
+        [SerializeField] private Image driftBoostIcon;
+        [Tooltip("The 11 authored ring steps, ordered EMPTY → FULL. Driven by the boost meter.")]
+        [SerializeField] private List<Sprite> chargeSteps = new();
+
+        [Header("Space — the full-energy CTA")]
         [Tooltip("Colour the jaws rest at. Matches the authored art (white); the CTA lime is " +
                  "blended over it as the bank approaches full.")]
         [SerializeField] private Color jawRestColor = Color.white;
@@ -111,6 +138,7 @@ namespace CosmicShore.UI
                  "Loaded from Resources when left empty; never author a second copy of the colour.")]
         [SerializeField] private ElementalBarsConfigSO barsConfig;
         [SerializeField] private string barsConfigResourcePath = "ElementalBarsConfig";
+
         [Header("Icon juice")]
         [SerializeField] private float iconPunchScale = 1.35f;
         [SerializeField] private float iconPunchDuration = 0.25f;
@@ -118,46 +146,52 @@ namespace CosmicShore.UI
 
         int _stepsMinusOne;
 
+        Vector3 _profileRestScale = Vector3.one;
         Vector3 _crystalIconRestScale = Vector3.one;
-        Vector3 _blastIconRestScale = Vector3.one;
         Vector3 _jawRestScale = Vector3.one;
 
+        Tween _profileColorTween, _profileScaleTween;
         Tween _crystalScaleTween, _crystalColorTween;
-        Tween _blastScaleTween, _blastColorTween;
         Tween _jawUpperTween, _jawLowerTween, _jawPunchTween, _jawColorTween;
+        Tween _reachTween, _blastColorTween;
 
-        // The jaw halves' own Graphics. The row's Time icon (JawIcon) is a fully transparent
-        // container, so these two ARE the visible Time gauge and the only thing worth tinting.
+        // The jaw halves' own Graphics. The row's Space icon is a fully transparent container, so
+        // these two ARE the visible Space gauge and the only thing worth tinting.
         Graphic _jawUpperGraphic, _jawLowerGraphic;
         Color _jawArmedColor = Color.white;
         float _jawArm01 = -1f;
         bool _warnedArmingUnavailable;
 
         float _blastCountTimer;
-        int _lastChargesShown = -1;
         float _currentJawAngle;
+        float _currentReach01 = -1f;
+        bool _sightEngaged;
+        bool _lastSeedsTeam;
 
         public override void Initialize()
         {
             _stepsMinusOne = Mathf.Max(0, (chargeSteps?.Count ?? 0) - 1);
 
+            ResolveBarsConfig();
+
+            if (blastProfile)
+            {
+                _profileRestScale = AbilityIconRestScale(Element.Charge);
+                blastProfile.rectTransform.localScale = _profileRestScale;
+                blastProfile.color = profileRestColor;
+            }
+            _sightEngaged = false;
+
             if (crystalIcon)
             {
-                _crystalIconRestScale = AbilityIconRestScale(Element.Charge);
-                if (crystalIcon.type == Image.Type.Filled) crystalIcon.fillAmount = 1f;
+                _crystalIconRestScale = AbilityIconRestScale(Element.Mass);
+                if (crystalIcon.type == Image.Type.Filled) crystalIcon.fillAmount = 0f;
             }
+            // -1 is impossible for a bool, so force the first push to paint rather than early-out.
+            _lastSeedsTeam = false;
+            ApplyCrystalTierColor(false, immediate: true);
 
-            // The ring's colour is authored art - never repainted from here.
-            if (driftBoostIcon && driftBoostIcon.type == Image.Type.Filled)
-                driftBoostIcon.fillAmount = 0f;
-
-            if (blastIcon)
-            {
-                _blastIconRestScale = AbilityIconRestScale(Element.Space);
-                blastIcon.color = blastRestColor;
-            }
-
-            if (jawUpper) _jawRestScale = AbilityIconRestScale(Element.Time);
+            if (jawUpper) _jawRestScale = AbilityIconRestScale(Element.Space);
             // Empty energy is the MIN gape, not a shut jaw - the blast is a short capsule at rest.
             SetJawAngleImmediate(minJawAngle);
 
@@ -165,14 +199,28 @@ namespace CosmicShore.UI
             _jawArm01 = -1f;             // a re-init must repaint, not early-out on a stale value
             ApplyJawArming(0f, immediate: true);
 
-            if (blastCountText) blastCountText.text = string.Empty;
+            if (reachFill)
+            {
+                reachFill.color = reachColor;
+                if (reachFill.type == Image.Type.Filled) reachFill.fillAmount = 0f;
+            }
+            _currentReach01 = -1f;
 
-            _lastChargesShown = -1;
+            if (blastCountText)
+            {
+                blastCountText.color = blastRestColor;
+                blastCountText.text = string.Empty;
+            }
+            _blastCountTimer = 0f;
+
+            // The ring's colour is authored art - never repainted from here.
+            if (driftBoostIcon && driftBoostIcon.type == Image.Type.Filled)
+                driftBoostIcon.fillAmount = 0f;
         }
 
         /// <summary>
         /// Re-anchors this view's per-icon rest scales to the shared upgrade rest scale, so the
-        /// crystal arm-punch, the blast flash and the jaw glide all settle back to the UPGRADED
+        /// profile pulse, the crystal arm-punch and the jaw glide all settle back to the UPGRADED
         /// size instead of snapping the bump away. The base call does the sprite swap, the element
         /// badge and the one-shot unlock punch.
         /// </summary>
@@ -184,76 +232,91 @@ namespace CosmicShore.UI
             switch (element)
             {
                 case Element.Charge:
-                    _crystalIconRestScale = rest;
-                    _lastChargesShown = -1; // the seed yield just moved - repaint the pip row
+                    _profileRestScale = rest;
+                    // The profile is driven by mesh regeneration, so nothing else re-scales it.
+                    if (blastProfile) blastProfile.rectTransform.localScale = rest;
                     break;
-                // Mass needs no re-anchor: nothing in this view writes the boost ring's scale, so
-                // the base class's bump is never contested.
-                case Element.Space: _blastIconRestScale = rest; break;
-                case Element.Time:
+                case Element.Mass:
+                    _crystalIconRestScale = rest;
+                    break;
+                case Element.Space:
                     _jawRestScale = rest;
                     ApplyJawRestScale(); // the jaws are driven by rotation, so nothing else re-scales them
                     break;
+                // Time needs no re-anchor: nothing in this view writes the boost ring's scale, so
+                // the base class's bump is never contested.
             }
         }
 
         // ---------------------------------------------------------------
-        // Charge: crystal seeding — a PASSIVE ability. Nothing is ever carried,
-        // so the icon is a pure recharge fill (0 -> 1 as the next seeding arms)
-        // and the pips show the YIELD: how many crystals the next cycle plants.
-        //
-        // seedsPerCycle is 1 normally and 2 once Twin Seed (Charge L5) lands.
+        // Charge: the Echo Sight, drawn as the profile of the blast it aims.
         // ---------------------------------------------------------------
-        public void SetCrystalSeedState(int seedsPerCycle, float ready01)
+
+        /// <summary>
+        /// The cross-section of the blast as it stands right now, in world units, straight from
+        /// <c>VesselExplosionByCrystalEffectSO.TryResolveProfile</c>. All three numbers arrive
+        /// together so the icon can never mix a radius from one frame with a reference from another.
+        /// </summary>
+        public void SetBlastProfile(float radius, float halfLength, float referenceExtent)
         {
-            ready01 = Mathf.Clamp01(ready01);
-
-            // The ability plants itself, so "how full is the clock" is the only thing the main
-            // icon can honestly say. It is never pinned to 1 by a held charge any more.
-            if (crystalIcon && crystalIcon.type == Image.Type.Filled)
-                crystalIcon.fillAmount = ready01;
-
-            for (int i = 0; i < crystalPips.Count; i++)
-            {
-                var pip = crystalPips[i];
-                if (!pip) continue;
-
-                // A pip stands for an EXTRA crystal in the cycle - one beyond the first, which the
-                // main icon already represents. So pip[i] is seed i+2, and an un-upgraded Dolphin
-                // (yield 1) shows no pips at all: the mini crystal appearing IS Twin Seed becoming
-                // visible, not a second copy of the ability icon.
-                int seedShown = i + 2;
-                bool withinYield = seedShown <= seedsPerCycle;
-                if (pip.gameObject.activeSelf != withinYield) pip.gameObject.SetActive(withinYield);
-                if (!withinYield) continue;
-
-                // Every shown pip is part of the coming cycle, so it rides the same recharge fill
-                // as the main icon rather than a per-slot one - there are no per-slot clocks now.
-                if (crystalPipFilled && crystalPipEmpty)
-                {
-                    pip.sprite = crystalPipFilled;
-                    pip.color = Color.white;
-                }
-                else
-                {
-                    pip.color = crystalReadyColor;
-                }
-
-                if (pip.type == Image.Type.Filled) pip.fillAmount = ready01;
-            }
-
-            _lastChargesShown = seedsPerCycle;
+            if (!blastProfile) return;
+            blastProfile.SetProfile(radius, halfLength, referenceExtent);
         }
 
         /// <summary>
-        /// A cycle just fired and crystals were planted out in the cytoplasm. The pilot gave no
+        /// The pilot picked the sight up or put it down. The profile warms to the same colour the
+        /// highlight paints on the world, so the cockpit answers the trigger even when the pilot is
+        /// looking at empty space with nothing out there to light up.
+        /// </summary>
+        public void SetSightEngaged(bool engaged)
+        {
+            if (!blastProfile || engaged == _sightEngaged) return;
+            _sightEngaged = engaged;
+
+            _profileColorTween?.Kill();
+            _profileColorTween = blastProfile
+                .DOColor(engaged ? profileEngagedColor : profileRestColor, profileEngageDuration)
+                .SetEase(Ease.OutQuad)
+                .SetLink(blastProfile.gameObject);
+
+            if (!engaged) return;
+
+            _profileScaleTween?.Kill();
+            blastProfile.rectTransform.localScale = _profileRestScale;
+            _profileScaleTween = blastProfile.rectTransform
+                .DOScale(_profileRestScale * iconPunchScale, profileEngageDuration * 0.4f)
+                .SetEase(Ease.OutQuad)
+                .SetLink(blastProfile.gameObject)
+                .OnComplete(() =>
+                {
+                    _profileScaleTween = blastProfile.rectTransform
+                        .DOScale(_profileRestScale, profileEngageDuration * 0.6f)
+                        .SetEase(Ease.OutQuad)
+                        .SetLink(blastProfile.gameObject);
+                });
+        }
+
+        // ---------------------------------------------------------------
+        // Mass: crystal seeding — a PASSIVE ability. Nothing is ever carried,
+        // so the icon is a pure recharge fill (0 -> 1 as the next seeding arms).
+        // The pips are gone with Twin Seed: the cycle plants exactly one crystal
+        // at every level, and the upgrade changes its TIER, which the colour says.
+        // ---------------------------------------------------------------
+        public void SetCrystalSeedState(float ready01, bool seedsTeamCrystal)
+        {
+            if (crystalIcon && crystalIcon.type == Image.Type.Filled)
+                crystalIcon.fillAmount = Mathf.Clamp01(ready01);
+
+            if (seedsTeamCrystal != _lastSeedsTeam)
+                ApplyCrystalTierColor(seedsTeamCrystal, immediate: false);
+        }
+
+        /// <summary>
+        /// A cycle just fired and a crystal was planted out in the cytoplasm. The pilot gave no
         /// input and may be looking anywhere, so the slot punches to say it happened — this is the
         /// only notification the passive ability has.
         /// </summary>
-        public void PulseCrystalSeeded() => JuiceCrystalArmed();
-
-        /// <summary>A seeding fired: punch and flash the slot.</summary>
-        void JuiceCrystalArmed()
+        public void PulseCrystalSeeded()
         {
             if (!crystalIcon) return;
 
@@ -274,36 +337,42 @@ namespace CosmicShore.UI
             _crystalColorTween?.Kill();
             crystalIcon.color = crystalArmedFlashColor;
             _crystalColorTween = crystalIcon
-                .DOColor(crystalReadyColor, colorTweenDuration)
+                .DOColor(CrystalTierColor(_lastSeedsTeam), colorTweenDuration)
                 .SetEase(Ease.OutQuad)
                 .SetLink(crystalIcon.gameObject);
         }
 
-        // ---------------------------------------------------------------
-        // Mass: how much boost the drift has banked, 0-1.
-        //
-        // The ring is an ELEVEN-SPRITE authored gauge, so stepping the sprite is the whole
-        // readout. This deliberately writes nothing else: a swell keyed to charge01 and a colour
-        // ramp both landed on EVERY resource tick - the 1 Hz passive regen, each charge tick, each
-        // discharge tick - so the icon jittered between discrete scales and killed its own tween
-        // doing it. Leaving the transform alone also means the level-5 scale bump the base class
-        // applies survives, which matters more here than juice: this HUD has upgrade tint and the
-        // element badge both turned off, so the bump is the only upgrade signal the slot has left.
-        // ---------------------------------------------------------------
-        public void SetDriftBoost(float charge01)
+        /// <summary>
+        /// Which crystal the next cycle will leave behind, said in the colour that crystal will
+        /// actually wear out in the cell. Below Mass 5 the seed is a free-for-all pickup and the
+        /// slot shows the lime CTA; at Mass 5 it is team-locked and the slot shows so.
+        /// </summary>
+        void ApplyCrystalTierColor(bool seedsTeamCrystal, bool immediate)
         {
-            if (!driftBoostIcon) return;
+            _lastSeedsTeam = seedsTeamCrystal;
+            if (!crystalIcon) return;
 
-            charge01 = Mathf.Clamp01(charge01);
-            if (driftBoostIcon.type == Image.Type.Filled)
-                driftBoostIcon.fillAmount = charge01;
+            var target = CrystalTierColor(seedsTeamCrystal);
 
-            // The authored ring encodes the level in its lit segments - step it.
-            SetBoostStepNormalized(charge01);
+            _crystalColorTween?.Kill();
+            if (immediate) { crystalIcon.color = target; return; }
+
+            _crystalColorTween = crystalIcon.DOColor(target, colorTweenDuration)
+                .SetEase(Ease.OutQuad)
+                .SetLink(crystalIcon.gameObject);
+        }
+
+        Color CrystalTierColor(bool seedsTeamCrystal)
+        {
+            if (seedsTeamCrystal) return crystalTeamColor;
+
+            // The free-for-all seed wears the same lime a full element flower does, read from the
+            // one shared config rather than authored a second time here.
+            return barsConfig ? barsConfig.limeColor : crystalOmniColor;
         }
 
         // ---------------------------------------------------------------
-        // Space: the cone fired - flash the icon and show what it took.
+        // Space: the cone fired - flash the tally and show what it took.
         // ---------------------------------------------------------------
         public void ReportBlast(int destroyedCount)
         {
@@ -311,30 +380,51 @@ namespace CosmicShore.UI
             {
                 blastCountText.text = destroyedCount > 0 ? destroyedCount.ToString() : string.Empty;
                 _blastCountTimer = blastCountHoldSeconds;
+
+                // DOVirtual rather than a DOColor extension: this project ships no DOTween TMP
+                // module, so TMP_Text has no tween shortcut of its own.
+                _blastColorTween?.Kill();
+                blastCountText.color = blastFlashColor;
+                _blastColorTween = DOVirtual.Color(blastFlashColor, blastRestColor, colorTweenDuration,
+                        c => { if (blastCountText) blastCountText.color = c; })
+                    .SetEase(Ease.OutQuad)
+                    .SetLink(blastCountText.gameObject);
             }
 
-            if (!blastIcon) return;
+            // The jaws are the Space slot's icon now, so the blast's own beat lands on them - the
+            // same pair that has been showing the gape it just spent.
+            ReportSkim();
+        }
 
-            _blastScaleTween?.Kill();
-            blastIcon.rectTransform.localScale = _blastIconRestScale;
-            _blastScaleTween = blastIcon.rectTransform
-                .DOScale(_blastIconRestScale * iconPunchScale, iconPunchDuration * 0.3f)
-                .SetEase(Ease.OutQuad)
-                .SetLink(blastIcon.gameObject)
-                .OnComplete(() =>
-                {
-                    _blastScaleTween = blastIcon.rectTransform
-                        .DOScale(_blastIconRestScale, iconPunchDuration * 0.7f)
-                        .SetEase(Ease.OutBounce)
-                        .SetLink(blastIcon.gameObject);
-                });
+        /// <summary>
+        /// How far down-range the cone reaches, as a fraction of the reach a maxed Space would buy.
+        /// Glides, because a reach change is an element change and those should read as a shift
+        /// rather than a jump.
+        /// </summary>
+        public void SetReachNormalized(float reach01)
+        {
+            if (!reachFill) return;
 
-            _blastColorTween?.Kill();
-            blastIcon.color = blastFlashColor;
-            _blastColorTween = blastIcon
-                .DOColor(blastRestColor, colorTweenDuration)
-                .SetEase(Ease.OutQuad)
-                .SetLink(blastIcon.gameObject);
+            reach01 = Mathf.Clamp01(reach01);
+            if (Mathf.Abs(reach01 - _currentReach01) < 0.002f) return;
+
+            float from = _currentReach01 < 0f ? reach01 : _currentReach01;
+            _currentReach01 = reach01;
+
+            _reachTween?.Kill();
+
+            if (reachFill.type != Image.Type.Filled)
+            {
+                // Not a filled Image: scale it along X instead, so the bar still works with plain art.
+                _reachTween = DOVirtual.Float(from, reach01, reachGlideDuration,
+                        v => { if (reachFill) reachFill.rectTransform.localScale = new Vector3(v, 1f, 1f); })
+                    .SetEase(Ease.OutQuad).SetLink(reachFill.gameObject);
+                return;
+            }
+
+            _reachTween = DOVirtual.Float(from, reach01, reachGlideDuration,
+                    v => { if (reachFill) reachFill.fillAmount = v; })
+                .SetEase(Ease.OutQuad).SetLink(reachFill.gameObject);
         }
 
         void Update()
@@ -345,7 +435,7 @@ namespace CosmicShore.UI
         }
 
         // ---------------------------------------------------------------
-        // Time: banked skim energy, drawn as a jaw gape. Same angle the hull
+        // Space: banked skim energy, drawn as a jaw gape. Same angle the hull
         // opens to, and the same half-angle the released cone will carry.
         // ---------------------------------------------------------------
 
@@ -360,6 +450,11 @@ namespace CosmicShore.UI
             ApplyJawArming(norm01, immediate: false);
         }
 
+        void ResolveBarsConfig()
+        {
+            if (!barsConfig) barsConfig = Resources.Load<ElementalBarsConfigSO>(barsConfigResourcePath);
+        }
+
         /// <summary>
         /// Caches the jaw halves' Graphics and the armed colour. The lime is read from the shared
         /// <see cref="ElementalBarsConfigSO"/> rather than authored here, so the "this is maxed"
@@ -372,7 +467,7 @@ namespace CosmicShore.UI
             _jawUpperGraphic = jawUpper ? jawUpper.GetComponent<Graphic>() : null;
             _jawLowerGraphic = jawLower ? jawLower.GetComponent<Graphic>() : null;
 
-            if (!barsConfig) barsConfig = Resources.Load<ElementalBarsConfigSO>(barsConfigResourcePath);
+            ResolveBarsConfig();
             _jawArmedColor = barsConfig ? barsConfig.limeColor : jawRestColor;
 
             if (_warnedArmingUnavailable) return;
@@ -398,8 +493,8 @@ namespace CosmicShore.UI
         /// Blends the jaws from their rest colour to the CTA lime over the last
         /// (1 - <see cref="jawArmingThreshold"/>) of the bank, so a full meter reads as "fire this"
         /// at a glance. This is the ONE colour writer on the jaw pair: the row's upgrade tint is off
-        /// on this HUD (every icon is a live gauge) and it targets JawIcon, not these halves — so
-        /// the gauge colour and the upgrade signal can never contest each other.
+        /// on this HUD (every icon is a live gauge) and it targets the Space container, not these
+        /// halves — so the gauge colour and the upgrade signal can never contest each other.
         /// </summary>
         void ApplyJawArming(float norm01, bool immediate)
         {
@@ -495,7 +590,7 @@ namespace CosmicShore.UI
         }
 
         /// <summary>
-        /// Parks both jaw halves at the Time slot's current rest scale, so the level-5 upgrade bump
+        /// Parks both jaw halves at the Space slot's current rest scale, so the level-5 upgrade bump
         /// survives every gape change. Without this the jaws are the one icon in the row whose
         /// upgrade scale is never applied.
         /// </summary>
@@ -519,10 +614,26 @@ namespace CosmicShore.UI
         }
 
         // ---------------------------------------------------------------
-        // The boost ring's authored steps. This is the Dolphin's own gauge -
-        // eleven sprites lighting 0..10 segments - so the level is read off
-        // the art rather than off a fill amount.
+        // Time: how fast the drift banks boost. The ring is an ELEVEN-SPRITE
+        // authored gauge, so stepping the sprite is the whole readout. This
+        // deliberately writes nothing else: a swell keyed to charge01 and a colour
+        // ramp both landed on EVERY resource tick - the 1 Hz passive regen, each charge tick, each
+        // discharge tick - so the icon jittered between discrete scales and killed its own tween
+        // doing it. Leaving the transform alone also means the level-5 scale bump the base class
+        // applies survives, which matters more here than juice: this HUD has upgrade tint and the
+        // element badge both turned off, so the bump is the only upgrade signal the slot has left.
         // ---------------------------------------------------------------
+        public void SetDriftBoost(float charge01)
+        {
+            if (!driftBoostIcon) return;
+
+            charge01 = Mathf.Clamp01(charge01);
+            if (driftBoostIcon.type == Image.Type.Filled)
+                driftBoostIcon.fillAmount = charge01;
+
+            // The authored ring encodes the level in its lit segments - step it.
+            SetBoostStepNormalized(charge01);
+        }
 
         /// <summary>0–1 normalized boost → the matching ring step.</summary>
         public void SetBoostStepNormalized(float norm01)
@@ -554,14 +665,16 @@ namespace CosmicShore.UI
         protected override void OnDestroy()
         {
             base.OnDestroy();
+            _profileColorTween?.Kill();
+            _profileScaleTween?.Kill();
             _crystalScaleTween?.Kill();
             _crystalColorTween?.Kill();
-            _blastScaleTween?.Kill();
-            _blastColorTween?.Kill();
             _jawUpperTween?.Kill();
             _jawLowerTween?.Kill();
             _jawPunchTween?.Kill();
             _jawColorTween?.Kill();
+            _reachTween?.Kill();
+            _blastColorTween?.Kill();
         }
     }
 }

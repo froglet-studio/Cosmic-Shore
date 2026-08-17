@@ -1,4 +1,6 @@
+using CosmicShore.Data;
 using CosmicShore.Utility;
+using Reflex.Attributes;
 using UnityEngine;
 
 namespace CosmicShore.Gameplay
@@ -21,6 +23,14 @@ namespace CosmicShore.Gameplay
     ///
     /// <para><b>Local pilot only.</b> A remote peer sees a Dolphin flying normally, which is
     /// correct — the sight is a thing the pilot looks through, not a thing the vessel does.</para>
+    ///
+    /// <para><b>Charge owns this ability</b> (2026-08-17). Charge's multiplier sets the blast's
+    /// capsule THICKNESS — 0.75x at rest to 1.5x at level 10, authored on
+    /// <see cref="VesselExplosionByCrystalEffectSO"/> — so the shape the sight draws is the shape
+    /// Charge has been fattening, and its level-5 upgrade extends the sight from mass to PILOTS:
+    /// every vessel inside the same volume brightens in its own domain colour
+    /// (<see cref="EchoSightVesselHighlighter"/>). One trigger, one volume, two things standing in
+    /// it.</para>
     /// </summary>
     public sealed class EchoSightActionExecutor : ShipActionExecutorBase
     {
@@ -30,8 +40,24 @@ namespace CosmicShore.Gameplay
                  "its own copy of those numbers would drift the first time one was retuned.")]
         [SerializeField] private VesselExplosionByCrystalEffectSO blastEffect;
 
+        [Header("Charge level-5 — pilot highlight")]
+        [Tooltip("Seconds a VESSEL takes to bloom into / fade out of the highlight as the cone " +
+                 "sweeps over it. Nothing pops.")]
+        [SerializeField, Min(0.01f)] private float vesselHighlightFadeSeconds = 0.18f;
+        [Tooltip("Brightness gain applied to a highlighted vessel's OWN colours at full highlight. " +
+                 "It multiplies whatever each material already rests at, so the pilot lights up in " +
+                 "their domain rather than being recoloured.")]
+        [SerializeField, Min(1f)] private float vesselHighlightGain = 3.5f;
+
+        // The player roster - the one live list of who is flying. Injected rather than searched:
+        // vessels DO get GameObjectInjector.InjectRecursive at spawn, so this is populated by the
+        // time any pilot can hold a trigger.
+        [Inject] GameDataSO _gameData;
+
         IVesselStatus _status;
         EchoSightActionSO _so;
+
+        EchoSightVesselHighlighter _vesselHighlighter;
 
         bool _engaged;
         float _blend;   // 0 = no highlight, 1 = fully lit
@@ -93,6 +119,7 @@ namespace CosmicShore.Gameplay
             if (_blend <= 0f)
             {
                 PrismDestructionSight.Clear();
+                DriveVesselHighlight(default, 0f);
                 return;
             }
 
@@ -100,10 +127,41 @@ namespace CosmicShore.Gameplay
                 !blastEffect.TryResolveBlastVolume(_status, out var volume))
             {
                 PrismDestructionSight.Clear();
+                DriveVesselHighlight(default, 0f);
                 return;
             }
 
-            PrismDestructionSight.Publish(volume, _blend * so.HighlightStrength);
+            float strength = _blend * so.HighlightStrength;
+            PrismDestructionSight.Publish(volume, strength);
+            DriveVesselHighlight(volume, strength);
+        }
+
+        /// <summary>
+        /// The Charge level-5 half: pilots standing in the same volume light up.
+        ///
+        /// Below the upgrade the highlighter is fed a zero strength rather than skipped, so anything
+        /// still lit from a moment ago fades out properly when the upgrade is lost mid-flight — a
+        /// re-lock must not strand a vessel at full brightness. Gated on
+        /// <c>IsUpgradeActive</c> and not a raw level read: this is a thing other players SEE on
+        /// their own hull, so every machine has to agree on it.
+        /// </summary>
+        void DriveVesselHighlight(in BlastVolume volume, float strength01)
+        {
+            bool upgraded = strength01 > 0f
+                            && _status?.ElementalAbilityHandler != null
+                            && _status.ElementalAbilityHandler.IsUpgradeActive(Element.Charge);
+
+            if (!upgraded && _vesselHighlighter == null) return;
+
+            _vesselHighlighter ??= new EchoSightVesselHighlighter(
+                vesselHighlightFadeSeconds, vesselHighlightGain);
+
+            _vesselHighlighter.Tick(
+                upgraded ? _gameData?.Players : null,
+                _status?.Vessel,
+                volume,
+                upgraded ? strength01 : 0f,
+                Time.deltaTime);
         }
 
         void HardReset()
@@ -111,6 +169,10 @@ namespace CosmicShore.Gameplay
             _engaged = false;
             _blend = 0f;
             PrismDestructionSight.Clear();
+
+            // Restores every borrowed brightness immediately. A faded-but-unrestored highlight would
+            // leave a rival vessel permanently over-bright with nothing left running to fix it.
+            _vesselHighlighter?.ClearAll();
         }
     }
 }

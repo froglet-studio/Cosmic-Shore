@@ -26,6 +26,51 @@ namespace CosmicShore.Gameplay
         public float TanCorePerUnit;
         public float TanGapePerUnit;
         public bool IsValid;
+
+        /// <summary>
+        /// Is <paramref name="worldPoint"/> standing inside this blast, and how deep?
+        ///
+        /// This is the CPU transcription of the volume test three other places already run:
+        /// <c>AOEConicSweepQueryJob.Execute</c> (the damage sweep), <c>PrismDestructionSight.hlsl</c>
+        /// (the prism highlight) and the capsule trigger. Clamp onto the cross-section's segment
+        /// first, then measure distance to that point — that ordering is what makes the ends round,
+        /// and copying it rather than approximating with a cone is why a vessel lights up exactly
+        /// when the blast would actually reach it.
+        ///
+        /// <paramref name="fill01"/> comes back on the same edge-weighted curve the shader uses, so
+        /// a highlighted VESSEL and the highlighted PRISMS around it brighten together instead of
+        /// reading as two separate effects that happen to share a trigger.
+        /// </summary>
+        public readonly bool Contains(Vector3 worldPoint, out float fill01)
+        {
+            const float EdgePower = 2f;   // PRISM_SIGHT_EDGE_POWER
+            const float CoreFill = 0.35f; // PRISM_SIGHT_CORE_FILL
+
+            fill01 = 0f;
+            if (!IsValid || Height <= 0f) return false;
+
+            Vector3 rel = worldPoint - Apex;
+
+            // The near clip is the apex: mass (and pilots) BEHIND the vessel are never inside,
+            // even though the axis extends backwards mathematically.
+            float s = Vector3.Dot(rel, Axis);
+            if (s <= 0f || s > Height) return false;
+
+            float coreRadius = TanCorePerUnit * s;
+            if (coreRadius <= 0f) return false;
+
+            Vector3 radial = rel - Axis * s;
+            float halfLength = TanGapePerUnit * s;
+            float along = Mathf.Clamp(Vector3.Dot(radial, GapeAxis), -halfLength, halfLength);
+            Vector3 offAxis = radial - GapeAxis * along;
+
+            float d = offAxis.magnitude;
+            if (d > coreRadius) return false;
+
+            float edge = Mathf.Clamp01(d / coreRadius);
+            fill01 = Mathf.Lerp(CoreFill, 1f, Mathf.Pow(edge, EdgePower));
+            return true;
+        }
     }
 
     public static class ExplosionHelper
@@ -50,6 +95,14 @@ namespace CosmicShore.Gameplay
         /// empty) precisely so a blast can start as a short capsule rather than a sphere. 0 means
         /// "no separate core": the capsule collapses to the plain circular cone, which is what the
         /// spherical blast and every non-conic caller want.
+        ///
+        /// <paramref name="coreMultiplier"/> scales the capsule's DIAMETER and nothing else — the
+        /// one dimension <paramref name="sizeMultiplier"/> is forbidden to touch on its own. The two
+        /// are deliberately separate axes of the same blast: size grows the cone self-similarly
+        /// (reach and base together, preserving the half-angle the resource set), while the core
+        /// multiplier fattens or thins the beam ACROSS that cone without moving its reach. A caller
+        /// that wants one element to own thickness passes it here; 1 leaves the authored capsule
+        /// exactly as the asset drew it.
         /// </summary>
         public static void CreateExplosion(
             AOEExplosion[] aoePrefabs,
@@ -61,7 +114,8 @@ namespace CosmicShore.Gameplay
             Vector3 localOffset,
             float sizeMultiplier = 1f,
             bool? affectSelfOverride = null,
-            float coreExplosionScale = 0f)
+            float coreExplosionScale = 0f,
+            float coreMultiplier = 1f)
         {
             if (impactor?.Vessel?.VesselStatus == null) return;
 
@@ -82,7 +136,8 @@ namespace CosmicShore.Gameplay
                 // resource set. Falls back to the empty length (= a sphere at rest) when the
                 // caller authors no core.
                 CoreScale            = (coreExplosionScale > 0f ? coreExplosionScale : minExplosionScale)
-                                       * Mathf.Max(0.01f, sizeMultiplier),
+                                       * Mathf.Max(0.01f, sizeMultiplier)
+                                       * Mathf.Max(0.01f, coreMultiplier),
                 OverrideMaterial     = overrideMaterial ? overrideMaterial : ss.AOEExplosionMaterial,
                 AnnonymousExplosion  = false,
                 SpawnPosition        = shipTransform.position + shipTransform.TransformDirection(localOffset),
@@ -177,6 +232,7 @@ namespace CosmicShore.Gameplay
             Vector3 localOffset,
             float sizeMultiplier,
             float coreExplosionScale,
+            float coreMultiplier,
             out BlastVolume volume)
         {
             volume = default;
@@ -189,7 +245,8 @@ namespace CosmicShore.Gameplay
             if (height <= 0f) return false;
 
             float maxScale = ComputeScaleForShip(ss, minExplosionScale, maxExplosionScale, resourceIndex) * size;
-            float coreScale = (coreExplosionScale > 0f ? coreExplosionScale : minExplosionScale) * size;
+            float coreScale = (coreExplosionScale > 0f ? coreExplosionScale : minExplosionScale)
+                              * size * Mathf.Max(0.01f, coreMultiplier);
 
             // Same clamp AOEConicExplosion.Initialize applies: the core can never exceed the base,
             // and a caller that authors none collapses the capsule to a plain circular cone.
@@ -217,6 +274,13 @@ namespace CosmicShore.Gameplay
             };
             return true;
         }
+
+        /// <summary>
+        /// The first conic blast in a set, or null when it holds none. Public so a HUD can read the
+        /// cone's AUTHORED reach off the same prefab the detonation scales, rather than a second
+        /// copy of that number living in the cockpit.
+        /// </summary>
+        public static AOEConicExplosion FindConeIn(AOEExplosion[] prefabs) => FindCone(prefabs);
 
         static AOEConicExplosion FindCone(AOEExplosion[] prefabs)
         {
