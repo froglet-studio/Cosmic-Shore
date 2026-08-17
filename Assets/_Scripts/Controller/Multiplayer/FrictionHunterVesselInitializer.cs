@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using CosmicShore.Data;
+using Unity.Netcode;
 using UnityEngine;
 
 namespace CosmicShore.Gameplay
@@ -34,6 +35,15 @@ namespace CosmicShore.Gameplay
         {
             int intensity = Mathf.Clamp(gameData.SelectedIntensity.Value, 1, hunterSkillByIntensity.Length);
             return Mathf.Clamp01(hunterSkillByIntensity[intensity - 1]);
+        }
+
+        // Tag the spawned instance only — the shared Rhino vessel prefab asset stays
+        // untouched, so human Rhino players in every other mode are unaffected by
+        // hunter-only impact effects like VesselLifeLossByHunterSkimmerEffectSO.
+        protected override void OnAIVesselSpawned(NetworkObject aiVesselNO, Player aiPlayer)
+        {
+            if (!aiVesselNO.gameObject.TryGetComponent<FrictionHunterTag>(out _))
+                aiVesselNO.gameObject.AddComponent<FrictionHunterTag>();
         }
     }
 }

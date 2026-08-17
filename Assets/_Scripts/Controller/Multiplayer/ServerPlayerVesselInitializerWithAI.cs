@@ -180,6 +180,8 @@ namespace CosmicShore.Gameplay
                     continue;
                 }
 
+                OnAIVesselSpawned(aiVesselNO, aiPlayer);
+
                 // Server-side initialization of the AI player-vessel pair
                 if (!aiVesselNO.TryGetComponent(out IVessel vessel))
                 {
@@ -213,6 +215,16 @@ namespace CosmicShore.Gameplay
         /// with selected intensity. Friction overrides this with its own 4-level curve.
         /// </summary>
         protected virtual float ResolveAISkill() => Mathf.Clamp01(gameData.SelectedIntensity.Value * 0.25f);
+
+        /// <summary>
+        /// Called once an AI's vessel NetworkObject has spawned, before pair
+        /// initialization and pilot configuration. Default: no-op. Friction overrides
+        /// this to attach <see cref="FrictionHunterTag"/> to the spawned instance only —
+        /// never to the shared vessel prefab asset — so hunter-only impact effects
+        /// (e.g. VesselLifeLossByHunterSkimmerEffectSO) stay inert for every other mode's
+        /// Rhino players.
+        /// </summary>
+        protected virtual void OnAIVesselSpawned(NetworkObject aiVesselNO, Player aiPlayer) { }
 
         /// <summary>
         /// Returns the active domain with the fewest players. Ties are broken
