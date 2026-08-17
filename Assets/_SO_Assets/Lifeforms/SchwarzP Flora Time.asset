@@ -19,7 +19,19 @@ MonoBehaviour:
   NewPlantPeriod: 9999999
   Element: 4
   Variant:
-    Enabled: 0
+    Enabled: 1
+    LeafSize: {x: 4.72, y: 2.92, z: 1}
+    GrowPeriod: -1
+    ShieldPeriod: -1
+    WitherRingInterval: -1
+    MaxTotalSpawnedObjects: -1
+    MaxTotalSpawnedObjectsScale: -1
+    ItemsPerGrow: -1
+    RandomItems: -1
+    MaturationSeconds: -1
+    MaxSpawnsPerFrame: -1
+    PlantRadiusCellFraction: -1
+    PlantRadiusCellFractionMin: -1
   InitialLevel: 1
-  LeafScalePerLevel: 1.15
+  LeafScalePerLevel: 1
   CrystalScalePerLevel: 1.2

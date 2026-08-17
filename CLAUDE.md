@@ -191,7 +191,15 @@ outcome is optimization, not life). Use the `/ecology` skill for any change here
   Measured by `Tools/Build/measure_schwarz_p_tile.py`, and the SHIPPED C# re-proved from the
   implicit function by `Tools/Build/verify_schwarz_p_tile_tables.py` (a separate script on
   purpose: the transcription from a proven measurement to the asset is the step neither the
-  measurement nor code review can see). Full record: `Docs/ECOSYSTEM.md §33`.
+  measurement nor code review can see). **A lattice species' PRISM SIZE belongs to the
+  lattice, not to the plant**: `leafSize` is a footprint in the surface's tangent plane
+  (local +z is the normal, +y the site's tangent), so whether plates sit flush is an exact
+  OBB question against the measured site set — fit it (`Tools/Build/fit_schwarz_p_leaf_sizes.py`,
+  which tests seam pairs too, since a size fitted inside one tile is wrong at the boundary),
+  and **pin `LeafScalePerLevel` at 1**, because it scales the prism but not the lattice and
+  the Blob cell rolls Levels 1..5 — at the inherited 1.15 a level-5 plant's prisms are 1.749×
+  the flush size and it interpenetrates itself (measured: 0 overlapping pairs at L1, 144 at
+  L3, 212 at L5). Full record: `Docs/ECOSYSTEM.md §33` (§33.5 the per-element prism fit).
 - **Territorial permanence.** Take a cell, leave, it stays yours — the claim fauna cannot touch.
   In nucleus cells the permanent claim is the **nucleus interior** (fauna never consume it);
   exterior canopy/trail is deliberately contested churn (voracious any-domain grazing). In

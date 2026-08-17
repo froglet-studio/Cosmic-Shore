@@ -4471,3 +4471,81 @@ freestyle, or the Hesperides topiary) and watch: (1) it grows as a *patch spread
 not a tendril; (2) the plates meet edge to edge with no visible seam where one tile meets the
 next — the seam is where the old marcher's drift showed; (3) at full budget the six-way tunnel
 network reads clearly; (4) let fauna graze it and confirm the wound regrows.
+
+### 33.5 The prisms — sized to the tile, per element (Aug 2026, second pass)
+
+A prism is an oriented box, and the tile fixes its frame: local **+z is the surface
+normal** (the thin axis), **+y is the site's baked tangent**, **+x is
+`cross(tangent, normal)`** — Unity's `LookRotation(forward: normal, up: tangent)`. So
+`leafSize` is a *footprint in the surface's tangent plane*, and "do these plates sit
+flush without overlapping?" is an exact OBB question about a known point set, not a
+matter of taste. `Tools/Build/fit_schwarz_p_leaf_sizes.py` answers it: it reads the
+shipped table, builds every prism of a 3×3×3 tile block at the authored `periodScale`,
+and runs a separating-axis test over every neighbouring pair — **including pairs across
+a tile seam**, which is exactly where a size fitted inside one tile would be wrong.
+
+**The reference was measured, not eyeballed.** The brief was "flush like the Time and
+Charge gyroids", so the gyroid was measured first. Its prisms sit **7.825 world units**
+apart (not 3 — `separationDistance` is a bond-delta scale, not the spacing), and:
+
+| gyroid | size | span | contact |
+|---|---|---|---|
+| Charge / Time | 9 × 3.4 × 1.5 | 1.15 spacings | 33% of prisms graze, max penetration **0.19u** (2% of the plate) |
+| Mass | 7 × 4.5 × 3.5 | 0.89 spacings | 49% graze, max 0.31u |
+| Space | 20 × 1 × 1 | 2.56 spacings | 99% interpenetrate, max 1.14u |
+
+So the family's Charge/Time look is a plate about one spacing long that just touches its
+neighbours, and its **Space is deliberately a strut that spans two and a half spacings
+and passes through everything** — that is what makes it skeletal.
+
+**The Schwarz P fit.** At the shipped flora (level 3, 37 sites/tile) sites sit **4.667
+min / 5.263 mean** world units apart. Sweeping aspect against the largest footprint that
+still has *zero* overlaps:
+
+| aspect | x | y | coverage |
+|---|---|---|---|
+| 1.0 | 3.69 | 3.69 | 47.7% |
+| 1.3 | 4.30 | 3.31 | **49.9%** |
+| 1.618 | 4.72 | 2.92 | 48.3% |
+| 2.0 | 5.10 | 2.55 | 45.6% |
+| 3.4 | 5.61 | 1.65 | 32.4% |
+| 5.0 | 5.85 | 1.17 | 24.0% |
+
+Coverage is broad and flat near square, so the aspect can be chosen for looks at almost
+no cost — which is what the four elements do:
+
+| element | leaf size | aspect | span | result |
+|---|---|---|---|---|
+| **Charge / Time** | **4.72 × 2.92 × 1** | 1.618:1 (golden) | 0.90 spacings | flush, **zero overlaps**, 48.3% coverage |
+| **Mass** | **4.09 × 3.14 × 2** | 1.3:1 | 0.78 | chunkier — squarer footprint, twice the slab; **zero overlaps**, 45.0% |
+| **Space** | **13.5 × 0.7 × 0.7** | 19.3:1 | 2.57 | the strut: skeletal, largest bounds, interpenetrating by design |
+
+Every plate is thin in z. The gyroid's Charge/Time runs a thickness of 0.19 spacings and
+its Mass 0.45; these are 0.19 and 0.38 — the same family. **Space is the one element that
+is not a flush plate**, matched deliberately to the gyroid's Space (2.57 spacings against
+its 2.56): a strut spanning the lattice is what takes the largest bounds and reads
+skeletal, and it cannot do that and avoid its neighbours at the same time.
+
+**The level trap — a lattice species must pin `LeafScalePerLevel` at 1.** `ApplyLevel`
+multiplies the leaf by `LeafScalePerLevel^(Level-1)`, and the Blob cell rolls this species
+at **Levels 1..5**. It scales the *prism* but not the *lattice*, so at the inherited 1.15 a
+level-5 plant's prisms are **1.749×** the size fitted flush and the plant interpenetrates
+itself — measured at **144 overlapping pairs at level 3 and 212 at level 5**, against zero
+at level 1. Pinned to 1, every level is clear. Nothing is lost: the crystal still grows
+with level (`CrystalScalePerLevel`), and budget and lineage are untouched. **The prism size
+belongs to the lattice, not to the plant.**
+
+**All six producers were authored, not four.** The species has six config sites and a
+size applied to four of them shows up wrong in two cells: the four `SchwarzP Flora
+<Element>` assets, the **Hesperides topiary** (Element 2 / Mass — it carried a 4.2 × 4.2
+square, wider than the 4.667 minimum spacing, so it was overlapping) and the **Blob**
+config (no `Variant` of its own — it delegates to the element palette — but it is the
+config whose `LeafScalePerLevel` the spawner actually reads). `SchwarzPFlora.prefab`'s own
+fallback `leafSize` was the same overlapping 5 × 5 square and now carries the fitted
+Charge/Time plate, so the variant-less path and the Lifeform Matrix preview are correct too.
+
+Regenerate with `--render` for the preview sheet, `--write` to re-author. The writer emits
+**every** `FloraVariantTuning` field explicitly and asserts the key set against the C#
+class, because the keep-the-prefab sentinel is **−1**, not 0 — writing
+`MaxTotalSpawnedObjects: 0` would not mean "keep", it would set the plant's live-prism
+budget to zero and it would never grow a prism.
