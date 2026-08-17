@@ -292,6 +292,26 @@ nothing upstream changed. Wake prisms' z genuinely points down the trail
 (`blockRotation = transform.rotation` at lay time), so the authored-z invariant the dimension
 ladder rests on holds for every wake ribbon.
 
+## The stamp (round 13): the spine cannot be RECONSTRUCTED — the lay must record it
+
+Round 12's spine recovery was right about the helix and wrong about the cure. Its claim —
+"the block's rotation preserves the lay-time right vector" — is FALSE for exactly the blocks a
+drifting Squirrel lays: the lay offset rides the **ship's** right, but the block's rotation can
+be a travel-aligned override (`BlockRotationOverride`, set by drift and barrel-roll bridging so
+prisms lay along the travel direction). For those blocks `block.right` is the wrong axis, and
+subtracting ~10u along a wrong, per-block-varying direction is the reported "bobbing up and
+down and over to the other trail" (the flailing hull then contacts and pays both ribbons —
+the "shielding both trails").
+
+So the recovery is dead as a concept: **any reconstruction of the lay offset from the block's
+own geometry has now failed twice** (fixed-distance-along-right → helix under roll;
+undo-along-block-right → wrong axis under the rotation override). The spawner now stamps
+`Prism.TrailLayOffset` — the exact world-space vector it added to the spawn position — and
+`Trail.RidePoint` subtracts it. Immune to roll, to the rotation override, to per-block boost
+gap variance (the round-12 approximation note is void — the stamp is per-block and exact), and
+to the payoff growing ridden blocks (no live width read). Cleared on pool reuse, stamped after
+`Initialize`, zero for spawnable lays and ungapped wakes (centres already ARE the spine).
+
 ## The helix (round 12): a rolling layer BRAIDS its ribbons — ride the spine
 
 Round 11 restored the right transformer and the ride still "orbited like crazy" — because the
@@ -304,7 +324,8 @@ right inherits that helix: the block centres (ridden before round 9) and the inn
 round 9's `RidePoint` chose as "the width-independent line") alike. Following a 9.25u-radius
 helix at 150 u/s IS orbiting like crazy — in every round so far, under every transformer.
 
-The fix is exact, not approximate: `RidePoint` now undoes the **entire** lay offset —
+The fix was exact in intent and WRONG in mechanism *(see round 13 — the block-right
+reconstruction fails under `BlockRotationOverride`; the lay now stamps the offset)*: `RidePoint` undoes the **entire** lay offset —
 `blockPos − blockRight × (width/2 + halfGap)` — recovering the SPINE, the path the laying
 vessel's own centre flew. Because the block's rotation preserves the lay-time right vector,
 the recovery holds under full roll: the spine is straight where the flight was straight,

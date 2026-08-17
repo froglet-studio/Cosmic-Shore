@@ -26,47 +26,37 @@ namespace CosmicShore.Gameplay
         public PrismscapeDimension Dimension { get; set; } = PrismscapeDimension.Trail;
 
         /// <summary>
-        /// Which way this ribbon's blocks are offset from the SPINE the vessel actually flew:
-        /// +1 / -1 for the two ribbons of a gapped pair, 0 when the block centres ARE the
-        /// spine (an ungapped wake, and everything a spawnable lays). Declared by the layer,
-        /// because only the layer knows it - a prism cannot tell which of its faces points at
-        /// its sibling ribbon. <see cref="LateralHalfGap"/> carries the gap half of the same
-        /// declaration.
-        /// </summary>
-        public float LateralAnchor { get; set; }
-
-        /// <summary>Half the authored gap between the ribbon pair, world units - the constant
-        /// part of the lay offset (<c>xShift = width/2 + halfGap</c>).</summary>
-        public float LateralHalfGap { get; set; }
-
-        /// <summary>
         /// The point on <paramref name="p"/> the RIDE follows: the block's centre corrected
         /// back onto the SPINE - the path the laying vessel's own centre actually flew - by
-        /// undoing the ENTIRE lay offset, <c>right × (width/2 + halfGap)</c>.
+        /// subtracting the EXACT world-space offset the lay applied
+        /// (<see cref="Prism.TrailLayOffset"/>, stamped by the spawner).
         ///
-        /// Undoing all of it (not just the width half) is what makes the ride survive a
-        /// ROLLING layer. Each block is laid at <c>spine + vesselRight × xShift</c> with the
-        /// vessel's right AT LAY TIME - roll included - so a vessel that rolls while flying
-        /// (the Squirrel, constantly) lays each ribbon as a HELIX braided around its flight
-        /// path, radius xShift (~10u and up on a Squirrel). Any ride line that keeps a fixed
-        /// distance from the spine along the block's right - the centres, the inner edge -
-        /// inherits that helix, and riding it at speed IS "orbiting like crazy". The spine is
-        /// the one line that is straight when the flight was straight, and because the block's
-        /// own rotation preserves the lay-time right vector, subtracting the full offset
-        /// recovers it EXACTLY, roll and all.
+        /// Why the stamp, and never a reconstruction from the block's own geometry - both
+        /// reconstructions have been tried here and both put the ride on a corkscrew:
         ///
-        /// Both ribbons of a pair map to the SAME spine, which is also correct: the pair is
-        /// one wake, and whichever ribbon you touch, the road is the path the vessel flew.
-        /// Reads the block's AUTHORED width (<see cref="Prism.TargetScale"/>), not its live
-        /// scale, so a block still growing in does not drag the line with it.
+        ///  * A line at fixed distance along the block's right (the centres, the inner edge)
+        ///    inherits the layer's ROLL: each block is offset along the ship's right AT LAY
+        ///    TIME, so a rolling layer (the Squirrel, constantly) braids each ribbon into a
+        ///    HELIX around its flight path, radius ~10u and up. Riding it at speed IS
+        ///    "orbiting like crazy".
+        ///  * Undoing the offset along <c>block.right</c> fails differently: the offset rides
+        ///    the SHIP's right, but the block's ROTATION can be a travel-aligned override
+        ///    (drift and barrel-roll bridging prisms - `BlockRotationOverride`), so for
+        ///    exactly the blocks a drifting Squirrel lays, `block.right` is the wrong axis
+        ///    and the "recovered spine" bobs and swings ribbon to ribbon.
+        ///
+        /// The stamped vector is immune to both, and to width changes after the lay (the
+        /// payoff GROWS ridden blocks - a recovery that reads the live width would shift
+        /// under the rider as it pays). Both ribbons of a gapped pair map to the SAME spine,
+        /// which is correct: the pair is one wake, and whichever ribbon you touch, the road
+        /// is the path the vessel flew. Blocks with no stamp (spawnable lays, ungapped
+        /// wakes) ride their centres.
         /// </summary>
         public Vector3 RidePoint(Prism p)
         {
-            var t = p.transform;
-            if (LateralAnchor == 0f) return t.position;
-            float width = p.TargetScale.x;
-            if (width <= 0f) width = t.localScale.x;
-            return t.position - t.right * (LateralAnchor * (width * 0.5f + LateralHalfGap));
+            return p.TrailLayOffset.sqrMagnitude > 1e-8f
+                ? p.transform.position - p.TrailLayOffset
+                : p.transform.position;
         }
 
         bool isLoop;

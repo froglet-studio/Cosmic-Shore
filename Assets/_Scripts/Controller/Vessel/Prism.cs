@@ -729,6 +729,7 @@ namespace CosmicShore.Gameplay
             // builder and the vessel spawner both do.
             Trail = null;
             if (prismProperties != null) prismProperties.Trail = null;
+            TrailLayOffset = Vector3.zero;
 
             // Pool-reuse safety: no spawner requests super-shield via prismProperties
             // before Initialize (it's engaged post-spawn via ActivateSuperShield /
@@ -1362,6 +1363,21 @@ namespace CosmicShore.Gameplay
             Trail = trail;
             if (prismProperties != null) prismProperties.Trail = trail;
         }
+
+        /// <summary>
+        /// The WORLD-SPACE offset this block was laid at from the laying vessel's centre path
+        /// (the wake's SPINE) - stamped by the spawner, exactly the vector it added to the
+        /// spawn position. Zero for everything that is not a gapped wake block.
+        ///
+        /// It is stored as the actual vector, never reconstructed from the block's own axes,
+        /// because the two genuinely disagree: the offset is applied along the SHIP's right
+        /// while the block's rotation can be a travel-aligned override (drift and barrel-roll
+        /// bridging prisms - `BlockRotationOverride`), so `block.right` is the wrong axis for
+        /// exactly the blocks a drifting Squirrel lays. <see cref="Trail.RidePoint"/> subtracts
+        /// this to recover the spine the ride follows. Cleared on pool reuse like all lay
+        /// state, stamped AFTER Initialize like trail membership.
+        /// </summary>
+        public Vector3 TrailLayOffset;
         
         public void RegisterProjectileCreated(string playerName)
         {

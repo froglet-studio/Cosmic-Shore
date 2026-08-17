@@ -356,6 +356,27 @@ and ride it — the ride runs straight down the corridor between the braided rib
 no swing; attach to either ribbon of the pair → same road; the Urchin's own trail rides as
 before.
 
+**ROUND 13 (2026-08-16) — the spine cannot be reconstructed; the lay STAMPS it.** Playtest of
+round 12: rode a Squirrel, swapped to Urchin, attached to the Squirrel trail → "immediately
+bobbing up and down and over to the other trail, shielding both trails". Round 12's premise —
+"the block's rotation preserves the lay-time right vector" — is FALSE for exactly the blocks a
+DRIFTING Squirrel lays: the lay offset rides the SHIP's right, but drift/barrel-roll bridging
+sets `BlockRotationOverride` so those blocks are rotated to the TRAVEL direction. `block.right`
+is then the wrong axis, and subtracting ~10u along a wrong, per-block-varying direction is the
+bob-and-swing (the flailing hull then contacted and paid both ribbons — the shielding).
+
+Reconstruction of the lay offset from block geometry has now failed twice (fixed offset along
+right → helix under roll; undo along block.right → wrong axis under the override), so it is
+dead as a concept: **`Prism.TrailLayOffset`** — the exact world-space vector the spawner added
+to the spawn position — is stamped per block (after `Initialize`, cleared on pool reuse) and
+`Trail.RidePoint` subtracts it. Immune to roll, to the rotation override, to per-block boost
+gap variance (round 12's approximation note is void — per-block exact), and to the payoff
+GROWING ridden blocks (no live width read). `Trail.LateralAnchor`/`LateralHalfGap` deleted.
+
+Round-13 verify: fly the Squirrel and DRIFT + roll while laying, swap to the Urchin, attach to
+that trail — the ride runs clean down the wake's spine, no bobbing, no crossing to the sibling
+ribbon, payoff only on the ribbon you ride. Straight-flight trails unchanged.
+
 Round-10 verify (`URCHIN_TRAIL_RIDER.md` steps 7/8/8a): release mid-grind → coasts to a stop;
 grind onto an enemy trail → brakes rather than snaps; latch on at speed holding forward →
 carries the speed, eases onto the rail, no sideways pop; full-speed run down a long ribbon → no
