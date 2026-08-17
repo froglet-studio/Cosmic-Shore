@@ -35,6 +35,19 @@ namespace CosmicShore.Gameplay
         // re-applied whenever the owner's level changes (LifeForm.ApplyLevel / LevelUp,
         // Fauna.SetLevel). Callers work in WORLD scale; the local-scale conversion divides out
         // the parent chain, so a heart carried by a body that is itself growing holds its size.
+        //
+        // THE ROOT SCALE IS THE GAMEPLAY NUMBER - a per-element SIZE fix never goes here.
+        // The four elemental prefabs do NOT render the same at the same root scale: each carries
+        // its own model correction on the child BELOW the root (Charge 1.38 / Mass 1.38 /
+        // Space 1.34 / Time 1.42), because their exported models are different sizes and Mass is
+        // four animated Shepard shells rather than one solid body. Charge and Mass shipped with
+        // NO correction, so a uniform root scale rendered them ~30-42% smaller than Space and
+        // Time - which is exactly what the old per-species scales had been quietly compensating
+        // for (the gyroid authored its Mass heart at 4.0 where every other flora authored Space
+        // at 3.0, a 1.33 ratio cancelling Space's 1.34 child). If an element still reads wrong,
+        // fix its crystal PREFAB's model child. Scaling the root instead would move the collect
+        // reward and the live domain fauna buff with it, both of which read the root's
+        // lossyScale - and re-open the per-element reward spread this whole system removed.
 
         // Used only if Resources/ElementalCrystalSet is missing - the same misconfiguration the
         // provisioning paths below already report loudly. Mirrors the shipped asset's values.

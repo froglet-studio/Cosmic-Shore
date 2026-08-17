@@ -4394,6 +4394,38 @@ world scale, a 5.7× spread nobody chose**, on a number that is read twice as ga
   `FaunaConfigurationSO.CrystalScalePerLevel` are deleted: a per-species crystal factor is a
   per-species REWARD, which is not a thing anyone was trying to author.
 
+### The root scale is the gameplay number — per-element size lives BELOW it
+
+Uniform root scale is **not** uniform apparent size. The four elemental crystal prefabs render
+differently at the same root scale, and each carries its own correction on the model child
+below the root:
+
+| | model correction (child of the crystal root) | rendered vs. Space |
+|---|---|---|
+| Charge | 1.0 → **1.38** | was ~0.75× |
+| Mass | 1.0 → **1.38** | was ~0.75× |
+| Space | 1.34 (as shipped) | 1.0 |
+| Time | 1.42 (as shipped) | ~1.06× |
+
+Charge and Mass shipped with **no** correction, so the uniform root scale rendered them ~30–42%
+smaller than Space and Time — reported from play as "blue mass crystals are super tiny" (blue =
+the embedded-heart state, §30). Their models are also structurally different: Space is one solid
+body inflated by a `_spread` of 0.15, while Mass is four nested shells animated by
+`ShepardGraph._ScaleDistance`, so no analytic mesh comparison predicts apparent size — only an
+eye does.
+
+This is what the old per-species crystal scales had been quietly compensating for, which is why
+they looked arbitrary: the gyroid authored its **Mass** heart at 4.0 while every other flora
+authored **Space** at 3.0 — a 1.33 ratio that almost exactly cancels Space's 1.34 child.
+
+**The rule: a per-element size fix goes on that element's crystal PREFAB, on the child below the
+root — never on the root.** The root's world scale is read as gameplay twice
+(`SkimmerAdjustElementLevelByCrystalEffectSO`, `DomainFaunaBuffSystem`), so correcting a look on
+the root moves the reward with it and re-opens the per-element reward spread this section
+removed. Charge/Mass were set to 1.38, the midpoint of the two elements that were already
+eye-calibrated; if an element still reads wrong, move ITS child, and expect the other three to
+stay put.
+
 ### Where the size is applied — the one gate
 
 `Crystal.SetEmbeddedIn` — the single call every lifeform heart in the game passes through
