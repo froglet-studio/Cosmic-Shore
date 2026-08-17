@@ -21,10 +21,15 @@ namespace CosmicShore.Gameplay
 
         [Tooltip("OPTIONAL, and the robust way: name the authored material(s) the domain colour " +
                  "REPLACES, and every slot wearing one is repainted - whatever index it sits at " +
-                 "on each renderer. Two reasons to prefer this over the slot index: a vessel " +
-                 "whose submesh order is not consistent across its parts (no single index can be " +
-                 "right for all of them), and a vessel whose art has MORE than one slot that " +
-                 "should carry the domain. Leave empty to use the slot index above.")]
+                 "on each renderer. The fleet convention (spelled out by the Squirrel FBX's " +
+                 "externalObjects map) is THREE material roles: 'Body' = BlueBaseVesselMaterial, " +
+                 "the dark glassy hull that never changes; 'Domain' = GreenAccentVesselMaterial, " +
+                 "the accent the runtime REPLACES with the domain ship material (authored jade " +
+                 "only because jade is the menu default - it is a placeholder, not a colour " +
+                 "choice); 'Window' = ScreenVesselMaterial, fixed. So this list normally names " +
+                 "exactly GreenAccentVesselMaterial. Never list the Body material - painting it " +
+                 "turns the whole hull one uniform material and erases the two-tone read. " +
+                 "Leave empty to use the slot index above.")]
         [SerializeField] List<Material> _domainReplacesMaterials = new();
 
         /// <summary>

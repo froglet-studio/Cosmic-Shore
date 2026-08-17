@@ -345,7 +345,46 @@ A geometry wearing none of the named material warns once by name — an authorin
 otherwise invisible, because a part that simply never recolours looks like a part that is meant
 to be a fixed colour.
 
-### The jade that survived a Ruby swap: `GreenAccentVesselMaterial` IS Jade (round 20)
+### Round 21 SUPERSEDES round 20: `GreenAccentVesselMaterial` is the DOMAIN PLACEHOLDER, not a bug
+
+Round 20's measurement was right and its conclusion was wrong. The measurement: `GreenAccent`'s
+colours are exactly Jade's ship colours ×2. The wrong conclusion: "hardcoded jade, welded in —
+replace it AND the base." Painting both materials made the vessel **uniformly one material**,
+which erased the two-tone read entirely.
+
+The authority is the **Squirrel's FBX `.meta`**, whose `externalObjects` names the three material
+roles the fleet actually uses:
+
+| FBX material name | Asset | Role |
+|---|---|---|
+| `Body` | `BlueBaseVesselMaterial` | the dark glassy hull — **never changes** |
+| **`Domain`** | `GreenAccentVesselMaterial` | **the accent the runtime REPLACES with the domain ship material** — authored jade only because jade is the menu default |
+| `Window` | `ScreenVesselMaterial` | cockpit screen — never changes |
+
+Measured proportions on the Squirrel (the reference the design points at): **Domain 26% / Body
+64% / Window 2% / Engine 6%** of polygons. The domain colour is an *accent* on a dark body, with
+the window and engines fixed — "swapping just the accent colors, and leaving the screen, base,
+and jets their own materials." The Urchin's authored mapping (Body on its ~75% majority submesh,
+Domain on its ~25% accent submesh, Window on the Body part's third submesh) matches this model
+**exactly** — the original authoring was correct all along, and the one true defect was
+`ShroudLeft`'s reversed slot pair, long since normalized.
+
+So the final state: authored order everywhere (`BlueBase` slot 0, `GreenAccent` slot 1, `Screen`
+on Body's slot 2), and `_domainReplacesMaterials` names **only `GreenAccentVesselMaterial`**.
+On a Ruby pilot: every accent goes ruby, the body stays dark navy glass, the screen stays a
+screen — no jade anywhere, and not uniform either.
+
+Model facts established by parsing `Urchan_Test.fbx` directly (binary FBX 7400), for the next
+person who suspects "model errors": all 14 geometries declare their materials in the same order
+(`Material.004` = Body ~70–80% of polys, `Material.009` = Domain accent, `Material.002` = Window,
+Body only); the mirrored halves match poly-for-poly; each prefab renderer wires its own distinct
+mesh; **the left gun is clean** — its only anomaly was the prefab-side ShroudLeft slot reversal.
+One deliberate judgment call: the Window submesh is only 33 polygons but forms the vessel's
+whole FRONT DOME (a third of the silhouette — the pale disc with the glowing rings). That is the
+authored art, plausibly the Urchin's "eye", and it is left as authored; if it should read as dark
+hull instead, the change is ONE slot (Body renderer slot 2 → `BlueBaseVesselMaterial`).
+
+### ~~The jade that survived a Ruby swap: `GreenAccentVesselMaterial` IS Jade~~ (round 20 — conclusion superseded above; measurements below remain valid)
 
 Naming one material was still not enough, because **both** of the Urchin's authored materials are
 domain-bearing and neither is a legitimate neutral. Measured, not inferred:

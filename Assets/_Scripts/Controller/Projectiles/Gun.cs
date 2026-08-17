@@ -303,7 +303,19 @@ namespace CosmicShore.Gameplay
             projectile.SetChainRangeScale(ChainRangeScale);
             projectile.SetChainRangeFalloff(ChainRangeFalloff);
 
-            projectile.transform.localScale = projectileScale * projectile.InitialScale;
+            // WORLD size, not local: the projectile is parented under the container while it
+            // spawns, and a container inside a scaled model subtree (the Urchin's muzzles sit
+            // under guns at 1.75) would silently multiply into the round's size, colliders and
+            // sweep radius. Divide the parent's lossy scale back out so the round is exactly
+            // projectileScale x InitialScale in the world regardless of what it spawned under.
+            // A scale-1 container (every hull-origin fire point) divides by 1 and is unchanged.
+            Vector3 lossy = containerTransform.lossyScale;
+            projectile.transform.localScale = Vector3.Scale(
+                projectileScale * projectile.InitialScale,
+                new Vector3(
+                    1f / Mathf.Max(Mathf.Abs(lossy.x), 1e-4f),
+                    1f / Mathf.Max(Mathf.Abs(lossy.y), 1e-4f),
+                    1f / Mathf.Max(Mathf.Abs(lossy.z), 1e-4f)));
 
             // MASS in-flight growth: set BEFORE launch, which is where the round captures the
             // scale it will grow from. The gun owns no growth policy - it is handed a factor.

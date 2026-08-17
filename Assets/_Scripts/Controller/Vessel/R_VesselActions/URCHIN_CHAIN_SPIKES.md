@@ -286,6 +286,36 @@ checked once per tick, so the two cases are not conflated into one early return.
 | Spike pools (per-vessel) | `_Prefabs/Spacevessels/Urchin.prefab` — a `ProjectileFactory` + three `ProjectilePoolManager`s, `maxSize` 400 / 160 / 48 |
 | Asset generator (idempotent, key-validating) | `Tools/Build/author_urchin_assets.py` |
 
+## Round 21: "spikes stick but nothing steals or chains" — the abortable effect chain
+
+The playtest read "spikes are just getting stuck in everything without stealing anything or
+beginning their chain reaction." The container order is `[Embed, Steal, ChainFire]` and the
+dispatch loop had NO per-effect isolation, so any throw inside Steal killed ChainFire for that
+contact — and the throw was *upstream of the domain flip*, so the steal itself never landed
+either. Embed runs first, which is why the spikes still visibly stuck. Three repairs, one
+diagnosis aid:
+
+1. **Two prism prefabs could not be stolen at all**: `TrailRing.prefab` (the Squirrel's crystal
+   rings — 2 of its 3 `PrismTeamManager`s) and `GreenDartBlock.prefab` had `onPrismStolen`
+   and/or `_themeManagerData` slots authored `{fileID: 0}`. Under the fail-loud SOAP policy
+   there is no null guard, so `PrismTeamManager.Steal` threw at the Raise on every hit. Wired
+   (9 slots total) to the same `EventOnPrismStolen` / `ThemeManagerDataContainer` assets every
+   sibling prefab wires.
+2. **`Steal` now flips FIRST and reports SECOND.** The payload (AttackerName = previous owner)
+   is captured before `ChangeTeam`, but the `onPrismStolen.Raise` moved after it: reporting
+   must never be able to veto gameplay. A broken listener now costs the stat line, not the
+   steal or the cascade.
+3. **`ProjectileImpactor` dispatch loops run each effect isolated**
+   (`ImpactorBase.RunEffectIsolated`): a throwing effect is reported ONCE per (effect,
+   impactor type) with its stack — loud, named — and the rest of the list still runs. The
+   companion of `IsEffectSlotEmpty`, same doctrine. If anything else in the field is killing
+   the chain, the next playtest's console now names it instead of going silent.
+4. **Muzzle-fired rounds were 1.75× oversized** (round 19 regression): `FireSingle` set
+   `localScale` under the muzzle's parent chain, and the Urchin's guns carry scale 1.75, which
+   multiplied into the spike's size, collider AND sweep radius. The scale is now authored in
+   WORLD terms — the container's lossy scale is divided back out, so a hull-origin fire point
+   (scale 1) is unchanged and a scaled muzzle no longer leaks into the round.
+
 ## Tuning knobs
 
 | Knob | Where | Value |

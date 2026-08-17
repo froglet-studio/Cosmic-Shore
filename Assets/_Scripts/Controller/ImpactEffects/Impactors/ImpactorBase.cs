@@ -57,6 +57,43 @@ namespace CosmicShore.Gameplay
             return true;
         }
 
+        // Effect instances whose Execute already threw, keyed by (effect, impactor type) so a
+        // broken effect names itself once rather than once per contact.
+        static readonly HashSet<long> s_reportedThrowingEffects = new();
+
+        /// <summary>
+        /// Runs one effect with its siblings' survival guaranteed: an exception inside
+        /// <c>Execute</c> is reported ONCE per (effect, impactor type) with its stack - loud,
+        /// named, actionable - and the rest of the effect list still runs.
+        ///
+        /// The companion of <see cref="IsEffectSlotEmpty"/>, and the same doctrine: this is not
+        /// a fail-soft blanket, it is fail-loud with the offender's address. Before it, one
+        /// throwing effect (an unwired SOAP event on a prism variant, a listener assuming
+        /// in-game state from the menu) silently killed every LATER effect in the list for that
+        /// contact - on the Urchin spike container that meant an aborted steal also swallowed
+        /// the chain volley, and the whole weapon read as dead with nothing in the console
+        /// naming why.
+        /// </summary>
+        protected void RunEffectIsolated(System.Action execute, UnityEngine.Object effect)
+        {
+            try
+            {
+                execute();
+            }
+            catch (System.Exception ex)
+            {
+                int effectId = effect ? effect.GetInstanceID() : 0;
+                long key = ((long)effectId << 32) ^ (uint)GetType().Name.GetHashCode();
+                if (s_reportedThrowingEffects.Add(key))
+                {
+                    CSDebug.LogError(
+                        $"[{GetType().Name}] Effect '{(effect ? effect.name : "<null>")}' threw during " +
+                        $"Execute - reported once; the rest of this contact's effect list still runs.\n{ex}",
+                        effect);
+                }
+            }
+        }
+
         // Per-concrete-type profiler marker so an impact storm shows up in captures as
         // e.g. 'SkimmerImpactor.AcceptImpactee' with real timings instead of vanishing
         // into Physics.SendEvents self-time. Lazily created (one string per component

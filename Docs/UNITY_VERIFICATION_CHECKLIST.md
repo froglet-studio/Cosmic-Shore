@@ -459,8 +459,46 @@ Urchin hull opacity.**
   `BlueBaseVesselMaterial` is shared by nine vessels; this is a per-renderer slot-order fix on
   the Urchin prefab only.
 
+**ROUND 21 (2026-08-17) — reorient merge; the steal chain was abortable; round 20's material
+conclusion reversed by the Squirrel's own material map.**
+
+- **Merged `origin/bleeding-edge`** (43 commits: Dolphin elemental re-cut, self-trail contact
+  grace, logging channels, ecology fixes). One docs conflict, both sides kept.
+- **"Spikes stick but nothing steals or chains"** — the container is `[Embed, Steal, ChainFire]`
+  with no per-effect isolation, so a throw inside Steal killed both the flip (it sat upstream)
+  and the chain volley, while Embed had already landed. Fixed four ways: wired the 9 authored
+  `{fileID: 0}` holes on `TrailRing.prefab` / `GreenDartBlock.prefab` (`onPrismStolen`,
+  `_themeManagerData` — an unstealable prism family under the fail-loud SOAP policy);
+  `PrismTeamManager.Steal` now flips BEFORE it reports (capture payload → `ChangeTeam` →
+  `Raise`), so reporting can never veto gameplay; `ProjectileImpactor` runs every effect
+  through `ImpactorBase.RunEffectIsolated` (throw = ONE named console error with stack,
+  siblings still run); and `Gun.FireSingle` authors projectile scale in WORLD terms — the
+  Urchin's muzzles sit under guns at scale 1.75, which had been multiplying into every
+  round's size, collider and sweep radius since round 19.
+- **Materials: round 20 reversed.** The Squirrel FBX's `externalObjects` map names the roles:
+  `Body` = BlueBase (dark glass, fixed), **`Domain` = GreenAccent (the placeholder the runtime
+  REPLACES — authored jade because jade is the menu default)**, `Window` = Screen (fixed).
+  Squirrel proportions: Domain 26% / Body 64% / Window 2% / Engine 6% — the domain is an
+  ACCENT. The Urchin's authored mapping matches exactly, so `_domainReplacesMaterials` now
+  names ONLY `GreenAccentVesselMaterial` and the vessel is two-tone again: domain accents +
+  dark body + screen. Rendered the FBX submeshes offline (three orthographic views): the left
+  gun is clean, every part is Body-majority + Domain-accent, and the "Window" is the authored
+  front dome (33 polys, a third of the silhouette — left as authored; if it should be dark
+  hull, the change is one slot on the Body renderer).
+
+Round-21 verify: change domain to Ruby on the Urchin → the ACCENTS (ribs, rings, gun rings) go
+ruby, the body stays dark navy glass, the front dome stays the screen material, **no jade
+anywhere, and NOT one uniform material**. Fire the aimed volley into a hostile trail → prisms
+recolour to your domain (the steal) and child volleys erupt from converted prisms (the chain);
+fire at a Squirrel crystal RING → it steals and chains too (this was structurally impossible
+before — the ring prefab's steal event was unwired). Shotgun spikes are back to their normal
+size (they were 1.75× oversized since round 19). If anything in the chain still fails, the
+console now names the exact effect and stack — paste that line back.
+
 **ROUND 20 (2026-08-17) — the jade that survived a Ruby swap: BOTH of the Urchin's authored
-materials are domain-bearing.**
+materials are domain-bearing.** *(Conclusion REVERSED by round 21 — GreenAccent is the Domain
+placeholder by fleet convention; painting both erased the two-tone read. The colour measurements
+remain valid.)*
 
 - **`GreenAccentVesselMaterial` IS Jade, hardcoded.** Its `_Color2` (the fresnel rim, the part
   that glows) is `(0, 0.7765, 1.4980)` = `JadeColors.ShipColor2 × 2` **exactly, to 7 decimals**;
