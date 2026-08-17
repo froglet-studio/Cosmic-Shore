@@ -56,6 +56,11 @@ namespace CosmicShore.Gameplay
         [SerializeField] float HostileTerrainSpeed;
         [SerializeField] float DestroyedTerrainSpeed;
 
+        [Tooltip("How quickly the ride's speed chases its target (1/s, exponential). The rail's " +
+                 "weight: crossing from a friendly prism (150) onto a hostile one (10) becomes " +
+                 "a braking slide rather than a 15x snap, and letting go coasts to a stop.")]
+        [SerializeField] float speedTrackingRate = 5f;
+
         [HideInInspector]
         public float Throttle;
 
@@ -139,6 +144,11 @@ namespace CosmicShore.Gameplay
             TravelHeading = heading.sqrMagnitude > 1e-6f
                 ? heading.normalized * (int)direction
                 : Vector3.forward;
+
+            // Carry the arrival speed onto the rail. Starting the grind at a dead stop and
+            // ramping back up brakes the pilot for latching on, which is the opposite of what
+            // a rail grind should reward; the smoothing then eases it to the ride's own pace.
+            _rideSpeed = Mathf.Max(0f, vesselData.Speed);
             return true;
         }
 
@@ -146,6 +156,7 @@ namespace CosmicShore.Gameplay
         {
             if (attachedTrail != null) attachedTrail.OnOldestRemoved -= HandleOldestRemoved;
             attachedTrail = null;
+            _rideSpeed = 0f;
         }
 
         /// <summary>
@@ -168,51 +179,42 @@ namespace CosmicShore.Gameplay
             if (attachedTrail != null) attachedTrail.OnOldestRemoved -= HandleOldestRemoved;
         }
 
+        /// <summary>
+        /// The ride's live speed - smoothed, so it is also what the ride COASTS on when the
+        /// pilot lets go. The transformer keeps calling <see cref="RideTheTrail"/> while this
+        /// is bleeding off rather than cutting the ride dead at the throttle deadband.
+        /// </summary>
+        public float RideSpeed => _rideSpeed;
+        float _rideSpeed;
+
         public void RideTheTrail()
         {
             if (!IsAttached) return;
 
-            var upcomingBlocks = attachedTrail.LookAhead(attachedBlockIndex, percentTowardNextBlock, direction, Throttle * FriendlyTerrainSpeed * Time.deltaTime);
-            if (upcomingBlocks == null || upcomingBlocks.Count < 2) {
-                CSDebug.LogWarning("Could not move TrailFollower, not enough upcoming blocks");
-                return;
-            }
+            // ONE speed for the frame, smoothed toward the block-under-the-rider's target.
+            //
+            // Terrain speed is a per-BLOCK step (friendly 150 vs hostile 10 - a 15x cliff at a
+            // domain boundary), and the old walk re-read it per block WITHIN the frame and
+            // published each value to vesselData.Speed in turn, so the ride's speed jumped
+            // block to block and the last block of the frame won. Chasing one target
+            // exponentially turns every one of those cliffs - terrain change, throttle
+            // change, release - into a deceleration you can feel rather than a snap.
+            //
+            // A frame covers ~2.5u at full grind (150 u/s at 60fps) against blocks 4u and
+            // longer, so treating speed as constant across the frame costs nothing real and
+            // removes the entire per-block time-accounting walk (and with it the LookAhead
+            // call, whose <2-block early-out fought the hole bridging: a ribbon whose
+            // survivors are sparse would refuse to move at all).
+            var block = AttachedPrism;
+            float terrain = block ? GetTerrainAwareBlockSpeed(block) : FriendlyTerrainSpeed;
+            float multiplier = vesselData.VesselTransformer ? vesselData.VesselTransformer.SpeedMultiplier : 1f;
 
-            // TODO: percentTowardNextBlock is always positive?
+            _rideSpeed = Mathf.Lerp(_rideSpeed, Throttle * terrain * multiplier,
+                                    1f - Mathf.Exp(-speedTrackingRate * Time.deltaTime));
+            vesselData.Speed = _rideSpeed;
 
-            var distanceToTravel = 0f;  // <-- This is what we're calculating
-            var timeRemaining = Time.deltaTime; 
-
-            var blockIndex = 0;
-            var currentBlock = upcomingBlocks[blockIndex];
-            var nextBlock = upcomingBlocks[blockIndex+1];
-
-            var distanceToNextBlock = Vector3.Magnitude(nextBlock.transform.position - currentBlock.transform.position) * (1-percentTowardNextBlock);
-            var speedToNextBlock = Throttle * GetTerrainAwareBlockSpeed(currentBlock);
-            
-            speedToNextBlock *= vesselData.VesselTransformer.SpeedMultiplier;
-            vesselData.Speed = speedToNextBlock;
-
-            var timeToNextBlock = distanceToNextBlock / speedToNextBlock;
-
-            while (timeRemaining > timeToNextBlock)
-            {
-                distanceToTravel += distanceToNextBlock;
-                timeRemaining -= timeToNextBlock;
-                
-                currentBlock = upcomingBlocks[++blockIndex];
-                nextBlock = upcomingBlocks[blockIndex + 1];
-                
-                distanceToNextBlock = Vector3.Magnitude(nextBlock.transform.position - currentBlock.transform.position);
-                speedToNextBlock = Throttle * GetTerrainAwareBlockSpeed(currentBlock);
-                speedToNextBlock *= vesselData.VesselTransformer.SpeedMultiplier;
-                vesselData.Speed = speedToNextBlock;
-
-                timeToNextBlock = distanceToNextBlock / speedToNextBlock;
-            }
-
-            // Accumulate the remain
-            distanceToTravel += speedToNextBlock * timeRemaining;
+            float distanceToTravel = _rideSpeed * Time.deltaTime;
+            if (distanceToTravel <= 1e-5f) return;   // parked - nothing to project
 
             // Do the movement and save the out direction
             var projected = attachedTrail.Project(attachedBlockIndex, percentTowardNextBlock, direction, distanceToTravel,
@@ -228,6 +230,10 @@ namespace CosmicShore.Gameplay
                 // the other way. Adopting the bounce is what made the head UNRIDEABLE: the
                 // transformer's throttle mapping would flip it straight back next frame, and the
                 // two flips oscillated the rider around the terminal block.
+                //
+                // Parking kills the carried speed as well, or the rider keeps "coasting"
+                // against an end it cannot pass.
+                _rideSpeed = 0f;
                 vesselData.Speed = 0f;
                 return;
             }

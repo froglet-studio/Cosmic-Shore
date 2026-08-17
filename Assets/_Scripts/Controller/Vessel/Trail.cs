@@ -181,7 +181,7 @@ namespace CosmicShore.Gameplay
         /// The ribbon's axis at <paramref name="index"/> in INDEX ORDER (toward the head),
         /// central difference over the neighbouring blocks. Zero when the trail is too short
         /// or the neighbourhood is missing. This is the stable facing reference the ride
-        /// resolves throttle direction against, and the heading a junction fork compares.
+        /// resolves throttle direction against.
         /// </summary>
         public Vector3 HeadingAt(int index)
         {

@@ -53,8 +53,8 @@ contact  →  VesselAttachPrismEffectSO      sets IVesselStatus.IsAttached + .At
               ▼
          GunVesselTransformer.MoveShip     edge-detects the flag
               │   true  when !attached  →  TryBeginRide() routes by topology:
-              │       prism.Trail != null →  trailFollower.Attach(prism)   [RideMode.Trail]
-              │       else                →  surfaceFollower.Attach(prism) [RideMode.Surface]
+              │       DimensionOf == Trail →  trailFollower.Attach(prism)   [RideMode.Trail]
+              │       else                 →  surfaceFollower.Attach(prism) [RideMode.Surface]
               │   false when  attached  →  EndRide() detaches both
               ▼
          Slide()  replaces base.MoveShip() entirely while attached
@@ -291,7 +291,52 @@ nothing upstream changed. Wake prisms' z genuinely points down the trail
 (`blockRotation = transform.rotation` at lay time), so the authored-z invariant the dimension
 ladder rests on holds for every wake ribbon.
 
+## Polishing the grind (round 10): junctions OUT, weight IN
+
+Junctions are **removed** (see the round-8 entry for what was learned and kept). The ride now
+does one thing and does it well, and the polish is all about giving the rail WEIGHT and taking
+the last steps out of the frame it moves in:
+
+**1. The ride's speed is smoothed, in the follower, where terrain changes happen.**
+`TrailFollower` keeps a `_rideSpeed` that chases `Throttle × terrainSpeed × SpeedMultiplier`
+(`speedTrackingRate`). This matters most at a **domain boundary**: friendly 150 against hostile
+10 is a 15× cliff, and the old walk re-read terrain speed per block *within* a frame and
+published each value to `VesselStatus.Speed` in turn, so the ride's speed stepped block to
+block and the frame's last block won. One smoothed target turns every cliff — terrain change,
+throttle change, release — into a deceleration you can feel.
+
+That replaced the per-block time-accounting walk entirely (`LookAhead` + the `while` loop). A
+frame covers ~2.5u at full grind (150 u/s at 60 fps) against blocks 4u and longer, so treating
+speed as constant across a frame costs nothing measurable — and it removed `LookAhead`'s
+"fewer than two blocks" early-out, which fought the hole bridging by refusing to move at all
+on a sparsely-surviving ribbon.
+
+**2. The throttle has inertia, so a reversal SWINGS THROUGH ZERO.** The transformer smooths its
+signed throttle (`trailInertiaRate`) and only re-latches direction while that smoothed value is
+outside the deadband — flip the stick and the grind coasts down, crosses zero, and picks up the
+other way, instead of an instant about-face at whatever speed you were doing. The follower is
+now ticked **every frame** rather than only while over the deadband, because it owns the ride's
+speed and therefore the coast; cutting the call at the deadband made release a hard stop.
+
+**3. The orbit frame rides the CONTINUOUS tangent.** `IndexOrderHeading` is a step function —
+it only changes when the block index changes — so parallel-transporting the orbit radial against
+it kicked the grind once per block, a tick at exactly the trail's periodicity (the same shape of
+defect as the round-7 chord bug, one layer up). `GunVesselTransformer.RibbonAxis()` prefers the
+follower's Catmull-Rom tangent (`TravelHeading`, continuous through crossings) re-expressed in
+index order, and falls back to the discrete axis when parked or degenerate.
+
+**4. Latching on carries your speed and never pops.** `Attach` seeds `_rideSpeed` from the
+vessel's arrival speed (starting the grind at a dead stop and ramping up brakes the pilot for
+latching on, which is backwards); `SeedTrailRide` seeds the grind throttle from the stick, so
+holding forward through a contact just keeps going. The orbit radius seeds at the hull's ACTUAL
+distance and eases in exponentially (`orbitRadiusSettleRate`) — clamping the seed instead, as
+the junction work did, teleported the hull sideways at the instant of contact.
+
 ## Riding another vessel's wake (round 9): what the SQUIRREL exposed
+
+> **Read 1–3 as history.** They were junction fixes, and round 10 removed junctions outright —
+> those fields are gone. They are kept because they are the evidence behind the two rules worth
+> re-applying if junctions ever return. **#4 is live and load-bearing.**
 
 The Urchin's own wake is the easy case — constant block size, straight lay. Test-riding a
 **Squirrel** trail broke the ride ("moving me around on strange axes and between both trails"),
@@ -346,7 +391,7 @@ about what a drift line should look like, not a ride bug. Flagged here because t
 invariant is stated as *trail prisms have z down the trail*, and for the drift vessel that is
 currently false.
 
-## Holes and junctions (round 8): a damaged trail still rides, and trails FORK
+## Holes (round 8): a damaged trail still rides
 
 **Trail integrity over missing prisms.** A DESTROYED prism still rides — its object stays in
 place as a restorable skeleton, the walk's geometry is intact, and the payoff restores it in
@@ -363,23 +408,21 @@ because `DestroyedTerrainSpeed` was authored 10 against a friendly 150. Both clo
 - `DestroyedTerrainSpeed` on `Urchin.prefab` is now **150** (both followers) — riding across a
   destroyed stretch keeps pace, and the payoff re-builds the ribbon under you as you cross.
 
-**Junctions.** When an Urchin attaches, the wake it was laying ends at the meeting point — a
-junction, spatially. And any two trails crossing in space are one too. The rule (authored per
-the design: *"travel down the trail fork that it is more oriented toward — larger dot
-product"*): on every block crossing the ride probes around the ridden block
-(`PrismSpatialIndex.QuerySphere`, `junctionSearchRadiusScale` × the block's extent — never
-physics) for prisms of a DIFFERENT 1D container; if a crossing ribbon's heading
-(`Trail.HeadingAt`) runs more along the pilot's forward than the current ribbon's axis does —
-by at least `junctionSwitchMargin`, the hysteresis that stops flip-flopping while lingering at
-a junction — the ride FORKS: `Attach` to the crossing block, `SeedTrailRide` re-seeds orbit +
-facing from where the hull stands, so the switch is positionally continuous. Aim down the
-branch you want as you approach; the ride takes it. The probe runs once per block crossing,
-after the walk returns (forking mid-walk would corrupt the walk's state), and only ribbons are
-fork targets (a gyroid passing nearby is not a "branch").
+**Junctions were built here and REMOVED in round 10.** The rule was implemented as designed
+(probe the ridden block's neighbourhood on each crossing, fork onto whichever ribbon runs more
+along the pilot's facing) and it worked, but it made the single-trail ride harder to judge:
+every crossing carried a chance of leaving the rail you were on, and two rounds of tuning went
+into stopping it firing when it shouldn't (a vessel's own parallel second ribbon; a probe
+radius that scaled with a Squirrel's 40u blocks). **A ride has to be excellent on ONE trail
+before choosing between two is worth anything**, so the concept is gone rather than carried
+half-tuned. What it left behind is all still here and all still earning its place: hole
+bridging, `Trail.HeadingAt`, `SeedTrailRide`, and the orbit-radius settle (which now serves the
+attach approach it was always also doing).
 
-A wide fork seeds a wide orbit radius (the new centerline starts several units away), so the
-grind radius now **settles** toward `minOrbitRadius` at `orbitRadiusSettleRate` — imperceptible
-on a normal ride, and what reels the rider in onto the new rail after a fork.
+If junctions return, the two findings that cost the most to learn are worth keeping: a junction
+is a **divergence** (a parallel ribbon is the same road, and a vessel's own second ribbon is
+parallel for its whole length), and the probe radius must be in **world units** (block extents
+are dynamic on some vessels).
 
 ## The rail grind (round 5): each ride's controls map onto its prismscape's z-axis
 
@@ -524,7 +567,7 @@ restore the previous pilot's colliders onto the new one at an arbitrary moment.
 | Attach effect (the two flags + guns) | `ImpactEffects/EffectsSO/Vessel Prism Effects/VesselAttachPrismEffectSO.cs` |
 | The attach guard (**platform**) | `ImpactEffects/EffectsSO/Vessel Prism Effects/VesselDamagePrismEffectSO.cs` — `skipWhileAttached` |
 | Flight model / topology routing / payoff | `Controller/Vessel/GunVesselTransformer.cs` — `MoveShip`, `TryBeginRide`, `Slide`, `ReadThrottle`, `SlideActions`, `ApplyPrismscapePayoff` |
-| The 1D centerline kernel | `Controller/Vessel/TrailFollower.cs` — `Attach` (bool; seeds direction + lerp from the touch), `CenterlinePoint`/`TravelHeading`/`IndexOrderHeading` (publishes, never writes the transform), `SetDirection` (range-clamped), `RideTheTrail` (parks at open-ribbon ends), live `Domain` |
+| The 1D centerline kernel | `Controller/Vessel/TrailFollower.cs` — `Attach` (bool; seeds direction, lerp and speed from the touch), `CenterlinePoint`/`TravelHeading`/`IndexOrderHeading` (publishes, never writes the transform), `SetDirection` (range-clamped), `RideTheTrail` (one smoothed speed per frame; parks at open-ribbon ends), `RideSpeed`, live `Domain` |
 | The 2D ride kernel (marble) | `Controller/Vessel/BlockscapeFollower.cs` — smoothed plane over authored normals (prism Z ⊥ surface), momentum (`surfaceInertiaRate`), hover spring, gap coasting, rim wrap (`ResolveSurfaceFrame`), `OnPrismCrossed`, `SurfaceNormal` |
 | The dimension ladder | `Data/Enums/PrismscapeDimension.cs` — Singleton 0 / Trail 1 / Surface 2 / Volume 3 |
 | The topology classifier | `Controller/Vessel/PrismscapeTopology.cs` — `DimensionOf`, QuerySphere census |
@@ -540,10 +583,9 @@ restore the previous pilot's colliders onto the new one at an arbitrary moment.
 | Knob | Where | Value |
 |---|---|---|
 | `FriendlyTerrainSpeed` / `HostileTerrainSpeed` / `DestroyedTerrainSpeed` | `Urchin.prefab` — `TrailFollower` AND `BlockscapeFollower` | **150 / 10 / 150** on both. The 15× hostile gap is what Slipstream buys. Destroyed = friendly pace (round 8): a hole must not halt the slide — the payoff restores the ribbon as you cross it. Keep the trios matched unless the roll should price differently. |
-| `junctionSearchRadius` | `GunVesselTransformer` (C# default **12**) | Junction probe radius in WORLD UNITS. Deliberately not scaled by the ridden block — a Squirrel's blocks reach ~40u and would sweep the arena. |
-| `junctionSwitchMargin` | `GunVesselTransformer` (C# default **0.1**) | How much better aligned a crossing ribbon must be before the ride forks. Hysteresis. |
-| `junctionParallelThreshold` | `GunVesselTransformer` (C# default **0.9**) | \|dot\| of the two headings above which a candidate is the SAME ROAD, not a fork — chiefly the vessel's own second ribbon. |
-| `maxOrbitRadius` | `GunVesselTransformer` (C# default **8**) | Ceiling on the grind radius, so a far attach or a wide fork cannot fling the hull around the rail. |
+| `trailInertiaRate` | `GunVesselTransformer` (C# default **6**) | 1/s chase of the signed grind throttle — coast on release, and a reversal that swings through zero instead of snapping. |
+| `orbitRadiusSettleRate` | `GunVesselTransformer` (C# default **2**) | 1/s ease of the grind radius from the attach distance down to `minOrbitRadius`. Exponential: brisk from far, gentle at the end, never a pop. |
+| `speedTrackingRate` | `Urchin.prefab` `TrailFollower` (C# default **5**) | 1/s chase of the ride's speed. The rail's WEIGHT — this is what makes a friendly→hostile boundary (150→10) a braking slide rather than a 15× snap. |
 | `orbitRadiusSettleRate` | `GunVesselTransformer` (C# default **1.5**) | u/s reel-in of the grind radius toward `minOrbitRadius` — matters after a wide fork. |
 | `growthAmount` | `Urchin.prefab` `GunVesselTransformer` | `ElementalFloat`, element **Mass**, Min 0.6 → Max 1.2, `Value` 1 |
 | `rechargeRate` | `Urchin.prefab` `GunVesselTransformer` | 0.1 ammo/s, **×2** on a shielded prism |
@@ -619,10 +661,17 @@ Nothing below can be checked without play mode.
    attitude snap at attach or detach. Aim around with pitch/yaw while sliding — moving and
    aiming are independent. Aim DOWN-trail and push: you slide the way you face. Aim UP-trail
    (turn past broadside) and push: you now slide the other way — facing decides forward.
-8. **Reverse and orbit.** Pull the speed axis below rest: the vessel backs down the ribbon
-   without turning. Hold roll: the hull orbits AROUND the ribbon (up stays pointed away from
-   the trail), and rolling right moves your right whichever way you face. At the trail's HEAD
-   the rider parks and resumes the moment new prisms are laid — no bouncing.
+8. **Reverse and orbit.** Pull the speed axis below rest: the grind coasts down, passes
+   through zero, and backs down the ribbon — a swing, never an about-face. Hold roll: the hull
+   orbits AROUND the ribbon (up stays pointed away from the trail), and rolling right moves
+   your right whichever way you face. At the trail's HEAD the rider parks and resumes the
+   moment new prisms are laid — no bouncing.
+8a. **The rail has weight (round 10).** Release the stick mid-grind: the ride COASTS to a stop
+   rather than cutting dead. Grind from your own trail onto an enemy's: the 150→10 terrain
+   change reads as braking, not a snap. Latch on at speed with the stick held forward: you
+   carry that speed onto the rail — no stop-and-ramp — and the hull eases in toward the rail
+   rather than popping sideways. Grind a long ribbon at full speed: no tick at block
+   boundaries in POSITION, HEADING or the orbit frame.
 8b. **Roll a surface — marble madness.** Fly into a gyroid or Schwarz-P shell: the vessel
    latches (console: `Riding a Surface prismscape`), the belly eases onto the surface, steering
    stays fully live, and the ride carries MOMENTUM — release the stick and you glide to rest;

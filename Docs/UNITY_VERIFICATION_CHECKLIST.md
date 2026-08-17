@@ -277,7 +277,39 @@ for the drift vessel.
 
 Round-9 verify: ride a Squirrel trail — no hopping between the pair, no lateral swerve as the
 Squirrel's blocks change width, no fling on attach. Ride an Urchin trail — unchanged from
-round 8. Cross a genuinely diverging trail while aiming down it — still forks.
+round 8.
+
+**ROUND 10 (2026-08-16) — junctions REMOVED, single-trail ride polished.** Junction forking is
+gone by design call: it worked, but every block crossing carried a chance of leaving the rail
+you were on, and two rounds went into stopping it firing when it shouldn't. A ride has to be
+excellent on ONE trail before choosing between two means anything. Everything the junction work
+left behind is kept and still earning its place — hole bridging, `Trail.HeadingAt`,
+`SeedTrailRide`, the orbit-radius settle. (If it returns: a junction is a DIVERGENCE, and the
+probe radius must be in world units — both recorded in `URCHIN_TRAIL_RIDER.md`.)
+
+The polish, all on the 1D grind:
+
+- **Speed is smoothed in the follower** (`speedTrackingRate`), where terrain changes happen: a
+  friendly→hostile boundary is a 15× cliff (150→10) and the old walk re-read terrain per block
+  *within* a frame, publishing each value in turn. This replaced the per-block time-accounting
+  walk entirely — including `LookAhead`'s "<2 blocks" early-out, which fought hole bridging by
+  refusing to move on a sparse ribbon.
+- **Throttle has inertia** (`trailInertiaRate`) and direction only re-latches outside the
+  deadband, so a reversal coasts through zero instead of an about-face at speed. The follower
+  is ticked EVERY frame now (it owns the coast); gating it at the deadband made release a hard
+  stop.
+- **The orbit frame rides the continuous spline tangent** (`RibbonAxis()`), not the per-block
+  `IndexOrderHeading` step function — the same class of once-per-block tick as the round-7
+  chord bug, one layer up.
+- **Attach carries your speed and never pops**: `_rideSpeed` seeds from arrival speed, the
+  grind throttle seeds from the stick, and the orbit radius seeds at the hull's ACTUAL distance
+  and eases in (clamping the seed — what the junction work did — teleported the hull sideways
+  on contact).
+
+Round-10 verify (`URCHIN_TRAIL_RIDER.md` steps 7/8/8a): release mid-grind → coasts to a stop;
+grind onto an enemy trail → brakes rather than snaps; latch on at speed holding forward →
+carries the speed, eases onto the rail, no sideways pop; full-speed run down a long ribbon → no
+tick in position, heading OR the orbit frame; reverse → swings through zero.
 
 Full mechanics, historical record and follow-ups:
 `_Scripts/Controller/Vessel/R_VesselActions/URCHIN_CHAIN_SPIKES.md` and `URCHIN_TRAIL_RIDER.md`.

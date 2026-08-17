@@ -74,15 +74,10 @@ namespace CosmicShore.Gameplay
                  "(degrees/second at full stick). The 1D ride's roll axis IS the trail.")]
         [SerializeField] float orbitDegreesPerSecond = 180f;
 
-        [Tooltip("Minimum orbit radius around the trail centerline (world units). The attach " +
-                 "distance is kept when larger, so you grind at the height you latched on.")]
+        [Tooltip("The grind radius the ride settles to - how far off the rail you ultimately " +
+                 "sit. The attach distance is kept as the STARTING radius and eases to this, " +
+                 "so latching on never pops the hull sideways.")]
         [SerializeField] float minOrbitRadius = 2.5f;
-
-        [Tooltip("Ceiling on the grind radius. The seed keeps the distance you latched on at, " +
-                 "which must still be bounded: a far attach - or a fork onto a ribbon several " +
-                 "block-widths away - would otherwise swing the hull around the rail at that " +
-                 "whole distance, which reads as being flung sideways rather than riding.")]
-        [SerializeField] float maxOrbitRadius = 8f;
 
         [Tooltip("How quickly the hull's up twists to point radially OUT from the ribbon " +
                  "(1/s, exponential). Twist only - pitch/yaw stay the pilot's, for aiming.")]
@@ -93,29 +88,17 @@ namespace CosmicShore.Gameplay
                  "the pilot aims near broadside.")]
         [SerializeField] float facingDeadband = 0.15f;
 
-        [Header("Junctions")]
-        [Tooltip("How far around the ridden block the ride looks for ANOTHER trail's prisms " +
-                 "when it crosses a block (a junction probe), in WORLD UNITS. Deliberately not " +
-                 "scaled by the ridden prism's size: a vessel whose block scale is dynamic " +
-                 "(the Squirrel widens its blocks as it skims, up to ~40u) would otherwise " +
-                 "sweep a radius of a hundred-plus units and fork onto anything in the arena.")]
-        [SerializeField] float junctionSearchRadius = 12f;
+        [Tooltip("How quickly the grind radius eases toward minOrbitRadius (1/s, exponential) " +
+                 "- the rider is drawn down onto the rail after latching on from a distance. " +
+                 "Exponential rather than a constant rate so a far attach closes briskly and " +
+                 "the last inch is gentle.")]
+        [SerializeField] float orbitRadiusSettleRate = 2f;
 
-        [Tooltip("How much better aligned (|dot| with the pilot's forward) a crossing trail " +
-                 "must be before the ride forks onto it. Hysteresis - zero would flip-flop " +
-                 "the rider at every junction it lingers near.")]
-        [SerializeField] float junctionSwitchMargin = 0.1f;
-
-        [Tooltip("A candidate this parallel to the ridden ribbon (|dot| of the two headings) " +
-                 "is the SAME ROAD, not a fork - most importantly the vessel's own SECOND " +
-                 "ribbon, which runs alongside the first for its whole length. A junction is " +
-                 "a DIVERGENCE.")]
-        [SerializeField, Range(0.5f, 0.99f)] float junctionParallelThreshold = 0.9f;
-
-        [Tooltip("The grind radius eases toward minOrbitRadius at this rate (world units/s) - " +
-                 "reels the rider in onto the rail, and matters most after a wide junction " +
-                 "fork, where the new centerline starts several units away.")]
-        [SerializeField] float orbitRadiusSettleRate = 1.5f;
+        [Tooltip("How quickly the grind speed chases the throttle (1/s, exponential) - the " +
+                 "rail's WEIGHT. This is what makes letting go coast to a stop, a reversal " +
+                 "swing through zero, and a friendly->hostile prism transition read as a " +
+                 "deceleration instead of a 15x speed snap.")]
+        [SerializeField] float trailInertiaRate = 6f;
 
         [Tooltip("How quickly the hull's belly eases onto the surface normal while rolling a " +
                  "2D prismscape (1/s, exponential). A minimal-twist correction on top of the " +
@@ -135,12 +118,8 @@ namespace CosmicShore.Gameplay
         /// broadside cannot flap the throttle mapping.</summary>
         int _facingSign = 1;
 
-        /// <summary>Set on each block crossing; the junction probe runs once per crossing,
-        /// AFTER RideTheTrail returns (forking mid-walk would corrupt the walk's state).</summary>
-        bool _junctionCheckQueued;
-
-        // Main-thread only, like every QuerySphere consumer.
-        static readonly System.Collections.Generic.List<Prism> s_junctionCandidates = new(32);
+        /// <summary>The grind's smoothed signed throttle - the rail's momentum.</summary>
+        float _grindThrottle;
 
         [SerializeField] int ammoIndex = 0;
 
@@ -244,71 +223,45 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// Seed the grind from where the hull actually stands: radius = distance from the
-        /// centerline (floored at minOrbitRadius), radial = that offset made perpendicular to
-        /// the ribbon axis, facing = the nose's current agreement with the index-order axis.
-        /// Runs at ride begin AND at every junction fork - both are "a new rail from here".
+        /// Seed the grind from where the hull actually stands: radial = the hull's offset made
+        /// perpendicular to the ribbon axis, radius = that distance (NOT clamped down - the
+        /// settle eases it in, and clamping here would pop the hull sideways at the instant of
+        /// contact), facing = the nose's agreement with the index-order axis, and the grind
+        /// throttle seeded from the stick so latching on while holding forward carries your
+        /// speed onto the rail instead of stopping dead and ramping back up.
         /// </summary>
         void SeedTrailRide()
         {
             Vector3 axis = trailFollower.IndexOrderHeading;
             Vector3 offset = transform.position - trailFollower.CenterlinePoint;
             Vector3 radial = offset - axis * Vector3.Dot(offset, axis);
-            _orbitRadius = Mathf.Clamp(radial.magnitude, minOrbitRadius, maxOrbitRadius);
+            _orbitRadius = Mathf.Max(minOrbitRadius, radial.magnitude);
             _orbitRadial = radial.sqrMagnitude > 1e-4f ? radial.normalized : PerpendicularTo(axis);
             _facingSign = Vector3.Dot(transform.forward, axis) >= 0f ? 1 : -1;
+            _grindThrottle = ReadThrottle();
         }
 
         /// <summary>
-        /// The junction rule: when the ride crosses a block, look for ANOTHER trail passing
-        /// nearby; if one runs MORE ALONG the pilot's facing than the current ribbon does
-        /// (larger |dot|, beyond a hysteresis margin), fork onto it. This is what makes a
-        /// wake that meets another trail into a real junction - ride to the meeting point
-        /// aiming down the branch you want, and the ride takes it.
+        /// The ribbon's axis at the rider, in INDEX ORDER, preferring the CONTINUOUS spline
+        /// tangent over the block-to-block central difference.
+        ///
+        /// <see cref="TrailFollower.IndexOrderHeading"/> is a step function - it only changes
+        /// when the block index changes - so transporting the orbit frame against it kicked
+        /// the grind once per block, a tick at exactly the trail's periodicity. The follower's
+        /// <see cref="TrailFollower.TravelHeading"/> is the Catmull-Rom tangent and IS
+        /// continuous through crossings; multiplying by the travel direction re-expresses it
+        /// in index order, making it a drop-in with the same sign convention. The dot guard
+        /// keeps a stale or reflected tangent from inverting the frame, and the discrete axis
+        /// remains the fallback (parked before the first walk, degenerate geometry).
         /// </summary>
-        void TryForkAtJunction()
+        Vector3 RibbonAxis()
         {
-            var index = PrismSpatialIndex.Instance;
-            if (!index || !index.IsAvailable) return;
+            Vector3 discrete = trailFollower.IndexOrderHeading;
+            Vector3 travel = trailFollower.TravelHeading;
+            if (travel.sqrMagnitude <= 1e-6f) return discrete;
 
-            var current = trailFollower.AttachedPrism;
-            if (!current) return;
-            var currentTrail = current.Trail;
-
-            Vector3 axis = trailFollower.IndexOrderHeading;
-            float currentAlign = Mathf.Abs(Vector3.Dot(transform.forward, axis));
-
-            index.QuerySphere(trailFollower.CenterlinePoint, junctionSearchRadius, s_junctionCandidates);
-
-            Prism best = null;
-            float bestAlign = currentAlign + junctionSwitchMargin;
-            for (int i = 0; i < s_junctionCandidates.Count; i++)
-            {
-                var candidate = s_junctionCandidates[i];
-                if (!candidate || candidate.Trail == null || candidate.Trail == currentTrail) continue;
-                if (candidate.Trail.Dimension != PrismscapeDimension.Trail) continue; // fork onto RIBBONS only
-
-                Vector3 branch = candidate.Trail.HeadingAt(candidate.Trail.GetBlockIndex(candidate));
-                if (branch.sqrMagnitude < 1e-6f) continue;
-
-                // A junction is a DIVERGENCE. A ribbon running parallel to the one being
-                // ridden is the same road - above all the vessel's OWN second ribbon, which
-                // runs alongside the first for its entire length and is therefore a candidate
-                // at every single block crossing. Without this test the ride ping-pongs
-                // between a vessel's two wake ribbons (the Squirrel lays its pair 19u apart,
-                // so each hop was a 19-unit sideways teleport onto a new centerline).
-                if (Mathf.Abs(Vector3.Dot(branch, axis)) > junctionParallelThreshold) continue;
-
-                float align = Mathf.Abs(Vector3.Dot(transform.forward, branch));
-                if (align > bestAlign)
-                {
-                    bestAlign = align;
-                    best = candidate;
-                }
-            }
-
-            if (!best || !trailFollower.Attach(best)) return;
-            SeedTrailRide();
+            Vector3 continuous = travel.normalized * (int)trailFollower.Direction;
+            return Vector3.Dot(continuous, discrete) > 0f ? continuous : discrete;
         }
 
         void EndRide()
@@ -316,6 +269,7 @@ namespace CosmicShore.Gameplay
             if (trailFollower) trailFollower.Detach();
             if (surfaceFollower) surfaceFollower.Detach();
             _rideMode = RideMode.None;
+            _grindThrottle = 0f;
 
             // Hand free flight the attitude the ride actually left the hull in - during a ride
             // the slerp application keeps accumulatedRotation and the transform close, but a
@@ -325,9 +279,21 @@ namespace CosmicShore.Gameplay
 
         void Slide()
         {
-            float throttle = ReadThrottle();
-            bool moving = Mathf.Abs(throttle) > throttleDeadband;
             float dt = Time.deltaTime;
+            float throttle = ReadThrottle();
+
+            // The rail has WEIGHT: the grind speed chases the stick instead of being it, so
+            // letting go coasts to a stop, a reversal swings through zero rather than
+            // snapping, and a friendly->hostile prism transition (150 -> 10) reads as braking
+            // instead of a 15x jolt. The 2D marble already rode on this and it is what made
+            // the surface feel right; the rail wants the same.
+            if (_rideMode == RideMode.Trail)
+                _grindThrottle = Mathf.Lerp(_grindThrottle, throttle, 1f - Mathf.Exp(-trailInertiaRate * dt));
+            else
+                _grindThrottle = throttle;
+
+            throttle = _rideMode == RideMode.Trail ? _grindThrottle : throttle;
+            bool moving = Mathf.Abs(throttle) > throttleDeadband;
 
             if (_rideMode == RideMode.Trail)
             {
@@ -339,37 +305,36 @@ namespace CosmicShore.Gameplay
                 // index-order axis - the original Urchin's scheme. The axis never flips with
                 // travel (unlike Course), so there is no feedback loop; the hysteresis band
                 // keeps an aim near broadside from flapping the mapping.
-                Vector3 axis = trailFollower.IndexOrderHeading;
+                Vector3 axis = RibbonAxis();
                 float facingDot = Vector3.Dot(transform.forward, axis);
                 if (Mathf.Abs(facingDot) > facingDeadband)
                     _facingSign = facingDot >= 0f ? 1 : -1;
 
+                // Direction only re-latches while the smoothed throttle is meaningfully off
+                // zero, which is what makes a reversal SWING THROUGH ZERO: the stick flips,
+                // the grind coasts down, and the direction changes as it passes through the
+                // deadband - not as an instant about-face at whatever speed you were doing.
                 if (moving)
                 {
                     int travelSign = throttle > 0f ? _facingSign : -_facingSign;
                     trailFollower.SetDirection(travelSign > 0
                         ? TrailFollowerDirection.Forward
                         : TrailFollowerDirection.Backward);
-                    trailFollower.Throttle = Mathf.Abs(throttle);
-                    trailFollower.RideTheTrail();           // advances CenterlinePoint, writes Speed + Course
-                }
-                else
-                {
-                    VesselStatus.Speed = 0f;
                 }
 
-                // Junction probe, once per block crossing, AFTER the walk (forking mid-walk
-                // would corrupt the walk's own state).
-                if (_junctionCheckQueued)
-                {
-                    _junctionCheckQueued = false;
-                    TryForkAtJunction();
-                    axis = trailFollower.IndexOrderHeading; // a fork changes the rail under us
-                }
+                // ALWAYS tick the follower - it owns the ride's speed and therefore the coast.
+                // Cutting the call at the deadband (as this did) made releasing the stick a
+                // hard stop, which no rail grind should be.
+                trailFollower.Throttle = Mathf.Abs(throttle);
+                trailFollower.RideTheTrail();               // advances CenterlinePoint, writes Speed + Course
 
-                // Reel the grind in toward the rail - imperceptible on a normal ride, and
-                // what brings the rider home after a wide junction fork.
-                _orbitRadius = Mathf.MoveTowards(_orbitRadius, minOrbitRadius, orbitRadiusSettleRate * dt);
+                // The walk advanced the centerline, so re-read the (continuous) axis before
+                // transporting the orbit frame against it.
+                axis = RibbonAxis();
+
+                // Draw the rider down onto the rail. Exponential: brisk from a distant attach,
+                // gentle over the last inch, and never a pop.
+                _orbitRadius = Mathf.Lerp(_orbitRadius, minOrbitRadius, 1f - Mathf.Exp(-orbitRadiusSettleRate * dt));
 
                 // Orbit: keep the radial perpendicular to the (curving) axis by parallel
                 // transport, then let roll input carry it around the ribbon. The extra
@@ -518,9 +483,7 @@ namespace CosmicShore.Gameplay
         /// <summary>Kept as <see cref="TrailFollower"/>'s callback surface.</summary>
         public void FinalBlockSlideEffects()
         {
-            if (!trailFollower) return;
-            ApplyPrismscapePayoff(trailFollower.AttachedPrism);
-            _junctionCheckQueued = true;
+            if (trailFollower) ApplyPrismscapePayoff(trailFollower.AttachedPrism);
         }
     }
 }
