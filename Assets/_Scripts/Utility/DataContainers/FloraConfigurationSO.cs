@@ -89,16 +89,19 @@ namespace CosmicShore.Utility
                  "prefabs. Leave Enabled off to keep the prefab as authored.")]
         public FloraVariantTuning Variant = new();
 
-        [Tooltip("Level (1..5) this flora spawns at - scales the leaf prisms and the crystal " +
-                 "below (level 5 always carries, and drops, the largest crystal).")]
+        [Tooltip("Level (1..5) this flora SEEDS at. Default 1, and level is otherwise EARNED " +
+                 "by reproducing - it is never ROLLED at spawn (Docs/ECOSYSTEM.md §33). " +
+                 "Authoring it above 1 is a deliberate MODE surface; no shipped flora does, and " +
+                 "the Lifeform Matrix bench is its only current caller.\n\n" +
+                 "NOTE: a species with GrowthPerOffspring = 0 does not reproduce, so it can " +
+                 "never level - it is a level-1 forest forever. Author reproduction if that " +
+                 "species is meant to show a size range.")]
         [Range(1, 5)] public int InitialLevel = 1;
 
-        [Tooltip("Leaf prism scale multiplier per level above 1.")]
+        [Tooltip("Leaf prism scale multiplier per level above 1. Leaves only - the heart's size " +
+                 "is the ONE shared curve on ElementalCrystalSet, so it is the same for every " +
+                 "species and element at a given level.")]
         [Min(1f)] public float LeafScalePerLevel = 1.15f;
-
-        [Tooltip("Crystal scale multiplier per level above 1 - the death-drop powerup grows " +
-                 "with level (mass rewarded, still conserved).")]
-        [Min(1f)] public float CrystalScalePerLevel = 1.2f;
 
         [Header("Variant spread - one config spans the element x level matrix")]
         [Tooltip("Roll the ELEMENT per spawn instead of planting this config's single element. " +
@@ -114,9 +117,11 @@ namespace CosmicShore.Utility
                  "on THIS config, so the cell keeps its own density tuning.")]
         public List<FloraConfigurationSO> ElementPalette = new();
 
-        [Tooltip("Spawn across a band of LEVELS instead of always InitialLevel. Level is a pure " +
-                 "scale curve (leaves + dropped crystal), so this costs no extra colliders.")]
-        public LifeformLevelSpread Levels = new();
+        // A LEVEL spread used to sit here too (LifeformLevelSpread: min/max/rarity-falloff),
+        // rolling each seeding somewhere in 1..5. It is retired: level is now earned by
+        // reproducing, so a rolled seed level would hand a plant the record of a life it has
+        // not lived (Docs/ECOSYSTEM.md §33, superseding §17's level half). Element spread above
+        // is untouched - an element is an identity, not an achievement.
 
         [Header("Cell-level overrides - applied AFTER the rolled variant, so they survive SpreadElements")]
         [Tooltip("OUTER edge of the planting band this cell wants for this species, as a fraction " +
@@ -232,7 +237,10 @@ namespace CosmicShore.Utility
                 }
             }
 
-            return new LifeformVariantPick<FloraVariantTuning>(element, tuning, Levels.Roll(InitialLevel));
+            // Level is NOT rolled - every plant seeds at this config's InitialLevel (1 in every
+            // shipped asset) and earns the rest by reproducing. Inherited picks return above, so
+            // an offspring likewise starts at 1: acquired growth is not heritable.
+            return new LifeformVariantPick<FloraVariantTuning>(element, tuning, InitialLevel);
         }
 
         FloraConfigurationSO RollPaletteSibling()

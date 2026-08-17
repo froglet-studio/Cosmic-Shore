@@ -114,6 +114,30 @@ outcome is optimization, not life). Use the `/ecology` skill for any change here
   the capitals (`Fauna.ProvisionHeart`). Do not "fix" a heartless body segment by giving it a
   crystal, and do not cite one as precedent for a crystal-less standalone fauna — the ruling and
   its reasoning are `Docs/ECOSYSTEM.md §23.3`.
+  **A heart's SIZE is ONE curve keyed on LEVEL — never per species, element or prefab.**
+  `ElementalCrystalSet.levelOneWorldScale × worldScalePerLevel^(L-1)` (3.5 → 4.25 across
+  levels 1..5), applied at the single gate every heart passes through (`Crystal.SetEmbeddedIn`)
+  and re-applied on every level change. A crystal's world scale is read twice AS GAMEPLAY — the
+  collect reward (`SkimmerAdjustElementLevelByCrystalEffectSO`) and the live domain fauna buff
+  (`DomainFaunaBuffSystem`) — so a per-prefab scale is a per-prefab REWARD: the shipped prefabs
+  ranged 0.7 (tadpole) to 4.0 (gyroid), a 5.7× spread nobody authored, and four of five species
+  CLIPPED the gain cap by level 5 so levelling stopped paying exactly where it should pay most.
+  Keep the whole band under the cap (`levelOne × perLevel⁴ < maxLevelGainPerCrystal /
+  levelPerUnitScale`), work in WORLD scale (`LifeFormCrystal.SetWorldScale` — a local write
+  drags the heart along with a growing body, which is the coupling being removed), and do not
+  compensate a sizing change by retuning `levelPerUnitScale`: it is shared with non-lifeform
+  elemental crystals (the Wanderway conveyor, Dog Fight's arena scatter).
+  **Uniform root scale is NOT uniform apparent size, and the fix goes BELOW the root.** Each
+  elemental prefab carries a size correction on its model child (Charge 1.0 / Mass 1.38 /
+  Space 1.34 / Time 1.42) because the four FBX models are very different sizes in their own
+  units — and those children exist to equalize apparent EXTENT, which at 1.0/1.0/1.34/1.42 they
+  already did within 7% (measured from FBX `Vertices` bounds normalized by `UnitScaleFactor`;
+  Space's file is unit-1, the others unit-100). Mass is raised to 1.38 anyway because it reads
+  thin rather than small — four concentric `ShepardGraph` shells vs Space's solid `_spread`
+  body — and that number is an eye-calibration pending playtest, not a measurement. A
+  per-element size fix belongs on that element's crystal PREFAB child; putting it on the root
+  moves the collect reward and the live domain fauna buff with it, since both read the root's
+  `lossyScale`. `Docs/ECOSYSTEM.md §33`.
   **Collecting one is a BEAT, not a journey** — snatch → suction → absorb in **0.44 s**, ending in
   the element's spent-crystal husk bursting into the vessel's wake (`Crystal.Explode`, the same
   payoff an omni pickup plays) and the crystal dissolving out on `_opacity` rather than being
@@ -176,6 +200,26 @@ outcome is optimization, not life). Use the `/ecology` skill for any change here
 - **Endogenous selection only.** When evolution lands, fitness is **survival itself**
   (starvation/predation/reproduction cost), never a designer-scored fitness function — the line
   between artificial life and a mere optimizer, identical to "don't cheat emergence."
+  **LEVEL is the first place this bites, and it is now EARNED, never ROLLED.** Nothing picks a
+  level at random; an ordinary spawn is level 1 (`InitialLevel` stays a deliberate MODE surface —
+  Wildlife Liberation authors its per-cage tiers there, and the Lifeform Matrix bench its band).
+  A plant earns a level per reproduction EVENT (`Flora.NotifyReproduced`,
+  wired to both reproduction paths), a creature earns one per `FaunaConfigurationSO.FeedsPerLevel`
+  feeds (`Fauna.NotifyFed`, on a counter separate from the reproduction quota — a feed pays into
+  both and a birth must not reset progress toward a level; authored at 2× `FeedsPerOffspring`).
+  The spawn-time `LifeformLevelSpread` roll is **deleted** — do not reintroduce it: handing a
+  lifeform the record of a life it has not lived is the same mistake as a scripted fitness
+  function. Acquired growth stays non-heritable (offspring inherit the ELEMENT and start at 1).
+  **A LATTICE species levels but does NOT grow its leaf** (`Flora.PrismSizeFixedByGrowthRule`,
+  true on `AssembledFlora`): gyroid/SchwarzP/wall bond at offsets measured in absolute local
+  units, so a leaf that grows mid-life lays prisms the CI-verified bond table no longer
+  describes — and the plant's earlier prisms are still the old size, so two prism sizes cannot
+  tile one lattice. Three consequences to carry: that one; a flora species with
+  `GrowthPerOffspring = 0` cannot breed and so
+  is a level-1 forest forever (only 29 of 85 flora configs breed today); and a cell whose ladder
+  was authored against the old spread's expected volume multiplier now boots that much lighter
+  (Rampage: 4.3×, deliberately left as play-tested since Frenzy arriving LATER is the safe
+  direction — `Tools/Build/rampage_intensity.py` prints the re-measure note). `Docs/ECOSYSTEM.md §33`.
 - **Collider budget is a hard gate.** No ecology feature ships without stating its active-collider
   impact; respect the per-cell budget (collider-LOD by phase + Burst density-grid fauna queries,
   not `Physics.OverlapSphere`). See `Docs/ECOSYSTEM_MASTERPLAN.md §4`.

@@ -268,12 +268,16 @@ prefab per element. The element is data on `FaunaConfigurationSO.Element` — at
 `AssignLineage` the heart is provisioned from `ElementalCrystalSet` for that element
 (`LifeFormCrystal.EnsureElementalCrystal(owner, element)` replaces a disagreeing authored
 crystal; `None` keeps the legacy per-variant-prefab path). Level scales the creature via
-config (`InitialLevel`, `BodyScalePerLevel`, `CrystalScalePerLevel`, `LevelGrowSeconds`):
-spawns arrive AT size; in-world level-ups **grow** over `LevelGrowSeconds` (continuity —
-never a pop) with `NotifyBodyPrismsMoved` keeping the spatial index honest, and the heart
-grows a step per level so a higher-level creature drops a **bigger** elemental powerup on
-death (mass rewarded, still conserved). Flora answer the contract at fixed level 1 until
-flora leveling lands.
+config (`InitialLevel`, `BodyScalePerLevel`, `LevelGrowSeconds`): spawns arrive AT size;
+in-world level-ups **grow** over `LevelGrowSeconds` (continuity — never a pop) with
+`NotifyBodyPrismsMoved` keeping the spatial index honest, and the heart grows a step per
+level so a higher-level creature drops a **bigger** elemental powerup on death (mass
+rewarded, still conserved).
+
+> **Updated by §33 (Aug 2026).** Level is now EARNED, not authored or rolled: every lifeform
+> is born at level 1, a plant levels per reproduction and a creature per
+> `FeedsPerLevel` feeds. The heart's SIZE is no longer a per-species factor — it is one curve
+> on `ElementalCrystalSet` keyed on level alone. Flora do level now.
 
 **Who actually spawns the 20.** A config authors ONE point of the matrix, so the live world
 only showed the whole grid once cells were allowed to *spread* across it: `SpreadElements` +
@@ -306,11 +310,14 @@ applies element + tuning BEFORE `Initialize` (leaf size and the crystal lookup a
 consumed there); `LifeForm.ApplyVariantTuning` (shield cadence) → `Flora` (leaf/tempo/
 radius) → `AssembledFlora` (prism budget) layer the fields where they live.
 
-**Level → crystal size.** `CrystalScalePerLevel` makes the level curve monotone in the
-heart: level 1 = authored size, level 5 = ×(CrystalScalePerLevel)⁴ (≈2.07× at the 1.2
-default) — the level-5 creature always carries, and drops, the largest crystal. Flora
-level the same way (`FloraConfigurationSO.InitialLevel` + `LeafScalePerLevel` /
-`CrystalScalePerLevel`, applied via `LifeForm.ApplyLevel` before Initialize).
+**Level → crystal size (REPLACED by §33, Aug 2026).** This used to be
+`CrystalScalePerLevel` compounding off each prefab's *authored* crystal scale — monotone
+per species, but wildly different BETWEEN them (0.7 to 4.0 world scale), and clipping the
+collect-gain cap by level 5 on four of five species. It is now ONE curve keyed on level
+alone, on `ElementalCrystalSet` (`levelOneWorldScale` × `worldScalePerLevel^(L-1)`,
+3.5 → 4.25), applied at `Crystal.SetEmbeddedIn` and re-applied on every level change.
+Both `CrystalScalePerLevel` fields are deleted. Flora still scale their LEAVES per level
+(`FloraConfigurationSO.LeafScalePerLevel`, applied via `LifeForm.ApplyLevel`).
 
 **Unification (SHIPPED) — one base prefab per species, variants are config.** The
 per-element prefab variants were retired: `TadPoleFauna.prefab` (formerly
@@ -1297,9 +1304,10 @@ crystal becomes collectible, with the same world scale carrying the same value o
 freezes if the heart is freed mid-level-up so the drop keeps its death-moment scale — a
 mid-flare death drops at the pop's transient scale, bounded by the ×1.6 overshoot and the
 per-crystal gain cap). **Zero
-new tunables**: the existing knobs (`levelPerUnitScale`, `maxLevelGainPerCrystal`,
-`CrystalScalePerLevel`, `InitialLevel`, per-species population caps) govern both the standing
-buff and the pickup.
+new tunables**: the existing knobs (`levelPerUnitScale`, `maxLevelGainPerCrystal`, the
+shared heart-size level curve on `ElementalCrystalSet` — see §33, which replaced the
+per-species `CrystalScalePerLevel` — and per-species population caps) govern both the
+standing buff and the pickup.
 
 **Mechanism (SOAP-evented + reconcile sweep, no cheat).** `DomainFaunaBuffSystem`
 (auto-created by the first `Cell.Initialize` via `EnsureExists` — so it exists wherever fauna
@@ -1490,6 +1498,15 @@ unconditional `normalized` (which computes the same magnitude anyway).
 ---
 
 ## 17. Spawning the whole matrix — element × level spread (July 2026)
+
+> **⚠ The LEVEL half of this section is SUPERSEDED by §33 (Aug 2026).** `LifeformLevelSpread`
+> is deleted and no lifeform rolls a level at spawn any more: every lifeform is born at level 1
+> and EARNS the rest — a plant by reproducing, a creature by feeding. A rolled spawn level hands
+> a lifeform the record of a life it has not lived, which is the same class of mistake as a
+> scripted fitness function. Do not reintroduce it. The heart's size is likewise no longer a
+> per-species `CrystalScalePerLevel` compounding off a per-prefab base — it is ONE curve on
+> `ElementalCrystalSet`. **Everything below about the ELEMENT half still stands** and is
+> untouched: an element is an identity a lifeform is born with, not an achievement.
 
 **What was wrong.** The element × level contract (§3) was fully implemented but almost
 nothing used it: every cell config authored ONE element and `InitialLevel: 1`, so a
@@ -4350,3 +4367,203 @@ MUST stay 0 (non-zero = the tables are wrong in-engine - regenerate with
 and `poison` count misaligned-frame contacts (expected only where independent founders'
 colonies meet); `ringErrMax` should sit well under 1; `UNRESERVED` non-zero → the spatial
 index was unavailable and growth ran unchecked.
+
+---
+
+## 33. Level is EARNED, and a heart is ONE size per level (Aug 2026)
+
+**Two defects, one root.** §17 spread the element × level matrix into the live world, and the
+LEVEL half of it did that by *rolling* a level at spawn (`LifeformLevelSpread`,
+min/max/rarity-falloff). A creature was therefore born large or small by luck, and its bigger
+heart — the thing worth hunting — was a property of the dice rather than of anything it had
+done. That is the same class of mistake as a scripted fitness function: the world hands out
+the *record* of an achievement that never happened. Separately, and invisibly, a heart's SIZE
+was whatever each species' prefab had authored — and it ranged **0.7 (tadpole) to 4.0 (gyroid)
+world scale, a 5.7× spread nobody chose**, on a number that is read twice as gameplay: by
+`SkimmerAdjustElementLevelByCrystalEffectSO` (the collect reward) and by
+`DomainFaunaBuffSystem` (the live buff every living heart grants its domain).
+
+### The rule now
+
+- **Level is never ROLLED, and an ordinary spawn is level 1.** `LifeformLevelSpread` is
+  deleted; nothing anywhere picks a level at random. `InitialLevel` survives on both config SOs,
+  defaulting to 1 — and it is now a **deliberate mode-authoring surface** rather than a tuning
+  default. Two callers use it above 1, both on purpose:
+  **Wildlife Liberation** escalates creature size per cage (middle room 2, core worms 3, core
+  sharks 5, in 16 configs), because its three rooms have to read as tiers the moment the hunt
+  starts and nothing *earned* can deliver that at t=0; and the **Lifeform Matrix bench**, which
+  spawns a chosen level so a tuner can see the whole band without playing a session out.
+  The distinction that matters is dice vs. intent: a rolled level is a lifeform being handed a
+  life it did not live, while an authored one is a designer stating what the room contains.
+- **A LATTICE species levels but does not grow its leaf.** `Flora.PrismSizeFixedByGrowthRule`
+  (false by default, **true** on `AssembledFlora` — gyroid / SchwarzP / wall) suppresses the
+  leaf half of the level curve. Those species bond at offsets measured in ABSOLUTE local units
+  (`OctagonNeighbor.Center`/`SeedPosition`, `GyroidAssembler.SeparationDistance`, captured once
+  in `GyroidAssembler.Start`), so a leaf that grows mid-life lays prisms the bond table no
+  longer describes — and it cannot be fixed by making the offsets scale-aware, because the
+  plant's EARLIER prisms are still the old size and two prism sizes cannot tile one lattice.
+  This is not a corner case: the gyroid octagon colony is the flora family that reproduces
+  MOST (one birth per fauna-wave period, §32.7), so it would have inflated fastest — reaching
+  a 1.75× linear / 5.35× volume leaf in four births, against a CI-verified geometry table.
+  Such a species still earns levels and still grows a bigger heart.
+- **A plant earns a level by REPRODUCING** (`Flora.NotifyReproduced`, called from both
+  reproduction paths — the per-plant growth quota and the octagon colony's population-scheduled
+  birth). One level per birth EVENT, not per offspring, so a multi-offspring birth is one rung
+  and level 5 is a plant that has seeded the cell four times.
+- **A creature earns a level by FEEDING** — `FaunaConfigurationSO.FeedsPerLevel` feeds, counted
+  in `Fauna.NotifyFed` on a counter separate from the reproduction quota (a feed pays into
+  both; a birth must not reset progress toward a level). Authored at **2× `FeedsPerOffspring`**
+  in every shipped asset, so a level reads as "this one has out-fed its siblings for a long
+  time" rather than as a second reproduction clock. 0 disables it — the worm colony, which
+  funds its growth by adding segments rather than by scaling.
+- **A heart's size is ONE curve, on `ElementalCrystalSet`**: `levelOneWorldScale` (3.5) ×
+  `worldScalePerLevel` (1.05)^(L−1) → **3.5 at level 1, 4.25 at level 5**. Not a function of
+  species, element, prefab, or body size. `FloraConfigurationSO.CrystalScalePerLevel` and
+  `FaunaConfigurationSO.CrystalScalePerLevel` are deleted: a per-species crystal factor is a
+  per-species REWARD, which is not a thing anyone was trying to author.
+
+### The root scale is the gameplay number — per-element size lives BELOW it
+
+Uniform root scale is **not** uniform apparent size. Each elemental crystal prefab carries a
+size correction on the model child below its root, and the four models are very different
+sizes in their own FBX units. Measured (FBX `Vertices` bounds normalized by
+`UnitScaleFactor` — Space's file is unit-1, the other three unit-100):
+
+| | Unity extent @ root 1 | authored child | apparent extent |
+|---|---|---|---|
+| Charge | 2.032 | 1.0 | 2.03 |
+| Mass | 1.960 | **1.0 → 1.38** | 1.96 → 2.70 |
+| Space | 1.565 | 1.34 | 2.10 |
+| Time | 1.377 | 1.42 | 1.96 |
+
+**The finding that matters: those children exist precisely to equalize apparent EXTENT, and at
+1.0/1.0/1.34/1.42 all four already agreed within 7%.** So the code comment claiming "one scale
+convention" was right about the *outcome* and wrong about the *mechanism* — the convention is
+maintained by four per-element corrections, not by the models being alike.
+
+Mass was nonetheless reported from play as reading **"super tiny"** (blue = the embedded-heart
+state, §30) once the level curve normalized every heart to one root scale. Extent does not
+explain that, and the likely cause is **fill, not size**: Mass is four *concentric* shells of
+one mesh animated by `ShepardGraph._ScaleDistance`, so the visible shell spends most of its
+cycle well inside the envelope, where Space is one solid body inflated by a `_spread` of 0.15.
+Its child is set to **1.38 as a first eye-calibration answering the report** — deliberately
+larger in extent than its neighbours to compensate for reading thinner. **This one number is
+expected to need a playtest pass** (see follow-ups). Charge was briefly raised to 1.38 on the
+same inference and **reverted**: nothing was reported against it and the measurement says its
+1.0 was already correct.
+
+The inference that produced the original 1.38 is worth recording as a trap, because it looked
+strong and was confounded: the gyroid authored its **Mass** heart at 4.0 while every other
+flora authored **Space** at 3.0, a 1.33 ratio that almost exactly cancels Space's 1.34 child.
+But those are different plants at very different overall sizes, so the ratio is as easily a
+composition choice as a size correction. **A ratio between two authored numbers is not a
+measurement until you have controlled for what else differs between them.**
+
+**The rule regardless: a per-element size fix goes on that element's crystal PREFAB, on the
+child below the root — never on the root.** The root's world scale is read as gameplay twice
+(`SkimmerAdjustElementLevelByCrystalEffectSO`, `DomainFaunaBuffSystem`), so correcting a look
+on the root moves the reward with it and re-opens the per-element reward spread this section
+removed.
+
+### Where the size is applied — the one gate
+
+`Crystal.SetEmbeddedIn` — the single call every lifeform heart in the game passes through
+(`LifeForm.Initialize`, `Fauna.ProvisionHeart`, `Boid`, `LightFauna`, `WormSegmentFauna`). A
+heart is sized there from its owner's level, and re-sized whenever the level changes
+(`LifeForm.ApplyLevel` / `LevelUp`, `Fauna.SetLevel`). Putting it at the gate rather than in
+each spawn path is what makes "no species keeps a private size" structural instead of a
+convention four subclasses have to remember.
+
+Callers work in **WORLD** scale (`LifeFormCrystal.SetWorldScale` divides out the parent chain).
+That is load-bearing for fauna: the body still grows with level (`BodyScalePerLevel`), and the
+heart is a child of it, so a local-scale write would drag the heart along with the body — which
+is exactly the coupling being removed. The level-up flare (`Fauna.GrowCrystalWithPop`)
+interpolates world scale for the same reason: it holds the heart's size steady *while the body
+grows underneath it*.
+
+### Effect on the numbers
+
+| | heart world scale @ L1 | @ L5 | collect gain @ L1 | @ L5 |
+|---|---|---|---|---|
+| tadpole (was) | 0.70 | 1.45 | 0.07 | 0.15 |
+| clawfish (was) | 1.35 | 2.80 | 0.14 | 0.28 |
+| shark / brittlestar (was) | 2.50 | 5.18 | 0.25 | **0.50 (clipped)** |
+| most flora (was) | 3.00 | 6.21 | 0.30 | **0.50 (clipped)** |
+| gyroid flora (was) | 4.00 | 8.29 | 0.40 | **0.50 (clipped)** |
+| **every lifeform (now)** | **3.50** | **4.25** | **0.35** | **0.425** |
+
+Gain is `min(scale × levelPerUnitScale, maxLevelGainPerCrystal)` at the shipped 0.1 / 0.5.
+Note what the old numbers did at the top of the band: **four of five species clipped at the
+cap by level 5**, so levelling stopped paying exactly where it was supposed to pay most. The
+new band is chosen to sit entirely *under* the cap (4.25 × 0.1 = 0.425 < 0.5), which is the
+constraint to preserve if either dial is retuned: keep
+`levelOneWorldScale × worldScalePerLevel⁴ < maxLevelGainPerCrystal / levelPerUnitScale`.
+
+**Not touched: `levelPerUnitScale` itself.** It is shared with non-lifeform elemental crystals
+(the Wanderway conveyor's pickups, Dog Fight's arena scatter), so retuning it to compensate for
+the lifeform-side change would silently move rewards in two modes that were never part of this.
+
+### Invariants
+
+- **Continuity of existence** — held. A level-up grows over `LevelGrowSeconds` (fauna, with the
+  overshoot flare) or via `Crystal.GrowCrystal` (flora). Nothing pops.
+- **Every lifeform drops one elemental crystal** — untouched. Only the size changed.
+- **Endogenous selection only** — *strengthened*, and this is the point of the change. Level is
+  no longer assigned; it is what survived long enough to breed or to out-feed its siblings.
+  Acquired growth is still not heritable: an offspring inherits its parent's element and starts
+  at level 1, so a lineage cannot bank rungs.
+- **No imposed death** — untouched; nothing was given a clock.
+- **Mass is conserved** — untouched. Flora leaves still grow with level, through the normal
+  spawn channel; existing leaves are never re-scaled in place.
+- **Collider budget: zero delta.** Level is a pure scale curve. Same creature count, same one
+  heart collider per lifeform, same prism counts.
+
+### Consequences to watch (open, needs the editor)
+
+1. **Rampage's volume ladder now describes the MATURE arena, not the opening one.** Its flora
+   ran the spread at `LeafScalePerLevel 1.3 / RarityFalloff 1.6` — a **4.3× expected volume
+   multiplier** that was baked into the play-tested ladder (`Tools/Build/rampage_intensity.py`).
+   A freshly-seeded arena is now that much lighter and climbs as the forest breeds. Booting
+   lighter is the SAFE direction — Frenzy freezes planting, so arriving later means the arena
+   keeps growing rather than freezing — which is why the ladder is deliberately left as
+   play-tested rather than re-derived from a model that can no longer be a constant. Re-measure
+   and retune **Restless** if the arena reads Calm for too long after the whistle.
+2. **A flora species with `GrowthPerOffspring = 0` can never level** — it does not reproduce, so
+   it is a level-1 forest forever. Only **29 of 85** flora configs reproduce today (the gyroid
+   colonies, Hesperides, Rampage, three Wildlife Blitz cells). The eight phyllotactic families
+   in `_SO_Assets/Lifeforms` that had the spread enabled will now read uniformly small unless
+   reproduction is authored for them. That is a deliberate consequence, not an oversight: size
+   variety is supposed to be earned, so a species that cannot breed has not earned any.
+3. **The domain fauna buff gets more uniform, and larger for small species.** A tadpole heart
+   went 0.7 → 3.5 world scale, so a domain fielding tadpoles now draws what a domain fielding
+   brittlestars always did. The pool is summed across living hearts and clamped by the
+   maintained-mechanism ceiling (sustained level 10), which large populations already reached,
+   so the expected change is "the small-species domains stop being quietly under-buffed" rather
+   than a new saturation.
+
+### Verify in-editor (the human is the gate — none of this has been run)
+
+Menu_Main freestyle (Blob cell) is the fastest read:
+
+1. **Uniform size** — kill a tadpole, a shark and a gyroid flora in one session and compare the
+   dropped crystals. They should be indistinguishable in size (3.5 world scale), where the
+   tadpole's used to be visibly a fifth of the gyroid's.
+2. **Everything is born small** — watch a fauna wave spawn in an ORDINARY biome (Blob,
+   Rampage, Wildlife Blitz). No conspicuously large newcomers; every creature hatches at the
+   same size. Wildlife Liberation is the deliberate exception: its middle room and core should
+   still spawn visibly bigger creatures (authored `InitialLevel` 2/3/5), and confirming that
+   still reads as three tiers is its own check.
+3. **Feeding grows a creature** — follow one grazer. After `FeedsPerLevel` consumes (32 for the
+   Blob forager, 40 for the Blob tadpole) it should visibly bloom a step, heart included, with
+   the overshoot flare. Confirm it never pops.
+4. **Breeding grows a plant** — watch a colony. A plant that completes a birth steps up and
+   its HEART grows; the daughter starts at level 1. For a LATTICE species (gyroid, SchwarzP,
+   wall) the leaf prisms must stay exactly the authored size no matter how many times the plant
+   has bred — a colony whose prisms drift apart in size is `PrismSizeFixedByGrowthRule`
+   failing, and the surface will overlap or gap. Non-lattice flora (phyllotactic, branching)
+   SHOULD show a size gradient with the founders largest.
+5. **The reward tracks** — collect a level-1 heart and a levelled one and confirm the element
+   flowers move further on the second.
+6. Re-run `FrogletTools ▸ Validation ▸ Validate Lifeform Crystals` (no prefab changed, but the
+   sizing path did) and `FrogletTools ▸ Ecology ▸ Measure Cell Environment Baselines` for
+   Rampage per consequence 1 above.

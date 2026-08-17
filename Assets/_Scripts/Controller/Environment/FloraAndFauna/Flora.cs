@@ -205,20 +205,36 @@ namespace CosmicShore.Gameplay
                 plantRadiusCellFractionMin = Mathf.Clamp01(tuning.PlantRadiusCellFractionMin);
         }
 
+        /// <summary>
+        /// True when this species' prism SIZE is dictated by its growth rule rather than being
+        /// free, so LEVEL must not scale it. A LATTICE species is the case
+        /// (<see cref="AssembledFlora"/>): its neighbour offsets are a measured bond table in
+        /// absolute local units (<see cref="OctagonNeighbor"/>, <c>SeparationDistance</c>), and
+        /// <c>GyroidAssembler.Start</c> captures the prism's target scale once — so growing the
+        /// leaf mid-life lays prisms the table no longer describes. It cannot be fixed by making
+        /// the offsets scale-aware either: a plant's EARLIER prisms were laid at the old size,
+        /// and two prism sizes cannot tile one lattice.
+        ///
+        /// <para>Such a species still earns levels and still grows a bigger heart — only the
+        /// leaf half of the level curve is suppressed.</para>
+        /// </summary>
+        protected virtual bool PrismSizeFixedByGrowthRule => false;
+
         /// <summary>Flora level: leaf prisms grow with the level (crystal handled by base).</summary>
-        public override void ApplyLevel(int level, float bodyScalePerLevel, float crystalScalePerLevel)
+        public override void ApplyLevel(int level, float bodyScalePerLevel)
         {
-            base.ApplyLevel(level, bodyScalePerLevel, crystalScalePerLevel);
-            if (Level > 1)
+            base.ApplyLevel(level, bodyScalePerLevel);
+            if (Level > 1 && !PrismSizeFixedByGrowthRule)
                 leafSize *= Mathf.Pow(Mathf.Max(1f, bodyScalePerLevel), Level - 1);
         }
 
         /// <summary>In-world level-up: future leaves grow a step too (existing leaves keep their
-        /// size - growth flows through the normal spawn channel, nothing is re-scaled in place).</summary>
+        /// size - growth flows through the normal spawn channel, nothing is re-scaled in place).
+        /// A lattice species keeps its authored leaf - see <see cref="PrismSizeFixedByGrowthRule"/>.</summary>
         public override bool LevelUp()
         {
             if (!base.LevelUp()) return false;
-            leafSize *= BodyScalePerLevel;
+            if (!PrismSizeFixedByGrowthRule) leafSize *= BodyScalePerLevel;
             return true;
         }
 
@@ -349,7 +365,23 @@ namespace CosmicShore.Gameplay
 
             _lastBirthTime = Time.time;
             _growthSinceBirth = 0;
+            NotifyReproduced();
         }
+
+        /// <summary>
+        /// <b>A plant earns its level by reproducing</b> (Docs/ECOSYSTEM.md §33). Every flora is
+        /// born at level 1; each birth EVENT — not each offspring, so a multi-offspring birth is
+        /// still one rung — grows it a step, so a big plant is the visible record of a plant that
+        /// has successfully seeded the cell several times over, and a level-5 plant is the
+        /// matriarch of a line rather than a lucky spawn roll.
+        ///
+        /// <para>This keeps selection endogenous: level is not scored by a designer, it is what
+        /// survived long enough to breed four times. It is also self-braking against the volume
+        /// ladder — reproduction is production, so it freezes with planting at Frenzy, which
+        /// freezes levelling with it; and a plant at its prism budget has stopped growing, so
+        /// its bigger leaves only actually appear after the food web grazes it and it regrows.</para>
+        /// </summary>
+        void NotifyReproduced() => LevelUp();
 
         /// <summary>
         /// Spawns exactly ONE offspring right now, subject only to the universal production
@@ -367,7 +399,12 @@ namespace CosmicShore.Gameplay
             if (!cfg || !host || !cfg.FloraPrefab) return false;
             if (cell && !cell.FloraPlantingEnabled) return false;
             if (host.IsFloraAtCap(cfg)) return false;
-            return SpawnOffspring(host, cfg);
+            if (!SpawnOffspring(host, cfg)) return false;
+
+            // Same earning rule as the per-plant quota path - a birth is a birth however the
+            // population decided to schedule it (the octagon colony's one-per-cycle drive).
+            NotifyReproduced();
+            return true;
         }
 
         bool SpawnOffspring(Cell host, FloraConfigurationSO cfg)

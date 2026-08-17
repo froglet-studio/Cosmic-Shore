@@ -927,6 +927,32 @@ never prunes an unresolvable modification, so the inspector keeps showing a valu
 
 ## 5. Traps learned the hard way (check these BEFORE debugging for an hour)
 
+- **A ratio between two authored numbers is not a measurement until you have controlled for
+  what else differs between them.** Chasing "why does this element render smaller?", the
+  authored history looked like hard evidence: the gyroid flora set its *Mass* crystal to 4.0
+  while every other flora set *Space* to 3.0 — a 1.33 ratio that almost exactly cancelled the
+  Space prefab's 1.34 model-child multiplier. Two independent signals agreeing. Both were
+  wrong: those are different plants at very different overall sizes, so the ratio is as easily
+  a composition choice. The actual measurement (below) showed all four elements were already
+  matched. **When authored numbers seem to encode a correction, find the thing they correct and
+  measure it directly** — and if you ship on the inference anyway because a human reported a
+  symptom, label the number as an eye-calibration, not as a result.
+- **Raw mesh extents from two FBX files are not comparable — normalize by `UnitScaleFactor`
+  first.** §4.8 gives the parse; the trap is forgetting the normalization when the question is
+  "which of these models is bigger?". Four crystal models measured 2.03 / 1.96 / **156.46** /
+  1.38 in raw file units, which reads as one model being 80× the others; the outlier's FBX just
+  declares `UnitScaleFactor: 1` where the rest declare 100. Normalized (`raw × UnitScaleFactor
+  / 100`, cross-checked against the `.meta`'s `useFileScale`/`globalScale`) they are 2.03 /
+  1.96 / 1.56 / 1.38 — and after each prefab's own model-child multiplier, all four agree
+  within 7%. The un-normalized read would have "proved" a defect that does not exist.
+- **Before normalizing a transform value across a family of prefabs, check (a) what each one
+  carries BELOW its root, and (b) whether that value is read as GAMEPLAY.** A family that looks
+  uniform at the root can be maintaining its uniformity through per-item corrections on a child
+  — flatten the root and you break a match that was already there. And when the root's scale is
+  read by game logic (a pickup's reward, a buff magnitude computed from `lossyScale`), a purely
+  visual fix applied there silently retunes balance. The correction belongs on the child; the
+  root stays the number the game reads.
+
 - **A Unity NullReferenceException names an exact LINE — mine it before theorising, and
   calibrate the trace's fidelity from the log itself.** Two steps, both cheap. (1) Confirm
   the reported line maps to the file on disk (`sed -n '113p' <file>`, and check the running
