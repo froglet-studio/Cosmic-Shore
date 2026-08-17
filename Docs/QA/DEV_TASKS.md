@@ -36,3 +36,10 @@ of duplicating it.
 - **Symptom:** Three problems beyond the known exceptions; everything else (skimmers, ability rows, hull morphs, speed-tunnel law, occlusion corridor, baselines) ran fine. (1) **Audit Cell-Owned Visuals** logged errors: "'CosmicShore.Core.NetworkMonitor' is missing the class attribute 'ExtensionOfNativeClass'!" (x2) and warning "GameObject (named 'NetworkMonitor') references runtime script in scene file. Fixing!", then "[CellOwnedVisualAudit] 26 scenes scanned." (2) **Validate Lifeform Crystals** — the menu item does not exist on this build (could not run it). (3) **Game Mode Prefab Kit ▸ Validate** — 1 error + ~40 warnings; logged "[PrefabKit] Created kit config at Assets/Resources/GameModePrefabKit.asset with 9 seeded entries." For reference the baseline line read: "SpawnableAtlantis 67,722 prisms / 950,437 volume", and the occlusion-corridor check reported the hlsl GUID pinned (OK).
 - **Definition of done:** QA item `QA-AUDIT-TOOLS` passes.
 <!-- /devtask:QA-AUDIT-TOOLS -->
+
+<!-- devtask:QA-VESSEL-SPARROW-ROLL -->
+### QA-VESSEL-SPARROW-ROLL — Sparrow rolls on prism hit
+- **Failed on:** bleeding-edge @ eb85e1e · Unity 6000.4.11f1.x · Windows, Unity Editor (2026-08-17, andrew)
+- **Symptom:** Hitting a prism as the Sparrow shifts my movement (course is redirected) rather than rolling the vessel in place — matches the item's "still being deflected off-course" FAIL criterion.
+- **Definition of done:** QA item `QA-VESSEL-SPARROW-ROLL` passes.
+<!-- /devtask:QA-VESSEL-SPARROW-ROLL -->

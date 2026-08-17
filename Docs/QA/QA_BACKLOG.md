@@ -23,15 +23,17 @@ clean verdict on (asset-only, one-glance, or a single short check). Not a priori
 the P0 gates below still matter more; this is just "what can I knock out quickly." Refreshed
 every run, so it can lag reality by one submission.
 
-1. **QA-CHARGE-CRYSTAL-SHADER** — load a scene with a charge crystal and look: magenta = FAIL, blooms-in with edge arcs = pass. Seconds.
-2. **QA-UI-QUIT-BUTTON** — open the in-game settings panel, click Quit. One control, one check.
-3. **QA-P2-LIFEFORM-MATRIX-MOONS** — one glance at the Lifeform Matrix bench: are the four crystal "moons" visible or swallowed by the sphere.
-4. **QA-VESSEL-SPARROW-ROLL** — fly the Sparrow into prisms at a couple of angles; does it roll (not deflect off course).
-5. **QA-CRYSTAL-EFFECTS** — collect an elemental crystal (capture effect) and watch an omni crystal appear (blooms in, not pops).
-6. **QA-DOLPHIN-SPEED-TUNE** — Dolphin freestyle, check three numbers: cruise ≈78, boost fill ≈3.6 s, peak ≈357.
-7. **QA-UI-MODAL-STACK** — open the Arcade configure modal, close it three ways (✕, background tap, Home), confirm nav still works.
+1. **QA-P2-LIFEFORM-MATRIX-MOONS** — one glance at the Lifeform Matrix bench: are the four crystal "moons" visible or swallowed by the sphere.
+2. **QA-CRYSTAL-EFFECTS** — collect an elemental crystal (capture effect) and watch an omni crystal appear (blooms in, not pops).
+3. **QA-DOLPHIN-SPEED-TUNE** — Dolphin freestyle, check three numbers: cruise ≈78, boost fill ≈3.6 s, peak ≈357.
+4. **QA-DOLPHIN-DRIFT-VELOCITY** — Dolphin freestyle, enter a drift: does the speed hold for the whole drift instead of bleeding off.
+5. **QA-VESSEL-SELF-TRAIL** — fly a tight loop so you cross your own just-laid trail: no skim/ram/slow off the fresh trail.
+6. **QA-UI-MODAL-STACK** — open the Arcade configure modal, close it three ways (✕, background tap, Home), confirm nav still works.
+7. **QA-PALETTE-DANGER-GOLD** — get danger + shielded prisms on screen (a populated cell) and check gold reads in the pastel family, danger isn't inverted.
 
 Editor-only, no play mode: **QA-PRISM-SHIELD-GPU-VISUALS** (run the jiggle test + glance for magenta) is nearly as cheap if you're already in the editor.
+
+Tip: #1–#5 and #7 are all "one freestyle session in a populated cell" — load a lifeform-rich cell (Cell Selector → Yggdra/Hesperides) on the Dolphin and you can knock out several in a row.
 
 ## Priority 0 — gates. Nothing below matters if these fail.
 
@@ -319,7 +321,9 @@ Source: PRs #652, #632, #643.
 
 PASS: the blast expands through danger and regular-shielded prisms (shields pop, danger takes damage) and stops only on stellated super-shielded prisms; the cone mesh and its destruction both reach ≈2400 units with a travelling wavefront; struck prisms fly radially from the apex, not from the wavefront; the spherical AOE is unchanged; debris tumbles noticeably more than before at the same flight speed and shatter timing. FAIL: the blast stopping on a danger prism · destruction falling short of the cone mesh · debris flying from the moving wavefront · flight speed or shatter pace changing with the spin tune (that would mean something else moved). Known cosmetic gap (report, do not fail on): the conic VFX spawn flash does not scale with the tripled height.
 
-### QA-VESSEL-SPARROW-ROLL ⬜ — Sparrow rolls on prism hit
+### QA-VESSEL-SPARROW-ROLL 🔴 — Sparrow rolls on prism hit
+> **Last result:** 🔴 FAIL — Hitting a prism as the Sparrow shifts my movement (course is redirected) rather than rolling the vessel in place — matches the item's "still being deflected off-course" FAIL criterion.  _(build bleeding-edge @ eb85e1e · Unity 6000.4.11f1.x · Windows, Unity Editor, 2026-08-17, andrew)_
+
 Source: PR #669 (two hand-authored assets, never imported; 60° is a guess).
 
 1. Inspect the Sparrow's prism-effect container: `VesselRollByPrismEffect` in slot 0, inspecting cleanly (no `Missing (Mono Script)`).
@@ -651,16 +655,6 @@ Source: `astro-league-improvements` (feat `769eeb61`, + `17e9116f` court-shrink 
 
 PASS: court + cage build clean; ball settles, strikes give feedback, goals/golden-goal resolve; AI competes; the food web runs without frozen/runaway fauna; the round resolves and returns cleanly. FAIL: missing scripts · a ball that never settles or a strike with no feedback · passive/stuck AI · frozen or exploding fauna · a round that won't resolve.
 
-### QA-CHARGE-CRYSTAL-SHADER ⬜ — dedicated charge-crystal shader (edge-only plasma, blooms in)
-Source: PR #710 (`charge-crystal-shader`). New `ChargeCrystal.shader` + `CrystalEdgeArcs` + `CrystalEdgeArcMeshBaker` + a re-imported crystal FBX; a follow-up (`5b5ca689`) makes it honour `_opacity` so the crystal still **blooms in** rather than popping. Shader work → magenta risk on charge crystals.
-
-1. Load a scene with charge crystals (freestyle in a cell with lifeforms, or any mode that drops elemental crystals). If a charge crystal renders **magenta**, the shader failed to compile — stop, FAIL, attach the error.
-2. Watch a charge crystal spawn — it should **bloom in** (continuity of existence), not pop.
-3. Look at the effect: edge-only plasma discharge / arcs along the crystal edges, reading as a charge crystal (distinct from the other three elements).
-4. Skim/collect one — it behaves as a normal charge crystal (energy/level applied), and withers/leaves on death per the usual rules.
-
-PASS: no magenta; charge crystals bloom in; the edge-arc plasma renders and reads as "charge"; collection and death behave normally. FAIL: a magenta/failed shader · a crystal that pops instead of blooming · no edge-arc effect or a broken look · collection/death misbehaving.
-
 ### QA-SPARROW-MISSILE-BAY ⬜ — bay-animated skyburst launch with the real missile model
 Source: PR #708 (`sparrow-missile-bay`). The Sparrow's skyburst now launches from a bay animation using the real missile model (`Sparrow.prefab`, `SparrowAnimationController`, `FireGunActionExecutor`, `SkyBurstGunAction.asset`). Reference: `_Scripts/Controller/Vessel/R_VesselActions/SPARROW_SKYBURST_BAY.md` + `Docs/UNITY_VERIFICATION_CHECKLIST.md`.
 
@@ -836,15 +830,6 @@ Source: PRs #705 (`danger-prisms-shielded-color`, `ThemeManager`) + #707 (`gold-
 4. Focus on **Gold**: its shielded prism should read in the same pastel family as Ruby/Jade shielded, and its unshielded rim should look right (not inverted/over-bright).
 
 PASS: the danger tier reads correctly (not inverted); gold shielded sits in the pastel family alongside the other domains; gold unshielded rim looks right; no domain blows out under bloom. FAIL: a danger tier that still reads inverted · gold shielded reading flat/muddy or out of family · an over-bright/blown-out gold rim.
-
-### QA-UI-QUIT-BUTTON ⬜ — quit-game control moved into the settings panel
-Source: `quit-game-button` (`fabe7074`). The standalone `QuitGameButton.cs` was removed and its behaviour folded into `GameSettingsPanelController`.
-
-1. Open the in-game settings panel: a Quit control is present with no missing-script slot where the old button was.
-2. Trigger quit from the settings panel — it does what it should (returns to menu / quits per design) with no exception.
-3. Confirm nothing else in the settings panel regressed.
-
-PASS: the quit control is present in the settings panel and works with no missing scripts or exceptions; the rest of the panel is intact. FAIL: a missing button/script · a quit control that throws or does nothing · another settings control broken by the move.
 
 ### QA-CRYSTAL-EFFECTS ⬜ — elemental crystal capture effect + omni-crystal bloom
 Source: PRs #725 (`elemental-crystal-capture-effect`), #724 (`omni-crystal-bloom`). Two crystal VFX: a capture effect when an elemental crystal is collected, and a bloom on the omni crystal. Cosmetic/visual.
