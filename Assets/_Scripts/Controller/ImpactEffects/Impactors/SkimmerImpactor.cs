@@ -4,6 +4,7 @@ using CosmicShore.Gameplay;
 using UnityEngine;
 using UnityEngine.Serialization;
 using CosmicShore.Data;
+using CosmicShore.ScriptableObjects;
 namespace CosmicShore.Gameplay
 {
     public class SkimmerImpactor : ImpactorBase
@@ -258,6 +259,14 @@ namespace CosmicShore.Gameplay
 
                 case PrismImpactor prismImpactor:
                     var prism = prismImpactor.Prism;
+                    // A pilot does not skim the ribbon still coming out of their own ship.
+                    // OWNER-scoped and time-boxed, never domain-scoped: a teammate's trail and
+                    // this pilot's own older trail both skim normally, so a pursuing Squirrel
+                    // still farms someone else's fresh ribbon all the way into joust range.
+                    // Ahead of the shell guard so a shielded self-prism is suppressed on both
+                    // dispatch tiers. See SelfTrailContactConfigSO.
+                    if (SelfTrailContactConfigSO.SuppressesSkimContact(prism, skimmer.VesselStatus))
+                        return;
                     // While a prism's engaged shell owns contact, the shell tier
                     // (PrismShellContactManager) dispatches this pair at the visible
                     // shell surface — the box trigger must not also dispatch it at

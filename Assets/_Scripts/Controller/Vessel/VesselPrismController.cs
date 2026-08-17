@@ -94,6 +94,15 @@ namespace CosmicShore.Gameplay
         /// </summary>
         public Trail SecondaryTrail => Trail2;
         public float TrailZScale => BaseScale.z; // <- from BaseScale now
+
+        // Guards on the waitTillOutsideSkimmer clearance delay (see CreateBlock). Neither is a
+        // tuning dial: the speed floor stops a stationary or near-stationary vessel dividing its
+        // way to an infinite delay, and the ceiling stops a slow lay leaving a prism collider-less
+        // (and therefore un-hittable by ANYONE, since this delay is not owner-scoped) for longer
+        // than the self-trail grace would have covered anyway.
+        const float MinClearanceSpeed = 1f;
+        const float MaxClearanceWaitSeconds = 2f;
+
         public event Action<Prism> OnBlockSpawned;
         /// <summary>Static event: fired each time a danger block is created during overheat. Param = owner player name.</summary>
         public static event Action<string> OnDangerBlockCreated;
@@ -269,9 +278,22 @@ namespace CosmicShore.Gameplay
             // Team
             prism.ChangeTeam(vesselStatus.Domain);
 
-            // Wait time (uses TrailZScale from BaseScale)
+            // Wait time — how long this prism's collider stays off so the vessel that laid it can
+            // get clear. Measured against `scale.z`, the length this prism is ACTUALLY being laid
+            // at, not the authored `TrailZScale` (= BaseScale.z) it used to use: BaseScale.z omits
+            // both ZScaler and the MASS volume multiplier applied above, so an upgraded vessel
+            // laying stretched mass had its collider come on while the prism was still inside the
+            // ship. Un-upgraded vessels are unchanged — with ZScaler 1 and no boost/volume scaling
+            // `scale.z` IS `BaseScale.z`, so this only ever lengthens the delay when the prism is
+            // genuinely longer.
+            //
+            // Note this delay hides the prism from EVERYONE, which is why it stays a geometry
+            // correction and is not the lever for self-trail contact: that is owner-scoped and
+            // lives in SelfTrailContactConfigSO.
             prism.waitTime = waitTillOutsideSkimmer
-                ? (skimmer.transform.localScale.z + TrailZScale) / vesselStatus.Speed
+                ? Mathf.Min((skimmer.transform.localScale.z + scale.z) /
+                            Mathf.Max(vesselStatus.Speed, MinClearanceSpeed),
+                            MaxClearanceWaitSeconds)
                 : waitTime;
 
             if (_dangerMode)
