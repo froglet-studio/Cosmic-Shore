@@ -1416,6 +1416,21 @@ never prunes an unresolvable modification, so the inspector keeps showing a valu
   whose whole body is `#if UNITY_EDITOR` (pattern 2 of
   `Docs/CONDITIONAL_COMPILATION.md`), which both can reach and which never enters a player
   build. Writing the rule twice is how the two gates drift apart.
+- **Adding a `using` to an existing Unity file is a SEMANTIC change, not a formatting one —
+  and a syntax parse cannot see the breakage.** `UnityEngine.Object` is referenced by its
+  short name all over this codebase, so importing `System` into such a file makes every bare
+  `Object` ambiguous (`CS0104: 'Object' is an ambiguous reference between 'UnityEngine.Object'
+  and 'object'`). It bit `CSDebug.cs`, where `using System;` — added only to reach
+  `[Flags]` — broke all seven `Log(object, Object context)` overloads at once. A Roslyn
+  **syntax** pass (`CSharpSyntaxTree.ParseText` + `GetDiagnostics`) reports this file as
+  clean, because it is a binding error, not a parse error; only a real compile catches it.
+  Two habits: prefer the fully-qualified attribute (`[System.Flags]`) over importing a
+  namespace into a Unity-facing file, and when you must add the import, grep the file for
+  bare `Object`/`Random`/`Debug`/`Application` first — those four collide between `System*`
+  and `UnityEngine`. When a namespace is deliberately absent, leave a comment saying so, or
+  the next person re-adds it. The mirror also holds: before REMOVING a `using`, enumerate the
+  types that namespace declares and grep the file's body for all of them — checking only the
+  one symbol you deleted misses a sibling type that was riding the same import.
 - **Verify the bug before fixing it.** A report describing code behaviour
   ("it's using the sphere centre") may predate a fix that already landed. Read
   the live path end to end and check `git log` on the file FIRST; report
