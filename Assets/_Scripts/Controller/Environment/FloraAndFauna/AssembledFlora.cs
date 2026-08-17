@@ -1216,9 +1216,10 @@ namespace CosmicShore.Gameplay
         ///   preview IS a patch of the gyroid the species actually grows.
         /// • <see cref="WallAssembler"/> - its four in-plane bond offsets
         ///   (±up, ±right by half-extent + separation).
-        /// • <see cref="SchwarzPAssembler"/> - its own <c>TryPreviewLattice</c>: the same seed
-        ///   anchor, tangent sites, Newton projection and parallel-transported heading the live
-        ///   growth uses, with the occupancy claims replaced by a local visited set.
+        /// • <see cref="SchwarzPAssembler"/> - its own <c>TryPreviewLattice</c>: the same
+        ///   subdivision level, the same measured tile sites and the same integer tile
+        ///   arithmetic (<see cref="SchwarzPTileData"/>) the live growth uses, with the
+        ///   occupancy claims replaced by a local visited set.
         /// </summary>
         public override bool TryPreviewGrowth(int budget, int seed, List<SpawnPoint> into)
         {

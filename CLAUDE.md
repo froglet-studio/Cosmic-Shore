@@ -168,6 +168,30 @@ outcome is optimization, not life). Use the `/ecology` skill for any change here
   floor alone was 87% of `FrenzyEnterVolume` and the colony froze after one wave while its caps
   sat 19× further out. Reach for the ladder, not the population dial (`Docs/ECOSYSTEM.md §32.7`
   seventh pass). Full record: `Docs/ECOSYSTEM.md §32` (§32.7 the octagon colony).
+- **A lattice species grows on its SURFACE'S OWN TILE, never on a fitted grid.** A triply
+  periodic minimal surface is intrinsically **hyperbolic**, so it admits no Euclidean lattice
+  and a square-ish marching walk across it (step a tangent, Newton-project, repeat) can only
+  approximate one — it accumulates drift, fronts arriving from different directions disagree
+  (which is why such a walk needs a *quantized float* occupancy key), and it has no repeat unit,
+  so nothing can be baked, measured or verified. Every TPMS does carry an exact non-Euclidean
+  tiling, and for **Schwarz P** it is the hyperbolic **{6,4}** realized as *the patch of surface
+  inside one half-period cube*: one flat point per cube, six planar-geodesic edges on the six cube
+  faces, six 4-fold corners in the flat point's tangent plane, six neighbours = the six
+  face-adjacent cubes. **Tile adjacency is simple-cubic adjacency**, so a prism's address is a
+  `Vector3Int` + site index and occupancy is exact integer bookkeeping (`SchwarzPTileData`,
+  `SchwarzPAssembler`). Two rules generalise to any future lattice species: **(1) never bake a
+  rotation** — half the tile transforms are reflections and a quaternion carried through one is
+  silently wrong (the gyroid paid five playtests for this, §32.7); bake positions and tangents,
+  which transform correctly, and derive orientation from the closed-form gradient. **(2) a bond
+  delta does not ADD** — carrying a canonical bond into tile `(i,j,k)` composes tile transforms,
+  and `T_a∘T_b` is `T_(a−b)` when `a` is odd, so a delta is negated on every odd axis
+  (`SchwarzPTileData.NeighbourTile`). Getting that wrong is invisible to every static check —
+  offsets stay exact, every prism still lands on the surface, occupancy still keys cleanly — and
+  shows up ONLY as geometry; it was caught by simulating a plant's growth to its authored budget.
+  Measured by `Tools/Build/measure_schwarz_p_tile.py`, and the SHIPPED C# re-proved from the
+  implicit function by `Tools/Build/verify_schwarz_p_tile_tables.py` (a separate script on
+  purpose: the transcription from a proven measurement to the asset is the step neither the
+  measurement nor code review can see). Full record: `Docs/ECOSYSTEM.md §33`.
 - **Territorial permanence.** Take a cell, leave, it stays yours — the claim fauna cannot touch.
   In nucleus cells the permanent claim is the **nucleus interior** (fauna never consume it);
   exterior canopy/trail is deliberately contested churn (voracious any-domain grazing). In

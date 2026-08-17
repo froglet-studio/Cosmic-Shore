@@ -4340,3 +4340,134 @@ MUST stay 0 (non-zero = the tables are wrong in-engine - regenerate with
 and `poison` count misaligned-frame contacts (expected only where independent founders'
 colonies meet); `ringErrMax` should sit well under 1; `UNRESERVED` non-zero → the spatial
 index was unavailable and growth ran unchecked.
+
+## 33. Schwarz P grows on its own TILE — the hyperbolic {6,4}, which is one half-period cube (Aug 2026)
+
+`SchwarzPFlora` crystallises the Schwarz P minimal surface —
+`f(x,y,z) = cos x + cos y + cos z = 0` — one prism at a time. It always did. What changed is
+**what it thinks the surface's neighbourhood structure is**.
+
+**What it was doing.** The original `SchwarzPAssembler` marched a *quasi-square array*: from
+each prism, step a tangent direction by `separationDistance`, Newton-project back onto the
+zero level set, orient to the gradient, parallel-transport the heading, repeat. It works —
+it shipped, and it produces a surface — but it is an approximation of a lattice the surface
+does not have. **Schwarz P is intrinsically HYPERBOLIC** (K ≤ 0 everywhere), so it admits no
+Euclidean lattice at all, and a square-ish array on it can only ever be a fit. The
+consequences were structural, not cosmetic:
+
+- every position was computed from the previous one, so the walk **accumulated drift**;
+- two growth fronts arriving at the same place from different directions **did not agree**,
+  so occupancy had to be a **quantized float key** (`RoundToInt(param / (step/2))`) to paper
+  over the mismatch;
+- there was **no repeat unit**, so nothing about the growth could be baked, measured, or
+  verified — only played and eyeballed.
+
+**What it does now.** The surface does carry an exact non-Euclidean tiling: the hyperbolic
+**{6,4}** — hexagons with 90° corners, four to a vertex — and on this surface it turns out to
+be startlingly concrete:
+
+> **The tile is the patch of surface inside one half-period cube.**
+
+The {100} mirror planes (`x, y, z ∈ πZ`) cut space into cubes of side π. Each cube holds
+exactly one **flat point** (K = 0, normal along a body diagonal), and the patch inside it is
+one hyperbolic hexagon: **six edges**, one on each cube face, every one a planar geodesic
+because the face is a mirror; **six corners**, on the six cube edges whose ends straddle the
+surface, every one a 4-fold point of the surface lying *exactly* in the flat point's tangent
+plane at the vertices of a regular hexagon of circumradius `π/√2`; and **six neighbours** —
+the six face-adjacent cubes.
+
+So **tile adjacency is simple-cubic adjacency**. A prism's address is a `Vector3Int` plus a
+site index, occupancy is exact integer bookkeeping, and a site's position is arithmetic on a
+measured offset. No Newton iteration and no quantization survive anywhere in the growth path.
+
+Each hexagon is **12 copies of the *246 Schwarz triangle** — the measuring script gets
+(30°, 45°, 90°) to nine decimals, the signature of the triangle group the P surface's symmetry
+quotients onto — with corners at the flat point (order 6), a tile corner (order 4) and a tile
+edge midpoint (order 2), and edges on the mirrors `{y = π/2, x+z = π}` (a **straight line
+lying in the surface**), `{y = z}` and `{x = 0}`. Per cubic unit cell the tiling closes at
+**F = 8, E = 24, V = 12, χ = −4** — genus 3, exactly what the P surface must be.
+
+**Adjacent tiles are mirror images across their shared cube face**, so tile `(i,j,k)` is the
+canonical tile carried by `T_ijk`, acting one axis at a time: `x → x + πi` when `i` is even,
+`x → π(i+1) − x` when `i` is odd. `f` is invariant under every `T_ijk`, so the whole surface
+is one baked patch plus a sign flip per odd axis.
+
+### 33.1 What is measured, and what is proven
+
+The tile's **combinatorics are exact and proven**, not fitted. The one fitted quantity is how
+finely the tile is filled with prisms — a hyperbolic patch admits no uniform lattice, so a
+covering has to be measured. Each level is seeded from a triangular lattice on the flat
+point's 6-fold axis, lifted onto the patch, then equalized by a **centroidal Voronoi
+relaxation in which every site competes with every image of every site under the full symmetry
+group — including its own mirror image across each tile seam**. Uniform spacing inside a tile
+and uniform spacing across a tile boundary therefore fall out of one computation, with nothing
+tuned for the seam (measured: seam-to-intra ratio **1.00×** at every level).
+
+Levels land on the **centered hexagonal numbers** — 1, 7, 19, 37, 61, 91 sites — because
+complete hexagonal shells are what the tile's 6-fold symmetry admits. `separationDistance`
+stays the authored field and now *selects* a level (`ResolveLevel`) rather than setting a step;
+at the shipped `SchwarzPFlora` (`separation 6`, `periodScale 60`) that is **level 3, 37 sites
+per tile at 5.26 world units** — so no asset needed re-authoring, and the orphaned
+`overlapProbeScale: 0.45` already sitting in `SchwarzPBlock Variant.prefab` became a live field
+again.
+
+**No rotation is baked.** Half the `T_ijk` are reflections, and a baked quaternion carried
+through one is silently wrong — the failure that cost the gyroid's seed rotations five
+playtests (§32.7). Positions and tangents are *vectors* and transform correctly under a
+reflection; the surface normal is recomputed from the closed-form gradient at the transformed
+point. Orientation is derived, never carried.
+
+### 33.2 The bug the simulation caught, and why nothing else would have
+
+`SchwarzPTileData.NeighbourTile` exists because **bond deltas do not add**. A bond is measured
+in the canonical tile; carrying one into tile `(i,j,k)` composes tile transforms, and per axis
+`T_a(T_b(x))` is `T_(a+b)` when `a` is even but **`T_(a−b)` when `a` is odd** — an odd tile is
+a mirror image, and a mirror reverses the step through it. So a bond delta must be negated on
+exactly the axes `AxisSigns` negates.
+
+The first implementation used `tile + delta`. That is wrong on every odd-indexed tile, and it
+is **silent**: the offsets are still exact, every prism still lands on the surface to 6e−8,
+occupancy still keys cleanly, it compiles, and it passes every static check. It shows up only
+as *geometry*. Simulating a plant's growth to its authored 800-prism budget made it obvious in
+one line — the grown plant sprayed across **113 tiles** with a maximum nearest-neighbour gap of
+**49.5 units** where the spacing is 5.3. With the fix: **41 tiles, max gap 5.9**, zero
+duplicate positions, and a render that is unmistakably Schwarz P in all three projections.
+
+The lesson is the general one: *a tiling defect can be invisible to every check that examines
+one tile.* Both scripts now gate it, and the verifier asserts the naive rule is **provably
+wrong** at every level that can discriminate — a gate nobody has watched fail is not a gate.
+(Level 0's single site sits on the tile's centre of symmetry, so `T + δ` and `T − δ` are mirror
+images at equal distance and it genuinely cannot discriminate; that exemption is stated in the
+output rather than hidden.)
+
+### 33.3 Invariant review
+
+- **Mass is conserved.** Growth is still one prism per site, claimed through
+  `PrismSpatialIndex.TryReserve`; occupancy is still *weak* (a site frees when its resident is
+  eaten), so a grazed plant regrows into its own wound. No decay, no timer, no cull.
+- **Continuity of existence.** Untouched — prisms still bloom in and wither out through the
+  standard `AssembledFlora` path.
+- **Flora populations.** Untouched. Schwarz P is not a lattice-colony species (that is the
+  gyroid, §32.7); it keeps the ordinary per-plant budget and reseeding.
+- **Collider budget: unchanged, one-for-one.** The plant holds the same
+  `maxTotalSpawnedObjects` live prisms with the same colliders; only *where* they are placed
+  changed. Site spacing moved 6 → 5.26 world units, so a full plant is slightly denser in
+  space but identical in count. The bond table is built once per level (~144k distance
+  computations at the largest level, lazily, cached) and never again.
+
+### 33.4 Tooling and verification
+
+| | |
+|---|---|
+| `Tools/Build/measure_schwarz_p_tile.py` | Proves the tile and measures the layouts. `--check` verifies, `--write` regenerates the C# table. Independently reproduces the literature surface area **2.3451 a²** per cubic cell (measured 2.3464, 0.06%). |
+| `Tools/Build/verify_schwarz_p_tile_tables.py` | Re-derives every claim **from the shipped `SchwarzPTileData.cs`**, by parsing it. Run after any edit to the table or the tile arithmetic. |
+
+The second script is not redundant with the first, and §32.7 is why: the transcription between
+a proven measurement and the shipped asset is exactly the step that neither the measurement nor
+code review can see.
+
+**In-editor verification (the human is the gate).** Plant a `SchwarzPFlora` (Blob cell in
+freestyle, or the Hesperides topiary) and watch: (1) it grows as a *patch spreading outward*,
+not a tendril; (2) the plates meet edge to edge with no visible seam where one tile meets the
+next — the seam is where the old marcher's drift showed; (3) at full budget the six-way tunnel
+network reads clearly; (4) let fauna graze it and confirm the wound regrows.
