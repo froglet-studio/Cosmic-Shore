@@ -99,6 +99,22 @@ namespace CosmicShore.Gameplay
             _nucleusControlRadiusSqr > 0f ? Mathf.Sqrt(_nucleusControlRadiusSqr) : 0f;
 
         /// <summary>
+        /// The nucleus marker's GEOMETRIC world radius — renderer-bounds derived like
+        /// <see cref="NucleusWorldRadius"/>, but INDEPENDENT of whether the nucleus is a control
+        /// zone. 0 only when the cell genuinely has no nucleus.
+        ///
+        /// The two differ exactly where <see cref="NucleusIsControlZone"/> is false: a mode that
+        /// borrowed the nucleus as PLAY GEOMETRY (Astro League's court) collapses the control
+        /// radius to 0 on purpose, so <see cref="NucleusWorldRadius"/> reports 0 while the marker
+        /// is still very much there and still very much the size of the arena. Anything asking
+        /// "how big is the core, in metres" — a soft boundary, a placement ring, a camera frame —
+        /// wants THIS; anything asking "who owns this cell" wants the other one. Reading the
+        /// control radius for a geometric question is the §25 mistake in reverse: instead of
+        /// inheriting semantics with the geometry, you lose the geometry with the semantics.
+        /// </summary>
+        public float NucleusVisualWorldRadius { get; private set; }
+
+        /// <summary>
         /// The world radius the nucleus HAS, or WILL have once <see cref="SpawnVisuals"/> runs —
         /// measured off the config's <c>NucleusPrefab</c> asset without instantiating anything.
         ///
@@ -1198,7 +1214,14 @@ namespace CosmicShore.Gameplay
             _replicatedDominantDomain = null;
             ResetVolumeAccounting();
             liveFaunaCounts.Clear();
+            liveFloraCounts.Clear();
             liveFauna.Clear();
+            // The gyroid colony's frontier is a POPULATION-level book of open octagons, so it
+            // outlives any individual plant by design - which means only the cell can retire it.
+            // Left behind, the next world grown here inherits the dead one's sites and plants
+            // daughters into lattice that no longer exists (the Cell Selector swaps worlds in
+            // the very scene this colony ships in). Keyed by cell, so this touches no other.
+            GyroidColonyFrontier.Clear(this);
             phase = CellPhase.Calm;
 
             if (spawnedCytoplasm)
@@ -1274,6 +1297,47 @@ namespace CosmicShore.Gameplay
         public IReadOnlyList<Fauna> LiveFauna => liveFauna;
 
         /// <summary>
+        /// THIS CELL's take on an authored fauna population number - a seed count
+        /// (<c>InitialSpawnCount</c> / <c>PopulationSize</c>) or the hard cap
+        /// (<c>MaxLivePopulation</c>) - after its SpawnProfile's
+        /// <see cref="SpawnProfileSO.FaunaPopulationScale"/>. A cell with no profile, or the
+        /// default scale of 1, returns the authored number untouched, so every biome that
+        /// authors nothing is bit-for-bit unchanged.
+        ///
+        /// <para><b>Every producer must ask the CELL, never the config.</b> There are four
+        /// (<c>RandomLifeSpawner</c>, <c>IntensityWiseLifeSpawner</c>, <c>Fauna.TryReproduce</c>
+        /// and the freestyle <c>Microscene</c> conveyor), and which SPAWNER a biome runs is
+        /// decided by an unrelated field - <c>CellTypeChoiceOptions.IntensityWise</c> silently
+        /// swaps the class - so a density rule implemented in one spawner is dead code in
+        /// exactly the modes that asked for it. The cell is the one thing all four already
+        /// hold. A fifth producer that asks here gets the scalar for free; one that reads
+        /// <c>cfg.MaxLivePopulation</c> directly silently opts a species out of it.</para>
+        /// </summary>
+        public int ResolveFaunaPopulation(int authored)
+        {
+            var profile = cellConfigData ? cellConfigData.SpawnProfile : null;
+            return profile ? profile.ScaleFaunaPopulation(authored) : authored;
+        }
+
+        /// <summary>
+        /// This cell's live cap for a species: <see cref="FaunaConfigurationSO.MaxLivePopulation"/>
+        /// through <see cref="ResolveFaunaPopulation"/>. 0 stays 0 (uncapped).
+        /// </summary>
+        public int ResolveFaunaCap(FaunaConfigurationSO config) =>
+            config ? ResolveFaunaPopulation(config.MaxLivePopulation) : 0;
+
+        /// <summary>
+        /// True when this species is already at or over this cell's live cap - the one place
+        /// the "cap" comparison is written, so a producer cannot accidentally test the
+        /// unscaled authored number. An uncapped species (0) is never full.
+        /// </summary>
+        public bool IsFaunaAtCap(FaunaConfigurationSO config)
+        {
+            int cap = ResolveFaunaCap(config);
+            return cap > 0 && GetLiveFaunaCount(config) >= cap;
+        }
+
+        /// <summary>
         /// Live herbivores still eligible as prey - the prey signal for predator
         /// seeding (a real herbivore count, not the prism-mass proxy).
         /// </summary>
@@ -1306,6 +1370,78 @@ namespace CosmicShore.Gameplay
             liveFauna.Remove(fauna);
         }
 
+        // ---------------------------------------------------------------------
+        //  Live FLORA registry - the plant-side twin of the fauna registry above,
+        //  and it exists for the same reason: flora now reproduce (Flora.TryReproduce),
+        //  so the periodic spawner is no longer the only producer and "how many plants
+        //  of this species are alive" has to be a fact the cell owns rather than
+        //  something a producer guesses. Plants register on Flora.AssignLineage (both
+        //  the spawner path and the reproduction path) and unregister in OnDestroy.
+        //  A plant spawned with no config (a toy clone, a microscene release) carries
+        //  no lineage and is invisible here - same rule fauna follow.
+        //  See Docs/ECOSYSTEM.md §32.
+        // ---------------------------------------------------------------------
+
+        readonly Dictionary<FloraConfigurationSO, int> liveFloraCounts = new();
+
+        /// <summary>Live plant count for the species defined by <paramref name="config"/> in this cell.</summary>
+        public int GetLiveFloraCount(FloraConfigurationSO config) =>
+            config && liveFloraCounts.TryGetValue(config, out int c) ? c : 0;
+
+        /// <summary>
+        /// THIS CELL's take on an authored flora population number - a seed count
+        /// (<c>InitialSpawnCount</c> / <c>PopulationSize</c>) or the hard cap
+        /// (<c>MaxLivePopulation</c>) - after its SpawnProfile's
+        /// <see cref="SpawnProfileSO.FloraPopulationScale"/>.
+        ///
+        /// <para><b>Every producer must ask the CELL, never the config</b> - the same rule, for
+        /// the same reason, as <see cref="ResolveFaunaPopulation"/>. Flora has FOUR producers
+        /// (<c>RandomLifeSpawner</c>, <c>IntensityWiseLifeSpawner</c>, <c>Flora.TryReproduce</c>
+        /// and the freestyle <c>Microscene</c> conveyor / Lifeform Matrix toy), and which
+        /// SPAWNER a biome runs is decided by an unrelated field - <c>CellTypeChoiceOptions</c>
+        /// <c>.IntensityWise</c> silently swaps the class - so a density rule implemented in one
+        /// producer is dead code in exactly the modes that asked for it. The cell is the one
+        /// thing all four already hold.</para>
+        /// </summary>
+        public int ResolveFloraPopulation(int authored)
+        {
+            var profile = cellConfigData ? cellConfigData.SpawnProfile : null;
+            return profile ? profile.ScaleFloraPopulation(authored) : authored;
+        }
+
+        /// <summary>
+        /// This cell's live cap for a flora species: <see cref="FloraConfigurationSO.MaxLivePopulation"/>
+        /// through <see cref="ResolveFloraPopulation"/>. 0 stays 0 (uncapped).
+        /// </summary>
+        public int ResolveFloraCap(FloraConfigurationSO config) =>
+            config ? ResolveFloraPopulation(config.MaxLivePopulation) : 0;
+
+        /// <summary>
+        /// True when this species is already at or over this cell's live plant cap - the one
+        /// place the "cap" comparison is written, so a producer cannot accidentally test the
+        /// unscaled authored number. An uncapped species (0) is never full.
+        /// </summary>
+        public bool IsFloraAtCap(FloraConfigurationSO config)
+        {
+            int cap = ResolveFloraCap(config);
+            return cap > 0 && GetLiveFloraCount(config) >= cap;
+        }
+
+        public void RegisterLiveFlora(Flora flora)
+        {
+            if (!flora || !flora.SourceConfig) return;
+            liveFloraCounts.TryGetValue(flora.SourceConfig, out int c);
+            liveFloraCounts[flora.SourceConfig] = c + 1;
+        }
+
+        public void UnregisterLiveFlora(Flora flora)
+        {
+            // `is null` guard only - see UnregisterLiveFauna.
+            if (flora is null || !flora.SourceConfig) return;
+            if (liveFloraCounts.TryGetValue(flora.SourceConfig, out int c) && c > 0)
+                liveFloraCounts[flora.SourceConfig] = c - 1;
+        }
+
         void Initialize()
         {
             spawnedLifeForms.Clear();
@@ -1317,7 +1453,14 @@ namespace CosmicShore.Gameplay
             _replicatedDominantDomain = null;
             ResetVolumeAccounting();
             liveFaunaCounts.Clear();
+            liveFloraCounts.Clear();
             liveFauna.Clear();
+            // The gyroid colony's frontier is a POPULATION-level book of open octagons, so it
+            // outlives any individual plant by design - which means only the cell can retire it.
+            // Left behind, the next world grown here inherits the dead one's sites and plants
+            // daughters into lattice that no longer exists (the Cell Selector swaps worlds in
+            // the very scene this colony ships in). Keyed by cell, so this touches no other.
+            GyroidColonyFrontier.Clear(this);
             phase = CellPhase.Calm;
 
             // Bind runtime -> this cell
@@ -1925,7 +2068,14 @@ namespace CosmicShore.Gameplay
             _replicatedDominantDomain = null;
             ResetVolumeAccounting();
             liveFaunaCounts.Clear();
+            liveFloraCounts.Clear();
             liveFauna.Clear();
+            // The gyroid colony's frontier is a POPULATION-level book of open octagons, so it
+            // outlives any individual plant by design - which means only the cell can retire it.
+            // Left behind, the next world grown here inherits the dead one's sites and plants
+            // daughters into lattice that no longer exists (the Cell Selector swaps worlds in
+            // the very scene this colony ships in). Keyed by cell, so this touches no other.
+            GyroidColonyFrontier.Clear(this);
             phase = CellPhase.Calm;
             _nucleusControlRadiusSqr = 0f;
 
@@ -2093,20 +2243,26 @@ namespace CosmicShore.Gameplay
         void RefreshNucleusControlRadius()
         {
             _nucleusControlRadiusSqr = 0f;
+            NucleusVisualWorldRadius = MeasureNucleusWorldRadius();   // geometry, always
+
             // A nucleus a mode borrowed as play geometry is a wall, not a claim - no control
             // zone, so the cell keeps its whole-cell control + diet semantics. See
             // NucleusIsControlZone.
             if (!_nucleusIsControlZone) return;
-            if (nucleus == null) return;
+            if (NucleusVisualWorldRadius <= 1e-3f) return;
+
+            _nucleusControlRadiusSqr = NucleusVisualWorldRadius * NucleusVisualWorldRadius;
+        }
+
+        float MeasureNucleusWorldRadius()
+        {
+            if (nucleus == null) return 0f;
 
             var r = nucleus.GetComponentInChildren<Renderer>();
-            if (r == null) return;
+            if (r == null) return 0f;
 
             Vector3 ext = r.bounds.extents;
-            float radius = Mathf.Max(ext.x, Mathf.Max(ext.y, ext.z));
-            if (radius <= 1e-3f) return;
-
-            _nucleusControlRadiusSqr = radius * radius;
+            return Mathf.Max(ext.x, Mathf.Max(ext.y, ext.z));
         }
 
         /// <summary>

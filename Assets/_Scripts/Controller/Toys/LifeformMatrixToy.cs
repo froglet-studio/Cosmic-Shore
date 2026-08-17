@@ -348,7 +348,6 @@ namespace CosmicShore.Gameplay
             // The matrix is the tuning BENCH: a station spawns the EXACT variant it shows, so
             // the cell's element/level spread must not re-roll it here.
             clone.SpreadElements = false;
-            clone.Levels.Enabled = false;
 
             // Spawn INTO THE FOOD, not at the station. The variant stations are layered
             // outward and can sit hundreds of units BEYOND the membrane; a creature
@@ -392,7 +391,6 @@ namespace CosmicShore.Gameplay
             clone.InitialLevel = level;
             // Bench semantics - see SpawnFaunaVariant.
             clone.SpreadElements = false;
-            clone.Levels.Enabled = false;
 
             // A POPULATION (InitialSpawnCount), rooted AT the station so the tester sees it
             // grow right where they flew - Plant() would otherwise disperse it across the cell.

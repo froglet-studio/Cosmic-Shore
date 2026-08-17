@@ -27,7 +27,7 @@
 
 ## Round 4 (2026-08-10): shield moves to SPACE 5; the hit sphere is the bullets'
 
-- **Shield is now the SPACE-5 upgrade** (`firedPrismState: ShieldedAtSpace5`, the new default):
+- **Shield is now the SPACE-5 upgrade** (`firedPrismState: ShieldedAtSpace5`, the new default) — **superseded in round 8, which returned it to MASS 5 as `ShieldedAtMass5`; read that section first**:
   regular prisms below SPACE 5, shielded at 5+ — the SAME gate and the same moment as the
   bullets' pierce, so the one level-5 SPACE upgrade transforms both fire modes at once
   (bullets pierce; turret shots pierce, arrive armored, and hit wider). The MASS-5 map slot is
@@ -160,6 +160,50 @@ subgraph feed into `Prism Sub Graph.SqrDistance` on BlockGraph (wired by
 node; ExplodingBlockGraph has no distance chain). Unstamped prisms (`Duration 0`) reduce to
 exactly the old expression, so nothing else in the game renders differently.
 
+## Round 7 (2026-08-13): the cadence doubles, and both fire modes spray
+
+The parity doctrine extends cleanly to accuracy: a turret shot is a bullet, so it walks off aim on
+a held trigger exactly like one and the prism stays wherever that deflected round would have died.
+`FullAutoBlockShootActionSO.Spread` forwards `bulletAction.Spread` — the turret authors **no cone
+of its own**, same as cadence and speed. Full mechanic, tuning and verification:
+**`SPARROW_SPRAY_ACCURACY.md`**. What changes here:
+
+- **`firingRate` 30 → 90** (60 in the first pass, raised again after playtest). Anchored prisms/s
+  therefore **60 → 180** and volume/s ~120 → ~360 at base scale (MASS ×1). This is the documented consequence of "the same rate as its bullets" and
+  `firingRate` is still the single lever — a turret-only divisor would re-open the drift the
+  shared-cadence pass closed. The prism pool was resized for it (see the table below).
+- **The cadence is now frame-rate independent.** Both loops replaced `UniTask.Delay(1/rate)` with a
+  time accumulator. A whole-frame delay caps the rate at the frame rate, so at 60 volleys/s a 30 fps
+  device would have laid prisms at **half** the rate a 60 fps device did. Capped at 4 volleys/tick
+  with the excess dropped, so a hitch never discharges as a burst.
+- **Shot rotation is the deflected pose**, composed with `Quaternion.FromToRotation` rather than
+  rebuilt with `LookRotation` — the prism's long axis *is* the shot, so re-referencing roll to world
+  up would visibly twist every prism.
+- **`placementImmunitySeconds` matters again.** Round 6 noted 0.2 s was probably too long once the
+  hit sphere shrank; at 120 shots/s the shot-vs-shot spacing it guards is tighter again. Re-judge in
+  play rather than assuming either direction.
+
+## Round 8 (2026-08-13): the shield comes back to MASS, and rounds grow as they fly
+
+Playtest: *"the only thing that has felt fun was huge projectiles."* The answer was to make
+huge projectiles **earned** rather than authored, which settled where the two elements divide:
+
+> **MASS owns the SUBSTANCE of what you fire. SPACE owns its REACH.**
+
+- **`ShieldedAtSpace5` → `ShieldedAtMass5`** (same enum value `3`, so the asset is unchanged).
+  Fired prisms arrive armored at **MASS 5**, gated on `IsUpgradeActive(Element.Mass)`. Round 4
+  had moved it to Space 5 to make one gate transform both fire modes; with round 8's growth
+  also on Mass, the substance/reach split is the cleaner line and this came back by sign-off.
+  The Sparrow's map is 4/4 upgrades again and the MASS-5 slot is no longer open.
+- **SPACE 5 is now purely pierce**, on both fire modes — unchanged in code, narrowed in the map
+  text.
+- **Rounds swell as they travel**, bullets and turret shots alike: `ResolveGrowthFactor` on the
+  shared bullet action, **3× over the flight at resting Mass, 6× at Mass 10**, linear in level
+  across the full [-5, 15] band (1.5× starved, 7.5× at full overcharge). The turret adopts it
+  through `bulletAction` like everything else. Its carried hit sphere therefore ends the flight
+  at 4.95 diameter at Mass 0 — much closer to the size of the prism the player actually watches
+  flying (bounding ≈5.1) than the 1.65 it launches at.
+
 ## Two flight visualizations (A/B, live-switchable)
 
 `FullAutoBlockShootAction.asset` → **Flight Visualization** selects how the flying prism is
@@ -254,8 +298,9 @@ forbids. It is now one stamp:
 The easing is the **bullets'** easing. `Projectile.MoveProjectileAsync` steps by
 `cos(t·π/2T)`, so distance travelled is its integral, `v·(2T/π)·sin(t·π/2T)`; the shader
 evaluates the same closed form. A turret prism and a bullet released at the same instant stay
-abreast for the whole flight and stop at the same range (≈ **286 u** at the shipped
-1500 u/s × 0.3 s).
+abreast for the whole flight and stop at the same range (≈ **72 u** at the shipped 375 u/s ×
+0.3 s at SPACE 0 — the figure was ~286 u before round 3 quartered the base speed; at SPACE 10 it
+is ~645 u).
 
 ### The prompt's open question, answered
 
@@ -317,13 +362,18 @@ instance clears the stamp. It is a cull-efficiency loss on a torn-down scene, no
 - **MASS quantitative** stretches the fired prism's long axis (`blockScale.z ×
   Multiplier(Mass)`), read live per volley. Volume is `x·y·z`, so the stretch feeds
   `Cell.LiveVolume` — *volume is the spine*.
-- **…and since 2026-08-12 it grows the HIT VOLUME too** (`hitDiameter × √Multiplier(Mass)`).
-  Before that the flying collider was a fixed `collisionDiameter` / `shieldedCollisionDiameter`,
-  so Mass made the rounds *look* bigger while they connected exactly as often — a cosmetic buff on
-  the one element this vessel's guns are wired to. The **square root** is deliberate: the prism
-  grows on one axis and the hit volume is a sphere, so scaling the sphere by the full multiplier
-  would outrun the silhouette it stands in for. At Mass 10 (multiplier 2.5) the prism is 2.5×
-  longer and the sphere 1.58× wider.
+- **…and it grows the HIT VOLUME too — now by IN-FLIGHT GROWTH, not a static multiplier.**
+  2026-08-12 shipped `hitDiameter × √Multiplier(Mass)` here, for a reason that still stands:
+  before it, the flying collider was a fixed `collisionDiameter` / `shieldedCollisionDiameter`,
+  so Mass made the rounds *look* bigger while they connected exactly as often — a cosmetic buff
+  on the one element this vessel's guns are wired to.
+  **Round 8 (2026-08-13) replaced it** with `FullAutoActionSO.ResolveGrowthFactor`: the round
+  launches at its authored diameter and **swells across the flight**, 3× at resting Mass and 6×
+  at Mass 10. Same intent, three changes: it covers **both** fire modes (the √ bump was
+  turret-only), it is far larger where it matters (6× vs 1.58×), and it grows the drawn round in
+  lockstep so the hit volume stays honest. The two are **not** stacked — that would apply MASS to
+  one quantity twice (1.58 × 6 ≈ 9.5× on a 2.475 base, about double the prism's own bounding
+  size). See `SPARROW_SPRAY_ACCURACY.md` ▸ "Round 3".
 - **MASS level-5 "Shielded Prisms"** is now a **pre-`Initialize` flag**
   (`prismProperties.IsShielded`), so the shield is part of the prism's **birth** and snaps
   (`Docs/PRISM_ANIMATION.md` §4.5) instead of morphing on arrival — one less exotic-visual
@@ -355,9 +405,10 @@ Everything that moves both fire modes lives on **`FullAutoAction.asset`**:
 
 | Knob | Value | Effect |
 |---|---|---|
-| `firingRate` | **30** | Volleys/s for guns **and** turret. |
-| `speedValue.Value` | **1500** | Muzzle speed base for both, before the SPACE multiplier (0.4×–2.5×). |
-| `projectileTime` | **0.3** | Flight time; with the easing curve → ~286 u of range at base speed. |
+| `firingRate` | **90** (was 30 before round 7) | Volleys/s for guns **and** turret. |
+| `speedValue.Value` | **375** (was 1500 before round 3's quartering) | Muzzle speed base for both, before the SPACE multiplier (0.4× at rest → 9× at full overcharge). |
+| `projectileTime` | **0.3** | Flight time; with the easing curve → ~**72 u** of range at SPACE 0, ~645 u at SPACE 10. |
+| `spread.*` | see `SPARROW_SPRAY_ACCURACY.md` | The accuracy-decay cone, shared by both modes (round 7). |
 
 Turret-only, on **`FullAutoBlockShootAction.asset`**: `blockScale` **(0.8, 0.5, 5)** (before
 the MASS stretch on z), `rotationOffsetEuler`, `prismType` `Sparrow`.
@@ -368,17 +419,20 @@ ended.
 
 ## Collider / mass budget
 
-| | Before | After |
-|---|---|---|
-| Volleys/s | 14 | **30** |
-| Muzzles | 2 | 2 |
-| **Anchored prisms/s** | 28 | **60** |
-| Volume/s (base scale, MASS ×1) | ~56 | **~120** |
+| | Original | Cadence parity | **Round 7** |
+|---|---|---|---|
+| Volleys/s | 14 | 30 | **90** |
+| Muzzles | 2 | 2 | 2 |
+| **Anchored prisms/s** | 28 | 60 | **180** |
+| Volume/s (base scale, MASS ×1) | ~56 | ~120 | **~360** |
 
-A held burst lays permanent mass at **~2.1× the previous rate** — ~600 prisms in ten seconds,
+A held burst lays permanent mass at **~6.4× the original rate** — ~1,800 prisms in ten seconds,
 each a spatial-index registration plus a collider under the usual collider-LOD. That is what
 "the same rate as its bullets" costs; the single lever is `FullAutoAction.firingRate`, and it
-moves the guns too.
+moves the guns too. Pool sizing on `Sparrow.prefab` follows it: the turret's
+`BlockProjectilePoolManager` went to `defaultCapacity 120 / maxSize 600 / bufferSizeTarget 260 /
+maxAddsPerFrame 16`, because anchored prisms are **never returned** and every shot past the
+buffer is a fresh `Instantiate`.
 
 **Per-frame CPU went down, not up.** The prism costs one stamp and one anchor; the only
 per-frame work is the carried projectile's transform, which is exactly what a bullet already
@@ -390,7 +444,7 @@ Three silent failure modes survived the first fix, all now closed or screaming:
 
 1. **The shader graphs not (re)imported.** The flight properties were spliced into the graphs
    out-of-editor; until Unity reimports them, the per-instance stamp uploads into a property no
-   shader reads and the prism **teleports to maximum range (~286 u downrange) with no flight** —
+   shader reads and the prism **teleports to maximum range (~72 u downrange at SPACE 0) with no flight** —
    invisible to anyone watching the muzzle. This now screams
    (`PrismClockDiagnostics.WarnUnwiredMaterial` on `_FlightStartTime`), and `ReverseSuction`
    does not depend on the new graph wiring at all — it rides the long-shipped SuctionGraph, so
@@ -416,7 +470,7 @@ hold fire (input 1). Test BOTH visualizations — select `FullAutoBlockShootActi
    from the moving shot point (viz 2).
 2. **Cadence parity.** Fire on the move, then stopped. The rate must be indistinguishable —
    both 30 volleys/s from 2 muzzles.
-3. **Speed parity + smooth flight.** Prisms leave as fast as bullets and travel ~286 u. The
+3. **Speed parity + smooth flight.** Prisms leave as fast as bullets and travel ~72 u at SPACE 0. The
    flight must be **smooth**, not a snap or a pop-in: that is the GPU stamp working. A prism
    that appears at maximum range with no visible travel means the flight stamp failed — check
    the console for `[PrismClock] flight:` and run **Validate Clock Wiring**.
@@ -456,16 +510,19 @@ present on BlockGraph and ExplodingBlockGraph.
 
 ## Follow-ups
 
-- **Tunneling.** Bullets and turret shots alike are discrete triggers moved by transform
-  writes (`m_CollisionDetection: 0`), so at 1500 u/s they advance ~25 u/frame and can pass
-  through a thin prism unregistered. The right fix is a swept segment query on
-  `PrismSpatialIndex` (`Docs/SPATIAL_INDEX.md`), not CCD — a transform teleport bypasses CCD.
-  Not done here: it would change bullet behaviour too, and parity is the point.
+- **Tunneling — RESOLVED (2026-08-13), and it was worse than this entry estimated.** Shipped as
+  `PrismSpatialIndex.QuerySegment` + `Projectile.sweptPrismDetection`, exactly the swept segment
+  query named here. The measured hole was ~74% of the path at the shipped 375 u/s base speed and
+  ~97% at high SPACE — it was the actual reason the guns could not clear a small area, and the
+  reason the round-6 collider correction (12 → 1.65 diameter) removed so much felt lethality: the
+  oversized ball had been closing the per-frame gap. Changing bullet behaviour was the POINT this
+  time, and parity holds because both fire modes opt in. See
+  `SPARROW_SPRAY_ACCURACY.md` ▸ "Round 2".
 - **Anchored-mass rate.** If 60 prisms/s is too much for a cell's phase ladder in practice,
   move `FullAutoAction.firingRate` — not a turret-only divisor, which would re-open the drift
   this pass closed.
 - **The spawn window.** A prism is invisible for the 1–2 frames between the pool pull and
-  creation completion (~25–50 u of a 286 u flight). `Docs/PRISM_ANIMATION.md` §4.2 already
+  creation completion (~6–12 u of a 72 u flight at SPACE 0). `Docs/PRISM_ANIMATION.md` §4.2 already
   plans to retire that window entirely; it is not turret-specific.
 - **`placementImmunitySeconds` is probably now too long.** It was sized (0.2) against a
   12-diameter hit sphere; round 6 shrank that to 1.65, so the shot-vs-shot overlap it was

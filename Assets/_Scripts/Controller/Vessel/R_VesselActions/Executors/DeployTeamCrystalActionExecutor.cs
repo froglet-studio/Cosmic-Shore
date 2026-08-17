@@ -1,60 +1,71 @@
 using System;
 using System.Collections.Generic;
 using CosmicShore.Data;
-using CosmicShore.Utility;
-using DG.Tweening;
 using Obvious.Soap;
 using UnityEngine;
 
 namespace CosmicShore.Gameplay
 {
     /// <summary>
-    /// The Dolphin's crystal seeding. Hold the trigger and a preview crystal blooms out in front of
-    /// the nose; release and it is planted.
+    /// The Dolphin's crystal seeding — a <b>PASSIVE</b> ability with no input of its own. A cooldown
+    /// runs continuously; each time it completes the Dolphin seeds a TEAM crystal somewhere in the
+    /// containing cell's CYTOPLASM (the shell between nucleus and membrane) and the cooldown
+    /// restarts immediately.
     ///
     /// What gets planted is a TEAM crystal — only the pilot's own domain can collect it, exactly
     /// like the crystals Skim Race lays along its track. That gate is structural rather than
     /// conventional: TeamCrystal.prefab drops the base <see cref="OmniCrystalImpactor"/> in favour
     /// of a <see cref="TeamCrystalImpactor"/>, whose <c>IsDomainMatching</c> rejects every vessel
-    /// outside the crystal's domain in the impact chain itself. The PREVIEW says so too — it wears
-    /// the domain's crystal colours from the moment it appears, because crystal colour is already
-    /// the game's language for "who may collect this" (see <see cref="Crystal.ApplyColorSetTint"/>).
+    /// outside the crystal's domain in the impact chain itself.
+    ///
+    /// This is the Dolphin's own ammunition supply: the crystal it seeds is the crystal it later
+    /// flies into to release Echo Obliteration, so the seeding rate IS the blast's tempo.
     ///
     /// Element → parameter: CHARGE owns this ability. Its multiplier divides the recharge, and its
-    /// level-5 upgrade lets the Dolphin carry a second crystal so two can be planted back to back.
-    /// The HUD reads <see cref="ChargesAvailable"/> / <see cref="MaxCharges"/> for the slot pips and
-    /// <see cref="CooldownRemaining01"/> for the fill.
+    /// level-5 upgrade ("Twin Seed") doubles the yield per cycle. The HUD reads
+    /// <see cref="SeedsPerCycle"/> for the pip row, <see cref="CooldownRemaining01"/> for the fill,
+    /// and edge-detects <see cref="SeedCount"/> for the planted beat.
+    ///
+    /// <para><b>Locally simulated only.</b> <c>TeamCrystal.prefab</c> carries no NetworkObject, so a
+    /// seeded crystal has always been a local instantiate — the previous hold-to-plant version ran
+    /// on the owner's machine behind the action handler's <c>IsSpawned &amp;&amp; IsOwner</c> gate and
+    /// produced an owner-only crystal too. The clock therefore runs for the LOCAL PILOT's Dolphin
+    /// and no other, which preserves exactly that scope; letting every peer run it would have each
+    /// peer roll its own placement and desync the field outright. Networked seeding is a follow-up
+    /// and wants crystal network sync first (see DOLPHIN_CRYSTAL_SEEDING.md ▸ Follow-ups).</para>
     /// </summary>
     public sealed class DeployTeamCrystalActionExecutor : ShipActionExecutorBase
     {
-        static readonly int Opacity = Shader.PropertyToID("_opacity");
-
-        [Header("Scene Refs")]
+        [Header("Setup")]
+        [Tooltip("The TEAM crystal planted by each seeding. TeamCrystal.prefab.")]
         [SerializeField] private Crystal crystalPrefab;
+
+        [Tooltip("Tuning for the seeding. Wired directly because the ability is PASSIVE - it is " +
+                 "bound to no input event, so the action handler's binding maps can never resolve " +
+                 "it. Leave empty only if this vessel should not seed.")]
+        [SerializeField] private DeployTeamCrystalActionSO config;
 
         [Header("Events")]
         [SerializeField] private ScriptableEventNoParam OnMiniGameTurnEnd;
 
-        Crystal _ghostCrystal;
-        Vector3 _ghostRestScale = Vector3.one;
-        Tween _ghostTween;
-        MaterialPropertyBlock _fadeBlock;
-
         IVesselStatus _status;
 
-        // The SO carries the tuning, but it only reaches us through Begin/Commit. The HUD polls
-        // from frame zero, so resolve it lazily off the action handler the first time anything asks.
+        // Live crystals this Dolphin has seeded. Compacted lazily; entries go null when a crystal
+        // is collected or destroyed, which is exactly how the cap frees up.
+        readonly List<Crystal> _live = new();
+
+        float _nextSeedTime;
+        float _activeCooldown;
+        bool _clockStarted;
+
+        /// <summary>Monotonic count of seedings performed, for HUD edge detection.</summary>
+        public int SeedCount { get; private set; }
+
+        // Kept as a fallback resolution path only - see ResolveSo.
         DeployTeamCrystalActionSO _so;
         static readonly List<ShipActionSO> s_boundScratch = new();
 
-        // Charge stack. _charges is what the pilot is holding right now; the recharge clock refills
-        // it one slot at a time toward MaxCharges. -1 means "not seeded yet" (starts full).
-        int _charges = -1;
-        float _rechargeEndTime;
-        float _activeCooldown;
-
-        // No null guard on the SOAP channel: a missing reference must fail loud, not silently
-        // strand the preview past the end of a turn.
+        // No null guard on the SOAP channel: a missing reference must fail loud.
         void OnEnable()
         {
             OnMiniGameTurnEnd.OnRaised += OnTurnEndOfMiniGame;
@@ -63,179 +74,197 @@ namespace CosmicShore.Gameplay
         void OnDisable()
         {
             OnMiniGameTurnEnd.OnRaised -= OnTurnEndOfMiniGame;
-            End();
         }
 
         public override void Initialize(IVesselStatus shipStatus)
         {
             _status = shipStatus;
 
-            // Fresh vessel, fresh stack. The SO may differ after a class swap, so re-resolve it.
-            _charges = -1;
-            _activeCooldown = 0f;
+            // Fresh vessel, fresh clock. The SO may differ after a class swap, so re-resolve it.
             _so = null;
+            _clockStarted = false;
+            _activeCooldown = 0f;
+            SeedCount = 0;
+            _live.Clear();
         }
 
         // ---------------- HUD surface ----------------
 
-        /// <summary>Crystals the pilot is carrying right now.</summary>
-        public int ChargesAvailable
-        {
-            get { Pump(); return Mathf.Max(0, _charges); }
-        }
-
         /// <summary>
-        /// How many crystals can be carried at once: one normally, <see cref="DeployTeamCrystalActionSO.UpgradedCharges"/>
-        /// once Charge's level-5 upgrade is active.
+        /// Crystals planted per cycle: one normally,
+        /// <see cref="DeployTeamCrystalActionSO.UpgradedSeedsPerCycle"/> once Charge's level-5
+        /// upgrade is active.
         /// </summary>
-        public int MaxCharges
+        public int SeedsPerCycle
         {
             get
             {
                 var so = ResolveSo();
                 if (!so || !IsChargeUpgraded) return 1;
-                return Mathf.Max(1, so.UpgradedCharges);
+                return Mathf.Max(1, so.UpgradedSeedsPerCycle);
             }
         }
 
         /// <summary>
-        /// Recharge remaining as a 0-1 fraction: 1 the instant a crystal is planted, 0 when the next
-        /// slot is ready. Reads 0 whenever the stack is full.
+        /// Recharge remaining as a 0-1 fraction: 1 the instant a cycle fires, 0 when the next
+        /// seeding is due. Reads 0 while the clock is paused at the live-crystal cap.
         /// </summary>
         public float CooldownRemaining01
         {
             get
             {
-                Pump();
                 if (_activeCooldown <= 0f) return 0f;
-                return Mathf.Clamp01((_rechargeEndTime - Time.time) / _activeCooldown);
+                return Mathf.Clamp01((_nextSeedTime - Time.time) / _activeCooldown);
             }
         }
 
-        /// <summary>True when at least one crystal is available to plant.</summary>
-        public bool IsReady => ChargesAvailable > 0;
-
-        // ---------------- Action ----------------
-
-        public void Begin(DeployTeamCrystalActionSO so, IVesselStatus status)
+        /// <summary>Live crystals this Dolphin currently has planted.</summary>
+        public int LiveSeededCount
         {
-            if (so) _so = so;
-            if (!so || _ghostCrystal || !crystalPrefab || status?.Vessel?.Transform == null) return;
-
-            // Out of crystals: no preview at all, so the cooldown is legible from the cockpit and
-            // not just from the HUD.
-            if (ChargesAvailable <= 0) return;
-
-            _ghostCrystal = Instantiate(crystalPrefab, status.Vessel.Transform);
-            _ghostCrystal.transform.localPosition = new Vector3(0f, 0f, so.ForwardOffset);
-            _ghostCrystal.transform.localRotation = Quaternion.identity;
-
-            PrepareGhost(_ghostCrystal, so, status.Domain);
-            BloomGhost(so);
+            get { CompactLive(); return _live.Count; }
         }
 
-        public void Commit(DeployTeamCrystalActionSO so, IVesselStatus status)
+        // ---------------- The clock ----------------
+
+        void Update()
         {
-            if (so) _so = so;
-            if (!_ghostCrystal) return;
+            var so = ResolveSo();
+            if (!so || !crystalPrefab) return;
 
-            var crystal = _ghostCrystal;
-            _ghostCrystal = null;
+            // Local pilot only - see the class doc. Player can be null for a frame during a swap.
+            var player = _status?.Player;
+            if (player == null || !player.IsLocalPilot) return;
 
-            // The bloom may still be running, and Crystal.Start derives crystalValue from world
-            // scale — so settle the transform before the crystal is allowed to wake up.
-            _ghostTween?.Kill();
-            _ghostTween = null;
-            crystal.transform.localScale = _ghostRestScale;
+            CompactLive();
 
-            crystal.transform.SetParent(null, true);
-
-            ActivateCrystal(crystal, status);
-            SpendCharge();
-        }
-
-        void End()
-        {
-            if (!_ghostCrystal) return;
-
-            var crystal = _ghostCrystal;
-            _ghostCrystal = null;
-
-            _ghostTween?.Kill();
-            _ghostTween = null;
-
-            float duration = _so ? _so.PreviewWitherDuration : 0f;
-
-            // On teardown there are no frames left to animate in — the object is going away with
-            // the scene either way.
-            if (duration <= 0f || !isActiveAndEnabled)
+            // At the cap the clock PAUSES rather than culling anything. Not creating mass is
+            // allowed; aging it out is not.
+            if (so.MaxLiveSeeded > 0 && _live.Count >= so.MaxLiveSeeded)
             {
-                Destroy(crystal.gameObject);
+                _activeCooldown = 0f;
+                _clockStarted = false;
                 return;
             }
 
-            // Continuity of existence: an abandoned preview withers away, it does not blink out.
-            crystal.transform.DOScale(Vector3.zero, duration)
-                .SetEase(Ease.InBack)
-                .SetLink(crystal.gameObject)
-                .OnComplete(() => { if (crystal) Destroy(crystal.gameObject); });
-        }
-
-        void OnTurnEndOfMiniGame() => End();
-
-        // ---------------- Ghost ----------------
-
-        void PrepareGhost(Crystal cr, DeployTeamCrystalActionSO so, Domains domain)
-        {
-            cr.enabled = false;
-            foreach (var col in cr.GetComponentsInChildren<Collider>(true)) col.enabled = false;
-
-            // The preview wears the pilot's DOMAIN colours rather than the neutral pickup lime,
-            // because what is being previewed is a crystal only this domain will be able to
-            // collect — and colour is how every other crystal in the game says that.
-            cr.ApplyDomainPreview(domain);
-
-            // Half-lit so it still reads as "not planted yet". Driven through a
-            // MaterialPropertyBlock over the shared material — renderer.material would clone (and
-            // leak) one material per preview and break batching. GetPropertyBlock preserves the
-            // domain tint applied just above.
-            _fadeBlock ??= new MaterialPropertyBlock();
-            foreach (var fade in cr.GetComponentsInChildren<FadeIn>(true))
+            if (!_clockStarted)
             {
-                fade.enabled = false;
-                if (!fade.TryGetComponent<Renderer>(out var r)) continue;
-                r.GetPropertyBlock(_fadeBlock);
-                _fadeBlock.SetFloat(Opacity, so.FadeValue);
-                r.SetPropertyBlock(_fadeBlock);
+                StartClock(so);
+                return;
             }
+
+            if (Time.time < _nextSeedTime) return;
+
+            int yield = SeedsPerCycle;
+            for (int i = 0; i < yield; i++)
+            {
+                if (so.MaxLiveSeeded > 0 && _live.Count >= so.MaxLiveSeeded) break;
+                SeedOne(so);
+            }
+
+            SeedCount++;
+            StartClock(so);
         }
 
-        void BloomGhost(DeployTeamCrystalActionSO so)
+        void StartClock(DeployTeamCrystalActionSO so)
         {
-            var t = _ghostCrystal.transform;
-            _ghostRestScale = t.localScale;
-
-            // Continuity of existence: nothing pops into being — not even a preview.
-            _ghostTween?.Kill();
-            t.localScale = Vector3.zero;
-            _ghostTween = t.DOScale(_ghostRestScale, so.PreviewBloomDuration)
-                .SetEase(Ease.OutBack)
-                .SetLink(_ghostCrystal.gameObject);
+            _activeCooldown = CurrentCooldown();
+            _nextSeedTime = Time.time + _activeCooldown;
+            _clockStarted = true;
         }
 
-        void ActivateCrystal(Crystal cr, IVesselStatus status)
+        // ---------------- Seeding ----------------
+
+        void SeedOne(DeployTeamCrystalActionSO so)
         {
+            Vector3 point = ResolveSeedPoint(so);
+
+            var crystal = Instantiate(crystalPrefab, point, UnityEngine.Random.rotation);
+
             // Domain is stamped BEFORE activation so the crystal settles straight into its team
             // material (Crystal.ResolveActivationMaterial) instead of lerping through the neutral
             // free-for-all look on its way there.
-            cr.ownDomain = status.Domain;
-            foreach (var col in cr.GetComponentsInChildren<Collider>(true)) col.enabled = true;
-            foreach (var fade in cr.GetComponentsInChildren<FadeIn>(true)) fade.enabled = true;
-            cr.enabled = true;
-            cr.ActivateCrystal();
+            crystal.ownDomain = _status.Domain;
+            crystal.ActivateCrystal();
+
+            _live.Add(crystal);
         }
 
-        // ---------------- Charges ----------------
+        /// <summary>
+        /// A random point in the containing cell's CYTOPLASM — the shell between the nucleus
+        /// surface and the membrane.
+        ///
+        /// The radius is drawn <b>volume-uniformly</b> across the band (cube-root of a uniform
+        /// draw between the cubed radii), not uniformly in radius. A shell's available space grows
+        /// as r², so a uniform-in-radius draw crowds seedings against the nucleus and leaves the
+        /// outer cytoplasm — most of the actual volume — nearly empty. Same rule the flora planting
+        /// band follows (CLAUDE.md ▸ Rampage §27.2).
+        ///
+        /// The inner edge is clamped outside the nucleus regardless of what the band fractions ask
+        /// for: nucleus mass is the cell's territorial claim and a fauna sanctuary, so ability
+        /// crystals must not seed into it.
+        /// </summary>
+        Vector3 ResolveSeedPoint(DeployTeamCrystalActionSO so)
+        {
+            Vector3 origin = _status.Vessel != null && _status.Vessel.Transform
+                ? _status.Vessel.Transform.position
+                : transform.position;
+
+            var cell = Cell.FindCellContaining(origin) ?? Cell.FindNearestActiveCell(origin);
+
+            // No cell to measure against (freestyle transit, tool scenes): seed in a ball around
+            // the vessel so the ability still does something rather than silently stopping.
+            if (cell == null)
+                return origin + UnityEngine.Random.insideUnitSphere * so.CellessSeedRadius;
+
+            Vector3 centre = cell.transform.position;
+            float nucleus = Mathf.Max(0f, cell.ExpectedNucleusWorldRadius);
+            float membrane = cell.MembraneRadius;
+
+            // A cell with no membrane measurement gives us no band to draw from.
+            if (membrane <= nucleus)
+                return origin + UnityEngine.Random.insideUnitSphere * so.CellessSeedRadius;
+
+            float span = membrane - nucleus;
+            float inner = nucleus + span * so.BandInnerFraction;
+            float outer = nucleus + span * so.BandOuterFraction;
+
+            // Never inside the nucleus, whatever the fractions say.
+            inner = Mathf.Max(inner, nucleus);
+            if (outer <= inner) outer = Mathf.Min(membrane, inner + Mathf.Max(1f, span * 0.05f));
+
+            float u = UnityEngine.Random.value;
+            float i3 = inner * inner * inner;
+            float o3 = outer * outer * outer;
+            float radius = Mathf.Pow(Mathf.Lerp(i3, o3, u), 1f / 3f);
+
+            return centre + UnityEngine.Random.onUnitSphere * radius;
+        }
+
+        /// <summary>Drops collected/destroyed crystals so the cap counts only what is really there.</summary>
+        void CompactLive()
+        {
+            for (int i = _live.Count - 1; i >= 0; i--)
+                if (!_live[i]) _live.RemoveAt(i);
+        }
+
+        /// <summary>
+        /// End of turn: stop the clock. The crystals themselves are left to the scene teardown that
+        /// owns them — this executor never destroys planted mass.
+        ///
+        /// The live roster is deliberately NOT cleared. It is cap accounting, not turn state, and
+        /// the crystals it counts are still standing: a mode that runs several turns without a
+        /// scene reload would otherwise hand the next turn a fresh budget on top of last turn's
+        /// crystals, and the cap would ratchet open a turn at a time. <see cref="CompactLive"/>
+        /// already drops entries as the crystals are collected, which is the only correct way for
+        /// the budget to free up.
+        /// </summary>
+        void OnTurnEndOfMiniGame()
+        {
+            _clockStarted = false;
+            _activeCooldown = 0f;
+        }
+
+        // ---------------- Elemental ----------------
 
         bool IsChargeUpgraded
         {
@@ -247,8 +276,8 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// Seconds to recharge one slot right now. Element → parameter (Charge → how soon the next
-        /// crystal is ready): anchored at exactly 1x at the resting level, so the authored cooldown
+        /// Seconds between seedings right now. Element → parameter (Charge → how soon the next
+        /// crystal arrives): anchored at exactly 1x at the resting level, so the authored cooldown
         /// is what a fresh pilot feels, and floored by MinCooldown so it never becomes free.
         ///
         /// Scaled from the SO's OWN authored multiplier rather than the map's generic one, because
@@ -266,76 +295,19 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// Advances the recharge clock lazily — called from every accessor and from the action, so
-        /// the executor costs nothing per frame on the vessels nobody is looking at (every AI one).
-        /// </summary>
-        void Pump()
-        {
-            int max = MaxCharges;
-
-            if (_charges < 0) // first look this vessel: the stack starts full
-            {
-                _charges = max;
-                _activeCooldown = 0f;
-                return;
-            }
-
-            if (_charges > max) _charges = max; // the level-5 upgrade lapsed
-            if (_charges >= max)
-            {
-                _activeCooldown = 0f;
-                return;
-            }
-
-            float cooldown = _activeCooldown > 0f ? _activeCooldown : CurrentCooldown();
-            if (cooldown <= 0f) // unconfigured cooldown: treat the ability as always ready
-            {
-                _charges = max;
-                _activeCooldown = 0f;
-                return;
-            }
-
-            // A slot opened with no clock running (the upgrade just landed) — start one.
-            if (_activeCooldown <= 0f)
-            {
-                _activeCooldown = cooldown;
-                _rechargeEndTime = Time.time + cooldown;
-                return;
-            }
-
-            while (_charges < max && Time.time >= _rechargeEndTime)
-            {
-                _charges++;
-                if (_charges < max) _rechargeEndTime += cooldown;
-            }
-
-            if (_charges >= max) _activeCooldown = 0f;
-        }
-
-        void SpendCharge()
-        {
-            Pump();
-            _charges = Mathf.Max(0, _charges - 1);
-
-            if (_charges >= MaxCharges) return;
-            if (_activeCooldown > 0f) return; // a clock is already ticking toward the next slot
-
-            _activeCooldown = CurrentCooldown();
-            _rechargeEndTime = Time.time + _activeCooldown;
-        }
-
-        /// <summary>
-        /// Finds this vessel's crystal action among its own bindings. The action handler builds its
-        /// maps AFTER initialising executors, so this cannot happen in Initialize — it runs on the
-        /// first access that beats the first deploy (i.e. the HUD's).
+        /// The serialized <see cref="config"/> is the real source now: a PASSIVE ability is bound to
+        /// no input event, so <c>CollectBoundActions</c> — which walks the input→action maps — can
+        /// never find it. The binding sweep is kept only as a fallback for a vessel that still lists
+        /// the action against an input.
         ///
         /// It gives up only on SUCCESS, never on the first attempt. R_VesselActionHandler.Initialize
         /// calls InitializeAll on the executors BEFORE it populates the binding maps, so an early
         /// query lands in a window where the maps are still empty — latching there would pin _so
-        /// null for the life of the vessel and leave the HUD reporting "always ready".
+        /// null for the life of the vessel.
         /// </summary>
         DeployTeamCrystalActionSO ResolveSo()
         {
+            if (config) return config;
             if (_so) return _so;
 
             var handler = _status?.ActionHandler;

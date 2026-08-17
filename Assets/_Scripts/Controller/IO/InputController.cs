@@ -20,6 +20,7 @@ namespace CosmicShore.Gameplay
         [SerializeField] public bool Portrait;
         [Inject] GameSetting gameSetting;
         IVessel vessel;
+        Player ownerPlayer;
 
         private IInputStrategy currentStrategy;
         private GamepadInputStrategy gamepadStrategy;
@@ -41,6 +42,7 @@ namespace CosmicShore.Gameplay
         {
             InputStatus ??= TryAddInputStatus();
             InputStatus.InputController = this;
+            ownerPlayer = GetComponent<Player>();
         }
 
         private void RegisterToEvents()
@@ -77,14 +79,17 @@ namespace CosmicShore.Gameplay
                 Screen.fullScreen = !Screen.fullScreen;
 #endif
             
+            // Flight input is local-human-pilot only. AI and remote Player replicas
+            // still carry an InputController (OnNetworkSpawn initializes everyone)
+            // but must not consume WASD / sticks on this machine.
+            if (ownerPlayer != null && !ownerPlayer.IsLocalPilot)
+                return;
+
             if (InputStatus.Paused)
                 return;
 
             if (PauseSystem.Paused)
-            {
-                // CSDebug.Log("InputController.Update: PauseSystem.Paused -> blocking input");
                 return;
-            }
 
             // Tick once per frame here so engagement detection and the
             // strategy itself read the same per-frame snapshot.
@@ -195,6 +200,8 @@ namespace CosmicShore.Gameplay
                 return touchStrategy;
             if (dualMouseEngaged && multiMouseService != null && multiMouseService.HasTwoMice)
                 return dualMouseStrategy;
+            // Desktop default is dual-WASD KeyboardInputStrategy, not the legacy
+            // KeyboardMouseInputStrategy (that class remains in the project unused).
             return keyboardStrategy;
         }
 

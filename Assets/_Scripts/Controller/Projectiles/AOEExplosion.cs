@@ -180,6 +180,7 @@ namespace CosmicShore.Gameplay
                 ExplosionDuration = initStruct.DurationOverride;
 
             ApplyAffectSelfOverride(initStruct);
+            ApplyDevastatingOverride(initStruct);
 
             MaxScaleVector = new Vector3(MaxScale, MaxScale, MaxScale);
             speed = MaxScale / ExplosionDuration;
@@ -207,6 +208,12 @@ namespace CosmicShore.Gameplay
         /// explosion is instantiated fresh from its prefab, so writing the instance's flag cannot
         /// leak into the next blast. No override leaves the authored prefab value alone.
         /// </summary>
+        protected void ApplyDevastatingOverride(InitializeStruct initStruct)
+        {
+            if (!initStruct.DevastatingOverride.HasValue) return;
+            if (_explosionImpactor) _explosionImpactor.SetDevastating(initStruct.DevastatingOverride.Value);
+        }
+
         protected void ApplyAffectSelfOverride(InitializeStruct initStruct)
         {
             if (!initStruct.AffectSelfOverride.HasValue) return;
@@ -437,6 +444,12 @@ namespace CosmicShore.Gameplay
             /// friendly fire off as a reward.
             /// </summary>
             public bool? AffectSelfOverride;
+
+            /// <summary>Per-instance override of the prefab's authored `devastating` flag: a
+            /// devastating blast destroys SHIELDED prisms outright rather than only shedding
+            /// their shields. null (the default) keeps the authored value. Same shape as
+            /// <see cref="AffectSelfOverride"/>.</summary>
+            public bool? DevastatingOverride;
         }
     }
 }

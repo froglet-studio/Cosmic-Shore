@@ -11,7 +11,9 @@ namespace CosmicShore.Gameplay
     /// Prism / PrismStateManager lifecycle.
     ///
     /// Mirrors <see cref="PrismOctahedronShieldTester"/> for the stellated
-    /// (super-shielded) variant. Uses the new Input System package
+    /// (super-shielded) variant — including its role as the in-editor verification
+    /// rig for the GPU shield morph, and the MaterialPropertyBlock stamp path a
+    /// Prism-less host takes (see that class). Uses the new Input System package
     /// (<c>UnityEngine.InputSystem</c>) because the project has legacy Input
     /// handling disabled.
     /// </summary>

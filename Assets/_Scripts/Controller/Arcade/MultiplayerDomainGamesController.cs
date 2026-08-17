@@ -85,14 +85,14 @@ namespace CosmicShore.Gameplay
             if (!IsServer)
                 return;
 
-            Debug.Log($"<color=#00CED1>[FLOW-9] [DomainGamesCtrl] OnCountdownTimerEnded (server) - activating players. Players={gameData.Players.Count}, RoundStats={gameData.RoundStatsList.Count}</color>");
+            CSDebug.LogVerbose(CSLogChannel.NetworkFlow, $"<color=#00CED1>[FLOW-9] [DomainGamesCtrl] OnCountdownTimerEnded (server) - activating players. Players={gameData.Players.Count}, RoundStats={gameData.RoundStatsList.Count}</color>");
             OnCountdownTimerEnded_ClientRpc();
         }
 
         [ClientRpc]
         void OnCountdownTimerEnded_ClientRpc()
         {
-            Debug.Log("<color=#00CED1>[FLOW-9] [DomainGamesCtrl] OnCountdownTimerEnded_ClientRpc - SetPlayersActive + StartTurn</color>");
+            CSDebug.LogVerbose(CSLogChannel.NetworkFlow, "<color=#00CED1>[FLOW-9] [DomainGamesCtrl] OnCountdownTimerEnded_ClientRpc - SetPlayersActive + StartTurn</color>");
             gameData.SetPlayersActive();
             gameData.StartTurn();
             EnsureLocalHumanCanMove();
@@ -112,7 +112,7 @@ namespace CosmicShore.Gameplay
             // Use connected clients count (humans only - excludes AI)
             int humanCount = NetworkManager.Singleton.ConnectedClientsIds.Count;
 
-            Debug.Log($"<color=#00CED1>[FLOW-9] [DomainGamesCtrl] OnReadyClicked_ServerRpc - {playerName} ready. Count: {readyClientCount}/{humanCount}</color>");
+            CSDebug.LogVerbose(CSLogChannel.NetworkFlow, $"<color=#00CED1>[FLOW-9] [DomainGamesCtrl] OnReadyClicked_ServerRpc - {playerName} ready. Count: {readyClientCount}/{humanCount}</color>");
             CSDebug.Log($"[Server] Player Ready. Count: {readyClientCount}/{humanCount}");
 
             // Broadcast which player is ready to all clients
@@ -120,11 +120,11 @@ namespace CosmicShore.Gameplay
 
             if (readyClientCount < humanCount)
             {
-                Debug.Log($"<color=#FFA500>[FLOW-9] [DomainGamesCtrl] Waiting for more players ({readyClientCount}/{humanCount})</color>");
+                CSDebug.LogVerbose(CSLogChannel.NetworkFlow, $"<color=#FFA500>[FLOW-9] [DomainGamesCtrl] Waiting for more players ({readyClientCount}/{humanCount})</color>");
                 return;
             }
 
-            Debug.Log("<color=#00CED1>[FLOW-9] [DomainGamesCtrl] All players ready! Starting countdown...</color>");
+            CSDebug.LogVerbose(CSLogChannel.NetworkFlow, "<color=#00CED1>[FLOW-9] [DomainGamesCtrl] All players ready! Starting countdown...</color>");
             readyClientCount = 0;
             OnReadyClicked_ClientRpc();
         }

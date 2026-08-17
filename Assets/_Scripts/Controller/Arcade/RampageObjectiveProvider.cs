@@ -8,12 +8,13 @@ using UnityEngine;
 namespace CosmicShore.Gameplay
 {
     /// <summary>
-    /// Objective provider for Rampage: the arena's single contested OMNI crystal, and nothing
+    /// Objective provider for Rampage: the arena's nearest contested OMNI crystal, and nothing
     /// else, ever.
     ///
     /// Rampage is the one mode where the crystal is not a pickup but a TRIGGER - a Dolphin banks
     /// skim energy in the forest and the crystal is the only thing that discharges it as the jaw
-    /// blast (DOLPHIN_ENERGY_ECONOMY.md §1). There is exactly one in the arena, so "where is it
+    /// blast (DOLPHIN_ENERGY_ECONOMY.md §1). How many are in the arena IS the mode's intensity
+    /// (twice the roster at 1, exactly one at 4 - see RAMPAGE.md), so "where is the nearest one
     /// right now" is the question the whole match is played around, and it is the one thing a
     /// pilot deep in a cactus thicket cannot answer by looking.
     ///

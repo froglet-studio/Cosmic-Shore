@@ -17,6 +17,13 @@ MonoBehaviour:
   InitialSpawnCount: 10
   OverrideDefaultPlantPeriod: 1
   NewPlantPeriod: 22
+  PopulationSize: 10
+  MaxLivePopulation: 15
+  GrowthPerOffspring: 52
+  OffspringPerBirth: 1
+  ReproductionCooldownSeconds: 5
+  MaturityFraction: 0.5
+  OffspringSpread: 60
   PreferredSites: 31
   Element: 0
   Variant:
@@ -30,18 +37,12 @@ MonoBehaviour:
     PlantRadiusCellFractionMin: -1
   InitialLevel: 1
   LeafScalePerLevel: 1.25
-  CrystalScalePerLevel: 1.2
   SpreadElements: 1
   ElementPalette:
   - {fileID: 11400000, guid: 12bd6f27581147c1a081ecef353dacd9, type: 2}
   - {fileID: 11400000, guid: 2eeb5320cd1c4f8bacc07e4af64e907c, type: 2}
   - {fileID: 11400000, guid: a5d4c148308747ffbff241aac38f5912, type: 2}
   - {fileID: 11400000, guid: 8143e68d2afd437cbf107584a54b246a, type: 2}
-  Levels:
-    Enabled: 1
-    MinLevel: 1
-    MaxLevel: 5
-    RarityFalloff: 1.6
   PlantRadiusCellFractionMaxOverride: 0.9
   PlantRadiusCellFractionMinOverride: 0.14
   MaxTotalSpawnedObjectsOverride: 150

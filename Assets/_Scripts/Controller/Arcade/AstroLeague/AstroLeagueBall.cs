@@ -42,6 +42,26 @@ namespace CosmicShore.Gameplay
         // null-guarded because this is a service reference, not a SOAP event channel.
         [Inject] AudioSystem audioSystem;
 
+        [Header("Shield interaction")]
+        [Tooltip("Bounce off an OPPOSING shielded prism (and still pop its shield) instead of " +
+                 "passing through it. OFF for the Astro League match ball, which keeps the " +
+                 "shipped pop-and-continue behaviour; ON for the Scarab's forged balls.")]
+        [SerializeField] bool bounceOffShieldedPrisms;
+
+        [Tooltip("Die on contact with a SUPER-shielded prism, popping its super-shield on the way " +
+                 "out. MUST stay OFF for the Astro League match ball: the arena's 480-prism edge " +
+                 "lining is super-shielded and is inset INSIDE the analytic boundary, so the ball " +
+                 "reaches it before it reaches the wall — a lethal super-shield would kill the " +
+                 "match ball on its first approach to any edge.")]
+        [SerializeField] bool destroyedBySuperShielded;
+
+        /// <summary>Every live ball, for systems that must find them without a per-frame
+        /// FindObjectsByType (the Scarab's switch rings). Registered on enable, removed on
+        /// disable, so it is exact and costs nothing to maintain.</summary>
+        public static readonly List<AstroLeagueBall> Live = new();
+
+        bool _dieAfterScan;
+
         [Header("Visuals")]
         [Tooltip("The prism fresnel material (PrismMaterial.mat) - cloned at runtime so the ball " +
                  "renders with the same 3D fresnel-rim look as trail prisms. Falls back to the " +
@@ -109,6 +129,7 @@ namespace CosmicShore.Gameplay
         // Server-side velocity estimates for transform-driven vessels (root → last pos + velocity)
         readonly Dictionary<Transform, Vector3> _vesselLastPos = new();
         readonly Dictionary<Transform, Vector3> _vesselVelocity = new();
+        readonly List<Transform> _deadSampleKeys = new();
 
         // Per-vessel-root time of last strike - dedups the hull+trigger double-fire and paces dribble
         // taps (see VesselContact). Gated by settings.vesselStrikeCooldown.
@@ -154,6 +175,16 @@ namespace CosmicShore.Gameplay
         public bool IsHidden => n_Hidden.Value;
         /// <summary>Domain whose color the ball currently carries (Blue = neutral). Set by the last striker.</summary>
         public Domains LastHitDomain => n_LastHitDomain.Value;
+
+        void OnEnable()
+        {
+            if (!Live.Contains(this)) Live.Add(this);
+        }
+
+        void OnDisable()
+        {
+            Live.Remove(this);
+        }
 
         void Awake()
         {
@@ -477,7 +508,7 @@ namespace CosmicShore.Gameplay
                 // replacing it. Below restSpeed the remainder is snapped out, or the asymptote leaves
                 // the ball creeping forever at an invisible speed.
                 if (settings.ballDrag > 0f)
-                    rb.linearVelocity *= Mathf.Exp(-settings.ballDrag * Time.fixedDeltaTime);
+                    rb.linearVelocity *= Mathf.Exp(-EffectiveDrag() * Time.fixedDeltaTime);
                 if (rb.linearVelocity.sqrMagnitude < settings.ballRestSpeed * settings.ballRestSpeed)
                     rb.linearVelocity = Vector3.zero;
 
@@ -499,6 +530,55 @@ namespace CosmicShore.Gameplay
                 n_Velocity.Value = n_Frozen.Value ? Vector3.zero : rb.linearVelocity;
                 n_AngularVelocity.Value = n_Frozen.Value ? Vector3.zero : rb.angularVelocity;
             }
+        }
+
+        /// <summary>
+        /// The coast drag for where the ball currently IS: authored `ballDrag` inside the cell's
+        /// nucleus, ramping linearly up to `ballDrag × outsideNucleusDragMultiplier` once it is a
+        /// full `outsideNucleusDragFalloff` beyond the nucleus surface.
+        ///
+        /// This is a SOFT boundary and is deliberately the only kind the payload gets: a ball that
+        /// leaves the pitch is never teleported back, culled, or bounced off an invisible wall —
+        /// the hypersea simply gets thicker, and the ball settles instead of sailing away forever.
+        /// A mode whose court IS the nucleus (Astro League) reflects the ball at that same radius,
+        /// so the ramp never engages there and the mode's feel is untouched; it exists for a ball
+        /// that got out, and for the Scarab's forged balls in a cell that has no court at all.
+        ///
+        /// NUCLEUS SIZE COMES FROM `NucleusVisualWorldRadius`, NOT `NucleusWorldRadius`. Astro
+        /// League sets `Cell.NucleusIsControlZone = false` because it borrowed the nucleus as play
+        /// geometry, and that collapses the CONTROL radius to zero — so the obvious read reports 0
+        /// for the very mode this is about and the whole world would count as "outside".
+        /// </summary>
+        float EffectiveDrag()
+        {
+            float baseDrag = settings.ballDrag;
+            if (settings.outsideNucleusDragMultiplier <= 1f) return baseDrag;
+
+            var cell = ResolveCell();
+            if (cell == null) return baseDrag;
+
+            float nucleus = cell.NucleusVisualWorldRadius;
+            if (nucleus <= 0f) return baseDrag;      // no nucleus: nothing to be outside of
+
+            float distance = Vector3.Distance(transform.position, cell.transform.position);
+            float outside01 = Mathf.Clamp01(
+                (distance - nucleus) / Mathf.Max(1f, settings.outsideNucleusDragFalloff));
+
+            return baseDrag * Mathf.Lerp(1f, settings.outsideNucleusDragMultiplier, outside01);
+        }
+
+        // Cached because Cell's finders are O(cells-in-scene) and documented as lifecycle-time
+        // calls, not per-tick ones. Re-resolved only when the reference goes null - which covers
+        // both "the ball spawned before the cell finished initializing" and a Cell Selector swap
+        // destroying the old one.
+        Cell _cell;
+
+        Cell ResolveCell()
+        {
+            if (_cell != null) return _cell;
+            _cell = Cell.FindCellContaining(transform.position)
+                    ?? Cell.FindNearestActiveCell(transform.position);
+            return _cell;
         }
 
         void ClientFixedUpdate()
@@ -534,15 +614,43 @@ namespace CosmicShore.Gameplay
             float dt = Time.fixedDeltaTime;
             for (int i = 0, n = gameData.Vessels.Count; i < n; i++)
             {
-                var vessel = gameData.Vessels[i];
-                if (vessel == null) continue;
-                var root = vessel.Transform;
+                var root = LiveTransform(gameData.Vessels[i]);
                 if (root == null) continue;
 
                 if (_vesselLastPos.TryGetValue(root, out var lastPos))
                     _vesselVelocity[root] = (root.position - lastPos) / dt;
                 _vesselLastPos[root] = root.position;
             }
+
+            PruneDeadVesselSamples();
+        }
+
+        /// <summary>The roster is `List&lt;IVessel&gt;`, and `==` on an INTERFACE reference never
+        /// reaches UnityEngine.Object's overload — so a destroyed VesselController sails through a
+        /// plain null check and throws on the first member access. <see cref="VesselLiveness"/> is
+        /// the shared guard; a stale entry is rare now (VesselController leaves the roster in
+        /// OnDestroy) but a vessel can be destroyed at any point in a frame, so the roster is never
+        /// something to walk unguarded.</summary>
+        static Transform LiveTransform(IVessel vessel) => vessel.LiveTransform();
+
+        /// <summary>Drop sample entries whose transform has been destroyed. Keyed by Transform, so
+        /// a swap-heavy session (the freestyle vessel changer) would otherwise grow these
+        /// dictionaries for the ball's whole life. Only runs when they have outgrown the roster,
+        /// so the steady state costs one integer compare.</summary>
+        void PruneDeadVesselSamples()
+        {
+            if (_vesselLastPos.Count <= gameData.Vessels.Count) return;
+
+            _deadSampleKeys.Clear();
+            foreach (var key in _vesselLastPos.Keys)
+                if (!key) _deadSampleKeys.Add(key);
+
+            for (int i = 0; i < _deadSampleKeys.Count; i++)
+            {
+                _vesselLastPos.Remove(_deadSampleKeys[i]);
+                _vesselVelocity.Remove(_deadSampleKeys[i]);
+            }
+            _deadSampleKeys.Clear();
         }
 
         void OnCollisionEnter(Collision collision)
@@ -645,7 +753,16 @@ namespace CosmicShore.Gameplay
                     // SUPER-shielded prisms are fully invulnerable structure (Prism.Damage/Consume
                     // no-op on them - e.g. the arena's edge lining): the ball passes through
                     // untouched regardless of domain - never unshielded, never eaten, no speed cost.
-                    if (prism.prismProperties.IsSuperShielded) continue;
+                    // UNLESS this ball is authored to die on them (the Scarab's forged balls): then
+                    // the super-shield is popped and the ball is spent. Both happen - the structure
+                    // is downgraded, and the ball paid for it.
+                    if (prism.prismProperties.IsSuperShielded)
+                    {
+                        if (!destroyedBySuperShielded) continue;
+                        prism.DeactivateShields();
+                        _dieAfterScan = true;   // never despawn mid-scan; drained below
+                        continue;
+                    }
 
                     _scanInRange.Add(prism);
 
@@ -661,10 +778,27 @@ namespace CosmicShore.Gameplay
                         // Opposing + shielded: pop the shield and LEAVE the prism this visit.
                         prism.DeactivateShields();
                         if (!_shieldPoppedThisVisit.Contains(prism)) _shieldPoppedThisVisit.Add(prism);
+
+                        // ...and, for balls authored to do so, CAROM off it. The shield is spent
+                        // either way; the difference is whether the armour also turned the shot.
+                        // Server-only: the reflection is a velocity write, and clients mirror it
+                        // through n_Velocity like every other ball impulse.
+                        if (bounceOffShieldedPrisms && isServer)
+                            ReflectOffPrism(prism);
                     }
                     else
                     {
                         // Opposing + unshielded: eat it - unless we just popped its shield THIS visit.
+                        //
+                        // A DANGER prism arrives here too, and that is deliberate: danger is
+                        // mutually exclusive with BOTH shield tiers (PrismStateManager.MakeDangerous
+                        // clears them), so it can only ever be "unshielded", and nothing below
+                        // reads the tier. A danger prism and a plain prism of the same volume
+                        // therefore cost the ball exactly the same speed. Danger is a punishment
+                        // for a PILOT (the slow, the debuff, the boost reset), not for the
+                        // payload - a ball that braked harder on danger mass would hand the
+                        // defending side a wall it could build out of a hazard. Do not add a
+                        // per-tier multiplier to the drag.
                         if (_shieldPoppedThisVisit.Contains(prism)) continue;
                         eatenMass += Mathf.Max(0f, prism.CurrentVolume);
                         prism.Damage(ballVel, ballDomain, BallAttackerName);
@@ -684,6 +818,15 @@ namespace CosmicShore.Gameplay
                 }
             }
 
+            // A ball spent on super-shielded structure. Drained AFTER the scan so nothing is
+            // despawned while the query buffer is still being walked.
+            if (_dieAfterScan)
+            {
+                _dieAfterScan = false;
+                if (isServer) ExpireServer();
+                return;
+            }
+
             if (eatenMass <= 0f) return;
 
             // Server slows the ball by the eaten mass (direction preserved); clients mirror via velocity.
@@ -693,6 +836,50 @@ namespace CosmicShore.Gameplay
                 rb.linearVelocity *= rb.mass / Mathf.Max(0.0001f, rb.mass + prismMass);
             }
             TriggerFlash(0.6f); // local "chomp" feedback on every peer that ate mass
+        }
+
+        /// <summary>
+        /// Server: carom off a prism. The ball has no physics contact with prisms at all (their
+        /// layer is excluded from its collider — see Awake), so the normal is derived
+        /// geometrically: prism centre → ball centre, which for a sphere-vs-box at contact range
+        /// is the face normal to within the box's corner rounding. Reflects only the INTO-prism
+        /// component, so a glancing pass is barely turned and a head-on one comes straight back.
+        ///
+        /// This is a pure REDIRECT: at `prismCaromRestitution` 1 the reflection is an exact
+        /// mirror, so |v| is unchanged and only the heading turns. That is what armour is
+        /// supposed to buy — a shielded prism costs the SHIELD and the ball's line, never its
+        /// momentum, and the prism itself is left standing (the caller pops the shield and adds
+        /// the prism to `_shieldPoppedThisVisit`, so it is not eaten on the way past either). It
+        /// used to reuse `wallRestitution` (0.72), which quietly bled 28% of the approach speed
+        /// out of every deflection and made a shielded wall a brake as well as a bumper.
+        /// </summary>
+        void ReflectOffPrism(Prism prism)
+        {
+            Vector3 n = transform.position - prism.transform.position;
+            if (n.sqrMagnitude < 1e-6f) return;
+            n.Normalize();
+
+            Vector3 v = rb.linearVelocity;
+            float into = Vector3.Dot(v, n);
+            if (into >= 0f) return;   // already leaving — never "bounce" a ball outward twice
+
+            float e = settings != null ? settings.prismCaromRestitution : 1f;
+            rb.linearVelocity = v - (1f + e) * into * n;
+
+            // Nudge clear so the next tick's scan doesn't re-reflect on the same prism.
+            transform.position += n * (BallWorldRadius() * 0.5f);
+            HandleWallBounce(prism.transform.position, n);
+        }
+
+        /// <summary>Server: this ball is spent — detonate for the visual and remove it. Used by
+        /// balls that die on super-shielded structure; a scene-placed match ball is only ever
+        /// hidden, never despawned, so the NetworkObject despawn is guarded on being spawned.</summary>
+        void ExpireServer()
+        {
+            if (!IsServer) return;
+            DetonateServer();                       // burst + hide (continuity: it does not pop out)
+            if (IsSpawned && NetworkObject != null && !NetworkObject.IsSceneObject.GetValueOrDefault(false))
+                NetworkObject.Despawn(true);
         }
 
         /// <summary>
@@ -990,6 +1177,103 @@ namespace CosmicShore.Gameplay
             }
 
             OnStruckServer?.Invoke(vessel, intensity); // controller recoils the vessel (it bounces off too)
+        }
+
+        /// <summary>
+        /// SERVER: an AOE blast reached the ball. The payload is shoved the way prism mass is
+        /// shoved — with the blast's OWN impact vector (<see cref="AOEExplosion.CalculateImpactVector"/>,
+        /// i.e. <c>ExplosionImpulse.Along(radialDirection)</c>), so a weapon tuned to throw mass
+        /// hard throws the ball hard and no second tuning surface exists to drift from the first.
+        /// There is no distance falloff because prisms do not get one either: the blast either
+        /// reached you or it did not.
+        ///
+        /// Before this, an explosion passed straight through the ball. Nothing in the mode could
+        /// move the payload except a hull or a blade, which quietly made every AOE weapon useless
+        /// on the one object the match is about.
+        ///
+        /// A blast also CLAIMS the ball (<see cref="AstroLeagueSettingsSO.explosionClaimsBall"/>),
+        /// on the same rule as a strike: whoever touched it last owns it. And unlike a prism, the
+        /// ball has no friendly-fire exemption — blowing your OWN ball toward the goal is a play,
+        /// not an accident, so the blast's domain is never a reason to skip.
+        /// </summary>
+        /// <param name="blastOrigin">Centre the impact vector radiates from.</param>
+        /// <param name="impactVector">The blast's impact vector at the ball's position — already
+        /// direction × magnitude, exactly as a prism receives it.</param>
+        /// <param name="blastDomain">Domain that fired the blast; claims the ball.</param>
+        /// <summary>
+        /// Route a blast to the ball from whichever peer owns the explosion. Blasts are LOCAL —
+        /// a projectile or a juke-fired cavitation punch exists only on the machine that fired
+        /// it — while the ball is server-simulated, so a client's blast has to ask. Without this
+        /// hop, "explosions move the ball" would quietly mean "the host's explosions move the
+        /// ball", which is the kind of asymmetry that reads as netcode jitter rather than as a
+        /// missing feature.
+        /// </summary>
+        public static void RequestBlast(AstroLeagueBall ball, IVessel source, Vector3 blastOrigin,
+                                        Vector3 impactVector, Domains blastDomain)
+        {
+            if (ball == null) return;
+
+            if (!ball.IsSpawned || ball.IsServer)
+            {
+                ball.ApplyBlastServer(blastOrigin, impactVector, blastDomain);
+                return;
+            }
+
+            // Client: ask through our own Player, so ownership is the identity check and the
+            // server decides the domain from its own copy of that player's vessel.
+            var player = source?.VesselStatus?.Player as Player;
+            if (player == null || !player.IsSpawned || !player.IsOwner) return;
+            player.RequestBlastBall_ServerRpc(ball.NetworkObjectId, blastOrigin, impactVector);
+        }
+
+        public void ApplyBlastServer(Vector3 blastOrigin, Vector3 impactVector, Domains blastDomain)
+        {
+            if (settings == null || !settings.explosionsAffectBall) return;
+            if (IsSpawned && !IsServer) return;
+            if (n_Frozen.Value || n_Hidden.Value) return;
+
+            Vector3 kick = impactVector * settings.explosionKickMultiplier;
+            if (kick.sqrMagnitude < 1e-6f) return;
+
+            Vector3 desired = rb.linearVelocity + kick;
+            if (desired.sqrMagnitude > settings.maxSpeed * settings.maxSpeed)
+                desired = desired.normalized * settings.maxSpeed;
+
+            Vector3 before = rb.linearVelocity;
+            rb.linearVelocity = desired;
+
+            // Spin comes from applying the impulse off-centre, at the point on the ball's surface
+            // facing the blast — the split form of AddForceAtPosition, same as VesselStrike uses,
+            // so a blast tumbles the ball instead of sliding it flat.
+            if (settings.explosionSpinFraction > 0f)
+            {
+                Vector3 toBall = transform.position - blastOrigin;
+                Vector3 facing = toBall.sqrMagnitude > 1e-6f ? -toBall.normalized : Vector3.up;
+                Vector3 contact = transform.position + facing * BallWorldRadius();
+                Vector3 impulse = rb.mass * (desired - before) * settings.explosionSpinFraction;
+                rb.AddTorque(Vector3.Cross(contact - rb.worldCenterOfMass, impulse), ForceMode.Impulse);
+            }
+
+            if (settings.explosionClaimsBall && blastDomain != Domains.Blue
+                && n_LastHitDomain.Value != blastDomain)
+                n_LastHitDomain.Value = blastDomain;
+
+            if (IsSpawned)
+            {
+                n_Velocity.Value = rb.linearVelocity;
+                n_AngularVelocity.Value = rb.angularVelocity;
+            }
+
+            if (settings.strikeFeedbackEnabled && IsSpawned)
+            {
+                Vector3 toBall = transform.position - blastOrigin;
+                Vector3 normal = toBall.sqrMagnitude > 1e-6f ? toBall.normalized : Vector3.up;
+                float intensity = Mathf.Clamp01(rb.linearVelocity.magnitude / settings.maxSpeed);
+                // No striker vessel: a blast is credited to the blast, so the emphasised
+                // striker shake has nobody to land on and every peer gets the shared one.
+                Strike_ClientRpc(transform.position - normal * BallWorldRadius(), normal,
+                                 intensity, 0UL, tipHit: false);
+            }
         }
 
         /// <summary>
@@ -1353,6 +1637,46 @@ namespace CosmicShore.Gameplay
             n_LastHitDomain.Value = Domains.Blue;
             _shieldPoppedThisVisit.Clear();
             _lastPrismScanPos = spawnPosition;
+            if (trail != null) trail.Clear();
+        }
+
+        /// <summary>
+        /// Server: bring a freshly-spawned ball into play at <paramref name="position"/> carrying
+        /// <paramref name="velocity"/>, owned by <paramref name="ownerDomain"/>. This is the entry
+        /// point for a ball that is CREATED mid-match rather than reset to the arena centre — the
+        /// Scarab's crystal forge (R_VesselActions/SCARAB.md §4.1) is the first caller; the Astro
+        /// League controller never uses it, so the mode's single-ball flow is unchanged.
+        ///
+        /// Order is load-bearing: a fresh ball's n_Frozen defaults to TRUE (kinematic, snapped to
+        /// spawnPosition), and un-freezing deliberately ZEROES the rigidbody's velocity, so the
+        /// launch velocity has to be written after the unfreeze or it is silently discarded.
+        ///
+        /// The domain written here is the ball's OWNER. It replicates through the same variable a
+        /// strike would rewrite, so until per-ball permanent ownership lands (SCARAB.md §4.2) an
+        /// opposing strike still re-colours it — the forge sets the STARTING allegiance, which is
+        /// what makes it eat the enemy's trail and shield yours from birth.
+        /// </summary>
+        public void LaunchServer(Vector3 position, Vector3 velocity, Domains ownerDomain)
+        {
+            if (!IsServer) return;
+
+            SetSpawnPosition(position);
+            transform.position = position;
+            transform.rotation = Quaternion.identity;
+
+            SetHiddenServer(false);
+            SetFrozenServer(false);   // zeroes rb velocity — everything below must follow it
+
+            rb.linearVelocity = velocity;
+            rb.angularVelocity = Vector3.zero;
+
+            n_Position.Value = position;
+            n_Velocity.Value = velocity;
+            n_AngularVelocity.Value = Vector3.zero;
+            n_LastHitDomain.Value = ownerDomain;
+
+            _shieldPoppedThisVisit.Clear();
+            _lastPrismScanPos = position;   // or the first scan sweeps from the origin
             if (trail != null) trail.Clear();
         }
 

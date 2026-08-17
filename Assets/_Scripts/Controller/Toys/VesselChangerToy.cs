@@ -30,6 +30,7 @@ namespace CosmicShore.Gameplay
         {
             VesselClassType.Manta, VesselClassType.Dolphin, VesselClassType.Rhino,
             VesselClassType.Squirrel, VesselClassType.Serpent, VesselClassType.Sparrow,
+            VesselClassType.Scarab,
         };
 
         const int RestoreDelayMs = 600;
@@ -294,11 +295,16 @@ namespace CosmicShore.Gameplay
             // Only hand control back if the player is still flying freestyle.
             if (Context?.IsFreestyleActive != null && !Context.IsFreestyleActive()) return;
 
+            // IVessel is an INTERFACE, so `!= null` never reaches UnityEngine.Object's overload:
+            // a vessel destroyed during the swap sails through it and throws
+            // MissingReferenceException inside ToggleAIPilot. That fires on every FAILED swap,
+            // where the outgoing hull is already gone and no incoming one arrived — which is
+            // exactly when this path runs. VesselLiveness is the shared guard.
             var p = Context?.GameData?.LocalPlayer;
-            if (p?.Vessel != null)
+            if (p != null && p.Vessel.IsAlive())
             {
                 p.Vessel.ToggleAIPilot(false);
-                p.InputController.SetPause(false);
+                p.InputController?.SetPause(false);
             }
         }
     }

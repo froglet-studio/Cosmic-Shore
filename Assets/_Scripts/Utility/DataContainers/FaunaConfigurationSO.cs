@@ -28,6 +28,13 @@ namespace CosmicShore.Utility
         [Min(0)] public int FeedsPerOffspring = 0;
         [Tooltip("Offspring spawned per birth.")]
         [Min(1)] public int OffspringPerBirth = 1;
+        [Tooltip("Feeds an individual needs per LEVEL - what makes a creature big. Every " +
+                 "creature hatches at level 1 and earns the rest (Docs/ECOSYSTEM.md §33), so " +
+                 "this is the ONLY way a standing population grows a size range. Author it as a " +
+                 "MULTIPLE of FeedsPerOffspring (the shipped assets use 2x): a level should read " +
+                 "as 'this one has out-fed its siblings for a long time', not as a second " +
+                 "reproduction clock. 0 = this species never levels from feeding.")]
+        [Min(0)] public int FeedsPerLevel = 25;
         [Tooltip("Minimum seconds between births per individual. Throttles bursts when an " +
                  "individual is gorging on a dense buildup.")]
         [Min(0f)] public float ReproductionCooldownSeconds = 10f;
@@ -76,16 +83,20 @@ namespace CosmicShore.Utility
                  "provisioned from ElementalCrystalSet at lineage assignment.")]
         public Element Element = Element.None;
 
-        [Tooltip("Level (1..5) this species spawns at. Level scales body + crystal below; it can " +
-                 "rise in-world (e.g. an own-domain Crystal Joust levels the creature up).")]
+        [Tooltip("Level (1..5) this species HATCHES at. Default 1, and level is otherwise " +
+                 "EARNED by feeding (FeedsPerLevel) - it is never ROLLED at spawn " +
+                 "(Docs/ECOSYSTEM.md §33). Authoring it above 1 is a deliberate MODE surface, " +
+                 "not a tuning default: Wildlife Liberation escalates creature size per cage " +
+                 "(middle room 2, core worms 3, core sharks 5) because its rooms have to read " +
+                 "as tiers the moment a hunt starts, which nothing earned can deliver. The " +
+                 "Lifeform Matrix bench also sets it, to show the whole band without playing a " +
+                 "session out. If you are authoring an ordinary biome, leave it at 1.")]
         [Range(1, 5)] public int InitialLevel = 1;
 
-        [Tooltip("Uniform body scale multiplier per level above 1 (level 5 = this^4).")]
+        [Tooltip("Uniform body scale multiplier per level above 1 (level 5 = this^4). Body only " +
+                 "- the heart's size is the ONE shared curve on ElementalCrystalSet, so it is " +
+                 "the same for every species and element at a given level.")]
         [Min(1f)] public float BodyScalePerLevel = 1.15f;
-
-        [Tooltip("Crystal WORLD scale multiplier per level above 1 - a higher-level lifeform " +
-                 "drops a bigger elemental powerup on death (mass rewarded, still conserved).")]
-        [Min(1f)] public float CrystalScalePerLevel = 1.2f;
 
         [Tooltip("Seconds a level-up growth animates over (continuity - a level-up blooms, " +
                  "never pops). Spawn-time seeding applies instantly (it spawns AT size).")]
@@ -113,11 +124,11 @@ namespace CosmicShore.Utility
                  "and Variant are read from them.")]
         public List<FaunaConfigurationSO> ElementPalette = new();
 
-        [Tooltip("Spawn across a band of LEVELS instead of always InitialLevel. Level is a pure " +
-                 "scale curve (body + dropped crystal), so this costs no extra colliders. " +
-                 "Offspring INHERIT their parent's element and spawn level - a lineage keeps its " +
-                 "identity rather than re-rolling every birth.")]
-        public LifeformLevelSpread Levels = new();
+        // A LEVEL spread used to sit here too (LifeformLevelSpread: min/max/rarity-falloff),
+        // rolling each hatch somewhere in 1..5. It is retired: level is now earned by feeding,
+        // so a rolled spawn level would hand a creature the record of a life it has not lived
+        // (Docs/ECOSYSTEM.md §33, superseding §17's level half). Element spread above is
+        // untouched - an element is an identity a creature is born with, not an achievement.
 
         /// <summary>
         /// What a single hatch of this species is: element + the variant block expressing it +
@@ -146,7 +157,10 @@ namespace CosmicShore.Utility
                 }
             }
 
-            return new LifeformVariantPick<FaunaVariantTuning>(element, tuning, Levels.Roll(InitialLevel));
+            // Level is NOT rolled - every creature hatches at this config's InitialLevel (1 in
+            // every shipped asset) and earns the rest. Inherited picks return above, so an
+            // offspring likewise starts at 1: acquired growth is not heritable.
+            return new LifeformVariantPick<FaunaVariantTuning>(element, tuning, InitialLevel);
         }
 
         FaunaConfigurationSO RollPaletteSibling()

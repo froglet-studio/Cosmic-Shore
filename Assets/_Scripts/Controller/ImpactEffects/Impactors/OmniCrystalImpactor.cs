@@ -96,6 +96,57 @@ namespace CosmicShore.Gameplay
             manager.ReplayVesselCrystalEffects(Crystal.Id, vesselObject.NetworkObjectId,
                                                vesselObject.OwnerClientId);
         }
+        
+        /// <summary>
+        /// Spend this crystal because a BLAST engulfed it (the Scarab's cavitation punch forging
+        /// a ball). Same retirement as a vessel collect — the crystal blooms out through its own
+        /// explode path and respawns, rather than popping out of existence — and the same
+        /// half-second impact latch, so a growing blast cannot collect it twice.
+        ///
+        /// It takes the blast's domain and position instead of a vessel's, because there is no
+        /// collector here: the thing that consumed the crystal is a wavefront.
+        /// </summary>
+        /// <summary>
+        /// True when a blast of this domain may spend this crystal. Routes through the same
+        /// <see cref="IsDomainMatching"/> predicate a vessel collect uses, so
+        /// <see cref="TeamCrystalImpactor"/>'s strict domain rule holds for blasts too — a blast
+        /// must not be a way around a gate a hull cannot pass.
+        /// </summary>
+        public bool CanBlastConsume(Domains blastDomain) =>
+            !IsNetworkClient() && !IsImpacting
+            && Crystal != null && !Crystal.IsExploding
+            && IsDomainMatching(blastDomain);
+
+        public void ConsumeByBlast(Domains blastDomain, Vector3 blastOrigin)
+        {
+            if (!CanBlastConsume(blastDomain)) return;
+
+            IsImpacting = true;
+            WaitForImpact().Forget();
+
+            OnCrystalCollected?.Raise(
+                new CrystalStats()
+                {
+                    PlayerName = string.Empty,   // a blast has no pilot standing on the crystal
+                    Element = Crystal.crystalProperties.Element,
+                    Value = Crystal.crystalProperties.crystalValue,
+                }
+            );
+
+            Vector3 away = Crystal.transform.position - blastOrigin;
+            var explode = new Crystal.ExplodeParams
+            {
+                Course = away.sqrMagnitude > 1e-4f ? away.normalized : Vector3.forward,
+                Speed = 0f,
+                PlayerName = string.Empty,
+            };
+            if (Crystal.CrystalManager != null)
+                Crystal.NotifyManagerToExplodeCrystal(explode);
+            else
+                Crystal.Explode(explode);
+
+            Crystal.Respawn();
+        }
 
         void ExecuteEffect(VesselImpactor vesselImpactee)
         {

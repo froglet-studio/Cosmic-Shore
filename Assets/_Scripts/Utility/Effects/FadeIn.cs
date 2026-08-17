@@ -6,8 +6,18 @@ namespace CosmicShore.Utility
     /// <summary>
     /// Fades a renderer in by driving its shader's _opacity through a
     /// MaterialPropertyBlock — no material clone, no per-frame GetComponent.
-    /// The override is cleared once the fade completes so material swaps
-    /// (crystal activation, domain changes) always show their authored opacity.
+    ///
+    /// Every write COMPOSES with the block already on the renderer instead of replacing it.
+    /// This is load-bearing, not tidiness: <see cref="CosmicShore.Gameplay.Crystal"/> paints the
+    /// free-pickup lime through a property block on these same renderers, and this component used
+    /// to own a private block it pushed wholesale (wiping the tint at the START of the fade) and
+    /// then Clear() at the end (wiping it again, permanently). Every crystal in the game therefore
+    /// settled back to its authored material colour and the CTA lime was never seen. Composing also
+    /// makes the two writers order-independent, so it no longer matters whether Crystal.Start or
+    /// FadeIn.Start runs first.
+    ///
+    /// The fade override is retired by restoring the MATERIAL's own authored opacity rather than by
+    /// clearing the block — same end state for _opacity, without discarding anyone else's overrides.
     /// </summary>
     public class FadeIn : MonoBehaviour
     {
@@ -34,8 +44,7 @@ namespace CosmicShore.Utility
         {
             // Zero the opacity before starting the coroutine so there is no
             // one-frame flash at full opacity.
-            _mpb.SetFloat(OpacityID, 0f);
-            _renderer.SetPropertyBlock(_mpb);
+            SetOpacity(0f);
 
             if (fadeInCoroutine != null)
                 StopCoroutine(fadeInCoroutine);
@@ -52,14 +61,22 @@ namespace CosmicShore.Utility
                 yield return null;
                 fadeInRate *= 1.00f + Time.deltaTime;
                 opacity += fadeInRate;
-                _mpb.SetFloat(OpacityID, opacity);
-                _renderer.SetPropertyBlock(_mpb);
+                SetOpacity(opacity);
             }
 
-            // Drop the override so the material's own opacity wins from here on.
-            _mpb.Clear();
-            _renderer.SetPropertyBlock(_mpb);
+            // Retire the fade by handing _opacity back to the material's authored value, rather
+            // than Clear()ing the block — a Clear would also discard the crystal's colour tint.
+            var mat = _renderer.sharedMaterial;
+            SetOpacity(mat && mat.HasProperty(OpacityID) ? mat.GetFloat(OpacityID) : 1f);
             fadeInCoroutine = null;
+        }
+
+        /// <summary>Writes _opacity ON TOP of whatever block the renderer already carries.</summary>
+        void SetOpacity(float opacity)
+        {
+            _renderer.GetPropertyBlock(_mpb);
+            _mpb.SetFloat(OpacityID, opacity);
+            _renderer.SetPropertyBlock(_mpb);
         }
     }
 }

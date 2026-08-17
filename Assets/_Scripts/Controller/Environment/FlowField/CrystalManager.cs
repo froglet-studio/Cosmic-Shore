@@ -19,6 +19,28 @@ namespace CosmicShore.Gameplay
     }
 
     /// <summary>
+    /// One intensity's crystal count, as a function of the roster:
+    /// <c>max(1, round(players x CrystalsPerPlayer) + ExtraCrystals)</c>.
+    ///
+    /// <para>Two numbers rather than one because the useful answers are not all the same shape:
+    /// "twice as many as players" is a multiplier, "exactly one, whatever the roster" is a flat
+    /// count, and "one fewer than players" is both. Rampage authors all three down its ladder
+    /// (2x / 1x / 1x-1 / 0x+1), so intensity there is how CONTESTED the Dolphin's only blast
+    /// trigger is rather than how much arena there is.</para>
+    /// </summary>
+    [Serializable]
+    public class IntensityCrystalCount
+    {
+        [Tooltip("Crystals per player in the roster. 0 = the count does not depend on the roster " +
+                 "at all (use ExtraCrystals alone for a flat count).")]
+        [Min(0f)] public float CrystalsPerPlayer = 1f;
+
+        [Tooltip("Added to (or subtracted from) the per-player result. -1 gives 'one fewer than " +
+                 "players'; the total is always floored at 1, so a solo player still gets a crystal.")]
+        public int ExtraCrystals = 0;
+    }
+
+    /// <summary>
     /// Base crystal manager:
     /// - Handles spawn + respawn logic for multiple crystals.
     /// - Provides anchor-based spawn positions (pre-authored anchor lists).
@@ -31,6 +53,7 @@ namespace CosmicShore.Gameplay
         {
             FixedCount = 0,
             PlayerCountPlusExtra = 1,
+            IntensityScaled = 2,
         }
 
         // IMPORTANT:
@@ -66,6 +89,12 @@ namespace CosmicShore.Gameplay
         [SerializeField] private CrystalCountMode crystalCountMode = CrystalCountMode.PlayerCountPlusExtra;
         [SerializeField, Min(0)] private int fixedCrystalCount = 1;
         [SerializeField] private int extraCrystalsToSpawnBeyondPlayerCount = 0;
+
+        [Tooltip("IntensityScaled mode only: one entry per intensity, list order = intensity " +
+                 "(index 0 is intensity 1), exactly like Cell.CellConfigs under " +
+                 "CellTypeChoiceOptions.IntensityWise. An intensity past the end of the list " +
+                 "reuses the last entry.")]
+        [SerializeField] private List<IntensityCrystalCount> crystalCountByIntensity = new();
 
         [Header("Crystal Domain")]
         [SerializeField] protected bool spawnCrystalWithPlayerDomain;
@@ -289,7 +318,7 @@ namespace CosmicShore.Gameplay
             if (listOfCrystalPositions == null || listOfCrystalPositions.Count == 0)
                 return false;
 
-            int intensity = Mathf.Clamp(intensityLevelData ? intensityLevelData.Value : 1, 1, listOfCrystalPositions.Count);
+            int intensity = Mathf.Clamp(CurrentIntensity, 1, listOfCrystalPositions.Count);
             var set = listOfCrystalPositions[intensity - 1];
 
             if (set == null || set.positions == null || set.positions.Count == 0)
@@ -310,13 +339,82 @@ namespace CosmicShore.Gameplay
             return true;
         }
 
+        /// <summary>
+        /// The intensity this manager authors against: the serialized SOAP variable when a scene
+        /// wires one, otherwise <see cref="GameDataSO.SelectedIntensity"/> - which is the SAME
+        /// asset in every scene that wires it, so this is one source with a fallback rather than
+        /// two. Floored at 1.
+        ///
+        /// <para>No <c>GameConfigSynced</c> gate is needed here even though a client's
+        /// <c>SelectedIntensity</c> arrives late (see <see cref="GameDataSO.GameConfigSynced"/> for
+        /// the sticky-cell race this resembles): both intensity readers are SERVER-side. The count
+        /// is resolved only inside <see cref="NetworkCrystalManager"/>'s <c>IsServer</c> paths and
+        /// reaches clients as the replicated slot-list LENGTH, and the anchor list is likewise read
+        /// on the server. A client never derives either number for itself.</para>
+        /// </summary>
+        protected int CurrentIntensity
+        {
+            get
+            {
+                var source = intensityLevelData ? intensityLevelData
+                                                : (gameData ? gameData.SelectedIntensity : null);
+                return Mathf.Max(1, source ? source.Value : 1);
+            }
+        }
+
         protected int GetCrystalCountToSpawn()
         {
             return crystalCountMode switch
             {
                 CrystalCountMode.FixedCount => fixedCrystalCount,
+                CrystalCountMode.IntensityScaled => IntensityScaledCrystalCount(),
                 _ => Mathf.Max(1, gameData.Players.Count + extraCrystalsToSpawnBeyondPlayerCount),
             };
+        }
+
+        /// <summary>
+        /// The crystal count for the current intensity and roster. See
+        /// <see cref="IntensityCrystalCount"/> for the formula.
+        ///
+        /// <para>The roster is <c>gameData.Players.Count</c> - the same source
+        /// <see cref="CrystalCountMode.PlayerCountPlusExtra"/> uses, and the reason the count can
+        /// safely be taken before everyone has arrived: <c>NetworkCrystalManager</c> re-asks on
+        /// every <c>OnPlayerAdded</c> and again at turn start, growing the slot list as the roster
+        /// fills. AI backfill counts, because an AI is a player holding a Dolphin.</para>
+        /// </summary>
+        private int IntensityScaledCrystalCount()
+        {
+            int players = Mathf.Max(1, gameData.Players.Count);
+
+            if (crystalCountByIntensity is not { Count: > 0 })
+            {
+                CSDebug.LogError($"[CrystalManager] '{name}' is on IntensityScaled crystal count but " +
+                                 "authors no crystalCountByIntensity entries; falling back to one " +
+                                 "crystal per player.");
+                return players;
+            }
+
+            return ResolveIntensityCrystalCount(crystalCountByIntensity, CurrentIntensity, players);
+        }
+
+        /// <summary>
+        /// The pure <see cref="CrystalCountMode.IntensityScaled"/> formula, static so the
+        /// edit-mode tests can pin the ladder without a NetworkBehaviour or a live roster.
+        /// An intensity past the end of the table reuses the last entry; the result never
+        /// drops below 1.
+        /// </summary>
+        public static int ResolveIntensityCrystalCount(
+            IReadOnlyList<IntensityCrystalCount> table, int intensity, int players)
+        {
+            if (table is not { Count: > 0 }) return Mathf.Max(1, players);
+
+            var entry = table[Mathf.Clamp(intensity, 1, table.Count) - 1];
+            if (entry == null) return Mathf.Max(1, players);
+
+            // Round half UP explicitly - Mathf.RoundToInt is banker's rounding, which would send
+            // 3 players x 0.5 and 5 players x 0.5 in opposite directions for no stated reason.
+            int scaled = Mathf.FloorToInt(Mathf.Max(1, players) * Mathf.Max(0f, entry.CrystalsPerPlayer) + 0.5f);
+            return Mathf.Max(1, scaled + entry.ExtraCrystals);
         }
 
         /// <summary>

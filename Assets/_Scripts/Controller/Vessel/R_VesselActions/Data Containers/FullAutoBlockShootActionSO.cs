@@ -73,18 +73,20 @@ namespace CosmicShore.Gameplay
             /// <summary>Every prism arrives DANGEROUS. Locked law: danger bites everyone
             /// including the shooter, and suppresses shields (mutual exclusion).</summary>
             Danger = 2,
-            /// <summary>THE DESIGN: regular prisms below SPACE 5; at SPACE 5+ they
-            /// arrive shielded — the same gate (and the same moment) as the bullets'
-            /// pierce, so the level-5 SPACE upgrade transforms both fire modes at
-            /// once.</summary>
-            ShieldedAtSpace5 = 3,
+            /// <summary>THE DESIGN: regular prisms below MASS 5; at MASS 5+ they arrive
+            /// shielded. Shielding is the MASS level-5 upgrade — MASS owns the SUBSTANCE of
+            /// what you fire (prism length, round growth, and now armour), while SPACE 5
+            /// owns REACH: pierce, on both fire modes. Briefly lived at SPACE 5 (round 4)
+            /// and was moved back by design sign-off in round 3 of the gun-feel pass.</summary>
+            ShieldedAtMass5 = 3,
         }
 
-        [Tooltip("The state fired prisms are born in. ShieldedAtSpace5 is the design: regular " +
-                 "prisms below SPACE 5, shielded at 5+ (the same gate as the bullets' pierce). " +
-                 "Plain/Shielded/Danger are unconditional playtest overrides; Danger bites " +
-                 "everyone, shooter included, per locked law.")]
-        [SerializeField] private FiredPrismState firedPrismState = FiredPrismState.ShieldedAtSpace5;
+        [Tooltip("The state fired prisms are born in. ShieldedAtMass5 is the design: regular " +
+                 "prisms below MASS 5, shielded at 5+ - MASS owns the substance of what you " +
+                 "fire, SPACE 5 owns pierce on both fire modes. Plain/Shielded/Danger are " +
+                 "unconditional playtest overrides; Danger bites everyone, shooter included, " +
+                 "per locked law.")]
+        [SerializeField] private FiredPrismState firedPrismState = FiredPrismState.ShieldedAtMass5;
 
         [Header("Shot Collision")]
         [Tooltip("World-space DIAMETER of the shot's spherical hit volume, matched to the " +
@@ -148,9 +150,23 @@ namespace CosmicShore.Gameplay
         /// <summary>Seconds of flight before the prism anchors — the bullets' lifetime, verbatim.</summary>
         public float FlightTime => bulletAction ? bulletAction.ProjectileTime : 0f;
 
+        /// <summary>In-flight growth for this shot — the bullets' live MASS-scaled factor,
+        /// verbatim. The carried hit sphere swells exactly as a bullet's does, which also
+        /// brings it much closer to the size of the prism the player watches flying.</summary>
+        public float ResolveGrowthFactor(IVesselStatus status)
+            => bulletAction ? bulletAction.ResolveGrowthFactor(status) : 1f;
+
         /// <summary>Muzzle speed for this shot — the bullets' live SPACE-scaled speed, verbatim.</summary>
         public float ResolveSpeed(IVesselStatus status)
             => bulletAction ? bulletAction.ResolveSpeed(status) : 0f;
+
+        /// <summary>
+        /// The accuracy-decay cone — the bullets' profile, verbatim. A turret shot IS a bullet,
+        /// so it walks off aim on a held trigger exactly like one; the prism simply stays where
+        /// the deflected bullet would have died. Authoring a second cone here is the same class
+        /// of drift the shared cadence closed.
+        /// </summary>
+        public GunSpreadProfile Spread => bulletAction ? bulletAction.Spread : null;
 
         public override void StartAction(ActionExecutorRegistry execs, IVesselStatus vesselStatus)
         {
@@ -158,11 +174,13 @@ namespace CosmicShore.Gameplay
             {
                 CSDebug.LogError(
                     $"[{name}] No bulletAction assigned — the Turret Stance takes its fire rate, " +
-                    "speed and flight time from the vessel's Full Auto action. Wire it on the asset.");
+                    "speed, flight time and spread from the vessel's Full Auto action. Wire it on " +
+                    "the asset.");
                 return;
             }
 
-            execs?.Get<FullAutoBlockShootActionExecutor>()?.Begin(this);
+            if (!execs) return;
+            execs.Get<FullAutoBlockShootActionExecutor>()?.Begin(this, execs.Get<GunSprayAccuracy>());
         }
 
         public override void StopAction(ActionExecutorRegistry execs, IVesselStatus vesselStatus)

@@ -12,6 +12,15 @@ namespace CosmicShore.Gameplay
     public class GyroidGrowthInfo : GrowthInfo
     {
         public GyroidBlockType BlockType;
+
+        /// <summary>
+        /// The corner site on the SUBSTRATE assembler this growth would fill. Carried so a
+        /// caller that declines the site for a non-occupancy reason (the octagon colony's
+        /// ownership gate - the site belongs to a neighbouring plant's territory) can tell the
+        /// assembler via <see cref="GyroidAssembler.DeclineGrowthSite"/>; without that, the
+        /// assembler re-offers the same site every tick and the branch stalls forever.
+        /// </summary>
+        public CornerSiteType Site = CornerSiteType.None;
     }
 
     public enum GyroidBlockType
@@ -146,7 +155,13 @@ namespace CosmicShore.Gameplay
                 // above any drift so a same-site duplicate always is.
                 float clearRadius = Mathf.Max(2f, 0.4f * (newPosition - transform.position).magnitude);
                 var spatialIndex = PrismSpatialIndex.EnsureInstance();
-                if (spatialIndex == null || !spatialIndex.IsAvailable ||
+                bool unreserved = spatialIndex == null || !spatialIndex.IsAvailable;
+                // An unavailable index means growth proceeds with NO occupancy dedupe at all -
+                // the one path that can double-fill a site. Counted so the colony heartbeat
+                // makes it visible: a non-zero UnreservedSpawns alongside overlapping prisms IS
+                // the diagnosis (and the fix is index availability, not growth logic).
+                if (unreserved) GyroidColonyDiagnostics.UnreservedSpawns++;
+                if (unreserved ||
                     spatialIndex.TryReserve(newPosition, clearRadius))
                     return new GyroidGrowthInfo
                     {
@@ -159,7 +174,8 @@ namespace CosmicShore.Gameplay
                             bondMateData.BlockType == GyroidBlockType.DE ||
                             bondMateData.BlockType == GyroidBlockType.EG ||
                             bondMateData.BlockType == GyroidBlockType.EsD,
-                        Depth = depth - 1
+                        Depth = depth - 1,
+                        Site = growthSite
                     };
 
                 // Fill the bond site
@@ -196,6 +212,19 @@ namespace CosmicShore.Gameplay
                     BottomRightIsBonded = isBonded;
                     break;
             }
+        }
+
+        /// <summary>
+        /// Marks a growth site permanently filled WITHOUT growing it - the caller decided the
+        /// site is not this plant's to grow (the octagon colony's ownership gate: it belongs to
+        /// a neighbouring octagon's territory, and that plant will grow it from its own lattice
+        /// at the same world position). The site's spatial-index reservation, made by
+        /// <see cref="GetGrowthInfo"/>, simply lapses on its TTL - the standard
+        /// skip-after-claim path every dropped grow order already takes.
+        /// </summary>
+        public void DeclineGrowthSite(CornerSiteType site)
+        {
+            if (site != CornerSiteType.None) SetBondSiteStatus(site, true);
         }
 
         public void ClearMateList()
@@ -444,14 +473,22 @@ namespace CosmicShore.Gameplay
         // this method generalize both of the methods above
         private GyroidBondMate FindClosestMate(Vector3 bondSite, CornerSiteType siteType)
         {
+            // Bond-site telemetry. This runs several times per prism GROWN, so it is both
+            // channel-gated and IsVerbose-guarded: the interpolated string must not be built
+            // while nobody is listening (a [Conditional] method still evaluates its arguments
+            // in the Editor). A 900-prism colony emitted thousands of these lines.
             if (preferedBlocks.Count > 0)
             {
-                CSDebug.Log($"GyroidAssembler: Preferred Block, Depth: {depth}");
+                if (CSDebug.IsVerbose(CSLogChannel.GyroidColony))
+                    CSDebug.LogVerbose(CSLogChannel.GyroidColony,
+                        $"[GyroidColony] {name}: preferred block, depth {depth}");
                 var mate = CreateGyroidBondMate(preferedBlocks.Dequeue(), BlockType, siteType);
                 return mate;
             }
 
-            CSDebug.Log($"GyroidAssembler: No Preferred Block, Depth: {depth}");
+            if (CSDebug.IsVerbose(CSLogChannel.GyroidColony))
+                CSDebug.LogVerbose(CSLogChannel.GyroidColony,
+                    $"[GyroidColony] {name}: no preferred block, depth {depth}");
 
             // Candidates come from the spatial index (the canonical prism population -
             // no physics broadphase, no per-collider GetComponent) plus a Mound-layer
@@ -596,7 +633,14 @@ namespace CosmicShore.Gameplay
             Vector3 up = mate.DeltaUp.x * transform.right + mate.DeltaUp.y * transform.up + mate.DeltaUp.z * transform.forward + transform.up;
 
             if (!SafeLookRotation.TryGet(forward, up, out var targetRotation, mate.Mate ? mate.Mate.gameObject : gameObject))
+            {
+                // A degenerate basis means this prism keeps whatever rotation it already had -
+                // exactly the "90 degrees off" twin the colony auditor hunts. Offline analysis
+                // says the bond table never produces one (margins >= 0.9999), so a non-zero
+                // count here fingers a post-spawn transform write corrupting the parent frame.
+                GyroidColonyDiagnostics.RotationFallbacks++;
                 return mate.Mate ? mate.Mate.transform.rotation : transform.rotation;
+            }
 
             return targetRotation;
         }

@@ -276,9 +276,14 @@ scripts were unreachable dead code, see §5 C4) ·
 `_FlightStartTime`/`_FlightDuration`/`_FlightVelocity` on both live-prism graphs, wired by
 `Tools/Shaders/wire_prism_flight_clock.py`; gate: **Validate Clock Wiring** now requires
 them) ·
+~~B4 GPU shield morphs~~ (✅ shipped 2026-08-15 — `PrismShieldMorph` + the four
+`_ShieldMorph*` properties on both live-prism graphs, wired by
+`Tools/Shaders/wire_prism_shield_morph.py`; the last sanctioned CPU prism ticker,
+`PrismOctahedronShieldManager`, is DELETED. Gates: **Validate Clock Wiring** now
+requires them, plus the `PrismShieldMorphTests` edit-mode suite. Phase 9 below) ·
 C6 fauna wither/devour/level-up · C7 flora growth · C8 microscene conveyor ·
 C9 cell-swap suction · C11 spindle fade · C13 environment-lay
-pooling · B4 GPU shield morphs. (C10 worm shift is resolved by deletion — the
+pooling. (C10 worm shift is resolved by deletion — the
 worm-colony rebuild removed the legacy shift; see Docs/ECOSYSTEM.md §23.)
 
 ## Phase 8 — Occlusion corridor (C1) — WIRED PROGRAMMATICALLY, **PLAYTEST OUTSTANDING**
@@ -397,6 +402,120 @@ polygon or a wall as large as the gradient band cannot resolve the gradient.
 that the vessel spawned through `VesselController.Initialize` with `IPlayer.IsLocalPilot`
 true; then run the validator above.
 
+## Phase 9 — Shield morphs (B4) — WIRED PROGRAMMATICALLY, **PLAYTEST OUTSTANDING**
+
+The engage bloom and the disengage shatter are GPU-clocked and
+`PrismOctahedronShieldManager` is deleted (`Docs/PRISM_ANIMATION.md` §4.8). Everything
+machine-checkable passes; what no tool can answer is whether it looks right.
+
+**Gates that already pass** (asset-only, no play mode):
+
+- `python3 Tools/Shaders/wire_prism_shield_morph.py --check` — the splice's structure:
+  the four Hybrid-Per-Instance properties, the custom-function node and its HLSL GUID, the
+  UV1 + object-space-normal feeds, and that `Prism Sub Graph.Out_Vector3` now reaches the
+  vertex chain **only** through the morph.
+- `FrogletTools > Ecology > Prism Animation > Validate Clock Wiring` — the same properties
+  from the compiled-material side, on every BlockGraph / ExplodingBlockGraph material.
+- `PrismShieldMorphTests` (edit-mode) — baked centroids vs the retired CPU formula, the
+  wiring, the deleted ticker, and that neither shield has regrown an `Update`/coroutine/
+  tween or a CPU mesh rebuilder.
+
+**The playtest.** Anywhere prisms shield: skim a trail to shield it, or load the Skim Race /
+Astro League track for super-shields (`SegmentSpawner.SuperShieldSpawnedPrisms`).
+
+1. **Engage**: the octahedron's 8 faces (stella: 24) grow out of their own centres over
+   ~0.35 s (~0.45 s), smoothly, from invisible. A shield that appears full-size instantly is
+   an unwired graph — check the console for `[PrismClock] ... _ShieldMorphDuration`.
+2. **Disengage**: the prism is a box again immediately, and the shield's faces fly outward
+   along their normals while shrinking to points over ~0.6 s (~0.7 s). No overlay at all =
+   the batched shatter was refused; the console says so once (`shieldShatter`).
+3. **Re-engage mid-shatter**: the old shards must keep flying while the new shield blooms —
+   they are deliberately not cancelled any more (continuity of existence).
+4. **Batching**: with many same-size shields up, the frame's draw calls must not scale with
+   the number of shields — the morph runs on the shared mesh, so a hundred blooming shields
+   of one size and domain is one batch, exactly like a hundred settled ones.
+5. **Birth snap**: environment prisms laid pre-shielded (e.g. `ShieldedSpawnablePrism`) must
+   still appear already-armoured with no bloom and no shield SFX — the birth rule
+   (`PrismStateManager.IsBirthTransition`).
+6. **Pool reuse**: shield a prism, destroy it, let the pool hand it back — the reused prism
+   must be a plain box with no residual morph (a stale stamp would collapse it toward its
+   own origin, which is the loudest possible symptom).
+7. **`BlueBlock.prefab`'s easing changed on purpose** (Duel for Cell / Freestyle MP / 2v2,
+   plus both Recording Studios). It and `OctahedronShieldTest.prefab` were the only two
+   assets that *serialized* the engage/shatter curves, and they carried a hand-altered
+   fast-slow-fast variant (end tangents 2) rather than `EaseInOut`'s zero-tangent
+   smoothstep — up to 0.192 apart mid-transition. Every other shield in the game took the
+   C# initializer and is byte-identical. If BlueBlock's bloom reads differently from a
+   trail prism's, that is this, and it is expected — say so rather than "fixing" it, and
+   note that Unity will drop those now-orphaned YAML keys the next time either prefab is
+   saved.
+
+## Phase 10 — Super-shield deflection jiggle (C14) — WIRED PROGRAMMATICALLY, **FIRST PLAYTEST PASSED**
+
+> **2026-08-15:** confirmed in-editor — both graphs import clean (nothing magenta), and the
+> deflection reads on vessel impact. Skimmer impact correctly produces none (step 6). The
+> steps below stay as the regression checklist; steps 2, 3 and 5 have not been
+> specifically exercised yet.
+
+A super-shielded prism that is HIT but not destroyed now wobbles and settles instead of
+absorbing the hit in total silence. Design + rationale: `Docs/PRISM_ANIMATION.md §4.9`.
+
+**Nothing here needs hand-wiring in the editor.** The graph surgery is
+`Tools/Shaders/wire_prism_jiggle_clock.py` (idempotent — re-running prints "already wired"),
+and the properties alone can be repaired from
+`FrogletTools > Ecology > Prism Animation > Auto-Wire Clock Properties`.
+
+**Gates that already pass** (all asset-only, no play mode):
+
+- `python3 Tools/Shaders/wire_prism_jiggle_clock.py --check` — re-validates the whole graph
+  model plus the splice topology on both graphs.
+- `FrogletTools > Ecology > Prism Animation > **Validate Clock Wiring**` — the three
+  `_Jiggle*` properties (exposed + Hybrid Per Instance) and the `PrismJiggleClock` node are
+  in its required set for BlockGraph and ExplodingBlockGraph.
+- `PrismSuperShieldJiggleTests` (edit-mode) — the CPU↔GPU count-match (graph property ⟷
+  `[MaterialProperty]` component ⟷ prototype registration), pool hygiene via
+  `ClearPrismStamps`, and the config's amplitude clamp/monotonicity.
+
+**What only a human can answer — the playtest.** Any scene with super-shielded mass; the
+fastest is the Skim Race / Astro League track lining, or `SegmentSpawner`'s super-shielded
+segments. Shoot or ram a super-shielded prism and watch:
+
+1. **It visibly wobbles and settles** — roughly two oscillations over ~0.55 s, spike tips
+   moving much further than the core, and each face going its own way rather than the whole
+   prism tipping as one rigid block.
+2. **It does not drift, grow, or end up rotated.** The wobble must return to *exactly* the
+   resting pose. Any permanent offset means the envelope is not reaching zero.
+3. **Sustained fire still reads as wobbling, not frozen.** Hold full-auto on one prism: the
+   spam gate (`minSecondsBetweenStamps`, default 0.12 s) is what stops each new hit
+   restarting the envelope before it can move. If it looks locked mid-tilt, raise it.
+4. **Nothing else changed.** The prism is still invulnerable, still skims, still blocks the
+   blast. Ordinary (non-super-shielded) prisms must be visually identical to before.
+5. **Neighbours are not in lockstep.** A blast that touches several super-shielded prisms
+   should make them wobble out of phase with each other.
+6. **Skimming never deflects, on any vessel.** Confirmed by playtest 2026-08-15 (jiggle on
+   vessel impact, none on skimmer impact — both as desired), and still true after the energy
+   sword merge. Four of five skimmer containers carry no prism-damage effect at all; the fifth
+   (Rhino forcefield) carries `RhinoSkimmerDamagePrismEffectSO`, which pops or bounces
+   super-shielded mass in its own branch and returns before `Damage`. If you ever want a skim
+   to deflect, that is a container/effect change on that vessel — not a change here.
+
+**Tuning** — `Resources/PrismSuperShieldJiggleConfig`:
+
+| Field | Default | What it does |
+|---|---|---|
+| `duration` | `0.55` | Length of one deflection. The envelope hits exactly zero here. |
+| `minTiltDegrees` / `maxTiltDegrees` | `2.5` / `6.5` | Peak face tilt for the weakest / hardest hit. Small numbers — the pivot is the prism origin, so a few degrees is a lot of motion at a stella tip. |
+| `referenceImpactSpeed` | `120` | Impact speed (u/s) at which the tilt reaches its ceiling. |
+| `precessionDegreesPerSecond` | `1260` | How fast the tip direction revolves. |
+| `nutationDegreesPerSecond` | `1776` | How fast the tilt magnitude breathes. Keep it non-commensurate with the precession rate or the wobble repeats and reads as a mechanical buzz. |
+| `minSecondsBetweenStamps` | `0.12` | Per-prism spam gate (see playtest step 3). |
+| `enabled` | `on` | Off costs exactly what the feature cost before it existed. |
+
+**If nothing wobbles at all**, check in this order: the config asset's `enabled`; that the
+prism really is super-shielded (`PrismStateManager.CurrentState == SuperShielded`, not merely
+`Shielded`); then `--check` above. A `[PrismClock] STRICT MODE` error in the console naming
+`_JiggleStartTime` means the graph wiring is gone — re-run the wiring tool.
+
 ## Troubleshooting
 
 | Symptom | Cause | Fix |
@@ -411,3 +530,7 @@ true; then run the validator above.
 | Debris vanishes mid-flight / draws when it shouldn't | `RenderBounds` still the unexploded box | Stamp site must call `ResetBoundsToMesh` + `ExpandBoundsForClockAnimation` (any vertex-displacing clock animation needs this) |
 | `[PrismClock] ... no companion render entity` | Instanced rendering off / no ECS world | `PrismRenderConfig` ▸ Use Instanced Rendering ON |
 | DiagnosticsHUD shows active CPU animators | Something re-engaged a retired manager | Law regression — find the caller; it should not exist |
+| Shield appears full-size with no bloom | `_ShieldMorph*` missing on the material's graph | `python3 Tools/Shaders/wire_prism_shield_morph.py`; reimport |
+| A prism collapses toward its own origin | A shield-morph stamp survived onto the prism's BOX mesh (no centroids in UV1) | `Disengage` / `Prism.Initialize` must reach `ClearShieldMorphStamp` — check the clear path, not the shader |
+| Shields bloom but shatter shows nothing | Batched shatter refused (service off / no world) — logged once as `shieldShatter` | Same fix as any missing companion entity: instanced rendering ON |
+| Draw calls scale with the number of *morphing* shields | Something set `SetExoticVisualActive(true)` again, or handed a per-prism mesh to the entity | Nothing should: the morph runs on the SHARED mesh (§4.8) |

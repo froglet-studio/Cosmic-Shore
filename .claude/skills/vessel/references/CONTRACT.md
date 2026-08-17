@@ -297,6 +297,21 @@ warning). Be exhaustive here; this is the contract's least-guarded clause.
   Serpent do); danger-prism effect SOs never gate on domain; shell-tier
   cooperation (`ShellOwnsContact` suppression + probe registration) must survive any collider
   rearrangement.
+- **There are THREE self-guard shapes, and picking the wrong one is silent.** (a) *Reference
+  compare* on `VesselStatus` — "me exactly" (vessel↔own-skimmer). (b) *Domain compare* — "my
+  team", which is what `Skimmer.affectSelf` and `VesselChangeSpeedByPrismEffectSO` use, and it is
+  a **trap** whenever the intent is per-pilot: switching it off also blinds the vessel to its
+  teammates' mass. (c) *Owner + age* — `prism.ownerID` against `VesselStatus.PlayerName` within a
+  grace of `prismProperties.TimeCreated`, i.e. "mass I am making right now"; this is the only
+  shape that can spare a pilot their own fresh trail while leaving every other pilot's trail (and
+  their own older trail) fully live. `SelfTrailContactConfigSO` owns it fleet-wide — route a new
+  self-rule through it rather than authoring a fourth shape.
+  Two facts that make (b) worse than it looks: **`affectSelf` is evaluated AFTER the skimmer
+  effect loop**, so it gates only `_skimStartTimes` bookkeeping and changes nothing for effects
+  (a vessel with `affectSelf = 0` still runs every skimmer prism effect on its own mass); and
+  `Prism` has **no vessel handle at all** — no `Prism.Vessel`, and `Prism.Trail` is null on
+  vessel-laid prisms — so `ownerID`/`PlayerName` strings are the only per-pilot identity
+  available. Prefer `ownerID`: it records who LAID it and a steal does not reassign it.
 - **Joust**: vessels participating in Joust wire a `VesselExplosionBySkimmerEffectSO` in their
   SKIMMER container's `vesselSkimmerEffectsSO` — `ExecuteJoustImpact` warns on every confirmed
   joust otherwise. The vessel-side `vesselSkimmerEffects` arrays are empty fleet-wide; authoring
@@ -305,6 +320,25 @@ warning). Be exhaustive here; this is the contract's least-guarded clause.
   — leave per-vessel `skimmerCrystalEffectsSO` empty; do not duplicate pickup logic.
 - **Crackle opt-in = two halves**: the `ForcefieldCrackleController` on the skimmer GO +
   `SkimmerForcefieldCracklePrismEffect` in the skimmer container.
+- **A fast projectile is a TELEPORT, not a sweep — it only tests the points it LANDS on.**
+  `Projectile.MoveProjectileAsync` writes `position += Velocity·Δt` and PhysX samples the
+  discrete trigger once per physics step, so the path BETWEEN samples is never tested. Measured
+  on the Sparrow: at its base 375 u/s a round covers 6.25 u per 60 fps frame behind a 1.65
+  hit sphere — **26% of its own path**, ~3% at high SPACE, and it halves again at 30 fps. The
+  symptom is a gun that cannot clear a dense patch no matter how much you shoot, with no misses
+  to see; the tell is *"making the projectile bigger fixes it"*, because a big enough ball closes
+  the per-frame gap. Fix with `PrismSpatialIndex.QuerySegment` +
+  `Projectile.sweptPrismDetection` (dispatch nearest-first, and have the sweep OWN the contact
+  class so the trigger cannot double-fire) — never by inflating the collider, and never with
+  `Physics.SphereCast` (CLAUDE.md forbids physics queries against prisms; a transform teleport
+  also bypasses CCD entirely). Rate and spread cannot compensate: they multiply a path the
+  weapon is structurally blind to.
+- **A `SphereCollider`'s world radius is `m_Radius × the LARGEST lossy-scale component`** — this
+  trap has now bitten the same vessel twice. Once as the 12-diameter hit sphere nobody authored
+  (a `0.3` radius on a tracer stretched ×20 in z), and again when growing a round's
+  cross-section only: the untouched z-stretch stays the max, so a radius re-derived from
+  `lossyScale` never moves. Author it as `desiredWorldRadius / maxScaleComponent`, and when a
+  size must track a non-uniform scale, carry the factor EXPLICITLY rather than re-deriving.
 - **Hygiene**: renaming container fields without `[FormerlySerializedAs]` silently strips
   authored effects (Sparrow lost all elemental-crystal feedback this way); an effect asset that
   exists but sits in no container executes never (several orphans exist); fork shared effect SOs

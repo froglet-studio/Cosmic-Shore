@@ -426,6 +426,10 @@ namespace CosmicShore.Gameplay
                 {
                     var cfg = profile.SupportedFloras[rng.Next(profile.SupportedFloras.Count)];
                     if (!cfg || !cfg.FloraPrefab) continue;
+                    // The species' live cap is the CELL's, and this conveyor is one of the flora
+                    // PRODUCERS - a producer that skips the cap gives the species two ceilings
+                    // (Docs/ECOSYSTEM.md §32). No-op for every species that authors none.
+                    if (cell.IsFloraAtCap(cfg)) continue;
                     // Canonical cell spawn: random playable domain, Initialize(cell), Register. Flora
                     // re-disperses within the membrane in its own Plant(), so cell-centre spawn is fine.
                     CellLifeSpawnerBase.SpawnFlora(cell, cfg.FloraPrefab, null, cfg);
@@ -439,8 +443,9 @@ namespace CosmicShore.Gameplay
                     var cfg = profile.SupportedFaunas[rng.Next(profile.SupportedFaunas.Count)];
                     if (!cfg || !cfg.FaunaPrefab) continue;
                     // Respect the species' per-cell performance cap - the conveyor adds citizens,
-                    // never a parallel population.
-                    if (cfg.MaxLivePopulation > 0 && cell.GetLiveFaunaCount(cfg) >= cfg.MaxLivePopulation) continue;
+                    // never a parallel population. Asked of the CELL so the host biome's own
+                    // FaunaPopulationScale applies here too (Cell.ResolveFaunaPopulation).
+                    if (cell.IsFaunaAtCap(cfg)) continue;
                     // …and the canonical prey-linked production gate (the ONE shared copy): no
                     // herbivore without enough opposing mass, no predator without enough prey - a
                     // fauna spawned into famine just withers in ~30s.

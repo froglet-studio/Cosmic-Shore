@@ -36,11 +36,20 @@ namespace CosmicShore.Gameplay
         [Tooltip("Include the radial velocity from the blade lengthening/shortening. Physically real, but OFF by default: the Rhino's blade length is driven by a resource meter (ShieldSkimmerScaleDriver grows at 30 and shrinks at 10 world-units/sec, and its tick loop decays the shield every second), so the blade is almost never static. At the tip that is a permanent +15/-5 u/s on top of a ~35 u/s cruise - the sword would read as hotter than the hull for a reason that has nothing to do with swordsmanship. Turn on only if a shield extension should shove.")]
         [SerializeField] bool includeElongation;
 
+        [Tooltip("Subtract the blade ORIGIN's growth-driven translation before differentiating. The " +
+                 "Rhino's sword is hilt-anchored (ShieldSwipeActionExecutor), so its centre slides " +
+                 "along the blade axis as the energy meter lengthens it - motion the sampler would " +
+                 "otherwise read as a genuine swing at up to the crystal burst's 600 u/s. Leaving it " +
+                 "ON keeps the same rule includeElongation encodes: growth is not a strike. Turn it " +
+                 "off only for a blade whose transform does not move when it grows.")]
+        [SerializeField] bool compensateGrowthTranslation = true;
+
         public float SmoothingSeconds => smoothingSeconds;
         public float MaxSampleDeltaSeconds => maxSampleDeltaSeconds;
         public float MaxAngularSpeedDegrees => maxAngularSpeedDegrees;
         public float RestDeadbandSpeed => restDeadbandSpeed;
         public bool IncludeVesselRotation => includeVesselRotation;
         public bool IncludeElongation => includeElongation;
+        public bool CompensateGrowthTranslation => compensateGrowthTranslation;
     }
 }

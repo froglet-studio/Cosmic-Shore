@@ -30,10 +30,18 @@ namespace CosmicShore.Gameplay
         [Header("Events")]
         [SerializeField] ScriptableEventNoParam OnMiniGameTurnEnd;
 
+        [Header("Blade Geometry")]
+        [Tooltip("Half the blade mesh's extent along its length axis, in the blade's OWN local units. " +
+                 "Unity's built-in Capsule spans local y in [-1, 1], so 1. This is what anchors the HILT: " +
+                 "the blade grows from its mount outward like a sword instead of extending equally both " +
+                 "ways like a staff, at every size the energy meter produces.")]
+        [SerializeField] float bladeHalfExtentLocal = 1f;
+
         // Same deadzone the gamepad strategy uses for its press/release edges.
         const float TriggerDeadzone = 0.05f;
 
         IVesselStatus _status;
+        Skimmer _swordSkimmer; // resolved from shieldRoot; carries SwordState when this is a Rhino
 
         Vector3 _baseLocalPos;
         Quaternion _baseLocalRot;
@@ -41,6 +49,13 @@ namespace CosmicShore.Gameplay
 
         float _diff;       // smoothed swipe control: -1 (left stance) .. +1 (right stance)
         float _sum;        // smoothed chop control: 0 (raised rest) .. 2 (full chop)
+        float _appliedAnchor = float.NaN; // blade half-extent the last applied pose was anchored for
+
+        // Per-direction swipe recovery. Engaged tracks the RAW pull so a suppressed input can't
+        // re-arm itself, and the timer starts on RELEASE — a swing plays out in full, then owes
+        // its recovery.
+        bool _rightSwung, _leftSwung;
+        float _rightReadyAt, _leftReadyAt;
         float _activeSign; // event-driven stance (+1/-1/0) for non-analog inputs
         bool _rightHeld;   // event-side per-direction held state (cross-swipe handoff)
         bool _leftHeld;
@@ -99,19 +114,135 @@ namespace CosmicShore.Gameplay
             {
                 // Event-driven stance: remote peers replaying the owner's press/release,
                 // and binary local devices. A press mirrors a full single-trigger pull -
-                // full difference, half chop. If autopilot took over mid-hold (menu
-                // freestyle exit) the release edge never arrives, so drop the stance.
+                // full difference, half chop; BOTH holds down mirror the both-triggers
+                // centered chop (the energize stance), so binary devices can energize and
+                // remote peers replay the owner's stance pose instead of a one-sided swipe.
+                // If autopilot took over mid-hold (menu freestyle exit) the release edge
+                // never arrives, so drop the stance.
                 if (_activeSign != 0f && _status.IsLocalUser && _status.AutoPilotEnabled)
                     ClearStance();
-                diffTarget = _activeSign;
-                sumTarget = _activeSign != 0f ? 1f : 0f;
+                if (_rightHeld && _leftHeld)
+                {
+                    diffTarget = 0f;
+                    sumTarget = 2f;
+                }
+                else
+                {
+                    diffTarget = _activeSign;
+                    sumTarget = _activeSign != 0f ? 1f : 0f;
+                }
             }
 
-            if (_diff == 0f && _sum == 0f && diffTarget == 0f && sumTarget == 0f) return;
+            // The stance is fed from the RAW trigger mirrors, before any swipe recovery is
+            // applied — a sword recovering from a swing must still be able to chop and energize.
+            FeedSwordStance();
+
+            // Lateral recovery gates the SWIPE axis only; the chop (sum) passes through untouched.
+            diffTarget = ApplySwipeRecovery(diffTarget);
+
+            // A resting pose still has to be re-applied when the blade's LENGTH moved: the hilt
+            // anchor is a function of that length, so skipping the write would leave the sword
+            // growing out of both ends of its mount again (the staff read this fix removes).
+            bool poseAtRest = _diff == 0f && _sum == 0f && diffTarget == 0f && sumTarget == 0f;
+            if (poseAtRest && Mathf.Approximately(AnchorOffsetLocal(), _appliedAnchor)) return;
 
             _diff = Drive(_diff, diffTarget, analog);
             _sum = Drive(_sum, sumTarget, analog);
             ApplyShieldPose();
+        }
+
+        /// <summary>
+        /// The Rhino energy sword's per-vessel state (null on any vessel whose shield
+        /// root carries no sword brain). The swipe executor is the gesture SOURCE: it
+        /// feeds the both-triggers stance each frame so the driver's energize state
+        /// machine (the supershield key) runs off the same reparameterized trigger
+        /// signals that pose the blade. See RHINO_ENERGY_SWORD.md.
+        /// </summary>
+        IRhinoSwordState Sword
+        {
+            get
+            {
+                if (!shieldRoot) return null;
+                if (_swordSkimmer == null) shieldRoot.TryGetComponent(out _swordSkimmer);
+                return _swordSkimmer ? _swordSkimmer.SwordState : null;
+            }
+        }
+
+        /// <summary>
+        /// The energize gesture: both triggers pulled (sum high) and even (difference
+        /// near zero) — the lower/chop stance. Evaluated from the replicated trigger
+        /// MIRRORS (`InputStatus` n_lTrig/n_rTrig — Owner-write, Everyone-read), NOT the
+        /// local pose signals: the stance gates the supershield pop, which every client
+        /// executes in its own local prism sim, so the verdict must be computable
+        /// identically on every machine or one peer's energized blade pops a prism the
+        /// owner's world keeps (a divergent conserved prismscape). The owner writes the
+        /// mirrors from the same fingers that drive the pose; every peer runs the same
+        /// thresholds on the same values. Autopilot drops the stance on the owner's
+        /// machine (a paused InputController freezes the mirrors rather than zeroing
+        /// them; the remote-side residual of that freeze is the replication follow-up
+        /// in RHINO_ENERGY_SWORD.md).
+        /// </summary>
+        void FeedSwordStance()
+        {
+            var sword = Sword;
+            if (sword == null) return;
+
+            var input = _status?.InputStatus;
+            if (input == null || (_status.IsLocalUser && _status.AutoPilotEnabled))
+            {
+                sword.SetInStance(false);
+                return;
+            }
+
+            float lt = ApplyDeadzone(input.LeftTriggerAnalog);
+            float rt = ApplyDeadzone(input.RightTriggerAnalog);
+            bool inStance = lt + rt >= config.StanceSumThreshold
+                            && Mathf.Abs(rt - lt) <= config.StanceCenterEpsilon;
+            sword.SetInStance(inStance);
+        }
+
+        /// <summary>
+        /// Give each swipe direction a short recovery after it releases, so the sword swings with
+        /// a rhythm instead of flapping side to side as fast as the triggers can be worked. While
+        /// the blade is ENERGIZED the recovery is ZERO — the frenzy is part of what energizing buys.
+        ///
+        /// This gates the lateral POSE and nothing else. The blade keeps cutting everything it
+        /// touches throughout (ordinary damage is ungated — a locked rule), the chop/energize
+        /// stance rides the sum axis and is never blocked, and a direction still recovering simply
+        /// holds centre. Returns the difference target with any recovering direction suppressed.
+        /// </summary>
+        float ApplySwipeRecovery(float diffTarget)
+        {
+            float now = Time.time;
+            float threshold = config.SwipeEngageThreshold;
+            bool energized = Sword is { IsEnergized: true };
+
+            // Track the swing/release edges off the RAW target, so suppressing a direction can
+            // never make it look released and re-arm itself mid-hold.
+            UpdateSwipeEdge(ref _rightSwung, ref _rightReadyAt, diffTarget >= threshold, now);
+            UpdateSwipeEdge(ref _leftSwung, ref _leftReadyAt, -diffTarget >= threshold, now);
+
+            if (energized)
+            {
+                // Zero cooldown: clear the timers too, so dropping out of energized never inherits
+                // a stale recovery the player never felt themselves earn.
+                _rightReadyAt = _leftReadyAt = now;
+                return diffTarget;
+            }
+
+            if (diffTarget > 0f && now < _rightReadyAt) return 0f;
+            if (diffTarget < 0f && now < _leftReadyAt) return 0f;
+            return diffTarget;
+        }
+
+        void UpdateSwipeEdge(ref bool swung, ref float readyAt, bool engaged, float now)
+        {
+            if (engaged) swung = true;
+            else if (swung)
+            {
+                swung = false;
+                readyAt = now + config.SwipeCooldownSeconds;   // recovery starts on release
+            }
         }
 
         /// <summary>
@@ -194,15 +325,38 @@ namespace CosmicShore.Gameplay
             var sweep = Quaternion.AngleAxis(yaw, Vector3.up)
                       * Quaternion.AngleAxis(roll, Vector3.forward)
                       * Quaternion.AngleAxis(pitch, Vector3.right);
-            shieldRoot.localRotation = sweep * _baseLocalRot;
-            shieldRoot.localPosition = sweep * _baseLocalPos;
+            var pose = sweep * _baseLocalRot;
+            shieldRoot.localRotation = pose;
+
+            // HILT ANCHOR — what makes it a sword instead of a staff. The blade mesh is
+            // centred on its transform, so growing it extends the capsule equally in BOTH
+            // directions from the mount: at 30 the sword ran 30 units past the grip in each
+            // direction, at 120 it ran 120 — a quarterstaff the vessel wears through its
+            // middle. Offsetting the centre by the blade's own half-extent pins the HILT to
+            // the authored mount and sends every unit of growth out the tip, so the sword
+            // reads as a sword at every length the energy meter produces.
+            float anchor = AnchorOffsetLocal();
+            shieldRoot.localPosition = sweep * _baseLocalPos + pose * Vector3.up * anchor;
+            _appliedAnchor = anchor;
         }
+
+        /// <summary>
+        /// Distance from the blade's mount to the centre of its mesh, in PARENT units: the
+        /// capsule's local half-extent scaled by the length the shield driver is currently
+        /// running. Local +Y is the tip direction (the blade elongates on Y —
+        /// <c>Skimmer.elongateYOnly</c>).
+        /// </summary>
+        float AnchorOffsetLocal() =>
+            shieldRoot ? shieldRoot.localScale.y * bladeHalfExtentLocal : 0f;
 
         void ClearStance()
         {
             _activeSign = 0f;
             _rightHeld = false;
             _leftHeld = false;
+            // Never hand a re-spawned / re-taken vessel a recovery it did not swing for.
+            _rightSwung = _leftSwung = false;
+            _rightReadyAt = _leftReadyAt = 0f;
         }
 
         bool EnsureShieldRoot()
@@ -227,10 +381,18 @@ namespace CosmicShore.Gameplay
             _sum = 0f;
             ClearStance();
 
+            // Drop the energize gesture too, so a turn-end/despawn mid-hold can't leave
+            // the sword charging forever off a stance edge that will never release.
+            Sword?.SetInStance(false);
+
             if (_baseCaptured && shieldRoot)
             {
+                // Rest pose, hilt still anchored — the blade keeps whatever length the energy
+                // meter is holding, so snapping back to the raw mount would re-centre it.
+                float anchor = AnchorOffsetLocal();
                 shieldRoot.localRotation = _baseLocalRot;
-                shieldRoot.localPosition = _baseLocalPos;
+                shieldRoot.localPosition = _baseLocalPos + _baseLocalRot * Vector3.up * anchor;
+                _appliedAnchor = anchor;
             }
         }
     }

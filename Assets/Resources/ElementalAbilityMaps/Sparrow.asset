@@ -18,7 +18,7 @@ MonoBehaviour:
     AbilityLabel: Pulsefire Cannons
     AbilityDescription: Full-auto cannons. Space extends their range dramatically
       - short at rest, unchanged at full overcharge. At level 5 shots pierce through
-      prisms, and turret-stance prisms arrive shielded.
+      prisms - both bullets and turret-stance prism rounds.
     Input: 1
     MultiplierAtFullLevel: 9
     MinMultiplier: 0.4
@@ -27,8 +27,8 @@ MonoBehaviour:
     LatchPolicy: 0
     UpgradeLabel: Piercing Bullets
     UpgradeDescription: Shots pierce through prisms instead of being destroyed on
-      first impact, and prisms fired in the turret stance arrive shielded (one-hit
-      ablative armor) with a wider hit sphere.
+      first impact - bullets and turret-stance prism rounds alike. SPACE owns REACH;
+      the armour on fired prisms is MASS 5.
   - Element: 4
     AbilityLabel: Afterburner
     AbilityDescription: Hold to boost indefinitely - there is no heat and no meter.
@@ -48,17 +48,21 @@ MonoBehaviour:
     AbilityLabel: Turret Stance
     AbilityDescription: Stop and fire prisms instead of bullets - the same shot in
       every way, except you watch a prism fly and it stays wherever the bullet would
-      have died. Mass stretches the fired prisms.
+      have died. Mass is the SUBSTANCE of what you fire: it stretches the fired prisms
+      AND swells every round as it travels (3x over its flight at rest, 6x at level
+      10), so the hit volume grows with the visual. At level 5 fired prisms arrive
+      shielded.
     Input: 6
     MultiplierAtFullLevel: 2.5
     MinMultiplier: 0.4
     UnlockLevel: 5
     RelockBelowLevel: 4
     LatchPolicy: 0
-    UpgradeLabel: (open design slot)
-    UpgradeDescription: The former Shielded Prisms upgrade moved to Space 5 (2026-08,
-      playtest round 4) so one gate transforms both fire modes. This slot is open for
-      a new Mass 5 design.
+    UpgradeLabel: Shielded Prisms
+    UpgradeDescription: Prisms fired in the turret stance arrive shielded - one-hit
+      ablative octahedron armor, with a wider hit sphere to match. Briefly lived at
+      Space 5 (2026-08 round 4) and was returned here by design sign-off: MASS owns
+      the substance of what you fire, SPACE owns its reach.
   - Element: 1
     AbilityLabel: Skyburst Rockets
     AbilityDescription: Crystal-stocked rockets that detonate on impact. Charge

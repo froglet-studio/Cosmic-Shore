@@ -1,6 +1,5 @@
 using CosmicShore.Gameplay;
 using UnityEngine;
-using CosmicShore.Utility;
 using System.Linq;
 
 namespace CosmicShore.Gameplay
@@ -81,8 +80,6 @@ namespace CosmicShore.Gameplay
             var newZ = Mathf.SmoothDamp(_controller.GetCameraDistance(), targetZ, ref _vel, _controller.ZoomSmoothTime, MaxZoomSpeed);    
         
             _controller.SetCameraDistance(newZ);
-        
-            CSDebug.Log($"[CamZoom] {_zoomDir,3} | Ratio={ratio:0.#} → Eff={eff:0.#} " + $"TargetZ={targetZ:0.#} ActZ={newZ:0.#}");
 
             _prevRatio = ratio;
         }

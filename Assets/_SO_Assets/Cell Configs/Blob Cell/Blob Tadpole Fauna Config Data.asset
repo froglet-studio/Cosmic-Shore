@@ -17,6 +17,7 @@ MonoBehaviour:
   PopulationSize: 4
   SpawnProbability: 1
   FeedsPerOffspring: 20
+  FeedsPerLevel: 40
   OffspringPerBirth: 1
   ReproductionCooldownSeconds: 10
   MaxLivePopulation: 6
@@ -24,7 +25,6 @@ MonoBehaviour:
   Element: 2
   InitialLevel: 1
   BodyScalePerLevel: 1.15
-  CrystalScalePerLevel: 1.2
   LevelGrowSeconds: 1
   Variant:
     Enabled: 1
@@ -55,8 +55,3 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 28c9a96388684fa0b3b10b9dbea56c70, type: 2}
   - {fileID: 11400000, guid: 72fa98519b534214b89e9c29c44b89da, type: 2}
   - {fileID: 11400000, guid: 62a30981533145a5b66304c04e7c50e0, type: 2}
-  Levels:
-    Enabled: 1
-    MinLevel: 1
-    MaxLevel: 5
-    RarityFalloff: 2

@@ -26,6 +26,7 @@ MonoBehaviour:
   SceneName: MinigameAstroLeague
   Vessels:
   - {fileID: 11400000, guid: ec97e344adb08f847a8f7649ab79088e, type: 2}
+  - {fileID: 11400000, guid: b136d82d275e0f8ea1feef29f0d416a4, type: 2}
   MinPlayersAllowed: 2
   MaxPlayersAllowed: 6
   MinDomainsAllowed: 2
