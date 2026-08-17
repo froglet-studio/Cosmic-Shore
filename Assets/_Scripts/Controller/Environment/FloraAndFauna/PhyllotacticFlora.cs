@@ -405,7 +405,13 @@ namespace CosmicShore.Gameplay
         {
             base.AddHealthBlock(healthPrism);
             if (healthPrism && _pendingPrismScale.HasValue)
+            {
+                // Same authored-not-grown rule as Flora.AddHealthBlock: admit the size before
+                // stating it, or PrismScaleAnimator's [0.5, 10] clamp trims it silently. This
+                // flora's stem prisms span a whole segment and routinely exceed 10.
+                healthPrism.AdmitTargetScale(_pendingPrismScale.Value);
                 healthPrism.TargetScale = _pendingPrismScale.Value;
+            }
             _pendingPrismScale = null;
         }
 

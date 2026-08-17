@@ -225,6 +225,10 @@ namespace CosmicShore.Gameplay
         public override void AddHealthBlock(HealthPrism healthPrism)
         {
             base.AddHealthBlock(healthPrism);
+            // leafSize is AUTHORED, not grown, so it must survive PrismScaleAnimator's per-axis
+            // [minScale, maxScale] clamp - default [0.5, 10], which no flora prefab overrides.
+            // Without this a config asking for 60 x 1 x 1 silently becomes 10 x 1 x 1.
+            healthPrism.AdmitTargetScale(leafSize);
             healthPrism.TargetScale = leafSize;
         }
 

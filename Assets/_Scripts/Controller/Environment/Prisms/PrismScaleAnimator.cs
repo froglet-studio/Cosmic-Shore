@@ -236,6 +236,28 @@ namespace CosmicShore.Gameplay
             StampClockGrowth();
         }
 
+        /// <summary>
+        /// Widens the constraint window so <paramref name="target"/> is representable, then
+        /// leaves it widened.
+        ///
+        /// <para><see cref="SetTargetScale"/> CLAMPS per axis into [minScale, maxScale], whose
+        /// defaults are (0.5,0.5,0.5) and (10,10,10) and which almost no prefab overrides. That
+        /// is right for a trail prism, whose size is grown by <see cref="Grow"/> and wants a
+        /// sane bound - and silently wrong for a prism whose size is AUTHORED, because the clamp
+        /// happens inside the setter with no error and no trace: the config says 60 and the
+        /// prism is 10, and nothing anywhere reports the difference. A lattice flora's every
+        /// Space prism was clamped to a 10-unit long axis for the whole of its life that way,
+        /// and every authored cross-section under 0.5 was quietly clamped UP.</para>
+        ///
+        /// <para>So an authored size widens the window rather than being trimmed to fit it.
+        /// Callers that GROW into a bound keep it; callers that STATE a size get the size.</para>
+        /// </summary>
+        public void AdmitTargetScale(Vector3 target)
+        {
+            maxScale = Vector3.Max(maxScale, target);
+            minScale = Vector3.Min(minScale, target);
+        }
+
         public void SetTargetScale(Vector3 newTarget)
         {
             if (!enabled) return;

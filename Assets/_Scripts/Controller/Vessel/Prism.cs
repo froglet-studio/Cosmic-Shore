@@ -248,6 +248,13 @@ namespace CosmicShore.Gameplay
             }
         }
 
+        /// <summary>Widens this prism's scale-constraint window so an AUTHORED size survives
+        /// <see cref="TargetScale"/>'s per-axis clamp. See PrismScaleAnimator.AdmitTargetScale.</summary>
+        public void AdmitTargetScale(Vector3 target)
+        {
+            if (scaleAnimator is not null) scaleAnimator.AdmitTargetScale(target);
+        }
+
         public void ChangeSize()
         {
             if (scaleAnimator is not null)
