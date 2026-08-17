@@ -55,8 +55,8 @@ namespace CosmicShore.Gameplay
 
         // Property key names mirror the values written by PresenceLobbyService
         // and PartySessionService so that player-property reads are consistent.
-        private const string DISPLAY_NAME_KEY = "displayName";
-        private const string AVATAR_ID_KEY    = "avatarId";
+        private const string DISPLAY_NAME_KEY = PartyLobbyKeys.DisplayName;
+        private const string AVATAR_ID_KEY    = PartyLobbyKeys.AvatarId;
 
         // ─────────────────────────────────────────────────────────────────────
         // Dependencies
@@ -125,12 +125,18 @@ namespace CosmicShore.Gameplay
         /// <inheritdoc/>
         public void SeedLocalPlayer(bool clearFirst = true)
         {
-            if (clearFirst)
-                _connectionData.PartyMembers?.Clear();
+            bool changed = false;
+
+            if (clearFirst && _connectionData.PartyMembers is { Count: > 0 })
+            {
+                _connectionData.PartyMembers.Clear();
+                changed = true;
+            }
 
             if (string.IsNullOrEmpty(_connectionData.LocalPlayerData.PlayerId))
             {
                 Debug.Log("[PartyMemberService] Seeded PartyMembers with local player.");
+                if (changed) _eventBus.RequestPartyRosterChanged();
                 return;
             }
 
@@ -142,9 +148,13 @@ namespace CosmicShore.Gameplay
             // clearing (see HostConnectionService.ApplyPostLobbyJoinState).
             if (_connectionData.PartyMembers != null &&
                 !_connectionData.PartyMembers.Contains(_connectionData.LocalPlayerData))
+            {
                 _connectionData.PartyMembers.Add(_connectionData.LocalPlayerData);
+                changed = true;
+            }
 
             Debug.Log("[PartyMemberService] Seeded PartyMembers with local player.");
+            if (changed) _eventBus.RequestPartyRosterChanged();
         }
 
         /// <inheritdoc/>
@@ -156,6 +166,13 @@ namespace CosmicShore.Gameplay
             var sessionPlayerIds = new HashSet<string>();
             foreach (var p in session.Players)
                 sessionPlayerIds.Add(p.Id);
+
+            // Tracks whether this sync moved the roster at all. A steady-state
+            // poll tick changes nothing, and raising OnPartyRosterChanged on
+            // every one of those would make a coalesced repaint signal fire at
+            // poll cadence forever - which is precisely the per-tick churn the
+            // channel exists to replace.
+            bool rosterChanged = false;
 
             // Add players that are in the session but not yet in the SOAP list;
             // refresh identity (displayName/avatarId) on members already present.
@@ -177,6 +194,7 @@ namespace CosmicShore.Gameplay
                     _connectionData.PartyMembers.Add(memberData);
                     _eventBus.RaisePartyMemberJoined(memberData);
                     joinedPlayerIds.Add(p.Id);
+                    rosterChanged = true;
                     Debug.Log($"[PartyMemberService] Member joined: {memberData.DisplayName} ({p.Id})");
                 }
                 else
@@ -193,6 +211,10 @@ namespace CosmicShore.Gameplay
                         // HostConnectionService.RefreshOnlinePlayersDiff.
                         _connectionData.PartyMembers.RemoveAt(existingIdx);
                         _connectionData.PartyMembers.Insert(existingIdx, memberData);
+                        // A rename is not a membership change - hence no
+                        // joined/left raise above - but it IS a repaint, which
+                        // is exactly what OnPartyRosterChanged signals.
+                        rosterChanged = true;
                         Debug.Log($"[PartyMemberService] Member identity refreshed: '{existing.DisplayName}' -> '{memberData.DisplayName}' ({p.Id})");
                     }
                 }
@@ -228,17 +250,33 @@ namespace CosmicShore.Gameplay
                 _missedReads.Remove(member.PlayerId);
                 _connectionData.PartyMembers.RemoveAt(i);
                 _eventBus.RaisePartyMemberLeft(member);
+                rosterChanged = true;
                 Debug.Log($"[PartyMemberService] Member left: {member.DisplayName} ({member.PlayerId})");
             }
+
+            // ONE raise for the whole sync, after the list has settled. A sync
+            // that adds three members costs one repaint here, where the
+            // per-member events above cost three. Raising inside the loops would
+            // also let a listener observe a half-applied roster.
+            if (rosterChanged) _eventBus.RequestPartyRosterChanged();
 
             return joinedPlayerIds;
         }
 
         /// <inheritdoc/>
+        /// <remarks>
+        /// "Silent" means no per-member <c>OnPartyMemberLeft</c> raises - those
+        /// carry side effects (invite-row clearing, Friends presence writes)
+        /// that a wholesale teardown must not trigger. It does NOT mean the
+        /// roster moved invisibly: anything rendering party size still has to
+        /// repaint, so the coalesced roster signal is raised.
+        /// </remarks>
         public void ClearSilent()
         {
+            bool changed = _connectionData.PartyMembers is { Count: > 0 };
             _connectionData.PartyMembers?.Clear();
             Debug.Log("[PartyMemberService] Party members cleared (silent).");
+            if (changed) _eventBus.RequestPartyRosterChanged();
         }
 
         /// <inheritdoc/>
@@ -246,15 +284,18 @@ namespace CosmicShore.Gameplay
         {
             if (_connectionData.PartyMembers == null) return;
 
+            bool changed = false;
             for (int i = _connectionData.PartyMembers.Count - 1; i >= 0; i--)
             {
                 var member = _connectionData.PartyMembers[i];
                 if (member.PlayerId == localPlayerId) continue;
                 _connectionData.PartyMembers.RemoveAt(i);
                 _eventBus.RaisePartyMemberLeft(member);
+                changed = true;
             }
 
             Debug.Log("[PartyMemberService] Party members cleared with Left events.");
+            if (changed) _eventBus.RequestPartyRosterChanged();
         }
 
         /// <inheritdoc/>

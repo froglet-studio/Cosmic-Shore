@@ -28,6 +28,7 @@
 //   because SOAP ScriptableEvent.Raise() notifies MonoBehaviour listeners.
 // ─────────────────────────────────────────────────────────────────────────────
 
+using System.Threading;
 using CosmicShore.ScriptableObjects;
 using CosmicShore.Utility;
 using UnityEngine;
@@ -185,6 +186,73 @@ namespace CosmicShore.Gameplay
         {
             Debug.Log($"[SoapPartyEventBus] RaisePartyMemberKicked → {member.DisplayName} ({member.PlayerId})");
             _data.OnPartyMemberKicked?.Raise(member);
+        }
+
+        // ─────────────────────────────────────────────────────────────────────
+        // Roster-changed: REQUEST + FLUSH, not an immediate raise
+        //
+        // This event is deferred where every other event on this bus is raised
+        // inline, and the asymmetry is deliberate.
+        //
+        // SOAP invokes listeners INLINE on the calling thread. This event's
+        // listeners touch UnityEngine.Object - FriendsListPanel Instantiates and
+        // Destroys rows, ArcadeLobbyList rebuilds slots, and FriendsInitializer
+        // does `hostConnectionData == null`, which routes through op_Equality and
+        // throws EnsureRunningOnMainThread off-thread. FriendsInitializer lives
+        // on a persistent GameObject, so that listener is ALWAYS attached.
+        //
+        // Its raise sites are not all main-thread. PartyMemberService.SeedLocalPlayer
+        // is called by HostConnectionService.ApplyPostLobbyJoinState at four sites,
+        // each immediately after `await _lobbyService.JoinOrCreateAsync(...)` - and
+        // that method's fallback path ends in `await UniTask.Delay(...)` followed by
+        // ConvergeToCanonicalAsync, which can return without awaiting anything.
+        // Per Docs/THREADING.md, awaiting a UniTask does NOT restore the caller's
+        // thread and UniTask's own primitives do not reliably marshal to main on
+        // this version. So the continuation can land on the ThreadPool.
+        //
+        // Requiring every future raise site to prove its thread context is a
+        // contract nobody can keep. Deferring once, here, makes the whole class of
+        // mistake impossible - and it is the same Interlocked-flag-drained-from-
+        // Update pattern PresenceLobbyService already uses for every UGS push.
+        //
+        // Coalescing gets strictly better as a side effect: several raises in one
+        // frame collapse into a single repaint instead of one repaint each.
+        // ─────────────────────────────────────────────────────────────────────
+
+        private int _rosterChangedPending;
+
+        /// <summary>
+        /// Requests the coalesced "party roster moved, repaint" signal.
+        ///
+        /// <para>
+        /// <b>Safe to call from any thread.</b> Sets a flag; the actual SOAP raise
+        /// happens in <see cref="FlushPartyRosterChanged"/> on the main thread.
+        /// See the block comment above for why this one event is deferred.
+        /// </para>
+        ///
+        /// <para>
+        /// Call once per settled mutation, never once per member - a sync adding
+        /// three members should cost one repaint, not three. Request it AFTER the
+        /// roster has finished mutating so listeners read a consistent list.
+        /// </para>
+        /// </summary>
+        public void RequestPartyRosterChanged() =>
+            Interlocked.Exchange(ref _rosterChangedPending, 1);
+
+        /// <summary>
+        /// Raises the pending roster-changed signal, if any. **Main thread only** -
+        /// drained once per frame from <c>HostConnectionService.Update</c>.
+        ///
+        /// <para>
+        /// No log line, deliberately: this is checked every frame, and a console
+        /// line per settle would drown the timeline the per-member raises exist to
+        /// provide. Those already say who moved.
+        /// </para>
+        /// </summary>
+        public void FlushPartyRosterChanged()
+        {
+            if (Interlocked.Exchange(ref _rosterChangedPending, 0) != 1) return;
+            _data.OnPartyRosterChanged?.Raise();
         }
 
         // ─────────────────────────────────────────────────────────────────────

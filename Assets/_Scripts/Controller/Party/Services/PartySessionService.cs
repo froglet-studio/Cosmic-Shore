@@ -34,6 +34,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Threading;
 using CosmicShore.ScriptableObjects;
 using CosmicShore.Utility;
 using Cysharp.Threading.Tasks;
@@ -69,16 +70,11 @@ namespace CosmicShore.Gameplay
         private const int TRANSIENT_MAX_RETRIES   = 5;
         private const int TRANSIENT_BASE_DELAY_MS = 1000;
 
-        // Lobby player-property keys - written during session create/join so
-        // other lobby members can see our display name, party info, etc.
-        private const string DISPLAY_NAME_KEY    = "displayName";
-        private const string AVATAR_ID_KEY       = "avatarId";
-        private const string PARTY_COUNT_KEY     = "partyCount";
-        private const string PARTY_MAX_KEY       = "partyMax";
-        private const string MATCH_NAME_KEY      = "matchName";
-        private const string JOINED_PARTY_KEY    = "joined_party";
-        private const string INVITE_PAYLOADS_KEY = "invite_payloads";
-        private const string ACCEPTED_INVITE_KEY = "accepted_invite";
+        // Session player-property keys. Identity only - see
+        // BuildLocalPlayerProperties for why the six party-state keys that used
+        // to live here were removed rather than left as unused declarations.
+        private const string DISPLAY_NAME_KEY = PartyLobbyKeys.DisplayName;
+        private const string AVATAR_ID_KEY    = PartyLobbyKeys.AvatarId;
 
         // ─────────────────────────────────────────────────────────────────────
         // Dependencies + state
@@ -126,7 +122,108 @@ namespace CosmicShore.Gameplay
         /// in <see cref="ClearSession"/> - the single point that nulls the reference -
         /// so no handler outlives the session object it was attached to.
         /// </summary>
-        private void OnSessionPlayerLeaving(string playerId) => PlayerLeaving?.Invoke(playerId);
+        private void OnSessionPlayerLeaving(string playerId)
+        {
+            MarkRosterDirty();
+            PlayerLeaving?.Invoke(playerId);
+        }
+
+        // ─────────────────────────────────────────────────────────────────────
+        // Push channel
+        //
+        // The presence lobby has had one of these since PRESENCE_SYNC_PLAN
+        // commit 4; the party session had exactly ONE subscription
+        // (PlayerLeaving) and no roster-dirty flag at all. So a party JOIN was
+        // discoverable only by RefreshPartyMembersAsync on a poll tick - and
+        // that read is voided ~32% of the time by the SDK stale-index defect
+        // (Docs/PresenceSystem/BUGS.md, MEASURED run 2). Two voided ticks plus
+        // the 4s creation grace period is the reported "1/4 -> 2/4 took 15-20
+        // seconds".
+        //
+        // A push tick performs NO network read: the SDK has already patched
+        // ISession.Players in memory before it raises. That is the decisive
+        // property - a path with no read cannot be voided by a read fault. It is
+        // the same bargain TODO-P9 already banked on the presence side.
+        // ─────────────────────────────────────────────────────────────────────
+
+        /// <summary>
+        /// Set by any push handler; drained by
+        /// <see cref="TryConsumeRosterDirty"/> on the main thread.
+        ///
+        /// <para>
+        /// <c>int</c> + <see cref="Interlocked"/> rather than <c>bool</c>: the
+        /// UGS SDK gives no guarantee about which thread it dispatches session
+        /// events on. Every handler therefore does exactly one thing - set this
+        /// flag. No Unity API, no SOAP raise, no logging. Per
+        /// <c>Docs/THREADING.md</c> a SOAP <c>Raise()</c> invokes its listeners
+        /// INLINE, so raising from a push handler would run FriendsListPanel's
+        /// Instantiate/Destroy off the main thread and throw
+        /// <c>EnsureRunningOnMainThread</c>.
+        /// </para>
+        /// </summary>
+        private int _rosterDirty;
+
+        /// <inheritdoc/>
+        public bool TryConsumeRosterDirty() => Interlocked.Exchange(ref _rosterDirty, 0) == 1;
+
+        private void MarkRosterDirty() => Interlocked.Exchange(ref _rosterDirty, 1);
+
+        /// <summary>
+        /// Subscribes the push handlers to a session we have just taken ownership
+        /// of. Called at EVERY point <see cref="ActiveSession"/> is assigned -
+        /// create and join - because both produce a session that pushes to us.
+        ///
+        /// <para>
+        /// <c>PlayerLeaving</c> keeps its dedicated typed relay
+        /// (<see cref="OnSessionPlayerLeaving"/>) because the host's
+        /// invite-clearing and reconcile path needs the departing id, not just
+        /// "something moved"; it marks the flag too.
+        /// </para>
+        ///
+        /// <para>
+        /// <c>RemovedFromSession</c> and <c>Deleted</c> are deliberately NOT
+        /// subscribed here. Losing the party session is already handled, on the
+        /// signal that actually matters for gameplay, by
+        /// <c>MultiplayerSetup.OnClientDisconnect</c> ->
+        /// <c>PartyInviteController.HandleHostLossAsync</c>. Adding a second
+        /// recovery trigger on a different signal would race it, and this commit
+        /// is about the join-discovery gap.
+        /// </para>
+        /// </summary>
+        private void WireSessionEvents(ISession session)
+        {
+            if (session == null) return;
+
+            session.PlayerLeaving           += OnSessionPlayerLeaving;
+            session.PlayerJoined            += OnPushPlayerJoined;
+            session.PlayerHasLeft           += OnPushPlayerHasLeft;
+            session.PlayerPropertiesChanged += OnPushPlayerPropertiesChanged;
+            session.Changed                 += OnPushChanged;
+        }
+
+        /// <summary>
+        /// Mirror of <see cref="WireSessionEvents"/>, called from
+        /// <see cref="ClearSession"/> - the single point that nulls the
+        /// reference. Missing one of these would leak a subscription onto a dead
+        /// session and keep marking the roster dirty from a party we already left.
+        /// </summary>
+        private void UnwireSessionEvents(ISession session)
+        {
+            if (session == null) return;
+
+            session.PlayerLeaving           -= OnSessionPlayerLeaving;
+            session.PlayerJoined            -= OnPushPlayerJoined;
+            session.PlayerHasLeft           -= OnPushPlayerHasLeft;
+            session.PlayerPropertiesChanged -= OnPushPlayerPropertiesChanged;
+            session.Changed                 -= OnPushChanged;
+        }
+
+        // Named methods, not lambdas, so the -= above actually removes them - a
+        // lambda would create a new delegate instance and unsubscribe nothing.
+        private void OnPushPlayerJoined(string _)     => MarkRosterDirty();
+        private void OnPushPlayerHasLeft(string _)    => MarkRosterDirty();
+        private void OnPushPlayerPropertiesChanged()  => MarkRosterDirty();
+        private void OnPushChanged()                  => MarkRosterDirty();
 
         // ─────────────────────────────────────────────────────────────────────
         // Construction
@@ -183,7 +280,7 @@ namespace CosmicShore.Gameplay
                 {
                     ActiveSession          = await _multiplayerService.CreateSessionAsync(opts).AsMainThread();
                     CreatedAtUnscaledTime  = Time.unscaledTime;
-                    ActiveSession.PlayerLeaving += OnSessionPlayerLeaving;
+                    WireSessionEvents(ActiveSession);
                     Debug.Log($"[PartySessionService] Created party session {ActiveSession.Id} (maxPlayers={maxPlayers}).");
                     return;
                 }
@@ -237,7 +334,12 @@ namespace CosmicShore.Gameplay
                 try
                 {
                     ActiveSession = await _multiplayerService.JoinSessionByIdAsync(sessionId, opts).AsMainThread();
-                    ActiveSession.PlayerLeaving += OnSessionPlayerLeaving;
+                    WireSessionEvents(ActiveSession);
+
+                    // A join is itself a roster change we must not wait for a poll
+                    // to notice: the host is already in ISession.Players the moment
+                    // this returns.
+                    MarkRosterDirty();
                     Debug.Log($"[PartySessionService] Joined party session {ActiveSession.Id}.");
                     return;
                 }
@@ -332,7 +434,7 @@ namespace CosmicShore.Gameplay
         {
             if (ActiveSession == null) return;
             Debug.Log($"[PartySessionService] Clearing session reference {ActiveSession.Id}.");
-            ActiveSession.PlayerLeaving -= OnSessionPlayerLeaving;
+            UnwireSessionEvents(ActiveSession);
             ActiveSession         = null;
             CreatedAtUnscaledTime = 0f;
         }
@@ -348,19 +450,33 @@ namespace CosmicShore.Gameplay
         /// </summary>
         private Dictionary<string, PlayerProperty> BuildLocalPlayerProperties()
         {
-            int partyCount = _connectionData.PartyMembers != null ? _connectionData.PartyMembers.Count : 0;
-            int partyMax   = _connectionData.MaxPartySlots;
-
+            // Identity ONLY.
+            //
+            // This dictionary is written to the RELAY session, and the relay
+            // session's player properties have exactly one reader in the whole
+            // codebase: PartyMemberService.ReadMemberData, which takes
+            // displayName and avatarId. The six other keys this used to write -
+            // partyCount, partyMax, matchName, joined_party, invite_payloads,
+            // accepted_invite - are the PRESENCE LOBBY's vocabulary. Every
+            // consumer of them (ReadOnlinePlayerData, TryFindIncomingInvite,
+            // ScanPresenceForJoinedPartyMembers, AcceptanceSignalService) reads
+            // from _lobbyService.ActiveLobby.Players, never from the session.
+            // They were written here and read nowhere: four of them always
+            // string.Empty.
+            //
+            // Dropping them is not just tidiness. Property writes are the
+            // measured driver of the B1/B6 stale-index defect - the fault rate
+            // concentrates in the startup write burst - which is why
+            // "coalesce startup property writes" (TODO-P2) is the highest-value
+            // item on the presence list. Session create and join each carried
+            // six dead keys; now they carry none.
+            //
+            // If a future feature genuinely needs party state on the session, add
+            // the key back WITH its reader in the same commit.
             return new Dictionary<string, PlayerProperty>
             {
-                { DISPLAY_NAME_KEY,    new PlayerProperty(string.IsNullOrEmpty(_connectionData.LocalDisplayName) ? "Pilot" : _connectionData.LocalDisplayName, VisibilityPropertyOptions.Public) },
-                { AVATAR_ID_KEY,       new PlayerProperty(_connectionData.LocalAvatarId.ToString(),    VisibilityPropertyOptions.Public) },
-                { PARTY_COUNT_KEY,     new PlayerProperty(partyCount.ToString(), VisibilityPropertyOptions.Public) },
-                { PARTY_MAX_KEY,       new PlayerProperty(partyMax.ToString(),   VisibilityPropertyOptions.Public) },
-                { MATCH_NAME_KEY,      new PlayerProperty(string.Empty,          VisibilityPropertyOptions.Public) },
-                { JOINED_PARTY_KEY,    new PlayerProperty(string.Empty,          VisibilityPropertyOptions.Public) },
-                { INVITE_PAYLOADS_KEY, new PlayerProperty(string.Empty,          VisibilityPropertyOptions.Public) },
-                { ACCEPTED_INVITE_KEY, new PlayerProperty(string.Empty,          VisibilityPropertyOptions.Public) },
+                { DISPLAY_NAME_KEY, new PlayerProperty(string.IsNullOrEmpty(_connectionData.LocalDisplayName) ? "Pilot" : _connectionData.LocalDisplayName, VisibilityPropertyOptions.Public) },
+                { AVATAR_ID_KEY,    new PlayerProperty(_connectionData.LocalAvatarId.ToString(), VisibilityPropertyOptions.Public) },
             };
         }
 

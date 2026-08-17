@@ -12,7 +12,7 @@ namespace CosmicShore.Utility
     [CreateAssetMenu(
         fileName = "HostConnectionData",
         menuName = "ScriptableObjects/DataContainers/Host Connection Data")]
-    public class HostConnectionDataSO : ScriptableObject
+    public class HostConnectionDataSO : ScriptableObject, IPartyRoster
     {
         // ─────────────────────────────────────────────────────────────────────
         // Connection State
@@ -49,6 +49,39 @@ namespace CosmicShore.Utility
 
         [Tooltip("Raised when the host kicks a remote player from the party.")]
         public ScriptableEventPartyPlayerData OnPartyMemberKicked;
+
+        /// <summary>
+        /// Raised ONCE after any mutation of <see cref="PartyMembers"/> settles.
+        ///
+        /// <para>
+        /// <b>Coalesced by design.</b> A sync that adds three members raises this
+        /// once, not three times - unlike the per-member
+        /// <see cref="OnPartyMemberJoined"/>/<see cref="OnPartyMemberLeft"/>
+        /// pair, which every consumer was subscribing to three times over and
+        /// then answering with the same full repopulate. This is the channel to
+        /// listen on for "repaint anything that renders party size or
+        /// membership"; the per-member events remain for consumers that
+        /// genuinely need to know WHO moved (invite-row clearing, presence
+        /// activity strings).
+        /// </para>
+        ///
+        /// <para>
+        /// <b>Requested</b> via <c>SoapPartyEventBus.RequestPartyRosterChanged</c>
+        /// (safe from any thread) and actually raised by
+        /// <c>SoapPartyEventBus.FlushPartyRosterChanged</c>, drained once per frame
+        /// from <c>HostConnectionService.Update</c>. The deferral is required, not
+        /// stylistic: this event's listeners touch <c>UnityEngine.Object</c>, and
+        /// its request sites are not all main-thread - raising inline threw
+        /// <c>EnsureRunningOnMainThread</c>. Do not add a direct <c>.Raise()</c>
+        /// for this event without proving the call site's thread context; see the
+        /// block comment in <c>SoapPartyEventBus</c>.
+        /// </para>
+        /// </summary>
+        [Tooltip("Raised ONCE per party-roster mutation, after the roster has settled. " +
+                 "Coalesced - a sync adding three members raises this once, not three times. " +
+                 "Listen to this (not OnPartyMemberJoined/Left) to repaint anything that " +
+                 "renders party size or membership.")]
+        public ScriptableEventNoParam OnPartyRosterChanged;
 
         [Header("Max Slots")]
         [Tooltip("Maximum number of party slots (including the local player).")]
@@ -130,6 +163,35 @@ namespace CosmicShore.Utility
 
         public bool HasOpenSlots => PartyMembers == null || PartyMembers.Count < maxPartySlots;
 
+        // ─────────────────────────────────────────────────────────────────────
+        // IPartyRoster - the authoritative LOCAL answer to "how big is my party"
+        //
+        // These are thin aliases over state this SO already held. They exist as
+        // an interface so a consumer can depend on the QUESTION rather than on
+        // this concrete container, and so the two-tier rule (local roster for
+        // your own party, advertised presence properties only for other
+        // people's) has a name a call site can be checked against. See
+        // IPartyRoster.cs for why that mattered enough to formalise.
+        // ─────────────────────────────────────────────────────────────────────
+
+        /// <inheritdoc/>
+        public int MemberCount => PartyMembers?.Count ?? 0;
+
+        /// <inheritdoc/>
+        public int MaxSlots => maxPartySlots;
+
+        /// <inheritdoc/>
+        public bool IsHost => IsPartyHost;
+
+        /// <inheritdoc/>
+        public bool Contains(string playerId)
+        {
+            if (PartyMembers == null || string.IsNullOrEmpty(playerId)) return false;
+            foreach (var m in PartyMembers)
+                if (m.PlayerId == playerId) return true;
+            return false;
+        }
+
         /// <summary>
         /// Number of remote (non-local) human players in the party.
         /// </summary>
@@ -147,6 +209,25 @@ namespace CosmicShore.Utility
 
         /// <summary>
         /// Removes a party member by player ID and fires OnPartyMemberKicked.
+        ///
+        /// <para>
+        /// One of only two roster mutations that do not go through
+        /// <c>PartyMemberService</c> (the other is the host-only presence-join
+        /// scan in <c>HostConnectionService</c>), which is why it raises
+        /// <see cref="OnPartyRosterChanged"/> itself. Leaving it out would make
+        /// the kick path the one roster change that never repainted a count.
+        /// </para>
+        ///
+        /// <para>
+        /// <b>MAIN THREAD ONLY.</b> This is the one direct raise of
+        /// <see cref="OnPartyRosterChanged"/> left in the codebase - every other
+        /// path defers through <c>SoapPartyEventBus.RequestPartyRosterChanged</c>
+        /// because its listeners touch <c>UnityEngine.Object</c>. It is safe here
+        /// only because the sole caller, <c>HostConnectionService.KickPartyMemberAsync</c>,
+        /// invokes it BEFORE its first <c>await</c>, and is itself only ever
+        /// reached from a UI button handler. If a future caller can reach this
+        /// off-thread, route it through the bus instead.
+        /// </para>
         /// </summary>
         public bool RemovePartyMember(string playerId)
         {
@@ -160,6 +241,7 @@ namespace CosmicShore.Utility
                     PartyMembers.RemoveAt(i);
                     OnPartyMemberKicked?.Raise(removed);
                     OnPartyMemberLeft?.Raise(removed);
+                    OnPartyRosterChanged?.Raise();
                     return true;
                 }
             }

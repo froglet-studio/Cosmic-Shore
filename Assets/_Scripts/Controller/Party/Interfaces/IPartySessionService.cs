@@ -39,6 +39,29 @@ namespace CosmicShore.Gameplay
         event Action<string> PlayerLeaving;
 
         /// <summary>
+        /// Returns <c>true</c> once if the UGS SDK has pushed a roster-affecting
+        /// session event since the last call, clearing the flag as it reads.
+        ///
+        /// <para>
+        /// The party-session analogue of
+        /// <c>IPresenceLobbyService.ConsumeRosterDirty</c>. Drain it from
+        /// <c>Update()</c> and re-sync the party members <b>from the SDK's
+        /// in-memory roster</b> - do NOT issue a <see cref="RefreshAsync"/> in
+        /// response. The SDK has already patched <c>ISession.Players</c> before
+        /// it raises, so the push tick needs no network call, and a path with no
+        /// read cannot be voided by the stale-index read fault that voids ~32% of
+        /// party-session poll reads (<c>Docs/PresenceSystem/BUGS.md</c>).
+        /// </para>
+        ///
+        /// <para>
+        /// Set from UGS callbacks on an unspecified thread; consumed on the main
+        /// thread. The implementation uses <c>Interlocked</c> and does nothing
+        /// else inside the callbacks.
+        /// </para>
+        /// </summary>
+        bool TryConsumeRosterDirty();
+
+        /// <summary>
         /// The wall-clock time (via <c>Time.unscaledTime</c>) when the current
         /// session was created.  Used to enforce the grace period that prevents
         /// premature RefreshAsync failures from nulling a freshly-provisioned session.

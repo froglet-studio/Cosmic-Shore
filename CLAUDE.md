@@ -631,7 +631,23 @@ Component reference, full spawn chains (menu, game, party join, freestyle flight
 
 Two UGS sessions layer here: a **presence lobby** (lobby-only, no Relay, ≤100 players -
 discovery + invite property exchange) and a **party session** (Relay-backed, ≤4 - actual
-gameplay networking); both coexist with the active NetworkManager. Single writers:
+gameplay networking); both coexist with the active NetworkManager.
+
+**Local authoritative state is never answered from a remote-published mirror (LOCKED).**
+"How big is MY party / is X in it?" is answered by `IPartyRoster` (implemented by
+`HostConnectionDataSO`, fed by the party **session**) - local, authoritative, zero latency.
+"How big is THEIR party?" is answered by `PartyPlayerData.AdvertisedPartyMemberCount` /
+`AdvertisedPartyMaxSlots` - presence-**lobby** properties, a hint, poll latency. Answering
+the first with the second's data is what let three players in ONE party render 2/4, 1/4 and
+3/4 simultaneously: with N members that is N independently-published scalars and nothing
+that reconciles them, so **no polling cadence can ever fix it** (which is why several
+cadence/push/jitter passes did not). The `Advertised` prefix and the `IPartyRoster` surface
+exist to make the mistake unspellable - do not remove either as redundant. Full analysis:
+`Docs/PresenceSystem/BUGS.md` B15. Roster changes broadcast on the coalesced
+`HostConnectionDataSO.OnPartyRosterChanged` (one raise per settled mutation) - listen to
+that for repaints, not to the per-member joined/left events.
+
+Single writers:
 `HostConnectionService` → `HostConnectionDataSO`; `FriendsServiceFacade` → `FriendsDataSO`
 (UI reads SOAP lists/events, never calls UGS directly; presence updates go through
 `FriendsInitializer` only; invites are per-player lobby properties so no host privilege is

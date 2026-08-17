@@ -46,6 +46,22 @@ namespace CosmicShore.Gameplay
         private bool _initialized;
         private bool _partySubscriptionsWired;
 
+        /// <summary>
+        /// Remote party-member count at the last presence publish, or -1 before
+        /// the first one.
+        ///
+        /// <para>
+        /// The roster channel is coalesced but not deduplicated - it fires on
+        /// every settled mutation, including seeds and clears during scene
+        /// transitions that leave the remote count exactly where it was. Each of
+        /// those would otherwise cost a UGS presence write and, if
+        /// <c>SetPresenceInGame</c> is ever wired up, would overwrite an
+        /// in-game activity with a menu one for no reason at all. Publishing
+        /// only on an actual change makes both impossible.
+        /// </para>
+        /// </summary>
+        private int _lastPublishedRemoteCount = -1;
+
         // ─────────────────────────────────────────────────────────────────────
         // Unity Lifecycle
         // ─────────────────────────────────────────────────────────────────────
@@ -83,10 +99,8 @@ namespace CosmicShore.Gameplay
             if (_partySubscriptionsWired || hostConnectionData == null) return;
             _partySubscriptionsWired = true;
 
-            if (hostConnectionData.OnPartyMemberJoined != null)
-                hostConnectionData.OnPartyMemberJoined.OnRaised += HandlePartyMemberJoined;
-            if (hostConnectionData.OnPartyMemberLeft != null)
-                hostConnectionData.OnPartyMemberLeft.OnRaised += HandlePartyMemberLeft;
+            if (hostConnectionData.OnPartyRosterChanged != null)
+                hostConnectionData.OnPartyRosterChanged.OnRaised += HandlePartyRosterChanged;
         }
 
         void UnwirePartySubscriptions()
@@ -94,18 +108,43 @@ namespace CosmicShore.Gameplay
             if (!_partySubscriptionsWired || hostConnectionData == null) return;
             _partySubscriptionsWired = false;
 
-            if (hostConnectionData.OnPartyMemberJoined != null)
-                hostConnectionData.OnPartyMemberJoined.OnRaised -= HandlePartyMemberJoined;
-            if (hostConnectionData.OnPartyMemberLeft != null)
-                hostConnectionData.OnPartyMemberLeft.OnRaised -= HandlePartyMemberLeft;
+            if (hostConnectionData.OnPartyRosterChanged != null)
+                hostConnectionData.OnPartyRosterChanged.OnRaised -= HandlePartyRosterChanged;
         }
 
-        void HandlePartyMemberJoined(PartyPlayerData _) => SetPresenceInParty();
-
-        void HandlePartyMemberLeft(PartyPlayerData _)
+        /// <summary>
+        /// Republishes Friends presence whenever the party roster settles.
+        ///
+        /// <para>
+        /// Replaces a joined-handler that published "In Party" and a left-handler
+        /// that only acted when the party emptied. That pair had a hole: a 3→2
+        /// shrink hit neither branch, so the advertised
+        /// <c>FriendPresenceActivity.PartyMemberCount</c> stayed pinned at 3 for
+        /// the rest of the session. Deriving the whole decision from the settled
+        /// roster - in party if any remote member remains, otherwise back to the
+        /// menu - closes it, and there is no longer a per-transition case to
+        /// enumerate.
+        /// </para>
+        ///
+        /// <para>
+        /// Note the count this republishes is currently write-only on the wire:
+        /// <c>FriendsServiceFacade.RelationshipToFriendData</c> reads only
+        /// <c>activity.Status</c> and discards every party field. Fixed here
+        /// anyway - a stale number that becomes correct the moment someone reads
+        /// it is cheaper than the same bug rediscovered later.
+        /// </para>
+        /// </summary>
+        void HandlePartyRosterChanged()
         {
-            // Once the last remote member leaves, return to solo "In Menu" presence.
-            if (hostConnectionData != null && hostConnectionData.RemotePartyMemberCount == 0)
+            if (hostConnectionData == null) return;
+
+            int remoteCount = hostConnectionData.RemotePartyMemberCount;
+            if (remoteCount == _lastPublishedRemoteCount) return;
+            _lastPublishedRemoteCount = remoteCount;
+
+            if (remoteCount > 0)
+                SetPresenceInParty();
+            else
                 SetPresenceInMenu();
         }
 

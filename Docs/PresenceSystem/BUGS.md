@@ -19,6 +19,8 @@ Statuses: 🔴 open · 🟡 investigating · 🟢 fixed (commit) · ⚪ deferred
 | B12 | Explicit leave took ~30 s to remove the player | Confirmed | 🟡 `a510bd51` — graceful path **untested**; see retest note below |
 | B13 | Relay 500 on boot bricks the loading splash (no retry, no recovery) | Confirmed | ✅ `c3dbf682` **VERIFIED 2026-08-04** (4 instances; wider run pending) |
 | B14 | `presenceState` change never repainted the row - "CONNECTING…" forever | Confirmed | ✅ `c49c8c91` **VERIFIED 2026-08-04** |
+| B15 | Three players in ONE party render three different party sizes | Confirmed | ✅ **VERIFIED 2026-08-06** (4-VP) |
+| B16 | Coalesced roster raise ran off the main thread — `EnsureRunningOnMainThread` | Confirmed | ✅ `4aece925` **VERIFIED 2026-08-06** |
 
 > **Working order.** Diagnostics-first. The presence-lobby cluster (B4,
 > B6) is the locked-design area — read `ARCHITECTURE.md` and
@@ -123,6 +125,187 @@ re-measure.
 identifies startup as the concentration point. Run 2 supersedes this block's
 consequence list; the conclusions are unchanged in direction, sharper in
 priority.
+
+---
+
+## B16. A new SOAP event raised off the main thread — `EnsureRunningOnMainThread` returned — ✅ `4aece925` VERIFIED 2026-08-06
+
+**Self-inflicted, during the B15 fix.** Recorded in full because the lesson
+generalises to every SOAP event anyone adds to this system, and because the
+process failure that let it reach a build matters more than the code.
+
+**Symptom.** After the B15 branch, a live build threw the old
+`EnsureRunningOnMainThread` cascade in a system that had been working.
+
+### Mechanism
+
+`Docs/THREADING.md`: SOAP `Raise()` invokes listeners **inline on the calling
+thread**, and any `UnityEngine.Object` access off the main thread throws —
+**including a `== null` check**, which routes through `op_Equality`.
+
+`OnPartyRosterChanged` (added in `f6aecb6a`) has three listeners:
+
+| Listener | Touches | Always live? |
+|---|---|---|
+| `FriendsInitializer.HandlePartyRosterChanged` | `hostConnectionData == null` → `op_Equality`, then an `async void` UGS call | **YES — persistent GameObject** |
+| `FriendsListPanel.HandlePartyRosterChanged` | `PopulateOnlineSection()` → Instantiate/Destroy | only when open |
+| `ArcadeLobbyList.HandlePartyRosterChanged` | `PopulateSlots()` | only when open |
+
+Its request sites are **not** all main-thread. `PartyMemberService.SeedLocalPlayer`
+is called by `HostConnectionService.ApplyPostLobbyJoinState` at four sites, each
+immediately after `await _lobbyService.JoinOrCreateAsync(...)` — whose fallback
+path ends:
+
+```csharp
+await CreateAsync(maxPlayers);              // ends .AsMainThread()  ✓
+await UniTask.Delay(LOBBY_RACE_SETTLE_MS);  // ← no affinity guarantee
+await ConvergeToCanonicalAsync(maxPlayers); // may return with NO await at all
+```
+
+Awaiting a `UniTask` does not restore the caller's thread
+(`ConfigureAwait(false)` semantics), and UniTask's own primitives do not
+reliably marshal to main on this version — both stated in `THREADING.md`. So
+the continuation can land on the ThreadPool.
+
+**Why it was new.** Before the branch, `SeedLocalPlayer` raised no SOAP event —
+it only mutated the `PartyMembers` ScriptableList, and `FriendsListPanel`
+subscribes solely to `OnlinePlayers` list events. That path could not reach any
+Unity-touching listener. The coalesced channel connected it, including one that
+is **always attached**.
+
+### Fix
+
+`RaisePartyRosterChanged` → `RequestPartyRosterChanged` (an `Interlocked` flag,
+safe from any thread) + `FlushPartyRosterChanged` (the actual raise), drained at
+the **top of `HostConnectionService.Update()`** before every gate. One deferral
+covers all six request sites; making each *listener* thread-safe would have been
+three fixes, and the next listener anyone added would have reintroduced it.
+
+This is the same `Interlocked`-flag-drained-from-`Update` pattern
+`PresenceLobbyService` already uses for every UGS push. **The correct shape was
+already in the codebase and was not followed.**
+
+Coalescing improved as a side effect: several roster changes in one frame now
+collapse to one repaint.
+
+### The rule this establishes
+
+> **A SOAP event whose listeners touch Unity state may only be raised from a
+> guaranteed main-thread context.** Where the raise site cannot prove that, defer
+> it to a drain in `Update()`. Do not require every future call site to prove its
+> thread — that is a contract nobody can keep.
+
+Pinned by `PartyRosterEventTests.RosterChanged_IsNotRaisedUntilFlushed`.
+`HostConnectionDataSO.RemovePartyMember` keeps a direct raise and is documented
+**MAIN THREAD ONLY** — its sole caller runs before its first `await`, from a UI
+button.
+
+### Process failure — the more important half
+
+`REFACTOR.md` requires a 3-VP MPPM smoke **per commit** and "push only after
+explicit risk discussion". Seven commits were landed with **zero runtime
+verification between them**, in the area the docs call the fragile locked-design
+area, while the author could not compile. The plan was ordered by *value* when it
+should have been ordered by *blast radius* with a hard stop after each step.
+
+**The cheapest gate would have caught it**: single editor, enter play mode in
+Menu_Main, watch for `EnsureRunningOnMainThread` and the
+`SceneTransitionManager` canary. No MPPM, no party, no second player. That is now
+step 3 of the standing verification order in `../PartySystem/TESTS.md`.
+
+---
+
+## B15. Three players in ONE party render three different party sizes — ✅ VERIFIED FIXED 2026-08-06
+
+**Symptom** (reported from a live 3-player session; A hosts, B joins, then C joins):
+
+| Panel | A's row | B's row | C's row |
+|---|---|---|---|
+| **A** | — | `IN YOUR PARTY 2/4` ❌ | `IN YOUR PARTY 1/4` ❌ |
+| **B** | `3/4` ✅ | — | `3/4` ✅ |
+| **C** | ❌ (like A) | ❌ (like A) | — |
+
+Plus: after a client joined, its own row took **15–20 s** to go `1/4 → 2/4`,
+alongside two `Benign SDK fault on party-session read - refresh tick VOIDED` logs.
+
+**These are two different bugs that presented as one.**
+
+### The count divergence is NOT a latency bug
+
+`FriendsListPanel.ResolveRemoteStatus` assigned the member count once, up front,
+from `player.PartyMemberCount` — the **remote peer's self-published `partyCount`
+presence property** — and used it for every status, including `InYourParty`. So
+the *bucket* ("is this person in my party?") came from local truth
+(`IsInSameParty` → `PartyMembers`), while the *number* came from the peer's stale
+self-report.
+
+With N members that is **N independently-published scalars and N×(N−1)
+independently-lossy read edges**, and nothing that reconciles them. No poll
+cadence can make N scalars agree — which is why every previous fix in this area
+(cadence, push channel, jitter, two-strike eviction, benign classification)
+left it standing.
+
+It violated two things already written down:
+
+- the locked *"Session is authoritative over presence — the lobby is a hint,
+  never the source of truth"* invariant (`MultiplayerArchitecture/ROADMAP.md`);
+- `PartySystem/ARCHITECTURE.md` **exit criterion 3** — "host's view of party
+  membership matches every client's view within one refresh tick".
+
+`FriendsListPanel:386` was the **only** display consumer of the advertised count
+in the codebase. `ArcadeGameConfigureModal:447`, `QuickPlayButton:95`,
+`ScreenSwitcher:637`, `FriendsInitializer:154` all already read the local roster.
+A lone outlier, not a pattern.
+
+### Root causes
+
+| | Cause |
+|---|---|
+| **RC1** | `FriendsListPanel:386` renders a party member's size from their advertised presence property instead of the local roster. **The reported divergence.** |
+| **RC2** | `RefreshAsync` was one linear pipeline in one `try`; the lobby read is the first `await`, so a fault there unwound past the publish. Read voided ~12% of ticks. |
+| **RC3** | No republish on roster change — `PublishPresenceImmediateAsync` fired only on Menu_Main load and presence-state transitions. |
+| **RC4** | `PartySessionService` wired **1** UGS push event (`PlayerLeaving`) vs `PresenceLobbyService`'s **7**, so a party JOIN was discoverable only by a poll read voided ~32% of the time. **The 15–20 s.** |
+| **RC5** | Three writers of `partyCount`; 12 key literals across 5 files; 6 keys written to the Relay session that nothing reads. |
+| **RC6** | Two traps for anyone fixing RC1: `PartyMemberService.ReadMemberData` uses the identity-only ctor so every `PartyMembers` entry reports `AdvertisedPartyMemberCount == 0`; and `FriendsInitializer` only republished presence on join, so a 3→2 shrink left the advertised count pinned at 3. |
+
+### The rule this established
+
+> **Local authoritative state is never answered from a remote-published mirror.**
+> "How big is MY party?" → `IPartyRoster` (local, 0 latency).
+> "How big is THEIR party?" → `PartyPlayerData.Advertised*` (a hint).
+
+Made structural by `IPartyRoster` (implemented by `HostConnectionDataSO`, no new
+writer) and by renaming `PartyMemberCount`/`PartyMaxSlots` →
+`AdvertisedPartyMemberCount`/`AdvertisedPartyMaxSlots`, so a call site cannot
+mistake a hint for a fact.
+
+### Fix (6 commits on `claude/lobby-sync-bugs-4n4nl2`)
+
+| | |
+|---|---|
+| C1 | `IPartyRoster` + the rename + `FriendsListPanel` sources counts per tier. **Fixes the divergence.** |
+| C2 | `OnPartyRosterChanged` — one raise per settled mutation, change-gated. Also fixes RC6's 3→2 shrink. |
+| C3 | Republish presence the moment the roster moves (drained flag — the raise fires with the lobby mutex held). |
+| C4 | Read and publish get separate `try`s, so a voided read no longer eats the publish. |
+| C5 | Party-session push channel; push path syncs from the SDK's in-memory roster with **zero UGS reads**. **Fixes the 15–20 s.** |
+| C6 | `PartyLobbyKeys` single owner; drop the 6 write-only Relay-session keys (partial TODO-P2). |
+
+### Retest (MPPM, **unique tags mandatory**)
+
+1. A starts, B starts, A invites B, B joins. C starts, A invites C, C joins.
+2. All three panels must read `IN YOUR PARTY 3/4`.
+3. C's row on A's panel must reach `3/4` **within a frame** of C's vessel
+   appearing, not after a poll.
+4. B leaves → all panels `2/4` within one refresh tick.
+5. No `RaisePartyMemberJoined`/`Left` oscillation (B8 regression check).
+6. `BenignPresenceSkips` / `BenignPartySessionSkips` should still climb — the SDK
+   defect is untouched — **but the counts stay correct anyway**. That is the proof
+   C4/C5 worked.
+
+> ⚠ **Untagged MPPM clones reproduce this exact symptom for an unrelated reason**
+> (shared `mppm-clone` auth profile → one UGS PlayerId → each join invalidates the
+> previous clone's membership). Confirm tags before drawing any conclusion, same
+> caveat as B4/B5.
 
 ---
 

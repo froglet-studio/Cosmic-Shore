@@ -185,12 +185,12 @@ namespace CosmicShore.UI
                 connectionData.OnlinePlayers.OnCleared += HandleOnlineCleared;
             }
 
-            if (connectionData.OnPartyMemberJoined != null)
-                connectionData.OnPartyMemberJoined.OnRaised += HandlePartyMemberEvent;
-            if (connectionData.OnPartyMemberLeft != null)
-                connectionData.OnPartyMemberLeft.OnRaised += HandlePartyMemberEvent;
-            if (connectionData.OnPartyMemberKicked != null)
-                connectionData.OnPartyMemberKicked.OnRaised += HandlePartyMemberEvent;
+            // One coalesced repaint instead of three per-member subscriptions
+            // that all discarded their payload and ran the same full repopulate.
+            // Fires after the roster settles, so the slots are built from a
+            // consistent list rather than a half-applied one.
+            if (connectionData.OnPartyRosterChanged != null)
+                connectionData.OnPartyRosterChanged.OnRaised += HandlePartyRosterChanged;
 
             // Auto-open the friends panel when an incoming party invite arrives
             // while the arcade lobby is visible. Without this, the recipient has
@@ -227,12 +227,8 @@ namespace CosmicShore.UI
                 connectionData.OnlinePlayers.OnCleared -= HandleOnlineCleared;
             }
 
-            if (connectionData.OnPartyMemberJoined != null)
-                connectionData.OnPartyMemberJoined.OnRaised -= HandlePartyMemberEvent;
-            if (connectionData.OnPartyMemberLeft != null)
-                connectionData.OnPartyMemberLeft.OnRaised -= HandlePartyMemberEvent;
-            if (connectionData.OnPartyMemberKicked != null)
-                connectionData.OnPartyMemberKicked.OnRaised -= HandlePartyMemberEvent;
+            if (connectionData.OnPartyRosterChanged != null)
+                connectionData.OnPartyRosterChanged.OnRaised -= HandlePartyRosterChanged;
 
             if (connectionData.OnInviteReceived != null)
                 connectionData.OnInviteReceived.OnRaised -= HandleInviteReceived;
@@ -336,7 +332,7 @@ namespace CosmicShore.UI
             // the counter reflects the total player population, which is
             // what players intuitively expect when they read "N Players Online".
             // The Arcade header intentionally shows only the raw count here -
-            // "IN LOBBY X/N" / "LOBBY FULL" / "IN A MATCH" badges belong on the
+            // "IN PARTY X/N" / "IN A MATCH" badges belong on the
             // per-remote-player rows in FriendsListPanel (OnlineInfoEntry), not
             // on the local player's count of everyone online.
             int remoteCount = connectionData.OnlinePlayers != null
@@ -383,7 +379,19 @@ namespace CosmicShore.UI
 
         void HandleOnlineChanged(PartyPlayerData _) => UpdateOnlineStatus();
         void HandleOnlineCleared() => UpdateOnlineStatus();
-        void HandlePartyMemberEvent(PartyPlayerData _)
+
+        /// <summary>
+        /// The party roster settled - rebuild the slots, the leave button and the
+        /// online counter together.
+        ///
+        /// <para>
+        /// Replaces three identical per-member subscriptions that each discarded
+        /// their <c>PartyPlayerData</c> payload. The <c>PartyMembers</c> list
+        /// events remain subscribed as the pre-existing backstop; they fire
+        /// mid-mutation, this fires once the roster is whole.
+        /// </para>
+        /// </summary>
+        void HandlePartyRosterChanged()
         {
             PopulateSlots();
             UpdateLeaveButtonState();
@@ -431,7 +439,7 @@ namespace CosmicShore.UI
 
         // A slot's ✕ was pressed. Host-only removal of that member; KickPartyMemberAsync
         // guards host/self internally. The optimistic RemovePartyMember inside it fires
-        // OnPartyMemberKicked → PopulateSlots, so the slot re-renders either way.
+        // OnPartyRosterChanged → PopulateSlots, so the slot re-renders either way.
         async void OnKickSlotPressed(string playerId)
         {
             var service = HostConnectionService.Instance;

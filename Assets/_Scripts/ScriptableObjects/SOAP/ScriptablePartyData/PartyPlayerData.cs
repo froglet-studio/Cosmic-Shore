@@ -24,11 +24,40 @@ namespace CosmicShore.ScriptableObjects
         public string DisplayName => displayName;
         public int AvatarId => avatarId;
 
-        /// <summary>Members currently in this player's party (includes themselves).</summary>
-        public int PartyMemberCount => partyMemberCount;
+        /// <summary>
+        /// Party size this player <b>advertised</b> via their <c>partyCount</c>
+        /// presence-lobby property (includes themselves). 0 if unknown.
+        ///
+        /// <para>
+        /// <b>This is a hint about a party you are not in - never the truth about
+        /// your own.</b> It is the peer's own scalar, republished on their tick
+        /// and read back on yours, so with N members in one party there are N
+        /// independently-published numbers and N*(N-1) independently-lossy read
+        /// edges. Rendering a row for one of YOUR party members from this value
+        /// is what let a three-player party display 2/4, 1/4 and 3/4 on three
+        /// screens simultaneously. For anyone in your own party ask
+        /// <see cref="CosmicShore.Utility.IPartyRoster.MemberCount"/> instead -
+        /// it is local, authoritative and has no latency at all.
+        /// </para>
+        ///
+        /// <para>
+        /// Legitimate readers: the "IN PARTY n/4" label for players you are NOT
+        /// partied with, where no local answer exists, and the derived "their
+        /// party is full, so they are not invitable" rule in
+        /// <c>OnlineInfoEntry.Populate</c> - which reads this together with
+        /// <see cref="AdvertisedPartyMaxSlots"/>, so the label and the rule can
+        /// never disagree.
+        /// </para>
+        /// </summary>
+        public int AdvertisedPartyMemberCount => partyMemberCount;
 
-        /// <summary>Max party slots advertised by this player (0 if unknown).</summary>
-        public int PartyMaxSlots => partyMaxSlots;
+        /// <summary>
+        /// Max party slots advertised by this player (0 if unknown - e.g. a peer
+        /// on a build predating the property). Same hint-not-truth caveat as
+        /// <see cref="AdvertisedPartyMemberCount"/>; fall back to
+        /// <see cref="CosmicShore.Utility.IPartyRoster.MaxSlots"/> when 0.
+        /// </summary>
+        public int AdvertisedPartyMaxSlots => partyMaxSlots;
 
         /// <summary>Active match name if this player is in-game, else empty.</summary>
         public string MatchName => matchName ?? string.Empty;
@@ -59,6 +88,23 @@ namespace CosmicShore.ScriptableObjects
         /// </summary>
         public const int PRESENCE_PRESENT = 3;
 
+        /// <summary>
+        /// Identity only. The advertised party fields are deliberately
+        /// <b>zero</b>: this overload is for rows built from a source that
+        /// carries no presence properties - notably
+        /// <c>PartyMemberService.ReadMemberData</c>, which reads the party
+        /// SESSION's player list (displayName + avatarId only).
+        ///
+        /// <para>
+        /// So every entry in <c>HostConnectionDataSO.PartyMembers</c> reports
+        /// <see cref="AdvertisedPartyMemberCount"/> == 0. That is correct and
+        /// harmless - nothing renders a party member's advertised count - but it
+        /// is a live trap for anyone "fixing" a party count by pointing a label
+        /// at <c>PartyMembers</c> entries: the label would read 0/4. Use
+        /// <see cref="CosmicShore.Utility.IPartyRoster.MemberCount"/>, which
+        /// counts the list rather than reading a field off its items.
+        /// </para>
+        /// </summary>
         public PartyPlayerData(string playerId, string displayName, int avatarId)
             : this(playerId, displayName, avatarId, 0, 0, null, PRESENCE_PRESENT) { }
 

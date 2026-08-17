@@ -66,8 +66,8 @@ namespace CosmicShore.Gameplay
         // Constants - lobby player-property keys
         // ─────────────────────────────────────────────────────────────────────
 
-        private const string ACCEPTED_INVITE_KEY = "accepted_invite";
-        private const string INVITE_PAYLOADS_KEY = "invite_payloads";
+        private const string ACCEPTED_INVITE_KEY = PartyLobbyKeys.AcceptedInvite;
+        private const string INVITE_PAYLOADS_KEY = PartyLobbyKeys.InvitePayloads;
 
         // ─────────────────────────────────────────────────────────────────────
         // Public API - host-side (scan + republish)

@@ -10,7 +10,7 @@ namespace CosmicShore.UI
     /// Row entry for the Online section of FriendsListPanel.
     /// Shows avatar, username, lobby/match status, plus an Invite button and a
     /// Cancel/Kick (✕) button. The Invite button is shown only when the player can be
-    /// invited (Online / IN PARTY). The ✕ is shown when an outgoing invite is pending
+    /// invited (Online / IN PARTY with room). The ✕ is shown when an outgoing invite is pending
     /// (click = cancel the invite) OR the player is in YOUR party and you are the host
     /// (click = kick them). Sending an invite tints the row yellowish and pulses until
     /// the target accepts/declines/times out. Invite, cancel and kick all pass through
@@ -28,7 +28,7 @@ namespace CosmicShore.UI
                  "while an invite to this player is in-flight.")]
         [SerializeField] private Image backgroundImage;
         [Tooltip("Invite button. Click sends an invite to this player. Shown only " +
-                 "while the player can be invited (Online / IN PARTY).")]
+                 "while the player can be invited (Online / IN PARTY with room).")]
         [SerializeField] private Button inviteButton;
         [Tooltip("Cancel / Kick (✕) button. Shown while an outgoing invite is pending (click " +
                  "retracts it) OR when this player is in your party and you're the host (click " +
@@ -39,7 +39,6 @@ namespace CosmicShore.UI
         [SerializeField] private Color onlineColor = Color.white;
         [SerializeField] private Color inLobbyColor = new(0.4f, 0.8f, 1f, 1f);
         [SerializeField] private Color inMatchColor = new(0.9f, 0.2f, 0.2f, 1f);
-        [SerializeField] private Color lobbyFullColor = new(0.5f, 0.5f, 0.5f, 1f);
         [Tooltip("Label colour while a remote player is still entering the world (vessel not spawned).")]
         [SerializeField] private Color connectingColor = new(0.6f, 0.6f, 0.6f, 1f);
         [Tooltip("Label colour when this player is already in the local player's party (non-invitable).")]
@@ -52,7 +51,7 @@ namespace CosmicShore.UI
         [SerializeField] private Color pendingInviteTint = new(1f, 0.75f, 0.1f, 1f);
         [Tooltip("Bright end of the pending-tint pulse.")]
         [SerializeField] private Color pendingInviteTintBright = new(1f, 0.95f, 0.5f, 1f);
-        [Tooltip("Background tint when this row cannot be invited (in-match / lobby-full).")]
+        [Tooltip("Background tint when this row cannot be invited (in-match, still connecting, already in your party, or their party is full).")]
         [SerializeField] private Color disabledTint = new(0.35f, 0.35f, 0.35f, 1f);
 
         [Header("Pending Pulse")]
@@ -78,9 +77,23 @@ namespace CosmicShore.UI
         public enum Status
         {
             Online,
+
+            /// <summary>
+            /// In a party that is not mine. Renders "IN PARTY n/4".
+            ///
+            /// <para>
+            /// This also covers a party at capacity, which used to have its own
+            /// <c>LobbyFull</c> member rendering "PARTY FULL". The count already
+            /// says 4/4, so the separate status was a second way of stating the
+            /// same fact - and it carried the invitability rule as a side effect,
+            /// which meant the label and the rule could drift apart. Fullness is
+            /// now derived from the counts in <see cref="Populate"/>, where both
+            /// the label and the rule read the same two numbers.
+            /// </para>
+            /// </summary>
             InLobby,
+
             InMatch,
-            LobbyFull,
             InYourParty,
 
             /// <summary>
@@ -117,8 +130,8 @@ namespace CosmicShore.UI
         /// <param name="displayName">Display name shown next to avatar.</param>
         /// <param name="avatar">Resolved avatar sprite (may be null).</param>
         /// <param name="status">High-level status bucket.</param>
-        /// <param name="partyMemberCount">Members in their party (for InLobby/LobbyFull).</param>
-        /// <param name="partyMaxSlots">Max party slots (for InLobby/LobbyFull rendering).</param>
+        /// <param name="partyMemberCount">Members in their party. Renders the n in "IN PARTY n/4", and (with partyMaxSlots) decides whether they are invitable.</param>
+        /// <param name="partyMaxSlots">Max party slots. 0 means the peer published none - treated as unknown, not full.</param>
         /// <param name="matchName">Match name text (for InMatch status).</param>
         /// <param name="onInvite">Invite callback; null (or a non-invitable status) hides the Invite button.</param>
         /// <param name="onCancel">Cancel-invite callback, fired by the ✕ while an invite is pending.</param>
@@ -151,10 +164,25 @@ namespace CosmicShore.UI
 
             SetStatus(status, partyMemberCount, partyMaxSlots, matchName);
 
+            // A target whose own party is already at capacity is not invitable.
+            //
+            // This rule used to be carried implicitly by Status.LobbyFull simply
+            // being absent from the invitable list below - so deleting that status
+            // to drop the "PARTY FULL" label would have silently made full parties
+            // invitable. Deriving it from the counts keeps the rule explicit and
+            // keeps it reading the same two numbers the label does.
+            //
+            // partyMaxSlots == 0 means the peer published no partyMax (a build from
+            // before the property existed): unknown, not full. Same treatment as the
+            // old branch, which was guarded on maxSlots > 0.
+            bool targetPartyFull = partyMaxSlots > 0 && partyMemberCount >= partyMaxSlots;
+
             // Invite button shows ONLY when the status permits an invite
-            // (Online / InLobby) and a callback is provided - hidden otherwise.
+            // (Online / InLobby), their party has room, and a callback is
+            // provided - hidden otherwise.
             _invitable = onInvite != null &&
-                         (status == Status.Online || status == Status.InLobby);
+                         (status == Status.Online || status == Status.InLobby) &&
+                         !targetPartyFull;
 
             // Kick affordance: this row is a kickable member of MY party.
             // FriendsListPanel passes onKick only when I'm the host.
@@ -213,10 +241,6 @@ namespace CosmicShore.UI
                         ? $"IN PARTY {partyMemberCount}/{partyMaxSlots}"
                         : "IN PARTY";
                     color = inLobbyColor;
-                    break;
-                case Status.LobbyFull:
-                    text = "PARTY FULL";
-                    color = lobbyFullColor;
                     break;
                 case Status.InMatch:
                     text = string.IsNullOrEmpty(matchName)

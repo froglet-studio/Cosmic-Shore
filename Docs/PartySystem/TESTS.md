@@ -47,6 +47,52 @@ treat pre-2026-07-16 3-4-VP findings (notably Presence **B4**, and the
 environment of **B5**/B7 repros) as suspect until re-reproduced with
 tagged VPs.
 
+## Verification ORDER — cheapest gate first
+
+Run these in order and **stop on the first failure**. Added after the B16
+threading regression, which seven commits and a full MPPM plan missed but which
+**step 2 alone would have caught in under a minute** — no virtual players, no
+party, no invite.
+
+| # | Gate | Cost | Catches |
+|---|---|---|---|
+| 0 | Unity recompiles clean; `Test Runner → EditMode → Run All` green | ~2 min | compile breaks, contract regressions |
+| 1 | `python3 Tools/Build/check_conditional_compilation.py` | ~1 s | the `#if` guard class that only fails the Release build |
+| 2 | **Single editor, enter play mode in `Menu_Main`, watch the console** for `EnsureRunningOnMainThread` and for the `SceneTransitionManager` main-thread canary | ~1 min | **every off-main-thread SOAP raise** (B16) |
+| 3 | 3-VP MPPM smoke: S1–S4, S9 | ~10 min | the party lifecycle |
+| 4 | Stress-1/2/3 (refactor commits only) | ~15 min | races, re-entrancy |
+| 5 | The scenario the change actually alters (see S10/S11 below) | varies | the thing you meant to fix |
+
+**Step 2 is not optional on any commit that adds or moves a SOAP raise.** It is
+the only gate in this list that is cheap enough to run on every single commit,
+and it is the one that failed to exist when it was needed.
+
+## ⚠ Outstanding verification — roster-truth branch, merged 2026-08-06
+
+The roster-truth branch (`REFACTOR.md` § "Shipped — roster-truth pass") was merged
+into `Ys-bleeding-edge` on the owner's call, with positive but **not exhaustive**
+testing. Confirmed at merge: it compiles, the `EnsureRunningOnMainThread` errors
+are gone, and invite + accept + 4 VPs in one lobby work across multiple runs.
+
+These four were **not** run. None is known to be broken; they are simply unproven.
+Listed cheapest-first so they can be picked up in any spare five minutes. **Tick
+them off here as they are done** so the next person knows what is actually covered.
+
+| | Check | Cost | If it fails |
+|---|---|---|---|
+| ☐ 1 | **EditMode tests** — `Test Runner → EditMode → Run All`. 41 cases were added by that branch (`PartyRosterTests`, `PartyRosterEventTests`, `PartyLobbyKeysTests`) and have never been executed. | 2 min | Almost certainly a test bug, not a product bug — but they are the contract for the coalescing, the change-gate, the main-thread deferral and the frozen wire format, so a red one is worth reading carefully. |
+| ☐ 2 | **S11 — full party you are NOT in stays non-invitable** (below). **The highest-value item on this list.** The ordinary 4-in-one-party session does NOT exercise it: those rows render through `InYourParty`, a different branch entirely. | 5 min | A live bug in the newest code on the branch. `PARTY FULL` used to carry the "cannot invite them" rule implicitly; `5b36156e` moved it into a derived `targetPartyFull` in `OnlineInfoEntry.Populate`. If that derivation is wrong, you can invite into a full party and the send fails at the service. |
+| ☐ 3 | **Stress-1 / Stress-2 / Stress-3** (below). Required by `REFACTOR.md`'s per-commit gate for refactor commits; not run for this branch. | 15 min | Races and re-entrancy around rapid accept/leave. The branch added a push channel and changed the refresh error matrix, both of which are exercised hardest here. |
+| ☐ 4 | **C4's error-matrix branches** (`791c6d04`) — rate-limit, definite-session-gone, transient, on both the presence and party-session read paths. **Normal play never reaches these**; they only fire under UGS faults. This commit is also the one that never received an adversarial review (the reviewing agent failed twice). | hard | Misclassification during a party transition. Degrades rather than breaks — worst case a benign SDK fault is treated as definite and recreates a solo session mid-join. **This is the first commit to revert** if something odd surfaces later: it is self-contained, and its benefit (the publish surviving a voided read) is real but not urgent. |
+
+**How to provoke #4 if you want it covered.** Rate-limit is reachable by spamming
+invite/cancel until UGS 429s — you should see
+`Rate limited during refresh - backing off`, **not** a silently-absorbed benign
+skip. The precedence between those two is the subtle part of that commit
+(`../PresenceSystem/BUGS.md` B15 RC2). Definite-gone and transient are not
+practically reachable without fault injection; treat them as reviewed-by-reading
+until there is a reason to do more.
+
 ## Smoke gate — run on every commit
 
 ### S1. Accept invite (happy path)
@@ -128,6 +174,45 @@ Menu_Main, both in autopilot).
 - Non-host VP2 never sees the scoreboard's Main Menu button — only the
   host returns the whole party (VP2 has "Leave Lobby" instead, see S3).
 - Repeat the menu → game → menu cycle 2–3× with no leftover state.
+
+### S10. Party-size agreement across every panel (the B15 gate)
+
+**Why.** Three players in one party once rendered three *different* sizes
+simultaneously. The count must now come from the local roster, so it is
+identical on every machine by construction — this test proves that stays true.
+
+**Setup.** 3+ tagged VPs. A invites B, B accepts. A invites C, C accepts.
+
+**Pass criterion.**
+- Open the friends list on **all three**. Every row reads `IN YOUR PARTY 3/4`.
+- C's row on A's panel reaches `3/4` **within a frame** of C's vessel appearing —
+  not after a poll interval. (The party-session push channel, `090f61a6`.)
+- B leaves → all panels read `2/4` within one refresh tick.
+- No `RaisePartyMemberJoined`/`Left` oscillation in the console (B8 regression).
+- **`BenignPresenceSkips` / `BenignPartySessionSkips` still climb, and the counts
+  stay correct anyway.** The SDK stale-index defect is untouched by design; that
+  the numbers survive it is the proof the read/publish split works. Skips of zero
+  means a lucky run — extend the session before concluding.
+
+### S11. A full party you are NOT in stays non-invitable
+
+**Why.** `PARTY FULL` was retired in favour of `IN PARTY 4/4`. That status was
+also silently carrying the "you cannot invite them" rule, which now lives in
+`OnlineInfoEntry.Populate` derived from the counts. This is the regression check
+for that move — and note the ordinary 4-in-one-party case does **not** exercise
+it, because those rows render through `InYourParty` instead.
+
+**Setup.** 4 tagged VPs. Form a party of three (A+B+C); leave D solo.
+
+**Steps + pass criterion.**
+1. From **D's** panel, A/B/C read `IN PARTY 3/4` and the invite button **is**
+   shown.
+2. Add a fourth member so that party is at capacity.
+3. From D's panel those rows now read **`IN PARTY 4/4`** — never `PARTY FULL`.
+4. **The invite button is hidden and the row is dimmed.** This is the part that
+   breaks if the derived rule is wrong.
+5. The host's kick ✕ still appears on `IN YOUR PARTY` rows (it keys off a
+   different status, but it is one line from the edit).
 
 ## Stress gate — run on every refactor commit
 
