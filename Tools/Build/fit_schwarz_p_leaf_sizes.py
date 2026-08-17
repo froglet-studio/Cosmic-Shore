@@ -437,20 +437,25 @@ def assert_level_invariant(levels):
     return peer
 
 
-def space_leaf(space_spacing):
-    """The Space prism, derived from the GYROID Space's proportions rather than re-fitted.
+# The Space prism's two free numbers, as RATIOS to the lattice's own prism spacing: how many
+# spacings the strut spans, and how thick it is relative to one.
+#
+# PROVENANCE, and why these are frozen literals rather than an import. They were derived from a
+# gyroid Space that had been widened to LatticeScale 1.667 and doubled to 45.92 x 0.45 - a pass
+# that produced these (approved) Schwarz numbers and, on the gyroid itself, a regression: the
+# widened lattice slipped out from under the gyroid's absolute misalignment gate and grew offset
+# parallel domains (Docs/ECOSYSTEM.md 33.8). The gyroid was reverted to its native lattice and
+# its fitter deleted, so there is no longer anything to import from. The ratios stay because the
+# Schwarz result was judged good on sight; they are now the Schwarz element's OWN constants.
+SPACE_SPANS = 45.92 / 13.05          # strut length in prism spacings
+SPACE_THICK_RATIO = 0.45 / 13.05     # cross-section in prism spacings
 
-    The brief is that Space reads the same on both surfaces, so the two free numbers are
-    taken as RATIOS to each lattice's own prism spacing: how many spacings the strut spans,
-    and how thick it is relative to one. Importing them from the gyroid fitter means the two
-    species cannot drift apart silently - the gyroid module asserts its own spacing constant
-    against a fresh walk on import-time use, so a change there fails loudly here."""
-    from fit_gyroid_space_strut import SPACE_LENGTH, SPACE_THICKNESS as G_THICK, SPACE_SPACING
-    spans = SPACE_LENGTH / SPACE_SPACING
-    thick_ratio = G_THICK / SPACE_SPACING
-    return (round(spans * space_spacing, 2),
-            round(thick_ratio * space_spacing, 2),
-            round(thick_ratio * space_spacing, 2))
+
+def space_leaf(space_spacing):
+    """The Space prism: a strut sized in multiples of its own lattice's spacing."""
+    return (round(SPACE_SPANS * space_spacing, 2),
+            round(SPACE_THICK_RATIO * space_spacing, 2),
+            round(SPACE_THICK_RATIO * space_spacing, 2))
 
 
 def main():

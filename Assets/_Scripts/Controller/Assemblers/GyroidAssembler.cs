@@ -86,20 +86,26 @@ namespace CosmicShore.Gameplay
         /// the growth pattern (flora icons) that must never instantiate anything.</summary>
         public float SeparationDistance => separationDistance;
 
-        /// <summary>
-        /// Scales this element's whole lattice (FloraVariantTuning.LatticeScale). Every bond
-        /// offset is derived from <see cref="separationDistance"/>, so scaling that one number
-        /// moves every prism outward together - the TOPOLOGY and the prism COUNT are untouched,
-        /// only the distances change.
-        ///
-        /// <para>The octagon tables are measured at
-        /// <see cref="GyroidOctagonData.MeasuredSeparation"/> and must be scaled to match; that
-        /// is <c>AssembledFlora.LatticeScale</c>. Set before the plant's first growth probe.</para>
-        /// </summary>
-        public void ApplyLatticeScale(float scale)
-        {
-            if (scale > 0f) separationDistance *= scale;
-        }
+        // NO ApplyLatticeScale here, deliberately - see Docs/ECOSYSTEM.md 33.8.
+        //
+        // A gyroid plant's COHERENCE is enforced by distances written in ABSOLUTE world units,
+        // every one of them sized against the separationDistance-3 lattice:
+        //   - snapDistance (0.3, compared against SQUARED distances, so 0.548u): whether an
+        //     existing prism IS the one at this bond site, or a second one beside it;
+        //   - radius (40u): how far the mate search looks for that existing prism at all;
+        //   - AssembledFlora's lattice-misalignment gate, IsAnyPrismWithin(pos, 5.5f) at BOTH
+        //     the grown-site and seed-site checks, sized against a healthy 6.6u closest pair;
+        //   - the 2u floor under the otherwise-proportional growth reservation clearRadius.
+        // Scaling separationDistance moves every REAL distance out from under all of them at
+        // once. The misalignment gate is the one that bites: at 1.667x the healthy pair becomes
+        // 11u and a twin domain sits at 5.5-9.2u, so the gate that exists to catch twins stops
+        // catching them and the plant grows offset parallel lattice domains. That shipped for
+        // one pass and was reverted on sight.
+        //
+        // Making the gyroid scalable means scaling that whole family together, and it can only
+        // be validated by eye in play. Until someone needs it, the dial is Schwarz P's alone -
+        // there the level arithmetic makes scale exact by construction.
+
         [SerializeField] int colliderTheshold = 1;
         [SerializeField] float radius = 40f;
 

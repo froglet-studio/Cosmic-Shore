@@ -4648,28 +4648,26 @@ colony machinery is now duplicated between `OctagonMode` and `TileColonyMode`; t
 is one `ILatticeColony` abstraction, filed rather than done because the gyroid path had just
 shipped. (3) `minHealthBlocks: 5` was 0.6% of an 800-prism plant and is 14% of a 36-prism one.
 
-### 33.7 Space gets its own lattice — closing it up, on both surfaces (Aug 2026, fourth pass)
+### 33.7 Space gets its own lattice — Schwarz P (Aug 2026, fourth pass)
 
-Space is the skeletal element on both lattice species. This pass gave it a lattice of its own,
-in two goes — and the correction between them is the part worth keeping.
+Space is the skeletal element on both lattice species. This pass gave the **Schwarz P** Space a
+lattice of its own. The gyroid was given one too, and it regressed — that half is §33.8.
 
 **The dial: `FloraVariantTuning.LatticeScale`** (sentinel **−1** = keep the prefab's). It scales
 an element's whole lattice — every distance between prisms — while leaving the plant's
 **topology and prism count identical to its elemental peers**. `AssembledFlora.ApplyLatticeSpacing`
 pushes it onto a freshly created assembler at all three creation sites (founder, daughter,
-re-seed), because both species read it *before* their first growth probe and a value that
-arrives later is a value the seed never saw. It means a different thing per species:
+re-seed), because the assembler reads it *before* its first growth probe and a value that arrives
+later is a value the seed never saw. **It is Schwarz P's alone** — see §33.8 for why the gyroid
+cannot have it.
 
-- **Gyroid** — `separationDistance *= k`. Every bond offset derives from that one number, so the
-  whole lattice moves outward together. `k = 5/3` takes prism spacing `7.83 → 13.05`.
-- **Schwarz P** — `periodScale *= k` **and** `separationDistance *= k`, together, and *together*
-  is the whole trick. `ResolveLevel` picks the subdivision whose
-  `MeanParamSpacing × periodScale / 2π` is nearest `separationDistance`; scaling both sides by
-  the same factor leaves the argmin invariant, so the level — and with it the mesh and the
-  prism count — cannot move. `k = 5/3` takes spacing `5.25 → 8.75` at **level 2, 36 sites**,
-  exactly its peers'.
+On Schwarz P it scales `periodScale` **and** `separationDistance`, together, and *together* is the
+whole trick. `ResolveLevel` picks the subdivision whose `MeanParamSpacing × periodScale / 2π` is
+nearest `separationDistance`; scaling both sides by the same factor leaves the argmin invariant, so
+the level — and with it the mesh and the prism count — cannot move. `k = 5/3` takes spacing
+`5.25 → 8.75` at **level 2, 36 sites**, exactly its peers'.
 
-**The correction.** The first attempt scaled the Schwarz `separationDistance` alone. That
+**The correction this pass made.** The first attempt scaled `separationDistance` alone. That
 re-resolved to **level 0 — 6 sites per tile instead of 36** — and shipped a plant with visibly
 fewer subdivisions: a *different* plant, not a bigger one. The tell was downstream and loud once
 seen: `author_flora_populations.py` needed a per-config override to say a Space plant owned 6
@@ -4677,104 +4675,91 @@ prisms, and its cap ran to the 60-plant ceiling while its peers sat at 22. That 
 **deleted**, and its absence is the evidence the topology is back. `assert_level_invariant()`
 proves it on every run of the fitter rather than trusting the arithmetic.
 
-**Zero overlaps was the wrong objective.** The first pass fitted the longest strut that touches
-nothing (22.96u, 1.76 spacings). Measured against a real playtest, that reads as **disconnected
-bars** — a strut short enough to clear every neighbour is a strut that reaches none of them. The
-crossings *are* the lattice closing up. So the strut is now **double** that length, and the cost
-is measured rather than assumed:
+**The result.**
 
-| length | spans | crossings | worst |
-|---|---|---|---|
-| 22.96 | 1.76 | 0 | — |
-| 26.00 | 1.99 | 102 | 0.466 |
-| 34.00 | 2.61 | 574 | 0.566 |
-| **45.92** | **3.52** | **575** | **0.566** |
-| 60.00 | 4.60 | 575 | 0.566 |
+| | before this pass | after |
+|---|---|---|
+| **Schwarz P Space** | 13.4 × 0.7 × 0.7, 72 overlaps, level 2 | **30.79 × 0.30 × 0.30**, 103:1, 3.52 spans, spacing `5.25 → 8.75`, **level 2 / 36 sites, unchanged** |
 
-It **saturates**: past ~2.6 spans the strut runs down an empty channel and hits nothing new, so
-the crossing count is bounded and the worst penetration is 0.566u — about 1.2% of the strut.
-`report_closure()` re-measures this on every run and *fails* if the count is still climbing at
-60u, because a strut that keeps finding new neighbours is not running down a channel and the fit
-would be wrong. Note also that no thickness buys the crossings away: at the doubled length even
-a 918:1 needle still makes 237, and **357 of the 575 are near-perpendicular** (median 60°). They
-are structural to a strut that spans 3.5 cells, which is precisely why the objective changed.
+The prism is sized in multiples of its own lattice's spacing (`SPACE_SPANS`,
+`SPACE_THICK_RATIO` in `fit_schwarz_p_leaf_sizes.py`) rather than as absolute numbers, so the
+strut and the lattice can never drift apart. Those two ratios were originally derived from a
+gyroid Space that §33.8 then reverted; their provenance is recorded at the constants, and they
+are now the Schwarz element's own.
 
-**The result, and why the two species match.**
+**`LeafScalePerLevel` pinned at 1** — the §33.5 trap, unchanged here: it scales the prism and
+leaves the lattice put.
 
-| | before this pass | after | lattice |
-|---|---|---|---|
-| **Gyroid Space** | 20 × 1 × 1, 99% interpenetrating | **45.92 × 0.45 × 0.45**, 102:1, 3.52 spans | `LatticeScale 1.667`, spacing `7.83 → 13.05` |
-| **Schwarz P Space** | 13.4 × 0.7 × 0.7, 72 overlaps | **30.79 × 0.30 × 0.30**, 103:1, 3.52 spans | `LatticeScale 1.667`, spacing `5.25 → 8.75`, **level 2 / 36 sites, unchanged** |
+**Populations and the collider budget.** Schwarz Space sits at its peers' `cap 22 / 792 prisms at
+cap`, uniform across all four elements. Per §4.6 the binding ceiling is unchanged: per-prism
+volume moves 2.93 → 2.77, so the species' whole standing mass at cap is ~2.2k against the Blob
+cell's `FrenzyEnterVolume 288,000`. The Blob's Mass gyroid (~137k at cap) is still what binds,
+exactly as §32.7 recorded.
 
-The Schwarz prism is **derived from the gyroid's, not re-fitted**: `space_leaf()` imports the
-gyroid's shipped length, thickness and measured spacing and carries across the two *ratios* —
-spans-per-spacing and thickness-per-spacing — so the element reads the same on both surfaces and
-the two cannot drift apart. The gyroid fitter asserts its `SPACE_SPACING` constant against a
-fresh walk, so a change there fails loudly in the Schwarz fit rather than silently mis-sizing it.
+**Invariants.** Authored size and spacing data plus one scale read: *mass is conserved*,
+*continuity of existence*, *no imposed death*, *one crystal per lifeform* and *volume is the
+spine* all stand as §33.6 left them. A prism-count change per plant moves production only;
+nothing is culled.
 
-**`AssembledFlora.LatticeScale` — the consequence a widened gyroid drags with it.** Every length
-in `GyroidOctagonData` — ring radius, neighbouring octagon centres and seed positions, territory
-radius, membership and dedupe tolerances — is a world distance **measured at separationDistance 3**
-(`GyroidOctagonData.MeasuredSeparation`, now a named constant instead of an unstated assumption).
-An element that widens its lattice must widen all seven by the same ratio, or its founder computes
-a ring centre that does not exist, its ownership gate refuses its own sites, and its daughters are
-planted at a fraction of the right distance. It is **1 for Charge / Mass / Time**, so the octagon
-colony (§32.7) is bit-for-bit unchanged for the three elements that keep the prefab's spacing.
-Rotations are scale-free and are used unmodified — §32.7's rule that a *rotation* is never the
-thing to adjust still holds.
+### 33.8 Why the GYROID cannot be scaled — the dislocation (Aug 2026, reverted same day)
 
-It reads the **authored** scale, not the assembler's, and that is deliberate: the only
-`GyroidAssembler` in reach is the health-prism PREFAB's, whose `separationDistance` is the
-unscaled 3 — the scale is applied to each spawned instance. Asking the prefab would return 1 for
-a scaled element and silently defeat the entire correction. It is also fenced to `OctagonMode`,
-since on a Schwarz plant the ratio would be between two unrelated quantities.
+The same pass widened the gyroid Space lattice to `LatticeScale 1.667` and doubled its strut to
+`45.92 × 0.45 × 0.45`. **It was reverted on sight**, and the reason generalises well past this
+element.
 
-**The preview paths needed the same scale, and this is the general lesson.** `TryPreviewGrowth`
-(flora icons, the Lifeform Matrix) walks the **prefab's** assembler for the same reason — so it
-was drawing the new prism on the old lattice: a 46u strut on a 7.8u gyroid, which reads as a
-solid block. Both `PreviewGyroid` and `SchwarzPAssembler.TryPreviewLattice` now take the scale
-explicitly. **Any code path that reads a lattice field off a PROTOTYPE rather than a live
-instance is a path the scale has to be handed to** — grep for prototype reads whenever a
-per-instance modifier is introduced.
+**What was seen:** the prisms did not read as stretched, and the structure grew *offset parallel
+surfaces* — a dislocation, two lattice domains side by side out of register.
 
-**The one distance that is deliberately NOT scaled.** `GyroidOctagonRegistry` is a single claim
-book shared by every colony in the scene, so it cannot carry a per-plant scale. It does not need
-one: its `CenterDedupeRadius` (12u) only has to separate the drift that makes two computations of
-the SAME centre disagree (~0.3u per 100u of lattice) from half the spacing between DISTINCT
-centres (17.9u at scale 1, **29.9u at Space's 1.667**), and 12 sits clear of both ends. The bound
-is now stated in the registry rather than assumed — an element below ~0.67× would falsely dedupe
-distinct octagons, and one above ~40× would outgrow the radius with drift; either needs a
-per-query scale *and* a larger `BinSize`, since the 3³ bin scan only guarantees a search radius of
-one bin.
+**Why it did not look stretched.** Scaling the lattice *with* the prism cancels the stretch. The
+strut went from 2.56 spans to 3.52, but everything grew 1.667× together, so at any fixed viewing
+distance nothing was longer — it was the same plant, bigger. **A prism only reads as stretched
+against a lattice that stayed put**, which is exactly what the shipped `20 × 1 × 1` at separation
+3 does.
 
-**`LeafScalePerLevel` pinned at 1 on Space too — the §33.5 trap, re-measured.** It scales the
-prism and leaves the lattice put. On the new gyroid Space lattice, the inherited **1.15** gives
-`L1 575 → L3 694 → L5 1651` crossings (the strut reaching 80.3u against the 45.92 authored); at
-**1** every level holds at 575. The fitter writes the pin itself, so the fit and the dial that
-would void it cannot be authored apart.
+**Why it dislocated, and this is the finding to keep.** A gyroid plant's coherence is enforced by
+distances written in ABSOLUTE world units, every one of them sized against the
+separationDistance-3 lattice:
 
-**What was deliberately NOT changed.** The other three gyroid elements are plates, not struts,
-and they already touch at Level 1 with their shipped sizes (Charge/Time 102 overlapping pairs,
-Mass 199, both at separation 3 — measured this pass). That interlock is the shipped look the
-brief cited as its reference, so their sizes, spacing and `LeafScalePerLevel` are untouched.
+| where | value | what it decides |
+|---|---|---|
+| `GyroidAssembler.snapDistance` | 0.3, compared to **squared** distances → 0.548u | whether an existing prism IS the one at this bond site, or a second one beside it |
+| `GyroidAssembler.radius` | 40u | how far the mate search looks for that prism at all |
+| `AssembledFlora` misalignment gate | `IsAnyPrismWithin(pos, 5.5f)`, at **both** the grown-site and seed-site checks | rejects a site whose neighbour belongs to a MISALIGNED frame (healthy closest pair is 6.6u) |
+| growth reservation `clearRadius` | `max(2f, 0.4 × bond length)` | the 2u floor is absolute; the rest scales |
 
-**Populations and the collider budget.** Schwarz Space returns to **36 prisms per plant** and
-therefore to its peers' `cap 22 / 792 prisms at cap` — the 60-crystal excursion of the previous
-pass is gone, and the species table is uniform across all four elements again. Per §4.6, the
-binding ceiling is unchanged: per-prism volume moves from 4.65 → 9.30 (gyroid Space, doubled
-length) and 2.93 → 2.77 (Schwarz Space), so the two species' whole standing mass at cap is ~9.2k
-and ~2.2k against the Blob cell's `FrenzyEnterVolume 288,000`. Neither is remotely the binding
-gate — the Blob's Mass gyroid (207 effective volume per prism, ~137k at cap) still is, exactly as
-§32.7 recorded. Crystal count is unchanged for the gyroid (33) and **falls 60 → 22** for Schwarz.
+Scaling `separationDistance` moves every *real* distance out from under all of them at once. The
+misalignment gate is the one that bites: at 1.667× the healthy closest pair becomes 11.0u and a
+twin domain sits at roughly 5.5–9.2u, so **the gate that exists to catch twins stopped catching
+them** and the plant grew the domains it was written to prevent. Everything about the gate still
+looked correct — it was measured, commented, and firing — it was simply measuring the wrong
+lattice.
 
-**Invariants.** Nothing here creates or removes mass on a clock: authored size and spacing data
-plus one scale read, so *mass is conserved*, *continuity of existence*, *no imposed death*, *one
-crystal per lifeform* (one plant, one tile or one ring, one heart) and *volume is the spine* all
-stand as §33.6 left them. A prism-count change per plant moves production only; nothing is culled.
+**The general rule.** A coherence tolerance expressed as an absolute distance is an *unstated
+dependency on the lattice it was measured against*. Scaling that lattice silently invalidates it,
+and the failure surfaces as geometry rather than as an error. Before scaling anything, enumerate
+the tolerances that decide *sameness* — snap, dedupe, reserve, twin-detect — and confirm each is
+either proportional or scaled with it. Schwarz P is safe because its "sameness" test is an
+**integer tile address**, not a distance, so no tolerance exists to invalidate.
 
-**Verification run for this pass.** `verify_schwarz_p_tile_tables.py` (the shipped table re-proved
-from the implicit function, all levels), `check_conditional_compilation.py`,
-`author_flora_populations.py --check`, `assert_level_invariant()` + `report_closure()` inside the
-two fitters, and a Roslyn build of the shipped `SchwarzPTileData` / `SchwarzPAssembler` /
-`SchwarzPTileRegistry` / `SchwarzPColonyFrontier` / `GyroidOctagonData` / `GyroidOctagonRegistry`
-against real-namespace stubs, with the `LatticeScale` block and every call site compiled verbatim.
+**What shipped instead.** The Space gyroid is back to the geometry it had before the branch —
+`20 × 1 × 1` on the native separation-3 lattice, `LeafScalePerLevel 1.15` — with the octagon
+colony's **populations kept** (`MaxTotalSpawnedObjects 30`, cap 33). The struts span 2.56 spacings
+at level 1 and up to 4.5 at level 5, interpenetrating by design: on this species the crossings are
+what read as a connected skeleton.
+
+`GyroidAssembler.ApplyLatticeScale` is **deleted**, and `ApplyLatticeSpacing` fails loud
+(`CSDebug.LogError`, once) if a gyroid config ever authors a `LatticeScale` — silently doing
+nothing would hide the mistake until a play test. The octagon tables' `* LatticeScale`
+multiplications are gone with it (they can only ever be ×1 now), leaving
+`GyroidOctagonData.MeasuredSeparation` as the documented statement that those distances were
+measured at 3. `Tools/Build/fit_gyroid_space_strut.py` is **deleted rather than kept as a record**:
+running it would re-author the reverted values, which makes it a landmine, and the measurements it
+produced are in this section instead.
+
+**A note on the objective it was fitted to.** That fitter chased *zero overlaps*, which is also
+wrong for this element: a strut short enough to clear every neighbour reaches none of them and
+reads as disconnected bars. Measured on the widened lattice, crossings saturated (0 at 1.76 spans,
+102 at 1.99, 574 at 2.61, and 575 from there to 4.6 spans, worst penetration 0.566u), and no
+thickness removed them — at 918:1 there were still 237, with 357 of the 575 near-perpendicular.
+The shipped native-lattice geometry simply accepts the crossings, as it always did.
+

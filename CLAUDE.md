@@ -199,27 +199,26 @@ outcome is optimization, not life). Use the `/ecology` skill for any change here
   and **pin `LeafScalePerLevel` at 1**, because it scales the prism but not the lattice and
   the Blob cell rolls Levels 1..5 — at the inherited 1.15 a level-5 plant's prisms are 1.749×
   the flush size and it interpenetrates itself (measured: 0 overlapping pairs at L1, 144 at
-  L3, 212 at L5). **And a LONGER prism needs a WIDER LATTICE, not a thinner prism** — the
-  bound on a strut is the neighbour along its own axis, so thinning buys ~2% (Schwarz) to ~7%
-  (gyroid). `FloraVariantTuning.LatticeScale` (sentinel **−1** = keep the prefab's) is that
-  dial: it scales an element's whole lattice while keeping its **topology and prism count
-  identical to its elemental peers**, and is pushed onto the assembler at all three creation
-  sites because both species read it BEFORE their first growth probe. On the gyroid it scales
-  `separationDistance`; on Schwarz P it scales `periodScale` **and** `separationDistance`
-  TOGETHER — and together is the point, because `ResolveLevel` compares one against the other,
-  so scaling both leaves the subdivision invariant while scaling either alone silently ships a
-  DIFFERENT PLANT (Space landed on 6 sites per tile instead of 36 that way, and needed a
-  population override to paper over it). **Zero overlaps is not the objective for a strut** —
-  a strut short enough to clear every neighbour reaches none of them and reads as disconnected
-  bars; the crossings are the lattice closing up, they SATURATE (575 at 3.5 spans, unchanged at
-  4.6), and no thickness removes them since most are near-perpendicular. Measure that the cost
-  is bounded, don't fit it to zero. Two consequences to remember: **every distance in
-  `GyroidOctagonData` was measured at separation 3** (`MeasuredSeparation`), so a widened gyroid
-  must scale all seven by `AssembledFlora.LatticeScale` — which reads the AUTHORED scale, since
-  the only assembler in reach is the unscaled PREFAB's, and is fenced to `OctagonMode`; and
-  **any path reading a lattice field off a PROTOTYPE must be handed the scale too** (the flora
-  preview drew the new prism on the old lattice until it was). Full record:
-  `Docs/ECOSYSTEM.md §33` (§33.5 the per-element prism fit, §33.7 the per-element lattice).
+  L3, 212 at L5). **A lattice can be SCALED only where "sameness" is an integer address, never
+  a distance.** `FloraVariantTuning.LatticeScale` (sentinel **−1** = keep the prefab's) scales an
+  element's whole lattice while keeping its topology and prism count identical to its elemental
+  peers, and is pushed onto the assembler at all three creation sites because it is read BEFORE
+  the first growth probe. It is **Schwarz P's alone**: there it scales `periodScale` AND
+  `separationDistance` together, which leaves `ResolveLevel`'s argmin — the subdivision — exactly
+  invariant (scaling either alone silently ships a DIFFERENT PLANT: Space landed on 6 sites per
+  tile instead of 36 that way), and a prism's identity is an integer tile address, so no tolerance
+  exists to invalidate. **The GYROID cannot be scaled and the attempt was reverted on sight**
+  (`Docs/ECOSYSTEM.md §33.8`): its coherence rides absolute separation-3 distances — the mate-snap
+  tolerance (0.3 compared against SQUARED distances, so 0.548u), the 40u mate-search radius, and
+  `AssembledFlora`'s lattice-misalignment gate `IsAnyPrismWithin(pos, 5.5f)` at both the grown- and
+  seed-site checks — so widening the lattice moved every real distance out from under the gate that
+  exists to catch twins, and the plant grew the offset parallel domains it was written to prevent.
+  Two rules come out of it: **a coherence tolerance written as an absolute distance is an unstated
+  dependency on the lattice it was measured against** (enumerate every snap/dedupe/reserve/
+  twin-detect test before scaling anything), and **a prism only reads as STRETCHED against a
+  lattice that stayed put** — scaling both cancels the stretch and just makes a bigger plant. Full
+  record: `Docs/ECOSYSTEM.md §33` (§33.5 the per-element prism fit, §33.7 the Schwarz P lattice,
+  §33.8 the gyroid dislocation).
 - **Territorial permanence.** Take a cell, leave, it stays yours — the claim fauna cannot touch.
   In nucleus cells the permanent claim is the **nucleus interior** (fauna never consume it);
   exterior canopy/trail is deliberately contested churn (voracious any-domain grazing). In
