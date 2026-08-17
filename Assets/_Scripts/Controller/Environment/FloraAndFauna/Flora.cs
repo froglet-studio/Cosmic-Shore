@@ -205,20 +205,36 @@ namespace CosmicShore.Gameplay
                 plantRadiusCellFractionMin = Mathf.Clamp01(tuning.PlantRadiusCellFractionMin);
         }
 
+        /// <summary>
+        /// True when this species' prism SIZE is dictated by its growth rule rather than being
+        /// free, so LEVEL must not scale it. A LATTICE species is the case
+        /// (<see cref="AssembledFlora"/>): its neighbour offsets are a measured bond table in
+        /// absolute local units (<see cref="OctagonNeighbor"/>, <c>SeparationDistance</c>), and
+        /// <c>GyroidAssembler.Start</c> captures the prism's target scale once — so growing the
+        /// leaf mid-life lays prisms the table no longer describes. It cannot be fixed by making
+        /// the offsets scale-aware either: a plant's EARLIER prisms were laid at the old size,
+        /// and two prism sizes cannot tile one lattice.
+        ///
+        /// <para>Such a species still earns levels and still grows a bigger heart — only the
+        /// leaf half of the level curve is suppressed.</para>
+        /// </summary>
+        protected virtual bool PrismSizeFixedByGrowthRule => false;
+
         /// <summary>Flora level: leaf prisms grow with the level (crystal handled by base).</summary>
         public override void ApplyLevel(int level, float bodyScalePerLevel)
         {
             base.ApplyLevel(level, bodyScalePerLevel);
-            if (Level > 1)
+            if (Level > 1 && !PrismSizeFixedByGrowthRule)
                 leafSize *= Mathf.Pow(Mathf.Max(1f, bodyScalePerLevel), Level - 1);
         }
 
         /// <summary>In-world level-up: future leaves grow a step too (existing leaves keep their
-        /// size - growth flows through the normal spawn channel, nothing is re-scaled in place).</summary>
+        /// size - growth flows through the normal spawn channel, nothing is re-scaled in place).
+        /// A lattice species keeps its authored leaf - see <see cref="PrismSizeFixedByGrowthRule"/>.</summary>
         public override bool LevelUp()
         {
             if (!base.LevelUp()) return false;
-            leafSize *= BodyScalePerLevel;
+            if (!PrismSizeFixedByGrowthRule) leafSize *= BodyScalePerLevel;
             return true;
         }
 

@@ -146,6 +146,16 @@ namespace CosmicShore.Gameplay
         /// the reproduction maturity gate (see <see cref="Flora.PrismBudget"/>).</summary>
         protected override int PrismBudget => maxTotalSpawnedObjects;
 
+        /// <summary>
+        /// A LATTICE species: every assembler here (gyroid, SchwarzP, wall) bonds at offsets
+        /// measured in absolute local units, and <c>GyroidAssembler.Start</c> captures the
+        /// prism's target scale once, so a leaf that grows mid-life lays prisms the bond table
+        /// no longer describes - and the plant's own earlier prisms are still the old size.
+        /// Levels are still earned and the heart still grows; the leaf simply does not.
+        /// See <see cref="Flora.PrismSizeFixedByGrowthRule"/> and Docs/ECOSYSTEM.md §33.
+        /// </summary>
+        protected override bool PrismSizeFixedByGrowthRule => true;
+
         /// <summary>Assembled layer of the variant expression: the live-prism budget
         /// (Mass gyroid 1500 / Space 800 - the per-element density identity).</summary>
         public override void ApplyVariantTuning(FloraVariantTuning tuning)

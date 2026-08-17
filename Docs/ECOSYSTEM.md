@@ -4388,6 +4388,17 @@ world scale, a 5.7× spread nobody chose**, on a number that is read twice as ga
 - **Every lifeform is born at level 1.** No spawn-level roll exists; `LifeformLevelSpread` is
   deleted. `InitialLevel` survives on both config SOs at 1, for the Lifeform Matrix bench,
   which spawns a chosen level so a tuner can see the whole band without playing a session out.
+- **A LATTICE species levels but does not grow its leaf.** `Flora.PrismSizeFixedByGrowthRule`
+  (false by default, **true** on `AssembledFlora` — gyroid / SchwarzP / wall) suppresses the
+  leaf half of the level curve. Those species bond at offsets measured in ABSOLUTE local units
+  (`OctagonNeighbor.Center`/`SeedPosition`, `GyroidAssembler.SeparationDistance`, captured once
+  in `GyroidAssembler.Start`), so a leaf that grows mid-life lays prisms the bond table no
+  longer describes — and it cannot be fixed by making the offsets scale-aware, because the
+  plant's EARLIER prisms are still the old size and two prism sizes cannot tile one lattice.
+  This is not a corner case: the gyroid octagon colony is the flora family that reproduces
+  MOST (one birth per fauna-wave period, §32.7), so it would have inflated fastest — reaching
+  a 1.75× linear / 5.35× volume leaf in four births, against a CI-verified geometry table.
+  Such a species still earns levels and still grows a bigger heart.
 - **A plant earns a level by REPRODUCING** (`Flora.NotifyReproduced`, called from both
   reproduction paths — the per-plant growth quota and the octagon colony's population-scheduled
   birth). One level per birth EVENT, not per offspring, so a multi-offspring birth is one rung
