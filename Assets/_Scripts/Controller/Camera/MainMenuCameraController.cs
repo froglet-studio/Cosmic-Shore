@@ -375,6 +375,8 @@ namespace CosmicShore.Gameplay
                 Make("MenuCam_LavaLamp1 (default)", c =>
                 {
                     c.rigKind = MenuCameraRigKind.LavaLamp;
+                    c.lavaLampOrbitRadius = 686f;
+                    c.lavaLampOrbitAxis = new Vector3(1f, 1f, 0f);
                     c.positionSmoothTime = 0.3f;
                     c.rotationSharpness = 0.45f;
                     c.blendDuration = 2f;

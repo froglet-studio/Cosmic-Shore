@@ -107,6 +107,21 @@ namespace CosmicShore.Gameplay
                  "for a perfectly still frame. Falls back to the centre whenever no crystal exists.")]
         public bool lavaLampAimAtCrystal = true;
 
+        [Range(0.5f, 0.999f)]
+        [Tooltip("CAMERA ROLL DIAL. World-up as the look hint gives EXACTLY a level horizon, so the " +
+                 "camera only ever rolls once the view gets vertical enough that this blend engages " +
+                 "and slides the hint toward the orbit axis. Value is |dot(viewDir, up)| - 1.0 is " +
+                 "straight down.\n\n" +
+                 "Higher = less roll. This is NOT a numerical-safety limit: LookRotation stays " +
+                 "well-conditioned to ~0.9999, so the only cost of raising it is that when the view " +
+                 "DOES pass vertical the roll is compressed into a narrower, faster band.\n\n" +
+                 "0.99 suits an INCLINED orbit (an axis perpendicular to the start direction, e.g. " +
+                 "(1,1,0)), which never goes over the pole - only a crystal near the camera's own " +
+                 "latitude can push the view that steep, so the blend effectively never fires. " +
+                 "Lower it (~0.85) for an orbit that DOES cross the pole - the legacy (0,1,-1) cone " +
+                 "- where the roll is unavoidable and wants to be spread out gently instead.")]
+        public float lavaLampPoleBlendStart = 0.99f;
+
         [Header("Top-Down Framing (TopDownPan)")]
         [Tooltip("Height above the vessel for the top-down vantage.")]
         public float topDownHeight = 70f;
@@ -229,7 +244,7 @@ namespace CosmicShore.Gameplay
                     return flatForward.sqrMagnitude > 1e-6f ? flatForward.normalized : Vector3.forward;
 
                 case MenuCameraRigKind.LavaLamp:
-                    return PoleSafeUp(lookDirection, OrbitAxis);
+                    return PoleSafeUp(lookDirection, OrbitAxis, lavaLampPoleBlendStart);
 
                 default:
                     return Vector3.up;
@@ -238,21 +253,23 @@ namespace CosmicShore.Gameplay
 
         /// <summary>
         /// World-up everywhere except near the vertical singularity, where it eases into
-        /// <paramref name="fallbackUp"/> over a wide arc so the horizon never snaps. The final
-        /// guard covers a configuration whose fallback is itself vertical.
+        /// <paramref name="fallbackUp"/> so the horizon never snaps. The final guard covers a
+        /// configuration whose fallback is itself vertical.
+        ///
+        /// <paramref name="blendStart"/> is the ROLL dial, not a safety limit — below it the
+        /// horizon is exactly level, so every degree of camera roll the lava lamp ever shows comes
+        /// from this blend. See <see cref="lavaLampPoleBlendStart"/> for how to pick it.
         /// </summary>
-        static Vector3 PoleSafeUp(Vector3 lookDirection, Vector3 fallbackUp)
+        static Vector3 PoleSafeUp(Vector3 lookDirection, Vector3 fallbackUp, float blendStart)
         {
-            // cos(~32 degrees off vertical) - the blend starts far enough out that damping
-            // hides it entirely.
-            const float BlendStart = 0.85f;
+            float start = Mathf.Clamp(blendStart, 0.5f, 0.999f);
 
             Vector3 direction = Normalized(lookDirection, Vector3.forward);
             float verticality = Mathf.Abs(Vector3.Dot(direction, Vector3.up));
 
             Vector3 up = Vector3.up;
-            if (verticality > BlendStart)
-                up = Vector3.Slerp(Vector3.up, fallbackUp, Mathf.InverseLerp(BlendStart, 1f, verticality));
+            if (verticality > start)
+                up = Vector3.Slerp(Vector3.up, fallbackUp, Mathf.InverseLerp(start, 1f, verticality));
 
             if (Mathf.Abs(Vector3.Dot(Normalized(up, Vector3.up), direction)) < 0.999f)
                 return up;
