@@ -42,6 +42,11 @@ namespace CosmicShore.Gameplay
 
                 StampMatchEnvelope();
 
+                // The server IS the authority, so its config is synced by definition. Set before
+                // the broadcast: Cell.AssignConfig gates its (sticky) IntensityWise choice on this
+                // flag, and on the host that choice can happen at any point after this frame.
+                gameData.GameConfigSynced = true;
+
                 // Sync game config to all clients now that we're in the game scene.
                 // Previously this was done by SceneLoader via ClientRpc before scene load,
                 // but SceneLoader is now a plain MonoBehaviour (no RPCs).
@@ -65,8 +70,9 @@ namespace CosmicShore.Gameplay
             // REQUIRED for every party game: the elemental comeback system. Scene-authored
             // instances are respected; a scene that forgot one gets it created and configured
             // for this game mode (comeback runs locally on every machine, so this executes on
-            // host and clients alike).
-            ElementalComebackSystem.EnsureExists(gameObject, gameData);
+            // host and clients alike). UseGolfRules travels with it so a Score-sourced mode
+            // knows which direction "ahead" is.
+            ElementalComebackSystem.EnsureExists(gameObject, gameData, UseGolfRules);
 
             InitializeAfterDelay().Forget();
         }
@@ -120,14 +126,14 @@ namespace CosmicShore.Gameplay
         {
             try
             {
-                Debug.Log($"<color=#00CED1>[FLOW-7] [MultiplayerMiniGameBase] InitializeAfterDelay - waiting {InitDelayMs}ms, IsServer={IsServer}</color>");
+                CSDebug.LogVerbose(CSLogChannel.NetworkFlow, $"<color=#00CED1>[FLOW-7] [MultiplayerMiniGameBase] InitializeAfterDelay - waiting {InitDelayMs}ms, IsServer={IsServer}</color>");
                 using (LoadInsights.Measure(LoadInsightCategory.ScriptedDelay,
                            $"InitDelayMs gate before InitializeGame ({InitDelayMs}ms)", isWait: true))
                 {
                     await UniTask.Delay(InitDelayMs, DelayType.UnscaledDeltaTime);
                 }
 
-                Debug.Log($"<color=#00CED1>[FLOW-7] [MultiplayerMiniGameBase] Calling gameData.InitializeGame(). Players.Count={gameData.Players.Count}</color>");
+                CSDebug.LogVerbose(CSLogChannel.NetworkFlow, $"<color=#00CED1>[FLOW-7] [MultiplayerMiniGameBase] Calling gameData.InitializeGame(). Players.Count={gameData.Players.Count}</color>");
                 using (LoadInsights.Measure(LoadInsightCategory.GameFlow,
                            "InitializeGame raise (inline listeners: cell, spawn adapters, HUD…)"))
                 {
@@ -144,7 +150,7 @@ namespace CosmicShore.Gameplay
 
                 if (!IsServer)
                 {
-                    Debug.Log("<color=#00CED1>[FLOW-7] [MultiplayerMiniGameBase] Not server, skipping session start + round setup</color>");
+                    CSDebug.LogVerbose(CSLogChannel.NetworkFlow, "<color=#00CED1>[FLOW-7] [MultiplayerMiniGameBase] Not server, skipping session start + round setup</color>");
                     return;
                 }
 
@@ -152,15 +158,15 @@ namespace CosmicShore.Gameplay
                 // Without this, the loading screen overlay persists because no
                 // scene-placed MultiplayerSetup fires InvokeSessionStarted().
                 // Safe: ApplicationStateMachine validates transitions and no-ops on invalid ones.
-                Debug.Log("<color=#00CED1>[FLOW-7] [MultiplayerMiniGameBase] Server: InvokeSessionStarted (AppState → InGame)</color>");
+                CSDebug.LogVerbose(CSLogChannel.NetworkFlow, "<color=#00CED1>[FLOW-7] [MultiplayerMiniGameBase] Server: InvokeSessionStarted (AppState → InGame)</color>");
                 gameData.InvokeSessionStarted();
 
-                Debug.Log("<color=#00CED1>[FLOW-7] [MultiplayerMiniGameBase] Server: SetupNewRound()</color>");
+                CSDebug.LogVerbose(CSLogChannel.NetworkFlow, "<color=#00CED1>[FLOW-7] [MultiplayerMiniGameBase] Server: SetupNewRound()</color>");
                 SetupNewRound();
             }
             catch (OperationCanceledException)
             {
-                Debug.Log("<color=#FFA500>[FLOW-7] [MultiplayerMiniGameBase] InitializeAfterDelay CANCELLED</color>");
+                CSDebug.LogVerbose(CSLogChannel.NetworkFlow, "<color=#FFA500>[FLOW-7] [MultiplayerMiniGameBase] InitializeAfterDelay CANCELLED</color>");
                 // Task was cancelled, ignore
             }
         }
@@ -572,6 +578,12 @@ namespace CosmicShore.Gameplay
             LoadInsights.SetGameContext(
                 sceneName, ((GameModes)gameMode).ToString(), intensity, playerCount,
                 Mathf.Max(0, playerCount - aiBackfillCount), aiBackfillCount, isMultiplayer);
+
+            // LAST: everything above is now authoritative on this client. Cell.AssignConfig
+            // refuses to make its sticky IntensityWise choice until this is true, because the
+            // intensity it reads arrives in this very RPC and a cell that latched before it would
+            // build a different arena than the host for the whole match.
+            gameData.GameConfigSynced = true;
         }
     }
 }

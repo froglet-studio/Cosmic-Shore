@@ -80,7 +80,13 @@ namespace CosmicShore.Gameplay
             Domains? excluded)
         {
             // Initial batch
-            int initialCount = Mathf.Max(0, floraCfg.InitialSpawnCount);
+            // Cell density scalar: the SpawnProfile is the per-intensity asset, so scaling the
+            // seed batch is how one cell config makes a bigger or smaller forest out of the same
+            // species assets. Through the CELL, never the profile: every flora producer must resolve its
+            // population numbers at one accessor or the density scalar ends up live in one
+            // producer and dead in the next (Cell.ResolveFloraPopulation, Docs/ECOSYSTEM.md §32).
+            // This used to be an inline copy of the scaling, duplicated verbatim in both spawners.
+            int initialCount = host.ResolveFloraPopulation(Mathf.Max(0, floraCfg.InitialSpawnCount));
             float initialInterval = Mathf.Max(0f, spawnProfile.FloraSpawnIntervalSeconds);
 
             for (int i = 0; i < initialCount; i++)
@@ -89,7 +95,7 @@ namespace CosmicShore.Gameplay
                 // (Phase < Frenzy). No early planting cap - flora keep planting + growing
                 // and the food web (fauna grazing) is the only down-force. Replaces the
                 // old scored-volume ceiling (~0 in Menu_Main, so it never bounded planting).
-                if (host && host.FloraPlantingEnabled)
+                if (host && host.FloraPlantingEnabled && !host.IsFloraAtCap(floraCfg))
                     PlantOne(host, floraCfg, excluded);
 
                 // Spread instantiation across frames. WaitForSeconds when an interval
@@ -115,10 +121,21 @@ namespace CosmicShore.Gameplay
                 else yield return null;
 
                 if (!host) yield break;
-                if (host.FloraPlantingEnabled)
+                if (!host.FloraPlantingEnabled) continue;
+
+                int toPlant = FloraSeedDeficit(host, floraCfg);
+                for (int i = 0; i < toPlant; i++)
+                {
+                    if (!host || !host.FloraPlantingEnabled) break;
                     PlantOne(host, floraCfg, excluded);
+                    // Spread instantiation across frames - a species recovering from a crash
+                    // seeds its whole floor on one tick, and every plant is a prism-bodied
+                    // lifeform (the same reason the initial batch yields).
+                    if (i + 1 < toPlant) yield return null;
+                }
             }
         }
+
 
         /// <summary>
         /// Plant one flora of this species. When the cell's authored environment prepared ground
@@ -184,15 +201,17 @@ namespace CosmicShore.Gameplay
                 // PopulationSize in the controlling color, clamped by the hard cap -
                 // wave-scored modes (Brood Rush) ride this so each 30s cycle visibly
                 // hatches a brood. Population stays starvation-bounded either way.
+                // Seed floor AND cap come from the CELL, so a profile's FaunaPopulationScale moves
+                // both together - scaling the floor alone would be clamped away by the authored
+                // cap and read as doing nothing. See Cell.ResolveFaunaPopulation.
+                int seedFloor = Mathf.Max(1, host.ResolveFaunaPopulation(faunaCfg.PopulationSize));
+                int cap = host.ResolveFaunaCap(faunaCfg);
+
                 int toSpawn = spawnProfile.SeedFullWaveEveryTick
                     ? FaunaReproductionRules.WaveSpawnCount(
-                        host.GetLiveFaunaCount(faunaCfg),
-                        Mathf.Max(1, faunaCfg.PopulationSize),
-                        faunaCfg.MaxLivePopulation)
+                        host.GetLiveFaunaCount(faunaCfg), seedFloor, cap)
                     : FaunaReproductionRules.SeedSpawnCount(
-                        host.GetLiveFaunaCount(faunaCfg),
-                        Mathf.Max(1, faunaCfg.PopulationSize),
-                        faunaCfg.MaxLivePopulation);
+                        host.GetLiveFaunaCount(faunaCfg), seedFloor, cap);
 
                 // Solitary predators: while the predator spawn ring is active, at most
                 // ONE predator hatches per spawn interval (successive spawns alternate

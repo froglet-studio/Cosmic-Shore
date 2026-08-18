@@ -120,7 +120,7 @@ PREVIEW_FILEID = 241334157148977051
 # The point target - the race metric. The 25%/50% milestone rungs are fractions of this (so 30
 # and 60), and moving it moves the whole progress ladder. Kept in sync with
 # EndConditionOverridesSO.DefaultDogFightPointTarget.
-DOGFIGHT_POINT_TARGET = 120
+DOGFIGHT_POINT_TARGET = 90
 
 # The comeback strength, and it is a FUNCTION OF THE TARGET - `bonusLevels = deficit x rate`, so
 # a rate is only meaningful next to the scale of the deficits the mode produces. This one shipped
@@ -154,7 +154,12 @@ SENSE_RADIUS = 1200
 # It was briefly zeroed here after a playtest read the big faceted sphere as a bouncable
 # objective; that was reverted on request. What was actually wrong is the SPAWN RADIUS, fixed
 # properly below rather than by deleting the crystal.
-OMNI_CRYSTAL_COUNT = 1
+# FOUR of them, Scurry-style. One crystal in a 520-unit arena is a needle nobody detours for;
+# four means there is usually one worth breaking off toward, which is the point of having them at
+# all in a mode where crystals score nothing. Kept on FixedCount rather than Scurry's
+# PlayerCountPlusExtra (which would put NINE in a full lobby) - the arena wants a handful, not a
+# field. Every one of them still needs OMNI_SPAWN_RADIUS below to not stack on the origin.
+OMNI_CRYSTAL_COUNT = 4
 
 # The ball the omni crystal is drawn from, in place of the nucleus radius this cell hasn't got.
 # Inside the wreck field (r=520) so it is genuinely hidden among the hulks rather than floating
@@ -343,6 +348,41 @@ if bullet_ref not in prismshot:
     assert m, "projectileShipEffects block not found on the prism-projectile container"
     prismshot = prismshot.replace(m.group(0), m.group(0) + bullet_ref, 1)
 emit(PRISMSHOT_PATH, prismshot)
+
+# ── 4b. THE TURRET'S MUZZLES — the reason turret shots did nothing ──────────
+#
+# The Sparrow carries TWO pairs of gun transforms, one per fire mode, and they had drifted 13.8
+# units apart:
+#
+#     FullAutoActionExecutor/Guns       (bullets)        LeftGun/RightGun at z =  1.30
+#     FullAutoBlockActionExecutor/Guns  (turret prisms)  LeftGun/RightGun at z = 15.13
+#
+# A shot is BORN at its muzzle, so every turret round spawned 15 units ahead of the nose and the
+# first 15 units of its path simply did not exist. In a wreck-field dogfight — a mode built
+# specifically for close passes — the enemy is routinely inside that gap, so the round appeared
+# already past them and hit nothing. No damage, and therefore no points, no matter how correctly
+# the scoring was wired. (Playtest: "shooting with the turrets does not do any damage. Maybe
+# because the point of origin of bullets for the sparrow is too far away from the model" —
+# exactly right.)
+#
+# Both pairs are bare Transforms (no renderer, no VFX, no children), so this is purely where the
+# shot starts. They are moved onto the bullets' position, which is also the documented rule for
+# this weapon: SPARROW_TURRET_STANCE.md — "a turret shot IS a bullet — you just see a prism
+# flying". Range is unaffected: the executor computes `anchor = muzzle + forward * range`, so
+# moving the muzzle back moves the anchor back with it and the path length is identical.
+SPARROW_PREFAB = "Assets/_Prefabs/Spacevessels/Sparrow.prefab"
+sparrow = read(SPARROW_PREFAB)
+TURRET_MUZZLES = (
+    ("  m_LocalPosition: {x: 3, y: 0.4, z: 15.13}\n",
+     "  m_LocalPosition: {x: 3.2, y: 0.4, z: 1.3}\n"),
+    ("  m_LocalPosition: {x: -3, y: 0.4, z: 15.13}\n",
+     "  m_LocalPosition: {x: -3.2, y: 0.4, z: 1.3}\n"),
+)
+for old_pos, new_pos in TURRET_MUZZLES:
+    if old_pos in sparrow:
+        assert sparrow.count(old_pos) == 1, f"turret muzzle position {old_pos!r} is not unique"
+        sparrow = sparrow.replace(old_pos, new_pos, 1)
+emit(SPARROW_PREFAB, sparrow)
 
 # MISSILES, direct strike: same, on the skyburst container.
 SKYBURST_PATH = ("Assets/_SO_Assets/Effects/Effect Containers/Projectile Containers/"
@@ -546,6 +586,7 @@ for i in INTENSITIES:
   PopulationSize: {seed_pop}
   SpawnProbability: 1
   FeedsPerOffspring: 20
+  FeedsPerLevel: 40
   OffspringPerBirth: 1
   ReproductionCooldownSeconds: 12
   MaxLivePopulation: {cap_pop}
@@ -556,18 +597,12 @@ for i in INTENSITIES:
   Element: 0
   InitialLevel: 1
   BodyScalePerLevel: 1.15
-  CrystalScalePerLevel: 1.2
   LevelGrowSeconds: 1
   Variant:
     Enabled: 0
   SpreadElements: 1
   ElementPalette:
-{palette}  Levels:
-    Enabled: 0
-    MinLevel: 1
-    MaxLevel: 1
-    RarityFalloff: 2
-""")
+{palette}""")
     emit(f"{FOLDER}/Boneyard Scavenger {i}.asset.meta",
          asset_meta(G_ASSET[f"BoneyardScavenger{i}"]))
 
@@ -644,6 +679,14 @@ for i in INTENSITIES:
 
 
 # ── 9. Scene: clone MinigameRampage, swap the mode-specific wiring ───────────
+#
+# ONE-SHOT, AND THE DONOR HAS MOVED ON. This script cloned the Rampage scene once; Dog Fight's
+# scene exists and is committed, so its output is landed and nothing here needs to run again.
+# It can no longer run: the Rampage rework deleted RampageController.arenaCell /
+# aiRetargetSeconds and replaced the donor's single Cell config with four per-intensity ones,
+# so the asserts below fire on a donor that is simply a different scene now. That is the
+# expected end state of a migration generator, not a break to repair - if Dog Fight ever needs
+# re-authoring, re-point it at a current donor rather than trying to satisfy these asserts.
 scene = read("Assets/_Scenes/Multiplayer Scenes/MinigameRampage.unity")
 
 # 9a. turn monitor script swap (field set is identical - base TurnMonitor fields only)
@@ -669,6 +712,8 @@ NEW_FIELDS = f"""  rule: {{fileID: 11400000, guid: {G_ASSET['DogFightScoringRule
   aiRetargetSeconds: 1.5
   aiLeadSeconds: 0.6
   aiBreakOffDistance: 120
+  aiExtendDistanceMultiplier: 3
+  aiMaxExtendSeconds: 4
 """
 assert OLD_FIELDS in scene, "controller field block not found in donor scene"
 scene = scene.replace(OLD_FIELDS, NEW_FIELDS)
@@ -720,17 +765,19 @@ scene = scene.replace(OLD_SPAWN, NEW_SPAWN)
 #
 # The donor's settings are already the platform-normal ones (crystalCountMode 0, one crystal,
 # spawnOnClientReady), identical to Ribcage, and they are kept verbatim. What the donor does NOT
-# author is `anchorlessSpawnRadius`, and in THIS cell that is the whole problem:
-# CrystalManager.GetAnchorlessSpawnRadius falls back to the cell's NUCLEUS radius, the Boneyard
-# has no nucleus by design, so it fell through to the crystal's own SphereRadius - a few units -
-# and every spawn landed on the arena's exact centre. A large faceted sphere pinned to the middle
+# author is `noNucleusSpawnRadius`, and in THIS cell that is the whole problem:
+# CrystalManager.GetAnchorlessSpawnRadius resolves the cell's NUCLEUS radius FIRST (the crystal
+# volume and the nucleus are coupled platform-wide and no scene may override that - see
+# Docs/ECOSYSTEM.md 27.6), the Boneyard has no nucleus by design, so it fell through to the
+# crystal's own SphereRadius - a few units - and every spawn landed on the arena's exact centre.
+# `noNucleusSpawnRadius` is the FALLBACK that exists for exactly this case: a cell with no core. A large faceted sphere pinned to the middle
 # of a gunnery arena reads as THE objective, which is how it got mistaken for a ball.
 #
 # Authoring the radius is the fix the field exists for: the crystal now draws from a ball that
 # covers the wreck field, so it hides among the hulks and moves somewhere new on every respawn -
 # a thing you go and find, not a monument in the middle of the map.
 OLD_CRYSTALS = "  crystalCountMode: 0\n  fixedCrystalCount: 1\n"
-NEW_CRYSTALS = (f"  anchorlessSpawnRadius: {OMNI_SPAWN_RADIUS}\n"
+NEW_CRYSTALS = (f"  noNucleusSpawnRadius: {OMNI_SPAWN_RADIUS}\n"
                 f"  crystalCountMode: 0\n  fixedCrystalCount: {OMNI_CRYSTAL_COUNT}\n")
 assert OLD_CRYSTALS in scene, "donor crystal-count block not found"
 scene = scene.replace(OLD_CRYSTALS, NEW_CRYSTALS, 1)
@@ -788,7 +835,13 @@ END_PATH = "Assets/Resources/EndConditionOverrides.asset"
 endcond = read(END_PATH)
 for live_key, new_key in (("wildlifeKillTarget", "dogFightPointTarget"),
                           ("wildlifeKillTargetBuild", "dogFightPointTargetBuild")):
-    if f"\n  {new_key}: " in endcond:
+    # SET, don't just add. An earlier version only inserted the key when it was absent, so
+    # re-running after a target change left the asset on the OLD number while the C# default and
+    # every doc said the new one - and the asset is what the game actually reads.
+    existing = re.search(rf"^  {new_key}: \d+\n", endcond, re.M)
+    if existing:
+        endcond = endcond.replace(existing.group(0),
+                                  f"  {new_key}: {DOGFIGHT_POINT_TARGET}\n", 1)
         continue
     m = re.search(rf"^  {live_key}: (\d+)\n", endcond, re.M)
     assert m, f"{live_key} not found in {END_PATH} - run author_wildlife_liberation_assets.py first"
@@ -854,8 +907,8 @@ if "vesselClass: 3" in sc:
 if f"  fixedCrystalCount: {OMNI_CRYSTAL_COUNT}\n" not in sc:
     errors.append("scene does not spawn the omni crystal - crystals are a platform fundamental, "
                   "not mode furniture")
-if f"  anchorlessSpawnRadius: {OMNI_SPAWN_RADIUS}\n" not in sc:
-    errors.append("scene does not author anchorlessSpawnRadius - this cell has no nucleus, so "
+if f"  noNucleusSpawnRadius: {OMNI_SPAWN_RADIUS}\n" not in sc:
+    errors.append("scene does not author noNucleusSpawnRadius - this cell has no nucleus, so "
                   "the omni crystal would fall back to its own SphereRadius and spawn on the "
                   "arena's exact centre")
 if sc.count("vesselClass: 11") != 4:
@@ -873,6 +926,20 @@ if G_ASSET["VesselCombatHitByBullet"] not in files[FULLAUTO_PATH]:
 if G_ASSET["VesselCombatHitByBullet"] not in files[PRISMSHOT_PATH]:
     errors.append("the prism-projectile container does not carry the bullet scoring effect - "
                   "the Sparrow's turret stance would be worth nothing")
+
+# The turret's muzzles must sit where the BULLETS' do. Wiring the scoring effect is worthless if
+# the shot is born past the target, which is exactly what shipped once (see section 4b).
+_sparrow = files[SPARROW_PREFAB]
+_bullet_muzzles = _sparrow.count("  m_LocalPosition: {x: 3.2, y: 0.4, z: 1.3}\n") + \
+                  _sparrow.count("  m_LocalPosition: {x: -3.2, y: 0.4, z: 1.3}\n")
+if _bullet_muzzles != 4:
+    errors.append(f"the Sparrow should carry FOUR gun transforms on the bullets' position "
+                  f"(two bullet + two turret); found {_bullet_muzzles}. The turret's muzzles "
+                  "have drifted forward again - a turret shot is born past its target and "
+                  "hits nothing at close range")
+if "z: 15.13}" in _sparrow:
+    errors.append("a Sparrow gun transform is still at z=15.13 - the far-forward turret muzzle "
+                  "that made close-range turret fire do nothing")
 if G_ASSET["VesselCombatHitByMissile"] not in files[SKYBURST_PATH]:
     errors.append("the skyburst container does not carry the missile scoring effect - "
                   "direct rocket hits would never score")

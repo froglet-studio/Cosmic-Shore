@@ -181,6 +181,13 @@ namespace CosmicShore.Gameplay
         internal bool UsesEntityColorSink =>
             !_exoticVisualActive && PrismRenderService.IsHandleUsable(in RenderHandle);
 
+        /// <summary>True while per-prism-unique geometry (a shield engage morph, a shatter
+        /// overlay) is drawn by this GameObject's MeshRenderer instead of the companion
+        /// entity. A one-shot clock stamp made in this window is spent invisibly, so stamp
+        /// sites that can defer should check this ALONE — <see cref="UsesEntityColorSink"/>
+        /// bundles it with handle usability and is the wrong test for that question.</summary>
+        internal bool ExoticVisualActive => _exoticVisualActive;
+
         public Vector3 TargetScale
         {
             get => scaleAnimator?.TargetScale ?? transform.localScale;
@@ -239,6 +246,13 @@ namespace CosmicShore.Gameplay
             {
                 if (scaleAnimator is not null) scaleAnimator.MaxScale = value;
             }
+        }
+
+        /// <summary>Widens this prism's scale-constraint window so an AUTHORED size survives
+        /// <see cref="TargetScale"/>'s per-axis clamp. See PrismScaleAnimator.AdmitTargetScale.</summary>
+        public void AdmitTargetScale(Vector3 target)
+        {
+            if (scaleAnimator is not null) scaleAnimator.AdmitTargetScale(target);
         }
 
         public void ChangeSize()
@@ -710,7 +724,21 @@ namespace CosmicShore.Gameplay
             destroyed = false;
             devastated = false;
             _destroyedByCreature = false; // pool reuse: clear stale creature-kill flag
+            // Pool reuse: a prism whose scale window was widened for an AUTHORED size
+            // (AdmitTargetScale) must not carry that ceiling into its next life.
+            scaleAnimator?.RestoreAuthoredScaleWindow();
             ProjectileImmuneUntil = 0f;   // pool reuse: immunity never survives into a new life
+
+            // Pool-reuse safety: trail MEMBERSHIP never survives into a new life. A reused
+            // prism kept its previous container here for years, and the consequences were
+            // structural, not cosmetic: a vessel's wake block could wear a dead spawnable's
+            // Trail, so the attach effect's Trail gate passed against the WRONG ribbon,
+            // GetBlockIndex said "not a member" (-1) and refused the ride, and
+            // PrismscapeTopology read a stale container's dimension. Every layer that puts a
+            // prism IN a trail stamps it explicitly AFTER Initialize (AssignTrail) - the
+            // builder and the vessel spawner both do.
+            Trail = null;
+            if (prismProperties != null) prismProperties.Trail = null;
 
             // Pool-reuse safety: no spawner requests super-shield via prismProperties
             // before Initialize (it's engaged post-spawn via ActivateSuperShield /
@@ -720,6 +748,11 @@ namespace CosmicShore.Gameplay
             // IsShielded/IsDangerous are NOT cleared: spawners set those pre-Initialize
             // as the requested state for this life.
             if (prismProperties != null) prismProperties.IsSuperShielded = false;
+            // Pool reuse: this is also what INVALIDATES any super-shield deflection settle
+            // still scheduled from the previous life. That callback compares its captured
+            // stamp time against LastSuperShieldJiggleTime and no-ops on a mismatch, so
+            // resetting here is what stops it resetting THIS life's culling envelope.
+            _lastSuperShieldJiggleTime = float.NegativeInfinity;
             _lodCulled = false; // pool reuse: Initialize owns the collider again
             CachedVolume = 0f;  // stale from the previous life; reseeded at CreateBlock
             IsSmallest = false;
@@ -1126,6 +1159,7 @@ namespace CosmicShore.Gameplay
                     OwnName = PlayerName,
                     Volume = prismProperties.volume,
                     AttackerName = attackerPlayerName,
+                    OwnDomain = Domain,
                 });
             }
 
@@ -1162,6 +1196,11 @@ namespace CosmicShore.Gameplay
         protected virtual void Explode(Vector3 impactVector, Domains domain, string playerName, bool devastate = false,
                                        float debrisSpeedLimit = 0f)
         {
+            // Read the tier BEFORE the destruction pass so the debris is guaranteed to carry the
+            // state the prism was actually wearing on screen, whatever a subclass override or a
+            // future SetupDestruction step does to the flags.
+            var kind = PrismKinds.Of(this);
+
             SetupDestruction(domain, playerName, devastate);
             PlayDestructionSFX();
 
@@ -1185,6 +1224,7 @@ namespace CosmicShore.Gameplay
                 Scale = _lastDestructionScale,
                 Velocity = debrisSpeedLimit > 0f ? impactVector : impactVector / prismProperties.volume,
                 DebrisSpeedLimit = debrisSpeedLimit,
+                Kind = kind,
                 PrismType = PrismType.Explosion
             });
         }
@@ -1192,6 +1232,9 @@ namespace CosmicShore.Gameplay
         // Implosion Methods
         protected virtual void Implode(Transform targetTransform, Domains domain, string playerName, bool devastate = false)
         {
+            // See Explode: captured pre-destruction so the suction wears the prism's own tier.
+            var kind = PrismKinds.Of(this);
+
             SetupDestruction(domain, playerName, devastate);
             PlayDestructionSFX();
 
@@ -1204,6 +1247,7 @@ namespace CosmicShore.Gameplay
                 Scale = _lastDestructionScale,
                 TargetTransform = targetTransform,
                 Volume = prismProperties.volume,
+                Kind = kind,
                 PrismType = PrismType.Implosion
             });
         }
@@ -1228,11 +1272,13 @@ namespace CosmicShore.Gameplay
                            float debrisSpeedLimit = 0f)
         {
             if (destroyed) return;
-            // Super-shielded prisms are fully invulnerable. No damage source
-            // currently breaks them; ways to break them will be added later.
-            // The impactor's other effect SOs (sparks, sound) still fire on
-            // OnTriggerEnter, so the hit reads visually without state change.
-            if (prismProperties.IsSuperShielded) return;
+            // Super-shielded prisms are invulnerable to Damage itself. A source that may
+            // break them (the Rhino energy sword, arena teardowns) must call
+            // DeactivateShields() first, then Damage(devastate: true) — the sanctioned
+            // animated sequence (see AstroLeagueArena.ClearEdgeLining / RHINO_ENERGY_SWORD.md).
+            // That sequence clears the flag before it gets here, so a BREAKING hit never
+            // reaches this gate; only an unbreaking one does, and it now deflects (below).
+            if (AbsorbSuperShieldHit(impactVector.magnitude)) return;
             if (prismProperties.IsShielded && !devastate)
                 DeactivateShields();
             else
@@ -1244,8 +1290,11 @@ namespace CosmicShore.Gameplay
 
         public void Consume(Transform target, Domains domain, string playerName, bool devastate = false, bool byCreature = false)
         {
+            // A consume carries no impact vector — only the suction sink — so the deflection
+            // is stamped at the floor magnitude rather than derived from a direction that
+            // describes where the mass was being pulled, not how hard it was struck.
             if (destroyed) return;
-            if (prismProperties.IsSuperShielded) return;
+            if (AbsorbSuperShieldHit(0f)) return;
             if (prismProperties.IsShielded && !devastate)
                 DeactivateShields();
             else
@@ -1253,6 +1302,49 @@ namespace CosmicShore.Gameplay
                 _destroyedByCreature = byCreature;
                 Implode(target, domain, playerName, devastate);
             }
+        }
+
+        // Per-prism rate-limit slot for the deflection jiggle, owned here because the state is
+        // one float per prism and PrismSuperShieldJiggle would otherwise need a dictionary
+        // keyed by instance id. Absolute clock time; a pooled reuse inherits a value far in
+        // the past, which correctly reads as "no recent deflection".
+        float _lastSuperShieldJiggleTime = float.NegativeInfinity;
+
+        /// <summary>Clock time of this prism's most recent deflection stamp, or
+        /// <see cref="float.NegativeInfinity"/> if it has none in this life. A scheduled
+        /// settle carries the value it stamped and compares it here, so a re-stamp or a pool
+        /// reuse invalidates the older callback without an O(n) scan of the timer list.</summary>
+        internal float LastSuperShieldJiggleTime => _lastSuperShieldJiggleTime;
+
+        /// <summary>
+        /// THE super-shield invulnerability gate. Returns true when this prism absorbs the hit
+        /// — the caller must then do nothing else to it.
+        ///
+        /// Super-shielded prisms are invulnerable to damage itself. A source that BREAKS one
+        /// (the Rhino energy sword, arena teardowns) calls <see cref="DeactivateShields"/>
+        /// first and only then <c>Damage(devastate: true)</c> — the sanctioned animated
+        /// sequence — which clears the flag, so a breaking hit never arrives here. Everything
+        /// that does arrive is by definition a hit the prism SURVIVED. The impactor's other
+        /// effect SOs (sparks, sound) still fire, and since this method also stamps the
+        /// deflection wobble, such a hit now reads as a DEFLECTION rather than as a miss —
+        /// with no state change of any kind (Docs/PRISM_ANIMATION.md §5 C14).
+        ///
+        /// This exists as ONE method because the check previously existed as four independent
+        /// copies — <see cref="Damage"/>, <see cref="Consume"/>,
+        /// <c>PrismSpatialIndex.ResolveExplosionHit</c> and
+        /// <c>ExplosionImpactor.ExecuteCommonPrismCommands</c> — and a per-call-site copy is a
+        /// rule you can forget to apply at the next damage source. Route every new one here.
+        /// </summary>
+        /// <param name="impactSpeed">
+        /// Magnitude of the impact in world units/second, used only to size the wobble. Pass 0
+        /// where the hit site cannot describe its own magnitude; the deflection still reads, at
+        /// the configured floor.
+        /// </param>
+        public bool AbsorbSuperShieldHit(float impactSpeed)
+        {
+            if (prismProperties is not { IsSuperShielded: true }) return false;
+            PrismSuperShieldJiggle.TryStamp(this, impactSpeed, ref _lastSuperShieldJiggleTime);
+            return true;
         }
 
         // State Management Methods
@@ -1267,6 +1359,20 @@ namespace CosmicShore.Gameplay
         public void Steal(string playerName, Domains domain, bool superSteal = false) =>
             teamManager.Steal(playerName, domain, superSteal);
         public void ChangeTeam(Domains domain) => teamManager?.ChangeTeam(domain);
+
+        /// <summary>
+        /// Declare this prism a member of <paramref name="trail"/> - the ONE way to stamp
+        /// trail membership, keeping the public field and the prismProperties mirror coherent.
+        /// Call it AFTER <see cref="Initialize"/>: pool-reuse reset clears membership
+        /// (a reused prism must never wear its previous life's container), so a stamp made
+        /// before Initialize is silently wiped.
+        /// </summary>
+        public void AssignTrail(Trail trail)
+        {
+            Trail = trail;
+            if (prismProperties != null) prismProperties.Trail = trail;
+        }
+
         
         public void RegisterProjectileCreated(string playerName)
         {

@@ -1,5 +1,3 @@
-using CosmicShore.Utility;
-
 ﻿using UnityEngine;
 
 namespace CosmicShore.Gameplay
@@ -14,8 +12,6 @@ namespace CosmicShore.Gameplay
         {
             var skimmerVesselStatus = impactor.Skimmer.VesselStatus;
             skimmerVesselStatus.VesselPrismController.Gap = Mathf.Lerp(skimmerVesselStatus.VesselPrismController.Gap, skimmerVesselStatus.VesselPrismController.MinimumGap, impactor.CombinedWeight);
-            CSDebug.Log($"<color=blue> We are getting called context Gaped" );
-
         }
     }
 }

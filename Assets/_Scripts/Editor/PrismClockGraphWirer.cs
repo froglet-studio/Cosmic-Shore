@@ -100,6 +100,11 @@ namespace CosmicShore.Editor
                     // which is every prism that is not in flight.
                     F("_FlightStartTime", 0f), F("_FlightDuration", 0f),
                     V3("_FlightVelocity", 0f, 0f, 0f),
+                    // Super-shield deflection jiggle (Docs/PRISM_ANIMATION.md §5 C14): a
+                    // super-shielded prism HIT but not destroyed. Duration 0 = unstamped =
+                    // identity, which is every prism that has never deflected anything.
+                    F("_JiggleStartTime", 0f), F("_JiggleDuration", 0f),
+                    V3("_JiggleParams", 0f, 0f, 0f),
                 },
             },
             new GraphJob
@@ -124,6 +129,11 @@ namespace CosmicShore.Editor
                     // which is every prism that is not in flight.
                     F("_FlightStartTime", 0f), F("_FlightDuration", 0f),
                     V3("_FlightVelocity", 0f, 0f, 0f),
+                    // Super-shield deflection jiggle (Docs/PRISM_ANIMATION.md §5 C14): a
+                    // super-shielded prism HIT but not destroyed. Duration 0 = unstamped =
+                    // identity, which is every prism that has never deflected anything.
+                    F("_JiggleStartTime", 0f), F("_JiggleDuration", 0f),
+                    V3("_JiggleParams", 0f, 0f, 0f),
                 },
             },
             new GraphJob

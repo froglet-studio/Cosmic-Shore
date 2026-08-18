@@ -49,6 +49,10 @@ asset, the prefab, and the code are the record.** Before changing a vessel:
    including HUD icons that live in the **vessel** prefab, not the HUD variant (the Rhino's row
    was missed for exactly this reason), and `m_Modifications` overrides on nested prefabs.
 3. Run (or, since you cannot run Unity, reason from the source of) the fleet auditors:
+   **FrogletTools > Vessels > Wire Vessel Ability Row** (`VesselAbilityRowWirer` — builds or repairs
+   ANY vessel's four-icon row from nothing at the fleet-standard bands; idempotent, never touches
+   sprites, adopts authored gauges by name. This is the mechanical half of taking a vessel from 0/4
+   to 4/4 once its map is designed),
    **FrogletTools > Vessels > Audit Vessel Ability Rows**, **Audit Vessel Skimmers** and **Audit
    Vessel Elemental Morphs** — all asset-only, all reuse the exact runtime discovery code, so
    report and game cannot disagree.
@@ -103,7 +107,7 @@ un-implemented until Garrett marks them up. If your task requires a mapping that
 STOP and ask (AskUserQuestion), presenting the FLEET_MAPS proposal for that row. The same gate
 applies to new abilities, new resources on the meter list, and anything that adds a fundamental.
 
-## 4. Implement — the fifteen rules that keep getting relearned
+## 4. Implement — the twenty-seven rules that keep getting relearned
 
 1. **Ability SOs are shared and stateless.** Per-vessel state lives in executors / vessel-root
    MonoBehaviours; SOs receive `(registry, status)` per call. Never bind state to an SO asset.
@@ -126,7 +130,9 @@ applies to new abilities, new resources on the meter list, and anything that add
    shared SOAP channels. This exact bug shipped three times on one branch.
 6. **Executor→SO resolution retries until success** — `R_VesselActionHandler.Initialize` runs
    executors *before* populating its binding maps, so a first-frame query that latches on
-   attempt (not success) pins null forever. Resolve lazily via `CollectBoundActions`.
+   attempt (not success) pins null forever. Resolve lazily via `CollectBoundActions` — **but
+   only for an ability that HAS an input.** See rule 20: a passive ability is in no binding
+   map, so that sweep can never find its SO.
 7. **One authored number per displayed quantity.** A HUD readout adopts the gameplay component's
    value (`RiptideAnimation.MaxJawAngleDegrees` pattern); never author a "keep in step" copy.
    Bind HUD gauges **by name** with index fallback, and only to resources whose writers raise
@@ -153,7 +159,13 @@ applies to new abilities, new resources on the meter list, and anything that add
     an executor's own cooldown can block its path entirely — so deleting the passive trickle
     "because gain should come from the ability" left the Dolphin's boost with no working fill
     path at all. The trickle and `rechargeCooldownSeconds` had to move together. Grep every
-    writer, then change the set.
+    writer, then change the set. **The same enumeration is required to FREEZE a quantity**, and
+    there the answer is per-writer rather than all-or-nothing: the Dolphin's drift speed hold
+    pins the throttle-derived cruise `speed` but deliberately leaves `throttleMultiplier`
+    (impact slows) and `velocityShift` (knockback/AOE) live — freezing those too would have
+    quietly made a drifting vessel immune to danger prisms, which is a LOCKED-design violation
+    hiding inside a feel change. List every writer, then say per writer whether the freeze
+    covers it, and record that list in the doc.
 13. **A cancelled UniTask never runs its tail.** `catch (OperationCanceledException) { }` means
     any status the routine set *before* its loop stays set forever. Interrupting a discharge left
     `BoostMultiplier`/`IsBoosting` frozen — a permanent free speed bonus. Restore that state in
@@ -176,14 +188,142 @@ applies to new abilities, new resources on the meter list, and anything that add
     plus a transition); a partial fill on a pip reads as a meter and reopens the question you just
     closed. Drive it from a sibling image, never the ability icon itself, or you collide with the
     four-icon upgrade tint/badge (rule 9).
+16. **Intervene in the flight model at `VesselTransformer.AdvanceSpeed`, not at
+    `ComputeThrottleTarget`.** Four transformers exist (`VesselTransformer`,
+    `SingleStickVesselTransformer` — what the Sparrow and Serpent actually run —
+    `GunVesselTransformer`, `CommandVesselTransformer`) and the first two carry their own
+    `MoveShip` AND their own `ComputeThrottleTarget`, so a change written into the target reaches
+    only the vessels running the class you edited (the single-stick override ignores `XDiff` and
+    the throttle-scaler multiplier entirely). `AdvanceSpeed` is the one line both `MoveShip`s call
+    — the choke point where anything that must hold for EVERY vessel belongs, and where the
+    Dolphin's drift speed hold sits. Two companions of `speed` need the same treatment when you
+    touch it: the `toggleManualThrottle` lerp is a SECOND throttle channel living in each
+    `MoveShip` (no shipped prefab enables it — check before assuming your change covered it), and
+    `_speedTrackingRate` is a latched ramp state (the Rhino's ramp boost) that a naive early-return
+    can silently consume.
+
+17. **A `UniTask.Delay(1/rate)` fire loop quantizes to WHOLE FRAMES**, so an authored rate is
+    silently `min(rate, framerate)` — a 60 fps client fires twice as fast as a 30 fps one, and
+    the rate simply cannot exceed the frame rate. It looks correct at any rate whose interval
+    happens to straddle two frames (30/s at 60 fps was right by luck for a year). Owe fire in
+    SECONDS and pay it off in whole volleys (`owed += Time.deltaTime`; fire `floor(owed/interval)`),
+    capping the per-tick catch-up and DROPPING the excess so a hitch never discharges as a burst.
+18. **Never draw from `UnityEngine.Random` in a per-shot hot path.** It is global state that
+    deterministic systems seed (`Random.InitState` for the HexRace track), so a gun rolling it
+    120×/s makes their output depend on how long someone held a trigger. Use a pure integer hash
+    of a per-shot serial: no global state, and peers that agree on the shot count agree on the
+    result — which matters wherever the spawned object is local and unreplicated.
+19. **Weapon "feel" complaints are usually a CEILING, not a tuning value.** Before re-tuning,
+    find what caps output per unit of input: prisms have no HP (one hit = one kill) and a
+    sub-upgrade round dies on its first impact, so a Sparrow's ceiling is exactly *rounds/s*.
+    Rate, spread and accuracy all multiply a 1:1 relationship and cannot break it — only pierce
+    depth, chain effects, or **size** can, and size wins because destruction footprint goes as the
+    SQUARE of the radius. Say which ceiling you found before proposing numbers.
+20. **A PASSIVE ability is bound to no input event, so `CollectBoundActions` can never resolve
+    its SO.** The binding maps are keyed by `InputEvents`; an ability with no input is in none
+    of them, so the lazy sweep of rule 6 returns null forever and the executor silently runs on
+    its field initializers — an ability that looks wired, logs nothing, and is tuned by an asset
+    nobody is reading. Wire the config **directly on the executor** as a `[SerializeField]`, so a
+    missing wire is visible in the inspector, and keep the sweep only as a fallback for a vessel
+    that still lists the action against an input. (Dolphin crystal seeding, 2026-08-14.)
+21. **An ability that wants the camera's FOV must move the speed tunnel's HOME, never
+    `Camera.fieldOfView`.** `VesselSpeedTunnel` owns FOV fleet-wide and is the only writer. A
+    direct write fails two ways, both silent: while the tunnel is engaged it is overwritten every
+    frame, and when the tunnel ENGAGES it captures whatever FOV it finds as the home to restore
+    later — so a live zoom is baked in permanently and the player never gets their FOV back.
+    Camera POSE is free (the law is explicitly a no-camera-distance-change effect); FOV is not.
+    And before adding a public FOV surface to that law for one vessel, check the ability still
+    earns it without the zoom — the Dolphin's Echo Sight did, and the surface was reverted.
+22. **A shared impact effect is PER-VESSEL WIRING. Audit which containers list it — never infer
+    it from the class existing, from an asset existing, or from a doc saying it happens.** An
+    effect only runs for a vessel whose `VesselImpactorDataContainerSO` array actually contains
+    it, and a missing entry is *totally silent*: no null, no warning, just a consequence that
+    never occurs. `VesselChangeSpeedByPrismEffectSO` shipped absent from the Dolphin (whose
+    `DolphinVesselChangeSpeedByPrism` asset existed and was referenced by **no** container) and
+    from the Sparrow (no asset at all, in the one vessel Dog Fight flies) — so neither slowed on
+    any prism, danger included, for the fleet's whole life. **An orphaned effect asset is the
+    tell**, and it is one sweep: map every `*.asset.meta` GUID to its name, then check which
+    GUIDs appear inside the six `VesselContainers/*.asset` arrays. Anything of that script type
+    that appears in none is authored-but-dead. Do the same sweep for TUNING once wired —
+    per-vessel instances drift apart silently, and a prism should read the same whichever hull
+    hits it. (Dolphin/Sparrow/Manta prism slow, 2026-08-15.)
+23. **An impact effect must not scale a SERIALIZED authored field on `VesselStatus` in place.**
+    Check whether the property is runtime bookkeeping or a serialized value with an authored
+    default before writing it. `BoostMultiplier` is `[SerializeField] boostMultiplier = 4` and is
+    what boost sources that don't write it fall back to (`BoostActionSO` only flips `IsBoosting`;
+    `VesselResetBoostPrismEffectSO` restores it to an authored base) — so "halve the boost on a
+    ram" applied to it ratchets the vessel's authored number toward 1 a little further on every
+    collision, permanently, with nothing in the game to restore it. Scale the RESOURCE METER
+    instead and let the executor re-derive; a creeping, unrecoverable nerf is indistinguishable
+    from a tuning problem for as long as anyone will look. (Dolphin boost ram, 2026-08-14.)
+
+24. **Puppetry amplitudes are FLEET-SCALE — 14-26 degrees is invisible.** A new vessel whose
+    animation swings its parts through "a believable" 15-25 deg reads at chase-camera distance
+    as *no puppeteering at all*, and the report you get back is "the ship feels dead", not "the
+    numbers are small". `RhinoAnimation` is the calibration: wings and engines swing through
+    `yawAnimationScaler = 80` deg, the fuselage through 25. Match that order of magnitude, and
+    drive the parts that should answer to FLIGHT rather than to the stick off
+    `VesselStatus.Speed`, so they keep moving under a boost or a danger-prism slow the stick
+    knows nothing about.
+    **Corollary — a part's arc must be SIGNED through its rest pose** when its two ends mean two
+    states. Rotating "toward rest" as speed rises can only reach the pose the mesh was authored
+    in, which is usually neither state you wanted: legs meant to read gear-down-when-slow /
+    tucked-at-speed need `Lerp(+hang, -tuck, speed01)`, not `splay * (1 - speed01)`.
+    (Scarab hull, 2026-08-15.)
+
+25. **A named accessor that LOOKS like a geometry is often one factor of it.** Rules 4a/4b cover
+    an authored number that isn't the effective one; this is its sibling — a property whose name
+    promises the real dimension while its body carries only the base term, with the multipliers
+    applied at the *use* site. `VesselPrismController.TrailZScale` is `BaseScale.z` alone, but a
+    laid trail prism is `BaseScale.z × ZScaler × boostScale × ∛(MASS volume multiplier)`. The
+    `waitTillOutsideSkimmer` clearance delay divided by the accessor, so an upgraded vessel's
+    prism collider switched on while the prism was still inside the ship — and the symptom
+    ("I clip my own trail after upgrading") points at collision code, not at a scale accessor
+    three files away. **Read the accessor's BODY and compare it to the expression at the spawn
+    site**; if the spawn site multiplies and the accessor does not, the accessor is a base term
+    and every consumer sizing real geometry off it is wrong by the same factor. When you fix one,
+    document the accessor as a base term so the next reader does not re-adopt it.
+    (Self-trail contact, 2026-08-17.)
+
+26. **RE-SCOPING an L5 upgrade means finding and switching OFF the old one — the map's prose is
+    not the wiring.** An `ElementalAbilityMapSO` entry's `UpgradeLabel`/`UpgradeDescription` is
+    documentation; the upgrade itself lives in whatever SO gates on `IsUpgradeActive(<element>)`.
+    Re-author the map alone and the element now grants TWO upgrades, with the map describing only
+    the new one — a balance change invisible in the diff and in the HUD. So: grep
+    `IsUpgradeActive` across the effect/action SOs, resolve each hit's per-vessel ASSET, and
+    confirm which ones name the element you are re-scoping. (Dolphin Time 5, 2026-08-18: the
+    retired "Live Current" was `_dangerBonusElement: 4` on
+    `DolphinSkimmerChangeResourceByPrismEffect` and had to be set back to `None`.)
+    **Two effects can describe the same sentence and be different mechanisms.** "Danger prisms
+    pay more" is `SkimmerBoostPrismEffect.dangerEnergyMultiplier` (10x, BOOST, hardcoded to the
+    CHARGE upgrade, platform-wide) *and* `SkimmerChangeResourceByPrismEffectSO._dangerBonusElement`
+    (per-asset element, a different RESOURCE). CLAUDE.md and the fleet map each described one of
+    them; reading either alone gives a confident wrong answer about which gate you are moving.
+
+27. **Before writing "X still lands" about an upgrade's SCOPE, read that vessel's own effect
+    containers.** The platform's danger-prism paragraph lists slow + elemental drain + boost
+    reset + input mute, and it is tempting to inherit that list wholesale into a per-vessel
+    upgrade description. Per-vessel reality differs: the Dolphin carries the slow and an energy
+    halving, its boost effect is a `retainedFraction` halving that deliberately **skips its
+    correction while drifting** (i.e. exactly inside a drift-gated ward's window), and the input
+    mute (`SparrowDebuffByRhinoDangerPrismEffectSO`) is wired into **no container on any
+    vessel**. Resolve every guid in the vessel's `VesselImpactorDataContainerSO` /
+    `SkimmerImpactorDataContainerSO` and read the effects you are about to make claims about —
+    the ship protocol's "find the PRODUCER" rule, aimed at your own new prose rather than at
+    inherited docs. (Dolphin Drift Ward, 2026-08-18.)
 
 ## 5. Audit, then hand back verification (you cannot run Unity; the human is the gate)
 
 - State which auditors to run and the expected result: **Audit Vessel Ability Rows**,
   **Audit Vessel Skimmers**, **Audit Vessel Elemental Morphs**, plus **Wire Elemental Petal
   Bars** (or **Bake Elemental Petal Bars Into All Vessel HUDs**) and **Plan Vessel Rig Swap**
-  where relevant. Vessel-impactor container wiring still has no auditor — hand back explicit
-  play-mode checks for that half (prism hit, crystal collect ×1, no NREs).
+  where relevant. Vessel-impactor container wiring still has no in-editor auditor, but do NOT
+  hand that half back as play-mode-only: run the rule-22 sweep yourself first (GUID → name over
+  `*.asset.meta`, then cross-reference the six `VesselContainers/*.asset` arrays) and print the
+  per-vessel table — which vessels carry the effect, which are missing it, and whether the wired
+  ones share tuning. That is a static, seconds-long check that catches the entire "authored but
+  never wired" class before a human ever opens Unity; play-mode checks (prism hit, crystal
+  collect ×1, no NREs) then confirm the wiring you already proved exists.
 - **Check that the feedback you are asking a human to judge is OBSERVABLE before you ask.** A
   skim's three signals are each individually invisible on a desktop editor: the haptic is a
   NO-OP (NiceVibrations does nothing there), the beam VFX only draws if the skimmed prism

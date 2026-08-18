@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
+using CosmicShore.Data;
 using CosmicShore.ECS;
 using CosmicShore.Gameplay;
 using CosmicShore.Utility;
@@ -22,6 +23,19 @@ namespace CosmicShore.Utility
         [Tooltip("Default ceiling on debris speed. This is a GUARD against the legacy impactVector/volume gain (which spans ~100x across prism sizes), not a physical bound - so it sits far below any real impact speed and flattens the magnitude of everything that hits it. An impact that hands over a true velocity passes its own limit through PrismEventData.DebrisSpeedLimit instead. This band and the proportional paths' restitution/debrisSpeedLimit are one tuning group - scale them together or the retune clips instead of toning down.")]
         [SerializeField]
         private float maxSpeed = 33.33f;
+
+        [Tooltip("How much harder a DANGER prism detonates than a plain one. Scales the debris " +
+                 "speed AND the shatter rate together with the whole clamp band - deliberately ONE " +
+                 "number, because on this contract debris speed and shatter rate are one quantity " +
+                 "(see CLAUDE.md > AOE blast impulse); splitting them makes a blast that finishes " +
+                 "shattering while the debris crawls, or the reverse. 1 = a danger prism dies " +
+                 "exactly like a plain one and only its palette differs. TUNING NOTE: the batched " +
+                 "debris path caches this off the prefab in PrismDebris.Configure and only " +
+                 "re-reads it when the prefab reference itself changes (same as minSpeed/maxSpeed), " +
+                 "so edit it in edit mode - a play-mode edit will not take effect until the next " +
+                 "domain reload.")]
+        [SerializeField]
+        private float dangerDetonationMultiplier = 1.6f;
 
         [SerializeField]
         private MeshRenderer _renderer;
@@ -97,6 +111,29 @@ namespace CosmicShore.Utility
         /// pool prefab so the batched entity path ships identical clamp semantics.</summary>
         public float MinDebrisSpeed => minSpeed;
         public float MaxDebrisSpeed => maxSpeed;
+
+        /// <summary>Authored danger-tier detonation gain, likewise read off the pool prefab
+        /// by PrismDebris so both routes detonate identically.</summary>
+        public float DangerDetonationMultiplier => Mathf.Max(0.01f, dangerDetonationMultiplier);
+
+        /// <summary>
+        /// The gain applied to a dying prism's debris because of the TIER it was wearing.
+        /// Scales the flight speed, the shatter rate and the clamp band as one quantity —
+        /// only DANGER differs today, because it is the only tier whose whole identity is
+        /// "this is a hazard": its debris should read as a detonation rather than as
+        /// ordinary mass coming apart. Shielded/super-shielded mass gets its own PALETTE
+        /// (which is the part that was wrong) but plain dynamics; a shielded prism only
+        /// ever explodes to a devastating hit, whose own force already carries that read.
+        ///
+        /// It applies on BOTH impulse paths — the legacy inertia gain and the true-velocity
+        /// one (<c>proportionalDebris</c>, where "the vector IS the debris velocity"). That
+        /// is a deliberate, narrow deviation from that contract: a danger prism carries its
+        /// own stored energy, so what leaves it is not only the impactor's momentum, and the
+        /// alternative — scaling only the legacy path — would make danger detonate harder
+        /// when a hull rams it but not when a Dolphin cone does, which reads as a bug.
+        /// </summary>
+        public static float DetonationGain(PrismKind kind, float dangerMultiplier) =>
+            kind == PrismKind.Danger ? Mathf.Max(0.01f, dangerMultiplier) : 1f;
 
         // --- Instanced rendering (Entities Graphics companion entity) -----------
         // Mirrors the prism path: the MeshRenderer stays disabled and a companion
@@ -233,7 +270,13 @@ namespace CosmicShore.Utility
         /// inertia/volume product, so their accurate magnitude is not clipped by a guard
         /// sized for a different quantity.
         /// </param>
-        public void TriggerExplosion(Vector3 velocity, float speedLimitOverride = 0f)
+        /// <param name="kind">
+        /// The tier the dying prism was wearing. Affects the DYNAMICS only (danger detonates
+        /// harder — see <see cref="DetonationGain"/>); the palette arrives separately through
+        /// <see cref="SetTeamColors"/>.
+        /// </param>
+        public void TriggerExplosion(Vector3 velocity, float speedLimitOverride = 0f,
+                                     PrismKind kind = PrismKind.Plain)
         {
             if (_renderer == null || _mpb == null)
                 return;
@@ -241,11 +284,17 @@ namespace CosmicShore.Utility
             if (float.IsNaN(velocity.x) || float.IsNaN(velocity.y) || float.IsNaN(velocity.z))
                 velocity = Vector3.up * minSpeed;
 
+            // Tier gain scales the vector AND the whole clamp band together, so a danger prism
+            // genuinely detonates harder instead of saturating against a band sized for plain
+            // mass. Applied before the clamp so the floor lifts with it too.
+            float gain = DetonationGain(kind, dangerDetonationMultiplier);
+            velocity *= gain;
+
             bool hasOverride = speedLimitOverride > 0f;
-            float ceiling = hasOverride ? speedLimitOverride : maxSpeed;
+            float ceiling = (hasOverride ? speedLimitOverride : maxSpeed) * gain;
 
             // Clamp velocity and calculate speed
-            velocity = GeometryUtils.ClampMagnitude(velocity, minSpeed, ceiling, out float speed);
+            velocity = GeometryUtils.ClampMagnitude(velocity, minSpeed * gain, ceiling, out float speed);
 
             // ClampMagnitude reports the PRE-clamp magnitude, so Speed - which drives the
             // shatter rate (_ExplosionAmount = speed * elapsed) - has always run at the raw

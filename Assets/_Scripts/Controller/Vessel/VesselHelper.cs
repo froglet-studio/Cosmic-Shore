@@ -110,7 +110,44 @@ namespace CosmicShore.Gameplay
                 action.StopAction();
         }
 
-        public static void ApplyShipMaterial(Material shipMaterial, List<GameObject> shipGeometries)
+        /// <param name="meshRendererSlot">
+        /// Which material slot on a MESH renderer takes the domain colour. The platform
+        /// contract is slot <b>1</b> (submesh 0 = shared body material, submesh 1 = the part
+        /// that wears the domain - see <c>ScarabHullBuilder</c>'s material contract), and that
+        /// is the default. A vessel whose FBX authors its submeshes the other way round says
+        /// so on its own <see cref="VesselCustomization"/> rather than forcing the fleet's
+        /// contract to bend - the Urchin is the one that does.
+        /// </param>
+        /// <summary>
+        /// Paints <paramref name="shipMaterial"/> into EXPLICIT slots per geometry - the
+        /// index-free path, used when a vessel names the material the domain replaces rather
+        /// than a slot number (see <c>VesselCustomization</c>). Both renderer kinds are handled
+        /// the same way here, because the caller already resolved which slots to write.
+        /// </summary>
+        public static void ApplyShipMaterialToSlots(Material shipMaterial,
+                                                    List<GameObject> shipGeometries,
+                                                    int[][] slotsPerGeometry)
+        {
+            if (shipMaterial == null || slotsPerGeometry == null) return;
+
+            for (int i = 0; i < shipGeometries.Count && i < slotsPerGeometry.Length; i++)
+            {
+                var slots = slotsPerGeometry[i];
+                if (slots == null || slots.Length == 0) continue;
+
+                var geometry = shipGeometries[i];
+                var renderer = geometry ? geometry.GetComponent<Renderer>() : null;
+                if (!renderer) continue;
+
+                var materials = renderer.materials;
+                foreach (var slot in slots)
+                    if (slot >= 0 && slot < materials.Length) materials[slot] = shipMaterial;
+                renderer.materials = materials;
+            }
+        }
+
+        public static void ApplyShipMaterial(Material shipMaterial, List<GameObject> shipGeometries,
+                                             int meshRendererSlot = 1)
         {
             if (shipMaterial == null)
                 return;
@@ -126,7 +163,12 @@ namespace CosmicShore.Gameplay
                 else if (shipGeometry.GetComponent<MeshRenderer>() != null)
                 {
                     var materials = shipGeometry.GetComponent<MeshRenderer>().materials;
-                    materials[1] = shipMaterial;
+                    // Clamp rather than throw: a renderer with a single submesh is legal art,
+                    // and painting its only slot is the sane reading of "wear the domain".
+                    // The empty case has to be skipped outright - Clamp(1, 0, -1) returns -1,
+                    // so the guard that exists to stop this throwing would itself throw.
+                    if (materials.Length == 0) continue;
+                    materials[Mathf.Clamp(meshRendererSlot, 0, materials.Length - 1)] = shipMaterial;
                     shipGeometry.GetComponent<MeshRenderer>().materials = materials;
                 }
             }

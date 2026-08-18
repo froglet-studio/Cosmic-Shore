@@ -39,7 +39,7 @@ Three pieces, all vessel-agnostic:
 |---|---|---|
 | The state | `ResourceSystem.IsElementallyImmune` + `SetElementalDebuffImmunity(source, immune)` + `OnElementalImmunityChanged` | Source-keyed grants (a `HashSet`), so two concurrent holders can't clear each other. Immune while any grant stands. |
 | The read | `IVesselStatus.IsElementallyImmune` | Convenience accessor for HUD / VFX / gameplay, alongside `IsSlowed` / `IsBoosting`. |
-| The driver | `VesselElementalImmunity` (vessel root) | Declarative: pick a `Condition` (`Always` / `WhileBoosting` / `WhileTranslationRestricted`) and an optional `upgradeGate` element. |
+| The driver | `VesselElementalImmunity` (vessel root) | Declarative: pick a `Condition` (`Always` / `WhileBoosting` / `WhileTranslationRestricted` / `WhileDrifting`) and an optional `upgradeGate` element. |
 
 Wired today:
 
@@ -47,6 +47,7 @@ Wired today:
 |---|---|---|
 | Sparrow | `WhileBoosting` | `Time` (level 5 — "Elemental Ward") |
 | Serpent | `WhileTranslationRestricted` (stopped to weave) | `None` — ungated, stopping is the whole cost |
+| Dolphin | `WhileDrifting` | `Time` (level 5 — "Drift Ward") |
 
 **Scope, deliberately narrow:**
 - Blocks **negative** magnitudes only. Buffs still land while immune.
@@ -246,6 +247,16 @@ Not editor-verified — I cannot run Unity. Every step below is unrun. Mirrored 
    - **while boosting**, hit the same danger prism → flowers do **not** dip. You are still slowed
      and still take the input mute; only the elemental drain is denied.
    - **not boosting**, hit it → flowers dip normally.
+
+   > **"You are still slowed" was aspirational until 2026-08-15.** The immunity gate is, and always
+   > was, a single check on the negative branch of `ResourceSystem.ApplyElementalEffect` — it never
+   > touched `ModifyThrottle`, so the *statement* was structurally right. But the Sparrow had **no
+   > `VesselChangeSpeedByPrismEffectSO` in its impact chain at all**, so nothing was slowing it in
+   > the first place and there was no slow for the ward to leave standing. Fixed by wiring
+   > `SparrowVesselChangeSpeedByPrism` (the Squirrel's numbers); this step is now actually
+   > falsifiable. `SparrowDebuffByRhinoDangerPrismEffectSO` was never the slow despite its
+   > `vesselSlowedByRhinoDangerPrismEvent` field and its "Slow Viewer Integration" header — it
+   > mutes an input and raises events, nothing more.
 7. **Serpent, ungated.** Serpent in the same scene, Time at any level. Stopped (turret/weave
    stance) + danger prism → no flower dip. Moving → normal dip.
 8. **No stuck immunity.** Boost into a vessel swap / turn end while immune, then take a danger hit

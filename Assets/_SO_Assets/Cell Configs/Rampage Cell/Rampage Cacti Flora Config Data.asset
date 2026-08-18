@@ -1,0 +1,48 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a32a297a7606432885f4d3e1f83bea9a, type: 3}
+  m_Name: Rampage Cacti Flora Config Data
+  m_EditorClassIdentifier: 
+  FloraPrefab: {fileID: 7514956980722975813, guid: 82e04cfd7f5b93f478b5fbfe40c2a2d7, type: 3}
+  SpawnProbability: 1
+  InitialSpawnCount: 26
+  OverrideDefaultPlantPeriod: 1
+  NewPlantPeriod: 18
+  PopulationSize: 26
+  MaxLivePopulation: 39
+  GrowthPerOffspring: 56
+  OffspringPerBirth: 1
+  ReproductionCooldownSeconds: 5
+  MaturityFraction: 0.5
+  OffspringSpread: 60
+  PreferredSites: 31
+  Element: 0
+  Variant:
+    Enabled: 0
+    LeafSize: {x: 0, y: 0, z: 0}
+    GrowPeriod: -1
+    ShieldPeriod: -1
+    WitherRingInterval: -1
+    MaxTotalSpawnedObjects: -1
+    PlantRadiusCellFraction: -1
+    PlantRadiusCellFractionMin: -1
+  InitialLevel: 1
+  LeafScalePerLevel: 1.3
+  SpreadElements: 1
+  ElementPalette:
+  - {fileID: 11400000, guid: 58355313138d44a18893054ecabf494f, type: 2}
+  - {fileID: 11400000, guid: 3c7234ddfb27413fa43e7640d54027c5, type: 2}
+  - {fileID: 11400000, guid: e2677134f5ac45c5985e5c24cdf31a20, type: 2}
+  - {fileID: 11400000, guid: d182188565e8421bb0fa6a13dfebb0bb, type: 2}
+  PlantRadiusCellFractionMaxOverride: 0.95
+  PlantRadiusCellFractionMinOverride: 0.1
+  MaxTotalSpawnedObjectsOverride: 160

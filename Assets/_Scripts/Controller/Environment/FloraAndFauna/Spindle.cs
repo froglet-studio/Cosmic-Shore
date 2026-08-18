@@ -36,9 +36,22 @@ namespace CosmicShore.Gameplay
         // is bounded by the handful of distinct spindle materials.
         const int PhaseVariantCount = 8;
         static readonly Dictionary<Material, Material[]> PhaseVariants = new();
-        Material _phaseBaseMaterial;   // captured once so pooled reuse never layers variants-on-variants
 
         public Renderer RenderedObject;
+
+        // A spindle may carry MORE THAN ONE piece of branch geometry, and every piece has to
+        // live and die on the same clock as the first: the gyroid's branch is a MIRRORED PAIR
+        // of half-branches meeting at the prism (Docs/ECOSYSTEM.md §34.12), so a fade driven
+        // through RenderedObject alone would condense one half in and evaporate one half out
+        // while the other POPPED - a continuity-of-existence violation, on a spindle whose
+        // whole point is symmetry. Listed explicitly rather than swept with
+        // GetComponentsInChildren because the flora parents its HEALTH PRISM under the spindle
+        // root, so a sweep would capture the prism's renderer and fade the mass along with the
+        // branch. Empty on every single-renderer spindle; those behave exactly as before.
+        // NOTE: attribute and declaration stay on ONE line - the repo's serialized-field parity
+        // check is line-based, so a wrapped attribute hides the field from it (a silent false pass).
+        [SerializeField, Tooltip("Extra branch renderers beyond RenderedObject. They share its sway phase bucket and take the same condense/evaporate fade, so a multi-part spindle can never half-pop. Leave empty for a single-part spindle.")] Renderer[] additionalRenderedObjects;
+
         [SerializeField] Spindle parentSpindle;
         public LifeForm LifeForm;
         [SerializeField] bool retainSpindle = false;
@@ -46,7 +59,15 @@ namespace CosmicShore.Gameplay
         HashSet<HealthPrism> healthBlocks = new HashSet<HealthPrism>();
         HashSet<Spindle> spindles = new HashSet<Spindle>();
 
-        Material originalMaterial;
+        // RenderedObject + additionalRenderedObjects, flattened once. Parallel arrays, one
+        // slot per renderer: its captured base material and the shared phase variant it draws
+        // with. Every slot resolves its variant from the SPINDLE ROOT's position, so the parts
+        // of one spindle always land in the same phase bucket and sway together - bucketing
+        // per-renderer would desync a mirrored pair and tear it apart at the joint.
+        Renderer[] _renderers;
+        Material[] _phaseBaseMaterials;
+        Material[] _phaseVariants;
+
         Coroutine condenseCoroutine;
 
         bool deregistered;
@@ -73,6 +94,43 @@ namespace CosmicShore.Gameplay
             spindles.RemoveWhere(s => !s);
         }
 
+        void Awake() => CacheRenderers();
+
+        /// <summary>
+        /// Flattens <see cref="RenderedObject"/> + <see cref="additionalRenderedObjects"/> into
+        /// the array every visual path drives. Idempotent and called defensively from each entry
+        /// point as well as from Awake, so no Awake/OnEnable ordering assumption is load-bearing.
+        /// </summary>
+        void CacheRenderers()
+        {
+            if (_renderers != null) return;
+
+            int extra = 0;
+            if (additionalRenderedObjects != null)
+                for (int i = 0; i < additionalRenderedObjects.Length; i++)
+                    if (additionalRenderedObjects[i] && additionalRenderedObjects[i] != RenderedObject) extra++;
+
+            _renderers = new Renderer[(RenderedObject ? 1 : 0) + extra];
+            int n = 0;
+            if (RenderedObject) _renderers[n++] = RenderedObject;
+            if (additionalRenderedObjects != null)
+                for (int i = 0; i < additionalRenderedObjects.Length && n < _renderers.Length; i++)
+                {
+                    var extraRenderer = additionalRenderedObjects[i];
+                    if (extraRenderer && extraRenderer != RenderedObject) _renderers[n++] = extraRenderer;
+                }
+
+            _phaseBaseMaterials = new Material[_renderers.Length];
+            _phaseVariants = new Material[_renderers.Length];
+        }
+
+        void SetRenderersEnabled(bool value)
+        {
+            CacheRenderers();
+            for (int i = 0; i < _renderers.Length; i++)
+                if (_renderers[i]) _renderers[i].enabled = value;
+        }
+
         void OnEnable()
         {
             // pooled spindles must be allowed to deregister again later
@@ -81,7 +139,7 @@ namespace CosmicShore.Gameplay
 
             if (!isPermanentlyWithered) return;
 
-            if (RenderedObject) RenderedObject.enabled = false;
+            SetRenderersEnabled(false);
             StopAllCoroutines();
         }
 
@@ -97,11 +155,18 @@ namespace CosmicShore.Gameplay
             }
 
             // Desync the sway via a shared phase-variant material (see PhaseVariants) so the
-            // spindle stays SRP-batchable — no per-renderer MaterialPropertyBlock. Capture the
-            // base material once so pooled reuse never layers variants-on-variants.
-            if (_phaseBaseMaterial == null) _phaseBaseMaterial = RenderedObject.sharedMaterial;
-            originalMaterial = GetPhaseVariant(_phaseBaseMaterial, transform.position);
-            RenderedObject.sharedMaterial = originalMaterial;
+            // spindle stays SRP-batchable — no per-renderer MaterialPropertyBlock. Capture each
+            // base material once so pooled reuse never layers variants-on-variants, and bucket
+            // EVERY part off the spindle root's position so a multi-part spindle sways as one.
+            CacheRenderers();
+            for (int i = 0; i < _renderers.Length; i++)
+            {
+                var partRenderer = _renderers[i];
+                if (!partRenderer) continue;
+                if (_phaseBaseMaterials[i] == null) _phaseBaseMaterials[i] = partRenderer.sharedMaterial;
+                _phaseVariants[i] = GetPhaseVariant(_phaseBaseMaterials[i], transform.position);
+                if (_phaseVariants[i]) partRenderer.sharedMaterial = _phaseVariants[i];
+            }
             condenseCoroutine = StartCoroutine(CondenseCoroutine());
 
             if (LifeForm) LifeForm.AddSpindle(this);
@@ -218,20 +283,27 @@ namespace CosmicShore.Gameplay
         void RestoreOriginalMaterial()
         {
             // Clearing the property block is what restores SRP batching; the shared
-            // phase-variant material itself was never swapped out.
-            if (RenderedObject)
+            // phase-variant material itself was never swapped out. The null guard on the
+            // variant matters on the error path: Start bails before assigning one when the
+            // material is invalid, and writing that null back would blank the renderer.
+            CacheRenderers();
+            for (int i = 0; i < _renderers.Length; i++)
             {
-                RenderedObject.sharedMaterial = originalMaterial;
-                RenderedObject.SetPropertyBlock(null);
+                var partRenderer = _renderers[i];
+                if (!partRenderer) continue;
+                if (_phaseVariants[i]) partRenderer.sharedMaterial = _phaseVariants[i];
+                partRenderer.SetPropertyBlock(null);
             }
         }
 
         void SetFadeValue(float deathAnimation)
         {
-            if (!RenderedObject) return;
+            CacheRenderers();
+            if (_renderers.Length == 0) return;
             s_fadeMpb ??= new MaterialPropertyBlock();
             s_fadeMpb.SetFloat(DeathAnimationID, deathAnimation);
-            RenderedObject.SetPropertyBlock(s_fadeMpb);
+            for (int i = 0; i < _renderers.Length; i++)
+                if (_renderers[i]) _renderers[i].SetPropertyBlock(s_fadeMpb);
         }
 
         IEnumerator EvaporateCoroutine()
@@ -258,7 +330,7 @@ namespace CosmicShore.Gameplay
             }
 
             RestoreOriginalMaterial();
-            if (RenderedObject) RenderedObject.enabled = false;
+            SetRenderersEnabled(false);
 
             DisableSpindle();
 

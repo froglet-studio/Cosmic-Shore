@@ -232,8 +232,6 @@ MonoBehaviour:
   Crystal: {fileID: 1648936725651798775}
   elementalCrystalShipEffects:
   - {fileID: 11400000, guid: 0ac04a748b4c4ad8825e811431df45f4, type: 2}
-  moveToVesselDuration: 3
-  easeMoveToVessel: 1
 --- !u!114 &7383174847063407884
 MonoBehaviour:
   m_ObjectHideFlags: 0

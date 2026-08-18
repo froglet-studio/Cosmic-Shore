@@ -29,7 +29,13 @@ namespace CosmicShore.Tests
         // --- the authored sword rig ---
         static readonly Vector3 MountLocalPosition = new(0f, 9.38f, 20.7f);
         static readonly Quaternion MountLocalRotation = Quaternion.AngleAxis(20f, Vector3.right);
-        const float RestHalfLength = 15f;   // 0.5 * localScale.y (30)
+        // The fixture's own centred-blade model: a material point at fraction t sits at
+        // (2t-1) * RestHalfLength from the blade origin. NOTE this is the fixture's parameterization,
+        // not the shipped rig's dimensions - the real sword authors lengthScale 2 (Unity's capsule
+        // spans local [-1, 1]), so its HalfLength at rest is localScale.y = 30, and it is HILT-
+        // ANCHORED rather than centred on its mount. Neither changes what is under test here:
+        // RelativeVelocity is a pure composition about whatever origin and half-length it is handed.
+        const float RestHalfLength = 15f;
         const float SwipeYaw = 90f, SwipeRoll = 90f, ChopPitch = 65f;
 
         // Central-difference step for the analytic reference. Deliberately not tiny: Unity's
@@ -229,6 +235,44 @@ namespace CosmicShore.Tests
             Vector3 relative = SkimmerSwingKinematics.RelativeVelocity(sample, tip, Vector3.up, true, true);
 
             Assert.That(relative.magnitude, Is.LessThan(AbsoluteFloor));
+        }
+
+        [Test]
+        public void RemoveGrowthTranslation_PureGrowth_LeavesNothing()
+        {
+            // The sword is hilt-anchored, so a blade that ONLY grows still translates its centre
+            // along its own axis. That must not read as a swing: a prism struck during a crystal
+            // burst has to take the hull's velocity, not the burst's 600 u/s expansion.
+            Vector3 axis = (Quaternion.AngleAxis(20f, Vector3.right) * Vector3.up).normalized;
+            const float rate = 600f;   // crystal-burst expansion, the worst case
+
+            Vector3 growthOnly = axis * rate;                     // tipSign +1
+            Vector3 stripped = SkimmerSwingKinematics.RemoveGrowthTranslation(growthOnly, axis, 1f, rate);
+            Assert.That(stripped.magnitude, Is.LessThan(1e-3f),
+                "a purely growing blade must contribute no swing velocity");
+
+            // …and with the axis pointing at the hilt instead, the sign has to follow.
+            Vector3 flipped = SkimmerSwingKinematics.RemoveGrowthTranslation(-axis * rate, axis, -1f, rate);
+            Assert.That(flipped.magnitude, Is.LessThan(1e-3f),
+                "tipSign -1 must strip growth in the opposite direction");
+        }
+
+        [Test]
+        public void RemoveGrowthTranslation_PureSwing_IsUntouched()
+        {
+            // The compensation must be surgical: a swipe with no growth keeps every unit of its
+            // velocity, including any component that happens to lie along the blade.
+            Vector3 axis = Vector3.up;
+            Vector3 swing = new(120f, 45f, -30f);
+
+            Assert.That(SkimmerSwingKinematics.RemoveGrowthTranslation(swing, axis, 1f, 0f),
+                Is.EqualTo(swing), "a blade that is not growing must be left alone");
+
+            // A blade that grows WHILE swinging keeps the swing and loses exactly the growth.
+            Vector3 mixed = swing + axis * 30f;
+            Vector3 stripped = SkimmerSwingKinematics.RemoveGrowthTranslation(mixed, axis, 1f, 30f);
+            Assert.That((stripped - swing).magnitude, Is.LessThan(1e-3f),
+                "only the along-axis growth component may be removed");
         }
 
         [Test]

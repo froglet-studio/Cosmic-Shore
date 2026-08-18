@@ -99,11 +99,15 @@ namespace CosmicShore.Gameplay
             prism.ChangeTeam(domain);
             prism.ownerID = ownerId;
             prism.TargetScale = scale;
-            if (trail != null)
-                prism.Trail = trail;
 
             if (string.IsNullOrEmpty(playerName)) prism.Initialize(); // environment-owned
             else prism.Initialize(playerName);
+
+            // AFTER Initialize - pool-reuse reset clears trail membership, so a stamp made
+            // before it is silently wiped and the ring's prisms become container-less. That
+            // reads as a 0D Singleton to the prismscape topology, which is how a boost ring
+            // stopped being rideable as the 1D LOOP it is.
+            if (trail != null) prism.AssignTrail(trail);
 
             // Danger repaints on the BoxCollider - apply now so the ring reads as a hazard from
             // frame 0. Shield kinds swap to the transform-scaled octahedron MeshCollider, so they

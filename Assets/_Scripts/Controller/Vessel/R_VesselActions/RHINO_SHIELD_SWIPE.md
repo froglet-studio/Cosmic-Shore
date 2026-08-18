@@ -1,5 +1,15 @@
 # Rhino Shield Swipe — analog trigger swordsmanship
 
+> The blade's **cutting behavior, energy meter, and the energize ritual** — ungated prism
+> damage, the ENERGIZED-only super-shield pop (hold the both-triggers chop stance to charge),
+> energy banked per kill (blade length + heat), the elemental-crystal 3D burst, and the full
+> blade FX pass — live in **`RHINO_ENERGY_SWORD.md`**. This file covers only the
+> pose/analog-swipe control model, though the two now share the triggers: the same
+> reparameterized sum/difference that poses the blade also feeds the energize stance
+> (`FeedSwordStance` → `IRhinoSwordState.SetInStance`). The `ShieldSkimmerScaleDriver`
+> "Sword dimensions & scale ownership" section below is driven by that energy meter (no
+> tick decay).
+
 The Rhino's ForceFieldSkimmer capsule (the only CapsuleCollider on the vessel — its
 "sword") is puppeteered by the analog triggers. The vessel plays like a swordsman:
 the triggers are reparameterized Manta-style into a difference axis and a sum axis,
@@ -14,9 +24,18 @@ each mapped to an orientation axis of the sword.
 
 The raised rest pose is authored on the ForceFieldSkimmer instance transform in
 `Rhino.prefab` (currently ~20° pitch; it was 41.8° pre-feature — raised so the chop
-axis has meaningful travel). The executor captures whatever local pose is authored
+axis has meaningful travel). Its MOUNT sits at local (0, **−1**, 20.7) — lowered from
+9.38, which perched the grip ~3 units above the hull's top, to about the hull's own
+vertical centre (the hull box spans y ≈ −8.9…+6.4, centred −1.2). Both numbers are one edit on that instance: y is how high
+the sword is *held*, the pitch is how far it is *raised*, and on a 60–240-unit blade
+the PITCH is much the stronger lever for "it towers overhead". The executor captures whatever local pose is authored
 as its zero point, and pivots rotation **and mount position** about the Fusilage
-origin so the blade carves a real arc instead of spinning in place.
+origin so the blade carves a real arc instead of spinning in place. On top of that
+arc it applies the **hilt anchor**: the blade mesh is centred on its transform, so the
+pose offsets that centre by the blade's own half-extent along its local +Y, keeping the
+HILT at the authored mount and sending every unit of the energy meter's growth out the
+tip. Without it a growing blade extends equally in both directions and reads as a
+quarterstaff (see `RHINO_ENERGY_SWORD.md` § "The blade is HILT-ANCHORED").
 
 Sign conventions (Unity, verified): positive about up = yaw right; positive about
 +forward = **counterclockwise** roll from the pilot's seat (`AngleAxis(+90, forward)`
@@ -39,9 +58,13 @@ do not copy it (follow-up below).
   replicate through `R_VesselActionHandler`'s RPC chain, so **remote peers animate an
   event-driven approximation**: press = full stance + half chop (rate-limited by
   `swipeOutSeconds` so it reads as a swing), release = return (`returnSeconds`),
-  cross-press hands the stance to the still-held side. Touch and keyboard resolve no
-  action for these events (shared mapping has no entry), so they are unaffected; a
-  future mobile binding gets the event path for free.
+  cross-press hands the stance to the still-held side, and **both held = centered full
+  chop** (`diff 0, sum 2` — added with the energize ritual so remote peers replay the
+  owner's two-trigger stance POSE instead of a one-sided swipe; the energize STANCE
+  itself is evaluated from the replicated trigger mirrors, not from these events, so
+  every peer reaches the same verdict — see `RHINO_ENERGY_SWORD.md`). Touch and
+  keyboard resolve no action for these events (shared mapping has no entry), so they
+  are unaffected; a future mobile binding gets the event path for free.
 
 ## Files
 
@@ -58,15 +81,28 @@ do not copy it (follow-up below).
 
 Config knobs (`RhinoShieldSwipeConfig.asset`): `swipeYawDegrees` 90, `swipeRollDegrees`
 90, `chopPitchDegrees` 65, `analogSmoothingSeconds` 0.04, `swipeOutSeconds` 0.18,
-`returnSeconds` 0.3.
+`returnSeconds` 0.3, `swipeCooldownSeconds` 0.35, `swipeEngageThreshold` 0.4,
+`stanceSumThreshold` 1.5, `stanceCenterEpsilon` 0.4.
+
+**Swipe recovery.** Each direction owes `swipeCooldownSeconds` after it releases before it
+can sweep again (zero while the blade is ENERGIZED), so the sword swings with a rhythm.
+It suppresses the DIFFERENCE axis only — the chop and the energize stance ride the sum and
+are never blocked, and the blade keeps cutting everything it touches throughout. It is not
+the rejected v1 slash cooldown, which gated DAMAGE; see `RHINO_ENERGY_SWORD.md`
+§ "Swipe recovery".
 
 ## Sword dimensions & scale ownership
 
 The sword's silhouette is the authored local scale on the ForceFieldSkimmer instance
-in `Rhino.prefab` — (1.5, 30, 4.8) — and X/Z are **never** scaled at runtime. All
-runtime scaling elongates local Y only (`Skimmer.elongateYOnly`, set on
-`ForceFieldSkimmer Variant.prefab`; spherical skimmers on other vessels keep the
-legacy uniform XYZ path).
+in `Rhino.prefab` — (1.5, 30, 4.8). Resting-length scaling elongates local Y only
+(`Skimmer.elongateYOnly`, set on `ForceFieldSkimmer Variant.prefab`; spherical
+skimmers on other vessels keep the legacy uniform XYZ path). The one exception is the
+transient elemental-crystal **burst** (`RHINO_ENERGY_SWORD.md`), which deliberately
+scales all three dimensions for a few seconds before easing back to the authored X/Z.
+Because the blade is hilt-anchored, every unit of that scale extends the sword from its
+grip rather than through it — and `SkimmerSwingKinematics.lengthScale` is **2** on the
+variant, because Unity's capsule spans local ±1 and the model would otherwise describe
+only the middle half of the blade you can see.
 
 Exactly one component writes the sword's scale at runtime:
 
@@ -117,7 +153,7 @@ v_rel(P) = v_bladeOrigin/vessel  +  omega_blade/vessel x (P - bladeOrigin)  +  (
 |---|---|---|
 | `v_vessel` | `Speed * Course + VesselTransformer.VelocityShift` | the hull's own translation — the canonical value the transformer integrates each frame |
 | `omega_vessel x r` | vessel rotation, differentiated | a hard turn genuinely sweeps a 35-unit sword. Optional (`includeVesselRotation`) |
-| `v_bladeOrigin/vessel` | `ShieldSwipeActionExecutor` writes `localPosition = sweep * basePos` | the mount arcs about the Fusilage origin |
+| `v_bladeOrigin/vessel` | `ShieldSwipeActionExecutor` writes `localPosition = sweep * basePos + bladeUp * halfExtent` | the mount arcs about the Fusilage origin; the second term is the hilt anchor, whose growth component `SkimmerSwingKinematics.RemoveGrowthTranslation` strips back out so lengthening is not read as a swing |
 | `omega_blade/vessel x r` | `localRotation = sweep * baseRot`, differentiated | the blade's own spin — the dominant term at the tip |
 | `(dL/dt)*f*axis` | `ShieldSkimmerScaleDriver` growing local Y | a lengthening blade drives its points outward. Optional (`includeElongation`) |
 
@@ -141,9 +177,11 @@ authored, so re-posing or re-parenting the sword cannot invert them.
 ### Impact wiring
 
 `PrismEffectHelper.ContactVelocity` composes it, and both
-`SkimmerDamagePrismEffectSO` (the generic effect that the Rhino sword's
-`RhinoForceFieldSkimmerImpactorDataContainer` actually wires — `RhinoSkimmerDamagePrismEffect`
-exists but is **not** in that container) and `RhinoSkimmerDamagePrismEffectSO` call it before
+`SkimmerDamagePrismEffectSO` (the generic effect, wired on every other skimmer) and
+`RhinoSkimmerDamagePrismEffectSO` (wired on the sword itself — the energy-sword branch swapped
+`RhinoForceFieldSkimmerImpactorDataContainer`'s prism slot from the generic effect to this one,
+see `RHINO_ENERGY_SWORD.md`; both assets carry identical swing-model values, so the velocity
+model is unchanged by that swap) call it before
 `PrismEffectHelper.Damage(..., Vector3 velocity)` → `Prism.Damage` → `Prism.Explode`
 (`Velocity = impactVector / volume` on the debris VFX).
 
@@ -224,10 +262,12 @@ Three things otherwise leave the sword permanently "hotter" than the hull while 
 which is not swordsmanship and reads as a bug:
 
 - **Blade elongation is ambient, not a strike.** `ShieldSkimmerScaleDriver` grows the blade at 30
-  and shrinks it at 10 world-units/sec, and its tick loop decays the shield every second — the
-  blade is almost never static. At the tip that is a standing **+15 / −5 u/s** on a ~35 u/s
-  cruise. The term is physically real and stays in the model, but `includeElongation` now
-  defaults **off**; turn it on only if a shield extension should genuinely shove.
+  and shrinks it at 10 world-units/sec — driven by the energy meter, which rises on every prism
+  the sword kills and empties into the crystal burst (`RHINO_ENERGY_SWORD.md`; the old tick-decay
+  loop is gone), so the blade is almost never static. At the tip that is a standing **+15 / −5
+  u/s** on a ~35 u/s cruise, and the burst's 600 u/s expansion would read far hotter still. The
+  term is physically real and stays in the model, but `includeElongation` now defaults **off**;
+  turn it on only if a shield extension should genuinely shove.
 - **Sampling residue rectifies upward.** Whatever residue survives per-frame differentiation adds
   roughly *perpendicular* to the vessel's velocity, and `|v + n| > |v|` always — residue can only
   bias the magnitude up, never down. `restDeadbandSpeed` (1.5) zeroes sub-threshold relative
