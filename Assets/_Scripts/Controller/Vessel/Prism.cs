@@ -724,6 +724,9 @@ namespace CosmicShore.Gameplay
             destroyed = false;
             devastated = false;
             _destroyedByCreature = false; // pool reuse: clear stale creature-kill flag
+            // Pool reuse: a prism whose scale window was widened for an AUTHORED size
+            // (AdmitTargetScale) must not carry that ceiling into its next life.
+            scaleAnimator?.RestoreAuthoredScaleWindow();
             ProjectileImmuneUntil = 0f;   // pool reuse: immunity never survives into a new life
 
             // Pool-reuse safety: no spawner requests super-shield via prismProperties

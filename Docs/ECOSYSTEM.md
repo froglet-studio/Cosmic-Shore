@@ -4765,7 +4765,8 @@ at **Levels 1..5**. It scales the *prism* but not the *lattice*, so at the inher
 level-5 plant's prisms are **1.749×** the size fitted flush and the plant interpenetrates
 itself — measured at **144 overlapping pairs at level 3 and 204 at level 5**, against zero
 at level 1. Pinned to 1, every level is clear. Nothing is lost: the crystal still grows
-with level (`CrystalScalePerLevel`), and budget and lineage are untouched. **The prism size
+with level (via `ElementalCrystalSet`'s one shared curve since §33; the per-species
+`CrystalScalePerLevel` this originally named is deleted), and budget and lineage are untouched. **The prism size
 belongs to the lattice, not to the plant.**
 
 **All six producers were authored, not four.** The species has six config sites and a
@@ -4858,7 +4859,8 @@ Hesperides is unchanged at 4.
 **Two traps this pass fixed, both the §34.5 lesson repeated for other fields.**
 `SchwarzPFlora.prefab` authored `crystalGrowth: 0.1` and nothing gated it, so a Schwarz
 crystal grew **+0.1 every grow tick, unbounded, forever** — now gated in code *and* authored 0.
-And `CrystalScalePerLevel: 1.2` against Blob's Levels 1..5 gives crystal scales
+And — *before §33 replaced per-species crystal scaling with one shared curve* —
+`CrystalScalePerLevel: 1.2` against Blob's Levels 1..5 gave crystal scales
 3.0 / 3.6 / 4.32 / 5.18 / 6.22 against a hole of about 4.2 units, so **from level 3 up the
 heart burst its own seat** — pinned at 1, exactly as `LeafScalePerLevel` was. On a lattice
 species the geometry owns the size; the plant's level does not.
@@ -5024,9 +5026,10 @@ compile or in any static check — only in geometry, and only some distance from
 2× would be an **8× per-prism volume**, which is what makes this the §4.6 trap: at `60 × 2 × 2` the
 prism is 240 units and the species' ceiling reaches **155%** of the Blob cell's
 `FrenzyEnterVolume 288,000` on its own. Holding the cross-section at **1** instead lands it at
-`60 × 1 × 1 = 60` per prism (**112.7** after the 1.88 level spread) and **39%** — heavier than the
-20 × 1 × 1 it replaced (13%), lighter than its own Mass sibling (71%), and comfortably inside the
-budget. (§34.11's shortening to 40 takes it further down, to 75.1 and 26%.) A lattice species' thickness is therefore a *volume* dial with cubic leverage, not only a
+`60 × 1 × 1 = 60` per prism and **39%** — heavier than the 20 × 1 × 1 it replaced, lighter than
+its own Mass sibling, and comfortably inside the budget. *(The ×1.88 level-spread multiplier this
+pass applied is retired — see §34.9's correction; the percentages here are that pass's and §34.11
+carries the current ones.)* A lattice species' thickness is therefore a *volume* dial with cubic leverage, not only a
 look dial: it is the cheapest correction available when a scale-up overshoots the ladder. If the
 freestyle cell still reads sparse or freezes early, the levers in order remain the **cell's volume
 ladder** first and `MaxLivePopulation` last (§32.7 seventh pass, /ecology §4.6); neither is changed
@@ -5183,8 +5186,8 @@ which is a spatial question no offline check here answers.
 Two prism-and-lattice tunings on the gyroid, Schwarz P untouched:
 
 - **Strut `60 × 1 × 1 → 40 × 1 × 1`.** Prism only. Volume falls `60 → 40` per prism,
-  **112.7 → 75.1** effective after the 1.88 level spread, and the species' ceiling in the Blob
-  cell **39% → 26%** of `FrenzyEnterVolume`.
+  and the species' ceiling in the Blob cell falls with it. *(Volume figures restated below
+  without the retired ×1.88 level spread — §34.9.)*
 - **Spacing to an absolute 25.** `LatticeScale 4 → 3.1902` — solved, not multiplied: the bonded
   spacing at `separationDistance 3` measures **7.8364**, so `25 / 7.8364 = 3.1902` lands the walk
   on **24.9997**. That is the only reason the number looks arbitrary; it is "spacing 25" expressed
@@ -5213,5 +5216,10 @@ The current state of both Space elements:
 
 | | prism | LatticeScale | spacing | span | eff. volume | % of Blob Frenzy | plant footprint |
 |---|---|---|---|---|---|---|---|
-| **Gyroid Space** | 40 × 1 × 1 | 3.1902 | 25.00 | 1.60 | 75.1 | 26% | ring r 32u, territory 85u |
+| **Gyroid Space** | 40 × 1 × 1 | 3.1902 | 25.00 | 1.60 | 40.0 | 14% | ring r 32u, territory 85u |
 | **Schwarz P Space** | 30 × 0.5 × 0.5 | 5 | 26.25 | 1.14 | 7.5 | 2% | tile 150u across |
+
+Volumes are RAW (`x·y·z`): since §33 a lattice species' leaf does not scale with level
+(`Flora.PrismSizeFixedByGrowthRule`), so raw == effective and the ×1.88 spread these sections
+were originally computed with no longer applies. Blob `FrenzyEnterVolume` = 288,000; the gyroid
+ceiling is `40.0 × 30 prisms × 33 plants`, the Schwarz `7.5 × 36 × 22`.

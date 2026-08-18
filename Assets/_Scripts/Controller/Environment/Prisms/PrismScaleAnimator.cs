@@ -254,8 +254,34 @@ namespace CosmicShore.Gameplay
         /// </summary>
         public void AdmitTargetScale(Vector3 target)
         {
+            if (!_authoredWindowCaptured)
+            {
+                _authoredMinScale = minScale;
+                _authoredMaxScale = maxScale;
+                _authoredWindowCaptured = true;
+            }
             maxScale = Vector3.Max(maxScale, target);
             minScale = Vector3.Min(minScale, target);
+        }
+
+        Vector3 _authoredMinScale, _authoredMaxScale;
+        bool _authoredWindowCaptured;
+
+        /// <summary>
+        /// Restores the window <see cref="AdmitTargetScale"/> widened, on pool reuse.
+        ///
+        /// <para>Prisms are POOLED and the widening is permanent on the instance, so without
+        /// this a prism that once carried a 40-unit flora leaf would keep a 40-unit ceiling
+        /// into its next life as a trail prism. Reachable today only through
+        /// <c>GyroidAssembler.ConvertBlock</c>, which steals an existing (possibly pooled)
+        /// prism - but the leak is in the widening, not in that one caller.</para>
+        /// </summary>
+        public void RestoreAuthoredScaleWindow()
+        {
+            if (!_authoredWindowCaptured) return;
+            minScale = _authoredMinScale;
+            maxScale = _authoredMaxScale;
+            _authoredWindowCaptured = false;
         }
 
         public void SetTargetScale(Vector3 newTarget)
