@@ -1139,8 +1139,9 @@ namespace CosmicShore.Gameplay
                 _hasHomeHeart = true;
                 PlaceCrystalAtHeart();
                 QuasicrystalColonyDiagnostics.Founders++;
-                CSDebug.Log($"[QuasicrystalColony] FOUNDER {name}: heart {_homeHeart} " +
-                            $"lattice #{frame.GetHashCode():X}");
+                CSDebug.LogVerbose(CSLogChannel.QuasicrystalColony,
+                    $"[QuasicrystalColony] FOUNDER {name}: heart {_homeHeart} " +
+                    $"lattice #{frame.GetHashCode():X}");
                 return;
             }
         }
@@ -1221,9 +1222,10 @@ namespace CosmicShore.Gameplay
                 offered++;
             }
 
-            CSDebug.Log($"[QuasicrystalColony] COMPLETE {name}: heart {_homeHeart} " +
-                        $"prisms={healthTracker.Count} offered={offered} - frontier now " +
-                        $"{QuasicrystalColonyFrontier.Count(cell, SourceConfig)} open hearts");
+            CSDebug.LogVerbose(CSLogChannel.QuasicrystalColony,
+                $"[QuasicrystalColony] COMPLETE {name}: heart {_homeHeart} " +
+                $"prisms={healthTracker.Count} offered={offered} - frontier now " +
+                $"{QuasicrystalColonyFrontier.Count(cell, SourceConfig)} open hearts");
         }
 
         /// <summary>
@@ -1274,9 +1276,10 @@ namespace CosmicShore.Gameplay
             if (born)
             {
                 QuasicrystalColonyDiagnostics.Births++;
-                CSDebug.Log($"[QuasicrystalColony] BIRTH #{QuasicrystalColonyDiagnostics.Births} " +
-                            $"donor {name}: daughter on heart {heart} (frontier " +
-                            $"{QuasicrystalColonyFrontier.Count(cell, SourceConfig)} open)");
+                CSDebug.LogVerbose(CSLogChannel.QuasicrystalColony,
+                    $"[QuasicrystalColony] BIRTH #{QuasicrystalColonyDiagnostics.Births} " +
+                    $"donor {name}: daughter on heart {heart} (frontier " +
+                    $"{QuasicrystalColonyFrontier.Count(cell, SourceConfig)} open)");
             }
             else
             {
@@ -2046,7 +2049,15 @@ namespace CosmicShore.Gameplay
             newHealthPrism.Initialize();
 
             Assembler newAssembler = newHealthPrism.GetComponent<Assembler>();
-            ApplyLatticeSpacing(newAssembler);   // founder: before its first growth probe
+            // Founder only: a SEEDED daughter's assembler already received this in the branch
+            // above (right after ProgramAssembler), and applying the lattice scale a second
+            // time would SQUARE it on the instance fields (edgeLength / separationDistance x
+            // periodScale) - no live reader today (a programmed daughter's frame carries the
+            // real scale), but the field reads wrong in the inspector and is a trap for any
+            // future instance-field consumer. _seedGrowth is still non-null here; it is
+            // cleared a few lines down.
+            if (_seedGrowth == null)
+                ApplyLatticeSpacing(newAssembler);   // founder: before its first growth probe
             newAssembler.Prism = newHealthPrism;
             newAssembler.Spindle = newSpindle;
 

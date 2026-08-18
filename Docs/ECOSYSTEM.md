@@ -5759,7 +5759,9 @@ five-playtest failure class).
    the real window test).
 6. **Reproduction:** after a plant completes (~59 struts + maturation), one daughter per
    fauna-wave period at a random shell heart 2.38 edges away; the colony wanders rather than
-   inflating as a ball; `[QuasicrystalColony]` logs report founders/births/frontier.
+   inflating as a ball. The `[QuasicrystalColony]` founder/completion/birth telemetry is
+   opt-in per the logging law — flip `CSLogChannel.QuasicrystalColony` on in
+   FrogletTools ▸ Toolbox ▸ Logging; blocked-reseed-mint warnings always emit.
 7. **The food web:** graze a strut (any vessel ability) — the edge frees and the plant regrows
    it; strip a whole plant — it withers to its crystal on the standard path, and the freed
    heart is re-plantable by the colony.
