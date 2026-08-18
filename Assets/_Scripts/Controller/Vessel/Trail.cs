@@ -420,9 +420,22 @@ namespace CosmicShore.Gameplay
             return (index, incrementor);
         }
 
+        /// <summary>
+        /// The prism at <paramref name="blockIndex"/>, or null when this trail cannot answer.
+        ///
+        /// Null rather than an exception is the whole point: a rider caches an index, and the
+        /// trail underneath it can be CLEARED while it rides (<see cref="Clear"/>, which
+        /// VesselPrismController.ClearTrails calls on every Cell.RequestCellSwap). Indexing a
+        /// zero-length list there threw ArgumentOutOfRangeException out of MoveShip once per
+        /// frame for as long as the vessel stayed attached. Callers already null-check the
+        /// prism they get back, so the empty trail now reads as "no ground" and the ride's
+        /// own detach paths take over.
+        /// </summary>
         public Prism GetBlock(int blockIndex)
         {
+            if (TrailList.Count == 0) return null;
             if (blockIndex < 0) return TrailList[0];
+            if (blockIndex >= TrailList.Count) return TrailList[TrailList.Count - 1];
             return TrailList[blockIndex];
         }
     }

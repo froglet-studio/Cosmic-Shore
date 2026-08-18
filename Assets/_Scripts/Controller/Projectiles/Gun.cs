@@ -211,7 +211,10 @@ namespace CosmicShore.Gameplay
                 // ShootPoint ports mirrored across the hull; the spiral supersedes them).
                 // Chain children keep the energy-derived budget so a cascade's population
                 // stays bounded by depth.
-                int points = pointsOverride > 0 ? pointsOverride : 2 * (energy + 3);
+                // Floor of 2: the spiral divides by (points - 1), so a caller authoring a
+                // single point (barrageSpikeCount is [Range(0,64)], and 1 is inside it) would
+                // divide by zero and launch a NaN-direction round at a NaN position.
+                int points = Mathf.Max(2, pointsOverride > 0 ? pointsOverride : 2 * (energy + 3));
                 float phi = Mathf.PI * (3 - Mathf.Sqrt(5)); // golden angle
 
                 // DETERMINISTIC, not Random.rotation. Every peer runs this volley (button
@@ -303,19 +306,17 @@ namespace CosmicShore.Gameplay
             projectile.SetChainRangeScale(ChainRangeScale);
             projectile.SetChainRangeFalloff(ChainRangeFalloff);
 
-            // WORLD size, not local: the projectile is parented under the container while it
-            // spawns, and a container inside a scaled model subtree (the Urchin's muzzles sit
-            // under guns at 1.75) would silently multiply into the round's size, colliders and
-            // sweep radius. Divide the parent's lossy scale back out so the round is exactly
-            // projectileScale x InitialScale in the world regardless of what it spawned under.
-            // A scale-1 container (every hull-origin fire point) divides by 1 and is unchanged.
-            Vector3 lossy = containerTransform.lossyScale;
-            projectile.transform.localScale = Vector3.Scale(
-                projectileScale * projectile.InitialScale,
-                new Vector3(
-                    1f / Mathf.Max(Mathf.Abs(lossy.x), 1e-4f),
-                    1f / Mathf.Max(Mathf.Abs(lossy.y), 1e-4f),
-                    1f / Mathf.Max(Mathf.Abs(lossy.z), 1e-4f)));
+            // The round's size is authored in WORLD terms and applied by the projectile itself
+            // at launch (Projectile.ApplyIntendedWorldScale), AFTER any detach - never here.
+            //
+            // Here is too early, and dividing the container's lossy scale out here was WRONG:
+            // it cancels a UNIFORM container exactly (the Urchin's muzzles sit under guns at
+            // 1.75, which is what the compensation was written for), but a CHAIN hop's
+            // container is the parent spike ITSELF at a non-uniform (0.4, 0.4, 2), and a local
+            // scale cannot cancel a non-uniform parent that is also ROTATED - the product
+            // shears, Unity bakes an approximation at SetParent(null, true), and because every
+            // generation fires from the previous spike the error COMPOUNDS once per hop.
+            projectile.SetIntendedWorldScale(projectileScale * projectile.InitialScale);
 
             // MASS in-flight growth: set BEFORE launch, which is where the round captures the
             // scale it will grow from. The gun owns no growth policy - it is handed a factor.

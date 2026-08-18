@@ -265,6 +265,7 @@ namespace CosmicShore.Gameplay
             // Likewise the previous shot's MASS growth — a caller that does not set it gets
             // the un-grown default rather than whoever fired this instance last.
             _flightGrowthFactor = 1f;
+            _intendedWorldScale = Vector3.zero;
 
             // Per-flight chain state. Without these two an instance recycled out of the pool
             // would carry the previous cascade's remaining depth (deepening the chain for
@@ -286,6 +287,48 @@ namespace CosmicShore.Gameplay
         }
 
         public void SetType(ProjectileType type) => Type = type;
+
+        /// <summary>
+        /// The size this round should be IN THE WORLD, handed over by the gun at fire time and
+        /// applied by <see cref="ApplyIntendedWorldScale"/> at launch.
+        ///
+        /// It is deliberately NOT applied by the gun. A round spawns parented to its fire
+        /// container so it inherits that container's motion for the spawn frame, and a
+        /// container is a POSE source, never a size source - its scale must not reach the
+        /// round's mesh, collider or sweep radius. Cancelling it from the gun works only while
+        /// the container's scale is UNIFORM: a local scale cannot undo a non-uniform parent
+        /// that is also rotated (the product shears). A CHAIN hop's container is the previous
+        /// spike itself, non-uniform at (0.4, 0.4, 2) and rotated to its own flight direction,
+        /// so that error compounded once per generation.
+        /// </summary>
+        Vector3 _intendedWorldScale = Vector3.zero;
+
+        public void SetIntendedWorldScale(Vector3 worldScale) => _intendedWorldScale = worldScale;
+
+        /// <summary>
+        /// Resolve <see cref="_intendedWorldScale"/> against whatever parent the round has
+        /// AFTER the launch-time detach. Unparented (every spike, and every detachOnLaunch
+        /// round) is the exact case: local scale IS world scale, so no compensation is needed
+        /// and none can go wrong. A round that stays parented divides its parent's lossy scale
+        /// out, which is exact for the uniform containers those rounds actually use.
+        /// </summary>
+        void ApplyIntendedWorldScale()
+        {
+            if (_intendedWorldScale == Vector3.zero) return;
+
+            var parent = transform.parent;
+            if (!parent)
+            {
+                transform.localScale = _intendedWorldScale;
+                return;
+            }
+
+            var lossy = parent.lossyScale;
+            transform.localScale = new Vector3(
+                _intendedWorldScale.x / Mathf.Max(Mathf.Abs(lossy.x), 1e-4f),
+                _intendedWorldScale.y / Mathf.Max(Mathf.Abs(lossy.y), 1e-4f),
+                _intendedWorldScale.z / Mathf.Max(Mathf.Abs(lossy.z), 1e-4f));
+        }
         #endregion
 
         #region Impact Checks
@@ -341,6 +384,11 @@ namespace CosmicShore.Gameplay
             }
 
             Stop(); // Stop any running movement before starting a new one
+
+            // Size the round now that its parent chain is FINAL (both detach paths above have
+            // run). Must precede CacheSweepRadius and the _launchScale capture below, or the
+            // hit radius and the MASS growth baseline are taken from the pre-correction scale.
+            ApplyIntendedWorldScale();
 
             // After every scale/parent change above — the carried turret collider is sized
             // per shot, so this cannot be cached at Awake.
@@ -541,10 +589,28 @@ namespace CosmicShore.Gameplay
             public SweepHit(float t, PrismImpactor impactor) { T = t; Impactor = impactor; }
         }
 
-        // Shared scratch — the sweep is main-thread and non-reentrant (dispatching an impact
-        // runs effects, never another projectile's move loop).
-        static readonly List<Prism> s_sweepCandidates = new(64);
-        static readonly List<SweepHit> s_sweepHits = new(16);
+        // Shared scratch, RENTED BY DEPTH. The sweep is main-thread but it is NOT
+        // non-reentrant, which an earlier comment here asserted and the Urchin disproved:
+        // dispatching a swept hit runs the effect list synchronously, ProjectileChainFire
+        // fires the next generation from inside it, and that child's MoveProjectileAsync runs
+        // synchronously up to its first await - which is PAST its own first SweepPrismsAlong.
+        // So a child clears and refills the very list its parent is mid-iteration over,
+        // dropping the parent's remaining hits and re-dispatching converted prisms. Depth is
+        // bounded by ChainGeneration (<= 4) and the per-frame volley budget, so a small stack
+        // of buffers covers it; the lists grow on demand and are never freed.
+        static readonly List<List<Prism>> s_candidatePool = new();
+        static readonly List<List<SweepHit>> s_hitPool = new();
+        static int s_sweepDepth;
+
+        static (List<Prism> candidates, List<SweepHit> hits) RentSweepBuffers(int depth)
+        {
+            while (s_candidatePool.Count <= depth)
+            {
+                s_candidatePool.Add(new List<Prism>(64));
+                s_hitPool.Add(new List<SweepHit>(16));
+            }
+            return (s_candidatePool[depth], s_hitPool[depth]);
+        }
         static readonly Comparison<SweepHit> s_nearestFirst = (x, y) => x.T.CompareTo(y.T);
 
         float _sweepRadius = 0.5f;
@@ -626,6 +692,11 @@ namespace CosmicShore.Gameplay
             var index = PrismSpatialIndex.Instance;
             if (!index || !index.IsAvailable) return;
 
+            int depth = s_sweepDepth++;
+            try
+            {
+            var (s_sweepCandidates, s_sweepHits) = RentSweepBuffers(depth);
+
             if (index.QuerySegment(from, to, _sweepRadius + SweepCandidateExtent, s_sweepCandidates) == 0)
                 return;
 
@@ -672,6 +743,8 @@ namespace CosmicShore.Gameplay
 
             // Pierced everything it met — finish the frame's step.
             transform.position = to;
+            }
+            finally { s_sweepDepth--; }
         }
 
         #endregion

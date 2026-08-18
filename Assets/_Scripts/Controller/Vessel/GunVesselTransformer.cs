@@ -159,7 +159,7 @@ namespace CosmicShore.Gameplay
                     // pilot never saw.
                     accumulatedRotation = transform.rotation;
 
-                    if (!VesselStatus.AutoPilotEnabled && cameraManager != null)
+                    if (IsLocalPilotCamera && cameraManager != null)
                     {
                         // Pull the camera in while riding: the prismscape is the thing to
                         // read, and the ride is close-quarters.
@@ -170,11 +170,22 @@ namespace CosmicShore.Gameplay
             else if (!VesselStatus.IsAttached && attached)
             {
                 EndRide();
-                if (!VesselStatus.AutoPilotEnabled && cameraManager != null)
+                if (IsLocalPilotCamera && cameraManager != null)
                     cameraManager.SetNormalizedCloseCameraDistance(0);
             }
 
             attached = VesselStatus.IsAttached;
+
+            // A follower that let go on its own (its trail was cleared, or its ground prism
+            // was destroyed) leaves VesselStatus.IsAttached true, so without this the vessel
+            // would ride a null trail: frozen in place, one exception per frame. Hand it back
+            // to free flight instead, and let the next MoveShip run EndRide properly.
+            if (attached && _rideMode != RideMode.None && !RideHasGround())
+            {
+                VesselStatus.IsAttached = false;
+                VesselStatus.AttachedPrism = null;
+                attached = false;
+            }
 
             if (attached && _rideMode != RideMode.None)
                 Slide();
@@ -343,6 +354,35 @@ namespace CosmicShore.Gameplay
             // the slerp application keeps accumulatedRotation and the transform close, but a
             // residual gap on detach would fire as an uncommanded turn.
             accumulatedRotation = transform.rotation;
+        }
+
+        /// <summary>
+        /// The gameplay camera is a SINGLE global rig, so only the machine-local pilot may
+        /// move it. Gating on !AutoPilotEnabled alone was not enough: a REMOTE player's Urchin
+        /// is not on autopilot either, so every attach/detach they made yanked the local
+        /// player's camera in and out.
+        /// </summary>
+        bool IsLocalPilotCamera =>
+            !VesselStatus.AutoPilotEnabled &&
+            VesselStatus.Player != null && VesselStatus.Player.IsLocalPilot;
+
+        /// <summary>
+        /// True when the ride still has ground under it. A follower can drop its own
+        /// attachment (TrailFollower.Detach from HandleOldestRemoved, a cleared trail) without
+        /// touching VesselStatus, which would leave Slide() dereferencing a null trail; when
+        /// that happens the vessel must fall back to free flight rather than freeze.
+        /// </summary>
+        bool RideHasGround()
+        {
+            switch (_rideMode)
+            {
+                // BlockscapeFollower exposes no IsAttached - its AttachedPrism IS its
+                // attachment state, and it goes (fake-)null when the ground prism is
+                // destroyed, which is exactly the case this guard exists to catch.
+                case RideMode.Trail:   return trailFollower && trailFollower.IsAttached;
+                case RideMode.Surface: return surfaceFollower && surfaceFollower.AttachedPrism;
+                default:               return false;
+            }
         }
 
         void Slide()

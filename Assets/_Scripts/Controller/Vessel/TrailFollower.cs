@@ -65,7 +65,14 @@ namespace CosmicShore.Gameplay
         public float Throttle;
 
         public bool IsAttached { get { return attachedTrail != null; } }
-        public Prism AttachedPrism { get { return attachedTrail.GetBlock(attachedBlockIndex); } }
+        /// <summary>
+        /// Null when this follower is not attached. <see cref="Detach"/> nulls the trail
+        /// without touching VesselStatus, so a consumer can legitimately still be asking.
+        /// </summary>
+        public Prism AttachedPrism
+        {
+            get { return attachedTrail != null ? attachedTrail.GetBlock(attachedBlockIndex) : null; }
+        }
 
         IVesselStatus vesselData;
 
