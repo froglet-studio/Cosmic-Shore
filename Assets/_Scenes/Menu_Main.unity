@@ -5010,9 +5010,9 @@ MonoBehaviour:
   - {fileID: 11400000, guid: ce657732064a48dfa48cb345c4fb47db, type: 2}
   _initialConfigIndex: 4
   _cellData: {fileID: 11400000, guid: 8d4e8398eedc76c4dadb8604f89b9e1b, type: 2}
-  _randomSwitchEnabled: 0
-  _randomSwitchIntervalMin: 20
-  _randomSwitchIntervalMax: 30
+  _randomSwitchEnabled: 1
+  _randomSwitchIntervalMin: 45
+  _randomSwitchIntervalMax: 45
   _configGlideDuration: 3
   _fallbackBlendDuration: 1.2
 --- !u!114 &1486013854
