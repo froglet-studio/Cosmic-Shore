@@ -1224,6 +1224,8 @@ namespace CosmicShore.Gameplay
             GyroidColonyFrontier.Clear(this);
             SchwarzPColonyFrontier.Clear(this);
             SchwarzPTileRegistry.Clear(this);
+            QuasicrystalColonyFrontier.Clear(this);
+            QuasicrystalHeartRegistry.Clear(this);
             phase = CellPhase.Calm;
 
             if (spawnedCytoplasm)
@@ -1465,6 +1467,8 @@ namespace CosmicShore.Gameplay
             GyroidColonyFrontier.Clear(this);
             SchwarzPColonyFrontier.Clear(this);
             SchwarzPTileRegistry.Clear(this);
+            QuasicrystalColonyFrontier.Clear(this);
+            QuasicrystalHeartRegistry.Clear(this);
             phase = CellPhase.Calm;
 
             // Bind runtime -> this cell
@@ -2082,6 +2086,8 @@ namespace CosmicShore.Gameplay
             GyroidColonyFrontier.Clear(this);
             SchwarzPColonyFrontier.Clear(this);
             SchwarzPTileRegistry.Clear(this);
+            QuasicrystalColonyFrontier.Clear(this);
+            QuasicrystalHeartRegistry.Clear(this);
             phase = CellPhase.Calm;
             _nucleusControlRadiusSqr = 0f;
 

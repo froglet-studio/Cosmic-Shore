@@ -263,6 +263,31 @@ outcome is optimization, not life). Use the `/ecology` skill for any change here
   under the spindle root and fade conserved mass with the branch). Full record:
   `Docs/ECOSYSTEM.md §34` (§34.5 the per-element prism fit, §34.7 the Schwarz P lattice, §34.8 the
   gyroid scale, §34.12 the branch pair).
+  **The THIRD lattice species is APERIODIC — and its addressing is still exact integers.** The
+  quasicrystal flora grows the icosahedral Ammann–Kramer–Neri tiling (the 3D analogue of the
+  Penrose tiling — perfect long-range "forbidden" five-fold order that NEVER repeats) by
+  **cut-and-project from Z⁶**: a vertex is six integers whose perp projection lands inside a
+  rhombic triacontahedron window (closed-form test, doubles, margins seven orders above rounding),
+  a prism is one EDGE (vertex + axis — every strut identical length, a theorem of the projection),
+  and "sameness is an integer address" therefore holds with NO mirror composition (bond deltas
+  honestly ADD upstairs in Z⁶ — the §34.2 trap cannot arise), no subdivision level and no absolute
+  coherence tolerances (the §34.8 family cannot arise): `ApplyLatticeScale` is the single
+  `edgeLength` dial. One plant = one **HEART** — a 12-coordinated vertex that is a local max of
+  window margin (bare 12-coordination admits ADJACENT hearts; measured, rejected, kept as a
+  negative control) — its crystal in a clear twelve-ray alcove (heart-adjacent struts hold back by
+  the absolute `heartSeatInset`; hearts are never adjacent so at most one end of a strut holds
+  back), and hearts self-organize to a CONSTANT 2.3840-edge spacing. **Territory is a TREE, not a
+  radius**: owner(v) follows lex-least parent chains one graph-step closer to a heart — a pure
+  integer function, cells connected by construction, measured ZERO unlaid edges where Euclidean
+  Voronoi left 47 (graph-disconnected pockets). Reproduction walks the measured 50-delta
+  heart-link census one birth per fauna-wave period (`QuasicrystalColonyFrontier` /
+  `QuasicrystalHeartRegistry`, keyed (Cell, species), cleared at all three Cell teardown sites).
+  Charge is the §35 fit (uniform shrink ×0.3568, octahedra fill the lattice back in) and
+  `fit_quasicrystal_strut_sizes.py` OWNS its leaf — `fit_shield_clearance.py` does not know this
+  species. Measured by `Tools/Build/measure_icosahedral_quasilattice.py`, the SHIPPED file
+  re-proven by `verify_icosahedral_quasilattice_tables.py` (incl. the Euclidean-Voronoi and
+  adjacent-hearts negative controls), populations by `author_flora_populations.py` (cap 14 — 14
+  always-on heart colliders in Blob, ~3% of its Frenzy ladder). `Docs/ECOSYSTEM.md §36`.
 - **An AUTHORED prism size widens its clamp; a GROWN one keeps it.**
   `PrismScaleAnimator.SetTargetScale` clamps PER AXIS into `[minScale, maxScale]` — serialized
   defaults `(0.5,0.5,0.5)`/`(10,10,10)`, which **363 of 404 prefabs** inherit unchanged — inside
