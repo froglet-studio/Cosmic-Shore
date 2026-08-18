@@ -955,6 +955,28 @@ never prunes an unresolvable modification, so the inspector keeps showing a valu
 
 ## 5. Traps learned the hard way (check these BEFORE debugging for an hour)
 
+- **Play-mode edits: SCENE changes are discarded on Stop, SO ASSET changes are kept — and that
+  asymmetry is what makes it baffling.** A human tuning your feature will edit both kinds in the
+  same sitting: the `MenuCameraConfigSO` values they change while playing STICK (it is an asset),
+  the checkbox they uncheck on the scene component silently REVERTS the moment they press Stop.
+  `Ctrl-S` during Play does not rescue the scene half — it saves assets, not the scene. So the
+  report you get is "half my changes keep undoing themselves", which reads like a save bug or a
+  git problem and sends you looking in entirely the wrong place. **Ask which kind of object the
+  field lives on, and whether they were in Play mode**, before investigating anything. Two fixes,
+  and give both: edit scene fields with the editor STOPPED, or — better when the value is part of
+  the change under review — set it in the scene YAML yourself and commit it, so it survives and is
+  reviewable. Suggest `Preferences → Colors → Playmode tint` as the standing guard.
+- **A worst case sampled over a CONVENIENT subset is not a worst case, and will send you to the
+  wrong fix.** Asked how far a camera's aim could tilt, the first pass varied the target only
+  along the axis that looked dominant (straight up/down) and reported 0.855 — comfortably near
+  the threshold, which made "move the camera further out" look like the fix. Searching the whole
+  spawn volume adversarially gave **0.9859**, i.e. the radius barely mattered and the real lever
+  was a constant elsewhere in the code. The restricted model did not just understate the number,
+  it inverted the conclusion. **When the output is a bound rather than a typical value, enumerate
+  the full parameter space (grid + refinement) and say which parameters you searched**; if you
+  quote a bound from a subset, label it as such. Re-deriving it honestly is minutes of compute
+  and is the difference between a fix and a detour.
+
 - **`HideFlags.HideAndDontSave` includes `DontUnloadUnusedAsset`, so a runtime-created Mesh or
   Material with it LEAKS.** It is the reflexive flag for a procedurally-built helper object, and
   on a GameObject it is fine (a child dies with its parent regardless). On an *asset-like* object —
