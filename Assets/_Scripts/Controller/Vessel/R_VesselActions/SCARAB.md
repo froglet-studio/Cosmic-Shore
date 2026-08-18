@@ -716,6 +716,56 @@ discovered mid-implementation. Whether it belongs in the vessel branch at all is
 
 ---
 
+### 4.6 Nucleus seeding — the Scarab studs the core (SHIPPED)
+
+**Passive, platform-level, and not a minigame feature.** While a Scarab flies, balls of its own
+domain periodically appear **embedded in the cell's nucleus**, waiting for anyone to knock them
+loose. No input, no meter, no HUD slot — the Dolphin's shipped crystal-seeding shape, and the
+reason it can be a property of the *vessel* rather than of a mode: nothing is wired per scene, so
+it behaves identically in a match, in freestyle, and in the menu.
+
+The loop, and what each direction means:
+
+| Act | Result |
+|---|---|
+| Scarab flies (passive, `seedIntervalSeconds`) | One ball of its domain embeds in the nucleus surface, up to `maxEmbeddedPerDomain` |
+| Anyone strikes it **outward** | It flies into the **CYTOPLASM** and lives there — bouncing off the nucleus from the *outside* and the membrane from the inside. Deliberately inconsequential: a toy, not a scoring path |
+| Anyone strikes it **inward** | It enters the **NUCLEUS** — which in Scarab Scramble *is* the court — so it becomes a ball of consequence. This is the mode's **second source of balls**, alongside the crystal forge |
+| One ball too many goes in (`nucleusEntryLimit`) | **Overload**: every ball detonates with an explosion `detonationRadiusScale`× its own radius. Feeding the core is the greedy line, and the greedy line has a cliff |
+
+**The embed is its own state, deliberately not `n_Frozen`.** Every vessel-contact gate on the ball
+bails on frozen — a kickoff ball must ignore the ships stacked on it — and an embedded ball's whole
+purpose is to *be* struck. So `n_Embedded` skips physics integration like frozen while leaving
+contact live. Getting this wrong yields a ball nobody can hit, with no error anywhere.
+
+**The nucleus surface is ONE surface serving both sides.** The court ball rides it from within
+(`Sphere` outer containment); the cytoplasm ball rides it from without
+(`AstroLeagueBoundary(coreObstacleRadius:)`, a central sphere obstacle added as an *orthogonal*
+feature composable with every outer shape, mirroring the existing `NotchedRing` torus). No second
+geometry, no duplicated radius.
+
+**Read `NucleusVisualWorldRadius`, never `NucleusWorldRadius`.** The latter reports **0** whenever a
+mode has declared the nucleus play geometry rather than a territorial claim
+(`NucleusIsControlZone = false` — which both Scramble and Astro League set), because that field
+answers "how big is the claim", not "how big is the sphere". The ball needs the shape.
+`Docs/ECOSYSTEM.md §25.1`.
+
+**Ownership composes with §4.2 rather than special-casing it.** A seeded ball is minted through
+`ScarabBallForge`, so it is ownership-locked from birth like every other forged ball: it is that
+Scarab's, and an enemy who wants it must **dash-steal** it exactly as they would any ball — in the
+same contact that knocks it loose.
+
+**Platform-law compliance.** Nothing is culled and nothing ages out: at the embedded cap the seed
+clock *pauses* (not creating mass is allowed; aging it out is not), and the overload is an
+**active, player-caused** removal — the same class as a vessel ability firing, never a timer. Every
+ball still leaves through a detonate-then-despawn beat, so continuity of existence holds for all of
+them at once.
+
+Tuning is one asset, `Resources/ScarabNucleusFieldConfig` (`ScarabNucleusFieldConfigSO`). Code:
+`ScarabNucleusSeeder` (the vessel component — "is it time, which cell am I in") and
+`ScarabNucleusField` (the per-cell server book — embedded caps, nucleus entries, the overload).
+Verbose telemetry rides `CSLogChannel.ScarabNucleus`, off by default.
+
 ## 5. The switch
 
 The Scarab's placeable structure is **not** a wall. It is a **curved, directional switch** — a

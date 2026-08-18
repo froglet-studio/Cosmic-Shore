@@ -265,12 +265,17 @@ namespace CosmicShore.Gameplay
                     rosterCount++;
             int cap = Mathf.Max(1, settings.ballsPerPlayer * Mathf.Max(1, rosterCount));
 
+            // Counts the balls this domain has IN THE COURT. A ball still embedded in the nucleus
+            // is the Scarab's seeding ABILITY, not mode income (SCARAB.md §4.6) — counting those
+            // would let a passive vessel behaviour quietly starve the mode's own crystal forge, and
+            // a pilot would be refused a forge because of balls they never made and cannot reach.
+            // Once somebody knocks one loose it is an ordinary ball and counts like any other.
             int liveOwned = 0;
             var live = AstroLeagueBall.Live;
             for (int i = 0; i < live.Count; i++)
             {
                 var ball = live[i];
-                if (ball == null || ball.IsHidden) continue;
+                if (ball == null || ball.IsHidden || ball.IsEmbeddedOnNucleus) continue;
                 if (ball.LastHitDomain == status.Domain) liveOwned++;
             }
             if (liveOwned < cap) return true;
@@ -308,10 +313,10 @@ namespace CosmicShore.Gameplay
         void HandleBallForged(AstroLeagueBall ball, IVesselStatus forger)
         {
             if (ball == null) return;
-            // Permanent colour (§4.2): from birth to death the ball is its maker's, whoever
-            // bats it around. This is what makes "knock the enemy's ball AWAY" the only
-            // sensible defence — pushing it through a hoop would score for them.
-            ball.SetOwnershipLockedServer(true);
+            // Permanent colour (§4.2) is NOT installed here: ScarabBallForge locks every ball it
+            // mints, so "the ball is its maker's and only a dash steals it" is a Scarab property
+            // the mode inherits rather than configures. This is what makes "knock the enemy's
+            // ball AWAY" the only sensible defence — pushing it through a hoop scores for them.
             ball.SetBoundary(_boundary);
             _forgerByBall[ball] = forger != null ? forger.PlayerName : string.Empty;
         }

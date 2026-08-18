@@ -184,6 +184,7 @@ GameObject:
   - component: {fileID: 8100000000000000083}
   - component: {fileID: 7423918465920174631}
   - component: {fileID: 2645891037714460318}
+  - component: {fileID: 7423918465920174777}
   m_Layer: 0
   m_Name: Scarab
   m_TagString: Player_Ship
@@ -2415,3 +2416,16 @@ MonoBehaviour:
   hornSides: 6
   legLength: 0.52
   legacyModelRoot: {fileID: 3239361814751565711}
+--- !u!114 &7423918465920174777
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8279817603024118164}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: dbfaadfbe145fe8600dd76597b09faf8, type: 3}
+  m_Name:
+  m_EditorClassIdentifier:
+  config: {fileID: 11400000, guid: 683186ef8a25333bb8189e23acd342ba, type: 2}

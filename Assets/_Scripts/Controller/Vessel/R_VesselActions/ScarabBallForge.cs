@@ -118,6 +118,16 @@ namespace CosmicShore.Gameplay
             // Stamped once — the ball keeps the size it was born with.
             ball.SetSizeScale(sizeScale);
             ball.LaunchServer(at, velocity, domain);
+
+            // PLATFORM RULE (SCARAB.md §4.2), not a mode policy: a ball a Scarab forged is its
+            // maker's from birth to death. Every later claim site refuses — a strike moves it,
+            // a blast moves it, neither re-colours it — with ONE exception, the juke-dash STEAL.
+            // Locking here rather than in a controller is what makes the pair "permanent colour
+            // + dash steals it" travel with the VESSEL into every context a Scarab can forge in
+            // (freestyle, the menu, any future mode), instead of existing only where a mode
+            // remembered to install it. Astro League's scene-placed match ball never routes
+            // through the forge, so its last-touch colouring is untouched.
+            ball.SetOwnershipLockedServer(true);
             return ball;
         }
 

@@ -107,6 +107,28 @@ platform-law) shaped the final rule set:
 | `case GameModes.ScarabScramble → Goals` | `ElementalComebackSystem.DefaultSourceFor` + `ElementalComebackSystemTests.LiveSourceCases` |
 | Objective-provider case | `_Scripts/UI/MiniGameHUD.cs` |
 
+## The Scarab's nucleus seeding, seen from the mode
+
+The Scarab passively studs the nucleus with balls of its domain (`SCARAB.md §4.6`). That is a
+**vessel ability, not mode content** — this controller installs nothing for it and can turn none of
+it off — but because Scramble's court *is* the nucleus, the two meet:
+
+- Balls knocked **inward** off the nucleus wall drop into the court as ordinary balls of
+  consequence, so the mode gains a **second income stream** beside the crystal forge. They arm,
+  score and detonate like any other ball.
+- Balls knocked **outward** leave through the wall into the cytoplasm and bounce around out there
+  for fun. They are outside the court, so they cannot reach a hoop and cannot score — which is the
+  intended "just for fun" reading, achieved by geometry rather than by a rule.
+- **Embedded balls are excluded from the mode's forge cap** (`CanForge` skips
+  `IsEmbeddedOnNucleus`). Counting them would let a passive vessel behaviour quietly starve the
+  crystal forge, refusing a pilot a ball because of balls they never made and cannot yet reach.
+- The **overload** (one ball too many banked inside the nucleus) detonates every live ball,
+  including the court's scoring balls. It is rare, player-caused and loud — but if playtest finds
+  it too punishing for a beachhead mode, the dial is `detonateAllLiveBalls` on
+  `Resources/ScarabNucleusFieldConfig`, which narrows it to the banked balls only. Do not add a
+  mode-local suppression: the ability is platform behaviour and Scramble is not entitled to a
+  private exception.
+
 ## Known limitations / follow-ups
 
 - **The juke-steal works for remote clients** via `ScarabJukeController.NotifyJukeFired_ServerRpc`
