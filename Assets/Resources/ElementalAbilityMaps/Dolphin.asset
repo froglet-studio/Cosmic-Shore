@@ -76,12 +76,17 @@ MonoBehaviour:
     AbilityDescription: Time raises the rate the boost meter charges while drifting
       (authored on ChargeBoostActionSO.chargeRateMultiplierAtFullTime, x1.5 at level 10;
       the generic map multiplier stays 1.0 because VesselTransformer consumes it for boost
-      SPEED); at level 5 danger prisms pay triple skim energy.
+      SPEED); at level 5 the drift itself becomes the ward - while drifting the Dolphin
+      holds the general elemental-debuff immunity state, so a danger prism's all-element
+      drain does not land.
     Input: 2
     MultiplierAtFullLevel: 1
     MinMultiplier: 1
     UnlockLevel: 5
     RelockBelowLevel: 4
     LatchPolicy: 0
-    UpgradeLabel: Live Current
-    UpgradeDescription: Skimming a danger prism grants 3x energy.
+    UpgradeLabel: Drift Ward
+    UpgradeDescription: While drifting you take no elemental debuff - a danger prism's
+      all-element drain does not land. Everything else still does: the full-strength slow
+      (x3 magnitude, x3 duration) and the halving of your banked blast energy. Your banked
+      boost is halved too, but the drift you are already in refills it.

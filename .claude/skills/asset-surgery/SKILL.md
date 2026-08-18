@@ -384,6 +384,21 @@ CSC=$(ls /usr/lib/dotnet/sdk/*/Roslyn/bincore/csc.dll | head -1)
 dotnet "$CSC" -langversion:9.0 -target:library -out:/tmp/x.dll Stubs.cs <files>
 ```
 
+**When `apt-get` isn't available (remote/rootless containers), install it per-user** — same
+Roslyn, no root, ~40s, and it lands in the scratchpad so it never pollutes the repo:
+
+```sh
+curl -fsSL https://dot.net/v1/dotnet-install.sh -o dotnet-install.sh
+bash dotnet-install.sh --channel 8.0 --install-dir "$PWD/dotnet" --no-path
+CSC=$(ls "$PWD"/dotnet/sdk/*/Roslyn/bincore/csc.dll | head -1)
+"$PWD"/dotnet/dotnet "$CSC" -langversion:9.0 -target:library -out:/dev/null <files>
+```
+
+Do NOT conclude "no compiler here" from a missing `dotnet` on `PATH` — that was the state of
+a 2026-08 remote session that then nearly shipped on inspection alone. There are also no Unity
+managed DLLs in such a container (no `Library/`, no `UnityEngine.dll` anywhere on disk), so a
+full type check is genuinely impossible and the no-stubs filter below is the whole game.
+
 Roslyn parses the real files, so **the throwaway desugared copy disappears entirely** —
 and with the same `Stubs.cs` harness you still get the full type check. Cost is one
 install (~1 min) against a desugaring pass that has to be redone per file and can itself
@@ -399,7 +414,12 @@ dotnet "$CSC" -langversion:9.0 -target:library -out:/tmp/x.dll <files> 2>&1 \
 ```
 
 The flood of `CS0246`/`CS0234` (missing Unity types) is expected noise; a hit in that
-filter is real. It catches every syntax error, duplicate/conflicting declaration, and
+filter is real. **Bucket the diagnostics before reading any of them** —
+`| grep -oE "error CS[0-9]+" | sort | uniq -c | sort -rn` turns 4,000 lines into six rows, and
+the shape of that histogram tells you instantly whether anything real is in there. If you add
+`-nostdlib -noconfig` (useful when the SDK's own ref assemblies muddy the output) then
+`CS0518`, `CS8179` and `CS8137` join the expected-noise list, since they are all "predefined
+type not defined" in disguise — filter those three too or they read as findings. It catches every syntax error, duplicate/conflicting declaration, and
 scope collision — including the ones an edit inside a `switch` section or a nested loop
 creates (`CS0128`/`CS0136`), which is exactly where mechanical edits go wrong. It cannot
 catch a wrong member name or arity; when that matters, build the stubs.
