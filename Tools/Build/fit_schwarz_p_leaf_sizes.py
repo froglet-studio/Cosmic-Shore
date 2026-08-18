@@ -404,6 +404,13 @@ def space_leaf():
     return SPACE_LEAF
 
 
+def shipped_leaf(element):
+    """The LeafSize currently authored on one element asset."""
+    text = (LIFEFORMS / f"SchwarzP Flora {element}.asset").read_text()
+    m = re.search(r"^    LeafSize: \{x: ([-\d.]+), y: ([-\d.]+), z: ([-\d.]+)\}$", text, re.M)
+    return tuple(float(v) for v in m.groups())
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--render", action="store_true", help="write a preview sheet")
@@ -474,8 +481,21 @@ def main():
     space_spacing = float(np.mean(sd.min(axis=0)))
     space = space_leaf()
 
+    # CHARGE IS NO LONGER THIS FITTER'S TO SIZE, and re-imposing the flush fit here would
+    # silently revert it depending on which script ran last - the exact run-order hazard
+    # write_variant's own comment warns about. Charge SHIELDS (Flora.ResolveShieldPeriod),
+    # and a shield is the CIRCUMSCRIBING octahedron - 3x the prism's reach - so what decides
+    # its size is whether those octahedra interpenetrate, not whether the plates do. That is
+    # fitted by Tools/Build/fit_shield_clearance.py (Docs/ECOSYSTEM.md 35); this reads it
+    # back so the report and the writes both describe what actually ships.
+    charge = shipped_leaf("Charge")
+    print(f"\n  NOTE Charge is sized by fit_shield_clearance.py, not by the flush fit: its")
+    print(f"       shields are 3x its plates and they, not the plates, are what crowd. The")
+    print(f"       flush fit would be {pleasant[0]:g} x {pleasant[1]:g} x {pleasant[2]:g}; "
+          f"it ships {charge[0]:g} x {charge[1]:g} x {charge[2]:g}.")
+
     elements = [
-        ("Charge", pleasant, (86, 196, 232)),
+        ("Charge", charge, (86, 196, 232)),
         ("Time", pleasant, (150, 214, 130)),
         ("Mass", chunky, (232, 168, 96)),
         ("Space", space, (196, 140, 232)),

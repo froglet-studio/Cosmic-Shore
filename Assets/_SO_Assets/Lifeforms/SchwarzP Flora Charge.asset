@@ -27,10 +27,10 @@ MonoBehaviour:
   Element: 1
   Variant:
     Enabled: 1
-    LeafSize: {x: 4.72, y: 2.92, z: 1}
+    LeafSize: {x: 1.88, y: 1.16, z: 0.39}
     GrowPeriod: -1
     LatticeScale: -1
-    ShieldPeriod: -1
+    ShieldPeriod: 1
     WitherRingInterval: -1
     MaxTotalSpawnedObjects: 36
     MaxTotalSpawnedObjectsScale: -1
