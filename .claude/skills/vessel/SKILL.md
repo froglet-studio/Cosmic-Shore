@@ -107,7 +107,7 @@ un-implemented until Garrett marks them up. If your task requires a mapping that
 STOP and ask (AskUserQuestion), presenting the FLEET_MAPS proposal for that row. The same gate
 applies to new abilities, new resources on the meter list, and anything that adds a fundamental.
 
-## 4. Implement — the twenty-four rules that keep getting relearned
+## 4. Implement — the rules that keep getting relearned
 
 1. **Ability SOs are shared and stateless.** Per-vessel state lives in executors / vessel-root
    MonoBehaviours; SOs receive `(registry, status)` per call. Never bind state to an SO asset.
@@ -284,6 +284,70 @@ applies to new abilities, new resources on the meter list, and anything that add
     and every consumer sizing real geometry off it is wrong by the same factor. When you fix one,
     document the accessor as a base term so the next reader does not re-adopt it.
     (Self-trail contact, 2026-08-17.)
+
+26. **RE-SCOPING an L5 upgrade means finding and switching OFF the old one — the map's prose is
+    not the wiring.** An `ElementalAbilityMapSO` entry's `UpgradeLabel`/`UpgradeDescription` is
+    documentation; the upgrade itself lives in whatever SO gates on `IsUpgradeActive(<element>)`.
+    Re-author the map alone and the element now grants TWO upgrades, with the map describing only
+    the new one — a balance change invisible in the diff and in the HUD. So: grep
+    `IsUpgradeActive` across the effect/action SOs, resolve each hit's per-vessel ASSET, and
+    confirm which ones name the element you are re-scoping. (Dolphin Time 5, 2026-08-18: the
+    retired "Live Current" was `_dangerBonusElement: 4` on
+    `DolphinSkimmerChangeResourceByPrismEffect` and had to be set back to `None`.)
+    **Two effects can describe the same sentence and be different mechanisms.** "Danger prisms
+    pay more" is `SkimmerBoostPrismEffect.dangerEnergyMultiplier` (10x, BOOST, hardcoded to the
+    CHARGE upgrade, platform-wide) *and* `SkimmerChangeResourceByPrismEffectSO._dangerBonusElement`
+    (per-asset element, a different RESOURCE). CLAUDE.md and the fleet map each described one of
+    them; reading either alone gives a confident wrong answer about which gate you are moving.
+
+27. **Before writing "X still lands" about an upgrade's SCOPE, read that vessel's own effect
+    containers.** The platform's danger-prism paragraph lists slow + elemental drain + boost
+    reset + input mute, and it is tempting to inherit that list wholesale into a per-vessel
+    upgrade description. Per-vessel reality differs: the Dolphin carries the slow and an energy
+    halving, its boost effect is a `retainedFraction` halving that deliberately **skips its
+    correction while drifting** (i.e. exactly inside a drift-gated ward's window), and the input
+    mute (`SparrowDebuffByRhinoDangerPrismEffectSO`) is wired into **no container on any
+    vessel**. Resolve every guid in the vessel's `VesselImpactorDataContainerSO` /
+    `SkimmerImpactorDataContainerSO` and read the effects you are about to make claims about —
+    the ship protocol's "find the PRODUCER" rule, aimed at your own new prose rather than at
+    inherited docs. (Dolphin Drift Ward, 2026-08-18.)
+
+28. **MERGING two abilities merges their ELEMENTS and their L5s — an element carries exactly
+    one level-5, so a merge forces a choice.** Two abilities on two triggers own two elements;
+    fold them into one and you have a spare element that must be given a REAL parameter (not left
+    dangling, and not left scaling the merged ability as a second dial nobody documented), and two
+    level-5 upgrades competing for one slot. Resolve both explicitly and say so in the map's
+    `UpgradeDescription`: either FUSE them when they are two halves of one idea (the Urchin's
+    "Overcharge" became +1 cascade generation **and** no reach falloff, absorbing the retired
+    SPACE-5 "Deep Cascade") or drop one on the record. Also move every element READ with the
+    ability — `Multiplier(Element.X)` calls inside the SO are the half that silently keeps
+    pointing at the old element, and the map multiplier has to move with them (the Urchin's
+    Charge entry went 2.0 → 2.5 to inherit the reach behaviour Space had authored).
+    (Urchin trigger merge, 2026-08-18.)
+
+29. **Clearing a state flag mid-routine: check what the REST of that frame still reads off it.**
+    An ability that ends a mode part-way through a frame (`VesselStatus.IsAttached = false;
+    AttachedPrism = null;` inside the ride's own `Slide()`) leaves the remaining ~30 lines running
+    against the state it just deleted. The Urchin's end-of-ribbon launch survived only because
+    `RideSurfaceOffset` happens to read `trailFollower.AttachedPrism` rather than
+    `VesselStatus.AttachedPrism` and null-guards it — one line's difference from an NRE on every
+    launch. Grep the rest of the method for every field you nulled before you null it, and prefer
+    letting the next frame's edge detector do the teardown over unwinding in place.
+    **Its companion:** a state-machine exit that clears BOTH sides of a mirrored flag at once
+    makes the edge-detecting branch unreachable. `GunVesselTransformer` had a path that set
+    `VesselStatus.IsAttached = false` *and* its own `attached = false` in the same block, so the
+    `else if (!IsAttached && attached)` that runs `EndRide` could never fire for it — `_rideMode`
+    stayed stale and the ride camera stayed pulled in for the rest of the vessel's life, silently,
+    since the vessel still flew. Route every exit through one method.
+
+30. **A pooled-object teardown must prove the object is still YOURS.** An ability that keeps a
+    `List<Prism>` of what it laid and returns them at a turn boundary will, sooner or later, hold
+    a prism that died mid-match, went back to the pool, and was handed to a different lay site —
+    at which point the teardown yanks live mass out from under its new owner. `p.destroyed` does
+    not catch it (the recycled prism is alive). Test IDENTITY, not liveness: keep the `Trail`s you
+    laid into and skip anything whose `Prism.Trail` is no longer one of them, since pool reuse
+    clears membership (`Prism.ResetState`) and the next lay stamps its own.
+    `SquirrelTubeActionExecutor` still carries the unguarded version — do not copy it verbatim.
 
 ## 5. Audit, then hand back verification (you cannot run Unity; the human is the gate)
 

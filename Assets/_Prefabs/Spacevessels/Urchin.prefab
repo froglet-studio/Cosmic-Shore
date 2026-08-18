@@ -2552,10 +2552,10 @@ MonoBehaviour:
   _inputEventShipActions:
   - InputEvent: 1
     ShipActions:
-    - {fileID: 11400000, guid: c72e07f08b60234a4d0dfb79132f3c5e, type: 2}
+    - {fileID: 11400000, guid: c5624ab5aecf001b384ccc35a949f367, type: 2}
   - InputEvent: 2
     ShipActions:
-    - {fileID: 11400000, guid: 8569ada518a14f91f824f13bbb9db058, type: 2}
+    - {fileID: 11400000, guid: 2f10470308d7f1914ce0e1ab176b4627, type: 2}
   - InputEvent: 7
     ShipActions:
     - {fileID: 11400000, guid: de66d37522393ebecdb29c677fb937e4, type: 2}
@@ -3473,6 +3473,7 @@ Transform:
   m_Children:
   - {fileID: 7770000000000000006}
   - {fileID: 7770000000000000009}
+  - {fileID: 7770000000000000051}
   m_Father: {fileID: 5928382658856804067}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &7770000000000000004
@@ -3490,6 +3491,7 @@ MonoBehaviour:
   _executors:
   - {fileID: 7770000000000000007}
   - {fileID: 7770000000000000010}
+  - {fileID: 7770000000000000052}
 --- !u!1 &7770000000000000005
 GameObject:
   m_ObjectHideFlags: 0
@@ -3583,6 +3585,52 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 521e6be4d70e428686452cd4869bf5ca, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+--- !u!1 &7770000000000000050
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 7770000000000000051}
+  - component: {fileID: 7770000000000000052}
+  m_Layer: 0
+  m_Name: TrackActionExecutor
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &7770000000000000051
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7770000000000000050}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 7770000000000000003}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &7770000000000000052
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7770000000000000050}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 377b57f5def70b3b58d3c6fe5393ae03, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  prismSpawnChannel: {fileID: 11400000, guid: 765004a68c88ffb439febbdf47d892db, type: 2}
+  OnMiniGameTurnEnd: {fileID: 11400000, guid: 91ea9101389ea884babdf61e446ced27, type: 2}
 --- !u!114 &7770000000000000012
 MonoBehaviour:
   m_ObjectHideFlags: 0

@@ -10,14 +10,26 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 1d866cc32d654069a046cc9a58a60730, type: 3}
-  m_Name: UrchinSpikeBarrageAction
+  m_Name: UrchinSpikeAction
   m_EditorClassIdentifier:
-  firingPattern: 1
+  firingPattern: 2
   repeatWhileHeld: 0
+  barrageSpikeCount: 36
+  ringCount: 3
+  spikesPerRing: 3
+  coneHalfAngleDegrees: 9
+  centerSpike: 1
+  chargeEnabled: 1
+  minChargeSeconds: 0.35
+  maxChargeSeconds: 2.5
+  chargedSpikesAtMin: 6
+  chargedSpikesAtMax: 36
+  chargedAmmoCost: 0
+  chargedProjectileSpeed: 40
   ammoIndex: 0
-  ammoCost: 0
-  firingRate: 1
-  projectileSpeed: 40
+  ammoCost: 0.15
+  firingRate: 3
+  projectileSpeed: 60
   projectileTime: 2
   projectileScale: 1
   generationsAtRestingCharge: 1

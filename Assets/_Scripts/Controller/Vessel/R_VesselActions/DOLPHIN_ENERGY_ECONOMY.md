@@ -62,12 +62,19 @@ a vessel whose boost is bought with drift-seconds rather than picked up.
 | event | effect on Energy | authored in |
 |---|---|---|
 | skim a prism | **+0.006667** (max 1.0, so 150 skims fills it) | `DolphinSkimmerChangeResourceByPrismEffect` |
-| skim a DANGER prism, Time L5 active | **+0.02** (×3, so 50 danger skims fills it) | same asset, `_dangerBonusElement` / `_dangerBonusMultiplier` |
 | ram a prism | **halved** | `DolphinVesselChangeResourceByPrismEffect` |
 | hit a crystal | **set to 0** — spent entirely | `DolphinVesselChangeResourceByCrystalEffect` (`_overrideAmount`) |
 
 Energy has **no passive regeneration** (`resourceGainRate: 0`), which is what makes the skim
 the only way to arm the blast.
+
+A danger prism pays the same as any other prism here. The Dolphin briefly carried a Time-5
+"Live Current" bonus (`×3` on danger skims, via
+`SkimmerChangeResourceByPrismEffectSO._dangerBonusElement`); Time 5 was re-scoped on 2026-08-18
+to **Drift Ward** (elemental-debuff immunity while drifting), so `_dangerBonusElement` is back
+to `None` on `DolphinSkimmerChangeResourceByPrismEffect` and Time 5 grants exactly one upgrade.
+The generic 10× danger multiplier on `SkimmerBoostPrismEffect` is a different effect on a
+different resource (boost, not energy) and is gated on CHARGE — it is untouched by this.
 
 ### Energy IS the jaw gape
 

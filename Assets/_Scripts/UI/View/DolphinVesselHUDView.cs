@@ -18,7 +18,7 @@ namespace CosmicShore.UI
     ///   Charge → Echo Sight       (profile + living tally) → "Pilot Echo"
     ///   Mass   → crystal seeding  (the recharge fill)      → "Claimed Seed"
     ///   Space  → cone blast       (jaws + tally)           → "Clean Blast"
-    ///   Time   → charge fill rate (the boost ring)         → "Live Current"
+    ///   Time   → charge fill rate (the boost ring)         → "Drift Ward"
     ///
     /// <para><b>Every slot draws one dimension of the same weapon.</b> The Dolphin has essentially
     /// one offensive act — bank energy by skimming, fly into a crystal, release a cone — and the

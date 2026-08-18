@@ -297,7 +297,7 @@ public class VesselTransformer : MonoBehaviour
         public void ToggleActive(bool active) => isActive = active;
 
         // ----------------------------- Reset State -----------------------------
-        public void ResetTransformer()
+        public virtual void ResetTransformer()
         {
             // Core speed/rotation
             MinimumSpeed = DefaultMinimumSpeed;
