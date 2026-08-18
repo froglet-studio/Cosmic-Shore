@@ -216,6 +216,38 @@ what the carve-out silently broke — see the traps below.
 - **A visual state applied before `Prism.IsCreationComplete` is part of BIRTH and must snap.**
   Engaging a morph there holds the exotic-visual window across the creation reveal and eats the
   one-shot grow stamp, so the prism snaps in instead of blooming (`Docs/PRISM_ANIMATION.md` §4).
+- **A prism's SHIELD is 3x the prism, so a species fitted for its box is not fitted for its
+  armour.** `PrismStateManager.ActivateShield` swaps in the CIRCUMSCRIBING octahedron
+  (`OctahedronMeshGenerator.CIRCUMSCRIBING_SCALE = 3` on the box HALF-extents — reach `1.5 x
+  leafSize`, 4.5x the volume). Both lattice species were fitted TIGHT against their own
+  neighbours *unshielded* and cleared by 5–99%; tripling that reach made each Charge plant one
+  interpenetrating solid (`Docs/ECOSYSTEM.md` §35). **Any change that turns shielding ON for a
+  species is a change to its GEOMETRY** — measure the octahedra, not the boxes, and fit the
+  PRISM rather than the lattice (scaling the lattice drags the whole absolute-distance tolerance
+  family with it, §34.8; scaling the prism drags nothing). Tool:
+  `Tools/Build/fit_shield_clearance.py`.
+- **An elemental LAW cannot live in per-element config when the element is ROLLED.** A cadence,
+  a size, an immunity authored per CONFIG is applied by `ApplyVariantTuning`, which runs BEFORE
+  the element is known and is then overwritten by the cell's own overrides — and a config with
+  `SpreadElements` and an EMPTY `ElementPalette` rolls an element and applies its OWN block to
+  it, so no value writable on any per-element asset reaches it (both Hesperides topiaries).
+  Put the law at the one choke point where prefab + variant + cell overrides + the crystal
+  carrying the element have ALL landed — `LifeForm.Initialize` — as a hook a subclass overrides
+  (`Flora.ResolveShieldPeriod`), and keep the assets stating the same number with a `--check`.
+  Scope it to the class that actually means it: on `Flora`, not `LifeForm`, or every creature
+  inherits a rule written about plants.
+- **Two fitters must never own one asset field.** `fit_schwarz_p_leaf_sizes.py` sizes that
+  species' plates flush and `fit_shield_clearance.py` sizes its Charge plate for the octahedra —
+  whichever ran LAST used to win, which is a run-order hazard rather than a bug, so it only
+  surfaces months later when somebody re-runs the older tool. Make the losing tool READ the
+  value back and print what it would have chosen. Related: a fitter must be an idempotent FIXED
+  POINT (`s* = 1/(1-clearance)`), never a fresh multiply of whatever is authored, or every run
+  walks the number.
+- **A fitted axis below `minScale` is silently clamped, so CHECK the admit call, don't assume
+  it.** `HealthBlock.prefab` ships `minScale (0.5,0.5,0.5)` and `PrismScaleAnimator.SetTargetScale`
+  clamps inside the setter with no log — Schwarz P Charge's fitted 0.39 thickness survives only
+  because `Flora.AddHealthBlock` calls `Prism.AdmitTargetScale` first (§34.9). Any tool that
+  emits a size outside the prefab's window must fail if that admit call is ever refactored away.
 
 ## 3. Implement (emergence first, surgically)
 - **Favor emergence:** never hard-code an outcome that should emerge from the fundamentals
