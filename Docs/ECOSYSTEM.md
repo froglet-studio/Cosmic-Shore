@@ -5104,6 +5104,26 @@ to reconcile it.)*
 | **Gyroid** | 45.9 | 110.2 | **10.0 → 60.0** (→ 40.0 at §34.11's 40) | 45.9 |
 | **Schwarz P** | 13.8 | 25.7 | **2.5 → 7.5** | 13.8 |
 
+**Follow-up, measured and deliberately NOT taken here: the phyllotactic stems.**
+`PhyllotacticFlora` sizes prisms per ROLE, and its STEM spans a whole segment
+(`segmentLength × stemScale.z`), so five of the eight authored species ask for a long axis
+above the 10 ceiling and are silently trimmed to it:
+
+| species | authored stem | rendered |
+|---|---|---|
+| Arbor | 15.30 | 10 |
+| Reed | 13.58 | 10 |
+| Spire | 12.35 | 10 |
+| Frond | 11.40 | 10 |
+| Tendril | 10.45 | 10 |
+
+A stem clamped below its own segment cannot reach the next one, so this is the same defect
+`Flora.AddHealthBlock` was fixed for, and the same one-line fix applies
+(`AdmitTargetScale` before the stamp). It is **not** taken on this branch: it changes the look of
+the **Hesperides garden** and of **Rampage** (Spire), neither of which this branch is about, and
+it cannot be play-tested from here. The reasoning is recorded at the call site so the next person
+finds it before re-deriving it.
+
 **Not swept in.** About fifteen other call sites author `TargetScale` directly
 (`PrismTrailBuilder`, `Fauna` body prisms, the AOE block creators, `Microscene`,
 `PaintingRunner`, the `Spawnable*` environment builders). Most draw from the max-100 spawnable

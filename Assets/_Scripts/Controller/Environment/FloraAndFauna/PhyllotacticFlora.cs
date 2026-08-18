@@ -405,14 +405,16 @@ namespace CosmicShore.Gameplay
         {
             base.AddHealthBlock(healthPrism);
             if (healthPrism && _pendingPrismScale.HasValue)
-            {
-                // Same authored-not-grown rule as Flora.AddHealthBlock: admit the size before
-                // stating it, or PrismScaleAnimator's [0.5, 10] clamp trims it silently. This
-                // flora's stem prisms span a whole segment and routinely exceed 10.
-                healthPrism.AdmitTargetScale(_pendingPrismScale.Value);
                 healthPrism.TargetScale = _pendingPrismScale.Value;
-            }
             _pendingPrismScale = null;
+
+            // NOT calling AdmitTargetScale here, deliberately - see Docs/ECOSYSTEM.md §34.9.
+            // This flora's STEM spans its whole segment, so 5 of the 8 authored species ask for
+            // a long axis above PrismScaleAnimator's 10 ceiling and are silently trimmed to it:
+            // Arbor 15.3, Reed 13.6, Spire 12.4, Frond 11.4, Tendril 10.5. Admitting the size
+            // would be the same correct fix Flora.AddHealthBlock got - and it would change the
+            // look of the Hesperides garden and Rampage on a branch about the Schwarz P lattice,
+            // with no way to play-test it here. Filed rather than smuggled in.
         }
 
         void Execute(SpawnOrder order)
