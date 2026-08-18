@@ -10,8 +10,22 @@
 > the four-row ability map, containers, camera SO, class card, HUD view/controller, and all
 > registrations (arcade card, prefab container, network prefabs, vessel-changer toy). In-editor
 > verification steps + first-pass tuning: `Docs/UNITY_VERIFICATION_CHECKLIST.md` § Scarab.
-> Everything below the next paragraph is the DESIGN record; §4.2–§4.5's mode-side ball work
-> (permanent ownership, boundary death, population cap) is still open.
+> Everything below the next paragraph is the DESIGN record.
+>
+> **STATUS UPDATE 2 (2026-08-18): the §4.2–§4.5 mode-side ball work SHIPPED — as a SECOND MODE.**
+> `GameModes.ScarabScramble = 42` (`_Scripts/Controller/Arcade/SCARABSCRAMBLE.md`) answers §15.11
+> as "a second mode that shares the arena machinery" and lands: permanent ownership
+> (`AstroLeagueBall.SetOwnershipLockedServer`, §4.2 — resolved with a LAST-TOUCH ARMING gate on
+> scoring, and the JUKE as the sanctioned steal via `ScarabJukeController.IsJukeStrikeWindowOpen`),
+> multi-ball with per-ball attribution (§4.4/§4.5 — `Live` + `ScarabBallForge.OnForged` adoption +
+> a forger/last-toucher ledger; §15.12 answered "the ball's domain scores, last toucher gets
+> personal credit"), a per-DOMAIN forge cap through the new `ScarabBallForge.ForgeGate` policy
+> hook (§15.5 answered: refuse + targeted toast, never expire), goals that stop nothing (§15.13's
+> party answer), and the forged ball's previously-unreplicated `SetSizeScale` (`n_SizeScale`).
+> §4.3's boundary DEATH is deliberately NOT used in that mode (walls reflect — a beachhead mode
+> must not make balls a resource you can waste); it remains available per-mode via
+> `destroyedBySuperShielded` + a lined court. Astro League itself is unchanged (its ball never
+> locks ownership; the touch ledger is inert bookkeeping there).
 
 > **Original design gate note — nothing beyond the foundation is implemented.** Written for Garrett to
 > mark up before any code or asset lands (the `/vessel` design-approval gate). The element map is
