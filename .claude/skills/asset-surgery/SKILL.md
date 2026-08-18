@@ -397,7 +397,30 @@ CSC=$(ls "$PWD"/dotnet/sdk/*/Roslyn/bincore/csc.dll | head -1)
 Do NOT conclude "no compiler here" from a missing `dotnet` on `PATH` — that was the state of
 a 2026-08 remote session that then nearly shipped on inspection alone. There are also no Unity
 managed DLLs in such a container (no `Library/`, no `UnityEngine.dll` anywhere on disk), so a
-full type check is genuinely impossible and the no-stubs filter below is the whole game.
+**whole-assembly** type check is impossible and the no-stubs filter below is the fallback.
+
+**But a REAL type check of the files you actually wrote is still available, and it is worth the
+20 minutes** on new code (as opposed to a small edit inside a large existing file). Build a stub
+harness — the mcs recipe below, minus the desugaring — and hand Roslyn the .NET **reference pack**
+so `System.Object` exists:
+
+```sh
+REFDIR=$(ls -d /usr/lib/dotnet/packs/Microsoft.NETCore.App.Ref/*/ref/net8.0 | head -1)   # or $PWD/dotnet/packs/...
+REFS=$(ls $REFDIR/*.dll | sed 's/^/-r:/' | tr '\n' ' ')
+dotnet "$CSC" -langversion:9.0 -nostdlib -noconfig $REFS \
+  -nowarn:CS1591,CS0067,CS0649,CS0414,CS1574,CS0169,CS8632 \
+  -target:library -out:/tmp/x.dll Stubs.cs <your files>
+```
+
+Without `-nostdlib -noconfig $REFS` this dies in a wall of `CS0518 Predefined type 'System.Object'
+is not defined` and reads as a broken harness. Two rules make the stubs honest: **transcribe every
+signature from the real declaration** (grep it, don't remember it — the whole value is that a wrong
+member name or arity fails HERE), and **declare each stub in the type's real namespace** so a
+missing `using` still fails. `UniTaskVoid` needs an `[AsyncMethodBuilder(...)]` struct with the six
+builder methods — ~25 lines, and it is what lets an `async UniTaskVoid` method be checked in place
+rather than desugared. A 2026-08 Urchin session type-checked two new ability files this way against
+~200 lines of stubs and shipped them clean; the errors it *did* surface were both stub gaps
+(`Object.name`, `Behaviour.isActiveAndEnabled`), which is what a working harness looks like.
 
 Roslyn parses the real files, so **the throwaway desugared copy disappears entirely** —
 and with the same `Stubs.cs` harness you still get the full type check. Cost is one

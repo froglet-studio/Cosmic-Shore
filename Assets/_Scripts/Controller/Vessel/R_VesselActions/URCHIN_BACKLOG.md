@@ -39,12 +39,13 @@ camera-ownership gate, the `points - 1` NaN, the "Overcharge" no-op, the missing
 | U14 | `ApplyShipMaterialToSlots` round-trips `renderer.materials`, whose getter clones every slot — including the Body/Window materials it never writes. The `renderer.material` anti-pattern CLAUDE.md names, in new code. | `VesselHelper` |
 | U15 | `RunEffectIsolated` is wired into `ProjectileImpactor` only; `VesselImpactor` and `SkimmerImpactor` still dispatch bare. It also allocates a closure per effect per contact. | `ImpactorBase` consumers |
 | U16 | A cancelled `GhostAsync` runs its `finally` one frame late, after `Slip()` has re-armed a new ghost — the stale task re-solidifies the hull and kills the new ghost. | `UrchinSlipActionExecutor` |
-| U17 | `pointsOverride <= 0` is the ship-volley-vs-chain-hop discriminator for the `energy--` decrement, so the tooltip's own advertised `barrageSpikeCount = 0` silently re-enables the decrement on the ship's volley. | `Gun.FireSpherical` |
+| U17 | `pointsOverride <= 0` is the ship-volley-vs-chain-hop discriminator for the `energy--` decrement, so the tooltip's own advertised `barrageSpikeCount = 0` silently re-enables the decrement on the ship's volley. Still live after the 2026-08-18 merge: the charged release passes `ChargedSpikeCount`, which is clamped `>= 1`, so the shipped path is safe — but a Spherical ability authored with 0 points is still mis-tiered. | `Gun.FireSpherical` |
 
 ## Not defects, but worth knowing
 
 - `author_urchin_assets.py --check` only validates keys that are PRESENT. A key omitted from a
-  body is invisible to it — `UrchinSpikeBarrageAction` omits `barrageSpikeCount` and relies on the
-  C# initializer (36). Correct today, silently wrong the day that initializer moves.
+  body is invisible to it. (The instance that made this concrete — `UrchinSpikeBarrageAction`
+  omitting `barrageSpikeCount` — went away with that asset in the 2026-08-18 trigger merge, but
+  the gap in the checker did not.)
 - `VesselAbilityRowWirer` writes assets but neither records to `FrogletToolChangeLedger` nor draws
   `FrogletToolShipPanel`, which `Docs/TOOLING.md` requires of a writing tool. Pre-existing, upstream.
