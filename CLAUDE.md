@@ -533,7 +533,7 @@ now FAILS if a quarter-of-target deficit buys under one whole element level (the
 this: Mass stretches the Sparrow's fired prisms **and now their hit sphere too**, so the trailing
 side's rounds both look and land bigger — the other three rise with it, because equal-elements is
 the law, and Mass is simply the only one wired to that vessel's gun output); (2) **a cell with NO
-NUCLEUS must author `CrystalManager.anchorlessSpawnRadius`** — that field falls back to the
+NUCLEUS must author `CrystalManager.noNucleusSpawnRadius`** — that field falls back to the
 nucleus radius, so without it every omni crystal falls through to its own `SphereRadius` and
 spawns on the arena's exact centre, where a big faceted sphere reads as the objective (it was
 mistaken for an Astro League ball). The fix is the radius, never switching the crystal off.

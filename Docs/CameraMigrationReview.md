@@ -58,9 +58,13 @@ Three properties are worth knowing before retuning it:
 - **Roll is set by `lavaLampPoleBlendStart`, not by the geometry.** With world-up as the hint,
   `LookRotation` produces exactly zero roll — the camera's right vector stays horizontal — so
   *every* degree of roll the lava lamp shows comes from `ComputeLookUpHint`'s blend sliding the
-  hint toward the orbit axis. Crystals spawn anywhere in a ball of the nucleus radius
-  (`CrystalManager.anchorlessSpawnRadius` 0 → 392), and the adversarial case is the camera at peak
-  latitude aiming at a crystal at the far bottom of that ball, at the camera's own longitude.
+  hint toward the orbit axis. Crystals spawn anywhere in a ball of the nucleus radius — that
+  coupling is a platform rule, not a coincidence: `CrystalManager.GetAnchorlessSpawnRadius` returns
+  `Cell.ExpectedNucleusWorldRadius` for any cell that HAS a nucleus, and
+  `noNucleusSpawnRadius` is a fallback only for cells that have none. So the crystal ball is
+  **392, the same number as the nucleus, and it tracks the nucleus by construction**. The
+  adversarial case is the camera at peak latitude aiming at a crystal at the far bottom of that
+  ball, at the camera's own longitude.
 
   The field's default of **0.99 is chosen against the measured geometry, and yields zero roll**:
 
@@ -81,6 +85,19 @@ Three properties are worth knowing before retuning it:
   worst case: the crystal ball scales with it, so it is the one input that can push verticality
   back through the threshold. Inclination is the secondary lever
   (`lavaLampOrbitAxis = (tan i, 1, 0)`), and lowering it reduces the worst case further.
+
+### Scene wiring (Menu_Main)
+
+`MainMenuCameraController` on the Game GameObject: `MenuCam_LavaLamp1` is **element 4** of
+`_configs` with `_initialConfigIndex` **4**, so the menu opens on the lava lamp. `_cellData` points
+at `Runtime Cell Data` — optional (the rig falls back to `Cell.FindNearestActiveCell` and to aiming
+at the cell centre), but wiring it avoids that per-frame search. Rotation is on at a flat **45 s**
+interval (`_randomSwitchIntervalMin`/`Max` both 45); widening `Max` restores a random spread.
+
+**Editing these in Play mode does not persist** — Unity discards scene changes on Stop, and Ctrl-S
+during Play saves assets but not the scene. Stop first, then edit, then save. Note the asymmetry
+that makes this confusing: `MenuCam_*.asset` edits made in Play mode DO stick, because they are
+assets rather than scene objects.
 
 ## Key Files
 
