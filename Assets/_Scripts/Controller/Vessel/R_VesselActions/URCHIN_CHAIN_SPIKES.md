@@ -425,7 +425,7 @@ Nothing below can be checked without play mode; the depth curve is a pure functi
    `ArgumentOutOfRangeException` **every frame of a ride**.
 6. **One spike, one steal.** Menu_Main freestyle or any Urchin-playable mode. Fire the volley at
    an enemy trail at Charge 0 (depth 1): the spike stops in the prism, the prism changes domain,
-   a burst of **8** children sprays out of it, and the original spike fades out ~1.25 s later
+   a burst of children sprays out of it (**8** at depth 1; **14** at the shipped full-Charge depth 4), and the original spike fades out ~**3.75** s later
    instead of popping or standing there forever.
 7. **The cascade dies by eating its frontier.** Fire the same volley into a trail that is
    *already yours*: nothing should happen at all beyond the spike stopping — no steal, no
@@ -445,7 +445,7 @@ Nothing below can be checked without play mode; the depth curve is a pure functi
     been drained: check that a spike which HIT something returned (step 6's fade) and that a
     spike which MISSED returned (`projectileEndEffects` on the container).
 12. **Frame brake reports itself.** Drive a deep cascade into a wall of enemy trail and watch the
-    console for `[ChainReactionBudget] Shed a chain volley - ceiling is 4/frame`. Seeing it is
+    console for `[ChainReactionBudget] Shed a chain volley - ceiling is 6/frame`. Seeing it is
     correct behaviour, not a bug — it is the message that tells you whether a short cascade was
     the design (brake 1) or the budget (brake 3).
 13. **Domain paint.** Fire as Jade, die/respawn or swap domain at the domain-changer toy, fire

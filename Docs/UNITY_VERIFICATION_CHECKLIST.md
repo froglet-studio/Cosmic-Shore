@@ -108,8 +108,7 @@ ride is smooth rolling on a continuous curved surface (gyroid/Schwarz prisms are
   `sign(dot(frozen forward, curving Course))` FLAPPED as the ribbon curved. Every flap ran
   `SetDirection`, which shifts the block index ±1 — a teleport per flap, up to every frame.
   The AI break-off lesson again: directional decisions are LATCHED, never per-frame geometry.
-  Now `TrailFollower.Attach` latches `attachDirection` from the vessel's own motion and the
-  signed throttle maps onto the latch (`SetRideSign`, idempotent).
+  Now `GunVesselTransformer` keeps a latched `_facingSign`, flipped only when `dot(transform.forward, RibbonAxis())` crosses `facingFlipThreshold` (0.35) the OTHER way — true hysteresis, so a bend sweeping the axis under a steady nose cannot flap it — and the signed throttle maps onto that sign before `TrailFollower.SetDirection` is told anything.
 - **Attach snap killed**: the 2023 `percentTowardNextBlock = 0` TODO is implemented — the lerp
   seeds from the actual touch point projected onto the segment ahead.
 - **The head parks instead of bouncing**: round 3's reflection stopped the freeze but bounced
@@ -737,7 +736,9 @@ re-check each line against the prefab rather than trusting the tick.*
    afterwards — Trail Rider's `Input = 0` will look like an unset field and is **correct** (it is
    passive; the map cannot distinguish the two).
 8. **Three `GunVesselTransformer` fields are not serialized on the prefab** — `throttleDeadband`
-   (0.05), `throttleZeroPosition` (0.2), `reverseLookThreshold` (−0.6). They deserialize to their
+   (**0.1**), `throttleRestPosition` (**0.5**), `facingFlipThreshold` (**0.35**). (An earlier
+   revision of this list named `throttleZeroPosition` and `reverseLookThreshold`; neither ever
+   shipped.) They deserialize to their
    C# initializers, which is correct behaviour, but they will only appear in the inspector after a
    re-save. Never let `throttleDeadband` reach 0: `RideTheTrail` divides by `Throttle × speed`.
 
@@ -749,11 +750,14 @@ re-check each line against the prefab rather than trusting the tick.*
    against the serialized fields of the class each asset's `m_Script` points at — a key Unity does
    not recognise is silently dropped and the field reads its initializer forever).
 10. **Urchin is selectable and spawns.** Menu_Main → vessel changer toy, or any mode's vessel
-   select. It flies, lays a trail, and its HUD appears. (`vesselType` was `Random(0)`; if it still
-   fails to spawn, `TryGetShipPrefab` is not matching.)
+   select. It flies and lays a trail. **NO HUD APPEARS, and that is the known state** — there is
+   no `UrchinHUDVariant.prefab`, `vesselHUDController` is `{fileID: 0}`, and the
+   `UrchinVesselHUDController`/`View` pair is referenced by nothing. Do not treat a missing HUD
+   as a failure of this step. (`vesselType` was `Random(0)`; if it fails to SPAWN,
+   `TryGetShipPrefab` is not matching.)
 11. **One spike, one steal.** Fire the volley (RT) at an **enemy** trail at Charge 0 (depth 1): the
     spike stops in the prism, the prism changes to your domain, **8** children spray out of it, and
-    the original spike fades out ~1.25 s later rather than popping or standing there forever.
+    the original spike fades out ~3.75 s later rather than popping or standing there forever.
 12. **The cascade dies by eating its frontier.** Same volley into a trail that is *already yours*:
     nothing beyond the spike stopping — no steal, no children. Into open space: the spike expires
     at 2 s and returns to its pool.
@@ -772,7 +776,7 @@ re-check each line against the prefab rather than trusting the tick.*
     firing. The gun must not go quiet. A silent stop means a spike that HIT (step 10's fade) or a
     spike that MISSED (`projectileEndEffects` on the container) failed to return.
 18. **The frame brake reports itself.** Drive a deep cascade into a wall of enemy trail; the
-    console should show `[ChainReactionBudget] Shed a chain volley - ceiling is 4/frame`. Seeing it
+    console should show `[ChainReactionBudget] Shed a chain volley - ceiling is 6/frame`. Seeing it
     is correct — it is how you tell a short cascade caused by brake 1 from one caused by brake 3.
 19. **Domain paint.** Fire as Jade, change domain at the domain-changer toy, fire again: spikes
     must wear the **new** colour. The previous domain's material means the paint drifted back to
@@ -848,11 +852,11 @@ re-check each line against the prefab rather than trusting the tick.*
 | Frame ceiling | `ChainReactionBudget.VolleysPerFrame` (public static, **code**) | **4**, global across every Urchin in the match. If cascades feel truncated, check the console warning first — this drops, it does not queue. |
 | Volley cost / rate | `UrchinSpikeVolleyAction.asset` | 0.15 ammo @ 3/s, muzzle speed 60 × SPACE (0.4 … 2.5), flight 2 s |
 | Barrage cost / rate | `UrchinSpikeBarrageAction.asset` | **free** @ 1/s, muzzle speed 40 × SPACE, flight 2 s |
-| Spike dwell / fade | `ProjectileEmbedPrismEffect.asset` | 1.25 s / 0.35 s — pure look; the steal and the volley already happened. `fadeSeconds` must stay > 0 (continuity of existence). |
+| Spike dwell / fade | `ProjectileEmbedPrismEffect.asset` | **3.75 s** / 0.35 s — pure look; the steal and the volley already happened. `fadeSeconds` must stay > 0 (continuity of existence). |
 | Ride speeds | `Urchin.prefab` `TrailFollower` | Friendly **150** / Hostile **10** / Destroyed **10**. The 15× gap is what Slipstream buys, and it is the biggest single number in the vessel. Note `BlockscapeFollower` on the same GameObject serializes an identical trio that nothing reads. |
 | Growth per ridden prism | `Urchin.prefab` `GunVesselTransformer.growthAmount` | `ElementalFloat`, element Mass, 0.6 → 1.2 (`Value` 1) |
 | Ride ammo recharge | `Urchin.prefab` `GunVesselTransformer.rechargeRate` | 0.1/s, **×2** on a shielded prism |
-| Throttle shaping | `GunVesselTransformer` (C# defaults, **not yet serialized on the prefab**) | `throttleDeadband` 0.05 · `throttleZeroPosition` 0.2 · `reverseLookThreshold` −0.6. The deadband must never reach 0 — `RideTheTrail` divides by `Throttle × speed`. |
+| Throttle shaping | `GunVesselTransformer` (C# defaults, **not yet serialized on the prefab**) | `throttleDeadband` **0.1** · `throttleRestPosition` **0.5** · `facingFlipThreshold` **0.35**. A deadband of 0 means the ride never parks at rest (there is no divide by throttle — an earlier revision of this row claimed one). |
 | Slip ghost | `UrchinSlipAction.asset` | 0.6 s → 1.6 s, `detachImpulse` **0** (off) |
 | Steal→score weight | mode `ScoringRuleSO` | unchanged; the RPC only makes a client's steals *count*, it does not weight them |
 

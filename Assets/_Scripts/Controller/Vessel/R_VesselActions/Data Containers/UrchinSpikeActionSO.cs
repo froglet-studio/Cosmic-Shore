@@ -87,9 +87,10 @@ namespace CosmicShore.Gameplay
                  "overrides this to 1.")]
         [SerializeField, Range(0.05f, 1f)] float generationRangeFalloff = 0.75f;
 
-        [Tooltip("CHARGE level-5 'Overcharge': grant this ability at least one generation even " +
-                 "when it is authored with none. This is what turns the free barrage from a " +
-                 "wide steal into a cascade, and it is the barrage's whole upgrade.")]
+        [Tooltip("CHARGE level-5 'Overcharge': grant this ability ONE EXTRA generation. Not a " +
+                 "floor-at-one - the upgrade unlocks at Charge 5, where the depth curve already " +
+                 "returns at least 1 for every authored pair, so a floor could never bind and " +
+                 "the upgrade did nothing. It is the barrage's whole upgrade.")]
         [SerializeField] bool chainsOnChargeUpgrade;
 
         public FiringPatterns FiringPattern => firingPattern;
@@ -134,8 +135,12 @@ namespace CosmicShore.Gameplay
 
         /// <summary>
         /// CHARGE -> depth. How many generations this volley's spikes may propagate, from the
-        /// vessel's LIVE Charge level, plus the level-5 "Overcharge" floor for an ability
-        /// authored with no chain of its own.
+        /// vessel's LIVE Charge level, plus the level-5 "Overcharge" bonus generation.
+        ///
+        /// KNOWN GAP (multiplayer): the level read is the LOCAL ResourceSystem's, which does
+        /// not replicate - unlike the unlock BIT that ResolveRangeFalloff correctly uses. Depth
+        /// changes the prismscape, so peers can run different-depth cascades until a replicated
+        /// level surface exists (Docs/ElementalAbilitySystem/ARCHITECTURE.md 3.4).
         /// </summary>
         public int ResolveGenerations(IVesselStatus status)
         {
@@ -143,9 +148,15 @@ namespace CosmicShore.Gameplay
             int level = resources ? resources.GetLevel(Element.Charge) : 0;
             int generations = GenerationsForLevel(level, generationsAtRestingCharge, generationsAtFullCharge);
 
+            // "Overcharge" ADDS a generation; it does not floor at one. A floor was a no-op by
+            // construction: the upgrade unlocks at Charge 5, and at Charge 5 the depth curve
+            // already returns >= 1 for every authored pair the assets use, so Mathf.Max(g, 1)
+            // could never bind and the level-5 upgrade did literally nothing. Clamped to the
+            // same [0, 4] ceiling GenerationsForLevel enforces, so the pool tiers and the
+            // per-frame volley budget still bound the worst case.
             var abilities = status?.ElementalAbilityHandler;
             if (chainsOnChargeUpgrade && abilities != null && abilities.IsUpgradeActive(Element.Charge))
-                generations = Mathf.Max(generations, 1);
+                generations = Mathf.Clamp(generations + 1, 0, 4);
 
             return generations;
         }

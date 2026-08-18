@@ -308,13 +308,19 @@ oversights:
   input event. The map cannot distinguish "passive" from "unset", so the hint layer will find no
   control for it — and it should not. Charge/Space/Time carry `LeftStickAction(2)` /
   `RightStickAction(1)` / `Button2Action(7)` and do want hints.
-- `Urchin.prefab` has `R_VesselActionHandler._executors: {fileID: 0}` and
-  `_inputEventShipActions: []`, so nothing binds yet; the row cannot be exercised until an
-  `ActionExecutorRegistry` lands on the prefab.
-- `UrchinVesselHUDView` is in flight at the time of writing. It adds an **ammo** fill and a
-  deliberately **binary** riding indicator on top of the fleet-standard four-icon row (the base
-  class owns the row, in charge → mass → space → time order); the four `abilityIcons` bindings
-  still have to be authored on the HUD prefab.
+- **LANDED** (this block previously read "nothing binds yet"; later commits on the same branch
+  made that false): `Urchin.prefab` wires `R_VesselActionHandler._executors` to an
+  `ActionExecutorRegistry`, and `RightStickAction(1)` / `LeftStickAction(2)` / `Button2Action(7)`
+  are bound. The abilities are exercisable.
+- **STILL OPEN — the HUD.** `UrchinVesselHUDController`/`UrchinVesselHUDView` exist and compile,
+  but **no `UrchinHUDVariant.prefab` exists**, `Urchin.prefab` carries
+  `vesselHUDController: {fileID: 0}`, and no asset references either script — so the pair is
+  unreferenced code and the Urchin ships with **0/4 ability icons**. Every other vessel wires a
+  `<Vessel>HUDVariant.prefab` into its vessel prefab (Dolphin 35 references, Sparrow 76). The
+  view is designed to add an **ammo** fill and a deliberately **binary** riding indicator on top
+  of the fleet-standard four-icon row (the base class owns the row, in charge → mass → space →
+  time order). Authoring the prefab is the remaining work; **FrogletTools > Vessels > Wire Vessel
+  Ability Row** creates and binds the row once a HUD prefab exists to run it against.
 
 Mechanics for what those four icons will label: `_Scripts/Controller/Vessel/R_VesselActions/`
 `URCHIN_CHAIN_SPIKES.md` and `URCHIN_TRAIL_RIDER.md`.

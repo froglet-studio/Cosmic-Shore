@@ -211,10 +211,10 @@ attach-instant attitude forever. Meanwhile round 3 derived direction per frame a
 curving ribbon crosses 90° and the sign FLAPS — and every flap ran `SetDirection`, which shifts
 the block index ±1. A teleport per flap, potentially every frame. This is the AI break-off
 lesson again, in a new costume: **a directional decision must be LATCHED, never recomputed per
-frame from live geometry.** Now: `TrailFollower.Attach` latches `attachDirection` from
-`dot(Course, ribbonHeading)` — the way you were flying — and the pilot's signed throttle maps
-onto that latch (`SetRideSign`: push = keep going, pull = back up; idempotent, so stating it
-every frame cannot flap).
+frame from live geometry.** Now (round 5 superseded round 4's mechanism, and this paragraph
+was left describing the retired one): `GunVesselTransformer` keeps a latched `_facingSign`, flipped only when `dot(transform.forward, RibbonAxis())` crosses `facingFlipThreshold` (0.35) the OTHER way — true hysteresis, so a bend sweeping the axis under a steady nose cannot flap it — and the signed throttle maps onto that sign before `TrailFollower.SetDirection` is told anything. `TrailFollower.Attach` seeds the
+initial direction from the arrival Course; nothing named `attachDirection` or `SetRideSign`
+ships — those were round 4's names.
 
 **2. Attach snapped the rider to the block's start.** `percentTowardNextBlock = 0` (a 2023
 TODO) — a visible backwards jump at every latch. Now seeded by projecting the vessel's actual
