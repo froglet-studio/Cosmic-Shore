@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using CosmicShore.Utility;
+using Unity.Netcode;
 using UnityEngine;
 
 namespace CosmicShore.Gameplay
@@ -17,11 +18,13 @@ namespace CosmicShore.Gameplay
     ///    plain input-pacing cooldown (nothing in the world is removed by it), displayed as a
     ///    binary pip via <see cref="OnJukeChargeChanged"/> — the Sparrow rollChargeIndicator
     ///    pattern exactly.
-    /// 3. It is (eventually) an attack: the design's ball strike and skimmer-mediated vessel
-    ///    shove land with the Astro League mode work. v1 here matches the Sparrow's replication
-    ///    posture verbatim — displacement rides the owner-authoritative NetworkTransform, the
-    ///    360° spin is local, no RPC — so the platform half ships first and the mode half
-    ///    (Juke_ServerRpc carrying direction + Charge snapshot) upgrades this class later.
+    /// 3. It is an attack surface: displacement rides the owner-authoritative NetworkTransform
+    ///    and the 360° spin stays local (the Sparrow's replication posture), but the FIRE moment
+    ///    itself now makes one owner→server round-trip (<see cref="NotifyJukeFired_ServerRpc"/>)
+    ///    so the server's replica opens <see cref="IsJukeStrikeWindowOpen"/> — the window Scarab
+    ///    Scramble's juke-steal reads on the server. Without it a remote client's steal never
+    ///    registered (the ball's strike path is server-side). The fuller Juke_ServerRpc carrying
+    ///    direction + Charge snapshot remains the Phase 2.5 upgrade path.
     ///
     /// Kinematics are the Sparrow's exactly: ModifyVelocity displacement orthogonal to travel,
     /// visual-child 360° smoothstep spin (the camera reads the root), a small REAL root bank via
@@ -29,7 +32,7 @@ namespace CosmicShore.Gameplay
     /// Owner-driven; autopilot vessels produce no stick input, so the juke is inert for AI
     /// (trigger synthesis is the standing Phase 2.5 backlog item).
     /// </summary>
-    public class ScarabJukeController : MonoBehaviour
+    public class ScarabJukeController : NetworkBehaviour
     {
         [Header("Trigger")]
         [Tooltip("Stick radial magnitude treated as 'at the perimeter'. 1 = full deflection " +
@@ -74,12 +77,28 @@ namespace CosmicShore.Gameplay
         /// True while the dash's displacement window is live — the window in which a ball
         /// contact counts as a JUKE STRIKE. Scarab Scramble's steal reads this
         /// (<c>AstroLeagueBall.IsJukeStrike</c>): the committed dash converts a locked ball,
-        /// the casual bump never does. Owner-local state, so in a networked session the steal
-        /// registers only where this component actually fired (host / local sessions) — the
-        /// same client-side gap as the blast forge, closed by the same planned Juke_ServerRpc
-        /// upgrade (see the class note's Phase 2.5 item).
+        /// the casual bump never does. The ball's strike path runs on the SERVER, so a remote
+        /// pilot's fire opens the window on the server's replica via
+        /// <see cref="NotifyJukeFired_ServerRpc"/> — the strike test then reads the same
+        /// property on either machine.
         /// </summary>
         public bool IsJukeStrikeWindowOpen => Time.time - _lastJukeTime <= jukeDurationSeconds;
+
+        /// <summary>
+        /// OWNER -> SERVER: this pilot just fired a juke; open the strike window on the
+        /// server's replica so the (server-side) ball strike path can see the dash. Same
+        /// owner-detects / server-records family as <c>Player.ReportFaunaKill_ServerRpc</c>.
+        /// RequireOwnership stays at its default (true), so only the juking pilot's owner can
+        /// open their own window; the window's LENGTH is the server's serialized
+        /// <see cref="jukeDurationSeconds"/>, never a client-supplied number. Arrival is one
+        /// half-RTT after the local fire, which shifts the window late by the same latency the
+        /// dashed vessel's NetworkTransform pose arrives with — the two travel together.
+        /// </summary>
+        [ServerRpc]
+        void NotifyJukeFired_ServerRpc()
+        {
+            _lastJukeTime = Time.time;
+        }
 
         /// <summary>Raised the instant a juke fires, carrying the world-space dash DIRECTION.
         /// <see cref="ScarabCavitationBlast"/> rides this so the blast leaves along the dash —
@@ -134,6 +153,10 @@ namespace CosmicShore.Gameplay
 
             _lastJukeTime = Time.time;
             SetJukeArmed(false);
+            // Mirror the fire onto the server's replica so the juke-steal window exists where
+            // the ball strike is resolved. Host/local sessions are already the server copy.
+            if (IsSpawned && !IsServer)
+                NotifyJukeFired_ServerRpc();
             transformer.ModifyVelocity(shove.normalized * jukeSpeed, jukeDurationSeconds,
                                        ignoresTranslationRestriction: true);
             OnJukeFired?.Invoke(shove.normalized);

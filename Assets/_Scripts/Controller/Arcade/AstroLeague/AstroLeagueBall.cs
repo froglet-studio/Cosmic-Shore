@@ -1345,7 +1345,11 @@ namespace CosmicShore.Gameplay
 
             // A blast is a touch for the arming/bank ledger (no name — nobody escorted it),
             // but never a steal: only the juke's committed dash converts a locked ball.
-            RecordTouchServer(blastDomain, string.Empty);
+            // A DOMAIN-LESS blast (Blue) records nothing: Blue is the ledger's "untouched"
+            // sentinel, so stamping it would silently RE-ARM a ball an enemy touch had
+            // disarmed — a neutral explosion must not launder the arming state.
+            if (blastDomain != Domains.Blue)
+                RecordTouchServer(blastDomain, string.Empty);
 
             if (IsSpawned)
             {

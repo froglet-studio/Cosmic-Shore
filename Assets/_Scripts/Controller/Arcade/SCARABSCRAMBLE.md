@@ -109,11 +109,14 @@ platform-law) shaped the final rule set:
 
 ## Known limitations / follow-ups
 
-- **The juke-steal registers only where the juke fired** (host / local sessions): the juke
-  controller is owner-local state, so a remote CLIENT's steal window is invisible to the
-  server-side ball — the same client-side gap as the blast forge, closed by the same
-  planned `Juke_ServerRpc` upgrade (SCARAB.md's Phase 2.5 item). Remote clients still
-  bump, escort and score; they cannot steal until the RPC lands.
+- **The juke-steal works for remote clients** via `ScarabJukeController.NotifyJukeFired_ServerRpc`
+  (the controller is now a `NetworkBehaviour`; a fire mirrors onto the server's replica, so
+  `IsJukeStrikeWindowOpen` is true where the ball's strike path actually runs). The window
+  opens one half-RTT late on the server — the same latency the dashed vessel's
+  NetworkTransform pose arrives with, so the two travel together. Only the fire MOMENT
+  travels; the window length is the server's own serialized `jukeDurationSeconds`, never a
+  client number. The fuller `Juke_ServerRpc` (direction + Charge snapshot) remains SCARAB.md's
+  Phase 2.5 item for the cavitation-blast half.
 - **AI cannot juke or blast** (`ScarabJukeController` is inert under autopilot), so AI
   play is fetch-and-escort only (`ArmRollers`: nearest crystal ↔ escort own ball behind
   the predicted position toward the nearest hoop, full throttle via the Scarab
@@ -170,12 +173,14 @@ by `MaxLivePopulation` (8+4+22).
    toast `{name} rings one home - n/10`, HUD domain sums move, play continues.
 5. **Arming gate**: push an ENEMY ball through a ring → nothing scores, ball sails on.
    Re-touch by its owner → it scores again for them.
-6. **Juke-steal** (host): juke-dash into an enemy ball → it converts to your colour.
-   Ordinary bump → it never converts.
+6. **Juke-steal**: juke-dash into an enemy ball → it converts to your colour.
+   Ordinary bump → it never converts. Works from a remote client too
+   (`NotifyJukeFired_ServerRpc` opens the window on the server's replica).
 7. **Bank**: score off 2+ wall caroms → `BANK x{n}` toast.
 8. **Cap**: forge 2×roster balls → next crystal collects normally + targeted cap toast.
 9. **Match end**: first domain to 10 → winner banner, scoreboard, Play Again reloads.
 10. **MPPM two-client**: forged balls appear on the client at the correct SIZE (the
-    `n_SizeScale` fix) and colour; goals sync; client cannot steal (known limitation).
+    `n_SizeScale` fix) and colour; goals sync; a client's juke-dash steals (the
+    `NotifyJukeFired_ServerRpc` round-trip).
 11. **Ecology**: idle until trail silts the court (~Restless 12000 volume) → foragers
     pour over the court wall and graze.

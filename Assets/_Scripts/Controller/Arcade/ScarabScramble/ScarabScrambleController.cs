@@ -179,6 +179,11 @@ namespace CosmicShore.Gameplay
 
         void BuildHoops(Vector3 centre, float courtRadius, int count, float mouthRadius)
         {
+            // A bare Destroy is tolerable here ONLY because a rebuild can never hit live play:
+            // the court NVs are written once at server spawn and the zero-guard above keeps
+            // clients from building until those real values land, so at most one build ever
+            // shows on screen. A future mode feature that re-configures the court MID-MATCH
+            // must wither the old hoops out (continuity of existence) before building anew.
             if (_hoopRoot != null) Destroy(_hoopRoot);
             _hoops.Clear();
 
@@ -469,7 +474,16 @@ namespace CosmicShore.Gameplay
                     if (selfTf == null) return centre;
                     Vector3 selfPos = selfTf.position;
 
-                    if (Time.time >= nextSample || !IsBallEscortable(targetBall, captured.Domain))
+                    // Resample on the pacing timer, or EARLY only when the held latch dies
+                    // (escorted ball spent/stolen, fetched crystal collected). The latch test
+                    // must cover BOTH states — gating on the ball alone made the crystal-fetch
+                    // state resample every frame, because IsBallEscortable(null, …) is false.
+                    bool latchDied =
+                        (targetBall != null && !IsBallEscortable(targetBall, captured.Domain))
+                        || (targetBall == null && targetCrystal != null
+                            && (!targetCrystal.gameObject.activeInHierarchy
+                                || !IsForgeSource(targetCrystal)));
+                    if (Time.time >= nextSample || latchDied)
                     {
                         nextSample = Time.time + settings.aiRetargetSeconds;
                         targetBall = FindNearestDomainBall(captured.Domain, selfPos);
