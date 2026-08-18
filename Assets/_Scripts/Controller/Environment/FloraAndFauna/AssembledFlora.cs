@@ -26,6 +26,52 @@ namespace CosmicShore.Gameplay
     /// counter in the console IS the diagnosis). Always compiled - plain CSDebug, no editor-only
     /// guards (Docs/CONDITIONAL_COMPILATION.md).
     /// </summary>
+    /// <summary>
+    /// Colony-wide event counters for the Schwarz P TILE population (Docs/ECOSYSTEM.md 34.6).
+    /// A separate class from <see cref="GyroidColonyDiagnostics"/> on purpose: the two colonies
+    /// can live in one cell, and a merged counter is unattributable.
+    ///
+    /// <para>Deliberately smaller than the gyroid's. Every counter that colony needs for FRAME
+    /// COHERENCE - ring poison, ring-coherence error, seed-handoff error, declined foreign
+    /// sites - measures a defect class a tile colony cannot have: a tile is an exact integer
+    /// address, so two plants either agree or belong to different lattices. What is left is
+    /// what can still go wrong: a birth that should not have happened, a mint that would go
+    /// off-lattice, and a site that grew without a reservation.</para>
+    ///
+    /// <para>Always compiled - plain CSDebug, no editor-only guards
+    /// (Docs/CONDITIONAL_COMPILATION.md).</para>
+    /// </summary>
+    public static class SchwarzPColonyDiagnostics
+    {
+        public static int Founders;
+        public static int Births;
+        public static int ReseedMintsBlocked;
+        public static int UnreservedSpawns;
+
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        static void ResetForDomainReload()
+        {
+            Founders = Births = ReseedMintsBlocked = UnreservedSpawns = 0;
+        }
+
+        /// <summary>
+        /// The heartbeat. Healthy readings, so a playtest is decisive rather than suggestive:
+        /// <c>plants</c> climbs by one per birth and equals the live claim count;
+        /// <c>frontier</c> grows when a plant completes and shrinks by one per birth;
+        /// <c>prismsPerPlant</c> settles at exactly SiteCount(level) - 36 at the shipped
+        /// separation - because a tile is a closed set of sites, not a spread;
+        /// <c>mintsBlocked</c> and <c>unreserved</c> must both stay 0.
+        /// </summary>
+        public static string Summary(Cell cell, FloraConfigurationSO species, int livePrisms)
+        {
+            int plants = SchwarzPTileRegistry.ClaimCount;
+            return $"[SchwarzPColony] founders={Founders} plants={plants} births={Births} " +
+                   $"frontier={SchwarzPColonyFrontier.TotalCount} " +
+                   $"prismsPerPlant={(plants > 0 ? (float)livePrisms / plants : 0f):F1} " +
+                   $"mintsBlocked={ReseedMintsBlocked} unreserved={UnreservedSpawns}";
+        }
+    }
+
     public static class GyroidColonyDiagnostics
     {
         public static int Births;
@@ -170,6 +216,11 @@ namespace CosmicShore.Gameplay
                 maxTotalSpawnedObjects = Mathf.Max(1, Mathf.FloorToInt(
                     maxTotalSpawnedObjects * tuning.MaxTotalSpawnedObjectsScale + 0.5f));
 
+            // Per-element lattice scale. Stored rather than applied here: the assemblers
+            // that need it do not exist yet (they are created per prism), so every creation
+            // site pushes it - see ApplyLatticeSpacing.
+            if (tuning.LatticeScale > 0f) _latticeScaleOverride = tuning.LatticeScale;
+
             // Pacing overrides - the prefab's throttles are shared by every biome's plants,
             // so a cell that wants a different pace authors it in config instead.
             if (tuning.ItemsPerGrow >= 1) itemsPerGrow = tuning.ItemsPerGrow;
@@ -239,6 +290,7 @@ namespace CosmicShore.Gameplay
             // growing: a complete plant (budget-full, branchless) must still contribute its
             // frontier once and keep a hand on the population's reproduction clock.
             if (OctagonMode) TickOctagonPopulation();
+            if (TileColonyMode) TickTilePopulation();
 
             // Live-prism budget: the flora can hold at most maxTotalSpawnedObjects LIVE
             // prisms. Consumption frees budget, so a grazed flora regrows. (Was: a
@@ -343,7 +395,7 @@ namespace CosmicShore.Gameplay
                 if (OctagonMode && growthInfo.CanGrow)
                 {
                     var idx = PrismSpatialIndex.Instance;
-                    if (idx != null && idx.IsAvailable && idx.IsAnyPrismWithin(growthInfo.Position, 5.5f))
+                    if (idx != null && idx.IsAvailable && idx.IsAnyPrismWithin(growthInfo.Position, MisalignmentRadius))
                     {
                         GyroidColonyDiagnostics.GrownSiteDefects++;
                         GyroidColonyDiagnostics.ReportDefect("grown-blocked", growthInfo.Position, name);
@@ -436,6 +488,7 @@ namespace CosmicShore.Gameplay
             Branch newBranch = new Branch(newHealthPrism);
 
             var newAssembler = AssemblerFactory.ProgramAssembler(newHealthPrism.gameObject, growthInfo);
+            ApplyLatticeSpacing(newAssembler);
             if (newAssembler == null)
             {
                 CSDebug.LogError("Failed to create assembler");
@@ -446,6 +499,7 @@ namespace CosmicShore.Gameplay
             newSpindle.LifeForm = this;
             newSpindle.transform.position = newHealthPrism.transform.position;
             newSpindle.transform.rotation = newHealthPrism.transform.rotation;
+            ScaleSpindleToLattice(newSpindle);
 
             newHealthPrism.transform.SetParent(newSpindle.transform, false);
             newHealthPrism.transform.localPosition = Vector3.zero;
@@ -528,6 +582,106 @@ namespace CosmicShore.Gameplay
         // by its parent under the boundary epsilon, and a ring-complete test the same.
         int _idleGrowTicks;
 
+        float _latticeScaleOverride = -1f;
+        float? _latticeScaleCached;
+
+        /// <summary>
+        /// How far this element's lattice is stretched relative to the one the octagon tables
+        /// were MEASURED on (<see cref="GyroidOctagonData.MeasuredSeparation"/>) - and relative
+        /// to which every absolute coherence distance in the gyroid path was sized.
+        ///
+        /// <para>Reads the AUTHORED scale, not the assembler's: the only GyroidAssembler in
+        /// reach is the health-prism PREFAB's, whose separationDistance is the unscaled 3, since
+        /// the scale is applied to each spawned instance. Asking the prefab would return 1 for a
+        /// scaled element and silently defeat the whole correction.</para>
+        ///
+        /// <para>GYROID ONLY: the ratio is against a GyroidOctagonData constant, so on a
+        /// Schwarz P plant - whose scale multiplies a tile PERIOD - it would be meaningless.
+        /// 1 for every element that keeps the prefab's spacing.</para>
+        /// </summary>
+        float LatticeScale
+        {
+            get
+            {
+                if (_latticeScaleCached.HasValue) return _latticeScaleCached.Value;
+                if (!OctagonMode) { _latticeScaleCached = 1f; return 1f; }
+                float prefabSeparation = healthPrism && healthPrism.TryGetComponent(out GyroidAssembler ga)
+                    ? ga.SeparationDistance : GyroidOctagonData.MeasuredSeparation;
+                float authored = _latticeScaleOverride > 0f ? _latticeScaleOverride : 1f;
+                _latticeScaleCached = authored * prefabSeparation / GyroidOctagonData.MeasuredSeparation;
+                return _latticeScaleCached.Value;
+            }
+        }
+
+        /// <summary>
+        /// Scale applied to a newly instantiated SPINDLE - the visible branch geometry between
+        /// prisms. It has to follow the lattice: the branch spans the gap between two prisms, so
+        /// a widened lattice with unscaled branches leaves them visibly short.
+        ///
+        /// <para>GYROID ONLY, on purpose. The Schwarz P Space element's proportions were judged
+        /// good on sight at its shipped lattice scale WITH unscaled spindles; scaling them now
+        /// would change an approved look for no request. If Schwarz spindles should scale too,
+        /// that is its own decision, not a side effect of this one.</para>
+        /// </summary>
+        float SpindleLatticeScale => OctagonMode ? LatticeScale : 1f;
+
+        /// <summary>
+        /// Lattice-misalignment radius: mass this close to a new site belongs to a frame
+        /// MISALIGNED with this plant's, so the site is declined rather than grown into a
+        /// visible twin. 5.5u was measured against the separation-3 lattice, where a coherent
+        /// plant's closest non-bonded pair is 6.6u - it therefore SCALES, and the one pass that
+        /// forgot to scale it is the pass that grew offset parallel domains
+        /// (Docs/ECOSYSTEM.md 34.8). Named once because it was a bare literal at two call sites,
+        /// which is exactly how one of them gets missed.
+        /// </summary>
+        float MisalignmentRadius => 5.5f * LatticeScale;
+
+        /// <summary>
+        /// Pushes this element's authored lattice scale onto a freshly created assembler, which
+        /// reads it before its first growth probe.
+        ///
+        /// <para>Each species scales a different thing, and each is exact for its own reason:
+        /// Schwarz P moves periodScale and separationDistance together so the subdivision level
+        /// is invariant; the gyroid moves its bond offsets AND every absolute tolerance that
+        /// decides lattice coherence (see GyroidAssembler.ApplyLatticeScale - scaling the
+        /// offsets alone is what grew offset parallel domains, Docs/ECOSYSTEM.md 34.8).</para>
+        /// </summary>
+        /// <summary>
+        /// Scales the spindle's visible branch geometry with the lattice - the branch spans the
+        /// gap between two prisms, so a widened lattice leaves an unscaled one visibly short.
+        ///
+        /// <para>It scales the spindle's own CHILDREN, never the spindle root, and that is
+        /// load-bearing for two independent reasons:</para>
+        /// <list type="bullet">
+        /// <item><b>Spindles NEST.</b> Every grown spindle is instantiated as a child of its
+        /// parent branch's spindle, so scaling the root multiplies down the whole chain -
+        /// <c>scale^depth</c>. At scale 2 and ten generations deep that is 1024x, which is
+        /// exactly the runaway this replaced.</item>
+        /// <item><b>Prisms parent to the spindle ROOT.</b> A scaled root multiplies every
+        /// prism's authored <c>leafSize</c> on top of the compounding, so the leaf size in the
+        /// config would stop describing the prism at all.</item>
+        /// </list>
+        ///
+        /// <para>Called BEFORE the prism is parented, so the children walked here are only the
+        /// spindle prefab's own - the prism can never be caught by it.</para>
+        /// </summary>
+        void ScaleSpindleToLattice(Spindle target)
+        {
+            float scale = SpindleLatticeScale;
+            if (!target || Mathf.Approximately(scale, 1f)) return;
+
+            Transform root = target.transform;
+            for (int i = 0; i < root.childCount; i++)
+                root.GetChild(i).localScale *= scale;
+        }
+
+        void ApplyLatticeSpacing(Assembler target)
+        {
+            if (_latticeScaleOverride <= 0f || target == null) return;
+            if (target is SchwarzPAssembler schwarz) schwarz.ApplyLatticeScale(_latticeScaleOverride);
+            else if (target is GyroidAssembler gyroid) gyroid.ApplyLatticeScale(_latticeScaleOverride);
+        }
+
         bool? _octagonModeCached;
 
         /// <summary>
@@ -558,12 +712,284 @@ namespace CosmicShore.Gameplay
             // A daughter knows her centre before her crystal exists; the founder's crystal is
             // moved when its centre is discovered (RegisterDangerPrism).
             PlaceCrystalAtCenter();
+            PlaceCrystalAtTileCentre();
         }
 
         void PlaceCrystalAtCenter()
         {
             if (_octagonCenter.HasValue && crystal)
                 crystal.transform.position = _octagonCenter.Value;
+        }
+
+        // ─────────────────────────────────────────────────────────────────────────
+        //  The tile colony (Schwarz P) - a plant IS a tile-owner
+        //
+        //  The same population model as the gyroid's octagon colony (§32.7), applied
+        //  to the Schwarz P surface's own non-Euclidean tile (§34): one plant grows
+        //  exactly ONE tile of the {6,4} tiling, keeps its crystal on that tile's
+        //  flat point, and on completing itself offers its unclaimed face-adjacent
+        //  tiles to the population's frontier. Reproduction is a POPULATION event -
+        //  one birth per fauna-wave period, popped at random - so the colony wanders
+        //  instead of inflating as a ball.
+        //
+        //  What it does NOT need, because a tile is an exact integer address:
+        //  discovery (a prism is stamped with its tile at birth), ring membership, a
+        //  coherence tolerance, a poison band, a territory radius, an ownership
+        //  epsilon, a nearest-foreign-claim scan, and a transcribed seed rotation.
+        //  Every one of those exists in the gyroid path to paper over float drift in
+        //  a lattice that has no addressing.
+        // ─────────────────────────────────────────────────────────────────────────
+
+        SchwarzPSurfaceFrame _tileFrame;
+        Vector3Int _homeTile;
+        bool _hasHomeTile;
+
+        SchwarzPGrowthInfo _pendingTileSeed;
+        SchwarzPSurfaceFrame _pendingOffspringFrame;
+        Vector3Int _pendingOffspringTile;
+        bool _hasPendingTileClaim;
+
+        bool _tileFrontierContributed;
+        bool? _tileColonyModeCached;
+
+        /// <summary>
+        /// True when this species is a Schwarz P tile colony: its health prism carries a
+        /// <see cref="SchwarzPAssembler"/>. Deliberately a SECOND gate rather than a widened
+        /// <see cref="OctagonMode"/> - the gyroid branches type-test <c>GyroidGrowthInfo</c>
+        /// inside, so one shared gate would let a Schwarz plant through into code that
+        /// silently no-ops on it.
+        /// </summary>
+        bool TileColonyMode => _tileColonyModeCached ??= healthPrism && healthPrism.GetComponent<SchwarzPAssembler>();
+
+        /// <summary>
+        /// Hands a daughter her lattice and her tile. The claim was already made by the parent
+        /// (so a sibling can't race it between placement and spawn) - the daughter adopts it
+        /// here. Call before <see cref="Flora.Initialize"/>.
+        /// </summary>
+        public void AdoptHomeTile(SchwarzPSurfaceFrame frame, Vector3Int tile)
+        {
+            _tileFrame = frame;
+            _homeTile = tile;
+            _hasHomeTile = frame != null;
+            if (_hasHomeTile) SchwarzPTileRegistry.TransferClaim(frame, tile, this);
+        }
+
+        void PlaceCrystalAtTileCentre()
+        {
+            if (_hasHomeTile && _tileFrame != null && crystal)
+                crystal.transform.position = _tileFrame.TileCenterWorld(_homeTile);
+        }
+
+        /// <summary>
+        /// Founder path: adopt the lattice this plant's own seed prism anchored, and claim its
+        /// tile. A daughter already has both (<see cref="AdoptHomeTile"/>) and skips this.
+        /// Runs from the grow tick rather than Initialize because a founder's frame is built
+        /// lazily by its assembler's first growth probe.
+        /// </summary>
+        void BindHomeTile()
+        {
+            if (_hasHomeTile || healthTracker == null) return;
+
+            foreach (var prism in healthTracker.All)
+            {
+                if (!prism || !prism.TryGetComponent(out SchwarzPAssembler assembler)) continue;
+                var frame = assembler.Frame;
+                if (frame == null) continue;
+
+                // If the tile is already held, this founder landed on top of another colony's
+                // lattice. It keeps growing unclaimed - the spatial index still stops its
+                // prisms overlapping anyone - it simply never joins the reproduction pool.
+                if (!SchwarzPTileRegistry.TryClaim(frame, assembler.Tile, this)) return;
+
+                frame.Cell ??= cell;
+                _tileFrame = frame;
+                _homeTile = assembler.Tile;
+                _hasHomeTile = true;
+                PlaceCrystalAtTileCentre();
+                SchwarzPColonyDiagnostics.Founders++;
+                CSDebug.Log($"[SchwarzPColony] FOUNDER {name}: tile {_homeTile} " +
+                            $"level {frame.Level} ({SchwarzPTileData.SiteCount(frame.Level)} sites) " +
+                            $"lattice #{frame.GetHashCode():X}");
+                return;
+            }
+        }
+
+        /// <summary>
+        /// A tile plant is COMPLETE when every site of its tile is occupied - an exact test,
+        /// because a site belongs to exactly one tile. The pacing conjuncts are the gyroid's
+        /// and are kept for the same reasons: a plant with orders still queued has not
+        /// finished, and the maturation window lets its prisms finish blooming before it
+        /// parents (a plant that reproduces mid-bloom reads as popping in).
+        /// </summary>
+        bool TileColonyComplete
+        {
+            get
+            {
+                if (!_hasHomeTile || _tileFrame == null || healthTracker == null) return false;
+                if (pendingSpawns.Count > 0) return false;
+                if (_idleGrowTicks < 2) return false;
+                if (Time.time - _lastGrowthTime < _maturationSeconds) return false;
+
+                int sites = SchwarzPTileData.SiteCount(_tileFrame.Level);
+                for (int s = 0; s < sites; s++)
+                    if (!_tileFrame.IsOccupied(new SchwarzPSiteKey(_homeTile, s)))
+                        return false;
+                return true;
+            }
+        }
+
+        /// <summary>
+        /// The population-level reproduction drive, run from every tile plant's grow tick.
+        /// Contribute once on completion, then ride the cell's fauna-wave cadence for one
+        /// birth per cycle. Mirrors <see cref="TickOctagonPopulation"/>.
+        /// </summary>
+        void TickTilePopulation()
+        {
+            BindHomeTile();
+
+            // No lineage (a toy clone, a microscene release) or no cell = grows, coordinates
+            // nothing. Both are required: the frontier book is keyed by (cell, species).
+            if (!SourceConfig || !cell) return;
+
+            if (!_tileFrontierContributed && TileColonyComplete)
+            {
+                ContributeTileFrontier();
+                _tileFrontierContributed = true;
+            }
+
+            float period = cell.CurrentFaunaSpawnPeriod;
+            if (period <= 0f) period = 30f;
+
+            if (!SchwarzPColonyFrontier.TryBeginCycle(cell, SourceConfig, period, PopulationCycleStagger))
+                return;
+
+            // Production gates checked BEFORE popping, so a capped or Frenzy-frozen colony
+            // skips the cycle without burning frontier entries - nothing is culled, nothing is
+            // lost, the sites are simply still there next cycle.
+            if (!cell.FloraPlantingEnabled || cell.IsFloraAtCap(SourceConfig)) return;
+
+            while (SchwarzPColonyFrontier.TryPopRandom(cell, SourceConfig, out var entry))
+            {
+                if (SchwarzPTileRegistry.IsClaimed(entry.Frame, entry.Tile)) continue;
+
+                // The contributor is the lineage donor. If the food web took it since it
+                // offered this tile, the tile is still real lattice - the ticking plant stands
+                // in as donor.
+                var donor = entry.Contributor ? entry.Contributor : this;
+                if (donor.TrySpawnTileDaughter(entry.Frame, entry.Tile)) break;
+            }
+        }
+
+        /// <summary>
+        /// Offers this plant's six unclaimed face-adjacent tiles to the population's frontier.
+        ///
+        /// <para>Six, not twelve. The bond graph also reaches six EDGE-diagonal tiles (a tile's
+        /// hexagon meets those only at a 4-fold corner, by a single bond), and iterating bonds
+        /// blindly would offer them too. The {6,4} tiling's adjacency is the six shared EDGES -
+        /// the six faces of the half-period cube - so the colony grows through faces and the
+        /// surface it builds stays the simple-cubic tiling the tile is defined by.</para>
+        /// </summary>
+        void ContributeTileFrontier()
+        {
+            for (int axis = 0; axis < 3; axis++)
+            {
+                for (int sign = -1; sign <= 1; sign += 2)
+                {
+                    var delta = axis == 0 ? new Vector3Int(sign, 0, 0)
+                              : axis == 1 ? new Vector3Int(0, sign, 0)
+                                          : new Vector3Int(0, 0, sign);
+                    var neighbour = SchwarzPTileData.NeighbourTile(_homeTile, delta);
+                    if (SchwarzPTileRegistry.IsClaimed(_tileFrame, neighbour)) continue;
+                    SchwarzPColonyFrontier.Contribute(cell, SourceConfig, _tileFrame, neighbour, this);
+                }
+            }
+
+            CSDebug.Log($"[SchwarzPColony] COMPLETE {name}: tile {_homeTile} " +
+                        $"prisms={healthTracker.Count} - frontier now " +
+                        $"{SchwarzPColonyFrontier.Count(cell, SourceConfig)} open tiles");
+        }
+
+        /// <summary>
+        /// Executes the population's chosen birth on THIS plant as lineage donor: claims the
+        /// tile, reserves the daughter's seed site, stages the handoff and spawns her through
+        /// the one canonical spawn path. All-or-nothing - any failure releases everything it
+        /// took, because an orphan claim or reservation punches a permanent hole.
+        /// </summary>
+        public bool TrySpawnTileDaughter(SchwarzPSurfaceFrame frame, Vector3Int tile)
+        {
+            if (frame == null) return false;
+
+            // Claim the tile FIRST - released on any later failure. The seed reservation must
+            // come second: a reservation abandoned on a lost claim would sit until its TTL,
+            // permanently blocking every frontier that probes the site meanwhile.
+            if (!SchwarzPTileRegistry.TryClaim(frame, tile, this)) return false;
+
+            var seed = SchwarzPAssembler.BuildSeed(frame, tile, depth);
+            if (seed == null)
+            {
+                SchwarzPTileRegistry.Release(frame, tile, this);
+                return false;
+            }
+
+            var spatialIndex = PrismSpatialIndex.EnsureInstance();
+            bool reserved = false;
+            if (spatialIndex != null && spatialIndex.IsAvailable)
+            {
+                // The seed site must be free mass-wise. TryReserve doubles as the check and
+                // the claim - the daughter's first prism consumes it on register. The radius
+                // is the lattice's own, so it scales with periodScale instead of a magic
+                // number: below half the spacing, so a legitimate neighbouring site is never
+                // blocked, above any drift so a duplicate always is.
+                if (!spatialIndex.TryReserve(seed.Position, frame.WorldSpacing * 0.45f))
+                {
+                    SchwarzPTileRegistry.Release(frame, tile, this);
+                    return false;
+                }
+                reserved = true;
+            }
+
+            _pendingOffspringFrame = frame;
+            _pendingOffspringTile = tile;
+            _hasPendingTileClaim = true;
+            _pendingTileSeed = seed;
+
+            bool born = TrySpawnOneOffspring();
+            if (born)
+            {
+                SchwarzPColonyDiagnostics.Births++;
+                CSDebug.Log($"[SchwarzPColony] BIRTH #{SchwarzPColonyDiagnostics.Births} donor {name}: " +
+                            $"daughter on tile {tile} (frontier " +
+                            $"{SchwarzPColonyFrontier.Count(cell, SourceConfig)} open)");
+            }
+            else
+            {
+                // SpawnFlora refused (cap raced shut, planting froze, prefab torn down) -
+                // release everything this attempt took so nothing strands.
+                SchwarzPTileRegistry.Release(frame, tile, this);
+                if (reserved) spatialIndex.ReleaseReservation(seed.Position);
+                _pendingTileSeed = null;
+                _hasPendingTileClaim = false;
+                _pendingOffspringFrame = null;
+            }
+            return born;
+        }
+
+        /// <summary>
+        /// The tile colony's placement is STAGED, never searched: the population pops one
+        /// random open tile per cycle and <see cref="TrySpawnTileDaughter"/> stages its seed
+        /// pose before spawning. This just reports it, which is what keeps the per-plant quota
+        /// machinery (<c>Flora.TryReproduce</c>) harmlessly inert for colony species.
+        /// </summary>
+        bool TryResolveTileOffspring(out Vector3 position, out Quaternion rotation, out Vector3? up)
+        {
+            position = default;
+            rotation = default;
+            up = null;
+            if (_pendingTileSeed == null) return false;
+
+            position = _pendingTileSeed.Position;
+            rotation = _pendingTileSeed.Rotation;
+            return true;
         }
 
         /// <summary>
@@ -576,6 +1002,7 @@ namespace CosmicShore.Gameplay
         void RegisterDangerPrism(GyroidBlockType type, Vector3 position, Quaternion rotation)
         {
             if (!GyroidOctagonData.TryGetOwnCenterOffset(type, out var localOffset)) return;
+            localOffset *= LatticeScale;
 
             Vector3 center = position + rotation * localOffset;
 
@@ -612,7 +1039,7 @@ namespace CosmicShore.Gameplay
             }
 
             float err = (center - _octagonCenter.Value).magnitude;
-            if (err < GyroidOctagonData.RingMemberToleranceRadius && _ringMembers.Count < 8)
+            if (err < GyroidOctagonData.RingMemberToleranceRadius * LatticeScale && _ringMembers.Count < 8)
             {
                 _ringMembers.Add(new RingMember { Position = position, Rotation = rotation, Type = type });
                 // Coherence telemetry: a genuine ring member computes the claimed centre to
@@ -621,7 +1048,7 @@ namespace CosmicShore.Gameplay
                 if (err > GyroidColonyDiagnostics.MaxRingCoherenceError)
                     GyroidColonyDiagnostics.MaxRingCoherenceError = err;
             }
-            else if (err < GyroidOctagonData.CenterDedupeRadius)
+            else if (err < GyroidOctagonData.CenterDedupeRadius * LatticeScale)
             {
                 // The poison band: near enough to be "this octagon" by claim-identity
                 // standards, far too incoherent to be a real member (the fifth Lab playtest
@@ -681,11 +1108,11 @@ namespace CosmicShore.Gameplay
             if (!_octagonCenter.HasValue) return true;   // founder bootstrap: no territory yet
 
             float dMine = Vector3.Distance(site, _octagonCenter.Value);
-            if (dMine > GyroidOctagonData.TerritoryRadius) return false;
+            if (dMine > GyroidOctagonData.TerritoryRadius * LatticeScale) return false;
 
             float foreignSqr = GyroidOctagonRegistry.NearestForeignClaimSqr(site, this);
             if (foreignSqr >= float.MaxValue) return true;
-            return dMine <= Mathf.Sqrt(foreignSqr) + GyroidOctagonData.OwnershipEpsilon;
+            return dMine <= Mathf.Sqrt(foreignSqr) + GyroidOctagonData.OwnershipEpsilon * LatticeScale;
         }
 
         // -------------------------------------------------------------------
@@ -731,6 +1158,8 @@ namespace CosmicShore.Gameplay
         {
             if (OctagonMode)
                 return TryResolveOctagonOffspring(out position, out rotation, out up);
+            if (TileColonyMode)
+                return TryResolveTileOffspring(out position, out rotation, out up);
 
             position = default;
             rotation = default;
@@ -879,13 +1308,13 @@ namespace CosmicShore.Gameplay
 
                 for (int n = 0; n < neighbors.Length; n++)
                 {
-                    Vector3 center = member.Position + member.Rotation * neighbors[n].Center;
+                    Vector3 center = member.Position + member.Rotation * (neighbors[n].Center * LatticeScale);
                     if (GyroidOctagonRegistry.IsClaimed(center)) continue;
 
                     GyroidColonyFrontier.Contribute(cell, SourceConfig, center, new GyroidGrowthInfo
                     {
                         CanGrow = true,
-                        Position = member.Position + member.Rotation * neighbors[n].SeedPosition,
+                        Position = member.Position + member.Rotation * (neighbors[n].SeedPosition * LatticeScale),
                         Rotation = member.Rotation * neighbors[n].SeedRotation,
                         BlockType = neighbors[n].SeedType,
                         IsDangerous = true,
@@ -931,7 +1360,7 @@ namespace CosmicShore.Gameplay
                 // Lattice-misalignment GATE, seed flavour: standing mass 3.1-5.5u from the
                 // seed site is a MISALIGNED frame's territory (coherent minimum is 6.6u) - a
                 // daughter seeded onto it would twin her whole subtree.
-                if (spatialIndex.IsAnyPrismWithin(seed.Position, 5.5f))
+                if (spatialIndex.IsAnyPrismWithin(seed.Position, MisalignmentRadius))
                 {
                     GyroidColonyDiagnostics.SeedSiteDefects++;
                     GyroidColonyDiagnostics.ReportDefect("seed-blocked", seed.Position, name);
@@ -993,12 +1422,26 @@ namespace CosmicShore.Gameplay
                         _hasPendingOffspringClaim = false;
                     }
                 }
+                else if (_pendingTileSeed != null)
+                {
+                    // The tile colony's handoff: her lattice, her tile, her first prism.
+                    // AdoptHomeTile must precede Initialize - Initialize is what puts her
+                    // crystal on the tile's flat point.
+                    assembled.SeedFromGrowth(_pendingTileSeed);
+                    if (_hasPendingTileClaim)
+                    {
+                        assembled.AdoptHomeTile(_pendingOffspringFrame, _pendingOffspringTile);
+                        _hasPendingTileClaim = false;
+                        _pendingOffspringFrame = null;
+                    }
+                }
                 else if (_donatedGrowth != null)
                 {
                     assembled.SeedFromGrowth(_donatedGrowth);
                 }
             }
             _pendingOffspringSeed = null;
+            _pendingTileSeed = null;
             _donatedGrowth = null;
         }
 
@@ -1009,6 +1452,14 @@ namespace CosmicShore.Gameplay
             // never transferred is released too.
             if (_octagonCenter.HasValue)
                 GyroidOctagonRegistry.Release(_octagonCenter.Value, this);
+            if (_hasHomeTile)
+                SchwarzPTileRegistry.Release(_tileFrame, _homeTile, this);
+            if (_hasPendingTileClaim)
+            {
+                SchwarzPTileRegistry.Release(_pendingOffspringFrame, _pendingOffspringTile, this);
+                if (_pendingTileSeed != null)
+                    PrismSpatialIndex.Instance?.ReleaseReservation(_pendingTileSeed.Position);
+            }
             if (_hasPendingOffspringClaim)
             {
                 GyroidOctagonRegistry.Release(_pendingOffspringCenter, this);
@@ -1044,6 +1495,18 @@ namespace CosmicShore.Gameplay
                 // die (nothing removed a prism through the tracked path) this repeats every
                 // grow tick: a spindle-minting loop. A prismless octagon plant just waits;
                 // grazing that empties it kills it through the normal lethality path instead.
+                if (TileColonyMode)
+                {
+                    // Same reason as the octagon plant below: a tile plant's root sits at
+                    // its tile's flat point - the crystal's seat, not a prism site - so a
+                    // minted prism would be off-lattice with garbage growth sites, and the
+                    // plant cannot die (nothing left through the tracked path), so it would
+                    // repeat every grow tick.
+                    SchwarzPColonyDiagnostics.ReseedMintsBlocked++;
+                    CSDebug.LogWarning($"[SchwarzPColony] {name}: ZERO surviving prisms with a " +
+                                       $"live tracker - off-lattice reseed mint BLOCKED");
+                    return;
+                }
                 if (OctagonMode)
                 {
                     GyroidColonyDiagnostics.ReseedMintsBlocked++;
@@ -1091,7 +1554,7 @@ namespace CosmicShore.Gameplay
             // The octagon colony's crystal is FIXED: it marks the ring's centre and never
             // grows (the gyroid prefab also authors crystalGrowth 0 - belt and braces, since
             // a growing crystal would drift out of scale with the window it sits in).
-            if (crystalGrowth <= 0f || OctagonMode) return;
+            if (crystalGrowth <= 0f || OctagonMode || TileColonyMode) return;
 
             if (crystal)
             {
@@ -1162,6 +1625,8 @@ namespace CosmicShore.Gameplay
                 newSpindle.transform.rotation = _seedGrowth.Rotation;
             }
 
+            ScaleSpindleToLattice(newSpindle);
+
             HealthPrism newHealthPrism = Instantiate(healthPrism, newSpindle.transform.position, newSpindle.transform.rotation);
             AddHealthBlock(newHealthPrism);
             // Zero the locals AFTER SetParent - worldPositionStays:false KEEPS the local
@@ -1186,6 +1651,7 @@ namespace CosmicShore.Gameplay
             if (_seedGrowth != null)
             {
                 var seeded = AssemblerFactory.ProgramAssembler(newHealthPrism.gameObject, _seedGrowth);
+                ApplyLatticeSpacing(seeded);
                 if (seeded != null && _seedGrowth.IsDangerous)
                 {
                     newHealthPrism.MakeDangerous();
@@ -1206,7 +1672,7 @@ namespace CosmicShore.Gameplay
                             GyroidOctagonData.TryGetOwnCenterOffset(sg.BlockType, out var ownOff))
                         {
                             float handoffErr = Vector3.Distance(
-                                _seedGrowth.Position + _seedGrowth.Rotation * ownOff,
+                                _seedGrowth.Position + _seedGrowth.Rotation * (ownOff * LatticeScale),
                                 _octagonCenter.Value);
                             if (handoffErr > GyroidColonyDiagnostics.MaxSeedHandoffError)
                                 GyroidColonyDiagnostics.MaxSeedHandoffError = handoffErr;
@@ -1228,6 +1694,7 @@ namespace CosmicShore.Gameplay
             newHealthPrism.Initialize();
 
             Assembler newAssembler = newHealthPrism.GetComponent<Assembler>();
+            ApplyLatticeSpacing(newAssembler);   // founder: before its first growth probe
             newAssembler.Prism = newHealthPrism;
             newAssembler.Spindle = newSpindle;
 
@@ -1260,9 +1727,10 @@ namespace CosmicShore.Gameplay
         ///   preview IS a patch of the gyroid the species actually grows.
         /// • <see cref="WallAssembler"/> - its four in-plane bond offsets
         ///   (±up, ±right by half-extent + separation).
-        /// • <see cref="SchwarzPAssembler"/> - its own <c>TryPreviewLattice</c>: the same seed
-        ///   anchor, tangent sites, Newton projection and parallel-transported heading the live
-        ///   growth uses, with the occupancy claims replaced by a local visited set.
+        /// • <see cref="SchwarzPAssembler"/> - its own <c>TryPreviewLattice</c>: the same
+        ///   subdivision level, the same measured tile sites and the same integer tile
+        ///   arithmetic (<see cref="SchwarzPTileData"/>) the live growth uses, with the
+        ///   occupancy claims replaced by a local visited set.
         /// </summary>
         public override bool TryPreviewGrowth(int budget, int seed, List<SpawnPoint> into)
         {
@@ -1270,10 +1738,17 @@ namespace CosmicShore.Gameplay
 
             Vector3 scale = LeafSize != Vector3.zero ? LeafSize : Vector3.one;
 
+            // The prototypes here are the PREFAB's assemblers, which carry the UNSCALED
+            // spacing - an authored LatticeScale is applied to each spawned instance, never to
+            // the prefab. So it has to be handed in, or a scaled element previews its new prism
+            // on the old lattice. (Only Schwarz P can be scaled; the gyroid prototype is always
+            // the real thing - see ApplyLatticeSpacing.)
+            float latticeScale = _latticeScaleOverride > 0f ? _latticeScaleOverride : 1f;
+
             if (healthPrism.TryGetComponent(out GyroidAssembler gyroid))
                 return PreviewGyroid(gyroid, scale, budget, into);
             if (healthPrism.TryGetComponent(out SchwarzPAssembler schwarz))
-                return schwarz.TryPreviewLattice(budget, scale, into);
+                return schwarz.TryPreviewLattice(budget, scale, into, latticeScale);
             if (healthPrism.TryGetComponent(out WallAssembler wall))
                 return PreviewWall(wall, scale, budget, into);
 

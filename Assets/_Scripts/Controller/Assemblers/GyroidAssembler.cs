@@ -85,6 +85,45 @@ namespace CosmicShore.Gameplay
         /// <summary>Lattice spacing this assembler bonds at. Read-only, for pure PREVIEWS of
         /// the growth pattern (flora icons) that must never instantiate anything.</summary>
         public float SeparationDistance => separationDistance;
+
+        /// <summary>How far this assembler's lattice is stretched (FloraVariantTuning.LatticeScale).
+        /// 1 for every element that keeps the prefab's spacing.</summary>
+        public float LatticeScale { get; private set; } = 1f;
+
+        /// <summary>
+        /// Scales this element's whole lattice, and with it EVERY tolerance that decides
+        /// lattice coherence. Set before the plant's first growth probe.
+        ///
+        /// <para>Scaling <see cref="separationDistance"/> alone is what shipped once and had to
+        /// be reverted (Docs/ECOSYSTEM.md 34.8): a gyroid plant's coherence rides distances
+        /// written in ABSOLUTE world units, all of them sized against separationDistance 3, so
+        /// widening the lattice moved every real distance out from under them at once. The worst
+        /// was AssembledFlora's lattice-misalignment gate, which stopped catching the twin
+        /// domains it exists to catch, and the plant grew offset parallel surfaces.</para>
+        ///
+        /// <para>So all of them move together here:</para>
+        /// <list type="bullet">
+        /// <item>bond offsets, via <see cref="separationDistance"/>;</item>
+        /// <item><see cref="snapDistance"/> - "is this the prism AT my bond site, or a second one
+        /// beside it". It is compared against SQUARED distances, so it takes <c>scale²</c> to
+        /// represent the same LINEAR tolerance;</item>
+        /// <item><see cref="radius"/> - how far the mate search looks for that prism at all;</item>
+        /// <item>the reservation clearRadius floor, and AssembledFlora's misalignment gate and
+        /// octagon tables, which read <see cref="LatticeScale"/>.</item>
+        /// </list>
+        /// </summary>
+        public void ApplyLatticeScale(float scale)
+        {
+            if (scale <= 0f || Mathf.Approximately(scale, LatticeScale)) return;
+
+            float delta = scale / LatticeScale;
+            LatticeScale = scale;
+
+            separationDistance *= delta;
+            radius *= delta;
+            snapDistance *= delta * delta;   // compared against squared distances
+        }
+
         [SerializeField] int colliderTheshold = 1;
         [SerializeField] float radius = 40f;
 
@@ -153,7 +192,7 @@ namespace CosmicShore.Gameplay
                 // spawn never happens. clearRadius is 0.4× this bond's lattice spacing -
                 // below half-spacing so legitimate neighbor sites are never blocked,
                 // above any drift so a same-site duplicate always is.
-                float clearRadius = Mathf.Max(2f, 0.4f * (newPosition - transform.position).magnitude);
+                float clearRadius = Mathf.Max(2f * LatticeScale, 0.4f * (newPosition - transform.position).magnitude);
                 var spatialIndex = PrismSpatialIndex.EnsureInstance();
                 bool unreserved = spatialIndex == null || !spatialIndex.IsAvailable;
                 // An unavailable index means growth proceeds with NO occupancy dedupe at all -
@@ -574,8 +613,15 @@ namespace CosmicShore.Gameplay
             {
                 healthPrism.Reparent(Prism.transform.parent);
             }
-            prism.TargetScale = scale;
+            // Widen BEFORE stating the size, not after: TargetScale's setter clamps per axis
+            // into the VICTIM's own [minScale, maxScale] (default 0.5..10), so assigning first
+            // and raising MaxScale second lets the clamp bite and the widening arrive too late
+            // to undo it - a converted prism would be pinned at 10 however long this lattice's
+            // prisms are. AdmitTargetScale also lowers minScale, which the plain MaxScale
+            // assignment never did, so a thin lattice prism survives too.
             prism.MaxScale = Prism.MaxScale;
+            prism.AdmitTargetScale(scale);
+            prism.TargetScale = scale;
             prism.GrowthVector = Prism.GrowthVector;
             prism.Steal(Prism.PlayerName, Prism.Domain);
             prism.ChangeSize();

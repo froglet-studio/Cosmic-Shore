@@ -186,6 +186,33 @@ what the carve-out silently broke — see the traps below.
   prism stays classified as volume-only body mass forever: it feeds `LiveVolume` but the food web
   can neither see nor eat it, which looks exactly like "fauna are ignoring it" with no error
   anywhere.
+- **An AUTHORED prism size is SILENTLY CLAMPED, and the clamp is invisible to every offline
+  check.** `PrismScaleAnimator.SetTargetScale` clamps per axis into `[minScale, maxScale]` —
+  serialized defaults `(0.5,0.5,0.5)`/`(10,10,10)`, inherited unchanged by **363 of 404 prefabs**
+  — inside the setter, with no log and no return value. A config saying `60 x 1 x 1` therefore
+  produces a `10 x 1 x 1` prism and *nothing reports the difference*. Three passes of flora
+  fitting measured, argued about and shipped prism sizes the engine never used that way; every
+  cross-section under 0.5 was clamped UP at the same time. Anything that STATES a size calls
+  `Prism.AdmitTargetScale(size)` first; anything that GROWS into the bound via `Grow()` leaves it
+  alone — and because the widening is permanent on a POOLED instance, `ResetState` restores it.
+  **When a fitted size does not read on screen, check what the engine actually STORED before
+  re-fitting** — one look at the live Transform beats another round of measurement.
+- **A scale applied to a node that PARENTS its own successors compounds.** Flora spindles nest —
+  each new spindle is instantiated as a child of its parent branch's spindle — and prisms parent
+  to the spindle ROOT. Scaling that root therefore multiplied down the chain as `scale^depth`
+  (1024x at ten generations) *and* multiplied every prism's authored `leafSize` on top. Scale the
+  node's CHILDREN instead, which are leaves of the chain. Before scaling anything in a hierarchy,
+  ask what else inherits that transform; no compile or static check sees this, only geometry, and
+  only some distance from the seed.
+- **A coherence tolerance written as an ABSOLUTE distance is an unstated dependency on the
+  lattice it was measured against.** A gyroid plant's coherence rides `snapDistance` (compared
+  against SQUARED distances), a 40u mate-search radius, a reservation floor, and
+  `AssembledFlora.MisalignmentRadius` — all sized at `separationDistance 3`. Scaling the lattice
+  moved every real distance out from under them, the twin-detection gate stopped catching twins,
+  and the plant grew the offset parallel domains that gate exists to prevent. Every constant was
+  individually correct; the defect was a RELATIONSHIP. Enumerate every test that decides
+  *sameness* — snap, dedupe, reserve, twin-detect — and assert the ORDERING between them
+  (`reserve < gate < healthy pair`) rather than the values.
 - **A visual state applied before `Prism.IsCreationComplete` is part of BIRTH and must snap.**
   Engaging a morph there holds the exotic-visual window across the creation reveal and eats the
   one-shot grow stamp, so the prism snaps in instead of blooming (`Docs/PRISM_ANIMATION.md` §4).

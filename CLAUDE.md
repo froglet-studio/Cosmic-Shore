@@ -192,6 +192,82 @@ outcome is optimization, not life). Use the `/ecology` skill for any change here
   floor alone was 87% of `FrenzyEnterVolume` and the colony froze after one wave while its caps
   sat 19× further out. Reach for the ladder, not the population dial (`Docs/ECOSYSTEM.md §32.7`
   seventh pass). Full record: `Docs/ECOSYSTEM.md §32` (§32.7 the octagon colony).
+- **A lattice species grows on its SURFACE'S OWN TILE, never on a fitted grid.** A triply
+  periodic minimal surface is intrinsically **hyperbolic**, so it admits no Euclidean lattice
+  and a square-ish marching walk across it (step a tangent, Newton-project, repeat) can only
+  approximate one — it accumulates drift, fronts arriving from different directions disagree
+  (which is why such a walk needs a *quantized float* occupancy key), and it has no repeat unit,
+  so nothing can be baked, measured or verified. Every TPMS does carry an exact non-Euclidean
+  tiling, and for **Schwarz P** it is the hyperbolic **{6,4}** realized as *the patch of surface
+  inside one half-period cube*: one flat point per cube, six planar-geodesic edges on the six cube
+  faces, six 4-fold corners in the flat point's tangent plane, six neighbours = the six
+  face-adjacent cubes. **Tile adjacency is simple-cubic adjacency**, so a prism's address is a
+  `Vector3Int` + site index and occupancy is exact integer bookkeeping (`SchwarzPTileData`,
+  `SchwarzPAssembler`). Two rules generalise to any future lattice species: **(1) never bake a
+  rotation** — half the tile transforms are reflections and a quaternion carried through one is
+  silently wrong (the gyroid paid five playtests for this, §32.7); bake positions and tangents,
+  which transform correctly, and derive orientation from the closed-form gradient. **(2) a bond
+  delta does not ADD** — carrying a canonical bond into tile `(i,j,k)` composes tile transforms,
+  and `T_a∘T_b` is `T_(a−b)` when `a` is odd, so a delta is negated on every odd axis
+  (`SchwarzPTileData.NeighbourTile`). Getting that wrong is invisible to every static check —
+  offsets stay exact, every prism still lands on the surface, occupancy still keys cleanly — and
+  shows up ONLY as geometry; it was caught by simulating a plant's growth to its authored budget.
+  Measured by `Tools/Build/measure_schwarz_p_tile.py`, and the SHIPPED C# re-proved from the
+  implicit function by `Tools/Build/verify_schwarz_p_tile_tables.py` (a separate script on
+  purpose: the transcription from a proven measurement to the asset is the step neither the
+  measurement nor code review can see). **A lattice species' PRISM SIZE belongs to the
+  lattice, not to the plant**: `leafSize` is a footprint in the surface's tangent plane
+  (local +z is the normal, +y the site's tangent), so whether plates sit flush is an exact
+  OBB question against the measured site set — fit it (`Tools/Build/fit_schwarz_p_leaf_sizes.py`,
+  which tests seam pairs too, since a size fitted inside one tile is wrong at the boundary),
+  and note that a lattice species' prism must NOT scale with level — it scales the prism but not
+  the lattice, so at 1.15 a level-5 plant's prisms are 1.749× the flush size and it
+  interpenetrates itself (measured: 0 overlapping pairs at L1, 144 at L3, 212 at L5). That is
+  now enforced in CODE by `Flora.PrismSizeFixedByGrowthRule` (true on `AssembledFlora`), so the
+  config field needs no pinning. **A lattice can be SCALED only where "sameness" is an integer address, never
+  a distance.** `FloraVariantTuning.LatticeScale` (sentinel **−1** = keep the prefab's) scales an
+  element's whole lattice while keeping its topology and prism count identical to its elemental
+  peers, and is pushed onto the assembler at all three creation sites because it is read BEFORE
+  the first growth probe. It is **Schwarz P's alone**: there it scales `periodScale` AND
+  `separationDistance` together, which leaves `ResolveLevel`'s argmin — the subdivision — exactly
+  invariant (scaling either alone silently ships a DIFFERENT PLANT: Space landed on 6 sites per
+  tile instead of 36 that way), and a prism's identity is an integer tile address, so no tolerance
+  exists to invalidate. **The GYROID took two attempts** (`Docs/ECOSYSTEM.md §34.8`): its coherence
+  rides distances written as ABSOLUTE world units sized at separation 3 — the mate-snap tolerance
+  (0.3, compared against SQUARED distances, so scale²), the 40u mate-search radius, the
+  reservation floor, and `AssembledFlora`'s lattice-misalignment gate (5.5u, at BOTH the grown-
+  and seed-site checks) — so scaling the bond offsets alone moved every real distance out from
+  under the gate that exists to catch twins, and the plant grew the offset parallel domains it was
+  written to prevent. Every constant was individually correct; the defect was a RELATIONSHIP, which
+  is why no static check saw it. `GyroidAssembler.ApplyLatticeScale` now moves the whole family
+  together, and the invariant asserted is the **ordering** `reserve < misalignment gate < healthy
+  closest pair` (constant 73% gate/healthy at every scale), proven over the shipped bond table by
+  `Tools/Build/verify_gyroid_lattice_scale.py`. Three rules come out of it: **a coherence tolerance
+  written as an absolute distance is an unstated dependency on the lattice it was measured
+  against** — enumerate every snap/dedupe/reserve/twin-detect test before scaling anything, and
+  assert the ordering rather than the values; **a prism only reads as STRETCHED against a lattice
+  that stayed put** (scale both and it is just a bigger plant, so stretch on the native lattice
+  FIRST, then scale); and **a uniform k× scale is a k³ VOLUME change** that lands straight on the
+  cell's Frenzy ladder (§4.6) — the Space gyroid's 2× would have taken its ceiling from 13% to
+  155% of the Blob cell's `FrenzyEnterVolume` at `60 × 2 × 2`, so its cross-section is held at 1
+  (`60 × 1 × 1`, 39%; now 40 × 1 × 1, 26%): a lattice prism's THICKNESS is a volume dial with cubic leverage and is the
+  cheapest correction when a scale-up overshoots the ladder. Spindles scale with the lattice (visible branch geometry spanning the
+  gap); crystals deliberately do not. Full record: `Docs/ECOSYSTEM.md §34` (§34.5 the per-element
+  prism fit, §34.7 the Schwarz P lattice, §34.8 the gyroid scale).
+- **An AUTHORED prism size widens its clamp; a GROWN one keeps it.**
+  `PrismScaleAnimator.SetTargetScale` clamps PER AXIS into `[minScale, maxScale]` — serialized
+  defaults `(0.5,0.5,0.5)`/`(10,10,10)`, which **363 of 404 prefabs** inherit unchanged — inside
+  the setter, with no log and no return value. So a config saying `60 x 1 x 1` produced a
+  `10 x 1 x 1` prism and *nothing reported the difference*: three passes of flora fitting
+  measured, argued about and shipped sizes the engine never used (`Docs/ECOSYSTEM.md §34.9`),
+  every Space strut rendered at 10 whatever was authored, and every cross-section under 0.5 was
+  clamped UP. Anything that STATES a size calls `Prism.AdmitTargetScale(size)` first
+  (`Flora.AddHealthBlock` and `PhyllotacticFlora.AddHealthBlock` do); anything that GROWS into
+  the bound via `Grow()` leaves it alone. The per-prefab version of this workaround already
+  existed (`SpawnablePrism` max 100, `Manta Prism` max x 40, `Dolphin Prism` max z 100), which is
+  why it was easy to miss. **General rule: a silent clamp inside a setter is indistinguishable
+  from a config that never applied, and it defeats every offline measurement — when a fitted size
+  does not read on screen, check what the engine actually STORED before re-fitting.**
 - **Territorial permanence.** Take a cell, leave, it stays yours — the claim fauna cannot touch.
   In nucleus cells the permanent claim is the **nucleus interior** (fauna never consume it);
   exterior canopy/trail is deliberately contested churn (voracious any-domain grazing). In
