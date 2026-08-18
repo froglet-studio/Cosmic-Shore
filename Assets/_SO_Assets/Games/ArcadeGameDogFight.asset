@@ -36,4 +36,4 @@ MonoBehaviour:
   CallToActionTargetType: 404
   ViewUserAction: 0
   PlayUserAction: 0
-  ComebackRatePerScoreDeficit: 0.004
+  ComebackRatePerScoreDeficit: 0.12

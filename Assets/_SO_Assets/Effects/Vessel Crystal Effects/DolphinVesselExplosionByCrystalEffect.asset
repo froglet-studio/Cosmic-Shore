@@ -24,5 +24,8 @@ MonoBehaviour:
   _spawnOffset: {x: 0, y: 0, z: 0}
   _heightMultiplierAtFullSpace: 2
   _minHeightMultiplier: 0.35
+  _coreMultiplierAtRestCharge: 0.75
+  _coreMultiplierAtFullCharge: 1.5
+  _minCoreMultiplier: 0.5
   _spaceUpgradeSparesAllies: 1
   _explosionCooldown: 0.15

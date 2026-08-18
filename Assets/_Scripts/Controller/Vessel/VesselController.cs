@@ -48,6 +48,16 @@ namespace CosmicShore.Gameplay
         public override void OnDestroy()
         {
             Debug.Log($"<color=#FFFF00>[VESSEL] OnDestroy '{gameObject.name}' - IsSpawned={IsSpawned}, IsServer={IsServer}, IsOwner={IsOwner}, NetObjId={NetworkObjectId}</color>");
+
+            // Leave the roster we joined in OnNetworkSpawn. Without this a destroyed vessel stays
+            // in gameData.Vessels forever, and every consumer that iterates it is exposed to a
+            // MissingReferenceException: the list is List<IVessel>, so `vessel == null` is a plain
+            // INTERFACE reference comparison that never reaches UnityEngine.Object's overload — a
+            // destroyed hull sails through the guard and throws on the first member access.
+            // The despawn path (ServerPlayerVesselInitializer) already removes; this covers every
+            // other way a vessel dies, including the freestyle vessel-changer swap.
+            if (gameData != null) gameData.Vessels.Remove(this);
+
             // Both clear only if THIS vessel is still the one in force, so a vessel swap whose
             // outgoing hull is destroyed after the incoming one initializes cannot cancel the
             // new binding.

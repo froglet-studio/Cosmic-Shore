@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Threading;
 using UnityEngine;
 using CosmicShore.Core;
@@ -20,6 +21,26 @@ namespace CosmicShore.Gameplay
         [Header("Projectile Settings")]
         [SerializeField] private bool spike = false;
         [SerializeField] private bool friendlyFire = false;
+
+        [Tooltip("Test the SEGMENT this projectile crossed each frame for prism contact, " +
+                 "instead of relying on the PhysX trigger at the point it landed on.\n\n" +
+                 "A projectile is a TELEPORT, not a sweep: the mover writes " +
+                 "position += Velocity·Δt and PhysX samples the trigger once per physics " +
+                 "step. A Sparrow round at its base 375 u/s crosses 6.25 u per frame behind " +
+                 "a 1.65-diameter hit sphere, so ~74% of its path is never tested for " +
+                 "collision at all — and at high SPACE it is ~97%. That reads in play as a " +
+                 "gun that cannot clear a small area no matter how much you shoot, and it is " +
+                 "why oversizing the collider 'fixed' the feel: a big enough ball closes the " +
+                 "per-frame gap.\n\n" +
+                 "With this on, prism contact comes from the swept query ONLY (the trigger " +
+                 "path is suppressed for prisms, so nothing double-dispatches) and the hit " +
+                 "volume can be the size the projectile actually looks.")]
+        [SerializeField] private bool sweptPrismDetection = false;
+
+        /// <summary>True when prism contact for this projectile is owned by the swept
+        /// segment query rather than the PhysX trigger — read by
+        /// <c>ProjectileImpactor</c> to suppress the trigger's prism case.</summary>
+        public bool UsesSweptPrismDetection => sweptPrismDetection;
 
         [Header("Data Containers")]
         [SerializeField] private ThemeManagerDataContainerSO _themeManagerData;
@@ -156,6 +177,10 @@ namespace CosmicShore.Gameplay
             // end-of-flight handler, and the once-only latch must re-arm.
             FlightEnded = null;
             _flightEndRaised = false;
+
+            // Likewise the previous shot's MASS growth — a caller that does not set it gets
+            // the un-grown default rather than whoever fired this instance last.
+            _flightGrowthFactor = 1f;
         }
 
         public void SetType(ProjectileType type) => Type = type;
@@ -217,6 +242,16 @@ namespace CosmicShore.Gameplay
 
             Stop(); // Stop any running movement before starting a new one
 
+            // After every scale/parent change above — the carried turret collider is sized
+            // per shot, so this cannot be cached at Awake.
+            if (sweptPrismDetection) CacheSweepRadius();
+
+            // The growth baseline is whatever this shot actually launched at (the gun applies
+            // projectileScale, the turret sizes its carried collider per shot), never the
+            // prefab's InitialScale.
+            _launchScale = transform.localScale;
+            _launchSweepRadius = _sweepRadius;
+
             _moveCts = CancellationTokenSource.CreateLinkedTokenSource(
                 this.GetCancellationTokenOnDestroy());
             MoveProjectileAsync(projectileTime, _moveCts.Token).Forget();
@@ -262,7 +297,26 @@ namespace CosmicShore.Gameplay
                 {
                     float deltaTime = Time.deltaTime;
                     float factor = Mathf.Cos(elapsedTime * Mathf.PI / (2f * projectileTime));
+
+                    // Grow BEFORE the step is swept, so this frame's hit volume is the size the
+                    // round has actually reached rather than the one it left the muzzle at.
+                    if (_flightGrowthFactor != 1f)
+                        ApplyFlightGrowth(elapsedTime / projectileTime);
+
+                    Vector3 sweepFrom = t.position;
                     t.position += Velocity * (deltaTime * factor);
+
+                    if (sweptPrismDetection)
+                    {
+                        SweepPrismsAlong(sweepFrom, t.position);
+
+                        // A stopping impact has already run the whole end-of-flight path
+                        // (RaiseFlightEnded + ReturnToFactory). Returning rather than
+                        // breaking is deliberate: the loop's tail would otherwise fire the
+                        // end effects a second time on an instance already back in the pool.
+                        if (_flightEndRaised)
+                            return;
+                    }
 
                     if (useSpike)
                     {
@@ -290,6 +344,161 @@ namespace CosmicShore.Gameplay
                 CSDebug.LogError($"[Projectile] Move loop error: {ex}");
             }
         }
+
+        #region Swept prism detection
+
+        /// <summary>
+        /// Extra radius added when GATHERING candidates, on top of the projectile's own hit
+        /// radius. <see cref="PrismSpatialIndex.QuerySegment"/> tests a prism's CENTRE, so
+        /// without an allowance a prism whose body crosses the path but whose centre sits
+        /// beside it would be missed. Sized to comfortably exceed the bounding radius of the
+        /// largest prism the guns meet (a 0.8×0.5×5 turret prism is ~2.5, stretched by MASS);
+        /// every candidate is then re-tested precisely against its own bounds, so a generous
+        /// value costs a few extra distance checks, never a false hit.
+        /// </summary>
+        const float SweepCandidateExtent = 8f;
+
+        readonly struct SweepHit
+        {
+            public readonly float T;                 // parameter along this frame's segment
+            public readonly PrismImpactor Impactor;
+            public SweepHit(float t, PrismImpactor impactor) { T = t; Impactor = impactor; }
+        }
+
+        // Shared scratch — the sweep is main-thread and non-reentrant (dispatching an impact
+        // runs effects, never another projectile's move loop).
+        static readonly List<Prism> s_sweepCandidates = new(64);
+        static readonly List<SweepHit> s_sweepHits = new(16);
+        static readonly Comparison<SweepHit> s_nearestFirst = (x, y) => x.T.CompareTo(y.T);
+
+        float _sweepRadius = 0.5f;
+
+        // ---- in-flight growth (MASS) ----
+        float _flightGrowthFactor = 1f;
+        Vector3 _launchScale = Vector3.one;
+        float _launchSweepRadius = 0.5f;
+
+        /// <summary>
+        /// How many times its launch cross-section this round swells to by the end of its
+        /// flight. Set per shot from the vessel's live MASS level; 1 = no growth (every
+        /// projectile that does not opt in).
+        /// </summary>
+        public void SetFlightGrowth(float factor) => _flightGrowthFactor = Mathf.Max(0.01f, factor);
+
+        /// <summary>
+        /// Grows the round toward its full factor across the flight, and grows the swept hit
+        /// radius by the SAME factor — the size you see is the size that hits.
+        ///
+        /// **Cross-section only.** The tracer mesh is a unit sphere at (1.5, 1.5, 20) — a
+        /// 20-long dart — so scaling it uniformly at 6× would draw a 120-unit needle across a
+        /// ~72-unit range. Width is what a hit volume is made of; length is just the streak.
+        ///
+        /// The hit radius is scaled EXPLICITLY rather than re-derived from lossyScale, because
+        /// a SphereCollider takes the largest lossy component: with the length left alone, that
+        /// stays the z-stretch and the derived radius would never move. (Consequence, and a
+        /// deliberate scope line: the swept PRISM radius grows, while the PhysX radius the
+        /// vessel/mine path uses is unchanged for the dart. Growing bullets against vessels is
+        /// a Dog Fight balance change, not a prism-clearing one.)
+        /// </summary>
+        void ApplyFlightGrowth(float progress01)
+        {
+            float g = Mathf.LerpUnclamped(1f, _flightGrowthFactor, Mathf.Clamp01(progress01));
+            transform.localScale = new Vector3(_launchScale.x * g, _launchScale.y * g, _launchScale.z);
+            _sweepRadius = _launchSweepRadius * g;
+        }
+
+        /// <summary>
+        /// The projectile's hit radius in world units, cached per launch (the Sparrow's
+        /// carried turret collider is re-scaled per shot, so it cannot be cached earlier).
+        /// A SphereCollider takes the LARGEST lossy-scale component — the same rule that once
+        /// turned a 0.3 radius on a ×20-stretched tracer into a 6.0 world radius.
+        /// </summary>
+        void CacheSweepRadius()
+        {
+            if (_rootCollider is SphereCollider sphere)
+            {
+                Vector3 s = _rootCollider.transform.lossyScale;
+                _sweepRadius = sphere.radius *
+                    Mathf.Max(Mathf.Abs(s.x), Mathf.Max(Mathf.Abs(s.y), Mathf.Abs(s.z)));
+                return;
+            }
+
+            // Non-sphere colliders: the smallest half-extent is the conservative read (a long
+            // dart's AABB diagonal would massively overstate its cross-section). Swept
+            // detection is opt-in and every current user is a sphere.
+            _sweepRadius = _rootCollider
+                ? Mathf.Min(_rootCollider.bounds.extents.x,
+                    Mathf.Min(_rootCollider.bounds.extents.y, _rootCollider.bounds.extents.z))
+                : 0.5f;
+        }
+
+        /// <summary>
+        /// Tests the segment this projectile crossed THIS FRAME for prism contact and
+        /// dispatches the hits **nearest-first**, which is what makes the sub-SPACE-5
+        /// "destroyed on its first prism impact" rule mean the first prism along the path
+        /// rather than an arbitrary one.
+        ///
+        /// The projectile is moved to each contact point before its impact is dispatched, so
+        /// an effect reading the shot's position — and the Turret Stance's anchor, which puts
+        /// its prism "wherever the bullet would be destroyed" — sees where the shot actually
+        /// met the prism, not where the frame's step happened to end.
+        /// </summary>
+        void SweepPrismsAlong(Vector3 from, Vector3 to)
+        {
+            if (!projectileImpactor) return;
+
+            var index = PrismSpatialIndex.Instance;
+            if (!index || !index.IsAvailable) return;
+
+            if (index.QuerySegment(from, to, _sweepRadius + SweepCandidateExtent, s_sweepCandidates) == 0)
+                return;
+
+            Vector3 ab = to - from;
+            float abLenSq = ab.sqrMagnitude;
+
+            s_sweepHits.Clear();
+            for (int i = 0; i < s_sweepCandidates.Count; i++)
+            {
+                var prism = s_sweepCandidates[i];
+                if (!prism || prism.destroyed) continue;
+                if (!prism.TryGetComponent(out PrismImpactor prismImpactor)) continue;
+
+                Vector3 centre = prism.transform.position;
+                float t = abLenSq > 1e-8f
+                    ? Mathf.Clamp01(Vector3.Dot(centre - from, ab) / abLenSq)
+                    : 0f;
+
+                // Bounding-SPHERE contact rather than an exact capsule-vs-OBB test: it is a
+                // few instructions instead of a narrowphase, and its error is a slightly
+                // generous corner hit — the right direction to err for a saturation weapon,
+                // and still far tighter than the oversized collider this replaces.
+                float contact = _sweepRadius + 0.5f * prism.transform.lossyScale.magnitude;
+                if ((centre - (from + ab * t)).sqrMagnitude > contact * contact) continue;
+
+                s_sweepHits.Add(new SweepHit(t, prismImpactor));
+            }
+
+            if (s_sweepHits.Count == 0) return;
+            if (s_sweepHits.Count > 1) s_sweepHits.Sort(s_nearestFirst);
+
+            for (int i = 0; i < s_sweepHits.Count; i++)
+            {
+                var hit = s_sweepHits[i];
+                if (!hit.Impactor) continue;
+
+                transform.position = from + ab * hit.T;
+                projectileImpactor.AcceptImpacteeFromSweep(hit.Impactor);
+
+                // A stopping impact ran the whole end-of-flight path from inside that call;
+                // the shot rests here.
+                if (_flightEndRaised) return;
+            }
+
+            // Pierced everything it met — finish the frame's step.
+            transform.position = to;
+        }
+
+        #endregion
 
         void Stop()
         {

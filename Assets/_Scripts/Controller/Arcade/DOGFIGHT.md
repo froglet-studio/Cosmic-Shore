@@ -12,7 +12,7 @@ Dog Fight is the **Sparrow-only gun duel**. Two to four pilots hunt each other t
 **Boneyard** — a wrecked world of hollow hulks, leaning spires and rubble canyons built for
 close encounters and hiding places. A **bullet hit scores 1**, a **missile hit scores 50**
 (direct strike *or* caught in the blast), and the first **DOMAIN** to the point target
-(default **120**) wins.
+(default **90**) wins.
 
 **One axis, and it is gunnery.** The scored stat is `IRoundStats.CombatPoints` — a weighted sum
 of landed vessel-vs-vessel hits. Nothing else scores: not the wreckage, not crystals, not
@@ -39,7 +39,7 @@ scoreboard anywhere before this.
   winning domain's pilots score their finish time, everyone else the `GolfScoreSentinels`
   sentinel (displayed "N Points Left")
 - **Turn monitor**: `DogFightPointTurnMonitor` — resolves the target from
-  `EndConditionOverridesSO.GetDogFightPointTarget()` (default **120**, FrogletTools ▸ Game Modes
+  `EndConditionOverridesSO.GetDogFightPointTarget()` (default **90**, FrogletTools ▸ Game Modes
   ▸ End Game Conditions — never a per-scene field), syncs it via NetworkVariable →
   `GameDataSO.CombatPointTargetCount`
 - **Players**: **2–4** with AI backfill. `MinDomainsAllowed = 2`, `MaxDomainsAllowed = 3`
@@ -49,8 +49,10 @@ scoreboard anywhere before this.
   `GameLists/OrganicRematchGames.asset`, `ProgressionConfig.alwaysUnlockedModes`)
 - **Objective marker**: `DogFightObjectiveProvider` — the off-screen arrow points at the nearest
   vessel you can actually shoot (see below)
-- **Crystals**: no OMNI crystal; `DogFightController` scatters **elemental** pickups (see below)
-- **Intensity 4 is Scurry's world**: `SpawnableAtlantis`, referenced verbatim (see below)
+- **Crystals**: **four** omni crystals on platform-normal settings (with an authored
+  `noNucleusSpawnRadius`, see below) **plus** elemental pickups scattered by `DogFightController`
+- **Comeback**: `ScoreDifferenceSource.CombatPoints`, rate **0.12** (see below)
+- **Environment**: `SpawnableBoneyard` at all four intensities, 9,043 → 34,654 prisms
 
 ## Why it is a TEAM race and not a free-for-all
 
@@ -91,6 +93,7 @@ Universality section warns about.
 ```
 Sparrow lands a shot on an OPPOSING vessel
   ├─ direct hit   → ProjectileImpactor.AcceptImpactee → VesselCombatHitByProjectileEffectSO
+  │                 (bullet, turret-stance prism round, or a rocket's centre-punch)
   └─ blast        → ExplosionImpactor.AcceptImpactee  → VesselCombatHitByExplosionEffectSO
         │  (both claim the SAME VesselCombatHitLatch window per shooter/victim/class)
         ▼
@@ -120,6 +123,13 @@ The platform counts landed hits as **raw facts** (`BulletHitsLanded` / `MissileH
 has no opinion about what one is worth. `DogFightScoringRuleSO` says a bullet is 1 and a rocket
 is 50, through the new `ScoringRuleSO.PointsForCombatHit` virtual (default **0** — every other
 mode counts gunnery and scores none of it).
+
+**Both of the Sparrow's fire modes count as "bullet".** Full-auto rounds and turret-stance prism
+rounds are the same weapon class — one direct projectile hit — so
+`SparrowPrismProjectileImpactContainer` carries the same `VesselCombatHitByBullet` effect as
+`SparrowFullAutoProjectileImpactContainer`, and its container already carried the same two victim
+effects (spin + skimmer shrink). Only the **missile** is worth more, and only because a missile
+is a different proposition.
 
 `CombatHitScoring.Credit` applies that weighting **once, server-side, at the instant of the
 hit**, and banks the result in `IRoundStats.CombatPoints`. That is deliberate: it keeps
@@ -289,52 +299,58 @@ arena **radius is fixed at 520 at every intensity**, for the same reason Ribcage
 cages fix theirs: it is what the spawn shell, the AI's fallback aim point and the silhouette are
 all defined against.
 
-### Intensity 4 IS Scurry's intensity 4
+### The intensity ladder is SPREAD, deliberately
 
-**Intensities 1–3 fly the Boneyard; intensity 4 flies `SpawnableAtlantis`** — the exact prefab
-Crystal Capture spawns from its `SegmentSpawner.spawnableByIntensity[3]`, referenced verbatim
-rather than copied, so Scurry and Dog Fight can never drift. Requested directly after playtest
-("the environment is no way around scurry intensity 4").
+All four intensities fly the same Boneyard. Intensity 4 briefly flew Scurry's `SpawnableAtlantis`
+instead ("make dog fight intensity 4 have the same environment as scurry 4"); the playtest read
+after that was the opposite — the Boneyard is right at every level, and what was wrong was that
+the levels sat too close together (1 → 4 spanned only **1.9×**, so picking one barely changed the
+match). Intensity 4 came back to the Boneyard and the ladder was widened to **3.8×**:
 
-Atlantis is **never modified**: it is a shipped Scurry environment and editing it would change
-that mode. Its authored `spawnClearRadius` and Crystal Capture pads come along harmlessly.
+| intensity | density | hulks | spires | frames | overpasses | prisms | volume | danger | step |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| 1 | 0.55 | 4 | 6 | 3 | 2 | **9,043** | 601,491 | 43 | — |
+| 2 | 0.90 | 8 | 12 | 5 | 4 | **16,100** | 1,074,639 | 81 | +78 % |
+| 3 | 1.30 | 13 | 19 | 8 | 7 | **24,807** | 1,652,305 | 139 | +54 % |
+| 4 | 1.75 | 19 | 27 | 11 | 10 | **34,654** | 2,314,319 | 203 | +40 % |
 
-Its cell config carries **no `PhaseThresholds`**, exactly as `Scurry Cell Config` does — a cell
-running Atlantis uses `CellPhaseThresholds.Default`, and matching Scurry means matching its
-ecology behaviour too. Authoring the Boneyard's ladder there would size the fauna phase
-transitions against 24k prisms in a world that carries ~69k.
+**Intensity 2 is byte-for-byte where it was.** The arena was tuned at that level, so the other
+three moved around it rather than the whole ladder shifting.
 
-> **⚠ Performance.** Atlantis is **~69,000 prisms** — CLAUDE.md already flags it as ~2.8× the
-> largest previously profiled cohort and **not yet device-profiled**, with a standing instruction
-> to soak Crystal Capture at intensity 4 before ship. Dog Fight puts that on top of four Sparrows'
-> projectile and AOE traffic plus up to 300 scavenger body prisms, which is a heavier load than
-> Scurry ever asked of it. **Soak intensity 4 on device before trusting it**, and if it will not
-> hold, the scavenger cap (`SCAVENGER_CAP[3]`) is the cheapest thing to pull.
+The generator enforces the spread: `author_dogfight_assets.py` fails if any step adds less than
+25 % more cover than the level below it, so "intensity" can never quietly become a rounding error
+again. Analytic budget from `Tools/Build/boneyard_budget.py` — an exact mirror of the C#, not an
+estimate; confirm with FrogletTools ▸ Ecology ▸ Measure Cell Environment Baselines.
 
-Analytic budget for the **Boneyard** (`Tools/Build/boneyard_budget.py`; confirm with
-FrogletTools ▸ Ecology ▸ Measure Cell Environment Baselines). The intensity-4 row is the
-Boneyard's own model, kept for reference and for anyone reverting intensity 4 to it — the
-shipped intensity 4 is Atlantis:
-
-| intensity | density | hulks | spires | frames | overpasses | prisms | volume | danger |
-|---|---:|---:|---:|---:|---:|---:|---:|---:|
-| 1 | 0.75 | 6 | 9 | 4 | 3 | **12,746** | 850,965 | 61 |
-| 2 | 0.90 | 8 | 12 | 5 | 4 | **16,100** | 1,074,639 | 81 |
-| 3 | 1.05 | 10 | 15 | 6 | 5 | **19,460** | 1,298,664 | 104 |
-| 4 | 1.20 | 13 | 19 | 8 | 7 | **24,097** | 1,600,003 | 139 |
-
-Comparable to Ribcage (10,620 → 20,153) and Wildlife Liberation (9,206 → 13,956 of cage), and
-**far cheaper than Atlantis** (~69k, itself flagged as un-profiled). That was a deliberate
-choice: this arena carries four Sparrows' worth of projectile and AOE traffic on top of the
-structure, which no other mode does.
+The top end is the same order as the freestyle cell environments (34–41k), and **half** of
+Atlantis (~69k, itself flagged as un-profiled and ~2.8× the largest profiled cohort). That
+headroom is deliberate: this arena carries four Sparrows' worth of projectile and AOE traffic on
+top of the structure, which no other mode does. Ribcage runs 10,620 → 20,153 and Wildlife
+Liberation 9,206 → 13,956 of cage, so intensity 4 is now the heaviest party-game arena — **soak it
+on device**, and if it will not hold, the scavenger cap (`SCAVENGER_CAP[3]`) is the cheapest thing
+to pull before the structure counts.
 
 **Every bar is a one-hit plain prism** except the sparse danger and the rationed armour:
 
-- **Danger** (61–139) rides only the **torn end ribs** of hulks and the reactor's hot inner ribs
+- **Danger** (43–203) rides only the **torn end ribs** of hulks and the reactor's hot inner ribs
   — telegraphed by the geometry rather than hidden in it. Contact costs the standard danger
   punishment (volume-independent full-stop slow, 4 s all-element debuff, boost reset).
-- **Shielded / super-shielded** is the reactor core ring (24) plus one beacon per spire — **33–43
-  always-on convex mesh colliders, 0.18–0.26 % of the structure**. Beacons are shielded rather
+
+  > **The full-stop slow did not exist here until 2026-08-15.** The Sparrow's
+  > `SparrowImpactorDataContainer` carried no `VesselChangeSpeedByPrismEffectSO`, so the *only*
+  > vessel this mode flies took no speed penalty from any prism — danger ribs included. The
+  > danger punishment was really only the debuff and the input mute. `SparrowVesselChangeSpeedByPrism`
+  > is now wired on the Squirrel's numbers, which makes this paragraph true and has a second
+  > consequence the mode wants: **the wreckage is now terrain.** A normal Boneyard prism is
+  > environment-owned (`Domains.Blue`, hostile to everyone, so the own-domain skip never applies)
+  > and at `massScaling 0.1` against `maxSlowStrength 0.5` anything of volume ≥ 5 saturates — so
+  > clipping a hulk halves your throttle for a second and recovers linearly. Flying the canyons
+  > cleanly is now a skill the arena rewards rather than a line you can ignore. Worth a look in
+  > the first playtest: it makes cover genuinely costly to hug, which is the point, but it also
+  > slows disengages through debris — if it over-punishes, `maxSlowStrength` on that asset is the
+  > dial, and moving it un-shares the fleet's collision read.
+- **Shielded / super-shielded** is the reactor core ring (24) plus one beacon per spire — **30–51
+  always-on convex mesh colliders, 0.15–0.33 % of the structure**. Beacons are shielded rather
   than plain so they *survive* a match: a landmark a stray rocket can delete is not a landmark.
   **Do not armour the wreckage** — a shielded hulk would be both un-shootable cover and a few
   thousand permanent mesh colliders.
@@ -374,6 +390,40 @@ The cell has **no nucleus**, so the ring has nothing to measure off and uses
 not a territorial claim, and a node-control zone would be a second silent objective nobody is
 playing for.)
 
+## The turret muzzles — why turret fire scored nothing
+
+Wiring the scoring effect into `SparrowPrismProjectileImpactContainer` was necessary and not
+sufficient. Turret shots still did no damage and scored no points, and the cause was not in the
+scoring path at all:
+
+**The Sparrow carries two pairs of gun transforms, one per fire mode, and they had drifted 13.8
+units apart.**
+
+| executor | fire mode | `LeftGun` / `RightGun` local position |
+|---|---|---|
+| `FullAutoActionExecutor` | bullets | `(±3.2, 0.4, `**`1.30`**`)` |
+| `FullAutoBlockActionExecutor` | turret prism rounds | `(±3.0, 0.4, `**`15.13`**`)` |
+
+A shot is **born at its muzzle**, so every turret round spawned 15 units ahead of the nose and the
+first 15 units of its path simply did not exist. This mode is built for close passes through a
+wreck field, so the enemy is routinely *inside* that gap — the round appeared already past them
+and hit nothing, no matter how correctly the scoring was wired. Playtest, and exactly right:
+*"maybe because the point of origin of bullets for the sparrow is too far away from the model."*
+
+Both pairs are bare `Transform`s — no renderer, no VFX, no children — so the position is purely
+where the shot starts. The turret's pair is moved onto the bullets' position, which is also the
+documented rule for this weapon (`SPARROW_TURRET_STANCE.md`: *"a turret shot **is** a bullet —
+you just see a prism flying"*).
+
+**Range is unaffected.** The executor computes `anchor = muzzle + forward × range`, so moving the
+muzzle back moves the anchor back with it; the path length is identical and nothing needs
+retuning. The prism now visibly emerges from the gun barrels instead of materialising ahead of
+the ship.
+
+The generator asserts this on every run — four gun transforms on the bullets' position, and no
+transform left at `z = 15.13`. It is authored on a **shared vessel prefab**, so a silent drift
+here breaks the Sparrow in every mode, not just this one.
+
 ## AI dogfighters
 
 **The AI's guns need no wiring.** The Sparrow prefab's `AIPilot` already runs `FullAutoAction`
@@ -385,12 +435,32 @@ what *"in front of it"* means.
   its target forever and flies through on arrival — so an AI aimed at an opponent's *current*
   position permanently trails them and only ever fires where they were. The aim point is
   `aiLeadSeconds` (0.6) ahead along the quarry's own course.
-- **Break off on the merge.** Inside `aiBreakOffDistance` (120) the aim point flips to a spot
-  *beyond* the quarry, so the AI commits to an overshoot and comes back around instead of
-  grinding hull-to-hull. Without it, "steer at the enemy forever" degenerates into a ramming
-  contest neither pilot can shoot their way out of — the same class of mistake as Wildlife
-  Liberation's AI orbiting a cage wall, and the exact inverse of Rampage, where ramming **is**
-  the scoring verb.
+- **A COMMITTED break-off, latched at the merge.** Inside `aiBreakOffDistance` (120) the AI
+  switches to an `Extend` phase, latches one escape point — straight through the quarry and out
+  `aiExtendDistanceMultiplier` (3) × the break-off distance beyond it — and flies *that fixed
+  point* until it arrives or `aiMaxExtendSeconds` (4) expires. Only then does it look for a
+  quarry again.
+
+  > **This is a rewrite of a version that did not work, and the reason is worth keeping.** The
+  > first attempt had no state: it aimed at the quarry, and inside the break-off radius aimed at
+  > a point derived from the *current* geometry instead. That point is recomputed every frame, so
+  > the instant the AI slipped past its target the vector to it flipped and the "escape" point
+  > landed back behind the AI — it turned straight round. Two ships welded together, grinding in
+  > a circle. Playtest: *"the AI always try to be close to the player but not run away a bit."*
+  > **A break-off has to be a decision the pilot commits to, not a function of where the enemy is
+  > this instant** — an escape vector the target can steer is not an escape vector.
+
+- **Separation is what makes the missiles visible.** The skyburst was always on the AI's ability
+  list and always fired, on its own timer, whether or not anyone was in front of it. Welded to a
+  target at zero range a rocket has no room to fly and its blast has nowhere useful to land, so
+  the missiles read as absent. With a real extend the AI comes back in from a few hundred units
+  with the target ahead — the geometry a skyburst is for. Turret stance (`ModeSwitchingFire`,
+  2 s every 12 s) gets the same benefit. **No weapon or ability wiring was changed**; the loop
+  drives `SetExternalTargetProvider` and nothing else, so it cannot leak into another mode.
+
+  Without any of this, "steer at the enemy forever" degenerates into a ramming contest neither
+  pilot can shoot their way out of — the same class of mistake as Wildlife Liberation's AI
+  orbiting a cage wall, and the exact inverse of Rampage, where ramming **is** the scoring verb.
 - **Quarry selection** re-runs every `aiRetargetSeconds` (1.5) and takes the nearest live
   opponent, so a pilot who flies into a brawl is picked up by whoever is closest rather than
   every AI converging on one victim. Between samples the AI keeps flying lead pursuit on the
@@ -418,22 +488,43 @@ built to break sightlines, the question the arrow has to answer is *"which way i
 when a hulk has just swallowed your target. Anything cleverer would fight the player's own read
 of the situation instead of restoring the one thing the Boneyard takes away.
 
-## Crystals — elemental, scattered, never the omni
+## Crystals — the omni PLUS a scattered elemental layer
 
-Dog Fight scores **only** gunnery, so crystals are pure elemental progression: a reason to fly
-the wreckage between engagements, worth nothing on the scoreboard.
+Dog Fight scores **only** gunnery, so crystals are pure elemental progression: worth nothing on
+the scoreboard, but a real reason to fly the wreckage between engagements — see the comeback
+section below for why Mass in particular pays here.
 
-**The omni crystal is off** (`fixedCrystalCount: 0`). The donor scene spawns one
-`Crystal.prefab` — the big faceted sphere — and it landed on the arena's exact centre for a
-precise reason: `CrystalManager.GetAnchorlessSpawnRadius` falls back to the cell's **nucleus**
-radius, and this cell has no nucleus, so it fell through to the crystal's own `SphereRadius`, a
-few units. A large omni crystal parked in the middle of a gunnery arena reads as *the objective*
-and is not one. Zeroing the count rather than deleting the manager keeps its replay/reset
-bookkeeping wired; the one consumer of a missing crystal, `Cell.GetCrystalTransform`, is called
-only by a Rhino skimmer effect that cannot run in a Sparrow-only mode.
+### The omni crystal runs exactly as it does everywhere else
 
-**`DogFightController.SpawnElementalCrystals` scatters the pickups instead** — all four elements,
-equal-volume through a shell so they are not bunched at the middle.
+`crystalCountMode: 0`, `fixedCrystalCount: **4**`, `spawnOnClientReady: 1`. Crystals are a
+platform fundamental; a mode that switches one off is a mode where a whole economy silently does
+nothing.
+
+**Four, not one.** A single crystal in a 520-unit arena is a needle nobody detours for; four means
+there is usually one worth breaking off toward, which is the entire point of having them in a mode
+where crystals score nothing. Scurry reaches a similar density by a different route
+(`PlayerCountPlusExtra` + 5, i.e. **nine** in a full lobby) — too many here, so this stays on
+`FixedCount`.
+
+The scene authors **one** thing the donor did not: **`noNucleusSpawnRadius: 420`**. This is the
+whole fix for the bug that made the omni crystal read as an Astro League ball —
+`CrystalManager.GetAnchorlessSpawnRadius` falls back to the cell's **nucleus** radius, the
+Boneyard has no nucleus *by design*, so it fell through to the crystal's own `SphereRadius` (a few
+units) and every spawn landed on the arena's exact centre. A large faceted sphere pinned to the
+middle of a gunnery arena reads as *the objective*.
+
+420 puts it inside the wreck field (520) so it hides among the hulks, and inside the spawn shell
+(700) so it is never behind a pilot's back at the countdown. Each respawn draws a new point, so it
+is a thing you go and find. The field exists for exactly this case — deleting the crystal was
+never the fix.
+
+### The elemental layer on top
+
+**`DogFightController.SpawnElementalCrystals`** scatters 14 more — all four elements, equal-volume
+through a shell (cube root of a uniform draw) so they spread evenly rather than bunching at the
+middle. These are the mode's comeback loop made physical: a trailing pilot is already being
+buffed, and Mass stretches the Sparrow's fired prisms, so this is the same reward available to
+anyone willing to fly for it.
 
 Two implementation notes, both forced rather than chosen:
 
@@ -442,9 +533,9 @@ Two implementation notes, both forced rather than chosen:
   they are scenery until something wires an `ElementalCrystalImpactor` + `ImpactCollider` onto
   them. That recipe is the platform's, not this mode's: it is exactly what the Wanderway's
   `Microscene.MintElementalCrystal` does, down to the collection effects coming off the set.
-- **In the controller, not the environment.** Intensity 4 flies Atlantis, which is Scurry's
-  environment and not ours to modify, so spawning from the controller is the one path that covers
-  every intensity.
+- **In the controller, not the environment.** The arena is authored per intensity (four
+  `SpawnableBoneyard` variants) and pickups have nothing to do with how much wreckage there is, so
+  the controller is the one path that covers every intensity from one seed.
 
 > **Known limitation — the crystals are LOCAL.** Placement is deterministic (fixed seed + fixed
 > count), so every peer lays the *same* crystals in the *same* places with no network message —
@@ -453,7 +544,50 @@ Two implementation notes, both forced rather than chosen:
 > (`Docs/ECOSYSTEM.md` §7 caveat 4), and it is tolerable here **only because crystals score
 > nothing in this mode**. If they ever do, this must become server-authoritative.
 
-## Progress milestones## Progress milestones
+## Comeback — all four elements, sized to a 90-point race
+
+`ElementalComebackSystem` runs here on `ScoreDifferenceSource.CombatPoints`, per **domain** like
+every other team source: a pilot's deficit is their side's deficit behind the leading colour.
+
+**All four elements rise together.** That is platform law, not a Dog Fight choice —
+CLAUDE.md and `ElementalComebackSystem`'s own summary: *"ALL FOUR elements rise EQUALLY … the
+per-vessel/per-element weights are retired (equal-elements is the law)."* So
+`ComebackRatePerScoreDeficit` is the entire tuning surface, and a Mass-only weighting would be a
+fundamentals change requiring sign-off, not a mode setting.
+
+That said, **Mass is the element this mode's buff is actually felt through**, because of what the
+Sparrow does with each one: Space scales muzzle speed, Time and Charge pay in their own
+currencies, and **Mass is the only one wired to the guns' output** — it stretches the fired prisms
+(`SPARROW_TURRET_STANCE.md`). So the equal-elements law and the playtest ask ("more mass for the
+player behind") do not actually conflict: all four rise, and the one that changes how your shots
+behave is Mass.
+
+**Mass now grows the HIT VOLUME too, not just the silhouette.** It always stretched the prism's
+z-axis, but the flying collider was a fixed sphere (`collisionDiameter` 1.65 / `shieldedCollisionDiameter`
+2.475), so a Mass-buffed pilot fired visibly bigger rounds that connected exactly as often as
+before — the buff was a cosmetic. `FullAutoBlockShootActionExecutor.FireOne` now scales the hit
+diameter by **√multiplier**: the prism grows on one axis and the hit volume is a sphere, so the
+square root keeps the sphere inside the silhouette it stands in for. At Mass 10 (multiplier 2.5)
+the prism is 2.5× longer and the sphere 1.58× wider.
+
+**The rate is a function of the target.** `bonusLevels = deficit × rate`, so a rate only means
+anything next to the scale of deficits the mode produces. This shipped at **0.004**, which was
+scaled for the original 500-point target and never rescaled when the target changed — a whole
+rocket behind (50 points) bought 0.2 of a level, i.e. nothing. It is now **0.12**, against a
+**90**-point target:
+
+| deficit | bonus levels | in words |
+|---:|---:|---|
+| 22.5 (¼ of target) | 2.7 | a couple of exchanges behind |
+| 50 (one rocket) | 6.0 | one missile behind |
+| 90 (shutout) | 10.8 → **capped at 10** | `ResourceSystem.SustainedCeiling` |
+
+That puts it on the same footing as the other party games (Rampage: a quarter-of-target deficit is
+worth ~5 levels). The generator **fails the build** if a quarter-of-target deficit ever buys less
+than one whole element level, so the rate and the target cannot drift apart again the way they
+already did once.
+
+## Progress milestones
 
 At a quarter and a half of the point target, the **leading domain** crosses a rung:
 `SampleProgress` (server, every 0.5 s) → `AnnounceMilestone_ClientRpc` → a `GameToastSituation`
@@ -501,14 +635,15 @@ two of these and a client still flew a Dolphin:
 ## End condition
 
 Authored ONLY through **FrogletTools ▸ Game Modes ▸ End Game Conditions**
-(`EndConditionOverridesSO.dogFightPointTarget`, 0 = default **120**) — the points **one domain**
+(`EndConditionOverridesSO.dogFightPointTarget`, 0 = default **90**) — the points **one domain**
 must bank. Live/Build split + build auto-restore work like every other mode. The milestone rungs
-are fractions of it (0.25 / 0.5), so they land at **30** and **60**.
+are fractions of it (0.25 / 0.5), so they land at **22** and **45**.
 
-At 120, the two routes are **120 bullet hits** or **3 rockets** (or any mix), which makes the
-skyburst decisive rather than incidental — landing one rocket is worth more than forty seconds of
-accurate cannon fire. Whether that ratio is right is the open question; the target and both point
-values are single editor fields (`DogFightScoringRule.asset` for the values).
+At 90, the two routes are **90 bullet hits** or **2 rockets** (or any mix), which makes the
+skyburst decisive rather than incidental — landing one rocket is worth more than half the race.
+Whether that ratio is right is the open question; the target and both point values are single
+editor fields (`DogFightScoringRule.asset` for the values). The milestone rungs move with the
+target automatically, since they are fractions of it.
 
 ## Assets
 
@@ -535,9 +670,10 @@ YAML. `Tools/Build/boneyard_budget.py` is the arena's analytic model and the gen
 
 The generator also makes **three edits outside the mode**, and they are the load-bearing wiring
 for the whole feature — without them Dog Fight has a scoring rule and nothing that raises it:
-the bullet effect onto `SparrowFullAutoProjectileImpactContainer`, the missile effect onto
+the bullet effect onto `SparrowFullAutoProjectileImpactContainer` **and**
+`SparrowPrismProjectileImpactContainer` (turret stance), the missile effect onto
 `SparrowSkyBurstProjectileImpactContainer`, and the new explosion container onto
-`AOEConicSkyBurst.prefab`. All three are asserted before anything is written.
+`AOEConicSkyBurst.prefab`. All four are asserted before anything is written.
 
 ## Shared-code touchpoints (added for this mode)
 
@@ -558,7 +694,7 @@ the bullet effect onto `SparrowFullAutoProjectileImpactContainer`, the missile e
 | `StatsManager` | `CombatHitLanded(CombatHitStats)` + a code-side SOAP subscription, and the class's SECOND client branch (see "Multiplayer") |
 | `Player` | `ReportCombatHit_ServerRpc(int)` — owner-side hit report; identity comes from RPC ownership |
 | `ElementalComebackSystem` | `ScoreDifferenceSource.CombatPoints` (per-DOMAIN) |
-| `EndConditionOverridesSO` (+ window + asset) | `dogFightPointTarget` live/build/getter, default 120 |
+| `EndConditionOverridesSO` (+ window + asset) | `dogFightPointTarget` live/build/getter, default 90 |
 | `GameToastSituation` | `DogFightQuarterDown = 57`, `DogFightHalfDown = 58`, `DogFightLeadChanged = 59` |
 | `ServerPlayerVesselInitializerWithAI` | Dog Fight added to the `shouldSeekPlayers` modes |
 | `MiniGameHUD` | `CreateObjectiveProviderForGameMode` case for Dog Fight |
@@ -571,22 +707,25 @@ the bullet effect onto `SparrowFullAutoProjectileImpactContainer`, the missile e
 
 1. **Open** `MinigameDogFight.unity`. Every script reference resolves (no "Missing (Mono
    Script)"), the controller's inspector shows `rule` = DogFightScoringRule, the milestone
-   fractions 0.25 / 0.5, and the AI fields 1.5 / 0.6 / 120; the **Cell shows four configs with
-   Cell Type Choice = Intensity Wise**.
-2. **The arena builds.** Launch at intensity 1: a bowl of crust with 6 hulks, 9 leaning spires,
+   fractions 0.25 / 0.5, and the AI fields 1.5 / 0.6 / 120 / 3 / 4; the **Cell shows four configs
+   with Cell Type Choice = Intensity Wise**.
+2. **The arena builds.** Launch at intensity 1: a bowl of crust with 4 hulks, 6 leaning spires,
    4 girder cages, 3 broken overpasses, and the reactor at the centre. If you see one structure
    or an empty bowl, the Cell is not on `IntensityWise` or the configs are out of order.
 3. **Hulks are hollow and enterable.** Fly INTO one through its torn-open side and sit there.
    Confirm the ribs leave gaps you can slip between, and that you cannot be seen from outside.
    **This is the headline check** — if the hulks read as solid tubes, the plating arc is wrong.
-4. **Intensity changes the density of cover.** Relaunch at intensity 3: visibly more wrecks,
-   shorter sightlines, and a noticeably busier crust. Same arena radius.
-4b. **Intensity 4 is ATLANTIS**, not the Boneyard — the drowned garden-city from Scurry 4, with
-   its world-tree and terraces. If you see the Boneyard at intensity 4 the config is pointing at
-   the wrong prefab. Watch the frame rate here specifically (see the performance flag above).
-   Also relaunch **Crystal Capture at intensity 4** and confirm Atlantis is unchanged there.
+4. **THE LEVELS MUST FEEL DIFFERENT — the intensity check.** Launch intensity 1 and intensity 4
+   back to back. 1 should read as an *open field* with knots of wreckage you have to fly to,
+   where a fleeing Sparrow struggles to break line of sight; 4 should read as a *maze* you can
+   lose someone in within a second. Same arena radius, ~3.8× the cover. If 1 and 4 feel like the
+   same match at slightly different densities, the ladder is still too tight.
+4b. **Every intensity is the Boneyard.** Intensity 4 is *not* Atlantis (it was, briefly) — if you
+   see Scurry's drowned garden-city with its world-tree and terraces, the intensity-4 config is
+   pointing at the wrong prefab. Watch the frame rate here specifically: 34,654 prisms is the
+   heaviest arena of any party game.
 5. **Baseline confirm.** FrogletTools ▸ Ecology ▸ Measure Cell Environment Baselines should
-   report **12,746 / 16,100 / 19,460 / 24,097** prisms for intensities 1–4. If it disagrees, the
+   report **9,043 / 16,100 / 24,807 / 34,654** prisms for intensities 1–4. If it disagrees, the
    generator and `boneyard_budget.py` have drifted — fix both.
 6. **Spawn outside, on a sphere.** All players start ~700 u out, spread over a sphere, facing the
    arena with the whole thing visible ahead. Nobody starts inside it. Also check Crystal Capture
@@ -617,18 +756,37 @@ the bullet effect onto `SparrowFullAutoProjectileImpactContainer`, the missile e
     win. Replay (scene reload) resets the milestones and the counters.
 14. **Milestones.** When the leading domain reaches **125** points the device should shake hard
     for ~1.2 s; again at **250**. Nothing else should change.
-15. **AI dogfights.** Watch an AI Sparrow for a minute: it should chase a pilot, *shoot*,
-    overshoot on the merge, and come back around. If it grinds hull-to-hull, `aiBreakOffDistance`
-    is not being applied; if it circles empty space, the quarry search found nothing.
+15. **AI DOGFIGHTS — it must LEAVE.** Watch an AI Sparrow for a minute. The loop should read as
+    *close → pass → run out a long way → turn → come back in*, with a visible gap between passes.
+    If it stays glued to you circling, the extend is not committing (check that
+    `aiExtendDistanceMultiplier` / `aiMaxExtendSeconds` reached the scene). If it circles empty
+    space, the quarry search found nothing.
+15b. **AI MISSILES.** On the run back in, the AI should be launching skybursts at standoff range —
+    that is the geometry they were always missing, not new wiring. If you still never see one,
+    the problem is `SkyBurstGunAction`'s ammo, not the steering.
 16. **SCATTER — the arena must not read as centred.** From the spawn shell, the wreck field
     should look *patchy and spread to the rim*: knots of structure with open lanes between them,
     an obviously empty middle, and the reactor off to one side rather than dead ahead. Fly the
     rim: there should be real cover out there, not a bare edge. Fly high: drifting wrecks should
     hang above the crust at odd angles, so the upper volume is not empty sky.
-17. **Crystals: elemental, scattered, no omni.** No big faceted sphere anywhere — least of all
-    at the arena centre. Instead ~14 small elemental crystals spread through the arena, in all
-    four colours, each skimmable for an element level. Confirm they appear at **every** intensity
-    including 4 (Atlantis), and that two peers see them in the SAME places.
+17. **Crystals: FOUR omni, and they move.** Four big faceted spheres, none at the arena centre —
+    scattered out among the wreckage inside r≈420. Collect one and confirm the respawn lands
+    somewhere *else*. If they spawn stacked dead centre, the scene has lost its
+    `noNucleusSpawnRadius`. Alongside them, ~14 small elemental crystals spread through the
+    arena in all four colours, each skimmable for an element level; confirm they appear at
+    **every** intensity and that two peers see them in the SAME places.
+17b. **COMEBACK — Mass in particular.** Let one domain get ~50 points ahead, then check the
+    trailing pilot's element flowers: all four should be visibly filled (≈6 levels of bonus).
+    Switch that pilot to **turret stance** and watch the fired prisms — they should be noticeably
+    longer than the leader's. Close the gap and the buff should drain back. If the flowers barely
+    move, `ComebackRatePerScoreDeficit` is not reaching the vessel.
+17c. **TURRET PRISMS DAMAGE AND SCORE — the regression check.** In turret stance, land a prism
+    round on an opponent: it must **do damage** and read **+1**, exactly like a bullet. Do this at
+    CLOSE range specifically (inside ~15 units) — that is the case that was completely dead before
+    the muzzle fix. Shooting wreckage with it still scores nothing.
+17d. **Mass grows what you HIT WITH.** With Mass buffed, turret rounds should be both visibly
+    longer *and* easier to land. If they look bigger but feel identical to aim, the hit diameter
+    has stopped riding the multiplier.
 18. **The objective arrow points at an ENEMY.** In a 2v2, confirm the marker tracks an opposing
     pilot and never your wingman, and that it re-targets when your quarry disappears behind a
     hulk.
@@ -643,9 +801,10 @@ the bullet effect onto `SparrowFullAutoProjectileImpactContainer`, the missile e
 
 ## Known limitations / follow-ups
 
-- **120 is unmeasured, and so is the 1:50 ratio** — at this target a single rocket is 42% of
-  a domain's whole race, which is either the drama of the mode or its flaw. See the pacing
-  flag under "End condition".
+- **90 is unmeasured, and so is the 1:50 ratio** — at this target a single rocket is **56%** of
+  a domain's whole race, which is either the drama of the mode or its flaw. The target has now
+  moved 500 → 120 → 90 without a measured match behind any of them. See the pacing flag under
+  "End condition".
 - **Hits are not replicated as FEELING, only as score.** The victim's spin / debuff runs on the
   shooter's machine (projectiles are local), so a pilot being shot does not see themselves get
   knocked about the way the shooter does. That is pre-existing behaviour for every Sparrow

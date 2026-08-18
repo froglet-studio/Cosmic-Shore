@@ -56,13 +56,20 @@ namespace CosmicShore.Gameplay
             FloraConfigurationSO floraCfg,
             Domains? excluded)
         {
-            int initialCount = Mathf.Max(0, floraCfg.InitialSpawnCount);
+            // Cell density scalar: the SpawnProfile is the per-intensity asset, so scaling the
+            // seed batch is how one cell config makes a bigger or smaller forest out of the same
+            // species assets. Through the CELL, never the profile: every flora producer must resolve its
+            // population numbers at one accessor or the density scalar ends up live in one
+            // producer and dead in the next (Cell.ResolveFloraPopulation, Docs/ECOSYSTEM.md §32).
+            // This used to be an inline copy of the scaling, duplicated verbatim in both spawners.
+            int initialCount = host.ResolveFloraPopulation(Mathf.Max(0, floraCfg.InitialSpawnCount));
             float initialInterval = Mathf.Max(0f, spawnProfile.FloraSpawnIntervalSeconds);
 
             // Initial batch - gated on FloraPlantingEnabled and per-attempt probability.
             for (int i = 0; i < initialCount; i++)
             {
-                if (host && host.FloraPlantingEnabled && AllowSpawn(floraCfg.SpawnProbability))
+                if (host && host.FloraPlantingEnabled && !host.IsFloraAtCap(floraCfg)
+                    && AllowSpawn(floraCfg.SpawnProbability))
                     SpawnFlora(host, floraCfg.FloraPrefab, excluded, floraCfg);
 
                 // Spread instantiation across frames. WaitForSeconds when an interval
@@ -93,7 +100,16 @@ namespace CosmicShore.Gameplay
                 if (!host.FloraPlantingEnabled) continue;
                 if (!AllowSpawn(floraCfg.SpawnProbability)) continue;
 
-                SpawnFlora(host, floraCfg.FloraPrefab, excluded, floraCfg);
+                // SEEDER, not population driver - the same rule RandomLifeSpawner follows, and
+                // it lives on the shared base precisely so it cannot be live in one spawner and
+                // dead in the other (CellLifeSpawnerBase.FloraSeedDeficit, Docs/ECOSYSTEM.md §32).
+                int toPlant = FloraSeedDeficit(host, floraCfg);
+                for (int i = 0; i < toPlant; i++)
+                {
+                    if (!host || !host.FloraPlantingEnabled) break;
+                    SpawnFlora(host, floraCfg.FloraPrefab, excluded, floraCfg);
+                    if (i + 1 < toPlant) yield return null;
+                }
             }
         }
 
@@ -139,7 +155,11 @@ namespace CosmicShore.Gameplay
             SpawnProfileSO spawnProfile,
             FaunaConfigurationSO faunaCfg)
         {
-            int initialCount = Mathf.Max(0, faunaCfg.InitialSpawnCount);
+            // Cell density scalar, the fauna twin of the flora one above: the SpawnProfile is the
+            // per-intensity asset, so scaling the seed batch here is how one cell config carries
+            // more wildlife than another out of the same species assets. Asked of the CELL, which
+            // owns the profile - see Cell.ResolveFaunaPopulation for why every producer must.
+            int initialCount = Mathf.Max(0, host.ResolveFaunaPopulation(faunaCfg.InitialSpawnCount));
             float initialInterval = Mathf.Max(0f, spawnProfile.FaunaSpawnIntervalSeconds);
 
             // Initial batch - gated on FaunaSpawningEnabled (cell holds mass) +
@@ -190,13 +210,13 @@ namespace CosmicShore.Gameplay
             // SpawnProfileSO.InitialFaunaReleaseTier) leave every shipped biome unchanged.
             if (faunaCfg.ReleaseTier > host.FaunaReleaseTier) return;
 
-            // Honour the authored performance backstop. This loop spawns ONE creature per tick
-            // forever, so without a cap a long match walks a species past MaxLivePopulation -
-            // the number the collider budget was sized against - even though reproduction
+            // Honour the performance backstop. This loop spawns ONE creature per tick forever,
+            // so without a cap a long match walks a species past MaxLivePopulation - the number
+            // the collider budget was sized against - even though reproduction
             // (Fauna.TryReproduce) respects it. The other spawner has always capped here
-            // (FaunaReproductionRules.SeedSpawnCount); 0 still means uncapped.
-            if (faunaCfg.MaxLivePopulation > 0 &&
-                host.GetLiveFaunaCount(faunaCfg) >= faunaCfg.MaxLivePopulation) return;
+            // (FaunaReproductionRules.SeedSpawnCount); 0 still means uncapped. The CELL resolves
+            // it so the cap moves with the profile's FaunaPopulationScale (Cell.IsFaunaAtCap).
+            if (host.IsFaunaAtCap(faunaCfg)) return;
 
             // Prefer the crystal as the initial goal, but fall back to the cell's own
             // position. The previous implementation silently skipped spawning when no

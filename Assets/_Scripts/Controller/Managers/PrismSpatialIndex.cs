@@ -923,6 +923,88 @@ namespace CosmicShore.Gameplay
             return results.Count;
         }
 
+        /// <summary>
+        /// The SWEPT counterpart of <see cref="QuerySphere"/>: gathers every LIVE prism whose
+        /// centre lies within <paramref name="radius"/> of the SEGMENT
+        /// <paramref name="a"/>→<paramref name="b"/>, i.e. inside a capsule.
+        ///
+        /// This exists because a fast projectile is a **teleport, not a sweep**:
+        /// <c>Projectile.MoveProjectileAsync</c> advances the transform by
+        /// <c>Velocity·Δt</c> each frame, and PhysX samples that discrete trigger once per
+        /// physics step. A Sparrow round at its base 375 u/s covers 6.25 u per frame behind a
+        /// 1.65-diameter hit sphere, so **~74% of its path is never tested** — and at high
+        /// SPACE (3375 u/s) that becomes ~97%. Prisms in the gaps are silently passed
+        /// through, which reads in play as a gun that cannot clear a small area no matter how
+        /// much you shoot. Querying the segment restores full path coverage without inflating
+        /// the projectile.
+        ///
+        /// Same conventions as <see cref="QuerySphere"/>: results are cleared first, the test
+        /// is against the prism's CENTRE (callers wanting contact against a prism's extent
+        /// must add their own allowance and refine), the snapshot is unordered and entries can
+        /// be destroyed by the caller's own side effects mid-iteration, and it is main-thread
+        /// only with no allocation given a reused list.
+        ///
+        /// A degenerate segment (a == b) reduces to exactly <see cref="QuerySphere"/>.
+        /// </summary>
+        public int QuerySegment(Vector3 a, Vector3 b, float radius, List<Prism> results)
+        {
+            results.Clear();
+            if (!_buckets.IsCreated || _highWaterMark == 0) return 0;
+
+            float3 p0 = a;
+            float3 ab = (float3)b - p0;
+            float abLenSq = math.lengthsq(ab);
+            float radiusSq = radius * radius;
+
+            // The capsule's AABB — thin in the two axes across the flight, so the bucket walk
+            // stays cheap even on a long step.
+            float3 lo = math.min(p0, (float3)b) - radius;
+            float3 hi = math.max(p0, (float3)b) + radius;
+            int3 min = (int3)math.floor(lo / BucketSizeMeters);
+            int3 max = (int3)math.floor(hi / BucketSizeMeters);
+
+            if (BucketWalkCostsMoreThanLinearScan(min, max))
+            {
+                for (int i = 0; i < _highWaterMark; i++)
+                {
+                    var s = _spatial[i];
+                    if ((s.Flags & PrismFlags.JobSkipMask) != PrismFlags.JobPassValue) continue;
+                    if (DistanceToSegmentSq(s.Position, p0, ab, abLenSq) > radiusSq) continue;
+                    var prism = _prisms[i];
+                    if (prism) results.Add(prism);
+                }
+                return results.Count;
+            }
+
+            for (int x = min.x; x <= max.x; x++)
+            for (int y = min.y; y <= max.y; y++)
+            for (int z = min.z; z <= max.z; z++)
+            {
+                if (!_buckets.TryGetFirstValue(new int3(x, y, z), out int idx, out var it))
+                    continue;
+                do
+                {
+                    var s = _spatial[idx];
+                    if ((s.Flags & PrismFlags.JobSkipMask) != PrismFlags.JobPassValue) continue;
+                    if (DistanceToSegmentSq(s.Position, p0, ab, abLenSq) > radiusSq) continue;
+                    var prism = _prisms[idx];
+                    if (prism) results.Add(prism);
+                } while (_buckets.TryGetNextValue(out idx, ref it));
+            }
+            return results.Count;
+        }
+
+        /// <summary>
+        /// Squared distance from <paramref name="p"/> to the segment starting at
+        /// <paramref name="a"/> with direction/length <paramref name="ab"/> — the same
+        /// point-to-segment metric a CapsuleCollider uses, clamped to the endpoints.
+        /// </summary>
+        public static float DistanceToSegmentSq(float3 p, float3 a, float3 ab, float abLenSq)
+        {
+            float t = abLenSq > 1e-8f ? math.saturate(math.dot(p - a, ab) / abLenSq) : 0f;
+            return math.distancesq(p, a + ab * t);
+        }
+
         #endregion
 
         #region Reservations
@@ -2151,8 +2233,16 @@ namespace CosmicShore.Gameplay
             // stops the explosion expanding past this layer) but cause no
             // damage and no state change. Ways to break super-shields will
             // be added later as targeted opt-in mechanics.
+            //
+            // The blast is not silent, though: the shared gate stamps the
+            // deflection wobble (Prism.AbsorbSuperShieldHit), so the shield
+            // visibly rocks instead of the explosion stopping dead against
+            // nothing. Magnitude is Speed x Inertia — the impact vector's
+            // length, without building the vector or taking its root.
+            // Photons only; every gameplay consequence below is still skipped.
             if ((flags & PrismFlags.IsSuperShielded) != 0)
             {
+                prism.AbsorbSuperShieldHit(impulse.Speed * impulse.Inertia);
                 shouldContinue = false;
                 return false;
             }

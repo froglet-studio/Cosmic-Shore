@@ -268,12 +268,16 @@ prefab per element. The element is data on `FaunaConfigurationSO.Element` — at
 `AssignLineage` the heart is provisioned from `ElementalCrystalSet` for that element
 (`LifeFormCrystal.EnsureElementalCrystal(owner, element)` replaces a disagreeing authored
 crystal; `None` keeps the legacy per-variant-prefab path). Level scales the creature via
-config (`InitialLevel`, `BodyScalePerLevel`, `CrystalScalePerLevel`, `LevelGrowSeconds`):
-spawns arrive AT size; in-world level-ups **grow** over `LevelGrowSeconds` (continuity —
-never a pop) with `NotifyBodyPrismsMoved` keeping the spatial index honest, and the heart
-grows a step per level so a higher-level creature drops a **bigger** elemental powerup on
-death (mass rewarded, still conserved). Flora answer the contract at fixed level 1 until
-flora leveling lands.
+config (`InitialLevel`, `BodyScalePerLevel`, `LevelGrowSeconds`): spawns arrive AT size;
+in-world level-ups **grow** over `LevelGrowSeconds` (continuity — never a pop) with
+`NotifyBodyPrismsMoved` keeping the spatial index honest, and the heart grows a step per
+level so a higher-level creature drops a **bigger** elemental powerup on death (mass
+rewarded, still conserved).
+
+> **Updated by §33 (Aug 2026).** Level is now EARNED, not authored or rolled: every lifeform
+> is born at level 1, a plant levels per reproduction and a creature per
+> `FeedsPerLevel` feeds. The heart's SIZE is no longer a per-species factor — it is one curve
+> on `ElementalCrystalSet` keyed on level alone. Flora do level now.
 
 **Who actually spawns the 20.** A config authors ONE point of the matrix, so the live world
 only showed the whole grid once cells were allowed to *spread* across it: `SpreadElements` +
@@ -306,11 +310,14 @@ applies element + tuning BEFORE `Initialize` (leaf size and the crystal lookup a
 consumed there); `LifeForm.ApplyVariantTuning` (shield cadence) → `Flora` (leaf/tempo/
 radius) → `AssembledFlora` (prism budget) layer the fields where they live.
 
-**Level → crystal size.** `CrystalScalePerLevel` makes the level curve monotone in the
-heart: level 1 = authored size, level 5 = ×(CrystalScalePerLevel)⁴ (≈2.07× at the 1.2
-default) — the level-5 creature always carries, and drops, the largest crystal. Flora
-level the same way (`FloraConfigurationSO.InitialLevel` + `LeafScalePerLevel` /
-`CrystalScalePerLevel`, applied via `LifeForm.ApplyLevel` before Initialize).
+**Level → crystal size (REPLACED by §33, Aug 2026).** This used to be
+`CrystalScalePerLevel` compounding off each prefab's *authored* crystal scale — monotone
+per species, but wildly different BETWEEN them (0.7 to 4.0 world scale), and clipping the
+collect-gain cap by level 5 on four of five species. It is now ONE curve keyed on level
+alone, on `ElementalCrystalSet` (`levelOneWorldScale` × `worldScalePerLevel^(L-1)`,
+3.5 → 4.25), applied at `Crystal.SetEmbeddedIn` and re-applied on every level change.
+Both `CrystalScalePerLevel` fields are deleted. Flora still scale their LEAVES per level
+(`FloraConfigurationSO.LeafScalePerLevel`, applied via `LifeForm.ApplyLevel`).
 
 **Unification (SHIPPED) — one base prefab per species, variants are config.** The
 per-element prefab variants were retired: `TadPoleFauna.prefab` (formerly
@@ -1297,9 +1304,10 @@ crystal becomes collectible, with the same world scale carrying the same value o
 freezes if the heart is freed mid-level-up so the drop keeps its death-moment scale — a
 mid-flare death drops at the pop's transient scale, bounded by the ×1.6 overshoot and the
 per-crystal gain cap). **Zero
-new tunables**: the existing knobs (`levelPerUnitScale`, `maxLevelGainPerCrystal`,
-`CrystalScalePerLevel`, `InitialLevel`, per-species population caps) govern both the standing
-buff and the pickup.
+new tunables**: the existing knobs (`levelPerUnitScale`, `maxLevelGainPerCrystal`, the
+shared heart-size level curve on `ElementalCrystalSet` — see §33, which replaced the
+per-species `CrystalScalePerLevel` — and per-species population caps) govern both the
+standing buff and the pickup.
 
 **Mechanism (SOAP-evented + reconcile sweep, no cheat).** `DomainFaunaBuffSystem`
 (auto-created by the first `Cell.Initialize` via `EnsureExists` — so it exists wherever fauna
@@ -1490,6 +1498,15 @@ unconditional `normalized` (which computes the same magnitude anyway).
 ---
 
 ## 17. Spawning the whole matrix — element × level spread (July 2026)
+
+> **⚠ The LEVEL half of this section is SUPERSEDED by §33 (Aug 2026).** `LifeformLevelSpread`
+> is deleted and no lifeform rolls a level at spawn any more: every lifeform is born at level 1
+> and EARNS the rest — a plant by reproducing, a creature by feeding. A rolled spawn level hands
+> a lifeform the record of a life it has not lived, which is the same class of mistake as a
+> scripted fitness function. Do not reintroduce it. The heart's size is likewise no longer a
+> per-species `CrystalScalePerLevel` compounding off a per-prefab base — it is ONE curve on
+> `ElementalCrystalSet`. **Everything below about the ELEMENT half still stands** and is
+> untouched: an element is an identity a lifeform is born with, not an achievement.
 
 **What was wrong.** The element × level contract (§3) was fully implemented but almost
 nothing used it: every cell config authored ONE element and `InitialLevel: 1`, so a
@@ -2890,6 +2907,29 @@ court, `nucleusEnvVolumeByDomain` and `liveVolumeByDomain` were already almost t
 **Watch for this whenever a mode repurposes a Cell-owned visual.** The Cell's visuals carry
 *semantics*, not just geometry — borrowing the nucleus silently borrowed the sanctuary rule with it.
 
+### 25.1a The mirror trap — losing the GEOMETRY with the semantics (Aug 2026)
+
+§25.1 is about a mode INHERITING semantics it did not want along with a Cell-owned visual. The
+mirror bit later, on the same declaration: `RefreshNucleusControlRadius` returns early when
+`NucleusIsControlZone` is false, so in Astro League `Cell.NucleusWorldRadius` reports **0** — the
+arena is right there, hundreds of units across, and the canonical "how big is the nucleus" accessor
+says zero. Anything asking a GEOMETRIC question through that property gets a plausible-looking
+wrong answer with no error: a soft play boundary keyed off it would have treated every position in
+the world as outside the nucleus.
+
+`Cell.NucleusVisualWorldRadius` is the fix: the same renderer-bounds measurement, taken BEFORE the
+control-zone branch. The control radius is now *derived* from it, so existing behaviour is
+bit-identical.
+
+**The rule to carry forward:** `NucleusWorldRadius` answers *who owns this cell*;
+`NucleusVisualWorldRadius` answers *how big is the core, in metres*. Placement, boundaries, camera
+framing and anything else spatial want the second. During the SPAWN CHAIN both are still empty —
+use `ExpectedNucleusWorldRadius` there (§18's rule is unchanged).
+
+First consumer: the Astro League ball's off-pitch drag ramp (`AstroLeagueBall.EffectiveDrag`),
+which bleeds a ball's speed increasingly fast once it leaves the nucleus — a soft boundary, never
+a wall, so nothing is teleported, culled or reflected.
+
 ### 25.2 A pen gains an inner wall
 
 The design ask was "aggressive little creatures that stay OUT of the arena until it starts to get
@@ -3179,3 +3219,1351 @@ speed.
 3. **Skeleton accumulation over a long round** is the §26.7 budget risk and can only be answered by
    a playtest. If skeletons outpace grazing, the levers are the existing diet/spawn dials
    (`SpawnProfile.FaunaFoodFloor`, per-species populations) — never a timer, never a cap.
+
+---
+
+## 27. Rampage — a planting shell belongs to the CELL, not to the crystal (Aug 2026)
+
+The Dolphin rework of Rampage (`_Scripts/Controller/Arcade/RAMPAGE.md`) needed one thing
+from the ecology: **a belt of breakable flora ringing the membrane, with the core left
+open** for a single roaming contested crystal. Three latent defects stood between the
+config and that arrangement, and all three are general — none is a Rampage special case.
+
+### 27.1 The planting shell was measured from the CRYSTAL
+
+All three `Flora.Plant` implementations dispersed a new plant about
+`cellData.CrystalTransform.position`:
+
+```csharp
+float radius = ResolvePlantRadius(legacyRadius: plantRadius);   // "fraction of the cell's membrane radius"
+transform.position = cellData.CrystalTransform.position + radius * Random.onUnitSphere;
+```
+
+`ResolvePlantRadius` is documented — and named — as *a fraction of the **cell's** membrane
+radius*, and every one of those three call sites carried a comment saying "disperse across
+the cell". The two only agree while a mode's crystals sit in the cell core, which was true
+of every cell that had shipped, so nothing surfaced it.
+
+Rampage's crystal roams to radius 900 in a cell whose membrane is 1200. A plant on the
+0.90 shell would therefore have landed at up to `900 + 1080 = 1980` — **outside the
+membrane**, where `Cell.ContainsPosition` rejects its prisms: not in `LiveVolume`, invisible
+to the phase ladder, and untargetable by the fauna density grids. A belt of food the food
+web cannot see is worse than no belt.
+
+**Fixed:** `Flora.ResolvePlantCenter()` — cell centre, falling back to the crystal (legacy)
+and then to the plant's own position. That last fallback also removes a real crash: the
+`CrystalTransform` property logs and returns **null** in a cell with no crystal at all, so
+`.position` on it threw. `BranchingFlora.Initialize` had the same unguarded dereference for
+its look-rotation and now resolves once, falling back to the plant's growth axis.
+
+**Rule:** *a planting radius is a fraction of the CELL, so it is measured from the cell.*
+Anything a mode moves at runtime — crystals above all — must not be able to drag the
+ecology's geometry with it.
+
+### 27.2 A live-prism budget only worked on one flora family
+
+`FloraVariantTuning.MaxTotalSpawnedObjects` was read **only** by `AssembledFlora`.
+`BranchingFlora` and `PhyllotacticFlora` declared their own `maxTotalSpawnedObjects` and
+ignored the config's, so a cell could author a per-plant budget, save, see nothing change,
+and silently get the prefab's — **5000** for both CactiFlora and PineFlora. A handful of
+plants can eat a whole arena's phase ladder at that budget.
+
+45 authored assets were already writing into this field expecting it to work: the canonical
+`_SO_Assets/Lifeforms/<Species> Flora <Element>` set carries a deliberate per-element density
+identity (Charge ×0.85, Mass ×1.2, Space ×0.7, Time ×1.0 of the prefab), and Hesperides'
+per-cell configs mirror it. Every one of them was inert.
+
+**Fixed:** `BranchingFlora` and `PhyllotacticFlora` now override `ApplyVariantTuning` and
+read it, matching `AssembledFlora`. **This changes existing cells** — Hesperides and the
+Wildlife Blitz cells now get the per-element budgets they always authored. The average
+effect is ≈ −6% prisms per plant (the four element multipliers average 0.9375), well inside
+every phase-hysteresis band, and the *variety* it restores is the point. Re-check Hesperides'
+`LiveVolume` against its thresholds on the next pass through that cell.
+
+**Rule:** *a tuning field that appears on every flora config must mean the same thing on
+every flora.* A field that silently does nothing on 2 of 3 families is worse than an absent
+one, because the author gets no signal.
+
+### 27.3 SpreadElements ate the cell's own layout decisions
+
+`FloraConfigurationSO.RollVariant` replaces this config's whole `Variant` with the palette
+sibling's when `SpreadElements` is on — while the field's tooltip claims "planting counts,
+periods and probability stay on THIS config, so the cell keeps its own density tuning". Both
+`PlantRadiusCellFraction` and `MaxTotalSpawnedObjects` live in that block, so with spread on
+a cell could not use the canonical per-element assets **and** choose its own planting shell:
+Rampage's belt would have collapsed back onto each species' authored 0.5–0.6, i.e. the middle
+of the arena.
+
+Composing the two blocks (cell wins on non-sentinel fields) was considered and **rejected**:
+Blob's gyroid configs carry a full duplicate of the Mass element's Variant alongside their
+palette, so cell-wins composition would flatten all four gyroid elements into Mass and
+destroy exactly the per-element identity §17 exists to express.
+
+**Fixed:** two explicitly-named cell-level overrides on `FloraConfigurationSO` —
+`PlantRadiusCellFractionOverride` and `MaxTotalSpawnedObjectsOverride`, both default −1 (off,
+so no existing cell changes) — applied **after** the roll via
+`TryBuildCellOverrideTuning` → the existing `Flora.ApplyVariantTuning` path, reusing its
+"sentinel = keep" semantics rather than inventing a second application mechanism.
+
+**Rule, and the split worth remembering:** *the ELEMENT owns identity* (leaf prism shape,
+growth tempo, shield cadence, per-element density) *and the CELL owns layout* (where a
+species plants, how big one plant may get in THIS arena). They were in one block because
+they were authored together, not because they are the same kind of fact.
+
+### 27.4 A cell whose prisms are not nominal must author its volume ladder
+
+Rampage's hero species is the cactus, whose leaf prism is 5×5×3 = **75 volume — 4.7×
+`NominalPrismVolume` (16)**. The cell inherited volume thresholds derived the standard way
+(`count × 16`), so its Frenzy ceiling was ~3× too low for the belt it now grows: the cell
+would have pinned at Frenzy within seconds, frozen planting, and held a sparse arena that
+never regrew — the failure looking exactly like "flora don't spawn", with nothing in the
+config pointing at the cause.
+
+Authored explicitly against the belt's estimated volume (~471k at full growth):
+`RestlessEnter/Exit 34000/24000`, `FrenzyEnter/Exit 480000/370000`, count backstop unchanged
+at 10000/8000.
+
+**Rule (already stated in `ECOSYSTEM_MASTERPLAN.md §5.1` for the low-volume direction, now
+with a high-volume instance):** the `×16` derivation is a migration convenience, not a
+default. Any cell whose prisms are meaningfully off nominal — a Squirrel trail at ⅕, a
+cactus leaf at 4.7× — must author `*EnterVolume` / `*ExitVolume` itself. Verify against
+`Cell.LiveVolume` on the DiagnosticsHUD; the estimate cannot be trusted for phyllotactic
+species, whose prisms are sized per role and have no single authored volume to read.
+
+### Collider budget
+
+Unchanged from the previous Rampage: the count backstop holds the arena at **10,000
+prisms** (~2.8× the Blob envelope, deliberate demolition-arena headroom). The belt seeds
+136 plants at ~9,550 prisms, one instantiation per frame (~2.3 s spread, no hitch), leaving
+the rest of the budget for player trails. No new physics queries: scoring rides the
+`StatsManager` SOAP channel and the AI rides `Cell.GetExplosionTarget`'s Burst density grid.
+
+### Invariants checked
+
+- **Continuity of existence** — untouched; plants still bloom in and wither out.
+- **No imposed death** — no decay, lifespan or despawn timer added. The Frenzy ceiling is a
+  *growth* gate (planting/growth pause), never a culler; mass stays conserved.
+- **No domain asymmetry** — the belt rolls its domain uniformly across all three via
+  `CellLifeSpawnerBase.SpawnFlora`; fauna remain controlling-colour only.
+- **Every lifeform drops one elemental crystal** — untouched; the belt uses the canonical
+  element palettes, so each plant carries its element's heart.
+- **Volume is the spine** — reinforced: §27.4 is the whole point of the threshold rework.
+- **The Cell owns the environment** — the mode builds no parallel spawner, culler or arena
+  edge. Everything above is `CellConfigDataSO` + `SpawnProfileSO` + flora configs.
+
+### 27.5 A planting SHELL is not a forest — the band (Aug 2026)
+
+`plantRadiusCellFraction` gave a species exactly one radius, and `Plant` picked a random
+direction on that sphere. Stacking several species at staggered fractions approximates depth,
+but each species still reads as a soap bubble, and no cell could put plants *near its core*
+without moving the whole species in.
+
+`Flora.plantRadiusCellFractionMin` makes it a **band**, and the draw is uniform by
+**VOLUME**, not by radius:
+
+```csharp
+r = cbrt( lerp(inner³, outer³, Random.value) )
+```
+
+A shell's available space grows as r², so a uniform-in-radius draw crowds plants onto the
+inner edge and leaves the outer band — most of the cell — looking empty. Volume-uniform gives
+even spatial density through the whole band, which naturally puts most plants in the outer
+reaches (that is where the space is) while still landing some in close.
+
+**The inner edge is clamped outside the nucleus**, in code, so an author can write `0` and
+get "from the nucleus outward" rather than plants in the core. Three separate reasons make
+that a rule and not a nicety: nucleus-interior mass is the territorial CLAIM, it is excluded
+from the fauna targeting grids (so a plant there is food the web can never be steered to),
+and §27.6 puts the standard crystal respawn in exactly that volume.
+
+Default `min = 0` collapses the band to the legacy single shell, so no existing cell changes.
+
+### 27.6 The crystal volume IS the nucleus — platform coupling (Aug 2026)
+
+`CrystalManager.GetAnchorlessSpawnRadius()` used to resolve **serialized override → nucleus →
+crystal SphereRadius**, i.e. any scene could decouple its crystals from its core with one
+field. Rampage did exactly that (a 900-unit roam radius, to make the crystal a chase) and it
+was wrong for a reason that generalises:
+
+> **The nucleus is the visible marker of the cell's core** — the thing a player reads as "the
+> middle". A crystal that respawns anywhere else makes that marker a lie, and every mode that
+> contests a crystal then has to teach its own answer to "where do I look".
+
+The precedence is now **nucleus → `noNucleusSpawnRadius` → crystal SphereRadius** (the field
+renamed to say what it is). A cell WITH a nucleus always spawns its crystals inside it and no
+per-scene field can override that. The fallback exists only for a cell with genuinely no core
+(Dog Fight's Boneyard, 420 — and note CLAUDE.md's existing warning that a nucleus-less cell
+MUST author it, or the crystal falls through to its own `SphereRadius` and lands on the exact
+centre).
+
+**A mode that wants a different crystal volume resizes its NUCLEUS** — author a
+`CellConfigDataSO` pointing at a resized `NucleusPrefab`, exactly as Scurry does with
+`HalfNucleus.prefab`. That moves both together and keeps them coupled, which is the whole
+point. Do not reintroduce a per-scene override.
+
+Note the coupling composes with §27.5: crystals inside the nucleus, flora strictly outside it,
+so the two never fight for the same volume and the core stays legible.
+
+### 27.7 The AI's drift look-direction is a mass cluster, not a 180° flip (Aug 2026)
+
+`AIPilot` has a genuinely good idea in it: once the AI has its objective lined up, it DRIFTS —
+`VesselStatus.Course` stays locked on the target while the nose swings elsewhere, which is how
+a drifting vessel lays trail, skims and fires along an axis that is not its heading. What it
+pointed at was `desiredDirection *= -1`: a flat 180° flip away from the objective. That aims
+at nothing in particular and reads as the AI spinning on the spot.
+
+It now aims at a **cluster of hostile mass** via `Cell.GetExplosionTarget(myDomain)` — the
+exact Burst density-grid query aggression-1 fauna hunt prey with. Two things make that the
+right call rather than a new behaviour:
+
+- It is **one system**. "Go where the mass is" already exists on this platform, is already
+  Burst, already excludes nucleus-interior and shielded mass (so it can only point at mass the
+  AI may attack), and is already sampled on a cadence rather than per frame. A mode-local
+  re-derivation of it is the mistake §0 warns about.
+- It makes the drift **productive in every mode**, not just the one that prompted it.
+
+Sampled on `massClusterRetargetInterval` (1.5 s), cached in between. Falls back to the legacy
+flip when there is no cell, no mass, or the cluster lies within 0.9 dot of the objective (where
+the drift would not turn the vessel at all).
+
+**Corollary for mode authors:** do NOT install an `AIPilot.SetExternalTargetProvider` hook in a
+mode whose objective is a crystal. The hook overrides crystal seeking outright — Rampage shipped
+a two-phase "graze until charged, then break for the crystal" provider and it was removed,
+because the platform default (seek the crystal + drift onto mass) already IS that loop.
+
+### 27.8 A client scored nothing for the living world — environment mass is per-peer (Aug 2026)
+
+A 2-player Rampage test: the host scored off everything, the client could only ever score
+off the **other pilot's trail** — never off a single cactus it flew through and shattered.
+
+`StatsManager` records prism destruction **server-only** (`_allowRecord`), and two of its own
+doc comments state the assumption that justifies it:
+
+> "a prism sits at the same place on the server, so the server's own physics sees a client's
+> ram and records it"
+
+That is true of a TRAIL prism — laid from replicated vessel motion, so both peers have one in
+the same place — which is exactly why trail kills were the only thing that worked. **It is
+false of flora and fauna**, and `CellNetworkSync`'s own class doc has said so all along:
+
+> "Flora and fauna spawning is non-deterministic per-side (each client runs its own
+> IntensityWiseLifeSpawner with local Random.value rolls)"
+
+So the server's copy of the cactus a client just shredded is somewhere else entirely. The
+client destroys a tree on its screen and nothing is recorded anywhere; whatever the server's
+own physics happened to knock over in the same cone is credited instead, uncorrelated with
+what that pilot did. In a mode whose entire score is destroyed environment mass, a client is
+playing a slot machine.
+
+**Fixed the way the platform already fixes this class**, for the third time:
+`Player.ReportEnvironmentPrismDestroyed_ServerRpc`, joining `ReportFaunaKill_ServerRpc`
+(fauna have no NetworkObject) and `ReportCombatHit_ServerRpc` (projectiles are not networked).
+Same owner-detects → server-records round-trip, same rule that identity comes from RPC
+ownership rather than a name string.
+
+**The other half is who must NOT credit.** A client forwarding its own environment kills
+would double-count against the server's own simulation, so crediting is split by who
+simulates the attacker: `StatsManager.OwnsAttacker` lets the server credit only players it
+owns (the host's own, and every AI — both server-owned NetworkObjects) and drop environment
+kills it observed a *remote* player make. Rostered victims are untouched: a trail exists
+identically on every peer, so it stays server-recorded exactly as before. Each kill lands
+exactly once on both paths.
+
+**The rule that surfaced with it:** environment mass was hostile to EVERY domain, because the
+only hostility test was the owner-name/roster comparison and a cactus has no roster entry.
+`PrismStats` now carries the prism's `OwnDomain` and `StatsManager.IsFriendlyEnvironmentPrism`
+applies to the world the same rule trails always had — **your own colour is worth nothing** —
+with `Domains.Blue` (the "no team" sentinel) staying hostile to everyone so neutral structure
+still scores. A third of a mixed-domain forest is now yours and worthless, which makes domain
+a real targeting decision instead of decoration. Ribcage rides the same metric and is
+unaffected in practice: its cage is painted across the full triad plus Blue joints, so a team
+can still reach a 2,000 target out of ~10,620 prisms.
+
+### 27.9 Corollary — the collecting pilot must run their own crystal effects
+
+Chasing §27.8 turned up why the client's blast was missing entirely:
+`OmniCrystalImpactor.AcceptImpactee` opens with `if (IsNetworkClient()) return;`, so a crystal
+collection resolves **server-only** — for every vessel, including one a remote client is
+flying. Collection *should* be server-authoritative (one machine must decide who got it and
+where it goes next), but the **effects** of a pickup are what the pilot sees and feels, and
+they were landing only on the server: a client's Dolphin collected the crystal and the jaw
+blast, the spent energy meter and the elemental level all happened on a machine that pilot was
+not looking at. Their meter never emptied, no cone ever appeared, and — being the mode's only
+damage verb — they had almost nothing to report under §27.8 either.
+
+`CrystalManager.ReplayVesselCrystalEffects` (no-op) → `NetworkCrystalManager`'s targeted
+ClientRpc now replays the same effect list on the vessel's OWNER. Targeted rather than
+broadcast because these effects mutate ONE vessel's state and spawn its blast; every other peer
+would be applying them to a vessel it does not own. The server keeps sole authority over
+collection, respawn and every stat — this is additive, and the effect list is shared
+(`OmniCrystalImpactor.RunVesselEffects`) so the two sides cannot drift.
+
+### 27.10 An objective arrow in a living cell must filter to MANAGED crystals
+
+`Crystal.Active` is every live crystal on the machine, and in a cell with a food web that is
+mostly *not* the objective: every flora and fauna carries a heart and drops it on death (the
+every-lifeform-drops-a-crystal invariant), and a Dolphin seeds a team crystal every 30 s. In a
+mode whose verb is killing flora, the arena rains elemental crystals continuously.
+
+So a nearest-live-crystal objective provider points at the objective almost never. The
+discriminator is **`Crystal.CrystalManager`** - non-null only for a crystal spawned by the
+cell's `CrystalManager` (`SpawnWithDomain` → `InjectDependencies`, the single writer). Hearts
+and seeded crystals are plain `Instantiate`s and carry none, so one test separates them all,
+and it is the same test that means "this is the crystal that respawns inside the nucleus
+forever" (§27.6). Follow it with `Crystal.CanBeCollected` so a mode that spawns per-domain
+managed crystals still only names one the reading pilot may take.
+
+Corollary for any crystal-tracking UI: do **not** blank out on `Crystal.IsExploding`. The flag
+stays true for 0.5 s *after* the respawn has already repositioned the crystal, so honouring it
+hides the arrow for half a second while the crystal sits at exactly the place it was pointing
+to. A collection does not invalidate the target at all - the manager MOVES the same Crystal
+object (`UpdateCrystalPos`), so the cached transform follows it to its new home.
+
+---
+
+## 28. Per-intensity forests, and the sticky config choice a client makes too early (Aug 2026)
+
+Rampage gained four intensity levels. Two general capabilities and one platform BUG came out of
+it; the mode-specific numbers live in `_Scripts/Controller/Arcade/RAMPAGE.md`.
+
+### 28.1 A cell scales its forest with two scalars, not twenty forked assets
+
+`SpawnProfileSO.FloraPopulationScale` (how many plants — multiplies each species'
+`InitialSpawnCount`) and `FloraPlantBudgetScale` (how big each gets — multiplies the live-prism
+budget that survives the variant roll and the cell override). Both default 1, so every existing
+profile is unchanged and no asset needed migrating.
+
+A SpawnProfile is referenced **from** `CellConfigDataSO`, so it already forks per intensity for
+free under `CellTypeChoiceOptions.IntensityWise`. That makes it the natural home for "how much
+arena is there", and it keeps the split §27.3 established: **the element owns identity, the cell
+owns layout** — now also *quantity*. Forking Rampage's five species four ways would have been 20
+assets whose only deltas are two integers each.
+
+Three implementation rules, each learned the hard way:
+
+- **BOTH spawners, or it is dead code.** `Cell.StartSpawnerForMode` picks
+  `IntensityWiseLifeSpawner` for exactly the cells that use IntensityWise, and
+  `RandomLifeSpawner` for everyone else. A population scalar implemented in only one of them
+  does nothing in the very modes that need it. (`CellLifeSpawnerBase`'s own class doc already
+  warned about this split; Wildlife Liberation hit it once.)
+- **The budget scalar rides `Flora.ApplyVariantTuning`**, as a new
+  `FloraVariantTuning.MaxTotalSpawnedObjectsScale` applied AFTER the absolute — one application
+  path, so it reaches all three flora families and cannot drift from the overrides it composes
+  with. It is a MULTIPLIER because the families ship budgets an order of magnitude apart (400 /
+  1000 / 5000); no single absolute could serve them. Sentinel is **-1**, and 0 also means keep:
+  a nested serialized class can zero-initialize, and "budget 0" must never be something an
+  absent key can mean.
+- **Round half UP explicitly** (`Mathf.FloorToInt(x + 0.5f)`). `Mathf.RoundToInt` is banker's
+  rounding, which sends an authored 10 × 0.85 to 8 on one species and 9 on the next.
+
+**The scalar and the phase thresholds are ONE change.** The scalar scales the SEED batch — the
+fill rate and the opening density — while the Frenzy volume gate is what actually bounds the
+standing population. Move one without the other and the forest either tops out at the wrong size
+or takes the whole match to get there. Rampage's four ladders are therefore generated, not
+hand-authored: `Tools/Build/rampage_intensity.py` computes each intensity's volume from the same
+numbers the game reads and self-tests by reproducing the shipped intensity-4 ladder to the digit.
+
+### 28.2 A client could pick a DIFFERENT intensity's cell than the host — silently, permanently
+
+`Cell.AssignConfig` is **sticky** by design (`if (runtime && runtime.Config) return;` — a re-roll
+could swap the config out from under a streaming environment). Its IntensityWise arm reads
+`gameData.SelectedIntensity`, which on a client arrives **only** in
+`MultiplayerMiniGameControllerBase.SyncGameConfigToClients_ClientRpc`. And a client's cell does
+not wait for that: it bootstraps off its FIRST CRYSTAL —
+`OnCellItemsUpdated` → `InitilizePostFirstCellItem` → lazy `Initialize()` → `AssignConfig()` —
+roughly 400 ms after scene load, versus `OnInitializeGame` at `InitDelayMs` 1000 ms.
+
+Lose that race and the SOAP variable still reads its default **0**, `Clamp(0 - 1, 0, n)` yields
+index 0, and the client builds intensity 1's arena while the host builds the chosen one. For the
+whole match. With no error — the clamp is silent and the default is legal.
+
+This was **already live in every IntensityWise scene** (Dog Fight, Ribcage, Wildlife Liberation,
+both Wildlife Blitz cells) before Rampage went near it.
+
+Fixed with three pieces that only work together:
+
+1. **`GameDataSO.GameConfigSynced`** — true immediately on the server, and set as the LAST line
+   of the config ClientRpc on a client.
+2. **`Cell.IntensityChoiceReady`** gates `AssignConfig`, which now returns **without latching**
+   when a connected client cannot yet know its intensity, and warns.
+3. **The deferral must be retryable.** `InitilizePostFirstCellItem` used to set
+   `postInitilized = true` on its FIRST line, so a deferred bootstrap was permanent — the cell
+   would have ended up with no cytoplasm and no spawner at all. The latch moved below the config
+   check, `Initialize()` bails before `SpawnVisuals` when the config is still unassigned, and its
+   tail finishes any deferred bootstrap. `OnInitializeGame` fires on EVERY peer (the
+   `if (!IsServer) return` in `InitializeAfterDelay` comes after it), so the retry always lands.
+
+Fail-safe by construction: if the broadcast never arrives, the cell warns on every attempt and
+never silently starts a spawner on the wrong arena.
+
+**Rule for any future per-intensity cell:** a choice that is sticky AND derived from replicated
+state must be gated on that state having replicated. `Cell.IntensityIndex` also floors at 1 and
+warns when the selected intensity exceeds the authored config count — a mode offering four
+intensities over two configs would otherwise serve the same arena for 3 and 4 in silence.
+
+## 29. Intensity as SCARCITY, not size — the fauna density scalar (Aug 2026, Rampage)
+
+Rampage's intensity ladder was rebuilt. It used to thin the FOREST (§28.1: intensity 1 grew half
+the plants of intensity 4). It no longer touches the forest at all — **every intensity now grows
+intensity 4's arena, prism for prism** — and instead moves two things in opposite directions:
+
+| | I1 | I2 | I3 | I4 |
+|---|---|---|---|---|
+| omni crystals | 2 × players | players | players − 1 (min 1) | **1** |
+| wildlife (`FaunaPopulationScale`) | 1× | 2× | 3× | **4×** |
+| forest | 9,830 seeded prisms — **identical at every intensity** | | | |
+
+The mode-specific reasoning is in `_Scripts/Controller/Arcade/RAMPAGE.md`; two platform
+capabilities and one general rule came out of it.
+
+### 29.1 `SpawnProfileSO.FaunaPopulationScale` — the fauna twin of §28.1
+
+One scalar, defaulting to 1, multiplying every species' `InitialSpawnCount`, `PopulationSize`
+**and `MaxLivePopulation`**. Same argument as the flora scalar: a SpawnProfile forks per
+intensity for free under `CellTypeChoiceOptions.IntensityWise`, so it is the natural home for
+"how much wildlife is there", while the species assets keep owning what each creature IS.
+
+Rampage makes that argument unavoidable rather than merely tidy: its two species are the
+**shared Blob assets**, referenced straight out of `Blob Cell/`. Editing them to stock Rampage
+would restock Menu\_Main's lava lamp with it. There was no per-mode asset to tune even if forking
+four ways had been acceptable.
+
+**It scales the CAP, and that is the load-bearing half.** `MaxLivePopulation` is documented as a
+performance backstop rather than the primary control, which makes it easy to leave alone — but it
+is what actually bounds a standing population. The tadpole floor is 4 and its cap is 6, so a
+scalar that moved only the floor would be clamped away above ~1.5× and read as doing nothing at
+all. Floor and cap move together or the lever is inert.
+
+**Nothing is culled.** Lowering a scale gates PRODUCTION — the seeder stops topping up and
+reproduction stops filling — and existing creatures live until starvation or predation takes
+them. That is the same permission `FaunaConfigurationSO.ReleaseTier` already has (§0: "gating
+production is allowed by the conserved-mass law; culling is not"). A cell that drops its scale
+mid-match does not lose a creature to the change itself.
+
+### 29.2 Route population reads through the CELL, not the config
+
+§28.1's rule was "implement it in BOTH spawners or it is dead code in exactly the modes that
+asked for it". Fauna has **four** producers, not two — `RandomLifeSpawner`,
+`IntensityWiseLifeSpawner`, `Fauna.TryReproduce` (reproduction is the actual population driver)
+and the freestyle `Microscene` conveyor — so "remember to apply it in each" is a rule that will
+be forgotten. Worse, splitting it is not merely incomplete but *incoherent*: a seeder filling to
+24 while reproduction stops at 6 is two ceilings for one number.
+
+So the resolution lives on `Cell`, which all four already hold:
+
+```
+Cell.ResolveFaunaPopulation(authored)   // seed counts and caps alike
+Cell.ResolveFaunaCap(config)            // MaxLivePopulation, 0 still means uncapped
+Cell.IsFaunaAtCap(config)               // the one place the comparison is written
+```
+
+There is now no direct read of `cfg.MaxLivePopulation` anywhere outside the config and the
+profile. A fifth producer that asks the cell gets the scalar for free; one that reads the config
+opts a species out of it silently, which is why `IsFaunaAtCap` exists rather than leaving each
+caller to write `cap > 0 && live >= cap` correctly.
+
+**Generalizes:** any future per-cell modifier of a per-species number belongs on `Cell`, for the
+same reason. The cell is the only object every producer of life in a biome has in hand.
+
+### 29.3 `CrystalManager.CrystalCountMode.IntensityScaled`
+
+`max(1, round(players × CrystalsPerPlayer) + ExtraCrystals)`, one entry per intensity, list order
+= intensity (index 0 is intensity 1) — the same convention as `Cell.CellConfigs`. Two numbers
+because the useful answers are not one shape: "twice as many as players" is a multiplier,
+"exactly one whatever the roster" is a flat count, and "one fewer than players" is both. Rounds
+half UP explicitly, for the §28.1 reason.
+
+Three notes for the next mode that reaches for it:
+
+- **No replication gate is needed, unlike §28.2's sticky cell config.** Both intensity readers on
+  `CrystalManager` are server-side: the count is resolved only inside `NetworkCrystalManager`'s
+  `IsServer` paths and reaches clients as the replicated slot-list LENGTH. A client never derives
+  it. That is the difference between a value a client *computes* and one it *receives*.
+- **The roster is `gameData.Players.Count`, and it is allowed to be incomplete.** Rampage spawns
+  crystals on client-ready, before everyone has arrived; `NetworkCrystalManager` re-asks on every
+  `OnPlayerAdded` and again at turn start, growing the slot list as the roster fills. AI backfill
+  counts — an AI is a player holding a Dolphin.
+- **The crystals still respawn in the NUCLEUS.** `GetAnchorlessSpawnRadius` is untouched and the
+  §27.6 coupling stands: N crystals means N crystals sharing the core, not a crystal roaming to
+  make room. A mode that wants them spread out resizes its nucleus.
+
+`CurrentIntensity` also unified the two intensity reads on that class — the serialized SOAP
+variable when a scene wires one, `GameDataSO.SelectedIntensity` (the same asset) otherwise. The
+anchor lookup previously fell back to intensity 1 whenever the field was unwired.
+
+### 29.4 Collider budget
+
+**Flora:** intensities 1–3 rise to intensity 4's forest — 9,830 seeded prisms, the arena that was
+already play-tested and already documented at 2.8× the Blob envelope as deliberate headroom. The
+worst case is unchanged; three intensities that used to sit below it no longer do, and the count
+backstop (`FrenzyEnter` 10,000) is the same at all four.
+
+**Fauna:** 8 → 32 creatures at cap between intensity 1 and 4 (tadpole 6→24, shark 2→8). That is
+the cheap dimension: a tadpole is one body prism plus its heart, a shark a small spindled body,
+so the top of the ladder adds tens of prisms against a forest of 9,830, and creature sensing
+rides the Burst density grid rather than physics. No new colliders, no new queries.
+
+**Crystals:** at most `2 × players` = 8 at intensity 1, each a single trigger collider.
+
+
+## 30. A living heart is BLUE, and the crossing to lime TRAVELS (Aug 2026)
+
+**The rule (it was never in doubt): a crystal's ELEMENT is its shape, its COLOUR is who may
+collect it.** `Crystal.ApplyColorSetTint` resolves one of three pairs from the live `SO_ColorSet`
+and writes them per renderer through a `MaterialPropertyBlock`:
+
+| State | Pair | Reads as |
+|---|---|---|
+| domain-owned (Jade/Ruby/Gold) | that domain's `BrightCrystalColor` / `DullCrystalColor` | only that domain collects |
+| **embedded lifeform heart** (`Crystal.IsEmbedded`) | `BlueColors.BrightCrystalColor` / `DullCrystalColor` | **blue** — it is alive, nobody collects it |
+| free pickup (drop / omni / cell) | `EnvironmentColors.BrightCTA` / `DarkCTA`, elementals dimmed | **lime** — anyone collects it |
+
+**None of it reached the screen until 2026-08-15**, because `FadeIn` — which every crystal model
+carries, and which is what blooms a crystal into existence per the continuity law — drove
+`_opacity` through the *same* per-renderer block and ended the bloom by clearing it. That is
+diagnosed and fixed in `Docs/PALETTE.md §2.2` (a palette-wide defect: no crystal in the game ever
+showed its resolved colour). What it cost the ECOLOGY specifically is worth recording, because the
+symptom was asymmetric and therefore invisible: the fallback was each prefab's authored material,
+and of the four elemental crystals Mass and Space author the *Blue* material and looked correct
+**by accident**, while `ChargeCrystalMaterial` is literally the CTA pair and Time's Fringe
+materials carry a lime dull face. Species assets are split evenly across the four elements — 21
+each — so **half the ecosystem's living hearts advertised themselves as free pickups**, and the
+half that worked gave no signal anything was wrong.
+
+### 30.1 The crossing is a state change, so it travels
+
+The blue→lime crossing at `ActivateCrystal` is the pickup affordance: it is the moment the §26
+wither reaches the core, or the moment a joust frees the heart, and it says *you can take this
+now*. It runs the same clock-stamped shape as a prism domain change
+(`MaterialPropertyAnimator.ClockColorTransition`, `Docs/PRISM_ANIMATION.md`) — the state goes
+final at the start (the crystal is collectable the instant it drops; colour is only how it reads),
+the start pair is stamped once against `PrismClock`, the pairs between are computed analytically
+from that stamp, and `PrismTimerManager` fires ONE settle at the analytically-known end, which is
+what makes the final colour independent of the driver. Duration is
+`Crystal.colorTransitionSeconds`, 0.8 s to match the prism transition.
+
+Three rules it depends on, each a bug first — full contract in `Docs/PALETTE.md §2.3`:
+
+- **Paint the flip explicitly.** `ActivateCrystal` repaints itself rather than leaving it to
+  `Start` (which fires only because a heart's `Crystal` component is authored **disabled**) or to
+  the material lerp's tail (skipped outright when a model has no target material). Rely on either
+  and a collectable crystal keeps wearing heart blue.
+- **Read the start pair BEFORE anything disturbs it** — before `EmbeddedIn` is cleared and before
+  any material lerp drops the block.
+- **A cleared block no longer describes the screen**, so `ClearColorSetTint` forgets the resting
+  pair.
+
+### 30.2 Collider budget
+
+**Zero.** Colours only — no colliders, no spatial queries, no spawn or consumption behaviour, no
+change to what is edible or steerable. The per-frame cost is one property-block write per model
+for the 0.8 s a crystal is actually crossing, and only crystals cross.
+
+## 31. The crystal capture — a pickup is a beat, not a journey (Aug 2026)
+
+**Prompter's ask, verbatim in shape:** *"when elemental crystals are captured it looks terrible, and
+takes far too long. we need a more satisfying capture effect."*
+
+Every lifeform drops exactly one elemental crystal (§0, the locked invariant), so this is the moment
+the whole food web pays out — and it was the weakest frame in the game. What shipped before:
+
+- the crystal **dragged** to the vessel over **3 seconds** (1s on two fauna prefabs, 3s on eleven
+  flora prefabs — the duration was authored per prefab, so the same pickup had two speeds);
+- it lerped from a **frozen start point** toward a **moving** vessel with a smoothstep, which reads
+  as the crystal chasing the ship rather than being pulled into it;
+- it flew at **full scale, unlit, unspinning** (the collect disabled nothing, so the idle tumble kept
+  running and there was nothing to see change);
+- it then **stopped existing** — a bare `Destroy`, except on the Space crystal, which had a 0.6 s
+  blendshape shrink bolted on the END of the flight, so that element parked a full-size crystal on
+  the hull for over half a second before vanishing;
+- **no burst and no pickup SFX.** The omni crystal has played a spent-husk burst + `CrystalCollect`
+  since forever (`Crystal.Explode`); the elemental path never called it.
+
+Total: **3.6 s** for the Space crystal, **3.0 s** for the other three, ending in a pop-out.
+
+### 31.1 The shape of a capture
+
+Three beats, and the beats are what make it read as a grab rather than a drag. All feel lives in
+**one** asset — `Resources/CrystalCaptureConfig` (`CrystalCaptureConfigSO`) — because a per-prefab
+duration is exactly how the old one drifted:
+
+| Beat | Default | What it does |
+|---|---|---|
+| **Snatch** | 0.08 s | Scale pops to 1.5× and the crystal kicks **away** from the vessel. Anticipation: the recoil is what sells the pull. |
+| **Suction** | 0.26 s | Homes on the vessel's **live** position, **accelerating** (`u^2.6`, never linear), swinging in on an arc, spinning up 2.25 revolutions, shrinking to 0.55×, flaring to 3× brightness. |
+| **Absorb** | 0.10 s | Rides the hull, collapses to zero scale and dissolves `_opacity` out, and **fires the element's spent-crystal husk into the vessel's wake** — the same burst and the same `CrystalCollect` SFX an omni pickup plays. |
+
+**0.44 s total**, versus 3.0–3.6 s. Everything is sized in **crystal radii** (recoil 0.9, arc 1.6),
+so a grown flora heart and a tiny fauna drop capture identically.
+
+Three rules came out of it and generalize:
+
+1. **A flourish must never outlast its own payoff.** The element level lands at *contact* — it is
+   applied by `SkimmerAdjustElementLevelByCrystalEffectSO` in the impact frame, and the element's
+   petal flower has already ticked over before the crystal has moved. A three-second animation over
+   an instantaneous reward does not read as a reward; it reads as lag. `OnCrystalCollected` (the
+   scoring event four modes count) now also fires at contact rather than inside the flight loop, so
+   a mode's objective can never wait on a visual.
+2. **Homing on a moving target is a function of DURATION.** The old lerp was toward
+   `vesselTransform.position` read live, which is correct — over 3 seconds a vessel travels far
+   enough that "correct" still looks like chasing. Shortening the flight fixed more of the look than
+   any easing change could, and the acceleration curve does the rest: the crystal hangs, then snaps.
+3. **Continuity of existence applies to a crystal, not just to prisms.** The platform law says
+   nothing the player can see may pop in or out. A crystal blooms in through `FadeIn`
+   (`_opacity` 0→1) and now leaves the same way — scale to zero *and* `_opacity` back to 0, spent as
+   screen-door coverage by the crystal shaders, so it composes with the project's
+   dither-not-blend transparency rather than introducing a second kind of fade.
+
+### 31.2 What it composes with, and what it does not add
+
+Nothing new was invented. The burst is `Crystal.Explode`, the existing pooled spent-husk path
+(`SpentCrystalPoolManager` → `Impact`), which the elemental crystals were already authored for —
+all four prefabs carry a per-element `SpentCrystalPrefab` that had never been reached from a skim.
+The flare rides `Crystal.ApplyCaptureVisual`, one MaterialPropertyBlock over the shared material, and
+it scales the crystal's **own** colours (RGB only, alpha preserved) rather than washing toward white:
+a colour is a rate in linear HDR, so a gain brightens without shifting hue, and washing to white
+would read as a *different* crystal (`Docs/PALETTE.md`). No new FMOD event was added — the pickup now
+reaches the shared `CrystalCollect` category it always should have.
+
+**The flare composes with the omni/elemental brightness split** (the CTA-lime pass that landed
+alongside this branch): `ApplyCaptureVisual` scales whatever the crystal currently *wears*, and an
+elemental's resting colour is now the CTA dimmed by `EnvironmentColors.ElementalCrystalDimming`
+(0.45). So a captured elemental flares 3× **relative to itself** — which is the ratio the eye reads
+over a 0.44 s beat — peaking at ~1.35× the CTA, i.e. just above the omni's resting brightness rather
+than the 3× absolute the gain was first chosen against. That is the intended relationship (a crystal
+being taken briefly outshines the hero pickup), but it means `flareGain` and
+`ElementalCrystalDimming` are coupled: **move one and re-judge the other.** Both scale RGB only
+through the shared `Color.ScaleRGB`, so neither can shift hue.
+
+**And that reach was itself broken, on far more than this branch's path.** `Crystal.PlayExplosionAudio`
+guarded on its `[Inject] AudioSystem` field, which is null on **every crystal that was not part of a
+loaded scene**: a lifeform's heart is `Instantiate`d by the cell's spawners, and *nothing* under
+`Controller/Environment` calls `GameObjectInjector.InjectRecursive`. So the pickup sound was a silent
+no-op for the entire ecology's crystal drops — and for the conveyor toy's local mints — while reading
+as correctly wired, because the guard is exactly what a correct guard looks like. It now falls back
+to `AudioSystem.Instance`, the same accessor `SkimmerAdjustElementLevelByCrystalEffectSO` already uses
+one frame earlier on the very same pickup. **The general lesson: `[Inject]` on a prefab that some
+system spawns at runtime is a REQUEST, not a guarantee** — before relying on an injected field in
+anything spawned outside a scene load or a `GameObjectInjector` call site, find the injector. There
+may not be one.
+
+`Crystal.Explode` grew one optional argument, `huskScale`: the burst fires at the end of a flight
+that has already shrunk the crystal into the hull, and the payoff must be sized by the crystal the
+pilot *picked up*, not by the flourish that preceded it. The networked path takes the default and is
+unchanged.
+
+The `moveToVesselDuration` / `easeMoveToVessel` fields were removed from the impactor **and** their
+now-dead serialized keys stripped from the 15 prefabs that authored them — a value that is read by
+nothing but still shows in the inspector is worse than no field at all.
+
+### 31.3 Collider budget
+
+**Zero.** No collider is created; the capture *disables* the crystal's own trigger at contact (as it
+always did) and the husk burst is the pre-existing pooled `Impact` path with no colliders at all. The
+per-frame cost is one transform write + one MaterialPropertyBlock write on a single crystal for
+0.44 s, down from 3.6 s — a ~8× reduction in the live window, and captures are individually rare.
+Prisms are untouched, so the clock-material law (`Docs/PRISM_ANIMATION.md`) is not in scope: a
+crystal is a handful of objects, not the 2,000-instance surface that law exists to protect.
+
+### 31.4 In-editor verification (the human is the gate)
+
+1. Any scene with fauna — Wildlife Blitz is the fastest. Kill a creature and skim its dropped heart.
+   The capture must complete in **under half a second**, ending in a husk burst at your hull with the
+   `CrystalCollect` sound. Nothing should linger on the ship. (That sound is a **regression test** as
+   much as a feature — it never played for a lifeform drop before this branch; see §31.2.)
+2. Do it at **top speed** (Squirrel, boosting). The crystal must land *on* the ship, not trail behind
+   it — that is the test the old 3-second lerp failed.
+3. Do it on a **Space** crystal specifically: its blendshape pulse now runs *alongside* the flight,
+   not after it. There must be no full-size crystal parked on the hull.
+4. Joust a lifeform with the Squirrel (`ElementalCrystalImpactor.CollectBy`, §26) — the auto-collect
+   runs the identical capture, so it must look the same as a skim.
+5. Tune by editing `Resources/CrystalCaptureConfig` **only**. If a capture feels wrong on one
+   lifeform and right on another, that is a bug (something is sizing off world scale rather than
+   crystal radii), not a reason to re-add a per-prefab duration.
+
+---
+
+## 32. Flora get POPULATIONS — and the gyroid becomes a colony (Aug 2026)
+
+Fauna have had a population pipeline since §6.1: a seed floor, a hard cap, and **reproduction as the
+actual driver** — a creature that feeds converts prey into offspring, and the food web bounds the
+result. Flora had none of it. A flora species had `InitialSpawnCount` and a plant period, and the
+spawner planted **one more plant every period, forever**, bounded only by the cell's Frenzy gate
+(`RandomLifeSpawner.SpawnFloraTypeLoop_Random`, `IntensityWiseLifeSpawner.SpawnFloraTypeLoop`).
+There was no per-species live count anywhere in the codebase — `Cell` tracked fauna only.
+
+This section adds the plant-side half, and converts the first species to it.
+
+### 32.1 Growth is a plant's feeding
+
+The one design question is what a plant's reproduction is *funded by*. A creature is funded by prey.
+A plant is funded by **growth**: the prisms it managed to lay into the space around it. That single
+choice is what makes the model work without breaking §0:
+
+> A plant at its live-prism budget **has stopped growing**, so it has stopped funding children. It
+> only funds another one after the food web grazes it and it regrows.
+
+So the population is bounded by **grazing**, exactly as the fauna population is bounded by
+starvation — and there is no decay clock, no lifespan, no TTL and nothing culled. A lowered cap
+stops *production*; it never removes a live plant.
+
+The knobs are on `FloraConfigurationSO` and mirror the fauna block field for field:
+
+| Flora | Fauna counterpart | Meaning |
+|---|---|---|
+| `PopulationSize` | same | seed floor — **0 keeps the legacy unbounded planting**, so the model is opt-in per species |
+| `MaxLivePopulation` | same | hard per-cell plant cap (a performance backstop) |
+| `GrowthPerOffspring` | `FeedsPerOffspring` | prisms grown per birth |
+| `OffspringPerBirth`, `ReproductionCooldownSeconds` | same | burst throttles |
+| `MaturityFraction` | *(no counterpart)* | fraction of its own budget a plant must hold to seed |
+| `OffspringSpread` | `OffspringSpawnJitter` (const) | how far a child is planted |
+
+`Flora.AssignLineage` / `SourceConfig` / `NotifyGrew` / `TryReproduce` mirror `Fauna`'s, and the
+decision lives in `FloraReproductionRules` (pure, engine-free, edit-mode tested) beside
+`FaunaReproductionRules`. The spawners are **demoted to seeders** in both classes — they now fill
+only the deficit below the floor, which is bootstrap plus recovery after the food web grazes a
+species out, so extinction is never permanent.
+
+**The cap resolves on the `Cell`, never on the config** (`Cell.ResolveFloraPopulation` /
+`ResolveFloraCap` / `IsFloraAtCap`) — the §29.2 rule, and flora needs it more than fauna did: there
+are **five** flora producers (both spawners, `Flora.TryReproduce`, the freestyle `Microscene`
+conveyor, the Lifeform Matrix toy). A cap honoured by one producer is two ceilings for one number.
+The initial-batch `FloraPopulationScale` scaling that both spawners used to inline was routed
+through the same accessor for the same reason.
+
+### 32.2 The gyroid: one plant became a colony, and the frontier does the connecting
+
+> **Superseded in part by §32.7 (same branch, later passes).** The 27-prism BFS-patch unit cell
+> and the single-donor frontier handoff described below shipped first; the octagon colony —
+> crystal at the centre of each danger-prism ring, territory ownership, table-driven
+> reproduction — replaced them the same week, after the user supplied the tiling design, and a
+> later pass moved reproduction itself from the PER-PLANT quota described below to a
+> POPULATION cycle (one birth per fauna wave, random open octagon). For a lattice species the
+> `GrowthPerOffspring` / `OffspringPerBirth` / `ReproductionCooldownSeconds` machinery below is
+> therefore inert — it still governs every NON-lattice flora. The measured bond-table geometry
+> below is still the foundation everything §32.7 does is computed from.
+
+The gyroid was one plant that grew forever — a single `AssembledFlora` crystallising a minimal
+surface out of 1,500 bonded prisms, carrying **one** heart. It is now a **population of unit cells**,
+each with its own crystal.
+
+The size is measured, not chosen by feel. Walking the assembler's own bond table (48 entries, 12
+block types) exactly as `AssembledFlora.PreviewGyroid` does: bonds are ~7.8u long, the smallest
+closed ring is 3 prisms (the doubled A–B strut junction) with the gyroid's characteristic 8/9/10
+rings above it, and the lattice is **BCC with a ~119.6u conventional cube ≈ 584 prisms**. Three bonds
+out from a seed is **27 prisms** and is the smallest patch containing **all twelve block types** —
+one of everything the assembler can say, ~40 × 42 × 12 world units. That is the unit cell.
+(A crystallographic primitive cell, ~292 prisms, is far too big to make a population out of.)
+
+**What makes the pieces add up to a gyroid is that reproduction reuses the growth frontier.**
+`AssembledFlora.TryResolveOffspringPlacement` does not scatter a child near its parent. It asks the
+parent's own assembler for a growth order — the same `GetGrowthInfo()` call, against the same bond
+table, with the same `PrismSpatialIndex.TryReserve` claim that stops two growers filling one site —
+and hands that exact position, rotation and `GyroidBlockType` to the daughter
+(`ConfigureOffspring` → `SeedFromGrowth` → `CreateNewAssembler`). The daughter's first prism lands
+precisely where the parent's next prism would have. **Nothing in the code describes a gyroid**; the
+superstructure is emergent from each plant continuing its parent's lattice, which is the whole
+point — a scripted superstructure would be the same class of cheat as a scripted fitness function.
+
+Two consequences worth stating:
+
+- **The daughter gets a FRESH depth budget.** `depth` used to be the lattice's global size bound;
+  now the per-plant prism budget bounds a plant and the **population cap** bounds the colony.
+  Inheriting the parent's remaining depth would make every generation smaller until the colony
+  stalled.
+- **A blocked plant stays ARMED.** A plant that has banked its quota but is blocked by the cap keeps
+  its quota (`Flora.TryReproduce` spends it only on a birth that happened). A full plant is never
+  re-armed by another growth tick, so without this it could never fill the gap left when a
+  neighbour is grazed out. With it, gap-filling is automatic.
+
+### 32.3 What the conversion preserves, and what it costs
+
+Numbers are authored by `Tools/Build/author_flora_populations.py` (`--check` verifies the assets
+still match the model), not by hand. The lattice rule is `cap = old_single_plant_budget / 24` (the
+octagon patch — it was `/ 27`, the BFS unit cell, before §32.7), so **total prism mass is preserved
+to within a rounding step and a clamp** — Blob's Mass gyroid goes from 1 plant × 1500 to 60 plants ×
+24 = 1,440 (its unclamped cap would be 63). Leaf size and the level spread are untouched, so
+**per-prism volume is unchanged.**
+
+> **One later correction (§32.7 seventh pass):** this section originally added "and no cell's
+> volume phase ladder needs re-authoring". That was true of the CONVERSION and false of the
+> colony: preserving per-prism volume says nothing about the ladder being right in the first
+> place, and Blob's was set so low that its seeded floor alone was 87% of Frenzy. Blob's ladder
+> is now authored ×5. Per-prism volume is still unchanged by anything in this section.
+
+**The cost is crystals, and it is the collider line to watch.** Every plant is a lifeform, so it
+carries one heart whose collider is always on and is *not* phase-LOD culled (§21.6). Blob's three
+gyroid species go from **3 crystals to 135** at cap (60 + 42 + 33); Blob's profile is shared by the
+freestyle seven, so the same figure applies to Caldera / Daedala / Geode / Orrery / Ourobor / Yggdra
+/ Zephyr. The cap is a backstop, not a prediction — with Blob's ×5 ladder the cell reaches Frenzy
+at **~69 plants**, which is the figure to hold against the budget. Against the masterplan's
+~1,500-collider per-cell target that is ~5% realized (~9% at the cap), and
+`MaxLivePopulation` is the dial — the authoring script clamps every species to
+`MAX_PLANTS_PER_SPECIES = 60` for exactly this reason. Prism colliders are unchanged in count.
+
+There is a real gameplay consequence, and it is the interesting one: a 27-prism plant can be grazed
+to death, where a 1,500-prism plant could only ever be dented. The gyroid becomes a **crop** — fauna
+clear a unit cell, it dies and drops its elemental crystal, and its neighbours colonise the hole.
+That is the food web finally having a visible effect on the cell's canopy rather than nibbling it.
+
+*(Watch on the first playtest: `GyroidFlora.prefab` authors `minHealthBlocks: 5`, so a plant dies with
+5 prisms still standing and `LifeForm.DestroyStructure` detonates them. At 1,500 prisms that leak was
+0.3% of a plant; at 24 it is 21%. It is pre-existing behaviour and out of scope here, but if the
+colony visibly loses mass over a long session, that is where it is going — the fix is
+`minHealthBlocks: 0`, not a change to the population model.)*
+
+### 32.4 Collider budget
+
+- **Prism colliders: unchanged.** Mass is preserved by construction (§32.3); the same prisms are
+  simply owned by more plants.
+- **Crystal colliders: +132 per gyroid cell at the cap** (3 → 135), ~66 realized under Blob's
+  ×5 volume ladder (§32.7), +~1 per plant elsewhere. Bounded by
+  `MaxLivePopulation`, clamped to ≤ 60 per species by the authoring script, and scaled with the rest
+  by `SpawnProfileSO.FloraPopulationScale` (which now moves the floor **and** the cap — a scalar that
+  moved only the floor would be clamped away by the cap and read as doing nothing, §29.2).
+- **No new queries.** Reproduction reuses the growth `TryReserve` the assembler already performed;
+  no `Physics.OverlapSphere` is added anywhere. (The 2026-04 attempt on
+  `claude/gyroid-seed-danger-prism-U3MnJ` used `Physics.OverlapSphere` to find a neighbouring flora
+  by crystal proximity — banned by `Docs/SPATIAL_INDEX.md`, and structurally blind besides, since
+  prism colliders are disabled for the first 0.6 s after spawn.)
+- **Per-frame CPU:** one `TryReproduce` call per plant per grow tick, which fails on the first
+  integer compare for any species that authors no reproduction. A lattice plant additionally runs
+  `TickOctagonPopulation` per grow tick: a bool, a clock compare, and — once in its life, on the
+  tick it matures — one projection of its ring through the neighbour tables. The reproduction
+  cycle itself is one dictionary lookup per plant per tick and a random pop once per fauna wave.
+
+### 32.5 Invariant review (the rulings, recorded)
+
+- **Mass is conserved / no imposed death** — nothing is removed. Reproduction only *creates*, and it
+  is gated on `Cell.FloraPlantingEnabled` so it freezes with planting at Frenzy. A cap stops
+  production; §0 explicitly permits gating production. Both retired growth-side cheats stay retired:
+  no regrowth pulse, no timed culler.
+- **Continuity of existence** — an offspring is an ordinary plant spawned through the one canonical
+  path (`CellLifeSpawnerBase.SpawnFlora`), so its prisms bloom in on the existing grow path. Nothing
+  new pops.
+- **No domain asymmetry** — the *spawner* still seeds uniformly across Jade/Ruby/Gold
+  (`PickRandomDomain`). Within a lineage a plant's children are its own colour, which is exactly the
+  fauna rule (§6.1) and not a per-domain bias.
+- **Every lifeform drops one elemental crystal** — each unit cell is a full lifeform with its own
+  heart. This is the invariant the change *leans into*: it is what the user asked for, and it is why
+  §32.3 states the crystal cost so plainly.
+- **Volume is the spine** — untouched. Prism count and per-prism volume are both preserved, so no
+  threshold moves.
+- **Endogenous selection only** — a colony survives by growing and dies by being eaten. No fitness
+  function anywhere; offspring inherit their founder's variant pick (element + hatch level), and
+  in-world level-ups are not inherited, matching §17 and the fauna rule.
+
+### 32.6 In-editor verification (the human is the gate)
+
+**Status: RUN, across five Menu_Main playtests (2026-08-15/16).** Steps 1-3 below passed on the
+final pass — the surface reads as one continuous gyroid, daughters mate with their parents, and
+each completed window holds exactly one non-growing crystal. The numbers in this section are the
+ORIGINAL unit-cell model's; the shipped model is the octagon colony (§32.7), whose own verification
+steps and heartbeat decode live at the end of that section — **use those.** Steps 4-7 here were
+NOT re-run after the octagon conversion and remain open:
+
+4. **Graze test.** Let the tadpoles work a patch. A grazed octagon should die, drop its crystal,
+   and the population should recolonise the hole (its centre returns to the claim book on death,
+   and neighbouring plants re-offer it). Nothing should vanish without being eaten.
+5. **Wildlife Blitz Cell 4** — the same three species under `IntensityWiseLifeSpawner`. This is the
+   check that the seeder change landed in *both* spawner classes; if Cell 4's gyroids behave
+   differently from Blob's, one of them is running the other code path. **Note Cell 4 did NOT get
+   the ×5 volume ladder** (that was authored on Blob alone, §32.7 seventh pass), so its colonies
+   will still stop at the old ceiling — expected, not a defect.
+6. **Hesperides** — the gyroid topiary is now 8 small plants instead of one 190-prism specimen.
+   Confirm it still reads as topiary in the garden.
+7. Re-run `python3 Tools/Build/author_flora_populations.py --check` after any asset tuning,
+   `python3 Tools/Build/verify_gyroid_octagon_tables.py` after any bond-table or octagon-table
+   edit, and `FrogletTools ▸ Validation ▸ Validate Lifeform Crystals` (every octagon is a lifeform
+   now, so the one-crystal rule is being asserted far more often than before).
+
+### 32.7 The octagon colony — a crystal in every window (Aug 2026, second pass)
+
+The first pass (§32.2) made the gyroid a population, but its unit was arbitrary — "3 bonds out
+from a seed" — and its reproduction handed a daughter one donor site. The design that replaced
+it came from the tiling itself:
+
+**The gyroid's 12 block types are a non-Euclidean tile** — 6 prisms and their 6 mirror images
+(the conjugate structure: DE↔EsD, EG↔GEs are the danger pairs). The four danger types close
+into rings of exactly **eight danger prisms** — measured, not assumed: the danger-only bond
+subgraph contains ONLY 8-cycles (120 of 120 in a 4,000-prism walk), each ring 2×DE + 2×EG +
+2×EsD + 2×GEs, radius 10.03u. Since danger types are 4 of 12 equidistributed types, each ring
+owns **24 prisms** of the surface: 8 ring + 16 between. Adjacent ring centres sit 35.9–42.4u
+apart, and each danger type sees exactly **four** neighbouring rings at fixed local offsets
+with a deterministic seed pose each (measured purity 1.00, position std ≤ 0.25u).
+
+> **The spec said 48 prisms per lifeform (4 tiles); the lattice says 24 (2 tiles).** This is
+> forced, not chosen: with a crystal in EVERY octagon and no overlapping prisms, prisms per
+> lifeform = total ÷ octagons = 8 ÷ ⅓ = 24 exactly. A 48-prism lifeform is only possible with
+> crystals in every OTHER octagon. The build follows the stronger constraints (crystal per
+> octagon, no overlap); flag if the other trade was meant.
+
+**A gyroid plant IS an octagon-owner.** Its crystal sits at the ring's centre and **never
+grows** (`crystalGrowth 0` + a code guard); its root is the centre, so "a crystal at local
+(0,0,0)". A founder discovers its centre from the first danger prism it grows
+(`GyroidOctagonData.TryGetOwnCenterOffset` — each danger type knows its ring centre in its own
+local frame) and claims it in `GyroidOctagonRegistry`; a daughter is handed hers, pre-claimed
+by the parent so siblings cannot race.
+
+**Territory makes the tiling.** A plant grows a site only if it lies within `TerritoryRadius`
+(26.5u) of its own centre AND no other claimed centre is meaningfully nearer
+(`AssembledFlora.OwnsLatticeSite`, epsilon 0.75 — boundary prisms sit EXACTLY equidistant, so
+both owners contest and the spatial-index reservation keeps whichever grew first; patches
+measure 22–28). A declined site is marked filled on the assembler
+(`GyroidAssembler.DeclineGrowthSite`) so the branch moves on — the neighbouring plant lays the
+same world position from its own lattice.
+
+**Reproduction is the neighbour table.** A full plant projects, from each ring prism it grew,
+the four neighbouring ring centres; for each UNCLAIMED one whose seed site is free it plants a
+daughter — root at that centre, first prism a real member of that ring, block type and pose
+from the table (`OctagonNeighbor`). "Calculate where the neighbouring crystals belong, check
+if one is already there, plant where there is not." `OffspringPerBirth 8` covers the whole
+neighbourhood per birth; the armed quota retries the rest.
+
+**Proof before Unity.** The exact algorithm (bond-table growth + ownership + registry +
+neighbour-table reproduction) was simulated end-to-end in Python: from one founder, 273 plants
+/ 5,547 prisms — a **single connected component**, **zero overlaps** (min pairwise distance
+7.17u vs 6.6u lattice minimum), **bijective on the reference lattice** (max deviation 0.74u at
+radius 95, no double-filled site), and **175 of 175 complete octagons holding exactly one
+claimed crystal centre**. Float drift off the bond table accumulates ~0.3u per 100u of lattice
+— absorbed by the reservation clear radius (~3.1u) out to radius ~1,000.
+
+**The Gyroid Lab was the test chamber, and is RETIRED (2026-08-16).** It was a Cell-Selector
+station on an environment-free config with every guardrail off — uncapped population, no
+fauna to graze the specimen, a phase ladder that could never reach Frenzy — so one founder
+colonised indefinitely and the growth rule could be watched in isolation. It earned its keep
+(it found the daughter-stall bug, the premature-reproduction cascade and the twinning
+geography below), and then it stopped being informative: **a cell with no gates only ever
+answers questions about itself.** Its last playtest read as a runaway shell precisely because
+guardrail-free was its whole design — while the same code in the shipped freestyle biome grew
+correctly. Removed from Menu_Main's `CellConfigs` and deleted; the shipped biomes are the
+honest test. If a future rule change needs a chamber again, `author_flora_populations.py`'s
+`EXCLUDE` hook is still there for it.
+
+**First playtest (2026-08-15) found the daughter-stall bug.** Daughters planted (crystal +
+seed prism visible) but never grew. Root cause: `CreateNewAssembler` ran
+`SetParent(spindle, worldPositionStays: false)` on the seed prism WITHOUT zeroing the locals —
+`worldPositionStays: false` keeps the local values, which at that point are the world
+coordinates `Instantiate` assigned, so the prism landed at `spindle.pos + spindle.rot × worldPos`
+(~2x its own distance from the origin, in empty space). The legacy code only ever worked
+because a spawner flora ran this while still parked at the cell centre (world ≈ 0, stale local
+≈ 0); an octagon daughter is created AT her centre, so her seed prism was thrown into space,
+the ownership gate declined every garbage site, and the plant reseed-looped forever.
+`ExecuteGrowOrder` always zeroed the locals; the fix copies it. The same fix repairs the
+Lifeform Matrix toy's pinned-station assembled flora, broken the same way for as long as the
+toy has existed. `Docs/PRISM_ANIMATION.md`-style lesson: a parenting call's semantics
+(`worldPositionStays`) are load-bearing — audit both spawn paths whenever one changes.
+
+**The Lab is tuned as a speed chamber** (same playtest's request): ONE **Time** gyroid
+(the fastest authored tempo, pushed further: GrowPeriod 0.1) seeded at the **cell centre** —
+the config removes its `NucleusPrefab`, because "never plant inside the nucleus" is exactly
+the clamp that keeps a plant off the centre, and a cell with no nucleus HAS no such zone (a
+supported state, §25.1's declaration, not a rule exception). Every pacing guard is opened in
+CONFIG, not on the shared prefab: `FloraVariantTuning` grew `ItemsPerGrow` / `RandomItems` /
+`MaxSpawnsPerFrame` overrides (sentinel -1 = keep prefab) so the Lab authors 8 / 0 / 3 while
+every other biome's plants keep the shipped pacing. Reproduction: quota 12 (plants colonise
+while half-grown, so the frontier expands ahead of completion), cooldown 0.25s, maturity 0,
+seeder delay 0. The Frenzy gate was already unreachable. Expansion is frontier-limited by
+design: interior plants complete and stop, so the active grower count tracks the colony's
+surface, not its volume.
+
+**Second playtest (2026-08-15): the crystal cloud, and the maturity gate.** With reproduction
+armed at quota 12 ("colonise while half-grown"), each half-grown plant minted 8
+crystal-bearing daughters per birth - the population octupled per ~half-second generation
+while growth lagged behind, and the cell filled with an exponential cloud of hearts and seed
+spindles far beyond any grown surface. The rule that fixes it is the one the playtest asked
+for: **a gyroid reproduces only when it has fully grown all its spindles and health prisms.**
+`AssembledFlora.OctagonMature` = a real patch (count ≥ 18) AND an exhausted frontier (a run of
+grow ticks that decided nothing, with no orders pending; budget-full ticks count as idle).
+Deliberately NOT a fixed prism count or ring-complete test - patch sizes legitimately vary
+22-28+, and a plant whose near ring-arc was pre-grown by its parent under the boundary epsilon
+would stall forever against either. The banked quota simply waits at the gate. Re-simulated
+with the exact rule: 167 plants / 3,301 prisms, 19.8 prisms per crystal (was a seed-plant
+flood), single connected lattice, zero overlaps, immature plants = exactly the one-generation
+frontier shell.
+
+**Third playtest (2026-08-15): "full size" means the BLOOM, and the overlap suspects.** Two
+observations: generations still cascaded before prisms reached full size, and real overlapping
+prisms accumulated at the centre. The first is a units mismatch now fixed: the maturity gate's
+frontier-idle test settles in fractions of a second (2 grow ticks), while a prism's grow-in
+bloom takes SECONDS (`Prism.growthRate` 0.01) - so a plant read as "fully grown" while every
+prism was mid-bloom. `FloraVariantTuning.MaturationSeconds` (default 4, Lab authors 5) now
+requires the plant's YOUNGEST prism to be older than the bloom before it may reproduce -
+fully-formed plants begetting fully-formed plants, paced to the animation the player watches.
+Three overlap/hole suspects were closed or instrumented in the same pass: (1) the claim/reserve
+ORDER in reproduction - a seed reservation abandoned on a lost claim race sat until TTL while
+every neighbouring branch that probed the site marked it PERMANENTLY skipped (reserve-fail
+reads as "occupied for real"), a transient race punching a lasting hole; centres now claim
+first and release on failure. (2) The founder's seed prism registered with the spatial index at
+its pre-`Plant()` position and was then dragged to the planting point - occupancy reads the
+STORED position, so its real location read as empty space another grower could fill
+(`NotifyPositionChanged` after the move; pre-dated this branch for every dispersed assembled
+flora). (3) `GetGrowthInfo` grows UNCHECKED when the spatial index is unavailable - the one
+path that can double-fill a site at scale; now counted (`UNRESERVED` in the heartbeat), because
+a non-zero count alongside overlapping prisms is the diagnosis and the fix is index
+availability, not growth logic.
+
+**Fourth playtest (2026-08-15): growth pacing confirmed excellent; lattice "twinning"
+defects.** Fully-formed plants now beget fully-formed plants, but the surface showed defects
+"like twinning in crystallography" - prisms reading as ~90° misrotated, errors compounding,
+and crystals appearing outside some octagonal rings. Offline analysis exonerated the
+mathematical suspects (LookRotation degeneracy margins ≥0.9999 across all 48 bond entries;
+float32 walk bit-equivalent to float64; `ToGlobal` is scale-free; the quaternion bake in the
+E-table verified against Unity's convention branch by branch), so the defect enters through a
+Unity-runtime interaction the simulation could not see. Two responses shipped:
+
+1. **The lattice-defect auditor** (`GyroidColonyDiagnostics`): every grow decision and every
+   daughter seed handoff is checked for a prism 3.1-5.5u away (TryReserve already cleared
+   ~3.1u; the healthy lattice's minimum non-bonded spacing is 6.6u, so a hit means a
+   misaligned lattice domain being minted), counted separately for GROWN sites (bond-table
+   continuation - drift or seam defects) and SEED sites (the E-table handoff - one bad
+   handoff twins a whole subtree), with the first 24 logged at their world positions.
+   `MaxRingCoherenceError` tracks the worst computed-vs-claimed ring-centre disagreement
+   (healthy < 1u), and `RotationFallbacks` counts `SafeLookRotation` failures (offline says
+   the table never produces one, so non-zero fingers a post-spawn transform write). All in
+   the 5s colony heartbeat line.
+
+   > **The heartbeat is OPT-IN since Aug 2026** — a working colony repeating its census
+   > every 5s for the life of the scene is console spam, so it (and the FOUNDER / MATURE /
+   > BIRTH / bond-site lines) now emit only while `CSLogChannel.GyroidColony` is enabled in
+   > **FrogletTools > Toolbox > Logging**. Turn it on BEFORE any colony investigation; the
+   > counters accumulate regardless, so enabling mid-session still reports true totals.
+   > The defect WARNINGS are unaffected and always emit: `LATTICE MISALIGNMENT` (capped at
+   > 24), the once-per-plant reseed-mint block, and the `INCOHERENT SEED HANDOFF` error.
+
+2. **The orphan-reservation seam race - found by reading, fixed to match the sim.** The
+   validated colony simulation used perfect-information reservations; Unity's had a 5s TTL,
+   and three paths abandoned live reservations into it. The systematic one: the ownership
+   gate DECLINES a foreign boundary site with the reservation `GetGrowthInfo` just made
+   still live. The site's true owner - a sister plant growing at 0.1-1s cadence - probes the
+   same world position within the window with near-certainty, its `TryReserve` fails, and
+   `GetGrowthInfo` treats reserve-failure as "occupied for real": the owner's bond site is
+   marked bonded PERMANENTLY. Roughly every seam site whose first prober was the non-owner
+   became a lasting hole - missing danger prisms, open ring arcs, and crystals apparently
+   sitting outside their octagons, concentrated exactly where plants meet. All abandoning
+   paths now release explicitly: the decline itself, an age-dropped grow order (which
+   otherwise fails against its OWN stale claim on re-decision), a died plant's pending
+   queue, and a stranded offspring seed (both the octagon and the generic donated-growth
+   flavours, plus `OnDestroy`). Reserve-failure still means "someone real is there" - that
+   is what makes marking-bonded-on-failure correct again.
+
+**Fifth playtest (2026-08-16): the auditor attributed it - a CHIRALITY corruption in the
+baked tables, plus frame-poisoned rings.** The heartbeat read `DEFECTS grown=482 seed=140
+ringErrMax=11.79` with `claims=3` before any birth, and the user's diagnosis ("there is
+subtle chirality at play... double check everything is the correct handedness") was exactly
+right. The numeric end-to-end check (reconstruct daughter seed poses from the BAKED C#
+quaternions under Unity's exact composition, then test them against the reference lattice)
+convicted the table: **12 of the 16 baked `SeedRotation` quaternions - all of the EG, EsD
+and GEs rows - were never the measurement.** When the emitted table was transcribed into
+`GyroidOctagonData.cs`, only the DE row came from the emit; the other three types were
+constructed by a z-mirror symmetry ansatz (centres z-negated, quaternions (x,w)-negated).
+The gyroid's enantiomer conjugation does NOT act on the LookRotation frames that way, so
+seed rotations were wrong by up to 179° - a daughter seeded through DE mated perfectly,
+one seeded through the other three types grew an internally-perfect lattice that could not
+mate with its parent ("good looking lifeforms not matching up with other good looking
+lifeforms"). The simulation had validated the measured MATRICES; the quaternion bake was
+the one unvalidated link. Resolution, four parts:
+
+1. **The table is re-baked from the verified emit** - all 16 entries measured, none derived.
+   Re-running the end-to-end check against the shipped file: self-centre coherence 0.01u,
+   every seed pose lands on a reference-lattice prism (worst 0.37u / 0.74°), subtrees mate
+   to 0.63u. `Tools/Build/measure_gyroid_octagons.py` now emits the COMPLETE C# block
+   itself (exact per-class sample poses - never averaged rotations, where a det -1
+   reflection can hide - with quaternions and a per-entry self-centre assertion), so
+   regeneration is paste-verbatim and hand-derivation has no step left to slip into.
+2. **A daughter asserts her handoff at birth** (`IncoherentHandoffs` / `MaxSeedHandoffError`
+   in the heartbeat): her seed pose must recompute the centre she adopted to <1u, else a
+   loud error names the table. A future table regression costs one birth, not five playtests.
+3. **Ring membership is a COHERENCE test** (`GyroidOctagonData.RingMemberToleranceRadius`,
+   2.5u), separate from claim identity (`CenterDedupeRadius`, 12u). The playtest recorded an
+   11.79u admission - a foreign-frame danger prism joining a ring, whose pose reproduction
+   then projected the neighbour tables from: a chimera lineage. Poison-band admissions are
+   now rejected and counted (`RingPoisonRejected`).
+4. **The misalignment auditor became a GATE**: a grow decision or daughter seed site with
+   standing mass 3.1-5.5u away (coherent minimum is 6.6u) is DECLINED - reservation and
+   claim released - instead of grown. Lattice frames that were never projected from one
+   another cannot mate (`claims=3` before any birth = three independent founders, the third
+   playtest's centre chaos ball), so where independent frames meet, the colonies now stop
+   at a clean interface instead of interpenetrating. The FOUNDER log names each frame's
+   origin (`lineage=` config, or `NONE/toy` for a Lifeform Matrix planting).
+
+**Sixth pass (2026-08-16, chirality confirmed fixed): reproduction became a POPULATION
+event - the organic-growth model.** With the lattice mating correctly ("everything is
+perfect now"), the per-plant reproduction drive was retired for the octagon colony: every
+mature plant independently planting all its neighbours produced a breadth-first spherical
+wavefront, where the old single-plant gyroid grew organically - wandering prism by prism.
+The colony now wanders the same way at the level of whole flora:
+
+- **Completing growth earns a place in the reproduction pool.** The first grow tick on
+  which a plant reads fully grown (`OctagonMature`), it contributes every unclaimed
+  neighbouring ring centre - with the full seed pose projected from its measured ring - to
+  **`GyroidColonyFrontier`**, the population's per-species book of open octagons (deduped
+  against the claim book and against duplicate offers; several plants border the same
+  window).
+- **One new lifeform for the whole population per cycle.** The cycle rides the cell's
+  fauna-wave cadence (`Cell.CurrentFaunaSpawnPeriod` - the ecosystem's one heartbeat),
+  staggered ~0.35s so a birth never shares a frame with a wave's instantiation burst. Any
+  living plant's grow tick may cross the clock boundary; the first one owns the cycle -
+  main-thread, one at a time, **no race by construction**. Missed cycles under a hold
+  (Frenzy, cap) are skipped, never burst-fired, and skipping burns no frontier entries.
+- **The site is a uniformly random pop across every complete plant's frontier** - the
+  de-sphering. The popped entry's contributor is the lineage donor (domain + variant breed
+  true); if the food web took it since it offered, the ticking plant stands in - "the
+  chosen one can seed off ANY complete plant". Validation per birth is a point lookup
+  against the crystal claim book plus the one seed-site reservation + misalignment gate -
+  a rare, cheap event, not a per-prism occupancy sweep.
+- The per-plant quota machinery (`Flora.TryReproduce`) is untouched for every other
+  species and harmlessly inert here: octagon placement only ever returns a target staged
+  by the population cycle (`TrySpawnFrontierDaughter` → `Flora.TrySpawnOneOffspring`, the
+  new one-offspring entry point that still passes the universal Frenzy + cap gates).
+  `GrowthPerOffspring` / `OffspringPerBirth` / `ReproductionCooldownSeconds` no longer
+  drive this species; the cadence dial is the spawn profile's `BaseFaunaSpawnTime`.
+
+**Seventh pass (2026-08-16): the colony's ceiling is the CELL'S VOLUME LADDER, not its
+population cap.** With growth and mating both correct, the freestyle colonies still stopped
+early, and the instinct — raise `MaxLivePopulation` — would have been **dead tuning**. The
+arithmetic says why. The Blob cell (Menu_Main's freestyle / lava-lamp cell, and the Wanderway
+host) authored `FrenzyEnterVolume 57,600`, while its three gyroid species carry prisms far
+above the nominal 16: **Mass 7×4.5×3.5 = 110 volume (6.9× nominal)**, Time 45.9, Space 20,
+all multiplied again by the level spread (`LeafScalePerLevel 1.15` on each axis = ×1.52 per
+level; ×2.74 averaged over levels 1-5). One settled plant is therefore ~7,900 (Mass) /
+~3,300 (Time) / ~1,400 (Space) volume, so the **seeded floor alone — 4 founders × 3 species —
+is ~50,200 volume, 87% of the Frenzy threshold before a single birth.** The colony froze
+after roughly one wave. Its population caps (60/42/33 = 135 plants) sat ~19× further out and
+were never in play.
+
+The ladder is now authored ×5 (`RestlessEnterVolume 56,000` / exit 40,000,
+`FrenzyEnterVolume 288,000` / exit 240,000), which is ~69 plants and ~1,790 prisms of mixed
+colony — so the caps still sit above it and remain what they were designed to be, a crystal
+(collider) backstop rather than the growth bound. The count backstop moved 3,600 → 5,400
+(exit 3,000 → 4,500) for one reason only: the new volume ceiling filled entirely with the
+THINNEST gyroid species would be ~5,255 prisms, so a 3,600 count would have preempted the
+volume spine in that case; above ~5,400 is no longer the ladder, it is a runaway.
+**Collider impact:** ~69 crystals (one always-on heart collider each) where the cell
+previously reached ~14, and ~1,790 prisms where it reached ~360 — a lava-lamp-only change
+(Blob config; no other biome touched). Fauna aggression also becomes a real ladder here
+rather than a pin: the cell used to sit at Frenzy (Level2 berserk) from its seeded floor
+onward, and now climbs Calm → Restless → Frenzy as the colony actually fills.
+
+**The general rule, and it has now bitten twice** (Rampage's cactus leaves, §27; this):
+**a cell whose prisms are not nominal-sized must author its volume ladder against MEASURED
+prism volume, and the level spread is part of that measurement.** A species whose leaf is 7×
+nominal and whose levels multiply it another 2.7× reaches a count-derived ladder ~19× too
+early, and the symptom is never "the ladder is wrong" — it is "my population stopped growing",
+which sends you to the population dial, which is not connected.
+
+In-editor verification (the human is the gate): **first enable `CSLogChannel.GyroidColony`
+in FrogletTools > Toolbox > Logging** — the heartbeat this procedure reads is opt-in since
+Aug 2026 and is silent by default. Then enter freestyle in Menu_Main (the lava lamp
+IS the test now). Watch: (1) the founder's first danger prism moves the
+crystal to the ring centre; (2) ONE new plant blooms per fauna-wave period, at a random
+edge of the colony - the surface should visibly WANDER, not inflate as a ball; (3) the
+surface stays ONE continuous gyroid with no doubled prisms, a non-growing crystal in each
+completed window; (4) growth continues to roughly 5× the old standing colony before the cell
+reaches Frenzy and freezes (an active force - grazing, a vessel ability - resumes it). Read the heartbeat: `frontier=` is the population's
+open-site pool (grows by ~10-14 per maturation, shrinks by one per birth); `HANDOFF bad=`
+MUST stay 0 (non-zero = the tables are wrong in-engine - regenerate with
+`Tools/Build/measure_gyroid_octagons.py` and paste its emit verbatim); `BLOCKED grown/seed`
+and `poison` count misaligned-frame contacts (expected only where independent founders'
+colonies meet); `ringErrMax` should sit well under 1; `UNRESERVED` non-zero → the spatial
+index was unavailable and growth ran unchecked.
+
+---
+
+## 33. Level is EARNED, and a heart is ONE size per level (Aug 2026)
+
+**Two defects, one root.** §17 spread the element × level matrix into the live world, and the
+LEVEL half of it did that by *rolling* a level at spawn (`LifeformLevelSpread`,
+min/max/rarity-falloff). A creature was therefore born large or small by luck, and its bigger
+heart — the thing worth hunting — was a property of the dice rather than of anything it had
+done. That is the same class of mistake as a scripted fitness function: the world hands out
+the *record* of an achievement that never happened. Separately, and invisibly, a heart's SIZE
+was whatever each species' prefab had authored — and it ranged **0.7 (tadpole) to 4.0 (gyroid)
+world scale, a 5.7× spread nobody chose**, on a number that is read twice as gameplay: by
+`SkimmerAdjustElementLevelByCrystalEffectSO` (the collect reward) and by
+`DomainFaunaBuffSystem` (the live buff every living heart grants its domain).
+
+### The rule now
+
+- **Level is never ROLLED, and an ordinary spawn is level 1.** `LifeformLevelSpread` is
+  deleted; nothing anywhere picks a level at random. `InitialLevel` survives on both config SOs,
+  defaulting to 1 — and it is now a **deliberate mode-authoring surface** rather than a tuning
+  default. Two callers use it above 1, both on purpose:
+  **Wildlife Liberation** escalates creature size per cage (middle room 2, core worms 3, core
+  sharks 5, in 16 configs), because its three rooms have to read as tiers the moment the hunt
+  starts and nothing *earned* can deliver that at t=0; and the **Lifeform Matrix bench**, which
+  spawns a chosen level so a tuner can see the whole band without playing a session out.
+  The distinction that matters is dice vs. intent: a rolled level is a lifeform being handed a
+  life it did not live, while an authored one is a designer stating what the room contains.
+- **A LATTICE species levels but does not grow its leaf.** `Flora.PrismSizeFixedByGrowthRule`
+  (false by default, **true** on `AssembledFlora` — gyroid / SchwarzP / wall) suppresses the
+  leaf half of the level curve. Those species bond at offsets measured in ABSOLUTE local units
+  (`OctagonNeighbor.Center`/`SeedPosition`, `GyroidAssembler.SeparationDistance`, captured once
+  in `GyroidAssembler.Start`), so a leaf that grows mid-life lays prisms the bond table no
+  longer describes — and it cannot be fixed by making the offsets scale-aware, because the
+  plant's EARLIER prisms are still the old size and two prism sizes cannot tile one lattice.
+  This is not a corner case: the gyroid octagon colony is the flora family that reproduces
+  MOST (one birth per fauna-wave period, §32.7), so it would have inflated fastest — reaching
+  a 1.75× linear / 5.35× volume leaf in four births, against a CI-verified geometry table.
+  Such a species still earns levels and still grows a bigger heart.
+- **A plant earns a level by REPRODUCING** (`Flora.NotifyReproduced`, called from both
+  reproduction paths — the per-plant growth quota and the octagon colony's population-scheduled
+  birth). One level per birth EVENT, not per offspring, so a multi-offspring birth is one rung
+  and level 5 is a plant that has seeded the cell four times.
+- **A creature earns a level by FEEDING** — `FaunaConfigurationSO.FeedsPerLevel` feeds, counted
+  in `Fauna.NotifyFed` on a counter separate from the reproduction quota (a feed pays into
+  both; a birth must not reset progress toward a level). Authored at **2× `FeedsPerOffspring`**
+  in every shipped asset, so a level reads as "this one has out-fed its siblings for a long
+  time" rather than as a second reproduction clock. 0 disables it — the worm colony, which
+  funds its growth by adding segments rather than by scaling.
+- **A heart's size is ONE curve, on `ElementalCrystalSet`**: `levelOneWorldScale` (3.5) ×
+  `worldScalePerLevel` (1.05)^(L−1) → **3.5 at level 1, 4.25 at level 5**. Not a function of
+  species, element, prefab, or body size. `FloraConfigurationSO.CrystalScalePerLevel` and
+  `FaunaConfigurationSO.CrystalScalePerLevel` are deleted: a per-species crystal factor is a
+  per-species REWARD, which is not a thing anyone was trying to author.
+
+### The root scale is the gameplay number — per-element size lives BELOW it
+
+Uniform root scale is **not** uniform apparent size. Each elemental crystal prefab carries a
+size correction on the model child below its root, and the four models are very different
+sizes in their own FBX units. Measured (FBX `Vertices` bounds normalized by
+`UnitScaleFactor` — Space's file is unit-1, the other three unit-100):
+
+| | Unity extent @ root 1 | authored child | apparent extent |
+|---|---|---|---|
+| Charge | 2.032 | 1.0 | 2.03 |
+| Mass | 1.960 | **1.0 → 1.38** | 1.96 → 2.70 |
+| Space | 1.565 | 1.34 | 2.10 |
+| Time | 1.377 | 1.42 | 1.96 |
+
+**The finding that matters: those children exist precisely to equalize apparent EXTENT, and at
+1.0/1.0/1.34/1.42 all four already agreed within 7%.** So the code comment claiming "one scale
+convention" was right about the *outcome* and wrong about the *mechanism* — the convention is
+maintained by four per-element corrections, not by the models being alike.
+
+Mass was nonetheless reported from play as reading **"super tiny"** (blue = the embedded-heart
+state, §30) once the level curve normalized every heart to one root scale. Extent does not
+explain that, and the likely cause is **fill, not size**: Mass is four *concentric* shells of
+one mesh animated by `ShepardGraph._ScaleDistance`, so the visible shell spends most of its
+cycle well inside the envelope, where Space is one solid body inflated by a `_spread` of 0.15.
+Its child is set to **1.38 as a first eye-calibration answering the report** — deliberately
+larger in extent than its neighbours to compensate for reading thinner. **This one number is
+expected to need a playtest pass** (see follow-ups). Charge was briefly raised to 1.38 on the
+same inference and **reverted**: nothing was reported against it and the measurement says its
+1.0 was already correct.
+
+The inference that produced the original 1.38 is worth recording as a trap, because it looked
+strong and was confounded: the gyroid authored its **Mass** heart at 4.0 while every other
+flora authored **Space** at 3.0, a 1.33 ratio that almost exactly cancels Space's 1.34 child.
+But those are different plants at very different overall sizes, so the ratio is as easily a
+composition choice as a size correction. **A ratio between two authored numbers is not a
+measurement until you have controlled for what else differs between them.**
+
+**The rule regardless: a per-element size fix goes on that element's crystal PREFAB, on the
+child below the root — never on the root.** The root's world scale is read as gameplay twice
+(`SkimmerAdjustElementLevelByCrystalEffectSO`, `DomainFaunaBuffSystem`), so correcting a look
+on the root moves the reward with it and re-opens the per-element reward spread this section
+removed.
+
+### Where the size is applied — the one gate
+
+`Crystal.SetEmbeddedIn` — the single call every lifeform heart in the game passes through
+(`LifeForm.Initialize`, `Fauna.ProvisionHeart`, `Boid`, `LightFauna`, `WormSegmentFauna`). A
+heart is sized there from its owner's level, and re-sized whenever the level changes
+(`LifeForm.ApplyLevel` / `LevelUp`, `Fauna.SetLevel`). Putting it at the gate rather than in
+each spawn path is what makes "no species keeps a private size" structural instead of a
+convention four subclasses have to remember.
+
+Callers work in **WORLD** scale (`LifeFormCrystal.SetWorldScale` divides out the parent chain).
+That is load-bearing for fauna: the body still grows with level (`BodyScalePerLevel`), and the
+heart is a child of it, so a local-scale write would drag the heart along with the body — which
+is exactly the coupling being removed. The level-up flare (`Fauna.GrowCrystalWithPop`)
+interpolates world scale for the same reason: it holds the heart's size steady *while the body
+grows underneath it*.
+
+### Effect on the numbers
+
+| | heart world scale @ L1 | @ L5 | collect gain @ L1 | @ L5 |
+|---|---|---|---|---|
+| tadpole (was) | 0.70 | 1.45 | 0.07 | 0.15 |
+| clawfish (was) | 1.35 | 2.80 | 0.14 | 0.28 |
+| shark / brittlestar (was) | 2.50 | 5.18 | 0.25 | **0.50 (clipped)** |
+| most flora (was) | 3.00 | 6.21 | 0.30 | **0.50 (clipped)** |
+| gyroid flora (was) | 4.00 | 8.29 | 0.40 | **0.50 (clipped)** |
+| **every lifeform (now)** | **3.50** | **4.25** | **0.35** | **0.425** |
+
+Gain is `min(scale × levelPerUnitScale, maxLevelGainPerCrystal)` at the shipped 0.1 / 0.5.
+Note what the old numbers did at the top of the band: **four of five species clipped at the
+cap by level 5**, so levelling stopped paying exactly where it was supposed to pay most. The
+new band is chosen to sit entirely *under* the cap (4.25 × 0.1 = 0.425 < 0.5), which is the
+constraint to preserve if either dial is retuned: keep
+`levelOneWorldScale × worldScalePerLevel⁴ < maxLevelGainPerCrystal / levelPerUnitScale`.
+
+**Not touched: `levelPerUnitScale` itself.** It is shared with non-lifeform elemental crystals
+(the Wanderway conveyor's pickups, Dog Fight's arena scatter), so retuning it to compensate for
+the lifeform-side change would silently move rewards in two modes that were never part of this.
+
+### Invariants
+
+- **Continuity of existence** — held. A level-up grows over `LevelGrowSeconds` (fauna, with the
+  overshoot flare) or via `Crystal.GrowCrystal` (flora). Nothing pops.
+- **Every lifeform drops one elemental crystal** — untouched. Only the size changed.
+- **Endogenous selection only** — *strengthened*, and this is the point of the change. Level is
+  no longer assigned; it is what survived long enough to breed or to out-feed its siblings.
+  Acquired growth is still not heritable: an offspring inherits its parent's element and starts
+  at level 1, so a lineage cannot bank rungs.
+- **No imposed death** — untouched; nothing was given a clock.
+- **Mass is conserved** — untouched. Flora leaves still grow with level, through the normal
+  spawn channel; existing leaves are never re-scaled in place.
+- **Collider budget: zero delta.** Level is a pure scale curve. Same creature count, same one
+  heart collider per lifeform, same prism counts.
+
+### Consequences to watch (open, needs the editor)
+
+1. **Rampage's volume ladder now describes the MATURE arena, not the opening one.** Its flora
+   ran the spread at `LeafScalePerLevel 1.3 / RarityFalloff 1.6` — a **4.3× expected volume
+   multiplier** that was baked into the play-tested ladder (`Tools/Build/rampage_intensity.py`).
+   A freshly-seeded arena is now that much lighter and climbs as the forest breeds. Booting
+   lighter is the SAFE direction — Frenzy freezes planting, so arriving later means the arena
+   keeps growing rather than freezing — which is why the ladder is deliberately left as
+   play-tested rather than re-derived from a model that can no longer be a constant. Re-measure
+   and retune **Restless** if the arena reads Calm for too long after the whistle.
+2. **A flora species with `GrowthPerOffspring = 0` can never level** — it does not reproduce, so
+   it is a level-1 forest forever. Only **29 of 85** flora configs reproduce today (the gyroid
+   colonies, Hesperides, Rampage, three Wildlife Blitz cells). The eight phyllotactic families
+   in `_SO_Assets/Lifeforms` that had the spread enabled will now read uniformly small unless
+   reproduction is authored for them. That is a deliberate consequence, not an oversight: size
+   variety is supposed to be earned, so a species that cannot breed has not earned any.
+3. **The domain fauna buff gets more uniform, and larger for small species.** A tadpole heart
+   went 0.7 → 3.5 world scale, so a domain fielding tadpoles now draws what a domain fielding
+   brittlestars always did. The pool is summed across living hearts and clamped by the
+   maintained-mechanism ceiling (sustained level 10), which large populations already reached,
+   so the expected change is "the small-species domains stop being quietly under-buffed" rather
+   than a new saturation.
+
+### Verify in-editor (the human is the gate — none of this has been run)
+
+Menu_Main freestyle (Blob cell) is the fastest read:
+
+1. **Uniform size** — kill a tadpole, a shark and a gyroid flora in one session and compare the
+   dropped crystals. They should be indistinguishable in size (3.5 world scale), where the
+   tadpole's used to be visibly a fifth of the gyroid's.
+2. **Everything is born small** — watch a fauna wave spawn in an ORDINARY biome (Blob,
+   Rampage, Wildlife Blitz). No conspicuously large newcomers; every creature hatches at the
+   same size. Wildlife Liberation is the deliberate exception: its middle room and core should
+   still spawn visibly bigger creatures (authored `InitialLevel` 2/3/5), and confirming that
+   still reads as three tiers is its own check.
+3. **Feeding grows a creature** — follow one grazer. After `FeedsPerLevel` consumes (32 for the
+   Blob forager, 40 for the Blob tadpole) it should visibly bloom a step, heart included, with
+   the overshoot flare. Confirm it never pops.
+4. **Breeding grows a plant** — watch a colony. A plant that completes a birth steps up and
+   its HEART grows; the daughter starts at level 1. For a LATTICE species (gyroid, SchwarzP,
+   wall) the leaf prisms must stay exactly the authored size no matter how many times the plant
+   has bred — a colony whose prisms drift apart in size is `PrismSizeFixedByGrowthRule`
+   failing, and the surface will overlap or gap. Non-lattice flora (phyllotactic, branching)
+   SHOULD show a size gradient with the founders largest.
+5. **The reward tracks** — collect a level-1 heart and a levelled one and confirm the element
+   flowers move further on the second.
+6. Re-run `FrogletTools ▸ Validation ▸ Validate Lifeform Crystals` (no prefab changed, but the
+   sizing path did) and `FrogletTools ▸ Ecology ▸ Measure Cell Environment Baselines` for
+   Rampage per consequence 1 above.

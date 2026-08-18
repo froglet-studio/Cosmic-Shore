@@ -42,6 +42,13 @@ namespace CosmicShore.Gameplay
                     break;
                 
                 case PrismImpactor prismImpactee:
+                    // When this projectile sweeps, the swept segment query OWNS prism
+                    // contact and the PhysX trigger is suppressed for it. The trigger is
+                    // not a second chance — it samples one point per physics step, so at
+                    // these muzzle speeds it sees a few percent of the path — and letting
+                    // both run would double-dispatch every prism the sweep already found.
+                    if (Projectile.UsesSweptPrismDetection && !IsSweepDispatch)
+                        break;
                     if (Projectile.DisallowImpactOnPrism(prismImpactee.Prism))
                         break;
                     if(!DoesEffectExist(projectileImpactorDataContainer.ProjectilePrismEffects)) return;

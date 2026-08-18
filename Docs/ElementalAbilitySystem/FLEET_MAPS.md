@@ -31,12 +31,34 @@ executor, replicated unlock bits, no new fundamentals).
 
 | Vessel | Live quantitative entries (map value) |
 |---|---|
-| Sparrow | Space→gun range (2.5) · Time→boost speed (1.5, now on an **indefinite** boost — see §2 Sparrow) · Mass→turret prism stretch (2.5) · Charge→skyburst blast (asset range 100→170) |
+| Sparrow | Space→gun range (9.0) · Time→boost speed (1.5, now on an **indefinite** boost — see §2 Sparrow) · Mass→turret prism stretch (2.5) **+ in-flight round growth (3× at rest → 6× at Mass 10, authored on `FullAutoAction.asset`)** · Charge→skyburst blast (asset range 100→170) |
 | Manta | Charge→overcharge detonation blast (1.75) · Mass→overcharge harvest capacity (1.75) · Space→Yawstery turn rate (1.6) |
-| Dolphin | Charge→charge-boost peak (1.5) · Time→charge fill rate (1.5) |
+| Dolphin | Charge→blast capsule THICKNESS (0.75× at rest → 1.5× at level 10) + the Echo Sight on RT · Mass→crystal-seeding recharge (0.5) · Space→blast reach (2.0) · Time→charge fill rate (1.5) |
 | Rhino | Mass→trail slab max size (1.5) |
 | Serpent | Time→boost duration (1.6) |
 | Squirrel | **All four LIVE (approved + shipped, see §2 Squirrel)**: Charge→skim energy per prism hit (map 2.0, read in `SkimmerBoostPrismEffectSO`) · Mass→trail prism VOLUME (authored `trailVolume` ElementalFloat 1→2.5 on `VesselPrismController`, cube-root per axis) · Space→skimmer reach (authored skimmer `Scale` ElementalFloat 15→30) · Time→boost-ring cooldown (authored `cooldownMultiplierAtFullTime` 0.5 on `SquirrelTubeActionSO`; the generic map Time multiplier stays 1.0 because `VesselTransformer` consumes it for boost speed). The former Time→top speed mapping was REMOVED (prefab `ThrottleScalerMultiplier` disabled) — one parameter per element. |
+
+### Flight model (not an elemental mapping, but it changes what the Time rows *feel* like)
+
+`VesselTransformer` carries two movement models since 2026-08-15, selected per vessel by
+`vectorFlightModel` (default **off**). The scalar model integrates a speed **scalar** along
+`Course`, so during a drift the throttle pushes along the SLIDE — squeezing mid-drift digs you
+deeper into it. The vector model integrates a world-space velocity and applies thrust along the
+**NOSE**. Outside a drift the two are provably the same computation (proof + numeric verification:
+`_Scripts/Controller/Vessel/R_VesselActions/SQUIRREL_DRIFT.md` §3.2), so the flag changes behaviour
+only inside the drift window.
+
+| Vessel | Model | Drift throttle policy |
+|---|---|---|
+| **Squirrel** | vector | **Live** — thrust along the nose; aiming out of a slide and squeezing recovers |
+| **Dolphin** | vector | **Locked** — no acceleration while drifting; with its authored grip 0 the velocity vector freezes outright, so entering a drift at speed costs nothing (`DOLPHIN_ENERGY_ECONOMY.md` §2a) |
+| **Scarab** | vector | Live, own policy (integrator + hard ceiling + Snap Dash) |
+| everyone else | scalar | — (bit-identical to before the flag existed) |
+
+Relevant to this document because three Time rows are speed rows: the Squirrel's Time→top-speed
+mapping is retired (`ThrottleScalerMultiplier` disabled), the Dolphin's Time reaches speed only via
+`CurrentBoostAmount`, and the Scarab's Time IS its throttle ceiling. None of those mappings changed
+here — only the direction thrust is applied in.
 
 ## 2. Level-5 upgrade proposals (NOT implemented — mark up)
 
@@ -119,9 +141,46 @@ The proposal table below was superseded by Garrett's design; the shipped map is
 `Assets/Resources/ElementalAbilityMaps/Dolphin.asset`. **The asset is the record — do not
 re-litigate from the superseded proposal.**
 
-Mechanics detail (energy economy, drift boost, the four gauges, the skimmer traps, and the
-in-editor verification table) lives beside the code:
-`_Scripts/Controller/Vessel/R_VesselActions/DOLPHIN_ENERGY_ECONOMY.md`.
+Mechanics detail lives beside the code, in two files:
+`_Scripts/Controller/Vessel/R_VesselActions/DOLPHIN_ENERGY_ECONOMY.md` (energy economy, drift
+boost, the four gauges, the skimmer traps) and `DOLPHIN_CRYSTAL_SEEDING.md` (the passive seeding
+and the Echo Sight, added 2026-08-14 when the right trigger was freed).
+
+**2026-08-14 — the two abilities swapped which one carries an input.** Charge's crystal seeding
+became PASSIVE (a cooldown loop that seeds team crystals into the cell's cytoplasm), which freed
+the right trigger for the **Echo Sight**: hold it and every prism inside the blast's current
+destruction volume lights up (a zoomed first-person view shipped alongside it and was cut the same
+day — the highlight alone carries the ability and it leaves the speed tunnel untouched).
+Rationale, placement rules and the FOV-vs-speed-tunnel resolution: `DOLPHIN_CRYSTAL_SEEDING.md`.
+
+**2026-08-17 — the map was re-cut so each element owns one DIMENSION of the one weapon.** The
+Dolphin has essentially a single offensive act (bank energy by skimming, fly into a crystal,
+release a cone), so the elements were re-assigned to the orthogonal axes of that act rather than
+to four loosely-related mechanics:
+
+- **Charge took the Echo Sight AND the blast's THICKNESS** — the capsule's diameter across the
+  beam, 0.75× the authored core at the resting level rising to 1.5× at level 10
+  (`_coreMultiplierAtRestCharge` / `_coreMultiplierAtFullCharge`). Note this is the fleet's first
+  use of `ElementalScaling.MultiplierFromRest`: the pair does NOT anchor at 1 at rest, so the
+  authored core is what a MID-charge Dolphin fires and a fresh pilot's beam is deliberately
+  thinner. Sight and thickness share the slot because the profile you are widening is the profile
+  the sight draws. Its L5 became **Pilot Echo** (vessels inside the volume light up in their own
+  domain colour), replacing Twin Seed.
+- **Mass took crystal seeding** from Charge — the recharge multiplier moved with it
+  (`cooldownMultiplierAtFullMass`, `[FormerlySerializedAs]` on the old Charge name). Its L5 is
+  **Claimed Seed**: below it the seed is a free-for-all OMNI crystal wearing the lime CTA (your
+  own ammunition, standing in open space, for whoever reaches it first); at Mass 5 it lands
+  TEAM-locked. **Twin Seed is retired** — the yield is one crystal per cycle at every level.
+- **Mass gave up the trail entirely.** `trailVolume` is disabled and `massUpgradeShieldsTrail` is
+  off on `Dolphin.prefab`; the Dolphin no longer grows its drift prisms or shields them. (The
+  machinery stays — it is the Squirrel's Heavy Trail — it is simply no longer wired here.)
+- **Space narrowed to REACH only.** It still scales the blast self-similarly through
+  `_heightMultiplierAtFullSpace`; what changed is that Charge now moves the capsule diameter on
+  top of that, so the three elements own three orthogonal dimensions and none can steal what
+  another bought: **energy → gape · Charge → thickness · Space → reach**.
+- **Time is unchanged** (charge fill rate, Live Current).
+
+The HUD row was re-cut to match — see the table below and `DOLPHIN_CRYSTAL_SEEDING.md`.
 
 The Dolphin's spine is an ENERGY economy: skimming banks energy, hitting a prism halves it,
 and hitting a crystal spends it ALL at once to release a blast. Energy sets the blast's GAPE,
@@ -136,9 +195,9 @@ exact jaw-angle curve: `DOLPHIN_ENERGY_ECONOMY.md` §1 and §3.
 
 | Element | Quantitative (LIVE) | L5 upgrade (LIVE) |
 |---|---|---|
-| Charge | team-crystal recharge ×0.5 at level 10 (`DeployTeamCrystalActionSO.cooldownMultiplierAtFullCharge`, floored by `minCooldown`) | **Twin Seed** — carry TWO team crystals instead of one (`upgradedCharges`), so two can be planted back to back |
-| Mass | drift prism VOLUME (`trailVolume` ElementalFloat 1→2.5 on `VesselPrismController`, cube-root per axis) | **Hard Wake** — drift prisms arrive shielded, gated on `IsDrifting` (`massUpgradeShieldsTrail`, the Squirrel's Heavy Trail machinery) |
-| Space | crystal-impact blast SIZE ×2 at level 10 (`VesselExplosionByCrystalEffectSO._heightMultiplierAtFullSpace`). Scales the blast **self-similarly** — reach, capsule length AND capsule diameter together — because the angles ARE those over height, and energy owns the gape | **Clean Blast** — the blast spares the pilot's own domain (`_spaceUpgradeSparesAllies` → `InitializeStruct.AffectSelfOverride`). Below the unlock the cone is indiscriminate, which is what makes sparing allies worth earning |
+| Charge | crystal-blast capsule **THICKNESS** — the width across the beam, `0.75×` the authored `_coreExplosionScale` at the resting level rising to `1.5×` at level 10 (`VesselExplosionByCrystalEffectSO._coreMultiplierAtRestCharge/_coreMultiplierAtFullCharge`, floored by `_minCoreMultiplier`). Total extent across the gape is set by ENERGY, so Charge does not enlarge the blast — it redistributes that extent, trading a long thin beam for a fat round one. Carries the **Echo Sight** on the right trigger (`EchoSightActionSO`) | **Pilot Echo** — the sight lights up VESSELS caught in the same volume, each brightened in its own domain's colours (`EchoSightVesselHighlighter` drives `_ColorMultiplier` on `VesselGraph`; `BlastVolume.Contains` is the CPU transcription of the same predicate the sweep job and the prism shader run) |
+| Mass | crystal-seeding recharge ×0.5 at level 10 (`DeployTeamCrystalActionSO.cooldownMultiplierAtFullMass`, floored by `minCooldown`). The ability is **PASSIVE** — no input; it seeds into the cell's cytoplasm on a loop, so this multiplier sets the seeding tempo and therefore the blast's tempo | **Claimed Seed** — the seed lands TEAM-locked instead of as a free-for-all omni crystal (`upgradedCrystalPrefab` = `TeamCrystal.prefab`, plus the `ownDomain` stamp that IS `Crystal.CanBeCollected`'s gate). Below it your ammunition is anyone's |
+| Space | crystal-impact blast **REACH** ×2 at level 10 (`VesselExplosionByCrystalEffectSO._heightMultiplierAtFullSpace`). Scales the blast self-similarly (reach and base diameter together) because the half-angle IS baseRadius/height; Charge's thickness multiplier composes on top of it and moves only the capsule diameter | **Clean Blast** — the blast spares the pilot's own domain (`_spaceUpgradeSparesAllies` → `InitializeStruct.AffectSelfOverride`). Below the unlock the cone is indiscriminate, which is what makes sparing allies worth earning |
 | Time | boost charge RATE while drifting ×1.5 at level 10 (`ChargeBoostActionSO.chargeRateMultiplierAtFullTime`) | **Live Current** — skimming a DANGER prism grants 3× energy (`SkimmerChangeResourceByPrismEffectSO._dangerBonusElement/_dangerBonusMultiplier`; the Squirrel's Live Wire shape — the risk was always there, the reward is now earned) |
 
 All four map `MultiplierAtFullLevel` are pinned to **1** — every scaling above is authored on its
@@ -158,7 +217,7 @@ Time→charge fill rate / "Instant Draw".
 | Element | Quantitative (live) | Proposed L5 upgrade |
 |---|---|---|
 | Charge | *(open)* → propose: forcefield shrink rate (the authored-but-dead `GrowSkimmerAction.shrinkRate` Charge mapping, 6→2) | **Unyielding Field** — forcefield no longer shrinks on prism hits, only on crystal timeout |
-| Mass | trail slab max size | **Armored Slabs** — grown slabs arrive shielded (the "arrive shielded" shape; note it lives on the Sparrow's **SPACE** 5, not Mass, since 2026-08) |
+| Mass | trail slab max size | **Armored Slabs** — grown slabs arrive shielded (the "arrive shielded" shape; on the Sparrow this lives on **MASS** 5 — it spent 2026-08 rounds 4–6 on Space 5 and was returned by sign-off on 2026-08-13) |
 | Space | *(open)* → propose: forcefield max size | **Breaker** — ramming destroys shielded prisms in one hit (devastate on ram) |
 | Time | *(open)* → propose: slab growth rate | **Fast Pour** — slab growth continues while boosting |
 
@@ -187,6 +246,34 @@ HUD: the shared upgrade-highlight system (`VesselHUDView.abilityIcons` + base
 `VesselHUDController` subscribing `OnUpgradeStateChanged`) is wired on the Squirrel's four
 icons (boost gauge / drift / impact / tube); other vessels adopt by filling their view's
 `abilityIcons` bindings — no code.
+
+### Scarab — the Rocket League vessel (throttle + drift + dash + ball/switch economy) — AUTHORED (2026-08-15)
+
+`VesselClassType.Scarab = 12` exists and `Assets/Resources/ElementalAbilityMaps/Scarab.asset` is
+**authored** — this table is the shipped map, not a proposal. Full design — controls, the
+player-generated multi-ball model, the switch, the crystal→ball economy, the four-lane
+"quadrality" rationale, ecology retune and registration checklist — lives in
+`_Scripts/Controller/Vessel/R_VesselActions/SCARAB.md`. Rows come from Garrett's markup of
+2026-08-15. Map multipliers pinned to 1 wherever an authored field carries the scaling (the
+Dolphin no-double-dip pattern); **Space is the exception** — there is no authored ball scale, so
+the map's own `MultiplierAtFullLevel` is the carrier.
+
+| Element | Quantitative | L5 upgrade |
+|---|---|---|
+| Charge | cavitation-blast **cooldown** (`ScarabCavitationBlast.cooldownSeconds 2.5` × `cooldownMultiplierAtFullCharge 0.5` at L10 — the authored-cooldown idiom) | **Cavitation Shear** — the blast destroys SHIELDED prisms outright instead of only shedding shields (`AOEExplosion.InitializeStruct.DevastatingOverride`, per-use snapshot) |
+| Mass | switch structure size — ring aperture + interior fill span (`switchScale` ElementalFloat 1→2.5) | **Armored Switch** — the switch is built from SHIELDED prisms, snapshotted at placement, so an opposing ball caroms off and sheds one shield per prism |
+| Space | forged **ball size**, ×1 → **×4 at L10** (`MultiplierAtFullLevel: 4` on the map itself; stamped once at forge time) | *(open — the notes name no Space upgrade; do not invent one)* |
+| Time | top speed of the throttle ramp (`ThrottleScalerMultiplier` ElementalFloat 1→1.5 — the existing dormant `VesselTransformer` field, enabled) | **Snap Dash** — double-tap the THROTTLE (RT) for a burst gap closer (detected off the RT `RightStickAction` edges, no new input plumbing) |
+
+**The right-stick dash is base kit and has no cooldown** — it is not a map row. Only the
+cavitation blast riding it is paced, which is the Charge row. Snap Dash is the *throttle's*
+upgrade, not the dash's; do not conflate them.
+
+Superseded passes (kept for the record): the vessel was "Mantis", Astro-League-only, with a single
+mode ball launched by a cavitation cone and a braking wall on the A button — Surgical Strike /
+Ablative Wake / Deep Wall / Hair Trigger. A second pass proposed Charge = ball-generation energy
+with **Split Shot**, Mass with **Second Pass**, and Space = juke reach. **The 2026-08-15 markup is
+the record; do not re-litigate from a superseded pass.**
 
 ## 3. Implementation notes for approved rows
 

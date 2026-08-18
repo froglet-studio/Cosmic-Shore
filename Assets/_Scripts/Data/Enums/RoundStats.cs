@@ -791,8 +791,27 @@ namespace CosmicShore.Data
         // fires the corresponding game event.
         //–––––––––––––––––––––––––––––––––––––––––
 
-        public override void OnNetworkSpawn()
+        /// <summary>
+        /// Re-derive every local mirror from the replicated NetworkVariables - the SERVER's
+        /// authoritative values.
+        ///
+        /// This exists because a client's local mirror can DIVERGE and then never heal. The stat
+        /// setters always write the local field but only write the NetworkVariable on the server
+        /// (see any property above), so anything that assigns a stat on a client - a mode's
+        /// end-of-game snapshot ClientRpc, a replay reset, StatsManager before its OnNetworkSpawn
+        /// turns recording off - moves the mirror without moving the network value. A later server
+        /// write of the SAME value then raises no OnValueChanged, so the stale mirror survives
+        /// into the next game. That is why a match could start with every NON-HOST player showing
+        /// the previous game's score while the host, whose setters write both halves, read zero.
+        ///
+        /// Called at network spawn and again at every scene entry
+        /// (<see cref="Player.InitializeForMultiplayerMode"/>), which runs once per player per
+        /// scene on every peer.
+        /// </summary>
+        public void SyncLocalMirrorsFromNetwork()
         {
+            if (!IsSpawned) return;
+
             // --- Initial sync from current NetworkVariable state ---
             _nameLocal   = n_Name.Value.ToString();
             _scoreLocal  = n_Score.Value;
@@ -836,6 +855,13 @@ namespace CosmicShore.Data
             _button1AbilityActiveTimeLocal           = n_Button1AbilityActiveTime.Value;
             _button2AbilityActiveTimeLocal           = n_Button2AbilityActiveTime.Value;
             _button3AbilityActiveTimeLocal           = n_Button3AbilityActiveTime.Value;
+
+        }
+
+        public override void OnNetworkSpawn()
+        {
+            // --- Initial sync from current NetworkVariable state ---
+            SyncLocalMirrorsFromNetwork();
 
             // --- Replication callbacks: sync local field, then fire event ---
 

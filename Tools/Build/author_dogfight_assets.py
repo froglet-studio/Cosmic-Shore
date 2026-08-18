@@ -39,9 +39,11 @@ def guid(name: str) -> str:
 
 
 INTENSITIES = [1, 2, 3, 4]
-# The intensities the Boneyard itself builds. Intensity 4 flies Atlantis instead, so it gets no
-# Boneyard prefab variant - an unreferenced one would just be clutter that reads as live content.
-BONEYARD_INTENSITIES = [1, 2, 3]
+# Every intensity flies the Boneyard. Intensity 4 briefly flew Scurry's SpawnableAtlantis
+# instead; the playtest read after that was that the Boneyard itself is right at every level and
+# what was wrong was the SPREAD between levels, so 4 came back to the Boneyard and the ladder in
+# boneyard_budget.INTENSITIES was widened from a 1.9x span to 3.8x.
+BONEYARD_INTENSITIES = INTENSITIES
 
 # ── New script GUIDs (the .cs.meta files this script also writes) ─────────────
 # Only scripts an ASSET points at need a deterministic GUID authored here; the rest of the
@@ -102,20 +104,7 @@ EXISTING = {
     "QuadFishPrefab":     "19615ed0c903b1041973d70593d4b0a3",
     # the cell's CellRuntimeDataSO - the spawn ring resolves its Cell through this
     "RuntimeCellData":    "8d4e8398eedc76c4dadb8604f89b9e1b",
-    # Scurry's intensity-4 world, reused verbatim as Dog Fight's intensity 4 (see below)
-    "SpawnableAtlantis":  "022b1ce17e20488aa81fb9badb462563",
 }
-
-# Dog Fight's intensity 4 IS Scurry's intensity 4 - the same SpawnableAtlantis prefab the
-# Crystal Capture scene spawns from its SegmentSpawner's spawnableByIntensity[3]. Requested
-# directly after playtest ("make dog fight intensity 4 have the same environment as scurry 4"),
-# so intensities 1-3 fly the Boneyard and 4 flies Atlantis.
-#
-# Atlantis is REFERENCED, never modified: it is a shipped Scurry environment and editing it
-# would change that mode. Its authored spawnClearRadius and Crystal Capture pads come along
-# harmlessly - they clear a few 14-unit spheres nothing else cares about.
-ATLANTIS_FILEID = 4711172930391493203        # the SpawnableAtlantis component inside the prefab
-ATLANTIS_INTENSITY = 4
 
 QUADFISH_FILEID = 4652232322436628206      # the LightFauna component inside the prefab
 # Per-element sibling configs, reused verbatim (read-only species identity assets) so the
@@ -131,7 +120,22 @@ PREVIEW_FILEID = 241334157148977051
 # The point target - the race metric. The 25%/50% milestone rungs are fractions of this (so 30
 # and 60), and moving it moves the whole progress ladder. Kept in sync with
 # EndConditionOverridesSO.DefaultDogFightPointTarget.
-DOGFIGHT_POINT_TARGET = 120
+DOGFIGHT_POINT_TARGET = 90
+
+# The comeback strength, and it is a FUNCTION OF THE TARGET - `bonusLevels = deficit x rate`, so
+# a rate is only meaningful next to the scale of the deficits the mode produces. This one shipped
+# at 0.004, which was scaled for the original 500-point target and never rescaled when the target
+# became 120: a whole rocket behind (50 points) bought 0.2 of a level, i.e. nothing.
+#
+# 0.12 puts it back on the same footing as the other party games (Rampage: a quarter-of-target
+# deficit is worth ~5 levels): one rocket behind = 6 levels, a shutout saturates at the level-10
+# sustained ceiling. This is what makes the trailing side's MASS - which stretches the Sparrow's
+# fired prisms - visibly larger, per the playtest ask.
+#
+# All four elements rise together. That is the platform law (CLAUDE.md / ElementalComebackSystem:
+# "ALL FOUR elements rise EQUALLY... equal-elements is the law"), so the dial below is the whole
+# tuning surface; a Mass-only weighting would be a fundamentals change, not a mode setting.
+COMEBACK_RATE = 0.12
 
 # Players spawn on a shell OUTSIDE the wreck field (radius 520) and inside the membrane (1200),
 # so every pilot's opening move is to fly in. The cell has no nucleus, so the ring has nothing
@@ -142,9 +146,26 @@ SPAWN_RING_RADIUS = 700
 # anywhere in it; the membrane visual is 1200, so sensing that far costs no visual change.
 SENSE_RADIUS = 1200
 
-# The scene's NetworkCrystalManager spawns the OMNI crystal, and Dog Fight wants none of them -
-# see the scene patch. Its ELEMENTAL pickups are scattered by DogFightController instead.
-OMNI_CRYSTAL_COUNT = 0
+# The scene's NetworkCrystalManager spawns the OMNI crystal. Dog Fight runs it EXACTLY as every
+# other mode does (Ribcage, freestyle: crystalCountMode 0, one crystal, spawnOnClientReady) - it
+# is a platform fundamental, not mode furniture, and a mode that switches it off is a mode where
+# a whole crystal economy silently does nothing.
+#
+# It was briefly zeroed here after a playtest read the big faceted sphere as a bouncable
+# objective; that was reverted on request. What was actually wrong is the SPAWN RADIUS, fixed
+# properly below rather than by deleting the crystal.
+# FOUR of them, Scurry-style. One crystal in a 520-unit arena is a needle nobody detours for;
+# four means there is usually one worth breaking off toward, which is the point of having them at
+# all in a mode where crystals score nothing. Kept on FixedCount rather than Scurry's
+# PlayerCountPlusExtra (which would put NINE in a full lobby) - the arena wants a handful, not a
+# field. Every one of them still needs OMNI_SPAWN_RADIUS below to not stack on the origin.
+OMNI_CRYSTAL_COUNT = 4
+
+# The ball the omni crystal is drawn from, in place of the nucleus radius this cell hasn't got.
+# Inside the wreck field (r=520) so it is genuinely hidden among the hulks rather than floating
+# in the open, and comfortably inside the spawn shell (700) so it is never behind a player's back
+# at the countdown.
+OMNI_SPAWN_RADIUS = 420
 
 # The scavenger population. DELIBERATELY LIGHT - see DOGFIGHT.md: this arena already carries
 # 12.7k-24k prisms of cover and four Sparrows' worth of projectile and AOE traffic, and every
@@ -310,6 +331,58 @@ if bullet_ref not in fullauto:
     assert m, "projectileShipEffects block not found on the full-auto container"
     fullauto = fullauto.replace(m.group(0), m.group(0) + bullet_ref, 1)
 emit(FULLAUTO_PATH, fullauto)
+
+# TURRET-STANCE PRISM SHOTS: the Sparrow's second fire mode, and it scores the same 1 point a
+# bullet does. It is the same weapon class - a single direct projectile hit - just a different
+# round, and its container already carries the SAME two victim effects the full-auto one does
+# (spin + skimmer shrink), so the scoring effect slots in identically.
+#
+# It matters more here than the symmetry suggests: MASS stretches the fired prisms
+# (SPARROW_TURRET_STANCE.md), so this is the fire mode the comeback buff visibly feeds - a
+# trailing pilot's rounds get bigger, and now those bigger rounds are also worth something.
+PRISMSHOT_PATH = ("Assets/_SO_Assets/Effects/Effect Containers/Projectile Containers/"
+                  "SparrowPrismProjectileImpactContainer.asset")
+prismshot = read(PRISMSHOT_PATH)
+if bullet_ref not in prismshot:
+    m = re.search(r"^  projectileShipEffects:\n((?:  - \{[^}]*\}\n)*)", prismshot, re.M)
+    assert m, "projectileShipEffects block not found on the prism-projectile container"
+    prismshot = prismshot.replace(m.group(0), m.group(0) + bullet_ref, 1)
+emit(PRISMSHOT_PATH, prismshot)
+
+# ── 4b. THE TURRET'S MUZZLES — the reason turret shots did nothing ──────────
+#
+# The Sparrow carries TWO pairs of gun transforms, one per fire mode, and they had drifted 13.8
+# units apart:
+#
+#     FullAutoActionExecutor/Guns       (bullets)        LeftGun/RightGun at z =  1.30
+#     FullAutoBlockActionExecutor/Guns  (turret prisms)  LeftGun/RightGun at z = 15.13
+#
+# A shot is BORN at its muzzle, so every turret round spawned 15 units ahead of the nose and the
+# first 15 units of its path simply did not exist. In a wreck-field dogfight — a mode built
+# specifically for close passes — the enemy is routinely inside that gap, so the round appeared
+# already past them and hit nothing. No damage, and therefore no points, no matter how correctly
+# the scoring was wired. (Playtest: "shooting with the turrets does not do any damage. Maybe
+# because the point of origin of bullets for the sparrow is too far away from the model" —
+# exactly right.)
+#
+# Both pairs are bare Transforms (no renderer, no VFX, no children), so this is purely where the
+# shot starts. They are moved onto the bullets' position, which is also the documented rule for
+# this weapon: SPARROW_TURRET_STANCE.md — "a turret shot IS a bullet — you just see a prism
+# flying". Range is unaffected: the executor computes `anchor = muzzle + forward * range`, so
+# moving the muzzle back moves the anchor back with it and the path length is identical.
+SPARROW_PREFAB = "Assets/_Prefabs/Spacevessels/Sparrow.prefab"
+sparrow = read(SPARROW_PREFAB)
+TURRET_MUZZLES = (
+    ("  m_LocalPosition: {x: 3, y: 0.4, z: 15.13}\n",
+     "  m_LocalPosition: {x: 3.2, y: 0.4, z: 1.3}\n"),
+    ("  m_LocalPosition: {x: -3, y: 0.4, z: 15.13}\n",
+     "  m_LocalPosition: {x: -3.2, y: 0.4, z: 1.3}\n"),
+)
+for old_pos, new_pos in TURRET_MUZZLES:
+    if old_pos in sparrow:
+        assert sparrow.count(old_pos) == 1, f"turret muzzle position {old_pos!r} is not unique"
+        sparrow = sparrow.replace(old_pos, new_pos, 1)
+emit(SPARROW_PREFAB, sparrow)
 
 # MISSILES, direct strike: same, on the skyburst container.
 SKYBURST_PATH = ("Assets/_SO_Assets/Effects/Effect Containers/Projectile Containers/"
@@ -482,7 +555,7 @@ emit("Assets/_SO_Assets/Games/ArcadeGameDogFight.asset",
   CallToActionTargetType: 404
   ViewUserAction: 0
   PlayUserAction: 0
-  ComebackRatePerScoreDeficit: 0.004
+  ComebackRatePerScoreDeficit: {COMEBACK_RATE}
 """)
 emit("Assets/_SO_Assets/Games/ArcadeGameDogFight.asset.meta",
      asset_meta(G_ASSET["ArcadeGameDogFight"]))
@@ -513,6 +586,7 @@ for i in INTENSITIES:
   PopulationSize: {seed_pop}
   SpawnProbability: 1
   FeedsPerOffspring: 20
+  FeedsPerLevel: 40
   OffspringPerBirth: 1
   ReproductionCooldownSeconds: 12
   MaxLivePopulation: {cap_pop}
@@ -523,18 +597,12 @@ for i in INTENSITIES:
   Element: 0
   InitialLevel: 1
   BodyScalePerLevel: 1.15
-  CrystalScalePerLevel: 1.2
   LevelGrowSeconds: 1
   Variant:
     Enabled: 0
   SpreadElements: 1
   ElementPalette:
-{palette}  Levels:
-    Enabled: 0
-    MinLevel: 1
-    MaxLevel: 1
-    RarityFalloff: 2
-""")
+{palette}""")
     emit(f"{FOLDER}/Boneyard Scavenger {i}.asset.meta",
          asset_meta(G_ASSET[f"BoneyardScavenger{i}"]))
 
@@ -563,38 +631,23 @@ for i in INTENSITIES:
     emit(f"{FOLDER}/Boneyard Spawn Profile {i}.asset.meta",
          asset_meta(G_ASSET[f"BoneyardSpawnProfile{i}"]))
 
-    is_atlantis = i == ATLANTIS_INTENSITY
     density, hulks, spires, frames, overpasses = budget.INTENSITIES[i - 1]
 
-    if is_atlantis:
-        # Scurry's own intensity-4 world, referenced verbatim.
-        env_ref = f"{{fileID: {ATLANTIS_FILEID}, guid: {EXISTING['SpawnableAtlantis']}, type: 3}}"
-        description = (
-            f"The Dog Fight arena at intensity {i} - SCURRY'S INTENSITY-4 WORLD (SpawnableAtlantis,\n"
-            "    ~69,000 prisms), referenced verbatim rather than copied so Scurry and Dog Fight can\n"
-            "    never drift. Intensities 1-3 fly the Boneyard; this one flies Atlantis.\n"
-            "    PhaseThresholds are deliberately ABSENT here, exactly as on Scurry Cell Config - a\n"
-            "    cell running Atlantis uses CellPhaseThresholds.Default, and matching Scurry means\n"
-            "    matching its ecology behaviour too. Regenerate with\n"
-            "    Tools/Build/author_dogfight_assets.py rather than hand-editing.")
-        # No PhaseThresholds block: omitting the key leaves CellPhaseThresholds.Default, which is
-        # what Scurry Cell Config does. Authoring the Boneyard's ladder here would size the fauna
-        # phase transitions against 24k prisms in a world that carries ~69k.
-        thresholds = ""
-    else:
-        env_ref = (f"{{fileID: 5260000000000503, "
-                   f"guid: {G_ASSET[f'SpawnableBoneyard{i}.prefab']}, type: 3}}")
-        row = budget.all_intensities()[i - 1]
-        description = (
-            f"The Dog Fight arena at intensity {i} - {row['total']} prisms of wreckage\n"
-            f"    inside r={budget.ARENA_RADIUS:.0f}: {hulks} hollow hulks to hide in, {spires} leaning spires,\n"
-            f"    {frames} girder cages, {overpasses} broken overpasses, and {row['danger']} danger traps on the torn\n"
-            "    ends and around the reactor, scattered into debris fields with an open centre.\n"
-            "    Cover, never an objective - shooting it scores nothing. NO NUCLEUS by design.\n"
-            "    PhaseThresholds ride THIS intensity's own baseline; regenerate with\n"
-            "    Tools/Build/author_dogfight_assets.py after any change rather than hand-editing.")
-        th = budget.phase_thresholds(row["total"], row["volume"])
-        thresholds = f"""  PhaseThresholds:
+    # Every intensity is the SAME arena at a different density - one recipe, four settings of its
+    # dials. Nothing about the silhouette, the radius or the family mix changes with intensity;
+    # only how much wreckage there is to hide behind.
+    env_ref = (f"{{fileID: 5260000000000503, "
+               f"guid: {G_ASSET[f'SpawnableBoneyard{i}.prefab']}, type: 3}}")
+    description = (
+        f"The Dog Fight arena at intensity {i} - {row['total']} prisms of wreckage\n"
+        f"    inside r={budget.ARENA_RADIUS:.0f}: {hulks} hollow hulks to hide in, {spires} leaning spires,\n"
+        f"    {frames} girder cages, {overpasses} broken overpasses, and {row['danger']} danger traps on the torn\n"
+        "    ends and around the reactor, scattered into debris fields with an open centre.\n"
+        "    Cover, never an objective - shooting it scores nothing. NO NUCLEUS by design.\n"
+        "    PhaseThresholds ride THIS intensity's own baseline; regenerate with\n"
+        "    Tools/Build/author_dogfight_assets.py after any change rather than hand-editing.")
+    th = budget.phase_thresholds(row["total"], row["volume"])
+    thresholds = f"""  PhaseThresholds:
     RestlessEnter: {th['RestlessEnter']}
     RestlessExit: {th['RestlessExit']}
     FrenzyEnter: {th['FrenzyEnter']}
@@ -607,7 +660,7 @@ for i in INTENSITIES:
 
     emit(f"{FOLDER}/Boneyard Cell Config {i}.asset",
          HEADER_FOR(EXISTING["CellConfigDataSO"], f"Boneyard Cell Config {i}") +
-         f"""  CellName: {'Atlantis' if is_atlantis else 'Boneyard'}
+         f"""  CellName: Boneyard
   Description: {description}
   Icon: {{fileID: 21300000, guid: {EXISTING['CellIcon']}, type: 3}}
   Difficulty: {i}
@@ -626,6 +679,14 @@ for i in INTENSITIES:
 
 
 # ── 9. Scene: clone MinigameRampage, swap the mode-specific wiring ───────────
+#
+# ONE-SHOT, AND THE DONOR HAS MOVED ON. This script cloned the Rampage scene once; Dog Fight's
+# scene exists and is committed, so its output is landed and nothing here needs to run again.
+# It can no longer run: the Rampage rework deleted RampageController.arenaCell /
+# aiRetargetSeconds and replaced the donor's single Cell config with four per-intensity ones,
+# so the asserts below fire on a donor that is simply a different scene now. That is the
+# expected end state of a migration generator, not a break to repair - if Dog Fight ever needs
+# re-authoring, re-point it at a current donor rather than trying to satisfy these asserts.
 scene = read("Assets/_Scenes/Multiplayer Scenes/MinigameRampage.unity")
 
 # 9a. turn monitor script swap (field set is identical - base TurnMonitor fields only)
@@ -651,6 +712,8 @@ NEW_FIELDS = f"""  rule: {{fileID: 11400000, guid: {G_ASSET['DogFightScoringRule
   aiRetargetSeconds: 1.5
   aiLeadSeconds: 0.6
   aiBreakOffDistance: 120
+  aiExtendDistanceMultiplier: 3
+  aiMaxExtendSeconds: 4
 """
 assert OLD_FIELDS in scene, "controller field block not found in donor scene"
 scene = scene.replace(OLD_FIELDS, NEW_FIELDS)
@@ -698,21 +761,24 @@ NEW_SPAWN = f"""  playerSpawnPoints:
 assert OLD_SPAWN in scene, "donor spawn-point block not found"
 scene = scene.replace(OLD_SPAWN, NEW_SPAWN)
 
-# 9e. NO OMNI CRYSTAL. The donor spawns one Crystal.prefab - the big faceted sphere - and it
-# landed on the arena's exact centre for a precise reason: CrystalManager.GetAnchorlessSpawnRadius
-# defaults to the cell's NUCLEUS radius, and this cell has no nucleus, so it fell through to the
-# crystal's own SphereRadius, a few units. A large omni crystal parked in the middle of a
-# gunnery arena reads as THE objective and is not one.
+# 9e. THE OMNI CRYSTAL SPAWNS NORMALLY - it just stops spawning at the origin.
 #
-# Dog Fight still wants pickups, just not that one: DogFightController scatters ELEMENTAL
-# crystals instead (deterministic placement, all four elements, and it covers intensity 4's
-# Atlantis too, which is Scurry's environment and not ours to modify).
+# The donor's settings are already the platform-normal ones (crystalCountMode 0, one crystal,
+# spawnOnClientReady), identical to Ribcage, and they are kept verbatim. What the donor does NOT
+# author is `noNucleusSpawnRadius`, and in THIS cell that is the whole problem:
+# CrystalManager.GetAnchorlessSpawnRadius resolves the cell's NUCLEUS radius FIRST (the crystal
+# volume and the nucleus are coupled platform-wide and no scene may override that - see
+# Docs/ECOSYSTEM.md 27.6), the Boneyard has no nucleus by design, so it fell through to the
+# crystal's own SphereRadius - a few units - and every spawn landed on the arena's exact centre.
+# `noNucleusSpawnRadius` is the FALLBACK that exists for exactly this case: a cell with no core. A large faceted sphere pinned to the middle
+# of a gunnery arena reads as THE objective, which is how it got mistaken for a ball.
 #
-# Zeroing the count rather than deleting the manager keeps its replay/reset bookkeeping wired.
-# The one consumer of a missing crystal, Cell.GetCrystalTransform, is called only by a Rhino
-# skimmer effect that cannot run in a Sparrow-only mode.
+# Authoring the radius is the fix the field exists for: the crystal now draws from a ball that
+# covers the wreck field, so it hides among the hulks and moves somewhere new on every respawn -
+# a thing you go and find, not a monument in the middle of the map.
 OLD_CRYSTALS = "  crystalCountMode: 0\n  fixedCrystalCount: 1\n"
-NEW_CRYSTALS = f"  crystalCountMode: 0\n  fixedCrystalCount: {OMNI_CRYSTAL_COUNT}\n"
+NEW_CRYSTALS = (f"  noNucleusSpawnRadius: {OMNI_SPAWN_RADIUS}\n"
+                f"  crystalCountMode: 0\n  fixedCrystalCount: {OMNI_CRYSTAL_COUNT}\n")
 assert OLD_CRYSTALS in scene, "donor crystal-count block not found"
 scene = scene.replace(OLD_CRYSTALS, NEW_CRYSTALS, 1)
 
@@ -769,7 +835,13 @@ END_PATH = "Assets/Resources/EndConditionOverrides.asset"
 endcond = read(END_PATH)
 for live_key, new_key in (("wildlifeKillTarget", "dogFightPointTarget"),
                           ("wildlifeKillTargetBuild", "dogFightPointTargetBuild")):
-    if f"\n  {new_key}: " in endcond:
+    # SET, don't just add. An earlier version only inserted the key when it was absent, so
+    # re-running after a target change left the asset on the OLD number while the C# default and
+    # every doc said the new one - and the asset is what the game actually reads.
+    existing = re.search(rf"^  {new_key}: \d+\n", endcond, re.M)
+    if existing:
+        endcond = endcond.replace(existing.group(0),
+                                  f"  {new_key}: {DOGFIGHT_POINT_TARGET}\n", 1)
         continue
     m = re.search(rf"^  {live_key}: (\d+)\n", endcond, re.M)
     assert m, f"{live_key} not found in {END_PATH} - run author_wildlife_liberation_assets.py first"
@@ -833,8 +905,12 @@ if "  cellTypeChoiceOptions: 1\n" not in sc:
 if "vesselClass: 3" in sc:
     errors.append("scene still authors a non-Sparrow AI vessel class")
 if f"  fixedCrystalCount: {OMNI_CRYSTAL_COUNT}\n" not in sc:
-    errors.append("scene still spawns an omni crystal - it reads as an objective this mode "
-                  "does not have")
+    errors.append("scene does not spawn the omni crystal - crystals are a platform fundamental, "
+                  "not mode furniture")
+if f"  noNucleusSpawnRadius: {OMNI_SPAWN_RADIUS}\n" not in sc:
+    errors.append("scene does not author noNucleusSpawnRadius - this cell has no nucleus, so "
+                  "the omni crystal would fall back to its own SphereRadius and spawn on the "
+                  "arena's exact centre")
 if sc.count("vesselClass: 11") != 4:
     errors.append("scene does not author 4 Sparrow AI templates")
 
@@ -847,6 +923,23 @@ if f"OnCombatHitLanded: {{fileID: 11400000, guid: {G_ASSET['Event_CombatHitStats
 if G_ASSET["VesselCombatHitByBullet"] not in files[FULLAUTO_PATH]:
     errors.append("the full-auto container does not carry the bullet scoring effect - "
                   "bullet hits would never score")
+if G_ASSET["VesselCombatHitByBullet"] not in files[PRISMSHOT_PATH]:
+    errors.append("the prism-projectile container does not carry the bullet scoring effect - "
+                  "the Sparrow's turret stance would be worth nothing")
+
+# The turret's muzzles must sit where the BULLETS' do. Wiring the scoring effect is worthless if
+# the shot is born past the target, which is exactly what shipped once (see section 4b).
+_sparrow = files[SPARROW_PREFAB]
+_bullet_muzzles = _sparrow.count("  m_LocalPosition: {x: 3.2, y: 0.4, z: 1.3}\n") + \
+                  _sparrow.count("  m_LocalPosition: {x: -3.2, y: 0.4, z: 1.3}\n")
+if _bullet_muzzles != 4:
+    errors.append(f"the Sparrow should carry FOUR gun transforms on the bullets' position "
+                  f"(two bullet + two turret); found {_bullet_muzzles}. The turret's muzzles "
+                  "have drifted forward again - a turret shot is born past its target and "
+                  "hits nothing at close range")
+if "z: 15.13}" in _sparrow:
+    errors.append("a Sparrow gun transform is still at z=15.13 - the far-forward turret muzzle "
+                  "that made close-range turret fire do nothing")
 if G_ASSET["VesselCombatHitByMissile"] not in files[SKYBURST_PATH]:
     errors.append("the skyburst container does not carry the missile scoring effect - "
                   "direct rocket hits would never score")
@@ -881,6 +974,16 @@ elif EXISTING["Vessel_Sparrow"] not in vessels.group(1):
 if "MinDomainsAllowed: 2" not in arcade:
     errors.append("ArcadeGameDogFight must require at least TWO domains - teammates cannot "
                   "damage each other, so a one-domain lobby has no legal targets")
+
+# The comeback rate only means anything relative to the TARGET, and the two have already drifted
+# apart once (the rate was scaled for a 500-point target and left behind when it became 120).
+# A quarter-of-target deficit must be worth at least a whole element level, or the buff is
+# arithmetic nobody can feel - which is a silently dead system, not a tuning choice.
+_quarter_deficit_levels = (DOGFIGHT_POINT_TARGET * 0.25) * COMEBACK_RATE
+if _quarter_deficit_levels < 1.0:
+    errors.append(f"ComebackRatePerScoreDeficit {COMEBACK_RATE} is too small for a "
+                  f"{DOGFIGHT_POINT_TARGET}-point target: a quarter-of-target deficit buys only "
+                  f"{_quarter_deficit_levels:.2f} element levels, which is invisible")
 
 
 # serialized MonoBehaviour keys must exist on the C# class (asset-surgery §3)
@@ -963,17 +1066,24 @@ for asset_path, cs_path in CHECKS:
         errors.append(f"{os.path.basename(asset_path)}: keys not found on "
                       f"{os.path.basename(cs_path)}: {sorted(unknown)}")
 
-# intensity 4 must be Scurry's world, and must NOT carry the Boneyard's phase ladder
-_cfg4 = files[f"{FOLDER}/Boneyard Cell Config {ATLANTIS_INTENSITY}.asset"]
-if EXISTING["SpawnableAtlantis"] not in _cfg4:
-    errors.append(f"intensity {ATLANTIS_INTENSITY} does not reference SpawnableAtlantis")
-if "PhaseThresholds:" in _cfg4:
-    errors.append(f"intensity {ATLANTIS_INTENSITY} authors PhaseThresholds - a cell running "
-                  "Atlantis (~69k prisms) must use the default ladder like Scurry does, not the "
-                  "Boneyard's ladder sized against 24k")
-for _i in BONEYARD_INTENSITIES:
-    if EXISTING["SpawnableAtlantis"] in files[f"{FOLDER}/Boneyard Cell Config {_i}.asset"]:
-        errors.append(f"intensity {_i} should fly the Boneyard, not Atlantis")
+# every intensity flies its OWN Boneyard variant and carries its OWN ladder
+for _i in INTENSITIES:
+    _cfg = files[f"{FOLDER}/Boneyard Cell Config {_i}.asset"]
+    if G_ASSET[f"SpawnableBoneyard{_i}.prefab"] not in _cfg:
+        errors.append(f"intensity {_i} does not reference its own Boneyard prefab variant")
+    if "PhaseThresholds:" not in _cfg:
+        errors.append(f"intensity {_i} authors no PhaseThresholds - it would fall back to the "
+                      "default ladder instead of riding its own measured baseline")
+
+# LEVELS MUST BE SPREAD. The playtest ask was that picking an intensity should change the match,
+# so each step up must add a MEANINGFUL amount of cover, not a rounding error. 25% per step is
+# the floor; the shipped ladder runs +78 / +54 / +40%.
+_rows = budget.all_intensities()
+for _i in range(1, len(_rows)):
+    _lo, _hi = _rows[_i - 1]["total"], _rows[_i]["total"]
+    if _hi < _lo * 1.25:
+        errors.append(f"intensity {_i + 1} ({_hi:,} prisms) is less than 25% denser than "
+                      f"intensity {_i} ({_lo:,}) - the levels are not spread apart")
 
 # the prefab variants must actually differ, or "intensity" is a lie
 prefab_bodies = [files[f"Assets/_Prefabs/Spawnables/SpawnableBoneyard{i}.prefab"] for i in BONEYARD_INTENSITIES]

@@ -37,6 +37,10 @@ MonoBehaviour:
   bladeAwareStrikes: 1
   bladeClearRadius: 7
   bladeTipStrikeBonus: 1.35
+  explosionsAffectBall: 1
+  explosionKickMultiplier: 1
+  explosionSpinFraction: 0.6
+  explosionClaimsBall: 1
   strikeFeedbackEnabled: 1
   strikerShakeEmphasis: 1.8
   bigHitSpeedFraction: 0.45
@@ -92,9 +96,12 @@ MonoBehaviour:
   ballMass: 3
   ballBounciness: 1
   wallRestitution: 0.72
+  prismCaromRestitution: 1
   ballDrag: 0.35
+  outsideNucleusDragMultiplier: 6
+  outsideNucleusDragFalloff: 250
   ballRestSpeed: 6
-  prismDragMassScale: 0.05
+  prismDragMassScale: 0.0167
   ballAngularDamping: 0.3
   maxAngularSpeed: 40
   ballMeshSubdivisions: 2
