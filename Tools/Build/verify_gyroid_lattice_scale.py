@@ -42,6 +42,17 @@ ASSEMBLER = ROOT / "Assets/_Scripts/Controller/Assemblers/GyroidAssembler.cs"
 FLORA = ROOT / "Assets/_Scripts/Controller/Environment/FloraAndFauna/AssembledFlora.cs"
 
 SITES = ("TopRight", "TopLeft", "BottomLeft", "BottomRight")
+
+# The Space element is the only one that authors a LatticeScale, and it is the configuration
+# that actually ships - so read it rather than hard-coding a sweep and hoping the shipped value
+# happens to be in it. A scale that is authored but never proven is the whole failure mode this
+# file exists for (Docs/ECOSYSTEM.md 33.8).
+SPACE_CONFIG = ROOT / "Assets/_SO_Assets/Lifeforms/Gyroid Flora Space.asset"
+
+
+def shipped_lattice_scale():
+    m = re.search(r"^    LatticeScale: ([\d.]+)$", SPACE_CONFIG.read_text(), re.M)
+    return float(m.group(1)) if m else None
 MEASURED_SEPARATION = 3.0
 
 
@@ -144,7 +155,12 @@ def main():
 
     failures = []
     baseline = None
-    for scale in (1.0, 1.5, 2.0, 3.0, 4.0):
+    shipped = shipped_lattice_scale()
+    scales = sorted({1.0, 1.5, 2.0, 3.0, 4.0} | ({shipped} if shipped else set()))
+    if shipped:
+        print(f"(shipped Space gyroid LatticeScale = {shipped:g}, included below)\n")
+
+    for scale in scales:
         sep = MEASURED_SEPARATION * scale
         P = walk(table, sep)
         D = np.linalg.norm(P[:, None, :] - P[None, :, :], axis=2)
@@ -174,9 +190,10 @@ def main():
             failures.append(f"scale {scale}: tolerances out of order - "
                             f"reserve {reserve:.2f} < gate {gate:.2f} < healthy {healthy:.2f} is FALSE")
 
-        print(f"{scale:>6.1f} {sep:>5.1f} {bond:>7.2f} {reserve:>8.2f} {gate:>7.2f} "
+        mark = " <- SHIPPED" if shipped and abs(scale - shipped) < 1e-9 else ""
+        print(f"{scale:>6.2f} {sep:>5.1f} {bond:>7.2f} {reserve:>8.2f} {gate:>7.2f} "
               f"{healthy:>8.2f} {gate / healthy:>12.0%}  "
-              f"{'ok' if ratio_ok and ordered else 'FAIL'}")
+              f"{'ok' if ratio_ok and ordered else 'FAIL'}{mark}")
 
     print("\nNote: this walk measures the closest pair at 7.52u at scale 1, where the gate's")
     print("comment cites 6.6u. Both are below the gate's own 5.5u and the ordering is what is")

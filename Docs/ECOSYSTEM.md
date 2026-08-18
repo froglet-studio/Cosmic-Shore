@@ -4944,21 +4944,40 @@ and a Schwarz plant's tile goes 50u → 150u across. Same mass, spread over ~4×
 extent — worth an eye in the editor for plants reaching past the membrane or into the nucleus,
 which is a spatial question no offline check here answers.
 
-### 33.11 The Space gyroid strut, shortened to 40 (Aug 2026)
+### 33.11 Space gyroid — strut to 40, spacing to 25 (Aug 2026)
 
-`60 × 1 × 1 → 40 × 1 × 1` on the unchanged `LatticeScale 4` lattice (spacing 31.32), so the span
-falls **1.92 → 1.28** spacings. Prism only; spacing, topology, prism count and populations are
-untouched, which is why nothing in §33.10's verification needed re-running — the coherence family,
-the level invariance and the registry bound are all properties of the *lattice*, and the lattice
-did not move.
+Two prism-and-lattice tunings on the gyroid, Schwarz P untouched:
 
-Volume falls with it: `60 → 40` per prism, **112.7 → 75.1** effective after the 1.88 level spread,
-and the species' ceiling in the Blob cell **39% → 26%** of `FrenzyEnterVolume`. Schwarz P Space
-keeps `30 × 0.5 × 0.5` at `LatticeScale 5`, judged good as shipped.
+- **Strut `60 × 1 × 1 → 40 × 1 × 1`.** Prism only. Volume falls `60 → 40` per prism,
+  **112.7 → 75.1** effective after the 1.88 level spread, and the species' ceiling in the Blob
+  cell **39% → 26%** of `FrenzyEnterVolume`.
+- **Spacing to an absolute 25.** `LatticeScale 4 → 3.1902` — solved, not multiplied: the bonded
+  spacing at `separationDistance 3` measures **7.8364**, so `25 / 7.8364 = 3.1902` lands the walk
+  on **24.9997**. That is the only reason the number looks arbitrary; it is "spacing 25" expressed
+  in the units the dial actually takes.
+
+Neither touches topology, prism count or populations. Volume moved only with the strut — a
+spacing change is mass-neutral by construction, since it moves prisms apart without adding any.
+
+**The verifier now proves the SHIPPED configuration, not a guess at it.**
+`verify_gyroid_lattice_scale.py` reads `LatticeScale` out of `Gyroid Flora Space.asset` and folds
+it into the swept scales, because a scale that is *authored but never proven* is exactly the
+failure mode §33.8 exists for — a fixed sweep of 1/1.5/2/3/4 would have silently stopped covering
+the shipped lattice the moment it became 3.1902:
+
+| scale | sep | bond | reserve | gate | healthy | gate/healthy | |
+|---|---|---|---|---|---|---|---|
+| 3.00 | 9.0 | 23.51 | 9.40 | 16.50 | 22.57 | 73% | |
+| **3.19** | **9.6** | **25.00** | **10.00** | **17.55** | **24.01** | **73%** | **← shipped** |
+| 4.00 | 12.0 | 31.35 | 12.54 | 22.00 | 30.10 | 73% | |
+
+`GyroidOctagonRegistry`'s unscaled `CenterDedupeRadius` (12u) stays correctly bracketed: distinct
+octagon centres sit `35.87 × 3.1902 = 114.4` apart (half = 57.2), and 12 is still under `BinSize`
+17.935 so the 3³ scan reaches it.
 
 The current state of both Space elements:
 
-| | prism | LatticeScale | spacing | span | eff. volume | % of Blob Frenzy |
-|---|---|---|---|---|---|---|
-| **Gyroid Space** | 40 × 1 × 1 | 4 | 31.32 | 1.28 | 75.1 | 26% |
-| **Schwarz P Space** | 30 × 0.5 × 0.5 | 5 | 26.25 | 1.14 | 7.5 | 2% |
+| | prism | LatticeScale | spacing | span | eff. volume | % of Blob Frenzy | plant footprint |
+|---|---|---|---|---|---|---|---|
+| **Gyroid Space** | 40 × 1 × 1 | 3.1902 | 25.00 | 1.60 | 75.1 | 26% | ring r 32u, territory 85u |
+| **Schwarz P Space** | 30 × 0.5 × 0.5 | 5 | 26.25 | 1.14 | 7.5 | 2% | tile 150u across |
