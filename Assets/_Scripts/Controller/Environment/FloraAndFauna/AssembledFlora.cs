@@ -196,7 +196,29 @@ namespace CosmicShore.Gameplay
 
             public Branch(HealthPrism healthPrism)
             {
-                gameObject = healthPrism.gameObject;
+                // The branch's GameObject is the prism's SPINDLE, never the prism itself.
+                //
+                // ExecuteGrowOrder instantiates the next generation's spindle as a CHILD of
+                // this GameObject, and a prism carries the species' authored leaf as its
+                // localScale - so parenting a spindle under a PRISM puts a NON-UNIFORM scale
+                // above a rotated child, which in Unity's matrix composition is a SHEAR: the
+                // descendant prisms stop being cuboids (faces no longer orthogonal), stretch
+                // along the ancestor's long axis, and the skew COMPOUNDS down the chain.
+                //
+                // Both grow paths reassign this field to the spindle immediately after
+                // constructing the branch; ReseedBranches - the only other creation site -
+                // did not, so a plant that had exhausted or been grazed clear of its active
+                // branches grew visibly skewed slivers from its first reseed onward. It hit
+                // every lattice species, worst on the one with the most extreme aspect ratio
+                // (Docs/ECOSYSTEM.md 36.9). It also left RemoveSpindle unable to match the
+                // branch, so a reseeded branch outlived the spindle it grew from.
+                //
+                // Both creation paths parent a prism to its spindle; the fallback only keeps
+                // a hypothetical unparented prism harmless.
+                var parent = healthPrism.transform.parent;
+                gameObject = parent && parent.TryGetComponent(out Spindle _)
+                    ? parent.gameObject
+                    : healthPrism.gameObject;
                 depth = 0;
                 assembler = healthPrism.GetComponent<Assembler>();
             }
@@ -662,12 +684,19 @@ namespace CosmicShore.Gameplay
         /// prisms. It has to follow the lattice: the branch spans the gap between two prisms, so
         /// a widened lattice with unscaled branches leaves them visibly short.
         ///
-        /// <para>GYROID ONLY, on purpose. The Schwarz P Space element's proportions were judged
-        /// good on sight at its shipped lattice scale WITH unscaled spindles; scaling them now
-        /// would change an approved look for no request. If Schwarz spindles should scale too,
-        /// that is its own decision, not a side effect of this one.</para>
+        /// <para>The gyroid and the quasicrystal star colony scale; Schwarz P deliberately does
+        /// NOT. The Schwarz P Space element's proportions were judged good on sight at its
+        /// shipped lattice scale WITH unscaled spindles, and changing an approved look for no
+        /// request is its own decision, not a side effect of this one. The star colony joins
+        /// because its branch pair is DERIVED from the lattice - each half-branch is sized to
+        /// reach the node at edge/2 (Docs/ECOSYSTEM.md 36.9) - so an element that widens its
+        /// lattice (Space, x2) must carry the branch with it or the halves fall short of the
+        /// nodes they exist to join.</para>
         /// </summary>
-        float SpindleLatticeScale => OctagonMode ? LatticeScale : 1f;
+        float SpindleLatticeScale =>
+            OctagonMode ? LatticeScale
+            : StarColonyMode && _latticeScaleOverride > 0f ? _latticeScaleOverride
+            : 1f;
 
         /// <summary>
         /// Lattice-misalignment radius: mass this close to a new site belongs to a frame

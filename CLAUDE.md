@@ -282,12 +282,12 @@ outcome is optimization, not life). Use the `/ecology` skill for any change here
   Voronoi left 47 (graph-disconnected pockets). Reproduction walks the measured 50-delta
   heart-link census one birth per fauna-wave period (`QuasicrystalColonyFrontier` /
   `QuasicrystalHeartRegistry`, keyed (Cell, species), cleared at all three Cell teardown sites).
-  Charge is the §35 fit (uniform shrink ×0.3568, octahedra fill the lattice back in) and
+  Charge is the §35 fit (uniform shrink ×0.3277, octahedra fill the lattice back in) and
   `fit_quasicrystal_strut_sizes.py` OWNS its leaf — `fit_shield_clearance.py` does not know this
   species. Measured by `Tools/Build/measure_icosahedral_quasilattice.py`, the SHIPPED file
   re-proven by `verify_icosahedral_quasilattice_tables.py` (incl. the Euclidean-Voronoi and
   adjacent-hearts negative controls), populations by `author_flora_populations.py` (cap 14 — 14
-  always-on heart colliders in Blob, ~3% of its Frenzy ladder). `Docs/ECOSYSTEM.md §36`.
+  always-on heart colliders in Blob, ~7% of its Frenzy ladder). **A prism carries the authored leaf as its `localScale`, so NOTHING may be parented under one** — a non-uniform scale above a rotated child is a SHEAR, and `ReseedBranches` hung the next spindle off the prism instead of its spindle, so every lattice species grew skewed non-cuboid slivers from its first reseed (`Docs/ECOSYSTEM.md §36.9`). `Docs/ECOSYSTEM.md §36`.
 - **An AUTHORED prism size widens its clamp; a GROWN one keeps it.**
   `PrismScaleAnimator.SetTargetScale` clamps PER AXIS into `[minScale, maxScale]` — serialized
   defaults `(0.5,0.5,0.5)`/`(10,10,10)`, which **363 of 404 prefabs** inherit unchanged — inside

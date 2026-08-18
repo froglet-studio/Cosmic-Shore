@@ -81,7 +81,7 @@ PrefabInstance:
     - target: {fileID: 6313579230210663873, guid: 1488a2ac58b2b4c43b14f84206bd9195,
         type: 3}
       propertyPath: TargetScale.x
-      value: 10.19
+      value: 22.19
       objectReference: {fileID: 0}
     - target: {fileID: 6313579230210663873, guid: 1488a2ac58b2b4c43b14f84206bd9195,
         type: 3}
@@ -152,7 +152,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3433dd800041491fac436894d22be5d3, type: 3}
   m_Name:
   m_EditorClassIdentifier:
-  edgeLength: 12
+  edgeLength: 24
   heartSeatInset: 2.6
   overlapProbeScale: 0.2
 --- !u!114 &534068647644661704

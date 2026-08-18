@@ -5660,7 +5660,8 @@ fast).
 
 **The heart seat is a two-class span.** A strut with a heart at one end holds back by
 `QuasicrystalAssembler.heartSeatInset` (2.6u, ABSOLUTE — crystals do not scale with the
-lattice, §34.8) so the crystal sits clear inside its twelve-ray alcove; the level-5 heart
+lattice, §34.8; on the shipped 24u edge the plain inset is only 0.9u, so the seat is what
+actually opens the alcove) so the crystal sits clear inside its twelve-ray alcove; the level-5 heart
 (world scale 4.25 on the one platform curve, §33) needs ~2.55u and the measured min clear
 radius at every heart is 2.60u. Heartness of an endpoint is a closed-form window test — a
 property of the LATTICE, not of claims — so every plant computes the same span for the same
@@ -5674,18 +5675,18 @@ Fitted leaves (cross-section is the authored identity, length fitted flush, roun
 
 | element | leaf | lattice | vol/strut | ~/plant (×59) | note |
 |---|---|---|---|---|---|
-| Time | 10.19 × 0.8 × 0.8 | ×1 | 6.5 | 385 | the reference slender strut |
-| Mass | 8.15 × 1.7 × 1.7 | ×1 | 23.6 | 1,390 | thick, shorter by consequence of the 63° node |
-| Space | 22.41 × 0.7 × 0.7 | ×2 (`LatticeScale`) | 11.0 | 648 | the airy giant lattice — Space's identity across all three lattice species |
-| Charge | 3.63 × 0.28 × 0.28 | ×1 | 0.28 | 17 | uniform shrink ×0.3568: the SHIELD fit |
+| Time | 22.19 × 0.8 × 0.8 | ×1 | 14.2 | 838 | the reference slender strut |
+| Mass | 20.15 × 1.7 × 1.7 | ×1 | 58.2 | 3,436 | thick, shorter by consequence of the 63° node |
+| Space | 46.41 × 0.7 × 0.7 | ×2 (`LatticeScale`) | 22.7 | 1,342 | the airy giant lattice — Space's identity across all three lattice species |
+| Charge | 7.27 × 0.26 × 0.26 | ×1 | 0.49 | 29 | uniform shrink ×0.3277: the SHIELD fit |
 
 Charge is armoured by law (`Flora.ResolveShieldPeriod`, §35.1) and its shield octahedron
-reaches 3× the box half-extents, so the flush strut's octahedra fuse (touch scale 0.3925);
+reaches 3× the box half-extents, so the flush strut's octahedra fuse (touch scale 0.3605);
 the shipped leaf is Time's fit shrunk uniformly to touch/1.10 — plates read as a sparse
 dashed skeleton and the octahedra fill the lattice back in, exactly the §35 trade.
 **`fit_shield_clearance.py` does NOT know this species — `fit_quasicrystal_strut_sizes.py`
 owns the Charge leaf**, stated in both scripts, because two fitters must never own one asset
-field (§35.3). The 0.28 cross-section sits under `HealthBlock.prefab`'s `minScale` 0.5 and
+field (§35.3). The 0.26 cross-section sits under `HealthBlock.prefab`'s `minScale` 0.5 and
 survives only through `AdmitTargetScale` (§34.9) — same standing caveat as Schwarz P
 Charge's 0.39.
 
@@ -5723,9 +5724,10 @@ five-playtest failure class).
   22, because a star plant carries ~59 struts to a tile's 36) and ~830 prism colliders at cap,
   phase-LOD-managed like all flora. Zero new query shapes — the assembler uses the same
   `TryReserve` every flora makes.
-- **Volume ladder (§4.6, computed before shipping):** mixed-element Blob average ≈ 10.4
-  vol/strut × 59 × 14 plants ≈ **8.6k ≈ 3% of Blob's `FrenzyEnterVolume` 288,000** — the ×5
-  ladder authored for the gyroid conversion absorbs this species without re-authoring. Level
+- **Volume ladder (§4.6, computed before shipping, re-computed at the §36.9 doubling):**
+  mixed-element Blob average ≈ 23.9 vol/strut × 59 × 14 plants ≈ **19.8k ≈ 6.9% of Blob's
+  `FrenzyEnterVolume` 288,000** — the ×5 ladder authored for the gyroid conversion absorbs
+  this species without re-authoring (it was 3% at the 12u edge). Level
   spread multiplier is ×1 (lattice species, §34.9).
 - **Population numbers** are authored by `author_flora_populations.py` (cap = 800/59 → 14,
   floor 4 founders, budget 110), never by hand; `--check` gates them.
@@ -5766,3 +5768,85 @@ five-playtest failure class).
    it; strip a whole plant — it withers to its crystal on the standard path, and the freed
    heart is re-plantable by the colony.
 8. After the flora config edits: `FrogletTools ▸ Validation ▸ Validate Lifeform Crystals`.
+
+### 36.9 A prism is a LEAF of the hierarchy — and the lattice doubles (Aug 2026, second pass)
+
+First playtest. Two changes and one defect, in the order they mattered.
+
+**The defect: skewed, non-cuboid slivers after a few plants.** A colony grew several correct
+plants and then began producing prisms stretched along an axis that was not one of their own,
+their faces no longer orthogonal — visibly not cuboids. The cause is a single line, and it is
+not quasicrystal-specific:
+
+> `AssembledFlora.ExecuteGrowOrder` instantiates the next generation's spindle as a **child of
+> `Branch.gameObject`**. Both grow paths set that field to the new SPINDLE. `ReseedBranches` —
+> the third creation site — left it as the `Branch(HealthPrism)` constructor's default, the
+> **PRISM**. A prism carries the species' authored leaf as its `localScale`, so this parents a
+> spindle under a **non-uniform scale**; Unity composes world matrices as `parent × T·R·S`, and
+> a non-uniform scale above a *rotated* child is a **SHEAR**. Every descendant inherits it and
+> the skew compounds down the chain.
+
+Everything about the symptom follows from that: the stretch is along the *ancestor's* long
+axis (not the child's), the faces stop being orthogonal, and it only starts **after a while** —
+a reseed happens only once a plant's branches are exhausted or grazed away, which is late in a
+colony's life. It hit every lattice species; it was merely most visible on the one with the
+most extreme aspect ratio (a 22.19 × 0.8 strut is 27:1, against a gyroid plate's 6:1). The fix
+is in the `Branch` constructor, which now resolves the prism's spindle, so all three creation
+sites agree. It also repairs a second, quieter defect from the same root: `RemoveSpindle`
+matches branches by spindle GameObject, so a reseeded branch could never be removed when the
+spindle it grew from died.
+
+**The general rule, platform-wide: a prism is a LEAF of the transform hierarchy.** Nothing may
+be parented under one. The authored leaf lives in `localScale` and is almost never uniform, so
+any child of a prism whose own rotation differs is sheared — silently, with no error, and only
+visible as geometry some generations later. Where a hierarchy must continue past a prism, it
+continues from the prism's **spindle**, which is deliberately kept at uniform scale
+(`ScaleSpindleToLattice` scales the spindle's *children*, never its root — §34.8's compounding
+rule is the same lesson from the other side).
+
+**The lattice doubles: `edgeLength` 12 → 24.** The gaps at a 12u edge were too tight to fly
+through, which is the point of an open scaffold. Doubling the edge doubles the strut length and
+leaves the cross-sections alone (spacing and prism size are independent dials, §34.10), so every
+fitted length grew by **exactly +12u** — the tip clearance that binds the fit is set by the
+cross-section and is therefore constant in absolute units, so the whole of the new edge goes
+into strut. Prism *count* is untouched (the tiling has no subdivision level; scaling the edge
+cannot change topology), so mass rises only with the struts' length: **6.9% of Blob's Frenzy
+ladder, from 3%.** The heart seat is unchanged at 2.6u because crystals do not scale with the
+lattice — at the wider edge the plain inset falls to 0.9u, so the seat now does *all* the work
+of opening the crystal's alcove, exactly as intended.
+
+**The spindle becomes a mirrored PAIR (§34.12's shape, this species' axis).** The species
+shipped on the shared single `AssemblyBranch`, whose one asymmetric mesh is posed with its
+middle on the prism — the exact defect §34.12 fixed for the gyroid: it skewers the prism and
+shows different geometry on each side. `QuasicrystalBranch.prefab` is a flat copy of
+`GyroidBranch.prefab` (a second prefab, never an edit in place — `AssemblyBranch` is still
+shared by Wall and Schwarz P, and a decision for one species must not move another's approved
+proportions), re-posed on two axes of difference:
+
+- **Split along local +X, the STRUT axis** (rotations ±90° about Y, offsets ±X), not the
+  gyroid's local Y. A quasicrystal prism spans its whole edge and meets its neighbours at the
+  *vertices*, so the branch's job here is the joint at each node.
+- **Scaled so each half reaches the node.** The pair construction is scaled uniformly by
+  `k = (edge/2) / gyroidHalfReach = 12 / 5.2183 = 2.2996`, giving z-scale `3.1k = 7.1288` and
+  offset `1.7133k = 3.9399`. Derived from §34.12's measured mesh span (tip −7.01, flare +8.61 at
+  z-scale 6.2), the halves land at exactly `[−12, +12]` — **one full edge, symmetric about the
+  prism**, tip on each node, flares overlapping through the prism so the joint reads continuous.
+  Lateral scale stays 1, the convention both existing branch prefabs keep.
+
+Because that pair is *derived from the lattice*, `SpindleLatticeScale` now covers the star
+colony as well as the gyroid: an element that widens its lattice (Space, ×2) must carry the
+branch with it or the halves fall short of the nodes they exist to join. Schwarz P still
+deliberately does not scale its spindles (§34.8). Both halves are listed in
+`Spindle.additionalRenderedObjects`, without which the second half would POP rather than fade —
+§34.12's continuity requirement, inherited with the copy.
+
+**Budgets.** Colliders unchanged (a spindle is not a `Prism`; prism and crystal counts are
+identical). Triangles double per spindle, as they did for the gyroid — the same trade §34.12
+accepted, and `MaxLivePopulation` is the same lever if it ever bites.
+
+**Verification (the human is the gate).** All of §36.8, plus: (1) fly a mature colony and
+confirm **no** skewed or non-cuboid prisms appear as it ages past its first reseeds — that is
+the defect above, and a plant only reseeds late; (2) confirm the gaps now read as flyable;
+(3) look at a node where several struts meet and confirm the branch halves meet AT the prism
+with no skewering and no pop as a branch grows in; (4) check Space (×2 lattice) has branches
+that still reach its nodes.

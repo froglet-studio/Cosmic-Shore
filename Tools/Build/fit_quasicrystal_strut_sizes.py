@@ -63,7 +63,7 @@ LIFEFORMS = ROOT / "Assets/_SO_Assets/Lifeforms"
 BLOCK_PREFAB = ROOT / "Assets/_Prefabs/Trails/QuasicrystalBlock Variant.prefab"
 FLORA_PREFAB = ROOT / "Assets/_Prefabs/FloraAndFauna/QuasicrystalFlora.prefab"
 
-EDGE = 12.0          # QuasicrystalBlock Variant's authored edgeLength
+EDGE = 24.0          # QuasicrystalBlock Variant's authored edgeLength (read back below)
 HEART_SEAT = 2.6     # QuasicrystalAssembler.heartSeatInset - read back off the prefab below
 CRYSTAL_NEED = 2.55  # level-5 heart apparent radius (4.25 world x ~0.6)
 SHIELD_SCALE = 3.0   # OctahedronMeshGenerator.CIRCUMSCRIBING_SCALE on box HALF-extents

@@ -111,7 +111,7 @@ namespace CosmicShore.Gameplay
         [Tooltip("World-space length of one lattice edge - the strut-to-strut repeat. The " +
                  "tiling has no subdivision levels (it is what it is), so this is the single " +
                  "scale dial; FloraVariantTuning.LatticeScale multiplies it per element.")]
-        [SerializeField] float edgeLength = 12f;
+        [SerializeField] float edgeLength = 24f;
 
         [Tooltip("Clear radius a plant's crystal needs around its heart vertex, in ABSOLUTE " +
                  "world units (crystal size is the platform's one level curve and does not " +
