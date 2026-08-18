@@ -119,7 +119,7 @@ add(f"{EFFECTS}/Projectile Prism Effects/ProjectileStealPrismEffect.asset",
 
 add(f"{EFFECTS}/Projectile Prism Effects/ProjectileEmbedPrismEffect.asset",
     "ProjectileEmbedPrismEffect", "ProjectileEmbedPrismEffectSO",
-    "  dwellSeconds: 1.25\n  fadeSeconds: 0.35\n")
+    "  dwellSeconds: 3.75\n  fadeSeconds: 0.35\n")
 
 add(f"{EFFECTS}/Projectile Prism Effects/ProjectileChainFirePrismEffect.asset",
     "ProjectileChainFirePrismEffect", "ProjectileChainFirePrismEffectSO",
@@ -157,8 +157,13 @@ add(f"{EFFECTS}/Effect Containers/VesselContainers/UrchinImpactorDataContainer.a
 # --- the three ability assets -------------------------------------------------
 # SPACE: the aimed volley. Costs ammo, chains by default.
 add(f"{ACTIONS}/UrchinSpikeVolleyAction.asset", "UrchinSpikeVolleyAction", "UrchinSpikeActionSO",
-    "  firingPattern: 0\n"
+    "  firingPattern: 2\n"          # ConcentricRings - the shotgun
     "  repeatWhileHeld: 1\n"
+    "  barrageSpikeCount: 36\n"
+    "  ringCount: 3\n"
+    "  spikesPerRing: 3\n"          # PER MUZZLE - both guns fire, so 2x this
+    "  coneHalfAngleDegrees: 9\n"
+    "  centerSpike: 1\n"
     "  ammoIndex: 0\n"
     "  ammoCost: 0.15\n"
     "  firingRate: 3\n"
@@ -166,20 +171,22 @@ add(f"{ACTIONS}/UrchinSpikeVolleyAction.asset", "UrchinSpikeVolleyAction", "Urch
     "  projectileTime: 2\n"
     "  projectileScale: 1\n"
     "  generationsAtRestingCharge: 1\n"
-    "  generationsAtFullCharge: 2\n"
+    "  generationsAtFullCharge: 4\n"
     "  generationRangeFalloff: 0.75\n"
     "  chainsOnChargeUpgrade: 0\n")
 
 # Depth ladder, worst case per SEEDED hit (every child finding fresh enemy mass), from
 # FireSpherical's own formula points = 2*(energy+3) with children at energy-1:
 #     depth 1 ->      8 spikes
-#     depth 2 ->     90 spikes      <- shipped ceiling, at Charge 10
+#     depth 2 ->     90 spikes
 #     depth 3 ->  1,092 spikes
-#     depth 4 -> 15,302 spikes
+#     depth 4 -> 15,302 spikes      <- shipped ceiling, at Charge 10
 # Every spike is a live trigger collider, so the ladder is a collider-budget decision, not
-# a feel one. Depth 2 is spectacular and affordable; 3 and 4 are supported by the SO and
-# deliberately not shipped. The real-world count is far below the worst case because a
-# converted prism stops accepting spikes, but the budget has to survive the worst case.
+# a feel one. Depth 2 shipped first as the affordable call; round 6 ("dial up the recursive
+# explosions") took it to 4 on BOTH triggers and raised ChainReactionBudget.VolleysPerFrame
+# 4 -> 6 to pay for it - that per-frame ceiling, not the depth, is what bounds frame cost
+# (<= 6 x 14 = 84 chain spikes/frame). The real-world count is far below the worst case
+# because a converted prism stops accepting spikes, but the budget survives the worst case.
 
 # CHARGE: the free omni barrage. "Fire free spikes in all directions that steal blocks,
 # and even other player's trails" - so ammoCost 0, and no chain until Overcharge.
@@ -192,8 +199,8 @@ add(f"{ACTIONS}/UrchinSpikeBarrageAction.asset", "UrchinSpikeBarrageAction", "Ur
     "  projectileSpeed: 40\n"
     "  projectileTime: 2\n"
     "  projectileScale: 1\n"
-    "  generationsAtRestingCharge: 0\n"
-    "  generationsAtFullCharge: 1\n"
+    "  generationsAtRestingCharge: 1\n"
+    "  generationsAtFullCharge: 4\n"
     "  generationRangeFalloff: 0.75\n"
     "  chainsOnChargeUpgrade: 1\n")
 
