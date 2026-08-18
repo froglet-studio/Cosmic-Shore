@@ -173,7 +173,9 @@ namespace CosmicShore.Editor
         /// An adopted slot's own Image. Never created: it is authored art, often with nested glyphs,
         /// so a missing one is a fault to report rather than to paper over with a generated square.
         /// </summary>
-        static Image Adopt(Transform band, string childName, Object context)
+        // UnityEngine.Object is spelled out because this file imports System for Array/Enum
+        // (OrdinalOf below), which makes a bare `Object` ambiguous with System.Object (CS0104).
+        static Image Adopt(Transform band, string childName, UnityEngine.Object context)
         {
             var existing = band.Find(childName);
             var image = existing ? existing.GetComponent<Image>() : null;
@@ -208,7 +210,7 @@ namespace CosmicShore.Editor
         static int OrdinalOf(Element element)
             => Array.IndexOf((Element[])Enum.GetValues(typeof(Element)), element);
 
-        static void Bind(SerializedObject so, string field, Object value)
+        static void Bind(SerializedObject so, string field, UnityEngine.Object value)
         {
             var prop = so.FindProperty(field);
             if (prop != null) prop.objectReferenceValue = value;
