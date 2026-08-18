@@ -5556,3 +5556,140 @@ fit against and no equivalent measurement; nobody has looked at them.
    Charge gyroid's join is the one thing this branch cannot predict. Check it on the same plant as
    step 5.
 8. After the flora config edits: `FrogletTools ▸ Validation ▸ Validate Lifeform Crystals`.
+
+---
+
+## 36. The Lattice cell — a world that is nothing but eight colonies (Aug 2026)
+
+**What shipped.** A tenth freestyle Cell-Selector world, `Lattice`, whose entire environment is
+**living flora**: eight lattice colonies — gyroid ×4 and Schwarz P ×4, one colony per element —
+growing into one another inside the standard membrane. It authors **no `EnvironmentPrefab`**, so
+it costs no environment build; every prism in it was grown by a plant.
+
+Assets: `_SO_Assets/Cell Configs/Lattice Cell/` (11 assets — cell config, spawn profile, eight
+flora configs, one grazer). Wired as `CellConfigs[9]` on Menu_Main's `Cell`, i.e. one more slot in
+the Cell Selector's matrix. Authored by `Tools/Build/author_lattice_cell.py` (`--check`).
+
+### 36.1 Why a per-cell config set rather than the shared species assets
+
+`_SO_Assets/Lifeforms/{Gyroid,SchwarzP} Flora {Element}.asset` already define all eight
+element identities, and a profile *can* reference them directly. It does not, for one reason:
+`SpawnProfileSO.FloraPopulationScale` scales floor and cap by ONE factor, and the shipped
+floor/cap ratio is 4/22..4/60 — a scalar cannot open a colony to 30 founders and 90 plants
+without also multiplying every other cell that reads those assets. So the cell forks the
+**population** (`InitialSpawnCount` / `PopulationSize` / `MaxLivePopulation` / planting band) and
+copies the **identity** (leaf size, grow tempo, `LatticeScale`, shield cadence, per-plant budget)
+verbatim — and the authoring script *reads* that identity back off the shipped assets at emit
+time rather than restating it, so a future leaf refit (§34.5, §35) propagates here for free.
+
+### 36.2 The caps are relaxed, and the reason the old ones do not apply
+
+`author_flora_populations.py` derives a lattice cap as `old_single_plant_budget / patch` — the
+arithmetic of the §32.7 conversion, "one big plant became many small ones of the same total
+mass". This cell is not a conversion of an authored plant: its whole environment *is* the colony,
+so it has no pre-conversion budget to divide and the model has no input. Rather than exclude the
+configs silently, `author_flora_populations.py` now carries **`OWNED_ELSEWHERE`** — a hand-off
+table keyed by asset-name prefix that names the owning script and **prints it** in the table. Two
+scripts quietly writing one field is a run-order hazard that only surfaces months later when
+somebody re-runs the older tool (§34.5, and the same rule the `fit_*` pair follows).
+
+### 36.3 The budget, measured
+
+Per-plant prisms are geometry, not tuning: a gyroid plant owns a **24-prism octagon** (budgeted 30
+for the boundary prisms its ownership epsilon wins; measured patches 22–28), a Schwarz P plant
+owns exactly **one 36-site tile**. Raising a plant's budget therefore buys nothing — plant COUNT
+is the only lever, which is why the caps and not the budgets moved.
+
+| colony | plants @cap | leaf volume | prisms settled | prisms ceiling | volume ceiling |
+|---|---|---|---|---|---|
+| Gyroid Charge | 90 | 4.92 | 2,160 | 2,700 | 13,292 |
+| Gyroid Mass | 90 | 110.25 | 2,160 | 2,700 | 297,675 |
+| Gyroid Space | 90 | 40.00 | 2,160 | 2,700 | 108,000 |
+| Gyroid Time | 90 | 45.90 | 2,160 | 2,700 | 123,930 |
+| SchwarzP Charge | 90 | 0.85 | 3,240 | 3,240 | 2,756 |
+| SchwarzP Mass | 90 | 25.69 | 3,240 | 3,240 | 83,220 |
+| SchwarzP Space | 90 | 7.50 | 3,240 | 3,240 | 24,300 |
+| SchwarzP Time | 90 | 13.78 | 3,240 | 3,240 | 44,655 |
+| **total** | **720** | | **21,600** | **23,760** | **697,827** |
+
+Note the spread the table exists to make visible: **Gyroid Mass is 43% of the cell's volume from
+9% of its prisms** (110.25 per prism, 6.9× nominal), and SchwarzP Charge is 0.4% of the volume
+from 14% of the prisms. This is exactly the §32.7 trap — a ladder derived from `count × 16` would
+have been an order of magnitude wrong and the cell would have frozen during bootstrap.
+
+### 36.4 The ladder, and why Frenzy EXIT sits above the mature forest
+
+Derived from one set of ratios against the mature ceiling, so every threshold moves together when
+a population or a leaf changes:
+
+```
+RestlessEnter 5200 / Exit 3800      RestlessEnterVolume 154,000 / Exit 112,000
+FrenzyEnter  30900 / Exit 26100     FrenzyEnterVolume   907,000 / Exit 768,000
+```
+
+`FrenzyExitVolume` (768,000) is **above** the mature forest (697,827) on purpose. A Frenzy here
+can only ever be caused by vessel trail laid on top of a full garden, and it must always release
+with the forest intact. If exit sat below mature, a cell that froze once would need active
+grazing before it could resume growing — a garden that punishes visitors. `RestlessEnterVolume`
+sits below the SEEDED forest (232,609) so the food web is awake through the whole bootstrap
+rather than only at the end. The count fields are the perf backstop only (§0), set above the
+mature prism ceiling so volume always binds first. `verify()` asserts these ORDERINGS, not the
+values (§34.8's rule).
+
+### 36.5 The planting band clears the nucleus — which the shipped assets do not
+
+The shipped per-element assets author `PlantRadiusCellFraction 0.2` = 240u, and the nucleus is
+~392u, so `Flora.ResolvePlantRadius`'s `inner >= outer` branch collapses to a single degenerate
+shell **inside** the nucleus. That is survivable for Blob's three colonies and wrong for eight, so
+this cell authors its own volume-uniform band, **0.38 → 0.75** of the membrane (456u → 900u): the
+inner edge just outside the nucleus (that mass is the territorial claim and is excluded from the
+fauna targeting grids), the outer edge far enough inside the sense radius that a colony's outward
+growth still registers. The band is asserted in `verify()`.
+
+### 36.6 What the cell is actually a showcase OF
+
+Eight independent colonies seeded into one shell is the first content that exercises
+`AssembledFlora`'s **foreign-lattice interface** at scale. A colony declines any site within
+`MisalignmentRadius` (5.5u × its own `LatticeScale`) of standing mass belonging to a frame it
+cannot mate with, so colonies **stop at a clean interface instead of interpenetrating** (§34.8) —
+and each of the eight carries a different lattice, three of them a different scale. The
+equilibrium the cell settles into is therefore emergent from that gate plus grazing, and the
+21,600-prism figure is a **ceiling, not a prediction**: some colonies will stop early against a
+neighbour. Nothing culls them, nothing ages out, and the interfaces are where two crystals of
+different elements meet.
+
+### 36.7 Collider budget — stated plainly, and it is the largest of any cell
+
+At cap: **~23,760 prism colliders + 720 always-on heart-crystal colliders**. That is several
+times the "~3–4k active `BoxCollider`s per full cell" the MASTERPLAN §4 records as current
+reality, and roughly 6× the plant count of any shipped biome (825 plants across *all* cells
+today). It is deliberate and it is the cell's cost:
+
+- Prism colliders are **phase-LOD** material — the cell reaches Restless early and holds there,
+  so the Frozen-tier LOD does not help here. They are live.
+- Heart crystals are **not** phase-LOD culled (§21.6), so `MaxLivePopulation` IS the crystal
+  count. **90 is THE dial** if the cell reads as too heavy — halving it to 45 halves both lines
+  and lands the cell at ~10,800 prisms, below the requested target.
+- Fauna are held deliberately light (one grazer species, floor 4 / cap 8, no predators) so the
+  collider line is dominated by the thing the cell exists to show.
+
+This cell is opt-in through the Cell Selector and is never the boot world (Blob remains
+`CellConfigs[0]`, and `EnvironmentFreeConfig` still resolves to it), so nothing pays for it until
+a player flies the station and asks.
+
+### 36.8 The heartbeat is the fill clock
+
+A lattice colony births exactly ONE daughter per fauna-wave period (§32.7), so
+`SpawnProfileSO.BaseFaunaSpawnTime` is what decides how long the garden takes to fill:
+`(cap − floor) × period` per species, in parallel across the eight. At the authored **10 s** that
+is ~10 minutes from the seeded 240 plants to the full 720. Lowering it quickens the fauna waves
+too — they share the clock by design, because the wave clock *is* the ecosystem heartbeat.
+
+### 36.9 Invariants
+
+Touched: volume-is-the-spine (the ladder is authored in volume against a measured forest, count
+is the backstop only), the collider budget (§36.7), flora populations (§32). Violated: **none** —
+nothing decays, no lifespan or cull exists anywhere in the cell, every plant seeds at level 1 and
+earns levels by reproducing (§33), the two Charge colonies keep their shielded leaves and stay out
+of the food web's diet and targeting grids (§35), and the population is bounded by the cap, the
+volume ladder and grazing — never by a clock.

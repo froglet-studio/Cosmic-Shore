@@ -192,6 +192,20 @@ outcome is optimization, not life). Use the `/ecology` skill for any change here
   floor alone was 87% of `FrenzyEnterVolume` and the colony froze after one wave while its caps
   sat 19× further out. Reach for the ladder, not the population dial (`Docs/ECOSYSTEM.md §32.7`
   seventh pass). Full record: `Docs/ECOSYSTEM.md §32` (§32.7 the octagon colony).
+  **A cell can BE its colonies**: the freestyle `Lattice` cell (`_SO_Assets/Cell Configs/Lattice
+  Cell/`, `CellConfigs[9]` in Menu_Main) authors no `EnvironmentPrefab` at all — its whole
+  environment is eight lattice colonies (gyroid ×4, Schwarz P ×4, one per element) growing into
+  one another, ~21,600 grown prisms and 720 plants at cap. Three things it records: a per-plant
+  budget is GEOMETRY (24-prism octagon / 36-site tile), so **plant COUNT is the only lever** and
+  `MaxLivePopulation` is simultaneously the crystal-collider count; `FrenzyExitVolume` must sit
+  **above** the mature forest so a trail-caused Frenzy always releases with the forest intact;
+  and the shipped per-element assets' `PlantRadiusCellFraction 0.2` (240u) is INSIDE the ~392u
+  nucleus, where `Flora.ResolvePlantRadius` collapses to one degenerate shell — a multi-colony
+  cell must author its own band. It is the largest collider budget of any cell and is opt-in
+  through the Cell Selector only (Blob is still the boot world). Numbers are authored by
+  `Tools/Build/author_lattice_cell.py` (`--check`), which `author_flora_populations.py` hands the
+  configs to by name prefix (`OWNED_ELSEWHERE`) rather than excluding them silently.
+  Full record: `Docs/ECOSYSTEM.md §36`.
 - **A lattice species grows on its SURFACE'S OWN TILE, never on a fitted grid.** A triply
   periodic minimal surface is intrinsically **hyperbolic**, so it admits no Euclidean lattice
   and a square-ish marching walk across it (step a tangent, Newton-project, repeat) can only

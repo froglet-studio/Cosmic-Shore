@@ -701,7 +701,7 @@ PrefabInstance:
     - target: {fileID: 3197094124088707225, guid: cb702179ff5b42f41a3521ccd59e6934,
         type: 3}
       propertyPath: CellConfigs.Array.size
-      value: 9
+      value: 10
       objectReference: {fileID: 0}
     - target: {fileID: 3197094124088707225, guid: cb702179ff5b42f41a3521ccd59e6934,
         type: 3}
@@ -756,6 +756,12 @@ PrefabInstance:
       propertyPath: 'CellConfigs.Array.data[8]'
       value: 
       objectReference: {fileID: 11400000, guid: 9dc0ad0d04cc77d049e6c6ba466f8151,
+        type: 2}
+    - target: {fileID: 3197094124088707225, guid: cb702179ff5b42f41a3521ccd59e6934,
+        type: 3}
+      propertyPath: 'CellConfigs.Array.data[9]'
+      value: 
+      objectReference: {fileID: 11400000, guid: 289b8186f1c5abb5091f81001dc8bb29,
         type: 2}
     - target: {fileID: 7817456538282590180, guid: cb702179ff5b42f41a3521ccd59e6934,
         type: 3}
