@@ -5251,8 +5251,10 @@ ceiling is `40.0 × 30 prisms × 33 plants`, the Schwarz `7.5 × 36 × 22`.
 Two halves of one elemental identity: **Charge is the element whose leaves are shielded**, and
 a shielded prism is not a recoloured prism — it is a body **three times as long in every
 direction** as the one it replaces. The first half was true of nine flora species and silently
-false of six; the second half had never been fitted at all, so the one lattice species that did
-shield drew itself as an interpenetrating solid.
+false of six. The second half had never been fitted at all: both lattice species were sized for
+the box they draw *unshielded*, and both were sized TIGHT, so armouring one drew an
+interpenetrating solid rather than a lattice of octahedra. Both are now fitted for the body they
+actually draw.
 
 ### 35.1 The law, and why it could not be data alone
 
@@ -5294,7 +5296,7 @@ not the food web's mass, and shielding them changes what it takes to kill a crea
 assets still state `1` so a reader sees the identity in the data — `--check` keeps the two from
 drifting apart.
 
-### 35.2 A shield is 3× the prism, and nobody had fitted for it
+### 35.2 A shield is 3× the prism, and neither lattice species had been fitted for it
 
 `PrismStateManager.ActivateShield` engages a `PrismOctahedronShield`: the octahedron that
 **circumscribes** the prism's box, at `OctahedronMeshGenerator.CIRCUMSCRIBING_SCALE = 3` applied
@@ -5302,105 +5304,146 @@ to the box HALF-extents. `HealthBlock.prefab`'s collider is a unit cube, so worl
 `leafSize / 2` and the shield reaches **`1.5 × leafSize`** from the prism centre along each local
 axis — `4.5 ×` the box volume, and **3× the reach**.
 
-`Tools/Build/fit_gyroid_shield_clearance.py` walks the SHIPPED bond table and runs an exact
-separating-axis test over every near pair. The measurement corrected the assumption that motivated
-it:
+Both lattice species were fitted for the box they draw *unshielded*, and both were fitted TIGHT —
+the gyroid's leaf nearly spans its bond, Schwarz P's plates are literally flush (§34.5). Tripling
+that reach therefore does not draw a lattice of octahedra, it draws one interpenetrating solid.
+`Tools/Build/fit_shield_clearance.py` walks each species' own shipped geometry — the gyroid bond
+table, and Schwarz P's tile table through that species' own frame builder — and runs an exact
+separating-axis test over every near pair:
 
-| element | shield | lattice | bond | leaf | box s\* | shield s\* | interpenetrating pairs |
+| species | element | shield | spacing | leaf as shipped | plates s\* | shields s\* | interpenetrating |
 |---|---|---|---|---|---|---|---|
-| **Charge** | **ON** | 1.0000 | 7.84 | 9 × 3.4 × 1.5 | **1.59** | **0.53** | **826 of 15,880** |
-| Mass | off | 1.0000 | 7.84 | 7 × 4.5 × 3.5 | 1.99 | 0.66 | 829 of 9,828 |
-| Space | off | 3.1902 | 25.00 | 40 × 1 × 1 | 1.26 | 0.42 | 281 of 22,681 |
-| Time | off | 1.0000 | 7.84 | 9 × 3.4 × 1.5 | 1.59 | 0.53 | 826 of 15,880 |
+| gyroid | **Charge** | **ON** | 7.84 | 9 × 3.4 × 1.5 | **1.59** | **0.53** | **826 of 15,880** |
+| gyroid | Mass | off | 7.84 | 7 × 4.5 × 3.5 | 1.99 | 0.66 | 829 of 9,828 |
+| gyroid | Space | off | 25.00 | 40 × 1 × 1 | 1.26 | 0.42 | 281 of 22,681 |
+| gyroid | Time | off | 7.84 | 9 × 3.4 × 1.5 | 1.59 | 0.53 | 826 of 15,880 |
+| SchwarzP | **Charge** | **ON** | 5.35 | 4.72 × 2.92 × 1 | **1.33** | **0.44** | **3,654 of 74,952** |
+| SchwarzP | Mass | off | 5.35 | 4.09 × 3.14 × 2 | 1.54 | 0.51 | 2,844 of 51,963 |
+| SchwarzP | Space | off | 26.74 | 30 × 0.5 × 0.5 | 1.05 | 0.35 | 918 of 131,487 |
+| SchwarzP | Time | off | 5.35 | 4.72 × 2.92 × 1 | 1.33 | 0.44 | 3,654 of 74,952 |
 
 `s*` is the uniform scale at which the worst pair exactly **touches** — exact rather than
 bisected, because both bodies are centrally symmetric about their prism, so scaling a pair by `s`
 scales every projection radius by `s` while the centre offset is fixed and
 `s* = max over candidate axes of |d·u| / (rA(u) + rB(u))`.
 
-**The plain leaves were already clear** (box `s*` 1.26–1.99): the gyroid's leaf very nearly spans
-its bond — 9u against a 7.84u mean bond — but does not touch its neighbours. It is *tripling that
-reach* that fuses the plant, which is why only the shielded element has to answer for it. The
-worst Charge value is shared by **10 pairs**, so it is a repeating bond relationship, not one
-accidental pair.
+**Every element's plain prisms are already clear** (plates `s*` 1.05–1.99). It is *tripling that
+reach* that fuses a plant, which is why only the shielded element has to answer for it — the other
+three draw the box they were fitted as. The worst value is shared by 10 pairs on the gyroid and
+162 on Schwarz P, so both are repeating lattice relationships, not accidental pairs.
 
-### 35.3 The fit
+### 35.3 The fits
 
-Uniform on all three axes — the Charge leaf's ASPECT (9 : 3.4 : 1.5, shared with Time) is its
-identity; only its size moves:
+Uniform on all three axes — a species' leaf ASPECT is its identity (the gyroid Charge's
+9 : 3.4 : 1.5, shared with Time; Schwarz P Charge's 4.72 : 2.92 : 1, a thin plate lying ON a
+minimal surface). Only the size moves:
 
 ```
-shields touch at   ×0.5295          (they currently overlap 1.89× oversize)
-clearance          10% of touching  → ×0.4766
-Charge leaf        9 × 3.4 × 1.5  →  4.28 × 1.62 × 0.71
+gyroid    Charge   9    × 3.4  × 1.5   →  4.28 × 1.62 × 0.71   (touch ×0.5295, +10% clearance)
+SchwarzP  Charge   4.72 × 2.92 × 1     →  1.88 × 1.16 × 0.39   (touch ×0.4441, +10% clearance)
 ```
 
-At the fitted size the worst shielded pair sits at `s* = 1.114` with **zero** interpenetrating
-pairs, while the unshielded boxes are far apart (`s* > 2.5`). That is exactly the trade the ask
-described: the plant's plates become a sparse skeleton and **the octahedra are what fill the
-lattice back in**. Because a Charge plant is fully armoured a few tens of seconds after it
-settles, the armoured state is the one that is nearly always on screen.
+Both verify at `s* ≈ 1.11` with **zero** interpenetrating pairs, plates far apart (`s* > 2.5`).
+That is exactly the trade the ask described: the plates become a sparse skeleton and **the
+octahedra are what fill the lattice back in**. Because a Charge plant is fully armoured a few tens
+of seconds after it settles, the armoured state is the one that is nearly always on screen.
 
-**Nothing about the LATTICE moved** — `separationDistance` / `LatticeScale`, the bond table, and
-every coherence tolerance (snap, mate-search radius, reservation floor,
+**Uniform is a look decision the geometry permits, not one it forces.** On Schwarz P the binding
+axes are the two in the TANGENT plane: shrinking the footprint alone to `2.10 × 1.30` clears every
+shield with `z` left at 1.0, so the thickness buys nothing either way. It is shrunk anyway,
+because at `1.88 × 1.16 × 1.00` the "plate" is very nearly a cube and stops reading as a plate on
+a surface — the thing §34.5 keeps thin on all four elements.
+
+**Nothing about either LATTICE moved** — `separationDistance` / `periodScale` / `LatticeScale`, the
+bond and tile tables, and every coherence tolerance (snap, mate-search radius, reservation floor,
 `AssembledFlora.MisalignmentRadius`) are untouched. That is deliberate and is the cheap half of
-§34.8: those tolerances are absolute distances measured against this lattice, so scaling the
-lattice drags a whole family of constants with it, whereas scaling the PRISM drags nothing —
-`GyroidAssembler` reads `Prism.TargetScale` only to stamp it onto the next prism
-(`ConvertBlock`), never to place one. The fit also survives levelling for free: a lattice species'
-leaf does not grow with level (`Flora.PrismSizeFixedByGrowthRule`, §33).
+§34.8: those tolerances are absolute distances measured against the lattice, so scaling the
+lattice drags a whole family of constants with it, whereas scaling the PRISM drags nothing — the
+assemblers read `Prism.TargetScale` only to stamp it onto the next prism, never to place one. The
+fits also survive levelling for free: a lattice species' leaf does not grow with level
+(`Flora.PrismSizeFixedByGrowthRule`, §33).
+
+**The silent clamp is checked, not assumed.** Schwarz P Charge's fitted thickness `0.39` is BELOW
+`HealthBlock.prefab`'s `minScale` 0.5, and `PrismScaleAnimator.SetTargetScale` clamps inside the
+setter with no log and no return value (§34.9) — the authored size would silently become 0.5. It
+survives only because `Flora.AddHealthBlock` calls `Prism.AdmitTargetScale` first, which *lowers*
+`minScale` to admit the stated size. The fitter reports any axis outside the prefab's window and
+**fails** if that admit call is ever refactored away.
+
+**Two fitters, one owner per asset.** `fit_schwarz_p_leaf_sizes.py` sizes that species' plates
+FLUSH and used to own all four elements — so re-running its `--write` would have reverted the
+shield fit, depending on which script ran last. It now reads Charge's leaf back instead of
+imposing the flush fit, prints what the flush fit *would* have been (`4.72 × 2.92 × 1`, 47%
+surface coverage vs the shipped 7.4%), and leaves the sizing to the shield fitter. Proven by
+running it: Mass / Space / Time / the Hesperides topiary come out byte-identical and Charge is
+untouched.
 
 ### 35.4 Cost
 
 - **Colliders: unchanged.** A shield changes the LOOK and the mass, never the collider — the
   authored primitive box trigger stays (`PrismOctahedronShield.ApplyShieldedPose`), because a
   convex mesh trigger is invisible to trigger-skimmers. Shape-precise contact rides the Burst
-  shell tier in `PrismSpatialIndex`, which is a cold array keyed off the prism slots that already
-  exist. Prism COUNTS are unchanged everywhere (`MaxTotalSpawnedObjects` untouched), so the
-  per-cell collider budget is exactly as before. More shielded prisms do mean more slots pass
-  `ShellKind.None` in `ShellContactQueryJob` — Burst, per probe, no colliders.
-- **Volume: down, which is the safe direction.** Charge prism volume `45.90 → 4.92`
-  (`0.4766³ = 0.108`). In the Blob cell, where all three gyroid configs roll the four elements
-  uniformly, the gyroid family's ceiling falls from **85% → 71% of `FrenzyEnterVolume`** (245,076
-  → 203,586 against 288,000) and its seeded floor from 8% → 6%. Frenzy therefore arrives LATER, so
-  **no ladder is re-authored** — and it gives back some of the headroom §32.7 found the Blob
-  colony freezing against.
+  shell tier in `PrismSpatialIndex`, a cold array keyed off prism slots that already exist. Prism
+  COUNTS are unchanged everywhere (`MaxTotalSpawnedObjects` untouched), so the per-cell collider
+  budget is exactly as before. More shielded prisms do mean more slots pass `ShellKind.None` in
+  `ShellContactQueryJob` — Burst, per probe, no colliders.
+- **Volume: down, which is the safe direction.** Per-prism `45.90 → 4.92` (gyroid Charge) and
+  `13.78 → 0.85` (Schwarz P Charge). In the Blob cell, where every flora config rolls the four
+  elements uniformly:
+
+  | | before | after | of `FrenzyEnterVolume` (288,000) |
+  |---|---|---|---|
+  | gyroid ceiling (60+33+42 plants × 30) | 245,076 | 203,586 | 85.1% → 70.7% |
+  | SchwarzP ceiling (22 plants × 36) | 12,028 | 9,468 | 4.2% → 3.3% |
+  | **flora total** | **257,104** | **213,054** | **89.3% → 74.0%** |
+
+  Frenzy therefore arrives LATER, so **no ladder is re-authored** — and it gives back some of the
+  headroom §32.7 found the Blob colony freezing against.
 
 ### 35.5 What is NOT fitted (open, measured, deliberate)
 
-Schwarz P's Charge variant now shields too, and its plates were fitted **flush** against its own
-site set (§34.5), so it has exactly the same problem. Measured by the same tool, over that
-fitter's own frames (972 prisms of a 3×3×3 tile block, leaf `4.72 × 2.92 × 1`):
+Two configs roll their element with an **empty** `ElementPalette`, so ONE authored leaf serves all
+four elements and a per-element fit cannot reach them without giving them a palette (which would
+replace their bespoke topiary sizes). Measured the same way:
 
-| | s\* | interpenetrating |
-|---|---|---|
-| plates | 1.33 | 0 of 6,867 |
-| shields | **0.44** | **3,654 of 74,952** |
+| config | leaf (all four elements) | plates s\* | shields s\* | interpenetrating |
+|---|---|---|---|---|
+| Hesperides Gyroid Topiary | 3.6 × 3 × 2.2 | > 2.5 | **1.003** | 0 of 2,412 |
+| Hesperides SchwarzP Topiary | 4.09 × 3.14 × 2 | 1.54 | **0.513** | 2,844 of 51,963 |
 
-It is left alone on purpose: the ask was the gyroid, and shrinking a second species' prisms is a
-look decision somebody has to want. The arithmetic is identical if it is wanted — a uniform
-`× 0.44 × 0.9 ≈ ×0.40`, giving roughly `1.89 × 1.17 × 0.40`. The eight phyllotactic Charge
-species have shielded since the garden shipped and were never fitted for it either; they are
-not lattices, so their prisms are far more loosely packed, but nobody has measured them.
+The gyroid topiary is already clear — barely, and by accident of being a small leaf. The Schwarz P
+topiary is not, and fixing it means deciding what its *other three* elements should look like: a
+garden decision, not a geometric one.
+
+The eight phyllotactic Charge species (Arbor / Coral / Frond / Lantern / Reed / Rosette / Spire /
+Tendril) have shielded since the garden shipped and were never fitted for it either. They are not
+lattices — their prisms are sized by ROLE and placed by a growth rule, so there is no site set to
+fit against and no equivalent measurement; nobody has looked at them.
 
 ### 35.6 Verification (the human is the gate)
 
 1. `python3 Tools/Build/author_charge_flora_shields.py --check` — every Charge flora asset states
    the armour, and states the same number the law does.
-2. `python3 Tools/Build/fit_gyroid_shield_clearance.py --check` — the shipped Charge gyroid leaf
-   is the fitted one; the run also re-proves zero interpenetrating pairs and self-tests the SAT.
-3. `python3 Tools/Build/verify_gyroid_lattice_scale.py` — unchanged, and must stay so: this branch
-   moved no lattice distance.
-4. **In-editor, Menu_Main (the Blob cell rolls all four gyroid elements):** find a gyroid plant
-   whose heart is the Charge crystal — identify it by the crystal's SHAPE, not its colour, since
-   a crystal's colour says who may collect it (`Docs/PALETTE.md` §2.2) — and watch it armour one
-   leaf per second. Confirm (a) the octahedra bloom in individually and read as separate bodies
-   rather than one fused mass, (b) the plant is progressively ignored by herbivores as it armours
-   (shielded mass leaves the cell's targeting grids, §22) and any contact that does land strips
-   the shield instead of eating the leaf, with the plant re-armouring it on the next pass of the
-   cadence, (c) the unshielded plates look deliberately sparse — that is the fit, not a growth
-   failure.
-5. **Hesperides:** a Charge topiary (gyroid or SchwarzP) must armour too — that config carries
+2. `python3 Tools/Build/fit_shield_clearance.py --check` — both shielded lattice species are at
+   their fit; the run also re-proves zero interpenetrating pairs, self-tests the SAT against two
+   closed-form cases, and fails if a fitted axis outside the prefab's clamp stops being admitted.
+3. `python3 Tools/Build/fit_schwarz_p_leaf_sizes.py` — must report Charge as SHIPPED, not as the
+   flush fit; and `--write` must leave the Charge asset untouched.
+4. `python3 Tools/Build/verify_gyroid_lattice_scale.py` + `verify_gyroid_octagon_tables.py` +
+   `verify_schwarz_p_tile_tables.py` — unchanged, and must stay so: this branch moved no lattice
+   distance.
+5. **In-editor, Menu_Main (the Blob cell rolls all four elements of both lattice species):** find
+   a gyroid and a Schwarz P plant whose heart is the Charge crystal — identify it by the crystal's
+   SHAPE, not its colour, since a crystal's colour says who may collect it (`Docs/PALETTE.md`
+   §2.2) — and watch each armour one leaf per second. Confirm (a) the octahedra bloom in
+   individually and read as separate bodies rather than one fused mass, (b) the plant is
+   progressively ignored by herbivores as it armours (shielded mass leaves the cell's targeting
+   grids, §22) and any contact that does land strips the shield instead of eating the leaf, with
+   the plant re-armouring it on the next pass of the cadence, (c) the unshielded plates look
+   deliberately sparse — that is the fit, not a growth failure. Schwarz P is the more extreme of
+   the two: its plates cover 7.4% of the surface unshielded, against 47% before.
+6. **Hesperides:** a Charge topiary (gyroid or SchwarzP) must armour too — that config carries
    `ShieldPeriod: 0` and rolls its element with an empty palette, so it is the case only
-   `Flora.ResolveShieldPeriod` can reach.
-6. After the flora config edits: `FrogletTools ▸ Validation ▸ Validate Lifeform Crystals`.
+   `Flora.ResolveShieldPeriod` can reach. Expect the SchwarzP topiary's octahedra to still fuse;
+   that is the open item in §35.5, not a regression.
+7. After the flora config edits: `FrogletTools ▸ Validation ▸ Validate Lifeform Crystals`.

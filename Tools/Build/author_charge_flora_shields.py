@@ -54,7 +54,7 @@ def charge_period():
 def variant_fields():
     """Every serialized field of FloraVariantTuning with its type, read from the C#.
 
-    Mirrors the helper in fit_schwarz_p_leaf_sizes.py / fit_gyroid_shield_clearance.py -
+    Mirrors the helper in fit_schwarz_p_leaf_sizes.py / fit_shield_clearance.py -
     deliberately a local copy rather than an import, so authoring an asset never depends on
     those tools' numpy."""
     src = VARIANT_CS.read_text(encoding="utf-8-sig")
