@@ -106,8 +106,18 @@ GAMMA = (0.03400571, 0.01267392, 0.02209043)
 #   double error (1e-12)  <<  floor (1e-6)  <=  measured min (4e-5).
 MIN_MARGIN_FLOOR = 1e-6
 
-# Census sizes. PATCH_VERTS drives every statistic; SIM_PLANTS bounds the
-# growth simulation (it stops once this many plants completed).
+# Census sizes. PATCH_VERTS drives every statistic. SIM_PLANTS is the MINIMUM
+# colony the growth simulation must complete - the sim deliberately runs its
+# whole cycle budget (births land every few cycles, so "all plants done" only
+# happens when the budget stops the frontier), which yields ~1,461 complete
+# plants: the bigger census is the stronger measurement of the plant-size
+# band, and MinPatchPrisms is derived from its minimum. The verify script's
+# smaller re-run gates the same properties with a spawn-capped sim.
+# NOTE: --check is an exact string compare of 15-decimal emits computed
+# through libm cos/sin, so it is authoritative on the machine that emitted
+# the table; across platforms a 1-ulp libm difference can fail it spuriously,
+# and verify_icosahedral_quasilattice_tables.py (tolerance 5e-13) is the
+# portable re-proof.
 PATCH_VERTS = 60000
 SIM_PLANTS = 400
 

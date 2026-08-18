@@ -322,6 +322,28 @@ def fit_charge(lat, classes, frames, time_leaf, f):
             math.floor(cz * shrink * 100) / 100)
     f.check(shrink < 1.0, "Charge shields NEED the shrink (octahedra of the flush strut fuse)",
             f"octahedron touch scale {worst:.4f} -> uniform shrink x{shrink:.4f}")
+
+    # Re-check the SHIPPED geometry, not just the pre-shrink model: the fitted
+    # leaf is RE-POSED by the span arithmetic (its plain inset (12-3.63)/2 = 4.19
+    # exceeds the heart seat, so every strut re-centres to its edge midpoint and
+    # the heart-end asymmetry disappears) - the same post-search re-census
+    # fit_length runs. The pair-class cutoff (midpoints within 1.2 lattice units)
+    # was sized for BOXES; shield octahedra reach 3x, so shield pairs beyond it
+    # exist but cannot bind: an excluded pair's touch scale is at least
+    # (1.2 - 0.07) / (2 x 1.27) ~ 0.44, far above the binding in-census class.
+    worst_shipped = 10.0
+    over = 0
+    for cls in classes:
+        (ca, ia, la), (cb, ib, lb) = class_struts(lat, cls, edge_world, leaf[0], HEART_SEAT)
+        rA = (SHIELD_SCALE * la / 2, SHIELD_SCALE * leaf[1] / 2, SHIELD_SCALE * leaf[2] / 2)
+        rB = (SHIELD_SCALE * lb / 2, SHIELD_SCALE * leaf[1] / 2, SHIELD_SCALE * leaf[2] / 2)
+        s = octa_touch_scale(ca, rA, frames[ia], cb, rB, frames[ib])
+        if s < 1.0:
+            over += 1
+        worst_shipped = min(worst_shipped, s)
+    f.check(over == 0, "the SHIPPED Charge leaf's shield octahedra are flush",
+            f"touch scale {worst_shipped:.4f} over {len(classes)} classes, re-posed spans")
+
     print(f"       Charge leaf: {length} x {cy} x {cz} -> "
           f"{leaf[0]} x {leaf[1]} x {leaf[2]} (aspect preserved)")
     return leaf
@@ -359,10 +381,32 @@ def shipped_leaf(name):
     return tuple(float(g) for g in m.groups()) if m else None
 
 
+def shipped_lattice_scale(name):
+    """The asset's LatticeScale (sentinel -1 = prefab's x1). A fitted length is only
+    valid on the lattice it was fitted against, so --check gates this too - Space's
+    22.41 was fitted on edge 24, and reverting its scale to 1 would interpenetrate
+    every node by ~10u while a LeafSize-only check stayed green."""
+    path = LIFEFORMS / f"Quasicrystal Flora {name}.asset"
+    if not path.exists():
+        return None
+    m = re.search(r"^    LatticeScale: ([-\d.]+)$", path.read_text(), re.M)
+    if not m:
+        return None
+    v = float(m.group(1))
+    return 1.0 if v <= 0 else v
+
+
 def shipped_heart_seat():
     if not BLOCK_PREFAB.exists():
         return None
     m = re.search(r"^  heartSeatInset: ([-\d.]+)$", BLOCK_PREFAB.read_text(), re.M)
+    return float(m.group(1)) if m else None
+
+
+def shipped_edge_length():
+    if not BLOCK_PREFAB.exists():
+        return None
+    m = re.search(r"^  edgeLength: ([-\d.]+)$", BLOCK_PREFAB.read_text(), re.M)
     return float(m.group(1)) if m else None
 
 
@@ -386,6 +430,13 @@ def main() -> int:
         f.check(abs(seat - HEART_SEAT) < 1e-6,
                 "block prefab's heartSeatInset matches this fit's constant",
                 f"prefab {seat} vs fit {HEART_SEAT}")
+    edge = shipped_edge_length()
+    if edge is not None:
+        # Same read-back as the seat: every fitted length below is sized against
+        # THIS edge, so a prefab retune must fail here rather than ship stale fits.
+        f.check(abs(edge - EDGE) < 1e-6,
+                "block prefab's edgeLength matches this fit's constant",
+                f"prefab {edge} vs fit {EDGE}")
 
     print("censusing configuration classes over the patch ...")
     pair_classes, seat_classes, n_edges, n_hearts = census_classes(lat, PATCH_VERTS)
@@ -419,6 +470,10 @@ def main() -> int:
                 f.check(shipped is not None and all(abs(a - b) < 1e-6 for a, b in zip(shipped, leaf)),
                         f"shipped {name} leaf matches the fit",
                         f"shipped {shipped} vs fit {leaf}")
+                shipped_scale = shipped_lattice_scale(name)
+                f.check(shipped_scale is not None and abs(shipped_scale - scale) < 1e-6,
+                        f"shipped {name} LatticeScale matches the fit's lattice",
+                        f"shipped x{shipped_scale} vs fit x{scale:g}")
             else:
                 state = "SHIPPED" if shipped == leaf else f"shipped {shipped}"
                 print(f"  {name:<7} fit {leaf}  lattice x{scale:g}  ({state})")
