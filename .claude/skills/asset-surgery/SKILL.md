@@ -1569,6 +1569,52 @@ never prunes an unresolvable modification, so the inspector keeps showing a valu
   `_nearFieldSkimmer` → the *other* skimmer). Record the finding in a backlog rather than
   hand-editing prefab YAML to remove override entries — the sweep is what tooling is for.
 
+- **A GENERATOR that has drifted behind its own output is a loaded gun, and `--check` will not
+  catch it.** "The generator is the source, the assets are the build" only holds while the two
+  agree. Hand-tune an asset the generator authors — four playtest rounds of it — and the next
+  person who re-runs the generator silently reverts the lot, with the validator passing
+  throughout, because a key-vs-C#-field validator checks that the emitted YAML is *well-formed*,
+  not that it is *current*. `author_urchin_assets.py` had drifted far enough that a re-run
+  reverted an entire firing pattern (`firingPattern 2 -> 0`, dropping four ring fields outright),
+  both triggers' chain depth, and the spike dwell. **The test is one command**: run the generator
+  and `git status --porcelain -- Assets`. Empty = the generator still reproduces what ships. Do it
+  at ship time for every generator the branch touched, and re-sync the generator (not the assets)
+  when it fails.
+- **Never move an array's ORDER and the INDEX that reads it in the same change.** They cancel, the
+  diff looks substantial, and the runtime behaviour is byte-identical — so the bug survives a
+  playtest that specifically checked for it. If you find yourself editing both, you have not
+  decided which one is wrong. (Cost here: a whole round on "the domain colour is still on the
+  wrong submesh", where the material order and `_domainMaterialSlot` were swapped together.)
+- **`using System;` + `using UnityEngine;` is CS0104 on `Object`, `Random` and `Debug`, and this
+  repo's convention is a `using` ALIAS, not per-site qualification** (`using Object =
+  UnityEngine.Object;` — see `InterfaceReference.cs`, `AOERadialBlocks.cs`, `CSDebug.cs`). A
+  naive detector cries wolf on all of them: make it alias-aware (skip a file with
+  `^using <Name>\s*=`) or it reports 65 hits where there are two. The alias also covers the
+  *next* bare use, which per-site qualification does not.
+- **A componentwise divide by `lossyScale` cannot cancel a NON-UNIFORM parent that is also
+  ROTATED** — the product shears, and Unity bakes an approximation the moment you
+  `SetParent(null, true)`. It is exact for a uniform parent, which is why it passes the case it
+  was written for and fails silently elsewhere. Where the child detaches anyway, do not compensate
+  at all: apply the intended WORLD size after the detach, when the parent chain is final. If the
+  child then spawns more children from itself (a chain reaction), the error COMPOUNDS once per
+  generation — the symptom is geometric, not additive.
+- **A "this is non-reentrant" comment on static scratch is a hypothesis, and synchronous effect
+  dispatch is how it dies.** Dispatching an impact runs its effect list inline; an effect that
+  spawns a projectile runs that projectile's `async` body synchronously *up to its first await* —
+  which can be past the child's own use of the same static buffers. The parent is then iterating a
+  list the child just cleared. Rent buffers by depth (recursion is bounded by the feature's own
+  depth cap) rather than asserting the property in a comment.
+- **A hardcoded palette entry and a neutral base material look identical in the inspector.** Before
+  deciding which material "wears the domain", compare each candidate's authored colours against
+  the project's `SO_ColorSet` per-domain entries — `GreenAccentVesselMaterial` turned out to be
+  exactly `JadeColors.ShipColor2 x 2`, i.e. one domain's colour welded into every vessel that used
+  it. A material whose numbers ARE a domain's numbers is a placeholder, not a design choice.
+- **Check "does every `m_Script` guid resolve?" DIFFERENTIALLY, against the merge base.** In a
+  headless container `Library/PackageCache` is absent, so every TMP/Netcode/UI script guid looks
+  unresolvable and a naive check reports dozens of phantom "Missing (Mono Script)" rows. Compare
+  the unresolved set in your version against the unresolved set in `git show <base>:<file>`; only
+  the difference is yours.
+
 ### Bundled tool: `field_parity.py`
 
 Beside this skill. `serialized_fields(cs_path)` returns what Unity would serialize
