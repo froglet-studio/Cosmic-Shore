@@ -257,3 +257,28 @@ Mechanics reference: `_Scripts/Controller/Vessel/R_VesselActions/DOLPHIN_ENERGY_
     is the same authoring hole that produced this branch's `NullReferenceException` in the
     impact-effect dispatch, in a list that happens to filter. Clear the slot when the prefab is
     next opened.
+
+## Danger-prism consequence drift (observed while shipping `claude/dolphin-time5-debuff-immunity-kn4vmy`)
+
+25. **CLAUDE.md's danger-prism paragraph asserts an "input mute" that nothing wires.** The
+    locked-design paragraph lists a danger prism's costs as "slow + all-element debuff +
+    boost reset", and the elemental-immunity sentence says the immunity "denies ONLY the
+    elemental drain: the slow, the input mute and the boost reset still land". Verified at
+    ship time: `SparrowDebuffByRhinoDangerPrismEffect.asset` — the only effect that mutes an
+    input — is referenced by **no `VesselImpactorDataContainerSO` at all**, so the input mute
+    happens on no vessel. "Boost reset" is also imprecise: the live effect is
+    `VesselChangeBoostByPrismEffectSO`, a `retainedFraction` **halving** on any prism ram, and
+    it deliberately skips its pinned-snapshot correction while the vessel is DRIFTING. The
+    same doc-vs-producer gap CLAUDE.md already records for the per-vessel speed effect.
+    Left alone here to keep this branch's diff scoped to the Dolphin; the fix is a re-audit of
+    that whole paragraph against the shipped containers, per-vessel, not a wording tweak.
+
+26. **`SkimmerChangeResourceByPrismEffectSO`'s danger-bonus fields now have zero users.**
+    `_dangerBonusElement` / `_dangerBonusMultiplier` were introduced for the Dolphin's Time-5
+    "Live Current"; that upgrade was re-scoped to Drift Ward and the asset set back to
+    `None`/`1`. The machinery is generic, documented and correctly gated on `IsUpgradeActive`,
+    so it is kept as a reusable surface rather than deleted — but it is unreferenced today.
+    Delete it if no vessel claims it within a release or two, and note that it is a DIFFERENT
+    effect from `SkimmerBoostPrismEffect.dangerEnergyMultiplier` (the platform's 10× danger
+    bonus): different resource (energy vs boost), different gate (per-asset element vs
+    hardcoded Charge). The two are easy to confuse from an ability map's prose alone.

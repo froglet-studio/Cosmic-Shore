@@ -39,7 +39,7 @@ Three pieces, all vessel-agnostic:
 |---|---|---|
 | The state | `ResourceSystem.IsElementallyImmune` + `SetElementalDebuffImmunity(source, immune)` + `OnElementalImmunityChanged` | Source-keyed grants (a `HashSet`), so two concurrent holders can't clear each other. Immune while any grant stands. |
 | The read | `IVesselStatus.IsElementallyImmune` | Convenience accessor for HUD / VFX / gameplay, alongside `IsSlowed` / `IsBoosting`. |
-| The driver | `VesselElementalImmunity` (vessel root) | Declarative: pick a `Condition` (`Always` / `WhileBoosting` / `WhileTranslationRestricted`) and an optional `upgradeGate` element. |
+| The driver | `VesselElementalImmunity` (vessel root) | Declarative: pick a `Condition` (`Always` / `WhileBoosting` / `WhileTranslationRestricted` / `WhileDrifting`) and an optional `upgradeGate` element. |
 
 Wired today:
 
@@ -47,6 +47,7 @@ Wired today:
 |---|---|---|
 | Sparrow | `WhileBoosting` | `Time` (level 5 — "Elemental Ward") |
 | Serpent | `WhileTranslationRestricted` (stopped to weave) | `None` — ungated, stopping is the whole cost |
+| Dolphin | `WhileDrifting` | `Time` (level 5 — "Drift Ward") |
 
 **Scope, deliberately narrow:**
 - Blocks **negative** magnitudes only. Buffs still land while immune.

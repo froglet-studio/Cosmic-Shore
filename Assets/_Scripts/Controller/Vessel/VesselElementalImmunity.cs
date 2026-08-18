@@ -16,6 +16,8 @@ namespace CosmicShore.Gameplay
     ///             (the TIME level-5 upgrade: boost is the shield).
     ///   Serpent — <see cref="Condition.WhileTranslationRestricted"/>, ungated
     ///             (stopping to weave is what makes you untouchable — no unlock needed).
+    ///   Dolphin — <see cref="Condition.WhileDrifting"/> gated on <see cref="Element.Time"/>
+    ///             (the TIME level-5 upgrade: the drift is the ward).
     ///
     /// The grant is source-keyed on THIS component, so a second holder (another ability, a game mode)
     /// can hold immunity at the same time without either clearing the other. It is revoked in
@@ -37,6 +39,9 @@ namespace CosmicShore.Gameplay
 
             /// <summary>Held while the vessel is stopped / translation-restricted (turret + Serpent stances).</summary>
             WhileTranslationRestricted = 2,
+
+            /// <summary>Held while the vessel is drifting (<c>IVesselStatus.IsDrifting</c>).</summary>
+            WhileDrifting = 3,
         }
 
         [Header("Immunity window")]
@@ -84,6 +89,7 @@ namespace CosmicShore.Gameplay
             {
                 Condition.WhileBoosting              => _status.IsBoosting,
                 Condition.WhileTranslationRestricted => _status.IsTranslationRestricted,
+                Condition.WhileDrifting              => _status.IsDrifting,
                 Condition.Always                     => true,
                 _                                    => false,
             };
