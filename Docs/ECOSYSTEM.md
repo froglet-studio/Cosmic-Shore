@@ -5244,6 +5244,104 @@ Volumes are RAW (`x·y·z`): since §33 a lattice species' leaf does not scale w
 were originally computed with no longer applies. Blob `FrenzyEnterVolume` = 288,000; the gyroid
 ceiling is `40.0 × 30 prisms × 33 plants`, the Schwarz `7.5 × 36 × 22`.
 
+### 34.12 The gyroid branch is a MIRRORED PAIR, not one branch through the prism (Aug 2026)
+
+The gyroid spindle's visible branch is one `BezierCurve.001` mesh — three strands braided into a
+shape that runs *narrow tip → bulb → waist → splayed flare*. `AssemblyBranch.prefab` posed it so
+its **middle** sat on the prism: tip at **−7.01**, flare at **+8.61**, the prism at 0. So every
+prism in the colony was skewered by a single branch, and what showed on the two sides of it was
+not the same geometry — a bulb and a converging tip below, three diverging wires above.
+
+**Now it is two half-branches meeting at the prism**, mirrored about the prism plane
+(`GyroidBranch.prefab`): each is the same mesh at **half** the length, its tip landing on the
+spindle origin and its flare reaching outward. Every number is derived, not chosen:
+
+| | shipped | this change |
+|---|---|---|
+| branch meshes per spindle | 1 | 2 |
+| child z-scale | 6.2 | 3.1 (exactly half) |
+| lateral scale | 1, 1 | 1, 1 (**untouched** — same shape, same visual weight) |
+| child local Y | −3.58 | ±1.7133 (`3.1 × mesh zmax`, so the tip lands on 0) |
+| span, spindle-local | −7.01 … +8.61 | −7.81 … +7.81 |
+| **total span** | **15.6194** | **15.6194** (identical) |
+
+`Tools`-free verification lives beside the change: the branch mesh's extents are read from
+`bonita.fbx` (`z ∈ [−1.966579, +0.552674]` Unity units, length 2.519253) and the transforms out of
+the prefab YAML, and the checker asserts total span preserved, both tips on the prism within
+1e-5 u, exact mirror symmetry, each half exactly half, and lateral scale untouched.
+
+**The visual weight is preserved because the lateral scale is not halved.** Where the branch
+crosses each element's prism face it is essentially the width it was, and — the point of the
+change — it is now the *same* width on both sides:
+
+| element | leafSize.y | shipped +y / −y | paired |
+|---|---|---|---|
+| Mass | 4.5 | 0.430 / 0.570 | 0.595 |
+| Charge / Time | 3.4 | 0.409 / 0.521 | 0.624 |
+| Space | 1.0 | 0.319 / 0.367 | 0.362 |
+
+**Why a second prefab rather than an edit in place.** `AssemblyBranch.prefab` is shared by
+**Wall** and **Schwarz P** flora, and §34.8 already settled that a gyroid decision must not
+change Schwarz P's approved proportions. `GyroidBranch.prefab` is a **flat copy**, which is what
+the `Spindles/` folder already does (`AssemblyBranch` and `Branch` are flat copies of each other
+with identical internal fileIDs) — so the `spindle` field on `GyroidFlora.prefab` changed only
+its **guid**; the fileID is byte-identical. Pointing Wall or Schwarz P at the pair later is that
+same one-field edit.
+
+**The code half: a spindle may now carry MORE THAN ONE renderer, and every one of them lives and
+dies on the same clock.** `Spindle` drove `RenderedObject` alone — its shared phase-variant
+material, its condense fade in, its evaporate fade out, its `enabled` flips. A second branch
+hung off that would have **popped** in and out while the first animated, which is a
+continuity-of-existence violation (§0) on the very spindle whose purpose is symmetry. So
+`Spindle.additionalRenderedObjects` joins `RenderedObject` in a flattened `_renderers` array that
+every visual path drives, with per-renderer captured base materials. Two properties are
+load-bearing:
+
+- **The phase bucket is resolved from the SPINDLE ROOT's position, once, for every part.** Sway
+  desync is per-spindle, never per-renderer — bucketing the halves separately would sway them out
+  of phase and tear the pair apart at the joint.
+- **The list is explicit, never a `GetComponentsInChildren` sweep.** The flora parents its
+  **health prism** under the spindle root (`ExecuteGrowOrder`, `CreateNewAssembler`), so a sweep
+  would capture the prism's renderer and fade conserved mass along with the branch.
+
+Empty on every other spindle prefab, all of which behave exactly as before (parity-checked
+against `Spindle.cs` for all ten: the three `Spindles/`, the three worm segments, QuadFish, shark,
+brittlestar).
+
+**Budget.** **Colliders: zero change** — a spindle carries none, and this adds none. **Mass: zero
+change** — a spindle is not a `Prism`, has no volume and no health, so `Cell.LiveVolume`, the
+Frenzy ladder and the population caps are all untouched; "twice the branch geometry" is not twice
+the mass. The cost is **triangles**: the branch mesh is 225 verts / 432 tris, so a spindle goes
+432 → 864, and a gyroid species at its cap (`MaxLivePopulation` 60 × ~24 prisms ≈ 1,440 spindles)
+goes ≈0.62 M → ≈1.24 M tris. Draw calls do **not** double: both halves of a spindle share one
+phase-variant material and there are still only 8 variants per base material, so the SRP batches
+are unchanged and the extra cost is submission, not state changes. This is the trade the change
+was asked for; if a capture shows it, the lever is `MaxLivePopulation`, not the pairing.
+
+**The general rule.** *A visual element that is animated through one serialized renderer reference
+cannot be split in two without splitting the animation with it.* Duplicating geometry to fix a
+symmetry problem is the easy half; the half that bites is every lifecycle path that was written
+against "the renderer" singular — and it fails as a **pop**, which the continuity law forbids and
+which no static check sees.
+
+**Open — decide from a playtest, not from here.**
+
+- **Which end faces the prism.** Shipped: the branch's fine **tip** lands on the prism and the
+  splayed end reaches outward, which is the literal read of "scaled to just reach the prism" and
+  keeps the shipped asset's outward direction. The alternative — splayed ends meeting *at* the
+  prism, fine points outward — is the same pair rotated, has the same total span, and hides the
+  widest part of the branch inside the prism. Flipping is four values on `GyroidBranch.prefab`:
+  swap the two children's `m_LocalRotation.x` signs and set the positions to `±6.0964`
+  (`3.1 × |mesh zmin|`). `verify_gyroid_branch_pair.py` passes either way — it asserts the
+  span, the mirror and the wiring, not the orientation, because orientation is a look call.
+- **Wall and Schwarz P still use the single piercing branch.** Deliberate (§34.8: a gyroid
+  decision must not move Schwarz P's approved proportions), not an oversight. If they should
+  pair too, it is one guid on the `spindle` field of each prefab plus the two lines in
+  `verify_gyroid_branch_pair.py`'s scope table.
+- **The triangle cost is the branch's headline perf risk** and is unmeasured in engine: ≈1.24 M
+  tris for one gyroid species at its cap, up from ≈0.62 M. If a capture shows it, the lever is
+  `MaxLivePopulation`, or a single mesh authored as the finished pair (one renderer, same
+  triangles) — never un-pairing, which re-introduces the skewer.
 ---
 
 ## 35. Charge ARMOURS its mass — and a shield triples a prism's reach (Aug 2026)
@@ -5354,6 +5452,11 @@ shield with `z` left at 1.0, so the thickness buys nothing either way. It is shr
 because at `1.88 × 1.16 × 1.00` the "plate" is very nearly a cube and stops reading as a plate on
 a surface — the thing §34.5 keeps thin on all four elements.
 
+**Schwarz P moved on its OWN evidence, not on a gyroid decision.** §34.8's rule — that a gyroid
+call must not drag Schwarz P's approved proportions with it — is intact: this fit measured that
+species' own tile table, against its own shields, and would have produced the same number if the
+gyroid did not exist. The two are the same *arithmetic*, not one decision applied twice.
+
 **Nothing about either LATTICE moved** — `separationDistance` / `periodScale` / `LatticeScale`, the
 bond and tile tables, and every coherence tolerance (snap, mate-search radius, reservation floor,
 `AssembledFlora.MisalignmentRadius`) are untouched. That is deliberate and is the cheap half of
@@ -5446,4 +5549,10 @@ fit against and no equivalent measurement; nobody has looked at them.
    `ShieldPeriod: 0` and rolls its element with an empty palette, so it is the case only
    `Flora.ResolveShieldPeriod` can reach. Expect the SchwarzP topiary's octahedra to still fuse;
    that is the open item in §35.5, not a regression.
-7. After the flora config edits: `FrogletTools ▸ Validation ▸ Validate Lifeform Crystals`.
+7. **The mirrored branch pair (§34.12) meets AT the prism, and the Charge prism is now half the
+   size it was** — the branch is sized in spindle-local units against the LATTICE, so it did not
+   move, but a smaller leaf exposes more of the join. The two changes are independent by
+   construction (nothing in `Spindle` reads `leafSize`) and they compose, but the *look* of a
+   Charge gyroid's join is the one thing this branch cannot predict. Check it on the same plant as
+   step 5.
+8. After the flora config edits: `FrogletTools ▸ Validation ▸ Validate Lifeform Crystals`.

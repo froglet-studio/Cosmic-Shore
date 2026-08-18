@@ -30,7 +30,7 @@ namespace CosmicShore.Gameplay
         {
             VesselClassType.Manta, VesselClassType.Dolphin, VesselClassType.Rhino,
             VesselClassType.Squirrel, VesselClassType.Serpent, VesselClassType.Sparrow,
-            VesselClassType.Scarab,
+            VesselClassType.Urchin, VesselClassType.Scarab,
         };
 
         const int RestoreDelayMs = 600;
