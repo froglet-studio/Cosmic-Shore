@@ -98,6 +98,31 @@ namespace CosmicShore.Gameplay
                  "deceleration instead of a 15x speed snap.")]
         [SerializeField] float trailInertiaRate = 6f;
 
+        [Tooltip("How fast the speed CARRIED off a ride bleeds back to ordinary cruise " +
+                 "(world units per second). A friendly grind runs at 150 against a ~50 u/s " +
+                 "free-flight top, so this is the whole length of the launch: 12 u/s spends " +
+                 "about eight seconds getting back to cruise. It only ever removes EXCESS - " +
+                 "a ride slower than the throttle target hands nothing over and the vessel " +
+                 "accelerates normally.")]
+        [SerializeField] float detachSpeedDecayRate = 12f;
+
+        [Tooltip("Seconds after launching off the end of a ribbon during which THAT ribbon " +
+                 "cannot re-latch the vessel. A curved trail whose end doubles back would " +
+                 "otherwise snatch the launch away in the same breath it was granted. Only " +
+                 "the ribbon just left is refused - fly straight off one rail into another " +
+                 "and the new one takes you immediately.")]
+        [SerializeField] float endLaunchReattachGrace = 0.35f;
+
+        /// <summary>The speed a ride handed to free flight, decaying toward the ordinary
+        /// throttle target. 0 = nothing carried, and the vessel flies exactly as before.</summary>
+        float _carriedSpeed;
+
+        /// <summary>The ribbon a launch just left, refused by <see cref="IsReattachBlocked"/>
+        /// until <see cref="_reattachBlockedUntil"/>. Held as a plain reference, never a prism -
+        /// the whole ribbon is what must not re-latch, not the one terminal block.</summary>
+        Trail _launchedFromTrail;
+        float _reattachBlockedUntil;
+
         bool attached = false;
         CameraManager cameraManager;
 
@@ -128,7 +153,11 @@ namespace CosmicShore.Gameplay
                     "without it the vessel can attach to a trail but never move along it.");
 
             // Detach-first, above any gate: Initialize re-runs on a LIVE component (vessel
-            // swap, ownership change) and a stale subscription would pay the previous pilot.
+            // swap, ownership change) and a stale subscription - or a stale launch - would pay
+            // the previous pilot. A carry left standing would hand the incoming pilot a free
+            // 150 u/s they never rode for.
+            ClearLaunchState();
+
             if (surfaceFollower)
             {
                 surfaceFollower.OnPrismCrossed -= ApplyPrismscapePayoff;
@@ -141,11 +170,29 @@ namespace CosmicShore.Gameplay
             if (surfaceFollower) surfaceFollower.OnPrismCrossed -= ApplyPrismscapePayoff;
         }
 
+        /// <summary>
+        /// A respawn / turn reset must not inherit the previous life's launch. `speed` is zeroed
+        /// by the base, and a carry left standing would immediately floor the throttle target
+        /// back up to a ride speed the new life never earned.
+        /// </summary>
+        public override void ResetTransformer()
+        {
+            ClearLaunchState();
+            base.ResetTransformer();
+        }
+
+        void ClearLaunchState()
+        {
+            _carriedSpeed = 0f;
+            _launchedFromTrail = null;
+            _reattachBlockedUntil = 0f;
+        }
+
         protected override void MoveShip()
         {
             if (VesselStatus.IsAttached && !attached)
             {
-                if (!TryBeginRide())
+                if (IsReattachBlocked(VesselStatus.AttachedPrism) || !TryBeginRide())
                 {
                     // A refused attach must release the flags, or the vessel is stuck in ride
                     // mode with nothing under it and free flight never resumes.
@@ -169,9 +216,7 @@ namespace CosmicShore.Gameplay
             }
             else if (!VesselStatus.IsAttached && attached)
             {
-                EndRide();
-                if (IsLocalPilotCamera && cameraManager != null)
-                    cameraManager.SetNormalizedCloseCameraDistance(0);
+                LeaveRide();
             }
 
             attached = VesselStatus.IsAttached;
@@ -179,18 +224,30 @@ namespace CosmicShore.Gameplay
             // A follower that let go on its own (its trail was cleared, or its ground prism
             // was destroyed) leaves VesselStatus.IsAttached true, so without this the vessel
             // would ride a null trail: frozen in place, one exception per frame. Hand it back
-            // to free flight instead, and let the next MoveShip run EndRide properly.
+            // to free flight - through the SAME exit as every other detach, so this one is not
+            // the one case that skips the ride teardown: it used to clear the flags and set
+            // `attached` false in place, which meant the `else if` above could never fire for
+            // it, so _rideMode stayed stale and the ride camera stayed pulled in for the rest
+            // of the life. It would also have been the one exit that dropped the speed carry.
             if (attached && _rideMode != RideMode.None && !RideHasGround())
             {
                 VesselStatus.IsAttached = false;
                 VesselStatus.AttachedPrism = null;
                 attached = false;
+                LeaveRide();
             }
 
             if (attached && _rideMode != RideMode.None)
+            {
                 Slide();
+            }
             else
+            {
+                // Free flight owns the bleed-off. Ticked BEFORE base.MoveShip so the frame the
+                // carry expires is the frame the ordinary throttle target takes over.
+                TickCarriedSpeed();
                 base.MoveShip();
+            }
         }
 
         /// <summary>Routes the attach to the follower the prism's topology calls for.</summary>
@@ -343,8 +400,101 @@ namespace CosmicShore.Gameplay
             return Vector3.Dot(continuous, discrete) > 0f ? continuous : discrete;
         }
 
+        /// <summary>
+        /// The 1D ride ran out of ribbon. Clear the attach flags so the next
+        /// <see cref="MoveShip"/> ends the ride properly, and fence the ribbon just left so it
+        /// cannot immediately re-latch what it just released.
+        /// </summary>
+        void LaunchOffRibbonEnd()
+        {
+            _launchedFromTrail = trailFollower ? trailFollower.AttachedTrail : null;
+            _reattachBlockedUntil = Time.time + Mathf.Max(0f, endLaunchReattachGrace);
+
+            VesselStatus.IsAttached = false;
+            VesselStatus.AttachedPrism = null;
+        }
+
+        /// <summary>
+        /// True while <paramref name="prism"/> belongs to the ribbon a launch just left and the
+        /// grace has not expired. Scoped to that ONE ribbon on purpose: a blanket "no attaching
+        /// for N seconds" would also refuse the next rail the pilot aimed for, which is the
+        /// manoeuvre the launch exists to enable.
+        /// </summary>
+        bool IsReattachBlocked(Prism prism)
+        {
+            if (_launchedFromTrail == null || Time.time >= _reattachBlockedUntil) return false;
+            return prism && prism.Trail == _launchedFromTrail;
+        }
+
+        /// <summary>
+        /// Hand free flight the speed the ride was doing, to be bled off by
+        /// <see cref="TickCarriedSpeed"/> rather than snapped away.
+        ///
+        /// Only EXCESS is carried: a ride slower than what the pilot could fly anyway
+        /// (hostile terrain at 10 u/s) hands over nothing, so this can never brake a vessel and
+        /// can never be a free speed floor - it is strictly momentum the pilot already had.
+        /// </summary>
+        void CarrySpeedIntoFreeFlight(float rideSpeed)
+        {
+            // A new detach REPLACES whatever the last one left bleeding off. A ride writes
+            // VesselStatus.Speed authoritatively, so a pilot who launched at 150, brushed a
+            // hostile ribbon and crawled at 10 really IS doing 10 when they let go - keeping the
+            // old carry would hand back speed the vessel no longer had.
+            _carriedSpeed = 0f;
+
+            if (rideSpeed <= 0f || InputStatus == null) return;
+
+            float natural = base.ComputeThrottleTarget();
+            if (rideSpeed <= natural) return;
+
+            _carriedSpeed = rideSpeed;
+            // Write the smoothed cruise field directly: the whole point is that the handoff is
+            // seamless, and letting `speed` lerp UP to the carried value would read as the
+            // vessel accelerating after it let go rather than coasting.
+            speed = rideSpeed;
+        }
+
+        /// <summary>One frame of the bleed-off, at a constant, readable
+        /// <see cref="detachSpeedDecayRate"/> u/s rather than an exponential tail that never
+        /// quite lands.</summary>
+        void TickCarriedSpeed()
+        {
+            if (_carriedSpeed <= 0f || InputStatus == null) return;
+
+            float natural = base.ComputeThrottleTarget();
+            _carriedSpeed = Mathf.MoveTowards(_carriedSpeed, natural,
+                                              Mathf.Max(0f, detachSpeedDecayRate) * Time.deltaTime);
+            if (_carriedSpeed <= natural) _carriedSpeed = 0f;
+        }
+
+        /// <summary>
+        /// The ordinary throttle target, floored by whatever speed a ride handed over. MAX, not
+        /// a replacement: the pilot's throttle takes back over the instant it can beat the
+        /// decaying carry, and a boost during the glide is not thrown away.
+        /// </summary>
+        protected override float ComputeThrottleTarget()
+        {
+            float natural = base.ComputeThrottleTarget();
+            return _carriedSpeed > natural ? _carriedSpeed : natural;
+        }
+
+        /// <summary>The one exit from a ride: end it and give the pilot their camera back.</summary>
+        void LeaveRide()
+        {
+            EndRide();
+            if (IsLocalPilotCamera && cameraManager != null)
+                cameraManager.SetNormalizedCloseCameraDistance(0);
+        }
+
         void EndRide()
         {
+            // Momentum outlives the ride. Read BEFORE Detach, which zeroes the follower's own
+            // ride speed. Every exit routes through here - running off the end of a ribbon,
+            // Slip, a trail that was cleared under the rider - so "an Urchin keeps its speed
+            // when it lets go" is one rule with one implementation rather than a property of
+            // one particular exit.
+            CarrySpeedIntoFreeFlight(VesselStatus != null ? VesselStatus.Speed : 0f);
+
             if (trailFollower) trailFollower.Detach();
             if (surfaceFollower) surfaceFollower.Detach();
             _rideMode = RideMode.None;
@@ -445,6 +595,14 @@ namespace CosmicShore.Gameplay
                 // hard stop, which no rail grind should be.
                 trailFollower.Throttle = Mathf.Abs(throttle);
                 trailFollower.RideTheTrail();               // advances CenterlinePoint, writes Speed + Course
+
+                // Out of rail: LAUNCH. The rest of this frame still runs on the ride (the
+                // hull finishes on the terminal block with the pilot's own attitude), and the
+                // next MoveShip sees the cleared flags, ends the ride and hands free flight the
+                // speed the grind was doing. Course is whatever the last successful projection
+                // wrote - the ribbon's own tangent - so the vessel leaves along the rail and
+                // then flies its nose, which is what makes aiming the exit a real decision.
+                if (trailFollower.ReachedEnd) LaunchOffRibbonEnd();
 
                 // Attitude: EXACTLY free flight's. Roll, yaw and pitch all run untouched, so
                 // the pilot aims and rolls while the rail carries them.

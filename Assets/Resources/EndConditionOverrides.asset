@@ -21,6 +21,7 @@ MonoBehaviour:
   ribcagePrismTarget: 2000
   wildlifeKillTarget: 250
   dogFightPointTarget: 90
+  bendsPointTarget: 3
   hexRaceCrystalCountBuild: 0
   crystalCaptureCrystalCountBuild: 20
   joustCountBuild: 3
@@ -30,4 +31,5 @@ MonoBehaviour:
   ribcagePrismTargetBuild: 2000
   wildlifeKillTargetBuild: 250
   dogFightPointTargetBuild: 90
+  bendsPointTargetBuild: 3
   autoRestoreBuildValuesBeforeBuild: 1

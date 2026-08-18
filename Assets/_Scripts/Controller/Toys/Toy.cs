@@ -72,6 +72,7 @@ namespace CosmicShore.Gameplay
             {
                 col.isTrigger = true;
                 _triggerWorldRadius = ComputeTriggerWorldRadius(col);
+                BuildSwitchRing(col);
             }
 
             OnInitialized();
@@ -80,6 +81,51 @@ namespace CosmicShore.Gameplay
 
         /// <summary>Hook for subclasses to do extra setup after <see cref="Initialize"/>.</summary>
         protected virtual void OnInitialized() { }
+
+        // ── The SWITCH ring ──────────────────────────────────────────────────
+        //
+        // Every toy is a ring you fly through. The ring is drawn from the toy's OWN trigger
+        // collider - the same collider the exit gate measures - so the shape a player is taught to
+        // read ("thread this and something happens") can never drift from the volume that actually
+        // fires. Docs/ToySystem/ARCHITECTURE.md, "The switch".
+        //
+        // It is drawn by the BASE, not by each toy's builder, so a toy authored tomorrow wears one
+        // without anybody remembering to add it - the same reason the bloom-in and the exit gate
+        // live here. There are exactly two opt-outs, both explicit, both called before Initialize:
+        // a smaller radius (a matrix whose station triggers overlap their neighbours', where
+        // interpenetrating rings would read as noise) and 0, which waives the ring entirely (the
+        // domain changer, whose cones already carry the "fly through me" read).
+
+        float _switchRingRadius = -1f;      // < 0 = derive from the trigger collider
+        Color? _switchRingTint;
+        Material _switchRingMaterial;
+
+        /// <summary>
+        /// Resize, re-tint or waive this toy's switch ring. Call BEFORE <see cref="Initialize"/>.
+        /// <paramref name="radius"/> is in the toy root's own space (toy roots are unscaled, so
+        /// that is world units) and 0 draws no ring; <paramref name="tint"/> defaults to the
+        /// definition's accent; <paramref name="prismMaterial"/> paints the ring in a domain's
+        /// prism material instead of a flat tint.
+        /// </summary>
+        public void ConfigureSwitchRing(float radius, Color? tint = null, Material prismMaterial = null)
+        {
+            _switchRingRadius = radius;
+            _switchRingTint = tint;
+            _switchRingMaterial = prismMaterial;
+        }
+
+        void BuildSwitchRing(Collider col)
+        {
+            // The collider's LOCAL radius, not the world one: the ring is a child of the collider's
+            // own transform, so a local radius stays correct under any parent scaling - and stays
+            // correct DURING the bloom, while the root's scale is still climbing to 1.
+            float radius = _switchRingRadius >= 0f
+                ? _switchRingRadius
+                : col is SphereCollider sphere ? sphere.radius : _triggerWorldRadius;
+
+            Color tint = _switchRingTint ?? (Definition ? Definition.AccentColor : Color.white);
+            ToyFactory.AddSwitchRing(transform, radius, tint, _switchRingMaterial);
+        }
 
         /// <summary>This toy's emblem, or null when it has none (see <see cref="AttachEmblem"/>).</summary>
         protected ToyEmblem Emblem { get; private set; }
