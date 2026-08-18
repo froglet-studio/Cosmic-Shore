@@ -208,7 +208,7 @@ namespace CosmicShore.Editor
         static int OrdinalOf(Element element)
             => Array.IndexOf((Element[])Enum.GetValues(typeof(Element)), element);
 
-        static void Bind(SerializedObject so, string field, Object value)
+        static void Bind(SerializedObject so, string field, UnityEngine.Object value)
         {
             var prop = so.FindProperty(field);
             if (prop != null) prop.objectReferenceValue = value;
