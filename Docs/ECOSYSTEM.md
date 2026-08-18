@@ -1630,7 +1630,8 @@ fallback.
 
 **The freestyle seven (July–August 2026).** Atlantis (~69k) stays Scurry-intensity-4 exclusive;
 the freestyle rotation runs at roughly half that weight per cell, split across seven
-environments so the lava lamp deals a different world each load — Blob (empty baseline)
+environments so the lava lamp deals a different world each load — Blob (empty baseline;
+retired as a world in §36, though its SpawnProfile is still what the seven use)
 plus: **Yggdra** (the world-tree, distilled from Atlantis: trunk/roots/canopy/vines/kelp/
 fireflies), **Daedala** (Atlantis's built half expanded into an Escher road-city: four ring
 terraces, twin counter-chiral Möbius causeways, arches, aqueducts, minarets, lanterns),
@@ -2265,7 +2266,8 @@ expected `Jit` volume factor), not measured — nothing has been observed runnin
 2. **Lifeform crystals.** FrogletTools ▸ Validation ▸ **Validate Lifeform Crystals** — the eight new
    flora prefabs must pass (each carries an authored elemental crystal; configs replace it per
    element at spawn).
-3. **Menu_Main.** Boot the menu (it still opens on Blob — `EnvironmentFree`, index 0, unchanged),
+3. **Menu_Main.** Boot the menu (at the time of writing it opened on Blob — `EnvironmentFree`,
+   index 0; that slot is the **Lattice** cell since §36),
    enter freestyle, fly the **Cell Selector**. Hesperides is the 8th mini-cell and must draw a
    real scale model (terraces + wall + dome) with a `LOAD` label. Select it: the old world
    suctions, the garden blooms in behind the veil.
@@ -5709,9 +5711,11 @@ today). It is deliberate and it is the cell's cost:
 - Fauna are held deliberately light (one grazer species, floor 4 / cap 8, no predators) so the
   collider line is dominated by the thing the cell exists to show.
 
-This cell is opt-in through the Cell Selector and is never the boot world (Blob remains
-`CellConfigs[0]`, and `EnvironmentFreeConfig` still resolves to it), so nothing pays for it until
-a player flies the station and asks.
+**This cell IS the boot world as of §36.10** — it replaced Blob at `CellConfigs[0]`. That is
+affordable only because the cost accrues rather than lands: the cell opens with **eight plants**
+and no environment build at all, so entering Menu_Main is as cheap as it was, and the collider
+line above is reached only after ~7 minutes of continuous growth. A player who launches an arcade
+game before then never pays it, and every return to the menu starts the garden over.
 
 ### 36.9 The heartbeat is the build clock
 
@@ -5723,7 +5727,51 @@ seeded forest did: the authored **5 s** gives ~7 minutes from eight seeds to 720
 it quickens the fauna waves too — they share the clock by design, because the wave clock *is* the
 ecosystem heartbeat.
 
-### 36.10 Invariants
+### 36.10 Blob is retired as a world — and "environment-free" turned out to be two properties
+
+Blob is no longer a cell you can be in. `Blob Cell Config.asset` is deleted and its two consumers
+now point at Lattice: Menu_Main's `CellConfigs[0]` (the `EnvironmentFree` boot slot) and
+`BenchmarkStressTest`'s four `IntensityWise` slots. **Only the config is gone** — the folder's
+`Blob Cell Spawn Profile` is the population of all seven authored freestyle worlds (Yggdra,
+Daedala, Orrery, Zephyr, Caldera, Geode, Ourobor) and its per-species assets are referenced by
+Hesperides and Rampage, so the folder stays and keeps its name. That naming is now misleading and
+is noted as debt, not fixed here.
+
+**The interesting part is what the swap exposed.** `Cell.EnvironmentFreeConfig` — "the first
+config with no `EnvironmentPrefab`" — had two consumers that wanted two different things, and one
+test served both only because Blob happened to satisfy both:
+
+| consumer | actually wants |
+|---|---|
+| `CellTypeChoiceOptions.EnvironmentFree` boot | a world that is **cheap to BUILD** (no multi-second veiled lay on every Menu_Main entry) |
+| `WanderwayRun` | a world that is **EMPTY** (you wander through open space, not through a world you are leaving) |
+
+Lattice is the first config where those diverge: it authors no environment, so it boots instantly
+and is the correct boot world — and it then grows 21,600 prisms out of eight seeds, which is the
+opposite of empty. Left alone, starting a wander would have reset the cell into a garden that grew
+underneath the belt's own 30,000 transported prisms.
+
+So the concept is split. `EnvironmentFreeConfig` keeps its meaning (cheap to build) and
+**`Cell.BareCanvasConfig`** is new: the first config with no `EnvironmentPrefab` **and** a
+`SpawnProfile` listing no flora and no fauna. It is a **predicate over the authored data, not a
+new serialized field** — there is no reference to forget to wire, and a cell cannot claim a canvas
+that is not actually bare. It falls back to `EnvironmentFreeConfig`, so a cell with no bare config
+gets the cheapest world it has rather than nothing: degraded, never broken.
+
+The config it resolves to is **`Barren`**, which already existed, was referenced by nothing, and
+was already exactly right (empty `SupportedFloras` / `SupportedFaunas`). Promoting it to a live
+role meant three small fixes: its `CellName` was misspelled "Baren", its `Description` described a
+different cell, and it carried **no `PhaseThresholds` at all** — `IsAllZero` fell through to
+`CellPhaseThresholds.Default` (Frenzy at 15,000 prisms), which the belt's 30,000-prism stock
+clears immediately. It now authors 40,000 / 34,000 so a wander cannot freeze the lifeforms the
+conveyor releases. It also sits at `CellConfigs[9]`, so it appears in the Cell Selector as a
+tenth, deliberately empty station — the "open water" option.
+
+**The general rule:** *a property named for how something is BUILT will eventually be read as a
+claim about what it CONTAINS.* One config satisfying both is not evidence they are the same
+question; it is the reason nobody notices until the second config arrives.
+
+### 36.11 Invariants
 
 Touched: volume-is-the-spine (the ladder is authored in volume against a measured forest, count
 is the backstop only), the collider budget (§36.7), flora populations (§32). Violated: **none** —
