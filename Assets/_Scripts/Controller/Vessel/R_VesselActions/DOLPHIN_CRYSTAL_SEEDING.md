@@ -266,7 +266,7 @@ of that single act**, so the row reads left to right as the whole weapon.
 | **Charge** | Echo Sight (RT) | blast capsule **THICKNESS**, `0.75×` → `1.5×` | **Pilot Echo** — vessels in the volume light up |
 | **Mass** | Crystal Seeding (passive) | recharge `×0.5` at level 10 | **Claimed Seed** — omni seed → team seed |
 | **Space** | Echo Obliteration (crystal impact) | **REACH** `×2` at level 10 | **Clean Blast** — spares own domain |
-| **Time** | Charge Fill Rate (drift) | boost fill `×1.5` at level 10 | **Live Current** — 3× energy on danger skims |
+| **Time** | Charge Fill Rate (drift) | boost fill `×1.5` at level 10 | **Drift Ward** — no elemental debuff while drifting |
 
 ### Charge → thickness, and the first un-anchored elemental multiplier
 
