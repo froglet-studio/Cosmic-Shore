@@ -173,7 +173,7 @@ namespace CosmicShore.Editor
         /// An adopted slot's own Image. Never created: it is authored art, often with nested glyphs,
         /// so a missing one is a fault to report rather than to paper over with a generated square.
         /// </summary>
-        static Image Adopt(Transform band, string childName, Object context)
+        static Image Adopt(Transform band, string childName, UnityEngine.Object context)
         {
             var existing = band.Find(childName);
             var image = existing ? existing.GetComponent<Image>() : null;
