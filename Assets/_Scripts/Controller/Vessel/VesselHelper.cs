@@ -165,6 +165,9 @@ namespace CosmicShore.Gameplay
                     var materials = shipGeometry.GetComponent<MeshRenderer>().materials;
                     // Clamp rather than throw: a renderer with a single submesh is legal art,
                     // and painting its only slot is the sane reading of "wear the domain".
+                    // The empty case has to be skipped outright - Clamp(1, 0, -1) returns -1,
+                    // so the guard that exists to stop this throwing would itself throw.
+                    if (materials.Length == 0) continue;
                     materials[Mathf.Clamp(meshRendererSlot, 0, materials.Length - 1)] = shipMaterial;
                     shipGeometry.GetComponent<MeshRenderer>().materials = materials;
                 }

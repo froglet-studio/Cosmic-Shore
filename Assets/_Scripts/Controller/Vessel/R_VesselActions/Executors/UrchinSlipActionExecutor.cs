@@ -31,15 +31,36 @@ namespace CosmicShore.Gameplay
             // the previous pilot's colliders onto the new one at an arbitrary moment.
             CancelGhost(restore: true);
 
+            // Harvested LAZILY, not here. VesselController.Initialize calls
+            // ActionHandler.Initialize (which reaches this) ~50 lines BEFORE
+            // Customization.Initialize, and Customization is the only writer of
+            // IVesselStatus.ShipGeometries - so reading the list here always found it empty and
+            // the ghost half of Slip silently never ran. Just drop the stale set; the next Slip
+            // rebuilds it against a fully-initialized vessel.
             _hullColliders.Clear();
-            var geometries = shipStatus?.ShipGeometries;
+        }
+
+        /// <summary>
+        /// Resolve the hull colliders on first use. Returns false when the vessel genuinely has
+        /// no geometry to phase, which is worth one warning: the detach still works, but the
+        /// vessel does not go intangible, so it can re-attach immediately.
+        /// </summary>
+        bool EnsureHullColliders()
+        {
+            if (_hullColliders.Count > 0) return true;
+
+            var geometries = _status?.ShipGeometries;
             if (geometries == null || geometries.Count == 0)
             {
-                CSDebug.LogWarning(
-                    $"{name}: UrchinSlipActionExecutor found no ShipGeometries - the detach will " +
-                    "work but the vessel will not phase out, so it can re-attach immediately. " +
-                    "Populate VesselCustomization._shipGeometries on the vessel prefab.");
-                return;
+                if (!_warnedNoGeometry)
+                {
+                    _warnedNoGeometry = true;
+                    CSDebug.LogWarning(
+                        $"{name}: UrchinSlipActionExecutor found no ShipGeometries - the detach " +
+                        "will work but the vessel will not phase out, so it can re-attach " +
+                        "immediately. Populate VesselCustomization._shipGeometries on the prefab.");
+                }
+                return false;
             }
 
             foreach (var geometry in geometries)
@@ -47,7 +68,10 @@ namespace CosmicShore.Gameplay
                 if (!geometry) continue;
                 if (geometry.TryGetComponent(out Collider collider)) _hullColliders.Add(collider);
             }
+            return _hullColliders.Count > 0;
         }
+
+        bool _warnedNoGeometry;
 
         public void Slip(UrchinSlipActionSO so)
         {
@@ -63,7 +87,7 @@ namespace CosmicShore.Gameplay
                 _status.Course = (_status.Course + transform.up * so.DetachImpulse).normalized;
 
             float ghostSeconds = so.ResolveGhostSeconds(_status);
-            if (ghostSeconds <= 0f || _hullColliders.Count == 0) return;
+            if (ghostSeconds <= 0f || !EnsureHullColliders()) return;
 
             CancelGhost(restore: true);
             _cts = CancellationTokenSource.CreateLinkedTokenSource(this.GetCancellationTokenOnDestroy());
