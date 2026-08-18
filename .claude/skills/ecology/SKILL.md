@@ -248,6 +248,34 @@ what the carve-out silently broke — see the traps below.
   clamps inside the setter with no log — Schwarz P Charge's fitted 0.39 thickness survives only
   because `Flora.AddHealthBlock` calls `Prism.AdmitTargetScale` first (§34.9). Any tool that
   emits a size outside the prefab's window must fail if that admit call is ever refactored away.
+- **N founders do NOT build one superstructure N times faster.** A lattice colony is one
+  continuous surface grown outward from a single founder, and every extra founder is an
+  independent lattice FRAME — `AssembledFlora` declines any growth or seed site within
+  `MisalignmentRadius` of a foreign frame (the gate that stops visible twins, §34.8). So
+  seeding 30 per species does not converge 30x sooner; it builds 30 small structures that stop
+  against each other. Identical prism count, reads as a scattered forest, and **nothing in the
+  population numbers shows it** — the caps, the floors and the totals are all exactly what you
+  authored. Seed ONE per colony and let reproduction extend it; the seeder's remaining job is
+  extinction recovery. Verify by what the cell LOOKS like, never by the count.
+- **A rule written about ROLLED elements must not be inherited by a FIXED-element config.**
+  `author_flora_populations.py` floors lattice species at 4 founders (`LATTICE_MIN_FOUNDERS`)
+  because a colony inherits its founder's element PICK, so one seed wastes a config's authored
+  element spread. A config that authors ONE fixed element has no spread to protect and the floor
+  is actively wrong there. Before inheriting any population/variant rule, check whether it was
+  written about the rolled case.
+- **A property named for how something is BUILT will eventually be read as a claim about what it
+  CONTAINS.** `Cell.EnvironmentFreeConfig` ("first config with no `EnvironmentPrefab`") served
+  the cheap-boot chooser AND the Wanderway's bare canvas, and one test satisfied both only
+  because Blob happened to be cheap *and* empty. The first config that is cheap to build and
+  then GROWS a forest broke the second consumer silently. One config satisfying two questions is
+  not evidence they are one question — it is the reason nobody notices until the second config
+  arrives. Split it as a PREDICATE over authored data (`Cell.BareCanvasConfig`), never a new
+  serialized field, and give it a fallback so it degrades rather than returns null.
+- **When two scripts could own one asset, HAND IT OFF BY NAME — do not exclude it silently.**
+  The "two fitters must not own one asset field" trap above has a remedy: a table keyed by
+  asset-name prefix mapping to the OWNING script, which the non-owner **prints** in its report
+  (`author_flora_populations.py`'s `OWNED_ELSEWHERE`). An `EXCLUDE` set is invisible in the
+  output, so the next reader cannot tell "deliberately owned elsewhere" from "forgotten".
 
 ## 3. Implement (emergence first, surgically)
 - **Favor emergence:** never hard-code an outcome that should emerge from the fundamentals
