@@ -97,7 +97,7 @@ platform-law) shaped the final rule set:
 
 | Change | File |
 |---|---|
-| `ScarabScramble = 42` | `_Scripts/Data/Enums/GameModes.cs` (+ `EnumIntegrityTests` count 33→34) |
+| `ScarabScramble = 42` | `_Scripts/Data/Enums/GameModes.cs` (+ `EnumIntegrityTests` count → 41; that assertion had drifted to 33 while the enum grew to 40, so it was already failing before this branch) |
 | Ownership lock + touch ledger (`LastTouchDomainServer` / `LastToucherNameServer` / `WallBouncesSinceTouchServer`) + juke-steal + `SpendServer` + birth bloom + **`n_SizeScale`** | `AstroLeague/AstroLeagueBall.cs` (+ `spawnBloomSeconds` on `AstroLeagueSettingsSO`) |
 | `n_SizeScale` fixes a confirmed pre-existing bug this mode made live: `SetSizeScale` ran server-side after the spawn payload was built, so a SPACE-scaled forged ball rendered — and prism-scanned — at prefab size on every remote peer | same |
 | `ForgeGate` (mode cap policy) + `OnForged` (mode adoption) + both forge paths routed through `Request` | `R_VesselActions/ScarabBallForge.cs`, `EffectsSO/Vessel Crystal Effects/ScarabBallForgeByCrystalEffectSO.cs` |
@@ -117,6 +117,15 @@ platform-law) shaped the final rule set:
   travels; the window length is the server's own serialized `jukeDurationSeconds`, never a
   client number. The fuller `Juke_ServerRpc` (direction + Charge snapshot) remains SCARAB.md's
   Phase 2.5 item for the cavitation-blast half.
+- **An offline Roslyn pass cannot see a `System`/`UnityEngine` name collision.** This branch
+  was syntax-checked against .NET reference assemblies with no `UnityEngine.dll` available,
+  so every Unity type was already unresolved — which means `Object` resolved *only* to
+  `System.Object` and the CS0104 ambiguity that a real Unity compile raises
+  (`ScarabBallForge`, after `using System;` was added for the forge gate's `Func`/`Action`)
+  was **structurally invisible** to it. The offline check proves syntax and structure; it
+  cannot prove name resolution. The collision set under `using System;` + `using UnityEngine;`
+  is exactly `Object` and `Random` — grep for those two before trusting an offline pass, and
+  treat the first real Editor compile as the authority.
 - **AI cannot juke or blast** (`ScarabJukeController` is inert under autopilot), so AI
   play is fetch-and-escort only (`ArmRollers`: nearest crystal ↔ escort own ball behind
   the predicted position toward the nearest hoop, full throttle via the Scarab

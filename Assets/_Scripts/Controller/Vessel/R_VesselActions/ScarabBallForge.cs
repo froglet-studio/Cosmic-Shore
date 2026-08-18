@@ -101,11 +101,13 @@ namespace CosmicShore.Gameplay
                 return null;
             }
 
-            var ball = Object.Instantiate(prefab, at, Quaternion.identity);
+            // Fully qualified: this file's `using System;` (for Func/event Action on the forge
+            // gate) makes a bare `Object` ambiguous with System.Object.
+            var ball = UnityEngine.Object.Instantiate(prefab, at, Quaternion.identity);
             if (!ball.TryGetComponent(out NetworkObject netObj))
             {
                 CSDebug.LogError("[ScarabBallForge] Ball prefab has no NetworkObject — destroying.");
-                Object.Destroy(ball.gameObject);
+                UnityEngine.Object.Destroy(ball.gameObject);
                 return null;
             }
 
