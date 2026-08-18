@@ -13,6 +13,11 @@ namespace CosmicShore.Gameplay
     /// </summary>
     public class DomainChangerToySet : SwapToySetCoordinator<Domains>
     {
+        // No switch ring here, by design: the cone IS this set's read. Its apex points the way you
+        // fly through, it is rebuilt in the target domain's prism material on every flip, and a
+        // ring around it would say a second time what the cone already says once.
+        protected override bool SlotsWearSwitchRing => false;
+
         protected override IReadOnlyList<Domains> InitialUniverse()
         {
             int dc = Mathf.Clamp(Context.GameData ? Context.GameData.RequestedDomainCount : 3,

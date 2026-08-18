@@ -52,6 +52,22 @@ namespace CosmicShore.Gameplay
         [Tooltip("Floor for the Space size multiplier so a deficit can never collapse the blast.")]
         [SerializeField] private float _minHeightMultiplier = 0.35f;
 
+        [Header("Elemental (Charge) — blast thickness")]
+        [Tooltip("CHARGE → the capsule's DIAMETER: multiplier on Core Explosion Scale at the " +
+                 "RESTING charge level. Unlike Space (which is anchored at 1x at rest), this pair " +
+                 "hands Charge the parameter's whole range — the authored core is what a MID-charge " +
+                 "Dolphin fires, so a fresh pilot's beam is deliberately thinner than the asset " +
+                 "draws. Leave both endpoints at 1 to opt a vessel out entirely.\n\n" +
+                 "It moves ONLY the width across the beam. Reach and gape are untouched, so Charge " +
+                 "cannot steal the angle the resource set or the range Space bought — the three " +
+                 "elements own three orthogonal dimensions of one blast.")]
+        [SerializeField] private float _coreMultiplierAtRestCharge = 1f;
+        [Tooltip("CHARGE → the capsule's DIAMETER at Charge level 10.")]
+        [SerializeField] private float _coreMultiplierAtFullCharge = 1f;
+        [Tooltip("Floor for the Charge thickness multiplier so a deficit can never collapse the beam " +
+                 "to a line.")]
+        [SerializeField] private float _minCoreMultiplier = 0.5f;
+
         [Header("Elemental (Space) — friendly fire")]
         [Tooltip("When ON, this blast damages the pilot's OWN domain until Space's level-5 upgrade " +
                  "lands, and spares allies once it does — the upgrade IS the no-friendly-fire " +
@@ -91,8 +107,59 @@ namespace CosmicShore.Gameplay
                 _aoePrefabs, status,
                 _minExplosionScale, _maxExplosionScale,
                 _resourceIndex, _spawnOffset,
-                sizeMultiplier, _coreExplosionScale,
+                sizeMultiplier, _coreExplosionScale, ResolveCoreMultiplier(status),
                 out volume);
+        }
+
+        /// <summary>
+        /// The blast's CROSS-SECTION at its base, for the HUD to draw: the capsule's radius and the
+        /// half-length of the straight section it is dragged along, plus the extent that section
+        /// would reach at FULL energy so the icon can be a true-to-scale miniature rather than a
+        /// shape normalized into meaninglessness.
+        ///
+        /// Note what the three numbers do, because it is the whole reason the icon is worth drawing:
+        /// <c>halfLength + radius</c> is always <c>maxScale / 2</c> — the resource sets the total
+        /// extent and Charge only REDISTRIBUTES it between the round part and the straight part. So
+        /// banking energy grows the profile and raising Charge rounds it out, and the two readings
+        /// never fight for the same pixels.
+        ///
+        /// Space is deliberately divided out of <paramref name="referenceExtent"/>. Space scales the
+        /// whole blast self-similarly, so leaving it in would make the icon grow with reach and this
+        /// slot would be showing Space's parameter instead of Charge's. Dividing it out keeps the
+        /// icon a readout of the two things it is for: extent from energy, roundness from Charge.
+        /// </summary>
+        public bool TryResolveProfile(IVesselStatus status, out float radius, out float halfLength,
+                                      out float referenceExtent)
+        {
+            radius = halfLength = referenceExtent = 0f;
+            if (!TryResolveBlastVolume(status, out var volume) || volume.Height <= 0f) return false;
+
+            radius = volume.TanCorePerUnit * volume.Height;
+            halfLength = volume.TanGapePerUnit * volume.Height;
+
+            float sizeMultiplier = 1f;
+            if (!Mathf.Approximately(_heightMultiplierAtFullSpace, 1f))
+                sizeMultiplier = ElementalScaling.Multiplier(status, Element.Space,
+                    _heightMultiplierAtFullSpace, _minHeightMultiplier);
+
+            referenceExtent = _maxExplosionScale * 0.5f * Mathf.Max(0.01f, sizeMultiplier);
+            return referenceExtent > 0f;
+        }
+
+        /// <summary>
+        /// CHARGE → how THICK the beam is across the cone. Read live, per blast, off this vessel's
+        /// own levels, and — critically — resolved by the SAME method the preview and the detonation
+        /// both call, so the Echo Sight can never draw a beam of a different width than the one that
+        /// lands. A vessel that authors neither endpoint gets exactly 1 and nothing changes.
+        /// </summary>
+        float ResolveCoreMultiplier(IVesselStatus status)
+        {
+            if (Mathf.Approximately(_coreMultiplierAtRestCharge, 1f) &&
+                Mathf.Approximately(_coreMultiplierAtFullCharge, 1f))
+                return 1f;
+
+            return ElementalScaling.MultiplierFromRest(status, Element.Charge,
+                _coreMultiplierAtRestCharge, _coreMultiplierAtFullCharge, _minCoreMultiplier);
         }
 
         public override void Execute(VesselImpactor vesselImpactor, CrystalImpactData data)
@@ -147,7 +214,8 @@ namespace CosmicShore.Gameplay
                 _spawnOffset,
                 sizeMultiplier,
                 affectSelfOverride,
-                _coreExplosionScale);
+                _coreExplosionScale,
+                ResolveCoreMultiplier(status));
 
             switch (vesselImpactor.Vessel.VesselStatus.VesselType)
             {

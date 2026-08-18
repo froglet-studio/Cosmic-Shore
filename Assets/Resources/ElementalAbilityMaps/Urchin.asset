@@ -1,0 +1,82 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4b3f2a8c8f344355b16a4d4296ae3f98, type: 3}
+  m_Name: Urchin
+  m_EditorClassIdentifier:
+  vesselClass: 4
+  entries:
+  - Element: 1
+    AbilityLabel: Spike Barrage
+    AbilityDescription: Free spikes in every direction, which steal every prism they
+      land on - including other players' trails. Charge is the DEPTH of the chain
+      reaction - how many further generations a landed spike may spray - and it also
+      feeds the ammo the aimed volley spends. At level 5 the free barrage chains too.
+    Input: 2
+    MultiplierAtFullLevel: 2
+    MinMultiplier: 0.4
+    UnlockLevel: 5
+    RelockBelowLevel: 4
+    LatchPolicy: 0
+    UpgradeLabel: Overcharge
+    UpgradeDescription: The barrage's spikes chain. At base they steal wide and stop;
+      overcharged, every one of them sprays a further generation, so a single free
+      press can convert a whole neighbourhood instead of a shell of it.
+  - Element: 2
+    AbilityLabel: Trail Rider
+    AbilityDescription: Fly into a trail to latch onto it and ride, steering by the
+      ribbon rather than the stick. Your own trail GROWS under you as you pass;
+      an enemy's is STOLEN. Riding also recharges ammo, at double rate over shielded
+      prisms. Mass is how much volume each friendly prism gains per pass. Passive -
+      it triggers on contact, not on a button.
+    Input: 0
+    MultiplierAtFullLevel: 1
+    MinMultiplier: 1
+    UnlockLevel: 5
+    RelockBelowLevel: 4
+    LatchPolicy: 0
+    UpgradeLabel: Reinforced Wake
+    UpgradeDescription: Prisms you grow while riding arrive shielded. Since a shielded
+      prism pays double ammo to ride over, a fortified lap of your own trail funds
+      the next one.
+  - Element: 3
+    AbilityLabel: Spike Volley
+    AbilityDescription: An aimed burst of spikes. Each one embeds in the prism it
+      hits, steals it, and sprays the next generation out of the mass it just took -
+      a cascade that runs for as long as it keeps finding enemy territory, and dies
+      when it runs out. Space is REACH - how far each spike flies, carried down every
+      generation of the chain. At level 5 the cascade stops losing reach as it spreads.
+    Input: 1
+    MultiplierAtFullLevel: 2.5
+    MinMultiplier: 0.4
+    UnlockLevel: 5
+    RelockBelowLevel: 4
+    LatchPolicy: 0
+    UpgradeLabel: Deep Cascade
+    UpgradeDescription: The chain stops decaying. Normally each generation launches
+      shorter than the one before it, so a deep cascade peters out; with this, the
+      last generation reaches as far as the first.
+  - Element: 4
+    AbilityLabel: Slip
+    AbilityDescription: Let go of the trail you are riding and phase out for a moment,
+      so you can clear the mass you were inside instead of being re-latched by it.
+      Time is how long the ghost lasts. At level 5 hostile trail no longer slows you
+      down, so raiding an enemy ribbon is as fast as riding your own.
+    Input: 7
+    MultiplierAtFullLevel: 1
+    MinMultiplier: 1
+    UnlockLevel: 5
+    RelockBelowLevel: 4
+    LatchPolicy: 0
+    UpgradeLabel: Slipstream
+    UpgradeDescription: Enemy trail is ridden at your friendly speed. Hostile mass
+      normally crawls, which punishes the raid exactly when you most want to be
+      moving; overcharged, you cross it at full pace while still converting it.

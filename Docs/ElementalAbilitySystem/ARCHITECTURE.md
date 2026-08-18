@@ -284,8 +284,13 @@ an ability that *is* bound to an input but has no hint labelling it.
 Reassigning an ability to a different input event in the action handler, or moving an icon in the
 row, now carries the label along with no manual repositioning.
 
-**Fleet status.** Squirrel and Sparrow author the row (four buttons, four bindings, uniform pitch and
-slot size, charge → mass → space → time). Sparrow's row was **Mass, Space, Charge, Time** and is now
+**Fleet status.** Squirrel, Sparrow and Dolphin author the row (four buttons, four bindings, uniform
+pitch and slot size, charge → mass → space → time). The Dolphin runs with **both**
+`tintIconOnUpgrade` and `showUpgradeBadge` off, because all four of its icons are live gauges — the
+persistent scale bump is its only upgrade signal, and its Time-slot jaw tint is a *gauge* colour on
+the jaw halves, not an upgrade tint on the (transparent) Time icon. It has no
+`InputDeviceIconSetSwitcher`, so its hints do not bind. Sparrow's row was
+**Mass, Space, Charge, Time** and is now
 reordered; note two of its icons have their sprite driven by gameplay (`missileIcon` by ammo,
 `weaponModeIcon` by weapon mode) and both start `enabled = false`, so the sprite-swap layer of the
 upgrade signal is unavailable there and the element badge carries it. Sparrow's HUD is **not** a variant
@@ -293,14 +298,42 @@ of `VesselHUDPrefab` and has no `InputDeviceIconSetSwitcher`, so its four Xbox +
 `ControllerIcon` glyphs are untoggled — both sets render at once — and hints cannot bind to abilities
 until a switcher is added.
 
-Manta, Dolphin, Rhino and Serpent are blocked on **design**: their maps are still `(open design slot)`
+**Urchin** (revived 2026-08-15) is the inverse case and worth stating separately: its map is
+**complete** — four named abilities, four `UpgradeLabel`s, all four L5 upgrades implemented and
+gated on `IsUpgradeActive` — while its HUD row is **not yet authored**. So it is blocked on
+*wiring*, not on design. Three specifics the auditor will report and that are correct rather than
+oversights:
+
+- **Trail Rider (MASS) carries `Input = 0` because it is PASSIVE**, contact-driven, bound to no
+  input event. The map cannot distinguish "passive" from "unset", so the hint layer will find no
+  control for it — and it should not. Charge/Space/Time carry `LeftStickAction(2)` /
+  `RightStickAction(1)` / `Button2Action(7)` and do want hints.
+- **LANDED** (this block previously read "nothing binds yet"; later commits on the same branch
+  made that false): `Urchin.prefab` wires `R_VesselActionHandler._executors` to an
+  `ActionExecutorRegistry`, and `RightStickAction(1)` / `LeftStickAction(2)` / `Button2Action(7)`
+  are bound. The abilities are exercisable.
+- **STILL OPEN — the HUD.** `UrchinVesselHUDController`/`UrchinVesselHUDView` exist and compile,
+  but **no `UrchinHUDVariant.prefab` exists**, `Urchin.prefab` carries
+  `vesselHUDController: {fileID: 0}`, and no asset references either script — so the pair is
+  unreferenced code and the Urchin ships with **0/4 ability icons**. Every other vessel wires a
+  `<Vessel>HUDVariant.prefab` into its vessel prefab (Dolphin 35 references, Sparrow 76). The
+  view is designed to add an **ammo** fill and a deliberately **binary** riding indicator on top
+  of the fleet-standard four-icon row (the base class owns the row, in charge → mass → space →
+  time order). Authoring the prefab is the remaining work; **FrogletTools > Vessels > Wire Vessel
+  Ability Row** creates and binds the row once a HUD prefab exists to run it against.
+
+Mechanics for what those four icons will label: `_Scripts/Controller/Vessel/R_VesselActions/`
+`URCHIN_CHAIN_SPIKES.md` and `URCHIN_TRAIL_RIDER.md`.
+
+Manta, Rhino and Serpent are blocked on **design**: their maps are still `(open design slot)`
 with `Input = 0` and no `UpgradeLabel`, and their HUDs carry 0–2 lower-right icons. Run
 **FrogletTools > Vessels > Audit Vessel Ability Rows** (`VesselAbilityRowAuditor`) for the live table — it
 checks map completeness, icon count and order, pitch/size uniformity and hint coverage across the whole
 fleet from assets alone. At runtime a vessel with no row now warns once per class instead of failing
 silently. The
-other five flyable HUDs have no `abilityIcons` bindings and varied lower-right layouts; wiring them
-is per-vessel HUD work — the framework above needs no further changes.
+remaining flyable HUDs (Manta, Rhino, Serpent, and the Urchin until its row is authored) have no
+`abilityIcons` bindings and varied lower-right layouts; wiring them is per-vessel HUD work — the
+framework above needs no further changes.
 
 ### 7.3 Gotcha: never write a control hint's SIZE
 

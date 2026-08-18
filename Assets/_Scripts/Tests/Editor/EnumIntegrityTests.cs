@@ -290,6 +290,28 @@ namespace CosmicShore.Tests
         }
 
         #endregion
+
+        #region PrismscapeDimension
+
+        // The values ARE the dimension (0D singleton .. 3D volume) - consumers may do
+        // arithmetic/ordering on them, so drift here is worse than a wrong label.
+        [Test]
+        [TestCase(PrismscapeDimension.Singleton, 0)]
+        [TestCase(PrismscapeDimension.Trail, 1)]
+        [TestCase(PrismscapeDimension.Surface, 2)]
+        [TestCase(PrismscapeDimension.Volume, 3)]
+        public void PrismscapeDimension_ValueIsTheDimension(PrismscapeDimension d, int expectedValue)
+        {
+            Assert.AreEqual(expectedValue, (int)d);
+        }
+
+        [Test]
+        public void PrismscapeDimension_HasExpectedMemberCount()
+        {
+            Assert.AreEqual(4, Enum.GetValues(typeof(PrismscapeDimension)).Length);
+        }
+
+        #endregion
     }
 }
 #endif

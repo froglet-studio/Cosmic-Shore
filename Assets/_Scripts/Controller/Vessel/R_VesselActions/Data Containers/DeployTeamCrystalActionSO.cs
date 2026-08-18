@@ -1,19 +1,27 @@
 using CosmicShore.Gameplay;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 namespace CosmicShore.Gameplay
 {
     /// <summary>
     /// Config for the Dolphin's crystal seeding. The ability is <b>PASSIVE</b>: it takes no input
-    /// at all. A cooldown runs continuously, and every time it completes the Dolphin seeds a TEAM
-    /// crystal at a random point in the containing cell's <b>cytoplasm</b> — the shell between the
-    /// nucleus and the membrane — and the cooldown immediately restarts.
+    /// at all. A cooldown runs continuously, and every time it completes the Dolphin seeds a crystal
+    /// at a random point in the containing cell's <b>cytoplasm</b> — the shell between the nucleus
+    /// and the membrane — and the cooldown immediately restarts.
     ///
-    /// What gets planted is a TEAM crystal — only the pilot's domain can collect it, the same rule
-    /// Skim Race's track crystals run on.
+    /// Element → parameter: <b>MASS</b> owns this ability (2026-08-17). Its multiplier divides the
+    /// recharge, and its level-5 upgrade changes WHAT gets planted: an un-upgraded Dolphin seeds an
+    /// ordinary <b>omni</b> crystal that anyone can fly into, and Mass 5 promotes the seed to a
+    /// <b>team</b> crystal only the pilot's own domain can collect. That is the ability's whole risk
+    /// curve — until the upgrade lands, your ammunition is standing in open space for a rival to
+    /// take, and the seeding rate is as much a liability as a supply.
     ///
-    /// Element → parameter: CHARGE owns this ability. Its multiplier divides the recharge, and its
-    /// level-5 upgrade raises how many crystals each cycle plants to <see cref="UpgradedSeedsPerCycle"/>.
+    /// <para>The gate is structural rather than conventional: <c>TeamCrystal.prefab</c> drops the
+    /// base <see cref="OmniCrystalImpactor"/> in favour of a <see cref="TeamCrystalImpactor"/>,
+    /// whose <c>IsDomainMatching</c> rejects every vessel outside the crystal's domain in the impact
+    /// chain itself — so the upgrade is a prefab swap, not a rule the seeding has to remember to
+    /// enforce.</para>
     ///
     /// <para><b>This is not the omni-crystal respawn volume.</b> `CrystalManager.GetAnchorlessSpawnRadius`
     /// is LOCKED to the nucleus (CLAUDE.md ▸ Rampage §27.3) because the nucleus is the visible marker
@@ -26,13 +34,10 @@ namespace CosmicShore.Gameplay
     public class DeployTeamCrystalActionSO : ShipActionSO
     {
         [Header("Cooldown")]
-        [Tooltip("Seconds between seedings at the RESTING charge level.")]
+        [Tooltip("Seconds between seedings at the RESTING mass level.")]
         [SerializeField] private float cooldown = 30f;
         [Tooltip("Absolute floor on the recharge in seconds, so the ability can never become free.")]
         [SerializeField, Min(0.1f)] private float minCooldown = 4f;
-        [Tooltip("Crystals seeded per cycle once Charge's level-5 upgrade is active. Below the " +
-                 "upgrade the yield is always 1.")]
-        [SerializeField, Min(1)] private int upgradedSeedsPerCycle = 2;
 
         [Header("Placement — the cytoplasm")]
         [Tooltip("Inner edge of the seeding band, as a fraction of the way from the NUCLEUS surface " +
@@ -53,24 +58,23 @@ namespace CosmicShore.Gameplay
                  "allowed; aging it out is not (CLAUDE.md - Mass is conserved). 0 = uncapped.")]
         [SerializeField, Min(0)] private int maxLiveSeeded = 8;
 
-        [Header("Elemental (Charge)")]
-        [Tooltip("CHARGE -> cooldown: multiplier on Cooldown at Charge level 10 (1 at the resting " +
-                 "level, extrapolating into the deficit band so debuffed Charge LENGTHENS the " +
-                 "recharge). Authored HERE rather than through the map's generic multiplier, which " +
-                 "ChargeBoostActionExecutor already consumes for the boost peak - reading both " +
-                 "would double-dip one element into two parameters.")]
-        [SerializeField] private float cooldownMultiplierAtFullCharge = 0.5f;
-        [Tooltip("Floor for the Charge cooldown multiplier so overcharge can never zero the recharge.")]
+        [Header("Elemental (Mass)")]
+        [Tooltip("MASS -> cooldown: multiplier on Cooldown at Mass level 10 (1 at the resting " +
+                 "level, extrapolating into the deficit band so debuffed Mass LENGTHENS the " +
+                 "recharge). Authored HERE rather than through the map's generic multiplier, so the " +
+                 "recharge is driven by exactly one number that lives beside the ability it tunes.")]
+        [FormerlySerializedAs("cooldownMultiplierAtFullCharge")]
+        [SerializeField] private float cooldownMultiplierAtFullMass = 0.5f;
+        [Tooltip("Floor for the Mass cooldown multiplier so overcharge can never zero the recharge.")]
         [SerializeField] private float minCooldownMultiplier = 0.35f;
 
         public float Cooldown => cooldown;
         public float MinCooldown => minCooldown;
-        public int UpgradedSeedsPerCycle => upgradedSeedsPerCycle;
         public float BandInnerFraction => Mathf.Min(bandInnerFraction, bandOuterFraction);
         public float BandOuterFraction => Mathf.Max(bandInnerFraction, bandOuterFraction);
         public float CellessSeedRadius => cellessSeedRadius;
         public int MaxLiveSeeded => maxLiveSeeded;
-        public float CooldownMultiplierAtFullCharge => cooldownMultiplierAtFullCharge;
+        public float CooldownMultiplierAtFullMass => cooldownMultiplierAtFullMass;
         public float MinCooldownMultiplier => Mathf.Max(0.01f, minCooldownMultiplier);
 
         // Passive: the ability is bound to no input, so neither hook ever fires. They stay

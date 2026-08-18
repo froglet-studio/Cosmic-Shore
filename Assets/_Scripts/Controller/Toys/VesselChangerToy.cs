@@ -30,7 +30,7 @@ namespace CosmicShore.Gameplay
         {
             VesselClassType.Manta, VesselClassType.Dolphin, VesselClassType.Rhino,
             VesselClassType.Squirrel, VesselClassType.Serpent, VesselClassType.Sparrow,
-            VesselClassType.Scarab,
+            VesselClassType.Urchin, VesselClassType.Scarab,
         };
 
         const int RestoreDelayMs = 600;
@@ -208,7 +208,8 @@ namespace CosmicShore.Gameplay
                 ToyFactory.AddSphereBody(body, radius, previewColor);
             }
 
-            ToyFactory.AddLabel(station.transform, vessel.ToString(), previewColor, radius * 1.9f);
+            ToyFactory.AddRingedLabel(station.transform, vessel.ToString(), previewColor,
+                StationRingRadius(radius * 1.6f), radius);
 
             var captured = vessel;
             station.OnVesselPassed = () => SelectVessel(captured);

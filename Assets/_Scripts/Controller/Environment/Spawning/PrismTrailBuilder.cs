@@ -73,9 +73,12 @@ namespace CosmicShore.Gameplay
             block.TargetScale = e.Point.Scale;
             t = LoadInsights.AccumulateSample("Prism lay: TargetScale (scale-manager registration)", t);
 
-            block.Trail = trail;
             block.Initialize();
             t = LoadInsights.AccumulateSample("Prism lay: Initialize (reset + grow coroutine start)", t);
+
+            // AFTER Initialize: pool-reuse reset clears trail membership, so a stamp made
+            // before it is silently wiped (AssignTrail's contract).
+            block.AssignTrail(trail);
 
             PrismKinds.Apply(block, e.Kind); // additive: Plain leaves baked/prefab state intact
             trail.Add(block);

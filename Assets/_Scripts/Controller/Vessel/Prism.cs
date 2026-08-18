@@ -248,6 +248,13 @@ namespace CosmicShore.Gameplay
             }
         }
 
+        /// <summary>Widens this prism's scale-constraint window so an AUTHORED size survives
+        /// <see cref="TargetScale"/>'s per-axis clamp. See PrismScaleAnimator.AdmitTargetScale.</summary>
+        public void AdmitTargetScale(Vector3 target)
+        {
+            if (scaleAnimator is not null) scaleAnimator.AdmitTargetScale(target);
+        }
+
         public void ChangeSize()
         {
             if (scaleAnimator is not null)
@@ -717,7 +724,21 @@ namespace CosmicShore.Gameplay
             destroyed = false;
             devastated = false;
             _destroyedByCreature = false; // pool reuse: clear stale creature-kill flag
+            // Pool reuse: a prism whose scale window was widened for an AUTHORED size
+            // (AdmitTargetScale) must not carry that ceiling into its next life.
+            scaleAnimator?.RestoreAuthoredScaleWindow();
             ProjectileImmuneUntil = 0f;   // pool reuse: immunity never survives into a new life
+
+            // Pool-reuse safety: trail MEMBERSHIP never survives into a new life. A reused
+            // prism kept its previous container here for years, and the consequences were
+            // structural, not cosmetic: a vessel's wake block could wear a dead spawnable's
+            // Trail, so the attach effect's Trail gate passed against the WRONG ribbon,
+            // GetBlockIndex said "not a member" (-1) and refused the ride, and
+            // PrismscapeTopology read a stale container's dimension. Every layer that puts a
+            // prism IN a trail stamps it explicitly AFTER Initialize (AssignTrail) - the
+            // builder and the vessel spawner both do.
+            Trail = null;
+            if (prismProperties != null) prismProperties.Trail = null;
 
             // Pool-reuse safety: no spawner requests super-shield via prismProperties
             // before Initialize (it's engaged post-spawn via ActivateSuperShield /
@@ -1338,6 +1359,20 @@ namespace CosmicShore.Gameplay
         public void Steal(string playerName, Domains domain, bool superSteal = false) =>
             teamManager.Steal(playerName, domain, superSteal);
         public void ChangeTeam(Domains domain) => teamManager?.ChangeTeam(domain);
+
+        /// <summary>
+        /// Declare this prism a member of <paramref name="trail"/> - the ONE way to stamp
+        /// trail membership, keeping the public field and the prismProperties mirror coherent.
+        /// Call it AFTER <see cref="Initialize"/>: pool-reuse reset clears membership
+        /// (a reused prism must never wear its previous life's container), so a stamp made
+        /// before Initialize is silently wiped.
+        /// </summary>
+        public void AssignTrail(Trail trail)
+        {
+            Trail = trail;
+            if (prismProperties != null) prismProperties.Trail = trail;
+        }
+
         
         public void RegisterProjectileCreated(string playerName)
         {

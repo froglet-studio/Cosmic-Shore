@@ -384,6 +384,21 @@ CSC=$(ls /usr/lib/dotnet/sdk/*/Roslyn/bincore/csc.dll | head -1)
 dotnet "$CSC" -langversion:9.0 -target:library -out:/tmp/x.dll Stubs.cs <files>
 ```
 
+**When `apt-get` isn't available (remote/rootless containers), install it per-user** — same
+Roslyn, no root, ~40s, and it lands in the scratchpad so it never pollutes the repo:
+
+```sh
+curl -fsSL https://dot.net/v1/dotnet-install.sh -o dotnet-install.sh
+bash dotnet-install.sh --channel 8.0 --install-dir "$PWD/dotnet" --no-path
+CSC=$(ls "$PWD"/dotnet/sdk/*/Roslyn/bincore/csc.dll | head -1)
+"$PWD"/dotnet/dotnet "$CSC" -langversion:9.0 -target:library -out:/dev/null <files>
+```
+
+Do NOT conclude "no compiler here" from a missing `dotnet` on `PATH` — that was the state of
+a 2026-08 remote session that then nearly shipped on inspection alone. There are also no Unity
+managed DLLs in such a container (no `Library/`, no `UnityEngine.dll` anywhere on disk), so a
+full type check is genuinely impossible and the no-stubs filter below is the whole game.
+
 Roslyn parses the real files, so **the throwaway desugared copy disappears entirely** —
 and with the same `Stubs.cs` harness you still get the full type check. Cost is one
 install (~1 min) against a desugaring pass that has to be redone per file and can itself
@@ -399,7 +414,12 @@ dotnet "$CSC" -langversion:9.0 -target:library -out:/tmp/x.dll <files> 2>&1 \
 ```
 
 The flood of `CS0246`/`CS0234` (missing Unity types) is expected noise; a hit in that
-filter is real. It catches every syntax error, duplicate/conflicting declaration, and
+filter is real. **Bucket the diagnostics before reading any of them** —
+`| grep -oE "error CS[0-9]+" | sort | uniq -c | sort -rn` turns 4,000 lines into six rows, and
+the shape of that histogram tells you instantly whether anything real is in there. If you add
+`-nostdlib -noconfig` (useful when the SDK's own ref assemblies muddy the output) then
+`CS0518`, `CS8179` and `CS8137` join the expected-noise list, since they are all "predefined
+type not defined" in disguise — filter those three too or they read as findings. It catches every syntax error, duplicate/conflicting declaration, and
 scope collision — including the ones an edit inside a `switch` section or a nested loop
 creates (`CS0128`/`CS0136`), which is exactly where mechanical edits go wrong. It cannot
 catch a wrong member name or arity; when that matters, build the stubs.
@@ -569,6 +589,39 @@ Fix by MERGING the two doc comments into one declaration, not by deleting one �
 each side wrote its comment for a reason and the surviving comment should carry
 both meanings.
 
+### Trap: an empty slice makes `str.replace("")` shred the file
+
+`t.replace(t[i:j], new)` is the natural way to swap a block out of a source file — and when
+`j < i` (the two anchors are in the opposite order to the one you assumed) the slice is `""`,
+`str.replace("", new)` inserts `new` **between every character**, and the file is destroyed in
+one line. It happened here on a Python fitter whose `space_leaf` was defined *after* the
+function used as the end anchor.
+
+Never slice-and-replace on unverified anchor order. Instead:
+
+```python
+def sub(old, new, label):
+    assert old in t, f"ANCHOR MISS: {label}"
+    assert t.count(old) == 1, f"AMBIGUOUS ({t.count(old)}x): {label}"
+    return t.replace(old, new)
+```
+
+…and for a block, assert `j > i` before slicing. Then re-parse the result (`ast.parse` for
+Python, a compile for C#) and check the line count moved by roughly what you intended — a file
+that grew 40x is the signature of exactly this bug.
+
+### Trap: compiling a COPY cannot see whole-class consistency
+
+The harness pattern in §4 — paste the block under test into a stub file and compile it — proves
+the block's *contents* against real types, which is its whole value. It cannot see anything about
+the block's RELATIONSHIP to the rest of the real class: a member you added that duplicates one
+already there (`CS0102`), a name that collides with a base-class member, an override whose base
+signature changed. Those are only found by compiling the real file, or by Unity.
+
+So: after any patch that ADDS a member to a large existing class, grep that class for the
+member's own name and confirm exactly one declaration. This session shipped a duplicate field
+that the harness compiled clean and Unity rejected.
+
 ## 4.5 Technique: offline simulation of a deterministic generator
 
 Origin: the Caldera/Ourobor cell rework (2026-08). §6 below used to list
@@ -679,6 +732,34 @@ coverage-correct this way, and **the fit is tied to the field's parameters** —
 the cell size, the jitter, or add animation, and the constants must be re-fitted or
 the error silently returns. Verify the fit across the whole range you intend to use
 (here: rate 0 through t=400s).
+
+## 4.5b-geo Technique: prove GENERATED GEOMETRY against a closed form
+
+Origin: the Dolphin's `BlastProfileGraphic` and `EchoSightHalo` (2026-08-17). §4.5b samples a
+fragment function to judge a LOOK. This is its vertex-side sibling: when you generate a mesh, a
+UI outline, or a screen-space size in code you cannot run, transcribe the *same arithmetic* into
+Python and assert the properties the shape must have. It catches a class §4.5b cannot, because a
+wrong outline does not look noisy — **it renders a plausible WRONG SHAPE**, and reviewing the code
+that produced it tends to re-confirm the author's own mental model.
+
+The assertions that actually earn their keep, in the order they catch things:
+
+| Property | How to assert it | What it catches |
+|---|---|---|
+| **Simple, non-self-intersecting loop** | sign of `cross(p[i], p[i+1], p[i+2])` constant around the ring | an outline walked in the wrong ORDER — the killer, because a centre-fan over a mis-ordered loop draws a bowtie with hollow wedges and no error |
+| **Area vs the exact formula** | shoelace vs the closed form (a stadium is `πR² + 4LR`) | a whole dimension dropped or doubled; polygonal under-approximation shows as a clean few-% deficit that shrinks with segment count |
+| **Max step between consecutive vertices** | should equal a KNOWN edge of the shape | a jump across the interior — the direct signature of the ordering bug above |
+| **Aspect / units** | for screen-space math, assert x and y offsets subtend EQUAL PIXELS | an ellipse where a circle was intended (NDC x and y both span −1..1 over unequal pixel counts) |
+| **The regime table** | tabulate the output across the input range | a `max()`/`min()` crossover in the wrong place, or a floor that never engages |
+
+A worked instance: the stadium outline swept both end caps from the ACROSS basis vector instead
+of ALONG, which left cap one ending at the far tip and cap two starting near the middle. Convexity
+and max-step both failed instantly; area was 2% under the closed form at 10 segments per cap after
+the fix, which is exactly the expected polygonal deficit. The same script then tabulated the halo's
+angular size against depth and confirmed the constant-size floor engaged where intended.
+
+Cheap to write (~30 lines), and the table it prints is evidence you can paste straight into the
+doc and the PR.
 
 ## 4.5c Technique: COMPILE the shipped HLSL with clang (stronger than porting it)
 
@@ -926,6 +1007,47 @@ never prunes an unresolvable modification, so the inspector keeps showing a valu
   whitespace-only byte change on 15 prefabs is indistinguishable from a real edit in review.
 
 ## 5. Traps learned the hard way (check these BEFORE debugging for an hour)
+
+- **Play-mode edits: SCENE changes are discarded on Stop, SO ASSET changes are kept — and that
+  asymmetry is what makes it baffling.** A human tuning your feature will edit both kinds in the
+  same sitting: the `MenuCameraConfigSO` values they change while playing STICK (it is an asset),
+  the checkbox they uncheck on the scene component silently REVERTS the moment they press Stop.
+  `Ctrl-S` during Play does not rescue the scene half — it saves assets, not the scene. So the
+  report you get is "half my changes keep undoing themselves", which reads like a save bug or a
+  git problem and sends you looking in entirely the wrong place. **Ask which kind of object the
+  field lives on, and whether they were in Play mode**, before investigating anything. Two fixes,
+  and give both: edit scene fields with the editor STOPPED, or — better when the value is part of
+  the change under review — set it in the scene YAML yourself and commit it, so it survives and is
+  reviewable. Suggest `Preferences → Colors → Playmode tint` as the standing guard.
+- **A worst case sampled over a CONVENIENT subset is not a worst case, and will send you to the
+  wrong fix.** Asked how far a camera's aim could tilt, the first pass varied the target only
+  along the axis that looked dominant (straight up/down) and reported 0.855 — comfortably near
+  the threshold, which made "move the camera further out" look like the fix. Searching the whole
+  spawn volume adversarially gave **0.9859**, i.e. the radius barely mattered and the real lever
+  was a constant elsewhere in the code. The restricted model did not just understate the number,
+  it inverted the conclusion. **When the output is a bound rather than a typical value, enumerate
+  the full parameter space (grid + refinement) and say which parameters you searched**; if you
+  quote a bound from a subset, label it as such. Re-deriving it honestly is minutes of compute
+  and is the difference between a fix and a detour.
+
+- **`HideFlags.HideAndDontSave` includes `DontUnloadUnusedAsset`, so a runtime-created Mesh or
+  Material with it LEAKS.** It is the reflexive flag for a procedurally-built helper object, and
+  on a GameObject it is fine (a child dies with its parent regardless). On an *asset-like* object —
+  `new Mesh`, `new Material` — it means the thing is never garbage collected AND never swept by
+  `Resources.UnloadUnusedAssets`, so one accumulates per owner instance, forever, across vessel
+  swaps and scene loads. The Echo Sight halo minted one quad Mesh per executor this way. Fix by
+  making it a **static shared** instance (correct anyway when the geometry is identical for every
+  user — size belongs in a shader property, not a transform scale), or by destroying it explicitly
+  in the owner's teardown. The flag is right for the shared one and wrong for the per-instance one.
+- **Anything that RESOLVES A CELL during the spawn chain must retry, not bind once.** CLAUDE.md
+  documents this for the nucleus radius; the same 800 ms window bites anything else that looks a
+  cell up at init. `Cell.Initialize` runs on `OnInitializeGame` behind `InitDelayMs` (1000 ms) while
+  vessels spawn at `preSpawnDelayMs` (200 ms), so `Cell.FindCellContaining` /
+  `FindNearestActiveCell` return **null** in a vessel component's `Initialize`. Binding a SOAP
+  channel there fails silently and stays failed for the whole match — a HUD tally reading zero
+  forever with nothing in the log. Resolve at USE time (the crystal seeding executor resolves per
+  seeding) or late-bind on the first event that needs it, and keep the unsubscribe pointed at the
+  channel you actually attached to so a mid-flight cell swap cannot strand it.
 
 - **A ratio between two authored numbers is not a measurement until you have controlled for
   what else differs between them.** Chasing "why does this element render smaller?", the
@@ -1521,6 +1643,70 @@ never prunes an unresolvable modification, so the inspector keeps showing a valu
   cleaned; all three answers were dead (commented-out `skimmerPrismEffectsSO`, `m_IsActive: 0`,
   `_nearFieldSkimmer` → the *other* skimmer). Record the finding in a backlog rather than
   hand-editing prefab YAML to remove override entries — the sweep is what tooling is for.
+
+- **A GENERATOR that has drifted behind its own output is a loaded gun, and `--check` will not
+  catch it.** "The generator is the source, the assets are the build" only holds while the two
+  agree. Hand-tune an asset the generator authors — four playtest rounds of it — and the next
+  person who re-runs the generator silently reverts the lot, with the validator passing
+  throughout, because a key-vs-C#-field validator checks that the emitted YAML is *well-formed*,
+  not that it is *current*. `author_urchin_assets.py` had drifted far enough that a re-run
+  reverted an entire firing pattern (`firingPattern 2 -> 0`, dropping four ring fields outright),
+  both triggers' chain depth, and the spike dwell. **The test is one command**: run the generator
+  and `git status --porcelain -- Assets`. Empty = the generator still reproduces what ships. Do it
+  at ship time for every generator the branch touched, and re-sync the generator (not the assets)
+  when it fails.
+- **Never move an array's ORDER and the INDEX that reads it in the same change.** They cancel, the
+  diff looks substantial, and the runtime behaviour is byte-identical — so the bug survives a
+  playtest that specifically checked for it. If you find yourself editing both, you have not
+  decided which one is wrong. (Cost here: a whole round on "the domain colour is still on the
+  wrong submesh", where the material order and `_domainMaterialSlot` were swapped together.)
+- **`using System;` + `using UnityEngine;` is CS0104 on `Object`, `Random` and `Debug`, and this
+  repo's convention is a `using` ALIAS, not per-site qualification** (`using Object =
+  UnityEngine.Object;` — see `InterfaceReference.cs`, `AOERadialBlocks.cs`, `CSDebug.cs`). A
+  naive detector cries wolf on all of them: make it alias-aware (skip a file with
+  `^using <Name>\s*=`) or it reports 65 hits where there are two. The alias also covers the
+  *next* bare use, which per-site qualification does not.
+- **A componentwise divide by `lossyScale` cannot cancel a NON-UNIFORM parent that is also
+  ROTATED** — the product shears, and Unity bakes an approximation the moment you
+  `SetParent(null, true)`. It is exact for a uniform parent, which is why it passes the case it
+  was written for and fails silently elsewhere. Where the child detaches anyway, do not compensate
+  at all: apply the intended WORLD size after the detach, when the parent chain is final. If the
+  child then spawns more children from itself (a chain reaction), the error COMPOUNDS once per
+  generation — the symptom is geometric, not additive.
+- **A "this is non-reentrant" comment on static scratch is a hypothesis, and synchronous effect
+  dispatch is how it dies.** Dispatching an impact runs its effect list inline; an effect that
+  spawns a projectile runs that projectile's `async` body synchronously *up to its first await* —
+  which can be past the child's own use of the same static buffers. The parent is then iterating a
+  list the child just cleared. Rent buffers by depth (recursion is bounded by the feature's own
+  depth cap) rather than asserting the property in a comment.
+- **A hardcoded palette entry and a neutral base material look identical in the inspector.** Before
+  deciding which material "wears the domain", compare each candidate's authored colours against
+  the project's `SO_ColorSet` per-domain entries — `GreenAccentVesselMaterial` turned out to be
+  exactly `JadeColors.ShipColor2 x 2`, i.e. one domain's colour welded into every vessel that used
+  it. A material whose numbers ARE a domain's numbers is a placeholder, not a design choice.
+- **Check "does every `m_Script` guid resolve?" DIFFERENTIALLY, against the merge base.** In a
+  headless container `Library/PackageCache` is absent, so every TMP/Netcode/UI script guid looks
+  unresolvable and a naive check reports dozens of phantom "Missing (Mono Script)" rows. Compare
+  the unresolved set in your version against the unresolved set in `git show <base>:<file>`; only
+  the difference is yours.
+- **`field_parity.py` is LINE-BASED, so a WRAPPED attribute hides a serialized field from it —
+  and it fails in the direction that reads as your fault.** The checker asks "does this line carry
+  `SerializeField` or `public`?", so a declaration whose attribute spilled onto earlier lines —
+
+  ```csharp
+  [SerializeField, Tooltip("a long tooltip " +
+      "wrapped over three lines")]
+  Renderer[] additionalRenderedObjects;      // <- invisible to the checker
+  ```
+
+  — is simply not in the field set, and the parity run then reports the perfectly-correct YAML key
+  you just authored as an *unknown key*. The temptation at that point is to go hunting for a typo
+  in the asset, or to conclude Unity will not serialize the field: both wrong, and Unity is fine
+  either way (it reads the compiled attribute, not the layout). **Keep attribute and declaration on
+  one line** for anything you intend to verify — that is what every existing field in this repo
+  does — and leave a comment saying why, or the next formatter re-wraps it and the field silently
+  drops out of the checker again. The mirror failure is worse and quieter: a field that SHOULD be
+  flagged but is wrapped will never be flagged at all.
 
 ### Bundled tool: `field_parity.py`
 

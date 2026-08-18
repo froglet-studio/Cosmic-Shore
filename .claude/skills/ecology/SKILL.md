@@ -186,9 +186,68 @@ what the carve-out silently broke — see the traps below.
   prism stays classified as volume-only body mass forever: it feeds `LiveVolume` but the food web
   can neither see nor eat it, which looks exactly like "fauna are ignoring it" with no error
   anywhere.
+- **An AUTHORED prism size is SILENTLY CLAMPED, and the clamp is invisible to every offline
+  check.** `PrismScaleAnimator.SetTargetScale` clamps per axis into `[minScale, maxScale]` —
+  serialized defaults `(0.5,0.5,0.5)`/`(10,10,10)`, inherited unchanged by **363 of 404 prefabs**
+  — inside the setter, with no log and no return value. A config saying `60 x 1 x 1` therefore
+  produces a `10 x 1 x 1` prism and *nothing reports the difference*. Three passes of flora
+  fitting measured, argued about and shipped prism sizes the engine never used that way; every
+  cross-section under 0.5 was clamped UP at the same time. Anything that STATES a size calls
+  `Prism.AdmitTargetScale(size)` first; anything that GROWS into the bound via `Grow()` leaves it
+  alone — and because the widening is permanent on a POOLED instance, `ResetState` restores it.
+  **When a fitted size does not read on screen, check what the engine actually STORED before
+  re-fitting** — one look at the live Transform beats another round of measurement.
+- **A scale applied to a node that PARENTS its own successors compounds.** Flora spindles nest —
+  each new spindle is instantiated as a child of its parent branch's spindle — and prisms parent
+  to the spindle ROOT. Scaling that root therefore multiplied down the chain as `scale^depth`
+  (1024x at ten generations) *and* multiplied every prism's authored `leafSize` on top. Scale the
+  node's CHILDREN instead, which are leaves of the chain. Before scaling anything in a hierarchy,
+  ask what else inherits that transform; no compile or static check sees this, only geometry, and
+  only some distance from the seed.
+- **A coherence tolerance written as an ABSOLUTE distance is an unstated dependency on the
+  lattice it was measured against.** A gyroid plant's coherence rides `snapDistance` (compared
+  against SQUARED distances), a 40u mate-search radius, a reservation floor, and
+  `AssembledFlora.MisalignmentRadius` — all sized at `separationDistance 3`. Scaling the lattice
+  moved every real distance out from under them, the twin-detection gate stopped catching twins,
+  and the plant grew the offset parallel domains that gate exists to prevent. Every constant was
+  individually correct; the defect was a RELATIONSHIP. Enumerate every test that decides
+  *sameness* — snap, dedupe, reserve, twin-detect — and assert the ORDERING between them
+  (`reserve < gate < healthy pair`) rather than the values.
 - **A visual state applied before `Prism.IsCreationComplete` is part of BIRTH and must snap.**
   Engaging a morph there holds the exotic-visual window across the creation reveal and eats the
   one-shot grow stamp, so the prism snaps in instead of blooming (`Docs/PRISM_ANIMATION.md` §4).
+- **A prism's SHIELD is 3x the prism, so a species fitted for its box is not fitted for its
+  armour.** `PrismStateManager.ActivateShield` swaps in the CIRCUMSCRIBING octahedron
+  (`OctahedronMeshGenerator.CIRCUMSCRIBING_SCALE = 3` on the box HALF-extents — reach `1.5 x
+  leafSize`, 4.5x the volume). Both lattice species were fitted TIGHT against their own
+  neighbours *unshielded* and cleared by 5–99%; tripling that reach made each Charge plant one
+  interpenetrating solid (`Docs/ECOSYSTEM.md` §35). **Any change that turns shielding ON for a
+  species is a change to its GEOMETRY** — measure the octahedra, not the boxes, and fit the
+  PRISM rather than the lattice (scaling the lattice drags the whole absolute-distance tolerance
+  family with it, §34.8; scaling the prism drags nothing). Tool:
+  `Tools/Build/fit_shield_clearance.py`.
+- **An elemental LAW cannot live in per-element config when the element is ROLLED.** A cadence,
+  a size, an immunity authored per CONFIG is applied by `ApplyVariantTuning`, which runs BEFORE
+  the element is known and is then overwritten by the cell's own overrides — and a config with
+  `SpreadElements` and an EMPTY `ElementPalette` rolls an element and applies its OWN block to
+  it, so no value writable on any per-element asset reaches it (both Hesperides topiaries).
+  Put the law at the one choke point where prefab + variant + cell overrides + the crystal
+  carrying the element have ALL landed — `LifeForm.Initialize` — as a hook a subclass overrides
+  (`Flora.ResolveShieldPeriod`), and keep the assets stating the same number with a `--check`.
+  Scope it to the class that actually means it: on `Flora`, not `LifeForm`, or every creature
+  inherits a rule written about plants.
+- **Two fitters must never own one asset field.** `fit_schwarz_p_leaf_sizes.py` sizes that
+  species' plates flush and `fit_shield_clearance.py` sizes its Charge plate for the octahedra —
+  whichever ran LAST used to win, which is a run-order hazard rather than a bug, so it only
+  surfaces months later when somebody re-runs the older tool. Make the losing tool READ the
+  value back and print what it would have chosen. Related: a fitter must be an idempotent FIXED
+  POINT (`s* = 1/(1-clearance)`), never a fresh multiply of whatever is authored, or every run
+  walks the number.
+- **A fitted axis below `minScale` is silently clamped, so CHECK the admit call, don't assume
+  it.** `HealthBlock.prefab` ships `minScale (0.5,0.5,0.5)` and `PrismScaleAnimator.SetTargetScale`
+  clamps inside the setter with no log — Schwarz P Charge's fitted 0.39 thickness survives only
+  because `Flora.AddHealthBlock` calls `Prism.AdmitTargetScale` first (§34.9). Any tool that
+  emits a size outside the prefab's window must fail if that admit call is ever refactored away.
 
 ## 3. Implement (emergence first, surgically)
 - **Favor emergence:** never hard-code an outcome that should emerge from the fundamentals

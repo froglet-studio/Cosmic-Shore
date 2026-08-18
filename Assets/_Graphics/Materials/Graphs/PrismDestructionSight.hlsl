@@ -27,6 +27,26 @@
 // a property type neither graph contains, which is precisely the kind of hand-authored schema the
 // asset-surgery protocol says not to invent.
 //
+// IT LIGHTS WHOLE PRISMS, NOT THE PART THAT INTERSECTS. The volume test is evaluated once per PRISM
+// — at the prism's own origin, read from the object matrix — not per fragment. That is not a look
+// preference, it is what makes the preview honest: `AOEConicSweepQueryJob.Execute` tests
+// `p.Position`, ONE point per prism, and destroys the whole prism if that point is inside. A
+// per-fragment test painted the geometric intersection instead, so the sight was drawing a shape the
+// blast does not actually operate on — it showed half a prism lit that the blast would remove
+// entirely. Per-prism sampling also makes the zone's boundary read as a jagged prism-granular edge,
+// which is exactly what the damage boundary is.
+//
+// It costs nothing extra: the object matrix is already resident, so this replaces an interpolated
+// float3 read with three matrix element reads, and the branch becomes coherent across the WHOLE
+// prism instead of only across a screen tile. PositionWS stays in the signature as the fallback
+// sample point, and is still live on the graph regardless — the occlusion corridor node next door
+// consumes the same Position node.
+//
+// One known imprecision, on DEBRIS only: a flying chunk's visual position is integrated in the
+// VERTEX stage off its stamped velocity (PrismFlightClock), so its object origin is where it
+// SPAWNED rather than where it currently is. A chunk therefore lights according to the prism it came
+// from, which is transient, already fading, and arguably the more meaningful answer anyway.
+//
 // THE VOLUME. Not a circular cone: the blast opens the way the jaws open. At axial depth s the
 // cross-section is a 2D STADIUM — a disc of radius (_PrismSightParams.y · s) dragged along the
 // gape axis for ±(_PrismSightParams.z · s). So it is narrow across the beam at every charge and
@@ -38,10 +58,9 @@
 //
 // COST CONTRACT. A fragment with the sight off executes one compare (_PrismSightParams.x > 0) and
 // returns. With the sight on it costs one dot for the axial band, one reject, then ~12 ALU for the
-// segment distance — no texture, no extra varying beyond world position, no branch that diverges
-// across a prism (the whole prism is on one side of the test at typical prism sizes, and near the
-// boundary the branch is still coherent across a screen tile). Nothing here changes the render
-// queue, the batch, or the draw call count.
+// segment distance — no texture, no extra varying, and (since the sample point is the prism's own
+// origin) no branch that can diverge across a prism at all. Nothing here changes the render queue,
+// the batch, or the draw call count.
 //
 // WHY IT ADDS RATHER THAN TINTS. The highlight has to read against every prism tier and both
 // domains without being mistaken for one of them. REPLACING colour on a Jade prism lands in the
@@ -59,6 +78,13 @@
 #ifndef PRISM_DESTRUCTION_SIGHT_INCLUDED
 #define PRISM_DESTRUCTION_SIGHT_INCLUDED
 
+// Sample the volume once per PRISM (at its own origin) rather than per fragment, so a prism the
+// blast would destroy lights up WHOLE. See the header note — this is the sampling the damage sweep
+// itself uses. Set to 0 to go back to per-fragment intersection painting.
+#ifndef PRISM_SIGHT_WHOLE_PRISM
+#define PRISM_SIGHT_WHOLE_PRISM 1
+#endif
+
 // How much of the emission is a flat fill vs. an edge-weighted rim. A pure flat fill turns the
 // zone into a slab of solid colour and hides which prisms are which; weighting toward the volume's
 // BOUNDARY draws the blast's silhouette onto the mass instead.
@@ -71,17 +97,26 @@
 #define PRISM_SIGHT_CORE_FILL 0.35
 #endif
 
-// The light the sight adds. Deliberately NOT a domain or tier colour (see the note above): a warm
-// white-hot cast that no palette tier owns, so "lit by the sight" can never be misread as "this
-// mass is shielded / danger / another team". Kept a #define rather than a uniform for the same
-// reason the occlusion kernel's dials are - it is a look decision, not a per-frame quantity.
+// The light the sight adds: a pale COOL cast (H~209, S~0.55, V 1.0), desaturated enough to read as
+// light rather than as a recolour. Kept a #define rather than a uniform for the same reason the
+// occlusion kernel's dials are - it is a look decision, not a per-frame quantity.
+//
+// It was a warm amber until 2026-08-17, chosen because no palette tier owns warm. Cool is a slightly
+// riskier neighbourhood — the SHIELDED tier is frosty and Jade's base face is a deep blue — so two
+// things keep it clear of them: it is deliberately DESATURATED (a tier colour at this lightness is
+// far more saturated), and the gain below is low enough that the prism's own tier colour still shows
+// through the cast rather than being flooded by it. If a lit shielded prism ever starts reading as a
+// tier change, lower the gain before touching the hue.
 #ifndef PRISM_SIGHT_COLOR
-#define PRISM_SIGHT_COLOR float3(1.0, 0.72, 0.34)
+#define PRISM_SIGHT_COLOR float3(0.45, 0.70, 1.0)
 #endif
 
-// How hard the added light drives. 1.0 roughly doubles a mid-tone prism at full fill.
+// How hard the added light drives. Lowered from 1.15 on 2026-08-17: the sight was washing prisms out
+// to near-white, and lighting WHOLE prisms (see PRISM_SIGHT_WHOLE_PRISM) lights strictly more screen
+// area than the old partial-intersection paint did, so the same gain would have washed out harder
+// still.
 #ifndef PRISM_SIGHT_GAIN
-#define PRISM_SIGHT_GAIN 1.15
+#define PRISM_SIGHT_GAIN 0.7
 #endif
 
 void PrismDestructionSight_float(
@@ -106,7 +141,19 @@ void PrismDestructionSight_float(
     if (height <= 0.0 || Strength <= 0.0)
         return;
 
-    float3 rel = PositionWS - Apex;
+    // ONE sample point for the whole prism: its own origin, which is the exact point
+    // AOEConicSweepQueryJob tests. The preview and the damage therefore select the same prisms by
+    // construction, and a prism is lit all-or-nothing just as it is destroyed all-or-nothing.
+    // Mirrors the object-origin idiom PrismClockAnimation.hlsl already uses, preview guard included.
+#if PRISM_SIGHT_WHOLE_PRISM && !defined(SHADERGRAPH_PREVIEW)
+    float3 samplePos = float3(GetObjectToWorldMatrix()._m03,
+                              GetObjectToWorldMatrix()._m13,
+                              GetObjectToWorldMatrix()._m23);
+#else
+    float3 samplePos = PositionWS;
+#endif
+
+    float3 rel = samplePos - Apex;
 
     // Axial band. Outside [0, height] there is no blast at all - note the near clip is at the
     // apex, so mass BEHIND the vessel is never highlighted even though the cone's axis extends

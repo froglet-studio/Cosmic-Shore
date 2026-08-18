@@ -49,11 +49,27 @@ Four structural properties, mirroring the occlusion corridor's four layers:
 | 3 | **Fail loud** | Missing `PostProcessingManager` (Panini half inert) and an unexpected camera-controller type (FOV half inert) each warn **once per session**, naming the fix. A null controller — Cinemachine driving the menu — is a designed state and is deliberately silent. |
 | 4 | **Gates** | `SpeedTunnelLawTests` (edit-mode, asset-only) + **FrogletTools > Vessels > Validate Speed Tunnel Law**. Both assert that no vessel prefab carries its own driver *or a missing-script residue of the retired one*, that **every** bind site sits under an `IsLocalPilot` guard, that the drive site passes **raw** speed, and that the config is sane. Every one of those predicates lives once — `SpeedTunnelConfigSO.IsSane` and `SpeedTunnelLawSource` — and all three gates call it, so they cannot drift. Two of these checks are written the way they are because the obvious version is *vacuous*: prefab YAML records a script by GUID and never by class name, and a whole-file `Contains("IsLocalPilot")` stopped being a gate the moment `ChangePlayer` grew a second occurrence. |
 
-The one sanctioned hold is `VesselSpeedTunnel.SetSuppressed`, called by exactly one caller:
-`CameraManager.BeginManualReplayCamera` / `RestoreGameplayCamera`. A replay camera is posed by
-hand and `AstroLeagueGoalReplay` reads its field of view to fit the shot, so a live FOV write
-would both fight the pose and silently mis-frame the replay. It is a **hold, not an opt-out** —
-the vessel binding survives it, so nothing has to remember to re-point the tunnel afterwards.
+The sanctioned hold is `VesselSpeedTunnel.SetSuppressed`, and it has exactly one shape: **a
+vantage posed independently of the pilot's vessel**. It is a **hold, not an opt-out** — the vessel
+binding survives it, so nothing has to remember to re-point the tunnel afterwards. Two callers
+qualify, and a third would need to meet the same bar:
+
+- `CameraManager.BeginManualReplayCamera` / `RestoreGameplayCamera`. A replay camera is posed by
+  hand and `AstroLeagueGoalReplay` reads its field of view to fit the shot, so a live FOV write
+  would both fight the pose and silently mis-frame the replay.
+- `MainMenuCameraController`, while a **non-vessel-framing** menu config owns the view — today
+  only `MenuCameraRigKind.LavaLamp`. This is the one case the "menu is a designed state" note
+  below does *not* cover. In the menu the FOV half is already inert (the menu owns the scene
+  camera, so `GetActiveController()` is null), **but the Panini half is global and does not care
+  which camera renders**, so the autopilot vessel's fluctuating speed keeps warping the frame.
+  While a vessel-framing config is active that is fine — the camera is riding the ship and the
+  warp tracks the motion being watched. The lava lamp is a detached orbital shot of the *cell*
+  that never follows the vessel, so there is no speed being sold to anyone and the pumping Panini
+  distance reads as an unexplained rhythmic lens warp. The hold is re-derived from live state at
+  the top of `LateUpdate` **before** that method's early returns (so it cannot latch on when
+  freestyle begins) and lifted in `OnDisable` (which covers both teardown and a merely-disabled
+  controller). It only ever writes the flag on its own edge, so it can never release the replay
+  camera's hold — the flag has no ref-counting, exactly like the Panini override it guards.
 
 Two details of that hold are load-bearing. It is **immediate**: `Tick` tests suppression at the
 point of application, not only when computing the target, because this driver carries smoothing

@@ -496,5 +496,33 @@ unchanged by this work.
   falloff and `WallAssembler`'s bond offsets, which are re-expressed rather than shared. If either
   changes, re-check the icon.
 - **Emblem legibility vs. the label position.** The emblem's outer extent (33.4u) and the label
-  height (41.8u) are independent numbers that happen to clear each other at R=22. If the toybox's
-  `toyBodyRadius` is ever retuned, re-check both against the trigger radius.
+  height are independent numbers. Since the switch-ring pass the label is *derived* from the ring
+  (`ToyFactory.SwitchRingLabelHeight`) rather than from the body radius, so the pair that has to
+  keep clearing each other is now **emblem outer (33.4u) vs. ring inner (38.6u)** — 5.2u at R=22.
+  If the toybox's `toyBodyRadius` or `toyTriggerRadius` is retuned, re-check that gap.
+
+## The switch (rings) — known-remaining follow-ups
+
+- **Label crowding in the dense matrices is PRE-EXISTING and got no worse where it matters, but it
+  is still there.** A station's label hangs clear of its own ring; in the tight grids it still ends
+  up inside the *neighbour's* footprint. Measured: the Vessel Changer (spacing 60, ships fitted to
+  radius 22 → only 16u of clear air between hulls) and the Painting gallery (spacing 140.8, rings
+  63.4 → 3.9u between rings) both already overlapped their neighbours' models *before* rings
+  existed; the ring only makes it visible. The three real fixes, in preference order: (1) drop the
+  labels — the ring now carries the far read the label used to, which is the gate the emblem
+  section already describes; (2) widen `VesselChangerToyDefinitionSO.stationSpacing` (and
+  compensate `matrixDistanceFactor`, since the matrix distance is a multiple of the spacing);
+  (3) shrink the ringed-label font, which is deliberately left at its historic
+  `contentRadius × 1.425` so this pass changed affordance and not typography. **Do not "fix" it by
+  lowering the label back onto its own ring.**
+- **The clamp is holding three matrices, not one.** `ToyFactory.MaxRingSpacingFraction` (0.45) is
+  what keeps the Vessel Changer (1.7u between rings), the level-5 Lifeform variants (2.5u) and the
+  Painting gallery (3.9u) from interpenetrating. It cannot go much lower: at 0.36 the Vessel
+  Changer's ring inner radius (21.6) would fall *inside* its own 22-radius ship. If a matrix's
+  spacing or station radius is retuned, re-run the geometry check in `ARCHITECTURE.md` §
+  "The switch" rather than nudging the constant.
+- **Not yet play-verified.** In-editor pass should confirm: every toy root and every matrix station
+  blooms in already ringed; the ring reads as the thing you aim at from the far side of the
+  membrane; the Cell Selector's current world is legible as *two* rings (outer switch, inner
+  counter-spinning halo) rather than one thick rim; the domain changer is visibly unchanged; and
+  the Wanderway return station's hoop turns to face you as you fly back down the tether.

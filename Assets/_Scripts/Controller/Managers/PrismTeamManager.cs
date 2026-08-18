@@ -77,22 +77,22 @@ namespace CosmicShore.Gameplay
 
             playerName ??= "No name";
 
-            // TODO - Raise events about steal.
-                
-            onPrismStolen.Raise(
-                new PrismStats
-                {
-                    OwnName = playerName,
-                    Volume = prism.Volume,
-                    AttackerName = prism.PlayerName
-                });
-
-            /*if (CellControlManager.Instance)
+            // Capture the payload BEFORE the flip (AttackerName is the PREVIOUS owner), but
+            // RAISE it after: the raise runs its listeners inline, so a throwing listener - or
+            // an unwired event slot on a prism variant - used to abort the steal itself, and
+            // the caller's whole effect chain with it (the Urchin's chain volley runs AFTER the
+            // steal in the same effect list). The steal is gameplay; the event is reporting.
+            // Reporting must never be able to veto gameplay.
+            var stolenStats = new PrismStats
             {
-                CellControlManager.Instance.StealBlock(newDomain, prism.prismProperties);
-            }*/
+                OwnName = playerName,
+                Volume = prism.Volume,
+                AttackerName = prism.PlayerName
+            };
 
             ChangeTeam(newDomain);
+
+            onPrismStolen.Raise(stolenStats);
         }
 
         private void HandleTeamChange(Domains oldDomain, Domains newDomain)

@@ -121,7 +121,20 @@ namespace CosmicShore.Gameplay
         private void OnDisable()
         {
             StopSpawn();
-            ClearTrails();
+
+            // Deliberately NO ClearTrails() here. The wake OUTLIVES its vessel - mass is
+            // conserved, the prisms stay in the world, and a rider must still be able to ride
+            // them - so the Trail containers must stay live too. Clearing on disable emptied
+            // the lists while every laid prism still pointed at them, and "member of an empty
+            // container" reads as a one-block prismscape: the topology routed riders of any
+            // DESPAWNED vessel's trail (a swapped-away Squirrel's, always) onto the SURFACE
+            // follower, whose along-z "normal" on trail prisms flung the hull everywhere and
+            // whose nearest-ground search hopped it between both ribbons. The Trail objects
+            // are plain C# state kept alive by the prisms that reference them; they die with
+            // their last prism, which is the correct lifetime. Explicit resets that MEAN to
+            // drop the bookkeeping (a game-mode turn reset, the cell-swap drain) still call
+            // ClearTrails() themselves - and Clear() now un-stamps membership so even those
+            // leave honest container-less prisms behind, never members of an empty list.
         }
 
         /// <summary>Initializes and starts spawning.</summary>
@@ -262,7 +275,8 @@ namespace CosmicShore.Gameplay
 
             // --- Position & Rotation ---
             float xShift = halfGap == 0 ? 0 : (scale.x / 2f + Mathf.Abs(halfGap)) * Mathf.Sign(halfGap);
-            Vector3 pos = transform.position - vesselStatus.Course * offset + vesselStatus.ShipTransform.right * xShift;
+            Vector3 pos = transform.position - vesselStatus.Course * offset
+                        + vesselStatus.ShipTransform.right * xShift;
             Quaternion rot = vesselStatus.blockRotation;
 
             // --- Ask factory to spawn Interactive prism (pooled) ---
@@ -333,6 +347,14 @@ namespace CosmicShore.Gameplay
             trail.Add(prism);
             prism.prismProperties.Index = (ushort)trail.TrailList.IndexOf(prism);
             prism.Initialize(vesselStatus.PlayerName);
+
+            // AFTER Initialize (pool-reuse reset clears membership - AssignTrail's contract).
+            // This stamp is what makes a wake block a member of ITS ribbon: without it every
+            // wake prism either had NO container (fresh instance - the attach gate refused it)
+            // or a STALE one from a previous pooled life (the gate passed against the wrong
+            // ribbon and the ride followed garbage). The twin trails were always two separate
+            // Trail objects; this is what finally lets a rider see that.
+            prism.AssignTrail(trail);
 
             // Events
             OnBlockSpawned?.Invoke(prism);

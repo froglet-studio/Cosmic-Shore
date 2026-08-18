@@ -80,7 +80,11 @@ namespace CosmicShore.Gameplay
             if (SafeLookRotation.TryGet(_axis, _basisU, out var rot, this))
                 transform.rotation = rot;
 
-            _ring = ToyFactory.AddRingBody(transform, _ringRadius, DomainAccent(_domain));
+            // The same builder every freestyle toy's ring comes from: this IS the switch the toy
+            // rings borrow their meaning from, and CrossedMouth tests exactly _ringRadius, so the
+            // ring is its trigger volume drawn at its own radius (Docs/ToySystem/ARCHITECTURE.md
+            // § "The switch").
+            _ring = ToyFactory.AddSwitchRing(transform, _ringRadius, DomainAccent(_domain));
 
             // Interior: the first arc of the spiral, inside the ring.
             for (int i = 0; i < _interiorCount; i++)

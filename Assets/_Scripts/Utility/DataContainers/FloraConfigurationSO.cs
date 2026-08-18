@@ -280,6 +280,14 @@ namespace CosmicShore.Utility
                  "Space: 0.8). -1 = keep prefab.")]
         public float GrowPeriod = -1f;
 
+        [Tooltip("LATTICE species only: scales this element's whole lattice - every distance " +
+                 "between prisms, and so between their spindles - while keeping the plant's " +
+                 "TOPOLOGY and PRISM COUNT identical to its elemental peers. Only the spacings " +
+                 "change, so a longer prism gains room without the plant becoming a different " +
+                 "plant. The Space element uses it to be skeletal: a long thin strut on a lattice " +
+                 "widened to match. -1 = keep prefab. See Docs/ECOSYSTEM.md 34.7.")]
+        public float LatticeScale = -1f;
+
         [Tooltip("Seconds between shield refreshes on the health prisms (the Charge gyroid " +
                  "ships shielded leaves at 1). -1 = keep prefab.")]
         public float ShieldPeriod = -1f;

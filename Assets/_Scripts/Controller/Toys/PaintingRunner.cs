@@ -732,7 +732,9 @@ namespace CosmicShore.Gameplay
                 : _rotation;
 
             var prismMaterial = ToyFactory.DomainPrismMaterial(_context, stroke.Domain);
-            ToyFactory.AddRingBody(_milestone.transform, ringR, stroke.BaseColor, prismMaterial);
+            // A milestone is a switch like any other: the ring you thread, at the radius of the
+            // trigger below that fires it.
+            ToyFactory.AddSwitchRing(_milestone.transform, ringR, stroke.BaseColor, prismMaterial);
             if (isStrokeEnd)
                 ToyFactory.AddJackBody(_milestone.transform, ringR * 0.45f, stroke.BaseColor, prismMaterial);
 

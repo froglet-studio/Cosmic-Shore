@@ -476,10 +476,15 @@ namespace CosmicShore.Gameplay
             float radius, Color accent, bool bodySphere = true, GameObject model = null)
         {
             var go = ToyFactory.CreateBareRoot(label, parent, position, transform.position, radius * 1.6f);
+            // Clamped against the bench's spacing: a level-5 variant station is 2.4x the base
+            // radius, so its trigger overruns half the gap to its neighbour and an un-clamped ring
+            // would interpenetrate the one beside it.
+            float ringRadius = ToyFactory.StationRingRadius(radius * 1.6f, _def.StationSpacing);
+            ToyFactory.AddSwitchRing(go.transform, ringRadius, accent);
             if (bodySphere)
                 ToyFactory.AddSphereBody(go.transform, radius, accent);
             if (model) model.transform.SetParent(go.transform, false);
-            ToyFactory.AddLabel(go.transform, label, accent, radius * 1.9f);
+            ToyFactory.AddRingedLabel(go.transform, label, accent, ringRadius, radius);
 
             var station = go.AddComponent<ToyMatrixStation>();
             station.Bind(Context);

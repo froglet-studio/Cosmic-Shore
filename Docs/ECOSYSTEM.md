@@ -4567,3 +4567,992 @@ Menu_Main freestyle (Blob cell) is the fastest read:
 6. Re-run `FrogletTools ▸ Validation ▸ Validate Lifeform Crystals` (no prefab changed, but the
    sizing path did) and `FrogletTools ▸ Ecology ▸ Measure Cell Environment Baselines` for
    Rampage per consequence 1 above.
+## 34. Schwarz P grows on its own TILE — the hyperbolic {6,4}, which is one half-period cube (Aug 2026)
+
+`SchwarzPFlora` crystallises the Schwarz P minimal surface —
+`f(x,y,z) = cos x + cos y + cos z = 0` — one prism at a time. It always did. What changed is
+**what it thinks the surface's neighbourhood structure is**.
+
+**What it was doing.** The original `SchwarzPAssembler` marched a *quasi-square array*: from
+each prism, step a tangent direction by `separationDistance`, Newton-project back onto the
+zero level set, orient to the gradient, parallel-transport the heading, repeat. It works —
+it shipped, and it produces a surface — but it is an approximation of a lattice the surface
+does not have. **Schwarz P is intrinsically HYPERBOLIC** (K ≤ 0 everywhere), so it admits no
+Euclidean lattice at all, and a square-ish array on it can only ever be a fit. The
+consequences were structural, not cosmetic:
+
+- every position was computed from the previous one, so the walk **accumulated drift**;
+- two growth fronts arriving at the same place from different directions **did not agree**,
+  so occupancy had to be a **quantized float key** (`RoundToInt(param / (step/2))`) to paper
+  over the mismatch;
+- there was **no repeat unit**, so nothing about the growth could be baked, measured, or
+  verified — only played and eyeballed.
+
+**What it does now.** The surface does carry an exact non-Euclidean tiling: the hyperbolic
+**{6,4}** — hexagons with 90° corners, four to a vertex — and on this surface it turns out to
+be startlingly concrete:
+
+> **The tile is the patch of surface inside one half-period cube.**
+
+The {100} mirror planes (`x, y, z ∈ πZ`) cut space into cubes of side π. Each cube holds
+exactly one **flat point** (K = 0, normal along a body diagonal), and the patch inside it is
+one hyperbolic hexagon: **six edges**, one on each cube face, every one a planar geodesic
+because the face is a mirror; **six corners**, on the six cube edges whose ends straddle the
+surface, every one a 4-fold point of the surface lying *exactly* in the flat point's tangent
+plane at the vertices of a regular hexagon of circumradius `π/√2`; and **six neighbours** —
+the six face-adjacent cubes.
+
+So **tile adjacency is simple-cubic adjacency**. A prism's address is a `Vector3Int` plus a
+site index, occupancy is exact integer bookkeeping, and a site's position is arithmetic on a
+measured offset. No Newton iteration and no quantization survive anywhere in the growth path.
+
+Each hexagon is **12 copies of the *246 Schwarz triangle** — the measuring script gets
+(30°, 45°, 90°) to nine decimals, the signature of the triangle group the P surface's symmetry
+quotients onto — with corners at the flat point (order 6), a tile corner (order 4) and a tile
+edge midpoint (order 2), and edges on the mirrors `{y = π/2, x+z = π}` (a **straight line
+lying in the surface**), `{y = z}` and `{x = 0}`. Per cubic unit cell the tiling closes at
+**F = 8, E = 24, V = 12, χ = −4** — genus 3, exactly what the P surface must be.
+
+**Adjacent tiles are mirror images across their shared cube face**, so tile `(i,j,k)` is the
+canonical tile carried by `T_ijk`, acting one axis at a time: `x → x + πi` when `i` is even,
+`x → π(i+1) − x` when `i` is odd. `f` is invariant under every `T_ijk`, so the whole surface
+is one baked patch plus a sign flip per odd axis.
+
+### 34.1 What is measured, and what is proven
+
+The tile's **combinatorics are exact and proven**, not fitted. The one fitted quantity is how
+finely the tile is filled with prisms — a hyperbolic patch admits no uniform lattice, so a
+covering has to be measured. Each level is seeded from a triangular lattice on the flat
+point's 6-fold axis, lifted onto the patch, then equalized by a **centroidal Voronoi
+relaxation in which every site competes with every image of every site under the full symmetry
+group — including its own mirror image across each tile seam**. Uniform spacing inside a tile
+and uniform spacing across a tile boundary therefore fall out of one computation, with nothing
+tuned for the seam (measured: seam-to-intra ratio **1.00×** at every level).
+
+Levels land on **complete hexagonal shells around the flat point** — 6, 18, 36, 60, 90 sites,
+i.e. `3n(n+1)`, the centered hexagonal numbers with the centre removed (the flat point is the
+plant's CRYSTAL seat, §34.6, not a prism site). `separationDistance` stays the authored field
+and now *selects* a level (`ResolveLevel`) rather than setting a step; at the shipped
+`SchwarzPFlora` (`separation 6`, `periodScale 60`) that is **level 2, 36 sites per tile at
+5.25 world units** — so no asset needed re-authoring, and the orphaned
+`overlapProbeScale: 0.45` already sitting in `SchwarzPBlock Variant.prefab` became a live field
+again.
+
+**No rotation is baked.** Half the `T_ijk` are reflections, and a baked quaternion carried
+through one is silently wrong — the failure that cost the gyroid's seed rotations five
+playtests (§32.7). Positions and tangents are *vectors* and transform correctly under a
+reflection; the surface normal is recomputed from the closed-form gradient at the transformed
+point. Orientation is derived, never carried.
+
+### 34.2 The bug the simulation caught, and why nothing else would have
+
+`SchwarzPTileData.NeighbourTile` exists because **bond deltas do not add**. A bond is measured
+in the canonical tile; carrying one into tile `(i,j,k)` composes tile transforms, and per axis
+`T_a(T_b(x))` is `T_(a+b)` when `a` is even but **`T_(a−b)` when `a` is odd** — an odd tile is
+a mirror image, and a mirror reverses the step through it. So a bond delta must be negated on
+exactly the axes `AxisSigns` negates.
+
+The first implementation used `tile + delta`. That is wrong on every odd-indexed tile, and it
+is **silent**: the offsets are still exact, every prism still lands on the surface to 6e−8,
+occupancy still keys cleanly, it compiles, and it passes every static check. It shows up only
+as *geometry*. Simulating a plant's growth to its authored 800-prism budget made it obvious in
+one line — the grown plant sprayed across **113 tiles** with a maximum nearest-neighbour gap of
+**49.5 units** where the spacing is 5.3. With the fix: **41 tiles, max gap 5.9**, zero
+duplicate positions, and a render that is unmistakably Schwarz P in all three projections.
+
+The lesson is the general one: *a tiling defect can be invisible to every check that examines
+one tile.* Both scripts now gate it, and the verifier asserts the naive rule is **provably
+wrong** at every level that can discriminate — a gate nobody has watched fail is not a gate.
+(Level 0's single site sits on the tile's centre of symmetry, so `T + δ` and `T − δ` are mirror
+images at equal distance and it genuinely cannot discriminate; that exemption is stated in the
+output rather than hidden.)
+
+### 34.3 Invariant review
+
+- **Mass is conserved.** Growth is still one prism per site, claimed through
+  `PrismSpatialIndex.TryReserve`; occupancy is still *weak* (a site frees when its resident is
+  eaten), so a grazed plant regrows into its own wound. No decay, no timer, no cull.
+- **Continuity of existence.** Untouched — prisms still bloom in and wither out through the
+  standard `AssembledFlora` path.
+- **Flora populations.** *Superseded by §34.6* — Schwarz P became a lattice-colony species in
+  the pass that followed this one. At the time of writing it kept the ordinary per-plant
+  budget and reseeding.
+- **Collider budget: unchanged, one-for-one** *at this pass*. The plant held the same
+  `maxTotalSpawnedObjects` live prisms with the same colliders; only *where* they are placed
+  changed. Site spacing moved 6 → 5.25 world units. The bond table is built once per level
+  (~144k distance computations at the largest level, lazily, cached) and never again.
+  (§34.6 restates the budget for the colony: prism colliders unchanged, crystal colliders
+  3 → 22 in Blob.)
+
+### 34.4 Tooling and verification
+
+| | |
+|---|---|
+| `Tools/Build/measure_schwarz_p_tile.py` | Proves the tile and measures the layouts. `--check` verifies, `--write` regenerates the C# table. Independently reproduces the literature surface area **2.3451 a²** per cubic cell (measured 2.3464, 0.06%). |
+| `Tools/Build/verify_schwarz_p_tile_tables.py` | Re-derives every claim **from the shipped `SchwarzPTileData.cs`**, by parsing it. Run after any edit to the table or the tile arithmetic. |
+
+The second script is not redundant with the first, and §32.7 is why: the transcription between
+a proven measurement and the shipped asset is exactly the step that neither the measurement nor
+code review can see.
+
+**In-editor verification (the human is the gate).** Plant a `SchwarzPFlora` (Blob cell in
+freestyle, or the Hesperides topiary) and watch: (1) it grows as a *patch spreading outward*,
+not a tendril; (2) the plates meet edge to edge with no visible seam where one tile meets the
+next — the seam is where the old marcher's drift showed; (3) at full budget the six-way tunnel
+network reads clearly; (4) let fauna graze it and confirm the wound regrows.
+
+### 34.5 The prisms — sized to the tile, per element (Aug 2026, second pass)
+
+A prism is an oriented box, and the tile fixes its frame: local **+z is the surface
+normal** (the thin axis), **+y is the site's baked tangent**, **+x is
+`cross(tangent, normal)`** — Unity's `LookRotation(forward: normal, up: tangent)`. So
+`leafSize` is a *footprint in the surface's tangent plane*, and "do these plates sit
+flush without overlapping?" is an exact OBB question about a known point set, not a
+matter of taste. `Tools/Build/fit_schwarz_p_leaf_sizes.py` answers it: it reads the
+shipped table, builds every prism of a 3×3×3 tile block at the authored `periodScale`,
+and runs a separating-axis test over every neighbouring pair — **including pairs across
+a tile seam**, which is exactly where a size fitted inside one tile would be wrong.
+
+**The reference was measured, not eyeballed.** The brief was "flush like the Time and
+Charge gyroids", so the gyroid was measured first. Its prisms sit **7.825 world units**
+apart (not 3 — `separationDistance` is a bond-delta scale, not the spacing), and:
+
+| gyroid | size | span | contact |
+|---|---|---|---|
+| Charge / Time | 9 × 3.4 × 1.5 | 1.15 spacings | 33% of prisms graze, max penetration **0.19u** (2% of the plate) |
+| Mass | 7 × 4.5 × 3.5 | 0.89 spacings | 49% graze, max 0.31u |
+| Space | 20 × 1 × 1 | 2.56 spacings | 99% interpenetrate, max 1.14u |
+
+So the family's Charge/Time look is a plate about one spacing long that just touches its
+neighbours, and its **Space is deliberately a strut that spans two and a half spacings
+and passes through everything** — that is what makes it skeletal.
+
+**The Schwarz P fit.** At the shipped flora (level 3, 37 sites/tile) sites sit **4.667
+min / 5.263 mean** world units apart. Sweeping aspect against the largest footprint that
+still has *zero* overlaps:
+
+| aspect | x | y | coverage |
+|---|---|---|---|
+| 1.0 | 3.69 | 3.69 | 46.4% |
+| 1.3 | 4.30 | 3.31 | **48.5%** |
+| 1.618 | 4.72 | 2.92 | 47.1% |
+| 2.0 | 5.10 | 2.55 | 44.3% |
+| 3.4 | 5.61 | 1.65 | 31.6% |
+| 5.0 | 5.85 | 1.17 | 23.3% |
+
+Coverage is broad and flat near square, so the aspect can be chosen for looks at almost
+no cost — which is what the four elements do:
+
+| element | leaf size | aspect | span | result |
+|---|---|---|---|---|
+| **Charge / Time** | **4.72 × 2.92 × 1** | 1.618:1 (golden) | 0.90 spacings | flush, **zero overlaps**, 47.0% coverage |
+| **Mass** | **4.09 × 3.14 × 2** | 1.3:1 | 0.78 | chunkier — squarer footprint, twice the slab; **zero overlaps**, 43.8% |
+| **Space** | **13.4 × 0.7 × 0.7** | 19.1:1 | 2.55 | the strut: skeletal, largest bounds, interpenetrating by design |
+
+Every plate is thin in z. The gyroid's Charge/Time runs a thickness of 0.19 spacings and
+its Mass 0.45; these are 0.19 and 0.38 — the same family. **Space is the one element that
+is not a flush plate**, matched deliberately to the gyroid's Space (2.57 spacings against
+its 2.56): a strut spanning the lattice is what takes the largest bounds and reads
+skeletal, and it cannot do that and avoid its neighbours at the same time.
+
+**The level trap — a lattice species must not scale its leaf with level.**
+*(Superseded as of §33: `Flora.PrismSizeFixedByGrowthRule`, true on `AssembledFlora`, now
+suppresses the leaf half of the level curve in CODE for every lattice species, so the config
+field no longer needs pinning and the assets carry the fleet-wide 1.15 again. The measurement
+below is why that fix exists, and is left as the evidence for it.)* `ApplyLevel`
+multiplies the leaf by `LeafScalePerLevel^(Level-1)`, and the Blob cell rolls this species
+at **Levels 1..5**. It scales the *prism* but not the *lattice*, so at the inherited 1.15 a
+level-5 plant's prisms are **1.749×** the size fitted flush and the plant interpenetrates
+itself — measured at **144 overlapping pairs at level 3 and 204 at level 5**, against zero
+at level 1. Pinned to 1, every level is clear. Nothing is lost: the crystal still grows
+with level (via `ElementalCrystalSet`'s one shared curve since §33; the per-species
+`CrystalScalePerLevel` this originally named is deleted), and budget and lineage are untouched. **The prism size
+belongs to the lattice, not to the plant.**
+
+**All six producers were authored, not four.** The species has six config sites and a
+size applied to four of them shows up wrong in two cells: the four `SchwarzP Flora
+<Element>` assets, the **Hesperides topiary** (Element 2 / Mass — it carried a 4.2 × 4.2
+square, wider than the 4.667 minimum spacing, so it was overlapping) and the **Blob**
+config (no `Variant` of its own — it delegates to the element palette — but it is the
+config whose `LeafScalePerLevel` the spawner actually reads). `SchwarzPFlora.prefab`'s own
+fallback `leafSize` was the same overlapping 5 × 5 square and now carries the fitted
+Charge/Time plate, so the variant-less path and the Lifeform Matrix preview are correct too.
+
+Regenerate with `--render` for the preview sheet, `--write` to re-author. The writer emits
+**every** `FloraVariantTuning` field explicitly and asserts the key set against the C#
+class, because the keep-the-prefab sentinel is **−1**, not 0 — writing
+`MaxTotalSpawnedObjects: 0` would not mean "keep", it would set the plant's live-prism
+budget to zero and it would never grow a prism.
+
+### 34.6 The tile colony — one plant, one tile, one crystal (Aug 2026, third pass)
+
+The Schwarz P flora was one large plant sprawling across many tiles. It is now a **population
+of plants that each own exactly one tile** — the same conversion the gyroid got in §32.7, and
+the tile makes it markedly simpler.
+
+**The flat point is the crystal's seat.** Each tile's centre used to carry a prism; it now
+carries the plant's **heart**, one crystal per tile, never growing. The layouts were
+re-measured with the centre excluded, so a level is a set of complete hexagonal shells —
+**6, 18, 36, 60, 90** sites (`3n(n+1)`) — and the shipped flora resolves to **36 prisms per
+plant**. The hole this leaves is not incidental: the centre took part in the relaxation and was
+dropped afterwards, so the innermost shell sits where a real neighbour would hold it and the
+gap is crystal-sized by construction. `verify_schwarz_p_tile_tables.py` asserts the seat is
+empty at every level.
+
+**Territory is one line, because a tile is an exact integer address.** A plant owns tile `T`;
+a bond leading out of `T` belongs to its neighbour, and `SchwarzPAssembler.GetGrowthInfo`
+declines it. That is the whole ownership question. What the gyroid needs for the same job —
+and does *not* need here — is worth listing, because every item exists to paper over float
+drift in a lattice that has no addressing:
+
+| gyroid mechanism | why the tile colony has none |
+|---|---|
+| octagon discovery from danger prisms | a prism is stamped with its tile at birth |
+| `RingMemberToleranceRadius` (2.5u) | membership is an integer, not a coherence test |
+| the "poison band" (2.5–12u) | two plants either agree on an integer or are in different lattices |
+| `TerritoryRadius` (26.5u) | a site belongs to exactly one tile |
+| `OwnershipEpsilon` (0.75u) + contested boundary prisms | there is no boundary to contest |
+| `NearestForeignClaimSqr` spatial-hash scan | the claim book is a dictionary hit |
+| a baked seed **pose** carried through the frontier | the seed is *derived* at birth from the tile address |
+| the per-birth handoff-coherence assert | there is no transcribed rotation to be wrong |
+
+The claim book (`SchwarzPTileRegistry`) is therefore `Dictionary<(frame, tile), plant>` rather
+than a binned spatial hash, and a frontier entry is just `(frame, tile)`.
+
+**The lattice frame is the colony.** A founder anchors a `SchwarzPSurfaceFrame` on its own
+seed prism; every daughter is `Program`med with her mother's frame **by reference**, and
+`EnsureSeeded` early-returns on a non-null frame. So one lineage shares one world anchor, one
+level and one occupancy book, and two plants of a colony cannot disagree about where a site
+is — the gyroid needs a whole registry class to get a weaker version of that. Independent
+founders in one cell hold *different* frames and simply never collide in the book; their
+prisms still cannot overlap, because `PrismSpatialIndex.TryReserve` gates every site, exactly
+as it does for any two floras that meet.
+
+**Reproduction is a population event.** A plant that fills every site of its tile contributes
+its unclaimed **face-adjacent** tiles to `SchwarzPColonyFrontier`; the population then births
+**one** plant per fauna-wave period (`Cell.CurrentFaunaSpawnPeriod`) at a **uniformly random**
+open tile. Random choice across every complete plant is what de-spheres the colony — it
+wanders the way the old single plant wandered prism by prism, now at the level of whole flora.
+
+*Six neighbours, not twelve.* The bond graph also reaches six edge-diagonal tiles, which touch
+this one only at a 4-fold corner by a single bond. The {6,4} tiling's adjacency is the six
+shared **edges** — the six faces of the half-period cube — so the colony grows through faces
+and the surface it builds stays the tiling the tile is defined by. Iterating bonds blindly
+would have offered the diagonals too; that would be an accident, not a choice.
+
+**Completion is exact**, not a fudged prism count: every site of the tile occupied, plus the
+gyroid's pacing conjuncts (no queued orders, two idle ticks, the maturation window) so a plant
+does not parent mid-bloom. The gyroid's `PatchPrisms - 6` slack exists for a 22–28 patch
+spread that cannot happen here.
+
+**Mass is preserved, and the numbers are authored, never typed.**
+`Tools/Build/author_flora_populations.py` now carries both lattice species with **separate**
+unit cells (`LATTICE_PATCH`: gyroid 24 owned / 30 budget, Schwarz P **36 / 36** — exact, with
+no headroom, because there are no boundary prisms to win). Blob: `800 → 22 plants × 36 = 792`.
+Hesperides topiary: `150 → 4 × 36 = 144`.
+
+**Collider budget.** Prism colliders are **unchanged** — mass is preserved and they are still
+phase-LOD managed. The cost is **crystals**: one always-on heart collider per plant, so Blob
+goes **3 → 22** for this species (~9% of `MAX_PLANTS_PER_SPECIES`, which is the dial).
+Hesperides is unchanged at 4.
+
+**Two traps this pass fixed, both the §34.5 lesson repeated for other fields.**
+`SchwarzPFlora.prefab` authored `crystalGrowth: 0.1` and nothing gated it, so a Schwarz
+crystal grew **+0.1 every grow tick, unbounded, forever** — now gated in code *and* authored 0.
+And — *before §33 replaced per-species crystal scaling with one shared curve* —
+`CrystalScalePerLevel: 1.2` against Blob's Levels 1..5 gave crystal scales
+3.0 / 3.6 / 4.32 / 5.18 / 6.22 against a hole of about 4.2 units, so **from level 3 up the
+heart burst its own seat** — pinned at 1, exactly as `LeafScalePerLevel` was. On a lattice
+species the geometry owns the size; the plant's level does not.
+
+**Invariants.** *Mass conserved* — no timer, decay or culler; a lowered cap stops production
+and never culls; `cap × 36 ≈ the old budget`. *Continuity of existence* — daughters bloom
+through the standard spawn path, deaths use the existing wither. *One crystal per lifeform* —
+one plant, one tile, one heart, which is exactly what §23.3 requires. *Volume is the spine* —
+the Frenzy gates are checked before every production site, including the population cycle
+(before the pop, so a frozen colony burns no frontier entries). *Territorial permanence* — a
+claim is released only when the plant is destroyed, never by a clock.
+
+**Known follow-ups, deliberately not swept in.** (1) The Hesperides topiary lands at
+`floor = cap = 4`, so it is planted at its ceiling and never reproduces — correct for a clipped
+specimen, inert as a colony; raise its recorded source budget if it should spread. (2) The
+colony machinery is now duplicated between `OctagonMode` and `TileColonyMode`; the honest fix
+is one `ILatticeColony` abstraction, filed rather than done because the gyroid path had just
+shipped. (3) `minHealthBlocks: 5` was 0.6% of an 800-prism plant and is 14% of a 36-prism one.
+
+### 34.7 Space gets its own lattice — Schwarz P (Aug 2026, fourth pass)
+
+Space is the skeletal element on both lattice species. This pass gave the **Schwarz P** Space a
+lattice of its own. The gyroid was given one too, and it regressed — that half is §34.8.
+
+**The dial: `FloraVariantTuning.LatticeScale`** (sentinel **−1** = keep the prefab's). It scales
+an element's whole lattice — every distance between prisms — while leaving the plant's
+**topology and prism count identical to its elemental peers**. `AssembledFlora.ApplyLatticeSpacing`
+pushes it onto a freshly created assembler at all three creation sites (founder, daughter,
+re-seed), because the assembler reads it *before* its first growth probe and a value that arrives
+later is a value the seed never saw. Both species have it, but each scales a different thing and
+each is exact for its own reason — the gyroid's took two attempts, §34.8.
+
+On Schwarz P it scales `periodScale` **and** `separationDistance`, together, and *together* is the
+whole trick. `ResolveLevel` picks the subdivision whose `MeanParamSpacing × periodScale / 2π` is
+nearest `separationDistance`; scaling both sides by the same factor leaves the argmin invariant, so
+the level — and with it the mesh and the prism count — cannot move. `k = 5/3` takes spacing
+`5.25 → 8.75` at **level 2, 36 sites**, exactly its peers'.
+
+**The correction this pass made.** The first attempt scaled `separationDistance` alone. That
+re-resolved to **level 0 — 6 sites per tile instead of 36** — and shipped a plant with visibly
+fewer subdivisions: a *different* plant, not a bigger one. The tell was downstream and loud once
+seen: `author_flora_populations.py` needed a per-config override to say a Space plant owned 6
+prisms, and its cap ran to the 60-plant ceiling while its peers sat at 22. That override is now
+**deleted**, and its absence is the evidence the topology is back. `assert_level_invariant()`
+proves it on every run of the fitter rather than trusting the arithmetic.
+
+**The result.**
+
+| | before this pass | after |
+|---|---|---|
+| **Schwarz P Space** | 13.4 × 0.7 × 0.7, 72 overlaps, level 2 | **30 × 0.5 × 0.5**, 60:1, 1.14 spans, `LatticeScale 5` (spacing `5.25 → 26.25`), **level 2 / 36 sites, unchanged**, flush with no overlaps |
+
+The prism is sized in multiples of its own lattice's spacing (`SPACE_SPANS`,
+`SPACE_THICK_RATIO` in `fit_schwarz_p_leaf_sizes.py`) rather than as absolute numbers, so the
+strut and the lattice can never drift apart. Those two ratios were originally derived from a
+gyroid Space that §34.8 then reverted; their provenance is recorded at the constants, and they
+are now the Schwarz element's own.
+
+**Leaf-vs-level** — the §34.5 trap, now handled in code by `Flora.PrismSizeFixedByGrowthRule`
+(§33) rather than by pinning the config field.
+
+**Populations and the collider budget.** Schwarz Space sits at its peers' `cap 22 / 792 prisms at
+cap`, uniform across all four elements. Per §4.6 the binding ceiling is unchanged: per-prism
+volume moves 2.93 → 2.77, so the species' whole standing mass at cap is ~2.2k against the Blob
+cell's `FrenzyEnterVolume 288,000`. The Blob's Mass gyroid (~137k at cap) is still what binds,
+exactly as §32.7 recorded.
+
+**Invariants.** Authored size and spacing data plus one scale read: *mass is conserved*,
+*continuity of existence*, *no imposed death*, *one crystal per lifeform* and *volume is the
+spine* all stand as §34.6 left them. A prism-count change per plant moves production only;
+nothing is culled.
+
+### 34.8 Scaling the gyroid — the dislocation, and what it took to fix (Aug 2026)
+
+The gyroid Space lattice was scaled, it grew **offset parallel surfaces**, it was reverted, and
+then it was done properly. The failure is the more useful half.
+
+**Attempt 1 — scale `separationDistance`, ship the dislocation.** Two things went wrong at once:
+
+*It did not look stretched.* Scaling the lattice *with* the prism cancels the stretch. The strut
+went 2.56 → 3.52 spans, but everything grew 1.667× together, so at any viewing distance nothing
+was longer — the same plant, bigger. **A prism only reads as stretched against a lattice that
+stayed put.**
+
+*It dislocated.* A gyroid plant's coherence is decided by distances written in ABSOLUTE world
+units, every one sized against the separationDistance-3 lattice:
+
+| where | value at scale 1 | what it decides |
+|---|---|---|
+| `GyroidAssembler.snapDistance` | 0.3, compared to **squared** distances → 1.73u | is this prism THE one at my bond site, or a second one beside it |
+| `GyroidAssembler.radius` | 40u | how far the mate search looks for it at all |
+| `AssembledFlora.MisalignmentRadius` | 5.5u, at **both** the grown-site and seed-site checks | rejects a site whose neighbour belongs to a MISALIGNED frame |
+| reservation `clearRadius` floor | 2u | the floor under an otherwise-proportional radius |
+
+Scaling only the bond offsets moved every *real* distance out from under all four at once. The
+misalignment gate is the one that bit: the healthy closest pair grew with the lattice while the
+gate did not, so **the gate written to catch twins stopped catching them** and the plant grew the
+domains it exists to prevent. Every constant was individually correct, measured and commented,
+and each still fired — the defect was a *relationship*, which is why no static check saw it.
+
+**Attempt 2 — scale the family, and assert the relationship.** `GyroidAssembler.ApplyLatticeScale`
+now moves all of them together: bond offsets via `separationDistance`, `radius` linearly,
+`snapDistance` by **scale²** (it is compared against squared distances, so that is what holds the
+same *linear* tolerance), the `clearRadius` floor, and — through `AssembledFlora.LatticeScale` —
+the octagon tables and the misalignment gate. The bare `5.5f` that appeared at two call sites is
+now the single `MisalignmentRadius` property, because a literal repeated at two sites is exactly
+how one of them gets missed.
+
+The invariant that actually matters is an **ordering**, and it is asserted rather than assumed:
+
+    reservation clearRadius  <  misalignment gate  <  healthy closest pair
+
+Below the gate a neighbour is a duplicate to reject; above the healthy pair everything is a
+legitimate neighbour. Drift the gate up and it rejects real growth; drift it down and twins are
+born. `Tools/Build/verify_gyroid_lattice_scale.py` walks the SHIPPED bond table at scales
+1 / 1.5 / 2 / 3, measures the healthy pair, reads the tolerances out of the shipped C#, and fails
+unless the ordering holds and the ratio stays constant:
+
+| scale | sep | bond | reserve | gate | healthy | gate/healthy |
+|---|---|---|---|---|---|---|
+| 1.0 | 3.0 | 7.84 | 3.13 | 5.50 | 7.52 | 73% |
+| 1.5 | 4.5 | 11.75 | 4.70 | 8.25 | 11.29 | 73% |
+| 2.0 | 6.0 | 15.67 | 6.27 | 11.00 | 15.05 | 73% |
+| 3.0 | 9.0 | 23.51 | 9.40 | 22.57 | 22.57 | 73% |
+
+**What shipped.** The strut is stretched on the native lattice to `30 × 1 × 1` and then the whole
+structure — prisms, spacing, and the spindles between them — is scaled **2×**, giving
+`60 × 1 × 1` at `LatticeScale 2` (separation 3 → 6, spacing 7.83 → 15.66). The span was **3.83
+spacings before and after**, which is the check that the LENGTH is a pure scale-up rather than a
+reshape; the cross-section was then thinned by hand from the 2 a uniform scale would give to
+**1**, which is a deliberate reshape — Space is the skeletal element and a 60:1 needle reads
+thinner than a 30:1 bar at the same length. (§34.10 later opened the spacing to `LatticeScale 4`
+and §34.11 shortened the strut to 40; the numbers in this section are that pass's, not the
+shipped ones.)
+The octagon colony's populations are unchanged (`MaxTotalSpawnedObjects 30`, cap 33).
+
+**Spindles scale; crystals do not — and the spindle scale goes on the CHILD, not the root.**
+The spindle is visible branch geometry spanning the gap between two prisms, so a widened lattice
+with unscaled branches leaves them visibly short. `AssembledFlora.ScaleSpindleToLattice` applies
+the scale at both spawn sites, to the spindle's own **children**.
+
+Putting it on the spindle root instead is a runaway, and it shipped for one build. Two facts make
+it so, either one sufficient: **spindles NEST** — every grown spindle is instantiated as a child
+of its parent branch's spindle (`Instantiate(spindle, order.parent.gameObject.transform)`), so a
+root scale multiplies down the whole chain as `scale^depth`, which at scale 2 and ten generations
+is 1024× — and **prisms parent to the spindle root**, so that compounding factor also multiplies
+every prism's authored `leafSize`, and the number in the config stops describing the prism at all.
+The result was prisms that grew visibly larger the further a branch got from its seed. Scaling the
+children is safe because a child is a leaf of that chain and prisms are never among them (the call
+happens before the prism is parented).
+
+The crystal is deliberately excluded from the scale entirely: octagon centres move apart with the
+lattice, so the hearts spread out while each stays its authored size. Spindle scaling is also
+**gyroid-only** — the Schwarz P Space element's proportions were judged good at its shipped scale
+*with* unscaled spindles, and changing them now would regress an approved look for no request.
+
+**The general rule.** Before scaling anything in a hierarchy, ask what else *inherits* that
+transform. A scale applied to a node that is both a parent of its own successors and a parent of
+the thing whose size is authored elsewhere is wrong twice over, and neither error shows up in a
+compile or in any static check — only in geometry, and only some distance from the seed.
+
+**The volume consequence, and why the thin cross-section matters more than it looks.** A uniform
+2× would be an **8× per-prism volume**, which is what makes this the §4.6 trap: at `60 × 2 × 2` the
+prism is 240 units and the species' ceiling reaches **155%** of the Blob cell's
+`FrenzyEnterVolume 288,000` on its own. Holding the cross-section at **1** instead lands it at
+`60 × 1 × 1 = 60` per prism and **39%** — heavier than the 20 × 1 × 1 it replaced, lighter than
+its own Mass sibling, and comfortably inside the budget. *(The ×1.88 level-spread multiplier this
+pass applied is retired — see §34.9's correction; the percentages here are that pass's and §34.11
+carries the current ones.)* A lattice species' thickness is therefore a *volume* dial with cubic leverage, not only a
+look dial: it is the cheapest correction available when a scale-up overshoots the ladder. If the
+freestyle cell still reads sparse or freezes early, the levers in order remain the **cell's volume
+ladder** first and `MaxLivePopulation` last (§32.7 seventh pass, /ecology §4.6); neither is changed
+here, because cell pacing is a design call rather than a consequence of this one.
+
+**The general rule.** A coherence tolerance written as an absolute distance is an *unstated
+dependency on the lattice it was measured against*. Before scaling any lattice, enumerate every
+test that decides *sameness* — snap, dedupe, reserve, twin-detect — and either make it
+proportional or scale it, then assert the ORDERING between them rather than the values. Schwarz P
+never needed this: its sameness test is an integer tile address, so no tolerance exists to
+invalidate.
+
+### 34.9 The clamp — an authored prism size was never reaching the screen (Aug 2026)
+
+Three passes of §34.5–§34.8 fitted, measured and argued about Space prism sizes. **None of
+them reached the engine.** Every one was silently trimmed to a 10-unit long axis.
+
+**The mechanism.** `PrismScaleAnimator.SetTargetScale` clamps PER AXIS into
+`[minScale, maxScale]`, whose serialized defaults are `(0.5,0.5,0.5)` and `(10,10,10)`:
+
+```csharp
+newTarget.x = Mathf.Clamp(newTarget.x, minScale.x, maxScale.x);   // and y, z
+```
+
+`Flora.AddHealthBlock` states `healthPrism.TargetScale = leafSize`, and `Prism.TargetScale`'s
+setter routes straight into that clamp. The flora health-prism prefabs
+(`MassGyroidBlock Variant` — which the Space flora also uses — and `SchwarzPBlock Variant`)
+carry no override, so the window is the default. An authored `60 × 1 × 1` at Level 2 is
+`69 × 1.15 × 1.15`, and `Clamp` returns exactly **`(10, 1.15, 1.15)`** — the value read off the
+live scene, to the float.
+
+**What it hid, which is the whole lesson.** The clamp is inside a setter, with no log, no
+warning and no return value. The config said 60 and the prism was 10, and *nothing anywhere
+reported the difference*:
+
+| authored | rendered | authored | rendered |
+|---|---|---|---|
+| 20 × 1 × 1 (pre-branch) | 10 × 1 × 1 | 60 × 2 × 2 | 10 × 2 × 2 |
+| 22.96 × 0.45 × 0.45 | 10 × **0.5** × **0.5** | 60 × 1 × 1 | 10 × 1 × 1 |
+| 45.92 × 0.45 × 0.45 | 10 × **0.5** × **0.5** | Schwarz 30.79 × 0.3 | 10 × **0.5** |
+
+Cross-sections under 0.5 were clamped **up**, so the "thin" struts were never thin either.
+Consequences that were all misread as other problems:
+
+- *"This pass didn't stretch the prisms"* — correct, and it could not. 22.96, 45.92 and 60 all
+  render identically. The only thing any of those passes changed on screen was lattice spacing.
+- *The wrong spacing* — the spacing was right; the prisms were pinned at 10 while the lattice
+  widened to 15.66, so the structure read as sparse and disconnected.
+- **Every overlap and volume measurement in §34.5–§34.8 was computed against geometry the
+  engine never used.** The OBB fits, the saturating crossing counts, the volume table — all
+  phantom. The numbers are correct *for the sizes named*; those sizes just were not what ran.
+
+**The fix, and its principle: a size that is AUTHORED widens the window; a size that is GROWN
+keeps it.** `PrismScaleAnimator.AdmitTargetScale(Vector3)` raises `maxScale` / lowers `minScale`
+to admit the target, and both flora paths (`Flora.AddHealthBlock`,
+`PhyllotacticFlora.AddHealthBlock`) call it before stating the size. Trail prisms, which grow
+into the bound through `Grow()`, are untouched — the bound is meaningful there.
+
+This is the general form of a workaround the project already had: `SpawnablePrism` and
+`ShieldedSpawnablePrism` serialize max **100**, `Manta Prism` max x **40**, `Dolphin Prism` max
+z **100**. The trap has been hit and patched per-prefab before; it was simply never applied to
+flora. **363 of 404 prefabs still fall through to `[0.5, 10]`.**
+
+**Corrected prism volumes.** *(Every "effective volume" figure in §34.5–§34.11 was computed with
+a ×1.88 level-spread multiplier. That multiplier is GONE: `LifeformLevelSpread` is retired and
+lattice leaves no longer scale with level at all (§33), so for these species **effective volume ==
+raw volume**. The numbers below are the raw ones; divide any ×1.88 figure elsewhere in §34 by 1.88
+to reconcile it.)*
+
+| | Charge | Mass | Space (was → now) | Time |
+|---|---|---|---|---|
+| **Gyroid** | 45.9 | 110.2 | **10.0 → 60.0** (→ 40.0 at §34.11's 40) | 45.9 |
+| **Schwarz P** | 13.8 | 25.7 | **2.5 → 7.5** | 13.8 |
+
+**Follow-up, measured and deliberately NOT taken here: the phyllotactic stems.**
+`PhyllotacticFlora` sizes prisms per ROLE, and its STEM spans a whole segment
+(`segmentLength × stemScale.z`), so five of the eight authored species ask for a long axis
+above the 10 ceiling and are silently trimmed to it:
+
+| species | authored stem | rendered |
+|---|---|---|
+| Arbor | 15.30 | 10 |
+| Reed | 13.58 | 10 |
+| Spire | 12.35 | 10 |
+| Frond | 11.40 | 10 |
+| Tendril | 10.45 | 10 |
+
+A stem clamped below its own segment cannot reach the next one, so this is the same defect
+`Flora.AddHealthBlock` was fixed for, and the same one-line fix applies
+(`AdmitTargetScale` before the stamp). It is **not** taken on this branch: it changes the look of
+the **Hesperides garden** and of **Rampage** (Spire), neither of which this branch is about, and
+it cannot be play-tested from here. The reasoning is recorded at the call site so the next person
+finds it before re-deriving it.
+
+**Not swept in.** About fifteen other call sites author `TargetScale` directly
+(`PrismTrailBuilder`, `Fauna` body prisms, the AOE block creators, `Microscene`,
+`PaintingRunner`, the `Spawnable*` environment builders). Most draw from the max-100 spawnable
+prefabs and are unaffected; changing them all would move geometry across many shipped modes on
+no evidence of a defect. Flagged, deliberately not touched.
+
+**The history, which closes the loop on "six months ago it was great".** `SpaceGyroidBlock
+Variant.prefab` exists and overrides exactly one property: **`maxScale.x = 20`** — authored so a
+20-unit Space needle would survive the clamp. **Nothing references it any more.** The Space flora
+runs on `MassGyroidBlock Variant.prefab`, which carries no such override. So the element rendered
+at its full 20 until a per-element-prefab → config consolidation moved it onto the Mass block, at
+which point the needle silently halved to 10 and stayed there. That regression predates this
+branch entirely, and `AdmitTargetScale` is the general form of what that retired prefab did by
+hand — the per-prefab override is no longer needed by anything.
+
+**A second instance of the same ordering mistake.** `GyroidAssembler.ConvertBlock` assigned
+`prism.TargetScale = scale` and only *then* `prism.MaxScale = Prism.MaxScale` — widening after the
+clamp had already bitten, so a converted prism was pinned at the victim's own ceiling however long
+the lattice's prisms are. Fixed to widen first (and it now uses `AdmitTargetScale`, which also
+lowers `minScale` — the bare `MaxScale` assignment never did, so a thin lattice prism was clamped
+up regardless). Not on the flora growth path (`ConvertBlock` is reached only from
+`FindClosestMate` under `StartBonding`, which `AssembledFlora` never calls), so this was latent
+rather than active — but it is the same bug and would have bitten the first caller that hit it.
+
+**One more thing worth knowing when authoring these configs.** The Blob Space gyroid config has
+`SpreadElements` ON with a 4-asset `ElementPalette`, so the `Variant` that actually reaches the
+plant is the palette SIBLING's — `Assets/_SO_Assets/Lifeforms/Gyroid Flora Space.asset` — not the
+cell config's own `Variant` block. Editing only the cell config would be a silent no-op. Author
+both (the fitters do).
+
+**The general rule.** A silent clamp inside a setter is indistinguishable from a config that
+was never applied — and it defeats every offline measurement, because the measurement models
+the authored number while the engine uses another. When a fitted size does not read on screen,
+verify what the engine actually stored **before** re-fitting: one look at the live Transform
+would have saved three passes of measuring phantom geometry.
+
+### 34.10 Spacing and prism size are INDEPENDENT dials (Aug 2026)
+
+The two Space elements were opened up: gyroid `LatticeScale 2 → 4` (spacing `15.66 → 31.32`) and
+Schwarz P `1.667 → 5` (spacing `8.75 → 26.25`), with **both prisms unchanged** at `60 × 1 × 1`
+and `30 × 0.5 × 0.5` (the gyroid strut was shortened to 40 immediately after — §34.11). Spans
+fall accordingly — gyroid `3.83 → 1.92`, Schwarz `3.43 → 1.14` — and
+the Schwarz strut, which had 108 crossings, is now **flush with none**.
+
+**What this pass had to undo.** `fit_schwarz_p_leaf_sizes.py` sized the Space prism as RATIOS to
+its own lattice spacing (`SPACE_SPANS`, `SPACE_THICK_RATIO`), so the strut tracked the lattice
+automatically. That coupling was right while the two moved together and became actively wrong the
+moment they were tuned separately: tripling the spacing would have tripled the strut to
+`90 × 1.5 × 1.5` with nobody asking. It is now an authored `SPACE_LEAF = (30.0, 0.5, 0.5)`.
+
+**The rule.** Derive a value from another only while they are genuinely one decision. The moment
+a human tunes them independently, the derivation stops being a safeguard and becomes a silent
+edit — and it fires in the direction nobody is looking, because the field they *did* change looks
+correct afterwards.
+
+**Verified at the new scales, not assumed.** `verify_gyroid_lattice_scale.py` now covers scale 4
+and the ordering still holds with the ratio constant:
+
+| scale | sep | bond | reserve | gate | healthy | gate/healthy |
+|---|---|---|---|---|---|---|
+| 2.0 | 6.0 | 15.67 | 6.27 | 11.00 | 15.05 | 73% |
+| **4.0** | **12.0** | **31.35** | **12.54** | **22.00** | **30.10** | **73%** |
+
+`assert_level_invariant()` confirms Schwarz stays at level 2 / 36 sites at `k = 5`
+(`sep 30`, `period 300` → the argmin is unmoved), so topology and prism count are its peers'.
+`GyroidOctagonRegistry`'s deliberately-unscaled `CenterDedupeRadius` (12u) is still correctly
+bracketed at `k = 4`: distinct octagon centres are `35.87 × 4 = 143.5` apart, half of that is
+71.7, and drift is ~1–2u — and 12 remains under `BinSize` 17.935, so the 3³ scan still covers it
+(§34.8's stated bound was 0.67×–40×; 4 is inside it).
+
+**Mass is unchanged, footprint is not.** Prism sizes and counts did not move, so per-prism volume,
+the species ceilings and the cell's Frenzy ladder are all exactly as §34.9 left them. What grows is
+the **bounds**: a gyroid plant's octagon ring radius goes 20u → 40u and its territory 53u → 106u,
+and a Schwarz plant's tile goes 50u → 150u across. Same mass, spread over ~4× and ~3× the linear
+extent — worth an eye in the editor for plants reaching past the membrane or into the nucleus,
+which is a spatial question no offline check here answers.
+
+### 34.11 Space gyroid — strut to 40, spacing to 25 (Aug 2026)
+
+Two prism-and-lattice tunings on the gyroid, Schwarz P untouched:
+
+- **Strut `60 × 1 × 1 → 40 × 1 × 1`.** Prism only. Volume falls `60 → 40` per prism,
+  and the species' ceiling in the Blob cell falls with it. *(Volume figures restated below
+  without the retired ×1.88 level spread — §34.9.)*
+- **Spacing to an absolute 25.** `LatticeScale 4 → 3.1902` — solved, not multiplied: the bonded
+  spacing at `separationDistance 3` measures **7.8364**, so `25 / 7.8364 = 3.1902` lands the walk
+  on **24.9997**. That is the only reason the number looks arbitrary; it is "spacing 25" expressed
+  in the units the dial actually takes.
+
+Neither touches topology, prism count or populations. Volume moved only with the strut — a
+spacing change is mass-neutral by construction, since it moves prisms apart without adding any.
+
+**The verifier now proves the SHIPPED configuration, not a guess at it.**
+`verify_gyroid_lattice_scale.py` reads `LatticeScale` out of `Gyroid Flora Space.asset` and folds
+it into the swept scales, because a scale that is *authored but never proven* is exactly the
+failure mode §34.8 exists for — a fixed sweep of 1/1.5/2/3/4 would have silently stopped covering
+the shipped lattice the moment it became 3.1902:
+
+| scale | sep | bond | reserve | gate | healthy | gate/healthy | |
+|---|---|---|---|---|---|---|---|
+| 3.00 | 9.0 | 23.51 | 9.40 | 16.50 | 22.57 | 73% | |
+| **3.19** | **9.6** | **25.00** | **10.00** | **17.55** | **24.01** | **73%** | **← shipped** |
+| 4.00 | 12.0 | 31.35 | 12.54 | 22.00 | 30.10 | 73% | |
+
+`GyroidOctagonRegistry`'s unscaled `CenterDedupeRadius` (12u) stays correctly bracketed: distinct
+octagon centres sit `35.87 × 3.1902 = 114.4` apart (half = 57.2), and 12 is still under `BinSize`
+17.935 so the 3³ scan reaches it.
+
+The current state of both Space elements:
+
+| | prism | LatticeScale | spacing | span | eff. volume | % of Blob Frenzy | plant footprint |
+|---|---|---|---|---|---|---|---|
+| **Gyroid Space** | 40 × 1 × 1 | 3.1902 | 25.00 | 1.60 | 40.0 | 14% | ring r 32u, territory 85u |
+| **Schwarz P Space** | 30 × 0.5 × 0.5 | 5 | 26.25 | 1.14 | 7.5 | 2% | tile 150u across |
+
+Volumes are RAW (`x·y·z`): since §33 a lattice species' leaf does not scale with level
+(`Flora.PrismSizeFixedByGrowthRule`), so raw == effective and the ×1.88 spread these sections
+were originally computed with no longer applies. Blob `FrenzyEnterVolume` = 288,000; the gyroid
+ceiling is `40.0 × 30 prisms × 33 plants`, the Schwarz `7.5 × 36 × 22`.
+
+### 34.12 The gyroid branch is a MIRRORED PAIR, not one branch through the prism (Aug 2026)
+
+The gyroid spindle's visible branch is one `BezierCurve.001` mesh — three strands braided into a
+shape that runs *narrow tip → bulb → waist → splayed flare*. `AssemblyBranch.prefab` posed it so
+its **middle** sat on the prism: tip at **−7.01**, flare at **+8.61**, the prism at 0. So every
+prism in the colony was skewered by a single branch, and what showed on the two sides of it was
+not the same geometry — a bulb and a converging tip below, three diverging wires above.
+
+**Now it is two half-branches meeting at the prism**, mirrored about the prism plane
+(`GyroidBranch.prefab`): each is the same mesh at **half** the length, its tip landing on the
+spindle origin and its flare reaching outward. Every number is derived, not chosen:
+
+| | shipped | this change |
+|---|---|---|
+| branch meshes per spindle | 1 | 2 |
+| child z-scale | 6.2 | 3.1 (exactly half) |
+| lateral scale | 1, 1 | 1, 1 (**untouched** — same shape, same visual weight) |
+| child local Y | −3.58 | ±1.7133 (`3.1 × mesh zmax`, so the tip lands on 0) |
+| span, spindle-local | −7.01 … +8.61 | −7.81 … +7.81 |
+| **total span** | **15.6194** | **15.6194** (identical) |
+
+`Tools`-free verification lives beside the change: the branch mesh's extents are read from
+`bonita.fbx` (`z ∈ [−1.966579, +0.552674]` Unity units, length 2.519253) and the transforms out of
+the prefab YAML, and the checker asserts total span preserved, both tips on the prism within
+1e-5 u, exact mirror symmetry, each half exactly half, and lateral scale untouched.
+
+**The visual weight is preserved because the lateral scale is not halved.** Where the branch
+crosses each element's prism face it is essentially the width it was, and — the point of the
+change — it is now the *same* width on both sides:
+
+| element | leafSize.y | shipped +y / −y | paired |
+|---|---|---|---|
+| Mass | 4.5 | 0.430 / 0.570 | 0.595 |
+| Charge / Time | 3.4 | 0.409 / 0.521 | 0.624 |
+| Space | 1.0 | 0.319 / 0.367 | 0.362 |
+
+**Why a second prefab rather than an edit in place.** `AssemblyBranch.prefab` is shared by
+**Wall** and **Schwarz P** flora, and §34.8 already settled that a gyroid decision must not
+change Schwarz P's approved proportions. `GyroidBranch.prefab` is a **flat copy**, which is what
+the `Spindles/` folder already does (`AssemblyBranch` and `Branch` are flat copies of each other
+with identical internal fileIDs) — so the `spindle` field on `GyroidFlora.prefab` changed only
+its **guid**; the fileID is byte-identical. Pointing Wall or Schwarz P at the pair later is that
+same one-field edit.
+
+**The code half: a spindle may now carry MORE THAN ONE renderer, and every one of them lives and
+dies on the same clock.** `Spindle` drove `RenderedObject` alone — its shared phase-variant
+material, its condense fade in, its evaporate fade out, its `enabled` flips. A second branch
+hung off that would have **popped** in and out while the first animated, which is a
+continuity-of-existence violation (§0) on the very spindle whose purpose is symmetry. So
+`Spindle.additionalRenderedObjects` joins `RenderedObject` in a flattened `_renderers` array that
+every visual path drives, with per-renderer captured base materials. Two properties are
+load-bearing:
+
+- **The phase bucket is resolved from the SPINDLE ROOT's position, once, for every part.** Sway
+  desync is per-spindle, never per-renderer — bucketing the halves separately would sway them out
+  of phase and tear the pair apart at the joint.
+- **The list is explicit, never a `GetComponentsInChildren` sweep.** The flora parents its
+  **health prism** under the spindle root (`ExecuteGrowOrder`, `CreateNewAssembler`), so a sweep
+  would capture the prism's renderer and fade conserved mass along with the branch.
+
+Empty on every other spindle prefab, all of which behave exactly as before (parity-checked
+against `Spindle.cs` for all ten: the three `Spindles/`, the three worm segments, QuadFish, shark,
+brittlestar).
+
+**Budget.** **Colliders: zero change** — a spindle carries none, and this adds none. **Mass: zero
+change** — a spindle is not a `Prism`, has no volume and no health, so `Cell.LiveVolume`, the
+Frenzy ladder and the population caps are all untouched; "twice the branch geometry" is not twice
+the mass. The cost is **triangles**: the branch mesh is 225 verts / 432 tris, so a spindle goes
+432 → 864, and a gyroid species at its cap (`MaxLivePopulation` 60 × ~24 prisms ≈ 1,440 spindles)
+goes ≈0.62 M → ≈1.24 M tris. Draw calls do **not** double: both halves of a spindle share one
+phase-variant material and there are still only 8 variants per base material, so the SRP batches
+are unchanged and the extra cost is submission, not state changes. This is the trade the change
+was asked for; if a capture shows it, the lever is `MaxLivePopulation`, not the pairing.
+
+**The general rule.** *A visual element that is animated through one serialized renderer reference
+cannot be split in two without splitting the animation with it.* Duplicating geometry to fix a
+symmetry problem is the easy half; the half that bites is every lifecycle path that was written
+against "the renderer" singular — and it fails as a **pop**, which the continuity law forbids and
+which no static check sees.
+
+**Open — decide from a playtest, not from here.**
+
+- **Which end faces the prism.** Shipped: the branch's fine **tip** lands on the prism and the
+  splayed end reaches outward, which is the literal read of "scaled to just reach the prism" and
+  keeps the shipped asset's outward direction. The alternative — splayed ends meeting *at* the
+  prism, fine points outward — is the same pair rotated, has the same total span, and hides the
+  widest part of the branch inside the prism. Flipping is four values on `GyroidBranch.prefab`:
+  swap the two children's `m_LocalRotation.x` signs and set the positions to `±6.0964`
+  (`3.1 × |mesh zmin|`). `verify_gyroid_branch_pair.py` passes either way — it asserts the
+  span, the mirror and the wiring, not the orientation, because orientation is a look call.
+- **Wall and Schwarz P still use the single piercing branch.** Deliberate (§34.8: a gyroid
+  decision must not move Schwarz P's approved proportions), not an oversight. If they should
+  pair too, it is one guid on the `spindle` field of each prefab plus the two lines in
+  `verify_gyroid_branch_pair.py`'s scope table.
+- **The triangle cost is the branch's headline perf risk** and is unmeasured in engine: ≈1.24 M
+  tris for one gyroid species at its cap, up from ≈0.62 M. If a capture shows it, the lever is
+  `MaxLivePopulation`, or a single mesh authored as the finished pair (one renderer, same
+  triangles) — never un-pairing, which re-introduces the skewer.
+---
+
+## 35. Charge ARMOURS its mass — and a shield triples a prism's reach (Aug 2026)
+
+Two halves of one elemental identity: **Charge is the element whose leaves are shielded**, and
+a shielded prism is not a recoloured prism — it is a body **three times as long in every
+direction** as the one it replaces. The first half was true of nine flora species and silently
+false of six. The second half had never been fitted at all: both lattice species were sized for
+the box they draw *unshielded*, and both were sized TIGHT, so armouring one drew an
+interpenetrating solid rather than a lattice of octahedra. Both are now fitted for the body they
+actually draw.
+
+### 35.1 The law, and why it could not be data alone
+
+`FloraVariantTuning.ShieldPeriod` is the cadence: `LifeForm.ShieldRegenCoroutine` re-armours one
+leaf every `shieldPeriod` seconds, cycling the plant's live prisms forever, so a settled plant is
+fully armoured after `prisms × period` seconds and re-armours anything a grazer strips.
+
+The armour is **not immunity**. `Prism.Consume` on a shielded prism **sheds the shield** instead
+of imploding the mass, so a herbivore has to strip a Charge plant before it can graze it, and the
+plant races to put the armour back. Nothing is culled, nothing is invulnerable, and the food web
+is still the only down-force (§0) — grazing a Charge plant simply costs two passes. The second
+effect is steering: shielded mass is excluded from the cell's targeting grids
+(`Cell.AddBlock` / `NotifyBlockShieldStateChanged`, §22), so an armoured Charge plant also stops
+*attracting* the herbivores that would strip it. That pair is the whole cost/benefit of the
+element: Charge mass persists, and it persists by being uninteresting.
+
+**Where it was.** The Charge gyroid shipped `ShieldPeriod 1` with the elemental contract, and the
+eight phyllotactic garden species (Arbor / Coral / Frond / Lantern / Reed / Rosette / Spire /
+Tendril) followed it. Six Charge species never did — Branching, Cacti, Nerve, Pine and Wall sat
+at `Variant.Enabled: 0` (which `CellLifeSpawnerBase` skips **whole**), SchwarzP at the
+keep-the-prefab sentinel `-1`, and **every flora prefab ships `shieldPeriod 0`**.
+
+**Why the six assets are not the fix.** They are now authored (`ShieldPeriod: 1`, by
+`Tools/Build/author_charge_flora_shields.py --check`), but authoring cannot reach every Charge
+plant, because **the cadence is authored per CONFIG while the element is rolled per PLANT**. A
+config with `SpreadElements` and an EMPTY `ElementPalette` rolls an element and then applies its
+*own* variant block to it — so `Hesperides Gyroid Topiary` and `Hesperides SchwarzP Topiary` hand
+a Charge plant `ShieldPeriod: 0`, and no value writable on those two assets fixes it without
+re-shaping the other three elements grown from the same block.
+
+So the law lives in code: **`Flora.ResolveShieldPeriod`** floors a Charge plant at
+`Flora.ChargeShieldPeriod` (1s). It is asked once, from `LifeForm.Initialize`, at the only point
+where the prefab, the rolled variant, the cell overrides **and** the crystal that carries the
+element have all landed — `ApplyVariantTuning` runs before the element is known and would be
+overwritten by the cell overrides afterwards. An authored cadence still WINS: a Charge species may
+be armoured faster or slower than the fleet, it just may not be *unarmoured*. Two deliberate
+limits: it is on `Flora`, not `LifeForm`, so **fauna are untouched** (a creature's body prisms are
+not the food web's mass, and shielding them changes what it takes to kill a creature); and the
+assets still state `1` so a reader sees the identity in the data — `--check` keeps the two from
+drifting apart.
+
+### 35.2 A shield is 3× the prism, and neither lattice species had been fitted for it
+
+`PrismStateManager.ActivateShield` engages a `PrismOctahedronShield`: the octahedron that
+**circumscribes** the prism's box, at `OctahedronMeshGenerator.CIRCUMSCRIBING_SCALE = 3` applied
+to the box HALF-extents. `HealthBlock.prefab`'s collider is a unit cube, so world half-extents are
+`leafSize / 2` and the shield reaches **`1.5 × leafSize`** from the prism centre along each local
+axis — `4.5 ×` the box volume, and **3× the reach**.
+
+Both lattice species were fitted for the box they draw *unshielded*, and both were fitted TIGHT —
+the gyroid's leaf nearly spans its bond, Schwarz P's plates are literally flush (§34.5). Tripling
+that reach therefore does not draw a lattice of octahedra, it draws one interpenetrating solid.
+`Tools/Build/fit_shield_clearance.py` walks each species' own shipped geometry — the gyroid bond
+table, and Schwarz P's tile table through that species' own frame builder — and runs an exact
+separating-axis test over every near pair:
+
+| species | element | shield | spacing | leaf as shipped | plates s\* | shields s\* | interpenetrating |
+|---|---|---|---|---|---|---|---|
+| gyroid | **Charge** | **ON** | 7.84 | 9 × 3.4 × 1.5 | **1.59** | **0.53** | **826 of 15,880** |
+| gyroid | Mass | off | 7.84 | 7 × 4.5 × 3.5 | 1.99 | 0.66 | 829 of 9,828 |
+| gyroid | Space | off | 25.00 | 40 × 1 × 1 | 1.26 | 0.42 | 281 of 22,681 |
+| gyroid | Time | off | 7.84 | 9 × 3.4 × 1.5 | 1.59 | 0.53 | 826 of 15,880 |
+| SchwarzP | **Charge** | **ON** | 5.35 | 4.72 × 2.92 × 1 | **1.33** | **0.44** | **3,654 of 74,952** |
+| SchwarzP | Mass | off | 5.35 | 4.09 × 3.14 × 2 | 1.54 | 0.51 | 2,844 of 51,963 |
+| SchwarzP | Space | off | 26.74 | 30 × 0.5 × 0.5 | 1.05 | 0.35 | 918 of 131,487 |
+| SchwarzP | Time | off | 5.35 | 4.72 × 2.92 × 1 | 1.33 | 0.44 | 3,654 of 74,952 |
+
+`s*` is the uniform scale at which the worst pair exactly **touches** — exact rather than
+bisected, because both bodies are centrally symmetric about their prism, so scaling a pair by `s`
+scales every projection radius by `s` while the centre offset is fixed and
+`s* = max over candidate axes of |d·u| / (rA(u) + rB(u))`.
+
+**Every element's plain prisms are already clear** (plates `s*` 1.05–1.99). It is *tripling that
+reach* that fuses a plant, which is why only the shielded element has to answer for it — the other
+three draw the box they were fitted as. The worst value is shared by 10 pairs on the gyroid and
+162 on Schwarz P, so both are repeating lattice relationships, not accidental pairs.
+
+### 35.3 The fits
+
+Uniform on all three axes — a species' leaf ASPECT is its identity (the gyroid Charge's
+9 : 3.4 : 1.5, shared with Time; Schwarz P Charge's 4.72 : 2.92 : 1, a thin plate lying ON a
+minimal surface). Only the size moves:
+
+```
+gyroid    Charge   9    × 3.4  × 1.5   →  4.28 × 1.62 × 0.71   (touch ×0.5295, +10% clearance)
+SchwarzP  Charge   4.72 × 2.92 × 1     →  1.88 × 1.16 × 0.39   (touch ×0.4441, +10% clearance)
+```
+
+Both verify at `s* ≈ 1.11` with **zero** interpenetrating pairs, plates far apart (`s* > 2.5`).
+That is exactly the trade the ask described: the plates become a sparse skeleton and **the
+octahedra are what fill the lattice back in**. Because a Charge plant is fully armoured a few tens
+of seconds after it settles, the armoured state is the one that is nearly always on screen.
+
+**Uniform is a look decision the geometry permits, not one it forces.** On Schwarz P the binding
+axes are the two in the TANGENT plane: shrinking the footprint alone to `2.10 × 1.30` clears every
+shield with `z` left at 1.0, so the thickness buys nothing either way. It is shrunk anyway,
+because at `1.88 × 1.16 × 1.00` the "plate" is very nearly a cube and stops reading as a plate on
+a surface — the thing §34.5 keeps thin on all four elements.
+
+**Schwarz P moved on its OWN evidence, not on a gyroid decision.** §34.8's rule — that a gyroid
+call must not drag Schwarz P's approved proportions with it — is intact: this fit measured that
+species' own tile table, against its own shields, and would have produced the same number if the
+gyroid did not exist. The two are the same *arithmetic*, not one decision applied twice.
+
+**Nothing about either LATTICE moved** — `separationDistance` / `periodScale` / `LatticeScale`, the
+bond and tile tables, and every coherence tolerance (snap, mate-search radius, reservation floor,
+`AssembledFlora.MisalignmentRadius`) are untouched. That is deliberate and is the cheap half of
+§34.8: those tolerances are absolute distances measured against the lattice, so scaling the
+lattice drags a whole family of constants with it, whereas scaling the PRISM drags nothing — the
+assemblers read `Prism.TargetScale` only to stamp it onto the next prism, never to place one. The
+fits also survive levelling for free: a lattice species' leaf does not grow with level
+(`Flora.PrismSizeFixedByGrowthRule`, §33).
+
+**The silent clamp is checked, not assumed.** Schwarz P Charge's fitted thickness `0.39` is BELOW
+`HealthBlock.prefab`'s `minScale` 0.5, and `PrismScaleAnimator.SetTargetScale` clamps inside the
+setter with no log and no return value (§34.9) — the authored size would silently become 0.5. It
+survives only because `Flora.AddHealthBlock` calls `Prism.AdmitTargetScale` first, which *lowers*
+`minScale` to admit the stated size. The fitter reports any axis outside the prefab's window and
+**fails** if that admit call is ever refactored away.
+
+**Two fitters, one owner per asset.** `fit_schwarz_p_leaf_sizes.py` sizes that species' plates
+FLUSH and used to own all four elements — so re-running its `--write` would have reverted the
+shield fit, depending on which script ran last. It now reads Charge's leaf back instead of
+imposing the flush fit, prints what the flush fit *would* have been (`4.72 × 2.92 × 1`, 47%
+surface coverage vs the shipped 7.4%), and leaves the sizing to the shield fitter. Proven by
+running it: Mass / Space / Time / the Hesperides topiary come out byte-identical and Charge is
+untouched.
+
+### 35.4 Cost
+
+- **Colliders: unchanged.** A shield changes the LOOK and the mass, never the collider — the
+  authored primitive box trigger stays (`PrismOctahedronShield.ApplyShieldedPose`), because a
+  convex mesh trigger is invisible to trigger-skimmers. Shape-precise contact rides the Burst
+  shell tier in `PrismSpatialIndex`, a cold array keyed off prism slots that already exist. Prism
+  COUNTS are unchanged everywhere (`MaxTotalSpawnedObjects` untouched), so the per-cell collider
+  budget is exactly as before. More shielded prisms do mean more slots pass `ShellKind.None` in
+  `ShellContactQueryJob` — Burst, per probe, no colliders.
+- **Volume: down, which is the safe direction.** Per-prism `45.90 → 4.92` (gyroid Charge) and
+  `13.78 → 0.85` (Schwarz P Charge). In the Blob cell, where every flora config rolls the four
+  elements uniformly:
+
+  | | before | after | of `FrenzyEnterVolume` (288,000) |
+  |---|---|---|---|
+  | gyroid ceiling (60+33+42 plants × 30) | 245,076 | 203,586 | 85.1% → 70.7% |
+  | SchwarzP ceiling (22 plants × 36) | 12,028 | 9,468 | 4.2% → 3.3% |
+  | **flora total** | **257,104** | **213,054** | **89.3% → 74.0%** |
+
+  Frenzy therefore arrives LATER, so **no ladder is re-authored** — and it gives back some of the
+  headroom §32.7 found the Blob colony freezing against.
+
+### 35.5 What is NOT fitted (open, measured, deliberate)
+
+Two configs roll their element with an **empty** `ElementPalette`, so ONE authored leaf serves all
+four elements and a per-element fit cannot reach them without giving them a palette (which would
+replace their bespoke topiary sizes). Measured the same way:
+
+| config | leaf (all four elements) | plates s\* | shields s\* | interpenetrating |
+|---|---|---|---|---|
+| Hesperides Gyroid Topiary | 3.6 × 3 × 2.2 | > 2.5 | **1.003** | 0 of 2,412 |
+| Hesperides SchwarzP Topiary | 4.09 × 3.14 × 2 | 1.54 | **0.513** | 2,844 of 51,963 |
+
+The gyroid topiary is already clear — barely, and by accident of being a small leaf. The Schwarz P
+topiary is not, and fixing it means deciding what its *other three* elements should look like: a
+garden decision, not a geometric one.
+
+The eight phyllotactic Charge species (Arbor / Coral / Frond / Lantern / Reed / Rosette / Spire /
+Tendril) have shielded since the garden shipped and were never fitted for it either. They are not
+lattices — their prisms are sized by ROLE and placed by a growth rule, so there is no site set to
+fit against and no equivalent measurement; nobody has looked at them.
+
+### 35.6 Verification (the human is the gate)
+
+1. `python3 Tools/Build/author_charge_flora_shields.py --check` — every Charge flora asset states
+   the armour, and states the same number the law does.
+2. `python3 Tools/Build/fit_shield_clearance.py --check` — both shielded lattice species are at
+   their fit; the run also re-proves zero interpenetrating pairs, self-tests the SAT against two
+   closed-form cases, and fails if a fitted axis outside the prefab's clamp stops being admitted.
+3. `python3 Tools/Build/fit_schwarz_p_leaf_sizes.py` — must report Charge as SHIPPED, not as the
+   flush fit; and `--write` must leave the Charge asset untouched.
+4. `python3 Tools/Build/verify_gyroid_lattice_scale.py` + `verify_gyroid_octagon_tables.py` +
+   `verify_schwarz_p_tile_tables.py` — unchanged, and must stay so: this branch moved no lattice
+   distance.
+5. **In-editor, Menu_Main (the Blob cell rolls all four elements of both lattice species):** find
+   a gyroid and a Schwarz P plant whose heart is the Charge crystal — identify it by the crystal's
+   SHAPE, not its colour, since a crystal's colour says who may collect it (`Docs/PALETTE.md`
+   §2.2) — and watch each armour one leaf per second. Confirm (a) the octahedra bloom in
+   individually and read as separate bodies rather than one fused mass, (b) the plant is
+   progressively ignored by herbivores as it armours (shielded mass leaves the cell's targeting
+   grids, §22) and any contact that does land strips the shield instead of eating the leaf, with
+   the plant re-armouring it on the next pass of the cadence, (c) the unshielded plates look
+   deliberately sparse — that is the fit, not a growth failure. Schwarz P is the more extreme of
+   the two: its plates cover 7.4% of the surface unshielded, against 47% before.
+6. **Hesperides:** a Charge topiary (gyroid or SchwarzP) must armour too — that config carries
+   `ShieldPeriod: 0` and rolls its element with an empty palette, so it is the case only
+   `Flora.ResolveShieldPeriod` can reach. Expect the SchwarzP topiary's octahedra to still fuse;
+   that is the open item in §35.5, not a regression.
+7. **The mirrored branch pair (§34.12) meets AT the prism, and the Charge prism is now half the
+   size it was** — the branch is sized in spindle-local units against the LATTICE, so it did not
+   move, but a smaller leaf exposes more of the join. The two changes are independent by
+   construction (nothing in `Spindle` reads `leafSize`) and they compose, but the *look* of a
+   Charge gyroid's join is the one thing this branch cannot predict. Check it on the same plant as
+   step 5.
+8. After the flora config edits: `FrogletTools ▸ Validation ▸ Validate Lifeform Crystals`.
