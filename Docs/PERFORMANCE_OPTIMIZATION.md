@@ -178,6 +178,61 @@ per-capture analyses; `Docs/SPATIAL_INDEX.md` documents the summation view
 
 ---
 
+## 0.4 FMOD — the REAL cause: a LOOPING event fired as a one-shot (2026-08-18, SHIPPED)
+
+**This is the one that mattered.** 0.3 (the prism one-shot throttle) was a real defect and
+is kept, but it was not the dominant cost: after it, the capture still showed
+`RuntimeManager.Update()` at **693 ms**, and — the tell that redirected the hunt —
+**sustained on every frame** with the rest of the scene idle. A burst being drained is
+spiky; a flat per-frame cost means a fixed, permanent population of live instances.
+
+**Root cause.** `FMODOneShotVolumeHelper` does `CreateInstance` → `start()` → `release()`.
+That contract is only safe for an event that **stops by itself**: FMOD frees a released
+instance when it stops. An event with a **loop region** never stops, so `release()` never
+frees it — every call leaks one immortal, forever-playing instance, and
+`studioSystem.update()` re-processes all of them every frame. Hence: grows over the
+session, all *self* time, **0 B GC alloc**, nothing in the Unity hierarchy to point at.
+
+Cross-referencing the in-repo FMOD Studio project (`Cosmic Shore/Metadata/Event/*.xml`,
+which records loop regions) against the 47 `EventReference`s the Bootstrap scene wires
+found **exactly one** offender:
+
+| event | loops? | fired as |
+|---|---|---|
+| `event:/SFX/Oneshots/Gameplay sfx/Boost Activate` | **yes** | fire-and-forget one-shot |
+| the other 46 wired events | no | one-shot (correct) |
+
+A **looping** event, in a folder called *Oneshots*, fired by **five** boost call sites
+(`BoostActionSO`, `RampBoostActionSO`, `ChargeBoostActionExecutor`,
+`ConsumeBoostActionExecutor`, `MantaAnalogTurnBoostExecutor`) — on every vessel and every
+AI, repeatedly, all match.
+
+**Fix:** `FMODOneShotVolumeHelper` now asks FMOD itself (`EventDescription.isOneshot`)
+before firing and forgetting, and **refuses** a looping/sustaining event, reporting it once
+with the event path. Cached per event GUID (one native query per event, not per call). The
+check is dynamic, so removing the loop region in FMOD Studio makes it play again with **no
+code change**. An undeterminable answer (banks still loading) counts as safe, so a query
+failure can never silently mute audio — only a definite "this loops" refuses.
+
+**Known cost of the fix:** the boost sting is **silent** until the event is corrected. That
+is deliberate (fail-loud policy) and it is the cheaper half of the trade against an
+unplayable frame rate. Given five *momentary* call sites, the loop region is almost
+certainly the authoring bug and the remedy is one click in FMOD Studio; if boost is instead
+meant to be a sustained bed, it needs its own `EventReference` with an owned instance
+(start on begin, stop on end), per CLAUDE.md's audio policy — not a one-shot.
+
+**The standing rule this bought:** *`start()` + `release()` is a contract that the event
+stops by itself.* Any looping/sustaining event must be owned by a component that stops it
+(`ShipAudioController` / `DriftAudioController` / `FloraAmbientAudioController` are the
+right shape). A folder named "Oneshots" is not evidence — check `isOneshot`.
+
+**Tooling:** `FrogletTools ▸ Performance ▸ FMOD Live Diagnostics` (reader, writes nothing)
+shows live instance count **per event**, real/total channels, and FMOD's own CPU split.
+A four-figure count on one row names an offender of this class outright. Use it before
+theorising about FMOD again — the Unity profiler structurally cannot.
+
+---
+
 ## 0.3 FMOD — `RuntimeManager.Update()` eating a whole frame (2026-08-18, SHIPPED)
 
 **Capture:** `RuntimeManager.Update() [Invoke]` — **1,158.77 ms**, 98.2 % of a
