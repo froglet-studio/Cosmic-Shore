@@ -84,10 +84,24 @@ TADPOLE_PREFAB = ("5945480239701989318", "c7fd418d426de8740ac888dcc23a5d24")
 MEMBRANE_RADIUS = 1200.0    # CapsuleMembrane.prefab -> radius
 NUCLEUS_RADIUS = 392.0      # Node2 half-extent 0.9798 x Nucleus.prefab scale 400
 
-# ── Population: the one thing this cell relaxes ─────────────────────────────
-INITIAL_SPAWN = 8     # founders planted at t=0 (per species)
-FLOOR = 30            # seed floor - the seeder tops back up to this every PlantPeriod (120s)
-CAP = 90              # hard per-species cap; the real bound is the ladder + grazing
+# ── Population: ONE founder per colony, and a high ceiling ──────────────────
+# EXACTLY EIGHT SEEDS IN THE WHOLE CELL - this is the cell's defining choice, not a tuning
+# value. A lattice colony is ONE continuous minimal surface grown outward from its founder
+# (Docs/ECOSYSTEM.md 32.7: 273 plants from one founder, a single connected gyroid), so every
+# extra founder is an extra INDEPENDENT lattice frame - and independent frames cannot mate.
+# AssembledFlora declines any site within MisalignmentRadius of a foreign frame, so N founders
+# per species do not build one big structure N times faster: they build N small ones that stop
+# against each other, which reads as a scattered forest (the Rampage look) instead of a
+# superstructure. Seeding one and letting it reproduce is the whole mechanic.
+#
+# The seeder's job here is therefore EXTINCTION RECOVERY only: floor 1 means it replants a
+# colony the food web wiped out, and does nothing at all while any plant of that species lives.
+# (author_flora_populations.py floors lattice species at 4 founders for a reason that does not
+# apply here - it protects the ELEMENT SPREAD of a config that rolls its element per plant.
+# These eight configs each author ONE fixed element, so there is no spread to protect.)
+INITIAL_SPAWN = 1     # founders planted at t=0, per species -> 8 in the cell
+FLOOR = 1             # seed floor = extinction recovery only
+CAP = 90              # how large ONE superstructure may get; the real bound is the ladder + grazing
 
 QUOTA = 22            # GrowthPerOffspring (inert for a colony birth, but must be sane)
 COOLDOWN = 5
@@ -95,18 +109,26 @@ MATURITY = 0.5
 SPREAD = 40
 
 # ── The garden BAND (volume-uniform between these fractions of the membrane) ─
-# Outer 0.75 keeps the colonies' outward growth well inside the sense radius; inner 0.38 is
-# just outside the nucleus. The inner edge matters: the shipped per-element assets author
-# PlantRadiusCellFraction 0.2 (240u), which is INSIDE the ~392u nucleus, so ResolvePlantRadius
-# collapses to a single degenerate shell there. A cell with eight colonies needs the room.
-BAND_OUTER = 0.75
-BAND_INNER = 0.38
+# This band places the EIGHT FOUNDERS and nothing else - every other plant is placed by its
+# parent's own lattice frontier, not by a radius roll. So it is not "where the forest goes", it
+# is "where the eight seeds go", and it is a MID-SHELL (540u - 840u of the 1200u membrane) so
+# each superstructure has room to grow both inward and outward before it meets anything.
+# Eight points on a ~700u shell sit ~760u apart, which is several superstructure diameters.
+#
+# The inner edge still matters for the reason it always did: the shipped per-element assets
+# author PlantRadiusCellFraction 0.2 (240u), which is INSIDE the ~392u nucleus, so
+# ResolvePlantRadius collapses to a single degenerate shell there - every founder on one sphere,
+# inside the territorial claim.
+BAND_OUTER = 0.70
+BAND_INNER = 0.45
 
 # ── Ecosystem heartbeat: also the colony BIRTH clock ────────────────────────
-# A lattice colony births exactly ONE daughter per fauna-wave period, so this is the dial that
-# decides how long the garden takes to fill: (CAP - FLOOR) x HEARTBEAT per species, in
-# parallel across the eight. 10s -> ~10 minutes. Lower it and the fauna waves quicken too.
-HEARTBEAT = 10.0
+# A lattice colony births exactly ONE daughter per fauna-wave period - REGARDLESS of how many
+# plants it already has - so this is the dial that decides how long a superstructure takes to
+# build itself: (CAP - 1) x HEARTBEAT per colony, in parallel across the eight. Growth is
+# linear in the cap, which is why one founder needs a quicker heartbeat than a seeded forest
+# did. Lower it and the fauna waves quicken too; they share the clock by design.
+HEARTBEAT = 5.0
 
 # ── Ladder ratios (against the mature forest at the per-plant BUDGET ceiling) ─
 FRENZY_ENTER_RATIO = 1.30
@@ -235,13 +257,14 @@ def verify(rows):
         problems.append("FrenzyExitVolume is below the mature forest - a frozen cell "
                         "would need active grazing before it could resume growing")
 
-    # Fauna must start hunting a PARTLY grown cell, not a finished one.
-    seeded_volume = t["volume"] * FLOOR / CAP
-    if L["RestlessEnterVolume"] >= t["volume"]:
-        problems.append("RestlessEnterVolume is at/above the mature forest - fauna never hunt")
-    if L["RestlessEnterVolume"] > seeded_volume:
-        problems.append("RestlessEnterVolume is above the SEEDED forest - the food web is "
-                        "asleep through the whole bootstrap")
+    # Fauna must start hunting a PARTLY grown cell, not a finished one. The cell opens with
+    # eight lone founders, so there is no seeded forest to compare against - what matters is
+    # that Restless lands a good way BELOW mature, i.e. while the colonies are still building.
+    if L["RestlessEnterVolume"] >= t["volume"] * 0.5:
+        problems.append("RestlessEnterVolume is too near the mature forest - fauna would only "
+                        "wake once the superstructures are already finished")
+    if L["RestlessEnterVolume"] <= 0:
+        problems.append("RestlessEnterVolume must be positive")
 
     # Hysteresis must be a band, in the right direction.
     for hi, lo in (("FrenzyEnterVolume", "FrenzyExitVolume"),
@@ -463,10 +486,10 @@ def main():
     print(f"{'TOTAL':<20}{t['plants']:>7}{'':>10}{t['settled']:>9}{t['ceiling']:>9}"
           f"{t['volume']:>12,.0f}")
     print()
-    print(f"  seeded (floor {FLOOR}/species): {t['plants_seeded']} plants, "
-          f"{t['seeded']:,} prisms, {t['volume'] * FLOOR / CAP:,.0f} volume")
-    print(f"  fill time: ({CAP} - {FLOOR}) x {HEARTBEAT:g}s heartbeat "
-          f"= ~{(CAP - FLOOR) * HEARTBEAT / 60:.0f} min (colonies fill in parallel)")
+    print(f"  founders: {t['plants_seeded']} ({INITIAL_SPAWN}/species) - one lattice frame per "
+          f"colony, floor {FLOOR} = extinction recovery only")
+    print(f"  build time: ({CAP} - 1) x {HEARTBEAT:g}s heartbeat "
+          f"= ~{(CAP - 1) * HEARTBEAT / 60:.0f} min per superstructure (all eight in parallel)")
     print(f"  heart-crystal colliders at cap: {t['plants']} (one per plant, always on)")
     print()
     print("  ladder: " + "  ".join(f"{k}={v:g}" for k, v in L.items()))

@@ -195,7 +195,17 @@ outcome is optimization, not life). Use the `/ecology` skill for any change here
   **A cell can BE its colonies**: the freestyle `Lattice` cell (`_SO_Assets/Cell Configs/Lattice
   Cell/`, `CellConfigs[9]` in Menu_Main) authors no `EnvironmentPrefab` at all — its whole
   environment is eight lattice colonies (gyroid ×4, Schwarz P ×4, one per element) growing into
-  one another, ~21,600 grown prisms and 720 plants at cap. Three things it records: a per-plant
+  one another, ~21,600 grown prisms and 720 plants at cap. It holds **exactly EIGHT SEEDS** — one
+  founder per colony — and that is the cell, not a tuning value: **N founders do not build one
+  superstructure N times faster.** Every founder is an independent lattice FRAME and independent
+  frames cannot mate (`AssembledFlora` declines any site within `MisalignmentRadius` of a foreign
+  frame, §34.8), so 30 founders per species built 30 small structures that stopped against each
+  other — the same prism count, read as a scattered forest. Seeding one and letting reproduction
+  extend it IS the mechanic; the seeder's only remaining job is extinction recovery. Note this is
+  the case `author_flora_populations.py`'s `LATTICE_MIN_FOUNDERS = 4` guards, and why it does not
+  apply: that floor protects the ELEMENT SPREAD of a config that ROLLS its element, and these
+  eight author one fixed element each — **a rule written about rolled elements must not be
+  inherited by a fixed-element config**. Three more things it records: a per-plant
   budget is GEOMETRY (24-prism octagon / 36-site tile), so **plant COUNT is the only lever** and
   `MaxLivePopulation` is simultaneously the crystal-collider count; `FrenzyExitVolume` must sit
   **above** the mature forest so a trail-caused Frenzy always releases with the forest intact;

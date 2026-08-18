@@ -31,7 +31,7 @@ MonoBehaviour:
   InitialFaunaSpawnWaitTime: 20
   FaunaSpawnVolumeThreshold: 1
   FaunaPopulationScale: 1
-  BaseFaunaSpawnTime: 10
+  BaseFaunaSpawnTime: 5
   SeedFullWaveEveryTick: 0
   FaunaFoodFloor: 5
   FaunaInitialDelaySeconds: 0
