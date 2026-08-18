@@ -97,11 +97,45 @@ levels: `ApplyElementalEffect` drops negative magnitudes while immune. Scoring t
 would pay for something that provably did not happen — and the two effects, siblings in one
 container dispatched from one contact, would disagree about whether anything occurred.
 
-This is also real counter-play rather than a technicality: immunity is a state a vessel can hold
-(the Sparrow while boosting at Time 5, the Serpent while stopped), so "be un-bendable for a
-moment" is a legible defensive idea the mode gets for free.
-
 Off for a missile, because a rocket that hits you hit you whatever your immunity state.
+
+### ⚠ This collides with the Dolphin's own Time 5 — read before tuning
+
+When this flag was written, elemental immunity was somebody else's vessel: the Sparrow while
+boosting, the Serpent while stopped. **`bleeding-edge` then landed "Drift Ward"** — Dolphin
+Time 5, `VesselElementalImmunity(condition: WhileDrifting, upgradeGate: Time)` on
+`Dolphin.prefab` — and in this mode *every pilot is a Dolphin*. So the mode's only vessel now has
+a hard counter to the mode's only scoring event, and the following is verified from the assets
+rather than inferred:
+
+- **Drift is a HELD action.** `DriftActionSO` sets `IsDrifting` in `StartAction` and clears it in
+  `StopAction`; there is no timer. Immunity therefore lasts as long as the input is held.
+- **A one-bend deficit unlocks it.** `ElementalComebackSystem` feeds `SetComebackModifier`, which
+  composites into `GetEffectiveLevel`, which is what `R_VesselElementalAbilityHandler` reads to
+  flip an unlock. Dolphin Time authors `UnlockLevel: 5`, `RelockBelowLevel: 4`,
+  `LatchPolicy: Relock`. At the shipped rate: base level 1 (0.1) + one bend behind
+  (1 × 4.0 ⁄ 10 = 0.4) = 0.5 → **level 5 → Drift Ward**. Falling one bend behind out of three
+  hands the trailing pilot immunity.
+- **`Relock` is the only brake**, and it only releases when the deficit closes — which in a 1v1
+  requires the leader to land a bend on a pilot who is currently immune to bends.
+
+**What is NOT verified** (and must not be assumed from CLAUDE.md's summary): the *cost* of
+holding a drift. CLAUDE.md's "Locked freezes the velocity vector outright" describes the VECTOR
+flight model, and `Dolphin.prefab` authors `vectorFlightModel: 0` — the scalar model, where
+throttle pushes along `Course`. Whether a permanently drifting Dolphin is genuinely unable to
+manoeuvre (and therefore unable to score either, making this a stalemate rather than a dominant
+strategy) is a **playtest question**, not something this doc should claim.
+
+Three levers exist if it does read as degenerate, in increasing order of violence to the design:
+
+1. **Lower the comeback rate** so one bend no longer reaches level 5 — but the generator's guard
+   (correctly) rejects a rate low enough to matter, so this trades one dead dial for another.
+2. **Turn `requireDebuffableVictim` off**, so a bend scores even against an immune pilot. Cheapest
+   fix, and it breaks the "score must not disagree with the effect" property this flag exists for.
+3. **Gate the ward out of this mode.** No mechanism exists for that today and inventing one is a
+   platform change, not a mode setting.
+
+Do not pick one from a desk. This needs one match.
 
 ### `requireOwningMachine` — a networking fix, not a design choice
 
@@ -444,6 +478,9 @@ editor and a real lobby.
 - **`BendsObjectiveProvider` is not wired into the scene**, exactly like `DogFightObjectiveProvider`
   — the objective-marker HUD element has no host in these scenes yet. The provider is correct and
   ready for whichever one lands first.
+- **The Drift Ward interaction above is the branch's top open risk** and is deliberately shipped
+  un-tuned — see that section. It landed on `bleeding-edge` after this mode was built and is a
+  balance question a single playtest answers.
 - **The debuff magnitude is Rampage-era.** `-0.5` on every element over 4 s was authored for a
   blast that never touched a pilot; it has never been play-tested as a *scored* quantity. If a
   bend reads as too weak to be worth aiming for, that asset is the dial — not the point value,
