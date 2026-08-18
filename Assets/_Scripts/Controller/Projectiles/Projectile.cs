@@ -73,6 +73,56 @@ namespace CosmicShore.Gameplay
         /// Destroy the host's child on the first stopping impact.
         public bool IsCarriedByHost { get; private set; }
 
+        /// <summary>
+        /// How many further generations of the chain reaction this round may still seed —
+        /// the Urchin's spike cascade (<c>ProjectileChainFirePrismEffectSO</c>). It is the
+        /// same quantity the gun calls <c>energy</c>: it picks the projectile TIER from
+        /// <see cref="ProjectileFactory.GetProjectile"/> and it is the recursion depth, so the
+        /// two can never drift apart.
+        ///
+        /// **Zero is TERMINAL and that is load-bearing.** The 2023 original had no depth cap
+        /// at all: its base tier fired a volley whose children were also base tier, so the
+        /// only thing that ever stopped the cascade was territory conversion (a prism already
+        /// yours is skipped by <see cref="DisallowImpactOnPrism"/>). That emergent brake is
+        /// still the PRIMARY one and is deliberately kept — this counter is the second,
+        /// authored brake that bounds the worst case, and the per-frame volley budget in
+        /// <see cref="ChainReactionBudget"/> is the third.
+        ///
+        /// Per-FLIGHT: cleared by <see cref="Initialize"/> so a pooled reissue never inherits
+        /// the previous shot's remaining depth.
+        /// </summary>
+        public int ChainGeneration { get; private set; }
+
+        /// <summary>Stamped by <see cref="Gun.FireSingle"/> from the volley's energy.</summary>
+        public void SetChainGeneration(int generation) => ChainGeneration = Mathf.Max(0, generation);
+
+        /// <summary>
+        /// The firing vessel's SPACE reach, carried DOWN the cascade so every generation
+        /// inherits the range the pilot paid for. The vessel's gun stamps it on the first
+        /// volley; each spike hands it to its own <see cref="LoadedGun"/>, which stamps it on
+        /// the volley it fires — so one authored multiplier reaches the last generation
+        /// without any generation having to look back up at the vessel (which, by then, may be
+        /// dead, respawned, or on the other side of the cell). 1 = unscaled.
+        /// </summary>
+        public float ChainRangeScale { get; private set; } = 1f;
+
+        public void SetChainRangeScale(float scale) => ChainRangeScale = Mathf.Max(0.01f, scale);
+
+        /// <summary>
+        /// How much of its reach each generation hands to the next: the children of this spike
+        /// launch at <see cref="ChainRangeScale"/> × this. Below 1 the cascade visibly runs out
+        /// of steam as it spreads, which is what makes a deep chain feel like a wave rather
+        /// than an expanding sphere.
+        ///
+        /// The Urchin's SPACE level-5 upgrade ("Deep Cascade") sets it to 1 so the wavefront
+        /// keeps its full reach to the last generation. Propagated unchanged down the chain, so
+        /// the pilot's upgrade state at FIRE time governs the whole cascade even if their level
+        /// moves while it is still running.
+        /// </summary>
+        public float ChainRangeFalloff { get; private set; } = 1f;
+
+        public void SetChainRangeFalloff(float falloff) => ChainRangeFalloff = Mathf.Clamp(falloff, 0.05f, 1f);
+
 
         /// <summary>
         /// Raised the instant this flight ends — at BOTH death points: the lifetime
@@ -140,20 +190,54 @@ namespace CosmicShore.Gameplay
         {
             InitialScale = transform.localScale;
             _rootCollider = GetComponent<Collider>();
+            _loadedGun = GetComponent<LoadedGun>();   // only chain spikes carry one
 
             // cache whatever parent it has in the pool (ship container or pool root)
             _pooledParent = transform.parent;
         }
 
-        private void Start()
+        /// The gun a chain spike fires its next generation from; null on every ordinary round.
+        private LoadedGun _loadedGun;
+
+        /// <summary>
+        /// Paints a spike in its firing domain's colours. Called from
+        /// <see cref="LaunchProjectile"/> — NOT from <c>Start</c>, where it used to live.
+        ///
+        /// <c>Start</c> runs once per INSTANCE: on a fresh object it runs before
+        /// <see cref="Initialize"/> has supplied <see cref="OwnDomain"/> (so the spike wore
+        /// whatever <c>Domains.Blue</c> maps to), and on every subsequent pull from the pool
+        /// it does not run at all (so a spike recycled from a Ruby pilot stayed Ruby in a Jade
+        /// player's hands). Domain is re-read per flight for the same reason the gun re-reads
+        /// it at fire time: domains re-pick at runtime and must never be snapshotted.
+        ///
+        /// The material is assigned as <c>sharedMaterial</c> — the theme's own asset, one per
+        /// domain — so spikes of a domain still batch; the per-instance opacity that the
+        /// launch and the embed fade animate rides a MaterialPropertyBlock instead of the
+        /// per-renderer clone `.material` would mint.
+        /// </summary>
+        void ApplySpikeAppearance()
         {
-            if (spike)
-            {
-                meshRenderer = GetComponent<MeshRenderer>();
-                meshRenderer.material = _themeManagerData.GetTeamSpikeMaterial(OwnDomain);
-                meshRenderer.material.SetFloat("_Opacity", 0.5f);
-            }
+            if (!spike) return;
+            if (!meshRenderer) meshRenderer = GetComponent<MeshRenderer>();
+            if (!meshRenderer || _themeManagerData == null) return;
+
+            var domainMaterial = _themeManagerData.GetTeamSpikeMaterial(OwnDomain);
+            if (domainMaterial) meshRenderer.sharedMaterial = domainMaterial;
+
+            SetSpikeOpacity(0.5f);
         }
+
+        /// <summary>Per-instance opacity via MPB — never <c>renderer.material</c>.</summary>
+        internal void SetSpikeOpacity(float opacity)
+        {
+            if (!meshRenderer) return;
+            _mpb ??= new MaterialPropertyBlock();
+            meshRenderer.GetPropertyBlock(_mpb);
+            _mpb.SetFloat(OpacityId, opacity);
+            meshRenderer.SetPropertyBlock(_mpb);
+        }
+
+        MaterialPropertyBlock _mpb;
 
         /*private void OnDestroy()
         {
@@ -181,9 +265,70 @@ namespace CosmicShore.Gameplay
             // Likewise the previous shot's MASS growth — a caller that does not set it gets
             // the un-grown default rather than whoever fired this instance last.
             _flightGrowthFactor = 1f;
+            _intendedWorldScale = Vector3.zero;
+
+            // Per-flight chain state. Without these two an instance recycled out of the pool
+            // would carry the previous cascade's remaining depth (deepening the chain for
+            // free) and its spent embed latch (making the round un-embeddable for life).
+            ChainGeneration = 0;
+            ChainRangeScale = 1f;
+            ChainRangeFalloff = 1f;
+            _embedded = false;
+
+            // A chain spike carries its own gun. It is a pooled prefab, so it cannot be
+            // authored with the scene's factory or with a pilot — both arrive here, per
+            // flight, from whoever fired this round. Re-supplied every flight rather than
+            // once, because a pooled instance changes hands between pilots and domains.
+            if (_loadedGun)
+            {
+                _loadedGun.SetProjectileFactory(factory);
+                _loadedGun.Initialize(vesselStatus);
+            }
         }
 
         public void SetType(ProjectileType type) => Type = type;
+
+        /// <summary>
+        /// The size this round should be IN THE WORLD, handed over by the gun at fire time and
+        /// applied by <see cref="ApplyIntendedWorldScale"/> at launch.
+        ///
+        /// It is deliberately NOT applied by the gun. A round spawns parented to its fire
+        /// container so it inherits that container's motion for the spawn frame, and a
+        /// container is a POSE source, never a size source - its scale must not reach the
+        /// round's mesh, collider or sweep radius. Cancelling it from the gun works only while
+        /// the container's scale is UNIFORM: a local scale cannot undo a non-uniform parent
+        /// that is also rotated (the product shears). A CHAIN hop's container is the previous
+        /// spike itself, non-uniform at (0.4, 0.4, 2) and rotated to its own flight direction,
+        /// so that error compounded once per generation.
+        /// </summary>
+        Vector3 _intendedWorldScale = Vector3.zero;
+
+        public void SetIntendedWorldScale(Vector3 worldScale) => _intendedWorldScale = worldScale;
+
+        /// <summary>
+        /// Resolve <see cref="_intendedWorldScale"/> against whatever parent the round has
+        /// AFTER the launch-time detach. Unparented (every spike, and every detachOnLaunch
+        /// round) is the exact case: local scale IS world scale, so no compensation is needed
+        /// and none can go wrong. A round that stays parented divides its parent's lossy scale
+        /// out, which is exact for the uniform containers those rounds actually use.
+        /// </summary>
+        void ApplyIntendedWorldScale()
+        {
+            if (_intendedWorldScale == Vector3.zero) return;
+
+            var parent = transform.parent;
+            if (!parent)
+            {
+                transform.localScale = _intendedWorldScale;
+                return;
+            }
+
+            var lossy = parent.lossyScale;
+            transform.localScale = new Vector3(
+                _intendedWorldScale.x / Mathf.Max(Mathf.Abs(lossy.x), 1e-4f),
+                _intendedWorldScale.y / Mathf.Max(Mathf.Abs(lossy.y), 1e-4f),
+                _intendedWorldScale.z / Mathf.Max(Mathf.Abs(lossy.z), 1e-4f));
+        }
         #endregion
 
         #region Impact Checks
@@ -228,19 +373,22 @@ namespace CosmicShore.Gameplay
             }
 
             // === DETACH when spawned if it's a spike ===
+            // A chain spike outlives the muzzle that fired it — its parent is very often
+            // ANOTHER SPIKE that is about to retire into the pool — so it must fly in world
+            // space or it would be dragged (and deactivated) with its parent.
             if (spike)
             {
-                // keep world position/rotation
-                transform.SetParent(null, true);
-            }
-
-            if (spike)
-            {
-                transform.localScale = new Vector3(0.4f, 0.4f, 2f);
-                meshRenderer.material.SetFloat("_Opacity", 0.5f);
+                transform.SetParent(null, true);   // keep world position/rotation
+                _detachedThisFlight = true;
+                ApplySpikeAppearance();
             }
 
             Stop(); // Stop any running movement before starting a new one
+
+            // Size the round now that its parent chain is FINAL (both detach paths above have
+            // run). Must precede CacheSweepRadius and the _launchScale capture below, or the
+            // hit radius and the MASS growth baseline are taken from the pre-correction scale.
+            ApplyIntendedWorldScale();
 
             // After every scale/parent change above — the carried turret collider is sized
             // per shot, so this cannot be cached at Awake.
@@ -284,12 +432,88 @@ namespace CosmicShore.Gameplay
             }
         }
 
+        #region Embed (the Urchin spike's landing)
+
+        bool _embedded;
+
+        /// <summary>
+        /// Halts this round where it struck and leaves it standing in the prism for
+        /// <paramref name="dwellSeconds"/>, then fades it out and returns it to the pool.
+        /// This is the modern <c>TrailBlockImpactEffects.Stop</c> — the Urchin spike sticking
+        /// into the mass it just converted.
+        ///
+        /// **It owns the pool return, and that is the whole point.** The 2023 original
+        /// implemented Stop as a bare <c>StopCoroutine(moveCoroutine)</c>, which killed the
+        /// coroutine whose terminal statement was the only <c>Destroy</c>/<c>ReturnToPool</c>
+        /// call — so every spike that actually hit something (i.e. every spike that mattered)
+        /// was immortal, and after the pool port it permanently drained a 1,500-deep pool.
+        /// Cancelling <see cref="_moveCts"/> here has exactly that shape —
+        /// <see cref="MoveProjectileAsync"/> swallows the cancellation and never reaches its
+        /// tail — so the retirement must be, and is, explicit.
+        ///
+        /// Fading rather than vanishing is the continuity-of-existence law: nothing the player
+        /// can see may pop out of existence.
+        /// </summary>
+        public void EmbedAndRetire(float dwellSeconds, float fadeSeconds = 0.35f)
+        {
+            if (_embedded) return;
+            _embedded = true;
+
+            Stop();                     // halt the mover; its tail will NOT run
+            Velocity = Vector3.zero;
+
+            EmbedAndRetireAsync(dwellSeconds, fadeSeconds, FlightGeneration,
+                                this.GetCancellationTokenOnDestroy()).Forget();
+        }
+
+        async UniTaskVoid EmbedAndRetireAsync(float dwellSeconds, float fadeSeconds,
+                                              int generation, CancellationToken token)
+        {
+            try
+            {
+                if (dwellSeconds > 0f)
+                    await UniTask.Delay(System.TimeSpan.FromSeconds(dwellSeconds),
+                                        DelayType.DeltaTime, PlayerLoopTiming.Update, token);
+
+                // The instance may have been reissued while we waited (an embed dwell easily
+                // outlives a pool round-trip). Acting on it now would retire someone else's
+                // shot mid-flight.
+                if (generation != FlightGeneration) return;
+
+                if (spike && meshRenderer && fadeSeconds > 0f)
+                {
+                    const float from = 0.5f;      // the opacity a spike flies at
+                    float t = 0f;
+                    while (t < fadeSeconds && !token.IsCancellationRequested)
+                    {
+                        t += Time.deltaTime;
+                        SetSpikeOpacity(Mathf.Lerp(from, 0f, t / fadeSeconds));
+                        await UniTask.Yield(PlayerLoopTiming.Update, token);
+                        if (generation != FlightGeneration) return;
+                    }
+                }
+
+                if (generation != FlightGeneration) return;
+
+                RaiseFlightEnded(stoppedByImpact: true);
+                ReturnToFactory();
+            }
+            catch (OperationCanceledException) { }
+            catch (Exception ex)
+            {
+                CSDebug.LogError($"[Projectile] Embed retire error: {ex}");
+            }
+        }
+
+        static readonly int OpacityId = Shader.PropertyToID("_Opacity");
+
+        #endregion
+
         private async UniTaskVoid MoveProjectileAsync(float projectileTime, CancellationToken token)
         {
             float elapsedTime = 0f;
             var t = transform; // cache
             var useSpike = spike && meshRenderer;
-            var mat = useSpike ? meshRenderer.material : null;
 
             try
             {
@@ -322,7 +546,7 @@ namespace CosmicShore.Gameplay
                     {
                         float percentRemaining = elapsedTime / projectileTime;
                         if (percentRemaining > 0.9f)
-                            mat.SetFloat("_Opacity", 1f - Mathf.Pow(percentRemaining, 4f));
+                            SetSpikeOpacity(1f - Mathf.Pow(percentRemaining, 4f));
                     }
 
                     elapsedTime += deltaTime;
@@ -365,10 +589,28 @@ namespace CosmicShore.Gameplay
             public SweepHit(float t, PrismImpactor impactor) { T = t; Impactor = impactor; }
         }
 
-        // Shared scratch — the sweep is main-thread and non-reentrant (dispatching an impact
-        // runs effects, never another projectile's move loop).
-        static readonly List<Prism> s_sweepCandidates = new(64);
-        static readonly List<SweepHit> s_sweepHits = new(16);
+        // Shared scratch, RENTED BY DEPTH. The sweep is main-thread but it is NOT
+        // non-reentrant, which an earlier comment here asserted and the Urchin disproved:
+        // dispatching a swept hit runs the effect list synchronously, ProjectileChainFire
+        // fires the next generation from inside it, and that child's MoveProjectileAsync runs
+        // synchronously up to its first await - which is PAST its own first SweepPrismsAlong.
+        // So a child clears and refills the very list its parent is mid-iteration over,
+        // dropping the parent's remaining hits and re-dispatching converted prisms. Depth is
+        // bounded by ChainGeneration (<= 4) and the per-frame volley budget, so a small stack
+        // of buffers covers it; the lists grow on demand and are never freed.
+        static readonly List<List<Prism>> s_candidatePool = new();
+        static readonly List<List<SweepHit>> s_hitPool = new();
+        static int s_sweepDepth;
+
+        static (List<Prism> candidates, List<SweepHit> hits) RentSweepBuffers(int depth)
+        {
+            while (s_candidatePool.Count <= depth)
+            {
+                s_candidatePool.Add(new List<Prism>(64));
+                s_hitPool.Add(new List<SweepHit>(16));
+            }
+            return (s_candidatePool[depth], s_hitPool[depth]);
+        }
         static readonly Comparison<SweepHit> s_nearestFirst = (x, y) => x.T.CompareTo(y.T);
 
         float _sweepRadius = 0.5f;
@@ -450,6 +692,11 @@ namespace CosmicShore.Gameplay
             var index = PrismSpatialIndex.Instance;
             if (!index || !index.IsAvailable) return;
 
+            int depth = s_sweepDepth++;
+            try
+            {
+            var (s_sweepCandidates, s_sweepHits) = RentSweepBuffers(depth);
+
             if (index.QuerySegment(from, to, _sweepRadius + SweepCandidateExtent, s_sweepCandidates) == 0)
                 return;
 
@@ -496,6 +743,8 @@ namespace CosmicShore.Gameplay
 
             // Pierced everything it met — finish the frame's step.
             transform.position = to;
+            }
+            finally { s_sweepDepth--; }
         }
 
         #endregion

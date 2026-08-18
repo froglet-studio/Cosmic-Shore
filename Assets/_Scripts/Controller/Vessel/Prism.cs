@@ -729,6 +729,17 @@ namespace CosmicShore.Gameplay
             scaleAnimator?.RestoreAuthoredScaleWindow();
             ProjectileImmuneUntil = 0f;   // pool reuse: immunity never survives into a new life
 
+            // Pool-reuse safety: trail MEMBERSHIP never survives into a new life. A reused
+            // prism kept its previous container here for years, and the consequences were
+            // structural, not cosmetic: a vessel's wake block could wear a dead spawnable's
+            // Trail, so the attach effect's Trail gate passed against the WRONG ribbon,
+            // GetBlockIndex said "not a member" (-1) and refused the ride, and
+            // PrismscapeTopology read a stale container's dimension. Every layer that puts a
+            // prism IN a trail stamps it explicitly AFTER Initialize (AssignTrail) - the
+            // builder and the vessel spawner both do.
+            Trail = null;
+            if (prismProperties != null) prismProperties.Trail = null;
+
             // Pool-reuse safety: no spawner requests super-shield via prismProperties
             // before Initialize (it's engaged post-spawn via ActivateSuperShield /
             // SegmentSpawner), so a set flag here is always a leak from the previous
@@ -1348,6 +1359,20 @@ namespace CosmicShore.Gameplay
         public void Steal(string playerName, Domains domain, bool superSteal = false) =>
             teamManager.Steal(playerName, domain, superSteal);
         public void ChangeTeam(Domains domain) => teamManager?.ChangeTeam(domain);
+
+        /// <summary>
+        /// Declare this prism a member of <paramref name="trail"/> - the ONE way to stamp
+        /// trail membership, keeping the public field and the prismProperties mirror coherent.
+        /// Call it AFTER <see cref="Initialize"/>: pool-reuse reset clears membership
+        /// (a reused prism must never wear its previous life's container), so a stamp made
+        /// before Initialize is silently wiped.
+        /// </summary>
+        public void AssignTrail(Trail trail)
+        {
+            Trail = trail;
+            if (prismProperties != null) prismProperties.Trail = trail;
+        }
+
         
         public void RegisterProjectileCreated(string playerName)
         {

@@ -1,10 +1,13 @@
 # Fleet Elemental Ability Maps — status + level-5 upgrade proposals
 
 **Status of this doc:** the quantitative layer and the flower display are LIVE fleet-wide
-(see §1). The level-5 qualitative upgrades for the non-Sparrow vessels are **PROPOSALS for
-Garrett to mark up** — none are implemented. Approve/edit per row; implementation follows the
-Sparrow pattern (per-shot/per-use snapshot, gated on `IsUpgradeActive(element)` in the
-executor, replicated unlock bits, no new fundamentals).
+(see §1). Four vessels have an **APPROVED + SHIPPED** map with all four level-5 upgrades
+implemented — **Sparrow, Dolphin, Squirrel, Urchin**; their rows below are the record, not a
+proposal, and are not to be re-litigated from the superseded tables kept beside them. The level-5
+upgrades for **Manta, Rhino and Serpent** are still **PROPOSALS for Garrett to mark up** — none
+are implemented. Approve/edit per row; implementation follows the Sparrow pattern (per-shot/per-use
+snapshot, gated on `IsUpgradeActive(element)` in the executor, replicated unlock bits, no new
+fundamentals).
 
 ## 1. What is live on every vessel now
 
@@ -36,6 +39,7 @@ executor, replicated unlock bits, no new fundamentals).
 | Dolphin | Charge→blast capsule THICKNESS (0.75× at rest → 1.5× at level 10) + the Echo Sight on RT · Mass→crystal-seeding recharge (0.5) · Space→blast reach (2.0) · Time→charge fill rate (1.5) |
 | Rhino | Mass→trail slab max size (1.5) |
 | Serpent | Time→boost duration (1.6) |
+| Urchin | **All four LIVE (approved + shipped 2026-08-15, see §2 Urchin)**: Space→spike reach (map 2.5, muzzle speed × the multiplier, carried down every chain generation via `Projectile.ChainRangeScale`) · Charge→cascade DEPTH (`UrchinSpikeActionSO.ResolveGenerations` reads `GetLevel(Element.Charge)` directly; the map's generic 2.0 feeds ammo) · Mass→volume grown per prism ridden (authored `growthAmount` ElementalFloat 0.6→1.2 on `GunVesselTransformer`) · Time→Slip ghost duration (authored `ghostSecondsAtRestingTime/AtFullTime` 0.6→1.6 on `UrchinSlipActionSO`) |
 | Squirrel | **All four LIVE (approved + shipped, see §2 Squirrel)**: Charge→skim energy per prism hit (map 2.0, read in `SkimmerBoostPrismEffectSO`) · Mass→trail prism VOLUME (authored `trailVolume` ElementalFloat 1→2.5 on `VesselPrismController`, cube-root per axis) · Space→skimmer reach (authored skimmer `Scale` ElementalFloat 15→30) · Time→boost-ring cooldown (authored `cooldownMultiplierAtFullTime` 0.5 on `SquirrelTubeActionSO`; the generic map Time multiplier stays 1.0 because `VesselTransformer` consumes it for boost speed). The former Time→top speed mapping was REMOVED (prefab `ThrottleScalerMultiplier` disabled) — one parameter per element. |
 
 ### Flight model (not an elemental mapping, but it changes what the Time rows *feel* like)
@@ -247,6 +251,58 @@ HUD: the shared upgrade-highlight system (`VesselHUDView.abilityIcons` + base
 icons (boost gauge / drift / impact / tube); other vessels adopt by filling their view's
 `abilityIcons` bindings — no code.
 
+### Urchin — chain spikes + trail rider — APPROVED + SHIPPED (2026-08-15)
+
+The Urchin's revival. Both of its signature mechanics survived in the tree **unwired rather than
+deleted**, and the map was approved this session against what they actually do. The shipped map is
+`Assets/Resources/ElementalAbilityMaps/Urchin.asset` — **the asset is the record.**
+
+Mechanics detail lives beside the code, in two files:
+`_Scripts/Controller/Vessel/R_VesselActions/URCHIN_CHAIN_SPIKES.md` (the cascade, its three brakes,
+the 2023 historical record, the determinism fix, the collider budget) and `URCHIN_TRAIL_RIDER.md`
+(attach/ride/slip, and the platform attach-guard it required).
+
+The Urchin's spine is **conversion, never destruction**: a spike embeds in a prism, *steals* it
+(domain flip, mass conserved), then fires its own `LoadedGun` out of the converted mass — and the
+ride does the same thing on contact, growing your own trail under you and stealing an enemy's as
+you pass. So SPACE and CHARGE are the two axes of the cascade (how far it reaches, how deep it
+runs), MASS is what a ridden prism gains, and TIME is the escape.
+
+| Element | Ability (Input) | Quantitative (LIVE) | L5 upgrade (LIVE) |
+|---|---|---|---|
+| Charge | **Spike Barrage** (`LeftStickAction` 2) | cascade **DEPTH** — generations a landed spike may still spray (`UrchinSpikeActionSO.ResolveGenerations`, linear in `GetLevel(Element.Charge)` between the asset's authored pair, clamped `[0, 4]`); the map's generic 2.0 multiplier feeds the ammo the aimed volley spends | **Overcharge** — the free barrage gains at least one generation (`chainsOnChargeUpgrade`), turning a wide steal into a cascade. That IS the barrage's upgrade: it is authored with 0 generations at rest |
+| Mass | **Trail Rider** (`Input 0` — **PASSIVE**, contact-driven) | volume each friendly prism gains as you ride over it (`GunVesselTransformer.growthAmount`, `ElementalFloat` 0.6→1.2, read with `EvaluateLive`) | **Reinforced Wake** — prisms grown while riding arrive **shielded**; since a shielded prism pays double ride-ammo, a fortified lap funds the next one |
+| Space | **Spike Volley** (`RightStickAction` 1) | spike **REACH** — muzzle speed × the map multiplier (2.5 at level 10, floor 0.4), carried down the whole cascade by `Projectile.ChainRangeScale` so the last generation inherits the range the pilot paid for | **Deep Cascade** — `ChainRangeFalloff` becomes 1, so per-generation reach stops decaying and the wavefront reaches as far on its last hop as its first |
+| Time | **Slip** (`Button2Action` 7) | ghost duration — how long the hull phases out after letting go (`UrchinSlipActionSO`, 0.6 s→1.6 s, extrapolated across `[-5, 15]`) | **Slipstream** — hostile trail is ridden at **friendly** speed. `Urchin.prefab` authors `FriendlyTerrainSpeed 150` against `HostileTerrainSpeed 10`, so this is the largest single number in the vessel |
+
+Notes that matter when retuning:
+
+- **Trail Rider is bound to no input event on purpose.** It fires on contact, so
+  `R_VesselActionHandler.CollectBoundActions` can never resolve it — the same lesson the Dolphin's
+  passive Charge seeding records from the other side. Its behaviour lives in `GunVesselTransformer`
+  and `VesselAttachPrismEffectSO`, which the vessel holds directly.
+- **CHARGE's depth does NOT come off the map multiplier.** It reads the integer level. The generic
+  2.0 is there for ammo. Two unrelated parameters off one element is exactly what the Dolphin's
+  all-ones map exists to avoid — this is the same discipline, applied by keeping depth on its own
+  authored pair (`generationsAtRestingCharge` / `generationsAtFullCharge`) instead of on the map.
+- **SPACE's reach is the only quantitative value that has to travel.** A cascade can outlive the
+  pilot who started it (dead, respawned, across the cell), so the reach is stamped onto the gun →
+  onto each projectile → onto that spike's own `LoadedGun`. Nothing in a cascade ever looks back up
+  at the vessel.
+- **Both spike abilities share one SO type**, authored twice (`UrchinSpikeVolleyAction.asset`,
+  `UrchinSpikeBarrageAction.asset`). They are one weapon with two patterns, and both element dials
+  apply to both — which is what keeps one-parameter-per-element intact rather than giving each
+  ability a private copy of the other's dial.
+- **All four L5 gates read `IsUpgradeActive(element)`** — the replicated unlock bit. Every one of
+  them changes the prismscape (reach, depth, shielded prisms, ride speed), so a local level read
+  desyncs it.
+
+Shipping it also required one **platform** change, recorded here because it is not Urchin-only:
+`VesselDamagePrismEffectSO` declines while `IVesselStatus.IsAttached` (`skipWhileAttached`,
+default on). Riding a trail and ramming it are the same collision through one flat effect list, so
+any attaching vessel destroys the prism it latched onto — the 2023 "urchin destroys the first
+block" bug. See `URCHIN_TRAIL_RIDER.md` § "The platform change".
+
 ### Scarab — the Rocket League vessel (throttle + drift + dash + ball/switch economy) — AUTHORED (2026-08-15)
 
 `VesselClassType.Scarab = 12` exists and `Assets/Resources/ElementalAbilityMaps/Scarab.asset` is
@@ -283,4 +339,7 @@ the record; do not re-litigate from a superseded pass.**
 - Domain-sparing: explosion/collection layer only — never `Prism.Damage`, never danger effects.
 - Fill in each map's `UpgradeLabel`/`UpgradeDescription` when a row is approved; the HUD reads
   the map.
-- The `Input` fields in the non-Sparrow maps are 0 (unset) — fill during HUD icon work.
+- The `Input` fields are filled on Sparrow (4/4), Dolphin (3/4), Squirrel (2/4) and Urchin (3/4 —
+  Trail Rider is deliberately 0 because it is **passive**, not because it is unset). Manta, Rhino
+  and Serpent are 0 across the board — fill during HUD icon work. A genuine 0 and a passive
+  ability are indistinguishable in the asset, so say which it is in the row.
