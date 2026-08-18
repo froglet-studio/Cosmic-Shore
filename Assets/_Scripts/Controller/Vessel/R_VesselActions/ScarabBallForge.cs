@@ -1,3 +1,4 @@
+using System;
 using CosmicShore.Data;
 using CosmicShore.Utility;
 using Unity.Netcode;
@@ -31,6 +32,25 @@ namespace CosmicShore.Gameplay
     /// </summary>
     public static class ScarabBallForge
     {
+        /// <summary>
+        /// Optional MODE POLICY on whether this pilot may forge right now — null (the default,
+        /// and every mode-less context: freestyle, the menu) means always. Scarab Scramble
+        /// installs its per-domain live-ball cap here and clears it on despawn, the
+        /// <c>AIPilot.SetExternalTargetProvider</c> shape: a server-side hook a mode owns for
+        /// its lifetime, never left behind. A refusal is quiet by design — the crystal simply
+        /// collects normally instead (its sibling effects still run), so "at the cap" degrades
+        /// to ordinary crystal income rather than a dead pickup.
+        /// </summary>
+        public static Func<IVesselStatus, bool> ForgeGate;
+
+        /// <summary>
+        /// Raised on the peer that minted a ball (the server, or a no-network local session),
+        /// immediately after launch. This is how a mode ADOPTS a forged ball — boundary handoff,
+        /// ownership lock, per-ball attribution — without the vessel knowing any mode exists.
+        /// The forger is the ball's maker; the ball already carries their domain.
+        /// </summary>
+        public static event Action<AstroLeagueBall, IVesselStatus> OnForged;
+
         /// <summary>True on the server, and also in a session with no NetworkManager at all
         /// (a local single-machine mint — the freestyle toys do this).</summary>
         public static bool CanSpawnLocally
@@ -54,13 +74,20 @@ namespace CosmicShore.Gameplay
         /// <summary>
         /// Forge a ball for <paramref name="status"/>'s domain, on a peer that may spawn one.
         /// Returns null (silently) on a client — see the class note on why that is the honest
-        /// shape rather than a round-trip that cannot be reached.
+        /// shape rather than a round-trip that cannot be reached — and null when the installed
+        /// <see cref="ForgeGate"/> refuses. This is the ONE entry point both forge paths use;
+        /// call it rather than <see cref="Spawn"/> so the gate and <see cref="OnForged"/> can
+        /// never be bypassed by one path and honoured by the other.
         /// </summary>
         public static AstroLeagueBall Request(IVesselStatus status, AstroLeagueBall prefab,
                                               Vector3 at, Vector3 velocity)
         {
             if (status == null || !CanSpawnLocally) return null;
-            return Spawn(prefab, at, velocity, status.Domain, SizeScaleFor(status));
+            if (ForgeGate != null && !ForgeGate(status)) return null;
+
+            var ball = Spawn(prefab, at, velocity, status.Domain, SizeScaleFor(status));
+            if (ball != null) OnForged?.Invoke(ball, status);
+            return ball;
         }
 
         /// <summary>Server-side (or local-only) spawn — the one place a ball is instantiated.</summary>

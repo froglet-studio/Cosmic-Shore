@@ -70,6 +70,17 @@ namespace CosmicShore.Gameplay
         /// <summary>True while a juke is available.</summary>
         public bool IsJukeArmed => _jukeArmed;
 
+        /// <summary>
+        /// True while the dash's displacement window is live — the window in which a ball
+        /// contact counts as a JUKE STRIKE. Scarab Scramble's steal reads this
+        /// (<c>AstroLeagueBall.IsJukeStrike</c>): the committed dash converts a locked ball,
+        /// the casual bump never does. Owner-local state, so in a networked session the steal
+        /// registers only where this component actually fired (host / local sessions) — the
+        /// same client-side gap as the blast forge, closed by the same planned Juke_ServerRpc
+        /// upgrade (see the class note's Phase 2.5 item).
+        /// </summary>
+        public bool IsJukeStrikeWindowOpen => Time.time - _lastJukeTime <= jukeDurationSeconds;
+
         /// <summary>Raised the instant a juke fires, carrying the world-space dash DIRECTION.
         /// <see cref="ScarabCavitationBlast"/> rides this so the blast leaves along the dash —
         /// the dash itself stays free and the blast keeps its own (CHARGE-scaled) cooldown, so

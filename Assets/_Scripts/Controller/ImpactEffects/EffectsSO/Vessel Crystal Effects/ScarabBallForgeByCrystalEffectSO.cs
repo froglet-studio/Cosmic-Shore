@@ -114,8 +114,11 @@ namespace CosmicShore.Gameplay
             Vector3 course = heading;
             Vector3 spawnAt = ship.position + course * _forwardClearance;
 
-            var ball = ScarabBallForge.Spawn(_ballPrefab, spawnAt, course * launchSpeed,
-                                             status.Domain, ScarabBallForge.SizeScaleFor(status));
+            // Through Request — the one entry both forge paths share — so a mode's ForgeGate
+            // (e.g. Scarab Scramble's live-ball cap) and OnForged adoption apply to a hull
+            // forge exactly as they do to a blast forge. Domain + SPACE size stamp are
+            // identical to the old direct Spawn call; the gate and the event are the delta.
+            var ball = ScarabBallForge.Request(status, _ballPrefab, spawnAt, course * launchSpeed);
             if (ball == null) return;
 
             if (_requireEnergy && meter != null)

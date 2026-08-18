@@ -363,6 +363,13 @@ namespace CosmicShore.Gameplay
                  "spin never appears to jump.")]
         [Range(0f, 0.6f)] public float strikePopAmount = 0.22f;
 
+        [Tooltip("Seconds a ball's visual BLOOMS IN over when it comes into existence — the " +
+                 "continuity-of-existence law applied to the payload itself (a Scarab-forged " +
+                 "ball must grow out of its crystal, never pop in). Visual child only, same " +
+                 "rule as the strike pop: the physical radius is live from frame one. " +
+                 "0 disables (instant, law-breaking — leave it on).")]
+        [Min(0f)] public float spawnBloomSeconds = 0.55f;
+
         [Header("Ball - Physics (zero friction)")]
         public float maxSpeed = 380f;
         public float ballMass = 3f;

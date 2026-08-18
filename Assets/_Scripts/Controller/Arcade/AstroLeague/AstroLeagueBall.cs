@@ -62,6 +62,38 @@ namespace CosmicShore.Gameplay
 
         bool _dieAfterScan;
 
+        // Server-side: while true, nothing re-colours the ball — not a strike, not a blast claim.
+        // Both claim sites are server writes to n_LastHitDomain, so a server-local flag is the
+        // whole mechanism; clients keep reading colour off the replicated variable as always.
+        // ONE exception, and it is the exception on purpose: a strike delivered mid-JUKE (the
+        // Scarab's committed dash) STEALS the ball — the deliberate skill move converts, the
+        // casual bump never does. That is Scarab Scramble's whole player-vs-player verb.
+        bool _ownershipLocked;
+
+        // Server-side touch ledger (Scarab Scramble's arming gate + bank-shot juice; harmless
+        // bookkeeping in Astro League, which never reads it). Domains.Blue = untouched since
+        // launch/reset — a fresh forge still carries its maker's launch.
+        /// <summary>Server: domain of the last vessel/blast to touch the ball (Blue = none since launch).</summary>
+        public Domains LastTouchDomainServer { get; private set; } = Domains.Blue;
+        /// <summary>Server: player name of the last vessel to touch the ball (empty = none / a blast).</summary>
+        public string LastToucherNameServer { get; private set; } = string.Empty;
+        /// <summary>Server: wall caroms since the last vessel/blast touch — the bank-shot count.</summary>
+        public int WallBouncesSinceTouchServer { get; private set; }
+
+        void RecordTouchServer(Domains domain, string toucherName)
+        {
+            LastTouchDomainServer = domain;
+            LastToucherNameServer = toucherName ?? string.Empty;
+            WallBouncesSinceTouchServer = 0;
+        }
+
+        void ResetTouchLedgerServer()
+        {
+            LastTouchDomainServer = Domains.Blue;
+            LastToucherNameServer = string.Empty;
+            WallBouncesSinceTouchServer = 0;
+        }
+
         [Header("Visuals")]
         [Tooltip("The prism fresnel material (PrismMaterial.mat) - cloned at runtime so the ball " +
                  "renders with the same 3D fresnel-rim look as trail prisms. Falls back to the " +
@@ -108,6 +140,10 @@ namespace CosmicShore.Gameplay
         // and the attacker domain for Prism.Damage. Blue = neutral (no strike yet) → smashes any team's mass.
         readonly NetworkVariable<Domains> n_LastHitDomain =
             new(Domains.Blue, readPerm: NetworkVariableReadPermission.Everyone, writePerm: NetworkVariableWritePermission.Server);
+        // Size factor over the authored base scale (SetSizeScale). Replicated because a forged
+        // ball is sized after its spawn payload is built — see SetSizeScale's doc note.
+        readonly NetworkVariable<float> n_SizeScale =
+            new(1f, readPerm: NetworkVariableReadPermission.Everyone, writePerm: NetworkVariableWritePermission.Server);
 
         float _lastSnapshotTime;
 
@@ -143,6 +179,7 @@ namespace CosmicShore.Gameplay
         // court, where a particle burst is a couple of pixels.
         Transform _visual;
         float _popTimer;
+        float _bloomTimer; // birth bloom countdown, armed once in Awake (continuity of existence)
 
         // Per-tick prism scan state (ProcessPrismInteractions, every peer): reusable query buffer, the
         // set of prisms seen this tick (for pruning), the opposing prisms whose shield we popped this
@@ -225,16 +262,32 @@ namespace CosmicShore.Gameplay
             spawnPosition = transform.position;
             _baseScale = transform.localScale;
             SetupVisuals();
+
+            // Arm the birth bloom: a ball coming into existence grows in (continuity law).
+            // Every peer Awakes its own copy — server, client replica, and no-network local
+            // mints alike — so no RPC is needed; the scene showpiece blooms once at load,
+            // behind the connecting veil, which is harmless and equally lawful.
+            _bloomTimer = settings != null ? settings.spawnBloomSeconds : 0.55f;
         }
 
         /// <summary>
         /// Scale the ball (visual + collider) by the intensity factor on top of its authored
         /// base size. Runs on every peer (server physics + client rendering both need it).
         /// BallWorldRadius reads lossyScale, so the strike/eject maths track the new size.
+        ///
+        /// On the server the factor ALSO replicates through <see cref="n_SizeScale"/>: a
+        /// runtime-forged ball (the Scarab's SPACE-scaled forge) is stamped AFTER
+        /// NetworkObject.Spawn, so the spawn payload carries the prefab scale and, without
+        /// the variable, every remote peer would render — and prism-scan with — the wrong
+        /// radius forever. Astro League's per-peer intensity calls are unaffected: each peer
+        /// applies the same value locally and the replicated echo is idempotent.
         /// </summary>
         public void SetSizeScale(float factor)
         {
-            transform.localScale = _baseScale * Mathf.Max(0.01f, factor);
+            factor = Mathf.Max(0.01f, factor);
+            transform.localScale = _baseScale * factor;
+            if (IsSpawned && IsServer)
+                n_SizeScale.Value = factor;
         }
 
         /// <summary>
@@ -292,6 +345,13 @@ namespace CosmicShore.Gameplay
                 transform.position = n_Position.Value;
                 n_Position.OnValueChanged += (_, _) => _lastSnapshotTime = Time.time;
                 _lastSnapshotTime = Time.time;
+
+                // Catch a size stamped before this peer spawned the replica (a forged ball is
+                // sized right after Spawn; a late joiner sees only the variable).
+                n_SizeScale.OnValueChanged += (_, factor) =>
+                    transform.localScale = _baseScale * Mathf.Max(0.01f, factor);
+                if (!Mathf.Approximately(n_SizeScale.Value, 1f))
+                    transform.localScale = _baseScale * Mathf.Max(0.01f, n_SizeScale.Value);
             }
 
             n_Hidden.OnValueChanged += (_, hidden) => ApplyHiddenVisuals(hidden);
@@ -933,6 +993,7 @@ namespace CosmicShore.Gameplay
 
             rb.position = pos;
             rb.linearVelocity = vel;
+            WallBouncesSinceTouchServer++; // every real carom counts toward a bank shot
             HandleWallBounce(contactPoint, contactNormal);
         }
 
@@ -949,6 +1010,20 @@ namespace CosmicShore.Gameplay
         /// vessel overlaps, so trigger-only ships (no physics depenetration) can never clip the ball.
         /// </summary>
         void OnTriggerStay(Collider other) => HandleVesselTrigger(other);
+
+        /// <summary>
+        /// True while the striking vessel is inside a committed juke dash — the Scarab's
+        /// side-shove skill move. Resolved off the vessel root's own controller; a vessel with
+        /// no juke (every other hull) simply never steals. Strikes are cooldown-paced, so the
+        /// component walk costs nothing measurable.
+        /// </summary>
+        static bool IsJukeStrike(IVessel vessel)
+        {
+            var t = vessel?.Transform;
+            return t != null
+                   && t.TryGetComponent(out ScarabJukeController juke)
+                   && juke.IsJukeStrikeWindowOpen;
+        }
 
         void HandleVesselTrigger(Collider other)
         {
@@ -1112,9 +1187,19 @@ namespace CosmicShore.Gameplay
         {
             // Re-color the ball to the striker's domain - every bounce counts as the last hit. The
             // per-tick prism scan picks up the new same/opposing relationship automatically next tick.
+            // Unless ownership is LOCKED (SCARAB.md §4.2 — Scarab Scramble's forged balls belong to
+            // their maker forever): then a strike moves the ball but never claims it — EXCEPT a
+            // strike delivered mid-juke, which is the sanctioned STEAL (see _ownershipLocked).
             Domains strikerDomain = vessel.VesselStatus != null ? vessel.VesselStatus.Domain : Domains.Blue;
-            if (n_LastHitDomain.Value != strikerDomain)
+            bool jukeSteal = _ownershipLocked
+                             && strikerDomain != Domains.Blue
+                             && strikerDomain != n_LastHitDomain.Value
+                             && IsJukeStrike(vessel);
+            if ((!_ownershipLocked || jukeSteal) && n_LastHitDomain.Value != strikerDomain)
                 n_LastHitDomain.Value = strikerDomain;
+
+            RecordTouchServer(strikerDomain,
+                vessel.VesselStatus != null ? vessel.VesselStatus.PlayerName : string.Empty);
 
             Vector3 ballVel = rb.linearVelocity;
 
@@ -1254,9 +1339,13 @@ namespace CosmicShore.Gameplay
                 rb.AddTorque(Vector3.Cross(contact - rb.worldCenterOfMass, impulse), ForceMode.Impulse);
             }
 
-            if (settings.explosionClaimsBall && blastDomain != Domains.Blue
+            if (settings.explosionClaimsBall && !_ownershipLocked && blastDomain != Domains.Blue
                 && n_LastHitDomain.Value != blastDomain)
                 n_LastHitDomain.Value = blastDomain;
+
+            // A blast is a touch for the arming/bank ledger (no name — nobody escorted it),
+            // but never a steal: only the juke's committed dash converts a locked ball.
+            RecordTouchServer(blastDomain, string.Empty);
 
             if (IsSpawned)
             {
@@ -1325,16 +1414,28 @@ namespace CosmicShore.Gameplay
             // the root's scale is the ball's physical size and must not move (see _visual).
             if (_visual != null)
             {
+                float pop = 1f;
                 if (_popTimer > 0f)
                 {
                     _popTimer -= Time.deltaTime;
                     float t = Mathf.Clamp01(_popTimer / Mathf.Max(0.0001f, settings.strikePopSeconds));
-                    _visual.localScale = Vector3.one * (1f + settings.strikePopAmount * t * t);
+                    pop = 1f + settings.strikePopAmount * t * t;
                 }
-                else if (_visual.localScale != Vector3.one)
+
+                // Birth bloom (continuity of existence): every peer's fresh instance GROWS in
+                // over spawnBloomSeconds instead of popping into the court at full size. Runs
+                // once per instance from Awake; composes with the pop as a multiplier.
+                float bloom = 1f;
+                if (_bloomTimer > 0f)
                 {
-                    _visual.localScale = Vector3.one;
+                    _bloomTimer -= Time.deltaTime;
+                    float u = 1f - Mathf.Clamp01(_bloomTimer / Mathf.Max(0.0001f, settings.spawnBloomSeconds));
+                    bloom = u * u * (3f - 2f * u); // smoothstep 0→1, settles without a snap
                 }
+
+                Vector3 targetScale = Vector3.one * (pop * bloom);
+                if (_visual.localScale != targetScale)
+                    _visual.localScale = targetScale;
             }
 
             float speedRatio = Mathf.Clamp01(Velocity.magnitude / settings.speedForMaxVisuals);
@@ -1635,9 +1736,36 @@ namespace CosmicShore.Gameplay
             n_AngularVelocity.Value = Vector3.zero;
             // Fresh ball at kickoff: unclaimed until the first strike.
             n_LastHitDomain.Value = Domains.Blue;
+            ResetTouchLedgerServer();
             _shieldPoppedThisVisit.Clear();
             _lastPrismScanPos = spawnPosition;
             if (trail != null) trail.Clear();
+        }
+
+        /// <summary>
+        /// Server: permanently pin the ball's domain to whoever it belongs to NOW (SCARAB.md §4.2).
+        /// While locked, a strike or a blast moves the ball but never re-colours it, so "your ball
+        /// always eats the enemy's trail and always shields yours, from birth to death" — the
+        /// legibility rule that keeps a multi-ball arena readable. Scarab Scramble locks every ball
+        /// it adopts; Astro League never calls this, so the match ball keeps last-touch colouring.
+        /// </summary>
+        public void SetOwnershipLockedServer(bool locked)
+        {
+            if (!IsServer) return;
+            _ownershipLocked = locked;
+        }
+
+        /// <summary>
+        /// Server: spend the ball — the goal-mouth burst on every peer, then despawn (a scene-placed
+        /// match ball is only ever hidden). This is the public face of the private expiry the
+        /// super-shield contact path already uses; Scarab Scramble retires a scored ball through it,
+        /// so a spent payload always leaves through the same detonation beat (continuity of
+        /// existence — it bursts and fades, it never blinks out).
+        /// </summary>
+        public void SpendServer()
+        {
+            if (!IsServer) return;
+            ExpireServer();
         }
 
         /// <summary>
@@ -1675,6 +1803,7 @@ namespace CosmicShore.Gameplay
             n_AngularVelocity.Value = Vector3.zero;
             n_LastHitDomain.Value = ownerDomain;
 
+            ResetTouchLedgerServer(); // fresh forge: untouched, so it still carries its maker's launch
             _shieldPoppedThisVisit.Clear();
             _lastPrismScanPos = position;   // or the first scan sweeps from the origin
             if (trail != null) trail.Clear();
