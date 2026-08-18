@@ -268,12 +268,16 @@ prefab per element. The element is data on `FaunaConfigurationSO.Element` — at
 `AssignLineage` the heart is provisioned from `ElementalCrystalSet` for that element
 (`LifeFormCrystal.EnsureElementalCrystal(owner, element)` replaces a disagreeing authored
 crystal; `None` keeps the legacy per-variant-prefab path). Level scales the creature via
-config (`InitialLevel`, `BodyScalePerLevel`, `CrystalScalePerLevel`, `LevelGrowSeconds`):
-spawns arrive AT size; in-world level-ups **grow** over `LevelGrowSeconds` (continuity —
-never a pop) with `NotifyBodyPrismsMoved` keeping the spatial index honest, and the heart
-grows a step per level so a higher-level creature drops a **bigger** elemental powerup on
-death (mass rewarded, still conserved). Flora answer the contract at fixed level 1 until
-flora leveling lands.
+config (`InitialLevel`, `BodyScalePerLevel`, `LevelGrowSeconds`): spawns arrive AT size;
+in-world level-ups **grow** over `LevelGrowSeconds` (continuity — never a pop) with
+`NotifyBodyPrismsMoved` keeping the spatial index honest, and the heart grows a step per
+level so a higher-level creature drops a **bigger** elemental powerup on death (mass
+rewarded, still conserved).
+
+> **Updated by §33 (Aug 2026).** Level is now EARNED, not authored or rolled: every lifeform
+> is born at level 1, a plant levels per reproduction and a creature per
+> `FeedsPerLevel` feeds. The heart's SIZE is no longer a per-species factor — it is one curve
+> on `ElementalCrystalSet` keyed on level alone. Flora do level now.
 
 **Who actually spawns the 20.** A config authors ONE point of the matrix, so the live world
 only showed the whole grid once cells were allowed to *spread* across it: `SpreadElements` +
@@ -306,11 +310,14 @@ applies element + tuning BEFORE `Initialize` (leaf size and the crystal lookup a
 consumed there); `LifeForm.ApplyVariantTuning` (shield cadence) → `Flora` (leaf/tempo/
 radius) → `AssembledFlora` (prism budget) layer the fields where they live.
 
-**Level → crystal size.** `CrystalScalePerLevel` makes the level curve monotone in the
-heart: level 1 = authored size, level 5 = ×(CrystalScalePerLevel)⁴ (≈2.07× at the 1.2
-default) — the level-5 creature always carries, and drops, the largest crystal. Flora
-level the same way (`FloraConfigurationSO.InitialLevel` + `LeafScalePerLevel` /
-`CrystalScalePerLevel`, applied via `LifeForm.ApplyLevel` before Initialize).
+**Level → crystal size (REPLACED by §33, Aug 2026).** This used to be
+`CrystalScalePerLevel` compounding off each prefab's *authored* crystal scale — monotone
+per species, but wildly different BETWEEN them (0.7 to 4.0 world scale), and clipping the
+collect-gain cap by level 5 on four of five species. It is now ONE curve keyed on level
+alone, on `ElementalCrystalSet` (`levelOneWorldScale` × `worldScalePerLevel^(L-1)`,
+3.5 → 4.25), applied at `Crystal.SetEmbeddedIn` and re-applied on every level change.
+Both `CrystalScalePerLevel` fields are deleted. Flora still scale their LEAVES per level
+(`FloraConfigurationSO.LeafScalePerLevel`, applied via `LifeForm.ApplyLevel`).
 
 **Unification (SHIPPED) — one base prefab per species, variants are config.** The
 per-element prefab variants were retired: `TadPoleFauna.prefab` (formerly
@@ -1297,9 +1304,10 @@ crystal becomes collectible, with the same world scale carrying the same value o
 freezes if the heart is freed mid-level-up so the drop keeps its death-moment scale — a
 mid-flare death drops at the pop's transient scale, bounded by the ×1.6 overshoot and the
 per-crystal gain cap). **Zero
-new tunables**: the existing knobs (`levelPerUnitScale`, `maxLevelGainPerCrystal`,
-`CrystalScalePerLevel`, `InitialLevel`, per-species population caps) govern both the standing
-buff and the pickup.
+new tunables**: the existing knobs (`levelPerUnitScale`, `maxLevelGainPerCrystal`, the
+shared heart-size level curve on `ElementalCrystalSet` — see §33, which replaced the
+per-species `CrystalScalePerLevel` — and per-species population caps) govern both the
+standing buff and the pickup.
 
 **Mechanism (SOAP-evented + reconcile sweep, no cheat).** `DomainFaunaBuffSystem`
 (auto-created by the first `Cell.Initialize` via `EnsureExists` — so it exists wherever fauna
@@ -1490,6 +1498,15 @@ unconditional `normalized` (which computes the same magnitude anyway).
 ---
 
 ## 17. Spawning the whole matrix — element × level spread (July 2026)
+
+> **⚠ The LEVEL half of this section is SUPERSEDED by §33 (Aug 2026).** `LifeformLevelSpread`
+> is deleted and no lifeform rolls a level at spawn any more: every lifeform is born at level 1
+> and EARNS the rest — a plant by reproducing, a creature by feeding. A rolled spawn level hands
+> a lifeform the record of a life it has not lived, which is the same class of mistake as a
+> scripted fitness function. Do not reintroduce it. The heart's size is likewise no longer a
+> per-species `CrystalScalePerLevel` compounding off a per-prefab base — it is ONE curve on
+> `ElementalCrystalSet`. **Everything below about the ELEMENT half still stands** and is
+> untouched: an element is an identity a lifeform is born with, not an achievement.
 
 **What was wrong.** The element × level contract (§3) was fully implemented but almost
 nothing used it: every cell config authored ONE element and `InitialLevel: 1`, so a
@@ -4206,6 +4223,14 @@ Unity-runtime interaction the simulation could not see. Two responses shipped:
    the table never produces one, so non-zero fingers a post-spawn transform write). All in
    the 5s colony heartbeat line.
 
+   > **The heartbeat is OPT-IN since Aug 2026** — a working colony repeating its census
+   > every 5s for the life of the scene is console spam, so it (and the FOUNDER / MATURE /
+   > BIRTH / bond-site lines) now emit only while `CSLogChannel.GyroidColony` is enabled in
+   > **FrogletTools > Toolbox > Logging**. Turn it on BEFORE any colony investigation; the
+   > counters accumulate regardless, so enabling mid-session still reports true totals.
+   > The defect WARNINGS are unaffected and always emit: `LATTICE MISALIGNMENT` (capped at
+   > 24), the once-per-plant reseed-mint block, and the `INCOHERENT SEED HANDOFF` error.
+
 2. **The orphan-reservation seam race - found by reading, fixed to match the sim.** The
    validated colony simulation used perfect-information reservations; Unity's had a 5s TTL,
    and three paths abandoned live reservations into it. The systematic one: the ownership
@@ -4327,7 +4352,9 @@ nominal and whose levels multiply it another 2.7× reaches a count-derived ladde
 early, and the symptom is never "the ladder is wrong" — it is "my population stopped growing",
 which sends you to the population dial, which is not connected.
 
-In-editor verification (the human is the gate): enter freestyle in Menu_Main (the lava lamp
+In-editor verification (the human is the gate): **first enable `CSLogChannel.GyroidColony`
+in FrogletTools > Toolbox > Logging** — the heartbeat this procedure reads is opt-in since
+Aug 2026 and is silent by default. Then enter freestyle in Menu_Main (the lava lamp
 IS the test now). Watch: (1) the founder's first danger prism moves the
 crystal to the ring centre; (2) ONE new plant blooms per fauna-wave period, at a random
 edge of the colony - the surface should visibly WANDER, not inflate as a ball; (3) the
@@ -4341,7 +4368,206 @@ and `poison` count misaligned-frame contacts (expected only where independent fo
 colonies meet); `ringErrMax` should sit well under 1; `UNRESERVED` non-zero → the spatial
 index was unavailable and growth ran unchecked.
 
-## 33. Schwarz P grows on its own TILE — the hyperbolic {6,4}, which is one half-period cube (Aug 2026)
+---
+
+## 33. Level is EARNED, and a heart is ONE size per level (Aug 2026)
+
+**Two defects, one root.** §17 spread the element × level matrix into the live world, and the
+LEVEL half of it did that by *rolling* a level at spawn (`LifeformLevelSpread`,
+min/max/rarity-falloff). A creature was therefore born large or small by luck, and its bigger
+heart — the thing worth hunting — was a property of the dice rather than of anything it had
+done. That is the same class of mistake as a scripted fitness function: the world hands out
+the *record* of an achievement that never happened. Separately, and invisibly, a heart's SIZE
+was whatever each species' prefab had authored — and it ranged **0.7 (tadpole) to 4.0 (gyroid)
+world scale, a 5.7× spread nobody chose**, on a number that is read twice as gameplay: by
+`SkimmerAdjustElementLevelByCrystalEffectSO` (the collect reward) and by
+`DomainFaunaBuffSystem` (the live buff every living heart grants its domain).
+
+### The rule now
+
+- **Level is never ROLLED, and an ordinary spawn is level 1.** `LifeformLevelSpread` is
+  deleted; nothing anywhere picks a level at random. `InitialLevel` survives on both config SOs,
+  defaulting to 1 — and it is now a **deliberate mode-authoring surface** rather than a tuning
+  default. Two callers use it above 1, both on purpose:
+  **Wildlife Liberation** escalates creature size per cage (middle room 2, core worms 3, core
+  sharks 5, in 16 configs), because its three rooms have to read as tiers the moment the hunt
+  starts and nothing *earned* can deliver that at t=0; and the **Lifeform Matrix bench**, which
+  spawns a chosen level so a tuner can see the whole band without playing a session out.
+  The distinction that matters is dice vs. intent: a rolled level is a lifeform being handed a
+  life it did not live, while an authored one is a designer stating what the room contains.
+- **A LATTICE species levels but does not grow its leaf.** `Flora.PrismSizeFixedByGrowthRule`
+  (false by default, **true** on `AssembledFlora` — gyroid / SchwarzP / wall) suppresses the
+  leaf half of the level curve. Those species bond at offsets measured in ABSOLUTE local units
+  (`OctagonNeighbor.Center`/`SeedPosition`, `GyroidAssembler.SeparationDistance`, captured once
+  in `GyroidAssembler.Start`), so a leaf that grows mid-life lays prisms the bond table no
+  longer describes — and it cannot be fixed by making the offsets scale-aware, because the
+  plant's EARLIER prisms are still the old size and two prism sizes cannot tile one lattice.
+  This is not a corner case: the gyroid octagon colony is the flora family that reproduces
+  MOST (one birth per fauna-wave period, §32.7), so it would have inflated fastest — reaching
+  a 1.75× linear / 5.35× volume leaf in four births, against a CI-verified geometry table.
+  Such a species still earns levels and still grows a bigger heart.
+- **A plant earns a level by REPRODUCING** (`Flora.NotifyReproduced`, called from both
+  reproduction paths — the per-plant growth quota and the octagon colony's population-scheduled
+  birth). One level per birth EVENT, not per offspring, so a multi-offspring birth is one rung
+  and level 5 is a plant that has seeded the cell four times.
+- **A creature earns a level by FEEDING** — `FaunaConfigurationSO.FeedsPerLevel` feeds, counted
+  in `Fauna.NotifyFed` on a counter separate from the reproduction quota (a feed pays into
+  both; a birth must not reset progress toward a level). Authored at **2× `FeedsPerOffspring`**
+  in every shipped asset, so a level reads as "this one has out-fed its siblings for a long
+  time" rather than as a second reproduction clock. 0 disables it — the worm colony, which
+  funds its growth by adding segments rather than by scaling.
+- **A heart's size is ONE curve, on `ElementalCrystalSet`**: `levelOneWorldScale` (3.5) ×
+  `worldScalePerLevel` (1.05)^(L−1) → **3.5 at level 1, 4.25 at level 5**. Not a function of
+  species, element, prefab, or body size. `FloraConfigurationSO.CrystalScalePerLevel` and
+  `FaunaConfigurationSO.CrystalScalePerLevel` are deleted: a per-species crystal factor is a
+  per-species REWARD, which is not a thing anyone was trying to author.
+
+### The root scale is the gameplay number — per-element size lives BELOW it
+
+Uniform root scale is **not** uniform apparent size. Each elemental crystal prefab carries a
+size correction on the model child below its root, and the four models are very different
+sizes in their own FBX units. Measured (FBX `Vertices` bounds normalized by
+`UnitScaleFactor` — Space's file is unit-1, the other three unit-100):
+
+| | Unity extent @ root 1 | authored child | apparent extent |
+|---|---|---|---|
+| Charge | 2.032 | 1.0 | 2.03 |
+| Mass | 1.960 | **1.0 → 1.38** | 1.96 → 2.70 |
+| Space | 1.565 | 1.34 | 2.10 |
+| Time | 1.377 | 1.42 | 1.96 |
+
+**The finding that matters: those children exist precisely to equalize apparent EXTENT, and at
+1.0/1.0/1.34/1.42 all four already agreed within 7%.** So the code comment claiming "one scale
+convention" was right about the *outcome* and wrong about the *mechanism* — the convention is
+maintained by four per-element corrections, not by the models being alike.
+
+Mass was nonetheless reported from play as reading **"super tiny"** (blue = the embedded-heart
+state, §30) once the level curve normalized every heart to one root scale. Extent does not
+explain that, and the likely cause is **fill, not size**: Mass is four *concentric* shells of
+one mesh animated by `ShepardGraph._ScaleDistance`, so the visible shell spends most of its
+cycle well inside the envelope, where Space is one solid body inflated by a `_spread` of 0.15.
+Its child is set to **1.38 as a first eye-calibration answering the report** — deliberately
+larger in extent than its neighbours to compensate for reading thinner. **This one number is
+expected to need a playtest pass** (see follow-ups). Charge was briefly raised to 1.38 on the
+same inference and **reverted**: nothing was reported against it and the measurement says its
+1.0 was already correct.
+
+The inference that produced the original 1.38 is worth recording as a trap, because it looked
+strong and was confounded: the gyroid authored its **Mass** heart at 4.0 while every other
+flora authored **Space** at 3.0, a 1.33 ratio that almost exactly cancels Space's 1.34 child.
+But those are different plants at very different overall sizes, so the ratio is as easily a
+composition choice as a size correction. **A ratio between two authored numbers is not a
+measurement until you have controlled for what else differs between them.**
+
+**The rule regardless: a per-element size fix goes on that element's crystal PREFAB, on the
+child below the root — never on the root.** The root's world scale is read as gameplay twice
+(`SkimmerAdjustElementLevelByCrystalEffectSO`, `DomainFaunaBuffSystem`), so correcting a look
+on the root moves the reward with it and re-opens the per-element reward spread this section
+removed.
+
+### Where the size is applied — the one gate
+
+`Crystal.SetEmbeddedIn` — the single call every lifeform heart in the game passes through
+(`LifeForm.Initialize`, `Fauna.ProvisionHeart`, `Boid`, `LightFauna`, `WormSegmentFauna`). A
+heart is sized there from its owner's level, and re-sized whenever the level changes
+(`LifeForm.ApplyLevel` / `LevelUp`, `Fauna.SetLevel`). Putting it at the gate rather than in
+each spawn path is what makes "no species keeps a private size" structural instead of a
+convention four subclasses have to remember.
+
+Callers work in **WORLD** scale (`LifeFormCrystal.SetWorldScale` divides out the parent chain).
+That is load-bearing for fauna: the body still grows with level (`BodyScalePerLevel`), and the
+heart is a child of it, so a local-scale write would drag the heart along with the body — which
+is exactly the coupling being removed. The level-up flare (`Fauna.GrowCrystalWithPop`)
+interpolates world scale for the same reason: it holds the heart's size steady *while the body
+grows underneath it*.
+
+### Effect on the numbers
+
+| | heart world scale @ L1 | @ L5 | collect gain @ L1 | @ L5 |
+|---|---|---|---|---|
+| tadpole (was) | 0.70 | 1.45 | 0.07 | 0.15 |
+| clawfish (was) | 1.35 | 2.80 | 0.14 | 0.28 |
+| shark / brittlestar (was) | 2.50 | 5.18 | 0.25 | **0.50 (clipped)** |
+| most flora (was) | 3.00 | 6.21 | 0.30 | **0.50 (clipped)** |
+| gyroid flora (was) | 4.00 | 8.29 | 0.40 | **0.50 (clipped)** |
+| **every lifeform (now)** | **3.50** | **4.25** | **0.35** | **0.425** |
+
+Gain is `min(scale × levelPerUnitScale, maxLevelGainPerCrystal)` at the shipped 0.1 / 0.5.
+Note what the old numbers did at the top of the band: **four of five species clipped at the
+cap by level 5**, so levelling stopped paying exactly where it was supposed to pay most. The
+new band is chosen to sit entirely *under* the cap (4.25 × 0.1 = 0.425 < 0.5), which is the
+constraint to preserve if either dial is retuned: keep
+`levelOneWorldScale × worldScalePerLevel⁴ < maxLevelGainPerCrystal / levelPerUnitScale`.
+
+**Not touched: `levelPerUnitScale` itself.** It is shared with non-lifeform elemental crystals
+(the Wanderway conveyor's pickups, Dog Fight's arena scatter), so retuning it to compensate for
+the lifeform-side change would silently move rewards in two modes that were never part of this.
+
+### Invariants
+
+- **Continuity of existence** — held. A level-up grows over `LevelGrowSeconds` (fauna, with the
+  overshoot flare) or via `Crystal.GrowCrystal` (flora). Nothing pops.
+- **Every lifeform drops one elemental crystal** — untouched. Only the size changed.
+- **Endogenous selection only** — *strengthened*, and this is the point of the change. Level is
+  no longer assigned; it is what survived long enough to breed or to out-feed its siblings.
+  Acquired growth is still not heritable: an offspring inherits its parent's element and starts
+  at level 1, so a lineage cannot bank rungs.
+- **No imposed death** — untouched; nothing was given a clock.
+- **Mass is conserved** — untouched. Flora leaves still grow with level, through the normal
+  spawn channel; existing leaves are never re-scaled in place.
+- **Collider budget: zero delta.** Level is a pure scale curve. Same creature count, same one
+  heart collider per lifeform, same prism counts.
+
+### Consequences to watch (open, needs the editor)
+
+1. **Rampage's volume ladder now describes the MATURE arena, not the opening one.** Its flora
+   ran the spread at `LeafScalePerLevel 1.3 / RarityFalloff 1.6` — a **4.3× expected volume
+   multiplier** that was baked into the play-tested ladder (`Tools/Build/rampage_intensity.py`).
+   A freshly-seeded arena is now that much lighter and climbs as the forest breeds. Booting
+   lighter is the SAFE direction — Frenzy freezes planting, so arriving later means the arena
+   keeps growing rather than freezing — which is why the ladder is deliberately left as
+   play-tested rather than re-derived from a model that can no longer be a constant. Re-measure
+   and retune **Restless** if the arena reads Calm for too long after the whistle.
+2. **A flora species with `GrowthPerOffspring = 0` can never level** — it does not reproduce, so
+   it is a level-1 forest forever. Only **29 of 85** flora configs reproduce today (the gyroid
+   colonies, Hesperides, Rampage, three Wildlife Blitz cells). The eight phyllotactic families
+   in `_SO_Assets/Lifeforms` that had the spread enabled will now read uniformly small unless
+   reproduction is authored for them. That is a deliberate consequence, not an oversight: size
+   variety is supposed to be earned, so a species that cannot breed has not earned any.
+3. **The domain fauna buff gets more uniform, and larger for small species.** A tadpole heart
+   went 0.7 → 3.5 world scale, so a domain fielding tadpoles now draws what a domain fielding
+   brittlestars always did. The pool is summed across living hearts and clamped by the
+   maintained-mechanism ceiling (sustained level 10), which large populations already reached,
+   so the expected change is "the small-species domains stop being quietly under-buffed" rather
+   than a new saturation.
+
+### Verify in-editor (the human is the gate — none of this has been run)
+
+Menu_Main freestyle (Blob cell) is the fastest read:
+
+1. **Uniform size** — kill a tadpole, a shark and a gyroid flora in one session and compare the
+   dropped crystals. They should be indistinguishable in size (3.5 world scale), where the
+   tadpole's used to be visibly a fifth of the gyroid's.
+2. **Everything is born small** — watch a fauna wave spawn in an ORDINARY biome (Blob,
+   Rampage, Wildlife Blitz). No conspicuously large newcomers; every creature hatches at the
+   same size. Wildlife Liberation is the deliberate exception: its middle room and core should
+   still spawn visibly bigger creatures (authored `InitialLevel` 2/3/5), and confirming that
+   still reads as three tiers is its own check.
+3. **Feeding grows a creature** — follow one grazer. After `FeedsPerLevel` consumes (32 for the
+   Blob forager, 40 for the Blob tadpole) it should visibly bloom a step, heart included, with
+   the overshoot flare. Confirm it never pops.
+4. **Breeding grows a plant** — watch a colony. A plant that completes a birth steps up and
+   its HEART grows; the daughter starts at level 1. For a LATTICE species (gyroid, SchwarzP,
+   wall) the leaf prisms must stay exactly the authored size no matter how many times the plant
+   has bred — a colony whose prisms drift apart in size is `PrismSizeFixedByGrowthRule`
+   failing, and the surface will overlap or gap. Non-lattice flora (phyllotactic, branching)
+   SHOULD show a size gradient with the founders largest.
+5. **The reward tracks** — collect a level-1 heart and a levelled one and confirm the element
+   flowers move further on the second.
+6. Re-run `FrogletTools ▸ Validation ▸ Validate Lifeform Crystals` (no prefab changed, but the
+   sizing path did) and `FrogletTools ▸ Ecology ▸ Measure Cell Environment Baselines` for
+   Rampage per consequence 1 above.
+## 34. Schwarz P grows on its own TILE — the hyperbolic {6,4}, which is one half-period cube (Aug 2026)
 
 `SchwarzPFlora` crystallises the Schwarz P minimal surface —
 `f(x,y,z) = cos x + cos y + cos z = 0` — one prism at a time. It always did. What changed is
@@ -4392,7 +4618,7 @@ canonical tile carried by `T_ijk`, acting one axis at a time: `x → x + πi` wh
 `x → π(i+1) − x` when `i` is odd. `f` is invariant under every `T_ijk`, so the whole surface
 is one baked patch plus a sign flip per odd axis.
 
-### 33.1 What is measured, and what is proven
+### 34.1 What is measured, and what is proven
 
 The tile's **combinatorics are exact and proven**, not fitted. The one fitted quantity is how
 finely the tile is filled with prisms — a hyperbolic patch admits no uniform lattice, so a
@@ -4405,7 +4631,7 @@ tuned for the seam (measured: seam-to-intra ratio **1.00×** at every level).
 
 Levels land on **complete hexagonal shells around the flat point** — 6, 18, 36, 60, 90 sites,
 i.e. `3n(n+1)`, the centered hexagonal numbers with the centre removed (the flat point is the
-plant's CRYSTAL seat, §33.6, not a prism site). `separationDistance` stays the authored field
+plant's CRYSTAL seat, §34.6, not a prism site). `separationDistance` stays the authored field
 and now *selects* a level (`ResolveLevel`) rather than setting a step; at the shipped
 `SchwarzPFlora` (`separation 6`, `periodScale 60`) that is **level 2, 36 sites per tile at
 5.25 world units** — so no asset needed re-authoring, and the orphaned
@@ -4418,7 +4644,7 @@ playtests (§32.7). Positions and tangents are *vectors* and transform correctly
 reflection; the surface normal is recomputed from the closed-form gradient at the transformed
 point. Orientation is derived, never carried.
 
-### 33.2 The bug the simulation caught, and why nothing else would have
+### 34.2 The bug the simulation caught, and why nothing else would have
 
 `SchwarzPTileData.NeighbourTile` exists because **bond deltas do not add**. A bond is measured
 in the canonical tile; carrying one into tile `(i,j,k)` composes tile transforms, and per axis
@@ -4441,24 +4667,24 @@ wrong** at every level that can discriminate — a gate nobody has watched fail 
 images at equal distance and it genuinely cannot discriminate; that exemption is stated in the
 output rather than hidden.)
 
-### 33.3 Invariant review
+### 34.3 Invariant review
 
 - **Mass is conserved.** Growth is still one prism per site, claimed through
   `PrismSpatialIndex.TryReserve`; occupancy is still *weak* (a site frees when its resident is
   eaten), so a grazed plant regrows into its own wound. No decay, no timer, no cull.
 - **Continuity of existence.** Untouched — prisms still bloom in and wither out through the
   standard `AssembledFlora` path.
-- **Flora populations.** *Superseded by §33.6* — Schwarz P became a lattice-colony species in
+- **Flora populations.** *Superseded by §34.6* — Schwarz P became a lattice-colony species in
   the pass that followed this one. At the time of writing it kept the ordinary per-plant
   budget and reseeding.
 - **Collider budget: unchanged, one-for-one** *at this pass*. The plant held the same
   `maxTotalSpawnedObjects` live prisms with the same colliders; only *where* they are placed
   changed. Site spacing moved 6 → 5.25 world units. The bond table is built once per level
   (~144k distance computations at the largest level, lazily, cached) and never again.
-  (§33.6 restates the budget for the colony: prism colliders unchanged, crystal colliders
+  (§34.6 restates the budget for the colony: prism colliders unchanged, crystal colliders
   3 → 22 in Blob.)
 
-### 33.4 Tooling and verification
+### 34.4 Tooling and verification
 
 | | |
 |---|---|
@@ -4475,7 +4701,7 @@ not a tendril; (2) the plates meet edge to edge with no visible seam where one t
 next — the seam is where the old marcher's drift showed; (3) at full budget the six-way tunnel
 network reads clearly; (4) let fauna graze it and confirm the wound regrows.
 
-### 33.5 The prisms — sized to the tile, per element (Aug 2026, second pass)
+### 34.5 The prisms — sized to the tile, per element (Aug 2026, second pass)
 
 A prism is an oriented box, and the tile fixes its frame: local **+z is the surface
 normal** (the thin axis), **+y is the site's baked tangent**, **+x is
@@ -4529,7 +4755,11 @@ is not a flush plate**, matched deliberately to the gyroid's Space (2.57 spacing
 its 2.56): a strut spanning the lattice is what takes the largest bounds and reads
 skeletal, and it cannot do that and avoid its neighbours at the same time.
 
-**The level trap — a lattice species must pin `LeafScalePerLevel` at 1.** `ApplyLevel`
+**The level trap — a lattice species must not scale its leaf with level.**
+*(Superseded as of §33: `Flora.PrismSizeFixedByGrowthRule`, true on `AssembledFlora`, now
+suppresses the leaf half of the level curve in CODE for every lattice species, so the config
+field no longer needs pinning and the assets carry the fleet-wide 1.15 again. The measurement
+below is why that fix exists, and is left as the evidence for it.)* `ApplyLevel`
 multiplies the leaf by `LeafScalePerLevel^(Level-1)`, and the Blob cell rolls this species
 at **Levels 1..5**. It scales the *prism* but not the *lattice*, so at the inherited 1.15 a
 level-5 plant's prisms are **1.749×** the size fitted flush and the plant interpenetrates
@@ -4553,7 +4783,7 @@ class, because the keep-the-prefab sentinel is **−1**, not 0 — writing
 `MaxTotalSpawnedObjects: 0` would not mean "keep", it would set the plant's live-prism
 budget to zero and it would never grow a prism.
 
-### 33.6 The tile colony — one plant, one tile, one crystal (Aug 2026, third pass)
+### 34.6 The tile colony — one plant, one tile, one crystal (Aug 2026, third pass)
 
 The Schwarz P flora was one large plant sprawling across many tiles. It is now a **population
 of plants that each own exactly one tile** — the same conversion the gyroid got in §32.7, and
@@ -4625,7 +4855,7 @@ phase-LOD managed. The cost is **crystals**: one always-on heart collider per pl
 goes **3 → 22** for this species (~9% of `MAX_PLANTS_PER_SPECIES`, which is the dial).
 Hesperides is unchanged at 4.
 
-**Two traps this pass fixed, both the §33.5 lesson repeated for other fields.**
+**Two traps this pass fixed, both the §34.5 lesson repeated for other fields.**
 `SchwarzPFlora.prefab` authored `crystalGrowth: 0.1` and nothing gated it, so a Schwarz
 crystal grew **+0.1 every grow tick, unbounded, forever** — now gated in code *and* authored 0.
 And `CrystalScalePerLevel: 1.2` against Blob's Levels 1..5 gives crystal scales
@@ -4648,10 +4878,10 @@ colony machinery is now duplicated between `OctagonMode` and `TileColonyMode`; t
 is one `ILatticeColony` abstraction, filed rather than done because the gyroid path had just
 shipped. (3) `minHealthBlocks: 5` was 0.6% of an 800-prism plant and is 14% of a 36-prism one.
 
-### 33.7 Space gets its own lattice — Schwarz P (Aug 2026, fourth pass)
+### 34.7 Space gets its own lattice — Schwarz P (Aug 2026, fourth pass)
 
 Space is the skeletal element on both lattice species. This pass gave the **Schwarz P** Space a
-lattice of its own. The gyroid was given one too, and it regressed — that half is §33.8.
+lattice of its own. The gyroid was given one too, and it regressed — that half is §34.8.
 
 **The dial: `FloraVariantTuning.LatticeScale`** (sentinel **−1** = keep the prefab's). It scales
 an element's whole lattice — every distance between prisms — while leaving the plant's
@@ -4659,7 +4889,7 @@ an element's whole lattice — every distance between prisms — while leaving t
 pushes it onto a freshly created assembler at all three creation sites (founder, daughter,
 re-seed), because the assembler reads it *before* its first growth probe and a value that arrives
 later is a value the seed never saw. Both species have it, but each scales a different thing and
-each is exact for its own reason — the gyroid's took two attempts, §33.8.
+each is exact for its own reason — the gyroid's took two attempts, §34.8.
 
 On Schwarz P it scales `periodScale` **and** `separationDistance`, together, and *together* is the
 whole trick. `ResolveLevel` picks the subdivision whose `MeanParamSpacing × periodScale / 2π` is
@@ -4684,11 +4914,11 @@ proves it on every run of the fitter rather than trusting the arithmetic.
 The prism is sized in multiples of its own lattice's spacing (`SPACE_SPANS`,
 `SPACE_THICK_RATIO` in `fit_schwarz_p_leaf_sizes.py`) rather than as absolute numbers, so the
 strut and the lattice can never drift apart. Those two ratios were originally derived from a
-gyroid Space that §33.8 then reverted; their provenance is recorded at the constants, and they
+gyroid Space that §34.8 then reverted; their provenance is recorded at the constants, and they
 are now the Schwarz element's own.
 
-**`LeafScalePerLevel` pinned at 1** — the §33.5 trap, unchanged here: it scales the prism and
-leaves the lattice put.
+**Leaf-vs-level** — the §34.5 trap, now handled in code by `Flora.PrismSizeFixedByGrowthRule`
+(§33) rather than by pinning the config field.
 
 **Populations and the collider budget.** Schwarz Space sits at its peers' `cap 22 / 792 prisms at
 cap`, uniform across all four elements. Per §4.6 the binding ceiling is unchanged: per-prism
@@ -4698,10 +4928,10 @@ exactly as §32.7 recorded.
 
 **Invariants.** Authored size and spacing data plus one scale read: *mass is conserved*,
 *continuity of existence*, *no imposed death*, *one crystal per lifeform* and *volume is the
-spine* all stand as §33.6 left them. A prism-count change per plant moves production only;
+spine* all stand as §34.6 left them. A prism-count change per plant moves production only;
 nothing is culled.
 
-### 33.8 Scaling the gyroid — the dislocation, and what it took to fix (Aug 2026)
+### 34.8 Scaling the gyroid — the dislocation, and what it took to fix (Aug 2026)
 
 The gyroid Space lattice was scaled, it grew **offset parallel surfaces**, it was reverted, and
 then it was done properly. The failure is the more useful half.
@@ -4760,8 +4990,8 @@ structure — prisms, spacing, and the spindles between them — is scaled **2×
 spacings before and after**, which is the check that the LENGTH is a pure scale-up rather than a
 reshape; the cross-section was then thinned by hand from the 2 a uniform scale would give to
 **1**, which is a deliberate reshape — Space is the skeletal element and a 60:1 needle reads
-thinner than a 30:1 bar at the same length. (§33.10 later opened the spacing to `LatticeScale 4`
-and §33.11 shortened the strut to 40; the numbers in this section are that pass's, not the
+thinner than a 30:1 bar at the same length. (§34.10 later opened the spacing to `LatticeScale 4`
+and §34.11 shortened the strut to 40; the numbers in this section are that pass's, not the
 shipped ones.)
 The octagon colony's populations are unchanged (`MaxTotalSpawnedObjects 30`, cap 33).
 
@@ -4796,7 +5026,7 @@ prism is 240 units and the species' ceiling reaches **155%** of the Blob cell's
 `FrenzyEnterVolume 288,000` on its own. Holding the cross-section at **1** instead lands it at
 `60 × 1 × 1 = 60` per prism (**112.7** after the 1.88 level spread) and **39%** — heavier than the
 20 × 1 × 1 it replaced (13%), lighter than its own Mass sibling (71%), and comfortably inside the
-budget. (§33.11's shortening to 40 takes it further down, to 75.1 and 26%.) A lattice species' thickness is therefore a *volume* dial with cubic leverage, not only a
+budget. (§34.11's shortening to 40 takes it further down, to 75.1 and 26%.) A lattice species' thickness is therefore a *volume* dial with cubic leverage, not only a
 look dial: it is the cheapest correction available when a scale-up overshoots the ladder. If the
 freestyle cell still reads sparse or freezes early, the levers in order remain the **cell's volume
 ladder** first and `MaxLivePopulation` last (§32.7 seventh pass, /ecology §4.6); neither is changed
@@ -4809,9 +5039,9 @@ proportional or scale it, then assert the ORDERING between them rather than the 
 never needed this: its sameness test is an integer tile address, so no tolerance exists to
 invalidate.
 
-### 33.9 The clamp — an authored prism size was never reaching the screen (Aug 2026)
+### 34.9 The clamp — an authored prism size was never reaching the screen (Aug 2026)
 
-Three passes of §33.5–§33.8 fitted, measured and argued about Space prism sizes. **None of
+Three passes of §34.5–§34.8 fitted, measured and argued about Space prism sizes. **None of
 them reached the engine.** Every one was silently trimmed to a 10-unit long axis.
 
 **The mechanism.** `PrismScaleAnimator.SetTargetScale` clamps PER AXIS into
@@ -4845,7 +5075,7 @@ Consequences that were all misread as other problems:
   render identically. The only thing any of those passes changed on screen was lattice spacing.
 - *The wrong spacing* — the spacing was right; the prisms were pinned at 10 while the lattice
   widened to 15.66, so the structure read as sparse and disconnected.
-- **Every overlap and volume measurement in §33.5–§33.8 was computed against geometry the
+- **Every overlap and volume measurement in §34.5–§34.8 was computed against geometry the
   engine never used.** The OBB fits, the saturating crossing counts, the volume table — all
   phantom. The numbers are correct *for the sizes named*; those sizes just were not what ran.
 
@@ -4860,11 +5090,15 @@ This is the general form of a workaround the project already had: `SpawnablePris
 z **100**. The trap has been hit and patched per-prefab before; it was simply never applied to
 flora. **363 of 404 prefabs still fall through to `[0.5, 10]`.**
 
-**Corrected effective volumes** (with the level spread; §33.7's table was pre-clamp-fix):
+**Corrected prism volumes.** *(Every "effective volume" figure in §34.5–§34.11 was computed with
+a ×1.88 level-spread multiplier. That multiplier is GONE: `LifeformLevelSpread` is retired and
+lattice leaves no longer scale with level at all (§33), so for these species **effective volume ==
+raw volume**. The numbers below are the raw ones; divide any ×1.88 figure elsewhere in §34 by 1.88
+to reconcile it.)*
 
 | | Charge | Mass | Space (was → now) | Time |
 |---|---|---|---|---|
-| **Gyroid** | 86.2 | 207.0 | **18.8 → 112.7** (→ 75.1 at §33.11's 40) | 86.2 |
+| **Gyroid** | 45.9 | 110.2 | **10.0 → 60.0** (→ 40.0 at §34.11's 40) | 45.9 |
 | **Schwarz P** | 13.8 | 25.7 | **2.5 → 7.5** | 13.8 |
 
 **Not swept in.** About fifteen other call sites author `TargetScale` directly
@@ -4903,11 +5137,11 @@ the authored number while the engine uses another. When a fitted size does not r
 verify what the engine actually stored **before** re-fitting: one look at the live Transform
 would have saved three passes of measuring phantom geometry.
 
-### 33.10 Spacing and prism size are INDEPENDENT dials (Aug 2026)
+### 34.10 Spacing and prism size are INDEPENDENT dials (Aug 2026)
 
 The two Space elements were opened up: gyroid `LatticeScale 2 → 4` (spacing `15.66 → 31.32`) and
 Schwarz P `1.667 → 5` (spacing `8.75 → 26.25`), with **both prisms unchanged** at `60 × 1 × 1`
-and `30 × 0.5 × 0.5` (the gyroid strut was shortened to 40 immediately after — §33.11). Spans
+and `30 × 0.5 × 0.5` (the gyroid strut was shortened to 40 immediately after — §34.11). Spans
 fall accordingly — gyroid `3.83 → 1.92`, Schwarz `3.43 → 1.14` — and
 the Schwarz strut, which had 108 crossings, is now **flush with none**.
 
@@ -4935,16 +5169,16 @@ and the ordering still holds with the ratio constant:
 `GyroidOctagonRegistry`'s deliberately-unscaled `CenterDedupeRadius` (12u) is still correctly
 bracketed at `k = 4`: distinct octagon centres are `35.87 × 4 = 143.5` apart, half of that is
 71.7, and drift is ~1–2u — and 12 remains under `BinSize` 17.935, so the 3³ scan still covers it
-(§33.8's stated bound was 0.67×–40×; 4 is inside it).
+(§34.8's stated bound was 0.67×–40×; 4 is inside it).
 
 **Mass is unchanged, footprint is not.** Prism sizes and counts did not move, so per-prism volume,
-the species ceilings and the cell's Frenzy ladder are all exactly as §33.9 left them. What grows is
+the species ceilings and the cell's Frenzy ladder are all exactly as §34.9 left them. What grows is
 the **bounds**: a gyroid plant's octagon ring radius goes 20u → 40u and its territory 53u → 106u,
 and a Schwarz plant's tile goes 50u → 150u across. Same mass, spread over ~4× and ~3× the linear
 extent — worth an eye in the editor for plants reaching past the membrane or into the nucleus,
 which is a spatial question no offline check here answers.
 
-### 33.11 Space gyroid — strut to 40, spacing to 25 (Aug 2026)
+### 34.11 Space gyroid — strut to 40, spacing to 25 (Aug 2026)
 
 Two prism-and-lattice tunings on the gyroid, Schwarz P untouched:
 
@@ -4962,7 +5196,7 @@ spacing change is mass-neutral by construction, since it moves prisms apart with
 **The verifier now proves the SHIPPED configuration, not a guess at it.**
 `verify_gyroid_lattice_scale.py` reads `LatticeScale` out of `Gyroid Flora Space.asset` and folds
 it into the swept scales, because a scale that is *authored but never proven* is exactly the
-failure mode §33.8 exists for — a fixed sweep of 1/1.5/2/3/4 would have silently stopped covering
+failure mode §34.8 exists for — a fixed sweep of 1/1.5/2/3/4 would have silently stopped covering
 the shipped lattice the moment it became 3.1902:
 
 | scale | sep | bond | reserve | gate | healthy | gate/healthy | |

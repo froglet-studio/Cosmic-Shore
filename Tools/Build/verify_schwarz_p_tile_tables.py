@@ -188,7 +188,7 @@ def verify_level(index, mean_spacing, sites):
 
     # --- the flat point is the CRYSTAL's seat and must hold no prism. A site there
     # would put a prism inside the heart, and the heart is what the wither unravels
-    # around (Docs/ECOSYSTEM.md 33.6).
+    # around (Docs/ECOSYSTEM.md 34.6).
     to_centre = min(math.sqrt(sum(c * c for c in off)) for off in offsets)
     check(to_centre > 1e-3, f"{tag}: the flat point carries no prism (it is the crystal seat)",
           f"nearest site sits {to_centre:.4f} rad out")

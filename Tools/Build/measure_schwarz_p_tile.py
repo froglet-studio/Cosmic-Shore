@@ -741,7 +741,7 @@ def drop_center(sites):
     """Strip the flat point from a relaxed layout.
 
     The tile's centre is where the plant's CRYSTAL sits - one heart per tile, never
-    growing (Docs/ECOSYSTEM.md 33.6) - so it is not a prism site. It is dropped AFTER
+    growing (Docs/ECOSYSTEM.md 34.6) - so it is not a prism site. It is dropped AFTER
     the relaxation rather than excluded from it, deliberately: with the centre
     participating, the innermost shell settles at the distance a real neighbour would
     hold it, which leaves a correctly-sized hole for the crystal instead of a shell

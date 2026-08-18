@@ -5,6 +5,27 @@ using UnityEngine;
 using CosmicShore.Data;
 namespace CosmicShore.Gameplay
 {
+    /// <summary>
+    /// What one blast claimed, reported once as it retires. A struct rather than a widening
+    /// parameter list so a future quantity (crystals converted, flora felled) is an added field
+    /// instead of a signature change that silently reorders two ints at every call site.
+    ///
+    /// Presentation only. <see cref="ExplosionImpactor.OnBlastResolved"/> is a HUD channel.
+    /// </summary>
+    public readonly struct BlastTally
+    {
+        /// <summary>Distinct prisms the blast destroyed.</summary>
+        public readonly int Prisms;
+        /// <summary>Distinct VESSELS the blast landed on — pilots it debuffed.</summary>
+        public readonly int Vessels;
+
+        public BlastTally(int prisms, int vessels)
+        {
+            Prisms = prisms;
+            Vessels = vessels;
+        }
+    }
+
     [RequireComponent(typeof(AOEExplosion))]
     public class ExplosionImpactor : ImpactorBase
     {
@@ -64,6 +85,14 @@ namespace CosmicShore.Gameplay
         private int _crystalLayerMask;
         private HashSet<int> _crystalsHit;
 
+        // Distinct VESSELS this blast has landed on, keyed by instance ID. Same once-per-blast
+        // ledger shape as _crystalsHit and for the same reason: a blast grows over many frames and
+        // its trigger re-reports a pilot who is still standing inside it, so a raw counter would
+        // climb every frame a target loiters in the cone. Only vessels that passed the domain /
+        // friendly-fire gate are recorded, so the count is "pilots this blast actually debuffed",
+        // not "pilots it overlapped".
+        private HashSet<int> _vesselsHit;
+
         public bool IsBatchProcessing => _useBatchProcessing;
 
         /// <summary>True while budget-deferred damage is still waiting to resolve.</summary>
@@ -117,6 +146,10 @@ namespace CosmicShore.Gameplay
                 _batchPending.Clear();
 
             _crystalsHit?.Clear();
+            _vesselsHit?.Clear();
+
+            if (explosion != null && explosion.Vessel != null)
+                OnBlastBegan?.Invoke(explosion.Vessel);
         }
 
         /// <summary>
@@ -224,13 +257,26 @@ namespace CosmicShore.Gameplay
         /// </summary>
         public int BatchHitCount => _batchHitTracker?.Count ?? 0;
 
+        /// <summary>How many distinct vessels this blast has landed on. See <see cref="_vesselsHit"/>.</summary>
+        public int VesselHitCount => _vesselsHit?.Count ?? 0;
+
         /// <summary>
-        /// Raised once per blast as it retires, with the vessel that fired it and how many prisms
-        /// it claimed. Presentation only (a HUD tally) — listeners must not change outcomes.
-        /// Static because explosions are spawned and destroyed per shot, so there is nothing
-        /// durable for a HUD to subscribe to; listeners filter by the vessel they own.
+        /// Raised once per blast as it BEGINS, with the vessel that fired it. Exists so a listener
+        /// can zero window counters it keeps for effects the blast causes but does not itself
+        /// dispatch — the Dolphin's HUD counts fauna kills this way, because a creature dies when
+        /// its last body prism is destroyed and that death is raised by the ECOLOGY
+        /// (<c>CellRuntimeDataSO.OnFaunaKilled</c>), several steps downstream of the prism damage.
+        /// Presentation only, exactly like <see cref="OnBlastResolved"/>.
         /// </summary>
-        public static event System.Action<IVessel, int> OnBlastResolved;
+        public static event System.Action<IVessel> OnBlastBegan;
+
+        /// <summary>
+        /// Raised once per blast as it retires, with the vessel that fired it and what it claimed.
+        /// Presentation only (a HUD tally) — listeners must not change outcomes. Static because
+        /// explosions are spawned and destroyed per shot, so there is nothing durable for a HUD to
+        /// subscribe to; listeners filter by the vessel they own.
+        /// </summary>
+        public static event System.Action<IVessel, BlastTally> OnBlastResolved;
 
         /// <summary>
         /// Ends batch processing and cleans up tracking data.
@@ -238,7 +284,8 @@ namespace CosmicShore.Gameplay
         public void EndBatchProcessing()
         {
             if (_useBatchProcessing && explosion != null && explosion.Vessel != null)
-                OnBlastResolved?.Invoke(explosion.Vessel, BatchHitCount);
+                OnBlastResolved?.Invoke(explosion.Vessel,
+                    new BlastTally(BatchHitCount, VesselHitCount));
 
             _useBatchProcessing = false;
             // Keep HashSet/Queue allocated for reuse - cleared on next BeginBatchProcessing.
@@ -289,7 +336,14 @@ namespace CosmicShore.Gameplay
                 case VesselImpactor vesselImpactee:
                     if (vesselImpactee.Vessel.VesselStatus.Domain == explosion.Domain && !affectSelf)
                         break;
-                    
+
+                    // Recorded BEFORE the effect container is consulted: a pilot who passed the
+                    // friendly-fire gate has been caught by this blast whether or not the firing
+                    // vessel happens to author any vessel effects, and the tally is a report of the
+                    // blast's reach, not of one container's wiring.
+                    _vesselsHit ??= new HashSet<int>(4);
+                    _vesselsHit.Add(vesselImpactee.Vessel.Transform.GetInstanceID());
+
                     if (!explosionImpactorDataContainer) return;
                     var vesselExplosionEffects = explosionImpactorDataContainer.vesselExplosionEffects;
                     if(!DoesEffectExist(vesselExplosionEffects)) return;

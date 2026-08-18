@@ -27,7 +27,7 @@ namespace CosmicShore.Gameplay
     /// guards (Docs/CONDITIONAL_COMPILATION.md).
     /// </summary>
     /// <summary>
-    /// Colony-wide event counters for the Schwarz P TILE population (Docs/ECOSYSTEM.md 33.6).
+    /// Colony-wide event counters for the Schwarz P TILE population (Docs/ECOSYSTEM.md 34.6).
     /// A separate class from <see cref="GyroidColonyDiagnostics"/> on purpose: the two colonies
     /// can live in one cell, and a merged counter is unattributable.
     ///
@@ -191,6 +191,16 @@ namespace CosmicShore.Gameplay
         /// <summary>The live-prism budget this individual resolved to - the base reads it for
         /// the reproduction maturity gate (see <see cref="Flora.PrismBudget"/>).</summary>
         protected override int PrismBudget => maxTotalSpawnedObjects;
+
+        /// <summary>
+        /// A LATTICE species: every assembler here (gyroid, SchwarzP, wall) bonds at offsets
+        /// measured in absolute local units, and <c>GyroidAssembler.Start</c> captures the
+        /// prism's target scale once, so a leaf that grows mid-life lays prisms the bond table
+        /// no longer describes - and the plant's own earlier prisms are still the old size.
+        /// Levels are still earned and the heart still grows; the leaf simply does not.
+        /// See <see cref="Flora.PrismSizeFixedByGrowthRule"/> and Docs/ECOSYSTEM.md §33.
+        /// </summary>
+        protected override bool PrismSizeFixedByGrowthRule => true;
 
         /// <summary>Assembled layer of the variant expression: the live-prism budget
         /// (Mass gyroid 1500 / Space 800 - the per-element density identity).</summary>
@@ -621,7 +631,7 @@ namespace CosmicShore.Gameplay
         /// visible twin. 5.5u was measured against the separation-3 lattice, where a coherent
         /// plant's closest non-bonded pair is 6.6u - it therefore SCALES, and the one pass that
         /// forgot to scale it is the pass that grew offset parallel domains
-        /// (Docs/ECOSYSTEM.md 33.8). Named once because it was a bare literal at two call sites,
+        /// (Docs/ECOSYSTEM.md 34.8). Named once because it was a bare literal at two call sites,
         /// which is exactly how one of them gets missed.
         /// </summary>
         float MisalignmentRadius => 5.5f * LatticeScale;
@@ -634,7 +644,7 @@ namespace CosmicShore.Gameplay
         /// Schwarz P moves periodScale and separationDistance together so the subdivision level
         /// is invariant; the gyroid moves its bond offsets AND every absolute tolerance that
         /// decides lattice coherence (see GyroidAssembler.ApplyLatticeScale - scaling the
-        /// offsets alone is what grew offset parallel domains, Docs/ECOSYSTEM.md 33.8).</para>
+        /// offsets alone is what grew offset parallel domains, Docs/ECOSYSTEM.md 34.8).</para>
         /// </summary>
         /// <summary>
         /// Scales the spindle's visible branch geometry with the lattice - the branch spans the
@@ -715,7 +725,7 @@ namespace CosmicShore.Gameplay
         //  The tile colony (Schwarz P) - a plant IS a tile-owner
         //
         //  The same population model as the gyroid's octagon colony (§32.7), applied
-        //  to the Schwarz P surface's own non-Euclidean tile (§33): one plant grows
+        //  to the Schwarz P surface's own non-Euclidean tile (§34): one plant grows
         //  exactly ONE tile of the {6,4} tiling, keeps its crystal on that tile's
         //  flat point, and on completing itself offers its unclaimed face-adjacent
         //  tiles to the population's frontier. Reproduction is a POPULATION event -
@@ -1012,8 +1022,18 @@ namespace CosmicShore.Gameplay
                 // - every founder is an independent lattice FRAME, and frames that were never
                 // projected from one another cannot mate, so knowing where each frame came
                 // from is the first question of any "colonies don't match up" report.
-                CSDebug.Log($"[GyroidColony] FOUNDER {name} claimed centre {center} " +
-                            $"(prism {type} at {position}, lineage={(SourceConfig ? SourceConfig.name : "NONE/toy")})");
+                //
+                // Both reports are BRING-UP telemetry: silent unless CSLogChannel.GyroidColony
+                // is on (FrogletTools > Toolbox > Logging), because a working colony repeating
+                // its census every 5s for the life of the scene is console spam. The heartbeat
+                // tick is still SCHEDULED unconditionally - it costs one no-op invoke per 5s per
+                // founder and buys a channel that can be flipped on mid-session, which is the
+                // only time anyone actually wants it. Coherence DEFECTS stay on the warning
+                // channel and always emit.
+                if (CSDebug.IsVerbose(CSLogChannel.GyroidColony))
+                    CSDebug.LogVerbose(CSLogChannel.GyroidColony,
+                        $"[GyroidColony] FOUNDER {name} claimed centre {center} " +
+                        $"(prism {type} at {position}, lineage={(SourceConfig ? SourceConfig.name : "NONE/toy")})");
                 InvokeRepeating(nameof(LogColonyHeartbeat), 5f, 5f);
                 return;
             }
@@ -1059,12 +1079,20 @@ namespace CosmicShore.Gameplay
             _idleGrowTicks >= 2 &&
             Time.time - _lastGrowthTime >= _maturationSeconds;
 
+        /// <summary>
+        /// The founder's 5s population census. Guarded rather than unscheduled so the channel
+        /// can be flipped in EITHER direction mid-session; the guard is what keeps the summary
+        /// string from being built while nobody is reading it.
+        /// </summary>
         void LogColonyHeartbeat()
         {
-            CSDebug.Log($"[GyroidColony] t={Time.time:F0}s {GyroidColonyDiagnostics.Summary} | " +
-                        $"founder: prisms={(healthTracker != null ? healthTracker.Count : -1)} " +
-                        $"ring={_ringMembers.Count} idle={_idleGrowTicks} " +
-                        $"branches={activeBranches.Count} pending={pendingSpawns.Count} mature={OctagonMature}");
+            if (!CSDebug.IsVerbose(CSLogChannel.GyroidColony)) return;
+
+            CSDebug.LogVerbose(CSLogChannel.GyroidColony,
+                $"[GyroidColony] t={Time.time:F0}s {GyroidColonyDiagnostics.Summary} | " +
+                $"founder: prisms={(healthTracker != null ? healthTracker.Count : -1)} " +
+                $"ring={_ringMembers.Count} idle={_idleGrowTicks} " +
+                $"branches={activeBranches.Count} pending={pendingSpawns.Count} mature={OctagonMature}");
         }
 
         /// <summary>
@@ -1295,8 +1323,9 @@ namespace CosmicShore.Gameplay
                 }
             }
 
-            CSDebug.Log($"[GyroidColony] MATURE {name}: prisms={healthTracker.Count} " +
-                        $"ring={_ringMembers.Count} - frontier now {GyroidColonyFrontier.Count(cell, SourceConfig)} open sites");
+            CSDebug.LogVerbose(CSLogChannel.GyroidColony,
+                $"[GyroidColony] MATURE {name}: prisms={healthTracker.Count} " +
+                $"ring={_ringMembers.Count} - frontier now {GyroidColonyFrontier.Count(cell, SourceConfig)} open sites");
         }
 
         /// <summary>
@@ -1357,9 +1386,10 @@ namespace CosmicShore.Gameplay
             if (born)
             {
                 GyroidColonyDiagnostics.Births++;
-                CSDebug.Log($"[GyroidColony] BIRTH #{GyroidColonyDiagnostics.Births} donor {name}: " +
-                            $"daughter at {center} seed {seed.BlockType} " +
-                            $"(frontier {GyroidColonyFrontier.Count(cell, SourceConfig)} open)");
+                CSDebug.LogVerbose(CSLogChannel.GyroidColony,
+                    $"[GyroidColony] BIRTH #{GyroidColonyDiagnostics.Births} donor {name}: " +
+                    $"daughter at {center} seed {seed.BlockType} " +
+                    $"(frontier {GyroidColonyFrontier.Count(cell, SourceConfig)} open)");
             }
             else
             {
@@ -1439,6 +1469,9 @@ namespace CosmicShore.Gameplay
             base.OnDestroy();
         }
 
+        /// <summary>Latches the once-per-plant reseed-block warning in ReseedBranches.</summary>
+        bool _warnedReseedMintBlocked;
+
         /// <summary>
         /// Re-sprout growth branches from surviving prisms - each surviving prism still
         /// carries its Assembler, so wrapping it in a Branch puts it back in the grow
@@ -1477,9 +1510,20 @@ namespace CosmicShore.Gameplay
                 if (OctagonMode)
                 {
                     GyroidColonyDiagnostics.ReseedMintsBlocked++;
-                    CSDebug.LogWarning($"[GyroidColony] {name}: ZERO surviving prisms with a live " +
-                                       $"tracker (count={(healthTracker != null ? healthTracker.Count : -1)}) - " +
-                                       $"off-lattice reseed mint BLOCKED");
+                    // ONCE per plant, not once per grow tick. The block above says exactly why:
+                    // a prismless octagon plant cannot die on its own, so it re-enters this
+                    // branch every tick for the rest of the scene - and a WARNING outranks both
+                    // the info tier and the channel gate, so nothing downstream can quiet it.
+                    // The running total stays visible either way via ReseedMintsBlocked, which
+                    // the colony heartbeat reports.
+                    if (!_warnedReseedMintBlocked)
+                    {
+                        _warnedReseedMintBlocked = true;
+                        CSDebug.LogWarning($"[GyroidColony] {name}: ZERO surviving prisms with a live " +
+                                           $"tracker (count={(healthTracker != null ? healthTracker.Count : -1)}) - " +
+                                           $"off-lattice reseed mint BLOCKED (further occurrences on this " +
+                                           $"plant are counted, not logged)");
+                    }
                     return;
                 }
                 CreateNewAssembler();
@@ -1566,7 +1610,7 @@ namespace CosmicShore.Gameplay
 
         public Assembler CreateNewAssembler()
         {
-            CSDebug.Log("New Assembler");
+            CSDebug.LogVerbose(CSLogChannel.GyroidColony, $"[GyroidColony] {name}: new assembler");
             var newSpindle = AddSpindle();
 
             // A SEEDED plant's first prism lands at the exact pose its parent's lattice

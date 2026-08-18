@@ -10,7 +10,7 @@ WHY THIS EXISTS
 ---------------
 A gyroid plant's coherence is decided by distances that were measured in ABSOLUTE world
 units against the separationDistance-3 lattice. Widening the lattice while leaving them
-alone is what grew offset parallel lattice domains (Docs/ECOSYSTEM.md 33.8) - and every
+alone is what grew offset parallel lattice domains (Docs/ECOSYSTEM.md 34.8) - and every
 static check passed while it did, because each constant was individually correct. The
 defect was a RELATIONSHIP: three radii that must stay ordered
 
@@ -46,7 +46,7 @@ SITES = ("TopRight", "TopLeft", "BottomLeft", "BottomRight")
 # The Space element is the only one that authors a LatticeScale, and it is the configuration
 # that actually ships - so read it rather than hard-coding a sweep and hoping the shipped value
 # happens to be in it. A scale that is authored but never proven is the whole failure mode this
-# file exists for (Docs/ECOSYSTEM.md 33.8).
+# file exists for (Docs/ECOSYSTEM.md 34.8).
 SPACE_CONFIG = ROOT / "Assets/_SO_Assets/Lifeforms/Gyroid Flora Space.asset"
 
 

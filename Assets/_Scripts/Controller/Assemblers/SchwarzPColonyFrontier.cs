@@ -6,7 +6,7 @@ namespace CosmicShore.Gameplay
 {
     /// <summary>
     /// The Schwarz P colony's POPULATION-level reproduction book - the tile analogue of
-    /// <see cref="GyroidColonyFrontier"/> (Docs/ECOSYSTEM.md §32.7, §33.6).
+    /// <see cref="GyroidColonyFrontier"/> (Docs/ECOSYSTEM.md §32.7, §34.6).
     ///
     /// <para>When a plant COMPLETES its tile it contributes every unclaimed face-adjacent
     /// tile - and itself as the lineage donor - to this per-species book. Reproduction is

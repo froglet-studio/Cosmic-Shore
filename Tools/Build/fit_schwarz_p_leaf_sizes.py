@@ -10,7 +10,7 @@ WHY THIS IS MEASURED AND NOT AUTHORED BY EYE
 --------------------------------------------
 "The plates sit flush with no overlaps" is a geometric claim about a specific point
 set, and the point set is the measured tile layout in SchwarzPTileData
-(Docs/ECOSYSTEM.md 33).  Each prism is an oriented box: local +z is the surface
+(Docs/ECOSYSTEM.md 34).  Each prism is an oriented box: local +z is the surface
 NORMAL (the thin axis), local +y is the site's baked tangent, and local +x is
 cross(tangent, normal) - Unity's LookRotation(forward: normal, up: tangent).  So a
 leaf size (x, y, z) is a footprint in the surface's tangent plane, and whether two
@@ -293,59 +293,6 @@ def variant_fields():
     return out
 
 
-def set_leaf_scale_per_level(path, value=1):
-    """A LATTICE species' prism size is set by its LATTICE, so the plant's level must
-    not scale it.
-
-    LeafScalePerLevel multiplies the leaf but not the site spacing, so at the Blob
-    cell's authored Levels 1..5 a 1.15 falloff makes a level-5 plant's prisms 1.749x
-    the size that was fitted flush - every plant above level 1 interpenetrates itself,
-    and the higher the level the worse. Level still means something here: the crystal
-    grows (CrystalScalePerLevel) and the plant's budget and lineage are unchanged.
-    Only the prism, whose size the geometry owns, is pinned."""
-    text = path.read_text()
-    row = f"  LeafScalePerLevel: {value:g}"
-    new, n = re.subn(r"^  LeafScalePerLevel: .*$", row, text, count=1, flags=re.M)
-    if n == 0:
-        # Absent means the field is taking the C# initializer (1.15) rather than being
-        # authored - which is exactly the case that hides this. Insert it explicitly.
-        # Unity's YAML is name-keyed, so position is free; anchor on whichever top-level
-        # key this asset happens to carry.
-        for anchor in (r"^  Levels:$", r"^  CrystalScalePerLevel: .*$",
-                       r"^  InitialLevel: .*$"):
-            new, n = re.subn(anchor, row + "\n" + r"\g<0>", text, count=1, flags=re.M)
-            if n == 1:
-                break
-    if n != 1:
-        raise SystemExit(f"could not set LeafScalePerLevel in {path.name}")
-    path.write_text(new)
-    return path
-
-
-def set_crystal_scale_per_level(path, value=1):
-    """The crystal seat is a HOLE of a measured size, so the crystal must not outgrow it.
-
-    This is the `LeafScalePerLevel` trap (§33.5) repeated for the heart. The flat point's
-    hole has a radius of one site spacing minus half a plate - about 4.2 world units - and
-    the authored crystal renders about 2x its root scale of 3. At the SO default
-    CrystalScalePerLevel of 1.2 the Blob cell's Levels 1..5 give root scales
-    3.00 / 3.60 / 4.32 / 5.18 / 6.22, so from level 3 up the heart bursts the window it is
-    supposed to sit in. Pinned at 1 for the same reason the leaf is: on a lattice species
-    the geometry owns the size, not the plant's level."""
-    text = path.read_text()
-    row = f"  CrystalScalePerLevel: {value:g}"
-    new, n = re.subn(r"^  CrystalScalePerLevel: .*$", row, text, count=1, flags=re.M)
-    if n == 0:
-        for anchor in (r"^  Levels:$", r"^  LeafScalePerLevel: .*$", r"^  InitialLevel: .*$"):
-            new, n = re.subn(anchor, row + "\n" + r"\g<0>", text, count=1, flags=re.M)
-            if n == 1:
-                break
-    if n != 1:
-        raise SystemExit(f"could not set CrystalScalePerLevel in {path.name}")
-    path.write_text(new)
-    return path
-
-
 def set_leaf_size_only(path, leaf):
     """Replace just the LeafSize row of an already-populated Variant block, so a cell's
     own decisions in that block (budget, planting radius, tempo) survive untouched."""
@@ -448,7 +395,7 @@ def assert_level_invariant(levels):
 #
 # Zero-overlap is likewise not the objective for a strut: one short enough to clear every
 # neighbour reaches none of them and reads as disconnected bars. Crossings are accepted, and
-# only REPORTED below. Docs/ECOSYSTEM.md 33.7.
+# only REPORTED below. Docs/ECOSYSTEM.md 34.7.
 SPACE_LEAF = (30.0, 0.5, 0.5)
 
 
@@ -551,17 +498,11 @@ def main():
               f"aspect {max(leaf[0], leaf[1]) / min(leaf[0], leaf[1]):4.1f}:1   "
               f"span {span:4.2f} spacings   coverage {cov:5.1%}   {state}")
 
-    # ---- the level trap: LeafScalePerLevel scales the leaf but NOT the lattice
-    print("\nLEVEL SPREAD - the Blob cell rolls these at Levels 1..5")
-    for scale_per_level in (1.15, 1.0):
-        row = []
-        for lvl in (1, 3, 5):
-            grown = tuple(v * scale_per_level ** (lvl - 1) for v in pleasant)
-            _, pairs = measure_fit(centres, bases, is_central, grown)
-            row.append(f"L{lvl}: {'clear' if pairs == 0 else f'{pairs} overlaps'}")
-        print(f"  LeafScalePerLevel {scale_per_level:<5g}  " + "   ".join(row))
-    print("  -> a lattice species must pin it at 1: the prism size is the LATTICE's, "
-          "not the plant's")
+    # The LEVEL trap this used to demonstrate here - LeafScalePerLevel scaling the leaf but
+    # not the lattice, so a levelled plant interpenetrates itself - is now handled in CODE by
+    # Flora.PrismSizeFixedByGrowthRule (true on AssembledFlora), which suppresses the leaf half
+    # of the level curve for every lattice species. It is no longer this fitter's business, and
+    # pinning the field from here would fight the config the rest of the fleet uses.
 
     if args.render:
         sheets = [(f"{n}  {l[0]:g}x{l[1]:g}x{l[2]:g}",
@@ -575,27 +516,19 @@ def main():
         for name, leaf, _ in elements:
             p = write_variant(name, leaf,
                              SPACE_LATTICE_SCALE if name == "Space" else None)
-            set_leaf_scale_per_level(p)
-            set_crystal_scale_per_level(p)
             print(f"  wrote {p.relative_to(ROOT)}")
 
         # The two CELL-level configs are producers too, and a fit applied to four of six
         # is a fit that shows up wrong in two cells. The Hesperides topiary is Element 2
         # (Mass) and carries its own budget/planting decisions, so only its LeafSize row
-        # moves; the Blob config has no Variant at all (it delegates to the palette above)
-        # and needs only the level pin.
+        # moves. The Blob cell config is NOT written: it has no Variant of its own (it
+        # delegates to the element palette above), and the level fields this fitter used to
+        # pin there are now handled in code by Flora.PrismSizeFixedByGrowthRule.
         hesperides = (ROOT / "Assets/_SO_Assets/Cell Configs/Hesperides Cell"
                              "/Hesperides SchwarzP Topiary Config Data.asset")
         set_leaf_size_only(hesperides, chunky)
-        set_leaf_scale_per_level(hesperides)
-        set_crystal_scale_per_level(hesperides)
         print(f"  wrote {hesperides.relative_to(ROOT)}")
 
-        blob = (ROOT / "Assets/_SO_Assets/Cell Configs/Blob Cell"
-                       "/Blob SchwarzP Flora Config Data.asset")
-        set_leaf_scale_per_level(blob)
-        set_crystal_scale_per_level(blob)
-        print(f"  wrote {blob.relative_to(ROOT)}")
 
     return 0
 

@@ -21,7 +21,7 @@ namespace CosmicShore.Gameplay
     /// neighbouring bins, so lookups stay O(1) however large a colony grows.</para>
     ///
     /// <para>DELIBERATELY NOT SCALED by <c>AssembledFlora.LatticeScale</c>, unlike every other
-    /// GyroidOctagonData distance (Docs/ECOSYSTEM.md §33.7). This is one book shared by every
+    /// GyroidOctagonData distance (Docs/ECOSYSTEM.md §34.7). This is one book shared by every
     /// colony in the scene, so it cannot hold a per-plant scale - and it does not need one:
     /// <c>CenterDedupeRadius</c> (12u) only has to sit between the drift that makes two
     /// computations of the SAME centre disagree (~0.3u per 100u of lattice) and half the

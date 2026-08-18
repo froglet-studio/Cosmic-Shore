@@ -13,7 +13,7 @@ namespace CosmicShore.Gameplay
     /// equivalent (<see cref="GyroidOctagonRegistry"/>) has to bin float centres and compare
     /// them against a dedupe radius, because an octagon is DISCOVERED by measuring a ring of
     /// danger prisms and two colonies' lattices drift apart. A Schwarz P tile is an exact
-    /// integer partition of space within its colony's frame (Docs/ECOSYSTEM.md §33), so
+    /// integer partition of space within its colony's frame (Docs/ECOSYSTEM.md §34), so
     /// "is this tile taken" is a dictionary hit. There is no dedupe radius, no ownership
     /// epsilon and no ring-coherence tolerance to tune, and the whole misalignment defect
     /// class the gyroid spent five playtests on cannot arise here - two plants either agree

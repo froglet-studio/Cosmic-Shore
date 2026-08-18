@@ -41,5 +41,4 @@ MonoBehaviour:
     PlantRadiusCellFraction: -1
     PlantRadiusCellFractionMin: -1
   InitialLevel: 1
-  LeafScalePerLevel: 1
-  CrystalScalePerLevel: 1
+  LeafScalePerLevel: 1.15

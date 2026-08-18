@@ -41,6 +41,30 @@ namespace CosmicShore.ScriptableObjects
             TryGetColorSetByDomain(domain, out var colorSet) ? colorSet.TrailHighlightColor : Color.gray;
 
         /// <summary>
+        /// The domain's colour pushed to FULL BRIGHTNESS — hue and saturation preserved, the
+        /// brightest channel driven to 1. For a SIGNAL that has to be unmistakable: a HUD slot
+        /// announcing which team owns something, or a highlight that must separate a vessel from lit
+        /// mass around it.
+        ///
+        /// <para><b>Do not reach for a crystal colour to say "this belongs to domain X".</b>
+        /// <c>DullCrystalColor</c> is authored (0,0,0) on Jade, Ruby AND Gold in the shipped
+        /// <c>OriginalColorSetSO</c> — the domain crystals are deliberately near-black bodies with a
+        /// bright fresnel rim, which is right on a faceted crystal in the world and renders as a
+        /// black square in a UI slot. <c>BrightCrystalColor</c> tops out at 0.75 value. The domain UI
+        /// colour is the palette's answer to "what colour is this team", and this is that colour at
+        /// full strength.</para>
+        ///
+        /// Returns white for an unauthored domain, so a signal can never silently become invisible.
+        /// </summary>
+        public Color GetDomainSignalColor(Domains domain)
+        {
+            var c = GetDomainUIColor(domain);
+            float peak = Mathf.Max(c.r, Mathf.Max(c.g, c.b));
+            if (peak <= 0.001f) return Color.white;
+            return new Color(c.r / peak, c.g / peak, c.b / peak, 1f);
+        }
+
+        /// <summary>
         /// The per-domain accent for translucent flat-UI card tints (Maelstrom round/player/summary
         /// cards, Connecting-panel domain rank) - deliberately brighter than
         /// <see cref="DomainColorSet.TrailHighlightColor"/> and alpha-tinted so card backgrounds stay

@@ -8,23 +8,19 @@ namespace CosmicShore.Gameplay
 {
     /// <summary>
     /// The Dolphin's crystal seeding — a <b>PASSIVE</b> ability with no input of its own. A cooldown
-    /// runs continuously; each time it completes the Dolphin seeds a TEAM crystal somewhere in the
+    /// runs continuously; each time it completes the Dolphin seeds a crystal somewhere in the
     /// containing cell's CYTOPLASM (the shell between nucleus and membrane) and the cooldown
     /// restarts immediately.
-    ///
-    /// What gets planted is a TEAM crystal — only the pilot's own domain can collect it, exactly
-    /// like the crystals Skim Race lays along its track. That gate is structural rather than
-    /// conventional: TeamCrystal.prefab drops the base <see cref="OmniCrystalImpactor"/> in favour
-    /// of a <see cref="TeamCrystalImpactor"/>, whose <c>IsDomainMatching</c> rejects every vessel
-    /// outside the crystal's domain in the impact chain itself.
     ///
     /// This is the Dolphin's own ammunition supply: the crystal it seeds is the crystal it later
     /// flies into to release Echo Obliteration, so the seeding rate IS the blast's tempo.
     ///
-    /// Element → parameter: CHARGE owns this ability. Its multiplier divides the recharge, and its
-    /// level-5 upgrade ("Twin Seed") doubles the yield per cycle. The HUD reads
-    /// <see cref="SeedsPerCycle"/> for the pip row, <see cref="CooldownRemaining01"/> for the fill,
-    /// and edge-detects <see cref="SeedCount"/> for the planted beat.
+    /// Element → parameter: <b>MASS</b> owns this ability. Its multiplier divides the recharge, and
+    /// its level-5 upgrade changes WHAT is planted — see <see cref="CurrentCrystalPrefab"/>. Below
+    /// the upgrade the seed is an ordinary OMNI crystal standing in open space that any pilot can
+    /// take; at Mass 5 it becomes a TEAM crystal only this domain can collect. The HUD reads
+    /// <see cref="CooldownRemaining01"/> for the recharge fill and edge-detects
+    /// <see cref="SeedCount"/> for the planted beat.
     ///
     /// <para><b>Locally simulated only.</b> <c>TeamCrystal.prefab</c> carries no NetworkObject, so a
     /// seeded crystal has always been a local instantiate — the previous hold-to-plant version ran
@@ -37,8 +33,14 @@ namespace CosmicShore.Gameplay
     public sealed class DeployTeamCrystalActionExecutor : ShipActionExecutorBase
     {
         [Header("Setup")]
-        [Tooltip("The TEAM crystal planted by each seeding. TeamCrystal.prefab.")]
+        [Tooltip("The crystal planted by each seeding BELOW the Mass level-5 upgrade - an ordinary " +
+                 "OMNI crystal (Crystal.prefab) that any pilot who reaches it can collect.")]
         [SerializeField] private Crystal crystalPrefab;
+
+        [Tooltip("The crystal planted once MASS level 5 is active - a TEAM crystal " +
+                 "(TeamCrystal.prefab) only this pilot's own domain can collect. Leave empty to " +
+                 "keep seeding omni crystals at every level.")]
+        [SerializeField] private Crystal upgradedCrystalPrefab;
 
         [Tooltip("Tuning for the seeding. Wired directly because the ability is PASSIVE - it is " +
                  "bound to no input event, so the action handler's binding maps can never resolve " +
@@ -91,19 +93,18 @@ namespace CosmicShore.Gameplay
         // ---------------- HUD surface ----------------
 
         /// <summary>
-        /// Crystals planted per cycle: one normally,
-        /// <see cref="DeployTeamCrystalActionSO.UpgradedSeedsPerCycle"/> once Charge's level-5
-        /// upgrade is active.
+        /// True once the seed is TEAM-locked — the Mass level-5 upgrade. HUD-readable, so the slot
+        /// can say which kind of crystal the next cycle will leave behind.
         /// </summary>
-        public int SeedsPerCycle
-        {
-            get
-            {
-                var so = ResolveSo();
-                if (!so || !IsChargeUpgraded) return 1;
-                return Mathf.Max(1, so.UpgradedSeedsPerCycle);
-            }
-        }
+        public bool SeedsTeamCrystal => IsMassUpgraded && upgradedCrystalPrefab;
+
+        /// <summary>
+        /// What the next cycle plants: the team crystal once Mass 5 is active, the omni crystal
+        /// otherwise. Resolved per seeding rather than latched at init, so losing the upgrade to a
+        /// Mass debuff immediately puts the pilot back to planting crystals anyone can take.
+        /// </summary>
+        Crystal CurrentCrystalPrefab
+            => IsMassUpgraded && upgradedCrystalPrefab ? upgradedCrystalPrefab : crystalPrefab;
 
         /// <summary>
         /// Recharge remaining as a 0-1 fraction: 1 the instant a cycle fires, 0 when the next
@@ -154,12 +155,9 @@ namespace CosmicShore.Gameplay
 
             if (Time.time < _nextSeedTime) return;
 
-            int yield = SeedsPerCycle;
-            for (int i = 0; i < yield; i++)
-            {
-                if (so.MaxLiveSeeded > 0 && _live.Count >= so.MaxLiveSeeded) break;
-                SeedOne(so);
-            }
+            // One crystal per cycle at every level. The Mass upgrade changes WHAT is planted, never
+            // how many - the yield is the recharge's job and the recharge alone.
+            SeedOne(so);
 
             SeedCount++;
             StartClock(so);
@@ -178,12 +176,24 @@ namespace CosmicShore.Gameplay
         {
             Vector3 point = ResolveSeedPoint(so);
 
-            var crystal = Instantiate(crystalPrefab, point, UnityEngine.Random.rotation);
+            // Resolved per seeding, not per cycle: the Mass upgrade is what decides whether this
+            // crystal is team-locked, and it can flip between one seeding and the next.
+            var prefab = CurrentCrystalPrefab;
+            if (!prefab) return;
 
-            // Domain is stamped BEFORE activation so the crystal settles straight into its team
-            // material (Crystal.ResolveActivationMaterial) instead of lerping through the neutral
-            // free-for-all look on its way there.
-            crystal.ownDomain = _status.Domain;
+            var crystal = Instantiate(prefab, point, UnityEngine.Random.rotation);
+
+            // Domain is stamped BEFORE activation so the crystal settles straight into the right
+            // material (Crystal.ResolveActivationMaterial) instead of lerping through the wrong look
+            // on its way there. It is also the COLLECTION gate itself
+            // (Crystal.CanBeCollected: Blue is free-for-all), so the two halves of the Mass upgrade
+            // - the impactor the prefab carries and the domain stamped here - always agree:
+            //
+            //   below Mass 5 -> Domains.Blue, the lime free-for-all CTA. Anyone can take it, and it
+            //                   LOOKS like anyone can take it (Docs/PALETTE.md 2.2: crystal colour
+            //                   signals who may collect).
+            //   at Mass 5    -> this pilot's domain, in that domain's crystal colours.
+            crystal.ownDomain = SeedsTeamCrystal ? _status.Domain : Domains.Blue;
             crystal.ActivateCrystal();
 
             _live.Add(crystal);
@@ -266,31 +276,31 @@ namespace CosmicShore.Gameplay
 
         // ---------------- Elemental ----------------
 
-        bool IsChargeUpgraded
+        bool IsMassUpgraded
         {
             get
             {
                 var handler = _status?.ElementalAbilityHandler;
-                return handler && handler.IsUpgradeActive(Element.Charge);
+                return handler && handler.IsUpgradeActive(Element.Mass);
             }
         }
 
         /// <summary>
-        /// Seconds between seedings right now. Element → parameter (Charge → how soon the next
+        /// Seconds between seedings right now. Element → parameter (Mass → how soon the next
         /// crystal arrives): anchored at exactly 1x at the resting level, so the authored cooldown
         /// is what a fresh pilot feels, and floored by MinCooldown so it never becomes free.
         ///
-        /// Scaled from the SO's OWN authored multiplier rather than the map's generic one, because
-        /// ChargeBoostActionExecutor already consumes the generic Charge multiplier for the boost
-        /// peak — reading it here too would drive two unrelated parameters off one number.
+        /// Scaled from the SO's OWN authored multiplier rather than the map's generic one, so the
+        /// recharge is driven by exactly one number and a future consumer of the map's generic Mass
+        /// multiplier cannot silently start moving it too.
         /// </summary>
         float CurrentCooldown()
         {
             var so = ResolveSo();
             if (!so) return 0f;
 
-            float mult = ElementalScaling.Multiplier(_status, Element.Charge,
-                so.CooldownMultiplierAtFullCharge, so.MinCooldownMultiplier);
+            float mult = ElementalScaling.Multiplier(_status, Element.Mass,
+                so.CooldownMultiplierAtFullMass, so.MinCooldownMultiplier);
             return Mathf.Max(so.MinCooldown, so.Cooldown * mult);
         }
 

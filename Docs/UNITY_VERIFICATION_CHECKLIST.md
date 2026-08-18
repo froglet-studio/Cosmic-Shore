@@ -23,6 +23,202 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Dolphin elemental map re-cut around one weapon (`claude/dolphin-elemental-upgrades-umokil`)
+
+Authored without a Unity compile or play-test. Every element on the Dolphin now owns one
+orthogonal dimension of its single offensive act, and the HUD row was re-cut to match. Full
+record: `_Scripts/Controller/Vessel/R_VesselActions/DOLPHIN_CRYSTAL_SEEDING.md` §8.
+
+**What landed**
+
+- **Charge → Echo Sight + blast THICKNESS.** `_coreMultiplierAtRestCharge 0.75` /
+  `_coreMultiplierAtFullCharge 1.5` on `DolphinVesselExplosionByCrystalEffect`, via the new
+  `ElementalScaling.MultiplierFromRest` (the fleet's first multiplier NOT anchored at 1 at rest —
+  so the authored core is now what a mid-Charge Dolphin fires and a fresh pilot's beam is
+  deliberately thinner).
+- **Charge 5 = Pilot Echo.** Vessels inside the blast volume brighten in their own domain colours
+  (`EchoSightVesselHighlighter` → `_ColorMultiplier` MPB per material index; `BlastVolume.Contains`
+  is the CPU twin of the sweep job's predicate).
+- **Mass → crystal seeding.** Recharge multiplier renamed `cooldownMultiplierAtFullMass`
+  (`[FormerlySerializedAs]`). **Twin Seed retired** — one crystal per cycle. **Mass 5 = Claimed
+  Seed**: the seed is an omni crystal (`Crystal.prefab`, `ownDomain = Blue`, lime CTA) below the
+  upgrade and a team crystal (`TeamCrystal.prefab`, own domain) above it.
+- **Mass no longer touches the trail.** `trailVolume` disabled, `massUpgradeShieldsTrail 0` on
+  `Dolphin.prefab`.
+- **HUD row re-cut**: Charge = new procedural `BlastProfileGraphic`; Mass = crystal recharge (pips
+  deleted); Space = jaws + a widened prism tally; Time = the boost ring. Prefab YAML was
+  hand-authored, and the row wirer was re-cut to the same layout and generalized fleet-wide as
+  `VesselAbilityRowWirer` (`FrogletTools > Vessels > Wire Vessel Ability Row`).
+- **Second pass (colour + subtraction).** The Charge profile crosses the shared palette's
+  **grey → white** (idle → in use) instead of a bespoke warm colour. The Space **reach bar was
+  dropped entirely** — that slot says angle and amount only. And `BlastProfileGraphic`'s outline
+  winding was fixed: it was measuring the end caps from the wrong basis vector and rendering a bowtie.
+- **Third pass (all three from playtest).** (a) The Mass slot rendered **black** — `DullCrystalColor`
+  is authored (0,0,0) on Jade/Ruby/Gold in the live palette. Replaced with the new
+  `SO_ColorSet.GetDomainSignalColor` (domain UI colour, brightest channel driven to 1);
+  `Docs/PALETTE.md` §2.4. (b) **Pilot Echo was indistinguishable from the lit prisms in Rampage.**
+  Brightness was the one channel the ability itself had already saturated, so the hull is now driven
+  to its **saturated domain colour** (`_Color1`/`_Color2`) AND gets an additive **halo** — a disc with
+  a hard ring at the silhouette, drawn `ZTest Always` so it reads through mass and in empty space
+  (`_Graphics/Materials/Graphs/EchoSightHalo.shader` + `Resources/EchoSightHalo.mat`, both new,
+  hand-authored). (c) The Charge slot now reports **pilots debuffed** and **creatures killed** after
+  each blast, two stacked bare numbers in the Space tally's grammar, told apart by palette colour.
+- **Fourth pass.** The halo no longer shrinks with distance: its radius is
+  `max(world size at this depth, vesselHaloMinScreenRadius)` computed in the vertex shader, so past
+  ~750 u it holds a constant angular size (measured: 59 px diameter at 1080p, vs ~20 px before, at the
+  2400 u max reach). The offset moved from view space to CLIP space to do it. Also recorded: the
+  sight's range gate was already Space-driven and already covers fauna/flora — no change needed
+  there — with crystals the one thing it does not reach (`DOLPHIN_CRYSTAL_SEEDING.md` §11).
+- **Fifth pass — the PRISM half.** The sight now samples its volume **once per prism** (object
+  origin) instead of per fragment, so a prism lights up WHOLE. That matches
+  `AOEConicSweepQueryJob`, which tests one point per prism and destroys the whole prism — the
+  per-fragment version was painting a shape the blast does not operate on. Colour went warm amber
+  → pale cool blue `(0.45, 0.70, 1.0)` and gain 1.15 → 0.70 (`DOLPHIN_CRYSTAL_SEEDING.md` §12).
+
+**Verify in editor**
+
+1. **Compile.** Two new scripts ship with hand-authored `.meta` GUIDs
+   (`BlastProfileGraphic` = `3d1c8a7e…`, `EchoSightVesselHighlighter` = `7a4e2f9c…`); the HUD prefab
+   references the first by that GUID. If Unity re-mints either GUID on import, the Charge slot's
+   profile binding breaks — check the `Profile` object on `DolphinHUDVariant` still has its script.
+2. **Run FrogletTools > Vessels > Audit Vessel Ability Rows.** Dolphin should report map complete,
+   4/4 icons, order ✅.
+3. Open `DolphinHUDVariant.prefab`: four slots left→right must be ProfileButton, CrystalButton,
+   JawButton, DriftButton. `CrystalPip0/1` should be **gone**.
+4. Freestyle on the Dolphin: the Charge slot draws a **solid capsule** (not a bowtie, no hollow
+   wedges) that grows with banked energy; raising Charge fattens and shortens it without changing its
+   overall extent. It sits at the palette's grey when RT is released and crosses to white while held.
+5. **Hold RT** — prisms in the blast volume light warm as before. At Charge 5, another vessel that
+   enters the cone brightens in its own domain colours and fades back out when the cone leaves it.
+   Release RT and confirm every vessel returns to its exact prior brightness (no lingering glow).
+6. Swap vessel while holding RT — no vessel is left over-bright (`HardReset` → `ClearAll`).
+7. Idle a cooldown below Mass 5: the seeded crystal wears the **lime CTA**, the Mass slot is lime,
+   and a rival-domain vessel can collect it. Raise Mass to 5: seeds arrive in your domain's colours,
+   the Mass slot crosses to that same domain colour, and a rival cannot collect them. Then use the
+   freestyle domain-changer toy — the slot must follow the new domain.
+8. Lay a drift trail: prisms are **not** shielded and do **not** grow with Mass.
+9. Fire a blast at a dense wall and confirm the tally under the jaws renders a 4–5 digit number at
+   full size without auto-shrinking.
+10. **MPPM two clients** — Pilot Echo is local-only presentation, but the unlock bit is replicated;
+    confirm a remote Dolphin holding RT does not brighten anything on the other client.
+11. **The halo shader is the highest-risk item on this branch** — a hand-written ShaderLab pass that
+    no compiler here can check. Confirm `EchoSightHalo` compiles with no errors, and that
+    `Resources/EchoSightHalo.mat` resolves it (a magenta or invisible quad means it did not). Its
+    `.shader.meta` GUID is hand-minted (`6c2b9d4a…`) and the material references it by that GUID; if
+    Unity re-mints it, re-assign the shader on the material.
+12. **Halo through mass.** At Charge 5 in **Rampage** (the case that motivated it — ~9,800 cactus
+    prisms all lit at once): hold RT with a rival in the cone and confirm the halo reads (a) in open
+    space, (b) surrounded by lit prisms, (c) fully behind prisms. Confirm the ring lands on the hull's
+    silhouette rather than inside or well outside it, and that it never occludes anything (ZWrite is
+    off) or darkens the ship (additive).
+13. **Halo at range.** Mark a rival across the arena (≥1000 u) and confirm the halo is clearly
+    visible and roughly the same on-screen size as one at 800 u — that is the floor working. Up close
+    the ring should still trace the hull's silhouette; at range it becomes a reticle around the ship,
+    which is intended. Check it stays CIRCULAR at a non-16:9 aspect (the shader carries an explicit
+    aspect correction) and that it does not jitter or pop at the crossover depth.
+14. **Two rivals of different domains in one cone** must be tellable apart — each halo and hull wears
+    its OWN domain colour, never a shared highlight colour.
+15. **The prism half.** Hold RT near a wall of prisms: each prism must be lit ALL-OR-NOTHING with a
+    jagged prism-granular boundary, never a smooth cut across a prism's face. This is the item most
+    likely to fail to compile — it reads the object matrix in the FRAGMENT stage, which is supported
+    but is not proven elsewhere in this project (the one precedent, `PrismClockAnimation`'s jiggle, is
+    vertex-stage). A silent failure mode to watch for under DOTS instancing: if the instance ID is not
+    set up in the fragment, EVERY prism would light off one instance's origin — i.e. all or none light
+    together regardless of where the cone points. If that happens, set `PRISM_SIGHT_WHOLE_PRISM 0` to
+    fall back and report it.
+16. **Sight brightness/hue.** Prisms should read as *lit*, not washed to white, with their tier
+    colours still visible through the cast. Check a SHIELDED prism specifically — the frosty tier is
+    the one the new cool hue could be confused with. If it reads as a tier change, lower
+    `PRISM_SIGHT_GAIN` rather than changing the hue.
+17. **The living tally.** Fire a blast that catches a rival and some fauna: the Charge slot shows a
+    white pilot count and a blue creature count, both fading after ~2.5 s. Fire one that catches
+    neither and confirm both stay blank (no "0"). Then fire two blasts back to back inside the 0.15 s
+    cooldown — the fauna count may be shared between them; that is the documented window limitation,
+    not a bug to chase.
+
+**Verification matrix (what was actually verified, and how)**
+
+| System changed | Verified how | Result |
+|---|---|---|
+| `PrismDestructionSight.hlsl` (whole-prism sampling, colour, gain) | **clang compile + run of the shipped file** | Compiles. Deep-inside adds exactly `gain × blue × CORE_FILL`; outside-gape / behind-vessel / past-reach all add exactly 0 |
+| The sight's SPACE range gate | **clang run** — same prism at z=1500 with cone height 2400 vs 1200 | Lights at full reach, dark at half. The gate is real and Space-driven (was previously argued from reading the code) |
+| `EchoSightHalo.shader` | **clang compile + run of the extracted HLSLPROGRAM** | Compiles (found and fixed a non-portable `0.0h` half-literal). Crossover at 756 u, then a constant 59 px diameter to the 2400 u max reach; x/y pixel extents equal at every depth (circular, not elliptical) |
+| `BlastProfileGraphic` outline | **Off-engine Python sim** over 5 (L, R, rotation) cases | Convex, non-self-intersecting; area within 2% of the exact stadium at 10 segments/cap; max vertex step = 2L (the straight edge), proving no jump across the interior |
+| All 7 hand-authored YAML component blocks | **Mechanical key↔field parity** vs the C# classes and their bases | Zero unknown keys (the only "unknowns" are `MaskableGraphic`'s own package-side fields) |
+| `EchoSightHalo.mat` ↔ shader | **Set comparison** of Properties / material entries / CBUFFER members | All three sets identical — no property that fails to upload, none MPB-only |
+| New assets (4 GUIDs) | **GUID uniqueness + meta pairing + m_Script resolution sweep** | Each GUID appears in exactly one `.meta`; no orphan/missing metas; every unresolved `m_Script` in the changed prefabs is a pre-existing package script |
+| Deleted prefab sub-objects (pips ×2, ReachBar) | **Repo-wide fileID sweep** | Zero references anywhere |
+| Removed/renamed public members (12) | **Repo-wide grep per member** | Zero stragglers; every re-signed member's call sites migrated |
+| `VesselAbilityRowWirer` idempotency | **Tool constants diffed against the shipped prefab** | All four band pairs match to 1e-6; Dolphin slot names match the prefab — running it is a no-op |
+| Conditional-compilation guards | `Tools/Build/check_conditional_compilation.py` | OK (1676 files) |
+| **All C# on the branch** | **NOT COMPILED — impossible in this container** (no Unity managed DLLs, no `dotnet`/`mcs`/`csc`). Verified instead by mechanical symbol checking: every interface member dereferenced, every namespace, every call site, every serialized field name | Consistent, but **the editor is the compile gate** |
+| **Everything in play** (look, feel, tuning, DOTS-instanced fragment matrix) | **NOT VERIFIED** — steps 1–17 above are the gate | Human required |
+
+**First-pass tuning (not settled)**
+
+| knob | asset | value |
+|---|---|---|
+| `_coreMultiplierAtRestCharge` / `AtFullCharge` | `DolphinVesselExplosionByCrystalEffect` | 0.75 / 1.5 |
+| `_minCoreMultiplier` | " | 0.5 |
+| `vesselHighlightGain` | `Dolphin.prefab` ▸ `EchoSightActionExecutor` | 4 |
+| `vesselHighlightSaturation` | " | 0.85 |
+| `vesselHaloScale` | " | 2.4 (halo radius ÷ hull radius, close range) |
+| `vesselHaloMinScreenRadius` | " | 0.055 (≈59 px diameter at 1080p; the distance floor) |
+| `vesselHaloIntensity` | " | 1.4 |
+| `vesselHighlightFadeSeconds` | " | 0.18 |
+| `_RingWidth` / `_RingGain` / `_GlowFalloff` | `Resources/EchoSightHalo.mat` | 0.12 / 1.6 / 2.5 |
+| `maxExtentFraction` / `minRadiusFraction` | `DolphinHUDVariant` ▸ `Profile` | 0.86 / 0.06 |
+
+**Known gap.** `_coreExplosionScale` (320) was authored as the blast's true thickness; it is now
+the mid-Charge value, so at rest the beam is 240 and at Charge 10 it is 480 (clamped to the base
+diameter). If the resting blast reads too thin in play, raise `_coreExplosionScale` rather than
+moving the 0.75 endpoint — the endpoints are the design.
+### 🔴 Self-trail contact grace (`claude/vessel-self-trail-collision-tp01j3`)
+
+Authored without a Unity compile or play-test. A pilot's hull and skimmer now ignore a prism
+**that pilot laid** for `hullGraceSeconds` / `skimGraceSeconds` (both 1.0 s) after it was laid —
+owner-scoped and time-boxed, never domain-scoped, so another player's *and* a teammate's trail
+stay interactable from the frame they appear. New config `SelfTrailContactConfigSO` +
+`Assets/Resources/SelfTrailContactConfig.asset` (**both the .asset and its .meta were hand-authored
+as YAML — Unity has never imported them**). Guards added at the top of the prism branch in
+`VesselImpactor.AcceptImpactee` and `SkimmerImpactor.AcceptImpactee`, above the shell-ownership
+check. Companion geometry fix in `VesselPrismController.CreateBlock`: the `waitTillOutsideSkimmer`
+clearance delay measured `TrailZScale` (= `BaseScale.z`), omitting both `ZScaler` and the MASS
+volume multiplier, so upgraded vessels' colliders came on while the prism was still inside the
+ship; it now measures `scale.z` with a speed floor and a 2 s ceiling.
+
+**Verify in editor**
+
+1. Project imports clean — confirm `SelfTrailContactConfig.asset` resolves its script (not
+   "missing MonoBehaviour") and shows both grace fields at 1. A hand-written GUID pairing is the
+   single most likely thing to have gone wrong here.
+2. **Squirrel, freestyle:** drift a tight circle — Charge/boost must NOT climb off the ribbon you
+   are laying. Cross trail older than a second — skim energy resumes.
+3. **Dolphin:** bank skim energy, then drift the hull across your own fresh ribbon. Energy and
+   charged boost must NOT halve and there must be NO `VesselImpact` SFX. Against an *older* stretch
+   of your own trail it must still ram, sound, and cost you.
+4. **MASS 5 on the Squirrel** (Heavy Trail → shielded drift prisms) and repeat (2). This is the
+   case that proves the guard sits above the shell-ownership check.
+5. **MPPM, two clients:** trailing pilot skims the leader's trail from the frame it appears and
+   reaches joust range. Repeat with both on the SAME domain — still skims. (A domain-scoped fix
+   would have broken this; it is the regression to watch for.)
+6. **Rhino (regression check):** cutting your own older trail must STILL bank sword energy at the
+   signed-off 0.04/prism. The grace is not expected to reach this vessel — it cannot turn onto its
+   own freshest ribbon inside the window — so any change here is a bug in the grace.
+7. Delete the asset once and confirm the code defaults still apply and the rule still holds.
+
+**First-pass tuning** (starting points, not settled)
+
+| Knob | Value | Notes |
+|---|---|---|
+| `hullGraceSeconds` | 1.0 | Raise if vessels still clip their own ribbon mid-drift. |
+| `skimGraceSeconds` | 1.0 | Lower if self-skim feels dead coming out of a drift. |
+| `MaxClearanceWaitSeconds` | 2.0 | Const guard, not a dial — only reached at very low speed. |
+
+Full record: `Assets/_Scripts/Controller/ImpactEffects/SELF_TRAIL_CONTACT.md`.
+
+---
+
 ### 🔴 Shield morphs → GPU; the last CPU prism ticker deleted (`claude/octahedron-shield-gpu-morph-4nnw1s`)
 
 Authored without a Unity compile or play-test. The octahedron shield's engage bloom and its
@@ -1060,12 +1256,14 @@ Mechanics + full knob list: `_Scripts/Controller/Vessel/R_VesselActions/DOLPHIN_
 4. **Crystal impact.** The cone fires, energy empties, the jaws snap shut, and the Space
    icon flashes with a prism count. At Space L5 the cone must stop damaging your own
    domain's prisms.
-5. **Charge L5.** A second crystal pip appears. *(Superseded 2026-08-14: crystal seeding
-   is now PASSIVE — there is no deploy preview to tint, and Twin Seed means two crystals
-   per seeding cycle rather than two carried. Verify against the Dolphin entry at the end
-   of this file instead.)*
+5. **Charge L5.** ~~A second crystal pip appears.~~ *(Superseded TWICE. 2026-08-14: seeding
+   went passive, so the pips became per-cycle yield rather than carried crystals. 2026-08-17:
+   **Twin Seed and the pips are retired outright** — seeding moved to MASS, plants exactly one
+   crystal per cycle at every level, and its L5 changes the crystal's TIER. Charge L5 is now
+   "Pilot Echo". Verify against the newest Dolphin entry at the TOP of this file.)*
 6. **MPPM two-client:** the L5 upgrade effects are gated on the replicated
-   `IsUpgradeActive`, so confirm both peers agree on Clean Blast and Twin Seed.
+   `IsUpgradeActive`, so confirm both peers agree — on Clean Blast and, since 2026-08-17,
+   Claimed Seed and Pilot Echo (Twin Seed no longer exists).
 
 **Hand-authored assets that have never had an editor import round-trip:** the Dolphin
 HUD variant's four-icon row, the Dolphin prefab's crackle overlay + controller, and
@@ -1172,7 +1370,7 @@ retained as the regression list for anyone touching this again. Full detail + tu
 `Assets/_Scripts/Controller/Vessel/R_VesselActions/DOLPHIN_CRYSTAL_SEEDING.md` §6.
 
 Still UNVERIFIED, because a single-editor play-test cannot reach them:
-**the MPPM two-client row (9)** — that a remote Dolphin's sight stays local and that Twin Seed
+**the MPPM two-client row (9)** — that a remote Dolphin's sight stays local and that the L5 upgrade
 agrees across peers — and **the live-cap row (3)**, which needs ~4 minutes of uninterrupted
 seeding at the shipped 30 s cooldown to reach `maxLiveSeeded: 8`.
 

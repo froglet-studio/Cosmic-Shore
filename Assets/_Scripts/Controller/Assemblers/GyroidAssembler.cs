@@ -95,7 +95,7 @@ namespace CosmicShore.Gameplay
         /// lattice coherence. Set before the plant's first growth probe.
         ///
         /// <para>Scaling <see cref="separationDistance"/> alone is what shipped once and had to
-        /// be reverted (Docs/ECOSYSTEM.md 33.8): a gyroid plant's coherence rides distances
+        /// be reverted (Docs/ECOSYSTEM.md 34.8): a gyroid plant's coherence rides distances
         /// written in ABSOLUTE world units, all of them sized against separationDistance 3, so
         /// widening the lattice moved every real distance out from under them at once. The worst
         /// was AssembledFlora's lattice-misalignment gate, which stopped catching the twin
@@ -512,14 +512,22 @@ namespace CosmicShore.Gameplay
         // this method generalize both of the methods above
         private GyroidBondMate FindClosestMate(Vector3 bondSite, CornerSiteType siteType)
         {
+            // Bond-site telemetry. This runs several times per prism GROWN, so it is both
+            // channel-gated and IsVerbose-guarded: the interpolated string must not be built
+            // while nobody is listening (a [Conditional] method still evaluates its arguments
+            // in the Editor). A 900-prism colony emitted thousands of these lines.
             if (preferedBlocks.Count > 0)
             {
-                CSDebug.Log($"GyroidAssembler: Preferred Block, Depth: {depth}");
+                if (CSDebug.IsVerbose(CSLogChannel.GyroidColony))
+                    CSDebug.LogVerbose(CSLogChannel.GyroidColony,
+                        $"[GyroidColony] {name}: preferred block, depth {depth}");
                 var mate = CreateGyroidBondMate(preferedBlocks.Dequeue(), BlockType, siteType);
                 return mate;
             }
 
-            CSDebug.Log($"GyroidAssembler: No Preferred Block, Depth: {depth}");
+            if (CSDebug.IsVerbose(CSLogChannel.GyroidColony))
+                CSDebug.LogVerbose(CSLogChannel.GyroidColony,
+                    $"[GyroidColony] {name}: no preferred block, depth {depth}");
 
             // Candidates come from the spatial index (the canonical prism population -
             // no physics broadphase, no per-collider GetComponent) plus a Mound-layer

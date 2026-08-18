@@ -680,6 +680,34 @@ the cell size, the jitter, or add animation, and the constants must be re-fitted
 the error silently returns. Verify the fit across the whole range you intend to use
 (here: rate 0 through t=400s).
 
+## 4.5b-geo Technique: prove GENERATED GEOMETRY against a closed form
+
+Origin: the Dolphin's `BlastProfileGraphic` and `EchoSightHalo` (2026-08-17). §4.5b samples a
+fragment function to judge a LOOK. This is its vertex-side sibling: when you generate a mesh, a
+UI outline, or a screen-space size in code you cannot run, transcribe the *same arithmetic* into
+Python and assert the properties the shape must have. It catches a class §4.5b cannot, because a
+wrong outline does not look noisy — **it renders a plausible WRONG SHAPE**, and reviewing the code
+that produced it tends to re-confirm the author's own mental model.
+
+The assertions that actually earn their keep, in the order they catch things:
+
+| Property | How to assert it | What it catches |
+|---|---|---|
+| **Simple, non-self-intersecting loop** | sign of `cross(p[i], p[i+1], p[i+2])` constant around the ring | an outline walked in the wrong ORDER — the killer, because a centre-fan over a mis-ordered loop draws a bowtie with hollow wedges and no error |
+| **Area vs the exact formula** | shoelace vs the closed form (a stadium is `πR² + 4LR`) | a whole dimension dropped or doubled; polygonal under-approximation shows as a clean few-% deficit that shrinks with segment count |
+| **Max step between consecutive vertices** | should equal a KNOWN edge of the shape | a jump across the interior — the direct signature of the ordering bug above |
+| **Aspect / units** | for screen-space math, assert x and y offsets subtend EQUAL PIXELS | an ellipse where a circle was intended (NDC x and y both span −1..1 over unequal pixel counts) |
+| **The regime table** | tabulate the output across the input range | a `max()`/`min()` crossover in the wrong place, or a floor that never engages |
+
+A worked instance: the stadium outline swept both end caps from the ACROSS basis vector instead
+of ALONG, which left cap one ending at the far tip and cap two starting near the middle. Convexity
+and max-step both failed instantly; area was 2% under the closed form at 10 segments per cap after
+the fix, which is exactly the expected polygonal deficit. The same script then tabulated the halo's
+angular size against depth and confirmed the constant-size floor engaged where intended.
+
+Cheap to write (~30 lines), and the table it prints is evidence you can paste straight into the
+doc and the PR.
+
 ## 4.5c Technique: COMPILE the shipped HLSL with clang (stronger than porting it)
 
 Origin: the occlusion corridor's triangle/shatter kernels (2026-08-06). §4.5b ports a
@@ -926,6 +954,73 @@ never prunes an unresolvable modification, so the inspector keeps showing a valu
   whitespace-only byte change on 15 prefabs is indistinguishable from a real edit in review.
 
 ## 5. Traps learned the hard way (check these BEFORE debugging for an hour)
+
+- **Play-mode edits: SCENE changes are discarded on Stop, SO ASSET changes are kept — and that
+  asymmetry is what makes it baffling.** A human tuning your feature will edit both kinds in the
+  same sitting: the `MenuCameraConfigSO` values they change while playing STICK (it is an asset),
+  the checkbox they uncheck on the scene component silently REVERTS the moment they press Stop.
+  `Ctrl-S` during Play does not rescue the scene half — it saves assets, not the scene. So the
+  report you get is "half my changes keep undoing themselves", which reads like a save bug or a
+  git problem and sends you looking in entirely the wrong place. **Ask which kind of object the
+  field lives on, and whether they were in Play mode**, before investigating anything. Two fixes,
+  and give both: edit scene fields with the editor STOPPED, or — better when the value is part of
+  the change under review — set it in the scene YAML yourself and commit it, so it survives and is
+  reviewable. Suggest `Preferences → Colors → Playmode tint` as the standing guard.
+- **A worst case sampled over a CONVENIENT subset is not a worst case, and will send you to the
+  wrong fix.** Asked how far a camera's aim could tilt, the first pass varied the target only
+  along the axis that looked dominant (straight up/down) and reported 0.855 — comfortably near
+  the threshold, which made "move the camera further out" look like the fix. Searching the whole
+  spawn volume adversarially gave **0.9859**, i.e. the radius barely mattered and the real lever
+  was a constant elsewhere in the code. The restricted model did not just understate the number,
+  it inverted the conclusion. **When the output is a bound rather than a typical value, enumerate
+  the full parameter space (grid + refinement) and say which parameters you searched**; if you
+  quote a bound from a subset, label it as such. Re-deriving it honestly is minutes of compute
+  and is the difference between a fix and a detour.
+
+- **`HideFlags.HideAndDontSave` includes `DontUnloadUnusedAsset`, so a runtime-created Mesh or
+  Material with it LEAKS.** It is the reflexive flag for a procedurally-built helper object, and
+  on a GameObject it is fine (a child dies with its parent regardless). On an *asset-like* object —
+  `new Mesh`, `new Material` — it means the thing is never garbage collected AND never swept by
+  `Resources.UnloadUnusedAssets`, so one accumulates per owner instance, forever, across vessel
+  swaps and scene loads. The Echo Sight halo minted one quad Mesh per executor this way. Fix by
+  making it a **static shared** instance (correct anyway when the geometry is identical for every
+  user — size belongs in a shader property, not a transform scale), or by destroying it explicitly
+  in the owner's teardown. The flag is right for the shared one and wrong for the per-instance one.
+- **Anything that RESOLVES A CELL during the spawn chain must retry, not bind once.** CLAUDE.md
+  documents this for the nucleus radius; the same 800 ms window bites anything else that looks a
+  cell up at init. `Cell.Initialize` runs on `OnInitializeGame` behind `InitDelayMs` (1000 ms) while
+  vessels spawn at `preSpawnDelayMs` (200 ms), so `Cell.FindCellContaining` /
+  `FindNearestActiveCell` return **null** in a vessel component's `Initialize`. Binding a SOAP
+  channel there fails silently and stays failed for the whole match — a HUD tally reading zero
+  forever with nothing in the log. Resolve at USE time (the crystal seeding executor resolves per
+  seeding) or late-bind on the first event that needs it, and keep the unsubscribe pointed at the
+  channel you actually attached to so a mid-flight cell swap cannot strand it.
+
+- **A ratio between two authored numbers is not a measurement until you have controlled for
+  what else differs between them.** Chasing "why does this element render smaller?", the
+  authored history looked like hard evidence: the gyroid flora set its *Mass* crystal to 4.0
+  while every other flora set *Space* to 3.0 — a 1.33 ratio that almost exactly cancelled the
+  Space prefab's 1.34 model-child multiplier. Two independent signals agreeing. Both were
+  wrong: those are different plants at very different overall sizes, so the ratio is as easily
+  a composition choice. The actual measurement (below) showed all four elements were already
+  matched. **When authored numbers seem to encode a correction, find the thing they correct and
+  measure it directly** — and if you ship on the inference anyway because a human reported a
+  symptom, label the number as an eye-calibration, not as a result.
+- **Raw mesh extents from two FBX files are not comparable — normalize by `UnitScaleFactor`
+  first.** §4.8 gives the parse; the trap is forgetting the normalization when the question is
+  "which of these models is bigger?". Four crystal models measured 2.03 / 1.96 / **156.46** /
+  1.38 in raw file units, which reads as one model being 80× the others; the outlier's FBX just
+  declares `UnitScaleFactor: 1` where the rest declare 100. Normalized (`raw × UnitScaleFactor
+  / 100`, cross-checked against the `.meta`'s `useFileScale`/`globalScale`) they are 2.03 /
+  1.96 / 1.56 / 1.38 — and after each prefab's own model-child multiplier, all four agree
+  within 7%. The un-normalized read would have "proved" a defect that does not exist.
+- **Before normalizing a transform value across a family of prefabs, check (a) what each one
+  carries BELOW its root, and (b) whether that value is read as GAMEPLAY.** A family that looks
+  uniform at the root can be maintaining its uniformity through per-item corrections on a child
+  — flatten the root and you break a match that was already there. And when the root's scale is
+  read by game logic (a pickup's reward, a buff magnitude computed from `lossyScale`), a purely
+  visual fix applied there silently retunes balance. The correction belongs on the child; the
+  root stays the number the game reads.
 
 - **A Unity NullReferenceException names an exact LINE — mine it before theorising, and
   calibrate the trace's fidelity from the log itself.** Two steps, both cheap. (1) Confirm
@@ -1416,6 +1511,21 @@ never prunes an unresolvable modification, so the inspector keeps showing a valu
   whose whole body is `#if UNITY_EDITOR` (pattern 2 of
   `Docs/CONDITIONAL_COMPILATION.md`), which both can reach and which never enters a player
   build. Writing the rule twice is how the two gates drift apart.
+- **Adding a `using` to an existing Unity file is a SEMANTIC change, not a formatting one —
+  and a syntax parse cannot see the breakage.** `UnityEngine.Object` is referenced by its
+  short name all over this codebase, so importing `System` into such a file makes every bare
+  `Object` ambiguous (`CS0104: 'Object' is an ambiguous reference between 'UnityEngine.Object'
+  and 'object'`). It bit `CSDebug.cs`, where `using System;` — added only to reach
+  `[Flags]` — broke all seven `Log(object, Object context)` overloads at once. A Roslyn
+  **syntax** pass (`CSharpSyntaxTree.ParseText` + `GetDiagnostics`) reports this file as
+  clean, because it is a binding error, not a parse error; only a real compile catches it.
+  Two habits: prefer the fully-qualified attribute (`[System.Flags]`) over importing a
+  namespace into a Unity-facing file, and when you must add the import, grep the file for
+  bare `Object`/`Random`/`Debug`/`Application` first — those four collide between `System*`
+  and `UnityEngine`. When a namespace is deliberately absent, leave a comment saying so, or
+  the next person re-adds it. The mirror also holds: before REMOVING a `using`, enumerate the
+  types that namespace declares and grep the file's body for all of them — checking only the
+  one symbol you deleted misses a sibling type that was riding the same import.
 - **Verify the bug before fixing it.** A report describing code behaviour
   ("it's using the sphere centre") may predate a fix that already landed. Read
   the live path end to end and check `git log` on the file FIRST; report

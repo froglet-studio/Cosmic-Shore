@@ -139,12 +139,12 @@ namespace CosmicShore.Gameplay
         {
             if (!NetworkManager.Singleton.IsServer)
             {
-                Debug.Log("<color=#00FF00>[FLOW-5] [ServerVesselInit] OnNetworkSpawn - NOT server, disabling</color>");
+                CSDebug.LogVerbose(CSLogChannel.NetworkFlow, "<color=#00FF00>[FLOW-5] [ServerVesselInit] OnNetworkSpawn - NOT server, disabling</color>");
                 enabled = false;
                 return;
             }
 
-            Debug.Log($"<color=#00FF00>[FLOW-5] [ServerVesselInit] OnNetworkSpawn - IsServer=true, subscribing to OnPlayerNetworkSpawnedUlong. gameData.Players.Count={gameData.Players.Count}</color>");
+            CSDebug.LogVerbose(CSLogChannel.NetworkFlow, $"<color=#00FF00>[FLOW-5] [ServerVesselInit] OnNetworkSpawn - IsServer=true, subscribing to OnPlayerNetworkSpawnedUlong. gameData.Players.Count={gameData.Players.Count}</color>");
 
             // The computed ring needs the cell's nucleus, which the Cell spawns in Initialize -
             // deferred to the first vessel spawn (EnsureSpawnPosesReady) so it can't read a
@@ -230,7 +230,7 @@ namespace CosmicShore.Gameplay
 
         async UniTaskVoid HandlePlayerNetworkSpawnedAsync(ulong ownerClientId, CancellationToken ct)
         {
-            Debug.Log($"<color=#00FF00>[FLOW-5] [ServerVesselInit] HandlePlayerNetworkSpawnedAsync - ownerClientId={ownerClientId}, waiting {preSpawnDelayMs}ms for NetworkVariables</color>");
+            CSDebug.LogVerbose(CSLogChannel.NetworkFlow, $"<color=#00FF00>[FLOW-5] [ServerVesselInit] HandlePlayerNetworkSpawnedAsync - ownerClientId={ownerClientId}, waiting {preSpawnDelayMs}ms for NetworkVariables</color>");
             // Wait for NetworkVariables set in Player.OnNetworkSpawn to sync
             using (LoadInsights.Measure(LoadInsightCategory.ScriptedDelay,
                        $"preSpawnDelayMs before vessel spawn ({preSpawnDelayMs}ms)", isWait: true))
@@ -245,7 +245,7 @@ namespace CosmicShore.Gameplay
                 return;
             }
 
-            Debug.Log($"<color=#00FF00>[FLOW-5] [ServerVesselInit] Found player: Name={player.NetName.Value}, VesselType={player.NetDefaultVesselType.Value}, NetworkObjectId={player.NetworkObjectId}</color>");
+            CSDebug.LogVerbose(CSLogChannel.NetworkFlow, $"<color=#00FF00>[FLOW-5] [ServerVesselInit] Found player: Name={player.NetName.Value}, VesselType={player.NetDefaultVesselType.Value}, NetworkObjectId={player.NetworkObjectId}</color>");
 
             // Re-initialize the PERSISTENT Player for this scene - exactly once, for every player,
             // whichever way it was found. RoundStats lives on the Player NetworkObject and survives
@@ -270,7 +270,7 @@ namespace CosmicShore.Gameplay
 
             if (!_processedPlayers.Add(player.NetworkObjectId))
             {
-                Debug.Log($"<color=#FFA500>[FLOW-5] [ServerVesselInit] Player {player.NetworkObjectId} already processed, skipping</color>");
+                CSDebug.LogVerbose(CSLogChannel.NetworkFlow, $"<color=#FFA500>[FLOW-5] [ServerVesselInit] Player {player.NetworkObjectId} already processed, skipping</color>");
                 return;
             }
 
@@ -314,7 +314,7 @@ namespace CosmicShore.Gameplay
                 }
             }
 
-            Debug.Log($"<color=#00FF00>[FLOW-5] [ServerVesselInit] Player ready! Spawning vessel for {player.NetName.Value} (type={player.NetDefaultVesselType.Value})</color>");
+            CSDebug.LogVerbose(CSLogChannel.NetworkFlow, $"<color=#00FF00>[FLOW-5] [ServerVesselInit] Player ready! Spawning vessel for {player.NetName.Value} (type={player.NetDefaultVesselType.Value})</color>");
             await OnPlayerReadyToSpawnAsync(player, ct);
         }
 
@@ -388,10 +388,10 @@ namespace CosmicShore.Gameplay
         {
             EnsureSpawnPosesReady();
 
-            Debug.Log($"<color=#00FF00>[FLOW-5] [ServerVesselInit] OnPlayerReadyToSpawnAsync - SpawnVesselAndInitialize for {player.NetName.Value}</color>");
+            CSDebug.LogVerbose(CSLogChannel.NetworkFlow, $"<color=#00FF00>[FLOW-5] [ServerVesselInit] OnPlayerReadyToSpawnAsync - SpawnVesselAndInitialize for {player.NetName.Value}</color>");
             SpawnVesselAndInitialize(player.OwnerClientId, player);
 
-            Debug.Log($"<color=#00FF00>[FLOW-5] [ServerVesselInit] Vessel spawned. Waiting {postSpawnDelayMs}ms for replication...</color>");
+            CSDebug.LogVerbose(CSLogChannel.NetworkFlow, $"<color=#00FF00>[FLOW-5] [ServerVesselInit] Vessel spawned. Waiting {postSpawnDelayMs}ms for replication...</color>");
             // Wait for the vessel NetworkObject to fully replicate before telling clients
             using (LoadInsights.Measure(LoadInsightCategory.ScriptedDelay,
                        $"postSpawnDelayMs before NotifyClients ({postSpawnDelayMs}ms)", isWait: true))
@@ -399,7 +399,7 @@ namespace CosmicShore.Gameplay
                 await UniTask.Delay(postSpawnDelayMs, DelayType.UnscaledDeltaTime, cancellationToken: ct);
             }
 
-            Debug.Log($"<color=#00FF00>[FLOW-5] [ServerVesselInit] NotifyClients for {player.NetName.Value}</color>");
+            CSDebug.LogVerbose(CSLogChannel.NetworkFlow, $"<color=#00FF00>[FLOW-5] [ServerVesselInit] NotifyClients for {player.NetName.Value}</color>");
             NotifyClients(player);
         }
 
