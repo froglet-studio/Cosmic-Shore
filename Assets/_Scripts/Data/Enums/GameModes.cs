@@ -77,5 +77,11 @@ namespace CosmicShore.Data
         // only mode whose score comes from vessel-vs-vessel gunnery. See
         // _Scripts/Controller/Arcade/DOGFIGHT.md.
         DogFight = 41,
+        // ScarabScramble (42): the Scarab-only party game - the accessible sibling of Astro
+        // League. Every white (omni) crystal you fly through becomes YOUR ball, permanently
+        // your colour; roll it through any of the arena's glowing hoops and your DOMAIN scores.
+        // Goals stop nothing (continuous play, no kickoffs), there are no own goals, and the
+        // first domain to the goal target wins. See _Scripts/Controller/Arcade/SCARABSCRAMBLE.md.
+        ScarabScramble = 42,
     }
 }

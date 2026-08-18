@@ -55,6 +55,9 @@ namespace CosmicShore.ScriptableObjects
         /// <summary>Dog Fight point target used when <see cref="dogFightPointTarget"/> is 0 (auto/default).</summary>
         public const int DefaultDogFightPointTarget = 90;
 
+        /// <summary>Scarab Scramble goal target used when <see cref="scarabScrambleGoalTarget"/> is 0 (auto/default).</summary>
+        public const int DefaultScarabScrambleGoalTarget = 10;
+
         [Header("Live counts - used at runtime. 0 = auto/default (edit via FrogletTools > Game Modes > End Game Conditions)")]
         [Tooltip("HexRace crystals to end the race. 0 = auto-calc from the track waypoints.")]
         [Min(0)] public int hexRaceCrystalCount = 0;
@@ -95,6 +98,12 @@ namespace CosmicShore.ScriptableObjects
                  "0 = default (120).")]
         [Min(0)] public int dogFightPointTarget = 90;
 
+        [Tooltip("Scarab Scramble goals a DOMAIN needs to win (race to N). A goal = one of your " +
+                 "domain's forged balls threaded through any hoop; teammates pool. With abundant " +
+                 "crystals and continuous play, 10 reads as a 3-5 minute party match. " +
+                 "0 = default (10).")]
+        [Min(0)] public int scarabScrambleGoalTarget = 10;
+
         [Header("Build baseline - what a shipping build uses. Set via the tool's \"Set Build Values\" button.")]
         [Min(0)] public int hexRaceCrystalCountBuild = 0;
         [Min(0)] public int crystalCaptureCrystalCountBuild = 20;
@@ -105,6 +114,7 @@ namespace CosmicShore.ScriptableObjects
         [Min(0)] public int ribcagePrismTargetBuild = 2000;
         [Min(0)] public int wildlifeKillTargetBuild = 250;
         [Min(0)] public int dogFightPointTargetBuild = 90;
+        [Min(0)] public int scarabScrambleGoalTargetBuild = 10;
 
         [Tooltip("When on, a build first copies the Build baseline onto the Live counts, so test values are never shipped.")]
         public bool autoRestoreBuildValuesBeforeBuild = true;
@@ -181,6 +191,13 @@ namespace CosmicShore.ScriptableObjects
         /// </summary>
         public int GetDogFightPointTarget() => dogFightPointTarget > 0 ? dogFightPointTarget : DefaultDogFightPointTarget;
 
+        /// <summary>
+        /// Scarab Scramble goal target ("first domain to N goals"): the configured value when
+        /// &gt; 0, otherwise <see cref="DefaultScarabScrambleGoalTarget"/>. Compared against a
+        /// DOMAIN SUM of <see cref="CosmicShore.Data.IRoundStats.GoalsScored"/>, so teammates pool.
+        /// </summary>
+        public int GetScarabScrambleGoalTarget() => scarabScrambleGoalTarget > 0 ? scarabScrambleGoalTarget : DefaultScarabScrambleGoalTarget;
+
         /// <summary>True when every Live count (used at runtime) already equals its Build baseline.</summary>
         public bool LiveMatchesBuild =>
             hexRaceCrystalCount == hexRaceCrystalCountBuild &&
@@ -191,7 +208,8 @@ namespace CosmicShore.ScriptableObjects
             rampagePrismTarget == rampagePrismTargetBuild &&
             ribcagePrismTarget == ribcagePrismTargetBuild &&
             wildlifeKillTarget == wildlifeKillTargetBuild &&
-            dogFightPointTarget == dogFightPointTargetBuild;
+            dogFightPointTarget == dogFightPointTargetBuild &&
+            scarabScrambleGoalTarget == scarabScrambleGoalTargetBuild;
 
         /// <summary>Copy the Build baseline onto the Live counts (build → live) - used by the build auto-restore.</summary>
         public void ApplyBuildValues()
@@ -205,6 +223,7 @@ namespace CosmicShore.ScriptableObjects
             ribcagePrismTarget = ribcagePrismTargetBuild;
             wildlifeKillTarget = wildlifeKillTargetBuild;
             dogFightPointTarget = dogFightPointTargetBuild;
+            scarabScrambleGoalTarget = scarabScrambleGoalTargetBuild;
         }
 
         /// <summary>Snapshot the current Live counts as the Build baseline (live → build) - used by "Set Build Values".</summary>
@@ -219,6 +238,7 @@ namespace CosmicShore.ScriptableObjects
             ribcagePrismTargetBuild = ribcagePrismTarget;
             wildlifeKillTargetBuild = wildlifeKillTarget;
             dogFightPointTargetBuild = dogFightPointTarget;
+            scarabScrambleGoalTargetBuild = scarabScrambleGoalTarget;
         }
     }
 }
