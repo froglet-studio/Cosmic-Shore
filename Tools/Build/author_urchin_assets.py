@@ -155,15 +155,25 @@ add(f"{EFFECTS}/Effect Containers/VesselContainers/UrchinImpactorDataContainer.a
     f"  - {aref('VesselHapticsByCrystalEffect')}\n")
 
 # --- the three ability assets -------------------------------------------------
-# SPACE: the aimed volley. Costs ammo, chains by default.
-add(f"{ACTIONS}/UrchinSpikeVolleyAction.asset", "UrchinSpikeVolleyAction", "UrchinSpikeActionSO",
+# CHARGE: the one spike weapon, both shots. TAP = the aimed shotgun (ConcentricRings, ammo);
+# HOLD-then-RELEASE = the omni burst, free, with the spike count taken from the hold. It was
+# two abilities on two triggers until the merge; the freed trigger now carries the track.
+# repeatWhileHeld is OFF - the press is semi-automatic and the hold belongs to the charge.
+add(f"{ACTIONS}/UrchinSpikeAction.asset", "UrchinSpikeAction", "UrchinSpikeActionSO",
     "  firingPattern: 2\n"          # ConcentricRings - the shotgun
-    "  repeatWhileHeld: 1\n"
+    "  repeatWhileHeld: 0\n"
     "  barrageSpikeCount: 36\n"
     "  ringCount: 3\n"
     "  spikesPerRing: 3\n"          # PER MUZZLE - both guns fire, so 2x this
     "  coneHalfAngleDegrees: 9\n"
     "  centerSpike: 1\n"
+    "  chargeEnabled: 1\n"
+    "  minChargeSeconds: 0.35\n"
+    "  maxChargeSeconds: 2.5\n"
+    "  chargedSpikesAtMin: 6\n"
+    "  chargedSpikesAtMax: 36\n"
+    "  chargedAmmoCost: 0\n"
+    "  chargedProjectileSpeed: 40\n"
     "  ammoIndex: 0\n"
     "  ammoCost: 0.15\n"
     "  firingRate: 3\n"
@@ -173,7 +183,7 @@ add(f"{ACTIONS}/UrchinSpikeVolleyAction.asset", "UrchinSpikeVolleyAction", "Urch
     "  generationsAtRestingCharge: 1\n"
     "  generationsAtFullCharge: 4\n"
     "  generationRangeFalloff: 0.75\n"
-    "  chainsOnChargeUpgrade: 0\n")
+    "  chainsOnChargeUpgrade: 1\n")
 
 # Depth ladder, worst case per SEEDED hit (every child finding fresh enemy mass), from
 # FireSpherical's own formula points = 2*(energy+3) with children at energy-1:
@@ -188,21 +198,20 @@ add(f"{ACTIONS}/UrchinSpikeVolleyAction.asset", "UrchinSpikeVolleyAction", "Urch
 # (<= 6 x 14 = 84 chain spikes/frame). The real-world count is far below the worst case
 # because a converted prism stops accepting spikes, but the budget survives the worst case.
 
-# CHARGE: the free omni barrage. "Fire free spikes in all directions that steal blocks,
-# and even other player's trails" - so ammoCost 0, and no chain until Overcharge.
-add(f"{ACTIONS}/UrchinSpikeBarrageAction.asset", "UrchinSpikeBarrageAction", "UrchinSpikeActionSO",
-    "  firingPattern: 1\n"
-    "  repeatWhileHeld: 0\n"
-    "  ammoIndex: 0\n"
-    "  ammoCost: 0\n"
-    "  firingRate: 1\n"
-    "  projectileSpeed: 40\n"
-    "  projectileTime: 2\n"
-    "  projectileScale: 1\n"
-    "  generationsAtRestingCharge: 1\n"
-    "  generationsAtFullCharge: 4\n"
-    "  generationRangeFalloff: 0.75\n"
-    "  chainsOnChargeUpgrade: 1\n")
+# SPACE: the track projector. A straight 100u single-lane stretch of the pilot's own trail,
+# laid ahead of the nose so the vessel has something to grind in open space. The cooldown is
+# the Squirrel boost ring's 20s and is deliberately NOT elemental - TIME is Slip's.
+add(f"{ACTIONS}/UrchinTrackAction.asset", "UrchinTrackAction", "UrchinTrackActionSO",
+    "  trackLength: 100\n"
+    "  prismSpacing: 8\n"
+    "  prismScale: {x: 3, y: 3, z: 6}\n"
+    "  forwardOffset: 40\n"
+    "  leadSeconds: 0.35\n"
+    "  spawnPerFrame: 8\n"
+    "  cooldown: 20\n"
+    "  lengthMultiplierAtFullSpace: 2\n"
+    "  minLengthMultiplier: 0.4\n"
+    "  upgradeExtraLength: 100\n")
 
 # TIME: detach + ghost.
 add(f"{ACTIONS}/UrchinSlipAction.asset", "UrchinSlipAction", "UrchinSlipActionSO",
