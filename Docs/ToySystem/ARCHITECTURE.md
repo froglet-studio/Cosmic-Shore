@@ -897,14 +897,22 @@ continuity transitions may run:
 The belt is what you fly *through*; the **run** is what makes the wander a place you go to and come
 back from. Starting one does three things, and all three are undone when it ends:
 
-- **A bare canvas.** The host cell is handed back to its environment-free config — the Blob
-  (`Cell.EnvironmentFreeConfig`, new accessor) — through the one sanctioned entry point,
-  `Cell.RequestCellSwap(blob, clearLooseTrailMass: true)`. Re-selecting the config the cell is
+- **A bare canvas.** The host cell is handed its **bare-canvas** config — the one that grows
+  nothing (`Cell.BareCanvasConfig`: no `EnvironmentPrefab` **and** a `SpawnProfile` listing no
+  flora and no fauna, which is `Barren`) — through the one sanctioned entry point,
+  `Cell.RequestCellSwap(canvas, clearLooseTrailMass: true)`. Re-selecting the config the cell is
   already on is the documented freestyle **reset**, which is exactly what starting a wander should
   mean. It is requested *before* the belt's stock build so both join ONE load-veil hold instead of
   stacking two covers. Authored off (`revertCellOnStart`) if a designer wants the wander to happen
-  inside whatever world is up; with no environment-free config in the cell's list it warns and
-  leaves the world alone.
+  inside whatever world is up; with no bare config it falls back to the cheapest environment-free
+  one, and with none of those it warns and leaves the world alone.
+
+  This used to read `Cell.EnvironmentFreeConfig` — "the first config with no `EnvironmentPrefab`",
+  which was the Blob and was therefore also bare. **Those are two different properties**, and the
+  Lattice cell separated them: it authors no environment (so it boots instantly, and it is now
+  Menu_Main's boot world) and then grows a 21,600-prism forest out of eight seeds — cheap to
+  build, the opposite of empty. Reverting a wander onto it would have grown a garden under the
+  belt's own 30,000 transported prisms. See `Docs/ECOSYSTEM.md` §36.10.
 - **A rolling tether.** The trail follows you as a ribbon of exactly `tetherPrisms` (100): as you
   lay at the head, the oldest prism at the tail withers and **recycles back into the pool it came
   from**, so the next prism you lay is very often the one that just left. Turn around and your trail

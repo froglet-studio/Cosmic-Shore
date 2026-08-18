@@ -198,6 +198,17 @@ its GameObject lists it in `m_Component`.
   every human diffing the file reads it as misplaced. Serialize enum fields as
   their INTEGER value (`condition: 1`), and get the integer from the C# —
   an enum with explicit values is not its declaration order.
+- **Authoring a whole new asset FOLDER: emit its `.meta` too, or Unity re-mints it.** A directory
+  under `Assets/` is itself an asset and needs `fileFormatVersion: 2` / `guid:` /
+  `folderAsset: yes` / `DefaultImporter:`. Without it Unity generates one on next import — fine
+  locally, and a fresh guid on every other machine, so the folder shows as an untracked change
+  forever. Same uniqueness assert as a script meta.
+- **Mint asset guids DETERMINISTICALLY when a script emits a whole asset set.** `uuid4()` is right
+  for a one-off, wrong for a generator with `--check`: a re-run mints new guids, every
+  cross-reference inside the set changes, and the diff is total. `md5(f"<project>/<set>/{name}")`
+  is stable across runs and machines, so `--check` compares content instead of identity — and the
+  uniqueness assert still applies (sweep every `.meta` repo-wide and confirm each new guid appears
+  exactly once).
 - **CHANGE a component's TYPE in place, by rewriting its class id and KEEPING its
   fileID.** Swapping `SphereCollider` → `CapsuleCollider` reads like an excise+add,
   and doing it that way is strictly worse: a new fileID means editing the owning

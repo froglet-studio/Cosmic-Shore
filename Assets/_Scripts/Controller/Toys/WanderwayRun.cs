@@ -11,8 +11,8 @@ namespace CosmicShore.Gameplay
     ///
     /// Three things make the wander its own place:
     ///
-    ///   • A BARE CANVAS. Starting a run reverts the host cell to its environment-free config —
-    ///     the Blob (<see cref="Cell.EnvironmentFreeConfig"/>) — through the one sanctioned entry
+    ///   • A BARE CANVAS. Starting a run reverts the host cell to its bare-canvas config — the
+    ///     one that grows nothing (<see cref="Cell.BareCanvasConfig"/>) — through the one sanctioned entry
     ///     point, <see cref="Cell.RequestCellSwap"/>. That is the same explicit, player-initiated
     ///     world change the Cell Selector performs (suction out → veil → bloom in); the wander is
     ///     what you look at, not an authored world you are flying through.
@@ -112,18 +112,24 @@ namespace CosmicShore.Gameplay
                 _hasHome = true;
             }
 
-            RevertCellToBlob(localVessel);
+            RevertCellToBareCanvas(localVessel);
             ArmTether();
         }
 
         /// <summary>
-        /// Hand the cell back to its cheap environment-free config. Deliberately requested even
-        /// when the cell is ALREADY on that config: re-selecting the same config is the documented
-        /// freestyle RESET (clear the world, grow it back fresh), which is exactly what starting a
-        /// wander should mean. The swap raises its own load veil and the conveyor's stock build
-        /// joins the same hold, so the player pays one cover, not two.
+        /// Hand the cell its BARE CANVAS config - the one that grows nothing. Deliberately
+        /// requested even when the cell is ALREADY on that config: re-selecting the same config is
+        /// the documented freestyle RESET (clear the world, grow it back fresh), which is exactly
+        /// what starting a wander should mean. The swap raises its own load veil and the
+        /// conveyor's stock build joins the same hold, so the player pays one cover, not two.
+        ///
+        /// <para><see cref="Cell.BareCanvasConfig"/>, not <c>EnvironmentFreeConfig</c>: a wander
+        /// wants an EMPTY world, and "authors no environment" stopped implying that once the
+        /// Lattice cell existed - it builds instantly and then grows a 21,600-prism forest out of
+        /// eight seeds, which is the world a wander is trying to leave (Docs/ECOSYSTEM.md
+        /// §36.10).</para>
         /// </summary>
-        void RevertCellToBlob(IVesselStatus localVessel)
+        void RevertCellToBareCanvas(IVesselStatus localVessel)
         {
             if (!_cfg.RevertCellOnStart) return;
 
@@ -135,16 +141,17 @@ namespace CosmicShore.Gameplay
                 return;
             }
 
-            var blob = cell.EnvironmentFreeConfig;
-            if (!blob)
+            var canvas = cell.BareCanvasConfig;
+            if (!canvas)
             {
                 CSDebug.LogWarning($"[Wanderway] Cell '{cell.name}' has no environment-free config " +
                                    "(every CellConfig authors an EnvironmentPrefab) - leaving the world as it is. " +
-                                   "Add a Blob-style config to the cell's list to get the bare canvas.");
+                                   "Add a bare config (no EnvironmentPrefab, no flora or fauna in its " +
+                                   "SpawnProfile - e.g. Barren) to the cell's list to get the bare canvas.");
                 return;
             }
 
-            cell.RequestCellSwap(blob, clearLooseTrailMass: true);
+            cell.RequestCellSwap(canvas, clearLooseTrailMass: true);
         }
 
         // ── Tether ───────────────────────────────────────────────────────────
