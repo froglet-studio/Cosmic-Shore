@@ -28,7 +28,28 @@ MonoBehaviour:
     Max: 2.5
     element: 2
   interiorPrismCount: 28
-  burstPrismCount: 44
-  burstRadiusMultiplier: 2.2
   brickScale: {x: 2.5, y: 1.5, z: 8}
   growthRate: 1
+  dais:
+    PairCount: 10
+    FeathersPerWing: 9
+    TierCycleOffset: 0
+    ShoulderRadius: 1.3
+    ShoulderOffsetDeg: 5
+    FanStartDeg: 6
+    FanEndDeg: 78
+    FanShape: 1.1
+    RootOffsetStart: 0.1
+    RootOffsetEnd: 0.35
+    BladeLengthStart: 0.5
+    BladeLengthEnd: 1.9
+    BladeWidthStart: 0.1
+    BladeWidthEnd: 0.23
+    BladeGrowthShape: 1.3
+    BladeThickness: 0.05
+    BladeRollEndDeg: 22
+    SunRadius: 1.95
+    SunApparentDiameter: 1.25
+    DishRise: 0.4
+    DishPower: 2
+  daisPrismsPerFrame: 24

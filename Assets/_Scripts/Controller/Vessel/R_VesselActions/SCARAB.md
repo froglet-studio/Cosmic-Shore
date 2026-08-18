@@ -4,8 +4,8 @@
 > `Scarab.prefab` (Sparrow clone, weapons excised), `ScarabVesselTransformer` (velocity-integrator
 > throttle along the nose + Snap Dash), `ScarabJukeController` (free dash, `OnJukeFired`),
 > `ScarabCavitationBlast` + `AOEScarabCavitation.prefab` + its elemental-debuff container,
-> `PlaceSwitchActionSO`/executor + `ScarabSwitch` (toy ring, Vogel interior fill, plane-crossing
-> trigger, outward burst, MASS-5 shielded prisms), `ScarabBallForgeByCrystalEffectSO` (every omni
+> `PlaceSwitchActionSO`/executor + `ScarabSwitch` + `ScarabWingDais` (toy ring, Vogel interior
+> fill, plane-crossing trigger, the ten-pair scarab-wing dais it pays out, MASS-5 shielded body), `ScarabBallForgeByCrystalEffectSO` (every omni
 > crystal forges a ball at the vessel's TRUE velocity, dash included; SPACE scales it to ×4),
 > the four-row ability map, containers, camera SO, class card, HUD view/controller, and all
 > registrations (arcade card, prefab container, network prefabs, vessel-changer toy). In-editor
@@ -750,15 +750,115 @@ different outcome.
 
 Placement: on the **course**, not the nose (mid-drift you throw the switch where you are
 *going*), at a base distance ahead *(proposal: 150u — the mode's own kickoff-line distance)*.
-Bricks claim occupancy via `PrismSpatialIndex.TryReserve` before spawning (claim-before-spawn —
-physics queries are blind to fresh prisms for 0.6s), spawn through the pooled
-`PrismEventChannelWithReturnSO` channel the skyburst block-creator uses, and **bloom in** on the
-prism clock (`TargetScale` + `SetGrowthRate` + `Initialize` — the one growth engine; never tween
-scales). Bricks are **plain**: never super-shielded (a forbidden grant that also exits the food
-web), and not shielded, since a shielded prism is a *free pass* for a ball rather than armour.
+Bricks spawn through the pooled `PrismEventChannelWithReturnSO` channel the skyburst
+block-creator uses, and **bloom in** on the prism clock (`AdmitTargetScale` + `TargetScale` +
+`SetGrowthRate` — the one growth engine; never tween scales).
 
 Cost: one **switch charge** *(proposal: 3 charges, refilled by crystals alongside energy — or a
 single shared meter, §15)*.
+
+> **Superseded (2026-08-18).** This section used to say bricks "claim occupancy via
+> `PrismSpatialIndex.TryReserve`" and are "**plain**: never super-shielded … and not shielded".
+> Both have been overtaken by §5.1 below, deliberately and for stated reasons — the reservation
+> because it is a per-peer VETO on an authored structure, and the tier rule because §4.1b turned
+> out to make each tier mean something different and worth having. Do not restore either from
+> this paragraph.
+
+### 5.1 The payout — a scarab-wing DAIS
+
+A struck switch does not scatter prisms outward. It raises a **rosette**: ten mirrored pairs of
+scarab-wing fans meeting all the way around the spent ring, with a **super-shielded cube** on each
+pair's axis standing in for the scarab's sun disc — which the stellation draws as an eight-pointed
+star. Geometry: `ScarabWingDais` (pure closed-form, no scene dependency); shape:
+`ScarabWingDaisSettings` on `PlaceSwitchActionSO`; tests: `ScarabWingDaisTests`.
+
+Each wing is a **fan** of blade prisms rooted at a shoulder just off its pair's axis, sweeping
+from "pointing radially outward, alongside the sun" round to "pointing tangentially, reaching into
+the neighbouring pair", with blade LENGTH and WIDTH rising together along the sweep and a
+progressive roll shingling them. Along the wing the tier cycles **base → shielded → danger**,
+three complete cycles at the shipped nine blades, all in the placer's own domain.
+
+**Why the wings shingle instead of tiling their own sectors.** A blade only reads as its own unit
+when the next blade's TIP has moved further than the blade is WIDE — about 7.6° of fan step at the
+shipped sizes, so a wing needs ~60°+ of sweep. Twenty wings around a circle have 18° each. Tiling
+and legibility are therefore incompatible at ten pairs, and the overlap is the resolution rather
+than a compromise: it is also what the reference scarab does, where the two wings overlap each
+other and the body. A version that constrained each wing inside its own sector was built and
+rejected — its blades nest into a single spike.
+
+**The three tiers are three different things to the ball** (§4.1b), which is what makes the cycle
+gameplay rather than stripes:
+
+| tier | to a BALL | to a PILOT |
+|---|---|---|
+| base | eaten; costs speed in proportion to volume | nothing |
+| shielded | shield popped, prism left standing, **no speed lost**; a forged ball is *turned* | nothing |
+| danger | identical to base — the code forbids a per-tier drag multiplier | slow + all-element debuff + boost reset |
+| sun core (super) | inert to the match ball; a **forged** ball dies on it and strips the super-shield | nothing |
+
+**A shielded blade is authored at ⅓ scale, and that is not a tuning choice.** A shield's semi-axes
+are `CIRCUMSCRIBING_SCALE × the box half-extents` = **1.5 × the box's full size**, so an unfitted
+shielded blade renders THREE TIMES the length of its neighbours and destroys the size gradient the
+wing is built on. `ScarabWingDais.ShieldedFit` is derived from the generator's own constant
+(`1 / CIRCUMSCRIBING_SCALE`) and applied UNIFORMLY so the blade's aspect — its identity — is exact.
+Same rule in the other direction for the sun: `SunApparentDiameter` states the star you want to
+SEE and the cube edge is derived, because a designer should never have to divide by 3 in their head.
+This is `Docs/ECOSYSTEM.md §35`'s "fit the PRISM, never the pattern".
+
+**Four laying rules, each of which was a live defect in the first pass:**
+
+1. **`AdmitTargetScale` goes AFTER `Initialize`, not before.** `Initialize` → `ResetState` →
+   `RestoreAuthoredScaleWindow()` undoes any widening and then re-clamps the target against the
+   restored window. The interactive prism pool's window is `(0.5,0.5,0.5)..(40,10,10)` and the dais
+   states blades 38 long and 0.33 thin, so getting this backwards is the difference between the
+   authored rosette and a field of 10-unit stubs — silently, with no error anywhere.
+2. **`ChangeTeam`, never the `Domain` setter.** The setter routes to `SetInitialTeam`, which is a
+   NO-OP once the team is non-Blue, and a pooled prism arrives wearing its last life's colour.
+3. **Kind flags are cleared before `Initialize`.** The Interactive pool path does not reset them
+   (the Boost path does) and `Initialize` re-engages whatever it finds, so a recycled prism would
+   arrive wearing its previous tier.
+4. **No occupancy reservation.** `TryReserve` answers from each peer's OWN live prism set, and a
+   switch is rebuilt independently on every peer from a replicated input event — so a reservation
+   is a per-peer veto on an authored structure and the peers end up with different prisms in
+   different places, permanently, because none of this is replicated. `BoostRingBuilder`, the
+   reference structure builder, does not reserve either.
+
+The rosette is laid **over several frames**, ordered ring-outward (every wing's blade 0, then every
+wing's blade 1, …) with the ten suns igniting LAST — so the payout reads as a monument going up
+rather than as mass appearing, and a ~190-prism burst never lands in one frame.
+
+**Cost, measured from the shipped generator** (`ring radius 20`, the authored default):
+
+| quantity | value |
+|---|---|
+| prisms per dais | **190** (10 pairs × 2 wings × 9 blades + 10 suns) |
+| box volume | **15,608** (≈ 976 nominal-16 prisms) |
+| always-on convex MeshColliders | **70** (60 shielded + 10 super-shielded) |
+| LOD-cullable BoxColliders | 120 |
+| outer reach | 56.5u, i.e. 2.8 × the ring radius |
+
+Everything scales with the ring radius, so **Mass grows the whole rosette with the switch** and
+there is still exactly one size dial (§7's one-parameter-per-element contract). `FeathersPerWing`
+and `PairCount` are the cost dials; the always-on collider count is `PairCount × (2×⌊blades/3⌋ + 1)`
+and it is the number to watch, not the prism count.
+
+⚠ **This makes §8's phase-ladder re-authoring mandatory, not optional.** Astro League's cell is
+authored `RestlessEnterVolume 30600 / FrenzyEnterVolume 32000` over a 30,000 super-shielded lining
+floor — a **+600** gameplay band and **+2,000** to Frenzy. One dais is 15,608, i.e. **7.8× the
+entire Calm→Frenzy span**; the switch BODY alone (28 bricks × 30) was already 840 and blew Restless
+before this change. The ladder must be re-measured and re-authored against real Scarab play. That
+is a playtest decision and is deliberately not made here.
+
+⚠ **Known, pre-existing, NOT fixed here: the switch diverges across peers.** The charge gate is
+evaluated against the per-peer, non-replicated `ResourceSystem` meter, and `PlaceSwitch` returns
+before creating the GameObject — so on a peer whose meter is empty the switch, its body and its
+dais simply do not exist, forever. The Scarab's `Switch Charges` meter starts at 0.34 (one charge)
+with zero passive gain and is refilled only by a crystal effect replayed to the OWNING client, so
+in a 3-peer session the second switch a client places is invisible to the third. The dais makes
+this more visible, not worse. The in-repo precedent for the fix is `NetElementUnlocks` on
+`R_VesselActionHandler` — the Mass-5 shield flag resolves identically on every peer precisely
+because it reads replicated unlock bits rather than a local meter. Placement centre and axis also
+differ by (latency × speed) because each peer reads its own interpolated transform.
 
 ---
 
@@ -877,11 +977,13 @@ their death positions, on-court once the cleanup crew is released at Restless+. 
 therefore rises exactly when the pitch is crowded, which is emergent from the food web rather
 than authored.
 
-**The volume ladder needs a retune.** The mode's phase window is authored for Rhino trail
-(~0.75 volume/prism): Restless at LiveVolume 30,600 over a 30,000 super-shielded lining floor —
-a +600 gameplay band. Switch bodies are placed mass and will move that number, so the mode's
-`PhaseThresholds` must be re-measured and re-authored when the Scarab ships, with the stated side
-effect that Rhino-only matches silt differently. This is the ecosystem masterplan's
+**The volume ladder needs a retune, and §5.1 makes it urgent.** The mode's phase window is
+authored for Rhino trail (~0.75 volume/prism): Restless at LiveVolume 30,600 over a 30,000
+super-shielded lining floor — a +600 gameplay band, +2,000 to Frenzy. Switch bodies are placed
+mass and already move that number (28 bricks x 30 = **840**, past Restless on the first switch);
+the scarab-wing dais a struck switch pays out is **15,608**, i.e. 7.8x the whole Calm→Frenzy span.
+So the mode's `PhaseThresholds` must be re-measured and re-authored against real Scarab play, with
+the stated side effect that Rhino-only matches silt differently. This is the ecosystem masterplan's
 author-explicit-volumes clause arriving on the switch dial; it is a playtest decision, not a
 free parameter.
 
@@ -955,7 +1057,8 @@ tool in any mode with opponents. Nothing in the kit requires an arena to functio
 | `_Scripts/.../R_VesselActions/ScarabCavitationBlast.cs` | Rides `OnJukeFired`: spawns the spherical blast down-range along the dash, CHARGE-scaled cooldown, CHARGE-5 `DevastatingOverride` (§3.4, §7) |
 | `_Scripts/.../Vessel Explosion Effects/VesselElementalDebuffByExplosionEffectSO.cs` | Platform addition: the danger-prism elemental debuff lifted onto the **explosion** impactor (all four elements, decaying, per-victim anti-spam) |
 | `_Scripts/Controller/Projectiles/AOEExplosion.cs` + `Impactors/ExplosionImpactor.cs` | Platform additions: `InitializeStruct.DevastatingOverride` + `ApplyDevastatingOverride` + `ExplosionImpactor.SetDevastating`, mirroring the existing `AffectSelfOverride` pair |
-| `_Scripts/.../Data Containers/PlaceSwitchActionSO.cs` + `Executors/PlaceSwitchActionExecutor.cs` | Charge gate, placement, occupancy claim, pooled spawn, spend (§5) |
+| `_Scripts/.../Data Containers/PlaceSwitchActionSO.cs` + `Executors/PlaceSwitchActionExecutor.cs` | Charge gate, placement, pooled spawn, spend, dais shape (§5) |
+| `_Scripts/.../R_VesselActions/ScarabWingDais.cs` + `_Scripts/Tests/Editor/ScarabWingDaisTests.cs` | The payout rosette's closed-form geometry + its contract tests (§5.1) |
 | `_Scripts/.../Impactors/BallForgeCrystalImpactor.cs` | `OmniCrystalImpactor` subclass: the threshold branch — collect as usual, or materialise a ball with inherited velocity and skip the collect (§4.1) |
 | Mode-side: **a ball prefab + network registration** (neither exists), ball registry with spawn/despawn, per-ball goal state, per-ball attribution, `Switch` object (reflector + mouth detector), boundary-death path, no-generation zone, and a goal-outcome decision (§15.13) | §4.5, §5 — scoped as mode work, not vessel work |
 
@@ -1068,6 +1171,16 @@ Vessel Elemental Morphs**, **Audit Corridor Vessel Radii**, **Validate Speed Tun
     mouth pays energy and the switch breaks; **an enemy ball threading it pays you too**; a ball
     striking the panel off-mouth **deflects** (this is the §5 crux — if it merely slows, the
     analytic reflector is not wired and the mechanic does not exist).
+10a. **The dais** (§5.1), the one thing a playtest must confirm that no offline check can:
+    on the strike the rosette blooms **ring-outward** over ~8 frames and the ten sun-stars ignite
+    LAST. Then look for the four failures the geometry cannot see: (a) blades that all read the
+    same LENGTH mean `AdmitTargetScale` is not landing and the pool clamped them to 10 — the whole
+    gradient is the motif, so this is a fail, not a nit; (b) shielded blades reading three times
+    their neighbours mean `ShieldedFit` is not applied; (c) any prism inside the ring's mouth;
+    (d) the sun cores reading as ordinary blocks rather than eight-pointed stars means the
+    super-shield never engaged. Also fly the rim: the outermost blades are DANGER, so brushing
+    them must slow and debuff you. Frame time during the bloom is the perf question —
+    `daisPrismsPerFrame` is the dial.
 11. **Mass 5 / Charge 5** (seeded): switch survives its first trigger; threshold hit yields two
     balls.
 12. **Conversion rate**: over ~20 generated balls, count goals — target ~80%. This is the headline

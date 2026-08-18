@@ -8,10 +8,10 @@ namespace CosmicShore.Gameplay
     /// Design: R_VesselActions/SCARAB.md §5. Costs one switch charge (a normalized
     /// ResourceSystem meter fraction, refilled by crystals — the Sparrow missile idiom).
     ///
-    /// v1 scope: the ring BODY (domain-coloured prisms, bloomed in on the clock, occupancy-
-    /// claimed). The ball-deflecting analytic reflector and the mouth-crossing energy trigger
-    /// are Astro League mode work (the ball never bounces off prisms — SCARAB.md §5's crux) and
-    /// land with the multi-ball pass.
+    /// v1 scope: the ring BODY (domain-coloured prisms, bloomed in on the clock) plus the
+    /// scarab-wing DAIS it pays out when a ball threads it (<see cref="ScarabWingDais"/>). The
+    /// ball-deflecting analytic reflector is Astro League mode work (the ball never bounces off
+    /// prisms — SCARAB.md §5's crux) and lands with the multi-ball pass.
     ///
     /// Element scaling (SCARAB.md §7):
     /// - MASS → structure size (`switchScale` ElementalFloat, ×1 → ×2.5 on the ring radius; the
@@ -52,14 +52,6 @@ namespace CosmicShore.Gameplay
         [Tooltip("Prisms filling the DISC inside the ring at placement (a Vogel spiral, so the " +
                  "area fills evenly).")]
         [SerializeField, Range(4, 96)] int interiorPrismCount = 28;
-
-        [Tooltip("Prisms laid when a ball threads the switch — the same spiral CONTINUED outward " +
-                 "past the ring's edge, so the payout is the pattern growing rather than a second " +
-                 "effect.")]
-        [SerializeField, Range(0, 160)] int burstPrismCount = 44;
-
-        [Tooltip("How far past the ring radius the burst reaches, as a multiple of it.")]
-        [SerializeField, Min(1f)] float burstRadiusMultiplier = 2.2f;
         [Tooltip("Per-brick target scale. z runs along the ring tangent (prism forward), " +
                  "y points radially (thin), x is the ring's depth along the course axis.")]
         [SerializeField] Vector3 brickScale = new(2.5f, 1.5f, 8f);
@@ -67,13 +59,39 @@ namespace CosmicShore.Gameplay
                  "Docs/PRISM_ANIMATION.md).")]
         [SerializeField, Min(0.01f)] float growthRate = 1f;
 
+        [Header("Payout — the scarab-wing dais")]
+        [Tooltip("Shape of the rosette a threaded switch raises. Every distance is a multiple of " +
+                 "the RING RADIUS, so Mass grows the dais with the switch and there is still one " +
+                 "size dial. See ScarabWingDais for the motif and the fitting rules.")]
+        [SerializeField] ScarabWingDaisSettings dais = ScarabWingDaisSettings.Default;
+
+        [Tooltip("Prisms laid per frame while the dais blooms outward. The rosette is ~190 prisms " +
+                 "at the shipped shape, so laying it in one frame would spike; this is a pacing " +
+                 "dial, not a cap — every prism is always laid.")]
+        [SerializeField, Range(1, 96)] int daisPrismsPerFrame = 24;
+
         public int ResourceIndex => resourceIndex;
         public int InteriorPrismCount => interiorPrismCount;
-        public int BurstPrismCount => burstPrismCount;
-        public float BurstRadiusMultiplier => burstRadiusMultiplier;
         public Vector3 BrickScale => brickScale;
         public float GrowthRate => growthRate;
         public float RingRadius => ringRadius;
+        public int DaisPrismsPerFrame => daisPrismsPerFrame;
+
+        /// <summary>
+        /// The authored dais shape, with a fallback for the asset that predates it.
+        /// A struct field ADDED to an existing asset deserializes as all-zero — which here means
+        /// a zero-pair, zero-blade rosette, i.e. no payout at all and nothing on screen to say
+        /// why. <see cref="ScarabWingDaisSettings.PairCount"/> is range-gated at 3 in the
+        /// inspector, so zero can only mean "never authored".
+        /// </summary>
+        public ScarabWingDaisSettings Dais => dais.PairCount > 0 ? dais : ScarabWingDaisSettings.Default;
+
+        void OnValidate()
+        {
+            // Repair the pre-dais asset in place so the inspector shows the real motif rather
+            // than a field of zeros the first time someone opens it.
+            if (dais.PairCount <= 0) dais = ScarabWingDaisSettings.Default;
+        }
 
         public float ComputeCost(ResourceSystem rs)
         {

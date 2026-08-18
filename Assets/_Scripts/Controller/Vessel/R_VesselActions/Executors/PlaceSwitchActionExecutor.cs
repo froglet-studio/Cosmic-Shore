@@ -7,7 +7,7 @@ namespace CosmicShore.Gameplay
     /// <summary>
     /// Executes <see cref="PlaceSwitchActionSO"/>: gates on switch charges, spends one, and
     /// hands off to a <see cref="ScarabSwitch"/>, which owns the ring visual, the interior
-    /// prism fill, the pass-through detection and the outward burst. Per-vessel state lives
+    /// prism fill, the pass-through detection and the scarab-wing dais it pays out. Per-vessel state lives
     /// here (the SO is shared and stateless). Rides the normal R_VesselActionHandler
     /// ServerRpc→ClientRpc re-execution, so every peer builds the same switch from its
     /// replicated transform.
@@ -65,7 +65,7 @@ namespace CosmicShore.Gameplay
             var go = new GameObject($"ScarabSwitch::{status.PlayerName}");
             var sw = go.AddComponent<ScarabSwitch>();
             sw.Build(prismSpawnEvent, status, center, course, radius, so.BrickScale, so.GrowthRate,
-                     so.InteriorPrismCount, so.BurstPrismCount, so.BurstRadiusMultiplier);
+                     so.InteriorPrismCount, so.Dais, so.DaisPrismsPerFrame);
 
             resources.ChangeResourceAmount(so.ResourceIndex, -cost);
             CSDebug.Log($"[PlaceSwitch] Switch ring r={radius:F0} placed {distance:F0}u ahead.");
