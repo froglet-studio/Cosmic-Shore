@@ -31,3 +31,24 @@ Source: `quit-game-button` (`fabe7074`). The standalone `QuitGameButton.cs` was 
 
 PASS: the quit control is present in the settings panel and works with no missing scripts or exceptions; the rest of the panel is intact. FAIL: a missing button/script · a quit control that throws or does nothing · another settings control broken by the move.
 <!-- /archived:QA-UI-QUIT-BUTTON -->
+
+<!-- archived:QA-DOLPHIN-DRIFT-VELOCITY -->
+_Passed on build bleeding-edge @ 55b310a · Unity 6000.4.11f1.x · Windows, Unity Editor (2026-08-18, andrew)._
+
+### QA-DOLPHIN-DRIFT-VELOCITY ⬜ — drift holds velocity magnitude for its whole duration
+Source: PR #716 (`dolphin-drift-velocity`). The Dolphin now **holds its velocity magnitude for the duration of a drift** (`VesselTransformer` + `SingleStickVesselTransformer` + `Dolphin.prefab`). Touches the **shared** transformer, so re-check other single-stick vessels don't regress. Reference: `DOLPHIN_ENERGY_ECONOMY.md`, `Docs/UNITY_VERIFICATION_CHECKLIST.md`.
+
+1. Project compiles. Dolphin in freestyle: enter a drift — speed **holds** at its magnitude through the whole drift rather than bleeding off.
+2. Release the drift, then re-drift — the speed hold re-arms cleanly each time (watch the re-drift verification row in the checklist).
+3. Confirm it doesn't leak into non-drift flight (normal accel/decel unchanged when not drifting).
+4. Sanity-check another single-stick vessel (e.g. Serpent/Sparrow that share `SingleStickVesselTransformer`) — its drift/turn behaviour is unchanged.
+
+PASS: compiles; drift holds velocity for its full duration and re-arms on re-drift; non-drift flight unchanged; other single-stick vessels unaffected. FAIL: compile error · speed bleeding off during a drift · the hold not re-arming on re-drift · non-drift flight altered · another single-stick vessel regressing.
+<!-- /archived:QA-DOLPHIN-DRIFT-VELOCITY -->
+
+<!-- archived:QA-P2-LIFEFORM-MATRIX-MOONS -->
+_Passed on build bleeding-edge @ 55b310a · Unity 6000.4.11f1.x · Windows, Unity Editor (2026-08-18, andrew)._
+
+### QA-P2-LIFEFORM-MATRIX-MOONS ⬜ — element-crystal "moons" swallowed by the toy body
+Suspected pre-existing: the Lifeform Matrix's four crystal moons sit ~2.2 world units out while toys place at `toyBodyRadius = 22`. Look at the bench. PASS = the four moons are visible and distinct. FAIL = they are inside the sphere (then the fix is a placement value, not code).
+<!-- /archived:QA-P2-LIFEFORM-MATRIX-MOONS -->

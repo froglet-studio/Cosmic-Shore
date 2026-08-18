@@ -43,3 +43,10 @@ of duplicating it.
 - **Symptom:** Hitting a prism as the Sparrow shifts my movement (course is redirected) rather than rolling the vessel in place — matches the item's "still being deflected off-course" FAIL criterion.
 - **Definition of done:** QA item `QA-VESSEL-SPARROW-ROLL` passes.
 <!-- /devtask:QA-VESSEL-SPARROW-ROLL -->
+
+<!-- devtask:QA-CRYSTAL-EFFECTS -->
+### QA-CRYSTAL-EFFECTS — elemental crystal capture effect + omni-crystal bloom
+- **Failed on:** bleeding-edge @ 55b310a · Unity 6000.4.11f1.x · Windows, Unity Editor (2026-08-18, andrew)
+- **Symptom:** In HexRace: the crystal model and its breaking/collection effect look normal, but when a new crystal spawns in it POPS into existence instead of blooming in — the omni/crystal bloom-in (PR #724) is not playing on spawn.
+- **Definition of done:** QA item `QA-CRYSTAL-EFFECTS` passes.
+<!-- /devtask:QA-CRYSTAL-EFFECTS -->

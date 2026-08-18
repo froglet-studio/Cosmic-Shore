@@ -23,17 +23,17 @@ clean verdict on (asset-only, one-glance, or a single short check). Not a priori
 the P0 gates below still matter more; this is just "what can I knock out quickly." Refreshed
 every run, so it can lag reality by one submission.
 
-1. **QA-P2-LIFEFORM-MATRIX-MOONS** — one glance at the Lifeform Matrix bench: are the four crystal "moons" visible or swallowed by the sphere.
-2. **QA-CRYSTAL-EFFECTS** — collect an elemental crystal (capture effect) and watch an omni crystal appear (blooms in, not pops).
-3. **QA-DOLPHIN-SPEED-TUNE** — Dolphin freestyle, check three numbers: cruise ≈78, boost fill ≈3.6 s, peak ≈357.
-4. **QA-DOLPHIN-DRIFT-VELOCITY** — Dolphin freestyle, enter a drift: does the speed hold for the whole drift instead of bleeding off.
-5. **QA-VESSEL-SELF-TRAIL** — fly a tight loop so you cross your own just-laid trail: no skim/ram/slow off the fresh trail.
-6. **QA-UI-MODAL-STACK** — open the Arcade configure modal, close it three ways (✕, background tap, Home), confirm nav still works.
-7. **QA-PALETTE-DANGER-GOLD** — get danger + shielded prisms on screen (a populated cell) and check gold reads in the pastel family, danger isn't inverted.
+1. **QA-DOLPHIN-SPEED-TUNE** — Dolphin freestyle, check three numbers: cruise ≈78, boost fill ≈3.6 s, peak ≈357.
+2. **QA-DOLPHIN-CAPSULE-BLAST** — first an editor check: `_Prefabs/Projectile/AOEConicExplosion.prefab` has a **Capsule Collider** (not Sphere/missing); then a charged Dolphin crystal blast should fan wide-in-jaw-plane, growing in length.
+3. **QA-DOLPHIN-SKIM-ENERGY-CTA** — editor: the six HUD-variant prefabs have no missing scripts; then Dolphin skim → energy fills much slower, and the jaw gauge arms **lime** at full.
+4. **QA-VESSEL-SELF-TRAIL** — fly a tight loop so you cross your own just-laid trail: no skim/ram/slow off the fresh trail.
+5. **QA-UI-MODAL-STACK** — open the Arcade configure modal, close it three ways (✕, background tap, Home), confirm nav still works.
+6. **QA-PALETTE-DANGER-GOLD** — get shielded prisms of all three domains on screen (a populated cell / HexRace) and check gold reads in the pastel family.
+7. **QA-P2-DANGLING-CELLDATA** — a populated cell in freestyle: watch the Console for `LifeForm.Start()` / `Flora.Plant()` throws (PR #731 may have fixed this — verify which, if any, still throw).
 
-Editor-only, no play mode: **QA-PRISM-SHIELD-GPU-VISUALS** (run the jiggle test + glance for magenta) is nearly as cheap if you're already in the editor.
+Editor-only, no play mode: **QA-PRISM-SHIELD-GPU-VISUALS** (run the jiggle test + glance for magenta on Skim Race track prisms) is nearly as cheap if you're already in the editor.
 
-Tip: #1–#5 and #7 are all "one freestyle session in a populated cell" — load a lifeform-rich cell (Cell Selector → Yggdra/Hesperides) on the Dolphin and you can knock out several in a row.
+Tip: #1–#4, #6, #7 are all "one Dolphin freestyle session in a populated cell" — load a lifeform-rich cell (Cell Selector → Yggdra/Hesperides) on the Dolphin and knock out several in a row. #2/#3 start with a quick editor prefab glance.
 
 ## Priority 0 — gates. Nothing below matters if these fail.
 
@@ -687,16 +687,6 @@ Source: PR #717 (`dolphin-rampage-minigame`). A rebuild of the Rampage mode as t
 
 PASS: scene clean; the four intensities differ; the demolition race plays with the nucleus-coupled objective crystal and correct arrow tracking; the round resolves on the destruction target with a sane scoreboard; return/relaunch clean. FAIL: missing scripts · identical intensities (config race not fixed) · the objective arrow tracking the wrong crystal · AI stuck/not drifting · a round that won't resolve · leaked score on relaunch.
 
-### QA-DOLPHIN-DRIFT-VELOCITY ⬜ — drift holds velocity magnitude for its whole duration
-Source: PR #716 (`dolphin-drift-velocity`). The Dolphin now **holds its velocity magnitude for the duration of a drift** (`VesselTransformer` + `SingleStickVesselTransformer` + `Dolphin.prefab`). Touches the **shared** transformer, so re-check other single-stick vessels don't regress. Reference: `DOLPHIN_ENERGY_ECONOMY.md`, `Docs/UNITY_VERIFICATION_CHECKLIST.md`.
-
-1. Project compiles. Dolphin in freestyle: enter a drift — speed **holds** at its magnitude through the whole drift rather than bleeding off.
-2. Release the drift, then re-drift — the speed hold re-arms cleanly each time (watch the re-drift verification row in the checklist).
-3. Confirm it doesn't leak into non-drift flight (normal accel/decel unchanged when not drifting).
-4. Sanity-check another single-stick vessel (e.g. Serpent/Sparrow that share `SingleStickVesselTransformer`) — its drift/turn behaviour is unchanged.
-
-PASS: compiles; drift holds velocity for its full duration and re-arms on re-drift; non-drift flight unchanged; other single-stick vessels unaffected. FAIL: compile error · speed bleeding off during a drift · the hold not re-arming on re-drift · non-drift flight altered · another single-stick vessel regressing.
-
 ### QA-PRISM-DEATH-TIER ⬜ — death visuals wear the dying prism's tier + danger-prism detonations
 Source: PR #715 (`danger-prisms-explosions`). Prism **death visuals now wear the dying prism's TIER** (plain/danger/shielded/super-shielded), not just its domain; danger prisms carry a detonation gain with extended reach. `PrismDebris` + `PrismExplosion` changes, new EditMode suite `PrismDeathVisualTierTests`. Related: QA-VESSEL-AOE-IMPULSE, QA-PALETTE-*.
 
@@ -840,9 +830,6 @@ Known cosmetic gap: the prefab's world-space ParticleSystem child ignores the co
 ### QA-P2-DANGLING-CELLDATA ⬜ — the project-wide dangling `cellData` GUID
 `Clawfish`, `QuadFish`, `TermiteDrone`, the three `Worm*` prefabs, `oldWallFlora`, both cytoplasm prefabs and three scenes (including `Menu_Main`) still point at a `CellRuntimeDataSO` GUID that does not exist. Spawn each of those fauna and check for a throw from `LifeForm.Start()` / `Flora.Plant()`. PASS = enumerate which ones actually throw — that list scopes the fix branch.
 
-### QA-P2-LIFEFORM-MATRIX-MOONS ⬜ — element-crystal "moons" swallowed by the toy body
-Suspected pre-existing: the Lifeform Matrix's four crystal moons sit ~2.2 world units out while toys place at `toyBodyRadius = 22`. Look at the bench. PASS = the four moons are visible and distinct. FAIL = they are inside the sphere (then the fix is a placement value, not code).
-
 ### QA-ANALYTICS-FLIGHT-TIME ⬜ — menu freestyle counts as flight time; starter/selected vessel to HANGAR_DATA
 Source: `game-data-json-schema`. `FlightClock`, `VesselUnlockSystem`, `UGSDataService` (Cloud Save +69) and `PlayerDataService` changed so menu-freestyle flight accrues flight time and the starter + `SelectedVessel` land in `HANGAR_DATA`. Data-path change with a Cloud Save save/load surface — mostly data-gathering, low gameplay risk.
 
@@ -873,7 +860,9 @@ Source: PRs #705 (`danger-prisms-shielded-color`, `ThemeManager`) + #707 (`gold-
 
 PASS: the danger tier reads correctly (not inverted); gold shielded sits in the pastel family alongside the other domains; gold unshielded rim looks right; no domain blows out under bloom. FAIL: a danger tier that still reads inverted · gold shielded reading flat/muddy or out of family · an over-bright/blown-out gold rim.
 
-### QA-CRYSTAL-EFFECTS ⬜ — elemental crystal capture effect + omni-crystal bloom
+### QA-CRYSTAL-EFFECTS 🔴 — elemental crystal capture effect + omni-crystal bloom
+> **Last result:** 🔴 FAIL — In HexRace: the crystal model and its breaking/collection effect look normal, but when a new crystal spawns in it POPS into existence instead of blooming in — the omni/crystal bloom-in (PR #724) is not playing on spawn.  _(build bleeding-edge @ 55b310a · Unity 6000.4.11f1.x · Windows, Unity Editor, 2026-08-18, andrew)_
+
 Source: PRs #725 (`elemental-crystal-capture-effect`), #724 (`omni-crystal-bloom`). Two crystal VFX: a capture effect when an elemental crystal is collected, and a bloom on the omni crystal. Cosmetic/visual.
 
 1. Collect an elemental crystal — a capture effect plays (no magenta, no missing VFX).
