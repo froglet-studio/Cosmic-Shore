@@ -133,10 +133,23 @@ namespace CosmicShore.Gameplay
         protected ToyMatrixStation CreateStation(Transform parent, Vector3 position, string name, float triggerRadius)
         {
             var go = ToyFactory.CreateBareRoot(name, parent, position, transform.position, triggerRadius);
+            // Every fly-through choice wears the same switch ring as the toy root that opened it -
+            // one word for "thread this and something happens", at every level of the toybox.
+            ToyFactory.AddSwitchRing(go.transform, StationRingRadius(triggerRadius),
+                Definition ? Definition.AccentColor : Color.white);
             var station = go.AddComponent<ToyMatrixStation>();
             station.Bind(Context);
             return station;
         }
+
+        /// <summary>
+        /// This matrix's switch ring radius for a station whose trigger is
+        /// <paramref name="triggerRadius"/> - clamped against <see cref="StationSpacing"/> so
+        /// adjacent rings never interpenetrate (see <see cref="ToyFactory.MaxRingSpacingFraction"/>).
+        /// Subclasses that hang their own labels use it to set the height.
+        /// </summary>
+        protected float StationRingRadius(float triggerRadius)
+            => ToyFactory.StationRingRadius(triggerRadius, StationSpacing);
 
         protected virtual void OnDestroy()
         {
