@@ -178,6 +178,66 @@ per-capture analyses; `Docs/SPATIAL_INDEX.md` documents the summation view
 
 ---
 
+## 0.3 FMOD — `RuntimeManager.Update()` eating a whole frame (2026-08-18, SHIPPED)
+
+**Capture:** `RuntimeManager.Update() [Invoke]` — **1,158.77 ms**, 98.2 % of a
+1,179 ms frame, **1 call, 0 B GC alloc**. Everything else on the frame was
+noise (`PrismColliderLodManager` 4.99 ms, the rest under 0.3 ms).
+
+**Read the signature before hunting.** All *self* time with zero managed
+children and zero allocation means the cost is **native**, inside
+`studioSystem.update()` — FMOD paying, on the main thread, for commands that
+managed code queued on earlier frames. So the culprit is never in the
+`RuntimeManager` row; it is whatever created event instances. Nothing in the
+Unity hierarchy points at it, which is why this reads as "FMOD is slow".
+
+**Root cause: the burst throttle guarded the one category the ecology never
+uses.** `Prism.PlayDestructionSFX` plays one spatialized one-shot **per prism
+destroyed**, from BOTH `Explode` and `Implode`. Each is a
+`RuntimeManager.CreateInstance` + `set3DAttributes` + `start` + `release`
+(`FMODOneShotVolumeHelper`). `AudioSystem.PassesGameplaySFXThrottle` capped
+that at 4 per 0.1 s — but only for `GameplaySFXCategory.BlockDestroy`, and
+both high-volume paths route around it:
+
+| path | category | throttled before? | wired? |
+|---|---|---|---|
+| plain prism | `BlockDestroy` | **yes** | yes |
+| flora health prism (`HealthPrism.DestructionSFX`) | `FloraCollision` | **no** | **yes** (`event:/SFX/Oneshots/Gameplay sfx/Creature colide`) |
+| any prism killed by a creature (`Prism.PlayDestructionSFX`) | `CreatureBlockHit` | **no** | no — unwired, so free *today*, and a landmine the moment someone wires it |
+
+So the **food web** — fauna imploding flora — and every AOE blast through a
+forest queued an unbounded number of instances per frame. The throttle existed
+and was correct in intent; it just keyed on a single enum member while two
+subclass/branch overrides changed the member out from under it.
+
+**Fix:** `throttledCategories` is now a serialized array (defaulting to
+`BlockDestroy` + `FloraCollision` + `CreatureBlockHit`) with **independent**
+sliding windows per category, so a burning forest cannot starve plain block
+destruction. `blockDestroyMaxPerWindow` / `blockDestroyThrottleWindow` became
+`burstThrottleMaxPerWindow` / `burstThrottleWindow` (`[FormerlySerializedAs]`;
+neither was authored in any prefab or scene, so both take their initializers —
+4 per 0.1 s, unchanged). Lookup is a linear scan of a three-entry array, not a
+Dictionary: it runs once per prism destroyed and an enum-keyed dictionary boxes.
+
+**Measured (offline harness against the shipped logic):** 5,000 flora one-shots
+in one frame → **4** voices; 500/frame sustained for 100 frames → **60** voices
+instead of 50,000; an unlisted category still always passes.
+
+**The standing rule this bought:** *a rate limit must key on the BEHAVIOUR
+(one voice per destroyed prism), not on one enum member.* Any new
+prism-destruction category must be added to `throttledCategories` — it is
+serialized precisely so that is a data edit, not a code edit.
+
+> **Not yet field-verified.** The defect is proven and the gate is tested, but
+> nobody has re-run the capture. To confirm on the next run: the
+> `Prism.Destroy.Sfx` marker's **call count** in the stalled frame is the
+> number of one-shots queued — if it is in the thousands, this was the cause;
+> if it is single digits while `RuntimeManager.Update()` is still seconds long,
+> the cost is elsewhere in FMOD (start with `AutomaticSampleLoading: 0` in
+> `FMODStudioSettings`, which loads sample data on demand).
+
+---
+
 ## 0.2 PLATFORM NOTE — macOS / Metal (2026-08-03)
 
 Branch `claude/mac-game-unity-performance-p35x60`. Triggered by a report of
