@@ -569,6 +569,39 @@ Fix by MERGING the two doc comments into one declaration, not by deleting one �
 each side wrote its comment for a reason and the surviving comment should carry
 both meanings.
 
+### Trap: an empty slice makes `str.replace("")` shred the file
+
+`t.replace(t[i:j], new)` is the natural way to swap a block out of a source file — and when
+`j < i` (the two anchors are in the opposite order to the one you assumed) the slice is `""`,
+`str.replace("", new)` inserts `new` **between every character**, and the file is destroyed in
+one line. It happened here on a Python fitter whose `space_leaf` was defined *after* the
+function used as the end anchor.
+
+Never slice-and-replace on unverified anchor order. Instead:
+
+```python
+def sub(old, new, label):
+    assert old in t, f"ANCHOR MISS: {label}"
+    assert t.count(old) == 1, f"AMBIGUOUS ({t.count(old)}x): {label}"
+    return t.replace(old, new)
+```
+
+…and for a block, assert `j > i` before slicing. Then re-parse the result (`ast.parse` for
+Python, a compile for C#) and check the line count moved by roughly what you intended — a file
+that grew 40x is the signature of exactly this bug.
+
+### Trap: compiling a COPY cannot see whole-class consistency
+
+The harness pattern in §4 — paste the block under test into a stub file and compile it — proves
+the block's *contents* against real types, which is its whole value. It cannot see anything about
+the block's RELATIONSHIP to the rest of the real class: a member you added that duplicates one
+already there (`CS0102`), a name that collides with a base-class member, an override whose base
+signature changed. Those are only found by compiling the real file, or by Unity.
+
+So: after any patch that ADDS a member to a large existing class, grep that class for the
+member's own name and confirm exactly one declaration. This session shipped a duplicate field
+that the harness compiled clean and Unity rejected.
+
 ## 4.5 Technique: offline simulation of a deterministic generator
 
 Origin: the Caldera/Ourobor cell rework (2026-08). §6 below used to list
