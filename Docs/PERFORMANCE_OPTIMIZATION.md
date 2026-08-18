@@ -226,6 +226,14 @@ stops by itself.* Any looping/sustaining event must be owned by a component that
 (`ShipAudioController` / `DriftAudioController` / `FloraAmbientAudioController` are the
 right shape). A folder named "Oneshots" is not evidence — check `isOneshot`.
 
+**Verifying FMOD code without Unity:** `Assets/Plugins/FMOD/src/{fmod,fmod_dsp,fmod_errors,fmod_studio}.cs`
+depend only on the BCL — no `UnityEngine` — so they compile standalone. Mirror your FMOD
+calls into a probe file, add a five-line `RuntimeManager` stub, and Roslyn type-checks every
+signature for real. A reference-less compile can NOT do this: it reports missing Unity types
+and stays silent about a wrong member on a type it never resolved, which is exactly how
+`core.isValid()` shipped here (the *core* `FMOD.System` has `hasHandle()`; only the *studio*
+`FMOD.Studio.System` has `isValid()` — two different types in two different files).
+
 **Tooling:** `FrogletTools ▸ Performance ▸ FMOD Live Diagnostics` (reader, writes nothing)
 shows live instance count **per event**, real/total channels, and FMOD's own CPU split.
 A four-figure count on one row names an offender of this class outright. Use it before

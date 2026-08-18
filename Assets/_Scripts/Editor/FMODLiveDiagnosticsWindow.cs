@@ -159,7 +159,7 @@ namespace CosmicShore.Editor
             try
             {
                 var core = RuntimeManager.CoreSystem;
-                if (core.isValid()) core.getChannelsPlaying(out _channels, out _realChannels);
+                if (core.hasHandle()) core.getChannelsPlaying(out _channels, out _realChannels);
             }
             catch (Exception) { /* core not up yet - totals above still stand */ }
 
