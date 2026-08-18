@@ -57,7 +57,7 @@ MonoBehaviour:
   onLifeFormCreated: {fileID: 11400000, guid: 0ec64678e3c91034faed17b6e66ded9d, type: 2}
   onLifeFormDestroyed: {fileID: 11400000, guid: af79f31492a261e49826374c21ee2234,
     type: 2}
-  leafSize: {x: 22.19, y: 0.8, z: 0.8}
+  leafSize: {x: 22, y: 1, z: 1}
   growPeriod: 0.8
   PlantPeriod: 120
   stunDuration: 2

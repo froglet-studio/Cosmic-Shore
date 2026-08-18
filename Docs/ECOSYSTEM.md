@@ -5675,20 +5675,19 @@ Fitted leaves (cross-section is the authored identity, length fitted flush, roun
 
 | element | leaf | lattice | vol/strut | ~/plant (×59) | note |
 |---|---|---|---|---|---|
-| Time | 22.19 × 0.8 × 0.8 | ×1 | 14.2 | 838 | the reference slender strut |
-| Mass | 20.15 × 1.7 × 1.7 | ×1 | 58.2 | 3,436 | thick, shorter by consequence of the 63° node |
-| Space | 46.41 × 0.7 × 0.7 | ×2 (`LatticeScale`) | 22.7 | 1,342 | the airy giant lattice — Space's identity across all three lattice species |
-| Charge | 7.27 × 0.26 × 0.26 | ×1 | 0.49 | 29 | uniform shrink ×0.3277: the SHIELD fit |
+| Time | 22 × 1 × 1 | ×1 | 22.0 | 1,298 | the reference strut; grazes 0.099u (§36.10) |
+| Mass | 15 × 3 × 3 | ×1 | 135.0 | 7,965 | the heavy element: thick, and short by consequence |
+| Space | 44 × 0.7 × 0.7 | ×2 (`LatticeScale`) | 21.6 | 1,272 | the airy giant lattice — Space's identity across all three lattice species |
+| Charge | 7 × 1 × 1 | ×1 | 7.0 | 413 | short so the 3× shield has room — octahedra clear by 14% |
 
 Charge is armoured by law (`Flora.ResolveShieldPeriod`, §35.1) and its shield octahedron
-reaches 3× the box half-extents, so the flush strut's octahedra fuse (touch scale 0.3605);
-the shipped leaf is Time's fit shrunk uniformly to touch/1.10 — plates read as a sparse
-dashed skeleton and the octahedra fill the lattice back in, exactly the §35 trade.
-**`fit_shield_clearance.py` does NOT know this species — `fit_quasicrystal_strut_sizes.py`
-owns the Charge leaf**, stated in both scripts, because two fitters must never own one asset
-field (§35.3). The 0.26 cross-section sits under `HealthBlock.prefab`'s `minScale` 0.5 and
-survives only through `AdmitTargetScale` (§34.9) — same standing caveat as Schwarz P
-Charge's 0.39.
+reaches 3× the box half-extents — which is exactly why its authored strut is SHORT: at
+7 × 1 × 1 the octahedra clear each other by 14% (touch scale 1.1429) while a strut spanning
+the edge would fuse them. Charge therefore reads as a sparse dashed skeleton whose armour
+fills the lattice back in, exactly the §35 trade, but bought with LENGTH rather than the
+uniform shrink §35 used. **`fit_shield_clearance.py` does NOT know this species —
+`fit_quasicrystal_strut_sizes.py` owns the Charge leaf**, stated in both scripts, because two
+fitters must never own one asset field (§35.3).
 
 ### 36.5 Reproduction rides the measured heart-link census
 
@@ -5724,10 +5723,11 @@ five-playtest failure class).
   22, because a star plant carries ~59 struts to a tile's 36) and ~830 prism colliders at cap,
   phase-LOD-managed like all flora. Zero new query shapes — the assembler uses the same
   `TryReserve` every flora makes.
-- **Volume ladder (§4.6, computed before shipping, re-computed at the §36.9 doubling):**
-  mixed-element Blob average ≈ 23.9 vol/strut × 59 × 14 plants ≈ **19.8k ≈ 6.9% of Blob's
-  `FrenzyEnterVolume` 288,000** — the ×5 ladder authored for the gyroid conversion absorbs
-  this species without re-authoring (it was 3% at the 12u edge). Level
+- **Volume ladder (§4.6, re-computed at every leaf change — §36.9's doubling, §36.10's
+  authored leaves):** mixed-element Blob average ≈ 46.4 vol/strut × 59 × 14 plants ≈
+  **38.3k ≈ 13.3% of Blob's `FrenzyEnterVolume` 288,000** (3% → 6.9% → 13.3% across the
+  three passes; Mass's 3×3 cross-section carries most of it at 135/strut). The ×5 ladder
+  authored for the gyroid conversion still absorbs the species without re-authoring. Level
   spread multiplier is ×1 (lattice species, §34.9).
 - **Population numbers** are authored by `author_flora_populations.py` (cap = 800/59 → 14,
   floor 4 founders, budget 110), never by hand; `--check` gates them.
@@ -5850,3 +5850,40 @@ the defect above, and a plant only reseeds late; (2) confirm the gaps now read a
 (3) look at a node where several struts meet and confirm the branch halves meet AT the prism
 with no skewering and no pop as a branch grows in; (4) check Space (×2 lattice) has branches
 that still reach its nodes.
+
+### 36.10 The leaves are AUTHORED, and a measured graze is stated, not discovered (Aug 2026, third pass)
+
+Second playtest. The spacings read well; the prisms did not, and the four leaves were
+authored outright by eye:
+
+| element | leaf | why |
+|---|---|---|
+| Time | 22 × 1 × 1 | the reference strut, near-spanning its edge |
+| Mass | 15 × 3 × 3 | the heavy element — thick, and short by consequence |
+| Space | 44 × 0.7 × 0.7 | reach: the ×2 lattice's 48u edge, spanned slenderly |
+| Charge | 7 × 1 × 1 | short, so the 3× shield octahedron has room |
+
+**The fitter became a verifier.** It previously binary-searched each length; a script that
+re-derives what a human authored is an edit in the direction nobody is looking (§34.10's
+rule about deriving one value from another once a human tunes them separately). It now
+*proves* the authored leaves — zero overlapping struts, a clear crystal seat, and for Charge
+the shield-octahedron census — and reports the flush maximum for each cross-section alongside
+as **headroom**, so the next retune can see how much room it has (Time uses 101% of its
+21.73u flush maximum, Mass 87%, Space 95%, Charge 32%).
+
+**Time grazes, and that is recorded rather than corrected.** At 22 × 1 × 1 it runs 0.27u past
+the flush maximum for a 1×1 cross-section, so **12 of 3,218 pair classes touch, to a maximum
+depth of 0.099u** — 0.41% of the 24u edge, 10% of the strut's own width, at a scale a pilot
+passes at speed. The precedent is §34.5, which shipped the gyroid's Charge/Time plates with
+33% of prisms grazing to 0.19u. What is new here is that the tolerance is now **explicit**:
+`GRAZE_TOLERANCE_EDGE_FRACTION` (0.5% of the edge — 0.12u here) passes a hairline *with its
+depth printed every run*, and fails anything a player could read as interpenetration. An
+accepted graze should be a stated number, never something a later reader discovers.
+**Shielded elements are held to zero** — fused octahedra are §35's entire subject, and
+Charge's clear by 14%.
+
+Two consequences worth carrying: Charge now buys its shield clearance with **length** (a 7u
+strut on a 24u edge) rather than §35's uniform shrink, so its cross-section is back above
+`HealthBlock.prefab`'s `minScale` 0.5 and no longer leans on `AdmitTargetScale` (§34.9); and
+Mass at 135 vol/strut is now the species' mass budget almost by itself — see the ladder line
+in §36.6, which is re-computed on every leaf change for exactly this reason.

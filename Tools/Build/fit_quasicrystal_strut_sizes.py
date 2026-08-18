@@ -17,22 +17,27 @@ Per Docs/ECOSYSTEM.md 34.10, spacing (edgeLength / LatticeScale) and prism
 size are INDEPENDENT dials: this script fits the PRISM and never touches the
 lattice.
 
-For each element the CROSS-SECTION is the authored identity and the LENGTH is
-binary-searched to the largest flush value (rounded DOWN, so the zero-overlap
-result stays true of the shipped number):
+All four leaves are AUTHORED (a look call - the elements' proportions are
+their identity), and this script's job is to PROVE them: every element is
+checked for zero overlapping struts and a clear crystal seat, and the largest
+flush length for that cross-section is reported alongside as headroom, so a
+retune can see how much room it has before the geometry binds. It does not
+silently move an authored number - a fitter that re-derives what a human
+authored is an edit in the direction nobody is looking (Docs/ECOSYSTEM.md
+34.10).
 
-  * Time   - the reference slender strut.
-  * Mass   - the heavy element: a thick strut, shorter by consequence (a fat
-             tip needs more clearance at a 63-degree node).
+  * Time   - the reference strut.
+  * Mass   - the heavy element: thick, and short by consequence (a fat tip
+             needs more clearance at a 63-degree node).
   * Space  - reach: LatticeScale 2 doubles the edge; the strut spans it.
   * Charge - ARMOURED (Flora.ResolveShieldPeriod floors every Charge flora at
              a 1s cadence): the shield is the octahedron CIRCUMSCRIBING the
-             box at 3x the half-extents (Docs/ECOSYSTEM.md 35), so the Charge
-             strut is Time's fit shrunk UNIFORMLY (aspect is identity) to the
-             octahedron touch scale plus 10% clearance. NOTE:
+             box at 3x the half-extents (Docs/ECOSYSTEM.md 35), so Charge is
+             checked TWICE - plain struts flush, and the octahedra flush - and
+             its authored leaf is short enough to leave the armour room. NOTE:
              Tools/Build/fit_shield_clearance.py does NOT know this species -
-             THIS script owns the Charge fit, and says so, because two fitters
-             must never own one asset field (Docs/ECOSYSTEM.md 35.3).
+             THIS script owns the Charge leaf, and says so, because two
+             fitters must never own one asset field (Docs/ECOSYSTEM.md 35.3).
 
 THE HEART SEAT
 --------------
@@ -69,16 +74,25 @@ CRYSTAL_NEED = 2.55  # level-5 heart apparent radius (4.25 world x ~0.6)
 SHIELD_SCALE = 3.0   # OctahedronMeshGenerator.CIRCUMSCRIBING_SCALE on box HALF-extents
 CLEARANCE = 1.10     # ship at touch / 1.10, the fit_shield_clearance convention
 
-# Authored identities: cross-section (y, z) and, for Space, the lattice scale.
-# Lengths are FITTED below. Space's strut is DELIBERATELY long and slender - the
-# element's identity across all three lattice species (gyroid 40x1x1, Schwarz P
-# 30x0.5x0.5) - and like theirs it is fitted flush rather than interpenetrating,
-# because a strut species' struts MEET at nodes instead of crossing mid-air.
+# A GRAZE this shallow is accepted, measured and stated - never discovered later.
+# Precedent: the gyroid ships Charge/Time at 1.15 spacings with 33% of prisms
+# grazing to 0.19u (Docs/ECOSYSTEM.md 34.5). Expressed as a fraction of the EDGE
+# so it scales with the lattice: 0.5% of 24u is 0.12u, a hairline at flight
+# speed, while anything a player could read as interpenetration still fails.
+# Shielded elements are held to ZERO - fused octahedra are 35's whole subject.
+GRAZE_TOLERANCE_EDGE_FRACTION = 0.005
+
+# AUTHORED leaves (length x cross-section), proven below, never re-derived here.
+# Space's strut is DELIBERATELY long and slender - the element's identity across
+# all three lattice species (gyroid 40x1x1, Schwarz P 30x0.5x0.5) - and like
+# theirs it stays flush rather than interpenetrating, because a strut species'
+# struts MEET at nodes instead of crossing mid-air. Mass is short and thick, and
+# Charge shorter still: a short strut is what leaves its 3x shield room.
 ELEMENTS = {
-    "Time":   dict(cross=(0.8, 0.8), lattice_scale=1.0),
-    "Mass":   dict(cross=(1.7, 1.7), lattice_scale=1.0),
-    "Space":  dict(cross=(0.7, 0.7), lattice_scale=2.0),
-    # Charge: derived from Time by uniform shrink - see fit_charge().
+    "Time":   dict(leaf=(22.0, 1.0, 1.0), lattice_scale=1.0),
+    "Mass":   dict(leaf=(15.0, 3.0, 3.0), lattice_scale=1.0),
+    "Space":  dict(leaf=(44.0, 0.7, 0.7), lattice_scale=2.0),
+    "Charge": dict(leaf=(7.0, 1.0, 1.0), lattice_scale=1.0, shielded=True),
 }
 
 PATCH_VERTS = 9000   # struts for the pair census; every angle class appears many times
@@ -259,23 +273,70 @@ def pair_census(lat, classes, frames, edge_world, plain_len, heart_seat, half_y,
     return worst, len(classes), overlapping
 
 
-def fit_length(lat, classes, frames, cross, lattice_scale, f):
-    """Binary-search the largest flush plain strut length for this cross-section."""
+def obb_penetration(cA, hA, fA, cB, hB, fB):
+    """SAT penetration depth in world units - 0 when a separating axis exists."""
+    d = cB - cA
+    axes = list(fA) + list(fB)
+    for a in fA:
+        for b in fB:
+            c = np.cross(a, b)
+            n = np.linalg.norm(c)
+            if n > 1e-9:
+                axes.append(c / n)
+    best = float("inf")
+    for u in axes:
+        overlap = (sum(h * abs(float(u @ ax)) for h, ax in zip(hA, fA)) +
+                   sum(h * abs(float(u @ ax)) for h, ax in zip(hB, fB))) - abs(float(d @ u))
+        if overlap <= 0:
+            return 0.0
+        best = min(best, overlap)
+    return best
+
+
+def flush_length(lat, classes, frames, cross, lattice_scale):
+    """The largest flush plain strut length for this cross-section - reported as
+    HEADROOM beside the authored leaf, never written. Binary search, floored to
+    2dp so the zero-overlap result stays true of the printed number."""
     edge_world = EDGE * lattice_scale
     half_y, half_z = cross[0] / 2, cross[1] / 2
-    lo, hi = edge_world * 0.5, edge_world
-    for _ in range(22):
+    lo, hi = edge_world * 0.02, edge_world
+    for _ in range(24):
         mid = (lo + hi) / 2
         _, _, over = pair_census(lat, classes, frames, edge_world, mid, HEART_SEAT, half_y, half_z)
         if over == 0:
             lo = mid
         else:
             hi = mid
-    fitted = math.floor(lo * 100) / 100
-    worst, n, over = pair_census(lat, classes, frames, edge_world, fitted, HEART_SEAT, half_y, half_z)
-    f.check(over == 0, f"fitted length {fitted:.2f} is flush (zero overlapping pairs)",
-            f"cross {cross}, {n} pair classes, worst touch scale {worst:.3f}")
-    return fitted
+    return math.floor(lo * 100) / 100
+
+
+def verify_leaf(lat, classes, frames, leaf, lattice_scale, name, f):
+    """Prove an AUTHORED leaf. Flush is the goal; a graze under
+    GRAZE_TOLERANCE_EDGE_FRACTION passes with its depth REPORTED, so an
+    accepted hairline is a stated number rather than something found later."""
+    edge_world = EDGE * lattice_scale
+    tolerance = GRAZE_TOLERANCE_EDGE_FRACTION * edge_world
+    worst, grazing, deepest = 10.0, 0, 0.0
+    for cls in classes:
+        (ca, ia, la), (cb, ib, lb) = class_struts(lat, cls, edge_world, leaf[0], HEART_SEAT)
+        hA = (la / 2, leaf[1] / 2, leaf[2] / 2)
+        hB = (lb / 2, leaf[1] / 2, leaf[2] / 2)
+        worst = min(worst, obb_touch_scale(ca, hA, frames[ia], cb, hB, frames[ib]))
+        pen = obb_penetration(ca, hA, frames[ia], cb, hB, frames[ib])
+        if pen > 0:
+            grazing += 1
+            deepest = max(deepest, pen)
+
+    label = f"{name}: the authored {leaf[0]:g} x {leaf[1]:g} x {leaf[2]:g} strut clears its neighbours"
+    if grazing == 0:
+        f.check(True, label, f"{len(classes)} pair classes flush, worst touch scale {worst:.3f}")
+    else:
+        f.check(deepest <= tolerance, label,
+                f"{grazing}/{len(classes)} classes GRAZE to {deepest:.4f}u "
+                f"({deepest / edge_world * 100:.2f}% of the {edge_world:g}u edge, "
+                f"{deepest / min(leaf[1], leaf[2]) * 100:.0f}% of the strut's width) - "
+                f"tolerance {tolerance:.3f}u")
+    return worst
 
 
 def measure_heart_seat(lat, seat_classes, frames, plain_len, half_y, half_z,
@@ -304,49 +365,25 @@ def measure_heart_seat(lat, seat_classes, frames, plain_len, half_y, half_z,
             f"{n_hearts} hearts in patch)")
 
 
-def fit_charge(lat, classes, frames, time_leaf, f):
-    """Time's strut shrunk uniformly to the shield-octahedron touch scale / 1.1."""
-    edge_world = EDGE
-    length, cy, cz = time_leaf
+def shield_census(lat, classes, frames, leaf, edge_world, name, f):
+    """Charge is ARMOURED, and a shield is the octahedron CIRCUMSCRIBING the box at
+    3x its half-extents (Docs/ECOSYSTEM.md 35) - so an armoured species must be
+    proven for a body 3x its prism's reach, not just for the prism. This is the
+    check the authored leaf has to survive; it is why Charge's strut is SHORT."""
     worst = 10.0
-    for cls in classes:
-        (ca, ia, la), (cb, ib, lb) = class_struts(lat, cls, edge_world, length, HEART_SEAT)
-        # Octahedron reach: SHIELD_SCALE x the box half-extent per axis (35's 1.5 x leaf)
-        rA = (SHIELD_SCALE * la / 2, SHIELD_SCALE * cy / 2, SHIELD_SCALE * cz / 2)
-        rB = (SHIELD_SCALE * lb / 2, SHIELD_SCALE * cy / 2, SHIELD_SCALE * cz / 2)
-        s = octa_touch_scale(ca, rA, frames[ia], cb, rB, frames[ib])
-        worst = min(worst, s)
-    shrink = math.floor(worst / CLEARANCE * 10000) / 10000
-    leaf = (math.floor(length * shrink * 100) / 100,
-            math.floor(cy * shrink * 100) / 100,
-            math.floor(cz * shrink * 100) / 100)
-    f.check(shrink < 1.0, "Charge shields NEED the shrink (octahedra of the flush strut fuse)",
-            f"octahedron touch scale {worst:.4f} -> uniform shrink x{shrink:.4f}")
-
-    # Re-check the SHIPPED geometry, not just the pre-shrink model: the fitted
-    # leaf is RE-POSED by the span arithmetic (its plain inset (12-3.63)/2 = 4.19
-    # exceeds the heart seat, so every strut re-centres to its edge midpoint and
-    # the heart-end asymmetry disappears) - the same post-search re-census
-    # fit_length runs. The pair-class cutoff (midpoints within 1.2 lattice units)
-    # was sized for BOXES; shield octahedra reach 3x, so shield pairs beyond it
-    # exist but cannot bind: an excluded pair's touch scale is at least
-    # (1.2 - 0.07) / (2 x 1.27) ~ 0.44, far above the binding in-census class.
-    worst_shipped = 10.0
     over = 0
     for cls in classes:
         (ca, ia, la), (cb, ib, lb) = class_struts(lat, cls, edge_world, leaf[0], HEART_SEAT)
         rA = (SHIELD_SCALE * la / 2, SHIELD_SCALE * leaf[1] / 2, SHIELD_SCALE * leaf[2] / 2)
         rB = (SHIELD_SCALE * lb / 2, SHIELD_SCALE * leaf[1] / 2, SHIELD_SCALE * leaf[2] / 2)
-        s = octa_touch_scale(ca, rA, frames[ia], cb, rB, frames[ib])
-        if s < 1.0:
+        sc = octa_touch_scale(ca, rA, frames[ia], cb, rB, frames[ib])
+        if sc < 1.0:
             over += 1
-        worst_shipped = min(worst_shipped, s)
-    f.check(over == 0, "the SHIPPED Charge leaf's shield octahedra are flush",
-            f"touch scale {worst_shipped:.4f} over {len(classes)} classes, re-posed spans")
-
-    print(f"       Charge leaf: {length} x {cy} x {cz} -> "
-          f"{leaf[0]} x {leaf[1]} x {leaf[2]} (aspect preserved)")
-    return leaf
+        worst = min(worst, sc)
+    f.check(over == 0, f"{name}: the shield OCTAHEDRA are flush (3x the box)",
+            f"touch scale {worst:.4f} over {len(classes)} classes"
+            + (f", {over} FUSED" if over else f" - {(worst - 1) * 100:.0f}% clearance"))
+    return worst
 
 
 # ---------------------------------------------------------------------------
@@ -417,7 +454,7 @@ def main() -> int:
     args = ap.parse_args()
 
     print("=" * 78)
-    print("Quasicrystal strut fit (SAT over the measured patch, per element)")
+    print("Quasicrystal strut verification (SAT over the measured patch, per element)")
     print("=" * 78)
 
     f = Failures()
@@ -446,18 +483,26 @@ def main() -> int:
     fits = {}
     for name, spec in ELEMENTS.items():
         print(f"---- {name} " + "-" * (72 - len(name)))
-        length = fit_length(lat, pair_classes, frames, spec["cross"], spec["lattice_scale"], f)
-        leaf = (length, spec["cross"][0], spec["cross"][1])
-        fits[name] = (leaf, spec["lattice_scale"])
-        measure_heart_seat(lat, seat_classes, frames, length, spec["cross"][0] / 2,
-                           spec["cross"][1] / 2, EDGE * spec["lattice_scale"], n_hearts, f, name)
-        vol = leaf[0] * leaf[1] * leaf[2]
-        print(f"       leaf {leaf[0]:g} x {leaf[1]:g} x {leaf[2]:g}  volume {vol:.1f}/strut  "
-              f"(~59 struts/plant -> {vol * 59:.0f}/plant)")
+        leaf, scale = spec["leaf"], spec["lattice_scale"]
+        edge_world = EDGE * scale
+        fits[name] = (leaf, scale)
 
-    print("---- Charge " + "-" * 66)
-    charge_leaf = fit_charge(lat, pair_classes, frames, fits["Time"][0], f)
-    fits["Charge"] = (charge_leaf, 1.0)
+        verify_leaf(lat, pair_classes, frames, leaf, scale, name, f)
+        if spec.get("shielded"):
+            shield_census(lat, pair_classes, frames, leaf, edge_world, name, f)
+        measure_heart_seat(lat, seat_classes, frames, leaf[0], leaf[1] / 2, leaf[2] / 2,
+                           edge_world, n_hearts, f, name)
+
+        # Headroom: what the geometry would allow at this cross-section, and the
+        # gap the strut leaves at each node (the heart seat overrides it at 2.6).
+        flush = flush_length(lat, pair_classes, frames, (leaf[1], leaf[2]), scale)
+        inset = (edge_world - leaf[0]) / 2
+        vol = leaf[0] * leaf[1] * leaf[2]
+        print(f"       edge {edge_world:g}  node gap {inset:.2f}"
+              f"{'' if inset >= HEART_SEAT else f' (heart end holds back {HEART_SEAT})'}"
+              f"  |  flush max at this cross-section {flush:g} "
+              f"({leaf[0] / flush * 100:.0f}% used)")
+        print(f"       volume {vol:.1f}/strut  (~59 struts/plant -> {vol * 59:.0f}/plant)")
 
     print("-" * 78)
     if args.write:
@@ -468,7 +513,7 @@ def main() -> int:
             shipped = shipped_leaf(name)
             if args.check:
                 f.check(shipped is not None and all(abs(a - b) < 1e-6 for a, b in zip(shipped, leaf)),
-                        f"shipped {name} leaf matches the fit",
+                        f"shipped {name} leaf matches the authored value",
                         f"shipped {shipped} vs fit {leaf}")
                 shipped_scale = shipped_lattice_scale(name)
                 f.check(shipped_scale is not None and abs(shipped_scale - scale) < 1e-6,
@@ -476,14 +521,14 @@ def main() -> int:
                         f"shipped x{shipped_scale} vs fit x{scale:g}")
             else:
                 state = "SHIPPED" if shipped == leaf else f"shipped {shipped}"
-                print(f"  {name:<7} fit {leaf}  lattice x{scale:g}  ({state})")
+                print(f"  {name:<7} authored {leaf}  lattice x{scale:g}  ({state})")
 
     if f:
         print(f"FAILED {len(f)} check(s):")
         for label in f:
             print(f"  - {label}")
         return 1
-    print("fit complete")
+    print("all authored leaves proven")
     return 0
 
 

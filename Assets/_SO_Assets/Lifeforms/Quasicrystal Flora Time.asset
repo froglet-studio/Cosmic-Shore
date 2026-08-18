@@ -27,7 +27,7 @@ MonoBehaviour:
   Element: 4
   Variant:
     Enabled: 1
-    LeafSize: {x: 22.19, y: 0.8, z: 0.8}
+    LeafSize: {x: 22, y: 1, z: 1}
     GrowPeriod: -1
     LatticeScale: -1
     ShieldPeriod: -1
