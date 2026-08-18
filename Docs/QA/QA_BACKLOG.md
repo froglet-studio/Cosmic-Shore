@@ -1,6 +1,6 @@
 # QA Backlog — untested development on `bleeding-edge`
 
-Generated: 2026-08-17 · Scan covers: up to `eb85e1e3` (PRs #583–#737) · **Owner of this file: the `/qa-backlog` skill — do not hand-edit.**
+Generated: 2026-08-18 · Scan covers: up to `55b310a6` (PRs #583–#750) · **Owner of this file: the `/qa-backlog` skill — do not hand-edit.**
 
 > Note (2026-08-11): `bleeding-edge` was briefly force-pushed back to `0e855b24` (dropping PRs #674–#679) and then restored — the current tip `b0cf4f0f` re-includes all of that work plus PRs #680/#681/#695/#696. No items were pruned. The `windows-build-failures` build-fix branch is validated by QA-BUILD-COMPILE on Windows and has no separate item.
 
@@ -780,6 +780,48 @@ Source: PR #722 (`keyboard-controls`). A keyboard control scheme (input strategy
 4. Plug in a gamepad mid-session (if available) — the input strategy switches cleanly.
 
 PASS: full vessel control from the keyboard with sensible mappings; abilities respond; no double-driven UI; gamepad hand-off works. FAIL: unmapped/broken controls · an ability with no key · keyboard driving the UI and the vessel at once · a broken device switch.
+
+### QA-URCHIN-VESSEL ⬜ — the Urchin vessel revived (chain-reaction spikes + prismscape rider)
+Source: PR #746 (`restore-urchin-vessel`). A whole vessel brought back — 100 files, 8,464 insertions, authored headless, with a new asset-writing tool (`Tools/Build/author_urchin_assets.py`) and an 854-line verification checklist. Reference: `Docs/UNITY_VERIFICATION_CHECKLIST.md`, `Docs/ElementalAbilitySystem/FLEET_MAPS.md`.
+
+1. Project compiles; open `Urchin.prefab` — no `Missing (Mono Script)`; camera/telemetry/HUD/skimmer wiring resolves.
+2. Fly the Urchin in freestyle: it spawns, is controllable, and its HUD renders (ability row, petal bars).
+3. Exercise its abilities — the chain-reaction spikes and the "prismscape rider" behave as designed (spikes chain; the rider interacts with prism mass).
+4. Confirm it swaps in cleanly via the Vessel Changer toy and inherits pose/speed.
+5. Run FrogletTools ▸ Vessels ▸ Audit Vessel Skimmers / Ability Rows against the Urchin — record its verdict (may be design-blocked; note what the audits say).
+
+PASS: compiles, prefab intact; the Urchin spawns, flies, and renders its HUD; chain-spikes and prismscape rider work; a Vessel Changer swap is clean; audits report clean or a known/annotated state. FAIL: missing scripts · a vessel that won't spawn/fly · abilities that don't fire · a broken HUD · a swap that throws · an unexpected audit failure.
+
+### QA-DOLPHIN-ELEMENTAL-REWORK ⬜ — elemental map re-cut around one weapon + Time-5 Drift Ward
+Source: PRs #740 (`dolphin-elemental-upgrades`, re-cut the elemental map around one weapon), #749 (`dolphin-time5-debuff-immunity`, Time 5 re-scoped to **Drift Ward** — elemental-debuff immunity **while drifting**). Vessel elemental-ability surface. Reference: `Docs/ElementalAbilitySystem/FLEET_MAPS.md`, `DOLPHIN_ENERGY_ECONOMY.md`.
+
+1. Project compiles; Dolphin HUD shows four ability icons in charge → mass → space → time order (run Audit Vessel Ability Rows).
+2. Raise each element to its unlock level (5) via crystals / test harness — the re-cut map's upgrades apply to the intended weapon/abilities, and the icon upgrade signal (badge/tint/scale) fires.
+3. **Time 5 Drift Ward:** at Time ≥ 5, take a danger-prism/elemental debuff **while drifting** → the element flowers do not dip (immunity); **not drifting** → they dip. The slow/mute still land either way (by design).
+4. MPPM two clients, one at Time 5: both agree on who resists the drain (replicated unlock state).
+
+PASS: compiles; ability row 4/4 in order; the re-cut upgrades apply as intended; Drift Ward blocks the elemental drain only while drifting; peers agree. FAIL: compile error · wrong/missing ability order or upgrade signal · Drift Ward blocking when not drifting, or not blocking while drifting, or blocking the slow/mute · peers disagreeing.
+
+### QA-TOYS-SWITCH-RING ⬜ — every freestyle toy inside a switch ring
+Source: PR #750 (`freestyle-toys-switch-fundamental`). All freestyle toys are now placed inside a "switch ring" (a new asset-writing tool `Tools/Build/toy_switch_ring_geometry.py`). Reference: `Docs/ToySystem/ARCHITECTURE.md`, `BACKLOG.md`.
+
+1. Enter freestyle (Menu_Main → take control): the toys sit in a switch ring around the membrane; no toy is missing or mis-placed, nothing assembles in view.
+2. Fly each toy in the ring and confirm it still triggers its function (cell selector, vessel changer, domain changer, painting, Wanderway).
+3. Confirm the ring re-arms correctly after use (a used toy doesn't switch you back before you fly clear).
+4. Return from an arcade game and re-enter freestyle — the ring is intact.
+
+PASS: all toys present in the switch ring and each still triggers its function; re-arm behaves; the ring survives a game round-trip; nothing assembles in view. FAIL: a missing/mis-placed toy · a toy that no longer triggers · broken re-arm · an emblem building in view · the ring absent after a game return.
+
+### QA-ECOLOGY-LATTICE-FLORA ⬜ — gyroid branch-pair + Schwarz-P non-Euclidean tile + charge flora shields
+Source: PRs #747 (`branch-spindle-gyroid-redesign` — gyroid branch is a mirrored half-branch pair), #744 (`schwarz-p-noneuclidean-tile` — Schwarz P grows on its own non-Euclidean tile, per-element lattice scale, a silent prism-size clamp), #748 (`charge-flora-prism-shield` — Charge armours its mass; both lattice species fitted for the shield). Extends QA-ECOLOGY-GYROID-COLONY; LOCKED ecology surface. Reference: `Docs/ECOSYSTEM.md`.
+
+1. Project compiles; load the gyroid / Schwarz-P lattice flora cell (Cell Selector or Lifeform Matrix) — no missing scripts, no `None` refs.
+2. **Gyroid branch:** grown gyroid flora show the mirrored half-branch pair geometry (not a single branch punched through the prism); the branch-pair verifier's intent holds visually.
+3. **Schwarz P:** the Schwarz-P species grows on its non-Euclidean tile, sized per-element; no prisms are silently clamped to a wrong size (leaves/tiles look correctly scaled).
+4. **Charge shields:** Charge-domain lattice flora carry the prism shield (their mass is armoured) and the shield fits the leaf clearance — no shield clipping through or dwarfing the leaf.
+5. Continuity/mass: growth blooms/withers, nothing pops; population behaves per QA-ECOLOGY-GYROID-COLONY.
+
+PASS: compiles; gyroid branches are mirrored half-pairs; Schwarz-P grows correctly-scaled on its tile with no bad clamps; charge flora are shielded with a well-fitted shield; continuity/mass hold. FAIL: missing scripts/None refs · a single-branch gyroid · mis-scaled/clamped Schwarz-P · charge flora with no shield or a clipping/oversized one · anything popping in/out.
 
 ## Priority 2 — lower risk, cosmetic, or data-gathering
 
