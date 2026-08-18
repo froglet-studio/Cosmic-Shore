@@ -1624,6 +1624,25 @@ never prunes an unresolvable modification, so the inspector keeps showing a valu
   `_nearFieldSkimmer` → the *other* skimmer). Record the finding in a backlog rather than
   hand-editing prefab YAML to remove override entries — the sweep is what tooling is for.
 
+- **`field_parity.py` is LINE-BASED, so a WRAPPED attribute hides a serialized field from it —
+  and it fails in the direction that reads as your fault.** The checker asks "does this line carry
+  `SerializeField` or `public`?", so a declaration whose attribute spilled onto earlier lines —
+
+  ```csharp
+  [SerializeField, Tooltip("a long tooltip " +
+      "wrapped over three lines")]
+  Renderer[] additionalRenderedObjects;      // <- invisible to the checker
+  ```
+
+  — is simply not in the field set, and the parity run then reports the perfectly-correct YAML key
+  you just authored as an *unknown key*. The temptation at that point is to go hunting for a typo
+  in the asset, or to conclude Unity will not serialize the field: both wrong, and Unity is fine
+  either way (it reads the compiled attribute, not the layout). **Keep attribute and declaration on
+  one line** for anything you intend to verify — that is what every existing field in this repo
+  does — and leave a comment saying why, or the next formatter re-wraps it and the field silently
+  drops out of the checker again. The mirror failure is worse and quieter: a field that SHOULD be
+  flagged but is wrapped will never be flagged at all.
+
 ### Bundled tool: `field_parity.py`
 
 Beside this skill. `serialized_fields(cs_path)` returns what Unity would serialize

@@ -5323,3 +5323,22 @@ cannot be split in two without splitting the animation with it.* Duplicating geo
 symmetry problem is the easy half; the half that bites is every lifecycle path that was written
 against "the renderer" singular — and it fails as a **pop**, which the continuity law forbids and
 which no static check sees.
+
+**Open — decide from a playtest, not from here.**
+
+- **Which end faces the prism.** Shipped: the branch's fine **tip** lands on the prism and the
+  splayed end reaches outward, which is the literal read of "scaled to just reach the prism" and
+  keeps the shipped asset's outward direction. The alternative — splayed ends meeting *at* the
+  prism, fine points outward — is the same pair rotated, has the same total span, and hides the
+  widest part of the branch inside the prism. Flipping is four values on `GyroidBranch.prefab`:
+  swap the two children's `m_LocalRotation.x` signs and set the positions to `±6.0964`
+  (`3.1 × |mesh zmin|`). `verify_gyroid_branch_pair.py` passes either way — it asserts the
+  span, the mirror and the wiring, not the orientation, because orientation is a look call.
+- **Wall and Schwarz P still use the single piercing branch.** Deliberate (§34.8: a gyroid
+  decision must not move Schwarz P's approved proportions), not an oversight. If they should
+  pair too, it is one guid on the `spindle` field of each prefab plus the two lines in
+  `verify_gyroid_branch_pair.py`'s scope table.
+- **The triangle cost is the branch's headline perf risk** and is unmeasured in engine: ≈1.24 M
+  tris for one gyroid species at its cap, up from ≈0.62 M. If a capture shows it, the lever is
+  `MaxLivePopulation`, or a single mesh authored as the finished pair (one renderer, same
+  triangles) — never un-pairing, which re-introduces the skewer.

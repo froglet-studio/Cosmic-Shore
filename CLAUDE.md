@@ -252,8 +252,17 @@ outcome is optimization, not life). Use the `/ecology` skill for any change here
   155% of the Blob cell's `FrenzyEnterVolume` at `60 × 2 × 2`, so its cross-section is held at 1
   (`60 × 1 × 1`, 39%; now 40 × 1 × 1, 26%): a lattice prism's THICKNESS is a volume dial with cubic leverage and is the
   cheapest correction when a scale-up overshoots the ladder. Spindles scale with the lattice (visible branch geometry spanning the
-  gap); crystals deliberately do not. Full record: `Docs/ECOSYSTEM.md §34` (§34.5 the per-element
-  prism fit, §34.7 the Schwarz P lattice, §34.8 the gyroid scale).
+  gap); crystals deliberately do not. **The GYROID's branch is a MIRRORED PAIR of half-branches
+  meeting at the prism** (`GyroidBranch.prefab`, gyroid only — Wall and Schwarz P keep the single
+  `AssemblyBranch`, per the same no-side-effects rule as the lattice scale): one branch posed with
+  its middle on the prism skewered every prism and showed different geometry on each side. The
+  general rule it leaves behind is a CONTINUITY one — **a visual element animated through one
+  serialized renderer reference cannot be split in two without splitting the animation with it**,
+  or the second half POPS; `Spindle.additionalRenderedObjects` is that split, and it must stay an
+  explicit list (a `GetComponentsInChildren` sweep would catch the health prism the flora parents
+  under the spindle root and fade conserved mass with the branch). Full record:
+  `Docs/ECOSYSTEM.md §34` (§34.5 the per-element prism fit, §34.7 the Schwarz P lattice, §34.8 the
+  gyroid scale, §34.12 the branch pair).
 - **An AUTHORED prism size widens its clamp; a GROWN one keeps it.**
   `PrismScaleAnimator.SetTargetScale` clamps PER AXIS into `[minScale, maxScale]` — serialized
   defaults `(0.5,0.5,0.5)`/`(10,10,10)`, which **363 of 404 prefabs** inherit unchanged — inside
