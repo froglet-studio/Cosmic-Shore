@@ -4756,11 +4756,13 @@ unless the ordering holds and the ratio stays constant:
 
 **What shipped.** The strut is stretched on the native lattice to `30 × 1 × 1` and then the whole
 structure — prisms, spacing, and the spindles between them — is scaled **2×**, giving
-`60 × 1 × 1` at `LatticeScale 4` (separation 3 → 12, spacing 7.83 → 31.32). The span is **3.83
+`60 × 1 × 1` at `LatticeScale 2` (separation 3 → 6, spacing 7.83 → 15.66). The span was **3.83
 spacings before and after**, which is the check that the LENGTH is a pure scale-up rather than a
 reshape; the cross-section was then thinned by hand from the 2 a uniform scale would give to
 **1**, which is a deliberate reshape — Space is the skeletal element and a 60:1 needle reads
-thinner than a 30:1 bar at the same length.
+thinner than a 30:1 bar at the same length. (§33.10 later opened the spacing to `LatticeScale 4`
+and §33.11 shortened the strut to 40; the numbers in this section are that pass's, not the
+shipped ones.)
 The octagon colony's populations are unchanged (`MaxTotalSpawnedObjects 30`, cap 33).
 
 **Spindles scale; crystals do not — and the spindle scale goes on the CHILD, not the root.**
@@ -4794,7 +4796,7 @@ prism is 240 units and the species' ceiling reaches **155%** of the Blob cell's
 `FrenzyEnterVolume 288,000` on its own. Holding the cross-section at **1** instead lands it at
 `60 × 1 × 1 = 60` per prism (**112.7** after the 1.88 level spread) and **39%** — heavier than the
 20 × 1 × 1 it replaced (13%), lighter than its own Mass sibling (71%), and comfortably inside the
-budget. A lattice species' thickness is therefore a *volume* dial with cubic leverage, not only a
+budget. (§33.11's shortening to 40 takes it further down, to 75.1 and 26%.) A lattice species' thickness is therefore a *volume* dial with cubic leverage, not only a
 look dial: it is the cheapest correction available when a scale-up overshoots the ladder. If the
 freestyle cell still reads sparse or freezes early, the levers in order remain the **cell's volume
 ladder** first and `MaxLivePopulation` last (§32.7 seventh pass, /ecology §4.6); neither is changed
@@ -4862,7 +4864,7 @@ flora. **363 of 404 prefabs still fall through to `[0.5, 10]`.**
 
 | | Charge | Mass | Space (was → now) | Time |
 |---|---|---|---|---|
-| **Gyroid** | 86.2 | 207.0 | **18.8 → 112.7** | 86.2 |
+| **Gyroid** | 86.2 | 207.0 | **18.8 → 112.7** (→ 75.1 at §33.11's 40) | 86.2 |
 | **Schwarz P** | 13.8 | 25.7 | **2.5 → 7.5** | 13.8 |
 
 **Not swept in.** About fifteen other call sites author `TargetScale` directly
@@ -4905,7 +4907,8 @@ would have saved three passes of measuring phantom geometry.
 
 The two Space elements were opened up: gyroid `LatticeScale 2 → 4` (spacing `15.66 → 31.32`) and
 Schwarz P `1.667 → 5` (spacing `8.75 → 26.25`), with **both prisms unchanged** at `60 × 1 × 1`
-and `30 × 0.5 × 0.5`. Spans fall accordingly — gyroid `3.83 → 1.92`, Schwarz `3.43 → 1.14` — and
+and `30 × 0.5 × 0.5` (the gyroid strut was shortened to 40 immediately after — §33.11). Spans
+fall accordingly — gyroid `3.83 → 1.92`, Schwarz `3.43 → 1.14` — and
 the Schwarz strut, which had 108 crossings, is now **flush with none**.
 
 **What this pass had to undo.** `fit_schwarz_p_leaf_sizes.py` sized the Space prism as RATIOS to
@@ -4940,3 +4943,22 @@ the **bounds**: a gyroid plant's octagon ring radius goes 20u → 40u and its te
 and a Schwarz plant's tile goes 50u → 150u across. Same mass, spread over ~4× and ~3× the linear
 extent — worth an eye in the editor for plants reaching past the membrane or into the nucleus,
 which is a spatial question no offline check here answers.
+
+### 33.11 The Space gyroid strut, shortened to 40 (Aug 2026)
+
+`60 × 1 × 1 → 40 × 1 × 1` on the unchanged `LatticeScale 4` lattice (spacing 31.32), so the span
+falls **1.92 → 1.28** spacings. Prism only; spacing, topology, prism count and populations are
+untouched, which is why nothing in §33.10's verification needed re-running — the coherence family,
+the level invariance and the registry bound are all properties of the *lattice*, and the lattice
+did not move.
+
+Volume falls with it: `60 → 40` per prism, **112.7 → 75.1** effective after the 1.88 level spread,
+and the species' ceiling in the Blob cell **39% → 26%** of `FrenzyEnterVolume`. Schwarz P Space
+keeps `30 × 0.5 × 0.5` at `LatticeScale 5`, judged good as shipped.
+
+The current state of both Space elements:
+
+| | prism | LatticeScale | spacing | span | eff. volume | % of Blob Frenzy |
+|---|---|---|---|---|---|---|
+| **Gyroid Space** | 40 × 1 × 1 | 4 | 31.32 | 1.28 | 75.1 | 26% |
+| **Schwarz P Space** | 30 × 0.5 × 0.5 | 5 | 26.25 | 1.14 | 7.5 | 2% |
