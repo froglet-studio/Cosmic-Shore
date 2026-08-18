@@ -787,6 +787,15 @@ The whole loop is built from existing fundamentals: crystals (unchanged), prisms
 body), domains (ball ownership), elementals (the four scaling knobs). Nothing here adds a
 fundamental or a parallel system, and nothing is removed from the world by a timer.
 
+> **Later (2026-08-18):** the **switch** itself was named as a platform fundamental — *a ring you
+> thread, and threading it activates something* — when the freestyle toybox was put on the same
+> shape. That is a NAMING of what this section already describes, not a new mechanism the Scarab
+> introduced: the ring shape and the mouth-crossing test were already shared with `AstroLeagueGoal`
+> and the painting toy's stroke gates. The law that came out of it, and that `ScarabSwitch` already
+> satisfies, is **the ring IS the trigger volume, drawn at its own radius** (`CrossedMouth` tests
+> exactly `_ringRadius`). See `CLAUDE.md` § fundamentals and `Docs/ToySystem/ARCHITECTURE.md`
+> § "The switch".
+
 ---
 
 ## 7. The four abilities × four elements
