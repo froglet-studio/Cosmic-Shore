@@ -664,6 +664,11 @@ namespace CosmicShore.Gameplay
         ///
         /// <para>Called BEFORE the prism is parented, so the children walked here are only the
         /// spindle prefab's own - the prism can never be caught by it.</para>
+        ///
+        /// <para>A spindle may have MORE THAN ONE child: the gyroid's branch is a mirrored PAIR
+        /// of half-branches meeting at the prism (Docs/ECOSYSTEM.md 34.12), and both halves must
+        /// move with the lattice together or the pair separates at the joint. The loop below is
+        /// already the right shape for that - do not narrow it to GetChild(0).</para>
         /// </summary>
         void ScaleSpindleToLattice(Spindle target)
         {
