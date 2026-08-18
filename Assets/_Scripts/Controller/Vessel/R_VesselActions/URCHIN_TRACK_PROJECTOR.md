@@ -16,9 +16,16 @@ It is not a wall, a weapon or a trap. It is **one lane of ordinary conserved tra
 pilot's own domain**, so every system in the game already knows what to do with it:
 
 - the ride reads it as **friendly terrain** (150 u/s) and **grows** it as it passes
-  (`GunVesselTransformer.FinalBlockSlideEffects`),
-- an opposing Urchin rides it as hostile terrain at 10 u/s and **steals** it under itself,
-- fauna graze it like any other trail,
+  (`GunVesselTransformer.ApplyPrismscapePayoff` → `Prism.Grow`),
+- at **Mass 5** ("Reinforced Wake") the prisms you ride over come up **shielded** — so a lap of
+  your own ramp armours it, at the cost of double ride-ammo on the next lap and of dropping those
+  prisms out of the cell's fauna targeting grids (shielded mass is never prey),
+- an opposing Urchin rides it as hostile terrain at 10 u/s and **steals** it under itself
+  (`Prism.Steal`, same method, else branch),
+- **fauna graze it like any other trail** — not by assertion: `BoostRingBuilder.LayOne` calls
+  `Prism.Initialize`, which registers with `PrismSpatialIndex`, whose `BindCell` calls
+  `Cell.AddBlock`. That is the same registration path the vessel wake takes, so the track lands in
+  the cell's targeting grids and per-domain volume sums exactly like any other prism,
 - it is destroyed only by an active force, never by a clock.
 
 Nothing here is a new fundamental. It is Prisms/Prismscapes + Domain, placed on purpose.
@@ -125,6 +132,18 @@ One deploy per Urchin per 20 s, so a four-Urchin lobby adds at most ~2.6 prisms/
 mass, against a cell whose live population is in the thousands. It is the cheapest structure-placing
 ability in the fleet (the Squirrel's tube lays 8 prisms per ring on a ring count the intensity
 picks; the Ribcage lays 10,000+).
+
+**Volume, for the cell's phase ladder**: a track prism is 3 × 3 × 6 = **54** volume (3.4× the
+nominal 16), so a deploy adds **~702** to the host cell's `LiveVolume` and a Space-5 deploy ~1,400.
+A cell's `FrenzyEnterVolume` is in the tens of thousands, so this cannot move the ladder on its own
+— but it is real mass and it counts, so a mode that expects many Urchins should be measured rather
+than assumed.
+
+**Per-prism CPU**: `HoldColliderAtFullSize` runs one short-lived coroutine per prism *for the bloom
+only* — it compensates the collider against the animated transform scale and exits the frame the
+prism reaches its target. That is the shared cost of every boost-ring prism in the game, not
+something this ability adds; the prisms are ordinary clock-animated mass once the bloom lands, and
+a later `Grow()` from a ride is unaffected (the coroutine has already exited).
 
 The prisms are **conserved**: nothing removes them on a clock. `Cleanup` returns them to the pool at
 a turn boundary — the same active, explicit event class as a scene load — and a live match removes
