@@ -268,6 +268,37 @@ outcome is optimization, not life). Use the `/ecology` skill for any change here
   why it was easy to miss. **General rule: a silent clamp inside a setter is indistinguishable
   from a config that never applied, and it defeats every offline measurement — when a fitted size
   does not read on screen, check what the engine actually STORED before re-fitting.**
+- **CHARGE armours its mass, and a SHIELD is 3x the prism it replaces.** Charge is the element
+  whose leaves are SHIELDED, and that is a LAW rather than 15 copies of a number:
+  `Flora.ResolveShieldPeriod` floors a Charge plant at `Flora.ChargeShieldPeriod` (1s), asked
+  once from `LifeForm.Initialize` — the only point where the prefab, the rolled variant, the
+  cell overrides AND the crystal carrying the element have all landed. Authoring cannot replace
+  it: the cadence is authored per CONFIG while the element is ROLLED per plant, so a config with
+  `SpreadElements` and an EMPTY `ElementPalette` (both Hesperides topiaries) applies its own
+  `ShieldPeriod: 0` to a Charge roll and nothing writable on that asset reaches it. An authored
+  cadence still wins (faster or slower is fine, *off* is not); **fauna are deliberately exempt** —
+  the override is on `Flora`, not `LifeForm`, because a creature's body prisms are not the food
+  web's mass. It is not immunity: `Prism.Consume` SHEDS a shield instead of eating the prism, so
+  grazing a Charge plant costs two passes, and armoured mass also leaves the cell's targeting
+  grids — Charge mass persists by being uninteresting. The **second** half is geometry:
+  `PrismStateManager.ActivateShield` engages the CIRCUMSCRIBING octahedron
+  (`OctahedronMeshGenerator.CIRCUMSCRIBING_SCALE = 3` on the box HALF-extents, i.e. reaching
+  **1.5 x leafSize** from the prism centre, 4.5x the volume), so **a shielded species must be
+  fitted for a body 3x its prism's reach**. Measured on the shipped gyroid bond table
+  (`Tools/Build/fit_gyroid_shield_clearance.py`), the plain leaves of every element are already
+  clear (box `s*` 1.26-1.99 — the leaf nearly spans its 7.84u bond but does not touch its
+  neighbours), and it is tripling that reach that fused the Charge plant into one solid: 826 of
+  15,880 near pairs interpenetrating, at 1.89x the size that would let them touch. The Charge
+  leaf is now the fitted `4.28 x 1.62 x 0.71` (uniform, so the 9 : 3.4 : 1.5 aspect it shares
+  with Time is untouched) — the plates read as a sparse skeleton and the octahedra fill the
+  lattice in. **Fit the PRISM, never the lattice**: scaling the lattice drags a whole family of
+  absolute-distance tolerances with it (§34.8) while scaling the prism drags nothing, and a
+  uniform k shrink is a k^3 volume change landing on the cell's Frenzy ladder (Blob gyroid
+  ceiling 85% -> 71% of `FrenzyEnterVolume` — later Frenzy, so no ladder is re-authored).
+  Colliders are unchanged: a shield swaps the MESH and the mass, never the collider. **Open,
+  measured, deliberate:** Schwarz P's Charge plates are fitted FLUSH and now shield too, so its
+  octahedra overlap at `s* 0.44` (3,654 of 74,952 near pairs) — reported by the same tool, left
+  unfitted because shrinking a second species is a look decision. `Docs/ECOSYSTEM.md §35`.
 - **Territorial permanence.** Take a cell, leave, it stays yours — the claim fauna cannot touch.
   In nucleus cells the permanent claim is the **nucleus interior** (fauna never consume it);
   exterior canopy/trail is deliberately contested churn (voracious any-domain grazing). In

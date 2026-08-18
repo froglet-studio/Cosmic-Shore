@@ -5243,3 +5243,164 @@ Volumes are RAW (`x·y·z`): since §33 a lattice species' leaf does not scale w
 (`Flora.PrismSizeFixedByGrowthRule`), so raw == effective and the ×1.88 spread these sections
 were originally computed with no longer applies. Blob `FrenzyEnterVolume` = 288,000; the gyroid
 ceiling is `40.0 × 30 prisms × 33 plants`, the Schwarz `7.5 × 36 × 22`.
+
+---
+
+## 35. Charge ARMOURS its mass — and a shield triples a prism's reach (Aug 2026)
+
+Two halves of one elemental identity: **Charge is the element whose leaves are shielded**, and
+a shielded prism is not a recoloured prism — it is a body **three times as long in every
+direction** as the one it replaces. The first half was true of nine flora species and silently
+false of six; the second half had never been fitted at all, so the one lattice species that did
+shield drew itself as an interpenetrating solid.
+
+### 35.1 The law, and why it could not be data alone
+
+`FloraVariantTuning.ShieldPeriod` is the cadence: `LifeForm.ShieldRegenCoroutine` re-armours one
+leaf every `shieldPeriod` seconds, cycling the plant's live prisms forever, so a settled plant is
+fully armoured after `prisms × period` seconds and re-armours anything a grazer strips.
+
+The armour is **not immunity**. `Prism.Consume` on a shielded prism **sheds the shield** instead
+of imploding the mass, so a herbivore has to strip a Charge plant before it can graze it, and the
+plant races to put the armour back. Nothing is culled, nothing is invulnerable, and the food web
+is still the only down-force (§0) — grazing a Charge plant simply costs two passes. The second
+effect is steering: shielded mass is excluded from the cell's targeting grids
+(`Cell.AddBlock` / `NotifyBlockShieldStateChanged`, §22), so an armoured Charge plant also stops
+*attracting* the herbivores that would strip it. That pair is the whole cost/benefit of the
+element: Charge mass persists, and it persists by being uninteresting.
+
+**Where it was.** The Charge gyroid shipped `ShieldPeriod 1` with the elemental contract, and the
+eight phyllotactic garden species (Arbor / Coral / Frond / Lantern / Reed / Rosette / Spire /
+Tendril) followed it. Six Charge species never did — Branching, Cacti, Nerve, Pine and Wall sat
+at `Variant.Enabled: 0` (which `CellLifeSpawnerBase` skips **whole**), SchwarzP at the
+keep-the-prefab sentinel `-1`, and **every flora prefab ships `shieldPeriod 0`**.
+
+**Why the six assets are not the fix.** They are now authored (`ShieldPeriod: 1`, by
+`Tools/Build/author_charge_flora_shields.py --check`), but authoring cannot reach every Charge
+plant, because **the cadence is authored per CONFIG while the element is rolled per PLANT**. A
+config with `SpreadElements` and an EMPTY `ElementPalette` rolls an element and then applies its
+*own* variant block to it — so `Hesperides Gyroid Topiary` and `Hesperides SchwarzP Topiary` hand
+a Charge plant `ShieldPeriod: 0`, and no value writable on those two assets fixes it without
+re-shaping the other three elements grown from the same block.
+
+So the law lives in code: **`Flora.ResolveShieldPeriod`** floors a Charge plant at
+`Flora.ChargeShieldPeriod` (1s). It is asked once, from `LifeForm.Initialize`, at the only point
+where the prefab, the rolled variant, the cell overrides **and** the crystal that carries the
+element have all landed — `ApplyVariantTuning` runs before the element is known and would be
+overwritten by the cell overrides afterwards. An authored cadence still WINS: a Charge species may
+be armoured faster or slower than the fleet, it just may not be *unarmoured*. Two deliberate
+limits: it is on `Flora`, not `LifeForm`, so **fauna are untouched** (a creature's body prisms are
+not the food web's mass, and shielding them changes what it takes to kill a creature); and the
+assets still state `1` so a reader sees the identity in the data — `--check` keeps the two from
+drifting apart.
+
+### 35.2 A shield is 3× the prism, and nobody had fitted for it
+
+`PrismStateManager.ActivateShield` engages a `PrismOctahedronShield`: the octahedron that
+**circumscribes** the prism's box, at `OctahedronMeshGenerator.CIRCUMSCRIBING_SCALE = 3` applied
+to the box HALF-extents. `HealthBlock.prefab`'s collider is a unit cube, so world half-extents are
+`leafSize / 2` and the shield reaches **`1.5 × leafSize`** from the prism centre along each local
+axis — `4.5 ×` the box volume, and **3× the reach**.
+
+`Tools/Build/fit_gyroid_shield_clearance.py` walks the SHIPPED bond table and runs an exact
+separating-axis test over every near pair. The measurement corrected the assumption that motivated
+it:
+
+| element | shield | lattice | bond | leaf | box s\* | shield s\* | interpenetrating pairs |
+|---|---|---|---|---|---|---|---|
+| **Charge** | **ON** | 1.0000 | 7.84 | 9 × 3.4 × 1.5 | **1.59** | **0.53** | **826 of 15,880** |
+| Mass | off | 1.0000 | 7.84 | 7 × 4.5 × 3.5 | 1.99 | 0.66 | 829 of 9,828 |
+| Space | off | 3.1902 | 25.00 | 40 × 1 × 1 | 1.26 | 0.42 | 281 of 22,681 |
+| Time | off | 1.0000 | 7.84 | 9 × 3.4 × 1.5 | 1.59 | 0.53 | 826 of 15,880 |
+
+`s*` is the uniform scale at which the worst pair exactly **touches** — exact rather than
+bisected, because both bodies are centrally symmetric about their prism, so scaling a pair by `s`
+scales every projection radius by `s` while the centre offset is fixed and
+`s* = max over candidate axes of |d·u| / (rA(u) + rB(u))`.
+
+**The plain leaves were already clear** (box `s*` 1.26–1.99): the gyroid's leaf very nearly spans
+its bond — 9u against a 7.84u mean bond — but does not touch its neighbours. It is *tripling that
+reach* that fuses the plant, which is why only the shielded element has to answer for it. The
+worst Charge value is shared by **10 pairs**, so it is a repeating bond relationship, not one
+accidental pair.
+
+### 35.3 The fit
+
+Uniform on all three axes — the Charge leaf's ASPECT (9 : 3.4 : 1.5, shared with Time) is its
+identity; only its size moves:
+
+```
+shields touch at   ×0.5295          (they currently overlap 1.89× oversize)
+clearance          10% of touching  → ×0.4766
+Charge leaf        9 × 3.4 × 1.5  →  4.28 × 1.62 × 0.71
+```
+
+At the fitted size the worst shielded pair sits at `s* = 1.114` with **zero** interpenetrating
+pairs, while the unshielded boxes are far apart (`s* > 2.5`). That is exactly the trade the ask
+described: the plant's plates become a sparse skeleton and **the octahedra are what fill the
+lattice back in**. Because a Charge plant is fully armoured a few tens of seconds after it
+settles, the armoured state is the one that is nearly always on screen.
+
+**Nothing about the LATTICE moved** — `separationDistance` / `LatticeScale`, the bond table, and
+every coherence tolerance (snap, mate-search radius, reservation floor,
+`AssembledFlora.MisalignmentRadius`) are untouched. That is deliberate and is the cheap half of
+§34.8: those tolerances are absolute distances measured against this lattice, so scaling the
+lattice drags a whole family of constants with it, whereas scaling the PRISM drags nothing —
+`GyroidAssembler` reads `Prism.TargetScale` only to stamp it onto the next prism
+(`ConvertBlock`), never to place one. The fit also survives levelling for free: a lattice species'
+leaf does not grow with level (`Flora.PrismSizeFixedByGrowthRule`, §33).
+
+### 35.4 Cost
+
+- **Colliders: unchanged.** A shield changes the LOOK and the mass, never the collider — the
+  authored primitive box trigger stays (`PrismOctahedronShield.ApplyShieldedPose`), because a
+  convex mesh trigger is invisible to trigger-skimmers. Shape-precise contact rides the Burst
+  shell tier in `PrismSpatialIndex`, which is a cold array keyed off the prism slots that already
+  exist. Prism COUNTS are unchanged everywhere (`MaxTotalSpawnedObjects` untouched), so the
+  per-cell collider budget is exactly as before. More shielded prisms do mean more slots pass
+  `ShellKind.None` in `ShellContactQueryJob` — Burst, per probe, no colliders.
+- **Volume: down, which is the safe direction.** Charge prism volume `45.90 → 4.92`
+  (`0.4766³ = 0.108`). In the Blob cell, where all three gyroid configs roll the four elements
+  uniformly, the gyroid family's ceiling falls from **85% → 71% of `FrenzyEnterVolume`** (245,076
+  → 203,586 against 288,000) and its seeded floor from 8% → 6%. Frenzy therefore arrives LATER, so
+  **no ladder is re-authored** — and it gives back some of the headroom §32.7 found the Blob
+  colony freezing against.
+
+### 35.5 What is NOT fitted (open, measured, deliberate)
+
+Schwarz P's Charge variant now shields too, and its plates were fitted **flush** against its own
+site set (§34.5), so it has exactly the same problem. Measured by the same tool, over that
+fitter's own frames (972 prisms of a 3×3×3 tile block, leaf `4.72 × 2.92 × 1`):
+
+| | s\* | interpenetrating |
+|---|---|---|
+| plates | 1.33 | 0 of 6,867 |
+| shields | **0.44** | **3,654 of 74,952** |
+
+It is left alone on purpose: the ask was the gyroid, and shrinking a second species' prisms is a
+look decision somebody has to want. The arithmetic is identical if it is wanted — a uniform
+`× 0.44 × 0.9 ≈ ×0.40`, giving roughly `1.89 × 1.17 × 0.40`. The eight phyllotactic Charge
+species have shielded since the garden shipped and were never fitted for it either; they are
+not lattices, so their prisms are far more loosely packed, but nobody has measured them.
+
+### 35.6 Verification (the human is the gate)
+
+1. `python3 Tools/Build/author_charge_flora_shields.py --check` — every Charge flora asset states
+   the armour, and states the same number the law does.
+2. `python3 Tools/Build/fit_gyroid_shield_clearance.py --check` — the shipped Charge gyroid leaf
+   is the fitted one; the run also re-proves zero interpenetrating pairs and self-tests the SAT.
+3. `python3 Tools/Build/verify_gyroid_lattice_scale.py` — unchanged, and must stay so: this branch
+   moved no lattice distance.
+4. **In-editor, Menu_Main (the Blob cell rolls all four gyroid elements):** find a gyroid plant
+   whose heart is the Charge crystal — identify it by the crystal's SHAPE, not its colour, since
+   a crystal's colour says who may collect it (`Docs/PALETTE.md` §2.2) — and watch it armour one
+   leaf per second. Confirm (a) the octahedra bloom in individually and read as separate bodies
+   rather than one fused mass, (b) the plant is progressively ignored by herbivores as it armours
+   (shielded mass leaves the cell's targeting grids, §22) and any contact that does land strips
+   the shield instead of eating the leaf, with the plant re-armouring it on the next pass of the
+   cadence, (c) the unshielded plates look deliberately sparse — that is the fit, not a growth
+   failure.
+5. **Hesperides:** a Charge topiary (gyroid or SchwarzP) must armour too — that config carries
+   `ShieldPeriod: 0` and rolls its element with an empty palette, so it is the case only
+   `Flora.ResolveShieldPeriod` can reach.
+6. After the flora config edits: `FrogletTools ▸ Validation ▸ Validate Lifeform Crystals`.
