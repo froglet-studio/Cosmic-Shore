@@ -107,7 +107,7 @@ un-implemented until Garrett marks them up. If your task requires a mapping that
 STOP and ask (AskUserQuestion), presenting the FLEET_MAPS proposal for that row. The same gate
 applies to new abilities, new resources on the meter list, and anything that adds a fundamental.
 
-## 4. Implement — the twenty-four rules that keep getting relearned
+## 4. Implement — the twenty-seven rules that keep getting relearned
 
 1. **Ability SOs are shared and stateless.** Per-vessel state lives in executors / vessel-root
    MonoBehaviours; SOs receive `(registry, status)` per call. Never bind state to an SO asset.
@@ -284,6 +284,33 @@ applies to new abilities, new resources on the meter list, and anything that add
     and every consumer sizing real geometry off it is wrong by the same factor. When you fix one,
     document the accessor as a base term so the next reader does not re-adopt it.
     (Self-trail contact, 2026-08-17.)
+
+26. **RE-SCOPING an L5 upgrade means finding and switching OFF the old one — the map's prose is
+    not the wiring.** An `ElementalAbilityMapSO` entry's `UpgradeLabel`/`UpgradeDescription` is
+    documentation; the upgrade itself lives in whatever SO gates on `IsUpgradeActive(<element>)`.
+    Re-author the map alone and the element now grants TWO upgrades, with the map describing only
+    the new one — a balance change invisible in the diff and in the HUD. So: grep
+    `IsUpgradeActive` across the effect/action SOs, resolve each hit's per-vessel ASSET, and
+    confirm which ones name the element you are re-scoping. (Dolphin Time 5, 2026-08-18: the
+    retired "Live Current" was `_dangerBonusElement: 4` on
+    `DolphinSkimmerChangeResourceByPrismEffect` and had to be set back to `None`.)
+    **Two effects can describe the same sentence and be different mechanisms.** "Danger prisms
+    pay more" is `SkimmerBoostPrismEffect.dangerEnergyMultiplier` (10x, BOOST, hardcoded to the
+    CHARGE upgrade, platform-wide) *and* `SkimmerChangeResourceByPrismEffectSO._dangerBonusElement`
+    (per-asset element, a different RESOURCE). CLAUDE.md and the fleet map each described one of
+    them; reading either alone gives a confident wrong answer about which gate you are moving.
+
+27. **Before writing "X still lands" about an upgrade's SCOPE, read that vessel's own effect
+    containers.** The platform's danger-prism paragraph lists slow + elemental drain + boost
+    reset + input mute, and it is tempting to inherit that list wholesale into a per-vessel
+    upgrade description. Per-vessel reality differs: the Dolphin carries the slow and an energy
+    halving, its boost effect is a `retainedFraction` halving that deliberately **skips its
+    correction while drifting** (i.e. exactly inside a drift-gated ward's window), and the input
+    mute (`SparrowDebuffByRhinoDangerPrismEffectSO`) is wired into **no container on any
+    vessel**. Resolve every guid in the vessel's `VesselImpactorDataContainerSO` /
+    `SkimmerImpactorDataContainerSO` and read the effects you are about to make claims about —
+    the ship protocol's "find the PRODUCER" rule, aimed at your own new prose rather than at
+    inherited docs. (Dolphin Drift Ward, 2026-08-18.)
 
 ## 5. Audit, then hand back verification (you cannot run Unity; the human is the gate)
 

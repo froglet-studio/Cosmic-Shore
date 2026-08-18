@@ -87,5 +87,6 @@ MonoBehaviour:
     LatchPolicy: 0
     UpgradeLabel: Drift Ward
     UpgradeDescription: While drifting you take no elemental debuff - a danger prism's
-      all-element drain does not land. The slow, the input mute and the boost reset still
-      do.
+      all-element drain does not land. Everything else still does: the full-strength slow
+      (x3 magnitude, x3 duration) and the halving of your banked blast energy. Your banked
+      boost is halved too, but the drift you are already in refills it.
