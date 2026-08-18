@@ -83,9 +83,10 @@ namespace CosmicShore.Editor
                 "  • Dog Fight: gunnery points a DOMAIN needs to win - a bullet hit scores 1 and " +
                 "a missile hit scores 50, so the default " + EndConditionOverridesSO.DefaultDogFightPointTarget +
                 " is 120 bullets or 3 rockets, or any mix.\n" +
-                "  • The Bends: bend points a DOMAIN needs to win - one opposing pilot caught in " +
-                "your Dolphin crystal blast scores 10, so the default " +
-                EndConditionOverridesSO.DefaultBendsPointTarget + " is six clean hits.",
+                "  • The Bends: BENDS a DOMAIN needs to win - one opposing pilot caught in your " +
+                "Dolphin crystal blast scores 1, so the default " +
+                EndConditionOverridesSO.DefaultBendsPointTarget +
+                " is three clean hits (a race to 3, like Joust).",
                 MessageType.Info);
 
             // ---- Live input fields (used at runtime) ----
@@ -101,7 +102,7 @@ namespace CosmicShore.Editor
             int rc  = Mathf.Max(0, EditorGUILayout.IntField("Ribcage - Prism Target", _config.ribcagePrismTarget));
             int wl  = Mathf.Max(0, EditorGUILayout.IntField("Wildlife Liberation - Kill Target", _config.wildlifeKillTarget));
             int df  = Mathf.Max(0, EditorGUILayout.IntField("Dog Fight - Point Target", _config.dogFightPointTarget));
-            int bd  = Mathf.Max(0, EditorGUILayout.IntField("The Bends - Point Target", _config.bendsPointTarget));
+            int bd  = Mathf.Max(0, EditorGUILayout.IntField("The Bends - Bend Target", _config.bendsPointTarget));
             if (EditorGUI.EndChangeCheck())
                 Persist("Edit End Game Conditions", () =>
                 {

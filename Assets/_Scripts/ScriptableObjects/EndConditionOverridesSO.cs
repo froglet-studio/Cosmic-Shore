@@ -56,7 +56,7 @@ namespace CosmicShore.ScriptableObjects
         public const int DefaultDogFightPointTarget = 90;
 
         /// <summary>The Bends bend target used when <see cref="bendsPointTarget"/> is 0 (auto/default).</summary>
-        public const int DefaultBendsPointTarget = 60;
+        public const int DefaultBendsPointTarget = 3;
 
         [Header("Live counts - used at runtime. 0 = auto/default (edit via FrogletTools > Game Modes > End Game Conditions)")]
         [Tooltip("HexRace crystals to end the race. 0 = auto-calc from the track waypoints.")]
@@ -98,11 +98,11 @@ namespace CosmicShore.ScriptableObjects
                  "0 = default (120).")]
         [Min(0)] public int dogFightPointTarget = 90;
 
-        [Tooltip("The Bends: points a DOMAIN needs to win. Points come from BENDS - opposing " +
-                 "pilots caught in your Dolphin crystal blast, 10 each - so 60 reads as 'six " +
-                 "clean hits on an enemy pilot, or three that catch a pair'. Teammates pool. " +
-                 "0 = default (60).")]
-        [Min(0)] public int bendsPointTarget = 60;
+        [Tooltip("The Bends: BENDS a DOMAIN needs to win - opposing pilots caught in your " +
+                 "Dolphin crystal blast, one point each. Race to 3, like Joust: three clean " +
+                 "hits, or one blast that catches a pair plus one more. Teammates pool. " +
+                 "0 = default (3).")]
+        [Min(0)] public int bendsPointTarget = 3;
 
         [Header("Build baseline - what a shipping build uses. Set via the tool's \"Set Build Values\" button.")]
         [Min(0)] public int hexRaceCrystalCountBuild = 0;
@@ -114,7 +114,7 @@ namespace CosmicShore.ScriptableObjects
         [Min(0)] public int ribcagePrismTargetBuild = 2000;
         [Min(0)] public int wildlifeKillTargetBuild = 250;
         [Min(0)] public int dogFightPointTargetBuild = 90;
-        [Min(0)] public int bendsPointTargetBuild = 60;
+        [Min(0)] public int bendsPointTargetBuild = 3;
 
         [Tooltip("When on, a build first copies the Build baseline onto the Live counts, so test values are never shipped.")]
         public bool autoRestoreBuildValuesBeforeBuild = true;
@@ -192,7 +192,7 @@ namespace CosmicShore.ScriptableObjects
         public int GetDogFightPointTarget() => dogFightPointTarget > 0 ? dogFightPointTarget : DefaultDogFightPointTarget;
 
         /// <summary>
-        /// The Bends point target ("first domain to N points"): the configured value when
+        /// The Bends bend target ("first domain to N bends"): the configured value when
         /// &gt; 0, otherwise <see cref="DefaultBendsPointTarget"/>. Compared against a DOMAIN
         /// SUM of <see cref="CosmicShore.Data.IRoundStats.CombatPoints"/> - the same field Dog
         /// Fight races on, because both modes score vessel-vs-vessel hits and only the WEIGHTING

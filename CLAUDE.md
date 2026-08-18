@@ -673,9 +673,11 @@ guns in it. Every pilot flies a Dolphin, whose one offensive act is a cone armed
 skimming** and fired **only by touching a crystal**; Rampage paid you for aiming that cone at a
 forest, and this mode changes nothing about the vessel and pays you only for catching an
 **opposing pilot** in it. A caught pilot takes the blast's all-element decaying debuff — one
-**bend**, 10 points — so nothing is destroyed and nobody is removed: the victim is simply worse
+**bend**, 1 point — so nothing is destroyed and nobody is removed: the victim is simply worse
 at the mode for four seconds (narrower cone, shorter reach, slower crystal seeding, weaker
-boost), which makes the whole fight about that window. First DOMAIN to 60 wins, and it is a team
+boost), which makes the whole fight about that window. **First DOMAIN to 3 wins** — a race to 3
+like Joust, so a bend is a whole-match event rather than a tick and a blast that catches two
+opponents at once takes two thirds of the match. It is a team
 race for the same structural reason as Dog Fight (`ExplosionImpactor.AcceptImpactee` declines
 own-domain vessels, so you cannot bend a teammate at all). It **reuses Rampage's arena outright**
 — the same four per-intensity cactus-forest `CellConfigDataSO`s, referenced not forked, so
@@ -696,9 +698,14 @@ crystal collection resolves server-side and `NetworkCrystalManager.ReplayVesselC
 re-runs the vessel effects on the owning client, so unlike a pooled local projectile a client's
 one blast exists on both the server and that client, and `VesselCombatHitLatch` is per-machine and
 cannot see across the wire; the gate is `IPlayer.IsNetworkOwner` (never `IsLocalUser`, which would
-drop every AI's hits); (3) **a score must not be able to disagree with the effect it is scoring** —
+drop every AI's hits); (3) **a comeback rate is a function of the TARGET, and re-targeting a mode
+silently kills it** — the same trap Dog Fight recorded, hit again 20x harder when this mode's
+target went from 60 to 3: the rate that bought 6 element levels at a quarter-of-target deficit
+would have bought 0.3 of one at the same FRACTION of the race, so it was rescaled 0.4 → 4.0 and
+`author_bends_assets.py` now FAILS the build if a quarter-of-target deficit stops buying a whole
+level; (4) **a score must not be able to disagree with the effect it is scoring** —
 an elementally immune victim takes no drain, so the scoring effect is authored to require a
-debuffable victim, which also turns immunity into real counter-play for free; and (4) **the AI
+debuffable victim, which also turns immunity into real counter-play for free; and (5) **the AI
 needed a narrower hook than steering** — `AIPilot.SetExternalTargetProvider` replaces crystal
 seeking outright and would disarm every AI in a mode whose weapon is fired BY a crystal, so
 `AIPilot` grew **`SetDriftLookTargetProvider`**, an opt-in override for the DRIFT LOOK-DIRECTION

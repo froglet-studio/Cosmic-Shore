@@ -14,5 +14,5 @@ MonoBehaviour:
   m_EditorClassIdentifier:
   metric: 8
   golfRules: 1
-  bendPoints: 10
+  bendPoints: 1
   gunneryPoints: 0

@@ -91,26 +91,35 @@ PREVIEW_FILEID = 241334157148977051
 # The Cell component's fileID in the donor scene - the controller's arenaCell reference.
 DONOR_CELL_FILEID = 1700000065
 
-# The bend target - the race metric. The 25%/50% milestone rungs are FRACTIONS of this (so 15
-# and 30), and moving it moves the whole progress ladder. Kept in sync with
-# EndConditionOverridesSO.DefaultBendsPointTarget.
-BENDS_POINT_TARGET = 60
+# The bend target - the race metric. RACE TO 3, like Joust's three collisions: a bend is a
+# whole-match event rather than a tick, so the number on the HUD is small enough to hold in your
+# head and each hit is worth a third of the match. The 25%/50% milestone rungs are FRACTIONS of
+# this, so at 3 they fire on the 1st and 2nd bend - which in a race this short is exactly right.
+# Kept in sync with EndConditionOverridesSO.DefaultBendsPointTarget.
+BENDS_POINT_TARGET = 3
 
-# What one bend is worth. 10 rather than 1 so the target reads as a count of REAL EVENTS (60 =
-# six clean hits) instead of a number that needs dividing, and so a blast that catches two
-# enemies is visibly a big moment on the HUD.
-BEND_POINTS = 10
+# What one bend is worth. ONE, so a point IS a bend: the scored metric, the raw count and the
+# HUD number are all the same thing, and there is no scale factor to divide out when reading a
+# scoreboard. Kept authorable because ScoringRuleSO.PointsForCombatHit is the only place a
+# weighting may live (Dog Fight's rule says a rocket is 50), not because this one wants tuning.
+BEND_POINTS = 1
 
 # The comeback strength, and it is a FUNCTION OF THE TARGET - `bonusLevels = deficit x rate` -
-# so a rate only means anything next to the scale of deficits the mode produces. A
-# quarter-of-target deficit here is 15 points, and the platform rule of thumb (Rampage, Dog
-# Fight) is that this should buy several whole element levels: 15 x 0.4 = 6.
+# so a rate only means anything next to the scale of deficits the mode produces. This is the
+# trap DOGFIGHT.md records (a rate authored for a 500-point target quietly became worth 0.2 of a
+# level when the target became 120), and dropping this mode's target from 60 to 3 is a 20x
+# version of exactly that: the 0.4 that bought 6 levels at a 15-point deficit would now buy 0.3
+# of a level at the same FRACTION of the race, i.e. nothing at all.
+#
+# Rescaled to the new target: one bend behind (a THIRD of the match) buys 4 levels, two behind
+# buys 8 and saturates near the level-10 sustained ceiling. The assert below fails the build if
+# a quarter-of-target deficit ever stops buying a whole element level again.
 #
 # It matters more in this mode than in any other, because the thing a bend TAKES is element
 # levels: a player who is losing is, by construction, also debuffed. The comeback buff is what
 # stops that becoming a spiral, and all four elements rise together per the platform law
 # (CLAUDE.md / ElementalComebackSystem: equal-elements), so this dial is the whole surface.
-COMEBACK_RATE = 0.4
+COMEBACK_RATE = 4.0
 
 # How long a bend lasts and how deep it cuts. These are the ALREADY-AUTHORED values on the
 # cavitation debuff asset (-0.5 on every element, decaying over 4s); they are restated here only
@@ -274,7 +283,7 @@ emit("Assets/_SO_Assets/Games/ArcadeGameBends.asset",
   Description: Dolphins only, in the cactus forest, with no guns anywhere. Graze the
     thicket to charge your jaws, race a rival to the crystal, and put the cone on a
     PILOT instead of the trees - a hit strips every element they have and leaves them
-    four seconds of being worse at all of it. First domain to the bend target takes it.
+    four seconds of being worse at all of it. Three bends and your domain takes it.
   IconActive: {{fileID: 21300000, guid: {EXISTING['IconActive']}, type: 3}}
   IconInactive: {{fileID: 21300000, guid: {EXISTING['IconInactive']}, type: 3}}
   CardBackground: {{fileID: 21300000, guid: {EXISTING['CardBackground']}, type: 3}}
@@ -399,6 +408,19 @@ emit(END_PATH, endcond)
 
 # ══ VALIDATE EVERYTHING BEFORE WRITING ANYTHING ═════════════════════════════
 errors = []
+
+# The comeback rate is meaningless without the target next to it - see COMEBACK_RATE. A quarter
+# of the way behind must buy at least one whole element level, or the mode ships with a dead
+# dial that reads as a working one.
+if 0.25 * BENDS_POINT_TARGET * COMEBACK_RATE < 1.0:
+    errors.append(
+        f"comeback rate {COMEBACK_RATE} is dead against target {BENDS_POINT_TARGET}: a "
+        f"quarter-of-target deficit buys {0.25 * BENDS_POINT_TARGET * COMEBACK_RATE:.2f} "
+        f"element levels (< 1). Rescale the rate with the target.")
+
+# A bend must be worth at least a point, or the only scoring event in the mode scores nothing.
+if BEND_POINTS < 1:
+    errors.append("bend points is 0 - the mode's only scoring event would be worth nothing")
 
 all_new = list(G_SCRIPT.values()) + list(G_ASSET.values())
 if len(set(all_new)) != len(all_new):

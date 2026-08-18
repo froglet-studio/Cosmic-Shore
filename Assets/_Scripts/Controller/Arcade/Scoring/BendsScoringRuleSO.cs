@@ -44,8 +44,11 @@ namespace CosmicShore.Gameplay
         [Tooltip("Points for one BEND - an opposing pilot caught in your Dolphin crystal blast " +
                  "and stripped of element levels. Counted once per blast per victim through the " +
                  "shared VesselCombatHitLatch window, so a cone that grows through a pilot over " +
-                 "several frames pays once. A blast that catches two enemies pays twice.")]
-        [Min(0)] [SerializeField] int bendPoints = 10;
+                 "several frames pays once. A blast that catches two enemies pays twice.\n\n" +
+                 "ONE, deliberately: the mode races to 3, so a point IS a bend and the HUD " +
+                 "number is the thing that happened rather than a scaled proxy for it - the " +
+                 "same shape as Joust, which races to 3 collisions.")]
+        [Min(0)] [SerializeField] int bendPoints = 1;
 
         [Tooltip("Points for landed GUNNERY. Zero on purpose: the Dolphin has no guns, and a " +
                  "rule that paid for them would hide a mis-authored vessel roster behind a " +
@@ -112,11 +115,12 @@ namespace CosmicShore.Gameplay
                 s.Score,
                 GolfScoreSentinels.IsFinishTime(s.Score)
                     ? ScoreResultBuilder.FormatTime(s.Score)
-                    : $"{Remaining(gameData, s.Domain)} Points Left",
-                // The secondary line is the BREAKDOWN. In a mode with one hit class that is just
-                // the bend count - but it is the honest count rather than points/weight, so
-                // retuning bendPoints can never make the scoreboard lie about what happened.
-                $"{LiveMetric(s)} pts · {s.DebuffHitsLanded}×◈")).ToList();
+                    : $"{Remaining(gameData, s.Domain)} Bends Left",
+                    // The secondary line is the BEND COUNT, not the points. At the shipped weight
+                // (1 point per bend) the two are the same number, so printing both would just
+                // read as "2 pts · 2 bends"; printing the raw count keeps the line honest if
+                // bendPoints is ever re-tuned away from 1.
+                $"{s.DebuffHitsLanded} bends")).ToList();
 
             return ScoreResultBuilder.BuildRanked(rows);
         }
@@ -124,6 +128,6 @@ namespace CosmicShore.Gameplay
         public override ScoreReveal BuildReveal(GameDataSO gameData, IRoundStats localStats, bool didWin) =>
             didWin
                 ? new ScoreReveal("VICTORY", "BEND TIME", (int)localStats.Score, true)
-                : new ScoreReveal("DEFEAT", "POINTS LEFT", Remaining(gameData, localStats.Domain), false);
+                : new ScoreReveal("DEFEAT", "BENDS LEFT", Remaining(gameData, localStats.Domain), false);
     }
 }
