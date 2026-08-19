@@ -31,24 +31,24 @@ MonoBehaviour:
   brickScale: {x: 2.5, y: 1.5, z: 8}
   growthRate: 1
   dais:
-    PairCount: 10
-    BladesPerWing: 19
-    HingeEvery: 5
-    SunRadius: 7
-    WingHoleRadius: 1.25
-    WingRootReach: 0.8
-    WingHalfGapDeg: 2
+    PairCount: 5
+    BladesPerWing: 25
+    HingeEvery: 4
+    SunRadius: 6
+    WingHoleRadius: 1.2
+    WingRootReach: 1.25
+    WingHalfGapDeg: 7.12
     BladeGapDeg: 0.8
-    SectorMargin: 0.06
-    BladeTipLength: 0.55
-    BladeMinLength: 0.3
-    BladeTaper: 1.8
+    SectorMargin: 0.18
+    BladeTipLength: 0.71
+    BladeMinLength: 0.23
+    BladeTaper: 1.24
     BladeWidthStart: 0.07
-    BladeWidthEnd: 0.09
-    BladeWidthShape: 1
-    HingeWidthScale: 1.8
-    BladeThickness: 0.05
-    SunApparentDiameter: 2.3
-    DishRise: 0.6
-    DishPower: 2
+    BladeWidthEnd: 0.1
+    BladeWidthShape: 1.83
+    HingeWidthScale: 1.7
+    BladeThickness: 0.2
+    SunApparentDiameter: 2
+    DishRise: 1.43
+    DishPower: 2.13
   daisPrismsPerFrame: 24
