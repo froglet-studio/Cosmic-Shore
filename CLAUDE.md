@@ -2176,6 +2176,26 @@ fleet runs 1.5s; **the Dolphin is authored at 2.5s** because it is the one vesse
 way in (it locks course on the crystal then swings its nose onto a rival — 180° at 110°/s is 1.64s,
 so the run has to cover it). Measured: 373/400 randomized objectives reached → **400/400**, for
 +0.18s of mean time.
+  **A reported "the AI dodges the crystal at the last second" was NOT the break-off** — two
+  plausible fixes were measured and rejected first (a commit range trades the dodge for orbiting,
+  because the turning-circle test is structurally a sub-1s test; a look-ahead factor moves the
+  median but not the earliest and costs 9× the break-offs). The cause was
+  `AIPilot.UpdateCellContent` comparing a squared distance against `MinDistance * MinDistance`
+  while `MinDistance` already held a squared distance — a `d⁴` threshold that **every** later
+  candidate passed, so the pilot took the LAST eligible crystal rather than the nearest, and
+  re-picked arbitrarily on every `OnCellItemsUpdated` (which every respawn raises). General rule:
+  **a comparison that mixes a squared quantity with a linear one is invisible to review and to
+  every static check, and its symptom is a behaviour nobody attributes to arithmetic.** Selection
+  now lives in `AIObjectiveScoring.Select` — pure, list-based, so the shipped path IS the tested
+  one — with commitment hysteresis (`objectiveSwitchImprovement` 0.75) so a crystal event can no
+  longer re-point a pilot that is a second from arriving. Two more from the same report, both
+  about the Dolphin never aiming at the player: **a provider that NAMES an aim point must not
+  inherit the fallback's "would this drift actually turn the vessel" test** (the mass cluster's
+  only job is to find somewhere interesting to point, so it defers when the objective is already
+  ahead; an explicitly named rival being ahead is the BEST case, and rejecting it turned the nose
+  away from exactly the pilot it was lining up on), and **an AI's engagement range must track its
+  weapon's** (Bends capped `aiAimMaxRange` at 900 against `AOEConicExplosion.prefab`'s authored
+  `height: 2400`).
 
 ### Menu Screen Navigation (Menu_Main Scene)
 

@@ -1,5 +1,6 @@
 #if UNITY_EDITOR
 using System;
+using System.Collections.Generic;
 using NUnit.Framework;
 using UnityEngine;
 using CosmicShore.Gameplay;
@@ -187,6 +188,72 @@ namespace CosmicShore.Tests
                 "A crystal being collected and another selected teleports the bearing and the range. " +
                 "The sweep accumulated around the old objective says nothing about the new one, and " +
                 "carrying it over would send the AI on a break-off it never earned.");
+        }
+
+        // ---------------------------------------------------------------------------------------
+        // Objective selection
+        // ---------------------------------------------------------------------------------------
+
+        [Test]
+        public void Select_TakesTheNearest_NotTheLastInTheList()
+        {
+            // The exact defect, pinned. The original compared a squared distance against
+            // MinDistance*MinDistance while MinDistance already held a squared distance, so the
+            // threshold was d^4 and every candidate after the first passed — the pilot took the
+            // LAST eligible item. With crystals collected and respawned constantly (each respawn
+            // re-runs the selection) its objective jumped around mid-approach, which reads on
+            // screen as an AI swerving away from a crystal it was about to collect.
+            var distances = new List<float> { 40f, 300f, 120f };
+
+            Assert.AreEqual(0, AIObjectiveScoring.Select(distances, -1, false, 0f, 0.75f),
+                "Expected the 40-unit objective. Picking index 2 (the last) is the d^4 comparison " +
+                "returning: every candidate beats a threshold that is the square of a square.");
+
+            // Order must not matter — the same set shuffled must give the same answer.
+            Assert.AreEqual(1, AIObjectiveScoring.Select(new List<float> { 300f, 40f, 120f }, -1, false, 0f, 0.75f));
+            Assert.AreEqual(2, AIObjectiveScoring.Select(new List<float> { 120f, 300f, 40f }, -1, false, 0f, 0.75f));
+        }
+
+        [Test]
+        public void Select_KeepsACommittedApproachAgainstAMarginallyBetterCandidate()
+        {
+            // held = index 0 at 100u. A candidate at 90u is barely better and must not steal the
+            // approach; one at 50u is a different proposition and may.
+            var marginal = new List<float> { 100f, 90f };
+            Assert.AreEqual(0, AIObjectiveScoring.Select(marginal, 0, false, 0f, 0.75f),
+                "A 10% better candidate must not re-point a pilot that is already on an approach — " +
+                "that is the swerve, arriving by a different route.");
+
+            var decisive = new List<float> { 100f, 50f };
+            Assert.AreEqual(1, AIObjectiveScoring.Select(decisive, 0, false, 0f, 0.75f),
+                "A candidate at half the range is worth switching to; commitment is hysteresis, not a lock.");
+
+            // A held index that no longer exists (its crystal was collected) must not pin anything.
+            Assert.AreEqual(1, AIObjectiveScoring.Select(decisive, 7, false, 0f, 0.75f));
+            Assert.AreEqual(1, AIObjectiveScoring.Select(decisive, -1, false, 0f, 0.75f));
+        }
+
+        [Test]
+        public void Select_WithRunUpPreference_PicksSomethingItCanMakeARunAt()
+        {
+            // The Dolphin's case: it locks course on a crystal and then swings its nose onto a
+            // rival, so a crystal under its nose gives it no time to do it. 200u at 80 u/s is 2.5s
+            // of approach; 20u is a quarter of a second.
+            var distances = new List<float> { 20f, 210f, 600f };
+            const float desiredRun = 200f;
+
+            Assert.AreEqual(0, AIObjectiveScoring.Select(distances, -1, false, desiredRun, 0.75f),
+                "Precondition: without the preference it takes the nearest.");
+            Assert.AreEqual(1, AIObjectiveScoring.Select(distances, -1, true, desiredRun, 0.75f),
+                "With the preference it should take the 210-unit crystal — the one nearest the run-up " +
+                "it wants — not the 20-unit one under its nose nor the 600-unit one across the arena.");
+        }
+
+        [Test]
+        public void Select_HandlesAnEmptyField()
+        {
+            Assert.AreEqual(-1, AIObjectiveScoring.Select(new List<float>(), -1, false, 0f, 0.75f));
+            Assert.AreEqual(-1, AIObjectiveScoring.Select(null, 3, true, 100f, 0.75f));
         }
 
         // ---------------------------------------------------------------------------------------

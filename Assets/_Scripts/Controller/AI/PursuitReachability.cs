@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace CosmicShore.Gameplay
@@ -240,6 +241,65 @@ namespace CosmicShore.Gameplay
             }
 
             return _sweptDegrees >= orbitSweepDegrees;
+        }
+    }
+
+    /// <summary>
+    /// Which objective a pursuing AI should fly at. Pure and list-based so the SHIPPED selection is
+    /// the tested one — the alternative, a helper the pilot uses and a reference the tests use, is
+    /// two implementations that agree until they do not.
+    ///
+    /// <para>It exists because the original one-line selection carried a defect that is invisible
+    /// on inspection and unmistakable in play: it compared a squared distance against
+    /// <c>MinDistance * MinDistance</c> while <c>MinDistance</c> already held a squared distance,
+    /// making the threshold <c>d⁴</c>. Every candidate after the first passed, so the pilot took
+    /// the LAST eligible item rather than the nearest — and since the item list re-orders as
+    /// crystals are collected and respawned, and every respawn re-runs the selection, its objective
+    /// jumped to an arbitrary crystal mid-approach. On screen that is an AI swerving away from a
+    /// crystal it was about to collect.</para>
+    /// </summary>
+    public static class AIObjectiveScoring
+    {
+        /// <summary>
+        /// How good an objective is, lower being better.
+        ///
+        /// Plain range by default. With <paramref name="preferApproachRun"/> it is instead the
+        /// distance from the RUN-UP the pilot wants, so it picks something it can make a proper run
+        /// at rather than whatever is under its nose — which matters for a vessel that has to line
+        /// something up on the way in. Skipping a near objective costs nothing, because collecting
+        /// is physical: the pilot still picks up whatever it flies through.
+        /// </summary>
+        public static float Score(float distance, bool preferApproachRun, float desiredRun) =>
+            preferApproachRun ? Mathf.Abs(distance - desiredRun) : distance;
+
+        /// <summary>
+        /// Index of the objective to fly at, or -1 when there are none.
+        ///
+        /// <paramref name="heldIndex"/> is the objective already committed to (-1 if none or if it
+        /// is gone). A committed approach is only abandoned for a candidate scoring at or below
+        /// <paramref name="switchImprovement"/> of it — otherwise any crystal event anywhere in the
+        /// cell can re-point a pilot that was a second from arriving, which is the same swerve the
+        /// class summary describes arriving by a different route.
+        /// </summary>
+        public static int Select(IReadOnlyList<float> distances, int heldIndex,
+                                 bool preferApproachRun, float desiredRun, float switchImprovement)
+        {
+            if (distances == null || distances.Count == 0) return -1;
+
+            int best = -1;
+            float bestScore = float.PositiveInfinity;
+            for (int i = 0; i < distances.Count; i++)
+            {
+                float score = Score(distances[i], preferApproachRun, desiredRun);
+                if (score >= bestScore) continue;
+                bestScore = score;
+                best = i;
+            }
+
+            if (heldIndex < 0 || heldIndex >= distances.Count || heldIndex == best) return best;
+
+            float heldScore = Score(distances[heldIndex], preferApproachRun, desiredRun);
+            return bestScore > heldScore * switchImprovement ? heldIndex : best;
         }
     }
 }

@@ -255,6 +255,86 @@ lives. Err generous.
   same place with one predicate and one timer, because the AI re-evaluates every frame anyway and
   an optimal path recomputed 60 times a second is wasted work.
 
+## 2026-08-19, second pass — the swerve was not the break-off at all
+
+Reported from play: *"the AI still seem to dodge the crystal at the last second sometimes."*
+
+The break-off was the obvious suspect and was **not** the cause. Two mechanisms were measured and
+rejected before finding it, and both are worth recording because both look right:
+
+- **A commit range** (silence the predictive test inside N seconds of the objective) trades the
+  dodge for orbiting. The turning-circle test is *structurally* a short-range test — it can only
+  fire inside `2R`, which is `2/ω` ≈ 1.04 s of flight — so a commit range silences it in the only
+  band where it ever fires. At 1.0 s it cut break-offs 28 → 4 and coverage 400/400 → 377/400
+  (329/400 boosted).
+- **A look-ahead factor** (run the test against an inflated `R` so it fires earlier) raises the
+  *median* decision time but not the *earliest*, and costs enormously: at k = 2.5 the break-off
+  count goes 28 → 247 and mean time to objective 2.10 s → 4.08 s. Worth knowing what it converges
+  to, though: as k → ∞ the test becomes exactly *"flying straight, would I miss by more than the
+  capture radius?"*, verified at 17.5° tripping a 60-unit approach against an 18-unit capture.
+
+### The actual cause: the objective selection was picking the LAST crystal, not the nearest
+
+```csharp
+float MinDistance = Mathf.Infinity;
+...
+var sqDistance = Vector3.SqrMagnitude(item.transform.position - transform.position);
+if (sqDistance < (MinDistance * MinDistance))   // MinDistance ALREADY holds a squared distance
+{ closestItem = item; MinDistance = sqDistance; }
+```
+
+After the first candidate the threshold is `d⁴`. At 100 units that is 100,000,000 — larger than any
+squared range in the arena — so **every later candidate passed** and the pilot took the last
+eligible item in the list.
+
+That alone would only be "picks oddly". What makes it a *swerve* is that the selection re-runs on
+`OnCellItemsUpdated`, which every crystal respawn raises, and the item list re-orders as crystals
+are collected and respawned. So a pilot two seconds from a crystal would silently re-point at an
+arbitrary other one and turn away.
+
+Two fixes, both in `AIObjectiveScoring` so the shipped path is the tested one:
+
+1. **Compare like with like.** Plain distances, one comparison.
+2. **Commitment.** A pilot on an approach does not abandon it for a marginally better candidate —
+   a new objective has to score at or below `objectiveSwitchImprovement` (0.75) of the held one.
+   Hysteresis, not a lock: something at half the range still wins.
+
+### And a free guarantee on top
+
+`breakOffClosingCosine` (0.5, i.e. 60°) silences the predictive test while the objective is inside
+that cosine of the direction of travel — which *is* "the range is falling", since
+`d(range)/dt = −speed·cos θ`, in one dot product and no state.
+
+Measured cost: **none.** Across 400 randomized pursuits the break-off count and every timing are
+identical with the gate on and off, because the predictive test only ever fires once the pilot is
+already flying tangentially. It ships anyway: it makes "never break off something you are closing
+on" a property of the code rather than an observation about one sample.
+
+### Giving the Dolphin a run-up
+
+Reported alongside: *"I never saw it point at me once."* Three causes, all separate from the above.
+
+1. **It targeted the nearest crystal**, so its approach — and therefore its drift, and therefore the
+   window in which the nose swings onto a rival — was often a fraction of a second.
+   `preferApproachRunDistance` (on for the Dolphin) scores candidates by distance from the run-up it
+   wants (`speed × approachRunSeconds`) instead of by range. Skipping a near crystal costs nothing:
+   collecting is physical, so the pilot still picks up whatever it flies through.
+2. **The provided drift-look target inherited a rule that belongs to the fallback.**
+   `TryGetProvidedLookDirection` required `dot < 0.9` before honouring the mode's aim point — a
+   sensible rule for the mass cluster, whose only job is to find *somewhere interesting* to point,
+   and wrong for a provider that names what to aim at. The Bends provider hands back the nearest
+   rival, so whenever that rival was within 26° of the crystal the AI was flying at, this fell
+   through to the mass cluster and turned the nose **away** from the pilot it was lining up on.
+   Removed.
+3. **`aiAimMaxRange` was 900 against a blast that reaches 2400.** `AOEConicExplosion.prefab` authors
+   `height: 2400`, before Space scales it further, so the AI was declining to aim at rivals it could
+   comfortably hit. Raised to 2400 in both the C# default and the Bends scene, which authored the
+   old value.
+
+With the run-up in, a Dolphin at cruise locks its course roughly 150 units out and drifts for ~1.9 s;
+its nose swings at 110°/s × the drift's 1.5 multiplier = 165°/s, so it has ~300° of authority — more
+than enough for any bearing. Before, a 20-unit crystal gave it about 40°.
+
 ## In-editor verification
 
 1. Any mode with AI. Watch a pilot that has just overshot its objective — it should fly out,
@@ -262,6 +342,13 @@ lives. Err generous.
 1. **It must never break off on final approach.** Watch a pilot inside ~25 units of a crystal: it
    should fly through, not peel. If it peels, `objectiveCaptureRadius` is too small for that
    objective.
+1. **It must never re-point mid-approach.** Collect a crystal (which respawns another, raising
+   `OnCellItemsUpdated`) while an AI is closing on a different one — it should keep its approach.
+   A swerve here is the commitment failing, not the break-off.
+1. **The Bends specifically:** fly within 2400 units of an AI Dolphin and watch it drift onto a
+   crystal. Its nose should come round onto YOU during the drift, and its Echo Sight cone should be
+   lit while it does. If the nose goes to a cactus cluster instead, the provider is falling through
+   — check the rival is inside `aiAimMaxRange`.
 2. **Rampage or The Bends** specifically: a boosted AI Dolphin has a ~370 unit unreachable bubble,
    so this is where the old behaviour was most visible and the change should be most obvious.
 3. Set `breakOrbits` off on one AI's prefab and watch the two side by side — the old behaviour

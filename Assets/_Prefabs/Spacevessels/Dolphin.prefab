@@ -2287,6 +2287,7 @@ MonoBehaviour:
   ram: 0
   drift: 1
   approachRunSeconds: 2.5
+  preferApproachRunDistance: 1
   abilities:
   - Ability: {fileID: 11400000, guid: 51198b110e790e047b4fe6979db3f47c, type: 2}
     Duration: 2
