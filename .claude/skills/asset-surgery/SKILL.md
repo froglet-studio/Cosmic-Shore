@@ -644,6 +644,34 @@ def sub(old, new, label):
 Python, a compile for C#) and check the line count moved by roughly what you intended — a file
 that grew 40x is the signature of exactly this bug.
 
+### Technique: make the harness EXTRACT the shipped block, and run the shipped TEST
+
+The §4 harness is only worth what its fidelity to the real file is worth, and a hand-retyped
+copy drifts the moment you fix a typo in one and not the other. Slice it out of the shipped
+file instead, so the thing you prove is byte-identical to the thing you commit:
+
+```python
+src   = pathlib.Path(REAL_FILE).read_text()
+block = src[src.index(START_MARKER) : src.index(END_MARKER)]      # assert both markers found
+pathlib.Path("Program.cs").write_text(STUBS + block + DRIVER)
+```
+
+Two things this buys beyond a compile:
+
+- **Unity-flavoured null checks work with a three-line stub.** Nearly every gameplay block that
+  touches `UnityEngine.Object` needs only its implicit-bool operator to run headlessly:
+  `public static implicit operator bool(Object o) => o is { Destroyed: false };`. That covers
+  `if (!component)`, `x ? a : b`, and the destroyed-object prune idiom in one go.
+- **You can execute the shipped TEST FILE's own assertions**, not a paraphrase of them: strip
+  `#if UNITY_EDITOR` / the NUnit `using`, swap `[Test]` for a plain method and `Assert` for a
+  four-line shim, and drive it by reflection. What you then prove is literally what the edit-mode
+  suite will assert when a human opens Unity, which is a much stronger claim than "it compiles".
+  This is the closest you can get to running the repo's tests without the editor — do it whenever
+  a branch adds a test whose subject is a pure function.
+
+Use it for the pure/static core of a change (a predicate, a mask, a formula). It still cannot see
+name resolution or whole-class consistency — see the two traps below.
+
 ### Trap: compiling a COPY cannot see whole-class consistency
 
 The harness pattern in §4 — paste the block under test into a stub file and compile it — proves

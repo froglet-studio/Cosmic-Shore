@@ -367,8 +367,10 @@ namespace CosmicShore.Gameplay
         // debuff channel; collecting a crystal is a player action, not something to be immune to.
         readonly Dictionary<UnityEngine.Object, ElementalDebuffSources> _debuffImmunityGrants = new();
 
-        // Scratch list for pruning destroyed grantors without allocating during the sweep.
-        static readonly List<UnityEngine.Object> _deadGrantors = new();
+        // Scratch list for pruning destroyed grantors without allocating during the sweep. Per
+        // instance rather than static: the sweep is re-entrancy-safe today only because nothing
+        // inside it calls out, and one list per vessel costs nothing to make that unconditional.
+        readonly List<UnityEngine.Object> _deadGrantors = new();
 
         /// <summary>
         /// The union of every standing grant's warded source classes — what this vessel is currently
