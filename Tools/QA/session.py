@@ -44,19 +44,112 @@ TABLE_CLOSE = "<!-- /qa-results-table -->"
 
 # ---------------------------------------------------------------- backlog
 
+def _strip_bold(s):
+    # re.S: a bold span in the backlog routinely straddles its ~80-col hard wrap.
+    return re.sub(r"\*\*(.*?)\*\*", r"\1", s, flags=re.S)
+
+
+def _unwrap(text, bullet=r"\d+\."):
+    """Undo markdown's ~80-col hard wrapping: one line per numbered step/bullet.
+
+    The window renders these as word-wrapped labels, so the source's hard breaks
+    would otherwise show as ragged mid-sentence newlines.
+    """
+    out = []
+    for raw in _strip_bold(text).splitlines():
+        s = raw.strip()
+        if not s:
+            continue
+        if re.match(r"^(?:%s)\s" % bullet, s) or not out:
+            out.append(s)
+        else:
+            out[-1] += " " + s
+    return "\n".join(out)
+
+
+def _parse_item_body(body):
+    """The tester-facing halves of one backlog item: why / steps / PASS / FAIL / known.
+
+    Tolerant by design — a section an item does not have comes back as "" and the
+    window simply omits it. Never raises: a formatting drift in the generated
+    backlog must degrade to a missing panel, not a broken picker.
+    """
+    def clean(s):
+        return " ".join(_strip_bold(s).split())
+
+    def para(rx, src):
+        m = re.search(rx, src, re.S)
+        return clean(m.group(1)) if m else ""
+
+    steps = re.search(r"^(\d+\..*?)(?=\n\*\*PASS|\Z)", body, re.S | re.M)
+    # [^*]*: markers vary — "**PASS:**" but also "**PASS (for this pass):**".
+    passWhen = para(r"\*\*PASS[^*]*:\*\*(.*?)(?=\n\*\*FAIL|\Z)", body)
+    failWhen = para(r"\*\*FAIL[^*]*:\*\*(.*?)(?=\n\*\*Known|\Z)", body)
+    known = para(r"\*\*Known[^*]*:\*\*(.*)", body)
+
+    # The compressed (P2) items write their criteria as an inline bold span —
+    # "**PASS = x.** **FAIL = y.**", sometimes both inside one span. Lift them out
+    # so every item gets the same green/red panels in the window.
+    if not passWhen:
+        m = re.search(r"\*\*PASS\s*=\s*(.*?)\*\*", body, re.S)
+        if m:
+            passWhen = clean(m.group(1))
+            halves = re.split(r"\s*\bFAIL\s*=\s*", passWhen, maxsplit=1)
+            if len(halves) == 2 and not failWhen:
+                passWhen, failWhen = halves[0].strip(), halves[1].strip()
+    if not failWhen:
+        m = re.search(r"\*\*FAIL\s*=\s*(.*?)\*\*", body, re.S)
+        if m:
+            failWhen = clean(m.group(1))
+
+    # Context: the Source paragraph, minus any inline criteria span already lifted
+    # above. \s*\Z: in a compressed item the paragraph is the whole body. Items with
+    # no Source marker at all fall back to their first paragraph.
+    ctx_src = re.sub(r"\*\*(?:PASS|FAIL)\s*=\s*.*?\*\*", "", body, flags=re.S)
+    context = para(r"\*\*Source:\*\*(.*?)(?=\n\s*\n|\n\d+\.|\s*\Z)", ctx_src)
+    if not context and not re.match(r"\s*\d+\.", ctx_src):
+        context = para(r"\A\s*(\S.*?)(?=\n\s*\n|\s*\Z)", ctx_src)
+
+    return {"context": context, "steps": _unwrap(steps.group(1)) if steps else "",
+            "passWhen": passWhen, "failWhen": failWhen, "known": known}
+
+
 def backlog_items():
-    """[(id, priority, title)] in backlog order — the window's item picker."""
+    """Backlog-ordered item list — the window's picker AND its instruction panels.
+
+    Each entry carries the item's full tester-facing text (context, numbered
+    steps, PASS/FAIL definitions, known exceptions) so the window can walk a
+    first-time tester through an item without them ever opening QA_BACKLOG.md.
+    """
     text = open(BACKLOG).read()
-    out, priority = [], "P?"
+    out, priority, cur = [], "P?", None
     for line in text.splitlines():
         m = re.match(r"^## Priority (\d)", line)
         if m:
-            priority = "P" + m.group(1)
+            priority, cur = "P" + m.group(1), None
+            continue
         m = re.match(r"^### (QA-[A-Z0-9-]+)\s*([⬜🟡🔴⛔])?\s*—?\s*(.*)$", line)
         if m:
-            out.append({"id": m.group(1), "priority": priority,
-                        "status": m.group(2) or "⬜", "title": m.group(3).strip()})
+            cur = {"id": m.group(1), "priority": priority,
+                   "status": m.group(2) or "⬜", "title": m.group(3).strip(),
+                   "_body": []}
+            out.append(cur)
+            continue
+        if line.startswith("## "):
+            cur = None
+            continue
+        if cur is not None:
+            cur["_body"].append(line)
+    for item in out:
+        item.update(_parse_item_body("\n".join(item.pop("_body"))))
     return out
+
+
+def backlog_preconditions():
+    """The once-per-session setup block from the backlog header, unwrapped."""
+    m = re.search(r"\*\*Standing preconditions[^\n]*\n(.*?)(?=\n---|\n## )",
+                  open(BACKLOG).read(), re.S)
+    return _unwrap(m.group(1), bullet=r"[-•]") if m else ""
 
 
 def git(*args):
@@ -211,7 +304,7 @@ def state(path):
     head = git("rev-parse", "--short", "HEAD")
     out = {"root": ROOT, "head": head,
            "branch": git("rev-parse", "--abbrev-ref", "HEAD"),
-           "backlog": items,
+           "backlog": items, "preconditions": backlog_preconditions(),
            "sessions": sorted(f for f in os.listdir(RESULTS_DIR)
                               if f.endswith(".md") and f != "TEMPLATE.md"),
            "hasSession": False, "sessionFile": "", "sessionPath": "",
@@ -326,7 +419,9 @@ def contract_matches_csharp(sample):
     top = fields("SessionState")
     if top is None or top != set(sample):
         return False
-    for cls, key, blank in (("BacklogItem", "backlog", {"id", "priority", "status", "title"}),
+    for cls, key, blank in (("BacklogItem", "backlog",
+                             {"id", "priority", "status", "title", "context",
+                              "steps", "passWhen", "failWhen", "known"}),
                             ("Row", "rows", {"id", "verdict", "notes", "frozen",
                                              "problem", "problemBlocking"}),
                             ("Problem", "problems", {"blocking", "where", "what", "fix"})):
@@ -354,8 +449,21 @@ def selftest():
         bl = os.path.join(tmp, "QA_BACKLOG.md")
         arch = os.path.join(tmp, "ARCHIVE.md")
         open(bl, "w").write(
-            "## Priority 0 — gates\n### QA-ONE ⬜ — first thing\nbody\n\n"
-            "### QA-TWO ⬜ — second thing\nbody\n\n"
+            "**Standing preconditions for every item** (once per session):\n"
+            "- Pull the branch, let Unity **fully reimport** (a stale Library\n"
+            "  masks changes).\n"
+            "- Keep the Console open.\n\n---\n\n"
+            "## Priority 0 — gates\n"
+            "### QA-ONE ⬜ — first thing\n"
+            "**Source:** PR #1. **Why P0:** everything\nsits behind it.\n\n"
+            "1. Open the project and wait for\n   the import to settle.\n"
+            "2. Read the Console.\n\n"
+            "**PASS:** zero compile errors and the app\nboots.\n"
+            "**FAIL:** any compile error. Record it\nverbatim.\n"
+            "**Known, do not fail on:** the pre-existing missing script.\n\n"
+            "### QA-TWO ⬜ — second thing (compressed shape)\n"
+            "**Source:** PR #2. Place one on a build.\n"
+            "**PASS = it quits cleanly on\ndesktop. FAIL = a hard exit with no shutdown.**\n\n"
             "## Priority 1 — features\n### QA-THREE ⬜ — third thing\nbody\n")
         open(arch, "w").write("| QA-OLD | `x` | d | t |  |\n")
         for mod in (ar, submit_mod):
@@ -367,6 +475,26 @@ def selftest():
         assert [i["id"] for i in items] == ["QA-ONE", "QA-TWO", "QA-THREE"], items
         assert items[0]["priority"] == "P0" and items[2]["priority"] == "P1", items
         assert items[0]["title"] == "first thing", items
+
+        # the instruction panels: hard wraps undone, bold stripped, sections split
+        one = items[0]
+        assert one["context"] == "PR #1. Why P0: everything sits behind it.", one
+        assert one["steps"] == ("1. Open the project and wait for the import to "
+                                "settle.\n2. Read the Console."), one["steps"]
+        assert one["passWhen"] == "zero compile errors and the app boots.", one
+        assert one["failWhen"] == "any compile error. Record it verbatim.", one
+        assert one["known"] == "the pre-existing missing script."
+        # the compressed shape: inline "PASS = x. FAIL = y." is lifted into panels,
+        # even across a hard-wrapped bold span
+        two = items[1]
+        assert two["context"] == "PR #2. Place one on a build.", two
+        assert two["passWhen"] == "it quits cleanly on desktop.", two
+        assert two["failWhen"] == "a hard exit with no shutdown.", two
+        # an item with none of the sections degrades to empty strings, never breaks
+        assert items[2]["steps"] == "" and items[2]["passWhen"] == ""
+        pre = backlog_preconditions()
+        assert pre.startswith("- Pull the branch, let Unity fully reimport"), pre
+        assert "\n- Keep the Console open." in pre, pre
 
         p = create("Ada Lovelace", ["QA-ONE", "QA-TWO", "QA-NOPE"], "6000.3.17f1")
         assert os.path.basename(p).endswith("-ada-lovelace.md"), p
@@ -420,7 +548,7 @@ def selftest():
 
         assert contract_matches_csharp(state(p)), "JSON shape drifted from the C# window"
 
-        print("session selftest: 19/19 checks passed")
+        print("session selftest: 25/25 checks passed")
         return 0
     finally:
         ar.BACKLOG, ar.ARCHIVE, ar.RESULTS_DIR, ar.LEDGER = saved

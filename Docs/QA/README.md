@@ -50,6 +50,16 @@ this idea. It is now a **pointer** — new unverified work goes here.
 
 # For QA — how to run a session
 
+**The easiest way to run a session is inside Unity: `FrogletTools ▸ QA ▸ QA Session`.**
+That window is this whole workflow as a form — it creates your session file, lists the
+backlog, and for every item shows **the numbered steps, the exact PASS and FAIL
+definitions, and the known pre-existing defects you must not fail on**, right next to
+the verdict dropdown. It has the Submit button, an Attach button for evidence, and a
+one-click "Console" button that saves the Editor log against an item. If you use the
+window, steps 1 and 4–6 below all happen in it; you still do steps 2–3 (get the build,
+run the items) yourself, because looking at the game is the whole job. The rest of
+this section is the same workflow by hand, for when Unity or the window is unavailable.
+
 **Read this whole section once before your first session.** It assumes no prior
 knowledge of this repo, the backlog, or git. Everything you need is a copy-paste
 command or a decision with the answer written down.

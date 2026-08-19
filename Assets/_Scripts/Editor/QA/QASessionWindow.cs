@@ -33,6 +33,11 @@ namespace CosmicShore.Editor.QA
             public string priority;
             public string status;
             public string title;
+            public string context;   // why this item exists (Source / Why P0)
+            public string steps;     // numbered, one per line — what the tester DOES
+            public string passWhen;  // the PASS definition, verbatim from the backlog
+            public string failWhen;  // the FAIL definition
+            public string known;     // pre-existing defects that are NOT a failure
         }
 
         [System.Serializable]
@@ -61,6 +66,7 @@ namespace CosmicShore.Editor.QA
             public string root;
             public string head;
             public string branch;
+            public string preconditions;
             public bool hasSession;
             public string sessionFile;
             public string sessionPath;
@@ -90,7 +96,21 @@ namespace CosmicShore.Editor.QA
         Vector2 _scroll;
         int _addIndex;
         bool _busy;
+        bool _preconditionsOpen = true;
         readonly Dictionary<string, string> _noteEdits = new Dictionary<string, string>();
+        readonly Dictionary<string, bool> _instructionsOpen = new Dictionary<string, bool>();
+        GUIStyle _bodyStyle, _passHeader, _failHeader;
+
+        GUIStyle Body => _bodyStyle ?? (_bodyStyle = new GUIStyle(EditorStyles.wordWrappedLabel));
+        GUIStyle PassHeader => _passHeader ?? (_passHeader = Tinted(FrogletEditorPalette.Ok));
+        GUIStyle FailHeader => _failHeader ?? (_failHeader = Tinted(FrogletEditorPalette.Error));
+
+        static GUIStyle Tinted(Color c)
+        {
+            var s = new GUIStyle(EditorStyles.miniBoldLabel);
+            s.normal.textColor = c;
+            return s;
+        }
 
         bool HasUnsavedNotes
         {
@@ -175,7 +195,14 @@ namespace CosmicShore.Editor.QA
                     RedirectStandardError = true,
                     UseShellExecute = false,
                     CreateNoWindow = true,
+                    // Both ends of the pipe must agree on UTF-8. Left to defaults,
+                    // Python on Windows emits the ANSI codepage into a redirected
+                    // pipe and .NET reads it as the console codepage — the backlog's
+                    // em-dashes and status glyphs arrive as mojibake ("â€œ â€").
+                    StandardOutputEncoding = Encoding.UTF8,
+                    StandardErrorEncoding = Encoding.UTF8,
                 };
+                psi.EnvironmentVariables["PYTHONIOENCODING"] = "utf-8";
                 using (var p = System.Diagnostics.Process.Start(psi))
                 {
                     if (p == null) return false;
@@ -347,11 +374,11 @@ var sb = new StringBuilder();
             using (new EditorGUILayout.HorizontalScope())
             {
                 var build = _state == null ? "?" : _state.branch + " @ " + _state.head;
-                EditorGUILayout.LabelField("Build", build, EditorStyles.miniLabel);
+                EditorGUILayout.LabelField("Build  " + build, EditorStyles.miniLabel,
+                    GUILayout.MinWidth(260f));
                 GUILayout.FlexibleSpace();
                 EditorGUILayout.LabelField(_pythonVersion ?? "", EditorStyles.miniLabel,
-                    GUILayout.Width(150f));
-                GUILayout.FlexibleSpace();
+                    GUILayout.Width(110f));
                 if (FrogletEditorPalette.ColorButton("Refresh", FrogletEditorPalette.Info, 80f))
                     Refresh();
             }
@@ -385,6 +412,18 @@ var sb = new StringBuilder();
                 "Tester " + _state.tester + "   ·   " + _state.date + "   ·   Unity " +
                 _state.unity + "   ·   " + _state.platform, EditorStyles.miniLabel);
             EditorGUILayout.Space(6);
+
+            if (!string.IsNullOrEmpty(_state.preconditions))
+            {
+                _preconditionsOpen = EditorGUILayout.Foldout(_preconditionsOpen,
+                    "Before you start — once per session", true);
+                if (_preconditionsOpen)
+                {
+                    using (new EditorGUILayout.VerticalScope(EditorStyles.helpBox))
+                        EditorGUILayout.LabelField(_state.preconditions, Body);
+                }
+                EditorGUILayout.Space(4);
+            }
 
             if (_state.rows.Length == 0)
                 EditorGUILayout.HelpBox("No items yet — add one below.", MessageType.Info);
@@ -438,6 +477,17 @@ var sb = new StringBuilder();
                     }
                 }
 
+                // The item's instructions live INSIDE its row: open by default until a
+                // verdict is recorded (you are presumably still running it), folded away
+                // once one is — but always one click from coming back.
+                var open = _instructionsOpen.TryGetValue(row.id, out var o)
+                    ? o
+                    : !row.frozen && string.IsNullOrEmpty((row.verdict ?? "").Trim());
+                var next = EditorGUILayout.Foldout(open,
+                    "What to check — steps and PASS/FAIL", true);
+                if (next != open) _instructionsOpen[row.id] = next;
+                if (next) DrawInstructions(ItemFor(row.id));
+
                 if (!row.frozen)
                 {
                     // Notes commit on an explicit press rather than on focus loss. Focus
@@ -488,10 +538,65 @@ var sb = new StringBuilder();
 
         string TitleFor(string id)
         {
-            if (_state?.backlog == null) return id;
+            var b = ItemFor(id);
+            return b == null ? id : b.priority + " — " + b.title;
+        }
+
+        BacklogItem ItemFor(string id)
+        {
+            if (_state?.backlog == null) return null;
             foreach (var b in _state.backlog)
-                if (b.id == id) return b.priority + " — " + b.title;
-            return id;
+                if (b.id == id) return b;
+            return null;
+        }
+
+        /// <summary>
+        /// The item's full tester-facing instructions — context, numbered steps, the
+        /// PASS/FAIL definitions and known exceptions — parsed out of QA_BACKLOG.md by
+        /// session.py. This panel is what lets someone run an item without ever opening
+        /// the backlog file: everything they need to DO and to JUDGE is on screen.
+        /// </summary>
+        void DrawInstructions(BacklogItem item)
+        {
+            if (item == null) return;
+            using (new EditorGUILayout.VerticalScope(EditorStyles.helpBox))
+            {
+                if (!string.IsNullOrEmpty(item.context))
+                {
+                    EditorGUILayout.LabelField("Why this is on the list", EditorStyles.miniBoldLabel);
+                    EditorGUILayout.LabelField(item.context, Body);
+                    EditorGUILayout.Space(4);
+                }
+                if (!string.IsNullOrEmpty(item.steps))
+                {
+                    EditorGUILayout.LabelField("What to do — in order", EditorStyles.miniBoldLabel);
+                    EditorGUILayout.LabelField(item.steps, Body);
+                    EditorGUILayout.Space(4);
+                }
+                if (!string.IsNullOrEmpty(item.passWhen))
+                {
+                    EditorGUILayout.LabelField("PASS when", PassHeader);
+                    EditorGUILayout.LabelField(item.passWhen, Body);
+                    EditorGUILayout.Space(4);
+                }
+                if (!string.IsNullOrEmpty(item.failWhen))
+                {
+                    EditorGUILayout.LabelField("FAIL when", FailHeader);
+                    EditorGUILayout.LabelField(item.failWhen, Body);
+                    EditorGUILayout.Space(4);
+                }
+                if (!string.IsNullOrEmpty(item.known))
+                {
+                    EditorGUILayout.LabelField("Known already — do NOT fail on these",
+                        EditorStyles.miniBoldLabel);
+                    EditorGUILayout.LabelField(item.known, Body);
+                }
+                if (string.IsNullOrEmpty(item.steps) && string.IsNullOrEmpty(item.passWhen))
+                    EditorGUILayout.LabelField(
+                        "This item's instructions could not be read out of QA_BACKLOG.md — " +
+                        "open Docs/QA/QA_BACKLOG.md and find " + item.id + " for the steps.",
+                        EditorStyles.wordWrappedMiniLabel);
+            }
         }
 
         void DrawAddItem()
@@ -516,6 +621,16 @@ var sb = new StringBuilder();
                     Run("set", "--item", ids[_addIndex], "--verdict", "");
                     _addIndex = 0;
                 }
+            }
+
+            // Show the selected item's instructions BEFORE it is added, so picking an
+            // item is an informed choice, not a leap.
+            if (_addIndex > 0 && _addIndex < ids.Count)
+            {
+                EditorGUILayout.LabelField(
+                    "Read what this involves, then press Add to put it in your session:",
+                    EditorStyles.wordWrappedMiniLabel);
+                DrawInstructions(ItemFor(ids[_addIndex]));
             }
         }
 
