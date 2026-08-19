@@ -58,6 +58,52 @@ against the long-hand circle definition over 20,000 random configurations, 0 dis
 away is reachable from *any* heading. "Get `2R` of separation" is a guarantee, not a guess — and it
 is exactly the fly-out-and-come-back the manoeuvre is named for.
 
+### The objective is not a point — it has a capture radius
+
+Shipping the test above with `c = 0` produced a second, opposite complaint: **the AI peeled away
+just before collecting a crystal.** That is the test being *correct* about the wrong question. It
+asks whether the vessel can fly onto an infinitely small point, and a pursuer does not need to —
+it needs to pass within the objective's collect radius.
+
+With `c = 0`, the bearing error that trips a break-off is brutal at short range:
+
+| range | breaks off above |
+|---|---|
+| 10 u | 6.9° |
+| 20 u | 13.9° |
+| 30 u | 21.1° |
+| 50 u | 36.9° |
+
+So an AI 20 units from a crystal, 14° off the nose — a collect it would have made — decides it
+cannot reach the point and leaves.
+
+The generalisation is exact and moves one term. The objective is truly unreachable only when its
+whole capture sphere sits inside the turning circle, `|d − C| < R − c`:
+
+```
+|d|² + 2Rc − c²  <  2R·|d⊥|                    (reduces to |d|² < 2R·|d⊥| at c = 0)
+```
+
+and the guaranteed separation moves with it, to **`2R − c`**. The same quadratic's *other* root is
+`|d| ≤ c` — "already inside the capture sphere" — so **the do-not-peel-away-on-final-approach case
+is not a special case at all**: it is the second half of the same solution. At `c ≥ R` nothing is
+ever unreachable, which is correct and self-consistent: a slow vessel with a generous capture radius
+can always clip its objective.
+
+Measured over 400 randomized pursuits (Dolphin at 80 u/s):
+
+| capture radius | closest range it ever broke off at | break-offs |
+|---|---|---|
+| 0 u | *any* range | 2,787 |
+| 8 u | 13.0 u | 61 |
+| **18 u (shipped)** | **23.8 u** | **28** |
+| 25 u | 32.1 u | 15 |
+
+`Crystal.prefab` is a sphere of radius 1.2 at root scale 10, so ~12 units in the world; 18 adds hull
+and errs generous **on purpose**. Erring large is the safe direction here and the reason is
+structural: too small peels away on approach with nothing to catch it, while too large just means
+the pilot orbits a little longer before `OrbitDetector` — which is watching regardless — notices.
+
 ## Two triggers, because there are two kinds of orbit
 
 | | catches | when it fires |
@@ -95,24 +141,57 @@ away first — which keeps it near the objective for the whole reversal.
 > each other. It ships at 0.35 so the manoeuvre reads as a deliberate break rather than as drifting
 > past.
 
-**Exit** on any of:
-- separation past `2R × orbitBreakExitMargin` — the guarantee;
-- the objective clear of a deliberately *smaller* circle (`× orbitBreakExitHysteresis`), but never
-  before `orbitBreakMinSeconds`;
-- `orbitBreakMaxSeconds`, a safety stop.
+**Exit** once the pilot has its **runway** — the separation it wants before turning back:
 
-Both halves of that exit are load-bearing:
+```
+runway = max( 2R − c ,  speed × approachRunSeconds )
+```
 
-- The **hysteresis** is a Schmitt trigger. Exiting the instant the test clears means re-entering on
-  the next frame, forever.
-- The **minimum duration** is what makes a *detector-triggered* break-off work at all. That orbit
-  has no turning-circle condition to clear, so without a floor it would end on its first frame and
-  the AI would never actually break off.
+…subject to a `orbitBreakMinSeconds` floor and a `orbitBreakMaxSeconds` safety stop. The two terms
+answer different questions and the larger wins:
 
-An **entry dwell** was tried and rejected: requiring the condition to hold for 0.3 s before
-committing cut needless break-offs only 104 → 97 out of 400, cost mean time, and badly hurt moving
-targets (a fleeing target went 2.6 s → 9.9 s with three break-offs instead of one). Measured, not
-assumed.
+- **`2R − c` is the geometric floor.** Below it the objective can still be inside the turning
+  circle, so exiting there can leave the pilot trapped exactly as it was. Not optional.
+- **`speed × approachRunSeconds` is the tactical floor.** A purely geometric break-off turns around
+  the instant it is *allowed* to, which is right for arriving and useless for a vessel that has to
+  DO something on the way in.
+
+**Expressing the second as a time is what makes it portable.** The separation that matters scales
+with speed, and `2R/v = 2/ω` is a constant for a given turn rate — so a runway measured in seconds
+buys the same run at every speed, and it is simultaneously how long the pilot spends leaving and how
+long the return leg lasts:
+
+| speed | `R` | runway at 2.5 s | run time |
+|---|---|---|---|
+| 60 u/s | 31 u | 150 u | 2.50 s |
+| 150 u/s | 78 u | 375 u | 2.50 s |
+| 357 u/s | 186 u | 892 u | 2.50 s |
+
+The cost is monotonic and small — over 400 randomized pursuits, all of these reach 400/400:
+
+| `approachRunSeconds` | run | mean time to objective | worst |
+|---|---|---|---|
+| 0 (geometry only) | 0.82 s | 2.04 s | 5.07 s |
+| 1.0 | 1.00 s | 2.05 s | 5.07 s |
+| **1.5 (fleet default)** | **1.50 s** | **2.10 s** | **5.57 s** |
+| 2.0 | 2.00 s | 2.16 s | 6.48 s |
+| **2.5 (Dolphin)** | **2.50 s** | **2.23 s** | **7.43 s** |
+| 3.5 | 3.50 s | 2.37 s | 9.37 s |
+
+**The Dolphin is authored at 2.5 s** (`approachRunSeconds` on `Dolphin.prefab`) because it is the
+one vessel that aims on the way in: it locks its course on the crystal and then swings its nose onto
+a rival before the blast lands. 180° at its authored 110°/s is 1.64 s, so 2.5 s of straight run
+leaves real margin. Any future vessel that needs to line something up during its approach raises the
+same dial.
+
+Two rejected alternatives, both measured rather than reasoned about:
+
+- An **entry dwell** — requiring the condition to hold for 0.3 s before committing — cut needless
+  break-offs only 104 → 97 out of 400, cost mean time, and badly hurt moving targets (a fleeing
+  target went 2.6 s → 9.9 s with three break-offs instead of one).
+- A **hysteresis exit** ("leave once the objective is clear of a smaller circle") was the original
+  rule and is now subsumed. It made break-offs end as early as the geometry allowed, which is
+  precisely the short approach run this section exists to lengthen.
 
 ## Not while drifting
 
@@ -139,20 +218,33 @@ Against the shipped vessel model (Dolphin at 80 u/s, 110°/s), flying the shippe
 
 | | pure pursuit | with the break-off |
 |---|---|---|
-| objective at the turning-circle centre | **never reached** (40 s, 12.2 laps) | reached in **3.6 s** |
-| 400 randomized objectives | 343/400 (85.8%) | **400/400** |
-| mean time to reach (successes) | 2.18 s | 2.45 s |
-| worst time to reach | 4.03 s | 4.03 s |
+| objective at the turning-circle centre | **never reached** (40 s, 12.2 laps) | reached in **4.4 s** |
+| 400 randomized objectives | 373/400 (93.3%) | **400/400** |
+| mean time to reach (successes) | 1.92 s | 2.10 s |
+| worst time to reach | 4.02 s | 5.57 s |
+| closest range it ever broke off at | — | 23.8 u (capture radius 18) |
 
-+0.27 s of mean time buys +14 percentage points of "reaches the objective at all", and the worst
-case does not move. The tests carry a trimmed version of this so a regression fails CI rather than a
-playtest.
++0.18 s of mean time buys the last 6.7% of "reaches the objective at all". The worst case grows
+because the break-off deliberately flies further out than it strictly has to — that is the approach
+run being bought, not a regression. The tests carry a trimmed version of all of this, so a
+regression fails CI rather than a playtest.
 
 ## Tuning
 
 Everything is serialized on `AIPilot` under **Orbit break (extend and re-attack)**, per-prefab.
 `breakOrbits` off returns that pilot to plain pure pursuit — for isolating a problem, not for
 shipping.
+
+The two that matter:
+
+| field | default | what it is for |
+|---|---|---|
+| `approachRunSeconds` | 1.5 (Dolphin 2.5) | how much straight run at the objective the break-off buys |
+| `objectiveCaptureRadius` | 18 | how close counts as arrived; too small and the pilot peels off on final approach |
+
+`objectiveCaptureRadius` is the one to revisit per mode rather than per vessel — a crystal, a ball
+and an opposing hull are not the same size — but it is on the vessel because that is where `AIPilot`
+lives. Err generous.
 
 ## What this does NOT do
 
@@ -167,6 +259,9 @@ shipping.
 
 1. Any mode with AI. Watch a pilot that has just overshot its objective — it should fly out,
    come around, and come back in, rather than settling into a circle.
+1. **It must never break off on final approach.** Watch a pilot inside ~25 units of a crystal: it
+   should fly through, not peel. If it peels, `objectiveCaptureRadius` is too small for that
+   objective.
 2. **Rampage or The Bends** specifically: a boosted AI Dolphin has a ~370 unit unreachable bubble,
    so this is where the old behaviour was most visible and the change should be most obvious.
 3. Set `breakOrbits` off on one AI's prefab and watch the two side by side — the old behaviour

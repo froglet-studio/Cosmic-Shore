@@ -2148,10 +2148,18 @@ rate `ω` cannot fly tighter than `R = v/ω`, so pure pursuit can never reach a 
 circle of radius `R` tangent to its velocity — it turns as hard as it can, forever. **Turning
 harder is exactly the wrong response, which is why the failure survived every tuning pass.** It is
 the Dubins (1957) reachability condition and the fix is the manoeuvre pilots use — *extend and
-re-attack*: fly out, come around, come back in. Four things to carry: (1) the test collapses to
+re-attack*: fly out, come around, come back in. Five things to carry: (1) the test collapses to
 **`|d| < 2R·sin θ`** (the circle test with the `R²` cancelled — proven exact against the long-hand
 definition over 20k cases), and its **exit condition falls out of the same line**, since `sin θ ≤ 1`
-means `2R` of separation is a GUARANTEE of reachability rather than a tuned threshold; (2) **`R` is
+means `2R` of separation is a GUARANTEE of reachability rather than a tuned threshold; (1b) **an
+objective is not a POINT — it has a capture radius `c`, and leaving it out is a defect rather than
+a simplification**: at `c = 0` the test asks whether the vessel can fly onto an infinitely small
+target, which 20u out is false for any bearing error over 14°, so the AI peels away from crystals
+it was about to collect. The generalisation is exact (`|d|² + 2Rc − c² < 2R·|d⊥|`, guaranteed
+separation `2R − c`) and its OTHER root, `|d| ≤ c`, IS the don't-peel-away-on-final-approach case —
+not a special case bolted on but the second half of the same solution. Err GENEROUS on `c`: too
+small peels off with nothing to catch it, too large just means the orbit detector catches it a
+beat later; (2) **`R` is
 a property of the vessel AT THIS SPEED, never an authored constant** — a boosted Dolphin's
 unreachable bubble is 372u against 83u at cruise, off the same authored 110°/s, so it is derived
 live in `VesselTransformer.MinTurnRadius`; (3) reason from **`Course`, not the nose** — the radius
@@ -2160,9 +2168,14 @@ break-off is suppressed there: a locked course reads as an infinite radius, i.e.
 orbit); (4) a geometric test cannot catch an orbit it does not describe, so `OrbitDetector` is the
 empirical backstop — swept angle with no progress — and its progress gate must compare against the
 range at the START of the window, because **a running minimum tracks a steady approach downward and
-can then never register progress at all**, silently degrading the detector to "constant range only".
-Measured: 343/400 randomized objectives reached → **400/400**, for +0.27s of mean time and no change
-to the worst case.
+can then never register progress at all**, silently degrading the detector to "constant range only";
+and (5) **how far the break-off flies out is a TIME, not a distance** — `2R/v = 2/ω` is constant for
+a given turn rate, so `speed × approachRunSeconds` buys the same straight run at 60 u/s and at 357,
+and it is simultaneously how long the pilot spends leaving and how long the return leg lasts. The
+fleet runs 1.5s; **the Dolphin is authored at 2.5s** because it is the one vessel that AIMS on the
+way in (it locks course on the crystal then swings its nose onto a rival — 180° at 110°/s is 1.64s,
+so the run has to cover it). Measured: 373/400 randomized objectives reached → **400/400**, for
++0.18s of mean time.
 
 ### Menu Screen Navigation (Menu_Main Scene)
 

@@ -35,6 +35,23 @@ namespace CosmicShore.Gameplay
     /// therefore a guarantee rather than a guess, and it is exactly the "fly away, turn around, fly
     /// back" the manoeuvre is named for: flying out grows <c>|d|</c> past <c>2R</c>, at which point
     /// ordinary pursuit can turn in.</para>
+    ///
+    /// <para><b>A pursuer does not need to reach a POINT — it needs to pass within the objective's
+    /// capture radius</b>, and leaving that out is a real defect rather than a refinement. With
+    /// <c>c = 0</c> the test asks whether the vessel can fly onto an infinitely small target, which
+    /// at 20 units of range is false for any bearing error over 7°, so an AI on final approach
+    /// peels away from a crystal it was about to collect. The generalisation is exact and changes
+    /// one term: the objective is truly unreachable only when its whole capture sphere sits inside
+    /// the turning circle, <c>|d − C| &lt; R − c</c>, which expands to
+    /// <code>
+    ///   |d|² + 2Rc − c² &lt; 2R·|d⊥|
+    /// </code>
+    /// and reduces to the line above at <c>c = 0</c>. The guaranteed separation moves with it, to
+    /// <c>2R − c</c> — the same quadratic's other root is <c>|d| ≤ c</c>, i.e. "already inside the
+    /// capture sphere", so the do-not-peel-away-on-final-approach case is not a special case at
+    /// all: it is the second half of the solution. At <c>c ≥ R</c> nothing is ever unreachable,
+    /// which is correct — a slow vessel with a generous capture radius can always clip its
+    /// objective.</para>
     /// </summary>
     public static class PursuitReachability
     {
@@ -52,12 +69,15 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// Separation beyond which a target is reachable from ANY heading — <c>2R</c>, the diameter
-        /// of the turning circle. See the class summary: the reachability test is
-        /// <c>|d| &lt; 2R·sin θ</c> and <c>sin θ</c> cannot exceed 1.
+        /// Separation beyond which a target is reachable from ANY heading — <c>2R − c</c>, the
+        /// turning circle's diameter less the objective's capture radius. See the class summary:
+        /// the reachability test is <c>|d| &lt; 2R·sin θ</c> (capture-adjusted) and <c>sin θ</c>
+        /// cannot exceed 1.
         /// </summary>
-        public static float GuaranteedReachableSeparation(float minTurnRadius) =>
-            float.IsInfinity(minTurnRadius) ? float.PositiveInfinity : 2f * minTurnRadius;
+        public static float GuaranteedReachableSeparation(float minTurnRadius, float captureRadius = 0f) =>
+            float.IsInfinity(minTurnRadius)
+                ? float.PositiveInfinity
+                : Mathf.Max(0f, 2f * minTurnRadius - Mathf.Max(0f, captureRadius));
 
         /// <summary>
         /// True when <paramref name="toTarget"/> lies inside the turning circle on its own side —
@@ -68,10 +88,16 @@ namespace CosmicShore.Gameplay
         /// vessel the two differ and it is the velocity the turn radius applies to.
         /// It need not be normalized.
         ///
+        /// <paramref name="captureRadius"/> is how close the vessel has to PASS to count as having
+        /// arrived — a crystal's collect radius, a ball's contact radius. It defaults to 0, which
+        /// asks the stricter question "can it fly onto the exact point"; that is almost never what
+        /// a pursuer actually needs, and using it made AI peel away from crystals on final approach.
+        ///
         /// A zero-length heading or target is reported reachable — there is no orbit to break out
         /// of, and inventing one would send a stationary or coincident vessel on an escape run.
         /// </summary>
-        public static bool IsInsideTurningCircle(Vector3 toTarget, Vector3 heading, float minTurnRadius)
+        public static bool IsInsideTurningCircle(Vector3 toTarget, Vector3 heading, float minTurnRadius,
+                                                 float captureRadius = 0f)
         {
             if (minTurnRadius <= 0f) return false;
 
@@ -86,8 +112,12 @@ namespace CosmicShore.Gameplay
             if (float.IsInfinity(minTurnRadius))
                 return Vector3.Cross(toTarget, forward).sqrMagnitude > Mathf.Epsilon;
 
+            float capture = Mathf.Max(0f, captureRadius);
             float lateral = Vector3.Cross(toTarget, forward).magnitude;   // = |d| sin θ = |d⊥|
-            return distanceSqr < 2f * minTurnRadius * lateral;
+
+            // |d - C| < R - c, expanded, with the R² cancelled. At c = 0 this is |d|² < 2R|d⊥|.
+            return distanceSqr + 2f * minTurnRadius * capture - capture * capture
+                   < 2f * minTurnRadius * lateral;
         }
 
         /// <summary>

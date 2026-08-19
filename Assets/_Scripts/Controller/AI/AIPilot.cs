@@ -84,20 +84,30 @@ namespace CosmicShore.Gameplay
                  "mean times inside 0.06s of each other. It is non-zero so the manoeuvre reads as " +
                  "a deliberate break rather than as drifting past.")]
         [SerializeField, Range(0f, 1.5f)] float orbitBreakAwayBias = 0.35f;
-        [Tooltip("Extra separation, as a multiple of the guaranteed-reachable distance (twice the " +
-                 "minimum turn radius), before a break-off is considered finished on distance alone.")]
-        [SerializeField, Min(1f)] float orbitBreakExitMargin = 1.15f;
-        [Tooltip("The break-off ends early once the objective is outside a turning circle this " +
-                 "much smaller than the real one. Below 1 it is hysteresis - without a dead band " +
-                 "the pilot would exit the moment the test clears and re-enter on the next frame.")]
-        [SerializeField, Range(0.1f, 1f)] float orbitBreakExitHysteresis = 0.75f;
+        [Tooltip("How long a straight run at the objective the break-off is trying to buy, in " +
+                 "SECONDS. The pilot keeps flying away until it has this much separation at its " +
+                 "current speed, so the number is simultaneously how long it spends leaving and " +
+                 "how long the run back lasts.\n\nSeconds rather than distance because the " +
+                 "distance that matters scales with speed - a boosted vessel needs proportionally " +
+                 "more room, and 2R/v is a constant for a given turn rate, so this dial means the " +
+                 "same thing at every speed.\n\nRaise it for a vessel that needs to DO something " +
+                 "on the way in: the Dolphin locks its course on the crystal and then swings its " +
+                 "nose onto a rival, and that swing needs runway.")]
+        [SerializeField, Min(0f)] float approachRunSeconds = 1.5f;
         [Tooltip("Shortest break-off. Without a floor, an orbit that the turning-circle test did " +
-                 "not cause (the detector's job) would exit on its first frame and never actually " +
+                 "not cause (the detector's job) could exit on its first frame and never actually " +
                  "break off.")]
         [SerializeField, Min(0f)] float orbitBreakMinSeconds = 0.6f;
         [Tooltip("Longest break-off, after which the pilot re-attacks regardless. A safety stop, " +
-                 "not a tuning value: an AI that flies away forever is worse than one that orbits.")]
-        [SerializeField, Min(0.5f)] float orbitBreakMaxSeconds = 4f;
+                 "not a tuning value: an AI that flies away forever is worse than one that orbits. " +
+                 "Keep it comfortably above Approach Run Seconds or it truncates the run.")]
+        [SerializeField, Min(0.5f)] float orbitBreakMaxSeconds = 6f;
+        [Tooltip("How close this pilot has to PASS its objective to count as having arrived - a " +
+                 "crystal's collect radius plus a little hull. It is not cosmetic: with 0 the " +
+                 "reachability test asks whether the vessel can fly onto an infinitely small " +
+                 "point, which at 20 units of range is false for any bearing error over 7 degrees, " +
+                 "so the pilot peels away from an objective it was about to reach.")]
+        [SerializeField, Min(0f)] float objectiveCaptureRadius = 18f;
         [Tooltip("Degrees swept around the objective, with no progress made, before the empirical " +
                  "detector calls it an orbit. 540 is a lap and a half - enough that a wide but " +
                  "genuine approach is never mistaken for one.")]
@@ -652,13 +662,42 @@ namespace CosmicShore.Gameplay
             return course.sqrMagnitude > 1e-6f ? course : transform.forward;
         }
 
-        /// <summary>How far ahead to place the escape point. Far enough that the steering treats it
-        /// as a bearing to hold rather than a waypoint to arrive at.</summary>
+        /// <summary>
+        /// Separation the break-off flies out to before turning back — the runway the return leg
+        /// gets. Two floors, and the larger wins:
+        ///
+        /// <list type="bullet">
+        /// <item><b>The geometric one</b>, <c>2R − c</c>: below it the objective can still be
+        /// inside the turning circle, so exiting there can leave the pilot trapped exactly as it
+        /// was. This is the guarantee and it is not optional.</item>
+        /// <item><b>The tactical one</b>, <c>speed × approachRunSeconds</c>: how much STRAIGHT RUN
+        /// the pilot wants at its objective once it turns back. Purely geometric break-offs turn
+        /// around the instant they are allowed to, which is correct for arriving and useless for a
+        /// vessel that has to line something up on the way in.</item>
+        /// </list>
+        ///
+        /// Expressing the second as a TIME is what makes it portable: the separation that matters
+        /// scales with speed, and <c>2R/v = 2/ω</c> is a constant for a given turn rate, so a run
+        /// measured in seconds means the same thing on a drifting Dolphin at 357 u/s as on a
+        /// Squirrel at cruise.
+        /// </summary>
+        float RequiredApproachRun(float minTurnRadius)
+        {
+            float geometric = PursuitReachability.GuaranteedReachableSeparation(
+                minTurnRadius, objectiveCaptureRadius);
+            if (float.IsInfinity(geometric)) geometric = _maxDistance;
+
+            float tactical = Mathf.Abs(VesselStatus.Speed) * approachRunSeconds;
+            return Mathf.Max(geometric, tactical);
+        }
+
+        /// <summary>How far ahead to place the escape point. Beyond the runway, so the steering
+        /// treats it as a bearing to hold rather than a waypoint to arrive at.</summary>
         float EscapeLegLength()
         {
-            float separation = PursuitReachability.GuaranteedReachableSeparation(
+            float run = RequiredApproachRun(
                 VesselStatus.VesselTransformer != null ? VesselStatus.VesselTransformer.MinTurnRadius : 0f);
-            return float.IsInfinity(separation) || separation <= 1f ? _maxDistance : separation * 2f;
+            return run > 1f ? run * 2f : _maxDistance;
         }
 
         /// <summary>
@@ -714,20 +753,15 @@ namespace CosmicShore.Gameplay
             {
                 _extendElapsed += Time.deltaTime;
 
-                float separation = toObjective.magnitude;
-                bool farEnough = separation >
-                                 PursuitReachability.GuaranteedReachableSeparation(radius) * orbitBreakExitMargin;
-                bool clearOfCircle = _extendElapsed >= orbitBreakMinSeconds &&
-                                     !PursuitReachability.IsInsideTurningCircle(
-                                         toObjective, HeadingDirection(), radius * orbitBreakExitHysteresis);
-
-                if (farEnough || clearOfCircle || _extendElapsed >= orbitBreakMaxSeconds)
+                bool hasRunway = toObjective.magnitude >= RequiredApproachRun(radius);
+                if ((hasRunway && _extendElapsed >= orbitBreakMinSeconds) ||
+                    _extendElapsed >= orbitBreakMaxSeconds)
                     EndOrbitBreak();
                 return;
             }
 
             bool unreachable = PursuitReachability.IsInsideTurningCircle(
-                toObjective, HeadingDirection(), radius);
+                toObjective, HeadingDirection(), radius, objectiveCaptureRadius);
             bool orbiting = _orbitDetector.Tick(toObjective, orbitSweepDegrees,
                                                 orbitProgressFraction, orbitTargetJumpFraction);
 

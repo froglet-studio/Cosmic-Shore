@@ -193,19 +193,28 @@ namespace CosmicShore.Tests
         // End to end
         // ---------------------------------------------------------------------------------------
 
-        /// <summary>One frame of the shipped AIPilot rule, reduced to the parts that steer.</summary>
-        static bool Pursue(Vector3 target, float speed, float turnRateDeg, bool breakOrbits, out float seconds)
+        const float CaptureRadius = 18f;   // AIPilot's default: an omni crystal is ~12u plus hull
+
+        /// <summary>
+        /// One frame of the shipped AIPilot rule, reduced to the parts that steer.
+        /// <paramref name="closestBreakOff"/> reports the shortest range at which the pilot ever
+        /// broke off — the number that says whether it peels away on final approach.
+        /// </summary>
+        static bool Pursue(Vector3 target, float speed, float turnRateDeg, bool breakOrbits,
+                           out float seconds, out float closestBreakOff, float approachRunSeconds = 1.5f)
         {
-            const float dt = 1f / 60f, arrivalRadius = 8f, timeout = 40f;
-            const float awayBias = 0.35f, exitMargin = 1.15f, exitHysteresis = 0.75f;
-            const float minExtend = 0.6f, maxExtend = 4f;
+            const float dt = 1f / 60f, timeout = 40f;
+            const float awayBias = 0.35f, minExtend = 0.6f, maxExtend = 6f;
 
             Vector3 position = Vector3.zero, heading = Vector3.forward;
             float radius = PursuitReachability.MinTurnRadius(speed, turnRateDeg);
-            float exitSeparation = PursuitReachability.GuaranteedReachableSeparation(radius) * exitMargin;
+            float runway = Mathf.Max(
+                PursuitReachability.GuaranteedReachableSeparation(radius, CaptureRadius),
+                speed * approachRunSeconds);
 
             bool extending = false;
             float extendElapsed = 0f;
+            closestBreakOff = float.MaxValue;
             var detector = new OrbitDetector();
             detector.Reset();
 
@@ -213,7 +222,7 @@ namespace CosmicShore.Tests
             {
                 Vector3 toTarget = target - position;
                 float distance = toTarget.magnitude;
-                if (distance < arrivalRadius) { seconds = step * dt; return true; }
+                if (distance < CaptureRadius) { seconds = step * dt; return true; }
 
                 Vector3 steer = toTarget.normalized;
                 if (breakOrbits)
@@ -221,22 +230,20 @@ namespace CosmicShore.Tests
                     if (extending)
                     {
                         extendElapsed += dt;
-                        bool clear = extendElapsed >= minExtend &&
-                                     !PursuitReachability.IsInsideTurningCircle(
-                                         toTarget, heading, radius * exitHysteresis);
-                        if (distance > exitSeparation || clear || extendElapsed >= maxExtend)
+                        if ((distance >= runway && extendElapsed >= minExtend) || extendElapsed >= maxExtend)
                         {
                             extending = false;
                             extendElapsed = 0f;
                             detector.Reset();
                         }
                     }
-                    else if (PursuitReachability.IsInsideTurningCircle(toTarget, heading, radius) ||
+                    else if (PursuitReachability.IsInsideTurningCircle(toTarget, heading, radius, CaptureRadius) ||
                              detector.Tick(toTarget, 540f, 0.9f, 1.6f))
                     {
                         extending = true;
                         extendElapsed = 0f;
                         detector.Reset();
+                        closestBreakOff = Mathf.Min(closestBreakOff, distance);
                     }
 
                     if (extending)
@@ -261,17 +268,98 @@ namespace CosmicShore.Tests
             // vessel is about to fly. No turn can ever reach it.
             var target = new Vector3(radius, 0f, 0f);
 
-            Assert.IsFalse(Pursue(target, speed, turnRate, breakOrbits: false, out _),
+            Assert.IsFalse(Pursue(target, speed, turnRate, breakOrbits: false, out _, out _),
                 "Precondition: pure pursuit must fail here. If it now succeeds, the vessel model in " +
                 "this test has drifted from the one AIPilot flies and the rest of this assertion is " +
                 "meaningless.");
 
-            Assert.IsTrue(Pursue(target, speed, turnRate, breakOrbits: true, out float seconds),
+            Assert.IsTrue(Pursue(target, speed, turnRate, breakOrbits: true, out float seconds, out _),
                 "The break-off did not reach an objective that pure pursuit provably cannot. This is " +
                 "the entire point of PursuitReachability.");
             Assert.Less(seconds, 10f, $"Reached it, but took {seconds:F2}s — far longer than the ~3.6s " +
                                       "the manoeuvre measures at, which suggests it is thrashing in " +
                                       "and out of the break-off rather than flying one.");
+        }
+
+        [Test]
+        public void CaptureRadius_StopsThePilotPeelingAwayOnFinalApproach()
+        {
+            // Reported from play: the AI broke off just before collecting a crystal. With a capture
+            // radius of 0 the reachability test asks whether the vessel can fly onto an infinitely
+            // small POINT, which at 20 units of range is false for any bearing error over 7° — so
+            // the pilot correctly concludes it cannot hit the exact spot, and breaks off from an
+            // objective it would have collected.
+            float radius = PursuitReachability.MinTurnRadius(80f, 110f);
+            var closeAndSlightlyOff = new Vector3(6f, 0f, 20f);   // 21u out, ~17° off the nose
+
+            Assert.IsTrue(
+                PursuitReachability.IsInsideTurningCircle(closeAndSlightlyOff, Vector3.forward, radius, 0f),
+                "Precondition: with no capture radius this reads as unreachable — that is the bug.");
+
+            Assert.IsFalse(
+                PursuitReachability.IsInsideTurningCircle(closeAndSlightlyOff, Vector3.forward, radius, CaptureRadius),
+                "An objective 21 units away with an 18-unit capture radius is one the vessel will " +
+                "fly straight through. Reporting it unreachable makes the pilot peel off on final " +
+                "approach, which is exactly what this parameter exists to prevent.");
+
+            // And the whole-run version: over a randomized field, break-offs must not happen at
+            // point blank range.
+            var rng = new System.Random(Seed + 4);
+            float Range(float a, float b) => a + (b - a) * (float)rng.NextDouble();
+            float nearest = float.MaxValue;
+            for (int i = 0; i < 120; i++)
+            {
+                float polar = Range(0f, Mathf.PI), azimuth = Range(0f, 2f * Mathf.PI);
+                float distance = Range(0.15f * radius, 5f * radius);
+                var target = new Vector3(distance * Mathf.Sin(polar) * Mathf.Cos(azimuth),
+                                         distance * Mathf.Sin(polar) * Mathf.Sin(azimuth),
+                                         distance * Mathf.Cos(polar));
+                Pursue(target, 80f, 110f, true, out _, out float closest);
+                nearest = Mathf.Min(nearest, closest);
+            }
+            Assert.Greater(nearest, CaptureRadius,
+                $"A pilot broke off {nearest:F1} units from its objective, inside the {CaptureRadius}-unit " +
+                "capture radius it was about to enter. Nothing should ever decide to leave from in there.");
+        }
+
+        [Test]
+        public void ApproachRun_IsATimeAndScalesWithSpeed()
+        {
+            // The point of expressing the runway in seconds: 2R/v = 2/w is constant for a given
+            // turn rate, so the same dial buys the same RUN TIME at every speed. A vessel that
+            // doubles its speed needs double the room, and gets it without retuning.
+            const float runSeconds = 2.5f;
+            foreach (float speed in new[] { 60f, 150f, 357f })
+            {
+                float radius = PursuitReachability.MinTurnRadius(speed, 110f);
+                float runway = Mathf.Max(
+                    PursuitReachability.GuaranteedReachableSeparation(radius, CaptureRadius),
+                    speed * runSeconds);
+                Assert.AreEqual(runSeconds, runway / speed, 0.01f,
+                    $"At {speed} u/s the runway works out to {runway / speed:F2}s of straight run, not " +
+                    $"{runSeconds:F2}s. The tactical floor must dominate the geometric one at every " +
+                    "shipped speed, or the dial stops meaning what its name says.");
+            }
+        }
+
+        [Test]
+        public void CaptureRadius_BeyondTheTurnRadius_MakesEverythingReachable()
+        {
+            // Self-consistency at the boundary: once the capture sphere is as big as the turning
+            // circle, the vessel can always clip its objective, so nothing is ever unreachable.
+            // Falls out of the algebra rather than needing a guard, and it is what keeps a slow
+            // vessel with a generous capture radius from ever breaking off.
+            var rng = new System.Random(Seed + 5);
+            float Range(float a, float b) => a + (b - a) * (float)rng.NextDouble();
+            Vector3 Vec(float s) => new Vector3(Range(-s, s), Range(-s, s), Range(-s, s));
+
+            for (int i = 0; i < 5000; i++)
+            {
+                float radius = Range(1f, 300f);
+                Assert.IsFalse(
+                    PursuitReachability.IsInsideTurningCircle(Vec(600f), Vec(1f), radius, radius),
+                    "With the capture radius equal to the turn radius, nothing can be unreachable.");
+            }
         }
 
         [Test]
@@ -292,8 +380,8 @@ namespace CosmicShore.Tests
                                          distance * Mathf.Sin(polar) * Mathf.Sin(azimuth),
                                          distance * Mathf.Cos(polar));
 
-                if (Pursue(target, speed, turnRate, false, out _)) pureHits++;
-                if (Pursue(target, speed, turnRate, true, out _)) brokenHits++;
+                if (Pursue(target, speed, turnRate, false, out _, out _)) pureHits++;
+                if (Pursue(target, speed, turnRate, true, out _, out _)) brokenHits++;
             }
 
             Assert.AreEqual(trials, brokenHits,
