@@ -5960,7 +5960,8 @@ five-playtest failure class).
 - **Endogenous selection / level:** `PrismSizeFixedByGrowthRule` = true (AssembledFlora-wide);
   levels earned, leaf never scales, heart grows within its measured seat.
 - **No domain asymmetry / territorial permanence:** unchanged — ordinary flora spawn rules.
-- **Collider budget:** Blob cap **14 plants → 14 always-on heart colliders** (under Schwarz P's
+- **Collider budget:** the shared-profile cap (the asset still named `Blob …`, §36.10) is
+  **14 plants → 14 always-on heart colliders** (under Schwarz P's
   22, because a star plant carries ~59 struts to a tile's 36) and ~830 prism colliders at cap,
   phase-LOD-managed like all flora. Zero new query shapes — the assembler uses the same
   `TryReserve` every flora makes. The species' **second home is the Lattice cell** (§37.11),
@@ -6062,8 +6063,9 @@ leaves the cross-sections alone (spacing and prism size are independent dials, �
 fitted length grew by **exactly +12u** — the tip clearance that binds the fit is set by the
 cross-section and is therefore constant in absolute units, so the whole of the new edge goes
 into strut. Prism *count* is untouched (the tiling has no subdivision level; scaling the edge
-cannot change topology), so mass rises only with the struts' length: **6.9% of Blob's Frenzy
-ladder, from 3%.** The heart seat is unchanged at 2.6u because crystals do not scale with the
+cannot change topology), so mass rises only with the struts' length: **6.9% of the host cell's
+Frenzy ladder, from 3%** (measured against Blob's, which §36.10 has since retired — §37.6 carries
+the current figure against the seven worlds that now load the profile). The heart seat is unchanged at 2.6u because crystals do not scale with the
 lattice — at the wider edge the plain inset falls to 0.9u, so the seat now does *all* the work
 of opening the crystal's alcove, exactly as intended.
 
