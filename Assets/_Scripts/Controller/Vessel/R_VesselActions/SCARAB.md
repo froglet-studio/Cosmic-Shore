@@ -1240,6 +1240,28 @@ generator at ring radius 20; the Dais Lab prints it, and it is the number the la
 from. A dais retune that does not move the ladder with it silently changes when the cell gets
 restless.
 
+⚠ **OPEN, and it is the other mode's call: Scarab Scramble's ladder does not know about the
+dais.** `GameModes.ScarabScramble` is Scarab-ONLY, so every pilot there carries `PlaceSwitchAction`
+— and its cell was authored on **trail mass over a zero floor** (Restless 12,000 / Frenzy 36,000,
+`SCARABSCRAMBLE.md` § Known limitations), with switches never entering the derivation. One spent
+switch is **50,773**, so the FIRST payout of a match crosses both gates at once: the cleanup crew
+is released and the cell pins at Frenzy for the rest of the match.
+
+It is deliberately **not** fixed here, because the two readings need a playtest to separate and
+guessing would quietly overwrite another mode's stated intent:
+
+- **Trail-paced (as authored).** Restless is "the mode's primary ecology pacing dial" and is meant
+  to fire when trail silts the court. Raising it to clear a dais means fauna never release from
+  trail at all.
+- **Build-paced.** Raise both gates by N spent switches the way Astro League's now are (Restless
+  12,000 + 3 × 50,773 ≈ 164,000; Frenzy 36,000 + 7 × 50,773 ≈ 391,000), and the ecology paces off
+  what the players have BUILT — at the cost of the trail-silting read the mode was written around.
+
+Scramble has **no flora**, so Frenzy's production freeze costs it little; what it actually loses is
+the pacing itself, since the ladder stops carrying information after the first strike. Its own doc
+already schedules "run Measure Cell Environment Baselines and retune after the first playtest" —
+this is a term that retune must now include.
+
 ## 9. The other three lanes
 
 ### 9.1 Esport
@@ -1386,7 +1408,9 @@ populated, ≥2 material slots per hull MeshRenderer.
 | Switch placement distance | switch SO | 150 |
 | Switch size (Mass-scaled) | switch SO | 1 → 2.5 |
 | Target ball→goal conversion | playtest metric | ~80% |
-| Astro League `PhaseThresholds` | cell config | re-measure with switches in play |
+| Dais shape (20 dials) | switch SO / **Dais Lab** | 5 pairs × 25 blades, 255 prisms, 50,773 volume |
+| Astro League `PhaseThresholds` | cell config | **re-authored** — Restless 182,000 / Frenzy 385,000 |
+| Scarab Scramble `PhaseThresholds` | cell config | ⚠ **NOT re-authored — see below** |
 
 ---
 

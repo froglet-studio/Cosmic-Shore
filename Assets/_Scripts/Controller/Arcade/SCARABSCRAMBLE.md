@@ -177,6 +177,18 @@ it off — but because Scramble's court *is* the nucleus, the two meet:
   and must never be copied). Run FrogletTools ▸ Ecology ▸ Measure Cell Environment
   Baselines and retune after the first playtest; Restless is the fauna-release gate and
   the mode's primary ecology pacing dial.
+  ⚠ **That estimate counts TRAIL only, and the switch dais now dwarfs it.** Every pilot
+  here is a Scarab, so every pilot carries `PlaceSwitchAction`, and a struck switch pays
+  out **50,773 volume across 255 prisms** (`SCARAB.md` §5.1) — 4× this arena's whole
+  `FrenzyEnterVolume`. The FIRST payout of a match therefore crosses both gates at once:
+  the cleanup crew is released and the cell pins at Frenzy for the rest of the match.
+  With no flora here the production freeze costs little; what is lost is the pacing
+  itself, since the ladder stops carrying information after the first strike. The retune
+  has to choose between **trail-paced** (as authored — then a dais must not be allowed to
+  satisfy Restless) and **build-paced** (raise both gates by N spent switches, the way
+  Astro League's now are: Restless ≈ 164,000, Frenzy ≈ 391,000). Left unresolved
+  deliberately — it is this mode's call, not the dais branch's. `SCARAB.md` §8 carries the
+  same note from the other side.
 - **Toast copy claims "bumping enemy balls is always safe"** — true for scoring (the
   arming gate) and for ownership (bumps never recolor); a shielded own-ribbon deflects
   (`prismCaromRestitution 1`) rather than "eats momentum". Copy uses "deflect" where it

@@ -70,7 +70,18 @@ namespace CosmicShore.Gameplay
 
         bool _shieldPrisms;
         GameObject _ring;
-        readonly List<Prism> _interior = new();
+        /// <summary>
+        /// The membrane, each prism remembered WITH the <c>TimeCreated</c> it was laid at.
+        ///
+        /// <para>The switch lives for the whole match and its fill is ordinary mass — a ball eats
+        /// it, fauna graze it, a blast takes it — so by the time it is struck an entry may name a
+        /// prism that died, went back to the pool, and was re-issued to a completely different lay
+        /// site. <c>prism.destroyed</c> does NOT catch that (the recycled prism is alive), and
+        /// blowing it out would yank live mass out from under its new owner. <c>Prism.Initialize</c>
+        /// re-stamps <c>prismProperties.TimeCreated</c> on every pool issue, so the timestamp is
+        /// the identity test: same object AND same life.</para>
+        /// </summary>
+        readonly List<(Prism prism, float laidAt)> _interior = new();
         readonly List<ScarabWingDais.Element> _daisElements = new();
         readonly Dictionary<AstroLeagueBall, Vector3> _lastBallPos = new();
         readonly List<AstroLeagueBall> _scratchDead = new();
@@ -124,7 +135,8 @@ namespace CosmicShore.Gameplay
                 var kind = _shieldPrisms ? PrismKind.Shielded : PrismKind.Plain;
                 if (TryLay(SpiralPoint(i, _interiorCount, 0f, _ringRadius), InteriorRotation(),
                            _brickScale, kind, out var prism))
-                    _interior.Add(prism);
+                    _interior.Add((prism, prism.prismProperties != null
+                                          ? prism.prismProperties.TimeCreated : 0f));
             }
         }
 
@@ -313,6 +325,10 @@ namespace CosmicShore.Gameplay
         /// applies to a membrane as much as to anything else. <c>devastate</c> is set because a
         /// MASS-5 armoured body must go with the switch instead of shedding its shield and
         /// standing there in the middle of the rosette.</para>
+        ///
+        /// <para>Only prisms still living the life this switch laid them into are touched — a
+        /// pooled prism that has since been re-issued elsewhere is skipped, because destroying it
+        /// would take live mass from whoever owns it now.</para>
         /// </summary>
         void BlowOutInterior(AstroLeagueBall ball)
         {
@@ -322,8 +338,11 @@ namespace CosmicShore.Gameplay
 
             for (int i = 0; i < _interior.Count; i++)
             {
-                var prism = _interior[i];
-                if (prism == null) continue;
+                var (prism, laidAt) = _interior[i];
+                if (prism == null || prism.prismProperties == null) continue;
+                // Identity, not liveness — see the field's note. A recycled prism carries a
+                // different TimeCreated and belongs to someone else now.
+                if (!Mathf.Approximately(prism.prismProperties.TimeCreated, laidAt)) continue;
                 prism.Damage(through, _domain, _playerName, devastate: true);
             }
             _interior.Clear();
@@ -353,7 +372,8 @@ namespace CosmicShore.Gameplay
                 await UniTask.Yield(PlayerLoopTiming.Update, ct);
             }
 
-            CSDebug.Log($"[ScarabSwitch] Threaded by a {struckBy} ball — dais raised with " +
+            CSDebug.LogVerbose(CSLogChannel.ScarabSwitch,
+                        $"[ScarabSwitch] Threaded by a {struckBy} ball — dais raised with " +
                         $"{placed}/{_daisElements.Count} prisms " +
                         $"({_dais.PairCount} wing pairs, reach " +
                         $"{ScarabWingDais.OuterReach(_dais, _ringRadius):F0}u).");

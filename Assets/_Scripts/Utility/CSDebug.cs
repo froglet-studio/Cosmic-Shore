@@ -63,6 +63,12 @@ namespace CosmicShore.Utility
         /// real fault here is still a warning and is unaffected by this flag.
         /// </summary>
         ScarabNucleus = 1 << 3,
+        /// <summary>
+        /// <c>[ScarabSwitch]</c> / <c>[PlaceSwitch]</c> — the Scarab's switch: placements,
+        /// refusals, and the wing dais a strike pays out. Off by default like every channel;
+        /// a real fault here is still a warning and is unaffected by this flag.
+        /// </summary>
+        ScarabSwitch = 1 << 4,
         All = ~0
     }
 
