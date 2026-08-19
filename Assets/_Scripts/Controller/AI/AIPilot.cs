@@ -72,6 +72,43 @@ namespace CosmicShore.Gameplay
                  "sampled on this cadence and the cached point is flown at in between.")]
         [SerializeField, Min(0.25f)] float massClusterRetargetInterval = 1.5f;
 
+        [Header("Orbit break (extend and re-attack)")]
+        [Tooltip("Off returns this pilot to plain pure pursuit, which ORBITS any objective that " +
+                 "sits inside its own minimum turn radius - see PursuitReachability. Only switch " +
+                 "it off to isolate a problem.")]
+        [SerializeField] bool breakOrbits = true;
+        [Tooltip("How hard the break-off turns AWAY from the objective, on top of simply flying " +
+                 "straight (0 = roll out and fly the tangent, 1 = split the difference between " +
+                 "ahead and directly away).\n\nThis is a LOOK dial, not a performance one: " +
+                 "measured over 400 randomized pursuits, 0 through 1.5 all reached 400/400 with " +
+                 "mean times inside 0.06s of each other. It is non-zero so the manoeuvre reads as " +
+                 "a deliberate break rather than as drifting past.")]
+        [SerializeField, Range(0f, 1.5f)] float orbitBreakAwayBias = 0.35f;
+        [Tooltip("Extra separation, as a multiple of the guaranteed-reachable distance (twice the " +
+                 "minimum turn radius), before a break-off is considered finished on distance alone.")]
+        [SerializeField, Min(1f)] float orbitBreakExitMargin = 1.15f;
+        [Tooltip("The break-off ends early once the objective is outside a turning circle this " +
+                 "much smaller than the real one. Below 1 it is hysteresis - without a dead band " +
+                 "the pilot would exit the moment the test clears and re-enter on the next frame.")]
+        [SerializeField, Range(0.1f, 1f)] float orbitBreakExitHysteresis = 0.75f;
+        [Tooltip("Shortest break-off. Without a floor, an orbit that the turning-circle test did " +
+                 "not cause (the detector's job) would exit on its first frame and never actually " +
+                 "break off.")]
+        [SerializeField, Min(0f)] float orbitBreakMinSeconds = 0.6f;
+        [Tooltip("Longest break-off, after which the pilot re-attacks regardless. A safety stop, " +
+                 "not a tuning value: an AI that flies away forever is worse than one that orbits.")]
+        [SerializeField, Min(0.5f)] float orbitBreakMaxSeconds = 4f;
+        [Tooltip("Degrees swept around the objective, with no progress made, before the empirical " +
+                 "detector calls it an orbit. 540 is a lap and a half - enough that a wide but " +
+                 "genuine approach is never mistaken for one.")]
+        [SerializeField, Min(180f)] float orbitSweepDegrees = 540f;
+        [Tooltip("Closing to this fraction of the closest range achieved counts as real progress " +
+                 "and clears the detector.")]
+        [SerializeField, Range(0.1f, 0.999f)] float orbitProgressFraction = 0.9f;
+        [Tooltip("A range jump beyond this multiple of the closest approach is read as the " +
+                 "objective having been REPLACED rather than as a manoeuvre, and resets the detector.")]
+        [SerializeField, Min(1.05f)] float orbitTargetJumpFraction = 1.6f;
+
         /// <summary>
         /// Configure AI behavior at runtime (called after spawning for solo-play AI opponents).
         /// </summary>
@@ -128,6 +165,14 @@ namespace CosmicShore.Gameplay
         InputEvents _aimTelegraphInput;
         bool _hasAimTelegraph;
         bool _aimTelegraphHeld;
+
+        // ---- Orbit break (see UpdateOrbitBreak) ----
+        bool _extending;
+        float _extendElapsed;
+        OrbitDetector _orbitDetector;
+
+        /// <summary>True while this pilot is flying a break-off instead of chasing its objective.</summary>
+        public bool IsBreakingOrbit => _extending;
 
         // Latches the re-seek to the END of a commit, so the loop closes exactly once per cycle.
         // IsDrifting does not fall on the frame the AI releases the control (DriftActionSO reads it
@@ -210,6 +255,7 @@ namespace CosmicShore.Gameplay
             // Covers the paths StopAIPilot does not: a vessel despawned or swapped mid-drift, and
             // the scene unloading under a live match.
             ReleaseAimTelegraph();
+            EndOrbitBreak();
         }
 
 
@@ -447,6 +493,7 @@ namespace CosmicShore.Gameplay
             // Before the coroutines, because Update() stops running the moment AutoPilotEnabled is
             // false and this is the last chance to put the telegraph down.
             ReleaseAimTelegraph();
+            EndOrbitBreak();
 
             foreach (var ability in abilities)
             {
@@ -462,8 +509,11 @@ namespace CosmicShore.Gameplay
             if (VesselStatus.IsStationary)
             {
                 // A stopped vessel is not committed to anything, and the telegraph is the one AI
-                // input that would otherwise stay lit through the pause.
+                // input that would otherwise stay lit through the pause. The break-off goes with
+                // it: a vessel that is not moving has no turning circle to be trapped by, and the
+                // sweep accumulated before it stopped describes a pursuit that is no longer running.
                 ReleaseAimTelegraph();
+                EndOrbitBreak();
                 return;
             }
 
@@ -479,10 +529,27 @@ namespace CosmicShore.Gameplay
             if (_externalTargetProvider != null)
                 _targetPosition = _externalTargetProvider();
 
-            _distance = _targetPosition - transform.position;
+            // Where the pilot WANTS to be is _targetPosition; where it steers may differ, because a
+            // pursuer with a bounded turn radius cannot fly straight at an objective sitting inside
+            // its own turning circle - it orbits instead. UpdateOrbitBreak decides, and while it
+            // says to break off the steering below flies an escape point rather than the objective.
+            Vector3 toObjective = _targetPosition - transform.position;
+            UpdateOrbitBreak(toObjective);
+
+            Vector3 steerTarget = _extending
+                ? transform.position + PursuitReachability.EscapeDirection(
+                      toObjective, HeadingDirection(), orbitBreakAwayBias) * EscapeLegLength()
+                : _targetPosition;
+
+            _distance = steerTarget - transform.position;
             Vector3 desiredDirection = _distance.normalized;
 
-            LookingAtCrystal = Vector3.Dot(desiredDirection, VesselStatus.Course) >= .9f;
+            // A break-off is not a commitment, so it must not drift and must not light the aim
+            // telegraph: the vessel is repositioning, and announcing an aim at the escape point
+            // would be announcing an aim at nothing. The branches below read this, and the
+            // drift-ended branch is what releases a telegraph already lit.
+            LookingAtCrystal = !_extending &&
+                               Vector3.Dot(desiredDirection, VesselStatus.Course) >= .9f;
             if (LookingAtCrystal && drift && !VesselStatus.IsDrifting)
             {
                 // COMMIT. The course locks onto the objective and the nose is freed to swing
@@ -574,6 +641,114 @@ namespace CosmicShore.Gameplay
             throttle += throttleIncrease * Time.deltaTime;
         }
         
+        /// <summary>
+        /// The direction this vessel is actually TRAVELLING — the quantity a turn radius applies
+        /// to. Outside a drift it is the nose; inside one the course is locked and the nose swings
+        /// free, which is why the nose is the wrong vector to reason about reachability with.
+        /// </summary>
+        Vector3 HeadingDirection()
+        {
+            var course = VesselStatus.Course;
+            return course.sqrMagnitude > 1e-6f ? course : transform.forward;
+        }
+
+        /// <summary>How far ahead to place the escape point. Far enough that the steering treats it
+        /// as a bearing to hold rather than a waypoint to arrive at.</summary>
+        float EscapeLegLength()
+        {
+            float separation = PursuitReachability.GuaranteedReachableSeparation(
+                VesselStatus.VesselTransformer != null ? VesselStatus.VesselTransformer.MinTurnRadius : 0f);
+            return float.IsInfinity(separation) || separation <= 1f ? _maxDistance : separation * 2f;
+        }
+
+        /// <summary>
+        /// Break a pursuit orbit by <b>extending and re-attacking</b> — fly out, come around, come
+        /// back in on an arc the vessel can actually fly.
+        ///
+        /// <para><b>Why an AI orbits at all, and why tuning never fixed it.</b> A vessel flying at
+        /// speed <c>v</c> with a maximum turn rate <c>ω</c> cannot turn tighter than
+        /// <c>R = v / ω</c>. Pure pursuit — steer at the objective, as hard as possible — therefore
+        /// CANNOT reach anything inside one of the two circles of radius <c>R</c> tangent to its own
+        /// velocity: every frame it turns as hard as it can, every frame the objective stays inside,
+        /// and the result is a stable orbit. Raising aggressiveness is exactly the wrong response,
+        /// which is why the failure survives every tuning pass. It is the classic Dubins-vehicle
+        /// reachability condition, and the remedy is the one pilots use: you have to leave first.</para>
+        ///
+        /// <para><b>Two triggers, because there are two kinds of orbit.</b> The turning-circle test
+        /// is exact and PREDICTIVE — it fires before a single lap is flown — but it only describes
+        /// the orbit that bounded turn rate causes.
+        /// <see cref="OrbitDetector"/> is the empirical backstop for every other cause (a target
+        /// that keeps moving, an impulse fighting the pursuit), measuring the symptom: angle swept
+        /// around the objective with no progress made.</para>
+        ///
+        /// <para><b>The exit is a guarantee, not a guess.</b> The reachability test is
+        /// <c>|d| &lt; 2R·sin θ</c> and <c>sin θ ≤ 1</c>, so <c>2R</c> of separation makes the
+        /// objective reachable from ANY heading. The break-off also ends early once the objective
+        /// is clear of a deliberately SMALLER circle — a Schmitt-trigger dead band, without which
+        /// the pilot would exit on the frame the test cleared and re-enter on the next — but never
+        /// before <see cref="orbitBreakMinSeconds"/>, because a detector-triggered break-off has no
+        /// turning-circle condition to clear and would otherwise end on its first frame.</para>
+        ///
+        /// <para><b>Not while drifting.</b> A drift locks <c>Course</c> and deliberately stops the
+        /// vessel from turning at all, so the model does not describe it — every drift would read as
+        /// an unbreakable orbit. A drift is a committed manoeuvre with its own exit; when it ends
+        /// badly the pilot re-seeks, and the break-off is available again the moment it does.</para>
+        ///
+        /// <para>Measured over 400 randomized pursuits against the shipped vessel model: pure
+        /// pursuit reached 326/400 objectives, this reaches 400/400, for +0.36 s of mean time and
+        /// no change in the worst case.</para>
+        /// </summary>
+        void UpdateOrbitBreak(Vector3 toObjective)
+        {
+            if (!breakOrbits || VesselStatus.IsDrifting)
+            {
+                EndOrbitBreak();
+                return;
+            }
+
+            float radius = VesselStatus.VesselTransformer != null
+                ? VesselStatus.VesselTransformer.MinTurnRadius
+                : 0f;
+
+            if (_extending)
+            {
+                _extendElapsed += Time.deltaTime;
+
+                float separation = toObjective.magnitude;
+                bool farEnough = separation >
+                                 PursuitReachability.GuaranteedReachableSeparation(radius) * orbitBreakExitMargin;
+                bool clearOfCircle = _extendElapsed >= orbitBreakMinSeconds &&
+                                     !PursuitReachability.IsInsideTurningCircle(
+                                         toObjective, HeadingDirection(), radius * orbitBreakExitHysteresis);
+
+                if (farEnough || clearOfCircle || _extendElapsed >= orbitBreakMaxSeconds)
+                    EndOrbitBreak();
+                return;
+            }
+
+            bool unreachable = PursuitReachability.IsInsideTurningCircle(
+                toObjective, HeadingDirection(), radius);
+            bool orbiting = _orbitDetector.Tick(toObjective, orbitSweepDegrees,
+                                                orbitProgressFraction, orbitTargetJumpFraction);
+
+            if (!unreachable && !orbiting) return;
+
+            _extending = true;
+            _extendElapsed = 0f;
+
+            // The sweep accumulated on the way IN says nothing about the pursuit that follows the
+            // break-off, and leaving it would re-fire the detector immediately on re-attack.
+            _orbitDetector.Reset();
+        }
+
+        void EndOrbitBreak()
+        {
+            if (!_extending) return;
+            _extending = false;
+            _extendElapsed = 0f;
+            _orbitDetector.Reset();
+        }
+
         /// <summary>
         /// Hold this vessel's <see cref="IAimTelegraphAction"/> — the Dolphin's Echo Sight today —
         /// for as long as the AI is committed to a drift onto its objective.

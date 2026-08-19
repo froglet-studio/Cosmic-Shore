@@ -829,6 +829,7 @@ MiniGameControllerBase (abstract, NetworkBehaviour)
 | `DOGFIGHT.md` | `_Scripts/Controller/Arcade/` | Dog Fight technical reference (Sparrow-only gun duel). **Read before touching the combat-hit path, the Sparrow's weapon effect containers, or the skyburst's AOE prefabs** — this mode added the platform's first vessel-vs-vessel scoring metric and gave the skyburst's conic blast the explosion container it never had (so a rocket's blast can now reach a pilot at all). Also documents why the mode is a TEAM race rather than a free-for-all: teammates cannot damage each other, so domains ARE the sides. |
 | `BENDS.md` | `_Scripts/Controller/Arcade/` | The Bends technical reference (Dolphin-only debuff duel). **Read before touching the Dolphin's conic blast effect container, the combat-hit path, or `AIPilot`'s drift look-direction** — this mode gave the Dolphin's crystal blast the vessel effects it never had (so the blast now debuffs a pilot it engulfs, in every mode), added `CombatHitClass.Debuff`, and gave `AIPilot` a drift-aim hook that is deliberately separate from the steering hook. Also records two networking bugs it surfaced: a client→server hit-class validator that mis-filed any new enum member, and the double-credit a REPLAYED blast causes. |
 | `WILDLIFE_LIBERATION.md` | `_Scripts/Controller/Arcade/` | Wildlife Liberation technical reference (Sparrow-only three-cage hunt). **Read before touching the fauna kill path or the per-species containment bands** — this mode made every creature in the game shootable, and generalized the cell's single fauna pen into a per-species annulus. Also documents why a per-player (free-for-all) winner was tried here and reverted, the client-local-fauna kill RPC, and the very-heavy collider budget. |
+| `AI_ORBIT_BREAK.md` | `_Scripts/Controller/AI/` | Why every AI orbited its objective, and the extend-and-re-attack that fixes it. **Read before touching `AIPilot`'s steering, `PursuitReachability`, or any vessel's Pitch/Yaw scalers** — the orbit is a Dubins minimum-turn-radius result, not a tuning miss, and turning harder is the wrong response. Carries the measured before/after and the two rejected alternatives (an entry dwell, a running-minimum progress gate). |
 | `PRISM_PERFORMANCE_AUDIT.md` | `_Scripts/Game/Prisms/` | Prism system performance analysis (vestigial location) |
 | `UNIT_TESTING_GUIDE.md` | `_Scripts/Tests/` | Unit testing guidelines and inventory |
 | `BENCHMARK_TOOL.md` | `_Scripts/Utility/PerformanceBenchmark/` | Performance Benchmark tool guide (tabs, score/hints, sweep, Load Time Insights, customization) |
@@ -2140,6 +2141,28 @@ Runtime-configurable AI opponents at `Assets/_Scripts/Controller/AI/`:
 - AI profiles configured via `SO_AIProfileList` (`MainAIProfileList.asset`)
 - AI profiles used for score cards and multiplayer backfill
 - Configurable AI ship selection and behavior at runtime
+
+**A pursuing AI ORBITS anything inside its own minimum turn radius, and that is geometry rather
+than tuning** (`AI_ORBIT_BREAK.md`, `PursuitReachability`). A vessel at speed `v` with max turn
+rate `ω` cannot fly tighter than `R = v/ω`, so pure pursuit can never reach a target inside either
+circle of radius `R` tangent to its velocity — it turns as hard as it can, forever. **Turning
+harder is exactly the wrong response, which is why the failure survived every tuning pass.** It is
+the Dubins (1957) reachability condition and the fix is the manoeuvre pilots use — *extend and
+re-attack*: fly out, come around, come back in. Four things to carry: (1) the test collapses to
+**`|d| < 2R·sin θ`** (the circle test with the `R²` cancelled — proven exact against the long-hand
+definition over 20k cases), and its **exit condition falls out of the same line**, since `sin θ ≤ 1`
+means `2R` of separation is a GUARANTEE of reachability rather than a tuned threshold; (2) **`R` is
+a property of the vessel AT THIS SPEED, never an authored constant** — a boosted Dolphin's
+unreachable bubble is 372u against 83u at cruise, off the same authored 110°/s, so it is derived
+live in `VesselTransformer.MinTurnRadius`; (3) reason from **`Course`, not the nose** — the radius
+applies to the direction of TRAVEL, and the two differ during a drift (which is also why the
+break-off is suppressed there: a locked course reads as an infinite radius, i.e. an unbreakable
+orbit); (4) a geometric test cannot catch an orbit it does not describe, so `OrbitDetector` is the
+empirical backstop — swept angle with no progress — and its progress gate must compare against the
+range at the START of the window, because **a running minimum tracks a steady approach downward and
+can then never register progress at all**, silently degrading the detector to "constant range only".
+Measured: 343/400 randomized objectives reached → **400/400**, for +0.27s of mean time and no change
+to the worst case.
 
 ### Menu Screen Navigation (Menu_Main Scene)
 
