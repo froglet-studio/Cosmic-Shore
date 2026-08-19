@@ -229,6 +229,48 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
+        /// Processes one frame of batch AOE damage for the CYLINDRICAL explosion: an exact test
+        /// against the swept plate over the axial slab [sliceMin, sliceMax] it newly covers this
+        /// frame. Successive slabs tile the sweep exactly, so coverage does not depend on frame
+        /// rate and never reaches past the visible end cap.
+        ///
+        /// The cross-section is a DISC of constant <paramref name="radius"/>, and every prism the
+        /// plate claims is shoved along <paramref name="axis"/> — the blast's own velocity —
+        /// rather than radially from an origin.
+        /// Returns true if the explosion should continue, false if it should be destroyed
+        /// (e.g. hit a super-shielded enemy prism).
+        /// </summary>
+        public bool ProcessBatchCylinderFrame(
+            Vector3 origin, Vector3 axis, float sliceMin, float sliceMax, float radius,
+            in ExplosionImpulse impulse)
+        {
+            using (s_processBatch.Auto())
+            {
+                // Bounding sphere of the swept-so-far cylinder: centre at its axial midpoint,
+                // radius the half-diagonal. A crystal conversion is a discrete, once-per-blast
+                // event (the Scarab forges a ball off one), so the sphere's slight over-reach at
+                // the plate's rim is not worth an exact test.
+                float depth = Mathf.Max(sliceMax, 0f);
+                float half = depth * 0.5f;
+                SweepCrystals(origin + axis * half,
+                              Mathf.Sqrt(half * half + radius * radius));
+
+                if (!_useBatchProcessing) return true;
+                var registry = PrismSpatialIndex.Instance;
+                if (registry == null) return true;
+
+                return registry.ProcessExplosionCylinderFrame(
+                    origin, axis, sliceMin, sliceMax, radius, impulse,
+                    explosion.Domain,
+                    affectSelf, destructive, devastating, shielding,
+                    explosion.AnonymousExplosion,
+                    explosion.Vessel,
+                    _batchHitTracker,
+                    _batchPending);
+            }
+        }
+
+        /// <summary>
         /// Drains one frame's worth of budget-deferred damage without running a new
         /// spatial query. Called after the explosion's visual finishes so a blast
         /// dense enough to exceed the per-frame budget still damages everything it

@@ -396,6 +396,56 @@ namespace CosmicShore.Gameplay
     }
 
     /// <summary>
+    /// Burst-compiled spatial query for the CYLINDRICAL explosion — the Scarab's cavitation
+    /// punch. The volume is a flat circular PLATE of constant radius that starts centred on the
+    /// hull with its face normal along the dash and sweeps that normal; there is no apex and no
+    /// half-angle, so the cone job cannot express it (its cross-section is proportional to depth,
+    /// which is the one thing this shape refuses to do).
+    ///
+    /// Coverage follows the cone job's contract exactly: slice [SliceMin, SliceMax] is the axial
+    /// interval between the previous frame's sweep depth and this frame's, so the union over the
+    /// blast's frames is EXACTLY the swept cylinder — no gaps at any frame rate and no reach past
+    /// the visible end cap.
+    ///
+    /// THE IMPACT DIRECTION IS THE SWEEP AXIS, not a radial from an origin. A plate does not
+    /// radiate; it shoves. Every prism it claims leaves along <see cref="Axis"/> at the blast's
+    /// own speed, so the debris field travels with the punch instead of blooming out of it — the
+    /// direction is a constant, which is also why this job does no per-hit normalize at all.
+    /// </summary>
+    [BurstCompile]
+    public struct AOECylinderSweepQueryJob : IJobParallelFor
+    {
+        [ReadOnly] public NativeArray<PrismSpatialData> Prisms;
+        [ReadOnly] public float3 Origin;    // the plate's starting centre (the hull)
+        [ReadOnly] public float3 Axis;      // unit vector, the plate's face normal = sweep direction
+        [ReadOnly] public float SliceMin;   // axial depth already swept (previous frame)
+        [ReadOnly] public float SliceMax;   // this frame's sweep depth
+        [ReadOnly] public float RadiusSq;   // the plate's radius, squared — CONSTANT along the sweep
+
+        public NativeList<AOEHit>.ParallelWriter Hits;
+
+        public void Execute(int index)
+        {
+            var p = Prisms[index];
+
+            // Same single-byte liveness gate as the spherical and conic queries.
+            if ((p.Flags & PrismFlags.JobSkipMask) != PrismFlags.JobPassValue) return;
+
+            float3 rel = p.Position - Origin;
+
+            // Axial band: only the slab this frame newly covers.
+            float s = math.dot(rel, Axis);
+            if (s < SliceMin || s > SliceMax) return;
+
+            // Radial band: constant radius about the axis — a true cylinder, flat end caps.
+            float3 radial = rel - Axis * s;
+            if (math.lengthsq(radial) > RadiusSq) return;
+
+            Hits.AddNoResize(new AOEHit { Index = index, ImpactDir = Axis });
+        }
+    }
+
+    /// <summary>
     /// Burst-compiled collider-LOD classification over the packed hot array.
     /// Maintains the per-slot <see cref="PrismFlags.LodNear"/> bit and emits only
     /// TRANSITIONS (slots whose near/far state changed since the last pass), so the
@@ -2099,7 +2149,74 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// Phase 2, shared by the spherical and conic queries: main-thread damage
+        /// Batch AOE damage for the CYLINDRICAL explosion (the Scarab's cavitation plate). Phase 1
+        /// runs <see cref="AOECylinderSweepQueryJob"/> over the axial slab
+        /// [<paramref name="sliceMin"/>, <paramref name="sliceMax"/>] the plate newly covers this
+        /// frame; phase 2 is the shared resolve pass. The interval is CLOSED at both ends for the
+        /// same reason as the cone's — consecutive slabs share an endpoint so no prism can fall
+        /// between them, and the alreadyHit claim dedupes the overlap.
+        ///
+        /// <paramref name="radius"/> is CONSTANT along the sweep (that is what makes this a
+        /// cylinder rather than a cone), and every hit's impact direction is
+        /// <paramref name="axis"/> itself: the plate shoves what it claims along the sweep at the
+        /// blast's own speed rather than radiating it from a point.
+        /// </summary>
+        public bool ProcessExplosionCylinderFrame(
+            Vector3 origin,
+            Vector3 axis,
+            float sliceMin,
+            float sliceMax,
+            float radius,
+            in ExplosionImpulse impulse,
+            Domains explosionDomain,
+            bool affectSelf,
+            bool destructive,
+            bool devastating,
+            bool shielding,
+            bool anonymous,
+            IVessel vessel,
+            HashSet<int> alreadyHit,
+            Queue<PendingExplosionHit> pending = null)
+        {
+            using var processScope = s_processExplosion.Auto();
+
+            // A degenerate query must not stall the backlog: already-claimed hits are this
+            // explosion's debt and need no query at all to resolve.
+            bool queryable = _highWaterMark > 0 && _spatial.IsCreated
+                             && sliceMax > 0f && radius > 0f;
+
+            _aoeHits.Clear();
+            if (!queryable)
+                return ResolveExplosionHits(
+                    impulse, explosionDomain, affectSelf, destructive, devastating,
+                    shielding, anonymous, vessel, alreadyHit, pending);
+
+            if (_aoeHits.Capacity < _highWaterMark)
+                _aoeHits.Capacity = _highWaterMark;
+
+            using (s_burstJobSchedule.Auto())
+            {
+                var job = new AOECylinderSweepQueryJob
+                {
+                    Prisms = _spatial,
+                    Origin = (float3)origin,
+                    Axis = math.normalizesafe((float3)axis, new float3(0f, 0f, 1f)),
+                    SliceMin = math.max(sliceMin, 0f),
+                    SliceMax = sliceMax,
+                    RadiusSq = radius * radius,
+                    Hits = _aoeHits.AsParallelWriter()
+                };
+
+                job.Schedule(_highWaterMark, JOB_BATCH_SIZE).Complete();
+            }
+
+            return ResolveExplosionHits(
+                impulse, explosionDomain, affectSelf, destructive, devastating,
+                shielding, anonymous, vessel, alreadyHit, pending);
+        }
+
+        /// <summary>
+        /// Phase 2, shared by the spherical, conic and cylindrical queries: main-thread damage
         /// logic over cold data + managed refs for the slots phase 1 returned in
         /// <c>_aoeHits</c>.
         /// </summary>

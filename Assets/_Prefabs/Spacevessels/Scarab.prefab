@@ -730,7 +730,7 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 90, y: 90, z: 90}
+  m_LocalScale: {x: 30, y: 30, z: 30}
   m_ConstrainProportionsScale: 1
   m_Children: []
   m_Father: {fileID: 5558533727464959561}
@@ -811,9 +811,9 @@ MonoBehaviour:
   visible: 0
   Scale:
     Enabled: 1
-    Value: 20
-    Min: 20
-    Max: 40
+    Value: 30
+    Min: 30
+    Max: 60
     element: 3
   nudgeShardPoolManager: {fileID: 0}
   markerDistance: 70
@@ -1537,8 +1537,8 @@ GameObject:
     type: 3}
   m_PrefabInstance: {fileID: 3134011750752858212}
   m_PrefabAsset: {fileID: 0}
---- !u!65 &7110296633923301272
-BoxCollider:
+--- !u!135 &7110296633923301272
+SphereCollider:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
@@ -1556,8 +1556,8 @@ BoxCollider:
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 3
-  m_Size: {x: 10.31, y: 0.46, z: 4.38}
-  m_Center: {x: 0, y: 0, z: -3.5}
+  m_Radius: 4.5
+  m_Center: {x: 0, y: 0, z: 0}
 --- !u!114 &3543197422640980197
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2300,8 +2300,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   blastPrefab: {fileID: 7412093556301884212, guid: dd8d6149fdb64a5d869d0b0d041dd659, type: 3}
-  blastScale: 90
-  forwardOffset: 45
+  radiusPerVesselRadius: 2
+  fallbackVesselRadius: 4.5
   cooldownSeconds: 2.5
   cooldownMultiplierAtFullCharge: 0.5
 --- !u!1 &6013774229915510331

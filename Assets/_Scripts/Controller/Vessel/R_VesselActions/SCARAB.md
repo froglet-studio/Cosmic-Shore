@@ -353,15 +353,34 @@ Modelled on the Sparrow's `BarrelRollController`
 
 **RESOLVED (2026-08-15) — the juke fires a blast: `ScarabCavitationBlast`.** The original brief
 asked for a short-range lateral cone of destruction; the revised notes described a bump. Garrett's
-markup settled it: the dash carries a **small spherical blast**, in the shape the Dolphin's AOE had
-*before* it was reworked into the parametric capsule cone — the "cone" is the **offset**, the blast
-sitting ahead of you along the dash rather than centred on the hull.
+markup settled it as a **small blast** in the shape the Dolphin's AOE had *before* it was reworked
+into the parametric capsule cone.
 
-- Prefab `Assets/_Prefabs/Projectile/AOEScarabCavitation.prefab` — sphere, `ExplosionDuration 0.85`,
-  `proportionalDebris 1`, `debrisRestitution 1/3 × Inertia 1.8` (the Dolphin's shipped tuning
-  group, so debris leaves at the house 1/3-of-physical read).
-- Fired from `ScarabJukeController.OnJukeFired(direction)` at `blastScale 90`,
-  `forwardOffset 45`, domain-tinted from `IVesselStatus.AOEExplosionMaterial`.
+**REVISED (2026-08-19) — the blast is a SWEPT PLATE, and its size is the HULL's size.** It is a
+circular disc whose face normal is the dash direction — so it lies flat **across** the vessel's
+course — starting **centred on the hull** (no offset to author) and sweeping along its own normal.
+The volume it leaves behind is a cylinder with flat end caps: `AOECylindricalExplosion`, the AOE
+family's third shape after the sphere and the cone. The cone cannot express it — its cross-section
+is proportional to axial depth, and a plate is the same width at the hull as at full reach, which
+is what makes it read as a *slap* rather than a muzzle blast.
+
+- Prefab `Assets/_Prefabs/Projectile/AOEScarabCavitation.prefab` — `AOECylindricalExplosion`,
+  `proportionalDebris 1`, `debrisRestitution 1/3 × Inertia 3` (product **1.0**, so the debris
+  magnitude IS the blast's own velocity — see the wavefront table below).
+- **Its dimensions are a RELATIONSHIP to the ship, not a second number beside it.** The plate's
+  radius is `radiusPerVesselRadius` (**2**) × the vessel's own collider radius, measured live off
+  `VesselImpactor.HullColliders` at fire time, and its length is `lengthPerRadius` (**2**) × that
+  radius. The Scarab's hull is a single **4.5**-unit sphere, so the shipped punch is **r 9, length
+  18**. Reshape the hull collider and the blast follows; there is nothing left behind to drift.
+  (`HullColliders` is the same set the shell tier probes with, so the skimmer — which owns its own
+  Rigidbody — can never be mistaken for the ship.)
+- **Everything it claims leaves ALONG the sweep, at the blast's own velocity.** The Burst job hands
+  back the sweep axis itself as every prism's impact direction (no per-hit normalize), and
+  `CalculateImpactVector` returns that same vector at every position — so a pilot caught in the
+  plate and an Astro League ball it reaches are launched the way the punch *travelled* rather than
+  away from a point. The beetle's strike throws mass DOWN-RANGE.
+- Fired from `ScarabJukeController.OnJukeFired(direction)`, domain-tinted from
+  `IVesselStatus.AOEExplosionMaterial`.
 - **`Initialize` only ARMS a blast — `Detonate()` is what runs it.** `AOEExplosion.Initialize`
   deliberately leaves the explosion at zero scale with its renderer off; `Detonate` starts
   `ExplodeAsync`. Missing that call is why the blast never worked from the day it shipped: every
@@ -543,6 +562,24 @@ wavefront faster*, and the cavitation punch shipped as a slow bloom: 90 units ov
 |---|---|---|---|---|---|
 | before | 105.9 u/s | 35.3 | 1.8 | **31.8 u/s** | 11% |
 | after | 257.1 u/s | 85.7 | 3.0 | **257.1 u/s** | 86% |
+
+**So the plate authors its SPEED and DERIVES its duration** (`sweepSpeed 257.14`,
+`AOECylindricalExplosion`). This is the direct consequence of sizing the blast off the hull: the
+reach stopped being an authored constant, so holding the *duration* fixed would have silently
+retuned every impulse in the table above. The 2026-08-19 pass took the reach from 90 to 18, which
+at a fixed 0.35 s would have dropped the wavefront to **51 u/s** and the ball kick back to **17%**
+— undoing this whole pass without touching a number anyone would think to look at. Holding the
+speed instead gives a **0.070 s** punch, which is also the right read: over 0.070 s the dashing
+hull covers 5.6 u while the plate sweeps 18, so the punch LEADS the dash; at 0.35 s it would cover
+28 u and the punch would trail the ship that threw it. The general rule: **when a blast's reach
+becomes derived, its SPEED is the thing to author.**
+
+Its cost is that the whole blast is now ~4 frames, and PhysX only raises trigger events inside the
+physics step while the sweep loop runs in `Update` — so the final, largest trigger shape would be
+written and disabled inside one frame and never simulated. `contactHoldSeconds` (**0.05**) holds
+the trigger at full extent for a beat before retiring it. On a long blast the shape one frame back
+is nearly as big and nothing is lost; on this one it is most of the volume, and a punch that misses
+the ball it visibly engulfed is the mode failing.
 
 Three changes, all of them the *blast's* dials rather than the ball's:
 `ExplosionDuration` 0.85 → **0.35** (same 90-unit reach, 2.4× the wavefront speed — and a punch
@@ -1071,7 +1108,8 @@ tool in any mode with opponents. Nothing in the kit requires an arena to functio
 |---|---|
 | `_Scripts/Controller/Vessel/ScarabVesselTransformer.cs` | `SingleStickVesselTransformer` subclass: the throttle **integrator** + Time-scaled ceiling + double-tap dash (§3.2, §3.6) |
 | `_Scripts/Controller/Vessel/ScarabJukeController.cs` | Right-stick poll (uncooled), displacement + visual roll, `OnJukeFired(direction)`; vessel shove + ball strike + fire RPCs still to come (§3.4) |
-| `_Scripts/.../R_VesselActions/ScarabCavitationBlast.cs` | Rides `OnJukeFired`: spawns the spherical blast down-range along the dash, CHARGE-scaled cooldown, CHARGE-5 `DevastatingOverride` (§3.4, §7) |
+| `_Scripts/.../R_VesselActions/ScarabCavitationBlast.cs` | Rides `OnJukeFired`: spawns the swept-plate blast centred on the hull along the dash, sized off `VesselImpactor.HullColliders`, CHARGE-scaled cooldown, CHARGE-5 `DevastatingOverride` (§3.4, §7) |
+| `_Scripts/Controller/Projectiles/AOECylindricalExplosion.cs` | The swept-plate blast itself — constant-radius disc, linear sweep, one velocity handed to prisms/vessels/ball alike (§3.4) |
 | `_Scripts/.../Vessel Explosion Effects/VesselElementalDebuffByExplosionEffectSO.cs` | Platform addition: the danger-prism elemental debuff lifted onto the **explosion** impactor (all four elements, decaying, per-victim anti-spam) |
 | `_Scripts/Controller/Projectiles/AOEExplosion.cs` + `Impactors/ExplosionImpactor.cs` | Platform additions: `InitializeStruct.DevastatingOverride` + `ApplyDevastatingOverride` + `ExplosionImpactor.SetDevastating`, mirroring the existing `AffectSelfOverride` pair |
 | `_Scripts/.../Data Containers/PlaceSwitchActionSO.cs` + `Executors/PlaceSwitchActionExecutor.cs` | Charge gate, placement, occupancy claim, pooled spawn, spend (§5) |

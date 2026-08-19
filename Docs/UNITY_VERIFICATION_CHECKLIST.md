@@ -128,9 +128,14 @@ The editor-riskiest items:
   ball. **Both directions must read as a HIT, not a radial shove** — that is what the new 1s
   `nucleusReleaseGraceSeconds` buys, and it is the single most likely thing to still look
   wrong. Bank a fourth into the nucleus to see the overload.
-- **Scarab skimmer is 50% larger** (world radius 30 → 45): confirm the forge triggers at a
-  comfortable stand-off and that the wider sphere has not made skim-energy gain or prism
-  interaction feel different on the Scarab elsewhere.
+- **Scarab skimmer is 50% larger — for real this time** (SPACE band 20..40 → **30..60**, so the
+  live world radius goes 10..20 → **15..30**). The previous pass raised only the authored
+  `m_LocalScale` (60 → 90) and was a **no-op in play**: `Skimmer.ApplyScaleIfChanged` overwrites
+  `localScale` with the `Scale` ElementalFloat on the first live frame, so the shipped skimmer had
+  been 20..40 the whole time and the "30 → 45" claim above it described a number nothing read. The
+  authored `localScale` is now parked on the resting size (30) so the prefab reads what the game
+  runs. Confirm the forge triggers at a comfortable stand-off, and that the wider sphere has not
+  made skim-energy gain or prism interaction feel different on the Scarab elsewhere.
 - **MPPM two-client**: forged-ball SIZE on the client (the new `n_SizeScale` — seed the forger
   SPACE 10 so the ×4 ball is unmistakable), colour permanence under enemy strikes.
 - **PhaseThresholds are an estimate** (Restless 12000/11000, Frenzy 36000/32000 volume, zero
@@ -1675,8 +1680,11 @@ occurrence names itself.
    `ScarabHullBuilder`; right-click the component ▸ **Rebuild Hull** to see the mesh without
    entering play mode. In flight the Scarab must read as a BEETLE — domed shell with a seam down
    the middle, a forward horn, six legs — and the inherited Sparrow mesh must be invisible (its
-   renderers are disabled at build time; its GameObjects stay, because the vessel's BoxCollider and
-   ImpactCollider live on them, so collisions must still work). The domain colour must land on the
+   renderers are disabled at build time; its GameObjects stay, because the vessel's collider and
+   ImpactCollider live on them, so collisions must still work). **Its hull collider is now a single
+   `SphereCollider`, r 4.5 at the origin** (was a Sparrow-shaped 10.31 x 0.46 x 4.38 box parked
+   3.5 u behind the ship) — confirm the component renders as *Sphere Collider*, not
+   "Missing", and that the gizmo wraps the carapace rather than sitting behind it. The domain colour must land on the
    CARAPACE and horn (submesh 1), not the underside. Camera sits directly behind with **no vertical
    lift** — `followOffset {0, 0, -50}`; the old `y: 10` was inherited from the Sparrow, the only
    vessel that carries one.
@@ -1685,8 +1693,12 @@ occurrence names itself.
    up and splay as you slow, the horn swings against the nose. A rigid hull means
    `ScarabAnimation` resolved no parts — check the console for its unresolved-part report.
    Right-stick dash: the whole visible ship must spin 360° (it previously rolled the hidden FBX).
-   And the dash must now throw a **visible spherical blast** ~45u ahead — if nothing appears,
-   `Detonate()` regressed.
+   And the dash must now throw a **visible cylindrical plate** — a disc lying flat ACROSS your
+   course, starting on the hull and sweeping ~18 u along the dash in ~0.07 s (r 9, i.e. twice the
+   4.5 hull radius; length twice that radius). It is a fast flash, not a bloom. If nothing appears,
+   `Detonate()` regressed; if it draws as a sphere, the prefab's `plateVisual` child lost its
+   built-in Cylinder mesh. Prisms it claims must all fly the SAME way — down-range along the dash —
+   not outward from a point; a ball it reaches must launch the same direction.
 1. **Open `Assets/_Prefabs/Spacevessels/Scarab.prefab` and SAVE it** — this is load-bearing, not
    a smoke test: the clone carries Sparrow's `NetworkObject.GlobalObjectIdHash` until the editor
    re-serializes it, and two registered network prefabs sharing a hash collide. Open, confirm no

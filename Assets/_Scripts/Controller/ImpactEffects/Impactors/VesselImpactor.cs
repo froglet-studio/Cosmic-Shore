@@ -49,6 +49,17 @@ namespace CosmicShore.Gameplay
         // sets don't change at runtime; world poses are re-read every frame.
         Collider[] _probeColliders;
 
+        /// <summary>
+        /// The vessel's own HULL colliders — the same set the shell tier probes with, i.e. every
+        /// collider routed to this impactor by the root Rigidbody, with the skimmer (and any other
+        /// child that owns a Rigidbody) excluded. Exposed because a vessel's hull volume is a
+        /// gameplay quantity beyond collision: the Scarab sizes its cavitation blast off it
+        /// (<see cref="ScarabCavitationBlast"/>), so retuning the hull retunes the punch instead of
+        /// leaving a second number to drift. Do NOT mutate the returned array — it is the cached
+        /// probe set.
+        /// </summary>
+        public Collider[] HullColliders => _probeColliders ??= GatherHullColliders();
+
         void OnEnable()
         {
             _probeColliders ??= GatherHullColliders();
