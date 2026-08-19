@@ -725,6 +725,42 @@ Rules that fall out:
   not tuned. Get the pivot wrong — rotate about the chain point instead of the shared root
   tip — and every hinge overlaps, at a rate that looks like a global spacing problem.
 
+### Trap: a stub-harness error is a STUB GAP until proven otherwise — but not always
+
+Running the shipped file against transcribed stubs means every compile error has two possible
+causes, and the likely one is the harness. In one session the harness raised nine errors:
+`Mathf.Rad2Deg`, `Mathf.Acos`, `Vector2.zero`, `Vector2`/`Vector3` unary minus, `Vector3.Scale`,
+`Quaternion.x/y/z/w`, `Prism.Damage`, `AstroLeagueBall.Velocity` — **eight were missing stub
+members** that real Unity has, and patching the shipped code for any of them would have been a
+regression invented by the tool.
+
+So the discipline is: **grep the real repo for the member before touching your file.** Two
+`grep -n` calls settle it — the type's own source, or any existing call site.
+
+The ninth was real (a missing `using CosmicShore.Utility;` in a new editor window, which would
+have broken the whole editor assembly), and that is the point: the eight false alarms are the
+price of the one catch, and the catch is a build break nobody would have seen until Unity opened.
+Do not stop running the harness because it cries wolf; just always ask *whose* fault it is first.
+Keep the stub file, too — it accumulates, and the next session starts with nine fewer gaps.
+
+### Trap: a test that pins an ABSOLUTE number fails on the first legitimate retune
+
+When the subject is authored geometry — a generated structure with a dozen coupled dials — a
+human WILL retune it, and every assertion phrased as a fixed multiple then fails for the wrong
+reason. Three of one session's tests failed the moment the designer's own parameters were adopted,
+and all three were the test being wrong, not the shape:
+
+| pinned | broke because | rewritten as |
+|---|---|---|
+| "the inner edge is within 1.15× the ring" | the reach is a DIAL, and a second dial swings it further | "outside the mouth, and within a quarter of the structure's OWN radius" |
+| "every hinge opens 1.2× the plain step" | the mechanic strengthens along the run (1.17× → 1.62×) | "every hinge beats its neighbours, AND the last beats the first" |
+| "some prism goes under the pool's scale floor" | one dial moved and nothing did any more | ceiling on the shipped shape, floor on an explicit thin variant |
+
+The rule: **assert relationships that scale with the structure — monotonicity, ordering, ratios
+against the thing's own dimensions — and reserve absolute numbers for genuine physical limits**
+(a pool clamp, a collider budget, an arena radius). When an absolute number really is the point,
+assert it against a settings variant you construct in the test, so the shipped tuning stays free.
+
 ### Trap: compiling a COPY cannot see whole-class consistency
 
 The harness pattern in §4 — paste the block under test into a stub file and compile it — proves
