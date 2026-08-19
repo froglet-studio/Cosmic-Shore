@@ -36,31 +36,24 @@ What it adds to each graph:
       Normal Vector (OBJECT space)        -> the flat per-face normal (fly-out + spin axis)
       PrismShieldMorph (Custom Function)  -> PrismClockAnimation.hlsl
 
-  edges (TWO splices):
-
-    position — the Prism Sub Graph's Out_Vector3, i.e. the RAW object-space vertex
-    position at the head of the vertex chain, is retargeted through the morph so
-    everything downstream (the explosion's face rotation, the grow scale, the explosion
-    offset, the ballistic flight) applies to the MORPHED shape rather than fighting it:
+  edges (ONE splice) — the Prism Sub Graph's Out_Vector3, i.e. the RAW object-space
+  vertex position at the head of the vertex chain, is retargeted through the morph so
+  everything downstream (the explosion's face rotation, the grow scale, the explosion
+  offset, the ballistic flight) applies to the MORPHED shape rather than fighting it:
       BEFORE:  PrismSubGraph.Out_Vector3 ------------------> <first vertex consumer>
       AFTER:   PrismSubGraph.Out_Vector3 -> PrismShieldMorph.Position
                UV1 -> .FaceCentroid, NormalOS -> .Normal, clock + props -> the rest
                PrismShieldMorph.MorphedPosition ----------> <first vertex consumer>
 
-    normal — a tumbling face that keeps a frozen normal lights as though it never moved,
-    and these prism materials are fresnel-driven, so the rim is the brightest thing on the
-    shard. The morph is spliced in FRONT of PrismJiggleClock.Normal, which is where the
-    position chain already puts it, so the two chains stay in the same order. That feeder
-    differs per graph — a raw object-space Normal Vector on BlockGraph, the explosion's
-    already-rotated normal on ExplodingBlockGraph — which is exactly why the morph carries
-    it on a PASS-THROUGH channel (InNormal/MorphedNormal) instead of re-deriving it:
-      BEFORE:  <normal feeder> ------------------> PrismJiggleClock.Normal
-      AFTER:   <normal feeder> -> PrismShieldMorph.InNormal
-               PrismShieldMorph.MorphedNormal ---> PrismJiggleClock.Normal
+  The tumble deliberately does NOT carry the vertex normal with it. That was built and
+  reverted: on ExplodingBlockGraph the only acyclic source for an incoming normal is
+  RotateFacesAlongAxis' output, and that subgraph is fed BY this node's position output,
+  so routing its normal back in makes the two a CYCLE — which ShaderGraph rejects, turning
+  every material on the graph magenta. validate() now asserts acyclicity for exactly that
+  reason.
 
-Ordering: run the clock, flight and jiggle wirers FIRST. This asserts their outputs
-(GrowStartTime / FlightVelocity as schema-exact donors, PrismJiggleClock as the normal
-splice anchor) rather than inventing them.
+Ordering: run the clock and flight wirers FIRST. This asserts their outputs
+(GrowStartTime and FlightVelocity as schema-exact donors) rather than inventing them.
 
 Out-of-editor ShaderGraph JSON synthesis per the /asset-surgery protocol: parse the whole
 file, clone same-file (or cross-file) donors so the schema is exact by construction,
@@ -109,9 +102,6 @@ COORDINATE_SPACE_OBJECT = 0
 # OctahedronMeshGenerator.FaceCentroidUVChannel.
 UV_CHANNEL_UV1 = 1
 
-JIGGLE_FUNCTION = "PrismJiggleClock"  # the normal-splice anchor (§4.9, wired first)
-JIGGLE_NORMAL_SLOT = 5
-
 # (display name, reference name, "Vector1"|"Vector3")
 SHIELD_PROPS = [
     ("ShieldMorphStartTime", "_ShieldMorphStartTime", "Vector1"),
@@ -133,15 +123,13 @@ CF_SLOTS = [
     (6, "Position", "Vector3", False),
     (7, "Normal", "Vector3", False),
     (8, "FaceCentroid", "Vector3", False),
-    (9, "InNormal", "Vector3", False),
-    (10, "MorphedPosition", "Vector3", True),
-    (11, "MorphedNormal", "Vector3", True),
+    (9, "MorphedPosition", "Vector3", True),
 ]
 
 CF_POSITION_SLOT = 6
-CF_OUTPUT_SLOT = 10          # MorphedPosition
-CF_NORMAL_IN_SLOT = 9
-CF_NORMAL_OUT_SLOT = 11
+CF_NORMAL_SLOT = 7
+CF_CENTROID_SLOT = 8
+CF_OUTPUT_SLOT = 9           # MorphedPosition
 
 # The pre-velocity signature this tool migrates from. Slots are remapped BY DISPLAY NAME,
 # so this table is only used to recognise an old node — never to move data.
@@ -259,6 +247,11 @@ def make_slot(donor, slot_id, display_name, is_output):
 
 
 def make_property_node(donor_property_node, donor_slot, property_oid, label, x, y):
+    """`donor_slot` MUST be a MaterialSlot of the PROPERTY'S OWN kind. A PropertyNode's
+    single output slot carries the property's concrete type, so handing a Vector1 donor to
+    a Vector3 property serializes a node that cannot deliver a vector — the exact defect
+    that shipped in the first velocity pass and made the stamp look like it never arrived
+    (validate() now asserts this)."""
     node = json.loads(json.dumps(donor_property_node))
     node["m_ObjectId"] = new_oid()
     node["m_Property"] = {"m_Id": property_oid}
@@ -313,6 +306,45 @@ def edge(out_node, out_slot, in_node, in_slot):
 # validation
 # ---------------------------------------------------------------------------
 
+def assert_acyclic(graph, idx):
+    """A shader graph is a DAG. Splicing a node in FRONT of something that is already
+    DOWNSTREAM of it closes a loop, and ShaderGraph then fails the whole asset — every
+    material on it renders as the magenta error shader. This is not hypothetical: the
+    first velocity pass routed RotateFacesAlongAxis' normal back into PrismShieldMorph,
+    whose position output feeds that same subgraph, and it turned every prism explosion
+    pink. Nothing else in this file could see it, so it is checked here for the WHOLE
+    graph rather than only around our own edits."""
+    upstream = {}
+    for e in graph["m_Edges"]:
+        upstream.setdefault(e["m_InputSlot"]["m_Node"]["m_Id"], set()).add(
+            e["m_OutputSlot"]["m_Node"]["m_Id"])
+
+    def label(nid):
+        n = idx.get(nid, {})
+        return (n.get("m_FunctionName") or n.get("m_Name")
+                or n.get("m_Type", "?").split(".")[-1])
+
+    WHITE, GREY, BLACK = 0, 1, 2
+    color = {}
+
+    def walk(node, stack):
+        color[node] = GREY
+        stack.append(node)
+        for parent in upstream.get(node, ()):
+            state = color.get(parent, WHITE)
+            if state == GREY:
+                loop = stack[stack.index(parent):] + [parent]
+                raise AssertionError("edge cycle: " + " -> ".join(label(n) for n in loop))
+            if state == WHITE:
+                walk(parent, stack)
+        stack.pop()
+        color[node] = BLACK
+
+    for node in list(upstream):
+        if color.get(node, WHITE) == WHITE:
+            walk(node, [])
+
+
 def validate(docs, expect_wired):
     """Rebuild the object model and assert every invariant. Raises on failure."""
     idx = index(docs)
@@ -341,6 +373,24 @@ def validate(docs, expect_wired):
             ints.add(sd["m_Id"])
         slot_ids[ref["m_Id"]] = {idx[s["m_Id"]]["m_Id"]: idx[s["m_Id"]] for s in node.get("m_Slots", [])}
 
+    # A PropertyNode's output slot carries its property's concrete type. Checked for
+    # EVERY property node, not just ours: this is cheap, and a mismatch anywhere is the
+    # same silent failure.
+    for ref in graph["m_Nodes"]:
+        node = idx[ref["m_Id"]]
+        if "PropertyNode" not in node.get("m_Type", ""):
+            continue
+        prop = idx.get((node.get("m_Property") or {}).get("m_Id"))
+        if prop is None or not node.get("m_Slots"):
+            continue
+        kind = prop["m_Type"].split(".")[-1].replace("ShaderProperty", "")
+        if kind not in ("Vector1", "Vector2", "Vector3", "Vector4"):
+            continue  # colors, textures, booleans — different slot families
+        slot_type = idx[node["m_Slots"][0]["m_Id"]]["m_Type"]
+        assert f"{kind}MaterialSlot" in slot_type, \
+            (f"property node for {prop.get('m_Name')} ({kind}) carries a "
+             f"{slot_type.split('.')[-1]} output slot")
+
     feeders = {}
     for e in graph["m_Edges"]:
         o, i = e["m_OutputSlot"], e["m_InputSlot"]
@@ -354,6 +404,8 @@ def validate(docs, expect_wired):
         feeders[key] = feeders.get(key, 0) + 1
     for key, count in feeders.items():
         assert count == 1, f"input slot {key} has {count} feeders (must be exactly 1)"
+
+    assert_acyclic(graph, idx)
 
     if not expect_wired:
         return
@@ -434,22 +486,21 @@ def validate(docs, expect_wired):
     assert nrm_node.get("m_Space") == COORDINATE_SPACE_OBJECT, \
         "the shatter Normal Vector node is not in OBJECT space (the morph is object-space arithmetic)"
 
-    # The NORMAL splice — the tumble has to reach the lit rim, not just the silhouette.
-    jiggle = find_cf(docs, JIGGLE_FUNCTION)
-    assert jiggle is not None, \
-        f"{JIGGLE_FUNCTION} not found — it is the normal splice anchor; run its wirer first"
-    assert sources[(jiggle["m_ObjectId"], JIGGLE_NORMAL_SLOT)] == (cf["m_ObjectId"], CF_NORMAL_OUT_SLOT), \
-        "PrismJiggleClock.Normal is not fed by PrismShieldMorph.MorphedNormal"
-    assert (cf["m_ObjectId"], CF_NORMAL_IN_SLOT) in sources, \
-        "PrismShieldMorph.InNormal is unconnected — the pass-through channel has no source"
-    assert sources[(cf["m_ObjectId"], CF_NORMAL_IN_SLOT)][0] != cf["m_ObjectId"], \
-        "PrismShieldMorph.InNormal feeds itself"
-
-    normal_consumers = [e for e in graph["m_Edges"]
-                        if e["m_OutputSlot"]["m_Node"]["m_Id"] == cf["m_ObjectId"]
-                        and e["m_OutputSlot"]["m_SlotId"] == CF_NORMAL_OUT_SLOT]
-    assert len(normal_consumers) == 1, \
-        f"MorphedNormal feeds {len(normal_consumers)} inputs (expected exactly 1 — the jiggle)"
+    # The velocity feed, and — the check whose absence shipped a broken graph — that the
+    # PropertyNode driving it can actually carry a vector.
+    vel_source = sources.get((cf["m_ObjectId"], 5))
+    assert vel_source is not None, "PrismShieldMorph.Velocity is unconnected"
+    vel_node = idx[vel_source[0]]
+    assert "PropertyNode" in vel_node.get("m_Type", ""), \
+        "PrismShieldMorph.Velocity is not fed by a property node"
+    vel_prop = idx[vel_node["m_Property"]["m_Id"]]
+    assert vel_prop["m_DefaultReferenceName"] == "_ShieldMorphVelocity", \
+        f"PrismShieldMorph.Velocity is fed by {vel_prop['m_DefaultReferenceName']}, not _ShieldMorphVelocity"
+    vel_slot = idx[vel_node["m_Slots"][0]["m_Id"]]
+    assert "Vector3MaterialSlot" in vel_slot["m_Type"], \
+        (f"the _ShieldMorphVelocity property NODE carries a {vel_slot['m_Type'].split('.')[-1]} "
+         "output slot; a Vector3 property's node must carry a Vector3MaterialSlot or no vector "
+         "ever reaches the shader")
 
 
 # ---------------------------------------------------------------------------
@@ -476,16 +527,6 @@ def signature_of(docs):
         "neither the shipped 12-slot one nor the pre-velocity 9-slot one this tool migrates")
 
 
-def normal_feeder_of_jiggle(graph, jiggle):
-    """The edge currently driving PrismJiggleClock.Normal — the normal splice anchor."""
-    matches = [e for e in graph["m_Edges"]
-               if e["m_InputSlot"]["m_Node"]["m_Id"] == jiggle["m_ObjectId"]
-               and e["m_InputSlot"]["m_SlotId"] == JIGGLE_NORMAL_SLOT]
-    assert len(matches) == 1, \
-        f"expected exactly 1 feeder on {JIGGLE_FUNCTION}.Normal, found {len(matches)}"
-    return matches[0]
-
-
 def add_velocity_property(docs, graph, idx, x, y):
     """The one new property + its node. Shared by the fresh wire and the migration."""
     flight_velocity = find_property(docs, "FlightVelocity")
@@ -495,8 +536,10 @@ def add_velocity_property(docs, graph, idx, x, y):
     assert donor_property_node, "no PropertyNode donor"
     cf_donor = find_cf(docs, "PrismGrowScale")
     assert cf_donor, "no PrismGrowScale CustomFunctionNode donor"
-    donor_slot_v1 = next(idx[sl["m_Id"]] for sl in cf_donor["m_Slots"]
-                         if "Vector1MaterialSlot" in idx[sl["m_Id"]]["m_Type"])
+    # A Vector3 property's node needs a Vector3 output slot. Cloning the Vector1 donor
+    # here is what shipped a node that could not carry a vector.
+    donor_slot_v3 = next(idx[sl["m_Id"]] for sl in cf_donor["m_Slots"]
+                         if "Vector3MaterialSlot" in idx[sl["m_Id"]]["m_Type"])
 
     name, reference, kind = next(sp for sp in SHIELD_PROPS if sp[0] == "ShieldMorphVelocity")
     prop = make_per_instance_property(flight_velocity, name, reference, kind)
@@ -506,7 +549,7 @@ def add_velocity_property(docs, graph, idx, x, y):
                        for ch in idx[c["m_Id"]]["m_ChildObjectList"]))
     host["m_ChildObjectList"].append({"m_Id": prop["m_ObjectId"]})
 
-    node, slots = make_property_node(donor_property_node, donor_slot_v1,
+    node, slots = make_property_node(donor_property_node, donor_slot_v3,
                                      prop["m_ObjectId"], name, x, y)
     graph["m_Nodes"].append({"m_Id": node["m_ObjectId"]})
     return [prop, node] + slots, node
@@ -524,9 +567,6 @@ def migrate(path):
     idx = index(docs)
 
     cf = find_cf(docs, FUNCTION_NAME)
-    jiggle = find_cf(docs, JIGGLE_FUNCTION)
-    assert jiggle is not None, \
-        f"{JIGGLE_FUNCTION} not found — it is the normal splice anchor; run its wirer first"
 
     cf_donor = find_cf(docs, "PrismGrowScale")
     donor_slots = [idx[sl["m_Id"]] for sl in cf_donor["m_Slots"]]
@@ -568,12 +608,6 @@ def migrate(path):
                                                pos["x"] - 340.0, pos["y"] + 400.0)
     new_docs.extend(vel_docs)
     graph["m_Edges"].append(edge(vel_node["m_ObjectId"], 0, cf["m_ObjectId"], 5))
-
-    # -- the normal splice -------------------------------------------------
-    feeder = normal_feeder_of_jiggle(graph, jiggle)
-    feeder["m_InputSlot"] = {"m_Node": {"m_Id": cf["m_ObjectId"]}, "m_SlotId": CF_NORMAL_IN_SLOT}
-    graph["m_Edges"].append(
-        edge(cf["m_ObjectId"], CF_NORMAL_OUT_SLOT, jiggle["m_ObjectId"], JIGGLE_NORMAL_SLOT))
 
     docs.extend(new_docs)
     validate(docs, expect_wired=True)
@@ -635,9 +669,6 @@ def wire(path, uv_donor_docs):
     flight_velocity = find_property(docs, "FlightVelocity")
     assert flight_velocity, \
         "FlightVelocity not found — it is the schema-exact Vector3 donor; run the flight wirer first"
-    jiggle = find_cf(docs, JIGGLE_FUNCTION)
-    assert jiggle, \
-        f"{JIGGLE_FUNCTION} not found — it is the normal splice anchor; run its wirer first"
 
     prop_oids = {}
     for name, reference, kind in SHIELD_PROPS:
@@ -655,8 +686,11 @@ def wire(path, uv_donor_docs):
     # ---- property nodes ---------------------------------------------------
     base_x, base_y = -3200.0, 2700.0
     node_oids = {}
-    for i, (name, _ref, _kind) in enumerate(SHIELD_PROPS):
-        node, slots = make_property_node(donor_property_node, donor_slot_v1, prop_oids[name],
+    for i, (name, _ref, kind) in enumerate(SHIELD_PROPS):
+        # Slot kind follows the PROPERTY's kind — see make_property_node.
+        node, slots = make_property_node(donor_property_node,
+                                         donor_slot_v3 if kind == "Vector3" else donor_slot_v1,
+                                         prop_oids[name],
                                          name, base_x, base_y + i * 80.0)
         node_oids[name] = node["m_ObjectId"]
         new_docs.append(node)
@@ -701,12 +735,6 @@ def wire(path, uv_donor_docs):
     assert retargeted == 1, \
         f"expected exactly 1 consumer of Prism Sub Graph.Out_Vector3, retargeted {retargeted}"
 
-    # The NORMAL splice: whatever drives PrismJiggleClock.Normal today becomes the
-    # morph's pass-through input, and the morph's rotated normal drives the jiggle.
-    feeder = normal_feeder_of_jiggle(graph, jiggle)
-    normal_source = (feeder["m_OutputSlot"]["m_Node"]["m_Id"], feeder["m_OutputSlot"]["m_SlotId"])
-    feeder["m_InputSlot"] = {"m_Node": {"m_Id": cf["m_ObjectId"]}, "m_SlotId": CF_NORMAL_IN_SLOT}
-
     graph["m_Edges"].extend([
         edge(clock_node["m_ObjectId"], 0, cf["m_ObjectId"], 0),
         edge(node_oids["ShieldMorphStartTime"], 0, cf["m_ObjectId"], 1),
@@ -715,11 +743,9 @@ def wire(path, uv_donor_docs):
         edge(node_oids["ShieldMorphOffset"], 0, cf["m_ObjectId"], 4),
         edge(node_oids["ShieldMorphVelocity"], 0, cf["m_ObjectId"], 5),
         edge(sub["m_ObjectId"], PRISM_SUBGRAPH_POSITION_SLOT, cf["m_ObjectId"], CF_POSITION_SLOT),
-        edge(normal_node["m_ObjectId"], 0, cf["m_ObjectId"], 7),
-        edge(uv_node["m_ObjectId"], 0, cf["m_ObjectId"], 8),
-        edge(cf["m_ObjectId"], CF_NORMAL_OUT_SLOT, jiggle["m_ObjectId"], JIGGLE_NORMAL_SLOT),
+        edge(normal_node["m_ObjectId"], 0, cf["m_ObjectId"], CF_NORMAL_SLOT),
+        edge(uv_node["m_ObjectId"], 0, cf["m_ObjectId"], CF_CENTROID_SLOT),
     ])
-    assert normal_source[0] != cf["m_ObjectId"], "the normal splice sourced itself"
 
     docs.extend(new_docs)
     validate(docs, expect_wired=True)

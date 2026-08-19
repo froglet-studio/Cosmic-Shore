@@ -445,20 +445,21 @@ void PrismFlightSqrDistance_float(float Clock, float StartTime, float Duration, 
 // more than the others. The normal is carried through the same frame INVERTED, because
 // a normal transforms by the inverse transpose.
 //
-// InNormal/MorphedNormal is a pass-through channel, NOT the face normal the morph
-// computes with: the shatter is spliced in front of PrismJiggleClock.Normal, whose
-// feeder differs per graph (a raw object-space Normal Vector on BlockGraph, the
-// explosion's already-rotated normal on ExplodingBlockGraph). Rotating whatever
-// arrives is what keeps one splice rule correct on both. A face that tumbles with a
-// frozen normal lights as though it never moved, and on these fresnel-driven prism
-// materials the rim is the brightest thing on the shard.
+// KNOWN LIMITATION, deliberate: the tumble rotates POSITIONS ONLY — a shard's normal
+// does not follow it, so a tumbling face lights as though it never moved. Carrying the
+// normal through this node was built and REVERTED: on ExplodingBlockGraph the only
+// acyclic source for an incoming normal is RotateFacesAlongAxis' output, and that
+// subgraph is fed BY this node's position output, so routing its normal back in makes
+// the two nodes a cycle and ShaderGraph fails the whole graph (pink materials on every
+// explosion). Fixing it properly needs a SECOND custom function that rotates only the
+// normal, downstream of both — not a wider signature on this one. The shard shrinks to
+// nothing in 0.6-0.7 s, so the stale shading is a small price next to that risk.
 //
 // Because the morph runs on the SETTLED shared mesh, a shielded prism never leaves the
 // instanced path: same-size shields batch into one draw through the entire animation.
 // Normal is the OBJECT-space flat face normal (the generators author one normal per
-// face); under the fly-out alone it is deliberately not re-derived, because a per-face
-// rigid translation cannot change a face's normal — only the tumble can, and that is
-// what MorphedNormal carries.
+// face) and is deliberately not re-derived: a per-face rigid translation cannot change a
+// face's normal, and the tumble's effect on it is the known limitation above.
 //
 // Duration <= 0 -> unstamped: position and normal pass through untouched, which is every
 // prism in the game that is not mid-shield-morph (and every mesh with no TEXCOORD1).
@@ -474,14 +475,12 @@ void PrismFlightSqrDistance_float(float Clock, float StartTime, float Duration, 
 
 void PrismShieldMorph_float(float Clock, float StartTime, float Duration, float Direction,
     float ShatterOffset, float3 Velocity, float3 Position, float3 Normal, float3 FaceCentroid,
-    float3 InNormal,
-    out float3 MorphedPosition, out float3 MorphedNormal)
+    out float3 MorphedPosition)
 {
     MorphedPosition = Position;
-    MorphedNormal = InNormal;
 
     if (Duration <= 0.0)
-        return;                                   // unstamped -> identity on both
+        return;                                   // unstamped -> the position passes through
 
     float p = saturate((Clock - StartTime) / Duration);
     float t = smoothstep(0.0, 1.0, p);
@@ -552,12 +551,9 @@ void PrismShieldMorph_float(float Clock, float StartTime, float Duration, float 
     // rides — so the tumble reads identically whatever the prism's local scale is.
     float angle = PRISM_SHIELD_SHATTER_SPIN * sqrt(vLenSq) * tSec;
 
-    // Position rotates in the isotropic frame about the face centroid; the normal
-    // rotates in the frame a normal actually lives in (inverse transpose => divide by
-    // scale going in, multiply coming out — the mirror of the position's).
+    // Rotation runs in the isotropic frame about the face centroid (see the header).
     float3 rel = (MorphedPosition - FaceCentroid) * scale;
     MorphedPosition = FaceCentroid + PrismJiggleRotate(rel, axis, angle) / scale;
-    MorphedNormal = PrismJiggleRotate(InNormal / scale, axis, angle) * scale;
 }
 
 #endif // PRISM_CLOCK_ANIMATION_INCLUDED

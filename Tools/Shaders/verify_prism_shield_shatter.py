@@ -13,7 +13,7 @@ running it.
 
 The properties it asserts are the ones a regression here would break silently:
 
-  1. Duration <= 0 passes position AND normal through (every prism not mid-morph)
+  1. Duration <= 0 passes the position through (every prism not mid-morph)
   2. a ZERO velocity is byte-identical to the pre-velocity shatter, at every t - which is
      what makes every direction-less disengage (a shield timer expiring, an arena
      teardown, a domain change, a herbivore stripping armour) unchanged
@@ -21,11 +21,12 @@ The properties it asserts are the ones a regression here would break silently:
   4. drift == Velocity * Duration in world terms
   5. the tumble is exactly Rodrigues about normalize(cross(v, n)) through the face
      CENTROID, at angle PRISM_SHIELD_SHATTER_SPIN * |Velocity| * t
-  6. the pass-through normal takes the SAME rotation and stays unit length
-  7. the rotation runs in the locally-ISOTROPIC frame, so a long thin trail slab's faces
+  6. the rotation runs in the locally-ISOTROPIC frame, so a long thin trail slab's faces
      do not shear (the 4.9 correction, easy to drop and invisible on a cube)
+  7. a face struck dead-on (cross ~ 0) is pushed rather than tumbled
   8. a degenerate object frame (a prism still at localScale 0) bails to the plain puff
   9. a stamp that outlives its scheduled retirement freezes instead of flying away
+ 10. a NaN velocity falls back to the plain puff rather than poisoning the shard
 
 Requires clang++ (no Unity, no GPU). Read-only: it copies the shipped file into a temp
 dir and never writes to the repo.
@@ -146,12 +147,10 @@ inline float3 operator-(float s,float3 a){return float3(s-a.x,s-a.y,s-a.z);}
 HARNESS = r"""
 #include "hlsl_shim.hpp"
 #include <cstdio>
-
-
 #include "PrismClockAnimation.hlsl"
 
-
-
+// The pre-velocity shatter, transcribed from the shipped expression before this pass.
+// Every zero-velocity case must reproduce it exactly.
 static float3 OldShatter(float clock,float t0,float dur,float dir,float off,
                          float3 pos,float3 nrm,float3 cent){
     if(dur<=0.0f) return pos;
@@ -168,55 +167,51 @@ static void check(const char*what,bool ok){ printf("%-58s %s\n",what,ok?"ok":"FA
 
 int main(){
     SetObjectScale(1,1,1);
-    float3 pos(0.7f,0.2f,-0.4f), nrm(0,0,1), cent(0.3f,0.1f,0.0f), inN(0,0,1);
-    float3 P,N;
+    float3 pos(0.7f,0.2f,-0.4f), nrm(0,0,1), cent(0.3f,0.1f,0.0f);
+    float3 P;
 
-    // 1. unstamped -> identity on both channels
-    PrismShieldMorph_float(5,0,0,-1,3, float3(9,9,9), pos,nrm,cent,inN, P,N);
-    check("Duration<=0 passes position and normal through", near(P,pos)&&near(N,inN));
+    // 1. unstamped -> identity
+    PrismShieldMorph_float(5,0,0,-1,3, float3(9,9,9), pos,nrm,cent, P);
+    check("Duration<=0 passes the position through", near(P,pos));
 
-    // 2. zero velocity shatter == the pre-change formula, at several times
+    // 2. zero velocity shatter == the pre-change formula, at every t
     bool same=true;
     for(float c=0.0f;c<=0.6f;c+=0.05f){
-        PrismShieldMorph_float(c,0,0.6f,-1,3, float3(0,0,0), pos,nrm,cent,inN, P,N);
-        same &= near(P, OldShatter(c,0,0.6f,-1,3,pos,nrm,cent)) && near(N,inN);
+        PrismShieldMorph_float(c,0,0.6f,-1,3, float3(0,0,0), pos,nrm,cent, P);
+        same &= near(P, OldShatter(c,0,0.6f,-1,3,pos,nrm,cent));
     }
     check("zero-velocity shatter is byte-identical to the old puff", same);
 
     // 3. bloom ignores velocity entirely
     bool bloom=true;
     for(float c=0.0f;c<=0.35f;c+=0.05f){
-        PrismShieldMorph_float(c,0,0.35f,1,0, float3(40,0,0), pos,nrm,cent,inN, P,N);
-        bloom &= near(P, OldShatter(c,0,0.35f,1,0,pos,nrm,cent)) && near(N,inN);
+        PrismShieldMorph_float(c,0,0.35f,1,0, float3(40,0,0), pos,nrm,cent, P);
+        bloom &= near(P, OldShatter(c,0,0.35f,1,0,pos,nrm,cent));
     }
     check("engage bloom is unaffected by a stamped velocity", bloom);
 
     // 4. drift: at t=Duration the shard has moved exactly Velocity*Duration past the
     //    zero-velocity result, when the impulse is along the face normal (no tumble).
     float3 vAlongN(0,0,20);
-    PrismShieldMorph_float(0.6f,0,0.6f,-1,3, vAlongN, pos,nrm,cent,inN, P,N);
+    PrismShieldMorph_float(0.6f,0,0.6f,-1,3, vAlongN, pos,nrm,cent, P);
     float3 baseline = OldShatter(0.6f,0,0.6f,-1,3,pos,nrm,cent);
     check("drift == Velocity*Duration when impulse is along the normal",
-          near(P, baseline + vAlongN*0.6f, 1e-4f) && near(N,inN));
+          near(P, baseline + vAlongN*0.6f, 1e-4f));
 
-    // 5. tumble: a cross-wise impulse rotates the face AND its normal by
-    //    SPIN*|v|*t about normalize(cross(v,n)).
+    // 5. tumble: a cross-wise impulse rotates the face about normalize(cross(v,n))
+    //    THROUGH ITS OWN CENTROID, by SPIN*|v|*t.
     float3 vCross(20,0,0);
-    PrismShieldMorph_float(0.3f,0,0.6f,-1,3, vCross, pos,nrm,cent,inN, P,N);
+    PrismShieldMorph_float(0.3f,0,0.6f,-1,3, vCross, pos,nrm,cent, P);
     float ang = PRISM_SHIELD_SHATTER_SPIN*20.0f*0.3f;
     float3 axis = normalize(cross(vCross,nrm));
     float3 expectRel = PrismJiggleRotate(
         (OldShatter(0.3f,0,0.6f,-1,3,pos,nrm,cent) + vCross*0.3f) - cent, axis, ang);
-    check("tumble rotates position about the face centroid",
-          near(P, cent+expectRel, 1e-4f));
-    check("tumble rotates the pass-through normal by the same angle",
-          near(N, PrismJiggleRotate(inN,axis,ang), 1e-4f));
-    check("tumbled normal stays unit length", std::fabs(length(N)-1.0f)<1e-4f);
+    check("tumble rotates position about the face centroid", near(P, cent+expectRel, 1e-4f));
 
     // 6. non-uniform scale: rotation runs in the isotropic frame, so a face on a long
-    //    thin trail slab must not shear. Compare against the same isotropic-frame math.
+    //    thin trail slab must not shear.
     SetObjectScale(1,1,8);
-    PrismShieldMorph_float(0.3f,0,0.6f,-1,3, vCross, pos,nrm,cent,inN, P,N);
+    PrismShieldMorph_float(0.3f,0,0.6f,-1,3, vCross, pos,nrm,cent, P);
     float3 s(1,1,8);
     float3 vObj = float3(vCross.x/1, vCross.y/1, vCross.z/8);
     float3 axis2 = normalize(cross(vObj,nrm));
@@ -224,18 +219,31 @@ int main(){
     float3 expect2 = cent + PrismJiggleRotate((pre-cent)*s, axis2, ang)/s;
     check("non-uniform scale rotates in the isotropic frame", near(P,expect2,1e-4f));
 
-    // 7. degenerate object frame (a prism still at localScale 0) bails safely
-    SetObjectScale(1e-9f,1e-9f,1e-9f);
-    PrismShieldMorph_float(0.3f,0,0.6f,-1,3, vCross, pos,nrm,cent,inN, P,N);
-    check("degenerate object scale leaves the plain puff",
-          near(P, OldShatter(0.3f,0,0.6f,-1,3,pos,nrm,cent)) && near(N,inN));
-
-    // 8. clock past the end freezes rather than flying away forever
+    // 7. an impulse straight along the face normal must not tumble that face (cross ~ 0)
     SetObjectScale(1,1,1);
-    float3 A,B,An,Bn;
-    PrismShieldMorph_float(0.6f,0,0.6f,-1,3, vCross, pos,nrm,cent,inN, A,An);
-    PrismShieldMorph_float(60.0f,0,0.6f,-1,3, vCross, pos,nrm,cent,inN, B,Bn);
-    check("a stamp that outlives its retirement freezes at Duration", near(A,B)&&near(An,Bn));
+    PrismShieldMorph_float(0.3f,0,0.6f,-1,3, vAlongN, pos,nrm,cent, P);
+    check("a face struck dead-on is pushed, not tumbled",
+          near(P, OldShatter(0.3f,0,0.6f,-1,3,pos,nrm,cent) + vAlongN*0.3f, 1e-4f));
+
+    // 8. degenerate object frame (a prism still at localScale 0) bails safely
+    SetObjectScale(1e-9f,1e-9f,1e-9f);
+    PrismShieldMorph_float(0.3f,0,0.6f,-1,3, vCross, pos,nrm,cent, P);
+    check("degenerate object scale leaves the plain puff",
+          near(P, OldShatter(0.3f,0,0.6f,-1,3,pos,nrm,cent)));
+
+    // 9. clock past the end freezes rather than flying away forever
+    SetObjectScale(1,1,1);
+    float3 A,B;
+    PrismShieldMorph_float(0.6f,0,0.6f,-1,3, vCross, pos,nrm,cent, A);
+    PrismShieldMorph_float(60.0f,0,0.6f,-1,3, vCross, pos,nrm,cent, B);
+    check("a stamp that outlives its retirement freezes at Duration", near(A,B));
+
+    // 10. a NaN velocity must not poison the shard
+    SetObjectScale(1,1,1);
+    float nan = std::nanf("");
+    PrismShieldMorph_float(0.3f,0,0.6f,-1,3, float3(nan,nan,nan), pos,nrm,cent, P);
+    check("a NaN velocity falls back to the plain puff",
+          near(P, OldShatter(0.3f,0,0.6f,-1,3,pos,nrm,cent)));
 
     printf("\n%s\n", fails? "FAILURES" : "all checks passed");
     return fails?1:0;
