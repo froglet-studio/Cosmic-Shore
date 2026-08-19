@@ -103,7 +103,7 @@ namespace CosmicShore.Gameplay
     /// exactly one designated layer and the colony's lattice is complete by construction -
     /// the measuring script's growth simulation asserts zero holes. Like the Schwarz P tile
     /// colony, the whole territory question is one line; unlike it there is no mirror
-    /// transform anywhere, because Z^6 needs none (Docs/ECOSYSTEM.md 36).</para>
+    /// transform anywhere, because Z^6 needs none (Docs/ECOSYSTEM.md 37).</para>
     /// </summary>
     public class QuasicrystalAssembler : Assembler
     {

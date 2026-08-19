@@ -208,7 +208,8 @@ namespace CosmicShore.Gameplay
                 ToyFactory.AddSphereBody(body, radius, previewColor);
             }
 
-            ToyFactory.AddLabel(station.transform, vessel.ToString(), previewColor, radius * 1.9f);
+            ToyFactory.AddRingedLabel(station.transform, vessel.ToString(), previewColor,
+                StationRingRadius(radius * 1.6f), radius);
 
             var captured = vessel;
             station.OnVesselPassed = () => SelectVessel(captured);

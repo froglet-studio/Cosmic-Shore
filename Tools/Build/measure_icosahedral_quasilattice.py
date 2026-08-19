@@ -606,7 +606,7 @@ def emit(m: dict) -> str:
     a("        // ---- MEASURED by Tools/Build/measure_icosahedral_quasilattice.py. Do not")
     a("        // hand-edit; regenerate with --write. Every row is pasted verbatim from the")
     a("        // emit and re-proven from a fresh derivation by")
-    a("        // Tools/Build/verify_icosahedral_quasilattice_tables.py (Docs/ECOSYSTEM.md 36).")
+    a("        // Tools/Build/verify_icosahedral_quasilattice_tables.py (Docs/ECOSYSTEM.md 37).")
     a(f"        // Census: mean degree {m['mean_degree']:.4f}, heart density {m['heart_density']:.4f},")
     a(f"        // heart spacing {m['heart_spacing']:.4f} edges (constant), plant struts")
     a(f"        // {m['plant_min']}..{m['plant_max']} (mean {m['plant_mean']:.1f}), shell lengths {m['shell_lengths']}.")

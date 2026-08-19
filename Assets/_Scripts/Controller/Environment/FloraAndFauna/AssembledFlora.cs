@@ -73,7 +73,7 @@ namespace CosmicShore.Gameplay
     }
 
     /// <summary>
-    /// Colony-wide event counters for the quasicrystal STAR population (Docs/ECOSYSTEM.md 36).
+    /// Colony-wide event counters for the quasicrystal STAR population (Docs/ECOSYSTEM.md 37).
     /// A separate class from the gyroid's and Schwarz P's on purpose: three colonies can live
     /// in one cell, and a merged counter is unattributable. Same shape as
     /// <see cref="SchwarzPColonyDiagnostics"/> - the defect classes an exact integer address
@@ -210,7 +210,7 @@ namespace CosmicShore.Gameplay
                 // did not, so a plant that had exhausted or been grazed clear of its active
                 // branches grew visibly skewed slivers from its first reseed onward. It hit
                 // every lattice species, worst on the one with the most extreme aspect ratio
-                // (Docs/ECOSYSTEM.md 36.9). It also left RemoveSpindle unable to match the
+                // (Docs/ECOSYSTEM.md 37.9). It also left RemoveSpindle unable to match the
                 // branch, so a reseeded branch outlived the spindle it grew from.
                 //
                 // Both creation paths parent a prism to its spindle; the fallback only keeps
@@ -689,7 +689,7 @@ namespace CosmicShore.Gameplay
         /// shipped lattice scale WITH unscaled spindles, and changing an approved look for no
         /// request is its own decision, not a side effect of this one. The star colony joins
         /// because its branch pair is DERIVED from the lattice - each half-branch is sized to
-        /// reach the node at edge/2 (Docs/ECOSYSTEM.md 36.9) - so an element that widens its
+        /// reach the node at edge/2 (Docs/ECOSYSTEM.md 37.9) - so an element that widens its
         /// lattice (Space, x2) must carry the branch with it or the halves fall short of the
         /// nodes they exist to join.</para>
         /// </summary>
@@ -1084,7 +1084,7 @@ namespace CosmicShore.Gameplay
         //  The star colony (icosahedral quasicrystal) - a plant IS a heart-owner
         //
         //  The same population model as the octagon (§32.7) and tile (§34.6)
-        //  colonies, applied to the Ammann-Kramer-Neri quasilattice (§36): one
+        //  colonies, applied to the Ammann-Kramer-Neri quasilattice (§37): one
         //  plant grows the tree territory of ONE HEART - a twelve-coordinated
         //  vertex, local max of window margin - keeps its crystal at that vertex
         //  (the centre of a perfect twelve-strut star), and on completing itself

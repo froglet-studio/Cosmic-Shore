@@ -51,5 +51,10 @@ namespace CosmicShore.Data
         DogFightQuarterDown = 57,    // the leading domain is a quarter of the way to the target
         DogFightHalfDown = 58,       // the leading domain is halfway
         DogFightLeadChanged = 59,    // the lead changes hands after a milestone
+
+        // The Bends. {0} = leading domain, {1} = that domain's points, {2} = point target.
+        BendsQuarterBent = 60,       // the leading domain is a quarter of the way to the target
+        BendsHalfBent = 61,          // the leading domain is halfway
+        BendsLeadChanged = 62,       // the lead changes hands after a milestone
     }
 }

@@ -14,7 +14,7 @@ namespace CosmicShore.Gameplay
     /// gyroid's float-centre book lacks: a heart is a Z^6 address, so "is this heart taken"
     /// is a dictionary hit with no dedupe radius, no ownership epsilon and no coherence
     /// tolerance, even though the pattern the addresses describe never repeats
-    /// (Docs/ECOSYSTEM.md 36).</para>
+    /// (Docs/ECOSYSTEM.md 37).</para>
     ///
     /// <para>Keyed by FRAME as well as heart, because an address only means something
     /// relative to the lattice that minted it. Every plant of one colony shares its

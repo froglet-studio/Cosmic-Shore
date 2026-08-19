@@ -135,6 +135,30 @@ namespace CosmicShore.Gameplay
         /// <summary>Restores default crystal/player target seeking.</summary>
         public void ClearExternalTargetProvider() => _externalTargetProvider = null;
 
+        /// <summary>
+        /// Optional override for the DRIFT LOOK-DIRECTION only - where the AI points its nose
+        /// while its course stays locked on the objective. Deliberately a SEPARATE hook from
+        /// <see cref="SetExternalTargetProvider"/>, because they answer different questions: the
+        /// steering hook decides where the AI GOES (and overrides crystal seeking entirely, which
+        /// is fatal in any mode whose objective is a crystal), while this one only decides what it
+        /// AIMS AT once it is already going somewhere.
+        ///
+        /// The Bends is the case that needed it: the Dolphin's blast is fired BY collecting a
+        /// crystal, so the AI must keep seeking crystals exactly as the platform already makes it -
+        /// but the thing worth pointing the cone at there is an opposing PILOT, not the densest
+        /// cluster of hostile mass that <see cref="ResolveDriftLookDirection"/> finds by default.
+        ///
+        /// Returns a world POSITION. It is sampled on the drift path only, so a null or
+        /// unresolvable provider costs nothing and simply falls back to the mass cluster and then
+        /// to the legacy flip - the same graceful chain the default already runs.
+        /// </summary>
+        public void SetDriftLookTargetProvider(Func<Vector3?> provider) => _driftLookTargetProvider = provider;
+
+        /// <summary>Restores the default (mass-cluster) drift look-direction.</summary>
+        public void ClearDriftLookTargetProvider() => _driftLookTargetProvider = null;
+
+        Func<Vector3?> _driftLookTargetProvider;
+
         Dictionary<Corner, AvoidanceBehavior> CornerBehaviors;
 
         #region Avoidance Stuff
@@ -238,9 +262,31 @@ namespace CosmicShore.Gameplay
         /// </summary>
         Vector3 ResolveDriftLookDirection(Vector3 towardTarget)
         {
+            // A mode may name what this pilot should point at (The Bends: an opposing pilot).
+            // Same "would this drift actually turn the vessel?" test as the mass cluster, so an
+            // aim point that already lies along the objective falls through instead of producing
+            // a drift that does nothing.
+            if (TryGetProvidedLookDirection(towardTarget, out var towardProvided))
+                return towardProvided;
+
             return TryGetMassClusterDirection(towardTarget, out var towardMass)
                 ? towardMass
                 : -towardTarget;
+        }
+
+        bool TryGetProvidedLookDirection(Vector3 towardTarget, out Vector3 direction)
+        {
+            direction = default;
+            if (_driftLookTargetProvider == null) return false;
+
+            var provided = _driftLookTargetProvider();
+            if (!provided.HasValue) return false;
+
+            var offset = provided.Value - transform.position;
+            if (offset.sqrMagnitude < 1f) return false;
+
+            direction = offset.normalized;
+            return Vector3.Dot(direction, towardTarget) < 0.9f;
         }
 
         bool TryGetMassClusterDirection(Vector3 towardTarget, out Vector3 direction)

@@ -6,7 +6,7 @@ namespace CosmicShore.Gameplay
 {
     /// <summary>
     /// The quasicrystal colony's POPULATION-level reproduction book - the heart analogue of
-    /// <see cref="SchwarzPColonyFrontier"/> (Docs/ECOSYSTEM.md 32.7, 34.6, 36).
+    /// <see cref="SchwarzPColonyFrontier"/> (Docs/ECOSYSTEM.md 32.7, 34.6, 37).
     ///
     /// <para>When a plant COMPLETES its star it walks the measured heart-link census
     /// (<c>QuasicrystalLatticeData.FrontierNeighbour</c>) and contributes every unclaimed

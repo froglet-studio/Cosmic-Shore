@@ -127,6 +127,7 @@ namespace CosmicShore.Gameplay
                 case GameModes.WildlifeLiberation: // Score lands only at game end - kills are the live stat
                     return ScoreDifferenceSource.LifeformsKilled;
                 case GameModes.DogFight: // Score lands only at game end - gunnery is the live stat
+                case GameModes.Bends:    // same shape: bends land as CombatPoints, Score at the end
                     return ScoreDifferenceSource.CombatPoints;
                 case GameModes.MultiplayerJoust: // Score lands only at game end - jousts are the live stat
                     return ScoreDifferenceSource.Jousts;

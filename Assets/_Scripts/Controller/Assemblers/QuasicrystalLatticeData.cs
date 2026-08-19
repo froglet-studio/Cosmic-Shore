@@ -118,7 +118,7 @@ namespace CosmicShore.Gameplay
     /// (<c>--check</c> verifies, <c>--write</c> rewrites the table below); the shipped file
     /// is re-proven from a fresh derivation by
     /// <c>Tools/Build/verify_icosahedral_quasilattice_tables.py</c>. Design record:
-    /// Docs/ECOSYSTEM.md 36.</para>
+    /// Docs/ECOSYSTEM.md 37.</para>
     /// </summary>
     public static class QuasicrystalLatticeData
     {
@@ -126,7 +126,7 @@ namespace CosmicShore.Gameplay
         // ---- MEASURED by Tools/Build/measure_icosahedral_quasilattice.py. Do not
         // hand-edit; regenerate with --write. Every row is pasted verbatim from the
         // emit and re-proven from a fresh derivation by
-        // Tools/Build/verify_icosahedral_quasilattice_tables.py (Docs/ECOSYSTEM.md 36).
+        // Tools/Build/verify_icosahedral_quasilattice_tables.py (Docs/ECOSYSTEM.md 37).
         // Census: mean degree 5.9850, heart density 0.0483,
         // heart spacing 2.3840 edges (constant), plant struts
         // 44..97 (mean 58.8), shell lengths [2.384, 2.7528].
