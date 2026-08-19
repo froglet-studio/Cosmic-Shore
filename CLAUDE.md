@@ -821,12 +821,16 @@ Bank one too many inside and the core OVERLOADS, detonating every ball in a doma
 (own-domain prisms take a temporary shield, other domains are destroyed). See SCARAB.md §4.6. The cell follows the Astro League template (nucleus = court,
 `NucleusIsControlZone = false`, cleanup crew held out by `FaunaExclusionRadius` until Restless)
 with its OWN ladder authored for Scarab trail volume (10-40/prism, no lining floor — never copy
-the AL numbers, which ride a 30k structural floor). ⚠ **That ladder counts trail only, and every
-pilot here carries the switch**: one struck switch pays a 50,773-volume dais, 4x this arena's whole
-`FrenzyEnterVolume`, so the first payout crosses both gates at once and the ladder stops carrying
-information. Deliberately left for this mode's own retune to resolve — trail-paced or build-paced
-is a playtest question, not a dais-branch one. See `_Scripts/Controller/Arcade/SCARABSCRAMBLE.md`
-§ Known limitations and `SCARAB.md` §8.
+the AL numbers, which ride a 30k structural floor). ⚠ **That ladder counted trail only, and every
+pilot here carries the switch**: one struck switch pays a 50,773-volume dais, 4x the old
+`FrenzyEnterVolume`, so the first payout crossed both gates at once and the ladder stopped carrying
+information. Re-authored BUILD-PACED (Restless 164,000 / Frenzy 391,000 = the trail band + 3 and 7
+spent switches), at the stated cost that **Restless no longer fires from trail alone** — and
+Restless is this mode's fauna-release gate, so a switch-less match now sits in Calm far longer than
+its authoring intended. General rule: **when a vessel's ability places an order of magnitude more
+mass than a mode's own traffic, that mode's volume ladder stops describing the mode and starts
+describing the ability** — re-derive it from the ability, and name what the old reading paid for.
+See `_Scripts/Controller/Arcade/SCARABSCRAMBLE.md` § Known limitations and `SCARAB.md` §8.
 
 `WildlifeLiberation(40)` is the **Sparrow-only hunt** — three concentric cages at 1050 / 600 / 200 pen three tiers of wildlife (a very heavy swarm of small creatures outside, much bigger ones in the middle room, the biggest and toughest in the core), plus a fourth tier loose in the open water outside the outer cage where players spawn; the first **DOMAIN** to 250 summed kills wins. It is an ordinary domain race and that is deliberate: a per-PLAYER (free-for-all) winner shipped here briefly and was **reverted**, because the mode seats up to four players while the platform has only three playable domains, so a full lobby always has teammates and a per-individual winner bypasses every domain surface (winner banner, HUD panels, scoreboard ordering, `ResolvePlacementOrder`). Do not re-derive it. Its metric, `ScoringMetric.LifeformsKilled`, is the first whose source is the ECOLOGY rather than prisms or crystals — and the first that needs an RPC, because fauna are client-local so a client's kill is invisible to the server (`Player.ReportFaunaKill_ServerRpc`; the round-trip stays correct once fauna network sync lands). Shipping it made **every creature in the game killable by shooting its body prisms** (previously only the worm colony was — see `Docs/ECOSYSTEM.md §24`) and generalized the cell's single fauna pen into a per-species BAND. See `_Scripts/Controller/Arcade/WILDLIFE_LIBERATION.md`.
 

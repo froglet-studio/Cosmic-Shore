@@ -893,8 +893,8 @@ pair's two wings **begin together on the inboard axis**, their first blades long
 to the switch ring, then sweep apart around the sun and close into a **C that opens away from the
 switch**. So the wing starts where the ball threaded the switch and grows outward until it has the
 sun in its crook. Geometry: `ScarabWingDais` (pure closed-form, no scene dependency); shape:
-`ScarabWingDaisSettings` on `PlaceSwitchActionSO`; tests: `ScarabWingDaisTests`; author it in
-**FrogletTools > Vessels > Scarab Wing Dais Lab**.
+`ScarabWingDaisSettings` on `PlaceSwitchActionSO`; tests: `ScarabWingDaisTests`, which are the
+gate on any retune.
 
 **The mouth is cleared on the strike.** The switch's own membrane — the Vogel-spiral interior fill
 inside the ring — is blown out along the ball's velocity when the ball threads it
@@ -1080,8 +1080,10 @@ dial (it is the axis nobody looks along); `WingRootReach` decides where the wing
 
 ⚠ **`SunRadius` and `WingHoleRadius` are SOLVED, not styled.** Every pair has to fit beside its
 neighbours and each sun has to fit inside its own hole, so changing a blade dial moves that
-solution — re-run `ScarabWingDaisTests`, which will fail rather than ship a rosette that clips, or
-open the Dais Lab, which reports the same checks live and refuses to write an overlapping setting.
+solution — re-run `ScarabWingDaisTests`, which will fail rather than ship a rosette that clips.
+(The parametric **Dais Lab** that solved the shipped tuning was retired once it landed; the offline
+harness that ran its checks headlessly is recorded in the `asset-surgery` skill, and rebuilding it
+is a morning's work if the shape is ever re-opened.)
 `ScarabWingDaisSettings.Default` is kept **in step with `PlaceSwitchAction.asset`** for the same
 reason: a default that has drifted from the shipped asset means the tests are guarding a shape
 nobody plays.
@@ -1236,31 +1238,22 @@ matches silt differently** and will sit in Calm far longer than they used to; th
 one ladder serving two vessels, and it is a playtest call to split it if it matters.
 
 ⚠ **Re-measure this whenever the dais changes.** The box volume above comes from the shipped
-generator at ring radius 20; the Dais Lab prints it, and it is the number the ladder is derived
-from. A dais retune that does not move the ladder with it silently changes when the cell gets
-restless.
+generator at ring radius 20 and is the number both ladders are derived from — `PrismCount`
+× the per-blade box volume, which `ScarabWingDaisTests` can be extended to print. A dais retune
+that does not move the ladders with it silently changes when both cells get restless.
 
-⚠ **OPEN, and it is the other mode's call: Scarab Scramble's ladder does not know about the
-dais.** `GameModes.ScarabScramble` is Scarab-ONLY, so every pilot there carries `PlaceSwitchAction`
-— and its cell was authored on **trail mass over a zero floor** (Restless 12,000 / Frenzy 36,000,
+⚠ **Scarab Scramble's ladder was re-authored the same way, and for the same reason.**
+`GameModes.ScarabScramble` is Scarab-ONLY, so every pilot there carries `PlaceSwitchAction` — and
+its cell had been authored on **trail mass over a zero floor** (Restless 12,000 / Frenzy 36,000,
 `SCARABSCRAMBLE.md` § Known limitations), with switches never entering the derivation. One spent
-switch is **50,773**, so the FIRST payout of a match crosses both gates at once: the cleanup crew
-is released and the cell pins at Frenzy for the rest of the match.
+switch is 50,773, so the FIRST payout of a match crossed both gates at once and the ladder stopped
+pacing anything. It is now **Restless 164,000 / Frenzy 391,000** (counts 2,180 / 5,810) — its trail
+band plus 3 and 7 spent switches.
 
-It is deliberately **not** fixed here, because the two readings need a playtest to separate and
-guessing would quietly overwrite another mode's stated intent:
-
-- **Trail-paced (as authored).** Restless is "the mode's primary ecology pacing dial" and is meant
-  to fire when trail silts the court. Raising it to clear a dais means fauna never release from
-  trail at all.
-- **Build-paced.** Raise both gates by N spent switches the way Astro League's now are (Restless
-  12,000 + 3 × 50,773 ≈ 164,000; Frenzy 36,000 + 7 × 50,773 ≈ 391,000), and the ecology paces off
-  what the players have BUILT — at the cost of the trail-silting read the mode was written around.
-
-Scramble has **no flora**, so Frenzy's production freeze costs it little; what it actually loses is
-the pacing itself, since the ladder stops carrying information after the first strike. Its own doc
-already schedules "run Measure Cell Environment Baselines and retune after the first playtest" —
-this is a term that retune must now include.
+⚠ **Stated cost, and the first thing to re-check at that mode's playtest: Restless no longer fires
+from trail alone**, and Restless is Scramble's fauna-release gate. A match with no switch strikes
+now sits in Calm much longer than its authoring intended. The alternative reading — keep the trail
+band and simply refuse to let a dais satisfy Restless — is a two-row revert.
 
 ## 9. The other three lanes
 
@@ -1332,7 +1325,6 @@ tool in any mode with opponents. Nothing in the kit requires an arena to functio
 | `_Scripts/Controller/Projectiles/AOEExplosion.cs` + `Impactors/ExplosionImpactor.cs` | Platform additions: `InitializeStruct.DevastatingOverride` + `ApplyDevastatingOverride` + `ExplosionImpactor.SetDevastating`, mirroring the existing `AffectSelfOverride` pair |
 | `_Scripts/.../Data Containers/PlaceSwitchActionSO.cs` + `Executors/PlaceSwitchActionExecutor.cs` | Charge gate, placement, pooled spawn, spend, dais shape (§5) |
 | `_Scripts/.../R_VesselActions/ScarabWingDais.cs` + `_Scripts/Tests/Editor/ScarabWingDaisTests.cs` | The payout rosette's closed-form geometry + its contract tests (§5.1) |
-| `_Scripts/Editor/ScarabWingDaisLab.cs` | **FrogletTools > Vessels > Scarab Wing Dais Lab** — draws the rosette from its dials, runs the overlap / confinement / reach / wrap checks live, bakes the result into `PlaceSwitchAction.asset` (§5.1) |
 | `_Scripts/.../Impactors/BallForgeCrystalImpactor.cs` | `OmniCrystalImpactor` subclass: the threshold branch — collect as usual, or materialise a ball with inherited velocity and skip the collect (§4.1) |
 | Mode-side: **a ball prefab + network registration** (neither exists), ball registry with spawn/despawn, per-ball goal state, per-ball attribution, `Switch` object (reflector + mouth detector), boundary-death path, no-generation zone, and a goal-outcome decision (§15.13) | §4.5, §5 — scoped as mode work, not vessel work |
 
@@ -1408,9 +1400,9 @@ populated, ≥2 material slots per hull MeshRenderer.
 | Switch placement distance | switch SO | 150 |
 | Switch size (Mass-scaled) | switch SO | 1 → 2.5 |
 | Target ball→goal conversion | playtest metric | ~80% |
-| Dais shape (20 dials) | switch SO / **Dais Lab** | 5 pairs × 25 blades, 255 prisms, 50,773 volume |
+| Dais shape (20 dials) | switch SO (gate: `ScarabWingDaisTests`) | 5 pairs × 25 blades, 255 prisms, 50,773 volume |
 | Astro League `PhaseThresholds` | cell config | **re-authored** — Restless 182,000 / Frenzy 385,000 |
-| Scarab Scramble `PhaseThresholds` | cell config | ⚠ **NOT re-authored — see below** |
+| Scarab Scramble `PhaseThresholds` | cell config | **re-authored** — Restless 164,000 / Frenzy 391,000 |
 
 ---
 
@@ -1461,7 +1453,8 @@ Vessel Elemental Morphs**, **Audit Corridor Vessel Radii**, **Validate Speed Tun
     never engaged; (e) the sun cores reading too LARGE again — their authored size is the sphere
     the spikes reach, `√3` bigger than their bounding box, so that is the number to argue with;
     (f) a **void** between the ring and the wings means the spar is being clipped by its sector
-    rather than reaching — `WingRootReach` is the dial and the Dais Lab prints the inner reach.
+    rather than reaching — `WingRootReach` is the dial and `ScarabWingDais.InnerReach` is the
+    number (`EveryWingBeginsAtTheSwitchRing` asserts it).
     Also fly the rim and a hinge: blades alternate plain/danger, so brushing the run must slow and
     debuff you about half the time. Frame time during the draw is the perf question —
     `daisPrismsPerFrame` is the dial, and 75 always-on mesh colliders per dais is the standing

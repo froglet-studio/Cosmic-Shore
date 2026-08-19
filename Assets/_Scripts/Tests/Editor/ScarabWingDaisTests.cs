@@ -232,7 +232,7 @@ namespace CosmicShore.Tests
                 $"the wings begin {nearest:F1} out from a ring of {RingRadius:F0} — that is a void, " +
                 "not a rosette that starts at the switch");
             Assert.AreEqual(nearest, ScarabWingDais.InnerReach(s, RingRadius), 1e-2f,
-                "InnerReach is what the Dais Lab reports; it must be the real thing");
+                "InnerReach is what a retune reads to place the wings; it must be the real thing");
         }
 
         [Test]

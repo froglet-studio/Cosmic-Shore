@@ -46,8 +46,8 @@ namespace CosmicShore.Gameplay
     ///
     /// <para><b>Sizes are stated, not grown</b>, so every consumer must widen the prism's scale
     /// window (<c>Prism.AdmitTargetScale</c>) before assigning <c>TargetScale</c> — see
-    /// <see cref="ScarabSwitch"/>. Tune it in <b>FrogletTools &gt; Vessels &gt; Scarab Wing Dais
-    /// Lab</b>, which draws the rosette and runs these checks live.</para>
+    /// <see cref="ScarabSwitch"/>. Every property named above is asserted by
+    /// <c>ScarabWingDaisTests</c>, which is the gate on any retune.</para>
     /// </summary>
     public static class ScarabWingDais
     {
@@ -501,9 +501,11 @@ namespace CosmicShore.Gameplay
     /// SWITCH RING RADIUS, so the Mass element grows the rosette with the ring it surrounds and
     /// there is exactly one size dial (SCARAB.md §7's one-parameter-per-element contract).
     ///
-    /// <para>Tune it in <b>FrogletTools &gt; Vessels &gt; Scarab Wing Dais Lab</b>: it draws the
-    /// rosette from these numbers, runs the overlap / reach / wrap checks, and writes the result
-    /// back into <c>PlaceSwitchAction.asset</c>.</para>
+    /// <para>Every dial below is coupled to the others — move <see cref="SunRadius"/> and the spar
+    /// length follows it, widen <see cref="HingeWidthScale"/> and the wrap follows that — so a
+    /// retune is a re-solve, not an edit. <c>ScarabWingDaisTests</c> is the gate: it re-runs the
+    /// exact separating-axis, sector-confinement, inner-reach and wrap checks against whatever
+    /// numbers are authored here, and fails rather than let a clipping rosette ship.</para>
     /// </summary>
     [Serializable]
     public struct ScarabWingDaisSettings
@@ -607,7 +609,7 @@ namespace CosmicShore.Gameplay
         /// separating-axis test over every prism silhouette reports ZERO overlaps, no blade
         /// leaves its pair's sector, nothing reaches inside the ring, and the sun keeps 4.0 units
         /// of clearance inside its hole. Changing any dial moves that solution: re-run
-        /// <c>ScarabWingDaisTests</c>, or open the Dais Lab.
+        /// <c>ScarabWingDaisTests</c>.
         /// </summary>
         public static ScarabWingDaisSettings Default => new()
         {

@@ -62,9 +62,9 @@ namespace CosmicShore.Gameplay
         [Header("Payout — the scarab-wing dais")]
         [Tooltip("Shape of the rosette a threaded switch raises. Every distance is a multiple of " +
                  "the RING RADIUS, so Mass grows the dais with the switch and there is still one " +
-                 "size dial. Author it in FrogletTools > Vessels > Scarab Wing Dais Lab, which " +
-                 "draws it and runs the overlap checks; see ScarabWingDais for the motif and the " +
-                 "fitting rules.")]
+                 "size dial. Retuning it moves a SOLVED solution — ScarabWingDaisTests is the gate " +
+                 "and will fail rather than let a clipping rosette ship. See ScarabWingDais for " +
+                 "the motif and the fitting rules.")]
         [SerializeField] ScarabWingDaisSettings dais = ScarabWingDaisSettings.Default;
 
         [Tooltip("Prisms laid per frame while the dais blooms outward. The rosette is 255 prisms " +
