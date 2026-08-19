@@ -5,13 +5,27 @@
 > throttle along the nose + Snap Dash), `ScarabJukeController` (free dash, `OnJukeFired`),
 > `ScarabCavitationBlast` + `AOEScarabCavitation.prefab` + its elemental-debuff container,
 > `PlaceSwitchActionSO`/executor + `ScarabSwitch` (toy ring, Vogel interior fill, plane-crossing
-> trigger, outward burst, MASS-5 shielded prisms), `ScarabBallForgeByCrystalEffectSO` (every omni
+> trigger, outward burst, MASS-5 shielded prisms), `ScarabBallForgeBySkimmerCrystalEffectSO` (every omni
 > crystal forges a ball at the vessel's TRUE velocity, dash included; SPACE scales it to ×4),
 > the four-row ability map, containers, camera SO, class card, HUD view/controller, and all
 > registrations (arcade card, prefab container, network prefabs, vessel-changer toy). In-editor
 > verification steps + first-pass tuning: `Docs/UNITY_VERIFICATION_CHECKLIST.md` § Scarab.
-> Everything below the next paragraph is the DESIGN record; §4.2–§4.5's mode-side ball work
-> (permanent ownership, boundary death, population cap) is still open.
+> Everything below the next paragraph is the DESIGN record.
+>
+> **STATUS UPDATE 2 (2026-08-18): the §4.2–§4.5 mode-side ball work SHIPPED — as a SECOND MODE.**
+> `GameModes.ScarabScramble = 43` (`_Scripts/Controller/Arcade/SCARABSCRAMBLE.md`) answers §15.11
+> as "a second mode that shares the arena machinery" and lands: permanent ownership
+> (`AstroLeagueBall.SetOwnershipLockedServer`, §4.2 — resolved with a LAST-TOUCH ARMING gate on
+> scoring, and the JUKE as the sanctioned steal via `ScarabJukeController.IsJukeStrikeWindowOpen`),
+> multi-ball with per-ball attribution (§4.4/§4.5 — `Live` + `ScarabBallForge.OnForged` adoption +
+> a forger/last-toucher ledger; §15.12 answered "the ball's domain scores, last toucher gets
+> personal credit"), a per-DOMAIN forge cap through the new `ScarabBallForge.ForgeGate` policy
+> hook (§15.5 answered: refuse + targeted toast, never expire), goals that stop nothing (§15.13's
+> party answer), and the forged ball's previously-unreplicated `SetSizeScale` (`n_SizeScale`).
+> §4.3's boundary DEATH is deliberately NOT used in that mode (walls reflect — a beachhead mode
+> must not make balls a resource you can waste); it remains available per-mode via
+> `destroyedBySuperShielded` + a lined court. Astro League itself is unchanged (its ball never
+> locks ownership; the touch ledger is inert bookkeeping there).
 
 > **Original design gate note — nothing beyond the foundation is implemented.** Written for Garrett to
 > mark up before any code or asset lands (the `/vessel` design-approval gate). The element map is
@@ -405,6 +419,40 @@ four of those properties.
 
 ### 4.1 Generation — crystals become balls
 
+**SHIPPED MECHANIC: the SKIMMER touches a crystal and the crystal BECOMES a ball, in place, at
+rest** (`ScarabBallForgeBySkimmerCrystalEffectSO`). The skimmer sphere reaches well past the hull,
+so the conversion happens *before* the ship arrives and the ball is sitting still when it does. The
+hull then hits a real ball and the ordinary strike path produces the trajectory.
+
+*This replaced a hull-collision forge that tried to make collecting a crystal FEEL like striking a
+ball* — it spawned the ball ahead of the vessel along its course, carrying a fraction of its
+velocity, with a forward clearance so it did not materialise inside the hull
+(`_inheritedVelocityFraction`, `_minimumLaunchSpeed`, `_forwardClearance`). Every one of those
+numbers was approximating a collision that had not happened yet, and no amount of tuning could make
+it read right, because the ball was always leaving before the ship got there. **Do not reintroduce
+them.** The skimmer makes the collision real instead of imitating it, which is both simpler and
+strictly better-feeling.
+
+Two properties are load-bearing:
+
+- **Mechanically instant.** The ball is fully live the frame it is minted, so a pilot arriving one
+  frame later strikes a finished ball — not a crystal, and not a half-built object.
+- **Visually gradual, and free to finish late.** The crystal leaves through its own shipped collect
+  burst and the ball blooms in over `AstroLeagueSettingsSO.spawnBloomSeconds`. That bloom is armed
+  in the ball's `Awake` on *every* peer and is a pure scale animation, so it needs no RPC and simply
+  keeps running wherever the ball has got to — it may still be finishing while the ball is struck
+  and travelling, which is exactly the intended read.
+- **A plain skim field never strikes the ball** (`AstroLeagueBall.VesselContact`). Without that,
+  the very sphere that converted the crystal would strike the new ball on the same frame and throw
+  it clear — reproducing the old feel through a different door. The Rhino's sword is unaffected: it
+  is routed through the blade branch, tested on `SwingKinematics` rather than on the
+  `bladeAwareStrikes` flag.
+
+The energy-meter economy below is the ORIGINAL design and is currently **off**
+(`_requireEnergy = false` was carried onto the skimmer effect's predecessor; every omni crystal
+converts outright). It is retained here because turning it back on is still the intended path to a
+paced economy:
+
 Balls are made from **crystal energy**, not spawned by the mode:
 
 1. Collecting crystals fills the Scarab's energy meter (a `ResourceSystem` resource — normalized
@@ -414,7 +462,7 @@ Balls are made from **crystal energy**, not spawned by the mode:
 3. The meter drains by the ball's cost, and the crystal respawns as normal.
 
 **Two things forge, one place mints.** A hull flying through a crystal
-(`ScarabBallForgeByCrystalEffectSO`) and a BLAST engulfing one
+(`ScarabBallForgeBySkimmerCrystalEffectSO`) and a BLAST engulfing one
 (`ScarabBallForgeByExplosionEffectSO`) both route through `ScarabBallForge`, which owns the spawn,
 the network gate, the SPACE size stamp and the client→server hop. Writing the spawn twice is how
 the two would drift apart on the one thing that must never differ — what a ball *is*.
@@ -701,6 +749,77 @@ None of this is exotic, but it is substantial mode work and should be scoped up 
 discovered mid-implementation. Whether it belongs in the vessel branch at all is §15.11.
 
 ---
+
+### 4.6 Nucleus seeding — the Scarab studs the core (SHIPPED)
+
+**Passive, platform-level, and not a minigame feature.** While a Scarab flies, balls of its own
+domain periodically appear **embedded in the cell's nucleus**, waiting for anyone to knock them
+loose. No input, no meter, no HUD slot — the Dolphin's shipped crystal-seeding shape, and the
+reason it can be a property of the *vessel* rather than of a mode: nothing is wired per scene, so
+it behaves identically in a match, in freestyle, and in the menu.
+
+The loop, and what each direction means:
+
+| Act | Result |
+|---|---|
+| Scarab flies (passive, `seedIntervalSeconds`) | One ball of its domain embeds in the nucleus surface, up to `maxEmbeddedPerDomain` |
+| Anyone strikes it **outward** | It flies into the **CYTOPLASM** and lives there — bouncing off the nucleus from the *outside* and the membrane from the inside. Deliberately inconsequential: a toy, not a scoring path |
+| Anyone strikes it **inward** | It enters the **NUCLEUS** — which in Scarab Scramble *is* the court — so it becomes a ball of consequence. This is the mode's **second source of balls**, alongside the crystal forge |
+| One ball too many goes in (`nucleusEntryLimit`) | **Overload**: every ball detonates with an explosion `detonationRadiusScale`× its own radius. Feeding the core is the greedy line, and the greedy line has a cliff |
+
+**Leaving the nucleus is a HIT, not a shove.** An embedded ball sits part-sunk in the shell, which
+is on the wrong side of BOTH the court and the cytoplasm volumes — so the frame it is released,
+containment corrects it and the ball jumps radially in or out. `nucleusReleaseGraceSeconds` (1 s)
+suspends its boundary so the strike's own velocity carries it across that band; containment then
+engages on a ball that is already where it belongs. This is presentation-only: the ball is a normal
+body the whole time, and nothing else about the release changes.
+
+**Too many balls is ONE event with one look.** Both the nucleus overload and the mode's forge-cap
+overflow call `AstroLeagueBall.DetonateAllLiveServer`, so they cannot drift into different-looking
+detonations. The forge cap no longer REFUSES: at the cap the crystal still forges, and then
+everything — including the ball just made — detonates. A refusal made a crystal silently do nothing
+at the worst possible moment; an overload makes "I grabbed one too many" legible.
+
+**A ball detonates in a DOMAIN explosion.** `AstroLeagueSettingsSO.detonationExplosionPrefabs`
+spawns an `AOEExplosion` carrying the BALL's domain and that domain's `AOEExplosionMaterial`, so the
+blast wears the ball's colour. The rest is stock `ExplosionImpactor` behaviour with the shipped
+`affectSelf = false, destructive = true` flags: own-domain prisms take a temporary shield (the
+no-perceived-clipping rule) and other domains are destroyed. It is flagged `AnnonymousExplosion`
+because no vessel made it — which is also what keeps the damage path from dereferencing a null
+pilot.
+
+**The embed is its own state, deliberately not `n_Frozen`.** Every vessel-contact gate on the ball
+bails on frozen — a kickoff ball must ignore the ships stacked on it — and an embedded ball's whole
+purpose is to *be* struck. So `n_Embedded` skips physics integration like frozen while leaving
+contact live. Getting this wrong yields a ball nobody can hit, with no error anywhere.
+
+**The nucleus surface is ONE surface serving both sides.** The court ball rides it from within
+(`Sphere` outer containment); the cytoplasm ball rides it from without
+(`AstroLeagueBoundary(coreObstacleRadius:)`, a central sphere obstacle added as an *orthogonal*
+feature composable with every outer shape, mirroring the existing `NotchedRing` torus). No second
+geometry, no duplicated radius.
+
+**Read `NucleusVisualWorldRadius`, never `NucleusWorldRadius`.** The latter reports **0** whenever a
+mode has declared the nucleus play geometry rather than a territorial claim
+(`NucleusIsControlZone = false` — which both Scramble and Astro League set), because that field
+answers "how big is the claim", not "how big is the sphere". The ball needs the shape.
+`Docs/ECOSYSTEM.md §25.1`.
+
+**Ownership composes with §4.2 rather than special-casing it.** A seeded ball is minted through
+`ScarabBallForge`, so it is ownership-locked from birth like every other forged ball: it is that
+Scarab's, and an enemy who wants it must **dash-steal** it exactly as they would any ball — in the
+same contact that knocks it loose.
+
+**Platform-law compliance.** Nothing is culled and nothing ages out: at the embedded cap the seed
+clock *pauses* (not creating mass is allowed; aging it out is not), and the overload is an
+**active, player-caused** removal — the same class as a vessel ability firing, never a timer. Every
+ball still leaves through a detonate-then-despawn beat, so continuity of existence holds for all of
+them at once.
+
+Tuning is one asset, `Resources/ScarabNucleusFieldConfig` (`ScarabNucleusFieldConfigSO`). Code:
+`ScarabNucleusSeeder` (the vessel component — "is it time, which cell am I in") and
+`ScarabNucleusField` (the per-cell server book — embedded caps, nucleus entries, the overload).
+Verbose telemetry rides `CSLogChannel.ScarabNucleus`, off by default.
 
 ## 5. The switch
 

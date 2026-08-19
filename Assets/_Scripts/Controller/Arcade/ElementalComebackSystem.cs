@@ -119,6 +119,8 @@ namespace CosmicShore.Gameplay
                     return ScoreDifferenceSource.CrystalsCollected;
                 case GameModes.AstroLeague:
                     return ScoreDifferenceSource.Goals;
+                case GameModes.ScarabScramble: // Score lands only at game end - hoop goals are the live stat
+                    return ScoreDifferenceSource.Goals;
                 case GameModes.NucleusRush: // Score lands only at game end - broods are the live stat
                     return ScoreDifferenceSource.Goals;
                 case GameModes.Rampage: // Score lands only at game end - destruction is the live stat

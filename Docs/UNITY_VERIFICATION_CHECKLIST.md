@@ -100,6 +100,45 @@ was not**.
   the abilities are silent by design until they are given a voice.
 - The continuous Space/Charge element dials are still LOCAL level reads (`URCHIN_BACKLOG.md` U1);
   only the L5 unlock bits replicate.
+### 🔴 Scarab Scramble — the Scarab-only hoop-court party mode (`claude/scarab-party-game-pxe569`, 2026-08-18)
+
+Authored fully headless (code + SO assets + scene YAML cloned from the DogFight scene with
+in-place component swaps); Roslyn-compiled and machine-validated, never opened in Unity. Full
+mode doc + the 11-step in-editor verification list live in
+`Assets/_Scripts/Controller/Arcade/SCARABSCRAMBLE.md` — work that list rather than a copy here.
+The editor-riskiest items:
+
+- **Scene import**: `MinigameScarabScramble.unity` must open with zero Missing (Mono Script)
+  rows — the controller/monitor swaps were done by rewriting `m_Script` guids at the donor's
+  fileIDs, and a rejected guid shows up nowhere else. GlobalObjectIdHash values were cloned
+  from the DogFight scene; Unity will regenerate them on first save — save the scene once.
+- **Forge → hoop loop end-to-end** (SCARABSCRAMBLE.md steps 2–8): the SKIMMER converts a
+  crystal into a ball in place and at rest, the ball blooms in, the hull then strikes a real
+  ball; arming gate blocks enemy shoves; juke-steal converts (works from a client too, via
+  `NotifyJukeFired_ServerRpc`); bank toast on 2+ caroms.
+- **Ball cap now OVERLOADS, it does not refuse** — take one crystal past
+  `ballsPerPlayer × roster` and EVERY live ball should detonate, including the one just made,
+  each in its own domain-coloured blast. Watch that own-domain prisms take a temporary shield
+  rather than being destroyed (the no-perceived-clipping rule), and that the toast reads as an
+  overload.
+- **Scarab nucleus seeding** (SCARAB.md §4.6, a PLATFORM vessel ability — it is live in
+  freestyle and the menu too, not just this mode): balls of your domain appear embedded in the
+  nucleus on a ~14s clock. Strike one OUTWARD → it should leave into the cytoplasm and bounce
+  off the nucleus from outside; strike one INWARD → it enters the court as an ordinary scoring
+  ball. **Both directions must read as a HIT, not a radial shove** — that is what the new 1s
+  `nucleusReleaseGraceSeconds` buys, and it is the single most likely thing to still look
+  wrong. Bank a fourth into the nucleus to see the overload.
+- **Scarab skimmer is 50% larger** (world radius 30 → 45): confirm the forge triggers at a
+  comfortable stand-off and that the wider sphere has not made skim-energy gain or prism
+  interaction feel different on the Scarab elsewhere.
+- **MPPM two-client**: forged-ball SIZE on the client (the new `n_SizeScale` — seed the forger
+  SPACE 10 so the ×4 ball is unmistakable), colour permanence under enemy strikes.
+- **PhaseThresholds are an estimate** (Restless 12000/11000, Frenzy 36000/32000 volume, zero
+  structural floor): run FrogletTools ▸ Ecology ▸ Measure Cell Environment Baselines on the
+  new cell and retune; Restless is the fauna-release gate.
+- **First-pass tuning table**: court 480/560/640/720 · hoops 4/3/2/1 · mouths 60/54/48/42 ·
+  ring fraction 0.45 · balls/player 2 · goal target 10 (End Game Conditions window) ·
+  crystals players+2 · comeback rate 0.5 on the card · AI lead 45u / intercept 0.5s.
 
 ### 🔴 Urchin revival — chain-reaction spikes + trail rider (`claude/restore-urchin-vessel-9qacdk`, 2026-08-15)
 

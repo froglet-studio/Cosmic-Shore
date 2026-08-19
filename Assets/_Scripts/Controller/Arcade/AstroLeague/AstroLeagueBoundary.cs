@@ -76,6 +76,13 @@ namespace CosmicShore.Gameplay
         // whose outer is a separate court shape (default Cylinder) wrapped around the central ring.
         readonly AstroLeagueBoundaryShape _outerShape;
 
+        // Central SPHERE obstacle, orthogonal to Shape and composable with any outer court: the ball
+        // stays OUTSIDE it. This is how a ball plays in the CYTOPLASM — outer sphere = the membrane,
+        // core = the cell nucleus — so the same nucleus surface the court ball bounces off from the
+        // INSIDE is bounced off from the OUTSIDE out here. One obstacle, both sides.
+        readonly float _coreRadius;
+        readonly bool _hasCore;
+
         // Central torus ring obstacle (NotchedRing only): axis = Z (the goal axis), so the ring lies in
         // the mid-plane and the ball can shoot straight down the center hole or through the angular notch.
         readonly bool _hasRing;
@@ -103,6 +110,7 @@ namespace CosmicShore.Gameplay
         /// <param name="ringTubeFraction">0..1: ring thickness as a fraction of the cross-section radius.</param>
         /// <param name="notchCenterRadians">Angle (atan2(y,x)) of the notch center - the gap in the ring.</param>
         /// <param name="notchHalfWidthRadians">Half-angle of the notch gap; 0 = a solid ring (no gap).</param>
+        /// <param name="coreObstacleRadius">Radius of a central SPHERE the ball must stay OUTSIDE of; 0 (default) = none. Composes with every outer shape — used for cytoplasm play around the cell nucleus.</param>
         public AstroLeagueBoundary(
             AstroLeagueBoundaryShape shape,
             Vector3 center,
@@ -114,7 +122,8 @@ namespace CosmicShore.Gameplay
             float ringMajorFraction = 0.5f,
             float ringTubeFraction = 0.18f,
             float notchCenterRadians = 0f,
-            float notchHalfWidthRadians = 0.5f)
+            float notchHalfWidthRadians = 0.5f,
+            float coreObstacleRadius = 0f)
         {
             Shape = shape;
             Center = center;
@@ -144,7 +153,13 @@ namespace CosmicShore.Gameplay
                 _notchHalfWidth = Mathf.Max(0f, notchHalfWidthRadians);
                 _hasRing = _ringMajor > 1e-3f && _ringTube > 1e-3f;
             }
+
+            _coreRadius = Mathf.Max(0f, coreObstacleRadius);
+            _hasCore = _coreRadius > 1e-3f;
         }
+
+        /// <summary>Radius of the central sphere obstacle the ball stays outside of; 0 = none.</summary>
+        public float CoreRadius => _coreRadius;
 
         /// <summary>Build the planes / analytic params + MaxExtent for one (outer) court shape.</summary>
         void BuildOuterShape(AstroLeagueBoundaryShape shape, float hx, float hy, float hz,
@@ -369,6 +384,14 @@ namespace CosmicShore.Gameplay
                 contactPoint = rcp;
                 contactNormal = rcn;
             }
+
+            // Central SPHERE obstacle (the nucleus, seen from outside) - same ordering rule as the ring.
+            if (_hasCore && ContainCore(ref position, ref velocity, ballRadius, e, out Vector3 ccp, out Vector3 ccn))
+            {
+                bounced = true;
+                contactPoint = ccp;
+                contactNormal = ccn;
+            }
             return bounced;
         }
 
@@ -412,6 +435,31 @@ namespace CosmicShore.Gameplay
 
             cn = normal;
             cp = pos - normal * r; // the ball-surface contact point
+            return true;
+        }
+
+        /// <summary>
+        /// Central sphere obstacle: keep the ball OUTSIDE a core of radius <c>_coreRadius</c>. The exact
+        /// mirror of <see cref="ContainSphere"/> — that one clamps the ball's distance from center to a
+        /// MAXIMUM and reflects the outward velocity component; this clamps it to a MINIMUM and reflects
+        /// the inward one. A ball that starts dead-centre has no defined outward direction, so it is left
+        /// alone rather than being pushed in an arbitrary one (it cannot be there without having been
+        /// placed there, and the seeder never does that).
+        /// </summary>
+        bool ContainCore(ref Vector3 pos, ref Vector3 vel, float r, float e, out Vector3 cp, out Vector3 cn)
+        {
+            cp = pos; cn = Vector3.zero;
+            Vector3 fromCenter = pos - Center;
+            float minDist = _coreRadius + r;      // ball SURFACE kisses the core
+            float dist = fromCenter.magnitude;
+            if (dist >= minDist || dist < 1e-4f) return false;
+
+            Vector3 outward = fromCenter / dist;
+            float vn = Vector3.Dot(vel, outward);
+            if (vn < 0f) vel -= (1f + e) * vn * outward; // moving INTO the core → reflect the inward part
+            pos = Center + outward * minDist;
+            cn = outward;
+            cp = Center + outward * _coreRadius;
             return true;
         }
 

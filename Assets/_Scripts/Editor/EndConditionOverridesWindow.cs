@@ -86,7 +86,9 @@ namespace CosmicShore.Editor
                 "  • The Bends: BENDS a DOMAIN needs to win - one opposing pilot caught in your " +
                 "Dolphin crystal blast scores 1, so the default " +
                 EndConditionOverridesSO.DefaultBendsPointTarget +
-                " is three clean hits (a race to 3, like Joust).",
+                " is three clean hits (a race to 3, like Joust).\n" +
+                "  • Scarab Scramble: goals a DOMAIN needs to win (race to N) - a forged ball " +
+                "through any hoop, default " + EndConditionOverridesSO.DefaultScarabScrambleGoalTarget + ".",
                 MessageType.Info);
 
             // ---- Live input fields (used at runtime) ----
@@ -103,6 +105,7 @@ namespace CosmicShore.Editor
             int wl  = Mathf.Max(0, EditorGUILayout.IntField("Wildlife Liberation - Kill Target", _config.wildlifeKillTarget));
             int df  = Mathf.Max(0, EditorGUILayout.IntField("Dog Fight - Point Target", _config.dogFightPointTarget));
             int bd  = Mathf.Max(0, EditorGUILayout.IntField("The Bends - Bend Target", _config.bendsPointTarget));
+            int ss  = Mathf.Max(0, EditorGUILayout.IntField("Scarab Scramble - Goal Target", _config.scarabScrambleGoalTarget));
             if (EditorGUI.EndChangeCheck())
                 Persist("Edit End Game Conditions", () =>
                 {
@@ -116,6 +119,7 @@ namespace CosmicShore.Editor
                     _config.wildlifeKillTarget = wl;
                     _config.dogFightPointTarget = df;
                     _config.bendsPointTarget = bd;
+                    _config.scarabScrambleGoalTarget = ss;
                 });
 
             EditorGUILayout.Space();
@@ -131,6 +135,7 @@ namespace CosmicShore.Editor
             EditorGUILayout.LabelField("Wildlife Liberation", wl > 0 ? wl.ToString() : EndConditionOverridesSO.DefaultWildlifeKillTarget + " (default)");
             EditorGUILayout.LabelField("Dog Fight", df > 0 ? df.ToString() : EndConditionOverridesSO.DefaultDogFightPointTarget + " (default)");
             EditorGUILayout.LabelField("The Bends", bd > 0 ? bd.ToString() : EndConditionOverridesSO.DefaultBendsPointTarget + " (default)");
+            EditorGUILayout.LabelField("Scarab Scramble", ss > 0 ? ss.ToString() : EndConditionOverridesSO.DefaultScarabScrambleGoalTarget + " (default)");
             EditorGUI.indentLevel--;
 
             // ---- Build baseline (read-only display + capture button) ----
@@ -169,7 +174,8 @@ namespace CosmicShore.Editor
                    "Ribcage: " + Fmt(_config.ribcagePrismTargetBuild, "default " + EndConditionOverridesSO.DefaultRibcagePrismTarget) + "\n" +
                    "Wildlife Liberation: " + Fmt(_config.wildlifeKillTargetBuild, "default " + EndConditionOverridesSO.DefaultWildlifeKillTarget) + "\n" +
                    "Dog Fight: " + Fmt(_config.dogFightPointTargetBuild, "default " + EndConditionOverridesSO.DefaultDogFightPointTarget) + "\n" +
-                   "The Bends: " + Fmt(_config.bendsPointTargetBuild, "default " + EndConditionOverridesSO.DefaultBendsPointTarget);
+                   "The Bends: " + Fmt(_config.bendsPointTargetBuild, "default " + EndConditionOverridesSO.DefaultBendsPointTarget) + "\n" +
+                   "Scarab Scramble: " + Fmt(_config.scarabScrambleGoalTargetBuild, "default " + EndConditionOverridesSO.DefaultScarabScrambleGoalTarget);
 
             static string Fmt(int value, string zeroMeaning) => value > 0 ? value.ToString() : "0 (" + zeroMeaning + ")";
         }

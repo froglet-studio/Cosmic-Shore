@@ -84,5 +84,11 @@ namespace CosmicShore.Data
         // one "bend"; first DOMAIN to the bend target wins. See
         // _Scripts/Controller/Arcade/BENDS.md.
         Bends = 42,
+        // ScarabScramble (43): the Scarab-only party game - the accessible sibling of Astro
+        // League. Every white (omni) crystal you fly through becomes YOUR ball, permanently
+        // your colour; roll it through any of the arena's glowing hoops and your DOMAIN scores.
+        // Goals stop nothing (continuous play, no kickoffs), there are no own goals, and the
+        // first domain to the goal target wins. See _Scripts/Controller/Arcade/SCARABSCRAMBLE.md.
+        ScarabScramble = 43,
     }
 }
