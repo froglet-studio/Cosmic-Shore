@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 """
 Author the LATTICE cell - the freestyle Cell-Selector world whose entire environment is a
-living population of the two lattice flora species, one colony per element (8 colonies).
+living population of the three lattice flora species, one colony per element (12 colonies).
 
 WHY A SCRIPT (the /ecology skill §7.1 rule): a cell whose mass comes from FLORA has to have
-its phase ladder authored against the forest it will actually grow, and the two lattice
-species' per-prism volumes span 130x (SchwarzP Charge 0.85 -> gyroid Mass 110.25). Eight
+its phase ladder authored against the forest it will actually grow, and the three lattice
+species' per-prism volumes span 159x (SchwarzP Charge 0.85 -> quasicrystal Mass 135). Eight
 hand-typed thresholds drift the first time one leaf is refitted. This file holds the model,
 reads every leaf size back off the SHIPPED per-element species assets so it can never
 disagree with them, prints the table, and supports --check.
@@ -14,12 +14,14 @@ THE MODEL
 ---------
 Species        one colony per (species, element). The element IDENTITY (leaf size, grow
                tempo, lattice scale, shield cadence, per-plant budget) is copied verbatim
-               from _SO_Assets/Lifeforms/{Gyroid,SchwarzP} Flora {Element}.asset - those
+               from _SO_Assets/Lifeforms/{Gyroid,SchwarzP,Quasicrystal} Flora
+               {Element}.asset - those
                assets are the element palette, and forking their identity here would be two
                sources of truth for one plant's shape.
 
 Population     floor / cap are the ONLY numbers this cell relaxes, and they are relaxed for
-               a stated reason: the shipped caps (gyroid 33-60, SchwarzP 22) descend from
+               a stated reason: the shipped caps (gyroid 33-60, SchwarzP 22, quasicrystal 14)
+               descend from
                "one big plant became many small ones of the SAME TOTAL MASS"
                (author_flora_populations.py). This cell is not a conversion of an authored
                plant - it is a cell whose environment IS the colony, so its ceiling is the
@@ -29,6 +31,9 @@ Prisms        gyroid: a plant OWNS a 24-prism octagon and is budgeted 30 for the
               prisms its ownership epsilon lets it win (measured patches run 22-28).
               SchwarzP: a plant owns exactly one TILE - an integer partition of the surface -
               so patch == budget == 36 and there is no contested boundary.
+              Quasicrystal: a plant owns one HEART's TREE cell on the aperiodic lattice - an
+              exact integer partition, but one whose size legitimately varies (44..97 struts,
+              mean 58.8 measured), so patch is the MEAN and budget sits above the measured max.
               The PRISM TARGET is therefore quoted twice: at the patch (what plants settle
               at) and at the budget (the ceiling). The ladder is sized off the ceiling.
 
@@ -85,7 +90,8 @@ MEMBRANE_RADIUS = 1200.0    # CapsuleMembrane.prefab -> radius
 NUCLEUS_RADIUS = 392.0      # Node2 half-extent 0.9798 x Nucleus.prefab scale 400
 
 # ── Population: ONE founder per colony, and a high ceiling ──────────────────
-# EXACTLY EIGHT SEEDS IN THE WHOLE CELL - this is the cell's defining choice, not a tuning
+# EXACTLY ONE SEED PER COLONY - twelve in the whole cell - and this is the cell's defining
+# choice, not a tuning
 # value. A lattice colony is ONE continuous minimal surface grown outward from its founder
 # (Docs/ECOSYSTEM.md 32.7: 273 plants from one founder, a single connected gyroid), so every
 # extra founder is an extra INDEPENDENT lattice frame - and independent frames cannot mate.
@@ -99,7 +105,7 @@ NUCLEUS_RADIUS = 392.0      # Node2 half-extent 0.9798 x Nucleus.prefab scale 40
 # (author_flora_populations.py floors lattice species at 4 founders for a reason that does not
 # apply here - it protects the ELEMENT SPREAD of a config that rolls its element per plant.
 # These eight configs each author ONE fixed element, so there is no spread to protect.)
-INITIAL_SPAWN = 1     # founders planted at t=0, per species -> 8 in the cell
+INITIAL_SPAWN = 1     # founders planted at t=0, per species -> 12 in the cell
 FLOOR = 1             # seed floor = extinction recovery only
 CAP = 90              # how large ONE superstructure may get; the real bound is the ladder + grazing
 
@@ -109,11 +115,14 @@ MATURITY = 0.5
 SPREAD = 40
 
 # ── The garden BAND (volume-uniform between these fractions of the membrane) ─
-# This band places the EIGHT FOUNDERS and nothing else - every other plant is placed by its
+# This band places the TWELVE FOUNDERS and nothing else - every other plant is placed by its
 # parent's own lattice frontier, not by a radius roll. So it is not "where the forest goes", it
-# is "where the eight seeds go", and it is a MID-SHELL (540u - 840u of the 1200u membrane) so
+# is "where the twelve seeds go", and it is a MID-SHELL (540u - 840u of the 1200u membrane) so
 # each superstructure has room to grow both inward and outward before it meets anything.
-# Eight points on a ~700u shell sit ~760u apart, which is several superstructure diameters.
+# Twelve points on a ~700u shell sit ~600u apart - still wider than the largest superstructure
+# (the Space quasicrystal, whose LatticeScale 2 puts 90 hearts inside a ~300u ball). Two frames
+# that DO meet simply stop against one another; nothing overlaps, because every strut still
+# passes PrismSpatialIndex.TryReserve.
 #
 # The inner edge still matters for the reason it always did: the shipped per-element assets
 # author PlantRadiusCellFraction 0.2 (240u), which is INSIDE the ~392u nucleus, so
@@ -137,11 +146,15 @@ RESTLESS_ENTER_RATIO = 0.22
 RESTLESS_EXIT_RATIO = 0.16
 
 # species key -> (source asset in Lifeforms, patch, budget)
+# Patch/budget must agree with author_flora_populations.py's LATTICE_PATCH - the same two
+# numbers describe the same plant there, and a fork would give one species two sizes.
 SPECIES = []
 for element in ("Charge", "Mass", "Space", "Time"):
     SPECIES.append(("Gyroid", element, 24, 30))
 for element in ("Charge", "Mass", "Space", "Time"):
     SPECIES.append(("SchwarzP", element, 36, 36))
+for element in ("Charge", "Mass", "Space", "Time"):
+    SPECIES.append(("Quasicrystal", element, 59, 110))
 
 ELEMENT_ID = {"Charge": 1, "Mass": 2, "Space": 3, "Time": 4}
 
@@ -246,6 +259,13 @@ def verify(rows):
     if t["settled"] <= 20000:
         problems.append(f"settled prism target missed: {t['settled']} <= 20000")
 
+    # Every colony must be able to REACH its cap before the cell freezes. The ladder is
+    # derived from the whole forest, so one very heavy species can in principle put Frenzy
+    # below a lighter colony's own ceiling only if the ratios invert - assert it directly.
+    for r in rows:
+        if r["volume_ceiling"] >= L["FrenzyEnterVolume"]:
+            problems.append(f"{r['family']} {r['element']} alone reaches FrenzyEnterVolume")
+
     # The forest must fit UNDER both ceilings, or the cell freezes while still growing.
     if L["FrenzyEnterVolume"] <= t["volume"]:
         problems.append("FrenzyEnterVolume is below the mature forest - the garden freezes")
@@ -258,7 +278,7 @@ def verify(rows):
                         "would need active grazing before it could resume growing")
 
     # Fauna must start hunting a PARTLY grown cell, not a finished one. The cell opens with
-    # eight lone founders, so there is no seeded forest to compare against - what matters is
+    # twelve lone founders, so there is no seeded forest to compare against - what matters is
     # that Restless lands a good way BELOW mature, i.e. while the colonies are still building.
     if L["RestlessEnterVolume"] >= t["volume"] * 0.5:
         problems.append("RestlessEnterVolume is too near the mature forest - fauna would only "
@@ -415,8 +435,8 @@ def cell_asset(profile_name, L):
     name = f"{CELL_NAME} Cell Config"
     body = HEADER.format(script=SCRIPT["cell"], name=name)
     body += f"""  CellName: {CELL_NAME}
-  Description: Eight lattice colonies - gyroid and Schwarz P, one of each element - growing
-    into one another
+  Description: Twelve lattice colonies - gyroid, Schwarz P and icosahedral quasicrystal, one
+    of each element - growing into one another
   Icon: {{fileID: 21300000, guid: {ICON}, type: 3}}
   Difficulty: 2
   CellEndGameScore: 0
@@ -489,7 +509,8 @@ def main():
     print(f"  founders: {t['plants_seeded']} ({INITIAL_SPAWN}/species) - one lattice frame per "
           f"colony, floor {FLOOR} = extinction recovery only")
     print(f"  build time: ({CAP} - 1) x {HEARTBEAT:g}s heartbeat "
-          f"= ~{(CAP - 1) * HEARTBEAT / 60:.0f} min per superstructure (all eight in parallel)")
+          f"= ~{(CAP - 1) * HEARTBEAT / 60:.0f} min per superstructure "
+          f"(all {len(rows)} in parallel)")
     print(f"  heart-crystal colliders at cap: {t['plants']} (one per plant, always on)")
     print()
     print("  ladder: " + "  ".join(f"{k}={v:g}" for k, v in L.items()))

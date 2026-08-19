@@ -194,8 +194,10 @@ outcome is optimization, not life). Use the `/ecology` skill for any change here
   seventh pass). Full record: `Docs/ECOSYSTEM.md §32` (§32.7 the octagon colony).
   **A cell can BE its colonies**: the freestyle `Lattice` cell (`_SO_Assets/Cell Configs/Lattice
   Cell/`, `CellConfigs[9]` in Menu_Main) authors no `EnvironmentPrefab` at all — its whole
-  environment is eight lattice colonies (gyroid ×4, Schwarz P ×4, one per element) growing into
-  one another, ~21,600 grown prisms and 720 plants at cap. It holds **exactly EIGHT SEEDS** — one
+  environment is twelve lattice colonies (gyroid ×4, Schwarz P ×4, quasicrystal ×4, one per
+  element) growing into one another, ~42,840 grown prisms and 1,080 plants at cap — the same
+  order as the heaviest AUTHORED environment in the game (Atlantis ~69k), reached by growth
+  rather than by a lay. It holds **exactly TWELVE SEEDS** — one
   founder per colony — and that is the cell, not a tuning value: **N founders do not build one
   superstructure N times faster.** Every founder is an independent lattice FRAME and independent
   frames cannot mate (`AssembledFlora` declines any site within `MisalignmentRadius` of a foreign
@@ -204,14 +206,21 @@ outcome is optimization, not life). Use the `/ecology` skill for any change here
   extend it IS the mechanic; the seeder's only remaining job is extinction recovery. Note this is
   the case `author_flora_populations.py`'s `LATTICE_MIN_FOUNDERS = 4` guards, and why it does not
   apply: that floor protects the ELEMENT SPREAD of a config that ROLLS its element, and these
-  eight author one fixed element each — **a rule written about rolled elements must not be
+  twelve author one fixed element each — **a rule written about rolled elements must not be
   inherited by a fixed-element config**. Three more things it records: a per-plant
-  budget is GEOMETRY (24-prism octagon / 36-site tile), so **plant COUNT is the only lever** and
+  budget is GEOMETRY (24-prism octagon / 36-site tile / a heart's tree cell, mean 59 struts),
+  so **plant COUNT is the only lever** and
   `MaxLivePopulation` is simultaneously the crystal-collider count; `FrenzyExitVolume` must sit
   **above** the mature forest so a trail-caused Frenzy always releases with the forest intact;
   and the shipped per-element assets' `PlantRadiusCellFraction 0.2` (240u) is INSIDE the ~392u
   nucleus, where `Flora.ResolvePlantRadius` collapses to one degenerate shell — a multi-colony
-  cell must author its own band. It is the largest collider budget of any cell and is opt-in
+  cell must author its own band. With the species spanning **159×** per prism (SchwarzP Charge
+  0.85 → quasicrystal Mass 135), one more ordering is asserted: **no single colony's own volume
+  ceiling may reach `FrenzyEnterVolume`**, or the heaviest species freezes the cell before the
+  other eleven finish and the ladder describes one colony instead of the forest. `CAP` stays ONE
+  number for all twelve because it is expressed in **plants** — territory units of each species'
+  own lattice; equalising prism counts instead would shrink the quasicrystal's superstructure
+  below its neighbours', which is the comparison the cell exists to make. It is the largest collider budget of any cell and is opt-in
   through the Cell Selector, and since §36.10 it is also **the boot world** — it replaced Blob at
   `CellConfigs[0]` and `Blob Cell Config` is deleted (only the config; the `Blob Cell` folder's
   SpawnProfile is still the population of all seven authored freestyle worlds). Booting into it is
