@@ -41,10 +41,10 @@ namespace CosmicShore.Gameplay
                  "its own blast) on a clean hit.")]
         [SerializeField, Min(0f)] float sameVictimCooldownSeconds = 0.5f;
 
-        [Tooltip("Only score if the victim could actually BE debuffed - i.e. is not elementally " +
-                 "immune. Off for a missile (a rocket that hits you hit you, whatever your " +
-                 "immunity state); ON for a DEBUFF-class blast, where the whole event being " +
-                 "scored IS the element drain and an immune pilot takes none of it " +
+        [Tooltip("Only score if the victim could actually BE debuffed - i.e. is not warded against " +
+                 "Explosion-class elemental debuffs. Off for a missile (a rocket that hits you hit " +
+                 "you, whatever your immunity state); ON for a DEBUFF-class blast, where the whole " +
+                 "event being scored IS the element drain and a warded pilot takes none of it " +
                  "(ResourceSystem.ApplyElementalEffect drops negative magnitudes while immune). " +
                  "Without this the scoring effect and the debuff effect - siblings in one " +
                  "container, dispatched from one contact - would disagree about whether " +
@@ -79,8 +79,11 @@ namespace CosmicShore.Gameplay
             // Exactly one machine may report a blast that exists on several. See the field.
             if (requireOwningMachine && shooterStatus.Player is { IsNetworkOwner: false }) return;
 
-            // The score follows the effect: no drain, no point.
-            if (requireDebuffableVictim && victimStatus.IsElementallyImmune) return;
+            // The score follows the effect: no drain, no point. Asked about THIS blast's own debuff
+            // class - a victim warded only against danger prisms is still fully debuffable here, and
+            // scoring must agree with the sibling debuff effect rather than with a broader state.
+            if (requireDebuffableVictim &&
+                victimStatus.IsImmuneToElementalDebuff(ElementalDebuffSources.Explosion)) return;
 
             // Never score a pilot for their own blast, and never for a teammate's. The
             // ExplosionImpactor already skips own-domain vessels unless the blast is running

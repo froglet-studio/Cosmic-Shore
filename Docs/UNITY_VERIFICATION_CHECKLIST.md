@@ -2141,12 +2141,14 @@ GameObject, a removed resource slot, and renamed serialized fields.
   `BoostAction.asset`; boost is now unlimited in duration.
 - The **strafing roll dropped to base kit** — `BarrelRollController` lost its
   `IsUpgradeActive(Element.Time)` gate. Still one roll per boost press.
-- **TIME-5 is now "Elemental Ward"** — a general, source-keyed
+- **TIME-5 is now "Elemental Ward"** — a general, grantor-keyed
   elemental-debuff immunity on `ResourceSystem`
-  (`SetElementalDebuffImmunity` / `IsElementallyImmune`), gated in one place:
+  (`SetElementalDebuffImmunity` / `IsImmuneTo`), gated in one place:
   the negative branch of `ApplyElementalEffect`. Driven declaratively by the new
   `VesselElementalImmunity` component: **Sparrow** `WhileBoosting` + Time gate,
-  **Serpent** `WhileTranslationRestricted` ungated.
+  **Serpent** `WhileTranslationRestricted` ungated. A ward also declares WHICH
+  debuff classes it stops (`ElementalDebuffSources`); these two stop all of
+  them, the **Dolphin's** Drift Ward stops `DangerPrism` alone.
 - The Sparrow boost icon's radial gauge became a **binary roll-charge pip**
   (`SparrowHUDView.SetRollCharge`), driven by
   `BarrelRollController.OnRollChargeChanged`.
@@ -2167,8 +2169,11 @@ GameObject, a removed resource slot, and renamed serialized fields.
    `ResourceSystem` list reads Missiles / FullAuto / ExhaustBarrage (3 entries,
    no Heat); `SparrowHUDController.barrelRollController` points at the root's
    `BarrelRollController`; `VesselElementalImmunity` is on the root reading
-   `WhileBoosting` + `Time`. Then `Serpent.prefab`: `VesselElementalImmunity`
-   on the root reading `WhileTranslationRestricted` + `None`.
+   `WhileBoosting` + `Time` + `wardedSources: Everything`. Then
+   `Serpent.prefab`: `VesselElementalImmunity` on the root reading
+   `WhileTranslationRestricted` + `None` + `Everything`. Then `Dolphin.prefab`:
+   `WhileDrifting` + `Time` + **`DangerPrism` only** — if that mask reads
+   `Everything`, a drifting Dolphin cannot be scored on in The Bends.
 3. Hold boost 60 s — no force-release, no danger trail, no self-slam.
 4. Time at 0: boost + full stick deflection rolls **once** per press.
 5. The boost (rightmost) ability icon's ring: full on press, wipes empty with a
@@ -2177,6 +2182,8 @@ GameObject, a removed resource slot, and renamed serialized fields.
    boosting** → element flowers do not dip; **not boosting** → they dip. Slow
    and input-mute land either way (by design).
 7. Serpent stopped + danger prism → no flower dip, at any Time level.
+7b. Dolphin at Time 5, drifting: danger prism → no flower dip; caught in another
+   Dolphin's crystal blast → flowers **do** dip and the attacker scores the bend.
 8. **MPPM two clients**, both Sparrows, one at Time 5: both machines must agree
    on who resists the drain. This is the replicated-`NetElementUnlocks` path —
    a local level read would pass step 6 and fail here.

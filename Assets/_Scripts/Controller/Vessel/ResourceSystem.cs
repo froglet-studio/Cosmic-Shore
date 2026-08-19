@@ -347,51 +347,104 @@ namespace CosmicShore.Gameplay
         // Every buff/debuff in the game routes through ApplyElementalEffect (CLAUDE.md, Elementals
         // fundamental), so ONE gate there is the whole of "immune to elemental debuffs". The state is
         // deliberately vessel-agnostic and source-keyed: any system can hold it, holders cannot clear
-        // each other's grant, and nothing about it is Sparrow- or Serpent-specific. The shared
-        // declarative driver is VesselElementalImmunity; read the state through
-        // IVesselStatus.IsElementallyImmune.
+        // each other's grant, and nothing about it is Sparrow-, Serpent- or Dolphin-specific. The
+        // shared declarative driver is VesselElementalImmunity; read the state through
+        // IVesselStatus.IsImmuneToElementalDebuff.
         //
         // Scope: it blocks NEGATIVE effects only - buffs still land while immune - and it PREVENTS new
         // debuffs rather than cleansing live ones (a cleanse would make the state a spammable purge
         // instead of a shield; live debuffs keep decaying on their own).
         //
+        // A grant is held against a SET OF SOURCE CLASSES (ElementalDebuffSources), not as a bare
+        // bool, because "immune to danger prisms" and "immune to an opposing pilot's weapon" are
+        // different promises and one bool cannot tell them apart. The Dolphin's Time-5 Drift Ward is
+        // the case that forced the distinction: unscoped, it also cancelled the Dolphin crystal
+        // blast, which is the entire scoring event of The Bends - a mode in which every pilot is a
+        // Dolphin. A debuff names ONE class and a grant holds a MASK; the debuff is blocked iff the
+        // two overlap, so a narrow ward can never be widened by a class added later.
+        //
         // NOT gated: AdjustLevel. That is the persistent crystal/comeback progression writer, not the
         // debuff channel; collecting a crystal is a player action, not something to be immune to.
-        readonly HashSet<UnityEngine.Object> _debuffImmunityGrants = new();
+        readonly Dictionary<UnityEngine.Object, ElementalDebuffSources> _debuffImmunityGrants = new();
 
-        /// <summary>True while at least one system holds elemental-debuff immunity on this vessel.</summary>
-        public bool IsElementallyImmune
+        // Scratch list for pruning destroyed grantors without allocating during the sweep.
+        static readonly List<UnityEngine.Object> _deadGrantors = new();
+
+        /// <summary>
+        /// The union of every standing grant's warded source classes — what this vessel is currently
+        /// immune to. <see cref="ElementalDebuffSources.None"/> when nothing is held. For HUD / VFX /
+        /// diagnostics; gameplay should ask <see cref="IsImmuneTo"/> about a specific class.
+        /// </summary>
+        public ElementalDebuffSources ImmuneDebuffSources
         {
             get
             {
-                if (_debuffImmunityGrants.Count == 0) return false;
+                if (_debuffImmunityGrants.Count == 0) return ElementalDebuffSources.None;
+
                 // A destroyed grantor cannot hold immunity (safety net for a holder that never revoked).
-                _debuffImmunityGrants.RemoveWhere(o => !o);
-                return _debuffImmunityGrants.Count > 0;
+                _deadGrantors.Clear();
+                var union = ElementalDebuffSources.None;
+                foreach (var grant in _debuffImmunityGrants)
+                {
+                    if (!grant.Key) { _deadGrantors.Add(grant.Key); continue; }
+                    union |= grant.Value;
+                }
+                for (int i = 0; i < _deadGrantors.Count; i++)
+                    _debuffImmunityGrants.Remove(_deadGrantors[i]);
+                _deadGrantors.Clear();
+
+                return union;
             }
         }
 
-        /// <summary>Raised when the immunity state flips on or off, for HUD / VFX consumers.</summary>
-        public event Action<bool> OnElementalImmunityChanged;
+        /// <summary>
+        /// Does a ward covering <paramref name="wardedSources"/> stop a debuff of class
+        /// <paramref name="source"/>? The whole of the scoping rule, kept static and pure so it is
+        /// directly testable (<c>ElementalDebuffWardTests</c>) — the failure this guards against
+        /// (a ward silently covering a class it was never earned against) is invisible in play.
+        /// </summary>
+        public static bool WardStops(ElementalDebuffSources wardedSources, ElementalDebuffSources source) =>
+            (wardedSources & source) != 0;
+
+        /// <summary>
+        /// True while some system wards this vessel against <paramref name="source"/> — the one
+        /// predicate the debuff gate and every gameplay reader asks. Pass the class that is about to
+        /// land, never <see cref="ElementalDebuffSources.All"/>: with mask semantics that asks "immune
+        /// to ANY class?", which is a different (and almost never the intended) question.
+        /// </summary>
+        public bool IsImmuneTo(ElementalDebuffSources source) =>
+            WardStops(ImmuneDebuffSources, source);
+
+        /// <summary>
+        /// Raised when the union of warded sources changes, for HUD / VFX consumers. Carries the new
+        /// union — <see cref="ElementalDebuffSources.None"/> means no immunity is held.
+        /// </summary>
+        public event Action<ElementalDebuffSources> OnElementalImmunityChanged;
 
         /// <summary>
         /// Grant or revoke elemental-debuff immunity from ONE source. Source-keyed rather than a bare
         /// bool so two concurrent holders (e.g. an ability and a mode) can't stomp each other; the
-        /// vessel is immune while any grant stands. Pass the granting component as
-        /// <paramref name="source"/> and revoke it in that component's OnDisable/OnDestroy.
+        /// vessel is immune to a class while any grant covering it stands. Pass the granting component
+        /// as <paramref name="source"/> and revoke it in that component's OnDisable/OnDestroy.
+        /// <para><paramref name="wardedSources"/> is what the grant wards against. It defaults to
+        /// <see cref="ElementalDebuffSources.All"/> so an unqualified grant means what it always
+        /// did — narrow it to promise less.</para>
         /// </summary>
-        public void SetElementalDebuffImmunity(UnityEngine.Object source, bool immune)
+        public void SetElementalDebuffImmunity(UnityEngine.Object source, bool immune,
+            ElementalDebuffSources wardedSources = ElementalDebuffSources.All)
         {
             if (!source) return;
 
-            bool wasImmune = IsElementallyImmune;
+            var was = ImmuneDebuffSources;
 
-            if (immune) _debuffImmunityGrants.Add(source);
-            else        _debuffImmunityGrants.Remove(source);
+            if (immune && wardedSources != ElementalDebuffSources.None)
+                _debuffImmunityGrants[source] = wardedSources;
+            else
+                _debuffImmunityGrants.Remove(source);
 
-            bool nowImmune = IsElementallyImmune;
-            if (nowImmune != wasImmune)
-                OnElementalImmunityChanged?.Invoke(nowImmune);
+            var now = ImmuneDebuffSources;
+            if (now != was)
+                OnElementalImmunityChanged?.Invoke(now);
         }
 
         /// <summary>
@@ -401,13 +454,18 @@ namespace CosmicShore.Gameplay
         /// linearly back to zero over <paramref name="duration"/> seconds, leaving the base level
         /// untouched so persistent progress (crystals, comeback, etc.) is preserved.</para>
         /// <para><paramref name="duration"/> &lt;= 0 → permanent: added straight to the base level.</para>
-        /// <para>Negative magnitudes are dropped entirely while
-        /// <see cref="IsElementallyImmune"/> - see the immunity block above.</para>
+        /// <para>Negative magnitudes are dropped entirely while this vessel is warded against
+        /// <paramref name="source"/> - see the immunity block above. <paramref name="source"/> names
+        /// WHAT is applying the debuff so a narrow ward (the Dolphin's danger-prism-only Drift Ward)
+        /// can be told from a total one; leaving it unnamed lands in
+        /// <see cref="ElementalDebuffSources.Other"/>, which only a ward covering everything blocks.
+        /// It is ignored for buffs.</para>
         /// </summary>
-        public void ApplyElementalEffect(Element element, float magnitude, float duration)
+        public void ApplyElementalEffect(Element element, float magnitude, float duration,
+            ElementalDebuffSources source = ElementalDebuffSources.Other)
         {
             // The one gate for the general elemental-debuff immunity state. Buffs are unaffected.
-            if (magnitude < 0f && IsElementallyImmune) return;
+            if (magnitude < 0f && IsImmuneTo(source)) return;
 
             if (duration <= 0f)
             {
