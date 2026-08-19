@@ -33,15 +33,16 @@ namespace CosmicShore.Gameplay
     /// GEOMETRY LIVES IN WORLD UNITS ON A SCALE-1 ROOT. The cone drives a non-uniformly scaled
     /// container and then has to divide that scale back out of its capsule trigger, anisotropically
     /// (see <c>AOEConicExplosion.UpdateCapsuleTrigger</c>). This root is never scaled: the mesh
-    /// child carries the cylinder's shape and the trigger sphere is written in world units, so
-    /// there is no lossy scale to undo and the two cannot drift apart.
+    /// child carries the cylinder's shape and the trigger box is written in world units, so there
+    /// is no lossy scale to undo and the two cannot drift apart.
     /// </summary>
     public class AOECylindricalExplosion : AOEExplosion
     {
         [Header("Plate")]
-        [Tooltip("How long the sweep is, as a multiple of the plate's RADIUS. Shipped at 2 — the " +
-                 "cylinder is exactly as long as it is wide, so its axial span equals its " +
-                 "diameter. An explicit HeightOverride on the InitializeStruct wins over this.")]
+        [Tooltip("How long the sweep is, as a multiple of the plate's RADIUS. The DEFAULT 2 is " +
+                 "the neutral cylinder — exactly as long as it is wide, axial span == diameter. " +
+                 "Individual blasts author their own; the Scarab's plate is 1.2, a broad shallow " +
+                 "slap. An explicit HeightOverride on the InitializeStruct wins over both.")]
         [SerializeField, Min(0.05f)] float lengthPerRadius = 2f;
 
         [Tooltip("Sweep SPEED in world units/second. The plate's LENGTH is derived from the " +
@@ -74,7 +75,7 @@ namespace CosmicShore.Gameplay
         /// <summary>Total axial reach of the sweep in world units.</summary>
         float _length;
 
-        SphereCollider _triggerSphere;
+        BoxCollider _triggerBox;
         MaterialPropertyBlock _platePropertyBlock;
         static readonly int OpacityID = Shader.PropertyToID("_Opacity");
 
@@ -137,20 +138,20 @@ namespace CosmicShore.Gameplay
             // World units on a scale-1 root - see the class docs.
             transform.localScale = Vector3.one;
 
-            _triggerSphere = _triggerCollider as SphereCollider;
+            _triggerBox = _triggerCollider as BoxCollider;
             _visualComplete = false;
             if (_triggerCollider) _triggerCollider.enabled = true;
-            ShapeTriggerSphere(0f);
+            ShapeTriggerBox(0f);
             ShapePlateVisual(0f);
 
             if (meshRenderer) meshRenderer.enabled = false;
 
 #if DEVELOPMENT_BUILD || UNITY_EDITOR
-            if (!_triggerSphere)
+            if (!_triggerBox)
                 Debug.LogWarning(
-                    "[AOECylindricalExplosion] The trigger is not a SphereCollider, so vessel and " +
+                    "[AOECylindricalExplosion] The trigger is not a BoxCollider, so vessel and " +
                     "ball contacts will use the authored collider's own (unswept) shape while the " +
-                    "prism sweep uses the plate. Swap the trigger to a sphere.", this);
+                    "prism sweep uses the plate. Swap the trigger to a box.", this);
             if (!plateVisual)
                 Debug.LogWarning(
                     "[AOECylindricalExplosion] No plate visual assigned - the blast will damage " +
@@ -171,23 +172,32 @@ namespace CosmicShore.Gameplay
         public override Vector3 CalculateImpactVector(Vector3 impacteePosition) => Impulse.Along(_axis);
 
         /// <summary>
-        /// The trigger is the INSCRIBED sphere of the swept-so-far cylinder: centred on the sweep's
-        /// axial midpoint, radius min(depth/2, plate radius). Unity ships no cylinder collider, and
-        /// under-reaching at the rim is the safe direction — the prism sweep is exact either way,
-        /// and a circumscribing sphere would shove vessels and the ball from outside the volume the
-        /// player is shown. At the shipped length (2× radius) the final sphere touches both end
-        /// caps and the side wall.
+        /// The trigger is the CIRCUMSCRIBING box of the swept-so-far cylinder: `2R × 2R × depth`,
+        /// centred on the sweep's axial midpoint, with local +Z the sweep axis. Prisms come off the
+        /// exact Burst sweep; this shape is only what VESSEL and Astro League BALL contacts resolve
+        /// through, and Unity ships no cylinder collider.
+        ///
+        /// It circumscribes rather than inscribes, deliberately. An inscribed SPHERE was the first
+        /// shape here and it is only honest while the plate is at least as long as it is wide: its
+        /// radius is `min(depth/2, R)`, so the moment the cylinder is squat (the Scarab's is 45
+        /// wide and 54 long) the sphere caps at 27 and silently loses 40% of the plate's reach —
+        /// a ball plainly inside the punch the player was shown does nothing. Between the two
+        /// errors, over-reach is the survivable one: the box's only excess is the four corners of
+        /// the square cross-section (27% of area, none of it further than √2·R out), against an
+        /// under-reach that reads as the weapon being broken.
         /// </summary>
-        void ShapeTriggerSphere(float depth)
+        void ShapeTriggerBox(float depth)
         {
-            if (!_triggerSphere) return;
-            float lossy = Mathf.Max(Mathf.Abs(transform.lossyScale.x),
-                          Mathf.Max(Mathf.Abs(transform.lossyScale.y),
-                                    Mathf.Abs(transform.lossyScale.z)));
-            lossy = Mathf.Max(lossy, 1e-4f);
-            float half = depth * 0.5f;
-            _triggerSphere.radius = Mathf.Min(half, _radius) / lossy;
-            _triggerSphere.center = new Vector3(0f, 0f, half / lossy);
+            if (!_triggerBox) return;
+            Vector3 lossy = transform.lossyScale;
+            float sx = Mathf.Max(Mathf.Abs(lossy.x), 1e-4f);
+            float sy = Mathf.Max(Mathf.Abs(lossy.y), 1e-4f);
+            float sz = Mathf.Max(Mathf.Abs(lossy.z), 1e-4f);
+            // A box scales componentwise (unlike a sphere or a capsule), so each axis divides out
+            // its OWN factor and there is no anisotropy trap to fall into here.
+            _triggerBox.size = new Vector3(_radius * 2f / sx, _radius * 2f / sy,
+                                           Mathf.Max(depth, 1e-4f) / sz);
+            _triggerBox.center = new Vector3(0f, 0f, depth * 0.5f / sz);
         }
 
         /// <summary>
@@ -265,7 +275,7 @@ namespace CosmicShore.Gameplay
                     float depth = _length * t;   // LINEAR - see the class docs
 
                     ShapePlateVisual(depth);
-                    ShapeTriggerSphere(depth);
+                    ShapeTriggerBox(depth);
 
                     bool shouldContinue = impactor?.ProcessBatchCylinderFrame(
                         transform.position, _axis, sweptTo, depth, _radius, Impulse) ?? true;
@@ -302,7 +312,7 @@ namespace CosmicShore.Gameplay
                 // held volume is small and invisible for a few tens of milliseconds, which is a
                 // cheaper price than a missed contact.
                 ShapePlateVisual(_length);
-                ShapeTriggerSphere(_length);
+                ShapeTriggerBox(_length);
                 if (contactHoldSeconds > 0f)
                     await UniTask.Delay(TimeSpan.FromSeconds(contactHoldSeconds), DelayType.DeltaTime,
                                         PlayerLoopTiming.Update, ct);

@@ -368,12 +368,23 @@ is what makes it read as a *slap* rather than a muzzle blast.
   `proportionalDebris 1`, `debrisRestitution 1/3 × Inertia 3` (product **1.0**, so the debris
   magnitude IS the blast's own velocity — see the wavefront table below).
 - **Its dimensions are a RELATIONSHIP to the ship, not a second number beside it.** The plate's
-  radius is `radiusPerVesselRadius` (**2**) × the vessel's own collider radius, measured live off
-  `VesselImpactor.HullColliders` at fire time, and its length is `lengthPerRadius` (**2**) × that
-  radius. The Scarab's hull is a single **4.5**-unit sphere, so the shipped punch is **r 9, length
-  18**. Reshape the hull collider and the blast follows; there is nothing left behind to drift.
-  (`HullColliders` is the same set the shell tier probes with, so the skimmer — which owns its own
-  Rigidbody — can never be mistaken for the ship.)
+  radius is `radiusPerVesselRadius` (**10**) × the vessel's own collider radius, measured live off
+  `VesselImpactor.HullColliders` at fire time, and its length is `lengthPerRadius` (**1.2**) × that
+  radius. The Scarab's hull is a single **4.5**-unit sphere, so the shipped punch is **r 45, length
+  54** — a broad, shallow wall of destruction sweeping off the hull, about 90% of the volume the
+  original spherical blast had, redistributed into a plate. Reshape the hull collider and the blast
+  follows; there is nothing left behind to drift. (`HullColliders` is the same set the shell tier
+  probes with, so the skimmer — which owns its own Rigidbody — can never be mistaken for the ship.)
+- **The trigger is a CIRCUMSCRIBING box, and that is not a detail.** Prisms come off the exact
+  Burst sweep, but VESSEL and BALL contacts resolve through the AOE's collider, and Unity ships no
+  cylinder. An inscribed *sphere* was the first shape here and it is only honest while the plate is
+  at least as long as it is wide: its radius is `min(depth/2, R)`, so the moment the cylinder went
+  squat (45 wide, 54 long) it capped at 27 and silently lost **40% of the plate's reach** — a ball
+  plainly inside the punch the player was shown would not have launched. Between the two errors,
+  over-reach is the survivable one: the box's only excess is the four corners of the square
+  cross-section (27% of area, nothing further out than √2·R), against an under-reach that reads as
+  the weapon being broken. **General rule: an inscribed proxy collider is an unstated assumption
+  about the volume's ASPECT RATIO, and it fails silently the first time someone retunes the shape.**
 - **Everything it claims leaves ALONG the sweep, at the blast's own velocity.** The Burst job hands
   back the sweep axis itself as every prism's impact direction (no per-hit normalize), and
   `CalculateImpactVector` returns that same vector at every position — so a pilot caught in the

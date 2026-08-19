@@ -2300,7 +2300,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   blastPrefab: {fileID: 7412093556301884212, guid: dd8d6149fdb64a5d869d0b0d041dd659, type: 3}
-  radiusPerVesselRadius: 2
+  radiusPerVesselRadius: 10
   fallbackVesselRadius: 4.5
   cooldownSeconds: 2.5
   cooldownMultiplierAtFullCharge: 0.5

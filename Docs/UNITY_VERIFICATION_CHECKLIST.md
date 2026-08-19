@@ -1693,12 +1693,15 @@ occurrence names itself.
    up and splay as you slow, the horn swings against the nose. A rigid hull means
    `ScarabAnimation` resolved no parts — check the console for its unresolved-part report.
    Right-stick dash: the whole visible ship must spin 360° (it previously rolled the hidden FBX).
-   And the dash must now throw a **visible cylindrical plate** — a disc lying flat ACROSS your
-   course, starting on the hull and sweeping ~18 u along the dash in ~0.07 s (r 9, i.e. twice the
-   4.5 hull radius; length twice that radius). It is a fast flash, not a bloom. If nothing appears,
-   `Detonate()` regressed; if it draws as a sphere, the prefab's `plateVisual` child lost its
-   built-in Cylinder mesh. Prisms it claims must all fly the SAME way — down-range along the dash —
-   not outward from a point; a ball it reaches must launch the same direction.
+   And the dash must now throw a **visible cylindrical plate** — a broad disc lying flat ACROSS
+   your course, starting on the hull and sweeping **54 u** along the dash in **~0.21 s** at
+   **r 45** (10× the 4.5 hull radius; length 1.2× that radius). It is a fast slap, not a bloom. If
+   nothing appears, `Detonate()` regressed; if it draws as a sphere, the prefab's `plateVisual`
+   child lost its built-in Cylinder mesh. Check three things beyond "it appears": every prism it
+   claims flies the SAME way — down-range along the dash, not outward from a point; a ball it
+   reaches launches that same direction **even when the ball is out near the plate's rim** (that is
+   the circumscribing box trigger doing its job — an inscribed sphere would have covered only the
+   inner 27 u); and an opposing pilot caught in it takes the all-element debuff.
 1. **Open `Assets/_Prefabs/Spacevessels/Scarab.prefab` and SAVE it** — this is load-bearing, not
    a smoke test: the clone carries Sparrow's `NetworkObject.GlobalObjectIdHash` until the editor
    re-serializes it, and two registered network prefabs sharing a hash collide. Open, confirm no

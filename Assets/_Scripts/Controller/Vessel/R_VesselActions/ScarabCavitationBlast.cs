@@ -19,8 +19,8 @@ namespace CosmicShore.Gameplay
     /// read as a slap that carries mass down-range instead of a bomb that blooms.
     ///
     /// ITS SIZE IS THE HULL'S SIZE, MEASURED, NOT AUTHORED. The plate's radius is
-    /// <see cref="radiusPerVesselRadius"/> × the vessel's own collider radius and its length is
-    /// twice that radius (<c>AOECylindricalExplosion.lengthPerRadius</c>), read live off
+    /// <see cref="radiusPerVesselRadius"/> × the vessel's own collider radius and its length a
+    /// further multiple of that radius (<c>AOECylindricalExplosion.lengthPerRadius</c>), read live off
     /// <see cref="VesselImpactor.HullColliders"/> at fire time. So the punch is stated as a
     /// RELATIONSHIP to the ship rather than as a second number beside it: reshape the Scarab's hull
     /// collider and the blast follows, with nothing left behind to drift.
@@ -45,10 +45,11 @@ namespace CosmicShore.Gameplay
                  "it does to a vessel it engulfs.")]
         [SerializeField] AOEExplosion blastPrefab;
 
-        [Tooltip("The plate's radius as a multiple of the VESSEL COLLIDER's radius. Shipped at 2, " +
-                 "so the punch is exactly twice as wide as the ship that threw it. The plate's " +
-                 "LENGTH is then twice its radius, authored on the blast prefab.")]
-        [SerializeField, Min(0.1f)] float radiusPerVesselRadius = 2f;
+        [Tooltip("The plate's radius as a multiple of the VESSEL COLLIDER's radius. Shipped at " +
+                 "10, so the punch is ten times as wide as the ship that threw it - a broad wall " +
+                 "of destruction sweeping off the hull, not a jab. The plate's LENGTH is a " +
+                 "multiple of THAT radius, authored on the blast prefab (1.2).")]
+        [SerializeField, Min(0.1f)] float radiusPerVesselRadius = 10f;
 
         [Tooltip("Fallback VESSEL radius in world units, used only if the hull collider cannot " +
                  "be measured. Matches the shipped Scarab hull, a single 4.5-unit sphere.")]

@@ -57,7 +57,7 @@ MonoBehaviour:
   Inertia: 3
   proportionalDebris: 1
   debrisRestitution: 0.33333334
-  lengthPerRadius: 2
+  lengthPerRadius: 1.2
   sweepSpeed: 257.14
   contactHoldSeconds: 0.05
   plateVisual: {fileID: 7412093556301884301}
@@ -113,8 +113,8 @@ MeshRenderer:
   m_SortingLayer: 0
   m_SortingOrder: 0
   m_AdditionalVertexStreams: {fileID: 0}
---- !u!135 &7412093556301884215
-SphereCollider:
+--- !u!65 &7412093556301884215
+BoxCollider:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
@@ -132,7 +132,7 @@ SphereCollider:
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 3
-  m_Radius: 0.5
+  m_Size: {x: 1, y: 1, z: 1}
   m_Center: {x: 0, y: 0, z: 0}
 --- !u!54 &7412093556301884216
 Rigidbody:
