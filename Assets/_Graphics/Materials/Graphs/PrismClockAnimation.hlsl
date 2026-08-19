@@ -386,6 +386,7 @@ void PrismFlightSqrDistance_float(float Clock, float StartTime, float Duration, 
     SqrDistance = dot(d, d);
 }
 
+
 // -----------------------------------------------------------------------------
 // Shield morph — the per-face bloom (engage) and the shatter overlay (disengage),
 // for BOTH shield tiers (BlockGraph + ExplodingBlockGraph vertex stage).
@@ -411,24 +412,77 @@ void PrismFlightSqrDistance_float(float Clock, float StartTime, float Duration, 
 // retired with the CPU driver: an arbitrary AnimationCurve has no GPU evaluation, and
 // smoothstep is the easing every other clock transition already uses (PrismColorLerp).
 //
-// Because the morph runs on the SETTLED shared mesh, a shielded prism never leaves
-// the instanced path: same-size shields batch into one draw through the entire
-// animation. Normal is the OBJECT-space flat face normal (the generators author one
-// normal per face), and it is deliberately NOT re-derived after displacement — a
-// per-face rigid translation cannot change a face's normal.
+// -- THE SHATTER IS THE PRISM EXPLOSION, APPLIED PER FACE (§4.8.1) ------------
+// A shield does not fall apart on its own; something BREAKS it. So the shatter takes
+// the same initial condition the prism explosion takes — a WORLD-space Velocity, the
+// force that dropped the shield — and reproduces the explosion's motion model on the
+// shield's faces:
 //
-// Duration <= 0 -> unstamped: the position passes through untouched, which is every
+//   drift   p += velocityObj * tSec              (PrismExplosionClock's ObjectOffset)
+//   tumble  p  = centroid + R(p - centroid)      (RotateFacesAlongAxis, per face)
+//           R  = Rodrigues about normalize(cross(velocityObj, n)),
+//                angle = PRISM_SHIELD_SHATTER_SPIN * |Velocity| * tSec
+//
+// which is the explosion's `_ExplosionAmount * _ExplosiveRotation` with the same
+// speed*seconds gain. Note the two clocks: the SHAPE terms (contraction, fly-out) run
+// on the normalized eased t, while drift and tumble run on tSec — real seconds — so a
+// hard hit throws the shards further and spins them harder, exactly as the explosion's
+// debris does. It is expressed here rather than by reusing ExplodingBlockGraph's
+// RotateFacesAlongAxis subgraph for two reasons: that subgraph is not on BlockGraph
+// (where a shielded prism's own material lives), and it rotates about the object ORIGIN
+// off a TANGENT vector the shield meshes do not carry (they author positions, normals
+// and TEXCOORD1 only) — a zero tangent turns its second rotation into a cos(angle)
+// scale pulse. PrismJiggleClock re-expressed the same subgraph in HLSL for the same
+// reason (§4.9); this shares its helpers.
+//
+// Velocity ZERO is the identity for both new terms — no axis, no drift — so every
+// direction-less disengage (a timer expiring, an arena teardown, a domain change, a
+// herbivore stripping armour) renders exactly the symmetric puff it always did.
+//
+// Rotation runs in the locally-ISOTROPIC frame (position * objectScale), the same
+// correction PrismJiggleClock documents: prisms are non-uniformly scaled, and an
+// object-space rotation seen through that scale is a shear that wags the long axis far
+// more than the others. The normal is carried through the same frame INVERTED, because
+// a normal transforms by the inverse transpose.
+//
+// InNormal/MorphedNormal is a pass-through channel, NOT the face normal the morph
+// computes with: the shatter is spliced in front of PrismJiggleClock.Normal, whose
+// feeder differs per graph (a raw object-space Normal Vector on BlockGraph, the
+// explosion's already-rotated normal on ExplodingBlockGraph). Rotating whatever
+// arrives is what keeps one splice rule correct on both. A face that tumbles with a
+// frozen normal lights as though it never moved, and on these fresnel-driven prism
+// materials the rim is the brightest thing on the shard.
+//
+// Because the morph runs on the SETTLED shared mesh, a shielded prism never leaves the
+// instanced path: same-size shields batch into one draw through the entire animation.
+// Normal is the OBJECT-space flat face normal (the generators author one normal per
+// face); under the fly-out alone it is deliberately not re-derived, because a per-face
+// rigid translation cannot change a face's normal — only the tumble can, and that is
+// what MorphedNormal carries.
+//
+// Duration <= 0 -> unstamped: position and normal pass through untouched, which is every
 // prism in the game that is not mid-shield-morph (and every mesh with no TEXCOORD1).
 // -----------------------------------------------------------------------------
+
+// Radians of face tumble per world unit travelled by the breaking impulse — the shield's
+// counterpart of the explosion material's _ExplosiveRotation, and the ONE shape constant
+// of the shatter (its per-shield dials are authored on the shield components: duration,
+// fly-out offset, and the drift speed cap that bounds BOTH terms below). At the shipped
+// 20 u/s cap this is ~3 rad of tumble across a 0.6 s shatter, most of it spent while the
+// face is still large enough to read.
+#define PRISM_SHIELD_SHATTER_SPIN 0.25
+
 void PrismShieldMorph_float(float Clock, float StartTime, float Duration, float Direction,
-    float ShatterOffset, float3 Position, float3 Normal, float3 FaceCentroid,
-    out float3 MorphedPosition)
+    float ShatterOffset, float3 Velocity, float3 Position, float3 Normal, float3 FaceCentroid,
+    float3 InNormal,
+    out float3 MorphedPosition, out float3 MorphedNormal)
 {
+    MorphedPosition = Position;
+    MorphedNormal = InNormal;
+
     if (Duration <= 0.0)
-    {
-        MorphedPosition = Position;
-        return;
-    }
+        return;                                   // unstamped -> identity on both
+
     float p = saturate((Clock - StartTime) / Duration);
     float t = smoothstep(0.0, 1.0, p);
 
@@ -439,6 +493,71 @@ void PrismShieldMorph_float(float Clock, float StartTime, float Duration, float 
     float offset    = shatter * t * ShatterOffset;
 
     MorphedPosition = FaceCentroid + faceScale * (Position - FaceCentroid) + offset * Normal;
+
+    // ---- the explosion terms: only a SHATTER carries an impulse -------------
+    if (shatter == 0.0)
+        return;
+
+    // Elapsed SECONDS, not the normalized eased progress: drift and tumble are physical
+    // quantities (units/second, radians/unit) and must not be reshaped by the easing that
+    // governs the face's contraction. Held at Duration so a stamp that outlives its
+    // scheduled retirement freezes rather than flying away forever.
+    float tSec = clamp(Clock - StartTime, 0.0, Duration);
+
+    // Negated finite test: every comparison against NaN is false, so NaN bails.
+    float vLenSq = dot(Velocity, Velocity);
+    if (!(vLenSq > 1e-8))
+        return;                                   // direction-less disengage -> pure puff
+
+#if defined(SHADERGRAPH_PREVIEW)
+    float3 velocityObj = Velocity;
+    float3 scale = float3(1.0, 1.0, 1.0);
+#else
+    // Full inverse-model linear transform, unnormalized — never Shader Graph's
+    // Direction-mode Transform node, which emits TransformWorldToObjectDir and
+    // NORMALIZES (magnitude destroyed, direction re-skewed by the prism's non-uniform
+    // scale). Same rule as PrismExplosionClock / PrismFlightClock.
+    float3 velocityObj = mul((float3x3)GetWorldToObjectMatrix(), Velocity);
+    float3x3 m = (float3x3)GetObjectToWorldMatrix();
+    float3 scale = float3(length(float3(m._m00, m._m10, m._m20)),
+                          length(float3(m._m01, m._m11, m._m21)),
+                          length(float3(m._m02, m._m12, m._m22)));
+#endif
+    // A prism pulled fresh from the pool sits at localScale ZERO until its creation
+    // coroutine completes, so the frame is degenerate and 1/scale blows up. Birth
+    // transitions already disengage instantly (PrismStateManager.IsBirthTransition);
+    // this is so that "already" is not load-bearing.
+    if (!(all(scale > 1e-5)) || !(dot(velocityObj, velocityObj) < 1e12))
+        return;
+
+    // Drift: the whole shard cloud rides the breaking impulse. Object-space so the
+    // WORLD displacement is exactly Velocity * tSec, matching the explosion's debris.
+    MorphedPosition += velocityObj * tSec;
+
+    // Tumble: each face rotates about ITS OWN centroid, on the axis perpendicular to
+    // both the impulse and the face — so a face struck edge-on cartwheels while one
+    // struck dead-on (cross ~ 0) is simply pushed, which is the correct read for both.
+    float nLenSq = dot(Normal, Normal);
+    if (!(nLenSq > 1e-8))
+        return;                                   // no normals -> nothing to rotate about
+    float3 n = Normal * rsqrt(nLenSq);
+
+    float3 axis = cross(velocityObj, n);
+    float axisLenSq = dot(axis, axis);
+    if (!(axisLenSq > 1e-8))
+        return;                                   // impulse along the face normal
+    axis *= rsqrt(axisLenSq);
+
+    // |Velocity| is the WORLD speed — the same channel the explosion's shatter rate
+    // rides — so the tumble reads identically whatever the prism's local scale is.
+    float angle = PRISM_SHIELD_SHATTER_SPIN * sqrt(vLenSq) * tSec;
+
+    // Position rotates in the isotropic frame about the face centroid; the normal
+    // rotates in the frame a normal actually lives in (inverse transpose => divide by
+    // scale going in, multiply coming out — the mirror of the position's).
+    float3 rel = (MorphedPosition - FaceCentroid) * scale;
+    MorphedPosition = FaceCentroid + PrismJiggleRotate(rel, axis, angle) / scale;
+    MorphedNormal = PrismJiggleRotate(InNormal / scale, axis, angle) * scale;
 }
 
 #endif // PRISM_CLOCK_ANIMATION_INCLUDED

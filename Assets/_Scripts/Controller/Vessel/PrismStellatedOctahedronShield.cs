@@ -24,7 +24,11 @@ namespace CosmicShore.Gameplay
     /// centroids.
     /// Disengage: box mesh snaps back immediately, then a shatter overlay plays
     ///   where each of the 24 faces simultaneously shrinks and flies outward
-    ///   along its face normal, mirroring the prism destruction VFX.
+    ///   along its face normal — and, when the caller hands over the velocity of the force
+    ///   that BROKE the shield, drifting and tumbling along that blow. That is not
+    ///   "mirroring" the prism destruction VFX any more; it is the SAME motion model,
+    ///   applied per face (Docs/PRISM_ANIMATION.md §4.8.1). Zero velocity is the
+    ///   identity, so a direction-less disengage stays the symmetric puff it always was.
     ///
     /// BOTH MORPHS RUN ON THE GPU — one stamp per transition, no ticker, no per-frame
     /// mesh rebuild, everything final at t = 0, and the shield never leaves the
@@ -81,6 +85,16 @@ namespace CosmicShore.Gameplay
 
         [Tooltip("How far each face flies outward (in local-space units) at the end of the shatter.")]
         [SerializeField] private float shatterMaxOffset = 4f;
+
+        [Tooltip("Ceiling (world units/second) on the drift the shards inherit from the force " +
+                 "that BROKE the shield — the prism explosion's velocity, applied per face. " +
+                 "This is the ONE dial for how violently the stellation comes apart: the tumble " +
+                 "angle rides the same clamped speed. 0 disables both terms, leaving the " +
+                 "symmetric outward puff, which is also what every direction-less disengage " +
+                 "(a shield timer expiring, an arena teardown, a herbivore stripping armour) " +
+                 "already gets. Impact magnitudes are not comparable across the legacy and " +
+                 "true-velocity damage paths, so only the DIRECTION survives unclamped.")]
+        [SerializeField] private float shatterDriftSpeedCap = 25.0f;
 
         [Header("Shield Geometry")]
         [Tooltip("Circumscribing scale factor for the inscribed octahedron / cube of spike tips. 3 is the minimum that guarantees all box corners are inside the stellation and matches the octahedron shield.")]
@@ -253,7 +267,12 @@ namespace CosmicShore.Gameplay
         /// shatter overlay plays where each of the 24 faces flies outward
         /// along its normal while shrinking to a point.
         /// </summary>
-        public void Disengage(bool instant = false)
+        /// <param name="breakVelocity">
+        /// WORLD-space velocity of the force that broke the shield, if the caller has one.
+        /// The shards drift and tumble along it (Docs/PRISM_ANIMATION.md §4.8.1), clamped to
+        /// <c>shatterDriftSpeedCap</c>. Default zero = the symmetric puff.
+        /// </param>
+        public void Disengage(bool instant = false, Vector3 breakVelocity = default)
         {
             if (!_isShielded) return;
 
@@ -266,7 +285,8 @@ namespace CosmicShore.Gameplay
             // material on the shipped prefabs.)
             if (!instant && shatterDuration > 0f)
                 PrismShieldMorph.RequestShatter(gameObject, _meshRenderer, _stellatedMesh,
-                    shatterDuration, shatterMaxOffset);
+                    shatterDuration, shatterMaxOffset,
+                    PrismShieldMorph.ClampBreakVelocity(breakVelocity, shatterDriftSpeedCap));
 
             // Immediately restore box mesh + colliders so gameplay is unaffected.
             ApplyUnshieldedPose();

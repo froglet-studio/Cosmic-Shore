@@ -443,6 +443,7 @@ namespace CosmicShore.ECS
                         em.AddComponentData(prototype, new PrismShieldMorphDurationOverride { Value = 0f });
                         em.AddComponentData(prototype, new PrismShieldMorphDirectionOverride { Value = ShieldMorphBloom });
                         em.AddComponentData(prototype, new PrismShieldMorphOffsetOverride { Value = 0f });
+                        em.AddComponentData(prototype, new PrismShieldMorphVelocityOverride { Value = float3.zero });
                         em.AddComponentData(prototype, new PrismJiggleStartTimeOverride { Value = 0f });
                         em.AddComponentData(prototype, new PrismJiggleDurationOverride { Value = 0f });
                         em.AddComponentData(prototype, new PrismJiggleParamsOverride { Value = float3.zero });
@@ -798,9 +799,13 @@ namespace CosmicShore.ECS
         /// stage collapses/expands its faces about the per-face centroids baked into
         /// TEXCOORD1, so gameplay state, collider, mass and render mesh are all final
         /// from the stamp and the shield never leaves the instanced path.
+        ///
+        /// <paramref name="velocity"/> is the WORLD-space impulse that broke the shield —
+        /// the shatter drifts and tumbles its faces along it (§4.8.1). It is meaningless to
+        /// a bloom and defaults to zero, which is the identity for both terms.
         /// </summary>
         public static bool StampShieldMorph(in PrismRenderHandle handle, float startTime,
-            float duration, float direction, float offset)
+            float duration, float direction, float offset, float3 velocity = default)
         {
             if (!ClockAnimationEnabled || !IsUsable(in handle)) return false;
             var em = _world.EntityManager;
@@ -809,6 +814,7 @@ namespace CosmicShore.ECS
             em.SetComponentData(handle.Entity, new PrismShieldMorphDurationOverride { Value = duration });
             em.SetComponentData(handle.Entity, new PrismShieldMorphDirectionOverride { Value = direction });
             em.SetComponentData(handle.Entity, new PrismShieldMorphOffsetOverride { Value = offset });
+            em.SetComponentData(handle.Entity, new PrismShieldMorphVelocityOverride { Value = velocity });
             return true;
         }
 
@@ -825,6 +831,7 @@ namespace CosmicShore.ECS
             em.SetComponentData(handle.Entity, new PrismShieldMorphDurationOverride { Value = 0f });
             em.SetComponentData(handle.Entity, new PrismShieldMorphDirectionOverride { Value = ShieldMorphBloom });
             em.SetComponentData(handle.Entity, new PrismShieldMorphOffsetOverride { Value = 0f });
+            em.SetComponentData(handle.Entity, new PrismShieldMorphVelocityOverride { Value = float3.zero });
         }
 
         /// <summary>
@@ -1301,6 +1308,15 @@ namespace CosmicShore.ECS
             public float Duration;
             /// <summary>Fly-out distance in LOCAL units at t = 1.</summary>
             public float Offset;
+            /// <summary>WORLD-space velocity of the force that broke the shield, already
+            /// clamped by the caller (the shader does the world→object conversion). Zero
+            /// is the identity — the symmetric puff.</summary>
+            public float3 Velocity;
+            /// <summary>Object-space displacement the drift covers over the WHOLE shatter
+            /// (velocity × duration, mapped through the inverse of <see cref="LocalToWorld"/>)
+            /// — the culling envelope, exactly as <see cref="ExplosionDebrisSpawn"/> carries
+            /// it. Computed by the caller, which already holds the Transform.</summary>
+            public float3 ObjectDrift;
         }
 
         /// <summary>
@@ -1352,18 +1368,23 @@ namespace CosmicShore.ECS
                 em.SetComponentData(entity, new PrismShieldMorphDurationOverride { Value = s.Duration });
                 em.SetComponentData(entity, new PrismShieldMorphDirectionOverride { Value = ShieldMorphShatter });
                 em.SetComponentData(entity, new PrismShieldMorphOffsetOverride { Value = s.Offset });
+                em.SetComponentData(entity, new PrismShieldMorphVelocityOverride { Value = s.Velocity });
 
-                // Culling envelope: faces travel `Offset` LOCAL units along their own
-                // normals, so the mesh AABB grown by Offset on every axis covers the
-                // whole deterministic flight. Without it the shards cull against the
-                // un-shattered shield box and pop out at the edge of the frustum.
+                // Culling envelope, two terms. Faces travel `Offset` LOCAL units along
+                // their own normals — the mesh AABB grown by Offset on every axis covers
+                // that — and the whole cloud DRIFTS `ObjectDrift` over the shatter, which
+                // is re-centred exactly like the explosion debris' envelope. The tumble
+                // adds nothing: a face rotating about its own centroid stays within its own
+                // circumradius of it, already inside the mesh AABB. Without this the shards
+                // cull against the un-shattered shield box and pop out at the frustum edge.
                 float pad = math.max(0f, s.Offset);
+                float3 half = s.ObjectDrift * 0.5f;
                 em.SetComponentData(entity, new RenderBounds
                 {
                     Value = new AABB
                     {
-                        Center = meshCenter,
-                        Extents = meshExtents + new float3(pad),
+                        Center = meshCenter + half,
+                        Extents = meshExtents + math.abs(half) + new float3(pad),
                     }
                 });
 

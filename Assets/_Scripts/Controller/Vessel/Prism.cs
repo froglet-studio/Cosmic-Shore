@@ -1279,8 +1279,14 @@ namespace CosmicShore.Gameplay
             // That sequence clears the flag before it gets here, so a BREAKING hit never
             // reaches this gate; only an unbreaking one does, and it now deflects (below).
             if (AbsorbSuperShieldHit(impactVector.magnitude)) return;
+            // The shield pops instead of the prism, and it pops ALONG THE BLOW: the shatter
+            // takes the same initial condition Explode would have taken, so a shed reads as
+            // the armour being knocked off rather than as a symmetric puff that looks the
+            // same from every direction (Docs/PRISM_ANIMATION.md §4.8.1). The magnitude is
+            // clamped by the shield component — this vector's scale is not comparable across
+            // the legacy and proportional damage paths.
             if (prismProperties.IsShielded && !devastate)
-                DeactivateShields();
+                DeactivateShields(impactVector);
             else
             {
                 _destroyedByCreature = byCreature;
@@ -1295,6 +1301,10 @@ namespace CosmicShore.Gameplay
             // describes where the mass was being pulled, not how hard it was struck.
             if (destroyed) return;
             if (AbsorbSuperShieldHit(0f)) return;
+            // Direction-less on purpose, for the same reason the deflection above is stamped
+            // at the floor: a consume carries no impact vector, only a suction sink, and
+            // grazing armour off is not a blow. The shatter's velocity terms are the identity
+            // at zero, so this is the symmetric puff.
             if (prismProperties.IsShielded && !devastate)
                 DeactivateShields();
             else
@@ -1350,6 +1360,16 @@ namespace CosmicShore.Gameplay
         // State Management Methods
         public void MakeDangerous() => stateManager?.MakeDangerous();
         public void DeactivateShields() => stateManager?.DeactivateShields();
+
+        /// <summary>
+        /// Drops every shield tier and hands the shatter the WORLD-space velocity of the
+        /// force that BROKE it, so the shards drift and tumble along the blow instead of
+        /// puffing symmetrically (Docs/PRISM_ANIMATION.md §4.8.1). Magnitude is clamped by
+        /// the shield component's own cap, so passing a legacy inertia-scaled vector is
+        /// safe — only the direction survives unclamped. Zero is the identity.
+        /// </summary>
+        public void DeactivateShields(Vector3 breakVelocity) =>
+            stateManager?.DeactivateShields(null, breakVelocity);
         public void ActivateShield() => stateManager?.ActivateShield();
         public void ActivateShield(float duration) => stateManager?.ActivateShield(duration);
         public void ActivateSuperShield() => stateManager?.ActivateSuperShield();

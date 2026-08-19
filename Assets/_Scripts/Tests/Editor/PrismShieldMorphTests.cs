@@ -1,6 +1,8 @@
 #if UNITY_EDITOR
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text.RegularExpressions;
 using NUnit.Framework;
 using UnityEngine;
 using CosmicShore.Utility;
@@ -42,6 +44,10 @@ namespace CosmicShore.Tests
         {
             "_ShieldMorphStartTime", "_ShieldMorphDuration",
             "_ShieldMorphDirection", "_ShieldMorphOffset",
+            // The breaking impulse — the prism explosion's own initial condition, applied
+            // per face (Docs/PRISM_ANIMATION.md §4.8.1). Per-instance for the same reason
+            // as the other four: it is what was known at THIS prism's disengage.
+            "_ShieldMorphVelocity",
         };
 
         const string OctahedronShieldPath = "Assets/_Scripts/Controller/Vessel/PrismOctahedronShield.cs";
@@ -183,6 +189,73 @@ namespace CosmicShore.Tests
                     $"{Path.GetFileName(graphPath)} has no UV node reading UV{channel} — the shield " +
                     "morph would read whatever UV0 happens to hold instead of the face centroids.");
             }
+        }
+
+        [Test]
+        public void EveryWiredGraph_MatchesTheHlslSignatureExactly()
+        {
+            // The gap neither the wiring script nor a code review can see: the script
+            // asserts the graph is internally consistent and the HLSL compiles on its own,
+            // but NOTHING checks that the node's slots still describe the function they
+            // call. ShaderGraph passes slots positionally (inputs in list order, then
+            // outputs), so a signature change on one side and not the other silently
+            // shifts every argument — Velocity would arrive as Position and the shield
+            // would morph toward a garbage point with no error anywhere.
+            var (hlslInputs, hlslOutputs) = ReadHlslSignature();
+
+            foreach (var graphPath in WiredGraphPaths)
+            {
+                string text = File.ReadAllText(graphPath).Replace("\r\n", "\n");
+                var blocks = text.Split(new[] { "\n\n" }, System.StringSplitOptions.RemoveEmptyEntries);
+
+                var node = blocks.FirstOrDefault(b => b.Contains($"\"m_FunctionName\": \"{FunctionName}\""));
+                Assert.IsNotNull(node, $"{Path.GetFileName(graphPath)} has no {FunctionName} node.");
+
+                var slotIds = Regex.Matches(node.Substring(node.IndexOf("\"m_Slots\"", System.StringComparison.Ordinal)),
+                                            "\"m_Id\": \"([0-9a-f]{32})\"")
+                                   .Cast<Match>().Select(m => m.Groups[1].Value).ToList();
+
+                var inputs = new List<string>();
+                var outputs = new List<string>();
+                foreach (var id in slotIds)
+                {
+                    var slot = blocks.FirstOrDefault(b => b.Contains($"\"m_ObjectId\": \"{id}\"") &&
+                                                          b.Contains("MaterialSlot"));
+                    Assert.IsNotNull(slot, $"{Path.GetFileName(graphPath)}: slot {id} is missing.");
+                    string name = Regex.Match(slot, "\"m_DisplayName\": \"([^\"]*)\"").Groups[1].Value;
+                    bool isOutput = Regex.Match(slot, "\"m_SlotType\": (\\d+)").Groups[1].Value == "1";
+                    (isOutput ? outputs : inputs).Add(name);
+                }
+
+                CollectionAssert.AreEqual(hlslInputs, inputs,
+                    $"{Path.GetFileName(graphPath)}: the {FunctionName} node's INPUT slots no longer match " +
+                    $"{Path.GetFileName(HlslPath)}'s parameter order. Re-run Tools/Shaders/wire_prism_shield_morph.py.");
+                CollectionAssert.AreEqual(hlslOutputs, outputs,
+                    $"{Path.GetFileName(graphPath)}: the {FunctionName} node's OUTPUT slots no longer match " +
+                    $"{Path.GetFileName(HlslPath)}'s out-parameter order.");
+            }
+        }
+
+        /// <summary>Parameter names of PrismShieldMorph_float, split into ins and outs.</summary>
+        static (List<string> inputs, List<string> outputs) ReadHlslSignature()
+        {
+            string hlsl = File.ReadAllText(HlslPath);
+            int start = hlsl.IndexOf($"void {FunctionName}_float(", System.StringComparison.Ordinal);
+            Assert.Greater(start, -1, $"{HlslPath} does not declare {FunctionName}_float.");
+            start = hlsl.IndexOf('(', start) + 1;
+            int end = hlsl.IndexOf(')', start);
+            Assert.Greater(end, start, "unterminated parameter list");
+
+            var inputs = new List<string>();
+            var outputs = new List<string>();
+            foreach (var raw in hlsl.Substring(start, end - start).Split(','))
+            {
+                var parts = raw.Split(new[] { ' ', '\t', '\n', '\r' }, System.StringSplitOptions.RemoveEmptyEntries);
+                Assert.GreaterOrEqual(parts.Length, 2, $"unparsable parameter '{raw}'");
+                bool isOut = parts[0] == "out";
+                (isOut ? outputs : inputs).Add(parts[parts.Length - 1]);
+            }
+            return (inputs, outputs);
         }
 
         // ── 3. no CPU ticker, now or ever again ──────────────────────────────

@@ -8,7 +8,11 @@ namespace CosmicShore.Utility
     /// <summary>
     /// Batched PURE-ENTITY debris for the SHIELD DISENGAGE overlay — the shards of a
     /// dropped octahedron / stellated super-shield flying out along their own face
-    /// normals while shrinking to points (Docs/PRISM_ANIMATION.md §5 B4).
+    /// normals while shrinking to points (Docs/PRISM_ANIMATION.md §5 B4), now DRIFTING
+    /// and TUMBLING along the impulse that broke the shield: the prism explosion's own
+    /// initial condition, applied per face (§4.8.1). A shield does not fall apart on its
+    /// own, so the effect takes the same input the explosion takes — a velocity — and a
+    /// zero one degrades exactly to the symmetric puff it always was.
     ///
     /// The prism itself snaps back to its box mesh and its own companion entity the
     /// instant the shield drops (gameplay and rendering both final at t = 0), so the
@@ -113,8 +117,22 @@ namespace CosmicShore.Utility
         /// service is off or unusable, in which case the disengage has no overlay
         /// (strict mode: no CPU fallback tier).
         /// </summary>
+        /// <param name="velocity">
+        /// WORLD-space velocity of the force that BROKE the shield — the prism explosion's
+        /// own initial condition (Docs/PRISM_ANIMATION.md §4.8.1). Already clamped by the
+        /// caller: the shield components own the speed cap, so the GPU stays a pure
+        /// function of what it is handed. Zero (a timer expiring, an arena teardown, a
+        /// herbivore stripping armour) is the identity — the symmetric puff.
+        /// </param>
+        /// <param name="objectDrift">
+        /// The same velocity × duration mapped into the prism's object space, for the
+        /// culling envelope. Passed in rather than derived because the caller already holds
+        /// the Transform, and inverting <paramref name="localToWorld"/> per spawn would pay
+        /// for that Transform twice.
+        /// </param>
         public static bool TryRequest(Mesh sharedShieldMesh, Material material, int layer,
-            in Matrix4x4 localToWorld, float duration, float offset)
+            in Matrix4x4 localToWorld, float duration, float offset,
+            Vector3 velocity = default, Vector3 objectDrift = default)
         {
             if (sharedShieldMesh == null || material == null) return false;
             if (duration <= 0f) return false;
@@ -127,6 +145,8 @@ namespace CosmicShore.Utility
                     LocalToWorld = localToWorld,
                     Duration = duration,
                     Offset = Mathf.Max(0f, offset),
+                    Velocity = new Unity.Mathematics.float3(velocity.x, velocity.y, velocity.z),
+                    ObjectDrift = new Unity.Mathematics.float3(objectDrift.x, objectDrift.y, objectDrift.z),
                 });
             s_pendingCount++;
 

@@ -100,16 +100,32 @@ namespace CosmicShore.Gameplay
 
         /// <summary>
         /// Queues the disengage overlay: the shards of the shield just dropped, flying
-        /// out along their own face normals. Fire-and-forget — <see cref="PrismShieldShatter"/>
-        /// owns the entities and retires them on a flat time sweep.
+        /// out along their own face normals — and, when the shield was BROKEN by something,
+        /// drifting and tumbling along that impulse (Docs/PRISM_ANIMATION.md §4.8.1).
+        /// Fire-and-forget — <see cref="PrismShieldShatter"/> owns the entities and retires
+        /// them on a flat time sweep.
         /// </summary>
+        /// <param name="breakVelocity">
+        /// WORLD-space velocity of the breaking force, ALREADY CLAMPED by the shield
+        /// component (which owns the speed cap). Zero is the identity: every disengage with
+        /// no direction to speak of — a shield timer expiring, an arena teardown, a domain
+        /// change, a herbivore stripping armour — renders the symmetric puff it always did.
+        /// </param>
         public static void RequestShatter(GameObject host, MeshRenderer renderer, Mesh sharedShieldMesh,
-            float duration, float maxOffset)
+            float duration, float maxOffset, Vector3 breakVelocity = default)
         {
             if (duration <= 0f || sharedShieldMesh == null || renderer == null) return;
 
+            // The culling envelope wants the drift in OBJECT space. Do it here, where the
+            // Transform is already in hand — the batch spawner would otherwise have to
+            // invert a matrix per shard to recover what this one call gives it for free.
+            Vector3 objectDrift = breakVelocity == Vector3.zero
+                ? Vector3.zero
+                : host.transform.InverseTransformVector(breakVelocity) * duration;
+
             bool queued = PrismShieldShatter.TryRequest(sharedShieldMesh, renderer.sharedMaterial,
-                host.layer, host.transform.localToWorldMatrix, duration, maxOffset);
+                host.layer, host.transform.localToWorldMatrix, duration, maxOffset,
+                breakVelocity, objectDrift);
 
             // Strict mode is silent about nothing: the shards ride the instanced path, so
             // if there is none the disengage simply has no overlay and that must be said
@@ -118,6 +134,33 @@ namespace CosmicShore.Gameplay
             if (!queued)
                 PrismClockDiagnostics.WarnNoRenderEntity("shieldShatter", host,
                     $"batched shield-shatter debris was refused [service: {PrismRenderService.StatusLine()}]");
+        }
+
+        /// <summary>
+        /// The ONE rule for turning a breaking force into shatter drift, shared by both
+        /// shield tiers so they cannot drift apart.
+        ///
+        /// A shield is broken by whatever impact vector the damage site happened to carry,
+        /// and those magnitudes are not comparable: the legacy inertia gain and the
+        /// true-velocity (proportional) path differ by orders of magnitude for the same
+        /// blow (see PrismExplosion.TriggerExplosion's clamp note, which exists for exactly
+        /// this reason). Only the DIRECTION is reliably meaningful, so the magnitude is
+        /// clamped to the shield's authored cap — which is therefore the single dial for
+        /// how violently a shield comes apart, since the tumble angle rides the same speed.
+        ///
+        /// Clamped on the CPU, once, so the GPU stays a pure function of what it is handed.
+        /// A zero or non-finite vector returns zero: the symmetric puff, never a fabricated
+        /// direction.
+        /// </summary>
+        public static Vector3 ClampBreakVelocity(Vector3 velocity, float speedCap)
+        {
+            if (speedCap <= 0f) return Vector3.zero;
+            float sqr = velocity.sqrMagnitude;
+            // Negated finite test: every comparison against NaN is false, so NaN falls out.
+            if (!(sqr > 1e-6f) || !(sqr < 1e12f)) return Vector3.zero;
+
+            float speed = Mathf.Sqrt(sqr);
+            return speed > speedCap ? velocity * (speedCap / speed) : velocity;
         }
 
         // -- standalone rig only (see Stamp) ----------------------------------

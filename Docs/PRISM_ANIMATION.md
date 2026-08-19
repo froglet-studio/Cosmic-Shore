@@ -1611,9 +1611,12 @@ shatter (Direction <  0):  p = centroid + (1 - t) * (v - centroid) + t * Offset 
 t = smoothstep(0, 1, saturate((clock - StartTime) / Duration))
 ```
 
-Four properties carry it, all Hybrid Per Instance: `_ShieldMorphStartTime`,
+Five properties carry it, all Hybrid Per Instance: `_ShieldMorphStartTime`,
 `_ShieldMorphDuration` (0 = unstamped = render the mesh as authored),
-`_ShieldMorphDirection`, `_ShieldMorphOffset`. `PrismShieldMorph_float` lives in
+`_ShieldMorphDirection`, `_ShieldMorphOffset`, and — since **§4.8.1** — the breaking
+impulse `_ShieldMorphVelocity`, which adds a drift and a per-face tumble to the shatter
+expression above (zero is the identity, so the two-term form is still exactly what a
+direction-less disengage renders). `PrismShieldMorph_float` lives in
 `PrismClockAnimation.hlsl`; `Tools/Shaders/wire_prism_shield_morph.py` wires **both**
 live-prism graphs (BlockGraph + ExplodingBlockGraph — the same census as the corridor and
 the flight clock, because `TransparentPrismMaterial` rests on the latter).
@@ -1636,7 +1639,8 @@ Five properties of the result are worth carrying to the next migration:
   *cleared*, and only where it must be — at disengage (the entity has gone back to the
   prism's own box mesh, which carries no centroids, so a live stamp would collapse that box
   toward the object origin) and on pool reuse (`ClearPrismStamps`).
-- **The shatter is batched pure-entity debris, not a child GameObject.** The prism itself
+- **The shatter is batched pure-entity debris, not a child GameObject** — and since
+  §4.8.1 it flies along the force that broke the shield. The prism itself
   is back on its box the instant the shield drops, so the shards are necessarily a separate
   visual — and a separate visual with one pose, one stamp and one retirement is the §4.6
   carrier's exact shape. `PrismShieldShatter` queues a frame's disengages and spawns them
@@ -1668,6 +1672,103 @@ the retired CPU formula, the Hybrid-Per-Instance wiring and UV channel on both g
 the ticker file is gone, and that neither shield has grown an `Update` / coroutine / tween
 or a CPU mesh rebuilder. `FrogletTools > Ecology > Prism Animation > Validate Clock Wiring`
 covers the same properties from the compiled-material side.
+
+---
+
+### 4.8.1 The shatter is the prism explosion, applied per face (shipped 2026-08-19)
+
+A shield does not fall apart on its own — **something breaks it** — and until now the
+disengage overlay could not tell you what. Every face shrank to its centroid and slid out
+along its own normal, so a Rhino sword swing, a rammed hull, a herbivore stripping armour
+and a shield timer expiring all produced the *same symmetric puff*, viewed from any
+direction. The prism explosion has always taken the one initial condition that fixes this:
+a **velocity**. The shatter now takes the same one, and reproduces the explosion's motion
+model on the shield's faces.
+
+```
+tS   = smoothstep(0, 1, saturate((clock - t0) / Duration))     // shape, as before
+tSec = clamp(clock - t0, 0, Duration)                          // physical seconds
+
+p  = centroid + (1 - tS)*(v - centroid) + tS*Offset*n          // contract + fly out (unchanged)
+p += velocityObj * tSec                                        // drift   <- PrismExplosionClock
+p  = centroid + R(p - centroid)                                // tumble  <- RotateFacesAlongAxis
+     R = Rodrigues about normalize(cross(velocityObj, n)),
+         angle = PRISM_SHIELD_SHATTER_SPIN * |Velocity| * tSec
+```
+
+**Two clocks, deliberately.** The SHAPE terms ride the normalized eased `tS`; drift and
+tumble ride `tSec`, real seconds, because they are physical quantities (units/second,
+radians/unit) and must not be reshaped by the easing that governs a face's contraction.
+That is also what makes a hard hit throw the shards further and spin them harder — the
+same `speed × seconds` gain the explosion's `_ExplosionAmount × _ExplosiveRotation`
+carries.
+
+**Zero velocity is the identity for both new terms**, which is the whole compatibility
+story: a shield timer expiring, an arena teardown, a domain change, `MakeDangerous`,
+`ActivateSuperShield`, and a herbivore grazing armour off all still render exactly the
+puff they always did. `Prism.Consume` is deliberately in that set — it carries no impact
+vector, only a suction sink, the same reasoning `AbsorbSuperShieldHit` already applies to
+the deflection wobble. What *does* carry a direction: `Prism.Damage`'s impact vector (the
+main path — a shielded prism hit by anything sheds along the blow), the Rhino sword's
+`SkimmerSwingKinematics` contact velocity, and the overcharge skimmer's flight velocity.
+
+Five things are worth carrying forward:
+
+- **The magnitude is clamped on the CPU, and that clamp is the tuning dial.** Impact
+  vectors are not comparable across the two damage paths — the legacy inertia gain and the
+  true-velocity (`proportionalDebris`) one differ by orders of magnitude for the same blow,
+  which is exactly why `PrismExplosion.TriggerExplosion` carries its own clamp note. Only
+  the DIRECTION is reliably meaningful, so `PrismShieldMorph.ClampBreakVelocity` caps the
+  speed at the shield component's authored `shatterDriftSpeedCap` (octahedron 20, stella
+  25 u/s) and the GPU stays a pure function of what it is handed. Because the tumble angle
+  rides the same clamped speed, that ONE number is how violently a shield comes apart. Set
+  it to 0 and the tier reverts to the pre-2026-08-19 puff.
+- **It re-expresses `RotateFacesAlongAxis` in HLSL rather than reusing it, for two
+  concrete reasons** — the same call §4.9 made. That subgraph is not on **BlockGraph**,
+  where a shielded prism's own material lives; and it rotates about the object ORIGIN off a
+  **TANGENT** vector the shield meshes do not carry (`OctahedronMeshGenerator` /
+  `StellatedOctahedronMeshGenerator` author positions, normals and TEXCOORD1 only), so a
+  zero tangent turns its second rotation into a `cos(angle)` scale pulse. Routing the
+  shards through the real explosion path instead — spawning them as `ExplosionDebrisSpawn`
+  entities on the shield mesh — was considered and **rejected on that tangent dependency**
+  plus the subtractive graph migration it would have needed to retire the shatter branch.
+- **The rotation runs in the locally-ISOTROPIC frame** (`position * objectScale`), §4.9's
+  correction: prisms are non-uniformly scaled, and an object-space rotation seen through
+  that scale is a shear that wags the long axis far more than the others. Invisible on a
+  cube, obvious on a trail slab — which is why the verifier asserts it explicitly.
+- **The tumble reaches the lit rim, not just the silhouette.** A face that rotates while
+  its normal stays put lights as though it never moved, and prism materials are
+  fresnel-driven, so the rim is the brightest thing on a shard. The morph therefore carries
+  a **pass-through normal channel** (`InNormal` → `MorphedNormal`) spliced in FRONT of
+  `PrismJiggleClock.Normal` — where the position chain already puts it, so the two chains
+  keep the same order. It is a pass-through and NOT the face normal the morph computes
+  with, because that feeder differs per graph: a raw object-space Normal Vector on
+  BlockGraph, the explosion's already-rotated normal on ExplodingBlockGraph. Rotating
+  whatever arrives is what keeps one splice rule correct on both.
+- **The culling envelope grew the drift term.** `SpawnShieldShatterBatch` re-centres the
+  AABB on `ObjectDrift/2` and extends it by `|ObjectDrift/2|`, exactly like the explosion
+  debris' envelope; the tumble adds nothing, because a face rotating about its own centroid
+  stays inside its own circumradius of it. The object-space drift is computed at the
+  request site (`PrismShieldMorph.RequestShatter`), which already holds the Transform —
+  deriving it in the spawner would mean inverting a matrix per shard.
+
+One new Hybrid-Per-Instance property carries it, `_ShieldMorphVelocity` (float3, WORLD
+space; the shader does the world→object conversion with a raw unnormalized inverse-model
+multiply — never a Direction-mode Transform node, which normalizes). The spin gain is a
+shape constant in the HLSL (`PRISM_SHIELD_SHATTER_SPIN`, 0.25), the same place §4.9 keeps
+its decay and cone constants, because the per-shield dial that matters is the speed cap.
+
+Gates, three of them, each covering what the others structurally cannot:
+`Tools/Shaders/wire_prism_shield_morph.py --check` proves the graph wiring (and the tool
+MIGRATES a graph carrying the old 9-slot signature, so it is also the merge-conflict
+resolver); `PrismShieldMorphTests.EveryWiredGraph_MatchesTheHlslSignatureExactly` proves
+the node's slots still describe the function's parameters — ShaderGraph passes slots
+positionally, so a signature change on one side and not the other silently shifts every
+argument with no error anywhere; and `Tools/Shaders/verify_prism_shield_shatter.py`
+compiles the SHIPPED `.hlsl` through an HLSL→C++ shim and proves the arithmetic (all nine
+properties above, including that a zero velocity is byte-identical to the pre-change
+shatter at every t). The last one is mutation-tested: dropping the isotropic frame or
+moving the drift onto the eased `t` both fail it.
 
 ---
 
@@ -1814,7 +1915,7 @@ Phase B — migrate the engines (each retires a per-frame pass):
 | B1 | Grow-in → clock (all ~12 feeder paths ride the one engine); gameplay-final-at-start (volume/spatial stamps, clock predicates, `ExecuteOnScaleComplete` → start) | ✅ LIVE (strict, the only path) 2026-08-01 — `PrismScaleManager` DELETED (D2, 2026-08-02). Graph wiring ✅ (playtest-confirmed smooth). Pending: `HoldColliderAtFullSize` deletion, `CreateBlockCoroutine` window simplification, arena-gate simplification, PhaseThresholds re-baseline |
 | B2 | Color/state transitions → clock lerp (start colors + t₀; target = material authored; end-state material bound at START, settle scheduled) | ✅ LIVE (strict, the only path) 2026-08-01 — `MaterialStateManager` DELETED (D2, 2026-08-02). Graph wiring ✅ (playtest-confirmed smooth on BlockGraph; the transparent-prism color cluster on ExplodingBlockGraph is wired too — 2026-08-02 — so transparent steals/repaints fade instead of snapping) |
 | B3 | Explosion/implosion → clock (stamp `{t₀, velocity, speed, duration}` / `{t₀, duration, direction, delay, location}`) | ✅ LIVE (strict, the only path) 2026-08-01 — moving-target DECIDED as the §1 exception (a snapshot would suck prisms toward where the fauna WAS): progress rides the clock, `PrismEffectsManager` refreshes `_Location` only (one float3/frame) while the target lives. Animation passes + Burst jobs DELETED (D2, 2026-08-02 — the manager keeps only convergence refresh + zombie audit). Graph wiring ✅ both graphs, PLAYTEST-CONFIRMED 2026-08-02: explosions ✅ (GPU-side world→object conversion inside `PrismExplosionClock` — raw inverse-model multiply, never the normalizing Direction-mode Transform — + flight-envelope bounds) and suction ✅ (`EncapsulateBoundsPoint` envelope). **Mass-death carrier upgraded 2026-08-02**: prism-death explosions spawn as BATCHED PURE-ENTITY debris (`PrismDebris` + `PrismRenderService.SpawnExplosionDebrisBatch` — no GameObject/pool/per-effect timer; full duration always); pooled path = fallback only. **Implosion batch port shipped 2026-08-04** (`SpawnImplosionDebrisBatch` + `RefreshImplosionDebrisBatch`): suctions ride the same carrier, and the moving-target §1 exception moved onto it as a per-record `_Location` refresh with a CPU-mirrored culling envelope — see §4.6 for the carrier's rules and the death-path marker split that shipped with it |
-| B4 | Shield morphs → GPU (vertex-shader bloom/shatter from per-vertex face data + t₀; settled shared-mesh swap already conforms) | ✅ **SHIPPED 2026-08-15 — Phase B is complete and the LAST sanctioned CPU ticker is DELETED** (`PrismOctahedronShieldManager` + `IPrismShieldMorphTicker`; its active set is empty by construction because no shield registers any more, and an edit-mode test fails if the file returns). Both tiers' engage bloom and disengage shatter are now `f(clock, stamp)` via `PrismShieldMorph_float` + four Hybrid-Per-Instance properties, wired into **both** live-prism graphs by `Tools/Shaders/wire_prism_shield_morph.py`. The mesh generators bake each vertex's FACE CENTROID into TEXCOORD1, which makes the cache-shared **settled** mesh also the morph mesh — so no "anim variant" mesh was needed (the audit's sketch), no scheduled end-callback was needed (the shader clamps at t = 1, which IS the settled shield), the exotic-visual window collapses entirely (`SetExoticVisualActive` is now only ever driven FALSE; `SetRenderMeshOverride` still carries the handoff), and same-size shields stay in ONE batch through the whole animation instead of each minting a unique mesh + draw call. The shatter overlay's per-prism child GameObject is replaced by batched pure-entity debris on the §4.6 carrier (`PrismShieldShatter` → `SpawnShieldShatterBatch`, grouped by mesh × material × layer since shields vary in size and domain) and is no longer cancellable on re-engage — deleting shards mid-flight was a continuity-law breach. `AnimationCurve.EaseInOut(0,0,1,1)` == `smoothstep` (zero end tangents — verified against Unity's own serialization of that constructor), so every runtime-added shield is reproduced EXACTLY; the two prefabs that serialize a hand-altered curve (`BlueBlock`, `OctahedronShieldTest`, end tangents 2) now ease like the fleet, a stated deviation of up to 0.192. Curve fields retired. Design + the five carryable properties: §4.8 |
+| B4 | Shield morphs → GPU (vertex-shader bloom/shatter from per-vertex face data + t₀; settled shared-mesh swap already conforms) | ✅ **SHIPPED 2026-08-15 — Phase B is complete and the LAST sanctioned CPU ticker is DELETED** (`PrismOctahedronShieldManager` + `IPrismShieldMorphTicker`; its active set is empty by construction because no shield registers any more, and an edit-mode test fails if the file returns). Both tiers' engage bloom and disengage shatter are now `f(clock, stamp)` via `PrismShieldMorph_float` + four Hybrid-Per-Instance properties, wired into **both** live-prism graphs by `Tools/Shaders/wire_prism_shield_morph.py`. The mesh generators bake each vertex's FACE CENTROID into TEXCOORD1, which makes the cache-shared **settled** mesh also the morph mesh — so no "anim variant" mesh was needed (the audit's sketch), no scheduled end-callback was needed (the shader clamps at t = 1, which IS the settled shield), the exotic-visual window collapses entirely (`SetExoticVisualActive` is now only ever driven FALSE; `SetRenderMeshOverride` still carries the handoff), and same-size shields stay in ONE batch through the whole animation instead of each minting a unique mesh + draw call. The shatter overlay's per-prism child GameObject is replaced by batched pure-entity debris on the §4.6 carrier (`PrismShieldShatter` → `SpawnShieldShatterBatch`, grouped by mesh × material × layer since shields vary in size and domain) and is no longer cancellable on re-engage — deleting shards mid-flight was a continuity-law breach. `AnimationCurve.EaseInOut(0,0,1,1)` == `smoothstep` (zero end tangents — verified against Unity's own serialization of that constructor), so every runtime-added shield is reproduced EXACTLY; the two prefabs that serialize a hand-altered curve (`BlueBlock`, `OctahedronShieldTest`, end tangents 2) now ease like the fleet, a stated deviation of up to 0.192. Curve fields retired. Design + the five carryable properties: §4.8. **Follow-up 2026-08-19 (§4.8.1):** the shatter now takes the prism explosion's own initial condition — a WORLD-space velocity — so the shards DRIFT along the blow and each face TUMBLES about `normalize(cross(velocity, faceNormal))`, the `RotateFacesAlongAxis` model re-expressed in HLSL (that subgraph is not on BlockGraph and needs a TANGENT the shield meshes do not carry). One new Hybrid-Per-Instance property (`_ShieldMorphVelocity`), one new pass-through normal channel so the tumble reaches the fresnel rim, and a CPU-side speed clamp (`shatterDriftSpeedCap`) that is the single per-tier dial. Zero velocity is the identity, so every direction-less disengage is byte-identical — proven by `Tools/Shaders/verify_prism_shield_shatter.py`, which compiles the shipped HLSL and checks it |
 
 Phase C — rogue paths & ecosystem visuals (each is standalone):
 

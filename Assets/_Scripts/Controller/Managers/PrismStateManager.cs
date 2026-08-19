@@ -147,7 +147,16 @@ namespace CosmicShore.Gameplay
             SyncAOERegistryShieldState();
         }
 
-        public void DeactivateShields(float? delay = null)
+        /// <param name="breakVelocity">
+        /// WORLD-space velocity of the force that BROKE the shield, when the caller has one
+        /// (Prism.Damage's impact vector, the Rhino sword's contact velocity). The shatter
+        /// shards drift and tumble along it — the prism explosion's own initial condition,
+        /// applied per face (Docs/PRISM_ANIMATION.md §4.8.1). Default zero is the identity:
+        /// a shed with no direction to speak of renders the symmetric puff it always did.
+        /// A DELAYED deactivation deliberately drops it — by the time that timer fires,
+        /// whatever was moving when it was scheduled has moved on.
+        /// </param>
+        public void DeactivateShields(float? delay = null, Vector3 breakVelocity = default)
         {
             PrismTimerManager.EnsureInstance().CancelTimers(this);
 
@@ -157,7 +166,7 @@ namespace CosmicShore.Gameplay
             }
             else
             {
-                ApplyNormalState();
+                ApplyNormalState(breakVelocity);
             }
         }
 
@@ -189,7 +198,7 @@ namespace CosmicShore.Gameplay
             if (!birth) AudioSystem.Instance.PlayGameplaySFX(GameplaySFXCategory.ShieldActivate);
         }
 
-        private void ApplyNormalState()
+        private void ApplyNormalState(Vector3 breakVelocity = default)
         {
             var wasShielded = prism.prismProperties.IsShielded || prism.prismProperties.IsSuperShielded;
 
@@ -202,9 +211,12 @@ namespace CosmicShore.Gameplay
             prism.prismProperties.IsSuperShielded = false;
             CurrentState = BlockState.Normal;
 
+            // Only THIS teardown carries a breaking force. MakeDangerous and
+            // ActivateSuperShield also disengage, but those are state changes, not blows —
+            // they stay direction-less, which is the symmetric puff.
             bool birth = IsBirthTransition;
-            if (octahedronShield != null) octahedronShield.Disengage(birth);
-            if (stellatedShield != null) stellatedShield.Disengage(birth);
+            if (octahedronShield != null) octahedronShield.Disengage(birth, breakVelocity);
+            if (stellatedShield != null) stellatedShield.Disengage(birth, breakVelocity);
 
             SyncAOERegistryShieldState();
 
