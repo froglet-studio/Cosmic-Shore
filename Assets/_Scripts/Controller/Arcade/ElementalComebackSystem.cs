@@ -137,9 +137,13 @@ namespace CosmicShore.Gameplay
                 case GameModes.MultiplayerJoust: // Score lands only at game end - jousts are the live stat
                     return ScoreDifferenceSource.Jousts;
                 default:
-                    // The legacy composite/time-scored modes (Cellular Duel, Wildlife Blitz co-op,
-                    // Freestyle, 2v2) accumulate Score live via TimePlayedScoring, so Score is
-                    // the honest source there.
+                    // Nothing live to read: the modes that land here (Tournament - a meta whose
+                    // chained minigames each set their own mode - plus Benchmark and Random) have
+                    // no per-mode stat that accumulates during play. Score is the honest fallback.
+                    // This arm used to be justified by the legacy composite/time-scored modes
+                    // (Cellular Duel, Wildlife Blitz co-op, Freestyle, 2v2) accumulating Score via
+                    // TimePlayedScoring; all four were retired in the 2026-07-21 deletions and
+                    // their GameModes members are gone - do not reinstate one to explain this arm.
                     return ScoreDifferenceSource.Score;
             }
         }

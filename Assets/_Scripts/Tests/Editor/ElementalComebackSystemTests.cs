@@ -178,13 +178,31 @@ namespace CosmicShore.Tests
                 $"{mode} assigns Score only at game end, so the comeback deficit must read its live stat.");
         }
 
-        [Test]
-        public void DefaultSourceFor_LegacyTimeScoredModesKeepScore()
+        // The modes that legitimately reach the fallback arm. This used to be asserted with
+        // MultiplayerCellularDuel, standing in for the legacy composite/time-scored modes -
+        // but every one of those (Cellular Duel, Wildlife Blitz co-op, Freestyle, 2v2) was
+        // retired in the 2026-07-21 deletions and their enum members are gone, so the case
+        // is carried by the live modes that are genuinely unmapped instead. Do NOT restore a
+        // retired mode here to make this compile: their IDs are marked do-not-reuse in
+        // GameModes.cs.
+        static readonly object[] FallbackSourceCases =
         {
-            // Cellular Duel / Wildlife Blitz co-op / Freestyle accumulate Score live through
-            // TimePlayedScoring, so Score is the honest source there.
+            // Benchmark is the stress-test context, not an arcade mode - GameModes.cs names
+            // the "comeback default" as one of the consumers it exists to let resolve
+            // honestly rather than borrowing a retired id.
+            new object[] { GameModes.Benchmark },
+            // Tournament is the session-level meta; the minigames it chains each set their
+            // own mode, so the meta itself never needs a live stat of its own.
+            new object[] { GameModes.Tournament },
+            new object[] { GameModes.Random },
+        };
+
+        [TestCaseSource(nameof(FallbackSourceCases))]
+        public void DefaultSourceFor_UnmappedModesFallBackToScore(GameModes mode)
+        {
             Assert.AreEqual(ElementalComebackSystem.ScoreDifferenceSource.Score,
-                ElementalComebackSystem.DefaultSourceFor(MakeGameData(GameModes.MultiplayerCellularDuel)));
+                ElementalComebackSystem.DefaultSourceFor(MakeGameData(mode)),
+                $"{mode} has no live-stat mapping, so the deficit must fall back to Score.");
         }
 
         [Test]
