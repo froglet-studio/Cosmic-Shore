@@ -1690,11 +1690,21 @@ tS   = smoothstep(0, 1, saturate((clock - t0) / Duration))     // shape, as befo
 tSec = clamp(clock - t0, 0, Duration)                          // physical seconds
 
 p  = centroid + (1 - tS)*(v - centroid) + tS*Offset*n          // contract + fly out (unchanged)
-p += velocityObj * tSec                                        // drift   <- PrismExplosionClock
 p  = centroid + R(p - centroid)                                // tumble  <- RotateFacesAlongAxis
+p += velocityObj * tSec                                        // drift   <- PrismExplosionClock
      R = Rodrigues about normalize(cross(velocityObj, n)),
          angle = PRISM_SHIELD_SHATTER_SPIN * |Velocity| * tSec
 ```
+
+**Tumble first, drift second — the order is load-bearing.** Rotating a position that
+already carries the drift rotates the DRIFT ITSELF: `rel` becomes the ~12 world units the
+shard has travelled instead of the face's own ~1 unit of extent, so the face swings on a
+wide arc instead of spinning in place, and at the angles this reaches (up to ~3 rad) the
+shard ends up travelling back toward the blow. Shipped that way in the first pass and
+fixed; the verifier now asserts the composition rather than transcribing it. The tumble is
+also CONDITIONAL (a degenerate normal, or an impulse straight down the face normal, has no
+axis) while the drift is not — so neither case may return early, or a face struck dead-on
+stops moving altogether.
 
 **Two clocks, deliberately.** The SHAPE terms ride the normalized eased `tS`; drift and
 tumble ride `tSec`, real seconds, because they are physical quantities (units/second,

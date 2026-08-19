@@ -204,9 +204,12 @@ int main(){
     PrismShieldMorph_float(0.3f,0,0.6f,-1,3, vCross, pos,nrm,cent, P);
     float ang = PRISM_SHIELD_SHATTER_SPIN*20.0f*0.3f;
     float3 axis = normalize(cross(vCross,nrm));
+    // Tumble is about the face's OWN extent, then the drift translates the spinning face.
+    // Rotating a position that already carries the drift would rotate the drift itself.
     float3 expectRel = PrismJiggleRotate(
-        (OldShatter(0.3f,0,0.6f,-1,3,pos,nrm,cent) + vCross*0.3f) - cent, axis, ang);
-    check("tumble rotates position about the face centroid", near(P, cent+expectRel, 1e-4f));
+        OldShatter(0.3f,0,0.6f,-1,3,pos,nrm,cent) - cent, axis, ang);
+    check("tumble spins the face in place, then the drift translates it",
+          near(P, cent+expectRel+vCross*0.3f, 1e-4f));
 
     // 6. non-uniform scale: rotation runs in the isotropic frame, so a face on a long
     //    thin trail slab must not shear.
@@ -215,8 +218,8 @@ int main(){
     float3 s(1,1,8);
     float3 vObj = float3(vCross.x/1, vCross.y/1, vCross.z/8);
     float3 axis2 = normalize(cross(vObj,nrm));
-    float3 pre = OldShatter(0.3f,0,0.6f,-1,3,pos,nrm,cent) + vObj*0.3f;
-    float3 expect2 = cent + PrismJiggleRotate((pre-cent)*s, axis2, ang)/s;
+    float3 pre = OldShatter(0.3f,0,0.6f,-1,3,pos,nrm,cent);
+    float3 expect2 = cent + PrismJiggleRotate((pre-cent)*s, axis2, ang)/s + vObj*0.3f;
     check("non-uniform scale rotates in the isotropic frame", near(P,expect2,1e-4f));
 
     // 7. an impulse straight along the face normal must not tumble that face (cross ~ 0)

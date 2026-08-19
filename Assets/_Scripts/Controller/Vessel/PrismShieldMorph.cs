@@ -127,6 +127,17 @@ namespace CosmicShore.Gameplay
                 host.layer, host.transform.localToWorldMatrix, duration, maxOffset,
                 breakVelocity, objectDrift);
 
+            // The two ways this effect reads as "unchanged" are indistinguishable on screen:
+            // no overlay at all, or an overlay carrying no impulse (zero velocity is the
+            // identity by design). Guarded on IsVerbose because the interpolation is not free
+            // and a disengage is not rare. FrogletTools > Toolbox > Logging turns it on.
+            if (CSDebug.IsVerbose(CSLogChannel.PrismShieldShatter))
+                CSDebug.LogVerbose(CSLogChannel.PrismShieldShatter,
+                    $"[ShieldShatter] {host.name}: queued={queued} " +
+                    $"|v|={breakVelocity.magnitude:F2} u/s dur={duration:F2}s " +
+                    $"drift={(breakVelocity.magnitude * duration):F1}u " +
+                    $"objDrift={objectDrift.magnitude:F1} mat={renderer.sharedMaterial?.name}", host);
+
             // Strict mode is silent about nothing: the shards ride the instanced path, so
             // if there is none the disengage simply has no overlay and that must be said
             // once. Own reason key — a disengage can happen with no preceding bloom (a

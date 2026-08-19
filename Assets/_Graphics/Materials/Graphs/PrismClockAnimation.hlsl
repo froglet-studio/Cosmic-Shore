@@ -529,31 +529,41 @@ void PrismShieldMorph_float(float Clock, float StartTime, float Duration, float 
     if (!(all(scale > 1e-5)) || !(dot(velocityObj, velocityObj) < 1e12))
         return;
 
-    // Drift: the whole shard cloud rides the breaking impulse. Object-space so the
-    // WORLD displacement is exactly Velocity * tSec, matching the explosion's debris.
-    MorphedPosition += velocityObj * tSec;
-
+    // Tumble FIRST, drift SECOND, and the order is load-bearing. Rotating a position that
+    // already carries the drift rotates the DRIFT ITSELF: `rel` becomes ~12 world units of
+    // travel instead of the face's own ~1 unit of extent, so the shard swings on a wide arc
+    // instead of spinning in place, and at the angles this reaches (up to ~3 rad) the shard
+    // ends up travelling BACK toward the blow. Tumble about the centroid while the face is
+    // still at the origin of its own motion, then translate the spinning face away.
+    //
     // Tumble: each face rotates about ITS OWN centroid, on the axis perpendicular to
     // both the impulse and the face — so a face struck edge-on cartwheels while one
     // struck dead-on (cross ~ 0) is simply pushed, which is the correct read for both.
+    // The tumble is CONDITIONAL — a degenerate normal or an impulse straight down the face
+    // normal has no axis to turn about — but the drift below is not, so neither case may
+    // return early. A face struck dead-on is pushed; it just does not spin.
     float nLenSq = dot(Normal, Normal);
-    if (!(nLenSq > 1e-8))
-        return;                                   // no normals -> nothing to rotate about
-    float3 n = Normal * rsqrt(nLenSq);
+    if (nLenSq > 1e-8)
+    {
+        float3 n = Normal * rsqrt(nLenSq);
+        float3 axis = cross(velocityObj, n);
+        float axisLenSq = dot(axis, axis);
+        if (axisLenSq > 1e-8)
+        {
+            axis *= rsqrt(axisLenSq);
+            // |Velocity| is the WORLD speed — the same channel the explosion's shatter
+            // rate rides — so the tumble reads the same whatever the prism's local scale.
+            float angle = PRISM_SHIELD_SHATTER_SPIN * sqrt(vLenSq) * tSec;
+            // Rotation runs in the isotropic frame about the face centroid (see header).
+            float3 rel = (MorphedPosition - FaceCentroid) * scale;
+            MorphedPosition = FaceCentroid + PrismJiggleRotate(rel, axis, angle) / scale;
+        }
+    }
 
-    float3 axis = cross(velocityObj, n);
-    float axisLenSq = dot(axis, axis);
-    if (!(axisLenSq > 1e-8))
-        return;                                   // impulse along the face normal
-    axis *= rsqrt(axisLenSq);
-
-    // |Velocity| is the WORLD speed — the same channel the explosion's shatter rate
-    // rides — so the tumble reads identically whatever the prism's local scale is.
-    float angle = PRISM_SHIELD_SHATTER_SPIN * sqrt(vLenSq) * tSec;
-
-    // Rotation runs in the isotropic frame about the face centroid (see the header).
-    float3 rel = (MorphedPosition - FaceCentroid) * scale;
-    MorphedPosition = FaceCentroid + PrismJiggleRotate(rel, axis, angle) / scale;
+    // Drift LAST, and unconditionally: the whole spinning shard rides the breaking impulse,
+    // undeflected by its own tumble. Object-space so the WORLD displacement is exactly
+    // Velocity * tSec, which is the explosion debris' own flight term.
+    MorphedPosition += velocityObj * tSec;
 }
 
 #endif // PRISM_CLOCK_ANIMATION_INCLUDED
