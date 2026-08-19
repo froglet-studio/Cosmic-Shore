@@ -656,6 +656,33 @@ So: after any patch that ADDS a member to a large existing class, grep that clas
 member's own name and confirm exactly one declaration. This session shipped a duplicate field
 that the harness compiled clean and Unity rejected.
 
+### Trap: a stub-reference compile is BLIND to `System`/`UnityEngine` name collisions
+
+The §4 harness compiles against .NET reference assemblies with no `UnityEngine.dll`, so every
+Unity type is already unresolved and gets filtered out as expected noise. That filtering hides a
+whole error class: **`CS0104` ambiguity cannot occur when one of the two colliding types does not
+exist.** Add `using System;` to a file that already has `using UnityEngine;`, and a bare `Object`
+compiles clean in the harness while Unity rejects it — `Object` resolved only to `System.Object`
+because `UnityEngine.Object` was never loaded. A session shipped exactly this by adding
+`using System;` for a `Func`/`Action` field and leaving two `Object.Instantiate` / `Object.Destroy`
+calls alone; the human's first Editor compile was what found it.
+
+The offline pass proves SYNTAX and STRUCTURE. It cannot prove NAME RESOLUTION. Do not report it as
+"compiles clean" without that qualifier.
+
+The collision set is small enough to check exhaustively, so grep instead of hoping — in any file
+carrying BOTH usings, the ambiguous names are exactly **`Object`** and **`Random`**:
+
+```sh
+for f in <changed .cs files>; do
+  grep -qE '^using System;' "$f" && grep -qE '^using UnityEngine;' "$f" || continue
+  grep -nE '(^|[^.[:alnum:]_])(Object|Random)\s*[.(<]' "$f" | grep -v 'UnityEngine\.'
+done
+```
+
+Fix by fully qualifying (`UnityEngine.Object.Instantiate`), never by dropping `using System;` —
+the file needs it. Same shape applies to `using System.Diagnostics;` + `Debug`.
+
 ## 4.5 Technique: offline simulation of a deterministic generator
 
 Origin: the Caldera/Ourobor cell rework (2026-08). §6 below used to list
