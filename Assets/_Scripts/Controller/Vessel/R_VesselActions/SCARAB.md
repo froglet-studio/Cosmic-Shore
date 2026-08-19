@@ -767,10 +767,21 @@ single shared meter, §15)*.
 ### 5.1 The payout — a scarab-wing DAIS
 
 A struck switch does not scatter prisms outward. It raises a **rosette**: ten **super-shielded sun
-cores** ringing the spent switch, and from each side of every sun a wing runs out as a **tiled
-chain** of blade prisms laid root-to-root along an elegant curve. Geometry: `ScarabWingDais` (pure
-closed-form, no scene dependency); shape: `ScarabWingDaisSettings` on `PlaceSwitchActionSO`; tests:
+cores** ringing the spent switch, each **CRADLED** by a mirrored pair of wings — tiled chains of
+blade prisms laid root-to-root along an elegant curve. Geometry: `ScarabWingDais` (pure closed-form,
+no scene dependency); shape: `ScarabWingDaisSettings` on `PlaceSwitchActionSO`; tests:
 `ScarabWingDaisTests`.
+
+**Two directional rules, and both are asserted rather than eyeballed.** Every blade **grows away
+from the switch** (`EveryBladeGrowsAwayFromTheSwitch` — a wing that curled back past tangential
+would read as growing inward, which the first tiled pass did), and every sun sits **inboard of its
+own pair's blades** (`EverySunIsCradledInboardOfItsOwnWings`). The mechanism is one line of the
+seeding: a wing's chain starts on the sun's ORBIT with its blade pointing AWAY from the sun, so the
+pair wraps around the sun and grows past it. The sun is the crook, never the root.
+
+⚠ These two are in tension with the curl: past ~80° of sweep the last blade of a wing rotates
+beyond tangential and starts pointing back inward. The shipped sweep (78°) sits just under that,
+which is why `HingeAspect` and `HingeEvery` cannot be raised without re-running the tests.
 
 **Nothing overlaps and nothing clips, and that is a property of the construction rather than of
 tuning.** `ScarabWingDaisTests` proves it with an exact separating-axis test over every pair of
@@ -787,9 +798,16 @@ pass a rosette whose diamonds were fusing.
 
 All three prisms at a hinge share **one pivot** — the rhombus's root tip — and the rhombus's axis
 **bisects** the two runs. So a wing's curvature is *placed* (wherever a shielded blade goes) and
-never tuned: `HingeEvery` is the curvature dial, and blade width÷length is how hard each hinge
-turns. Shielded blades also cap both ends of every wing, which is what gives the curve a beginning
-and an end. Everything between them alternates **plain → danger**.
+never tuned. Shielded blades also cap both ends of every wing, which is what gives the curve a
+beginning and an end. Everything between them alternates **plain → danger**.
+
+**A hinge carries its OWN aspect (`HingeAspect`), not the blade ramp's**, and that is what lets the
+rosette be tight *and* strongly curved. A hinge pivots instead of advancing the chain, so widening
+it buys curvature for **free** — the wing gets no longer, the pair's footprint does not grow, and
+the sun radius that footprint forces does not grow either. Thin plain blades therefore keep the void
+around the switch small while fat octahedra do the turning. Without that split the two dials fight:
+wider blades curl harder but lengthen the chain, which pushes every sun outward and doubles the
+hole in the middle.
 
 Get the pivot wrong — rotate about the chain point instead of the shared root tip — and *every*
 hinge overlaps, at a rate that reads like a global spacing problem rather than a joint problem.
@@ -850,16 +868,19 @@ and a 270-prism burst never lands in one frame.
 | quantity | value |
 |---|---|
 | prisms per dais | **270** (10 pairs × 2 wings × 13 blades + 10 suns) |
-| box volume | **27,783** (≈ 1,736 nominal-16 prisms) |
+| box volume | **12,931** (≈ 808 nominal-16 prisms) |
 | always-on convex MeshColliders | **90** (80 shielded + 10 super-shielded) |
 | LOD-cullable BoxColliders | 180 |
-| planar band | 112 → 220 (ring 20; Astro League's court radius ≈ 392) |
-| wing sweep | 60° per wing, turned entirely at four hinges |
+| planar band | 113 → 190 (ring 20; Astro League's court radius ≈ 392) |
+| wing sweep | 78° per wing, turned entirely at four hinges |
+| blades growing outward | **260 / 260** |
+| suns cradled inboard of their wings | **10 / 10** |
 
 Everything scales with the ring radius, so **Mass grows the whole rosette with the switch** and
 there is still exactly one size dial. `BladesPerWing` and `PairCount` are the cost dials;
-`HingeEvery` is the curvature dial; `BladeThickness` is the cheapest volume dial (it is the axis
-nobody looks along).
+`HingeAspect` and `HingeEvery` are the curvature dials; `BladeThickness` is the cheapest volume dial
+(it is the axis nobody looks along), and `BladeWidthStart/End` is the void dial — thinner blades
+shorten the chain, which lets `SunRadius` come in.
 
 ⚠ **`SunRadius` is SOLVED, not styled.** The wing's footprint was measured and the sun radius
 raised until the separating-axis test reported zero overlaps with the innermost prism still clear
@@ -992,10 +1013,24 @@ than authored.
 
 **The volume ladder has been re-authored for the Scarab (2026-08-18).** It was written for Rhino
 trail (~0.75 volume/prism) — Restless at LiveVolume 30,600 over a 30,000 super-shielded lining
-floor, a **+600** gameplay band — and the Scarab's placed mass dwarfs that: a switch BODY is 840
-and the dais it pays out is **27,783**, so one full switch cycle is **28,623**. The mode now scales
-its ladder to the vessel it was opened to (the minigame yields to the vessel, not the other way
-round):
+floor, a **+600** gameplay band — and the Scarab's placed mass dwarfs that: a switch BODY is 840 and
+the dais it pays out is **12,931**, so one full switch cycle is **13,771**. The mode now scales its
+ladder to the vessel it was opened to (the minigame yields to the vessel, not the other way round):
+
+| gate | was | now | = |
+|---|---|---|---|
+| `RestlessEnterVolume` | 30,600 | **71,000** | floor + ~3 switch cycles |
+| `RestlessExitVolume` | 30,450 | **70,000** | |
+| `FrenzyEnterVolume` | 32,000 | **126,000** | floor + ~7 switch cycles |
+| `FrenzyExitVolume` | 31,600 | **124,000** | |
+| `RestlessEnter` (count backstop) | 900 | **1,494** | 3 cycles × 298 prisms + headroom |
+| `FrenzyEnter` (count backstop) | 3,000 | **3,286** | 7 cycles × 298 prisms + headroom |
+
+The count gates move with the volume gates so the perf backstop can never fire before the volume
+spine does. The read this buys is a good one and is what the volume spine is for: the cell now gets
+restless in proportion to **how much the players have built**. Stated side effect — **Rhino-only
+matches silt differently** and will sit in Calm far longer than they used to; that is the cost of
+one ladder serving two vessels, and it is a playtest call to split it if it matters.
 
 | gate | was | now | = |
 |---|---|---|---|

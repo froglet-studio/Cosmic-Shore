@@ -14,12 +14,14 @@ namespace CosmicShore.Gameplay
     /// requirement for a prism structure that is re-built locally rather than replicated.
     ///
     /// <para><b>The motif.</b> <see cref="ScarabWingDaisSettings.PairCount"/> super-shielded
-    /// SUN CORES ride a circle around the spent ring, and from each side of every sun a wing
-    /// runs out: a TILED chain of blade prisms laid root-to-root, splayed along an elegant
-    /// curve. Nothing overlaps and nothing clips — that is a property of the construction, not
-    /// of tuning, and <c>ScarabWingDaisTests</c> proves it with an exact separating-axis test
-    /// over the real silhouettes (a rectangle per plain/danger blade, a RHOMBUS per shielded
-    /// one, the stella's eight-point hull per sun).</para>
+    /// SUN CORES ride a circle around the spent ring. Each is CRADLED by a mirrored pair of
+    /// wings — TILED chains of blade prisms laid root-to-root — which start on the sun's orbit
+    /// with their blades pointing AWAY from it, wrap around it, and grow outward. Every blade
+    /// in the rosette points away from the switch, and no wing sprouts from its sun: the sun
+    /// sits in the crook. Nothing overlaps and nothing clips — that is a property of the
+    /// construction, not of tuning, and <c>ScarabWingDaisTests</c> proves it with an exact
+    /// separating-axis test over the real silhouettes (a rectangle per plain/danger blade, a
+    /// RHOMBUS per shielded one, the stella's eight-point hull per sun).</para>
     ///
     /// <para><b>The octahedra are the hinges, and that is geometry rather than decoration.</b>
     /// A plain blade presents a flat root EDGE, so two of them laid flush are parallel and the
@@ -31,9 +33,12 @@ namespace CosmicShore.Gameplay
     /// pattern the eye reads is the same thing as the shape it reads. Shielded blades also cap
     /// both ends of every wing, which is what gives the curve a beginning and an end.</para>
     ///
-    /// <para><b>Everything else alternates plain → danger</b>, so the run reads as a ribbon of
-    /// feathers with diamond joints, and every tier is doing a different job to a ball
-    /// (SCARAB.md §5.1).</para>
+    /// <para><b>Everything else alternates plain → danger</b>, so the run reads as groups of
+    /// feathers separated by diamond joints, and every tier is doing a different job to a ball
+    /// (SCARAB.md §5.1). A hinge carries its OWN aspect
+    /// (<see cref="ScarabWingDaisSettings.HingeAspect"/>) rather than the blade ramp's, because
+    /// it pivots instead of advancing the chain — so a fat wedge buys curvature without
+    /// lengthening the wing, which is what keeps the rosette tight around the switch.</para>
     ///
     /// <para><b>Sizes are stated, not grown</b>, so every consumer must widen the prism's scale
     /// window (<c>Prism.AdmitTargetScale</c>) before assigning <c>TargetScale</c> — see
@@ -129,7 +134,7 @@ namespace CosmicShore.Gameplay
             float thickness = R * settings.BladeThickness;
             float sunEdge = SunEdge(settings, R);
             float sunRadius = R * settings.SunRadius;
-            float sunClear = sunEdge * SunInPlaneReach + R * settings.SunClearance;
+            float orbit = sunEdge * SunInPlaneReach + R * settings.WingOrbit;
             float rootRadius = R * settings.RootRadius;
             float gap = R * settings.BladeGap;
 
@@ -146,9 +151,12 @@ namespace CosmicShore.Gameplay
                 {
                     int s = w == 0 ? 1 : -1;
                     int idx = p * 2 + w;
+                    // The blade points AWAY from its sun, and the chain is seeded on the sun's
+                    // ORBIT. That single choice is what makes the wing wrap AROUND the sun and
+                    // grow outward, instead of sprouting from it and curling back inward.
                     dir[idx] = Rotate(new Vector2(Mathf.Cos(pairRad), Mathf.Sin(pairRad)),
-                                      s * settings.WingTiltDeg * Mathf.Deg2Rad);
-                    chain[idx] = sun + Perp(dir[idx], s) * sunClear;
+                                      s * settings.WingStartDeg * Mathf.Deg2Rad);
+                    chain[idx] = sun + dir[idx] * orbit;
                 }
             }
 
@@ -156,9 +164,8 @@ namespace CosmicShore.Gameplay
             {
                 float t = blades > 1 ? b / (float)(blades - 1) : 0.5f;
                 PrismKind kind = KindAt(settings, b);
-                float shaped = Shape(t, settings.BladeGrowthShape);
-                float length = R * Mathf.LerpUnclamped(settings.BladeLengthStart, settings.BladeLengthEnd, shaped);
-                float width = R * Mathf.LerpUnclamped(settings.BladeWidthStart, settings.BladeWidthEnd, shaped);
+                float length = BladeLength(settings, R, t);
+                float width = BladeWidth(settings, R, t, kind);
 
                 for (int p = 0; p < pairs; p++)
                 for (int w = 0; w < 2; w++)
@@ -211,6 +218,26 @@ namespace CosmicShore.Gameplay
             }
         }
 
+        /// <summary>A blade's length: the shared growth ramp, tier-independent so the wing keeps
+        /// one silhouette.</summary>
+        static float BladeLength(in ScarabWingDaisSettings settings, float R, float t) =>
+            R * Mathf.LerpUnclamped(settings.BladeLengthStart, settings.BladeLengthEnd,
+                                    Shape(t, settings.BladeGrowthShape));
+
+        /// <summary>
+        /// A blade's width. A HINGE takes its own aspect instead of the growth ramp's, and that is
+        /// what lets the rosette be both tight and strongly curved: the hinge angle is
+        /// <c>2·atan(width/length)</c>, while a hinge costs NOTHING in chain length because it
+        /// pivots rather than advancing the run. So the plain blades stay thin (short chain, small
+        /// footprint, small void around the switch) and the octahedra stay fat (a wide wedge, a
+        /// strong turn) — two dials that would otherwise fight each other.
+        /// </summary>
+        static float BladeWidth(in ScarabWingDaisSettings settings, float R, float t, PrismKind kind) =>
+            kind == PrismKind.Shielded
+                ? settings.HingeAspect * BladeLength(settings, R, t)
+                : R * Mathf.LerpUnclamped(settings.BladeWidthStart, settings.BladeWidthEnd,
+                                          Shape(t, settings.BladeGrowthShape));
+
         static bool TryEmit(List<Element> into, in ScarabWingDaisSettings settings, Vector3 center,
                             Vector3 axis, Vector3 basisU, Vector3 basisV, float R, float reach,
                             Vector2 planar, Vector2 planarDir, Vector3 scale, PrismKind kind,
@@ -262,8 +289,8 @@ namespace CosmicShore.Gameplay
             float reach = R * settings.SunRadius + sunEdge * SunApparentFactor * 0.5f;
 
             Vector2 sun = new(R * settings.SunRadius, 0f);
-            Vector2 d = Rotate(new Vector2(1f, 0f), settings.WingTiltDeg * Mathf.Deg2Rad);
-            Vector2 chain = sun + Perp(d, 1) * (sunEdge * SunInPlaneReach + R * settings.SunClearance);
+            Vector2 d = Rotate(new Vector2(1f, 0f), settings.WingStartDeg * Mathf.Deg2Rad);
+            Vector2 chain = sun + d * (sunEdge * SunInPlaneReach + R * settings.WingOrbit);
             float rootRadius = R * settings.RootRadius;
             float gap = R * settings.BladeGap;
             int blades = Mathf.Max(1, settings.BladesPerWing);
@@ -271,11 +298,11 @@ namespace CosmicShore.Gameplay
             for (int b = 0; b < blades; b++)
             {
                 float t = blades > 1 ? b / (float)(blades - 1) : 0.5f;
-                float shaped = Shape(t, settings.BladeGrowthShape);
-                float length = R * Mathf.LerpUnclamped(settings.BladeLengthStart, settings.BladeLengthEnd, shaped);
-                float width = R * Mathf.LerpUnclamped(settings.BladeWidthStart, settings.BladeWidthEnd, shaped);
+                PrismKind kind = KindAt(settings, b);
+                float length = BladeLength(settings, R, t);
+                float width = BladeWidth(settings, R, t, kind);
 
-                if (KindAt(settings, b) == PrismKind.Shielded)
+                if (kind == PrismKind.Shielded)
                 {
                     Vector2 pivot = chain + d * rootRadius;
                     float phi = Mathf.Atan2(width * 0.5f, length * 0.5f)
@@ -350,13 +377,15 @@ namespace CosmicShore.Gameplay
         public float SunRadius;
 
         [Tooltip("Angle between a wing's first blade and its sun's outward radial, in degrees. " +
-                 "Near 90 the wing runs straight out and adjacent pairs converge; near 0 it runs " +
-                 "tangentially and the rosette becomes a thin band.")]
-        public float WingTiltDeg;
+                 "Small values start both wings of a pair almost on the axis, so they cradle the " +
+                 "sun in a tight crook before fanning apart.")]
+        public float WingStartDeg;
 
-        [Tooltip("Extra clearance between a sun core and its wings' first blade, ON TOP of the " +
-                 "sun's own in-plane spike reach (which is computed, not authored).")]
-        public float SunClearance;
+        [Tooltip("How far a wing's chain starts from its sun, ON TOP of the sun's own in-plane " +
+                 "spike reach (which is computed, not authored). The blade points AWAY from the " +
+                 "sun and the chain rides this orbit, so the wing wraps AROUND the sun and grows " +
+                 "outward — it does not sprout from it.")]
+        public float WingOrbit;
 
         [Tooltip("How far a blade's body starts from the run's root line. Larger values fan the " +
                  "blades further apart at their tips for the same hinge angle.")]
@@ -384,9 +413,15 @@ namespace CosmicShore.Gameplay
         [Tooltip("Width of a wing's last blade.")]
         public float BladeWidthEnd;
 
-        [Tooltip("Easing on length AND width together, so a blade's aspect — and therefore the " +
-                 "hinge angle — stays consistent along the wing.")]
+        [Tooltip("Easing on length AND width together, so a blade's aspect stays consistent " +
+                 "along the wing.")]
         public float BladeGrowthShape;
+
+        [Tooltip("Width:length of a HINGE blade, which sets its wedge angle (the run turns " +
+                 "2 x atan(this) there). Independent of the blade ramp on purpose: a hinge pivots " +
+                 "rather than advancing the chain, so fattening it buys curvature for free while " +
+                 "the plain blades stay thin and the rosette stays tight around the switch.")]
+        public float HingeAspect;
 
         [Tooltip("Out-of-plane thickness. A blade is a PLATE — this is the cheapest volume dial " +
                  "there is, since it is the axis nobody looks along.")]
@@ -418,19 +453,20 @@ namespace CosmicShore.Gameplay
             PairCount = 10,
             BladesPerWing = 13,
             HingeEvery = 4,
-            SunRadius = 10.1f,
-            WingTiltDeg = 60f,
-            SunClearance = 0.30f,
+            SunRadius = 6.40f,
+            WingStartDeg = 4f,
+            WingOrbit = 1.10f,
             RootRadius = 0.45f,
-            BladeGap = 0.07f,
+            BladeGap = 0.028f,
             HingeEaseDeg = 1f,
             BladeLengthStart = 0.80f,
             BladeLengthEnd = 1.70f,
-            BladeWidthStart = 0.17f,
-            BladeWidthEnd = 0.31f,
+            BladeWidthStart = 0.068f,
+            BladeWidthEnd = 0.124f,
             BladeGrowthShape = 1.15f,
+            HingeAspect = 0.25f,
             BladeThickness = 0.05f,
-            SunApparentDiameter = 2.20f,
+            SunApparentDiameter = 1.90f,
             DishRise = 0.60f,
             DishPower = 2f,
         };

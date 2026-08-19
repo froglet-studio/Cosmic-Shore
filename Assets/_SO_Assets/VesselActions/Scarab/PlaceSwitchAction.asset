@@ -34,19 +34,20 @@ MonoBehaviour:
     PairCount: 10
     BladesPerWing: 13
     HingeEvery: 4
-    SunRadius: 10.1
-    WingTiltDeg: 60
-    SunClearance: 0.3
+    SunRadius: 6.4
+    WingStartDeg: 4
+    WingOrbit: 1.1
     RootRadius: 0.45
-    BladeGap: 0.07
+    BladeGap: 0.028
     HingeEaseDeg: 1
     BladeLengthStart: 0.8
     BladeLengthEnd: 1.7
-    BladeWidthStart: 0.17
-    BladeWidthEnd: 0.31
+    BladeWidthStart: 0.068
+    BladeWidthEnd: 0.124
     BladeGrowthShape: 1.15
+    HingeAspect: 0.25
     BladeThickness: 0.05
-    SunApparentDiameter: 2.2
+    SunApparentDiameter: 1.9
     DishRise: 0.6
     DishPower: 2
   daisPrismsPerFrame: 24

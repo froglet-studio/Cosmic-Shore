@@ -136,13 +136,71 @@ namespace CosmicShore.Tests
                 float deg = Vector3.Angle(prev.Rotation * Vector3.forward, cur.Rotation * Vector3.forward);
                 bool touchesHinge = prev.Kind == PrismKind.Shielded || cur.Kind == PrismKind.Shielded;
                 if (touchesHinge) { hinges++; Assert.Greater(deg, 1f, $"hinge joint {b - 1}->{b} must actually turn"); }
-                else Assert.Less(deg, 0.01f, $"joint {b - 1}->{b} is box-to-box and must stay parallel (got {deg:F3}deg)");
+                // Consecutive boxes share the SAME direction vector by construction, so the only
+                // reason this is not exactly 0 is Vector3.Angle's acos losing precision near a unit
+                // dot product. Half a degree is still two orders of magnitude under a real hinge.
+                else Assert.Less(deg, 0.5f, $"joint {b - 1}->{b} is box-to-box and must stay parallel (got {deg:F3}deg)");
             }
             Assert.Greater(hinges, 0, "a wing with no hinge is a straight line, not a curve");
 
             float sweep = Vector3.Angle(Find(built, 0, +1, 0).Rotation * Vector3.forward,
                                         Find(built, 0, +1, s.BladesPerWing - 1).Rotation * Vector3.forward);
             Assert.Greater(sweep, 30f, "the wing has to read as a curve, not a nudge");
+        }
+
+        [Test]
+        public void EveryBladeGrowsAwayFromTheSwitch()
+        {
+            // The rosette surrounds the switch and points OUT of it. A wing that curled back past
+            // tangential would read as growing inward, which is what the first tiled pass did.
+            var s = ScarabWingDaisSettings.Default;
+            var (axis, _, _) = Frame();
+            foreach (var e in Build(s))
+            {
+                if (e.IsSunCore) continue;
+                Vector3 radial = Vector3.ProjectOnPlane(e.Position - Center, axis).normalized;
+                Assert.Greater(Vector3.Dot(radial, e.Rotation * Vector3.forward), 0f,
+                    $"blade {e.Feather} of pair {e.Pair} wing {e.WingSign} points back toward the switch");
+            }
+        }
+
+        [Test]
+        public void EverySunIsCradledInboardOfItsOwnWings()
+        {
+            // The sun is not the root the wings sprout from — it sits in their crook, with the
+            // pair wrapping around it and growing past.
+            var s = ScarabWingDaisSettings.Default;
+            var (axis, _, _) = Frame();
+            var built = Build(s);
+            float Planar(ScarabWingDais.Element e) =>
+                Vector3.ProjectOnPlane(e.Position - Center, axis).magnitude;
+
+            foreach (var sun in built.FindAll(e => e.IsSunCore))
+            {
+                float nearest = float.MaxValue;
+                foreach (var b in built)
+                    if (!b.IsSunCore && b.Pair == sun.Pair) nearest = Mathf.Min(nearest, Planar(b));
+                Assert.Less(Planar(sun), nearest,
+                    $"sun {sun.Pair} is not inboard of its own pair's blades — the wings sprout from it");
+            }
+        }
+
+        [Test]
+        public void HingeAspectSetsTheTurnIndependentlyOfTheBladeRamp()
+        {
+            // A hinge pivots rather than advancing the chain, so its width buys curvature without
+            // lengthening the wing. That is the only reason the rosette can be both tightly
+            // wrapped around the switch and strongly curved.
+            var s = ScarabWingDaisSettings.Default;
+            var built = Build(s);
+            foreach (var e in built)
+            {
+                if (e.IsSunCore || e.Kind != PrismKind.Shielded) continue;
+                float envelopeWidth = e.Scale.x / ScarabWingDais.ShieldedFit;
+                float envelopeLength = e.Scale.z / ScarabWingDais.ShieldedFit;
+                Assert.AreEqual(s.HingeAspect, envelopeWidth / envelopeLength, 1e-3f,
+                    "a hinge wears its authored aspect, not the blade ramp's");
+            }
         }
 
         [Test]
@@ -223,7 +281,7 @@ namespace CosmicShore.Tests
             {
                 if (e.IsSunCore || byBlade.ContainsKey(e.Feather)) continue;
                 float fit = e.Kind == PrismKind.Shielded ? ScarabWingDais.ShieldedFit : 1f;
-                byBlade[e.Feather] = e.Scale.z / fit;    // envelope, tier-independent by construction
+                byBlade[e.Feather] = e.Scale.z / fit;    // LENGTH is the shared ramp; width is not
             }
             for (int b = 1; b < s.BladesPerWing; b++)
                 Assert.Greater(byBlade[b], byBlade[b - 1], $"blade {b} must be longer than blade {b - 1}");
