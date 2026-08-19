@@ -92,50 +92,53 @@ missile-blast asset is byte-unchanged), both **on** for the crystal blast.
 
 ### `requireDebuffableVictim` — the score must follow the effect
 
-An elementally immune pilot (`ResourceSystem.IsElementallyImmune`) eats the cone and keeps their
-levels: `ApplyElementalEffect` drops negative magnitudes while immune. Scoring their attacker
-would pay for something that provably did not happen — and the two effects, siblings in one
-container dispatched from one contact, would disagree about whether anything occurred.
+A pilot warded against `Explosion`-class elemental debuffs eats the cone and keeps their levels:
+`ApplyElementalEffect` drops negative magnitudes whose source class the victim is immune to.
+Scoring their attacker would pay for something that provably did not happen — and the two effects,
+siblings in one container dispatched from one contact, would disagree about whether anything
+occurred. The gate reads `victimStatus.IsImmuneToElementalDebuff(ElementalDebuffSources.Explosion)`,
+i.e. it asks about *this blast's own* debuff class rather than about a broader state.
 
 Off for a missile, because a rocket that hits you hit you whatever your immunity state.
 
-### ⚠ This collides with the Dolphin's own Time 5 — read before tuning
+### The Dolphin's own Time 5 collided with this — RESOLVED, and worth reading
 
 When this flag was written, elemental immunity was somebody else's vessel: the Sparrow while
 boosting, the Serpent while stopped. **`bleeding-edge` then landed "Drift Ward"** — Dolphin
 Time 5, `VesselElementalImmunity(condition: WhileDrifting, upgradeGate: Time)` on
-`Dolphin.prefab` — and in this mode *every pilot is a Dolphin*. So the mode's only vessel now has
-a hard counter to the mode's only scoring event, and the following is verified from the assets
-rather than inferred:
+`Dolphin.prefab` — and in this mode *every pilot is a Dolphin*. The mode's only vessel therefore
+held a hard counter to the mode's only scoring event, and worse, the counter was handed to
+whoever was **losing**:
 
 - **Drift is a HELD action.** `DriftActionSO` sets `IsDrifting` in `StartAction` and clears it in
-  `StopAction`; there is no timer. Immunity therefore lasts as long as the input is held.
+  `StopAction`; there is no timer. Immunity lasted as long as the input was held.
 - **A one-bend deficit unlocks it.** `ElementalComebackSystem` feeds `SetComebackModifier`, which
   composites into `GetEffectiveLevel`, which is what `R_VesselElementalAbilityHandler` reads to
   flip an unlock. Dolphin Time authors `UnlockLevel: 5`, `RelockBelowLevel: 4`,
   `LatchPolicy: Relock`. At the shipped rate: base level 1 (0.1) + one bend behind
   (1 × 4.0 ⁄ 10 = 0.4) = 0.5 → **level 5 → Drift Ward**. Falling one bend behind out of three
-  hands the trailing pilot immunity.
-- **`Relock` is the only brake**, and it only releases when the deficit closes — which in a 1v1
-  requires the leader to land a bend on a pilot who is currently immune to bends.
+  handed the trailing pilot immunity.
+- **`Relock` was the only brake**, and it only releases when the deficit closes — which in a 1v1
+  required the leader to land a bend on a pilot who was currently immune to bends.
 
-**What is NOT verified** (and must not be assumed from CLAUDE.md's summary): the *cost* of
-holding a drift. CLAUDE.md's "Locked freezes the velocity vector outright" describes the VECTOR
-flight model, and `Dolphin.prefab` authors `vectorFlightModel: 0` — the scalar model, where
-throttle pushes along `Course`. Whether a permanently drifting Dolphin is genuinely unable to
-manoeuvre (and therefore unable to score either, making this a stalemate rather than a dominant
-strategy) is a **playtest question**, not something this doc should claim.
+**The resolution was a platform change, not a mode setting** — this doc's own lever 3, which then
+read "no mechanism exists for that today". The mechanism is that an elemental debuff now carries
+its **source class** (`ElementalDebuffSources`) and a ward is held against a **mask** of classes.
+The Drift Ward was authored to answer *danger prisms* — drifting through your own hazardous arena —
+so it now wards `DangerPrism` and nothing else (`Dolphin.prefab` → `wardedSources: 1`). Danger
+ribs still can't drain a drifting Dolphin; another pilot's cone always can. The two other levers
+were rejected on the record: lowering the comeback rate trades one dead dial for another, and
+turning `requireDebuffableVictim` off breaks the "score must not disagree with the effect"
+property the flag exists for.
 
-Three levers exist if it does read as degenerate, in increasing order of violence to the design:
+Full rationale and the two invariants that keep the scope honest (`All` is `~0`; an unclassified
+debuff falls in `Other`): `_Scripts/Controller/Vessel/R_VesselActions/SPARROW_AFTERBURNER.md` §1.1.
 
-1. **Lower the comeback rate** so one bend no longer reaches level 5 — but the generator's guard
-   (correctly) rejects a rate low enough to matter, so this trades one dead dial for another.
-2. **Turn `requireDebuffableVictim` off**, so a bend scores even against an immune pilot. Cheapest
-   fix, and it breaks the "score must not disagree with the effect" property this flag exists for.
-3. **Gate the ward out of this mode.** No mechanism exists for that today and inventing one is a
-   platform change, not a mode setting.
-
-Do not pick one from a desk. This needs one match.
+**Still a playtest question** (and never claimed here): the *cost* of holding a drift. CLAUDE.md's
+"Locked freezes the velocity vector outright" describes the VECTOR flight model, and
+`Dolphin.prefab` authors `vectorFlightModel: 0` — the scalar model, where throttle pushes along
+`Course`. Whether a permanently drifting Dolphin can manoeuvre at all is unchanged by this fix and
+still unmeasured; it now only affects how the Dolphin flies, not whether it can be scored on.
 
 ### `requireOwningMachine` — a networking fix, not a design choice
 
@@ -478,12 +481,26 @@ editor and a real lobby.
 - **`BendsObjectiveProvider` is not wired into the scene**, exactly like `DogFightObjectiveProvider`
   — the objective-marker HUD element has no host in these scenes yet. The provider is correct and
   ready for whichever one lands first.
-- **The Drift Ward interaction above is the branch's top open risk** and is deliberately shipped
-  un-tuned — see that section. It landed on `bleeding-edge` after this mode was built and is a
-  balance question a single playtest answers.
+- ~~**The Drift Ward interaction is the branch's top open risk**~~ — **RESOLVED** by scoping the
+  ward to `ElementalDebuffSources.DangerPrism`, so a drifting Dolphin is warded against the arena
+  and never against another pilot's cone. See the section above. What remains open there is only
+  the unrelated flight-model question (can a permanently drifting Dolphin manoeuvre at all), which
+  one playtest answers.
 - **The debuff magnitude is Rampage-era.** `-0.5` on every element over 4 s was authored for a
   blast that never touched a pilot; it has never been play-tested as a *scored* quantity. If a
   bend reads as too weak to be worth aiming for, that asset is the dial — not the point value,
   which sizes the race rather than the feel. At a 3-bend target this cuts both ways: the debuff
   now has to carry a whole third of the match, so if it reads as a shrug the mode reads as a
   coin flip.
+  **⚠ That dial is SHARED, and its name hides it.** The asset this mode wired
+  (guid `1587fc14…`) was renamed to `ScarabCavitationDebuffByExplosionEffect.asset` by the
+  Scarab branch, which then referenced the same asset from
+  `ScarabCavitationExplosionImpactorDataContainer` — so ONE
+  `VesselElementalDebuffByExplosionEffectSO` now voices both the Scarab's cavitation blast and
+  the Dolphin's crystal cone. GUID references follow a rename silently, so nothing flagged it and
+  the Dolphin's own container (`AOEConicExplosionImpactorDataContainer`, untouched since this
+  mode wired it) still points at it. **Retuning the bend retunes the Scarab, and a maintainer
+  reading the asset NAME would reasonably believe the opposite.** Fix by forking a
+  `BendsDebuffByExplosionEffect.asset` for this mode's container before the first tuning pass —
+  the values are identical today (`-0.5` / `4 s` / `1 s` cooldown), so the fork is free right now
+  and expensive after either mode moves.

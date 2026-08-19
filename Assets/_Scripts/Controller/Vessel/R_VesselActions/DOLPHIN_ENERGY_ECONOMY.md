@@ -71,7 +71,9 @@ the only way to arm the blast.
 A danger prism pays the same as any other prism here. The Dolphin briefly carried a Time-5
 "Live Current" bonus (`×3` on danger skims, via
 `SkimmerChangeResourceByPrismEffectSO._dangerBonusElement`); Time 5 was re-scoped on 2026-08-18
-to **Drift Ward** (elemental-debuff immunity while drifting), so `_dangerBonusElement` is back
+to **Drift Ward** (immunity to DANGER-PRISM elemental debuffs while drifting — scoped to that
+class alone, so an opposing pilot's crystal blast still debuffs a drifting Dolphin), so
+`_dangerBonusElement` is back
 to `None` on `DolphinSkimmerChangeResourceByPrismEffect` and Time 5 grants exactly one upgrade.
 The generic 10× danger multiplier on `SkimmerBoostPrismEffect` is a different effect on a
 different resource (boost, not energy) and is gated on CHARGE — it is untouched by this.

@@ -82,7 +82,7 @@ beside the code: `_Scripts/Controller/Vessel/R_VesselActions/SPARROW_AFTERBURNER
 | Charge | skyburst blast radius (authored on the skyburst effect assets, 100→170) | **Domain-Safe Skybursts** — explosions spare your own domain's prisms |
 | Mass | turret-fired prism stretch (2.5) | *(open again — Shielded Prisms moved to Space 5, 2026-08 round 4)* |
 | Space | gun range (steepened: base halved twice, atFull 9 — SPACE 15 unchanged) | **Piercing Bullets** — shots pierce, and turret prisms arrive SHIELDED with a wider hit sphere (moved from Mass 5, 2026-08 round 4) |
-| Time | boost SPEED (1.5), consumed by `VesselTransformer.CurrentBoostAmount()` | **Elemental Ward** — while boosting, negative `ApplyElementalEffect` calls are dropped (`ResourceSystem.IsElementallyImmune`) |
+| Time | boost SPEED (1.5), consumed by `VesselTransformer.CurrentBoostAmount()` | **Elemental Ward** — while boosting, negative `ApplyElementalEffect` calls are dropped, for every debuff source class (`VesselElementalImmunity.wardedSources: All` → `ResourceSystem.IsImmuneTo`) |
 
 **TIME row, changed 2026-08 — do not restore the old design:**
 
@@ -99,10 +99,15 @@ beside the code: `_Scripts/Controller/Vessel/R_VesselActions/SPARROW_AFTERBURNER
   the same stance triples pitch/yaw (`VesselTransformer.restrictedTurnMultiplier`). Neither touches
   the element map. Detail: `R_VesselActions/SPARROW_AFTERBURNER.md` §2.1–2.2.
 - **TIME-5 is now Elemental Ward**, and the immunity behind it is a **platform state, not a Sparrow
-  feature** — `ResourceSystem.SetElementalDebuffImmunity` / `IVesselStatus.IsElementallyImmune`,
-  driven declaratively by the shared `VesselElementalImmunity` component. The **Serpent holds the
-  same state while stopped, ungated** (`WhileTranslationRestricted`). Any vessel or mode can hold
-  it; grants are source-keyed so holders can't clear each other.
+  feature** — `ResourceSystem.SetElementalDebuffImmunity` /
+  `IVesselStatus.IsImmuneToElementalDebuff(source)`, driven declaratively by the shared
+  `VesselElementalImmunity` component. The **Serpent holds the same state while stopped, ungated**
+  (`WhileTranslationRestricted`). Any vessel or mode can hold it; grants are keyed on the grantor
+  so holders can't clear each other. A ward also declares **WHAT it wards** — a mask of
+  `ElementalDebuffSources` (`DangerPrism` / `Explosion` / `VesselContact` / `Other`) — because
+  "immune to the arena" and "immune to another pilot's weapon" are different promises. The
+  Sparrow's and Serpent's wards are `All`; the **Dolphin's is `DangerPrism` alone**
+  (`SPARROW_AFTERBURNER.md` §1.1).
 - **The danger-trail machinery survives.** `VesselPrismController.EnableDangerMode` /
   `DisableDangerMode` lost their only caller with the overheat executor. Keep them — the Serpent's
   proposed "Venom Wake" below is exactly that machinery reused.
@@ -184,8 +189,9 @@ to four loosely-related mechanics:
   another bought: **energy → gape · Charge → thickness · Space → reach**.
 - **Time keeps its quantitative half** (charge fill rate) and its L5 was **re-scoped**
   (2026-08-18) from *Live Current* — 3× energy on danger skims — to **Drift Ward**: while
-  drifting the Dolphin holds the general elemental-debuff immunity state, so a danger prism's
-  all-element drain does not land. The drift is already the vessel's signature act and its
+  drifting the Dolphin holds the general elemental-debuff immunity state **scoped to
+  `ElementalDebuffSources.DangerPrism`**, so a danger prism's all-element drain does not land and
+  an opposing pilot's blast still does. The drift is already the vessel's signature act and its
   `driftThrottlePolicy` is **Locked** (no acceleration for the drift's duration), so the ward
   is paid for in control rather than in speed. The retired bonus's machinery survives —
   `SkimmerChangeResourceByPrismEffectSO._dangerBonusElement` is simply set back to `None` on
@@ -210,7 +216,7 @@ exact jaw-angle curve: `DOLPHIN_ENERGY_ECONOMY.md` §1 and §3.
 | Charge | crystal-blast capsule **THICKNESS** — the width across the beam, `0.75×` the authored `_coreExplosionScale` at the resting level rising to `1.5×` at level 10 (`VesselExplosionByCrystalEffectSO._coreMultiplierAtRestCharge/_coreMultiplierAtFullCharge`, floored by `_minCoreMultiplier`). Total extent across the gape is set by ENERGY, so Charge does not enlarge the blast — it redistributes that extent, trading a long thin beam for a fat round one. Carries the **Echo Sight** on the right trigger (`EchoSightActionSO`) | **Pilot Echo** — the sight lights up VESSELS caught in the same volume, each brightened in its own domain's colours (`EchoSightVesselHighlighter` drives `_ColorMultiplier` on `VesselGraph`; `BlastVolume.Contains` is the CPU transcription of the same predicate the sweep job and the prism shader run) |
 | Mass | crystal-seeding recharge ×0.5 at level 10 (`DeployTeamCrystalActionSO.cooldownMultiplierAtFullMass`, floored by `minCooldown`). The ability is **PASSIVE** — no input; it seeds into the cell's cytoplasm on a loop, so this multiplier sets the seeding tempo and therefore the blast's tempo | **Claimed Seed** — the seed lands TEAM-locked instead of as a free-for-all omni crystal (`upgradedCrystalPrefab` = `TeamCrystal.prefab`, plus the `ownDomain` stamp that IS `Crystal.CanBeCollected`'s gate). Below it your ammunition is anyone's |
 | Space | crystal-impact blast **REACH** ×2 at level 10 (`VesselExplosionByCrystalEffectSO._heightMultiplierAtFullSpace`). Scales the blast self-similarly (reach and base diameter together) because the half-angle IS baseRadius/height; Charge's thickness multiplier composes on top of it and moves only the capsule diameter | **Clean Blast** — the blast spares the pilot's own domain (`_spaceUpgradeSparesAllies` → `InitializeStruct.AffectSelfOverride`). Below the unlock the cone is indiscriminate, which is what makes sparing allies worth earning |
-| Time | boost charge RATE while drifting ×1.5 at level 10 (`ChargeBoostActionSO.chargeRateMultiplierAtFullTime`) | **Drift Ward** — while DRIFTING the vessel holds the general elemental-debuff immunity state (`VesselElementalImmunity` on the Dolphin root, `condition: WhileDrifting`, `upgradeGate: Time`), so a danger prism's all-element drain does not land. It denies ONLY the elemental drain. **Verified against the Dolphin's own containers at ship time** (2026-08-18), what still lands on a danger ram is: the slow (`DolphinVesselChangeSpeedByPrism`, `maxSlowStrength 0.5 × dangerSlowMultiplier 3`, duration `1 × 3`), and the halving of banked blast ENERGY (`DolphinVesselChangeResourceByPrismEffect`, `retainedFraction 0.5`) — the ammunition for the cone, so the ward is not a free pass. Banked BOOST is halved too (`DolphinVesselChangeBoostByPrismEffect`), but that effect deliberately skips its pinned-snapshot correction *while drifting* because the running charge loop refills the meter — so inside the ward's own window a ram costs drift-seconds rather than a bank. Note the platform's "input mute" (`SparrowDebuffByRhinoDangerPrismEffectSO`) does **not** apply here, or anywhere: that asset is referenced by no effect container at all. The vessel-agnostic state is the extension point; nothing here is Dolphin-specific |
+| Time | boost charge RATE while drifting ×1.5 at level 10 (`ChargeBoostActionSO.chargeRateMultiplierAtFullTime`) | **Drift Ward** — while DRIFTING the vessel holds the general elemental-debuff immunity state **against DANGER PRISMS ONLY** (`VesselElementalImmunity` on the Dolphin root, `condition: WhileDrifting`, `upgradeGate: Time`, `wardedSources: DangerPrism`), so a danger prism's all-element drain does not land. It denies ONLY the elemental drain, and only from the ARENA: an opposing pilot's crystal blast (`ElementalDebuffSources.Explosion`) debuffs a drifting Dolphin normally, which is what keeps The Bends scoreable — unscoped, this ward cancelled that mode's only scoring event for whichever pilot was losing (`BENDS.md`, `SPARROW_AFTERBURNER.md` §1.1). **Verified against the Dolphin's own containers at ship time** (2026-08-18), what still lands on a danger ram is: the slow (`DolphinVesselChangeSpeedByPrism`, `maxSlowStrength 0.5 × dangerSlowMultiplier 3`, duration `1 × 3`), and the halving of banked blast ENERGY (`DolphinVesselChangeResourceByPrismEffect`, `retainedFraction 0.5`) — the ammunition for the cone, so the ward is not a free pass. Banked BOOST is halved too (`DolphinVesselChangeBoostByPrismEffect`), but that effect deliberately skips its pinned-snapshot correction *while drifting* because the running charge loop refills the meter — so inside the ward's own window a ram costs drift-seconds rather than a bank. Note the platform's "input mute" (`SparrowDebuffByRhinoDangerPrismEffectSO`) does **not** apply here, or anywhere: that asset is referenced by no effect container at all. The vessel-agnostic state is the extension point; nothing here is Dolphin-specific |
 
 All four map `MultiplierAtFullLevel` are pinned to **1** — every scaling above is authored on its
 own SO field. That is not cosmetic: `ChargeBoostActionExecutor` was already consuming the generic
