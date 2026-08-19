@@ -28,6 +28,40 @@ namespace CosmicShore.Gameplay
             NetworkVariableReadPermission.Everyone,
             NetworkVariableWritePermission.Owner);
 
+        /// <summary>
+        /// The live SHAPE of the Dolphin's Echo Sight while its owner holds it:
+        /// <c>(BlastVolume.Height, TanCorePerUnit, TanGapePerUnit)</c>, or
+        /// <see cref="Vector3.zero"/> when nobody is aiming. Owner-write, for the same reason
+        /// <see cref="NetElementUnlocks"/> is: the sight became visible to every player on
+        /// 2026-08-19, and a remote peer cannot derive this volume for itself.
+        ///
+        /// Two independent reasons it cannot:
+        /// <list type="bullet">
+        /// <item>Element levels never replicate (see <see cref="NetElementUnlocks"/>), and the
+        /// blast reads Space for its reach and Charge for its thickness — a crystal is collected
+        /// server-side and <c>NetworkCrystalManager.ReplayVesselCrystalEffects</c> replays the
+        /// vessel effects to the OWNER alone, so a third client's replica never sees the level
+        /// change at all.</item>
+        /// <item>The banked skim energy that sets the gape is simulated locally against each
+        /// machine's own prisms, and it is SPENT by a crystal collection that likewise only
+        /// resolves on the server and the owner — so on a third client the meter would drift
+        /// upward and then never empty.</item>
+        /// </list>
+        ///
+        /// Only these three scalars travel. The apex and both axes come off the vessel's own
+        /// replicated transform, so the moving part of the volume is already free and exact and
+        /// nothing has to be interpolated between ticks — what a peer draws turns with the ship at
+        /// full frame rate and only changes SIZE at the network tick.
+        ///
+        /// The owner writes it only while engaged and zeroes it on release, so a vessel that never
+        /// carries the ability never dirties it. Lives on this NetworkBehaviour because
+        /// VesselStatus is deliberately a plain MonoBehaviour.
+        /// </summary>
+        public NetworkVariable<Vector3> NetEchoSightShape = new(
+            Vector3.zero,
+            NetworkVariableReadPermission.Everyone,
+            NetworkVariableWritePermission.Owner);
+
         [Header("Executors")]
         [SerializeField] ActionExecutorRegistry _executors;
 

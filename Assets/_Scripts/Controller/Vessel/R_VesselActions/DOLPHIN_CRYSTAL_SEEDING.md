@@ -91,7 +91,12 @@ crystal.
 ### It touches nothing but photons
 
 The whole ability is `PrismDestructionSight`'s global uniforms, published while the trigger is
-held. No camera write of any kind, no speed change, no input mute, nothing replicated.
+held. No camera write of any kind, no speed change, no input mute, and nothing it does can destroy,
+move or protect a single prism.
+
+> **Amended 2026-08-19** — "nothing replicated" is no longer true: the sight is now visible to every
+> player, and three floats per holder go on the wire so a peer can draw the right cone. See §14.
+> Nothing else about this paragraph changed, and no *outcome* reads those floats.
 
 That is a deliberate narrowing. The first cut of this ability also eased the camera into a zoomed
 first-person shot down the blast axis, which meant moving the field of view — and FOV is owned
@@ -718,3 +723,174 @@ Harness: `clang++ -std=c++17 -Wall` over `PrismDestructionSight.hlsl` verbatim a
 `EchoSightHalo` HLSLPROGRAM body, with `ext_vector_type` float2/3/4, HLSL-shaped
 `abs`/`min`/`max`/`pow`/`exp`, and stubs for `GetObjectToWorldMatrix` / `TransformObjectToWorld` /
 `TransformWorldToHClip` / `UNITY_MATRIX_P` / `_ScreenParams`.
+
+
+---
+
+## 14. 2026-08-19 — everyone sees it, in the holder's domain colour
+
+The sight shipped local-only, on the reasoning recorded in §2: *"the sight is a thing the pilot
+looks through, not a thing the vessel does."* That reasoning was sound about the CAMERA and wrong
+about the ARENA. In the two Dolphin-only modes the mass is the shared object everyone is fighting
+over, so "which prisms is that rival about to remove" is the single most useful fact on the field —
+and the Dolphin already telegraphs its aim with its jaws, so saying it out loud costs the mode
+nothing it was keeping.
+
+### The rule: your own sight is untouched, everyone else's wears their domain
+
+Two channels, deliberately two different looks.
+
+| | published by | colour | who sees it |
+|---|---|---|---|
+| **Yours** | `PrismDestructionSight.PublishLocal` | `PRISM_SIGHT_COLOR`, the pale cool cast | you |
+| **Theirs** | `PrismDestructionSight.PublishPeer` | that pilot's **domain signal colour**, pulled toward white by `PRISM_SIGHT_PEER_DESATURATION` | everyone but them |
+
+**Your own cone wins outright on every prism it covers.** A rival sweeping across the same mass
+cannot recolour, brighten or dim it. This is not a tie-break convenience — an instrument that
+changes appearance because somebody else moved is an instrument you cannot read, and you already
+know your own cone covers that prism. Peers therefore only ever mark mass your own sight is *not*
+marking, which also draws the more useful picture: your cone in its pale cast, a rival's in their
+domain, and a visible boundary where the two meet.
+
+Between *themselves* peers blend rather than sum: each contributes its tint at weight
+`fill x strength`, and the result is the weight-averaged **hue** at the brightness of the
+**strongest single** contributor. Four Dolphins can hold the trigger at once and their cones overlap
+constantly, so summing would blow the arena out to white exactly where the fight is thickest.
+
+Hue is the right channel here even though §2 says the sight deliberately stays *out* of the palette's
+language, because the question a peer's mark answers is "whose blast is this" and the platform
+answers every whose-is-it question with domain colour — the same reasoning as Pilot Echo's hull
+tint (§10). The collision is held off by desaturating: a peer's tint is pulled toward white before
+it is added, so it reads as coloured **light** with a domain in it rather than as the prism having
+changed team. Your own sight stays hueless, so *"the pale one is mine"* is learnable in one match.
+
+### What it cost, and what it did not
+
+**The trigger needed no new networking at all.** `R_VesselActionHandler.OnButtonPressed` already
+round-trips every press through `SendButtonPressed_ServerRpc` → `SendButtonPressed_ClientRpc`, so
+`EchoSightActionSO.StartAction` — and therefore `EchoSightActionExecutor.Engage` — was *already*
+being called on every peer's replica of that Dolphin. Only the `IsLocalPilot` guard was throwing
+the result away. The bloom and fade a peer sees are the executor's own `_blend`, running on their
+machine off the replicated press, so a rival's mark eases in and out exactly like your own.
+
+Worth noting for the next replicated ability: the Dolphin binds this in the **shared**
+`_inputEventShipActions` (InputEvent 1) with no device overrides, so `ResolveActions` returns the
+same list on every machine. An ability bound only under `_touchActionOverrides` or
+`_gamepadActionOverrides` would resolve against the *observer's* input device, not the holder's, and
+would replicate inconsistently.
+
+**The cone's SIZE did need replicating**, and for two independent reasons — this is the part that
+looks optional and is not:
+
+1. **Element levels never replicate.** The blast reads Space for its reach and Charge for its
+   thickness. A crystal is collected server-side and `NetworkCrystalManager.ReplayVesselCrystalEffects`
+   replays the vessel effects to the **owner alone**, so a third client's replica never sees the
+   level change at all. (`R_VesselActionHandler.NetElementUnlocks` exists for precisely this reason
+   on the unlock bits; this is its continuous sibling.)
+2. **The banked skim energy is simulated locally and never spent remotely.** Each machine
+   accumulates it against its own prisms, and the crystal collection that empties it likewise
+   resolves only on the server and the owner — so on a third client the meter would creep upward
+   and then never empty.
+
+So `R_VesselActionHandler.NetEchoSightShape` carries `(Height, TanCorePerUnit, TanGapePerUnit)` —
+owner-write, zeroed on release, and written only when the shape has moved by more than
+`ShapeRepublishEpsilon` (0.5%), so holding the trigger through a filling meter costs a few ticks per
+second rather than one per frame. A vessel that never carries the ability never dirties it.
+
+**Only those three scalars travel.** The apex and both axes are re-derived every frame from the
+replica's own transform, which is already replicated and already exact — so a peer's mark turns with
+their ship at full frame rate and only changes *size* at the network tick, and nothing has to be
+interpolated. **A peer sight with no shape yet draws nothing**, rather than guessing from its stale
+local levels: the §2 rule that a targeting aid must not lie applies just as hard to somebody else's.
+
+### The Charge-5 pilot highlight stays local
+
+Deliberate, and the line is worth stating: **prisms are shared because mass is the shared object; a
+mark on a person is not.** Marking the ships a blast would catch (§10) is a targeting aid for the
+pilot aiming it, and un-gating it would stack `ZTest Always` halos on one hull from three
+directions at once. `DriveVesselHighlight` is fed a zero strength on every non-local path rather
+than skipped, so a vessel that changes hands mid-hold fades out anything it had marked instead of
+stranding it lit.
+
+### Cost
+
+Unchanged in the only place that matters: **O(1) per frame in total**, not per sight and not per
+prism. The peer bank is four `Shader.SetGlobalVectorArray` calls plus a float, packed once per frame
+in `LateUpdate` regardless of how many pilots are aiming — and skipped entirely when nobody is, so a
+match with no Dolphin in it costs this system literally nothing. On the GPU the loop is bounded by
+`_PrismSightPeerCount` and costs one compare when that is zero; with rivals aiming it is ~15 ALU per
+peer per prism, no texture, no extra varying, and no change to the render queue, the batch, or the
+draw call count. Wire cost is three floats per holder at a fraction of the tick rate.
+
+**Collider budget: unchanged, zero.** The sight has never had a collider and still does not.
+
+### The bank is FOUR slots, and that is bounded by the roster
+
+`PRISM_SIGHT_PEER_SLOTS` / `PrismDestructionSight.PeerSlots`, one number in two files. Four is the
+roster of both Dolphin-only modes (`MaxPlayersAllowed: 4` on `ArcadeGameRampage` and
+`ArcadeGameBends`) and one of those four is the viewer, so no roster the game ships can overflow it.
+`PrismDestructionSightTests.PeerBank_IsBigEnoughForEveryDolphinOnlyRoster` reads those assets rather
+than restating the number, so *raising a mode's player count* — the change that would silently start
+dropping rivals' marks — fails the test instead of shipping.
+
+Slots are self-cleaning: every entry carries the frame it was reported on, and one nobody reported
+this frame is dropped by the next flush. A vessel destroyed mid-hold, a scene unload, an owner
+disconnect — none of them can leave a cone burned into the arena, and none of them depends on a
+teardown path having run.
+
+### Verified
+
+`python3 Tools/Shaders/verify_prism_sight_composition.py` compiles **the shipped
+`PrismDestructionSight.hlsl`** with clang++ (`/asset-surgery` §4.5c — the file is translated by a
+short, asserted substitution list, not paraphrased) and runs it:
+
+| property | result |
+|---|---|
+| your own sight is unchanged from the pre-peer shader | **exact** over 200,000 random volumes, 89,301 of them lit — 0 mismatches |
+| ...including with four rivals aiming at the same prism | identical to the same prism with no rivals at all |
+| overlapping peers never brighten | 1, 2, 3, 4 peers at one prism all add exactly what 1 adds |
+| two domains blend in hue but not in brightness | red + green lands between them, peak 0.1405 vs 0.1925 for either alone |
+| idle publishes nothing | colour passes through untouched |
+
+The first row is the one that earned the harness. The original rewrite ran every source — yours
+included — through one weighted average, which is algebraically identity-preserving for a single
+source and was **not bit-identical**: `x/x*x` rounds, and it drifted on 3,381 of those 89,301 lit
+samples. That is invisible on screen and would have been invisible in review; it is also exactly the
+kind of "surely this is the same" that turns into a real behaviour change the next time somebody
+refactors near it. The fix was the composition rule above, which needs no division at all on the
+local path.
+
+Edit-mode gates (`Assets/_Scripts/Tests/Editor/PrismDestructionSightTests.cs`) cover what a C#
+assembly can see: the slot count matching the shader's array length, the bank being big enough for
+the authored rosters, every published global being declared in the HLSL, and the own-sight early
+`return` still preceding the peer loop — that `return` **is** the "your own cone wins outright"
+rule, and it is precisely the line a later refactor toward "one unified accumulation" would remove.
+
+C# was type-checked against transcribed real signatures with Roslyn (`/asset-surgery` §4), and the
+harness proved honest by re-running it with a `using` removed.
+
+### Files
+
+| file | change |
+|---|---|
+| `Assets/_Graphics/Materials/Graphs/PrismDestructionSight.hlsl` | peer bank + the own-wins composition rule. **No ShaderGraph edit** — the arrays are declared at file scope, the same mechanism `PrismOcclusionCorridor.hlsl` uses for its dials, and the Custom Function signature is unchanged (so `Tools/Shaders/wire_prism_destruction_sight.py` stays valid) |
+| `Assets/_Scripts/Utility/PrismDestructionSight.cs` | split into a local channel and a frame-stamped peer bank with a `LateUpdate` flush driver |
+| `Assets/_Scripts/Controller/Vessel/R_VesselActionHandler.cs` | `NetEchoSightShape` |
+| `.../Executors/EchoSightActionExecutor.cs` | local vs peer routing, shape publish/apply, teardown on both channels |
+| `Tools/Shaders/verify_prism_sight_composition.py` | new — compiles and runs the shipped HLSL |
+| `Assets/_Scripts/Tests/Editor/PrismDestructionSightTests.cs` | new — the C#-visible contracts |
+
+### In-editor verification
+
+1. Launch **The Bends** or **Rampage** with 2+ human players (MPPM), all Dolphins.
+2. Both hold RT. Each pilot's own cone is the pale cool cast, exactly as before; the other's is
+   their domain colour. Confirm neither pilot's own cone changes when the two overlap.
+3. Fly so one cone covers mass the other does not — the boundary between the two colours should be
+   prism-granular, not a gradient.
+4. Have one pilot bank energy from empty to full while the other watches: the remote cone's **gape**
+   should widen in steps at the network tick while its direction turns smoothly with the ship.
+5. Collect a crystal on one machine to raise Space, then re-aim: the remote cone's **reach** should
+   follow. (This is the case that fails without `NetEchoSightShape` and looks fine without it in a
+   two-player host/client test where the host is the one aiming — test it from a third machine, or
+   with the client as the holder.)
+6. Kill or despawn a Dolphin mid-hold and confirm its mark disappears within a frame.

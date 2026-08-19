@@ -2688,7 +2688,8 @@ scale bump** with a one-shot unlock punch.
   clock PAUSES rather than culling — not creating mass is allowed, aging it out is not), which
   freed RT for the **Echo Sight**: hold it and every prism inside the crystal blast's live
   destruction volume lights up. It touches nothing but photons — no camera write, no speed
-  change, nothing replicated. (A zoomed first-person view was built alongside it and **cut**:
+  change, and it cannot destroy, move or protect a prism. (A zoomed first-person view was built
+  alongside it and **cut**:
   it would have needed the speed tunnel to grow a public FOV-home surface for one vessel's view
   effect, and the highlight carries the ability on its own. If it is ever revisited, the one
   safe shape — move the tunnel's HOME, never `Camera.fieldOfView`, which a live tunnel
@@ -2709,7 +2710,40 @@ scale bump** with a one-shot unlock punch.
   0.70) enters the shielded tier's neighbourhood, so it is held clear by being DESATURATED (S 0.55 vs
   a tier's 0.9+) and by a gain low enough that the prism's own tier shows through the cast; if a lit
   shielded prism ever reads as a tier change, lower the gain before touching the hue.
-  Detail: `_Scripts/Controller/Vessel/R_VesselActions/DOLPHIN_CRYSTAL_SEEDING.md`.
+  **Since 2026-08-19 EVERY player sees it, and a rival's cone wears that pilot's DOMAIN colour** —
+  the sight was local-only on the reasoning that it is a thing the pilot looks through, which was
+  right about the camera and wrong about the arena: mass is the shared object both Dolphin-only
+  modes are fought over, so "which prisms is that rival about to take" is the most useful fact on
+  the field, and the jaws already telegraph the aim. **Your own cone is untouched and wins outright
+  on every prism it covers** — a rival sweeping across your mass cannot recolour, brighten or dim
+  it, because an instrument that changes appearance when somebody else moves is one you cannot
+  read; peers only ever mark mass your own sight is not marking, and blend among THEMSELVES by
+  weight-averaged hue at the brightness of the strongest, never summed (four overlapping cones
+  would otherwise blow the arena white exactly where the fight is). Hue is the right channel for a
+  peer even though the sight otherwise stays out of the palette's language, because "whose is
+  this" is the one question the platform always answers with domain colour — held clear by
+  desaturating toward white, so it reads as coloured LIGHT rather than the prism changing team.
+  Three things generalise. (1) **The trigger needed no new networking**: `R_VesselActionHandler`
+  already round-trips every press/release through the server, so the executor was ALREADY running
+  on every peer's replica and only an `IsLocalPilot` guard discarded it — check that channel before
+  building one. (An ability bound under a device override rather than the shared map would resolve
+  against the OBSERVER's input device, so it would not replicate consistently.) (2) **The cone's
+  SIZE did need replicating** (`NetEchoSightShape`, owner-write, 3 floats, ~0.5%-change gated),
+  because element levels never replicate and a crystal's effects are replayed to the OWNER alone,
+  and because banked skim energy is simulated locally and never SPENT remotely — so a third
+  client's replica would draw a cone of the wrong reach, thickness and gape. Only the scalars
+  travel; the apex and axes come off the already-replicated transform, so a peer's mark turns at
+  full frame rate and only resizes at the tick, and **a peer with no shape yet draws nothing**
+  rather than guessing. (3) **A bounded bank of N globals is still O(1) in prisms** — four array
+  slots packed once per frame in `LateUpdate`, frame-stamped so a despawned ship cannot leave a
+  cone burned in; the arrays must be declared at FILE SCOPE in the HLSL (Shader Graph has no array
+  property type — which is why this needed no graph edit) and OUTSIDE every CBUFFER. The Charge-5
+  PILOT highlight stays local on purpose: prisms are shared because mass is the shared object, a
+  mark on a person is not. Composition is proven by compiling and RUNNING the shipped HLSL
+  (`Tools/Shaders/verify_prism_sight_composition.py`) — which is what caught that routing your own
+  sight through the same weighted average was algebraically identical and **not bit-identical**
+  (`x/x*x` rounds; 3,381 of 89,301 lit samples drifted).
+  Detail: `_Scripts/Controller/Vessel/R_VesselActions/DOLPHIN_CRYSTAL_SEEDING.md` (§14).
 
   Manta / Rhino / Serpent are blocked on **design, not wiring**: their
   `ElementalAbilityMapSO` entries are still `(open design slot)` with `Input = 0` and no
