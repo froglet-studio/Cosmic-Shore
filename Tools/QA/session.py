@@ -35,7 +35,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import submit as submit_mod  # noqa: E402
 from apply_results import (  # noqa: E402
     ARCHIVE, BACKLOG, RESULTS_DIR, ROOT, VALID,
-    file_hash, load_ledger, parse_session, split_items,
+    file_hash, load_ledger, parse_session, split_items, utf8_open,
 )
 
 TABLE_OPEN = "<!-- qa-results-table -->"
@@ -121,7 +121,7 @@ def backlog_items():
     steps, PASS/FAIL definitions, known exceptions) so the window can walk a
     first-time tester through an item without them ever opening QA_BACKLOG.md.
     """
-    text = open(BACKLOG).read()
+    text = utf8_open(BACKLOG).read()
     out, priority, cur = [], "P?", None
     for line in text.splitlines():
         m = re.match(r"^## Priority (\d)", line)
@@ -148,7 +148,7 @@ def backlog_items():
 def backlog_preconditions():
     """The once-per-session setup block from the backlog header, unwrapped."""
     m = re.search(r"\*\*Standing preconditions[^\n]*\n(.*?)(?=\n---|\n## )",
-                  open(BACKLOG).read(), re.S)
+                  utf8_open(BACKLOG).read(), re.S)
     return _unwrap(m.group(1), bullet=r"[-•]") if m else ""
 
 
@@ -187,7 +187,7 @@ def write_rows(text, rows):
 
 
 def upsert(path, item, verdict=None, notes=None):
-    text = open(path).read()
+    text = utf8_open(path).read()
     rows, found = [], False
     for iid, v, n in read_rows(text):
         if iid == item:
@@ -198,12 +198,12 @@ def upsert(path, item, verdict=None, notes=None):
             rows.append((iid, v, n))
     if not found:
         rows.append((item, verdict or "", notes or ""))
-    open(path, "w").write(write_rows(text, rows))
+    utf8_open(path, "w").write(write_rows(text, rows))
 
 
 def drop(path, item):
-    text = open(path).read()
-    open(path, "w").write(
+    text = utf8_open(path).read()
+    utf8_open(path, "w").write(
         write_rows(text, [r for r in read_rows(text) if r[0] != item]))
 
 
@@ -266,7 +266,7 @@ def create(tester, items, unity="", platform="Editor", date=None, name=None):
     body = "".join("| %s |  |  |\n" % i for i in items) or "| |  |  |\n"
     scratch = "".join("### %s — %s\n\n_(what you saw)_\n\n" % (i, known[i]["title"])
                       for i in items)
-    open(path, "w").write(NEW_TEMPLATE.format(
+    utf8_open(path, "w").write(NEW_TEMPLATE.format(
         tester=tester, date=date, branch=git("rev-parse", "--abbrev-ref", "HEAD"),
         commit=git("rev-parse", "--short", "HEAD"), unity=unity, platform=platform,
         rows=body, scratch=scratch, stem=fname[:-3]))
@@ -281,7 +281,7 @@ def attach(path, item, src):
     base = "%s-%s" % (item, os.path.basename(src))
     shutil.copyfile(src, os.path.join(dest_dir, base))
     ref = "evidence/%s/%s" % (stem, base)
-    text = open(path).read()
+    text = utf8_open(path).read()
     for iid, v, n in read_rows(text):
         if iid == item and ref not in n:
             upsert(path, item, notes=(n + " " if n.strip() else "") + ref)
@@ -309,19 +309,20 @@ def state(path):
                               if f.endswith(".md") and f != "TEMPLATE.md"),
            "hasSession": False, "sessionFile": "", "sessionPath": "",
            "tester": "", "date": "", "commit": "", "unity": "", "platform": "",
+           "sessionBranch": "",
            "submitted": False, "canSubmit": False, "blocking": 0,
            "rows": [], "problems": [], "verdicts": sorted(VALID)}
     if not path or not os.path.exists(path):
         return out
 
-    text = open(path).read()
+    text = utf8_open(path).read()
     fname = os.path.basename(path)
     entry = load_ledger()["sessions"].get(fname, {})
     applied = entry.get("items", {})
     meta, _ = parse_session(text)
     known = {i["id"] for i in items}
     archived = set(re.findall(r"^\|\s*(QA-[A-Z0-9-]+)\s*\|",
-                              open(ARCHIVE).read(), re.M))
+                              utf8_open(ARCHIVE).read(), re.M))
     problems, rows = submit_mod.validate(text, fname, known, archived, applied, head)
 
     by_item = {}
@@ -337,6 +338,7 @@ def state(path):
         "tester": meta.get("Tester", ""), "date": meta.get("Date", ""),
         "commit": meta.get("Commit", ""), "unity": meta.get("Unity version", ""),
         "platform": meta.get("Platform(s)", ""),
+        "sessionBranch": meta.get("Branch", ""),
         "submitted": entry.get("submitted_hash") == file_hash(text),
         "blocking": sum(1 for x in problems if x.blocking),
         "canSubmit": not any(x.blocking for x in problems),
@@ -410,7 +412,7 @@ def contract_matches_csharp(sample):
     """
     if not os.path.exists(WINDOW_CS):
         return True
-    cs = open(WINDOW_CS).read()
+    cs = utf8_open(WINDOW_CS).read()
 
     def fields(cls):
         m = re.search(r"public class %s\s*\{(.*?)\n        \}" % cls, cs, re.S)
@@ -448,7 +450,7 @@ def selftest():
         os.mkdir(res)
         bl = os.path.join(tmp, "QA_BACKLOG.md")
         arch = os.path.join(tmp, "ARCHIVE.md")
-        open(bl, "w").write(
+        utf8_open(bl, "w").write(
             "**Standing preconditions for every item** (once per session):\n"
             "- Pull the branch, let Unity **fully reimport** (a stale Library\n"
             "  masks changes).\n"
@@ -465,7 +467,7 @@ def selftest():
             "**Source:** PR #2. Place one on a build.\n"
             "**PASS = it quits cleanly on\ndesktop. FAIL = a hard exit with no shutdown.**\n\n"
             "## Priority 1 — features\n### QA-THREE ⬜ — third thing\nbody\n")
-        open(arch, "w").write("| QA-OLD | `x` | d | t |  |\n")
+        utf8_open(arch, "w").write("| QA-OLD | `x` | d | t |  |\n")
         for mod in (ar, submit_mod):
             mod.BACKLOG, mod.ARCHIVE, mod.RESULTS_DIR = bl, arch, res
             mod.LEDGER = os.path.join(tmp, ".applied.json")
@@ -498,7 +500,7 @@ def selftest():
 
         p = create("Ada Lovelace", ["QA-ONE", "QA-TWO", "QA-NOPE"], "6000.3.17f1")
         assert os.path.basename(p).endswith("-ada-lovelace.md"), p
-        txt = open(p).read()
+        txt = utf8_open(p).read()
         assert "| Tester | Ada Lovelace |" in txt
         assert "QA-NOPE" not in txt, "unknown ids must not be written into the form"
         assert txt.count(TABLE_OPEN) == 1 and txt.count(TABLE_CLOSE) == 1
@@ -533,7 +535,7 @@ def selftest():
 
         # attach copies the file in and references it from that row only
         src = os.path.join(tmp, "shot.png")
-        open(src, "w").write("x")
+        utf8_open(src, "w").write("x")
         ref = attach(p, "QA-TWO", src)
         st = state(p)
         assert ref in st["rows"][0]["notes"] and ref not in st["rows"][1]["notes"]

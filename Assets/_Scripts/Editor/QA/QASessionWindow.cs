@@ -65,7 +65,8 @@ namespace CosmicShore.Editor.QA
         {
             public string root;
             public string head;
-            public string branch;
+            public string branch;         // what git has checked out right now
+            public string sessionBranch;  // what the session form says is under test
             public string preconditions;
             public bool hasSession;
             public string sessionFile;
@@ -96,20 +97,84 @@ namespace CosmicShore.Editor.QA
         Vector2 _scroll;
         int _addIndex;
         bool _busy;
-        bool _preconditionsOpen = true;
         readonly Dictionary<string, string> _noteEdits = new Dictionary<string, string>();
         readonly Dictionary<string, bool> _instructionsOpen = new Dictionary<string, bool>();
-        GUIStyle _bodyStyle, _passHeader, _failHeader;
+        GUIStyle _bodyStyle, _passHeader, _failHeader, _okBody, _headline, _chip;
 
         GUIStyle Body => _bodyStyle ?? (_bodyStyle = new GUIStyle(EditorStyles.wordWrappedLabel));
         GUIStyle PassHeader => _passHeader ?? (_passHeader = Tinted(FrogletEditorPalette.Ok));
         GUIStyle FailHeader => _failHeader ?? (_failHeader = Tinted(FrogletEditorPalette.Error));
+        GUIStyle OkBody => _okBody ?? (_okBody = TintedWrapped(FrogletEditorPalette.Ok));
+
+        GUIStyle Headline
+        {
+            get
+            {
+                if (_headline == null)
+                {
+                    _headline = new GUIStyle(EditorStyles.boldLabel);
+                    _headline.wordWrap = true;
+                }
+                return _headline;
+            }
+        }
+
+        GUIStyle Chip
+        {
+            get
+            {
+                if (_chip == null)
+                {
+                    _chip = new GUIStyle(EditorStyles.miniBoldLabel);
+                    _chip.alignment = TextAnchor.MiddleCenter;
+                    _chip.normal.textColor = new Color(0.1f, 0.1f, 0.1f);
+                }
+                return _chip;
+            }
+        }
 
         static GUIStyle Tinted(Color c)
         {
             var s = new GUIStyle(EditorStyles.miniBoldLabel);
             s.normal.textColor = c;
             return s;
+        }
+
+        static GUIStyle TintedWrapped(Color c)
+        {
+            var s = new GUIStyle(EditorStyles.wordWrappedLabel);
+            s.normal.textColor = c;
+            return s;
+        }
+
+        /// <summary>
+        /// A numbered step banner. The window reads as ONE PROCESS — session, build,
+        /// editor setup, items, submit — and these are what separate the phases so a
+        /// first-time tester always knows where in the process they are standing.
+        /// </summary>
+        void StepHeader(string number, string title)
+        {
+            EditorGUILayout.Space(14);
+            var accent = FrogletEditorPalette.ColorFor(FrogletToolCategory.Qa);
+            using (new EditorGUILayout.HorizontalScope())
+            {
+                var box = GUILayoutUtility.GetRect(20f, 20f, GUILayout.Width(20f));
+                EditorGUI.DrawRect(box, accent);
+                GUI.Label(box, number, Chip);
+                EditorGUILayout.LabelField(title, FrogletEditorPalette.SectionHeader);
+            }
+            var line = GUILayoutUtility.GetRect(1f, 2f, GUILayout.ExpandWidth(true));
+            EditorGUI.DrawRect(line, new Color(accent.r, accent.g, accent.b, 0.35f));
+            EditorGUILayout.Space(4);
+        }
+
+        /// <summary>A faint horizontal rule between subsections of one panel.</summary>
+        static void Rule()
+        {
+            EditorGUILayout.Space(4);
+            var r = GUILayoutUtility.GetRect(1f, 1f, GUILayout.ExpandWidth(true));
+            EditorGUI.DrawRect(r, new Color(0.5f, 0.5f, 0.5f, 0.25f));
+            EditorGUILayout.Space(4);
         }
 
         bool HasUnsavedNotes
@@ -203,6 +268,7 @@ namespace CosmicShore.Editor.QA
                     StandardErrorEncoding = Encoding.UTF8,
                 };
                 psi.EnvironmentVariables["PYTHONIOENCODING"] = "utf-8";
+                psi.EnvironmentVariables["PYTHONUTF8"] = "1";
                 using (var p = System.Diagnostics.Process.Start(psi))
                 {
                     if (p == null) return false;
@@ -389,11 +455,11 @@ var sb = new StringBuilder();
 
         void DrawNoSession()
         {
-            EditorGUILayout.LabelField("Start a session", FrogletEditorPalette.SectionHeader);
+            StepHeader("1", "Start your session");
             _newTester = EditorGUILayout.TextField("Your name", _newTester);
             EditorGUILayout.LabelField(
                 "Creates Docs/QA/RESULTS/<today>-<yourname>.md with the build and Unity " +
-                "version filled in. Add items to it below once it exists.",
+                "version filled in. Steps 2 through 5 appear once it exists.",
                 EditorStyles.wordWrappedMiniLabel);
             using (new EditorGUI.DisabledScope(string.IsNullOrWhiteSpace(_newTester)))
             {
@@ -407,26 +473,25 @@ var sb = new StringBuilder();
 
         void DrawSession()
         {
-            EditorGUILayout.LabelField(_state.sessionFile, FrogletEditorPalette.SectionHeader);
+            StepHeader("1", "Your session — " + _state.sessionFile);
             EditorGUILayout.LabelField(
                 "Tester " + _state.tester + "   ·   " + _state.date + "   ·   Unity " +
                 _state.unity + "   ·   " + _state.platform, EditorStyles.miniLabel);
-            EditorGUILayout.Space(6);
+
+            StepHeader("2", "Be on the right build");
+            DrawBuildStep();
 
             if (!string.IsNullOrEmpty(_state.preconditions))
             {
-                _preconditionsOpen = EditorGUILayout.Foldout(_preconditionsOpen,
-                    "Before you start — once per session", true);
-                if (_preconditionsOpen)
-                {
-                    using (new EditorGUILayout.VerticalScope(EditorStyles.helpBox))
-                        EditorGUILayout.LabelField(_state.preconditions, Body);
-                }
-                EditorGUILayout.Space(4);
+                StepHeader("3", "Set up the Unity Editor — once per session");
+                using (new EditorGUILayout.VerticalScope(EditorStyles.helpBox))
+                    EditorGUILayout.LabelField(_state.preconditions, Body);
             }
 
+            StepHeader("4", "Run your items — read, do, judge, note");
             if (_state.rows.Length == 0)
-                EditorGUILayout.HelpBox("No items yet — add one below.", MessageType.Info);
+                EditorGUILayout.HelpBox("No items in your session yet — pick one from " +
+                    "the list below to see what it involves.", MessageType.Info);
 
             foreach (var row in _state.rows) DrawRow(row);
 
@@ -435,46 +500,91 @@ var sb = new StringBuilder();
 
             foreach (var p in _state.problems)
             {
+                if (p.where == "Commit") continue;  // step 2 renders this one in place
                 EditorGUILayout.HelpBox(
                     p.where + ": " + p.what + (string.IsNullOrEmpty(p.fix) ? "" : "\n" + p.fix),
                     p.blocking ? MessageType.Error : MessageType.Warning);
             }
         }
 
+        /// <summary>
+        /// The live build check. Every backlog instruction that says "the branch under
+        /// test" means the build this form names — an abstraction that confuses a
+        /// beginner, so this step makes it concrete: here is that build, here is what
+        /// your project is actually on, and here is exactly what to type if they differ.
+        /// </summary>
+        void DrawBuildStep()
+        {
+            using (new EditorGUILayout.VerticalScope(EditorStyles.helpBox))
+            {
+                EditorGUILayout.LabelField(
+                    "Anywhere an instruction says “the branch under test”, it means " +
+                    "this exact build, which your form names:",
+                    EditorStyles.wordWrappedMiniLabel);
+                EditorGUILayout.LabelField(
+                    "        " + _state.sessionBranch + "   at commit   " + _state.commit,
+                    EditorStyles.boldLabel);
+
+                var match = !string.IsNullOrEmpty(_state.commit) &&
+                            _state.commit == _state.head;
+                if (match)
+                {
+                    EditorGUILayout.LabelField(
+                        "Your Unity project is on that exact commit. Nothing to do here — " +
+                        "go to step 3.", OkBody);
+                    return;
+                }
+
+                EditorGUILayout.LabelField(
+                    "Your project is currently on " + _state.head + " — a DIFFERENT build. " +
+                    "A verdict recorded against the wrong build sends engineering into the " +
+                    "wrong code, so fix this before running anything:", FailBodyStyle());
+                EditorGUILayout.LabelField(
+                    "In a terminal at the repo root, run the three commands below (the Copy " +
+                    "button puts them on your clipboard), then let Unity reimport.",
+                    EditorStyles.wordWrappedMiniLabel);
+                using (new EditorGUILayout.HorizontalScope())
+                {
+                    if (FrogletEditorPalette.ColorButton("Copy the git commands",
+                            FrogletEditorPalette.Info, 170f))
+                        EditorGUIUtility.systemCopyBuffer =
+                            "git fetch origin\n" +
+                            "git checkout " + _state.sessionBranch + "\n" +
+                            "git pull origin " + _state.sessionBranch;
+                    if (FrogletEditorPalette.ColorButton(
+                            "I tested what is checked out — record " + _state.head,
+                            FrogletEditorPalette.Warn, 320f, 24f,
+                            "Rewrites the form's Commit row to the build Unity currently " +
+                            "has open. Only press this if that really is the build you ran " +
+                            "the items on."))
+                        Run("submit", "--accept-head");
+                }
+            }
+        }
+
+        GUIStyle FailBodyStyle() => _failBody ?? (_failBody = TintedWrapped(FrogletEditorPalette.Error));
+        GUIStyle _failBody;
+
+        // A row reads top-to-bottom in the order the work actually happens:
+        // headline → the instructions → your verdict → your notes. The verdict
+        // control deliberately sits BELOW the instructions, because judging comes
+        // after doing.
         void DrawRow(Row row)
         {
             using (new EditorGUILayout.VerticalScope(EditorStyles.helpBox))
             {
+                var item = ItemFor(row.id);
                 using (new EditorGUILayout.HorizontalScope())
                 {
-                    EditorGUILayout.LabelField(new GUIContent(row.id, TitleFor(row.id)),
-                        EditorStyles.boldLabel, GUILayout.Width(230f));
-
-                    if (row.frozen)
-                    {
-                        EditorGUILayout.LabelField(
-                            row.verdict + "  (published — frozen)",
-                            EditorStyles.miniLabel);
-                    }
-                    else
-                    {
-                        var options = BuildVerdictOptions();
-                        var current = Mathf.Max(0, System.Array.IndexOf(options, row.verdict));
-                        var picked = EditorGUILayout.Popup(current, options, GUILayout.Width(110f));
-                        if (picked != current)
-                            Run("set", "--item", row.id, "--verdict", options[picked]);
-
-                        if (FrogletEditorPalette.ColorButton("Attach",
-                                FrogletEditorPalette.Info, 70f, 18f))
-                            Attach(row.id);
-                        if (FrogletEditorPalette.ColorButton("Console",
-                                FrogletEditorPalette.Muted, 74f, 18f,
-                                "Save the current Editor log as evidence for this item"))
-                            AttachEditorLog(row.id);
-                        if (FrogletEditorPalette.ColorButton("×",
-                                FrogletEditorPalette.Error, 24f, 18f, "Remove this row"))
-                            Run("remove", "--item", row.id);
-                    }
+                    var headline = row.id + (item == null ? "" : "  —  " + item.title);
+                    EditorGUILayout.LabelField(headline, Headline);
+                    if (item != null)
+                        EditorGUILayout.LabelField(item.priority,
+                            EditorStyles.miniBoldLabel, GUILayout.Width(24f));
+                    if (!row.frozen &&
+                        FrogletEditorPalette.ColorButton("×", FrogletEditorPalette.Error,
+                            24f, 18f, "Remove this row from your session"))
+                        Run("remove", "--item", row.id);
                 }
 
                 // The item's instructions live INSIDE its row: open by default until a
@@ -486,10 +596,42 @@ var sb = new StringBuilder();
                 var next = EditorGUILayout.Foldout(open,
                     "What to check — steps and PASS/FAIL", true);
                 if (next != open) _instructionsOpen[row.id] = next;
-                if (next) DrawInstructions(ItemFor(row.id));
+                if (next) DrawInstructions(item);
 
-                if (!row.frozen)
+                if (row.frozen)
                 {
+                    EditorGUILayout.LabelField(
+                        "Verdict: " + row.verdict + "  (published — frozen. A retest is a " +
+                        "new session, never an edit.)", EditorStyles.miniBoldLabel);
+                }
+                else
+                {
+                    using (new EditorGUILayout.HorizontalScope())
+                    {
+                        EditorGUILayout.LabelField("Your verdict",
+                            EditorStyles.miniBoldLabel, GUILayout.Width(80f));
+                        var options = BuildVerdictOptions();
+                        var current = Mathf.Max(0, System.Array.IndexOf(options, row.verdict));
+                        var picked = EditorGUILayout.Popup(current, options, GUILayout.Width(110f));
+                        if (picked != current)
+                            Run("set", "--item", row.id, "--verdict", options[picked]);
+
+                        GUILayout.FlexibleSpace();
+                        if (FrogletEditorPalette.ColorButton("Attach evidence",
+                                FrogletEditorPalette.Info, 120f, 18f,
+                                "Copy a screenshot/clip/log next to this session and " +
+                                "reference it from this item's notes"))
+                            Attach(row.id);
+                        if (FrogletEditorPalette.ColorButton("Save Console log",
+                                FrogletEditorPalette.Muted, 120f, 18f,
+                                "Save the current Editor log as evidence for this item"))
+                            AttachEditorLog(row.id);
+                    }
+
+                    EditorGUILayout.LabelField(
+                        "Your notes — required unless PASS. Say which step number and " +
+                        "exactly what you saw:", EditorStyles.wordWrappedMiniLabel);
+
                     // Notes commit on an explicit press rather than on focus loss. Focus
                     // tracking in IMGUI is subtle, and this window is the half that cannot
                     // be compile-tested — a visible button cannot silently drop a note.
@@ -527,6 +669,7 @@ var sb = new StringBuilder();
                         row.problemBlocking ? MessageType.Error : MessageType.Warning);
                 }
             }
+            EditorGUILayout.Space(6);
         }
 
         string[] BuildVerdictOptions()
@@ -534,12 +677,6 @@ var sb = new StringBuilder();
             var list = new List<string> { "" };
             if (_state != null && _state.verdicts != null) list.AddRange(_state.verdicts);
             return list.ToArray();
-        }
-
-        string TitleFor(string id)
-        {
-            var b = ItemFor(id);
-            return b == null ? id : b.priority + " — " + b.title;
         }
 
         BacklogItem ItemFor(string id)
@@ -561,32 +698,37 @@ var sb = new StringBuilder();
             if (item == null) return;
             using (new EditorGUILayout.VerticalScope(EditorStyles.helpBox))
             {
+                var first = true;
                 if (!string.IsNullOrEmpty(item.context))
                 {
+                    first = false;
                     EditorGUILayout.LabelField("Why this is on the list", EditorStyles.miniBoldLabel);
                     EditorGUILayout.LabelField(item.context, Body);
-                    EditorGUILayout.Space(4);
                 }
                 if (!string.IsNullOrEmpty(item.steps))
                 {
+                    if (!first) Rule();
+                    first = false;
                     EditorGUILayout.LabelField("What to do — in order", EditorStyles.miniBoldLabel);
                     EditorGUILayout.LabelField(item.steps, Body);
-                    EditorGUILayout.Space(4);
                 }
                 if (!string.IsNullOrEmpty(item.passWhen))
                 {
+                    if (!first) Rule();
+                    first = false;
                     EditorGUILayout.LabelField("PASS when", PassHeader);
                     EditorGUILayout.LabelField(item.passWhen, Body);
-                    EditorGUILayout.Space(4);
                 }
                 if (!string.IsNullOrEmpty(item.failWhen))
                 {
+                    if (!first) Rule();
+                    first = false;
                     EditorGUILayout.LabelField("FAIL when", FailHeader);
                     EditorGUILayout.LabelField(item.failWhen, Body);
-                    EditorGUILayout.Space(4);
                 }
                 if (!string.IsNullOrEmpty(item.known))
                 {
+                    if (!first) Rule();
                     EditorGUILayout.LabelField("Known already — do NOT fail on these",
                         EditorStyles.miniBoldLabel);
                     EditorGUILayout.LabelField(item.known, Body);
@@ -683,35 +825,30 @@ var sb = new StringBuilder();
             }
         }
 
+        // Step 5 of the process, pinned to the bottom so it is always visible.
+        // The build-mismatch remedy lives in step 2, next to its explanation.
         void DrawFooter()
         {
             EditorGUILayout.Space(4);
             using (new EditorGUILayout.HorizontalScope(EditorStyles.helpBox))
             {
+                EditorGUILayout.LabelField("5 · Submit", EditorStyles.boldLabel,
+                    GUILayout.Width(70f));
                 if (_state.submitted)
-                    EditorGUILayout.LabelField("Submitted — nothing new to publish.",
-                        EditorStyles.miniLabel);
+                    EditorGUILayout.LabelField("Submitted — nothing new to publish. Keep " +
+                        "adding items and submit again any time.", EditorStyles.miniLabel);
                 else if (_state.canSubmit)
-                    EditorGUILayout.LabelField("Ready to submit.", EditorStyles.miniLabel);
+                    EditorGUILayout.LabelField("Everything checks out — press Submit to " +
+                        "publish your verdicts.", EditorStyles.miniLabel);
                 else
                     EditorGUILayout.LabelField(
-                        _state.blocking + " problem(s) to fix before you can submit.",
-                        EditorStyles.miniLabel);
+                        _state.blocking + " problem(s) to fix first — each is explained in " +
+                        "red next to what it belongs to.", EditorStyles.miniLabel);
                 if (HasUnsavedNotes)
                     EditorGUILayout.LabelField("Unsaved notes.", EditorStyles.miniBoldLabel,
                         GUILayout.Width(90f));
 
                 GUILayout.FlexibleSpace();
-
-                if (!string.IsNullOrEmpty(_state.commit) &&
-                    !string.IsNullOrEmpty(_state.head) &&
-                    _state.commit != _state.head)
-                {
-                    if (FrogletEditorPalette.ColorButton("Use checked-out build",
-                            FrogletEditorPalette.Warn, 170f, 24f,
-                            "Record " + _state.head + " as the build you tested. Only if true."))
-                        Run("submit", "--accept-head");
-                }
 
                 using (new EditorGUI.DisabledScope(!_state.canSubmit || HasUnsavedNotes))
                 {

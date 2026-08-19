@@ -29,7 +29,7 @@ import sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from apply_results import (  # noqa: E402
     ARCHIVE, BACKLOG, RESULTS_DIR, ROOT, VALID,
-    load_ledger, parse_session, row_hash, split_items, stamp_submitted,
+    load_ledger, parse_session, row_hash, split_items, stamp_submitted, utf8_open,
 )
 
 REQUIRED_META = ("Tester", "Date", "Commit", "Unity version", "Platform(s)")
@@ -171,7 +171,7 @@ def write_receipt(path, total, new):
     value = "yes — %s · %d verdict(s), %d new this run" % (
         datetime.datetime.now().strftime("%Y-%m-%d %H:%M"), total, new)
     row = "| Submitted | %s |" % value
-    text = open(path).read()
+    text = utf8_open(path).read()
     if re.search(r"^\|\s*Submitted\s*\|.*\|\s*$", text, re.M):
         text = re.sub(r"^\|\s*Submitted\s*\|.*\|\s*$", row, text, count=1, flags=re.M)
     elif re.search(r"^\|\s*Platform\(s\)\s*\|.*\|\s*$", text, re.M):
@@ -179,7 +179,7 @@ def write_receipt(path, total, new):
                       text, count=1, flags=re.M)
     else:
         return False
-    open(path, "w").write(text)
+    utf8_open(path, "w").write(text)
     return True
 
 
@@ -190,7 +190,7 @@ def newest_unsubmitted():
         if not f.endswith(".md") or f == "TEMPLATE.md":
             continue
         entry = ledger["sessions"].get(f, {})
-        text = open(os.path.join(RESULTS_DIR, f)).read()
+        text = utf8_open(os.path.join(RESULTS_DIR, f)).read()
         from apply_results import file_hash
         if entry.get("submitted_hash") != file_hash(text):
             cands.append(f)
@@ -221,15 +221,15 @@ def main(argv=None):
 
     head = git_head()
     if args.accept_head and head:
-        t = open(path).read()
+        t = utf8_open(path).read()
         if re.search(r"^\|\s*Commit\s*\|.*\|\s*$", t, re.M):
-            open(path, "w").write(re.sub(r"^\|\s*Commit\s*\|.*\|\s*$",
+            utf8_open(path, "w").write(re.sub(r"^\|\s*Commit\s*\|.*\|\s*$",
                                          "| Commit | `%s` |" % head, t, count=1, flags=re.M))
             print("Commit row set to %s (the build currently checked out)." % head)
 
-    text = open(path).read()
-    known = {i for i, _ in split_items(open(BACKLOG).read())}
-    archived = set(re.findall(r"^\|\s*(QA-[A-Z0-9-]+)\s*\|", open(ARCHIVE).read(), re.M))
+    text = utf8_open(path).read()
+    known = {i for i, _ in split_items(utf8_open(BACKLOG).read())}
+    archived = set(re.findall(r"^\|\s*(QA-[A-Z0-9-]+)\s*\|", utf8_open(ARCHIVE).read(), re.M))
     applied = load_ledger()["sessions"].get(fname, {}).get("items", {})
 
     print("\nChecking %s" % os.path.relpath(path, ROOT))

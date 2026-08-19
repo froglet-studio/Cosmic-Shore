@@ -47,6 +47,17 @@ MARKER = {"FAIL": "🔴", "PARTIAL": "🟡", "BLOCKED": "⛔"}
 STATUS_CHARS = "⬜🟡🔴⛔"
 
 
+def utf8_open(path, mode="r"):
+    """Every file these tools touch is UTF-8, whatever the OS locale says.
+
+    A bare open() uses the locale encoding — cp1252 on Windows — which mojibakes
+    every em-dash and status glyph on READ (the QA window showed 'â€"' for '—')
+    and raises UnicodeEncodeError on WRITE the moment a ⬜ reaches the backlog.
+    All three QA tools route file I/O through here.
+    """
+    return open(path, mode, encoding="utf-8")
+
+
 # ---------------------------------------------------------------- parsing
 
 def parse_session(text):
@@ -180,7 +191,7 @@ def load_ledger():
     """
     if not os.path.exists(LEDGER):
         return {"version": LEDGER_VERSION, "sessions": {}}
-    data = json.load(open(LEDGER))
+    data = json.load(utf8_open(LEDGER))
     if "sessions" in data:
         data.setdefault("version", LEDGER_VERSION)
         return data
@@ -192,8 +203,8 @@ def load_ledger():
 
 def save_ledger(ledger):
     ledger["sessions"] = {k: ledger["sessions"][k] for k in sorted(ledger["sessions"])}
-    json.dump(ledger, open(LEDGER, "w"), indent=2, sort_keys=False)
-    open(LEDGER, "a").write("\n")
+    json.dump(ledger, utf8_open(LEDGER, "w"), indent=2, sort_keys=False)
+    utf8_open(LEDGER, "a").write("\n")
 
 
 def stamp_submitted(path):
@@ -206,7 +217,7 @@ def stamp_submitted(path):
     ledger = load_ledger()
     entry = ledger["sessions"].setdefault(
         fname, {"submitted_hash": None, "applied_hash": None, "items": {}})
-    entry["submitted_hash"] = file_hash(open(path).read())
+    entry["submitted_hash"] = file_hash(utf8_open(path).read())
     save_ledger(ledger)
     return entry
 
@@ -230,9 +241,9 @@ def apply_all(dry_run=False):
     files = sorted(f for f in os.listdir(RESULTS_DIR)
                    if f.endswith(".md") and f != "TEMPLATE.md")
 
-    backlog = open(BACKLOG).read()
-    archive = open(ARCHIVE).read()
-    dev_tasks = open(DEV_TASKS).read()
+    backlog = utf8_open(BACKLOG).read()
+    archive = utf8_open(ARCHIVE).read()
+    dev_tasks = utf8_open(DEV_TASKS).read()
     known = {iid for iid, _ in split_items(backlog)}
 
     passed, failed, other, unknown, frozen, skipped = [], [], [], [], [], []
@@ -241,7 +252,7 @@ def apply_all(dry_run=False):
     for fname in files:
         entry = ledger["sessions"].setdefault(
             fname, {"submitted_hash": None, "applied_hash": None, "items": {}})
-        text = open(os.path.join(RESULTS_DIR, fname)).read()
+        text = utf8_open(os.path.join(RESULTS_DIR, fname)).read()
         state, h = submitted_state(entry, text)
         if state != "ready":
             skipped.append((fname, state))
@@ -308,9 +319,9 @@ def apply_all(dry_run=False):
         print("\n--dry-run: nothing written.")
         return 0
 
-    open(BACKLOG, "w").write(backlog)
-    open(ARCHIVE, "w").write(archive)
-    open(DEV_TASKS, "w").write(dev_tasks)
+    utf8_open(BACKLOG, "w").write(backlog)
+    utf8_open(ARCHIVE, "w").write(archive)
+    utf8_open(DEV_TASKS, "w").write(dev_tasks)
     save_ledger(ledger)
     print("\nWrote QA_BACKLOG.md, ARCHIVE.md, DEV_TASKS.md and .applied.json.")
     return 0
@@ -418,9 +429,9 @@ def selftest_lifecycle():
         RESULTS_DIR = os.path.join(tmp, "RESULTS")
         LEDGER = os.path.join(tmp, ".applied.json")
         os.mkdir(RESULTS_DIR)
-        open(BACKLOG, "w").write(SAMPLE_BACKLOG)
-        open(ARCHIVE, "w").write("head\n\n<!-- /qa-archive -->\n")
-        open(DEV_TASKS, "w").write("head\n<!-- qa-dev-tasks -->\n\n<!-- /qa-dev-tasks -->\n")
+        utf8_open(BACKLOG, "w").write(SAMPLE_BACKLOG)
+        utf8_open(ARCHIVE, "w").write("head\n\n<!-- /qa-archive -->\n")
+        utf8_open(DEV_TASKS, "w").write("head\n<!-- qa-dev-tasks -->\n\n<!-- /qa-dev-tasks -->\n")
         sess = os.path.join(RESULTS_DIR, "2026-08-14-ada.md")
 
         def run():
@@ -430,49 +441,49 @@ def selftest_lifecycle():
             return buf.getvalue()
 
         # Day 1, still working: not submitted -> nothing happens, and it says why.
-        open(sess, "w").write(_session([("QA-ONE", "PASS", "")], submitted=False))
+        utf8_open(sess, "w").write(_session([("QA-ONE", "PASS", "")], submitted=False))
         out = run()
         assert "not submitted yet" in out, out
-        assert "### QA-ONE ⬜" in open(BACKLOG).read(), "unsubmitted file must not apply"
+        assert "### QA-ONE ⬜" in utf8_open(BACKLOG).read(), "unsubmitted file must not apply"
 
         # Day 1, submitted: the one finished row lands.
-        open(sess, "w").write(_session([("QA-ONE", "PASS", "")]))
+        utf8_open(sess, "w").write(_session([("QA-ONE", "PASS", "")]))
         stamp_submitted(sess)
         out = run()
-        assert "QA-ONE" in out and "QA-ONE" not in open(BACKLOG).read(), out
+        assert "QA-ONE" in out and "QA-ONE" not in utf8_open(BACKLOG).read(), out
 
         # Re-running changes nothing (idempotent).
         assert "No new verdicts" in run()
 
         # Day 2, appended but NOT re-submitted: parked, with the reason.
-        open(sess, "w").write(_session([("QA-ONE", "PASS", ""),
+        utf8_open(sess, "w").write(_session([("QA-ONE", "PASS", ""),
                                         ("QA-TWO", "FAIL", "Step 3: NRE in Prism.Explode")]))
         out = run()
         assert "edited since it was submitted" in out, out
-        assert "### QA-TWO ⬜" in open(BACKLOG).read(), "unsubmitted edit must not apply"
+        assert "### QA-TWO ⬜" in utf8_open(BACKLOG).read(), "unsubmitted edit must not apply"
 
         # Day 2, re-submitted: ONLY the new row applies. This is the burn that
         # used to swallow a whole finished session under the v1 ledger.
         stamp_submitted(sess)
         out = run()
         assert "QA-TWO" in out, out
-        b = open(BACKLOG).read()
+        b = utf8_open(BACKLOG).read()
         assert "### QA-TWO 🔴" in b, b
-        assert "DT-001" in open(DEV_TASKS).read()
-        assert open(ARCHIVE).read().count("QA-ONE") == 1, "PASS must not be re-archived"
+        assert "DT-001" in utf8_open(DEV_TASKS).read()
+        assert utf8_open(ARCHIVE).read().count("QA-ONE") == 1, "PASS must not be re-archived"
 
         # A retest is a NEW file, never an edit: changing an applied row is frozen,
         # reported, and does not touch the backlog.
-        open(sess, "w").write(_session([("QA-ONE", "PASS", ""),
+        utf8_open(sess, "w").write(_session([("QA-ONE", "PASS", ""),
                                         ("QA-TWO", "PASS", "retested, works now")]))
         stamp_submitted(sess)
         out = run()
         assert "FROZEN" in out and "retest is a NEW session file" in out, out
-        assert "### QA-TWO 🔴" in open(BACKLOG).read(), "frozen row must not be re-applied"
-        assert open(DEV_TASKS).read().count("## DT-") == 1, "no duplicate dev task"
+        assert "### QA-TWO 🔴" in utf8_open(BACKLOG).read(), "frozen row must not be re-applied"
+        assert utf8_open(DEV_TASKS).read().count("## DT-") == 1, "no duplicate dev task"
 
         # The v1 ledger upgrades in place rather than exploding.
-        json.dump({"applied": ["old-session.md"]}, open(LEDGER, "w"))
+        json.dump({"applied": ["old-session.md"]}, utf8_open(LEDGER, "w"))
         assert load_ledger()["sessions"]["old-session.md"]["items"] == {}
         return 9
     finally:
