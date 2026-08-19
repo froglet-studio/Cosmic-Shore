@@ -198,6 +198,17 @@ its GameObject lists it in `m_Component`.
   every human diffing the file reads it as misplaced. Serialize enum fields as
   their INTEGER value (`condition: 1`), and get the integer from the C# —
   an enum with explicit values is not its declaration order.
+- **Authoring a whole new asset FOLDER: emit its `.meta` too, or Unity re-mints it.** A directory
+  under `Assets/` is itself an asset and needs `fileFormatVersion: 2` / `guid:` /
+  `folderAsset: yes` / `DefaultImporter:`. Without it Unity generates one on next import — fine
+  locally, and a fresh guid on every other machine, so the folder shows as an untracked change
+  forever. Same uniqueness assert as a script meta.
+- **Mint asset guids DETERMINISTICALLY when a script emits a whole asset set.** `uuid4()` is right
+  for a one-off, wrong for a generator with `--check`: a re-run mints new guids, every
+  cross-reference inside the set changes, and the diff is total. `md5(f"<project>/<set>/{name}")`
+  is stable across runs and machines, so `--check` compares content instead of identity — and the
+  uniqueness assert still applies (sweep every `.meta` repo-wide and confirm each new guid appears
+  exactly once).
 - **CHANGE a component's TYPE in place, by rewriting its class id and KEEPING its
   fileID.** Swapping `SphereCollider` → `CapsuleCollider` reads like an excise+add,
   and doing it that way is strictly worse: a new fileID means editing the owning
@@ -633,6 +644,33 @@ def sub(old, new, label):
 Python, a compile for C#) and check the line count moved by roughly what you intended — a file
 that grew 40x is the signature of exactly this bug.
 
+### Technique: make the harness EXTRACT the shipped block, and run the shipped TEST
+
+The §4 harness is only worth what its fidelity to the real file is worth, and a hand-retyped
+copy drifts the moment you fix a typo in one and not the other. Slice it out of the shipped
+file instead, so the thing you prove is byte-identical to the thing you commit:
+
+```python
+src   = pathlib.Path(REAL_FILE).read_text()
+block = src[src.index(START_MARKER) : src.index(END_MARKER)]      # assert both markers found
+pathlib.Path("Program.cs").write_text(STUBS + block + DRIVER)
+```
+
+Two things this buys beyond a compile:
+
+- **Unity-flavoured null checks work with a three-line stub.** Nearly every gameplay block that
+  touches `UnityEngine.Object` needs only its implicit-bool operator to run headlessly:
+  `public static implicit operator bool(Object o) => o is { Destroyed: false };`. That covers
+  `if (!component)`, `x ? a : b`, and the destroyed-object prune idiom in one go.
+- **You can execute the shipped TEST FILE's own assertions**, not a paraphrase of them: strip
+  `#if UNITY_EDITOR` / the NUnit `using`, swap `[Test]` for a plain method and `Assert` for a
+  four-line shim, and drive it by reflection. What you then prove is literally what the edit-mode
+  suite will assert when a human opens Unity, which is a much stronger claim than "it compiles".
+  This is the closest you can get to running the repo's tests without the editor — do it whenever
+  a branch adds a test whose subject is a pure function.
+
+Use it for the pure/static core of a change (a predicate, a mask, a formula). It still cannot see
+name resolution or whole-class consistency — see the two traps below.
 ### Trap: a SHIELD's size is not the prism's size, and the two tiers scale DIFFERENTLY
 
 Origin: the Scarab wing dais (2026-08-18). A super-shielded "sun core" was sized so its
@@ -670,10 +708,15 @@ Rules that fall out:
   row of same-sized prisms triples every third one. Fitting the prism (authored scale
   `× 1/CIRCUMSCRIBING_SCALE`) restores the envelope exactly and is uniform, so the prism's
   aspect — its identity — survives; `Docs/ECOSYSTEM.md §35` is the ruling.
-- **Check clearance against the SHIELD's silhouette, not the box's.** In-plane, a shielded
-  prism is a rhombus with semi-axes `1.5·(w, L)` and a super-shielded one reaches `1.5S·√2`
-  toward its in-plane corners. An exact 2D separating-axis test over those silhouettes is
-  ~40 lines and is the only way to claim "no overlaps or clipping" honestly.
+- **Check clearance against the SHIELD's silhouette, not the box's — and the silhouette is a
+  function of the POSE.** In-plane, a shielded prism is a rhombus with semi-axes `1.5·(w, L)`.
+  A super-shielded one reaches `1.5S·√2` toward its in-plane corners *only while it is
+  axis-aligned*: rotate it so a spike lies in your plane (aiming `(1,1,1)` at something) and the
+  reach becomes the full `1.5S·√3`, 22.5% more, silently. So compute a stella's outline as the
+  projected convex hull of its eight spike tips under its own rotation — the stellation's hull IS
+  that cube — rather than a hard-coded octagon of alternating radii, which is the outline of one
+  particular pose. An exact 2D separating-axis test over those silhouettes is ~40 lines and is the
+  only way to claim "no overlaps or clipping" honestly.
 - **The taper is a design tool, not just a cost.** An octahedron's side faces slope at
   `atan(halfWidth/halfLength)` from its axis while a box's are parallel, so a run of
   flush-tiled boxes cannot turn and a run with an octahedron in it turns by exactly
@@ -693,6 +736,33 @@ signature changed. Those are only found by compiling the real file, or by Unity.
 So: after any patch that ADDS a member to a large existing class, grep that class for the
 member's own name and confirm exactly one declaration. This session shipped a duplicate field
 that the harness compiled clean and Unity rejected.
+
+### Trap: a stub-reference compile is BLIND to `System`/`UnityEngine` name collisions
+
+The §4 harness compiles against .NET reference assemblies with no `UnityEngine.dll`, so every
+Unity type is already unresolved and gets filtered out as expected noise. That filtering hides a
+whole error class: **`CS0104` ambiguity cannot occur when one of the two colliding types does not
+exist.** Add `using System;` to a file that already has `using UnityEngine;`, and a bare `Object`
+compiles clean in the harness while Unity rejects it — `Object` resolved only to `System.Object`
+because `UnityEngine.Object` was never loaded. A session shipped exactly this by adding
+`using System;` for a `Func`/`Action` field and leaving two `Object.Instantiate` / `Object.Destroy`
+calls alone; the human's first Editor compile was what found it.
+
+The offline pass proves SYNTAX and STRUCTURE. It cannot prove NAME RESOLUTION. Do not report it as
+"compiles clean" without that qualifier.
+
+The collision set is small enough to check exhaustively, so grep instead of hoping — in any file
+carrying BOTH usings, the ambiguous names are exactly **`Object`** and **`Random`**:
+
+```sh
+for f in <changed .cs files>; do
+  grep -qE '^using System;' "$f" && grep -qE '^using UnityEngine;' "$f" || continue
+  grep -nE '(^|[^.[:alnum:]_])(Object|Random)\s*[.(<]' "$f" | grep -v 'UnityEngine\.'
+done
+```
+
+Fix by fully qualifying (`UnityEngine.Object.Instantiate`), never by dropping `using System;` —
+the file needs it. Same shape applies to `using System.Diagnostics;` + `Debug`.
 
 ## 4.5 Technique: offline simulation of a deterministic generator
 

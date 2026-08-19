@@ -3148,6 +3148,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   condition: 3
   upgradeGate: 4
+  wardedSources: 1
 --- !u!1001 &4618456780277366565
 PrefabInstance:
   m_ObjectHideFlags: 0

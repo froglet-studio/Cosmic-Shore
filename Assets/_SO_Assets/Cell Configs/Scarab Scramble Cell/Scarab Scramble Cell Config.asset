@@ -1,0 +1,41 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 01f934d50526431a9392a6ceca1dc33d, type: 3}
+  m_Name: Scarab Scramble Cell Config
+  m_EditorClassIdentifier:
+  CellName: Scarab Scramble
+  Description: Hoop-court party cell. The nucleus IS the sphere court (play geometry,
+    not a claim - the controller clears NucleusIsControlZone) and the mass is Scarab
+    trail plus switch bricks, grazed by a small cleanup crew that waits outside the
+    court until the volume ladder leaves Calm. Thresholds are authored for SCARAB
+    trail volume (10 at rest to 40 skim-grown per prism, one per spawn) with NO
+    structural floor - there is no super-shielded lining in this arena, so do not
+    copy the Astro League ladder, which rides a 30k lining floor. ESTIMATE pending
+    the in-editor baseline measure; see SCARABSCRAMBLE.md.
+  Icon: {fileID: 21300000, guid: 6aa1c06e11b265744a5f9fa8858ac72a, type: 3}
+  Difficulty: 2
+  CellEndGameScore: 0
+  MembranePrefab: {fileID: 346633111830028674, guid: 6e330f85972faf843b8a128e7166f7b5, type: 3}
+  NucleusPrefab: {fileID: 7555898194514117247, guid: b9cf1833fa2493d4b8724ccb6740fb3a, type: 3}
+  CytoplasmPrefab: {fileID: 639495419069806261, guid: 9cacd903fcf4643459f5f14ac811bb20, type: 3}
+  CellModifiers: []
+  SpawnProfile: {fileID: 11400000, guid: 01b40762f7abf41e7e4b1eb70273090d, type: 2}
+  SenseRadiusOverride: 1300
+  PhaseThresholds:
+    RestlessEnter: 900
+    RestlessExit: 800
+    FrenzyEnter: 3000
+    FrenzyExit: 2600
+    RestlessEnterVolume: 12000
+    RestlessExitVolume: 11000
+    FrenzyEnterVolume: 36000
+    FrenzyExitVolume: 32000

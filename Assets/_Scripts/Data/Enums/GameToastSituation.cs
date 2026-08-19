@@ -51,5 +51,20 @@ namespace CosmicShore.Data
         DogFightQuarterDown = 57,    // the leading domain is a quarter of the way to the target
         DogFightHalfDown = 58,       // the leading domain is halfway
         DogFightLeadChanged = 59,    // the lead changes hands after a milestone
+
+        // The Bends. {0} = leading domain, {1} = that domain's points, {2} = point target.
+        BendsQuarterBent = 60,       // the leading domain is a quarter of the way to the target
+        BendsHalfBent = 61,          // the leading domain is halfway
+        BendsLeadChanged = 62,       // the lead changes hands after a milestone
+        // Scarab Scramble. Goal/bank: {0} = scorer name, {1} = their domain's goals, {2} = target
+        // ({3} = wall bounces on the bank goal). Milestones/lead: {0} = leading domain,
+        // {1} = that domain's goals, {2} = target. Cap: {0} = the capped player's name.
+        ScarabScrambleGoal = 63,          // a forged ball threaded a hoop
+        ScarabScrambleMatchPoint = 64,    // the leading domain is one goal from winning
+        ScarabScrambleLeadChanged = 65,   // the lead changes hands late in the match
+        ScarabScrambleForgeHint = 66,     // idle hint: follow the marker to the bright crystal
+        ScarabScrambleRollHint = 67,      // idle hint: roll your ball through any glowing ring
+        ScarabScrambleBankGoal = 68,      // a goal off 2+ wall caroms — the signature screamer
+        ScarabScrambleBallCap = 69,       // forge refused at the live-ball cap (targeted at the pilot)
     }
 }
