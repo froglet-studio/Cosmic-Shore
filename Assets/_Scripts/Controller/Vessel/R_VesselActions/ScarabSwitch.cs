@@ -14,13 +14,15 @@ namespace CosmicShore.Gameplay
     /// wear) with its interior filled by prisms, which pays out when a ball threads it.
     ///
     /// <para><b>The payout is a scarab-wing DAIS.</b> A struck switch does not scatter prisms —
-    /// it lays a <see cref="ScarabWingDais"/>: ten super-shielded SUN CORES ringing the spent
-    /// switch, each WRAPPED by a mirrored pair of wings. The wings BEGIN at this ring — their
-    /// first blades are long spars whose tips land on it — and sweep out and around their sun,
-    /// closing into a C that opens away from the switch. Nothing overlaps and nothing clips, by
-    /// construction. The rosette draws itself outward over several frames — every wing's first
-    /// blade, then every wing's second — with the ten suns igniting last, so the payout READS as
-    /// a monument being raised rather than as mass appearing.</para>
+    /// it lays a <see cref="ScarabWingDais"/>: super-shielded SUN CORES ringing the spent switch,
+    /// each WRAPPED by a mirrored pair of wings and each aiming one of its spikes back at the
+    /// switch. The wings BEGIN at this ring — their first blades are long spars running back to it
+    /// — and sweep out and around their sun, closing into a C that opens away from the switch.
+    /// Nothing overlaps and nothing clips, by construction. The rosette draws itself outward over
+    /// several frames — every wing's first blade, then every wing's second — with the suns
+    /// igniting last, so the payout READS as a monument being raised rather than as mass
+    /// appearing. The switch's own membrane is blown out on the strike
+    /// (<see cref="BlowOutInterior"/>), so it rises around a clear mouth.</para>
     ///
     /// <para><b>The tiers are gameplay AND geometry.</b> Blades alternate plain → danger, with
     /// SHIELDED octahedra capping both ends of every wing and recurring as its hinges — and that
@@ -50,6 +52,11 @@ namespace CosmicShore.Gameplay
         const float GoldenAngleRadians = 2.39996323f;
 
         PrismEventChannelWithReturnSO _spawnChannel;
+        /// <summary>Debris speed for the membrane when no ball velocity is available — only the
+        /// editor/tooling path, since a real trigger always arrives with the ball that caused
+        /// it.</summary>
+        const float InteriorBlowOutSpeed = 60f;
+
         Domains _domain;
         string _playerName;
         Vector3 _axis, _basisU, _basisV;
@@ -277,23 +284,54 @@ namespace CosmicShore.Gameplay
             return lateral.sqrMagnitude <= _ringRadius * _ringRadius;
         }
 
-        /// <summary>Struck: the switch is spent and its dais is raised.</summary>
+        /// <summary>Struck: the switch is spent, its membrane blows out, and its dais is raised.</summary>
         void Trigger(AstroLeagueBall ball)
         {
             _spent = true;
 
-            // The ring is the switch, and the switch has been used. The interior fill it laid
-            // stays as world mass (conserved — it is removed only by an active force, like any
-            // other prism).
+            // The ring is the switch, and the switch has been used.
             if (_ring) Destroy(_ring);
 
+            BlowOutInterior(ball);
             RaiseDaisAsync(ball != null ? ball.LastHitDomain : Domains.Blue,
                            this.GetCancellationTokenOnDestroy()).Forget();
         }
 
         /// <summary>
+        /// The ball punched through the membrane, so the membrane goes with it — and the dais
+        /// rises around a clear mouth rather than around the wreck of the switch that paid for it.
+        ///
+        /// <para><b>This is active removal, not decay</b>, which is the only kind conserved mass
+        /// allows (CLAUDE.md, "Mass is conserved"). A specific ball threaded a specific switch at
+        /// a specific instant and the prisms it hit are destroyed by that impact, exactly as if it
+        /// had eaten them on the way through — which, laid one prism further apart, is what would
+        /// have happened. There is no timer, no cull and no lifespan here: an unstruck switch
+        /// holds its membrane for the whole match.</para>
+        ///
+        /// <para>It explodes along the ball's own velocity, so the debris reads as having been
+        /// knocked through rather than as having been switched off — continuity of existence
+        /// applies to a membrane as much as to anything else. <c>devastate</c> is set because a
+        /// MASS-5 armoured body must go with the switch instead of shedding its shield and
+        /// standing there in the middle of the rosette.</para>
+        /// </summary>
+        void BlowOutInterior(AstroLeagueBall ball)
+        {
+            Vector3 through = ball != null && ball.Velocity.sqrMagnitude > 1e-4f
+                ? ball.Velocity
+                : _axis * InteriorBlowOutSpeed;
+
+            for (int i = 0; i < _interior.Count; i++)
+            {
+                var prism = _interior[i];
+                if (prism == null) continue;
+                prism.Damage(through, _domain, _playerName, devastate: true);
+            }
+            _interior.Clear();
+        }
+
+        /// <summary>
         /// Raise the rosette over several frames. Budgeted because the dais is an order of
-        /// magnitude more prisms than the old outward burst (270 at the shipped shape), and
+        /// magnitude more prisms than the old outward burst (255 at the shipped shape), and
         /// because a structure that draws itself outward from the spent ring reads as a monument
         /// going up — the continuity law's preferred reading of a spawn, applied to the whole
         /// structure rather than to each prism separately.

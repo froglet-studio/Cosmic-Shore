@@ -31,11 +31,11 @@ MonoBehaviour:
   SpawnProfile: {fileID: 11400000, guid: f37a525d67994012b78a221b97fbc1cf, type: 2}
   SenseRadiusOverride: 1300
   PhaseThresholds:
-    RestlessEnter: 2100
-    RestlessExit: 2000
-    FrenzyEnter: 4600
-    FrenzyExit: 4400
-    RestlessEnterVolume: 97000
-    RestlessExitVolume: 96000
-    FrenzyEnterVolume: 186000
-    FrenzyExitVolume: 184000
+    RestlessEnter: 1280
+    RestlessExit: 1220
+    FrenzyEnter: 2810
+    FrenzyExit: 2700
+    RestlessEnterVolume: 182000
+    RestlessExitVolume: 180000
+    FrenzyEnterVolume: 385000
+    FrenzyExitVolume: 382000

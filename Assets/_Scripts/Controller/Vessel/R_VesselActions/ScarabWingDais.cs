@@ -80,12 +80,55 @@ namespace CosmicShore.Gameplay
             StellatedOctahedronMeshGenerator.CIRCUMSCRIBING_SCALE * Mathf.Sqrt(3f);
 
         /// <summary>
-        /// Authored cube edge → the sun's reach IN THE DAIS PLANE, i.e. toward the four spikes
-        /// whose corners lie in that plane. This is the clearance the wing's hole must exceed, and
-        /// it is neither the axis extent nor the full circumsphere.
+        /// Authored cube edge → the sun's reach IN THE DAIS PLANE, which the wing's hole has to
+        /// clear.
+        ///
+        /// <para>It is the FULL circumradius, and that is a consequence of the aiming rotation
+        /// rather than a coincidence: <see cref="SunCornerAim"/> lays one of the stella's spikes
+        /// along the dais plane pointing at the switch, so the corner that used to sit 45° out of
+        /// the plane is now in it. An axis-aligned sun reaches only
+        /// <c>CIRCUMSCRIBING_SCALE·√2/2</c> in-plane; aiming a spike costs 22.5% of the hole's
+        /// clearance, and forgetting that is how a rotation silently becomes a collision.</para>
         /// </summary>
-        public static readonly float SunInPlaneReach =
-            StellatedOctahedronMeshGenerator.CIRCUMSCRIBING_SCALE * Mathf.Sqrt(2f) * 0.5f;
+        public static readonly float SunInPlaneReach = SunApparentFactor * 0.5f;
+
+        /// <summary>
+        /// The stella's eight spike tips in the prism's own frame, per unit of authored cube edge.
+        ///
+        /// <para>The stellation's CONVEX HULL is exactly the cube these corners span — the six
+        /// inscribed-octahedron vertices lie on its faces — so the hull of these eight points,
+        /// projected, is the silhouette a sun presents at any orientation. That matters now that
+        /// the sun is rotated: a hard-coded octagon of alternating axis and corner radii is only
+        /// the outline of an AXIS-ALIGNED sun, and every overlap check downstream would be
+        /// measuring a shape the game does not draw.</para>
+        /// </summary>
+        public static readonly Vector3[] SunSpikeTipsPerEdge = BuildSunSpikeTips();
+
+        /// <summary>
+        /// The twist that aims a sun core's <b>(1,1,1) body diagonal</b> — and therefore one of its
+        /// eight spikes — at the centre of the ring, applied inside the sun's own frame before the
+        /// look rotation that faces it inboard.
+        ///
+        /// <para>It is the minimal rotation taking the unit body diagonal onto local +z, so a sun
+        /// posed with <c>LookRotation(inward) * SunCornerAim</c> puts a spike on the line from its
+        /// centre to the spent switch. Every sun then points AT the thing it rings, which is the
+        /// one direction in the rosette that means something.</para>
+        /// </summary>
+        public static readonly Quaternion SunCornerAim = Quaternion.AngleAxis(
+            Mathf.Acos(1f / Mathf.Sqrt(3f)) * Mathf.Rad2Deg,
+            new Vector3(1f, -1f, 0f).normalized);
+
+        static Vector3[] BuildSunSpikeTips()
+        {
+            float h = StellatedOctahedronMeshGenerator.CIRCUMSCRIBING_SCALE * 0.5f;
+            var tips = new Vector3[8];
+            int i = 0;
+            for (int x = -1; x <= 1; x += 2)
+            for (int y = -1; y <= 1; y += 2)
+            for (int z = -1; z <= 1; z += 2)
+                tips[i++] = new Vector3(x * h, y * h, z * h);
+            return tips;
+        }
 
         /// <summary>One prism of the dais, in world space, ready to lay.</summary>
         public readonly struct Element
@@ -184,7 +227,7 @@ namespace CosmicShore.Gameplay
                     Vector2 sun = SunPlanar(settings, R, p);
                     Vector2 planar = sun + dir * (hole + blade.Length * 0.5f);
                     TryEmit(into, settings, center, axis, basisU, basisV, R, reach,
-                            planar, dir, scale, blade.Kind, p, s, blade.Index);
+                            planar, dir, scale, blade.Kind, p, s, blade.Index, Quaternion.identity);
                 }
             }
 
@@ -193,8 +236,8 @@ namespace CosmicShore.Gameplay
                 float pairRad = p * Mathf.PI * 2f / pairs;
                 Vector2 radial = new(Mathf.Cos(pairRad), Mathf.Sin(pairRad));
                 TryEmit(into, settings, center, axis, basisU, basisV, R, reach,
-                        radial * sunRadius, radial, Vector3.one * sunEdge,
-                        PrismKind.SuperShielded, p, 0, -1);
+                        radial * sunRadius, -radial, Vector3.one * sunEdge,
+                        PrismKind.SuperShielded, p, 0, -1, SunCornerAim);
             }
         }
 
@@ -322,15 +365,19 @@ namespace CosmicShore.Gameplay
             return new Vector2(Mathf.Cos(pairRad) * sunRadius, Mathf.Sin(pairRad) * sunRadius);
         }
 
+        /// <param name="localTwist">Rotation applied in the prism's OWN frame before the look
+        /// rotation — how a sun core aims a spike at the switch (<see cref="SunCornerAim"/>).
+        /// Identity for a blade, whose forward IS its axis.</param>
         static bool TryEmit(List<Element> into, in ScarabWingDaisSettings settings, Vector3 center,
                             Vector3 axis, Vector3 basisU, Vector3 basisV, float R, float reach,
                             Vector2 planar, Vector2 planarDir, Vector3 scale, PrismKind kind,
-                            int pair, int wingSign, int blade)
+                            int pair, int wingSign, int blade, Quaternion localTwist)
         {
             Vector3 pos = center + basisU * planar.x + basisV * planar.y
                         + axis * Dish(settings, R, planar.magnitude, reach);
             Vector3 forward = (basisU * planarDir.x + basisV * planarDir.y).normalized;
             if (!SafeLookRotation.TryGet(forward, axis, out Quaternion rot, null, false)) return false;
+            rot *= localTwist;   // exact for identity, so a blade is untouched by the sun's aim
             into.Add(new Element(pos, rot, scale, kind, pair, wingSign, blade));
             return true;
         }
@@ -554,34 +601,36 @@ namespace CosmicShore.Gameplay
         public float DishPower;
 
         /// <summary>
-        /// The shipped motif: ten suns, each cradled in a 240° C of feathers whose spars land on
-        /// the switch ring. Solved rather than eyeballed — an exact separating-axis test over
-        /// every prism silhouette reports ZERO overlaps, the inner reach lands within a unit of
-        /// the ring, and the sun keeps 6.2 units of clearance inside its hole. Changing any dial
-        /// moves that solution: re-run <c>ScarabWingDaisTests</c>, or open the Dais Lab.
+        /// The shipped motif, kept in step with <c>PlaceSwitchAction.asset</c> so the tests guard
+        /// the shape that actually plays: five suns, each cradled in a 288° C of feathers whose
+        /// spars run back to the switch ring. Solved rather than eyeballed — an exact
+        /// separating-axis test over every prism silhouette reports ZERO overlaps, no blade
+        /// leaves its pair's sector, nothing reaches inside the ring, and the sun keeps 4.0 units
+        /// of clearance inside its hole. Changing any dial moves that solution: re-run
+        /// <c>ScarabWingDaisTests</c>, or open the Dais Lab.
         /// </summary>
         public static ScarabWingDaisSettings Default => new()
         {
-            PairCount = 10,
-            BladesPerWing = 19,
-            HingeEvery = 5,
-            SunRadius = 7.00f,
-            WingHoleRadius = 1.25f,
-            WingRootReach = 0.80f,
-            WingHalfGapDeg = 2.0f,
+            PairCount = 5,
+            BladesPerWing = 25,
+            HingeEvery = 4,
+            SunRadius = 6f,
+            WingHoleRadius = 1.2f,
+            WingRootReach = 1.25f,
+            WingHalfGapDeg = 7.12f,
             BladeGapDeg = 0.8f,
-            SectorMargin = 0.06f,
-            BladeTipLength = 0.55f,
-            BladeMinLength = 0.30f,
-            BladeTaper = 1.80f,
-            BladeWidthStart = 0.070f,
-            BladeWidthEnd = 0.090f,
-            BladeWidthShape = 1f,
-            HingeWidthScale = 1.80f,
-            BladeThickness = 0.05f,
-            SunApparentDiameter = 2.30f,
-            DishRise = 0.60f,
-            DishPower = 2f,
+            SectorMargin = 0.18f,
+            BladeTipLength = 0.71f,
+            BladeMinLength = 0.23f,
+            BladeTaper = 1.24f,
+            BladeWidthStart = 0.07f,
+            BladeWidthEnd = 0.1f,
+            BladeWidthShape = 1.83f,
+            HingeWidthScale = 1.7f,
+            BladeThickness = 0.2f,
+            SunApparentDiameter = 2f,
+            DishRise = 1.43f,
+            DishPower = 2.13f,
         };
 
         /// <summary>Prisms this shape lays: two wings per pair, plus one sun core per pair.</summary>

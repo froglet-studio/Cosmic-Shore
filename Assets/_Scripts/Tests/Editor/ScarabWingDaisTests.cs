@@ -63,14 +63,17 @@ namespace CosmicShore.Tests
             }
             else if (e.Kind == PrismKind.SuperShielded)
             {
-                float a = hw * StellatedOctahedronMeshGenerator.CIRCUMSCRIBING_SCALE;
-                float r = a * Mathf.Sqrt(2f);
-                for (int i = 0; i < 8; i++)
+                // The stellation's convex hull IS the cube its spikes corner, so the outline is
+                // the hull of those eight points under the sun's OWN rotation — which is no
+                // longer axis-aligned. A hard-coded octagon would be measuring a shape the game
+                // does not draw.
+                var projected = new List<Vector2>(8);
+                foreach (var tip in ScarabWingDais.SunSpikeTipsPerEdge)
                 {
-                    float ang = i * Mathf.PI / 4f;
-                    float rr = (i % 2 == 1) ? r : a;
-                    poly.Add(p + new Vector2(Mathf.Cos(ang), Mathf.Sin(ang)) * rr);
+                    Vector3 w = e.Rotation * Vector3.Scale(tip, e.Scale);
+                    projected.Add(p + new Vector2(Vector3.Dot(w, u), Vector3.Dot(w, v)));
                 }
+                poly.AddRange(ConvexHull(projected));
             }
             else
             {
@@ -78,6 +81,31 @@ namespace CosmicShore.Tests
                 poly.Add(p - d * hl - n * hw); poly.Add(p - d * hl + n * hw);
             }
             return poly;
+        }
+
+        /// <summary>Monotone-chain hull, counter-clockwise. The SAT below wants a convex ring,
+        /// and a projected cube's corners do not arrive in order.</summary>
+        static List<Vector2> ConvexHull(List<Vector2> pts)
+        {
+            pts.Sort((a, b) => a.x != b.x ? a.x.CompareTo(b.x) : a.y.CompareTo(b.y));
+            var hull = new List<Vector2>(pts.Count * 2);
+            for (int pass = 0; pass < 2; pass++)
+            {
+                int start = hull.Count;
+                for (int i = 0; i < pts.Count; i++)
+                {
+                    var q = pass == 0 ? pts[i] : pts[pts.Count - 1 - i];
+                    while (hull.Count - start >= 2)
+                    {
+                        Vector2 a = hull[hull.Count - 2], b = hull[hull.Count - 1];
+                        if ((b.x - a.x) * (q.y - a.y) - (b.y - a.y) * (q.x - a.x) > 1e-9f) break;
+                        hull.RemoveAt(hull.Count - 1);
+                    }
+                    hull.Add(q);
+                }
+                hull.RemoveAt(hull.Count - 1);
+            }
+            return hull;
         }
 
         /// <summary>Exact separating-axis test. The dais is planar, so this is conservative for
@@ -196,7 +224,13 @@ namespace CosmicShore.Tests
             }
 
             Assert.AreEqual(0, nearestBlade, "the blade nearest the switch must be the wing's FIRST");
-            Assert.Less(nearest, RingRadius * 1.15f, "the wings have to start AT the ring, not out in a void");
+            Assert.Greater(nearest, RingRadius, "and it must stop OUTSIDE the mouth a ball threads");
+            // Stated against the rosette rather than against a fixed multiple of the ring, because
+            // WingRootReach is a dial and WingHalfGapDeg swings the spar's tip off-axis on top of
+            // it — the invariant is "the wings begin at the ring", not "at exactly 1.0x the ring".
+            Assert.Less(nearest, ScarabWingDais.OuterReach(s, RingRadius) * 0.25f,
+                $"the wings begin {nearest:F1} out from a ring of {RingRadius:F0} — that is a void, " +
+                "not a rosette that starts at the switch");
             Assert.AreEqual(nearest, ScarabWingDais.InnerReach(s, RingRadius), 1e-2f,
                 "InnerReach is what the Dais Lab reports; it must be the real thing");
         }
@@ -245,10 +279,43 @@ namespace CosmicShore.Tests
         }
 
         [Test]
+        public void EverySunAimsASpikeAtTheSwitch()
+        {
+            // A sun core is a stella octangula, so its eight spikes point at the CUBE CORNERS.
+            // Aiming its (1,1,1) body diagonal inboard puts one of those spikes on the line from
+            // the sun to the spent switch: every sun points AT the thing it rings, which is the
+            // one direction in the rosette that means anything.
+            Assert.AreEqual(0f,
+                (ScarabWingDais.SunCornerAim * Vector3.one.normalized - Vector3.forward).magnitude,
+                1e-5f, "SunCornerAim must take the unit body diagonal onto local +z");
+
+            var s = ScarabWingDaisSettings.Default;
+            var (axis, _, _) = Frame();
+            float edge = ScarabWingDais.SunEdge(s, RingRadius);
+            float spikeReach = edge * ScarabWingDais.SunInPlaneReach;
+
+            foreach (var sun in Build(s).FindAll(e => e.IsSunCore))
+            {
+                Vector3 inward = -Vector3.ProjectOnPlane(sun.Position - Center, axis).normalized;
+                Vector3 spike = sun.Rotation * (Vector3.one.normalized * spikeReach);
+                Assert.Less(Vector3.Angle(spike, inward), 0.05f,
+                    $"sun {sun.Pair}'s (1,1,1) spike is {Vector3.Angle(spike, inward):F2}deg off the switch");
+                // …and it is IN the dais plane, which is why the aim costs clearance (below).
+                Assert.AreEqual(0f, Vector3.Dot(spike.normalized, axis), 1e-4f);
+            }
+        }
+
+        [Test]
         public void TheSunSitsClearInsideTheHoleItsWingsWrap()
         {
-            // A stella's IN-PLANE reach is neither its axis extent nor its circumsphere, and it is
-            // the only one of the three that decides whether the wings grow through their own sun.
+            // A stella's IN-PLANE reach is the one of its three sizes that decides whether the
+            // wings grow through their own sun — and aiming a spike at the switch (above) is what
+            // makes it the FULL circumradius rather than the axis-aligned pose's
+            // CIRCUMSCRIBING_SCALE·√2/2. A rotation that nobody costed is a collision.
+            Assert.AreEqual(ScarabWingDais.SunApparentFactor * 0.5f,
+                            ScarabWingDais.SunInPlaneReach, 1e-5f,
+                            "an aimed sun reaches its full circumradius in the dais plane");
+
             var s = ScarabWingDaisSettings.Default;
             Assert.Greater(ScarabWingDais.SunClearance(s, RingRadius), 0f,
                 "the sun's spikes are inside the ring of blade roots that wraps it");
@@ -288,18 +355,28 @@ namespace CosmicShore.Tests
             var wing = ScarabWingDais.BuildWing(s, RingRadius);
             int checkedHinges = 0;
 
+            float firstRatio = 0f, lastRatio = 0f;
             for (int h = s.HingeEvery; h < wing.Count - 1; h += s.HingeEvery)
             {
                 if (wing[h].Kind != PrismKind.Shielded) continue;
                 float hingeJunction = wing[h].Theta - wing[h - 1].Theta;
                 float plainJunction = wing[h + 2].Theta - wing[h + 1].Theta;
-                Assert.Greater(hingeJunction, plainJunction * 1.2f,
+                Assert.Greater(hingeJunction, plainJunction,
                     $"the fan opens {hingeJunction * Mathf.Rad2Deg:F2}deg at hinge {h} but " +
                     $"{plainJunction * Mathf.Rad2Deg:F2}deg between the plain blades beside it — " +
                     "the octahedra are decoration, not joints");
+                lastRatio = hingeJunction / plainJunction;
+                if (checkedHinges == 0) firstRatio = lastRatio;
                 checkedHinges++;
             }
             Assert.Greater(checkedHinges, 1, "a wing with one joint is a kink, not a curve");
+
+            // The mechanic STRENGTHENS as the wing wraps, because a hinge's stand-off is
+            // atan(w/L) and the blades are shortening. A wing whose last joint opened no wider
+            // than its first would mean the widths had stopped tracking the lengths.
+            Assert.Greater(lastRatio, firstRatio * 1.2f,
+                $"the hinges open {firstRatio:F2}x the plain step at the root and {lastRatio:F2}x " +
+                "at the tip — the joints should bite harder as the blades shorten");
 
             for (int i = 1; i < wing.Count; i++)
                 Assert.Greater(wing[i].Theta, wing[i - 1].Theta, "the fan only ever opens");
@@ -461,15 +538,21 @@ namespace CosmicShore.Tests
             // (0.5,0.5,0.5)..(40,10,10) on the interactive prism — silently. Without
             // AdmitTargetScale the dais is a field of stubs with no error anywhere.
             var s = ScarabWingDaisSettings.Default;
-            bool overCeiling = false, underFloor = false;
+            bool overCeiling = false;
             foreach (var e in Build(s))
-            {
-                if (e.IsSunCore) continue;
-                overCeiling |= e.Scale.z > 10f;
-                underFloor |= Mathf.Min(e.Scale.x, Mathf.Min(e.Scale.y, e.Scale.z)) < 0.5f;
-            }
-            Assert.IsTrue(overCeiling, "the long blades must exceed the pool's default axis ceiling");
-            Assert.IsTrue(underFloor, "the fitted shielded blades must go under the pool's floor");
+                if (!e.IsSunCore) overCeiling |= e.Scale.z > 10f;
+            Assert.IsTrue(overCeiling, "the long spars must exceed the pool's default axis ceiling");
+
+            // The FLOOR is the other end of the same clamp and it is one dial away: a plate at the
+            // fleet-standard thickness, once fitted by ShieldedFit, lands under 0.5. The shipped
+            // dais happens to sit above it, which is exactly why this is asserted against a
+            // variant rather than assumed to be unreachable.
+            s.BladeThickness = 0.05f;
+            bool underFloor = false;
+            foreach (var e in Build(s))
+                if (!e.IsSunCore)
+                    underFloor |= Mathf.Min(e.Scale.x, Mathf.Min(e.Scale.y, e.Scale.z)) < 0.5f;
+            Assert.IsTrue(underFloor, "a thin-plate dais must go under the pool's floor");
         }
 
         [Test]

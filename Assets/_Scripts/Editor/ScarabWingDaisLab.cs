@@ -166,17 +166,43 @@ namespace CosmicShore.Editor
             }
             if (e.Kind == PrismKind.SuperShielded)
             {
-                float a = hw * StellatedOctahedronMeshGenerator.CIRCUMSCRIBING_SCALE;
-                float r = a * Mathf.Sqrt(2f);
-                var poly = new Vector2[8];
-                for (int i = 0; i < 8; i++)
+                // The stellation's convex hull IS the cube its spikes corner, so the outline is
+                // the hull of those eight points under the sun's OWN rotation — which is not axis
+                // aligned: every sun aims a spike at the switch.
+                var pts = new List<Vector2>(8);
+                foreach (var tip in ScarabWingDais.SunSpikeTipsPerEdge)
                 {
-                    float ang = i * Mathf.PI / 4f;
-                    poly[i] = p + new Vector2(Mathf.Cos(ang), Mathf.Sin(ang)) * ((i % 2 == 1) ? r : a);
+                    Vector3 w = e.Rotation * Vector3.Scale(tip, e.Scale);
+                    pts.Add(p + new Vector2(w.x, w.y));
                 }
-                return poly;
+                return ConvexHull(pts);
             }
             return new[] { p + d * hl + n * hw, p + d * hl - n * hw, p - d * hl - n * hw, p - d * hl + n * hw };
+        }
+
+        /// <summary>Monotone-chain hull, counter-clockwise — the SAT below wants a convex ring
+        /// and a projected cube's corners do not arrive in order.</summary>
+        static Vector2[] ConvexHull(List<Vector2> pts)
+        {
+            pts.Sort((a, b) => a.x != b.x ? a.x.CompareTo(b.x) : a.y.CompareTo(b.y));
+            var hull = new List<Vector2>(pts.Count * 2);
+            for (int pass = 0; pass < 2; pass++)
+            {
+                int start = hull.Count;
+                for (int i = 0; i < pts.Count; i++)
+                {
+                    Vector2 q = pass == 0 ? pts[i] : pts[pts.Count - 1 - i];
+                    while (hull.Count - start >= 2)
+                    {
+                        Vector2 a = hull[hull.Count - 2], b = hull[hull.Count - 1];
+                        if ((b.x - a.x) * (q.y - a.y) - (b.y - a.y) * (q.x - a.x) > 1e-9f) break;
+                        hull.RemoveAt(hull.Count - 1);
+                    }
+                    hull.Add(q);
+                }
+                hull.RemoveAt(hull.Count - 1);
+            }
+            return hull.ToArray();
         }
 
         static bool Separated(Vector2[] a, Vector2[] b)
@@ -299,11 +325,12 @@ namespace CosmicShore.Editor
                 FrogletEditorPalette.CardBody);
 
             // The three readings that are decisions rather than measurements.
-            if (r.Inner > _ringRadius * 1.25f)
+            if (r.Inner > r.Outer * 0.25f)
                 EditorGUILayout.HelpBox(
                     $"The wings begin {r.Inner:F0} out from a ring of {_ringRadius:F0} — there is a void " +
-                    "around the switch. Lower WingRootReach, or raise SunRadius so the spar has room to " +
-                    "grow back in.", MessageType.Warning);
+                    "around the switch. Lower WingRootReach or WingHalfGapDeg (which swings the spar's " +
+                    "tip off-axis on top of it), or raise SunRadius so the spar has room to grow back in.",
+                    MessageType.Warning);
             if (r.Inner < _ringRadius)
                 EditorGUILayout.HelpBox(
                     "The dais reaches inside the ring the ball threads. Raise WingRootReach.",

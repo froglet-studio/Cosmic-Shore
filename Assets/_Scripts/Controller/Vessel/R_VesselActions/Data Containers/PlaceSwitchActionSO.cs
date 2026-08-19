@@ -67,7 +67,7 @@ namespace CosmicShore.Gameplay
                  "fitting rules.")]
         [SerializeField] ScarabWingDaisSettings dais = ScarabWingDaisSettings.Default;
 
-        [Tooltip("Prisms laid per frame while the dais blooms outward. The rosette is 390 prisms " +
+        [Tooltip("Prisms laid per frame while the dais blooms outward. The rosette is 255 prisms " +
                  "at the shipped shape, so laying it in one frame would spike; this is a pacing " +
                  "dial, not a cap — every prism is always laid.")]
         [SerializeField, Range(1, 96)] int daisPrismsPerFrame = 24;
