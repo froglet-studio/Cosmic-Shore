@@ -1136,6 +1136,28 @@ namespace CosmicShore.Gameplay
             float bladeT = 0f;
             Vector3 strikerVelocity;
 
+            // ── A plain SKIM FIELD never strikes the ball ──────────────────────────────────
+            // The blade branch below already refuses the Rhino's skim SPHERE for this exact
+            // reason ("worse than the vessel-root behaviour it replaced"), but the refusal only
+            // covered swords: every other vessel's skimmer is also parented under the vessel, so
+            // GetComponentInParent<IVessel> found it and the ball was being batted from tens of
+            // units away by an invisible aura.
+            //
+            // It matters most on the Scarab, whose skimmer CREATES the ball out of a crystal
+            // (SCARAB.md §4.1). Without this, the very sphere that just converted the crystal
+            // would strike the new ball on the same frame and throw it clear before the hull
+            // arrived — which is precisely the "ball leaves before the ship gets there" feel the
+            // skimmer forge exists to remove.
+            //
+            // Tested on the presence of SwingKinematics rather than on `blade`, so a sword is
+            // still routed through the blade branch even when `bladeAwareStrikes` is off; that
+            // flag keeps its own meaning instead of being backdoored into "swords cannot hit".
+            if (blade == null && hitCollider != null)
+            {
+                var skimField = hitCollider.GetComponentInParent<Skimmer>();
+                if (skimField != null && skimField.SwingKinematics == null) return;
+            }
+
             if (blade != null)
             {
                 Vector3 ballCenter = transform.position;

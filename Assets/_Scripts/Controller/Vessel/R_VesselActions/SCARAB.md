@@ -5,7 +5,7 @@
 > throttle along the nose + Snap Dash), `ScarabJukeController` (free dash, `OnJukeFired`),
 > `ScarabCavitationBlast` + `AOEScarabCavitation.prefab` + its elemental-debuff container,
 > `PlaceSwitchActionSO`/executor + `ScarabSwitch` (toy ring, Vogel interior fill, plane-crossing
-> trigger, outward burst, MASS-5 shielded prisms), `ScarabBallForgeByCrystalEffectSO` (every omni
+> trigger, outward burst, MASS-5 shielded prisms), `ScarabBallForgeBySkimmerCrystalEffectSO` (every omni
 > crystal forges a ball at the vessel's TRUE velocity, dash included; SPACE scales it to ×4),
 > the four-row ability map, containers, camera SO, class card, HUD view/controller, and all
 > registrations (arcade card, prefab container, network prefabs, vessel-changer toy). In-editor
@@ -419,6 +419,40 @@ four of those properties.
 
 ### 4.1 Generation — crystals become balls
 
+**SHIPPED MECHANIC: the SKIMMER touches a crystal and the crystal BECOMES a ball, in place, at
+rest** (`ScarabBallForgeBySkimmerCrystalEffectSO`). The skimmer sphere reaches well past the hull,
+so the conversion happens *before* the ship arrives and the ball is sitting still when it does. The
+hull then hits a real ball and the ordinary strike path produces the trajectory.
+
+*This replaced a hull-collision forge that tried to make collecting a crystal FEEL like striking a
+ball* — it spawned the ball ahead of the vessel along its course, carrying a fraction of its
+velocity, with a forward clearance so it did not materialise inside the hull
+(`_inheritedVelocityFraction`, `_minimumLaunchSpeed`, `_forwardClearance`). Every one of those
+numbers was approximating a collision that had not happened yet, and no amount of tuning could make
+it read right, because the ball was always leaving before the ship got there. **Do not reintroduce
+them.** The skimmer makes the collision real instead of imitating it, which is both simpler and
+strictly better-feeling.
+
+Two properties are load-bearing:
+
+- **Mechanically instant.** The ball is fully live the frame it is minted, so a pilot arriving one
+  frame later strikes a finished ball — not a crystal, and not a half-built object.
+- **Visually gradual, and free to finish late.** The crystal leaves through its own shipped collect
+  burst and the ball blooms in over `AstroLeagueSettingsSO.spawnBloomSeconds`. That bloom is armed
+  in the ball's `Awake` on *every* peer and is a pure scale animation, so it needs no RPC and simply
+  keeps running wherever the ball has got to — it may still be finishing while the ball is struck
+  and travelling, which is exactly the intended read.
+- **A plain skim field never strikes the ball** (`AstroLeagueBall.VesselContact`). Without that,
+  the very sphere that converted the crystal would strike the new ball on the same frame and throw
+  it clear — reproducing the old feel through a different door. The Rhino's sword is unaffected: it
+  is routed through the blade branch, tested on `SwingKinematics` rather than on the
+  `bladeAwareStrikes` flag.
+
+The energy-meter economy below is the ORIGINAL design and is currently **off**
+(`_requireEnergy = false` was carried onto the skimmer effect's predecessor; every omni crystal
+converts outright). It is retained here because turning it back on is still the intended path to a
+paced economy:
+
 Balls are made from **crystal energy**, not spawned by the mode:
 
 1. Collecting crystals fills the Scarab's energy meter (a `ResourceSystem` resource — normalized
@@ -428,7 +462,7 @@ Balls are made from **crystal energy**, not spawned by the mode:
 3. The meter drains by the ball's cost, and the crystal respawns as normal.
 
 **Two things forge, one place mints.** A hull flying through a crystal
-(`ScarabBallForgeByCrystalEffectSO`) and a BLAST engulfing one
+(`ScarabBallForgeBySkimmerCrystalEffectSO`) and a BLAST engulfing one
 (`ScarabBallForgeByExplosionEffectSO`) both route through `ScarabBallForge`, which owns the spawn,
 the network gate, the SPACE size stamp and the client→server hop. Writing the spawn twice is how
 the two would drift apart on the one thing that must never differ — what a ball *is*.

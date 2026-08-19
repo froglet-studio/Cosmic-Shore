@@ -8,27 +8,33 @@ namespace CosmicShore.Gameplay
 {
     /// <summary>
     /// The one place a ball is minted (design: R_VesselActions/SCARAB.md §4.1). Two things forge
-    /// balls — a vessel flying through a crystal
-    /// (<see cref="ScarabBallForgeByCrystalEffectSO"/>) and a blast engulfing one
-    /// (<see cref="ScarabBallForgeByExplosionEffectSO"/>) — and they must produce the SAME object
-    /// from the same rules, so the spawn, the network gate and the SPACE size stamp live here
-    /// rather than being written twice and drifting.
+    /// balls — a Scarab's SKIMMER touching a crystal
+    /// (<see cref="ScarabBallForgeBySkimmerCrystalEffectSO"/>, the primary path) and a blast
+    /// engulfing one (<see cref="ScarabBallForgeByExplosionEffectSO"/>) — and they must produce the
+    /// SAME object from the same rules, so the spawn, the network gate and the SPACE size stamp
+    /// live here rather than being written twice and drifting.
     ///
-    /// BOTH PATHS ARE SERVER-AUTHORITATIVE, AND THE BLAST PATH IS THEREFORE HOST-ONLY TODAY.
-    /// The ball is a NetworkObject, so only the server may spawn one. The vessel-impact path
-    /// reaches the server for free through <c>NetworkVesselImpactor</c>'s ServerRpc → ClientRpc
-    /// fan-out, so it works for every pilot. The BLAST path does not: <c>ScarabJukeController</c>
+    /// BOTH PATHS ARE SERVER-AUTHORITATIVE. The ball is a NetworkObject, so only the server may
+    /// spawn one. The SKIMMER path needs no round-trip to be fair: the server simulates every
+    /// vessel, so the server's copy of any pilot's skimmer overlaps the crystal and converts it,
+    /// remote clients included. The BLAST path is host-only today: <c>ScarabJukeController</c>
     /// reads local input in <c>Update</c>, so a client's cavitation explosion exists only on that
     /// client — and the crystal it engulfs cannot be spent there either, because
     /// <c>OmniCrystalImpactor.CanBlastConsume</c> refuses on a network client exactly as every
     /// other crystal collect does. A client's blast therefore forges nothing.
     ///
-    /// A client→server hop was written for this and REMOVED, because it could never be reached:
-    /// the crystal-consumption gate runs first and returns before the forge effect executes, so
-    /// the RPC was plumbing that described a fix it could not deliver. Closing the gap properly
-    /// needs ONE round-trip that carries the crystal's id and lets the SERVER do both halves
-    /// (consume + forge) — the crystal is the authoritative object, not the ball. Recorded as a
-    /// follow-up in SCARAB.md §4.1; do not re-add a forge-only RPC.
+    /// A client→server hop was written for the blast and REMOVED, because it could never be
+    /// reached: the crystal-consumption gate runs first and returns before the forge effect
+    /// executes, so the RPC was plumbing that described a fix it could not deliver. Closing that
+    /// gap properly needs ONE round-trip carrying the crystal's id, letting the SERVER do both
+    /// halves (consume + forge) — the crystal is the authoritative object, not the ball. Recorded
+    /// as a follow-up in SCARAB.md §4.1; do not re-add a forge-only RPC.
+    ///
+    /// A THIRD path was deleted: a hull-collision forge that spawned the ball ahead of the vessel
+    /// carrying a fraction of its velocity, trying to make collecting a crystal feel like striking
+    /// a ball. The skimmer conversion makes the feeling real instead of imitating it — see
+    /// <see cref="ScarabBallForgeBySkimmerCrystalEffectSO"/> — so do not reintroduce launch
+    /// velocity, minimum launch speed, or a forward clearance offset at the forge.
     /// </summary>
     public static class ScarabBallForge
     {

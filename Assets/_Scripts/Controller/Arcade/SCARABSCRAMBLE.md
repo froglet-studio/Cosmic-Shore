@@ -50,8 +50,9 @@ all three, and a three-judge design panel (accessibility / beachhead-referral /
 platform-law) shaped the final rule set:
 
 1. **Everyone always has their own objective.** Every omni crystal forges a ball on
-   contact (`ScarabBallForgeByCrystalEffectSO` ships `_requireEnergy = false`), so a new
-   player is never locked out the way a single match ball locks them out.
+   SKIMMER contact (`ScarabBallForgeBySkimmerCrystalEffectSO` — the crystal becomes a ball in
+   place, at rest, and the hull then strikes a real ball), so a new player is never locked out
+   the way a single match ball locks them out.
 2. **Ownership is permanent** (`AstroLeagueBall.SetOwnershipLockedServer`, SCARAB.md
    §4.2): a ball is its maker's domain colour from birth to death, so it always eats the
    enemy's trail and shields its own — the legibility that keeps a multi-ball arena
@@ -100,7 +101,7 @@ platform-law) shaped the final rule set:
 | `ScarabScramble = 42` | `_Scripts/Data/Enums/GameModes.cs` (+ `EnumIntegrityTests` count → 41; that assertion had drifted to 33 while the enum grew to 40, so it was already failing before this branch) |
 | Ownership lock + touch ledger (`LastTouchDomainServer` / `LastToucherNameServer` / `WallBouncesSinceTouchServer`) + juke-steal + `SpendServer` + birth bloom + **`n_SizeScale`** | `AstroLeague/AstroLeagueBall.cs` (+ `spawnBloomSeconds` on `AstroLeagueSettingsSO`) |
 | `n_SizeScale` fixes a confirmed pre-existing bug this mode made live: `SetSizeScale` ran server-side after the spawn payload was built, so a SPACE-scaled forged ball rendered — and prism-scanned — at prefab size on every remote peer | same |
-| `ForgeGate` (mode cap policy) + `OnForged` (mode adoption) + both forge paths routed through `Request` | `R_VesselActions/ScarabBallForge.cs`, `EffectsSO/Vessel Crystal Effects/ScarabBallForgeByCrystalEffectSO.cs` |
+| `ForgeGate` (mode cap policy) + `OnForged` (mode adoption) + both forge paths routed through `Request` | `R_VesselActions/ScarabBallForge.cs`, `EffectsSO/Skimmer Crystal Effects/ScarabBallForgeBySkimmerCrystalEffectSO.cs` |
 | `IsJukeStrikeWindowOpen` (the steal window) | `Vessel/ScarabJukeController.cs` |
 | `scarabScrambleGoalTarget` live/build/getter, default 10 | `EndConditionOverridesSO` + window + `Resources/EndConditionOverrides.asset` |
 | `GameToastSituation` 60–66 (goal, match point, lead change, forge hint, roll hint, bank goal, ball cap) | `_Scripts/Data/Enums/GameToastSituation.cs` |
