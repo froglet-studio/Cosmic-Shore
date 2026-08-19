@@ -492,3 +492,15 @@ editor and a real lobby.
   which sizes the race rather than the feel. At a 3-bend target this cuts both ways: the debuff
   now has to carry a whole third of the match, so if it reads as a shrug the mode reads as a
   coin flip.
+  **⚠ That dial is SHARED, and its name hides it.** The asset this mode wired
+  (guid `1587fc14…`) was renamed to `ScarabCavitationDebuffByExplosionEffect.asset` by the
+  Scarab branch, which then referenced the same asset from
+  `ScarabCavitationExplosionImpactorDataContainer` — so ONE
+  `VesselElementalDebuffByExplosionEffectSO` now voices both the Scarab's cavitation blast and
+  the Dolphin's crystal cone. GUID references follow a rename silently, so nothing flagged it and
+  the Dolphin's own container (`AOEConicExplosionImpactorDataContainer`, untouched since this
+  mode wired it) still points at it. **Retuning the bend retunes the Scarab, and a maintainer
+  reading the asset NAME would reasonably believe the opposite.** Fix by forking a
+  `BendsDebuffByExplosionEffect.asset` for this mode's container before the first tuning pass —
+  the values are identical today (`-0.5` / `4 s` / `1 s` cooldown), so the fork is free right now
+  and expensive after either mode moves.
