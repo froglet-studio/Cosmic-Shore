@@ -90,6 +90,16 @@ namespace CosmicShore.Gameplay
         // the leader can only change on a goal event — no sampler coroutine needed.
         Domains _leaderDomain = Domains.Blue;
 
+        // The Scarab's nucleus-ability config, for the ONE number the mode shares with it: the
+        // detonation radius scale. Loaded lazily from Resources (the seeder's own fallback path)
+        // so the mode needs no new inspector wiring, and so "too many balls" looks identical
+        // whether the overload came from the nucleus or from the forge cap.
+        ScarabNucleusFieldConfigSO _nucleusConfigCache;
+        ScarabNucleusFieldConfigSO NucleusConfig =>
+            _nucleusConfigCache != null
+                ? _nucleusConfigCache
+                : (_nucleusConfigCache = Resources.Load<ScarabNucleusFieldConfigSO>("ScarabNucleusFieldConfig"));
+
         // Fauna exclusion sweep state (the Astro League cleanup-crew pattern).
         float _faunaExclusionCurrent;
 
@@ -278,11 +288,30 @@ namespace CosmicShore.Gameplay
                 if (ball == null || ball.IsHidden || ball.IsEmbeddedOnNucleus) continue;
                 if (ball.LastHitDomain == status.Domain) liveOwned++;
             }
-            if (liveOwned < cap) return true;
+            if (liveOwned < cap)
+            {
+                // Clear any flag a previous forge set but never consumed (a mint that failed
+                // outright raises no OnForged), so a stale overflow can never detonate the court
+                // on somebody's ordinary next crystal.
+                _overflowForgePending = false;
+                return true;
+            }
 
+            // AT THE CAP THE FORGE STILL RUNS — and then everything blows up. The cap used to
+            // REFUSE, which made a crystal silently do nothing at the worst possible moment; now
+            // exceeding it is the same event as overloading the nucleus (SCARAB.md §4.6), so the
+            // rule reads as one thing everywhere: too many balls detonates the lot. The overflow
+            // ball is minted first and dies with the rest, which is what makes "I grabbed one too
+            // many" legible rather than arbitrary.
+            _overflowForgePending = true;
             NotifyForgeCapped(status);
-            return false;
+            return true;
         }
+
+        // Set by CanForge when a forge crosses the cap; consumed by HandleBallForged, which runs
+        // immediately after the ball exists (ScarabBallForge.Request raises OnForged straight after
+        // the launch). A field rather than a return value because ForgeGate's contract is a bool.
+        bool _overflowForgePending;
 
         // Per-pilot rate limit on the cap toast, so grazing three crystals in a corridor does
         // not post three toasts.
@@ -319,6 +348,16 @@ namespace CosmicShore.Gameplay
             // ball AWAY" the only sensible defence — pushing it through a hoop scores for them.
             ball.SetBoundary(_boundary);
             _forgerByBall[ball] = forger != null ? forger.PlayerName : string.Empty;
+
+            if (!_overflowForgePending) return;
+            _overflowForgePending = false;
+
+            // Detonate INCLUDING the ball just forged — it is live by now, so the shared
+            // detonate-all covers it without a special case.
+            float scale = NucleusConfig != null ? NucleusConfig.detonationRadiusScale : 2f;
+            int n = AstroLeagueBall.DetonateAllLiveServer(scale);
+            CSDebug.LogVerbose(CSLogChannel.ScarabNucleus,
+                $"[ScarabScramble] Ball cap overflow — detonated {n} ball(s) at {scale}x radius.");
         }
 
         // ── Scoring (server; reported by the hoops) ──

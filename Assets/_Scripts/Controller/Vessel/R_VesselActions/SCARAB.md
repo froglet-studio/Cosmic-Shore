@@ -767,6 +767,27 @@ The loop, and what each direction means:
 | Anyone strikes it **inward** | It enters the **NUCLEUS** — which in Scarab Scramble *is* the court — so it becomes a ball of consequence. This is the mode's **second source of balls**, alongside the crystal forge |
 | One ball too many goes in (`nucleusEntryLimit`) | **Overload**: every ball detonates with an explosion `detonationRadiusScale`× its own radius. Feeding the core is the greedy line, and the greedy line has a cliff |
 
+**Leaving the nucleus is a HIT, not a shove.** An embedded ball sits part-sunk in the shell, which
+is on the wrong side of BOTH the court and the cytoplasm volumes — so the frame it is released,
+containment corrects it and the ball jumps radially in or out. `nucleusReleaseGraceSeconds` (1 s)
+suspends its boundary so the strike's own velocity carries it across that band; containment then
+engages on a ball that is already where it belongs. This is presentation-only: the ball is a normal
+body the whole time, and nothing else about the release changes.
+
+**Too many balls is ONE event with one look.** Both the nucleus overload and the mode's forge-cap
+overflow call `AstroLeagueBall.DetonateAllLiveServer`, so they cannot drift into different-looking
+detonations. The forge cap no longer REFUSES: at the cap the crystal still forges, and then
+everything — including the ball just made — detonates. A refusal made a crystal silently do nothing
+at the worst possible moment; an overload makes "I grabbed one too many" legible.
+
+**A ball detonates in a DOMAIN explosion.** `AstroLeagueSettingsSO.detonationExplosionPrefabs`
+spawns an `AOEExplosion` carrying the BALL's domain and that domain's `AOEExplosionMaterial`, so the
+blast wears the ball's colour. The rest is stock `ExplosionImpactor` behaviour with the shipped
+`affectSelf = false, destructive = true` flags: own-domain prisms take a temporary shield (the
+no-perceived-clipping rule) and other domains are destroyed. It is flagged `AnnonymousExplosion`
+because no vessel made it — which is also what keeps the damage path from dereferencing a null
+pilot.
+
 **The embed is its own state, deliberately not `n_Frozen`.** Every vessel-contact gate on the ball
 bails on frozen — a kickoff ball must ignore the ships stacked on it — and an embedded ball's whole
 purpose is to *be* struck. So `n_Embedded` skips physics integration like frozen while leaving

@@ -78,10 +78,13 @@ platform-law) shaped the final rule set:
    resource you can waste is the wrong feel for a beachhead mode). The sphere physics also
    manufactures the mode's signature moment — the multi-carom **bank goal** — which the
    controller celebrates by bounce count (`ScarabScrambleBankGoal` toast, "BANK x{n}").
-7. **The cap refuses, never culls, and never silently.** Live balls are capped per DOMAIN
-   (`ballsPerPlayer × roster`); at the cap a crystal simply collects normally (§15.5's
-   recommendation — an expiry would be an imposed clock) and the capped pilot gets a
-   targeted toast, because a silent gate is indistinguishable from a broken feature.
+7. **The cap OVERLOADS, never culls, and never silently.** Live balls are capped per DOMAIN
+   (`ballsPerPlayer × roster`). At the cap the crystal still forges — and then every ball on
+   the court detonates, the one just made included. Nothing is expired on a clock (§15.5: an
+   expiry would be an imposed clock); the removal is caused by a player taking one crystal
+   too many, and the capped pilot gets a targeted toast, because a silent gate is
+   indistinguishable from a broken feature. Same event and same shared detonation as the
+   nucleus overload (SCARAB.md §4.6).
 
 ## Class inventory
 
@@ -129,6 +132,10 @@ it off — but because Scramble's court *is* the nucleus, the two meet:
   `Resources/ScarabNucleusFieldConfig`, which narrows it to the banked balls only. Do not add a
   mode-local suppression: the ability is platform behaviour and Scramble is not entitled to a
   private exception.
+- **The mode's own ball cap detonates through the same path.** `CanForge` allows the forge at the
+  cap and flags an overflow; `HandleBallForged` then calls the shared
+  `AstroLeagueBall.DetonateAllLiveServer`, so a cap overload and a nucleus overload are
+  indistinguishable on screen — which is the point, because to a player they are the same mistake.
 
 ## Known limitations / follow-ups
 

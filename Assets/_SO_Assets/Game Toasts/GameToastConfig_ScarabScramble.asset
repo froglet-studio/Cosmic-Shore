@@ -51,7 +51,7 @@ MonoBehaviour:
     idleSeconds: 60
     repeatWhileIdle: 1
   - situation: 66
-    messageTemplate: '<i>Ball limit - roll your marked balls through a ring first</i>'
+    messageTemplate: 'OVERLOAD! one ball too many - <b>everything blows</b>'
     tintWithDomainColor: 0
     useDomainColoredNames: 0
     alpha: 0.9

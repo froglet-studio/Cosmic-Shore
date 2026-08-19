@@ -78,6 +78,10 @@ namespace CosmicShore.Gameplay
         Vector3 _embedOutward = Vector3.up;
         Vector3 _embedAnchor;
 
+        // While Time.time is below this, ContainWithinBoundary is skipped — see
+        // AstroLeagueSettingsSO.nucleusReleaseGraceSeconds. Server-side; containment is server-only.
+        float _containmentGraceUntil;
+
         // Server-side touch ledger (Scarab Scramble's arming gate + bank-shot juice; harmless
         // bookkeeping in Astro League, which never reads it). Domains.Blue = untouched since
         // launch/reset — a fresh forge still carries its maker's launch.
@@ -618,7 +622,11 @@ namespace CosmicShore.Gameplay
                 _velocityBeforePhysics = rb.linearVelocity;
 
                 // Spherical boundary: bounce the ball off the inner surface of the nucleus sphere.
-                ContainWithinBoundary();
+                // Skipped briefly after a nucleus release: the ball starts part-sunk in the shell,
+                // which is outside BOTH the court and the cytoplasm volumes, so containing it on
+                // that first frame reads as a radial shove rather than a hit (SCARAB.md §4.6).
+                if (Time.time >= _containmentGraceUntil)
+                    ContainWithinBoundary();
             }
 
             if (IsSpawned)
@@ -1797,6 +1805,11 @@ namespace CosmicShore.Gameplay
             n_Embedded.Value = false;
             ApplyEmbeddedPhysics(false);
 
+            // Let the strike itself carry the ball out of the shell before the walls start
+            // correcting it, so leaving the nucleus reads as a hit in either direction.
+            _containmentGraceUntil = Time.time
+                + (settings != null ? Mathf.Max(0f, settings.nucleusReleaseGraceSeconds) : 1f);
+
             rb.linearVelocity = velocity;
             rb.angularVelocity = Vector3.zero;
             if (IsSpawned)
@@ -1840,9 +1853,81 @@ namespace CosmicShore.Gameplay
         public void DetonateWithRadiusServer(float radiusScale)
         {
             if (!IsServer) return;
-            Detonate_ClientRpc(transform.position, Mathf.Max(0.1f, radiusScale));
+            float scale = Mathf.Max(0.1f, radiusScale);
+            Detonate_ClientRpc(transform.position, scale);
+            SpawnDomainBlast(scale);
             SetHiddenServer(true);
             DespawnIfForged();   // NOT ExpireServer: that would fire a second, unscaled burst
+        }
+
+        /// <summary>
+        /// A DOMAIN explosion where the ball died: coloured by the ball's own domain, and carrying
+        /// that domain into the standard blast rules — so own-domain prisms take a temporary shield
+        /// (the no-perceived-clipping rule) while other domains are destroyed. None of that is new
+        /// behaviour; it is what <c>ExplosionImpactor</c> already does with
+        /// <c>affectSelf = false, destructive = true</c>, which every shipped blast prefab authors.
+        ///
+        /// The blast radius is <paramref name="radiusScale"/>× the ball's own radius. MaxScale is a
+        /// DIAMETER (the explosion mesh is a unit sphere grown by localScale), hence the ×2.
+        /// </summary>
+        void SpawnDomainBlast(float radiusScale)
+        {
+            if (settings == null) return;
+            var prefabs = settings.detonationExplosionPrefabs;
+            if (prefabs == null || prefabs.Length == 0) return;   // unwired = burst only, by design
+
+            var init = new AOEExplosion.InitializeStruct
+            {
+                OwnDomain = n_LastHitDomain.Value,
+                Vessel = null,
+                // No vessel made this blast, so nothing may be credited to a pilot for it.
+                AnnonymousExplosion = true,
+                MaxScale = 2f * radiusScale * BallWorldRadius(),
+                OverrideMaterial = ResolveDomainBlastMaterial(n_LastHitDomain.Value),
+                SpawnPosition = transform.position,
+                SpawnRotation = Quaternion.identity,
+            };
+
+            // No DI container: the ball is spawned through NetworkObject.Spawn, not through an
+            // injecting call site, so it has none to hand on. Safe — every use of the explosion's
+            // injected gameData is null-guarded — at the cost of the blast not auto-cancelling on
+            // a turn end or replay reset that lands inside its ~3s life.
+            ExplosionHelper.CreateExplosion(prefabs, init, null);
+        }
+
+        /// <summary>
+        /// The AOE material for a domain, off the live theme data — the same per-domain set every
+        /// vessel's own blast material comes from, so a ball's explosion cannot drift from the
+        /// palette. Null (the prefab's authored material) when the theme has no set for the domain,
+        /// which is the correct fallback for the neutral Blue sentinel.
+        /// </summary>
+        Material ResolveDomainBlastMaterial(Domains domain)
+        {
+            var theme = gameData != null ? gameData.ThemeManagerData : null;
+            if (theme?.TeamMaterialSets == null) return null;
+            return theme.TeamMaterialSets.TryGetValue(domain, out var set) && set != null
+                ? set.AOEExplosionMaterial
+                : null;
+        }
+
+        /// <summary>
+        /// Server: detonate EVERY live ball at <paramref name="radiusScale"/>× its own radius. The
+        /// one implementation behind both "too many balls" events — the nucleus overload and the
+        /// forge-cap overflow — so the two can never drift into different-looking detonations.
+        /// Snapshots first, because detonating despawns and that mutates <see cref="Live"/>.
+        /// </summary>
+        public static int DetonateAllLiveServer(float radiusScale)
+        {
+            var doomed = new List<AstroLeagueBall>(Live);
+            int n = 0;
+            for (int i = 0; i < doomed.Count; i++)
+            {
+                var ball = doomed[i];
+                if (ball == null) continue;
+                ball.DetonateWithRadiusServer(radiusScale);   // no-ops off the server on its own
+                n++;
+            }
+            return n;
         }
 
         /// <summary>Server: freeze the ball in place at center (kickoff count-in). Velocity is cleared.</summary>

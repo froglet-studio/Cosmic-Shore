@@ -370,6 +370,23 @@ namespace CosmicShore.Gameplay
                  "0 disables (instant, law-breaking — leave it on).")]
         [Min(0f)] public float spawnBloomSeconds = 0.55f;
 
+        [Tooltip("Seconds after a ball is knocked out of the nucleus surface during which its " +
+                 "court/cytoplasm boundary is NOT applied (SCARAB.md §4.6). An embedded ball sits " +
+                 "part-sunk in the nucleus shell, which is on the wrong side of BOTH boundaries — " +
+                 "so the frame it is released, containment corrects it and the ball JUMPS radially " +
+                 "in or out. This grace lets its own velocity carry it across that band, after " +
+                 "which containment engages on a ball that is already where it belongs. 0 = the " +
+                 "old snap.")]
+        [Min(0f)] public float nucleusReleaseGraceSeconds = 1f;
+
+        [Header("Ball - Detonation")]
+        [Tooltip("Domain explosion spawned where a ball detonates (the nucleus overload / ball-cap " +
+                 "overflow). Coloured by the BALL's domain, and the standard blast rules then " +
+                 "apply: own-domain prisms take a temporary shield (no perceived clipping), other " +
+                 "domains are destroyed. Leave EMPTY for a burst with no blast — an unwired slot " +
+                 "is a visible TODO, never a borrowed prefab.")]
+        public AOEExplosion[] detonationExplosionPrefabs;
+
         [Header("Ball - Physics (zero friction)")]
         public float maxSpeed = 380f;
         public float ballMass = 3f;

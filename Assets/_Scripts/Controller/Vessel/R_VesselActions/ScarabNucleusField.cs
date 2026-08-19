@@ -230,25 +230,29 @@ namespace CosmicShore.Gameplay
         void Overload()
         {
             float scale = Mathf.Max(0.1f, _config.detonationRadiusScale);
+            int n;
 
-            // Snapshot first: detonating despawns, which mutates AstroLeagueBall.Live underneath us.
-            var doomed = new List<AstroLeagueBall>();
             if (_config.detonateAllLiveBalls)
             {
-                var live = AstroLeagueBall.Live;
-                for (int i = 0; i < live.Count; i++)
-                    if (live[i] != null) doomed.Add(live[i]);
+                // The SHARED implementation, also used by the mode's forge-cap overflow, so
+                // "too many balls" produces one identical detonation wherever it is triggered.
+                n = AstroLeagueBall.DetonateAllLiveServer(scale);
             }
             else
             {
-                doomed.AddRange(_inNucleus);
+                // Snapshot first: detonating despawns, which mutates the list underneath us.
+                var doomed = new List<AstroLeagueBall>(_inNucleus);
+                n = 0;
+                for (int i = 0; i < doomed.Count; i++)
+                {
+                    if (doomed[i] == null) continue;
+                    doomed[i].DetonateWithRadiusServer(scale);
+                    n++;
+                }
             }
 
             CSDebug.LogVerbose(CSLogChannel.ScarabNucleus,
-                $"[ScarabNucleusField] Nucleus overload — detonating {doomed.Count} ball(s) at {scale}x radius.");
-
-            for (int i = 0; i < doomed.Count; i++)
-                if (doomed[i] != null) doomed[i].DetonateWithRadiusServer(scale);
+                $"[ScarabNucleusField] Nucleus overload — detonated {n} ball(s) at {scale}x radius.");
 
             _inNucleus.Clear();
             _embedded.Clear();
