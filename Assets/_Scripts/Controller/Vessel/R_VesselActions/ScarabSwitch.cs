@@ -15,17 +15,19 @@ namespace CosmicShore.Gameplay
     ///
     /// <para><b>The payout is a scarab-wing DAIS.</b> A struck switch does not scatter prisms —
     /// it lays a <see cref="ScarabWingDais"/>: ten super-shielded SUN CORES ringing the spent
-    /// switch, and from each side of every sun a wing runs out as a TILED chain of blades laid
-    /// root-to-root along an elegant curve. Nothing overlaps and nothing clips, by construction.
-    /// The rosette draws itself outward over several frames — every wing's first blade, then
-    /// every wing's second — with the ten suns igniting last, so the payout READS as a monument
-    /// being raised rather than as mass appearing.</para>
+    /// switch, each WRAPPED by a mirrored pair of wings. The wings BEGIN at this ring — their
+    /// first blades are long spars whose tips land on it — and sweep out and around their sun,
+    /// closing into a C that opens away from the switch. Nothing overlaps and nothing clips, by
+    /// construction. The rosette draws itself outward over several frames — every wing's first
+    /// blade, then every wing's second — with the ten suns igniting last, so the payout READS as
+    /// a monument being raised rather than as mass appearing.</para>
     ///
     /// <para><b>The tiers are gameplay AND geometry.</b> Blades alternate plain → danger, with
     /// SHIELDED octahedra capping both ends of every wing and recurring as its hinges — and that
-    /// is not decoration: a plain blade presents a flat root edge so two of them laid flush are
-    /// parallel, while an octahedron presents a root POINT with faces sloping away from its axis,
-    /// so the run turns there and only there. To a ball the three are three different things
+    /// is not decoration: a plain blade's widest point is its root corner, so it stands its
+    /// neighbour off by a couple of degrees however long it is, while an octahedron presents a
+    /// root POINT with faces sloping away from its axis, so a flush neighbour has to stand off by
+    /// that whole angle and the fan visibly opens there. To a ball the three are three different things
     /// (SCARAB.md §4.1b): a PLAIN blade is food it eats and pays speed for; a SHIELDED blade
     /// costs no speed at all but sheds its shield and, for a forged ball, turns the shot — armour
     /// buys a redirect, not a brake; a DANGER blade is identical to a plain one from the ball's

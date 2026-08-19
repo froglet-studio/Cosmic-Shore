@@ -32,22 +32,23 @@ MonoBehaviour:
   growthRate: 1
   dais:
     PairCount: 10
-    BladesPerWing: 13
-    HingeEvery: 4
-    SunRadius: 6.4
-    WingStartDeg: 4
-    WingOrbit: 1.1
-    RootRadius: 0.45
-    BladeGap: 0.028
-    HingeEaseDeg: 1
-    BladeLengthStart: 0.8
-    BladeLengthEnd: 1.7
-    BladeWidthStart: 0.068
-    BladeWidthEnd: 0.124
-    BladeGrowthShape: 1.15
-    HingeAspect: 0.25
+    BladesPerWing: 19
+    HingeEvery: 5
+    SunRadius: 7
+    WingHoleRadius: 1.25
+    WingRootReach: 0.8
+    WingHalfGapDeg: 2
+    BladeGapDeg: 0.8
+    SectorMargin: 0.06
+    BladeTipLength: 0.55
+    BladeMinLength: 0.3
+    BladeTaper: 1.8
+    BladeWidthStart: 0.07
+    BladeWidthEnd: 0.09
+    BladeWidthShape: 1
+    HingeWidthScale: 1.8
     BladeThickness: 0.05
-    SunApparentDiameter: 1.9
+    SunApparentDiameter: 2.3
     DishRise: 0.6
     DishPower: 2
   daisPrismsPerFrame: 24

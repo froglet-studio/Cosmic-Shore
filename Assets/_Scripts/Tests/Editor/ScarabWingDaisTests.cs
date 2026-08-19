@@ -11,9 +11,11 @@ namespace CosmicShore.Tests
     /// The scarab-wing dais contract (SCARAB.md §5.1). The rosette is authored geometry that every
     /// peer rebuilds from scratch and whose prisms are STATED rather than grown, so the properties
     /// worth pinning are the ones a silent regression eats: that nothing overlaps or clips (proved
-    /// against the real SHIELD silhouettes, not the boxes), that the run turns ONLY at the
-    /// octahedral hinges, that a tier change is not a size change, that the sun core's authored
-    /// size means what the tooltip says it means, and that the whole thing scales with the ring.
+    /// against the real SHIELD silhouettes, not the boxes), that each pair is CONFINED to its own
+    /// sector so overlap between pairs is impossible rather than merely absent, that the wings
+    /// BEGIN at the switch ring and WRAP their sun, that the fan opens widest at the octahedral
+    /// hinges, that a tier change is not a size change, that the sun core's authored size means
+    /// what the tooltip says it means, and that the whole thing scales with the ring.
     /// </summary>
     public class ScarabWingDaisTests
     {
@@ -100,6 +102,12 @@ namespace CosmicShore.Tests
             return false;
         }
 
+        /// <summary>Angle of a point about the dais centre, in the (u,v) plane.</summary>
+        static float PlanarAngle(Vector2 p) => Mathf.Atan2(p.y, p.x);
+
+        static Vector2 Planar(Vector3 world, Vector3 u, Vector3 v) =>
+            new(Vector3.Dot(world - Center, u), Vector3.Dot(world - Center, v));
+
         [Test]
         public void TheRosetteHasNoOverlapsAndNoClipping()
         {
@@ -121,86 +129,202 @@ namespace CosmicShore.Tests
         }
 
         [Test]
-        public void TheRunTurnsOnlyAtTheOctahedralHinges()
+        public void EveryPairStaysInsideItsOwnSectorOfTheDais()
         {
-            // A plain blade presents a flat root EDGE, so two of them laid flush are parallel and
-            // cannot turn; the shielded blade's root POINT is the only place the curve moves.
-            // This is what makes the tier pattern and the shape the same statement.
+            // This is WHY the rosette cannot self-intersect between pairs, and it is a different
+            // argument from the within-a-wing one: every blade is clipped to ScarabWingDais
+            // .SectorLimit, so a pair physically cannot reach its neighbour. Overlap is then
+            // impossible rather than merely absent from this parameter set.
             var s = ScarabWingDaisSettings.Default;
-            var built = Build(s);
-            int hinges = 0;
-            for (int b = 1; b < s.BladesPerWing; b++)
-            {
-                var prev = Find(built, 0, +1, b - 1);
-                var cur = Find(built, 0, +1, b);
-                float deg = Vector3.Angle(prev.Rotation * Vector3.forward, cur.Rotation * Vector3.forward);
-                bool touchesHinge = prev.Kind == PrismKind.Shielded || cur.Kind == PrismKind.Shielded;
-                if (touchesHinge) { hinges++; Assert.Greater(deg, 1f, $"hinge joint {b - 1}->{b} must actually turn"); }
-                // Consecutive boxes share the SAME direction vector by construction, so the only
-                // reason this is not exactly 0 is Vector3.Angle's acos losing precision near a unit
-                // dot product. Half a degree is still two orders of magnitude under a real hinge.
-                else Assert.Less(deg, 0.5f, $"joint {b - 1}->{b} is box-to-box and must stay parallel (got {deg:F3}deg)");
-            }
-            Assert.Greater(hinges, 0, "a wing with no hinge is a straight line, not a curve");
+            var (_, u, v) = Frame();
+            float half = Mathf.PI / s.PairCount;
 
-            float sweep = Vector3.Angle(Find(built, 0, +1, 0).Rotation * Vector3.forward,
-                                        Find(built, 0, +1, s.BladesPerWing - 1).Rotation * Vector3.forward);
-            Assert.Greater(sweep, 30f, "the wing has to read as a curve, not a nudge");
-        }
-
-        [Test]
-        public void EveryBladeGrowsAwayFromTheSwitch()
-        {
-            // The rosette surrounds the switch and points OUT of it. A wing that curled back past
-            // tangential would read as growing inward, which is what the first tiled pass did.
-            var s = ScarabWingDaisSettings.Default;
-            var (axis, _, _) = Frame();
             foreach (var e in Build(s))
             {
                 if (e.IsSunCore) continue;
-                Vector3 radial = Vector3.ProjectOnPlane(e.Position - Center, axis).normalized;
-                Assert.Greater(Vector3.Dot(radial, e.Rotation * Vector3.forward), 0f,
-                    $"blade {e.Feather} of pair {e.Pair} wing {e.WingSign} points back toward the switch");
+                float pairAngle = e.Pair * Mathf.PI * 2f / s.PairCount;
+                foreach (var q in Silhouette(e, u, v))
+                {
+                    float d = Mathf.DeltaAngle(pairAngle * Mathf.Rad2Deg, PlanarAngle(q) * Mathf.Rad2Deg);
+                    Assert.LessOrEqual(Mathf.Abs(d), half * Mathf.Rad2Deg + 0.05f,
+                        $"pair {e.Pair} wing {e.WingSign} blade {e.Feather} reaches {d:F2}deg off its axis, " +
+                        $"past its own {half * Mathf.Rad2Deg:F1}deg sector");
+                }
             }
         }
 
         [Test]
-        public void EverySunIsCradledInboardOfItsOwnWings()
+        public void SectorConfinementHoldsEvenWhenTheBladeDialsAreAbsurd()
         {
-            // The sun is not the root the wings sprout from — it sits in their crook, with the
-            // pair wrapping around it and growing past.
+            // The clip is load-bearing, not decorative: ask for blades four times longer than the
+            // rosette's own radius — AND a length floor just as absurd, since the floor is applied
+            // before the clip and a version that clamped up afterwards let a generous floor push
+            // blades straight out of their own sector — and the pairs still cannot touch. A
+            // construction that only behaves at its shipped numbers is a coincidence, not an
+            // invariant.
             var s = ScarabWingDaisSettings.Default;
-            var (axis, _, _) = Frame();
+            s.BladeTipLength = 20f;
+            s.BladeMinLength = 8f;
+            s.BladeTaper = 0.2f;
+            var (_, u, v) = Frame();
             var built = Build(s);
-            float Planar(ScarabWingDais.Element e) =>
-                Vector3.ProjectOnPlane(e.Position - Center, axis).magnitude;
+            var sil = new List<List<Vector2>>(built.Count);
+            foreach (var e in built) sil.Add(Silhouette(e, u, v));
+
+            for (int i = 0; i < sil.Count; i++)
+            for (int j = i + 1; j < sil.Count; j++)
+                if (built[i].Pair != built[j].Pair)
+                    Assert.IsTrue(Separated(sil[i], sil[j]),
+                        $"pair {built[i].Pair} reached into pair {built[j].Pair}");
+        }
+
+        [Test]
+        public void EveryWingBeginsAtTheSwitchRing()
+        {
+            // The wing starts where the ball threaded the switch — the inboard spar's tip lands on
+            // the ring — and that length is DERIVED from WingRootReach, never authored, so the two
+            // cannot drift apart.
+            var s = ScarabWingDaisSettings.Default;
+            var (_, u, v) = Frame();
+            float nearest = float.MaxValue;
+            int nearestBlade = -1;
+            foreach (var e in Build(s))
+            {
+                if (e.IsSunCore) continue;
+                foreach (var q in Silhouette(e, u, v))
+                    if (q.magnitude < nearest) { nearest = q.magnitude; nearestBlade = e.Feather; }
+            }
+
+            Assert.AreEqual(0, nearestBlade, "the blade nearest the switch must be the wing's FIRST");
+            Assert.Less(nearest, RingRadius * 1.15f, "the wings have to start AT the ring, not out in a void");
+            Assert.AreEqual(nearest, ScarabWingDais.InnerReach(s, RingRadius), 1e-2f,
+                "InnerReach is what the Dais Lab reports; it must be the real thing");
+        }
+
+        [Test]
+        public void WingRootReachMovesWhereTheWingsBegin()
+        {
+            var s = ScarabWingDaisSettings.Default;
+            float near = ScarabWingDais.InnerReach(s, RingRadius);
+            s.WingRootReach *= 3f;
+            float far = ScarabWingDais.InnerReach(s, RingRadius);
+            Assert.Greater(far, near + RingRadius, "the derived spar has to actually shorten");
+        }
+
+        [Test]
+        public void EveryPairWrapsItsOwnSun()
+        {
+            // The sketch's C: the sun is not the root the wings sprout from and not a bead sitting
+            // beside them — the pair closes around it. Measured as the angle its own blades span
+            // SEEN FROM THE SUN, which is the only reading that cannot be satisfied by a wing
+            // merely passing nearby.
+            var s = ScarabWingDaisSettings.Default;
+            var (_, u, v) = Frame();
+            var built = Build(s);
 
             foreach (var sun in built.FindAll(e => e.IsSunCore))
             {
-                float nearest = float.MaxValue;
+                Vector2 c = Planar(sun.Position, u, v);
+                var angles = new List<float>();
                 foreach (var b in built)
-                    if (!b.IsSunCore && b.Pair == sun.Pair) nearest = Mathf.Min(nearest, Planar(b));
-                Assert.Less(Planar(sun), nearest,
-                    $"sun {sun.Pair} is not inboard of its own pair's blades — the wings sprout from it");
+                    if (!b.IsSunCore && b.Pair == sun.Pair)
+                        angles.Add(PlanarAngle(Planar(b.Position, u, v) - c));
+                angles.Sort();
+
+                float widestGap = angles[0] + Mathf.PI * 2f - angles[angles.Count - 1];
+                for (int i = 1; i < angles.Count; i++)
+                    widestGap = Mathf.Max(widestGap, angles[i] - angles[i - 1]);
+                float wrap = (Mathf.PI * 2f - widestGap) * Mathf.Rad2Deg;
+
+                Assert.Greater(wrap, 180f, $"pair {sun.Pair} only wraps {wrap:F0}deg of its sun — that is a fan beside it, not a cradle");
+                Assert.Less(wrap, 360f, "the wings leave a mouth on the far side; a closed ring is a wreath, not a wing pair");
+            }
+            Assert.AreEqual(ScarabWingDais.WrapDegrees(s, RingRadius),
+                            2f * ScarabWingDais.BuildWing(s, RingRadius)[s.BladesPerWing - 1].Theta * Mathf.Rad2Deg,
+                            1e-3f);
+        }
+
+        [Test]
+        public void TheSunSitsClearInsideTheHoleItsWingsWrap()
+        {
+            // A stella's IN-PLANE reach is neither its axis extent nor its circumsphere, and it is
+            // the only one of the three that decides whether the wings grow through their own sun.
+            var s = ScarabWingDaisSettings.Default;
+            Assert.Greater(ScarabWingDais.SunClearance(s, RingRadius), 0f,
+                "the sun's spikes are inside the ring of blade roots that wraps it");
+
+            var (_, u, v) = Frame();
+            var built = Build(s);
+            float hole = RingRadius * s.WingHoleRadius;
+            foreach (var sun in built.FindAll(e => e.IsSunCore))
+            {
+                Vector2 c = Planar(sun.Position, u, v);
+                foreach (var b in built)
+                {
+                    if (b.IsSunCore || b.Pair != sun.Pair) continue;
+                    foreach (var q in Silhouette(b, u, v))
+                        Assert.GreaterOrEqual((q - c).magnitude, hole - 1e-2f,
+                            $"blade {b.Feather} intrudes into the hole its own sun occupies");
+                }
             }
         }
 
         [Test]
-        public void HingeAspectSetsTheTurnIndependentlyOfTheBladeRamp()
+        public void TheFanOpensWidestAtTheOctahedralHinges()
         {
-            // A hinge pivots rather than advancing the chain, so its width buys curvature without
-            // lengthening the wing. That is the only reason the rosette can be both tightly
-            // wrapped around the switch and strongly curved.
+            // A plain blade is a rectangle: its root CORNER is the widest thing about it, so it
+            // stands its neighbour off by atan(halfWidth/hole) — a couple of degrees, and no more
+            // however long it is. An octahedron presents a root POINT with faces sloping at
+            // atan(w/L) from its axis, so a neighbour flush against one of those faces has to
+            // stand off by that whole angle. That is why the wing's curve is PLACED by the tier
+            // pattern rather than tuned, and why the shape the eye reads and the pattern it reads
+            // are one statement.
+            //
+            // The exception is honest and worth naming: on the INBOARD SPAR the octahedron is a
+            // needle (atan(2.5/95) is under two degrees), so blade 0's cap does not open anything
+            // — it is an accent marking where the wing begins. The mechanic belongs to the wrap,
+            // where the blades are short, so that is where it is asserted.
             var s = ScarabWingDaisSettings.Default;
-            var built = Build(s);
-            foreach (var e in built)
+            var wing = ScarabWingDais.BuildWing(s, RingRadius);
+            int checkedHinges = 0;
+
+            for (int h = s.HingeEvery; h < wing.Count - 1; h += s.HingeEvery)
             {
-                if (e.IsSunCore || e.Kind != PrismKind.Shielded) continue;
-                float envelopeWidth = e.Scale.x / ScarabWingDais.ShieldedFit;
-                float envelopeLength = e.Scale.z / ScarabWingDais.ShieldedFit;
-                Assert.AreEqual(s.HingeAspect, envelopeWidth / envelopeLength, 1e-3f,
-                    "a hinge wears its authored aspect, not the blade ramp's");
+                if (wing[h].Kind != PrismKind.Shielded) continue;
+                float hingeJunction = wing[h].Theta - wing[h - 1].Theta;
+                float plainJunction = wing[h + 2].Theta - wing[h + 1].Theta;
+                Assert.Greater(hingeJunction, plainJunction * 1.2f,
+                    $"the fan opens {hingeJunction * Mathf.Rad2Deg:F2}deg at hinge {h} but " +
+                    $"{plainJunction * Mathf.Rad2Deg:F2}deg between the plain blades beside it — " +
+                    "the octahedra are decoration, not joints");
+                checkedHinges++;
             }
+            Assert.Greater(checkedHinges, 1, "a wing with one joint is a kink, not a curve");
+
+            for (int i = 1; i < wing.Count; i++)
+                Assert.Greater(wing[i].Theta, wing[i - 1].Theta, "the fan only ever opens");
+        }
+
+        [Test]
+        public void HingeWidthScaleOpensTheFanWithoutTouchingThePlainBlades()
+        {
+            // The hinge carries its own width so the joint can be fattened — a stronger turn —
+            // without thickening every feather in the wing.
+            var s = ScarabWingDaisSettings.Default;
+            var narrow = ScarabWingDais.BuildWing(s, RingRadius);
+            s.HingeWidthScale *= 2f;
+            var wide = ScarabWingDais.BuildWing(s, RingRadius);
+
+            for (int i = 0; i < narrow.Count; i++)
+            {
+                if (narrow[i].Kind == PrismKind.Shielded)
+                    Assert.AreEqual(narrow[i].Width * 2f, wide[i].Width, 1e-3f, "a hinge follows its own scale");
+                else
+                    Assert.AreEqual(narrow[i].Width, wide[i].Width, 1e-4f, "and no plain blade moves with it");
+            }
+            Assert.Greater(ScarabWingDais.WrapDegrees(s, RingRadius),
+                           ScarabWingDais.WrapDegrees(ScarabWingDaisSettings.Default, RingRadius),
+                           "a fatter hinge opens the fan further around the sun");
         }
 
         [Test]
@@ -273,18 +397,16 @@ namespace CosmicShore.Tests
         }
 
         [Test]
-        public void BladesGrowMonotonicallyAlongTheWing()
+        public void TheInboardSparIsTheLongestBladeInTheWing()
         {
+            // The wing's silhouette is a cardioid in the fan angle: longest where it reaches back
+            // at the switch, easing as it closes around the sun. If some mid-wing blade were the
+            // longest, the wing would read as a spearhead pointing sideways.
             var s = ScarabWingDaisSettings.Default;
-            var byBlade = new Dictionary<int, float>();
-            foreach (var e in Build(s))
-            {
-                if (e.IsSunCore || byBlade.ContainsKey(e.Feather)) continue;
-                float fit = e.Kind == PrismKind.Shielded ? ScarabWingDais.ShieldedFit : 1f;
-                byBlade[e.Feather] = e.Scale.z / fit;    // LENGTH is the shared ramp; width is not
-            }
-            for (int b = 1; b < s.BladesPerWing; b++)
-                Assert.Greater(byBlade[b], byBlade[b - 1], $"blade {b} must be longer than blade {b - 1}");
+            var wing = ScarabWingDais.BuildWing(s, RingRadius);
+            for (int i = 1; i < wing.Count; i++)
+                Assert.Less(wing[i].Length, wing[0].Length,
+                    $"blade {i} out-reaches the spar that is supposed to touch the ring");
         }
 
         [Test]
@@ -382,14 +504,6 @@ namespace CosmicShore.Tests
                 lastBlade = e.Feather;
             }
             Assert.IsTrue(sunsStarted);
-        }
-
-        static ScarabWingDais.Element Find(List<ScarabWingDais.Element> built, int pair, int sign, int blade)
-        {
-            foreach (var e in built)
-                if (e.Pair == pair && e.WingSign == sign && e.Feather == blade) return e;
-            Assert.Fail($"no blade for pair {pair} wing {sign} index {blade}");
-            return default;
         }
     }
 }
