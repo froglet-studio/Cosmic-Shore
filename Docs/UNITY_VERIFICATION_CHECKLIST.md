@@ -112,9 +112,25 @@ The editor-riskiest items:
   rows — the controller/monitor swaps were done by rewriting `m_Script` guids at the donor's
   fileIDs, and a rejected guid shows up nowhere else. GlobalObjectIdHash values were cloned
   from the DogFight scene; Unity will regenerate them on first save — save the scene once.
-- **Forge → hoop loop end-to-end** (SCARABSCRAMBLE.md steps 2–8): forged ball blooms in,
-  arming gate blocks enemy shoves, juke-steal converts (host), bank toast on 2+ caroms,
-  cap refusal toasts the capped pilot.
+- **Forge → hoop loop end-to-end** (SCARABSCRAMBLE.md steps 2–8): the SKIMMER converts a
+  crystal into a ball in place and at rest, the ball blooms in, the hull then strikes a real
+  ball; arming gate blocks enemy shoves; juke-steal converts (works from a client too, via
+  `NotifyJukeFired_ServerRpc`); bank toast on 2+ caroms.
+- **Ball cap now OVERLOADS, it does not refuse** — take one crystal past
+  `ballsPerPlayer × roster` and EVERY live ball should detonate, including the one just made,
+  each in its own domain-coloured blast. Watch that own-domain prisms take a temporary shield
+  rather than being destroyed (the no-perceived-clipping rule), and that the toast reads as an
+  overload.
+- **Scarab nucleus seeding** (SCARAB.md §4.6, a PLATFORM vessel ability — it is live in
+  freestyle and the menu too, not just this mode): balls of your domain appear embedded in the
+  nucleus on a ~14s clock. Strike one OUTWARD → it should leave into the cytoplasm and bounce
+  off the nucleus from outside; strike one INWARD → it enters the court as an ordinary scoring
+  ball. **Both directions must read as a HIT, not a radial shove** — that is what the new 1s
+  `nucleusReleaseGraceSeconds` buys, and it is the single most likely thing to still look
+  wrong. Bank a fourth into the nucleus to see the overload.
+- **Scarab skimmer is 50% larger** (world radius 30 → 45): confirm the forge triggers at a
+  comfortable stand-off and that the wider sphere has not made skim-energy gain or prism
+  interaction feel different on the Scarab elsewhere.
 - **MPPM two-client**: forged-ball SIZE on the client (the new `n_SizeScale` — seed the forger
   SPACE 10 so the ×4 ball is unmistakable), colour permanence under enemy strikes.
 - **PhaseThresholds are an estimate** (Restless 12000/11000, Frenzy 36000/32000 volume, zero

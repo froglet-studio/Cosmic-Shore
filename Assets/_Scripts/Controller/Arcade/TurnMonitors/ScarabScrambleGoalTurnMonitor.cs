@@ -50,8 +50,6 @@ namespace CosmicShore.Gameplay
 
                 _netGoalTarget.Value = target;
                 gameData.GoalTargetCount = target;
-
-                CSDebug.Log($"[ScarabScrambleGoalMonitor] Server set goal target: {target}");
             }
             else if (_netGoalTarget.Value > 0)
             {

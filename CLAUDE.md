@@ -782,9 +782,10 @@ seeking outright and would disarm every AI in a mode whose weapon is fired BY a 
 alone (where the nose points once the course is already locked on the objective), defaulting to the
 hostile-mass cluster it already used. See `_Scripts/Controller/Arcade/BENDS.md`.
 `ScarabScramble(43)` is the **Scarab-only hoop-court party game** — the accessible sibling of
-Astro League and the platform's designated **beachhead mode**: fly through a bright (omni)
-crystal anywhere in the sphere court and it becomes YOUR ball (the Scarab's shipped forge, no
-button, no meter); roll, bat or bank it through any of the arena's glowing hoops and your
+Astro League and the platform's designated **beachhead mode**: fly your SKIMMER through a bright
+(omni) crystal anywhere in the sphere court and the crystal BECOMES your ball, in place and at
+rest (no button, no meter) — the skimmer reaches past the hull, so the ball is finished by the
+time the ship arrives and the hull then strikes a real ball rather than a faked launch; roll, bat or bank it through any of the arena's glowing hoops and your
 **DOMAIN** scores; first domain to the goal target (default 10, `EndConditionOverridesSO`) wins.
 Its whole rule set points at new players: ownership is **permanent**
 (`AstroLeagueBall.SetOwnershipLockedServer` — a ball is its maker's colour from birth to death),
@@ -799,9 +800,15 @@ is deliberately NOT used — walls reflect). Multi-carom goals get the "BANK x{n
 sphere manufactures the mode's signature screamer for novices. It lands the mode-side ball work
 SCARAB.md §4.2-§4.5 left open (multi-ball via `AstroLeagueBall.Live` + `ScarabBallForge.OnForged`
 adoption, per-ball attribution via a forger/last-toucher ledger, a per-domain forge cap through
-the `ScarabBallForge.ForgeGate` policy hook — refusal collects the crystal normally and toasts
-the capped pilot, never culls) and fixed the forged ball's unreplicated `SetSizeScale`
-(`n_SizeScale`). The cell follows the Astro League template (nucleus = court,
+the `ScarabBallForge.ForgeGate` policy hook — at the cap the crystal still forges and then EVERY
+live ball detonates, the new one included, which is the same shared `DetonateAllLiveServer` event
+as the nucleus overload below; nothing is ever culled on a clock) and fixed the forged ball's
+unreplicated `SetSizeScale` (`n_SizeScale`). The Scarab also brings a PLATFORM ability the mode
+merely inherits: it passively seeds balls of its domain **embedded in the nucleus**, which anyone
+can knock OUTWARD into the cytoplasm (where they live on, bouncing off the nucleus from outside)
+or INWARD into the nucleus — in this mode the court, so that is a second source of scoring balls.
+Bank one too many inside and the core OVERLOADS, detonating every ball in a domain-coloured blast
+(own-domain prisms take a temporary shield, other domains are destroyed). See SCARAB.md §4.6. The cell follows the Astro League template (nucleus = court,
 `NucleusIsControlZone = false`, cleanup crew held out by `FaunaExclusionRadius` until Restless)
 with its OWN ladder authored for Scarab trail volume (10-40/prism, no lining floor — never copy
 the AL numbers, which ride a 30k structural floor). See `_Scripts/Controller/Arcade/SCARABSCRAMBLE.md`.
