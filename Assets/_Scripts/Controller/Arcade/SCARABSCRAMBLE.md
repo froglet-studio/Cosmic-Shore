@@ -20,7 +20,7 @@ mode** that shares the arena machinery", and ships the §4.2–§4.5 mode-side b
 - **Scene**: `Assets/_Scenes/Multiplayer Scenes/MinigameScarabScramble.unity` (cloned from
   the Dog Fight scene — same `Game` GO component set, mode components swapped in place at
   the same fileIDs)
-- **GameMode enum**: `GameModes.ScarabScramble = 42`
+- **GameMode enum**: `GameModes.ScarabScramble = 43` (42 went to The Bends upstream while this branch was open)
 - **Controller**: `ScarabScrambleController : MultiplayerDomainGamesController`
   (1 round / 1 turn, `HasEndGame=false`, `UseSceneReloadForReplay=true`, server winner
   detection in `OnTurnEndedCustom` → snapshot `SyncFinalScores_ClientRpc` — the DogFight
@@ -101,7 +101,7 @@ platform-law) shaped the final rule set:
 
 | Change | File |
 |---|---|
-| `ScarabScramble = 42` | `_Scripts/Data/Enums/GameModes.cs` (+ `EnumIntegrityTests` count → 41; that assertion had drifted to 33 while the enum grew to 40, so it was already failing before this branch) |
+| `ScarabScramble = 43` | `_Scripts/Data/Enums/GameModes.cs` (+ `EnumIntegrityTests` count → 42; that assertion had drifted to 33 while the enum grew, so it was already failing before this branch) |
 | Ownership lock + touch ledger (`LastTouchDomainServer` / `LastToucherNameServer` / `WallBouncesSinceTouchServer`) + juke-steal + `SpendServer` + birth bloom + **`n_SizeScale`** | `AstroLeague/AstroLeagueBall.cs` (+ `spawnBloomSeconds` on `AstroLeagueSettingsSO`) |
 | `n_SizeScale` fixes a confirmed pre-existing bug this mode made live: `SetSizeScale` ran server-side after the spawn payload was built, so a SPACE-scaled forged ball rendered — and prism-scanned — at prefab size on every remote peer | same |
 | `ForgeGate` (mode cap policy) + `OnForged` (mode adoption) + both forge paths routed through `Request` | `R_VesselActions/ScarabBallForge.cs`, `EffectsSO/Skimmer Crystal Effects/ScarabBallForgeBySkimmerCrystalEffectSO.cs` |

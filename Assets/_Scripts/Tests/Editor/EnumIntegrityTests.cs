@@ -136,11 +136,11 @@ namespace CosmicShore.Tests
         [Test]
         public void GameModes_HasExpectedMemberCount()
         {
-            // 41 = IDs 0..42 with 7 and 31 deliberately skipped (retired Freestyle / never
+            // 42 = IDs 0..43 with 7 and 31 deliberately skipped (retired Freestyle / never
             // assigned — see GameModes.cs). The assertion had drifted to 33 while the enum
-            // grew to 40, so this test was failing before ScarabScramble(42) was added.
+            // grew, so this test was already failing before this branch added a mode.
             var values = Enum.GetValues(typeof(GameModes));
-            Assert.AreEqual(41, values.Length,
+            Assert.AreEqual(42, values.Length,
                 "GameModes member count changed. Update tests if a game mode was added/removed.");
         }
 

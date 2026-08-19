@@ -33,6 +33,9 @@ detection. On top of that base the `Toy` class adds:
   is on autopilot; they only activate once the player takes control
   (`ToyContext.IsFreestyleActive`).
 - **Continuity-law bloom-in** — every toy scales from zero on spawn (nothing pops in).
+- **A switch ring** — every toy is drawn inside one continuous ring, square across your flight
+  path, **at the radius of its own trigger collider**. The ring is the affordance: thread it and
+  something fires. See "The switch" below; the domain changer is the one deliberate exemption.
 - **Exit-gated re-arm** — a toy is *not consumed*, but it re-arms **only once the local vessel
   has flown clear of its trigger volume** (a per-frame distance poll with `exitRadiusMultiplier`
   hysteresis, robust to the swap's despawn/respawn which fires no `OnTriggerExit`). A swap toy
@@ -46,7 +49,8 @@ detection. On top of that base the `Toy` class adds:
 
 | Role | File |
 |---|---|
-| Toy base (trigger, bloom, gating, re-arm) | `Assets/_Scripts/Controller/Toys/Toy.cs` |
+| Toy base (trigger, bloom, gating, re-arm, **switch ring**) | `Assets/_Scripts/Controller/Toys/Toy.cs` |
+| Switch-ring layout gate (CI-style, no Unity) | `Tools/Build/toy_switch_ring_geometry.py` |
 | One-toy-opens-into-many base | `Assets/_Scripts/Controller/Toys/MatrixToy.cs` |
 | Shared matrix station (fly-through choice) | `Assets/_Scripts/Controller/Toys/ToyMatrixStation.cs` |
 | Cell Selector (world picker + reset) | `Assets/_Scripts/Controller/Toys/CellSelectorToy.cs` |
@@ -257,8 +261,10 @@ only: no skimmer sphere, trails, jets, VFX), and the lifeform bench passes the e
 creature bodies. **Any new toy that offers prefabs gets its icons from this, not from a sphere.**
 
 State that used to be text is becoming shape too: the Cell Selector marks the world you are
-already in with a **halo ring** instead of the word `RESET` (an environment-free config has
-nothing to model, so its empty slot already reads as "instant").
+already in with a **second, inner halo ring** hugging the model — inside the switch ring every
+station wears, and counter-spinning so the two never read as one thick rim — instead of the word
+`RESET` (an environment-free config has nothing to model, so its empty slot already reads as
+"instant").
 
 ### Toy-root emblems (`ToyEmblem` + `ToyEmblemStreamer`)
 
@@ -329,13 +335,18 @@ subscribe to, and the vessel source's existing mid-swap guard is exactly the "ho
 signal we want). A changed key rebuilds every slot; a changed tint writes the emblem's **own** one
 material — never `ToyFactory.AccentMaterial`'s shared per-colour cache and never a theme asset.
 
-**The Domain Changer deliberately has none.** Its slots already wear a domain-tinted cone in the
-domain's live *prism* material — content-derived, unique in silhouette, and the locked shape-
-language read for "this changes your trail." It also rebuilds its body on every flip, so an emblem
-there would be re-emitted constantly for no legibility gain. Do not "complete the set."
+**The Domain Changer deliberately has none** — no emblem, and (prompter-directed) **no switch
+ring either**. Its slots already wear a domain-tinted cone in the domain's live *prism* material —
+content-derived, unique in silhouette, and the locked shape-language read for "this changes your
+trail." It also rebuilds its body on every flip, so an emblem there would be re-emitted constantly
+for no legibility gain, and a ring around it would say a second time what the cone already says
+once. Do not "complete the set." The exemption is `SwapToySetCoordinator.SlotsWearSwitchRing`,
+overridden `false` exactly once.
 
-**Labels stay for now.** They come off once the ring-distance legibility pass confirms each toy is
-identifiable without them — a separate, gated change.
+**Labels stay for now**, hung clear above the switch ring (`ToyFactory.AddRingedLabel` — the font
+is unchanged, only the height moved). They come off once the ring-distance legibility pass
+confirms each toy is identifiable without them — a separate, gated change, and now a more likely
+one, since the ring carries the far read the label used to.
 
 ### Layout tuning (matrix scale & distance)
 
@@ -565,20 +576,82 @@ shader the painted trail wears — `ToyFactory.DomainPrismMaterial` →
 
 | Shape | Meaning | Where |
 |---|---|---|
+| **Ring — the SWITCH** | *thread it and something fires* | **every toy root and every matrix station**, stroke start gates, stroke milestones, the SHARE/REPAINT completion gates, the Wanderway return station — and, outside the toybox, the Scarab's placed switches and Astro League's goals |
 | **Cone** (apex = "this way next") | *turns / keeps your trail ON* | stroke-gate hubs, every intermediate stroke point (apex points at the stroke's next point), and the **Domain Changer** bodies (apex points the way you fly through) |
 | **Jack** (three rods through a centre) | *turns your trail OFF* | each stroke's final point (reaching it ends the stroke and pens up) |
-| **Ring** (fly-through portal) | *crossing commits a choice* | stroke start gates, the SHARE/REPAINT completion gates |
 | **Emblem** (tilted ring of discrete objects around a hub) | *this is what I am, and what I'd offer* | the toy roots — see "Toy-root emblems" |
 
 The domain changer and the painting gates deliberately share the cone so meeting either one
-first sets up expectations for the other. Builders live in `ToyFactory` (`AddConeBody`,
-`AddJackBody`, `AddRingBody`).
+first sets up expectations for the other. Builders live in `ToyFactory` (`AddSwitchRing`,
+`AddConeBody`, `AddJackBody`; `AddRingBody` is the raw torus underneath).
 
 **Ring vs. emblem, the disambiguation rule:** *one continuous ring square across your flight
-path is a portal — cross it and something commits. A tilted ring of separate objects orbiting a
+path is a switch — thread it and something fires. A tilted ring of separate objects orbiting a
 hub is an emblem — it is a label, not an interactable.* Emblems are therefore built from models,
-never from `AddRingBody`, and they are tilted 32° so they never present as a portal. An emblem
+never from `AddRingBody`, and they are tilted 32° so they never present as a switch. An emblem
 adds **no collider**: the toy's own trigger sphere remains the entire interaction surface.
+
+#### The switch — a ring is how anything is activated
+
+> **A switch is a ring you thread, and threading it activates something.** It is the one word the
+> platform has for "this does something when you go through it", and it is deliberately
+> *threader-agnostic*: a **vessel** threads a toy, a **ball** threads a Scarab switch or an Astro
+> League goal. Same shape, same promise.
+
+Before this pass the toybox taught it inconsistently — the painting's stroke gates and milestones
+were rings, but a toy root was a tinted sphere with a name floating over it and an invisible 42-unit
+trigger, so "how do I use this thing?" was answered by flying at it and finding out. Now **every
+toy is drawn inside its ring**, and one rule makes it teachable rather than decorative:
+
+> **The ring IS the trigger volume, drawn at its own radius.**
+
+so a ring can never advertise a volume the collider does not have, and *fly through the ring* is a
+promise the code keeps. `PaintingRunner`'s milestones already worked this way (`trigger.radius =
+ringR; // the hit volume IS the ring`); this generalises it.
+
+**It is drawn by the base, not by each builder.** `Toy.Initialize` reads its own `SphereCollider` —
+the same collider `LocalVesselOutsideTrigger` measures for the exit gate — and draws the ring from
+it, so a toy authored tomorrow wears one without anybody remembering to add it (the same reason the
+bloom-in and the exit-gated re-arm live there). The ring is a child of the toy root, so it blooms in
+with the toy; it carries **no collider of its own** and costs one shared static mesh, one renderer
+and one `ToyIdleSpin` per station. Light `ToyMatrixStation`s (which are not `Toy`s) get theirs from
+`MatrixToy.CreateStation` / `LifeformMatrixToy.CreateStation`.
+
+**Exactly two opt-outs**, both explicit, both `Toy.ConfigureSwitchRing(...)` *before* `Initialize`:
+
+| Opt-out | Who uses it | Why |
+|---|---|---|
+| **A smaller radius** | painting gallery stations, and every `MatrixToy` station via `ToyFactory.StationRingRadius` | A station's trigger can legitimately overrun half the gap to its neighbour; rings that interpenetrate read as chain-link, not as a row of switches. Clamped to `MaxRingSpacingFraction` (0.45) of the matrix spacing. A ring **smaller** than its trigger still always fires when threaded, so the promise above survives the clamp — only "the trigger is no bigger than the ring" is given up. |
+| **Radius 0 (waived)** | the Domain Changer only, via `SwapToySetCoordinator.SlotsWearSwitchRing` | Its cones already carry the read (prompter-directed: "the domain switchers can stay how they are"). |
+
+**Measured geometry.** The law is enforced in code; its LAYOUT consequences are not, because they
+move in *data* — a station radius, a matrix spacing, `toyBodyRadius`/`toyTriggerRadius` — where no
+compiler sees them. **`Tools/Build/toy_switch_ring_geometry.py`** (`--check` to gate) re-derives
+them from the shipped constants (`ToyFactory`, `ToyEmblem`, `ToyboxController`) and the shipped
+authored assets (`_SO_Assets/Toys/Toy_*.asset`), and asserts three things per site: the ring
+**encloses its own content**, it **clears its own label**, and it **clears its neighbours**. Today:
+
+| Site | ring R | ring inner | neighbour gap | emblem/content | label |
+|---|---|---|---|---|---|
+| toy root (×5) | 42.0 | 38.6 | — (angularly spaced) | emblem outer 33.4 → **5.2 clear** | 72.0, block bottom 46.9 > outer 45.4 ✓ |
+| Cell Selector station | 28.8 | 26.5 | 47.8 ✓ | model 18, inner halo 22.5 | 52.9 ✓ |
+| Vessel Changer station | 27.0 *(clamped)* | 24.8 | 1.7 ✓ | ship 22 | 55.8 ✓ |
+| Lifeform species station | 19.2 | 17.7 | 48.5 ✓ | creature 12 | 35.3 ✓ |
+| Lifeform variant, level 5 | 40.5 *(clamped)* | 37.3 | 2.5 ✓ | crystal 28.8 | 78.6 ✓ |
+| Painting gallery station | 63.4 *(clamped)* | 58.3 | 3.9 ✓ | miniature 44 | 121.7 ✓ |
+
+The Wanderway return station is not in the table because it is sized off its own
+`returnStationRadius` (22 authored → ring 48.4) rather than the toybox's placement, and it has no
+neighbours. The tightest margins — Vessel Changer 1.7, Lifeform L5 2.5, gallery 3.9 — come from
+station spacings that were already tight before rings existed, and are exactly what the clamp
+exists to hold; at 0.60 all three interpenetrate (the script's own negative control). Run the
+script rather than nudging the constant.
+
+**The Wanderway return station is the one ring with no fixed axis.** Every other toy faces the cell
+centre, which *is* the axis you approach it on. The return station rides the tether's tail and you
+come back at it from wherever you wandered, so it **turns to face the vessel** on the same easing it
+already used to follow the tail — a portal you can only ever see edge-on teaches nothing. (Roll is
+free here: a torus is symmetric about its own axis.)
 
 #### Stroke order — flight continuity first, computed at runtime
 
@@ -824,14 +897,22 @@ continuity transitions may run:
 The belt is what you fly *through*; the **run** is what makes the wander a place you go to and come
 back from. Starting one does three things, and all three are undone when it ends:
 
-- **A bare canvas.** The host cell is handed back to its environment-free config — the Blob
-  (`Cell.EnvironmentFreeConfig`, new accessor) — through the one sanctioned entry point,
-  `Cell.RequestCellSwap(blob, clearLooseTrailMass: true)`. Re-selecting the config the cell is
+- **A bare canvas.** The host cell is handed its **bare-canvas** config — the one that grows
+  nothing (`Cell.BareCanvasConfig`: no `EnvironmentPrefab` **and** a `SpawnProfile` listing no
+  flora and no fauna, which is `Barren`) — through the one sanctioned entry point,
+  `Cell.RequestCellSwap(canvas, clearLooseTrailMass: true)`. Re-selecting the config the cell is
   already on is the documented freestyle **reset**, which is exactly what starting a wander should
   mean. It is requested *before* the belt's stock build so both join ONE load-veil hold instead of
   stacking two covers. Authored off (`revertCellOnStart`) if a designer wants the wander to happen
-  inside whatever world is up; with no environment-free config in the cell's list it warns and
-  leaves the world alone.
+  inside whatever world is up; with no bare config it falls back to the cheapest environment-free
+  one, and with none of those it warns and leaves the world alone.
+
+  This used to read `Cell.EnvironmentFreeConfig` — "the first config with no `EnvironmentPrefab`",
+  which was the Blob and was therefore also bare. **Those are two different properties**, and the
+  Lattice cell separated them: it authors no environment (so it boots instantly, and it is now
+  Menu_Main's boot world) and then grows a 21,600-prism forest out of eight seeds — cheap to
+  build, the opposite of empty. Reverting a wander onto it would have grown a garden under the
+  belt's own 30,000 transported prisms. See `Docs/ECOSYSTEM.md` §36.10.
 - **A rolling tether.** The trail follows you as a ribbon of exactly `tetherPrisms` (100): as you
   lay at the head, the oldest prism at the tail withers and **recycles back into the pool it came
   from**, so the next prism you lay is very often the one that just left. Turn around and your trail

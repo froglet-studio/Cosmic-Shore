@@ -23,6 +23,83 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Urchin — end-of-ribbon launch, merged spike trigger, Track Projector (`claude/urchin-detach-trigger-abilities-2y7e2s`, 2026-08-18)
+
+Authored without a Unity compile or play-test. The C# was type-checked out of editor with Roslyn
+(the two new ability files against a stub harness transcribed from the real declarations; the
+transformer/follower edits against the syntax/scope filter), and the prefab was edited as YAML —
+so anchor integrity, dangling references and duplicate ids were machine-checked, but **the import
+was not**.
+
+**What landed**
+
+1. **Running out of rail LAUNCHES instead of parking.** `TrailFollower` reports the reflection at
+   an open ribbon's end (`ReachedEnd`) instead of zeroing the ride speed;
+   `GunVesselTransformer.LaunchOffRibbonEnd` clears the attach flags and fences that ONE ribbon
+   for `endLaunchReattachGrace` (0.35 s). A **loop** never reaches this and is still ridden
+   forever.
+2. **Momentum survives every detach.** `EndRide` carries the ride's last speed into free flight
+   (writing `speed` directly, and flooring `ComputeThrottleTarget` with it), bled off at a
+   constant `detachSpeedDecayRate` = **12 u/s** — so a 150 u/s grind takes ~8 s to fall back to
+   the ~50 u/s cruise. Only EXCESS carries: a 10 u/s hostile grind hands over nothing. Cleared on
+   `Initialize` and on an overridden `ResetTransformer`.
+3. **A pre-existing hole closed on the way**: the "follower let go on its own" path cleared the
+   attach flags in place, so `EndRide` could never run for it — `_rideMode` stayed stale and the
+   ride camera stayed pulled in. Every exit now goes through one `LeaveRide`.
+4. **The two spike abilities MERGED onto the right trigger.** Tap = the aimed ring shotgun
+   (semi-auto, one blast per press, 0.15 ammo); hold = charge; release = an omni burst of
+   **6 → 36** spikes across a **0.35 → 2.5 s** window, free. `repeatWhileHeld` authored **off**.
+   The charge timer lives on the per-vessel executor, and a teardown (`End(null)`) drops it
+   without firing.
+5. **The left trigger carries a new ability — the Track Projector.** A straight **100 u**
+   single-lane stretch of the pilot's own trail, laid `max(40, speed × 0.35)` u ahead of the
+   NOSE, 13 prisms at 8 u spacing, scale (3, 3, 6), on a flat **20 s** cooldown (the Squirrel
+   boost ring's). Laid through `BoostRingBuilder.LayOne` → full-size collider from frame 0 +
+   `AssignTrail`-after-`Initialize`, into its own `Trail` declared `PrismscapeDimension.Trail`.
+6. **Element map re-cut.** Charge = the whole spike weapon (depth × reach; map multiplier moved
+   2.0 → **2.5**, the value Space used to carry). Space = the track's LENGTH (authored on the SO,
+   map multiplier pinned 1.0). "Overcharge" is now the merged L5: +1 generation **and**
+   `ChainRangeFalloff` → 1. Mass and Time unchanged.
+7. **Assets:** `UrchinSpikeVolleyAction.asset` / `UrchinSpikeBarrageAction.asset` **deleted**,
+   replaced by `UrchinSpikeAction.asset`; `UrchinTrackAction.asset` added. All authored by
+   `Tools/Build/author_urchin_assets.py` (re-run it rather than hand-editing).
+
+**Verify in editor**
+
+1. **Import check.** `Urchin.prefab` shows a **TrackActionExecutor** child under `VesselActions`
+   with `prismSpawnChannel` (`EventOnSpawnPrismAndReturn`) and `OnMiniGameTurnEnd` wired, and
+   `ActionExecutorRegistry._executors` has **three** entries. `R_VesselActionHandler`'s
+   `_inputEventShipActions` binds `1 → UrchinSpikeAction`, `2 → UrchinTrackAction`,
+   `7 → UrchinSlipAction` — no missing-script or unassigned-reference warnings.
+2. **`Assets/Resources/ElementalAbilityMaps/Urchin.asset`** opens with four entries and the new
+   labels (Chain Spikes / Trail Rider / Track Projector / Slip).
+3. Work `URCHIN_TRAIL_RIDER.md` § "In-editor verification" steps **16a–16e** (the launch, the
+   re-attach fence, coasting to a stop, loops, and that the carry does not survive a respawn).
+4. Work `URCHIN_CHAIN_SPIKES.md` steps **14–16** (tap = one blast, hold = blast + burst, and the
+   charge dropped by a mid-hold vessel swap).
+5. Work `URCHIN_TRACK_PROJECTOR.md` § "In-editor verification" in full.
+
+**First-pass tuning (expect a balancing pass)**
+
+| Knob | Where | Value | Move it if… |
+|---|---|---|---|
+| `detachSpeedDecayRate` | `GunVesselTransformer` | **12** u/s | the launch outstays its welcome (raise) or ends too abruptly (lower). ~8 s from 150 → 50 today. |
+| `endLaunchReattachGrace` | `GunVesselTransformer` | **0.35** s | a curved ribbon still re-latches you at its own end (raise). |
+| `minChargeSeconds` / `maxChargeSeconds` | `UrchinSpikeAction.asset` | **0.35** / **2.5** s | every tap ends in a burst (raise the min) or a full charge feels like a chore (lower the max). |
+| `chargedSpikesAtMin` / `chargedSpikesAtMax` | `UrchinSpikeAction.asset` | **6** / **36** | the burst reads as weak at a short hold (raise the min) or floods the pool at a full one (lower the max; the Normal pool's `maxSize` is 400 **per vessel**). |
+| `trackLength` / `prismSpacing` / `prismScale` | `UrchinTrackAction.asset` | **100** u / **8** u / **(3, 3, 6)** | the ramp is hard to catch at grind speed (tighten spacing, fatten the prism) or too easy to trip over. |
+| `cooldown` | `UrchinTrackAction.asset` | **20** s | matched to `SquirrelTubeAction.cooldown` on purpose — move both together. |
+| Charge `MultiplierAtFullLevel` | `Urchin.asset` map | **2.5** (was 2.0) | spike reach at high Charge is now the old Space behaviour; retune here, not on the asset. |
+
+**Known gaps (not this branch's to fix)**
+
+- The Urchin still has **no HUD** (`URCHIN_BACKLOG.md` U3), so neither the charge nor the track's
+  cooldown is visible. `UrchinTrackActionExecutor.CooldownRemaining01` is exposed and unread for
+  the day it exists.
+- Three `EventReference` fields ship **empty** (charge start, charged release, track deploy) —
+  the abilities are silent by design until they are given a voice.
+- The continuous Space/Charge element dials are still LOCAL level reads (`URCHIN_BACKLOG.md` U1);
+  only the L5 unlock bits replicate.
 ### 🔴 Scarab Scramble — the Scarab-only hoop-court party mode (`claude/scarab-party-game-pxe569`, 2026-08-18)
 
 Authored fully headless (code + SO assets + scene YAML cloned from the DogFight scene with

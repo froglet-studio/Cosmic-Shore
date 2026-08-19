@@ -198,6 +198,17 @@ its GameObject lists it in `m_Component`.
   every human diffing the file reads it as misplaced. Serialize enum fields as
   their INTEGER value (`condition: 1`), and get the integer from the C# —
   an enum with explicit values is not its declaration order.
+- **Authoring a whole new asset FOLDER: emit its `.meta` too, or Unity re-mints it.** A directory
+  under `Assets/` is itself an asset and needs `fileFormatVersion: 2` / `guid:` /
+  `folderAsset: yes` / `DefaultImporter:`. Without it Unity generates one on next import — fine
+  locally, and a fresh guid on every other machine, so the folder shows as an untracked change
+  forever. Same uniqueness assert as a script meta.
+- **Mint asset guids DETERMINISTICALLY when a script emits a whole asset set.** `uuid4()` is right
+  for a one-off, wrong for a generator with `--check`: a re-run mints new guids, every
+  cross-reference inside the set changes, and the diff is total. `md5(f"<project>/<set>/{name}")`
+  is stable across runs and machines, so `--check` compares content instead of identity — and the
+  uniqueness assert still applies (sweep every `.meta` repo-wide and confirm each new guid appears
+  exactly once).
 - **CHANGE a component's TYPE in place, by rewriting its class id and KEEPING its
   fileID.** Swapping `SphereCollider` → `CapsuleCollider` reads like an excise+add,
   and doing it that way is strictly worse: a new fileID means editing the owning
@@ -384,6 +395,44 @@ CSC=$(ls /usr/lib/dotnet/sdk/*/Roslyn/bincore/csc.dll | head -1)
 dotnet "$CSC" -langversion:9.0 -target:library -out:/tmp/x.dll Stubs.cs <files>
 ```
 
+**When `apt-get` isn't available (remote/rootless containers), install it per-user** — same
+Roslyn, no root, ~40s, and it lands in the scratchpad so it never pollutes the repo:
+
+```sh
+curl -fsSL https://dot.net/v1/dotnet-install.sh -o dotnet-install.sh
+bash dotnet-install.sh --channel 8.0 --install-dir "$PWD/dotnet" --no-path
+CSC=$(ls "$PWD"/dotnet/sdk/*/Roslyn/bincore/csc.dll | head -1)
+"$PWD"/dotnet/dotnet "$CSC" -langversion:9.0 -target:library -out:/dev/null <files>
+```
+
+Do NOT conclude "no compiler here" from a missing `dotnet` on `PATH` — that was the state of
+a 2026-08 remote session that then nearly shipped on inspection alone. There are also no Unity
+managed DLLs in such a container (no `Library/`, no `UnityEngine.dll` anywhere on disk), so a
+**whole-assembly** type check is impossible and the no-stubs filter below is the fallback.
+
+**But a REAL type check of the files you actually wrote is still available, and it is worth the
+20 minutes** on new code (as opposed to a small edit inside a large existing file). Build a stub
+harness — the mcs recipe below, minus the desugaring — and hand Roslyn the .NET **reference pack**
+so `System.Object` exists:
+
+```sh
+REFDIR=$(ls -d /usr/lib/dotnet/packs/Microsoft.NETCore.App.Ref/*/ref/net8.0 | head -1)   # or $PWD/dotnet/packs/...
+REFS=$(ls $REFDIR/*.dll | sed 's/^/-r:/' | tr '\n' ' ')
+dotnet "$CSC" -langversion:9.0 -nostdlib -noconfig $REFS \
+  -nowarn:CS1591,CS0067,CS0649,CS0414,CS1574,CS0169,CS8632 \
+  -target:library -out:/tmp/x.dll Stubs.cs <your files>
+```
+
+Without `-nostdlib -noconfig $REFS` this dies in a wall of `CS0518 Predefined type 'System.Object'
+is not defined` and reads as a broken harness. Two rules make the stubs honest: **transcribe every
+signature from the real declaration** (grep it, don't remember it — the whole value is that a wrong
+member name or arity fails HERE), and **declare each stub in the type's real namespace** so a
+missing `using` still fails. `UniTaskVoid` needs an `[AsyncMethodBuilder(...)]` struct with the six
+builder methods — ~25 lines, and it is what lets an `async UniTaskVoid` method be checked in place
+rather than desugared. A 2026-08 Urchin session type-checked two new ability files this way against
+~200 lines of stubs and shipped them clean; the errors it *did* surface were both stub gaps
+(`Object.name`, `Behaviour.isActiveAndEnabled`), which is what a working harness looks like.
+
 Roslyn parses the real files, so **the throwaway desugared copy disappears entirely** —
 and with the same `Stubs.cs` harness you still get the full type check. Cost is one
 install (~1 min) against a desugaring pass that has to be redone per file and can itself
@@ -399,7 +448,12 @@ dotnet "$CSC" -langversion:9.0 -target:library -out:/tmp/x.dll <files> 2>&1 \
 ```
 
 The flood of `CS0246`/`CS0234` (missing Unity types) is expected noise; a hit in that
-filter is real. It catches every syntax error, duplicate/conflicting declaration, and
+filter is real. **Bucket the diagnostics before reading any of them** —
+`| grep -oE "error CS[0-9]+" | sort | uniq -c | sort -rn` turns 4,000 lines into six rows, and
+the shape of that histogram tells you instantly whether anything real is in there. If you add
+`-nostdlib -noconfig` (useful when the SDK's own ref assemblies muddy the output) then
+`CS0518`, `CS8179` and `CS8137` join the expected-noise list, since they are all "predefined
+type not defined" in disguise — filter those three too or they read as findings. It catches every syntax error, duplicate/conflicting declaration, and
 scope collision — including the ones an edit inside a `switch` section or a nested loop
 creates (`CS0128`/`CS0136`), which is exactly where mechanical edits go wrong. It cannot
 catch a wrong member name or arity; when that matters, build the stubs.

@@ -13,7 +13,7 @@
 > Everything below the next paragraph is the DESIGN record.
 >
 > **STATUS UPDATE 2 (2026-08-18): the §4.2–§4.5 mode-side ball work SHIPPED — as a SECOND MODE.**
-> `GameModes.ScarabScramble = 42` (`_Scripts/Controller/Arcade/SCARABSCRAMBLE.md`) answers §15.11
+> `GameModes.ScarabScramble = 43` (`_Scripts/Controller/Arcade/SCARABSCRAMBLE.md`) answers §15.11
 > as "a second mode that shares the arena machinery" and lands: permanent ownership
 > (`AstroLeagueBall.SetOwnershipLockedServer`, §4.2 — resolved with a LAST-TOUCH ARMING gate on
 > scoring, and the JUKE as the sanctioned steal via `ScarabJukeController.IsJukeStrikeWindowOpen`),
@@ -905,6 +905,15 @@ Authored balance targets from the notes, to be tuned against in playtest:
 The whole loop is built from existing fundamentals: crystals (unchanged), prisms/mass (the switch
 body), domains (ball ownership), elementals (the four scaling knobs). Nothing here adds a
 fundamental or a parallel system, and nothing is removed from the world by a timer.
+
+> **Later (2026-08-18):** the **switch** itself was named as a platform fundamental — *a ring you
+> thread, and threading it activates something* — when the freestyle toybox was put on the same
+> shape. That is a NAMING of what this section already describes, not a new mechanism the Scarab
+> introduced: the ring shape and the mouth-crossing test were already shared with `AstroLeagueGoal`
+> and the painting toy's stroke gates. The law that came out of it, and that `ScarabSwitch` already
+> satisfies, is **the ring IS the trigger volume, drawn at its own radius** (`CrossedMouth` tests
+> exactly `_ringRadius`). See `CLAUDE.md` § fundamentals and `Docs/ToySystem/ARCHITECTURE.md`
+> § "The switch".
 
 ---
 

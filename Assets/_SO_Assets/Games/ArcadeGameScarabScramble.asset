@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: fe040efad3307fb449b6b72ad15362da, type: 3}
   m_Name: ArcadeGameScarabScramble
   m_EditorClassIdentifier:
-  Mode: 42
+  Mode: 43
   IsMultiplayer: 1
   DisplayName: Scarab Scramble
   Description: Every bright crystal you fly through becomes YOUR ball. Roll it, bat

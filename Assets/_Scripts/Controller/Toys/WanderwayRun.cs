@@ -11,8 +11,8 @@ namespace CosmicShore.Gameplay
     ///
     /// Three things make the wander its own place:
     ///
-    ///   • A BARE CANVAS. Starting a run reverts the host cell to its environment-free config —
-    ///     the Blob (<see cref="Cell.EnvironmentFreeConfig"/>) — through the one sanctioned entry
+    ///   • A BARE CANVAS. Starting a run reverts the host cell to its bare-canvas config — the
+    ///     one that grows nothing (<see cref="Cell.BareCanvasConfig"/>) — through the one sanctioned entry
     ///     point, <see cref="Cell.RequestCellSwap"/>. That is the same explicit, player-initiated
     ///     world change the Cell Selector performs (suction out → veil → bloom in); the wander is
     ///     what you look at, not an authored world you are flying through.
@@ -112,18 +112,24 @@ namespace CosmicShore.Gameplay
                 _hasHome = true;
             }
 
-            RevertCellToBlob(localVessel);
+            RevertCellToBareCanvas(localVessel);
             ArmTether();
         }
 
         /// <summary>
-        /// Hand the cell back to its cheap environment-free config. Deliberately requested even
-        /// when the cell is ALREADY on that config: re-selecting the same config is the documented
-        /// freestyle RESET (clear the world, grow it back fresh), which is exactly what starting a
-        /// wander should mean. The swap raises its own load veil and the conveyor's stock build
-        /// joins the same hold, so the player pays one cover, not two.
+        /// Hand the cell its BARE CANVAS config - the one that grows nothing. Deliberately
+        /// requested even when the cell is ALREADY on that config: re-selecting the same config is
+        /// the documented freestyle RESET (clear the world, grow it back fresh), which is exactly
+        /// what starting a wander should mean. The swap raises its own load veil and the
+        /// conveyor's stock build joins the same hold, so the player pays one cover, not two.
+        ///
+        /// <para><see cref="Cell.BareCanvasConfig"/>, not <c>EnvironmentFreeConfig</c>: a wander
+        /// wants an EMPTY world, and "authors no environment" stopped implying that once the
+        /// Lattice cell existed - it builds instantly and then grows a 21,600-prism forest out of
+        /// eight seeds, which is the world a wander is trying to leave (Docs/ECOSYSTEM.md
+        /// §36.10).</para>
         /// </summary>
-        void RevertCellToBlob(IVesselStatus localVessel)
+        void RevertCellToBareCanvas(IVesselStatus localVessel)
         {
             if (!_cfg.RevertCellOnStart) return;
 
@@ -135,16 +141,17 @@ namespace CosmicShore.Gameplay
                 return;
             }
 
-            var blob = cell.EnvironmentFreeConfig;
-            if (!blob)
+            var canvas = cell.BareCanvasConfig;
+            if (!canvas)
             {
                 CSDebug.LogWarning($"[Wanderway] Cell '{cell.name}' has no environment-free config " +
                                    "(every CellConfig authors an EnvironmentPrefab) - leaving the world as it is. " +
-                                   "Add a Blob-style config to the cell's list to get the bare canvas.");
+                                   "Add a bare config (no EnvironmentPrefab, no flora or fauna in its " +
+                                   "SpawnProfile - e.g. Barren) to the cell's list to get the bare canvas.");
                 return;
             }
 
-            cell.RequestCellSwap(blob, clearLooseTrailMass: true);
+            cell.RequestCellSwap(canvas, clearLooseTrailMass: true);
         }
 
         // ── Tether ───────────────────────────────────────────────────────────
@@ -297,14 +304,29 @@ namespace CosmicShore.Gameplay
         void PlantReturnToy(Vector3 at)
         {
             float body = Mathf.Max(8f, _cfg.ReturnStationRadius);
-            var placement = new ToyPlacement(at, at + Vector3.forward, body, body * 2.2f);
+            // Every other toy's switch ring faces the cell centre, because that is the axis you
+            // approach it on. This one has no such axis - it rides the tether's tail and you come
+            // back at it from wherever you wandered - so it faces the VESSEL, and keeps facing it
+            // as it follows the tail (see FollowTail). A portal you only ever see edge-on teaches
+            // nothing.
+            var placement = new ToyPlacement(at, ReturnLookTarget(at), body, body * 2.2f);
             var go = ToyFactory.CreateRoot("Wanderway_Return", transform, placement,
                 _cfg.ReturnStationColor, "RETURN\n<size=60%>fly through to end the wander</size>");
 
             _returnToy = go.AddComponent<WanderwayReturnToy>();
             _returnToy.Configure(() => End(returnToCell: true));
+            // It carries no ToyDefinitionSO, so the ring's default accent would be white - hand it
+            // the colour the body and label already wear.
+            _returnToy.ConfigureSwitchRing(placement.TriggerRadius, _cfg.ReturnStationColor);
             _returnToy.Initialize(null, _context, placement);
             _returnTarget = at;
+        }
+
+        /// <summary>Where the station's ring should face: the local vessel, else straight ahead.</summary>
+        Vector3 ReturnLookTarget(Vector3 at)
+        {
+            var t = LocalVessel()?.Transform;
+            return t && (t.position - at).sqrMagnitude > 1f ? t.position : at + Vector3.forward;
         }
 
         /// <summary>
@@ -316,8 +338,22 @@ namespace CosmicShore.Gameplay
         {
             if (!_returnToy) return;
             var t = _returnToy.transform;
-            t.position = Vector3.Lerp(t.position, _returnTarget,
-                1f - Mathf.Exp(-StationFollowRate * Time.deltaTime));
+            float k = 1f - Mathf.Exp(-StationFollowRate * Time.deltaTime);
+            t.position = Vector3.Lerp(t.position, _returnTarget, k);
+
+            // ...and keeps its mouth turned toward you, on the same easing, so the ring reads as a
+            // hoop to aim at from anywhere rather than a disc that happens to be edge-on.
+            Vector3 toVessel = ReturnLookTarget(t.position) - t.position;
+            if (toVessel.sqrMagnitude > 1f)
+            {
+                Vector3 dir = toVessel.normalized;
+                // Straight above/below the station, world-up is colinear with the look direction
+                // and LookRotation's implicit up degenerates (the guard BillboardLabel carries for
+                // the same reason). Roll itself is invisible here - a torus is symmetric about its
+                // own axis - so swapping the hint costs nothing.
+                Vector3 up = Mathf.Abs(Vector3.Dot(dir, Vector3.up)) > 0.98f ? Vector3.forward : Vector3.up;
+                t.rotation = Quaternion.Slerp(t.rotation, Quaternion.LookRotation(dir, up), k);
+            }
         }
 
         void DestroyReturnToy()
