@@ -13,29 +13,31 @@ namespace CosmicShore.Gameplay
     /// (<c>ScarabWingDaisTests</c>) and bit-identical on every peer, which is the whole
     /// requirement for a prism structure that is re-built locally rather than replicated.
     ///
-    /// <para><b>The motif.</b> <see cref="ScarabWingDaisSettings.PairCount"/> mirrored WING PAIRS
-    /// evenly spaced around the ring. Each wing is a FAN of blade prisms rooted at a shoulder just
-    /// off its pair's axis, sweeping from "pointing radially outward, alongside the sun" round to
-    /// "pointing tangentially, reaching into the neighbouring pair", with blade LENGTH and WIDTH
-    /// rising together along the sweep. The pair's two fans meet in a chevron on the pair axis and
-    /// their long outer blades shingle over the neighbouring pairs' — so the pattern is continuous
-    /// all the way round, which is what makes it read as one dais rather than ten ornaments.
-    /// A super-shielded CUBE sits on each pair's axis in the crook of its two wings: the scarab's
-    /// sun disc, which the stellation renders as an eight-pointed star.</para>
+    /// <para><b>The motif.</b> <see cref="ScarabWingDaisSettings.PairCount"/> super-shielded
+    /// SUN CORES ride a circle around the spent ring, and from each side of every sun a wing
+    /// runs out: a TILED chain of blade prisms laid root-to-root, splayed along an elegant
+    /// curve. Nothing overlaps and nothing clips — that is a property of the construction, not
+    /// of tuning, and <c>ScarabWingDaisTests</c> proves it with an exact separating-axis test
+    /// over the real silhouettes (a rectangle per plain/danger blade, a RHOMBUS per shielded
+    /// one, the stella's eight-point hull per sun).</para>
     ///
-    /// <para><b>Why a fan and not a tiled petal.</b> A blade only reads as its own unit when the
-    /// next blade's TIP has moved further than the blade is WIDE, i.e. when the fan's angular step
-    /// exceeds <c>width / length</c> — about 7.6° at the shipped sizes, so a wing needs ~60°+ of
-    /// sweep. Twenty wings around a circle have 18° each. Tiling and legibility are therefore
-    /// incompatible at ten pairs, and the shingle is the resolution, not a compromise: it is also
-    /// what the reference scarab does, where the two wings overlap each other and the body.
-    /// A version that constrained each wing inside its own 18° sector was built and rejected —
-    /// its blades nest into a single spike.</para>
+    /// <para><b>The octahedra are the hinges, and that is geometry rather than decoration.</b>
+    /// A plain blade presents a flat root EDGE, so two of them laid flush are parallel and the
+    /// run cannot turn. A shielded blade's octahedron presents a root POINT with two faces
+    /// sloping at <c>atan(w/L)</c> from its axis, so the blades either side lie flush against
+    /// those faces while sitting at <c>2·atan(w/L)</c> to each other. All three share ONE pivot —
+    /// the rhombus's root tip — and the rhombus's axis BISECTS the two runs. So the wing's
+    /// curvature is <i>placed</i> (wherever a shielded blade goes) and never tuned, and the tier
+    /// pattern the eye reads is the same thing as the shape it reads. Shielded blades also cap
+    /// both ends of every wing, which is what gives the curve a beginning and an end.</para>
+    ///
+    /// <para><b>Everything else alternates plain → danger</b>, so the run reads as a ribbon of
+    /// feathers with diamond joints, and every tier is doing a different job to a ball
+    /// (SCARAB.md §5.1).</para>
     ///
     /// <para><b>Sizes are stated, not grown</b>, so every consumer must widen the prism's scale
     /// window (<c>Prism.AdmitTargetScale</c>) before assigning <c>TargetScale</c> — see
-    /// <see cref="ScarabSwitch"/>. The longest blade is ~1.9× the ring radius, far past the
-    /// interactive prism pool's authored (40, 10, 10) ceiling.</para>
+    /// <see cref="ScarabSwitch"/>.</para>
     /// </summary>
     public static class ScarabWingDais
     {
@@ -49,20 +51,31 @@ namespace CosmicShore.Gameplay
         /// destroyed by a tier that is supposed to be a texture. Fitting the PRISM (never the
         /// pattern) is <c>Docs/ECOSYSTEM.md §35</c>'s rule; the factor is derived from the
         /// generator's own constant so it cannot drift, and it is UNIFORM so the blade's aspect —
-        /// its identity — is exact.</para>
-        ///
-        /// <para>Cost: the box volume falls by 27× while the shield multiplies mass by 4.5, so a
-        /// shielded blade is ~1/6 the mass of the plain blade it replaces. That is the honest
-        /// price of a same-size diamond and is why the tier reads as texture rather than as bulk.</para>
+        /// its identity, and the hinge angle it produces — is exact.</para>
         /// </summary>
         public static readonly float ShieldedFit = 1f / OctahedronMeshGenerator.CIRCUMSCRIBING_SCALE;
 
         /// <summary>
-        /// Authored-edge → apparent-extent factor for the SUPER-shielded sun core. The stellation's
-        /// spike tips sit at the corners of a cube <c>CIRCUMSCRIBING_SCALE ×</c> the authored one,
-        /// so a designer states the star they want to SEE and the cube is derived.
+        /// Authored cube edge → the sun core's <b>apparent</b> size: the diameter of the sphere
+        /// its spikes reach.
+        ///
+        /// <para>This is the number that was got wrong once and is worth stating twice. The
+        /// octahedron's vertices sit ON THE AXES, so a shielded prism's apparent size IS its axis
+        /// extent (<c>3 × the box</c>). The stella octangula's spikes sit at the <b>cube
+        /// corners</b>, so its axis extent is also <c>3 ×</c> the box while the sphere it fills is
+        /// <c>√3</c> larger again. Sizing a sun core by its bounding box therefore understates
+        /// what the player sees by 73%, and no axis-extent measurement can see the error.</para>
         /// </summary>
-        public static readonly float SunApparentFactor = StellatedOctahedronMeshGenerator.CIRCUMSCRIBING_SCALE;
+        public static readonly float SunApparentFactor =
+            StellatedOctahedronMeshGenerator.CIRCUMSCRIBING_SCALE * Mathf.Sqrt(3f);
+
+        /// <summary>
+        /// Authored cube edge → the sun's reach IN THE DAIS PLANE, i.e. toward the four spikes
+        /// whose corners lie in that plane. This is the clearance a wing must start outside, and
+        /// it is neither the axis extent nor the full circumsphere.
+        /// </summary>
+        public static readonly float SunInPlaneReach =
+            StellatedOctahedronMeshGenerator.CIRCUMSCRIBING_SCALE * Mathf.Sqrt(2f) * 0.5f;
 
         /// <summary>One prism of the dais, in world space, ready to lay.</summary>
         public readonly struct Element
@@ -71,7 +84,7 @@ namespace CosmicShore.Gameplay
             public readonly Quaternion Rotation;
             public readonly Vector3 Scale;
             public readonly PrismKind Kind;
-            /// <summary>Which mirrored pair this belongs to, 0..PairCount-1.</summary>
+            /// <summary>Which sun core this belongs to, 0..PairCount-1.</summary>
             public readonly int Pair;
             /// <summary>+1 / -1 for the two wings of the pair; 0 for the sun core.</summary>
             public readonly int WingSign;
@@ -89,10 +102,10 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// Fills <paramref name="into"/> with the whole dais, ordered <b>outward along the wings</b>
-        /// (every wing's blade 0, then every wing's blade 1, …) and the ten sun cores LAST — so a
-        /// budgeted lay blooms the rosette from the ring outward and ignites the suns at the end,
-        /// rather than filling one wing at a time.
+        /// Fills <paramref name="into"/> with the whole dais, ordered <b>outward along the
+        /// wings</b> (every wing's blade 0, then every wing's blade 1, …) and the sun cores LAST —
+        /// so a budgeted lay draws each wing's curve out from its root and ignites the suns at the
+        /// end, rather than filling one wing at a time.
         /// </summary>
         /// <param name="settings">Authored shape (all distances are multiples of <paramref name="ringRadius"/>).</param>
         /// <param name="center">The switch's centre.</param>
@@ -109,115 +122,181 @@ namespace CosmicShore.Gameplay
             into.Clear();
 
             int pairs = Mathf.Max(1, settings.PairCount);
-            int feathers = Mathf.Max(1, settings.FeathersPerWing);
+            int blades = Mathf.Max(1, settings.BladesPerWing);
             float R = Mathf.Max(0.01f, ringRadius);
 
-            // The dish is a shallow bowl keyed on planar radius, so it needs the rosette's own
-            // outer reach as its reference. That is the outermost blade's tip, which is identical
-            // on every wing — one evaluation, before the loop.
             float reach = OuterReach(settings, R);
-
             float thickness = R * settings.BladeThickness;
-            float sunEdge = R * settings.SunApparentDiameter / SunApparentFactor;
+            float sunEdge = SunEdge(settings, R);
             float sunRadius = R * settings.SunRadius;
+            float sunClear = sunEdge * SunInPlaneReach + R * settings.SunClearance;
+            float rootRadius = R * settings.RootRadius;
+            float gap = R * settings.BladeGap;
 
-            for (int f = 0; f < feathers; f++)
+            // Walk every wing in lockstep so the emitted order is "blade 0 of all wings, blade 1
+            // of all wings, …" — the lay budget then draws the whole rosette outward at once.
+            int wings = pairs * 2;
+            var dir = new Vector2[wings];
+            var chain = new Vector2[wings];
+            for (int p = 0; p < pairs; p++)
             {
-                float t = feathers > 1 ? f / (float)(feathers - 1) : 0.5f;
-                PrismKind kind = KindAt(settings, f);
-                float fit = kind == PrismKind.Shielded ? ShieldedFit : 1f;
-
-                float length = R * Mathf.LerpUnclamped(settings.BladeLengthStart, settings.BladeLengthEnd,
-                                                       Shape(t, settings.BladeGrowthShape));
-                float width = R * Mathf.LerpUnclamped(settings.BladeWidthStart, settings.BladeWidthEnd,
-                                                      Shape(t, settings.BladeGrowthShape));
-                float rollDeg = Mathf.LerpUnclamped(0f, settings.BladeRollEndDeg, t);
-
-                for (int p = 0; p < pairs; p++)
+                float pairRad = p * Mathf.PI * 2f / pairs;
+                Vector2 sun = new(Mathf.Cos(pairRad) * sunRadius, Mathf.Sin(pairRad) * sunRadius);
+                for (int w = 0; w < 2; w++)
                 {
-                    float pairDeg = p * 360f / pairs;
-                    for (int s = 1; s >= -1; s -= 2)
-                    {
-                        Blade(settings, R, pairDeg, s, t, length, out Vector2 root2, out Vector2 tip2);
-
-                        Vector3 root = Plane(center, basisU, basisV, root2)
-                                     + axis * Dish(settings, R, root2.magnitude, reach);
-                        Vector3 tip = Plane(center, basisU, basisV, tip2)
-                                    + axis * Dish(settings, R, tip2.magnitude, reach);
-
-                        Vector3 span = tip - root;
-                        float len3 = span.magnitude;
-                        if (len3 <= 1e-4f) continue;
-                        Vector3 forward = span / len3;
-
-                        // `up` is the dais normal made perpendicular to the blade, so a dished
-                        // blade still lies flat in the rosette instead of twisting. It can never
-                        // be degenerate here: the dish rise is a small fraction of a blade's
-                        // length, so forward is never parallel to the axis.
-                        Vector3 up = axis - Vector3.Dot(axis, forward) * forward;
-                        if (up.sqrMagnitude < 1e-6f) up = basisU;
-                        if (!SafeLookRotation.TryGet(forward, up, out Quaternion rot, null, false)) continue;
-                        rot = Quaternion.AngleAxis(rollDeg * s, forward) * rot;
-
-                        into.Add(new Element(
-                            root + span * 0.5f, rot,
-                            new Vector3(width, thickness, len3) * fit,
-                            kind, p, s, f));
-                    }
+                    int s = w == 0 ? 1 : -1;
+                    int idx = p * 2 + w;
+                    dir[idx] = Rotate(new Vector2(Mathf.Cos(pairRad), Mathf.Sin(pairRad)),
+                                      s * settings.WingTiltDeg * Mathf.Deg2Rad);
+                    chain[idx] = sun + Perp(dir[idx], s) * sunClear;
                 }
             }
 
-            // The sun cores last: ten stars igniting in the crooks once the wings have bloomed.
+            for (int b = 0; b < blades; b++)
+            {
+                float t = blades > 1 ? b / (float)(blades - 1) : 0.5f;
+                PrismKind kind = KindAt(settings, b);
+                float shaped = Shape(t, settings.BladeGrowthShape);
+                float length = R * Mathf.LerpUnclamped(settings.BladeLengthStart, settings.BladeLengthEnd, shaped);
+                float width = R * Mathf.LerpUnclamped(settings.BladeWidthStart, settings.BladeWidthEnd, shaped);
+
+                for (int p = 0; p < pairs; p++)
+                for (int w = 0; w < 2; w++)
+                {
+                    int s = w == 0 ? 1 : -1;
+                    int idx = p * 2 + w;
+                    Vector2 d = dir[idx];
+                    Vector2 planar;
+                    Vector2 bladeDir;
+
+                    if (kind == PrismKind.Shielded)
+                    {
+                        // The hinge. One pivot serves all three prisms: the incoming run's far
+                        // root corner, the rhombus's root tip, and the outgoing run's near root
+                        // corner. The rhombus's axis bisects the two runs, so each neighbour lies
+                        // flush against one of its sloping faces.
+                        Vector2 pivot = chain[idx] + d * rootRadius;
+                        float phi = Mathf.Atan2(width * 0.5f, length * 0.5f)
+                                    - settings.HingeEaseDeg * Mathf.Deg2Rad;
+                        bladeDir = Rotate(d, s * phi);
+                        planar = pivot + bladeDir * (gap + length * 0.5f);
+
+                        Vector2 outgoing = Rotate(bladeDir, s * phi);
+                        dir[idx] = outgoing;
+                        chain[idx] = pivot - outgoing * rootRadius + Perp(outgoing, s) * gap;
+                    }
+                    else
+                    {
+                        // A flat root edge of its own width: it advances the run and cannot turn it.
+                        bladeDir = d;
+                        planar = chain[idx] + Perp(d, s) * (width * 0.5f) + d * (rootRadius + length * 0.5f);
+                        chain[idx] += Perp(d, s) * (width + gap);
+                    }
+
+                    float fit = kind == PrismKind.Shielded ? ShieldedFit : 1f;
+                    if (!TryEmit(into, settings, center, axis, basisU, basisV, R, reach,
+                                 planar, bladeDir, new Vector3(width, thickness, length) * fit,
+                                 kind, p, s, b))
+                        continue;
+                }
+            }
+
             for (int p = 0; p < pairs; p++)
             {
-                float pairDeg = p * 360f / pairs;
-                Vector2 planar = Polar(sunRadius, pairDeg);
-                Vector3 pos = Plane(center, basisU, basisV, planar)
-                            + axis * Dish(settings, R, sunRadius, reach);
-                Vector3 radial = (Plane(center, basisU, basisV, Polar(1f, pairDeg)) - center).normalized;
-                if (!SafeLookRotation.TryGet(radial, axis, out Quaternion rot, null, false))
-                    rot = Quaternion.identity;
-                into.Add(new Element(pos, rot, Vector3.one * sunEdge, PrismKind.SuperShielded, p, 0, -1));
+                float pairRad = p * Mathf.PI * 2f / pairs;
+                Vector2 radial = new(Mathf.Cos(pairRad), Mathf.Sin(pairRad));
+                TryEmit(into, settings, center, axis, basisU, basisV, R, reach,
+                        radial * sunRadius, radial, Vector3.one * sunEdge,
+                        PrismKind.SuperShielded, p, 0, -1);
             }
         }
 
-        /// <summary>The tier a blade wears: the authored three-cycle, rotated by
-        /// <see cref="ScarabWingDaisSettings.TierCycleOffset"/>.</summary>
-        public static PrismKind KindAt(in ScarabWingDaisSettings settings, int feather)
+        static bool TryEmit(List<Element> into, in ScarabWingDaisSettings settings, Vector3 center,
+                            Vector3 axis, Vector3 basisU, Vector3 basisV, float R, float reach,
+                            Vector2 planar, Vector2 planarDir, Vector3 scale, PrismKind kind,
+                            int pair, int wingSign, int blade)
         {
-            int i = ((feather + settings.TierCycleOffset) % 3 + 3) % 3;
-            return i switch
-            {
-                0 => PrismKind.Plain,
-                1 => PrismKind.Shielded,
-                _ => PrismKind.Danger,
-            };
+            Vector3 pos = center + basisU * planar.x + basisV * planar.y
+                        + axis * Dish(settings, R, planar.magnitude, reach);
+            Vector3 forward = (basisU * planarDir.x + basisV * planarDir.y).normalized;
+            if (!SafeLookRotation.TryGet(forward, axis, out Quaternion rot, null, false)) return false;
+            into.Add(new Element(pos, rot, scale, kind, pair, wingSign, blade));
+            return true;
         }
 
-        /// <summary>Planar radius of the outermost blade's tip — the rosette's own outer reach.</summary>
+        /// <summary>
+        /// The tier a blade wears. Shielded caps BOTH ends of the wing (the accents that give the
+        /// curve a beginning and an end) and recurs every
+        /// <see cref="ScarabWingDaisSettings.HingeEvery"/> blades (the joints the curve turns at);
+        /// everything else alternates plain → danger.
+        /// </summary>
+        public static PrismKind KindAt(in ScarabWingDaisSettings settings, int blade)
+        {
+            int n = Mathf.Max(1, settings.BladesPerWing);
+            int every = Mathf.Max(0, settings.HingeEvery);
+            if (blade <= 0 || blade >= n - 1) return PrismKind.Shielded;
+            if (every > 0 && blade % every == 0) return PrismKind.Shielded;
+
+            // Position in the plain/danger alternation, counting only the blades that are not hinges.
+            int ordinal = 0;
+            for (int i = 1; i < blade; i++)
+                if (!(every > 0 && i % every == 0)) ordinal++;
+            return (ordinal & 1) == 0 ? PrismKind.Plain : PrismKind.Danger;
+        }
+
+        /// <summary>The authored cube edge of a sun core, derived from the APPARENT size the
+        /// designer stated (see <see cref="SunApparentFactor"/>).</summary>
+        public static float SunEdge(in ScarabWingDaisSettings settings, float ringRadius) =>
+            Mathf.Max(0.01f, ringRadius) * settings.SunApparentDiameter / SunApparentFactor;
+
+        /// <summary>
+        /// Planar radius the rosette actually reaches — the dish's reference, and the number the
+        /// mode's arena has to accommodate. EXACT, not a bound: every wing is the same walk, so
+        /// one traversal of one wing answers it. A loose bound would be safe for clearance and
+        /// wrong for the dish, which is keyed on this and would flatten out.
+        /// </summary>
         public static float OuterReach(in ScarabWingDaisSettings settings, float ringRadius)
         {
             float R = Mathf.Max(0.01f, ringRadius);
-            float length = R * Mathf.LerpUnclamped(settings.BladeLengthStart, settings.BladeLengthEnd, 1f);
-            Blade(settings, R, 0f, 1, 1f, length, out _, out Vector2 tip);
-            float sun = R * (settings.SunRadius + 0.5f * settings.SunApparentDiameter);
-            return Mathf.Max(Mathf.Max(tip.magnitude, sun), R * 1.01f);
-        }
+            float sunEdge = SunEdge(settings, R);
+            float reach = R * settings.SunRadius + sunEdge * SunApparentFactor * 0.5f;
 
-        /// <summary>Root and tip of one blade, in the dais plane's 2D coordinates.</summary>
-        static void Blade(in ScarabWingDaisSettings settings, float R, float pairDeg, int wingSign,
-                          float t, float length, out Vector2 root, out Vector2 tip)
-        {
-            float shoulderDeg = pairDeg + wingSign * settings.ShoulderOffsetDeg;
-            Vector2 shoulder = Polar(R * settings.ShoulderRadius, shoulderDeg);
+            Vector2 sun = new(R * settings.SunRadius, 0f);
+            Vector2 d = Rotate(new Vector2(1f, 0f), settings.WingTiltDeg * Mathf.Deg2Rad);
+            Vector2 chain = sun + Perp(d, 1) * (sunEdge * SunInPlaneReach + R * settings.SunClearance);
+            float rootRadius = R * settings.RootRadius;
+            float gap = R * settings.BladeGap;
+            int blades = Mathf.Max(1, settings.BladesPerWing);
 
-            float psi = Mathf.LerpUnclamped(settings.FanStartDeg, settings.FanEndDeg,
-                                            Shape(t, settings.FanShape));
-            Vector2 dir = Polar(1f, shoulderDeg + wingSign * psi);
-            float rootOffset = R * Mathf.LerpUnclamped(settings.RootOffsetStart, settings.RootOffsetEnd, t);
+            for (int b = 0; b < blades; b++)
+            {
+                float t = blades > 1 ? b / (float)(blades - 1) : 0.5f;
+                float shaped = Shape(t, settings.BladeGrowthShape);
+                float length = R * Mathf.LerpUnclamped(settings.BladeLengthStart, settings.BladeLengthEnd, shaped);
+                float width = R * Mathf.LerpUnclamped(settings.BladeWidthStart, settings.BladeWidthEnd, shaped);
 
-            root = shoulder + dir * rootOffset;
-            tip = shoulder + dir * (rootOffset + length);
+                if (KindAt(settings, b) == PrismKind.Shielded)
+                {
+                    Vector2 pivot = chain + d * rootRadius;
+                    float phi = Mathf.Atan2(width * 0.5f, length * 0.5f)
+                                - settings.HingeEaseDeg * Mathf.Deg2Rad;
+                    Vector2 bladeDir = Rotate(d, phi);
+                    // The octahedron's far vertex sits on its axis at 3 x the fitted half-length,
+                    // which is exactly the plain blade's half-length — so the tip is the reach.
+                    reach = Mathf.Max(reach, (pivot + bladeDir * (gap + length)).magnitude);
+                    d = Rotate(bladeDir, phi);
+                    chain = pivot - d * rootRadius + Perp(d, 1) * gap;
+                }
+                else
+                {
+                    Vector2 root = chain + Perp(d, 1) * (width * 0.5f) + d * rootRadius;
+                    Vector2 tip = root + d * length;
+                    Vector2 across = Perp(d, 1) * (width * 0.5f);
+                    reach = Mathf.Max(reach, Mathf.Max((tip + across).magnitude, (tip - across).magnitude));
+                    chain += Perp(d, 1) * (width + gap);
+                }
+            }
+            return reach;
         }
 
         /// <summary>Rise out of the dais plane at <paramref name="planarRadius"/> — a shallow bowl
@@ -232,14 +311,14 @@ namespace CosmicShore.Gameplay
         static float Shape(float t, float power) =>
             Mathf.Approximately(power, 1f) ? t : Mathf.Pow(Mathf.Clamp01(t), Mathf.Max(0.01f, power));
 
-        static Vector2 Polar(float radius, float degrees)
+        static Vector2 Rotate(Vector2 v, float radians)
         {
-            float a = degrees * Mathf.Deg2Rad;
-            return new Vector2(Mathf.Cos(a) * radius, Mathf.Sin(a) * radius);
+            float c = Mathf.Cos(radians), s = Mathf.Sin(radians);
+            return new Vector2(v.x * c - v.y * s, v.x * s + v.y * c);
         }
 
-        static Vector3 Plane(Vector3 center, Vector3 basisU, Vector3 basisV, Vector2 planar) =>
-            center + basisU * planar.x + basisV * planar.y;
+        /// <summary>The chain direction: perpendicular to the blade, mirrored per wing.</summary>
+        static Vector2 Perp(Vector2 v, int wingSign) => new(-v.y * wingSign, v.x * wingSign);
     }
 
     /// <summary>
@@ -251,79 +330,73 @@ namespace CosmicShore.Gameplay
     public struct ScarabWingDaisSettings
     {
         [Header("Rosette")]
-        [Tooltip("Mirrored wing PAIRS spaced evenly around the switch. Ten is the authored motif.")]
+        [Tooltip("Sun cores around the switch; each carries a mirrored pair of wings. Ten is the " +
+                 "authored motif.")]
         [Range(3, 24)] public int PairCount;
 
-        [Tooltip("Blades per wing. A multiple of 3 closes the base/shielded/danger cycle exactly; " +
-                 "9 is three complete cycles. THIS IS THE COST DIAL: prisms = PairCount x 2 x this " +
-                 "+ PairCount, and a third of the blades are shielded (always-on mesh colliders).")]
-        [Range(3, 18)] public int FeathersPerWing;
+        [Tooltip("Blades per wing. THIS IS THE COST DIAL: prisms = PairCount x (2 x this + 1).")]
+        [Range(4, 32)] public int BladesPerWing;
 
-        [Tooltip("Rotates the base -> shielded -> danger cycle. 0 puts DANGER on the longest, " +
-                 "outermost blades, so the rosette's rim is the part that bites a pilot.")]
-        [Range(0, 2)] public int TierCycleOffset;
+        [Tooltip("A shielded HINGE every N blades (both ends are always shielded accents). This " +
+                 "is the curvature dial: the wing turns 2 x atan(width/length) at each hinge and " +
+                 "nowhere else, because only an octahedron's faces slope away from its axis. " +
+                 "Smaller = a tighter curl.")]
+        [Range(2, 8)] public int HingeEvery;
 
-        [Header("Wing fan (distances are multiples of the ring radius)")]
-        [Tooltip("Radius at which a wing's shoulder sits — where its blades are rooted.")]
-        public float ShoulderRadius;
+        [Header("Wing (distances are multiples of the ring radius)")]
+        [Tooltip("Radius at which the sun cores sit. The wings hang off them, so this sets the " +
+                 "rosette's whole scale — and it is what has to grow for the wings to TILE " +
+                 "instead of overlapping.")]
+        public float SunRadius;
 
-        [Tooltip("How far off its pair's axis a shoulder sits, in degrees. Small values make the " +
-                 "pair's two fans meet in a tight chevron on the axis.")]
-        public float ShoulderOffsetDeg;
+        [Tooltip("Angle between a wing's first blade and its sun's outward radial, in degrees. " +
+                 "Near 90 the wing runs straight out and adjacent pairs converge; near 0 it runs " +
+                 "tangentially and the rosette becomes a thin band.")]
+        public float WingTiltDeg;
 
-        [Tooltip("Angle of the FIRST (innermost, shortest) blade off the shoulder's own radial. " +
-                 "Near zero it points straight out, alongside the sun core.")]
-        public float FanStartDeg;
+        [Tooltip("Extra clearance between a sun core and its wings' first blade, ON TOP of the " +
+                 "sun's own in-plane spike reach (which is computed, not authored).")]
+        public float SunClearance;
 
-        [Tooltip("Angle of the LAST (outermost, longest) blade. Past ~60 degrees the wing sweeps " +
-                 "tangentially and shingles over the neighbouring pairs, which is what makes the " +
-                 "rosette continuous. Below ~40 the blades nest and stop reading as separate units.")]
-        public float FanEndDeg;
+        [Tooltip("How far a blade's body starts from the run's root line. Larger values fan the " +
+                 "blades further apart at their tips for the same hinge angle.")]
+        public float RootRadius;
 
-        [Tooltip("Easing on the fan sweep. >1 holds the blades near the pair axis longer before " +
-                 "flaring them out.")]
-        public float FanShape;
+        [Tooltip("Clearance between neighbouring blades. This is what keeps a flush-tiled run " +
+                 "from touching; the no-overlap test is run against the real silhouettes.")]
+        public float BladeGap;
 
-        [Tooltip("Gap between the shoulder and the first blade's root.")]
-        public float RootOffsetStart;
-
-        [Tooltip("Gap between the shoulder and the last blade's root — the roots walk outward as " +
-                 "the fan opens, which is what gives the wing its leading edge.")]
-        public float RootOffsetEnd;
+        [Tooltip("Shaves the hinge angle so a rhombus's neighbours sit just clear of its faces " +
+                 "rather than exactly on them, in degrees.")]
+        public float HingeEaseDeg;
 
         [Header("Blades")]
-        [Tooltip("Length of the innermost blade.")]
+        [Tooltip("Length of a wing's first blade.")]
         public float BladeLengthStart;
 
-        [Tooltip("Length of the outermost blade. This sets the dais's reach and is far past the " +
-                 "prism pool's authored scale ceiling — the lay path widens it per prism.")]
+        [Tooltip("Length of a wing's last blade. Longer blades turn LESS at a hinge " +
+                 "(atan(width/length)), so this and the width together set the curl.")]
         public float BladeLengthEnd;
 
-        [Tooltip("In-plane width of the innermost blade.")]
+        [Tooltip("Width of a wing's first blade.")]
         public float BladeWidthStart;
 
-        [Tooltip("In-plane width of the outermost blade.")]
+        [Tooltip("Width of a wing's last blade.")]
         public float BladeWidthEnd;
 
-        [Tooltip("Easing on length AND width together, so a blade's aspect stays constant along " +
-                 "the wing. >1 back-loads the growth into the outer blades.")]
+        [Tooltip("Easing on length AND width together, so a blade's aspect — and therefore the " +
+                 "hinge angle — stays consistent along the wing.")]
         public float BladeGrowthShape;
 
         [Tooltip("Out-of-plane thickness. A blade is a PLATE — this is the cheapest volume dial " +
                  "there is, since it is the axis nobody looks along.")]
         public float BladeThickness;
 
-        [Tooltip("Roll of the outermost blade about its own length, in degrees (mirrored per wing). " +
-                 "Shingles the fan the way a real wing's feathers overlap.")]
-        public float BladeRollEndDeg;
-
         [Header("Sun core")]
-        [Tooltip("Radius at which each pair's super-shielded sun core sits, on the pair axis.")]
-        public float SunRadius;
-
-        [Tooltip("APPARENT tip-to-tip size of the sun core's eight-pointed star. The authored cube " +
-                 "is derived from it (the stellation reaches 3x the cube), so state what you want " +
-                 "to SEE.")]
+        [Tooltip("APPARENT diameter of the sun core's eight-pointed star — the sphere its spikes " +
+                 "reach, which is sqrt(3) LARGER than its bounding box because a stella " +
+                 "octangula's spikes point at the cube's CORNERS. The authored cube is derived " +
+                 "from it, so state what you want to SEE.")]
         public float SunApparentDiameter;
 
         [Header("Dish")]
@@ -334,33 +407,35 @@ namespace CosmicShore.Gameplay
         [Tooltip("Profile of the dish. 2 is a paraboloid; 1 is a cone.")]
         public float DishPower;
 
-        /// <summary>The shipped motif — the numbers the rosette was designed and previewed at.</summary>
+        /// <summary>
+        /// The shipped motif. Solved rather than eyeballed: the wing's footprint was measured and
+        /// <see cref="SunRadius"/> raised until an exact separating-axis test over every prism
+        /// silhouette reported ZERO overlaps, with the innermost prism still clear of the ring.
+        /// Changing any blade dial moves that solution — re-run <c>ScarabWingDaisTests</c>.
+        /// </summary>
         public static ScarabWingDaisSettings Default => new()
         {
             PairCount = 10,
-            FeathersPerWing = 9,
-            TierCycleOffset = 0,
-            ShoulderRadius = 1.30f,
-            ShoulderOffsetDeg = 5f,
-            FanStartDeg = 6f,
-            FanEndDeg = 78f,
-            FanShape = 1.10f,
-            RootOffsetStart = 0.10f,
-            RootOffsetEnd = 0.35f,
-            BladeLengthStart = 0.50f,
-            BladeLengthEnd = 1.90f,
-            BladeWidthStart = 0.10f,
-            BladeWidthEnd = 0.23f,
-            BladeGrowthShape = 1.30f,
+            BladesPerWing = 13,
+            HingeEvery = 4,
+            SunRadius = 10.1f,
+            WingTiltDeg = 60f,
+            SunClearance = 0.30f,
+            RootRadius = 0.45f,
+            BladeGap = 0.07f,
+            HingeEaseDeg = 1f,
+            BladeLengthStart = 0.80f,
+            BladeLengthEnd = 1.70f,
+            BladeWidthStart = 0.17f,
+            BladeWidthEnd = 0.31f,
+            BladeGrowthShape = 1.15f,
             BladeThickness = 0.05f,
-            BladeRollEndDeg = 22f,
-            SunRadius = 1.95f,
-            SunApparentDiameter = 1.25f,
-            DishRise = 0.40f,
+            SunApparentDiameter = 2.20f,
+            DishRise = 0.60f,
             DishPower = 2f,
         };
 
-        /// <summary>Prisms this shape lays: two fans per pair, plus one sun core per pair.</summary>
-        public int PrismCount => Mathf.Max(1, PairCount) * (2 * Mathf.Max(1, FeathersPerWing) + 1);
+        /// <summary>Prisms this shape lays: two wings per pair, plus one sun core per pair.</summary>
+        public int PrismCount => Mathf.Max(1, PairCount) * (2 * Mathf.Max(1, BladesPerWing) + 1);
     }
 }

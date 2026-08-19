@@ -349,6 +349,21 @@ applies to new abilities, new resources on the meter list, and anything that add
     clears membership (`Prism.ResetState`) and the next lay stamps its own.
     `SquirrelTubeActionExecutor` still carries the unguarded version — do not copy it verbatim.
 
+### 4.x Placing prisms from a vessel ability — shield sizing
+
+An ability that BUILDS with prisms (the Scarab's switch dais, the Urchin's track, a boost ring)
+inherits two traps that have each cost a round-trip:
+
+- **`AdmitTargetScale` goes AFTER `Initialize`**, never before — `Initialize` -> `ResetState` ->
+  `RestoreAuthoredScaleWindow()` undoes the widening and re-clamps against the restored window.
+  The interactive prism pool's window is `(0.5,0.5,0.5)..(40,10,10)`, so a stated size outside it
+  is silently trimmed with no error anywhere.
+- **A shielded or super-shielded prism is 3x the box it replaces**, and the two tiers differ:
+  the octahedron's vertices are ON THE AXES, the stella octangula's spikes are at the CUBE
+  CORNERS (circumsphere `3S*sqrt(3)`, i.e. `sqrt(3)` bigger than its own bounding box). Size from
+  the measure the design cares about and derive it from `CIRCUMSCRIBING_SCALE`. Full table:
+  the `asset-surgery` skill, "Trap: a SHIELD's size is not the prism's size".
+
 ## 5. Audit, then hand back verification (you cannot run Unity; the human is the gate)
 
 - State which auditors to run and the expected result: **Audit Vessel Ability Rows**,

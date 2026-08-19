@@ -633,6 +633,55 @@ def sub(old, new, label):
 Python, a compile for C#) and check the line count moved by roughly what you intended — a file
 that grew 40x is the signature of exactly this bug.
 
+### Trap: a SHIELD's size is not the prism's size, and the two tiers scale DIFFERENTLY
+
+Origin: the Scarab wing dais (2026-08-18). A super-shielded "sun core" was sized so its
+*bounding box* matched the space it had to fill; it rendered 73% too big and the human
+caught it by eye. The measurement was not sloppy — it was the wrong measurement, and the
+class of error generalises to anything you place next to shielded mass.
+
+`PrismStateManager` swaps a prism's MESH when a shield engages, and both meshes are built from
+the box HALF-extents times `CIRCUMSCRIBING_SCALE` (3). So for a prism of full size `S` on an
+axis, the semi-axis is `1.5 S` — **three times the box's own extent** — and neither tier is
+"the prism, slightly bigger". Read the generators, not the field names:
+
+| tier | mesh | vertices at | extent along an axis | **circumscribed diameter** |
+|---|---|---|---|---|
+| plain | box | `±S/2` | `S` | `S·√3` |
+| shielded | octahedron | `(±1.5S, 0, 0)` &c — **ON THE AXES** | `3S` | `3S` |
+| super-shielded | stella octangula | spikes at `(±1.5S, ±1.5S, ±1.5S)` — **the CUBE CORNERS** | `3S` | `3S·√3 ≈ 5.196S` |
+
+The two shield tiers have the **same axis extent and different apparent size**, because the
+stellation's spikes point at the corners. Size a stella by its bounding box and you understate
+what the player sees by `√3`. That is the whole bug, and it is invisible to every check that
+measures axis extents — including a top-down render, where the spikes project to `1.5S·√2`.
+
+Rules that fall out:
+
+- **Decide which measure the design cares about, and derive the authored scale from it.**
+  "Fits this slot" is a bounding-box question (`S = slot / 3`). "Reads this big" is a
+  circumscribed-sphere question (`S = size / 3` for shielded, `S = size / (3√3)` for
+  super-shielded). Name the measure in the field's tooltip so the next person cannot pick
+  the other one.
+- **Derive the factor from the generator's own constant**, never a literal:
+  `OctahedronMeshGenerator.CIRCUMSCRIBING_SCALE`, and `× √3` for the stellation. A hard-coded
+  3 or 5.196 silently rots if the constant is ever retuned.
+- **A tier change is a SIZE change unless you fit for it.** Cycling plain → shielded along a
+  row of same-sized prisms triples every third one. Fitting the prism (authored scale
+  `× 1/CIRCUMSCRIBING_SCALE`) restores the envelope exactly and is uniform, so the prism's
+  aspect — its identity — survives; `Docs/ECOSYSTEM.md §35` is the ruling.
+- **Check clearance against the SHIELD's silhouette, not the box's.** In-plane, a shielded
+  prism is a rhombus with semi-axes `1.5·(w, L)` and a super-shielded one reaches `1.5S·√2`
+  toward its in-plane corners. An exact 2D separating-axis test over those silhouettes is
+  ~40 lines and is the only way to claim "no overlaps or clipping" honestly.
+- **The taper is a design tool, not just a cost.** An octahedron's side faces slope at
+  `atan(halfWidth/halfLength)` from its axis while a box's are parallel, so a run of
+  flush-tiled boxes cannot turn and a run with an octahedron in it turns by exactly
+  `2·atan(w/L)` at that prism — pivoting about its root TIP, which all three prisms share.
+  Curvature in a tiled prism structure is therefore *placed* (where the shielded prisms go),
+  not tuned. Get the pivot wrong — rotate about the chain point instead of the shared root
+  tip — and every hinge overlaps, at a rate that looks like a global spacing problem.
+
 ### Trap: compiling a COPY cannot see whole-class consistency
 
 The harness pattern in §4 — paste the block under test into a stub file and compile it — proves

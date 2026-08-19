@@ -14,22 +14,25 @@ namespace CosmicShore.Gameplay
     /// wear) with its interior filled by prisms, which pays out when a ball threads it.
     ///
     /// <para><b>The payout is a scarab-wing DAIS.</b> A struck switch does not scatter prisms —
-    /// it lays a <see cref="ScarabWingDais"/>: ten mirrored pairs of wing fans meeting all the
-    /// way around the spent ring, blades growing in size along each wing and cycling
-    /// base → shielded → danger along its length, with a super-shielded cube on every pair's axis
-    /// standing in for the scarab's sun disc (the stellation renders it as an eight-pointed star).
-    /// The rosette blooms outward over several frames — every wing's first blade, then every
-    /// wing's second, and the ten suns igniting last — so the payout READS as a monument being
-    /// raised rather than as mass appearing.</para>
+    /// it lays a <see cref="ScarabWingDais"/>: ten super-shielded SUN CORES ringing the spent
+    /// switch, and from each side of every sun a wing runs out as a TILED chain of blades laid
+    /// root-to-root along an elegant curve. Nothing overlaps and nothing clips, by construction.
+    /// The rosette draws itself outward over several frames — every wing's first blade, then
+    /// every wing's second — with the ten suns igniting last, so the payout READS as a monument
+    /// being raised rather than as mass appearing.</para>
     ///
-    /// <para><b>The tiers are gameplay, not decoration</b>, and they are three different things
-    /// (SCARAB.md §4.1b): a PLAIN blade is food the ball eats and pays speed for; a SHIELDED
-    /// blade costs the ball no speed at all but sheds its shield and, for a forged ball, turns
-    /// the shot — armour buys a redirect, not a brake; a DANGER blade is identical to a plain one
-    /// from the ball's point of view and exists to punish PILOTS who fly the rosette. The sun
-    /// cores are inert to the match ball and are a one-shot trade against a forged one, which
-    /// dies on them and strips their super-shield. Nothing here is removed by a clock: the dais
-    /// is conserved mass that only the food web, an ability, or a ball takes away.</para>
+    /// <para><b>The tiers are gameplay AND geometry.</b> Blades alternate plain → danger, with
+    /// SHIELDED octahedra capping both ends of every wing and recurring as its hinges — and that
+    /// is not decoration: a plain blade presents a flat root edge so two of them laid flush are
+    /// parallel, while an octahedron presents a root POINT with faces sloping away from its axis,
+    /// so the run turns there and only there. To a ball the three are three different things
+    /// (SCARAB.md §4.1b): a PLAIN blade is food it eats and pays speed for; a SHIELDED blade
+    /// costs no speed at all but sheds its shield and, for a forged ball, turns the shot — armour
+    /// buys a redirect, not a brake; a DANGER blade is identical to a plain one from the ball's
+    /// point of view and exists to punish PILOTS who fly the rosette. The sun cores are inert to
+    /// the match ball and are a one-shot trade against a forged one, which dies on them and
+    /// strips their super-shield. Nothing here is removed by a clock: the dais is conserved mass
+    /// that only the food web, an ability, or a ball takes away.</para>
     ///
     /// Detection is plane-crossing math against <see cref="AstroLeagueBall.Live"/> (a ball passing
     /// through the ring's mouth in either direction), the shape <see cref="AstroLeagueGoal"/>
@@ -80,9 +83,9 @@ namespace CosmicShore.Gameplay
             // switch and sheds one shield per prism instead of eating straight through it.
             //
             // It deliberately does NOT reach the dais. The upgrade armours the switch you PLACE;
-            // the rosette it pays out wears its authored base/shielded/danger cycle, because that
-            // pattern IS the read — an upgrade that silently re-tiered two thirds of it would
-            // make the same structure mean different things at different element levels.
+            // the rosette it pays out keeps its authored tier pattern, because there the tier is
+            // also the SHAPE — the shielded blades are the hinges the wing turns at, so re-tiering
+            // them at an element level would rebuild the curve rather than re-skin it.
             _shieldPrisms = status.ElementalAbilityHandler != null
                             && status.ElementalAbilityHandler.IsUpgradeActive(Element.Mass);
             _ringRadius = Mathf.Max(1f, ringRadius);
@@ -288,10 +291,10 @@ namespace CosmicShore.Gameplay
 
         /// <summary>
         /// Raise the rosette over several frames. Budgeted because the dais is an order of
-        /// magnitude more prisms than the old outward burst (~190 at the shipped shape), and
-        /// because a structure that blooms outward from the spent ring reads as a monument going
-        /// up — the continuity law's preferred reading of a spawn, applied to the whole structure
-        /// rather than to each prism separately.
+        /// magnitude more prisms than the old outward burst (270 at the shipped shape), and
+        /// because a structure that draws itself outward from the spent ring reads as a monument
+        /// going up — the continuity law's preferred reading of a spawn, applied to the whole
+        /// structure rather than to each prism separately.
         /// </summary>
         async UniTaskVoid RaiseDaisAsync(Domains struckBy, CancellationToken ct)
         {

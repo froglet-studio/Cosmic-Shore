@@ -766,99 +766,112 @@ single shared meter, §15)*.
 
 ### 5.1 The payout — a scarab-wing DAIS
 
-A struck switch does not scatter prisms outward. It raises a **rosette**: ten mirrored pairs of
-scarab-wing fans meeting all the way around the spent ring, with a **super-shielded cube** on each
-pair's axis standing in for the scarab's sun disc — which the stellation draws as an eight-pointed
-star. Geometry: `ScarabWingDais` (pure closed-form, no scene dependency); shape:
-`ScarabWingDaisSettings` on `PlaceSwitchActionSO`; tests: `ScarabWingDaisTests`.
+A struck switch does not scatter prisms outward. It raises a **rosette**: ten **super-shielded sun
+cores** ringing the spent switch, and from each side of every sun a wing runs out as a **tiled
+chain** of blade prisms laid root-to-root along an elegant curve. Geometry: `ScarabWingDais` (pure
+closed-form, no scene dependency); shape: `ScarabWingDaisSettings` on `PlaceSwitchActionSO`; tests:
+`ScarabWingDaisTests`.
 
-Each wing is a **fan** of blade prisms rooted at a shoulder just off its pair's axis, sweeping
-from "pointing radially outward, alongside the sun" round to "pointing tangentially, reaching into
-the neighbouring pair", with blade LENGTH and WIDTH rising together along the sweep and a
-progressive roll shingling them. Along the wing the tier cycles **base → shielded → danger**,
-three complete cycles at the shipped nine blades, all in the placer's own domain.
+**Nothing overlaps and nothing clips, and that is a property of the construction rather than of
+tuning.** `ScarabWingDaisTests` proves it with an exact separating-axis test over every pair of
+prisms, using the silhouette each one actually presents — a rectangle for a plain or danger blade,
+a **rhombus** for a shielded one, the stella's eight-point hull for a sun. A box-based check would
+pass a rosette whose diamonds were fusing.
 
-**Why the wings shingle instead of tiling their own sectors.** A blade only reads as its own unit
-when the next blade's TIP has moved further than the blade is WIDE — about 7.6° of fan step at the
-shipped sizes, so a wing needs ~60°+ of sweep. Twenty wings around a circle have 18° each. Tiling
-and legibility are therefore incompatible at ten pairs, and the overlap is the resolution rather
-than a compromise: it is also what the reference scarab does, where the two wings overlap each
-other and the body. A version that constrained each wing inside its own sector was built and
-rejected — its blades nest into a single spike.
+#### The octahedra are the hinges — the tier pattern IS the shape
 
-**The three tiers are three different things to the ball** (§4.1b), which is what makes the cycle
-gameplay rather than stripes:
+| joint | why | turn |
+|---|---|---|
+| plain/danger → plain/danger | both present a flat root EDGE; flush boxes are parallel | **0°** |
+| anything → **shielded** | the octahedron presents a root POINT and two faces sloping at `atan(w/L)` from its axis, so the neighbour lies flush against one of them | `atan(w/L)` per side, `2·atan(w/L)` across the hinge |
+
+All three prisms at a hinge share **one pivot** — the rhombus's root tip — and the rhombus's axis
+**bisects** the two runs. So a wing's curvature is *placed* (wherever a shielded blade goes) and
+never tuned: `HingeEvery` is the curvature dial, and blade width÷length is how hard each hinge
+turns. Shielded blades also cap both ends of every wing, which is what gives the curve a beginning
+and an end. Everything between them alternates **plain → danger**.
+
+Get the pivot wrong — rotate about the chain point instead of the shared root tip — and *every*
+hinge overlaps, at a rate that reads like a global spacing problem rather than a joint problem.
+That cost a full iteration.
+
+#### What each tier does to a ball (SCARAB.md §4.1b)
 
 | tier | to a BALL | to a PILOT |
 |---|---|---|
-| base | eaten; costs speed in proportion to volume | nothing |
+| plain | eaten; costs speed in proportion to volume | nothing |
 | shielded | shield popped, prism left standing, **no speed lost**; a forged ball is *turned* | nothing |
-| danger | identical to base — the code forbids a per-tier drag multiplier | slow + all-element debuff + boost reset |
+| danger | identical to plain — the code forbids a per-tier drag multiplier | slow + all-element debuff + boost reset |
 | sun core (super) | inert to the match ball; a **forged** ball dies on it and strips the super-shield | nothing |
 
-**A shielded blade is authored at ⅓ scale, and that is not a tuning choice.** A shield's semi-axes
-are `CIRCUMSCRIBING_SCALE × the box half-extents` = **1.5 × the box's full size**, so an unfitted
-shielded blade renders THREE TIMES the length of its neighbours and destroys the size gradient the
-wing is built on. `ScarabWingDais.ShieldedFit` is derived from the generator's own constant
-(`1 / CIRCUMSCRIBING_SCALE`) and applied UNIFORMLY so the blade's aspect — its identity — is exact.
-Same rule in the other direction for the sun: `SunApparentDiameter` states the star you want to
-SEE and the cube edge is derived, because a designer should never have to divide by 3 in their head.
-This is `Docs/ECOSYSTEM.md §35`'s "fit the PRISM, never the pattern".
+#### Sizing a shielded prism, and the mistake to never make twice
 
-**Four laying rules, each of which was a live defect in the first pass:**
+Both shield meshes are built from the box HALF-extents × `CIRCUMSCRIBING_SCALE` (3), so a prism of
+full size `S` gets a semi-axis of `1.5 S` — **three times the box's own extent**. But the two tiers
+put their vertices in different places, and that is where the first pass went wrong:
+
+| tier | mesh | vertices at | axis extent | **apparent (circumsphere) size** |
+|---|---|---|---|---|
+| shielded | octahedron | `(±1.5S, 0, 0)` &c — **ON THE AXES** | `3S` | `3S` |
+| super-shielded | stella octangula | `(±1.5S, ±1.5S, ±1.5S)` — the **CUBE CORNERS** | `3S` | `3S·√3 ≈ 5.196 S` |
+
+So a sun core sized by its *bounding box* renders **73% too big**, and no axis-extent measurement
+can see the error. `ScarabWingDais.SunApparentFactor` is `CIRCUMSCRIBING_SCALE × √3` and
+`SunApparentDiameter` states **the sphere the spikes reach** — the size you SEE — with the cube
+derived from it. `SunInPlaneReach` is a third number again (`CIRCUMSCRIBING_SCALE × √2 / 2`), the
+in-plane spike reach a wing has to start outside.
+
+Conversely `ShieldedFit = 1/CIRCUMSCRIBING_SCALE` shrinks a shielded blade so its octahedron
+occupies exactly the plain blade's envelope — uniformly, so the blade's aspect (and therefore its
+hinge angle) is exact. Without it a tier change would be a *size* change and every hinge blade
+would be triple-length. `Docs/ECOSYSTEM.md §35`'s "fit the PRISM, never the pattern".
+
+#### Four laying rules, each of which was a live defect
 
 1. **`AdmitTargetScale` goes AFTER `Initialize`, not before.** `Initialize` → `ResetState` →
    `RestoreAuthoredScaleWindow()` undoes any widening and then re-clamps the target against the
    restored window. The interactive prism pool's window is `(0.5,0.5,0.5)..(40,10,10)` and the dais
-   states blades 38 long and 0.33 thin, so getting this backwards is the difference between the
-   authored rosette and a field of 10-unit stubs — silently, with no error anywhere.
-2. **`ChangeTeam`, never the `Domain` setter.** The setter routes to `SetInitialTeam`, which is a
-   NO-OP once the team is non-Blue, and a pooled prism arrives wearing its last life's colour.
-3. **Kind flags are cleared before `Initialize`.** The Interactive pool path does not reset them
-   (the Boost path does) and `Initialize` re-engages whatever it finds, so a recycled prism would
-   arrive wearing its previous tier.
+   states blades over 30 long and 0.33 thin, so getting this backwards is the difference between
+   the authored rosette and a field of 10-unit stubs — silently, with no error anywhere.
+2. **`ChangeTeam`, never the `Domain` setter**, which routes to `SetInitialTeam` and is a no-op
+   once the team is non-Blue; a pooled prism arrives wearing its last life's colour.
+3. **Kind flags cleared before `Initialize`.** The Interactive pool path does not reset them (the
+   Boost path does) and `Initialize` re-engages whatever it finds.
 4. **No occupancy reservation.** `TryReserve` answers from each peer's OWN live prism set, and a
    switch is rebuilt independently on every peer from a replicated input event — so a reservation
-   is a per-peer veto on an authored structure and the peers end up with different prisms in
-   different places, permanently, because none of this is replicated. `BoostRingBuilder`, the
-   reference structure builder, does not reserve either.
+   is a per-peer veto on an authored structure. `BoostRingBuilder` does not reserve either.
 
-The rosette is laid **over several frames**, ordered ring-outward (every wing's blade 0, then every
-wing's blade 1, …) with the ten suns igniting LAST — so the payout reads as a monument going up
-rather than as mass appearing, and a ~190-prism burst never lands in one frame.
+The rosette is laid **over several frames**, ordered root-outward (every wing's blade 0, then every
+wing's blade 1, …) with the ten suns igniting LAST — so the payout reads as a monument going up,
+and a 270-prism burst never lands in one frame.
 
-**Cost, measured from the shipped generator** (`ring radius 20`, the authored default):
+#### Cost, measured from the shipped generator (ring radius 20)
 
 | quantity | value |
 |---|---|
-| prisms per dais | **190** (10 pairs × 2 wings × 9 blades + 10 suns) |
-| box volume | **15,608** (≈ 976 nominal-16 prisms) |
-| always-on convex MeshColliders | **70** (60 shielded + 10 super-shielded) |
-| LOD-cullable BoxColliders | 120 |
-| outer reach | 56.5u, i.e. 2.8 × the ring radius |
+| prisms per dais | **270** (10 pairs × 2 wings × 13 blades + 10 suns) |
+| box volume | **27,783** (≈ 1,736 nominal-16 prisms) |
+| always-on convex MeshColliders | **90** (80 shielded + 10 super-shielded) |
+| LOD-cullable BoxColliders | 180 |
+| planar band | 112 → 220 (ring 20; Astro League's court radius ≈ 392) |
+| wing sweep | 60° per wing, turned entirely at four hinges |
 
 Everything scales with the ring radius, so **Mass grows the whole rosette with the switch** and
-there is still exactly one size dial (§7's one-parameter-per-element contract). `FeathersPerWing`
-and `PairCount` are the cost dials; the always-on collider count is `PairCount × (2×⌊blades/3⌋ + 1)`
-and it is the number to watch, not the prism count.
+there is still exactly one size dial. `BladesPerWing` and `PairCount` are the cost dials;
+`HingeEvery` is the curvature dial; `BladeThickness` is the cheapest volume dial (it is the axis
+nobody looks along).
 
-⚠ **This makes §8's phase-ladder re-authoring mandatory, not optional.** Astro League's cell is
-authored `RestlessEnterVolume 30600 / FrenzyEnterVolume 32000` over a 30,000 super-shielded lining
-floor — a **+600** gameplay band and **+2,000** to Frenzy. One dais is 15,608, i.e. **7.8× the
-entire Calm→Frenzy span**; the switch BODY alone (28 bricks × 30) was already 840 and blew Restless
-before this change. The ladder must be re-measured and re-authored against real Scarab play. That
-is a playtest decision and is deliberately not made here.
+⚠ **`SunRadius` is SOLVED, not styled.** The wing's footprint was measured and the sun radius
+raised until the separating-axis test reported zero overlaps with the innermost prism still clear
+of the ring. **Change any blade dial and that solution moves** — re-run `ScarabWingDaisTests`,
+which will fail rather than ship a rosette that clips.
 
 ⚠ **Known, pre-existing, NOT fixed here: the switch diverges across peers.** The charge gate is
 evaluated against the per-peer, non-replicated `ResourceSystem` meter, and `PlaceSwitch` returns
 before creating the GameObject — so on a peer whose meter is empty the switch, its body and its
-dais simply do not exist, forever. The Scarab's `Switch Charges` meter starts at 0.34 (one charge)
-with zero passive gain and is refilled only by a crystal effect replayed to the OWNING client, so
-in a 3-peer session the second switch a client places is invisible to the third. The dais makes
-this more visible, not worse. The in-repo precedent for the fix is `NetElementUnlocks` on
-`R_VesselActionHandler` — the Mass-5 shield flag resolves identically on every peer precisely
-because it reads replicated unlock bits rather than a local meter. Placement centre and axis also
-differ by (latency × speed) because each peer reads its own interpolated transform.
+dais simply do not exist, forever. The in-repo precedent for the fix is `NetElementUnlocks` on
+`R_VesselActionHandler`. Placement centre and axis also differ by (latency × speed) because each
+peer reads its own interpolated transform.
 
 ---
 
@@ -977,15 +990,27 @@ their death positions, on-court once the cleanup crew is released at Restless+. 
 therefore rises exactly when the pitch is crowded, which is emergent from the food web rather
 than authored.
 
-**The volume ladder needs a retune, and §5.1 makes it urgent.** The mode's phase window is
-authored for Rhino trail (~0.75 volume/prism): Restless at LiveVolume 30,600 over a 30,000
-super-shielded lining floor — a +600 gameplay band, +2,000 to Frenzy. Switch bodies are placed
-mass and already move that number (28 bricks x 30 = **840**, past Restless on the first switch);
-the scarab-wing dais a struck switch pays out is **15,608**, i.e. 7.8x the whole Calm→Frenzy span.
-So the mode's `PhaseThresholds` must be re-measured and re-authored against real Scarab play, with
-the stated side effect that Rhino-only matches silt differently. This is the ecosystem masterplan's
-author-explicit-volumes clause arriving on the switch dial; it is a playtest decision, not a
-free parameter.
+**The volume ladder has been re-authored for the Scarab (2026-08-18).** It was written for Rhino
+trail (~0.75 volume/prism) — Restless at LiveVolume 30,600 over a 30,000 super-shielded lining
+floor, a **+600** gameplay band — and the Scarab's placed mass dwarfs that: a switch BODY is 840
+and the dais it pays out is **27,783**, so one full switch cycle is **28,623**. The mode now scales
+its ladder to the vessel it was opened to (the minigame yields to the vessel, not the other way
+round):
+
+| gate | was | now | = |
+|---|---|---|---|
+| `RestlessEnterVolume` | 30,600 | **116,000** | floor + ~3 switch cycles |
+| `RestlessExitVolume` | 30,450 | **113,000** | |
+| `FrenzyEnterVolume` | 32,000 | **230,000** | floor + ~7 switch cycles |
+| `FrenzyExitVolume` | 31,600 | **226,000** | |
+| `RestlessEnter` (count backstop) | 900 | **1,494** | 3 cycles × 298 prisms + headroom |
+| `FrenzyEnter` (count backstop) | 3,000 | **3,286** | 7 cycles × 298 prisms + headroom |
+
+The count gates move with the volume gates so the perf backstop can never fire before the volume
+spine does. The read this buys is a good one and is what the volume spine is for: the cell now gets
+restless in proportion to **how much the players have built**. Stated side effect — **Rhino-only
+matches silt differently** and will sit in Calm far longer than they used to; that is the cost of
+one ladder serving two vessels, and it is a playtest call to split it if it matters.
 
 ---
 
@@ -1172,15 +1197,19 @@ Vessel Elemental Morphs**, **Audit Corridor Vessel Radii**, **Validate Speed Tun
     striking the panel off-mouth **deflects** (this is the §5 crux — if it merely slows, the
     analytic reflector is not wired and the mechanic does not exist).
 10a. **The dais** (§5.1), the one thing a playtest must confirm that no offline check can:
-    on the strike the rosette blooms **ring-outward** over ~8 frames and the ten sun-stars ignite
-    LAST. Then look for the four failures the geometry cannot see: (a) blades that all read the
+    on the strike each wing draws itself **root-outward** over ~11 frames and the ten sun-stars
+    ignite LAST. Then look for the failures the geometry cannot see: (a) blades that all read the
     same LENGTH mean `AdmitTargetScale` is not landing and the pool clamped them to 10 — the whole
     gradient is the motif, so this is a fail, not a nit; (b) shielded blades reading three times
-    their neighbours mean `ShieldedFit` is not applied; (c) any prism inside the ring's mouth;
-    (d) the sun cores reading as ordinary blocks rather than eight-pointed stars means the
-    super-shield never engaged. Also fly the rim: the outermost blades are DANGER, so brushing
-    them must slow and debuff you. Frame time during the bloom is the perf question —
-    `daisPrismsPerFrame` is the dial.
+    their neighbours mean `ShieldedFit` is not applied; (c) **any overlap or clipping at all** —
+    the separating-axis test says there is none, so a clash on screen means the shipped silhouette
+    is not the one the test models, which is a bug in the test's model and worth chasing;
+    (d) sun cores reading as ordinary blocks rather than eight-pointed stars means the super-shield
+    never engaged; (e) the sun cores reading too LARGE again — their authored size is the sphere
+    the spikes reach, `√3` bigger than their bounding box, so that is the number to argue with.
+    Also fly the rim and a hinge: blades alternate plain/danger, so brushing the run must slow and
+    debuff you about half the time. Frame time during the draw is the perf question —
+    `daisPrismsPerFrame` is the dial, and 90 always-on mesh colliders per dais is the standing cost.
 11. **Mass 5 / Charge 5** (seeded): switch survives its first trigger; threshold hit yields two
     balls.
 12. **Conversion rate**: over ~20 generated balls, count goals — target ~80%. This is the headline
