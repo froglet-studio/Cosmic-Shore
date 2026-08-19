@@ -72,6 +72,43 @@ namespace CosmicShore.Gameplay
         }
     }
 
+    /// <summary>
+    /// Colony-wide event counters for the quasicrystal STAR population (Docs/ECOSYSTEM.md 37).
+    /// A separate class from the gyroid's and Schwarz P's on purpose: three colonies can live
+    /// in one cell, and a merged counter is unattributable. Same shape as
+    /// <see cref="SchwarzPColonyDiagnostics"/> - the defect classes an exact integer address
+    /// removes (ring poison, coherence error, seed-handoff error) cannot arise here either.
+    /// Always compiled - plain CSDebug, no editor-only guards (Docs/CONDITIONAL_COMPILATION.md).
+    /// </summary>
+    public static class QuasicrystalColonyDiagnostics
+    {
+        public static int Founders;
+        public static int Births;
+        public static int ReseedMintsBlocked;
+        public static int UnreservedSpawns;
+
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        static void ResetForDomainReload()
+        {
+            Founders = Births = ReseedMintsBlocked = UnreservedSpawns = 0;
+        }
+
+        /// <summary>
+        /// Healthy readings: <c>plants</c> climbs by one per birth and equals the live claim
+        /// count; <c>frontier</c> grows when a plant completes and shrinks by one per birth;
+        /// <c>prismsPerPlant</c> settles in the measured 44..97 band (a star's territory is a
+        /// tree cell, not a fixed patch); <c>mintsBlocked</c> and <c>unreserved</c> stay 0.
+        /// </summary>
+        public static string Summary(Cell cell, FloraConfigurationSO species, int livePrisms)
+        {
+            int plants = QuasicrystalHeartRegistry.ClaimCount;
+            return $"[QuasicrystalColony] founders={Founders} plants={plants} births={Births} " +
+                   $"frontier={QuasicrystalColonyFrontier.TotalCount} " +
+                   $"prismsPerPlant={(plants > 0 ? (float)livePrisms / plants : 0f):F1} " +
+                   $"mintsBlocked={ReseedMintsBlocked} unreserved={UnreservedSpawns}";
+        }
+    }
+
     public static class GyroidColonyDiagnostics
     {
         public static int Births;
@@ -159,7 +196,29 @@ namespace CosmicShore.Gameplay
 
             public Branch(HealthPrism healthPrism)
             {
-                gameObject = healthPrism.gameObject;
+                // The branch's GameObject is the prism's SPINDLE, never the prism itself.
+                //
+                // ExecuteGrowOrder instantiates the next generation's spindle as a CHILD of
+                // this GameObject, and a prism carries the species' authored leaf as its
+                // localScale - so parenting a spindle under a PRISM puts a NON-UNIFORM scale
+                // above a rotated child, which in Unity's matrix composition is a SHEAR: the
+                // descendant prisms stop being cuboids (faces no longer orthogonal), stretch
+                // along the ancestor's long axis, and the skew COMPOUNDS down the chain.
+                //
+                // Both grow paths reassign this field to the spindle immediately after
+                // constructing the branch; ReseedBranches - the only other creation site -
+                // did not, so a plant that had exhausted or been grazed clear of its active
+                // branches grew visibly skewed slivers from its first reseed onward. It hit
+                // every lattice species, worst on the one with the most extreme aspect ratio
+                // (Docs/ECOSYSTEM.md 37.9). It also left RemoveSpindle unable to match the
+                // branch, so a reseeded branch outlived the spindle it grew from.
+                //
+                // Both creation paths parent a prism to its spindle; the fallback only keeps
+                // a hypothetical unparented prism harmless.
+                var parent = healthPrism.transform.parent;
+                gameObject = parent && parent.TryGetComponent(out Spindle _)
+                    ? parent.gameObject
+                    : healthPrism.gameObject;
                 depth = 0;
                 assembler = healthPrism.GetComponent<Assembler>();
             }
@@ -271,6 +330,12 @@ namespace CosmicShore.Gameplay
                     newAssembler.Program(schwarzPGrowthInfo);
                     return newAssembler;
                 }
+                else if (growthInfo is QuasicrystalGrowthInfo quasicrystalGrowthInfo)
+                {
+                    var newAssembler = gameObject.GetComponent<QuasicrystalAssembler>();
+                    newAssembler.Program(quasicrystalGrowthInfo);
+                    return newAssembler;
+                }
                 // Add other assembler types here as needed
                 else
                 {
@@ -291,6 +356,7 @@ namespace CosmicShore.Gameplay
             // frontier once and keep a hand on the population's reproduction clock.
             if (OctagonMode) TickOctagonPopulation();
             if (TileColonyMode) TickTilePopulation();
+            if (StarColonyMode) TickStarPopulation();
 
             // Live-prism budget: the flora can hold at most maxTotalSpawnedObjects LIVE
             // prisms. Consumption frees budget, so a grazed flora regrows. (Was: a
@@ -618,12 +684,19 @@ namespace CosmicShore.Gameplay
         /// prisms. It has to follow the lattice: the branch spans the gap between two prisms, so
         /// a widened lattice with unscaled branches leaves them visibly short.
         ///
-        /// <para>GYROID ONLY, on purpose. The Schwarz P Space element's proportions were judged
-        /// good on sight at its shipped lattice scale WITH unscaled spindles; scaling them now
-        /// would change an approved look for no request. If Schwarz spindles should scale too,
-        /// that is its own decision, not a side effect of this one.</para>
+        /// <para>The gyroid and the quasicrystal star colony scale; Schwarz P deliberately does
+        /// NOT. The Schwarz P Space element's proportions were judged good on sight at its
+        /// shipped lattice scale WITH unscaled spindles, and changing an approved look for no
+        /// request is its own decision, not a side effect of this one. The star colony joins
+        /// because its branch pair is DERIVED from the lattice - each half-branch is sized to
+        /// reach the node at edge/2 (Docs/ECOSYSTEM.md 37.9) - so an element that widens its
+        /// lattice (Space, x2) must carry the branch with it or the halves fall short of the
+        /// nodes they exist to join.</para>
         /// </summary>
-        float SpindleLatticeScale => OctagonMode ? LatticeScale : 1f;
+        float SpindleLatticeScale =>
+            OctagonMode ? LatticeScale
+            : StarColonyMode && _latticeScaleOverride > 0f ? _latticeScaleOverride
+            : 1f;
 
         /// <summary>
         /// Lattice-misalignment radius: mass this close to a new site belongs to a frame
@@ -682,6 +755,15 @@ namespace CosmicShore.Gameplay
 
         void ApplyLatticeSpacing(Assembler target)
         {
+            // The quasicrystal branch runs even with no scale override: its strut pose math
+            // needs the authored plain strut length (leafSize.x) BEFORE the first growth
+            // probe, at every creation site - founder, grown child, seeded daughter.
+            if (target is QuasicrystalAssembler quasi)
+            {
+                if (_latticeScaleOverride > 0f) quasi.ApplyLatticeScale(_latticeScaleOverride);
+                quasi.ConfigureStrutLength(LeafSize.x);
+                return;
+            }
             if (_latticeScaleOverride <= 0f || target == null) return;
             if (target is SchwarzPAssembler schwarz) schwarz.ApplyLatticeScale(_latticeScaleOverride);
             else if (target is GyroidAssembler gyroid) gyroid.ApplyLatticeScale(_latticeScaleOverride);
@@ -718,6 +800,7 @@ namespace CosmicShore.Gameplay
             // moved when its centre is discovered (RegisterDangerPrism).
             PlaceCrystalAtCenter();
             PlaceCrystalAtTileCentre();
+            PlaceCrystalAtHeart();
         }
 
         void PlaceCrystalAtCenter()
@@ -997,6 +1080,266 @@ namespace CosmicShore.Gameplay
             return true;
         }
 
+        // ─────────────────────────────────────────────────────────────────────────
+        //  The star colony (icosahedral quasicrystal) - a plant IS a heart-owner
+        //
+        //  The same population model as the octagon (§32.7) and tile (§34.6)
+        //  colonies, applied to the Ammann-Kramer-Neri quasilattice (§37): one
+        //  plant grows the tree territory of ONE HEART - a twelve-coordinated
+        //  vertex, local max of window margin - keeps its crystal at that vertex
+        //  (the centre of a perfect twelve-strut star), and on completing itself
+        //  offers its unclaimed shell hearts to the population's frontier.
+        //  Reproduction is a POPULATION event - one birth per fauna-wave period,
+        //  popped at random - so the colony wanders instead of inflating.
+        //
+        //  Like the tile colony, an exact integer address removes discovery, ring
+        //  membership, coherence tolerances, poison bands, territory radii,
+        //  ownership epsilons and transcribed seed rotations wholesale - and here
+        //  even the Schwarz P mirror composition is gone, because bond deltas in
+        //  Z^6 honestly add. The pattern the addresses describe NEVER REPEATS;
+        //  the bookkeeping neither knows nor cares.
+        // ─────────────────────────────────────────────────────────────────────────
+
+        QuasicrystalLatticeFrame _starFrame;
+        QuasicrystalVertex _homeHeart;
+        bool _hasHomeHeart;
+
+        QuasicrystalGrowthInfo _pendingStarSeed;
+        QuasicrystalLatticeFrame _pendingStarFrame;
+        QuasicrystalVertex _pendingStarHeart;
+        bool _hasPendingStarClaim;
+
+        bool _starFrontierContributed;
+        bool? _starColonyModeCached;
+
+        /// <summary>
+        /// True when this species is a quasicrystal star colony: its health prism carries a
+        /// <see cref="QuasicrystalAssembler"/>. Deliberately a THIRD gate rather than a
+        /// widened <see cref="OctagonMode"/> or <see cref="TileColonyMode"/> - each colony's
+        /// branches type-test their own GrowthInfo inside, so one shared gate would let a
+        /// plant through into code that silently no-ops on it.
+        /// </summary>
+        bool StarColonyMode => _starColonyModeCached ??= healthPrism && healthPrism.GetComponent<QuasicrystalAssembler>();
+
+        /// <summary>
+        /// Hands a daughter her lattice and her heart. The claim was already made by the
+        /// parent (so a sibling can't race it between placement and spawn) - the daughter
+        /// adopts it here. Call before <see cref="Flora.Initialize"/>.
+        /// </summary>
+        public void AdoptHomeHeart(QuasicrystalLatticeFrame frame, QuasicrystalVertex heart)
+        {
+            _starFrame = frame;
+            _homeHeart = heart;
+            _hasHomeHeart = frame != null;
+            if (_hasHomeHeart) QuasicrystalHeartRegistry.TransferClaim(frame, heart, this);
+        }
+
+        void PlaceCrystalAtHeart()
+        {
+            if (_hasHomeHeart && _starFrame != null && crystal)
+                crystal.transform.position = _starFrame.VertexWorld(_homeHeart);
+        }
+
+        /// <summary>
+        /// Founder path: adopt the lattice this plant's own seed prism anchored, and claim
+        /// its heart. A daughter already has both (<see cref="AdoptHomeHeart"/>) and skips
+        /// this. Runs from the grow tick rather than Initialize because a founder's frame is
+        /// built lazily by its assembler's first growth probe.
+        /// </summary>
+        void BindHomeHeart()
+        {
+            if (_hasHomeHeart || healthTracker == null) return;
+
+            foreach (var prism in healthTracker.All)
+            {
+                if (!prism || !prism.TryGetComponent(out QuasicrystalAssembler assembler)) continue;
+                var frame = assembler.Frame;
+                if (frame == null) continue;
+
+                // If the heart is already held, this founder landed on top of another
+                // colony's lattice. It keeps growing unclaimed - the spatial index still
+                // stops its prisms overlapping anyone - it simply never joins the
+                // reproduction pool.
+                if (!QuasicrystalHeartRegistry.TryClaim(frame, assembler.Heart, this)) return;
+
+                frame.Cell ??= cell;
+                _starFrame = frame;
+                _homeHeart = assembler.Heart;
+                _hasHomeHeart = true;
+                PlaceCrystalAtHeart();
+                QuasicrystalColonyDiagnostics.Founders++;
+                CSDebug.LogVerbose(CSLogChannel.QuasicrystalColony,
+                    $"[QuasicrystalColony] FOUNDER {name}: heart {_homeHeart} " +
+                    $"lattice #{frame.GetHashCode():X}");
+                return;
+            }
+        }
+
+        /// <summary>
+        /// A star plant is COMPLETE when it holds a real tree cell AND its frontier is
+        /// exhausted. A tree cell's final size legitimately varies (measured 44..97 struts),
+        /// so this is the gyroid's honest shape - a count floor comfortably under the
+        /// measured minimum plus frontier exhaustion - rather than the tile colony's exact
+        /// site test (a tree has no fixed site count to test).
+        /// </summary>
+        bool StarColonyComplete =>
+            _hasHomeHeart &&
+            healthTracker != null &&
+            healthTracker.Count >= QuasicrystalLatticeData.MinPatchPrisms &&
+            pendingSpawns.Count == 0 &&
+            _idleGrowTicks >= 2 &&
+            Time.time - _lastGrowthTime >= _maturationSeconds;
+
+        /// <summary>
+        /// The population-level reproduction drive, run from every star plant's grow tick.
+        /// Contribute once on completion, then ride the cell's fauna-wave cadence for one
+        /// birth per cycle. Mirrors <see cref="TickTilePopulation"/>.
+        /// </summary>
+        void TickStarPopulation()
+        {
+            BindHomeHeart();
+
+            // No lineage (a toy clone, a microscene release) or no cell = grows, coordinates
+            // nothing. Both are required: the frontier book is keyed by (cell, species).
+            if (!SourceConfig || !cell) return;
+
+            if (!_starFrontierContributed && StarColonyComplete)
+            {
+                ContributeStarFrontier();
+                _starFrontierContributed = true;
+            }
+
+            float period = cell.CurrentFaunaSpawnPeriod;
+            if (period <= 0f) period = 30f;
+
+            if (!QuasicrystalColonyFrontier.TryBeginCycle(cell, SourceConfig, period, PopulationCycleStagger))
+                return;
+
+            // Production gates checked BEFORE popping, so a capped or Frenzy-frozen colony
+            // skips the cycle without burning frontier entries - nothing is culled, nothing
+            // is lost, the hearts are simply still there next cycle.
+            if (!cell.FloraPlantingEnabled || cell.IsFloraAtCap(SourceConfig)) return;
+
+            while (QuasicrystalColonyFrontier.TryPopRandom(cell, SourceConfig, out var entry))
+            {
+                if (QuasicrystalHeartRegistry.IsClaimed(entry.Frame, entry.Heart)) continue;
+
+                // The contributor is the lineage donor. If the food web took it since it
+                // offered this heart, the heart is still real lattice - the ticking plant
+                // stands in.
+                var donor = entry.Contributor ? entry.Contributor : this;
+                if (donor.TrySpawnStarDaughter(entry.Frame, entry.Heart)) break;
+            }
+        }
+
+        /// <summary>
+        /// Offers this plant's unclaimed shell hearts to the population's frontier. The
+        /// candidates are the measured heart-link census
+        /// (<see cref="QuasicrystalLatticeData.FrontierNeighbour"/>); each is re-proven a
+        /// heart at ITS OWN address by the closed-form window test - the census says where
+        /// shell hearts CAN be, never that one is.
+        /// </summary>
+        void ContributeStarFrontier()
+        {
+            int offered = 0;
+            for (int k = 0; k < QuasicrystalLatticeData.FrontierDeltaCount; k++)
+            {
+                var candidate = QuasicrystalLatticeData.FrontierNeighbour(_homeHeart, k);
+                if (!QuasicrystalLatticeData.IsHeart(candidate)) continue;
+                if (QuasicrystalHeartRegistry.IsClaimed(_starFrame, candidate)) continue;
+                QuasicrystalColonyFrontier.Contribute(cell, SourceConfig, _starFrame, candidate, this);
+                offered++;
+            }
+
+            CSDebug.LogVerbose(CSLogChannel.QuasicrystalColony,
+                $"[QuasicrystalColony] COMPLETE {name}: heart {_homeHeart} " +
+                $"prisms={healthTracker.Count} offered={offered} - frontier now " +
+                $"{QuasicrystalColonyFrontier.Count(cell, SourceConfig)} open hearts");
+        }
+
+        /// <summary>
+        /// Executes the population's chosen birth on THIS plant as lineage donor: claims the
+        /// heart, reserves the daughter's seed edge, stages the handoff and spawns her
+        /// through the one canonical spawn path. All-or-nothing - any failure releases
+        /// everything it took, because an orphan claim or reservation punches a permanent
+        /// hole. Mirrors <see cref="TrySpawnTileDaughter"/>.
+        /// </summary>
+        public bool TrySpawnStarDaughter(QuasicrystalLatticeFrame frame, QuasicrystalVertex heart)
+        {
+            if (frame == null) return false;
+
+            // Claim the heart FIRST - released on any later failure. The seed reservation
+            // must come second: a reservation abandoned on a lost claim would sit until its
+            // TTL, permanently blocking every frontier that probes the site meanwhile.
+            if (!QuasicrystalHeartRegistry.TryClaim(frame, heart, this)) return false;
+
+            var seed = QuasicrystalAssembler.BuildSeed(frame, heart, depth);
+            if (seed == null)
+            {
+                QuasicrystalHeartRegistry.Release(frame, heart, this);
+                return false;
+            }
+
+            var spatialIndex = PrismSpatialIndex.EnsureInstance();
+            bool reserved = false;
+            if (spatialIndex != null && spatialIndex.IsAvailable)
+            {
+                // The seed edge must be free mass-wise. TryReserve doubles as the check and
+                // the claim - the daughter's first prism consumes it on register. The radius
+                // is the lattice's own (a fraction of the edge length), so it scales with
+                // LatticeScale instead of a magic number.
+                if (!spatialIndex.TryReserve(seed.Position, frame.WorldEdgeLength * 0.2f))
+                {
+                    QuasicrystalHeartRegistry.Release(frame, heart, this);
+                    return false;
+                }
+                reserved = true;
+            }
+
+            _pendingStarFrame = frame;
+            _pendingStarHeart = heart;
+            _hasPendingStarClaim = true;
+            _pendingStarSeed = seed;
+
+            bool born = TrySpawnOneOffspring();
+            if (born)
+            {
+                QuasicrystalColonyDiagnostics.Births++;
+                CSDebug.LogVerbose(CSLogChannel.QuasicrystalColony,
+                    $"[QuasicrystalColony] BIRTH #{QuasicrystalColonyDiagnostics.Births} " +
+                    $"donor {name}: daughter on heart {heart} (frontier " +
+                    $"{QuasicrystalColonyFrontier.Count(cell, SourceConfig)} open)");
+            }
+            else
+            {
+                // SpawnFlora refused (cap raced shut, planting froze, prefab torn down) -
+                // release everything this attempt took so nothing strands.
+                QuasicrystalHeartRegistry.Release(frame, heart, this);
+                if (reserved) spatialIndex.ReleaseReservation(seed.Position);
+                _pendingStarSeed = null;
+                _hasPendingStarClaim = false;
+                _pendingStarFrame = null;
+            }
+            return born;
+        }
+
+        /// <summary>
+        /// The star colony's placement is STAGED, never searched - same contract as
+        /// <see cref="TryResolveTileOffspring"/>, which also keeps the per-plant quota
+        /// machinery (<c>Flora.TryReproduce</c>) harmlessly inert for colony species.
+        /// </summary>
+        bool TryResolveStarOffspring(out Vector3 position, out Quaternion rotation, out Vector3? up)
+        {
+            position = default;
+            rotation = default;
+            up = null;
+            if (_pendingStarSeed == null) return false;
+
+            position = _pendingStarSeed.Position;
+            rotation = _pendingStarSeed.Rotation;
+            return true;
+        }
+
         /// <summary>
         /// Every danger prism this plant grows passes through here. A founder discovers (and
         /// claims) its octagon centre from the first one; after that, prisms of MY ring are
@@ -1165,6 +1508,8 @@ namespace CosmicShore.Gameplay
                 return TryResolveOctagonOffspring(out position, out rotation, out up);
             if (TileColonyMode)
                 return TryResolveTileOffspring(out position, out rotation, out up);
+            if (StarColonyMode)
+                return TryResolveStarOffspring(out position, out rotation, out up);
 
             position = default;
             rotation = default;
@@ -1440,6 +1785,19 @@ namespace CosmicShore.Gameplay
                         _pendingOffspringFrame = null;
                     }
                 }
+                else if (_pendingStarSeed != null)
+                {
+                    // The star colony's handoff: her lattice, her heart, her first strut.
+                    // AdoptHomeHeart must precede Initialize - Initialize is what puts her
+                    // crystal at the heart vertex.
+                    assembled.SeedFromGrowth(_pendingStarSeed);
+                    if (_hasPendingStarClaim)
+                    {
+                        assembled.AdoptHomeHeart(_pendingStarFrame, _pendingStarHeart);
+                        _hasPendingStarClaim = false;
+                        _pendingStarFrame = null;
+                    }
+                }
                 else if (_donatedGrowth != null)
                 {
                     assembled.SeedFromGrowth(_donatedGrowth);
@@ -1447,6 +1805,7 @@ namespace CosmicShore.Gameplay
             }
             _pendingOffspringSeed = null;
             _pendingTileSeed = null;
+            _pendingStarSeed = null;
             _donatedGrowth = null;
         }
 
@@ -1464,6 +1823,14 @@ namespace CosmicShore.Gameplay
                 SchwarzPTileRegistry.Release(_pendingOffspringFrame, _pendingOffspringTile, this);
                 if (_pendingTileSeed != null)
                     PrismSpatialIndex.Instance?.ReleaseReservation(_pendingTileSeed.Position);
+            }
+            if (_hasHomeHeart)
+                QuasicrystalHeartRegistry.Release(_starFrame, _homeHeart, this);
+            if (_hasPendingStarClaim)
+            {
+                QuasicrystalHeartRegistry.Release(_pendingStarFrame, _pendingStarHeart, this);
+                if (_pendingStarSeed != null)
+                    PrismSpatialIndex.Instance?.ReleaseReservation(_pendingStarSeed.Position);
             }
             if (_hasPendingOffspringClaim)
             {
@@ -1512,6 +1879,16 @@ namespace CosmicShore.Gameplay
                                        $"live tracker - off-lattice reseed mint BLOCKED");
                     return;
                 }
+                if (StarColonyMode)
+                {
+                    // Same reason again: a star plant's root sits wherever Flora.Plant put
+                    // it - not an edge centre of its colony's shared lattice - so a minted
+                    // prism would anchor a SECOND incommensurable lattice at its own pose.
+                    QuasicrystalColonyDiagnostics.ReseedMintsBlocked++;
+                    CSDebug.LogWarning($"[QuasicrystalColony] {name}: ZERO surviving prisms with " +
+                                       $"a live tracker - off-lattice reseed mint BLOCKED");
+                    return;
+                }
                 if (OctagonMode)
                 {
                     GyroidColonyDiagnostics.ReseedMintsBlocked++;
@@ -1558,8 +1935,10 @@ namespace CosmicShore.Gameplay
         {
             // The octagon colony's crystal is FIXED: it marks the ring's centre and never
             // grows (the gyroid prefab also authors crystalGrowth 0 - belt and braces, since
-            // a growing crystal would drift out of scale with the window it sits in).
-            if (crystalGrowth <= 0f || OctagonMode || TileColonyMode) return;
+            // a growing crystal would drift out of scale with the window it sits in). The
+            // tile and star colonies' crystals are fixed for the same reason - each sits in
+            // a seat the lattice holds open for it.
+            if (crystalGrowth <= 0f || OctagonMode || TileColonyMode || StarColonyMode) return;
 
             if (crystal)
             {
@@ -1699,7 +2078,15 @@ namespace CosmicShore.Gameplay
             newHealthPrism.Initialize();
 
             Assembler newAssembler = newHealthPrism.GetComponent<Assembler>();
-            ApplyLatticeSpacing(newAssembler);   // founder: before its first growth probe
+            // Founder only: a SEEDED daughter's assembler already received this in the branch
+            // above (right after ProgramAssembler), and applying the lattice scale a second
+            // time would SQUARE it on the instance fields (edgeLength / separationDistance x
+            // periodScale) - no live reader today (a programmed daughter's frame carries the
+            // real scale), but the field reads wrong in the inspector and is a trap for any
+            // future instance-field consumer. _seedGrowth is still non-null here; it is
+            // cleared a few lines down.
+            if (_seedGrowth == null)
+                ApplyLatticeSpacing(newAssembler);   // founder: before its first growth probe
             newAssembler.Prism = newHealthPrism;
             newAssembler.Spindle = newSpindle;
 
@@ -1754,6 +2141,8 @@ namespace CosmicShore.Gameplay
                 return PreviewGyroid(gyroid, scale, budget, into);
             if (healthPrism.TryGetComponent(out SchwarzPAssembler schwarz))
                 return schwarz.TryPreviewLattice(budget, scale, into, latticeScale);
+            if (healthPrism.TryGetComponent(out QuasicrystalAssembler quasi))
+                return quasi.TryPreviewLattice(budget, scale, into, latticeScale);
             if (healthPrism.TryGetComponent(out WallAssembler wall))
                 return PreviewWall(wall, scale, budget, into);
 

@@ -52,6 +52,12 @@ namespace CosmicShore.Utility
         /// unaffected by this flag.
         /// </summary>
         GyroidColony = 1 << 1,
+        /// <summary>
+        /// <c>[QuasicrystalColony]</c> — star-colony lattice telemetry (founder claims, plant
+        /// completions, births). Defect warnings (blocked reseed mints) stay on the warning
+        /// channel and are unaffected by this flag.
+        /// </summary>
+        QuasicrystalColony = 1 << 2,
         All = ~0
     }
 

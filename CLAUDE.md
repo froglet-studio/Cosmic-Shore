@@ -194,8 +194,10 @@ outcome is optimization, not life). Use the `/ecology` skill for any change here
   seventh pass). Full record: `Docs/ECOSYSTEM.md §32` (§32.7 the octagon colony).
   **A cell can BE its colonies**: the freestyle `Lattice` cell (`_SO_Assets/Cell Configs/Lattice
   Cell/`, `CellConfigs[9]` in Menu_Main) authors no `EnvironmentPrefab` at all — its whole
-  environment is eight lattice colonies (gyroid ×4, Schwarz P ×4, one per element) growing into
-  one another, ~21,600 grown prisms and 720 plants at cap. It holds **exactly EIGHT SEEDS** — one
+  environment is twelve lattice colonies (gyroid ×4, Schwarz P ×4, quasicrystal ×4, one per
+  element) growing into one another, ~42,840 grown prisms and 1,080 plants at cap — the same
+  order as the heaviest AUTHORED environment in the game (Atlantis ~69k), reached by growth
+  rather than by a lay. It holds **exactly TWELVE SEEDS** — one
   founder per colony — and that is the cell, not a tuning value: **N founders do not build one
   superstructure N times faster.** Every founder is an independent lattice FRAME and independent
   frames cannot mate (`AssembledFlora` declines any site within `MisalignmentRadius` of a foreign
@@ -204,14 +206,21 @@ outcome is optimization, not life). Use the `/ecology` skill for any change here
   extend it IS the mechanic; the seeder's only remaining job is extinction recovery. Note this is
   the case `author_flora_populations.py`'s `LATTICE_MIN_FOUNDERS = 4` guards, and why it does not
   apply: that floor protects the ELEMENT SPREAD of a config that ROLLS its element, and these
-  eight author one fixed element each — **a rule written about rolled elements must not be
+  twelve author one fixed element each — **a rule written about rolled elements must not be
   inherited by a fixed-element config**. Three more things it records: a per-plant
-  budget is GEOMETRY (24-prism octagon / 36-site tile), so **plant COUNT is the only lever** and
+  budget is GEOMETRY (24-prism octagon / 36-site tile / a heart's tree cell, mean 59 struts),
+  so **plant COUNT is the only lever** and
   `MaxLivePopulation` is simultaneously the crystal-collider count; `FrenzyExitVolume` must sit
   **above** the mature forest so a trail-caused Frenzy always releases with the forest intact;
   and the shipped per-element assets' `PlantRadiusCellFraction 0.2` (240u) is INSIDE the ~392u
   nucleus, where `Flora.ResolvePlantRadius` collapses to one degenerate shell — a multi-colony
-  cell must author its own band. It is the largest collider budget of any cell and is opt-in
+  cell must author its own band. With the species spanning **159×** per prism (SchwarzP Charge
+  0.85 → quasicrystal Mass 135), one more ordering is asserted: **no single colony's own volume
+  ceiling may reach `FrenzyEnterVolume`**, or the heaviest species freezes the cell before the
+  other eleven finish and the ladder describes one colony instead of the forest. `CAP` stays ONE
+  number for all twelve because it is expressed in **plants** — territory units of each species'
+  own lattice; equalising prism counts instead would shrink the quasicrystal's superstructure
+  below its neighbours', which is the comparison the cell exists to make. It is the largest collider budget of any cell and is opt-in
   through the Cell Selector, and since §36.10 it is also **the boot world** — it replaced Blob at
   `CellConfigs[0]` and `Blob Cell Config` is deleted (only the config; the `Blob Cell` folder's
   SpawnProfile is still the population of all seven authored freestyle worlds). Booting into it is
@@ -298,6 +307,31 @@ outcome is optimization, not life). Use the `/ecology` skill for any change here
   under the spindle root and fade conserved mass with the branch). Full record:
   `Docs/ECOSYSTEM.md §34` (§34.5 the per-element prism fit, §34.7 the Schwarz P lattice, §34.8 the
   gyroid scale, §34.12 the branch pair).
+  **The THIRD lattice species is APERIODIC — and its addressing is still exact integers.** The
+  quasicrystal flora grows the icosahedral Ammann–Kramer–Neri tiling (the 3D analogue of the
+  Penrose tiling — perfect long-range "forbidden" five-fold order that NEVER repeats) by
+  **cut-and-project from Z⁶**: a vertex is six integers whose perp projection lands inside a
+  rhombic triacontahedron window (closed-form test, doubles, margins seven orders above rounding),
+  a prism is one EDGE (vertex + axis — every strut identical length, a theorem of the projection),
+  and "sameness is an integer address" therefore holds with NO mirror composition (bond deltas
+  honestly ADD upstairs in Z⁶ — the §34.2 trap cannot arise), no subdivision level and no absolute
+  coherence tolerances (the §34.8 family cannot arise): `ApplyLatticeScale` is the single
+  `edgeLength` dial. One plant = one **HEART** — a 12-coordinated vertex that is a local max of
+  window margin (bare 12-coordination admits ADJACENT hearts; measured, rejected, kept as a
+  negative control) — its crystal in a clear twelve-ray alcove (heart-adjacent struts hold back by
+  the absolute `heartSeatInset`; hearts are never adjacent so at most one end of a strut holds
+  back), and hearts self-organize to a CONSTANT 2.3840-edge spacing. **Territory is a TREE, not a
+  radius**: owner(v) follows lex-least parent chains one graph-step closer to a heart — a pure
+  integer function, cells connected by construction, measured ZERO unlaid edges where Euclidean
+  Voronoi left 47 (graph-disconnected pockets). Reproduction walks the measured 50-delta
+  heart-link census one birth per fauna-wave period (`QuasicrystalColonyFrontier` /
+  `QuasicrystalHeartRegistry`, keyed (Cell, species), cleared at all three Cell teardown sites).
+  Charge buys its 3x shield clearance with LENGTH (a 7u strut on a 24u edge, octahedra clear by 14%) rather than §35's uniform shrink, and
+  `fit_quasicrystal_strut_sizes.py` OWNS its leaf — `fit_shield_clearance.py` does not know this
+  species. Measured by `Tools/Build/measure_icosahedral_quasilattice.py`, the SHIPPED file
+  re-proven by `verify_icosahedral_quasilattice_tables.py` (incl. the Euclidean-Voronoi and
+  adjacent-hearts negative controls), populations by `author_flora_populations.py` (cap 14 — 14
+  always-on heart colliders in Blob, ~13% of its Frenzy ladder). **A prism carries the authored leaf as its `localScale`, so NOTHING may be parented under one** — a non-uniform scale above a rotated child is a SHEAR, and `ReseedBranches` hung the next spindle off the prism instead of its spindle, so every lattice species grew skewed non-cuboid slivers from its first reseed (`Docs/ECOSYSTEM.md §37.9`). `Docs/ECOSYSTEM.md §37`.
 - **An AUTHORED prism size widens its clamp; a GROWN one keeps it.**
   `PrismScaleAnimator.SetTargetScale` clamps PER AXIS into `[minScale, maxScale]` — serialized
   defaults `(0.5,0.5,0.5)`/`(10,10,10)`, which **363 of 404 prefabs** inherit unchanged — inside

@@ -277,6 +277,39 @@ what the carve-out silently broke — see the traps below.
   (`author_flora_populations.py`'s `OWNED_ELSEWHERE`). An `EXCLUDE` set is invisible in the
   output, so the next reader cannot tell "deliberately owned elsewhere" from "forgotten".
 
+- **NOTHING may be parented under a prism.** A prism carries its authored leaf as its
+  `localScale`, and a non-uniform scale above a ROTATED child is a **shear** — the child is no
+  longer a cuboid, and every generation compounds it. `AssembledFlora.ReseedBranches` hung the
+  next spindle off the *prism* instead of the prism's *spindle*, so all three lattice species
+  grew skewed slivers from a plant's first reseed onward, worst on the most extreme aspect
+  ratio (`Docs/ECOSYSTEM.md` §37.9). When you need "the thing this prism belongs to", resolve
+  the parent spindle; never take the prism's own GameObject as an attachment point.
+
+- **A ladder claim must be re-read against every cell that LOADS the profile, not the one the
+  profile is NAMED after.** A species' "N% of Frenzy" figure is written against one cell and
+  then survives that cell being retired: `Blob Cell Config` was deleted while `Blob Cell Spawn
+  Profile` lived on as the population of seven other worlds, whose Frenzy volumes span 5×
+  (Orrery 253k → Caldera 1.27M). Grep for the profile's GUID, hold the species against the
+  **tightest** consumer, and say which one you used.
+
+- **A fitter must not re-derive what a human authored.** Once a designer tunes a value by eye,
+  a script that binary-searches "the right" value silently overwrites their intent on the next
+  run, in a direction nobody is looking. Convert the fitter into a **verifier**: prove the
+  authored value (no overlaps, clear crystal seat, shield census) and *report the headroom*
+  alongside, so the next retune can see its room. If an authored value grazes, state the
+  tolerance explicitly and print the measured depth every run — an accepted graze must be a
+  stated number, never something a later reader discovers (`Docs/ECOSYSTEM.md` §37.10).
+
+- **One CAP across species of different plant sizes is a choice, and it is usually the right
+  one.** A colony cap is expressed in **plants** — territory units of that species' own
+  lattice — so equal caps give equal *territory*, not equal prism counts. The Lattice cell's
+  twelve colonies span 2.5× in struts per plant and 159× in volume per prism. Equalising prism
+  counts instead shrinks the biggest species' superstructure below its neighbours', which
+  destroys the comparison a multi-species cell exists to make. What you DO owe is a direct
+  assert that **no single colony's own volume ceiling reaches `FrenzyEnterVolume`** — otherwise
+  the heaviest species can freeze the cell while the others are still building, and the ladder
+  is describing one colony rather than the forest (`Docs/ECOSYSTEM.md` §37.11).
+
 ## 3. Implement (emergence first, surgically)
 - **Favor emergence:** never hard-code an outcome that should emerge from the fundamentals
   (Domain · Mass/prisms · Cells · Elementals · Flora & Fauna · Vessels) interacting. A scripted
