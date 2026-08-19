@@ -2743,7 +2743,29 @@ scale bump** with a one-shot unlock punch.
   (`Tools/Shaders/verify_prism_sight_composition.py`) — which is what caught that routing your own
   sight through the same weighted average was algebraically identical and **not bit-identical**
   (`x/x*x` rounds; 3,381 of 89,301 lit samples drifted).
-  Detail: `_Scripts/Controller/Vessel/R_VesselActions/DOLPHIN_CRYSTAL_SEEDING.md` (§14).
+  **The AI holds it too** (same day): `AIPilot` lights a vessel's aim telegraph while it is
+  DRIFTING and its course is locked on its objective — the commit window, where the cone's
+  direction is already decided — so an AI's blast is as readable as a human's rather than the
+  only unannounced one on the field. It asks for a CAPABILITY, never for a vessel:
+  **`IAimTelegraphAction`** marks an action whose whole effect is showing others what you are
+  lining up, and `R_VesselActionHandler.TryGetInputForAction<T>` answers which control this hull
+  puts it on — so the AI that flies all eleven vessels names neither the Dolphin nor a trigger,
+  most of the fleet is a silent no-op, and the next telegraph opts in with one interface. The
+  interface carries no members but does carry a CONTRACT, because the AI holds it blind: no
+  cooldown, no resource, no ammunition, no effect on motion. Three general findings came out of
+  it. (1) **Replicate an AI's press when the ability's output does not already ride some other
+  replicated channel** — an AI pilot runs SERVER-ONLY, so its local `PerformShipControllerActions`
+  is right for the drift (motion, and the transform already replicates) and useless for photons;
+  hence `PerformShipControllerActionsReplicated`. (2) **Owner and local pilot coincide for every
+  human and diverge for every AI**, so a gate that conflates them works perfectly until something
+  autonomous uses it — `NetEchoSightShape` was published on `IsLocalPilot` and therefore never for
+  an AI, whose sight could then draw on no machine at all including the host's. (3) **A behaviour
+  loop needs its own re-goal event**: the AI's `UpdateCellContent` was driven only by the cell's
+  `OnCellItemsUpdated`, a CRYSTAL event rather than a "this pilot needs a new target" event, so an
+  AI that overshot kept circling a crystal it could no longer reach; it now re-seeks once per
+  commit cycle (latched, because `IsDrifting` does not fall on the frame the control is released).
+  Both modes with AI Dolphins get all of this from `AIPilot` with no per-mode code.
+  Detail: `_Scripts/Controller/Vessel/R_VesselActions/DOLPHIN_CRYSTAL_SEEDING.md` (§14, §15).
 
   Manta / Rhino / Serpent are blocked on **design, not wiring**: their
   `ElementalAbilityMapSO` entries are still `(open design slot)` with `Input = 0` and no

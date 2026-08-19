@@ -305,6 +305,43 @@ different questions: the steering hook decides where the AI **goes**, this one d
 the provider closes over the controller and over an `IPlayer`, and AI players are spawned
 `destroyWithScene: false`, so a hook left armed would outlive the match that installed it.
 
+### 2026-08-19 — the loop closes, and the AI announces its aim
+
+The pieces above gave the AI the *middle* of a behaviour loop. Two of the four beats were missing,
+and both were fixed in `AIPilot` rather than here, because neither is about this mode:
+
+**It now announces the commit.** While the AI is drifting AND its course is locked on its
+objective, it holds the vessel's aim telegraph — the Dolphin's **Echo Sight** — so every other
+player sees the cone it is lining up, in the AI's own domain colour. That window is exactly the
+commit: the course is locked, so the direction of the eventual blast is already decided;
+announcing before it would be a lie and announcing after it would be pointless.
+
+Two things had to be true for that to work, and neither was:
+
+1. **The press had to travel.** An AI pilot runs on the SERVER ONLY, and its existing inputs go
+   straight to the local `PerformShipControllerActions`. That is right for the drift — the drift
+   moves the vessel and the transform replicates, so peers see the result without being told the
+   cause — and wrong for an ability whose entire output is photons. Hence
+   `R_VesselActionHandler.PerformShipControllerActionsReplicated`, and the rule that goes with it:
+   *replicate an AI's press when the ability's output does not already ride some other replicated
+   channel.*
+2. **The shape had to be published by the OWNER, not by the local pilot.** An AI vessel is owned
+   by the host and is nobody's local pilot, so `NetEchoSightShape` was never written for it and its
+   sight could not have drawn on any machine — including the host's own, which reads the value back
+   out of the same NetworkVariable. Fixed in `EchoSightActionExecutor` (see
+   `DOLPHIN_CRYSTAL_SEEDING.md` §15); it is a bug the human path could never have surfaced, because
+   there owner and local pilot are the same machine.
+
+**It now re-seeks when the commit ends.** The "course left the objective" branch already stopped
+the drift; it did not pick a new target. `UpdateCellContent` is driven by the cell's
+`OnCellItemsUpdated` — a *crystal* event, not a *this pilot needs a new goal* event — so an AI that
+overshot, or whose crystal someone else took, kept circling a target it could no longer reach until
+the cell happened to raise. It now re-seeks once per commit cycle (latched, because `IsDrifting`
+does not fall on the frame the control is released).
+
+Neither change is Bends-specific: both land in `AIPilot`, so **Rampage gets them for free**, which
+is the intent — there the same AI announces the same commit while its nose stays on the forest.
+
 ---
 
 ## Everyone starts at zero

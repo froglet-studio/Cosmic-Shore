@@ -239,6 +239,87 @@ namespace CosmicShore.Gameplay
             IsBound(_touchOverrideActions, inputEvent) ||
             IsBound(_gamepadOverrideActions, inputEvent);
 
+        /// <summary>
+        /// The reverse of <see cref="CollectBoundActions"/>: which control drives an ability of
+        /// type <typeparamref name="T"/> on this vessel, if any.
+        ///
+        /// It exists so an autonomous pilot can press an ability WITHOUT knowing which vessel it is
+        /// flying or which trigger that vessel's designer put it on — the AI asks for the concept
+        /// and the binding answers. <typeparamref name="T"/> is constrained to <c>class</c> rather
+        /// than to <c>ShipActionSO</c> precisely so it can be a capability INTERFACE
+        /// (<see cref="IAimTelegraphAction"/>) — asking for a concrete SO type would put the
+        /// caller back to naming one vessel's ability, which is the coupling this removes. Sweeps the shared map first and then both device override maps,
+        /// so it returns a real binding even for an ability a vessel exposes only on one device.
+        ///
+        /// Returns false for a vessel that binds no such ability — the answer for most of the
+        /// fleet, so it must be a quiet no-op rather than a warning. <paramref name="inputEvent"/>
+        /// is then <c>default</c>, which is the REAL member <c>FullSpeedStraightAction</c> and not a
+        /// sentinel (<see cref="InputEvents"/> deliberately has none, since every value is a control
+        /// somebody's vessel binds). Check the return value; never read the out parameter on false.
+        /// </summary>
+        public bool TryGetInputForAction<T>(out InputEvents inputEvent) where T : class
+        {
+            if (TryFindInput<T>(_shipControlActions, out inputEvent)) return true;
+            if (TryFindInput<T>(_touchOverrideActions, out inputEvent)) return true;
+            if (TryFindInput<T>(_gamepadOverrideActions, out inputEvent)) return true;
+
+            inputEvent = default;   // meaningless on false - see the summary
+            return false;
+        }
+
+        static bool TryFindInput<T>(Dictionary<InputEvents, List<ShipActionSO>> map, out InputEvents inputEvent)
+            where T : class
+        {
+            inputEvent = default;
+            if (map == null) return false;
+
+            foreach (var kv in map)
+            {
+                var list = kv.Value;
+                if (list == null) continue;
+                for (int i = 0; i < list.Count; i++)
+                {
+                    if (list[i] is not T) continue;
+                    inputEvent = kv.Key;
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        /// <summary>
+        /// Press a control the way a HUMAN pilot's press travels — owner to server to every peer —
+        /// for a caller that is not the input system. <see cref="AIPilot"/> is the only one today.
+        ///
+        /// <para><b>Why an AI needs this at all.</b> An AI pilot runs on the SERVER ONLY
+        /// (<c>Player.StartPlayer</c> returns before <c>ToggleAIPilot</c> on a client), and its
+        /// existing calls go straight to <see cref="PerformShipControllerActions"/>, which is local.
+        /// That is exactly right for an ability whose effect is MOTION — the drift moves the vessel
+        /// and the vessel's transform is replicated, so every peer sees the result without being
+        /// told the cause. It is exactly wrong for an ability whose entire effect is PHOTONS: a
+        /// telegraph nobody else can see is not a telegraph. So the rule is: replicate an AI's
+        /// press when the ability's output does not already ride some other replicated channel.</para>
+        ///
+        /// Falls back to the local call when this vessel is not spawned (the non-networked
+        /// single-player path) or not owned here, so it is safe to call unconditionally.
+        /// </summary>
+        public void PerformShipControllerActionsReplicated(InputEvents ie)
+        {
+            if (IsSpawned && IsOwner)
+                SendButtonPressed_ServerRpc(ie);
+            else
+                PerformShipControllerActions(ie);
+        }
+
+        /// <summary>Release counterpart of <see cref="PerformShipControllerActionsReplicated"/>.</summary>
+        public void StopShipControllerActionsReplicated(InputEvents ie)
+        {
+            if (IsSpawned && IsOwner)
+                SendButtonReleased_ServerRpc(ie);
+            else
+                StopShipControllerActions(ie);
+        }
+
         static void AppendBound(Dictionary<InputEvents, List<ShipActionSO>> map,
             InputEvents inputEvent, List<ShipActionSO> into)
         {

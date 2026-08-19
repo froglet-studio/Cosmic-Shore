@@ -46,6 +46,13 @@ namespace CosmicShore.Gameplay
     /// replicating is the cone's SIZE — see <see cref="R_VesselActionHandler.NetEchoSightShape"/>
     /// for the two independent reasons a remote replica cannot derive it.</para>
     ///
+    /// <para><b>An AI pilot's sight is a peer sight on every machine, including the host's.</b> An
+    /// AI vessel is owned by the server and is nobody's local pilot, so it never takes the local
+    /// branch anywhere — it publishes its shape as the owner and every machine, host included,
+    /// reads that shape back and draws it in the AI's domain colour.
+    /// <see cref="AIPilot"/> holds the trigger for the duration of a drift onto its objective, so
+    /// what a rival AI is lining up is as readable as what a human is.</para>
+    ///
     /// <para><b>The Charge-5 pilot highlight stays local.</b> Marking the ships a blast would catch
     /// is a targeting aid for the pilot aiming it, and showing every pilot's marks on every machine
     /// would stack ZTest-Always halos on the same hull from three directions at once. Prisms are
@@ -216,11 +223,19 @@ namespace CosmicShore.Gameplay
 
             float strength = _blend * so.HighlightStrength;
 
+            // OWNER-gated, and deliberately ABOVE the local/peer split: the machine that must put
+            // the shape on the wire is the one that OWNS the vessel, which is not the same thing as
+            // the one flying it. An AI Dolphin is owned by the host and is nobody's local pilot, so
+            // gating this on `local` meant its shape was never published and its sight could not
+            // draw on ANY machine - including the host's own, which reads the value back out of the
+            // same NetworkVariable. PublishShapeToPeers no-ops on a non-owner, so this is free
+            // everywhere else and identical for a human (owner and local pilot coincide).
+            PublishShapeToPeers(volume);
+
             if (local)
             {
                 // Unchanged from before peers existed, deliberately: this is the pilot's own
                 // instrument and it must read identically in every match.
-                PublishShapeToPeers(volume);
                 PrismDestructionSight.PublishLocal(volume, strength);
                 _localPublished = true;
                 DriveVesselHighlight(volume, strength);

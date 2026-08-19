@@ -894,3 +894,125 @@ harness proved honest by re-running it with a `using` removed.
    two-player host/client test where the host is the one aiming — test it from a third machine, or
    with the client as the holder.)
 6. Kill or despawn a Dolphin mid-hold and confirm its mark disappears within a frame.
+
+
+---
+
+## 15. 2026-08-19, same day — the AI holds it too
+
+§14 made the sight visible to every player. That immediately exposed an asymmetry: a human
+Dolphin's blast always arrived announced and an AI's never did, which is the wrong way round —
+the harder opponent should be the more readable one, not the more surprising one.
+
+### What the AI does now
+
+`AIPilot` holds a vessel's aim telegraph **while it is drifting AND its course is locked on its
+objective**, and releases it when the course swings off. That window is the *commit*: the drift is
+the manoeuvre where `VesselStatus.Course` is pinned to the crystal and the nose is freed to swing
+elsewhere, so the direction of the eventual cone is already decided. Announcing earlier would be a
+lie (the AI is still choosing) and later would be pointless (the blast has happened).
+
+It is stated as a STATE, not a transition, and that is load-bearing: the Dolphin's AI ability
+coroutine runs a drift of its own on a 2 s / 2 s timer, so roughly half the times the AI lines up a
+crystal the drift is already active and the "commit" branch never fires. Both branches engage; the
+latch makes it idempotent.
+
+The full loop, for the record — three of the four beats already existed:
+
+| beat | where it lives | new? |
+|---|---|---|
+| seek the nearest crystal | `AIPilot.UpdateCellContent` | no |
+| lock course + drift onto it, nose swinging free | `AIPilot.Update`, `drift` on the prefab | no |
+| **announce the commit** | `AIPilot.EngageAimTelegraph` | **yes** |
+| aim the nose at a rival (The Bends) / at the forest (Rampage) | `SetDriftLookTargetProvider` / `Cell.GetExplosionTarget` | no |
+| straighten up when the course leaves the objective | `AIPilot.Update` | no |
+| **re-seek a new crystal** | `AIPilot.Update` → `UpdateCellContent` | **yes** |
+
+The re-seek is the one that actually closes the loop. `UpdateCellContent` was driven only by the
+cell's `OnCellItemsUpdated`, which is a *crystal* event (one moved or respawned) and not a *this
+pilot needs a new goal* event — so an AI that overshot its crystal, or whose crystal another player
+took, kept circling a target it could no longer reach until the cell happened to raise. It is
+latched to one re-seek per commit cycle because `IsDrifting` does not fall on the frame the control
+is released (`DriftActionSO.StopAction` reads it back off `VesselTransformer.IsDriftActive`, and the
+ability coroutine may be holding its own drift), so the branch can hold for several frames.
+
+### The AI never names the Dolphin
+
+The AI asks for a **capability**, not for an ability: `IAimTelegraphAction` marks a `ShipActionSO`
+whose entire effect is showing other players what this vessel is lining up, and
+`R_VesselActionHandler.TryGetInputForAction<T>` answers which control this hull puts it on. So the
+shared AI that flies all eleven vessels contains no mention of the Dolphin or of a trigger, and the
+next vessel to grow a telegraph opts in with one interface on its SO and no AI change. Most of the
+fleet returns false and the whole thing is a silent no-op there, which is why
+`AimTelegraphBindingTests` exists: an unbound telegraph would turn the behaviour off across the
+board with an asset edit that mentions neither the AI nor the interface.
+
+The interface carries **no members** on purpose — the question it answers is a yes/no about the
+ability's nature — but it does carry a contract, because the AI holds it blind: no cooldown to
+waste, no resource to drain, no ammunition to spend, no effect on where the vessel goes. An ability
+that fails any of those is not a telegraph and must not wear the interface, or the AI would be
+spending the vessel's economy every time it lined up a shot.
+
+### Two things had to be fixed underneath
+
+**1. An AI's press has to travel.** An AI pilot runs on the SERVER ONLY (`Player.StartPlayer`
+returns before `ToggleAIPilot` on a client), and its existing inputs go straight to the local
+`PerformShipControllerActions`. That is exactly right for the drift — the drift moves the vessel and
+the vessel's transform is replicated, so every peer sees the *result* without being told the
+*cause* — and exactly wrong for an ability whose entire output is photons. Hence
+`R_VesselActionHandler.PerformShipControllerActionsReplicated` / `StopShipControllerActionsReplicated`,
+which route through the same owner → server → every-peer path a human press already takes.
+
+The general rule, worth carrying: **replicate an AI's press when the ability's output does not
+already ride some other replicated channel.** Motion does. Photons do not.
+
+**2. The shape had to be published by the OWNER, not by the local pilot.** §14 gated
+`PublishShapeToPeers` on `IsLocalPilot`, which is true for exactly the human flying the vessel. An
+AI vessel is owned by the host and is **nobody's** local pilot, so its `NetEchoSightShape` was never
+written — and since every peer sight (including the host's own view of its own AI) reads the cone's
+size back out of that variable, an AI's sight would have drawn nowhere at all. The publish now sits
+above the local/peer split and is gated on ownership alone; it no-ops on a non-owner, so nothing
+changes for a human, where owner and local pilot are the same machine.
+
+That bug is worth naming, because the human path could never have surfaced it: **owner and local
+pilot coincide for every human and diverge for every AI**, so any gate that conflates them works
+perfectly until something autonomous uses it.
+
+### Cost
+
+Nothing measurable. One extra `Dictionary` sweep per vessel at `Initialize` to resolve the binding;
+one replicated press and one release per commit cycle per AI (the same two RPCs a human generates by
+holding a trigger); one `UpdateCellContent` — a loop over the cell's handful of crystals — per commit
+cycle, latched so it cannot repeat while the drift unwinds. The telegraph itself is the §14 peer
+channel, which is O(1) per frame in total regardless of how many pilots, human or AI, are aiming.
+
+**Collider budget: unchanged, zero.**
+
+### Files
+
+| file | change |
+|---|---|
+| `.../Data Containers/IAimTelegraphAction.cs` | new — the capability marker and its contract |
+| `.../Data Containers/EchoSightActionSO.cs` | implements it |
+| `Assets/_Scripts/Controller/AI/AIPilot.cs` | hold the telegraph across a commit; re-seek when it ends; release on every exit |
+| `Assets/_Scripts/Controller/Vessel/R_VesselActionHandler.cs` | `TryGetInputForAction<T>`, `PerformShipControllerActionsReplicated`, `StopShipControllerActionsReplicated` |
+| `.../Executors/EchoSightActionExecutor.cs` | publish the shape as the OWNER rather than as the local pilot |
+| `Assets/_Scripts/Tests/Editor/AimTelegraphBindingTests.cs` | new — a declared telegraph must be bound on some vessel |
+
+### In-editor verification
+
+1. **The Bends** or **Rampage**, one human Dolphin plus 2–3 AI (set player count above the party
+   size so `RequestedAIBackfillCount` fills).
+2. Watch an AI line up a crystal. As it starts drifting, its cone should appear on your screen in
+   **its** domain colour, and should stay lit while it travels. Confirm your own sight is
+   unaffected when you hold yours at the same time.
+3. Follow one AI through a full cycle: cone appears → nose swings onto you (Bends) or onto the
+   forest (Rampage) → it passes or takes the crystal → cone goes out → it turns toward a
+   different crystal. Step 4 is the one that regressed before: an AI that keeps orbiting the
+   crystal it already missed has lost the re-seek.
+4. As a **client**, not the host — the whole point is that the AI's sight reaches other machines,
+   and the host would see it even if the replication were broken.
+5. Kill an AI mid-drift and confirm its cone disappears with it.
+6. Fly a **Sparrow** (Dog Fight) with AI opponents and confirm nothing changed: no vessel there
+   binds a telegraph, so `TryGetInputForAction` returns false and the AI behaves exactly as before.
+

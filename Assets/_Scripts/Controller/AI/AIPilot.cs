@@ -121,6 +121,21 @@ namespace CosmicShore.Gameplay
         Vector3 _massClusterPosition;
         float _nextMassClusterSample;
 
+        // ---- The aim telegraph (see EngageAimTelegraph) ----
+        // Which control this vessel puts its IAimTelegraphAction on, resolved once at Initialize
+        // from the vessel's own bindings. _hasAimTelegraph is false for most of the fleet, which is
+        // the normal case and must stay silent.
+        InputEvents _aimTelegraphInput;
+        bool _hasAimTelegraph;
+        bool _aimTelegraphHeld;
+
+        // Latches the re-seek to the END of a commit, so the loop closes exactly once per cycle.
+        // IsDrifting does not fall on the frame the AI releases the control (DriftActionSO reads it
+        // back off VesselTransformer.IsDriftActive, and this vessel's ability coroutine runs a drift
+        // of its own on a 2s/2s timer), so the "course left the objective" branch can hold for
+        // several frames - without this it would re-pick a target every one of them.
+        bool _reseekArmed;
+
         // Optional external steering hook. When set, the provider is sampled every
         // frame and overrides crystal/player seeking entirely. Used by game modes
         // that need bespoke AI objectives (e.g. Astro League ball striking).
@@ -191,6 +206,10 @@ namespace CosmicShore.Gameplay
         private void OnDisable()
         {
             OnCellItemsUpdated.OnRaised -= UpdateCellContent;
+
+            // Covers the paths StopAIPilot does not: a vessel despawned or swapped mid-drift, and
+            // the scene unloading under a live match.
+            ReleaseAimTelegraph();
         }
 
 
@@ -201,6 +220,12 @@ namespace CosmicShore.Gameplay
 
             // Guard against early calls before vessel is assigned
             if (vessel == null || VesselStatus == null) return;
+
+            // cellData is unset on a vessel spawned outside a cell (tool scenes). It used to be
+            // safe to dereference blind because this only ran from Initialize and from a cell's own
+            // SOAP raise - neither of which happens without a cell. The drift loop now re-seeks from
+            // Update(), so a null here would be an exception EVERY FRAME rather than never.
+            if (cellData == null) return;
 
             var cellItems = cellData.CellItems;
             float MinDistance = Mathf.Infinity;
@@ -391,6 +416,13 @@ namespace CosmicShore.Gameplay
 
             // Pick up any crystals that were spawned before this AI was initialized
             UpdateCellContent();
+
+            // Which control does this hull put its aim telegraph on? Asked ONCE, of the vessel's own
+            // bindings, so the AI never names a vessel or a trigger - see IAimTelegraphAction. Most
+            // of the fleet has none and this is simply false forever after.
+            var handler = VesselStatus?.ActionHandler;
+            _hasAimTelegraph = handler != null &&
+                               handler.TryGetInputForAction<IAimTelegraphAction>(out _aimTelegraphInput);
         }
 
         public void StartAIPilot()
@@ -411,7 +443,11 @@ namespace CosmicShore.Gameplay
         public void StopAIPilot()
         {
             AutoPilotEnabled = false;
-            
+
+            // Before the coroutines, because Update() stops running the moment AutoPilotEnabled is
+            // false and this is the last chance to put the telegraph down.
+            ReleaseAimTelegraph();
+
             foreach (var ability in abilities)
             {
                 StopCoroutine(UseAbilityCoroutine(ability));
@@ -424,7 +460,12 @@ namespace CosmicShore.Gameplay
                 return;
 
             if (VesselStatus.IsStationary)
+            {
+                // A stopped vessel is not committed to anything, and the telegraph is the one AI
+                // input that would otherwise stay lit through the pause.
+                ReleaseAimTelegraph();
                 return;
+            }
 
             // Player-seek (Joust): track the chosen opponent's LIVE position every frame so the
             // AI steers at where the target IS, not where it was at the last coroutine tick. When
@@ -444,13 +485,50 @@ namespace CosmicShore.Gameplay
             LookingAtCrystal = Vector3.Dot(desiredDirection, VesselStatus.Course) >= .9f;
             if (LookingAtCrystal && drift && !VesselStatus.IsDrifting)
             {
+                // COMMIT. The course locks onto the objective and the nose is freed to swing
+                // elsewhere; from here the vessel is travelling at the crystal no matter where it
+                // points, which is exactly the window in which announcing the aim is honest.
                 VesselStatus.Course = desiredDirection;
                 vessel.PerformShipControllerActions(InputEvents.LeftStickAction);
+                EngageAimTelegraph();
                 desiredDirection = ResolveDriftLookDirection(desiredDirection);
             }
             else if (LookingAtCrystal && VesselStatus.IsDrifting)
+            {
+                // Drifting AND on course for the objective - the same committed state as the branch
+                // above, reached the other way. It matters that this engages too: this vessel's AI
+                // ability coroutine runs its own drift on a 2s/2s timer, so roughly half the time
+                // the AI lines up a crystal the drift is ALREADY on and the commit branch never
+                // fires. The rule is the state, not the transition: while the course is locked on
+                // the objective and the vessel is drifting, the aim is announced.
+                EngageAimTelegraph();
                 desiredDirection = ResolveDriftLookDirection(desiredDirection);
-            else if (VesselStatus.IsDrifting) vessel.StopShipControllerActions(InputEvents.LeftStickAction);
+            }
+            else if (VesselStatus.IsDrifting)
+            {
+                // The course has swung off the objective - the AI overshot it, someone else took
+                // it, or it moved. Straighten up, stop announcing, and go find another one. That
+                // last step is what CLOSES the loop: without it the AI keeps the target it can no
+                // longer reach until the cell happens to raise OnCellItemsUpdated, which is a
+                // crystal event and not a "this pilot needs a new goal" event.
+                vessel.StopShipControllerActions(InputEvents.LeftStickAction);
+                ReleaseAimTelegraph();
+
+                if (_reseekArmed)
+                {
+                    _reseekArmed = false;
+                    UpdateCellContent();
+                }
+            }
+            else
+            {
+                // Neither committed nor unwinding a commit. Nothing above can hold the telegraph in
+                // this state, but the drift flag is written from three places (this loop, the drift
+                // action, and the transformer's ease-out) and only one of them is here - so the
+                // invariant is enforced rather than assumed: the telegraph is lit if and only if the
+                // course is locked on the objective and the vessel is drifting along it.
+                ReleaseAimTelegraph();
+            }
 
 
             if (_distance.sqrMagnitude < float.Epsilon) // On top of the target - avoid div-by-zero (guards the sqrMagnitude divisor below)
@@ -496,6 +574,61 @@ namespace CosmicShore.Gameplay
             throttle += throttleIncrease * Time.deltaTime;
         }
         
+        /// <summary>
+        /// Hold this vessel's <see cref="IAimTelegraphAction"/> — the Dolphin's Echo Sight today —
+        /// for as long as the AI is committed to a drift onto its objective.
+        ///
+        /// <para><b>Why the AI holds it at all.</b> A telegraph does nothing for the pilot pressing
+        /// it; it exists so everyone ELSE can read the aim. A human Dolphin holds it to see its own
+        /// cone, and the side effect is that rivals learn what it is about to take. An AI has no
+        /// use for the first half and every reason to pay the second: without this an AI's blast
+        /// arrives with no warning while a human's is always announced, which is the wrong
+        /// asymmetry — the harder opponent should be the more readable one.</para>
+        ///
+        /// <para><b>Held for exactly the drift.</b> The drift IS the commitment: the course is
+        /// locked on the crystal, so the cone that eventually comes out is already decided in
+        /// direction. Announcing before the commit would be a lie (the AI is still choosing) and
+        /// announcing after it would be pointless (the blast has happened). The Dolphin's whole
+        /// weapon is "bank energy, drift onto a crystal, release a cone" and this lights up for the
+        /// middle beat of it.</para>
+        ///
+        /// <para><b>Replicated on purpose.</b> An AI pilot runs on the server only, and a telegraph
+        /// nobody else sees is not a telegraph — see
+        /// <see cref="R_VesselActionHandler.PerformShipControllerActionsReplicated"/> for why this
+        /// is the one class of AI input that has to travel while the drift itself does not.</para>
+        ///
+        /// Idempotent: the latch means an <see cref="Update"/> that re-enters the commit branch
+        /// (a drift that has not registered yet) cannot stack presses.
+        /// </summary>
+        void EngageAimTelegraph()
+        {
+            if (!_hasAimTelegraph || _aimTelegraphHeld) return;
+
+            var handler = VesselStatus?.ActionHandler;
+            if (handler == null) return;
+
+            handler.PerformShipControllerActionsReplicated(_aimTelegraphInput);
+            _aimTelegraphHeld = true;
+            _reseekArmed = true;
+        }
+
+        /// <summary>
+        /// Stop announcing. Called when the drift ends, and again from
+        /// <see cref="StopAIPilot"/> and <see cref="OnDisable"/> — a telegraph is the one AI input
+        /// that leaves something on screen, so every path out of autopilot has to put it down or
+        /// the mark outlives the behaviour that raised it.
+        /// </summary>
+        void ReleaseAimTelegraph()
+        {
+            if (!_aimTelegraphHeld) return;
+            _aimTelegraphHeld = false;
+
+            var handler = VesselStatus?.ActionHandler;
+            if (handler == null) return;
+
+            handler.StopShipControllerActionsReplicated(_aimTelegraphInput);
+        }
+
         IEnumerator UseAbilityCoroutine(AIAbility action) 
         {
             yield return new WaitForSeconds(3);
