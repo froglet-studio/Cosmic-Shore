@@ -1,6 +1,6 @@
 # QA Backlog — untested development on `bleeding-edge`
 
-Generated: 2026-08-20 · Scan covers: up to `04756610` (PRs #583–#761) · **Owner of this file: the `/qa-backlog` skill — do not hand-edit.**
+Generated: 2026-08-20 · Scan covers: up to `74bf4080` (PRs #583–#761; `9471b544` audio-bank update carries no testable item) · **Owner of this file: the `/qa-backlog` skill — do not hand-edit.**
 
 > Note (2026-08-11): `bleeding-edge` was briefly force-pushed back to `0e855b24` (dropping PRs #674–#679) and then restored — the current tip `b0cf4f0f` re-includes all of that work plus PRs #680/#681/#695/#696. No items were pruned. The `windows-build-failures` build-fix branch is validated by QA-BUILD-COMPILE on Windows and has no separate item.
 
@@ -180,17 +180,6 @@ Source: `dog-fight-game-mode` (feat `3324b951`). A whole new game mode — 96 fi
 5. Return to menu and relaunch once — no leaked state, no crash.
 
 PASS: scene opens clean; the mode launches, plays a full round to a resolved scoreboard, and returns/relaunches without error; combat scoring behaves; the Boneyard arena builds as intended. FAIL: missing scripts · a scene/controller that throws on load or launch · the round never resolving · a scoreboard that doesn't tally combat hits/kills · a crash on return/relaunch.
-
-### QA-SCARAB-MODE ⬜ — the Scarab vessel + party game
-Source: PRs #755 (`scarab-party-game` — smooth nucleus release, bigger skimmer, cap overload, domain blast), #758 (`scarab-wing-prism-dais` — membrane blow-out identity test), #761 (`scarab-squirrel-colliders` — omni-only ball forge, no hull omni effects, per-cell ball overload). A large new vessel/party-game cluster (79 + 17 + 31 files), authored headless.
-
-1. Project compiles; open the Scarab vessel prefab and its mode scene — no `Missing (Mono Script)`; controller + scoring rule wired.
-2. Launch the Scarab mode (any player count): it reaches gameplay without an exception; the arena/cell builds.
-3. Fly the Scarab: the skimmer, nucleus release, cap/overload, and domain blast behave as designed; the omni-only ball forge works and hull omni effects are absent (per #761).
-4. Play a full round to the win condition; scoreboard resolves; return/relaunch clean.
-5. Confirm the Squirrel colliders touched in #761 didn't regress the Squirrel (fly it briefly).
-
-PASS: compiles, prefabs/scene intact; the Scarab mode launches, plays to a resolved scoreboard, and returns cleanly; Scarab abilities and the ball forge behave; Squirrel unaffected. FAIL: missing scripts · a scene/vessel that throws on load or launch · abilities/ball forge not working · a round that won't resolve · a Squirrel regression.
 
 ### QA-BENDS-MODE ⬜ — "The Bends": the Dolphin-only debuff duel (GameModes.Bends = 42)
 Source: PR #752 (`dolphin-dogfighting-game`). A new mode — `GameModes.Bends = 42`, Dolphin-only debuff duel — 42 files, 12,899 insertions, authored headless.

@@ -52,3 +52,18 @@ _Passed on build bleeding-edge @ 55b310a · Unity 6000.4.11f1.x · Windows, Unit
 ### QA-P2-LIFEFORM-MATRIX-MOONS ⬜ — element-crystal "moons" swallowed by the toy body
 Suspected pre-existing: the Lifeform Matrix's four crystal moons sit ~2.2 world units out while toys place at `toyBodyRadius = 22`. Look at the bench. PASS = the four moons are visible and distinct. FAIL = they are inside the sphere (then the fix is a placement value, not code).
 <!-- /archived:QA-P2-LIFEFORM-MATRIX-MOONS -->
+
+<!-- archived:QA-SCARAB-MODE -->
+_Passed on build bleeding-edge @ 0475661 · Unity 6000.4.11f1.x · Windows, Unity Editor (2026-08-20, andrew)._
+
+### QA-SCARAB-MODE ⬜ — the Scarab vessel + party game
+Source: PRs #755 (`scarab-party-game` — smooth nucleus release, bigger skimmer, cap overload, domain blast), #758 (`scarab-wing-prism-dais` — membrane blow-out identity test), #761 (`scarab-squirrel-colliders` — omni-only ball forge, no hull omni effects, per-cell ball overload). A large new vessel/party-game cluster (79 + 17 + 31 files), authored headless.
+
+1. Project compiles; open the Scarab vessel prefab and its mode scene — no `Missing (Mono Script)`; controller + scoring rule wired.
+2. Launch the Scarab mode (any player count): it reaches gameplay without an exception; the arena/cell builds.
+3. Fly the Scarab: the skimmer, nucleus release, cap/overload, and domain blast behave as designed; the omni-only ball forge works and hull omni effects are absent (per #761).
+4. Play a full round to the win condition; scoreboard resolves; return/relaunch clean.
+5. Confirm the Squirrel colliders touched in #761 didn't regress the Squirrel (fly it briefly).
+
+PASS: compiles, prefabs/scene intact; the Scarab mode launches, plays to a resolved scoreboard, and returns cleanly; Scarab abilities and the ball forge behave; Squirrel unaffected. FAIL: missing scripts · a scene/vessel that throws on load or launch · abilities/ball forge not working · a round that won't resolve · a Squirrel regression.
+<!-- /archived:QA-SCARAB-MODE -->
