@@ -1,0 +1,515 @@
+name: Bleeding-edge guard
+
+# Verifies every commit that LANDS on an integration branch, and attempts a
+# repair when one breaks. This is the workflow that exists so nobody has to
+# discover a broken trunk by hand at build time.
+#
+# Guards TWO branches, for different reasons:
+#   bleeding-edge  all work lands here, so a break is cheapest to fix while it
+#                  is still one push old rather than fifty commits deep.
+#   development    the source the Wednesday promotion reads. BUILD_PROMOTION_
+#                  REQUIRES_GREEN gates on check-runs against that commit, so
+#                  without CI here that gate can never be switched on.
+#
+# Why a push trigger and not just the PR gate in unity-ci.yml:
+#   Most work reaches these branches as a direct merge push
+#   ("Merge remote-tracking branch 'origin/claude/...' into bleeding-edge"),
+#   which fires no pull_request event at all. unity-ci.yml therefore never sees
+#   those commits. This does.
+#
+# Defence in depth, cheapest first:
+#   1. validate  - static checks, ubuntu, seconds, no Unity and no license. Also
+#                  decides whether stage 2 is warranted at all (see the scope
+#                  step): a docs-only push cannot break a Unity build.
+#   2. unity     - a real compile (edit-mode tests force one). This is the only
+#                  stage that can see the failures Python cannot: package-level
+#                  compile errors, asset import breakage, AOT/IL2CPP problems.
+#   3. report    - one self-closing tracking issue PER BRANCH saying whether
+#                  that branch is broken right now.
+#   4. autofix   - Claude repairs the mechanical classes of failure and opens a
+#                  PR. It NEVER pushes to the guarded branch directly; a bad
+#                  autofix landing unreviewed on trunk is worse than the break.
+#
+# The unity job stays SKIPPED until the repository variable UNITY_RUNNER_LABEL
+# is set, exactly as in unity-ci.yml and build-branch-ci.yml. Skipping rather
+# than defaulting to a label matters: a job queued against a runner that does
+# not exist sits as a permanently pending check and GitHub only reaps it after
+# roughly 24 hours. Until that variable is set, only stage 1 runs and this
+# workflow cannot catch a compile break. See Docs/BUILD_AND_DELIVERY.md section 10.
+#
+# SECURITY: this repository is public. This workflow is push-only on a branch
+# that requires write access, so a self-hosted runner attached here is not
+# reachable by fork pull requests. Do not add a pull_request trigger to this
+# file without first restricting outside-contributor runs.
+
+on:
+  push:
+    # bleeding-edge is where all work lands, so a break there is cheapest to fix
+    # while it is still one push old. development is the source the Wednesday
+    # promotion reads, and BUILD_PROMOTION_REQUIRES_GREEN gates on check-runs
+    # against THAT commit - without CI here that gate can never be switched on.
+    branches: [bleeding-edge, development]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  # Keyed by ref, NOT a fixed string. A shared group would make a push to
+  # development cancel an in-flight bleeding-edge run and vice versa, silently
+  # leaving one of the two branches unverified. Within a single branch a newer
+  # push still supersedes: there is no value in verifying a commit that is
+  # already not the tip.
+  group: branch-guard-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  # Per-branch, so a broken development never reads as a broken bleeding-edge.
+  # The label is how the tracking issue is found again on the next run, the same
+  # convention sync-build-branches.yml uses for its promotion report.
+  REPORT_LABEL: ci-${{ github.ref_name }}
+  REPORT_TITLE: '${{ github.ref_name }} is broken'
+
+jobs:
+  # ──────────────────────────────────────────────
+  #  1. Static validation - always runs, no Unity
+  # ──────────────────────────────────────────────
+  validate:
+    name: Static validation
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    outputs:
+      # Whether this push touched anything a Unity compile could possibly care
+      # about. Read by the unity job to skip the expensive stage on pushes that
+      # cannot affect a build.
+      unity_relevant: ${{ steps.scope.outputs.unity_relevant }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          lfs: false        # source-only checks; binary assets are not needed
+          fetch-depth: 1
+
+      # A docs-, workflow- or tooling-only push cannot break a Unity build, and
+      # proving that costs minutes of the single self-hosted runner that IL2CPP
+      # builds also queue behind. Compare the pushed range through the API
+      # rather than deepening the checkout: this is a ~2.8 GB repository and
+      # fetch-depth 0 would cost more than the compile being avoided.
+      #
+      # Fail SAFE in every direction. A first push to a branch, a force-push, a
+      # manual dispatch, an API hiccup, or a range so large the compare endpoint
+      # truncates its file list - all resolve to "run the compile". Skipping is
+      # only ever chosen from positive evidence that nothing relevant changed.
+      - name: Decide whether a Unity compile is warranted
+        id: scope
+        env:
+          GH_TOKEN: ${{ github.token }}
+          EVENT: ${{ github.event_name }}
+          BEFORE: ${{ github.event.before }}
+          SHA: ${{ github.sha }}
+        run: |
+          set -uo pipefail
+          run_it() { echo "unity_relevant=true"  >> "$GITHUB_OUTPUT"; echo "Unity compile: RUN ($1)"; exit 0; }
+          skip_it(){ echo "unity_relevant=false" >> "$GITHUB_OUTPUT"; echo "Unity compile: SKIP ($1)"; exit 0; }
+
+          [ "$EVENT" = "push" ] || run_it "not a push event"
+          case "$BEFORE" in
+            ''|0000000000000000000000000000000000000000) run_it "no usable before-SHA (new branch or force-push)" ;;
+          esac
+
+          resp=$(gh api "repos/$GITHUB_REPOSITORY/compare/$BEFORE...$SHA" 2>/dev/null) \
+            || run_it "compare API unavailable"
+
+          # The compare endpoint caps its file list at 300. A truncated list
+          # cannot prove absence, so treat it as relevant.
+          total=$(echo "$resp" | jq -r '.files | length')
+          [ "$total" -ge 300 ] && run_it "$total files (compare list truncated)"
+
+          files=$(echo "$resp" | jq -r '.files[].filename')
+          echo "Changed files ($total):"; echo "$files" | sed 's/^/  /'
+
+          if echo "$files" | grep -qE '^(Assets/|Packages/|ProjectSettings/|Tools/CI/|Tools/Build/|\.github/workflows/)'; then
+            run_it "touched code, assets, project settings, CI tooling or a workflow"
+          fi
+          skip_it "nothing a Unity build reads was changed"
+
+      # Both checkers have no-opped while still reporting OK. Prove they can
+      # detect their own fixtures BEFORE trusting a clean scan.
+      - name: Self-test the validators
+        run: |
+          set -euo pipefail
+          python3 Tools/CI/test_validate_project.py
+          python3 Tools/Build/check_conditional_compilation.py --self-test
+
+      - name: Validate project
+        run: python3 Tools/CI/validate_project.py --github
+
+      - name: Check conditional compilation
+        run: python3 Tools/Build/check_conditional_compilation.py --root Assets
+
+  # ──────────────────────────────────────────────
+  #  2. Unity compile - the only stage that sees a real build break
+  # ──────────────────────────────────────────────
+  unity:
+    name: Unity compile
+    needs: validate
+    # Two gates. No runner configured -> skip cleanly rather than queue forever
+    # against a label nobody answers. Nothing a build reads was touched -> skip,
+    # because this stage costs minutes of a single machine that IL2CPP player
+    # builds also queue behind.
+    if: vars.UNITY_RUNNER_LABEL != '' && needs.validate.outputs.unity_relevant == 'true'
+    runs-on: ${{ vars.UNITY_RUNNER_LABEL }}
+    timeout-minutes: 60
+    outputs:
+      # 'compile' | 'tests' | 'ok' - read by the autofix job, which only acts on
+      # a compile break.
+      failure_kind: ${{ steps.compile.outputs.failure_kind }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          lfs: true         # the project stores binary assets in Git LFS
+          fetch-depth: 1
+          # Do NOT clean. The default runs `git clean -ffdx`, which deletes
+          # Library/ every run and forces a full asset reimport - that is what
+          # made the first compile take 18 minutes, and it would have taken 18
+          # minutes on every push forever. A warm Library is the whole reason
+          # this job runs on an owned machine. Tracked files are force-reset by
+          # the checkout; UNTRACKED ones are not - see the next step.
+          clean: false
+
+      # `clean: false` preserves Library/ (the point) and also preserves any file
+      # that became untracked in this workspace (not the point). A ghost copy of
+      # the renamed Assets/_Scripts/Tests/EditMode/ folder survived that way and
+      # broke the IL2CPP build against a commit that does not contain it. Sweep
+      # the Unity source tree only, so Library/ at the repo root is untouched.
+      - name: Purge stale untracked files from the source tree
+        shell: bash
+        run: |
+          set -euo pipefail
+          # `git -c safe.directory='*'` is REQUIRED, not belt-and-braces.
+          # actions/checkout grants itself the safe.directory exception in a
+          # TEMPORARY global config (it overrides HOME for the duration of its
+          # own steps) and revokes it in post-job, so every later step runs
+          # under the real HOME with no exception at all. The workspace is owned
+          # by BUILTIN\Administrators while the runner service is
+          # NT AUTHORITY\NETWORK SERVICE, so bare git dies with
+          # "detected dubious ownership" and exit 128 - which is exactly how
+          # this step failed the first time it ran. Same trap that once killed
+          # `git rev-parse HEAD` here; the fix there was to stop calling git,
+          # and this step cannot. Scoped to the invocation, so nothing is
+          # written to the machine's global git config.
+          GIT=(git -c safe.directory='*')
+          "${GIT[@]}" clean -ffd --dry-run -- Assets Packages ProjectSettings | sed 's/^/::warning::stale file removed: /'
+          "${GIT[@]}" clean -ffd -- Assets Packages ProjectSettings
+
+      - name: Compile check
+        id: compile
+        shell: bash
+        run: |
+          # `set +e` is REQUIRED and must be explicit. GitHub invokes `shell: bash`
+          # as `bash --noprofile --norc -e -o pipefail {0}`, passing -e as a shell
+          # FLAG. `set -uo pipefail` sets u and pipefail but does NOT clear an
+          # inherited -e, so the step aborted the instant Unity exited non-zero:
+          # before PIPESTATUS was read, before compile-vs-tests was decided, and
+          # before UNITY_TESTS_BLOCKING was ever consulted. The symptom was a bare
+          # "Process completed with exit code 2" and a red job no repository
+          # variable could soften. Here the exit code IS the signal, not an abort.
+          set +e
+          set -uo pipefail
+          UNITY="${UNITY_PATH:-${{ vars.UNITY_PATH }}}"
+          if [ -z "$UNITY" ]; then
+            echo "::error::UNITY_PATH is not set. Point it at the Unity 6000.3.17f1 executable on the runner."
+            exit 1
+          fi
+          if [ ! -x "$UNITY" ]; then
+            echo "::error::UNITY_PATH is not executable: $UNITY"
+            exit 1
+          fi
+
+          EXPECTED="$(grep '^m_EditorVersion:' ProjectSettings/ProjectVersion.txt | awk '{print $2}')"
+          echo "Project expects Unity $EXPECTED"
+
+          RESULTS="$GITHUB_WORKSPACE/editmode-results.xml"
+          LOG="$GITHUB_WORKSPACE/unity-editmode.log"
+          rm -f "$RESULTS" "$LOG"
+
+          # Edit-mode tests force a full compile of runtime, editor, and test
+          # assemblies, which is what we actually care about here. -runTests must
+          # NOT be combined with -quit.
+          "$UNITY" -batchmode -nographics \
+            -projectPath "$GITHUB_WORKSPACE" \
+            -runTests -testPlatform EditMode \
+            -testResults "$RESULTS" \
+            -logFile - | tee "$LOG"
+          CODE=${PIPESTATUS[0]}
+
+          # A non-zero exit means EITHER the project did not compile OR tests
+          # failed, and those are very different signals: a compile break is the
+          # thing that stops a Windows build and must always block, whereas a red
+          # test is a separate problem that should not trigger an autofix on
+          # gameplay code. Two independent discriminators, either one is enough:
+          #   - 'error CS' in the log is the definitive compiler marker
+          #   - no results XML means the run never reached the test phase
+          COMPILE_ERRORS=0
+          grep -qE '\berror CS[0-9]+' "$LOG" && COMPILE_ERRORS=1
+          [ -f "$RESULTS" ] || COMPILE_ERRORS=1
+
+          if [ "$CODE" -eq 0 ]; then
+            echo "failure_kind=ok" >> "$GITHUB_OUTPUT"
+            echo "Compile clean, edit-mode tests green."
+            exit 0
+          fi
+
+          if [ "$COMPILE_ERRORS" -eq 1 ]; then
+            echo "failure_kind=compile" >> "$GITHUB_OUTPUT"
+            echo "::error::The project did not compile. This is what breaks the Windows build."
+            grep -E '\berror CS[0-9]+' "$LOG" | head -40 || true
+            exit 1
+          fi
+
+          echo "failure_kind=tests" >> "$GITHUB_OUTPUT"
+          # Tests, not compilation. Blocking is a repo-variable decision, matching
+          # the UNITY_TESTS_BLOCKING convention already used by unity-ci.yml.
+          if [ "${{ vars.UNITY_TESTS_BLOCKING }}" = "false" ]; then
+            echo "::warning::Edit-mode tests failed, but UNITY_TESTS_BLOCKING is 'false', so this run is not being failed. The project DID compile."
+            exit 0
+          fi
+          echo "::error::Edit-mode tests failed. The project compiled, so this is not a build break. Set UNITY_TESTS_BLOCKING=false to downgrade this to a warning while the suite is greened up."
+          exit 1
+
+      # Only on failure. Nobody has ever opened the editor log of a green run,
+      # and uploading ~1 MB per push on a branch that sees dozens a day is pure
+      # noise. When it IS needed, it is the artifact the autofix reads.
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: editmode-results-${{ github.run_id }}
+          path: |
+            editmode-results.xml
+            unity-editmode.log
+          if-no-files-found: ignore
+          retention-days: 14
+
+  # ──────────────────────────────────────────────
+  #  3. Report - one tracking issue that says whether trunk is broken right now
+  #
+  #  GitHub's built-in email only reaches the person whose push failed, which is
+  #  the wrong audience: a broken trunk is everyone's problem and the person who
+  #  pushed may already be offline. A single labelled issue is opened when trunk
+  #  breaks, commented on if it breaks again, and CLOSED when trunk goes green,
+  #  so "is bleeding-edge healthy?" is answerable at a glance and everyone
+  #  watching the repository is notified. Same convention as the promotion
+  #  report in sync-build-branches.yml.
+  # ──────────────────────────────────────────────
+  report:
+    name: Report status
+    needs: [validate, unity]
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      issues: write
+    steps:
+      - name: Open, update or close the tracking issue
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VALIDATE: ${{ needs.validate.result }}
+          UNITY: ${{ needs.unity.result }}
+          KIND: ${{ needs.unity.outputs.failure_kind }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          SHA: ${{ github.sha }}
+          ACTOR: ${{ github.actor }}
+        run: |
+          set -euo pipefail
+
+          # Classify. A skipped unity job means no runner is configured, which is
+          # a gap rather than a break, so it must not raise an alarm.
+          broken=false
+          summary=""
+          if [ "$VALIDATE" = "failure" ]; then
+            broken=true
+            summary="Static validation failed."
+          elif [ "$UNITY" = "failure" ]; then
+            broken=true
+            case "$KIND" in
+              compile) summary="**The project did not compile.** This is what breaks the Windows build." ;;
+              tests)   summary="Edit-mode tests failed. The project DID compile, so this is not a build break." ;;
+              *)       summary="The Unity job failed before it could classify the failure." ;;
+            esac
+          fi
+
+          # The label must exist before it can be filtered on. Creating it is
+          # idempotent; a 422 just means it is already there.
+          gh api -X POST "repos/$GITHUB_REPOSITORY/labels" \
+            -f name="$REPORT_LABEL" -f color="b60205" \
+            -f description="Bleeding-edge verification status" >/dev/null 2>&1 || true
+
+          num=$(gh api "repos/$GITHUB_REPOSITORY/issues?state=open&labels=$REPORT_LABEL&per_page=1" \
+                  --jq '.[0].number // empty')
+
+          if [ "$broken" = false ]; then
+            # Only speak on the transition back to green. Commenting on every
+            # healthy push would make the notification worthless.
+            if [ -n "$num" ]; then
+              gh api -X POST "repos/$GITHUB_REPOSITORY/issues/$num/comments" \
+                -f body="Recovered. \`$SHA\` verified clean. [Run]($RUN_URL)" >/dev/null
+              gh api -X PATCH "repos/$GITHUB_REPOSITORY/issues/$num" -f state=closed >/dev/null
+              echo "Trunk recovered; closed issue #$num."
+            else
+              echo "Trunk is green and no issue was open. Nothing to report."
+            fi
+            exit 0
+          fi
+
+          # Heredoc, not printf: the table rows must be separated by SINGLE
+          # newlines or GitHub does not render them as a table at all.
+          # Every line stays at the script's indentation: this is inside a YAML
+          # block scalar, and a line at column 1 ends the block. YAML strips the
+          # common indent, so the heredoc still reaches bash flush-left.
+          body=$(cat <<EOF
+          $summary
+
+          | | |
+          |---|---|
+          | Commit | \`$SHA\` |
+          | Pushed by | @$ACTOR |
+          | Run | $RUN_URL |
+          | Static validation | $VALIDATE |
+          | Unity compile | $UNITY${KIND:+ ($KIND)} |
+
+          Open the run above for the failing output. A compile break prints its
+          \`error CS\` lines inline and attaches the full editor log as an artifact.
+
+          This issue closes itself automatically when ${{ github.ref_name }} next verifies clean.
+          EOF
+          )
+
+          if [ -z "$num" ]; then
+            num=$(gh api -X POST "repos/$GITHUB_REPOSITORY/issues" \
+                    -f title="$REPORT_TITLE" -f body="$body" \
+                    -f "labels[]=$REPORT_LABEL" --jq .number)
+            echo "Opened issue #$num."
+          else
+            gh api -X POST "repos/$GITHUB_REPOSITORY/issues/$num/comments" \
+              -f body="$body" >/dev/null
+            echo "Trunk still broken; commented on issue #$num."
+          fi
+
+  # ──────────────────────────────────────────────
+  #  4. Autofix - repair and open a PR, never push to trunk
+  # ──────────────────────────────────────────────
+  autofix:
+    name: Attempt autofix
+    needs: [validate, unity]
+    # Fires on a static-validation failure or a COMPILE failure only. A red
+    # edit-mode test means the project compiled fine, so it is not a build break
+    # and must not send Claude editing gameplay code to make a test pass.
+    # `always()` is required because a needs-failure would otherwise skip this
+    # job outright. A skipped `unity` job yields an empty output, so the second
+    # clause is false and this stays correct while no runner is configured.
+    if: >-
+      always() && (
+        needs.validate.result == 'failure' ||
+        needs.unity.outputs.failure_kind == 'compile'
+      )
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    permissions:
+      contents: write
+      pull-requests: write
+    # Serialised and never cancelled: two overlapping failures must not race to
+    # open duplicate pull requests.
+    concurrency:
+      group: branch-guard-autofix-${{ github.ref }}
+      cancel-in-progress: false
+    steps:
+      # Either credential works and they bill differently, so the choice is the
+      # repo owner's rather than this file's:
+      #   ANTHROPIC_API_KEY       - console.anthropic.com key, billed to the
+      #                             Anthropic org that owns it (API credits).
+      #   CLAUDE_CODE_OAUTH_TOKEN - Claude Code token, drawn against that
+      #                             account's Pro/Max subscription instead.
+      # Set whichever one you want to pay from; the key wins if both are set.
+      - name: Check for a credential
+        id: key
+        env:
+          # Through env rather than inline interpolation, so neither value is
+          # ever pasted into the generated shell script.
+          KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          OAUTH: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+        run: |
+          if [ -n "$KEY" ]; then
+            echo "have=true" >> "$GITHUB_OUTPUT"
+            echo "Authenticating with ANTHROPIC_API_KEY (billed to that Anthropic organization)."
+          elif [ -n "$OAUTH" ]; then
+            echo "have=true" >> "$GITHUB_OUTPUT"
+            echo "Authenticating with CLAUDE_CODE_OAUTH_TOKEN (drawn against that Claude Code subscription)."
+          else
+            echo "::warning::Neither ANTHROPIC_API_KEY nor CLAUDE_CODE_OAUTH_TOKEN is set, so no autofix was attempted. Verification still failed; it simply was not repaired automatically."
+            echo "have=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: actions/checkout@v4
+        if: steps.key.outputs.have == 'true'
+        with:
+          lfs: false
+          fetch-depth: 0
+
+      - name: Fix and open a PR against the guarded branch
+        if: steps.key.outputs.have == 'true'
+        uses: anthropics/claude-code-action@v1
+        with:
+          # Both are passed; the action ignores whichever is empty. See the
+          # credential check above for which one bills where.
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          prompt: |
+            Commit ${{ github.sha }} broke verification on ${{ github.ref_name }}.
+
+            Reproduce first. Run, in this order, and read the output:
+              python3 Tools/CI/validate_project.py
+              python3 Tools/Build/check_conditional_compilation.py --root Assets
+            If both pass, the failure came from the Unity compile stage instead.
+            Read the "Unity compile" job's log in this workflow run; it prints the
+            first 40 `error CS...` lines directly, and the full editor log is
+            attached to this run as the `editmode-results-${{ github.run_id }}`
+            artifact.
+
+            You are only ever invoked for a COMPILE break or a static-validation
+            break. A failing edit-mode TEST does not reach you, so never change
+            gameplay code to make an assertion pass.
+
+            Read CLAUDE.md and the skills in .claude/skills/ before changing
+            anything. They carry this project's conventions and the traps
+            specific to it, including Docs/CONDITIONAL_COMPILATION.md, which
+            covers the guard mistakes that are invisible in the Editor and only
+            ever surface as a red automated build.
+
+            Fix ONLY what the verification reports. The recurring cases are:
+              - editor-only API reaching player code, fixed by moving the file
+                under an Editor/ folder or wrapping it in #if UNITY_EDITOR
+              - a using directive guarded by #if UNITY_EDITOR above a class
+                declaration that is NOT guarded, so the Release player build
+                cannot resolve MonoBehaviour
+              - namespace and using-directive errors, including base classes
+                that need qualifying, such as UnityEditor.Editor
+              - a MonoBehaviour whose class name does not match its file name
+              - a scene listed in ProjectSettings/EditorBuildSettings.asset that
+                no longer exists on disk
+
+            Do not refactor, do not reformat untouched code, and do not change
+            gameplay behaviour. If the failure is not one of these mechanical
+            classes, stop and explain in the pull request body rather than
+            guessing. A wrong autofix on trunk costs more than a red check.
+
+            Re-run both validators until they pass, then open a pull request
+            against ${{ github.ref_name }}.
+
+            NEVER push directly to ${{ github.ref_name }}. It is an integration trunk
+            and an unreviewed autofix landing on it is worse than the break it
+            was meant to repair.
+
+            Before opening anything, check whether an open pull request from a
+            previous autofix attempt already exists (look for the head branch
+            prefix `autofix/${{ github.ref_name }}`). If one does, push to that branch and
+            update its description instead of opening a second pull request.

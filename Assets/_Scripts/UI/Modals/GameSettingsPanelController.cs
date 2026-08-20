@@ -44,7 +44,7 @@ namespace CosmicShore.UI
         [Header("Panel")]
         [SerializeField, Tooltip("OptionsMenuContent root - enabled by Open(), disabled by Close(). Wire the settings modal's open event to Open() and its close event to Close().")]
         GameObject optionsMenuContent;
-        [SerializeField, Tooltip("Shown while the panel is open IN-GAME: Performance settings + Auto-Detect + Benchmark are locked outside the main menu (big graphics changes happen in the menu only).")]
+        [SerializeField, Tooltip("Shown while the panel is open IN-GAME: Performance settings + Auto-Detect + Benchmark, plus the GENERAL tab's Bug Report / Privacy Policy / Delete Data / Quit Game buttons, are locked outside the main menu (big graphics changes and anything that leaves the game happen in the menu only).")]
         GameObject menuOnlyHint;
         [SerializeField, Tooltip("Shown when a renderer-level change (Quality / AA / Texture / Upscaling) is made - 'some changes apply after a restart'. Hidden on open.")]
         GameObject restartRequiredNotice;
@@ -60,11 +60,14 @@ namespace CosmicShore.UI
         [SerializeField] OnOffControl subtitles;
         [SerializeField] TMP_Dropdown subtitleScaleDropdown;
         [SerializeField] OnOffControl analyticsConsent;
-        [SerializeField] Button bugReportButton;
-        [SerializeField] Button privacyPolicyButton;
-        [SerializeField] Button deleteDataButton;
+        [SerializeField, Tooltip("Opens the support page in a browser. Main menu only - see ApplyContextLock.")]
+        Button bugReportButton;
+        [SerializeField, Tooltip("Opens the privacy policy in a browser. Main menu only - see ApplyContextLock.")]
+        Button privacyPolicyButton;
+        [SerializeField, Tooltip("Opens the delete-my-data form in a browser. Main menu only - see ApplyContextLock.")]
+        Button deleteDataButton;
         [SerializeField, Tooltip("PC/Steam only: closes the game. Hidden automatically on mobile, where " +
-             "the OS owns app exit and a quit button is a store-review flag.")]
+             "the OS owns app exit and a quit button is a store-review flag. Main menu only - see ApplyContextLock.")]
         Button quitGameButton;
         [SerializeField] TMP_Text versionText;
 
@@ -154,13 +157,21 @@ namespace CosmicShore.UI
 
         // ───────────────────────── context lock (menu vs in-game) ─────────────────────────
 
-        /// <summary>True only in the main menu - big graphics + Auto-Detect + Benchmark are locked elsewhere.</summary>
+        /// <summary>True only in the main menu - see <see cref="ApplyContextLock"/> for what is locked elsewhere.</summary>
         bool InMainMenu => appState == null || appState.Value == null || appState.Value.State == ApplicationState.MainMenu;
 
         /// <summary>
-        /// Locks the Performance settings + Auto-Detect + Benchmark to the main menu (real-game pattern:
-        /// big graphics changes don't happen mid-session). Live-safe settings (audio, controls, FOV,
-        /// VSync, frame cap) stay editable in-game. Shows <see cref="menuOnlyHint"/> while locked.
+        /// Locks to the main menu everything that shouldn't be reachable mid-session:
+        /// <list type="bullet">
+        /// <item>Performance settings + Auto-Detect + Benchmark - real-game pattern, big graphics
+        /// changes don't happen mid-session.</item>
+        /// <item>The GENERAL tab's four exit actions - Bug Report, Privacy Policy, Delete Data and
+        /// Quit Game. Each one either leaves the game (an external browser tab, or closing outright)
+        /// or acts on the account, and doing that from a live session drops the player out of a
+        /// running match - and, in multiplayer, out of a session other people are still in.</item>
+        /// </list>
+        /// Live-safe settings (audio, controls, FOV, VSync, frame cap) stay editable in-game.
+        /// Shows <see cref="menuOnlyHint"/> while locked.
         /// </summary>
         void ApplyContextLock()
         {
@@ -173,6 +184,14 @@ namespace CosmicShore.UI
             SetInteractable(physicsDetailDropdown, menu);
             SetInteractable(autoDetectButton, menu);
             SetInteractable(benchmarkButton, menu);
+
+            // GENERAL tab exit actions - main menu only. quitGameButton may be hidden entirely here
+            // (mobile, see BindQuitButton); SetInteractable is safe either way.
+            SetInteractable(bugReportButton, menu);
+            SetInteractable(privacyPolicyButton, menu);
+            SetInteractable(deleteDataButton, menu);
+            SetInteractable(quitGameButton, menu);
+
             if (menuOnlyHint != null) menuOnlyHint.SetActive(!menu);
         }
 

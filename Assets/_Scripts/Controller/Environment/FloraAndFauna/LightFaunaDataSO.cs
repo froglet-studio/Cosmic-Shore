@@ -77,11 +77,13 @@ namespace CosmicShore.Gameplay
         [Min(0f)] public float huntDurationSeconds = 10f;
 
         [Header("Death (wither)")]
-        [Tooltip("Continuity rule - nothing pops out of existence. On death the body withers " +
-                 "one spindle ring at a time, FARTHEST-from-centre first (a shark's fins / a " +
-                 "brittlestar's arms evaporate before the core body), leaving the elemental " +
-                 "crystal behind. Seconds between rings. 0 falls back to 0.25s so the body " +
-                 "never collapses in a single frame.")]
+        [Tooltip("Continuity rule - nothing pops out of existence. On death the soft tissue withers " +
+                 "one spindle ring at a time and the body prisms are left standing as a skeleton " +
+                 "(Docs/ECOSYSTEM.md §26). Starvation runs FARTHEST-from-the-heart first (a shark's " +
+                 "fins / a brittlestar's arms evaporate before the core body) and the crystal becomes " +
+                 "collectable when the wither reaches the core; a JOUST runs the same rings in the " +
+                 "opposite direction, because the jouster already took the heart. Seconds between " +
+                 "rings. 0 falls back to 0.25s so the body never collapses in a single frame.")]
         [Min(0f)] public float witherRingInterval = 0.25f;
     }
 }

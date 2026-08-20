@@ -60,11 +60,11 @@ MonoBehaviour:
     ShipColor1: {r: 1.2203892, g: 0.6122575, b: 0.03070152, a: 1}
     ShipColor2: {r: 0.47058824, g: 0.23529412, b: 0.043137256, a: 1}
     OutsideBlockColor: {r: 0.23899364, g: 0.124818474, b: 0, a: 1}
-    ShieldedOutsideBlockColor: {r: 0.3478766, g: 0.2043237, b: 0.03582808, a: 1}
+    ShieldedOutsideBlockColor: {r: 0.3133712, g: 0.2098907, b: 0.0821433, a: 1}
     SuperShieldedOutsideBlockColor: {r: 0.59607846, g: 0.28627452, b: 0.003921569,
       a: 1}
-    InsideBlockColor: {r: 1.4980392, g: 0.66787237, b: 0.08886676, a: 1}
-    ShieldedInsideBlockColor: {r: 1.047677, g: 0.5569406, b: 0.1785668, a: 1}
+    InsideBlockColor: {r: 0.9964046, g: 0.4048625, b: 0.0185709, a: 1}
+    ShieldedInsideBlockColor: {r: 0.844452, g: 0.5967034, b: 0.3827994, a: 1}
     SuperShieldedInsideBlockColor: {r: 1.4980395, g: 1.1186504, b: 0.5323221, a: 1}
     AOETextureColor: {r: 2.0590868, g: 1.6091012, b: 0.44200292, a: 0}
     AOEFresnelColor: {r: 0.16078432, g: 0.12418869, b: 0, a: 0}
@@ -104,5 +104,6 @@ MonoBehaviour:
     LightColor: {r: 0, g: 0, b: 0, a: 0}
     DarkColor: {r: 0, g: 0, b: 0, a: 0}
     BrightCTA: {r: 0.59, g: 0.92, b: 0.16, a: 1}
-    DarkCTA: {r: 0.18, g: 0.32, b: 0.05, a: 1}
-    Danger: {r: 0.72350526, g: 0.04628531, b: 0.020476442, a: 0}
+    DarkCTA: {r: 0.28125, g: 0.5, b: 0.078125, a: 1}
+    ElementalCrystalDimming: 0.45
+    Danger: {r: 1.4979111, g: 0.0058463, b: 0.0068495, a: 0}

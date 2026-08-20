@@ -589,14 +589,8 @@ MonoBehaviour:
     PlantRadiusCellFraction: {s['plantRadiusFraction']}
   InitialLevel: 1
   LeafScalePerLevel: 1.15
-  CrystalScalePerLevel: 1.2
   SpreadElements: {1 if spread else 0}
 {palette_block}
-  Levels:
-    Enabled: 1
-    MinLevel: 1
-    MaxLevel: 5
-    RarityFalloff: 2
 """
 
 
@@ -637,14 +631,8 @@ MonoBehaviour:
     PlantRadiusCellFraction: 0.5
   InitialLevel: 1
   LeafScalePerLevel: 1.15
-  CrystalScalePerLevel: 1.2
   SpreadElements: 1
   ElementPalette: []
-  Levels:
-    Enabled: 1
-    MinLevel: 1
-    MaxLevel: 5
-    RarityFalloff: 2
 """
 
 

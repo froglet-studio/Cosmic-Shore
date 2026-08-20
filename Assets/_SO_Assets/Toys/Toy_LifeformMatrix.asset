@@ -50,6 +50,12 @@ MonoBehaviour:
     - {fileID: 11400000, guid: d6d14731fd184959b837ab47e378f813, type: 2}
     - {fileID: 11400000, guid: 0e87f3117e7141a7b5bce66b0385a2d0, type: 2}
     - {fileID: 11400000, guid: c7ff7791587d4467ba9fbe88358b2119, type: 2}
+  - Name: Worm Colony
+    ElementConfigs:
+    - {fileID: 11400000, guid: c1a7e2b45f0d4c1e8a6b9d3f2e7c5a10, type: 2}
+    - {fileID: 11400000, guid: a3d59c8e71b24f6a9c0e4d8b5f172c33, type: 2}
+    - {fileID: 11400000, guid: e7f1b3a2c9d84e5fb6a08c7d4e392b55, type: 2}
+    - {fileID: 11400000, guid: b9c4d7e2a1f34b8cd5e6f0a39b8d1c77, type: 2}
   floraSpecies:
   - Name: Gyroid
     ElementConfigs:
@@ -63,6 +69,12 @@ MonoBehaviour:
     - {fileID: 11400000, guid: c79b896ebbd141d5b46fa76a9f151b1b, type: 2}
     - {fileID: 11400000, guid: 5e33b2ff867d4bbebe6b690b11b22e7d, type: 2}
     - {fileID: 11400000, guid: 44339d43234c4273b7be825a8521387d, type: 2}
+  - Name: Quasicrystal
+    ElementConfigs:
+    - {fileID: 11400000, guid: fcf139eca19845ecbb5cea2d491214c6, type: 2}
+    - {fileID: 11400000, guid: 47624b4efa994b9296f16723e5c87482, type: 2}
+    - {fileID: 11400000, guid: f2677d56069e48aa85354b70616a650b, type: 2}
+    - {fileID: 11400000, guid: d8ebac2e7c7b4e64ad1e307c036b4a3f, type: 2}
   - Name: Wall
     ElementConfigs:
     - {fileID: 11400000, guid: a2df5b0a5bf945f4b006aea2767d5c3f, type: 2}

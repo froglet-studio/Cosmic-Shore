@@ -1,0 +1,42 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 01f934d50526431a9392a6ceca1dc33d, type: 3}
+  m_Name: Boneyard Cell Config 2
+  m_EditorClassIdentifier:
+  CellName: Boneyard
+  Description: The Dog Fight arena at intensity 2 - 16100 prisms of wreckage
+    inside r=520: 8 hollow hulks to hide in, 12 leaning spires,
+    5 girder cages, 4 broken overpasses, and 81 danger traps on the torn
+    ends and around the reactor, scattered into debris fields with an open centre.
+    Cover, never an objective - shooting it scores nothing. NO NUCLEUS by design.
+    PhaseThresholds ride THIS intensity's own baseline; regenerate with
+    Tools/Build/author_dogfight_assets.py after any change rather than hand-editing.
+  Icon: {fileID: 21300000, guid: 6aa1c06e11b265744a5f9fa8858ac72a, type: 3}
+  Difficulty: 2
+  CellEndGameScore: 0
+  MembranePrefab: {fileID: 346633111830028674, guid: 6e330f85972faf843b8a128e7166f7b5, type: 3}
+  NucleusPrefab: {fileID: 0}
+  CytoplasmPrefab: {fileID: 639495419069806261, guid: 9cacd903fcf4643459f5f14ac811bb20, type: 3}
+  CellModifiers: []
+  SpawnProfile: {fileID: 11400000, guid: cdb0d13903fc1ad109b58d796c608900, type: 2}
+  EnvironmentPrefab: {fileID: 5260000000000503, guid: a733af94c230ed1642c81588fb216c1a, type: 3}
+  EnvironmentIntensity: 2
+  SenseRadiusOverride: 1200
+  PhaseThresholds:
+    RestlessEnter: 16800
+    RestlessExit: 16600
+    FrenzyEnter: 19700
+    FrenzyExit: 19100
+    RestlessEnterVolume: 1085839
+    RestlessExitVolume: 1082639
+    FrenzyEnterVolume: 1132239
+    FrenzyExitVolume: 1122639

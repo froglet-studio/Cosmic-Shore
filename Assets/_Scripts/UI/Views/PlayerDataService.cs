@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using CosmicShore.Core;
 using CosmicShore.ScriptableObjects;
 using CosmicShore.Utility;
+using Cysharp.Threading.Tasks;
 using Reflex.Attributes;
 using Unity.Services.Authentication;
 using Unity.Services.Core;
@@ -98,6 +99,14 @@ namespace CosmicShore.UI
             IsInitialized = true;
             OnProfileChanged?.Invoke(CurrentProfile);
 
+            // Backfill this account into the public name registry once per session, so
+            // players who set their name before the uniqueness feature shipped become
+            // visible to other players' duplicate checks over time.
+            if (DisplayNameValidator.Config.EnableUniquenessCheck && CurrentProfile != null)
+                DisplayNameRegistry
+                    .PublishOwnNameAsync(DisplayNameValidator.NormalizeForUniqueness(CurrentProfile.Identity.DisplayName))
+                    .Forget();
+
             // Notify currency displays of the freshly-loaded cloud value. Those views subscribe
             // to the static balance event, which is otherwise only raised on mutation
             // (AddCrystals), so without this they'd show the local-default 0 until the next change.
@@ -154,6 +163,19 @@ namespace CosmicShore.UI
             if (flightTimeSeconds > 0f)
                 CurrentProfile.Lifecycle.TotalFlightTimeSeconds += flightTimeSeconds;
 
+            ScheduleSave();
+        }
+
+        /// <summary>
+        /// Adds flight time to the lifetime total without counting a game. This is how menu
+        /// freestyle lands here: it is time at the stick, but no game was completed, so
+        /// <see cref="ProfileLifecycle.GamesCompleted"/> must not move.
+        /// </summary>
+        public void RecordFlightTime(float flightTimeSeconds)
+        {
+            if (CurrentProfile?.Lifecycle == null || flightTimeSeconds <= 0f) return;
+
+            CurrentProfile.Lifecycle.TotalFlightTimeSeconds += flightTimeSeconds;
             ScheduleSave();
         }
 
@@ -257,24 +279,64 @@ namespace CosmicShore.UI
             SyncCurrentProfileToRepo();
         }
 
+        bool _immediateSaveInFlight;
+        bool _immediateSaveRequestedAgain;
+
         /// <summary>
         /// Pushes the profile to UGS Cloud Save immediately (in addition to the debounced save),
         /// so deliberate user actions like changing the avatar persist right away rather than
         /// after the ~1.5s debounce. Mirrors GameModeProgressionService.SaveImmediateAsync.
+        ///
+        /// Calls COALESCE rather than overlap. Every caller pairs this with ScheduleSave(), which
+        /// has already copied the current profile into the repo, so a flush that is already in
+        /// flight will carry any newer data anyway - and two concurrent SaveAsync calls against one
+        /// repository is a race worth not having. A request arriving mid-flush therefore sets a
+        /// flag and the loop below flushes exactly once more, instead of starting a second write.
+        ///
+        /// This was `async void`, which is why it mattered: two rapid deliberate actions (the
+        /// username confirm button was clickable twice, see AuthenticationSceneController) issued
+        /// overlapping saves, and an exception escaping an `async void` cannot be observed by any
+        /// caller - it goes straight to the runtime as unhandled.
         /// </summary>
-        async void SaveProfileImmediateAsync()
+        void SaveProfileImmediateAsync()
         {
-            var repo = _ugsDataService?.ProfileRepo;
-            if (repo == null) return;
+            if (_immediateSaveInFlight)
+            {
+                _immediateSaveRequestedAgain = true;
+                return;
+            }
 
+            RunImmediateSaveAsync().Forget();
+        }
+
+        async UniTaskVoid RunImmediateSaveAsync()
+        {
+            _immediateSaveInFlight = true;
             try
             {
-                await repo.SaveAsync();
+                do
+                {
+                    _immediateSaveRequestedAgain = false;
+
+                    var repo = _ugsDataService?.ProfileRepo;
+                    if (repo == null) return;
+
+                    try
+                    {
+                        await repo.SaveAsync();
+                    }
+                    catch (Exception e)
+                    {
+                        CSDebug.LogWarning($"[PlayerDataService] Immediate profile save failed: {e.Message}. " +
+                                           "Falling back to the debounced save.");
+                        return;
+                    }
+                }
+                while (_immediateSaveRequestedAgain);
             }
-            catch (Exception e)
+            finally
             {
-                CSDebug.LogWarning($"[PlayerDataService] Immediate profile save failed: {e.Message}. " +
-                                   "Falling back to the debounced save.");
+                _immediateSaveInFlight = false;
             }
         }
 
@@ -305,14 +367,98 @@ namespace CosmicShore.UI
             SaveProfileImmediateAsync(); // persist the avatar to UGS now, not just on debounce
         }
 
-        public void SetDisplayName(string displayName)
+        /// <summary>
+        /// The ONLY way a display name is changed. Runs the full local rule set
+        /// (length, characters, format, reserved names, profanity — see
+        /// <see cref="DisplayNameValidator"/>), then the global duplicate check
+        /// (<see cref="DisplayNameRegistry"/>), and only then writes the profile,
+        /// claims the name in the public registry, and syncs the UGS player name.
+        /// The returned result carries the user-facing failure message on rejection
+        /// and the sanitized name that was saved on success.
+        /// </summary>
+        public async UniTask<DisplayNameValidationResult> TrySetDisplayNameAsync(string requestedName)
         {
-            if (CurrentProfile == null)
-                return;
+            var validation = DisplayNameValidator.Validate(requestedName);
+            if (!validation.IsValid)
+                return validation;
 
+            if (CurrentProfile == null)
+                return DisplayNameValidationResult.Fail(DisplayNameError.ServiceUnavailable,
+                    "Profile isn't ready yet. Try again in a moment.");
+
+            string sanitized = validation.SanitizedName;
+            string normalized = DisplayNameValidator.NormalizeForUniqueness(sanitized);
+            string currentNormalized = DisplayNameValidator.NormalizeForUniqueness(CurrentProfile.Identity.DisplayName);
+
+            // Re-claiming your own name (e.g. changing only casing/spacing) never needs
+            // an availability check — the registry entry is already yours.
+            if (DisplayNameValidator.Config.EnableUniquenessCheck &&
+                !string.Equals(normalized, currentNormalized, StringComparison.Ordinal))
+            {
+                var availability = await DisplayNameRegistry.CheckAvailabilityAsync(normalized);
+
+                if (availability == DisplayNameAvailability.Taken)
+                    return DisplayNameValidationResult.Fail(DisplayNameError.Taken,
+                        "That name is already taken. Try another one.");
+
+                if (availability == DisplayNameAvailability.Unknown)
+                {
+                    if (DisplayNameValidator.Config.BlockWhenUniquenessUnknown)
+                        return DisplayNameValidationResult.Fail(DisplayNameError.ServiceUnavailable,
+                            "Can't check name availability right now. Try again later.");
+
+                    CSDebug.LogWarning($"[PlayerDataService] Availability unknown for '{sanitized}' - allowing the change (fail-open policy).");
+                }
+            }
+
+            ApplyValidatedDisplayName(sanitized);
+            DisplayNameRegistry.PublishOwnNameAsync(normalized).Forget();
+            SyncUgsPlayerNameAsync(sanitized).Forget();
+
+            return validation;
+        }
+
+        /// <summary>
+        /// Raw profile write. Private on purpose: every caller must come through
+        /// <see cref="TrySetDisplayNameAsync"/> so no UI can skip validation.
+        /// </summary>
+        void ApplyValidatedDisplayName(string displayName)
+        {
             CurrentProfile.Identity.DisplayName = displayName;
             OnProfileChanged?.Invoke(CurrentProfile);
             ScheduleSave();
+            SaveProfileImmediateAsync(); // a chosen name is a deliberate action - persist now
+        }
+
+        /// <summary>
+        /// Keeps the UGS account player name in sync with the Cloud Save display name,
+        /// otherwise friends see the auto-generated "Pilot9898" format in their friend
+        /// list. UGS player names cannot contain spaces or punctuation, so the name is
+        /// compacted ("Sky Walker" → "SkyWalker") instead of failing silently.
+        /// </summary>
+        async UniTask SyncUgsPlayerNameAsync(string displayName)
+        {
+            var sb = new System.Text.StringBuilder(displayName.Length);
+            foreach (char c in displayName)
+                if (char.IsLetterOrDigit(c))
+                    sb.Append(c);
+
+            if (sb.Length == 0)
+                return;
+
+            try
+            {
+                if (UnityServices.State == ServicesInitializationState.Initialized &&
+                    AuthenticationService.Instance != null &&
+                    AuthenticationService.Instance.IsSignedIn)
+                {
+                    await AuthenticationService.Instance.UpdatePlayerNameAsync(sb.ToString()).AsMainThread();
+                }
+            }
+            catch (Exception ex)
+            {
+                CSDebug.LogWarning($"[PlayerDataService] UpdatePlayerNameAsync failed (non-critical): {ex.Message}");
+            }
         }
 
         void SyncProfileToGameData(PlayerProfileData data)

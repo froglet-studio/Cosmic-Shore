@@ -20,7 +20,9 @@ In one or two lines, state which invariants the change touches and confirm it vi
 **continuity of existence** (nothing pops in/out — everything grows/fades/suctions/withers; PLATFORM-WIDE) ·
 no imposed death/decay/lifespan · no domain asymmetry (controlling-color spawn only) ·
 wither-to-crystal + mass conservation · volume is the spine (not count) · the lifeform→elemental-
-crystal invariant · territorial permanence (don't cull the dominant canopy) · endogenous
+crystal invariant (COMPOSITE creatures satisfy it at the CREATURE level — the worm
+colony's capital segments carry the hearts, its body segments are body-parts and carry
+none; `Docs/ECOSYSTEM.md` §23.3) · territorial permanence (don't cull the dominant canopy) · endogenous
 selection only (survival = fitness, never a scripted fitness function) · the collider budget.
 **If a change might violate one, STOP and ask (AskUserQuestion). Do not guess the design.**
 
@@ -57,6 +59,77 @@ what the carve-out silently broke — see the traps below.
 
 ## 2.6 Prism / trail traps (each of these cost real time)
 
+- **A SHIELD's size is not the prism's size, and the two tiers scale DIFFERENTLY.** Both shield
+  meshes are built from the box HALF-extents x `CIRCUMSCRIBING_SCALE` (3), so a prism of full
+  size `S` gets a semi-axis of `1.5 S` — **3x the box's own extent**. The octahedron's vertices
+  sit ON THE AXES (extent `3S`, circumsphere `3S`); the stella octangula's spikes sit at the
+  **CUBE CORNERS**, so its axis extent is also `3S` but its circumsphere is `3S*sqrt(3) ~= 5.196 S`.
+  Sizing a super-shielded prism by its bounding box therefore understates what the player sees
+  by `sqrt(3)`, and no axis-extent check can see it. Decide which measure the design cares about
+  ("fits this slot" = bounding box; "reads this big" = circumsphere), derive the authored scale
+  from the generator's own constant, and remember that cycling a tier along same-sized prisms
+  TRIPLES every shielded one unless you fit it (authored scale x `1/CIRCUMSCRIBING_SCALE`, which
+  restores the envelope exactly - §35's "fit the PRISM, never the pattern"). Full table + the
+  clearance and hinge consequences: the `asset-surgery` skill, "Trap: a SHIELD's size is not the
+  prism's size".
+- **Static bookkeeping outlives the world it describes.** A `static` registry/claim book/
+  frontier that coordinates a population survives every cell teardown — `Cell.ResetCell`,
+  `Initialize`, and the Cell-Selector world swap all destroy the lifeforms and leave the
+  static state standing, so the NEXT world inherits the dead one's entries and acts on
+  coordinates that no longer contain anything. Anything a lifeform's own `OnDestroy`
+  releases is fine (that self-heals); anything only the POPULATION owns must be dropped by
+  the **cell**, at all three reset sites. Key it by `(Cell, species)` rather than species
+  alone — one cell resetting must not wipe another's book, and it is usually also the fix
+  for a second bug, since per-cell clocks/periods were being shared too.
+- **`CellTypeChoiceOptions.IntensityWise` silently swaps the SPAWNER class.**
+  `Cell.StartSpawnerForMode` picks `IntensityWiseLifeSpawner` for every IntensityWise cell and
+  `RandomLifeSpawner` for everyone else. Any spawn-loop feature (a density scalar, a gate, a
+  new roll) implemented in only one of them is **dead code in exactly the modes that asked for
+  it**. Implement in both, or state why one is deliberately excluded.
+- **"Both spawners" is not enough for FAUNA — there are FOUR producers.** `RandomLifeSpawner`,
+  `IntensityWiseLifeSpawner`, **`Fauna.TryReproduce`** (reproduction is the actual population
+  driver, not the spawner) and the freestyle **`Microscene`** conveyor all read the per-species
+  population numbers. Splitting a modifier across them is not merely incomplete, it is
+  *incoherent*: a seeder filling to 24 while reproduction stops at 6 is two ceilings for one
+  number. So a per-cell modifier of a per-species number resolves on the **`Cell`** — the one
+  object all four already hold (`Cell.ResolveFaunaPopulation` / `ResolveFaunaCap` /
+  `IsFaunaAtCap`) — and the raw config field then has **no direct reader** outside the config
+  and the profile. Write the comparison once too (`IsFaunaAtCap`), or a caller will test the
+  unscaled number correctly-looking-ly. Generalizes to any future per-cell modifier.
+- **A population scalar that moves the FLOOR but not the CAP is inert.** `MaxLivePopulation` is
+  documented as "a performance backstop, not the primary control", which makes it easy to leave
+  alone — but it is what actually bounds a standing population. The Blob tadpole floors at 4 and
+  caps at 6, so a floor-only scalar is clamped away above ~1.5× and reads as *doing nothing*.
+  Move floor and cap together. (Scaling either is production gating, which §0 permits; culling
+  to meet a lowered scale is not.)
+- **A shared species asset is the reason the scalar belongs on the PROFILE.** Rampage's two
+  species are referenced straight out of `Blob Cell/`, so stocking its arena by editing them
+  would have restocked Menu_Main's lava lamp too. Before tuning any lifeform config, grep who
+  else references it — a per-mode number on a shared asset is a cross-mode bug.
+- **A tuning field on `FloraVariantTuning` reaches only the flora families that READ it.**
+  `MaxTotalSpawnedObjects` was honoured by `AssembledFlora` alone for a long time, so 45
+  authored assets were writing a per-plant budget that did nothing on branching and
+  phyllotactic species — and the silent fallback was the prefab's own 5000. A field that
+  appears on every flora config has to mean the same thing on every flora; check all three
+  `ApplyVariantTuning` overrides when you add one.
+- **A cell choice that is STICKY and derived from REPLICATED state must be gated on
+  replication.** `Cell.AssignConfig` latches `runtime.Config` on its first pass and reads
+  `SelectedIntensity`, which reaches a client only in the game-config ClientRpc — while a
+  client's cell bootstraps off its FIRST CRYSTAL, ~600 ms earlier. The client then builds a
+  different intensity's arena than the host, for the whole match, with no error (the SOAP
+  default 0 clamps to a legal index). Gate on `GameDataSO.GameConfigSynced`, and make the
+  deferral RETRYABLE — the bootstrap used to latch its "done" flag on its first line, which
+  would have left a deferred cell with no cytoplasm and no spawner at all.
+- **…but do NOT over-apply that gate: a value the client RECEIVES needs none.** The test is not
+  "does this depend on intensity", it is "does a CLIENT derive it?". `CrystalManager`'s
+  per-intensity crystal count reads the same late-arriving `SelectedIntensity`, yet needs no
+  `GameConfigSynced` gate — it is resolved only inside `NetworkCrystalManager`'s `IsServer`
+  paths and reaches clients as the replicated slot-list LENGTH. Gating it would add a race for
+  nothing. Ask which machine computes the value before reaching for the gate.
+- **`Mathf.RoundToInt` is banker's rounding.** For any authoring-facing scalar (a density
+  multiplier, a per-intensity count), use explicit `Mathf.FloorToInt(x + 0.5f)` — otherwise
+  `10 x 0.85` lands on 8 for one species and 9 for the next and nobody can explain why.
+
 - **A vessel lays TWO ribbons.** `VesselPrismController.Trail` is only half the trail; the
   double-trail spawn pattern puts every other prism in `SecondaryTrail` (`Trail2`). Anything
   reasoning about "the vessel's whole trail" — length, mass, cleanup, recycling — must walk both,
@@ -88,9 +161,167 @@ what the carve-out silently broke — see the traps below.
   `Cell.ExpectedNucleusWorldRadius` (measures the config's prefab asset, no instantiate) —
   `cellData.Cell` is null then and `NucleusWorldRadius` returns 0, and a fallback built on
   either silently placed every player *inside* the nucleus.
+- **Deferring a lifeform's crystal drop? REPARENT IT FIRST.** Ecology work keeps wanting to move
+  *when* something happens in a death — the heart drops at the end of the wither rather than the
+  start, a body part leaves later than it used to. A Unity child cannot be rescued once its parent
+  is being destroyed, so a deferral that leaves the object parented to the husk loses it on every
+  interrupted death (cell drain, turn end, a manager pulling the husk) — and an `OnDestroy`
+  backstop cannot fix it after the fact, it can only *report* the loss. Split it: re-home the
+  object at the TOP of the death (`Crystal.DetachHeartToCell` — onto the cell, but still
+  `IsEmbedded` so it is uncollectable), and let the deferred step only change its *state*. Then
+  every later exit is a real recovery instead of a hopeful one. **Corollary, and the part that
+  bites twice:** any guard phrased *"is it still attached to / embedded in me?"* silently stops
+  firing once you move the detach earlier — grep every reader of that state before you change its
+  timing (`GrowCrystalWithPop` was exactly such a guard). `Docs/ECOSYSTEM.md §26.4`.
+- **An ORDERED wither needs the spindles isolated first.** `Spindle.ForceWither` recurses into
+  child spindles AND destroying a spindle GameObject destroys its children, so any death that
+  spends spindles one at a time collapses the creature in one step — *except* outside-in, which
+  works by accident because it destroys leaves first. `Spindle.IsolateForOrderedWither` breaks both
+  couplings (and suspends `CheckForLife`, so handing a spindle's prisms away doesn't evaporate it
+  out of turn). Detach body prisms BEFORE withering spindles — a body prism is parented to a
+  spindle, so the wither would destroy the mass you meant to conserve. `Docs/ECOSYSTEM.md §26.3`.
+- **A per-lifeform SCALE curve must exempt any species whose geometry is a LATTICE.**
+  `Flora.LevelUp` grows `leafSize`, and `Flora.AddHealthBlock` stamps it onto every prism the
+  plant lays — but `AssembledFlora`'s families (gyroid, SchwarzP, wall) bond at offsets measured
+  in ABSOLUTE local units (`OctagonNeighbor.Center`/`SeedPosition`,
+  `GyroidAssembler.SeparationDistance`, captured once in `GyroidAssembler.Start`), so a leaf that
+  grows mid-life lays prisms the bond table no longer describes. Making the offsets scale-aware
+  does NOT fix it: the plant's earlier prisms are still the old size, and **two prism sizes
+  cannot tile one lattice**. Gate on `Flora.PrismSizeFixedByGrowthRule` (true on
+  `AssembledFlora`). The trap is that the worst-affected species is invisible from the feature
+  you are writing: making flora level on reproduction hits the gyroid octagon colony HARDEST,
+  because it is the family that reproduces most (one birth per fauna-wave period), so it would
+  have inflated fastest against a CI-verified geometry table. **Before adding any per-individual
+  scale curve, ask which species' geometry is authored in absolute units.**
+- **A prism that stops being body tissue must be RE-FILED, not just reparented.**
+  `PrismSpatialIndex.ComputeEnvironmentMass` reads `HealthPrism.OwnerFauna` to keep a live swarm
+  out of the targeting grids. Clear the owner without calling `NotifyOwnershipChanged` and the
+  prism stays classified as volume-only body mass forever: it feeds `LiveVolume` but the food web
+  can neither see nor eat it, which looks exactly like "fauna are ignoring it" with no error
+  anywhere.
+- **An AUTHORED prism size is SILENTLY CLAMPED, and the clamp is invisible to every offline
+  check.** `PrismScaleAnimator.SetTargetScale` clamps per axis into `[minScale, maxScale]` —
+  serialized defaults `(0.5,0.5,0.5)`/`(10,10,10)`, inherited unchanged by **363 of 404 prefabs**
+  — inside the setter, with no log and no return value. A config saying `60 x 1 x 1` therefore
+  produces a `10 x 1 x 1` prism and *nothing reports the difference*. Three passes of flora
+  fitting measured, argued about and shipped prism sizes the engine never used that way; every
+  cross-section under 0.5 was clamped UP at the same time. Anything that STATES a size calls
+  `Prism.AdmitTargetScale(size)` first; anything that GROWS into the bound via `Grow()` leaves it
+  alone — and because the widening is permanent on a POOLED instance, `ResetState` restores it.
+  **When a fitted size does not read on screen, check what the engine actually STORED before
+  re-fitting** — one look at the live Transform beats another round of measurement.
+- **A scale applied to a node that PARENTS its own successors compounds.** Flora spindles nest —
+  each new spindle is instantiated as a child of its parent branch's spindle — and prisms parent
+  to the spindle ROOT. Scaling that root therefore multiplied down the chain as `scale^depth`
+  (1024x at ten generations) *and* multiplied every prism's authored `leafSize` on top. Scale the
+  node's CHILDREN instead, which are leaves of the chain. Before scaling anything in a hierarchy,
+  ask what else inherits that transform; no compile or static check sees this, only geometry, and
+  only some distance from the seed.
+- **A coherence tolerance written as an ABSOLUTE distance is an unstated dependency on the
+  lattice it was measured against.** A gyroid plant's coherence rides `snapDistance` (compared
+  against SQUARED distances), a 40u mate-search radius, a reservation floor, and
+  `AssembledFlora.MisalignmentRadius` — all sized at `separationDistance 3`. Scaling the lattice
+  moved every real distance out from under them, the twin-detection gate stopped catching twins,
+  and the plant grew the offset parallel domains that gate exists to prevent. Every constant was
+  individually correct; the defect was a RELATIONSHIP. Enumerate every test that decides
+  *sameness* — snap, dedupe, reserve, twin-detect — and assert the ORDERING between them
+  (`reserve < gate < healthy pair`) rather than the values.
 - **A visual state applied before `Prism.IsCreationComplete` is part of BIRTH and must snap.**
   Engaging a morph there holds the exotic-visual window across the creation reveal and eats the
   one-shot grow stamp, so the prism snaps in instead of blooming (`Docs/PRISM_ANIMATION.md` §4).
+- **A prism's SHIELD is 3x the prism, so a species fitted for its box is not fitted for its
+  armour.** `PrismStateManager.ActivateShield` swaps in the CIRCUMSCRIBING octahedron
+  (`OctahedronMeshGenerator.CIRCUMSCRIBING_SCALE = 3` on the box HALF-extents — reach `1.5 x
+  leafSize`, 4.5x the volume). Both lattice species were fitted TIGHT against their own
+  neighbours *unshielded* and cleared by 5–99%; tripling that reach made each Charge plant one
+  interpenetrating solid (`Docs/ECOSYSTEM.md` §35). **Any change that turns shielding ON for a
+  species is a change to its GEOMETRY** — measure the octahedra, not the boxes, and fit the
+  PRISM rather than the lattice (scaling the lattice drags the whole absolute-distance tolerance
+  family with it, §34.8; scaling the prism drags nothing). Tool:
+  `Tools/Build/fit_shield_clearance.py`.
+- **An elemental LAW cannot live in per-element config when the element is ROLLED.** A cadence,
+  a size, an immunity authored per CONFIG is applied by `ApplyVariantTuning`, which runs BEFORE
+  the element is known and is then overwritten by the cell's own overrides — and a config with
+  `SpreadElements` and an EMPTY `ElementPalette` rolls an element and applies its OWN block to
+  it, so no value writable on any per-element asset reaches it (both Hesperides topiaries).
+  Put the law at the one choke point where prefab + variant + cell overrides + the crystal
+  carrying the element have ALL landed — `LifeForm.Initialize` — as a hook a subclass overrides
+  (`Flora.ResolveShieldPeriod`), and keep the assets stating the same number with a `--check`.
+  Scope it to the class that actually means it: on `Flora`, not `LifeForm`, or every creature
+  inherits a rule written about plants.
+- **Two fitters must never own one asset field.** `fit_schwarz_p_leaf_sizes.py` sizes that
+  species' plates flush and `fit_shield_clearance.py` sizes its Charge plate for the octahedra —
+  whichever ran LAST used to win, which is a run-order hazard rather than a bug, so it only
+  surfaces months later when somebody re-runs the older tool. Make the losing tool READ the
+  value back and print what it would have chosen. Related: a fitter must be an idempotent FIXED
+  POINT (`s* = 1/(1-clearance)`), never a fresh multiply of whatever is authored, or every run
+  walks the number.
+- **A fitted axis below `minScale` is silently clamped, so CHECK the admit call, don't assume
+  it.** `HealthBlock.prefab` ships `minScale (0.5,0.5,0.5)` and `PrismScaleAnimator.SetTargetScale`
+  clamps inside the setter with no log — Schwarz P Charge's fitted 0.39 thickness survives only
+  because `Flora.AddHealthBlock` calls `Prism.AdmitTargetScale` first (§34.9). Any tool that
+  emits a size outside the prefab's window must fail if that admit call is ever refactored away.
+- **N founders do NOT build one superstructure N times faster.** A lattice colony is one
+  continuous surface grown outward from a single founder, and every extra founder is an
+  independent lattice FRAME — `AssembledFlora` declines any growth or seed site within
+  `MisalignmentRadius` of a foreign frame (the gate that stops visible twins, §34.8). So
+  seeding 30 per species does not converge 30x sooner; it builds 30 small structures that stop
+  against each other. Identical prism count, reads as a scattered forest, and **nothing in the
+  population numbers shows it** — the caps, the floors and the totals are all exactly what you
+  authored. Seed ONE per colony and let reproduction extend it; the seeder's remaining job is
+  extinction recovery. Verify by what the cell LOOKS like, never by the count.
+- **A rule written about ROLLED elements must not be inherited by a FIXED-element config.**
+  `author_flora_populations.py` floors lattice species at 4 founders (`LATTICE_MIN_FOUNDERS`)
+  because a colony inherits its founder's element PICK, so one seed wastes a config's authored
+  element spread. A config that authors ONE fixed element has no spread to protect and the floor
+  is actively wrong there. Before inheriting any population/variant rule, check whether it was
+  written about the rolled case.
+- **A property named for how something is BUILT will eventually be read as a claim about what it
+  CONTAINS.** `Cell.EnvironmentFreeConfig` ("first config with no `EnvironmentPrefab`") served
+  the cheap-boot chooser AND the Wanderway's bare canvas, and one test satisfied both only
+  because Blob happened to be cheap *and* empty. The first config that is cheap to build and
+  then GROWS a forest broke the second consumer silently. One config satisfying two questions is
+  not evidence they are one question — it is the reason nobody notices until the second config
+  arrives. Split it as a PREDICATE over authored data (`Cell.BareCanvasConfig`), never a new
+  serialized field, and give it a fallback so it degrades rather than returns null.
+- **When two scripts could own one asset, HAND IT OFF BY NAME — do not exclude it silently.**
+  The "two fitters must not own one asset field" trap above has a remedy: a table keyed by
+  asset-name prefix mapping to the OWNING script, which the non-owner **prints** in its report
+  (`author_flora_populations.py`'s `OWNED_ELSEWHERE`). An `EXCLUDE` set is invisible in the
+  output, so the next reader cannot tell "deliberately owned elsewhere" from "forgotten".
+
+- **NOTHING may be parented under a prism.** A prism carries its authored leaf as its
+  `localScale`, and a non-uniform scale above a ROTATED child is a **shear** — the child is no
+  longer a cuboid, and every generation compounds it. `AssembledFlora.ReseedBranches` hung the
+  next spindle off the *prism* instead of the prism's *spindle*, so all three lattice species
+  grew skewed slivers from a plant's first reseed onward, worst on the most extreme aspect
+  ratio (`Docs/ECOSYSTEM.md` §37.9). When you need "the thing this prism belongs to", resolve
+  the parent spindle; never take the prism's own GameObject as an attachment point.
+
+- **A ladder claim must be re-read against every cell that LOADS the profile, not the one the
+  profile is NAMED after.** A species' "N% of Frenzy" figure is written against one cell and
+  then survives that cell being retired: `Blob Cell Config` was deleted while `Blob Cell Spawn
+  Profile` lived on as the population of seven other worlds, whose Frenzy volumes span 5×
+  (Orrery 253k → Caldera 1.27M). Grep for the profile's GUID, hold the species against the
+  **tightest** consumer, and say which one you used.
+
+- **A fitter must not re-derive what a human authored.** Once a designer tunes a value by eye,
+  a script that binary-searches "the right" value silently overwrites their intent on the next
+  run, in a direction nobody is looking. Convert the fitter into a **verifier**: prove the
+  authored value (no overlaps, clear crystal seat, shield census) and *report the headroom*
+  alongside, so the next retune can see its room. If an authored value grazes, state the
+  tolerance explicitly and print the measured depth every run — an accepted graze must be a
+  stated number, never something a later reader discovers (`Docs/ECOSYSTEM.md` §37.10).
+
+- **One CAP across species of different plant sizes is a choice, and it is usually the right
+  one.** A colony cap is expressed in **plants** — territory units of that species' own
+  lattice — so equal caps give equal *territory*, not equal prism counts. The Lattice cell's
+  twelve colonies span 2.5× in struts per plant and 159× in volume per prism. Equalising prism
+  counts instead shrinks the biggest species' superstructure below its neighbours', which
+  destroys the comparison a multi-species cell exists to make. What you DO owe is a direct
+  assert that **no single colony's own volume ceiling reaches `FrenzyEnterVolume`** — otherwise
+  the heaviest species can freeze the cell while the others are still building, and the ladder
+  is describing one colony rather than the forest (`Docs/ECOSYSTEM.md` §37.11).
 
 ## 3. Implement (emergence first, surgically)
 - **Favor emergence:** never hard-code an outcome that should emerge from the fundamentals
@@ -129,6 +360,27 @@ nucleus hands `DominantDomain` to whatever colour it favours before anyone flies
 That defect shipped undetected in Caldera (89% of its mass) until a one-line
 check over the point cloud found it.
 
+### 4.6 "It stopped growing" — prove WHICH gate binds before you turn a dial
+
+A population that stops has at least three ceilings — the species cap
+(`MaxLivePopulation`), the cell's **Frenzy volume ladder** (which freezes planting AND
+growth), and the count backstop — and the symptom is identical for all three. Compute
+which one binds before touching anything, or you will ship dead tuning: a change to a
+dial the run never reaches, which reads in-game as "my fix did nothing".
+
+The arithmetic is cheap and offline. Per-prism volume is `LeafSize.x*y*z` **times the
+level spread** — `LeafScalePerLevel` applies per axis, so it is `scale³` per level
+(1.15 → ×1.52 each level, ×2.74 averaged over levels 1-5), and that factor is the one
+everybody forgets. Multiply by the settled prisms per plant, then by the seed floor, and
+compare to `FrenzyEnterVolume` *before* the first birth.
+
+This has bitten twice, and both times the prisms were far from the nominal 16: Rampage's
+cactus leaves (75, §27) and the Blob cell's Mass gyroid (110 = 6.9× nominal, ×2.74 again
+from levels — its seeded floor alone was 87% of Frenzy, while its population cap sat 19×
+further out, `Docs/ECOSYSTEM.md` §32.7). **A cell whose prisms are not nominal-sized must
+author its ladder against measured volume**, and when a colony stalls, reach for the
+ladder first and the population dial last.
+
 ## 5. Hand back verification — you cannot run Unity; the human is the gate
 - State the exact in-editor steps to verify, the scene to test, and the precise SO knobs to tune.
 - Use the collider/volume telemetry overlay when it exists to make the budget observable.
@@ -163,3 +415,27 @@ and put Restless somewhere the fauna start hunting a partly-grown cell.
 
 Always hand the numbers back as ESTIMATES with the measurer step attached — analytic
 counts are exact, but only the editor proves the generator runs at all.
+
+### 7.1 A ladder of intensities: put the MODEL in a script, and self-test it
+
+A cell with per-intensity configs needs one `PhaseThresholds` block per intensity, each riding
+its own forest volume. Authoring four by hand is how four ladders drift apart. Write the model
+as a Python script under `Tools/Build/` that:
+
+- holds the species table (plants, budget, leaf prism volume, `LeafScalePerLevel`) and the
+  per-intensity scalars, and computes prisms + volume from them;
+- derives all eight thresholds from ONE set of ratios (Frenzy just above full growth, exit
+  ~77%, Restless ~7%), so every intensity is the same shape;
+- **emits the assets** and supports `--check` so CI can catch a hand-edit;
+- **self-tests by reproducing an already-shipped, play-tested ladder to the digit.** That
+  assert is the whole difference between a model and a fresh guess: if the formula cannot
+  reproduce the arena a human already approved, it is wrong, and you find out at authoring
+  time instead of in a play test.
+
+Also: the level spread's expected VOLUME multiplier is
+`Σ s^(3(L-1))·f^-(L-1) / Σ f^-(L-1)` for scale-per-level `s` and rarity falloff `f` — it is
+often the biggest single factor (4.3x at `s=1.30, f=1.6`) and is very easy to forget.
+
+Keep one honest soft spot visible: phyllotactic flora size prisms BY ROLE, so there is no
+single authored field to read for their volume. Put those estimates in a named `CALIBRATION`
+dict so one in-editor measurement corrects every intensity at once.

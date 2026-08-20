@@ -46,7 +46,6 @@ namespace CosmicShore.Gameplay
         IInputStatus InputStatus => Player.InputStatus;
 
         bool HasLiveProjectiles { get; set; }
-        bool IsOverheating { get; set; }
 
         IPlayer Player { get; set; }
 
@@ -111,6 +110,33 @@ namespace CosmicShore.Gameplay
         bool IsSlowed { get; set; }
         bool IsStationary { get; set; }
         bool IsTranslationRestricted { get; set; }
+
+        /// <summary>
+        /// True while some system wards this vessel against elemental debuffs of the given SOURCE
+        /// class — the general "invulnerable to elemental debuffs" state, asked about one kind of
+        /// debuff. Negative <see cref="ResourceSystem.ApplyElementalEffect"/> calls carrying that
+        /// class are dropped while it holds; buffs still land. Grant/revoke through
+        /// <see cref="ResourceSystem.SetElementalDebuffImmunity"/>, or declare a window on the
+        /// shared <c>VesselElementalImmunity</c> driver — it is not owned by any one vessel class
+        /// (the Sparrow holds it against everything while boosting at Time 5, the Serpent while
+        /// stopped; the Dolphin holds it against DANGER PRISMS ONLY while drifting at Time 5).
+        /// <para>Always name the class you are asking about. There is deliberately no bare
+        /// "is immune" bool: the Dolphin's ward proves a caller that assumes total immunity from a
+        /// true answer would be wrong, and that mistake is silent.</para>
+        /// </summary>
+        // `this.` is deliberate: the property and its type share a name, and while the C# "Color
+        // Color" rule resolves that correctly, this file is the only place in the codebase that
+        // would rely on it in a value context — not worth the ambiguity.
+        bool IsImmuneToElementalDebuff(ElementalDebuffSources source) =>
+            this.ResourceSystem && this.ResourceSystem.IsImmuneTo(source);
+
+        /// <summary>
+        /// The union of the source classes this vessel is currently warded against
+        /// (<see cref="ElementalDebuffSources.None"/> when nothing is held). For HUD / VFX /
+        /// diagnostics — gameplay asks <see cref="IsImmuneToElementalDebuff"/>.
+        /// </summary>
+        ElementalDebuffSources ImmuneDebuffSources =>
+            this.ResourceSystem ? this.ResourceSystem.ImmuneDebuffSources : ElementalDebuffSources.None;
 
         VesselPrismController VesselPrismController { get; }
 

@@ -348,23 +348,33 @@ namespace CosmicShore.Gameplay
             // The matrix is the tuning BENCH: a station spawns the EXACT variant it shows, so
             // the cell's element/level spread must not re-roll it here.
             clone.SpreadElements = false;
-            clone.Levels.Enabled = false;
+
+            // Spawn INTO THE FOOD, not at the station. The variant stations are layered
+            // outward and can sit hundreds of units BEYOND the membrane; a creature
+            // hatched out there starts in empty space with nothing to graze, which
+            // defeats the bench's whole purpose (watching the variant feed, breed and
+            // fight). Hatch on the cell's densest sensed mass instead - the same target
+            // the cell spawner and every forager seek - which also falls back to the
+            // cell anchor when the cell is empty. Flora still plant AT their station:
+            // a rooted structure is placed deliberately, a creature roams anyway.
+            Vector3 anchor = cell.GetDensestRegionAnyDomain();
 
             // A POPULATION, not an individual - the same seed-floor count the cell spawner
-            // uses, jittered around the station so the group disperses like a spawner wave.
+            // uses, jittered around the anchor so the group disperses like a spawner wave.
             Domains domain = Context?.GameData?.LocalPlayer?.Vessel?.VesselStatus?.Domain ?? cell.ControllingDomain;
             int count = Mathf.Max(1, clone.PopulationSize);
             int spawned = 0;
             for (int i = 0; i < count; i++)
             {
-                Vector3 pos = position + Random.insideUnitSphere * (_def.StationRadius * 2.5f);
+                Vector3 pos = anchor + Random.insideUnitSphere * (_def.StationRadius * 2.5f);
                 var fauna = CellLifeSpawnerBase.SpawnFaunaWithDomain(
-                    cell, clone.FaunaPrefab, cell.transform.position, domain, pos);
+                    cell, clone.FaunaPrefab, anchor, domain, pos);
                 if (!fauna) continue;
                 fauna.AssignLineage(cell, clone);
                 spawned++;
             }
-            CSDebug.Log($"[LifeformMatrix] Spawned {spawned}/{count} x {clone.name} ({domain}) at {position}");
+            CSDebug.Log($"[LifeformMatrix] Spawned {spawned}/{count} x {clone.name} ({domain}) " +
+                        $"on the cell's densest mass at {anchor} (station was at {position})");
         }
 
         void SpawnFloraVariant(FloraConfigurationSO config, int level, Vector3 position)
@@ -381,7 +391,6 @@ namespace CosmicShore.Gameplay
             clone.InitialLevel = level;
             // Bench semantics - see SpawnFaunaVariant.
             clone.SpreadElements = false;
-            clone.Levels.Enabled = false;
 
             // A POPULATION (InitialSpawnCount), rooted AT the station so the tester sees it
             // grow right where they flew - Plant() would otherwise disperse it across the cell.
@@ -467,10 +476,15 @@ namespace CosmicShore.Gameplay
             float radius, Color accent, bool bodySphere = true, GameObject model = null)
         {
             var go = ToyFactory.CreateBareRoot(label, parent, position, transform.position, radius * 1.6f);
+            // Clamped against the bench's spacing: a level-5 variant station is 2.4x the base
+            // radius, so its trigger overruns half the gap to its neighbour and an un-clamped ring
+            // would interpenetrate the one beside it.
+            float ringRadius = ToyFactory.StationRingRadius(radius * 1.6f, _def.StationSpacing);
+            ToyFactory.AddSwitchRing(go.transform, ringRadius, accent);
             if (bodySphere)
                 ToyFactory.AddSphereBody(go.transform, radius, accent);
             if (model) model.transform.SetParent(go.transform, false);
-            ToyFactory.AddLabel(go.transform, label, accent, radius * 1.9f);
+            ToyFactory.AddRingedLabel(go.transform, label, accent, ringRadius, radius);
 
             var station = go.AddComponent<ToyMatrixStation>();
             station.Bind(Context);

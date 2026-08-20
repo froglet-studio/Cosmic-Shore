@@ -12,7 +12,11 @@ namespace CosmicShore.UI
 
         [Header("Executors")]
         [SerializeField] private FireGunActionExecutor fireGunExecutor;
-        [SerializeField] private OverheatingActionExecutor overheatingExecutor;
+
+        [Tooltip("Drives the boost ability icon's charge ring: the Sparrow's boost is indefinite, so " +
+                 "the icon shows whether the once-per-press strafing roll is still available instead " +
+                 "of a heat/boost gauge.")]
+        [SerializeField] private BarrelRollController barrelRollController;
 
         [Header("Events")]
         [SerializeField] private ScriptableEventBool stationaryModeChanged;
@@ -20,7 +24,6 @@ namespace CosmicShore.UI
 
         Coroutine _initialAmmoRoutine;
         IVesselStatus _vesselStatus;
-        bool _heatActive;
 
         public override void Initialize(IVesselStatus vesselStatus)
         {
@@ -37,6 +40,11 @@ namespace CosmicShore.UI
 
         void Subscribe()
         {
+            // Detach-first, BEFORE the pilot gate: a vessel swap re-runs Initialize on live
+            // components, and if the re-init hands this HUD to an AI or a remote player the early
+            // return below must not leave the previous pilot's subscriptions attached.
+            Unsubscribe();
+
             if (_vesselStatus.IsInitializedAsAI || !_vesselStatus.IsLocalUser) return;
 
             if (stationaryModeChanged)
@@ -48,14 +56,10 @@ namespace CosmicShore.UI
             if (onInputEventBlocked)
                 onInputEventBlocked.OnRaised += HandleInputEventBlocked;
 
-            if (overheatingExecutor)
+            if (barrelRollController)
             {
-                overheatingExecutor.OnHeatBuildStarted   += OnHeatBuildStarted;
-                overheatingExecutor.OnOverheated         += OnOverheated;
-                overheatingExecutor.OnHeatDecayStarted   += OnHeatDecayStarted;
-                overheatingExecutor.OnHeatDecayCompleted += OnHeatDecayCompleted;
-
-                view.SetBoostState(overheatingExecutor.Heat01, overheatingExecutor.IsOverheating);
+                barrelRollController.OnRollChargeChanged += HandleRollChargeChanged;
+                view.SetRollCharge(barrelRollController.IsRollArmed);
             }
 
             if (fireGunExecutor == null) return;
@@ -65,16 +69,21 @@ namespace CosmicShore.UI
 
         void OnDisable()
         {
-            if (_vesselStatus != null && (_vesselStatus.IsInitializedAsAI || !_vesselStatus.IsLocalUser))
-                return;
+            // Unconditional and idempotent — gating teardown on the pilot flags would strand
+            // subscriptions on a vessel that was handed to an AI after it subscribed.
+            Unsubscribe();
 
-            if (overheatingExecutor)
+            if (_initialAmmoRoutine != null)
             {
-                overheatingExecutor.OnHeatBuildStarted   -= OnHeatBuildStarted;
-                overheatingExecutor.OnOverheated         -= OnOverheated;
-                overheatingExecutor.OnHeatDecayStarted   -= OnHeatDecayStarted;
-                overheatingExecutor.OnHeatDecayCompleted -= OnHeatDecayCompleted;
+                StopCoroutine(_initialAmmoRoutine);
+                _initialAmmoRoutine = null;
             }
+        }
+
+        void Unsubscribe()
+        {
+            if (barrelRollController)
+                barrelRollController.OnRollChargeChanged -= HandleRollChargeChanged;
 
             if (stationaryModeChanged)
                 stationaryModeChanged.OnRaised -= HandleStationaryModeChanged;
@@ -84,20 +93,6 @@ namespace CosmicShore.UI
 
             if (fireGunExecutor != null)
                 fireGunExecutor.OnAmmoChanged -= HandleAmmoChanged;
-
-            if (_initialAmmoRoutine != null)
-                StopCoroutine(_initialAmmoRoutine);
-
-            _heatActive = false;
-        }
-
-        void Update()
-        {
-            if (!_heatActive || !view || !overheatingExecutor) return;
-
-            view.SetBoostState(
-                Mathf.Clamp01(overheatingExecutor.Heat01),
-                overheatingExecutor.IsOverheating);
         }
 
         private IEnumerator InitialAmmoPaintRoutine()
@@ -119,15 +114,10 @@ namespace CosmicShore.UI
             view.SetWeaponMode(isStationary);
         }
 
-        void OnHeatBuildStarted() => _heatActive = true;
-        void OnOverheated()       => _heatActive = true;
-        void OnHeatDecayStarted() => _heatActive = true;
-
-        void OnHeatDecayCompleted()
+        private void HandleRollChargeChanged(bool armed)
         {
-            _heatActive = false;
-            if (overheatingExecutor && view)
-                view.SetBoostState(overheatingExecutor.Heat01, false);
+            if (!view) return;
+            view.SetRollCharge(armed);
         }
 
         private void HandleAmmoChanged(float ammo01)

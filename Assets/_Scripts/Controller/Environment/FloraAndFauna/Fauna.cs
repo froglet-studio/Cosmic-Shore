@@ -32,7 +32,114 @@ namespace CosmicShore.Gameplay
                  "otherwise creates a depletion zone where fauna repeatedly consume " +
                  "the same prism configuration.")]
         [SerializeField] float goalOrbitRadius = 60f;
-        public Vector3 Goal;
+
+        Vector3 _goal;
+
+        /// <summary>
+        /// Where this creature is currently heading. A PROPERTY rather than a field so the
+        /// cell's fauna containment (<see cref="Cell.ClampToFaunaContainment"/>) applies at the
+        /// single point every writer must pass through - and there are many: this class's
+        /// <see cref="ResolveGoal"/>, Boid's override, LightFauna's half-dozen direct writes on
+        /// its own behavior tick, the spawner's initial goal, and the inheritance in
+        /// <see cref="TryReproduce"/>. Clamping in each of them would be a rule you could forget
+        /// to apply in the next grazer; clamping here is a rule that cannot be bypassed.
+        /// No-op (returns the value unchanged) for every cell that authors no containment,
+        /// which is all of them except a mode that pens its brood.
+        /// </summary>
+        public Vector3 Goal
+        {
+            get => _goal;
+            set
+            {
+                // Two pens compose here, outermost first: the CELL's pen (one radius, every
+                // creature) and then this SPECIES' own band (an annulus, authored per config -
+                // see BandInner/BandOuter). Both are no-ops when unauthored, which is every
+                // biome that is not a mode's pen, so the common path is still two compares.
+                var clamped = cell ? cell.ClampToFaunaContainment(value, transform.position) : value;
+                _goal = ClampToBand(clamped);
+            }
+        }
+
+        // ── Per-species band (the layered pen) ────────────────────────────────
+        //
+        // A mode that stacks CONCENTRIC pens needs more than the cell's single containment
+        // radius: Wildlife Liberation stocks three nested cages with three different tiers of
+        // creature, and a lone radius can only express "inside R". The band generalizes it to
+        // an ANNULUS (inner..outer) authored per species on FaunaConfigurationSO, so the
+        // outer swarm rides the outer shell, the mid tier the mid shell, and the kaiju the
+        // core - each unable to reach the others' feeding ground.
+        //
+        // Same contract as the cell pen and for the same reason (Docs/ECOSYSTEM.md §22): it is
+        // a spatial DIET + STEERING rule, never a wall. Nothing is teleported, no collider is
+        // added, no creature is culled for leaving. A creature can still drift across a
+        // boundary on its own momentum - it simply has no reason to and nothing to eat there.
+        float _bandInner;
+        float _bandOuter;
+
+        /// <summary>True when this creature is penned to an annulus of its own (see the band notes).</summary>
+        protected bool HasBand => _bandOuter > 0f;
+
+        /// <summary>
+        /// The centre both pens measure from. The host cell when there is one (which is every
+        /// spawner-born creature); this creature's own spawn point otherwise, so a manager-spawned
+        /// or drone fauna with no cell simply has no band rather than one centred on the origin.
+        /// </summary>
+        Vector3 BandCentre => cell ? cell.transform.position : transform.position;
+
+        /// <summary>True when <paramref name="position"/> lies in this creature's band (always true with no band).</summary>
+        public bool IsInsideBand(Vector3 position)
+        {
+            if (!HasBand) return true;
+            float d = (position - BandCentre).magnitude;
+            return d >= _bandInner && d <= _bandOuter;
+        }
+
+        /// <summary>
+        /// Pulls a goal back into this creature's band. Returns the point unchanged when there is
+        /// no band or the goal is already inside, so the common path costs one compare. A goal
+        /// beyond the outer wall is pulled in to it; a goal inside the inner wall is pushed out to
+        /// it (a goal exactly at the centre picks the creature's own outward radial, so the push
+        /// is well-defined rather than arbitrary).
+        /// </summary>
+        public Vector3 ClampToBand(Vector3 goal)
+        {
+            if (!HasBand) return goal;
+
+            Vector3 centre = BandCentre;
+            Vector3 offset = goal - centre;
+            float d = offset.magnitude;
+
+            if (d >= _bandInner && d <= _bandOuter) return goal;
+
+            // A goal AT THE CENTRE is the ecology's "nothing sensed" answer
+            // (Cell.GetDensestRegionAnyDomain falls back to the cell anchor on an empty grid),
+            // not a destination. Clamping it radially would send every creature in the room to
+            // exactly _bandInner - the whole population collapsing onto the inner wall as a
+            // shell, which is the same clumping the spawner's per-creature spread exists to
+            // avoid. Project the creature's OWN position instead, so an unfed creature mills
+            // about where it already is inside its room.
+            if (d <= 0.0001f)
+            {
+                Vector3 own = transform.position - centre;
+                float ownD = own.magnitude;
+                if (ownD <= 0.0001f) return centre + Vector3.up * _bandInner;
+                return centre + own / ownD * Mathf.Clamp(ownD, _bandInner, _bandOuter);
+            }
+
+            return centre + offset / d * Mathf.Clamp(d, _bandInner, _bandOuter);
+        }
+
+        /// <summary>
+        /// The herbivore diet rule as THIS creature sees it: the cell's spatialized rule
+        /// (<see cref="Cell.IsPreyForHerbivore"/>) AND the creature's own band. Every grazer
+        /// routes its edibility test through here rather than calling the cell directly, for the
+        /// same reason <see cref="IsShieldedMass"/> exists - "a creature must never be led to
+        /// mass it cannot reach or eat" is ONE rule, and a per-subclass copy is a rule you can
+        /// forget to apply in the next grazer.
+        /// </summary>
+        protected bool IsPreyForMe(Vector3 position, Domains preyDomain) =>
+            cell != null && IsInsideBand(position) &&
+            cell.IsPreyForHerbivore(position, domain, preyDomain);
 
         // Stable per-instance offset so each fauna orbits its resolved goal at a
         // different point. Seeded once at Start so the spread is deterministic per
@@ -99,7 +206,28 @@ namespace CosmicShore.Gameplay
         protected void NotifyFed()
         {
             _lastFedTime = Time.time;
+            TryLevelUpFromFeeding();
             TryReproduce();
+        }
+
+        /// <summary>
+        /// <b>A creature earns its level by eating</b> (Docs/ECOSYSTEM.md §33). Every creature
+        /// hatches at level 1; a level costs <see cref="FaunaConfigurationSO.FeedsPerLevel"/>
+        /// feeds — deliberately a multiple of what an offspring costs, so a big creature is a
+        /// creature that has out-fed its siblings for a long time rather than one that won a
+        /// spawn roll. 0 on the config disables levelling for that species (the worm colony,
+        /// which funds its growth by segment instead).
+        ///
+        /// <para>Counted separately from the reproduction quota: a feed pays into both, and a
+        /// birth must not reset progress toward a level (or vice versa).</para>
+        /// </summary>
+        void TryLevelUpFromFeeding()
+        {
+            var cfg = sourceConfig;
+            if (!cfg || cfg.FeedsPerLevel <= 0 || Level >= MaxLifeformLevel) return;
+            if (++_feedsSinceLevel < cfg.FeedsPerLevel) return;
+            _feedsSinceLevel = 0;
+            LevelUp();
         }
 
         // -------------------------------------------------------------------
@@ -117,6 +245,7 @@ namespace CosmicShore.Gameplay
         LifeformVariantPick<FaunaVariantTuning>? _variantPick;
         bool lineageRegistered;
         int _feedsSinceBirth;
+        int _feedsSinceLevel;
         float _lastBirthTime = float.NegativeInfinity;
 
         // Offspring appear within this radius of the parent - far enough not to
@@ -161,14 +290,24 @@ namespace CosmicShore.Gameplay
             // the level curve grows from the variant's base scale.
             if (config)
             {
+                // The species' own pen (see the band notes above). Authored on the config so a
+                // mode pens a TIER rather than a cell, and so an offspring inherits its parent's
+                // band for free - it binds the same config.
+                _bandInner = Mathf.Max(0f, config.BandInnerRadius);
+                _bandOuter = Mathf.Max(0f, config.BandOuterRadius);
+                if (_bandOuter > 0f && _bandInner > _bandOuter)
+                    (_bandInner, _bandOuter) = (_bandOuter, _bandInner);
+
+                // The spawner sets Goal before Initialize (cell still null, so the setter's
+                // clamp was a no-op) - re-run it now that the band exists, or the creature's
+                // first few seconds are spent swimming to a point outside its own pen.
+                if (HasBand) Goal = _goal;
+
                 var pick = config.RollVariant(inherit);
                 _variantPick = pick;
 
                 if (pick.Element != Element.None)
-                {
-                    crystal = LifeFormCrystal.EnsureElementalCrystal(this, pick.Element);
-                    if (crystal) crystal.SetEmbeddedIn(this);
-                }
+                    ProvisionHeart(pick.Element);
                 if (pick.Tuning is { Enabled: true })
                     ApplyVariantTuning(pick.Tuning);
                 SetLevel(pick.Level, animate: false);
@@ -177,6 +316,20 @@ namespace CosmicShore.Gameplay
             // A new living heart entered the world - let the domain fauna buff re-sum now
             // instead of on its next reconcile sweep.
             RaiseFaunaHeartsChanged();
+        }
+
+        /// <summary>
+        /// Element-as-data landing point: gives this creature its heart of the config's
+        /// picked element. Default = the standard embedded-crystal provisioning every
+        /// simple fauna uses. A COMPOSITE creature overrides to route the element where
+        /// its hearts actually live — the worm colony forwards it to its capital
+        /// segments (the colony root itself is deliberately heartless,
+        /// Docs/ECOSYSTEM.md §23).
+        /// </summary>
+        protected virtual void ProvisionHeart(Element element)
+        {
+            crystal = LifeFormCrystal.EnsureElementalCrystal(this, element);
+            if (crystal) crystal.SetEmbeddedIn(this);
         }
 
         /// <summary>
@@ -200,10 +353,13 @@ namespace CosmicShore.Gameplay
             if (!cfg || !host || cfg.FeedsPerOffspring <= 0 || !cfg.FaunaPrefab) return;
 
             _feedsSinceBirth++;
+            // The cap is the CELL's, not the config's: a biome that scales its population
+            // (SpawnProfileSO.FaunaPopulationScale) has to scale what reproduction may fill to,
+            // or the seeder and the food web would be working to two different ceilings.
             if (!FaunaReproductionRules.ShouldBirth(
                     _feedsSinceBirth, cfg.FeedsPerOffspring,
                     Time.time - _lastBirthTime, cfg.ReproductionCooldownSeconds,
-                    host.GetLiveFaunaCount(cfg), cfg.MaxLivePopulation))
+                    host.GetLiveFaunaCount(cfg), host.ResolveFaunaCap(cfg)))
                 return;
 
             _lastBirthTime = Time.time;
@@ -214,7 +370,7 @@ namespace CosmicShore.Gameplay
             {
                 // Re-check the cap per birth so a multi-offspring birth can't
                 // overshoot the performance backstop.
-                if (cfg.MaxLivePopulation > 0 && host.GetLiveFaunaCount(cfg) >= cfg.MaxLivePopulation)
+                if (host.IsFaunaAtCap(cfg))
                     break;
                 SpawnOffspring(host, cfg);
             }
@@ -243,6 +399,16 @@ namespace CosmicShore.Gameplay
             if (lineageRegistered && hostCell)
                 hostCell.UnregisterLiveFauna(this);
             lineageRegistered = false;
+
+            // Last line of defence for a DEFERRED heart (see DefersHeartRelease): an interrupted
+            // wither - a cell drain, a manager pulling the husk, a turn ending - never reaches
+            // the release inside the wither. This is a genuine recovery rather than a hopeful
+            // one only because StashHeart already re-homed the crystal onto the cell at the top
+            // of Die, so it is not a child of this husk and releasing it here still works.
+            // Skipped during scene unload, where the cascade must not run at all (the same rule
+            // Spindle.OnDisable follows) and where nothing survives to collect anyway.
+            if (_diedThisLife && !_heartReleased && gameObject.scene.isLoaded)
+                ReleaseHeart();
         }
 
         // --- ILifeFormEntity ---
@@ -264,17 +430,30 @@ namespace CosmicShore.Gameplay
         /// override with their live velocity; manager/rooted fauna read as stationary.</summary>
         public virtual float CurrentSpeed => 0f;
 
-        /// <summary>A faster vessel jousted this creature's heart - routes through Predated
-        /// (idempotent, immunity-respecting) so it withers and drops its crystal.</summary>
-        public bool Jousted(string killerName) => Predated(killerName);
+        /// <summary>
+        /// A faster vessel jousted this creature's heart - routes through Predated
+        /// (idempotent, immunity-respecting) so it withers and drops its crystal.
+        ///
+        /// The style is stamped BEFORE the death runs because the death READS it: a joust
+        /// frees the heart at once (the jouster reached in and took it) and the body then
+        /// unravels from the hole outward, the mirror of a starvation wither. A joust that
+        /// does not land - spawn immunity, or a creature already dying - leaves the style
+        /// alone, so a later starvation still withers the ordinary way.
+        /// </summary>
+        public bool Jousted(string killerName)
+        {
+            var previousStyle = _deathStyle;
+            _deathStyle = LifeformDeathStyle.Jousted;
+            if (Predated(killerName)) return true;
+            _deathStyle = previousStyle;
+            return false;
+        }
 
         Vector3 _levelBaseScale = Vector3.one;   // root scale at level 1 (captured on first level apply)
-        float _crystalBaseScale = 1f;            // crystal local scale at level 1
         bool _levelBaseCaptured;
         Coroutine _levelGrowRoutine;
 
         float BodyScalePerLevel => sourceConfig ? sourceConfig.BodyScalePerLevel : 1.15f;
-        float CrystalScalePerLevel => sourceConfig ? sourceConfig.CrystalScalePerLevel : 1.2f;
         float LevelGrowSeconds => sourceConfig ? sourceConfig.LevelGrowSeconds : 1f;
 
         /// <summary>
@@ -297,7 +476,6 @@ namespace CosmicShore.Gameplay
             if (!_levelBaseCaptured)
             {
                 _levelBaseScale = transform.localScale;
-                if (crystal) _crystalBaseScale = crystal.transform.localScale.x;
                 _levelBaseCaptured = true;
             }
 
@@ -315,18 +493,19 @@ namespace CosmicShore.Gameplay
             }
 
             // The heart grows with the level so the eventual death drop is a bigger powerup
-            // (crystal value reads lossyScale live at collect time - mass rewarded). The crystal
-            // is a child of the root, so divide the body growth back out of its LOCAL target.
+            // (crystal value reads lossyScale live at collect time - mass rewarded). Its size is
+            // the SHARED level curve, not this species' body scale: a shark's heart and a
+            // tadpole's are the same size at the same level (Docs/ECOSYSTEM.md §33). The
+            // animation therefore works in WORLD scale and divides out the parent chain every
+            // frame, which is also what holds the heart's size steady while the body grows
+            // underneath it.
             if (crystal)
             {
-                // The body grows by pow(BodyScalePerLevel, L-1), so the crystal's LOCAL target is
-                // its world target divided by the body growth (it lands at the world size wanted).
-                float worldTarget = _crystalBaseScale * Mathf.Pow(CrystalScalePerLevel, Level - 1);
-                float localTarget = worldTarget / Mathf.Pow(BodyScalePerLevel, Level - 1);
+                float worldTarget = LifeFormCrystal.WorldScaleForLevel(Level);
                 if (animate && isActiveAndEnabled && crystal.gameObject.activeInHierarchy)
-                    StartCoroutine(GrowCrystalWithPop(localTarget, LevelGrowSeconds));
+                    StartCoroutine(GrowCrystalWithPop(worldTarget, LevelGrowSeconds));
                 else
-                    crystal.transform.localScale = Vector3.one * localTarget;
+                    LifeFormCrystal.SetWorldScale(crystal, worldTarget);
             }
         }
 
@@ -390,35 +569,38 @@ namespace CosmicShore.Gameplay
         /// the first quarter of the animation, then settles - readable at flight speed, where a
         /// plain 20%-over-a-second ease is too subtle to notice. Still continuous (never pops in).
         /// </summary>
-        IEnumerator GrowCrystalWithPop(float localTarget, float seconds)
+        IEnumerator GrowCrystalWithPop(float worldTarget, float seconds)
         {
             if (!crystal) yield break;
             var t = crystal.transform;
-            float start = t.localScale.x;
-            float flare = localTarget * 1.6f;
+            float start = t.lossyScale.x;
+            float flare = worldTarget * 1.6f;
             float flareTime = Mathf.Max(0.05f, seconds * 0.25f);
             float settleTime = Mathf.Max(0.05f, seconds - flareTime);
 
-            // Stop the moment the heart is no longer embedded in this fauna: a death mid-grow
-            // reparents the crystal to the cell (ActivateCrystal), where localTarget - computed
-            // to divide out the fauna body's scale - would land as the wrong WORLD scale. The
+            // Stop the moment the heart stops riding this body: ANY death reparents the crystal
+            // to the cell (ActivateCrystal, or StashHeart for a deferred release), and a write
+            // that divides out THIS body's scale would land as the wrong WORLD scale there. The
             // drop keeps the world scale it had at death, which is exactly the value the domain
-            // buff was granting at that moment.
+            // buff was granting at that moment. The test is `_diedThisLife` rather than the
+            // embedded state, because a stashed heart is still embedded (that is what keeps it
+            // uncollectable) and would sail past an EmbeddedIn check.
             for (float e = 0f; e < flareTime; e += Time.deltaTime)
             {
-                if (!crystal || !ReferenceEquals(crystal.EmbeddedIn, this)) yield break;
-                t.localScale = Vector3.one * Mathf.Lerp(start, flare, e / flareTime);
+                if (!crystal || _diedThisLife || !ReferenceEquals(crystal.EmbeddedIn, this)) yield break;
+                LifeFormCrystal.SetWorldScale(crystal, Mathf.Lerp(start, flare, e / flareTime));
                 yield return null;
             }
             for (float e = 0f; e < settleTime; e += Time.deltaTime)
             {
-                if (!crystal || !ReferenceEquals(crystal.EmbeddedIn, this)) yield break;
+                if (!crystal || _diedThisLife || !ReferenceEquals(crystal.EmbeddedIn, this)) yield break;
                 float u = e / settleTime;
-                t.localScale = Vector3.one * Mathf.Lerp(flare, localTarget, u * u * (3f - 2f * u));
+                LifeFormCrystal.SetWorldScale(
+                    crystal, Mathf.Lerp(flare, worldTarget, u * u * (3f - 2f * u)));
                 yield return null;
             }
-            if (crystal && ReferenceEquals(crystal.EmbeddedIn, this))
-                t.localScale = Vector3.one * localTarget;
+            if (crystal && !_diedThisLife && ReferenceEquals(crystal.EmbeddedIn, this))
+                LifeFormCrystal.SetWorldScale(crystal, worldTarget);
         }
 
         IEnumerator GrowToScale(Vector3 target, float seconds)
@@ -545,6 +727,54 @@ namespace CosmicShore.Gameplay
         /// <summary>The cached body prisms (see <see cref="CacheBodyPrisms"/>). May contain destroyed entries.</summary>
         protected HealthPrism[] BodyPrisms => _bodyPrisms;
 
+        /// <summary>True while any body prism is alive — the creature's health read.</summary>
+        public bool HasLiveBodyPrisms
+        {
+            get
+            {
+                var prisms = _bodyPrisms;
+                if (prisms == null) return false;
+                for (int i = 0; i < prisms.Length; i++)
+                {
+                    var hp = prisms[i];
+                    if (hp && !hp.destroyed) return true;
+                }
+                return false;
+            }
+        }
+
+        // One-shot guard: a burst (a missile's AOE, a shotgun frame) can strip the last
+        // several body prisms inside one frame, and every one of them calls back here.
+        bool _diedFromBodyLoss;
+
+        /// <summary>
+        /// A prism of this creature's BODY was destroyed by an active force (vessel,
+        /// projectile, AOE). Raised by <see cref="HealthPrism.Explode"/> through the
+        /// stamped owner. <paramref name="killerName"/> is the attribution the destruction
+        /// pipeline carried.
+        ///
+        /// THE PLAYER KILL PATH (platform-wide since Wildlife Liberation, 2026-08): when the
+        /// LAST body prism is gone the creature dies through the sealed <see cref="Die"/> —
+        /// it withers / is suctioned out (continuity of existence) and drops its elemental
+        /// crystal (mass conserved), exactly like a starvation or predation death. Before
+        /// this only <c>WormSegmentFauna</c> implemented it, so shooting any other creature
+        /// stripped its body and left an immortal husk swimming; a whole class of vessel
+        /// (the Sparrow, whose verbs ARE guns and missiles) could not kill wildlife at all.
+        ///
+        /// This is an ACTIVE force removing mass, so it is squarely inside the conserved-mass
+        /// law — there is no timer, no lifespan and no cull here; a creature nobody shoots
+        /// still only ever dies to starvation or predation. Subclasses may override to add
+        /// topology bookkeeping (the worm colony re-links its chain first), but a creature
+        /// that survives losing its whole body would violate the rule, so overrides must end
+        /// in a death.
+        /// </summary>
+        public virtual void OnBodyPrismExploded(HealthPrism prism, string killerName)
+        {
+            if (_diedFromBodyLoss || HasLiveBodyPrisms) return;
+            _diedFromBodyLoss = true;
+            Die(killerName);
+        }
+
         /// <summary>
         /// Pushes the body prisms' current positions into the spatial index. Call
         /// every frame after moving the creature. Cheap: the index only rebuckets
@@ -604,35 +834,151 @@ namespace CosmicShore.Gameplay
 
         /// <summary>
         /// The living embedded heart: non-null only while this fauna is alive and its elemental
-        /// crystal is still embedded in it. The sealed <see cref="Die"/> path frees the heart
-        /// via ActivateCrystal, so this returns null from the exact moment the crystal becomes
-        /// a collectible — the domain fauna buff keys off this so a fauna's domain-wide power
-        /// ends precisely when its crystal (the same heart, at the same world scale, carrying
-        /// the same value) hits the open water.
+        /// crystal is still embedded in it. <see cref="ReleaseHeart"/> is what frees it, so this
+        /// returns null from the exact moment the crystal becomes a collectible — the domain
+        /// fauna buff keys off this so a fauna's domain-wide power ends precisely when its
+        /// crystal (the same heart, at the same world scale, carrying the same value) hits the
+        /// open water. On an outside-in wither that moment is the END of the wither, not the
+        /// start of the death: the heart is the last thing standing, so a starving creature
+        /// keeps powering its domain until the wither reaches its core.
         /// </summary>
         public Crystal LiveHeart =>
             crystal && crystal.gameObject.activeInHierarchy && ReferenceEquals(crystal.EmbeddedIn, this)
                 ? crystal
                 : null;
 
+        // How this creature came apart - see LifeformDeathStyle. Written by the force that
+        // killed it (Jousted / the devour overload of Predated); starvation and every other
+        // death leave the default.
+        LifeformDeathStyle _deathStyle = LifeformDeathStyle.Withered;
+
+        /// <summary>How this creature is coming apart - read by subclass death animations.</summary>
+        protected LifeformDeathStyle DeathStyle => _deathStyle;
+
+        bool _heartReleased;
+        bool _diedThisLife;   // Die ran - arms the OnDestroy heart backstop below
+
+        /// <summary>
+        /// True when this subclass runs a progressive wither that calls
+        /// <see cref="ReleaseHeart"/> itself at the moment the wither reaches the core -
+        /// the "outside-in until the crystal becomes collectable" death. Everything else
+        /// drops the heart inside <see cref="Die"/> exactly as before, so the crystal
+        /// invariant cannot be lost by forgetting to opt in. A subclass that DOES opt in
+        /// must release, and <see cref="OnDestroy"/> screams if it didn't.
+        /// </summary>
+        protected virtual bool DefersHeartRelease => false;
+
         /// <summary>
         /// Death chokepoint - SEALED so no fauna can die without conserving its mass.
-        /// Every death path (starvation, <see cref="Predated"/>) routes here; it drops
-        /// the elemental crystal (the locked "every lifeform drops one elemental crystal
-        /// on death, mass is conserved" invariant - the creature does not just vanish)
-        /// and then runs subclass removal via <see cref="OnDeath"/>. ActivateCrystal
-        /// reparents the crystal to the cell, so it survives this object's destruction
-        /// as a collectible powerup.
+        /// Every death path (starvation, <see cref="Predated"/>, a jouster taking the
+        /// heart, losing the last body prism) routes here; it frees the elemental crystal
+        /// (the locked "every lifeform drops one elemental crystal on death, mass is
+        /// conserved" invariant - the creature does not just vanish) and then runs
+        /// subclass removal via <see cref="OnDeath"/>.
+        ///
+        /// WHEN the heart is freed is part of HOW the creature died (Docs/ECOSYSTEM.md §26):
+        ///   • Jousted  - a vessel reached in and TOOK it, so it is free immediately and
+        ///                the joust chain awards it to that pilot.
+        ///   • Consumed - a predator is tearing the body apart around it; free immediately,
+        ///                as it always has been.
+        ///   • Withered - the body is spent from the outside in and the heart is the LAST
+        ///                thing standing, so a subclass with a progressive wither
+        ///                (<see cref="DefersHeartRelease"/>) releases it when the wither
+        ///                reaches the core. Everything else still releases here.
         /// </summary>
         protected void Die(string killerName = "")
         {
+            _diedThisLife = true;
+
+            if (_deathStyle != LifeformDeathStyle.Withered || !DefersHeartRelease)
+                ReleaseHeart();
+            else
+                StashHeart();
+
+            ReportKill(killerName);
+            OnDeath(killerName);
+        }
+
+        /// <summary>
+        /// Re-homes the heart onto the cell but leaves it EMBEDDED - still uncollectable, still
+        /// wearing the neutral heart tint - for a wither that will release it when it reaches the
+        /// core. Doing this at the START of the death is what makes the deferral SAFE rather than
+        /// merely late: a crystal still parented to the husk dies with it, so an interrupted
+        /// wither (a cell drain, a manager removing the husk, a scene unload) would silently lose
+        /// the crystal. With it re-homed, <see cref="ReleaseHeart"/> works from anywhere,
+        /// including the <see cref="OnDestroy"/> backstop.
+        /// </summary>
+        void StashHeart()
+        {
+            if (crystal && crystal.gameObject && crystal.gameObject.activeInHierarchy)
+                crystal.DetachHeartToCell();
+        }
+
+        /// <summary>
+        /// Frees this creature's heart into the world as the collectible elemental crystal -
+        /// the sealed half of "every lifeform drops one elemental crystal on death".
+        /// ActivateCrystal reparents it to the cell, so it survives this object's
+        /// destruction as a powerup. Idempotent: the wither, the husk removal and the
+        /// backstop can all call it.
+        /// </summary>
+        protected void ReleaseHeart()
+        {
+            if (_heartReleased) return;
+            _heartReleased = true;
+
             if (crystal && crystal.gameObject && crystal.gameObject.activeInHierarchy)
                 crystal.ActivateCrystal();
+
             // The heart just left the living pool - poke the domain fauna buff so the
             // domain's power drops with the death, not on the next reconcile sweep.
             RaiseFaunaHeartsChanged();
-            OnDeath(killerName);
         }
+
+        /// <summary>
+        /// Leaves this creature's body prisms in the world as its SKELETON - the frame stays
+        /// where it died instead of being destroyed with the husk (Docs/ECOSYSTEM.md §26).
+        /// Called by the wither styles (starvation, joust); a devoured creature does NOT
+        /// call it, because there the mass genuinely transfers to the predator.
+        ///
+        /// Run this BEFORE withering any spindle: a body prism is parented to a spindle, so
+        /// evaporating the spindle first would destroy the very mass the skeleton conserves.
+        /// </summary>
+        protected void LeaveSkeleton()
+        {
+            var host = cell;
+            Transform skeletonParent = host ? host.transform : null;
+
+            var prisms = GetComponentsInChildren<HealthPrism>(true);
+            for (int i = 0; i < prisms.Length; i++)
+            {
+                var hp = prisms[i];
+                if (hp && !hp.destroyed) hp.LeaveAsSkeleton(skeletonParent);
+            }
+        }
+
+        /// <summary>
+        /// Publishes an ATTRIBUTED death on the cell's SOAP channel - the fauna half of the
+        /// stat <see cref="LifeForm.OnLifeFormDeath"/> already reports for flora, routed through
+        /// a ScriptableEvent rather than a static event per the SOAP policy. StatsManager
+        /// (server only) turns it into <see cref="IRoundStats.LifeformsKilled"/>.
+        ///
+        /// Only PLAYER-attributed deaths are published. The ecology's own deaths carry engine
+        /// attribution ("starvation", a predator's name, a colony wither reason) and must not
+        /// score for anyone - a mode whose objective is killing wildlife cannot have the wildlife
+        /// killing itself onto the scoreboard. StatsManager resolves the name against the player
+        /// roster anyway, so this is belt-and-braces on a hot-ish path.
+        /// </summary>
+        void ReportKill(string killerName)
+        {
+            if (string.IsNullOrEmpty(killerName)) return;
+            if (killerName == StarvationKiller) return;
+
+            var runtimeData = hostCell ? hostCell.RuntimeData : cellData;
+            if (runtimeData) runtimeData.OnFaunaKilled.Raise(killerName);
+        }
+
+        /// <summary>Attribution string every starvation death uses - never a scoring kill.</summary>
+        public const string StarvationKiller = "starvation";
 
         /// <summary>
         /// Subclass death behavior (manager removal / destroy / worm-splitting). Override
@@ -677,6 +1023,9 @@ namespace CosmicShore.Gameplay
             if (_consumedAsPrey || IsPredationImmune) return false;
             _consumedAsPrey = true;
             DevourTarget = devourTarget;
+            // A mouth to suction into IS the consumed style: the body transfers to the
+            // eater, so there is no skeleton and no wither ordering to pick.
+            if (devourTarget) _deathStyle = LifeformDeathStyle.Consumed;
             Die(predatorName);
             return true;
         }

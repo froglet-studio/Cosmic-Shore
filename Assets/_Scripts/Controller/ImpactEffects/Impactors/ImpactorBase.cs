@@ -1,9 +1,11 @@
 using System;
+using System.Collections.Generic;
 using Unity.Netcode;
 using Unity.Profiling;
 using UnityEngine;
 using CosmicShore.Data;
 using CosmicShore.Gameplay;
+using CosmicShore.Utility;
 using Reflex.Attributes;
 using Reflex.Core;
 
@@ -22,6 +24,75 @@ namespace CosmicShore.Gameplay
         protected abstract void AcceptImpactee(IImpactor impactee);
 
         protected bool DoesEffectExist(ImpactEffectSO[] effects) => effects is { Length: > 0 };
+
+        // Empty serialized effect slots already reported, keyed by (container, field, index) so
+        // one authoring hole logs once rather than once per contact.
+        static readonly HashSet<long> s_reportedEmptyEffectSlots = new();
+
+        /// <summary>
+        /// True when a serialized effect slot holds nothing runnable — never assigned in the
+        /// inspector, or its asset failed to load (missing script, unresolved GUID).
+        ///
+        /// Dispatch sites deref the slot directly, so a hole used to surface as a bare
+        /// <see cref="NullReferenceException"/> at the call site, naming neither the container
+        /// nor the index — and because <see cref="PrismShellContactManager"/> dispatches from
+        /// Update rather than a PhysX callback, once per frame for as long as the contact
+        /// lasted, which also aborted the rest of that frame's shell contacts. Name the hole
+        /// ONCE and let the sibling effects in the list still run: the missing effect cannot be
+        /// invented, but everything around it can still do its job.
+        /// </summary>
+        protected bool IsEffectSlotEmpty(ImpactEffectSO effect, UnityEngine.Object container, string field, int index)
+        {
+            if (effect) return false;
+
+            int containerId = container ? container.GetInstanceID() : 0;
+            long key = ((long)containerId << 32) ^ (uint)(field.GetHashCode() * 397 ^ index);
+            if (s_reportedEmptyEffectSlots.Add(key))
+            {
+                CSDebug.LogError(
+                    $"[{GetType().Name}] '{(container ? container.name : "<missing container>")}'." +
+                    $"{field}[{index}] is empty — that slot dispatches nothing and the rest of the " +
+                    "list still runs. Assign the effect asset, or remove the slot.", container);
+            }
+            return true;
+        }
+
+        // Effect instances whose Execute already threw, keyed by (effect, impactor type) so a
+        // broken effect names itself once rather than once per contact.
+        static readonly HashSet<long> s_reportedThrowingEffects = new();
+
+        /// <summary>
+        /// Runs one effect with its siblings' survival guaranteed: an exception inside
+        /// <c>Execute</c> is reported ONCE per (effect, impactor type) with its stack - loud,
+        /// named, actionable - and the rest of the effect list still runs.
+        ///
+        /// The companion of <see cref="IsEffectSlotEmpty"/>, and the same doctrine: this is not
+        /// a fail-soft blanket, it is fail-loud with the offender's address. Before it, one
+        /// throwing effect (an unwired SOAP event on a prism variant, a listener assuming
+        /// in-game state from the menu) silently killed every LATER effect in the list for that
+        /// contact - on the Urchin spike container that meant an aborted steal also swallowed
+        /// the chain volley, and the whole weapon read as dead with nothing in the console
+        /// naming why.
+        /// </summary>
+        protected void RunEffectIsolated(System.Action execute, UnityEngine.Object effect)
+        {
+            try
+            {
+                execute();
+            }
+            catch (System.Exception ex)
+            {
+                int effectId = effect ? effect.GetInstanceID() : 0;
+                long key = ((long)effectId << 32) ^ (uint)GetType().Name.GetHashCode();
+                if (s_reportedThrowingEffects.Add(key))
+                {
+                    CSDebug.LogError(
+                        $"[{GetType().Name}] Effect '{(effect ? effect.name : "<null>")}' threw during " +
+                        $"Execute - reported once; the rest of this contact's effect list still runs.\n{ex}",
+                        effect);
+                }
+            }
+        }
 
         // Per-concrete-type profiler marker so an impact storm shows up in captures as
         // e.g. 'SkimmerImpactor.AcceptImpactee' with real timings instead of vanishing
@@ -78,6 +149,42 @@ namespace CosmicShore.Gameplay
         /// trigger-exit skim bookkeeping.
         /// </summary>
         internal virtual void NotifyShellContactExit(PrismImpactor prismImpactor) { }
+
+        /// <summary>
+        /// True while <see cref="AcceptImpactee"/> is running for a SWEPT contact — one
+        /// found by querying the segment an object crossed this frame rather than by a
+        /// PhysX trigger overlap at its landing point. Lets a subclass suppress the
+        /// trigger path for a contact class the sweep has taken ownership of, without
+        /// suppressing the sweep's own dispatch of it.
+        /// </summary>
+        protected bool IsSweepDispatch { get; private set; }
+
+        /// <summary>
+        /// Swept-tier entry point, the exact analogue of
+        /// <see cref="AcceptImpacteeFromShellContact"/>: same isInitialized gate, same
+        /// profiler marker, same AcceptImpactee chain, with <see cref="IsSweepDispatch"/>
+        /// raised. A discrete trigger moved by transform writes only ever tests the points
+        /// it lands on; this is how the path BETWEEN them gets to land impacts too.
+        /// </summary>
+        internal void AcceptImpacteeFromSweep(IImpactor impactee)
+        {
+            if (!isInitialized)
+                return;
+
+            EnsureAcceptMarker();
+            using (_acceptMarker.Auto())
+            {
+                IsSweepDispatch = true;
+                try
+                {
+                    AcceptImpactee(impactee);
+                }
+                finally
+                {
+                    IsSweepDispatch = false;
+                }
+            }
+        }
 
         void EnsureAcceptMarker()
         {

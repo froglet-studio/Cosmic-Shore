@@ -47,6 +47,16 @@ namespace CosmicShore.Gameplay
         // so there is no leak.
         protected override bool DestroyVesselWithScene => false;
 
+        /// <summary>
+        /// Menu override: NO mode restriction. GameDataSO.AllowedVesselClasses deliberately
+        /// survives ResetRuntimeData (it is pre-launch config the game scene must still read), so
+        /// after playing a single-vessel mode it would still hold that mode's hull when the player
+        /// returns here - and the lava-lamp vessel would silently be clamped to it. The menu is
+        /// where you are ALLOWED to fly anything, so it takes the player's request verbatim.
+        /// </summary>
+        protected override VesselClassType ResolveSpawnVesselType(Player networkPlayer) =>
+            networkPlayer.NetDefaultVesselType.Value;
+
         protected override void OnNetworkSpawn()
         {
             base.OnNetworkSpawn();
@@ -146,57 +156,74 @@ namespace CosmicShore.Gameplay
         {
             _isSwapping = true;
 
-            // 1. Find the player
-            if (!gameData.TryGetPlayerByNetworkObjectId(playerNetId, out var iPlayer)
-                || iPlayer is not Player player)
+            // Everything below runs inside try/finally. This method is async void in effect
+            // (UniTaskVoid): an exception anywhere in the swap - a component throwing during
+            // the new vessel's Initialize was the live case - is logged by the runtime and
+            // then SWALLOWED, and without the finally `_isSwapping` stayed true forever. That
+            // turned one broken vessel into a bricked changer: every later swap of ANY vessel
+            // was silently refused by the IsSwapping gate until the scene reloaded.
+            try
             {
-                CSDebug.LogError($"[MenuServerVesselInit] Player {playerNetId} not found.");
-                _isSwapping = false;
-                return;
-            }
+                // 1. Find the player
+                if (!gameData.TryGetPlayerByNetworkObjectId(playerNetId, out var iPlayer)
+                    || iPlayer is not Player player)
+                {
+                    CSDebug.LogError($"[MenuServerVesselInit] Player {playerNetId} not found.");
+                    return;
+                }
 
-            var oldVessel = player.Vessel;
-            if (oldVessel == null)
+                var oldVessel = player.Vessel;
+                if (oldVessel == null)
+                {
+                    CSDebug.LogError($"[MenuServerVesselInit] Player {playerNetId} has no vessel to swap.");
+                    return;
+                }
+
+                // Inherit the outgoing ship's velocity so the swap is seamless - the new vessel
+                // continues at the same speed instead of the post-init dead stop (position + orientation
+                // are inherited via SetPose below). Captured before despawn while the old vessel is valid.
+                float snapshotSpeed = oldVessel.VesselStatus.Speed;
+
+                // 2. Despawn old vessel
+                DespawnVessel(oldVessel);
+
+                // 3. Spawn new vessel
+                var vesselNO = SpawnVesselForPlayer(ownerClientId, player, targetClass);
+                if (!vesselNO)
+                {
+                    return;
+                }
+
+                if (!vesselNO.TryGetComponent(out IVessel newVessel))
+                {
+                    CSDebug.LogError("[MenuServerVesselInit] Spawned vessel missing IVessel component.");
+                    return;
+                }
+
+                // 4. Re-initialize on host
+                clientPlayerVesselInitializer.ReplaceVesselForPlayer(player, newVessel);
+                newVessel.SetPose(snapshotPose);
+                newVessel.SetInitialSpeed(snapshotSpeed);
+                ActivateAutopilot(player);
+
+                // 5. Wait for replication, then notify all non-host clients
+                await UniTask.Delay(postSpawnDelayMs, cancellationToken: ct);
+                NotifyClientsOfSwap(player, newVessel);
+
+            }
+            catch (System.OperationCanceledException) { }
+            catch (System.Exception ex)
             {
-                CSDebug.LogError($"[MenuServerVesselInit] Player {playerNetId} has no vessel to swap.");
-                _isSwapping = false;
-                return;
+                // Name the vessel and rethrow nothing: the finally has already unlatched the
+                // changer, so the player can try another ship (or the same one after a fix)
+                // instead of finding every station silently dead.
+                CSDebug.LogError(
+                    $"[MenuServerVesselInit] Swap to {targetClass} FAILED mid-flight: {ex}");
             }
-
-            // Inherit the outgoing ship's velocity so the swap is seamless - the new vessel
-            // continues at the same speed instead of the post-init dead stop (position + orientation
-            // are inherited via SetPose below). Captured before despawn while the old vessel is valid.
-            float snapshotSpeed = oldVessel.VesselStatus.Speed;
-
-            // 2. Despawn old vessel
-            DespawnVessel(oldVessel);
-
-            // 3. Spawn new vessel
-            var vesselNO = SpawnVesselForPlayer(ownerClientId, player, targetClass);
-            if (!vesselNO)
+            finally
             {
                 _isSwapping = false;
-                return;
             }
-
-            if (!vesselNO.TryGetComponent(out IVessel newVessel))
-            {
-                CSDebug.LogError("[MenuServerVesselInit] Spawned vessel missing IVessel component.");
-                _isSwapping = false;
-                return;
-            }
-
-            // 4. Re-initialize on host
-            clientPlayerVesselInitializer.ReplaceVesselForPlayer(player, newVessel);
-            newVessel.SetPose(snapshotPose);
-            newVessel.SetInitialSpeed(snapshotSpeed);
-            ActivateAutopilot(player);
-
-            // 5. Wait for replication, then notify all non-host clients
-            await UniTask.Delay(postSpawnDelayMs, cancellationToken: ct);
-            NotifyClientsOfSwap(player, newVessel);
-
-            _isSwapping = false;
         }
 
         void NotifyClientsOfSwap(Player player, IVessel newVessel)
@@ -234,8 +261,9 @@ namespace CosmicShore.Gameplay
             player.Vessel.ToggleAIPilot(true);
             player.InputController.SetPause(true);
 
-            // Camera setup is handled by MainMenuController.HandleMenuReady()
-            // which activates the CM Main Menu Cinemachine camera for menu state.
+            // Camera setup is handled by MainMenuCameraController on OnClientReady -
+            // it drives the Menu_Main scene camera directly (vessel-framing rig, no
+            // Cinemachine) once the pair is ready.
         }
     }
 }

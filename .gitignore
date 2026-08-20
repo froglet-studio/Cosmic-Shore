@@ -92,3 +92,7 @@ Assets/Plugins/FMOD/Cache/Editor/FMODStudioCache.asset.meta
 
 # Prism explosion A/B benchmark output (branch-independent, regenerated per run)
 BenchmarkResults/
+
+# Python bytecode from Tools/CI scripts
+__pycache__/
+*.pyc

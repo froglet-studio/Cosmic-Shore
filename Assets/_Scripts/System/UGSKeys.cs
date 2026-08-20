@@ -36,7 +36,6 @@ namespace CosmicShore.Core
         public const string EventGameCompleted = "game_completed";
         public const string EventSessionEnded  = "session_ended";
         public const string EventUiAction      = "ui_action";
-        public const string EventAdImpression  = "ad_impression";
 
         // Phase 2 - activation
         public const string EventGameFirstLaunched = "game_first_launched";

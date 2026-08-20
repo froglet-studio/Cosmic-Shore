@@ -294,10 +294,10 @@ namespace CosmicShore.Gameplay
             // every piece at full length. The pooled path below is a ROUTE, not a
             // working visual fallback — see the note on SpawnImplosion.
             if (CosmicShore.Utility.PrismDebris.Configure(explosionPool != null ? explosionPool.Prefab : null) &&
-                TryGetTeamColors(data.ownDomain, out var bright, out var dark) &&
+                TryGetTeamColors(data.ownDomain, data.Kind, out var bright, out var dark) &&
                 CosmicShore.Utility.PrismDebris.TryRequestExplosion(
                     data.SpawnPosition, data.Rotation, data.Scale,
-                    bright, dark, data.Velocity, data.DebrisSpeedLimit))
+                    bright, dark, data.Velocity, data.DebrisSpeedLimit, data.Kind))
             {
                 // Callers treat a null spawn as fire-and-forget (the deferral
                 // branch below has always returned null).
@@ -336,7 +336,7 @@ namespace CosmicShore.Gameplay
             // and being loud there is the intended forcing function, not a degradation.
             // See Docs/PRISM_ANIMATION.md §4.6 for what retiring it actually requires.
             if (CosmicShore.Utility.PrismDebris.ConfigureImplosion(implosionPool != null ? implosionPool.Prefab : null) &&
-                TryGetTeamColors(data.ownDomain, out var bright, out var dark) &&
+                TryGetTeamColors(data.ownDomain, data.Kind, out var bright, out var dark) &&
                 CosmicShore.Utility.PrismDebris.TryRequestImplosion(
                     data.SpawnPosition, data.Rotation, data.Scale,
                     bright, dark, data.TargetTransform))
@@ -384,8 +384,8 @@ namespace CosmicShore.Gameplay
             var obj = explosionPool?.Get(data.SpawnPosition, data.Rotation, explosionPool.transform);
             if (obj == null) return null;
             obj.transform.localScale = data.Scale;
-            ConfigureForTeam(obj.gameObject, data.ownDomain);
-            obj.TriggerExplosion(data.Velocity, data.DebrisSpeedLimit);
+            ConfigureForTeam(obj.gameObject, data.ownDomain, data.Kind);
+            obj.TriggerExplosion(data.Velocity, data.DebrisSpeedLimit, data.Kind);
             return obj.gameObject;
         }
 
@@ -396,7 +396,7 @@ namespace CosmicShore.Gameplay
             var obj = implosionPool?.Get(data.SpawnPosition, data.Rotation, implosionPool.transform);
             if (obj == null) return null;
             obj.transform.localScale = data.Scale;
-            ConfigureForTeam(obj.gameObject, data.ownDomain);
+            ConfigureForTeam(obj.gameObject, data.ownDomain, data.Kind);
             obj.StartImplosion(data.TargetTransform);
             return obj.gameObject;
         }
@@ -441,7 +441,7 @@ namespace CosmicShore.Gameplay
         {
             var obj = implosionPool?.Get(data.SpawnPosition, data.Rotation, implosionPool.transform);
             obj.transform.localScale = data.Scale;
-            ConfigureForTeam(obj.gameObject, data.ownDomain);
+            ConfigureForTeam(obj.gameObject, data.ownDomain, data.Kind);
 
             // Self-unsubscribing callback so lambdas don't accumulate on pool reuse
             Action<PrismImplosion> growCallback = null;
@@ -452,29 +452,30 @@ namespace CosmicShore.Gameplay
             };
             obj.OnReturnToPool += growCallback;
 
-            obj.StartGrow(data.TargetTransform);
+            obj.StartGrow(data.TargetTransform, data.GrowDuration);
 
             return obj.gameObject;
         }
         
         /// <summary>
-        /// Domain palette lookup shared by the entity-debris path (which has no
-        /// GameObject for <see cref="ConfigureForTeam"/> to visit). False when the
-        /// theme is not populated yet — the caller falls back to the pooled path,
-        /// whose own warning covers the misconfiguration.
+        /// Palette lookup shared by the entity-debris path (which has no GameObject for
+        /// <see cref="ConfigureForTeam"/> to visit). Keyed on (domain, kind) and routed
+        /// through <see cref="SO_ColorSet.TryGetPrismKindColors"/> — the same composition
+        /// <c>ThemeManager</c> paints the live prism with — so a death visual always wears
+        /// the colours of the mass it came from. A danger prism therefore shatters into the
+        /// hot danger rim over its domain's shielded base, not into plain-domain debris.
+        /// False when the theme is not populated yet — the caller falls back to the pooled
+        /// path, whose own warning covers the misconfiguration.
         /// </summary>
-        private bool TryGetTeamColors(Domains domain, out Color bright, out Color dark)
+        private bool TryGetTeamColors(Domains domain, PrismKind kind, out Color bright, out Color dark)
         {
             bright = Color.white;
             dark = Color.black;
             if (!_themeManagerData || !_themeManagerData.ColorSet) return false;
-            if (!_themeManagerData.ColorSet.TryGetColorSetByDomain(domain, out var colorSet)) return false;
-            bright = colorSet.InsideBlockColor;
-            dark = colorSet.OutsideBlockColor;
-            return true;
+            return _themeManagerData.ColorSet.TryGetPrismKindColors(domain, kind, out bright, out dark);
         }
 
-        private void ConfigureForTeam(GameObject obj, Domains domain)
+        private void ConfigureForTeam(GameObject obj, Domains domain, PrismKind kind)
         {
             if (!obj) return;
 
@@ -490,7 +491,7 @@ namespace CosmicShore.Gameplay
                 return;
             }
 
-            if (!_themeManagerData.ColorSet.TryGetColorSetByDomain(domain, out var colorSet))
+            if (!_themeManagerData.ColorSet.TryGetPrismKindColors(domain, kind, out var bright, out var dark))
                 return;
 
             // Effect components route team colors to whichever render path is
@@ -498,12 +499,12 @@ namespace CosmicShore.Gameplay
             // animation starts — the factory just hands them the palette.
             if (obj.TryGetComponent(out CosmicShore.Utility.PrismExplosion explosion))
             {
-                explosion.SetTeamColors(colorSet.InsideBlockColor, colorSet.OutsideBlockColor);
+                explosion.SetTeamColors(bright, dark);
                 return;
             }
             if (obj.TryGetComponent(out CosmicShore.Utility.PrismImplosion implosion))
             {
-                implosion.SetTeamColors(colorSet.InsideBlockColor, colorSet.OutsideBlockColor);
+                implosion.SetTeamColors(bright, dark);
                 return;
             }
 
@@ -512,8 +513,8 @@ namespace CosmicShore.Gameplay
             {
                 renderer.GetPropertyBlock(mpb);
                 // Apply basic material set - refine later if different prisms need different materials
-                mpb.SetColor(DarkColorID, colorSet.OutsideBlockColor);
-                mpb.SetColor(BrightColorID, colorSet.InsideBlockColor);
+                mpb.SetColor(DarkColorID, dark);
+                mpb.SetColor(BrightColorID, bright);
                 renderer.SetPropertyBlock(mpb);
             }
         }

@@ -59,6 +59,23 @@ namespace CosmicShore.Gameplay
                  "Arrange Spawn Points Around Cell is on.")]
         [SerializeField, Min(0f)] protected float spawnDistanceOutsideNucleus = 40f;
 
+        [Tooltip("Floor for the computed spawn-ring radius, for a cell whose 'core' is NOT a " +
+                 "nucleus. The ring is max(nucleus radius + Spawn Distance Outside Nucleus, this). " +
+                 "Ribcage needs it: its cell has no NucleusPrefab (a nucleus control zone would " +
+                 "break the mode's fauna diet), so the nucleus radius is 0 and the ring would " +
+                 "collapse to the cell centre - INSIDE the 300u cage the players are meant to be " +
+                 "attacking from outside. 0 = no floor (every existing scene is unchanged).")]
+        [SerializeField, Min(0f)] protected float spawnRingRadiusFloor;
+
+        [Tooltip("How the computed ring distributes players. Symmetric spreads them over a SPHERE " +
+                 "(4 tetrahedral, 3 triangle, 2 antipodal). Equatorial Ring puts everyone on one " +
+                 "horizontal circle, evenly spaced, the way Joust authors its points by hand - use " +
+                 "it when the arena has a meaningful 'up' or a pole feature, so no player is handed " +
+                 "a harder approach than the others. Only used when Arrange Spawn Points Around " +
+                 "Cell is on.")]
+        [SerializeField] protected CellSpawnFormation.Formation spawnFormation =
+            CellSpawnFormation.Formation.Symmetric;
+
         [Tooltip("The cell whose nucleus the computed spawn ring measures off. Only used when " +
                  "Arrange Spawn Points Around Cell is on.")]
         [SerializeField] protected CellRuntimeDataSO cellData;
@@ -90,6 +107,14 @@ namespace CosmicShore.Gameplay
         /// </summary>
         protected readonly HashSet<ulong> _processedPlayers = new();
 
+        /// <summary>
+        /// Players whose persistent state has been re-initialized for THIS scene
+        /// (<see cref="Player.PrepareForNewScene"/>, which zeroes RoundStats). Separate from
+        /// <see cref="_processedPlayers"/> because that set is removed from on the not-ready
+        /// retry path - a player can be processed more than once, but must be reset exactly once.
+        /// </summary>
+        readonly HashSet<ulong> _preparedForScene = new();
+
         protected virtual void Awake()
         {
             _netcodeHooks = GetComponent<NetcodeHooks>();
@@ -114,12 +139,12 @@ namespace CosmicShore.Gameplay
         {
             if (!NetworkManager.Singleton.IsServer)
             {
-                Debug.Log("<color=#00FF00>[FLOW-5] [ServerVesselInit] OnNetworkSpawn - NOT server, disabling</color>");
+                CSDebug.LogVerbose(CSLogChannel.NetworkFlow, "<color=#00FF00>[FLOW-5] [ServerVesselInit] OnNetworkSpawn - NOT server, disabling</color>");
                 enabled = false;
                 return;
             }
 
-            Debug.Log($"<color=#00FF00>[FLOW-5] [ServerVesselInit] OnNetworkSpawn - IsServer=true, subscribing to OnPlayerNetworkSpawnedUlong. gameData.Players.Count={gameData.Players.Count}</color>");
+            CSDebug.LogVerbose(CSLogChannel.NetworkFlow, $"<color=#00FF00>[FLOW-5] [ServerVesselInit] OnNetworkSpawn - IsServer=true, subscribing to OnPlayerNetworkSpawnedUlong. gameData.Players.Count={gameData.Players.Count}</color>");
 
             // The computed ring needs the cell's nucleus, which the Cell spawns in Initialize -
             // deferred to the first vessel spawn (EnsureSpawnPosesReady) so it can't read a
@@ -154,9 +179,9 @@ namespace CosmicShore.Gameplay
             // but are cleared from gameData.Players by ResetRuntimeData().
             // Their OnNetworkSpawn() won't re-fire, so we initiate the spawn chain here.
             // Actual re-initialization (PrepareForNewScene) happens in
-            // FindUnprocessedPlayerByOwnerClientId() after the preSpawnDelay,
-            // which ensures it runs after any Start()-based list clearing
-            // (e.g. scene-placed MultiplayerSetup.DestroyPlayerAndVessel).
+            // HandlePlayerNetworkSpawnedAsync() after the preSpawnDelay, which ensures it runs
+            // after any Start()-based list clearing (e.g. scene-placed
+            // MultiplayerSetup.DestroyPlayerAndVessel).
             var nm = NetworkManager.Singleton;
             if (nm == null) return;
 
@@ -178,6 +203,7 @@ namespace CosmicShore.Gameplay
             if (clientPlayerVesselInitializer != null)
                 clientPlayerVesselInitializer.OnRosterRequested = null;
             _processedPlayers.Clear();
+            _preparedForScene.Clear();
             _cellSpawnRingBuilt = false; // a replay re-spawns the cell; rebuild against the new nucleus
 
             _cts?.Cancel();
@@ -204,7 +230,7 @@ namespace CosmicShore.Gameplay
 
         async UniTaskVoid HandlePlayerNetworkSpawnedAsync(ulong ownerClientId, CancellationToken ct)
         {
-            Debug.Log($"<color=#00FF00>[FLOW-5] [ServerVesselInit] HandlePlayerNetworkSpawnedAsync - ownerClientId={ownerClientId}, waiting {preSpawnDelayMs}ms for NetworkVariables</color>");
+            CSDebug.LogVerbose(CSLogChannel.NetworkFlow, $"<color=#00FF00>[FLOW-5] [ServerVesselInit] HandlePlayerNetworkSpawnedAsync - ownerClientId={ownerClientId}, waiting {preSpawnDelayMs}ms for NetworkVariables</color>");
             // Wait for NetworkVariables set in Player.OnNetworkSpawn to sync
             using (LoadInsights.Measure(LoadInsightCategory.ScriptedDelay,
                        $"preSpawnDelayMs before vessel spawn ({preSpawnDelayMs}ms)", isWait: true))
@@ -219,7 +245,23 @@ namespace CosmicShore.Gameplay
                 return;
             }
 
-            Debug.Log($"<color=#00FF00>[FLOW-5] [ServerVesselInit] Found player: Name={player.NetName.Value}, VesselType={player.NetDefaultVesselType.Value}, NetworkObjectId={player.NetworkObjectId}</color>");
+            CSDebug.LogVerbose(CSLogChannel.NetworkFlow, $"<color=#00FF00>[FLOW-5] [ServerVesselInit] Found player: Name={player.NetName.Value}, VesselType={player.NetDefaultVesselType.Value}, NetworkObjectId={player.NetworkObjectId}</color>");
+
+            // Re-initialize the PERSISTENT Player for this scene - exactly once, for every player,
+            // whichever way it was found. RoundStats lives on the Player NetworkObject and survives
+            // every scene load, so skipping this carries the previous game's stats straight into
+            // the new one: players began a match with a non-zero score.
+            //
+            // This used to live inside FindUnprocessedPlayerByOwnerClientId, on its FALLBACK branch
+            // only - so whether a player's score started at zero depended on which lookup branch
+            // happened to find them, which is why it hit "some" players and not others. A finder
+            // must not mutate; the reset belongs on the processing path where it is unconditional.
+            //
+            // Server-only by design: Cleanup() writes through the RoundStats property setters,
+            // which push the server's zeroes onto the NetworkVariables, and replication clears
+            // every client's local mirror. Clients never reset stats themselves.
+            if (_preparedForScene.Add(player.NetworkObjectId))
+                player.PrepareForNewScene();
 
             // Domain is server-writable: human players route their selections through
             // Player.RequestSetDomain_ServerRpc (called from DomainSelectionPanel and the
@@ -228,7 +270,7 @@ namespace CosmicShore.Gameplay
 
             if (!_processedPlayers.Add(player.NetworkObjectId))
             {
-                Debug.Log($"<color=#FFA500>[FLOW-5] [ServerVesselInit] Player {player.NetworkObjectId} already processed, skipping</color>");
+                CSDebug.LogVerbose(CSLogChannel.NetworkFlow, $"<color=#FFA500>[FLOW-5] [ServerVesselInit] Player {player.NetworkObjectId} already processed, skipping</color>");
                 return;
             }
 
@@ -272,7 +314,7 @@ namespace CosmicShore.Gameplay
                 }
             }
 
-            Debug.Log($"<color=#00FF00>[FLOW-5] [ServerVesselInit] Player ready! Spawning vessel for {player.NetName.Value} (type={player.NetDefaultVesselType.Value})</color>");
+            CSDebug.LogVerbose(CSLogChannel.NetworkFlow, $"<color=#00FF00>[FLOW-5] [ServerVesselInit] Player ready! Spawning vessel for {player.NetName.Value} (type={player.NetDefaultVesselType.Value})</color>");
             await OnPlayerReadyToSpawnAsync(player, ct);
         }
 
@@ -298,7 +340,10 @@ namespace CosmicShore.Gameplay
             // spawnDistanceOutsideNucleus from the cell CENTRE - inside the core.
             float nucleusRadius = cell ? cell.ExpectedNucleusWorldRadius : 0f;
 
-            if (nucleusRadius <= 0f)
+            // A radius floor makes the ring usable for a cell whose core is a STRUCTURE rather
+            // than a nucleus (Ribcage's cage), where nucleusRadius is legitimately 0. Without a
+            // floor that case is indistinguishable from "cell not resolvable yet" below.
+            if (nucleusRadius <= 0f && spawnRingRadiusFloor <= 0f)
             {
                 // Transient (cell not resolvable yet) - do NOT latch, so a later spawn can still
                 // install the real ring. Permanent (a cell with no nucleus configured) - latch,
@@ -325,12 +370,13 @@ namespace CosmicShore.Gameplay
                 ? Mathf.Max(1, gameData.SelectedPlayerCount.Value)
                 : Mathf.Max(1, gameData.Players.Count);
 
-            float radius = nucleusRadius + spawnDistanceOutsideNucleus;
-            gameData.SetSpawnPoses(CellSpawnFormation.Build(count, cell.transform.position, radius));
+            float radius = Mathf.Max(nucleusRadius + spawnDistanceOutsideNucleus, spawnRingRadiusFloor);
+            gameData.SetSpawnPoses(
+                CellSpawnFormation.Build(count, cell.transform.position, radius, spawnFormation));
 
             CSDebug.Log($"[ServerPlayerVesselInitializer] Spawn ring: {count} players at " +
-                        $"{radius:0.#}u (nucleus {nucleusRadius:0.#} + {spawnDistanceOutsideNucleus:0.#}) " +
-                        $"around {cell.name}.");
+                        $"{radius:0.#}u (nucleus {nucleusRadius:0.#} + {spawnDistanceOutsideNucleus:0.#}, " +
+                        $"floor {spawnRingRadiusFloor:0.#}) around {cell.name}, {spawnFormation}.");
         }
 
         /// <summary>
@@ -342,10 +388,10 @@ namespace CosmicShore.Gameplay
         {
             EnsureSpawnPosesReady();
 
-            Debug.Log($"<color=#00FF00>[FLOW-5] [ServerVesselInit] OnPlayerReadyToSpawnAsync - SpawnVesselAndInitialize for {player.NetName.Value}</color>");
+            CSDebug.LogVerbose(CSLogChannel.NetworkFlow, $"<color=#00FF00>[FLOW-5] [ServerVesselInit] OnPlayerReadyToSpawnAsync - SpawnVesselAndInitialize for {player.NetName.Value}</color>");
             SpawnVesselAndInitialize(player.OwnerClientId, player);
 
-            Debug.Log($"<color=#00FF00>[FLOW-5] [ServerVesselInit] Vessel spawned. Waiting {postSpawnDelayMs}ms for replication...</color>");
+            CSDebug.LogVerbose(CSLogChannel.NetworkFlow, $"<color=#00FF00>[FLOW-5] [ServerVesselInit] Vessel spawned. Waiting {postSpawnDelayMs}ms for replication...</color>");
             // Wait for the vessel NetworkObject to fully replicate before telling clients
             using (LoadInsights.Measure(LoadInsightCategory.ScriptedDelay,
                        $"postSpawnDelayMs before NotifyClients ({postSpawnDelayMs}ms)", isWait: true))
@@ -353,7 +399,7 @@ namespace CosmicShore.Gameplay
                 await UniTask.Delay(postSpawnDelayMs, DelayType.UnscaledDeltaTime, cancellationToken: ct);
             }
 
-            Debug.Log($"<color=#00FF00>[FLOW-5] [ServerVesselInit] NotifyClients for {player.NetName.Value}</color>");
+            CSDebug.LogVerbose(CSLogChannel.NetworkFlow, $"<color=#00FF00>[FLOW-5] [ServerVesselInit] NotifyClients for {player.NetName.Value}</color>");
             NotifyClients(player);
         }
 
@@ -472,7 +518,40 @@ namespace CosmicShore.Gameplay
         }
 
         protected NetworkObject SpawnVesselForPlayer(ulong clientId, Player networkPlayer) =>
-            SpawnVesselForPlayer(clientId, networkPlayer, networkPlayer.NetDefaultVesselType.Value);
+            SpawnVesselForPlayer(clientId, networkPlayer, ResolveSpawnVesselType(networkPlayer));
+
+        /// <summary>
+        /// The vessel class this player actually spawns in, clamped to what the game MODE allows.
+        ///
+        /// <c>Player.NetDefaultVesselType</c> is an OWNER-write NetworkVariable: every client
+        /// writes its own from its own local <c>gameData.selectedVesselClass</c>, and the menu's
+        /// vessel-changer toy writes it too. So a client walks into a restricted mode still
+        /// wearing the hull it last flew, and the launcher-side clamp in
+        /// <c>GameDataSO.SyncFromArcadeGame</c> never sees it - that call only runs on the machine
+        /// that pressed Start, and the config ClientRpc lands later than this spawn. A Dolphin
+        /// therefore flew Rhino-only Ribcage on every client while the AI (whose class comes from
+        /// the scene's aiInitializeDatas) correctly spawned Rhinos.
+        ///
+        /// The SERVER is the only authority that sees every player's request and the mode's rules
+        /// at the same time, so the clamp belongs here - same principle as never writing domain
+        /// state from client code. Empty <c>AllowedVesselClasses</c> = no restriction.
+        /// </summary>
+        protected virtual VesselClassType ResolveSpawnVesselType(Player networkPlayer)
+        {
+            var requested = networkPlayer.NetDefaultVesselType.Value;
+            var allowed = gameData.ClampVesselToGame(requested);
+            if (allowed == requested) return requested;
+
+            CSDebug.LogWarning(
+                $"[ServerPlayerVesselInitializer] {gameData.GameMode} does not allow {requested} " +
+                $"(player {networkPlayer.NetName.Value}); spawning {allowed} instead.");
+
+            // Keep the NetworkVariable honest too, or anything that re-reads it later (a respawn,
+            // a HUD, telemetry) would disagree with the hull that is actually flying. The server
+            // cannot write an owner-write variable directly, so Player routes it to the owner.
+            networkPlayer.ServerForceVesselType(allowed);
+            return allowed;
+        }
 
         /// <summary>
         /// Spawns a vessel of the given type, assigns ownership to <paramref name="clientId"/>,
@@ -523,8 +602,12 @@ namespace CosmicShore.Gameplay
         /// Finds the first unprocessed Player owned by the given clientId.
         /// Falls back to NetworkManager.ConnectedClients for persistent Players
         /// that may have been cleared from gameData.Players during scene transition
-        /// (by ResetRuntimeData or DestroyPlayerAndVessel). If found via fallback,
-        /// calls PrepareForNewScene() to re-initialize for the current game config.
+        /// (by ResetRuntimeData or DestroyPlayerAndVessel).
+        ///
+        /// PURE LOOKUP - it must not mutate the player it returns. Re-initializing for the new
+        /// scene (PrepareForNewScene) used to happen here on the fallback branch only, which made
+        /// the RoundStats reset depend on which branch found the player; it now runs
+        /// unconditionally in HandlePlayerNetworkSpawnedAsync.
         /// </summary>
         Player FindUnprocessedPlayerByOwnerClientId(ulong ownerClientId)
         {
@@ -556,8 +639,6 @@ namespace CosmicShore.Gameplay
             if (!player.IsSpawned || _processedPlayers.Contains(player.NetworkObjectId))
                 return null;
 
-            // Re-initialize the persistent Player for the current game scene.
-            player.PrepareForNewScene();
             return player;
         }
 

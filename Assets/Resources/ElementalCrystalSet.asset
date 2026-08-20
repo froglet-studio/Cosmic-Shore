@@ -18,3 +18,5 @@ MonoBehaviour:
   time: {fileID: 6588436222817790495, guid: e707773a458187444a9dfbf3ec06568f, type: 3}
   collectionEffects:
   - {fileID: 11400000, guid: 0ac04a748b4c4ad8825e811431df45f4, type: 2}
+  levelOneWorldScale: 3.5
+  worldScalePerLevel: 1.05

@@ -12,6 +12,49 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: afa9b701ce084be58a39d0c237666e26, type: 3}
   m_Name: AstroLeagueSettings
   m_EditorClassIdentifier: 
+  arenaLength: 400
+  arenaWidth: 320
+  arenaHeight: 240
+  goalMouthRadius: 62
+  arenaScaleByIntensity:
+  - 1.8
+  - 2.1
+  - 2.4
+  - 2.7
+  edgePrismsEnabled: 1
+  edgePrismCount: 480
+  edgePrismScale: {x: 2.5, y: 2.5, z: 10}
+  edgePrismInset: 6
+  goalResetsArena: 1
+  goalPrismClearSeconds: 1.6
+  goalReplayEnabled: 1
+  goalReplayRecordSeconds: 4
+  goalReplayWindowFraction: 0.85
+  goalReplayMinPlaybackSpeed: 0.3
+  goalReplayFramingMargin: 1.35
+  goalReplayVantageElevation: 0.35
+  goalReplayPanSpeed: 3.5
+  bladeAwareStrikes: 1
+  bladeClearRadius: 7
+  bladeTipStrikeBonus: 1.35
+  explosionsAffectBall: 1
+  explosionKickMultiplier: 1
+  explosionSpinFraction: 0.6
+  explosionClaimsBall: 1
+  strikeFeedbackEnabled: 1
+  strikerShakeEmphasis: 1.8
+  bigHitSpeedFraction: 0.45
+  strikePopSeconds: 0.2
+  strikePopAmount: 0.22
+  strikerClosingSpeedEstimate: 120
+  strikerMaxLeadSeconds: 1.6
+  strikerDefenderFraction: 0.5
+  defenderStandoffFraction: 0.35
+  defenderClearDistance: 260
+  strikerOwnGoalGuardDegrees: 55
+  faunaWaitOutsideCourt: 1
+  faunaExclusionCourtFraction: 1
+  faunaExclusionSweepSeconds: 3
   matchDurationSeconds: 180
   goalLimit: 5
   goldenGoalOvertime: 1
@@ -28,7 +71,7 @@ MonoBehaviour:
   - 0
   - 1
   centralBallSpawnOffset: 70
-  boundaryRadius: 190
+  boundaryRadius: 285
   octagonBevelFraction: 0.5
   beveledBoxBevelFraction: 0.45
   notchedRingOuterShape: 6
@@ -42,17 +85,23 @@ MonoBehaviour:
   celebrationTimeScale: 0.35
   kickoffFreezeSeconds: 2.4
   winnerBannerSeconds: 2.5
-  kickoffLineDistance: 110
-  kickoffLateralSpacing: 30
+  kickoffLineDistance: 150
+  kickoffLateralSpacing: 45
   hitBoostMultiplier: 2.5
   directionalBias: 0.45
   minimumHitSpeed: 5
   vesselStrikeCooldown: 0.12
   vesselClearRadius: 12
-  maxSpeed: 220
+  maxSpeed: 300
   ballMass: 3
   ballBounciness: 1
-  prismDragMassScale: 0.05
+  wallRestitution: 0.72
+  prismCaromRestitution: 1
+  ballDrag: 0.35
+  outsideNucleusDragMultiplier: 6
+  outsideNucleusDragFalloff: 250
+  ballRestSpeed: 6
+  prismDragMassScale: 0.0167
   ballAngularDamping: 0.3
   maxAngularSpeed: 40
   ballMeshSubdivisions: 2
@@ -61,12 +110,12 @@ MonoBehaviour:
   clientSnapDistance: 30
   hitstopDuration: 0.045
   hitstopTimeScale: 0.1
-  hitstopSpeedThreshold: 70
+  hitstopSpeedThreshold: 110
   strikeShakeIntensity: 1
   strikeShakeDuration: 0.18
   goalShakeIntensity: 2.5
   goalShakeDuration: 0.5
-  shakeFalloffRadius: 180
+  shakeFalloffRadius: 450
   wallJuiceMinIntensity: 0.12
   wallJuiceCooldown: 0.2
   impactFlashDuration: 0.12
@@ -79,9 +128,11 @@ MonoBehaviour:
   maxEmissionIntensity: 11
   minLightRange: 25
   maxLightRange: 90
-  speedForMaxVisuals: 160
-  strikerApproachLead: 18
-  strikerRecoverDistance: 60
+  speedForMaxVisuals: 210
+  strikerApproachLead: 40
+  strikerRecoverDistance: 120
   jadeGoalColor: {r: 0.18695846, g: 0.8200566, b: 0.8616352, a: 0.5}
   rubyGoalColor: {r: 0.9056604, g: 0.15094331, b: 0.66856146, a: 0.5}
   goldGoalColor: {r: 1, g: 0.82, b: 0.2, a: 0.5}
+  detonationExplosionPrefabs:
+  - {fileID: 3479271500403630839, guid: 4a855af160021d241b8c1ac70cf2d792, type: 3}

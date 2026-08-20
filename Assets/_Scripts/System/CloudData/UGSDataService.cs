@@ -224,7 +224,21 @@ namespace CosmicShore.Core
         }
 
         /// <summary>
-        /// Restores vessel SO_Vessel.isLocked states from cloud data.
+        /// Reconciles vessel ownership between the authored SO_Vessel assets and HANGAR_DATA,
+        /// in both directions:
+        ///
+        /// <list type="bullet">
+        ///   <item>Starters (<c>SO_Vessel.OwnedFromStart</c>) are seeded INTO the cloud record.
+        ///   Without this the player's one free vessel never appears in HANGAR_DATA, because
+        ///   <c>VesselUnlockSystem.UnlockVessel</c> early-returns on an already-unlocked vessel
+        ///   and so never persists it - which is why the Squirrel was missing from every
+        ///   player's hangar payload.</item>
+        ///   <item>Purchases recorded in the cloud are applied back onto the assets.</item>
+        ///   <item><c>SelectedVessel</c> falls back to the starter when the player has never
+        ///   opened the vessel panel - the only writer is a deliberate pick, so before the first
+        ///   one the field read as null.</item>
+        /// </list>
+        ///
         /// Called automatically after initialization and available publicly for re-sync.
         /// </summary>
         public void SyncHangarToVessels()
@@ -242,15 +256,62 @@ namespace CosmicShore.Core
 
             if (vesselList == null || _hangar?.Data == null) return;
 
+            var hangar = _hangar.Data;
+            long nowUtcMs = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+            string firstStarter = null;
+            bool changed = false;
+
             foreach (var vessel in vesselList.VesselList)
             {
-                if (vessel == null) continue;
+                if (vessel == null || string.IsNullOrWhiteSpace(vessel.Name)) continue;
 
-                if (_hangar.Data.IsVesselUnlocked(vessel.Name))
+                if (vessel.OwnedFromStart)
+                {
+                    firstStarter ??= vessel.Name;
+
+                    if (!hangar.IsVesselUnlocked(vessel.Name))
+                    {
+                        hangar.UnlockVessel(vessel.Name, nowUtcMs);
+                        changed = true;
+                    }
+                }
+
+                if (hangar.IsVesselUnlocked(vessel.Name))
                     vessel.Unlock();
             }
 
-            CSDebug.Log($"[UGSDataService] Synced hangar unlock state for {vesselList.VesselList.Count} vessels.");
+            // Prefer a vessel the player actually owns; fall back to the starter.
+            if (string.IsNullOrWhiteSpace(hangar.SelectedVessel) ||
+                !hangar.IsVesselUnlocked(hangar.SelectedVessel))
+            {
+                string fallback = firstStarter ?? FirstUnlockedName(hangar);
+                if (!string.IsNullOrWhiteSpace(fallback) && hangar.SelectedVessel != fallback)
+                {
+                    hangar.SelectedVessel = fallback;
+                    changed = true;
+                }
+            }
+
+            if (string.IsNullOrWhiteSpace(hangar.PreferredVessel))
+            {
+                // Nothing flown yet, so "most hours played" has no real answer - derive one from
+                // the records rather than leaving it empty. Real flight time overwrites it later.
+                hangar.RecomputePreferredVessel();
+                changed |= !string.IsNullOrWhiteSpace(hangar.PreferredVessel);
+            }
+
+            if (changed)
+                _hangar.MarkDirty();
+
+            CSDebug.Log($"[UGSDataService] Synced hangar for {vesselList.VesselList.Count} vessels - " +
+                        $"{hangar.UnlockedVesselCount()} unlocked, selected '{hangar.SelectedVessel}'.");
+        }
+
+        static string FirstUnlockedName(HangarCloudData hangar)
+        {
+            foreach (var name in hangar.UnlockedVesselNames())
+                return name;
+            return null;
         }
 
         /// <summary>

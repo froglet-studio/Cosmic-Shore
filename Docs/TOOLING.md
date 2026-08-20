@@ -98,6 +98,96 @@ every window gets it.
 
 ---
 
+## Tool output is a deliverable
+
+> **A tool that writes assets must record what it wrote and draw
+> `FrogletToolShipPanel`. Its OUTPUT is the deliverable; the tool is scaffolding.**
+
+A wirer, a setup tool, a migration — its real product is the rewritten scene, the re-authored
+prefab, the generated SO. That product lands in the **working tree**, and the branch only carries
+what someone chose to commit. Committing the tool and forgetting its output ships code that
+expects data nobody pushed: broken on every other machine, with nothing in the diff to explain it.
+
+The failure is likely rather than rare for two structural reasons. Whoever wrote the tool
+**cannot see its output** — it runs in someone else's editor, minutes or days later. And the
+output looks like noise: a regenerated `.unity` is thousands of YAML lines nobody reads, so
+`git status` showing it dirty is easy to scroll past. So the panel makes committing it a button
+at the point of the mistake, instead of a thing to remember later.
+
+### The contract
+
+```csharp
+using CosmicShore.Editor.Froglet;
+
+const string ToolName = "Wire Foo Widgets";     // ledger key + commit subject; keep it stable
+
+static readonly FrogletToolShipContext Ship = new FrogletToolShipContext(ToolName)
+{
+    ToolScriptPaths = new[] { "Assets/_Scripts/Editor/FrogletTools/MyWirer.cs" },
+    Validate = () => ValidateWiring(),          // the tool's own correctness check
+};
+
+void Wire()
+{
+    // ... write assets ...
+    FrogletToolChangeLedger.Record(ToolName, assetPath);      // record AS YOU WRITE
+    FrogletToolChangeLedger.RecordOpenScenes(ToolName);       // if you edited scene contents
+}
+
+void OnGUI()
+{
+    // ... the tool's own UI ...
+    FrogletToolShipPanel.Draw(Ship, this);                    // Validate & Push + Retire Tool
+}
+```
+
+| Button | What it does |
+|---|---|
+| **Validate & Push** | Saves assets + open scenes, runs the built-in checks and the tool's own `Validate`, stages **only** this tool's recorded paths, commits, pushes to the current branch. Everything else dirty is listed and left alone. |
+| **Retire Tool** | Deletes the tool's own scripts and scratch assets and commits the removal. Refuses while the tool still has unpushed output. |
+
+Built-in checks (they apply to any tool, whatever it does): scripts compile; no scene has unsaved
+changes; every staged asset has its `.meta`; no orphan `.meta` (one whose asset is gone). A missing
+`.meta` is the classic half-committed output — the asset lands with a fresh GUID on the next
+machine and every reference to it breaks.
+
+### Rules
+
+- **Record as you write, not at the end.** A path recorded in the same block that wrote it cannot
+  be missed by an early return or an exception.
+- **Never stage by wildcard, and scope the commit too.** `FrogletGit` has no `-A` path by design:
+  a tool commits its own output or nothing. Someone else's half-finished edit sitting next to it
+  in the tree is not yours to sweep up. The commit carries the same pathspec — a bare
+  `git commit` records the WHOLE index, so anything the human had already staged of their own
+  would ride along and undo, at the last step, the care `add` took all the way up to it.
+- **Output first, retirement second.** Deleting a tool while its output is uncommitted strands the
+  output with nothing left that could reproduce it. The panel enforces the order.
+- **Retire the one-offs; keep the re-runnables.** A tool written to perform ONE migration is
+  scaffolding — delete it once its output is verified (`chore(tools): retire <name> after
+  verification`). Keep it only if it is idempotent and someone will need it again (auditors,
+  validators, re-wirers) — and then add it to the tool index below.
+- **No push to a protected branch.** `main`, `master`, `bleeding-edge`, `develop`, `release/*` are
+  refused by both buttons.
+- **A READER tool needs none of this.** An auditor that only logs writes nothing, records nothing,
+  and draws no panel. Say so in its doc comment so nobody looks for missing output.
+
+### The fallback: Pending Tool Changes
+
+**FrogletTools ▸ Build ▸ Pending Tool Changes** is the last gate before a branch ships. It lists
+what each tool recorded *and* every other dirty file under `Assets/`, `Packages/` and
+`ProjectSettings/` — because a tool can only record what it was written to record, and the gap is
+exactly where things hide. Each group validates, commits and pushes on its own; a one-off can be
+retired from here too.
+
+The ledger lives at `Library/FrogletToolChangeLedger.json` — machine-local and gitignored, which is
+correct: it describes what THIS editor wrote and has not committed. It survives editor restarts,
+which is the window in which the forgetting happens.
+
+The agent-side counterpart is the `/ship-tools` skill (and `/ship` §2.5, which no ship mode may
+skip).
+
+---
+
 ## The migration that happened
 
 Menu items previously lived under three roots. All first-party items were moved under
@@ -133,17 +223,20 @@ their paths do not start with `FrogletTools/`.
 
 | Lane | Tool | What it is for |
 |---|---|---|
+| Build | **Pending Tool Changes** | Uncommitted asset output from editor tools. Validate, push, retire. The last gate before a branch ships. |
 | Game Modes | **Game Mode Prefab Kit** | The prefabs a new game-mode scene needs; Add to Scene / Open Prefab / Validate, plus cross-scene drift detection and consolidation. See `Docs/GAMECANVAS.md`. |
 | Game Modes | End Game Conditions | The one place win conditions are authored for the domain modes. |
 | Build | Windows x64 (Release / Development), Reveal Build Folder | Player builds. |
 | Ecology | Prism Animation ▸ Validate Clock Wiring / Auto-Wire Clock Properties | The clock-material law gate. |
+| Ecology | Prism Animation ▸ **Occlusion Dither Lab** | The occlusion corridor's unit shape, live — kernel + scale dials driven as shader globals **while the game runs**, a preview that IS the shipped GPU code, a Measure button that runs the corridor's own |coverage − alpha| admission rule against the shipped baseline, and Bake to write the result back into `PrismOcclusionCorridor.hlsl`. Keeper (re-runnable), but it writes source, so it draws the ship panel. See `Docs/PRISM_ANIMATION.md` §4.7. |
 | Ecology | Measure Cell Environment Baselines | Per-cell prism baselines the phase thresholds ride on. |
 | Validation | Validate Lifeform Crystals | Every lifeform drops exactly one elemental crystal. |
 | Vessels | Audit Vessel Ability Rows / Elemental Morphs, Wire & Bake Petal Bars, Plan Rig Swap | Vessel HUD + model wiring. |
 | Performance | Performance Benchmark, Prism Grid Benchmark, Texture Memory, Scene Object Counter | Frame cost and memory. |
 | Scene Setup | Setup Freestyle Toybox, Setup Prism Grid Explosion Scene | Scene scaffolding. |
 | Interface | Canvas Upgrader, Raycast Target Audit, Toast Notification setup | UI authoring. |
-| Misc | Toolbox | Logging levels, scene shortcuts, runtime switches. |
+| Misc | Toolbox ▸ Logging | Log levels, **diagnostic channels**, and console stack-trace depth. Channels (`CSLogChannel`) carry a finished system's BRING-UP telemetry — `[FLOW-n]` spawn/session flow, `[GyroidColony]` lattice — and default to OFF, so the trace stays in the tree as knowledge without spamming the console; turn one on before investigating that system. Warnings and errors never sit on a channel. Reader only — writes `EditorPrefs`, never assets, so no ship panel. |
+| Misc | Toolbox | Scene shortcuts, runtime switches, quest/crystal/UGS debug tabs. |
 
 ---
 
@@ -155,6 +248,10 @@ their paths do not start with `FrogletTools/`.
 | Auto-discovery | `Assets/_Scripts/Editor/FrogletTools/FrogletToolRegistry.cs` |
 | Metadata attribute | `Assets/_Scripts/Editor/FrogletTools/FrogletToolAttribute.cs` |
 | Shared palette / widgets | `Assets/_Scripts/Editor/FrogletTools/FrogletEditorPalette.cs` |
+| Ship panel (Validate & Push / Retire Tool) | `Assets/_Scripts/Editor/FrogletTools/FrogletToolShipPanel.cs` |
+| Tool-output ledger | `Assets/_Scripts/Editor/FrogletTools/FrogletToolChangeLedger.cs` |
+| Pending Tool Changes window | `Assets/_Scripts/Editor/FrogletTools/FrogletToolShipWindow.cs` |
+| git CLI wrapper (quoting-safe, no wildcards) | `Assets/_Scripts/Editor/FrogletTools/FrogletGit.cs` |
 | Prefab kit window | `Assets/_Scripts/Editor/FrogletTools/GameModePrefabKitWindow.cs` |
 | Prefab kit validation | `Assets/_Scripts/Editor/FrogletTools/KitValidator.cs` |
 | Scene drift scanner (read-only) | `Assets/_Scripts/Editor/FrogletTools/PrefabInstanceSceneScanner.cs` |
