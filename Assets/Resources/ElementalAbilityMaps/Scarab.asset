@@ -16,15 +16,22 @@ MonoBehaviour:
   entries:
   - Element: 1
     AbilityLabel: Cavitation Blast
-    AbilityDescription: 'The mantis-shrimp punch that rides the dash: every right-stick
-      dash throws a compact spherical blast down-range along the dash direction,
-      shredding prisms, killing fauna (a creature dies when its body prisms are
-      destroyed) and elementally debuffing any opposing pilot it engulfs. Charge
-      shortens its cooldown - authored on ScarabCavitationBlast, x1 at rest ->
-      x0.5 at level 10, so the generic map multiplier stays 1.0 (no double-dip).
-      THE DASH ITSELF IS FREE AND NEVER PACED: only the punch waits, so a
-      recharging blast never costs you the dodge.'
-    Input: 11
+    AbilityDescription: 'The mantis-shrimp punch that rides the dash: push the RIGHT
+      THUMBSTICK to the perimeter and the dash throws a swept PLATE - a broad disc
+      lying flat across your course, starting on the hull and sweeping along the
+      dash - shredding prisms, killing fauna (a creature dies when its body prisms
+      are destroyed) and elementally debuffing any opposing pilot it engulfs.
+      Everything it claims is thrown the way the punch travelled, not away from a
+      point. Charge shortens its cooldown - authored on ScarabCavitationBlast,
+      x1 at rest -> x0.5 at level 10, so the generic map multiplier stays 1.0 (no
+      double-dip). THE DASH ITSELF IS FREE AND NEVER PACED: only the punch waits,
+      so a recharging blast never costs you the dodge. No input-event binding: the
+      juke polls the right thumbstick directly (ScarabJukeController), and the enum
+      has no member for it - InputEvents.RightStickAction (1) and
+      OnlyRightStickAction (11) are both raised from the right TRIGGER despite
+      their names, and 11 is what this entry used to claim, which would have taught
+      the four-icon row that the blast is a trigger ability.'
+    Input: 0
     MultiplierAtFullLevel: 1
     MinMultiplier: 1
     UnlockLevel: 5

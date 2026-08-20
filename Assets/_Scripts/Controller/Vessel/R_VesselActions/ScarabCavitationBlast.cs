@@ -226,7 +226,9 @@ namespace CosmicShore.Gameplay
             // as a good null-guard is (CLAUDE.md's anti-pattern on relying on [Inject] at a
             // non-injecting spawn site). The vessel's own impactor carries the container, so there
             // is one to hand over; ExplosionHelper does the same thing off impactor.DIContainer.
-            // Ordering matters: Initialize's subscription retry runs after injection by design.
+            // Ordering matters, and BOTH halves are needed: Awake+OnEnable already ran inside
+            // Instantiate with a null gameData, so injecting here only makes the retry POSSIBLE —
+            // AOECylindricalExplosion.Initialize is what actually calls SubscribeToGameEvents.
             var container = _vesselImpactor != null ? _vesselImpactor.DIContainer : null;
             if (container != null)
                 GameObjectInjector.InjectRecursive(blast.gameObject, container);

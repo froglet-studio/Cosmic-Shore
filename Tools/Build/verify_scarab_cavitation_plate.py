@@ -98,6 +98,13 @@ def main():
     duration = L / sweep_speed
 
     print(f"\nShipped Scarab cavitation plate (read from the assets, not assumed):")
+    print(f"  NOTE: the runtime multiplies the collider radius by the hull GameObject's WORLD")
+    print(f"        lossyScale (ScarabCavitationBlast.ResolveVesselColliderRadius), and that")
+    print(f"        scale lives in SparrowModel1.fbx's binary, not in the repo — so the numbers")
+    print(f"        below assume the FBX instance root is unit-scaled. The blast sizes itself")
+    print(f"        CORRECTLY either way; what an offline check cannot settle is whether 4.5 is")
+    print(f"        the intended WORLD radius. Confirm once in the editor (the checklist says how);")
+    print(f"        every assertion here is about the relationships, which hold at any scale.")
     print(f"  hull collider        r={hull_r:g} at {hull_c}")
     print(f"  radiusPerVesselRadius {ratio:g}  ->  plate radius R = {R:g}")
     print(f"  lengthPerRadius       {length_per_r:g}  ->  plate length L = {L:g}")

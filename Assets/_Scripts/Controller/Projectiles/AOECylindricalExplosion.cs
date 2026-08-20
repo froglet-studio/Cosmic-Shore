@@ -169,6 +169,15 @@ namespace CosmicShore.Gameplay
 #endif
 
             explosionCts = new CancellationTokenSource();
+
+            // MUST BE LAST, AND MUST BE HERE. OnEnable also subscribes, but it runs inside
+            // Instantiate - before the call site can inject - so gameData is null there and the
+            // subscription never happens. This is the base's post-injection retry, and an override
+            // that replaces Initialize wholesale (this one, and AOEConicExplosion) has to make the
+            // call itself or the blast ships with no turn-end kill switch: it keeps sweeping and
+            // destroying mass after the turn ends, and survives a replay reset. Injecting at the
+            // spawn site is only half the fix; this is the other half.
+            SubscribeToGameEvents();
         }
 
         /// <summary>

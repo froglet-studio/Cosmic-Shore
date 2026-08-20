@@ -418,6 +418,35 @@ NetworkTransform). The juke's *hits* are outcome-affecting, so `ScarabJukeContro
 → `BroadcastJukeRoll_ClientRpc` → non-owner peers play the visual (sender-filtered). The ball
 strike and the vessel shove resolve **server-side**, where the ball already lives.
 
+**Traps this ability sits next to, recorded so nobody re-derives them.**
+
+- **`RightStickAction` (1) and `OnlyRightStickAction` (11) are RIGHT-TRIGGER events**, not
+  thumbstick events — `GamepadInputStrategy` raises both off `rightTrigger.ReadValue() >
+  TriggerDeadzone`. The enum has NO member for "right thumbstick at the perimeter"; the juke polls
+  `RightNormalizedJoystickPosition` directly and raises nothing. `Scarab.asset` claimed `Input: 11`
+  for the Cavitation Blast, which would have taught the four-icon row that the blast is a trigger
+  ability the moment that row is authored; it is now `0`, the same "no input-event binding" value
+  the Space entry uses for the ball mint.
+- **Blast↔ball works only because the ball is on layer 0 (Default).** Explosions (10) does NOT
+  collide with Crystals (9) in `ProjectSettings/DynamicsManager.asset`. Moving the ball onto the
+  Crystals layer — a natural-looking change, since it is forged from a crystal — would silently
+  kill every blast→ball interaction with no error. Crystals themselves are reached instead by
+  `ExplosionImpactor.SweepCrystals`'s own `Physics.OverlapSphereNonAlloc`, which the matrix does
+  not gate, which is why the forge still works.
+- **`ExplosionImpactor.s_crystalHits` is a shared 16-element buffer** and `OverlapSphereNonAlloc`
+  truncates silently. This blast hands it the largest sphere in the game (radius ≈ 52.5 at full
+  extent). Fine at Scarab Scramble's crystal counts; a mode with dense crystals would drop some.
+- **The blast's debuff effect asset is SHARED with the Dolphin's cone.**
+  `ScarabCavitationExplosionImpactorDataContainer` and `AOEConicExplosionImpactorDataContainer`
+  both reference `ScarabCavitationDebuffByExplosionEffect`, so retuning the Scarab's blast debuff
+  retunes the Dolphin's cone and therefore The Bends' scoring effect.
+- **`AOEConicExplosion` still has the turn-end gap this branch fixed here.** An AOE subclass that
+  overrides `Initialize` wholesale must call `SubscribeToGameEvents` itself (now `protected`),
+  because `OnEnable` runs inside `Instantiate`, before any call site can inject, so `gameData` is
+  null there. The cylindrical blast now does; the Dolphin's cone does not, and so keeps sweeping
+  past a turn end. Left alone deliberately — it is another vessel's play-tested mode and deserves
+  its own change and its own playtest.
+
 **SHIPPED 2026-08-20 — the "owner poll" above was never actually owner-gated, and that is what
 made the dash misbehave.** `InputStatus.RightNormalizedJoystickPosition` is a `NetworkVariable`
 with read permission **Everyone** (`InputStatus.n_rNorm`), so every peer's copy of a Scarab could
