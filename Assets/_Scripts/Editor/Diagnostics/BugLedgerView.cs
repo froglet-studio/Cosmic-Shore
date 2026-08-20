@@ -21,6 +21,9 @@ namespace CosmicShore.Editor
         bool _showNewForm;
         string _newTitle = "";
         string _newNotes = "";
+        int _newSeverityIndex = 1;
+
+        static readonly string[] SeverityOptions = { BugLedgerIssueSeverity.Blocker, BugLedgerIssueSeverity.Major, BugLedgerIssueSeverity.Minor };
 
         int _lastStamp = -1;
         List<BugLedgerIssue> _sorted = new();
@@ -65,6 +68,8 @@ namespace CosmicShore.Editor
             int rankA = StateRank(a);
             int rankB = StateRank(b);
             if (rankA != rankB) return rankA.CompareTo(rankB);
+            int sev = BugLedgerIssueSeverity.Rank(a.Severity).CompareTo(BugLedgerIssueSeverity.Rank(b.Severity));
+            if (sev != 0) return sev;
             // ISO-8601 UTC strings sort lexicographically; newest activity first within a state.
             int seen = string.CompareOrdinal(b.LastSeenUtc, a.LastSeenUtc);
             return seen != 0 ? seen : string.CompareOrdinal(b.CreatedUtc, a.CreatedUtc);
@@ -149,6 +154,7 @@ namespace CosmicShore.Editor
                 using (new EditorGUILayout.VerticalScope())
                 {
                     _newTitle = EditorGUILayout.TextField("Title", _newTitle);
+                    _newSeverityIndex = EditorGUILayout.Popup("Severity", _newSeverityIndex, SeverityOptions);
                     GUILayout.Label("Notes (repro steps, scene, what 'working' looks like):", FrogletEditorPalette.Subtitle);
                     _newNotes = EditorGUILayout.TextArea(_newNotes, GUILayout.MinHeight(48f));
                     using (new EditorGUILayout.HorizontalScope())
@@ -157,7 +163,7 @@ namespace CosmicShore.Editor
                         if (FrogletEditorPalette.ColorButton("File Bug", FrogletEditorPalette.Ok, 76f, 20f,
                                 enabled: !string.IsNullOrWhiteSpace(_newTitle)))
                         {
-                            BugLedger.ReportCustom(_newTitle, _newNotes);
+                            BugLedger.ReportCustom(_newTitle, _newNotes, SeverityOptions[_newSeverityIndex]);
                             _newTitle = "";
                             _newNotes = "";
                             _showNewForm = false;
@@ -211,10 +217,16 @@ namespace CosmicShore.Editor
             FrogletEditorPalette.DrawAccentStripe(rect, accent);
 
             float buttonsWidth = ButtonsWidth(issue);
-            GUI.Label(new Rect(rect.x + 10f, rect.y + 3f, rect.width - buttonsWidth - 20f, 16f),
+            GUI.Label(new Rect(rect.x + 10f, rect.y + 3f, rect.width - buttonsWidth - 84f, 16f),
                 issue.Title, FrogletEditorPalette.CardTitle);
-            GUI.Label(new Rect(rect.x + 10f, rect.y + 19f, rect.width - buttonsWidth - 20f, 14f),
+            GUI.Label(new Rect(rect.x + 10f, rect.y + 19f, rect.width - buttonsWidth - 84f, 14f),
                 MetaLine(issue), FrogletEditorPalette.CardBody);
+
+            // Severity pill — click cycles blocker → major → minor.
+            var sevRect = new Rect(rect.xMax - buttonsWidth - 64f, rect.y + 9f, 58f, 18f);
+            FrogletEditorPalette.StatusPill(sevRect, issue.Severity.ToUpperInvariant(), SeverityColor(issue.Severity));
+            if (GUI.Button(sevRect, new GUIContent("", "Severity — click to cycle blocker → major → minor."), GUIStyle.none))
+                BugLedger.SetSeverity(issue.Id, BugLedgerIssueSeverity.Next(issue.Severity));
 
             float x = rect.xMax - buttonsWidth;
             float y = rect.y + 8f;
@@ -275,6 +287,13 @@ namespace CosmicShore.Editor
                         BugLedger.Delete(id);
                 });
         }
+
+        static Color SeverityColor(string severity) => severity switch
+        {
+            BugLedgerIssueSeverity.Blocker => FrogletEditorPalette.Error,
+            BugLedgerIssueSeverity.Minor => FrogletEditorPalette.Muted,
+            _ => FrogletEditorPalette.Warn,
+        };
 
         static float ButtonsWidth(BugLedgerIssue issue)
             => issue.IsOpen ? 30f + 48f + 56f + 30f
@@ -394,6 +413,11 @@ namespace CosmicShore.Editor
                 new GUIContent("Auto-issue cap",
                     "A runaway error generator must not mint files; past the cap new signatures are dropped with one warning."),
                 settings.MaxAutoIssues, 10, 1000);
+            bool keepArchive = EditorGUILayout.ToggleLeft(
+                new GUIContent("  Archive resolved issues",
+                    "On resolution, stamp the issue into BugLedger/resolved/ (pruned to a cap) instead of discarding it. " +
+                    "Git history keeps everything either way."),
+                settings.KeepResolvedArchive);
 
             if (EditorGUI.EndChangeCheck())
             {
@@ -401,6 +425,7 @@ namespace CosmicShore.Editor
                 settings.MinValidationPlaySeconds = minPlay;
                 settings.MinEditorSessionMinutes = minEditor;
                 settings.MaxAutoIssues = maxAuto;
+                settings.KeepResolvedArchive = keepArchive;
                 settings.SaveNow();
                 BugLedger.ApplySettings(settings);
 
@@ -414,7 +439,9 @@ namespace CosmicShore.Editor
                 GUILayout.Label(
                     "How validation works: mark an issue Fixed and it turns VALIDATING. Each qualifying session where its " +
                     "error stays silent (a play run for play-mode bugs, a full editor session for edit-mode ones) counts one " +
-                    "clean session; at its quota the issue closes and its file is deleted. If the error recurs, it reopens as a regression.",
+                    "clean session; at its quota the issue closes — archived to BugLedger/resolved/, removed from the live " +
+                    "ledger. Tool-filed findings validate differently: a full clean re-run of the tool that filed them closes " +
+                    "them. If an error recurs, its issue reopens as a regression. Full doc: Docs/DIAGNOSTICS.md.",
                     FrogletEditorPalette.Subtitle);
                 GUILayout.Space(8f);
             }

@@ -61,7 +61,9 @@ to the inferred category and importance 3.
 - One **card per tool** — title, what it does, and a five-dot importance rating in the section's
   accent colour. Click a card to launch it. Cards flow into as many columns as the window is wide
   enough for, most important first.
-- **Right-click a card** for Launch / Copy menu path / Ping script / Open script.
+- A documented tool's card carries a **DOCS chip** (bottom-right) that opens its documentation on
+  GitHub — see `DocPath` in the authoring contract below.
+- **Right-click a card** for Launch / Open documentation / Copy menu path / Ping script / Open script.
 - Search filters across name, menu path, description and category.
 
 Launching routes through `EditorApplication.ExecuteMenuItem`, so validate functions and editor
@@ -125,7 +127,8 @@ always carries it**, on the same static method as the `[MenuItem]`:
 ```csharp
 [MenuItem("FrogletTools/<Section>/<Tool Name>", false, <priority>)]
 [FrogletTool(FrogletToolCategory.<Category>, Importance = <1..5>,
-    Description = "<one honest line — what it does, not what it is called>")]
+    Description = "<one honest line — what it does, not what it is called>",
+    DocPath = "Docs/<ItsDoc>.md#<anchor>")]
 public static void Open() { ... }
 ```
 
@@ -135,6 +138,11 @@ public static void Open() { ... }
 - **Pick from the existing categories.** Extending `FrogletToolCategory` is a curation act —
   propose it, get sign-off, and update the palette map, `LabelFor`, and this doc's section table
   in the same change. Never invent a section by menu path alone.
+- **`DocPath` links the tool to its documentation** — a repo-relative path (+ optional `#anchor`),
+  never a URL. The card on the board grows a **DOCS chip** and an *Open documentation* context
+  entry that open the page on GitHub (`FrogletDocLinks` builds the link from the checkout's own
+  origin remote on the `bleeding-edge` branch, falling back to the local file). A documented tool
+  declares it; a tool with no doc yet omits it — the chip only appears when it is real.
 
 ### 3. Colour & format rules (the "one product" look)
 
@@ -198,8 +206,9 @@ Behavioural rules that go with it:
 ### 8. Ship the paperwork with the tool
 
 A new keeper tool is not done until the **Tool index** and **File index** tables in this doc carry
-its row. A one-off migration tool instead states its one-off nature in its doc comment, so its
-retirement (via the ship panel) surprises nobody.
+its row — and, when it has real documentation, until its `DocPath` points there, so the board's
+DOCS chip works. A one-off migration tool instead states its one-off nature in its doc comment, so
+its retirement (via the ship panel) surprises nobody.
 
 ---
 
@@ -343,7 +352,7 @@ their paths do not start with `FrogletTools/`.
 | Misc | Toolbox ▸ Logging | Log levels, **diagnostic channels**, and console stack-trace depth. Channels (`CSLogChannel`) carry a finished system's BRING-UP telemetry — `[FLOW-n]` spawn/session flow, `[GyroidColony]` lattice — and default to OFF, so the trace stays in the tree as knowledge without spamming the console; turn one on before investigating that system. Warnings and errors never sit on a channel. Reader only — writes `EditorPrefs`, never assets, so no ship panel. |
 | Misc | Toolbox | Scene shortcuts, runtime switches, quest/crystal/UGS debug tabs. |
 | Diagnostics | **Crash Detector** | Always-on editor crash watchdog. A background thread journals every error/exception to `Logs/CrashDetector/` and heartbeats a session sentinel; when the editor dies abnormally (Unity crash, PC fault, force-kill — even with the main thread hung), the next launch writes a `Crash-*.log` report from the stale sentinel + captured errors + the tail of Unity's own `Editor-prev.log`. Reader only — writes machine-local logs and `UserSettings/`, never assets, so no ship panel. Shares the Diagnostics window with the Bug Ledger; a crash report can be filed into the ledger with one button. |
-| Diagnostics | **Bug Ledger** | The team's live bug list, INSIDE the editor. Every distinct error/exception/assert signature auto-files one issue into `BugLedger/issues/` at the project root — one small JSON file per issue, committable, merge-friendly (same signature = same file on every machine), and reviewers only ever see the issues a branch touched. Custom bugs are filed by hand for anything auto-capture cannot see. A fix is not believed until the game proves it: *Mark Fixed* → VALIDATING, and only after the issue's clean-session quota (play runs for play-mode bugs, editor sessions for edit-mode ones) does it close and delete its file; a recurrence reopens it as a regression, loudly. Per-issue: pause validation, ignore (parks it and suppresses re-filing), resolve now, delete. Store contract: `BugLedger/README.md`. Writes no Assets/ — no ship panel; the store is ordinary committable project data. |
+| Diagnostics | **Bug Ledger** | The team's live bug list, INSIDE the editor. Every distinct error/exception/assert signature auto-files one issue into `BugLedger/issues/` at the project root — one small JSON file per issue, committable, merge-friendly (same signature = same file on every machine, via the runtime-safe `BugSignature` core), and reviewers only ever see the issues a branch touched. Custom bugs are filed by hand; editor TOOLS file findings through `BugLedger.ReportFromTool`/`ReportToolFindings` (deduped, and auto-resolved by the tool's next full clean run — `VesselSkimmerAudit` is the reference integration). A fix is not believed until the game proves it: *Mark Fixed* → VALIDATING, and only after the issue's clean-session quota (play runs for play-mode bugs, editor sessions for edit-mode ones) does it close — archived to `BugLedger/resolved/`, removed from the live ledger; a recurrence reopens it as a regression, loudly. Per-issue: severity (blocker/major/minor), pause validation, ignore (parks it and suppresses re-filing), resolve now, delete. Full doc: `Docs/DIAGNOSTICS.md`; store contract: `BugLedger/README.md`. Writes no Assets/ — no ship panel; the store is ordinary committable project data. |
 
 ---
 
@@ -372,3 +381,7 @@ their paths do not start with `FrogletTools/`.
 | Bug ledger settings (`ScriptableSingleton`, `UserSettings/`) | `Assets/_Scripts/Editor/Diagnostics/BugLedgerSettings.cs` |
 | Bug ledger tab view | `Assets/_Scripts/Editor/Diagnostics/BugLedgerView.cs` |
 | Bug ledger store contract (committed data) | `BugLedger/README.md` (project root) |
+| Shared signature core (runtime-safe, for the future in-game reporter) | `Assets/_Scripts/Utility/BugSignature.cs` |
+| Signature determinism tests | `Assets/_Scripts/Tests/Editor/BugSignatureTests.cs` |
+| Doc-link resolver (DOCS chips → GitHub) | `Assets/_Scripts/Editor/FrogletTools/FrogletDocLinks.cs` |
+| Diagnostics documentation | `Docs/DIAGNOSTICS.md` |

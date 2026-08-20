@@ -17,6 +17,31 @@ namespace CosmicShore.Editor
     {
         public const string Auto = "auto";               // filed from a captured error signature
         public const string Custom = "custom";           // filed by a human (no signature unless added)
+        public const string Tool = "tool";               // filed by an editor tool (auditor/validator finding)
+    }
+
+    /// <summary>How much a bug hurts. Strings for the same reason as the states; unknown values
+    /// read as <see cref="Major"/> via <see cref="Rank"/> so a hand-typed severity can't break sorting.</summary>
+    public static class BugLedgerIssueSeverity
+    {
+        public const string Blocker = "blocker";
+        public const string Major = "major";
+        public const string Minor = "minor";
+
+        /// <summary>0 = worst. Unknown strings rank as Major.</summary>
+        public static int Rank(string severity) => severity switch
+        {
+            Blocker => 0,
+            Minor => 2,
+            _ => 1,
+        };
+
+        public static string Next(string severity) => severity switch
+        {
+            Blocker => Major,
+            Major => Minor,
+            _ => Blocker,
+        };
     }
 
     /// <summary>
@@ -36,6 +61,7 @@ namespace CosmicShore.Editor
         public string Id = "";
         public string Kind = BugLedgerIssueKind.Auto;
         public string State = BugLedgerIssueState.Open;
+        public string Severity = BugLedgerIssueSeverity.Major;
         public string Title = "";
         public string Notes = "";
         /// <summary>Normalized error fingerprint (empty = manual-only validation).</summary>
@@ -53,6 +79,10 @@ namespace CosmicShore.Editor
         public string LastSeenUtc = "";
         public string FixedBy = "";
         public string FixedUtc = "";
+        /// <summary>Stamped only on the archived copy under <c>BugLedger/resolved/</c>.</summary>
+        public string ResolvedUtc = "";
+        /// <summary>Why the issue closed ("validated", "resolved by hand", …) — archive copy only.</summary>
+        public string Resolution = "";
         public int TimesSeen;
         public int Regressions;
         public int CleanSessions;
@@ -74,6 +104,7 @@ namespace CosmicShore.Editor
             AppendString(sb, "id", Id);
             AppendString(sb, "kind", Kind);
             AppendString(sb, "state", State);
+            AppendString(sb, "severity", Severity);
             AppendString(sb, "title", Title);
             AppendString(sb, "notes", Notes);
             AppendString(sb, "signature", Signature);
@@ -87,6 +118,8 @@ namespace CosmicShore.Editor
             AppendString(sb, "lastSeenUtc", LastSeenUtc);
             AppendString(sb, "fixedBy", FixedBy);
             AppendString(sb, "fixedUtc", FixedUtc);
+            AppendString(sb, "resolvedUtc", ResolvedUtc);
+            AppendString(sb, "resolution", Resolution);
             AppendInt(sb, "timesSeen", TimesSeen);
             AppendInt(sb, "regressions", Regressions);
             AppendInt(sb, "cleanSessions", CleanSessions);
@@ -179,6 +212,7 @@ namespace CosmicShore.Editor
                 case "id": issue.Id = value; break;
                 case "kind": issue.Kind = value; break;
                 case "state": issue.State = value; break;
+                case "severity": issue.Severity = value; break;
                 case "title": issue.Title = value; break;
                 case "notes": issue.Notes = value; break;
                 case "signature": issue.Signature = value; break;
@@ -192,6 +226,8 @@ namespace CosmicShore.Editor
                 case "lastSeenUtc": issue.LastSeenUtc = value; break;
                 case "fixedBy": issue.FixedBy = value; break;
                 case "fixedUtc": issue.FixedUtc = value; break;
+                case "resolvedUtc": issue.ResolvedUtc = value; break;
+                case "resolution": issue.Resolution = value; break;
                 case "timesSeen": TryInt(value, ref issue.TimesSeen); break;
                 case "regressions": TryInt(value, ref issue.Regressions); break;
                 case "cleanSessions": TryInt(value, ref issue.CleanSessions); break;

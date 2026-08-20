@@ -14,6 +14,7 @@ namespace CosmicShore.Editor.Froglet
         public string DisplayName;       // last path segment, or the attribute override
         public string Group;             // middle path segment, e.g. "Game Modes"
         public string Description;
+        public string DocPath;           // repo-relative doc (+ optional #anchor); null = undocumented
         public FrogletToolCategory Category;
         public int Importance;           // 1..5
         public MethodInfo Method;
@@ -126,6 +127,7 @@ namespace CosmicShore.Editor.Froglet
                 DisplayName = attr?.DisplayName ?? leaf,
                 Group = group,
                 Description = attr?.Description,
+                DocPath = attr?.DocPath,
                 Category = attr?.Category ?? InferCategory(path, m.DeclaringType),
                 Importance = Mathf.Clamp(attr?.Importance ?? InferImportance(mi), 1, 5),
                 Method = m,

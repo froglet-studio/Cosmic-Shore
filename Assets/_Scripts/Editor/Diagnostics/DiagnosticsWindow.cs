@@ -39,12 +39,14 @@ namespace CosmicShore.Editor
 
         [MenuItem("FrogletTools/Diagnostics/Crash Detector", false, 10)]
         [FrogletTool(FrogletToolCategory.Diagnostics, Importance = 4,
-            Description = "Editor crash watchdog — journals errors off-thread, reports abnormal exits on the next launch.")]
+            Description = "Editor crash watchdog — journals errors off-thread, reports abnormal exits on the next launch.",
+            DocPath = "Docs/DIAGNOSTICS.md#the-crash-detector")]
         public static void OpenCrashDetector() => Open(CrashTab);
 
         [MenuItem("FrogletTools/Diagnostics/Bug Ledger", false, 11)]
         [FrogletTool(FrogletToolCategory.Diagnostics, Importance = 4,
-            Description = "Shared committable bug list — red errors file themselves, and a fix only closes once the game validates it.")]
+            Description = "Shared committable bug list — red errors file themselves, and a fix only closes once the game validates it.",
+            DocPath = "Docs/DIAGNOSTICS.md#the-bug-ledger")]
         public static void OpenBugLedger() => Open(BugsTab);
 
         static void Open(int tab)
@@ -135,6 +137,12 @@ namespace CosmicShore.Editor
                     GUI.FocusControl(null);
                 }
                 GUILayout.FlexibleSpace();
+                if (FrogletEditorPalette.ColorButton("Docs", FrogletEditorPalette.Info, 48f, 22f,
+                        "Open Docs/DIAGNOSTICS.md on GitHub — what these tools do and how validation works.",
+                        outline: true))
+                    _deferred = () => FrogletDocLinks.Open(
+                        _tab == BugsTab ? "Docs/DIAGNOSTICS.md#the-bug-ledger" : "Docs/DIAGNOSTICS.md#the-crash-detector");
+                GUILayout.Space(6f);
             }
             GUILayout.Space(2f);
         }
@@ -313,13 +321,19 @@ namespace CosmicShore.Editor
                         "Reveal in the file browser.", outline: true))
                     _deferred = () => EditorUtility.RevealInFinder(reportPath);
                 if (FrogletEditorPalette.ColorButton(file, "File Bug", FrogletEditorPalette.Warn,
-                        "Track this crash as a Bug Ledger issue (committable, so the team sees it).", outline: true))
+                        "Track this crash as a Bug Ledger issue (committable, so the team sees it). " +
+                        "Filing the same report twice updates one issue.", outline: true))
                     _deferred = () =>
                     {
-                        BugLedger.ReportCustom(
+                        // Tool-id dedupe: the report filename is the stable key, so a second click
+                        // (or a re-open of this window) refreshes the one issue instead of minting
+                        // another. A crash is a blocker by definition.
+                        BugLedger.ReportFromTool(
+                            "Crash Detector",
                             $"Editor crash — {Path.GetFileName(reportPath)}",
                             $"Filed from the crash detector. Local report: {reportPath}\n" +
-                            "Paste the relevant journal/log tail here so the issue travels with the evidence.");
+                            "Paste the relevant journal/log tail here so the issue travels with the evidence.",
+                            BugLedgerIssueSeverity.Blocker);
                         _tab = BugsTab;
                         Repaint();
                     };

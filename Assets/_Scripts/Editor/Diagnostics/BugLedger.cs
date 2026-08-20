@@ -6,6 +6,7 @@ using System.IO;
 using System.Security.Cryptography;
 using System.Text;
 using System.Threading;
+using CosmicShore.Utility;
 using UnityEditor;
 using UnityEngine;
 using Debug = UnityEngine.Debug;
@@ -61,8 +62,11 @@ namespace CosmicShore.Editor
         const int MaxQueuedEntries = 512;      // storm guard — dedupe makes drops harmless
         const int MaxPersistedSetEntries = 800;
 
+        const int MaxArchivedIssues = 300;
+
         public static string RootDir { get; private set; }
         public static string IssuesDir { get; private set; }
+        public static string ResolvedDir { get; private set; }
 
         // ── Store (issues by id). Every reader/writer takes StoreLock. ──────────────────────────
         static readonly object StoreLock = new();
@@ -103,6 +107,7 @@ namespace CosmicShore.Editor
 
         // Settings snapshot — plain fields any thread may read; the SO itself is main-thread-only.
         static volatile bool _autoCapture = true;
+        static volatile bool _keepArchive = true;
         static volatile int _defaultCleanRequired = 2;
         static volatile int _minPlaySeconds = 15;
         static volatile int _minEditorMinutes = 10;
@@ -130,6 +135,7 @@ namespace CosmicShore.Editor
             var projectRoot = Directory.GetParent(Application.dataPath)!.FullName;
             RootDir = Path.Combine(projectRoot, "BugLedger");
             IssuesDir = Path.Combine(RootDir, "issues");
+            ResolvedDir = Path.Combine(RootDir, "resolved");
 
             ApplySettings(BugLedgerSettings.instance);
             LoadAllLocked();
@@ -155,6 +161,7 @@ namespace CosmicShore.Editor
         public static void ApplySettings(BugLedgerSettings s)
         {
             _autoCapture = s.AutoCaptureEnabled;
+            _keepArchive = s.KeepResolvedArchive;
             _defaultCleanRequired = s.DefaultCleanSessionsRequired;
             _minPlaySeconds = s.MinValidationPlaySeconds;
             _minEditorMinutes = s.MinEditorSessionMinutes;
@@ -268,7 +275,7 @@ namespace CosmicShore.Editor
         {
             try
             {
-                string id = SignatureId(entry.Condition, entry.Stack, entry.Type, out string signature);
+                string id = BugSignature.ErrorId(entry.Condition, entry.Stack, entry.Type, out string signature);
 
                 bool firstThisSession;
                 lock (SeenLock)
@@ -412,7 +419,6 @@ namespace CosmicShore.Editor
             List<BugLedgerIssue> resolved = null;
             lock (StoreLock)
             {
-                List<string> toRemove = null;
                 foreach (var issue in Issues.Values)
                 {
                     if (!issue.IsValidating || issue.ValidationPaused || !issue.HasSignature) continue;
@@ -421,24 +427,19 @@ namespace CosmicShore.Editor
 
                     issue.CleanSessions++;
                     if (issue.CleanSessions >= issue.CleanSessionsRequired)
-                    {
-                        (toRemove ??= new List<string>()).Add(issue.Id);
                         (resolved ??= new List<BugLedgerIssue>()).Add(issue);
-                    }
                     else
-                    {
                         WriteLocked(issue);
-                    }
                 }
 
-                if (toRemove != null)
-                    foreach (var id in toRemove)
-                        DeleteLocked(id);
+                if (resolved != null)
+                    foreach (var issue in resolved)
+                        ResolveLocked(issue, $"validated — silent across {issue.CleanSessionsRequired} clean {scope} sessions");
             }
 
             if (resolved == null) return;
             foreach (var issue in resolved)
-                Debug.Log($"[BugLedger] Validated & closed: \"{issue.Title}\" — silent across {issue.CleanSessionsRequired} clean {scope} sessions (last: {why}). Ledger entry deleted.");
+                Debug.Log($"[BugLedger] Validated & closed: \"{issue.Title}\" — silent across {issue.CleanSessionsRequired} clean {scope} sessions (last: {why}). Archived to BugLedger/resolved/.");
         }
 
         // ── Public API (main thread; the window and other tools) ─────────────────────────────────
@@ -475,7 +476,8 @@ namespace CosmicShore.Editor
             => IssuesDir == null || string.IsNullOrEmpty(id) ? null : Path.Combine(IssuesDir, id + ".bug.json");
 
         /// <summary>Files a custom (human-authored) bug. Returns its id.</summary>
-        public static string ReportCustom(string title, string notes)
+        public static string ReportCustom(string title, string notes,
+                                          string severity = BugLedgerIssueSeverity.Major)
         {
             var nowIso = Iso(DateTime.UtcNow);
             var id = "C-" + DateTime.UtcNow.ToString("yyyyMMdd-HHmmss", CultureInfo.InvariantCulture)
@@ -485,6 +487,7 @@ namespace CosmicShore.Editor
                 Id = id,
                 Kind = BugLedgerIssueKind.Custom,
                 State = BugLedgerIssueState.Open,
+                Severity = severity,
                 Title = FirstLine(title, MaxTitleChars),
                 Notes = notes ?? "",
                 Reporter = Environment.UserName,
@@ -502,6 +505,100 @@ namespace CosmicShore.Editor
             return id;
         }
 
+        /// <summary>
+        /// Files (or refreshes) ONE finding from an editor tool — an auditor failure, a validator
+        /// hit, the crash detector's File Bug. The id derives from (tool, normalized title) via
+        /// <see cref="BugSignature.ToolId"/>, so reporting the same finding twice updates one
+        /// issue instead of minting a duplicate. Tool issues carry scope "Tool" and take part in
+        /// NO session-based validation — their validator is the tool itself, via
+        /// <see cref="ReportToolFindings"/>. Returns the issue id.
+        /// </summary>
+        public static string ReportFromTool(string toolName, string title, string notes,
+                                            string severity = BugLedgerIssueSeverity.Major)
+        {
+            string id = BugSignature.ToolId(toolName, title, out var signature);
+            var nowIso = Iso(DateTime.UtcNow);
+            lock (StoreLock)
+            {
+                if (Issues.TryGetValue(id, out var existing))
+                {
+                    existing.TimesSeen++;
+                    existing.LastSeenUtc = nowIso;
+                    if (existing.IsValidating && !existing.ValidationPaused)
+                    {
+                        existing.State = BugLedgerIssueState.Open;
+                        existing.Regressions++;
+                        existing.CleanSessions = 0;
+                        Debug.LogWarning($"[BugLedger] Regression: \"{existing.Title}\" reported again by {toolName} while validating — reopened (regression #{existing.Regressions}).");
+                    }
+                    WriteLocked(existing);
+                    return id;
+                }
+
+                var issue = new BugLedgerIssue
+                {
+                    Id = id,
+                    Kind = BugLedgerIssueKind.Tool,
+                    State = BugLedgerIssueState.Open,
+                    Severity = severity,
+                    Title = FirstLine(title, MaxTitleChars),
+                    Notes = notes ?? "",
+                    Signature = signature,
+                    Scope = "Tool",
+                    LogType = toolName,
+                    Reporter = Environment.UserName,
+                    Machine = Environment.MachineName,
+                    CreatedUtc = nowIso,
+                    LastSeenUtc = nowIso,
+                    TimesSeen = 1,
+                    // A deterministic tool re-run that stops reporting a finding IS the proof —
+                    // one clean run closes it (see ReportToolFindings).
+                    CleanSessionsRequired = 1,
+                };
+                Issues[id] = issue;
+                WriteLocked(issue);
+                return id;
+            }
+        }
+
+        /// <summary>
+        /// A tool ran to completion and THESE are all the findings it has (possibly none). Each is
+        /// filed/refreshed via <see cref="ReportFromTool"/>; then every VALIDATING issue this tool
+        /// owns that the run did NOT re-report is resolved — the tool that filed a finding is the
+        /// one authority on whether it is gone, and a full clean re-run is stronger evidence than
+        /// any number of play sessions. Only call this after a FULL run (a partial sweep would
+        /// resolve findings it simply never looked at).
+        /// </summary>
+        public static void ReportToolFindings(string toolName,
+                                              IReadOnlyList<(string title, string notes)> findings,
+                                              string severity = BugLedgerIssueSeverity.Major)
+        {
+            var reported = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            if (findings != null)
+                foreach (var (title, notes) in findings)
+                    reported.Add(ReportFromTool(toolName, title, notes, severity));
+
+            var prefix = $"Tool|{toolName}|";
+            List<BugLedgerIssue> resolved = null;
+            lock (StoreLock)
+            {
+                foreach (var issue in Issues.Values)
+                {
+                    if (!issue.IsValidating || issue.ValidationPaused) continue;
+                    if (!issue.Signature.StartsWith(prefix, StringComparison.Ordinal)) continue;
+                    if (reported.Contains(issue.Id)) continue;
+                    (resolved ??= new List<BugLedgerIssue>()).Add(issue);
+                }
+                if (resolved != null)
+                    foreach (var issue in resolved)
+                        ResolveLocked(issue, $"validated — a full {toolName} run no longer reports it");
+            }
+
+            if (resolved == null) return;
+            foreach (var issue in resolved)
+                Debug.Log($"[BugLedger] Validated & closed: \"{issue.Title}\" — a full {toolName} run no longer reports it. Archived to BugLedger/resolved/.");
+        }
+
         /// <summary>Open → Validating. Only meaningful for issues with a signature; the window
         /// routes signatureless issues to <see cref="ResolveNow"/> after a confirm.</summary>
         public static void MarkFixed(string id)
@@ -514,11 +611,19 @@ namespace CosmicShore.Editor
                 issue.FixedUtc = Iso(DateTime.UtcNow);
             });
 
-        /// <summary>Closes the issue and deletes its file, bypassing validation.</summary>
+        /// <summary>Closes the issue, bypassing validation. The live file is removed (archived
+        /// under <c>BugLedger/resolved/</c> unless the archive is off).</summary>
         public static void ResolveNow(string id)
         {
-            lock (StoreLock) DeleteLocked(id);
+            lock (StoreLock)
+            {
+                if (Issues.TryGetValue(id, out var issue))
+                    ResolveLocked(issue, "resolved by hand");
+            }
         }
+
+        public static void SetSeverity(string id, string severity)
+            => Mutate(id, issue => issue.Severity = severity);
 
         public static void Ignore(string id)
             => Mutate(id, issue => issue.State = BugLedgerIssueState.Ignored);
@@ -580,6 +685,41 @@ namespace CosmicShore.Editor
             Bump();
         }
 
+        /// <summary>Closes an issue: stamps a resolved copy into <c>BugLedger/resolved/</c> (unless
+        /// the archive is off), prunes the archive, and removes the live file. Git history keeps
+        /// everything regardless — the archive just makes "what got fixed lately" browsable.</summary>
+        static void ResolveLocked(BugLedgerIssue issue, string reason)
+        {
+            if (_keepArchive)
+            {
+                try
+                {
+                    issue.State = "resolved";
+                    issue.ResolvedUtc = Iso(DateTime.UtcNow);
+                    issue.Resolution = reason;
+                    Directory.CreateDirectory(ResolvedDir);
+                    File.WriteAllText(Path.Combine(ResolvedDir, issue.Id + ".bug.json"), issue.ToJson());
+                    PruneArchive();
+                }
+                catch { }
+            }
+            DeleteLocked(issue.Id);
+        }
+
+        static void PruneArchive()
+        {
+            try
+            {
+                var files = Directory.GetFiles(ResolvedDir, "*.bug.json");
+                if (files.Length <= MaxArchivedIssues) return;
+                Array.Sort(files, (a, b) =>
+                    File.GetLastWriteTimeUtc(a).CompareTo(File.GetLastWriteTimeUtc(b)));
+                for (int i = 0; i < files.Length - MaxArchivedIssues; i++)
+                    File.Delete(files[i]);
+            }
+            catch { }
+        }
+
         static void DeleteLocked(string id)
         {
             Issues.Remove(id);
@@ -594,110 +734,9 @@ namespace CosmicShore.Editor
 
         static void Bump() => Interlocked.Increment(ref _changeStamp);
 
-        // ── Signatures ───────────────────────────────────────────────────────────────────────────
-
-        /// <summary>
-        /// Deterministic id for an error: hash of (log type | normalized message | normalized top
-        /// user frame). Digits, hex runs and machine-local path prefixes are collapsed so counts,
-        /// instance ids, positions and checkout locations don't split one bug into many — and so
-        /// the same bug hashes identically on every machine.
-        /// </summary>
-        internal static string SignatureId(string condition, string stack, LogType type, out string signature)
-        {
-            var message = NormalizeText(condition, 300);
-            var frame = TopUserFrame(stack);
-            signature = $"{type}|{message}|{frame}";
-
-            using var md5 = MD5.Create();
-            var hash = md5.ComputeHash(Encoding.UTF8.GetBytes(signature));
-            var sb = new StringBuilder(12);
-            for (int i = 0; i < 5; i++) sb.Append(hash[i].ToString("x2", CultureInfo.InvariantCulture));
-            return "E-" + sb;
-        }
-
-        /// <summary>First line, trimmed, hex runs → <c>0x#</c>, digit runs → <c>#</c>.</summary>
-        internal static string NormalizeText(string s, int max)
-        {
-            if (string.IsNullOrEmpty(s)) return "";
-            int newline = s.IndexOf('\n');
-            if (newline >= 0) s = s[..newline];
-            s = s.Trim();
-            if (s.Length > max) s = s[..max];
-
-            var sb = new StringBuilder(s.Length);
-            for (int i = 0; i < s.Length; i++)
-            {
-                char c = s[i];
-                if (c == '0' && i + 1 < s.Length && (s[i + 1] == 'x' || s[i + 1] == 'X'))
-                {
-                    int j = i + 2;
-                    while (j < s.Length && Uri.IsHexDigit(s[j])) j++;
-                    if (j > i + 2)
-                    {
-                        sb.Append("0x#");
-                        i = j - 1;
-                        continue;
-                    }
-                }
-                if (char.IsDigit(c))
-                {
-                    while (i + 1 < s.Length && char.IsDigit(s[i + 1])) i++;
-                    sb.Append('#');
-                    continue;
-                }
-                sb.Append(c);
-            }
-            return sb.ToString();
-        }
-
-        /// <summary>
-        /// The first CosmicShore frame of a stack (else the first frame at all), with any
-        /// machine-local absolute path stripped back to <c>Assets/…</c> — a signature must hash the
-        /// same on every checkout.
-        /// </summary>
-        internal static string TopUserFrame(string stack)
-        {
-            if (string.IsNullOrEmpty(stack)) return "";
-            string firstNonEmpty = null;
-            string pick = null;
-            foreach (var raw in stack.Split('\n'))
-            {
-                var line = raw.Trim();
-                if (line.Length == 0) continue;
-                firstNonEmpty ??= line;
-                if (line.Contains("CosmicShore", StringComparison.Ordinal) &&
-                    !line.Contains("BugLedger", StringComparison.Ordinal) &&
-                    !line.Contains("CrashDetector", StringComparison.Ordinal))
-                {
-                    pick = line;
-                    break;
-                }
-            }
-            pick ??= firstNonEmpty;
-            if (pick == null) return "";
-
-            pick = pick.Replace('\\', '/');
-            // Both frame formats carry a source location: mono-style "… in <path>:line" and
-            // unity-style "… (at <path>:line)". Either may be absolute on one machine and
-            // repo-relative on another, so both are cut back to "Assets/…".
-            pick = StripPathAfterMarker(pick, " in ");
-            pick = StripPathAfterMarker(pick, "(at ");
-            return NormalizeText(pick, 240);
-        }
-
-        static string StripPathAfterMarker(string line, string marker)
-        {
-            int idx = line.LastIndexOf(marker, StringComparison.Ordinal);
-            if (idx < 0) return line;
-            int pathStart = idx + marker.Length;
-            var tail = line[pathStart..];
-            int assetsIdx = tail.IndexOf("Assets/", StringComparison.OrdinalIgnoreCase);
-            if (assetsIdx == 0) return line;                              // already repo-relative
-            if (assetsIdx > 0) return line[..pathStart] + tail[assetsIdx..];
-            return line[..idx];   // no Assets/ segment (packages, il2cpp) — drop the alien path
-        }
-
         // ── Helpers ──────────────────────────────────────────────────────────────────────────────
+        // (Signature normalization/hashing lives in CosmicShore.Utility.BugSignature — the
+        // runtime-safe shared core the future in-game reporter will use too.)
 
         static string FirstLine(string s, int max)
         {

@@ -1,8 +1,9 @@
 # Bug Ledger — the team's live bug list
 
-This folder is the data store of **FrogletTools ▸ Diagnostics ▸ Bug Ledger** (see
-`Docs/TOOLING.md`). It lives at the project root — outside `Assets/` — so Unity never imports it:
-no `.meta` files, no reimport churn, invisible to the asset pipeline.
+This folder is the data store of **FrogletTools ▸ Diagnostics ▸ Bug Ledger** (full documentation:
+`Docs/DIAGNOSTICS.md`; tooling conventions: `Docs/TOOLING.md`). It lives at the project root —
+outside `Assets/` — so Unity never imports it: no `.meta` files, no reimport churn, invisible to
+the asset pipeline.
 
 ## How it works
 
@@ -13,13 +14,19 @@ no `.meta` files, no reimport churn, invisible to the asset pipeline.
   *same* file on every machine, however many times it fires.
 - **Custom bugs** (`C-…`): filed by hand from the window, for anything auto-capture cannot see
   ("the quest screen is empty", "the toy ring never re-arms").
+- **Tool findings** (`T-…`): filed by editor tools (auditors, validators, the crash detector's
+  File Bug). Deduped by (tool, title), and validated by the tool itself — a full clean re-run of
+  the tool that filed a finding closes it.
+- Every issue carries a **severity** (`blocker` / `major` / `minor`) — click the pill in the
+  window to cycle it.
 - **The lifecycle**: `open` → *Mark Fixed* → `validating` → auto-closed. A fix is only believed
   once the game proves it: the error must stay silent across the issue's `cleanSessionsRequired`
   qualifying sessions (play runs for play-mode bugs, full editor sessions for edit-mode ones).
-  Then the issue is closed and **its file is deleted**. If the error recurs while validating, the
-  issue reopens with a regression count. Issues can also be `ignored` (parked — matching errors
-  never reopen it and the signature is never re-filed), paused (no validation either way), or
-  deleted outright.
+  Then the issue is **resolved: removed from `issues/` and stamped into `resolved/`** (a browsable
+  archive, pruned to a cap; git history keeps everything regardless). If the error recurs while
+  validating, the issue reopens with a regression count. Issues can also be `ignored` (parked —
+  matching errors never reopen it and the signature is never re-filed), paused (no validation
+  either way), or deleted outright.
 
 ## Committing
 
@@ -29,7 +36,8 @@ each issue is its own small file, different bugs can never conflict in a merge; 
 auto-filing the *same* signature before either pushes is the one add/add conflict possible, and
 either side can be kept (the durable fields agree; counters are advisory).
 
-Resolution deletes the file, so a merged branch that fixed a bug removes its entry in the same PR.
+Resolution moves an issue from `issues/` to `resolved/`, so a merged branch that fixed a bug
+removes its live entry in the same PR (and may add the archived copy, if it was committed).
 
 ## Editing by hand
 
