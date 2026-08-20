@@ -33,8 +33,9 @@ namespace CosmicShore.Editor
     ///
     /// <para><b>READER tool</b> per Docs/TOOLING.md: writes only machine-local files under
     /// <c>Logs/CrashDetector/</c> and <c>UserSettings/</c> (both gitignored), never assets — no
-    /// ledger, no ship panel. UI: FrogletTools ▸ Misc ▸ Crash Detector
-    /// (<see cref="CrashDetectorWindow"/>).</para>
+    /// ledger, no ship panel. UI: FrogletTools ▸ Diagnostics ▸ Crash Detector
+    /// (<see cref="DiagnosticsWindow"/>). Its sibling, <see cref="BugLedger"/>, files ISSUES from
+    /// the same error stream — this class stays purely about the editor process dying.</para>
     /// </summary>
     [InitializeOnLoad]
     public static class CrashDetectorMonitor

@@ -143,6 +143,8 @@ namespace CosmicShore.Editor.Froglet
 
             if (Has(hay, "build", "release", "player")) return FrogletToolCategory.Build;
             if (Has(hay, "benchmark", "performance", "memory", "profil", "texture")) return FrogletToolCategory.Performance;
+            // Deliberately not bare "bug" (matches "debug") or "log" (the Logging toolbox is Misc).
+            if (Has(hay, "crash", "diagnos", "watchdog", "bug ledger", "bugledger")) return FrogletToolCategory.Diagnostics;
             if (Has(hay, "audit", "validate", "validator", "verify", "integrity")) return FrogletToolCategory.Validation;
             if (Has(hay, "prism", "cell", "lifeform", "crystal", "ecolog", "flora", "fauna", "toybox")) return FrogletToolCategory.Ecology;
             if (Has(hay, "vessel", "ship", "hud", "elemental", "petal", "rig", "ability")) return FrogletToolCategory.Vessels;

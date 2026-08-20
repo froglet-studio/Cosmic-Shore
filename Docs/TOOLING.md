@@ -84,6 +84,7 @@ FMOD, Soap, Quick Scene Pro, …) are never picked up — the board shows only t
 | `Interface` | Interface | cyan |
 | `Services` | Services & Data | magenta |
 | `Misc` | Misc | slate |
+| `Diagnostics` | Diagnostics & Health | indigo |
 
 ---
 
@@ -108,7 +109,7 @@ no excuse for missing any line of it, because the whole list is mechanical.
 
 - **File location**: `Assets/_Scripts/Editor/` for standalone tools, or a subfolder per tool
   family (`Editor/FrogletTools/` is the board's own infrastructure, `Editor/Build/` the build
-  pipeline, `Editor/CrashDetector/` the crash detector). Never a runtime folder + `#if UNITY_EDITOR`
+  pipeline, `Editor/Diagnostics/` the diagnostics family — crash detector + bug ledger). Never a runtime folder + `#if UNITY_EDITOR`
   unless the tool must share a predicate with runtime code — and then read
   `Docs/CONDITIONAL_COMPILATION.md` first and run `python3 Tools/Build/check_conditional_compilation.py`.
 - **Namespace**: `CosmicShore.Editor` (the board's own infrastructure uses
@@ -341,7 +342,8 @@ their paths do not start with `FrogletTools/`.
 | Interface | Canvas Upgrader, Raycast Target Audit, Toast Notification setup | UI authoring. |
 | Misc | Toolbox ▸ Logging | Log levels, **diagnostic channels**, and console stack-trace depth. Channels (`CSLogChannel`) carry a finished system's BRING-UP telemetry — `[FLOW-n]` spawn/session flow, `[GyroidColony]` lattice — and default to OFF, so the trace stays in the tree as knowledge without spamming the console; turn one on before investigating that system. Warnings and errors never sit on a channel. Reader only — writes `EditorPrefs`, never assets, so no ship panel. |
 | Misc | Toolbox | Scene shortcuts, runtime switches, quest/crystal/UGS debug tabs. |
-| Misc | **Crash Detector** | Always-on editor crash watchdog. A background thread journals every error/exception to `Logs/CrashDetector/` and heartbeats a session sentinel; when the editor dies abnormally (Unity crash, PC fault, force-kill — even with the main thread hung), the next launch writes a `Crash-*.log` report from the stale sentinel + captured errors + the tail of Unity's own `Editor-prev.log`. Reader only — writes machine-local logs and `UserSettings/`, never assets, so no ship panel. |
+| Diagnostics | **Crash Detector** | Always-on editor crash watchdog. A background thread journals every error/exception to `Logs/CrashDetector/` and heartbeats a session sentinel; when the editor dies abnormally (Unity crash, PC fault, force-kill — even with the main thread hung), the next launch writes a `Crash-*.log` report from the stale sentinel + captured errors + the tail of Unity's own `Editor-prev.log`. Reader only — writes machine-local logs and `UserSettings/`, never assets, so no ship panel. Shares the Diagnostics window with the Bug Ledger; a crash report can be filed into the ledger with one button. |
+| Diagnostics | **Bug Ledger** | The team's live bug list, INSIDE the editor. Every distinct error/exception/assert signature auto-files one issue into `BugLedger/issues/` at the project root — one small JSON file per issue, committable, merge-friendly (same signature = same file on every machine), and reviewers only ever see the issues a branch touched. Custom bugs are filed by hand for anything auto-capture cannot see. A fix is not believed until the game proves it: *Mark Fixed* → VALIDATING, and only after the issue's clean-session quota (play runs for play-mode bugs, editor sessions for edit-mode ones) does it close and delete its file; a recurrence reopens it as a regression, loudly. Per-issue: pause validation, ignore (parks it and suppresses re-filing), resolve now, delete. Store contract: `BugLedger/README.md`. Writes no Assets/ — no ship panel; the store is ordinary committable project data. |
 
 ---
 
@@ -362,6 +364,11 @@ their paths do not start with `FrogletTools/`.
 | Scene drift scanner (read-only) | `Assets/_Scripts/Editor/FrogletTools/PrefabInstanceSceneScanner.cs` |
 | Drift fixer (writes via PrefabUtility) | `Assets/_Scripts/Editor/FrogletTools/PrefabDriftFixer.cs` |
 | Kit config SO | `Assets/_Scripts/ScriptableObjects/GameModePrefabKitSO.cs` |
-| Crash detector monitor (always-on watchdog) | `Assets/_Scripts/Editor/CrashDetector/CrashDetectorMonitor.cs` |
-| Crash detector settings (`ScriptableSingleton`, `UserSettings/`) | `Assets/_Scripts/Editor/CrashDetector/CrashDetectorSettings.cs` |
-| Crash detector window | `Assets/_Scripts/Editor/CrashDetector/CrashDetectorWindow.cs` |
+| Crash detector monitor (always-on watchdog) | `Assets/_Scripts/Editor/Diagnostics/CrashDetectorMonitor.cs` |
+| Crash detector settings (`ScriptableSingleton`, `UserSettings/`) | `Assets/_Scripts/Editor/Diagnostics/CrashDetectorSettings.cs` |
+| Diagnostics window (Crash Detector + Bug Ledger tabs) | `Assets/_Scripts/Editor/Diagnostics/DiagnosticsWindow.cs` |
+| Bug ledger core (capture, store, validation) | `Assets/_Scripts/Editor/Diagnostics/BugLedger.cs` |
+| Bug ledger issue model (hand-rolled JSON) | `Assets/_Scripts/Editor/Diagnostics/BugLedgerIssue.cs` |
+| Bug ledger settings (`ScriptableSingleton`, `UserSettings/`) | `Assets/_Scripts/Editor/Diagnostics/BugLedgerSettings.cs` |
+| Bug ledger tab view | `Assets/_Scripts/Editor/Diagnostics/BugLedgerView.cs` |
+| Bug ledger store contract (committed data) | `BugLedger/README.md` (project root) |

@@ -29,6 +29,8 @@ namespace CosmicShore.Editor.Froglet
         Services = 8,
         /// <summary>Everything else / uncategorised.</summary>
         Misc = 9,
+        /// <summary>Editor health: crash watchdog, bug ledger, triage.</summary>
+        Diagnostics = 10,
     }
 
     /// <summary>

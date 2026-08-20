@@ -7,33 +7,70 @@ using UnityEngine;
 namespace CosmicShore.Editor
 {
     /// <summary>
-    /// FrogletTools ▸ Misc ▸ <b>Crash Detector</b> — the UI over <see cref="CrashDetectorMonitor"/>.
+    /// FrogletTools ▸ Diagnostics — one window, two tabs:
     ///
-    /// Shows whether the watchdog is running, the previous session's verdict, the crash reports on
-    /// disk, and the machine-local settings. READER tool per Docs/TOOLING.md — the monitor writes
-    /// only gitignored logs, never assets, so there is no ship panel.
+    /// <para><b>Crash Detector</b> — the UI over <see cref="CrashDetectorMonitor"/>: whether the
+    /// watchdog is running, the previous session's verdict, the crash reports on disk, and the
+    /// machine-local settings.</para>
+    ///
+    /// <para><b>Bug Ledger</b> — the UI over <see cref="BugLedger"/>: the shared, committable
+    /// issue list with auto-capture, fix-then-validate lifecycle, and manual filing
+    /// (<see cref="BugLedgerView"/>).</para>
+    ///
+    /// READER tool per Docs/TOOLING.md — nothing here writes Assets/, so there is no ship panel.
+    /// The crash detector writes gitignored logs; the bug ledger writes the committable
+    /// <c>BugLedger/</c> store at the project root, which the developer pushes like any other
+    /// project data.
     /// </summary>
-    public sealed class CrashDetectorWindow : EditorWindow
+    public sealed class DiagnosticsWindow : EditorWindow
     {
+        const int CrashTab = 0;
+        const int BugsTab = 1;
+
+        [SerializeField] int _tab = CrashTab;
+
         Vector2 _scroll;
         string[] _reports = Array.Empty<string>();
         long _journalBytes;
+        BugLedgerView _bugView;
 
         /// <summary>Set by a button, run after the GUI pass — mutating state mid-layout throws.</summary>
         Action _deferred;
 
-        [MenuItem("FrogletTools/Misc/Crash Detector", false, 30)]
-        [FrogletTool(FrogletToolCategory.Misc, Importance = 4,
+        [MenuItem("FrogletTools/Diagnostics/Crash Detector", false, 10)]
+        [FrogletTool(FrogletToolCategory.Diagnostics, Importance = 4,
             Description = "Editor crash watchdog — journals errors off-thread, reports abnormal exits on the next launch.")]
-        public static void Open()
+        public static void OpenCrashDetector() => Open(CrashTab);
+
+        [MenuItem("FrogletTools/Diagnostics/Bug Ledger", false, 11)]
+        [FrogletTool(FrogletToolCategory.Diagnostics, Importance = 4,
+            Description = "Shared committable bug list — red errors file themselves, and a fix only closes once the game validates it.")]
+        public static void OpenBugLedger() => Open(BugsTab);
+
+        static void Open(int tab)
         {
-            var window = GetWindow<CrashDetectorWindow>("Crash Detector");
-            window.minSize = new Vector2(540f, 420f);
+            var window = GetWindow<DiagnosticsWindow>("Diagnostics");
+            window.minSize = new Vector2(620f, 440f);
+            window._tab = tab;
             window.Refresh();
             window.Show();
         }
 
         void OnEnable() => Refresh();
+
+        void OnFocus()
+        {
+            // A pull or a teammate's push may have changed the issue store while we were away.
+            BugLedger.RefreshFromDisk();
+            Refresh();
+        }
+
+        void OnInspectorUpdate()
+        {
+            // The ledger mutates from a background worker; poll its stamp instead of marshaling
+            // events across threads. OnInspectorUpdate is ~10 Hz — cheap and plenty.
+            if (_tab == BugsTab && _bugView is { NeedsRepaint: true }) Repaint();
+        }
 
         void Refresh()
         {
@@ -49,10 +86,63 @@ namespace CosmicShore.Editor
         void OnGUI()
         {
             FrogletEditorPalette.Banner(
-                "Crash Detector",
-                "Watches this editor for abnormal exits — even hangs and hard kills — and writes a report to Logs/CrashDetector/ on the next launch.",
-                FrogletEditorPalette.ColorFor(FrogletToolCategory.Misc));
+                "Diagnostics",
+                _tab == CrashTab
+                    ? "Watches this editor for abnormal exits — even hangs and hard kills — and writes a report to Logs/CrashDetector/ on the next launch."
+                    : "The team's live bug list — errors file themselves into BugLedger/, and a fix is only believed once the game stays clean.",
+                FrogletEditorPalette.ColorFor(FrogletToolCategory.Diagnostics));
 
+            DrawTabBar();
+
+            if (_tab == BugsTab)
+            {
+                _bugView ??= new BugLedgerView();
+                _bugView.Draw(action => _deferred = action);
+            }
+            else
+            {
+                DrawCrashTab();
+            }
+
+            if (_deferred != null)
+            {
+                var action = _deferred;
+                _deferred = null;
+                action();
+            }
+        }
+
+        void DrawTabBar()
+        {
+            GUILayout.Space(6f);
+            using (new EditorGUILayout.HorizontalScope())
+            {
+                GUILayout.Space(6f);
+                if (FrogletEditorPalette.ColorButton("Crash Detector",
+                        FrogletEditorPalette.ColorFor(FrogletToolCategory.Diagnostics), 118f, 22f,
+                        outline: _tab != CrashTab) && _tab != CrashTab)
+                {
+                    _tab = CrashTab;
+                    GUI.FocusControl(null);
+                    Refresh();
+                }
+                GUILayout.Space(4f);
+                if (FrogletEditorPalette.ColorButton("Bug Ledger",
+                        FrogletEditorPalette.ColorFor(FrogletToolCategory.Diagnostics), 96f, 22f,
+                        outline: _tab != BugsTab) && _tab != BugsTab)
+                {
+                    _tab = BugsTab;
+                    GUI.FocusControl(null);
+                }
+                GUILayout.FlexibleSpace();
+            }
+            GUILayout.Space(2f);
+        }
+
+        // ═════════════════════════════ Crash Detector tab ═══════════════════════
+
+        void DrawCrashTab()
+        {
             if (CrashDetectorMonitor.RootDir == null)
             {
                 EditorGUILayout.Space(8);
@@ -75,13 +165,6 @@ namespace CosmicShore.Editor
                 GUILayout.Space(8f);
             }
             EditorGUILayout.EndScrollView();
-
-            if (_deferred != null)
-            {
-                var action = _deferred;
-                _deferred = null;
-                action();
-            }
         }
 
         // ── Status ───────────────────────────────────────────────────────────────
@@ -213,14 +296,15 @@ namespace CosmicShore.Editor
                 }
                 catch { meta = "(unreadable)"; }
 
-                GUI.Label(new Rect(rect.x + 10f, rect.y + 3f, rect.width - 190f, 16f),
+                GUI.Label(new Rect(rect.x + 10f, rect.y + 3f, rect.width - 260f, 16f),
                     Path.GetFileName(path), FrogletEditorPalette.CardTitle);
-                GUI.Label(new Rect(rect.x + 10f, rect.y + 18f, rect.width - 190f, 14f),
+                GUI.Label(new Rect(rect.x + 10f, rect.y + 18f, rect.width - 260f, 14f),
                     meta, FrogletEditorPalette.CardBody);
 
                 var reportPath = path;
-                var open = new Rect(rect.xMax - 172f, rect.y + 7f, 52f, 20f);
-                var show = new Rect(rect.xMax - 116f, rect.y + 7f, 52f, 20f);
+                var open = new Rect(rect.xMax - 244f, rect.y + 7f, 52f, 20f);
+                var show = new Rect(rect.xMax - 188f, rect.y + 7f, 52f, 20f);
+                var file = new Rect(rect.xMax - 132f, rect.y + 7f, 62f, 20f);
                 var delete = new Rect(rect.xMax - 60f, rect.y + 7f, 26f, 20f);
 
                 if (FrogletEditorPalette.ColorButton(open, "Open", FrogletEditorPalette.Info, reportPath, outline: true))
@@ -228,6 +312,17 @@ namespace CosmicShore.Editor
                 if (FrogletEditorPalette.ColorButton(show, "Show", FrogletEditorPalette.Info,
                         "Reveal in the file browser.", outline: true))
                     _deferred = () => EditorUtility.RevealInFinder(reportPath);
+                if (FrogletEditorPalette.ColorButton(file, "File Bug", FrogletEditorPalette.Warn,
+                        "Track this crash as a Bug Ledger issue (committable, so the team sees it).", outline: true))
+                    _deferred = () =>
+                    {
+                        BugLedger.ReportCustom(
+                            $"Editor crash — {Path.GetFileName(reportPath)}",
+                            $"Filed from the crash detector. Local report: {reportPath}\n" +
+                            "Paste the relevant journal/log tail here so the issue travels with the evidence.");
+                        _tab = BugsTab;
+                        Repaint();
+                    };
                 if (FrogletEditorPalette.ColorButton(delete, "✕", FrogletEditorPalette.Error,
                         "Delete this report.", outline: true))
                     _deferred = () =>
