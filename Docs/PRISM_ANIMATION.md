@@ -1736,6 +1736,37 @@ immune to the tumble for free: it is added to the CENTRE, never rotated with the
 centre is preserved by the rotation, and that the distance to the baked centroid is *not*
 — and the second assertion is mutation-tested against the old pivot.
 
+**Removal is the EROSION, not a shrink.** The shatter used to scale each face to a point,
+which reads as the shield *deflating*; debris does not shrink, it erodes. The faces now stay
+at **full size** for the whole shatter and are taken away by `PrismErosionFade` — the same
+hard, jagged, UV0-anchored front the exploding prism uses (§ "THE EROSION" in
+`PrismOcclusionCorridor.hlsl`), so no amount of flight or spin can slide it.
+
+Three pieces make that work, and each is worth carrying:
+
+- **The shield meshes grew UV0** (`Octahedron`/`StellatedOctahedronMeshGenerator.ErosionUVChannel`).
+  The erosion's anchor is a *mesh attribute* by design, and the shield meshes had only UV1
+  (the face centroids). Each face now maps to the same isoceles triangle in the unit square;
+  identical UVs do not make the faces peel alike, because the wipe's direction and jag are
+  hashed **per face** from the centroid. This was safe to add only because BlockGraph reads
+  UV0 nowhere else — the wiring tool asserts that before it splices.
+- **`PrismShieldMorph` gained an `Opacity` output** — 1 unless shattering, then a *linear*
+  `1 − p` (the erosion's thresholds are CDF-fitted against a linear alpha ramp, not the eased
+  `t`). It is appended as slot 10, so migrating the previous signature renumbers nothing.
+- **BlockGraph MULTIPLIES rather than replaces.** `_Alpha × Survival → PrismOcclusionFade.BaseAlpha`.
+  A prism that is not shattering has Opacity 1, `PrismErosionFade` returns Survival 1 outright
+  at `BaseOpacity >= 1`, and `Alpha × 1` is `Alpha` — bit-for-bit the old chain, **including the
+  cloak family's authored near-zero alpha**. Feeding the erosion the material's alpha directly
+  would have put a wipe pattern on every cloaked prism; that is the trap the multiply avoids.
+
+`Tools/Shaders/wire_prism_shield_erosion.py` owns this splice and deliberately does **not**
+share a tool with `wire_prism_explosion_erosion.py`: same HLSL function, but two graphs, two
+drivers (the explosion clock vs. the shield morph) and disjoint asset sets, so neither can
+regress the other. Known gap, stated rather than glossed: a prism that is BOTH transparent and
+shielded renders its shards on ExplodingBlockGraph, where the erosion is driven by the
+explosion clock — which is unstamped for a shard, so `TransparentPrismMaterial`'s resting
+`_Opacity` of 0 makes those shards invisible. That predates this pass and is unchanged by it.
+
 **Duration is the base explosion's.** Both tiers default `shatterDuration` to
 `PrismExplosion.DefaultDuration` rather than a number of their own: a shield coming apart and
 a prism coming apart are the same event class, and at different lengths they read as

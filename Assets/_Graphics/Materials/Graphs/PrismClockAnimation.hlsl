@@ -461,8 +461,16 @@ void PrismFlightSqrDistance_float(float Clock, float StartTime, float Duration, 
 // face) and is deliberately not re-derived: a per-face rigid translation cannot change a
 // face's normal, and the tumble's effect on it is the known limitation above.
 //
-// Duration <= 0 -> unstamped: position and normal pass through untouched, which is every
-// prism in the game that is not mid-shield-morph (and every mesh with no TEXCOORD1).
+// REMOVAL IS THE EROSION, NOT A SHRINK. The shatter used to scale each face to a point,
+// which reads as the shield deflating; the exploding prism instead keeps its debris at full
+// size and wipes it away with PrismErosionFade (PrismOcclusionCorridor.hlsl) — a hard jagged
+// front anchored to UV0, so no amount of flight or spin can slide it. The shatter now does
+// the same: faceScale stays 1 and this function emits the Opacity ramp the erosion consumes.
+// BlockGraph multiplies the erosion's Survival into the material's own _Alpha, so a prism
+// that is not shattering is an exact pass-through (Opacity 1 -> Survival 1 -> _Alpha).
+//
+// Duration <= 0 -> unstamped: the position passes through untouched and Opacity is 1, which
+// is every prism in the game that is not mid-shield-morph (and every mesh with no TEXCOORD1).
 // -----------------------------------------------------------------------------
 
 // The shatter's two tumble constants.
@@ -485,9 +493,14 @@ void PrismFlightSqrDistance_float(float Clock, float StartTime, float Duration, 
 
 void PrismShieldMorph_float(float Clock, float StartTime, float Duration, float Direction,
     float ShatterOffset, float3 Velocity, float3 Position, float3 Normal, float3 FaceCentroid,
-    out float3 MorphedPosition)
+    out float3 MorphedPosition, out float Opacity)
 {
     MorphedPosition = Position;
+    // 1 = "nothing is fading here", which is every prism that is not mid-shatter and every
+    // engage bloom. BlockGraph multiplies the erosion's Survival into the material's own
+    // _Alpha, and PrismErosionFade returns Survival 1 outright at BaseOpacity >= 1, so a
+    // live prism's alpha chain is bit-for-bit what it was before the erosion was wired.
+    Opacity = 1.0;
 
     if (Duration <= 0.0)
         return;                                   // unstamped -> the position passes through
@@ -497,9 +510,20 @@ void PrismShieldMorph_float(float Clock, float StartTime, float Duration, float 
 
     // Branchless select: both tiers and both directions share one expression, so a
     // shattering prism and a blooming prism in the same batch never diverge.
+    //
+    // A BLOOM grows its faces out from their centroids (faceScale 0 -> 1). A SHATTER keeps
+    // its faces at FULL SIZE (faceScale 1) and is removed by the EROSION instead — the same
+    // body-anchored wipe the exploding prism uses. Scaling a face to nothing was the old
+    // removal mechanism and it read as the shield deflating rather than breaking up; debris
+    // does not shrink, it erodes.
     float shatter   = Direction < 0.0 ? 1.0 : 0.0;
-    float faceScale = lerp(t, 1.0 - t, shatter);
+    float faceScale = lerp(t, 1.0, shatter);
     float offset    = shatter * t * ShatterOffset;
+
+    // The erosion's clock: 1 -> 0 across the shatter, LINEAR like the explosion's own
+    // Opacity (1 - t/duration) rather than the eased t, because the wipe's thresholds are
+    // CDF-fitted against a linear alpha ramp. A bloom leaves it at 1.
+    Opacity = shatter > 0.0 ? saturate(1.0 - p) : 1.0;
 
     // Split the face into WHERE ITS CENTRE IS and WHAT THE FACE IS AROUND THAT CENTRE.
     // faceCenter is the baked centroid pushed out along the face's own normal by the

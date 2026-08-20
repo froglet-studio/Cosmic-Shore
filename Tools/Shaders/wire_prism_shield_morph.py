@@ -124,18 +124,28 @@ CF_SLOTS = [
     (7, "Normal", "Vector3", False),
     (8, "FaceCentroid", "Vector3", False),
     (9, "MorphedPosition", "Vector3", True),
+    (10, "Opacity", "Vector1", True),
 ]
 
 CF_POSITION_SLOT = 6
 CF_NORMAL_SLOT = 7
 CF_CENTROID_SLOT = 8
 CF_OUTPUT_SLOT = 9           # MorphedPosition
+CF_OPACITY_SLOT = 10         # 1 unless shattering; PrismErosionFade's BaseOpacity
 
 # The pre-velocity signature this tool migrates from. Slots are remapped BY DISPLAY NAME,
 # so this table is only used to recognise an old node — never to move data.
 LEGACY_CF_SLOT_NAMES = {
     0: "Clock", 1: "StartTime", 2: "Duration", 3: "Direction", 4: "ShatterOffset",
     5: "Position", 6: "Normal", 7: "FaceCentroid", 8: "MorphedPosition",
+}
+
+# The pre-EROSION signature: the velocity pass, before the shatter stopped shrinking its
+# faces and started emitting the Opacity ramp PrismErosionFade consumes. Migrating it is a
+# pure APPEND (the new output is slot 10), so no existing edge is renumbered.
+PRE_EROSION_CF_SLOT_NAMES = {
+    0: "Clock", 1: "StartTime", 2: "Duration", 3: "Direction", 4: "ShatterOffset",
+    5: "Velocity", 6: "Position", 7: "Normal", 8: "FaceCentroid", 9: "MorphedPosition",
 }
 
 
@@ -522,6 +532,8 @@ def signature_of(docs):
         return "current"
     if names == LEGACY_CF_SLOT_NAMES:
         return "legacy"
+    if names == PRE_EROSION_CF_SLOT_NAMES:
+        return "pre-erosion"
     raise AssertionError(
         f"{FUNCTION_NAME} carries an unrecognised signature {sorted(names.items())} — "
         "neither the shipped 12-slot one nor the pre-velocity 9-slot one this tool migrates")
@@ -602,19 +614,21 @@ def migrate(path):
     cf["m_Slots"] = [{"m_Id": slot_docs[sid]["m_ObjectId"]} for sid, _n, _k, _o in CF_SLOTS]
     cf["m_DrawState"]["m_Position"]["height"] = 560.0
 
-    # -- the velocity property + its node ---------------------------------
-    pos = cf["m_DrawState"]["m_Position"]
-    vel_docs, vel_node = add_velocity_property(docs, graph, idx,
-                                               pos["x"] - 340.0, pos["y"] + 400.0)
-    new_docs.extend(vel_docs)
-    graph["m_Edges"].append(edge(vel_node["m_ObjectId"], 0, cf["m_ObjectId"], 5))
+    # -- the velocity property + its node, only if this graph lacks it -----
+    # A pre-erosion graph already has both; migrating it is a pure slot APPEND.
+    if find_property(docs, "ShieldMorphVelocity") is None:
+        pos = cf["m_DrawState"]["m_Position"]
+        vel_docs, vel_node = add_velocity_property(docs, graph, idx,
+                                                   pos["x"] - 340.0, pos["y"] + 400.0)
+        new_docs.extend(vel_docs)
+        graph["m_Edges"].append(edge(vel_node["m_ObjectId"], 0, cf["m_ObjectId"], 5))
 
     docs.extend(new_docs)
     validate(docs, expect_wired=True)
 
     open(os.path.join(REPO, path), "w", encoding="utf-8").write(dump_docs(docs))
-    print(f"  {os.path.basename(path)}: migrated to the velocity signature "
-          f"(+1 property, +{len(new_docs)} objects)")
+    print(f"  {os.path.basename(path)}: migrated to the current signature "
+          f"(+{len(new_docs)} objects)")
     return True
 
 
@@ -627,7 +641,7 @@ def wire(path, uv_donor_docs):
         validate(docs, expect_wired=True)
         print(f"  {os.path.basename(path)}: already wired")
         return False
-    if signature == "legacy":
+    if signature in ("legacy", "pre-erosion"):
         return migrate(path)
 
     graph = find_graph(docs)

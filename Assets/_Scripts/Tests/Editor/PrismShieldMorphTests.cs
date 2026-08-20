@@ -351,6 +351,48 @@ namespace CosmicShore.Tests
             return (inputs, outputs);
         }
 
+        [Test]
+        public void BothGenerators_BakeTheErosionFrameIntoUV0()
+        {
+            // The shatter is removed by PrismErosionFade sweeping ONE front across each
+            // face, and that front lives in the face's own UV0 frame. An empty UV0 is not a
+            // missing detail: every vertex would share one wipe coordinate, so the whole
+            // face would cross the threshold on the same frame and POP instead of eroding.
+            foreach (var (mesh, verts) in new[]
+                     {
+                         (OctahedronMeshGenerator.Generate(new Vector3(0.5f, 1.25f, 2f)), 24),
+                         (StellatedOctahedronMeshGenerator.Generate(new Vector3(0.5f, 1.25f, 2f)),
+                          StellatedOctahedronMeshGenerator.VERTEX_COUNT),
+                     })
+            {
+                try
+                {
+                    var uvs = new List<Vector2>();
+                    mesh.GetUVs(OctahedronMeshGenerator.ErosionUVChannel, uvs);
+                    Assert.AreEqual(verts, uvs.Count,
+                        "UV0 must carry one erosion-frame coordinate per vertex — an empty " +
+                        "channel makes every face pop instead of eroding.");
+
+                    for (int f = 0; f < verts; f += 3)
+                    {
+                        // A real 2D frame: three distinct, non-collinear coordinates. Any
+                        // degenerate face would give the wipe no direction to run in.
+                        Vector2 a = uvs[f], b = uvs[f + 1], c = uvs[f + 2];
+                        float area = Mathf.Abs((b.x - a.x) * (c.y - a.y) - (c.x - a.x) * (b.y - a.y));
+                        Assert.Greater(area, 0.1f,
+                            $"face {f / 3}'s UV0 triangle is degenerate — the erosion front " +
+                            "would have no frame to sweep across.");
+                        foreach (var uv in new[] { a, b, c })
+                        {
+                            Assert.That(uv.x, Is.InRange(0f, 1f), "UV0 must stay inside the unit square");
+                            Assert.That(uv.y, Is.InRange(0f, 1f), "UV0 must stay inside the unit square");
+                        }
+                    }
+                }
+                finally { Object.DestroyImmediate(mesh); }
+            }
+        }
+
         // ── 3. no CPU ticker, now or ever again ──────────────────────────────
 
         [Test]

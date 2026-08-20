@@ -8464,6 +8464,9 @@
         },
         {
             "m_Id": "e537c3068dd7466680ccbf758339b88b"
+        },
+        {
+            "m_Id": "1f28c69ae19b421b932ff2f713541dc2"
         }
     ],
     "synonyms": [],
@@ -9266,5 +9269,20 @@
         "y": 0.0,
         "z": 0.0
     },
+    "m_Labels": []
+}
+
+{
+    "m_SGVersion": 0,
+    "m_Type": "UnityEditor.ShaderGraph.Vector1MaterialSlot",
+    "m_ObjectId": "1f28c69ae19b421b932ff2f713541dc2",
+    "m_Id": 10,
+    "m_DisplayName": "Opacity",
+    "m_SlotType": 1,
+    "m_Hidden": false,
+    "m_ShaderOutputName": "Opacity",
+    "m_StageCapability": 3,
+    "m_Value": 0.0,
+    "m_DefaultValue": 0.0,
     "m_Labels": []
 }

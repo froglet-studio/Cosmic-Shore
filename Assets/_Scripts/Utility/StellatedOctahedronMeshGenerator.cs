@@ -68,6 +68,11 @@ namespace CosmicShore.Utility
         /// </summary>
         public const int FaceCentroidUVChannel = OctahedronMeshGenerator.FaceCentroidUVChannel;
 
+        /// <summary>The erosion's face-local frame — again the SAME channel as
+        /// <see cref="OctahedronMeshGenerator.ErosionUVChannel"/>, so one fade path serves
+        /// both tiers.</summary>
+        public const int ErosionUVChannel = OctahedronMeshGenerator.ErosionUVChannel;
+
         /// <summary>
         /// Generate a flat-shaded stellated octahedron mesh for a box of the
         /// given half-extents. 24 outer triangles, 72 vertices (per-face for
@@ -129,6 +134,7 @@ namespace CosmicShore.Utility
             // outer faces. Total 24 faces, 72 unique vertices for flat shading.
             var verts = new Vector3[VERTEX_COUNT];
             var norms = new Vector3[VERTEX_COUNT];
+            var uvs   = new List<Vector2>(72);
             var cents = new List<Vector3>(VERTEX_COUNT);
             var tris  = new int[VERTEX_COUNT];
 
@@ -149,15 +155,15 @@ namespace CosmicShore.Utility
                 //   sx·sy·sz = -1 → flipped winding to keep outward normals
                 if (sx * sy * sz > 0)
                 {
-                    AddFace(verts, norms, cents, tris, ref vi, T, Vx, Vy);
-                    AddFace(verts, norms, cents, tris, ref vi, T, Vy, Vz);
-                    AddFace(verts, norms, cents, tris, ref vi, T, Vz, Vx);
+                    AddFace(verts, norms, cents, uvs, tris, ref vi, T, Vx, Vy);
+                    AddFace(verts, norms, cents, uvs, tris, ref vi, T, Vy, Vz);
+                    AddFace(verts, norms, cents, uvs, tris, ref vi, T, Vz, Vx);
                 }
                 else
                 {
-                    AddFace(verts, norms, cents, tris, ref vi, T, Vy, Vx);
-                    AddFace(verts, norms, cents, tris, ref vi, T, Vz, Vy);
-                    AddFace(verts, norms, cents, tris, ref vi, T, Vx, Vz);
+                    AddFace(verts, norms, cents, uvs, tris, ref vi, T, Vy, Vx);
+                    AddFace(verts, norms, cents, uvs, tris, ref vi, T, Vz, Vy);
+                    AddFace(verts, norms, cents, uvs, tris, ref vi, T, Vx, Vz);
                 }
             }
 
@@ -169,6 +175,10 @@ namespace CosmicShore.Utility
             // non-derivable input. Written AFTER mesh.vertices so the channel is
             // sized against the new vertex count.
             mesh.SetUVs(FaceCentroidUVChannel, cents);
+            // UV0: the erosion's face-local frame. Nothing else on the prism graphs reads
+            // UV0 (verified: the only other UV node in either graph is this mesh's
+            // FaceCentroidUVChannel feed), so authoring it changes no existing shading.
+            mesh.SetUVs(ErosionUVChannel, uvs);
             mesh.RecalculateBounds();
             // Normals are authored per-face for flat shading; do not recalculate.
         }
@@ -180,11 +190,22 @@ namespace CosmicShore.Utility
         // from the FaceCentroidUVChannel data baked above.
 
         private static void AddFace(Vector3[] verts, Vector3[] norms, List<Vector3> cents,
-                                    int[] tris, ref int vi,
+                                    List<Vector2> uvs, int[] tris, ref int vi,
                                     Vector3 v0, Vector3 v1, Vector3 v2)
         {
             int i0 = vi, i1 = vi + 1, i2 = vi + 2;
             verts[i0] = v0; verts[i1] = v1; verts[i2] = v2;
+
+            // FACE-LOCAL UV0 — the frame PrismErosionFade wipes across
+            // (PrismOcclusionCorridor.hlsl). Each triangle gets the same isoceles
+            // mapping into the unit square, which is all the erosion needs: it centres
+            // UV to [-1,1] and sweeps one front across it. The wipe's DIRECTION and jag
+            // are hashed per face from the centroid, so identical UVs do not make the
+            // faces peel alike. A mesh attribute is the only anchor no vertex animation
+            // can move, which is why the erosion is anchored here and not to position.
+            uvs.Add(new Vector2(0f, 0f));
+            uvs.Add(new Vector2(1f, 0f));
+            uvs.Add(new Vector2(0.5f, 1f));
 
             Vector3 n = Vector3.Cross(v1 - v0, v2 - v0).normalized;
             norms[i0] = n; norms[i1] = n; norms[i2] = n;

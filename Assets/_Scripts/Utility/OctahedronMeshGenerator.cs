@@ -37,6 +37,14 @@ namespace CosmicShore.Utility
         /// <see cref="StellatedOctahedronMeshGenerator"/> so ONE shader path serves both
         /// shield tiers.
         /// </summary>
+        /// <summary>
+        /// UV channel carrying each face's own [0,1] frame, which
+        /// <c>PrismErosionFade</c> sweeps its erosion front across when a shield shatters
+        /// — the same body-anchored fade the exploding prism uses, instead of scaling each
+        /// face down to nothing. TEXCOORD0.
+        /// </summary>
+        public const int ErosionUVChannel = 0;
+
         public const int FaceCentroidUVChannel = 1;
 
         /// <summary>
@@ -128,20 +136,21 @@ namespace CosmicShore.Utility
             // For flat shading each face owns its own 3 vertices (24 verts total).
             var verts = new Vector3[24];
             var norms = new Vector3[24];
+            var uvs   = new List<Vector2>(24);
             var cents = new List<Vector3>(24);
             var tris  = new int[24];
 
             int vi = 0;
             // sx·sy·sz = +1 octants: standard winding (X → Y → Z)
-            AddFace(verts, norms, cents, tris, ref vi, pX, pY, pZ); // (+,+,+)
-            AddFace(verts, norms, cents, tris, ref vi, pX, nY, nZ); // (+,-,-)
-            AddFace(verts, norms, cents, tris, ref vi, nX, pY, nZ); // (-,+,-)
-            AddFace(verts, norms, cents, tris, ref vi, nX, nY, pZ); // (-,-,+)
+            AddFace(verts, norms, cents, uvs, tris, ref vi, pX, pY, pZ); // (+,+,+)
+            AddFace(verts, norms, cents, uvs, tris, ref vi, pX, nY, nZ); // (+,-,-)
+            AddFace(verts, norms, cents, uvs, tris, ref vi, nX, pY, nZ); // (-,+,-)
+            AddFace(verts, norms, cents, uvs, tris, ref vi, nX, nY, pZ); // (-,-,+)
             // sx·sy·sz = -1 octants: flipped winding (X → Z → Y)
-            AddFace(verts, norms, cents, tris, ref vi, pX, pZ, nY); // (+,-,+)
-            AddFace(verts, norms, cents, tris, ref vi, pX, nZ, pY); // (+,+,-)
-            AddFace(verts, norms, cents, tris, ref vi, nX, pZ, pY); // (-,+,+)
-            AddFace(verts, norms, cents, tris, ref vi, nX, nZ, nY); // (-,-,-)
+            AddFace(verts, norms, cents, uvs, tris, ref vi, pX, pZ, nY); // (+,-,+)
+            AddFace(verts, norms, cents, uvs, tris, ref vi, pX, nZ, pY); // (+,+,-)
+            AddFace(verts, norms, cents, uvs, tris, ref vi, nX, pZ, pY); // (-,+,+)
+            AddFace(verts, norms, cents, uvs, tris, ref vi, nX, nZ, nY); // (-,-,-)
 
             mesh.Clear();
             mesh.vertices = verts;
@@ -151,6 +160,10 @@ namespace CosmicShore.Utility
             // non-derivable input (see the class docstring). Written AFTER
             // mesh.vertices so the channel is sized against the new vertex count.
             mesh.SetUVs(FaceCentroidUVChannel, cents);
+            // UV0: the erosion's face-local frame. Nothing else on the prism graphs reads
+            // UV0 (verified: the only other UV node in either graph is this mesh's
+            // FaceCentroidUVChannel feed), so authoring it changes no existing shading.
+            mesh.SetUVs(ErosionUVChannel, uvs);
             mesh.RecalculateBounds();
             // Normals are authored per-face for flat shading; do not recalculate.
         }
@@ -164,11 +177,22 @@ namespace CosmicShore.Utility
         // draw call).
 
         private static void AddFace(Vector3[] verts, Vector3[] norms, List<Vector3> cents,
-                                    int[] tris, ref int vi,
+                                    List<Vector2> uvs, int[] tris, ref int vi,
                                     Vector3 v0, Vector3 v1, Vector3 v2)
         {
             int i0 = vi, i1 = vi + 1, i2 = vi + 2;
             verts[i0] = v0; verts[i1] = v1; verts[i2] = v2;
+
+            // FACE-LOCAL UV0 — the frame PrismErosionFade wipes across
+            // (PrismOcclusionCorridor.hlsl). Each triangle gets the same isoceles
+            // mapping into the unit square, which is all the erosion needs: it centres
+            // UV to [-1,1] and sweeps one front across it. The wipe's DIRECTION and jag
+            // are hashed per face from the centroid, so identical UVs do not make the
+            // faces peel alike. A mesh attribute is the only anchor no vertex animation
+            // can move, which is why the erosion is anchored here and not to position.
+            uvs.Add(new Vector2(0f, 0f));
+            uvs.Add(new Vector2(1f, 0f));
+            uvs.Add(new Vector2(0.5f, 1f));
 
             Vector3 n = Vector3.Cross(v1 - v0, v2 - v0).normalized;
             norms[i0] = n; norms[i1] = n; norms[i2] = n;
