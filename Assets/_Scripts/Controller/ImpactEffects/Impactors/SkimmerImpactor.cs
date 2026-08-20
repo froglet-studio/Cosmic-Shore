@@ -296,14 +296,22 @@ namespace CosmicShore.Gameplay
 
                     break;
 
-                case ElementalCrystalImpactor elementalCrystalImpactor:
+                // The BASE crystal impactor, so OMNI and TEAM crystals reach the skimmer too — the
+                // Scarab converts an omni crystal into a ball on skimmer contact (SCARAB.md §4.1).
+                // Widening the case cannot change any shipped vessel, because an omni crystal is
+                // only handed to effects that OPT IN (AlsoAppliesToOmniCrystals); elemental
+                // crystals still go to every effect exactly as before.
+                case CrystalImpactor crystalImpactor:
+                {
                     // Mirror the crystal side's collectability guards (ElementalCrystalImpactor.
                     // AcceptImpactee): a living lifeform's embedded heart enters the trigger but is
                     // never skim-collectable — without this gate the skimmer's crystal effects
                     // (e.g. the Rhino sword's crystal burst) would fire on it, repeatedly, since
                     // the heart's collider never gets disabled by a collection.
-                    var crystal = elementalCrystalImpactor.Crystal;
+                    var crystal = crystalImpactor.Crystal;
                     if (crystal == null || crystal.IsEmbedded || crystal.IsExploding) return;
+
+                    bool elemental = crystalImpactor is ElementalCrystalImpactor;
 
                     var esc = skimmerImpactorDataContainer.SkimmerCrystalEffects;
                     if (!DoesEffectExist(esc)) return;
@@ -312,10 +320,12 @@ namespace CosmicShore.Gameplay
                         if (IsEffectSlotEmpty(esc[i], skimmerImpactorDataContainer,
                                 nameof(SkimmerImpactorDataContainerSO.SkimmerCrystalEffects), i))
                             continue;
-                        esc[i].Execute(this, elementalCrystalImpactor);
+                        if (!elemental && !esc[i].AlsoAppliesToOmniCrystals) continue;
+                        esc[i].Execute(this, crystalImpactor);
                     }
 
                     break;
+                }
             }
         }
 

@@ -1,7 +1,8 @@
 # Urchin Chain Spikes — a projectile that fires its own gun
 
 > The Urchin's other half — latching onto a trail and riding it — lives in
-> **`URCHIN_TRAIL_RIDER.md`**. The two are one loop: the ride carries the vessel into range of
+> **`URCHIN_TRAIL_RIDER.md`**, and the ability that supplies a trail where the map has none in
+> **`URCHIN_TRACK_PROJECTOR.md`**. They are one loop: the ride carries the vessel into range of
 > enemy mass, the spikes convert it. This file covers the spikes, their cascade, and the three
 > brakes that bound it.
 
@@ -176,22 +177,50 @@ The material is assigned as `sharedMaterial` (the theme's own per-domain asset, 
 domain still batch); the per-instance opacity that the launch fade and the embed fade animate
 rides a `MaterialPropertyBlock` instead of the per-renderer clone `.material` would mint.
 
-## The two abilities
+## One trigger, two shots (the 2026-08-18 merge)
 
-One SO type (`UrchinSpikeActionSO`), authored twice, because they are one weapon with two
-patterns — a spike does the same three things wherever it lands, and the two element dials apply
-to both. That keeps the fleet's one-parameter-per-element convention intact instead of giving each
-ability a private copy of the other's dial.
+The spikes were **two abilities on two triggers** — an aimed "Spike Volley" on SPACE/right and a
+free omni "Spike Barrage" on CHARGE/left. They were always one weapon: a spike does the same three
+things wherever it lands, and both element dials applied to both. So they are now **one ability on
+one trigger**, and the freed left trigger carries the **Track Projector**
+(`URCHIN_TRACK_PROJECTOR.md`).
 
-| | **Spike Volley** (SPACE, `RightStickAction`) | **Spike Barrage** (CHARGE, `LeftStickAction`) |
+The merge is a **hold**, not a mode switch:
+
+| | **Tap** (press and release quickly) | **Hold, then release** |
 |---|---|---|
-| Pattern | `ConcentricRings` — a SHOTGUN: rings of spikes around the aim, one blast per pull | `Spherical` — dense golden-spiral omni burst from the hull |
-| Shape | 3 rings at r/3 of a **9°** cone, 3·r spikes each, staggered + 1 center, fired **from every muzzle** = 19 × 2 guns = **38/pull** | **36** spikes, gapless sphere (chain children keep energy-derived counts) |
-| Repeat | while held, `firingRate` 3/s | one-shot per press, `firingRate` 1/s |
-| Ammo | 0.15 per volley | **free** (0) |
-| Muzzle speed | 60 × SPACE multiplier | 40 × SPACE multiplier |
+| Fires on | the PRESS — semi-automatic, one blast per pull | the RELEASE |
+| Pattern | `ConcentricRings` — a SHOTGUN: rings of spikes around the aim | `Spherical` — golden-spiral omni burst from the hull |
+| Shape | 3 rings at r/3 of a **9°** cone, 3·r spikes each, staggered + 1 center, fired **from every muzzle** = 19 × 2 guns = **38/pull** | `chargedSpikesAtMin` **6** → `chargedSpikesAtMax` **36**, linear in the hold |
+| Charge window | — | nothing below `minChargeSeconds` **0.35 s**; full at `maxChargeSeconds` **2.5 s** |
+| Ammo | 0.15 | **free** — the hold IS its price |
+| Muzzle speed | 60 × CHARGE multiplier | 40 × CHARGE multiplier |
 | Depth at Charge 0 → 10 | **1 → 4** | **1 → 4** |
-| L5 | SPACE "Deep Cascade" — `ChainRangeFalloff` becomes 1 | CHARGE "Overcharge" — `chainsOnChargeUpgrade` floors depth at 1 |
+| L5 | CHARGE "Overcharge" — one extra generation AND `ChainRangeFalloff` → 1 | same |
+
+**Holding is strictly additive.** The press fires the aimed blast and *then* starts charging, so a
+tap behaves exactly as the old volley's first pull did and the pilot never chooses between the two
+shots. `repeatWhileHeld` is authored **off** — the hold now belongs to the charge, so the volley no
+longer auto-repeats at 3/s; the field survives for a vessel that wants the old behaviour back with
+`chargeEnabled` off.
+
+**The charge is timed on the EXECUTOR, never on the SO.** One asset serves every Urchin in the
+match, so a charge timer on it would be last-writer-wins across vessels — the same reason
+`ElementalFloat` is banned from these assets. `UrchinSpikeActionExecutor._chargeStartTime` is
+per-vessel state on a per-vessel MonoBehaviour, which is where all of it belongs.
+
+**A RELEASE discharges; a TEARDOWN does not.** `End(so)` fires the burst; `End(null)` — the vessel
+swap / disable path — drops the charge silently. A vessel handed to a new pilot mid-hold must never
+discharge in the previous pilot's name, which is the same rule `Initialize`'s unconditional
+detach-first already encodes one level out.
+
+**Element ownership moved with the merge.** CHARGE now owns the whole weapon — reach *and* depth —
+because a charge-up mechanic on the charge element is the honest reading, and because SPACE was
+needed for the track's length. `ResolveRangeScale` reads `Multiplier(Element.Charge)` and the map's
+Charge entry carries the 2.5 the Space entry used to. The two L5s merged with them: **Overcharge**
+is now one extra generation *and* no reach falloff — the old CHARGE-5 and SPACE-5 as two halves of
+one idea, because an element may only carry one level-5 and "the cascade is overcharged" is a
+single thought.
 
 **Round 6 dialed the weapon up** ("dial up the recursive explosions") — this is the shotgun the
 old build had, restored deliberately rather than archaeologically:
@@ -215,20 +244,21 @@ old build had, restored deliberately rather than archaeologically:
   the same pass, so the Urchin's two guns still throw ~38 spikes per pull rather than 74 into a
   pool sized for 160. A vessel that grows a third gun gets a denser blast, which is the honest
   reading of mounting another gun.
-- **The barrage is dense**: the ship's own volley fires `barrageSpikeCount` (36) spiral points
+- **The barrage is dense**: the ship's own omni burst fires a `sphericalPoints` override
   regardless of depth (previously `2·(energy+3)` — at depth 0 that was FOUR tetrahedral
-  spikes). Chain children keep the energy-derived counts, so a cascade's population stays
+  spikes). Post-merge that override is the CHARGE count (`chargedSpikesAtMin`→`Max`, 6→36);
+  `barrageSpikeCount` (36) survives as the field a non-charged Spherical ability would use. Chain children keep the energy-derived counts, so a cascade's population stays
   bounded by depth. The hull historically carried **18 authored ShootPoint port objects**
   (recovered from the 2023 prefab: left-half + midline positions on a ~0.2-radius model
   sphere, mirrored ≈36 across the ship — e.g. `(0, 0.2, -0.02)`, `(-0.17, 0.07, 0.08)`,
   `(-0.08, -0.18, -0.02)`…); the golden spiral supersedes them with an even sphere and no
   gaps, which is the "we can do better now" half of the request.
 
-The barrage stays free; what it pays instead is spread — 36 spikes over the whole sphere reach
-far less mass each than 37 down a 15° cone. Both triggers now chain from rest and both reach the
-ceiling at full Charge.
+The omni burst stays free; what it pays instead is spread and TIME — 36 spikes over the whole
+sphere reach far less mass each than 37 down a 9° cone, and a full one costs 2.5 s of held
+trigger. Both shots chain from rest and both reach the ceiling at full Charge.
 
-**Both abilities' first shot now costs no generation — the asymmetry that silenced the barrage
+**Both shots' first spike costs no generation — the asymmetry that silenced the barrage
 is fixed.** `FireSingle` (the ring volley's path) stamps `energy` unchanged, but `FireSpherical`
 decremented before spawning, so the omni barrage came out one tier shallower than the ring volley
 from the same authored number. At the barrage's shipped resting depth that meant its spikes landed
@@ -239,11 +269,10 @@ The decrement is still exactly right for a chain HOP (it *is* the depth ladder),
 conditioned rather than removed: `if (pointsOverride <= 0) energy--`. The ship's own volley is the
 only call that authors a point count, and a hop never does, so the override is the honest
 discriminator and no new argument was needed. With that, `generations` means the same thing for
-both triggers, and the barrage's `generationsAtRestingCharge` moved 0 → **1** so it chains from
-rest like the volley.
+both shots — which is now literally true, since they are one ability reading one authored pair.
 
 Every element read is **live, per volley** — a crystal collected mid-hold changes the very next
-spike. Reach (`ResolveRangeScale` → `Multiplier(Element.Space)`) and its per-generation decay
+spike. Reach (`ResolveRangeScale` → `Multiplier(Element.Charge)`) and its per-generation decay
 (`ResolveRangeFalloff`) are stamped onto the **gun**, which stamps them onto each projectile;
 each spike then hands them to its own `LoadedGun`. That is how the pilot's SPACE level reaches
 the last generation of a cascade that may outlive the pilot who started it — by then they may be
@@ -278,7 +307,7 @@ checked once per tick, so the two cases are not conflated into one early return.
 | The gun a spike carries | `Controller/Projectiles/LoadedGun.cs` |
 | Volley stamping, factory hand-down, determinism | `Controller/Projectiles/Gun.cs` — `ChainRangeScale`/`ChainRangeFalloff`, `SetProjectileFactory`, `DeterministicOrientation`, `Scramble` |
 | Frame brake | `Controller/Projectiles/ChainReactionBudget.cs` |
-| Ability config (both abilities) | `R_VesselActions/Data Containers/UrchinSpikeActionSO.cs` → `_SO_Assets/VesselActions/Urchin/UrchinSpikeVolleyAction.asset`, `UrchinSpikeBarrageAction.asset` |
+| Ability config (one asset, both shots) | `R_VesselActions/Data Containers/UrchinSpikeActionSO.cs` → `_SO_Assets/VesselActions/Urchin/UrchinSpikeAction.asset` (`UrchinSpikeVolleyAction` / `UrchinSpikeBarrageAction` retired 2026-08-18) |
 | Executor (all per-vessel state) | `R_VesselActions/Executors/UrchinSpikeActionExecutor.cs` |
 | Element map | `Assets/Resources/ElementalAbilityMaps/Urchin.asset` |
 | Spike prefabs (pool tiers) — **the live ones** | `_Prefabs/Projectile/UrchinSpikeProjectile.prefab` (`energy 0`, speed 40) · `UrchinSpikeProjectileEnergized.prefab` (1) · `UrchinSpikeProjectileSuperEnergized.prefab` (2). Fully wired: trigger SphereCollider (r 0.25) + `Rigidbody` + `Projectile` + `ProjectileImpactor` → `UrchinSpikeProjectileImpactContainer` + `ImpactCollider` + `LoadedGun`. |
@@ -323,8 +352,11 @@ diagnosis aid:
 | `dwellSeconds` / `fadeSeconds` | `ProjectileEmbedPrismEffect.asset` | **3.75** / 0.35 — pure look; the steal and the volley have both already happened, so this is free to be long. Tripled from 1.25 because a prism bristling with embedded spikes is worth looking at. `fadeSeconds` must stay above 0 (continuity of existence). |
 | `requireDomainChange` | `ProjectileChainFirePrismEffect.asset` | 1 — off makes shielded mass cost the cascade a generation for no territory |
 | `VolleysPerFrame` | `ChainReactionBudget` (static, code) | **6**, global across all cascades (round 6: raised from 4 with the depth). At depth 4 a chain volley is up to 14 spikes, so one frame's chain contribution is bounded at **84** live trigger colliders. Raise for reach, lower for frame cost. |
-| `generationsAtRestingCharge` / `generationsAtFullCharge` | the two spike action assets | volley **1 → 4** · barrage **1 → 4** (round 6: "their generation limit should be 4"). `GenerationsForLevel` is linear in level, anchored at 0 and 10, extrapolated across the element system's `[-5, 15]` band, then clamped to **[0, 4]** — the range the pool tiers and the frame budget are sized for. |
-| `barrageSpikeCount` | both spike action assets (Spherical only) | **36** — the ship's own golden-spiral density; 0 = legacy energy-derived count |
+| `generationsAtRestingCharge` / `generationsAtFullCharge` | `UrchinSpikeAction.asset` | **1 → 4** (round 6: "their generation limit should be 4"), shared by both shots. `GenerationsForLevel` is linear in level, anchored at 0 and 10, extrapolated across the element system's `[-5, 15]` band, then clamped to **[0, 4]** — the range the pool tiers and the frame budget are sized for. |
+| `chargedSpikesAtMin` / `chargedSpikesAtMax` | `UrchinSpikeAction.asset` | **6 → 36** across the charge window. 36 is the gapless golden-spiral sphere the old free barrage fired; 6 is a barely-held trigger. |
+| `minChargeSeconds` / `maxChargeSeconds` | `UrchinSpikeAction.asset` | **0.35 → 2.5** s. The minimum must stay above a human's fastest deliberate tap or every shot ends in a burst; the maximum is also the weapon's slowest honest cadence. |
+| `chargedAmmoCost` / `chargedProjectileSpeed` | `UrchinSpikeAction.asset` | **0** (free — the hold is the price) / **40** (an omni burst is a net, not a shot) |
+| `barrageSpikeCount` | `UrchinSpikeAction.asset` (Spherical only) | **36** — used only if a Spherical ability fires WITHOUT a charge; the charged release overrides it with the hold-derived count |
 | `ringCount` / `spikesPerRing` / `coneHalfAngleDegrees` / `centerSpike` | both spike action assets (ConcentricRings only) | **3 / 3 / 9° / on** → 19 per muzzle × 2 muzzles = **38** spikes per pull. `spikesPerRing` is **per muzzle**. Cone tightened 25° → 15° (round 7) → 9° (round 10, "tighter spread"); `spikesPerRing` halved 6 → 3 in round 10 so moving the blast onto both guns did not double the live-spike count. |
 
 **Spikes always inherit the vessel's live velocity** (round 7). The executor briefly passed
@@ -333,10 +365,10 @@ a standing gun — at cruise speed the vessel outran its own shotgun's lateral s
 blast read as dropping behind the ship. `FireSingle` composes
 `Velocity = direction × speed + inherited`, so the fan now travels WITH the vessel and the rings
 hold their shape relative to the pilot.
-| `generationRangeFalloff` | both spike action assets | 0.75. Clamped `[0.05, 1]` by `SetChainRangeFalloff`. 1 = the SPACE-5 upgrade. |
-| `chainsOnChargeUpgrade` | barrage asset only | 1 — the CHARGE-5 floor of one generation |
+| `generationRangeFalloff` | `UrchinSpikeAction.asset` | 0.75. Clamped `[0.05, 1]` by `SetChainRangeFalloff`. 1 = the CHARGE-5 upgrade. |
+| `chainsOnChargeUpgrade` | `UrchinSpikeAction.asset` | 1 — the CHARGE-5 extra generation (its other half is the falloff override above) |
 | `ammoCost` / `firingRate` | the two spike action assets | 0.15 @ 3/s · 0 @ 1/s |
-| `projectileSpeed` × SPACE `MultiplierAtFullLevel` | assets + `Urchin.asset` map | 60 / 40 × (0.4 … **2.5**) |
+| `projectileSpeed` / `chargedProjectileSpeed` × CHARGE `MultiplierAtFullLevel` | asset + `Urchin.asset` map | 60 / 40 × (0.4 … **2.5**) |
 | CHARGE `MultiplierAtFullLevel` | `Urchin.asset` map | 2.0 / min 0.4 — the generic multiplier; depth itself comes off `GetLevel(Element.Charge)`, not this |
 | `MaxVolleysPerTick` | `UrchinSpikeActionExecutor` (const) | 4 |
 | `sideLength` | each spike prefab's `LoadedGun` | 2 — how far off the origin each child of a volley is spawned |
@@ -417,8 +449,8 @@ Nothing below can be checked without play mode; the depth curve is a pure functi
 4. **Wire the vessel.** `Urchin.prefab` has `R_VesselActionHandler._executors: {fileID: 0}` and
    `_inputEventShipActions: []` — add an `ActionExecutorRegistry` with
    `UrchinSpikeActionExecutor` (assign its `gun`, `muzzles`, `barrageOrigin`) and bind
-   `RightStickAction(1)` → `UrchinSpikeVolleyAction.asset`, `LeftStickAction(2)` →
-   `UrchinSpikeBarrageAction.asset`.
+   `RightStickAction(1)` → `UrchinSpikeAction.asset`, `LeftStickAction(2)` →
+   `UrchinTrackAction.asset` (see `URCHIN_TRACK_PROJECTOR.md`).
 5. **Give the Urchin an ammo resource.** `ResourceSystem.Resources` on `Urchin.prefab` is `[]`,
    and both `ammoIndex` fields are 0. The volley (`ammoCost` 0.15) will refuse to fire with
    `Invalid ammo index or ResourceSystem`, and `GunVesselTransformer.SlideActions` will throw an
@@ -433,10 +465,10 @@ Nothing below can be checked without play mode; the depth curve is a pure functi
 8. **Depth scales with CHARGE.** Collect Charge crystals to level 10 and repeat step 6 — the
    first landing should spray **10**, and each of those should spray again. If it still sprays 8,
    the level read is not reaching `ResolveGenerations`.
-9. **Reach scales with SPACE, and decays.** At Space 0 the spikes should visibly cover less
-   ground than at Space 10 (muzzle speed × 0.4 vs × 2.5), and within one cascade each generation
-   should reach shorter than the last (falloff 0.75). At Space 5 ("Deep Cascade") the last
-   generation should reach as far as the first.
+9. **Reach scales with CHARGE, and decays.** At Charge 0 the spikes should visibly cover less
+   ground than at Charge 10 (muzzle speed × 0.4 vs × 2.5), and within one cascade each generation
+   should reach shorter than the last (falloff 0.75). At Charge 5 ("Overcharge") the last
+   generation should reach as far as the first AND the cascade should run one tier deeper.
 10. **Shielded mass costs no generation.** Shield a prism (Rhino slab or a Squirrel Heavy Trail
     prism) and hit it with a spike: the shield sheds, the prism stays hostile, and **no** children
     are fired. Against a super-shielded prism, nothing at all happens.
@@ -451,18 +483,27 @@ Nothing below can be checked without play mode; the depth curve is a pure functi
 13. **Domain paint.** Fire as Jade, die/respawn or swap domain at the domain-changer toy, fire
     again: the spikes must wear the **new** colour. A spike wearing the previous domain's material
     means the paint has drifted back to `Start`.
+14. **A TAP is one blast.** Pull and release the right trigger quickly (under 0.35 s). Exactly one
+    aimed fan leaves the muzzles and **nothing** fires on the release. Holding the trigger down
+    must NOT auto-repeat the fan — `repeatWhileHeld` is authored off.
+15. **A HOLD is a blast plus a burst.** Press and hold ~1 s, then let go: the aimed fan fires on
+    the press, and an omni sphere of roughly 6–36 spikes leaves the hull on the release. Hold a
+    full 2.5 s and count the release — it should read as the same dense sphere the old free
+    barrage threw. Ammo is spent only by the press.
+16. **The charge cannot survive the vessel.** Hold the trigger and, while still holding, swap
+    vessels at the vessel-changer toy (or end the turn). **No** burst may fire. Then press and
+    release normally on the new hull — the charge must work from scratch.
 
 ### MPPM — two clients
 
-14. **The cascade agrees.** Host and client both watch the same Urchin fire a depth-2+ volley into
+17. **The cascade agrees.** Host and client both watch the same Urchin fire a depth-2+ volley into
     the same trail. The spray pattern and the resulting converted prisms must match on both
     screens. A visibly different fan is `Random.rotation` creeping back into `FireSpherical`.
-15. **The unlock bits replicate.** Take the *client's* Urchin to Space 5 and fire a deep cascade;
-    the host must see the same non-decaying reach (and the same converted prisms). Then take it to
-    Charge 5 and fire the **barrage**: both peers must see it chain. A peer that sees a shallower
-    or shorter cascade means an L5 gate is reading a local level instead of
-    `IsUpgradeActive`.
-16. **A client's steals score.** With the client's Urchin, convert ~20 prisms and check the
+18. **The unlock bits replicate.** Take the *client's* Urchin to Charge 5 and fire a deep
+    cascade; the host must see the same non-decaying reach, the same extra generation, and the
+    same converted prisms — with both the tap and the charged burst. A peer that sees a shallower
+    or shorter cascade means an L5 gate is reading a local level instead of `IsUpgradeActive`.
+19. **A client's steals score.** With the client's Urchin, convert ~20 prisms and check the
     client's own `PrismStolen` / `VolumeStolen` on the scoreboard. Before
     `Player.ReportPrismStolen_ServerRpc` this was **zero** — `StatsManager.PrismStolen` opened
     with `if (!_allowRecord) return;` and `_allowRecord` is false on clients, so a client's steals
@@ -504,6 +545,6 @@ Nothing below can be checked without play mode; the depth curve is a pure functi
 - **Audio.** No spike sound is authored. Per the FMOD convention, the embed, the steal and the
   chain-fire each want their own inspector-exposed `EventReference` on the component that makes the
   noise — shipped **empty**, never pointed at a borrowed event.
-- **No AI path.** `AIPilot` has no notion of the volley or the barrage, so an AI Urchin flies but
+- **No AI path.** `AIPilot` has no notion of the tap, the charge, or the track, so an AI Urchin flies but
   does not shoot. The abilities run through the standard executor registry, so this is binding
   work rather than new mechanics.

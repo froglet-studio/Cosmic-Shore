@@ -6,21 +6,34 @@ namespace CosmicShore.Gameplay
     /// <summary>
     /// The shared declarative driver for the general elemental-debuff immunity state
     /// (<see cref="ResourceSystem.SetElementalDebuffImmunity"/> /
-    /// <see cref="IVesselStatus.IsElementallyImmune"/>). Drop it on a vessel root, pick the window it
+    /// <see cref="IVesselStatus.IsImmuneToElementalDebuff"/>). Drop it on a vessel root, pick the window it
     /// holds immunity in, and optionally gate that on an element's level-5 upgrade. Nothing here is
     /// vessel-specific — it is one component any vessel (or mode) can wire, which is the point: the
     /// immunity is a platform state, not a Sparrow feature.
     ///
-    /// Wired today:
-    ///   Sparrow — <see cref="Condition.WhileBoosting"/> gated on <see cref="Element.Time"/>
-    ///             (the TIME level-5 upgrade: boost is the shield).
-    ///   Serpent — <see cref="Condition.WhileTranslationRestricted"/>, ungated
-    ///             (stopping to weave is what makes you untouchable — no unlock needed).
-    ///   Dolphin — <see cref="Condition.WhileDrifting"/> gated on <see cref="Element.Time"/>
-    ///             (the TIME level-5 upgrade: the drift is the ward).
+    /// A window is TWO declarations, not one: WHEN the ward holds (<see cref="condition"/> +
+    /// <see cref="upgradeGate"/>) and WHAT it wards against (<see cref="wardedSources"/>). The
+    /// second exists because "immune to danger prisms" and "immune to an opposing pilot's weapon"
+    /// are different promises — see <see cref="ElementalDebuffSources"/>.
     ///
-    /// The grant is source-keyed on THIS component, so a second holder (another ability, a game mode)
-    /// can hold immunity at the same time without either clearing the other. It is revoked in
+    /// Wired today:
+    ///   Sparrow — <see cref="Condition.WhileBoosting"/> gated on <see cref="Element.Time"/>,
+    ///             warding <see cref="ElementalDebuffSources.All"/>
+    ///             (the TIME level-5 upgrade: boost is the shield).
+    ///   Serpent — <see cref="Condition.WhileTranslationRestricted"/>, ungated, warding
+    ///             <see cref="ElementalDebuffSources.All"/>
+    ///             (stopping to weave is what makes you untouchable — no unlock needed).
+    ///   Dolphin — <see cref="Condition.WhileDrifting"/> gated on <see cref="Element.Time"/>,
+    ///             warding <see cref="ElementalDebuffSources.DangerPrism"/> ALONE
+    ///             (the TIME level-5 upgrade: the drift is the ward — against the ARENA, not
+    ///             against other pilots. Unscoped it also cancelled the Dolphin crystal blast,
+    ///             which is the whole scoring event of The Bends, a mode in which every pilot is
+    ///             a Dolphin: the trailing pilot's comeback buff handed them a hard counter to
+    ///             the only way they could be scored on).
+    ///
+    /// The grant is keyed on THIS component (the grantor — not to be confused with the debuff
+    /// SOURCE class it wards), so a second holder (another ability, a game mode) can hold immunity
+    /// at the same time without either clearing the other. It is revoked in
     /// OnDisable, so a vessel swap / pool return can never strand an immune vessel.
     ///
     /// Evaluated for AI as well as human pilots: the conditions read replicated/owner state
@@ -54,8 +67,18 @@ namespace CosmicShore.Gameplay
                  "like the Serpent's stopped stance.")]
         [SerializeField] Element upgradeGate = Element.None;
 
+        [Tooltip("WHICH elemental debuffs this window wards off. Everything = the total ward " +
+                 "(Sparrow, Serpent). Narrow it to promise less: the Dolphin's Drift Ward is " +
+                 "DangerPrism only, so drifting protects it from the arena without cancelling an " +
+                 "opposing pilot's blast. A debuff that names no class counts as Other, so it is " +
+                 "stopped only by a ward that covers everything.")]
+        [SerializeField] ElementalDebuffSources wardedSources = ElementalDebuffSources.All;
+
         IVesselStatus _status;
-        bool _granted;
+
+        // What is currently granted, so an inspector edit to wardedSources mid-play re-grants
+        // rather than leaving the vessel warded against the old set.
+        ElementalDebuffSources _granted = ElementalDebuffSources.None;
 
         void Awake()
         {
@@ -77,6 +100,9 @@ namespace CosmicShore.Gameplay
         {
             if (_status == null) return false;
 
+            // A ward against nothing is not a window, it is a disabled component.
+            if (wardedSources == ElementalDebuffSources.None) return false;
+
             // Outcome-affecting unlocks resolve through IsUpgradeActive (replicated unlock bits), never a
             // raw local level read — a local read desyncs the state across peers.
             if (upgradeGate != Element.None && upgradeGate != Element.Omni)
@@ -97,13 +123,14 @@ namespace CosmicShore.Gameplay
 
         void Grant(bool immune)
         {
-            if (immune == _granted) return;
+            var wanted = immune ? wardedSources : ElementalDebuffSources.None;
+            if (wanted == _granted) return;
 
             var resources = _status?.ResourceSystem;
             if (!resources) return;
 
-            resources.SetElementalDebuffImmunity(this, immune);
-            _granted = immune;
+            resources.SetElementalDebuffImmunity(this, immune, wanted);
+            _granted = wanted;
         }
     }
 }

@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using CosmicShore.Utility;
+using Unity.Netcode;
 using UnityEngine;
 
 namespace CosmicShore.Gameplay
@@ -17,11 +18,20 @@ namespace CosmicShore.Gameplay
     ///    plain input-pacing cooldown (nothing in the world is removed by it), displayed as a
     ///    binary pip via <see cref="OnJukeChargeChanged"/> — the Sparrow rollChargeIndicator
     ///    pattern exactly.
-    /// 3. It is (eventually) an attack: the design's ball strike and skimmer-mediated vessel
-    ///    shove land with the Astro League mode work. v1 here matches the Sparrow's replication
-    ///    posture verbatim — displacement rides the owner-authoritative NetworkTransform, the
-    ///    360° spin is local, no RPC — so the platform half ships first and the mode half
-    ///    (Juke_ServerRpc carrying direction + Charge snapshot) upgrades this class later.
+    /// 3. It is an attack surface, so the FIRE is OWNER-ONLY and the rest is sent explicitly.
+    ///    Displacement rides the owner-authoritative NetworkTransform; the fire moment makes one
+    ///    owner→server round-trip (<see cref="NotifyJukeFired_ServerRpc"/>) so the server's replica
+    ///    opens <see cref="IsJukeStrikeWindowOpen"/> — the window Scarab Scramble's juke-steal
+    ///    reads on the server — and the server fans the cosmetic 360° spin back out
+    ///    (<see cref="BroadcastJukeRoll_ClientRpc"/>). The fuller Juke_ServerRpc carrying
+    ///    direction + Charge snapshot remains the Phase 2.5 upgrade path.
+    ///
+    ///    THE OWNER GATE IS LOAD-BEARING AND WAS MISSING. `InputStatus.RightNormalizedJoystickPosition`
+    ///    is a NetworkVariable readable by Everyone, so the detection below ran on every peer off
+    ///    the owner's replicated stick: N cavitation blasts per dash, a doubled Astro League ball
+    ///    kick, and replicas writing velocity for a vessel they do not own. The spin appearing on
+    ///    other machines was a side effect of that bug — which is why it is now broadcast on
+    ///    purpose rather than left to fall out of duplicated simulation.
     ///
     /// Kinematics are the Sparrow's exactly: ModifyVelocity displacement orthogonal to travel,
     /// visual-child 360° smoothstep spin (the camera reads the root), a small REAL root bank via
@@ -29,7 +39,7 @@ namespace CosmicShore.Gameplay
     /// Owner-driven; autopilot vessels produce no stick input, so the juke is inert for AI
     /// (trigger synthesis is the standing Phase 2.5 backlog item).
     /// </summary>
-    public class ScarabJukeController : MonoBehaviour
+    public class ScarabJukeController : NetworkBehaviour
     {
         [Header("Trigger")]
         [Tooltip("Stick radial magnitude treated as 'at the perimeter'. 1 = full deflection " +
@@ -70,6 +80,54 @@ namespace CosmicShore.Gameplay
         /// <summary>True while a juke is available.</summary>
         public bool IsJukeArmed => _jukeArmed;
 
+        /// <summary>
+        /// True while the dash's displacement window is live — the window in which a ball
+        /// contact counts as a JUKE STRIKE. Scarab Scramble's steal reads this
+        /// (<c>AstroLeagueBall.IsJukeStrike</c>): the committed dash converts a locked ball,
+        /// the casual bump never does. The ball's strike path runs on the SERVER, so a remote
+        /// pilot's fire opens the window on the server's replica via
+        /// <see cref="NotifyJukeFired_ServerRpc"/> — the strike test then reads the same
+        /// property on either machine.
+        /// </summary>
+        public bool IsJukeStrikeWindowOpen => Time.time - _lastJukeTime <= jukeDurationSeconds;
+
+        /// <summary>
+        /// OWNER -> SERVER: this pilot just fired a juke; open the strike window on the
+        /// server's replica so the (server-side) ball strike path can see the dash. Same
+        /// owner-detects / server-records family as <c>Player.ReportFaunaKill_ServerRpc</c>.
+        /// RequireOwnership stays at its default (true), so only the juking pilot's owner can
+        /// open their own window; the window's LENGTH is the server's serialized
+        /// <see cref="jukeDurationSeconds"/>, never a client-supplied number. Arrival is one
+        /// half-RTT after the local fire, which shifts the window late by the same latency the
+        /// dashed vessel's NetworkTransform pose arrives with — the two travel together.
+        /// </summary>
+        [ServerRpc]
+        void NotifyJukeFired_ServerRpc(float rollSign)
+        {
+            _lastJukeTime = Time.time;
+            BroadcastJukeRoll_ClientRpc(rollSign);
+        }
+
+        /// <summary>
+        /// SERVER -> EVERYONE: play the dash's 360° visual roll on the peers that did not fire it.
+        /// Purely cosmetic — no displacement, no blast, no state the ball or the scoreboard reads;
+        /// the transformer is deliberately not passed, so a replica cannot write velocity, root
+        /// rotation, or BlockRotationOverride for a vessel it does not own.
+        ///
+        /// It exists because owner-gating the fire took this away. Before the gate every peer ran
+        /// the fire path off the replicated stick, so the spin appeared everywhere as a side effect
+        /// of the duplicate-blast bug; the spin was worth keeping and the duplicates were not, so
+        /// it is sent explicitly now. The owner skips it — it already rolled locally, on the frame
+        /// the stick hit the perimeter, with no round-trip.
+        /// </summary>
+        [ClientRpc]
+        void BroadcastJukeRoll_ClientRpc(float rollSign)
+        {
+            if (_status == null || _rolling) return;
+            if (_status.Player is { IsLocalPilot: true }) return;
+            StartCoroutine(RollRoutine(rollSign, null));
+        }
+
         /// <summary>Raised the instant a juke fires, carrying the world-space dash DIRECTION.
         /// <see cref="ScarabCavitationBlast"/> rides this so the blast leaves along the dash —
         /// the dash itself stays free and the blast keeps its own (CHARGE-scaled) cooldown, so
@@ -91,6 +149,23 @@ namespace CosmicShore.Gameplay
 
             if (!_jukeArmed || _rolling) return;
             if (_status.AutoPilotEnabled) return;
+
+            // THE STICK IS REPLICATED, SO THIS MUST BE OWNER-GATED.
+            // InputStatus.RightNormalizedJoystickPosition is backed by a NetworkVariable with
+            // read permission Everyone (InputStatus.n_rNorm), so EVERY peer's copy of this vessel
+            // sees the owning pilot's deflection — not just the machine the stick is plugged into.
+            // Without this gate the whole fire path below ran on all N peers at once: N cavitation
+            // blasts per dash instead of one, a second ball kick on the server (its own blast calls
+            // AstroLeagueBall.ApplyBlastServer directly while the owner's blast arrives again
+            // through RequestBlastBall_ServerRpc), and a ModifyVelocity write on replicas that only
+            // fights the owner-authoritative NetworkTransform.
+            //
+            // The gate is IsLocalPilot, not IsOwner, and that is deliberate: it is the SAME
+            // predicate InputController.Update uses to decide who may CONSUME the stick, and it is
+            // the one that also holds on the legacy non-networked single-player spawn path, where
+            // IsSpawned is false and IsOwner would report false for a human (CLAUDE.md, IPlayer).
+            // A response to local input belongs behind the same gate as the input itself.
+            if (_status.Player is not { IsLocalPilot: true }) return;
 
             var input = _status.InputStatus;
             if (input == null) return;
@@ -118,11 +193,23 @@ namespace CosmicShore.Gameplay
             if (shove.sqrMagnitude < 1e-4f)
                 shove = ship.right * rollSign;
 
-            CSDebug.Log($"[ScarabJuke] Fired: {(rollSign > 0f ? "CW" : "CCW")}, " +
-                        $"stick ({stick.x:F2}, {stick.y:F2}), dir {shove.normalized}");
+            if (CSDebug.IsVerbose(CSLogChannel.ScarabDash))
+                CSDebug.LogVerbose(CSLogChannel.ScarabDash,
+                    $"[ScarabJuke] Fired: {(rollSign > 0f ? "CW" : "CCW")}, " +
+                    $"stick ({stick.x:F2}, {stick.y:F2}), dir {shove.normalized}");
 
             _lastJukeTime = Time.time;
             SetJukeArmed(false);
+            // Mirror the fire onto the server's replica so the juke-steal window exists where
+            // the ball strike is resolved, and fan the VISUAL roll out to the other peers. Both
+            // used to happen by accident, because every peer ran the fire path off the replicated
+            // stick; now that the fire is owner-only they have to be sent deliberately. The host
+            // owns the server copy already, so it broadcasts directly instead of round-tripping.
+            if (IsSpawned)
+            {
+                if (IsServer) BroadcastJukeRoll_ClientRpc(rollSign);
+                else NotifyJukeFired_ServerRpc(rollSign);
+            }
             transformer.ModifyVelocity(shove.normalized * jukeSpeed, jukeDurationSeconds,
                                        ignoresTranslationRestriction: true);
             OnJukeFired?.Invoke(shove.normalized);
@@ -136,6 +223,14 @@ namespace CosmicShore.Gameplay
             OnJukeChargeChanged?.Invoke(armed);
         }
 
+        /// <summary>
+        /// The dash's 360° spin. <paramref name="transformer"/> is NULL on the cosmetic path
+        /// (<see cref="BroadcastJukeRoll_ClientRpc"/>, a peer that does not own this vessel):
+        /// everything that WRITES vessel state — the real root bank and the bridging-prism
+        /// rotation override — is skipped there, leaving only the visual child's local rotation.
+        /// A replica must never author either: the root rotation is the owner's NetworkTransform
+        /// to write, and BlockRotationOverride is read by the owner-written prism lay.
+        /// </summary>
         IEnumerator RollRoutine(float rollSign, VesselTransformer transformer)
         {
             _rolling = true;
@@ -163,30 +258,33 @@ namespace CosmicShore.Gameplay
                 if (visual)
                     visual.localRotation = visualStart * Quaternion.AngleAxis(angle, localRollAxis);
 
-                if (rootRollDegrees > 0f)
-                    transformer.ApplyRotation(
-                        rollSign * rootRollDegrees * (Time.deltaTime / jukeDurationSeconds),
-                        transform.forward);
+                if (transformer)
+                {
+                    if (rootRollDegrees > 0f)
+                        transformer.ApplyRotation(
+                            rollSign * rootRollDegrees * (Time.deltaTime / jukeDurationSeconds),
+                            transform.forward);
 
-                // Bridging prisms orient along the actual travel direction while the
-                // displacement is live (replicates via the owner-written n_BlockRotation).
-                if (_status.IsTranslationRestricted)
-                {
-                    transformer.BlockRotationOverride = null;
-                }
-                else
-                {
-                    var travel = _status.Speed * _status.Course + transformer.VelocityShift;
-                    transformer.BlockRotationOverride = travel.sqrMagnitude > 1e-4f
-                        ? (Quaternion?)Quaternion.LookRotation(travel.normalized, transform.up)
-                        : null;
+                    // Bridging prisms orient along the actual travel direction while the
+                    // displacement is live (replicates via the owner-written n_BlockRotation).
+                    if (_status.IsTranslationRestricted)
+                    {
+                        transformer.BlockRotationOverride = null;
+                    }
+                    else
+                    {
+                        var travel = _status.Speed * _status.Course + transformer.VelocityShift;
+                        transformer.BlockRotationOverride = travel.sqrMagnitude > 1e-4f
+                            ? (Quaternion?)Quaternion.LookRotation(travel.normalized, transform.up)
+                            : null;
+                    }
                 }
 
                 yield return null;
             }
 
             if (visual) visual.localRotation = visualStart;
-            transformer.BlockRotationOverride = null;
+            if (transformer) transformer.BlockRotationOverride = null;
             _rolling = false;
         }
 

@@ -1,7 +1,8 @@
 # Urchin Trail Rider — riding prismscapes
 
 > The Urchin's other half — the spike cascade the ride carries you into range to fire — lives in
-> **`URCHIN_CHAIN_SPIKES.md`**. The ride is the delivery system: it turns someone else's
+> **`URCHIN_CHAIN_SPIKES.md`**, and the ability that supplies a road where the map has none in
+> **`URCHIN_TRACK_PROJECTOR.md`**. The ride is the delivery system: it turns someone else's
 > prismscape into your road, and the road pays as you travel it.
 
 ## Prismscapes have a DIMENSION, and the ride's form follows it
@@ -770,7 +771,7 @@ because `DestroyedTerrainSpeed` was authored 10 against a friendly 150. Both clo
 
 - The walks now **BRIDGE holes**: `Trail.IsRidable` (non-null + active — destroyed-in-place
   passes), `TryStepRidable` (one ridable step with the same wrap/reflect end semantics, so the
-  park logic still hears reflections), and every step in `Project`/`LookAhead` routes through
+  end-of-ribbon launch still hears reflections), and every step in `Project`/`LookAhead` routes through
   it. A missing prism splices out of the ribbon: the segment spans the survivors, the spline's
   outer control points fall back to the segment endpoints (`ControlBlockPosition`), and a walk
   that runs out of survivors parks on the last one instead of throwing.
@@ -887,6 +888,9 @@ to `Domains.Blue` (the neutral sentinel) if the status is not resolved yet.
 | **MASS (2)** | **Trail Rider** | **0 — PASSIVE / contact-driven** | `growthAmount` per prism ridden | **Reinforced Wake** — prisms grown while riding arrive shielded |
 | **TIME (4)** | **Slip** | `Button2Action(7)` | ghost duration | **Slipstream** — ride HOSTILE trail at friendly speed |
 
+(The other two rows are the spike weapon on CHARGE and the track projector on SPACE — see
+`URCHIN_CHAIN_SPIKES.md` and `URCHIN_TRACK_PROJECTOR.md`.)
+
 **Trail Rider is bound to no input event**, and that is deliberate: it triggers on contact. The
 consequence worth knowing is fleet-general — `R_VesselActionHandler.CollectBoundActions` resolves
 an ability's SO by walking the input bindings, so a passive ability can never be found that way.
@@ -911,6 +915,70 @@ ribbon crawls at a fifteenth of the speed of a lap of your own, exactly when you
 moving. At Time 5 `GetTerrainAwareBlockSpeed` returns the friendly speed for hostile mass too,
 while the steal still happens under you. Same replicated gate, same reason: the ride writes
 `VesselStatus.Speed`, which every peer's view of this vessel depends on.
+
+## Running out of rail (round 22): the ribbon ENDS, so you LAUNCH
+
+Reaching the end of an open ribbon used to **park** the rider: `Trail.Project` reflects at a
+terminal block, `TrailFollower` discarded the reflected move and zeroed the ride speed, and the
+vessel came to rest against the last prism. Every property of that was defensible in isolation —
+adopting the bounce made the head unrideable (the transformer's throttle mapping flipped it
+straight back the next frame, and the two flips oscillated the rider), and holding the direction
+meant the ride resumed the moment the trail grew — but the *outcome* was that the reward for a long
+fast grind was **a dead stop at the exact moment the pilot had the most momentum to spend**.
+
+Now the ride ends the way it should: **the ribbon runs out and the vessel flies off it, carrying
+the speed the grind was doing.**
+
+Three pieces, and the split between them is the point:
+
+| Piece | Owns |
+|---|---|
+| `TrailFollower.ReachedEnd` | REPORTING it. The follower is the 1D kernel and never touches `VesselStatus.IsAttached` — it sets a flag, cleared at the top of every `RideTheTrail`, and stops. |
+| `GunVesselTransformer.LaunchOffRibbonEnd` | ACTING on it: clear the attach flags this frame, and fence the ribbon just left (`endLaunchReattachGrace`, 0.35 s) so a trail whose end doubles back cannot snatch the launch away in the same breath it was granted. The fence is scoped to **that one ribbon** — fly straight off one rail into another and the new one takes you immediately. |
+| `GunVesselTransformer.CarrySpeedIntoFreeFlight` / `TickCarriedSpeed` | The SPEED. |
+
+The reflected move is still discarded, so there is no snap and no oscillation; the frame the ride
+ends, the hull is on the terminal block with the pilot's own attitude, and `VesselStatus.Course` is
+still the last tangent the projection wrote. Free flight then re-derives `Course` from the nose, so
+**you leave along the rail and immediately fly where you are pointing** — aiming the exit is a real
+decision, and it is what makes the launch a manoeuvre rather than an ejection.
+
+**A LOOP never reaches this at all** (`Trail.Project` wraps instead of reflecting), so a closed
+ribbon — a boost ring, an omnicrystal ring — is still ridden forever. The difference between the two
+topologies is now something the pilot can *feel*.
+
+### The speed carry — momentum outlives the ride
+
+A friendly grind runs at **150 u/s** against the Urchin's ~50 u/s free-flight top
+(`DefaultThrottleScaler` 50, `DefaultMinimumSpeed` 0), so handing the vessel straight back to
+`ComputeThrottleTarget` would delete two thirds of its speed in a frame. Instead:
+
+- `EndRide` reads the ride's last speed and, if it beats what the pilot could fly anyway, writes it
+  into the transformer's smoothed cruise field **directly** and arms `_carriedSpeed`. Writing
+  `speed` rather than letting it lerp up is what makes the handoff seamless — a lerp would read as
+  the vessel *accelerating* after it let go.
+- `ComputeThrottleTarget` is overridden to return `max(natural, _carriedSpeed)`. **MAX, not a
+  replacement**: the pilot's throttle takes over the instant it can beat the decaying carry, and a
+  boost during the glide is not thrown away.
+- `TickCarriedSpeed` bleeds the carry toward the natural target at a constant
+  `detachSpeedDecayRate` (**12 u/s**, so 150 → 50 spends ~8 seconds), then clears it. Constant-rate
+  rather than exponential so the glide has a readable slope and actually *lands*.
+
+**Only EXCESS is carried.** A ride slower than the pilot's own cruise — hostile terrain at 10 u/s —
+hands over nothing, so this can never brake a vessel and can never become a free speed floor. It is
+strictly momentum the pilot already had.
+
+**Every exit routes through `EndRide`**, so "an Urchin keeps its speed when it lets go" is one rule
+with one implementation: running off the end, Slip, and a trail cleared out from under the rider all
+carry. That last case used to be the odd one out — it cleared the flags in place and set `attached`
+false itself, which meant the `else if` that runs `EndRide` could never fire for it, so `_rideMode`
+stayed stale and the ride camera stayed pulled in for the rest of the vessel's life. It now goes
+through the same `LeaveRide` as everything else.
+
+**And it must not outlive the pilot.** `ClearLaunchState` runs from `Initialize` (which re-runs on a
+live component when a vessel changes hands) and from an overridden `ResetTransformer` (a respawn /
+turn reset, which zeroes `speed`). A carry left standing would floor the throttle target back up to
+a ride speed the new life never earned.
 
 ## Slip — the detach that means something
 
@@ -938,7 +1006,8 @@ restore the previous pilot's colliders onto the new one at an arbitrary moment.
 | Attach effect (the two flags + guns) | `ImpactEffects/EffectsSO/Vessel Prism Effects/VesselAttachPrismEffectSO.cs` |
 | The attach guard (**platform**) | `ImpactEffects/EffectsSO/Vessel Prism Effects/VesselDamagePrismEffectSO.cs` — `skipWhileAttached` |
 | Flight model / topology routing / payoff | `Controller/Vessel/GunVesselTransformer.cs` — `MoveShip`, `TryBeginRide`, `Slide`, `ReadThrottle`, `SlideActions`, `ApplyPrismscapePayoff` |
-| The 1D centerline kernel | `Controller/Vessel/TrailFollower.cs` — `Attach` (bool; seeds direction, lerp and speed from the touch), `CenterlinePoint`/`TravelHeading`/`IndexOrderHeading` (publishes, never writes the transform), `SetDirection` (range-clamped), `RideTheTrail` (one smoothed speed per frame; parks at open-ribbon ends), `RideSpeed`, live `Domain` |
+| The 1D centerline kernel | `Controller/Vessel/TrailFollower.cs` — `Attach` (bool; seeds direction, lerp and speed from the touch), `CenterlinePoint`/`TravelHeading`/`IndexOrderHeading` (publishes, never writes the transform), `SetDirection` (range-clamped), `RideTheTrail` (one smoothed speed per frame), `ReachedEnd` + `AttachedTrail` (the launch signal and the ribbon it left), `RideSpeed`, live `Domain` |
+| The launch + speed carry | `Controller/Vessel/GunVesselTransformer.cs` — `LaunchOffRibbonEnd`, `IsReattachBlocked`, `CarrySpeedIntoFreeFlight`, `TickCarriedSpeed`, `ComputeThrottleTarget` override, `LeaveRide`, `ResetTransformer` override |
 | The 2D ride kernel (marble) | `Controller/Vessel/BlockscapeFollower.cs` — smoothed plane over authored normals (prism Z ⊥ surface), momentum (`surfaceInertiaRate`), hover spring, gap coasting, rim wrap (`ResolveSurfaceFrame`), `OnPrismCrossed`, `SurfaceNormal` |
 | The dimension ladder | `Data/Enums/PrismscapeDimension.cs` — Singleton 0 / Trail 1 / Surface 2 / Volume 3 |
 | The topology classifier | `Controller/Vessel/PrismscapeTopology.cs` — `DimensionOf`, QuerySphere census |
@@ -974,6 +1043,8 @@ restore the previous pilot's colliders onto the new one at an arbitrary moment.
 | `rimWrapMargin` | `BlockscapeFollower` (C# default **1**) | How far past the ground's footprint (× its largest extent) the rim wrap completes. |
 | `ghostSecondsAtRestingTime` / `AtFullTime` | `UrchinSlipAction.asset` | 0.6 → 1.6. `GhostSecondsForLevel` is linear in level, anchored at 0 and 10, **extrapolated** across `[-5, 15]`, floored at 0. |
 | `detachImpulse` | `UrchinSlipAction.asset` | **0** — off. Raise if a detach should visibly leave the ribbon rather than sliding off it. |
+| `detachSpeedDecayRate` | `GunVesselTransformer` (C# default **12**) | u/s bleed-off of the speed carried off a ride. 150 → the ~50 cruise takes ~8 s. Constant-rate, so the glide has a readable slope and lands rather than trailing off. Only ever removes EXCESS. |
+| `endLaunchReattachGrace` | `GunVesselTransformer` (C# default **0.35**) | Seconds after an end-of-ribbon launch during which THAT ribbon cannot re-latch. Scoped to the one trail, so the next rail you aim for still takes you. |
 | `armGunsOnAttach` | `VesselAttachPrismEffect.asset` | on |
 | `skipWhileAttached` | `VesselDamagePrismEffect.asset` | **on** — the platform guard. Turning it off restores the 2023 bug for every attaching vessel. |
 
@@ -1033,8 +1104,7 @@ Nothing below can be checked without play mode.
 8. **Reverse and orbit.** Pull the speed axis below rest: the grind coasts down, passes
    through zero, and backs down the ribbon — a swing, never an about-face. Hold roll: the hull
    spins around the rail exactly as it would in free flight — nothing fights the stick, and
-   the hull does not get swung around on its own. At the trail's HEAD the rider parks and
-   resumes the moment new prisms are laid — no bouncing.
+   the hull does not get swung around on its own.
 8a. **The rail has weight (round 10).** Release the stick mid-grind: the ride COASTS to a stop
    rather than cutting dead. Grind from your own trail onto an enemy's: the 150→10 terrain
    change reads as braking, not a snap. Latch on at speed with the stick held forward: you
@@ -1070,6 +1140,23 @@ Nothing below can be checked without play mode.
 16. **Detach speed.** Ride at full pelt on your own trail, then slip. The vessel must carry a
     sensible speed out of the ride rather than snapping back to the cruise it had when it latched
     on (the `AdvanceSpeed` feedback).
+16a. **Run off the END of a ribbon (round 22).** Grind your own trail all the way to its last
+    prism with the throttle held. The vessel must **fly off it, not stop** — the camera pulls back
+    out, free flight resumes, and the speed you carry off should be roughly the grind's 150 and
+    then bleed down to the ~50 cruise over ~8 seconds. Watch the speed readout (or just the trail
+    wavelength, which is `wavelength / speed`): it should fall steadily, not step.
+16b. **The launch does not re-latch itself.** Repeat 16a on a curved trail whose end bends back on
+    itself. You must stay OFF it for the 0.35 s grace even if the hull brushes it. Then fly
+    straight off one rail into a second one nearby — the second must take you **immediately**;
+    the fence is scoped to the ribbon you left, not to attaching in general.
+16c. **Coasting to a stop at the end still works.** Ride toward the end and RELEASE the throttle
+    before you reach it. The ride coasts down; if it comes to rest before the last prism you stay
+    attached. (Only a rider still moving when the ribbon runs out is launched.)
+16d. **A LOOP is still infinite.** Ride a boost ring / omnicrystal ring (a closed ribbon). It must
+    never launch you — a loop wraps rather than reflecting.
+16e. **The carry does not survive a life.** Launch off a ribbon at 150 and, while still gliding,
+    end the turn / respawn / swap vessels. The new life must start at its ordinary cruise, not at
+    the carried speed.
 17. **Refused attach.** Touch a prism with no trail (an environment/flora prism, a fauna body
     prism). The vessel must keep flying normally — a vessel that freezes in place has kept
     `IsAttached` set on a refusal.

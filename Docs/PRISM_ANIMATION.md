@@ -1565,15 +1565,17 @@ for everyone else. It is recorded here because it is the **second** use of §4.7
 and it demonstrates the shape generalises: a view-dependent prism visual that is a *feature* rather
 than a law still gets exactly one global-uniform publisher and zero per-prism CPU.
 
-While the Dolphin's pilot holds the sight, every prism standing inside the volume its next crystal
-blast would sweep lights up. `PrismDestructionSight` publishes five globals per frame (apex, sweep
-axis, gape axis, `(height, coreRadiusPerUnitDepth, halfLengthPerUnitDepth)`, strength);
-`PrismDestructionSight.hlsl` runs the containment test per fragment, spliced into BlockGraph and
-ExplodingBlockGraph by `Tools/Shaders/wire_prism_destruction_sight.py` — the same census the
-corridor covers, for the same reason (a prism material that cannot light up is a hole in a
-targeting aid).
+While a Dolphin's pilot holds the sight, every prism standing inside the volume their next crystal
+blast would sweep lights up. `PrismDestructionSight` publishes the viewer's OWN sight as five
+globals per frame (apex, sweep axis, gape axis,
+`(height, coreRadiusPerUnitDepth, halfLengthPerUnitDepth)`, strength);
+`PrismDestructionSight.hlsl` runs the containment test **once per prism** — at the prism's own
+origin, read from the object matrix, which is the exact point `AOEConicSweepQueryJob` tests — spliced
+into BlockGraph and ExplodingBlockGraph by `Tools/Shaders/wire_prism_destruction_sight.py` — the
+same census the corridor covers, for the same reason (a prism material that cannot light up is a
+hole in a targeting aid).
 
-Three properties worth carrying to the next one:
+Four properties worth carrying to the next one:
 
 - **The tested volume is not re-derived.** `ExplosionHelper.TryResolveConicVolume` builds it from
   the authored scales, the live energy read and the Space multiplier the *detonation* uses, and the
@@ -1589,8 +1591,20 @@ Three properties worth carrying to the next one:
   highlighted prism standing in the corridor thins out like its neighbours instead of punching
   through the ship. Two §4.7 consumers on the same graph do not interact, because they write
   different channels of the same surface description.
+- **N simultaneous publishers are still ONE publish** (added 2026-08-19, when the sight became
+  visible to every player). Other pilots' sights ride a fixed bank of four array slots — packed once
+  per frame in `LateUpdate` from a frame-stamped registry, four `SetGlobalVectorArray` calls plus a
+  count, *regardless of how many are aiming* and skipped entirely when none are. The shape
+  generalises from one volume to a small bounded set without becoming per-instance: what §4.7
+  forbids is per-PRISM CPU, and a bank of N globals is still O(1) in prisms. Two mechanics fell
+  out of the bounded bank that a future one will need too — the array must be declared **at file
+  scope in the HLSL** (Shader Graph has no array property type, and this is also why the change
+  needed no graph edit at all) and **outside every CBUFFER** (an array inside `UnityPerMaterial`
+  breaks SRP batching); and the count uniform must be the master sentinel, since unpublished
+  globals read as zero and that has to mean "loop does not execute".
 
-Mechanic and tuning: `_Scripts/Controller/Vessel/R_VesselActions/DOLPHIN_CRYSTAL_SEEDING.md`.
+Mechanic and tuning: `_Scripts/Controller/Vessel/R_VesselActions/DOLPHIN_CRYSTAL_SEEDING.md`
+(§14 for the peer channel).
 
 ### 4.8 The shield morph — the last CPU ticker (shipped 2026-08-15, B4)
 

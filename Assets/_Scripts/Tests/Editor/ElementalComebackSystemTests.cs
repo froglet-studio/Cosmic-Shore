@@ -168,6 +168,7 @@ namespace CosmicShore.Tests
             new object[] { GameModes.Ribcage, ElementalComebackSystem.ScoreDifferenceSource.PrismsDestroyed },
             new object[] { GameModes.WildlifeLiberation, ElementalComebackSystem.ScoreDifferenceSource.LifeformsKilled },
             new object[] { GameModes.DogFight, ElementalComebackSystem.ScoreDifferenceSource.CombatPoints },
+            new object[] { GameModes.ScarabScramble, ElementalComebackSystem.ScoreDifferenceSource.Goals },
         };
 
         [TestCaseSource(nameof(LiveSourceCases))]

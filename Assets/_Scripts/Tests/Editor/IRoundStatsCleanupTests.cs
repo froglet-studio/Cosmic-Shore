@@ -54,6 +54,7 @@ namespace CosmicShore.Tests
             public event Action<IRoundStats> OnLifeformsKilledChanged;
             public event Action<IRoundStats> OnBulletHitsLandedChanged;
             public event Action<IRoundStats> OnMissileHitsLandedChanged;
+            public event Action<IRoundStats> OnDebuffHitsLandedChanged;
             public event Action<IRoundStats> OnCombatPointsChanged;
             public event Action<IRoundStats> OnFullSpeedStraightAbilityActiveTimeChanged;
             public event Action<IRoundStats> OnRightStickAbilityActiveTimeChanged;
@@ -94,6 +95,7 @@ namespace CosmicShore.Tests
             public int LifeformsKilled { get; set; }
             public int BulletHitsLanded { get; set; }
             public int MissileHitsLanded { get; set; }
+            public int DebuffHitsLanded { get; set; }
             public int CombatPoints { get; set; }
             public float FullSpeedStraightAbilityActiveTime { get; set; }
             public float RightStickAbilityActiveTime { get; set; }
@@ -141,6 +143,7 @@ namespace CosmicShore.Tests
                 LifeformsKilled = 42,
                 BulletHitsLanded = 64,
                 MissileHitsLanded = 9,
+                DebuffHitsLanded = 27,
                 CombatPoints = 514,
                 FullSpeedStraightAbilityActiveTime = 10f,
                 RightStickAbilityActiveTime = 20f,
@@ -220,6 +223,7 @@ namespace CosmicShore.Tests
             // next match's pilots a head start.
             Assert.AreEqual(0, _stats.BulletHitsLanded);
             Assert.AreEqual(0, _stats.MissileHitsLanded);
+            Assert.AreEqual(0, _stats.DebuffHitsLanded);
             Assert.AreEqual(0, _stats.CombatPoints);
         }
 

@@ -526,3 +526,34 @@ unchanged by this work.
   membrane; the Cell Selector's current world is legible as *two* rings (outer switch, inner
   counter-spinning halo) rather than one thick rim; the domain changer is visibly unchanged; and
   the Wanderway return station's hoop turns to face you as you fly back down the tether.
+
+## Cell Selector — a GROWN cell has no scale model (Aug 2026, Lattice cell)
+
+`CellMiniatureBuilder` builds a station's model by striding the environment generator's own output
+(`GetTrailData` + `CellEnvironmentSpawnableBase.CachedLays`). A config with no `EnvironmentPrefab`
+has no generator, so its slot reads visibly empty — which was exactly right while Blob was the only
+such config ("you are in the empty one") and is now only *half* right, because the matrix carries
+**two** blank stations:
+
+- **`Barren`** (`CellConfigs[9]`) — blank is the truth. It is open water: no environment, no flora,
+  no fauna. Nothing to fix.
+- **`Lattice`** (`CellConfigs[0]`) — blank is a **lie**. It grows eight lattice superstructures to
+  ~21,600 prisms; it is one of the densest worlds in the game and it previews as nothing. Its label
+  is currently the only thing distinguishing it from the empty option.
+
+This is not a `CellMiniatureBuilder` bug — there is genuinely no lay data to stride, because the
+mass does not exist until plants grow it. Three directions, in preference order:
+
+1. **Sample the LIVE cell when it is the current world.** `CellSelectorToy` already prefers the
+   live environment's cached lays for its own emblem; a grown cell could feed the same path from
+   the prism spatial index instead of from `CachedLays`. Only works for the world you are already
+   in, which is the one case where the halo already tells you.
+2. **Bake a still.** Author a small mesh (or a sprite) on `CellConfigDataSO` for configs that have
+   no generator, so a grown world can advertise its shape without one. Costs an authored asset per
+   such cell, and drifts from what the cell actually grows.
+3. **Run the assembler headless for N plants.** Exact and self-maintaining, but it is a real
+   simulation — the reason `CellMiniatureBuilder` strides lay data in the first place is that
+   generating is the expensive part.
+
+Until one lands, a grown cell in the selector is identified by its **label** alone. Note this
+becomes more pressing, not less, if more grown-environment cells ship.

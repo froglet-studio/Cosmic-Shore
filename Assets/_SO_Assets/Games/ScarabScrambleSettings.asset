@@ -1,0 +1,38 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2b8e7b7645a247359db13f37ee95312b, type: 3}
+  m_Name: ScarabScrambleSettings
+  m_EditorClassIdentifier:
+  courtRadiusByIntensity:
+  - 480
+  - 560
+  - 640
+  - 720
+  hoopCountByIntensity:
+  - 4
+  - 3
+  - 2
+  - 1
+  hoopMouthRadiusByIntensity:
+  - 60
+  - 54
+  - 48
+  - 42
+  hoopRingRadiusFraction: 0.45
+  hoopAccentColor: {r: 0.78, g: 0.92, b: 1, a: 1}
+  hoopFlareSeconds: 1.2
+  faunaWaitOutsideCourt: 1
+  faunaExclusionCourtFraction: 1
+  faunaExclusionSweepSeconds: 3
+  aiRetargetSeconds: 1
+  aiApproachLead: 45
+  aiInterceptLeadSeconds: 0.5

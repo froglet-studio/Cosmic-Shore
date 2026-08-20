@@ -460,6 +460,7 @@ namespace CosmicShore.Utility
         {
             (CSLogChannel.NetworkFlow,  "[FLOW-n] spawn / session flow"),
             (CSLogChannel.GyroidColony, "[GyroidColony] lattice telemetry"),
+            (CSLogChannel.ScarabNucleus, "[ScarabNucleusField] Scarab nucleus seeding"),
         };
 
         void DrawStackTraceRow(string label, LogType type)

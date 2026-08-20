@@ -12,8 +12,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 01f934d50526431a9392a6ceca1dc33d, type: 3}
   m_Name: Barren Cell Config
   m_EditorClassIdentifier: 
-  CellName: Baren
-  Description: Feels like flying in a brain
+  CellName: Barren
+  Description: Open water - no environment, no flora, no fauna. The bare canvas a
+    Wanderway run happens in.
   Icon: {fileID: 21300000, guid: 6aa1c06e11b265744a5f9fa8858ac72a, type: 3}
   Difficulty: 2
   CellEndGameScore: 0
@@ -25,3 +26,12 @@ MonoBehaviour:
     type: 3}
   CellModifiers: []
   SpawnProfile: {fileID: 11400000, guid: 434c1f97bcb91b34895ef0f0a987b716, type: 2}
+  PhaseThresholds:
+    RestlessEnter: 8000
+    RestlessExit: 6000
+    FrenzyEnter: 40000
+    FrenzyExit: 34000
+    RestlessEnterVolume: 128000
+    RestlessExitVolume: 96000
+    FrenzyEnterVolume: 640000
+    FrenzyExitVolume: 544000

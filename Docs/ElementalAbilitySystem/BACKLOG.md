@@ -213,9 +213,11 @@ Mechanics reference: `_Scripts/Controller/Vessel/R_VesselActions/DOLPHIN_ENERGY_
     it means the field holds a stale multiplier for the rest of the vessel's life, and any future
     reader that forgets the gate silently inherits a free boost. Clear it alongside the flag in
     `DischargeRoutineAsync`'s tail and in `VesselStatus`'s reset if this area is touched again.
-20. **The Dolphin's speed retune has not been flown.** 60 → 78 cruise and 210 → 357 boost are
-    arithmetic, not feel. 357 is a large jump and the speed tunnel amplifies how it reads — expect
-    a balancing pass. Steps + knob table: `Docs/UNITY_VERIFICATION_CHECKLIST.md`.
+20. **The Dolphin's speed retune has not been flown.** 60 → 68 cruise and 210 → 347 boost are
+    arithmetic, not feel. 347 is a large jump and the speed tunnel amplifies how it reads — expect
+    a balancing pass. (The 78/357 figures that stood here came off `DefaultMinimumSpeed` 10, which
+    is **0** since `claude/dolphin-minimum-speed-59q8ay` — throttle-off is now a real stop, and the
+    floor no longer pads either number.) Steps + knob table: `Docs/UNITY_VERIFICATION_CHECKLIST.md`.
 
 ## Skim-visual follow-ups (opened by `claude/dolphin-skim-effect-7sd2w1`)
 

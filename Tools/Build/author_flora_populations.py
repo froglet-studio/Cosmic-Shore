@@ -93,7 +93,7 @@ LATTICE_MIN_FOUNDERS = 4
 # Species whose growth rule is a LATTICE: an offspring is handed a real bond site off the
 # parent's own frontier (AssembledFlora.TryResolveOffspringPlacement), so many small plants
 # add up to one continuous minimal surface. Matched on the flora prefab.
-LATTICE_PREFABS = {"GyroidFlora.prefab", "SchwarzPFlora.prefab"}
+LATTICE_PREFABS = {"GyroidFlora.prefab", "SchwarzPFlora.prefab", "QuasicrystalFlora.prefab"}
 
 # Per-plant budget for a lattice species: the 24-prism octagon patch plus headroom for the
 # boundary prisms the ownership epsilon lets a plant win (measured patches run 22-28; the
@@ -109,6 +109,14 @@ LATTICE_BUDGET = 30
 LATTICE_PATCH = {
     "GyroidFlora.prefab":   (OCTAGON_PATCH, LATTICE_BUDGET),   # 24 owned, 30 budget
     "SchwarzPFlora.prefab": (36, 36),                          # 36 owned, 36 budget - exact
+    # Quasicrystal: a plant owns ONE HEART's tree territory on the icosahedral
+    # quasilattice (Docs/ECOSYSTEM.md 37). Tree cells are exact but their size
+    # legitimately varies - measured 44..97 struts, mean 58.8, over 1,461 simulated
+    # plants (Tools/Build/measure_icosahedral_quasilattice.py) - so the conversion
+    # basis is the MEAN and the budget sits above the measured MAX, because the
+    # ownership tree, not the budget, is the real bound: a plant whose cell the
+    # budget truncated would leave permanent holes in the colony's scaffold.
+    "QuasicrystalFlora.prefab": (59, 110),                     # 59 mean owned, 110 budget
 }
 
 # No per-CONFIG override is needed, and that is the point of FloraVariantTuning.LatticeScale.
@@ -136,6 +144,26 @@ LATTICE_OFFSPRING_PER_BIRTH = 1
 # about itself - the shipped biomes are the honest test. Keep the hook: the next lab goes here.
 EXCLUDE = set()
 
+# Configs owned by ANOTHER authoring script, by asset-name prefix. Not an exclusion: it is a
+# hand-off, and it prints who the owner is. Two scripts silently writing one field is a
+# run-order hazard that only surfaces months later when somebody re-runs the older tool
+# (Docs/ECOSYSTEM.md 34.5 / the /ecology skill's "two fitters must not own one asset").
+#
+# "Lattice ": the Lattice cell (Docs/ECOSYSTEM.md 36). Its eight colonies are not a conversion
+# of an authored plant - the cell's whole environment IS the colony - so this file's rule
+# (cap = old_single_plant_budget / patch) has no input to work from and would silently shrink
+# them back to the Blob caps.
+OWNED_ELSEWHERE = {
+    "Lattice ": "Tools/Build/author_lattice_cell.py",
+}
+
+
+def owner_of(name):
+    for prefix, script in OWNED_ELSEWHERE.items():
+        if name.startswith(prefix):
+            return script
+    return None
+
 # The AUTHORED single-plant budget each lattice config carried BEFORE the conversion. Recorded
 # explicitly rather than read back off the asset, because the conversion overwrites that value -
 # deriving the cap from the live file would make a second run compute cap = 27/27 = 1 and quietly
@@ -161,6 +189,14 @@ LATTICE_SOURCE_BUDGET = {
     "SchwarzP Flora Mass": 800,
     "SchwarzP Flora Space": 800,
     "SchwarzP Flora Time": 800,
+    # Quasicrystal: the prefab's authored 800, same convention as Schwarz P.
+    # cap = round(800 / 59) = 14 plants - 14 always-on heart colliders at cap,
+    # under Schwarz P's 22 because a star plant carries ~59 struts to a tile's 36.
+    "Blob Quasicrystal Flora Config Data": 800,
+    "Quasicrystal Flora Charge": 800,
+    "Quasicrystal Flora Mass": 800,
+    "Quasicrystal Flora Space": 800,
+    "Quasicrystal Flora Time": 800,
 }
 
 
@@ -342,8 +378,14 @@ def main():
     print(f"{'config':<50}{'kind':<9}{'budget':>12}{'floor':>7}{'cap':>6}{'quota':>7}{'prisms@cap':>12}")
     print("-" * 103)
     drift, total_plants, total_prisms = [], 0, 0
+    handed_off = []
     for path in targets:
-        if os.path.basename(path)[:-6] in EXCLUDE:
+        name = os.path.basename(path)[:-6]
+        if name in EXCLUDE:
+            continue
+        owner = owner_of(name)
+        if owner:
+            handed_off.append((name, owner))
             continue
         p = plan(path, guids, defaults)
         changed, err = apply(path, p, check)
@@ -363,6 +405,11 @@ def main():
     print("-" * 103)
     print(f"{'TOTAL (all cells, at cap)':<50}{'':<9}{'':>12}{'':>7}"
           f"{total_plants:>6}{'':>7}{total_prisms:>12}")
+    if handed_off:
+        print("\nHANDED OFF (owned by another authoring script, untouched here):")
+        for name, owner in handed_off:
+            print(f"  {name:<50} -> {owner}")
+
     print("\nNOTE: 'prisms@cap' is a per-species ceiling, not a prediction - the cell's Frenzy\n"
           "volume gate stops growth first in every shipped biome. Each plant also carries ONE\n"
           "heart crystal (an always-on collider), so 'cap' IS the crystal count that species\n"

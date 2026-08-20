@@ -10,6 +10,10 @@ namespace CosmicShore.Gameplay
     /// <see cref="ResourceSystem.ApplyElementalEffect"/>. Danger prisms are friendly-fire - the
     /// debuff applies regardless of the prism's domain, own trail included. The debuff decays back
     /// to the vessel's base levels over <see cref="debuffDuration"/>; persistent progress is untouched.
+    ///
+    /// It is applied as <see cref="ElementalDebuffSources.DangerPrism"/>, so a ward held against
+    /// the ARENA alone (the Dolphin's Drift Ward) stops it while leaving that vessel fully
+    /// debuffable by another pilot's weapon.
     /// </summary>
     [CreateAssetMenu(
         fileName = "VesselElementalDebuffByDangerPrismEffect",
@@ -50,8 +54,11 @@ namespace CosmicShore.Gameplay
                 return;
             _lastEffectTime[rs] = now;
 
+            // Classed DangerPrism, which is what a narrow ward can be held against: the Dolphin's
+            // Time-5 Drift Ward wards THIS and nothing else (ElementalDebuffSources).
             for (int i = 0; i < AllElements.Length; i++)
-                rs.ApplyElementalEffect(AllElements[i], debuffMagnitude, debuffDuration);
+                rs.ApplyElementalEffect(AllElements[i], debuffMagnitude, debuffDuration,
+                                        ElementalDebuffSources.DangerPrism);
         }
     }
 }

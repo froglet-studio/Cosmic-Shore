@@ -221,7 +221,16 @@ namespace CosmicShore.Gameplay
             if (_explosionImpactor) _explosionImpactor.SetAffectSelf(initStruct.AffectSelfOverride.Value);
         }
 
-        private void SubscribeToGameEvents()
+        /// <summary>
+        /// The post-injection subscription retry. PROTECTED, not private, because a subclass that
+        /// overrides <see cref="Initialize"/> wholesale (the conic and cylindrical blasts both do)
+        /// otherwise has no way to reach it — and <see cref="OnEnable"/> cannot cover for it: a
+        /// runtime-spawned blast runs Awake+OnEnable inside `Instantiate`, BEFORE any call site
+        /// gets to inject it, so `gameData` is still null there. That is why this call exists at
+        /// the end of Initialize at all. An override that skips it silently ships a blast with no
+        /// turn-end kill switch and no replay-reset cleanup.
+        /// </summary>
+        protected void SubscribeToGameEvents()
         {
             if (gameData == null) return;
             gameData.OnMiniGameTurnEnd.OnRaised -= CancelExplosion;

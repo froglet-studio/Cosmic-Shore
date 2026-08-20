@@ -14,7 +14,7 @@ namespace CosmicShore.Gameplay
     /// WHY PROCEDURAL RATHER THAN A DIFFERENT FBX. The model hangs off the vessel as a
     /// <c>PrefabInstance</c> of the Sparrow FBX carrying ~40 per-child modifications plus stripped
     /// references from the vessel root (the hull GameObject that owns the ImpactCollider and the
-    /// vessel's BoxCollider, the Animator, several transforms). Repointing that instance's guid at
+    /// vessel's hull SphereCollider, the Animator, several transforms). Repointing that instance's guid at
     /// another FBX dangles every one of them — the exact failure `Docs/GAMECANVAS.md` records for
     /// hard-copied prefabs. So the legacy instance stays, keeping its colliders and rig wiring
     /// intact, and only its RENDERERS are switched off; this component draws the ship. When real
@@ -242,7 +242,7 @@ namespace CosmicShore.Gameplay
 
         /// <summary>
         /// Switch off the inherited model's renderers — never its GameObjects. The vessel's
-        /// ImpactCollider and BoxCollider live on that subtree, and `VesselCustomization` /
+        /// ImpactCollider and hull SphereCollider live on that subtree, and `VesselCustomization` /
         /// `VesselStatus` hold references into it; deactivating it would silently drop the ship
         /// out of the collision world. Disabled renderers are also excluded from the occlusion
         /// corridor's hull measurement, so the corridor sizes itself to THIS hull automatically.
