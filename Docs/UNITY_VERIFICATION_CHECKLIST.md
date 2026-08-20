@@ -1693,6 +1693,12 @@ occurrence names itself.
    up and splay as you slow, the horn swings against the nose. A rigid hull means
    `ScarabAnimation` resolved no parts — check the console for its unresolved-part report.
    Right-stick dash: the whole visible ship must spin 360° (it previously rolled the hidden FBX).
+   **MPPM two-client, the load-bearing one:** dash on the CLIENT and count the plates — there must
+   be exactly **ONE**, and the ball must take a single kick, not two. Before the `IsLocalPilot`
+   gate the replicated right stick made every peer fire, so a 4-player lobby threw 4 plates per
+   dash. Also confirm the OTHER machine still sees your ship spin 360° (that is now an explicit
+   `BroadcastJukeRoll_ClientRpc`, not a side effect), and that the spinning replica does not drift
+   sideways — a replica must play the visual only.
    And the dash must now throw a **visible cylindrical plate** — a broad disc lying flat ACROSS
    your course, starting on the hull and sweeping **54 u** along the dash in **~0.21 s** at
    **r 45** (10× the 4.5 hull radius; length 1.2× that radius). It is a fast slap, not a bloom. If

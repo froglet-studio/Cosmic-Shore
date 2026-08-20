@@ -30,6 +30,12 @@ namespace CosmicShore.Gameplay
     /// travelled instead of away from a point. That is the whole read: the beetle's strike throws
     /// mass DOWN-RANGE.
     ///
+    /// SPAWNED DIRECTLY, NOT THROUGH <c>ExplosionHelper.CreateExplosion</c>. That helper
+    /// special-cases the cone (<c>FindCone</c> / <c>AuthoredConeHeight</c>) and would hand a plate
+    /// a cone's height as its length. Routing one through it is benign today only because a
+    /// non-cone yields no height and this class then falls back to <see cref="lengthPerRadius"/> —
+    /// do not rely on that; give the helper a cylinder branch first if a second caller ever needs it.
+    ///
     /// GEOMETRY LIVES IN WORLD UNITS ON A SCALE-1 ROOT. The cone drives a non-uniformly scaled
     /// container and then has to divide that scale back out of its capsule trigger, anisotropically
     /// (see <c>AOEConicExplosion.UpdateCapsuleTrigger</c>). This root is never scaled: the mesh

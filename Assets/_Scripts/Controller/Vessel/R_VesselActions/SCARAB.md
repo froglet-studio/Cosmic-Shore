@@ -414,9 +414,38 @@ is what makes it read as a *slap* rather than a muzzle blast.
 
 **Replication.** The Sparrow's roll needs none (displacement rides the owner-authoritative
 NetworkTransform). The juke's *hits* are outcome-affecting, so `ScarabJukeController` is a
-`NetworkBehaviour`: owner poll → execute locally (zero latency) → `Juke_ServerRpc(dir)` →
-`Juke_ClientRpc` → non-owner peers play the visual (sender-filtered). The ball strike and the
-vessel shove resolve **server-side**, where the ball already lives.
+`NetworkBehaviour`: owner poll → execute locally (zero latency) → `NotifyJukeFired_ServerRpc(rollSign)`
+→ `BroadcastJukeRoll_ClientRpc` → non-owner peers play the visual (sender-filtered). The ball
+strike and the vessel shove resolve **server-side**, where the ball already lives.
+
+**SHIPPED 2026-08-20 — the "owner poll" above was never actually owner-gated, and that is what
+made the dash misbehave.** `InputStatus.RightNormalizedJoystickPosition` is a `NetworkVariable`
+with read permission **Everyone** (`InputStatus.n_rNorm`), so every peer's copy of a Scarab could
+see the owning pilot's stick. `ScarabJukeController.Update` had no ownership test, and none of the
+gates above it stops a replica: `_jukeArmed` re-arms everywhere (cooldown 0), `AutoPilotEnabled` is
+false on every peer for a *human* pilot (`Player.StartPlayer` only autopilots `IsInitializedAsAI`,
+and returns early on network clients), and `InputStatus` is non-null on replicas. So the entire
+fire path ran **N times, once per peer**:
+
+| consequence | why it mattered |
+|---|---|
+| **N cavitation blasts per dash** | each peer spawned its own `AOECylindricalExplosion` and shredded its own local prism set |
+| **The Astro League ball took two kicks** | the server's own replica-blast called `AstroLeagueBall.ApplyBlastServer` directly, *and* the owner's blast arrived again through `RequestBlastBall_ServerRpc` — the exact double-credit shape `Docs/…/BENDS.md` records for a replayed blast |
+| **Replicas wrote velocity** | `ModifyVelocity` on a vessel they do not own, fighting the owner-authoritative NetworkTransform |
+| **The ServerRpc looked redundant** | it was added so the server's replica would open `IsJukeStrikeWindowOpen`; the server was in fact already firing, which is the tell that nobody expected the replicated stick |
+
+The fix is the one line the design always implied: `if (_status.Player is not { IsLocalPilot: true }) return;`.
+**`IsLocalPilot`, never `IsOwner`** — it is the same predicate `InputController.Update` uses to
+decide who may *consume* the stick, and the only one that also holds on the legacy non-networked
+single-player spawn path where `IsSpawned` is false (CLAUDE.md, `IPlayer`). *A response to local
+input belongs behind the same gate as the input itself.*
+
+The 360° spin then had to be **sent** rather than left to fall out of duplicated simulation, which
+is what `BroadcastJukeRoll_ClientRpc` is for: it plays the visual on the peers that did not fire,
+and passes a **null transformer** into `RollRoutine` so a replica writes only the visual child's
+local rotation — never the root bank, never `BlockRotationOverride`, both of which belong to the
+owner. The general rule: **a replicated INPUT value makes every peer a simulator unless something
+says otherwise; grep for who READS a networked input before assuming an `Update` is owner-local.**
 
 ### 3.5 Pitch/yaw on the left stick
 
@@ -527,7 +556,9 @@ a gate a hull cannot pass.
 **KNOWN LIMITATION: blast-forging is host-only in a networked session.** The ball is a
 NetworkObject, so only the server may spawn one. The vessel-impact forge reaches the server for
 free because it arrives through `NetworkVesselImpactor`'s ServerRpc → ClientRpc fan-out, so it
-works for every pilot. A blast does not: `ScarabJukeController` reads local input in `Update`, so
+works for every pilot. A blast does not: `ScarabJukeController` fires only on the owning pilot's
+machine (§3.4 replication — true since the owner gate landed; before it, the blast existed on
+*every* peer, so this paragraph described an intent the code did not have), so
 a client's cavitation explosion exists **only on that client** — and the crystal it engulfs cannot
 be spent there either, because `OmniCrystalImpactor.CanBlastConsume` refuses on a network client
 exactly as every other crystal collect does. A client's blast therefore forges nothing; the
@@ -1118,7 +1149,7 @@ tool in any mode with opponents. Nothing in the kit requires an arena to functio
 | File | Contents |
 |---|---|
 | `_Scripts/Controller/Vessel/ScarabVesselTransformer.cs` | `SingleStickVesselTransformer` subclass: the throttle **integrator** + Time-scaled ceiling + double-tap dash (§3.2, §3.6) |
-| `_Scripts/Controller/Vessel/ScarabJukeController.cs` | Right-stick poll (uncooled), displacement + visual roll, `OnJukeFired(direction)`; vessel shove + ball strike + fire RPCs still to come (§3.4) |
+| `_Scripts/Controller/Vessel/ScarabJukeController.cs` | Right-stick poll (uncooled) **gated on `IsLocalPilot`**, displacement + visual roll, `OnJukeFired(direction)`, `NotifyJukeFired_ServerRpc` (strike window) + `BroadcastJukeRoll_ClientRpc` (cosmetic spin on non-owners); vessel shove + ball strike still to come (§3.4) |
 | `_Scripts/.../R_VesselActions/ScarabCavitationBlast.cs` | Rides `OnJukeFired`: spawns the swept-plate blast centred on the hull along the dash, sized off `VesselImpactor.HullColliders`, CHARGE-scaled cooldown, CHARGE-5 `DevastatingOverride` (§3.4, §7) |
 | `_Scripts/Controller/Projectiles/AOECylindricalExplosion.cs` | The swept-plate blast itself — constant-radius disc, linear sweep, one velocity handed to prisms/vessels/ball alike (§3.4) |
 | `_Scripts/.../Vessel Explosion Effects/VesselElementalDebuffByExplosionEffectSO.cs` | Platform addition: the danger-prism elemental debuff lifted onto the **explosion** impactor (all four elements, decaying, per-victim anti-spam) |
