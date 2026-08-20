@@ -1285,6 +1285,99 @@ particular looks like a leftover.
 
 ---
 
+### Task 10 — Editor domain reload ("Run managed callbacks") stall
+
+**Scope note:** this is the only item in this doc that is *editor iteration*
+cost, not frame cost. It is logged here because it is the same discipline —
+measure, attribute, fix — and because it is what the team actually pays for
+every recompile.
+
+**Symptom (reported 2026-08-20):** the editor sits in
+`Application.Reload Assemblies → Run managed callbacks` long enough that
+Windows marks it Not Responding and it gets killed from Task Manager.
+
+**What that phase is:** after the new assemblies are loaded, Unity rebuilds
+all managed state on the main thread with no message pump — every
+`[InitializeOnLoad]` static ctor, `[InitializeOnLoadMethod]`,
+`[DidReloadScripts]`, `AssemblyReloadEvents.afterAssemblyReload`, then
+re-deserialize + `OnEnable` on every live ScriptableObject, EditorWindow and
+loaded-scene component, then the `OnValidate` storm. Because the pump is
+blocked, "Not Responding" means *slow*, not necessarily *hung*.
+
+**Attribution, ranked (analysis, not yet a capture):**
+
+1. **Domain reload is not disabled on Play.**
+   `ProjectSettings/EditorSettings.asset` has `m_EnterPlayModeOptions: 3`
+   (both DisableDomainReload + DisableSceneReload bits) but
+   `m_EnterPlayModeOptionsEnabled: 0` — configured and never switched on. Every
+   Play press pays a full reload.
+2. **One assembly.** 1,446 runtime + 149 editor first-party scripts in
+   `Assembly-CSharp` / `Assembly-CSharp-Editor`, zero runtime asmdefs (by
+   design, see CLAUDE.md). A one-line edit reloads all of it, and every
+   reflection-based consumer rescans it.
+3. **DOTS Entities 1.4.2 + Entities Graphics.** `TypeManager.Initialize()`
+   runs inside this phase and reflects over every type in every loaded
+   assembly; Entities Graphics + baking register alongside it. Cost scales
+   with (2). Entities is genuinely in use (`PrismRenderService`,
+   `PrismDebris`, `PrismShieldShatter`) so this is a floor, not a removal
+   candidate.
+4. **First-party `[InitializeOnLoad]` disk work at the reload boundary** —
+   the two items fixed below.
+5. **FMOD.** `EditorUtils.Startup` (`[InitializeOnLoadMethod]`) hooks
+   `beforeAssemblyReload → DestroySystem()` and schedules
+   `EventManager.Startup → RefreshBanks()` (synchronous bank cache scan).
+   FMOD editor-system teardown across reload is a known genuine *hang*
+   source with a Studio live-update connection open — check here first if the
+   editor never recovers rather than recovering slowly.
+
+**How to get the real numbers (do this before further work):** Unity already
+writes them. After a slow reload, open `%LOCALAPPDATA%\Unity\Editor\Editor.log`
+and find the **`Domain Reload Profiling:`** block — a ms-attributed tree over
+`LoadAllAssembliesAndSetupDomain`, `AfterProcessingInitializeOnLoad`, and
+**per-`[InitializeOnLoad]`-class timings**. That names the offender instead of
+ranking suspects.
+
+**Shipped this round (both contained, no gameplay surface):**
+
+- `PlayModeSOProtector` — the play-mode SO snapshot moved from ~790
+  `SessionState` string keys (~11 MB held for the whole play session) to a
+  disk snapshot under `Library/PlayModeSOSnapshot`, gated by one small
+  `SessionState` bool so a crash-orphaned snapshot is never replayed into a
+  later editor session. Restore is now gated on write time + length, so an
+  asset play mode never touched costs one stat call instead of a full
+  read-back and content compare; only the changed subset is read. The
+  `AssetDatabase.ImportAsset(..., ForceUpdate)` loop is batched inside
+  `StartAssetEditing()` / `StopAssetEditing()` — unbatched, each import
+  triggered its own synchronous refresh. Behaviour is otherwise unchanged:
+  assets created or deleted during play are still left alone.
+- `SceneBootstrapper` — the OnValidate-noise auto-save is now **opt-in and
+  off by default** (`FrogletTools > Scene Setup > Testing Multiplayer >
+  Auto-Save OnValidate Noise`). It previously ran `EditorSceneManager.SaveScene`
+  on the active scene after *every* domain reload and every play-mode exit
+  whenever Cinemachine / URP / NetworkManager `OnValidate` dirtied it —
+  `Menu_Main.unity` is 4.1 MB, serialized inside the window the editor is
+  already spending on managed callbacks. With it off the scene simply reads as
+  dirty and saving is the developer's call.
+
+**Deferred, each needs its own pass:**
+
+- Turn on Enter Play Mode Options (item 1). Highest single win and free, but
+  it needs a static-state audit first. The codebase is closer to viable than
+  most — most statics already reset via
+  `[RuntimeInitializeOnLoadMethod(SubsystemRegistration)]` installers
+  (`PrismClock`, `PrismDebris`, `MainThreadDispatcher`,
+  `GyroidOctagonRegistry`, `Crystal`, `AssembledFlora`, …) — but the audit is
+  the work, not the toggle.
+- Move the 149 `Editor/` scripts behind an asmdef (item 2), which takes them
+  out of the runtime recompile path. Legal only per-file: an asmdef assembly
+  **cannot** reference `Assembly-CSharp`, where all gameplay types live, so
+  every editor script that touches a gameplay type has to stay put. Needs a
+  file-by-file check, not a blanket move.
+- FMOD (item 5) — no change until a `Domain Reload Profiling` capture or a
+  reproducible never-recovers hang implicates it.
+
+---
+
 ## 5. Standing verification protocol (run after each fix)
 
 Same HexRace scenario, Deep Profile **off**:
@@ -1318,3 +1411,4 @@ not compiler, at the time of the merge).
 | 2026-07-09 | 6-agent adversarial re-verification of the five commits (pre-editor-test). **3 blockers found in the fresh Task 1 commits, fixed in `d80e7ee5`:** `dtNominal` 0.02 → 0.04 (project Fixed Timestep is 0.04 — growth was ~1.9× too fast as committed; two agents converged on it independently); fixed 0.5 s dt cap → rotation-scaled cap (fixed cap slowed tempo up to 7× under the target frenzy load); cursor drift on removal bursts corrected. GC coverage gaps (clients + Play Again reloads never took the scheduled collect) fixed in `4443df83` via the two all-peers post-load fade-back handlers. WaitForSeconds cache, pool marker verdicts: SOUND (notes: cache misses on the variable-`waitTime` `waitTillOutsideSkimmer` path — acceptable; prewarm burst unmarked — intentional). Final compile-sanity pass over all six edited files: PASS (arithmetic invariants proven, `MaterialStateManager` independent, no external readers of the sliced behavior). Lesson recorded: never assume Unity's 0.02 default fixed timestep — check `TimeManager.asset`. |
 | 2026-07-17 (Sparrow regression) | The `75828ff0` async refill broke Sparrow guns/missiles once merged to bleeding-edge: `InstantiateAsync` bypasses the virtual `CreateFunc`, the only place `ProjectilePoolManager` ran Reflex injection, so async-refilled projectiles carried a null `AudioSystem` and NRE'd in `LaunchProjectile` (stack pool = un-injected instances hand out FIRST; Sparrow missile pool prewarms 5 toward a 20 target, so the pool top went dud within seconds). Fixed in `e146b882`: new `GenericPoolManager.OnInstanceCreated(T)` hook fires on both creation paths; subclass instance-prep (DI injection) must live there, never in a `CreateFunc` override. §1 item 3 updated with the contract. |
 | 2026-08-06 (pause + menu-return round) | Two reported UX stalls fixed. **Pause tap hitch:** the pause panel (`R_Pause_Menu_Panel`) starts inactive in every scene, so the FIRST tap paid the whole hierarchy's Awake/OnEnable + layout + TMP mesh generation mid-gameplay. Shipped `PauseMenu.Prewarm()` — the panel is activated invisible (root CanvasGroup alpha 0) for two frames at scene start and deactivated again; called from `MiniGameHUD.Start` (gameplay scenes) and `MenuMiniGameHUD.InstantiatePauseMenu` (menu freestyle). **Game→menu return:** (1) `SceneLoader.ReturnToMainMenu` now unpauses first (mirrors `LaunchGame`) — the pause-menu Main Menu button previously ran the whole transition at `timeScale 0`; (2) connected clients are covered BEFORE the teardown via `MultiplayerMiniGameControllerBase.BroadcastReturnToMenuVeil` → `ShowReturnToMenuVeil_ClientRpc` (mirror of the replay path's `PrepareForSceneReload_ClientRpc`; RPC + despawn messages share the reliable channel, so the veil always lands before vessels pop out — clients previously watched the whole despawn + scene switch uncovered); (3) on a game→menu arrival (previous loaded scene was a gameplay scene — tracked per-peer in `SceneLoader`), the opaque splash is HELD for `menuReturnSettleSeconds` (1.5 s, serialized) after `OnClientReady` so end-of-session cleanup finishes behind the veil instead of visibly clearing after the fade; the all-peers covered `GC.Collect` moved after the settle window so settle churn is collected too. First boot, auth→menu, party join, game launches, and replay reloads are not delayed (flag armed only on game→menu, cleared by `LaunchGame`). Remaining known stall: Menu_Main's synchronous scene-activation Awake/Start cost still freezes the splash spinner for its duration — structural, not addressed this round. |
+| 2026-08-20 (editor reload round) | Added **Task 10** — the `Run managed callbacks` domain-reload stall: what the phase is, the five ranked contributors (Enter Play Mode Options never switched on despite the flags being set; single-assembly compile; Entities `TypeManager` reflection; first-party `[InitializeOnLoad]` disk work; FMOD editor-system teardown), and the `Domain Reload Profiling:` block in `Editor.log` as the measurement that ends the guessing. Shipped two contained fixes: `PlayModeSOProtector` snapshot moved off `SessionState` (~11 MB across ~790 keys) onto a `Library/` snapshot with mtime+length-gated restore and batched reimports; `SceneBootstrapper`'s OnValidate-noise auto-save made opt-in and default OFF (it was serializing the 4.1 MB `Menu_Main` on every reload and every play exit). Deferred with reasons: Enter Play Mode Options (needs a static-state audit), editor asmdef split (blocked per-file by `Assembly-CSharp` references), FMOD (needs a capture first). |
