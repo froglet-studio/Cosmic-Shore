@@ -10,7 +10,7 @@ using CosmicShore.Utility;
 using Reflex.Attributes;
 using CosmicShore.ScriptableObjects;
 #if UNITY_EDITOR
-using Unity.Multiplayer.Playmode;
+
 using Unity.Netcode.Transports.UTP;
 #endif
 namespace CosmicShore.Gameplay
@@ -151,12 +151,12 @@ namespace CosmicShore.Gameplay
                 // MPPM clones run as separate editor processes on the same machine.
                 // Each starts its own local host, so they need unique ports to avoid
                 // bind conflicts. Relay transport handles actual multiplayer connections.
-                if (!CurrentPlayer.IsMainEditor)
+                if (!Unity.Multiplayer.PlayMode.CurrentPlayer.IsMainEditor)
                 {
                     var transport = nm.GetComponent<UnityTransport>();
                     if (transport != null)
                     {
-                        var tags = CurrentPlayer.ReadOnlyTags();
+                        var tags = Unity.Multiplayer.PlayMode.CurrentPlayer.ReadOnlyTags();
                         var tagKey = tags != null && tags.Length > 0 ? string.Join("-", tags) : "clone";
                         ushort port = (ushort)(7778 + (ushort)(Math.Abs(tagKey.GetHashCode()) % 100));
                         transport.SetConnectionData("127.0.0.1", port, "0.0.0.0");

@@ -2,6 +2,7 @@ using System.Linq;
 using System.Threading;
 using CosmicShore.Data;
 using CosmicShore.Gameplay;
+using CosmicShore.Utility;
 using Cysharp.Threading.Tasks;
 using Unity.Netcode;
 using UnityEngine;
@@ -24,7 +25,7 @@ namespace CosmicShore.Gameplay
         [SerializeField] private Collider arenaBounds;
 
         [Header("Timing")]
-        [SerializeField] private Vector2 strikeIntervalSecondsRange = new(4f, 8f);
+        [SerializeField] private Vector2 strikeIntervalSecondsRange = new Vector2(4f, 8f);
         [SerializeField] private float telegraphSeconds = 1.5f;
 
         [Header("Strike")]

@@ -6,7 +6,7 @@ using CosmicShore.Utility;
 using Unity.Services.Core;
 using Unity.Services.Authentication;
 #if UNITY_EDITOR
-using Unity.Multiplayer.Playmode;
+
 #endif
 
 namespace CosmicShore.Core
@@ -215,10 +215,10 @@ namespace CosmicShore.Core
         void SwitchMppmProfileIfNeeded()
         {
 #if UNITY_EDITOR
-            if (CurrentPlayer.IsMainEditor)
+            if (Unity.Multiplayer.PlayMode.CurrentPlayer.IsMainEditor)
                 return;
 
-            var tags = CurrentPlayer.ReadOnlyTags();
+            var tags = Unity.Multiplayer.PlayMode.CurrentPlayer.ReadOnlyTags();
             var profileName = tags != null && tags.Length > 0
                 ? $"mppm-{string.Join("-", tags)}"
                 : "mppm-clone";

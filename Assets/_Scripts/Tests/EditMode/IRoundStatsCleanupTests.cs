@@ -56,6 +56,8 @@ namespace CosmicShore.Tests
             public event Action<IRoundStats> OnButton1AbilityActiveTimeChanged;
             public event Action<IRoundStats> OnButton2AbilityActiveTimeChanged;
             public event Action<IRoundStats> OnButton3AbilityActiveTimeChanged;
+            public event Action<IRoundStats> OnLivesChanged;
+            public event Action<IRoundStats> OnEliminatedChanged;
 #pragma warning restore CS0067
 
             public string Name { get; set; }
@@ -91,6 +93,13 @@ namespace CosmicShore.Tests
             public float Button1AbilityActiveTime { get; set; }
             public float Button2AbilityActiveTime { get; set; }
             public float Button3AbilityActiveTime { get; set; }
+            public int Lives { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
+            public bool IsEliminated { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
+
+            public void Cleanup()
+            {
+                throw new NotImplementedException();
+            }
         }
 
         IRoundStats _stats;
