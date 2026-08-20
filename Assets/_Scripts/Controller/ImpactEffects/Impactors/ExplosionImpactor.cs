@@ -104,6 +104,10 @@ namespace CosmicShore.Gameplay
         /// </summary>
         public static bool ForceLegacyPhysics { get; set; }
 
+        // A/B switch owned by the benchmark overlay; must not survive into a normal session.
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        static void ResetForceLegacy() => ForceLegacyPhysics = false;
+
         // --- ProfilerMarkers ---
         private static readonly ProfilerMarker s_onTriggerEnter = new("AOE.OnTriggerEnter");
         private static readonly ProfilerMarker s_onTriggerSkipped = new("AOE.OnTriggerEnter.Skipped");

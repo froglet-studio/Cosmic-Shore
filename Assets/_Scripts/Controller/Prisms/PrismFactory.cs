@@ -53,6 +53,14 @@ namespace CosmicShore.Gameplay
         /// </summary>
         public static bool EffectPressureScalingDisabled = false;
 
+        // Benchmark-harness overrides; a play exit mid-run must not leave them lifted.
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        static void ResetBudgetOverrides()
+        {
+            VFXBudgetPerFrameOverride = 0;
+            EffectPressureScalingDisabled = false;
+        }
+
         static int EffectiveExplosionVFXBudget =>
             VFXBudgetPerFrameOverride > 0 ? VFXBudgetPerFrameOverride : MaxExplosionVFXPerFrame;
         static int EffectiveImplosionVFXBudget =>

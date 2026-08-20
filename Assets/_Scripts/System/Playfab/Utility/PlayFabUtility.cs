@@ -13,6 +13,10 @@ namespace CosmicShore.Core
 
         public static Action<PlayFabError> GettingPlayFabErrors;
 
+        // Bare delegate field — publicly assignable, never cleared by any subscriber.
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        static void ResetStatics() => GettingPlayFabErrors = null;
+
         public static DateTime ServerTime;
         /// <summary>
         /// Get current time from the server

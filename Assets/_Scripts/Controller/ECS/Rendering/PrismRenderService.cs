@@ -84,6 +84,15 @@ namespace CosmicShore.ECS
         // ------------------------------------------------------------------
 
         static bool? _runtimeOverride;
+
+        // Diagnostic overrides with no restore path of their own (the rest of this class's
+        // statics self-heal through TryEnsure's dead-world branch).
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        static void ResetOverrides()
+        {
+            _runtimeOverride = null;
+            _linearizeOverride = null;
+        }
         static bool _configLoaded;
         // OPT-IN: defaults OFF. The instanced path only renders correctly once the
         // prism ShaderGraphs expose their animated properties as Hybrid Per Instance

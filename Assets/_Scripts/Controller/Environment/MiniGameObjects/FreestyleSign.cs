@@ -57,6 +57,9 @@ namespace CosmicShore.Gameplay
     {
         public static event System.Action OnFreestyleSelected;
 
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        static void ResetStatics() => OnFreestyleSelected = null;
+
         public static void RaiseFreestyleSelected()
         {
             OnFreestyleSelected?.Invoke();
