@@ -16,11 +16,15 @@ fill the table, commit. Full workflow: `Docs/QA/README.md`.
 · ⛔ blocked. Items that PASS leave this file (→ `ARCHIVE.md`).
 
 **Standing preconditions for every item** (do these once per session):
-- Pull the branch under test, let Unity **fully reimport** (a stale `Library/`
-  masks asset changes and is the single most common false failure here).
-- Keep the Console open with **Error Pause off** and *Clear on Play* off.
-- Unless an item says otherwise, "freestyle" means: launch to `Menu_Main`, tap the
-  centre crystal to take control of the vessel.
+- Get the build being tested (branch + commit), then let Unity **finish importing
+  it completely** before you judge anything — a leftover `Library/` folder from an
+  older build hides the changes and is the most common reason a test looks broken
+  when it is not.
+- Keep Unity's **Console** window open, with **Error Pause off** and *Clear on Play*
+  off, so nothing scrolls away or halts the game mid-test.
+- Unless an item says otherwise, **"freestyle"** means: start the game, wait for the
+  main menu, then take control of the ship — **click the centre of the screen**, or
+  press **Y** on a gamepad. (Press it again to hand control back.)
 
 ---
 
@@ -32,7 +36,8 @@ Dog Fight / Wildlife Liberation / Astro League direct merges. **Why P0:** ~30
 branches of hand-authored C#, prefab, scene and ScriptableObject YAML have never
 been through Unity's importer or compiler.
 
-1. Open the project on the branch under test. Wait for import + compile to settle.
+1. Open the project in Unity. Wait until it has finished importing and compiling —
+   the progress bar is gone and the spinner in the bottom-right has stopped.
 2. Read the whole Console. Record every **compile error**, every `Missing (Mono Script)`,
    every "broken/dangling reference", and every meta-file regeneration warning.
 3. Launch to `Menu_Main`. Enter freestyle. Return to the menu. Launch one arcade
@@ -82,7 +87,8 @@ item on this list is observed through, and both freestyle transitions were rewri
    `MainMenuCameraController`).
 2. Cycle the four rig kinds (**OrbitVessel / CinematicTrail / ChaseTight / TopDownPan**)
    however the scene exposes them, and watch each config **glide** into the next.
-3. **Enter freestyle** (tap the centre crystal) and watch the whole transition.
+3. **Enter freestyle** (click the centre of the screen, or press **Y** on a gamepad)
+   and watch the whole transition.
 4. **Exit freestyle** back to the menu and watch the whole transition.
 5. Do steps 3–4 five times in a row, including while the AI vessel is turning hard.
 6. Swap vessel (Vessel Changer toy), then enter and exit freestyle again.

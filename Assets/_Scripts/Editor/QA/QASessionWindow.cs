@@ -99,6 +99,7 @@ namespace CosmicShore.Editor.QA
         bool _busy;
         readonly Dictionary<string, string> _noteEdits = new Dictionary<string, string>();
         readonly Dictionary<string, bool> _instructionsOpen = new Dictionary<string, bool>();
+        readonly Dictionary<string, bool> _helpOpen = new Dictionary<string, bool>();
         GUIStyle _bodyStyle, _passHeader, _failHeader, _okBody, _headline, _chip;
 
         GUIStyle Body => _bodyStyle ?? (_bodyStyle = new GUIStyle(EditorStyles.wordWrappedLabel));
@@ -151,21 +152,40 @@ namespace CosmicShore.Editor.QA
         /// A numbered step banner. The window reads as ONE PROCESS — session, build,
         /// editor setup, items, submit — and these are what separate the phases so a
         /// first-time tester always knows where in the process they are standing.
+        ///
+        /// <paramref name="help"/> is the section's explanation. It is NOT drawn by
+        /// default: a wall of prose reads as work before any has been done, so the
+        /// reasoning hides behind the "?" and the step keeps only what to DO. The
+        /// text also rides the button's tooltip, so hovering reveals it without a click.
         /// </summary>
-        void StepHeader(string number, string title)
+        void StepHeader(string number, string title, string help = null)
         {
             EditorGUILayout.Space(14);
             var accent = FrogletEditorPalette.ColorFor(FrogletToolCategory.Qa);
+            var open = help != null && _helpOpen.TryGetValue(number, out var h) && h;
             using (new EditorGUILayout.HorizontalScope())
             {
                 var box = GUILayoutUtility.GetRect(20f, 20f, GUILayout.Width(20f));
                 EditorGUI.DrawRect(box, accent);
                 GUI.Label(box, number, Chip);
                 EditorGUILayout.LabelField(title, FrogletEditorPalette.SectionHeader);
+                if (help != null)
+                {
+                    GUILayout.FlexibleSpace();
+                    if (FrogletEditorPalette.ColorButton(open ? "×" : "?",
+                            FrogletEditorPalette.Muted, 22f, 18f, help))
+                        _helpOpen[number] = !open;
+                }
             }
             var line = GUILayoutUtility.GetRect(1f, 2f, GUILayout.ExpandWidth(true));
             EditorGUI.DrawRect(line, new Color(accent.r, accent.g, accent.b, 0.35f));
             EditorGUILayout.Space(4);
+            if (open)
+            {
+                using (new EditorGUILayout.VerticalScope(EditorStyles.helpBox))
+                    EditorGUILayout.LabelField(help, Body);
+                EditorGUILayout.Space(2);
+            }
         }
 
         /// <summary>A faint horizontal rule between subsections of one panel.</summary>
@@ -473,25 +493,54 @@ var sb = new StringBuilder();
 
         void DrawSession()
         {
-            StepHeader("1", "Your session — " + _state.sessionFile);
+            StepHeader("1", "Your session — " + _state.sessionFile,
+                "This is your results file. It lives in Docs/QA/RESULTS/ and it is " +
+                "yours alone — nothing in it reaches anyone else until you press " +
+                "Submit in step 5. You can leave it half-finished for days and come " +
+                "back to it; the window reopens whatever you were last working on.");
             EditorGUILayout.LabelField(
                 "Tester " + _state.tester + "   ·   " + _state.date + "   ·   Unity " +
                 _state.unity + "   ·   " + _state.platform, EditorStyles.miniLabel);
 
-            StepHeader("2", "Be on the right build");
+            StepHeader("2", "Check you have the right version of the game",
+                "Different versions of the game are called \"builds\". Each one has a " +
+                "short code — a \"commit\" — like a receipt number, and the tests you " +
+                "are about to run were written against one specific build.\n\n" +
+                "Test the wrong build and your results point engineering at the wrong " +
+                "code, which costs more time than not testing at all. When an " +
+                "instruction later says \"the branch under test\", it means the build " +
+                "named in this step.");
             DrawBuildStep();
 
             if (!string.IsNullOrEmpty(_state.preconditions))
             {
-                StepHeader("3", "Set up the Unity Editor — once per session");
+                StepHeader("3", "Set up Unity — do this once, at the start",
+                    "These three settings stop the two most common false alarms: " +
+                    "judging the game before Unity has finished loading the new files, " +
+                    "and losing the error messages you are supposed to be reading " +
+                    "because the game cleared or paused on them.");
                 using (new EditorGUILayout.VerticalScope(EditorStyles.helpBox))
                     EditorGUILayout.LabelField(_state.preconditions, Body);
             }
 
-            StepHeader("4", "Run your items — read, do, judge, note");
+            StepHeader("4", "Run your tests",
+                "Each box below is one test. Work through it top to bottom: read what " +
+                "to check, go and do it in the game, come back and pick your verdict, " +
+                "then write down what you saw.\n\n" +
+                "Some words you will meet in the instructions:\n" +
+                "•  Console — Unity's message window (Window ▸ General ▸ Console). It " +
+                "lists errors as the game runs.\n" +
+                "•  Freestyle — flying the ship yourself from the main menu: click the " +
+                "centre of the screen, or press Y on a gamepad.\n" +
+                "•  Reimport — Unity re-reading the game's files. Assets ▸ Reimport All " +
+                "forces it, and it can take a while.\n" +
+                "•  MPPM — a Unity feature that runs several copies of the game at once " +
+                "so you can test multiplayer alone.\n\n" +
+                "You do not have to run every test, or run them in one sitting. If you " +
+                "cannot judge one, that is a real answer — mark it BLOCKED and say why.");
             if (_state.rows.Length == 0)
-                EditorGUILayout.HelpBox("No items in your session yet — pick one from " +
-                    "the list below to see what it involves.", MessageType.Info);
+                EditorGUILayout.HelpBox("No tests picked yet — choose one from the " +
+                    "list at the bottom to see what it involves.", MessageType.Info);
 
             foreach (var row in _state.rows) DrawRow(row);
 
@@ -508,59 +557,84 @@ var sb = new StringBuilder();
         }
 
         /// <summary>
-        /// The live build check. Every backlog instruction that says "the branch under
-        /// test" means the build this form names — an abstraction that confuses a
-        /// beginner, so this step makes it concrete: here is that build, here is what
-        /// your project is actually on, and here is exactly what to type if they differ.
+        /// The live build check, made concrete. "The branch under test" is an
+        /// abstraction that loses a beginner, so this step names the build, says what
+        /// the project is actually on, and — when they differ — gives the fix as
+        /// GitHub Desktop clicks (no typing) with the typed commands as a fallback.
         /// </summary>
         void DrawBuildStep()
         {
             using (new EditorGUILayout.VerticalScope(EditorStyles.helpBox))
             {
-                EditorGUILayout.LabelField(
-                    "Anywhere an instruction says “the branch under test”, it means " +
-                    "this exact build, which your form names:",
-                    EditorStyles.wordWrappedMiniLabel);
-                EditorGUILayout.LabelField(
-                    "        " + _state.sessionBranch + "   at commit   " + _state.commit,
-                    EditorStyles.boldLabel);
-
                 var match = !string.IsNullOrEmpty(_state.commit) &&
                             _state.commit == _state.head;
+
+                EditorGUILayout.LabelField("The build these tests were written for:",
+                    EditorStyles.miniBoldLabel);
+                EditorGUILayout.LabelField("      " + _state.sessionBranch +
+                    "      commit " + _state.commit, EditorStyles.boldLabel);
+                EditorGUILayout.Space(2);
+                EditorGUILayout.LabelField("The build your Unity project has open:",
+                    EditorStyles.miniBoldLabel);
+                EditorGUILayout.LabelField("      " + _state.branch +
+                    "      commit " + _state.head, EditorStyles.boldLabel);
+
                 if (match)
                 {
-                    EditorGUILayout.LabelField(
-                        "Your Unity project is on that exact commit. Nothing to do here — " +
-                        "go to step 3.", OkBody);
+                    Rule();
+                    EditorGUILayout.LabelField("These match. Nothing to do here — " +
+                        "go on to step 3.", OkBody);
                     return;
                 }
 
+                Rule();
                 EditorGUILayout.LabelField(
-                    "Your project is currently on " + _state.head + " — a DIFFERENT build. " +
-                    "A verdict recorded against the wrong build sends engineering into the " +
-                    "wrong code, so fix this before running anything:", FailBodyStyle());
+                    "These do not match, so you are about to test the wrong version of " +
+                    "the game. Switch to the right one before you run anything:",
+                    FailBodyStyle());
+                EditorGUILayout.Space(4);
+
+                EditorGUILayout.LabelField("In GitHub Desktop:", EditorStyles.miniBoldLabel);
                 EditorGUILayout.LabelField(
-                    "In a terminal at the repo root, run the three commands below (the Copy " +
-                    "button puts them on your clipboard), then let Unity reimport.",
-                    EditorStyles.wordWrappedMiniLabel);
+                    "1.  Click  Fetch origin  (top bar).\n" +
+                    "2.  Click  Current Branch  (top bar) and choose  " +
+                    _state.sessionBranch + "\n" +
+                    "3.  Click  Pull origin  (top bar). If it is not offered, you are " +
+                    "already up to date.", Body);
+                EditorGUILayout.Space(2);
+                EditorGUILayout.LabelField(
+                    "Then switch back to Unity, wait for it to finish importing, and " +
+                    "press Refresh at the top of this window.", Body);
+
+                Rule();
+                EditorGUILayout.LabelField("Prefer to type it? These are the same three " +
+                    "steps as commands:", EditorStyles.miniBoldLabel);
+                // Selectable so it can be read and copied by hand as well as by button —
+                // and shown literally, because "run the commands below" must have the
+                // commands directly below it.
+                EditorGUILayout.SelectableLabel(GitCommands(), EditorStyles.textArea,
+                    GUILayout.Height(52f));
                 using (new EditorGUILayout.HorizontalScope())
                 {
-                    if (FrogletEditorPalette.ColorButton("Copy the git commands",
-                            FrogletEditorPalette.Info, 170f))
-                        EditorGUIUtility.systemCopyBuffer =
-                            "git fetch origin\n" +
-                            "git checkout " + _state.sessionBranch + "\n" +
-                            "git pull origin " + _state.sessionBranch;
+                    if (FrogletEditorPalette.ColorButton("Copy these commands",
+                            FrogletEditorPalette.Info, 160f))
+                        EditorGUIUtility.systemCopyBuffer = GitCommands();
+                    GUILayout.FlexibleSpace();
                     if (FrogletEditorPalette.ColorButton(
-                            "I tested what is checked out — record " + _state.head,
-                            FrogletEditorPalette.Warn, 320f, 24f,
-                            "Rewrites the form's Commit row to the build Unity currently " +
-                            "has open. Only press this if that really is the build you ran " +
-                            "the items on."))
+                            "I already tested this version — use " + _state.head,
+                            FrogletEditorPalette.Warn, 300f, 24f,
+                            "Only press this if the build Unity has open right now IS " +
+                            "the one you ran the tests on. It rewrites your form to say " +
+                            "so — it does not change any code."))
                         Run("submit", "--accept-head");
                 }
             }
         }
+
+        string GitCommands() =>
+            "git fetch origin\n" +
+            "git checkout " + _state.sessionBranch + "\n" +
+            "git pull origin " + _state.sessionBranch;
 
         GUIStyle FailBodyStyle() => _failBody ?? (_failBody = TintedWrapped(FrogletEditorPalette.Error));
         GUIStyle _failBody;
@@ -593,10 +667,24 @@ var sb = new StringBuilder();
                 var open = _instructionsOpen.TryGetValue(row.id, out var o)
                     ? o
                     : !row.frozen && string.IsNullOrEmpty((row.verdict ?? "").Trim());
-                var next = EditorGUILayout.Foldout(open,
-                    "What to check — steps and PASS/FAIL", true);
-                if (next != open) _instructionsOpen[row.id] = next;
-                if (next) DrawInstructions(item);
+                var whyKey = "why:" + row.id;
+                var why = _helpOpen.TryGetValue(whyKey, out var w) && w;
+                using (new EditorGUILayout.HorizontalScope())
+                {
+                    var next = EditorGUILayout.Foldout(open,
+                        "What to check — steps and PASS/FAIL", true);
+                    if (next != open) _instructionsOpen[row.id] = next;
+                    open = next;
+                    if (open && item != null && !string.IsNullOrEmpty(item.context))
+                    {
+                        GUILayout.FlexibleSpace();
+                        if (FrogletEditorPalette.ColorButton(why ? "×" : "?",
+                                FrogletEditorPalette.Muted, 22f, 16f,
+                                "Why this test exists:\n\n" + item.context))
+                            _helpOpen[whyKey] = !why;
+                    }
+                }
+                if (open) DrawInstructions(item, why);
 
                 if (row.frozen)
                 {
@@ -629,8 +717,9 @@ var sb = new StringBuilder();
                     }
 
                     EditorGUILayout.LabelField(
-                        "Your notes — required unless PASS. Say which step number and " +
-                        "exactly what you saw:", EditorStyles.wordWrappedMiniLabel);
+                        "What you saw — needed for anything except PASS. Name the step " +
+                        "number, and copy any error message in full:",
+                        EditorStyles.wordWrappedMiniLabel);
 
                     // Notes commit on an explicit press rather than on focus loss. Focus
                     // tracking in IMGUI is subtle, and this window is the half that cannot
@@ -693,16 +782,16 @@ var sb = new StringBuilder();
         /// session.py. This panel is what lets someone run an item without ever opening
         /// the backlog file: everything they need to DO and to JUDGE is on screen.
         /// </summary>
-        void DrawInstructions(BacklogItem item)
+        void DrawInstructions(BacklogItem item, bool showWhy = true)
         {
             if (item == null) return;
             using (new EditorGUILayout.VerticalScope(EditorStyles.helpBox))
             {
                 var first = true;
-                if (!string.IsNullOrEmpty(item.context))
+                if (showWhy && !string.IsNullOrEmpty(item.context))
                 {
                     first = false;
-                    EditorGUILayout.LabelField("Why this is on the list", EditorStyles.miniBoldLabel);
+                    EditorGUILayout.LabelField("Why this test exists", EditorStyles.miniBoldLabel);
                     EditorGUILayout.LabelField(item.context, Body);
                 }
                 if (!string.IsNullOrEmpty(item.steps))
@@ -770,7 +859,7 @@ var sb = new StringBuilder();
             if (_addIndex > 0 && _addIndex < ids.Count)
             {
                 EditorGUILayout.LabelField(
-                    "Read what this involves, then press Add to put it in your session:",
+                    "Here is what that one involves. Press Add to put it in your list:",
                     EditorStyles.wordWrappedMiniLabel);
                 DrawInstructions(ItemFor(ids[_addIndex]));
             }
@@ -832,18 +921,25 @@ var sb = new StringBuilder();
             EditorGUILayout.Space(4);
             using (new EditorGUILayout.HorizontalScope(EditorStyles.helpBox))
             {
-                EditorGUILayout.LabelField("5 · Submit", EditorStyles.boldLabel,
-                    GUILayout.Width(70f));
+                EditorGUILayout.LabelField(new GUIContent("5 · Submit",
+                        "Submit hands your finished verdicts to engineering. It checks " +
+                        "your form first and refuses if anything is missing, telling you " +
+                        "exactly what to fix — so pressing it can never lose your work.\n\n" +
+                        "You can submit as often as you like; each time, only the tests " +
+                        "you have newly finished are sent. Once a verdict is sent it is " +
+                        "locked: if that test gets fixed and you run it again later, that " +
+                        "is a fresh session, not an edit to this one."),
+                    EditorStyles.boldLabel, GUILayout.Width(70f));
                 if (_state.submitted)
-                    EditorGUILayout.LabelField("Submitted — nothing new to publish. Keep " +
-                        "adding items and submit again any time.", EditorStyles.miniLabel);
+                    EditorGUILayout.LabelField("Sent. Keep testing and press Submit again " +
+                        "whenever you finish more.", EditorStyles.miniLabel);
                 else if (_state.canSubmit)
                     EditorGUILayout.LabelField("Everything checks out — press Submit to " +
-                        "publish your verdicts.", EditorStyles.miniLabel);
+                        "send your results.", EditorStyles.miniLabel);
                 else
                     EditorGUILayout.LabelField(
-                        _state.blocking + " problem(s) to fix first — each is explained in " +
-                        "red next to what it belongs to.", EditorStyles.miniLabel);
+                        _state.blocking + " thing(s) to fix first — each one is explained " +
+                        "in red where it belongs, above.", EditorStyles.miniLabel);
                 if (HasUnsavedNotes)
                     EditorGUILayout.LabelField("Unsaved notes.", EditorStyles.miniBoldLabel,
                         GUILayout.Width(90f));
