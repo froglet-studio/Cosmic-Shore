@@ -98,6 +98,110 @@ every window gets it.
 
 ---
 
+## The authoring contract (STRICT — every new tool, human- or AI-written)
+
+The conventions above describe what exists. This section is the **normative checklist a new tool
+must satisfy before it ships** — write against it, and review against it. An AI-authored tool has
+no excuse for missing any line of it, because the whole list is mechanical.
+
+### 1. Placement & naming
+
+- **File location**: `Assets/_Scripts/Editor/` for standalone tools, or a subfolder per tool
+  family (`Editor/FrogletTools/` is the board's own infrastructure, `Editor/Build/` the build
+  pipeline, `Editor/CrashDetector/` the crash detector). Never a runtime folder + `#if UNITY_EDITOR`
+  unless the tool must share a predicate with runtime code — and then read
+  `Docs/CONDITIONAL_COMPILATION.md` first and run `python3 Tools/Build/check_conditional_compilation.py`.
+- **Namespace**: `CosmicShore.Editor` (the board's own infrastructure uses
+  `CosmicShore.Editor.Froglet`; tools consume it via `using CosmicShore.Editor.Froglet;`).
+- **Class naming**: `<Thing>Window` for an `EditorWindow`, `<Thing>Auditor` / `<Thing>Validator`
+  for readers, `<Thing>Wirer` / `<Thing>SetupTool` for writers. One concern per file.
+
+### 2. Menu & metadata — the attribute is mandatory for new tools
+
+For legacy tools the `[FrogletTool]` attribute is optional (the registry infers). **A new tool
+always carries it**, on the same static method as the `[MenuItem]`:
+
+```csharp
+[MenuItem("FrogletTools/<Section>/<Tool Name>", false, <priority>)]
+[FrogletTool(FrogletToolCategory.<Category>, Importance = <1..5>,
+    Description = "<one honest line — what it does, not what it is called>")]
+public static void Open() { ... }
+```
+
+- The menu path's middle segment should read as the section it is filed under.
+- **Importance is calibrated, not aspirational**: 5 = used every day / a ship gate; 4 = reached
+  for weekly or the standing auditor for a law; 3 = the neutral default; 2 = occasional; 1 = niche.
+- **Pick from the existing categories.** Extending `FrogletToolCategory` is a curation act —
+  propose it, get sign-off, and update the palette map, `LabelFor`, and this doc's section table
+  in the same change. Never invent a section by menu path alone.
+
+### 3. Colour & format rules (the "one product" look)
+
+- **Every colour comes from `FrogletEditorPalette`.** No literal `Color(...)`, no hex, no
+  `GUI.color` juggling in tool code. A widget the palette lacks gets **added to the palette**, not
+  hand-rolled in the window.
+- **The banner accent is the tool's category colour** — `FrogletEditorPalette.ColorFor(<category>)`
+  — so a window and its card on the board agree. Semantic colours (`Ok` / `Warn` / `Error` /
+  `Info` / `Muted`) are reserved for **state**, never for decoration: a green button means the
+  action is safe/ready, a ruby pill means something is wrong.
+- **Standard widgets for standard jobs**: `Banner` for the header (title + one-sentence subtitle),
+  `StatusPill` for state, `ColorButton` for actions, `DrawCard` + `DrawAccentStripe` for rows,
+  `HorizontalRule` between sections. Text styles come from the palette (`Title`, `Subtitle`,
+  `SectionHeader`, `CardTitle`, `CardBody`, `Pill`), never ad-hoc `GUIStyle`s with hardcoded colours.
+
+### 4. Window anatomy
+
+Top to bottom, every Froglet window reads the same way:
+
+1. `FrogletEditorPalette.Banner(title, one-sentence purpose, ColorFor(category))`
+2. A toolbar / status row (refresh, filters, the headline pills)
+3. The scrolled body — cards or accent-striped rows
+4. Writer tools only: `FrogletToolShipPanel.Draw(Ship, this)` **last**
+
+Behavioural rules that go with it:
+
+- **Heavy work happens on demand, never per repaint.** One `git status` / asset scan / file stat
+  per explicit Refresh, cached into fields; `OnGUI` only draws. (See `FrogletToolShipWindow.Refresh`.)
+- **Mutating state from a button runs deferred**, after the GUI pass — mid-layout mutation throws
+  (`FrogletToolShipWindow._deferred` is the reference shape).
+- A destructive button (delete, overwrite, retire) confirms via `EditorUtility.DisplayDialog`.
+
+### 5. Config lives in a ScriptableObject, never in the window
+
+- **Project-shared tool config** (lists of prefabs, per-mode values): a `ScriptableObject` asset,
+  wired like gameplay config (`GameModePrefabKitSO` is the reference).
+- **Machine-local tool state** (toggles, intervals, last-used paths): a
+  `ScriptableSingleton<T>` under `UserSettings/` (gitignored, survives restarts, still a real SO
+  with `[SerializeField]` + tooltips), or `EditorPrefs` for single scalars (the Logging window's
+  precedent). Never a hard-coded list or a magic constant in the window class.
+
+### 6. Reader or writer — declare which, and honour it
+
+- A **READER** (audits, reports, log viewers) writes no assets, records nothing in the ledger, and
+  draws no ship panel — **and says so in its class doc comment**, so nobody hunts for missing
+  output. Writing to gitignored locations (`Logs/`, `UserSettings/`, `Library/`) keeps a tool a
+  reader.
+- A **WRITER** (wirers, setup, migrations, generators) follows the ship contract below in full:
+  ledger-record as it writes, ship panel in `OnGUI`, retire-when-one-off.
+- Read-only asset loading uses `AssetDatabase.LoadAssetAtPath`, never `PrefabUtility.LoadPrefabContents`
+  (which opens a preview scene per prefab and dies on the malformed data an auditor exists to find).
+
+### 7. Console discipline
+
+- A tool's console output is **headline-only**: one summary line per run, warnings/errors only for
+  real faults. Detailed output goes to a report the tool opens or pings (a file under `Logs/`, a
+  window section) — never 60 lines of `Debug.Log`.
+- Bring-up traces belong on a `CSLogChannel` (off by default), per CLAUDE.md's logging rules.
+  Nothing per-frame or per-contact logs, ever.
+
+### 8. Ship the paperwork with the tool
+
+A new keeper tool is not done until the **Tool index** and **File index** tables in this doc carry
+its row. A one-off migration tool instead states its one-off nature in its doc comment, so its
+retirement (via the ship panel) surprises nobody.
+
+---
+
 ## Tool output is a deliverable
 
 > **A tool that writes assets must record what it wrote and draw
@@ -237,6 +341,7 @@ their paths do not start with `FrogletTools/`.
 | Interface | Canvas Upgrader, Raycast Target Audit, Toast Notification setup | UI authoring. |
 | Misc | Toolbox ▸ Logging | Log levels, **diagnostic channels**, and console stack-trace depth. Channels (`CSLogChannel`) carry a finished system's BRING-UP telemetry — `[FLOW-n]` spawn/session flow, `[GyroidColony]` lattice — and default to OFF, so the trace stays in the tree as knowledge without spamming the console; turn one on before investigating that system. Warnings and errors never sit on a channel. Reader only — writes `EditorPrefs`, never assets, so no ship panel. |
 | Misc | Toolbox | Scene shortcuts, runtime switches, quest/crystal/UGS debug tabs. |
+| Misc | **Crash Detector** | Always-on editor crash watchdog. A background thread journals every error/exception to `Logs/CrashDetector/` and heartbeats a session sentinel; when the editor dies abnormally (Unity crash, PC fault, force-kill — even with the main thread hung), the next launch writes a `Crash-*.log` report from the stale sentinel + captured errors + the tail of Unity's own `Editor-prev.log`. Reader only — writes machine-local logs and `UserSettings/`, never assets, so no ship panel. |
 
 ---
 
@@ -257,3 +362,6 @@ their paths do not start with `FrogletTools/`.
 | Scene drift scanner (read-only) | `Assets/_Scripts/Editor/FrogletTools/PrefabInstanceSceneScanner.cs` |
 | Drift fixer (writes via PrefabUtility) | `Assets/_Scripts/Editor/FrogletTools/PrefabDriftFixer.cs` |
 | Kit config SO | `Assets/_Scripts/ScriptableObjects/GameModePrefabKitSO.cs` |
+| Crash detector monitor (always-on watchdog) | `Assets/_Scripts/Editor/CrashDetector/CrashDetectorMonitor.cs` |
+| Crash detector settings (`ScriptableSingleton`, `UserSettings/`) | `Assets/_Scripts/Editor/CrashDetector/CrashDetectorSettings.cs` |
+| Crash detector window | `Assets/_Scripts/Editor/CrashDetector/CrashDetectorWindow.cs` |
