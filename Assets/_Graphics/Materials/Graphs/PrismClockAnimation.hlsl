@@ -465,12 +465,21 @@ void PrismFlightSqrDistance_float(float Clock, float StartTime, float Duration, 
 // prism in the game that is not mid-shield-morph (and every mesh with no TEXCOORD1).
 // -----------------------------------------------------------------------------
 
-// Radians of face tumble per world unit travelled by the breaking impulse — the shield's
-// counterpart of the explosion material's _ExplosiveRotation, and the ONE shape constant
-// of the shatter (its per-shield dials are authored on the shield components: duration,
-// fly-out offset, and the drift speed cap that bounds BOTH terms below). At the shipped
-// 20 u/s cap this is ~3 rad of tumble across a 0.6 s shatter, most of it spent while the
-// face is still large enough to read.
+// The shatter's two tumble constants.
+//
+// TUMBLE is rad/SECOND and is ALWAYS ON — it is what makes each face rotate away as it
+// leaves, which is what the cuboid explosion does and the whole point of the effect. It
+// deliberately depends on NOTHING but the clock and the mesh's own face normal, both of
+// which are proven to reach this function (the fly-out along Normal is visibly correct),
+// so the tumble cannot be switched off by a stamp that fails to arrive. The first pass
+// made rotation proportional to the breaking impulse, and a shatter with no impulse — or
+// with an impulse that never reached the GPU — therefore had no rotation at all, which is
+// exactly how it shipped looking unchanged.
+//
+// SPIN is the additional rad per world unit the impulse travels: the shield's counterpart
+// of the explosion material's _ExplosiveRotation, so a hard hit still spins harder than a
+// soft one. It is a REFINEMENT on top of TUMBLE, never the source of it.
+#define PRISM_SHIELD_SHATTER_TUMBLE 4.0
 #define PRISM_SHIELD_SHATTER_SPIN 0.25
 
 void PrismShieldMorph_float(float Clock, float StartTime, float Duration, float Direction,
@@ -493,7 +502,7 @@ void PrismShieldMorph_float(float Clock, float StartTime, float Duration, float 
 
     MorphedPosition = FaceCentroid + faceScale * (Position - FaceCentroid) + offset * Normal;
 
-    // ---- the explosion terms: only a SHATTER carries an impulse -------------
+    // ---- the explosion terms: a SHATTER tumbles, a bloom does not -----------
     if (shatter == 0.0)
         return;
 
@@ -503,20 +512,23 @@ void PrismShieldMorph_float(float Clock, float StartTime, float Duration, float 
     // scheduled retirement freezes rather than flying away forever.
     float tSec = clamp(Clock - StartTime, 0.0, Duration);
 
-    // Negated finite test: every comparison against NaN is false, so NaN bails.
+    // The impulse is OPTIONAL. A direction-less disengage (a shield timer expiring, an
+    // arena teardown, a herbivore stripping armour) still tumbles — it simply has nothing
+    // to drift along and no preferred axis. Negated finite test: every comparison against
+    // NaN is false, so a NaN velocity falls into the impulse-less branch.
     float vLenSq = dot(Velocity, Velocity);
-    if (!(vLenSq > 1e-8))
-        return;                                   // direction-less disengage -> pure puff
+    bool hasImpulse = vLenSq > 1e-8 && vLenSq < 1e12;
 
 #if defined(SHADERGRAPH_PREVIEW)
-    float3 velocityObj = Velocity;
+    float3 velocityObj = hasImpulse ? Velocity : float3(0.0, 0.0, 0.0);
     float3 scale = float3(1.0, 1.0, 1.0);
 #else
     // Full inverse-model linear transform, unnormalized — never Shader Graph's
     // Direction-mode Transform node, which emits TransformWorldToObjectDir and
     // NORMALIZES (magnitude destroyed, direction re-skewed by the prism's non-uniform
     // scale). Same rule as PrismExplosionClock / PrismFlightClock.
-    float3 velocityObj = mul((float3x3)GetWorldToObjectMatrix(), Velocity);
+    float3 velocityObj = hasImpulse ? mul((float3x3)GetWorldToObjectMatrix(), Velocity)
+                                    : float3(0.0, 0.0, 0.0);
     float3x3 m = (float3x3)GetObjectToWorldMatrix();
     float3 scale = float3(length(float3(m._m00, m._m10, m._m20)),
                           length(float3(m._m01, m._m11, m._m21)),
@@ -526,7 +538,7 @@ void PrismShieldMorph_float(float Clock, float StartTime, float Duration, float 
     // coroutine completes, so the frame is degenerate and 1/scale blows up. Birth
     // transitions already disengage instantly (PrismStateManager.IsBirthTransition);
     // this is so that "already" is not load-bearing.
-    if (!(all(scale > 1e-5)) || !(dot(velocityObj, velocityObj) < 1e12))
+    if (!(all(scale > 1e-5)))
         return;
 
     // Tumble FIRST, drift SECOND, and the order is load-bearing. Rotating a position that
@@ -539,30 +551,50 @@ void PrismShieldMorph_float(float Clock, float StartTime, float Duration, float 
     // Tumble: each face rotates about ITS OWN centroid, on the axis perpendicular to
     // both the impulse and the face — so a face struck edge-on cartwheels while one
     // struck dead-on (cross ~ 0) is simply pushed, which is the correct read for both.
-    // The tumble is CONDITIONAL — a degenerate normal or an impulse straight down the face
-    // normal has no axis to turn about — but the drift below is not, so neither case may
-    // return early. A face struck dead-on is pushed; it just does not spin.
+    // The tumble needs only a face normal to turn about, and the mesh always has one (the
+    // generators author one per face, and it is the same Normal the fly-out above rides).
     float nLenSq = dot(Normal, Normal);
     if (nLenSq > 1e-8)
     {
         float3 n = Normal * rsqrt(nLenSq);
+
+        // Axis: perpendicular to the face, so the face TIPS AWAY from where it was
+        // pointing rather than spinning about its own normal like a plate on a stick.
+        // With an impulse it is cross(v, n) — the explosion's own axis, so a face struck
+        // edge-on cartwheels. Without one, any in-plane direction will do, and the
+        // branchless Duff basis gives a stable, per-face-different one for free (the
+        // normal IS the face id on these hard-edged meshes), so the eight faces never
+        // tumble in lockstep.
         float3 axis = cross(velocityObj, n);
         float axisLenSq = dot(axis, axis);
         if (axisLenSq > 1e-8)
         {
             axis *= rsqrt(axisLenSq);
-            // |Velocity| is the WORLD speed — the same channel the explosion's shatter
-            // rate rides — so the tumble reads the same whatever the prism's local scale.
-            float angle = PRISM_SHIELD_SHATTER_SPIN * sqrt(vLenSq) * tSec;
-            // Rotation runs in the isotropic frame about the face centroid (see header).
-            float3 rel = (MorphedPosition - FaceCentroid) * scale;
-            MorphedPosition = FaceCentroid + PrismJiggleRotate(rel, axis, angle) / scale;
         }
+        else
+        {
+            float3 tangent, bitangent;
+            PrismJiggleBasis(n, tangent, bitangent);
+            axis = tangent;
+        }
+
+        // ALWAYS-ON tumble plus the impulse's contribution. |Velocity| is the WORLD speed,
+        // the same channel the explosion's shatter rate rides, so the extra spin reads the
+        // same whatever the prism's local scale is.
+        // Gated on hasImpulse rather than max(): max() with a NaN operand is not
+        // specified to return the other one, and one NaN here is a NaN vertex.
+        float speed = hasImpulse ? sqrt(vLenSq) : 0.0;
+        float angle = (PRISM_SHIELD_SHATTER_TUMBLE +
+                       PRISM_SHIELD_SHATTER_SPIN * speed) * tSec;
+
+        // Rotation runs in the isotropic frame about the face centroid (see header).
+        float3 rel = (MorphedPosition - FaceCentroid) * scale;
+        MorphedPosition = FaceCentroid + PrismJiggleRotate(rel, axis, angle) / scale;
     }
 
-    // Drift LAST, and unconditionally: the whole spinning shard rides the breaking impulse,
-    // undeflected by its own tumble. Object-space so the WORLD displacement is exactly
-    // Velocity * tSec, which is the explosion debris' own flight term.
+    // Drift LAST: the whole spinning shard rides the breaking impulse, undeflected by its
+    // own tumble. Object-space so the WORLD displacement is exactly Velocity * tSec, which
+    // is the explosion debris' own flight term. Zero without an impulse.
     MorphedPosition += velocityObj * tSec;
 }
 

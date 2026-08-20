@@ -80,8 +80,8 @@ namespace CosmicShore.Gameplay
         [SerializeField] private float engageDuration = 0.45f;
 
         [Header("Shatter (Disengage)")]
-        [Tooltip("Duration of the shatter VFX overlay after disengaging. 0 snaps instantly.")]
-        [SerializeField] private float shatterDuration = 0.7f;
+        [Tooltip("Duration of the shatter VFX overlay after disengaging. 0 snaps instantly. Raised from 0.6/0.7 once the faces began tumbling: the fly-out reads in a third of a second, but a rotation needs long enough to be seen turning.")]
+        [SerializeField] private float shatterDuration = 1.1f;
 
         [Tooltip("How far each face flies outward (in local-space units) at the end of the shatter.")]
         [SerializeField] private float shatterMaxOffset = 4f;

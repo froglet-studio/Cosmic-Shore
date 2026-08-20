@@ -154,7 +154,7 @@ MonoBehaviour:
     m_PreInfinity: 2
     m_PostInfinity: 2
     m_RotationOrder: 4
-  shatterDuration: 0.6
+  shatterDuration: 1
   shatterMaxOffset: 3
   shatterCurve:
     serializedVersion: 2

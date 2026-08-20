@@ -1696,6 +1696,27 @@ p += velocityObj * tSec                                        // drift   <- Pri
          angle = PRISM_SHIELD_SHATTER_SPIN * |Velocity| * tSec
 ```
 
+**The tumble is ALWAYS ON; the impulse only steers and accelerates it.** This is the
+correction that took three passes to find, and the reasoning is worth keeping: the first
+version made the rotation *proportional to the breaking impulse*, so a shatter with no
+impulse — or with one that never reached the GPU — had no rotation whatsoever and rendered
+as the pre-change fly-out, pixel for pixel. That is indistinguishable on screen from "the
+feature is not wired", which is exactly how it was reported, twice. `PRISM_SHIELD_SHATTER_TUMBLE`
+(rad/second) now depends on **nothing but the clock and the mesh's own face normal**, both of
+which are proven to arrive — the fly-out along `Normal` is visibly correct, so `Normal`,
+`Direction`, `ShatterOffset`, `StartTime` and `Duration` all demonstrably reach the shader.
+`PRISM_SHIELD_SHATTER_SPIN` (rad per world unit the impulse travels) rides on top, so a hard
+hit still spins harder than a soft one, and the axis becomes `cross(v, n)` — the explosion's
+own axis — when there is an impulse to take it from. **General rule: an effect's headline
+motion must not be gated on the newest, least-proven input in the chain.** Put the new input
+on the *refinement* and let the motion stand on what already works.
+
+The fallback axis is the face's own in-plane tangent (the branchless Duff basis
+`PrismJiggleBasis` already in this file). It matters that it is *in-plane*: the face tips
+away from where it was pointing rather than spinning about its own normal like a plate on a
+stick, and because the object-space normal IS the face id on these hard-edged meshes, the
+eight faces never tumble in lockstep.
+
 **Tumble first, drift second — the order is load-bearing.** Rotating a position that
 already carries the drift rotates the DRIFT ITSELF: `rel` becomes the ~12 world units the
 shard has travelled instead of the face's own ~1 unit of extent, so the face swings on a
