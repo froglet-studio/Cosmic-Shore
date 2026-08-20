@@ -19,9 +19,11 @@ namespace CosmicShore.Gameplay
     /// already declines own-domain vessels unless the blast is authored/overridden affectSelf, so
     /// adding a second domain test here would silently double-gate friendly fire.
     ///
-    /// Elemental immunity (<see cref="ResourceSystem.IsElementallyImmune"/>) is honoured inside
-    /// ApplyElementalEffect, so an immune pilot eats the blast's other consequences and keeps
-    /// their levels — the same contract danger prisms run under.
+    /// Elemental immunity is honoured inside ApplyElementalEffect, so a pilot warded against
+    /// <see cref="ElementalDebuffSources.Explosion"/> eats the blast's other consequences and keeps
+    /// their levels — the same contract danger prisms run under. The class matters: the Dolphin's
+    /// Drift Ward covers <see cref="ElementalDebuffSources.DangerPrism"/> only, so drifting does
+    /// NOT shrug off this blast (which is the entire scoring event of The Bends).
     /// </summary>
     [CreateAssetMenu(
         fileName = "VesselElementalDebuffByExplosionEffect",
@@ -60,8 +62,11 @@ namespace CosmicShore.Gameplay
                 return;
             _lastEffectTime[rs] = now;
 
+            // Classed Explosion, NOT DangerPrism: a blast is a weapon another pilot aimed, and a
+            // ward earned against the arena must not cancel one (ElementalDebuffSources).
             for (int i = 0; i < AllElements.Length; i++)
-                rs.ApplyElementalEffect(AllElements[i], debuffMagnitude, debuffDuration);
+                rs.ApplyElementalEffect(AllElements[i], debuffMagnitude, debuffDuration,
+                                        ElementalDebuffSources.Explosion);
         }
     }
 }

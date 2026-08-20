@@ -775,7 +775,17 @@ would have bought 0.3 of one at the same FRACTION of the race, so it was rescale
 `author_bends_assets.py` now FAILS the build if a quarter-of-target deficit stops buying a whole
 level; (4) **a score must not be able to disagree with the effect it is scoring** —
 an elementally immune victim takes no drain, so the scoring effect is authored to require a
-debuffable victim, which also turns immunity into real counter-play for free; and (5) **the AI
+debuffable victim, which also turns immunity into real counter-play for free — and its corollary,
+**a ward has a SCOPE, because "immune" is not one promise**: the Dolphin's Time-5 Drift Ward was
+authored against DANGER PRISMS and, held as an unscoped grant, also cancelled the crystal blast's
+debuff, which is this mode's only scoring event — in a mode where every pilot is a Dolphin and the
+comeback buff hands Time 5 to whoever is LOSING, so falling behind bought a hard counter to the
+only way you could be scored on. Fixed platform-wide rather than per-mode: an elemental debuff now
+names its SOURCE CLASS (`ElementalDebuffSources`: `DangerPrism`/`Explosion`/`VesselContact`/
+`Other`) and a ward holds a MASK, so an ability earned against the arena cannot cancel a weapon
+another pilot aimed. Two invariants keep it honest — `All` is `~0` (a serialized "everything" ward
+must cover a class added later) and an unclassified debuff falls in `Other` (so a new class can
+never silently widen a narrow ward, and forgetting to classify fails safe); and (5) **the AI
 needed a narrower hook than steering** — `AIPilot.SetExternalTargetProvider` replaces crystal
 seeking outright and would disarm every AI in a mode whose weapon is fired BY a crystal, so
 `AIPilot` grew **`SetDriftLookTargetProvider`**, an opt-in override for the DRIFT LOOK-DIRECTION
@@ -811,7 +821,16 @@ Bank one too many inside and the core OVERLOADS, detonating every ball in a doma
 (own-domain prisms take a temporary shield, other domains are destroyed). See SCARAB.md §4.6. The cell follows the Astro League template (nucleus = court,
 `NucleusIsControlZone = false`, cleanup crew held out by `FaunaExclusionRadius` until Restless)
 with its OWN ladder authored for Scarab trail volume (10-40/prism, no lining floor — never copy
-the AL numbers, which ride a 30k structural floor). See `_Scripts/Controller/Arcade/SCARABSCRAMBLE.md`.
+the AL numbers, which ride a 30k structural floor). ⚠ **That ladder counted trail only, and every
+pilot here carries the switch**: one struck switch pays a 50,773-volume dais, 4x the old
+`FrenzyEnterVolume`, so the first payout crossed both gates at once and the ladder stopped carrying
+information. Re-authored BUILD-PACED (Restless 164,000 / Frenzy 391,000 = the trail band + 3 and 7
+spent switches), at the stated cost that **Restless no longer fires from trail alone** — and
+Restless is this mode's fauna-release gate, so a switch-less match now sits in Calm far longer than
+its authoring intended. General rule: **when a vessel's ability places an order of magnitude more
+mass than a mode's own traffic, that mode's volume ladder stops describing the mode and starts
+describing the ability** — re-derive it from the ability, and name what the old reading paid for.
+See `_Scripts/Controller/Arcade/SCARABSCRAMBLE.md` § Known limitations and `SCARAB.md` §8.
 
 `WildlifeLiberation(40)` is the **Sparrow-only hunt** — three concentric cages at 1050 / 600 / 200 pen three tiers of wildlife (a very heavy swarm of small creatures outside, much bigger ones in the middle room, the biggest and toughest in the core), plus a fourth tier loose in the open water outside the outer cage where players spawn; the first **DOMAIN** to 250 summed kills wins. It is an ordinary domain race and that is deliberate: a per-PLAYER (free-for-all) winner shipped here briefly and was **reverted**, because the mode seats up to four players while the platform has only three playable domains, so a full lobby always has teammates and a per-individual winner bypasses every domain surface (winner banner, HUD panels, scoreboard ordering, `ResolvePlacementOrder`). Do not re-derive it. Its metric, `ScoringMetric.LifeformsKilled`, is the first whose source is the ECOLOGY rather than prisms or crystals — and the first that needs an RPC, because fauna are client-local so a client's kill is invisible to the server (`Player.ReportFaunaKill_ServerRpc`; the round-trip stays correct once fauna network sync lands). Shipping it made **every creature in the game killable by shooting its body prisms** (previously only the worm colony was — see `Docs/ECOSYSTEM.md §24`) and generalized the cell's single fauna pen into a per-species BAND. See `_Scripts/Controller/Arcade/WILDLIFE_LIBERATION.md`.
 
@@ -896,6 +915,7 @@ MiniGameControllerBase (abstract, NetworkBehaviour)
 | `DOGFIGHT.md` | `_Scripts/Controller/Arcade/` | Dog Fight technical reference (Sparrow-only gun duel). **Read before touching the combat-hit path, the Sparrow's weapon effect containers, or the skyburst's AOE prefabs** — this mode added the platform's first vessel-vs-vessel scoring metric and gave the skyburst's conic blast the explosion container it never had (so a rocket's blast can now reach a pilot at all). Also documents why the mode is a TEAM race rather than a free-for-all: teammates cannot damage each other, so domains ARE the sides. |
 | `BENDS.md` | `_Scripts/Controller/Arcade/` | The Bends technical reference (Dolphin-only debuff duel). **Read before touching the Dolphin's conic blast effect container, the combat-hit path, or `AIPilot`'s drift look-direction** — this mode gave the Dolphin's crystal blast the vessel effects it never had (so the blast now debuffs a pilot it engulfs, in every mode), added `CombatHitClass.Debuff`, and gave `AIPilot` a drift-aim hook that is deliberately separate from the steering hook. Also records two networking bugs it surfaced: a client→server hit-class validator that mis-filed any new enum member, and the double-credit a REPLAYED blast causes. |
 | `WILDLIFE_LIBERATION.md` | `_Scripts/Controller/Arcade/` | Wildlife Liberation technical reference (Sparrow-only three-cage hunt). **Read before touching the fauna kill path or the per-species containment bands** — this mode made every creature in the game shootable, and generalized the cell's single fauna pen into a per-species annulus. Also documents why a per-player (free-for-all) winner was tried here and reverted, the client-local-fauna kill RPC, and the very-heavy collider budget. |
+| `AI_ORBIT_BREAK.md` | `_Scripts/Controller/AI/` | Why every AI orbited its objective, and the extend-and-re-attack that fixes it. **Read before touching `AIPilot`'s steering, `PursuitReachability`, or any vessel's Pitch/Yaw scalers** — the orbit is a Dubins minimum-turn-radius result, not a tuning miss, and turning harder is the wrong response. Carries the measured before/after and the two rejected alternatives (an entry dwell, a running-minimum progress gate). |
 | `PRISM_PERFORMANCE_AUDIT.md` | `_Scripts/Game/Prisms/` | Prism system performance analysis (vestigial location) |
 | `UNIT_TESTING_GUIDE.md` | `_Scripts/Tests/` | Unit testing guidelines and inventory |
 | `BENCHMARK_TOOL.md` | `_Scripts/Utility/PerformanceBenchmark/` | Performance Benchmark tool guide (tabs, score/hints, sweep, Load Time Insights, customization) |
@@ -1355,7 +1375,7 @@ container, a `ForcefieldCrackleController` on the impactor's own GameObject, and
 standalone skimmer objects do not). Detail:
 `_Scripts/Controller/Vessel/R_VesselActions/DOLPHIN_ENERGY_ECONOMY.md` §5.
 
-**Danger prisms are not safe to their own domain (locked design).** `IsDangerous` effects apply to every vessel that touches the prism, regardless of domain — friendly fire included (the fire-trail action literally sets `IsDangerous` from a `FriendlyFire` flag). Danger-prism effect SOs must not gate on domain. **Danger is mutually exclusive with BOTH shield tiers**: `PrismStateManager.MakeDangerous` clears `IsShielded` AND `IsSuperShielded` (and disengages the shield visuals), just as `ActivateSuperShield` clears `IsDangerous` — a danger prism carrying a stale super-shield flag is invulnerable and kills any AOE explosion that touches it. `Prism.ResetState` also clears `IsSuperShielded` on pool reuse (no spawner requests super-shield pre-`Initialize`; it is always engaged post-spawn). This is what makes danger trails a risk/reward surface: a danger trail grants 10x skim energy (`SkimmerBoostPrismEffect.dangerEnergyMultiplier`, gated behind the skimming vessel's Charge level-5 "Live Wire" upgrade — below it danger skims pay base energy) but slams its owner on contact — volume-independent full-stop slow at the danger max (`VesselChangeSpeedByPrismEffectSO`: `maxSlowStrength * dangerSlowMultiplier`), all-element decaying debuff for 4s (`VesselElementalDebuffByDangerPrismEffectSO`), and boost reset. (The Sparrow's own overheat danger trail was retired with its overheat mechanic; the `EnableDangerMode` machinery survives for a future caller. The one thing that can deny a danger prism's bite is the general **elemental-debuff immunity** state — `ResourceSystem.IsElementallyImmune`, held by the Sparrow while boosting at Time 5, by the Serpent while stopped, and by the Dolphin while drifting at Time 5 — and it denies ONLY the elemental drain: the slow, the input mute and the boost reset still land. It is a gate inside `ApplyElementalEffect`, not a domain exception, so the locked law is intact.)
+**Danger prisms are not safe to their own domain (locked design).** `IsDangerous` effects apply to every vessel that touches the prism, regardless of domain — friendly fire included (the fire-trail action literally sets `IsDangerous` from a `FriendlyFire` flag). Danger-prism effect SOs must not gate on domain. **Danger is mutually exclusive with BOTH shield tiers**: `PrismStateManager.MakeDangerous` clears `IsShielded` AND `IsSuperShielded` (and disengages the shield visuals), just as `ActivateSuperShield` clears `IsDangerous` — a danger prism carrying a stale super-shield flag is invulnerable and kills any AOE explosion that touches it. `Prism.ResetState` also clears `IsSuperShielded` on pool reuse (no spawner requests super-shield pre-`Initialize`; it is always engaged post-spawn). This is what makes danger trails a risk/reward surface: a danger trail grants 10x skim energy (`SkimmerBoostPrismEffect.dangerEnergyMultiplier`, gated behind the skimming vessel's Charge level-5 "Live Wire" upgrade — below it danger skims pay base energy) but slams its owner on contact — volume-independent full-stop slow at the danger max (`VesselChangeSpeedByPrismEffectSO`: `maxSlowStrength * dangerSlowMultiplier`), all-element decaying debuff for 4s (`VesselElementalDebuffByDangerPrismEffectSO`), and boost reset. (The Sparrow's own overheat danger trail was retired with its overheat mechanic; the `EnableDangerMode` machinery survives for a future caller. The one thing that can deny a danger prism's bite is the general **elemental-debuff immunity** state — `ResourceSystem.IsImmuneTo(ElementalDebuffSources.DangerPrism)`, held by the Sparrow while boosting at Time 5, by the Serpent while stopped, and by the Dolphin while drifting at Time 5 — and it denies ONLY the elemental drain: the slow, the input mute and the boost reset still land. It is a gate inside `ApplyElementalEffect`, not a domain exception, so the locked law is intact. A ward is held against a MASK of debuff SOURCE CLASSES, not as a bare bool: the Sparrow's and Serpent's cover everything, while the **Dolphin's covers `DangerPrism` alone** — it is a ward against the ARENA, so an opposing pilot's blast still debuffs a drifting Dolphin (which is what keeps The Bends scoreable; see §"The Bends" and `SPARROW_AFTERBURNER.md` §1.1).)
 **The slow half of that punishment is PER-VESSEL WIRING, not a platform given** — it only happens
 if the vessel's `VesselImpactorDataContainerSO.vesselPrismEffects` actually contains a
 `VesselChangeSpeedByPrismEffectSO`, and for most of the fleet's life most vessels did not. The
@@ -2208,6 +2228,61 @@ Runtime-configurable AI opponents at `Assets/_Scripts/Controller/AI/`:
 - AI profiles used for score cards and multiplayer backfill
 - Configurable AI ship selection and behavior at runtime
 
+**A pursuing AI ORBITS anything inside its own minimum turn radius, and that is geometry rather
+than tuning** (`AI_ORBIT_BREAK.md`, `PursuitReachability`). A vessel at speed `v` with max turn
+rate `ω` cannot fly tighter than `R = v/ω`, so pure pursuit can never reach a target inside either
+circle of radius `R` tangent to its velocity — it turns as hard as it can, forever. **Turning
+harder is exactly the wrong response, which is why the failure survived every tuning pass.** It is
+the Dubins (1957) reachability condition and the fix is the manoeuvre pilots use — *extend and
+re-attack*: fly out, come around, come back in. Five things to carry: (1) the test collapses to
+**`|d| < 2R·sin θ`** (the circle test with the `R²` cancelled — proven exact against the long-hand
+definition over 20k cases), and its **exit condition falls out of the same line**, since `sin θ ≤ 1`
+means `2R` of separation is a GUARANTEE of reachability rather than a tuned threshold; (1b) **an
+objective is not a POINT — it has a capture radius `c`, and leaving it out is a defect rather than
+a simplification**: at `c = 0` the test asks whether the vessel can fly onto an infinitely small
+target, which 20u out is false for any bearing error over 14°, so the AI peels away from crystals
+it was about to collect. The generalisation is exact (`|d|² + 2Rc − c² < 2R·|d⊥|`, guaranteed
+separation `2R − c`) and its OTHER root, `|d| ≤ c`, IS the don't-peel-away-on-final-approach case —
+not a special case bolted on but the second half of the same solution. Err GENEROUS on `c`: too
+small peels off with nothing to catch it, too large just means the orbit detector catches it a
+beat later; (2) **`R` is
+a property of the vessel AT THIS SPEED, never an authored constant** — a boosted Dolphin's
+unreachable bubble is 372u against 83u at cruise, off the same authored 110°/s, so it is derived
+live in `VesselTransformer.MinTurnRadius`; (3) reason from **`Course`, not the nose** — the radius
+applies to the direction of TRAVEL, and the two differ during a drift (which is also why the
+break-off is suppressed there: a locked course reads as an infinite radius, i.e. an unbreakable
+orbit); (4) a geometric test cannot catch an orbit it does not describe, so `OrbitDetector` is the
+empirical backstop — swept angle with no progress — and its progress gate must compare against the
+range at the START of the window, because **a running minimum tracks a steady approach downward and
+can then never register progress at all**, silently degrading the detector to "constant range only";
+and (5) **how far the break-off flies out is a TIME, not a distance** — `2R/v = 2/ω` is constant for
+a given turn rate, so `speed × approachRunSeconds` buys the same straight run at 60 u/s and at 357,
+and it is simultaneously how long the pilot spends leaving and how long the return leg lasts. The
+fleet runs 1.5s; **the Dolphin is authored at 2.5s** because it is the one vessel that AIMS on the
+way in (it locks course on the crystal then swings its nose onto a rival — 180° at 110°/s is 1.64s,
+so the run has to cover it). Measured: 373/400 randomized objectives reached → **400/400**, for
++0.18s of mean time.
+  **A reported "the AI dodges the crystal at the last second" was NOT the break-off** — two
+  plausible fixes were measured and rejected first (a commit range trades the dodge for orbiting,
+  because the turning-circle test is structurally a sub-1s test; a look-ahead factor moves the
+  median but not the earliest and costs 9× the break-offs). The cause was
+  `AIPilot.UpdateCellContent` comparing a squared distance against `MinDistance * MinDistance`
+  while `MinDistance` already held a squared distance — a `d⁴` threshold that **every** later
+  candidate passed, so the pilot took the LAST eligible crystal rather than the nearest, and
+  re-picked arbitrarily on every `OnCellItemsUpdated` (which every respawn raises). General rule:
+  **a comparison that mixes a squared quantity with a linear one is invisible to review and to
+  every static check, and its symptom is a behaviour nobody attributes to arithmetic.** Selection
+  now lives in `AIObjectiveScoring.Select` — pure, list-based, so the shipped path IS the tested
+  one — with commitment hysteresis (`objectiveSwitchImprovement` 0.75) so a crystal event can no
+  longer re-point a pilot that is a second from arriving. Two more from the same report, both
+  about the Dolphin never aiming at the player: **a provider that NAMES an aim point must not
+  inherit the fallback's "would this drift actually turn the vessel" test** (the mass cluster's
+  only job is to find somewhere interesting to point, so it defers when the objective is already
+  ahead; an explicitly named rival being ahead is the BEST case, and rejecting it turned the nose
+  away from exactly the pilot it was lining up on), and **an AI's engagement range must track its
+  weapon's** (Bends capped `aiAimMaxRange` at 900 against `AOEConicExplosion.prefab`'s authored
+  `height: 2400`).
+
 ### Menu Screen Navigation (Menu_Main Scene)
 
 The main menu uses a horizontal sliding panel system managed by `ScreenSwitcher`. Screen panels are laid out side-by-side and the container slides left/right to reveal each screen.
@@ -2755,7 +2830,8 @@ scale bump** with a one-shot unlock punch.
   clock PAUSES rather than culling — not creating mass is allowed, aging it out is not), which
   freed RT for the **Echo Sight**: hold it and every prism inside the crystal blast's live
   destruction volume lights up. It touches nothing but photons — no camera write, no speed
-  change, nothing replicated. (A zoomed first-person view was built alongside it and **cut**:
+  change, and it cannot destroy, move or protect a prism. (A zoomed first-person view was built
+  alongside it and **cut**:
   it would have needed the speed tunnel to grow a public FOV-home surface for one vessel's view
   effect, and the highlight carries the ability on its own. If it is ever revisited, the one
   safe shape — move the tunnel's HOME, never `Camera.fieldOfView`, which a live tunnel
@@ -2776,7 +2852,62 @@ scale bump** with a one-shot unlock punch.
   0.70) enters the shielded tier's neighbourhood, so it is held clear by being DESATURATED (S 0.55 vs
   a tier's 0.9+) and by a gain low enough that the prism's own tier shows through the cast; if a lit
   shielded prism ever reads as a tier change, lower the gain before touching the hue.
-  Detail: `_Scripts/Controller/Vessel/R_VesselActions/DOLPHIN_CRYSTAL_SEEDING.md`.
+  **Since 2026-08-19 EVERY player sees it, and a rival's cone wears that pilot's DOMAIN colour** —
+  the sight was local-only on the reasoning that it is a thing the pilot looks through, which was
+  right about the camera and wrong about the arena: mass is the shared object both Dolphin-only
+  modes are fought over, so "which prisms is that rival about to take" is the most useful fact on
+  the field, and the jaws already telegraph the aim. **Your own cone is untouched and wins outright
+  on every prism it covers** — a rival sweeping across your mass cannot recolour, brighten or dim
+  it, because an instrument that changes appearance when somebody else moves is one you cannot
+  read; peers only ever mark mass your own sight is not marking, and blend among THEMSELVES by
+  weight-averaged hue at the brightness of the strongest, never summed (four overlapping cones
+  would otherwise blow the arena white exactly where the fight is). Hue is the right channel for a
+  peer even though the sight otherwise stays out of the palette's language, because "whose is
+  this" is the one question the platform always answers with domain colour — held clear by
+  desaturating toward white, so it reads as coloured LIGHT rather than the prism changing team.
+  Three things generalise. (1) **The trigger needed no new networking**: `R_VesselActionHandler`
+  already round-trips every press/release through the server, so the executor was ALREADY running
+  on every peer's replica and only an `IsLocalPilot` guard discarded it — check that channel before
+  building one. (An ability bound under a device override rather than the shared map would resolve
+  against the OBSERVER's input device, so it would not replicate consistently.) (2) **The cone's
+  SIZE did need replicating** (`NetEchoSightShape`, owner-write, 3 floats, ~0.5%-change gated),
+  because element levels never replicate and a crystal's effects are replayed to the OWNER alone,
+  and because banked skim energy is simulated locally and never SPENT remotely — so a third
+  client's replica would draw a cone of the wrong reach, thickness and gape. Only the scalars
+  travel; the apex and axes come off the already-replicated transform, so a peer's mark turns at
+  full frame rate and only resizes at the tick, and **a peer with no shape yet draws nothing**
+  rather than guessing. (3) **A bounded bank of N globals is still O(1) in prisms** — four array
+  slots packed once per frame in `LateUpdate`, frame-stamped so a despawned ship cannot leave a
+  cone burned in; the arrays must be declared at FILE SCOPE in the HLSL (Shader Graph has no array
+  property type — which is why this needed no graph edit) and OUTSIDE every CBUFFER. The Charge-5
+  PILOT highlight stays local on purpose: prisms are shared because mass is the shared object, a
+  mark on a person is not. Composition is proven by compiling and RUNNING the shipped HLSL
+  (`Tools/Shaders/verify_prism_sight_composition.py`) — which is what caught that routing your own
+  sight through the same weighted average was algebraically identical and **not bit-identical**
+  (`x/x*x` rounds; 3,381 of 89,301 lit samples drifted).
+  **The AI holds it too** (same day): `AIPilot` lights a vessel's aim telegraph while it is
+  DRIFTING and its course is locked on its objective — the commit window, where the cone's
+  direction is already decided — so an AI's blast is as readable as a human's rather than the
+  only unannounced one on the field. It asks for a CAPABILITY, never for a vessel:
+  **`IAimTelegraphAction`** marks an action whose whole effect is showing others what you are
+  lining up, and `R_VesselActionHandler.TryGetInputForAction<T>` answers which control this hull
+  puts it on — so the AI that flies all eleven vessels names neither the Dolphin nor a trigger,
+  most of the fleet is a silent no-op, and the next telegraph opts in with one interface. The
+  interface carries no members but does carry a CONTRACT, because the AI holds it blind: no
+  cooldown, no resource, no ammunition, no effect on motion. Three general findings came out of
+  it. (1) **Replicate an AI's press when the ability's output does not already ride some other
+  replicated channel** — an AI pilot runs SERVER-ONLY, so its local `PerformShipControllerActions`
+  is right for the drift (motion, and the transform already replicates) and useless for photons;
+  hence `PerformShipControllerActionsReplicated`. (2) **Owner and local pilot coincide for every
+  human and diverge for every AI**, so a gate that conflates them works perfectly until something
+  autonomous uses it — `NetEchoSightShape` was published on `IsLocalPilot` and therefore never for
+  an AI, whose sight could then draw on no machine at all including the host's. (3) **A behaviour
+  loop needs its own re-goal event**: the AI's `UpdateCellContent` was driven only by the cell's
+  `OnCellItemsUpdated`, a CRYSTAL event rather than a "this pilot needs a new target" event, so an
+  AI that overshot kept circling a crystal it could no longer reach; it now re-seeks once per
+  commit cycle (latched, because `IsDrifting` does not fall on the frame the control is released).
+  Both modes with AI Dolphins get all of this from `AIPilot` with no per-mode code.
+  Detail: `_Scripts/Controller/Vessel/R_VesselActions/DOLPHIN_CRYSTAL_SEEDING.md` (§14, §15).
 
   Manta / Rhino / Serpent are blocked on **design, not wiring**: their
   `ElementalAbilityMapSO` entries are still `(open design slot)` with `Input = 0` and no
@@ -2841,7 +2972,7 @@ All game code lives under `CosmicShore.*` with 8 primary namespaces:
 | Elemental bars | `ElementalBarsView` (5-petal flower per element), `ElementalBarsConfigSO` (shared colour/sprite/juice spec), `ElementalBarsController` (per-vessel driver), `ElementalPetalBarWirer` (editor setup) | `_Scripts/UI/View/`, `_Scripts/ScriptableObjects/`, `_Scripts/Controller/Vessel/`, `_Scripts/Editor/` |
 | Arcade games | `MiniGameControllerBase`, `SinglePlayerMiniGameControllerBase`, `MultiplayerMiniGameControllerBase`, `CompositeScoring` | `_Scripts/Controller/Arcade/` |
 | Resource system | `ResourceSystem`, `R_VesselActionHandler`, `R_VesselElementStatsHandler` | `_Scripts/Controller/Vessel/` |
-| Elemental debuff immunity (general state) | `ResourceSystem.SetElementalDebuffImmunity` / `IsElementallyImmune` / `OnElementalImmunityChanged` (source-keyed grants, one gate on the NEGATIVE branch of `ApplyElementalEffect` — buffs still land, live debuffs still decay, `AdjustLevel` crystal progression is untouched), read via `IVesselStatus.IsElementallyImmune`, held declaratively by `VesselElementalImmunity` (`Always`/`WhileBoosting`/`WhileTranslationRestricted`/`WhileDrifting` × optional element upgrade gate). **Not owned by any vessel** — Sparrow holds it while boosting at Time 5, Serpent while stopped (ungated), Dolphin while drifting at Time 5 ("Drift Ward"); any vessel or mode can grant it. Detail: `_Scripts/Controller/Vessel/R_VesselActions/SPARROW_AFTERBURNER.md` | `_Scripts/Controller/Vessel/` |
+| Elemental debuff immunity (general state) | `ResourceSystem.SetElementalDebuffImmunity` / `IsImmuneTo` / `ImmuneDebuffSources` / `OnElementalImmunityChanged` (grantor-keyed grants, one gate on the NEGATIVE branch of `ApplyElementalEffect` — buffs still land, live debuffs still decay, `AdjustLevel` crystal progression is untouched), read via `IVesselStatus.IsImmuneToElementalDebuff(source)`, held declaratively by `VesselElementalImmunity` (`Always`/`WhileBoosting`/`WhileTranslationRestricted`/`WhileDrifting` × optional element upgrade gate × a `wardedSources` mask). **A ward has a SCOPE**: every elemental debuff names its source class (`ElementalDebuffSources` — `DangerPrism`/`Explosion`/`VesselContact`/`Other`, `All` = `~0`) and a grant holds a mask, because "immune to the arena" and "immune to another pilot's weapon" are different promises. There is deliberately **no bare `IsElementallyImmune` bool** — a reader that assumes total immunity from a true answer is wrong for the Dolphin, and wrong silently. **Not owned by any vessel** — Sparrow holds it while boosting at Time 5 and Serpent while stopped (ungated), both warding everything; the Dolphin holds it while drifting at Time 5 ("Drift Ward") warding **`DangerPrism` alone**, because unscoped it cancelled the Dolphin crystal blast and with it the entire scoring event of The Bends. Any vessel or mode can grant it. Detail: `_Scripts/Controller/Vessel/R_VesselActions/SPARROW_AFTERBURNER.md` §1/§1.1 | `_Scripts/Controller/Vessel/`, `_Scripts/Data/Enums/` |
 | Object pooling | `GenericPoolManager` (Unity `ObjectPool<T>` with async buffer maintenance) | `_Scripts/Utility/PoolsAndBuffers/` |
 | Player system | `Player` (NetworkBehaviour, `IPlayer`), `PlayerSpawner`, `PlayerSpawnerAdapterBase`, `MiniGamePlayerSpawnerAdapter`, `VolumeTestPlayerSpawnerAdapter` | `_Scripts/Controller/Player/` |
 | Cell-relative spawn ring | `CellSpawnFormation` (pure math, N players around the cell, all facing it) in two formations: `Symmetric` — spread over a SPHERE (4 tetrahedral, 3 equilateral triangle, 2 antipodal, 5+ Fibonacci), the default; and `EquatorialRing` — evenly spaced on ONE horizontal great circle the way Joust authors its points by hand, for an arena with a meaningful "up" or a pole feature (Ribcage: a latitude-hoop cage is densest where the ribs converge, so a tetrahedral spread would hand two of four players a much harder approach). Driven by `ServerPlayerVesselInitializer.arrangeSpawnPointsAroundCell` + `spawnFormation` at `Cell.ExpectedNucleusWorldRadius + spawnDistanceOutsideNucleus`. Opt-in per scene (Symmetric for Crystal Capture, EquatorialRing for Ribcage). Tests: `CellSpawnFormationTests` | `_Scripts/Utility/`, `_Scripts/Controller/Multiplayer/` |
@@ -3163,7 +3294,11 @@ ones.
   completion gates, the Wanderway return station, `ScarabSwitch` (`SCARAB.md §5`) and
   `AstroLeagueGoal`. It composes rather than duplicating: with **Vessel/Toys** (the
   activation affordance), with **Prisms/Mass** (a Scarab switch fills its ring with
-  conserved prisms and its interior fill outlives it), with **Domain** (a switch wears
+  conserved prisms, and threading it BLOWS THAT MEMBRANE OUT along the ball's velocity
+  and pays a **scarab-wing dais** in its place — 255 prisms wrapping five super-shielded
+  sun cores, each aiming a spike back at the spent switch; both the removal and the
+  payout are active events caused by a specific strike, never a clock, `SCARAB.md`
+  §5.1), with **Domain** (a switch wears
   the domain's *prism* material, and whose colour it is decides who it pays), and with
   **Cells** (rings are placed against arena/membrane geometry, never a parallel system).
   **The law that makes it teachable is one line: THE RING IS THE TRIGGER VOLUME, DRAWN

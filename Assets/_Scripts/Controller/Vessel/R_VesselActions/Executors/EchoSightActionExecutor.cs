@@ -16,13 +16,47 @@ namespace CosmicShore.Gameplay
     /// directly: it draws the volume onto the mass standing in it.
     ///
     /// <para><b>It touches nothing but photons.</b> No camera write of any kind — no pose, no field
-    /// of view — no speed change, no input mute, nothing replicated. The whole ability is
-    /// <see cref="PrismDestructionSight"/>'s global uniforms, published while the trigger is held.
-    /// That is what keeps it clear of the speed tunnel (<c>Docs/SPEED_TUNNEL.md</c>), which owns the
-    /// gameplay camera's FOV fleet-wide and admits exactly one hold.</para>
+    /// of view — no speed change, no input mute, and nothing it does can destroy, move or protect a
+    /// single prism. The whole ability is <see cref="PrismDestructionSight"/>'s global uniforms,
+    /// published while the trigger is held. That is what keeps it clear of the speed tunnel
+    /// (<c>Docs/SPEED_TUNNEL.md</c>), which owns the gameplay camera's FOV fleet-wide and admits
+    /// exactly one hold. It does now put three floats on the wire (below), but they describe the
+    /// overlay and are read by nothing else — no outcome anywhere depends on them.</para>
     ///
-    /// <para><b>Local pilot only.</b> A remote peer sees a Dolphin flying normally, which is
-    /// correct — the sight is a thing the pilot looks through, not a thing the vessel does.</para>
+    /// <para><b>Everyone sees it, but not the same way</b> (2026-08-19). The sight used to be
+    /// strictly local, on the reasoning that it is a thing the pilot looks through rather than a
+    /// thing the vessel does. It is now visible to every player, because in the two Dolphin-only
+    /// modes what a rival is about to remove is the single most useful thing on the field — and it
+    /// costs the mode nothing to say, since the Dolphin already telegraphs its aim with its jaws.
+    /// The two cases are deliberately different looks:
+    /// <list type="bullet">
+    /// <item><b>Yours</b> goes to <see cref="PrismDestructionSight.PublishLocal"/> and is UNCHANGED
+    /// — same pale cool cast, same gain, and (verified bit-for-bit by
+    /// <c>Tools/Shaders/verify_prism_sight_composition.py</c>) the same value out of the shader,
+    /// including when four rivals are aiming at the same prism. Your cone wins outright on every
+    /// prism it covers: an instrument that changes colour because someone else swept past is an
+    /// instrument you cannot read.</item>
+    /// <item><b>Theirs</b> goes to <see cref="PrismDestructionSight.PublishPeer"/> tinted with that
+    /// pilot's DOMAIN colour, so a lit patch of mass says whose blast is coming for it.</item>
+    /// </list>
+    /// The trigger itself needed no new networking: <see cref="R_VesselActionHandler"/> already
+    /// round-trips every press and release through the server, so this executor's
+    /// <see cref="Engage"/> and <see cref="Release"/> were already being called on every peer's
+    /// replica and only the <c>IsLocalPilot</c> guard was throwing the result away. What DID need
+    /// replicating is the cone's SIZE — see <see cref="R_VesselActionHandler.NetEchoSightShape"/>
+    /// for the two independent reasons a remote replica cannot derive it.</para>
+    ///
+    /// <para><b>An AI pilot's sight is a peer sight on every machine, including the host's.</b> An
+    /// AI vessel is owned by the server and is nobody's local pilot, so it never takes the local
+    /// branch anywhere — it publishes its shape as the owner and every machine, host included,
+    /// reads that shape back and draws it in the AI's domain colour.
+    /// <see cref="AIPilot"/> holds the trigger for the duration of a drift onto its objective, so
+    /// what a rival AI is lining up is as readable as what a human is.</para>
+    ///
+    /// <para><b>The Charge-5 pilot highlight stays local.</b> Marking the ships a blast would catch
+    /// is a targeting aid for the pilot aiming it, and showing every pilot's marks on every machine
+    /// would stack ZTest-Always halos on the same hull from three directions at once. Prisms are
+    /// shared because mass is the shared object; a mark on a person is not.</para>
     ///
     /// <para><b>Charge owns this ability</b> (2026-08-17). Charge's multiplier sets the blast's
     /// capsule THICKNESS — 0.75x at rest to 1.5x at level 10, authored on
@@ -83,6 +117,30 @@ namespace CosmicShore.Gameplay
         bool _engaged;
         float _blend;   // 0 = no highlight, 1 = fully lit
 
+        // This vessel's slot in the peer bank. The instance id rather than the player id so a
+        // vessel swap - which builds a whole new executor - can never inherit the old ship's slot.
+        int _peerSlotId;
+
+        // Which channels this executor currently occupies. Tracked rather than re-derived from
+        // IsLocalPilot at teardown time, because the whole hazard is the case where that answer has
+        // CHANGED since the publish: a live vessel handed to another player (the Cellular Duel
+        // ownership swap) must retire the channel it was using, not the one it would use now.
+        // _peerPublished also keeps a local pilot's teardown from clearing a peer slot it never took.
+        bool _localPublished;
+        bool _peerPublished;
+
+        // Last shape written to the network, so the owner dirties the NetworkVariable when the
+        // cone meaningfully changes rather than on every frame the energy meter creeps.
+        Vector3 _lastPublishedShape = Vector3.zero;
+
+        /// <summary>
+        /// Fractional change in any of the three shape scalars below which the owner does not
+        /// re-publish. At the shipped cone sizes this is well under a pixel of drawn difference at
+        /// any range, and it turns a continuously-creeping meter into a few ticks per second
+        /// instead of one per frame.
+        /// </summary>
+        const float ShapeRepublishEpsilon = 0.005f;
+
         public override void Initialize(IVesselStatus shipStatus)
         {
             // A vessel swap re-runs Initialize on a live component, so drop any sight still in
@@ -90,6 +148,7 @@ namespace CosmicShore.Gameplay
             // vessel that is no longer flying.
             HardReset();
             _status = shipStatus;
+            _peerSlotId = GetInstanceID();
         }
 
         void OnDisable() => HardReset();
@@ -102,14 +161,22 @@ namespace CosmicShore.Gameplay
 
         // ---------------- Action ----------------
 
+        /// <summary>
+        /// Called on EVERY machine, not just the holder's: <see cref="R_VesselActionHandler"/>
+        /// replicates the press through the server before performing it, so this runs on the
+        /// owner, the host and every observer. Which channel the resulting highlight goes to is
+        /// decided in <see cref="Update"/> by <see cref="IsLocalPilot"/> — deciding it here would
+        /// mean a vessel that changed hands mid-hold (the Cellular Duel ownership swap) kept
+        /// publishing to the wrong one.
+        /// </summary>
         public void Engage(EchoSightActionSO so, IVesselStatus status)
         {
             if (so) _so = so;
             if (status != null) _status = status;
-            if (!IsLocalPilot) return;
             _engaged = true;
         }
 
+        /// <summary>Also called on every machine — see <see cref="Engage"/>.</summary>
         public void Release(EchoSightActionSO so, IVesselStatus status)
         {
             if (so) _so = so;
@@ -132,33 +199,166 @@ namespace CosmicShore.Gameplay
             var so = _so;
             if (!so) return;
 
-            // Ease both ways. Nothing snaps into or out of the sight.
+            bool local = IsLocalPilot;
+
+            // Ease both ways, on every machine. Nothing snaps into or out of the sight - a rival's
+            // mark blooms and fades exactly like your own, because the press and the release both
+            // arrive here through the same replicated input channel.
             float rate = Time.deltaTime / Mathf.Max(0.01f, so.TransitionSeconds);
-            float target = _engaged && IsLocalPilot ? 1f : 0f;
+            float target = _engaged ? 1f : 0f;
             _blend = Mathf.MoveTowards(_blend, target, rate);
 
             if (_blend <= 0f)
             {
-                PrismDestructionSight.Clear();
-                DriveVesselHighlight(default, 0f);
+                StopPublishing();
                 return;
             }
 
             if (!blastEffect || _status == null ||
                 !blastEffect.TryResolveBlastVolume(_status, out var volume))
             {
-                PrismDestructionSight.Clear();
-                DriveVesselHighlight(default, 0f);
+                StopPublishing();
                 return;
             }
 
             float strength = _blend * so.HighlightStrength;
-            PrismDestructionSight.Publish(volume, strength);
-            DriveVesselHighlight(volume, strength);
+
+            // OWNER-gated, and deliberately ABOVE the local/peer split: the machine that must put
+            // the shape on the wire is the one that OWNS the vessel, which is not the same thing as
+            // the one flying it. An AI Dolphin is owned by the host and is nobody's local pilot, so
+            // gating this on `local` meant its shape was never published and its sight could not
+            // draw on ANY machine - including the host's own, which reads the value back out of the
+            // same NetworkVariable. PublishShapeToPeers no-ops on a non-owner, so this is free
+            // everywhere else and identical for a human (owner and local pilot coincide).
+            PublishShapeToPeers(volume);
+
+            if (local)
+            {
+                // Unchanged from before peers existed, deliberately: this is the pilot's own
+                // instrument and it must read identically in every match.
+                PrismDestructionSight.PublishLocal(volume, strength);
+                _localPublished = true;
+                DriveVesselHighlight(volume, strength);
+                return;
+            }
+
+            // Somebody else is aiming. Their cone's SIZE has to come off the wire - see
+            // R_VesselActionHandler.NetEchoSightShape for why this machine cannot work it out.
+            // Its apex and axes are re-derived locally every frame from the replica's own
+            // transform, so the mark turns with their ship at full frame rate.
+            if (!TryApplyReplicatedShape(ref volume) || !TryResolvePeerTint(out var tint))
+            {
+                StopPublishing();
+                return;
+            }
+
+            PrismDestructionSight.PublishPeer(_peerSlotId, volume, strength, tint);
+            _peerPublished = true;
+
+            // Fed zero rather than skipped so a vessel that changed hands mid-hold - and so stopped
+            // being the local pilot's - fades out anything it had marked instead of stranding it.
+            DriveVesselHighlight(default, 0f);
+        }
+
+        /// <summary>
+        /// Retire whatever this executor was showing, on whichever channel it was showing it.
+        /// Driven off what was actually PUBLISHED rather than off what this vessel is now, because
+        /// ownership can change under a live vessel (the Cellular Duel swap) and the stale channel
+        /// is precisely the one nothing else would ever clear.
+        ///
+        /// The wire is zeroed too — an owner that stops aiming without publishing
+        /// <see cref="Vector3.zero"/> leaves every peer drawing the last size it sent, which no
+        /// amount of local cleanup on their machines can fix.
+        /// </summary>
+        void StopPublishing()
+        {
+            if (_localPublished)
+            {
+                PrismDestructionSight.ClearLocal();
+                _localPublished = false;
+            }
+
+            if (_peerPublished)
+            {
+                PrismDestructionSight.ClearPeer(_peerSlotId);
+                _peerPublished = false;
+            }
+
+            // Unconditional: it no-ops on any machine that does not own this vessel, so it is
+            // correct here without asking again whether this executor is the local pilot's.
+            PublishShapeToPeers(default);
+
+            DriveVesselHighlight(default, 0f);
+        }
+
+        /// <summary>
+        /// The owner publishes the three scalars a peer cannot derive:
+        /// <c>(Height, TanCorePerUnit, TanGapePerUnit)</c>. An invalid volume publishes
+        /// <see cref="Vector3.zero"/>, which is the "not aiming" sentinel every reader tests.
+        ///
+        /// Written only when the shape has meaningfully moved, so holding the trigger while the
+        /// energy meter creeps costs a few ticks per second rather than one per frame — and a
+        /// vessel that never carries this ability never dirties the variable at all.
+        /// </summary>
+        void PublishShapeToPeers(in BlastVolume volume)
+        {
+            var handler = _status?.ActionHandler;
+            if (!handler || !handler.IsSpawned || !handler.IsOwner) return;
+
+            Vector3 shape = volume.IsValid && volume.Height > 0f
+                ? new Vector3(volume.Height, volume.TanCorePerUnit, volume.TanGapePerUnit)
+                : Vector3.zero;
+
+            if (!ShapeChanged(_lastPublishedShape, shape)) return;
+
+            _lastPublishedShape = shape;
+            handler.NetEchoSightShape.Value = shape;
+        }
+
+        /// <summary>
+        /// Relative comparison rather than absolute: the three scalars live on wildly different
+        /// scales (a height in the thousands of units next to two tangents under 1), so one
+        /// absolute epsilon would either spam the network for the tangents or freeze the height.
+        /// Going to or from exactly zero always counts — that transition is the sentinel.
+        /// </summary>
+        static bool ShapeChanged(Vector3 previous, Vector3 next)
+        {
+            for (int i = 0; i < 3; i++)
+            {
+                float a = previous[i], b = next[i];
+                if ((a == 0f) != (b == 0f)) return true;
+                if (Mathf.Abs(a - b) > ShapeRepublishEpsilon * Mathf.Max(Mathf.Abs(a), Mathf.Abs(b)))
+                    return true;
+            }
+            return false;
+        }
+
+        /// <summary>
+        /// Stamp the owner's replicated cone size onto the locally-derived volume. Returns false
+        /// while no shape has arrived — the owner is not aiming, or this machine has not received
+        /// their first tick yet — and a peer sight that has nothing authoritative to draw draws
+        /// NOTHING. Guessing from the replica's own stale elemental levels is what would make the
+        /// overlay lie, and a targeting aid that lies is worse than none.
+        /// </summary>
+        bool TryApplyReplicatedShape(ref BlastVolume volume)
+        {
+            var handler = _status?.ActionHandler;
+            if (!handler || !handler.IsSpawned) return false;
+
+            Vector3 shape = handler.NetEchoSightShape.Value;
+            if (shape.x <= 0f) return false;
+
+            volume.Height = shape.x;
+            volume.TanCorePerUnit = shape.y;
+            volume.TanGapePerUnit = shape.z;
+            return true;
         }
 
         /// <summary>
         /// The Charge level-5 half: pilots standing in the same volume light up.
+        ///
+        /// LOCAL PILOT ONLY, unlike the prism half — see the class summary. It is fed a zero
+        /// strength on every other path rather than skipped, so nothing is ever stranded lit.
         ///
         /// Below the upgrade the highlighter is fed a zero strength rather than skipped, so anything
         /// still lit from a moment ago fades out properly when the upgrade is lost mid-flight — a
@@ -195,15 +395,58 @@ namespace CosmicShore.Gameplay
         Color ResolveDomainSignalColor(IVessel vessel)
         {
             var colorSet = _gameData?.ThemeManagerData?.ColorSet;
-            var domain = vessel?.VesselStatus != null ? vessel.VesselStatus.Domain : Domains.Blue;
+            var status = vessel?.VesselStatus;
+
+            // Player, not just VesselStatus: IVesselStatus.Domain logs an error and falls back to
+            // Jade when the pair is not linked yet, and a replica can be alive for a frame or two
+            // before ClientPlayerVesselInitializer resolves it. Blue is the platform's "no team"
+            // sentinel and GetDomainSignalColor answers white for it, which is a correct-looking
+            // neutral mark rather than a wrong team's colour.
+            var domain = status?.Player != null ? status.Domain : Domains.Blue;
             return colorSet != null ? colorSet.GetDomainSignalColor(domain) : Color.white;
+        }
+
+        /// <summary>
+        /// The colour a PEER's mark is drawn in, or false if this machine cannot yet say whose mark
+        /// it is.
+        ///
+        /// A peer mark with no resolved owner is not drawn at all. Falling back to
+        /// <see cref="Domains.Blue"/> — the platform's "no team" sentinel — would be wrong twice
+        /// over here: Blue is an authored colour rather than a neutral, and after the shader's
+        /// desaturation it lands close enough to the local sight's own pale cool cast that a rival's
+        /// cone could be mistaken for your own. The window is a frame or two on a freshly spawned
+        /// replica, before <c>ClientPlayerVesselInitializer</c> links the pair, and showing nothing
+        /// across it is strictly better than showing something that means the wrong thing.
+        /// </summary>
+        bool TryResolvePeerTint(out Color tint)
+        {
+            tint = Color.white;
+            var status = _status;
+            if (status?.Player == null) return false;
+
+            tint = ResolveDomainSignalColor(status.Vessel);
+            return true;
         }
 
         void HardReset()
         {
             _engaged = false;
             _blend = 0f;
-            PrismDestructionSight.Clear();
+
+            // Both channels, and the wire. A vessel torn down mid-hold must not leave its cone
+            // burned into anyone's arena. ClearLocal is called unconditionally here rather than
+            // through the _localPublished flag: this also runs at the TOP of Initialize, where a
+            // sight left over from the previous occupant of this component is exactly what needs
+            // dropping and no flag on this instance can know about it.
+            PrismDestructionSight.ClearLocal();
+            _localPublished = false;
+            if (_peerPublished)
+            {
+                PrismDestructionSight.ClearPeer(_peerSlotId);
+                _peerPublished = false;
+            }
+            PublishShapeToPeers(default);
+            _lastPublishedShape = Vector3.zero;
 
             // Restores every borrowed brightness immediately. A faded-but-unrestored highlight would
             // leave a rival vessel permanently over-bright with nothing left running to fix it.

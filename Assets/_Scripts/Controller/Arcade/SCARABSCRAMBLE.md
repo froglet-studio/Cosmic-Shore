@@ -191,6 +191,33 @@ it off — but because Scramble's court *is* the nucleus, the two meet:
   and must never be copied). Run FrogletTools ▸ Ecology ▸ Measure Cell Environment
   Baselines and retune after the first playtest; Restless is the fauna-release gate and
   the mode's primary ecology pacing dial.
+  ⚠ **RE-AUTHORED BUILD-PACED (2026-08-19), because that estimate counted TRAIL only and
+  the switch dais dwarfs it.** Every pilot here is a Scarab, so every pilot carries
+  `PlaceSwitchAction`, and a struck switch pays out **50,773 volume across 255 prisms**
+  (`SCARAB.md` §5.1) — 4× the old `FrenzyEnterVolume`. The FIRST payout of a match
+  crossed both gates at once, so the cleanup crew was released and the cell pinned at
+  Frenzy for the rest of the match; with no flora here the production freeze costs
+  little, but the ladder stopped carrying information after the first strike. The mode
+  now paces off what the players have **built**, the same way Astro League's does:
+
+  | gate | was (trail only) | now | = |
+  |---|---|---|---|
+  | `RestlessEnterVolume` | 12,000 | **164,000** | trail band + 3 spent switches |
+  | `RestlessExitVolume` | 11,000 | **162,000** | |
+  | `FrenzyEnterVolume` | 36,000 | **391,000** | trail band + 7 spent switches |
+  | `FrenzyExitVolume` | 32,000 | **388,000** | |
+  | `RestlessEnter` (count backstop) | 900 | **2,180** | + 3 × 255 prisms × the ~1.6× headroom the old gates carried |
+  | `RestlessExit` | 800 | **2,080** | |
+  | `FrenzyEnter` (count backstop) | 3,000 | **5,810** | + 7 × 255 prisms × headroom |
+  | `FrenzyExit` | 2,600 | **5,600** | |
+
+  ⚠ **The stated cost: Restless no longer fires from trail alone**, and Restless is this
+  mode's fauna-release gate. A match in which nobody strikes a switch will sit in Calm far
+  longer than the original authoring intended. That was the accepted trade against a
+  ladder that conveyed nothing after the first strike — it is the FIRST thing to re-check
+  at the playtest this bullet already schedules, and the alternative (keep the trail band
+  and simply refuse to let a dais satisfy Restless) is a one-line revert of the two
+  Restless rows. `SCARAB.md` §8 carries the same table from the other side.
 - **Toast copy claims "bumping enemy balls is always safe"** — true for scoring (the
   arming gate) and for ownership (bumps never recolor); a shielded own-ribbon deflects
   (`prismCaromRestitution 1`) rather than "eats momentum". Copy uses "deflect" where it

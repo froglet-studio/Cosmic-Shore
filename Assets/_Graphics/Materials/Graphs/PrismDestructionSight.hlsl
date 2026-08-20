@@ -75,6 +75,57 @@
 // so a highlighted prism standing in the corridor thins out exactly like its neighbours instead of
 // punching through the ship.
 
+//
+// TWO CHANNELS: MINE, AND EVERYONE ELSE'S (2026-08-19).
+//
+// The sight used to be strictly local — a remote peer saw a Dolphin flying normally. It is now
+// visible to everyone, and the two cases are deliberately DIFFERENT LOOKS carried by two
+// different uniform sets:
+//
+//   MINE   — the five scalar/vector uniforms in this function's signature, painted with
+//            PRISM_SIGHT_COLOR (the pale cool cast). There is exactly ONE of these per viewer,
+//            which is why it stays a plain uniform, and its code path is unchanged: with no peer
+//            sight up, this file computes bit-identically to what it computed before.
+//   THEIRS — up to PRISM_SIGHT_PEER_SLOTS volumes in the arrays below, each carrying its
+//            holder's DOMAIN colour, so a lit patch of mass says WHO is about to take it.
+//
+// Why hue is the right channel for the second case, when the first case exists precisely to stay
+// OUT of the palette's language: the question a peer's mark answers is "whose blast is this",
+// and the platform already answers every whose-is-it question with domain colour. The same
+// reasoning as the Charge-5 vessel halo, which drives a marked hull to its saturated domain
+// colour because brightness alone cannot separate a ship from the lit mass around it. The
+// palette collision is held off by PRISM_SIGHT_PEER_DESATURATION: a peer's tint is pulled toward
+// white before it is added, so it reads as coloured LIGHT with a domain in it rather than as the
+// prism having changed team. Own sight stays hueless, so "the pale one is mine" is learnable in
+// one match.
+//
+// COMPOSITION — YOUR OWN SIGHT WINS OUTRIGHT, and peers fill in around it.
+//
+// A prism your own cone covers is painted by your own cone and nothing else: same colour, same
+// gain, same expression, so the instrument you are aiming with reads exactly as it did when the
+// sight was local-only, in every match, whoever else is on the field. That is not a tie-break
+// convenience — a targeting aid that changes hue because a rival happened to sweep across the
+// same mass is an aid you cannot trust, and you already know your cone covers that prism.
+//
+// Peers therefore only ever mark mass your own sight is NOT marking, which also draws the more
+// useful picture: your cone in its pale cast, a rival's in their domain, and the boundary between
+// them where the two overlap.
+//
+// Between THEMSELVES peers blend rather than sum. Four Dolphins can hold the trigger at once (both
+// Dolphin-only modes seat four) and their cones overlap constantly in a dense arena, so summing
+// would blow the mass out to white exactly where the fight is thickest. Each contributes its tint
+// at weight w = fill x strength; the result is the weight-averaged HUE at the brightness of the
+// STRONGEST single contributor. Two rivals aiming at one prism therefore read as a blend of two
+// domains, never as a brighter mark than either made alone — verified over the shipped file by a
+// clang build (Tools/Shaders/verify_prism_sight_composition.py).
+//
+// THE ARRAYS. Shader Graph has no array property type, so these are declared at file scope here
+// and bound with Shader.SetGlobalVectorArray — the same shape PrismOcclusionCorridor.hlsl uses
+// for its live-tuning dials, and the reason this change needed no graph edit at all. They sit
+// outside every CBUFFER because they are per-FRAME globals, not per-material properties;
+// putting an array in UnityPerMaterial is what would break SRP batching.
+//
+
 #ifndef PRISM_DESTRUCTION_SIGHT_INCLUDED
 #define PRISM_DESTRUCTION_SIGHT_INCLUDED
 
@@ -107,6 +158,9 @@
 // far more saturated), and the gain below is low enough that the prism's own tier colour still shows
 // through the cast rather than being flooded by it. If a lit shielded prism ever starts reading as a
 // tier change, lower the gain before touching the hue.
+//
+// This is the OWN-sight colour specifically. A peer's sight is tinted by its holder's domain
+// instead (see the peer block below), which is what makes "the hueless one is mine" readable.
 #ifndef PRISM_SIGHT_COLOR
 #define PRISM_SIGHT_COLOR float3(0.45, 0.70, 1.0)
 #endif
@@ -119,26 +173,113 @@
 #define PRISM_SIGHT_GAIN 0.7
 #endif
 
+// -----------------------------------------------------------------------------
+// PEER SIGHTS — the other pilots' cones, tinted by their domain.
+// -----------------------------------------------------------------------------
+
+// How many peer sights can be shown at once. Four is the roster of both Dolphin-only modes
+// (Rampage and The Bends, MaxPlayersAllowed 4), so in practice this is "everyone else" plus a
+// spare, so overflow cannot happen with any roster the game ships. PrismDestructionSight.cs keeps
+// the STRONGEST sights if it ever does, and mirrors this constant — change both together.
+#ifndef PRISM_SIGHT_PEER_SLOTS
+#define PRISM_SIGHT_PEER_SLOTS 4
+#endif
+
+// How far a peer's domain colour is pulled toward white before it is added. 0 = the raw saturated
+// domain signal colour, which reads as the prism having changed team and lands squarely in the
+// palette's language (Docs/PALETTE.md); 1 = hueless, at which point a peer's mark is
+// indistinguishable from your own. The shipped value keeps enough hue to name the domain while
+// still reading as light thrown ONTO mass rather than as mass wearing a colour.
+#ifndef PRISM_SIGHT_PEER_DESATURATION
+#define PRISM_SIGHT_PEER_DESATURATION 0.4
+#endif
+
+// Peers drive slightly softer than your own sight. Your cone is information you are acting on this
+// second; theirs is context. Same clamp band, so a peer mark can never out-shout the mark you are
+// aiming with.
+#ifndef PRISM_SIGHT_PEER_GAIN
+#define PRISM_SIGHT_PEER_GAIN 0.55
+#endif
+
+// Bound with Shader.SetGlobalVectorArray / SetGlobalFloat once per frame. Declared at file scope
+// because Shader Graph has no array property type, and OUTSIDE every CBUFFER because these are
+// per-frame globals rather than per-material properties (an array inside UnityPerMaterial is what
+// breaks SRP batching). Same mechanism PrismOcclusionCorridor.hlsl uses for its tuning dials.
+//
+//   PeerApex[i] = (apex.xyz,  height)
+//   PeerAxis[i] = (axis.xyz,  coreRadiusPerUnitDepth)
+//   PeerGape[i] = (gape.xyz,  halfLengthPerUnitDepth)
+//   PeerTint[i] = (tint.rgb,  strength)
+//
+// _PrismSightPeerCount is the master sentinel: unpublished globals read as zero (a player build
+// before any Dolphin holds a trigger, or the editor between play sessions), the loop below does
+// not execute, and this file behaves exactly as it did when the sight was local-only.
+float4 _PrismSightPeerApex[PRISM_SIGHT_PEER_SLOTS];
+float4 _PrismSightPeerAxis[PRISM_SIGHT_PEER_SLOTS];
+float4 _PrismSightPeerGape[PRISM_SIGHT_PEER_SLOTS];
+float4 _PrismSightPeerTint[PRISM_SIGHT_PEER_SLOTS];
+float  _PrismSightPeerCount;
+
+// How deep inside one blast volume a point stands, on the edge-weighted curve, or 0 if outside.
+//
+// This is THE containment test, factored out so the own sight and every peer sight run literally
+// the same code — three transcriptions of AOEConicSweepQueryJob already exist across the codebase
+// (the sweep, ExplosionHelper.Contains, the capsule trigger) and a fourth living inside a loop
+// body would have been a fifth place for the shape to drift.
+float PrismSightFill(float3 samplePos, float3 apex, float3 axis, float3 gape, float3 params)
+{
+    float height = params.x;
+    if (height <= 0.0)
+        return 0.0;
+
+    float3 rel = samplePos - apex;
+
+    // Axial band. Outside [0, height] there is no blast at all - note the near clip is at the
+    // apex, so mass BEHIND the vessel is never highlighted even though the cone's axis extends
+    // backwards mathematically.
+    float s = dot(rel, axis);
+    if (s <= 0.0 || s > height)
+        return 0.0;
+
+    float coreRadius = params.y * s;
+    if (coreRadius <= 0.0)
+        return 0.0;
+
+    // Distance from the cross-section's SEGMENT, not from the axis: clamp onto the segment first
+    // so the ends are round. Mirrors AOEConicSweepQueryJob exactly.
+    float3 radial = rel - axis * s;
+    float halfLength = params.z * s;
+    float along = dot(radial, gape);
+    float3 offAxis = radial - gape * clamp(along, -halfLength, halfLength);
+
+    float d = length(offAxis);
+    if (d > coreRadius)
+        return 0.0;
+
+    // Inside. Weight toward the boundary so the blast's silhouette is drawn onto the mass rather
+    // than flooding it, with a floor so deep mass still reads as marked.
+    float edge = saturate(d / coreRadius);
+    return lerp(PRISM_SIGHT_CORE_FILL, 1.0, pow(edge, PRISM_SIGHT_EDGE_POWER));
+}
+
 void PrismDestructionSight_float(
     float3 PositionWS,
-    float3 Apex,        // blast apex, world space
-    float3 Axis,        // sweep axis (unit)
-    float3 Gape,        // gape axis (unit, perpendicular to Axis)
-    float3 Params,      // (height, core radius per unit depth, half-length per unit depth)
-    float  Strength,
+    float3 Apex,        // OWN sight: blast apex, world space
+    float3 Axis,        // OWN sight: sweep axis (unit)
+    float3 Gape,        // OWN sight: gape axis (unit, perpendicular to Axis)
+    float3 Params,      // OWN sight: (height, core radius per unit depth, half-length per unit depth)
+    float  Strength,    // OWN sight: highlight fade, 0-1
     float3 BaseColor,
     out float3 Color)
 {
-    // Composes rather than overwrites: a fragment outside the volume, or with the sight released,
-    // leaves with exactly the colour the graph gave it.
+    // Composes rather than overwrites: a fragment outside every volume, with no sight held
+    // anywhere, leaves with exactly the colour the graph gave it.
     Color = BaseColor;
 
-    float Highlight = 0.0;
-
-    // Sentinel: the publisher zeroes every uniform when the sight is released, so an unheld
-    // trigger costs exactly this compare.
-    float height = Params.x;
-    if (height <= 0.0 || Strength <= 0.0)
+    // Both sentinels: an unheld own trigger with nobody else holding one costs exactly these two
+    // compares and nothing else.
+    int peerCount = min((int)_PrismSightPeerCount, PRISM_SIGHT_PEER_SLOTS);
+    if ((Params.x <= 0.0 || Strength <= 0.0) && peerCount <= 0)
         return;
 
     // ONE sample point for the whole prism: its own origin, which is the exact point
@@ -153,38 +294,56 @@ void PrismDestructionSight_float(
     float3 samplePos = PositionWS;
 #endif
 
-    float3 rel = samplePos - Apex;
+    // ---- YOUR OWN SIGHT, first and exclusive ----
+    // Deliberately the whole of the old function, expression for expression: a prism your cone
+    // covers must be painted the same way it was before peers existed, with no division and no
+    // averaging that could move it by even a bit. It also short-circuits the loop below in the
+    // one case that runs every frame you are holding the trigger.
+    if (Params.x > 0.0 && Strength > 0.0)
+    {
+        float own = PrismSightFill(samplePos, Apex, Axis, Gape, Params) * Strength;
+        if (own > 0.0)
+        {
+            Color = BaseColor + PRISM_SIGHT_COLOR * (own * PRISM_SIGHT_GAIN);
+            return;
+        }
+    }
 
-    // Axial band. Outside [0, height] there is no blast at all - note the near clip is at the
-    // apex, so mass BEHIND the vessel is never highlighted even though the cone's axis extends
-    // backwards mathematically.
-    float s = dot(rel, Axis);
-    if (s <= 0.0 || s > height)
+    // ---- EVERYONE ELSE, blended among themselves ----
+    // `weighted` accumulates tint x weight and `peak` tracks the strongest single weight, so the
+    // result is the weight-averaged HUE carried at ONE contributor's brightness. Adding a second
+    // rival to a prism changes its colour, never how brightly it is lit.
+    float3 weighted = float3(0.0, 0.0, 0.0);
+    float  total    = 0.0;
+    float  peak     = 0.0;
+
+    // [loop] rather than an unroll: the bound is a uniform, and at peerCount 0 — every frame in
+    // which no rival is aiming — this costs one compare instead of four dead iterations.
+    [loop]
+    for (int i = 0; i < peerCount; i++)
+    {
+        float4 apex = _PrismSightPeerApex[i];
+        float4 axis = _PrismSightPeerAxis[i];
+        float4 gape = _PrismSightPeerGape[i];
+        float4 tint = _PrismSightPeerTint[i];
+
+        float w = PrismSightFill(samplePos, apex.xyz, axis.xyz, gape.xyz,
+                                 float3(apex.w, axis.w, gape.w)) * tint.a;
+        if (w <= 0.0)
+            continue;
+
+        // Pulled toward white so a rival's mark reads as coloured light on the mass rather than as
+        // the mass having changed domain.
+        float3 peerColor = lerp(tint.rgb, float3(1.0, 1.0, 1.0), PRISM_SIGHT_PEER_DESATURATION);
+        weighted += peerColor * w;
+        total    += w;
+        peak      = max(peak, w);
+    }
+
+    if (total <= 0.0)
         return;
 
-    // Distance from the cross-section's SEGMENT, not from the axis: clamp onto the segment first
-    // so the ends are round. Mirrors AOEConicSweepQueryJob exactly.
-    float3 radial = rel - Axis * s;
-    float halfLength = Params.z * s;
-    float along = dot(radial, Gape);
-    float3 offAxis = radial - Gape * clamp(along, -halfLength, halfLength);
-
-    float coreRadius = Params.y * s;
-    if (coreRadius <= 0.0)
-        return;
-
-    float d = length(offAxis);
-    if (d > coreRadius)
-        return;
-
-    // Inside. Weight toward the boundary so the blast's silhouette is drawn onto the mass rather
-    // than flooding it, with a floor so deep mass still reads as marked.
-    float edge = saturate(d / coreRadius);
-    float fill = lerp(PRISM_SIGHT_CORE_FILL, 1.0, pow(edge, PRISM_SIGHT_EDGE_POWER));
-
-    Highlight = fill * Strength;
-
-    Color = BaseColor + PRISM_SIGHT_COLOR * (Highlight * PRISM_SIGHT_GAIN);
+    Color = BaseColor + (weighted / total) * (peak * PRISM_SIGHT_PEER_GAIN);
 }
 
 #endif // PRISM_DESTRUCTION_SIGHT_INCLUDED
