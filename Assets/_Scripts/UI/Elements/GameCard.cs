@@ -34,9 +34,13 @@ namespace CosmicShore.UI
         private Color _originalBgColor = Color.white;
 
         bool favorited;
-        [SerializeField] public bool Favorited
+        
+        public bool Favorited
         {
-            get { return favorited; }
+            get
+            {
+                return favorited;
+            }
             set
             {
                 favorited = value;
