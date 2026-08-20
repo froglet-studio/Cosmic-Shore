@@ -234,8 +234,9 @@ namespace CosmicShore.Gameplay
 
             if (_config.detonateAllLiveBalls)
             {
-                // The SHARED implementation, also used by the mode's forge-cap overflow, so
-                // "too many balls" produces one identical detonation wherever it is triggered.
+                // The SHARED implementation, the same beat the per-CELL overload uses
+                // (AstroLeagueBall.DetonateAllLooseInCellServer), so "too many balls" produces
+                // one identical detonation wherever it is triggered.
                 n = AstroLeagueBall.DetonateAllLiveServer(scale);
             }
             else

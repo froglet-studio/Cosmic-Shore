@@ -5,8 +5,8 @@
 > throttle along the nose + Snap Dash), `ScarabJukeController` (free dash, `OnJukeFired`),
 > `ScarabCavitationBlast` + `AOEScarabCavitation.prefab` + its elemental-debuff container,
 > `PlaceSwitchActionSO`/executor + `ScarabSwitch` (toy ring, Vogel interior fill, plane-crossing
-> trigger, outward burst, MASS-5 shielded prisms), `ScarabBallForgeBySkimmerCrystalEffectSO` (every omni
-> crystal forges a ball at the vessel's TRUE velocity, dash included; SPACE scales it to ×4),
+> trigger, outward burst, MASS-5 shielded prisms), `ScarabBallForgeBySkimmerCrystalEffectSO` (an OMNI
+> crystal — never an elemental one — becomes a ball in place, at rest; SPACE scales it to ×4),
 > the four-row ability map, containers, camera SO, class card, HUD view/controller, and all
 > registrations (arcade card, prefab container, network prefabs, vessel-changer toy). In-editor
 > verification steps + first-pass tuning: `Docs/UNITY_VERIFICATION_CHECKLIST.md` § Scarab.
@@ -19,8 +19,8 @@
 > scoring, and the JUKE as the sanctioned steal via `ScarabJukeController.IsJukeStrikeWindowOpen`),
 > multi-ball with per-ball attribution (§4.4/§4.5 — `Live` + `ScarabBallForge.OnForged` adoption +
 > a forger/last-toucher ledger; §15.12 answered "the ball's domain scores, last toucher gets
-> personal credit"), a per-DOMAIN forge cap through the new `ScarabBallForge.ForgeGate` policy
-> hook (§15.5 answered: refuse + targeted toast, never expire), goals that stop nothing (§15.13's
+> personal credit"), a ball ceiling (§15.5 answered: overload, never expire — see
+> the per-CELL rule in §4.6), goals that stop nothing (§15.13's
 > party answer), and the forged ball's previously-unreplicated `SetSizeScale` (`n_SizeScale`).
 > §4.3's boundary DEATH is deliberately NOT used in that mode (walls reflect — a beachhead mode
 > must not make balls a resource you can waste); it remains available per-mode via
@@ -535,6 +535,20 @@ Two properties are load-bearing:
   it clear — reproducing the old feel through a different door. The Rhino's sword is unaffected: it
   is routed through the blade branch, tested on `SwingKinematics` rather than on the
   `bladeAwareStrikes` flag.
+- **OMNI crystals only — an ELEMENTAL crystal is never converted.** An elemental crystal is the
+  platform's element economy (it is how every vessel levels Charge/Mass/Space/Time), so spending
+  one on a ball meant a Scarab could never level an element it flew past. The skimmer effect
+  returns on anything that is not an `OmniCrystalImpactor`, handing the crystal back to the HULL,
+  whose four elemental branches collect it normally. `TeamCrystalImpactor` derives from
+  `OmniCrystalImpactor` and is deliberately included — a team crystal is a domain-locked omni, the
+  same family. The BLAST path was already omni-only, not by choice but by construction
+  (`ExplosionImpactor.SweepCrystals` only picks up `OmniCrystalImpactor`); this makes the two
+  paths agree instead of leaving the skimmer as the odd one out.
+- **The hull carries NO omni-crystal effects on this vessel** (`ScarabImpactorDataContainer`'s
+  `vesselCrystalEffects` is empty). The skimmer sphere strictly contains the hull, so whatever the
+  skimmer converts, the hull never sees — an omni effect on the hull could therefore only fire on
+  a crystal the forge had *already* refused, and there is no such case. The four elemental
+  branches keep their effects, because those are exactly the crystals the forge hands back.
 
 The energy-meter economy below is the ORIGINAL design and is currently **off**
 (`_requireEnergy = false` was carried onto the skimmer effect's predecessor; every omni crystal
@@ -890,11 +904,20 @@ suspends its boundary so the strike's own velocity carries it across that band; 
 engages on a ball that is already where it belongs. This is presentation-only: the ball is a normal
 body the whole time, and nothing else about the release changes.
 
-**Too many balls is ONE event with one look.** Both the nucleus overload and the mode's forge-cap
-overflow call `AstroLeagueBall.DetonateAllLiveServer`, so they cannot drift into different-looking
-detonations. The forge cap no longer REFUSES: at the cap the crystal still forges, and then
-everything — including the ball just made — detonates. A refusal made a crystal silently do nothing
-at the worst possible moment; an overload makes "I grabbed one too many" legible.
+**Too many balls is ONE event with one look, and the count is per CELL.** A **cell** holds at most
+`AstroLeagueBall.cellBallLimit` (4) LOOSE balls (`!n_Embedded && !n_Hidden`, position inside
+`Cell.ContainsPosition`): the moment a further one enters, every loose ball in that cell detonates
+**regardless of domain**, the arriving one included — `TickCellMembershipServer` →
+`DetonateAllLooseInCellServer` → `CellOverload_ClientRpc`, one networked event on every peer, using
+the same per-ball `DetonateWithRadiusServer` the nucleus overload uses, so the two cannot drift into
+different-looking detonations.
+
+It replaced a per-DOMAIN cap enforced at FORGE time, and the reason generalises: **a rule enforced
+at one PRODUCER can only ever see that producer.** A ball enters play two ways — forged from a
+crystal, and knocked loose out of the nucleus (the table above) — so a forge-time gate was blind to
+half of them by construction, and a *refusal* additionally made a crystal silently do nothing at
+the worst possible moment. Counting what is actually IN the cell notices every route, needs no
+producer to remember to ask, and is the same count the player can see.
 
 **A ball detonates in a DOMAIN explosion.** `AstroLeagueSettingsSO.detonationExplosionPrefabs`
 spawns an `AOEExplosion` carrying the BALL's domain and that domain's `AOEExplosionMaterial`, so the

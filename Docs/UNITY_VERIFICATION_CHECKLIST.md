@@ -116,11 +116,28 @@ The editor-riskiest items:
   crystal into a ball in place and at rest, the ball blooms in, the hull then strikes a real
   ball; arming gate blocks enemy shoves; juke-steal converts (works from a client too, via
   `NotifyJukeFired_ServerRpc`); bank toast on 2+ caroms.
-- **Ball cap now OVERLOADS, it does not refuse** — take one crystal past
-  `ballsPerPlayer × roster` and EVERY live ball should detonate, including the one just made,
-  each in its own domain-coloured blast. Watch that own-domain prisms take a temporary shield
-  rather than being destroyed (the no-perceived-clipping rule), and that the toast reads as an
-  overload.
+- **Elemental crystals are NOT forged any more.** Fly the Scarab's skimmer through an
+  ELEMENTAL crystal (a lifeform heart, or one of the cell's element crystals): it must COLLECT
+  normally and raise that element's HUD flower — no ball. Then fly through a bright OMNI
+  crystal: that one must still become a ball in place. The omni case is the one to re-check
+  after this change, because the hull's `vesselCrystalEffects` (the OMNI branch) is now EMPTY
+  on `ScarabImpactorDataContainer` — if an omni crystal ever reaches the hull and does nothing
+  at all, the skimmer is not converting it (check `VesselStatus.NearFieldSkimmer` /
+  `FarFieldSkimmer` actually point at the live skimmer — FrogletTools > Vessels > Audit Vessel
+  Skimmers).
+- **The CELL overloads at 4 loose balls, regardless of domain** (the per-domain forge cap is
+  gone). Get a FOURTH ball loose in the court — any mix of domains, any mix of forged and
+  knocked-loose-from-the-nucleus — and all four should detonate at once, each in its own
+  domain-coloured blast, with the court-wide overload toast. Watch that own-domain prisms take
+  a temporary shield rather than being destroyed (the no-perceived-clipping rule). **Check both
+  entry routes**, because the old cap could only see one: forge a fourth from a crystal, and
+  separately knock a fourth inward off the nucleus wall. An EMBEDDED ball must not count —
+  three loose plus any number still studded in the shell is quiet.
+- **MPPM two-client: the overload is ONE synced event.** The count and the detonation are
+  server-side (`TickCellMembershipServer`), announced by `CellOverload_ClientRpc`, so both
+  peers must see the same balls vanish on the same beat and BOTH must get the toast — a
+  client-side count would fire twice or not at all. Trigger it once from the host's Scarab and
+  once from the client's.
 - **Scarab nucleus seeding** (SCARAB.md §4.6, a PLATFORM vessel ability — it is live in
   freestyle and the menu too, not just this mode): balls of your domain appear embedded in the
   nucleus on a ~14s clock. Strike one OUTWARD → it should leave into the cytoplasm and bounce
