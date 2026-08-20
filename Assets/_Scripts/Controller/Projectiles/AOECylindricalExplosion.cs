@@ -59,10 +59,11 @@ namespace CosmicShore.Gameplay
         [SerializeField, Min(0f)] float sweepSpeed = 257.14f;
 
         [Tooltip("Seconds to hold the trigger at FULL extent after the sweep finishes, before " +
-                 "retiring it. Trigger events are generated in the physics step, and the sweep " +
-                 "loop runs in Update - so the final, largest shape would otherwise be written " +
-                 "and disabled inside one frame, never simulated. At the shipped ~0.07s sweep " +
-                 "that is a large fraction of the blast. 0 disables the hold.")]
+                 "retiring it. Trigger events are raised in the PHYSICS step while the sweep loop " +
+                 "runs in Update, so the final and largest shape would otherwise be written and " +
+                 "disabled inside one frame and never simulated. Floored at 2x fixedDeltaTime at " +
+                 "run time, so this cannot silently become too short if the project's fixed " +
+                 "timestep changes. 0 disables the hold entirely.")]
         [SerializeField, Min(0f)] float contactHoldSeconds = 0.05f;
 
         [Tooltip("The cylinder MESH. Unity's built-in cylinder is 2 units tall along its local Y " +
@@ -195,14 +196,29 @@ namespace CosmicShore.Gameplay
         void ShapeTriggerBox(float depth)
         {
             if (!_triggerBox) return;
+
+            // ZERO DEPTH IS THE ZERO STATE, ON EVERY AXIS - not a full-width pane of no thickness.
+            // The base spherical blast reaches this posture for free (it zeroes transform.localScale
+            // in Initialize, which zeroes its collider with it); this one drives the collider
+            // directly on a scale-1 root, so it has to say so. It matters because a blast can be
+            // FROZEN here: AOEExplosion's cancellation contract deliberately leaves a cancelled
+            // explosion alive at its current size, and the pre-visual early-out runs before the
+            // sweep has advanced at all. Shaped as 2R x 2R x epsilon that would park an invisible
+            // 90x90 trigger pane in the arena for the rest of the match.
+            if (depth <= 0f)
+            {
+                _triggerBox.size = new Vector3(1e-4f, 1e-4f, 1e-4f);
+                _triggerBox.center = Vector3.zero;
+                return;
+            }
+
             Vector3 lossy = transform.lossyScale;
             float sx = Mathf.Max(Mathf.Abs(lossy.x), 1e-4f);
             float sy = Mathf.Max(Mathf.Abs(lossy.y), 1e-4f);
             float sz = Mathf.Max(Mathf.Abs(lossy.z), 1e-4f);
             // A box scales componentwise (unlike a sphere or a capsule), so each axis divides out
             // its OWN factor and there is no anisotropy trap to fall into here.
-            _triggerBox.size = new Vector3(_radius * 2f / sx, _radius * 2f / sy,
-                                           Mathf.Max(depth, 1e-4f) / sz);
+            _triggerBox.size = new Vector3(_radius * 2f / sx, _radius * 2f / sy, depth / sz);
             _triggerBox.center = new Vector3(0f, 0f, depth * 0.5f / sz);
         }
 
@@ -241,7 +257,13 @@ namespace CosmicShore.Gameplay
 
                 if (!this || ct.IsCancellationRequested)
                 {
+                    // Cancelled before the blast ever rendered or damaged anything. The base
+                    // class's "leave a cancelled explosion frozen at its current size" contract
+                    // exists so a VISIBLE blast does not pop out of the world; there is nothing
+                    // visible here yet, so retire the trigger rather than freeze an inert husk
+                    // holding a live vessel/ball hitbox.
                     impactor?.EndBatchProcessing();
+                    if (_triggerCollider) _triggerCollider.enabled = false;
                     return;
                 }
 
@@ -320,8 +342,18 @@ namespace CosmicShore.Gameplay
                 ShapePlateVisual(_length);
                 ShapeTriggerBox(_length);
                 if (contactHoldSeconds > 0f)
-                    await UniTask.Delay(TimeSpan.FromSeconds(contactHoldSeconds), DelayType.DeltaTime,
+                {
+                    // Floored at TWO fixed steps. The authored 0.05 was sized against Unity's
+                    // default 0.02 timestep; this project runs 0.04 (ProjectSettings/TimeManager),
+                    // where 0.05 guarantees only ONE step - and one step is the difference between
+                    // "the punch reliably catches the ball at its rim" and "usually". Deriving the
+                    // floor from fixedDeltaTime means the guarantee survives someone retuning the
+                    // timestep, instead of quietly becoming a wall-clock number that no longer
+                    // means what it meant when it was chosen.
+                    float hold = Mathf.Max(contactHoldSeconds, Time.fixedDeltaTime * 2f);
+                    await UniTask.Delay(TimeSpan.FromSeconds(hold), DelayType.DeltaTime,
                                         PlayerLoopTiming.Update, ct);
+                }
 
                 // Work the blast owes but could not afford within its per-frame budget still has to
                 // land - a prism's fate is decided by whether the blast CONTAINED it, never by how
