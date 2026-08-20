@@ -795,7 +795,14 @@ hostile-mass cluster it already used. See `_Scripts/Controller/Arcade/BENDS.md`.
 Astro League and the platform's designated **beachhead mode**: fly your SKIMMER through a bright
 (omni) crystal anywhere in the sphere court and the crystal BECOMES your ball, in place and at
 rest (no button, no meter) — the skimmer reaches past the hull, so the ball is finished by the
-time the ship arrives and the hull then strikes a real ball rather than a faked launch; roll, bat or bank it through any of the arena's glowing hoops and your
+time the ship arrives and the hull then strikes a real ball rather than a faked launch. **Only an
+OMNI crystal forges**: an elemental crystal is the platform's element economy, so spending one on
+a ball meant a Scarab could never level an element it flew past — it now falls through to the
+HULL and collects normally, which is also why the Scarab's `vesselCrystalEffects` (the hull's OMNI
+branch) is deliberately EMPTY, the skimmer sphere strictly containing the hull. The BLAST forge
+was already omni-only by construction (`ExplosionImpactor.SweepCrystals` only picks up
+`OmniCrystalImpactor`), so the two paths now agree.
+Roll, bat or bank it through any of the arena's glowing hoops and your
 **DOMAIN** scores; first domain to the goal target (default 10, `EndConditionOverridesSO`) wins.
 Its whole rule set points at new players: ownership is **permanent**
 (`AstroLeagueBall.SetOwnershipLockedServer` — a ball is its maker's colour from birth to death),
@@ -809,11 +816,21 @@ centre-focusing walls recycle wild shots back toward the hoops (SCARAB.md §4.3'
 is deliberately NOT used — walls reflect). Multi-carom goals get the "BANK x{n}" toast — the
 sphere manufactures the mode's signature screamer for novices. It lands the mode-side ball work
 SCARAB.md §4.2-§4.5 left open (multi-ball via `AstroLeagueBall.Live` + `ScarabBallForge.OnForged`
-adoption, per-ball attribution via a forger/last-toucher ledger, a per-domain forge cap through
-the `ScarabBallForge.ForgeGate` policy hook — at the cap the crystal still forges and then EVERY
-live ball detonates, the new one included, which is the same shared `DetonateAllLiveServer` event
-as the nucleus overload below; nothing is ever culled on a clock) and fixed the forged ball's
-unreplicated `SetSizeScale` (`n_SizeScale`). The Scarab also brings a PLATFORM ability the mode
+adoption, per-ball attribution via a forger/last-toucher ledger, and a ball ceiling) and fixed
+the forged ball's unreplicated `SetSizeScale` (`n_SizeScale`). **That ceiling is per CELL and
+lives on the BALL, not on the mode** — `AstroLeagueBall.cellBallLimit` (4): when a further loose
+ball enters a cell, every loose ball in it detonates regardless of domain, the arriving one
+included, announced by `CellOverload_ClientRpc` so it is ONE networked event on every peer and
+using the same per-ball detonation as the nucleus overload below; embedded/hidden balls do not
+count, and nothing is ever culled on a clock. It replaced a per-DOMAIN cap enforced at FORGE
+time (`ScarabBallForge.ForgeGate`, which survives as an unused mode-policy hook), and the reason
+generalises: **a rule enforced at one PRODUCER can only ever see that producer** — a ball enters
+play two ways, forged from a crystal and knocked loose out of the nucleus, so the forge-time gate
+was blind to half of them by construction. Counting what is actually IN the cell notices every
+route, needs no producer to remember to ask, and is the count the player can see. Its own
+corollary is an ORDERING one: a forged ball is DESPAWNED by its own detonation, so the
+announcement RPC must be sent BEFORE the detonation loop, and the ball's server tick must stop
+touching itself after triggering one. The Scarab also brings a PLATFORM ability the mode
 merely inherits: it passively seeds balls of its domain **embedded in the nucleus**, which anyone
 can knock OUTWARD into the cytoplasm (where they live on, bouncing off the nucleus from outside)
 or INWARD into the nucleus — in this mode the court, so that is a second source of scoring balls.
@@ -1411,7 +1428,14 @@ saturates to the same speed and `Inertia` is dead tuning. `AOEExplosion.proporti
 blast onto the true-velocity contract `PrismEffectHelper.DamageProportional` already defines: the
 vector IS the debris velocity (`speed * debrisRestitution * Inertia`) and the blast passes a matching
 ceiling. Off by default; **on** for `AOEConicExplosion.prefab` (the Dolphin crystal blast) at
-`debrisRestitution 1/3 x Inertia 1.8 = 0.6`. Debris speed and **shatter rate are one number** on this
+`debrisRestitution 1/3 x Inertia 1.8 = 0.6`, and for `AOEScarabCavitation.prefab` (the Scarab's
+swept-plate dash blast, `AOECylindricalExplosion`) at `1/3 x 3 = 1.0` — the product is deliberately
+**1** there because that blast's whole read is "the wall goes the way you dashed": at 1.0 the
+debris velocity IS the plate's sweep velocity, so a prism leaves at exactly the speed the blast
+crossed it. That is the third AOE shape (sphere / cone / swept cylinder), and a new shape must
+carry the ceiling through BOTH prism paths and supply a matching narrowphase — a squat cylinder's
+bounding sphere reaches ~43u BEHIND the pilot, which is harmless for prisms (they are tested
+exactly) and NOT harmless for the crystal sweep, which SPENDS what it touches. Debris speed and **shatter rate are one number** on this
 contract (`PrismExplosion.TriggerExplosion` re-reads `Speed` off the clamped velocity when an
 override is supplied — otherwise raising the ceiling finishes the shatter in a frame while the debris
 crawls), so `Inertia` scales both together; do not split them. Both prism paths carry the ceiling —

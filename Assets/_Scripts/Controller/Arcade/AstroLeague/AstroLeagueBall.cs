@@ -60,6 +60,45 @@ namespace CosmicShore.Gameplay
         /// disable, so it is exact and costs nothing to maintain.</summary>
         public static readonly List<AstroLeagueBall> Live = new();
 
+        [Header("Cell overload")]
+        [Tooltip("How many balls may be LOOSE IN ONE CELL at once. The ball whose arrival crosses " +
+                 "this count detonates every loose ball in that cell, ITSELF INCLUDED, regardless " +
+                 "of domain. 0 disables the rule. This is a property of BALLS, not of a mode: it " +
+                 "travels with the prefab into freestyle, the menu and any future mode, so no " +
+                 "controller can forget to install it.")]
+        [SerializeField, Min(0)] int cellBallLimit = 4;
+
+        [Tooltip("Explosion radius of a cell overload, as a multiple of each ball's own radius. " +
+                 "Kept EQUAL to ScarabNucleusFieldConfig.detonationRadiusScale (both 2) so the two " +
+                 "'too many balls' events read as the same event - they are deliberately separate " +
+                 "fields because one belongs to the ball and the other to a vessel ability, and a " +
+                 "platform ball must not depend on a Scarab config to know how loudly to die.")]
+        [SerializeField, Min(0.1f)] float cellOverloadRadiusScale = 2f;
+
+        [Tooltip("Seconds between cell-membership checks. Cell.FindCellContaining is O(active " +
+                 "cells) and its own docs say to call it at lifecycle points rather than per " +
+                 "frame, so entry is detected on a poll rather than every physics step.")]
+        [SerializeField, Min(0.02f)] float cellPollSeconds = 0.2f;
+
+        /// <summary>
+        /// Server-side: the cell this ball is currently LOOSE in, or null. Deliberately SEPARATE
+        /// from <c>_cell</c> / <c>ResolveCell</c>, which is a sticky cache for the drag lookup and
+        /// re-resolves only when its reference dies. This one must go null the moment the ball is
+        /// hidden or embedded, because it exists to detect the ENTRY EDGE and a sticky cache has no
+        /// edges. It is only ever the edge detector: every COUNT re-tests position, so a stale
+        /// value here can delay an overload but can never miscount one.
+        /// </summary>
+        Cell _looseInCell;
+        float _nextCellPoll;
+
+        /// <summary>
+        /// Raised on EVERY peer when a cell overloads, carrying where it happened and how many
+        /// balls went up. Presentation only - the detonation itself is already server-authoritative
+        /// and replicated per ball. Static because balls are spawned and destroyed per forge, so
+        /// there is nothing durable for a HUD or a controller to subscribe to.
+        /// </summary>
+        public static event System.Action<Vector3, int> OnCellOverload;
+
         bool _dieAfterScan;
 
         // Server-side: while true, nothing re-colours the ball — not a strike, not a blast claim.
@@ -586,6 +625,11 @@ namespace CosmicShore.Gameplay
 
         void ServerFixedUpdate()
         {
+            // May DESTROY this ball (an overload detonates every loose ball in the cell, this one
+            // included), so it must be able to stop the tick — everything below writes
+            // NetworkVariables and the rigidbody, which a despawned ball no longer owns.
+            if (TickCellMembershipServer()) return;
+
             SampleVesselVelocities();
 
             if (n_Embedded.Value)
@@ -1750,6 +1794,106 @@ namespace CosmicShore.Gameplay
 
         #region Match control API (server-only, driven by AstroLeagueController)
 
+        /// <summary>
+        /// A ball is LOOSE IN A CELL when it is neither hidden nor still embedded in the nucleus.
+        /// The embedded exclusion is the same ruling the nucleus overload makes: a ball studding
+        /// the core is the Scarab's seeding ABILITY, not yet in play, and it has its own cap
+        /// (<c>ScarabNucleusFieldConfigSO.nucleusEntryLimit</c>). Knocking one loose is precisely
+        /// what makes it ENTER the cell, which is the event this rule is about.
+        /// </summary>
+        public bool IsLooseIn(Cell cell) =>
+            cell != null && !n_Hidden.Value && !n_Embedded.Value
+            && cell.ContainsPosition(transform.position);
+
+        /// <summary>How many balls are loose in <paramref name="cell"/> right now, ANY domain.</summary>
+        public static int CountLooseInCell(Cell cell)
+        {
+            if (cell == null) return 0;
+            int n = 0;
+            for (int i = 0; i < Live.Count; i++)
+            {
+                var ball = Live[i];
+                if (ball != null && ball.IsLooseIn(cell)) n++;
+            }
+            return n;
+        }
+
+        /// <summary>
+        /// Server: detonate every ball loose in <paramref name="cell"/> - the ball that triggered
+        /// the overload included, because by the time this runs it is loose like any other and
+        /// needs no special case. Returns how many went up.
+        /// </summary>
+        public static int DetonateAllLooseInCellServer(Cell cell, float radiusScale)
+        {
+            if (cell == null) return 0;
+            var doomed = new List<AstroLeagueBall>();
+            for (int i = 0; i < Live.Count; i++)
+            {
+                var ball = Live[i];
+                if (ball != null && ball.IsLooseIn(cell)) doomed.Add(ball);
+            }
+            for (int i = 0; i < doomed.Count; i++)
+                doomed[i].DetonateWithRadiusServer(radiusScale);   // no-ops off the server on its own
+            return doomed.Count;
+        }
+
+        /// <summary>
+        /// Server: detect the moment this ball ENTERS a cell, and overload that cell if its arrival
+        /// is the one that crosses <see cref="cellBallLimit"/>.
+        ///
+        /// Entry is a TRANSITION, not a position test, which is why the cell is cached: a ball
+        /// already sitting in a crowded cell must not re-trigger every poll. All four ways in are
+        /// covered by the same edge - forged there by a skimmer or a blast, knocked loose from the
+        /// nucleus, un-hidden after a goal, or simply drifting across the membrane - because each
+        /// of them ends with a ball that was not loose in this cell last poll and is now.
+        /// </summary>
+        /// <returns>true when this ball's arrival overloaded the cell — it has detonated and is
+        /// very likely DESPAWNED, so the caller must stop touching it this tick.</returns>
+        bool TickCellMembershipServer()
+        {
+            if (cellBallLimit <= 0) return false;
+            // Only a peer that can actually DETONATE may count. DetonateWithRadiusServer requires
+            // IsServer, and CellOverload_ClientRpc requires a SPAWNED object, so in a no-network
+            // local session (the freestyle toys mint balls with no NetworkManager) this rule would
+            // otherwise announce an overload it could not carry out. Nothing overloads there, the
+            // same way the nucleus overload does nothing there.
+            if (!IsSpawned || !IsServer) return false;
+            if (Time.time < _nextCellPoll) return false;
+            _nextCellPoll = Time.time + Mathf.Max(0.02f, cellPollSeconds);
+
+            Cell now = (n_Hidden.Value || n_Embedded.Value)
+                ? null
+                : Cell.FindCellContaining(transform.position);
+
+            if (now == _looseInCell) return false;
+            _looseInCell = now;
+            if (now == null) return false;
+
+            int loose = CountLooseInCell(now);
+            if (loose < cellBallLimit) return false;
+
+            // ANNOUNCE FIRST, THEN DETONATE — the order is load-bearing, not style. A forged ball
+            // is DESPAWNED by its own detonation (DetonateWithRadiusServer → DespawnIfForged), and
+            // this ball is one of the doomed, so sending the RPC afterwards would be sending it
+            // from a NetworkObject that no longer exists. `loose` is the same predicate over the
+            // same list in the same frame as the detonation loop, so it is the honest count.
+            //
+            // The DETONATIONS are already replicated one ball at a time (each runs its own
+            // Detonate_ClientRpc + domain blast). This announces the OVERLOAD itself, so every peer
+            // can react to it as one event rather than inferring it from a burst of unrelated
+            // bursts — which is what lets the mode post a single court-wide notice instead of N.
+            CellOverload_ClientRpc(now.transform.position, loose);
+            CSDebug.LogVerbose(CSLogChannel.ScarabNucleus,
+                $"[AstroLeagueBall] Cell overload — {loose} loose ball(s) detonating in {now.name} " +
+                $"(limit {cellBallLimit}, any domain).");
+
+            DetonateAllLooseInCellServer(now, cellOverloadRadiusScale);
+            return true;
+        }
+
+        [ClientRpc]
+        void CellOverload_ClientRpc(Vector3 at, int count) => OnCellOverload?.Invoke(at, count);
+
         /// <summary>Server: detonate at the goal mouth - burst + shake on every peer, then hide until kickoff.</summary>
         public void DetonateServer()
         {
@@ -1912,8 +2056,9 @@ namespace CosmicShore.Gameplay
 
         /// <summary>
         /// Server: detonate EVERY live ball at <paramref name="radiusScale"/>× its own radius. The
-        /// one implementation behind both "too many balls" events — the nucleus overload and the
-        /// forge-cap overflow — so the two can never drift into different-looking detonations.
+        /// whole-world variant of <see cref="DetonateAllLooseInCellServer"/>, kept for the nucleus
+        /// overload's <c>detonateAllLiveBalls</c> option so the two "too many balls" events can
+        /// never drift into different-looking detonations.
         /// Snapshots first, because detonating despawns and that mutates <see cref="Live"/>.
         /// </summary>
         public static int DetonateAllLiveServer(float radiusScale)

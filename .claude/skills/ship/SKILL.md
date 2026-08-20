@@ -144,7 +144,7 @@ For each hit, read it and decide from the CODE, not the name:
 
 | Kind | Evidence in the source | What the branch must contain |
 |---|---|---|
-| **READER** | only logs / `Debug.Log` / builds a report; no `AssetDatabase.Save*`, `PrefabUtility.*`, `EditorSceneManager.Mark*`, `ApplyModifiedProperties`, `CreateAsset`, `File.Write*` | nothing — say so explicitly in the report |
+| **READER** | only logs / `Debug.Log` / builds a report; no `AssetDatabase.Save*`, `PrefabUtility.*`, `EditorSceneManager.Mark*`, `ApplyModifiedProperties`, `AssetDatabase.CreateAsset`, `File.Write*` | nothing — say so explicitly in the report |
 | **WRITER** | any of the above | its output, committed |
 
 **2. Prove a WRITER's output is on the branch.** Two independent checks, both required:
@@ -161,6 +161,11 @@ git diff --stat <merge-base>..HEAD -- '*.unity' '*.prefab' '*.asset'
   saved and never committed. You cannot tell from here — **ask** (step 3).
 - Also check `Library/FrogletToolChangeLedger.json` when it exists (machine-local, and
   absent in a remote container): it names the exact paths each tool wrote.
+- **Grep for `AssetDatabase.CreateAsset`, never a bare `CreateAsset`** — `[CreateAssetMenu]` is
+  an attribute on hundreds of ScriptableObject classes and matches the short form, so a bare grep
+  reports ordinary gameplay SOs as WRITER tools. Confirm every hit by reading the matching line;
+  a hit whose line is an attribute is not a writer, and a branch whose only "writers" are
+  `[CreateAssetMenu]` attributes has **no tools at all**.
 
 **3. Prompt the human — this is a blocking question, not a note.** Use
 `AskUserQuestion`, name each WRITER tool and the asset paths it targets, and ask which

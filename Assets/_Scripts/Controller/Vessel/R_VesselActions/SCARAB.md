@@ -6,8 +6,8 @@
 > `ScarabCavitationBlast` + `AOEScarabCavitation.prefab` + its elemental-debuff container,
 > `PlaceSwitchActionSO`/executor + `ScarabSwitch` + `ScarabWingDais` (toy ring, Vogel interior
 > fill blown out on the strike, plane-crossing trigger, the scarab-wing dais it pays out, MASS-5
-> shielded body), `ScarabBallForgeBySkimmerCrystalEffectSO` (every omni
-> crystal forges a ball at the vessel's TRUE velocity, dash included; SPACE scales it to ×4),
+> shielded body), `ScarabBallForgeBySkimmerCrystalEffectSO` (an OMNI crystal — never an elemental
+> one — becomes a ball in place, at rest; SPACE scales it to ×4),
 > the four-row ability map, containers, camera SO, class card, HUD view/controller, and all
 > registrations (arcade card, prefab container, network prefabs, vessel-changer toy). In-editor
 > verification steps + first-pass tuning: `Docs/UNITY_VERIFICATION_CHECKLIST.md` § Scarab.
@@ -20,8 +20,8 @@
 > scoring, and the JUKE as the sanctioned steal via `ScarabJukeController.IsJukeStrikeWindowOpen`),
 > multi-ball with per-ball attribution (§4.4/§4.5 — `Live` + `ScarabBallForge.OnForged` adoption +
 > a forger/last-toucher ledger; §15.12 answered "the ball's domain scores, last toucher gets
-> personal credit"), a per-DOMAIN forge cap through the new `ScarabBallForge.ForgeGate` policy
-> hook (§15.5 answered: refuse + targeted toast, never expire), goals that stop nothing (§15.13's
+> personal credit"), a ball ceiling (§15.5 answered: overload, never expire — see
+> the per-CELL rule in §4.6), goals that stop nothing (§15.13's
 > party answer), and the forged ball's previously-unreplicated `SetSizeScale` (`n_SizeScale`).
 > §4.3's boundary DEATH is deliberately NOT used in that mode (walls reflect — a beachhead mode
 > must not make balls a resource you can waste); it remains available per-mode via
@@ -151,7 +151,7 @@ radius, collapsing `hornSides` quads onto a single point, so the tip is now a pr
 
 **Why procedural rather than a different FBX.** The model hangs off the vessel as a
 `PrefabInstance` of the Sparrow FBX carrying ~40 per-child modifications plus stripped references
-from the vessel root — the hull GameObject that owns the vessel's BoxCollider and ImpactCollider,
+from the vessel root — the hull GameObject that owns the vessel's hull SphereCollider and ImpactCollider,
 the Animator, several transforms. Repointing that instance's guid at another FBX dangles every one
 of them (the failure `Docs/GAMECANVAS.md` records for hard-copied prefabs). So the legacy instance
 stays with its colliders and rig wiring intact and only its **renderers** are switched off;
@@ -354,15 +354,45 @@ Modelled on the Sparrow's `BarrelRollController`
 
 **RESOLVED (2026-08-15) — the juke fires a blast: `ScarabCavitationBlast`.** The original brief
 asked for a short-range lateral cone of destruction; the revised notes described a bump. Garrett's
-markup settled it: the dash carries a **small spherical blast**, in the shape the Dolphin's AOE had
-*before* it was reworked into the parametric capsule cone — the "cone" is the **offset**, the blast
-sitting ahead of you along the dash rather than centred on the hull.
+markup settled it as a **small blast** in the shape the Dolphin's AOE had *before* it was reworked
+into the parametric capsule cone.
 
-- Prefab `Assets/_Prefabs/Projectile/AOEScarabCavitation.prefab` — sphere, `ExplosionDuration 0.85`,
-  `proportionalDebris 1`, `debrisRestitution 1/3 × Inertia 1.8` (the Dolphin's shipped tuning
-  group, so debris leaves at the house 1/3-of-physical read).
-- Fired from `ScarabJukeController.OnJukeFired(direction)` at `blastScale 90`,
-  `forwardOffset 45`, domain-tinted from `IVesselStatus.AOEExplosionMaterial`.
+**REVISED (2026-08-19) — the blast is a SWEPT PLATE, and its size is the HULL's size.** It is a
+circular disc whose face normal is the dash direction — so it lies flat **across** the vessel's
+course — starting **centred on the hull** (no offset to author) and sweeping along its own normal.
+The volume it leaves behind is a cylinder with flat end caps: `AOECylindricalExplosion`, the AOE
+family's third shape after the sphere and the cone. The cone cannot express it — its cross-section
+is proportional to axial depth, and a plate is the same width at the hull as at full reach, which
+is what makes it read as a *slap* rather than a muzzle blast.
+
+- Prefab `Assets/_Prefabs/Projectile/AOEScarabCavitation.prefab` — `AOECylindricalExplosion`,
+  `proportionalDebris 1`, `debrisRestitution 1/3 × Inertia 3` (product **1.0**, so the debris
+  magnitude IS the blast's own velocity — see the wavefront table below).
+- **Its dimensions are a RELATIONSHIP to the ship, not a second number beside it.** The plate's
+  radius is `radiusPerVesselRadius` (**10**) × the vessel's own collider radius, measured live off
+  `VesselImpactor.HullColliders` at fire time, and its length is `lengthPerRadius` (**1.2**) × that
+  radius. The Scarab's hull is a single **4.5**-unit sphere, so the shipped punch is **r 45, length
+  54** — a broad, shallow wall of destruction sweeping off the hull, about 90% of the volume the
+  original spherical blast had, redistributed into a plate. Reshape the hull collider and the blast
+  follows; there is nothing left behind to drift. (`HullColliders` is the same set the shell tier
+  probes with, so the skimmer — which owns its own Rigidbody — can never be mistaken for the ship.)
+- **The trigger is a CIRCUMSCRIBING box, and that is not a detail.** Prisms come off the exact
+  Burst sweep, but VESSEL and BALL contacts resolve through the AOE's collider, and Unity ships no
+  cylinder. An inscribed *sphere* was the first shape here and it is only honest while the plate is
+  at least as long as it is wide: its radius is `min(depth/2, R)`, so the moment the cylinder went
+  squat (45 wide, 54 long) it capped at 27 and silently lost **40% of the plate's reach** — a ball
+  plainly inside the punch the player was shown would not have launched. Between the two errors,
+  over-reach is the survivable one: the box's only excess is the four corners of the square
+  cross-section (27% of area, nothing further out than √2·R), against an under-reach that reads as
+  the weapon being broken. **General rule: an inscribed proxy collider is an unstated assumption
+  about the volume's ASPECT RATIO, and it fails silently the first time someone retunes the shape.**
+- **Everything it claims leaves ALONG the sweep, at the blast's own velocity.** The Burst job hands
+  back the sweep axis itself as every prism's impact direction (no per-hit normalize), and
+  `CalculateImpactVector` returns that same vector at every position — so a pilot caught in the
+  plate and an Astro League ball it reaches are launched the way the punch *travelled* rather than
+  away from a point. The beetle's strike throws mass DOWN-RANGE.
+- Fired from `ScarabJukeController.OnJukeFired(direction)`, domain-tinted from
+  `IVesselStatus.AOEExplosionMaterial`.
 - **`Initialize` only ARMS a blast — `Detonate()` is what runs it.** `AOEExplosion.Initialize`
   deliberately leaves the explosion at zero scale with its renderer off; `Detonate` starts
   `ExplodeAsync`. Missing that call is why the blast never worked from the day it shipped: every
@@ -385,9 +415,67 @@ sitting ahead of you along the dash rather than centred on the hull.
 
 **Replication.** The Sparrow's roll needs none (displacement rides the owner-authoritative
 NetworkTransform). The juke's *hits* are outcome-affecting, so `ScarabJukeController` is a
-`NetworkBehaviour`: owner poll → execute locally (zero latency) → `Juke_ServerRpc(dir)` →
-`Juke_ClientRpc` → non-owner peers play the visual (sender-filtered). The ball strike and the
-vessel shove resolve **server-side**, where the ball already lives.
+`NetworkBehaviour`: owner poll → execute locally (zero latency) → `NotifyJukeFired_ServerRpc(rollSign)`
+→ `BroadcastJukeRoll_ClientRpc` → non-owner peers play the visual (sender-filtered). The ball
+strike and the vessel shove resolve **server-side**, where the ball already lives.
+
+**Traps this ability sits next to, recorded so nobody re-derives them.**
+
+- **`RightStickAction` (1) and `OnlyRightStickAction` (11) are RIGHT-TRIGGER events**, not
+  thumbstick events — `GamepadInputStrategy` raises both off `rightTrigger.ReadValue() >
+  TriggerDeadzone`. The enum has NO member for "right thumbstick at the perimeter"; the juke polls
+  `RightNormalizedJoystickPosition` directly and raises nothing. `Scarab.asset` claimed `Input: 11`
+  for the Cavitation Blast, which would have taught the four-icon row that the blast is a trigger
+  ability the moment that row is authored; it is now `0`, the same "no input-event binding" value
+  the Space entry uses for the ball mint.
+- **Blast↔ball works only because the ball is on layer 0 (Default).** Explosions (10) does NOT
+  collide with Crystals (9) in `ProjectSettings/DynamicsManager.asset`. Moving the ball onto the
+  Crystals layer — a natural-looking change, since it is forged from a crystal — would silently
+  kill every blast→ball interaction with no error. Crystals themselves are reached instead by
+  `ExplosionImpactor.SweepCrystals`'s own `Physics.OverlapSphereNonAlloc`, which the matrix does
+  not gate, which is why the forge still works.
+- **`ExplosionImpactor.s_crystalHits` is a shared 16-element buffer** and `OverlapSphereNonAlloc`
+  truncates silently. This blast hands it the largest sphere in the game (radius ≈ 52.5 at full
+  extent). Fine at Scarab Scramble's crystal counts; a mode with dense crystals would drop some.
+- **The blast's debuff effect asset is SHARED with the Dolphin's cone.**
+  `ScarabCavitationExplosionImpactorDataContainer` and `AOEConicExplosionImpactorDataContainer`
+  both reference `ScarabCavitationDebuffByExplosionEffect`, so retuning the Scarab's blast debuff
+  retunes the Dolphin's cone and therefore The Bends' scoring effect.
+- **`AOEConicExplosion` still has the turn-end gap this branch fixed here.** An AOE subclass that
+  overrides `Initialize` wholesale must call `SubscribeToGameEvents` itself (now `protected`),
+  because `OnEnable` runs inside `Instantiate`, before any call site can inject, so `gameData` is
+  null there. The cylindrical blast now does; the Dolphin's cone does not, and so keeps sweeping
+  past a turn end. Left alone deliberately — it is another vessel's play-tested mode and deserves
+  its own change and its own playtest.
+
+**SHIPPED 2026-08-20 — the "owner poll" above was never actually owner-gated, and that is what
+made the dash misbehave.** `InputStatus.RightNormalizedJoystickPosition` is a `NetworkVariable`
+with read permission **Everyone** (`InputStatus.n_rNorm`), so every peer's copy of a Scarab could
+see the owning pilot's stick. `ScarabJukeController.Update` had no ownership test, and none of the
+gates above it stops a replica: `_jukeArmed` re-arms everywhere (cooldown 0), `AutoPilotEnabled` is
+false on every peer for a *human* pilot (`Player.StartPlayer` only autopilots `IsInitializedAsAI`,
+and returns early on network clients), and `InputStatus` is non-null on replicas. So the entire
+fire path ran **N times, once per peer**:
+
+| consequence | why it mattered |
+|---|---|
+| **N cavitation blasts per dash** | each peer spawned its own `AOECylindricalExplosion` and shredded its own local prism set |
+| **The Astro League ball took two kicks** | the server's own replica-blast called `AstroLeagueBall.ApplyBlastServer` directly, *and* the owner's blast arrived again through `RequestBlastBall_ServerRpc` — the exact double-credit shape `Docs/…/BENDS.md` records for a replayed blast |
+| **Replicas wrote velocity** | `ModifyVelocity` on a vessel they do not own, fighting the owner-authoritative NetworkTransform |
+| **The ServerRpc looked redundant** | it was added so the server's replica would open `IsJukeStrikeWindowOpen`; the server was in fact already firing, which is the tell that nobody expected the replicated stick |
+
+The fix is the one line the design always implied: `if (_status.Player is not { IsLocalPilot: true }) return;`.
+**`IsLocalPilot`, never `IsOwner`** — it is the same predicate `InputController.Update` uses to
+decide who may *consume* the stick, and the only one that also holds on the legacy non-networked
+single-player spawn path where `IsSpawned` is false (CLAUDE.md, `IPlayer`). *A response to local
+input belongs behind the same gate as the input itself.*
+
+The 360° spin then had to be **sent** rather than left to fall out of duplicated simulation, which
+is what `BroadcastJukeRoll_ClientRpc` is for: it plays the visual on the peers that did not fire,
+and passes a **null transformer** into `RollRoutine` so a replica writes only the visual child's
+local rotation — never the root bank, never `BlockRotationOverride`, both of which belong to the
+owner. The general rule: **a replicated INPUT value makes every peer a simulator unless something
+says otherwise; grep for who READS a networked input before assuming an `Update` is owner-local.**
 
 ### 3.5 Pitch/yaw on the left stick
 
@@ -448,6 +536,20 @@ Two properties are load-bearing:
   it clear — reproducing the old feel through a different door. The Rhino's sword is unaffected: it
   is routed through the blade branch, tested on `SwingKinematics` rather than on the
   `bladeAwareStrikes` flag.
+- **OMNI crystals only — an ELEMENTAL crystal is never converted.** An elemental crystal is the
+  platform's element economy (it is how every vessel levels Charge/Mass/Space/Time), so spending
+  one on a ball meant a Scarab could never level an element it flew past. The skimmer effect
+  returns on anything that is not an `OmniCrystalImpactor`, handing the crystal back to the HULL,
+  whose four elemental branches collect it normally. `TeamCrystalImpactor` derives from
+  `OmniCrystalImpactor` and is deliberately included — a team crystal is a domain-locked omni, the
+  same family. The BLAST path was already omni-only, not by choice but by construction
+  (`ExplosionImpactor.SweepCrystals` only picks up `OmniCrystalImpactor`); this makes the two
+  paths agree instead of leaving the skimmer as the odd one out.
+- **The hull carries NO omni-crystal effects on this vessel** (`ScarabImpactorDataContainer`'s
+  `vesselCrystalEffects` is empty). The skimmer sphere strictly contains the hull, so whatever the
+  skimmer converts, the hull never sees — an omni effect on the hull could therefore only fire on
+  a crystal the forge had *already* refused, and there is no such case. The four elemental
+  branches keep their effects, because those are exactly the crystals the forge hands back.
 
 The energy-meter economy below is the ORIGINAL design and is currently **off**
 (`_requireEnergy = false` was carried onto the skimmer effect's predecessor; every omni crystal
@@ -498,7 +600,9 @@ a gate a hull cannot pass.
 **KNOWN LIMITATION: blast-forging is host-only in a networked session.** The ball is a
 NetworkObject, so only the server may spawn one. The vessel-impact forge reaches the server for
 free because it arrives through `NetworkVesselImpactor`'s ServerRpc → ClientRpc fan-out, so it
-works for every pilot. A blast does not: `ScarabJukeController` reads local input in `Update`, so
+works for every pilot. A blast does not: `ScarabJukeController` fires only on the owning pilot's
+machine (§3.4 replication — true since the owner gate landed; before it, the blast existed on
+*every* peer, so this paragraph described an intent the code did not have), so
 a client's cavitation explosion exists **only on that client** — and the crystal it engulfs cannot
 be spent there either, because `OmniCrystalImpactor.CanBlastConsume` refuses on a network client
 exactly as every other crystal collect does. A client's blast therefore forges nothing; the
@@ -544,6 +648,32 @@ wavefront faster*, and the cavitation punch shipped as a slow bloom: 90 units ov
 |---|---|---|---|---|---|
 | before | 105.9 u/s | 35.3 | 1.8 | **31.8 u/s** | 11% |
 | after | 257.1 u/s | 85.7 | 3.0 | **257.1 u/s** | 86% |
+
+**So the plate authors its SPEED and DERIVES its duration** (`sweepSpeed 257.14`,
+`AOECylindricalExplosion`). This is the direct consequence of sizing the blast off the hull: the
+reach stopped being an authored constant, so holding the *duration* fixed would have silently
+retuned every impulse in the table above — and the reach was then re-derived **twice on one
+branch** (90 → 18 when it was first sized off the hull, 18 → **54** when the hull ratio was
+retuned to 10×), which is exactly the churn that would have made a fixed duration lethal. At a
+fixed 0.35 s the first of those alone would have dropped the wavefront to **51 u/s** and the ball
+kick back to **17%**, undoing this whole pass without touching a number anyone would think to look
+at. Authoring the speed made both re-derivations free. The general rule: **when a blast's reach
+becomes derived, its SPEED is the thing to author** — and its corollary, learned the same week:
+**prose that quotes derived numbers goes stale the moment the derivation is retuned**, so state
+the relationship and let the verifier print the arithmetic.
+
+The shipped plate is therefore **r 45 · 54 long · 0.210 s**, and it still LEADS the dash it rides:
+over 0.210 s the dashing hull covers 16.8 u while the plate sweeps 54 (at 0.35 s it would cover
+28 u and the punch would trail the ship that threw it).
+
+Its cost is that the whole blast is ~5 physics steps, and PhysX only raises trigger events inside
+the physics step while the sweep loop runs in `Update` — so the final, largest trigger shape would
+be written and disabled inside one frame and never simulated. `contactHoldSeconds` holds the
+trigger at full extent for a beat first, **floored at 2 × `Time.fixedDeltaTime`**: the authored
+0.05 was chosen against Unity's default 0.02 timestep, and this project runs **0.04**
+(`ProjectSettings/TimeManager.asset`), where 0.05 buys only 1.25 steps. Deriving the floor from
+`fixedDeltaTime` means the guarantee survives someone retuning the timestep instead of quietly
+becoming a wall-clock number that no longer means what it meant when it was chosen.
 
 Three changes, all of them the *blast's* dials rather than the ball's:
 `ExplosionDuration` 0.85 → **0.35** (same 90-unit reach, 2.4× the wavefront speed — and a punch
@@ -775,11 +905,20 @@ suspends its boundary so the strike's own velocity carries it across that band; 
 engages on a ball that is already where it belongs. This is presentation-only: the ball is a normal
 body the whole time, and nothing else about the release changes.
 
-**Too many balls is ONE event with one look.** Both the nucleus overload and the mode's forge-cap
-overflow call `AstroLeagueBall.DetonateAllLiveServer`, so they cannot drift into different-looking
-detonations. The forge cap no longer REFUSES: at the cap the crystal still forges, and then
-everything — including the ball just made — detonates. A refusal made a crystal silently do nothing
-at the worst possible moment; an overload makes "I grabbed one too many" legible.
+**Too many balls is ONE event with one look, and the count is per CELL.** A **cell** holds at most
+`AstroLeagueBall.cellBallLimit` (4) LOOSE balls (`!n_Embedded && !n_Hidden`, position inside
+`Cell.ContainsPosition`): the moment a further one enters, every loose ball in that cell detonates
+**regardless of domain**, the arriving one included — `TickCellMembershipServer` →
+`DetonateAllLooseInCellServer` → `CellOverload_ClientRpc`, one networked event on every peer, using
+the same per-ball `DetonateWithRadiusServer` the nucleus overload uses, so the two cannot drift into
+different-looking detonations.
+
+It replaced a per-DOMAIN cap enforced at FORGE time, and the reason generalises: **a rule enforced
+at one PRODUCER can only ever see that producer.** A ball enters play two ways — forged from a
+crystal, and knocked loose out of the nucleus (the table above) — so a forge-time gate was blind to
+half of them by construction, and a *refusal* additionally made a crystal silently do nothing at
+the worst possible moment. Counting what is actually IN the cell notices every route, needs no
+producer to remember to ask, and is the same count the player can see.
 
 **A ball detonates in a DOMAIN explosion.** `AstroLeagueSettingsSO.detonationExplosionPrefabs`
 spawns an `AOEExplosion` carrying the BALL's domain and that domain's `AOEExplosionMaterial`, so the
@@ -1319,8 +1458,10 @@ tool in any mode with opponents. Nothing in the kit requires an arena to functio
 | File | Contents |
 |---|---|
 | `_Scripts/Controller/Vessel/ScarabVesselTransformer.cs` | `SingleStickVesselTransformer` subclass: the throttle **integrator** + Time-scaled ceiling + double-tap dash (§3.2, §3.6) |
-| `_Scripts/Controller/Vessel/ScarabJukeController.cs` | Right-stick poll (uncooled), displacement + visual roll, `OnJukeFired(direction)`; vessel shove + ball strike + fire RPCs still to come (§3.4) |
-| `_Scripts/.../R_VesselActions/ScarabCavitationBlast.cs` | Rides `OnJukeFired`: spawns the spherical blast down-range along the dash, CHARGE-scaled cooldown, CHARGE-5 `DevastatingOverride` (§3.4, §7) |
+| `_Scripts/Controller/Vessel/ScarabJukeController.cs` | Right-stick poll (uncooled) **gated on `IsLocalPilot`**, displacement + visual roll, `OnJukeFired(direction)`, `NotifyJukeFired_ServerRpc` (strike window) + `BroadcastJukeRoll_ClientRpc` (cosmetic spin on non-owners); vessel shove + ball strike still to come (§3.4) |
+| `_Scripts/.../R_VesselActions/ScarabCavitationBlast.cs` | Rides `OnJukeFired`: spawns the swept-plate blast centred on the hull along the dash, sized off `VesselImpactor.HullColliders`, CHARGE-scaled cooldown, CHARGE-5 `DevastatingOverride` (§3.4, §7) |
+| `_Scripts/Controller/Projectiles/AOECylindricalExplosion.cs` | The swept-plate blast itself — constant-radius disc, linear sweep, one velocity handed to prisms/vessels/ball alike (§3.4) |
+| `Tools/Build/verify_scarab_cavitation_plate.py` | Re-proves the plate from the SHIPPED prefabs + `ProjectSettings/TimeManager.asset` — the relationship to the hull collider, exact slab tiling, drawn == damaged, the circumscribing trigger, the zero state, the contact window against the real fixed timestep, and `restitution × Inertia == 1`. Run it after touching any of those numbers |
 | `_Scripts/.../Vessel Explosion Effects/VesselElementalDebuffByExplosionEffectSO.cs` | Platform addition: the danger-prism elemental debuff lifted onto the **explosion** impactor (all four elements, decaying, per-victim anti-spam) |
 | `_Scripts/Controller/Projectiles/AOEExplosion.cs` + `Impactors/ExplosionImpactor.cs` | Platform additions: `InitializeStruct.DevastatingOverride` + `ApplyDevastatingOverride` + `ExplosionImpactor.SetDevastating`, mirroring the existing `AffectSelfOverride` pair |
 | `_Scripts/.../Data Containers/PlaceSwitchActionSO.cs` + `Executors/PlaceSwitchActionExecutor.cs` | Charge gate, placement, pooled spawn, spend, dais shape (§5) |

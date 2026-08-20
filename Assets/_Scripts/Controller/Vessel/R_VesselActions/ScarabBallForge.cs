@@ -40,12 +40,18 @@ namespace CosmicShore.Gameplay
     {
         /// <summary>
         /// Optional MODE POLICY on whether this pilot may forge right now — null (the default,
-        /// and every mode-less context: freestyle, the menu) means always. Scarab Scramble
-        /// installs its per-domain live-ball cap here and clears it on despawn, the
-        /// <c>AIPilot.SetExternalTargetProvider</c> shape: a server-side hook a mode owns for
-        /// its lifetime, never left behind. A refusal is quiet by design — the crystal simply
-        /// collects normally instead (its sibling effects still run), so "at the cap" degrades
-        /// to ordinary crystal income rather than a dead pickup.
+        /// and every mode-less context: freestyle, the menu) means always. A refusal is quiet by
+        /// design — the crystal simply collects normally instead (its sibling effects still run),
+        /// so a refusal degrades to ordinary crystal income rather than a dead pickup.
+        ///
+        /// **NOTHING INSTALLS THIS TODAY.** Scarab Scramble used to hang its per-domain live-ball
+        /// cap here; that cap was replaced by the per-CELL ball limit on the ball itself
+        /// (<c>AstroLeagueBall.cellBallLimit</c>), because a gate at the FORGE could only ever see
+        /// balls that were forged — it was blind to the ones a Scarab knocks loose out of the
+        /// nucleus. The hook is kept as the <c>AIPilot.SetExternalTargetProvider</c> shape (a
+        /// server-side policy slot a mode owns for its lifetime and clears on despawn) for a mode
+        /// that genuinely wants to gate FORGING specifically. Do not reach for it to bound a ball
+        /// POPULATION — that lesson is already paid for.
         /// </summary>
         public static Func<IVesselStatus, bool> ForgeGate;
 

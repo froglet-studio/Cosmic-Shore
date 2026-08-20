@@ -27,6 +27,10 @@ namespace CosmicShore.Gameplay
     /// ball blooms in over <c>AstroLeagueSettingsSO.spawnBloomSeconds</c>, a scale animation that
     /// simply keeps running wherever the ball has got to.
     ///
+    /// OMNI CRYSTALS ONLY (see the guard in Execute): an elemental crystal is the element economy
+    /// every vessel shares, so it collects normally through the hull instead of being spent on a
+    /// ball. The blast forge was already omni-only by construction.
+    ///
     /// SERVER-ONLY, and it needs no round-trip to be fair. The server simulates every vessel, so the
     /// server's copy of any pilot's skimmer overlaps the crystal and converts it — including a remote
     /// client's. Clients see the crystal go and the ball arrive by ordinary replication.
@@ -45,6 +49,20 @@ namespace CosmicShore.Gameplay
         {
             if (impactor == null || impactor.Skimmer == null || impactee == null) return;
 
+            // OMNI CRYSTALS ONLY. An ELEMENTAL crystal is the platform's element economy - it is
+            // how every vessel levels Charge/Mass/Space/Time - and turning one into a ball spent
+            // it for something else entirely, so a Scarab could never level an element it flew
+            // past. Skipping it here hands the crystal back to the HULL, whose four elemental
+            // branches then collect it normally (the skimmer sphere strictly contains the hull, so
+            // whatever the skimmer consumes, the hull never sees). TeamCrystalImpactor derives
+            // from OmniCrystalImpactor and is deliberately included: a team crystal is a
+            // domain-locked omni, the same family, and forges the same way.
+            //
+            // This also makes the two forge paths agree. The BLAST path was omni-only already, not
+            // by choice but by construction - ExplosionImpactor.SweepCrystals only picks up
+            // OmniCrystalImpactor - so the skimmer was the odd one out.
+            if (impactee is not OmniCrystalImpactor) return;
+
             var status = impactor.Skimmer.VesselStatus;
             if (status == null) return;
 
@@ -56,11 +74,11 @@ namespace CosmicShore.Gameplay
 
             // AT REST, AT THE CRYSTAL. The ball inherits nothing from the vessel — that is the
             // entire point of moving the forge onto the skimmer. Through Request, so a mode's
-            // ForgeGate (Scarab Scramble's per-domain live-ball cap) and the OnForged adoption
-            // apply here exactly as they do to the blast forge.
+            // ForgeGate (a mode policy hook, unused today) and the OnForged adoption apply
+            // here exactly as they do to the blast forge.
             Vector3 at = crystal.transform.position;
             var ball = ScarabBallForge.Request(status, _ballPrefab, at, Vector3.zero);
-            if (ball == null) return;   // gate refused (at the cap) — the crystal is left alone
+            if (ball == null) return;   // a mode's ForgeGate refused — the crystal is left alone
 
             ConsumeCrystal(crystal, status);
 

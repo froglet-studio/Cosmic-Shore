@@ -13,7 +13,7 @@ namespace CosmicShore.Gameplay
     /// Scarab Scramble — the Scarab-only party game, and the accessible sibling of Astro
     /// League (design record: R_VesselActions/SCARAB.md; the mode answers its §15.11 as "a
     /// second mode that shares the arena machinery", and lands the §4.2–§4.5 mode-side ball
-    /// work: permanent ownership, multi-ball, per-ball attribution, a forge cap).
+    /// work: permanent ownership, multi-ball, per-ball attribution, a ball ceiling).
     ///
     /// The whole game in one sentence: fly through a white crystal anywhere in the court and
     /// it becomes YOUR ball; roll, bat, or escort it through ANY hoop and your DOMAIN scores;
@@ -90,15 +90,6 @@ namespace CosmicShore.Gameplay
         // the leader can only change on a goal event — no sampler coroutine needed.
         Domains _leaderDomain = Domains.Blue;
 
-        // The Scarab's nucleus-ability config, for the ONE number the mode shares with it: the
-        // detonation radius scale. Loaded lazily from Resources (the seeder's own fallback path)
-        // so the mode needs no new inspector wiring, and so "too many balls" looks identical
-        // whether the overload came from the nucleus or from the forge cap.
-        ScarabNucleusFieldConfigSO _nucleusConfigCache;
-        ScarabNucleusFieldConfigSO NucleusConfig =>
-            _nucleusConfigCache != null
-                ? _nucleusConfigCache
-                : (_nucleusConfigCache = Resources.Load<ScarabNucleusFieldConfigSO>("ScarabNucleusFieldConfig"));
 
         // Fauna exclusion sweep state (the Astro League cleanup-crew pattern).
         float _faunaExclusionCurrent;
@@ -239,104 +230,43 @@ namespace CosmicShore.Gameplay
         void InstallForgeHooks()
         {
             if (_forgeHooksInstalled) return;
-            ScarabBallForge.ForgeGate = CanForge;
+            // NO ForgeGate: the live-ball rule is now the BALL's own cell overload (any domain,
+            // any way in), so the mode installs no per-domain refusal. ScarabBallForge.ForgeGate
+            // stays a live platform capability for a future mode — null means always allowed.
             ScarabBallForge.OnForged += HandleBallForged;
+            AstroLeagueBall.OnCellOverload += HandleCellOverload;
             _forgeHooksInstalled = true;
         }
 
         void RemoveForgeHooks()
         {
             if (!_forgeHooksInstalled) return;
-            if (ScarabBallForge.ForgeGate == (System.Func<IVesselStatus, bool>)CanForge)
-                ScarabBallForge.ForgeGate = null;
             ScarabBallForge.OnForged -= HandleBallForged;
+            AstroLeagueBall.OnCellOverload -= HandleCellOverload;
             _forgeHooksInstalled = false;
             _forgerByBall.Clear();
         }
 
         /// <summary>
-        /// The live-ball cap, pooled per DOMAIN: ballsPerPlayer × that domain's roster (a
-        /// deliberate resolution of the design's "per player" shorthand — teammates share the
-        /// allowance, so one pilot fetching while another escorts never starves the team). A
-        /// refusal never culls anything — the crystal just collects normally (SCARAB.md §15.5:
-        /// refuse at the cap, never expire the oldest; an expiry would be an imposed clock) —
-        /// but it is NOT silent: the capped pilot gets a targeted toast, because a silent gate
-        /// is indistinguishable from a broken feature (the panel's Risk 3).
+        /// SERVER + CLIENTS: a cell overloaded — four balls loose in one cell, any domain — and
+        /// every one of them has just detonated. Announced by <c>AstroLeagueBall.OnCellOverload</c>,
+        /// which is raised from a ClientRpc, so this runs on EVERY peer and the notice is one
+        /// court-wide event rather than N unrelated bursts.
+        ///
+        /// It replaced a per-DOMAIN forge cap (a per-player count x that domain's roster,
+        /// overloaded at forge time; its `ballsPerPlayer` setting is retired with it).
+        /// Two reasons the cell rule is the better shape, beyond being what was asked for: the old
+        /// cap could only ever fire on a FORGE, so a ball knocked loose from the nucleus — the
+        /// Scarab's other way of putting one in play — could never trigger it; and being per-domain
+        /// it fired at 2 balls for a solo pilot while the court held 6, which reads as arbitrary.
+        /// Counting what is actually IN THE CELL, regardless of who made it, is a rule a player
+        /// can see.
         /// </summary>
-        bool CanForge(IVesselStatus status)
+        void HandleCellOverload(Vector3 at, int count)
         {
-            if (_finalResultsSent) return false;
-            if (status == null) return false;
-
-            int rosterCount = 0;
-            var players = gameData.Players;
-            for (int i = 0; i < players.Count; i++)
-                if (players[i] != null && players[i].Domain == status.Domain)
-                    rosterCount++;
-            int cap = Mathf.Max(1, settings.ballsPerPlayer * Mathf.Max(1, rosterCount));
-
-            // Counts the balls this domain has IN THE COURT. A ball still embedded in the nucleus
-            // is the Scarab's seeding ABILITY, not mode income (SCARAB.md §4.6) — counting those
-            // would let a passive vessel behaviour quietly starve the mode's own crystal forge, and
-            // a pilot would be refused a forge because of balls they never made and cannot reach.
-            // Once somebody knocks one loose it is an ordinary ball and counts like any other.
-            int liveOwned = 0;
-            var live = AstroLeagueBall.Live;
-            for (int i = 0; i < live.Count; i++)
-            {
-                var ball = live[i];
-                if (ball == null || ball.IsHidden || ball.IsEmbeddedOnNucleus) continue;
-                if (ball.LastHitDomain == status.Domain) liveOwned++;
-            }
-            if (liveOwned < cap)
-            {
-                // Clear any flag a previous forge set but never consumed (a mint that failed
-                // outright raises no OnForged), so a stale overflow can never detonate the court
-                // on somebody's ordinary next crystal.
-                _overflowForgePending = false;
-                return true;
-            }
-
-            // AT THE CAP THE FORGE STILL RUNS — and then everything blows up. The cap used to
-            // REFUSE, which made a crystal silently do nothing at the worst possible moment; now
-            // exceeding it is the same event as overloading the nucleus (SCARAB.md §4.6), so the
-            // rule reads as one thing everywhere: too many balls detonates the lot. The overflow
-            // ball is minted first and dies with the rest, which is what makes "I grabbed one too
-            // many" legible rather than arbitrary.
-            _overflowForgePending = true;
-            NotifyForgeCapped(status);
-            return true;
-        }
-
-        // Set by CanForge when a forge crosses the cap; consumed by HandleBallForged, which runs
-        // immediately after the ball exists (ScarabBallForge.Request raises OnForged straight after
-        // the launch). A field rather than a return value because ForgeGate's contract is a bool.
-        bool _overflowForgePending;
-
-        // Per-pilot rate limit on the cap toast, so grazing three crystals in a corridor does
-        // not post three toasts.
-        readonly Dictionary<string, float> _lastCapNoticeByPlayer = new();
-        const float CapNoticeCooldownSeconds = 4f;
-
-        void NotifyForgeCapped(IVesselStatus status)
-        {
-            string name = status.PlayerName;
-            if (string.IsNullOrEmpty(name)) return;
-            if (_lastCapNoticeByPlayer.TryGetValue(name, out float last)
-                && Time.time - last < CapNoticeCooldownSeconds) return;
-            _lastCapNoticeByPlayer[name] = Time.time;
-            NotifyForgeCapped_ClientRpc(new FixedString64Bytes(name), (int)status.Domain);
-        }
-
-        [ClientRpc]
-        void NotifyForgeCapped_ClientRpc(FixedString64Bytes playerName, int domain)
-        {
-            // Targeted by identity, not by RPC params: only the machine whose LOCAL pilot hit
-            // the cap posts the toast (AI caps stay quiet — nobody is reading their HUD).
-            var local = gameData.LocalPlayer;
-            if (local == null || local.Name != playerName.ToString()) return;
-            GameToastAPI.Post(GameToastSituation.ScarabScrambleBallCap, (Domains)domain,
-                playerName.ToString());
+            GameToastAPI.Post(GameToastSituation.ScarabScrambleBallCap, Domains.Blue, string.Empty);
+            CSDebug.LogVerbose(CSLogChannel.ScarabNucleus,
+                $"[ScarabScramble] Cell overload at {at} — {count} ball(s) detonated.");
         }
 
         void HandleBallForged(AstroLeagueBall ball, IVesselStatus forger)
@@ -349,15 +279,10 @@ namespace CosmicShore.Gameplay
             ball.SetBoundary(_boundary);
             _forgerByBall[ball] = forger != null ? forger.PlayerName : string.Empty;
 
-            if (!_overflowForgePending) return;
-            _overflowForgePending = false;
-
-            // Detonate INCLUDING the ball just forged — it is live by now, so the shared
-            // detonate-all covers it without a special case.
-            float scale = NucleusConfig != null ? NucleusConfig.detonationRadiusScale : 2f;
-            int n = AstroLeagueBall.DetonateAllLiveServer(scale);
-            CSDebug.LogVerbose(CSLogChannel.ScarabNucleus,
-                $"[ScarabScramble] Ball cap overflow — detonated {n} ball(s) at {scale}x radius.");
+            // No cap check here any more. A forged ball is only ONE of the ways a ball enters a
+            // cell, and the ball itself notices all of them
+            // (AstroLeagueBall.TickCellMembershipServer), so the overload cannot be reached by one
+            // route and missed by another.
         }
 
         // ── Scoring (server; reported by the hoops) ──

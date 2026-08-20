@@ -69,6 +69,14 @@ namespace CosmicShore.Utility
         /// a real fault here is still a warning and is unaffected by this flag.
         /// </summary>
         ScarabSwitch = 1 << 4,
+        /// <summary>
+        /// <c>[ScarabJuke]</c> / <c>[ScarabCavitation]</c> — the right-stick dash and the swept
+        /// cavitation plate that rides it (fire direction, plate radius, cooldown). Both used to
+        /// log unconditionally on every dash, which is per-input console spam for a finished
+        /// system. Off by default like every channel; a real fault here is still an error and is
+        /// unaffected by this flag.
+        /// </summary>
+        ScarabDash = 1 << 5,
         All = ~0
     }
 

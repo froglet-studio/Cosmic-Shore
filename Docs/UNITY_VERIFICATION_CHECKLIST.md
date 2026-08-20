@@ -161,11 +161,28 @@ The editor-riskiest items:
   crystal into a ball in place and at rest, the ball blooms in, the hull then strikes a real
   ball; arming gate blocks enemy shoves; juke-steal converts (works from a client too, via
   `NotifyJukeFired_ServerRpc`); bank toast on 2+ caroms.
-- **Ball cap now OVERLOADS, it does not refuse** — take one crystal past
-  `ballsPerPlayer × roster` and EVERY live ball should detonate, including the one just made,
-  each in its own domain-coloured blast. Watch that own-domain prisms take a temporary shield
-  rather than being destroyed (the no-perceived-clipping rule), and that the toast reads as an
-  overload.
+- **Elemental crystals are NOT forged any more.** Fly the Scarab's skimmer through an
+  ELEMENTAL crystal (a lifeform heart, or one of the cell's element crystals): it must COLLECT
+  normally and raise that element's HUD flower — no ball. Then fly through a bright OMNI
+  crystal: that one must still become a ball in place. The omni case is the one to re-check
+  after this change, because the hull's `vesselCrystalEffects` (the OMNI branch) is now EMPTY
+  on `ScarabImpactorDataContainer` — if an omni crystal ever reaches the hull and does nothing
+  at all, the skimmer is not converting it (check `VesselStatus.NearFieldSkimmer` /
+  `FarFieldSkimmer` actually point at the live skimmer — FrogletTools > Vessels > Audit Vessel
+  Skimmers).
+- **The CELL overloads at 4 loose balls, regardless of domain** (the per-domain forge cap is
+  gone). Get a FOURTH ball loose in the court — any mix of domains, any mix of forged and
+  knocked-loose-from-the-nucleus — and all four should detonate at once, each in its own
+  domain-coloured blast, with the court-wide overload toast. Watch that own-domain prisms take
+  a temporary shield rather than being destroyed (the no-perceived-clipping rule). **Check both
+  entry routes**, because the old cap could only see one: forge a fourth from a crystal, and
+  separately knock a fourth inward off the nucleus wall. An EMBEDDED ball must not count —
+  three loose plus any number still studded in the shell is quiet.
+- **MPPM two-client: the overload is ONE synced event.** The count and the detonation are
+  server-side (`TickCellMembershipServer`), announced by `CellOverload_ClientRpc`, so both
+  peers must see the same balls vanish on the same beat and BOTH must get the toast — a
+  client-side count would fire twice or not at all. Trigger it once from the host's Scarab and
+  once from the client's.
 - **Scarab nucleus seeding** (SCARAB.md §4.6, a PLATFORM vessel ability — it is live in
   freestyle and the menu too, not just this mode): balls of your domain appear embedded in the
   nucleus on a ~14s clock. Strike one OUTWARD → it should leave into the cytoplasm and bounce
@@ -173,9 +190,14 @@ The editor-riskiest items:
   ball. **Both directions must read as a HIT, not a radial shove** — that is what the new 1s
   `nucleusReleaseGraceSeconds` buys, and it is the single most likely thing to still look
   wrong. Bank a fourth into the nucleus to see the overload.
-- **Scarab skimmer is 50% larger** (world radius 30 → 45): confirm the forge triggers at a
-  comfortable stand-off and that the wider sphere has not made skim-energy gain or prism
-  interaction feel different on the Scarab elsewhere.
+- **Scarab skimmer is 50% larger — for real this time** (SPACE band 20..40 → **30..60**, so the
+  live world radius goes 10..20 → **15..30**). The previous pass raised only the authored
+  `m_LocalScale` (60 → 90) and was a **no-op in play**: `Skimmer.ApplyScaleIfChanged` overwrites
+  `localScale` with the `Scale` ElementalFloat on the first live frame, so the shipped skimmer had
+  been 20..40 the whole time and the "30 → 45" claim above it described a number nothing read. The
+  authored `localScale` is now parked on the resting size (30) so the prefab reads what the game
+  runs. Confirm the forge triggers at a comfortable stand-off, and that the wider sphere has not
+  made skim-energy gain or prism interaction feel different on the Scarab elsewhere.
 - **MPPM two-client**: forged-ball SIZE on the client (the new `n_SizeScale` — seed the forger
   SPACE 10 so the ×4 ball is unmistakable), colour permanence under enemy strikes.
 - **PhaseThresholds are an estimate** (Restless 12000/11000, Frenzy 36000/32000 volume, zero
@@ -1720,8 +1742,11 @@ occurrence names itself.
    `ScarabHullBuilder`; right-click the component ▸ **Rebuild Hull** to see the mesh without
    entering play mode. In flight the Scarab must read as a BEETLE — domed shell with a seam down
    the middle, a forward horn, six legs — and the inherited Sparrow mesh must be invisible (its
-   renderers are disabled at build time; its GameObjects stay, because the vessel's BoxCollider and
-   ImpactCollider live on them, so collisions must still work). The domain colour must land on the
+   renderers are disabled at build time; its GameObjects stay, because the vessel's collider and
+   ImpactCollider live on them, so collisions must still work). **Its hull collider is now a single
+   `SphereCollider`, r 4.5 at the origin** (was a Sparrow-shaped 10.31 x 0.46 x 4.38 box parked
+   3.5 u behind the ship) — confirm the component renders as *Sphere Collider*, not
+   "Missing", and that the gizmo wraps the carapace rather than sitting behind it. The domain colour must land on the
    CARAPACE and horn (submesh 1), not the underside. Camera sits directly behind with **no vertical
    lift** — `followOffset {0, 0, -50}`; the old `y: 10` was inherited from the Sparrow, the only
    vessel that carries one.
@@ -1730,8 +1755,28 @@ occurrence names itself.
    up and splay as you slow, the horn swings against the nose. A rigid hull means
    `ScarabAnimation` resolved no parts — check the console for its unresolved-part report.
    Right-stick dash: the whole visible ship must spin 360° (it previously rolled the hidden FBX).
-   And the dash must now throw a **visible spherical blast** ~45u ahead — if nothing appears,
-   `Detonate()` regressed.
+   **The one thing no offline check can settle:** select the Scarab's hull GameObject
+   (`SparrowModel1`, the nested FBX instance) and read its **world scale** in the inspector. The
+   blast measures the hull collider in world units, so the shipped `m_Radius: 4.5` only means a
+   4.5-unit hull — and therefore an r 45 / 54-long plate — if that root is unit-scaled. It is
+   *sized correctly either way*; what needs one look is whether 4.5 is the intended world radius.
+   (Circumstantial evidence says yes: the hull mesh measures ~12.5 u wide after its 0.2034 armature
+   scale, against the 10.31-wide box that used to be the hull collider — same order, not 5x apart.)
+   **MPPM two-client, the load-bearing one:** dash on the CLIENT and count the plates — there must
+   be exactly **ONE**, and the ball must take a single kick, not two. Before the `IsLocalPilot`
+   gate the replicated right stick made every peer fire, so a 4-player lobby threw 4 plates per
+   dash. Also confirm the OTHER machine still sees your ship spin 360° (that is now an explicit
+   `BroadcastJukeRoll_ClientRpc`, not a side effect), and that the spinning replica does not drift
+   sideways — a replica must play the visual only.
+   And the dash must now throw a **visible cylindrical plate** — a broad disc lying flat ACROSS
+   your course, starting on the hull and sweeping **54 u** along the dash in **~0.21 s** at
+   **r 45** (10× the 4.5 hull radius; length 1.2× that radius). It is a fast slap, not a bloom. If
+   nothing appears, `Detonate()` regressed; if it draws as a sphere, the prefab's `plateVisual`
+   child lost its built-in Cylinder mesh. Check three things beyond "it appears": every prism it
+   claims flies the SAME way — down-range along the dash, not outward from a point; a ball it
+   reaches launches that same direction **even when the ball is out near the plate's rim** (that is
+   the circumscribing box trigger doing its job — an inscribed sphere would have covered only the
+   inner 27 u); and an opposing pilot caught in it takes the all-element debuff.
 1. **Open `Assets/_Prefabs/Spacevessels/Scarab.prefab` and SAVE it** — this is load-bearing, not
    a smoke test: the clone carries Sparrow's `NetworkObject.GlobalObjectIdHash` until the editor
    re-serializes it, and two registered network prefabs sharing a hash collide. Open, confirm no
@@ -1746,25 +1791,33 @@ occurrence names itself.
    A / Space = a low-poly toy RING blooms ~150u ahead on the COURSE with its interior filled by a
    Vogel-spiral prism disc (drift then place — the ring should appear where you're going, not where
    you're pointing), second+third presses spend the remaining charges, fourth refuses.
-4. **Crystals → a ball.** **EVERY omni crystal forges a ball** — the energy gate is authored OFF
-   (`_requireEnergy: 0`) by request. Fly through one: a ball appears ahead of your nose carrying
-   your speed and domain colour, and the console prints `[ScarabBallForge] … forged a {domain}
-   ball … @ N u/s`. Each crystal also brightens the **Switch icon** one step (0→3 charges).
-   ⚠ If a ball spawns but sits still, the freeze/velocity ordering in `LaunchServer` regressed; if
-   TWO balls appear per crystal in MPPM, the server gate regressed.
-   ⚠ **Balls accumulate without bound** while the gate is off and freestyle has no arena boundary
-   — nothing despawns them, and each live ball costs a per-tick prism scan plus a sweep over every
-   vessel. Fine for a short session; if a long one degrades, that is the population cap (§15.5),
-   not a new bug.
+4. **Crystals → a ball.** **Every OMNI crystal forges a ball; an ELEMENTAL one never does** —
+   the energy gate is authored OFF (`_requireEnergy: 0`) by request. The forge is the **SKIMMER**,
+   not the hull: fly at a bright crystal and it becomes a ball **in place and at rest** before the
+   ship arrives (blooming in over `spawnBloomSeconds`), and the hull then strikes a real ball. It
+   does NOT appear ahead of your nose carrying your speed — that was the retired hull forge, and
+   seeing it would mean the old path came back. Console prints `[ScarabBallForge] … turned a
+   crystal into a {domain} ball at …` on the `ScarabNucleus` verbose channel. Each crystal also
+   brightens the **Switch icon** one step (0→3 charges).
+   ⚠ If TWO balls appear per crystal in MPPM, the server gate regressed.
+   ⚠ Balls no longer accumulate without bound: **four loose in one cell detonates all four**
+   (see the Scramble section above) — that is the population answer (§15.5), and it is live in
+   freestyle too, because it is a ball rule rather than a mode rule.
    *(The energy economy still exists behind that one flag: turn `_requireEnergy` on and the meter
    gates forging again — four crystals fill the ring, the fifth forges. While it is off the HUD's
    energy ring fills but gates nothing.)*
-3b. **The cavitation blast.** Every right-stick dash that finds the blast off cooldown throws a
-   small SPHERICAL explosion ~45u ahead along the dash direction (diameter 90). It must:
-   destroy prisms in that volume (fly at your own trail and dash into it); **kill fauna** caught in
-   it (a creature dies when its body prisms go — dash through a swarm in a populated cell); and
-   **debuff an opposing pilot** it engulfs — all four of their element flowers drop ~half a level
-   and recover over 4s. It must NOT hit your own domain's mass or teammates (`affectSelf 0`).
+3b. **The cavitation blast is a SWEPT PLATE, not a sphere** (rewritten on this branch — if it
+   reads as a ball of destruction around the ship, the old `AOEExplosion` prefab came back). A
+   circular plate is born centred ON the vessel with its face normal along the DASH direction
+   (perpendicular to your course), and sweeps forward along that normal: **radius 45** (10× the
+   4.5-unit hull collider), **length 54**, crossed in **0.21 s**. So the destruction is a disc
+   punched sideways out of the world — stand in a wall of your own trail, dash into it, and the
+   hole should be a broad flat slab across your dash line, not a crater at arm's length. It must
+   also **kill fauna** caught in it (a creature dies when its body prisms go — dash through a swarm
+   in a populated cell) and **debuff an opposing pilot** it engulfs (all four element flowers drop
+   ~half a level, recovering over 4 s), and must NOT touch your own domain's mass or teammates
+   (`affectSelf 0`). Debris carries the **blast velocity** (257 u/s along the plate normal), so
+   opposing prisms should be thrown along the dash, not radially.
    ⚠ Dash again immediately: the DASH must still fire even while the blast is recharging — if the
    dodge is blocked by the cooldown, the split regressed.
 4a. **Gauges**: the CHARGE icon (leftmost) is bright orange when the blast is ready and dims for
@@ -1785,15 +1838,18 @@ occurrence names itself.
    - **Space L10** → a forged ball is **4× the size** of one forged at rest. Balls already in flight
      keep the size they were born with (stamped once) — that is correct, not a bug.
    - **Time L10** → higher throttle ceiling (~270). **Time L5** → double-tap RT dashes forward.
-8. **Dash-into-crystal parity** (the trajectory check): hold a heading, dash sideways, and clip an
-   omni crystal *during* the dash. The forged ball must leave along the DASH-blended heading, not
-   the throttle line — the same trajectory a stationary ball would take if you dashed into it.
+8. **Dash-into-crystal parity** — *retired, and its replacement is the opposite check.* This
+   step tested the hull forge's inherited velocity, which no longer exists: the skimmer converts
+   the crystal AT REST and the hull then strikes it. So dash into a crystal and watch that the ball
+   is briefly **stationary** before the ship reaches it, then leaves on a real collision. A ball
+   that departs on the dash heading without being touched is the retired forge resurfacing.
 
 **First-pass tuning (expect a balancing pass):** accel 90 u/s², coast drag 120 (release-only —
 holding the trigger must never decay), top speed 180 (×1.5 at Time 10), dash 80 u/s / 0.5s /
-**no cooldown**, Snap Dash 100 u/s / 0.4s / 0.3s double-tap window, cavitation blast scale 90 /
-offset 45 / 2.5s cooldown (×0.5 at Charge 10) / duration 0.85s / `proportionalDebris` with
-restitution 1/3 × Inertia 1.8 (the Dolphin's shipped group), blast debuff −0.5 on all four
+**no cooldown**, Snap Dash 100 u/s / 0.4s / 0.3s double-tap window, cavitation **plate** radius
+45 (`radiusPerVesselRadius` 10 × the 4.5 hull) / length 54 (`lengthPerRadius` 1.2) / sweep
+257.14 u/s ⇒ duration 0.21s / 2.5s cooldown (×0.5 at Charge 10) / `proportionalDebris` with
+restitution 1/3 × Inertia **3** (so debris speed IS the blast velocity), blast debuff −0.5 on all four
 elements over 4s with 1s per-victim anti-spam, ring radius 20 (×2.5 at Mass 10), 28 interior +
 44 burst prisms (2.5, 1.5, 8), place distance flat 150 (Space no longer scales it), 3 switch
 charges, crystal grants +0.334 charge / +0.25 energy, ball size ×1 → ×4 at Space 10.
