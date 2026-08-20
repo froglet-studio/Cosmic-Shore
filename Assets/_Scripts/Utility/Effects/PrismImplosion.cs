@@ -157,6 +157,9 @@ namespace CosmicShore.Utility
         // PrismExplosion.EnabledInstances (List.Remove's O(n) scan was 1.9s of one frame
         // under a mass-death burst); order is not part of the registry's contract.
         internal static readonly List<PrismImplosion> EnabledInstances = new();
+
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        static void ResetStatics() => EnabledInstances.Clear();
         int _enabledIndex = -1;
 
         private void OnEnable()

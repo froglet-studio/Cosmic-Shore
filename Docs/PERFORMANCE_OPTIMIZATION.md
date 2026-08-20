@@ -1359,22 +1359,82 @@ ranking suspects.
   already spending on managed callbacks. With it off the scene simply reads as
   dirty and saving is the developer's call.
 
-**Deferred, each needs its own pass:**
+**Second round (2026-08-20) — the deferred items, resolved:**
 
-- Turn on Enter Play Mode Options (item 1). Highest single win and free, but
-  it needs a static-state audit first. The codebase is closer to viable than
-  most — most statics already reset via
-  `[RuntimeInitializeOnLoadMethod(SubsystemRegistration)]` installers
-  (`PrismClock`, `PrismDebris`, `MainThreadDispatcher`,
-  `GyroidOctagonRegistry`, `Crystal`, `AssembledFlora`, …) — but the audit is
-  the work, not the toggle.
-- Move the 149 `Editor/` scripts behind an asmdef (item 2), which takes them
-  out of the runtime recompile path. Legal only per-file: an asmdef assembly
-  **cannot** reference `Assembly-CSharp`, where all gameplay types live, so
-  every editor script that touches a gameplay type has to stay put. Needs a
-  file-by-file check, not a blanket move.
-- FMOD (item 5) — no change until a `Domain Reload Profiling` capture or a
-  reproducible never-recovers hang implicates it.
+- **Enter Play Mode Options is ON** (`m_EnterPlayModeOptionsEnabled: 1`, both
+  Disable bits kept). Every Play press now skips the domain reload — the
+  largest single cost in this phase. The audit that gated it covered all 259
+  runtime files carrying a mutable static or static event, classified every
+  symbol (safe / self-healing via fake-null or unconditional re-init /
+  already-reset / needs-reset), and shipped **52 new
+  `[RuntimeInitializeOnLoadMethod(SubsystemRegistration)]` resets** (66 runtime
+  files now carry one) for everything in the needs-reset bucket. The recurring leak shapes,
+  for review calibration: `OnApplicationQuit` latches (fires on editor play
+  EXIT — `PrismEffectsManager._isQuitting` had half the VFX system dead from
+  the second Play on), `Time.unscaledTime`/`Time.time` stamps compared across
+  a clock that restarts at 0 (haptics rate-limits, combat-hit latches,
+  per-impactor explosion cooldowns), begin/end bracket counters whose
+  `finally` a play exit skips (`PrismTrailBuilder`'s arena gate,
+  `Prism.BeginBulkTransport`), benchmark overrides with no restore path, and
+  disk-cache `Initialized` latches that stop the re-read. Two structural
+  cases: a reset cannot live on an open generic
+  (`NetworkClientCacheDomainReset` hosts the closed-type resets), and a pure
+  C# Reflex singleton subscribed to `SceneManager.sceneLoaded` needs an
+  instance teardown from its static reset (`TournamentController`).
+- **Obvious.Soap is patched** (`[Cosmic Shore patch]`, the project's second):
+  `ScriptableEventBase` had **no play-mode lifecycle at all** — variables
+  restore serialized values via `playModeStateChanged`, but an event's private
+  `_onRaised` delegate survived every Play press, so the un-unsubscribed
+  constructor lambdas in `AnalyticsServiceFacade` (14), the
+  `ApplicationStateMachine` (3) and `TournamentController` (1) would have
+  stacked one dead handler set per session — silently multiplying analytics
+  submissions and state transitions. Events, lists and dictionaries now clear
+  their C# delegates at BOTH play-mode boundaries; `ScriptableVariable` also
+  clears `_onValueChanged` (its `Init()` only cleared the inspector list) and
+  all four families fix a reimport double-subscribe (`OnEnable` re-ran,
+  `OnDisable` never removed the handler).
+- **Third-party verdicts, from source** (fetched pinned versions where the
+  checkout has none): Reflex 14.1.0 — explicit support (`UnityInjector`
+  re-inits per play, root container disposed on `Application.quitting`, its
+  own comment names domain-reload-off); UniTask — explicit
+  (`PlayerLoopHelper` detects the disabled flag and re-inits); Netcode 2.5.0 —
+  compatible (`NetworkUpdateLoop` re-registers at SubsystemRegistration, RPC
+  tables use idempotent indexer writes); FMOD — explicit (`RuntimeManager`
+  tears down by name on this exact setting); DOTween, NativeShare, PlayFab SDK
+  — compatible. NiceVibrations holds static state with no reset (inert on
+  desktop; revisit if mobile in-editor haptics testing ever matters).
+- **Editor asmdef split (item 2) — checked and CLOSED, not shipped.** The
+  file-by-file check the deferral asked for: of 168 editor-assembly files, 79
+  are tests that structurally cannot move (asmdefs cannot reference
+  `Assembly-CSharp`); of the 89 remaining, only **26 files (7,187 of 41,449
+  editor LOC, ~17%)** are free of gameplay-type references — the FrogletTools
+  board infrastructure, `PlayModeSOProtector`/`SceneBootstrapper`, and a few
+  drawers. 74 are hard-stuck on gameplay types. The split would trim well
+  under a second of *compile* per iteration and does **nothing** for the
+  reload itself (every loaded assembly reloads on any recompile regardless of
+  layout). Verdict: not worth the assembly-restructure risk; the movable list
+  lives in this branch's session notes if that ever changes.
+- FMOD teardown (item 5) — still deferred: no change until a
+  `Domain Reload Profiling` capture or a reproducible never-recovers hang
+  implicates it.
+
+**Protocol from here (Enter Play Mode Options is live):**
+
+- If the editor misbehaves on the SECOND Play press of a session (ghost
+  handlers, stale state, a system dead until restart), suspect a static that
+  escaped the audit: fix it with a
+  `[RuntimeInitializeOnLoadMethod(SubsystemRegistration)]` reset in the
+  owning file (66 examples now in-tree), and only toggle
+  `Edit > Project Settings > Editor > Enter Play Mode Options` off as a
+  temporary escape hatch — report it either way.
+- New code rules that keep the flip safe: a static event or delegate field
+  needs a reset in its file unless every subscriber provably unsubscribes on a
+  LIFECYCLE event (not a gameplay one); a static collection or latch written
+  during play needs one always; instance `event` fields on ScriptableObject
+  assets are the same hazard (SO assets persist exactly like statics — the
+  Soap families are patched, but e.g. `SkimmerOverchargeCollectPrismEffectSO`
+  declares four such events; sweep those before wiring asymmetric
+  subscribers).
 
 ---
 
@@ -1412,3 +1472,4 @@ not compiler, at the time of the merge).
 | 2026-07-17 (Sparrow regression) | The `75828ff0` async refill broke Sparrow guns/missiles once merged to bleeding-edge: `InstantiateAsync` bypasses the virtual `CreateFunc`, the only place `ProjectilePoolManager` ran Reflex injection, so async-refilled projectiles carried a null `AudioSystem` and NRE'd in `LaunchProjectile` (stack pool = un-injected instances hand out FIRST; Sparrow missile pool prewarms 5 toward a 20 target, so the pool top went dud within seconds). Fixed in `e146b882`: new `GenericPoolManager.OnInstanceCreated(T)` hook fires on both creation paths; subclass instance-prep (DI injection) must live there, never in a `CreateFunc` override. §1 item 3 updated with the contract. |
 | 2026-08-06 (pause + menu-return round) | Two reported UX stalls fixed. **Pause tap hitch:** the pause panel (`R_Pause_Menu_Panel`) starts inactive in every scene, so the FIRST tap paid the whole hierarchy's Awake/OnEnable + layout + TMP mesh generation mid-gameplay. Shipped `PauseMenu.Prewarm()` — the panel is activated invisible (root CanvasGroup alpha 0) for two frames at scene start and deactivated again; called from `MiniGameHUD.Start` (gameplay scenes) and `MenuMiniGameHUD.InstantiatePauseMenu` (menu freestyle). **Game→menu return:** (1) `SceneLoader.ReturnToMainMenu` now unpauses first (mirrors `LaunchGame`) — the pause-menu Main Menu button previously ran the whole transition at `timeScale 0`; (2) connected clients are covered BEFORE the teardown via `MultiplayerMiniGameControllerBase.BroadcastReturnToMenuVeil` → `ShowReturnToMenuVeil_ClientRpc` (mirror of the replay path's `PrepareForSceneReload_ClientRpc`; RPC + despawn messages share the reliable channel, so the veil always lands before vessels pop out — clients previously watched the whole despawn + scene switch uncovered); (3) on a game→menu arrival (previous loaded scene was a gameplay scene — tracked per-peer in `SceneLoader`), the opaque splash is HELD for `menuReturnSettleSeconds` (1.5 s, serialized) after `OnClientReady` so end-of-session cleanup finishes behind the veil instead of visibly clearing after the fade; the all-peers covered `GC.Collect` moved after the settle window so settle churn is collected too. First boot, auth→menu, party join, game launches, and replay reloads are not delayed (flag armed only on game→menu, cleared by `LaunchGame`). Remaining known stall: Menu_Main's synchronous scene-activation Awake/Start cost still freezes the splash spinner for its duration — structural, not addressed this round. |
 | 2026-08-20 (editor reload round) | Added **Task 10** — the `Run managed callbacks` domain-reload stall: what the phase is, the five ranked contributors (Enter Play Mode Options never switched on despite the flags being set; single-assembly compile; Entities `TypeManager` reflection; first-party `[InitializeOnLoad]` disk work; FMOD editor-system teardown), and the `Domain Reload Profiling:` block in `Editor.log` as the measurement that ends the guessing. Shipped two contained fixes: `PlayModeSOProtector` snapshot moved off `SessionState` (~11 MB across ~790 keys) onto a `Library/` snapshot with mtime+length-gated restore and batched reimports; `SceneBootstrapper`'s OnValidate-noise auto-save made opt-in and default OFF (it was serializing the 4.1 MB `Menu_Main` on every reload and every play exit). Deferred with reasons: Enter Play Mode Options (needs a static-state audit), editor asmdef split (blocked per-file by `Assembly-CSharp` references), FMOD (needs a capture first). |
+| 2026-08-20 (editor reload round 2) | Resolved Task 10's deferred items. **Enter Play Mode Options ENABLED** (domain + scene reload skipped on every Play press) after the full static-state audit: 259 runtime files with mutable statics/static events classified, **52 new `SubsystemRegistration` resets** shipped (66 runtime files now carry one) (worst finds: `PrismEffectsManager._isQuitting` latching true on play exit and killing VFX from the second Play on; `PrismTrailBuilder`'s 15-field arena-gate group wedging the load gate; `Time.*` stamps compared across the restarting clock in haptics/combat latches/explosion cooldowns). **Obvious.Soap patched** — `ScriptableEventBase` had no play-mode lifecycle, so `_onRaised` survived every Play and the un-unsubscribed constructor lambdas in `AnalyticsServiceFacade`/`ApplicationStateMachine`/`TournamentController` stacked one dead handler set per session; events/lists/dictionaries now clear delegates at both play boundaries, `ScriptableVariable` clears `_onValueChanged`, and a reimport double-subscribe is fixed in all four families. Third-party compatibility proven from pinned source (Reflex 14.1.0, UniTask, NGO 2.5.0, FMOD, DOTween). **Editor asmdef split closed with data, not shipped**: 79 of 168 editor files are immovable tests, only 26 of the remaining 89 (~17% of editor LOC) are free of gameplay-type refs, and the split cannot touch the reload cost — only sub-second compile time. FMOD stays capture-gated. |

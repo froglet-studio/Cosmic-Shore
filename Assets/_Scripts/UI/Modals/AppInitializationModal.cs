@@ -27,6 +27,10 @@ namespace CosmicShore.UI
 
         static bool NetworkInitialized = false;
 
+        // A stale true skips WaitForAuthCoroutine entirely on the next session's Awake.
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        static void ResetStatics() => NetworkInitialized = false;
+
         void Awake()
         {
             if (NetworkInitialized)

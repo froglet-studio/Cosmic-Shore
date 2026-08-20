@@ -58,6 +58,12 @@ namespace CosmicShore.Gameplay
         static readonly Dictionary<string, PaintingPrisms> Cache = new();
         static readonly Dictionary<string, List<PaintingPrismRecord>> PendingStroke = new();
 
+        // Keyed by stable painting ids: an uncommitted stroke from a play session that exited
+        // mid-stroke must not be committed to disk by the NEXT session's CommitStroke.
+        // (Cache stays — it is disk-truthed.)
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        static void ResetStatics() => PendingStroke.Clear();
+
         static string FileName(string paintingId) => $"painting_prisms_{paintingId}.data";
 
         static PaintingPrisms Load(string paintingId)

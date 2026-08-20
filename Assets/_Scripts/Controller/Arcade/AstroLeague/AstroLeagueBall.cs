@@ -283,6 +283,16 @@ namespace CosmicShore.Gameplay
         /// what the two directions MEAN, so policy never leaks into the payload.
         /// </summary>
         public static event System.Action<AstroLeagueBall, bool> OnNucleusReleasedServer;
+
+        // Paired with ScarabNucleusField.ResetStatics: its s_hooked latch and this event's
+        // subscriber list must clear TOGETHER or the field either double-subscribes or never
+        // re-subscribes across domain-reload-free play sessions.
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        static void ResetStaticEvents()
+        {
+            OnCellOverload = null;
+            OnNucleusReleasedServer = null;
+        }
         /// <summary>Domain whose color the ball currently carries (Blue = neutral). Set by the last striker.</summary>
         public Domains LastHitDomain => n_LastHitDomain.Value;
 

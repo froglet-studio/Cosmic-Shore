@@ -59,6 +59,15 @@ namespace CosmicShore.Utility
 
         static readonly HashSet<int> _checked = new();
 
+        // Warn-once means once per PLAY SESSION — see PrismClockDiagnostics.ResetWarnings.
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        static void ResetWarnings()
+        {
+            _checked.Clear();
+            _warnedRadiusVessels.Clear();
+            _warnedUnmeasurableVessel = false;
+        }
+
         static readonly int SurfaceId = Shader.PropertyToID("_Surface");
         static readonly int AlphaClipId = Shader.PropertyToID("_AlphaClip");
         const string AlphaTestKeyword = "_ALPHATEST_ON";
