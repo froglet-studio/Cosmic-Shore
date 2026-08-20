@@ -55,6 +55,10 @@ namespace CosmicShore.Utility
         /// per-face erosion wipe visibly completes well before the debris retires — the
         /// wipe itself also finishes with margin (PRISM_EROSION_END_MARGIN in
         /// PrismOcclusionCorridor.hlsl), so the two tunings compose rather than race.</summary>
+        /// <remarks>Also the shield shatter's default length
+        /// (<see cref="CosmicShore.Gameplay.PrismOctahedronShield"/>): a shield coming apart
+        /// and a prism coming apart are the same event class, and the two reading as
+        /// different lengths is the drift this shared constant prevents.</remarks>
         internal const float DefaultDuration = 7.5f;
 
         // Shortest an explosion is squeezed to under full pressure. Still long enough

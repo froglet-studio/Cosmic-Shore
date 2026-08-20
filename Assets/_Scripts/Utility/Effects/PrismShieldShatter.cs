@@ -70,10 +70,11 @@ namespace CosmicShore.Utility
 
         static readonly List<Entity> s_scratchEntities = new(256);
 
-        // Live records in append order. Shield durations are per-component constants
-        // (0.6 s octahedron / 0.7 s stellation), so append order is expiry order up to
-        // that spread; a shorter-lived entry queued behind a longer one is destroyed at
-        // most 0.1 s late, by which point its faces have already collapsed to points.
+        // Live records in append order. Both tiers default to PrismExplosion.DefaultDuration
+        // (a shield coming apart and a prism coming apart are the same event class), so
+        // append order IS expiry order unless a prefab authors its own length; a
+        // shorter-lived entry queued behind a longer one is destroyed late by at most that
+        // authored spread, by which point its faces have already collapsed to points.
         static readonly List<Record> s_live = new(256);
         static int s_liveHead;
         static int s_liveEpoch = -1;

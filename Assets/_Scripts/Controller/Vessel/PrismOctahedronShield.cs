@@ -79,8 +79,8 @@ namespace CosmicShore.Gameplay
         [SerializeField] private float engageDuration = 0.35f;
 
         [Header("Shatter (Disengage)")]
-        [Tooltip("Duration of the shatter VFX overlay after disengaging. 0 snaps instantly. Raised from 0.6/0.7 once the faces began tumbling: the fly-out reads in a third of a second, but a rotation needs long enough to be seen turning.")]
-        [SerializeField] private float shatterDuration = 1f;
+        [Tooltip("Duration of the shatter VFX overlay after disengaging. 0 snaps instantly. Defaults to PrismExplosion.DefaultDuration - a shield coming apart and a prism coming apart are the same event class, and they read wrong at different lengths. Note the tumble is a RATE (rad/second), so lengthening this spins the faces further.")]
+        [SerializeField] private float shatterDuration = PrismExplosion.DefaultDuration;
 
         [Tooltip("How far each face flies outward (in local-space units) at the end of the shatter.")]
         [SerializeField] private float shatterMaxOffset = 3f;

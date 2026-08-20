@@ -467,7 +467,8 @@ void PrismFlightSqrDistance_float(float Clock, float StartTime, float Duration, 
 
 // The shatter's two tumble constants.
 //
-// TUMBLE is rad/SECOND and is ALWAYS ON — it is what makes each face rotate away as it
+// TUMBLE is rad/SECOND (so a longer shatter spins further — it is a rate, like the
+// explosion's own, not a fixed sweep) and is ALWAYS ON — it is what makes each face rotate away as it
 // leaves, which is what the cuboid explosion does and the whole point of the effect. It
 // deliberately depends on NOTHING but the clock and the mesh's own face normal, both of
 // which are proven to reach this function (the fly-out along Normal is visibly correct),
@@ -479,7 +480,7 @@ void PrismFlightSqrDistance_float(float Clock, float StartTime, float Duration, 
 // SPIN is the additional rad per world unit the impulse travels: the shield's counterpart
 // of the explosion material's _ExplosiveRotation, so a hard hit still spins harder than a
 // soft one. It is a REFINEMENT on top of TUMBLE, never the source of it.
-#define PRISM_SHIELD_SHATTER_TUMBLE 4.0
+#define PRISM_SHIELD_SHATTER_TUMBLE 1.2
 #define PRISM_SHIELD_SHATTER_SPIN 0.25
 
 void PrismShieldMorph_float(float Clock, float StartTime, float Duration, float Direction,
@@ -500,7 +501,18 @@ void PrismShieldMorph_float(float Clock, float StartTime, float Duration, float 
     float faceScale = lerp(t, 1.0 - t, shatter);
     float offset    = shatter * t * ShatterOffset;
 
-    MorphedPosition = FaceCentroid + faceScale * (Position - FaceCentroid) + offset * Normal;
+    // Split the face into WHERE ITS CENTRE IS and WHAT THE FACE IS AROUND THAT CENTRE.
+    // faceCenter is the baked centroid pushed out along the face's own normal by the
+    // fly-out; rel is the face's geometry with its centre at the ORIGIN. That split is the
+    // whole reason the rotation below reads as a spin: rel is centred on the face by
+    // construction, so rotating it about the origin IS rotating the face about its own
+    // centre of mass, and adding faceCenter afterwards puts it back where it belongs.
+    // (This is the base explosion material's method: translate the face centre to the
+    // origin, rotate, translate back.)
+    float3 faceCenter = FaceCentroid + offset * Normal;
+    float3 rel = faceScale * (Position - FaceCentroid);
+
+    MorphedPosition = faceCenter + rel;
 
     // ---- the explosion terms: a SHATTER tumbles, a bloom does not -----------
     if (shatter == 0.0)
@@ -587,15 +599,19 @@ void PrismShieldMorph_float(float Clock, float StartTime, float Duration, float 
         float angle = (PRISM_SHIELD_SHATTER_TUMBLE +
                        PRISM_SHIELD_SHATTER_SPIN * speed) * tSec;
 
-        // Rotation runs in the isotropic frame about the face centroid (see header).
-        float3 rel = (MorphedPosition - FaceCentroid) * scale;
-        MorphedPosition = FaceCentroid + PrismJiggleRotate(rel, axis, angle) / scale;
+        // Rotation runs in the isotropic frame, on the face's own centred geometry — so
+        // the pivot is the face's centre of mass, never the baked centroid it has already
+        // flown away from. Rotating (MorphedPosition - FaceCentroid) instead swings the
+        // face around a point up to ShatterOffset units BEHIND it, which reads as an orbit
+        // rather than a spin: the strange-pivot bug this replaced.
+        rel = PrismJiggleRotate(rel * scale, axis, angle) / scale;
     }
 
-    // Drift LAST: the whole spinning shard rides the breaking impulse, undeflected by its
-    // own tumble. Object-space so the WORLD displacement is exactly Velocity * tSec, which
-    // is the explosion debris' own flight term. Zero without an impulse.
-    MorphedPosition += velocityObj * tSec;
+    // Put the spun face back at its desired position, and let the whole shard ride the
+    // breaking impulse — undeflected by its own tumble, because the drift is added to the
+    // CENTRE rather than rotated with the geometry. Object-space, so the WORLD displacement
+    // is exactly Velocity * tSec, the explosion debris' own flight term. Zero with no impulse.
+    MorphedPosition = faceCenter + rel + velocityObj * tSec;
 }
 
 #endif // PRISM_CLOCK_ANIMATION_INCLUDED

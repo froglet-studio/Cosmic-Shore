@@ -1717,6 +1717,35 @@ away from where it was pointing rather than spinning about its own normal like a
 stick, and because the object-space normal IS the face id on these hard-edged meshes, the
 eight faces never tumble in lockstep.
 
+**The pivot is the face's OWN centre, which means splitting the face in two.** The base
+explosion material does this explicitly — translate the face's centre to the origin, rotate,
+translate back — and the shatter now builds itself the same way:
+
+```
+faceCenter = FaceCentroid + offset*Normal      // where the face's centre ends up
+rel        = faceScale * (Position - centroid) // the face's geometry, centred on ITSELF
+p          = faceCenter + R(rel) + drift
+```
+
+Rotating `MorphedPosition − FaceCentroid` instead — which is what the first tumbling version
+did — pivots the face around its *baked* centroid, a point it has already flown up to
+`ShatterOffset` units away from. The face then orbits that point rather than spinning about
+its centre of mass, and reads as "not really rotating". The split also makes the drift
+immune to the tumble for free: it is added to the CENTRE, never rotated with the geometry.
+`verify_prism_shield_shatter.py` asserts both halves — that the distance to the face's own
+centre is preserved by the rotation, and that the distance to the baked centroid is *not*
+— and the second assertion is mutation-tested against the old pivot.
+
+**Duration is the base explosion's.** Both tiers default `shatterDuration` to
+`PrismExplosion.DefaultDuration` rather than a number of their own: a shield coming apart and
+a prism coming apart are the same event class, and at different lengths they read as
+different effects (the shatter shipped at 0.6 s against the explosion's 7.5 s and looked
+truncated next to it). The tumble is a RATE, so lengthening the shatter spins the faces
+further — `PRISM_SHIELD_SHATTER_TUMBLE` was re-scaled 4.0 → 1.2 rad/s for the longer life.
+Note the shatter's removal mechanism is the face CONTRACTING to a point, not the explosion's
+opacity fade, so the contraction is now correspondingly slow; that is the knob to watch if
+the effect ever reads as sluggish.
+
 **Tumble first, drift second — the order is load-bearing.** Rotating a position that
 already carries the drift rotates the DRIFT ITSELF: `rel` becomes the ~12 world units the
 shard has travelled instead of the face's own ~1 unit of extent, so the face swings on a
