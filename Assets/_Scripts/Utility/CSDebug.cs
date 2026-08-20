@@ -52,6 +52,23 @@ namespace CosmicShore.Utility
         /// unaffected by this flag.
         /// </summary>
         GyroidColony = 1 << 1,
+        /// <summary>
+        /// <c>[QuasicrystalColony]</c> — star-colony lattice telemetry (founder claims, plant
+        /// completions, births). Defect warnings (blocked reseed mints) stay on the warning
+        /// channel and are unaffected by this flag.
+        /// </summary>
+        QuasicrystalColony = 1 << 2,
+        /// <c>[ScarabNucleusField]</c> — the Scarab nucleus-seeding ability: seeds planted, balls
+        /// knocked in or out, and the overload detonation. Off by default like every channel; a
+        /// real fault here is still a warning and is unaffected by this flag.
+        /// </summary>
+        ScarabNucleus = 1 << 3,
+        /// <summary>
+        /// <c>[ScarabSwitch]</c> / <c>[PlaceSwitch]</c> — the Scarab's switch: placements,
+        /// refusals, and the wing dais a strike pays out. Off by default like every channel;
+        /// a real fault here is still a warning and is unaffected by this flag.
+        /// </summary>
+        ScarabSwitch = 1 << 4,
         All = ~0
     }
 

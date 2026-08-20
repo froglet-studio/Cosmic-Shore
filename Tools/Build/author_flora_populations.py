@@ -93,7 +93,7 @@ LATTICE_MIN_FOUNDERS = 4
 # Species whose growth rule is a LATTICE: an offspring is handed a real bond site off the
 # parent's own frontier (AssembledFlora.TryResolveOffspringPlacement), so many small plants
 # add up to one continuous minimal surface. Matched on the flora prefab.
-LATTICE_PREFABS = {"GyroidFlora.prefab", "SchwarzPFlora.prefab"}
+LATTICE_PREFABS = {"GyroidFlora.prefab", "SchwarzPFlora.prefab", "QuasicrystalFlora.prefab"}
 
 # Per-plant budget for a lattice species: the 24-prism octagon patch plus headroom for the
 # boundary prisms the ownership epsilon lets a plant win (measured patches run 22-28; the
@@ -109,6 +109,14 @@ LATTICE_BUDGET = 30
 LATTICE_PATCH = {
     "GyroidFlora.prefab":   (OCTAGON_PATCH, LATTICE_BUDGET),   # 24 owned, 30 budget
     "SchwarzPFlora.prefab": (36, 36),                          # 36 owned, 36 budget - exact
+    # Quasicrystal: a plant owns ONE HEART's tree territory on the icosahedral
+    # quasilattice (Docs/ECOSYSTEM.md 37). Tree cells are exact but their size
+    # legitimately varies - measured 44..97 struts, mean 58.8, over 1,461 simulated
+    # plants (Tools/Build/measure_icosahedral_quasilattice.py) - so the conversion
+    # basis is the MEAN and the budget sits above the measured MAX, because the
+    # ownership tree, not the budget, is the real bound: a plant whose cell the
+    # budget truncated would leave permanent holes in the colony's scaffold.
+    "QuasicrystalFlora.prefab": (59, 110),                     # 59 mean owned, 110 budget
 }
 
 # No per-CONFIG override is needed, and that is the point of FloraVariantTuning.LatticeScale.
@@ -181,6 +189,14 @@ LATTICE_SOURCE_BUDGET = {
     "SchwarzP Flora Mass": 800,
     "SchwarzP Flora Space": 800,
     "SchwarzP Flora Time": 800,
+    # Quasicrystal: the prefab's authored 800, same convention as Schwarz P.
+    # cap = round(800 / 59) = 14 plants - 14 always-on heart colliders at cap,
+    # under Schwarz P's 22 because a star plant carries ~59 struts to a tile's 36.
+    "Blob Quasicrystal Flora Config Data": 800,
+    "Quasicrystal Flora Charge": 800,
+    "Quasicrystal Flora Mass": 800,
+    "Quasicrystal Flora Space": 800,
+    "Quasicrystal Flora Time": 800,
 }
 
 

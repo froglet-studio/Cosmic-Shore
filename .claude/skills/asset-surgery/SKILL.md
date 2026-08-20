@@ -644,6 +644,123 @@ def sub(old, new, label):
 Python, a compile for C#) and check the line count moved by roughly what you intended — a file
 that grew 40x is the signature of exactly this bug.
 
+### Technique: make the harness EXTRACT the shipped block, and run the shipped TEST
+
+The §4 harness is only worth what its fidelity to the real file is worth, and a hand-retyped
+copy drifts the moment you fix a typo in one and not the other. Slice it out of the shipped
+file instead, so the thing you prove is byte-identical to the thing you commit:
+
+```python
+src   = pathlib.Path(REAL_FILE).read_text()
+block = src[src.index(START_MARKER) : src.index(END_MARKER)]      # assert both markers found
+pathlib.Path("Program.cs").write_text(STUBS + block + DRIVER)
+```
+
+Two things this buys beyond a compile:
+
+- **Unity-flavoured null checks work with a three-line stub.** Nearly every gameplay block that
+  touches `UnityEngine.Object` needs only its implicit-bool operator to run headlessly:
+  `public static implicit operator bool(Object o) => o is { Destroyed: false };`. That covers
+  `if (!component)`, `x ? a : b`, and the destroyed-object prune idiom in one go.
+- **You can execute the shipped TEST FILE's own assertions**, not a paraphrase of them: strip
+  `#if UNITY_EDITOR` / the NUnit `using`, swap `[Test]` for a plain method and `Assert` for a
+  four-line shim, and drive it by reflection. What you then prove is literally what the edit-mode
+  suite will assert when a human opens Unity, which is a much stronger claim than "it compiles".
+  This is the closest you can get to running the repo's tests without the editor — do it whenever
+  a branch adds a test whose subject is a pure function.
+
+Use it for the pure/static core of a change (a predicate, a mask, a formula). It still cannot see
+name resolution or whole-class consistency — see the two traps below.
+### Trap: a SHIELD's size is not the prism's size, and the two tiers scale DIFFERENTLY
+
+Origin: the Scarab wing dais (2026-08-18). A super-shielded "sun core" was sized so its
+*bounding box* matched the space it had to fill; it rendered 73% too big and the human
+caught it by eye. The measurement was not sloppy — it was the wrong measurement, and the
+class of error generalises to anything you place next to shielded mass.
+
+`PrismStateManager` swaps a prism's MESH when a shield engages, and both meshes are built from
+the box HALF-extents times `CIRCUMSCRIBING_SCALE` (3). So for a prism of full size `S` on an
+axis, the semi-axis is `1.5 S` — **three times the box's own extent** — and neither tier is
+"the prism, slightly bigger". Read the generators, not the field names:
+
+| tier | mesh | vertices at | extent along an axis | **circumscribed diameter** |
+|---|---|---|---|---|
+| plain | box | `±S/2` | `S` | `S·√3` |
+| shielded | octahedron | `(±1.5S, 0, 0)` &c — **ON THE AXES** | `3S` | `3S` |
+| super-shielded | stella octangula | spikes at `(±1.5S, ±1.5S, ±1.5S)` — **the CUBE CORNERS** | `3S` | `3S·√3 ≈ 5.196S` |
+
+The two shield tiers have the **same axis extent and different apparent size**, because the
+stellation's spikes point at the corners. Size a stella by its bounding box and you understate
+what the player sees by `√3`. That is the whole bug, and it is invisible to every check that
+measures axis extents — including a top-down render, where the spikes project to `1.5S·√2`.
+
+Rules that fall out:
+
+- **Decide which measure the design cares about, and derive the authored scale from it.**
+  "Fits this slot" is a bounding-box question (`S = slot / 3`). "Reads this big" is a
+  circumscribed-sphere question (`S = size / 3` for shielded, `S = size / (3√3)` for
+  super-shielded). Name the measure in the field's tooltip so the next person cannot pick
+  the other one.
+- **Derive the factor from the generator's own constant**, never a literal:
+  `OctahedronMeshGenerator.CIRCUMSCRIBING_SCALE`, and `× √3` for the stellation. A hard-coded
+  3 or 5.196 silently rots if the constant is ever retuned.
+- **A tier change is a SIZE change unless you fit for it.** Cycling plain → shielded along a
+  row of same-sized prisms triples every third one. Fitting the prism (authored scale
+  `× 1/CIRCUMSCRIBING_SCALE`) restores the envelope exactly and is uniform, so the prism's
+  aspect — its identity — survives; `Docs/ECOSYSTEM.md §35` is the ruling.
+- **Check clearance against the SHIELD's silhouette, not the box's — and the silhouette is a
+  function of the POSE.** In-plane, a shielded prism is a rhombus with semi-axes `1.5·(w, L)`.
+  A super-shielded one reaches `1.5S·√2` toward its in-plane corners *only while it is
+  axis-aligned*: rotate it so a spike lies in your plane (aiming `(1,1,1)` at something) and the
+  reach becomes the full `1.5S·√3`, 22.5% more, silently. So compute a stella's outline as the
+  projected convex hull of its eight spike tips under its own rotation — the stellation's hull IS
+  that cube — rather than a hard-coded octagon of alternating radii, which is the outline of one
+  particular pose. An exact 2D separating-axis test over those silhouettes is ~40 lines and is the
+  only way to claim "no overlaps or clipping" honestly.
+- **The taper is a design tool, not just a cost.** An octahedron's side faces slope at
+  `atan(halfWidth/halfLength)` from its axis while a box's are parallel, so a run of
+  flush-tiled boxes cannot turn and a run with an octahedron in it turns by exactly
+  `2·atan(w/L)` at that prism — pivoting about its root TIP, which all three prisms share.
+  Curvature in a tiled prism structure is therefore *placed* (where the shielded prisms go),
+  not tuned. Get the pivot wrong — rotate about the chain point instead of the shared root
+  tip — and every hinge overlaps, at a rate that looks like a global spacing problem.
+
+### Trap: a stub-harness error is a STUB GAP until proven otherwise — but not always
+
+Running the shipped file against transcribed stubs means every compile error has two possible
+causes, and the likely one is the harness. In one session the harness raised nine errors:
+`Mathf.Rad2Deg`, `Mathf.Acos`, `Vector2.zero`, `Vector2`/`Vector3` unary minus, `Vector3.Scale`,
+`Quaternion.x/y/z/w`, `Prism.Damage`, `AstroLeagueBall.Velocity` — **eight were missing stub
+members** that real Unity has, and patching the shipped code for any of them would have been a
+regression invented by the tool.
+
+So the discipline is: **grep the real repo for the member before touching your file.** Two
+`grep -n` calls settle it — the type's own source, or any existing call site.
+
+The ninth was real (a missing `using CosmicShore.Utility;` in a new editor window, which would
+have broken the whole editor assembly), and that is the point: the eight false alarms are the
+price of the one catch, and the catch is a build break nobody would have seen until Unity opened.
+Do not stop running the harness because it cries wolf; just always ask *whose* fault it is first.
+Keep the stub file, too — it accumulates, and the next session starts with nine fewer gaps.
+
+### Trap: a test that pins an ABSOLUTE number fails on the first legitimate retune
+
+When the subject is authored geometry — a generated structure with a dozen coupled dials — a
+human WILL retune it, and every assertion phrased as a fixed multiple then fails for the wrong
+reason. Three of one session's tests failed the moment the designer's own parameters were adopted,
+and all three were the test being wrong, not the shape:
+
+| pinned | broke because | rewritten as |
+|---|---|---|
+| "the inner edge is within 1.15× the ring" | the reach is a DIAL, and a second dial swings it further | "outside the mouth, and within a quarter of the structure's OWN radius" |
+| "every hinge opens 1.2× the plain step" | the mechanic strengthens along the run (1.17× → 1.62×) | "every hinge beats its neighbours, AND the last beats the first" |
+| "some prism goes under the pool's scale floor" | one dial moved and nothing did any more | ceiling on the shipped shape, floor on an explicit thin variant |
+
+The rule: **assert relationships that scale with the structure — monotonicity, ordering, ratios
+against the thing's own dimensions — and reserve absolute numbers for genuine physical limits**
+(a pool clamp, a collider budget, an arena radius). When an absolute number really is the point,
+assert it against a settings variant you construct in the test, so the shipped tuning stays free.
+
 ### Trap: compiling a COPY cannot see whole-class consistency
 
 The harness pattern in §4 — paste the block under test into a stub file and compile it — proves
@@ -655,6 +772,33 @@ signature changed. Those are only found by compiling the real file, or by Unity.
 So: after any patch that ADDS a member to a large existing class, grep that class for the
 member's own name and confirm exactly one declaration. This session shipped a duplicate field
 that the harness compiled clean and Unity rejected.
+
+### Trap: a stub-reference compile is BLIND to `System`/`UnityEngine` name collisions
+
+The §4 harness compiles against .NET reference assemblies with no `UnityEngine.dll`, so every
+Unity type is already unresolved and gets filtered out as expected noise. That filtering hides a
+whole error class: **`CS0104` ambiguity cannot occur when one of the two colliding types does not
+exist.** Add `using System;` to a file that already has `using UnityEngine;`, and a bare `Object`
+compiles clean in the harness while Unity rejects it — `Object` resolved only to `System.Object`
+because `UnityEngine.Object` was never loaded. A session shipped exactly this by adding
+`using System;` for a `Func`/`Action` field and leaving two `Object.Instantiate` / `Object.Destroy`
+calls alone; the human's first Editor compile was what found it.
+
+The offline pass proves SYNTAX and STRUCTURE. It cannot prove NAME RESOLUTION. Do not report it as
+"compiles clean" without that qualifier.
+
+The collision set is small enough to check exhaustively, so grep instead of hoping — in any file
+carrying BOTH usings, the ambiguous names are exactly **`Object`** and **`Random`**:
+
+```sh
+for f in <changed .cs files>; do
+  grep -qE '^using System;' "$f" && grep -qE '^using UnityEngine;' "$f" || continue
+  grep -nE '(^|[^.[:alnum:]_])(Object|Random)\s*[.(<]' "$f" | grep -v 'UnityEngine\.'
+done
+```
+
+Fix by fully qualifying (`UnityEngine.Object.Instantiate`), never by dropping `using System;` —
+the file needs it. Same shape applies to `using System.Diagnostics;` + `Debug`.
 
 ## 4.5 Technique: offline simulation of a deterministic generator
 

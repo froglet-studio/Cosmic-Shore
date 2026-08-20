@@ -13,8 +13,8 @@ MonoBehaviour:
   m_Name: Lattice Cell Config
   m_EditorClassIdentifier: 
   CellName: Lattice
-  Description: Eight lattice colonies - gyroid and Schwarz P, one of each element - growing
-    into one another
+  Description: Twelve lattice colonies - gyroid, Schwarz P and icosahedral quasicrystal, one
+    of each element - growing into one another
   Icon: {fileID: 21300000, guid: 6aa1c06e11b265744a5f9fa8858ac72a, type: 3}
   Difficulty: 2
   CellEndGameScore: 0
@@ -25,11 +25,11 @@ MonoBehaviour:
   - {fileID: 8058406376250941529, guid: daa37ae0e7af4b04383c1c4e6e76817d, type: 3}
   SpawnProfile: {fileID: 11400000, guid: 924b3c5db59d2c2af688399418ff449b, type: 2}
   PhaseThresholds:
-    RestlessEnter: 5200
-    RestlessExit: 3800
-    FrenzyEnter: 30900
-    FrenzyExit: 26100
-    RestlessEnterVolume: 154000
-    RestlessExitVolume: 112000
-    FrenzyEnterVolume: 907000
-    FrenzyExitVolume: 768000
+    RestlessEnter: 13900
+    RestlessExit: 10100
+    FrenzyEnter: 82400
+    FrenzyExit: 69700
+    RestlessEnterVolume: 558000
+    RestlessExitVolume: 406000
+    FrenzyEnterVolume: 3295000
+    FrenzyExitVolume: 2788000

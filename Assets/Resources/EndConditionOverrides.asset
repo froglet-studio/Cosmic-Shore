@@ -22,6 +22,7 @@ MonoBehaviour:
   wildlifeKillTarget: 250
   dogFightPointTarget: 90
   bendsPointTarget: 3
+  scarabScrambleGoalTarget: 10
   hexRaceCrystalCountBuild: 0
   crystalCaptureCrystalCountBuild: 20
   joustCountBuild: 3
@@ -32,4 +33,5 @@ MonoBehaviour:
   wildlifeKillTargetBuild: 250
   dogFightPointTargetBuild: 90
   bendsPointTargetBuild: 3
+  scarabScrambleGoalTargetBuild: 10
   autoRestoreBuildValuesBeforeBuild: 1

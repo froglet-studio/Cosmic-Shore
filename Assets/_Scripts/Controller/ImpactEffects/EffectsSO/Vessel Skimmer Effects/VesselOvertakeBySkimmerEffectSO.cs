@@ -75,8 +75,11 @@ namespace CosmicShore.Gameplay
             bool isAlly = overtakenStatus.Domain == impacteeVessel.VesselStatus.Domain;
             float magnitude = isAlly ? buffMagnitude : debuffMagnitude;
 
+            // Classed VesselContact - the source class only matters on the debuff branch, where it
+            // decides which wards stop it (ElementalDebuffSources).
             for (int i = 0; i < AllElements.Length; i++)
-                rs.ApplyElementalEffect(AllElements[i], magnitude, effectDuration);
+                rs.ApplyElementalEffect(AllElements[i], magnitude, effectDuration,
+                                        ElementalDebuffSources.VesselContact);
 
             // Friendly buff audio: all four elements are buffed at once, so play a
             // single representative element's buff SFX (chosen at random for variety)

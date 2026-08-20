@@ -5561,28 +5561,29 @@ fit against and no equivalent measurement; nobody has looked at them.
 
 ---
 
-## 36. The Lattice cell — a world that is nothing but eight colonies (Aug 2026)
+## 36. The Lattice cell — a world that is nothing but twelve colonies (Aug 2026)
 
 **What shipped.** A tenth freestyle Cell-Selector world, `Lattice`, whose entire environment is
-**living flora**: eight lattice colonies — gyroid ×4 and Schwarz P ×4, one colony per element —
-growing into one another inside the standard membrane. It authors **no `EnvironmentPrefab`**, so
-it costs no environment build; every prism in it was grown by a plant.
+**living flora**: twelve lattice colonies — gyroid ×4, Schwarz P ×4 and icosahedral quasicrystal
+×4 (§37), one colony per lattice species per element — growing into one another inside the
+standard membrane. It authors **no `EnvironmentPrefab`**, so it costs no environment build; every
+prism in it was grown by a plant.
 
-**The cell holds EXACTLY EIGHT SEEDS**, and that is its defining choice rather than a tuning
+**The cell holds EXACTLY TWELVE SEEDS**, and that is its defining choice rather than a tuning
 value. Each colony is one continuous minimal surface grown outward from a single founder — the
 §32.7 result ("273 plants from one founder: a single connected gyroid") applied as content. See
 §36.2, which is the lesson this cell was rebuilt around.
 
-Assets: `_SO_Assets/Cell Configs/Lattice Cell/` (11 assets — cell config, spawn profile, eight
+Assets: `_SO_Assets/Cell Configs/Lattice Cell/` (15 assets — cell config, spawn profile, twelve
 flora configs, one grazer). Wired as `CellConfigs[9]` on Menu_Main's `Cell`, i.e. one more slot in
 the Cell Selector's matrix. Authored by `Tools/Build/author_lattice_cell.py` (`--check`).
 
 ### 36.1 Why a per-cell config set rather than the shared species assets
 
-`_SO_Assets/Lifeforms/{Gyroid,SchwarzP} Flora {Element}.asset` already define all eight
-element identities, and a profile *can* reference them directly. It does not, for one reason:
+`_SO_Assets/Lifeforms/{Gyroid,SchwarzP,Quasicrystal} Flora {Element}.asset` already define all
+twelve element identities, and a profile *can* reference them directly. It does not, for one reason:
 `SpawnProfileSO.FloraPopulationScale` scales floor and cap by ONE factor, and the shipped
-floor/cap ratio is 4/22..4/60 — a scalar cannot open a colony to 30 founders and 90 plants
+floor/cap ratio is 4/14..4/60 — a scalar cannot open a colony to 30 founders and 90 plants
 without also multiplying every other cell that reads those assets. So the cell forks the
 **population** (`InitialSpawnCount` / `PopulationSize` / `MaxLivePopulation` / planting band) and
 copies the **identity** (leaf size, grow tempo, `LatticeScale`, shield cadence, per-plant budget)
@@ -5599,7 +5600,7 @@ site within `MisalignmentRadius` (5.5u × `LatticeScale`) of standing mass belon
 is not coherent with (§34.8) — that gate exists to stop visible twins, and it is doing its job.
 So 30 founders do not converge into one superstructure 30× sooner; they build 30 small ones that
 stop against each other, and the cell reads as a **scattered forest** — the Rampage look — rather
-than as eight structures. The prism count is identical. The thing you came to see is gone.
+than as twelve structures. The prism count is identical. The thing you came to see is gone.
 
 The fix is the whole mechanic: **one seed per colony**, and let reproduction extend it.
 `InitialSpawnCount 1` / `PopulationSize 1` per species, so the seeder's only remaining job is
@@ -5608,7 +5609,7 @@ while any plant of that species lives.
 
 Note this is the exact case `author_flora_populations.py`'s `LATTICE_MIN_FOUNDERS = 4` exists to
 prevent, and why it does not apply here: that floor protects the **element spread** of a config
-that rolls its element per plant, since a colony inherits its founder's pick. These eight configs
+that rolls its element per plant, since a colony inherits its founder's pick. These twelve configs
 each author ONE fixed element, so there is no spread to protect and nothing to lose by seeding
 one. **A rule written about rolled elements must not be inherited by a fixed-element config.**
 
@@ -5627,8 +5628,12 @@ somebody re-runs the older tool (§34.5, and the same rule the `fit_*` pair foll
 
 Per-plant prisms are geometry, not tuning: a gyroid plant owns a **24-prism octagon** (budgeted 30
 for the boundary prisms its ownership epsilon wins; measured patches 22–28), a Schwarz P plant
-owns exactly **one 36-site tile**. Raising a plant's budget therefore buys nothing — plant COUNT
-is the only lever, which is why the caps and not the budgets moved.
+owns exactly **one 36-site tile**, and a quasicrystal plant owns one heart's **tree cell** —
+also an exact integer partition, but one whose size legitimately varies (44–97 struts, mean 58.8
+measured over 1,461 simulated plants), so its patch is the MEAN and its budget (110) sits above
+the measured max. Raising a plant's budget therefore buys nothing — plant COUNT is the only
+lever, which is why the caps and not the budgets moved. The three patch/budget pairs live in
+`author_flora_populations.py`'s `LATTICE_PATCH` and are read from there rather than restated.
 
 | colony | plants @cap | leaf volume | prisms settled | prisms ceiling | volume ceiling |
 |---|---|---|---|---|---|
@@ -5640,11 +5645,15 @@ is the only lever, which is why the caps and not the budgets moved.
 | SchwarzP Mass | 90 | 25.69 | 3,240 | 3,240 | 83,220 |
 | SchwarzP Space | 90 | 7.50 | 3,240 | 3,240 | 24,300 |
 | SchwarzP Time | 90 | 13.78 | 3,240 | 3,240 | 44,655 |
-| **total** | **720** | | **21,600** | **23,760** | **697,827** |
+| Quasicrystal Charge | 90 | 7.00 | 5,310 | 9,900 | 69,300 |
+| Quasicrystal Mass | 90 | 135.00 | 5,310 | 9,900 | 1,336,500 |
+| Quasicrystal Space | 90 | 21.56 | 5,310 | 9,900 | 213,444 |
+| Quasicrystal Time | 90 | 22.00 | 5,310 | 9,900 | 217,800 |
+| **total** | **1,080** | | **42,840** | **63,360** | **2,534,871** |
 
-Note the spread the table exists to make visible: **Gyroid Mass is 43% of the cell's volume from
-9% of its prisms** (110.25 per prism, 6.9× nominal), and SchwarzP Charge is 0.4% of the volume
-from 14% of the prisms. This is exactly the §32.7 trap — a ladder derived from `count × 16` would
+Note the spread the table exists to make visible: **Quasicrystal Mass alone is 53% of the cell's
+volume from 16% of its prisms** (135 per prism, 8.4× nominal), and SchwarzP Charge is 0.1% of the
+volume from 5% of the prisms — a 159× per-prism spread across one cell. This is exactly the §32.7 trap — a ladder derived from `count × 16` would
 have been an order of magnitude wrong and the cell would have frozen during bootstrap.
 
 ### 36.5 The ladder, and why Frenzy EXIT sits above the mature forest
@@ -5653,17 +5662,20 @@ Derived from one set of ratios against the mature ceiling, so every threshold mo
 a population or a leaf changes:
 
 ```
-RestlessEnter 5200 / Exit 3800      RestlessEnterVolume 154,000 / Exit 112,000
-FrenzyEnter  30900 / Exit 26100     FrenzyEnterVolume   907,000 / Exit 768,000
+RestlessEnter 13900 / Exit 10100    RestlessEnterVolume   558,000 / Exit   406,000
+FrenzyEnter   82400 / Exit 69700    FrenzyEnterVolume   3,295,000 / Exit 2,788,000
 ```
 
-`FrenzyExitVolume` (768,000) is **above** the mature forest (697,827) on purpose. A Frenzy here
+`FrenzyExitVolume` (2,788,000) is **above** the mature forest (2,534,871) on purpose. A Frenzy here
 can only ever be caused by vessel trail laid on top of a full garden, and it must always release
 with the forest intact. If exit sat below mature, a cell that froze once would need active
-grazing before it could resume growing — a garden that punishes visitors. `RestlessEnterVolume` (154,000, 22% of mature) lands while the
+grazing before it could resume growing — a garden that punishes visitors. `RestlessEnterVolume` (558,000, 22% of mature) lands while the
 colonies are still building — roughly twenty plants each — so the food web is awake through the
 build rather than only once the superstructures are finished. There is no "seeded forest" to
-compare it against: the cell opens with eight lone plants. The count fields are the perf backstop only (§0), set above the
+compare it against: the cell opens with twelve lone plants. One more ordering is asserted now
+that the species span 159× per prism: **no single colony's own ceiling may reach
+`FrenzyEnterVolume`** — otherwise the heaviest species could freeze the cell before the other
+eleven finish, and the ladder would be describing one colony rather than the forest. The count fields are the perf backstop only (§0), set above the
 mature prism ceiling so volume always binds first. `verify()` asserts these ORDERINGS, not the
 values (§34.8's rule).
 
@@ -5671,48 +5683,55 @@ values (§34.8's rule).
 
 The shipped per-element assets author `PlantRadiusCellFraction 0.2` = 240u, and the nucleus is
 ~392u, so `Flora.ResolvePlantRadius`'s `inner >= outer` branch collapses to a single degenerate
-shell **inside** the nucleus. That is survivable for Blob's three colonies and wrong for eight, so
+shell **inside** the nucleus. That is survivable for Blob's three colonies and wrong for twelve, so
 this cell authors its own volume-uniform band, **0.45 → 0.70** of the membrane (540u → 840u).
 
-The band places the **eight founders and nothing else** — every other plant is placed by its
+The band places the **twelve founders and nothing else** — every other plant is placed by its
 parent's own lattice frontier, never by a radius roll — so it is not "where the forest goes", it
-is "where the eight seeds go". A mid-shell gives each superstructure room to grow both inward and
-outward before it meets anything: eight points on a ~700u shell sit ~760u apart, several
-superstructure diameters. Placement stays a random draw, so two founders can land close and their
+is "where the twelve seeds go". A mid-shell gives each superstructure room to grow both inward and
+outward before it meets anything: twelve points on a ~700u shell sit ~600u apart, still wider than
+the largest superstructure (the Space quasicrystal, whose `LatticeScale 2` puts 90 hearts inside a
+~300u ball). Placement stays a random draw, so two founders can land close and their
 colonies meet early — that is the interface behaviour of §36.7, not a defect. The band is
 asserted in `verify()`.
 
 ### 36.7 What the cell is actually a showcase OF
 
-Eight independent colonies, one seed each, is the first content that exercises
+Twelve independent colonies, one seed each, is the first content that exercises
 `AssembledFlora`'s **foreign-lattice interface** as a *late* event rather than an immediate one. A colony declines any site within
 `MisalignmentRadius` (5.5u × its own `LatticeScale`) of standing mass belonging to a frame it
 cannot mate with, so colonies **stop at a clean interface instead of interpenetrating** (§34.8) —
-and each of the eight carries a different lattice, three of them a different scale. The
+and each of the twelve carries a different lattice, four of them a different scale — and one of
+them, the quasicrystal, has no repeat unit at all, so its interface with a periodic neighbour is
+never the same twice. The
 equilibrium the cell settles into is therefore emergent from that gate plus grazing, and the
-21,600-prism figure is a **ceiling, not a prediction**: a colony that grows into a neighbour stops
-there. With eight seeds spread across a mid-shell that happens late, once the superstructures are
+42,840-prism figure is a **ceiling, not a prediction**: a colony that grows into a neighbour stops
+there. With twelve seeds spread across a mid-shell that happens late, once the superstructures are
 already large — which is the difference between an interface you can see and a forest that never
 formed one. Nothing culls them, nothing ages out, and the interfaces are where two crystals of
 different elements meet.
 
 ### 36.8 Collider budget — stated plainly, and it is the largest of any cell
 
-At cap: **~23,760 prism colliders + 720 always-on heart-crystal colliders**. That is several
-times the "~3–4k active `BoxCollider`s per full cell" the MASTERPLAN §4 records as current
-reality, and roughly 6× the plant count of any shipped biome (825 plants across *all* cells
-today). It is deliberate and it is the cell's cost:
+At cap: **~63,360 prism colliders + 1,080 always-on heart-crystal colliders**. That is an order of
+magnitude above the "~3–4k active `BoxCollider`s per full cell" the MASTERPLAN §4 records as
+current reality, and it is the same order as the heaviest **authored** environment in the game
+(Atlantis, ~69k prisms) — reached by growth rather than by a lay. It is deliberate and it is the cell's cost:
 
 - Prism colliders are **phase-LOD** material — the cell reaches Restless early and holds there,
   so the Frozen-tier LOD does not help here. They are live.
 - Heart crystals are **not** phase-LOD culled (§21.6), so `MaxLivePopulation` IS the crystal
   count. **90 is THE dial** if the cell reads as too heavy — halving it to 45 halves both lines
-  and lands the cell at ~10,800 prisms, below the requested target.
+  and lands the cell at ~31,700 prisms, in the band the seven authored freestyle worlds occupy
+  (34–41k). The dial is deliberately ONE number for all twelve colonies: `CAP` is expressed in
+  *plants*, i.e. in territory units, and a plant of each species owns one unit of its own
+  lattice. Equalising prism counts instead would shrink the quasicrystal's superstructure below
+  its neighbours', which is the thing the cell exists to compare.
 - Fauna are held deliberately light (one grazer species, floor 4 / cap 8, no predators) so the
   collider line is dominated by the thing the cell exists to show.
 
 **This cell IS the boot world as of §36.10** — it replaced Blob at `CellConfigs[0]`. That is
-affordable only because the cost accrues rather than lands: the cell opens with **eight plants**
+affordable only because the cost accrues rather than lands: the cell opens with **twelve plants**
 and no environment build at all, so entering Menu_Main is as cheap as it was, and the collider
 line above is reached only after ~7 minutes of continuous growth. A player who launches an arcade
 game before then never pays it, and every return to the menu starts the garden over.
@@ -5722,8 +5741,8 @@ game before then never pays it, and every return to the menu starts the garden o
 A lattice colony births exactly ONE daughter per fauna-wave period (§32.7) — **regardless of how
 many plants it already has** — so `SpawnProfileSO.BaseFaunaSpawnTime` is what decides how long a
 superstructure takes to build itself: `(cap − 1) × period` per colony, in parallel across the
-eight. Growth is *linear* in the cap, which is why one founder needs a quicker heartbeat than a
-seeded forest did: the authored **5 s** gives ~7 minutes from eight seeds to 720 plants. Lowering
+twelve. Growth is *linear* in the cap, which is why one founder needs a quicker heartbeat than a
+seeded forest did: the authored **5 s** gives ~7 minutes from twelve seeds to 1,080 plants. Lowering
 it quickens the fauna waves too — they share the clock by design, because the wave clock *is* the
 ecosystem heartbeat.
 
@@ -5747,7 +5766,7 @@ test served both only because Blob happened to satisfy both:
 | `WanderwayRun` | a world that is **EMPTY** (you wander through open space, not through a world you are leaving) |
 
 Lattice is the first config where those diverge: it authors no environment, so it boots instantly
-and is the correct boot world — and it then grows 21,600 prisms out of eight seeds, which is the
+and is the correct boot world — and it then grows 42,840 prisms out of twelve seeds, which is the
 opposite of empty. Left alone, starting a wander would have reset the cell into a garden that grew
 underneath the belt's own 30,000 transported prisms.
 
@@ -5774,8 +5793,381 @@ question; it is the reason nobody notices until the second config arrives.
 ### 36.11 Invariants
 
 Touched: volume-is-the-spine (the ladder is authored in volume against a measured forest, count
-is the backstop only), the collider budget (§36.7), flora populations (§32). Violated: **none** —
+is the backstop only), the collider budget (§36.8), flora populations (§32). Violated: **none** —
 nothing decays, no lifespan or cull exists anywhere in the cell, every plant seeds at level 1 and
-earns levels by reproducing (§33), the two Charge colonies keep their shielded leaves and stay out
+earns levels by reproducing (§33), the three Charge colonies keep their shielded leaves and stay out
 of the food web's diet and targeting grids (§35), and the population is bounded by the cap, the
 volume ladder and grazing — never by a clock.
+---
+
+## 37. The quasicrystal flora is APERIODIC ORDER — and its bookkeeping is a periodic lattice upstairs (Aug 2026)
+
+The third lattice species grows the **icosahedral quasicrystal**: the vertex-and-edge graph of
+the Ammann–Kramer–Neri tiling, the three-dimensional analogue of the Penrose tiling. Perfect
+long-range order with the "forbidden" five-fold symmetry — the structure Shechtman was
+ridiculed for and then handed a Nobel prize — and it **never repeats**: no patch of the colony,
+however large, recurs exactly anywhere else. If the gyroid and Schwarz P are the sine wave and
+the cubic lattice of this family, this species is the Penrose tiling. Files:
+`QuasicrystalLatticeData` / `QuasicrystalAssembler` / `QuasicrystalHeartRegistry` /
+`QuasicrystalColonyFrontier` (`_Scripts/Controller/Assemblers/`), integrated through
+`AssembledFlora`'s third colony gate (`StarColonyMode`).
+
+### 37.1 Cut-and-project: the aperiodic pattern is the shadow of a periodic one
+
+A vertex of the tiling is a point **n ∈ Z⁶** whose image under the internal ("perp")
+projection lands inside a **rhombic triacontahedron** window; its physical position is the same
+six integers through the physical projection. The two projections are the two 3-dimensional
+irreducible representations of the icosahedral group — the six Z⁶ basis vectors project
+physically to the six vertex axes of the icosahedron — and rows of `[Par; Perp]/√2` are an
+orthonormal 6D basis (measured residual 3e-16). An **edge** joins `n` and `n ± e_i` whenever
+both endpoints are accepted, so every strut has **exactly the same length** (a theorem of the
+projection, asserted by measurement) and one of six orientations.
+
+The doctrine consequence is the whole point: **"sameness is an integer address" (§34) holds
+even though the pattern never repeats.** A prism's address is six integers plus an axis;
+occupancy, territory and reproduction are dictionary hits. And unlike Schwarz P there is no
+mirror tile transform anywhere — one global frame per colony, and **bond deltas honestly ADD**,
+because upstairs in Z⁶ the lattice is Euclidean. The §34.2 mirror-composition trap and the
+§34.8 absolute-tolerance family are both structurally impossible here: the species has no
+subdivision levels (`ApplyLatticeScale` multiplies the single `edgeLength` dial), no snap
+tolerance, no dedupe radius, no coherence band.
+
+Measured census (60k-vertex patch): mean vertex degree 5.985 (≈ 3 edges per vertex — every
+patch measured lands within a fraction of a percent of 6), degree histogram spanning 4..12
+with 12-coordinated icosahedral stars at ~5%, acceptance margins ≥ 4.03e-5 against
+double rounding < 1e-12 at colony addresses — seven orders of headroom, which is why the
+strict `> 0` window test in `QuasicrystalLatticeData.AcceptMargin` (doubles end to end) is
+deterministic. The generic window offset GAMMA exists so no lattice point ever lands ON the
+boundary (a singular cut) and so the ORIGIN is a heart — a founder always seeds at the zero
+address. Also measured for the record: **τ is NOT an integer map on the primitive icosahedral
+module (its lift lands on half-integers) but τ³ is** (`lift of e₀ = [2,1,1,1,1,1]`) — the
+textbook P-type inflation crystallography, reproduced from scratch as this script's negative
+control.
+
+### 37.2 Hearts — a plant is a twelve-strut star, and bare 12-coordination was a bug
+
+One plant = one **heart**'s territory, its crystal at the heart vertex in the centre of a
+perfect twelve-strut icosahedral star. A heart is a vertex that (a) is **12-coordinated** (all
+twelve neighbours accepted — a closed-form test, 13 window evaluations) and (b) is a **local
+maximum of window margin among its 12-coordinated neighbours**, lexicographic address
+tie-break.
+
+(b) exists because (a) alone shipped a measured defect in the first prototype: the
+12-coordination region of the window is wider than one lattice step, so **adjacent hearts
+exist** under the bare rule — crystal pairs one edge apart and two-vertex runt plants (measured
+min nearest-heart distance 1.0). The local-max rule removes them exactly, and the measured
+consequence is startling: **every heart's nearest heart lands at EXACTLY 2.3840 edges** — the
+hearts self-organize into constant spacing, min = mean = max over every interior heart of the
+patch. Heart density 5.28% ≈ one plant per 19 vertices. Both facts are kept as negative
+controls in the tooling: bare deg-12 must keep admitting adjacent hearts, or the rule has gone
+dead weight.
+
+### 37.3 Territory is a TREE, because Euclidean Voronoi left holes — the defect is the useful half
+
+The first territory rule was nearest-heart-by-physical-distance, and the growth simulation
+found **47 unlaid interior edges in 98,288** — a Euclidean Voronoi cell can be
+**graph-disconnected** (rare pockets nearer to a heart they don't touch), and a plant's growth
+walk never reaches its own pocket, leaving a permanent crack in the scaffold no reseed can
+heal. The shipped rule replaces distance with pure combinatorics:
+
+- `dist(v)` = graph distance to the nearest heart (BFS over accepted vertices; measured max 3,
+  shipped bound 5);
+- `parent(v)` = the **lexicographically least** neighbour with `dist` one smaller;
+- `owner(v)` = `owner(parent(v))`, terminating at a heart.
+
+`parent()` is a pure function of the vertex alone, so ownership chains are suffix-closed and
+every territory is a **tree rooted at its heart — connected by construction**. No distance
+compare, no epsilon, no tie to break, and the re-run simulation measures **ZERO holes** over
+1,461 complete plants / 86,382 struts. An edge is laid by the plant owning its canonical
+minus-end vertex, so every edge has exactly one designated layer; `IsFullyBonded` and the grow
+probe test the same one-line predicate (`QuasicrystalAssembler.IsMineToLay`). Tree cells vary
+legitimately (13..29 vertices, 44..97 struts, mean 58.8), which is why the completion test is
+the gyroid's honest shape (count floor `MinPatchPrisms` 38 + frontier exhaustion + maturation)
+rather than the tile colony's exact site count, and why the per-plant budget (110) sits ABOVE
+the measured max 97 — the ownership tree, not the budget, is the real bound, and a
+budget-truncated cell would be a permanent hole. The Euclidean-Voronoi control is re-run by
+the verifier and must keep leaving holes; the day it stops, the tree rule has lost its reason.
+
+### 37.4 Struts, the heart seat, and the per-element fits
+
+A prism is one edge: local **+x along the edge axis** (`LookRotation(forward: StrutNormal,
+up: StrutTangent)` with `cross(tangent, normal) = axis` — baked VECTORS, never a rotation,
+§34.1), spanning the edge minus a tip inset at each end. Struts meet at 63.43°/116.57° (the
+icosahedral axis angles), so flushness is an exact OBB/SAT question —
+`Tools/Build/fit_quasicrystal_strut_sizes.py` fits each element's length by binary search over
+the patch's **relative configuration classes** (the lattice is locally finite: 3,218 distinct
+strut-pair classes stand in for hundreds of thousands of pairs, making the SAT sweep exact AND
+fast).
+
+**The heart seat is a two-class span.** A strut with a heart at one end holds back by
+`QuasicrystalAssembler.heartSeatInset` (2.6u, ABSOLUTE — crystals do not scale with the
+lattice, §34.8; on the shipped 24u edge the plain inset is only 0.9u, so the seat is what
+actually opens the alcove) so the crystal sits clear inside its twelve-ray alcove; the level-5 heart
+(world scale 4.25 on the one platform curve, §33) needs ~2.55u and the measured min clear
+radius at every heart is 2.60u. Heartness of an endpoint is a closed-form window test — a
+property of the LATTICE, not of claims — so every plant computes the same span for the same
+edge whether or not the heart's plant exists yet, and hearts are never adjacent (§37.2) so at
+most one end of any strut ever holds back. The per-prism length lands via
+`QuasicrystalAssembler.RestampStrut` (through `AdmitTargetScale`, §34.9) before `Initialize`
+on every grown and seeded prism; only a founder's re-stamp rides its first growth probe,
+mid-bloom, where the ordinary grow clock carries it.
+
+Fitted leaves (cross-section is the authored identity, length fitted flush, rounded down):
+
+| element | leaf | lattice | vol/strut | ~/plant (×59) | note |
+|---|---|---|---|---|---|
+| Time | 22 × 1 × 1 | ×1 | 22.0 | 1,298 | the reference strut; grazes 0.099u (§37.10) |
+| Mass | 15 × 3 × 3 | ×1 | 135.0 | 7,965 | the heavy element: thick, and short by consequence |
+| Space | 44 × 0.7 × 0.7 | ×2 (`LatticeScale`) | 21.6 | 1,272 | the airy giant lattice — Space's identity across all three lattice species |
+| Charge | 7 × 1 × 1 | ×1 | 7.0 | 413 | short so the 3× shield has room — octahedra clear by 14% |
+
+Charge is armoured by law (`Flora.ResolveShieldPeriod`, §35.1) and its shield octahedron
+reaches 3× the box half-extents — which is exactly why its authored strut is SHORT: at
+7 × 1 × 1 the octahedra clear each other by 14% (touch scale 1.1429) while a strut spanning
+the edge would fuse them. Charge therefore reads as a sparse dashed skeleton whose armour
+fills the lattice back in, exactly the §35 trade, but bought with LENGTH rather than the
+uniform shrink §35 used. **`fit_shield_clearance.py` does NOT know this species —
+`fit_quasicrystal_strut_sizes.py` owns the Charge leaf**, stated in both scripts, because two
+fitters must never own one asset field (§35.3).
+
+### 37.5 Reproduction rides the measured heart-link census
+
+Same population model as the octagon (§32.7) and tile (§34.6) colonies: a plant that completes
+contributes its unclaimed **shell hearts** to `QuasicrystalColonyFrontier` — the candidates are
+the measured **FrontierDeltas** census (50 distinct integer deltas, two shells at 2.3840 and
+2.7528 edges, closed under negation, heart graph over them measured connected with 0 interior
+unreached) — each candidate re-proven a heart at its own address by the closed-form test, so
+the census says where shell hearts CAN be, never that one is. One birth per fauna-wave period,
+uniformly random pop, `TryBeginCycle` skip-not-burst clock, all-or-nothing claim/reserve/spawn
+staging, claim book keyed by (frame, heart) in `QuasicrystalHeartRegistry`, both books keyed by
+(Cell, species) and cleared at all three `Cell` teardown sites — the §2.6 static-bookkeeping
+trap, paid for once by the gyroid, not paid again. The daughter's seed edge is `(heart, axis 0)`,
+whose canonical owner is the heart itself — always hers, always exists (a heart is
+12-coordinated) — and her pose is DERIVED from the shared frame's arithmetic at birth
+(`QuasicrystalAssembler.BuildSeed`); there is no transcribed pose to be wrong (§32.7's
+five-playtest failure class).
+
+### 37.6 Invariant review + budgets
+
+- **Mass conserved / no imposed death:** nothing new; weak occupancy (an edge frees when its
+  strut is eaten) so wounds regrow via `ReseedBranches`; zero-survivor reseed mints are BLOCKED
+  (`StarColonyMode` branch — a fresh root would anchor a second incommensurable lattice).
+- **Continuity of existence:** standard grow/wither paths throughout; the heart-adjacent
+  re-stamp rides the grow clock.
+- **One crystal per lifeform:** one heart per plant at the heart vertex
+  (`PlaceCrystalAtHeart`), `crystalGrowth` gated off for the colony (the seat is sized for the
+  §33 level curve, not an unbounded grow).
+- **Endogenous selection / level:** `PrismSizeFixedByGrowthRule` = true (AssembledFlora-wide);
+  levels earned, leaf never scales, heart grows within its measured seat.
+- **No domain asymmetry / territorial permanence:** unchanged — ordinary flora spawn rules.
+- **Collider budget:** the shared-profile cap (the asset still named `Blob …`, §36.10) is
+  **14 plants → 14 always-on heart colliders** (under Schwarz P's
+  22, because a star plant carries ~59 struts to a tile's 36) and ~830 prism colliders at cap,
+  phase-LOD-managed like all flora. Zero new query shapes — the assembler uses the same
+  `TryReserve` every flora makes. The species' **second home is the Lattice cell** (§37.11),
+  where its own budget is four colonies × 90 plants = **360 heart colliders and ~39,600 prisms**
+  — a different cell's dial, stated there.
+- **Volume ladder (§4.6, re-computed at every leaf change — §37.9's doubling, §37.10's
+  authored leaves):** mixed-element average ≈ 46.4 vol/strut × 59 × 14 plants ≈ **38.3k**.
+  The `Blob Cell Spawn Profile` this config sits in is no longer Blob's — §36.10 retired that
+  cell and the profile is now the population of all seven authored freestyle worlds — so the
+  number to hold it against is the **tightest** of them, Orrery's `FrenzyEnterVolume` 253,386:
+  **15.1%**, and 3.0% of the widest (Caldera, 1,268,353). Mass's 3×3 cross-section carries most
+  of it at 135/strut. Every one of the seven absorbs the species without re-authoring its
+  ladder. Level spread multiplier is ×1 (lattice species, §34.9). *(A profile named for a cell
+  that no longer exists is §36.10's stated debt; the lesson here is that a ladder claim must be
+  re-read against every cell that actually loads the profile, not the one it is named after.)*
+- **Population numbers** are authored by `author_flora_populations.py` (cap = 800/59 → 14,
+  floor 4 founders, budget 110), never by hand; `--check` gates them.
+
+### 37.7 Tooling
+
+| script | what it proves |
+|---|---|
+| `Tools/Build/measure_icosahedral_quasilattice.py` | derives the projection from first principles, measures the census (density, spacing, deltas, depth bound, margins, plant sizes), SIMULATES the exact colony algorithm to zero holes, and emits the C# table (`--check`/`--write`) |
+| `Tools/Build/verify_icosahedral_quasilattice_tables.py` | READ-ONLY: parses the SHIPPED `QuasicrystalLatticeData.cs` and re-proves every constant against an independent derivation — including the three negative controls (bare deg-12 admits adjacent hearts; Euclidean-Voronoi territory leaves holes; τ alone is not integral) — because the transcription from a proven measurement to the asset is the step neither the measurement nor review can see (§34.4) |
+| `Tools/Build/fit_quasicrystal_strut_sizes.py` | fits each element's strut by SAT over configuration classes, measures every heart's crystal seat, owns the Charge shield shrink (`--check`/`--write`) |
+| `Tools/Build/author_flora_populations.py` | the population conversion — extended with the (59, 110) patch entry and the five source budgets |
+
+### 37.8 Verification (the human is the gate)
+
+1. `python3 Tools/Build/measure_icosahedral_quasilattice.py --check` — the shipped table
+   matches a fresh measurement to the character.
+2. `python3 Tools/Build/verify_icosahedral_quasilattice_tables.py` — all checks pass,
+   including the three negative controls.
+3. `python3 Tools/Build/fit_quasicrystal_strut_sizes.py --check`,
+   `python3 Tools/Build/author_flora_populations.py --check` and
+   `python3 Tools/Build/author_lattice_cell.py --check` — shipped assets match the fits, the
+   population model and the Lattice cell's ladder.
+4. **Menu_Main (the Lattice cell, `CellConfigs[0]`, §37.11):** four quasicrystal founders are
+   planted alongside the eight periodic ones and grow their own superstructures. Watch one:
+   the first strut appears, the scaffold spreads outward as connected struts (never floating
+   disconnected dashes — except Charge, whose sparse skeleton is the §37.4 fit), and the
+   crystal sits in a clear twelve-ray alcove at the heart. Fly down a colony sight-line: at
+   certain angles the struts align into five-fold whorls and long Ammann-plane corridors — the
+   aperiodic tell — and no two neighbourhoods repeat. Then fly the boundary between a
+   quasicrystal colony and a gyroid or Schwarz P one: the two must **stop at a clean interface**
+   rather than interpenetrate (§36.7). The Cell Selector also reaches the species through any
+   world that lists it.
+5. **Lifeform Matrix toy:** the `Quasicrystal` entry appears with all four elements; the
+   preview icon reads as a patch of aperiodic scaffold spreading from a star (the preview walks
+   the real window test).
+6. **Reproduction:** after a plant completes (~59 struts + maturation), one daughter per
+   fauna-wave period at a random shell heart 2.38 edges away; the colony wanders rather than
+   inflating as a ball. The `[QuasicrystalColony]` founder/completion/birth telemetry is
+   opt-in per the logging law — flip `CSLogChannel.QuasicrystalColony` on in
+   FrogletTools ▸ Toolbox ▸ Logging; blocked-reseed-mint warnings always emit.
+7. **The food web:** graze a strut (any vessel ability) — the edge frees and the plant regrows
+   it; strip a whole plant — it withers to its crystal on the standard path, and the freed
+   heart is re-plantable by the colony.
+8. After the flora config edits: `FrogletTools ▸ Validation ▸ Validate Lifeform Crystals`.
+
+### 37.9 A prism is a LEAF of the hierarchy — and the lattice doubles (Aug 2026, second pass)
+
+First playtest. Two changes and one defect, in the order they mattered.
+
+**The defect: skewed, non-cuboid slivers after a few plants.** A colony grew several correct
+plants and then began producing prisms stretched along an axis that was not one of their own,
+their faces no longer orthogonal — visibly not cuboids. The cause is a single line, and it is
+not quasicrystal-specific:
+
+> `AssembledFlora.ExecuteGrowOrder` instantiates the next generation's spindle as a **child of
+> `Branch.gameObject`**. Both grow paths set that field to the new SPINDLE. `ReseedBranches` —
+> the third creation site — left it as the `Branch(HealthPrism)` constructor's default, the
+> **PRISM**. A prism carries the species' authored leaf as its `localScale`, so this parents a
+> spindle under a **non-uniform scale**; Unity composes world matrices as `parent × T·R·S`, and
+> a non-uniform scale above a *rotated* child is a **SHEAR**. Every descendant inherits it and
+> the skew compounds down the chain.
+
+Everything about the symptom follows from that: the stretch is along the *ancestor's* long
+axis (not the child's), the faces stop being orthogonal, and it only starts **after a while** —
+a reseed happens only once a plant's branches are exhausted or grazed away, which is late in a
+colony's life. It hit every lattice species; it was merely most visible on the one with the
+most extreme aspect ratio (a 22.19 × 0.8 strut is 27:1, against a gyroid plate's 6:1). The fix
+is in the `Branch` constructor, which now resolves the prism's spindle, so all three creation
+sites agree. It also repairs a second, quieter defect from the same root: `RemoveSpindle`
+matches branches by spindle GameObject, so a reseeded branch could never be removed when the
+spindle it grew from died.
+
+**The general rule, platform-wide: a prism is a LEAF of the transform hierarchy.** Nothing may
+be parented under one. The authored leaf lives in `localScale` and is almost never uniform, so
+any child of a prism whose own rotation differs is sheared — silently, with no error, and only
+visible as geometry some generations later. Where a hierarchy must continue past a prism, it
+continues from the prism's **spindle**, which is deliberately kept at uniform scale
+(`ScaleSpindleToLattice` scales the spindle's *children*, never its root — §34.8's compounding
+rule is the same lesson from the other side).
+
+**The lattice doubles: `edgeLength` 12 → 24.** The gaps at a 12u edge were too tight to fly
+through, which is the point of an open scaffold. Doubling the edge doubles the strut length and
+leaves the cross-sections alone (spacing and prism size are independent dials, §34.10), so every
+fitted length grew by **exactly +12u** — the tip clearance that binds the fit is set by the
+cross-section and is therefore constant in absolute units, so the whole of the new edge goes
+into strut. Prism *count* is untouched (the tiling has no subdivision level; scaling the edge
+cannot change topology), so mass rises only with the struts' length: **6.9% of the host cell's
+Frenzy ladder, from 3%** (measured against Blob's, which §36.10 has since retired — §37.6 carries
+the current figure against the seven worlds that now load the profile). The heart seat is unchanged at 2.6u because crystals do not scale with the
+lattice — at the wider edge the plain inset falls to 0.9u, so the seat now does *all* the work
+of opening the crystal's alcove, exactly as intended.
+
+**The spindle becomes a mirrored PAIR (§34.12's shape, this species' axis).** The species
+shipped on the shared single `AssemblyBranch`, whose one asymmetric mesh is posed with its
+middle on the prism — the exact defect §34.12 fixed for the gyroid: it skewers the prism and
+shows different geometry on each side. `QuasicrystalBranch.prefab` is a flat copy of
+`GyroidBranch.prefab` (a second prefab, never an edit in place — `AssemblyBranch` is still
+shared by Wall and Schwarz P, and a decision for one species must not move another's approved
+proportions), re-posed on two axes of difference:
+
+- **Split along local +X, the STRUT axis** (rotations ±90° about Y, offsets ±X), not the
+  gyroid's local Y. A quasicrystal prism spans its whole edge and meets its neighbours at the
+  *vertices*, so the branch's job here is the joint at each node.
+- **Scaled so each half reaches the node.** The pair construction is scaled uniformly by
+  `k = (edge/2) / gyroidHalfReach = 12 / 5.2183 = 2.2996`, giving z-scale `3.1k = 7.1288` and
+  offset `1.7133k = 3.9399`. Derived from §34.12's measured mesh span (tip −7.01, flare +8.61 at
+  z-scale 6.2), the halves land at exactly `[−12, +12]` — **one full edge, symmetric about the
+  prism**, tip on each node, flares overlapping through the prism so the joint reads continuous.
+  Lateral scale stays 1, the convention both existing branch prefabs keep.
+
+Because that pair is *derived from the lattice*, `SpindleLatticeScale` now covers the star
+colony as well as the gyroid: an element that widens its lattice (Space, ×2) must carry the
+branch with it or the halves fall short of the nodes they exist to join. Schwarz P still
+deliberately does not scale its spindles (§34.8). Both halves are listed in
+`Spindle.additionalRenderedObjects`, without which the second half would POP rather than fade —
+§34.12's continuity requirement, inherited with the copy.
+
+**Budgets.** Colliders unchanged (a spindle is not a `Prism`; prism and crystal counts are
+identical). Triangles double per spindle, as they did for the gyroid — the same trade §34.12
+accepted, and `MaxLivePopulation` is the same lever if it ever bites.
+
+**Verification (the human is the gate).** All of §37.8, plus: (1) fly a mature colony and
+confirm **no** skewed or non-cuboid prisms appear as it ages past its first reseeds — that is
+the defect above, and a plant only reseeds late; (2) confirm the gaps now read as flyable;
+(3) look at a node where several struts meet and confirm the branch halves meet AT the prism
+with no skewering and no pop as a branch grows in; (4) check Space (×2 lattice) has branches
+that still reach its nodes.
+
+### 37.10 The leaves are AUTHORED, and a measured graze is stated, not discovered (Aug 2026, third pass)
+
+Second playtest. The spacings read well; the prisms did not, and the four leaves were
+authored outright by eye:
+
+| element | leaf | why |
+|---|---|---|
+| Time | 22 × 1 × 1 | the reference strut, near-spanning its edge |
+| Mass | 15 × 3 × 3 | the heavy element — thick, and short by consequence |
+| Space | 44 × 0.7 × 0.7 | reach: the ×2 lattice's 48u edge, spanned slenderly |
+| Charge | 7 × 1 × 1 | short, so the 3× shield octahedron has room |
+
+**The fitter became a verifier.** It previously binary-searched each length; a script that
+re-derives what a human authored is an edit in the direction nobody is looking (§34.10's
+rule about deriving one value from another once a human tunes them separately). It now
+*proves* the authored leaves — zero overlapping struts, a clear crystal seat, and for Charge
+the shield-octahedron census — and reports the flush maximum for each cross-section alongside
+as **headroom**, so the next retune can see how much room it has (Time uses 101% of its
+21.73u flush maximum, Mass 87%, Space 95%, Charge 32%).
+
+**Time grazes, and that is recorded rather than corrected.** At 22 × 1 × 1 it runs 0.27u past
+the flush maximum for a 1×1 cross-section, so **12 of 3,218 pair classes touch, to a maximum
+depth of 0.099u** — 0.41% of the 24u edge, 10% of the strut's own width, at a scale a pilot
+passes at speed. The precedent is §34.5, which shipped the gyroid's Charge/Time plates with
+33% of prisms grazing to 0.19u. What is new here is that the tolerance is now **explicit**:
+`GRAZE_TOLERANCE_EDGE_FRACTION` (0.5% of the edge — 0.12u here) passes a hairline *with its
+depth printed every run*, and fails anything a player could read as interpenetration. An
+accepted graze should be a stated number, never something a later reader discovers.
+**Shielded elements are held to zero** — fused octahedra are §35's entire subject, and
+Charge's clear by 14%.
+
+Two consequences worth carrying: Charge now buys its shield clearance with **length** (a 7u
+strut on a 24u edge) rather than §35's uniform shrink, so its cross-section is back above
+`HealthBlock.prefab`'s `minScale` 0.5 and no longer leans on `AdmitTargetScale` (§34.9); and
+Mass at 135 vol/strut is now the species' mass budget almost by itself — see the ladder line
+in §37.6, which is re-computed on every leaf change for exactly this reason.
+
+### 37.11 The species joins the Lattice cell — twelve colonies (Aug 2026, fourth pass)
+
+The freestyle `Lattice` cell (§36) was authored as eight colonies, gyroid ×4 and Schwarz P ×4.
+It now carries **twelve**: one quasicrystal colony per element alongside them, so the cell shows
+all three lattice species — periodic minimal surface, periodic minimal surface, and the
+aperiodic one — growing into one another from one seed each.
+
+Nothing about the species is forked to get there. `author_lattice_cell.py` gained four rows in
+its `SPECIES` table and reads the element **identity** (leaf, `LatticeScale`, shield cadence,
+per-plant budget) back off the shipped `_SO_Assets/Lifeforms/Quasicrystal Flora {Element}.asset`
+at emit time, exactly as it already did for the other two; only the **population** (founder,
+floor 1, cap 90, planting band) is the cell's. The patch/budget pair (59 / 110) is the same one
+`author_flora_populations.py` uses — one plant, one size, in both scripts.
+
+**What the addition costs, and the one new assert it forced.** The cell goes from 23,760 to
+**63,360 prisms** and 720 to **1,080 heart-crystal colliders** at cap, and its volume ceiling
+from 697,827 to **2,534,871** — because a quasicrystal plant owns ~2.5× a gyroid octagon's
+struts and Mass carries 135 volume per strut. Quasicrystal Mass alone is now **53% of the cell's
+volume from 16% of its prisms**, and the per-prism spread across the cell is **159×** (SchwarzP
+Charge 0.85 → quasicrystal Mass 135). A ladder derived from one aggregate can describe the
+heaviest species rather than the forest, so `verify()` now asserts directly that **no single
+colony's own volume ceiling reaches `FrenzyEnterVolume`** — otherwise the cell could freeze while
+eleven colonies are still building. It passes with the heaviest colony at 41% of Frenzy.
+
+`CAP` stays ONE number for all twelve, deliberately. It is expressed in **plants** — territory
+units of each species' own lattice — so every colony grows to the same number of *territories*
+even though the quasicrystal's are larger. Equalising prism counts instead would shrink the
+quasicrystal superstructure below its neighbours', which is precisely the comparison the cell
+exists to make.

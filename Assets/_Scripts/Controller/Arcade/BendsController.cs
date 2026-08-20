@@ -41,11 +41,14 @@ namespace CosmicShore.Gameplay
     /// status: the debuff is <c>VesselElementalDebuffByExplosionEffectSO</c>, unchanged, and this
     /// mode's only addition is a sibling effect in the same container that REPORTS the hit.</para>
     ///
-    /// <para><b>3. Elemental immunity is a real counter-play, for free.</b> A pilot who is
-    /// elementally immune (<c>ResourceSystem.IsElementallyImmune</c>) eats the cone and keeps
-    /// their levels - and because the scoring effect is authored
-    /// <c>requireDebuffableVictim</c>, it scores the attacker nothing either. The score and the
-    /// effect cannot disagree, which is the whole reason that flag exists.</para>
+    /// <para><b>3. Elemental immunity is a real counter-play, for free.</b> A pilot warded against
+    /// <c>ElementalDebuffSources.Explosion</c> eats the cone and keeps their levels - and because
+    /// the scoring effect is authored <c>requireDebuffableVictim</c>, it scores the attacker
+    /// nothing either. The score and the effect cannot disagree, which is the whole reason that
+    /// flag exists. Note the ward is asked about THIS blast's own debuff class: the Dolphin's own
+    /// Time-5 Drift Ward covers <c>DangerPrism</c> alone, so drifting does NOT make a pilot
+    /// unscoreable here - which it did, for the whole trailing side of the race, until the
+    /// immunity state learned about source classes (BENDS.md, "The Dolphin's own Time 5").</para>
     ///
     /// <para><b>4. The AI keeps the platform's crystal seeking</b> and installs NO
     /// <see cref="AIPilot.SetExternalTargetProvider"/> hook - that override replaces crystal
