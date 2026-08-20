@@ -23,6 +23,51 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Dolphin minimum speed → 0 (`claude/dolphin-minimum-speed-59q8ay`, 2026-08-20)
+
+Authored without a Unity compile or play-test. **One authored scalar changed in an existing
+serialized asset** — no new keys, no new components, no hand-built YAML structure — so import
+risk is minimal, but the feel is unflown.
+
+**What landed.** `Dolphin.prefab` → `VesselTransformer.DefaultMinimumSpeed: 10 → 0`.
+(The serialized `MinimumSpeed` was already 0; `VesselTransformer` overwrites it from
+`DefaultMinimumSpeed` on every spawn, so the Default is the only authority.) Nothing else moved —
+no other vessel carries this asset, and no scene overrides the field.
+
+**The knock-on is the whole speed ladder**, because the floor is added AFTER the throttle multiply
+(`ComputeThrottleTarget`), so it padded both ends:
+
+| quantity | before | after |
+|---|---|---|
+| max cruise (`68 × 1 + floor`) | 78 | **68** |
+| max boost (`68 × 2.259² + floor`) | 357 | **347** |
+| throttle released | crawls at 10 u/s | **full stop** |
+
+**Verify in editor** (Menu_Main, freestyle, Dolphin)
+
+1. **Release the throttle** — the vessel comes to a genuine stop rather than settling on a 10 u/s
+   crawl, and it stops *smoothly* (the speed lerp, not a snap). A dead-stopped Dolphin is the
+   intended new state, so check it is recoverable: throttle back up from zero must feel responsive,
+   not like a stall.
+2. **Full throttle, no boost** — `VesselStatus.Speed` settles at **68** (was 78).
+3. **Release a full boost meter** — peak near **347** (was 357). The 10 u/s difference is inside
+   speed-tunnel noise; if the top end should be held at 357, the lever is
+   `DefaultThrottleScaler` 68 → 70.2, **not** re-adding the floor.
+4. **Drift at zero throttle.** The Dolphin's `driftThrottlePolicy` is `Locked` and its `Grip` is 0,
+   so a drift entered at speed freezes the velocity vector — but a drift entered at *rest* now has
+   no floor pushing it along. Confirm that reads as "parked", not as a stuck/unrecoverable state.
+5. **AI Dolphins** (Rampage, The Bends) still fly — the AI has no floor-specific logic, but an AI
+   that lets the throttle go now actually stops.
+6. **Speed tunnel.** Cruise crosses the law's floor in the *other* direction: 78 was just above
+   `minEffectSpeed` 70 (effect 0.04), 68 is just below it (effect 0.00), so unboosted flight now
+   has literally no tunnel instead of a barely-perceptible one. Boosted is unchanged — 347 and 357
+   both saturate at 1.00. Expect no visible difference; noted because it is a threshold crossing,
+   not because it should read.
+
+**Collider budget:** unchanged — no spawning, geometry, or query change.
+
+---
+
 ### 🔴 Urchin — end-of-ribbon launch, merged spike trigger, Track Projector (`claude/urchin-detach-trigger-abilities-2y7e2s`, 2026-08-18)
 
 Authored without a Unity compile or play-test. The C# was type-checked out of editor with Roslyn
@@ -1960,7 +2005,7 @@ Follow-ups there.
 | Knob | Value | Where it lives |
 |---|---|---|
 | Throttle top | **68** (+ `MinimumSpeed` 10 = 78) | `Dolphin.prefab` → `VesselTransformer.DefaultThrottleScaler` |
-| Speed floor | **10** (unchanged) | `Dolphin.prefab` → `VesselTransformer.DefaultMinimumSpeed` |
+| Speed floor | ~~10~~ → **0** (superseded, see the minimum-speed entry above) | `Dolphin.prefab` → `VesselTransformer.DefaultMinimumSpeed` |
 | Boost peak multiplier | **2.259** (**squared** in use → ×5.103) | `ChargeBoostAction.maxBoostMultiplier` |
 | Charge time to full | **3.636 s** | `ChargeBoostAction.chargeTimeToFull` |
 | Discharge time to empty | **2.5 s** | `ChargeBoostAction.dischargeTimeToEmpty` |
