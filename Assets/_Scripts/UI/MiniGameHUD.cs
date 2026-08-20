@@ -30,6 +30,10 @@ namespace CosmicShore.UI
         [Tooltip("Auto-creates an off-screen objective indicator at runtime when the game mode supports one (HexRace, Joust). Disable to wire your own indicator manually in the scene.")]
         [SerializeField] protected bool autoCreateObjectiveIndicator = true;
         ObjectiveIndicator _autoCreatedIndicator;
+        // Mode the auto-created indicator's provider was resolved for; a client can reach
+        // Start() before the config ClientRpc lands (see RefreshObjectiveProviderForCurrentMode).
+        GameModes _objectiveProviderMode = GameModes.Random;
+        IObjectiveProvider _objectiveProvider;
 
         [Header("View")]
         [SerializeField] protected MiniGameHUDView view;
@@ -227,8 +231,38 @@ namespace CosmicShore.UI
                 ? CreateObjectiveProviderForGameMode(gameData.GameMode)
                 : null;
 
+            _objectiveProvider = provider;
+            _objectiveProviderMode = gameData != null ? gameData.GameMode : GameModes.Random;
+
             Transform canvasRoot = transform.parent != null ? transform.parent : transform;
             _autoCreatedIndicator = ObjectiveIndicator.CreateRuntime(canvasRoot, provider);
+        }
+
+        /// <summary>
+        /// Re-resolves the objective provider if the game mode changed since the indicator was
+        /// built. <see cref="Start"/> can run BEFORE
+        /// <c>MultiplayerMiniGameControllerBase.SyncGameConfigToClients_ClientRpc</c> lands on a
+        /// client, so the first resolve can be made against whatever mode this machine happened to
+        /// be carrying (the previous game's, or the menu's) - which silently gives the arrow
+        /// another mode's provider, e.g. one that points at other PLAYERS in a mode whose
+        /// objective is a crystal. Cheap and idempotent: a no-op whenever the mode already agrees.
+        /// </summary>
+        protected void RefreshObjectiveProviderForCurrentMode()
+        {
+            if (gameData == null || _autoCreatedIndicator == null) return;
+            if (gameData.GameMode == _objectiveProviderMode) return;
+
+            _objectiveProviderMode = gameData.GameMode;
+
+            // Retire the stale provider's GameObject; CreateProviderComponent makes a new child
+            // each call, so without this the old one keeps running its OnEnable subscriptions.
+            var stale = _objectiveProvider as MonoBehaviour;
+
+            var fresh = CreateObjectiveProviderForGameMode(gameData.GameMode);
+            _objectiveProvider = fresh;
+            _autoCreatedIndicator.Configure(fresh);
+
+            if (stale != null) Destroy(stale.gameObject);
         }
 
         /// <summary>
@@ -301,6 +335,10 @@ namespace CosmicShore.UI
                     return CreateProviderComponent<AstroLeagueObjectiveProvider>("ObjectiveProvider_AstroLeague");
                 case GameModes.DogFight:
                     return CreateProviderComponent<DogFightObjectiveProvider>("ObjectiveProvider_DogFight");
+                case GameModes.Rampage:
+                    return CreateProviderComponent<RampageObjectiveProvider>("ObjectiveProvider_Rampage");
+                case GameModes.ScarabScramble:
+                    return CreateProviderComponent<ScarabScrambleObjectiveProvider>("ObjectiveProvider_ScarabScramble");
                 default:
                     return null;
             }
@@ -389,6 +427,10 @@ namespace CosmicShore.UI
 
             try
             {
+                // The config ClientRpc has landed by now, so the game mode is authoritative -
+                // rebuild the objective arrow's provider if Start() resolved it against a stale one.
+                RefreshObjectiveProviderForCurrentMode();
+
                 CleanupUI();
                 HideLocalVesselHUD();
                 UpdateTurnMonitorDisplay(string.Empty);

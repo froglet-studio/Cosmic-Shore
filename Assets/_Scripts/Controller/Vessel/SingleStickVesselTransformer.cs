@@ -71,7 +71,9 @@ namespace CosmicShore.Gameplay
             // saturates every sub-1 modifier to a near-stop.
             float effectiveSpeed = speed * throttleMultiplier;
 
-            if (toggleManualThrottle)
+            // See VesselTransformer.MoveShip: a held drift silences the manual-throttle channel
+            // too, since its value at capture time is already inside the held speed.
+            if (toggleManualThrottle && !IsDriftSpeedHeld)
                 effectiveSpeed = Mathf.Lerp(0, effectiveSpeed, InputStatus.Throttle);
 
             VesselStatus.Speed = effectiveSpeed;

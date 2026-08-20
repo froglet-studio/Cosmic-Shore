@@ -57,8 +57,14 @@ EditorBuildSettings:
     path: Assets/_Scenes/Multiplayer Scenes/MinigameRampage.unity
     guid: 53b3801c6e9149c08fd503711f84b79c
   - enabled: 1
+    path: Assets/_Scenes/Multiplayer Scenes/MinigameBends.unity
+    guid: 4bd7f88fecb7656a95c80e9bd3a26949
+  - enabled: 1
     path: Assets/_Scenes/Multiplayer Scenes/MinigameDogFight.unity
     guid: 9d8301469790f52127be3a371175902b
+  - enabled: 1
+    path: Assets/_Scenes/Multiplayer Scenes/MinigameScarabScramble.unity
+    guid: 0395d0c497342302a6aad5ec90e5c293
   - enabled: 1
     path: Assets/_Scenes/Multiplayer Scenes/MinigameWildlifeLiberation.unity
     guid: 11228dcc85a39689b45c12e88617a976

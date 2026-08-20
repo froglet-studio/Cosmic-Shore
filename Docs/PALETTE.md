@@ -45,6 +45,200 @@ slab is a legibility bug with teeth, not a cosmetic nit. Changing this tier is a
 visual change only — no collider, spawn, or consumption behaviour is involved — so it
 does not touch the ecology invariants or the collider budget.
 
+### 2.1 One composition, two consumers — a prism and its debris (2026-08-13)
+
+**`SO_ColorSet.GetPrismKindColors(colorSet, PrismKind, out rim, out base)` is the single
+definition of what a prism of a given tier is painted with.** Two consumers read it and
+must keep reading it:
+
+| consumer | what it paints |
+|---|---|
+| `ThemeManager.GenerateDomainMaterialSet` → `PaintPrismTier` | the LIVE block materials (opaque + transparent) for all four tiers |
+| `PrismFactory.TryGetTeamColors` / `ConfigureForTeam` | the DEATH visuals — explosion debris and consumption suction |
+
+It exists because the two disagreed. The debris palette was resolved from the dying
+prism's **domain alone, at the plain tier**, so a danger prism — a frosty shielded base
+under the hot domain-independent danger rim — shattered into ordinary domain-coloured
+debris and read as a plain prism dying. Shielded and super-shielded mass had the same
+defect (visible whenever a devastating hit explodes shielded mass rather than shedding
+its shield). The dying prism's tier now travels on the event
+(`PrismEventData.Kind`, stamped in `Prism.Explode` / `Prism.Implode` from
+`PrismKinds.Of` **before** the destruction pass), and both routes — the batched
+pure-entity debris and the pooled fallback — tint from it.
+
+This costs nothing at runtime: debris colour is already a **per-entity** override
+(`PrismBrightColorOverride` / `PrismDarkColorOverride`) inside the one
+prototype-instantiate batch, so a mixed-tier burst is still one batch and one draw.
+The per-domain `SO_MaterialSet.ExplodingBlockMaterial` copies are **not** what debris
+draws with (`PrismDebris` reads mesh + material off the pool prefab and overrides the
+colours per entity) — do not "fix" a debris colour there.
+
+**Do not re-inline a tier's colour pair** at either consumer. A prism and its own debris
+disagreeing is the exact failure this centralisation removes.
+
+Danger additionally detonates **harder** than plain mass — `PrismExplosion.DetonationGain`,
+authored as `dangerDetonationMultiplier` on `PrismExplosion.prefab` (1.6). That is a
+DYNAMICS knob, not a palette one: it scales the debris speed, the shatter rate and the
+clamp band as one quantity (they are one quantity on this contract — see CLAUDE.md ▸ "AOE
+blast impulse"). Set it to 1 for palette-only behaviour.
+
+### 2.2 The CTA lime — the crystal tier, and why bloom is bought with AREA (2026-08-15)
+
+Crystal COLOUR signals **who may collect it**, never which element it is (element is shape):
+domain crystals wear that domain's crystal pair, a living lifeform's heart wears the blue-white
+neutral, and a **free pickup wears the lime CTA** (`EnvironmentColorSet.BrightCTA` / `DarkCTA`).
+`Crystal.ApplyColorSetTint` drives it per-renderer through a `MaterialPropertyBlock`, and
+`Crystal.FindColorPropertyNames` accepts either naming pair, so it reaches all five crystals
+across six different shaders (audited 2026-08-15: `ShepardGraph` — omni **and** Mass —,
+`ChargeCrystal.shader`, `CrystalGraph` — Space —, `InverseDynamicFresnelGraph` — Time, the one
+that actually ships, via `_BrightColor`/`_DullColor`).
+
+**Dull is the body; bright is only the rim.** Every crystal shader composes its colour as
+`Blend(Base = Dull, Blend = Bright, Opacity = fresnel)` in **Overwrite** mode — i.e. a straight
+`lerp(dull, bright, fresnel)` — and the fresnel is `(1 − N·V)⁴` (`FresnelPower4`). At that power
+the rim is **2.5% of the silhouette** and the area-weighted mean fresnel is **0.067**, so
+`DarkCTA` paints ~**93%** of the crystal. `BrightCTA` is a hairline. Tune the body, not the rim.
+(`TimeCrystalGraph`/`DynamicFresnelGraph` swap the two roles — which is exactly why the elemental
+dimming below is a **scalar** rather than a second authored colour pair: a scalar dims correctly
+whichever role each colour plays, and cannot drift the hue out of the lime family.)
+
+**Bloom is CLAMPED, so brightness above the clamp is a dead dial.** The gameplay and Commander
+profiles override URP's Bloom `clamp` to **0.5** (URP's default is 65472), with `threshold 0.2`,
+`knee 0.1`, `intensity 2.5`. URP clamps the bloom SOURCE before thresholding, so the per-pixel
+bloom contribution rises with the max channel only up to 0.5 and is **flat above it**:
+
+| max channel | 0.15 | 0.20 | 0.25 | 0.32 | 0.40 | 0.50 | 0.92 | 1.50 | 4.87 |
+|---|---|---|---|---|---|---|---|---|---|
+| % of bloom ceiling | 2% | 8% | 19% | 40% | 67% | **100%** | 100% | 100% | 100% |
+
+Two consequences, both load-bearing:
+
+1. **§3's "channels above 1.0 bloom" is FALSE in gameplay.** 56 of the 86 colours authored in
+   `OriginalColorSetSO` exceed 0.5 (danger rim 1.498, AOE 4.0, supershielded 1.498) and are all
+   flattened to the same bloom. Raising the clamp is therefore not a crystal change — it re-lights
+   the entire palette — and is deliberately **not** done here. See §7.
+2. **Within the clamp, extra bloom is bought with bright AREA, not intensity.** `DarkCTA` was
+   `(0.18, 0.32, 0.05)` — max 0.32, only 40% of the ceiling over 93% of the crystal. It is now
+   that same colour scaled by **×1.5625**, `(0.28125, 0.5, 0.078125)`, which lands the green
+   channel exactly ON the clamp. Pure scalar ⇒ identical hue (§3), and no channel reaches 1.0, so
+   nothing clips (tonemapping is **None**, `mode: 0` — channels above 1.0 clip hard and shift the
+   lime toward yellow-white, so ≤1.0 is a real constraint here, not a nicety). `BrightCTA` is
+   unchanged at `(0.59, 0.92, 0.16)`: at max 0.92 it was already saturating the clamp, so raising
+   it would have bought exactly nothing.
+
+**The omni is the hero; the four elementals are the same lime, dimmed.**
+`EnvironmentColorSet.ElementalCrystalDimming` (**0.45**) scales the CTA pair for anything
+`CrystalProperties.IsElemental`, leaving the omni at full strength. Note the omni and the Mass
+crystal wear the *same four materials*, so this scalar is the only thing that distinguishes them.
+
+The scalar is far more sensitive than it looks, because the bloom **threshold (0.2) sits inside
+the elemental body's range** — so tune it against the measured curve, not by eye:
+
+| dimming | body max | rim max | body % of ceiling | omni : elemental bloom |
+|---|---|---|---|---|
+| 0.60 | 0.300 | 0.552 | 33% | 2.6 : 1 |
+| 0.55 | 0.275 | 0.506 | 26% | 3.3 : 1 |
+| **0.45** | **0.225** | **0.414** | **13%** | **6.2 : 1** |
+| 0.40 | 0.200 | 0.368 | 8% | 9.3 : 1 |
+| 0.30 | 0.150 | 0.276 | 2% | 32.5 : 1 |
+
+0.45 is chosen so the elementals keep a *live* body glow (body just above the threshold) and a
+still-bright rim at 83% of the ceiling, while the omni reads ~6× brighter. Below ~0.40 the body
+drops under the threshold entirely and the elementals become rim-only outlines — a legitimate
+look, but a different one; decide it deliberately rather than drifting into it.
+
+Note the raise to `DarkCTA` lifts the elementals too (they are scaled *from* the same pair), so
+the two knobs are not independent — re-read this table after changing either.
+
+**The tint was invisible until 2026-08-15.** `FadeIn` owned a private `MaterialPropertyBlock`,
+pushed it wholesale (wiping the tint at the start of the fade) and `Clear()`ed it at the end
+(wiping it permanently) — and every crystal model carries a `FadeIn`, the omni included via the
+nested `TrucatedOctahedron.prefab`. So every crystal in the game settled back to its authored
+material colour and **no crystal ever showed the CTA lime**: the omni read blue-white/green, Space
+blue-white, Time HDR blue, and only Charge was lime (its shader's authored defaults happen to *be*
+the CTA pair). `FadeIn` now composes — `GetPropertyBlock` before every write, and it retires the
+fade by restoring the material's own `_opacity` instead of clearing the block. Both writers are
+now order-independent. **Never push a whole property block onto a renderer another system also
+tints**; read-modify-write it.
+
+### 2.3 A crystal's state CHANGE travels — the heart's blue → lime crossing (2026-08-15)
+
+§2.2 defines what each state is painted with. This is what happens **between** two of them.
+
+The change that matters is the lifeform heart: blue while it lives, the lime CTA once
+`ActivateCrystal` drops it. That crossing is the pickup affordance — it is the moment the §26
+wither reaches the core, or a joust frees the heart — so it **travels** rather than snapping,
+running the same shape as a prism domain change
+(`MaterialPropertyAnimator.ClockColorTransition`, `Docs/PRISM_ANIMATION.md`):
+
+- the **state goes final at the start** — the crystal is collectable the instant it drops;
+  colour is only how it *reads*;
+- the start pair is **stamped once** against `PrismClock`;
+- every pair in between is computed **analytically** from that stamp rather than accumulated, on
+  the same smoothstep the prism lerp uses;
+- `PrismTimerManager` fires **one** settle at the analytically-known end, which is what makes the
+  final colour independent of the driver;
+- an interruption **re-stamps from the analytic current**, so a second state change mid-fade
+  departs from what is actually on screen.
+
+Duration is `Crystal.colorTransitionSeconds` (0.8 s, matching the prism transition; 0 snaps).
+
+**Three rules fall out, and each was a bug first.**
+
+1. **Paint the flip explicitly.** `ActivateCrystal` repaints itself rather than leaving it to
+   `Start` (which only fires because a heart's `Crystal` component is authored **disabled**) or to
+   the material lerp's tail (skipped outright when a model has no target material). Rely on either
+   and a collectable crystal keeps wearing heart blue.
+2. **Read the start pair BEFORE anything disturbs it.** `ActivateCrystal` captures it on its first
+   line: clearing `EmbeddedIn` changes what the state resolves to, and each material lerp drops
+   the block on its way in. Read it later and Charge and Time — whose inactive material *is* the
+   lime one — would start already-lime and travel nowhere. Exactly the ordering constraint
+   `MaterialPropertyAnimator` documents when it reads start colours before binding the end-state
+   material.
+3. **A cleared block no longer describes the screen.** `ClearColorSetTint` forgets the resting
+   pair, or a later cross-fade departs from a colour that has not been displayed since the clear.
+
+`ApplyColorSetTint` is the RE-ASSERT path by contrast (a birth, a domain preview, a material lerp
+settling): it writes the current state's pair immediately, and will not snap a live transition to
+its end.
+
+One deliberate difference from the prism path: a prism hands the interpolation to the GPU because
+thousands animate at once and its graphs carry the clock wiring. The crystal shaders carry none
+(§2.2 audits them), so a crystal's pair is pushed from the CPU — bounded by the crystals
+actually *transitioning*, and cheaper than the cloned-material lerp it runs alongside.
+
+### 2.4 A crystal colour is NOT a domain's UI colour — `GetDomainSignalColor` (2026-08-17)
+
+**`DullCrystalColor` is authored `(0, 0, 0)` on Jade, Ruby AND Gold in the live
+`OriginalColorSetSO`.** Only Blue has a non-black dull. That is deliberate and correct *on a
+crystal*: §2.2 established that at the crystal shaders' fresnel power the dull colour paints ~93% of
+the surface, so a near-black body with a bright fresnel rim is what makes a faceted domain crystal
+read as a dark gem with a lit edge.
+
+It is a trap for anything that is not a crystal shader. The Dolphin's Mass HUD slot announces a
+team-locked seed and sampled `DullCrystalColor` on the entirely reasonable theory that the icon
+should wear the colour the crystal will wear — and rendered a black square. `BrightCrystalColor` is
+no answer either: it tops out at value 0.75 across all four domains.
+
+**The rule.** To say "this belongs to domain X" anywhere that is not a crystal material, use
+`SO_ColorSet.GetDomainSignalColor(domain)` — the domain **UI** colour (`TrailHighlightColor`) with
+its brightest channel driven to 1, hue and saturation intact:
+
+| domain | `GetDomainUIColor` | → `GetDomainSignalColor` |
+|---|---|---|
+| Jade | (0.055, 0.753, 0.714) | (0.073, **1.0**, 0.948) |
+| Ruby | (0.784, 0.000, 0.765) | (**1.0**, 0.0, 0.976) |
+| Gold | (1.000, 0.657, 0.000) | (**1.0**, 0.657, 0.0) — already at peak |
+
+It returns white for an unauthored domain, so a signal can never silently become invisible — which
+is the other half of the lesson: a colour accessor that can return black or near-black is a colour
+accessor that can make a UI element disappear, and disappearing reads as "not implemented" rather
+than as "mis-tinted".
+
+Two consumers today, and they are the intended shape for future ones: the Dolphin's Mass slot, and
+the Charge-5 pilot highlight (which needs it *saturated* for the same reason — a marked vessel has to
+separate by HUE from the lit prisms around it, and brightness alone cannot do that).
+
 ## 3. The colour-space rule (this is the trap)
 
 The project is **Linear** (`ProjectSettings/ProjectSettings.asset: m_ActiveColorSpace: 1`)
@@ -172,7 +366,8 @@ other two domains, whose bases are likewise muted mid-tones (`#5386B9`, `#9C71B7
 ### The danger tier borrows the shielded base
 
 A danger prism is painted from a **fourth** pair that has no fields of its own — it is
-composed in `ThemeManager` out of two existing colours:
+composed in `SO_ColorSet.GetPrismKindColors` (§2.1) out of two existing colours, and both
+the live material and the death debris read it from there:
 
 | | |
 |---|---|
@@ -315,6 +510,45 @@ Machine validation covers structure and colorimetry; only a playtest covers *loo
    domain where a regression would surface first. Also confirm a gold danger prism is not
    confusable with a gold *plain* prism at speed — both now carry a hot rim, but they sit
    35° apart in hue and 40 apart in chroma (`#FF1214` against `#FFAB25`).
+2c. Get all five **crystals** on screen together (§2.2). Easiest producers:
+   - **Menu_Main freestyle** — the omni crystal plus whatever the cell's lifeforms drop.
+   - **Dog Fight / Rampage** — omni crystals respawn continuously in the nucleus, and
+     Rampage's four intensities change how many are out at once.
+   - **Wildlife Blitz / Wildlife Liberation** — elemental hearts drop as lifeforms die,
+     which is the cheapest way to see all four elementals next to each other.
+
+   Confirm, in this order — the first is the one that has never worked before:
+   a. **Every crystal is lime.** Before this change none of them were (the omni read
+      blue-white/green, Space blue-white, Time blue, only Charge lime), because `FadeIn`
+      wiped the tint. If any crystal still shows its old colour, the fade is winning
+      again — check that nothing else pushes a whole `MaterialPropertyBlock` onto that
+      renderer.
+   b. **The omni is clearly the brightest**, at distance especially — it is the only
+      crystal whose *body* sits at the bloom ceiling. Target is roughly 6:1 bloom against
+      an elemental; if they read the same, suspect `ElementalCrystalDimming` did not load
+      (it is a NEW field — an old serialized copy of the asset simply will not have it,
+      and it will silently take the 0.45 C# initializer, which is the intended value
+      anyway, so this failing means something overrode it).
+   c. **The four elementals are still legible**, not black. They sit just above the bloom
+      threshold by design; if they read as dead olive lumps, raise the dimming toward
+      0.55 (see the table in §2.2 — the knob is steep, 0.05 is a real step).
+   d. **Hue is unchanged across all five.** They must differ only in brightness. Any hue
+      drift means something is scaling the pair non-uniformly, or a channel is clipping
+      past 1.0 (tonemapping is None — there is no shoulder to absorb it).
+
+2d. Check the **heart crossing** (§2.3) — note it is the one crystal that must NOT be lime:
+   a living lifeform's heart wears the blue-white neutral, and only a *free* crystal is lime.
+   - Fly a cell with wildlife (Menu\_Main freestyle, Wildlife Blitz). Confirm every living
+     lifeform's heart is **blue** — check a **Charge** and a **Time** species specifically
+     (`Arbor Flora Charge`, `Tadpole Fauna Time`): their materials are the lime ones, so
+     they are the two that fail first if the tint is lost again.
+   - Kill one and watch the heart **ease** blue → lime over ~0.8 s rather than flicking.
+     Tune on the crystal prefab's **Color Transition Seconds** (0 snaps).
+   - Kill one **during its bloom** (within the first ~3 s of the lifeform spawning) to
+     confirm the crossing and `FadeIn` coexist — both write the same block.
+   - A heart stuck part-way between blue and lime means the settle never fired: check that
+     a `PrismTimerManager` exists in the scene.
+
 3. For **Ruby** and **Gold**, confirm: the prism's facets and silhouette read clearly
    (the base→rim separation is visible), and the shielded prism is obviously distinct
    from an unshielded prism of the same domain.
@@ -352,14 +586,43 @@ Machine validation covers structure and colorimetry; only a playtest covers *loo
 - **The danger tier has no base fields of its own** — it borrows each domain's shielded
   base. That coupling is why Gold's danger separation (ΔE00 34.2) cannot be raised to
   Jade's (49.8) without moving the shared rim and distorting the other two domains. If the
-  tier ever needs per-domain control, adding `DangerOutsideBlockColor` to `SO_ColorSet` +
-  `ThemeManager` is the clean way, and it is a structural change, not a tune.
+  tier ever needs per-domain control, adding `DangerOutsideBlockColor` to `SO_ColorSet`
+  and reading it in `GetPrismKindColors` (§2.1) is the clean way — one edit, and the live
+  material and the death debris both follow. It is a structural change, not a tune.
 - **The unshielded tier is still not equalised across domains** (ΔL\* 32.2 / 27.1 / 32.0;
   rim `L*` 76.2 / 54.5 / 76.2). §4.2 brought Gold into the band rather than imposing a
   contract, because Ruby's dark rim is load-bearing for its look. If that tier is ever
   given a contract like the shielded one, Ruby is the domain that will move.
 - `Domains.Blue` (the neutral sentinel) was not measured or tuned; it is not a playable
   domain and its prisms are rarely seen.
+- **The gameplay Bloom `clamp` of 0.5 is the single biggest open question in this document
+  (§2.2).** It caps the bloom source below most of the palette, so 56 of 86 authored colours
+  bloom identically and every HDR value in this file — the danger rim at 1.498, the AOE
+  colours at up to 4.0, `SuperShieldedInsideBlockColor` at 1.498 — is doing nothing that a
+  flat 0.5 would not do. §3's rule that "channels above 1.0 are legitimate (they bloom)"
+  is, as shipped, false. It is overridden deliberately (`m_OverrideState: 1`) in both the
+  GamePlay and Commander profiles, so someone chose it; it is **not** a stray default.
+  Raising it is a whole-game relighting, not a tune — do it as its own change, with its own
+  playtest, and expect to re-derive the tiers in §4 afterwards. Measured headroom if it were
+  raised to 1.0 and the crystal body pushed to a max channel of 1.0: **~3.5×** today's omni
+  bloom, versus the **1.38×** available underneath the current clamp.
 - The `Outside`/`Inside` field names are misleading (§2). Renaming them is a broad,
   GUID-safe but wide-reaching refactor across `SO_ColorSet` + `ThemeManager` + every
   colour set asset — worth doing, not worth bundling with a palette tune.
+- **The crystal crossing (§2.3) interpolates on the CPU because the crystal shaders carry no
+  clock wiring.** The prism path hands the same job to the GPU: `_ColorStartTime` +
+  `_ColorDuration` + the start pair as per-instance properties, and the graph does
+  `lerp(from, to, smoothstep(...))` itself (`MaterialPropertyAnimator.ClockColorTransition`,
+  `Docs/PRISM_ANIMATION.md §4.1`). Wiring it into the crystal graphs would delete the CPU
+  driver outright and make the crossing free. It is real work — `ShepardGraph` (259 nodes),
+  `CrystalGraph` (270), `InverseDynamicFresnelGraph` (135), `DynamicFresnelGraph` (75), plus
+  the hand-written `ChargeCrystal.shader`, which is the easy one — and it is
+  `/asset-surgery` §2 territory (ShaderGraph JSON synthesis), not hand-editing. Worth its own
+  change with its own playtest; the CPU driver is bounded by crystals actually transitioning,
+  so there is no urgency.
+- **`ChangeDomain`'s theft-decay path still snaps.** `ChangeDomain(Domains.Blue)` lerps the
+  MATERIAL back to `defaultMaterial` over 2 s and then the tail `ApplyColorSetTint()` snaps to
+  the CTA lime, because the two do not settle on the same colour. Pre-existing, and not fixed
+  by §2.3 (which only covers `ActivateCrystal`). The fix is the same mechanism — capture the
+  displayed pair before the material lerp starts and cross-fade the tint alongside it — but it
+  needs the theft path play-tested, which nothing currently exercises often.

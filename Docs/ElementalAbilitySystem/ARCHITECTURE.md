@@ -145,9 +145,9 @@ consumers scale symmetrically down through debuffs — codebase-consistent behav
 
 | Element | Quantitative (continuous) | Attach point | Level-5 upgrade | Attach point |
 |---|---|---|---|---|
-| **Space** | Gun range (projectile speed and/or lifetime; range = v·T·2/π) | `FullAutoActionExecutor` fire tick + `FireGunActionExecutor.Fire` — live `Multiplier(Space)` on speed/lifetime (the authored `speedValue` Min 1500→Max 4000 becomes the tuning range) | **Piercing bullets** (new default below L5: destroy on first prism impact — today's bullets already pierce, see AUDIT §4) **+ shielded turret prisms with a wider hit sphere** (moved here from Mass 5, 2026-08 — one gate, both fire modes) | Per-shot `piercing` flag through `Gun.FireGun → Projectile.Initialize`; prism-impact flow returns the projectile to the factory after the damage effect when not piercing. Turret side: `FiredPrismState.ShieldedAtSpace5` sets `prismProperties.IsShielded` before `Initialize` off the same `IsUpgradeActive(Space)` snapshot. Must not reuse `DisableColliderNow` until the dud bug is fixed |
-| **Time** | Boost speed, on an **indefinite** boost (no heat, no meter) | `VesselTransformer.CurrentBoostAmount()` — live `Multiplier(Time)` on top of `VesselStatus.BoostMultiplier`; the shared field is never mutated | **Elemental Ward**: while boosting, negative `ResourceSystem.ApplyElementalEffect` calls are dropped — buffs still land, live debuffs still decay, non-elemental danger punishments (slow, input mute) still apply | The general `ResourceSystem` immunity state + the shared `VesselElementalImmunity` driver (`WhileBoosting`, gated `Element.Time`). The **strafing roll is now BASE kit**, ungated, on `BarrelRollController` (left stick at perimeter + boost). Detail: `_Scripts/Controller/Vessel/R_VesselActions/SPARROW_AFTERBURNER.md` |
-| **Mass** | Turret prism stretch (long z-axis) | `FullAutoBlockShootActionExecutor` — multiply `BlockScale.z` by `Multiplier(Mass)` at fire time, routed through `TargetScale` + `Prism.Initialize` (prereq fix), curve in the SO | **OPEN DESIGN SLOT** (2026-08) — the former *Shielded turret prisms* upgrade moved to **Space 5** so one gate transforms both fire modes. Do not refill without sign-off | — |
+| **Space** | Gun range (projectile speed and/or lifetime; range = v·T·2/π) | `FullAutoActionExecutor` fire tick + `FireGunActionExecutor.Fire` — live `Multiplier(Space)` on speed/lifetime (authored `speedValue.Value` **375** with `MultiplierAtFullLevel` **9**, so SPACE 0 ≈ 72 u and SPACE 15 ≈ 931 u) | **Piercing bullets** — and ONLY that, on **both** fire modes (bullets and turret prism rounds). SPACE owns REACH; the armour on fired prisms is **MASS 5** (it spent 2026-08 rounds 4–6 here and was returned by sign-off on 2026-08-13) | Per-shot `piercing` flag through `Gun.FireGun → Projectile.Initialize`; prism-impact flow returns the projectile to the factory after the damage effect when not piercing. Must not reuse `DisableColliderNow` until the dud bug is fixed |
+| **Time** | Boost speed, on an **indefinite** boost (no heat, no meter) | `VesselTransformer.CurrentBoostAmount()` — live `Multiplier(Time)` on top of `VesselStatus.BoostMultiplier`; the shared field is never mutated | **Elemental Ward**: while boosting, negative `ResourceSystem.ApplyElementalEffect` calls are dropped — buffs still land, live debuffs still decay, non-elemental danger punishments (slow, input mute) still apply | The general `ResourceSystem` immunity state + the shared `VesselElementalImmunity` driver (`WhileBoosting`, gated `Element.Time`, warding `ElementalDebuffSources.All` — a ward declares WHICH debuff classes it stops, and the Sparrow's stops every one; the Dolphin's Drift Ward stops `DangerPrism` alone). The **strafing roll is now BASE kit**, ungated, on `BarrelRollController` (left stick at perimeter + boost). Detail: `_Scripts/Controller/Vessel/R_VesselActions/SPARROW_AFTERBURNER.md` |
+| **Mass** | Turret prism stretch (long z-axis) **+ in-flight round growth on BOTH fire modes** (rounds swell across their flight: 3× at resting Mass, 6× at Mass 10, linear in level over [-5, 15]) | `FullAutoBlockShootActionExecutor` — multiply `BlockScale.z` by `Multiplier(Mass)` at fire time, routed through `TargetScale` + `Prism.Initialize`. Growth: `FullAutoActionSO.ResolveGrowthFactor` → `Projectile.SetFlightGrowth`, scaling the drawn cross-section and the swept hit radius by the same factor every frame | **Shielded Prisms** — turret-fired prisms arrive with one-hit ablative octahedron armour and a wider hit sphere. Returned here from Space 5 by design sign-off (2026-08-13): **MASS owns the SUBSTANCE of what you fire, SPACE owns its REACH** | `FiredPrismState.ShieldedAtMass5` sets `prismProperties.IsShielded` before `Initialize`, off an `IsUpgradeActive(Mass)` snapshot taken per volley |
 | **Charge** | Skyburst blast radius | `FireGunActionExecutor.Fire`: replace the literal `0` with `Clamp01(GetLevel(Charge)/10)`; author real min/max on the three skyburst effect assets (the `Lerp(MinScale, MaxScale, Charge)` pipe already exists in `ProjectileDetonatorSO`) | **Skybursts spare the shooter's own domain** | Gate the direct-hit damage in `SkyBurstProjectileDamagePrismEffectSO` on domain when unlocked (per-shot flag plumbed like piercing). **The AOE follows the same per-shot flag** since 2026-08: `ProjectileDetonatorSO` passes `AffectSelfOverride = !SpareOwnDomain`, because the prefabs' authored `affectSelf: 0` had the blast sparing own domain at EVERY level — half the upgrade was pre-unlocked. Prereq: wire steal → `PrismSpatialIndex.UpdateDomain` so "own domain" is live |
 
 Presentation: `ElementalAbilityMaps/Sparrow.asset` re-authors the abandoned branch's verified
@@ -284,8 +284,13 @@ an ability that *is* bound to an input but has no hint labelling it.
 Reassigning an ability to a different input event in the action handler, or moving an icon in the
 row, now carries the label along with no manual repositioning.
 
-**Fleet status.** Squirrel and Sparrow author the row (four buttons, four bindings, uniform pitch and
-slot size, charge → mass → space → time). Sparrow's row was **Mass, Space, Charge, Time** and is now
+**Fleet status.** Squirrel, Sparrow and Dolphin author the row (four buttons, four bindings, uniform
+pitch and slot size, charge → mass → space → time). The Dolphin runs with **both**
+`tintIconOnUpgrade` and `showUpgradeBadge` off, because all four of its icons are live gauges — the
+persistent scale bump is its only upgrade signal, and its Time-slot jaw tint is a *gauge* colour on
+the jaw halves, not an upgrade tint on the (transparent) Time icon. It has no
+`InputDeviceIconSetSwitcher`, so its hints do not bind. Sparrow's row was
+**Mass, Space, Charge, Time** and is now
 reordered; note two of its icons have their sprite driven by gameplay (`missileIcon` by ammo,
 `weaponModeIcon` by weapon mode) and both start `enabled = false`, so the sprite-swap layer of the
 upgrade signal is unavailable there and the element badge carries it. Sparrow's HUD is **not** a variant
@@ -293,14 +298,42 @@ of `VesselHUDPrefab` and has no `InputDeviceIconSetSwitcher`, so its four Xbox +
 `ControllerIcon` glyphs are untoggled — both sets render at once — and hints cannot bind to abilities
 until a switcher is added.
 
-Manta, Dolphin, Rhino and Serpent are blocked on **design**: their maps are still `(open design slot)`
+**Urchin** (revived 2026-08-15) is the inverse case and worth stating separately: its map is
+**complete** — four named abilities, four `UpgradeLabel`s, all four L5 upgrades implemented and
+gated on `IsUpgradeActive` — while its HUD row is **not yet authored**. So it is blocked on
+*wiring*, not on design. Three specifics the auditor will report and that are correct rather than
+oversights:
+
+- **Trail Rider (MASS) carries `Input = 0` because it is PASSIVE**, contact-driven, bound to no
+  input event. The map cannot distinguish "passive" from "unset", so the hint layer will find no
+  control for it — and it should not. Charge/Space/Time carry `LeftStickAction(2)` /
+  `RightStickAction(1)` / `Button2Action(7)` and do want hints.
+- **LANDED** (this block previously read "nothing binds yet"; later commits on the same branch
+  made that false): `Urchin.prefab` wires `R_VesselActionHandler._executors` to an
+  `ActionExecutorRegistry`, and `RightStickAction(1)` / `LeftStickAction(2)` / `Button2Action(7)`
+  are bound. The abilities are exercisable.
+- **STILL OPEN — the HUD.** `UrchinVesselHUDController`/`UrchinVesselHUDView` exist and compile,
+  but **no `UrchinHUDVariant.prefab` exists**, `Urchin.prefab` carries
+  `vesselHUDController: {fileID: 0}`, and no asset references either script — so the pair is
+  unreferenced code and the Urchin ships with **0/4 ability icons**. Every other vessel wires a
+  `<Vessel>HUDVariant.prefab` into its vessel prefab (Dolphin 35 references, Sparrow 76). The
+  view is designed to add an **ammo** fill and a deliberately **binary** riding indicator on top
+  of the fleet-standard four-icon row (the base class owns the row, in charge → mass → space →
+  time order). Authoring the prefab is the remaining work; **FrogletTools > Vessels > Wire Vessel
+  Ability Row** creates and binds the row once a HUD prefab exists to run it against.
+
+Mechanics for what those four icons will label: `_Scripts/Controller/Vessel/R_VesselActions/`
+`URCHIN_CHAIN_SPIKES.md` and `URCHIN_TRAIL_RIDER.md`.
+
+Manta, Rhino and Serpent are blocked on **design**: their maps are still `(open design slot)`
 with `Input = 0` and no `UpgradeLabel`, and their HUDs carry 0–2 lower-right icons. Run
 **FrogletTools > Vessels > Audit Vessel Ability Rows** (`VesselAbilityRowAuditor`) for the live table — it
 checks map completeness, icon count and order, pitch/size uniformity and hint coverage across the whole
 fleet from assets alone. At runtime a vessel with no row now warns once per class instead of failing
 silently. The
-other five flyable HUDs have no `abilityIcons` bindings and varied lower-right layouts; wiring them
-is per-vessel HUD work — the framework above needs no further changes.
+remaining flyable HUDs (Manta, Rhino, Serpent, and the Urchin until its row is authored) have no
+`abilityIcons` bindings and varied lower-right layouts; wiring them is per-vessel HUD work — the
+framework above needs no further changes.
 
 ### 7.3 Gotcha: never write a control hint's SIZE
 

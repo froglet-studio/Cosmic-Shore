@@ -230,4 +230,171 @@ void ForcefieldCrackle_half(
     Alpha = (half)aOut;
 }
 
+// ─── Capsule variant (the Rhino energy-sword blade) ─────────────────────────
+//
+// The sphere function parameterizes the surface by unit DIRECTION and measures
+// ripples as great-circle ANGLES — on the blade's stretched capsule (built-in
+// capsule mesh, object y ∈ [-1, 1], under a strongly non-uniform ~(1.5, 30, 4.8)
+// scale) that collapses the whole blade length into the two poles. This variant
+// measures in WORLD UNITS instead:
+//
+//   • _ImpactPositions[i].xyz = the impact's OBJECT-SPACE POSITION (not direction),
+//     stored by ForcefieldCrackleController in Capsule surface mode, so arcs stay
+//     glued to the blade through swings and stretch with it as energy grows it.
+//   • _ImpactParams[i].y      = the ripple's REACH in world units.
+//
+// ScaleOS is the object→world scale per axis (from the vertex shader's model
+// matrix); multiplying object positions by it component-wise yields world-metric
+// distances without caring about the blade's world rotation. All visual params
+// (_ArcDensity, _RingThickness, _CenterFillAmount, colors, fresnel) keep the same
+// meaning and proportions as the sphere version — ring width and center fill are
+// fractions of the reach, arcs radiate in a surface-tangent frame at the impact.
+void ForcefieldCrackleCapsule_float(
+    float3 ObjectPosition,
+    float3 ObjectNormal,
+    float3 ViewDirOS,
+    float3 ScaleOS,
+    out float3 EmissionColor,
+    out float Alpha)
+{
+    EmissionColor = float3(0, 0, 0);
+    Alpha = 0;
+
+    // Fresnel rim - same view-dependent rim as the sphere version.
+    float3 N = normalize(ObjectNormal);
+    float3 V = normalize(ViewDirOS);
+    float NdotV = saturate(dot(N, V));
+    float fresnel = pow(1.0 - NdotV, _FresnelRimPower) * _FresnelRimIntensity;
+
+    Alpha = fresnel;
+    EmissionColor = _FresnelRimColor.rgb * fresnel;
+
+    if (_ImpactCount <= 0) return;
+
+    // World-metric position on the capsule (rotation dropped: it preserves distance).
+    float3 fragSC = ObjectPosition * ScaleOS;
+
+    float totalContribution = 0;
+    float3 totalColor = float3(0, 0, 0);
+
+    for (int i = 0; i < 16; i++)
+    {
+        float4 impactPos = _ImpactPositions[i];
+        float4 impactParam = _ImpactParams[i];
+
+        float maxLifetime = impactParam.z;
+        if (maxLifetime <= 0) continue;
+
+        float intensity = impactParam.x;
+        float reach = max(impactParam.y, 0.01); // world units
+        float elapsed = impactPos.w;
+
+        float lifeRatio = saturate(elapsed / maxLifetime);
+        float timeFade = pow(1.0 - lifeRatio, 1.5);
+
+        float3 impSC = impactPos.xyz * ScaleOS;
+        float3 d = fragSC - impSC;
+
+        // Normalized surface distance: 0 at the impact, 1 at full reach — the direct
+        // analog of the sphere version's angle / (angularRadius * PI).
+        float nd = length(d) / reach;
+
+        // ── Expanding wavefront (fractions of the reach; 1/PI keeps the sphere
+        //    version's ring-width : reach proportion for the same _RingThickness) ──
+        float front = saturate(lifeRatio * _RippleSpeed);
+        float ringW = _RingThickness * 0.3183;
+
+        float distBehindFront = front - nd;
+        float waveBand = smoothstep(-ringW * 0.1, 0.0, distBehindFront)
+                       * smoothstep(ringW, 0.0, distBehindFront);
+        waveBand *= step(nd, front + ringW * 0.2);
+
+        float centerGlow = smoothstep(_CenterFillAmount, 0, nd)
+                         * (1.0 - lifeRatio * lifeRatio);
+
+        float spatialEnvelope = max(waveBand, centerGlow);
+        if (spatialEnvelope < 0.001) continue;
+
+        // ── Surface-tangent frame at the impact: outward = capsule normal direction
+        //    (built-in capsule: cylinder body spans object y ∈ [-0.5, 0.5], caps beyond,
+        //    so the scaled body half-height is 0.5 * ScaleOS.y) ──
+        float segHalf = 0.5 * ScaleOS.y;
+        float3 axisPoint = float3(0.0, clamp(impSC.y, -segHalf, segHalf), 0.0);
+        float3 outward = normalize(impSC - axisPoint + float3(1e-4, 0.0, 0.0));
+        float3 tangent = normalize(cross(outward, float3(0.123, 0.456, 0.789)));
+        float3 bitangent = cross(outward, tangent);
+
+        float azimuth = atan2(dot(d, bitangent), dot(d, tangent));
+
+        // ── Electrical arc pattern (identical structure; nd*PI stands in for the
+        //    sphere's great-circle angle so the FBM frequencies carry over) ──
+        float ndAngle = nd * 3.14159;
+        int arcCount = (int)_ArcDensity;
+        float arcContrib = 0.0;
+        float arcHeat = 0.0;
+
+        for (int a = 0; a < arcCount; a++)
+        {
+            if (a >= (int)_ArcDensity) break;
+
+            float baseAngle = (float(a) / float(arcCount)) * 6.28318 + Hash1(float(i) * 7.3 + 0.5) * 6.28318;
+
+            float dAzimuth = azimuth - baseAngle;
+            dAzimuth = dAzimuth - 6.28318 * round(dAzimuth / 6.28318);
+
+            float noiseInput = ndAngle * 15.0 + float(a) * 13.7 + float(i) * 5.3;
+            float wobble = FBM1D(noiseInput, 4) * 0.3 * (ndAngle + 0.1);
+
+            float subBranch = FBM1D(noiseInput * 2.3 + 100.0, 3) * 0.15 * ndAngle;
+
+            float arcDist = abs(dAzimuth - wobble);
+            float arcDistSub = abs(dAzimuth - wobble - subBranch);
+
+            float arcLine = exp(-arcDist * arcDist / (_ArcSharpness * _ArcSharpness));
+            float subLine = exp(-arcDistSub * arcDistSub / (_ArcSharpness * _ArcSharpness * 4.0)) * 0.4;
+
+            float thisArc = max(arcLine, subLine);
+            thisArc *= smoothstep(0.0, 0.016, nd);
+
+            arcContrib = max(arcContrib, thisArc);
+            arcHeat = max(arcHeat, arcLine);
+        }
+
+        float contribution = spatialEnvelope * arcContrib * timeFade * intensity;
+
+        float3 arcColor = lerp(
+            _CrackleColorB.rgb,
+            _CrackleColorA.rgb,
+            arcHeat * arcHeat
+        );
+
+        arcColor *= 1.0 + arcHeat * 2.0;
+
+        totalContribution += contribution;
+        totalColor += arcColor * contribution;
+    }
+
+    totalContribution = saturate(totalContribution);
+
+    Alpha = saturate(totalContribution + fresnel);
+    EmissionColor = totalContribution > 0.001
+        ? (totalColor / max(totalContribution, 0.001)) * totalContribution + _FresnelRimColor.rgb * fresnel
+        : _FresnelRimColor.rgb * fresnel;
+}
+
+void ForcefieldCrackleCapsule_half(
+    half3 ObjectPosition,
+    half3 ObjectNormal,
+    half3 ViewDirOS,
+    half3 ScaleOS,
+    out half3 EmissionColor,
+    out half Alpha)
+{
+    float3 emOut;
+    float aOut;
+    ForcefieldCrackleCapsule_float(ObjectPosition, ObjectNormal, ViewDirOS, ScaleOS, emOut, aOut);
+    EmissionColor = (half3)emOut;
+    Alpha = (half)aOut;
+}
+
 #endif // FORCEFIELD_CRACKLE_INCLUDED

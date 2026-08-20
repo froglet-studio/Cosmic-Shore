@@ -16,5 +16,5 @@ MonoBehaviour:
     _resourceIndex: 0
     _resourceAmount: 0.006666667
     _overrideAmount: 0
-  _dangerBonusElement: 4
-  _dangerBonusMultiplier: 3
+  _dangerBonusElement: 0
+  _dangerBonusMultiplier: 1

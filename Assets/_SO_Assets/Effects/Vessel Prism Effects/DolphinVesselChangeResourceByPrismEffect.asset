@@ -13,3 +13,4 @@ MonoBehaviour:
   m_Name: DolphinVesselChangeResourceByPrismEffect
   m_EditorClassIdentifier: 
   energyResourceIndex: 0
+  retainedFraction: 0.5

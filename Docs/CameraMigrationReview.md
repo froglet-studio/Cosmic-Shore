@@ -6,7 +6,98 @@ This document tracks the camera system's migrations. Updated March 2026 to refle
 
 Gameplay cameras are plain-`Camera` rigs driven by `CustomCameraController`, with per-vessel `CameraSettingsSO` ScriptableObject assets. Vessels apply their settings through `VesselCameraCustomizer` via the `ICameraConfigurator` interface. Runtime cameras implement `ICameraController` to consume settings directly. `CameraManager` (DI singleton) manages the overall camera lifecycle and provides utility methods like `SnapPlayerCameraToTarget()`.
 
-**Menu_Main no longer uses Cinemachine.** `MainMenuCameraController` drives the scene's main camera transform directly through a set of `MenuCameraConfigSO` configurations (orbit / cinematic trail / tight chase / top-down pan). Every configuration frames the LOCAL VESSEL — a config carries framing, smoothing, lens, and blend duration only; there is no target field, so a menu camera cannot be authored to point at anything else. Transitions to/from the gameplay camera blend between two live, vessel-anchored endpoints (the menu rig pose and the exact pose `CustomCameraController.SnapToTarget` computes), so the blend rides the moving AI vessel instead of chasing it through world space. The `CinemachineBrain` was removed from Menu_Main's scene camera; the legacy `CM Main Menu` vCam in `CameraManager.prefab` is kept permanently inactive (`CameraManager.SetMainMenuCameraActive` now deactivates it) pending a future prefab cleanup.
+**Menu_Main no longer uses Cinemachine.** `MainMenuCameraController` drives the scene's main camera transform directly through a set of `MenuCameraConfigSO` configurations (orbit / cinematic trail / tight chase / top-down pan / lava lamp). A config carries framing, smoothing, lens, and blend duration only — there is still no target field, so a menu camera cannot be authored to point at an arbitrary object. **What it frames follows from its `MenuCameraRigKind`**, resolved by the controller each frame: the first four frame the LOCAL VESSEL, and `LavaLamp` frames the CELL (see below). Transitions to/from the gameplay camera blend between two live, vessel-anchored endpoints (the menu rig pose and the exact pose `CustomCameraController.SnapToTarget` computes), so the blend rides the moving AI vessel instead of chasing it through world space. The `CinemachineBrain` was removed from Menu_Main's scene camera; the legacy `CM Main Menu` vCam in `CameraManager.prefab` is kept permanently inactive (`CameraManager.SetMainMenuCameraActive` now deactivates it) pending a future prefab cleanup.
+
+## The Lava Lamp rig (`MenuCameraRigKind.LavaLamp`)
+
+Restored August 2026 as `MenuCam_LavaLamp1.asset`, reconstructing the ambience shot Menu_Main used
+before it moved to close vessel-following framings: a very slow orbit of the **cell centre**, aimed
+at the **crystal**, with the vessel merely one of the things drifting through the frame. It is the
+only rig kind that does not frame the vessel, and therefore the only one that needs no vessel — it
+runs from scene load rather than waiting on the spawn chain.
+
+The defaults are measured from the legacy Cinemachine rig, which still exists (inactive) as
+`CM Main Menu` in `Bootstrap.unity` and `CameraManager.prefab`:
+
+| Legacy Cinemachine | Value | `MenuCameraConfigSO` |
+|---|---|---|
+| `Main Menu Follow Target` position | `(0, 0, -350)` | `lavaLampStartDirection` (0,0,-1); `lavaLampOrbitRadius` **920**, see below |
+| `RotateAroundOrigin` speed / direction | 2, `(0, 1, -1)` | `lavaLampOrbitAxis` (0,1,-1), `lavaLampDegreesPerSecond` 2.83 (= 2·√2) |
+| `CinemachineFollow.FollowOffset` (WorldSpace) | `(0, 30, 0)` | `lavaLampHeightOffset` 30 |
+| `CinemachineFollow.PositionDamping` | 1 | `positionSmoothTime` 0.3 |
+| `CinemachineRotationComposer.Damping` | 10 | `rotationSharpness` 0.45 (≈ 4.605 / 10) |
+| `CameraManager.LookAtCrystal` → `cellData.CrystalTransform` | — | `lavaLampAimAtCrystal` (resolved via `TryGetLocalCrystal`) |
+| Lens FOV | 60 | `fieldOfView` 0 (= match the player's gameplay FOV) |
+
+Three properties are worth knowing before retuning it:
+
+- **Why it reads as calm.** A lap takes ~127 s and the aim damping is ~2 s, so essentially all
+  on-screen motion belongs to the vessels, trails and crystals rather than the camera. The camera
+  is well inside the membrane (radius 1200), so nothing was ever removed to make this shot work.
+
+- **The radius is 686, not the legacy 350, because the NUCLEUS GREW.** Every other legacy value
+  transferred directly; this one could not. The nucleus is `Node2.fbx` (mesh half-extent 0.9798)
+  at `Nucleus.prefab` scale 400 — **world radius ≈ 392**, roughly double the ~200 it had in the
+  lava-lamp era. The legacy 350 was a *curated* value, tuned so the nucleus filled the frame; 686
+  is that same framing re-derived against the bigger nucleus. At FOV 60 the vertical half-extent
+  framed at the cell centre is `R·tan30`:
+
+  | R | half-extent at centre | nucleus as % of it | note |
+  |---|---|---|---|
+  | 350 (legacy) | 202 | **194%** | camera is INSIDE the nucleus sphere; it overflows the frame ~2× |
+  | **686 (shipped)** | 396 | 99% | reproduces the legacy *framing* — nucleus edge-to-edge |
+  | 920 | 531 | 74% | whole nucleus plus a wide cytoplasm margin |
+
+  The hard ceiling is the **toys**: `ToyboxController` rings them at
+  `MembraneRadius × membraneFraction` = `1200 × 0.82` = **984** on the y=0 galactic plane, with a
+  42-unit trigger, so the nearest trigger surface reaches 942 toward the origin. Any `R < 942`
+  keeps the orbit clear of every toy at every orbit angle (686 leaves 256 units of margin).
+  **Re-derive that ceiling if the membrane radius, `membraneFraction`, or the trigger radius
+  changes.**
+
+- **Roll is set by `lavaLampPoleBlendStart`, not by the geometry.** With world-up as the hint,
+  `LookRotation` produces exactly zero roll — the camera's right vector stays horizontal — so
+  *every* degree of roll the lava lamp shows comes from `ComputeLookUpHint`'s blend sliding the
+  hint toward the orbit axis. Crystals spawn anywhere in a ball of the nucleus radius — that
+  coupling is a platform rule, not a coincidence: `CrystalManager.GetAnchorlessSpawnRadius` returns
+  `Cell.ExpectedNucleusWorldRadius` for any cell that HAS a nucleus, and
+  `noNucleusSpawnRadius` is a fallback only for cells that have none. So the crystal ball is
+  **392, the same number as the nucleus, and it tracks the nucleus by construction**. The
+  adversarial case is the camera at peak latitude aiming at a crystal at the far bottom of that
+  ball, at the camera's own longitude.
+
+  The field's default of **0.99 is chosen against the measured geometry, and yields zero roll**:
+
+  | R (45° incl.) | true worst-case verticality | `cross(up, dir)` there | roll at threshold 0.99 |
+  |---|---|---|---|
+  | 686 | 0.9859 | 0.168 | **none — the blend never engages** |
+  | 920 | 0.9449 | 0.327 | none |
+
+  The threshold is **not** a numerical-safety limit, which is what made the original 0.85 a
+  mistake here: `LookRotation` only degrades when `cross(up, dir)` approaches ~0.01, i.e. above
+  ~0.9999. At 0.85 the blend fired on 43% of crystal spawns for a median 5.3° / worst 13.5° horizon
+  tilt lasting ~8 s of each lap. Raising it to 0.99 removes all of that with an order of magnitude
+  of numerical margin still in hand.
+
+  Two follow-on rules. An orbit that genuinely **crosses the pole** (the legacy `(0,1,-1)` cone,
+  where verticality reaches 1.0) must *lower* this value — there the roll is unavoidable and a
+  narrow band would snap it; ~0.85 spreads it gently. And if the nucleus grows again, re-check the
+  worst case: the crystal ball scales with it, so it is the one input that can push verticality
+  back through the threshold. Inclination is the secondary lever
+  (`lavaLampOrbitAxis = (tan i, 1, 0)`), and lowering it reduces the worst case further.
+
+### Scene wiring (Menu_Main)
+
+`MainMenuCameraController` on the Game GameObject: `MenuCam_LavaLamp1` is **element 4** of
+`_configs` with `_initialConfigIndex` **4**, so the menu opens on the lava lamp. `_cellData` points
+at `Runtime Cell Data` — optional (the rig falls back to `Cell.FindNearestActiveCell` and to aiming
+at the cell centre), but wiring it avoids that per-frame search. Rotation is on at a flat **45 s**
+interval (`_randomSwitchIntervalMin`/`Max` both 45); widening `Max` restores a random spread.
+
+**Editing these in Play mode does not persist** — Unity discards scene changes on Stop, and Ctrl-S
+during Play saves assets but not the scene. Stop first, then edit, then save. Note the asymmetry
+that makes this confusing: `MenuCam_*.asset` edits made in Play mode DO stick, because they are
+assets rather than scene objects.
 
 ## Key Files
 

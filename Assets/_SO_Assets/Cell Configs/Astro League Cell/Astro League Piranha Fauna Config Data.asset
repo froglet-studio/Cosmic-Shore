@@ -17,6 +17,7 @@ MonoBehaviour:
   PopulationSize: 8
   SpawnProbability: 1
   FeedsPerOffspring: 4
+  FeedsPerLevel: 8
   OffspringPerBirth: 1
   ReproductionCooldownSeconds: 4
   MaxLivePopulation: 22
@@ -27,7 +28,6 @@ MonoBehaviour:
   Element: 1
   InitialLevel: 1
   BodyScalePerLevel: 1.15
-  CrystalScalePerLevel: 1.2
   LevelGrowSeconds: 1
   Variant:
     Enabled: 1
@@ -54,8 +54,3 @@ MonoBehaviour:
     AudioMaxDistance: -1
   SpreadElements: 1
   ElementPalette: []
-  Levels:
-    Enabled: 0
-    MinLevel: 1
-    MaxLevel: 1
-    RarityFalloff: 2

@@ -52,15 +52,15 @@ MonoBehaviour:
   layBudgetMsPerFrame: 6
   intensityLevel: 1
   prism: {fileID: 4563009547826722997, guid: ed9defc56162b4b4588e61c20984b6d9, type: 3}
-  density: 0.75
+  density: 0.55
   spawnClearRadius: 0
   spawnClearPoints: []
   arenaRadius: 520.0
   crustDepth: -200.0
-  hulkCount: 6
-  spireCount: 9
-  frameCount: 4
-  overpassCount: 3
+  hulkCount: 4
+  spireCount: 6
+  frameCount: 3
+  overpassCount: 2
   debrisFields: 7
   fieldRadiusFraction: 0.2
   coreClearRadius: 120.0

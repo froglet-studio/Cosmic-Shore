@@ -23,7 +23,10 @@ namespace CosmicShore.Gameplay
             var body = new GameObject("Body");
             body.transform.SetParent(root.transform, false);
             AddSphereBody(body.transform, placement.BodyRadius, accent);
-            AddLabel(root.transform, label, accent, placement.BodyRadius * 1.9f);
+            // The switch ring itself is drawn by Toy.Initialize off the trigger collider (one
+            // implementation, every toy) - the label only needs to know how big it will be so it
+            // can hang clear above the rim.
+            AddRingedLabel(root.transform, label, accent, placement.TriggerRadius, placement.BodyRadius);
             return root;
         }
 
@@ -238,6 +241,72 @@ namespace CosmicShore.Gameplay
             return body;
         }
 
+        // ── The SWITCH ───────────────────────────────────────────────────────
+        //
+        // A ring you thread is the platform's one word for "this activates something" - the
+        // Scarab's placed switches, Astro League's goals, the painting's stroke gates, and (since
+        // this pass) every freestyle toy and every choice a toy unfolds into. What makes it
+        // teachable rather than decorative is a single rule:
+        //
+        //     THE RING IS THE TRIGGER VOLUME, DRAWN AT ITS OWN RADIUS.
+        //
+        // so a ring can never advertise a volume the collider does not have, and "fly through the
+        // ring" is a promise the code keeps. `Toy` therefore draws its own from its own collider
+        // rather than each toy's builder remembering to - see Toy.ConfigureSwitchRing for the two
+        // explicit opt-outs (resize, waive).
+
+        /// <summary>Ring tube radius as a fraction of ring radius (<see cref="RingMesh"/>: r/R = 0.04/0.5).</summary>
+        public const float RingTubeFraction = 0.08f;
+
+        /// <summary>
+        /// Widest a station's switch ring may be, as a fraction of its matrix's spacing. A
+        /// station's TRIGGER can legitimately overrun half the gap to its neighbour (the vessel
+        /// changer's does, and a level-5 lifeform variant's does), but rings that interpenetrate
+        /// read as noise instead of as a row of switches. Threading a ring smaller than its
+        /// trigger still always fires it, so clamping never breaks the promise above.
+        /// </summary>
+        public const float MaxRingSpacingFraction = 0.45f;
+
+        /// <summary>
+        /// A <b>switch ring</b>: one continuous ring square across the flight path, at the radius
+        /// of the trigger volume it advertises. Named in the hierarchy so it is never confused
+        /// with an emblem's tilted halo. Returns null for a waived (non-positive) radius.
+        /// </summary>
+        public static GameObject AddSwitchRing(Transform parent, float radius, Color accent,
+            Material prismMaterial = null)
+        {
+            if (radius <= 0.01f) return null;
+            var ring = AddRingBody(parent, radius, accent, prismMaterial);
+            ring.name = "SwitchRing";
+            return ring;
+        }
+
+        /// <summary>Switch ring radius for a matrix station, clamped by <see cref="MaxRingSpacingFraction"/>.</summary>
+        public static float StationRingRadius(float triggerRadius, float stationSpacing)
+            => Mathf.Min(triggerRadius, Mathf.Max(1f, stationSpacing) * MaxRingSpacingFraction);
+
+        /// <summary>
+        /// Height at which a label clears a switch ring of <paramref name="ringRadius"/> for text
+        /// of <paramref name="fontSize"/>. TMP anchors world text at its MIDDLE and toy labels run
+        /// to two lines (the second at 60%), so half a block is 0.8 x fontSize - clearing that plus
+        /// the ring's own tube is what keeps text off the rim.
+        /// </summary>
+        public static float SwitchRingLabelHeight(float ringRadius, float fontSize)
+            => ringRadius * (1f + RingTubeFraction) + fontSize * 0.85f;
+
+        /// <summary>
+        /// A label sized for content <paramref name="contentRadius"/> across, hung clear above that
+        /// station's switch ring. Font size is unchanged from the pre-ring layout
+        /// (<c>contentRadius x 1.425</c>, i.e. the old <c>1.9 x radius</c> offset x 0.75); only the
+        /// height moves, so the far read is exactly what it was.
+        /// </summary>
+        public static TMP_Text AddRingedLabel(Transform parent, string text, Color color,
+            float ringRadius, float contentRadius)
+        {
+            float fontSize = Mathf.Max(8f, contentRadius * 1.425f);
+            return AddLabel(parent, text, color, SwitchRingLabelHeight(ringRadius, fontSize), fontSize);
+        }
+
         /// <summary>
         /// A fly-through gate: trigger root facing <paramref name="flightDirection"/>, ring, hub,
         /// label, and a <see cref="SwapToy"/> that raises <paramref name="onActivated"/> (inheriting
@@ -252,15 +321,18 @@ namespace CosmicShore.Gameplay
             System.Action<SwapToy> onActivated)
         {
             var root = CreateBareRoot(gateName, parent, position, position + flightDirection, ringRadius);
-            AddRingBody(root.transform, ringRadius, color, hubPrismMaterial);
             if (hubIsCone)
                 AddConeBody(root.transform, ringRadius * 0.22f, ringRadius * 0.66f, color, hubPrismMaterial);
             else
                 AddSphereBody(root.transform, ringRadius * 0.16f, color);
-            AddLabel(root.transform, label, color, ringRadius * 1.5f);
+            // 0.79 x the ring reproduces the pre-ring font exactly (old offset 1.5R x 0.75).
+            AddRingedLabel(root.transform, label, color, ringRadius, ringRadius * 0.79f);
 
             var toy = root.AddComponent<SwapToy>();
             if (onActivated != null) toy.Activated += onActivated;
+            // A gate's ring IS its switch ring - same builder, same rule, in the gate's own colour
+            // and (for trail gates) the stroke domain's prism material.
+            toy.ConfigureSwitchRing(ringRadius, color, hubPrismMaterial);
             toy.Initialize(definition, context, default);
             return root;
         }
@@ -451,8 +523,15 @@ namespace CosmicShore.Gameplay
             };
         }
 
-        /// <summary>Adds a world-space TMP label above the body. Returns the text so callers can recolor/retext it.</summary>
-        public static TMP_Text AddLabel(Transform parent, string text, Color color, float upOffset)
+        /// <summary>
+        /// Adds a world-space TMP label above the body. Returns the text so callers can
+        /// recolor/retext it. <paramref name="fontSize"/> defaults to the historic
+        /// <c>0.75 x upOffset</c>; pass it explicitly when the height is set by something other
+        /// than legibility (a label hung above a switch ring - see <see cref="AddRingedLabel"/>),
+        /// or the text grows with the clearance it needed.
+        /// </summary>
+        public static TMP_Text AddLabel(Transform parent, string text, Color color, float upOffset,
+            float fontSize = 0f)
         {
             // 3D TextMeshPro uses a RectTransform - create it up front so AddComponent is safe.
             var go = new GameObject("Label", typeof(RectTransform));
@@ -461,7 +540,7 @@ namespace CosmicShore.Gameplay
 
             var tmp = go.AddComponent<TextMeshPro>();
             tmp.text = text;
-            tmp.fontSize = Mathf.Max(8f, upOffset * 0.75f);
+            tmp.fontSize = fontSize > 0f ? fontSize : Mathf.Max(8f, upOffset * 0.75f);
             tmp.alignment = TextAlignmentOptions.Center;
             tmp.color = color;
             if (TMP_Settings.defaultFontAsset) tmp.font = TMP_Settings.defaultFontAsset;

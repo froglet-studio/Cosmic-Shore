@@ -25,7 +25,7 @@ Transform:
   m_GameObject: {fileID: 291093895247090278}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 3, y: 0.4, z: 15.13}
+  m_LocalPosition: {x: 3.2, y: 0.4, z: 1.3}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -583,7 +583,7 @@ Transform:
   m_GameObject: {fileID: 4896015700365488556}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -3, y: 0.4, z: 15.13}
+  m_LocalPosition: {x: -3.2, y: 0.4, z: 1.3}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -650,13 +650,13 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   prefab: {fileID: 7632677803272750685, guid: 1bdcea9e9329dd141af7ab874a4d31a2, type: 3}
-  defaultCapacity: 25
-  maxSize: 100
+  defaultCapacity: 90
+  maxSize: 320
   enableBufferMaintenance: 1
-  bufferSizeTarget: 25
-  maxInstantiateRate: 25
-  baseInstantiateRate: 10
-  maxAddsPerFrame: 15
+  bufferSizeTarget: 90
+  maxInstantiateRate: 90
+  baseInstantiateRate: 30
+  maxAddsPerFrame: 24
 --- !u!1 &6015654187000967467
 GameObject:
   m_ObjectHideFlags: 0
@@ -1550,6 +1550,50 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   impactorObject: {fileID: 1074530091616622690}
+--- !u!1 &7311204885573910001
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 7311204885573910002}
+  - component: {fileID: 7311204885573910003}
+  m_Layer: 8
+  m_Name: GunSprayAccuracy
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &7311204885573910002
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7311204885573910001}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 1556226694549335395}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &7311204885573910003
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7311204885573910001}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a50adf365dbc4ea4b3bb8194dcf030d5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1 &9050015968446005013
 GameObject:
   m_ObjectHideFlags: 0
@@ -1584,6 +1628,7 @@ Transform:
   - {fileID: 4283882808933721286}
   - {fileID: 6292733927990637921}
   - {fileID: 6748576735068701544}
+  - {fileID: 7311204885573910002}
   m_Father: {fileID: 4853044355858455827}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &5466809915974853214
@@ -1603,6 +1648,7 @@ MonoBehaviour:
   - {fileID: 4658886838346608747}
   - {fileID: 3509077200891672609}
   - {fileID: 4728567231997304035}
+  - {fileID: 7311204885573910003}
 --- !u!1 &9173360200931120276
 GameObject:
   m_ObjectHideFlags: 0
@@ -1664,13 +1710,13 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   prefab: {fileID: 4563009547826722997, guid: 2de9e3b14a5518041ad99111194d0591, type: 3}
-  defaultCapacity: 40
-  maxSize: 200
+  defaultCapacity: 120
+  maxSize: 600
   enableBufferMaintenance: 1
-  bufferSizeTarget: 90
-  maxInstantiateRate: 90
-  baseInstantiateRate: 30
-  maxAddsPerFrame: 8
+  bufferSizeTarget: 260
+  maxInstantiateRate: 260
+  baseInstantiateRate: 90
+  maxAddsPerFrame: 16
 --- !u!114 &5511220033445566778
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1685,6 +1731,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   condition: 1
   upgradeGate: 4
+  wardedSources: -1
 --- !u!1001 &779933931439586912
 PrefabInstance:
   m_ObjectHideFlags: 0

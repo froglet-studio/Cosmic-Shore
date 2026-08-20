@@ -348,7 +348,6 @@ namespace CosmicShore.Gameplay
             // The matrix is the tuning BENCH: a station spawns the EXACT variant it shows, so
             // the cell's element/level spread must not re-roll it here.
             clone.SpreadElements = false;
-            clone.Levels.Enabled = false;
 
             // Spawn INTO THE FOOD, not at the station. The variant stations are layered
             // outward and can sit hundreds of units BEYOND the membrane; a creature
@@ -392,7 +391,6 @@ namespace CosmicShore.Gameplay
             clone.InitialLevel = level;
             // Bench semantics - see SpawnFaunaVariant.
             clone.SpreadElements = false;
-            clone.Levels.Enabled = false;
 
             // A POPULATION (InitialSpawnCount), rooted AT the station so the tester sees it
             // grow right where they flew - Plant() would otherwise disperse it across the cell.
@@ -478,10 +476,15 @@ namespace CosmicShore.Gameplay
             float radius, Color accent, bool bodySphere = true, GameObject model = null)
         {
             var go = ToyFactory.CreateBareRoot(label, parent, position, transform.position, radius * 1.6f);
+            // Clamped against the bench's spacing: a level-5 variant station is 2.4x the base
+            // radius, so its trigger overruns half the gap to its neighbour and an un-clamped ring
+            // would interpenetrate the one beside it.
+            float ringRadius = ToyFactory.StationRingRadius(radius * 1.6f, _def.StationSpacing);
+            ToyFactory.AddSwitchRing(go.transform, ringRadius, accent);
             if (bodySphere)
                 ToyFactory.AddSphereBody(go.transform, radius, accent);
             if (model) model.transform.SetParent(go.transform, false);
-            ToyFactory.AddLabel(go.transform, label, accent, radius * 1.9f);
+            ToyFactory.AddRingedLabel(go.transform, label, accent, ringRadius, radius);
 
             var station = go.AddComponent<ToyMatrixStation>();
             station.Bind(Context);

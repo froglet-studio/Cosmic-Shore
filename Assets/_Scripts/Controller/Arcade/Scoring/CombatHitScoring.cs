@@ -25,8 +25,12 @@ namespace CosmicShore.Gameplay
         {
             if (shooterStats == null) return;
 
-            if (hitClass == CombatHitClass.Missile) shooterStats.MissileHitsLanded++;
-            else                                    shooterStats.BulletHitsLanded++;
+            switch (hitClass)
+            {
+                case CombatHitClass.Missile: shooterStats.MissileHitsLanded++; break;
+                case CombatHitClass.Debuff:  shooterStats.DebuffHitsLanded++;  break;
+                default:                     shooterStats.BulletHitsLanded++;  break;
+            }
 
             int points = rule != null ? rule.PointsForCombatHit(hitClass) : 0;
             if (points != 0) shooterStats.CombatPoints += points;

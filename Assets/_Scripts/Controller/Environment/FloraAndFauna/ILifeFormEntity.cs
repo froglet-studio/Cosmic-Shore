@@ -19,11 +19,19 @@ namespace CosmicShore.Gameplay
         // base prefab serves every variant (4 elements x 5 levels = 20) instead of a prefab per
         // element. The element lives on the lifeform's crystal (the LifeFormCrystal invariant);
         // the level scales the creature via its species config. See Docs/ECOSYSTEM.md §3.
+        //
+        // The two are acquired differently, and deliberately (Docs/ECOSYSTEM.md §33): the
+        // element is an IDENTITY a lifeform is born with (and passes to its offspring), while
+        // the level is an ACHIEVEMENT it earns after birth and cannot pass on.
 
         /// <summary>The element this lifeform carries (its crystal's element; None if uncrystaled).</summary>
         Element Element { get; }
 
-        /// <summary>This lifeform's level, 1..5. Raised in-world (e.g. an own-domain Crystal Joust).</summary>
+        /// <summary>
+        /// This lifeform's level, 1..5. Every lifeform is BORN at 1 and earns the rest in-world:
+        /// a plant per reproduction, a creature per FeedsPerLevel feeds, and either by an
+        /// own-domain Crystal Joust (the Squirrel's Space-5 'Shepherd').
+        /// </summary>
         int Level { get; }
 
         /// <summary>This lifeform's current travel speed (world units/s). 0 for rooted flora -
@@ -43,7 +51,8 @@ namespace CosmicShore.Gameplay
         /// </summary>
         bool Jousted(string killerName);
 
-        /// <summary>Raise this lifeform's level by one (capped at 5). Returns false at the cap.</summary>
+        /// <summary>Raise this lifeform's level by one (capped at 5). Returns false at the cap.
+        /// Call only from an EARNING event - reproduction, feeding, or an ally's joust.</summary>
         bool LevelUp();
     }
 }

@@ -93,7 +93,27 @@ namespace CosmicShore.Gameplay
         /// the mass. Read-only on purpose: the controller owns what goes in.
         /// </summary>
         public Trail SecondaryTrail => Trail2;
+        /// <summary>
+        /// The AUTHORED z extent of a trail prism — <see cref="BaseScale"/>.z alone.
+        ///
+        /// **This is not the length a prism is actually laid at.** `CreateBlock` multiplies it by
+        /// `ZScaler`, the boost scale, and the cube-rooted MASS volume multiplier before spawning,
+        /// so on an upgraded vessel the real prism is materially longer than this. Sizing anything
+        /// geometric off this property is how the `waitTillOutsideSkimmer` clearance delay came to
+        /// turn a prism's collider on while it was still inside the ship; that call site now
+        /// measures the local `scale.z` instead, leaving this with no consumer in the controller.
+        /// Kept as public surface, but reach for the spawn-time `scale` if you need real geometry.
+        /// </summary>
         public float TrailZScale => BaseScale.z; // <- from BaseScale now
+
+        // Guards on the waitTillOutsideSkimmer clearance delay (see CreateBlock). Neither is a
+        // tuning dial: the speed floor stops a stationary or near-stationary vessel dividing its
+        // way to an infinite delay, and the ceiling stops a slow lay leaving a prism collider-less
+        // (and therefore un-hittable by ANYONE, since this delay is not owner-scoped) for longer
+        // than the self-trail grace would have covered anyway.
+        const float MinClearanceSpeed = 1f;
+        const float MaxClearanceWaitSeconds = 2f;
+
         public event Action<Prism> OnBlockSpawned;
         /// <summary>Static event: fired each time a danger block is created during overheat. Param = owner player name.</summary>
         public static event Action<string> OnDangerBlockCreated;
@@ -101,7 +121,20 @@ namespace CosmicShore.Gameplay
         private void OnDisable()
         {
             StopSpawn();
-            ClearTrails();
+
+            // Deliberately NO ClearTrails() here. The wake OUTLIVES its vessel - mass is
+            // conserved, the prisms stay in the world, and a rider must still be able to ride
+            // them - so the Trail containers must stay live too. Clearing on disable emptied
+            // the lists while every laid prism still pointed at them, and "member of an empty
+            // container" reads as a one-block prismscape: the topology routed riders of any
+            // DESPAWNED vessel's trail (a swapped-away Squirrel's, always) onto the SURFACE
+            // follower, whose along-z "normal" on trail prisms flung the hull everywhere and
+            // whose nearest-ground search hopped it between both ribbons. The Trail objects
+            // are plain C# state kept alive by the prisms that reference them; they die with
+            // their last prism, which is the correct lifetime. Explicit resets that MEAN to
+            // drop the bookkeeping (a game-mode turn reset, the cell-swap drain) still call
+            // ClearTrails() themselves - and Clear() now un-stamps membership so even those
+            // leave honest container-less prisms behind, never members of an empty list.
         }
 
         /// <summary>Initializes and starts spawning.</summary>
@@ -242,7 +275,8 @@ namespace CosmicShore.Gameplay
 
             // --- Position & Rotation ---
             float xShift = halfGap == 0 ? 0 : (scale.x / 2f + Mathf.Abs(halfGap)) * Mathf.Sign(halfGap);
-            Vector3 pos = transform.position - vesselStatus.Course * offset + vesselStatus.ShipTransform.right * xShift;
+            Vector3 pos = transform.position - vesselStatus.Course * offset
+                        + vesselStatus.ShipTransform.right * xShift;
             Quaternion rot = vesselStatus.blockRotation;
 
             // --- Ask factory to spawn Interactive prism (pooled) ---
@@ -269,9 +303,22 @@ namespace CosmicShore.Gameplay
             // Team
             prism.ChangeTeam(vesselStatus.Domain);
 
-            // Wait time (uses TrailZScale from BaseScale)
+            // Wait time — how long this prism's collider stays off so the vessel that laid it can
+            // get clear. Measured against `scale.z`, the length this prism is ACTUALLY being laid
+            // at, not the authored `TrailZScale` (= BaseScale.z) it used to use: BaseScale.z omits
+            // both ZScaler and the MASS volume multiplier applied above, so an upgraded vessel
+            // laying stretched mass had its collider come on while the prism was still inside the
+            // ship. Un-upgraded vessels are unchanged — with ZScaler 1 and no boost/volume scaling
+            // `scale.z` IS `BaseScale.z`, so this only ever lengthens the delay when the prism is
+            // genuinely longer.
+            //
+            // Note this delay hides the prism from EVERYONE, which is why it stays a geometry
+            // correction and is not the lever for self-trail contact: that is owner-scoped and
+            // lives in SelfTrailContactConfigSO.
             prism.waitTime = waitTillOutsideSkimmer
-                ? (skimmer.transform.localScale.z + TrailZScale) / vesselStatus.Speed
+                ? Mathf.Min((skimmer.transform.localScale.z + scale.z) /
+                            Mathf.Max(vesselStatus.Speed, MinClearanceSpeed),
+                            MaxClearanceWaitSeconds)
                 : waitTime;
 
             if (_dangerMode)
@@ -300,6 +347,14 @@ namespace CosmicShore.Gameplay
             trail.Add(prism);
             prism.prismProperties.Index = (ushort)trail.TrailList.IndexOf(prism);
             prism.Initialize(vesselStatus.PlayerName);
+
+            // AFTER Initialize (pool-reuse reset clears membership - AssignTrail's contract).
+            // This stamp is what makes a wake block a member of ITS ribbon: without it every
+            // wake prism either had NO container (fresh instance - the attach gate refused it)
+            // or a STALE one from a previous pooled life (the gate passed against the wrong
+            // ribbon and the ride followed garbage). The twin trails were always two separate
+            // Trail objects; this is what finally lets a rider see that.
+            prism.AssignTrail(trail);
 
             // Events
             OnBlockSpawned?.Invoke(prism);

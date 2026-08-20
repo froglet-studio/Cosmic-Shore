@@ -1130,7 +1130,7 @@ Transform:
   - {fileID: 1652470095801812404}
   - {fileID: 2053099346465173604}
   - {fileID: 8733703129211920491}
-  - {fileID: 1843551402662252762}
+  - {fileID: 7734120558419063312}
   m_Father: {fileID: 2209447707423869789}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &3941163936891360053
@@ -1150,7 +1150,7 @@ MonoBehaviour:
   - {fileID: 8363998993469153081}
   - {fileID: 1396157652283013214}
   - {fileID: 3572016475912017619}
-  - {fileID: 2939051450022613431}
+  - {fileID: 7734120558419063313}
 --- !u!1 &5673849402713387567
 GameObject:
   m_ObjectHideFlags: 0
@@ -1546,54 +1546,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5bf98bef1c4b4178bc5562c99eaf0c12, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  crystalPrefab: {fileID: 2116889879390265659, guid: 922e4ca81ec32e9468c23c3a12a3c65c,
+  crystalPrefab: {fileID: 5535990081244205891, guid: 54802b89e00a0ed4281025fa5e770811,
     type: 3}
-  OnMiniGameTurnEnd: {fileID: 11400000, guid: 91ea9101389ea884babdf61e446ced27, type: 2}
---- !u!1 &6636369852405642565
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 1843551402662252762}
-  - component: {fileID: 2939051450022613431}
-  m_Layer: 0
-  m_Name: ToggleShardActionExecutor
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!4 &1843551402662252762
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 6636369852405642565}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 1252869930824874955}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &2939051450022613431
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 6636369852405642565}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 4eb9f73e42824c678ee068be55686a7d, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  shardFieldBus: {fileID: 11400000, guid: 3aa19b61104697c44a06b8d97816f741, type: 2}
+  upgradedCrystalPrefab: {fileID: 2116889879390265659, guid: 922e4ca81ec32e9468c23c3a12a3c65c,
+    type: 3}
+  config: {fileID: 11400000, guid: 205c7e57ccef34f4f858f04857f7c542, type: 2}
   OnMiniGameTurnEnd: {fileID: 11400000, guid: 91ea9101389ea884babdf61e446ced27, type: 2}
 --- !u!1 &6776402933378899515
 GameObject:
@@ -1991,6 +1948,7 @@ GameObject:
   - component: {fileID: 1519464876554390189}
   - component: {fileID: 8100000000000000081}
   - component: {fileID: 8100000000000000083}
+  - component: {fileID: 8100000000000000085}
   m_Layer: 0
   m_Name: Dolphin
   m_TagString: Player_Ship
@@ -2208,11 +2166,16 @@ MonoBehaviour:
   decayBoost: 0
   MaxBoostMultiplier: 5
   BoostDecayRate: 0.1
+  singleTriggerDrift: 0
+  holdSpeedWhileDrifting: 1
+  vectorFlightModel: 0
+  driftOvershootCeiling: 1.25
+  driftThrottlePolicy: 1
   DriftDamping: 0
   boostChanged: {fileID: 0}
   MinimumSpeed: 0
   ThrottleScaler: 0
-  DefaultMinimumSpeed: 10
+  DefaultMinimumSpeed: 0
   DefaultThrottleScaler: 68
   ThrottleScalerMultiplier:
     Enabled: 0
@@ -2249,12 +2212,12 @@ MonoBehaviour:
   waitTillOutsideSkimmer: 1
   shielded: 0
   trailVolume:
-    Enabled: 1
+    Enabled: 0
     Value: 1
     Min: 1
-    Max: 2.5
-    element: 2
-  massUpgradeShieldsTrail: 1
+    Max: 1
+    element: 0
+  massUpgradeShieldsTrail: 0
   offset: 0
   Gap: 1
   MinimumGap: 1
@@ -2323,6 +2286,8 @@ MonoBehaviour:
   raycastWidth: 2
   ram: 0
   drift: 1
+  approachRunSeconds: 2.5
+  preferApproachRunDistance: 1
   abilities:
   - Ability: {fileID: 11400000, guid: 51198b110e790e047b4fe6979db3f47c, type: 2}
     Duration: 2
@@ -2419,10 +2384,9 @@ MonoBehaviour:
     - {fileID: 11400000, guid: 51198b110e790e047b4fe6979db3f47c, type: 2}
     - {fileID: 11400000, guid: ab7bab2c9e3d95e478b95f459e44b5c2, type: 2}
     - {fileID: 11400000, guid: ca0139e36e14b1c4ba0b9fb12808d8cb, type: 2}
-    - {fileID: 11400000, guid: a8d01c9d7c3bfb245ba8e3303bdecfc6, type: 2}
   - InputEvent: 1
     ShipActions:
-    - {fileID: 11400000, guid: 205c7e57ccef34f4f858f04857f7c542, type: 2}
+    - {fileID: 11400000, guid: b58d21e7f3a94c60ae7d3b19c8054f2a, type: 2}
   _resourceEventClassActions: []
   _onButtonPressed: {fileID: 11400000, guid: e284840cd85013046af88075baea6be9, type: 2}
   _onButtonReleased: {fileID: 11400000, guid: 0323078ac5f77e345a4f10b93669d97e, type: 2}
@@ -2497,7 +2461,11 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   baseView: {fileID: 117603555638778835}
   view: {fileID: 117603555638778835}
+  blastEffect: {fileID: 11400000, guid: 4392889d8d23e384ebeb710b68640072, type: 2}
+  energyResourceName: Energy
   energyResourceIndex: 0
+  driftBoostResourceName: Boost
+  driftBoostResourceIndex: 1
 --- !u!114 &5259057883249728580
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -3168,6 +3136,21 @@ MeshRenderer:
   m_SortingLayer: 0
   m_SortingOrder: 0
   m_AdditionalVertexStreams: {fileID: 0}
+--- !u!114 &8100000000000000085
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7014513329719026904}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6b25636a8d704de38ec377554f34c538, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  condition: 3
+  upgradeGate: 4
+  wardedSources: 1
 --- !u!1001 &4618456780277366565
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -3825,3 +3808,55 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   debugLog: 0
+--- !u!1 &7734120558419063311
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 7734120558419063312}
+  - component: {fileID: 7734120558419063313}
+  m_Layer: 0
+  m_Name: EchoSightActionExecutor
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &7734120558419063312
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7734120558419063311}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 1252869930824874955}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &7734120558419063313
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7734120558419063311}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e93c7052a6d84bf1ae30592c7d418b6f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  blastEffect: {fileID: 11400000, guid: 4392889d8d23e384ebeb710b68640072, type: 2}
+  vesselHighlightFadeSeconds: 0.18
+  vesselHighlightGain: 4
+  vesselHighlightSaturation: 0.85
+  vesselHaloScale: 2.4
+  vesselHaloMinScreenRadius: 0.055
+  vesselHaloIntensity: 1.4
+  vesselHaloEnabled: 1

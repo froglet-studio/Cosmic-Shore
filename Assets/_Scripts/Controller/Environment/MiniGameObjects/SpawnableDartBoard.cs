@@ -60,7 +60,9 @@ namespace CosmicShore.Gameplay
             for (int ring = 1; ring <= ringCount; ring++)
             {
                 var td = trailData[ring - 1];
-                var trail = new Trail();
+                // isLoop: each ring CLOSES, so the walks wrap instead of reflecting at a
+                // phantom end and a rider can circle it indefinitely either way.
+                var trail = new Trail(isLoop: true);
                 trails.Add(trail);
 
                 int blocksInRing = blockCount * ring;
@@ -86,8 +88,8 @@ namespace CosmicShore.Gameplay
                     blockObj.transform.localPosition = point.Position;
                     blockObj.transform.localRotation = point.Rotation;
                     blockObj.TargetScale = point.Scale;
-                    blockObj.Trail = trail;
                     blockObj.Initialize();
+                    blockObj.AssignTrail(trail);   // AFTER Initialize - reset clears membership
                     trail.Add(blockObj);
                     // Custom loop bypasses PrismTrailBuilder.LayOne — register with the
                     // arena-ready gate so ring blocks can't pop in after the connecting screen.

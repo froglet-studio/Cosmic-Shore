@@ -43,6 +43,51 @@ run the `/reorient` skill first and act on its verdict before shipping.
   same new **doc section number** (both took `§4.6`) merges clean per-hunk and produces a
   document with two of them. When you renumber, renumber every inbound reference — and
   only YOURS: grep the whole repo, then split the hits by which section they mean.
+  **The same collision happens WITHOUT a second branch, against the document's own past** —
+  a migration-tracker row id (`C6`), a bug id (`B10`), a test id. You pick the "next" id by
+  reading the last row, and the last row is not the highest: `PRISM_ANIMATION.md`'s tracker
+  runs C1…C13b with C6 sitting mid-table. Grep for the id you intend to claim BEFORE writing
+  it into code comments, doc prose, tool docstrings and commit messages — by the time you
+  notice, it is spread across a dozen files and the fix is a sweep, not an edit.
+- **A parallel mode/feature branch will have claimed the same ENUM VALUES.** The id-collision
+  rule above is not only about doc sections and tracker rows: two branches adding a game mode, a
+  toast situation, a log-channel bit, or any hand-numbered enum member both pick "the next one",
+  and git merges the two additions cleanly into an enum with duplicate values. One session hit
+  this on THREE enums at once (`GameModes` 42, `GameToastSituation` 60-62, `CSLogChannel 1 << 2`).
+  Resolve by renumbering YOURS (theirs already merged), then sweep every place the NUMBER travels
+  rather than the name — for a game mode that is the enum, the arcade card asset's `Mode:`, and
+  the toast config's `gameMode:`/`situation:`/`resetOnSituation:` ids. Code that switches on the
+  enum by NAME needs no change, which is exactly why the stale numbers hide in assets. Verify with
+  a duplicate-value check over the whole enum, not just your own rows.
+- **"Keep both sides" is right for list entries and WRONG inside a chain.** Resolving conflicts by
+  concatenating HEAD and theirs works for independent fields, list items and doc paragraphs. It
+  produces invalid code when both sides are links in one expression: two halves of a `&&` chain
+  become two statements, and two halves of a `+` string chain become two ARGUMENTS (a `HelpBox`
+  call silently gaining a third parameter). Compile after every keep-both resolution — and treat
+  any conflict hunk whose last non-blank character is `&&`, `+`, `,` or `?` as one needing a
+  hand-joined merge, not a concatenation.
+- **A parallel branch may have fixed the SAME root cause while you worked.** Read the base
+  branch's new commits by subject before you resolve anything — this is not a merge
+  conflict, it is a design collision, and git will happily interleave two fixes for one
+  bug into a tree that carries both. When it happens: pick ONE implementation on merit and
+  take it **wholesale** (`git checkout --theirs <file>`), then delete the machinery yours
+  needed and theirs does not — a half-merged pair of fixes is worse than either. Then
+  **re-scope your docs to what is still genuinely yours**: your section was written when
+  you owned the whole story, and left as-is the repo ends up with two competing narratives
+  of one bug. Reference theirs rather than restating it, and keep only the part they do
+  not cover. Expect this whenever the base branch touched the same files — check with
+  `git log --oneline <merge-base>..origin/<base> -- <your changed files>`.
+- **If the branch ships a doc that cites `file:line`, the merge just rotted it.** Line
+  references are the one kind of prose that goes stale from a commit that never touched
+  your branch. After merging the base, re-resolve EVERY reference mechanically — extract
+  them, confirm the file exists, confirm the line is in range, and then **confirm the
+  content at that line still says what you claimed**. The third check is the one that
+  matters: in-range passes happily while pointing at the wrong line. One session shipped
+  a follow-up doc whose six `Cell.cs` refs all slid 22 lines because an unrelated upstream
+  commit added 28, and the same sweep caught an off-by-one that had been wrong since it
+  was written. Where the reference has to survive, **anchor on the symbol and demote the
+  number to a hint** ("`RetireWorldIntoSuctionRoot` (`:2058`) — re-grep before trusting
+  the number"), because the next drift is not preventable, only survivable.
 - Restate, in a few sentences, WHAT the branch delivers and WHY. If you can't, you are
   not ready to ship — go re-read the diff.
 
@@ -58,6 +103,27 @@ Walk every changed file against these gates:
   migrated? Renamed/deleted assets - every GUID reference updated?
 - **Verification honesty**: list what was actually verified (in-editor play, tests) vs.
   what only compiles-by-inspection. Unverified risk goes in the PR body, not under the rug.
+- **A doc that asserts a consequence is not evidence the consequence happens — find the
+  PRODUCER.** When a doc (or a verification step, or CLAUDE.md) says "X still lands", "contact
+  costs Y", or "the gate leaves Z alone", grep for who actually *calls* the thing that produces
+  X/Y/Z for that vessel/mode/path. A passthrough that is genuinely correct — the gate really
+  does leave the channel alone — reads as verified even when nothing upstream is pushing
+  anything through it, so the claim survives review indefinitely. Four such claims shipped
+  across three docs plus CLAUDE.md describing a prism-collision slow on vessels that had no
+  slow effect wired at all. The same shape hides behind NAMES: a serialized field called
+  `vesselSlowedByRhinoDangerPrismEvent` under a `"Slow Viewer Integration"` header belonged to
+  an effect that only muted an input. Treat "the docs say so" and "the identifier says so" as
+  hypotheses to check, never as the check.
+- **The mirror of that rule: a "dead surface" claim decays into a live path, and nothing
+  announces it.** "Unreferenced", "no producer anywhere", "provably dead" are true *as of a
+  date* — the next feature branch is free to wire the thing up, and it will not think to go
+  correct a deadness claim it never read. So a doc, comment, or prompt that licenses a
+  DELETION must have its emptiness re-proved at ship time, not inherited: grep for the
+  producer/caller again, now. `PrismType.Grow` was documented dead in three doc sites and two
+  code comments, acquired a producer two days later, and the stale instruction to delete it
+  survived in a follow-up prompt that a fresh session would have executed. Deadness claims
+  are the most dangerous kind of stale doc, because acting on one is irreversible and the
+  code that proves them wrong is somewhere you were told not to look.
 
 ## 2.5 Tool-output gate — NEVER SKIPPED, IN EVERY MODE
 
@@ -78,7 +144,7 @@ For each hit, read it and decide from the CODE, not the name:
 
 | Kind | Evidence in the source | What the branch must contain |
 |---|---|---|
-| **READER** | only logs / `Debug.Log` / builds a report; no `AssetDatabase.Save*`, `PrefabUtility.*`, `EditorSceneManager.Mark*`, `ApplyModifiedProperties`, `CreateAsset`, `File.Write*` | nothing — say so explicitly in the report |
+| **READER** | only logs / `Debug.Log` / builds a report; no `AssetDatabase.Save*`, `PrefabUtility.*`, `EditorSceneManager.Mark*`, `ApplyModifiedProperties`, `AssetDatabase.CreateAsset`, `File.Write*` | nothing — say so explicitly in the report |
 | **WRITER** | any of the above | its output, committed |
 
 **2. Prove a WRITER's output is on the branch.** Two independent checks, both required:
@@ -95,6 +161,11 @@ git diff --stat <merge-base>..HEAD -- '*.unity' '*.prefab' '*.asset'
   saved and never committed. You cannot tell from here — **ask** (step 3).
 - Also check `Library/FrogletToolChangeLedger.json` when it exists (machine-local, and
   absent in a remote container): it names the exact paths each tool wrote.
+- **Grep for `AssetDatabase.CreateAsset`, never a bare `CreateAsset`** — `[CreateAssetMenu]` is
+  an attribute on hundreds of ScriptableObject classes and matches the short form, so a bare grep
+  reports ordinary gameplay SOs as WRITER tools. Confirm every hit by reading the matching line;
+  a hit whose line is an attribute is not a writer, and a branch whose only "writers" are
+  `[CreateAssetMenu]` attributes has **no tools at all**.
 
 **3. Prompt the human — this is a blocking question, not a note.** Use
 `AskUserQuestion`, name each WRITER tool and the asset paths it targets, and ask which

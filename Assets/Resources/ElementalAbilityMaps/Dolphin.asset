@@ -15,42 +15,54 @@ MonoBehaviour:
   vesselClass: 2
   entries:
   - Element: 1
-    AbilityLabel: Crystal Seeding
-    AbilityDescription: Charge shortens the recharge between team crystals (authored
-      on DeployTeamCrystalActionSO.cooldownMultiplierAtFullCharge, x0.5 at level 10;
-      the generic map multiplier stays 1.0 so it does not also move the charge-boost
-      peak); at level 5 the Dolphin carries a SECOND crystal and can plant two back
-      to back.
+    AbilityLabel: Echo Sight
+    AbilityDescription: Hold the right trigger and every prism standing inside the next
+      crystal blast's destruction volume lights up. Charge sets how THICK that blast is
+      - the capsule's diameter across the beam, authored on
+      VesselExplosionByCrystalEffectSO as 0.75x the authored core at the resting level
+      rising to 1.5x at level 10. It is the one element whose slot both AIMS the weapon
+      and SHAPES it, which is why the sight and the thickness share it: the profile you
+      are widening is the profile the sight draws. Note the total extent across the gape
+      is set by banked energy, so Charge does not make the blast bigger - it redistributes
+      that extent, trading a long thin beam for a fat round one. At level 5 the sight
+      also lights up VESSELS caught in the same volume, each in its own domain's colour.
     Input: 1
     MultiplierAtFullLevel: 1
     MinMultiplier: 1
     UnlockLevel: 5
     RelockBelowLevel: 4
     LatchPolicy: 0
-    UpgradeLabel: Twin Seed
-    UpgradeDescription: Carry two team crystals at once instead of one.
+    UpgradeLabel: Pilot Echo
+    UpgradeDescription: The sight shows pilots too - any vessel inside the blast lights
+      up in its own domain colour.
   - Element: 2
-    AbilityLabel: Drift Trail
-    AbilityDescription: Mass raises the VOLUME of each drift prism (authored as the
-      trailVolume ElementalFloat on the vessel's VesselPrismController, 1 -> 2.5 at
-      level 10, cube root per axis; the generic map multiplier stays 1.0 to avoid
-      double-dipping); at level 5 drift prisms arrive shielded - massUpgradeShieldsTrail
-      gated on IsDrifting, the same machinery behind the Squirrel's Heavy Trail.
-    Input: 2
+    AbilityLabel: Crystal Seeding
+    AbilityDescription: PASSIVE - no input. A cooldown runs continuously and each time it
+      completes the Dolphin seeds one crystal at a random point in the cell's CYTOPLASM
+      (the shell between nucleus and membrane), then restarts immediately. Mass shortens
+      that recharge (authored on DeployTeamCrystalActionSO.cooldownMultiplierAtFullMass,
+      x0.5 at level 10; the generic map multiplier stays 1.0 so the recharge is driven by
+      exactly one number). Below level 5 the seed is an ordinary OMNI crystal wearing the
+      lime free-for-all CTA - your own ammunition, standing in open space, for any pilot
+      who reaches it first. At level 5 the seed lands TEAM-locked and only your domain can
+      collect it.
+    Input: 0
     MultiplierAtFullLevel: 1
     MinMultiplier: 1
     UnlockLevel: 5
     RelockBelowLevel: 4
     LatchPolicy: 0
-    UpgradeLabel: Hard Wake
-    UpgradeDescription: Drift prisms arrive shielded (one-hit ablative armour).
+    UpgradeLabel: Claimed Seed
+    UpgradeDescription: Seeded crystals land team-locked - only your domain can collect
+      them.
   - Element: 3
-    AbilityLabel: Cone Blast
-    AbilityDescription: Space carries the crystal-impact cone further down-range
-      (authored on VesselExplosionByCrystalEffectSO._heightMultiplierAtFullSpace, x2
-      at level 10; the cone's ANGLE is set by skim energy, not by Space, so the two
-      shape the blast independently); at level 5 the blast stops eating the pilot's
-      own domain.
+    AbilityLabel: Echo Obliteration
+    AbilityDescription: The crystal-impact cone itself - released by flying into a crystal,
+      so it takes no input of its own. Space carries it further down-range (authored on
+      VesselExplosionByCrystalEffectSO._heightMultiplierAtFullSpace, x2 at level 10). The
+      three elements own three orthogonal dimensions of one blast - skim energy sets its
+      GAPE, Charge sets its THICKNESS, Space sets its REACH - so none of them can steal
+      what another one bought. At level 5 the blast stops eating the pilot's own domain.
     Input: 0
     MultiplierAtFullLevel: 1
     MinMultiplier: 1
@@ -62,14 +74,19 @@ MonoBehaviour:
   - Element: 4
     AbilityLabel: Charge Fill Rate
     AbilityDescription: Time raises the rate the boost meter charges while drifting
-      (authored on ChargeBoostActionSO.chargeRateMultiplierAtFullTime, x1.5 at level
-      10; the generic map multiplier stays 1.0 because VesselTransformer consumes it
-      for boost SPEED); at level 5 danger prisms pay triple skim energy.
+      (authored on ChargeBoostActionSO.chargeRateMultiplierAtFullTime, x1.5 at level 10;
+      the generic map multiplier stays 1.0 because VesselTransformer consumes it for boost
+      SPEED); at level 5 the drift itself becomes the ward - while drifting the Dolphin
+      holds the general elemental-debuff immunity state, so a danger prism's all-element
+      drain does not land.
     Input: 2
     MultiplierAtFullLevel: 1
     MinMultiplier: 1
     UnlockLevel: 5
     RelockBelowLevel: 4
     LatchPolicy: 0
-    UpgradeLabel: Live Current
-    UpgradeDescription: Skimming a danger prism grants 3x energy.
+    UpgradeLabel: Drift Ward
+    UpgradeDescription: While drifting you take no elemental debuff - a danger prism's
+      all-element drain does not land. Everything else still does: the full-strength slow
+      (x3 magnitude, x3 duration) and the halving of your banked blast energy. Your banked
+      boost is halved too, but the drift you are already in refills it.

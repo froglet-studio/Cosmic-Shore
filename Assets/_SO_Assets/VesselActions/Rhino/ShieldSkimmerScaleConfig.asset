@@ -15,11 +15,36 @@ MonoBehaviour:
   baseScale: 30
   maxScale: 120
   prismMaxScale: 100
-  stepScaleUnits: 5
-  tickSeconds: 1
-  resetDelaySeconds: 5
-  crystalHoldSeconds: 9
   prismGrowSpeed: 30
-  crystalGrowSpeed: 40
   shrinkSpeed: 10
-  maxHoldEpsilon: 0.05
+  crystalBurstFactorAtFullEnergy: 4
+  crystalBurstHoldSeconds: 2.5
+  crystalBurstGrowSpeed: 600
+  crystalBurstReturnSpeed: 150
+  energizeCostFraction: 0.1
+  energizeHoldSeconds: 1
+  energizedTailSeconds: 5
+  energizeCooldownSeconds: 5
+  visibilityMultiplier: 1.2
+  restingBladeColor: {r: 1, g: 1, b: 1, a: 1}
+  fullEnergyColor: {r: 1, g: 1, b: 1, a: 1}
+  fullEnergyBrightness: 1.8
+  energizedColor: {r: 1.4979111, g: 0.0058463, b: 0.0068495, a: 1}
+  colorTransitionSeconds: 0.25
+  igniteCrackleIntensity: 2.5
+  igniteCrackleSeconds: 0.9
+  igniteCrackleSites: 5
+  chargeCrackleInterval: 0.18
+  chargeCrackleIntensity: 1.1
+  sparkIntensity: 1.6
+  sparkSeconds: 0.45
+  sparkWorldRadius: 14
+  deniedSparkIntensity: 0.7
+  hitFlashAmount: 0.35
+  popFlashAmount: 1
+  flashDecaySeconds: 0.35
+  flashColor: {r: 2, g: 2, b: 2, a: 1}
+  popShakeIntensity: 1.2
+  popShakeDuration: 0.25
+  burstShakeMaxIntensity: 2.5
+  burstShakeDuration: 0.4
