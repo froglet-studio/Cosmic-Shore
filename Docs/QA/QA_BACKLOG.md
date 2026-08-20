@@ -1,6 +1,6 @@
 # QA Backlog — untested development on `bleeding-edge`
 
-Generated: 2026-08-18 · Scan covers: up to `55b310a6` (PRs #583–#750) · **Owner of this file: the `/qa-backlog` skill — do not hand-edit.**
+Generated: 2026-08-20 · Scan covers: up to `04756610` (PRs #583–#761) · **Owner of this file: the `/qa-backlog` skill — do not hand-edit.**
 
 > Note (2026-08-11): `bleeding-edge` was briefly force-pushed back to `0e855b24` (dropping PRs #674–#679) and then restored — the current tip `b0cf4f0f` re-includes all of that work plus PRs #680/#681/#695/#696. No items were pruned. The `windows-build-failures` build-fix branch is validated by QA-BUILD-COMPILE on Windows and has no separate item.
 
@@ -180,6 +180,27 @@ Source: `dog-fight-game-mode` (feat `3324b951`). A whole new game mode — 96 fi
 5. Return to menu and relaunch once — no leaked state, no crash.
 
 PASS: scene opens clean; the mode launches, plays a full round to a resolved scoreboard, and returns/relaunches without error; combat scoring behaves; the Boneyard arena builds as intended. FAIL: missing scripts · a scene/controller that throws on load or launch · the round never resolving · a scoreboard that doesn't tally combat hits/kills · a crash on return/relaunch.
+
+### QA-SCARAB-MODE ⬜ — the Scarab vessel + party game
+Source: PRs #755 (`scarab-party-game` — smooth nucleus release, bigger skimmer, cap overload, domain blast), #758 (`scarab-wing-prism-dais` — membrane blow-out identity test), #761 (`scarab-squirrel-colliders` — omni-only ball forge, no hull omni effects, per-cell ball overload). A large new vessel/party-game cluster (79 + 17 + 31 files), authored headless.
+
+1. Project compiles; open the Scarab vessel prefab and its mode scene — no `Missing (Mono Script)`; controller + scoring rule wired.
+2. Launch the Scarab mode (any player count): it reaches gameplay without an exception; the arena/cell builds.
+3. Fly the Scarab: the skimmer, nucleus release, cap/overload, and domain blast behave as designed; the omni-only ball forge works and hull omni effects are absent (per #761).
+4. Play a full round to the win condition; scoreboard resolves; return/relaunch clean.
+5. Confirm the Squirrel colliders touched in #761 didn't regress the Squirrel (fly it briefly).
+
+PASS: compiles, prefabs/scene intact; the Scarab mode launches, plays to a resolved scoreboard, and returns cleanly; Scarab abilities and the ball forge behave; Squirrel unaffected. FAIL: missing scripts · a scene/vessel that throws on load or launch · abilities/ball forge not working · a round that won't resolve · a Squirrel regression.
+
+### QA-BENDS-MODE ⬜ — "The Bends": the Dolphin-only debuff duel (GameModes.Bends = 42)
+Source: PR #752 (`dolphin-dogfighting-game`). A new mode — `GameModes.Bends = 42`, Dolphin-only debuff duel — 42 files, 12,899 insertions, authored headless.
+
+1. Open the Bends scene / launch the mode: no missing scripts; controller + scoring rule wired; the arena builds.
+2. Launch (AI backfill for solo): reaches gameplay without an exception; confirm it is Dolphin-only.
+3. Play the debuff-duel loop — the win/scoring condition (debuffs applied / duel outcome) behaves as designed.
+4. Play a full round to resolution; scoreboard resolves; return to menu and relaunch once — clean.
+
+PASS: scene clean; the mode launches Dolphin-only, plays its debuff duel to a resolved scoreboard, and returns/relaunches without error. FAIL: missing scripts · a controller that throws on load/launch · the duel/scoring not resolving · a crash on return/relaunch.
 
 ## Priority 1 — merged features that have never been played
 
@@ -813,6 +834,16 @@ Source: PRs #747 (`branch-spindle-gyroid-redesign` — gyroid branch is a mirror
 
 PASS: compiles; gyroid branches are mirrored half-pairs; Schwarz-P grows correctly-scaled on its tile with no bad clamps; charge flora are shielded with a well-fitted shield; continuity/mass hold. FAIL: missing scripts/None refs · a single-branch gyroid · mis-scaled/clamped Schwarz-P · charge flora with no shield or a clipping/oversized one · anything popping in/out.
 
+### QA-ECOLOGY-QUASICRYSTAL ⬜ — the Lattice cell grows to twelve quasicrystal colonies
+Source: PRs #753 (`gyroid-schwarz-flora-cell` — seed the Lattice cell with EIGHT founders, not 240), #754 (`exotic-quasicrystal-flora` — grow the Lattice cell to twelve colonies with the quasicrystal). Extends QA-ECOLOGY-LATTICE-FLORA / QA-ECOLOGY-GYROID-COLONY; a new quasicrystal flora form + the Lattice cell tuning. LOCKED ecology surface. Reference: `Docs/ECOSYSTEM.md`.
+
+1. Project compiles; freestyle → Cell Selector → the Lattice cell — it builds with no missing scripts / `None` refs.
+2. Confirm it seeds with a small number of founders (~8, not 240 — a wall of founders on boot means the seed fix didn't take) and grows out to ~twelve colonies over time.
+3. Look at the **quasicrystal** flora form — it grows as a coherent quasicrystal lattice (not a broken/degenerate mesh), alongside the gyroid/Schwarz-P species.
+4. Continuity/mass: growth blooms/withers, nothing pops; population behaves (no frozen/runaway colony) per QA-ECOLOGY-GYROID-COLONY.
+
+PASS: compiles; the Lattice cell seeds with ~8 founders and grows to ~twelve colonies; the quasicrystal form renders and grows coherently; continuity/mass hold. FAIL: missing scripts/None refs · a 240-founder boot wall · a broken/degenerate quasicrystal · anything popping in/out · a frozen or runaway colony.
+
 ## Priority 2 — lower risk, cosmetic, or data-gathering
 
 ### QA-P2-SERPENT-SKIMMER ⬜ — Serpent's dead skimmer (known, unfixed)
@@ -848,7 +879,7 @@ Source: PR #681 (`dolphin-speed-boost-tuning`). Two authored numbers changed in 
 3. Full charged-boost discharge → peak speed reaches **~357** (was 210), draining over ~2.5 s.
 4. Sanity: no other vessel's speed/boost changed (the asset is Dolphin-only).
 
-PASS: cruise ~78, fill ~3.6 s, charged peak ~357, drain ~2.5 s; no other vessel affected. FAIL: values materially off from those targets · another vessel's boost/speed changed · the drift/idle floor moved (it should stay at 10). (Feel is a judgement call — note whether the new boost peak plays too strong.)
+PASS: cruise ~78, fill ~3.6 s, charged peak ~357, drain ~2.5 s; no other vessel affected; the Dolphin's **minimum speed is now 0** (updated per PR #760 — the vessel can come to a full stop). FAIL: values materially off from those targets · another vessel's boost/speed changed · a non-zero minimum speed (the old floor of 10 was removed by #760). (Feel is a judgement call — note whether the new boost peak plays too strong, and whether a full stop feels right.)
 
 ### QA-PALETTE-DANGER-GOLD ⬜ — danger tier un-inverted + gold shielded brought into the pastel family
 Source: PRs #705 (`danger-prisms-shielded-color`, `ThemeManager`) + #707 (`gold-shielded-prism-contrast`, `OriginalColorSetSO.asset`). Palette-only fixes: the danger tier was un-inverted, gold's unshielded rim corrected, and gold's shielded prism brought into the pastel family. Colour verification. Related: QA-PALETTE-SHIELDED. Reference: `Docs/PALETTE.md`.
