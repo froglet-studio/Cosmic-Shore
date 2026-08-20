@@ -74,11 +74,11 @@ namespace CosmicShore.Gameplay
 
             // AT REST, AT THE CRYSTAL. The ball inherits nothing from the vessel — that is the
             // entire point of moving the forge onto the skimmer. Through Request, so a mode's
-            // ForgeGate (Scarab Scramble's per-domain live-ball cap) and the OnForged adoption
-            // apply here exactly as they do to the blast forge.
+            // ForgeGate (a mode policy hook, unused today) and the OnForged adoption apply
+            // here exactly as they do to the blast forge.
             Vector3 at = crystal.transform.position;
             var ball = ScarabBallForge.Request(status, _ballPrefab, at, Vector3.zero);
-            if (ball == null) return;   // gate refused (at the cap) — the crystal is left alone
+            if (ball == null) return;   // a mode's ForgeGate refused — the crystal is left alone
 
             ConsumeCrystal(crystal, status);
 

@@ -1746,25 +1746,33 @@ occurrence names itself.
    A / Space = a low-poly toy RING blooms ~150u ahead on the COURSE with its interior filled by a
    Vogel-spiral prism disc (drift then place — the ring should appear where you're going, not where
    you're pointing), second+third presses spend the remaining charges, fourth refuses.
-4. **Crystals → a ball.** **EVERY omni crystal forges a ball** — the energy gate is authored OFF
-   (`_requireEnergy: 0`) by request. Fly through one: a ball appears ahead of your nose carrying
-   your speed and domain colour, and the console prints `[ScarabBallForge] … forged a {domain}
-   ball … @ N u/s`. Each crystal also brightens the **Switch icon** one step (0→3 charges).
-   ⚠ If a ball spawns but sits still, the freeze/velocity ordering in `LaunchServer` regressed; if
-   TWO balls appear per crystal in MPPM, the server gate regressed.
-   ⚠ **Balls accumulate without bound** while the gate is off and freestyle has no arena boundary
-   — nothing despawns them, and each live ball costs a per-tick prism scan plus a sweep over every
-   vessel. Fine for a short session; if a long one degrades, that is the population cap (§15.5),
-   not a new bug.
+4. **Crystals → a ball.** **Every OMNI crystal forges a ball; an ELEMENTAL one never does** —
+   the energy gate is authored OFF (`_requireEnergy: 0`) by request. The forge is the **SKIMMER**,
+   not the hull: fly at a bright crystal and it becomes a ball **in place and at rest** before the
+   ship arrives (blooming in over `spawnBloomSeconds`), and the hull then strikes a real ball. It
+   does NOT appear ahead of your nose carrying your speed — that was the retired hull forge, and
+   seeing it would mean the old path came back. Console prints `[ScarabBallForge] … turned a
+   crystal into a {domain} ball at …` on the `ScarabNucleus` verbose channel. Each crystal also
+   brightens the **Switch icon** one step (0→3 charges).
+   ⚠ If TWO balls appear per crystal in MPPM, the server gate regressed.
+   ⚠ Balls no longer accumulate without bound: **four loose in one cell detonates all four**
+   (see the Scramble section above) — that is the population answer (§15.5), and it is live in
+   freestyle too, because it is a ball rule rather than a mode rule.
    *(The energy economy still exists behind that one flag: turn `_requireEnergy` on and the meter
    gates forging again — four crystals fill the ring, the fifth forges. While it is off the HUD's
    energy ring fills but gates nothing.)*
-3b. **The cavitation blast.** Every right-stick dash that finds the blast off cooldown throws a
-   small SPHERICAL explosion ~45u ahead along the dash direction (diameter 90). It must:
-   destroy prisms in that volume (fly at your own trail and dash into it); **kill fauna** caught in
-   it (a creature dies when its body prisms go — dash through a swarm in a populated cell); and
-   **debuff an opposing pilot** it engulfs — all four of their element flowers drop ~half a level
-   and recover over 4s. It must NOT hit your own domain's mass or teammates (`affectSelf 0`).
+3b. **The cavitation blast is a SWEPT PLATE, not a sphere** (rewritten on this branch — if it
+   reads as a ball of destruction around the ship, the old `AOEExplosion` prefab came back). A
+   circular plate is born centred ON the vessel with its face normal along the DASH direction
+   (perpendicular to your course), and sweeps forward along that normal: **radius 45** (10× the
+   4.5-unit hull collider), **length 54**, crossed in **0.21 s**. So the destruction is a disc
+   punched sideways out of the world — stand in a wall of your own trail, dash into it, and the
+   hole should be a broad flat slab across your dash line, not a crater at arm's length. It must
+   also **kill fauna** caught in it (a creature dies when its body prisms go — dash through a swarm
+   in a populated cell) and **debuff an opposing pilot** it engulfs (all four element flowers drop
+   ~half a level, recovering over 4 s), and must NOT touch your own domain's mass or teammates
+   (`affectSelf 0`). Debris carries the **blast velocity** (257 u/s along the plate normal), so
+   opposing prisms should be thrown along the dash, not radially.
    ⚠ Dash again immediately: the DASH must still fire even while the blast is recharging — if the
    dodge is blocked by the cooldown, the split regressed.
 4a. **Gauges**: the CHARGE icon (leftmost) is bright orange when the blast is ready and dims for
@@ -1785,15 +1793,18 @@ occurrence names itself.
    - **Space L10** → a forged ball is **4× the size** of one forged at rest. Balls already in flight
      keep the size they were born with (stamped once) — that is correct, not a bug.
    - **Time L10** → higher throttle ceiling (~270). **Time L5** → double-tap RT dashes forward.
-8. **Dash-into-crystal parity** (the trajectory check): hold a heading, dash sideways, and clip an
-   omni crystal *during* the dash. The forged ball must leave along the DASH-blended heading, not
-   the throttle line — the same trajectory a stationary ball would take if you dashed into it.
+8. **Dash-into-crystal parity** — *retired, and its replacement is the opposite check.* This
+   step tested the hull forge's inherited velocity, which no longer exists: the skimmer converts
+   the crystal AT REST and the hull then strikes it. So dash into a crystal and watch that the ball
+   is briefly **stationary** before the ship reaches it, then leaves on a real collision. A ball
+   that departs on the dash heading without being touched is the retired forge resurfacing.
 
 **First-pass tuning (expect a balancing pass):** accel 90 u/s², coast drag 120 (release-only —
 holding the trigger must never decay), top speed 180 (×1.5 at Time 10), dash 80 u/s / 0.5s /
-**no cooldown**, Snap Dash 100 u/s / 0.4s / 0.3s double-tap window, cavitation blast scale 90 /
-offset 45 / 2.5s cooldown (×0.5 at Charge 10) / duration 0.85s / `proportionalDebris` with
-restitution 1/3 × Inertia 1.8 (the Dolphin's shipped group), blast debuff −0.5 on all four
+**no cooldown**, Snap Dash 100 u/s / 0.4s / 0.3s double-tap window, cavitation **plate** radius
+45 (`radiusPerVesselRadius` 10 × the 4.5 hull) / length 54 (`lengthPerRadius` 1.2) / sweep
+257.14 u/s ⇒ duration 0.21s / 2.5s cooldown (×0.5 at Charge 10) / `proportionalDebris` with
+restitution 1/3 × Inertia **3** (so debris speed IS the blast velocity), blast debuff −0.5 on all four
 elements over 4s with 1s per-victim anti-spam, ring radius 20 (×2.5 at Mass 10), 28 interior +
 44 burst prisms (2.5, 1.5, 8), place distance flat 150 (Space no longer scales it), 3 switch
 charges, crystal grants +0.334 charge / +0.25 energy, ball size ×1 → ×4 at Space 10.

@@ -443,9 +443,19 @@ file that touches a huge API surface): compile the real files with **no stubs at
 and read only the error classes that stubs cannot cause —
 
 ```sh
-dotnet "$CSC" -langversion:9.0 -target:library -out:/tmp/x.dll <files> 2>&1 \
+# Pass the file list through a RESPONSE FILE — see the CS2001 note below.
+git diff --name-only origin/bleeding-edge...HEAD | grep '\.cs$' | sed 's/^/"/;s/$/"/' > files.rsp
+dotnet "$CSC" -langversion:9.0 -target:library -out:/tmp/x.dll "@files.rsp" 2>&1 \
   | grep -E "error CS(1[0-9]{3}|8[0-9]{3}|0102|0106|0128|0136)"
 ```
+
+**`CS2001: Source file '…' could not be found` on a path you can `cat` is a QUOTING bug, not a
+missing file.** This repo is full of directories with spaces (`Skimmer Crystal Effects`,
+`Effect Containers`, `Data Containers`, `Cell Configs`), and a shell-expanded `<files>` splits
+every one of them into fragments — a single such path produced three CS2001 lines naming
+`.../EffectsSO/Skimmer`, `Crystal`, and `Effects/….cs`. The tell is that the fragments
+concatenate back into a real path. A response file with one quoted path per line fixes it for
+good, and is worth using unconditionally so the failure can never appear.
 
 The flood of `CS0246`/`CS0234` (missing Unity types) is expected noise; a hit in that
 filter is real. **Bucket the diagnostics before reading any of them** —
@@ -1959,6 +1969,27 @@ never prunes an unresolvable modification, so the inspector keeps showing a valu
   mode with no error and no local symptom for the developer testing solo. Decide per write which
   question you are asking: "is a person flying this?" (`IsLocalPilot`) or "does this machine own
   the object?" (`IsOwner` / `IsNetworkOwner`), and say so in a comment at the gate.
+- **Announce a batch removal BEFORE performing it, when the announcer is IN the batch.** A
+  ClientRpc is sent through a `NetworkObject`, so a sender that its own call just despawned
+  throws instead of broadcasting. The shape that hides it: "detonate everything in this cell,
+  then tell everyone how many" reads naturally and is exactly backwards — the count is knowable
+  before the loop (same predicate, same list, same frame), and the object is not knowable after
+  it. This is not specific to detonation: any "clear/expire/collect all of X, then report"
+  where the reporter is an X has the same defect. Send first, act second, and say in a comment
+  that the order is load-bearing, because the next reader will want to "fix" it.
+- **A per-object tick that can destroy `this` must tell its caller.** `Despawn(true)` destroys
+  the GameObject, but Unity defers the destroy to end of frame, so the rest of `FixedUpdate`
+  keeps running on an object that is no longer spawned — every NetworkVariable write after that
+  point is a write on a despawned object. Give the tick a `bool` return ("I removed myself") and
+  bail on it; a `void` tick that can self-destruct is a latent write-after-free that only shows
+  up as Netcode warnings under a condition nobody reproduces on purpose.
+- **A rule that only a SERVER can carry out must be gated on being one, or a local session
+  announces work it cannot do.** `IsServer` is false in a no-network local session (the freestyle
+  toys mint networked objects with no `NetworkManager`), and the surrounding code often runs
+  there deliberately — `if (!IsSpawned || IsServer) ServerFixedUpdate();` is a real, correct
+  idiom. So a new rule dropped into that tick inherits the local path for free, where its
+  detonations silently no-op (each guarded on `IsServer`) while its RPC throws. Gate the whole
+  rule on `IsSpawned && IsServer` rather than trusting the callees' own guards.
 
 ### Bundled tool: `field_parity.py`
 

@@ -153,6 +153,16 @@ it off — but because Scramble's court *is* the nucleus, the two meet:
 
 ## Known limitations / follow-ups
 
+- **The cell overload is POLLED, not evented** (`AstroLeagueBall.cellPollSeconds` 0.2). A ball
+  entering a cell is noticed within 200 ms, so four balls arriving inside one poll window all
+  detonate on the same tick — which is the intended outcome anyway. There is no cell-entry
+  event to subscribe to; adding one is a `Cell` change, not a ball change, and is not worth it
+  for a rule whose whole job is to fire once.
+- **`ScarabBallForge.ForgeGate` is now installed by nobody.** The per-domain forge cap that used
+  to live there was replaced by the per-CELL limit on the ball, and the hook was kept rather than
+  deleted because it is the only place a future mode can gate FORGING specifically (as opposed to
+  bounding a population, which is what it was wrongly used for). If nothing claims it by the next
+  Scarab pass, delete it — an unused policy slot invites the same misuse again.
 - **The juke-steal works for remote clients** via `ScarabJukeController.NotifyJukeFired_ServerRpc`
   (the controller is now a `NetworkBehaviour`; a fire mirrors onto the server's replica, so
   `IsJukeStrikeWindowOpen` is true where the ball's strike path actually runs). The window
