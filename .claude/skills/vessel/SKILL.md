@@ -372,6 +372,39 @@ applies to new abilities, new resources on the meter list, and anything that add
     neither adding a class nor forgetting to classify one can silently widen a narrow grant.
     (Dolphin Drift Ward scoping, 2026-08-19.)
 
+### 4.x Placing prisms from a vessel ability — shield sizing
+
+An ability that BUILDS with prisms (the Scarab's switch dais, the Urchin's track, a boost ring)
+inherits two traps that have each cost a round-trip:
+
+- **`AdmitTargetScale` goes AFTER `Initialize`**, never before — `Initialize` -> `ResetState` ->
+  `RestoreAuthoredScaleWindow()` undoes the widening and re-clamps against the restored window.
+  The interactive prism pool's window is `(0.5,0.5,0.5)..(40,10,10)`, so a stated size outside it
+  is silently trimmed with no error anywhere.
+- **A shielded or super-shielded prism is 3x the box it replaces**, and the two tiers differ:
+  the octahedron's vertices are ON THE AXES, the stella octangula's spikes are at the CUBE
+  CORNERS (circumsphere `3S*sqrt(3)`, i.e. `sqrt(3)` bigger than its own bounding box). Size from
+  the measure the design cares about and derive it from `CIRCUMSCRIBING_SCALE`. Full table:
+  the `asset-surgery` skill, "Trap: a SHIELD's size is not the prism's size".
+- **Anything you keep a PRISM REFERENCE in must be identity-tested before you act on it later.**
+  Rule 30's trail-membership test only exists for prisms in a `Trail`; an ability that lays loose
+  prisms (a switch's membrane, a ring, a placed structure) has no such stamp, and `p.destroyed` is
+  useless because the recycled prism is ALIVE. Use `prismProperties.TimeCreated`: `Prism.Initialize`
+  re-stamps it on every pool issue, so remembering `(prism, laidAt)` and skipping any entry whose
+  stamp has moved is an exact "same object AND same life" test. Without it, tearing your own
+  structure down destroys live mass belonging to whoever the pool handed it to.
+- **When a value has both a FLOOR and an invariant-preserving CEILING, the ceiling must be applied
+  LAST.** A generated structure whose no-overlap guarantee comes from clipping each element into
+  its own region loses that guarantee entirely if a "minimum size" clamp runs afterwards — the
+  clamp cheerfully pushes an element back out of the region, and nothing announces it. Order the
+  clamps so the invariant wins, and prove it with a test that sets the floor absurdly high.
+- **ROTATING a super-shielded prism changes how far it reaches in your plane**, so a pose is a
+  clearance change. Axis-aligned it reaches `1.5S*sqrt(2)` in-plane; aim a spike into the plane
+  (e.g. `(1,1,1)` at a target) and the reach becomes the full `1.5S*sqrt(3)` — 22.5% more, for
+  free, with nothing to warn you. Re-derive the clearance whenever you re-pose one, and compute
+  its silhouette as the projected hull of its eight spike tips rather than a hard-coded octagon,
+  which is only the outline of an AXIS-ALIGNED sun.
+
 ## 5. Audit, then hand back verification (you cannot run Unity; the human is the gate)
 
 - State which auditors to run and the expected result: **Audit Vessel Ability Rows**,
