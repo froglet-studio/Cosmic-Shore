@@ -38,6 +38,9 @@ namespace CosmicShore.Gameplay
 
         AOEExplosion explosion;
 
+        /// <summary>The explosion driving this impactor — effects use it for impact vectors and impulse.</summary>
+        public AOEExplosion Explosion => explosion;
+
         public override Domains OwnDomain => explosion.Domain;
 
         /// <summary>

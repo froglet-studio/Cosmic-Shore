@@ -98,22 +98,53 @@ namespace CosmicShore.Gameplay
         IVesselStatus vesselStatus;
         bool _subscribedToInputPaused;
 
+        // Actual handler attachment vs. subscription INTENT. OnDisable must detach the
+        // handlers (the scriptable events outlive this object), but a disable/enable
+        // cycle - HUD fades that toggle an ancestor, pooling, pause flows - must not
+        // permanently sever ability input. Intent survives the cycle; OnEnable re-attaches.
+        bool _inputHandlersAttached;
+        bool _wantsInputSubscription;
+
         void SubscribeToInputEvents()
         {
-            _onButtonPressed.OnRaised  += OnButtonPressed;
-            _onButtonReleased.OnRaised += OnButtonReleased;
+            _wantsInputSubscription = true;
+            AttachInputHandlers();
         }
 
         void UnsubscribeFromInputEvents()
         {
+            _wantsInputSubscription = false;
+            DetachInputHandlers();
+        }
+
+        void AttachInputHandlers()
+        {
+            if (_inputHandlersAttached) return;
+            _onButtonPressed.OnRaised  += OnButtonPressed;
+            _onButtonReleased.OnRaised += OnButtonReleased;
+            _inputHandlersAttached = true;
+        }
+
+        void DetachInputHandlers()
+        {
+            if (!_inputHandlersAttached) return;
             _onButtonPressed.OnRaised  -= OnButtonPressed;
             _onButtonReleased.OnRaised -= OnButtonReleased;
+            _inputHandlersAttached = false;
+        }
+
+        void OnEnable()
+        {
+            if (_wantsInputSubscription)
+            {
+                AttachInputHandlers();
+            }
         }
 
         void OnDisable()
         {
             if (!IsSpawned) ShipHelper.DestroyRuntimeActions(_runtimeInstances);
-            UnsubscribeFromInputEvents();
+            DetachInputHandlers();
 
             // During scene teardown the Player may already be destroyed.
             // The event lives on the Player, so it's GC'd with it - skip the unsubscribe.
@@ -216,7 +247,10 @@ namespace CosmicShore.Gameplay
             };
         }
 
-        void OnToggleInputPaused(bool toggle) => ToggleSubscription(!toggle);
+        void OnToggleInputPaused(bool toggle)
+        {
+            ToggleSubscription(!toggle);
+        }
 
         /// <summary>
         /// Appends every action this vessel binds to <paramref name="inputEvent"/> - across the shared
@@ -340,7 +374,7 @@ namespace CosmicShore.Gameplay
 
         void OnButtonPressed(InputEvents ie)
         {
-            if (vesselStatus.AutoPilotEnabled) 
+            if (vesselStatus.AutoPilotEnabled)
                 return;
             if (IsInputMuted(ie)) return;
             if (IsSpawned && IsOwner)
@@ -351,7 +385,7 @@ namespace CosmicShore.Gameplay
             {
                 PerformShipControllerActions(ie);
             }
-            
+
             OnInputEventStarted?.Invoke(ie);
         }
 

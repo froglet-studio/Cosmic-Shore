@@ -1,0 +1,71 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4b3f2a8c8f344355b16a4d4296ae3f98, type: 3}
+  m_Name: Grizzly
+  m_EditorClassIdentifier:
+  vesselClass: 5
+  entries:
+  - Element: 3
+    AbilityLabel: Charged Cannon
+    AbilityDescription: Hold to charge, release to fire - bigger charge, bigger boom.
+      Space grows the explosion radius. At level 5 your blasts spare allies, so you
+      can bombard freely near teammates (you still ride your own shockwaves).
+    Input: 1
+    MultiplierAtFullLevel: 2.5
+    MinMultiplier: 0.5
+    UnlockLevel: 5
+    RelockBelowLevel: 4
+    LatchPolicy: 0
+    UpgradeLabel: Safe Detonation
+    UpgradeDescription: Friendly fire off - your explosions no longer damage allied
+      vessels or your own domain's prisms. Self-propulsion is unaffected.
+  - Element: 2
+    AbilityLabel: Weapon Systems
+    AbilityDescription: Swap sniper and explosives. Mass grows your trail prisms.
+      At level 5 the plasma-claw flamethrower comes online - its spreading burn
+      steals enemy prisms for your team instead of destroying them.
+    Input: 2
+    MultiplierAtFullLevel: 2.5
+    MinMultiplier: 0.4
+    UnlockLevel: 5
+    RelockBelowLevel: 4
+    LatchPolicy: 0
+    UpgradeLabel: Plasma Claw
+    UpgradeDescription: Unlocks the third weapon - a burning plasma-claw flamethrower
+      whose spreading burn converts enemy prisms into your team's volume.
+  - Element: 1
+    AbilityLabel: Dig In
+    AbilityDescription: Stop to dig in and reload - energy regenerates faster while
+      parked. Charge raises the parked regeneration rate. Level 5 grants battlefield
+      sight while dug in.
+    Input: 6
+    MultiplierAtFullLevel: 3
+    MinMultiplier: 0.5
+    UnlockLevel: 5
+    RelockBelowLevel: 4
+    LatchPolicy: 0
+    UpgradeLabel: Battle Sight
+    UpgradeDescription: While dug in, key targets are highlighted (design in
+      progress - vision/highlight ability per the class doc).
+  - Element: 4
+    AbilityLabel: Rush
+    AbilityDescription: Spend energy to charge forward with a burst of momentum.
+      Time reduces the energy cost of each rush. At level 5 you can steer mid-rush.
+    Input: 7
+    MultiplierAtFullLevel: 0.4
+    MinMultiplier: 1
+    UnlockLevel: 5
+    RelockBelowLevel: 4
+    LatchPolicy: 0
+    UpgradeLabel: Vector Control
+    UpgradeDescription: Improved directional control - change direction while
+      charging instead of committing to a straight line.

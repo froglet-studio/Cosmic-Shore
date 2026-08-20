@@ -757,5 +757,16 @@ namespace CosmicShore.Gameplay
             _moveCts.Dispose();
             _moveCts = null;
         }
+
+        /// <summary>
+        /// Halts the projectile in place while keeping it alive, rendered, and detonatable
+        /// (the cancelled move loop skips FlightEnded / end effects / pool return).
+        /// Velocity is zeroed so a later FaceExitVelocity detonation cannot read stale motion.
+        /// </summary>
+        public void Freeze()
+        {
+            Stop();
+            Velocity = Vector3.zero;
+        }
     }
 }

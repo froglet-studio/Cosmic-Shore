@@ -34,6 +34,11 @@ namespace CosmicShore.Gameplay
             public bool Anonymous;
             public Material OverrideMaterial;
             public Container DIContainer;
+
+            // null = default behavior (!Projectile.SpareOwnDomain). Set explicitly when the
+            // shooter must still be hit by its own blast while sparing its domain's prisms
+            // (e.g. Grizzly explosion self-propulsion with Space-5 friendly fire disabled).
+            public bool? AffectSelfOverride;
         }
 
         public void Detonate(in Request req)
@@ -110,7 +115,7 @@ namespace CosmicShore.Gameplay
                         // thing that makes a detonation spare the shooter's own domain — so a
                         // hit, timeout, mine, or vessel-strike detonation all honor one gate,
                         // and the AOE prefabs' authored affectSelf never decides this path.
-                        AffectSelfOverride  = !proj.SpareOwnDomain
+                        AffectSelfOverride  = req.AffectSelfOverride ?? !proj.SpareOwnDomain
                     });
                     spawned.Detonate();
                 }

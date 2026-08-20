@@ -5530,6 +5530,14 @@ MonoBehaviour:
   selectedGameFavoriteIcon: {fileID: 6349527594030468359}
   configurationDetailView: {fileID: 8490682396956724260}
   gameDetailView: {fileID: 5440107228895143991}
+  vesselSelectionView: {fileID: 943974311015446669}
+  vesselSelectionItems:
+  - {fileID: 8159843956690779026}
+  - {fileID: 3289077344719913667}
+  - {fileID: 30212981268556692}
+  - {fileID: 7228513066854785149}
+  - {fileID: 8309381418254122847}
+  - {fileID: 8891704621581237748}
   intensityButtons:
   - {fileID: 8134648956201338943}
   - {fileID: 3758287313306442294}

@@ -1,0 +1,18 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 96c6dfd0c4714094b99140394ea91b8b, type: 3}
+  m_Name: GrizzlyDigInAction
+  m_EditorClassIdentifier: 
+  energyIndex: 0
+  stationaryGainMultiplier: 2
+  chargeScaleAtFull: 3
+  chargeScaleMinMul: 0.5

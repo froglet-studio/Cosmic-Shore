@@ -55,14 +55,18 @@ namespace CosmicShore.Gameplay
         {
             // Primary action buttons
             if (Gamepad.current.buttonSouth.wasPressedThisFrame)
+            {
                 inputStatus.OnButtonPressed.Raise(InputEvents.Button1Action);
+            }
                 //vessel.PerformShipControllerActions(InputEvents.Button1Action);
             if (Gamepad.current.buttonSouth.wasReleasedThisFrame)
                 inputStatus.OnButtonReleased.Raise(InputEvents.Button1Action);
                 // vessel.StopShipControllerActions(InputEvents.Button1Action);
 
             if (Gamepad.current.buttonEast.wasPressedThisFrame)
+            {
                 inputStatus.OnButtonPressed.Raise(InputEvents.Button2Action);
+            }
                 // vessel.PerformShipControllerActions(InputEvents.Button2Action);
             if (Gamepad.current.buttonEast.wasReleasedThisFrame)
                 inputStatus.OnButtonReleased.Raise(InputEvents.Button2Action);
@@ -126,7 +130,9 @@ namespace CosmicShore.Gameplay
             if (leftJustReleased)
                 inputStatus.OnButtonReleased.Raise(InputEvents.LeftStickAction);
             if (rightJustPressed)
+            {
                 inputStatus.OnButtonPressed.Raise(InputEvents.RightStickAction);
+            }
             if (rightJustReleased)
                 inputStatus.OnButtonReleased.Raise(InputEvents.RightStickAction);
 

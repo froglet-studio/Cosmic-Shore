@@ -90,5 +90,9 @@ namespace CosmicShore.Data
         // Goals stop nothing (continuous play, no kickoffs), there are no own goals, and the
         // first domain to the goal target wins. See _Scripts/Controller/Arcade/SCARABSCRAMBLE.md.
         ScarabScramble = 43,
+        // GrizzlyCharge (44): the Grizzly-only assault mode (in development). Was authored as 42
+        // on the grizzly-v2 branch before Bends/ScarabScramble claimed 42/43 upstream — the
+        // ArcadeGameGrizzlyCharge asset's serialized Mode moved with it.
+        GrizzlyCharge = 44,
     }
 }

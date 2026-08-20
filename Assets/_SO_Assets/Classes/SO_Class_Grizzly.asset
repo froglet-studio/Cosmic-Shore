@@ -14,8 +14,16 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Class: 5
   Name: Grizzly
-  Description: Don't mess with me or I will shoot. I will shoot anyway, but don't
-    mess with me.
+  Description: A flying siege tank - big, slow, and explosive. Charge devastating
+    shots, dig in to reload, rush and ride your own shockwaves, and set whole areas
+    on fire. Best at deleting big clusters of enemy prisms in one blast.
+  PrimaryElement: 0
+  Element: {fileID: 0}
+  InitialResourceLevels:
+    Mass: 0
+    Charge: 0
+    Space: 0
+    Time: 0
   IconActive: {fileID: 21300000, guid: 3236299f467e7004fbfab2b0d07e6280, type: 3}
   IconInactive: {fileID: 21300000, guid: 720f23b964da1e948927d1b2b7c1c5a9, type: 3}
   PreviewImage: {fileID: 21300000, guid: eab8ab57cb3ceef43b60ce237123c5ac, type: 3}
@@ -26,11 +34,6 @@ MonoBehaviour:
     type: 3}
   Abilities:
   - {fileID: 11400000, guid: bf4c23aad32b0f4489dbc09db593aab4, type: 2}
-  Captains:
-  - {fileID: 11400000, guid: 8cde53ad485a0eb4999781d28e131067, type: 2}
-  - {fileID: 11400000, guid: d1167a749c270634bbbef0ffc8a152a7, type: 2}
-  - {fileID: 11400000, guid: e9cdae4a814e02148b819f4a9ca4cae9, type: 2}
-  - {fileID: 11400000, guid: b2a9d8671aafb81409afd053d76a5388, type: 2}
   Games:
   - {fileID: 11400000, guid: 812851e4603217c469662dc3cb9c6d93, type: 2}
   - {fileID: 11400000, guid: 3537310ecbdad2e449bbca31d2aa8599, type: 2}
@@ -51,5 +54,6 @@ MonoBehaviour:
     LeftHandLabel: Solo
     RightHandLabel: Social
     Value: 0.66
-  isLocked: 1
+  isLocked: 0
+  ownedFromStart: 1
   UnlockCost: 4000

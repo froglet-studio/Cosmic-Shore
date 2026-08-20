@@ -48,6 +48,12 @@ namespace CosmicShore.UI
         [Header("Screens (right side)")]
         [SerializeField] private GameObject configurationDetailView; // Screen 1
         [SerializeField] private GameObject gameDetailView;          // Screen 2
+        [SerializeField] private GameObject vesselSelectionView;     // Screen 3
+
+        [Header("Screen 3 – Vessel Selection Grid")]
+        [Tooltip("Fixed pool of vessel cards inside the ShipSelectGrid. Configured from " +
+                 "the game's unlocked vessels on screen entry; surplus cards are hidden.")]
+        [SerializeField] private List<ShipSelectionItemView> vesselSelectionItems = new(6);
 
         [Header("Screen 1 – Intensity Controls")]
         [SerializeField] private List<IntensitySelectButton> intensityButtons   = new(4);
@@ -619,13 +625,16 @@ namespace CosmicShore.UI
 
         #region Screen switching
 
-        void SetScreenActive(GameObject configScreen, GameObject gameDetailScreen)
+        void SetScreenActive(GameObject configScreen, GameObject gameDetailScreen, GameObject vesselScreen = null)
         {
             if (configurationDetailView)
                 configurationDetailView.SetActive(configurationDetailView == configScreen);
 
             if (gameDetailView)
                 gameDetailView.SetActive(gameDetailView == gameDetailScreen);
+
+            if (vesselSelectionView)
+                vesselSelectionView.SetActive(vesselSelectionView == vesselScreen);
         }
 
         void ShowConfigurationScreen()
@@ -641,11 +650,22 @@ namespace CosmicShore.UI
 
         void ShowVesselSelectionScreen()
         {
-            ShowGameDetailScreen();
+            // Prefab variants without the vessel screen wired keep the old
+            // stay-on-game-detail behavior instead of blanking the right side.
+            if (!vesselSelectionView)
+            {
+                ShowGameDetailScreen();
+                return;
+            }
+
+            SetScreenActive(null, null, vesselSelectionView);
+            RefreshVesselSelectionItems();
+            RefreshShipSummaryView(); // keeps the screen-3 header (shipVesselNameText) current
         }
 
         void ShowSquadMateSelectionScreen()
         {
+            // No squad-mate screen exists in the prefab yet.
             ShowGameDetailScreen();
         }
 
@@ -1031,6 +1051,41 @@ namespace CosmicShore.UI
 
             var ship = _availableShips[_currentShipIndex];
             SetSelectedShipInternal(ship);
+            RaiseConfigChanged();
+        }
+
+        /// <summary>
+        /// Screen 3 - maps the game's unlocked vessels onto the fixed card pool.
+        /// Cards past the roster are hidden. Clicking a card selects that vessel
+        /// and re-renders so the active/inactive icons track the selection.
+        /// </summary>
+        void RefreshVesselSelectionItems()
+        {
+            for (int i = 0; i < vesselSelectionItems.Count; i++)
+            {
+                var item = vesselSelectionItems[i];
+                if (!item) continue;
+
+                if (i < _availableShips.Count)
+                {
+                    int captured = i;
+                    item.Configure(_availableShips[i], i == _currentShipIndex,
+                        () => HandleVesselItemClicked(captured));
+                }
+                else
+                {
+                    item.Clear();
+                }
+            }
+        }
+
+        void HandleVesselItemClicked(int index)
+        {
+            if (index < 0 || index >= _availableShips.Count) return;
+
+            _currentShipIndex = index;
+            SetSelectedShipInternal(_availableShips[index]);
+            RefreshVesselSelectionItems();
             RaiseConfigChanged();
         }
 
