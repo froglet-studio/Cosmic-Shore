@@ -150,7 +150,7 @@ radius, collapsing `hornSides` quads onto a single point, so the tip is now a pr
 
 **Why procedural rather than a different FBX.** The model hangs off the vessel as a
 `PrefabInstance` of the Sparrow FBX carrying ~40 per-child modifications plus stripped references
-from the vessel root — the hull GameObject that owns the vessel's BoxCollider and ImpactCollider,
+from the vessel root — the hull GameObject that owns the vessel's hull SphereCollider and ImpactCollider,
 the Animator, several transforms. Repointing that instance's guid at another FBX dangles every one
 of them (the failure `Docs/GAMECANVAS.md` records for hard-copied prefabs). So the legacy instance
 stays with its colliders and rig wiring intact and only its **renderers** are switched off;
@@ -608,20 +608,28 @@ wavefront faster*, and the cavitation punch shipped as a slow bloom: 90 units ov
 **So the plate authors its SPEED and DERIVES its duration** (`sweepSpeed 257.14`,
 `AOECylindricalExplosion`). This is the direct consequence of sizing the blast off the hull: the
 reach stopped being an authored constant, so holding the *duration* fixed would have silently
-retuned every impulse in the table above. The 2026-08-19 pass took the reach from 90 to 18, which
-at a fixed 0.35 s would have dropped the wavefront to **51 u/s** and the ball kick back to **17%**
-— undoing this whole pass without touching a number anyone would think to look at. Holding the
-speed instead gives a **0.070 s** punch, which is also the right read: over 0.070 s the dashing
-hull covers 5.6 u while the plate sweeps 18, so the punch LEADS the dash; at 0.35 s it would cover
-28 u and the punch would trail the ship that threw it. The general rule: **when a blast's reach
-becomes derived, its SPEED is the thing to author.**
+retuned every impulse in the table above — and the reach was then re-derived **twice on one
+branch** (90 → 18 when it was first sized off the hull, 18 → **54** when the hull ratio was
+retuned to 10×), which is exactly the churn that would have made a fixed duration lethal. At a
+fixed 0.35 s the first of those alone would have dropped the wavefront to **51 u/s** and the ball
+kick back to **17%**, undoing this whole pass without touching a number anyone would think to look
+at. Authoring the speed made both re-derivations free. The general rule: **when a blast's reach
+becomes derived, its SPEED is the thing to author** — and its corollary, learned the same week:
+**prose that quotes derived numbers goes stale the moment the derivation is retuned**, so state
+the relationship and let the verifier print the arithmetic.
 
-Its cost is that the whole blast is now ~4 frames, and PhysX only raises trigger events inside the
-physics step while the sweep loop runs in `Update` — so the final, largest trigger shape would be
-written and disabled inside one frame and never simulated. `contactHoldSeconds` (**0.05**) holds
-the trigger at full extent for a beat before retiring it. On a long blast the shape one frame back
-is nearly as big and nothing is lost; on this one it is most of the volume, and a punch that misses
-the ball it visibly engulfed is the mode failing.
+The shipped plate is therefore **r 45 · 54 long · 0.210 s**, and it still LEADS the dash it rides:
+over 0.210 s the dashing hull covers 16.8 u while the plate sweeps 54 (at 0.35 s it would cover
+28 u and the punch would trail the ship that threw it).
+
+Its cost is that the whole blast is ~5 physics steps, and PhysX only raises trigger events inside
+the physics step while the sweep loop runs in `Update` — so the final, largest trigger shape would
+be written and disabled inside one frame and never simulated. `contactHoldSeconds` holds the
+trigger at full extent for a beat first, **floored at 2 × `Time.fixedDeltaTime`**: the authored
+0.05 was chosen against Unity's default 0.02 timestep, and this project runs **0.04**
+(`ProjectSettings/TimeManager.asset`), where 0.05 buys only 1.25 steps. Deriving the floor from
+`fixedDeltaTime` means the guarantee survives someone retuning the timestep instead of quietly
+becoming a wall-clock number that no longer means what it meant when it was chosen.
 
 Three changes, all of them the *blast's* dials rather than the ball's:
 `ExplosionDuration` 0.85 → **0.35** (same 90-unit reach, 2.4× the wavefront speed — and a punch

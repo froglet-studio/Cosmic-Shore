@@ -116,13 +116,16 @@ namespace CosmicShore.Gameplay
             // built from `speed` (AOEExplosion.speed = reach / duration) - prism debris, shatter
             // rate, the vessel debuff's impulse, the Astro League ball's kick - so a blast whose
             // REACH is derived from the hull would silently retune all of them if the duration
-            // were held fixed instead. Sizing the Scarab's plate off its collider shortened the
-            // reach 5x; at a fixed 0.35s that would have dropped the play-tested 257 u/s wavefront
-            // to 51 u/s and taken the ball kick from 86% of its top speed back to 17% - undoing
-            // SCARAB.md's "a punch should read as a punch, not a bloom" pass without touching a
-            // number anyone would think to look at. It also keeps the plate AHEAD of the dash it
-            // rides (the hull covers 5.6u while the plate sweeps 18; at 0.35s it would cover 28
-            // and the punch would trail behind the ship that threw it).
+            // were held fixed instead. That is not hypothetical: this plate's reach has already
+            // been re-derived twice on one branch (90 -> 18 when it was first sized off the hull,
+            // 18 -> 54 when the hull ratio was retuned), and at a fixed 0.35s the first of those
+            // alone would have dropped the play-tested 257 u/s wavefront to 51 and taken the ball
+            // kick from 86% of its top speed to 17% - undoing SCARAB.md's "a punch should read as
+            // a punch, not a bloom" pass without touching a number anyone would think to look at.
+            // Authoring the SPEED makes every one of those re-derivations free. It also keeps the
+            // plate AHEAD of the dash it rides: at the shipped 54u / 0.210s the hull covers 16.8u
+            // while the plate sweeps 54, where at 0.35s it would cover 28 and the punch would
+            // trail behind the ship that threw it.
             if (initStruct.DurationOverride > 0f)
                 ExplosionDuration = initStruct.DurationOverride;
             else if (sweepSpeed > 0f && _length > 0f)
@@ -335,7 +338,7 @@ namespace CosmicShore.Gameplay
                 // Update, so the last iteration writes the largest shape and then falls straight
                 // through to the retirement below - in the SAME frame, before any FixedUpdate ever
                 // simulates it. On a long blast the shape one frame back is nearly as big and
-                // nothing is lost; on this one (~0.07s, ~4 frames) it is most of the volume, and a
+                // nothing is lost; on this one (0.210s, ~5 physics steps) it is most of the volume, and a
                 // punch that misses the ball it visibly engulfed is the whole mode failing. The
                 // held volume is small and invisible for a few tens of milliseconds, which is a
                 // cheaper price than a missed contact.

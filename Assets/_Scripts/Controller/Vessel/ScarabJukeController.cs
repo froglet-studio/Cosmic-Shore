@@ -193,8 +193,10 @@ namespace CosmicShore.Gameplay
             if (shove.sqrMagnitude < 1e-4f)
                 shove = ship.right * rollSign;
 
-            CSDebug.Log($"[ScarabJuke] Fired: {(rollSign > 0f ? "CW" : "CCW")}, " +
-                        $"stick ({stick.x:F2}, {stick.y:F2}), dir {shove.normalized}");
+            if (CSDebug.IsVerbose(CSLogChannel.ScarabDash))
+                CSDebug.LogVerbose(CSLogChannel.ScarabDash,
+                    $"[ScarabJuke] Fired: {(rollSign > 0f ? "CW" : "CCW")}, " +
+                    $"stick ({stick.x:F2}, {stick.y:F2}), dir {shove.normalized}");
 
             _lastJukeTime = Time.time;
             SetJukeArmed(false);

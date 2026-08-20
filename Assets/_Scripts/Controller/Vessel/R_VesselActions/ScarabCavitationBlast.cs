@@ -1,5 +1,6 @@
 using CosmicShore.Data;
 using CosmicShore.Utility;
+using Reflex.Injectors;
 using UnityEngine;
 
 namespace CosmicShore.Gameplay
@@ -197,11 +198,39 @@ namespace CosmicShore.Gameplay
             // The plate STARTS CENTRED ON THE VESSEL and sweeps forward from there, so there is no
             // forward offset to author: the punch leaves the hull rather than appearing ahead of it.
             Vector3 at = ship.position;
-            var rotation = Quaternion.LookRotation(dir, ship.up);
+
+            // THE UP-HINT MUST NOT BE PARALLEL TO THE DASH. A straight up/down juke produces a
+            // shove of exactly ship.up (the keyboard's right stick is DIGITAL, so it hands over
+            // exactly (0,1), and ProjectOnPlane leaves it untouched while flying straight), and
+            // LookRotation(up, up) cannot resolve a basis — it returns identity. That was harmless
+            // while the blast was a SPHERE, which is what it was when this line was written; the
+            // plate reads its sweep axis straight off this rotation (`_axis = transform.forward`),
+            // so a degenerate one silently aims the whole punch along world +Z while the player
+            // watches their ship dash upward. The existing `sqrMagnitude < 1e-8` guard cannot catch
+            // it either: identity yields a perfectly unit forward. The plate is rotationally
+            // symmetric about its axis, so the hint carries no meaning here beyond being usable —
+            // unlike the cone's gape axis, which IS gameplay.
+            Vector3 upHint = Mathf.Abs(Vector3.Dot(dir, ship.up)) > 0.999f ? ship.forward : ship.up;
+            var rotation = Quaternion.LookRotation(dir, upHint);
 
             float radius = ResolveVesselColliderRadius() * radiusPerVesselRadius;
 
             var blast = Instantiate(blastPrefab, at, rotation);
+
+            // INJECT BEFORE Initialize, or the blast has no turn-end kill switch. AOEExplosion's
+            // gameData is [Inject], and it is the ONLY thing that wires OnMiniGameTurnEnd ->
+            // CancelExplosion and OnResetForReplay -> PerformResetCleanup. Nothing in
+            // Controller/Environment or a bare Instantiate injects, so this blast was the one AOE
+            // in the game that kept sweeping and destroying mass after a turn ended and survived a
+            // replay reset — silently, because the null-guard that swallows it is written exactly
+            // as a good null-guard is (CLAUDE.md's anti-pattern on relying on [Inject] at a
+            // non-injecting spawn site). The vessel's own impactor carries the container, so there
+            // is one to hand over; ExplosionHelper does the same thing off impactor.DIContainer.
+            // Ordering matters: Initialize's subscription retry runs after injection by design.
+            var container = _vesselImpactor != null ? _vesselImpactor.DIContainer : null;
+            if (container != null)
+                GameObjectInjector.InjectRecursive(blast.gameObject, container);
+
             blast.Initialize(new AOEExplosion.InitializeStruct
             {
                 OwnDomain = _status.Domain,
@@ -227,8 +256,10 @@ namespace CosmicShore.Gameplay
             // it). Every other AOE call site in the codebase pairs the two.
             blast.Detonate();
 
-            CSDebug.Log($"[ScarabCavitation] Plate r={radius:F1} along {dir} " +
-                        $"(cooldown {CurrentCooldown():F2}s).");
+            if (CSDebug.IsVerbose(CSLogChannel.ScarabDash))
+                CSDebug.LogVerbose(CSLogChannel.ScarabDash,
+                    $"[ScarabCavitation] Plate r={radius:F1} along {dir} " +
+                    $"(cooldown {CurrentCooldown():F2}s).");
         }
     }
 }
