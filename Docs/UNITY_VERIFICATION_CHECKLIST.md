@@ -1693,6 +1693,13 @@ occurrence names itself.
    up and splay as you slow, the horn swings against the nose. A rigid hull means
    `ScarabAnimation` resolved no parts — check the console for its unresolved-part report.
    Right-stick dash: the whole visible ship must spin 360° (it previously rolled the hidden FBX).
+   **The one thing no offline check can settle:** select the Scarab's hull GameObject
+   (`SparrowModel1`, the nested FBX instance) and read its **world scale** in the inspector. The
+   blast measures the hull collider in world units, so the shipped `m_Radius: 4.5` only means a
+   4.5-unit hull — and therefore an r 45 / 54-long plate — if that root is unit-scaled. It is
+   *sized correctly either way*; what needs one look is whether 4.5 is the intended world radius.
+   (Circumstantial evidence says yes: the hull mesh measures ~12.5 u wide after its 0.2034 armature
+   scale, against the 10.31-wide box that used to be the hull collider — same order, not 5x apart.)
    **MPPM two-client, the load-bearing one:** dash on the CLIENT and count the plates — there must
    be exactly **ONE**, and the ball must take a single kick, not two. Before the `IsLocalPilot`
    gate the replicated right stick made every peer fire, so a 4-player lobby threw 4 plates per
