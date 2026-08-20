@@ -1013,6 +1013,46 @@ derivation attached, and re-running the harness after any shader edit re-checks 
 ratio in the harness, so a later change to the motion that widens the envelope fails there
 rather than as prisms popping at the screen edge.
 
+## 4.5d Technique: offline simulation of a CONTROL LOOP (steering, pursuit, any feedback law)
+
+§4.5 simulates a *generator* — deterministic, one pass, compare the output. A **control
+loop** is the harder cousin: the thing you are changing feeds back into its own input, so a
+change that looks locally sensible can be globally worse and neither review nor a unit test
+will say so. Simulate it the same way, and let the simulation pick the tuning.
+
+The shape:
+
+1. **Extract the loop's pure math into a static class with no `UnityEngine` in it**
+   (`PursuitReachability`: turning radius, the reachability test, the escape direction, the
+   orbit detector). That class is what the shipped `MonoBehaviour` calls AND what the harness
+   calls, so the tested path is the shipped path. This is the same discipline as §4.7's
+   "extract the shipped block" — here it also buys the design a seam.
+2. **Write a plant** — a few dozen lines integrating heading and position under a max turn
+   rate. It does not need to be the engine's integrator; it needs the same *constraint*
+   (bounded turn rate, constant-ish speed), because that constraint is what the law is
+   fighting.
+3. **Score over a randomized ensemble, not a scenario.** Hundreds of (start pose, objective)
+   draws, fixed seed. Report reached/total and mean time-to-objective. One hand-picked
+   scenario proves nothing about a feedback law.
+4. **Measure candidate fixes against each other before shipping one.** Two plausible
+   remedies for a late swerve were each simulated and REJECTED on the numbers (a commit-range
+   gate traded swerves for orbits, 400→377 reached; a look-ahead factor multiplied break-offs
+   28→247 at double the mean time) — which is what forced the search to continue until the
+   real cause turned up. Rejecting on data is cheaper than shipping and re-playtesting.
+5. **Sweep every dial you are about to author and report the curve, not the pick.** The
+   away-bias in this session turned out to be a *dead dial* — 0…1.5 all reached 400/400
+   within 0.06 s — so it shipped at its midpoint with that fact recorded, instead of being
+   defended as a tuned value.
+
+Two things the harness catches that reading cannot: a **ratcheting accumulator** (a
+running-minimum "best distance so far" silently degrades a progress gate to "constant range
+only"; visible instantly as a detector that never fires on an approach), and a **wrong
+comparison of derived quantities** — see the squared-vs-linear trap in §5.
+
+Limits, state them: the plant is not the engine, so the simulation bounds *behaviour of the
+law*, never feel. Frame timing, replication, and the vessel's real thrust/grip model are out
+of scope, and the human still playtests.
+
 ## 4.6 Technique: hand-authoring a new asset trio
 
 Adding a new SO-configured, prefab-backed thing (here: a cell) means four
@@ -1885,6 +1925,40 @@ never prunes an unresolvable modification, so the inspector keeps showing a valu
   does — and leave a comment saying why, or the next formatter re-wraps it and the field silently
   drops out of the checker again. The mirror failure is worse and quieter: a field that SHOULD be
   flagged but is wrapped will never be flagged at all.
+
+- **A comparison that mixes a SQUARED quantity with a LINEAR one is invisible to review and to
+  every static check, and its symptom is a behaviour nobody attributes to arithmetic.** A field
+  named `MinDistance` held a *squared* distance (assigned from `sqrMagnitude` a few lines
+  earlier), and the guard read `sqDistance < MinDistance * MinDistance` — a `d⁴` threshold that
+  every candidate passed, so a "pick the nearest" loop reliably picked the **last** item and
+  re-picked arbitrarily on every refresh. It compiles, it type-checks, the units are invisible
+  because C# has none, and the resulting behaviour ("the AI dodges its objective at the last
+  second") sounds like a steering bug — which is where two correct-looking steering fixes got
+  measured and rejected before the real cause turned up. **When a symptom points at a control law,
+  audit the SELECTION feeding it first**, and grep any distance-ish field for whether its writers
+  and readers agree on squared-ness. Name squared fields `*SqrDistance` when you touch them.
+- **A rule that belongs to a FALLBACK must not be inherited by an explicit provider.** A
+  look-direction helper defended its default (a "point at some interesting mass" heuristic) with a
+  sensible test — *skip if the target is already roughly ahead* — and when an opt-in provider was
+  bolted on for a NAMED target, it inherited that test. The named case is exactly the one where
+  "already ahead" is the BEST outcome, so the feature silently never fired: an AI that was
+  supposed to swing its nose onto a rival turned away from precisely the rival it had lined up.
+  Nothing errors, nothing logs, and the code reads as a careful guard. **When you add an explicit
+  provider beside a heuristic default, re-derive which guards were about the HEURISTIC and which
+  are about the OUTPUT**, and push the heuristic's own guards down into the heuristic.
+- **An AI's engagement range is authored independently of its weapon's, and drifts.** A mode
+  capped its AI aim range at 900 while the weapon prefab authored a reach of 2400, so the AI never
+  aimed at anything it could actually hit. Two numbers, two assets, no relationship in code — the
+  same class as the comeback-rate-vs-target trap. When a doc or a field claims "the AI engages at
+  X", go read the WEAPON's authored reach and compare; if they must stay separate, derive one from
+  the other or assert the ordering in a test.
+- **`IsLocalPilot` and `IsOwner` coincide for every human and diverge for every AI**, so a gate
+  that conflates them works perfectly until something autonomous uses it. An owner-write
+  `NetworkVariable` published under `IsLocalPilot` is never written for a host-owned AI vessel,
+  which means the AI's effect draws on **no machine at all, including the host's** — a failure
+  mode with no error and no local symptom for the developer testing solo. Decide per write which
+  question you are asking: "is a person flying this?" (`IsLocalPilot`) or "does this machine own
+  the object?" (`IsOwner` / `IsNetworkOwner`), and say so in a comment at the gate.
 
 ### Bundled tool: `field_parity.py`
 

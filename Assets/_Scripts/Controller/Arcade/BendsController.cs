@@ -110,8 +110,12 @@ namespace CosmicShore.Gameplay
         [Tooltip("Beyond this distance the AI does not bother aiming at a rival - the blast " +
                  "cannot reach, and pointing the nose at an unreachable pilot just stops it " +
                  "clearing forest. Past it the platform default (aim at a mass cluster) resumes, " +
-                 "which is also how the AI keeps its own energy topped up.")]
-        [SerializeField, Min(1f)] float aiAimMaxRange = 900f;
+                 "which is also how the AI keeps its own energy topped up.\n\nIt should track " +
+                 "the cone's authored reach - AOEConicExplosion.prefab is 2400 units, before " +
+                 "Space scales it further. This shipped at 900, i.e. under 40% of the range the " +
+                 "weapon actually has, so an AI simply declined to aim at a rival it could have " +
+                 "hit from more than twice as far away.")]
+        [SerializeField, Min(1f)] float aiAimMaxRange = 2400f;
 
         // Milestone rungs the leading domain crosses. Feedback only - nothing here changes game
         // state, so a missed or late sample costs a toast, never a rule.
