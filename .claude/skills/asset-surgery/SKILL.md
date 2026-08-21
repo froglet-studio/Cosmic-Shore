@@ -1234,6 +1234,39 @@ never prunes an unresolvable modification, so the inspector keeps showing a valu
   confirm `git diff` contains *only* the removed key lines and no `\ No newline` marker. A
   whitespace-only byte change on 15 prefabs is indistinguishable from a real edit in review.
 
+## 4.9c Technique: proving a SCENE's UI wiring without opening the editor
+
+The sibling of §4.9. There the producer was a nested prefab; here it is a **scene** field
+pointing at a **prefab instance**, and the behaviour you need to confirm lives in neither
+document on its own.
+
+Origin: adding four modes to the Maelstrom pool (2026-08). The tournament only advances when
+the host presses Continue on the per-mode `Scoreboard`, and that button is a
+`[SerializeField] GameObject continueButton` whose own tooltip says *"leave unassigned in
+non-tournament scenes"*. So four scenes could each satisfy every other admission criterion and
+still **stall the tournament after their round** — a null there is a silent early-out, not an
+error. The whole go/no-go rested on it, and it is four greps:
+
+1. **Find the component's block in the scene**, by script GUID from its `.cs.meta`, and read
+   the field out of that block (§4.9 step 1 — never regex the field name file-wide).
+2. **A `{fileID: 0}` is the failure.** A non-zero id means *something* is assigned; it does
+   not yet mean the right thing.
+3. **Follow the id.** `grep -n -A6 '^--- !u!1 &<id>'`. If the header ends in ` stripped`, the
+   object belongs to a prefab instance: its `m_CorrespondingSourceObject` carries the source
+   `guid`, and `grep -rl "guid: G" Assets --include=*.meta` names the prefab. **Do not look
+   for the button's `onClick` in the scene** — it is not there, and its absence reads as
+   "unwired" when the wiring is one hop away.
+4. **Confirm the handler in the SOURCE prefab**, by method name *and* target type:
+   `grep -B8 'm_MethodName: OnContinueButtonPressed'` should show
+   `m_TargetAssemblyTypeName: <Namespace>.<Class>, Assembly-CSharp`. Matching the method name
+   alone will happily accept a handler on some other component.
+
+The payoff is comparative, so run it across the **known-good** scenes too: finding the four new
+scenes carry the same `continueButton` fileID and the same source prefab as the modes already
+shipping through that flow turns "it looks wired" into "it is wired identically to the proven
+case". A shared fileID across several scenes is not a coincidence to explain away — it is the
+signature of one prefab instanced in all of them, and it is the evidence.
+
 ## 5. Traps learned the hard way (check these BEFORE debugging for an hour)
 
 - **Play-mode edits: SCENE changes are discarded on Stop, SO ASSET changes are kept — and that

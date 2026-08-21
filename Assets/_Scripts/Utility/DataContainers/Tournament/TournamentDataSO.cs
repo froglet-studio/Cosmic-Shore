@@ -109,8 +109,16 @@ namespace CosmicShore.Utility
     public class TournamentDataSO : ScriptableObject
     {
         [Header("Lineup")]
-        [Tooltip("The minigames played in order, one per round. Fixed set for the MVP: " +
-                 "HexRace, Joust, Crystal Capture.")]
+        [Tooltip("The POOL a round is drawn from - the host picks a random entry per round (no " +
+                 "immediate repeat), so serialized order is display order only (the hub's pool " +
+                 "string), never play order. Currently seven: Skim Race, Joust, Crystal Capture, " +
+                 "Rampage, Peel the Cage, Scarab Scramble, The Bends.\n\n" +
+                 "Adding a mode: it must be a domain-scored multiplayer mode whose ScoringRuleSO " +
+                 "can ResolvePlacementOrder, its scene must be in Build Settings, and its card's " +
+                 "player/domain range must contain the Maelstrom card's (2-4 players, 2+ domains). " +
+                 "A VESSEL-LOCKED mode is fine and needs no extra wiring - GameDataSO." +
+                 "SyncFromArcadeGame publishes the card's Vessels list and clamps the lobby pick, " +
+                 "so the round forces its own hull.")]
         public List<SO_ArcadeGame> GameQueue = new();
 
         [Tooltip("Scene loaded as the tournament lobby/intro (the SO_ArcadeGame card for " +
