@@ -47,6 +47,16 @@ leaves evidence.
      journal + the tail of Unity's own `Editor-prev.log`, and one console warning names it.
 6. The heartbeat-vs-main-thread-stamp gap lets the report distinguish **"died abruptly"** from
    **"was hung for ~N s, then killed"**.
+7. **A hang dumps itself** (2026-08-21): when the main-thread liveness stamp goes stale past the
+   settings threshold (default 45 s), the writer thread writes a live **minidump** —
+   `Logs/CrashDetector/HangDump-<session>.dmp` (Windows only, once per session, pruned with the
+   reports; thread stacks + module list, a few MB). Open it in Visual Studio / WinDbg: the main
+   thread's stack names the deadlock a Task-Manager kill would otherwise destroy, and the
+   next-launch report links the dump. A stall that RECOVERS is journaled as "slow, not hung"
+   instead. To make this cover the phase where the 2026-08-21 hangs actually lived, the writer
+   no longer stands down at `beforeAssemblyReload` — it stamps the sentinel `DomainReload` and
+   keeps running until the domain unload aborts it (handled; the journal flushes in `finally`),
+   so a reload that wedges in "Run managed callbacks" still gets dumped.
 
 Guard rails: an error storm is rate-capped (20/s, excess collapsed to one count), the journal is
 size-capped (drops with one marker past the cap), reports are pruned to a count, and the whole
@@ -62,7 +72,8 @@ filename, severity `blocker`).
 
 ### Settings (machine-local)
 
-Enable, heartbeat seconds, capture-warnings, stack lines per entry, reports kept, journal cap.
+Enable, heartbeat seconds, capture-warnings, stack lines per entry, reports kept, journal cap,
+hang-dump threshold seconds (0 = off).
 `UserSettings/CrashDetectorSettings.asset` — never on the branch.
 
 ### Limitations
