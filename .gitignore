@@ -96,3 +96,8 @@ BenchmarkResults/
 # Python bytecode from Tools/CI scripts
 __pycache__/
 *.pyc
+
+# Unity's "Recovering Scene Backups" prompt (shown after an abnormal editor exit)
+# offers to copy scene backups here — never commit them.
+Assets/_Recovery/
+Assets/_Recovery.meta
