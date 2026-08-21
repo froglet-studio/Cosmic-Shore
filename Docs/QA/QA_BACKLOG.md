@@ -1,6 +1,6 @@
 # QA Backlog — untested development on `bleeding-edge`
 
-Generated: 2026-08-20 · Scan covers: up to `74bf4080` (PRs #583–#761; `9471b544` audio-bank update carries no testable item) · **Owner of this file: the `/qa-backlog` skill — do not hand-edit.**
+Generated: 2026-08-21 · Scan covers: up to `ce6a9c78` (PRs #583–#766) · **Owner of this file: the `/qa-backlog` skill — do not hand-edit.**
 
 > Note (2026-08-11): `bleeding-edge` was briefly force-pushed back to `0e855b24` (dropping PRs #674–#679) and then restored — the current tip `b0cf4f0f` re-includes all of that work plus PRs #680/#681/#695/#696. No items were pruned. The `windows-build-failures` build-fix branch is validated by QA-BUILD-COMPILE on Windows and has no separate item.
 
@@ -31,7 +31,7 @@ every run, so it can lag reality by one submission.
 6. **QA-PALETTE-DANGER-GOLD** — get shielded prisms of all three domains on screen (a populated cell / HexRace) and check gold reads in the pastel family.
 7. **QA-P2-DANGLING-CELLDATA** — a populated cell in freestyle: watch the Console for `LifeForm.Start()` / `Flora.Plant()` throws (PR #731 may have fixed this — verify which, if any, still throw).
 
-Editor-only, no play mode: **QA-PRISM-SHIELD-GPU-VISUALS** (run the jiggle test + glance for magenta on Skim Race track prisms) is nearly as cheap if you're already in the editor.
+Editor-only, no play mode: **QA-CRASH-DETECTOR-TOOL** (just open FrogletTools ▸ Misc ▸ Crash Detector and confirm it doesn't throw) and **QA-PRISM-SHIELD-GPU-VISUALS** (run the jiggle test + glance for magenta on Skim Race track prisms) are the cheapest if you're already in the editor.
 
 Tip: #1–#4, #6, #7 are all "one Dolphin freestyle session in a populated cell" — load a lifeform-rich cell (Cell Selector → Yggdra/Hesperides) on the Dolphin and knock out several in a row. #2/#3 start with a quick editor prefab glance.
 
@@ -833,6 +833,25 @@ Source: PRs #753 (`gyroid-schwarz-flora-cell` — seed the Lattice cell with EIG
 
 PASS: compiles; the Lattice cell seeds with ~8 founders and grows to ~twelve colonies; the quasicrystal form renders and grows coherently; continuity/mass hold. FAIL: missing scripts/None refs · a 240-founder boot wall · a broken/degenerate quasicrystal · anything popping in/out · a frozen or runaway colony.
 
+### QA-MAELSTROM-POOL ⬜ — the four new modes join the Maelstrom (Tournament) pool
+Source: PR #766 (`1f0b235a` feat(tournament)). Maelstrom/Tournament now draws from a pool that includes **Rampage, Peel the Cage (Ribcage), Scarab Scramble, and The Bends** (plus a corrected pool-math fix and a scene-wiring check). `TournamentDataSO` + `TournamentData.asset`. **Depends on** the individual modes working (QA-RAMPAGE-REBUILD, QA-RIBCAGE-MODE, QA-SCARAB-MODE ✓, QA-BENDS-MODE). Reference: `Docs/TournamentSystem/ARCHITECTURE.md`.
+
+1. Launch **Maelstrom** (Tournament). Confirm the mode chains multiple minigames back-to-back and that the pool now includes the four new modes (over a few runs you should see them appear, not only the legacy HexRace/Joust/Crystal Capture).
+2. Play a chain through at least one of the new modes (e.g. it rolls Scarab Scramble or The Bends) and confirm the transition in/out of it works — scores fold into the standings, the next mode loads.
+3. Confirm the race-to-N standings / summary resolve correctly with the larger pool (the "stale 3-mode pool math" fix from this PR).
+4. No missing scripts / scene-wiring errors on any pool member as it loads.
+
+PASS: Maelstrom chains modes including the four new ones; transitions in/out of a new mode work; standings/summary resolve with the corrected pool math; no load errors. FAIL: a pool member that won't load or throws · standings math wrong (a mode not counted, or a wrong race-to-N) · a chain that wedges between modes · the new modes never appearing in the pool.
+
+### QA-ENTER-PLAYMODE-OPTIONS ⬜ — no stale static state with fast play-mode entry
+Source: `managed-callbacks-performance` (`b3af31e1` "enable Enter Play Mode Options behind a full static-state audit", `4d97ba09` cut domain-reload cost). The editor now uses **Enter Play Mode Options** (domain/scene reload disabled for faster iteration) — which surfaces any static field that isn't reset between play sessions as a "works first time, breaks second time" bug. The audit is unverified in practice. **Editor-only concern.**
+
+1. Enter Play Mode on Menu_Main, exit, and **re-enter several times in a row** — the menu, autopilot vessel, and freestyle behave identically on the 2nd/3rd entry as the 1st (no doubled objects, no stale singletons, no missing managers).
+2. Repeat with a gameplay scene: play a round, exit play mode, re-enter, play again — score/state start clean each time (cross-check QA-STATE-RESET), no leftover objects or events firing twice.
+3. Watch the Console across repeated entries for `static`-state-related nulls or "already registered/subscribed" style warnings.
+
+PASS: repeated play-mode entries behave identically to a cold entry; no doubled/stale objects, no double-fired events, clean console. FAIL: any behaviour that only breaks on the 2nd+ entry · doubled objects / stale singletons · events firing multiple times · nulls from un-reset statics.
+
 ## Priority 2 — lower risk, cosmetic, or data-gathering
 
 ### QA-P2-SERPENT-SKIMMER ⬜ — Serpent's dead skimmer (known, unfixed)
@@ -899,6 +918,15 @@ Source: PR #719 (`sparrow-spread-haptics`). Sparrow shot spread plus haptic feed
 3. Regression: the two standard feels (skim pulse, prism thud) still behave (cross-check QA-HAPTICS).
 
 PASS: the spread reads as intended; the haptic fires appropriately on a device and respects the haptics policy; the standard feels are intact. FAIL: broken/absent spread · a haptic that fires on silenced events or not at all · a regression to the two standard feels.
+
+### QA-CRASH-DETECTOR-TOOL ⬜ — the editor Crash Detector + Diagnostics lane / Bug Ledger
+Source: `tools-docs-crash-detector` (`419590fb` add editor crash detector, `0448192e` Diagnostics lane + shared Bug Ledger, `5b8cddae` ledger archive / findings / severity / doc links). A new editor tool at **FrogletTools ▸ Misc ▸ Crash Detector** with a Diagnostics lane and a shared Bug Ledger. Reader/diagnostics tool.
+
+1. Open **FrogletTools ▸ Misc ▸ Crash Detector** — it opens without throwing.
+2. Exercise the Diagnostics lane / Bug Ledger UI (view findings, severity, doc links) — nothing throws; links resolve.
+3. If it can surface recent editor crashes/errors, confirm it lists something sensible (or an empty state) rather than erroring.
+
+PASS: the tool opens and its Diagnostics/Ledger UI works without throwing; findings/links render. FAIL: the menu item missing or throwing on open · a Diagnostics/Ledger panel that errors · broken doc links / severity display.
 
 ## Not covered by this list
 
