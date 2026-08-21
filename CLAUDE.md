@@ -609,20 +609,40 @@ Note: A vestigial `_Scripts/Game/` directory exists containing only non-code ass
 
 ### Assembly Definitions
 
-All first-party gameplay code compiles in Unity's default assembly, `Assembly-CSharp` (no runtime
-`.asmdef` files). Exactly **one** first-party `.asmdef` exists:
+Most first-party code still compiles in Unity's default assembly, `Assembly-CSharp`. **That is a
+state being actively unwound, not the design.** The monolith means every one-line edit recompiles
+~1,481 files, and nothing enforces a dependency direction. The split proceeds bottom-up, one leaf
+assembly at a time — full plan, measurement protocol and phase-2 candidates:
+**`Docs/ASSEMBLY_SPLIT.md`**.
 
 | Assembly | Scope |
 |---|---|
+| `CosmicShore.Data` | `_Scripts/Data/` — enums, structs, small interfaces. The first extracted leaf: depends on no first-party code |
 | `CosmicShore.PlayFabTests` | PlayFab integration tests |
 
-> This table previously also listed `CosmicShore.Bootstrap.Tests`, `CosmicShore.Multiplayer.Tests`
-> and `CosmicShore.Tests.EditMode`. **Those assemblies never existed.** The tests therefore fell
-> into `Assembly-CSharp` and shipped into the player, where the IL2CPP linker hit their NUnit
-> attributes and killed the Windows build (`error IL1005` → `Failed to resolve assembly:
-> 'nunit.framework'`). Fixed by moving every test under an `Editor/` folder; see below.
+**The rule that makes extraction safe, and safe in only one direction:** a predefined assembly
+(`Assembly-CSharp`, `Assembly-CSharp-Editor`) **automatically references every auto-referenced
+asmdef**, so moving code OUT into an asmdef is invisible to everything left behind — no `using`
+change, no reference wiring, no big-bang. An asmdef can never reference a predefined assembly, so
+code that still reaches back into gameplay cannot be extracted at all. Extraction therefore works
+**bottom-up from the leaves**, and the compiler is the forcing function rather than a review
+checklist.
 
-### **Tests live under an `Editor/` folder, never in an asmdef.**
+Two things that do **not** survive an assembly boundary and must be checked before drawing one:
+`internal` members and `partial` types (invisible / illegal across assemblies), and extension
+methods (only found when their namespace is `using`-ed). A namespace *may* span assemblies — so
+relocating a file that blocks a boundary is a `git mv` of the file **and** its `.meta`, never a
+rename. Renaming is what breaks scene and prefab references; changing which assembly a class
+compiles into does not.
+
+> An earlier version of this table also listed `CosmicShore.Bootstrap.Tests`,
+> `CosmicShore.Multiplayer.Tests` and `CosmicShore.Tests.EditMode`. **Those assemblies never
+> existed.** The tests therefore fell into `Assembly-CSharp` and shipped into the player, where the
+> IL2CPP linker hit their NUnit attributes and killed the Windows build (`error IL1005` → `Failed
+> to resolve assembly: 'nunit.framework'`). Fixed by moving every test under an `Editor/` folder;
+> see below.
+
+### **Tests live under an `Editor/` folder, not in an asmdef — until their dependencies are extracted.**
 
 Every first-party test is under a folder literally named `Editor`, which puts it in
 `Assembly-CSharp-Editor`:
@@ -634,20 +654,30 @@ Every first-party test is under a folder literally named `Editor`, which puts it
 | Multiplayer tests | `_Scripts/Controller/Multiplayer/Tests/Editor/` |
 | PlayFab tests | `_Scripts/System/Playfab/PlayFabTests/` (has its own `.asmdef`) |
 
-Two properties make this the only workable arrangement, and both are load-bearing:
+Two properties make this work, and both are load-bearing:
 
 1. `Assembly-CSharp-Editor` is **never included in a player build**, so NUnit never reaches the
    IL2CPP linker.
-2. It **implicitly references `Assembly-CSharp`**, so tests can still see every gameplay type.
+2. It **implicitly references `Assembly-CSharp`** — and every auto-referenced asmdef — so tests see
+   both the gameplay types still in the monolith and every extracted assembly.
 
-**Do not "fix" this by authoring test `.asmdef`s.** An asmdef-based assembly *cannot* reference
-`Assembly-CSharp`, and all gameplay code lives there by design, so an asmdef would break every test
-that touches a gameplay type. That constraint is almost certainly why the three documented
-assemblies were never actually created.
+**Do not author a test `.asmdef` for a suite that touches gameplay types.** An asmdef cannot
+reference `Assembly-CSharp`, so such a test would be blind to the very types it tests. That
+constraint is almost certainly why the three documented assemblies above were never created.
 
-**A new test file must be created under an `Editor/` folder.** A test anywhere else compiles into
-the player and breaks the Windows build at the linker stage, which the compile tier and the
-edit-mode suite are both structurally blind to; only a player build catches it.
+**The constraint is a function of where the code under test lives, not a permanent law.** A suite
+whose dependencies are *entirely* inside extracted assemblies (`CosmicShore.Data` today) can have a
+real test asmdef referencing those plus the test-runner assemblies — `CosmicShore.PlayFabTests` is
+already this shape. Take that per-suite as its dependencies come out; never as a project-wide flip.
+
+**A new test file must be created under an `Editor/` folder** unless it meets the bar above. A test
+anywhere else compiles into the player and breaks the Windows build at the linker stage, which the
+compile tier and the edit-mode suite are both structurally blind to; only a player build catches it.
+
+**Adding a new runtime assembly** is not a casual change — it alters the build for every branch in
+flight. Follow the checklist in `Docs/ASSEMBLY_SPLIT.md` § "Adding an asmdef": prove the folder is a
+leaf, check the three things that don't cross a boundary, `autoReferenced: true`, one asmdef per
+commit, and run `validate_project.py` + `check_conditional_compilation.py`.
 
 Third-party assemblies: `Obvious.Soap`, `PlayFab`, `Lofelt.NiceVibrations`, `NativeShare.Runtime`
 
@@ -904,6 +934,7 @@ MiniGameControllerBase (abstract, NetworkBehaviour)
 | `THREADING.md` | `Docs/` | UniTask / SyncContext threading rules, `.AsMainThread()` contract, `MainThreadDispatcher`, canary, history |
 | `PALETTE.md` | `Docs/` | The domain colour set (`SO_ColorSet`): which asset is live, what `_DarkColor`/`_BrightColor` actually are (prism **base face** vs **fresnel rim** — "Outside/Inside" is a misnomer), the **linear-HDR colour-space rule** (Rec.709/CIELAB apply directly; scaling a pair changes brightness but NOT contrast), the measured shielded-tier contract (ΔL\* 29.34 across all domains), and the **danger tier** — which has no colour fields of its own: it composes the domain's *shielded* base face with the shared domain-independent `EnvironmentColors.Danger` rim. **The invariant that outranks every per-tier contract (§4.0): in every tier, on every domain, the rim is brighter than the base** — it held on nine of twelve tier×domain pairs by accident rather than by rule, and each of the three violations was separately rationalised as a local trade-off before being recognised as one defect (danger was inverted on all three domains at ΔL\* −3.8; it is now +9.30). Two warm-hue traps are recorded there and are the reason those violations were invisible: **absolute `C*` is not comparable across hues** (equal chroma leaves a warm hue's blue channel starved, so judge by screen saturation *after clipping*, §4.1), and **authoring a peak channel silently overshoots `L*` at a warm hue** — set lightness against the other tiers first, then solve the channels. §2.2 covers the **crystal tier**: crystal colour signals WHO MAY COLLECT (element is shape, never colour), a free pickup wears the lime CTA, and in every crystal shader the composition is `lerp(dull, bright, (1−N·V)⁴)` — so at that fresnel power **`DarkCTA` paints ~93% of the crystal and `BrightCTA` is a 2.5% hairline**; tune the body, not the rim. It also records the finding that outranks §3 in practice: **gameplay bloom is CLAMPED at 0.5** (URP's default is 65472), so bloom saturates at max channel 0.5 and 56 of the 86 authored colours bloom identically — brightness above the clamp is a **dead dial**, and §3's "channels above 1.0 bloom" is false as shipped. Within the clamp, extra bloom is bought with bright **area**, not intensity. **Read before editing any `*BlockColor` or `*CTA` field, changing which field feeds a prism or crystal material, or trying to make anything glow harder.** |
 | `CONDITIONAL_COMPILATION.md` | `Docs/` | `#if UNITY_EDITOR` / `DEVELOPMENT_BUILD` rules, the two safe guard patterns, and the `Tools/Build/check_conditional_compilation.py` CI gate. **Read before writing ANY script that uses a compilation guard or the `UnityEditor` namespace** — this class of mistake has broken the automated build repeatedly and is invisible in the Editor. |
+| `ASSEMBLY_SPLIT.md` | `Docs/` | Splitting the single-assembly monolith: the one-way rule that makes leaf extraction safe (predefined assemblies auto-reference asmdefs; the reverse is impossible), the compile-timing measurement protocol + structural baseline, what phase 1 extracted, and the measured phase-2 candidates with what blocks each. **Read before adding ANY `.asmdef`, relocating a file to satisfy an assembly boundary, or authoring a test asmdef.** |
 | `SPATIAL_INDEX.md` | `Docs/` | `PrismSpatialIndex` — THE canonical spatial index of prism mass (Burst AOE queries, growth occupancy reservations, bucket grid). **Read before adding any spatial query against prisms.** |
 | `PRISM_ANIMATION.md` | `Docs/` | **The clock-material law (LOCKED, STRICT — no legacy fallback)**: no prism may need multiframe CPU updates to animate — animation = pool-pull + one initial-conditions stamp + GPU runs the course off the shader clock + one scheduled end-state swap; colliders and gameplay state go FINAL at the start. There is NO CPU animation tier to fall back to: an unwired graph fails LOUD (`PrismClockDiagnostics`) and the visual snaps until the §4.4 wiring lands (in-editor checklist: `Docs/PRISM_CLOCK_WIRING_CHECKLIST.md`; validator: FrogletTools > Ecology > Prism Animation). Full audit of every prism update path+ migration tracker. §4.7 documents the ONE sanctioned shape for view-dependent prism visuals — a GLOBAL uniform published once per frame, never a per-prism write — and states the camera↔vessel occlusion corridor as a **PLATFORM LAW** with the four layers that make it un-authorable to skip. **Read before touching any prism visual, animation, or state transition.** |
 | `SPEED_TUNNEL.md` | `Docs/` | **The speed-tunnel PLATFORM LAW**: every vessel's camera FOV narrows and Panini relaxes as a function of its own measured speed — a quasi dolly zoom, sold entirely through optics with no camera-distance change. The mapping is **absolute and fleet-wide** (the same speed on any vessel looks the same); there is deliberately no per-vessel window, scalar, or normalization. Documents the four layers that make it un-authorable, the one sanctioned suppression (manual replay camera), the single tuning asset, and where every vessel lands in the shared window. **Read before touching vessel speed, the gameplay camera's FOV, or the Panini override.** |
