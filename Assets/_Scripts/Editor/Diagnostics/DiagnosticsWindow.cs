@@ -389,6 +389,11 @@ namespace CosmicShore.Editor
                     new GUIContent("Journal cap (MB)",
                         "An error storm must not fill the disk; past the cap entries are dropped with one marker."),
                     settings.MaxJournalMB, 1, 32);
+                int hangDump = EditorGUILayout.IntSlider(
+                    new GUIContent("Hang dump after (seconds)",
+                        "Main-thread unresponsiveness past this writes a live minidump (Windows only, once per " +
+                        "session) whose main-thread stack names the deadlock. 0 = off."),
+                    settings.HangDumpSeconds, 0, 600);
 
                 if (EditorGUI.EndChangeCheck())
                 {
@@ -397,6 +402,7 @@ namespace CosmicShore.Editor
                     settings.StackTraceLines = stackLines;
                     settings.MaxReportsKept = maxReports;
                     settings.MaxJournalMB = journalCap;
+                    settings.HangDumpSeconds = hangDump;
                     settings.SaveNow();
                     CrashDetectorMonitor.ApplySettings(settings);
 
