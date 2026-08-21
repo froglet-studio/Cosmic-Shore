@@ -46,6 +46,14 @@ Two corollaries worth stating because they are the things that actually bite:
   method is only found if its declaring namespace is `using`-ed. Check all three before
   drawing a boundary; the phase-1 commit verified each explicitly.
 
+- **Each new assembly needs its own `InternalsVisibleTo` grant if its internals are tested.**
+  `Assets/_Scripts/AssemblyInfo.cs` carries `[assembly: InternalsVisibleTo("Assembly-CSharp-Editor")]`,
+  which is what lets the edit-mode tests reach `Prism.SpatialIndexId` and friends. That attribute
+  applies to **`Assembly-CSharp` only** — an extracted assembly does not inherit it, so a layer that
+  has `internal` members reached by tests needs its own `AssemblyInfo.cs` inside the new assembly's
+  folder. `CosmicShore.Data` declares no `internal` members, so phase 1 needed no grant; do not
+  assume that of the next layer.
+
 ---
 
 ## Measuring
@@ -204,6 +212,37 @@ What changes as the split proceeds: a test that touches **only extracted assembl
 have a real test asmdef, referencing those assemblies plus the test-runner assemblies. That
 is a phase-2 win and should be taken per-suite as its dependencies come out, never as a
 project-wide flip. `CosmicShore.PlayFabTests` is already this shape and shows the pattern.
+
+---
+
+## Not enforced automatically
+
+The repo-root `.editorconfig` plus `Assets/Analyzers/Microsoft.Unity.Analyzers.dll` give the
+compiler teeth for a set of rules CLAUDE.md already states — Unity message signatures that
+silently never run, dropped coroutines, allocating physics queries, `[MenuItem]` on a
+non-static method, empty `Update()`. Severities are capped at **warning**; a build must never
+fail on a lint rule.
+
+**Three rules CLAUDE.md states are NOT covered, and it is worth being explicit about that**
+rather than assuming the analyzer picked them up. No rule exists for any of them in this
+package:
+
+| CLAUDE.md rule | occurrences (2026-08-21) | why it is not covered |
+|---|---:|---|
+| no `async void` | 31 | no UNT rule; needs `Microsoft.VisualStudio.Threading.Analyzers` (VSTHRD100) |
+| no `FindObjectOfType` in hot paths | 13 legacy + 61 `…ByType` | no analyzer rule exists; "hot path" is not statically decidable anyway |
+| per-frame `Update()` cost | 147 `Update()` methods | having one is not a defect; UNT0001 catches only the *empty* ones |
+
+The cheap honest option for the first two is a grep-based gate beside
+`Tools/CI/validate_project.py` and `Tools/Build/check_conditional_compilation.py` — the
+project already uses exactly that shape for rules a compiler cannot express. Not built here:
+it is a separate concern from the assembly split and deserves its own review.
+
+Two rules with a large existing backlog (`UNT0026` TryGetComponent, and the
+`?.`/`??`-on-Unity-objects family) are deliberately held at `suggestion`. They are correct and
+worth fixing, but landing them as warnings would add hundreds of Unity console entries on day
+one and bury the warnings that indicate real bugs. Promote each to `warning` once its backlog
+is cleared; the counts are recorded in `.editorconfig` next to each rule.
 
 ---
 
