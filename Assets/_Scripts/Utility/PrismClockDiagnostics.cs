@@ -18,6 +18,16 @@ namespace CosmicShore.Utility
         static readonly HashSet<int> _warnedMaterials = new();
         static readonly HashSet<string> _warnedContexts = new();
 
+        // Warn-once means once per PLAY SESSION: a strict-mode fail-loud that only fires once
+        // per editor session hides regressions, and material instance IDs get reused across
+        // sessions, falsely suppressing new offenders.
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        static void ResetWarnings()
+        {
+            _warnedMaterials.Clear();
+            _warnedContexts.Clear();
+        }
+
         // Edit-mode tooling (baseline measurers, track previews, prefab spawns)
         // legitimately runs the prism lifecycle without the instanced service or
         // a play-mode clock — strict-mode screaming is a RUNTIME contract. The

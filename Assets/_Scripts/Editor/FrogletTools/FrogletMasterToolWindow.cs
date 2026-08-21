@@ -33,7 +33,8 @@ namespace CosmicShore.Editor.Froglet
 
         [MenuItem("FrogletTools/Froglet Master Tool", false, -100)]
         [FrogletTool(FrogletToolCategory.Misc, Importance = 5,
-            Description = "This board. Every Froglet editor tool in one place.")]
+            Description = "This board. Every Froglet editor tool in one place.",
+            DocPath = "Docs/TOOLING.md")]
         public static void Open()
         {
             var w = GetWindow<FrogletMasterToolWindow>("Froglet Tools");
@@ -224,6 +225,19 @@ namespace CosmicShore.Editor.Froglet
             var descRect = new Rect(r.x + pad, r.y + 27f, r.width - pad * 2f, r.height - 34f);
             GUI.Label(descRect, body, new GUIStyle(FrogletEditorPalette.CardBody) { wordWrap = true });
 
+            // DOCS chip — only on documented tools. Drawn (and its button emitted) BEFORE the
+            // whole-card button so a click on the chip opens the doc instead of launching.
+            if (!string.IsNullOrEmpty(tool.DocPath))
+            {
+                var docRect = new Rect(r.xMax - pad - 44f, r.yMax - 21f, 44f, 15f);
+                FrogletEditorPalette.StatusPill(docRect, "DOCS", accent);
+                if (GUI.Button(docRect, new GUIContent("", $"Open the documentation on GitHub\n{tool.DocPath}"), GUIStyle.none))
+                {
+                    FrogletDocLinks.Open(tool.DocPath);
+                    GUIUtility.ExitGUI();
+                }
+            }
+
             if (GUI.Button(r, new GUIContent("", $"{tool.MenuPath}\n{tool.DeclaringType}"), GUIStyle.none))
                 tool.Invoke();
             if (hover) EditorGUIUtility.AddCursorRect(r, MouseCursor.Link);
@@ -253,6 +267,11 @@ namespace CosmicShore.Editor.Froglet
             var menu = new GenericMenu();
             menu.AddItem(new GUIContent("Launch"), false, tool.Invoke);
             menu.AddSeparator("");
+            if (!string.IsNullOrEmpty(tool.DocPath))
+                menu.AddItem(new GUIContent("Open documentation"), false,
+                    () => FrogletDocLinks.Open(tool.DocPath));
+            else
+                menu.AddDisabledItem(new GUIContent("Open documentation"));
             menu.AddItem(new GUIContent("Copy menu path"), false,
                 () => EditorGUIUtility.systemCopyBuffer = tool.MenuPath);
 

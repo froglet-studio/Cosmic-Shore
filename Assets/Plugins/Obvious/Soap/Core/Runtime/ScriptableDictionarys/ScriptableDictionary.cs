@@ -214,6 +214,9 @@ namespace Obvious.Soap
             if (_resetOn == ResetType.SceneLoaded)
                 SceneManager.sceneLoaded += OnSceneLoaded;
 #if UNITY_EDITOR
+            // [Cosmic Shore patch] -= before += : reimport re-runs OnEnable and OnDisable never
+            // removed this handler, so the original code double-subscribed.
+            EditorApplication.playModeStateChanged -= OnPlayModeStateChanged;
             EditorApplication.playModeStateChanged += OnPlayModeStateChanged;
 #endif
         }
@@ -222,6 +225,9 @@ namespace Obvious.Soap
         {
             if (_resetOn == ResetType.SceneLoaded)
                 SceneManager.sceneLoaded -= OnSceneLoaded;
+#if UNITY_EDITOR
+            EditorApplication.playModeStateChanged -= OnPlayModeStateChanged;
+#endif
         }
 
         private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
@@ -241,8 +247,28 @@ namespace Obvious.Soap
 #if UNITY_EDITOR
         public void OnPlayModeStateChanged(PlayModeStateChange state)
         {
+            // [Cosmic Shore patch] Clear the C# event delegates at BOTH play-mode boundaries —
+            // with domain reload disabled they survive across sessions and un-unsubscribed
+            // handlers stack one copy per Play press. Subscribers are dropped before Clear() so
+            // dead handlers never hear the content clear.
             if (state == PlayModeStateChange.EnteredEditMode)
+            {
+                ClearRuntimeSubscribers();
                 Clear();
+            }
+            else if (state == PlayModeStateChange.ExitingEditMode)
+                ClearRuntimeSubscribers();
+        }
+
+        private void ClearRuntimeSubscribers()
+        {
+            OnCountChanged = null;
+            OnPairAdded = null;
+            OnPairRemoved = null;
+            OnPairsAdded = null;
+            OnPairsRemoved = null;
+            OnCleared = null;
+            OnValueChanged = null;
         }
 #endif
 

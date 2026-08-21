@@ -50,6 +50,10 @@ namespace CosmicShore.Gameplay
         // prism debuff uses, so the two share a mental model even though the tables are separate.
         private static readonly Dictionary<ResourceSystem, float> _lastEffectTime = new();
 
+        // No prune path — destroyed ResourceSystem keys accumulate for the editor session.
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        static void ResetStatics() => _lastEffectTime.Clear();
+
         public override void Execute(VesselImpactor impactor, ExplosionImpactor impactee)
         {
             if (!impactor || impactor.Vessel == null) return;

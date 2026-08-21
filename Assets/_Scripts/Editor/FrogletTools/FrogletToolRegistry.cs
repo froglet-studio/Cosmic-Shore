@@ -14,6 +14,7 @@ namespace CosmicShore.Editor.Froglet
         public string DisplayName;       // last path segment, or the attribute override
         public string Group;             // middle path segment, e.g. "Game Modes"
         public string Description;
+        public string DocPath;           // repo-relative doc (+ optional #anchor); null = undocumented
         public FrogletToolCategory Category;
         public int Importance;           // 1..5
         public MethodInfo Method;
@@ -126,6 +127,7 @@ namespace CosmicShore.Editor.Froglet
                 DisplayName = attr?.DisplayName ?? leaf,
                 Group = group,
                 Description = attr?.Description,
+                DocPath = attr?.DocPath,
                 Category = attr?.Category ?? InferCategory(path, m.DeclaringType),
                 Importance = Mathf.Clamp(attr?.Importance ?? InferImportance(mi), 1, 5),
                 Method = m,
@@ -143,6 +145,8 @@ namespace CosmicShore.Editor.Froglet
 
             if (Has(hay, "build", "release", "player")) return FrogletToolCategory.Build;
             if (Has(hay, "benchmark", "performance", "memory", "profil", "texture")) return FrogletToolCategory.Performance;
+            // Deliberately not bare "bug" (matches "debug") or "log" (the Logging toolbox is Misc).
+            if (Has(hay, "crash", "diagnos", "watchdog", "bug ledger", "bugledger")) return FrogletToolCategory.Diagnostics;
             if (Has(hay, "audit", "validate", "validator", "verify", "integrity")) return FrogletToolCategory.Validation;
             if (Has(hay, "prism", "cell", "lifeform", "crystal", "ecolog", "flora", "fauna", "toybox")) return FrogletToolCategory.Ecology;
             if (Has(hay, "vessel", "ship", "hud", "elemental", "petal", "rig", "ability")) return FrogletToolCategory.Vessels;

@@ -32,9 +32,34 @@ three feature-complete domain minigames into one tournament with a per-player le
 ## 1. What it is
 
 One session plays a **randomized lineup** drawn from the competitive domain games — **Skim Race
-(HexRace 33), Joust (34), Crystal Capture (35)**. Each game the host draws a random pool mode (no
+(HexRace 33), Joust (34), Crystal Capture (35), Rampage (2), Peel the Cage (Ribcage 39), Scarab
+Scramble (43), The Bends (42)**. Each game the host draws a random pool mode (no
 immediate repeat) **and** a random intensity in `[1..X]` (X = the lobby-chosen intensity ceiling),
-so a higher intensity widens the variety (`3 modes × X` "experiences", L1=3 … L4=12). After each
+so a higher intensity widens the variety (`7 modes × X` "experiences", L1=7 … L4=28).
+
+**The pool is authored, not coded** — it is `TournamentData.asset`'s `GameQueue`, and every consumer
+(`LoadRandomGame`, `IndexOfSceneName`, the hub's pool string, `ConnectingPanelController`) is
+length-agnostic, so adding a mode is one asset edit. Three things a candidate must satisfy:
+
+1. **Domain-scored.** Standings fold through `ScoringRuleSO.ResolvePlacementOrder` (§3), so the mode
+   must rank *domains* by team total. All seven are `MultiplayerDomainGamesController` subclasses.
+2. **Scene in Build Settings.** `LoadRandomGame` drives a `Single` load by scene name; a missing
+   scene fails the round, not the draw.
+3. **Player/domain range must contain the Maelstrom card's** (2–4 players, 2+ domains). The drawn
+   mode's own card range is *not* re-checked at draw time — a mode capping at 3 players would break
+   a 4-player lobby silently.
+
+**Vessel-locked modes need no extra wiring.** Four of the seven are single-hull (Rampage and The
+Bends are Dolphin, Peel the Cage is Rhino, Scarab Scramble is Scarab). `GameDataSO.SyncFromArcadeGame`
+publishes the drawn card's `Vessels` list into `AllowedVesselClasses` and calls
+`ClampSelectedVesselToGame`, so the round forces its own hull and the lobby's vessel pick applies
+only to rounds that permit it. This is why the Maelstrom card's own `Vessels` list is a *lobby*
+choice, not a session-wide lock.
+
+**Known wrinkle — same-hull adjacency.** `PickRandomModeIndex` avoids repeating the previous
+*index*, not the previous *vessel* or *arena*. Rampage and The Bends share both (Dolphin, the cactus
+forest), so they can be drawn back-to-back and will read as one mode played twice. Fix, if it
+bothers a playtest: widen the avoid-set to the previous mode's first `Vessels` entry. After each
 game the active **domains** are ranked **by team total** (the mode rule's summed metric — see §3)
 and earn **placement crystals** by domain place (1st = 2, 2nd = 1, 3rd = 0; `PointsByPlace`,
 configurable — the **last**-placed domain always earns the table's last entry, 0, so a 2-domain

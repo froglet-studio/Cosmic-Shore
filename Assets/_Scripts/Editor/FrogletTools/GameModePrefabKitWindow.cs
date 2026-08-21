@@ -32,7 +32,8 @@ namespace CosmicShore.Editor.Froglet
 
         [MenuItem("FrogletTools/Game Modes/Game Mode Prefab Kit", false, 10)]
         [FrogletTool(FrogletToolCategory.GameModes, Importance = 5,
-            Description = "Add and validate every prefab a game-mode scene needs.")]
+            Description = "Add and validate every prefab a game-mode scene needs.",
+            DocPath = "Docs/GAMECANVAS.md")]
         public static void Open()
         {
             var w = GetWindow<GameModePrefabKitWindow>("Prefab Kit");

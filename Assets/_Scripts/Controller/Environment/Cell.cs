@@ -319,6 +319,16 @@ namespace CosmicShore.Gameplay
         // ---------------------------------------------------------------------
         static readonly List<Cell> ActiveCells = new();
 
+        // OnEnable/OnDisable keep the registry balanced across a clean play exit; the reset
+        // covers the unclean one (a crash mid-play) and restarts the id counter so the short
+        // can never wrap into PrismSpatialIndex's 0/-1 sentinels across many sessions.
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        static void ResetStatics()
+        {
+            ActiveCells.Clear();
+            s_nextVolumeCellId = 1;
+        }
+
         /// <summary>
         /// Read-only view of the enabled cells in the scene. Exposed for read-only
         /// diagnostics (e.g. <see cref="EcosystemPerfProbe"/> summing prisms + live

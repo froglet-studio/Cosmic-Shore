@@ -37,6 +37,16 @@ namespace CosmicShore.Gameplay
     {
         static readonly Dictionary<Cell, ScarabNucleusField> s_byCell = new();
 
+        // OnDestroy cannot remove this entry on play exit (the Cell key is already destroyed and
+        // reads fake-null), so dead keys accumulate. s_hooked clears in lockstep with
+        // AstroLeagueBall.ResetStaticEvents nulling the event — see the note there.
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        static void ResetStatics()
+        {
+            s_byCell.Clear();
+            s_hooked = false;
+        }
+
         Cell _cell;
         ScarabNucleusFieldConfigSO _config;
 

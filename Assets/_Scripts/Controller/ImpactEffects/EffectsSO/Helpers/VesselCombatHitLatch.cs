@@ -58,6 +58,12 @@ namespace CosmicShore.Gameplay
 
         static readonly Dictionary<Key, float> _lastHitTime = new();
 
+        // Keys are player-name strings that recur across sessions while Time.time restarts at 0,
+        // so a stale stamp makes the FIRST hit of the next session read as inside the cooldown.
+        // Only Bends/DogFight call Clear() — this covers every other mode.
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        static void ResetStatics() => Clear();
+
         // Lazy prune: sweeping every N admissions keeps the dictionary bounded without paying
         // for a scan on the hot path. Sized well above any plausible simultaneous-pair count.
         const int PruneEvery = 128;

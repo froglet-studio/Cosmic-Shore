@@ -157,6 +157,12 @@ namespace CosmicShore.Gameplay
 
         public static event Action<string, int> OnLifeFormDeath;
 
+        // Scoring subscribers (BaseScoring) are plain C# objects that unsubscribe on a GAMEPLAY
+        // event (turn end), not a lifecycle one — with domain reload disabled a mid-turn play
+        // exit would carry their dead handlers into the next session.
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        static void ResetStatics() => OnLifeFormDeath = null;
+
         // --- Composition: extracted trackers (SRP) ---
         protected HealthBlockTracker healthTracker;
         protected SpindleTracker spindleTracker;

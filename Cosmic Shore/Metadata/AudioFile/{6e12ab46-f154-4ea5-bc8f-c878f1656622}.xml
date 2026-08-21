@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <objects serializationModel="Studio.02.02.00">
-	<object class="AudioFile" id="{6dcbf907-2c04-41bb-b4f7-13a980ec9941}">
+	<object class="AudioFile" id="{6e12ab46-f154-4ea5-bc8f-c878f1656622}">
 		<property name="assetPath">
-			<value>cosmic shore laser.wav</value>
+			<value>cosmic shore laser 2.wav</value>
 		</property>
 		<property name="frequencyInKHz">
 			<value>48</value>
@@ -11,7 +11,7 @@
 			<value>2</value>
 		</property>
 		<property name="length">
-			<value>0.6875</value>
+			<value>1.5658333333333334</value>
 		</property>
 		<relationship name="masterAssetFolder">
 			<destination>{10bfe9dd-695d-4131-b664-efde45fc55f0}</destination>

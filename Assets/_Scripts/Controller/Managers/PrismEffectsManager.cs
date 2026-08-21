@@ -16,6 +16,12 @@ namespace CosmicShore.Gameplay
     {
         private static bool _isQuitting;
 
+        // OnApplicationQuit fires on editor play-mode EXIT — with domain reload disabled a
+        // stale true makes EnsureInstance() return null for every later session, silently
+        // killing implosion convergence. Same shape as ApplicationLifecycleManager.ResetStatics.
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        static void ResetStatics() => _isQuitting = false;
+
         private void OnApplicationQuit() => _isQuitting = true;
 
         /// <summary>

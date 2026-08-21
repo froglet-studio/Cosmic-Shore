@@ -10,7 +10,8 @@ scene view, the networked ready-up, and the connecting reveal) and the **UI wiri
 
 > **Length model (locked for this pass):** race to `WinTarget = 6` per-domain points (`{2,1,0}` per
 > game), hard cap `MaxGames = 7`. Intensity does **not** affect length — it only sets the per-game
-> difficulty draw pool (`3 modes × intensity` "experiences").
+> difficulty draw pool (`N modes × intensity` "experiences", where N is the authored `GameQueue`
+> length — 7 today).
 
 ---
 

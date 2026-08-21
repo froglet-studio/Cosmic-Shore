@@ -48,6 +48,10 @@ namespace CosmicShore.Gameplay
         /// </summary>
         public static bool ForceLegacyBoxInteraction;
 
+        // A/B verification switch; must not survive into a normal session.
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        static void ResetForceLegacy() => ForceLegacyBoxInteraction = false;
+
         struct OwnerEntry
         {
             public ImpactorBase Owner;

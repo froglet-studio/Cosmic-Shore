@@ -84,6 +84,11 @@ namespace CosmicShore.Gameplay
         private static readonly Dictionary<int, float> _lastExplosionTimeByImpactor
             = new ();
 
+        // Instance-ID keys get reused across play sessions while Time.time restarts at 0 — a
+        // stale stamp reads as a negative delta and suppresses the explosion outright.
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        static void ResetStatics() => _lastExplosionTimeByImpactor.Clear();
+
         /// <summary>
         /// The volume this blast would sweep if <paramref name="status"/>'s vessel struck a crystal
         /// right now — the shape the Dolphin's Echo Sight highlights.

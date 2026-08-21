@@ -702,6 +702,10 @@ namespace CosmicShore.Gameplay
         /// </summary>
         public static int DamageBudgetPerFrameOverride = 0;
 
+        // Benchmark-harness override; a play exit mid-run must not leave gameplay unthrottled.
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        static void ResetBudgetOverride() => DamageBudgetPerFrameOverride = 0;
+
         static int EffectiveDamageBudget =>
             DamageBudgetPerFrameOverride > 0 ? DamageBudgetPerFrameOverride : MAX_NEW_HITS_PER_FRAME;
 

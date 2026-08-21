@@ -39,6 +39,9 @@ namespace CosmicShore.Core
             {
                 CrashReportHandler.enableCaptureExceptions = false;
                 IsCapturing = false;
+                // Re-stamp metadata each play session — the once-latch otherwise survives a
+                // domain-reload-free play exit and StampMetadataOnce never re-runs.
+                _metadataStamped = false;
             }
             catch (Exception ex)
             {

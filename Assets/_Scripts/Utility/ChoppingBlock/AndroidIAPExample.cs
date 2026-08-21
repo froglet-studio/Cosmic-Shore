@@ -16,6 +16,18 @@ public class AndroidIAPExample : MonoBehaviour, IDetailedStoreListener
     // The Unity Purchasing system
     private static IStoreController m_StoreController;
 
+    // Plain C# session handles — with domain reload disabled a stale store controller / auth
+    // context would read as "initialized" against a torn-down purchasing subsystem.
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+    static void ResetStatics()
+    {
+        m_StoreController = null;
+        PlayerId = null;
+        m_AuthenticationContext = null;
+        EntityType = null;
+        catalogItems = null;
+    }
+
     static string PlayerId;
     static PlayFabAuthenticationContext m_AuthenticationContext;
     static string EntityType;
