@@ -1,6 +1,6 @@
 # QA Backlog — untested development on `bleeding-edge`
 
-Generated: 2026-08-21 · Scan covers: up to `ce6a9c78` (PRs #583–#766) · **Owner of this file: the `/qa-backlog` skill — do not hand-edit.**
+Generated: 2026-08-21 · Scan covers: up to `9bb325fb` (PRs #583–#766 + 3 direct commits) · **Owner of this file: the `/qa-backlog` skill — do not hand-edit.**
 
 > Note (2026-08-11): `bleeding-edge` was briefly force-pushed back to `0e855b24` (dropping PRs #674–#679) and then restored — the current tip `b0cf4f0f` re-includes all of that work plus PRs #680/#681/#695/#696. No items were pruned. The `windows-build-failures` build-fix branch is validated by QA-BUILD-COMPILE on Windows and has no separate item.
 
@@ -31,7 +31,7 @@ every run, so it can lag reality by one submission.
 6. **QA-PALETTE-DANGER-GOLD** — get shielded prisms of all three domains on screen (a populated cell / HexRace) and check gold reads in the pastel family.
 7. **QA-P2-DANGLING-CELLDATA** — a populated cell in freestyle: watch the Console for `LifeForm.Start()` / `Flora.Plant()` throws (PR #731 may have fixed this — verify which, if any, still throw).
 
-Editor-only, no play mode: **QA-CRASH-DETECTOR-TOOL** (just open FrogletTools ▸ Misc ▸ Crash Detector and confirm it doesn't throw) and **QA-PRISM-SHIELD-GPU-VISUALS** (run the jiggle test + glance for magenta on Skim Race track prisms) are the cheapest if you're already in the editor.
+Editor-only, no play mode: **QA-PRISM-SHIELD-GPU-VISUALS** (run the jiggle test + glance for magenta on Skim Race track prisms) is the cheapest if you're already in the editor.
 
 Tip: #1–#4, #6, #7 are all "one Dolphin freestyle session in a populated cell" — load a lifeform-rich cell (Cell Selector → Yggdra/Hesperides) on the Dolphin and knock out several in a row. #2/#3 start with a quick editor prefab glance.
 
@@ -170,23 +170,14 @@ Source: direct commit `b08a35d7` (`fix(ui): the Menu_Main crash is a type-punned
 
 PASS: prefab repointed with no missing script; the pause panel warms and opens in the Editor; the **Windows player build reaches Menu_Main repeatedly with no crash**; squad cards still render. FAIL: a missing script or a CanvasGroup-typed reference remaining · the pause panel not opening/warming · **any crash entering Menu_Main in the Windows player** · broken squad cards.
 
-### QA-DOGFIGHT-MODE ⬜ — "Dog Fight": the Sparrow-only gun duel in the Boneyard
-Source: `dog-fight-game-mode` (feat `3324b951`). A whole new game mode — 96 files, 15,626 insertions, authored headless — with new asset-writing tools (`Tools/Build/author_dogfight_assets.py`, `boneyard_budget.py`), a new scene (EditorBuildSettings changed), a `ScriptableEventCombatHitStats` SOAP type, and `GameDataSO` additions. Reference: `_Scripts/Controller/Arcade/DOGFIGHT.md`.
+### QA-BENDS-MODE 🔴 — "The Bends": the Dolphin-only debuff duel (GameModes.Bends = 42)
+> **Last result:** 🔴 FAIL — Can enter the mode and all machines are Dolphins (as expected), and the mode can be relaunched after closing it, but there is no way to earn points and the game never resolves to a win or a loss — either scoring/win-condition is not working, or the way to score (apply debuffs?) is not discoverable in-game.  _(build bleeding-edge @ ce6a9c7 · Unity 6000.4.11f1.x · Windows, Unity Editor, 2026-08-21, andrew)_
 
-1. Open the Dog Fight scene: no `Missing (Mono Script)`; the controller and its scoring rule are wired; the arena ("Boneyard") builds.
-2. Launch the mode (any player count — AI backfill for solo). It reaches gameplay without an exception.
-3. Confirm it is Sparrow-only and gun-combat focused (the Boneyard as the arena, the enemy marker, crystal drops).
-4. Play a full round to the win condition and watch the scoreboard resolve (combat-hit / kill scoring).
-5. Return to menu and relaunch once — no leaked state, no crash.
-
-PASS: scene opens clean; the mode launches, plays a full round to a resolved scoreboard, and returns/relaunches without error; combat scoring behaves; the Boneyard arena builds as intended. FAIL: missing scripts · a scene/controller that throws on load or launch · the round never resolving · a scoreboard that doesn't tally combat hits/kills · a crash on return/relaunch.
-
-### QA-BENDS-MODE ⬜ — "The Bends": the Dolphin-only debuff duel (GameModes.Bends = 42)
 Source: PR #752 (`dolphin-dogfighting-game`). A new mode — `GameModes.Bends = 42`, Dolphin-only debuff duel — 42 files, 12,899 insertions, authored headless.
 
 1. Open the Bends scene / launch the mode: no missing scripts; controller + scoring rule wired; the arena builds.
 2. Launch (AI backfill for solo): reaches gameplay without an exception; confirm it is Dolphin-only.
-3. Play the debuff-duel loop — the win/scoring condition (debuffs applied / duel outcome) behaves as designed.
+3. **How scoring works** (from `BendsController.cs` / `BENDS.md`): the ONLY thing that scores is **catching an OPPOSING pilot in your Dolphin's blast** (the cavitation/crystal cone). A caught pilot takes the blast's all-element decaying debuff = one **BEND (10 points)**; the **first DOMAIN to the bend target wins**. So to score you must FIRE the blast and LAND it on an enemy dolphin — hitting yourself/nothing scores nothing, and a warded/immune victim scores nothing. Confirm you can land a blast on an AI, earn a bend, and drive a domain to the target so the round resolves to a win/loss.
 4. Play a full round to resolution; scoreboard resolves; return to menu and relaunch once — clean.
 
 PASS: scene clean; the mode launches Dolphin-only, plays its debuff duel to a resolved scoreboard, and returns/relaunches without error. FAIL: missing scripts · a controller that throws on load/launch · the duel/scoring not resolving · a crash on return/relaunch.
@@ -919,10 +910,12 @@ Source: PR #719 (`sparrow-spread-haptics`). Sparrow shot spread plus haptic feed
 
 PASS: the spread reads as intended; the haptic fires appropriately on a device and respects the haptics policy; the standard feels are intact. FAIL: broken/absent spread · a haptic that fires on silenced events or not at all · a regression to the two standard feels.
 
-### QA-CRASH-DETECTOR-TOOL ⬜ — the editor Crash Detector + Diagnostics lane / Bug Ledger
-Source: `tools-docs-crash-detector` (`419590fb` add editor crash detector, `0448192e` Diagnostics lane + shared Bug Ledger, `5b8cddae` ledger archive / findings / severity / doc links). A new editor tool at **FrogletTools ▸ Misc ▸ Crash Detector** with a Diagnostics lane and a shared Bug Ledger. Reader/diagnostics tool.
+### QA-CRASH-DETECTOR-TOOL 🔴 — the editor Crash Detector + Diagnostics lane / Bug Ledger
+> **Last result:** 🔴 FAIL — The Crash Detector menu item is missing — FrogletTools ▸ Misc ▸ Crash Detector is not present on this build. (Third catalogued editor tool found missing on bleeding-edge, after Validate Lifeform Crystals and the Quest Graph Editor.)  _(build bleeding-edge @ ce6a9c7 · Unity 6000.4.11f1.x · Windows, Unity Editor, 2026-08-21, andrew)_
 
-1. Open **FrogletTools ▸ Misc ▸ Crash Detector** — it opens without throwing.
+Source: `tools-docs-crash-detector` (`419590fb` add editor crash detector, `0448192e` Diagnostics lane + shared Bug Ledger, `5b8cddae` ledger archive / findings / severity / doc links). A new editor tool with a Diagnostics lane and a shared Bug Ledger. Reader/diagnostics tool. **Confirmed path (2026-08-21): the code is on bleeding-edge (`Editor/Diagnostics/DiagnosticsWindow.cs`) and registers `[MenuItem("FrogletTools/Diagnostics/Crash Detector")]` — NOT under "Misc". A prior FAIL was from looking under Misc; retest under Diagnostics.**
+
+1. Open **FrogletTools ▸ Diagnostics ▸ Crash Detector** (and ▸ Diagnostics ▸ Bug Ledger) — it opens without throwing.
 2. Exercise the Diagnostics lane / Bug Ledger UI (view findings, severity, doc links) — nothing throws; links resolve.
 3. If it can surface recent editor crashes/errors, confirm it lists something sensible (or an empty state) rather than erroring.
 

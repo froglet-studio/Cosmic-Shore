@@ -50,3 +50,17 @@ of duplicating it.
 - **Symptom:** In HexRace: the crystal model and its breaking/collection effect look normal, but when a new crystal spawns in it POPS into existence instead of blooming in — the omni/crystal bloom-in (PR #724) is not playing on spawn.
 - **Definition of done:** QA item `QA-CRYSTAL-EFFECTS` passes.
 <!-- /devtask:QA-CRYSTAL-EFFECTS -->
+
+<!-- devtask:QA-BENDS-MODE -->
+### QA-BENDS-MODE — "The Bends": the Dolphin-only debuff duel (GameModes.Bends = 42)
+- **Failed on:** bleeding-edge @ ce6a9c7 · Unity 6000.4.11f1.x · Windows, Unity Editor (2026-08-21, andrew)
+- **Symptom:** Can enter the mode and all machines are Dolphins (as expected), and the mode can be relaunched after closing it, but there is no way to earn points and the game never resolves to a win or a loss — either scoring/win-condition is not working, or the way to score (apply debuffs?) is not discoverable in-game.
+- **Definition of done:** QA item `QA-BENDS-MODE` passes.
+<!-- /devtask:QA-BENDS-MODE -->
+
+<!-- devtask:QA-CRASH-DETECTOR-TOOL -->
+### QA-CRASH-DETECTOR-TOOL — the editor Crash Detector + Diagnostics lane / Bug Ledger
+- **Failed on:** bleeding-edge @ ce6a9c7 · Unity 6000.4.11f1.x · Windows, Unity Editor (2026-08-21, andrew)
+- **Symptom:** The Crash Detector menu item is missing — FrogletTools ▸ Misc ▸ Crash Detector is not present on this build. (Third catalogued editor tool found missing on bleeding-edge, after Validate Lifeform Crystals and the Quest Graph Editor.)
+- **Definition of done:** QA item `QA-CRASH-DETECTOR-TOOL` passes.
+<!-- /devtask:QA-CRASH-DETECTOR-TOOL -->

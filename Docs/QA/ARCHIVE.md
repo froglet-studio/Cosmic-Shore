@@ -67,3 +67,18 @@ Source: PRs #755 (`scarab-party-game` — smooth nucleus release, bigger skimmer
 
 PASS: compiles, prefabs/scene intact; the Scarab mode launches, plays to a resolved scoreboard, and returns cleanly; Scarab abilities and the ball forge behave; Squirrel unaffected. FAIL: missing scripts · a scene/vessel that throws on load or launch · abilities/ball forge not working · a round that won't resolve · a Squirrel regression.
 <!-- /archived:QA-SCARAB-MODE -->
+
+<!-- archived:QA-DOGFIGHT-MODE -->
+_Passed on build bleeding-edge @ ce6a9c7 · Unity 6000.4.11f1.x · Windows, Unity Editor (2026-08-21, andrew)._
+
+### QA-DOGFIGHT-MODE ⬜ — "Dog Fight": the Sparrow-only gun duel in the Boneyard
+Source: `dog-fight-game-mode` (feat `3324b951`). A whole new game mode — 96 files, 15,626 insertions, authored headless — with new asset-writing tools (`Tools/Build/author_dogfight_assets.py`, `boneyard_budget.py`), a new scene (EditorBuildSettings changed), a `ScriptableEventCombatHitStats` SOAP type, and `GameDataSO` additions. Reference: `_Scripts/Controller/Arcade/DOGFIGHT.md`.
+
+1. Open the Dog Fight scene: no `Missing (Mono Script)`; the controller and its scoring rule are wired; the arena ("Boneyard") builds.
+2. Launch the mode (any player count — AI backfill for solo). It reaches gameplay without an exception.
+3. Confirm it is Sparrow-only and gun-combat focused (the Boneyard as the arena, the enemy marker, crystal drops).
+4. Play a full round to the win condition and watch the scoreboard resolve (combat-hit / kill scoring).
+5. Return to menu and relaunch once — no leaked state, no crash.
+
+PASS: scene opens clean; the mode launches, plays a full round to a resolved scoreboard, and returns/relaunches without error; combat scoring behaves; the Boneyard arena builds as intended. FAIL: missing scripts · a scene/controller that throws on load or launch · the round never resolving · a scoreboard that doesn't tally combat hits/kills · a crash on return/relaunch.
+<!-- /archived:QA-DOGFIGHT-MODE -->
