@@ -939,6 +939,7 @@ MiniGameControllerBase (abstract, NetworkBehaviour)
 | `DIAGNOSTICS.md` | `Docs/` | The **FrogletTools ▸ Diagnostics** family: the editor **Crash Detector** (off-thread error journal + heartbeat sentinel; abnormal exits — crashes, PC faults, hangs-then-kills — are reported on the next launch from the journal + Unity's own `Editor-prev.log`) and the **Bug Ledger** (the team's live bug list: every distinct red-error signature auto-files ONE committable, merge-friendly issue file under `BugLedger/` at the project root; a fix is only believed once the game validates it — clean play/editor sessions for captured errors, a clean full re-run for tool-filed findings — then archived to `BugLedger/resolved/`; a recurrence reopens the issue as a regression). The signature core is the runtime-safe `CosmicShore.Utility.BugSignature`, shared with the planned in-game reporter. **Read before touching anything under `Assets/_Scripts/Editor/Diagnostics/`, `BugSignature`, or the `BugLedger/` store — and before wiring an auditor's findings into the ledger.** |
 | `TOOLING.md` | `Docs/` | **The editor-tooling convention.** One menu root (`FrogletTools/`), one auto-discovering board (Froglet Master Tool), one shared palette, and — for any tool that WRITES assets — the ship contract: record what you wrote, draw `FrogletToolShipPanel` (Validate & Push / Retire Tool), because a tool's output is the deliverable and it lands in the working tree, not the branch. **Read before adding ANY `[MenuItem]`** — a tool outside `FrogletTools/` is flagged as non-conforming by the board itself. |
 | `GAMECANVAS.md` | `Docs/` | GameCanvas as one source of truth: the two forked prefabs, the 1,734 identical-in-every-scene overrides that masked the prefab, the ~20 that are genuinely per-mode, the dangling cross-prefab refs, the code fixes that removed per-scene wiring, and the in-editor unification steps. **Read before touching any game-mode scene's canvas.** |
+| `unity-cli-setup.md` | `Docs/` | Unity CLI first-time setup (per-machine install, `unity doctor`, connecting to the open Editor, eval token hygiene, troubleshooting). Team-facing; the CLI is experimental and `unity --help` on the installed version is authoritative. |
 | `GIT_RULES.md` | Project root | Git commit conventions |
 
 ## Architecture Patterns
@@ -3104,6 +3105,33 @@ The prism system is the most performance-critical gameplay system. See `Assets/_
 ### Build & CI
 
 No automated CI/CD pipeline is currently configured. Builds are manual. Build profiles live in `Assets/Settings/Build Profiles/`.
+
+### Unity CLI verification — `/verify-unity` gates every C# commit (LOCKED rule)
+
+The repo carries **`com.unity.pipeline`** (`0.5.0-exp.1`, experimental) so a session can drive the
+**open** Unity Editor from the terminal via the standalone `unity` binary — real compiles, Play
+mode, in-editor verification, no human alt-tabbing and no copy-pasted console errors. Setup +
+troubleshooting: `Docs/unity-cli-setup.md`. The CLI is experimental and changes often; **`unity
+--help` for the installed version is authoritative** — never assume a command or flag from memory
+or from another machine.
+
+- **The rule: any C# change must pass `/verify-unity` before it is committed.** A green edit-mode
+  suite or a clean mental compile does not substitute for the Editor actually compiling and loading
+  the change. If the CLI genuinely isn't available in the session (no editor open, no `unity`
+  binary), say so explicitly in the commit/PR and file the change in
+  `Docs/UNITY_VERIFICATION_CHECKLIST.md` as before — never claim a verification that didn't run.
+- **`[CliCommand]` wrappers** are the editor methods exposed to the CLI's `unity command` surface —
+  the sanctioned way to give the CLI a repo-specific operation. They are editor tooling: they live
+  under an `Editor/` folder (Assembly-CSharp-Editor), never in runtime code.
+  <!-- TODO: no [CliCommand] wrappers exist in-repo yet; when the first one lands, record its
+       location and the naming convention here. -->
+- **The runtime component never ships.** `UnityPipelineReleaseGuard`
+  (`Assets/_Scripts/Editor/Build/`) is an `IPreprocessBuildWithReport` that throws
+  `BuildFailedException` on any **non-development** build whose shipped content (build scenes,
+  prefabs they instantiate, Resources, preloaded assets) would include the `com.unity.pipeline`
+  runtime component. Development builds are exempt — that is the sanctioned way to debug the CLI
+  integration in a player. Do not weaken or bypass this guard: release builds go to paying Steam
+  customers.
 
 ## Editor Tooling (LOCKED convention — read `Docs/TOOLING.md` before adding any `[MenuItem]`)
 
