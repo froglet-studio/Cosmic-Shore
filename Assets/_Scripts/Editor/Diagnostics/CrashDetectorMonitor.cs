@@ -3,6 +3,7 @@ using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Globalization;
 using System.IO;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
 using UnityEditor;
@@ -79,6 +80,25 @@ namespace CosmicShore.Editor
         static volatile int _maxReports = 10;
         static long _maxJournalBytes = 4 * 1024 * 1024;
 
+        // ── Hang dump (writer thread; Windows only) ──────────────────────────────────────────────
+        // A hang the user kills from Task Manager leaves no stack anywhere — the 2026-08-21
+        // 'Run managed callbacks' freeze reports could say WHEN the main thread stopped but
+        // never WHERE it was stuck. So when the writer thread sees the main thread stale past
+        // the threshold it writes a minidump of the live process (thread stacks + module list,
+        // a few MB): open it in Visual Studio / WinDbg and the main thread's stack names the
+        // deadlock. One attempt per session; a stall that RECOVERS is journaled instead, so the
+        // next report can tell slow from hung.
+        static volatile int _hangDumpSeconds = 45;   // 0 = off
+        static bool _hangDumpWritten;                // writer thread only
+        static bool _mainWasStale;                   // writer thread only
+        static long _staleSinceTicks;                // writer thread only
+        static bool _isWindowsEditor;                // cached on the main thread at Boot
+
+        [DllImport("DbgHelp.dll", SetLastError = true)]
+        static extern bool MiniDumpWriteDump(IntPtr hProcess, uint processId,
+            Microsoft.Win32.SafeHandles.SafeFileHandle hFile, int dumpType,
+            IntPtr exceptionParam, IntPtr userStreamParam, IntPtr callbackParam);
+
         // rate limiting (any thread)
         static long _rateSecond;
         static int _rateCount;
@@ -110,6 +130,7 @@ namespace CosmicShore.Editor
             var settings = CrashDetectorSettings.instance;
             ApplySettings(settings);
             _unityVersion = Application.unityVersion;
+            _isWindowsEditor = Application.platform == RuntimePlatform.WindowsEditor;
             Directory.CreateDirectory(RootDir);
 
             var previous = SessionSentinel.TryRead(SentinelPath);
@@ -191,6 +212,7 @@ namespace CosmicShore.Editor
             _captureWarnings = s.CaptureWarnings;
             _stackLines = s.StackTraceLines;
             _maxReports = s.MaxReportsKept;
+            _hangDumpSeconds = s.HangDumpSeconds;
             Interlocked.Exchange(ref _maxJournalBytes, s.MaxJournalMB * 1024L * 1024L);
         }
 
@@ -274,7 +296,15 @@ namespace CosmicShore.Editor
         {
             Enqueue(Marker("domain reload begins (script compilation / play-mode transition)"));
             // A crash DURING the reload then reads as "last state: DomainReload" in the report.
-            Shutdown("DomainReload", cleanExit: false);
+            _state = "DomainReload";
+            WriteSentinel(cleanExit: false);
+            // The writer thread deliberately KEEPS RUNNING through the managed-callbacks phase:
+            // the 2026-08-21 'Run managed callbacks' hangs lived exactly here (a LATER
+            // beforeAssemblyReload handler blocking forever), and a watchdog that stands down
+            // at reload-begin can never dump the deadlock it exists to name. The domain unload
+            // aborts the thread — WriterLoop catches ThreadAbortException and flushes in its
+            // finally — so heartbeats and the hang-dump check simply run until the domain
+            // actually goes down. (The full Shutdown still runs on editor quit.)
         }
 
         static void OnQuitting()
@@ -434,6 +464,8 @@ namespace CosmicShore.Editor
                         WriteSentinel(cleanExit: false);
                         lastBeatTicks = now;
                     }
+
+                    CheckMainThreadStall(now);
                 }
                 Drain(journal);
             }
@@ -451,6 +483,66 @@ namespace CosmicShore.Editor
             var fs = new FileStream(JournalPath, FileMode.Append, FileAccess.Write,
                                     FileShare.ReadWrite | FileShare.Delete);
             return new StreamWriter(fs, new UTF8Encoding(false));
+        }
+
+        // ── Hang dump (writer thread) ────────────────────────────────────────────────────────────
+
+        static void CheckMainThreadStall(long nowTicks)
+        {
+            int threshold = _hangDumpSeconds;
+            if (threshold <= 0) return;
+
+            long aliveTicks = Interlocked.Read(ref _mainAliveTicks);
+            double staleSec = (nowTicks - aliveTicks) / (double)TimeSpan.TicksPerSecond;
+
+            if (staleSec >= threshold)
+            {
+                if (!_mainWasStale)
+                {
+                    _mainWasStale = true;
+                    _staleSinceTicks = aliveTicks;
+                }
+                if (!_hangDumpWritten && _isWindowsEditor)
+                {
+                    _hangDumpWritten = true; // one attempt per session, success or not
+                    TryWriteHangDump(staleSec);
+                }
+            }
+            else if (_mainWasStale)
+            {
+                _mainWasStale = false;
+                double total = (aliveTicks - _staleSinceTicks) / (double)TimeSpan.TicksPerSecond;
+                Enqueue(Marker($"main thread stalled ~{total:F0}s and RECOVERED — slow, not hung"));
+            }
+        }
+
+        /// <summary>
+        /// Writes a minidump of the live, hung editor from this background thread. Thread
+        /// stacks + module list (typically a few MB) — enough to name the module the main
+        /// thread is stuck in, which is the one fact a Task-Manager kill destroys. Best-effort
+        /// by design: a watchdog that crashes the patient is worse than none.
+        /// </summary>
+        static void TryWriteHangDump(double staleSeconds)
+        {
+            try
+            {
+                var path = Path.Combine(RootDir, $"HangDump-{_sessionId}.dmp");
+                using var proc = Process.GetCurrentProcess();
+                using var fs = new FileStream(path, FileMode.Create, FileAccess.Write, FileShare.None);
+                // 0x0 MiniDumpNormal | 0x100 WithProcessThreadData | 0x1000 WithThreadInfo.
+                const int dumpType = 0x0 | 0x100 | 0x1000;
+                bool ok = MiniDumpWriteDump(proc.Handle, (uint)_pid, fs.SafeFileHandle, dumpType,
+                                            IntPtr.Zero, IntPtr.Zero, IntPtr.Zero);
+                Enqueue(ok
+                    ? Marker($"main thread unresponsive ~{staleSeconds:F0}s — wrote hang dump: {path} " +
+                             "(open in Visual Studio or WinDbg; the main thread's stack names the deadlock)")
+                    : Marker($"main thread unresponsive ~{staleSeconds:F0}s — MiniDumpWriteDump failed " +
+                             $"(Win32 error {Marshal.GetLastWin32Error()})"));
+            }
+            catch (Exception e)
+            {
+                Enqueue(Marker($"hang dump attempt failed: {e.GetType().Name}: {e.Message}"));
+            }
         }
 
         static void Drain(StreamWriter journal)
@@ -563,6 +655,10 @@ namespace CosmicShore.Editor
                     : "main thread:    responsive at the last heartbeat — the process ended abruptly (hard crash or kill)");
             }
 
+            var dumpPath = Path.Combine(RootDir, $"HangDump-{previous.sessionId}.dmp");
+            if (File.Exists(dumpPath))
+                sb.AppendLine($"hang dump:      {dumpPath} — open in Visual Studio / WinDbg; the main thread's stack names the deadlock");
+
             sb.AppendLine();
             sb.AppendLine("---- Captured errors (crash-detector journal) ----");
             var journalTail = TailOfFile(JournalPath, ReportJournalBytes);
@@ -595,6 +691,13 @@ namespace CosmicShore.Editor
                 Array.Sort(files, StringComparer.OrdinalIgnoreCase); // timestamped names sort chronologically
                 for (int i = 0; i < files.Length - _maxReports; i++)
                     File.Delete(files[i]);
+
+                // Hang dumps ride the same retention — they are MBs each, and a dump whose
+                // report has been pruned has lost its context anyway.
+                var dumps = Directory.GetFiles(RootDir, "HangDump-*.dmp");
+                Array.Sort(dumps, StringComparer.OrdinalIgnoreCase); // session ids sort chronologically
+                for (int i = 0; i < dumps.Length - _maxReports; i++)
+                    File.Delete(dumps[i]);
             }
             catch { }
         }
