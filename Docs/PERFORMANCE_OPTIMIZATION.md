@@ -1312,9 +1312,12 @@ blocked, "Not Responding" means *slow*, not necessarily *hung*.
    `m_EnterPlayModeOptionsEnabled: 0` — configured and never switched on. Every
    Play press pays a full reload.
 2. **One assembly.** 1,446 runtime + 149 editor first-party scripts in
-   `Assembly-CSharp` / `Assembly-CSharp-Editor`, zero runtime asmdefs (by
-   design, see CLAUDE.md). A one-line edit reloads all of it, and every
-   reflection-based consumer rescans it.
+   `Assembly-CSharp` / `Assembly-CSharp-Editor`. A one-line edit reloads all
+   of it, and every reflection-based consumer rescans it. **This is now being
+   unwound rather than accepted** — `CosmicShore.Data` (46 files) was the
+   first leaf extracted, and the plan, the measurement protocol and the
+   phase-2 candidates are in `Docs/ASSEMBLY_SPLIT.md`. (Superseded: this item
+   used to read "zero runtime asmdefs, by design".)
 3. **DOTS Entities 1.4.2 + Entities Graphics.** `TypeManager.Initialize()`
    runs inside this phase and reflects over every type in every loaded
    assembly; Entities Graphics + baking register alongside it. Cost scales

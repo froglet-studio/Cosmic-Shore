@@ -192,6 +192,17 @@ The rest are real coupling and need real decisions: `IVessel` / `IVesselStatus` 
 (`ScriptableVesselHUDData`) — a SOAP channel that carries a *HUD MonoBehaviour* as its payload
 is the coupling, and re-pointing it at an interface is a design change, not a move.
 
+### The EDITOR assembly is a separate axis, and it was already measured
+
+`Docs/PERFORMANCE_OPTIMIZATION.md` (Task 10) carries a file-by-file check of splitting
+`Assembly-CSharp-Editor`, concluded independently of this work: of 168 editor files, 79 are
+tests that structurally cannot move, and of the remaining 89 only **26 (~17% of editor LOC)**
+are free of gameplay-type references. It was closed as not worth shipping *at that time*.
+
+Worth re-reading rather than redoing — and note the two efforts converge: every runtime layer
+extracted here removes gameplay references from the editor files that used them, so the
+editor-side count is a function of runtime progress, not a fixed 26.
+
 ### Suggested phase-2 order
 
 1. Move the five payload types above into `CosmicShore.Data`. Mechanical.
