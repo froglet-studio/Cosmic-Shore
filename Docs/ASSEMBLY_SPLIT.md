@@ -59,8 +59,8 @@ Two corollaries worth stating because they are the things that actually bite:
 ## Measuring
 
 The split is paid for in edit-cycle seconds, so the seconds have to be measured the same way
-before and after rather than asserted. **FrogletTools ▸ Diagnostics ▸ Compile Timing**
-(`CompileTimingMonitor`) records them.
+before and after rather than asserted. **FrogletTools ▸ Diagnostics ▸ Compile Timing** — the third
+tab of the Diagnostics window (`CompileTimingMonitor`, `Docs/DIAGNOSTICS.md`) — records them.
 
 It is off by default and writes only to the gitignored `Logs/CompileTiming/compile-timing.csv`.
 
@@ -68,13 +68,13 @@ It is off by default and writes only to the gitignored `Logs/CompileTiming/compi
 already warm:
 
 1. Open the project, let all imports settle, enter no play mode.
-2. Enable recording in the tool window.
+2. Press **Start** on that tab.
 3. Make **the same one-line edit** — a whitespace line in a file inside the assembly under
    test — save, and wait for the reload to finish. Repeat **5 times**.
-4. Read the **median** total (the window prints it). The first compile of a session and any
+4. Read the **median** total (the tab prints it). The first compile of a session and any
    compile that races a background import are outliers large enough to swamp a mean over five
    samples, which is why the tool reports a median.
-5. Disable recording.
+5. Press **Stop**.
 
 Record the *rebuild set* as well as the seconds. The tool logs which assemblies Unity actually
 rebuilt, because that is the quantity extraction moves: an edit inside `Assembly-CSharp`

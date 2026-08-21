@@ -7,7 +7,6 @@ using System.Text;
 using UnityEditor;
 using UnityEditor.Compilation;
 using UnityEngine;
-using CosmicShore.Editor.Froglet;
 
 namespace CosmicShore.Editor
 {
@@ -31,8 +30,8 @@ namespace CosmicShore.Editor
     ///
     /// <para><b>READER tool</b> per Docs/TOOLING.md: writes only machine-local files under
     /// <c>Logs/CompileTiming/</c> (gitignored), never assets — no change ledger, no ship panel.
-    /// Off by default; enable it from FrogletTools ▸ Diagnostics ▸ Compile Timing, take the
-    /// measurements, and switch it back off.</para>
+    /// Off by default; enable it from FrogletTools ▸ Diagnostics ▸ Compile Timing (a tab of
+    /// <see cref="DiagnosticsWindow"/>), take the measurements, and switch it back off.</para>
     /// </summary>
     [InitializeOnLoad]
     public static class CompileTimingMonitor
@@ -207,11 +206,5 @@ namespace CosmicShore.Editor
                 ? parsed
                 : (DateTime?)null;
         }
-
-        [MenuItem("FrogletTools/Diagnostics/Compile Timing")]
-        [FrogletTool(FrogletToolCategory.Diagnostics, Importance = 2,
-            Description = "Record compile + domain-reload seconds per edit, and which assemblies rebuilt.",
-            DocPath = "Docs/ASSEMBLY_SPLIT.md#measuring")]
-        static void Open() => CompileTimingWindow.Open();
     }
 }
