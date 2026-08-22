@@ -57,10 +57,9 @@ of duplicating it.
 - **Symptom:** Can enter the mode and all machines are Dolphins (as expected), and the mode can be relaunched after closing it, but there is no way to earn points and the game never resolves to a win or a loss — either scoring/win-condition is not working, or the way to score (apply debuffs?) is not discoverable in-game.
 - **Definition of done:** QA item `QA-BENDS-MODE` passes.
 <!-- /devtask:QA-BENDS-MODE -->
-
-<!-- devtask:QA-CRASH-DETECTOR-TOOL -->
-### QA-CRASH-DETECTOR-TOOL — the editor Crash Detector + Diagnostics lane / Bug Ledger
-- **Failed on:** bleeding-edge @ ce6a9c7 · Unity 6000.4.11f1.x · Windows, Unity Editor (2026-08-21, andrew)
-- **Symptom:** The Crash Detector menu item is missing — FrogletTools ▸ Misc ▸ Crash Detector is not present on this build. (Third catalogued editor tool found missing on bleeding-edge, after Validate Lifeform Crystals and the Quest Graph Editor.)
-- **Definition of done:** QA item `QA-CRASH-DETECTOR-TOOL` passes.
-<!-- /devtask:QA-CRASH-DETECTOR-TOOL -->
+<!-- devtask:QA-KEYBOARD-CONTROLS -->
+### QA-KEYBOARD-CONTROLS — keyboard control scheme
+- **Failed on:** bleeding-edge @ 3bbe4f7 · Unity 6000.4.11f1.x · Windows, Unity Editor (2026-08-22, andrew)
+- **Symptom:** Tested Sparrow, Manta, Squirrel. Most vessel functionality works from the keyboard, and the device switch works (controls swap correctly when the player changes between gamepad and keyboard mid-session). Two real defects: (1) **the left/right turn bound to the controller shoulder buttons has no keyboard binding** — that turn input is unmapped on keyboard; (2) **you cannot start a game from the keyboard** — arrow keys + Enter can SELECT an arcade game but never actually launch it. NOT a defect (documented/expected): "only Squirrel's UI switches to the keyboard glyph set" — per the CLAUDE.md ability-row audit only the Squirrel HUD carries the device-icon switcher (Sparrow/Dolphin have complete rows but no switcher, Manta/Rhino/Serpent are design-blocked). Menu nav being mouse-driven is also expected.
+- **Definition of done:** QA item `QA-KEYBOARD-CONTROLS` passes.
+<!-- /devtask:QA-KEYBOARD-CONTROLS -->

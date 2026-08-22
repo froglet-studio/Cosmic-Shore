@@ -1,6 +1,6 @@
 # QA Backlog — untested development on `bleeding-edge`
 
-Generated: 2026-08-21 · Scan covers: up to `9bb325fb` (PRs #583–#766 + 3 direct commits) · **Owner of this file: the `/qa-backlog` skill — do not hand-edit.**
+Generated: 2026-08-22 · Scan covers: up to `3bbe4f7d` (PRs #583–#770) · **Owner of this file: the `/qa-backlog` skill — do not hand-edit.**
 
 > Note (2026-08-11): `bleeding-edge` was briefly force-pushed back to `0e855b24` (dropping PRs #674–#679) and then restored — the current tip `b0cf4f0f` re-includes all of that work plus PRs #680/#681/#695/#696. No items were pruned. The `windows-build-failures` build-fix branch is validated by QA-BUILD-COMPILE on Windows and has no separate item.
 
@@ -181,6 +181,17 @@ Source: PR #752 (`dolphin-dogfighting-game`). A new mode — `GameModes.Bends = 
 4. Play a full round to resolution; scoreboard resolves; return to menu and relaunch once — clean.
 
 PASS: scene clean; the mode launches Dolphin-only, plays its debuff duel to a resolved scoreboard, and returns/relaunches without error. FAIL: missing scripts · a controller that throws on load/launch · the duel/scoring not resolving · a crash on return/relaunch.
+
+### QA-ASSEMBLY-SPLIT ⬜ — the monolith begins splitting into assemblies (compile gate)
+Source: `csharp-monolith-assembly-split` (merge `409afb21`). The "zero runtime asmdefs, by design" rule is retired: `CosmicShore.Data` is extracted as the **first leaf `.asmdef`**, plus a root `.editorconfig` + Unity Roslyn analyzers and a compile/domain-reload timing recorder folded into the Diagnostics window. A new assembly boundary is a **compile-gate** — the whole project must still build with `Data` as its own assembly and nothing left referencing it the old way. Reference: `Docs/ASSEMBLY_SPLIT.md`.
+
+1. Let Unity fully reimport/recompile. **Read the whole Console** — zero compile errors, no `CS0246`/missing-type or "are you missing an assembly reference?" errors from the new `CosmicShore.Data` boundary.
+2. Confirm the `CosmicShore.Data.asmdef` (and its `.meta`) imported, and the assembly appears in the compile output; no duplicate-GUID or circular-reference warnings.
+3. Launch to `Menu_Main`, enter freestyle, launch one arcade game and return — no runtime type-load / `TypeLoadException` from the split.
+4. Run the EditMode tests (cross-check QA-EDITMODE-TESTS) — the test assemblies still resolve `CosmicShore.Data` types.
+5. Glance at the new compile-timing recorder in the Diagnostics window — it opens and reports without throwing.
+
+PASS: clean compile with the new `CosmicShore.Data` assembly; no missing-reference/type-load errors at import or runtime; the app boots + plays a round; tests still resolve Data types; the timing recorder works. FAIL: any compile error / missing-assembly-reference · a `TypeLoadException` at runtime · the app failing to boot or play a round · tests that no longer compile against `Data` · a circular/duplicate-assembly warning.
 
 ## Priority 1 — merged features that have never been played
 
@@ -762,7 +773,9 @@ Source: PR #736 (`vessel-self-trail-collision`). A vessel no longer skims or ram
 
 PASS: no skim/ram/damage from the trail you're actively laying; older trail still interacts; the Rhino self-farm still works; interactions with other mass unchanged. FAIL: still colliding with/slowing on fresh self-trail · unable to interact with older trail · the Rhino self-farm broken · other-mass interactions changed.
 
-### QA-KEYBOARD-CONTROLS ⬜ — keyboard control scheme
+### QA-KEYBOARD-CONTROLS 🔴 — keyboard control scheme
+> **Last result:** 🔴 FAIL — Tested Sparrow, Manta, Squirrel. Most vessel functionality works from the keyboard, and the device switch works (controls swap correctly when the player changes between gamepad and keyboard mid-session). Two real defects: (1) **the left/right turn bound to the controller shoulder buttons has no keyboard binding** — that turn input is unmapped on keyboard; (2) **you cannot start a game from the keyboard** — arrow keys + Enter can SELECT an arcade game but never actually launch it. NOT a defect (documented/expected): "only Squirrel's UI switches to the keyboard glyph set" — per the CLAUDE.md ability-row audit only the Squirrel HUD carries the device-icon switcher (Sparrow/Dolphin have complete rows but no switcher, Manta/Rhino/Serpent are design-blocked). Menu nav being mouse-driven is also expected.  _(build bleeding-edge @ 3bbe4f7 · Unity 6000.4.11f1.x · Windows, Unity Editor, 2026-08-22, andrew)_
+
 Source: PR #722 (`keyboard-controls`). A keyboard control scheme (input strategy). Verify on desktop with keyboard.
 
 1. Launch and take control of a vessel with the keyboard only (no gamepad).
@@ -909,17 +922,6 @@ Source: PR #719 (`sparrow-spread-haptics`). Sparrow shot spread plus haptic feed
 3. Regression: the two standard feels (skim pulse, prism thud) still behave (cross-check QA-HAPTICS).
 
 PASS: the spread reads as intended; the haptic fires appropriately on a device and respects the haptics policy; the standard feels are intact. FAIL: broken/absent spread · a haptic that fires on silenced events or not at all · a regression to the two standard feels.
-
-### QA-CRASH-DETECTOR-TOOL 🔴 — the editor Crash Detector + Diagnostics lane / Bug Ledger
-> **Last result:** 🔴 FAIL — The Crash Detector menu item is missing — FrogletTools ▸ Misc ▸ Crash Detector is not present on this build. (Third catalogued editor tool found missing on bleeding-edge, after Validate Lifeform Crystals and the Quest Graph Editor.)  _(build bleeding-edge @ ce6a9c7 · Unity 6000.4.11f1.x · Windows, Unity Editor, 2026-08-21, andrew)_
-
-Source: `tools-docs-crash-detector` (`419590fb` add editor crash detector, `0448192e` Diagnostics lane + shared Bug Ledger, `5b8cddae` ledger archive / findings / severity / doc links). A new editor tool with a Diagnostics lane and a shared Bug Ledger. Reader/diagnostics tool. **Confirmed path (2026-08-21): the code is on bleeding-edge (`Editor/Diagnostics/DiagnosticsWindow.cs`) and registers `[MenuItem("FrogletTools/Diagnostics/Crash Detector")]` — NOT under "Misc". A prior FAIL was from looking under Misc; retest under Diagnostics.**
-
-1. Open **FrogletTools ▸ Diagnostics ▸ Crash Detector** (and ▸ Diagnostics ▸ Bug Ledger) — it opens without throwing.
-2. Exercise the Diagnostics lane / Bug Ledger UI (view findings, severity, doc links) — nothing throws; links resolve.
-3. If it can surface recent editor crashes/errors, confirm it lists something sensible (or an empty state) rather than erroring.
-
-PASS: the tool opens and its Diagnostics/Ledger UI works without throwing; findings/links render. FAIL: the menu item missing or throwing on open · a Diagnostics/Ledger panel that errors · broken doc links / severity display.
 
 ## Not covered by this list
 

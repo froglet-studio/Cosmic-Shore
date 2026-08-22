@@ -173,6 +173,20 @@ def title_of(sec_lines):
     return m.group("rest").lstrip("—- ").strip() if m else ""
 
 
+def remove_marked_block(text, item_id, kind):
+    """Remove a <!-- kind:ID --> ... <!-- /kind:ID --> block if present. Returns (text, removed)."""
+    start = f"<!-- {kind}:{item_id} -->"
+    end = f"<!-- /{kind}:{item_id} -->"
+    pat = re.compile(r"\n*" + re.escape(start) + r".*?" + re.escape(end) + r"\n*", re.DOTALL)
+    if not pat.search(text):
+        return text, False
+    text = pat.sub("\n", text)
+    # restore the "_(none yet)_" placeholder if no marked blocks of this kind remain
+    if f"<!-- {kind}:" not in text and "_(none yet)_" not in text:
+        text = text.rstrip("\n") + "\n\n_(none yet)_\n"
+    return text, True
+
+
 def upsert_marked_block(text, item_id, block, kind):
     """Insert or replace a block delimited by <!-- kind:ID --> ... <!-- /kind:ID -->."""
     start = f"<!-- {kind}:{item_id} -->"
@@ -222,6 +236,9 @@ def main():
                 block = stamp + "\n\n" + "\n".join(sec).rstrip()
                 archive_text = upsert_marked_block(archive_text, item_id, block, "archived")
             changes.append(f"PASS   {item_id}  -> archived, removed from backlog")
+            devtasks_text, cleared = remove_marked_block(devtasks_text, item_id, "devtask")
+            if cleared:
+                changes.append(f"       {item_id}  -> cleared its stale dev task (now PASS)")
             # dropped from backlog (do not append to new_blocks)
             continue
         # FAIL / PARTIAL / BLOCKED
@@ -237,6 +254,18 @@ def main():
                     f"- **Definition of done:** QA item `{item_id}` passes.")
             devtasks_text = upsert_marked_block(devtasks_text, item_id, task, "devtask")
             changes.append(f"       {item_id}  -> DEV_TASKS entry upserted")
+        else:  # PARTIAL / BLOCKED supersedes any earlier FAIL — clear its stale dev task
+            devtasks_text, cleared = remove_marked_block(devtasks_text, item_id, "devtask")
+            if cleared:
+                changes.append(f"       {item_id}  -> cleared its stale dev task (now {r.value})")
+
+    # Post-loop: clear stale dev tasks for any non-FAIL result, including items already
+    # archived in a prior run (which the backlog loop above no longer iterates).
+    for iid, rr in results.items():
+        if rr.value in ("PASS", "PARTIAL", "BLOCKED"):
+            devtasks_text, cleared = remove_marked_block(devtasks_text, iid, "devtask")
+            if cleared:
+                changes.append(f"       {iid}  -> cleared its stale dev task (now {rr.value})")
 
     out_lines = []
     for b in new_blocks:

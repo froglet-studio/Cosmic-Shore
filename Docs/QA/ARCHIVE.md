@@ -82,3 +82,18 @@ Source: `dog-fight-game-mode` (feat `3324b951`). A whole new game mode — 96 fi
 
 PASS: scene opens clean; the mode launches, plays a full round to a resolved scoreboard, and returns/relaunches without error; combat scoring behaves; the Boneyard arena builds as intended. FAIL: missing scripts · a scene/controller that throws on load or launch · the round never resolving · a scoreboard that doesn't tally combat hits/kills · a crash on return/relaunch.
 <!-- /archived:QA-DOGFIGHT-MODE -->
+
+<!-- archived:QA-CRASH-DETECTOR-TOOL -->
+_Passed on build bleeding-edge @ 3bbe4f7 · Unity 6000.4.11f1.x · Windows, Unity Editor (2026-08-22, andrew)._
+
+### QA-CRASH-DETECTOR-TOOL 🔴 — the editor Crash Detector + Diagnostics lane / Bug Ledger
+> **Last result:** 🔴 FAIL — The Crash Detector menu item is missing — FrogletTools ▸ Misc ▸ Crash Detector is not present on this build. (Third catalogued editor tool found missing on bleeding-edge, after Validate Lifeform Crystals and the Quest Graph Editor.)  _(build bleeding-edge @ ce6a9c7 · Unity 6000.4.11f1.x · Windows, Unity Editor, 2026-08-21, andrew)_
+
+Source: `tools-docs-crash-detector` (`419590fb` add editor crash detector, `0448192e` Diagnostics lane + shared Bug Ledger, `5b8cddae` ledger archive / findings / severity / doc links). A new editor tool with a Diagnostics lane and a shared Bug Ledger. Reader/diagnostics tool. **Confirmed path (2026-08-21): the code is on bleeding-edge (`Editor/Diagnostics/DiagnosticsWindow.cs`) and registers `[MenuItem("FrogletTools/Diagnostics/Crash Detector")]` — NOT under "Misc". A prior FAIL was from looking under Misc; retest under Diagnostics.**
+
+1. Open **FrogletTools ▸ Diagnostics ▸ Crash Detector** (and ▸ Diagnostics ▸ Bug Ledger) — it opens without throwing.
+2. Exercise the Diagnostics lane / Bug Ledger UI (view findings, severity, doc links) — nothing throws; links resolve.
+3. If it can surface recent editor crashes/errors, confirm it lists something sensible (or an empty state) rather than erroring.
+
+PASS: the tool opens and its Diagnostics/Ledger UI works without throwing; findings/links render. FAIL: the menu item missing or throwing on open · a Diagnostics/Ledger panel that errors · broken doc links / severity display.
+<!-- /archived:QA-CRASH-DETECTOR-TOOL -->
