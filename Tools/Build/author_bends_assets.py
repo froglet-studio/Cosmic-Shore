@@ -344,7 +344,10 @@ NEW_FIELDS = f"""  rule: {{fileID: 11400000, guid: {G_ASSET['BendsScoringRule']}
   progressSampleSeconds: 0.5
   aiAimRetargetSeconds: 1.25
   aiAimLeadSeconds: 0.35
-  aiAimMaxRange: 900
+  aiAimBlastReach: 2400
+  aiAimBlastDuration: 2.7
+  aiAimHumanFocus: 3
+  aiAimMaxRange: 2400
 """
 assert scene.count(OLD_FIELDS) == 1, "controller field block not found in donor scene"
 scene = scene.replace(OLD_FIELDS, NEW_FIELDS)

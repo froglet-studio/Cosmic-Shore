@@ -1312,9 +1312,12 @@ blocked, "Not Responding" means *slow*, not necessarily *hung*.
    `m_EnterPlayModeOptionsEnabled: 0` — configured and never switched on. Every
    Play press pays a full reload.
 2. **One assembly.** 1,446 runtime + 149 editor first-party scripts in
-   `Assembly-CSharp` / `Assembly-CSharp-Editor`, zero runtime asmdefs (by
-   design, see CLAUDE.md). A one-line edit reloads all of it, and every
-   reflection-based consumer rescans it.
+   `Assembly-CSharp` / `Assembly-CSharp-Editor`. A one-line edit reloads all
+   of it, and every reflection-based consumer rescans it. **This is now being
+   unwound rather than accepted** — `CosmicShore.Data` (46 files) was the
+   first leaf extracted, and the plan, the measurement protocol and the
+   phase-2 candidates are in `Docs/ASSEMBLY_SPLIT.md`. (Superseded: this item
+   used to read "zero runtime asmdefs, by design".)
 3. **DOTS Entities 1.4.2 + Entities Graphics.** `TypeManager.Initialize()`
    runs inside this phase and reflects over every type in every loaded
    assembly; Entities Graphics + baking register alongside it. Cost scales
@@ -1436,6 +1439,106 @@ ranking suspects.
   declares four such events; sweep those before wiring asymmetric
   subscribers).
 
+**Third round (2026-08-21) — the hang itself, diagnosed from five crash
+reports.** The user-visible freeze ("Run managed callbacks", editor killed from
+Task Manager, seen on pause/unpause and after a multiplayer session cancel)
+turned out to be TWO things, neither of them reload *cost*:
+
+- **Four of five hangs struck in EDIT mode, 20–60s after "edit mode
+  restored"** — i.e. at the recompile-triggered domain reload that follows a
+  play session in which scripts were edited. Enter Play Mode Options cannot
+  help there (that reload is a recompile, not a Play press), and this is
+  precisely item 5's territory: **FMOD Live Update was ENABLED for the
+  `playInEditor` platform** (`FMODStudioSettings.asset`), the exact
+  precondition the attribution above names as the genuine never-recovers hang
+  (FMOD's `beforeAssemblyReload → DestroySystem()` blocking with a live-update
+  socket). Three fixes shipped: Live Update is now **off** for play-in-editor
+  (re-enable it temporarily from FMOD Settings when actually mixing against a
+  running game — and expect reload hangs while it is on);
+  **`PlayModeReloadGuard`** holds `EditorApplication.LockReloadAssemblies()`
+  for the whole of play mode, so a compile finishing mid-play (the
+  pause/unpause window, with the default "Recompile And Continue Playing"
+  preference) can never reload against a live scene — the refresh queues and
+  runs at EnteredEditMode, project-wide, regardless of per-user prefs; and
+  `HostConnectionService.OnDestroy` no longer disposes its two SemaphoreSlims
+  under still-resuming async flows (the journal's `ObjectDisposedException:
+  The semaphore has been disposed`).
+- **The fifth hang was an exception STORM, not a deadlock**: a
+  `NullReferenceException` per physics contact from
+  `SkimmerImpactor.AcceptImpactee` — the legacy `Components/Skimmer.prefab`
+  still serializes the pre-container-refactor field names, so the six vessels
+  that nest it without a per-instance override (Urchin, Manta, Grizzly,
+  Shrike, Termite, Falcon) ran their skimmer with a null
+  `skimmerImpactorDataContainer`, and every prism the Urchin rode threw into
+  the console. Fixed one level above the existing `IsEffectSlotEmpty`
+  doctrine: **`ImpactorBase.IsEffectContainerMissing`** reports the unwired
+  impactor ONCE with its full hierarchy path and skips the contact, and both
+  bare impactors (`SkimmerImpactor`, `VesselImpactor`) now also route every
+  `Execute` through `RunEffectIsolated`, closing the CLAUDE.md open item — no
+  impact-dispatch failure of any shape can storm again. The container wiring
+  itself stays design work (no Urchin/Grizzly/etc. container asset exists;
+  the audit tool and the new one-shot error keep it visible).
+- **The next hang names itself.** A Task-Manager kill destroys the one fact
+  that matters (WHERE the main thread was stuck), so the Crash Detector's
+  writer thread now doubles as a watchdog: main thread unresponsive past a
+  threshold (settings, default 45s) → it writes a live **minidump**
+  (`Logs/CrashDetector/HangDump-<session>.dmp`, Windows, once per session,
+  pruned with the reports) whose main-thread stack names the deadlock in
+  Visual Studio/WinDbg; a stall that recovers is journaled as "slow, not
+  hung" instead. The writer also no longer stands down at
+  `beforeAssemblyReload` — the hang lives in the managed-callbacks phase
+  AFTER that event, and a watchdog that stops at reload-begin can never dump
+  the very deadlock it exists to name. If the freeze recurs, the report now
+  arrives with the dump attached: that is the FMOD-or-not verdict item 5 has
+  been waiting on.
+
+**Fourth round (2026-08-21, same day) — the mechanism, pinned by a live
+screenshot.** A recurrence (branch switched in GitHub Desktop while the editor
+sat in play mode, then play exited) was caught with the progress dialog
+readable: *"Running managed callbacks (busy for 02:15) — Executing
+PlayModeStateChanged Callback (EnteredEditMode)"*. That corrects round 3's
+framing: the freeze is not the recompile's reload — it is a handler INSIDE the
+`EditorApplication.playModeStateChanged` dispatch at play exit, and the third
+round's own crash logs ("hang moments after the 'edit mode restored' journal
+marker" — which the Crash Detector's handler writes from the SAME dispatch)
+now read the same way. The blocking handler is FMOD's:
+`RuntimeManager.HandlePlayModeStateChange` calls `Destroy()` — a synchronous
+native `studioSystem.release()` — at `EnteredEditMode`, and with **Live
+Update enabled** (round 3's finding; the fix stands) a wedged live-update
+socket blocks that release indefinitely. The pause/unpause reports are the
+same root through a different door: `EditorUtils.HandleOnPausedModeChanged`
+runs synchronous `setPaused` + `StudioSystem.update()` on
+`pauseStateChanged`. So one cause covers every report: **synchronous FMOD
+main-thread calls at editor lifecycle boundaries, with Live Update's socket
+in a bad state** — disabling play-in-editor Live Update removes the
+precondition everywhere. Two amplifiers were fixed alongside:
+
+- **The Soap `playModeStateChanged` subscription leak** (fixed in the
+  2026-08-20 Soap patch, already on bleeding-edge): pre-patch, every one of
+  the 832 Soap assets re-subscribed on each OnEnable with no `-=` anywhere,
+  so every reimport round (a branch switch reimports hundreds) permanently
+  lengthened the play-exit dispatch by another asset's worth of stale
+  handlers. Teams seeing the freeze "on every machine" are running pre-patch
+  branches — pulling bleeding-edge is part of the fix.
+- **`PlayModeSOProtector` no longer fights git.** Its restore keyed on
+  "write time + length differ from the pre-play snapshot", so a branch
+  switch DURING play read as "hundreds of assets changed during play": the
+  delayCall restore then overwrote the new branch's `_SO_Assets` content
+  with the old branch's snapshot (silent working-tree corruption) and spent
+  minutes doing it. Restore is now keyed on an
+  `AssetModificationProcessor.OnWillSaveAssets` ledger of what UNITY
+  actually saved while playing — external writes never pass through Unity's
+  save pipeline, so the protector is structurally blind to git, the common
+  case (nothing saved during play) is one SessionState read, and after any
+  frozen-then-killed branch-switch session the working tree should be
+  checked for unexpected `_SO_Assets` modifications from the OLD code's
+  restore.
+- Housekeeping: Unity's **"Recovering Scene Backups"** prompt on project
+  open is a SYMPTOM — it appears after any killed editor session and stops
+  when the hangs stop. Answer **No** (the backups are play-mode scene state,
+  not lost work); `Assets/_Recovery/` is gitignored so an accidental Yes
+  can't be committed.
+
 ---
 
 ## 5. Standing verification protocol (run after each fix)
@@ -1473,3 +1576,5 @@ not compiler, at the time of the merge).
 | 2026-08-06 (pause + menu-return round) | Two reported UX stalls fixed. **Pause tap hitch:** the pause panel (`R_Pause_Menu_Panel`) starts inactive in every scene, so the FIRST tap paid the whole hierarchy's Awake/OnEnable + layout + TMP mesh generation mid-gameplay. Shipped `PauseMenu.Prewarm()` — the panel is activated invisible (root CanvasGroup alpha 0) for two frames at scene start and deactivated again; called from `MiniGameHUD.Start` (gameplay scenes) and `MenuMiniGameHUD.InstantiatePauseMenu` (menu freestyle). **Game→menu return:** (1) `SceneLoader.ReturnToMainMenu` now unpauses first (mirrors `LaunchGame`) — the pause-menu Main Menu button previously ran the whole transition at `timeScale 0`; (2) connected clients are covered BEFORE the teardown via `MultiplayerMiniGameControllerBase.BroadcastReturnToMenuVeil` → `ShowReturnToMenuVeil_ClientRpc` (mirror of the replay path's `PrepareForSceneReload_ClientRpc`; RPC + despawn messages share the reliable channel, so the veil always lands before vessels pop out — clients previously watched the whole despawn + scene switch uncovered); (3) on a game→menu arrival (previous loaded scene was a gameplay scene — tracked per-peer in `SceneLoader`), the opaque splash is HELD for `menuReturnSettleSeconds` (1.5 s, serialized) after `OnClientReady` so end-of-session cleanup finishes behind the veil instead of visibly clearing after the fade; the all-peers covered `GC.Collect` moved after the settle window so settle churn is collected too. First boot, auth→menu, party join, game launches, and replay reloads are not delayed (flag armed only on game→menu, cleared by `LaunchGame`). Remaining known stall: Menu_Main's synchronous scene-activation Awake/Start cost still freezes the splash spinner for its duration — structural, not addressed this round. |
 | 2026-08-20 (editor reload round) | Added **Task 10** — the `Run managed callbacks` domain-reload stall: what the phase is, the five ranked contributors (Enter Play Mode Options never switched on despite the flags being set; single-assembly compile; Entities `TypeManager` reflection; first-party `[InitializeOnLoad]` disk work; FMOD editor-system teardown), and the `Domain Reload Profiling:` block in `Editor.log` as the measurement that ends the guessing. Shipped two contained fixes: `PlayModeSOProtector` snapshot moved off `SessionState` (~11 MB across ~790 keys) onto a `Library/` snapshot with mtime+length-gated restore and batched reimports; `SceneBootstrapper`'s OnValidate-noise auto-save made opt-in and default OFF (it was serializing the 4.1 MB `Menu_Main` on every reload and every play exit). Deferred with reasons: Enter Play Mode Options (needs a static-state audit), editor asmdef split (blocked per-file by `Assembly-CSharp` references), FMOD (needs a capture first). |
 | 2026-08-20 (editor reload round 2) | Resolved Task 10's deferred items. **Enter Play Mode Options ENABLED** (domain + scene reload skipped on every Play press) after the full static-state audit: 259 runtime files with mutable statics/static events classified, **52 new `SubsystemRegistration` resets** shipped (66 runtime files now carry one) (worst finds: `PrismEffectsManager._isQuitting` latching true on play exit and killing VFX from the second Play on; `PrismTrailBuilder`'s 15-field arena-gate group wedging the load gate; `Time.*` stamps compared across the restarting clock in haptics/combat latches/explosion cooldowns). **Obvious.Soap patched** — `ScriptableEventBase` had no play-mode lifecycle, so `_onRaised` survived every Play and the un-unsubscribed constructor lambdas in `AnalyticsServiceFacade`/`ApplicationStateMachine`/`TournamentController` stacked one dead handler set per session; events/lists/dictionaries now clear delegates at both play boundaries, `ScriptableVariable` clears `_onValueChanged`, and a reimport double-subscribe is fixed in all four families. Third-party compatibility proven from pinned source (Reflex 14.1.0, UniTask, NGO 2.5.0, FMOD, DOTween). **Editor asmdef split closed with data, not shipped**: 79 of 168 editor files are immovable tests, only 26 of the remaining 89 (~17% of editor LOC) are free of gameplay-type refs, and the split cannot touch the reload cost — only sub-second compile time. FMOD stays capture-gated. |
+| 2026-08-21 (hang diagnosis round) | Five Crash Detector reports diagnosed the "Run managed callbacks" freeze: 4/5 hangs strike in EDIT mode 20-60s after play exit — the recompile-triggered reload — with **FMOD Live Update enabled for playInEditor** (the attribution's item-5 never-recovers precondition); 1/5 was a per-contact **NRE storm** from `SkimmerImpactor` (legacy `Components/Skimmer.prefab` predates the container refactor; six nesting vessels ran a null container). Shipped: FMOD play-in-editor Live Update OFF; `PlayModeReloadGuard` (assembly-reload lock held for all of play mode — no mid-play reloads, project-wide); `ImpactorBase.IsEffectContainerMissing` + `RunEffectIsolated` wired into Skimmer/Vessel impactors (impact dispatch can no longer storm, closing the open item); `HostConnectionService` no longer disposes awaited semaphores; and the Crash Detector watchdog now writes a live **HangDump-*.dmp** minidump when the main thread is unresponsive past 45s and keeps running through `beforeAssemblyReload`, so the next hang arrives with the deadlock's stack instead of a guess. |
+| 2026-08-21 (mechanism pinned) | A live screenshot of the recurrence ("Running managed callbacks — Executing PlayModeStateChanged Callback (EnteredEditMode), busy 02:15", after a GitHub Desktop branch switch during play) corrected the round-3 framing: the freeze is INSIDE the play-exit `playModeStateChanged` dispatch, and the blocker is FMOD — `RuntimeManager.HandlePlayModeStateChange → Destroy()` releasing the Studio system synchronously at `EnteredEditMode` (and `EditorUtils.HandleOnPausedModeChanged`'s synchronous calls for the pause/unpause reports), blocking forever on a wedged Live Update socket. Live-Update-off (round 3) stands as the cure; two amplifiers fixed: the Soap `playModeStateChanged` re-subscription leak (832 assets × every reimport round — patched on bleeding-edge 2026-08-20; pulling IS part of the fix) and `PlayModeSOProtector`, whose diff-based restore mass-overwrote a mid-play branch switch — it now restores only what an `OnWillSaveAssets` ledger proves UNITY saved during play, making it structurally blind to git. `Assets/_Recovery/` gitignored; the "Recovering Scene Backups" prompt is a symptom of killed sessions — answer No. |

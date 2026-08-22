@@ -25,20 +25,37 @@ namespace CosmicShore.Editor
     ///                      snapshot folder under Library/ (outside the
     ///                      AssetDatabase), alongside an index recording each
     ///                      file's pre-play write time + length.
+    ///   During play      → an AssetModificationProcessor records exactly which
+    ///                      _SO_Assets paths UNITY SAVES while playing (Ctrl+S,
+    ///                      AssetDatabase.SaveAssets from a tool, quit-save).
+    ///                      That set — not "whatever differs on disk" — is what
+    ///                      the protector is allowed to restore.
     ///   EnteredEditMode  → schedule a deferred restore via delayCall so it
     ///                      runs AFTER SOAP's own OnPlayModeStateChanged
-    ///                      callbacks (which re-dirty the assets). Then write
-    ///                      the original bytes back and force-reimport.
+    ///                      callbacks (which re-dirty the assets). Restore ONLY
+    ///                      the tracked, actually-different files, then batch
+    ///                      force-reimport them.
     ///
-    /// Performance notes (this runs on the play-mode boundary, inside the
-    /// window the user sees as "Run managed callbacks" / a frozen editor):
+    /// Why the tracked set is load-bearing (2026-08-21): the previous version
+    /// restored ANY file whose write time + length differed from the snapshot.
+    /// A git branch switch (or pull) while the editor sat in play mode rewrites
+    /// hundreds of _SO_Assets files — the restore then read every one of them
+    /// as "changed during play", overwrote the NEW branch's content with the
+    /// old branch's snapshot (silent working-tree corruption), and spent
+    /// minutes doing it on the play-exit boundary. External writes never pass
+    /// through Unity's save pipeline, so keying the restore on
+    /// OnWillSaveAssets makes the protector structurally blind to git — which
+    /// is exactly the blindness it needs. The tracked set lives in
+    /// SessionState so it survives the play-exit domain reload when Enter Play
+    /// Mode Options is off.
     ///
-    /// * The snapshot lives on disk rather than in SessionState. The previous
+    /// Performance notes (this runs on the play-mode boundary):
+    ///
+    /// * The snapshot lives on disk rather than in SessionState. An earlier
     ///   implementation held ~11 MB of asset text across ~790 SessionState
     ///   string keys for the whole play session.
-    /// * Restore is gated on write time + length, so the common case (an asset
-    ///   play mode never touched) costs one stat call instead of reading the
-    ///   file back and comparing its full contents.
+    /// * The common case — nothing was saved during play — is now one
+    ///   SessionState read and a snapshot delete. No stats, no read-backs.
     /// * The reimports are batched inside StartAssetEditing/StopAssetEditing.
     ///   Unbatched, each ImportAsset triggers its own synchronous refresh.
     /// </summary>
@@ -53,6 +70,11 @@ namespace CosmicShore.Editor
         // an editor crash is never replayed into a later editor session.
         private const string SnapshotValidKey = "PMSOP_SnapshotValid";
 
+        // Newline-joined asset paths Unity saved while in play mode. SessionState
+        // (not a static) so it survives the play-exit domain reload when Enter
+        // Play Mode Options is disabled.
+        private const string SavedDuringPlayKey = "PMSOP_SavedDuringPlay";
+
         static PlayModeSOProtector()
         {
             EditorApplication.playModeStateChanged += OnPlayModeStateChanged;
@@ -63,6 +85,33 @@ namespace CosmicShore.Editor
 
         private static string SnapshotRoot =>
             Path.Combine(ProjectRoot, "Library", SnapshotDirName);
+
+        /// <summary>
+        /// Called by <see cref="PlayModeSOSaveTracker"/> for every batch of paths
+        /// Unity saves while in play mode. This ledger is the ONLY evidence the
+        /// restore acts on: a file that changed on disk without passing through
+        /// Unity's save pipeline changed for an external reason (git, a text
+        /// editor) and must be left alone.
+        /// </summary>
+        internal static void RecordPlayModeSaves(string[] paths)
+        {
+            List<string> tracked = null;
+            foreach (var p in paths)
+            {
+                if (p != null && p.StartsWith(SOAssetsRoot + "/", StringComparison.Ordinal)
+                              && p.EndsWith(".asset", StringComparison.Ordinal))
+                    (tracked ??= new List<string>()).Add(p);
+            }
+
+            if (tracked == null)
+                return;
+
+            var existing = SessionState.GetString(SavedDuringPlayKey, string.Empty);
+            var set = new HashSet<string>(
+                existing.Split(new[] { '\n' }, StringSplitOptions.RemoveEmptyEntries));
+            foreach (var p in tracked) set.Add(p);
+            SessionState.SetString(SavedDuringPlayKey, string.Join("\n", set));
+        }
 
         private static void OnPlayModeStateChanged(PlayModeStateChange state)
         {
@@ -83,6 +132,7 @@ namespace CosmicShore.Editor
         private static void CaptureAssets()
         {
             SessionState.EraseBool(SnapshotValidKey);
+            SessionState.EraseString(SavedDuringPlayKey);
 
             if (!Directory.Exists(SOAssetsRoot))
                 return;
@@ -126,17 +176,32 @@ namespace CosmicShore.Editor
 
         private static void RestoreAssets()
         {
-            if (!SessionState.GetBool(SnapshotValidKey, false))
-                return;
+            var trackedRaw = SessionState.GetString(SavedDuringPlayKey, string.Empty);
+            SessionState.EraseString(SavedDuringPlayKey);
 
+            bool snapshotValid = SessionState.GetBool(SnapshotValidKey, false);
             SessionState.EraseBool(SnapshotValidKey);
 
             var snapshotRoot = SnapshotRoot;
-            var indexPath = Path.Combine(snapshotRoot, IndexFileName);
 
-            if (!File.Exists(indexPath))
+            // Fast path — the overwhelmingly common case: Unity saved nothing under
+            // _SO_Assets during play, so there is nothing to restore, whatever git
+            // or any other external tool did to the working tree in the meantime.
+            if (!snapshotValid || trackedRaw.Length == 0)
+            {
+                TryDeleteSnapshot(snapshotRoot);
                 return;
+            }
 
+            var indexPath = Path.Combine(snapshotRoot, IndexFileName);
+            if (!File.Exists(indexPath))
+            {
+                TryDeleteSnapshot(snapshotRoot);
+                return;
+            }
+
+            var tracked = new HashSet<string>(
+                trackedRaw.Split(new[] { '\n' }, StringSplitOptions.RemoveEmptyEntries));
             var restoredPaths = new List<string>();
 
             try
@@ -155,18 +220,22 @@ namespace CosmicShore.Editor
 
                     var relative = parts[0];
                     var assetPath = $"{SOAssetsRoot}/{relative}";
-                    var snapshotPath = Path.Combine(snapshotRoot, relative);
 
+                    // Restore is opt-in per file: only paths Unity itself saved
+                    // during play are candidates. Everything else is left exactly
+                    // as the working tree has it.
+                    if (!tracked.Contains(assetPath))
+                        continue;
+
+                    var snapshotPath = Path.Combine(snapshotRoot, relative);
                     if (!File.Exists(assetPath) || !File.Exists(snapshotPath))
                         continue;
 
-                    // Untouched by play mode: one stat call, no read-back.
+                    // Saved but byte-stable (write time + length unchanged, or the
+                    // re-serialization produced identical bytes): nothing leaked.
                     var info = new FileInfo(assetPath);
                     if (info.LastWriteTimeUtc.Ticks == ticks && info.Length == length)
                         continue;
-
-                    // Rewritten, but possibly byte-identical (Unity re-serializing
-                    // to the same result). Only the changed subset is read.
                     if (FilesMatch(assetPath, snapshotPath))
                         continue;
 
@@ -176,6 +245,10 @@ namespace CosmicShore.Editor
 
                 if (restoredPaths.Count == 0)
                     return;
+
+                UnityEngine.Debug.Log(
+                    $"[PlayModeSOProtector] Restored {restoredPaths.Count} _SO_Assets file(s) that " +
+                    "Unity saved during play mode back to their pre-play content.");
 
                 // Force-reimport each restored file so Unity reloads the SO from
                 // disk and clears any dirty flags left by SOAP's reset callbacks.
@@ -230,6 +303,22 @@ namespace CosmicShore.Editor
             {
                 // Leftover snapshot is harmless - the SessionState flag gates replay.
             }
+        }
+    }
+
+    /// <summary>
+    /// Feeds <see cref="PlayModeSOProtector.RecordPlayModeSaves"/>. Top-level on
+    /// purpose: Unity discovers AssetModificationProcessor subclasses by type
+    /// scanning, and a top-level class is the one shape every Unity version
+    /// reliably finds.
+    /// </summary>
+    sealed class PlayModeSOSaveTracker : AssetModificationProcessor
+    {
+        private static string[] OnWillSaveAssets(string[] paths)
+        {
+            if (EditorApplication.isPlayingOrWillChangePlaymode && paths != null && paths.Length > 0)
+                PlayModeSOProtector.RecordPlayModeSaves(paths);
+            return paths;
         }
     }
 }

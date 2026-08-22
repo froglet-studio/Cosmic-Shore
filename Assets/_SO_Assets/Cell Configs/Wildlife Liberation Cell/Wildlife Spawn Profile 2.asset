@@ -31,11 +31,9 @@ MonoBehaviour:
   PredatorSpawnPointCount: 0
   PredatorSpawnRadius: 0
   SupportedFaunas:
-  - {fileID: 11400000, guid: f1a8e1161cacc881f8e8b019170dce55, type: 2}
-  - {fileID: 11400000, guid: c8b2c218fa7e933148a4b616b7553b29, type: 2}
-  - {fileID: 11400000, guid: bad8f8ac49d9d203dff72618858cd84c, type: 2}
-  - {fileID: 11400000, guid: 86a86f88be03c1fa5cb52c7a5bab8703, type: 2}
-  - {fileID: 11400000, guid: 7d7aeda3651f7985fbf65d4a480574b0, type: 2}
-  - {fileID: 11400000, guid: 61a4187ccc0c62d6b0c4ecb436c2f2f1, type: 2}
-  - {fileID: 11400000, guid: 0cbf608c83b42aa2e80ee74a1f913441, type: 2}
-  - {fileID: 11400000, guid: 0b51847f62b2fe1b537357cae90e6772, type: 2}
+  - {fileID: 11400000, guid: bcc4322fab5c191b9504611806d894f4, type: 2}
+  - {fileID: 11400000, guid: 3f47eb7601fed233ecc7caeabbb6ab49, type: 2}
+  - {fileID: 11400000, guid: 1d58ed5677d4f86989e9ffa098ff2f54, type: 2}
+  - {fileID: 11400000, guid: 869c863f5f534957f28667fdec4a85b4, type: 2}
+  - {fileID: 11400000, guid: 9a82bb852f83d736091966902c7293eb, type: 2}
+  - {fileID: 11400000, guid: 8b769a9103e8e483b224d9ae625f9c4d, type: 2}

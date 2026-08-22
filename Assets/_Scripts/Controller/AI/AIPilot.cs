@@ -17,6 +17,12 @@ namespace CosmicShore.Gameplay
         public ShipActionSO Ability;
         public float Duration;
         public float Cooldown;
+
+        // The authored asset this entry started as, captured before Initialize replaces
+        // Ability with a per-AI instantiated copy - the copy can never match anything the
+        // vessel's own binding maps hold, and StartAIPilot needs to ask exactly that
+        // question (is this ability bound to the commit control?).
+        [NonSerialized] public ShipActionSO SourceAsset;
     }
 
     public class AIPilot : MonoBehaviour
@@ -253,6 +259,17 @@ namespace CosmicShore.Gameplay
         public void ClearDriftLookTargetProvider() => _driftLookTargetProvider = null;
 
         Func<Vector3?> _driftLookTargetProvider;
+
+        /// <summary>
+        /// The control the COMMIT loop drives - the input the commit branch presses to lock the
+        /// course and free the nose (on the Dolphin: the drift + charge boost + drift trail trio).
+        /// One name for it so the commit branches and the ability-cycler exclusion below can never
+        /// drift apart about which control they are talking about.
+        /// </summary>
+        const InputEvents CommitControl = InputEvents.LeftStickAction;
+
+        // Scratch for the commit-control binding lookup in StartAIPilot.
+        readonly List<ShipActionSO> _commitBoundActions = new();
 
         Dictionary<Corner, AvoidanceBehavior> CornerBehaviors;
 
@@ -500,6 +517,7 @@ namespace CosmicShore.Gameplay
                 var asset = ability.Ability;
                 if (asset == null) continue;
 
+                ability.SourceAsset = asset;
                 var inst = Instantiate(asset);
                 inst.name = $"{asset.name} [AI:{vessel.VesselStatus.PlayerName}]";
                 inst.Initialize(VesselStatus);
@@ -532,8 +550,26 @@ namespace CosmicShore.Gameplay
         {
             AutoPilotEnabled = true;
 
+            // A pilot that manages its own drift (the commit loop: line up a crystal, lock the
+            // course, swing the nose onto the aim) must not ALSO blind-cycle the abilities bound
+            // to that control. The cycler's StopAction lands on the SHARED per-vessel executor,
+            // so on its own 2s/2s clock it was ending the very drift the commit branch was
+            // holding: the course lock broke mid-approach (snapping the course onto the nose -
+            // i.e. toward whatever the AI was aiming at), the commit unwound, and the blast, when
+            // it eventually fired, went out along a nose that was back to steering at the
+            // crystal. Worse, the cycler's own random 2s drifts LOCKED the course while active,
+            // so the AI could not steer at all for half of every cycle. Both read on screen as
+            // "the AI roams around its target, tries to aim, and never hits" - the shipped state
+            // of The Bends until 2026-08-22. The commit loop starts and stops these abilities
+            // itself; everything not bound to the commit control still cycles as before.
+            _commitBoundActions.Clear();
+            if (drift)
+                VesselStatus?.ActionHandler?.CollectBoundActions(CommitControl, _commitBoundActions);
+
             foreach (var ability in abilities)
             {
+                if (ability.SourceAsset != null && _commitBoundActions.Contains(ability.SourceAsset))
+                    continue;
                 StartCoroutine(UseAbilityCoroutine(ability));
             }
 
@@ -613,7 +649,7 @@ namespace CosmicShore.Gameplay
                 // elsewhere; from here the vessel is travelling at the crystal no matter where it
                 // points, which is exactly the window in which announcing the aim is honest.
                 VesselStatus.Course = desiredDirection;
-                vessel.PerformShipControllerActions(InputEvents.LeftStickAction);
+                vessel.PerformShipControllerActions(CommitControl);
                 EngageAimTelegraph();
                 desiredDirection = ResolveDriftLookDirection(desiredDirection);
             }
@@ -635,7 +671,7 @@ namespace CosmicShore.Gameplay
                 // last step is what CLOSES the loop: without it the AI keeps the target it can no
                 // longer reach until the cell happens to raise OnCellItemsUpdated, which is a
                 // crystal event and not a "this pilot needs a new goal" event.
-                vessel.StopShipControllerActions(InputEvents.LeftStickAction);
+                vessel.StopShipControllerActions(CommitControl);
                 ReleaseAimTelegraph();
 
                 if (_reseekArmed)

@@ -65,8 +65,15 @@ namespace CosmicShore.Editor
         const int MaxArchivedIssues = 300;
 
         public static string RootDir { get; private set; }
+        /// <summary>Machine-local live store (gitignored via BugLedger/.gitignore). ALL day-to-day
+        /// writes land here, so the ledger never dirties version control on its own — an issue
+        /// reaches git only when the human stages and pushes it (Stage &amp; Push tab).</summary>
+        public static string LocalDir { get; private set; }
         public static string IssuesDir { get; private set; }
         public static string ResolvedDir { get; private set; }
+        /// <summary>The tracked, published set — written ONLY by <see cref="ApplyStagedChanges"/>
+        /// during a commit-and-push, read to sync teammates' issues down.</summary>
+        public static string SharedIssuesDir { get; private set; }
 
         // ── Store (issues by id). Every reader/writer takes StoreLock. ──────────────────────────
         static readonly object StoreLock = new();
@@ -107,7 +114,6 @@ namespace CosmicShore.Editor
 
         // Settings snapshot — plain fields any thread may read; the SO itself is main-thread-only.
         static volatile bool _autoCapture = true;
-        static volatile bool _keepArchive = true;
         static volatile int _defaultCleanRequired = 2;
         static volatile int _minPlaySeconds = 15;
         static volatile int _minEditorMinutes = 10;
@@ -134,11 +140,19 @@ namespace CosmicShore.Editor
         {
             var projectRoot = Directory.GetParent(Application.dataPath)!.FullName;
             RootDir = Path.Combine(projectRoot, "BugLedger");
-            IssuesDir = Path.Combine(RootDir, "issues");
-            ResolvedDir = Path.Combine(RootDir, "resolved");
+            LocalDir = Path.Combine(RootDir, "local");
+            IssuesDir = Path.Combine(LocalDir, "issues");
+            ResolvedDir = Path.Combine(LocalDir, "resolved");
+            SharedIssuesDir = Path.Combine(RootDir, "shared", "issues");
 
+            MigrateLegacyLayout();
+            EnsureStoreGitignore();
             ApplySettings(BugLedgerSettings.instance);
-            LoadAllLocked();
+            lock (StoreLock)
+            {
+                LoadAllLocked();
+                SyncFromSharedLocked();
+            }
 
             if (string.IsNullOrEmpty(SessionState.GetString(EditorStartKey, "")))
                 SessionState.SetString(EditorStartKey, Iso(DateTime.UtcNow));
@@ -161,7 +175,6 @@ namespace CosmicShore.Editor
         public static void ApplySettings(BugLedgerSettings s)
         {
             _autoCapture = s.AutoCaptureEnabled;
-            _keepArchive = s.KeepResolvedArchive;
             _defaultCleanRequired = s.DefaultCleanSessionsRequired;
             _minPlaySeconds = s.MinValidationPlaySeconds;
             _minEditorMinutes = s.MinEditorSessionMinutes;
@@ -465,12 +478,21 @@ namespace CosmicShore.Editor
             }
         }
 
-        /// <summary>Re-scans the issues folder — picks up a pull, a teammate's push, hand edits.</summary>
+        /// <summary>Re-scans the local store AND syncs teammates' shared issues down — picks up a
+        /// pull, a push, hand edits.</summary>
         public static void RefreshFromDisk()
         {
-            lock (StoreLock) LoadAllLocked();
+            lock (StoreLock)
+            {
+                LoadAllLocked();
+                SyncFromSharedLocked();
+            }
             Bump();
         }
+
+        /// <summary>For out-of-band mutations (the publisher finishing a push on its worker
+        /// thread) — makes every open window recompute.</summary>
+        public static void NotifyExternalChange() => Bump();
 
         public static string IssuePath(string id)
             => IssuesDir == null || string.IsNullOrEmpty(id) ? null : Path.Combine(IssuesDir, id + ".bug.json");
@@ -638,10 +660,16 @@ namespace CosmicShore.Editor
         public static void SetValidationPaused(string id, bool paused)
             => Mutate(id, issue => issue.ValidationPaused = paused);
 
-        /// <summary>Deletes the issue outright (no validation, no trace). The window confirms first.</summary>
+        /// <summary>Discards the issue (no validation). The window confirms first. Internally this
+        /// still stamps a tombstone into the local archive — without one, a copy a teammate
+        /// already pushed would re-import on the next sync and the bug would "resurrect".</summary>
         public static void Delete(string id)
         {
-            lock (StoreLock) DeleteLocked(id);
+            lock (StoreLock)
+            {
+                if (Issues.TryGetValue(id, out var issue))
+                    ResolveLocked(issue, "deleted by hand");
+            }
         }
 
         public static void SaveNotes(string id, string notes)
@@ -674,6 +702,180 @@ namespace CosmicShore.Editor
             catch { /* an unreadable folder degrades to an empty ledger, never an exception */ }
         }
 
+        /// <summary>
+        /// Adopts teammates' PUBLISHED issues into the local live store: every file under
+        /// <c>shared/issues/</c> that is neither live locally nor tombstoned (resolved/deleted
+        /// here) is imported. Local always wins for an issue that exists on both sides — the
+        /// difference is what the Stage &amp; Push tab shows as a pending MODIFY.
+        /// </summary>
+        static void SyncFromSharedLocked()
+        {
+            try
+            {
+                if (SharedIssuesDir == null || !Directory.Exists(SharedIssuesDir)) return;
+                foreach (var path in Directory.GetFiles(SharedIssuesDir, "*.bug.json"))
+                {
+                    var id = Path.GetFileName(path);
+                    id = id[..^".bug.json".Length];
+                    if (Issues.ContainsKey(id)) continue;
+                    if (File.Exists(TombstonePath(id))) continue;
+
+                    var issue = BugLedgerIssue.FromJson(File.ReadAllText(path));
+                    if (issue == null || !string.Equals(issue.Id, id, StringComparison.OrdinalIgnoreCase)) continue;
+                    Issues[issue.Id] = issue;
+                    WriteLocked(issue);
+                }
+            }
+            catch { }
+        }
+
+        /// <summary>Pre-split layouts wrote the live store directly under <c>BugLedger/issues|resolved</c>
+        /// (tracked — which made every ledger heartbeat dirty git). Move any such files into the
+        /// gitignored <c>local/</c> area once.</summary>
+        static void MigrateLegacyLayout()
+        {
+            try
+            {
+                MigrateFolder(Path.Combine(RootDir, "issues"), IssuesDir);
+                MigrateFolder(Path.Combine(RootDir, "resolved"), ResolvedDir);
+            }
+            catch { }
+        }
+
+        static void MigrateFolder(string oldDir, string newDir)
+        {
+            if (!Directory.Exists(oldDir)) return;
+            Directory.CreateDirectory(newDir);
+            foreach (var file in Directory.GetFiles(oldDir, "*.bug.json"))
+            {
+                var target = Path.Combine(newDir, Path.GetFileName(file));
+                try
+                {
+                    if (File.Exists(target)) File.Delete(file);
+                    else File.Move(file, target);
+                }
+                catch { }
+            }
+            try { if (Directory.GetFileSystemEntries(oldDir).Length == 0) Directory.Delete(oldDir); }
+            catch { }
+        }
+
+        /// <summary>Self-heals <c>BugLedger/.gitignore</c> (a committed file) so the live store can
+        /// never dirty version control even on a checkout that predates it.</summary>
+        static void EnsureStoreGitignore()
+        {
+            try
+            {
+                var path = Path.Combine(RootDir, ".gitignore");
+                if (File.Exists(path)) return;
+                Directory.CreateDirectory(RootDir);
+                File.WriteAllText(path,
+                    "# Live ledger data is machine-local; only shared/ (published through the\n" +
+                    "# Stage & Push tab of FrogletTools > Diagnostics > Bug Ledger) is tracked.\n" +
+                    "local/\n");
+            }
+            catch { }
+        }
+
+        // ── Publishing (the Stage & Push tab's data source) ──────────────────────────────────────
+
+        public enum BugLedgerChangeKind { Add = 0, Modify = 1, Remove = 2 }
+
+        /// <summary>One difference between the local live store and the published shared set.</summary>
+        public sealed class BugLedgerPendingChange
+        {
+            public string Id;
+            public string Title;
+            public BugLedgerChangeKind Kind;
+        }
+
+        /// <summary>
+        /// Diffs local against shared: live issues missing from shared are ADDs, differing ones
+        /// are MODIFYs, and shared issues with no live copy (resolved/deleted here) are REMOVEs.
+        /// Pure computation — nothing is written, and git sees nothing until
+        /// <see cref="ApplyStagedChanges"/> runs inside a publish.
+        /// </summary>
+        public static List<BugLedgerPendingChange> ComputePendingChanges()
+        {
+            var pending = new List<BugLedgerPendingChange>();
+            lock (StoreLock)
+            {
+                var shared = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+                try
+                {
+                    if (SharedIssuesDir != null && Directory.Exists(SharedIssuesDir))
+                        foreach (var path in Directory.GetFiles(SharedIssuesDir, "*.bug.json"))
+                        {
+                            var name = Path.GetFileName(path);
+                            shared[name[..^".bug.json".Length]] = File.ReadAllText(path);
+                        }
+                }
+                catch { }
+
+                foreach (var issue in Issues.Values)
+                {
+                    if (!shared.TryGetValue(issue.Id, out var publishedJson))
+                        pending.Add(new BugLedgerPendingChange { Id = issue.Id, Title = issue.Title, Kind = BugLedgerChangeKind.Add });
+                    else if (!string.Equals(publishedJson, issue.ToJson(), StringComparison.Ordinal))
+                        pending.Add(new BugLedgerPendingChange { Id = issue.Id, Title = issue.Title, Kind = BugLedgerChangeKind.Modify });
+                }
+
+                foreach (var kv in shared)
+                {
+                    if (Issues.ContainsKey(kv.Key)) continue;
+                    var parsed = BugLedgerIssue.FromJson(kv.Value);
+                    pending.Add(new BugLedgerPendingChange
+                    {
+                        Id = kv.Key,
+                        Title = parsed?.Title ?? kv.Key,
+                        Kind = BugLedgerChangeKind.Remove,
+                    });
+                }
+            }
+
+            pending.Sort((a, b) => a.Kind != b.Kind
+                ? ((int)a.Kind).CompareTo((int)b.Kind)
+                : string.CompareOrdinal(a.Id, b.Id));
+            return pending;
+        }
+
+        /// <summary>
+        /// Materializes the STAGED ids into <c>shared/</c> — copy for Add/Modify, delete for
+        /// Remove — and returns the absolute paths touched (for a scoped <c>git add</c>). Called
+        /// only from inside a publish operation (any thread; takes the store lock), never from a
+        /// [+] click: files must not dirty git while the human is still choosing.
+        /// </summary>
+        public static List<string> ApplyStagedChanges(ICollection<string> stagedIds)
+        {
+            var touched = new List<string>();
+            if (stagedIds == null || stagedIds.Count == 0) return touched;
+
+            lock (StoreLock)
+            {
+                Directory.CreateDirectory(SharedIssuesDir);
+                foreach (var id in stagedIds)
+                {
+                    var sharedPath = Path.Combine(SharedIssuesDir, id + ".bug.json");
+                    try
+                    {
+                        if (Issues.TryGetValue(id, out var issue))
+                        {
+                            File.WriteAllText(sharedPath, issue.ToJson());
+                            touched.Add(sharedPath);
+                        }
+                        else if (File.Exists(sharedPath))
+                        {
+                            File.Delete(sharedPath);
+                            touched.Add(sharedPath);   // git add stages the deletion of a tracked file
+                        }
+                    }
+                    catch { }
+                }
+            }
+            Bump();
+            return touched;
+        }
+
         static void WriteLocked(BugLedgerIssue issue)
         {
             try
@@ -685,26 +887,28 @@ namespace CosmicShore.Editor
             Bump();
         }
 
-        /// <summary>Closes an issue: stamps a resolved copy into <c>BugLedger/resolved/</c> (unless
-        /// the archive is off), prunes the archive, and removes the live file. Git history keeps
-        /// everything regardless — the archive just makes "what got fixed lately" browsable.</summary>
+        /// <summary>Closes an issue: stamps a resolved copy into the local archive
+        /// (<c>BugLedger/local/resolved/</c>), prunes it, and removes the live file. The archive is
+        /// ALSO the tombstone — <see cref="SyncFromSharedLocked"/> uses it to keep a resolved or
+        /// deleted issue from re-importing off a teammate's still-shared copy — which is why the
+        /// stamp is unconditional. If the issue was published, its shared copy shows up as a
+        /// REMOVE in the Stage &amp; Push tab.</summary>
         static void ResolveLocked(BugLedgerIssue issue, string reason)
         {
-            if (_keepArchive)
+            try
             {
-                try
-                {
-                    issue.State = "resolved";
-                    issue.ResolvedUtc = Iso(DateTime.UtcNow);
-                    issue.Resolution = reason;
-                    Directory.CreateDirectory(ResolvedDir);
-                    File.WriteAllText(Path.Combine(ResolvedDir, issue.Id + ".bug.json"), issue.ToJson());
-                    PruneArchive();
-                }
-                catch { }
+                issue.State = "resolved";
+                issue.ResolvedUtc = Iso(DateTime.UtcNow);
+                issue.Resolution = reason;
+                Directory.CreateDirectory(ResolvedDir);
+                File.WriteAllText(TombstonePath(issue.Id), issue.ToJson());
+                PruneArchive();
             }
+            catch { }
             DeleteLocked(issue.Id);
         }
+
+        static string TombstonePath(string id) => Path.Combine(ResolvedDir, id + ".bug.json");
 
         static void PruneArchive()
         {

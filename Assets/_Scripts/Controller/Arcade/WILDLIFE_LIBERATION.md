@@ -9,9 +9,10 @@
 ## Overview
 
 Wildlife Liberation is the **Sparrow-only hunt**. Three concentric cages at **1050 / 600 /
-200** pen three tiers of wildlife, with a very wide empty room between each pair — and a fourth
-tier loose in the **open water outside the outer cage**, where the players spawn. Break in and
-shoot; the **first DOMAIN** to the summed kill target (default **250**) wins.
+200** divide the arena into rooms with a very wide empty gap between each pair, and the
+wildlife — every tier of it, swarm to kaiju — roams **all of it** on one shared band, including
+the open water outside the outer cage where the players spawn. Hunt it down; the **first DOMAIN**
+to the summed kill target (default **30**) wins.
 
 **One axis, and it is the ecology.** The scored stat is `IRoundStats.LifeformsKilled` — an
 *attributed creature death*. Nothing else scores: not cage prisms, not rival trails, not
@@ -45,7 +46,7 @@ kills sum to the target first.
   golf-timed) — the winning **domain's** players `Score` = finish time, everyone else the
   `GolfScoreSentinels` sentinel encoding their team's deficit (displayed "N Kills Left")
 - **Turn monitor**: `WildlifeKillTurnMonitor` — resolves the **per-domain** target from
-  `EndConditionOverridesSO.GetWildlifeKillTarget()` (default **250**, FrogletTools ▸ Game Modes
+  `EndConditionOverridesSO.GetWildlifeKillTarget()` (default **30**, FrogletTools ▸ Game Modes
   ▸ End Game Conditions — never a per-scene field), syncs it via NetworkVariable →
   `GameDataSO.LifeformTargetCount`
 - **Players**: **1–4** with AI backfill. `MinDomainsAllowed = 2` (a domain race needs two
@@ -163,67 +164,114 @@ Verify those in-editor (checklist item 12) rather than assuming.
 `WormSegmentFauna` keeps a thin override purely for its own `_dead` guard, which covers the
 colony-initiated deaths (`WitherAway`, a split's shed) the base guard cannot see.
 
-## Per-species containment bands (the pens)
+## The roam band (one band, every species)
 
-`Cell.FaunaContainmentRadius` — Ribcage's brood pen — is **one radius, whole cell**. Three
-nested cages need three pens, so the capability is generalized to an **annulus authored per
-species**: `FaunaConfigurationSO.BandInnerRadius` / `BandOuterRadius`, honoured by
+`Cell.FaunaContainmentRadius` — Ribcage's brood pen — is **one radius, whole cell**.
+`FaunaConfigurationSO.BandInnerRadius` / `BandOuterRadius` generalizes it to an **annulus
+authored per species**. This mode used that to stack three pens, one tier of wildlife per room;
+it now authors **one band, shared by every species**: **0 .. 1180** — the whole arena, core to
+just inside the 1200u membrane (`SpawnableWildlifeCage.RoamInner` / `RoamOuter`).
+
+> **The three-tier pen was replaced on request (2026-08):** *"all the faunas are set up like the
+> big ones are concentrated in the center — make all the faunas disperse everywhere, do not need
+> the layer-by-layer fauna structure."* Locking a tier into a room read as three stacked
+> aquariums around a boss room: the fight converged wherever a player broke in, and the apex
+> creatures were only ever findable at one radius. Mixing every tier through one volume is what
+> makes this a **hunt** — what you meet next is a roll, not a radius.
+
+The band is honoured at the same three chokepoints as before; none of that machinery changed,
+which is the payoff of having built the pen as a capability rather than three special cases:
 
 - `Fauna.Goal`'s setter (the one point every goal writer passes through — `ResolveGoal`, Boid's
-  override, LightFauna's half-dozen direct writes, the spawner's initial goal, and
-  `TryReproduce`'s inheritance), which composes the cell pen first and then the band;
-- `Fauna.IsPreyForMe`, the shared edibility predicate every grazer now routes through
+  override, LightFauna's direct writes, the spawner's initial goal, and `TryReproduce`'s
+  inheritance), which composes the cell pen first and then the band;
+- `Fauna.IsPreyForMe`, the shared edibility predicate every grazer routes through
   (`LightFauna.IsEdibleForHerbivore`, `WormFauna.IsEdiblePrism`, `Boid.IsEdibleForForager`);
-- **`CellLifeSpawnerBase.SpawnFaunaBanded`**, so a banded species **hatches inside its room,
+- **`CellLifeSpawnerBase.SpawnFaunaBanded`**, so a banded species **hatches inside its band,
   scattered across it** — an independent random direction and radius per creature, for both its
-  spawn position and its initial goal. Unbanded species keep the wave path exactly as before.
+  spawn position and its initial goal.
 
-  **This lives on the BASE, and that is the whole lesson of the bug it fixes.** The placement
-  was first written into `RandomLifeSpawner` — and never ran. `Cell.StartSpawnerForMode` picks
-  `IntensityWiseLifeSpawner` whenever the cell is on `CellTypeChoiceOptions.IntensityWise`,
-  which is also the *only* way to vary a cell by intensity. This mode needs per-intensity cages,
-  so it gets the intensity spawner whether it wanted it or not, and that spawner passed **no
-  spawn position at all** (`SpawnFaunaWithDomain` then defaults to `host.transform.position`)
-  with a goal of the cell crystal. Every creature in the biome was born at the centre and
-  immediately swam back to it — which is exactly what "all the fauna spawn at the centre, the
-  fight always happens at the centre" was. Both spawners now go through one call.
-
-  Two further centre-collapses were fixed with it: `Fauna.ClampToBand` used to clamp a
-  degenerate "nothing sensed" goal radially, which sent every creature in a room to exactly its
-  inner wall; and `IntensityWiseLifeSpawner` never honoured `MaxLivePopulation`, so its
-  one-per-tick loop walked a species past the cap the collider budget was sized against.
+  **This lives on the BASE, and that is the whole lesson of the bug it fixed.** The placement was
+  first written into `RandomLifeSpawner` — and never ran. `Cell.StartSpawnerForMode` picks
+  `IntensityWiseLifeSpawner` whenever the cell is on `CellTypeChoiceOptions.IntensityWise`, which
+  is also the *only* way to vary a cell by intensity. This mode needs per-intensity cages, so it
+  gets the intensity spawner whether it wanted it or not, and that spawner passed **no spawn
+  position at all** with a goal of the cell crystal. Every creature in the biome was born at the
+  centre and immediately swam back to it. Both spawners now go through one call.
 
 Same contract as the cell pen and for the same reason (`Docs/ECOSYSTEM.md` §22): **a spatial
 DIET + STEERING rule, never a wall.** Nothing is teleported, no collider is added, nothing is
 culled for crossing a boundary. A creature can still drift out on its own momentum — it simply
-has no reason to and nothing to eat there. `0 = no band` is the default and what every shipped
-biome authors, so nothing else changes. Offspring inherit their parent's band for free (they
-bind the same config).
+has no reason to and nothing to eat there. At 0..1180 the band's only real remaining job is
+keeping creatures off the membrane. `0 = no band` is the default and what every *other* shipped
+biome authors, so nothing else in the game is affected. Offspring inherit their parent's band for
+free (they bind the same config).
 
-**The bands are why the cage can be cheap.** Each band stops **60u short of its own walls**
-(`SpawnableWildlifeCage.BandWallClearance`), so a creature's jail is outside its band and
-therefore not food. Without that, herbivores would eat two thirds of their own cage (the bars
-are painted across the domain triad, and the legacy diet eats opposing-domain mass) and the
-alternative — shielding the bars — would swap ~9,000 LOD-cullable BoxColliders for always-on
-convex MeshColliders. **Do not shield the cage.**
+### ⚠ The draw had to be fixed with it, and it was half the reported bug
 
-| room | band | bounded by |
+`CellLifeSpawnerBase.RandomPointInBand` drew `Random.Range(inner, outer)` — uniform in RADIUS,
+which gives every radial shell the same headcount while a shell's space grows as r². Measured
+over 200k samples on a 0..1180 band:
+
+| quarter of the arena's VOLUME (inner → outer) | uniform-in-radius | volume-uniform |
+|---|---:|---:|
+| 1st (r ≤ 743) | **63.1%** | 25.2% |
+| 2nd (743–936) | 16.3% | 24.9% |
+| 3rd (936–1072) | 11.6% | 24.8% |
+| 4th (1072–1180) | 9.1% | 25.2% |
+
+So *"the big ones are concentrated in the centre"* was partly the pens and partly the draw, and
+widening the band alone would have made the clumping **worse** — the wider the band, the harder
+the r² error bites. `RandomBandRadius` now draws the cube root of a uniform sample between the
+cubed walls. It was invisible until now because every band ever authored was a thin annulus
+(660..990 moves its mean radius 2.6%; 1090..1180 moves it 0.1%), and no other biome authors a
+band at all. **Same finding `Docs/ECOSYSTEM.md` §27 records for flora planting** — a species
+disperses in a volume-uniform BAND, never on a shell — reached independently on the fauna side,
+which is the tell that it is a property of spheres rather than of either system.
+
+### ⚠ What the pens were silently buying: the cage is now food
+
+**The old bands were why the cage could be cheap.** Each stopped **60u short of its own walls**,
+so a creature's jail was outside its band and therefore not food. One arena-wide band puts all
+three cages inside it, and this cell has **no nucleus**, so the legacy diet applies: herbivores
+eat opposing-domain mass, the bars are painted across the domain triad, and **the cage is
+grazeable and erodes as a match runs.**
+
+That is accepted deliberately — it is the food web working, in a mode whose entire subject is the
+ecology — and two things in the same pass cut how far it goes: the kill target dropped **250 →
+30** (an ~8× shorter match) and the population dropped **15%**.
+
+**Do not answer it by shielding the bars.** A shield reaches **1.5 × `leafSize`**
+(`OctahedronMeshGenerator.CIRCUMSCRIBING_SCALE`, `Docs/ECOSYSTEM.md` §35), so a 26u bar laid
+every 34u would fuse this sparse lattice into a solid tube — and every bar would stop being a
+one-hit prism, which is the break-in the mode is built on. If playtest says the erosion is too
+fast, the levers in order are: raise `RoamInner` off 0, then cut `POPULATION_SCALE`.
+
+**General rule this leaves behind: when you remove a constraint, find what it was silently
+buying.** A pen that looked like a steering rule was also a diet rule, and the diet rule was also
+a collider-budget device.
+
+### The rooms still exist — as architecture
+
+| room | interior | bounded by |
 |---|---|---|
-| **open water** | 1090 .. 1180 | outside the 1050 cage, inside the 1200 membrane |
+| open water | 1090 .. 1180 | outside the 1050 cage, inside the 1200 membrane |
 | outer | 660 .. 990 | the 1050 and 600 cages |
 | middle | 260 .. 540 | the 600 and 200 cages |
 | core | 0 .. 140 | the 200 cage |
 
-**The open water is a fourth room and it exists to move the fight.** The first pass put every
-creature inside the cages, so every fight converged on the middle of the arena. Stocking the
-water outside the outer cage — with big creatures, not filler — means there is something to
-shoot from the moment you spawn (the player ring is at **1150**, *inside* that band), so
-breaking into a cage becomes a choice rather than the only way to score. The AI hunters cycle
-through all four rooms for the same reason.
+`SpawnableWildlifeCage.RoomInner` / `RoomOuter` still describe these, because the three cages
+still divide the arena into them — but they are **cage architecture, not a fauna pen**. Their one
+live consumer is the AI hunters' patrol, which steps through the rooms to sweep the arena at
+every radius. The player spawn ring is at **1150**, inside the open water, so there is something
+to shoot from the moment you spawn and breaking into a cage is a choice rather than the only way
+to score.
 
-Authored from **one source**: `SpawnableWildlifeCage.BandInner/BandOuter` in C#, mirrored by
-`wildlife_cage_budget.band_inner/band_outer`, which is what the asset generator writes into the
-fauna configs. The generator refuses to write a band that is not strictly inside its room.
+Authored from **one source**: `SpawnableWildlifeCage.RoamInner/RoamOuter` in C#, mirrored by
+`wildlife_cage_budget.ROAM_INNER/ROAM_OUTER`, which is what the asset generator writes into the
+fauna configs — and the generator **fails** if the two disagree, if any species carries a
+different band from its neighbours (which is how a "tier" would creep back in), or if a band
+fails to reach past the outer cage into the water the players spawn in.
 
 ## The jail
 
@@ -275,33 +323,44 @@ Measure Cell Environment Baselines):
 
 ## The wildlife (the objective)
 
-One `FaunaConfigurationSO` per **(species, room, intensity)** — the spawner runs one loop per
-config — banded to its room and scaled by intensity ("later intensities will have more fauna").
+One `FaunaConfigurationSO` per **(species, level, intensity)** — the spawner runs one loop per
+config. Every one carries the **same** band (0..1180, the whole arena), so the only thing
+separating two entries of one species is the level it starts at, which is exactly the "big ones
+and small ones everywhere" mix the dispersal is for.
 
-| species | room | seed | cap | level | body prisms ea. |
-|---|---|---:|---:|---:|---:|
-| Brittlestar | **open water** | 28 | 65 | 1 | 10 |
-| QuadFish | **open water** | 130 | 300 | 1 | 1 |
-| QuadFish | outer | 320 | 750 | 1 | 1 |
-| Brittlestar | outer | 38 | 88 | 1 | 10 |
-| Brittlestar | middle | 50 | 115 | 2 | 10 |
-| Shark (predator) | middle | 24 | 52 | 2 | 11 |
-| Shark (predator) | core | 14 | 28 | 5 | 11 |
-| Worm Colony (kaiju) | core | 6 | 11 | 3 | ~26 |
-| **total** | | **610** | **1,409** | | **4,896 prisms at cap** |
+| species | level | seed | cap | body prisms ea. | prisms at cap |
+|---|---:|---:|---:|---:|---:|
+| QuadFish | 1 | 383 | 893 | 1 | 893 |
+| Brittlestar | 1 | 56 | 130 | 10 | 1,300 |
+| Brittlestar | 2 | 43 | 98 | 10 | 980 |
+| Shark (predator) | 2 | 20 | 44 | 11 | 484 |
+| Shark (predator) | 5 | 12 | 24 | 11 | 264 |
+| Worm Colony (kaiju) | 3 | 5 | 9 | ~26 | 234 |
+| **total** | | **519** | **1,198** | | **4,155 prisms at cap** |
+
+**The rooms are gone from the roster, and that is the shape of the change.** The pens used to
+give this table a `room` column, so a species that lived in two rooms needed two configs; with
+one band those collapse into one. The old roster's four rooms (8 configs) are 6 configs now, and
+the merge preserved the populations exactly — 610 seed / 1,409 cap — before the cut below.
 
 **No tadpoles** (removed on request, 2026-08). QuadFish inherits the swarm role — also a
 1-prism body, so the headcount survives, but the tadpoles were carrying a large share of it and
 redistributing that share across species that are not all 1-prism raised the body-prism total
 from 3,161 to 4,896. That is the cost of the swap and it is paid in the collider table below.
 
-**The roster is identical at every intensity** (requested 2026-08: *"keep around 600 rising to
-1400 at all intensities — the later levels can have more complexity"*). `POPULATION_SCALE` is
-`[1, 1, 1, 1]`; it is kept as a per-intensity array rather than collapsed to a scalar so
-re-introducing a population ramp is one edit. **Do not read "all 1.0" as "unused".** The whole
-intensity ramp lives in the cage's `SHELL_PLANS` instead.
+**15% off the whole roster** (requested 2026-08, alongside the dispersal): `POPULATION_SCALE` is
+`[0.85, 0.85, 0.85, 0.85]`, applied to seed **and** cap so it actually binds — a scalar that
+moves only the floor is clamped away by `MaxLivePopulation` and reads as doing nothing
+(`Docs/ECOSYSTEM.md` §29). 610 → 519 at seed, 1,409 → 1,198 at cap, 4,896 → 4,155 body prisms.
+It is deliberately the *dial* rather than twelve edited numbers, so the cut is one line to
+revisit and the authored roster still reads as the play-tested one.
 
-**The seed→cap gap is wide on purpose.** 610 → 1,409 means well over half the eventual
+**The roster is otherwise identical at every intensity** (requested 2026-08: *"keep around 600
+rising to 1400 at all intensities — the later levels can have more complexity"*, now scaled).
+The whole intensity ramp lives in the cage's `SHELL_PLANS` instead. **Do not read a uniform
+scale as "unused".**
+
+**The seed→cap gap is wide on purpose.** 519 → 1,198 means well over half the eventual
 population is *born in play*: the spawner only tops each species back up to its floor, so
 everything above it is reproduction, bounded by starvation and the caps. The swarm visibly
 thickens as a match runs and thins where hunters have been working — the food web doing the
@@ -313,34 +372,40 @@ by starvation — the food web, not a timer (`Docs/ECOSYSTEM.md` §6). `MaxLiveP
 performance backstop, which is why the **cap** column is what the collider budget is sized
 against.
 
-**`FaunaFoodFloor` is 0 (always produce)**, deliberately: the cage is not edible (bands), so a
-prey-gated spawner would never bootstrap the jail. Creatures then feed on whatever a player lays
-inside their room — which is the mode's risk/reward: fly in to shoot and your trail becomes
-their dinner.
+**`FaunaFoodFloor` is 0 (always produce)**, deliberately: it was set when the cage was inedible
+(the pens) and a prey-gated spawner would never have bootstrapped the jail. With the roam band
+the cage IS food, so the floor is no longer load-bearing — it is left at 0 because "always
+produce" is still what this mode wants. Creatures also feed on whatever a player lays, which is
+the mode's risk/reward: linger to shoot and your trail becomes their dinner.
 
 **No flora.** `SupportedFloras` is empty; the rooms are meant to read as empty space with
-wildlife in them.
+wildlife moving through them.
 
 ### Collider-budget impact — read this before tuning anything else
 
-| intensity | cage prisms | fauna body prisms (cap) | total |
-|---|---:|---:|---:|
-| 1 | 9,206 | 4,896 | **14,102** |
-| 2 | 12,696 | 4,896 | **17,592** |
-| 3 | 13,244 | 4,896 | **18,140** |
-| 4 | 13,956 | 4,896 | **18,852** |
+| intensity | cage prisms | fauna body prisms (cap) | total | was |
+|---|---:|---:|---:|---:|
+| 1 | 9,206 | 4,155 | **13,361** | 14,102 |
+| 2 | 12,696 | 4,155 | **16,851** | 17,592 |
+| 3 | 13,244 | 4,155 | **17,399** | 18,140 |
+| 4 | 13,956 | 4,155 | **18,111** | 18,852 |
+
+**The 15% cut moves the budget in the right direction and does not change its shape** — the cage
+is untouched, so the saving is 741 movers per intensity. The cage half will now also *shrink
+during a match*, because the roam band made the bars grazeable; do not treat the cage column as
+a floor.
 
 Comparable to Ribcage (10,620 → 20,153) in raw collider count — but **the fauna half is far more
 expensive per collider than the cage half**, and that is this branch's headline performance risk:
 
 - **Every fauna body prism is a MOVER.** It re-buckets in `PrismSpatialIndex` as the creature
   swims (`Fauna.NotifyBodyPrismsMoved`), where a cage prism is registered once and never moves.
-- **Every creature runs a behaviour coroutine** — **610 at seed, up to 1,409 at the caps.** This
+- **Every creature runs a behaviour coroutine** — **519 at seed, up to 1,198 at the caps.** This
   is the number to watch, not the prism count.
-- **This is ~2× the masterplan's ≤1,500-per-cell fauna-prism target** and roughly **an order of
-  magnitude more creatures than any shipped biome.** It is an explicit product decision ("very
-  heavy… around 600 rising to 1400", requested 2026-08), not an accident of the roster.
-- **Bootstrap cost:** 610 creatures, seeded one per `InitialSpawnCount` step per species loop
+- **This is still well over the masterplan's ≤1,500-per-cell fauna-prism target** and many times
+  more creatures than any shipped biome. It is an explicit product decision ("very heavy…",
+  requested 2026-08), trimmed 15% in the dispersal pass, not an accident of the roster.
+- **Bootstrap cost:** 519 creatures, seeded one per `InitialSpawnCount` step per species loop
   with a frame yield between each. Expect a visible fill-in during the countdown rather than a
   hitch.
 
@@ -439,19 +504,47 @@ feedback** (same state as Ribcage).
 ## End condition
 
 Authored ONLY through **FrogletTools ▸ Game Modes ▸ End Game Conditions**
-(`EndConditionOverridesSO.wildlifeKillTarget`, 0 = default **250**) — the number of creatures a
+(`EndConditionOverridesSO.wildlifeKillTarget`, 0 = default **30**) — the number of creatures a
 **domain** must kill between them. Live/Build split + build auto-restore work like every other mode. The
 milestone rungs are fractions of it (0.25 / 0.5).
 
-> **⚠ Pacing flag — 250 has not been playtested.** Every intensity holds ~610 creatures at seed
-> and breeds toward ~1,409, so a 250 per-domain total is a meaningful share of the standing
-> population without ever requiring the arena to be cleared. Milestones land at **63** and
-> **125**.
+> **30, down from 250 (requested 2026-08).** Every intensity holds ~519 creatures at seed and
+> breeds toward ~1,198, so 30 is a small fraction of the standing population — this is now a
+> **short, punchy** match rather than a long grind, and with the wildlife dispersed everywhere a
+> hunter can start scoring from the spawn ring without breaking into anything. Milestones land at
+> **8** (0.25) and **15** (0.5), and they follow the field automatically.
 >
-> Two things will move it. (1) While fauna are still client-local, a two-player domain reaches
-> it faster than a solo one (see the multiplayer note above) — so time a **4-player** match, not
-> a solo one. (2) When the fauna-sync branch merges that head start disappears and matches get
-> longer. It is one editor field and the milestones follow it automatically.
+> **Neither number is playtested.** Three things bear on it. (1) The target moved ~8×, so the
+> pacing question is now "is 30 too *quick*", not too slow. (2) While fauna are still
+> client-local, a two-player domain reaches it faster than a solo one (see the multiplayer note
+> above) — so time a **4-player** match, not a solo one. (3) When the fauna-sync branch merges
+> that head start disappears and matches get longer. It is one editor field.
+>
+> It also bounds the cage erosion the roam band introduced: a shorter match is less grazing.
+
+### ⚠ The comeback rate moved with it — the third outing of a recorded trap
+
+`ElementalComebackSystem` computes `bonusLevels = deficit × ComebackRatePerScoreDeficit`, so
+**the rate is a function of the target** and re-targeting a mode silently disarms it. Dog Fight
+recorded the trap; The Bends hit it 20× harder and added a build-time assert. This mode is the
+third case, and it was **already latent at bring-up**: the card inherited Rampage's `0.01`
+against a target 8× smaller, so a quarter-of-target deficit only ever bought 0.625 of a level.
+250 → 30 would have taken that to **0.075** — a comeback system that does nothing at all.
+
+Rate is now **0.35**, so a quarter-of-target deficit (7.5 kills) buys **2.6** levels. That is Dog
+Fight's curve (90 × 0.12 = 2.7), which is the nearest sibling by structure — same vessel, same
+"many small increments" race. Where the shipped family sits:
+
+| mode | target | rate | levels at ¼-target deficit |
+|---|---:|---:|---:|
+| Rampage / Ribcage | 2000 | 0.01 | 5.0 |
+| Bends | 3 | 4.0 | 3.0 |
+| **Wildlife Liberation** | **30** | **0.35** | **2.6** |
+| Dog Fight | 90 | 0.12 | 2.7 |
+| Scarab Scramble | 10 | 0.5 | 1.25 |
+
+`author_wildlife_liberation_assets.py` now **fails the build** if a quarter-of-target deficit
+stops buying one whole element level, so the next target change cannot repeat it.
 
 ## Assets
 
@@ -470,8 +563,21 @@ milestone rungs are fractions of it (0.25 / 0.5).
 Every asset above is authored by `Tools/Build/author_wildlife_liberation_assets.py` —
 deterministic GUIDs, idempotent, validates before writing. **Re-tune there and re-run** rather
 than hand-editing the YAML. `Tools/Build/wildlife_cage_budget.py` is the arena's analytic model
-(geometry **and** bands **and** roster) and the generator **imports** it, so the walls, the pens
-and the PhaseThresholds cannot drift apart.
+(geometry **and** the roam band **and** roster) and the generator **imports** it, so the walls,
+the band and the PhaseThresholds cannot drift apart.
+
+> **The generator has TWO modes, and a retune uses the second one.**
+> `--population` re-authors only the layer that gets retuned — the fauna configs, the spawn
+> profiles, the cell configs and the kill target — and skips the one-shot **bring-up** sections
+> that clone the donor `MinigameRampage.unity` and register the arcade card. Use it for every
+> roster, band or target change.
+>
+> That donor has moved on since bring-up, so a **full** run asserts out (`controller field block
+> not found in donor scene`) — and even if it matched, re-cloning would overwrite this mode's
+> scene with a fresh copy of somebody else's. A generator that authors both a one-time scene and
+> a re-tunable data layer has to be able to run just the second half. Re-enabling the full path
+> means re-syncing those `OLD_FIELDS` / `OLD_CELL` anchors against the current Rampage scene
+> first.
 
 ## Shared-code touchpoints (added for this mode)
 
@@ -482,7 +588,8 @@ and the PhaseThresholds cannot drift apart.
 | `WormSegmentFauna` | override thinned to its `_dead` guard — the kill rule moved to the base |
 | `LightFauna` / `WormFauna` / `Boid` | edibility routed through `Fauna.IsPreyForMe` (adds the band to the existing cell rule) |
 | `FaunaConfigurationSO` | `BandInnerRadius` / `BandOuterRadius` |
-| `CellLifeSpawnerBase` | `SpawnFaunaBanded` / `RandomPointInBand` / `ClampToBand` / `IsBanded` — banded placement hoisted onto the BASE so both spawners share it |
+| `CellLifeSpawnerBase` | `SpawnFaunaBanded` / `RandomPointInBand` / `ClampToBand` / `IsBanded` — banded placement hoisted onto the BASE so both spawners share it; **`RandomBandRadius`** draws the radius VOLUME-uniformly (cube root between the cubed walls) instead of uniform-in-radius, which crowded the inner wall — see "The draw had to be fixed with it" |
+| `SpawnableWildlifeCage` | `BandInner`/`BandOuter` → **`RoomInner`/`RoomOuter`** (cage architecture, consumed only by the AI patrol) + `BandWallClearance` → `RoomWallClearance`; new **`RoamInner`/`RoamOuter`** = the one fauna band |
 | `IntensityWiseLifeSpawner` | routed through `SpawnFaunaBanded` (it previously passed no spawn position, so everything spawned at the cell centre) + now honours `MaxLivePopulation` |
 | `RandomLifeSpawner` | routed through the same shared call |
 | `CellRuntimeDataSO` | `OnFaunaKilled` (`ScriptableEventString`) |
@@ -524,17 +631,24 @@ and the PhaseThresholds cannot drift apart.
    tick once per creature, not once per prism.
 8. **Only YOUR kills count.** Watch a shark eat a tadpole, and watch one starve. Neither should
    move any score. Shoot a cage bar — no score either.
-9. **The tiers stay in their rooms, SPREAD ACROSS them.** Fly a full lap of each room. The
-   outer room should be thick with tadpoles/quadfish plus a few brittlestars, distributed all the
-   way round — **not a clump**, and above all **not a clump at the centre of the arena** (that is
-   the failure mode the per-creature band spread fixes; if you see it, `RandomPointInBand` is not
-   being reached). The middle room is noticeably bigger creatures and sharks; the core is the
-   kaiju. **Nothing should be swimming between rooms**, and nothing should be chewing on a cage
-   bar.
-9b. **Population grows.** Note the rough headcount at the countdown (~610 across all four rooms)
-   and again three minutes in: it should be visibly denser, heading toward ~1,409 — that is
-   reproduction, and it is what makes 500 kills reachable. If it is flat, the species are hitting
-   their caps immediately or nothing is feeding.
+9. **THE HEADLINE CHECK — every tier is everywhere, and the density is even.** Fly a full lap of
+   each room. You should meet quadfish, brittlestars, sharks **and** the worm colony in all four,
+   including the open water you spawn in — **no room is a boss room any more**. Above all, look
+   down the middle: **there must be no clump at the centre of the arena.** That is the failure
+   this pass exists to fix and it had two causes, so check both — if creatures are stacked at the
+   centre, either `SpawnFaunaBanded`/`RandomPointInBand` is not being reached at all (everything
+   defaults to `host.transform.position`), or the volume-uniform draw has been reverted to
+   `Random.Range(inner, outer)`, which alone puts 63% of the population in the innermost
+   quarter-volume.
+9b. **Population grows.** Note the rough headcount at the countdown (~519) and again three
+   minutes in: it should be visibly denser, heading toward ~1,198 — that is reproduction. If it
+   is flat, the species are hitting their caps immediately or nothing is feeding.
+9c. **⚠ NEW — watch the cage erode, and judge whether it is too fast.** The roam band made the
+   bars food (see "What the pens were silently buying"). Some grazing is expected and correct.
+   Note roughly how open the **core** cage looks at the countdown and at the end of a full match:
+   if it has been chewed open enough that the innermost room stops reading as a room, the levers
+   are `SpawnableWildlifeCage.RoamInner` (raise it off 0) then `POPULATION_SCALE` — **never a
+   shield on the bars**, which would fuse the lattice and cost the one-hit break-in.
 10. **Sparrow only — SOLO.** Pick a different vessel in an earlier game, then launch this: you
     should spawn a Sparrow, with a `clamping selected vessel` line in the log.
 11. **Sparrow only — MULTIPLAYER (the Ribcage regression).** Have the CLIENT fly a Dolphin in the
@@ -552,9 +666,10 @@ and the PhaseThresholds cannot drift apart.
 14. **Win + scoreboard.** First player to the target ends the turn; the winner shows a time,
     everyone else "N Kills Left". Confirm a *teammate* of the winner does **not** get the
     winner's time. Replay (scene reload) resets the milestones and the counters.
-15. **Milestones.** When the leading hunter reaches **125** kills the device should shake hard
-    for ~1.2 s; again at **250**. Nothing else should change.
-16. **AI hunts.** Watch an AI Sparrow for a minute: it should work one room, actually shoot
+15. **Milestones.** When the leading domain reaches **8** kills the device should shake hard
+    for ~1.2 s; again at **15**. Nothing else should change. (These are 0.25 / 0.5 of the 30
+    target — they move with it.)
+16. **AI hunts.** Watch an AI Sparrow for a minute: it should sweep one room, actually shoot
     creatures, then move inward. If it orbits a wall without hunting, a waypoint has been moved
     onto a shell.
 17. **Danger traps are core-only.** Ram a bar on the outer and middle cages — one hit, no
