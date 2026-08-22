@@ -82,6 +82,15 @@ namespace CosmicShore.ScriptableObjects
         static SelfTrailContactConfigSO s_instance;
         static bool s_loadAttempted;
 
+        // If s_instance ever goes null after the first attempt, the latch would otherwise skip
+        // Resources.Load forever and silently serve CreateInstance code defaults.
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        static void ResetStatics()
+        {
+            s_instance = null;
+            s_loadAttempted = false;
+        }
+
         /// <summary>
         /// The fleet's one config. Falls back to an in-memory instance carrying the authored
         /// defaults above, so the rule is never silently off just because the asset is missing.

@@ -92,50 +92,53 @@ missile-blast asset is byte-unchanged), both **on** for the crystal blast.
 
 ### `requireDebuffableVictim` — the score must follow the effect
 
-An elementally immune pilot (`ResourceSystem.IsElementallyImmune`) eats the cone and keeps their
-levels: `ApplyElementalEffect` drops negative magnitudes while immune. Scoring their attacker
-would pay for something that provably did not happen — and the two effects, siblings in one
-container dispatched from one contact, would disagree about whether anything occurred.
+A pilot warded against `Explosion`-class elemental debuffs eats the cone and keeps their levels:
+`ApplyElementalEffect` drops negative magnitudes whose source class the victim is immune to.
+Scoring their attacker would pay for something that provably did not happen — and the two effects,
+siblings in one container dispatched from one contact, would disagree about whether anything
+occurred. The gate reads `victimStatus.IsImmuneToElementalDebuff(ElementalDebuffSources.Explosion)`,
+i.e. it asks about *this blast's own* debuff class rather than about a broader state.
 
 Off for a missile, because a rocket that hits you hit you whatever your immunity state.
 
-### ⚠ This collides with the Dolphin's own Time 5 — read before tuning
+### The Dolphin's own Time 5 collided with this — RESOLVED, and worth reading
 
 When this flag was written, elemental immunity was somebody else's vessel: the Sparrow while
 boosting, the Serpent while stopped. **`bleeding-edge` then landed "Drift Ward"** — Dolphin
 Time 5, `VesselElementalImmunity(condition: WhileDrifting, upgradeGate: Time)` on
-`Dolphin.prefab` — and in this mode *every pilot is a Dolphin*. So the mode's only vessel now has
-a hard counter to the mode's only scoring event, and the following is verified from the assets
-rather than inferred:
+`Dolphin.prefab` — and in this mode *every pilot is a Dolphin*. The mode's only vessel therefore
+held a hard counter to the mode's only scoring event, and worse, the counter was handed to
+whoever was **losing**:
 
 - **Drift is a HELD action.** `DriftActionSO` sets `IsDrifting` in `StartAction` and clears it in
-  `StopAction`; there is no timer. Immunity therefore lasts as long as the input is held.
+  `StopAction`; there is no timer. Immunity lasted as long as the input was held.
 - **A one-bend deficit unlocks it.** `ElementalComebackSystem` feeds `SetComebackModifier`, which
   composites into `GetEffectiveLevel`, which is what `R_VesselElementalAbilityHandler` reads to
   flip an unlock. Dolphin Time authors `UnlockLevel: 5`, `RelockBelowLevel: 4`,
   `LatchPolicy: Relock`. At the shipped rate: base level 1 (0.1) + one bend behind
   (1 × 4.0 ⁄ 10 = 0.4) = 0.5 → **level 5 → Drift Ward**. Falling one bend behind out of three
-  hands the trailing pilot immunity.
-- **`Relock` is the only brake**, and it only releases when the deficit closes — which in a 1v1
-  requires the leader to land a bend on a pilot who is currently immune to bends.
+  handed the trailing pilot immunity.
+- **`Relock` was the only brake**, and it only releases when the deficit closes — which in a 1v1
+  required the leader to land a bend on a pilot who was currently immune to bends.
 
-**What is NOT verified** (and must not be assumed from CLAUDE.md's summary): the *cost* of
-holding a drift. CLAUDE.md's "Locked freezes the velocity vector outright" describes the VECTOR
-flight model, and `Dolphin.prefab` authors `vectorFlightModel: 0` — the scalar model, where
-throttle pushes along `Course`. Whether a permanently drifting Dolphin is genuinely unable to
-manoeuvre (and therefore unable to score either, making this a stalemate rather than a dominant
-strategy) is a **playtest question**, not something this doc should claim.
+**The resolution was a platform change, not a mode setting** — this doc's own lever 3, which then
+read "no mechanism exists for that today". The mechanism is that an elemental debuff now carries
+its **source class** (`ElementalDebuffSources`) and a ward is held against a **mask** of classes.
+The Drift Ward was authored to answer *danger prisms* — drifting through your own hazardous arena —
+so it now wards `DangerPrism` and nothing else (`Dolphin.prefab` → `wardedSources: 1`). Danger
+ribs still can't drain a drifting Dolphin; another pilot's cone always can. The two other levers
+were rejected on the record: lowering the comeback rate trades one dead dial for another, and
+turning `requireDebuffableVictim` off breaks the "score must not disagree with the effect"
+property the flag exists for.
 
-Three levers exist if it does read as degenerate, in increasing order of violence to the design:
+Full rationale and the two invariants that keep the scope honest (`All` is `~0`; an unclassified
+debuff falls in `Other`): `_Scripts/Controller/Vessel/R_VesselActions/SPARROW_AFTERBURNER.md` §1.1.
 
-1. **Lower the comeback rate** so one bend no longer reaches level 5 — but the generator's guard
-   (correctly) rejects a rate low enough to matter, so this trades one dead dial for another.
-2. **Turn `requireDebuffableVictim` off**, so a bend scores even against an immune pilot. Cheapest
-   fix, and it breaks the "score must not disagree with the effect" property this flag exists for.
-3. **Gate the ward out of this mode.** No mechanism exists for that today and inventing one is a
-   platform change, not a mode setting.
-
-Do not pick one from a desk. This needs one match.
+**Still a playtest question** (and never claimed here): the *cost* of holding a drift. CLAUDE.md's
+"Locked freezes the velocity vector outright" describes the VECTOR flight model, and
+`Dolphin.prefab` authors `vectorFlightModel: 0` — the scalar model, where throttle pushes along
+`Course`. Whether a permanently drifting Dolphin can manoeuvre at all is unchanged by this fix and
+still unmeasured; it now only affects how the Dolphin flies, not whether it can be scored on.
 
 ### `requireOwningMachine` — a networking fix, not a design choice
 
@@ -293,17 +296,130 @@ It is deliberately a **separate** hook from `SetExternalTargetProvider` because 
 different questions: the steering hook decides where the AI **goes**, this one decides what it
 **aims at** once it is already going somewhere.
 
-`BendsController.ArmAimHooks` then gives each AI the nearest opposing pilot, with:
+`BendsController.ArmAimHooks` then gives each AI an opposing pilot, with:
 
-- **lead** (`aiAimLeadSeconds`, 0.35) along the rival's own course, because the cone has real
-  length and a blast put where someone *was* is a miss;
-- a **range gate** (`aiAimMaxRange`, 900) past which the provider returns `null` and the platform
-  default resumes. This matters more than it looks: aiming at an unreachable pilot would stop the
+- **intercept lead** along the rival's own course, sized by the blast wavefront's real travel
+  time (see the 2026-08-21 pass below) plus `aiAimLeadSeconds` (0.35) of padding;
+- a **range gate** (`aiAimMaxRange`, 2400 — the cone's authored reach; it shipped at 900 and
+  the AI declined shots it could have made) past which the provider returns `null` and the
+  platform default resumes. This matters more than it looks: aiming at an unreachable pilot would stop the
   AI clearing forest, and clearing forest is how it banks the energy for the next shot.
 
 `DisarmAimHooks` runs on despawn, on game end and on replay reset. It is not optional bookkeeping:
 the provider closes over the controller and over an `IPlayer`, and AI players are spawned
 `destroyWithScene: false`, so a hook left armed would outlive the match that installed it.
+
+### 2026-08-19 — the loop closes, and the AI announces its aim
+
+The pieces above gave the AI the *middle* of a behaviour loop. Two of the four beats were missing,
+and both were fixed in `AIPilot` rather than here, because neither is about this mode:
+
+**It now announces the commit.** While the AI is drifting AND its course is locked on its
+objective, it holds the vessel's aim telegraph — the Dolphin's **Echo Sight** — so every other
+player sees the cone it is lining up, in the AI's own domain colour. That window is exactly the
+commit: the course is locked, so the direction of the eventual blast is already decided;
+announcing before it would be a lie and announcing after it would be pointless.
+
+Two things had to be true for that to work, and neither was:
+
+1. **The press had to travel.** An AI pilot runs on the SERVER ONLY, and its existing inputs go
+   straight to the local `PerformShipControllerActions`. That is right for the drift — the drift
+   moves the vessel and the transform replicates, so peers see the result without being told the
+   cause — and wrong for an ability whose entire output is photons. Hence
+   `R_VesselActionHandler.PerformShipControllerActionsReplicated`, and the rule that goes with it:
+   *replicate an AI's press when the ability's output does not already ride some other replicated
+   channel.*
+2. **The shape had to be published by the OWNER, not by the local pilot.** An AI vessel is owned
+   by the host and is nobody's local pilot, so `NetEchoSightShape` was never written for it and its
+   sight could not have drawn on any machine — including the host's own, which reads the value back
+   out of the same NetworkVariable. Fixed in `EchoSightActionExecutor` (see
+   `DOLPHIN_CRYSTAL_SEEDING.md` §15); it is a bug the human path could never have surfaced, because
+   there owner and local pilot are the same machine.
+
+**It now re-seeks when the commit ends.** The "course left the objective" branch already stopped
+the drift; it did not pick a new target. `UpdateCellContent` is driven by the cell's
+`OnCellItemsUpdated` — a *crystal* event, not a *this pilot needs a new goal* event — so an AI that
+overshot, or whose crystal someone else took, kept circling a target it could no longer reach until
+the cell happened to raise. It now re-seeks once per commit cycle (latched, because `IsDrifting`
+does not fall on the frame the control is released).
+
+Neither change is Bends-specific: both land in `AIPilot`, so **Rampage gets them for free**, which
+is the intent — there the same AI announces the same commit while its nose stays on the forest.
+
+### 2026-08-21 — the AI learns to actually hit, and to hunt the human
+
+Playtest verdict on the loop above: the AI drifts, announces, fires — and misses, and mostly at
+other bots. Two causes, both in the mode's own aim provider, both fixed there
+(`BendsController`; `AIPilot` is untouched):
+
+**The lead was flat while the weapon is slow.** The cone's axial growth is
+`height × sin(t/duration × π/2)` (`AOEConicExplosion`: 2400 u over 2.7 s), so the wavefront
+reaches a rival at range ~1–2 seconds after the blast fires — and the old lead was a flat
+0.35 s of the rival's travel. Simulated miss distance against a perpendicular mover at 60 u/s:
+**99 u at range 1500, 252 u at 2200 for a 150 u/s rival** — far outside the beam's ~3.81°
+half-angle at that range. The provider now leads by the wavefront's real arrival time —
+`WavefrontLeadTime`, the INVERSE of the sin ease: `(2·duration/π)·asin(d/reach)` — refined with
+a second intercept pass, plus `aiAimLeadSeconds` as padding. Residual aim offset is a constant
+`rivalSpeed × padding` (~21 u at cruise), and it is an OVERLEAD by construction, which is the
+safe side: an overled rival flies *into* the persisting cone, an underled one flies away from
+it. The reach and duration are mode-side mirrors of the prefab's authored values
+(`aiAimBlastReach` 2400 / `aiAimBlastDuration` 2.7) — the same arrangement `aiAimMaxRange`
+already uses, and the same drift risk: retune them with the prefab.
+
+**Nearest-opponent aimed at bots.** In a backfilled lobby the nearest opposing pilot is usually
+another AI, so the human could watch a whole match of bots bending each other.
+`FindNearestOpponent` now prefers HUMAN rivals by `aiAimHumanFocus` (3): a human reads as three
+times closer than they are, so an AI rival must be dramatically closer to steal the aim. The
+range gate still tests TRUE distance, so the preference can never point the nose at a pilot the
+blast cannot reach — and when the human genuinely is out of the picture, the AI still fights
+whoever is there rather than idling.
+
+All the aim dials are authored in the scene by `author_bends_assets.py` — which this pass also
+re-synced: the generator still emitted `aiAimMaxRange: 900` after the scene was fixed to 2400,
+so a re-run would have silently reverted the range fix (`--check` had been failing on exactly
+that). It now emits the full block (`aiAimBlastReach: 2400` / `aiAimBlastDuration: 2.7` /
+`aiAimHumanFocus: 3` / `aiAimMaxRange: 2400`) and `--check` passes again. `aiAimHumanFocus: 1`
+restores pure-nearest if the preference reads as unfair in playtest.
+
+### 2026-08-22 — the real reason it never hit: the ability cycler was killing the commit
+
+Playtest of the pass above: five matches, the AI never landed a bend — it "roams around the
+player, tries to aim, always fails". The aim math was fine; the commit never survived to the
+shot, and the cause was not in this mode at all.
+
+`AIPilot` blind-cycles its authored abilities on independent `Duration`/`Cooldown` clocks
+(2 s on / 2 s off on the Dolphin), and the Dolphin's three cycled abilities are exactly the
+trio bound to the commit control (`LeftStickAction`: drift + charge boost + drift trail).
+`DriftActionSO.StopAction` acts on the SHARED per-vessel executor regardless of who started
+the drift, so the cycler's stop tick — at most 4 s away, on average 2 s, against a 2.5 s
+approach run — ended the commit drift mid-approach in nearly every attempt. The failure
+cascades perfectly into what the playtest saw:
+
+1. the drift drops → the scalar flight model re-derives `Course` from the nose — which the
+   aim had pointed AT THE PLAYER — so the AI lurches toward the player (the "roams around
+   me"), the commit condition breaks, and it re-seeks;
+2. when the vessel eventually touches the crystal it is usually NOT drifting, so the blast
+   fires along a nose that is back to steering at the crystal — straight into the forest;
+3. independently, the cycler's own random 2 s drifts LOCKED the course while active, so the
+   AI could not steer at all for half of every cycle — degrading crystal approaches
+   everywhere, in every mode with a Dolphin AI.
+
+The fix is in `AIPilot.StartAIPilot`, platform-side: a pilot with `drift` enabled — i.e. one
+whose commit loop manages the drift tactically — no longer blind-cycles any ability bound to
+the commit control (resolved live via `R_VesselActionHandler.CollectBoundActions` against the
+authored assets, captured in `AIAbility.SourceAsset` before Initialize swaps in per-AI
+copies). The commit loop starts and stops that trio itself; everything else still cycles. Two
+consequences worth knowing: the Dolphin AI now drifts ONLY during commits (its drift boost
+charges during approaches rather than on a wall clock — and discharges on the blast, since
+`EndDrift` starts the discharge), and the cycler's accidental role as a stale-commit watchdog
+is covered by the existing "course left the objective" branch, which fires within a beat of an
+overshoot because the dot test flips sign as the vessel passes its steer point.
+
+General lesson, same family as the shared-executor traps: **a blind actuator and a tactical
+controller must not drive one control.** The cycler predates the commit loop; when the commit
+loop took ownership of the drift, nobody took the drift away from the cycler, and the two
+fought at 0.25 Hz forever after. Rampage inherits this fix for free, like the rest of the
+commit loop.
 
 ---
 
@@ -462,9 +578,13 @@ editor and a real lobby.
 5. **Immunity** — confirm a bend on an elementally immune pilot scores nothing.
 6. **Double catch** — a blast that engulfs two opponents scores 2, i.e. two thirds of the match.
 7. **Growth window** — a cone that engulfs one opponent for a second or more scores 1, once.
-8. **AI aim** — watch an AI collect a crystal with a rival within 900 u and confirm it drifts its
-   nose toward the rival rather than toward the forest; beyond 900 u confirm it goes back to
-   grazing.
+8. **AI aim** — watch an AI collect a crystal with a rival within 2400 u and confirm it drifts
+   its nose toward the rival rather than toward the forest; beyond 2400 u confirm it goes back
+   to grazing. Since the 2026-08-21 pass, also confirm (a) the nose leads a crossing rival by a
+   visibly larger margin at long range than at short (the wavefront intercept), (b) a blast
+   aimed from mid-range actually lands on a rival flying a straight line, and (c) with a human
+   and an AI rival both in range, the AI's cone comes for the HUMAN unless the AI rival is much
+   closer (`aiAimHumanFocus`).
 9. **End + replay** — run a match to 3, confirm the scoreboard's secondary line reads `N bends`
    with the right counts on every peer, then replay and confirm everyone starts at 0.
 
@@ -478,12 +598,26 @@ editor and a real lobby.
 - **`BendsObjectiveProvider` is not wired into the scene**, exactly like `DogFightObjectiveProvider`
   — the objective-marker HUD element has no host in these scenes yet. The provider is correct and
   ready for whichever one lands first.
-- **The Drift Ward interaction above is the branch's top open risk** and is deliberately shipped
-  un-tuned — see that section. It landed on `bleeding-edge` after this mode was built and is a
-  balance question a single playtest answers.
+- ~~**The Drift Ward interaction is the branch's top open risk**~~ — **RESOLVED** by scoping the
+  ward to `ElementalDebuffSources.DangerPrism`, so a drifting Dolphin is warded against the arena
+  and never against another pilot's cone. See the section above. What remains open there is only
+  the unrelated flight-model question (can a permanently drifting Dolphin manoeuvre at all), which
+  one playtest answers.
 - **The debuff magnitude is Rampage-era.** `-0.5` on every element over 4 s was authored for a
   blast that never touched a pilot; it has never been play-tested as a *scored* quantity. If a
   bend reads as too weak to be worth aiming for, that asset is the dial — not the point value,
   which sizes the race rather than the feel. At a 3-bend target this cuts both ways: the debuff
   now has to carry a whole third of the match, so if it reads as a shrug the mode reads as a
   coin flip.
+  **⚠ That dial is SHARED, and its name hides it.** The asset this mode wired
+  (guid `1587fc14…`) was renamed to `ScarabCavitationDebuffByExplosionEffect.asset` by the
+  Scarab branch, which then referenced the same asset from
+  `ScarabCavitationExplosionImpactorDataContainer` — so ONE
+  `VesselElementalDebuffByExplosionEffectSO` now voices both the Scarab's cavitation blast and
+  the Dolphin's crystal cone. GUID references follow a rename silently, so nothing flagged it and
+  the Dolphin's own container (`AOEConicExplosionImpactorDataContainer`, untouched since this
+  mode wired it) still points at it. **Retuning the bend retunes the Scarab, and a maintainer
+  reading the asset NAME would reasonably believe the opposite.** Fix by forking a
+  `BendsDebuffByExplosionEffect.asset` for this mode's container before the first tuning pass —
+  the values are identical today (`-0.5` / `4 s` / `1 s` cooldown), so the fork is free right now
+  and expensive after either mode moves.

@@ -843,6 +843,11 @@ namespace CosmicShore.Gameplay
         const int BulkTransportCreationCompletionsPerFrame = 64;
         static int s_bulkTransportsInFlight;
 
+        // A play exit mid-transport skips the caller's finally, pinning the raised budget on
+        // forever once domain reload no longer clears it.
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        static void ResetBulkTransportStatics() => s_bulkTransportsInFlight = 0;
+
         /// <summary>Open a bulk-transport bracket (raises the per-frame creation-completion
         /// budget). ALWAYS pair with <see cref="EndBulkTransport"/> in a finally.</summary>
         public static void BeginBulkTransport() => s_bulkTransportsInFlight++;

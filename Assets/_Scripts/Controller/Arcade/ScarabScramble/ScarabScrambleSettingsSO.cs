@@ -53,12 +53,6 @@ namespace CosmicShore.Gameplay
         [Tooltip("Seconds a hoop's ring flares after a goal (feedback only, every peer).")]
         [Min(0.1f)] public float hoopFlareSeconds = 1.2f;
 
-        [Header("Balls")]
-        [Tooltip("Live-ball cap per PLAYER, enforced per DOMAIN at forge time (cap x domain " +
-                 "roster = that team's ceiling). At the cap a crystal simply collects " +
-                 "normally — the forge quietly declines, nothing is culled or expired.")]
-        [Min(1)] public int ballsPerPlayer = 2;
-
         [Header("Fauna (the cleanup crew waits outside the court)")]
         [Tooltip("Hold the cell's fauna outside the court while the cell is Calm (the Astro " +
                  "League pattern): FaunaExclusionRadius sweeps to the court radius, and drops " +

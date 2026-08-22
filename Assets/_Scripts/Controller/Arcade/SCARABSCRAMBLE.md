@@ -13,7 +13,7 @@ with a single sentence and be scoring inside their first minute.
 pipeline as every other domain minigame. The design record it lands is
 `R_VesselActions/SCARAB.md` — this mode answers its open question §15.11 as "**a second
 mode** that shares the arena machinery", and ships the §4.2–§4.5 mode-side ball work
-(permanent ownership, multi-ball, per-ball attribution, a forge cap).
+(permanent ownership, multi-ball, per-ball attribution, a ball ceiling).
 
 **Key architectural facts:**
 
@@ -78,21 +78,31 @@ platform-law) shaped the final rule set:
    resource you can waste is the wrong feel for a beachhead mode). The sphere physics also
    manufactures the mode's signature moment — the multi-carom **bank goal** — which the
    controller celebrates by bounce count (`ScarabScrambleBankGoal` toast, "BANK x{n}").
-7. **The cap OVERLOADS, never culls, and never silently.** Live balls are capped per DOMAIN
-   (`ballsPerPlayer × roster`). At the cap the crystal still forges — and then every ball on
-   the court detonates, the one just made included. Nothing is expired on a clock (§15.5: an
-   expiry would be an imposed clock); the removal is caused by a player taking one crystal
-   too many, and the capped pilot gets a targeted toast, because a silent gate is
-   indistinguishable from a broken feature. Same event and same shared detonation as the
-   nucleus overload (SCARAB.md §4.6).
+7. **The CELL overloads, never culls, and never silently.** A **CELL** holds at most
+   `AstroLeagueBall.cellBallLimit` (4) loose balls: when a fourth enters one, every loose
+   ball in that cell detonates **regardless of domain**, the arriving one included
+   (`TickCellMembershipServer` → `DetonateAllLooseInCellServer` → `CellOverload_ClientRpc`,
+   so it is one networked event every peer sees, not N unrelated bursts). Nothing is expired
+   on a clock (§15.5: an expiry would be an imposed clock) — the removal is caused by a
+   player putting one ball too many into the cell. Same shared detonation as the nucleus
+   overload (SCARAB.md §4.6).
+
+   It replaced a per-DOMAIN cap enforced at FORGE time (`ballsPerPlayer × roster`, now
+   deleted from `ScarabScrambleSettingsSO`), and the reason is general: **a rule enforced at
+   one PRODUCER can only ever see that producer.** A ball enters play two ways — forged from
+   a crystal, or knocked loose out of the nucleus — so a forge-time gate was blind to half
+   of them. Counting what is actually IN the cell notices every route by construction, and
+   the count a player can see (balls in front of them) is the count the rule uses. It also
+   stops being arbitrary: the old cap fired at 2 balls for a solo pilot while the same court
+   happily held 6. The toast is court-wide and names nobody, because the event is.
 
 ## Class inventory
 
 | Class | Role |
 |---|---|
-| `ScarabScrambleController` | Match director: court/hoop build on every peer (resolved-geometry NVs), forge policy hooks (`ScarabBallForge.ForgeGate` cap + `OnForged` adoption: ownership lock, boundary handoff, forger ledger), hoop scoring + arming gate + toast beats (goal / bank / match point / lead change / cap), AI rollers, fauna exclusion sweep, final-score snapshot |
+| `ScarabScrambleController` | Match director: court/hoop build on every peer (resolved-geometry NVs), forge adoption (`ScarabBallForge.OnForged`: boundary handoff, forger ledger), hoop scoring + arming gate + toast beats (goal / bank / match point / lead change / cell overload), AI rollers, fauna exclusion sweep, final-score snapshot |
 | `ScarabScrambleHoop` | One scoring ring: ToyFactory ring body (the toy "portal you thread" shape language), bloom-in (continuity law; detection live at full radius from t=0 — state final at start, photons animate), per-ball segment-crossing detection vs `AstroLeagueBall.Live` (either direction, teleport-guarded), MPB flare on goals |
-| `ScarabScrambleSettingsSO` | Court/hoop/cap/AI/fauna-exclusion tunables (per-intensity lists) |
+| `ScarabScrambleSettingsSO` | Court/hoop/AI/fauna-exclusion tunables (per-intensity lists). The ball ceiling is **not** here — it is `AstroLeagueBall.cellBallLimit` on the ball prefab, because it is a per-CELL platform rule, not a mode policy |
 | `ScarabScrambleScoringRuleSO` | Thin subclass of the AL rule so the mode owns its asset |
 | `ScarabScrambleGoalTurnMonitor` | DogFight-shape monitor: resolves the goal target from `EndConditionOverridesSO`, NV-syncs it, publishes `GameDataSO.GoalTargetCount`, ends the turn via `rule.IsObjectiveReached`, shows the local DOMAIN's deficit |
 | `ScarabScrambleObjectiveProvider` | HUD arrow: nearest own-domain live ball, else nearest FORGE-SOURCE crystal (omni only — `ScarabScrambleController.IsForgeSource`; pointing a new player at an elemental heart teaches the wrong first lesson). Wired via the `MiniGameHUD.CreateObjectiveProviderForGameMode` case |
@@ -104,10 +114,11 @@ platform-law) shaped the final rule set:
 | `ScarabScramble = 43` | `_Scripts/Data/Enums/GameModes.cs` (+ `EnumIntegrityTests` count → 42; that assertion had drifted to 33 while the enum grew, so it was already failing before this branch) |
 | Ownership lock + touch ledger (`LastTouchDomainServer` / `LastToucherNameServer` / `WallBouncesSinceTouchServer`) + juke-steal + `SpendServer` + birth bloom + **`n_SizeScale`** | `AstroLeague/AstroLeagueBall.cs` (+ `spawnBloomSeconds` on `AstroLeagueSettingsSO`) |
 | `n_SizeScale` fixes a confirmed pre-existing bug this mode made live: `SetSizeScale` ran server-side after the spawn payload was built, so a SPACE-scaled forged ball rendered — and prism-scanned — at prefab size on every remote peer | same |
-| `ForgeGate` (mode cap policy) + `OnForged` (mode adoption) + both forge paths routed through `Request` | `R_VesselActions/ScarabBallForge.cs`, `EffectsSO/Skimmer Crystal Effects/ScarabBallForgeBySkimmerCrystalEffectSO.cs` |
+| `ForgeGate` (mode policy hook, no longer used by this mode) + `OnForged` (mode adoption) + both forge paths routed through `Request`; skimmer forge gated to **omni crystals only** | `R_VesselActions/ScarabBallForge.cs`, `EffectsSO/Skimmer Crystal Effects/ScarabBallForgeBySkimmerCrystalEffectSO.cs` |
+| Per-CELL ball limit: `cellBallLimit` / `cellOverloadRadiusScale` / `cellPollSeconds`, `IsLooseIn` / `CountLooseInCell` / `DetonateAllLooseInCellServer`, `CellOverload_ClientRpc` + `static event OnCellOverload` | `AstroLeague/AstroLeagueBall.cs` |
 | `IsJukeStrikeWindowOpen` (the steal window) | `Vessel/ScarabJukeController.cs` |
 | `scarabScrambleGoalTarget` live/build/getter, default 10 | `EndConditionOverridesSO` + window + `Resources/EndConditionOverrides.asset` |
-| `GameToastSituation` 60–66 (goal, match point, lead change, forge hint, roll hint, bank goal, ball cap) | `_Scripts/Data/Enums/GameToastSituation.cs` |
+| `GameToastSituation` 63–69 (goal, match point, lead change, forge hint, roll hint, bank goal, cell overload) | `_Scripts/Data/Enums/GameToastSituation.cs` |
 | `case GameModes.ScarabScramble → Goals` | `ElementalComebackSystem.DefaultSourceFor` + `ElementalComebackSystemTests.LiveSourceCases` |
 | Objective-provider case | `_Scripts/UI/MiniGameHUD.cs` |
 
@@ -123,22 +134,35 @@ it off — but because Scramble's court *is* the nucleus, the two meet:
 - Balls knocked **outward** leave through the wall into the cytoplasm and bounce around out there
   for fun. They are outside the court, so they cannot reach a hoop and cannot score — which is the
   intended "just for fun" reading, achieved by geometry rather than by a rule.
-- **Embedded balls are excluded from the mode's forge cap** (`CanForge` skips
-  `IsEmbeddedOnNucleus`). Counting them would let a passive vessel behaviour quietly starve the
-  crystal forge, refusing a pilot a ball because of balls they never made and cannot yet reach.
+- **Embedded balls are excluded from the cell count** (`AstroLeagueBall.IsLooseIn` requires
+  `!n_Embedded && !n_Hidden`). A ball studded into the nucleus wall is not yet in play — counting
+  it would let a passive vessel behaviour overload the court with balls nobody put there. It joins
+  the count the moment it is knocked LOOSE, which is also the moment a player can see it.
 - The **overload** (one ball too many banked inside the nucleus) detonates every live ball,
   including the court's scoring balls. It is rare, player-caused and loud — but if playtest finds
   it too punishing for a beachhead mode, the dial is `detonateAllLiveBalls` on
   `Resources/ScarabNucleusFieldConfig`, which narrows it to the banked balls only. Do not add a
   mode-local suppression: the ability is platform behaviour and Scramble is not entitled to a
   private exception.
-- **The mode's own ball cap detonates through the same path.** `CanForge` allows the forge at the
-  cap and flags an overflow; `HandleBallForged` then calls the shared
-  `AstroLeagueBall.DetonateAllLiveServer`, so a cap overload and a nucleus overload are
-  indistinguishable on screen — which is the point, because to a player they are the same mistake.
+- **The CELL overload detonates through the same shared path.** `TickCellMembershipServer` counts
+  the loose balls in the cell a ball just entered and, at `cellBallLimit`, calls
+  `DetonateAllLooseInCellServer` — the same per-ball `DetonateWithRadiusServer` the nucleus
+  overload uses — so a cell overload and a nucleus overload are indistinguishable on screen, which
+  is the point: to a player they are the same mistake. The difference is scope: the nucleus
+  overload is about balls banked in the wall, the cell overload about balls loose in the room.
 
 ## Known limitations / follow-ups
 
+- **The cell overload is POLLED, not evented** (`AstroLeagueBall.cellPollSeconds` 0.2). A ball
+  entering a cell is noticed within 200 ms, so four balls arriving inside one poll window all
+  detonate on the same tick — which is the intended outcome anyway. There is no cell-entry
+  event to subscribe to; adding one is a `Cell` change, not a ball change, and is not worth it
+  for a rule whose whole job is to fire once.
+- **`ScarabBallForge.ForgeGate` is now installed by nobody.** The per-domain forge cap that used
+  to live there was replaced by the per-CELL limit on the ball, and the hook was kept rather than
+  deleted because it is the only place a future mode can gate FORGING specifically (as opposed to
+  bounding a population, which is what it was wrongly used for). If nothing claims it by the next
+  Scarab pass, delete it — an unused policy slot invites the same misuse again.
 - **The juke-steal works for remote clients** via `ScarabJukeController.NotifyJukeFired_ServerRpc`
   (the controller is now a `NetworkBehaviour`; a fire mirrors onto the server's replica, so
   `IsJukeStrikeWindowOpen` is true where the ball's strike path actually runs). The window
@@ -177,6 +201,33 @@ it off — but because Scramble's court *is* the nucleus, the two meet:
   and must never be copied). Run FrogletTools ▸ Ecology ▸ Measure Cell Environment
   Baselines and retune after the first playtest; Restless is the fauna-release gate and
   the mode's primary ecology pacing dial.
+  ⚠ **RE-AUTHORED BUILD-PACED (2026-08-19), because that estimate counted TRAIL only and
+  the switch dais dwarfs it.** Every pilot here is a Scarab, so every pilot carries
+  `PlaceSwitchAction`, and a struck switch pays out **50,773 volume across 255 prisms**
+  (`SCARAB.md` §5.1) — 4× the old `FrenzyEnterVolume`. The FIRST payout of a match
+  crossed both gates at once, so the cleanup crew was released and the cell pinned at
+  Frenzy for the rest of the match; with no flora here the production freeze costs
+  little, but the ladder stopped carrying information after the first strike. The mode
+  now paces off what the players have **built**, the same way Astro League's does:
+
+  | gate | was (trail only) | now | = |
+  |---|---|---|---|
+  | `RestlessEnterVolume` | 12,000 | **164,000** | trail band + 3 spent switches |
+  | `RestlessExitVolume` | 11,000 | **162,000** | |
+  | `FrenzyEnterVolume` | 36,000 | **391,000** | trail band + 7 spent switches |
+  | `FrenzyExitVolume` | 32,000 | **388,000** | |
+  | `RestlessEnter` (count backstop) | 900 | **2,180** | + 3 × 255 prisms × the ~1.6× headroom the old gates carried |
+  | `RestlessExit` | 800 | **2,080** | |
+  | `FrenzyEnter` (count backstop) | 3,000 | **5,810** | + 7 × 255 prisms × headroom |
+  | `FrenzyExit` | 2,600 | **5,600** | |
+
+  ⚠ **The stated cost: Restless no longer fires from trail alone**, and Restless is this
+  mode's fauna-release gate. A match in which nobody strikes a switch will sit in Calm far
+  longer than the original authoring intended. That was the accepted trade against a
+  ladder that conveyed nothing after the first strike — it is the FIRST thing to re-check
+  at the playtest this bullet already schedules, and the alternative (keep the trail band
+  and simply refuse to let a dais satisfy Restless) is a one-line revert of the two
+  Restless rows. `SCARAB.md` §8 carries the same table from the other side.
 - **Toast copy claims "bumping enemy balls is always safe"** — true for scoring (the
   arming gate) and for ownership (bumps never recolor); a shielded own-ribbon deflects
   (`prismCaromRestitution 1`) rather than "eats momentum". Copy uses "deflect" where it
@@ -206,8 +257,9 @@ by `MaxLivePopulation` (8+4+22).
    (Mono Script)); the Game GO carries ScarabScrambleController + ScarabScrambleGoalTurnMonitor.
 2. **Enter play (solo + AI backfill, intensity 1)**: court sphere ≈480 blooms as the
    nucleus; four rings bloom in facing the centre; crystals appear inside the court.
-3. **Forge**: fly through a bright crystal → a ball of your colour GROWS in ahead of you
-   carrying your velocity (no pop). HUD arrow points at it.
+3. **Forge**: fly your SKIMMER through a bright (omni) crystal → it becomes a ball of your
+   colour, in place and at rest, and the hull then strikes it. An ELEMENTAL crystal is NOT
+   converted — it collects normally and levels that element. HUD arrow points at the ball.
 4. **Score**: push it through any ring from either side → ring flares, ball detonates,
    toast `{name} rings one home - n/10`, HUD domain sums move, play continues.
 5. **Arming gate**: push an ENEMY ball through a ring → nothing scores, ball sails on.
@@ -216,7 +268,9 @@ by `MaxLivePopulation` (8+4+22).
    Ordinary bump → it never converts. Works from a remote client too
    (`NotifyJukeFired_ServerRpc` opens the window on the server's replica).
 7. **Bank**: score off 2+ wall caroms → `BANK x{n}` toast.
-8. **Cap**: forge 2×roster balls → next crystal collects normally + targeted cap toast.
+8. **Cell overload**: get a 4th ball loose in the court, any mix of domains and any mix of
+   forged/knocked-loose → ALL of them detonate at once + the court-wide overload toast, on
+   every peer.
 9. **Match end**: first domain to 10 → winner banner, scoreboard, Play Again reloads.
 10. **MPPM two-client**: forged balls appear on the client at the correct SIZE (the
     `n_SizeScale` fix) and colour; goals sync; a client's juke-dash steals (the

@@ -2736,7 +2736,10 @@ crowding `ColonySeparationRadius`/`ColonySeparationWeight`.
 ## 24. Wildlife Liberation — the creatures become killable, and a pen becomes a band (Aug 2026)
 
 `GameModes.WildlifeLiberation = 40` is the Sparrow-only hunt: three concentric cages at
-1050 / 600 / 200 pen three tiers of wildlife, and the first PLAYER to kill 500 creatures wins.
+1050 / 600 / 200 divide the arena into rooms, and the first DOMAIN to kill 30 creatures between
+them wins. (The cages penned one tier of wildlife each when this section was written; §24.4
+replaced the three pens with a single arena-wide roam band, and the win condition has been a
+domain race since shortly after bring-up.)
 Full mode reference: `_Scripts/Controller/Arcade/WILDLIFE_LIBERATION.md`. Two of its changes are
 **platform ecology** and belong here.
 
@@ -2855,13 +2858,75 @@ Offspring inherit their parent's band for free: they bind the same config.
 
 ### 24.3 Collider budget
 
-The mode's arena is 9,206–12,870 cage prisms plus **349–593 live creatures** (up to 868 at the
-population caps, 1,436–2,426 body prisms). That creature count is ~6× any shipped biome and is
-the branch's headline performance risk — every fauna body prism is a MOVER that re-buckets in
+The mode's arena is 9,206–13,956 cage prisms plus **519 live creatures at seed, up to 1,198 at
+the population caps (4,155 body prisms)** — the roster after §24.4's 15% cut; it was 610 / 1,409
+/ 4,896. That creature count is several times any shipped biome and is the mode's headline
+performance risk — every fauna body prism is a MOVER that re-buckets in
 `PrismSpatialIndex` each frame, and every creature runs a behaviour coroutine. It is an explicit
 product decision ("very heavy", requested 2026-08), not an accident of the roster. Full table,
 the tuning dials in order of bluntness, and the on-device measurement step:
 `WILDLIFE_LIBERATION.md` § "Collider-budget impact".
+
+### 24.4 The pens come out — ONE roam band, and the volume-uniform draw (Aug 2026)
+
+The three-tier pen §24.2 built lasted one design pass. Requested 2026-08: *"all the faunas are
+set up like the big ones are concentrated in the center — make all the faunas disperse
+everywhere, do not need the layer-by-layer fauna structure."* Every species now shares **one**
+band, `SpawnableWildlifeCage.RoamInner..RoamOuter` = **0 .. 1180** — the whole arena, core to
+membrane.
+
+**§24.2's mechanism is untouched and is what makes the change one number.** The band is still a
+spatial diet + steering rule applied at the same three chokepoints; it is simply now the same
+annulus for everybody. Nothing about `Fauna.Goal`, `IsPreyForMe` or `SpawnFaunaBanded` moved.
+That is the payoff of having built the pen as a *capability* rather than as three special cases.
+
+Three things are worth carrying out of it.
+
+**1. A uniform-in-radius draw is not a dispersal — and it was half the reported bug.**
+`CellLifeSpawnerBase.RandomPointInBand` drew `Random.Range(inner, outer)`, which gives every
+radial SHELL the same headcount while a shell's space grows as r². Measured over 200k samples on
+a 0..1180 band, that puts **63% of a population inside the innermost quarter-VOLUME**; the
+volume-uniform draw (`RandomBandRadius`: cube root of a uniform draw between the cubed walls)
+gives 25.2 / 24.9 / 24.8 / 25.2. So "the big ones are concentrated in the centre" was partly the
+pens and partly the draw, and widening the band alone would have made the clumping *worse* — the
+wider the band, the more the r² error bites. It was invisible for as long as it was because every
+band ever authored was a thin annulus: 660..990 shifts its mean radius by 2.6%, 1090..1180 by
+0.1%. **This is the same finding §27 records for flora planting** (a species plants in a
+volume-uniform BAND, never on a shell), arrived at independently on the fauna side — which is the
+tell that it is a property of spheres rather than of either system.
+
+**2. The pens were paying for something, and the bill comes due.** §24.2 states it plainly: the
+bands stopped 60u short of every wall, so a creature's own cage was outside its band and
+therefore not food. One arena-wide band puts all three cages inside it, and this cell has no
+nucleus, so the legacy diet applies — herbivores eat opposing-domain mass, the bars are painted
+across the domain triad, and **the cage is now grazeable and erodes as a match runs.** That is
+the food web working rather than a defect, and it is accepted deliberately, with two mitigations
+that landed in the same pass (the kill target dropped 250 → 30, an ~8× shorter match; the
+population dropped 15%). What it must NOT be answered with is a shield: §35's reach rule makes a
+shielded prism span 1.5× its own `leafSize`, and on a 26u bar laid every 34u that fuses the
+sparse lattice into a solid tube — and it would cost the one-hit break-in the mode is built on.
+The levers, in order: raise `RoamInner` off 0, then cut `POPULATION_SCALE`.
+**General rule: when you remove a constraint, find what it was silently buying.** A pen that
+looks like a steering rule was also a diet rule, and the diet rule was also a collider-budget
+device.
+
+**3. The kill target moved 250 → 30 in the same pass, and took the comeback rate with it.**
+Not an ecology change, but it is the third recorded outing of the same trap (Dog Fight, then The
+Bends) and it belongs beside the roster numbers because it is what a population change is usually
+paired with: `bonusLevels = deficit × ComebackRatePerScoreDeficit`, so **the rate is a function of
+the target.** The card had inherited Rampage's `0.01` against a target 8× smaller, so a
+quarter-of-target deficit only ever bought 0.625 of an element level; at 30 it would have bought
+0.075. Now `0.35` (2.6 levels, matching Dog Fight's curve), with a build-time assert. **When you
+change what a mode counts to, check every number derived from that count** — milestone rungs
+scale automatically here, comeback rates do not.
+
+**4. Merging the rooms merged the ASSETS.** With no room dimension, two configs of one species
+that differed only by which room they sat in are one config; the roster went from `species ×
+room` (8 per intensity) to `species × level` (6), and `InitialLevel` is now the only thing
+separating two entries of a species. That is the honest reading of it — level was always the
+"how big is this creature" axis and the room was the "where does it live" axis, and only one of
+those still exists. The population totals were preserved exactly through the merge (610 seed /
+1409 cap) so the 15% cut applies to a number that was already play-tested.
 
 ---
 

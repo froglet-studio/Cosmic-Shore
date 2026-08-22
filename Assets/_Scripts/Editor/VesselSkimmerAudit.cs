@@ -29,11 +29,14 @@ namespace CosmicShore.Editor
     {
         const string VesselPrefabFolder = "Assets/_Prefabs/Spacevessels";
 
+        const string ToolName = "Audit Vessel Skimmers";
+
         [MenuItem("FrogletTools/Vessels/Audit Vessel Skimmers")]
         [FrogletTool(FrogletToolCategory.Vessels, Importance = 4,
             Description = "Checks every vessel's near/far skimmer reference actually reaches the " +
                           "object doing the physics — an unreachable or inactive skimmer skims " +
-                          "nothing, silently.")]
+                          "nothing, silently.",
+            DocPath = "Assets/_Scripts/Controller/Vessel/R_VesselActions/DOLPHIN_ENERGY_ECONOMY.md")]
         static void Audit()
         {
             var report = new StringBuilder();
@@ -43,6 +46,7 @@ namespace CosmicShore.Editor
             report.AppendLine();
 
             int faults = 0;
+            var findings = new List<(string title, string notes)>();
             foreach (var guid in AssetDatabase.FindAssets("t:Prefab", new[] { VesselPrefabFolder }))
             {
                 var path = AssetDatabase.GUIDToAssetPath(guid);
@@ -50,8 +54,8 @@ namespace CosmicShore.Editor
                 if (!root || !root.TryGetComponent<VesselStatus>(out var status)) continue;
 
                 report.AppendLine($"── {root.name}");
-                faults += AuditSlot(report, root, status.NearFieldSkimmer, "NearFieldSkimmer");
-                faults += AuditSlot(report, root, status.FarFieldSkimmer, "FarFieldSkimmer", optional: true);
+                faults += AuditSlot(report, root, status.NearFieldSkimmer, "NearFieldSkimmer", findings);
+                faults += AuditSlot(report, root, status.FarFieldSkimmer, "FarFieldSkimmer", findings, optional: true);
                 report.AppendLine();
             }
 
@@ -59,11 +63,31 @@ namespace CosmicShore.Editor
                 ? "No faults."
                 : $"{faults} fault(s) — a vessel listed with *** below does not skim.");
             Debug.Log(report.ToString());
+
+            // Bug Ledger integration (reference shape for auditors — Docs/DIAGNOSTICS.md):
+            // findings dedupe by (tool, title), so a re-run refreshes issues instead of
+            // duplicating them, and a FULL clean run auto-resolves the validating ones — the
+            // auditor that filed a finding is the one authority on whether it is gone. A clean
+            // run credits silently; filing new findings is the human's explicit call, because
+            // the issue files are committable data.
+            if (faults == 0)
+            {
+                BugLedger.ReportToolFindings(ToolName, findings);   // empty — resolves validated fixes
+            }
+            else if (EditorUtility.DisplayDialog("Vessel skimmer audit",
+                         $"{faults} fault(s) found (details in the console report).\n\n" +
+                         "File/refresh them in the Bug Ledger so they are tracked and " +
+                         "auto-validated by the next clean audit run?",
+                         "File in Bug Ledger", "Skip"))
+            {
+                BugLedger.ReportToolFindings(ToolName, findings);
+                DiagnosticsWindow.OpenBugLedger();
+            }
         }
 
         /// <returns>1 when this slot is a genuine fault, 0 otherwise.</returns>
         static int AuditSlot(StringBuilder report, GameObject root, Skimmer skimmer, string slot,
-                             bool optional = false)
+                             List<(string title, string notes)> findings, bool optional = false)
         {
             if (!skimmer)
             {
@@ -117,7 +141,11 @@ namespace CosmicShore.Editor
                 return 0;
             }
 
-            report.AppendLine($"   {slot}: '{go.name}' *** {string.Join("; ", problems)}");
+            var joined = string.Join("; ", problems);
+            report.AppendLine($"   {slot}: '{go.name}' *** {joined}");
+            findings.Add(($"{root.name}: {slot} does not skim",
+                          $"'{go.name}' — {joined}\n\nReported by FrogletTools ▸ Vessels ▸ {ToolName}; " +
+                          "a full clean re-run of the audit auto-resolves this issue."));
             return 1;
         }
 

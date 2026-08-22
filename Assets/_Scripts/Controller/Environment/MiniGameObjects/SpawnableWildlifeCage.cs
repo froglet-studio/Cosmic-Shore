@@ -6,8 +6,8 @@ namespace CosmicShore.Gameplay
 {
     /// <summary>
     /// The three-layer prison of <see cref="GameModes.WildlifeLiberation"/> - three concentric
-    /// cages with a very wide, empty room between each pair, and a different tier of wildlife
-    /// locked in each room.
+    /// cages with a very wide, empty room between each pair, and every tier of wildlife mixed
+    /// through all of it (see <see cref="RoamInner"/>).
     ///
     /// This is NOT Ribcage. Ribcage is a layered ORANGE whose bone IS the score - dense, tight,
     /// five rinds you scrape through. This is a JAIL: a sparse open lattice of long bars with
@@ -16,12 +16,13 @@ namespace CosmicShore.Gameplay
     /// load-bearing:
     ///
     ///   • THREE SHELLS, ALWAYS, at a fixed <see cref="ShellRadii"/> of 1050 / 600 / 200 - and
-    ///     the shell count is deliberately NOT the intensity dial the way it is in Ribcage. Each
-    ///     shell walls in one tier of creature (see <see cref="BandInner"/>/<see cref="BandOuter"/>),
-    ///     so removing a shell would remove a tier of the game rather than making it easier. The
-    ///     radial gaps are enormous on purpose - 450u between the outer and middle cages, 400u
-    ///     between the middle and the core - so each room is a place you fly INTO rather than a
-    ///     rind you pass through.
+    ///     the shell count is deliberately NOT the intensity dial the way it is in Ribcage. The
+    ///     shells divide the arena into ROOMS (see <see cref="RoomInner"/>/<see cref="RoomOuter"/>)
+    ///     a hunter breaks into; the radial gaps are enormous on purpose - 450u between the outer
+    ///     and middle cages, 400u between the middle and the core - so each room is a place you
+    ///     fly INTO rather than a rind you pass through. The rooms are architecture only: every
+    ///     species roams the whole arena (see <see cref="RoamInner"/>), so a room is a place the
+    ///     wildlife passes through, never a tier locked inside one.
     ///   • THE OPENINGS ARE TRIANGLES, from a GEODESIC (subdivided icosahedron) rather than
     ///     Ribcage's latitude hoops. That is a fairness property, not a style one: a latitude
     ///     sphere is inherently densest at its poles, which is why Ribcage has to tilt every
@@ -38,12 +39,12 @@ namespace CosmicShore.Gameplay
     /// Every bar is <see cref="PrismKind.Plain"/> except the sparse <see cref="PrismKind.Danger"/>
     /// traps salted through the CORE cage (the maximum-security room). Nothing is
     /// <see cref="PrismKind.Shielded"/> or <see cref="PrismKind.SuperShielded"/>, and that is a
-    /// COLLIDER-BUDGET decision as much as a gameplay one: a shielded prism swaps its LOD-cullable
-    /// BoxCollider for an always-on convex MeshCollider (see <see cref="PrismKinds"/>), and this
-    /// arena already spends its budget on a very heavy swarm. The cage is kept safe from the
-    /// grazers instead by the fauna BANDS, which stop ~60u short of every wall - so a creature's
-    /// own jail is outside its band and therefore not food (<c>Fauna.IsPreyForMe</c>). No shield
-    /// needed, no collider paid.
+    /// GEOMETRY decision as much as a gameplay one: a shield reaches 1.5x the prism's own leafSize
+    /// (<c>OctahedronMeshGenerator.CIRCUMSCRIBING_SCALE</c>, Docs/ECOSYSTEM.md 35), which on a 26u
+    /// bar laid every 34u would fuse this sparse lattice into a solid tube - and it would cost the
+    /// one-hit break-in the mode is built on. The cage was previously kept out of the food web by
+    /// the per-room fauna pens instead; with those replaced by one arena-wide roam band it is
+    /// grazeable, which is a deliberate, stated trade - see <see cref="RoamInner"/>.
     ///
     /// Painted across the full domain triad so the jail reads as neutral, contested structure
     /// rather than any one team's property. Deterministic per seed like every cell environment -
@@ -58,14 +59,14 @@ namespace CosmicShore.Gameplay
         // ── The arena ────────────────────────────────────────────────────────
         //
         // Fixed at every intensity, for the same reason Ribcage fixes its outer radius: the
-        // player spawn ring, the AI's aim points, the fauna bands and the arena silhouette are
+        // player spawn ring, the AI's aim points, the fauna roam band and the arena silhouette are
         // all defined against these numbers, and the membrane is 1200. Intensity varies the
         // WEAVE and the SHAPE (see ShellPlans), never the radii.
 
         /// <summary>Outer / middle / core cage radii. Index 0 is the outermost.</summary>
         public static readonly float[] ShellRadii = { 1050f, 600f, 200f };
 
-        /// <summary>Number of cages. Fixed - one per wildlife tier.</summary>
+        /// <summary>Number of cages. Fixed - one per room a hunter breaks into.</summary>
         public const int ShellCount = 3;
 
         /// <summary>
@@ -75,36 +76,69 @@ namespace CosmicShore.Gameplay
         public const float OuterRadius = 1050f;
 
         /// <summary>
-        /// Clearance the fauna bands keep from each wall. A creature's band stops short of its
-        /// own cage so the cage is never inside its band and therefore never food - which is
-        /// what lets every bar stay a cheap plain prism instead of a shielded one (see the
-        /// summary's collider-budget note).
+        /// Clearance a room's usable interior keeps from each wall, so a point described as
+        /// "in this room" is never sitting on a bar.
         /// </summary>
-        public const float BandWallClearance = 60f;
+        public const float RoomWallClearance = 60f;
 
         /// <summary>
-        /// Inner radius of the band belonging to <paramref name="shell"/>'s room - the shell
-        /// below it plus clearance, or 0 for the core (whose room reaches the centre).
-        /// Authored here rather than on the fauna assets so the pens and the walls cannot drift.
+        /// Inner radius of <paramref name="shell"/>'s room - the shell below it plus clearance,
+        /// or 0 for the core (whose room reaches the centre).
+        ///
+        /// This is the cage's ARCHITECTURE and nothing else: the rooms still exist, because the
+        /// three cages still divide the arena into them. What it is NO LONGER is a fauna pen -
+        /// see <see cref="RoamInner"/>. Its one live consumer is the AI hunters' patrol, which
+        /// steps through the rooms to sweep the arena radially.
         /// </summary>
-        public static float BandInner(int shell) =>
+        public static float RoomInner(int shell) =>
             shell == OpenWaterRoom ? OpenWaterInner
-            : shell + 1 < ShellCount ? ShellRadii[shell + 1] + BandWallClearance
+            : shell + 1 < ShellCount ? ShellRadii[shell + 1] + RoomWallClearance
             : 0f;
 
         /// <summary>Outer radius of <paramref name="shell"/>'s room - just inside that shell.</summary>
-        public static float BandOuter(int shell) =>
-            shell == OpenWaterRoom ? OpenWaterOuter : ShellRadii[shell] - BandWallClearance;
+        public static float RoomOuter(int shell) =>
+            shell == OpenWaterRoom ? OpenWaterOuter : ShellRadii[shell] - RoomWallClearance;
+
+        /// <summary>
+        /// THE fauna band, and there is exactly one: every species in this biome roams the WHOLE
+        /// arena, from the core out to just inside the membrane.
+        ///
+        /// It replaces the three-tier pen this mode shipped with, where each species was banded
+        /// to one room - the outer swarm on the outer shell, the mid tier in the middle, the
+        /// biggest creatures locked in the core. That read as three separate aquariums stacked
+        /// around a boss room, so the fight converged wherever a player broke in, and the apex
+        /// creatures were only ever findable in one place. Mixing every tier through one volume
+        /// is what makes the mode a HUNT: what you meet next is a roll, not a radius.
+        ///
+        /// Still a spatial DIET + STEERING rule, never a wall (Docs/ECOSYSTEM.md 22) - it is
+        /// simply now the same rule for everybody, and wide enough that its only real job is
+        /// keeping creatures off the membrane.
+        ///
+        /// THE COST, stated because the pens were what paid for it: a room-banded creature could
+        /// not reach its own cage, so every bar was safely outside the food web. One arena-wide
+        /// band puts all three cages inside it, and in a nucleus-less cell herbivores eat
+        /// opposing-domain mass - so the triad-painted bars are now grazeable and the cage erodes
+        /// as a match runs. That is the food web working, not a bug, and shielding the bars is
+        /// NOT the answer: a shield reaches 1.5x leafSize (Docs/ECOSYSTEM.md 35), which at a 34u
+        /// bar step would fuse this sparse lattice into a solid tube and cost the one-hit
+        /// break-in the mode is built on. If playtest says the erosion is too fast, raise
+        /// <see cref="RoamInner"/> off 0 or cut the population - do not shield the cage.
+        /// </summary>
+        public const float RoamInner = 0f;
+
+        /// <summary>Outer wall of the fauna roam band - just inside the 1200u membrane.</summary>
+        public const float RoamOuter = 1180f;
 
         /// <summary>
         /// The OPEN WATER outside the outer cage, between it and the 1200u membrane - a fourth
         /// room, indexed <see cref="OpenWaterRoom"/>.
         ///
         /// It exists because the first pass put every creature inside the cages and every fight
-        /// therefore converged on the middle of the arena. Stocking the open water means there
-        /// is something to shoot from the moment you spawn (the player ring sits at 1150, INSIDE
-        /// this band), so the hunt starts spread out and breaking into a cage becomes a choice
-        /// rather than the only way to score.
+        /// therefore converged on the middle of the arena. It is now the outermost slice of the
+        /// single roam band rather than a room of its own, but the property that mattered still
+        /// holds: the player ring sits at 1150, inside it, so there is something to shoot from
+        /// the moment you spawn and breaking into a cage is a choice rather than the only way to
+        /// score. <see cref="OpenWaterOuter"/> is what <see cref="RoamOuter"/> is measured from.
         /// </summary>
         public const float OpenWaterInner = 1090f;
         public const float OpenWaterOuter = 1180f;
@@ -140,9 +174,9 @@ namespace CosmicShore.Gameplay
         /// are deliberate here.
         ///
         /// First, intensity NEVER changes the shell count - every intensity has all three rooms,
-        /// because each room is a tier of wildlife and dropping one would delete a third of the
-        /// game rather than make it easier. What rises is how tightly each cage is woven (harder
-        /// to shoot a hole through, harder to slip out of) and, from intensity 3, its SHAPE.
+        /// because each room is somewhere a hunter breaks into and dropping one would delete a
+        /// third of the arena rather than make it easier. What rises is how tightly each cage is
+        /// woven (harder to shoot a hole through) and, from intensity 3, its SHAPE.
         ///
         /// Second, the high intensities swap the outer cages to <see cref="CageForm.Boxed"/> -
         /// square-and-rectangle rail grids with corner posts. A box is a genuinely different
@@ -186,7 +220,7 @@ namespace CosmicShore.Gameplay
                  "INTENSITY DIAL: author one prefab variant per intensity and point each " +
                  "intensity's CellConfigDataSO at the matching variant (Cell picks by " +
                  "IntensityWise). Unlike Ribcage this never changes the SHELL COUNT - always " +
-                 "three cages, one per wildlife tier - only how each one is woven and shaped.")]
+                 "three cages - only how each one is woven and shaped.")]
         [SerializeField, Range(1, 4)] int intensityTier = 1;
 
         // Bar geometry. Long, sparse prisms: this is a jail of bars, not a woven bone rind, so

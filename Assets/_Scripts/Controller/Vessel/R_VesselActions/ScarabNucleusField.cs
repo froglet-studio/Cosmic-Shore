@@ -37,6 +37,16 @@ namespace CosmicShore.Gameplay
     {
         static readonly Dictionary<Cell, ScarabNucleusField> s_byCell = new();
 
+        // OnDestroy cannot remove this entry on play exit (the Cell key is already destroyed and
+        // reads fake-null), so dead keys accumulate. s_hooked clears in lockstep with
+        // AstroLeagueBall.ResetStaticEvents nulling the event — see the note there.
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        static void ResetStatics()
+        {
+            s_byCell.Clear();
+            s_hooked = false;
+        }
+
         Cell _cell;
         ScarabNucleusFieldConfigSO _config;
 
@@ -234,8 +244,9 @@ namespace CosmicShore.Gameplay
 
             if (_config.detonateAllLiveBalls)
             {
-                // The SHARED implementation, also used by the mode's forge-cap overflow, so
-                // "too many balls" produces one identical detonation wherever it is triggered.
+                // The SHARED implementation, the same beat the per-CELL overload uses
+                // (AstroLeagueBall.DetonateAllLooseInCellServer), so "too many balls" produces
+                // one identical detonation wherever it is triggered.
                 n = AstroLeagueBall.DetonateAllLiveServer(scale);
             }
             else

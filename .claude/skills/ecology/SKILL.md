@@ -59,6 +59,19 @@ what the carve-out silently broke — see the traps below.
 
 ## 2.6 Prism / trail traps (each of these cost real time)
 
+- **A SHIELD's size is not the prism's size, and the two tiers scale DIFFERENTLY.** Both shield
+  meshes are built from the box HALF-extents x `CIRCUMSCRIBING_SCALE` (3), so a prism of full
+  size `S` gets a semi-axis of `1.5 S` — **3x the box's own extent**. The octahedron's vertices
+  sit ON THE AXES (extent `3S`, circumsphere `3S`); the stella octangula's spikes sit at the
+  **CUBE CORNERS**, so its axis extent is also `3S` but its circumsphere is `3S*sqrt(3) ~= 5.196 S`.
+  Sizing a super-shielded prism by its bounding box therefore understates what the player sees
+  by `sqrt(3)`, and no axis-extent check can see it. Decide which measure the design cares about
+  ("fits this slot" = bounding box; "reads this big" = circumsphere), derive the authored scale
+  from the generator's own constant, and remember that cycling a tier along same-sized prisms
+  TRIPLES every shielded one unless you fit it (authored scale x `1/CIRCUMSCRIBING_SCALE`, which
+  restores the envelope exactly - §35's "fit the PRISM, never the pattern"). Full table + the
+  clearance and hinge consequences: the `asset-surgery` skill, "Trap: a SHIELD's size is not the
+  prism's size".
 - **Static bookkeeping outlives the world it describes.** A `static` registry/claim book/
   frontier that coordinates a population survives every cell teardown — `Cell.ResetCell`,
   `Initialize`, and the Cell-Selector world swap all destroy the lifeforms and leave the

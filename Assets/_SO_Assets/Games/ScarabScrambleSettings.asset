@@ -30,7 +30,6 @@ MonoBehaviour:
   hoopRingRadiusFraction: 0.45
   hoopAccentColor: {r: 0.78, g: 0.92, b: 1, a: 1}
   hoopFlareSeconds: 1.2
-  ballsPerPlayer: 2
   faunaWaitOutsideCourt: 1
   faunaExclusionCourtFraction: 1
   faunaExclusionSweepSeconds: 3

@@ -49,6 +49,17 @@ namespace CosmicShore.Gameplay
         // sets don't change at runtime; world poses are re-read every frame.
         Collider[] _probeColliders;
 
+        /// <summary>
+        /// The vessel's own HULL colliders — the same set the shell tier probes with, i.e. every
+        /// collider routed to this impactor by the root Rigidbody, with the skimmer (and any other
+        /// child that owns a Rigidbody) excluded. Exposed because a vessel's hull volume is a
+        /// gameplay quantity beyond collision: the Scarab sizes its cavitation blast off it
+        /// (<see cref="ScarabCavitationBlast"/>), so retuning the hull retunes the punch instead of
+        /// leaving a second number to drift. Do NOT mutate the returned array — it is the cached
+        /// probe set.
+        /// </summary>
+        public Collider[] HullColliders => _probeColliders ??= GatherHullColliders();
+
         void OnEnable()
         {
             _probeColliders ??= GatherHullColliders();
@@ -88,6 +99,11 @@ namespace CosmicShore.Gameplay
 
         protected override void AcceptImpactee(IImpactor impactee)
         {
+            // Same doctrine as SkimmerImpactor: an unwired container must fail loud ONCE, never
+            // throw per PhysX contact (that storm reads as an editor freeze).
+            if (IsEffectContainerMissing(vesselImpactorDataContainerSO, nameof(vesselImpactorDataContainerSO)))
+                return;
+
             switch (impactee)
             {
                 case PrismImpactor prismImpactee:
@@ -127,7 +143,8 @@ namespace CosmicShore.Gameplay
                         if (IsEffectSlotEmpty(prismEffects[i], vesselImpactorDataContainerSO,
                                 nameof(VesselImpactorDataContainerSO.VesselPrismEffects), i))
                             continue;
-                        prismEffects[i].Execute(this, prismImpactee);
+                        var pe = prismEffects[i];
+                        RunEffectIsolated(() => pe.Execute(this, prismImpactee), pe);
                     }
                     break;
 
@@ -158,7 +175,8 @@ namespace CosmicShore.Gameplay
                             if (IsEffectSlotEmpty(lifeformEffects[i], vesselImpactorDataContainerSO,
                                     nameof(VesselImpactorDataContainerSO.VesselLifeformCrystalEffects), i))
                                 continue;
-                            lifeformEffects[i].Execute(this, elementalCrystalImpactee.Crystal);
+                            var le = lifeformEffects[i];
+                            RunEffectIsolated(() => le.Execute(this, elementalCrystalImpactee.Crystal), le);
                         }
                         break;
                     }
@@ -187,7 +205,8 @@ namespace CosmicShore.Gameplay
                         if (IsEffectSlotEmpty(skimmerEffects[i], vesselImpactorDataContainerSO,
                                 nameof(VesselImpactorDataContainerSO.VesselSkimmerEffects), i))
                             continue;
-                        skimmerEffects[i].Execute(this, skimmerImpactee);
+                        var se = skimmerEffects[i];
+                        RunEffectIsolated(() => se.Execute(this, skimmerImpactee), se);
                     }
                     break;
             }
@@ -246,6 +265,8 @@ namespace CosmicShore.Gameplay
 
         public void ExecuteOmniCrystalImpact(CrystalImpactData data)
         {
+            if (IsEffectContainerMissing(vesselImpactorDataContainerSO, nameof(vesselImpactorDataContainerSO)))
+                return;
             var effects = vesselImpactorDataContainerSO.VesselCrystalEffects;
             if (!DoesEffectExist(effects)) return;
             RunCrystalEffects(effects, nameof(VesselImpactorDataContainerSO.VesselCrystalEffects), data);
@@ -253,6 +274,8 @@ namespace CosmicShore.Gameplay
 
         public void ExecuteElementalCrystalImpact(CrystalImpactData data)
         {
+            if (IsEffectContainerMissing(vesselImpactorDataContainerSO, nameof(vesselImpactorDataContainerSO)))
+                return;
             VesselCrystalEffectSO[] effects;
             string field;
             switch (data.Element)
@@ -288,7 +311,8 @@ namespace CosmicShore.Gameplay
             {
                 if (IsEffectSlotEmpty(effects[i], vesselImpactorDataContainerSO, field, i))
                     continue;
-                effects[i].Execute(this, data);
+                var ef = effects[i];
+                RunEffectIsolated(() => ef.Execute(this, data), ef);
             }
         }
 

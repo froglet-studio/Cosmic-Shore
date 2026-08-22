@@ -116,7 +116,7 @@ boosted numbers below are maintained by hand.
 | Rhino | 60 | 0.00 | 310 | 1.00 | ramp boost SO sets ×6 |
 | Squirrel | 60 | 0.00 | 300 | 1.00 | skim boost clamps to ×5 |
 | Serpent | 60 | 0.00 | 210 → 330 | 0.67 → 1.00 | Time elemental up to ×1.6 |
-| Dolphin | 60 | 0.00 | 210 | 0.67 | |
+| Dolphin | 68 | 0.00 | 347 | 1.00 | `DefaultMinimumSpeed` **0** — throttle-off is a real stop; boost multiplier is squared in use (2.259² = ×5.103) |
 | Falcon / Shrike | 60 | 0.00 | 210 | 0.67 | |
 | Urchin | 50 | 0.00 | 200 | 0.62 | `Speed` is 0 while trail-attached |
 | Grizzly | 50 | 0.00 | 200 | 0.62 | |

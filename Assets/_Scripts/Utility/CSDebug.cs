@@ -64,6 +64,20 @@ namespace CosmicShore.Utility
         /// </summary>
         ScarabNucleus = 1 << 3,
         /// <summary>
+        /// <c>[ScarabSwitch]</c> / <c>[PlaceSwitch]</c> — the Scarab's switch: placements,
+        /// refusals, and the wing dais a strike pays out. Off by default like every channel;
+        /// a real fault here is still a warning and is unaffected by this flag.
+        /// </summary>
+        ScarabSwitch = 1 << 4,
+        /// <summary>
+        /// <c>[ScarabJuke]</c> / <c>[ScarabCavitation]</c> — the right-stick dash and the swept
+        /// cavitation plate that rides it (fire direction, plate radius, cooldown). Both used to
+        /// log unconditionally on every dash, which is per-input console spam for a finished
+        /// system. Off by default like every channel; a real fault here is still an error and is
+        /// unaffected by this flag.
+        /// </summary>
+        ScarabDash = 1 << 5,
+        /// <summary>
         /// <c>[ShieldShatter]</c> — one line per shield disengage: whether the batched
         /// overlay was accepted at all, and the breaking impulse it carries before and
         /// after the shield's own speed clamp. The velocity terms are the identity at
@@ -71,7 +85,7 @@ namespace CosmicShore.Utility
         /// two very different causes — no overlay, or an overlay with no impulse — and
         /// this is what tells them apart. Off by default like every channel.
         /// </summary>
-        PrismShieldShatter = 1 << 4,
+        PrismShieldShatter = 1 << 6,
         All = ~0
     }
 

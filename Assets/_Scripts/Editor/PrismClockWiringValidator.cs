@@ -76,7 +76,8 @@ namespace CosmicShore.Editor
 
         [MenuItem("FrogletTools/Ecology/Prism Animation/Validate Clock Wiring")]
         [FrogletTool(FrogletToolCategory.Ecology, Importance = 5,
-            Description = "Clock-material law gate - unwired graphs fail loud here.")]
+            Description = "Clock-material law gate - unwired graphs fail loud here.",
+            DocPath = "Docs/PRISM_ANIMATION.md")]
         public static void Validate()
         {
             var report = new StringBuilder();
