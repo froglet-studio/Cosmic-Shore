@@ -381,6 +381,46 @@ that). It now emits the full block (`aiAimBlastReach: 2400` / `aiAimBlastDuratio
 `aiAimHumanFocus: 3` / `aiAimMaxRange: 2400`) and `--check` passes again. `aiAimHumanFocus: 1`
 restores pure-nearest if the preference reads as unfair in playtest.
 
+### 2026-08-22 — the real reason it never hit: the ability cycler was killing the commit
+
+Playtest of the pass above: five matches, the AI never landed a bend — it "roams around the
+player, tries to aim, always fails". The aim math was fine; the commit never survived to the
+shot, and the cause was not in this mode at all.
+
+`AIPilot` blind-cycles its authored abilities on independent `Duration`/`Cooldown` clocks
+(2 s on / 2 s off on the Dolphin), and the Dolphin's three cycled abilities are exactly the
+trio bound to the commit control (`LeftStickAction`: drift + charge boost + drift trail).
+`DriftActionSO.StopAction` acts on the SHARED per-vessel executor regardless of who started
+the drift, so the cycler's stop tick — at most 4 s away, on average 2 s, against a 2.5 s
+approach run — ended the commit drift mid-approach in nearly every attempt. The failure
+cascades perfectly into what the playtest saw:
+
+1. the drift drops → the scalar flight model re-derives `Course` from the nose — which the
+   aim had pointed AT THE PLAYER — so the AI lurches toward the player (the "roams around
+   me"), the commit condition breaks, and it re-seeks;
+2. when the vessel eventually touches the crystal it is usually NOT drifting, so the blast
+   fires along a nose that is back to steering at the crystal — straight into the forest;
+3. independently, the cycler's own random 2 s drifts LOCKED the course while active, so the
+   AI could not steer at all for half of every cycle — degrading crystal approaches
+   everywhere, in every mode with a Dolphin AI.
+
+The fix is in `AIPilot.StartAIPilot`, platform-side: a pilot with `drift` enabled — i.e. one
+whose commit loop manages the drift tactically — no longer blind-cycles any ability bound to
+the commit control (resolved live via `R_VesselActionHandler.CollectBoundActions` against the
+authored assets, captured in `AIAbility.SourceAsset` before Initialize swaps in per-AI
+copies). The commit loop starts and stops that trio itself; everything else still cycles. Two
+consequences worth knowing: the Dolphin AI now drifts ONLY during commits (its drift boost
+charges during approaches rather than on a wall clock — and discharges on the blast, since
+`EndDrift` starts the discharge), and the cycler's accidental role as a stale-commit watchdog
+is covered by the existing "course left the objective" branch, which fires within a beat of an
+overshoot because the dot test flips sign as the vessel passes its steer point.
+
+General lesson, same family as the shared-executor traps: **a blind actuator and a tactical
+controller must not drive one control.** The cycler predates the commit loop; when the commit
+loop took ownership of the drift, nobody took the drift away from the cycler, and the two
+fought at 0.25 Hz forever after. Rampage inherits this fix for free, like the rest of the
+commit loop.
+
 ---
 
 ## Everyone starts at zero
