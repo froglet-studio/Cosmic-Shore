@@ -140,6 +140,21 @@ namespace CosmicShore.Utility
             if (!PrismRenderService.Enabled) return false;
             if (Time.unscaledTime < s_suspendedUntil) return false;
 
+            // The explosion's pressure model, over THIS effect's live population
+            // (PrismExplosion.PressuredDuration — one curve for both death visuals, so the
+            // two cannot drift apart). At the shared 7.5 s default a mass disengage — a
+            // Rhino swipe stripping a lined wall, the overcharge skimmer — would otherwise
+            // hold hundreds of shard entities live at once; under pressure each new shatter
+            // completes as a smaller, quicker burst instead of piling up, exactly like a
+            // dense blast's explosions. ObjectDrift is linear in duration, so it scales
+            // with it and the culling envelope stays exact.
+            float pressured = PrismExplosion.PressuredDuration(LiveShatterCount + s_pendingCount);
+            if (pressured < duration)
+            {
+                objectDrift *= pressured / duration;
+                duration = pressured;
+            }
+
             GetOrCreateGroup(sharedShieldMesh, material, layer).Spawns.Add(
                 new PrismRenderService.ShieldShatterSpawn
                 {

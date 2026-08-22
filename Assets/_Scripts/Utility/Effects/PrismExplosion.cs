@@ -91,7 +91,13 @@ namespace CosmicShore.Utility
         /// quicker puff rather than the same bloom fast-forwarded — deliberate
         /// (scaling speed to compensate would fling debris at up to 22x).
         /// </summary>
-        static float PressuredDuration(int activeCount)
+        /// <summary>Internal rather than private: <see cref="PrismShieldShatter"/> runs the
+        /// SAME curve over its own live count — a shield coming apart and a prism coming
+        /// apart are one event class, and their pressure response must not drift apart
+        /// either. The two pools are intentionally counted separately (each bounds its own
+        /// entity population; a mass-death blast and a mass-disengage are different
+        /// saturations).</summary>
+        internal static float PressuredDuration(int activeCount)
         {
             // Benchmark/diagnostic lift (PrismFactory.EffectPressureScalingDisabled):
             // every death animates at full length no matter how many effects are

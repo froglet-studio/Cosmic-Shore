@@ -53,11 +53,13 @@ namespace CosmicShore.Utility
         /// </summary>
         public const float CIRCUMSCRIBING_SCALE = OctahedronMeshGenerator.CIRCUMSCRIBING_SCALE;
 
-        /// <summary>Total visible triangle count: 8 spikes × 3 lateral faces.</summary>
+        /// <summary>Outer face count: 8 spikes × 3 lateral faces. The mesh bakes a
+        /// mirrored BACK copy of every face (see AddFace), so the triangle count is
+        /// twice this.</summary>
         public const int FACE_COUNT = 24;
 
-        /// <summary>Vertex count for flat shading: <see cref="FACE_COUNT"/> × 3.</summary>
-        public const int VERTEX_COUNT = FACE_COUNT * 3;
+        /// <summary>Vertex count for flat shading: <see cref="FACE_COUNT"/> × 2 sides × 3.</summary>
+        public const int VERTEX_COUNT = FACE_COUNT * 2 * 3;
 
         /// <summary>
         /// UV channel carrying each vertex's per-face centroid (object space) for the
@@ -131,7 +133,8 @@ namespace CosmicShore.Utility
             float c = halfExtents.z * shieldScale;
 
             // 8 spike tetrahedra (one per octant), each contributing 3 lateral
-            // outer faces. Total 24 faces, 72 unique vertices for flat shading.
+            // outer faces, each baked with a mirrored back copy (see AddFace):
+            // 24 outer faces × 2 sides × 3 verts = 144 unique vertices.
             var verts = new Vector3[VERTEX_COUNT];
             var norms = new Vector3[VERTEX_COUNT];
             var uvs   = new List<Vector2>(72);
@@ -189,28 +192,49 @@ namespace CosmicShore.Utility
         // f(clock, stamp) in PrismShieldMorph_float, evaluated on THIS shared mesh
         // from the FaceCentroidUVChannel data baked above.
 
+        // Every face is baked TWICE: the authored front, and a mirrored BACK copy with
+        // reversed winding and a negated normal. A shattering shard is an OPEN face the
+        // camera sees from behind half of every tumble, and on a two-sided prism material
+        // the un-flipped normal feeds the UNSATURATED fresnel dot(N,V) < 0 — up to a 16×
+        // extrapolation of the rim colour, which reads as flickering grain (the base
+        // prism's debris never shows this because a debris cube is CLOSED). With a real
+        // back face, every visible side carries a correct outward normal. At rest the
+        // shield is a closed shape, so the interior copies are z-occluded and the settled
+        // look is unchanged; the GPU morph re-derives its MOTION normal from
+        // sign(dot(N, centroid)) so both copies fly and tumble as one shard
+        // (PrismShieldMorph_float — the sign is valid because every front face of both
+        // shield shapes has dot(N, centroid) > 0, proven across aspect ratios by
+        // Tools/Shaders/verify_prism_shield_shatter.py).
         private static void AddFace(Vector3[] verts, Vector3[] norms, List<Vector3> cents,
                                     List<Vector2> uvs, int[] tris, ref int vi,
                                     Vector3 v0, Vector3 v1, Vector3 v2)
         {
+            Vector3 n = Vector3.Cross(v1 - v0, v2 - v0).normalized;
+            Vector3 centroid = (v0 + v1 + v2) * (1f / 3f);
+
+            AddSide(verts, norms, cents, uvs, tris, ref vi, v0, v1, v2, n, centroid);
+            AddSide(verts, norms, cents, uvs, tris, ref vi, v0, v2, v1, -n, centroid);
+        }
+
+        private static void AddSide(Vector3[] verts, Vector3[] norms, List<Vector3> cents,
+                                    List<Vector2> uvs, int[] tris, ref int vi,
+                                    Vector3 v0, Vector3 v1, Vector3 v2, Vector3 n, Vector3 centroid)
+        {
             int i0 = vi, i1 = vi + 1, i2 = vi + 2;
             verts[i0] = v0; verts[i1] = v1; verts[i2] = v2;
+            norms[i0] = n; norms[i1] = n; norms[i2] = n;
 
             // FACE-LOCAL UV0 — the frame PrismErosionFade wipes across
-            // (PrismOcclusionCorridor.hlsl). Each triangle gets the same isoceles
-            // mapping into the unit square, which is all the erosion needs: it centres
-            // UV to [-1,1] and sweeps one front across it. The wipe's DIRECTION and jag
-            // are hashed per face from the centroid, so identical UVs do not make the
-            // faces peel alike. A mesh attribute is the only anchor no vertex animation
-            // can move, which is why the erosion is anchored here and not to position.
+            // (PrismOcclusionCorridor.hlsl). Both sides of a face share it, so the wipe
+            // eats the front and its back copy in perfect register. A mesh attribute is
+            // the only anchor no vertex animation can move, which is why the erosion is
+            // anchored here and not to position.
             uvs.Add(new Vector2(0f, 0f));
             uvs.Add(new Vector2(1f, 0f));
             uvs.Add(new Vector2(0.5f, 1f));
 
-            Vector3 n = Vector3.Cross(v1 - v0, v2 - v0).normalized;
-            norms[i0] = n; norms[i1] = n; norms[i2] = n;
-
-            Vector3 centroid = (v0 + v1 + v2) * (1f / 3f);
+            // Per-face centroid — the morph's pivot. Shared by both sides for the same
+            // reason: one face, one shard.
             cents.Add(centroid); cents.Add(centroid); cents.Add(centroid);
 
             tris[i0] = i0; tris[i1] = i1; tris[i2] = i2;

@@ -71,7 +71,7 @@ namespace CosmicShore.Tests
             var mesh = OctahedronMeshGenerator.Generate(new Vector3(0.5f, 1.25f, 2f));
             try
             {
-                AssertPerFaceCentroids(mesh, expectedVertexCount: 24,
+                AssertPerFaceCentroids(mesh, expectedVertexCount: 48,
                     OctahedronMeshGenerator.FaceCentroidUVChannel);
             }
             finally { Object.DestroyImmediate(mesh); }
@@ -87,6 +87,49 @@ namespace CosmicShore.Tests
                     StellatedOctahedronMeshGenerator.FaceCentroidUVChannel);
             }
             finally { Object.DestroyImmediate(mesh); }
+        }
+
+        [Test]
+        public void BothMeshes_BakeAMirroredBackCopyOfEveryFace()
+        {
+            // A shattering shard is an OPEN face the camera sees from behind half of every
+            // tumble, and the prism material renders two-sided with an UNSATURATED fresnel —
+            // dot(N,V) < 0 extrapolates the rim colour up to 16×, which is the grain this
+            // closes. Each face therefore bakes front + mirrored back: same positions and
+            // centroid, reversed winding, negated normal. The morph re-derives its MOTION
+            // normal as sign(dot(N, centroid))·N, which is only valid while every FRONT
+            // face's normal points with its centroid — asserted here on the real meshes.
+            foreach (var mesh in new[]
+                     {
+                         OctahedronMeshGenerator.Generate(new Vector3(0.5f, 1.25f, 2f)),
+                         StellatedOctahedronMeshGenerator.Generate(new Vector3(0.5f, 1.25f, 2f)),
+                     })
+            {
+                try
+                {
+                    var verts = mesh.vertices;
+                    var norms = mesh.normals;
+                    Assert.AreEqual(0, verts.Length % 6, "faces bake in front+back pairs of 3 verts");
+
+                    for (int pair = 0; pair * 6 < verts.Length; pair++)
+                    {
+                        int f = pair * 6, b = f + 3;
+                        // Back copy: same triangle, reversed winding.
+                        Assert.That(Vector3.Distance(verts[f], verts[b]), Is.LessThan(1e-5f));
+                        Assert.That(Vector3.Distance(verts[f + 1], verts[b + 2]), Is.LessThan(1e-5f));
+                        Assert.That(Vector3.Distance(verts[f + 2], verts[b + 1]), Is.LessThan(1e-5f));
+                        // Negated normal.
+                        Assert.That(Vector3.Distance(norms[f], -norms[b]), Is.LessThan(1e-4f),
+                            $"pair {pair}: back normal must be the front's negation");
+                        // The motion-sign premise.
+                        Vector3 centroid = (verts[f] + verts[f + 1] + verts[f + 2]) / 3f;
+                        Assert.Greater(Vector3.Dot(norms[f], centroid), 0f,
+                            $"pair {pair}: a FRONT face's normal must point with its centroid, " +
+                            "or the morph's sign(dot(N, centroid)) motion normal misfires");
+                    }
+                }
+                finally { Object.DestroyImmediate(mesh); }
+            }
         }
 
         /// <summary>
@@ -360,7 +403,7 @@ namespace CosmicShore.Tests
             // face would cross the threshold on the same frame and POP instead of eroding.
             foreach (var (mesh, verts) in new[]
                      {
-                         (OctahedronMeshGenerator.Generate(new Vector3(0.5f, 1.25f, 2f)), 24),
+                         (OctahedronMeshGenerator.Generate(new Vector3(0.5f, 1.25f, 2f)), 48),
                          (StellatedOctahedronMeshGenerator.Generate(new Vector3(0.5f, 1.25f, 2f)),
                           StellatedOctahedronMeshGenerator.VERTEX_COUNT),
                      })

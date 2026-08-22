@@ -227,8 +227,9 @@ void PrismFlightClock_float(float Clock, float StartTime, float Duration, float3
 //
 // Randomness needs NO mesh channel and NO extra stamped property. Prism meshes are
 // hard-edged (the box is 24 verts / 6 distinct normals; the super-shield stella is
-// 72 verts / 24 — StellatedOctahedronMeshGenerator splits per face for exactly this
-// reason), so the object-space NORMAL *is* the face id; the object-to-world
+// 144 verts / 48 — StellatedOctahedronMeshGenerator splits per face, and bakes a
+// mirrored back copy per face, for exactly this reason), so the object-space NORMAL
+// *is* the face id; the object-to-world
 // translation is a free per-prism seed, so neighbouring prisms in one blast do not
 // wobble in lockstep; and StartTime re-rolls every hit. This matters because the
 // stella carries no tangents and no UVs — the tangent basis is therefore built
@@ -520,6 +521,17 @@ void PrismShieldMorph_float(float Clock, float StartTime, float Duration, float 
     float faceScale = lerp(t, 1.0, shatter);
     float offset    = shatter * t * ShatterOffset;
 
+    // MOTION normal vs SHADING normal. The shield meshes bake a mirrored BACK copy of
+    // every face (so a tumbling shard is lit correctly from either side — an open
+    // single-sided face fed the unsaturated fresnel dot(N,V) < 0, up to a 16× rim
+    // extrapolation, which read as grain). The back copy's shading normal is negated by
+    // construction, so motion re-derives the OUTWARD normal from the face's own geometry:
+    // every front face of both shield shapes has dot(N, centroid) > 0 (proven across
+    // aspect ratios by Tools/Shaders/verify_prism_shield_shatter.py), so the sign
+    // restores it for both copies and the pair flies, blooms and tumbles as ONE shard
+    // instead of tearing apart. Raster lighting keeps the authored per-side normal.
+    float3 motionN = dot(Normal, FaceCentroid) >= 0.0 ? Normal : -Normal;
+
     // The erosion's clock: 1 -> 0 across the shatter, LINEAR like the explosion's own
     // Opacity (1 - t/duration) rather than the eased t, because the wipe's thresholds are
     // CDF-fitted against a linear alpha ramp. A bloom leaves it at 1.
@@ -533,7 +545,7 @@ void PrismShieldMorph_float(float Clock, float StartTime, float Duration, float 
     // centre of mass, and adding faceCenter afterwards puts it back where it belongs.
     // (This is the base explosion material's method: translate the face centre to the
     // origin, rotate, translate back.)
-    float3 faceCenter = FaceCentroid + offset * Normal;
+    float3 faceCenter = FaceCentroid + offset * motionN;
     float3 rel = faceScale * (Position - FaceCentroid);
 
     MorphedPosition = faceCenter + rel;
@@ -589,10 +601,10 @@ void PrismShieldMorph_float(float Clock, float StartTime, float Duration, float 
     // struck dead-on (cross ~ 0) is simply pushed, which is the correct read for both.
     // The tumble needs only a face normal to turn about, and the mesh always has one (the
     // generators author one per face, and it is the same Normal the fly-out above rides).
-    float nLenSq = dot(Normal, Normal);
+    float nLenSq = dot(motionN, motionN);
     if (nLenSq > 1e-8)
     {
-        float3 n = Normal * rsqrt(nLenSq);
+        float3 n = motionN * rsqrt(nLenSq);
 
         // Axis: perpendicular to the face, so the face TIPS AWAY from where it was
         // pointing rather than spinning about its own normal like a plate on a stick.

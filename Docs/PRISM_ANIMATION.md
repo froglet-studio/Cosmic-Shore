@@ -1781,6 +1781,40 @@ shielded renders its shards on ExplodingBlockGraph, where the erosion is driven 
 explosion clock — which is unstamped for a shard, so `TransparentPrismMaterial`'s resting
 `_Opacity` of 0 makes those shards invisible. That predates this pass and is unchanged by it.
 
+**The shards are CLOSED, like the debris they imitate — and that closure was the grain.**
+Playtest reported "very grainy dithering artifacts" on the shatter, and the alpha chain was
+provably innocent: every material a shard can wear is `_Alpha: 1` on BlockGraph, the erosion's
+Survival is binary, and the corridor only dithers fractional alpha — so the grain could not be
+alpha-side. The real mechanism was the one structural divergence from base-prism debris left
+standing: **a debris cube is a closed volume, a shield shard was an open single-sided face.**
+Prisms render two-sided (`_Cull: 0`) and `FresnelPower4` is `(1 − dot(N,V))⁴` with **no
+saturate**, so every time a tumbling shard showed its back — half of every revolution, for the
+full 7.5 s — the un-flipped normal drove the fresnel to `dot(N,V) < 0`, extrapolating the rim
+colour up to **16×**: flickering, oversaturated, high-frequency shimmer. Base debris never
+shows this because a closed cube's back faces are always z-occluded by its own front.
+
+The fix is geometric, free at runtime, and keeps the batch: both generators now bake a
+**mirrored back copy of every face** (reversed winding, negated normal, same centroid, same
+UV0 — octahedron 24 → 48 verts, stella 72 → 144), so every visible side of a shard carries a
+correct outward normal. At rest the shield is closed, so the interior copies are z-occluded
+and the settled look is unchanged; mid-bloom the glimpsed inner surfaces are now correctly lit
+too. The one thing the mirror must not split is the MOTION: the morph re-derives its motion
+normal as `sign(dot(N, centroid)) · N` — valid because every front face of both shield shapes
+has `dot(N, centroid) > 0`, proven across aspect ratios — so both copies fly, bloom and tumble
+as ONE shard while raster lighting keeps the authored per-side normal.
+`verify_prism_shield_shatter.py` asserts the twins move identically (mutation-tested: putting
+one motion term back on the raw normal fails it), and the edit-mode suite asserts the mirror
+pairing and the sign premise on the real meshes. **General rule worth keeping: a single-sided
+shard on a two-sided material with an unsaturated fresnel is a grain generator** — any future
+effect that breaks a closed prism shape into open faces needs the same closure.
+
+**Pressure parity (same pass).** The shatter now runs the explosion's own pressure model —
+`PrismExplosion.PressuredDuration`, one curve for both death visuals, over the shatter's own
+live count — so a mass disengage (a Rhino swipe stripping a lined wall, the overcharge
+skimmer) completes as smaller, quicker bursts instead of holding hundreds of 7.5 s shard
+entities live. `ObjectDrift` scales with the pressured duration, so the culling envelope
+stays exact.
+
 **Duration is the base explosion's.** Both tiers default `shatterDuration` to
 `PrismExplosion.DefaultDuration` rather than a number of their own: a shield coming apart and
 a prism coming apart are the same event class, and at different lengths they read as
