@@ -10,26 +10,32 @@ using UnityEngine;
 namespace CosmicShore.Editor
 {
     /// <summary>
-    /// FrogletTools ▸ Diagnostics — one window, two tabs:
+    /// FrogletTools ▸ Diagnostics — one window, four tabs:
     ///
     /// <para><b>Crash Detector</b> — the UI over <see cref="CrashDetectorMonitor"/>: whether the
     /// watchdog is running, the previous session's verdict, the crash reports on disk, and the
     /// machine-local settings.</para>
     ///
-    /// <para><b>Bug Ledger</b> — the UI over <see cref="BugLedger"/>: the shared, committable
-    /// issue list with auto-capture, fix-then-validate lifecycle, and manual filing
+    /// <para><b>Bug Ledger</b> — the UI over <see cref="BugLedger"/>: the team's live issue list
+    /// with auto-capture, fix-then-validate lifecycle, and manual filing
     /// (<see cref="BugLedgerView"/>).</para>
     ///
+    /// <para><b>Stage &amp; Push</b> — the ledger's own version-control surface
+    /// (<see cref="BugLedgerStageView"/> over <see cref="BugLedgerPublisher"/>): the live store is
+    /// gitignored, and this tab is the ONLY route by which ledger data reaches git — staged
+    /// per-issue, committed and pushed with a pathspec limited to BugLedger/.</para>
+    ///
+    /// <para><b>Compile Timing</b> — opt-in recorder of compile + domain-reload seconds per edit
+    /// (the measurement behind Docs/ASSEMBLY_SPLIT.md).</para>
+    ///
     /// READER tool per Docs/TOOLING.md — nothing here writes Assets/, so there is no ship panel.
-    /// The crash detector writes gitignored logs; the bug ledger writes the committable
-    /// <c>BugLedger/</c> store at the project root, which the developer pushes like any other
-    /// project data.
     /// </summary>
     public sealed class DiagnosticsWindow : EditorWindow
     {
         const int CrashTab = 0;
         const int BugsTab = 1;
-        const int TimingTab = 2;
+        const int StageTab = 2;
+        const int TimingTab = 3;
 
         [SerializeField] int _tab = CrashTab;
 
@@ -37,6 +43,7 @@ namespace CosmicShore.Editor
         string[] _reports = Array.Empty<string>();
         long _journalBytes;
         BugLedgerView _bugView;
+        BugLedgerStageView _stageView;
 
         /// <summary>Set by a button, run after the GUI pass — mutating state mid-layout throws.</summary>
         Action _deferred;
@@ -80,8 +87,10 @@ namespace CosmicShore.Editor
         void OnInspectorUpdate()
         {
             // The ledger mutates from a background worker; poll its stamp instead of marshaling
-            // events across threads. OnInspectorUpdate is ~10 Hz — cheap and plenty.
+            // events across threads. OnInspectorUpdate is ~10 Hz — cheap and plenty (and it is
+            // what animates the publisher's progress bar).
             if (_tab == BugsTab && _bugView is { NeedsRepaint: true }) Repaint();
+            else if (_tab == StageTab && _stageView is { NeedsRepaint: true }) Repaint();
         }
 
         void Refresh()
@@ -101,9 +110,10 @@ namespace CosmicShore.Editor
                 "Diagnostics",
                 _tab switch
                 {
-                    CrashTab => "Watches this editor for abnormal exits — even hangs and hard kills — and writes a report to Logs/CrashDetector/ on the next launch.",
-                    BugsTab => "The team's live bug list — errors file themselves into BugLedger/, and a fix is only believed once the game stays clean.",
-                    _ => "Records what an edit costs — compile seconds, domain-reload seconds, and which assemblies Unity rebuilt.",
+                    BugsTab => "The team's live bug list — errors file themselves into the local ledger, and a fix is only believed once the game stays clean.",
+                    StageTab => "The ledger's own version control — pick what to publish, comment it, and push. Only BugLedger/ files ever move.",
+                    TimingTab => "Records what an edit costs — compile seconds, domain-reload seconds, and which assemblies Unity rebuilt.",
+                    _ => "Watches this editor for abnormal exits — even hangs and hard kills — and writes a report to Logs/CrashDetector/ on the next launch.",
                 },
                 FrogletEditorPalette.ColorFor(FrogletToolCategory.Diagnostics));
 
@@ -112,7 +122,12 @@ namespace CosmicShore.Editor
             if (_tab == BugsTab)
             {
                 _bugView ??= new BugLedgerView();
-                _bugView.Draw(action => _deferred = action);
+                _bugView.Draw(action => _deferred = action, () => _tab = StageTab);
+            }
+            else if (_tab == StageTab)
+            {
+                _stageView ??= new BugLedgerStageView();
+                _stageView.Draw(action => _deferred = action);
             }
             else if (_tab == TimingTab)
             {
@@ -154,6 +169,14 @@ namespace CosmicShore.Editor
                     GUI.FocusControl(null);
                 }
                 GUILayout.Space(4f);
+                if (FrogletEditorPalette.ColorButton("Stage & Push",
+                        FrogletEditorPalette.ColorFor(FrogletToolCategory.Diagnostics), 104f, 22f,
+                        outline: _tab != StageTab) && _tab != StageTab)
+                {
+                    _tab = StageTab;
+                    GUI.FocusControl(null);
+                }
+                GUILayout.Space(4f);
                 if (FrogletEditorPalette.ColorButton("Compile Timing",
                         FrogletEditorPalette.ColorFor(FrogletToolCategory.Diagnostics), 116f, 22f,
                         outline: _tab != TimingTab) && _tab != TimingTab)
@@ -168,6 +191,7 @@ namespace CosmicShore.Editor
                     _deferred = () => FrogletDocLinks.Open(_tab switch
                     {
                         BugsTab => "Docs/DIAGNOSTICS.md#the-bug-ledger",
+                        StageTab => "Docs/DIAGNOSTICS.md#staging-and-pushing",
                         TimingTab => "Docs/ASSEMBLY_SPLIT.md#measuring",
                         _ => "Docs/DIAGNOSTICS.md#the-crash-detector",
                     });

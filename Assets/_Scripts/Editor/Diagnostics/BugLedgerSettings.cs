@@ -41,13 +41,11 @@ namespace CosmicShore.Editor
                                                   "dropped with one console warning.")]
         int maxAutoIssues = 150;
 
-        [SerializeField, Tooltip("On resolution, stamp the issue into BugLedger/resolved/ (pruned to a cap) " +
-                                 "instead of discarding it outright. Git history keeps everything either way; " +
-                                 "the archive makes 'what got fixed lately' browsable without git.")]
-        bool keepResolvedArchive = true;
+        // Note: closing an issue ALWAYS stamps it into BugLedger/local/resolved/ — the archive
+        // doubles as the tombstone that keeps a published-then-resolved issue from re-importing
+        // off a teammate's shared copy, so it is deliberately not a setting.
 
         public bool AutoCaptureEnabled { get => autoCaptureEnabled; set => autoCaptureEnabled = value; }
-        public bool KeepResolvedArchive { get => keepResolvedArchive; set => keepResolvedArchive = value; }
         public int DefaultCleanSessionsRequired { get => defaultCleanSessionsRequired; set => defaultCleanSessionsRequired = Mathf.Clamp(value, 1, 10); }
         public int MinValidationPlaySeconds { get => minValidationPlaySeconds; set => minValidationPlaySeconds = Mathf.Clamp(value, 0, 300); }
         public int MinEditorSessionMinutes { get => minEditorSessionMinutes; set => minEditorSessionMinutes = Mathf.Clamp(value, 0, 120); }
