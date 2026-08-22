@@ -1,11 +1,16 @@
-# Diagnostics — the editor crash detector and the shared bug ledger
+# Diagnostics — the crash detector, the shared bug ledger, and compile timing
 
-**FrogletTools ▸ Diagnostics** is one window with two tabs, backed by two always-on systems:
+**FrogletTools ▸ Diagnostics** is one window with three tabs:
 
 | Tool | Question it answers | Data it writes |
 |---|---|---|
 | **Crash Detector** | *Why did my editor die?* — even when Unity itself never got to say | `Logs/CrashDetector/` (machine-local, gitignored) |
 | **Bug Ledger** | *What is broken right now, and is the fix actually proven?* | `BugLedger/` at the project root (committable, merge-friendly) |
+| **Compile Timing** | *What does an edit cost?* — compile + domain-reload seconds, and which assemblies rebuilt | `Logs/CompileTiming/` (machine-local, gitignored) |
+
+The first two are always on. **Compile Timing is opt-in and off by default** — it exists to
+measure the assembly split (`Docs/ASSEMBLY_SPLIT.md` § Measuring), so it is switched on for a
+measurement run and back off afterwards rather than left recording.
 
 Both exist because of the same gap: editor crashes and red-console bugs were disappearing into
 scrollback and memory. Unity's own Crashlytics does not surface error detail without payment, so
@@ -236,7 +241,8 @@ a clean run. Copy that shape.
 | Issue model + hand-rolled JSON | `Assets/_Scripts/Editor/Diagnostics/BugLedgerIssue.cs` |
 | Ledger settings (`ScriptableSingleton`) | `Assets/_Scripts/Editor/Diagnostics/BugLedgerSettings.cs` |
 | Ledger tab view | `Assets/_Scripts/Editor/Diagnostics/BugLedgerView.cs` |
-| The window (both tabs) | `Assets/_Scripts/Editor/Diagnostics/DiagnosticsWindow.cs` |
+| Compile-timing recorder (`[InitializeOnLoad]`, opt-in) | `Assets/_Scripts/Editor/Diagnostics/CompileTimingMonitor.cs` |
+| The window (all three tabs) | `Assets/_Scripts/Editor/Diagnostics/DiagnosticsWindow.cs` |
 | Shared signature core (**runtime-safe**) | `Assets/_Scripts/Utility/BugSignature.cs` |
 | Signature determinism tests (edit mode) | `Assets/_Scripts/Tests/Editor/BugSignatureTests.cs` |
 | Committed store contract | `BugLedger/README.md` (project root) |

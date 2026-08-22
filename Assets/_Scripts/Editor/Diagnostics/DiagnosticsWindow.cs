@@ -1,5 +1,8 @@
 using System;
+using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
+using System.Linq;
 using CosmicShore.Editor.Froglet;
 using UnityEditor;
 using UnityEngine;
@@ -26,6 +29,7 @@ namespace CosmicShore.Editor
     {
         const int CrashTab = 0;
         const int BugsTab = 1;
+        const int TimingTab = 2;
 
         [SerializeField] int _tab = CrashTab;
 
@@ -48,6 +52,12 @@ namespace CosmicShore.Editor
             Description = "Shared committable bug list — red errors file themselves, and a fix only closes once the game validates it.",
             DocPath = "Docs/DIAGNOSTICS.md#the-bug-ledger")]
         public static void OpenBugLedger() => Open(BugsTab);
+
+        [MenuItem("FrogletTools/Diagnostics/Compile Timing", false, 12)]
+        [FrogletTool(FrogletToolCategory.Diagnostics, Importance = 2,
+            Description = "Record compile + domain-reload seconds per edit, and which assemblies rebuilt.",
+            DocPath = "Docs/ASSEMBLY_SPLIT.md#measuring")]
+        public static void OpenCompileTiming() => Open(TimingTab);
 
         static void Open(int tab)
         {
@@ -89,9 +99,12 @@ namespace CosmicShore.Editor
         {
             FrogletEditorPalette.Banner(
                 "Diagnostics",
-                _tab == CrashTab
-                    ? "Watches this editor for abnormal exits — even hangs and hard kills — and writes a report to Logs/CrashDetector/ on the next launch."
-                    : "The team's live bug list — errors file themselves into BugLedger/, and a fix is only believed once the game stays clean.",
+                _tab switch
+                {
+                    CrashTab => "Watches this editor for abnormal exits — even hangs and hard kills — and writes a report to Logs/CrashDetector/ on the next launch.",
+                    BugsTab => "The team's live bug list — errors file themselves into BugLedger/, and a fix is only believed once the game stays clean.",
+                    _ => "Records what an edit costs — compile seconds, domain-reload seconds, and which assemblies Unity rebuilt.",
+                },
                 FrogletEditorPalette.ColorFor(FrogletToolCategory.Diagnostics));
 
             DrawTabBar();
@@ -100,6 +113,10 @@ namespace CosmicShore.Editor
             {
                 _bugView ??= new BugLedgerView();
                 _bugView.Draw(action => _deferred = action);
+            }
+            else if (_tab == TimingTab)
+            {
+                DrawTimingTab();
             }
             else
             {
@@ -136,12 +153,24 @@ namespace CosmicShore.Editor
                     _tab = BugsTab;
                     GUI.FocusControl(null);
                 }
+                GUILayout.Space(4f);
+                if (FrogletEditorPalette.ColorButton("Compile Timing",
+                        FrogletEditorPalette.ColorFor(FrogletToolCategory.Diagnostics), 116f, 22f,
+                        outline: _tab != TimingTab) && _tab != TimingTab)
+                {
+                    _tab = TimingTab;
+                    GUI.FocusControl(null);
+                }
                 GUILayout.FlexibleSpace();
                 if (FrogletEditorPalette.ColorButton("Docs", FrogletEditorPalette.Info, 48f, 22f,
                         "Open Docs/DIAGNOSTICS.md on GitHub — what these tools do and how validation works.",
                         outline: true))
-                    _deferred = () => FrogletDocLinks.Open(
-                        _tab == BugsTab ? "Docs/DIAGNOSTICS.md#the-bug-ledger" : "Docs/DIAGNOSTICS.md#the-crash-detector");
+                    _deferred = () => FrogletDocLinks.Open(_tab switch
+                    {
+                        BugsTab => "Docs/DIAGNOSTICS.md#the-bug-ledger",
+                        TimingTab => "Docs/ASSEMBLY_SPLIT.md#measuring",
+                        _ => "Docs/DIAGNOSTICS.md#the-crash-detector",
+                    });
                 GUILayout.Space(6f);
             }
             GUILayout.Space(2f);
@@ -414,6 +443,138 @@ namespace CosmicShore.Editor
                         };
                 }
             }
+        }
+
+        // ═════════════════════════════ Compile Timing tab ═══════════════════════
+
+        void DrawTimingTab()
+        {
+            DrawTimingStatusRow();
+            FrogletEditorPalette.HorizontalRule();
+
+            _scroll = EditorGUILayout.BeginScrollView(_scroll);
+            {
+                GUILayout.Space(4f);
+                EditorGUILayout.HelpBox(
+                    "Records compile seconds + domain-reload seconds for every edit, and which " +
+                    "assemblies Unity rebuilt. Enable it, make the same one-line edit five times, " +
+                    "read the median, then disable it. Protocol: Docs/ASSEMBLY_SPLIT.md § Measuring.",
+                    MessageType.Info);
+
+                GUILayout.Space(6f);
+                DrawTimingRows();
+                GUILayout.Space(8f);
+            }
+            EditorGUILayout.EndScrollView();
+        }
+
+        void DrawTimingStatusRow()
+        {
+            var exists = File.Exists(CompileTimingMonitor.LogPath);
+
+            GUILayout.Space(4f);
+            using (new EditorGUILayout.HorizontalScope())
+            {
+                GUILayout.Space(6f);
+                var pill = GUILayoutUtility.GetRect(92f, 18f, GUILayout.Width(92f));
+                if (CompileTimingMonitor.Enabled)
+                    FrogletEditorPalette.StatusPill(pill, "RECORDING", FrogletEditorPalette.Ok);
+                else
+                    FrogletEditorPalette.StatusPill(pill, "OFF", FrogletEditorPalette.Muted);
+
+                GUILayout.Space(8f);
+                GUILayout.Label(
+                    CompileTimingMonitor.Enabled
+                        ? "every compile + reload is being appended to Logs/CompileTiming/"
+                        : "nothing is being recorded",
+                    FrogletEditorPalette.Subtitle);
+
+                GUILayout.FlexibleSpace();
+
+                if (FrogletEditorPalette.ColorButton(
+                        CompileTimingMonitor.Enabled ? "Stop" : "Start",
+                        CompileTimingMonitor.Enabled ? FrogletEditorPalette.Warn : FrogletEditorPalette.Ok,
+                        66f, 20f,
+                        "Recording is per machine and off by default; it never travels in the repo.",
+                        outline: true))
+                {
+                    var enable = !CompileTimingMonitor.Enabled;
+                    _deferred = () => CompileTimingMonitor.Enabled = enable;
+                }
+                GUILayout.Space(4f);
+                if (FrogletEditorPalette.ColorButton("Reveal", FrogletEditorPalette.Info, 66f, 20f,
+                        "Reveal the CSV in the file browser.", enabled: exists, outline: true))
+                    _deferred = () => EditorUtility.RevealInFinder(CompileTimingMonitor.LogPath);
+                GUILayout.Space(4f);
+                if (FrogletEditorPalette.ColorButton("Clear", FrogletEditorPalette.Error, 60f, 20f,
+                        "Delete the recorded cycles and start a fresh measurement.",
+                        enabled: exists, outline: true))
+                    _deferred = ClearTimingLog;
+                GUILayout.Space(6f);
+            }
+            GUILayout.Space(4f);
+        }
+
+        void ClearTimingLog()
+        {
+            if (!EditorUtility.DisplayDialog("Clear compile timing log",
+                    $"Delete {CompileTimingMonitor.LogPath}?", "Delete", "Cancel"))
+                return;
+
+            try { File.Delete(CompileTimingMonitor.LogPath); }
+            catch (IOException e) { Debug.LogWarning($"[CompileTiming] {e.Message}"); }
+            catch (UnauthorizedAccessException e) { Debug.LogWarning($"[CompileTiming] {e.Message}"); }
+        }
+
+        void DrawTimingRows()
+        {
+            if (!File.Exists(CompileTimingMonitor.LogPath))
+            {
+                EditorGUILayout.LabelField(
+                    "No cycles recorded yet.", EditorStyles.centeredGreyMiniLabel);
+                return;
+            }
+
+            string[] lines;
+            try { lines = File.ReadAllLines(CompileTimingMonitor.LogPath); }
+            catch (IOException e)
+            {
+                EditorGUILayout.HelpBox(e.Message, MessageType.Warning);
+                return;
+            }
+
+            var rows = lines.Skip(1).Where(l => !string.IsNullOrWhiteSpace(l)).ToArray();
+
+            EditorGUILayout.LabelField($"{rows.Length} cycle(s) recorded", FrogletEditorPalette.SectionLabel);
+            DrawTimingMedian(rows);
+
+            GUILayout.Space(4f);
+            foreach (var row in rows.Reverse().Take(50))
+                EditorGUILayout.LabelField(row, EditorStyles.miniLabel);
+        }
+
+        // Median rather than mean: the first compile of a session, and any compile that raced a
+        // background import, are outliers big enough to swamp an average over a handful of samples.
+        static void DrawTimingMedian(IReadOnlyCollection<string> rows)
+        {
+            var totals = rows
+                .Select(r => r.Split(','))
+                .Where(c => c.Length >= 4)
+                .Select(c => double.TryParse(
+                    c[3], NumberStyles.Float, CultureInfo.InvariantCulture, out var v) ? v : double.NaN)
+                .Where(v => !double.IsNaN(v))
+                .OrderBy(v => v)
+                .ToArray();
+
+            if (totals.Length == 0) return;
+
+            var median = totals.Length % 2 == 1
+                ? totals[totals.Length / 2]
+                : (totals[totals.Length / 2 - 1] + totals[totals.Length / 2]) / 2.0;
+
+            EditorGUILayout.LabelField(
+                $"Median total: {median:F2}s   (min {totals[0]:F2}s, max {totals[^1]:F2}s)",
+                EditorStyles.miniLabel);
         }
     }
 }
