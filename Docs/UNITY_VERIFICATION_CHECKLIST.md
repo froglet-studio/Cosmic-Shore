@@ -42,7 +42,21 @@ travel time — `WavefrontLeadTime` inverts the cone's sin-eased growth against 
 with a two-pass intercept; and (2) prefers aiming at HUMAN pilots (`aiAimHumanFocus` 3: an AI
 rival must be 3× closer to steal the aim).
 
+**2026-08-22 follow-up (same branch).** The first playtest (5 matches) showed the AI still
+never landing a bend — "roams around the player, tries to aim, always fails". Root cause found
+and fixed in `AIPilot.StartAIPilot`, not in the aim math: the AI's blind 2s/2s ability cycler
+was stopping the SHARED drift executor mid-commit (and its own random drifts were locking the
+AI's course for half of every cycle — the roaming). A pilot with `drift` enabled no longer
+blind-cycles abilities bound to the commit control (`LeftStickAction`); the commit loop drives
+that trio itself. Affects only the Dolphin AI (the one vessel with `drift: 1`), in every mode
+it flies — Bends, Rampage, menu autopilot. Full analysis: `BENDS.md` § 2026-08-22.
+
 **Verify in editor.**
+0. **The headline retest (the 2026-08-22 fix):** a Bends match vs 1 AI — the AI should now fly
+   visibly straighter between crystals (no more 2-second locked-course wanders), hold its drift
+   all the way onto the crystal with its nose tracking you, and actually land bends. If it
+   still never scores, the next suspect is the vessel-hit dispatch itself, not the AI — test
+   whether a HUMAN blast bends the AI (checklist item 2 of the mode's own doc).
 1. Open `MinigameBends.unity`; confirm `BendsController` shows the three new inspector fields at
    their defaults (Blast Reach 2400, Blast Duration 2.7, Human Focus 3) with no missing-script
    or serialization warnings.
