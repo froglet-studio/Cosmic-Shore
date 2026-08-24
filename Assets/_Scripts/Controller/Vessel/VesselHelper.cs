@@ -4,6 +4,7 @@ using UnityEngine;
 using CosmicShore.Data;
 using CosmicShore.Gameplay;
 using CosmicShore.ScriptableObjects;
+using CosmicShore.Utility;
 namespace CosmicShore.Gameplay
 {
     /// <summary>
@@ -222,6 +223,24 @@ namespace CosmicShore.Gameplay
             // and required for the new references to reach the mesh renderers.
             if (status.ShipGeometries is { Count: > 0 })
                 status.Customization?.RefreshShipMaterial();
+
+            // The VESSEL VISION BAND's per-vessel datum (Docs/VESSEL_VISION.md). This is the ONE
+            // stamp site, and it is here rather than on a per-vessel component because this is
+            // the one method a vessel's domain flows through on EVERY path - first spawn, runtime
+            // vessel swap, and every replicated Player.NetDomain change - so the mark cannot be
+            // omitted by authoring and cannot go stale when a pilot changes domain.
+            //
+            // AFTER the repaint above, deliberately: the stamp collects renderers by asking each
+            // material whether it can wear the tint, so it has to run once the domain material has
+            // actually reached the mesh.
+            //
+            // GetDomainSignalColor, never the hull's own colours: the domain hull materials are
+            // authored as stylised two-tone glass (Ruby's is a purple), so a mark derived from the
+            // material would answer the wrong question. This is the same accessor the HUD and the
+            // Echo Sight read, so the aid speaks the palette every other domain surface speaks.
+            if (themeManagerData.ColorSet != null)
+                VesselVisionShading.Stamp(vessel.Transform,
+                                          themeManagerData.ColorSet.GetDomainSignalColor(domain));
         }
     }
 }

@@ -1,0 +1,26 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6326aa3a0b0d422a92b2ba32df9262f1, type: 3}
+  m_Name: VesselVisionShadingConfig
+  m_EditorClassIdentifier: 
+  enabled: 1
+  nearFadeStart: 150
+  nearFullStart: 350
+  farFullEnd: 2000
+  farFadeEnd: 3500
+  strength: 0.85
+  celSteps: 3
+  shadeFloor: 0.35
+  gain: 1.15
+  rimInner: 0.55
+  rimOuter: 0.95
+  rimGain: 1.1
