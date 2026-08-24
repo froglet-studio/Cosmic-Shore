@@ -168,14 +168,16 @@ namespace CosmicShore.Editor.QA
                 var box = GUILayoutUtility.GetRect(20f, 20f, GUILayout.Width(20f));
                 EditorGUI.DrawRect(box, accent);
                 GUI.Label(box, number, Chip);
-                EditorGUILayout.LabelField(title, FrogletEditorPalette.SectionHeader);
-                if (help != null)
-                {
-                    GUILayout.FlexibleSpace();
-                    if (FrogletEditorPalette.ColorButton(open ? "×" : "?",
-                            FrogletEditorPalette.Muted, 22f, 18f, help))
-                        _helpOpen[number] = !open;
-                }
+                // ExpandWidth, not FlexibleSpace: a LabelField sized by the layout's
+                // leftovers gets squeezed by anything after it, which silently CLIPPED
+                // every header ("…do this once, at the s"). Let the title take the row
+                // and the button keep its fixed width.
+                EditorGUILayout.LabelField(title, FrogletEditorPalette.SectionHeader,
+                    GUILayout.ExpandWidth(true));
+                if (help != null &&
+                    FrogletEditorPalette.ColorButton(open ? "×" : "?",
+                        FrogletEditorPalette.Muted, 22f, 18f, help))
+                    _helpOpen[number] = !open;
             }
             var line = GUILayoutUtility.GetRect(1f, 2f, GUILayout.ExpandWidth(true));
             EditorGUI.DrawRect(line, new Color(accent.r, accent.g, accent.b, 0.35f));
@@ -493,28 +495,34 @@ var sb = new StringBuilder();
 
         void DrawSession()
         {
-            StepHeader("1", "Your session — " + _state.sessionFile,
+            StepHeader("1", "Your session",
                 "This is your results file. It lives in Docs/QA/RESULTS/ and it is " +
                 "yours alone — nothing in it reaches anyone else until you press " +
                 "Submit in step 5. You can leave it half-finished for days and come " +
                 "back to it; the window reopens whatever you were last working on.");
+            EditorGUILayout.LabelField(_state.sessionFile, EditorStyles.boldLabel);
             EditorGUILayout.LabelField(
                 "Tester " + _state.tester + "   ·   " + _state.date + "   ·   Unity " +
                 _state.unity + "   ·   " + _state.platform, EditorStyles.miniLabel);
 
-            StepHeader("2", "Check you have the right version of the game",
-                "Different versions of the game are called \"builds\". Each one has a " +
-                "short code — a \"commit\" — like a receipt number, and the tests you " +
-                "are about to run were written against one specific build.\n\n" +
-                "Test the wrong build and your results point engineering at the wrong " +
-                "code, which costs more time than not testing at all. When an " +
-                "instruction later says \"the branch under test\", it means the build " +
-                "named in this step.");
+            StepHeader("2", "Check you have the right build",
+                "Two names describe the code you are testing. The BRANCH is the line " +
+                "of work — the tests in your list are about one particular branch. The " +
+                "VERSION (engineers call it a \"commit\") is a short code, like a " +
+                "receipt number, for one exact snapshot of that branch.\n\n" +
+                "Your session recorded the version you had when you started. Branches " +
+                "move on as people push work, so if you update the project, that " +
+                "recorded version goes out of date — which is fine, as long as the " +
+                "record ends up matching what you really tested. That is all this step " +
+                "does.\n\n" +
+                "It matters because a result filed against the wrong version sends " +
+                "engineering hunting through the wrong code. When an instruction later " +
+                "says \"the branch under test\", it means the branch named here.");
             DrawBuildStep();
 
             if (!string.IsNullOrEmpty(_state.preconditions))
             {
-                StepHeader("3", "Set up Unity — do this once, at the start",
+                StepHeader("3", "Set up Unity — once per session",
                     "These three settings stop the two most common false alarms: " +
                     "judging the game before Unity has finished loading the new files, " +
                     "and losing the error messages you are supposed to be reading " +
@@ -557,10 +565,21 @@ var sb = new StringBuilder();
         }
 
         /// <summary>
-        /// The live build check, made concrete. "The branch under test" is an
-        /// abstraction that loses a beginner, so this step names the build, says what
-        /// the project is actually on, and — when they differ — gives the fix as
-        /// GitHub Desktop clicks (no typing) with the typed commands as a fallback.
+        /// The build check, made concrete and — importantly — honest about what the
+        /// form's Commit row IS.
+        ///
+        /// It is stamped from HEAD when the session is created (session.py create), so
+        /// it records "the version I started testing on", NOT a target engineering
+        /// handed down. An earlier draft of this step read it as a target and told the
+        /// tester to fetch/checkout/pull to reach it — which lands on the branch TIP
+        /// and therefore can never reach a stale recorded commit when the branch name
+        /// is the same. That was a dead end: the mismatch could not be cleared by
+        /// following the instructions.
+        ///
+        /// So the two mismatch cases are separated by what actually differs. Wrong
+        /// BRANCH is a real navigation problem, fixed in GitHub Desktop. Same branch,
+        /// moved on is the ordinary case — the project advanced under an open session
+        /// — and the fix is to record what you are really testing.
         /// </summary>
         void DrawBuildStep()
         {
@@ -568,16 +587,18 @@ var sb = new StringBuilder();
             {
                 var match = !string.IsNullOrEmpty(_state.commit) &&
                             _state.commit == _state.head;
+                var sameBranch = !string.IsNullOrEmpty(_state.sessionBranch) &&
+                                 _state.sessionBranch == _state.branch;
 
-                EditorGUILayout.LabelField("The build these tests were written for:",
+                EditorGUILayout.LabelField("Your session says you are testing:",
                     EditorStyles.miniBoldLabel);
                 EditorGUILayout.LabelField("      " + _state.sessionBranch +
-                    "      commit " + _state.commit, EditorStyles.boldLabel);
+                    "      version " + _state.commit, EditorStyles.boldLabel);
                 EditorGUILayout.Space(2);
-                EditorGUILayout.LabelField("The build your Unity project has open:",
+                EditorGUILayout.LabelField("Unity actually has open:",
                     EditorStyles.miniBoldLabel);
                 EditorGUILayout.LabelField("      " + _state.branch +
-                    "      commit " + _state.head, EditorStyles.boldLabel);
+                    "      version " + _state.head, EditorStyles.boldLabel);
 
                 if (match)
                 {
@@ -588,53 +609,53 @@ var sb = new StringBuilder();
                 }
 
                 Rule();
-                EditorGUILayout.LabelField(
-                    "These do not match, so you are about to test the wrong version of " +
-                    "the game. Switch to the right one before you run anything:",
-                    FailBodyStyle());
-                EditorGUILayout.Space(4);
 
-                EditorGUILayout.LabelField("In GitHub Desktop:", EditorStyles.miniBoldLabel);
-                EditorGUILayout.LabelField(
-                    "1.  Click  Fetch origin  (top bar).\n" +
-                    "2.  Click  Current Branch  (top bar) and choose  " +
-                    _state.sessionBranch + "\n" +
-                    "3.  Click  Pull origin  (top bar). If it is not offered, you are " +
-                    "already up to date.", Body);
-                EditorGUILayout.Space(2);
-                EditorGUILayout.LabelField(
-                    "Then switch back to Unity, wait for it to finish importing, and " +
-                    "press Refresh at the top of this window.", Body);
-
-                Rule();
-                EditorGUILayout.LabelField("Prefer to type it? These are the same three " +
-                    "steps as commands:", EditorStyles.miniBoldLabel);
-                // Selectable so it can be read and copied by hand as well as by button —
-                // and shown literally, because "run the commands below" must have the
-                // commands directly below it.
-                EditorGUILayout.SelectableLabel(GitCommands(), EditorStyles.textArea,
-                    GUILayout.Height(52f));
-                using (new EditorGUILayout.HorizontalScope())
+                if (!sameBranch)
                 {
-                    if (FrogletEditorPalette.ColorButton("Copy these commands",
-                            FrogletEditorPalette.Info, 160f))
-                        EditorGUIUtility.systemCopyBuffer = GitCommands();
-                    GUILayout.FlexibleSpace();
-                    if (FrogletEditorPalette.ColorButton(
-                            "I already tested this version — use " + _state.head,
-                            FrogletEditorPalette.Warn, 300f, 24f,
-                            "Only press this if the build Unity has open right now IS " +
-                            "the one you ran the tests on. It rewrites your form to say " +
-                            "so — it does not change any code."))
-                        Run("submit", "--accept-head");
+                    EditorGUILayout.LabelField(
+                        "You are on the wrong branch, so this is not the code your " +
+                        "tests are about. Switch before you run anything:",
+                        FailBodyStyle());
+                    EditorGUILayout.Space(4);
+                    EditorGUILayout.LabelField("In GitHub Desktop:",
+                        EditorStyles.miniBoldLabel);
+                    EditorGUILayout.LabelField(
+                        "1.  Click  Fetch origin  (top bar).\n" +
+                        "2.  Click  Current Branch  (top bar) and choose  " +
+                        _state.sessionBranch + "\n" +
+                        "3.  Click  Pull origin  (top bar). If it is not offered, you " +
+                        "are already up to date.\n" +
+                        "4.  Come back to Unity, wait for it to finish importing, then " +
+                        "press Refresh at the top of this window.", Body);
+                    Rule();
                 }
+                else
+                {
+                    EditorGUILayout.LabelField(
+                        "Same branch, newer code: the project has moved on since your " +
+                        "session was created — someone pushed work, or you pulled it. " +
+                        "That is normal and nothing is broken.", Body);
+                    EditorGUILayout.Space(4);
+                }
+
+                EditorGUILayout.LabelField(
+                    "Testing the version Unity has open now? Say so, and this step is " +
+                    "done:", EditorStyles.miniBoldLabel);
+                if (FrogletEditorPalette.ColorButton(
+                        "Yes — I am testing version " + _state.head,
+                        FrogletEditorPalette.Warn, 300f, 24f,
+                        "Records " + _state.head + " as the version this session was " +
+                        "run on. It only updates your own notes — it does not change " +
+                        "any code. Press it only if EVERY test in this session was run " +
+                        "on the version Unity has open right now."))
+                    Run("submit", "--accept-head");
+                EditorGUILayout.LabelField(
+                    "Only press that if every test in this session was run on it. If " +
+                    "you were told to test one specific older version, ask whoever set " +
+                    "up your session — do not guess.",
+                    EditorStyles.wordWrappedMiniLabel);
             }
         }
-
-        string GitCommands() =>
-            "git fetch origin\n" +
-            "git checkout " + _state.sessionBranch + "\n" +
-            "git pull origin " + _state.sessionBranch;
 
         GUIStyle FailBodyStyle() => _failBody ?? (_failBody = TintedWrapped(FrogletEditorPalette.Error));
         GUIStyle _failBody;
