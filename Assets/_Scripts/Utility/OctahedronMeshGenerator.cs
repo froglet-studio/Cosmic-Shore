@@ -37,6 +37,14 @@ namespace CosmicShore.Utility
         /// <see cref="StellatedOctahedronMeshGenerator"/> so ONE shader path serves both
         /// shield tiers.
         /// </summary>
+        /// <summary>
+        /// UV channel carrying each face's own [0,1] frame, which
+        /// <c>PrismErosionFade</c> sweeps its erosion front across when a shield shatters
+        /// — the same body-anchored fade the exploding prism uses, instead of scaling each
+        /// face down to nothing. TEXCOORD0.
+        /// </summary>
+        public const int ErosionUVChannel = 0;
+
         public const int FaceCentroidUVChannel = 1;
 
         /// <summary>
@@ -128,20 +136,22 @@ namespace CosmicShore.Utility
             // For flat shading each face owns its own 3 vertices (24 verts total).
             var verts = new Vector3[24];
             var norms = new Vector3[24];
+            var tangents = new List<Vector4>(24);
+            var uvs   = new List<Vector2>(24);
             var cents = new List<Vector3>(24);
             var tris  = new int[24];
 
             int vi = 0;
             // sx·sy·sz = +1 octants: standard winding (X → Y → Z)
-            AddFace(verts, norms, cents, tris, ref vi, pX, pY, pZ); // (+,+,+)
-            AddFace(verts, norms, cents, tris, ref vi, pX, nY, nZ); // (+,-,-)
-            AddFace(verts, norms, cents, tris, ref vi, nX, pY, nZ); // (-,+,-)
-            AddFace(verts, norms, cents, tris, ref vi, nX, nY, pZ); // (-,-,+)
+            AddFace(verts, norms, cents, uvs, tangents, tris, ref vi, pX, pY, pZ); // (+,+,+)
+            AddFace(verts, norms, cents, uvs, tangents, tris, ref vi, pX, nY, nZ); // (+,-,-)
+            AddFace(verts, norms, cents, uvs, tangents, tris, ref vi, nX, pY, nZ); // (-,+,-)
+            AddFace(verts, norms, cents, uvs, tangents, tris, ref vi, nX, nY, pZ); // (-,-,+)
             // sx·sy·sz = -1 octants: flipped winding (X → Z → Y)
-            AddFace(verts, norms, cents, tris, ref vi, pX, pZ, nY); // (+,-,+)
-            AddFace(verts, norms, cents, tris, ref vi, pX, nZ, pY); // (+,+,-)
-            AddFace(verts, norms, cents, tris, ref vi, nX, pZ, pY); // (-,+,+)
-            AddFace(verts, norms, cents, tris, ref vi, nX, nZ, nY); // (-,-,-)
+            AddFace(verts, norms, cents, uvs, tangents, tris, ref vi, pX, pZ, nY); // (+,-,+)
+            AddFace(verts, norms, cents, uvs, tangents, tris, ref vi, pX, nZ, pY); // (+,+,-)
+            AddFace(verts, norms, cents, uvs, tangents, tris, ref vi, nX, pZ, pY); // (-,+,+)
+            AddFace(verts, norms, cents, uvs, tangents, tris, ref vi, nX, nZ, nY); // (-,-,-)
 
             mesh.Clear();
             mesh.vertices = verts;
@@ -151,6 +161,14 @@ namespace CosmicShore.Utility
             // non-derivable input (see the class docstring). Written AFTER
             // mesh.vertices so the channel is sized against the new vertex count.
             mesh.SetUVs(FaceCentroidUVChannel, cents);
+            // UV0: the erosion's face-local frame. Nothing else on the prism graphs reads
+            // UV0 (verified: the only other UV node in either graph is this mesh's
+            // FaceCentroidUVChannel feed), so authoring it changes no existing shading.
+            mesh.SetUVs(ErosionUVChannel, uvs);
+            // Tangents: the debris pipeline's RotateFacesAlongAxis reads the mesh tangent
+            // as one of its rotation axes; a mesh without them hands it a zero vector and
+            // the rotation silently degenerates. Set AFTER vertices (channel sizing).
+            mesh.SetTangents(tangents);
             mesh.RecalculateBounds();
             // Normals are authored per-face for flat shading; do not recalculate.
         }
@@ -163,15 +181,44 @@ namespace CosmicShore.Utility
         // law forbids, and it also forfeits batching (a per-prism mesh is a per-prism
         // draw call).
 
+        // A shield SHATTERS as ordinary prism-explosion DEBRIS (Docs/PRISM_ANIMATION.md
+        // §4.8.1): the shards are explosion entities on ExplodingBlockGraph, whose vertex
+        // chain (RotateFacesAlongAxis) and fade (PrismErosionFade) are pure functions of
+        // the mesh's own attributes. This method therefore authors the SAME attribute set
+        // the exploding cube carries — the pipeline is never forked, the mesh conforms:
+        //   * UV0       — the face-local frame the erosion front wipes across
+        //   * NORMAL    — flat per face; the rotate subgraph's cross(velocity, n) axis
+        //   * TANGENT   — in-plane per face (dP/dU of the UV frame); the subgraph's
+        //                 second rotation axis, missing from these meshes until now
+        //   * TEXCOORD1 — the face centroid; the shield ENGAGE bloom's pivot (the one
+        //                 shield-specific animation that remains, and it is not a shatter)
         private static void AddFace(Vector3[] verts, Vector3[] norms, List<Vector3> cents,
-                                    int[] tris, ref int vi,
+                                    List<Vector2> uvs, List<Vector4> tangents, int[] tris, ref int vi,
                                     Vector3 v0, Vector3 v1, Vector3 v2)
         {
             int i0 = vi, i1 = vi + 1, i2 = vi + 2;
             verts[i0] = v0; verts[i1] = v1; verts[i2] = v2;
 
+            // FACE-LOCAL UV0 — the frame PrismErosionFade wipes across
+            // (PrismOcclusionCorridor.hlsl). Each triangle gets the same isoceles
+            // mapping into the unit square, which is all the erosion needs: it centres
+            // UV to [-1,1] and sweeps one front across it. The wipe's DIRECTION and jag
+            // are hashed per entity from the stamped velocity, and each face's UV frame
+            // is ORIENTED differently in object space, so the fronts still run in
+            // different world directions per face — the same mechanism as the cube.
+            uvs.Add(new Vector2(0f, 0f));
+            uvs.Add(new Vector2(1f, 0f));
+            uvs.Add(new Vector2(0.5f, 1f));
+
             Vector3 n = Vector3.Cross(v1 - v0, v2 - v0).normalized;
             norms[i0] = n; norms[i1] = n; norms[i2] = n;
+
+            // The tangent is dP/dU of the UV frame above (v0 → v1 IS the U axis), which
+            // is the standard convention an imported mesh carries. Flat per face, like
+            // the normal.
+            Vector3 t = (v1 - v0).normalized;
+            var tangent = new Vector4(t.x, t.y, t.z, 1f);
+            tangents.Add(tangent); tangents.Add(tangent); tangents.Add(tangent);
 
             Vector3 centroid = (v0 + v1 + v2) * (1f / 3f);
             cents.Add(centroid); cents.Add(centroid); cents.Add(centroid);

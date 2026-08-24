@@ -77,6 +77,15 @@ namespace CosmicShore.Utility
         /// unaffected by this flag.
         /// </summary>
         ScarabDash = 1 << 5,
+        /// <summary>
+        /// <c>[ShieldShatter]</c> — one line per shield disengage: whether the batched
+        /// overlay was accepted at all, and the breaking impulse it carries before and
+        /// after the shield's own speed clamp. The velocity terms are the identity at
+        /// zero (Docs/PRISM_ANIMATION.md §4.8.1), so "the shatter looks unchanged" has
+        /// two very different causes — no overlay, or an overlay with no impulse — and
+        /// this is what tells them apart. Off by default like every channel.
+        /// </summary>
+        PrismShieldShatter = 1 << 6,
         All = ~0
     }
 

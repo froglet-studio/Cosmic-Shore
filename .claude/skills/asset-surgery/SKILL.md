@@ -599,6 +599,24 @@ Assert the JSON analog of `CS0102` while you are there: duplicate `m_ObjectId`, 
 property reference names, registry entries that do not resolve, dangling edge endpoints,
 and any input slot with more than one feeder. All five are ~20 lines over the parsed model.
 
+### Trap: two graph-edit failures that ship silently — cycles, and slot-type mismatch
+
+Both shipped and cost a playtest round each (2026-08, shield-shatter branch):
+
+1. **An edge CYCLE makes the whole graph magenta.** Splicing node A's output into node B
+   while B (transitively) feeds A creates a cycle ShaderGraph rejects at import — every
+   material on the graph renders magenta, including effects your edit never touched.
+   Before writing any edge, walk the edge list and assert acyclicity of the whole graph,
+   not just the nodes you added.
+2. **A property NODE cloned from the wrong donor carries the donor's SLOT TYPE.** A
+   Vector3 property exposed through a node cloned from a Vector1-slot donor wires
+   "successfully" and delivers nothing — no import error, no magenta, the vector is
+   silently zero. Assert that every property node's slot type matches its property's
+   kind after synthesis.
+
+Both checks are cheap to run over the parsed JSON and are now standing assertions in
+`PrismClockWiringValidator` + `PrismShieldMorphTests` — copy that shape into any new wirer.
+
 ### Trap: a clean merge can still be a semantic conflict (duplicate members)
 
 Origin: `Flora.LeafSize` (2026-08). Two branches each added the SAME member to
