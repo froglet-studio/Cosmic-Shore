@@ -284,3 +284,37 @@ Mechanics reference: `_Scripts/Controller/Vessel/R_VesselActions/DOLPHIN_ENERGY_
     effect from `SkimmerBoostPrismEffect.dangerEnergyMultiplier` (the platform's 10× danger
     bonus): different resource (energy vs boost), different gate (per-asset element vs
     hardcoded Charge). The two are easy to confuse from an ability map's prose alone.
+
+27. **The Rhino's `GrowTrailAction` has never run — its grow loop is unreachable.**
+    `GrowTrailActionExecutor.Begin` sets `_growing = true` and then calls `End()`, which sets
+    it back to `false`, so `LoopAsync`'s `while (_growing)` never executes a single step and it
+    falls straight through to a shrink loop that has nothing to shrink. The ordering is simply
+    inverted; `_growing = true` belongs *after* the `End()` that cancels the previous run.
+    It is bound both to the Rhino's own `_inputEventShipActions[InputEvent 0]` and to its
+    `AIPilot.abilities`, so it is dead for the human pilot and the AI alike.
+
+    **Consequence, and why it surfaced:** without the grow, the Rhino only ever lays its
+    RESTING trail — `BaseScale (3, 3, 0.5)` with an authored `Gap: 2` gives two rails of
+    `3×1/2 − 1 = 0.5` width, i.e. **0.5 × 3 × 0.5 = 0.75 volume per prism**, laid every 5
+    world units (`initialWavelength == minWavelength == 5`, so the spacing is speed-invariant)
+    20 units behind the hull. That is 4× smaller than the next-smallest trail in the fleet
+    (Squirrel 3.09, Serpent 3.00, Manta 5.00, Dolphin 12.00) and at any distance it reads as
+    *no trail at all* — which is how it was found, via an AI Rhino released by the freestyle
+    Lifeform Matrix's hangar.
+
+    **Do not fix the ordering on its own — it would make the Rhino worse.** `Step` clamps
+    `XScaler`/`YScaler`/`ZScaler` against `maxSize` but never clamps `Gap`, and
+    `AnyAboveMin`'s gap branch (`if (so.WGap > 0f)`) is unreachable for the asset's authored
+    `GapWeight: -1`, so a live grow loop would open the hole without bound and never restore
+    it — rails inverting to zero width and flying out sideways. The spawner now refuses to lay
+    a degenerate rail (`VesselPrismController.ClampHalfGap`, shipped on the toy branch, no-op
+    against every authored config), but that is a floor, not the fix.
+
+    **The design fork to settle first:** the executor's own restore branch was written for a
+    POSITIVE `GapWeight` — growth pulls the hole closed, the shrink puts it back — which yields
+    a solid blade (`XScaler`/`YScaler` at `MaxSize 4` → `6 × 12 × 0.5` ≈ **36 volume**, a 48×
+    jump). The asset authors `-1`, which inverts it into the runaway-open case. Whichever
+    reading is intended, the volume change lands directly on **Ribcage** and **Astro League**
+    (both Rhino-only) and their `PhaseThresholds` would need re-deriving against the grown
+    slab — see CLAUDE.md, "a cell whose prisms are not nominal must author its volume ladder".
+    That is why this is its own branch and not a toy fix.
