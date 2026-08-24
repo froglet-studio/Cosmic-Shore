@@ -386,10 +386,19 @@ var sb = new StringBuilder();
             var publish = PublishSession();
             var next = NextBacklogItemId();
 
-            var message = offered == 1
-                ? "1 verdict sent. Thank you — that is one more thing that is no longer untested."
-                : offered + " verdicts sent. Thank you — that is " + offered +
-                  " more things that are no longer untested.";
+            // offered == 0 is the re-press case: everything in this session was already
+            // sent. Harmless, and worth keeping honest rather than claiming "0 sent" —
+            // it is also the safest possible rehearsal of the git path below.
+            string message;
+            if (offered == 0)
+                message = "Nothing new to send — everything in this session had already " +
+                          "been submitted.";
+            else if (offered == 1)
+                message = "1 verdict sent. Thank you — that is one more thing that is " +
+                          "no longer untested.";
+            else
+                message = offered + " verdicts sent. Thank you — that is " + offered +
+                          " more things that are no longer untested.";
             message += "\n\n" + publish;
 
             if (string.IsNullOrEmpty(next))
