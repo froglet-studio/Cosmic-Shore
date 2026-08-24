@@ -7,8 +7,9 @@ namespace CosmicShore.Tests
     /// <summary>
     /// Edit-mode coverage for the MASS in-flight growth curve — the Sparrow's answer to
     /// "the only thing that felt fun was huge projectiles". Rounds leave the muzzle small
-    /// and swell as they travel; MASS decides how much. The shipped pair is 3× at resting
-    /// Mass and 6× at Mass 10, extrapolated across the element system's [-5, 15] band.
+    /// and swell as they travel; MASS decides how much. The bullets' shipped pair is 3× at
+    /// resting Mass and 6× at Mass 10, extrapolated across the element system's [-5, 15]
+    /// band; the skyburst missile points at the SAME curve with its own 5×/8× pair.
     ///
     /// Lives under an Editor/ folder per CLAUDE.md — a test anywhere else compiles into the
     /// player and breaks the Windows build at the IL2CPP linker.
@@ -18,7 +19,16 @@ namespace CosmicShore.Tests
         const float AtRest = 3f;   // the shipped FullAutoAction.asset values
         const float AtFull = 6f;
 
-        static float G(int level) => FullAutoActionSO.GrowthFactorForLevel(level, AtRest, AtFull);
+        static float G(int level) => ElementalScaling.RoundGrowthFactorForLevel(level, AtRest, AtFull);
+
+        // ---- the skyburst missile (SkyBurstGunAction.asset) ----------------------
+        // The same ONE curve with its own authored pair: the missile leaves the bay at the
+        // size of the one the bay animation just ejected and swells into the warhead that
+        // detonates.
+        const float MissileAtRest = 5f;
+        const float MissileAtFull = 8f;
+
+        static float M(int level) => ElementalScaling.RoundGrowthFactorForLevel(level, MissileAtRest, MissileAtFull);
 
         [Test]
         public void HitsTheAuthoredAnchors()
@@ -58,9 +68,9 @@ namespace CosmicShore.Tests
         {
             // A factor of zero would collapse the round to nothing mid-flight, taking its hit
             // volume with it. Guard holds even for a mis-authored inverted pair.
-            Assert.That(FullAutoActionSO.GrowthFactorForLevel(-5, 0f, 0f), Is.GreaterThan(0f));
-            Assert.That(FullAutoActionSO.GrowthFactorForLevel(15, 6f, 3f), Is.GreaterThan(0f));
-            Assert.That(FullAutoActionSO.GrowthFactorForLevel(-5, 1f, 10f), Is.GreaterThan(0f));
+            Assert.That(ElementalScaling.RoundGrowthFactorForLevel(-5, 0f, 0f), Is.GreaterThan(0f));
+            Assert.That(ElementalScaling.RoundGrowthFactorForLevel(15, 6f, 3f), Is.GreaterThan(0f));
+            Assert.That(ElementalScaling.RoundGrowthFactorForLevel(-5, 1f, 10f), Is.GreaterThan(0f));
         }
 
         [Test]
@@ -68,7 +78,56 @@ namespace CosmicShore.Tests
         {
             // The sanctioned opt-out: author both endpoints to 1 and rounds fly at launch size.
             for (int level = -5; level <= 15; level++)
-                Assert.AreEqual(1f, FullAutoActionSO.GrowthFactorForLevel(level, 1f, 1f), 1e-4f);
+                Assert.AreEqual(1f, ElementalScaling.RoundGrowthFactorForLevel(level, 1f, 1f), 1e-4f);
+        }
+
+        // ------------------------------------------------------- the skyburst missile
+
+        [Test]
+        public void TheMissileHitsItsOwnAuthoredAnchors()
+        {
+            // A different weapon with its own endpoints, but NOT its own curve — one home
+            // (ElementalScaling.RoundGrowthFactorForLevel) for every round that grows.
+            Assert.AreEqual(5f, M(0), 1e-4f);
+            Assert.AreEqual(8f, M(10), 1e-4f);
+            Assert.AreEqual(3.5f, M(-5), 1e-4f);
+            Assert.AreEqual(9.5f, M(15), 1e-4f);
+        }
+
+        [Test]
+        public void TheMissileNeverOutgrowsItsOwnHitSphere()
+        {
+            // The skyburst grows its MODEL, not its collider (Projectile.flightGrowthTarget →
+            // MissileVisual), so growth walks a visual that was ~10× too small INTO the hit
+            // volume it already had. The authored ceiling is chosen so it never overshoots:
+            // past the hit sphere the round would start claiming reach it does not have.
+            //
+            // Measured, not assumed: Sparrow Missile.fbx vertex bounds span 8.2951 mesh units
+            // along the nose axis at UnitScaleFactor 1 (Unity import factor 0.01), and the
+            // prefab flies it at MissileVisual 2 × root ProjectileScale 10.
+            const float launchLength = 0.0829514f * 2f * 10f;   // ≈ 1.659 u
+            const float hitDiameter  = 0.85f * 10f * 2f;        // = 17 u (SphereCollider 0.85)
+
+            Assert.That(launchLength, Is.LessThan(hitDiameter),
+                "the missile already launches inside its own hit sphere");
+
+            for (int level = -5; level <= 15; level++)
+                Assert.That(launchLength * M(level), Is.LessThan(hitDiameter),
+                    $"grown missile length at Mass level {level}");
+
+            // ...and at rest it arrives at the hit RADIUS, which is the read the pair was
+            // authored for: by the time it lands, the model is the size of the thing that
+            // detonates rather than a speck inside it.
+            Assert.AreEqual(hitDiameter / 2f, launchLength * M(0), 0.5f);
+        }
+
+        [Test]
+        public void TheMissileGrowsMoreThanABulletDoes()
+        {
+            // Deliberate: a bullet launches at a size you can already see; the missile
+            // launches at bay size (~1.7 u) inside a 17 u hit sphere and has further to go.
+            for (int level = -5; level <= 15; level++)
+                Assert.That(M(level), Is.GreaterThan(G(level)), $"level {level}");
         }
 
         // ------------------------------------------------------------------ honesty

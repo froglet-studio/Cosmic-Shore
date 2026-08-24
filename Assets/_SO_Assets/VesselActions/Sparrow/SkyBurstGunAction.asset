@@ -23,4 +23,6 @@ MonoBehaviour:
     Min: 0
     Max: 0
     element: 0
+  growthFactorAtRestingMass: 5
+  growthFactorAtFullMass: 8
   launchDelaySeconds: 0.2

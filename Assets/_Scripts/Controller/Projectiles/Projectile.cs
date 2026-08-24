@@ -42,6 +42,25 @@ namespace CosmicShore.Gameplay
         /// <c>ProjectileImpactor</c> to suppress the trigger's prism case.</summary>
         public bool UsesSweptPrismDetection => sweptPrismDetection;
 
+        [Header("In-flight Growth (MASS)")]
+        [Tooltip("What the MASS in-flight growth scales. Empty = this projectile's ROOT, " +
+                 "which carries the collider — so the round's HIT VOLUME grows with it (the " +
+                 "full-auto tracer: what you see is what you hit).\n\n" +
+                 "Point it at a VISUAL CHILD instead when the round's model is much smaller " +
+                 "than its authored hit volume and growing both would only widen that gap. " +
+                 "The skyburst missile is that case: it launches at the size of the bay " +
+                 "missile (~1.7 u long) inside an 8.5 u hit sphere, so it grows its model " +
+                 "INTO the hit volume it already had, and its reach is unchanged.")]
+        [SerializeField] private Transform flightGrowthTarget;
+
+        [Tooltip("On: grow every axis, keeping the round's proportions — for a compact round " +
+                 "whose length is not a streak.\n\n" +
+                 "Off (default): grow the CROSS-SECTION only (the target's local x/y, with " +
+                 "flight along +z). The tracer mesh is a 20-long dart, so scaling it " +
+                 "uniformly at 6x would draw a 120-unit needle across a ~72-unit range: " +
+                 "width is what a hit volume is made of, length is just the streak.")]
+        [SerializeField] private bool flightGrowthUniform = false;
+
         [Header("Data Containers")]
         [SerializeField] private ThemeManagerDataContainerSO _themeManagerData;
 
@@ -189,6 +208,11 @@ namespace CosmicShore.Gameplay
         private void Awake()
         {
             InitialScale = transform.localScale;
+            // A growth target that is NOT the root is never re-sized by
+            // ApplyIntendedWorldScale, so the size it was authored at is the only baseline it
+            // has — and a pooled reissue must start from it rather than from where the last
+            // flight's growth left it.
+            _growthTargetAuthoredScale = GrowthTarget.localScale;
             _rootCollider = GetComponent<Collider>();
             _loadedGun = GetComponent<LoadedGun>();   // only chain spikes carry one
 
@@ -397,7 +421,15 @@ namespace CosmicShore.Gameplay
             // The growth baseline is whatever this shot actually launched at (the gun applies
             // projectileScale, the turret sizes its carried collider per shot), never the
             // prefab's InitialScale.
-            _launchScale = transform.localScale;
+            //
+            // A CHILD target has no such per-shot sizing pass, so last flight's growth would
+            // still be sitting on it: restore the authored scale first, or a pooled missile
+            // launches at the size the previous one died at and compounds every reuse.
+            var growthTarget = GrowthTarget;
+            if (growthTarget != transform)
+                growthTarget.localScale = _growthTargetAuthoredScale;
+
+            _launchScale = growthTarget.localScale;
             _launchSweepRadius = _sweepRadius;
 
             _moveCts = CancellationTokenSource.CreateLinkedTokenSource(
@@ -618,22 +650,29 @@ namespace CosmicShore.Gameplay
         // ---- in-flight growth (MASS) ----
         float _flightGrowthFactor = 1f;
         Vector3 _launchScale = Vector3.one;
+        Vector3 _growthTargetAuthoredScale = Vector3.one;
         float _launchSweepRadius = 0.5f;
 
         /// <summary>
-        /// How many times its launch cross-section this round swells to by the end of its
-        /// flight. Set per shot from the vessel's live MASS level; 1 = no growth (every
-        /// projectile that does not opt in).
+        /// How many times its launch size this round swells to by the end of its flight. Set
+        /// per shot from the vessel's live MASS level; 1 = no growth (every projectile that
+        /// does not opt in). WHAT grows — the root's hit volume or a visual child, on the
+        /// cross-section or on every axis — is the prefab's business, not the shooter's; see
+        /// <see cref="ApplyFlightGrowth"/>.
         /// </summary>
         public void SetFlightGrowth(float factor) => _flightGrowthFactor = Mathf.Max(0.01f, factor);
 
         /// <summary>
-        /// Grows the round toward its full factor across the flight, and grows the swept hit
-        /// radius by the SAME factor — the size you see is the size that hits.
+        /// Grows the round toward its full factor across the flight, and — when the growth
+        /// target is the ROOT — grows the swept hit radius by the SAME factor, so the size you
+        /// see is the size that hits.
         ///
-        /// **Cross-section only.** The tracer mesh is a unit sphere at (1.5, 1.5, 20) — a
-        /// 20-long dart — so scaling it uniformly at 6× would draw a 120-unit needle across a
-        /// ~72-unit range. Width is what a hit volume is made of; length is just the streak.
+        /// **Cross-section by default.** The tracer mesh is a unit sphere at (1.5, 1.5, 20) —
+        /// a 20-long dart — so scaling it uniformly at 6× would draw a 120-unit needle across
+        /// a ~72-unit range. Width is what a hit volume is made of; length is just the streak.
+        /// <see cref="flightGrowthUniform"/> opts a compact round (the skyburst missile) out
+        /// of that rule: there the length is the round, not a streak, and holding it fixed
+        /// would inflate the model into a pancake.
         ///
         /// The hit radius is scaled EXPLICITLY rather than re-derived from lossyScale, because
         /// a SphereCollider takes the largest lossy component: with the length left alone, that
@@ -641,13 +680,32 @@ namespace CosmicShore.Gameplay
         /// deliberate scope line: the swept PRISM radius grows, while the PhysX radius the
         /// vessel/mine path uses is unchanged for the dart. Growing bullets against vessels is
         /// a Dog Fight balance change, not a prism-clearing one.)
+        ///
+        /// **A CHILD target grows nothing but photons.** It carries no collider and feeds no
+        /// sweep radius, so the round's reach — PhysX and swept alike — is exactly what it was
+        /// before the growth was wired. That is the whole point for the skyburst, whose model
+        /// is ~10× smaller than its authored hit sphere in every axis: growing the model walks
+        /// it INTO the hit volume, while growing the root would have carried the mismatch up
+        /// with it and silently rewritten a Dog Fight missile's reach.
         /// </summary>
         void ApplyFlightGrowth(float progress01)
         {
             float g = Mathf.LerpUnclamped(1f, _flightGrowthFactor, Mathf.Clamp01(progress01));
-            transform.localScale = new Vector3(_launchScale.x * g, _launchScale.y * g, _launchScale.z);
-            _sweepRadius = _launchSweepRadius * g;
+
+            var target = GrowthTarget;
+            target.localScale = flightGrowthUniform
+                ? _launchScale * g
+                : new Vector3(_launchScale.x * g, _launchScale.y * g, _launchScale.z);
+
+            if (target == transform)
+                _sweepRadius = _launchSweepRadius * g;
         }
+
+        /// <summary>
+        /// What the in-flight growth scales — the authored <see cref="flightGrowthTarget"/>,
+        /// or this projectile's own root when none is wired (every round that already grew).
+        /// </summary>
+        Transform GrowthTarget => flightGrowthTarget ? flightGrowthTarget : transform;
 
         /// <summary>
         /// The projectile's hit radius in world units, cached per launch (the Sparrow's

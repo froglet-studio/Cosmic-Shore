@@ -23,6 +23,66 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Skyburst — the missile grows as it travels, like the bullets (`cece/gallant-noether-o4jugw`, 2026-08-24)
+
+Authored without a Unity compile or play-test (remote session, no editor, no `unity` CLI binary in
+this environment). Touches `Projectile.cs`, `ElementalScaling.cs`, `FireGunActionSO.cs`,
+`FireGunActionExecutor.cs`, `FullAutoActionSO.cs`, `SparrowRoundGrowthTests.cs`, plus two
+hand-edited assets — `SkyBurstGunAction.asset` and `SkyBurstProjectile.prefab`.
+
+**What landed.** The Sparrow's skyburst missile now swells over its flight the way its bullets
+already did — the SAME curve, moved to one home (`ElementalScaling.RoundGrowthFactorForLevel`),
+with its own authored pair (5× at resting Mass, 8× at Mass 10, extrapolated to 3.5×/9.5× across
+the `[-5, 15]` band). `Projectile` grew two optional serialized fields: `flightGrowthTarget`
+(empty = the root, which is every existing round, unchanged) and `flightGrowthUniform`. The
+missile points its growth at the `MissileVisual` child and grows uniformly, so **the model grows
+and the hit sphere does not** — its reach is byte-identical to before. Rationale + the tuning
+table: `_Scripts/Controller/Vessel/R_VesselActions/SPARROW_SKYBURST_BAY.md` § "The missile grows
+as it travels (MASS)".
+
+**Verified offline** (more than inspection): .NET 8 installed in-session; the real shipped
+`ElementalScaling.cs` + `SparrowRoundGrowthTests.cs` compiled and executed against a `Mathf`/NUnit
+shim — **11/11 tests pass**, including the three new missile ones; all six edited C# files parse
+with 0 Roslyn syntax errors; `check_conditional_compilation.py` OK (1738 files). The missile mesh
+was **measured, not assumed** — `Sparrow Missile.fbx` vertex bounds span 8.2951 mesh units on the
+nose axis at `UnitScaleFactor 1`, which at the prefab's `MissileVisual` 2 × root `ProjectileScale`
+10 is a 1.659 u launch length, independently reproducing the 1.7 u the bay doc measured a
+different way. Blast radius grepped: `FireGunActionSO` has exactly one asset
+(`SkyBurstGunAction`), the moved static has no stale callers, and `_launchScale` is used nowhere
+but `ApplyFlightGrowth`.
+
+**Verify in editor**
+1. **Compile clean**, then run the edit-mode suite — `SparrowRoundGrowthTests` should be 11/11
+   inside Unity as it is offline.
+2. **Prefab took.** Open `SkyBurstProjectile.prefab` → `Projectile`: *Flight Growth Target* must
+   read `MissileVisual` and *Flight Growth Uniform* must be ticked. Both fields were written into
+   the YAML by hand; a serialization that did not take shows up as growth silently landing on the
+   root (which WOULD grow the hit sphere — see 4).
+3. **Dog Fight, fly the Sparrow, fire a skyburst and watch it go.** It should leave the bay at the
+   size of the missile the bay animation just ejected and arrive ~5× longer. The read to check is
+   continuity: at the handoff (0.2 s after the press) the live projectile should be the same size
+   as the animated bay missile — if it pops, the launch size is wrong, not the growth.
+4. **The hit sphere must NOT have changed.** Same mode: a missile that used to connect at a given
+   miss distance should still connect at exactly that distance, and one that used to miss should
+   still miss. A missile hit is 50 points, so this is the balance-sensitive line.
+5. **Pool reuse.** Fire many missiles in one turn (ammo cost 0.5, so two per full bar — reload and
+   repeat a dozen times). Every one must launch at the SAME size. A missile that launches bigger
+   each time means the child-scale rebase in `LaunchProjectile` is not running.
+6. **Mass response.** Collect Mass crystals and fire again: growth should visibly increase (8× at
+   Mass 10 vs 5× at rest). At level 15 the missile is 15.8 u long against a 17 u hit diameter —
+   it should still read as sitting inside its own blast, never as overshooting it.
+7. **The exhaust.** The root `ParticleSystem` does not grow with the model (it is on the root), so
+   check whether it now reads as undersized against a grown missile — that is the pre-existing
+   follow-up in the bay doc, and this change makes it more visible.
+
+**First-pass tuning** (starting points, expect a balancing pass): `growthFactorAtRestingMass: 5`,
+`growthFactorAtFullMass: 8` on `SkyBurstGunAction.asset`. Raising them is bounded — the round must
+never visually outgrow its 17 u hit diameter, which at the shipped launch length caps the level-15
+factor at ~10.2×. `SparrowRoundGrowthTests.TheMissileNeverOutgrowsItsOwnHitSphere` fails the suite
+if a retune crosses it.
+
+---
+
 ### 🔴 Flora — TIME breeds faster, the second elemental law (`claude/flora-reproduction-balance-y9gaij`, 2026-08-24)
 
 Authored without a Unity compile or play-test (remote session, no editor, no `unity` CLI binary in
