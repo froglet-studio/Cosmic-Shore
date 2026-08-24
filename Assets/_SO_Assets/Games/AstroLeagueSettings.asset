@@ -134,3 +134,5 @@ MonoBehaviour:
   jadeGoalColor: {r: 0.18695846, g: 0.8200566, b: 0.8616352, a: 0.5}
   rubyGoalColor: {r: 0.9056604, g: 0.15094331, b: 0.66856146, a: 0.5}
   goldGoalColor: {r: 1, g: 0.82, b: 0.2, a: 0.5}
+  detonationExplosionPrefabs:
+  - {fileID: 3479271500403630839, guid: 4a855af160021d241b8c1ac70cf2d792, type: 3}

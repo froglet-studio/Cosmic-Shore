@@ -274,15 +274,18 @@ namespace CosmicShore.Gameplay
         /// reason. <c>AIPilot</c> has no arrive-and-stop behaviour - it steers at its target
         /// forever and flies through on arrival - so a target's placement decides where the AI
         /// LIVES. Ribcage wants its AI outside the bone (damage happens on the transit), so its
-        /// stations sit beyond the shell. Here the prey is INSIDE the rooms, so a station on a
-        /// wall would make the AI orbit the wall and never hunt: every waypoint is placed at the
-        /// MIDDLE of a room's radial band, where the creatures actually are.
+        /// stations sit beyond the shell. Here the prey is spread through the arena's whole
+        /// volume, so a station on a wall would make the AI orbit the wall and never hunt: every
+        /// waypoint is placed at the MIDDLE of a room's radial band, in open water between the
+        /// cages where an AI can actually fly.
         ///
         /// Each AI works one room for <see cref="AiWaypointsPerRoom"/> waypoints and then steps
-        /// inward, cycling outer → middle → core → OPEN WATER → outer (four rooms, including the
-        /// stocked water outside the cages), so a full lobby is spread through the whole arena
-        /// rather than queueing in one swarm. Waypoints walk a golden-angle spiral, so
-        /// successive ones are ~137° apart and it keeps finding fresh, un-hunted wildlife.
+        /// inward, cycling outer → middle → core → OPEN WATER → outer, so a full lobby sweeps the
+        /// arena at every radius rather than queueing in one place. The rooms are the cage's
+        /// architecture, not a fauna pen - since every species now roams the whole arena
+        /// (<c>SpawnableWildlifeCage.RoamInner</c>) the cycle is simply the cheapest way to cover
+        /// every radius. Waypoints walk a golden-angle spiral, so successive ones are ~137° apart
+        /// and it keeps finding fresh, un-hunted wildlife.
         ///
         /// Every other waypoint is a HUNT on <see cref="Cell.GetExplosionTarget"/> - the densest
         /// mass hostile to the AI's domain. In an arena whose mass is mostly creature bodies that
@@ -334,7 +337,7 @@ namespace CosmicShore.Gameplay
                     // Patrol beat: the middle of the current room's band, on a golden-angle
                     // spiral. INSIDE the room by construction - see the summary.
                     int room = (startRoom + waypoint / AiWaypointsPerRoom) % SpawnableWildlifeCage.RoomCount;
-                    float mid = 0.5f * (SpawnableWildlifeCage.BandInner(room) + SpawnableWildlifeCage.BandOuter(room));
+                    float mid = 0.5f * (SpawnableWildlifeCage.RoomInner(room) + SpawnableWildlifeCage.RoomOuter(room));
 
                     float a = phase + waypoint * 2.39996323f;
                     float y = 1f - 2f * ((waypoint * 0.37f) % 1f);

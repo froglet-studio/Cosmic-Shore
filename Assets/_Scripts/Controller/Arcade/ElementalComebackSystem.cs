@@ -119,6 +119,8 @@ namespace CosmicShore.Gameplay
                     return ScoreDifferenceSource.CrystalsCollected;
                 case GameModes.AstroLeague:
                     return ScoreDifferenceSource.Goals;
+                case GameModes.ScarabScramble: // Score lands only at game end - hoop goals are the live stat
+                    return ScoreDifferenceSource.Goals;
                 case GameModes.NucleusRush: // Score lands only at game end - broods are the live stat
                     return ScoreDifferenceSource.Goals;
                 case GameModes.Rampage: // Score lands only at game end - destruction is the live stat
@@ -127,6 +129,7 @@ namespace CosmicShore.Gameplay
                 case GameModes.WildlifeLiberation: // Score lands only at game end - kills are the live stat
                     return ScoreDifferenceSource.LifeformsKilled;
                 case GameModes.DogFight: // Score lands only at game end - gunnery is the live stat
+                case GameModes.Bends:    // same shape: bends land as CombatPoints, Score at the end
                     return ScoreDifferenceSource.CombatPoints;
                 case GameModes.MultiplayerJoust: // Score lands only at game end - jousts are the live stat
                     return ScoreDifferenceSource.Jousts;

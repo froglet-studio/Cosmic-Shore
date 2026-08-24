@@ -96,6 +96,7 @@ namespace CosmicShore.Utility
         {
             _cancelRequested = true;
             DiagnosticsHUD.ClearStats(StatsSection);
+            DiagnosticsHUD.UnregisterCommand(CommandName);
         }
 
         void Update()

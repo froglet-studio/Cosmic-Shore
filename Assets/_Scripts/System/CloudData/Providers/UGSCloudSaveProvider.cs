@@ -30,6 +30,15 @@ namespace CosmicShore.Core
         /// </summary>
         static readonly HashSet<string> _failedKeys = new();
 
+        // A key failing at play exit must not suppress the next session's first failure toast;
+        // AnalyticsServiceFacade's constructor subscription to OnSaveFailed has no matching -=.
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        static void ResetStatics()
+        {
+            _failedKeys.Clear();
+            OnSaveFailed = null;
+        }
+
         /// <summary>
         /// Raised once when a key's save exhausts all retries while the provider is
         /// available (a genuine online failure, not offline). AnalyticsServiceFacade

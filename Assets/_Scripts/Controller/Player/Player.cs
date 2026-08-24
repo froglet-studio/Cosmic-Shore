@@ -155,8 +155,16 @@ namespace CosmicShore.Gameplay
 
             if (RoundStats == null) return;
 
-            var resolved = hitClass == (int)CombatHitClass.Missile
-                ? CombatHitClass.Missile
+            // Validate against the DECLARED set rather than testing for one member and
+            // collapsing everything else onto Bullet. That earlier shape was a latent
+            // un-scoring bug the moment a third class existed: The Bends' Debuff hits arrived
+            // from a client as Bullet, landed in the wrong raw counter, and were paid at the
+            // mode's gunnery rate - which in that mode is deliberately zero, so a client could
+            // fight a whole match and score nothing while the host scored normally. Anything
+            // genuinely out of range still falls back to Bullet, which is the point of
+            // re-validating here instead of trusting the wire.
+            var resolved = System.Enum.IsDefined(typeof(CombatHitClass), hitClass)
+                ? (CombatHitClass)hitClass
                 : CombatHitClass.Bullet;
 
             CombatHitScoring.Credit(RoundStats, resolved, gameData != null ? gameData.ScoringRule : null);

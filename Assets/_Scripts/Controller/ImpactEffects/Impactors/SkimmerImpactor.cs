@@ -123,6 +123,8 @@ namespace CosmicShore.Gameplay
         public void ReapplyPrismEffectsToOverlapping()
         {
             if (!isInitialized || _overlappingPrisms.Count == 0) return;
+            if (IsEffectContainerMissing(skimmerImpactorDataContainer, nameof(skimmerImpactorDataContainer)))
+                return;
             var esp = skimmerImpactorDataContainer.SkimmerPrismEffects;
             if (!DoesEffectExist(esp)) return;
 
@@ -143,7 +145,8 @@ namespace CosmicShore.Gameplay
                     if (IsEffectSlotEmpty(esp[e], skimmerImpactorDataContainer,
                             nameof(SkimmerImpactorDataContainerSO.SkimmerPrismEffects), e))
                         continue;
-                    esp[e].Execute(this, prismImpactor);
+                    var ep = esp[e];
+                    RunEffectIsolated(() => ep.Execute(this, prismImpactor), ep);
                 }
             }
         }
@@ -235,7 +238,16 @@ namespace CosmicShore.Gameplay
         {
             if (!isInitialized)
                 return;
-            
+
+            // The legacy Components/Skimmer.prefab predates the container refactor (it still
+            // serializes the retired per-list fields), so vessels that nest it without a
+            // per-instance override run this impactor with a null container. Every branch
+            // below derefs it before its secondary calls, so a bare deref threw per contact —
+            // an exception storm inside PhysX callbacks that froze the editor. Report once,
+            // skip the contact.
+            if (IsEffectContainerMissing(skimmerImpactorDataContainer, nameof(skimmerImpactorDataContainer)))
+                return;
+
             switch (impactee)
             {
                 case VesselImpactor shipImpactor:
@@ -251,7 +263,8 @@ namespace CosmicShore.Gameplay
                         if (IsEffectSlotEmpty(evs[i], skimmerImpactorDataContainer,
                                 nameof(SkimmerImpactorDataContainerSO.VesselSkimmerEffects), i))
                             continue;
-                        evs[i].Execute(shipImpactor, this);
+                        var ev = evs[i];
+                        RunEffectIsolated(() => ev.Execute(shipImpactor, this), ev);
                     }
 
                     skimmer.ExecuteImpactOnShip(shipImpactor.Vessel); // secondary call
@@ -286,7 +299,8 @@ namespace CosmicShore.Gameplay
                         if (IsEffectSlotEmpty(esp[i], skimmerImpactorDataContainer,
                                 nameof(SkimmerImpactorDataContainerSO.SkimmerPrismEffects), i))
                             continue;
-                        esp[i].Execute(this, prismImpactor);
+                        var ep = esp[i];
+                        RunEffectIsolated(() => ep.Execute(this, prismImpactor), ep);
                     }
 
 
@@ -296,14 +310,22 @@ namespace CosmicShore.Gameplay
 
                     break;
 
-                case ElementalCrystalImpactor elementalCrystalImpactor:
+                // The BASE crystal impactor, so OMNI and TEAM crystals reach the skimmer too — the
+                // Scarab converts an omni crystal into a ball on skimmer contact (SCARAB.md §4.1).
+                // Widening the case cannot change any shipped vessel, because an omni crystal is
+                // only handed to effects that OPT IN (AlsoAppliesToOmniCrystals); elemental
+                // crystals still go to every effect exactly as before.
+                case CrystalImpactor crystalImpactor:
+                {
                     // Mirror the crystal side's collectability guards (ElementalCrystalImpactor.
                     // AcceptImpactee): a living lifeform's embedded heart enters the trigger but is
                     // never skim-collectable — without this gate the skimmer's crystal effects
                     // (e.g. the Rhino sword's crystal burst) would fire on it, repeatedly, since
                     // the heart's collider never gets disabled by a collection.
-                    var crystal = elementalCrystalImpactor.Crystal;
+                    var crystal = crystalImpactor.Crystal;
                     if (crystal == null || crystal.IsEmbedded || crystal.IsExploding) return;
+
+                    bool elemental = crystalImpactor is ElementalCrystalImpactor;
 
                     var esc = skimmerImpactorDataContainer.SkimmerCrystalEffects;
                     if (!DoesEffectExist(esc)) return;
@@ -312,10 +334,13 @@ namespace CosmicShore.Gameplay
                         if (IsEffectSlotEmpty(esc[i], skimmerImpactorDataContainer,
                                 nameof(SkimmerImpactorDataContainerSO.SkimmerCrystalEffects), i))
                             continue;
-                        esc[i].Execute(this, elementalCrystalImpactor);
+                        if (!elemental && !esc[i].AlsoAppliesToOmniCrystals) continue;
+                        var ec = esc[i];
+                        RunEffectIsolated(() => ec.Execute(this, crystalImpactor), ec);
                     }
 
                     break;
+                }
             }
         }
 

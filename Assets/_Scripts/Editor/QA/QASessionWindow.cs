@@ -17,6 +17,11 @@ namespace CosmicShore.Editor.QA
     /// be the copy nobody can prove correct. Anything this window gets wrong is a layout
     /// bug you can see, not a lost result.
     ///
+    /// WRITES NOTHING UNDER Assets/ — no ship panel (Docs/TOOLING.md §6). Its output is
+    /// the tester's own session file under <c>Docs/QA/RESULTS/</c> plus the ledger, which
+    /// are ordinary committable project data, exactly like the Bug Ledger's store. The
+    /// python tools own every one of those writes.
+    ///
     /// Requires python3 on PATH. If it is missing the window says so and offers the
     /// download page rather than half-working.
     /// </summary>
@@ -100,53 +105,14 @@ namespace CosmicShore.Editor.QA
         readonly Dictionary<string, string> _noteEdits = new Dictionary<string, string>();
         readonly Dictionary<string, bool> _instructionsOpen = new Dictionary<string, bool>();
         readonly Dictionary<string, bool> _helpOpen = new Dictionary<string, bool>();
-        GUIStyle _bodyStyle, _passHeader, _failHeader, _okBody, _headline, _chip;
 
-        GUIStyle Body => _bodyStyle ?? (_bodyStyle = new GUIStyle(EditorStyles.wordWrappedLabel));
-        GUIStyle PassHeader => _passHeader ?? (_passHeader = Tinted(FrogletEditorPalette.Ok));
-        GUIStyle FailHeader => _failHeader ?? (_failHeader = Tinted(FrogletEditorPalette.Error));
-        GUIStyle OkBody => _okBody ?? (_okBody = TintedWrapped(FrogletEditorPalette.Ok));
+        /// <summary>Set by a button, run after the GUI pass — mutating mid-layout throws.</summary>
+        System.Action _deferred;
 
-        GUIStyle Headline
-        {
-            get
-            {
-                if (_headline == null)
-                {
-                    _headline = new GUIStyle(EditorStyles.boldLabel);
-                    _headline.wordWrap = true;
-                }
-                return _headline;
-            }
-        }
+        static Color Accent => FrogletEditorPalette.ColorFor(FrogletToolCategory.Qa);
 
-        GUIStyle Chip
-        {
-            get
-            {
-                if (_chip == null)
-                {
-                    _chip = new GUIStyle(EditorStyles.miniBoldLabel);
-                    _chip.alignment = TextAnchor.MiddleCenter;
-                    _chip.normal.textColor = new Color(0.1f, 0.1f, 0.1f);
-                }
-                return _chip;
-            }
-        }
-
-        static GUIStyle Tinted(Color c)
-        {
-            var s = new GUIStyle(EditorStyles.miniBoldLabel);
-            s.normal.textColor = c;
-            return s;
-        }
-
-        static GUIStyle TintedWrapped(Color c)
-        {
-            var s = new GUIStyle(EditorStyles.wordWrappedLabel);
-            s.normal.textColor = c;
-            return s;
-        }
+        // Every style and colour comes from FrogletEditorPalette (Docs/TOOLING.md §3).
+        static GUIStyle Body => FrogletEditorPalette.CardBodyWrapped;
 
         /// <summary>
         /// A numbered step banner. The window reads as ONE PROCESS — session, build,
@@ -160,14 +126,13 @@ namespace CosmicShore.Editor.QA
         /// </summary>
         void StepHeader(string number, string title, string help = null)
         {
-            EditorGUILayout.Space(14);
-            var accent = FrogletEditorPalette.ColorFor(FrogletToolCategory.Qa);
+            EditorGUILayout.Space(12);
             var open = help != null && _helpOpen.TryGetValue(number, out var h) && h;
             using (new EditorGUILayout.HorizontalScope())
             {
-                var box = GUILayoutUtility.GetRect(20f, 20f, GUILayout.Width(20f));
-                EditorGUI.DrawRect(box, accent);
-                GUI.Label(box, number, Chip);
+                var pill = GUILayoutUtility.GetRect(22f, 18f, GUILayout.Width(22f));
+                FrogletEditorPalette.StatusPill(pill, number, Accent);
+                GUILayout.Space(6f);
                 // ExpandWidth, not FlexibleSpace: a LabelField sized by the layout's
                 // leftovers gets squeezed by anything after it, which silently CLIPPED
                 // every header ("…do this once, at the s"). Let the title take the row
@@ -176,11 +141,11 @@ namespace CosmicShore.Editor.QA
                     GUILayout.ExpandWidth(true));
                 if (help != null &&
                     FrogletEditorPalette.ColorButton(open ? "×" : "?",
-                        FrogletEditorPalette.Muted, 22f, 18f, help))
+                        FrogletEditorPalette.Muted, 22f, 18f, help, outline: true))
                     _helpOpen[number] = !open;
             }
-            var line = GUILayoutUtility.GetRect(1f, 2f, GUILayout.ExpandWidth(true));
-            EditorGUI.DrawRect(line, new Color(accent.r, accent.g, accent.b, 0.35f));
+            var line = GUILayoutUtility.GetRect(0f, 2f, GUILayout.ExpandWidth(true));
+            FrogletEditorPalette.DrawRect(line, Accent.WithAlpha(0.35f));
             EditorGUILayout.Space(4);
             if (open)
             {
@@ -190,13 +155,30 @@ namespace CosmicShore.Editor.QA
             }
         }
 
-        /// <summary>A faint horizontal rule between subsections of one panel.</summary>
-        static void Rule()
+        /// <summary>A palette pill used as a labelled subsection heading.</summary>
+        static void PillHeader(string label, Color accent, float width = 88f)
         {
-            EditorGUILayout.Space(4);
-            var r = GUILayoutUtility.GetRect(1f, 1f, GUILayout.ExpandWidth(true));
-            EditorGUI.DrawRect(r, new Color(0.5f, 0.5f, 0.5f, 0.25f));
-            EditorGUILayout.Space(4);
+            var r = GUILayoutUtility.GetRect(width, 16f, GUILayout.Width(width));
+            FrogletEditorPalette.StatusPill(r, label, accent);
+        }
+
+        /// <summary>
+        /// Queue a state change for after the GUI pass (Docs/TOOLING.md §4). Every
+        /// button here re-runs session.py and REPLACES _state, so acting inline would
+        /// change the control set between a layout and repaint pass mid-frame.
+        /// </summary>
+        void Defer(System.Action action) => _deferred = action;
+
+        void RunDeferred()
+        {
+            if (_deferred == null) return;
+            var action = _deferred;
+            _deferred = null;
+            EditorApplication.delayCall += () =>
+            {
+                action();
+                if (this != null) Repaint();
+            };
         }
 
         bool HasUnsavedNotes
@@ -216,7 +198,8 @@ namespace CosmicShore.Editor.QA
         [MenuItem("FrogletTools/QA/QA Session", false, 10)]
         [FrogletTool(FrogletToolCategory.Qa, Importance = 5,
             DisplayName = "QA Session",
-            Description = "Record verdicts for backlog items and submit a QA session.")]
+            Description = "Run the untested-development backlog and submit verdicts.",
+            DocPath = "Docs/QA/README.md#for-qa--how-to-run-a-session")]
         public static void Open()
         {
             var w = GetWindow<QASessionWindow>("QA Session");
@@ -406,6 +389,8 @@ var sb = new StringBuilder();
                 EditorGUILayout.EndScrollView();
                 if (_state != null && _state.hasSession) DrawFooter();
             }
+
+            RunDeferred();
         }
 
         void DrawNoPython()
@@ -487,9 +472,9 @@ var sb = new StringBuilder();
             {
                 if (FrogletEditorPalette.ColorButton("Create session",
                         FrogletEditorPalette.Ok, 140f))
-                    Run("new", "--tester", _newTester,
+                    Defer(() => Run("new", "--tester", _newTester,
                         "--unity", Application.unityVersion,
-                        "--platform", "Editor (" + Application.platform + ")");
+                        "--platform", "Editor (" + Application.platform + ")"));
             }
         }
 
@@ -602,20 +587,20 @@ var sb = new StringBuilder();
 
                 if (match)
                 {
-                    Rule();
-                    EditorGUILayout.LabelField("These match. Nothing to do here — " +
-                        "go on to step 3.", OkBody);
+                    FrogletEditorPalette.HorizontalRule(4f);
+                    PillHeader("MATCH", FrogletEditorPalette.Ok, 62f);
+                    EditorGUILayout.LabelField("Nothing to do here — go on to step 3.", Body);
                     return;
                 }
 
-                Rule();
+                FrogletEditorPalette.HorizontalRule(4f);
 
                 if (!sameBranch)
                 {
                     EditorGUILayout.LabelField(
                         "You are on the wrong branch, so this is not the code your " +
                         "tests are about. Switch before you run anything:",
-                        FailBodyStyle());
+                        Body);
                     EditorGUILayout.Space(4);
                     EditorGUILayout.LabelField("In GitHub Desktop:",
                         EditorStyles.miniBoldLabel);
@@ -627,7 +612,7 @@ var sb = new StringBuilder();
                         "are already up to date.\n" +
                         "4.  Come back to Unity, wait for it to finish importing, then " +
                         "press Refresh at the top of this window.", Body);
-                    Rule();
+                    FrogletEditorPalette.HorizontalRule(4f);
                 }
                 else
                 {
@@ -648,7 +633,7 @@ var sb = new StringBuilder();
                         "run on. It only updates your own notes — it does not change " +
                         "any code. Press it only if EVERY test in this session was run " +
                         "on the version Unity has open right now."))
-                    Run("submit", "--accept-head");
+                    Defer(() => Run("submit", "--accept-head"));
                 EditorGUILayout.LabelField(
                     "Only press that if every test in this session was run on it. If " +
                     "you were told to test one specific older version, ask whoever set " +
@@ -657,8 +642,6 @@ var sb = new StringBuilder();
             }
         }
 
-        GUIStyle FailBodyStyle() => _failBody ?? (_failBody = TintedWrapped(FrogletEditorPalette.Error));
-        GUIStyle _failBody;
 
         // A row reads top-to-bottom in the order the work actually happens:
         // headline → the instructions → your verdict → your notes. The verdict
@@ -672,14 +655,15 @@ var sb = new StringBuilder();
                 using (new EditorGUILayout.HorizontalScope())
                 {
                     var headline = row.id + (item == null ? "" : "  —  " + item.title);
-                    EditorGUILayout.LabelField(headline, Headline);
+                    EditorGUILayout.LabelField(headline, FrogletEditorPalette.CardTitle,
+                        GUILayout.ExpandWidth(true));
                     if (item != null)
                         EditorGUILayout.LabelField(item.priority,
                             EditorStyles.miniBoldLabel, GUILayout.Width(24f));
                     if (!row.frozen &&
                         FrogletEditorPalette.ColorButton("×", FrogletEditorPalette.Error,
                             24f, 18f, "Remove this row from your session"))
-                        Run("remove", "--item", row.id);
+                        Defer(() => Run("remove", "--item", row.id));
                 }
 
                 // The item's instructions live INSIDE its row: open by default until a
@@ -723,18 +707,21 @@ var sb = new StringBuilder();
                         var current = Mathf.Max(0, System.Array.IndexOf(options, row.verdict));
                         var picked = EditorGUILayout.Popup(current, options, GUILayout.Width(110f));
                         if (picked != current)
-                            Run("set", "--item", row.id, "--verdict", options[picked]);
+                        {
+                            var chosen = options[picked];
+                            Defer(() => Run("set", "--item", row.id, "--verdict", chosen));
+                        }
 
                         GUILayout.FlexibleSpace();
                         if (FrogletEditorPalette.ColorButton("Attach evidence",
                                 FrogletEditorPalette.Info, 120f, 18f,
                                 "Copy a screenshot/clip/log next to this session and " +
                                 "reference it from this item's notes"))
-                            Attach(row.id);
+                            Defer(() => Attach(row.id));
                         if (FrogletEditorPalette.ColorButton("Save Console log",
                                 FrogletEditorPalette.Muted, 120f, 18f,
                                 "Save the current Editor log as evidence for this item"))
-                            AttachEditorLog(row.id);
+                            Defer(() => AttachEditorLog(row.id));
                     }
 
                     EditorGUILayout.LabelField(
@@ -761,7 +748,8 @@ var sb = new StringBuilder();
                                     FrogletEditorPalette.Ok, 90f, 18f))
                             {
                                 _noteEdits.Remove(row.id);
-                                Run("set", "--item", row.id, "--notes", typed);
+                                var note = typed;
+                                Defer(() => Run("set", "--item", row.id, "--notes", note));
                             }
                             if (FrogletEditorPalette.ColorButton("Revert",
                                     FrogletEditorPalette.Muted, 70f, 18f))
@@ -817,28 +805,28 @@ var sb = new StringBuilder();
                 }
                 if (!string.IsNullOrEmpty(item.steps))
                 {
-                    if (!first) Rule();
+                    if (!first) FrogletEditorPalette.HorizontalRule(4f);
                     first = false;
                     EditorGUILayout.LabelField("What to do — in order", EditorStyles.miniBoldLabel);
                     EditorGUILayout.LabelField(item.steps, Body);
                 }
                 if (!string.IsNullOrEmpty(item.passWhen))
                 {
-                    if (!first) Rule();
+                    if (!first) FrogletEditorPalette.HorizontalRule(4f);
                     first = false;
-                    EditorGUILayout.LabelField("PASS when", PassHeader);
+                    PillHeader("PASS WHEN", FrogletEditorPalette.Ok);
                     EditorGUILayout.LabelField(item.passWhen, Body);
                 }
                 if (!string.IsNullOrEmpty(item.failWhen))
                 {
-                    if (!first) Rule();
+                    if (!first) FrogletEditorPalette.HorizontalRule(4f);
                     first = false;
-                    EditorGUILayout.LabelField("FAIL when", FailHeader);
+                    PillHeader("FAIL WHEN", FrogletEditorPalette.Error);
                     EditorGUILayout.LabelField(item.failWhen, Body);
                 }
                 if (!string.IsNullOrEmpty(item.known))
                 {
-                    if (!first) Rule();
+                    if (!first) FrogletEditorPalette.HorizontalRule(4f);
                     EditorGUILayout.LabelField("Known already — do NOT fail on these",
                         EditorStyles.miniBoldLabel);
                     EditorGUILayout.LabelField(item.known, Body);
@@ -870,8 +858,9 @@ var sb = new StringBuilder();
                 if (FrogletEditorPalette.ColorButton("Add", FrogletEditorPalette.Ok, 60f) &&
                     _addIndex > 0 && _addIndex < ids.Count)
                 {
-                    Run("set", "--item", ids[_addIndex], "--verdict", "");
+                    var picked = ids[_addIndex];
                     _addIndex = 0;
+                    Defer(() => Run("set", "--item", picked, "--verdict", ""));
                 }
             }
 
@@ -939,42 +928,58 @@ var sb = new StringBuilder();
         // The build-mismatch remedy lives in step 2, next to its explanation.
         void DrawFooter()
         {
-            EditorGUILayout.Space(4);
-            using (new EditorGUILayout.HorizontalScope(EditorStyles.helpBox))
+            // Drawn as the same numbered step as 1-4 — a pill, the title, the accent
+            // rule — rather than as a bespoke strip, so the process reads unbroken to
+            // its last line. It sits outside the scroll view so it is always reachable.
+            var help =
+                "Submit hands your finished verdicts to engineering. It checks your " +
+                "form first and refuses if anything is missing, telling you exactly " +
+                "what to fix — so pressing it can never lose your work.\n\n" +
+                "You can submit as often as you like; each time, only the tests you " +
+                "have newly finished are sent. Once a verdict is sent it is locked: if " +
+                "that test gets fixed and you run it again later, that is a fresh " +
+                "session, not an edit to this one.";
+
+            string status;
+            Color tone;
+            if (_state.submitted)
             {
-                EditorGUILayout.LabelField(new GUIContent("5 · Submit",
-                        "Submit hands your finished verdicts to engineering. It checks " +
-                        "your form first and refuses if anything is missing, telling you " +
-                        "exactly what to fix — so pressing it can never lose your work.\n\n" +
-                        "You can submit as often as you like; each time, only the tests " +
-                        "you have newly finished are sent. Once a verdict is sent it is " +
-                        "locked: if that test gets fixed and you run it again later, that " +
-                        "is a fresh session, not an edit to this one."),
-                    EditorStyles.boldLabel, GUILayout.Width(70f));
-                if (_state.submitted)
-                    EditorGUILayout.LabelField("Sent. Keep testing and press Submit again " +
-                        "whenever you finish more.", EditorStyles.miniLabel);
-                else if (_state.canSubmit)
-                    EditorGUILayout.LabelField("Everything checks out — press Submit to " +
-                        "send your results.", EditorStyles.miniLabel);
-                else
-                    EditorGUILayout.LabelField(
-                        _state.blocking + " thing(s) to fix first — each one is explained " +
-                        "in red where it belongs, above.", EditorStyles.miniLabel);
-                if (HasUnsavedNotes)
-                    EditorGUILayout.LabelField("Unsaved notes.", EditorStyles.miniBoldLabel,
-                        GUILayout.Width(90f));
-
-                GUILayout.FlexibleSpace();
-
-                using (new EditorGUI.DisabledScope(!_state.canSubmit || HasUnsavedNotes))
-                {
-                    if (FrogletEditorPalette.ColorButton("Submit session",
-                            FrogletEditorPalette.Ok, 150f, 24f,
-                            HasUnsavedNotes ? "Save your edited notes first" : null))
-                        Run("submit");
-                }
+                status = "Sent. Keep testing and press Submit again whenever you finish more.";
+                tone = FrogletEditorPalette.Ok;
             }
+            else if (HasUnsavedNotes)
+            {
+                status = "Save your edited note first — the Save note button is on that test.";
+                tone = FrogletEditorPalette.Warn;
+            }
+            else if (_state.canSubmit)
+            {
+                status = "Everything checks out — press Submit to send your results.";
+                tone = FrogletEditorPalette.Ok;
+            }
+            else
+            {
+                status = _state.blocking + " thing(s) to fix first — each one is " +
+                         "explained in red where it belongs, above.";
+                tone = FrogletEditorPalette.Error;
+            }
+
+            StepHeader("5", "Submit", help);
+            using (new EditorGUILayout.HorizontalScope())
+            {
+                // The status wraps and takes the row; the button keeps its fixed width.
+                // A fixed-width label here is what clipped "…press Submit again".
+                EditorGUILayout.LabelField(status, Body, GUILayout.ExpandWidth(true));
+
+                // enabled:, NOT a DisabledScope. A scope fades the fill and its white
+                // label together, which is what made this button unreadable; the
+                // palette's own disabled state is a legible Surface/Muted pair.
+                if (FrogletEditorPalette.ColorButton("Submit session", tone, 150f, 26f,
+                        HasUnsavedNotes ? "Save your edited notes first" : null,
+                        enabled: _state.canSubmit && !HasUnsavedNotes))
+                    Defer(() => Run("submit"));
+            }
+            EditorGUILayout.Space(4);
         }
     }
 }

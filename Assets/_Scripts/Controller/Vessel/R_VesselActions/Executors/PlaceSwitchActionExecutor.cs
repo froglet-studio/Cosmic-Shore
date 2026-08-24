@@ -6,11 +6,10 @@ namespace CosmicShore.Gameplay
 {
     /// <summary>
     /// Executes <see cref="PlaceSwitchActionSO"/>: gates on switch charges, spends one, and
-    /// hands off to a <see cref="ScarabSwitch"/>, which owns the ring visual, the interior
-    /// prism fill, the pass-through detection and the outward burst. Per-vessel state lives
-    /// here (the SO is shared and stateless). Rides the normal R_VesselActionHandler
-    /// ServerRpc→ClientRpc re-execution, so every peer builds the same switch from its
-    /// replicated transform.
+    /// hands off to a <see cref="ScarabSwitch"/>, which owns the ring visual, the pass-through
+    /// detection and the scarab-wing dais it pays out. Per-vessel state lives here (the SO is
+    /// shared and stateless). Rides the normal R_VesselActionHandler ServerRpc→ClientRpc
+    /// re-execution, so every peer builds the same switch from its replicated transform.
     /// </summary>
     public class PlaceSwitchActionExecutor : ShipActionExecutorBase
     {
@@ -50,7 +49,7 @@ namespace CosmicShore.Gameplay
             {
                 // Refusal: no charge, nothing spawns. (HUD pips already show the count;
                 // a refusal SFX is a follow-up alongside the Scarab HUD pass.)
-                CSDebug.Log("[PlaceSwitch] Refused — no switch charge banked.");
+                CSDebug.LogVerbose(CSLogChannel.ScarabSwitch, "[PlaceSwitch] Refused — no switch charge banked.");
                 return;
             }
 
@@ -61,14 +60,15 @@ namespace CosmicShore.Gameplay
             float radius = so.RingRadius * so.switchScale.EvaluateLive(status); // MASS, live
             Vector3 center = ship.position + course * distance;
 
-            // The switch owns its own ring visual, interior fill, and pass-through detection.
+            // The switch owns its own ring visual and pass-through detection.
             var go = new GameObject($"ScarabSwitch::{status.PlayerName}");
             var sw = go.AddComponent<ScarabSwitch>();
-            sw.Build(prismSpawnEvent, status, center, course, radius, so.BrickScale, so.GrowthRate,
-                     so.InteriorPrismCount, so.BurstPrismCount, so.BurstRadiusMultiplier);
+            sw.Build(prismSpawnEvent, status, center, course, radius, so.GrowthRate,
+                     so.Dais, so.DaisPrismsPerFrame);
 
             resources.ChangeResourceAmount(so.ResourceIndex, -cost);
-            CSDebug.Log($"[PlaceSwitch] Switch ring r={radius:F0} placed {distance:F0}u ahead.");
+            CSDebug.LogVerbose(CSLogChannel.ScarabSwitch,
+                $"[PlaceSwitch] Switch ring r={radius:F0} placed {distance:F0}u ahead.");
         }
 
     }

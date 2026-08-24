@@ -198,6 +198,17 @@ its GameObject lists it in `m_Component`.
   every human diffing the file reads it as misplaced. Serialize enum fields as
   their INTEGER value (`condition: 1`), and get the integer from the C# —
   an enum with explicit values is not its declaration order.
+- **Authoring a whole new asset FOLDER: emit its `.meta` too, or Unity re-mints it.** A directory
+  under `Assets/` is itself an asset and needs `fileFormatVersion: 2` / `guid:` /
+  `folderAsset: yes` / `DefaultImporter:`. Without it Unity generates one on next import — fine
+  locally, and a fresh guid on every other machine, so the folder shows as an untracked change
+  forever. Same uniqueness assert as a script meta.
+- **Mint asset guids DETERMINISTICALLY when a script emits a whole asset set.** `uuid4()` is right
+  for a one-off, wrong for a generator with `--check`: a re-run mints new guids, every
+  cross-reference inside the set changes, and the diff is total. `md5(f"<project>/<set>/{name}")`
+  is stable across runs and machines, so `--check` compares content instead of identity — and the
+  uniqueness assert still applies (sweep every `.meta` repo-wide and confirm each new guid appears
+  exactly once).
 - **CHANGE a component's TYPE in place, by rewriting its class id and KEEPING its
   fileID.** Swapping `SphereCollider` → `CapsuleCollider` reads like an excise+add,
   and doing it that way is strictly worse: a new fileID means editing the owning
@@ -397,7 +408,30 @@ CSC=$(ls "$PWD"/dotnet/sdk/*/Roslyn/bincore/csc.dll | head -1)
 Do NOT conclude "no compiler here" from a missing `dotnet` on `PATH` — that was the state of
 a 2026-08 remote session that then nearly shipped on inspection alone. There are also no Unity
 managed DLLs in such a container (no `Library/`, no `UnityEngine.dll` anywhere on disk), so a
-full type check is genuinely impossible and the no-stubs filter below is the whole game.
+**whole-assembly** type check is impossible and the no-stubs filter below is the fallback.
+
+**But a REAL type check of the files you actually wrote is still available, and it is worth the
+20 minutes** on new code (as opposed to a small edit inside a large existing file). Build a stub
+harness — the mcs recipe below, minus the desugaring — and hand Roslyn the .NET **reference pack**
+so `System.Object` exists:
+
+```sh
+REFDIR=$(ls -d /usr/lib/dotnet/packs/Microsoft.NETCore.App.Ref/*/ref/net8.0 | head -1)   # or $PWD/dotnet/packs/...
+REFS=$(ls $REFDIR/*.dll | sed 's/^/-r:/' | tr '\n' ' ')
+dotnet "$CSC" -langversion:9.0 -nostdlib -noconfig $REFS \
+  -nowarn:CS1591,CS0067,CS0649,CS0414,CS1574,CS0169,CS8632 \
+  -target:library -out:/tmp/x.dll Stubs.cs <your files>
+```
+
+Without `-nostdlib -noconfig $REFS` this dies in a wall of `CS0518 Predefined type 'System.Object'
+is not defined` and reads as a broken harness. Two rules make the stubs honest: **transcribe every
+signature from the real declaration** (grep it, don't remember it — the whole value is that a wrong
+member name or arity fails HERE), and **declare each stub in the type's real namespace** so a
+missing `using` still fails. `UniTaskVoid` needs an `[AsyncMethodBuilder(...)]` struct with the six
+builder methods — ~25 lines, and it is what lets an `async UniTaskVoid` method be checked in place
+rather than desugared. A 2026-08 Urchin session type-checked two new ability files this way against
+~200 lines of stubs and shipped them clean; the errors it *did* surface were both stub gaps
+(`Object.name`, `Behaviour.isActiveAndEnabled`), which is what a working harness looks like.
 
 Roslyn parses the real files, so **the throwaway desugared copy disappears entirely** —
 and with the same `Stubs.cs` harness you still get the full type check. Cost is one
@@ -409,9 +443,19 @@ file that touches a huge API surface): compile the real files with **no stubs at
 and read only the error classes that stubs cannot cause —
 
 ```sh
-dotnet "$CSC" -langversion:9.0 -target:library -out:/tmp/x.dll <files> 2>&1 \
+# Pass the file list through a RESPONSE FILE — see the CS2001 note below.
+git diff --name-only origin/bleeding-edge...HEAD | grep '\.cs$' | sed 's/^/"/;s/$/"/' > files.rsp
+dotnet "$CSC" -langversion:9.0 -target:library -out:/tmp/x.dll "@files.rsp" 2>&1 \
   | grep -E "error CS(1[0-9]{3}|8[0-9]{3}|0102|0106|0128|0136)"
 ```
+
+**`CS2001: Source file '…' could not be found` on a path you can `cat` is a QUOTING bug, not a
+missing file.** This repo is full of directories with spaces (`Skimmer Crystal Effects`,
+`Effect Containers`, `Data Containers`, `Cell Configs`), and a shell-expanded `<files>` splits
+every one of them into fragments — a single such path produced three CS2001 lines naming
+`.../EffectsSO/Skimmer`, `Crystal`, and `Effects/….cs`. The tell is that the fragments
+concatenate back into a real path. A response file with one quoted path per line fixes it for
+good, and is worth using unconditionally so the failure can never appear.
 
 The flood of `CS0246`/`CS0234` (missing Unity types) is expected noise; a hit in that
 filter is real. **Bucket the diagnostics before reading any of them** —
@@ -555,6 +599,24 @@ Assert the JSON analog of `CS0102` while you are there: duplicate `m_ObjectId`, 
 property reference names, registry entries that do not resolve, dangling edge endpoints,
 and any input slot with more than one feeder. All five are ~20 lines over the parsed model.
 
+### Trap: two graph-edit failures that ship silently — cycles, and slot-type mismatch
+
+Both shipped and cost a playtest round each (2026-08, shield-shatter branch):
+
+1. **An edge CYCLE makes the whole graph magenta.** Splicing node A's output into node B
+   while B (transitively) feeds A creates a cycle ShaderGraph rejects at import — every
+   material on the graph renders magenta, including effects your edit never touched.
+   Before writing any edge, walk the edge list and assert acyclicity of the whole graph,
+   not just the nodes you added.
+2. **A property NODE cloned from the wrong donor carries the donor's SLOT TYPE.** A
+   Vector3 property exposed through a node cloned from a Vector1-slot donor wires
+   "successfully" and delivers nothing — no import error, no magenta, the vector is
+   silently zero. Assert that every property node's slot type matches its property's
+   kind after synthesis.
+
+Both checks are cheap to run over the parsed JSON and are now standing assertions in
+`PrismClockWiringValidator` + `PrismShieldMorphTests` — copy that shape into any new wirer.
+
 ### Trap: a clean merge can still be a semantic conflict (duplicate members)
 
 Origin: `Flora.LeafSize` (2026-08). Two branches each added the SAME member to
@@ -610,6 +672,123 @@ def sub(old, new, label):
 Python, a compile for C#) and check the line count moved by roughly what you intended — a file
 that grew 40x is the signature of exactly this bug.
 
+### Technique: make the harness EXTRACT the shipped block, and run the shipped TEST
+
+The §4 harness is only worth what its fidelity to the real file is worth, and a hand-retyped
+copy drifts the moment you fix a typo in one and not the other. Slice it out of the shipped
+file instead, so the thing you prove is byte-identical to the thing you commit:
+
+```python
+src   = pathlib.Path(REAL_FILE).read_text()
+block = src[src.index(START_MARKER) : src.index(END_MARKER)]      # assert both markers found
+pathlib.Path("Program.cs").write_text(STUBS + block + DRIVER)
+```
+
+Two things this buys beyond a compile:
+
+- **Unity-flavoured null checks work with a three-line stub.** Nearly every gameplay block that
+  touches `UnityEngine.Object` needs only its implicit-bool operator to run headlessly:
+  `public static implicit operator bool(Object o) => o is { Destroyed: false };`. That covers
+  `if (!component)`, `x ? a : b`, and the destroyed-object prune idiom in one go.
+- **You can execute the shipped TEST FILE's own assertions**, not a paraphrase of them: strip
+  `#if UNITY_EDITOR` / the NUnit `using`, swap `[Test]` for a plain method and `Assert` for a
+  four-line shim, and drive it by reflection. What you then prove is literally what the edit-mode
+  suite will assert when a human opens Unity, which is a much stronger claim than "it compiles".
+  This is the closest you can get to running the repo's tests without the editor — do it whenever
+  a branch adds a test whose subject is a pure function.
+
+Use it for the pure/static core of a change (a predicate, a mask, a formula). It still cannot see
+name resolution or whole-class consistency — see the two traps below.
+### Trap: a SHIELD's size is not the prism's size, and the two tiers scale DIFFERENTLY
+
+Origin: the Scarab wing dais (2026-08-18). A super-shielded "sun core" was sized so its
+*bounding box* matched the space it had to fill; it rendered 73% too big and the human
+caught it by eye. The measurement was not sloppy — it was the wrong measurement, and the
+class of error generalises to anything you place next to shielded mass.
+
+`PrismStateManager` swaps a prism's MESH when a shield engages, and both meshes are built from
+the box HALF-extents times `CIRCUMSCRIBING_SCALE` (3). So for a prism of full size `S` on an
+axis, the semi-axis is `1.5 S` — **three times the box's own extent** — and neither tier is
+"the prism, slightly bigger". Read the generators, not the field names:
+
+| tier | mesh | vertices at | extent along an axis | **circumscribed diameter** |
+|---|---|---|---|---|
+| plain | box | `±S/2` | `S` | `S·√3` |
+| shielded | octahedron | `(±1.5S, 0, 0)` &c — **ON THE AXES** | `3S` | `3S` |
+| super-shielded | stella octangula | spikes at `(±1.5S, ±1.5S, ±1.5S)` — **the CUBE CORNERS** | `3S` | `3S·√3 ≈ 5.196S` |
+
+The two shield tiers have the **same axis extent and different apparent size**, because the
+stellation's spikes point at the corners. Size a stella by its bounding box and you understate
+what the player sees by `√3`. That is the whole bug, and it is invisible to every check that
+measures axis extents — including a top-down render, where the spikes project to `1.5S·√2`.
+
+Rules that fall out:
+
+- **Decide which measure the design cares about, and derive the authored scale from it.**
+  "Fits this slot" is a bounding-box question (`S = slot / 3`). "Reads this big" is a
+  circumscribed-sphere question (`S = size / 3` for shielded, `S = size / (3√3)` for
+  super-shielded). Name the measure in the field's tooltip so the next person cannot pick
+  the other one.
+- **Derive the factor from the generator's own constant**, never a literal:
+  `OctahedronMeshGenerator.CIRCUMSCRIBING_SCALE`, and `× √3` for the stellation. A hard-coded
+  3 or 5.196 silently rots if the constant is ever retuned.
+- **A tier change is a SIZE change unless you fit for it.** Cycling plain → shielded along a
+  row of same-sized prisms triples every third one. Fitting the prism (authored scale
+  `× 1/CIRCUMSCRIBING_SCALE`) restores the envelope exactly and is uniform, so the prism's
+  aspect — its identity — survives; `Docs/ECOSYSTEM.md §35` is the ruling.
+- **Check clearance against the SHIELD's silhouette, not the box's — and the silhouette is a
+  function of the POSE.** In-plane, a shielded prism is a rhombus with semi-axes `1.5·(w, L)`.
+  A super-shielded one reaches `1.5S·√2` toward its in-plane corners *only while it is
+  axis-aligned*: rotate it so a spike lies in your plane (aiming `(1,1,1)` at something) and the
+  reach becomes the full `1.5S·√3`, 22.5% more, silently. So compute a stella's outline as the
+  projected convex hull of its eight spike tips under its own rotation — the stellation's hull IS
+  that cube — rather than a hard-coded octagon of alternating radii, which is the outline of one
+  particular pose. An exact 2D separating-axis test over those silhouettes is ~40 lines and is the
+  only way to claim "no overlaps or clipping" honestly.
+- **The taper is a design tool, not just a cost.** An octahedron's side faces slope at
+  `atan(halfWidth/halfLength)` from its axis while a box's are parallel, so a run of
+  flush-tiled boxes cannot turn and a run with an octahedron in it turns by exactly
+  `2·atan(w/L)` at that prism — pivoting about its root TIP, which all three prisms share.
+  Curvature in a tiled prism structure is therefore *placed* (where the shielded prisms go),
+  not tuned. Get the pivot wrong — rotate about the chain point instead of the shared root
+  tip — and every hinge overlaps, at a rate that looks like a global spacing problem.
+
+### Trap: a stub-harness error is a STUB GAP until proven otherwise — but not always
+
+Running the shipped file against transcribed stubs means every compile error has two possible
+causes, and the likely one is the harness. In one session the harness raised nine errors:
+`Mathf.Rad2Deg`, `Mathf.Acos`, `Vector2.zero`, `Vector2`/`Vector3` unary minus, `Vector3.Scale`,
+`Quaternion.x/y/z/w`, `Prism.Damage`, `AstroLeagueBall.Velocity` — **eight were missing stub
+members** that real Unity has, and patching the shipped code for any of them would have been a
+regression invented by the tool.
+
+So the discipline is: **grep the real repo for the member before touching your file.** Two
+`grep -n` calls settle it — the type's own source, or any existing call site.
+
+The ninth was real (a missing `using CosmicShore.Utility;` in a new editor window, which would
+have broken the whole editor assembly), and that is the point: the eight false alarms are the
+price of the one catch, and the catch is a build break nobody would have seen until Unity opened.
+Do not stop running the harness because it cries wolf; just always ask *whose* fault it is first.
+Keep the stub file, too — it accumulates, and the next session starts with nine fewer gaps.
+
+### Trap: a test that pins an ABSOLUTE number fails on the first legitimate retune
+
+When the subject is authored geometry — a generated structure with a dozen coupled dials — a
+human WILL retune it, and every assertion phrased as a fixed multiple then fails for the wrong
+reason. Three of one session's tests failed the moment the designer's own parameters were adopted,
+and all three were the test being wrong, not the shape:
+
+| pinned | broke because | rewritten as |
+|---|---|---|
+| "the inner edge is within 1.15× the ring" | the reach is a DIAL, and a second dial swings it further | "outside the mouth, and within a quarter of the structure's OWN radius" |
+| "every hinge opens 1.2× the plain step" | the mechanic strengthens along the run (1.17× → 1.62×) | "every hinge beats its neighbours, AND the last beats the first" |
+| "some prism goes under the pool's scale floor" | one dial moved and nothing did any more | ceiling on the shipped shape, floor on an explicit thin variant |
+
+The rule: **assert relationships that scale with the structure — monotonicity, ordering, ratios
+against the thing's own dimensions — and reserve absolute numbers for genuine physical limits**
+(a pool clamp, a collider budget, an arena radius). When an absolute number really is the point,
+assert it against a settings variant you construct in the test, so the shipped tuning stays free.
+
 ### Trap: compiling a COPY cannot see whole-class consistency
 
 The harness pattern in §4 — paste the block under test into a stub file and compile it — proves
@@ -621,6 +800,33 @@ signature changed. Those are only found by compiling the real file, or by Unity.
 So: after any patch that ADDS a member to a large existing class, grep that class for the
 member's own name and confirm exactly one declaration. This session shipped a duplicate field
 that the harness compiled clean and Unity rejected.
+
+### Trap: a stub-reference compile is BLIND to `System`/`UnityEngine` name collisions
+
+The §4 harness compiles against .NET reference assemblies with no `UnityEngine.dll`, so every
+Unity type is already unresolved and gets filtered out as expected noise. That filtering hides a
+whole error class: **`CS0104` ambiguity cannot occur when one of the two colliding types does not
+exist.** Add `using System;` to a file that already has `using UnityEngine;`, and a bare `Object`
+compiles clean in the harness while Unity rejects it — `Object` resolved only to `System.Object`
+because `UnityEngine.Object` was never loaded. A session shipped exactly this by adding
+`using System;` for a `Func`/`Action` field and leaving two `Object.Instantiate` / `Object.Destroy`
+calls alone; the human's first Editor compile was what found it.
+
+The offline pass proves SYNTAX and STRUCTURE. It cannot prove NAME RESOLUTION. Do not report it as
+"compiles clean" without that qualifier.
+
+The collision set is small enough to check exhaustively, so grep instead of hoping — in any file
+carrying BOTH usings, the ambiguous names are exactly **`Object`** and **`Random`**:
+
+```sh
+for f in <changed .cs files>; do
+  grep -qE '^using System;' "$f" && grep -qE '^using UnityEngine;' "$f" || continue
+  grep -nE '(^|[^.[:alnum:]_])(Object|Random)\s*[.(<]' "$f" | grep -v 'UnityEngine\.'
+done
+```
+
+Fix by fully qualifying (`UnityEngine.Object.Instantiate`), never by dropping `using System;` —
+the file needs it. Same shape applies to `using System.Diagnostics;` + `Debug`.
 
 ## 4.5 Technique: offline simulation of a deterministic generator
 
@@ -835,6 +1041,46 @@ derivation attached, and re-running the harness after any shader edit re-checks 
 ratio in the harness, so a later change to the motion that widens the envelope fails there
 rather than as prisms popping at the screen edge.
 
+## 4.5d Technique: offline simulation of a CONTROL LOOP (steering, pursuit, any feedback law)
+
+§4.5 simulates a *generator* — deterministic, one pass, compare the output. A **control
+loop** is the harder cousin: the thing you are changing feeds back into its own input, so a
+change that looks locally sensible can be globally worse and neither review nor a unit test
+will say so. Simulate it the same way, and let the simulation pick the tuning.
+
+The shape:
+
+1. **Extract the loop's pure math into a static class with no `UnityEngine` in it**
+   (`PursuitReachability`: turning radius, the reachability test, the escape direction, the
+   orbit detector). That class is what the shipped `MonoBehaviour` calls AND what the harness
+   calls, so the tested path is the shipped path. This is the same discipline as §4.7's
+   "extract the shipped block" — here it also buys the design a seam.
+2. **Write a plant** — a few dozen lines integrating heading and position under a max turn
+   rate. It does not need to be the engine's integrator; it needs the same *constraint*
+   (bounded turn rate, constant-ish speed), because that constraint is what the law is
+   fighting.
+3. **Score over a randomized ensemble, not a scenario.** Hundreds of (start pose, objective)
+   draws, fixed seed. Report reached/total and mean time-to-objective. One hand-picked
+   scenario proves nothing about a feedback law.
+4. **Measure candidate fixes against each other before shipping one.** Two plausible
+   remedies for a late swerve were each simulated and REJECTED on the numbers (a commit-range
+   gate traded swerves for orbits, 400→377 reached; a look-ahead factor multiplied break-offs
+   28→247 at double the mean time) — which is what forced the search to continue until the
+   real cause turned up. Rejecting on data is cheaper than shipping and re-playtesting.
+5. **Sweep every dial you are about to author and report the curve, not the pick.** The
+   away-bias in this session turned out to be a *dead dial* — 0…1.5 all reached 400/400
+   within 0.06 s — so it shipped at its midpoint with that fact recorded, instead of being
+   defended as a tuned value.
+
+Two things the harness catches that reading cannot: a **ratcheting accumulator** (a
+running-minimum "best distance so far" silently degrades a progress gate to "constant range
+only"; visible instantly as a detector that never fires on an approach), and a **wrong
+comparison of derived quantities** — see the squared-vs-linear trap in §5.
+
+Limits, state them: the plant is not the engine, so the simulation bounds *behaviour of the
+law*, never feel. Frame timing, replication, and the vessel's real thrust/grip model are out
+of scope, and the human still playtests.
+
 ## 4.6 Technique: hand-authoring a new asset trio
 
 Adding a new SO-configured, prefab-backed thing (here: a cell) means four
@@ -1005,6 +1251,39 @@ never prunes an unresolvable modification, so the inspector keeps showing a valu
   against `git show <base>:<path>` that `endswith(b'\n')` is unchanged for every file, and
   confirm `git diff` contains *only* the removed key lines and no `\ No newline` marker. A
   whitespace-only byte change on 15 prefabs is indistinguishable from a real edit in review.
+
+## 4.9c Technique: proving a SCENE's UI wiring without opening the editor
+
+The sibling of §4.9. There the producer was a nested prefab; here it is a **scene** field
+pointing at a **prefab instance**, and the behaviour you need to confirm lives in neither
+document on its own.
+
+Origin: adding four modes to the Maelstrom pool (2026-08). The tournament only advances when
+the host presses Continue on the per-mode `Scoreboard`, and that button is a
+`[SerializeField] GameObject continueButton` whose own tooltip says *"leave unassigned in
+non-tournament scenes"*. So four scenes could each satisfy every other admission criterion and
+still **stall the tournament after their round** — a null there is a silent early-out, not an
+error. The whole go/no-go rested on it, and it is four greps:
+
+1. **Find the component's block in the scene**, by script GUID from its `.cs.meta`, and read
+   the field out of that block (§4.9 step 1 — never regex the field name file-wide).
+2. **A `{fileID: 0}` is the failure.** A non-zero id means *something* is assigned; it does
+   not yet mean the right thing.
+3. **Follow the id.** `grep -n -A6 '^--- !u!1 &<id>'`. If the header ends in ` stripped`, the
+   object belongs to a prefab instance: its `m_CorrespondingSourceObject` carries the source
+   `guid`, and `grep -rl "guid: G" Assets --include=*.meta` names the prefab. **Do not look
+   for the button's `onClick` in the scene** — it is not there, and its absence reads as
+   "unwired" when the wiring is one hop away.
+4. **Confirm the handler in the SOURCE prefab**, by method name *and* target type:
+   `grep -B8 'm_MethodName: OnContinueButtonPressed'` should show
+   `m_TargetAssemblyTypeName: <Namespace>.<Class>, Assembly-CSharp`. Matching the method name
+   alone will happily accept a handler on some other component.
+
+The payoff is comparative, so run it across the **known-good** scenes too: finding the four new
+scenes carry the same `continueButton` fileID and the same source prefab as the modes already
+shipping through that flow turns "it looks wired" into "it is wired identically to the proven
+case". A shared fileID across several scenes is not a coincidence to explain away — it is the
+signature of one prefab instanced in all of them, and it is the evidence.
 
 ## 5. Traps learned the hard way (check these BEFORE debugging for an hour)
 
@@ -1707,6 +1986,61 @@ never prunes an unresolvable modification, so the inspector keeps showing a valu
   does — and leave a comment saying why, or the next formatter re-wraps it and the field silently
   drops out of the checker again. The mirror failure is worse and quieter: a field that SHOULD be
   flagged but is wrapped will never be flagged at all.
+
+- **A comparison that mixes a SQUARED quantity with a LINEAR one is invisible to review and to
+  every static check, and its symptom is a behaviour nobody attributes to arithmetic.** A field
+  named `MinDistance` held a *squared* distance (assigned from `sqrMagnitude` a few lines
+  earlier), and the guard read `sqDistance < MinDistance * MinDistance` — a `d⁴` threshold that
+  every candidate passed, so a "pick the nearest" loop reliably picked the **last** item and
+  re-picked arbitrarily on every refresh. It compiles, it type-checks, the units are invisible
+  because C# has none, and the resulting behaviour ("the AI dodges its objective at the last
+  second") sounds like a steering bug — which is where two correct-looking steering fixes got
+  measured and rejected before the real cause turned up. **When a symptom points at a control law,
+  audit the SELECTION feeding it first**, and grep any distance-ish field for whether its writers
+  and readers agree on squared-ness. Name squared fields `*SqrDistance` when you touch them.
+- **A rule that belongs to a FALLBACK must not be inherited by an explicit provider.** A
+  look-direction helper defended its default (a "point at some interesting mass" heuristic) with a
+  sensible test — *skip if the target is already roughly ahead* — and when an opt-in provider was
+  bolted on for a NAMED target, it inherited that test. The named case is exactly the one where
+  "already ahead" is the BEST outcome, so the feature silently never fired: an AI that was
+  supposed to swing its nose onto a rival turned away from precisely the rival it had lined up.
+  Nothing errors, nothing logs, and the code reads as a careful guard. **When you add an explicit
+  provider beside a heuristic default, re-derive which guards were about the HEURISTIC and which
+  are about the OUTPUT**, and push the heuristic's own guards down into the heuristic.
+- **An AI's engagement range is authored independently of its weapon's, and drifts.** A mode
+  capped its AI aim range at 900 while the weapon prefab authored a reach of 2400, so the AI never
+  aimed at anything it could actually hit. Two numbers, two assets, no relationship in code — the
+  same class as the comeback-rate-vs-target trap. When a doc or a field claims "the AI engages at
+  X", go read the WEAPON's authored reach and compare; if they must stay separate, derive one from
+  the other or assert the ordering in a test.
+- **`IsLocalPilot` and `IsOwner` coincide for every human and diverge for every AI**, so a gate
+  that conflates them works perfectly until something autonomous uses it. An owner-write
+  `NetworkVariable` published under `IsLocalPilot` is never written for a host-owned AI vessel,
+  which means the AI's effect draws on **no machine at all, including the host's** — a failure
+  mode with no error and no local symptom for the developer testing solo. Decide per write which
+  question you are asking: "is a person flying this?" (`IsLocalPilot`) or "does this machine own
+  the object?" (`IsOwner` / `IsNetworkOwner`), and say so in a comment at the gate.
+- **Announce a batch removal BEFORE performing it, when the announcer is IN the batch.** A
+  ClientRpc is sent through a `NetworkObject`, so a sender that its own call just despawned
+  throws instead of broadcasting. The shape that hides it: "detonate everything in this cell,
+  then tell everyone how many" reads naturally and is exactly backwards — the count is knowable
+  before the loop (same predicate, same list, same frame), and the object is not knowable after
+  it. This is not specific to detonation: any "clear/expire/collect all of X, then report"
+  where the reporter is an X has the same defect. Send first, act second, and say in a comment
+  that the order is load-bearing, because the next reader will want to "fix" it.
+- **A per-object tick that can destroy `this` must tell its caller.** `Despawn(true)` destroys
+  the GameObject, but Unity defers the destroy to end of frame, so the rest of `FixedUpdate`
+  keeps running on an object that is no longer spawned — every NetworkVariable write after that
+  point is a write on a despawned object. Give the tick a `bool` return ("I removed myself") and
+  bail on it; a `void` tick that can self-destruct is a latent write-after-free that only shows
+  up as Netcode warnings under a condition nobody reproduces on purpose.
+- **A rule that only a SERVER can carry out must be gated on being one, or a local session
+  announces work it cannot do.** `IsServer` is false in a no-network local session (the freestyle
+  toys mint networked objects with no `NetworkManager`), and the surrounding code often runs
+  there deliberately — `if (!IsSpawned || IsServer) ServerFixedUpdate();` is a real, correct
+  idiom. So a new rule dropped into that tick inherits the local path for free, where its
+  detonations silently no-op (each guarded on `IsServer`) while its RPC throws. Gate the whole
+  rule on `IsSpawned && IsServer` rather than trusting the callees' own guards.
 
 ### Bundled tool: `field_parity.py`
 

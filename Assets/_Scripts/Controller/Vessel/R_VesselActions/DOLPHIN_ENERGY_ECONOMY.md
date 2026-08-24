@@ -71,7 +71,9 @@ the only way to arm the blast.
 A danger prism pays the same as any other prism here. The Dolphin briefly carried a Time-5
 "Live Current" bonus (`×3` on danger skims, via
 `SkimmerChangeResourceByPrismEffectSO._dangerBonusElement`); Time 5 was re-scoped on 2026-08-18
-to **Drift Ward** (elemental-debuff immunity while drifting), so `_dangerBonusElement` is back
+to **Drift Ward** (immunity to DANGER-PRISM elemental debuffs while drifting — scoped to that
+class alone, so an opposing pilot's crystal blast still debuffs a drifting Dolphin), so
+`_dangerBonusElement` is back
 to `None` on `DolphinSkimmerChangeResourceByPrismEffect` and Time 5 grants exactly one upgrade.
 The generic 10× danger multiplier on `SkimmerBoostPrismEffect` is a different effect on a
 different resource (boost, not energy) and is gated on CHARGE — it is untouched by this.
@@ -170,15 +172,17 @@ change it as a side-effect of a tuning pass.
 
 | quantity | formula | value |
 |---|---|---|
-| max cruise speed | `ThrottleScaler(68) × 1 + MinimumSpeed(10)` | **78** |
-| max boost speed | `68 × 2.259² + 10` | **357** |
+| max cruise speed | `ThrottleScaler(68) × 1 + MinimumSpeed(0)` | **68** |
+| max boost speed | `68 × 2.259² + 0` | **347** |
 | charge fill rate | `1 / chargeTimeToFull` | 0.275 /s |
 | boost drain rate | `1 / dischargeTimeToEmpty` | 0.40 /s |
 
 `ThrottleScalerMultiplier` is authored `Enabled: 0` on the Dolphin, so it evaluates to its
 serialized `Value: 1` and the map's Time multiplier reaches boost speed only through
 `CurrentBoostAmount` (also 1 at the resting level). `MinimumSpeed` is deliberately **not**
-scaled with the top speed — the floor is the drift/idle speed and was left as authored.
+scaled with the top speed — it is the throttle-off floor, and on the Dolphin it is **0**: a
+released throttle brings the vessel to a genuine stop rather than an unstoppable 10 u/s crawl.
+(It was authored 10 until 2026-08-20.)
 
 Speed is a platform-law input, not a private number: the speed tunnel
 (`Docs/SPEED_TUNNEL.md`) maps speed to FOV **absolutely and fleet-wide**, so a faster Dolphin
