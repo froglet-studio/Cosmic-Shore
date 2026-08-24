@@ -599,6 +599,24 @@ Assert the JSON analog of `CS0102` while you are there: duplicate `m_ObjectId`, 
 property reference names, registry entries that do not resolve, dangling edge endpoints,
 and any input slot with more than one feeder. All five are ~20 lines over the parsed model.
 
+### Trap: two graph-edit failures that ship silently — cycles, and slot-type mismatch
+
+Both shipped and cost a playtest round each (2026-08, shield-shatter branch):
+
+1. **An edge CYCLE makes the whole graph magenta.** Splicing node A's output into node B
+   while B (transitively) feeds A creates a cycle ShaderGraph rejects at import — every
+   material on the graph renders magenta, including effects your edit never touched.
+   Before writing any edge, walk the edge list and assert acyclicity of the whole graph,
+   not just the nodes you added.
+2. **A property NODE cloned from the wrong donor carries the donor's SLOT TYPE.** A
+   Vector3 property exposed through a node cloned from a Vector1-slot donor wires
+   "successfully" and delivers nothing — no import error, no magenta, the vector is
+   silently zero. Assert that every property node's slot type matches its property's
+   kind after synthesis.
+
+Both checks are cheap to run over the parsed JSON and are now standing assertions in
+`PrismClockWiringValidator` + `PrismShieldMorphTests` — copy that shape into any new wirer.
+
 ### Trap: a clean merge can still be a semantic conflict (duplicate members)
 
 Origin: `Flora.LeafSize` (2026-08). Two branches each added the SAME member to
@@ -1233,6 +1251,39 @@ never prunes an unresolvable modification, so the inspector keeps showing a valu
   against `git show <base>:<path>` that `endswith(b'\n')` is unchanged for every file, and
   confirm `git diff` contains *only* the removed key lines and no `\ No newline` marker. A
   whitespace-only byte change on 15 prefabs is indistinguishable from a real edit in review.
+
+## 4.9c Technique: proving a SCENE's UI wiring without opening the editor
+
+The sibling of §4.9. There the producer was a nested prefab; here it is a **scene** field
+pointing at a **prefab instance**, and the behaviour you need to confirm lives in neither
+document on its own.
+
+Origin: adding four modes to the Maelstrom pool (2026-08). The tournament only advances when
+the host presses Continue on the per-mode `Scoreboard`, and that button is a
+`[SerializeField] GameObject continueButton` whose own tooltip says *"leave unassigned in
+non-tournament scenes"*. So four scenes could each satisfy every other admission criterion and
+still **stall the tournament after their round** — a null there is a silent early-out, not an
+error. The whole go/no-go rested on it, and it is four greps:
+
+1. **Find the component's block in the scene**, by script GUID from its `.cs.meta`, and read
+   the field out of that block (§4.9 step 1 — never regex the field name file-wide).
+2. **A `{fileID: 0}` is the failure.** A non-zero id means *something* is assigned; it does
+   not yet mean the right thing.
+3. **Follow the id.** `grep -n -A6 '^--- !u!1 &<id>'`. If the header ends in ` stripped`, the
+   object belongs to a prefab instance: its `m_CorrespondingSourceObject` carries the source
+   `guid`, and `grep -rl "guid: G" Assets --include=*.meta` names the prefab. **Do not look
+   for the button's `onClick` in the scene** — it is not there, and its absence reads as
+   "unwired" when the wiring is one hop away.
+4. **Confirm the handler in the SOURCE prefab**, by method name *and* target type:
+   `grep -B8 'm_MethodName: OnContinueButtonPressed'` should show
+   `m_TargetAssemblyTypeName: <Namespace>.<Class>, Assembly-CSharp`. Matching the method name
+   alone will happily accept a handler on some other component.
+
+The payoff is comparative, so run it across the **known-good** scenes too: finding the four new
+scenes carry the same `continueButton` fileID and the same source prefab as the modes already
+shipping through that flow turns "it looks wired" into "it is wired identically to the proven
+case". A shared fileID across several scenes is not a coincidence to explain away — it is the
+signature of one prefab instanced in all of them, and it is the evidence.
 
 ## 5. Traps learned the hard way (check these BEFORE debugging for an hour)
 

@@ -50,7 +50,7 @@ namespace CosmicShore.ScriptableObjects
         public const int DefaultRibcagePrismTarget = 2000;
 
         /// <summary>Wildlife Liberation kill target used when <see cref="wildlifeKillTarget"/> is 0 (auto/default).</summary>
-        public const int DefaultWildlifeKillTarget = 250;
+        public const int DefaultWildlifeKillTarget = 30;
 
         /// <summary>Dog Fight point target used when <see cref="dogFightPointTarget"/> is 0 (auto/default).</summary>
         public const int DefaultDogFightPointTarget = 90;
@@ -90,8 +90,8 @@ namespace CosmicShore.ScriptableObjects
 
         [Tooltip("Wildlife Liberation: creatures a domain must kill between them to win " +
                  "(race to N), summed across that domain's players like every other target " +
-                 "here. 0 = default (250).")]
-        [Min(0)] public int wildlifeKillTarget = 250;
+                 "here. 0 = default (30).")]
+        [Min(0)] public int wildlifeKillTarget = 30;
 
         [Tooltip("Dog Fight points a DOMAIN needs to win. Points come from landed gunnery: a " +
                  "bullet hit scores 1 and a missile hit (direct strike or caught in the blast) " +
@@ -119,7 +119,7 @@ namespace CosmicShore.ScriptableObjects
         [Min(0)] public int nucleusRushWaveTargetBuild = 3;
         [Min(0)] public int rampagePrismTargetBuild = 2000;
         [Min(0)] public int ribcagePrismTargetBuild = 2000;
-        [Min(0)] public int wildlifeKillTargetBuild = 250;
+        [Min(0)] public int wildlifeKillTargetBuild = 30;
         [Min(0)] public int dogFightPointTargetBuild = 90;
         [Min(0)] public int bendsPointTargetBuild = 3;
         [Min(0)] public int scarabScrambleGoalTargetBuild = 10;

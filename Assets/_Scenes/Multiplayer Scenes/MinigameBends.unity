@@ -987,6 +987,9 @@ MonoBehaviour:
   progressSampleSeconds: 0.5
   aiAimRetargetSeconds: 1.25
   aiAimLeadSeconds: 0.35
+  aiAimBlastReach: 2400
+  aiAimBlastDuration: 2.7
+  aiAimHumanFocus: 3
   aiAimMaxRange: 2400
 --- !u!114 &1628508400
 MonoBehaviour:

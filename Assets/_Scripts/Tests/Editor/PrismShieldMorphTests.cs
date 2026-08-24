@@ -1,6 +1,8 @@
 #if UNITY_EDITOR
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text.RegularExpressions;
 using NUnit.Framework;
 using UnityEngine;
 using CosmicShore.Utility;
@@ -182,6 +184,230 @@ namespace CosmicShore.Tests
                                               b.Contains($"\"m_OutputChannel\": {channel}")),
                     $"{Path.GetFileName(graphPath)} has no UV node reading UV{channel} — the shield " +
                     "morph would read whatever UV0 happens to hold instead of the face centroids.");
+            }
+        }
+
+        [Test]
+        public void EveryWiredGraph_IsAcyclicAndItsPropertyNodesAreTypeConsistent()
+        {
+            // Both halves of this test exist because both failures SHIPPED, from one
+            // blind spot: the wiring script proved everything it BUILT and nothing about
+            // what it built it INTO.
+            //
+            //  * a cycle — splicing a node in front of something already downstream of it
+            //    closes a loop, ShaderGraph rejects the whole asset, and every material on
+            //    it renders magenta. Local per-node checks cannot see it.
+            //  * a property node whose output slot type does not match its property — a
+            //    Vector1 slot on a Vector3 property delivers no vector, silently, and the
+            //    animation just looks like it never got its stamp.
+            foreach (var graphPath in WiredGraphPaths)
+            {
+                string text = File.ReadAllText(graphPath).Replace("\r\n", "\n");
+                var blocks = text.Split(new[] { "\n\n" }, System.StringSplitOptions.RemoveEmptyEntries);
+
+                // objectId -> block, for the two lookups below.
+                var byId = new Dictionary<string, string>();
+                foreach (var b in blocks)
+                {
+                    var m = Regex.Match(b, "\"m_ObjectId\": \"([0-9a-f]{32})\"");
+                    if (m.Success && !byId.ContainsKey(m.Groups[1].Value))
+                        byId[m.Groups[1].Value] = b;
+                }
+
+                var graph = blocks.First(b => b.Contains("\"m_Type\": \"UnityEditor.ShaderGraph.GraphData\""));
+
+                // --- acyclicity over every edge in the graph ---------------------
+                var upstream = new Dictionary<string, List<string>>();
+                foreach (Match e in Regex.Matches(graph,
+                    "\"m_OutputSlot\":\\s*\\{\\s*\"m_Node\":\\s*\\{\\s*\"m_Id\": \"([0-9a-f]{32})\"[^}]*\\}[^}]*\\}," +
+                    "\\s*\"m_InputSlot\":\\s*\\{\\s*\"m_Node\":\\s*\\{\\s*\"m_Id\": \"([0-9a-f]{32})\""))
+                {
+                    string from = e.Groups[1].Value, to = e.Groups[2].Value;
+                    if (!upstream.TryGetValue(to, out var list))
+                        upstream[to] = list = new List<string>();
+                    list.Add(from);
+                }
+                Assert.Greater(upstream.Count, 0,
+                    $"{Path.GetFileName(graphPath)}: parsed no edges — the edge shape changed and " +
+                    "this test would silently pass on anything.");
+
+                var state = new Dictionary<string, int>();   // 0 unvisited, 1 on stack, 2 done
+                foreach (var node in upstream.Keys.ToList())
+                    AssertNoCycleFrom(node, upstream, state, new List<string>(),
+                                      Path.GetFileName(graphPath));
+
+                // --- property nodes carry their property's concrete type ---------
+                foreach (var node in blocks.Where(b =>
+                             b.Contains("\"m_Type\": \"UnityEditor.ShaderGraph.PropertyNode\"")))
+                {
+                    var propId = Regex.Match(node, "\"m_Property\":\\s*\\{\\s*\"m_Id\": \"([0-9a-f]{32})\"");
+                    var slotId = Regex.Match(node, "\"m_Slots\":[^]]*\"m_Id\": \"([0-9a-f]{32})\"");
+                    if (!propId.Success || !slotId.Success) continue;
+                    if (!byId.TryGetValue(propId.Groups[1].Value, out var prop)) continue;
+                    if (!byId.TryGetValue(slotId.Groups[1].Value, out var slot)) continue;
+
+                    var kind = Regex.Match(prop, "Internal\\.(Vector[1-4])ShaderProperty");
+                    if (!kind.Success) continue;   // colors/textures/booleans: other families
+                    string expected = kind.Groups[1].Value + "MaterialSlot";
+                    Assert.IsTrue(slot.Contains(expected),
+                        $"{Path.GetFileName(graphPath)}: the property node for " +
+                        $"{Regex.Match(prop, "\"m_Name\": \"([^\"]*)\"").Groups[1].Value} is a " +
+                        $"{kind.Groups[1].Value} property but its output slot is not a {expected}. " +
+                        "No value of that width can reach the shader.");
+                }
+            }
+        }
+
+        static void AssertNoCycleFrom(string node, Dictionary<string, List<string>> upstream,
+                                      Dictionary<string, int> state, List<string> stack, string graphName)
+        {
+            if (state.TryGetValue(node, out var s) && s != 0) return;
+            state[node] = 1;
+            stack.Add(node);
+            if (upstream.TryGetValue(node, out var parents))
+            {
+                foreach (var parent in parents)
+                {
+                    state.TryGetValue(parent, out var ps);
+                    Assert.AreNotEqual(1, ps,
+                        $"{graphName} contains an edge CYCLE through node {parent}. ShaderGraph " +
+                        "rejects a cyclic graph, so every material on it renders magenta. Something " +
+                        "was spliced in FRONT of a node that was already DOWNSTREAM of it.");
+                    if (ps == 0) AssertNoCycleFrom(parent, upstream, state, stack, graphName);
+                }
+            }
+            stack.RemoveAt(stack.Count - 1);
+            state[node] = 2;
+        }
+
+        [Test]
+        public void EveryWiredGraph_MatchesTheHlslSignatureExactly()
+        {
+            // The gap neither the wiring script nor a code review can see: the script
+            // asserts the graph is internally consistent and the HLSL compiles on its own,
+            // but NOTHING checks that the node's slots still describe the function they
+            // call. ShaderGraph passes slots positionally (inputs in list order, then
+            // outputs), so a signature change on one side and not the other silently
+            // shifts every argument — Velocity would arrive as Position and the shield
+            // would morph toward a garbage point with no error anywhere.
+            var (hlslInputs, hlslOutputs) = ReadHlslSignature();
+
+            foreach (var graphPath in WiredGraphPaths)
+            {
+                string text = File.ReadAllText(graphPath).Replace("\r\n", "\n");
+                var blocks = text.Split(new[] { "\n\n" }, System.StringSplitOptions.RemoveEmptyEntries);
+
+                var node = blocks.FirstOrDefault(b => b.Contains($"\"m_FunctionName\": \"{FunctionName}\""));
+                Assert.IsNotNull(node, $"{Path.GetFileName(graphPath)} has no {FunctionName} node.");
+
+                var slotIds = Regex.Matches(node.Substring(node.IndexOf("\"m_Slots\"", System.StringComparison.Ordinal)),
+                                            "\"m_Id\": \"([0-9a-f]{32})\"")
+                                   .Cast<Match>().Select(m => m.Groups[1].Value).ToList();
+
+                var inputs = new List<string>();
+                var outputs = new List<string>();
+                foreach (var id in slotIds)
+                {
+                    var slot = blocks.FirstOrDefault(b => b.Contains($"\"m_ObjectId\": \"{id}\"") &&
+                                                          b.Contains("MaterialSlot"));
+                    Assert.IsNotNull(slot, $"{Path.GetFileName(graphPath)}: slot {id} is missing.");
+                    string name = Regex.Match(slot, "\"m_DisplayName\": \"([^\"]*)\"").Groups[1].Value;
+                    bool isOutput = Regex.Match(slot, "\"m_SlotType\": (\\d+)").Groups[1].Value == "1";
+                    (isOutput ? outputs : inputs).Add(name);
+                }
+
+                CollectionAssert.AreEqual(hlslInputs, inputs,
+                    $"{Path.GetFileName(graphPath)}: the {FunctionName} node's INPUT slots no longer match " +
+                    $"{Path.GetFileName(HlslPath)}'s parameter order. Re-run Tools/Shaders/wire_prism_shield_morph.py.");
+                CollectionAssert.AreEqual(hlslOutputs, outputs,
+                    $"{Path.GetFileName(graphPath)}: the {FunctionName} node's OUTPUT slots no longer match " +
+                    $"{Path.GetFileName(HlslPath)}'s out-parameter order.");
+            }
+        }
+
+        /// <summary>Parameter names of PrismShieldMorph_float, split into ins and outs.</summary>
+        static (List<string> inputs, List<string> outputs) ReadHlslSignature()
+        {
+            string hlsl = File.ReadAllText(HlslPath);
+            int start = hlsl.IndexOf($"void {FunctionName}_float(", System.StringComparison.Ordinal);
+            Assert.Greater(start, -1, $"{HlslPath} does not declare {FunctionName}_float.");
+            start = hlsl.IndexOf('(', start) + 1;
+            int end = hlsl.IndexOf(')', start);
+            Assert.Greater(end, start, "unterminated parameter list");
+
+            var inputs = new List<string>();
+            var outputs = new List<string>();
+            foreach (var raw in hlsl.Substring(start, end - start).Split(','))
+            {
+                var parts = raw.Split(new[] { ' ', '\t', '\n', '\r' }, System.StringSplitOptions.RemoveEmptyEntries);
+                Assert.GreaterOrEqual(parts.Length, 2, $"unparsable parameter '{raw}'");
+                bool isOut = parts[0] == "out";
+                (isOut ? outputs : inputs).Add(parts[parts.Length - 1]);
+            }
+            return (inputs, outputs);
+        }
+
+        [Test]
+        public void BothGenerators_BakeTheDebrisAttributeSet()
+        {
+            // A shield SHATTERS as ordinary prism-explosion debris on ExplodingBlockGraph
+            // (Docs/PRISM_ANIMATION.md §4.8.1), whose vertex chain and fade are pure
+            // functions of the mesh's own attributes. The port therefore lives HERE, in
+            // the mesh: UV0 is the frame PrismErosionFade wipes across (an empty channel
+            // makes each face POP instead of eroding), and the TANGENT is one of
+            // RotateFacesAlongAxis' two rotation axes (a missing tangent hands the
+            // subgraph a zero axis and the per-face rotation silently degenerates —
+            // exactly the "faces do not rotate away" regression this task was about).
+            foreach (var (mesh, verts) in new[]
+                     {
+                         (OctahedronMeshGenerator.Generate(new Vector3(0.5f, 1.25f, 2f)), 24),
+                         (StellatedOctahedronMeshGenerator.Generate(new Vector3(0.5f, 1.25f, 2f)),
+                          StellatedOctahedronMeshGenerator.VERTEX_COUNT),
+                     })
+            {
+                try
+                {
+                    var uvs = new List<Vector2>();
+                    mesh.GetUVs(OctahedronMeshGenerator.ErosionUVChannel, uvs);
+                    Assert.AreEqual(verts, uvs.Count,
+                        "UV0 must carry one erosion-frame coordinate per vertex — an empty " +
+                        "channel makes every face pop instead of eroding.");
+
+                    var tangents = mesh.tangents;
+                    var normals = mesh.normals;
+                    var positions = mesh.vertices;
+                    Assert.AreEqual(verts, tangents.Length,
+                        "the debris pipeline's per-face rotation reads mesh tangents — " +
+                        "an empty channel degenerates the rotation to nothing");
+
+                    for (int f = 0; f < verts; f += 3)
+                    {
+                        // A real 2D frame: three distinct, non-collinear coordinates. Any
+                        // degenerate face would give the wipe no direction to run in.
+                        Vector2 a = uvs[f], b = uvs[f + 1], c = uvs[f + 2];
+                        float area = Mathf.Abs((b.x - a.x) * (c.y - a.y) - (c.x - a.x) * (b.y - a.y));
+                        Assert.Greater(area, 0.1f,
+                            $"face {f / 3}'s UV0 triangle is degenerate — the erosion front " +
+                            "would have no frame to sweep across.");
+                        foreach (var uv in new[] { a, b, c })
+                        {
+                            Assert.That(uv.x, Is.InRange(0f, 1f), "UV0 must stay inside the unit square");
+                            Assert.That(uv.y, Is.InRange(0f, 1f), "UV0 must stay inside the unit square");
+                        }
+
+                        // The tangent: unit length, in the face plane (the standard dP/dU an
+                        // imported mesh carries — v0→v1 IS the U axis of the frame above).
+                        Vector3 t = tangents[f];
+                        Assert.That(t.magnitude, Is.EqualTo(1f).Within(1e-3f),
+                            $"face {f / 3}'s tangent is not unit length");
+                        Assert.That(Mathf.Abs(Vector3.Dot(t, normals[f])), Is.LessThan(1e-3f),
+                            $"face {f / 3}'s tangent is not in the face plane");
+                        Assert.That(Vector3.Dot(t, (positions[f + 1] - positions[f]).normalized),
+                            Is.EqualTo(1f).Within(1e-3f),
+                            $"face {f / 3}'s tangent is not dP/dU of its UV frame");
+                    }
+                }
+                finally { Object.DestroyImmediate(mesh); }
             }
         }
 

@@ -23,6 +23,56 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Bends AI aim: wavefront intercept lead + human focus (`claude/pensive-hopper-35d6h4`, 2026-08-21)
+
+Authored without a Unity compile or play-test (remote session, no editor). Touches
+`BendsController.cs`, docs, `author_bends_assets.py`, and `MinigameBends.unity` — the scene
+edit is three new name-keyed float fields on the existing BendsController block, emitted by the
+re-synced generator (no structural YAML, minimal import risk). Verified offline: Roslyn compile
+of the file is clean of every syntax/scope/duplicate error class,
+`check_conditional_compilation.py` passes, `author_bends_assets.py --check` passes again (it
+had been failing — the generator still emitted the old `aiAimMaxRange: 900`, so a re-run would
+have reverted the shipped 2400), and the intercept math was simulated (old flat lead missed a
+60 u/s crossing rival by 99 u at range 1500; the new lead holds a constant ~21 u overlead,
+which is the safe side of the beam).
+
+**What landed.** The Bends AI Dolphin now (1) leads its drift aim by the blast wavefront's REAL
+travel time — `WavefrontLeadTime` inverts the cone's sin-eased growth against the new
+`aiAimBlastReach` (2400) / `aiAimBlastDuration` (2.7) mirrors of `AOEConicExplosion.prefab` —
+with a two-pass intercept; and (2) prefers aiming at HUMAN pilots (`aiAimHumanFocus` 3: an AI
+rival must be 3× closer to steal the aim).
+
+**2026-08-22 follow-up (same branch).** The first playtest (5 matches) showed the AI still
+never landing a bend — "roams around the player, tries to aim, always fails". Root cause found
+and fixed in `AIPilot.StartAIPilot`, not in the aim math: the AI's blind 2s/2s ability cycler
+was stopping the SHARED drift executor mid-commit (and its own random drifts were locking the
+AI's course for half of every cycle — the roaming). A pilot with `drift` enabled no longer
+blind-cycles abilities bound to the commit control (`LeftStickAction`); the commit loop drives
+that trio itself. Affects only the Dolphin AI (the one vessel with `drift: 1`), in every mode
+it flies — Bends, Rampage, menu autopilot. Full analysis: `BENDS.md` § 2026-08-22.
+
+**Verify in editor.**
+0. **The headline retest (the 2026-08-22 fix):** a Bends match vs 1 AI — the AI should now fly
+   visibly straighter between crystals (no more 2-second locked-course wanders), hold its drift
+   all the way onto the crystal with its nose tracking you, and actually land bends. If it
+   still never scores, the next suspect is the vessel-hit dispatch itself, not the AI — test
+   whether a HUMAN blast bends the AI (checklist item 2 of the mode's own doc).
+1. Open `MinigameBends.unity`; confirm `BendsController` shows the three new inspector fields at
+   their defaults (Blast Reach 2400, Blast Duration 2.7, Human Focus 3) with no missing-script
+   or serialization warnings.
+2. Solo match vs 1 AI (2 players, 2 domains): fly a straight line at mid-range while the AI
+   collects a crystal — its announced cone (Echo Sight) should point visibly AHEAD of you, and
+   the blast should actually land. This is the headline: before this pass the AI's shot trailed
+   any moving target at range.
+3. 3–4 player match with AI backfill: confirm the AIs' cones come for the human rather than for
+   each other, unless an AI rival is much closer.
+4. **First-pass tuning:** `aiAimHumanFocus` 3 is a starting point — drop toward 1 if being
+   hunted by every bot reads as unfair at intensity 1, where the platform skill floor is low.
+   `aiAimLeadSeconds` 0.35 is now pure padding on top of the computed intercept; if the AI
+   reads as over-leading a slow target up close, this is the dial, not the wavefront numbers.
+
+---
+
 ### 🔴 Dolphin minimum speed → 0 (`claude/dolphin-minimum-speed-59q8ay`, 2026-08-20)
 
 Authored without a Unity compile or play-test. **One authored scalar changed in an existing

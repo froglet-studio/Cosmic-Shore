@@ -21,7 +21,7 @@ namespace CosmicShore.Core
         public int RefreshRateHz = 0;          // 0 = native
         public VSyncSetting VSync = VSyncSetting.On;
         public int TargetFrameRate = 60;       // <= 0 = uncapped (-1)
-        public float FieldOfView = 60f;
+        public float FieldOfView = DefaultFieldOfView;
 
         // ── Graphics ──
         public QualityPresetSetting QualityPreset = QualityPresetSetting.High;
@@ -36,6 +36,19 @@ namespace CosmicShore.Core
         public PhysicsDetailSetting PhysicsDetail = PhysicsDetailSetting.High;
         public int AiCrowdSize = 3;            // AI vessels to backfill in solo play
         public int VfxDensityPercent = 100;    // 25..100 - scales the per-frame explosion VFX budget
+
+        /// <summary>
+        /// The field of view every player starts on. A narrower lens is a deliberate pick made in
+        /// the settings panel, never a state a player is dropped into.
+        /// </summary>
+        public const float DefaultFieldOfView = 90f;
+
+        /// <summary>
+        /// The default shipped before <see cref="DefaultFieldOfView"/> was raised. Kept so the
+        /// settings migration can tell a saved value that is merely the OLD default from one the
+        /// player actually chose. Do not read it for anything else.
+        /// </summary>
+        public const float LegacyDefaultFieldOfView = 60f;
 
         public GraphicsSettingsData Clone() => (GraphicsSettingsData)MemberwiseClone();
     }
