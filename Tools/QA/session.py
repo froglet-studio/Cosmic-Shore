@@ -140,8 +140,52 @@ def backlog_items():
             continue
         if cur is not None:
             cur["_body"].append(line)
+    answered = answered_items()
     for item in out:
         item.update(_parse_item_body("\n".join(item.pop("_body"))))
+        item["answeredBy"] = answered.get(item["id"], "")
+    return out
+
+
+def answered_items():
+    """{item_id: "PASS by Caleb (2026-08-14)"} for everything already reported.
+
+    THE BACKLOG FILE IS STALE BETWEEN CENTRAL RUNS. `apply_results.py` is what
+    removes a passed item from `QA_BACKLOG.md`, and it is deliberately a central
+    batch step (it rewrites three SHARED generated files, and a FAIL needs the
+    `/qa-backlog` skill to enrich its dev task with a source PR and likely files).
+    So between a tester pressing Submit and someone running that step, the backlog
+    still lists work that is done — and a second tester, or the same tester
+    tomorrow, would be handed it again.
+
+    Rather than have every tester rewrite the shared files, the window derives
+    what is left the same way apply_results would: backlog MINUS everything a
+    SUBMITTED session already answered, plus everything already archived. Reading
+    is safe to do from anywhere; only writing races.
+
+    A session that has been edited since it was submitted does not count — that is
+    the same content-hash rule the ledger enforces everywhere else, so a half-typed
+    verdict can never hide an item from the list.
+    """
+    out = {}
+    for line in utf8_open(ARCHIVE).read().splitlines():
+        m = re.match(r"^\|\s*(QA-[A-Z0-9-]+)\s*\|", line)
+        if m:
+            out[m.group(1)] = "already passed"
+
+    ledger = load_ledger()["sessions"]
+    for fname in sorted(os.listdir(RESULTS_DIR)):
+        if not fname.endswith(".md") or fname == "TEMPLATE.md":
+            continue
+        text = utf8_open(os.path.join(RESULTS_DIR, fname)).read()
+        if ledger.get(fname, {}).get("submitted_hash") != file_hash(text):
+            continue
+        meta, rows = parse_session(text)
+        who = meta.get("Tester", "?")
+        when = meta.get("Date", "?")
+        for item, result, _ in rows:
+            if result != "SKIP":
+                out[item] = "%s by %s (%s)" % (result, who, when)
     return out
 
 
@@ -423,7 +467,7 @@ def contract_matches_csharp(sample):
         return False
     for cls, key, blank in (("BacklogItem", "backlog",
                              {"id", "priority", "status", "title", "context",
-                              "steps", "passWhen", "failWhen", "known"}),
+                              "steps", "passWhen", "failWhen", "known", "answeredBy"}),
                             ("Row", "rows", {"id", "verdict", "notes", "frozen",
                                              "problem", "problemBlocking"}),
                             ("Problem", "problems", {"blocking", "where", "what", "fix"})):
@@ -550,7 +594,29 @@ def selftest():
 
         assert contract_matches_csharp(state(p)), "JSON shape drifted from the C# window"
 
-        print("session selftest: 25/25 checks passed")
+        # ── the stale-backlog gap: a submitted verdict must hide its item from the
+        # list even though QA_BACKLOG.md still carries it (apply_results is central)
+        assert [b["answeredBy"] for b in state(p)["backlog"]] == ["", "", ""], \
+            "nothing is answered before a submit"
+        assert answered_items() == {"QA-OLD": "already passed"}, answered_items()
+
+        upsert(p, "QA-TWO", "PASS", "")
+        upsert(p, "QA-THREE", "PASS", "")
+        assert submit_mod.main([os.path.basename(p)]) == 0, "fixture should submit"
+        ans = answered_items()
+        assert ans["QA-TWO"].startswith("PASS by Ada Lovelace"), ans
+        assert ans["QA-THREE"].startswith("PASS by Ada Lovelace"), ans
+        assert "QA-ONE" not in ans, "an item nobody reported stays open"
+        by_id = {b["id"]: b["answeredBy"] for b in state(p)["backlog"]}
+        assert by_id["QA-ONE"] == "" and by_id["QA-TWO"], by_id
+
+        # editing after submitting parks the file — a half-typed verdict must never
+        # hide an item, the same content-hash rule the ledger enforces elsewhere
+        upsert(p, "QA-ONE", "PASS", "")
+        assert "QA-TWO" not in answered_items(), \
+            "an edited (unsubmitted) session must not answer anything"
+
+        print("session selftest: 30/30 checks passed")
         return 0
     finally:
         ar.BACKLOG, ar.ARCHIVE, ar.RESULTS_DIR, ar.LEDGER = saved

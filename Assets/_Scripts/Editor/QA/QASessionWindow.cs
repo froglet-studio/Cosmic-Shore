@@ -43,6 +43,14 @@ namespace CosmicShore.Editor.QA
             public string passWhen;  // the PASS definition, verbatim from the backlog
             public string failWhen;  // the FAIL definition
             public string known;     // pre-existing defects that are NOT a failure
+
+            /// <summary>
+            /// "" when nobody has reported this yet; otherwise e.g. "PASS by Caleb
+            /// (2026-08-14)" or "already passed". Derived by session.py from submitted
+            /// sessions + the archive, because QA_BACKLOG.md is stale between central
+            /// apply_results runs and would otherwise hand out finished work again.
+            /// </summary>
+            public string answeredBy;
         }
 
         [System.Serializable]
@@ -477,14 +485,20 @@ var sb = new StringBuilder();
             }
         }
 
-        /// <summary>Top of the backlog that is not already in this session.</summary>
+        /// <summary>
+        /// Top of the backlog that is not in this session AND that nobody has already
+        /// reported. The second half matters because QA_BACKLOG.md only loses a passed
+        /// item when the central apply_results step runs — without it, tomorrow's
+        /// session (or a second tester) is handed work that is already done.
+        /// </summary>
         string NextBacklogItemId()
         {
             if (_state?.backlog == null) return null;
             var present = new HashSet<string>();
             foreach (var r in _state.rows) present.Add(r.id);
             foreach (var b in _state.backlog)
-                if (!present.Contains(b.id)) return b.id;
+                if (!present.Contains(b.id) && string.IsNullOrEmpty(b.answeredBy))
+                    return b.id;
             return null;
         }
 
@@ -992,16 +1006,40 @@ var sb = new StringBuilder();
 
         void DrawAddItem()
         {
-            var open = new List<string> { "Add an item…" };
+            // Already-reported items are listed LAST and labelled with who answered
+            // them, rather than hidden: re-running one is occasionally right (a
+            // second opinion, a retest after a fix), but it must be a deliberate
+            // choice rather than the accident of a stale backlog file.
+            var open = new List<string> { "Pick another test…" };
             var ids = new List<string> { null };
+            var done = new List<string>();
+            var doneIds = new List<string>();
             var present = new HashSet<string>();
+            var remaining = 0;
             foreach (var r in _state.rows) present.Add(r.id);
             foreach (var b in _state.backlog)
             {
                 if (present.Contains(b.id)) continue;
-                open.Add(b.priority + "  " + b.id + " — " + b.title);
-                ids.Add(b.id);
+                if (string.IsNullOrEmpty(b.answeredBy))
+                {
+                    open.Add(b.priority + "  " + b.id + " — " + b.title);
+                    ids.Add(b.id);
+                    remaining++;
+                }
+                else
+                {
+                    done.Add("(done: " + b.answeredBy + ")  " + b.id + " — " + b.title);
+                    doneIds.Add(b.id);
+                }
             }
+            open.AddRange(done);
+            ids.AddRange(doneIds);
+
+            EditorGUILayout.LabelField(
+                remaining == 0
+                    ? "Every test on the list has been reported. Nothing left to pick."
+                    : remaining + " test(s) still waiting for someone to run them.",
+                EditorStyles.miniLabel);
 
             using (new EditorGUILayout.HorizontalScope())
             {
@@ -1019,10 +1057,17 @@ var sb = new StringBuilder();
             // item is an informed choice, not a leap.
             if (_addIndex > 0 && _addIndex < ids.Count)
             {
+                var chosen = ItemFor(ids[_addIndex]);
+                if (chosen != null && !string.IsNullOrEmpty(chosen.answeredBy))
+                    EditorGUILayout.HelpBox(
+                        "Someone has already reported this one — " + chosen.answeredBy +
+                        ". You can still run it (a retest after a fix, or a second " +
+                        "opinion), but it is not work that is waiting for you.",
+                        MessageType.Warning);
                 EditorGUILayout.LabelField(
                     "Here is what that one involves. Press Add to put it in your list:",
                     EditorStyles.wordWrappedMiniLabel);
-                DrawInstructions(ItemFor(ids[_addIndex]));
+                DrawInstructions(chosen);
             }
         }
 
@@ -1089,7 +1134,12 @@ var sb = new StringBuilder();
                 "You can submit as often as you like; each time, only the tests you " +
                 "have newly finished are sent. Once a verdict is sent it is locked: if " +
                 "that test gets fixed and you run it again later, that is a fresh " +
-                "session, not an edit to this one.";
+                "session, not an edit to this one.\n\n" +
+                "You do not have to update the backlog afterwards — this window already " +
+                "knows what has been reported and stops offering it. Folding results " +
+                "into QA_BACKLOG.md and opening dev tasks for failures is a separate " +
+                "step someone runs periodically (the /qa-backlog skill); it needs the " +
+                "whole picture, so it is not yours to run.";
 
             string status;
             Color tone;
