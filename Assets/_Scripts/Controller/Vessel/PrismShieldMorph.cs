@@ -5,6 +5,53 @@ using UnityEngine;
 namespace CosmicShore.Gameplay
 {
     /// <summary>
+    /// The colour pair shed shield armour flies off wearing — the prism's DISPLAY at the
+    /// instant the shield broke.
+    ///
+    /// It has to be captured rather than looked up, because a state change binds the
+    /// end-state material first (gameplay-final-at-start, <see cref="MaterialPropertyAnimator"/>)
+    /// and only then disengages the shield: by the time the shards are queued, the renderer
+    /// already wears the INCOMING tier and reading it there painted every shard in plain
+    /// prism colours. <see cref="PrismStateManager"/> therefore reads the display before it
+    /// repaints and hands the pair down.
+    ///
+    /// Default = "not captured", which makes the shatter fall back to the renderer's own
+    /// material — correct for the standalone rig and the ContextMenu toggles, where nothing
+    /// repaints and the material on the renderer IS the shield's.
+    /// </summary>
+    public readonly struct PrismShedPalette
+    {
+        static readonly int BrightColorId = Shader.PropertyToID("_BrightColor");
+        static readonly int DarkColorId = Shader.PropertyToID("_DarkColor");
+
+        public readonly Color Bright;
+        public readonly Color Dark;
+        public readonly bool HasValue;
+
+        public PrismShedPalette(Color bright, Color dark)
+        {
+            Bright = bright;
+            Dark = dark;
+            HasValue = true;
+        }
+
+        /// <summary>
+        /// The pair a material is painted with; white for anything it does not author — and
+        /// white for no material at all, so a resolved palette is never the black an
+        /// uninitialised struct would hand the debris.
+        /// </summary>
+        public static PrismShedPalette FromMaterial(Material material)
+        {
+            if (material == null) return new PrismShedPalette(Color.white, Color.white);
+            return new PrismShedPalette(
+                material.HasProperty(BrightColorId)
+                    ? material.GetColor(BrightColorId) : Color.white,
+                material.HasProperty(DarkColorId)
+                    ? material.GetColor(DarkColorId) : Color.white);
+        }
+    }
+
+    /// <summary>
     /// The CPU half of the GPU shield morph (Docs/PRISM_ANIMATION.md §5 B4) — shared by
     /// <see cref="PrismOctahedronShield"/> and <see cref="PrismStellatedOctahedronShield"/>
     /// so the two tiers cannot drift apart.
@@ -98,9 +145,6 @@ namespace CosmicShore.Gameplay
             ClearRig(renderer);
         }
 
-        static readonly int BrightColorId = Shader.PropertyToID("_BrightColor");
-        static readonly int DarkColorId = Shader.PropertyToID("_DarkColor");
-
         /// <summary>
         /// Queues the disengage overlay: the shield's faces, shed as ORDINARY PRISM
         /// EXPLOSION DEBRIS (Docs/PRISM_ANIMATION.md §4.8.1) — the same entities, stamps,
@@ -119,24 +163,28 @@ namespace CosmicShore.Gameplay
         /// Per-impact ceiling for TRUE-velocity impacts, forwarded like
         /// <see cref="Prism.Damage"/>'s own; 0 keeps the authored band.
         /// </param>
+        /// <param name="shedPalette">
+        /// The colours the shield was SHOWING when it broke, captured before the state
+        /// change repainted the prism (see <see cref="PrismShedPalette"/>). Default falls
+        /// back to the renderer's own material — right only where nothing repaints.
+        /// </param>
         public static void RequestShatter(GameObject host, MeshRenderer renderer, Mesh sharedShieldMesh,
-            Vector3 breakVelocity = default, float debrisSpeedLimit = 0f)
+            Vector3 breakVelocity = default, float debrisSpeedLimit = 0f,
+            PrismShedPalette shedPalette = default)
         {
             if (sharedShieldMesh == null || renderer == null) return;
 
-            // The shards wear the shield's CURRENT palette — the material the renderer
-            // holds at the instant of the drop (already the post-transition domain
-            // material; PrismStateManager repaints before it disengages) — carried the
-            // same way death debris carries a dying prism's tier colors: per-entity
-            // overrides on the shared debris material.
-            var material = renderer.sharedMaterial;
-            Color bright = material != null && material.HasProperty(BrightColorId)
-                ? material.GetColor(BrightColorId) : Color.white;
-            Color dark = material != null && material.HasProperty(DarkColorId)
-                ? material.GetColor(DarkColorId) : Color.white;
+            // The shards wear what the shield was SHOWING, carried the same way death debris
+            // carries a dying prism's tier colours: per-entity overrides on the shared debris
+            // material. The renderer cannot answer that on a real prism — PrismStateManager has
+            // already bound the incoming tier's material by now — so the captured pair wins and
+            // the renderer is only the standalone rig's fallback.
+            var shed = shedPalette.HasValue
+                ? shedPalette
+                : PrismShedPalette.FromMaterial(renderer.sharedMaterial);
 
             bool queued = PrismShieldShatter.TryRequest(sharedShieldMesh, host.layer,
-                host.transform, bright, dark, breakVelocity, debrisSpeedLimit);
+                host.transform, shed.Bright, shed.Dark, breakVelocity, debrisSpeedLimit);
 
             // Strict mode is silent about nothing: the shards ride the instanced path, so
             // if there is none the disengage simply has no overlay and that must be said

@@ -253,20 +253,30 @@ namespace CosmicShore.Gameplay
         /// an impactless prism death gets (Docs/PRISM_ANIMATION.md §4.8.1).
         /// </param>
         /// <param name="debrisSpeedLimit">True-velocity impact ceiling, as on Prism.Damage; 0 = authored band.</param>
-        public void Disengage(bool instant = false, Vector3 breakVelocity = default, float debrisSpeedLimit = 0f)
+        /// <param name="shedPalette">
+        /// The colours the shield was SHOWING when it broke — captured by the caller before it
+        /// repaints the prism. See the octahedron tier for why the renderer cannot answer this
+        /// here. Note the super-shield deliberately wears the OPAQUE team material (the
+        /// stellation IS the tier's read), so this carries that pair, not a lookup that would
+        /// hand the shards colours the shield never wore.
+        /// </param>
+        public void Disengage(bool instant = false, Vector3 breakVelocity = default,
+            float debrisSpeedLimit = 0f, PrismShedPalette shedPalette = default)
         {
             if (!_isShielded) return;
 
             _isShielded = false;
 
-            // Queued BEFORE the pose flips: the shards are the shield that was standing
-            // here, so they take this prism's transform and the material it is wearing
-            // right now, both of which ApplyUnshieldedPose is about to change. (See the
-            // octahedron tier for why "right now" is already the post-transition domain
-            // material on the shipped prefabs.)
+            // Queued BEFORE the pose flips: the shards are the shield that was standing here,
+            // so they take this prism's transform, which ApplyUnshieldedPose is about to
+            // change. An authored override material outranks the captured pair — see the
+            // octahedron tier.
             if (!instant)
                 PrismShieldMorph.RequestShatter(gameObject, _meshRenderer, _stellatedMesh,
-                    breakVelocity, debrisSpeedLimit);
+                    breakVelocity, debrisSpeedLimit,
+                    shieldMaterialOverride != null
+                        ? PrismShedPalette.FromMaterial(shieldMaterialOverride)
+                        : shedPalette);
 
             // Immediately restore box mesh + colliders so gameplay is unaffected.
             ApplyUnshieldedPose();

@@ -271,21 +271,31 @@ namespace CosmicShore.Gameplay
         /// an impactless prism death gets (Docs/PRISM_ANIMATION.md §4.8.1).
         /// </param>
         /// <param name="debrisSpeedLimit">True-velocity impact ceiling, as on Prism.Damage; 0 = authored band.</param>
-        public void Disengage(bool instant = false, Vector3 breakVelocity = default, float debrisSpeedLimit = 0f)
+        /// <param name="shedPalette">
+        /// The colours the shield was SHOWING when it broke. A caller that repaints the prism
+        /// as part of the same state change (every <see cref="PrismStateManager"/> path) must
+        /// capture this BEFORE repainting — by the time we get here the renderer already wears
+        /// the incoming tier. Default reads the renderer, which is right only for the
+        /// standalone rig and the ContextMenu toggles, where nothing repaints.
+        /// </param>
+        public void Disengage(bool instant = false, Vector3 breakVelocity = default,
+            float debrisSpeedLimit = 0f, PrismShedPalette shedPalette = default)
         {
             if (!_isShielded) return;
 
             _isShielded = false;
 
-            // Queued BEFORE the pose flips: the shards are the shield that was standing
-            // here, so they take this prism's transform and the material it is wearing
-            // right now, both of which ApplyUnshieldedPose is about to change. (On the
-            // shipped prefabs "right now" is already the post-transition domain material,
-            // because PrismStateManager repaints before it disengages — the same colour
-            // the retired child-renderer overlay showed.)
+            // Queued BEFORE the pose flips: the shards are the shield that was standing here,
+            // so they take this prism's transform, which ApplyUnshieldedPose is about to
+            // change. An authored override material IS this shield's own look, so it outranks
+            // the captured pair; with none authored (every shipped prefab) the capture is the
+            // only thing that still knows what was on screen.
             if (!instant)
                 PrismShieldMorph.RequestShatter(gameObject, _meshRenderer, _octahedronMesh,
-                    breakVelocity, debrisSpeedLimit);
+                    breakVelocity, debrisSpeedLimit,
+                    shieldMaterialOverride != null
+                        ? PrismShedPalette.FromMaterial(shieldMaterialOverride)
+                        : shedPalette);
 
             // Immediately restore box mesh + colliders so gameplay is unaffected.
             ApplyUnshieldedPose();
