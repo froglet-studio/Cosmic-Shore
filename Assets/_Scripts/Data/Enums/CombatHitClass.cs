@@ -26,5 +26,12 @@ namespace CosmicShore.Data
         /// ever score once against a given victim (a skyburst detonates on its own direct hit,
         /// so the two paths always fire back-to-back).</summary>
         Missile = 1,
+
+        /// <summary>An area DEBUFF: an opposing pilot caught in a blast that strips their element
+        /// levels rather than their hull - today the Dolphin's crystal cone. It is a separate
+        /// class rather than a Missile because it is a different verb: nothing is fired, nothing
+        /// is destroyed, and what lands is elemental. The Bends is the only mode that pays for
+        /// it; everywhere else it is counted and worth nothing, exactly like the other two.</summary>
+        Debuff = 2,
     }
 }

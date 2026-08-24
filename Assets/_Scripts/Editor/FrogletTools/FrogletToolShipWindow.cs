@@ -38,7 +38,8 @@ namespace CosmicShore.Editor.Froglet
 
         [MenuItem("FrogletTools/Build/Pending Tool Changes", false, 20)]
         [FrogletTool(FrogletToolCategory.Build, Importance = 5,
-            Description = "Uncommitted asset output from editor tools. Validate, push, retire.")]
+            Description = "Uncommitted asset output from editor tools. Validate, push, retire.",
+            DocPath = "Docs/TOOLING.md#tool-output-is-a-deliverable")]
         public static void Open()
         {
             var w = GetWindow<FrogletToolShipWindow>("Tool Changes");

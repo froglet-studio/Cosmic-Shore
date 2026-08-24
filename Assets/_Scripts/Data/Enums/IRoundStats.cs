@@ -46,6 +46,7 @@ namespace CosmicShore.Data
         event Action<IRoundStats> OnLifeformsKilledChanged;
         event Action<IRoundStats> OnBulletHitsLandedChanged;
         event Action<IRoundStats> OnMissileHitsLandedChanged;
+        event Action<IRoundStats> OnDebuffHitsLandedChanged;
         event Action<IRoundStats> OnCombatPointsChanged;
 
         // Ability time events
@@ -123,6 +124,15 @@ namespace CosmicShore.Data
         int MissileHitsLanded { get; set; }
 
         /// <summary>
+        /// Area DEBUFFS this player has LANDED on an opposing pilot - today the Dolphin's crystal
+        /// blast catching someone in its cone and stripping their element levels. Counted once per
+        /// blast per victim through the same <c>VesselCombatHitLatch</c> window the other two
+        /// classes use, so a cone that grows through a pilot over several frames is one bend.
+        /// A raw count like its siblings: The Bends is the only mode that pays for it.
+        /// </summary>
+        int DebuffHitsLanded { get; set; }
+
+        /// <summary>
         /// Weighted combat score - the sum of what this mode paid for each landed hit
         /// (<c>ScoringRuleSO.PointsForCombatHit</c>). Accumulated server-side at the moment of
         /// the hit rather than derived, so it is a monotonic cumulative int like every other
@@ -179,6 +189,7 @@ namespace CosmicShore.Data
             LifeformsKilled = 0;
             BulletHitsLanded = 0;
             MissileHitsLanded = 0;
+            DebuffHitsLanded = 0;
             CombatPoints = 0;
 
             FullSpeedStraightAbilityActiveTime = 0f;

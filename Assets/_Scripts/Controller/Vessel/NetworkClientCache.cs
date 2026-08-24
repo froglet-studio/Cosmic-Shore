@@ -15,9 +15,21 @@ namespace CosmicShore.Gameplay
     public abstract class NetworkClientCache<T> : MonoBehaviour where T : NetworkBehaviour
     {
         public static Action<T> OnNewInstanceAdded;
-        
+
         // Static list of all active T instances
         private static readonly List<T> s_ActiveInstances = new();
+
+        /// <summary>
+        /// Statics live per CLOSED generic type, and [RuntimeInitializeOnLoadMethod] never runs
+        /// for an open generic — so this is called per closed type from
+        /// <see cref="NetworkClientCacheDomainReset"/> (add any new T there).
+        /// </summary>
+        public static void ResetStatics()
+        {
+            OnNewInstanceAdded = null;
+            s_ActiveInstances.Clear();
+            OwnInstance = null;
+        }
 
         /// <summary>
         /// Read‐only access to all currently spawned instances of T.
@@ -96,6 +108,20 @@ namespace CosmicShore.Gameplay
                     return inst;
             }
             return null;
+        }
+    }
+
+    /// <summary>
+    /// Non-generic reset host for every closed <see cref="NetworkClientCache{T}"/> type —
+    /// the attribute cannot live on the generic class itself.
+    /// </summary>
+    static class NetworkClientCacheDomainReset
+    {
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        static void ResetAllClosedTypes()
+        {
+            NetworkClientCache<Player>.ResetStatics();
+            NetworkClientCache<VesselController>.ResetStatics();
         }
     }
 }

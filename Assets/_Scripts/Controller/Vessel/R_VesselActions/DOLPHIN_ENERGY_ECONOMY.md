@@ -62,12 +62,21 @@ a vessel whose boost is bought with drift-seconds rather than picked up.
 | event | effect on Energy | authored in |
 |---|---|---|
 | skim a prism | **+0.006667** (max 1.0, so 150 skims fills it) | `DolphinSkimmerChangeResourceByPrismEffect` |
-| skim a DANGER prism, Time L5 active | **+0.02** (×3, so 50 danger skims fills it) | same asset, `_dangerBonusElement` / `_dangerBonusMultiplier` |
 | ram a prism | **halved** | `DolphinVesselChangeResourceByPrismEffect` |
 | hit a crystal | **set to 0** — spent entirely | `DolphinVesselChangeResourceByCrystalEffect` (`_overrideAmount`) |
 
 Energy has **no passive regeneration** (`resourceGainRate: 0`), which is what makes the skim
 the only way to arm the blast.
+
+A danger prism pays the same as any other prism here. The Dolphin briefly carried a Time-5
+"Live Current" bonus (`×3` on danger skims, via
+`SkimmerChangeResourceByPrismEffectSO._dangerBonusElement`); Time 5 was re-scoped on 2026-08-18
+to **Drift Ward** (immunity to DANGER-PRISM elemental debuffs while drifting — scoped to that
+class alone, so an opposing pilot's crystal blast still debuffs a drifting Dolphin), so
+`_dangerBonusElement` is back
+to `None` on `DolphinSkimmerChangeResourceByPrismEffect` and Time 5 grants exactly one upgrade.
+The generic 10× danger multiplier on `SkimmerBoostPrismEffect` is a different effect on a
+different resource (boost, not energy) and is gated on CHARGE — it is untouched by this.
 
 ### Energy IS the jaw gape
 
@@ -163,15 +172,17 @@ change it as a side-effect of a tuning pass.
 
 | quantity | formula | value |
 |---|---|---|
-| max cruise speed | `ThrottleScaler(68) × 1 + MinimumSpeed(10)` | **78** |
-| max boost speed | `68 × 2.259² + 10` | **357** |
+| max cruise speed | `ThrottleScaler(68) × 1 + MinimumSpeed(0)` | **68** |
+| max boost speed | `68 × 2.259² + 0` | **347** |
 | charge fill rate | `1 / chargeTimeToFull` | 0.275 /s |
 | boost drain rate | `1 / dischargeTimeToEmpty` | 0.40 /s |
 
 `ThrottleScalerMultiplier` is authored `Enabled: 0` on the Dolphin, so it evaluates to its
 serialized `Value: 1` and the map's Time multiplier reaches boost speed only through
 `CurrentBoostAmount` (also 1 at the resting level). `MinimumSpeed` is deliberately **not**
-scaled with the top speed — the floor is the drift/idle speed and was left as authored.
+scaled with the top speed — it is the throttle-off floor, and on the Dolphin it is **0**: a
+released throttle brings the vessel to a genuine stop rather than an unstoppable 10 u/s crawl.
+(It was authored 10 until 2026-08-20.)
 
 Speed is a platform-law input, not a private number: the speed tunnel
 (`Docs/SPEED_TUNNEL.md`) maps speed to FOV **absolutely and fleet-wide**, so a faster Dolphin
@@ -437,15 +448,15 @@ and the gape froze.
 
 Fleet-standard row (charge → mass → space → time, the same order as the element flowers), on
 the Squirrel's exact anchor bands. `DolphinHUDVariant.prefab` is authored;
-**FrogletTools > Vessels > Wire Dolphin Ability Row** re-binds a broken one without
+**FrogletTools > Vessels > Wire Vessel Ability Row** re-binds a broken one without
 re-deriving the layout.
 
 | slot | icon | shows |
 |---|---|---|
-| Charge | omni-crystal + yield pips | the seeding recharge, and how many crystals the next cycle plants |
-| Mass | the vessel's own 11-step boost ring | the boost banked by drifting |
-| Space | cone-blast icon + tally | prisms the last cone claimed |
-| Time | the vessel's own jaw silhouettes | banked energy, as a gape — **lime when full** |
+| Charge | a generated blast-PROFILE capsule + a two-line living tally | the next blast's cross-section (extent = energy, roundness = Charge), and what the last blast did to pilots and creatures |
+| Mass | omni-crystal icon | the seeding recharge, and — by colour — whether the next seed is a free-for-all crystal or a team-locked one |
+| Space | the vessel's own jaw silhouettes + a prism tally | banked energy, as a gape — **lime when full** — and prisms the last cone claimed |
+| Time | the vessel's own 11-step boost ring | the boost banked by drifting |
 
 Two conventions this HUD deviates on, both deliberate:
 
@@ -456,13 +467,12 @@ Two conventions this HUD deviates on, both deliberate:
   this vessel has**, which is why `SetDriftBoost` writes nothing but the ring's sprite: any
   per-event transform write on an icon wipes the bump.
 
-A **pip stands for an EXTRA crystal in the seeding cycle** — one beyond the first, which the
-main icon already represents. So an un-upgraded Dolphin shows no pips at all, and the mini
-crystal appearing *is* Twin Seed becoming visible.
-
-*(Crystal seeding went PASSIVE on 2026-08-14 — nothing is carried any more, so the pips moved
-from "crystals in hand" to "crystals per cycle" and the main icon became a pure recharge fill.
-Mechanic: `DOLPHIN_CRYSTAL_SEEDING.md`.)*
+*(The row above was re-cut on **2026-08-17**, when the whole elemental map was re-assigned so each
+element owns one orthogonal dimension of the single crystal-blast act. Charge took the Echo Sight
+and the blast's thickness, Mass took crystal seeding, Space narrowed to reach, and every slot moved
+band. The **carry/yield pips are retired** along with Twin Seed — the ability plants exactly one
+crystal per cycle at every level, and the Mass upgrade changes the crystal's TIER instead, which the
+slot says in colour. Full record: `DOLPHIN_CRYSTAL_SEEDING.md` §8–§12.)*
 
 ### Why the boost ring writes nothing but its sprite
 

@@ -26,9 +26,26 @@ namespace CosmicShore.Gameplay
 
         public static event Action<string> OnVesselDamagedPrism;
 
+        [Header("Attach")]
+        [Tooltip("ON (default): a vessel that is RIDING a trail does not also ram it. Riding " +
+                 "and ramming are the same collision, so without this the attacher destroys " +
+                 "the very prism it just latched onto.")]
+        [SerializeField] private bool skipWhileAttached = true;
+
         public override void Execute(VesselImpactor impactor, PrismImpactor prismImpactee)
         {
             var status = impactor.Vessel.VesselStatus;
+
+            // A vessel riding a trail is not ramming it. Attaching and colliding are the SAME
+            // contact, dispatched through one flat effect list with no ordering guarantee
+            // between them - so a vessel that can attach will destroy the prism it attached to
+            // unless something declines here. This shipped as a real bug in 2023 ("urchin
+            // destroying first block when attaching to a trail") and the fix of the day lived
+            // in a collision path that no longer exists; the Urchin only escaped it afterwards
+            // by never listing a damage effect at all, which leaves the trap armed for the next
+            // vessel that attaches. It is guarded here, once, for the whole fleet.
+            if (skipWhileAttached && status.IsAttached) return;
+
             var inertia = status.Inertia;
             var course  = useOverrideCourse ? overrideCourse : status.Course;
             var speed   = useOverrideSpeed  ? overrideSpeed  : status.Speed;

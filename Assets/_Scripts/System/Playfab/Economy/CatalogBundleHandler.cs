@@ -16,6 +16,14 @@ namespace CosmicShore.Core
 
         static PlayFabEconomyInstanceAPI _playFabEconomyInstanceAPI;
 
+        // See AuthenticationManager.ResetStatics.
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        static void ResetStatics()
+        {
+            _playFabEconomyInstanceAPI = null;
+            Bundles = new();
+        }
+
         public static Dictionary<string, string> Bundles { get; private set; } = new();
         public static event Action<string> OnGettingBundleId;
 

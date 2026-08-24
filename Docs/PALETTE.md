@@ -207,6 +207,38 @@ thousands animate at once and its graphs carry the clock wiring. The crystal sha
 (§2.2 audits them), so a crystal's pair is pushed from the CPU — bounded by the crystals
 actually *transitioning*, and cheaper than the cloned-material lerp it runs alongside.
 
+### 2.4 A crystal colour is NOT a domain's UI colour — `GetDomainSignalColor` (2026-08-17)
+
+**`DullCrystalColor` is authored `(0, 0, 0)` on Jade, Ruby AND Gold in the live
+`OriginalColorSetSO`.** Only Blue has a non-black dull. That is deliberate and correct *on a
+crystal*: §2.2 established that at the crystal shaders' fresnel power the dull colour paints ~93% of
+the surface, so a near-black body with a bright fresnel rim is what makes a faceted domain crystal
+read as a dark gem with a lit edge.
+
+It is a trap for anything that is not a crystal shader. The Dolphin's Mass HUD slot announces a
+team-locked seed and sampled `DullCrystalColor` on the entirely reasonable theory that the icon
+should wear the colour the crystal will wear — and rendered a black square. `BrightCrystalColor` is
+no answer either: it tops out at value 0.75 across all four domains.
+
+**The rule.** To say "this belongs to domain X" anywhere that is not a crystal material, use
+`SO_ColorSet.GetDomainSignalColor(domain)` — the domain **UI** colour (`TrailHighlightColor`) with
+its brightest channel driven to 1, hue and saturation intact:
+
+| domain | `GetDomainUIColor` | → `GetDomainSignalColor` |
+|---|---|---|
+| Jade | (0.055, 0.753, 0.714) | (0.073, **1.0**, 0.948) |
+| Ruby | (0.784, 0.000, 0.765) | (**1.0**, 0.0, 0.976) |
+| Gold | (1.000, 0.657, 0.000) | (**1.0**, 0.657, 0.0) — already at peak |
+
+It returns white for an unauthored domain, so a signal can never silently become invisible — which
+is the other half of the lesson: a colour accessor that can return black or near-black is a colour
+accessor that can make a UI element disappear, and disappearing reads as "not implemented" rather
+than as "mis-tinted".
+
+Two consumers today, and they are the intended shape for future ones: the Dolphin's Mass slot, and
+the Charge-5 pilot highlight (which needs it *saturated* for the same reason — a marked vessel has to
+separate by HUE from the lit prisms around it, and brightness alone cannot do that).
+
 ## 3. The colour-space rule (this is the trap)
 
 The project is **Linear** (`ProjectSettings/ProjectSettings.asset: m_ActiveColorSpace: 1`)

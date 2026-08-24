@@ -112,8 +112,8 @@ namespace CosmicShore.Gameplay
             //Block.GetComponent<MeshRenderer>().material = material;
             Block.ownerID = /*Block.ownerId +*/ ownerId + position;
             Block.TargetScale = blockScale;
-            Block.Trail = trail;
             Block.Initialize();
+            Block.AssignTrail(trail);   // AFTER Initialize - reset clears membership
             trail.Add(Block);
             return Block;
         }

@@ -337,6 +337,8 @@ namespace CosmicShore.UI
                     return CreateProviderComponent<DogFightObjectiveProvider>("ObjectiveProvider_DogFight");
                 case GameModes.Rampage:
                     return CreateProviderComponent<RampageObjectiveProvider>("ObjectiveProvider_Rampage");
+                case GameModes.ScarabScramble:
+                    return CreateProviderComponent<ScarabScrambleObjectiveProvider>("ObjectiveProvider_ScarabScramble");
                 default:
                     return null;
             }

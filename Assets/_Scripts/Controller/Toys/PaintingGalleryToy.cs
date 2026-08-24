@@ -214,14 +214,18 @@ namespace CosmicShore.Gameplay
             if (!MiniaturePaintingBuilder.TryBuild(body.transform, painting, radius, Context))
                 ToyFactory.AddSphereBody(body.transform, radius, Definition.AccentColor);
 
-            var label = ToyFactory.AddLabel(root.transform, painting.DisplayName,
-                Definition.AccentColor, radius * 1.9f);
+            float ringRadius = StationRingRadius(radius * 1.6f);
+            var label = ToyFactory.AddRingedLabel(root.transform, painting.DisplayName,
+                Definition.AccentColor, ringRadius, radius);
 
             // A full Toy, not a light matrix station: a painting station owns its own bloom, its
             // exit-gated re-arm (so a bench/resume toggle can't double-fire), and a per-frame
             // Update for the completion choice gates.
             var toy = root.AddComponent<PaintingToy>();
             toy.Configure(painting, _anchorPositions[index], _anchorRotations[index], label, ToyboxRoot);
+            // Its switch ring comes from the base like every other toy's - only the radius is ours,
+            // because a gallery station's trigger overruns half the gap to its neighbour.
+            toy.ConfigureSwitchRing(ringRadius);
             toy.Initialize(_def, Context,
                 new ToyPlacement(position, transform.position, radius, radius * 1.6f));
         }

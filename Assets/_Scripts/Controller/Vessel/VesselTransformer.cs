@@ -154,6 +154,37 @@ public class VesselTransformer : MonoBehaviour
         protected float TurnScalar =>
             VesselStatus != null && VesselStatus.IsTranslationRestricted ? restrictedTurnMultiplier : 1f;
 
+        /// <summary>
+        /// The fastest this vessel can swing its nose right now, in degrees per second — the exact
+        /// quantity <see cref="Pitch"/> and <see cref="Yaw"/> apply at full stick, including the
+        /// throttle-derived term and the translation-restricted multiplier.
+        ///
+        /// The MINIMUM of the two axes, deliberately: a turn onto an arbitrary bearing is some
+        /// blend of pitch and yaw, so the worst axis is the rate that can be relied on. Every
+        /// shipped vessel authors the two equal today, which makes the choice free — it matters
+        /// only if someone authors a vessel that turns faster in one plane than the other, and
+        /// there the conservative read is the correct one for anything reasoning about what the
+        /// vessel can and cannot reach.
+        ///
+        /// Live rather than authored: <c>BeginDrift</c> multiplies the scalers and <c>EndDrift</c>
+        /// restores them, so this follows a drifting vessel's real agility instead of its
+        /// resting one.
+        /// </summary>
+        public float MaxTurnRateDegreesPerSecond =>
+            (speed * RotationThrottleScaler + Mathf.Min(PitchScaler, YawScaler)) * TurnScalar;
+
+        /// <summary>
+        /// The tightest circle this vessel can fly at its current speed and turn rate,
+        /// <c>R = v / ω</c>. Nothing inside that circle can be reached by turning — see
+        /// <see cref="PursuitReachability"/>, which is what consumes this.
+        ///
+        /// It has to be derived rather than authored because it is not a property of the vessel at
+        /// all: it is a property of the vessel AT THIS SPEED. A Dolphin at 60 u/s turns inside 31
+        /// units and at 300 u/s needs 156, off the same authored 110°/s.
+        /// </summary>
+        public float MinTurnRadius =>
+            PursuitReachability.MinTurnRadius(Mathf.Abs(speed), MaxTurnRateDegreesPerSecond);
+
         private readonly List<ShipThrottleModifier> ThrottleModifiers = new();
         private readonly List<ShipVelocityModifier> VelocityModifiers = new();
 
@@ -297,7 +328,7 @@ public class VesselTransformer : MonoBehaviour
         public void ToggleActive(bool active) => isActive = active;
 
         // ----------------------------- Reset State -----------------------------
-        public void ResetTransformer()
+        public virtual void ResetTransformer()
         {
             // Core speed/rotation
             MinimumSpeed = DefaultMinimumSpeed;

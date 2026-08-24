@@ -782,17 +782,12 @@ namespace CosmicShore.Gameplay
             else if (_lobbyService.ActiveLobby != null)
                 await _lobbyService.LeaveAsync();
 
-            if (_propertyWriter != null)
-            {
-                _propertyWriter.LobbyMutex?.Dispose();
-                _propertyWriter.SessionCreationMutex?.Dispose();
-            }
-            else
-            {
-                Debug.LogError(
-                    "[HostConnectionService] OnDestroy: _propertyWriter is null - Reflex DI never populated it. " +
-                    "Skipping mutex disposal.");
-            }
+            // Deliberately NOT disposing the two SemaphoreSlims: this OnDestroy is async, so
+            // the service's other in-flight flows (every `await *Mutex.WaitAsync()`) can still
+            // resume AFTER the awaits above — a disposed semaphore turned every play-exit into
+            // "ObjectDisposedException: The semaphore has been disposed" spam (crash-detector
+            // journal, 2026-08-20). A SemaphoreSlim that never touches AvailableWaitHandle
+            // holds no OS handle, so there is nothing to leak by letting the GC collect it.
 
             Instance = null;
         }

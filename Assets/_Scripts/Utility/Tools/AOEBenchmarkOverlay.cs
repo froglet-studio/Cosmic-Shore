@@ -20,6 +20,15 @@ namespace CosmicShore.Utility
         private static AOEBenchmarkOverlay _instance;
         private static bool _enabled;
 
+        // The menu toggle flips _enabled but nothing re-reads it at play start — a stale true
+        // makes the first toggle of the next session read as "turn off" with no overlay shown.
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        static void ResetStatics()
+        {
+            _enabled = false;
+            _instance = null;
+        }
+
         private const int ROLLING_WINDOW = 60;
 
         // ProfilerRecorders - read back the markers we added to the hot paths

@@ -73,9 +73,12 @@ namespace CosmicShore.Gameplay
             block.TargetScale = e.Point.Scale;
             t = LoadInsights.AccumulateSample("Prism lay: TargetScale (scale-manager registration)", t);
 
-            block.Trail = trail;
             block.Initialize();
             t = LoadInsights.AccumulateSample("Prism lay: Initialize (reset + grow coroutine start)", t);
+
+            // AFTER Initialize: pool-reuse reset clears trail membership, so a stamp made
+            // before it is silently wiped (AssignTrail's contract).
+            block.AssignTrail(trail);
 
             PrismKinds.Apply(block, e.Kind); // additive: Plain leaves baked/prefab state intact
             trail.Add(block);
@@ -152,6 +155,32 @@ namespace CosmicShore.Gameplay
         }
 
         // ── Budgeted (UniTask, N milliseconds per frame, budget shared globally) ──
+
+        // A play-mode exit can kill the UniTask lays mid-flight, skipping every finally that
+        // balances these latches — with domain reload disabled the next session then starts with
+        // IsLayingInProgress stuck true, a wedged arena-ready gate, and Time.unscaledTime stamps
+        // from a clock that has since restarted. Restore the whole group to its declared state.
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        static void ResetStatics()
+        {
+            s_budgetFrame = -1;
+            s_budgetSpentMs = 0.0;
+            s_activeBudgetedLays = 0;
+            s_layQueuedTotal = 0;
+            s_layDoneTotal = 0;
+            s_growWatch.Clear();
+            GrowRemainingCount = 0;
+            s_pendingArenaBuilds = 0;
+            s_loadGateHolding = false;
+            s_loadGateStartTime = 0f;
+            s_allClearSince = -1f;
+            s_settleSpan = -1;
+            s_lastLayDone = -1;
+            s_lastGrowRemaining = -1;
+            s_lastProgressTime = 0f;
+            UseBatchedInstantiate = true;
+            LoadGateLayBudgetOverrideMs = 0f;
+        }
 
         // All budgeted lays draw from ONE per-frame time pool, so three concurrently-streaming
         // shells cost max(budget) per frame, not 3 × budget.

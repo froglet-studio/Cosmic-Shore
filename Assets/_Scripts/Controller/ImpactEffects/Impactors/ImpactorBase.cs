@@ -29,6 +29,50 @@ namespace CosmicShore.Gameplay
         // one authoring hole logs once rather than once per contact.
         static readonly HashSet<long> s_reportedEmptyEffectSlots = new();
 
+        // Warn-once means once per PLAY SESSION, and instance IDs get reused across sessions
+        // with domain reload disabled — clear all three report keys per play.
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        static void ResetWarnOnceKeys()
+        {
+            s_reportedEmptyEffectSlots.Clear();
+            s_reportedThrowingEffects.Clear();
+            s_reportedMissingContainers.Clear();
+        }
+
+        // Impactors whose whole effect container is unassigned, keyed by impactor instance so
+        // an unwired prefab names itself once rather than once per physics contact.
+        static readonly HashSet<int> s_reportedMissingContainers = new();
+
+        /// <summary>
+        /// True when the impactor's serialized effect CONTAINER is unassigned — the level above
+        /// <see cref="IsEffectSlotEmpty"/>, same doctrine. Dispatch sites deref the container
+        /// directly, so an unwired prefab used to surface as a bare
+        /// <see cref="NullReferenceException"/> inside a PhysX callback, once per contact for as
+        /// long as anything touched the collider — thousands of console exceptions that read as
+        /// the editor freezing (the 2026-08-21 'Run managed callbacks' hang reports carried
+        /// exactly this storm from the legacy Components/Skimmer.prefab, whose serialized data
+        /// predates the container refactor on six vessels). Name the hole ONCE with the full
+        /// hierarchy path and skip dispatch: the missing container cannot be invented, but the
+        /// editor must stay alive to say so.
+        /// </summary>
+        protected bool IsEffectContainerMissing(UnityEngine.Object container, string containerField)
+        {
+            if (container) return false;
+
+            if (s_reportedMissingContainers.Add(GetInstanceID()))
+            {
+                var t = transform;
+                string path = t.name;
+                while (t.parent != null) { t = t.parent; path = t.name + "/" + path; }
+                CSDebug.LogError(
+                    $"[{GetType().Name}] '{path}'.{containerField} is not assigned — this impactor " +
+                    "dispatches no effects until it is wired (reported once; contacts are skipped, " +
+                    "not thrown). Run FrogletTools > Vessels > Audit Vessel Skimmers to see every " +
+                    "unwired skimmer.", this);
+            }
+            return true;
+        }
+
         /// <summary>
         /// True when a serialized effect slot holds nothing runnable — never assigned in the
         /// inspector, or its asset failed to load (missing script, unresolved GUID).
@@ -55,6 +99,43 @@ namespace CosmicShore.Gameplay
                     "list still runs. Assign the effect asset, or remove the slot.", container);
             }
             return true;
+        }
+
+        // Effect instances whose Execute already threw, keyed by (effect, impactor type) so a
+        // broken effect names itself once rather than once per contact.
+        static readonly HashSet<long> s_reportedThrowingEffects = new();
+
+        /// <summary>
+        /// Runs one effect with its siblings' survival guaranteed: an exception inside
+        /// <c>Execute</c> is reported ONCE per (effect, impactor type) with its stack - loud,
+        /// named, actionable - and the rest of the effect list still runs.
+        ///
+        /// The companion of <see cref="IsEffectSlotEmpty"/>, and the same doctrine: this is not
+        /// a fail-soft blanket, it is fail-loud with the offender's address. Before it, one
+        /// throwing effect (an unwired SOAP event on a prism variant, a listener assuming
+        /// in-game state from the menu) silently killed every LATER effect in the list for that
+        /// contact - on the Urchin spike container that meant an aborted steal also swallowed
+        /// the chain volley, and the whole weapon read as dead with nothing in the console
+        /// naming why.
+        /// </summary>
+        protected void RunEffectIsolated(System.Action execute, UnityEngine.Object effect)
+        {
+            try
+            {
+                execute();
+            }
+            catch (System.Exception ex)
+            {
+                int effectId = effect ? effect.GetInstanceID() : 0;
+                long key = ((long)effectId << 32) ^ (uint)GetType().Name.GetHashCode();
+                if (s_reportedThrowingEffects.Add(key))
+                {
+                    CSDebug.LogError(
+                        $"[{GetType().Name}] Effect '{(effect ? effect.name : "<null>")}' threw during " +
+                        $"Execute - reported once; the rest of this contact's effect list still runs.\n{ex}",
+                        effect);
+                }
+            }
         }
 
         // Per-concrete-type profiler marker so an impact storm shows up in captures as

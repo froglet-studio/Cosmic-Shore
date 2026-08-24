@@ -16,6 +16,21 @@ namespace CosmicShore.Core
     {
         public static PlayFabAccount PlayFabAccount { get; private set; } = new();
         public static PlayerSession PlayerSession { get; private set; } = new();
+
+        // Field initializers run once per domain load — with domain reload disabled a session-1
+        // auth context would read as live in session 2. (Legacy PlayFab is dormant; this keeps
+        // the identity honest if it is ever re-enabled.)
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        static void ResetStatics()
+        {
+            PlayFabAccount = new();
+            PlayerSession = new();
+            Adjectives = null;
+            Nouns = null;
+            OnLoginSuccess = null;
+            OnLoginError = null;
+            OnRegisterSuccess = null;
+        }
         
         public static event Action OnLoginSuccess;
  

@@ -125,6 +125,9 @@ namespace Obvious.Soap
         private void OnEnable()
         {
 #if UNITY_EDITOR
+            // [Cosmic Shore patch] -= before += : an asset reimport re-runs OnEnable, and the
+            // original code double-subscribed because OnDisable never removed this handler.
+            EditorApplication.playModeStateChanged -= OnPlayModeStateChanged;
             EditorApplication.playModeStateChanged += OnPlayModeStateChanged;
 #else
             Init();
@@ -134,6 +137,9 @@ namespace Obvious.Soap
 
         private void OnDisable()
         {
+#if UNITY_EDITOR
+            EditorApplication.playModeStateChanged -= OnPlayModeStateChanged;
+#endif
             SceneManager.sceneLoaded -= OnSceneLoaded;
         }
 
@@ -163,8 +169,15 @@ namespace Obvious.Soap
             if (playModeStateChange == PlayModeStateChange.ExitingEditMode)
                 Init();
             else if (playModeStateChange == PlayModeStateChange.EnteredEditMode)
+            {
+                // [Cosmic Shore patch] Init() clears _listenersObjects but never the delegate
+                // itself. With domain reload disabled a play-session handler whose owner missed
+                // its -= survives into edit mode, where an inspector edit of the value invokes
+                // it against destroyed objects. Drop them on both boundaries (Init covers entry).
+                _onValueChanged = null;
                 if (!_saved)
                     ResetToInitialValue();
+            }
         }
 
         protected virtual void OnValidate()
@@ -196,6 +209,9 @@ namespace Obvious.Soap
             if (_saved)
                 Load();
             _listenersObjects.Clear();
+            // [Cosmic Shore patch] see OnPlayModeStateChanged — stale handlers must not survive
+            // into a new play session when domain reload is disabled.
+            _onValueChanged = null;
         }
 
         /// <summary> Reset to initial value</summary>

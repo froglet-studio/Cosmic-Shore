@@ -111,12 +111,14 @@ namespace CosmicShore.ScriptableObjects
         int seed;
 
         [Header("Conveyor - the run (Wanderway as its own mode)")]
-        [SerializeField, Tooltip("Starting a wander hands the host cell back to its environment-free " +
-                                 "config (the Blob) through Cell.RequestCellSwap - the same explicit, " +
-                                 "player-initiated world change the Cell Selector performs. The wander " +
-                                 "is the thing you look at, not an authored world you fly through. " +
-                                 "Requires the cell's config list to include an environment-free entry; " +
-                                 "with none it warns and leaves the world alone.")]
+        [SerializeField, Tooltip("Starting a wander hands the host cell its BARE CANVAS config - the " +
+                                 "one that grows nothing (no EnvironmentPrefab AND no flora or fauna " +
+                                 "in its SpawnProfile, e.g. Barren) - through Cell.RequestCellSwap, " +
+                                 "the same explicit, player-initiated world change the Cell Selector " +
+                                 "performs. The wander is the thing you look at, not an authored world " +
+                                 "you fly through. Requires the cell's config list to include such an " +
+                                 "entry; with none it falls back to the cheapest environment-free " +
+                                 "config, and with none of those it warns and leaves the world alone.")]
         bool revertCellOnStart = true;
 
         [SerializeField, Min(1), Tooltip("Length of the ROLLING tether, in prisms. The trail follows " +

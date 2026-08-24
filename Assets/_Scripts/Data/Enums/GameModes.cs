@@ -85,14 +85,28 @@ namespace CosmicShore.Data
         // only mode whose score comes from vessel-vs-vessel gunnery. See
         // _Scripts/Controller/Arcade/DOGFIGHT.md.
         DogFight = 41,
-        // Benchmark (42): the Settings > Run Benchmark stress-test context - not an
+        // Bends (42, display name "The Bends"): the Dolphin-only debuff duel. Two to four pilots
+        // fight in a cactus forest with no guns at all - the only weapon is the Dolphin's crystal
+        // blast, and the only thing that scores is catching an OPPOSING pilot in it. A caught
+        // pilot takes the all-element decaying debuff (the blast's elemental expression), which is
+        // one "bend"; first DOMAIN to the bend target wins. See
+        // _Scripts/Controller/Arcade/BENDS.md.
+        Bends = 42,
+        // ScarabScramble (43): the Scarab-only party game - the accessible sibling of Astro
+        // League. Every white (omni) crystal you fly through becomes YOUR ball, permanently
+        // your colour; roll it through any of the arena's glowing hoops and your DOMAIN scores.
+        // Goals stop nothing (continuous play, no kickoffs), there are no own goals, and the
+        // first domain to the goal target wins. See _Scripts/Controller/Arcade/SCARABSCRAMBLE.md.
+        ScarabScramble = 43,
+        // Benchmark (44): the Settings > Run Benchmark stress-test context - not an
         // arcade mode (no card, no scoring, endless). Set by BenchmarkSceneLauncher so
         // mode-keyed consumers (presence/connecting-panel display, comeback default,
         // HUD objective default) resolve honestly instead of borrowing a retired id.
-        // (Authored as 39 on Ys-bleeding-edge, then 40; landed at 42 on the merge with
-        // bleeding-edge, which had already shipped Ribcage at 39, WildlifeLiberation at
-        // 40 and DogFight at 41. Benchmark is set in code only - no serialized asset
-        // carries the id - so the renumber is safe.)
-        Benchmark = 42,
+        // (Authored as 39 on Ys-bleeding-edge, then 40, then 42; it landed at 44 on the
+        // merge with bleeding-edge, which had already shipped Ribcage at 39,
+        // WildlifeLiberation at 40, DogFight at 41, Bends at 42 and ScarabScramble at 43.
+        // Benchmark is set in code only - no serialized asset carries the id - so every
+        // renumber has been safe.)
+        Benchmark = 44,
     }
 }

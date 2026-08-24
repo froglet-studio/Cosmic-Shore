@@ -15,10 +15,10 @@ MonoBehaviour:
   Mode: 40
   IsMultiplayer: 1
   DisplayName: Wildlife Liberation
-  Description: Three cages, three kinds of prisoner, and open water full of the big
-    ones before you even reach the bars. Shoot your way in and thin the swarm - the
-    outer ring teems, the middle room is bigger and meaner, and whatever is in the
-    core did not get there by being easy. First domain to the kill count takes it.
+  Description: Three cages, and wildlife everywhere - swarms, big ones and worse,
+    scattered from the open water you spawn in all the way to the core. Shoot what
+    swims past, break in after what does not. You never know what the next one is.
+    First domain to the kill count takes it.
   IconActive: {fileID: 21300000, guid: 576d21301c622e9489beb58263f393cb, type: 3}
   IconInactive: {fileID: 21300000, guid: ebb26aeda98ffe840ad60e7ab88c8a28, type: 3}
   CardBackground: {fileID: 21300000, guid: 325ba2d27b2b2c24c9a6b06681eecbe5, type: 3}
@@ -36,4 +36,4 @@ MonoBehaviour:
   CallToActionTargetType: 427
   ViewUserAction: 0
   PlayUserAction: 0
-  ComebackRatePerScoreDeficit: 0.01
+  ComebackRatePerScoreDeficit: 0.35

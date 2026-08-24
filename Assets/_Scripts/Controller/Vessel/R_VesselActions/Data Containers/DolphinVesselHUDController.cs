@@ -1,6 +1,9 @@
 using CosmicShore.Data;
 using CosmicShore.Gameplay;
+using CosmicShore.ScriptableObjects;
 using CosmicShore.UI;
+using CosmicShore.Utility;
+using Reflex.Attributes;
 using UnityEngine;
 
 namespace CosmicShore.Gameplay
@@ -8,20 +11,51 @@ namespace CosmicShore.Gameplay
     /// <summary>
     /// Drives the Dolphin's four ability gauges. Element → icon, in the fleet order:
     ///
-    ///   Charge → crystal seeding: carry pips + the recharge fill, polled off the deploy executor
-    ///   Mass   → drift trail:     the boost banked while drifting
-    ///   Space  → cone blast:      a flash plus how many prisms the last cone claimed
-    ///   Time   → skim energy:     the jaw gape, which IS the width of the next blast
+    ///   Charge → Echo Sight:      the blast's cross-section profile, whether the sight is held, and
+    ///                             what the last blast did to LIVING things (pilots, creatures)
+    ///   Mass   → crystal seeding: the recharge fill, and which crystal tier the next cycle plants
+    ///   Space  → cone blast:      the jaw gape, and what the last cone claimed
+    ///   Time   → charge fill rate: the boost banked while drifting
     ///
     /// Energy is bound BY NAME rather than by index. It used to be an index, and the prefab had it
     /// pointing at Boost — a meter ChargeBoostActionExecutor writes through CurrentAmount directly,
     /// which never raises OnResourceChanged, so the readout could not move even in principle. A
     /// name survives the resource list being reordered; the serialized index stays as the fallback.
+    ///
+    /// <para>The blast PROFILE is polled rather than event-driven, because it is a function of an
+    /// element level and the live energy meter at once and neither has a single channel that fires on
+    /// every input to it. The push is guarded inside the view, so a poll that finds nothing changed
+    /// rebuilds nothing.</para>
+    ///
+    /// <para>The Mass slot's TEAM colour is the pilot's domain, resolved live off
+    /// <c>GameDataSO.ThemeManagerData.ColorSet</c> — the same path MultiplayerHUD and every other
+    /// domain-tinted UI reads, so the slot can never disagree with the rest of the HUD about what
+    /// colour a domain is. Live rather than cached because domain is not fixed for the match (the
+    /// freestyle domain-changer toy re-picks it) and CLAUDE.md is explicit that domain must not be
+    /// snapshotted at component-creation time.</para>
+    ///
+    /// <para><b>The Charge slot's tally splits what the blast did to LIVING things</b> from what it
+    /// did to mass. Pilots debuffed comes from the blast itself
+    /// (<see cref="BlastTally.Vessels"/> — the impactor keeps a per-blast ledger of the vessels it
+    /// landed on, so a target loitering in a growing cone is counted once). Creatures killed cannot:
+    /// a creature dies when its last body prism is destroyed, which the ECOLOGY announces several
+    /// steps downstream (<c>CellRuntimeDataSO.OnFaunaKilled</c>, carrying the killer's NAME). So
+    /// fauna are counted over the blast's own lifetime — zeroed on
+    /// <c>ExplosionImpactor.OnBlastBegan</c>, read on <c>OnBlastResolved</c>. That window is exact in
+    /// practice because the blast is the Dolphin's only prism-destroying force; two blasts overlapping
+    /// inside the 0.15 s cooldown would share a count, which is acceptable for a tally and is not
+    /// acceptable for anything else — do not read these numbers for scoring.</para>
     /// </summary>
     public class DolphinVesselHUDController : VesselHUDController
     {
         [Header("View")]
         [SerializeField] private DolphinVesselHUDView view;
+
+        [Header("Blast readouts")]
+        [Tooltip("The crystal-impact blast whose cross-section the Charge slot draws. The SAME asset " +
+                 "the vessel actually detonates and the Echo Sight previews - never a HUD-local copy " +
+                 "of those numbers.")]
+        [SerializeField] private VesselExplosionByCrystalEffectSO blastEffect;
 
         [Header("Resource Binding")]
         [Tooltip("Resource that holds the skim ENERGY the jaws display. Matched by name first so a " +
@@ -29,13 +63,19 @@ namespace CosmicShore.Gameplay
         [SerializeField] private string energyResourceName = "Energy";
         [Tooltip("Fallback slot used only when no resource matches the name above.")]
         [SerializeField] private int energyResourceIndex;
-        [Tooltip("Resource holding the boost charged while drifting (the Mass icon's gauge).")]
+        [Tooltip("Resource holding the boost charged while drifting (the Time icon's gauge).")]
         [SerializeField] private string driftBoostResourceName = "Boost";
         [SerializeField] private int driftBoostResourceIndex = 1;
+
+        // The palette and the player roster. Injected rather than serialized so the slot reads the
+        // same ColorSet the rest of the HUD does; vessels DO get GameObjectInjector.InjectRecursive
+        // at spawn.
+        [Inject] GameDataSO _gameData;
 
         ResourceSystem _resources;
         IVesselStatus _status;
         DeployTeamCrystalActionExecutor _crystalExecutor;
+        EchoSightActionExecutor _sightExecutor;
 
         int _energyIndex = -1;
         int _driftBoostIndex = -1;
@@ -53,6 +93,16 @@ namespace CosmicShore.Gameplay
         // True only for a local human pilot's Dolphin - the one cockpit that actually gets drawn.
         bool _drawGauges;
 
+        // The ecology's kill channel, resolved from whichever cell this vessel is flying in. Held so
+        // the unsubscribe detaches from the SAME channel it attached to - a cell swap mid-flight
+        // would otherwise leave a subscription on the old cell's SO forever.
+        CellRuntimeDataSO _faunaKillChannelOwner;
+
+        // Creatures this pilot has killed since the live blast began. See the class doc on why this
+        // is a window rather than a number the blast can report itself.
+        int _faunaKilledThisBlast;
+        bool _blastWindowOpen;
+
         public override void Initialize(IVesselStatus vesselStatus)
         {
             base.Initialize(vesselStatus);
@@ -67,6 +117,8 @@ namespace CosmicShore.Gameplay
             _drawGauges = false;
             _lastEnergy = float.PositiveInfinity; // a re-init's seed is not a skim either
             _lastSeedCount = -1;                  // ...and a re-init's crystal count is not a seeding
+            _faunaKilledThisBlast = 0;
+            _blastWindowOpen = false;
             Unbind();
 
             if (_resources == null || view == null) return;
@@ -83,17 +135,22 @@ namespace CosmicShore.Gameplay
             _driftBoostIndex = ResolveResource(driftBoostResourceName, driftBoostResourceIndex);
 
             // base.Initialize already ran view.Initialize() on this same component - do not run it
-            // twice, it would reset the pip row and the jaw gape a second time.
+            // twice, it would reset the jaw gape and the crystal tint a second time.
 
             // A vessel swap re-runs Initialize on a live controller, so detach before attaching or
             // every handler fires twice and OnDisable's single -= only removes one of them.
             Rebind();
 
-            var hull = vesselStatus.Vessel?.Transform
-                ? vesselStatus.Vessel.Transform.GetComponentInChildren<RiptideAnimation>(true)
+            var vesselTransform = vesselStatus.Vessel?.Transform;
+            var hull = vesselTransform ? vesselTransform.GetComponentInChildren<RiptideAnimation>(true) : null;
+
+            // Both executors live on THIS vessel, so they are looked up on its own transform - never
+            // by type across the scene, which would silently bind another vessel's component.
+            _crystalExecutor = vesselTransform
+                ? vesselTransform.GetComponentInChildren<DeployTeamCrystalActionExecutor>(true)
                 : null;
-            _crystalExecutor = vesselStatus.Vessel?.Transform
-                ? vesselStatus.Vessel.Transform.GetComponentInChildren<DeployTeamCrystalActionExecutor>(true)
+            _sightExecutor = vesselTransform
+                ? vesselTransform.GetComponentInChildren<EchoSightActionExecutor>(true)
                 : null;
 
             // One source for the gape: the HULL's authored angle RANGE. The cockpit jaws and the
@@ -110,7 +167,9 @@ namespace CosmicShore.Gameplay
             Unbind();
             _energy = Bind(_energyIndex, HandleEnergyChanged);
             _driftBoost = Bind(_driftBoostIndex, HandleDriftBoostChanged);
+            ExplosionImpactor.OnBlastBegan += HandleBlastBegan;
             ExplosionImpactor.OnBlastResolved += HandleBlastResolved;
+            BindFaunaKillChannel();
         }
 
         void Unbind()
@@ -119,7 +178,50 @@ namespace CosmicShore.Gameplay
             if (_driftBoost != null) _driftBoost.OnResourceChange -= HandleDriftBoostChanged;
             _energy = null;
             _driftBoost = null;
+            ExplosionImpactor.OnBlastBegan -= HandleBlastBegan;
             ExplosionImpactor.OnBlastResolved -= HandleBlastResolved;
+
+            // Detach from the channel we actually attached to, never a freshly-resolved one: the
+            // vessel may have moved to a different cell, or be tearing down, since Rebind ran.
+            if (_faunaKillChannelOwner != null && _faunaKillChannelOwner.OnFaunaKilled != null)
+                _faunaKillChannelOwner.OnFaunaKilled.OnRaised -= HandleFaunaKilled;
+            _faunaKillChannelOwner = null;
+        }
+
+        /// <summary>
+        /// Subscribe to the kill channel of whichever cell this vessel is flying in, resolved the same
+        /// way the crystal seeding executor resolves its cell — containing cell first, nearest active
+        /// cell as the fallback. Resolved rather than serialized so this works in every scene with
+        /// nothing per-prefab to wire; a scene with no cell simply has no creatures to count.
+        ///
+        /// <para><b>It must be RETRIED, not resolved once at init.</b> <c>Cell.Initialize</c> runs on
+        /// <c>OnInitializeGame</c> behind <c>InitDelayMs</c> (1000 ms) while vessels spawn at
+        /// <c>preSpawnDelayMs</c> (200 ms), so at this controller's Initialize there is usually no
+        /// cell to find at all — binding once there would leave the creature tally reading zero for
+        /// the entire match, silently. This is the same spawn-chain race CLAUDE.md documents for
+        /// anything that reads the cell during spawn, and the crystal seeding executor sidesteps it
+        /// by resolving its cell per seeding. Here the retry hangs off
+        /// <see cref="HandleBlastBegan"/>: it is the moment the count is needed, it is rare, and by
+        /// then the cell has certainly booted.</para>
+        /// </summary>
+        void EnsureFaunaKillChannel()
+        {
+            if (_faunaKillChannelOwner != null) return;
+            BindFaunaKillChannel();
+        }
+
+        void BindFaunaKillChannel()
+        {
+            var origin = _status?.Vessel != null && _status.Vessel.Transform
+                ? _status.Vessel.Transform.position
+                : transform.position;
+
+            var cell = Cell.FindCellContaining(origin) ?? Cell.FindNearestActiveCell(origin);
+            var runtime = cell != null ? cell.RuntimeData : null;
+            if (runtime == null || runtime.OnFaunaKilled == null) return;
+
+            _faunaKillChannelOwner = runtime;
+            runtime.OnFaunaKilled.OnRaised += HandleFaunaKilled;
         }
 
         // Symmetric with OnDisable, so a disable/enable cycle re-binds instead of silently leaving
@@ -147,14 +249,22 @@ namespace CosmicShore.Gameplay
 
         void Update()
         {
-            if (!view || _crystalExecutor == null) return;
+            if (!view || !_drawGauges) return;
 
-            // Crystal seeding is PASSIVE: nothing is carried, so the slot shows the cycle's yield
-            // (2 once Twin Seed lands) and the recharge fill, which grows 0 -> 1 as the next
-            // seeding arms.
+            PushCrystalSeeding();
+            PushBlastProfile();
+        }
+
+        // Crystal seeding is PASSIVE: nothing is carried, so the slot shows the recharge fill (0 -> 1
+        // as the next seeding arms) and which crystal tier that cycle will plant.
+        void PushCrystalSeeding()
+        {
+            if (_crystalExecutor == null) return;
+
             view.SetCrystalSeedState(
-                _crystalExecutor.SeedsPerCycle,
-                1f - _crystalExecutor.CooldownRemaining01);
+                1f - _crystalExecutor.CooldownRemaining01,
+                _crystalExecutor.SeedsTeamCrystal,
+                ResolveDomainSignalColor());
 
             // The pilot gives no input for this ability and may be facing anywhere when it fires,
             // so the planted beat is edge-detected off the executor's own counter and punched onto
@@ -164,6 +274,37 @@ namespace CosmicShore.Gameplay
             if (_lastSeedCount >= 0 && seeds > _lastSeedCount)
                 view.PulseCrystalSeeded();
             _lastSeedCount = seeds;
+        }
+
+        // The Charge slot draws the blast's cross-section, which is a live function of BOTH the
+        // Charge level (thickness) and the energy meter (extent) - so it is polled rather than
+        // hung off either one's change event.
+        void PushBlastProfile()
+        {
+            if (!blastEffect || _status == null) return;
+
+            if (blastEffect.TryResolveProfile(_status, out var radius, out var halfLength, out var reference))
+                view.SetBlastProfile(radius, halfLength, reference);
+
+            if (_sightExecutor) view.SetSightEngaged(_sightExecutor.IsEngaged);
+        }
+
+        /// <summary>
+        /// This pilot's domain, at full brightness, for the Mass slot to announce a team-locked seed.
+        ///
+        /// <para>It reads <c>SO_ColorSet.GetDomainSignalColor</c> — the domain UI colour with its
+        /// brightest channel driven to 1, hue and saturation intact. <b>Not a crystal colour:</b>
+        /// <c>DullCrystalColor</c> is authored (0,0,0) on Jade, Ruby AND Gold in the shipped palette
+        /// (the domain crystals are near-black bodies with a bright fresnel rim, which is right on a
+        /// faceted crystal in the world and rendered as a black square in the slot), and
+        /// <c>BrightCrystalColor</c> tops out at 0.75 value. An icon has to be legible on its own,
+        /// not a literal sample of a shader's base layer.</para>
+        /// </summary>
+        Color ResolveDomainSignalColor()
+        {
+            var colorSet = _gameData?.ThemeManagerData?.ColorSet;
+            if (colorSet == null || _status == null) return Color.white;
+            return colorSet.GetDomainSignalColor(_status.Domain);
         }
 
         /// <summary>
@@ -226,11 +367,53 @@ namespace CosmicShore.Gameplay
 
         // The blast tally is presentation only: a global channel filtered down to our own vessel,
         // because explosions are per-shot objects with nothing durable to subscribe to.
-        void HandleBlastResolved(IVessel vessel, int prismsClaimed)
+        void HandleBlastBegan(IVessel vessel)
         {
-            if (!view || vessel == null || _status?.Vessel == null) return;
+            if (vessel == null || _status?.Vessel == null) return;
             if (!ReferenceEquals(vessel, _status.Vessel)) return;
-            view.ReportBlast(prismsClaimed);
+
+            // Late-bind the ecology's kill channel if Initialize ran before the cell existed - see
+            // EnsureFaunaKillChannel. Cheap: it returns immediately once bound.
+            EnsureFaunaKillChannel();
+
+            _faunaKilledThisBlast = 0;
+            _blastWindowOpen = true;
+        }
+
+        void HandleBlastResolved(IVessel vessel, BlastTally tally)
+        {
+            if (vessel == null || _status?.Vessel == null) return;
+            if (!ReferenceEquals(vessel, _status.Vessel)) return;
+
+            int fauna = _faunaKilledThisBlast;
+            _faunaKilledThisBlast = 0;
+            _blastWindowOpen = false;
+
+            if (!view) return;
+
+            // Space says what it did to MASS; Charge says what it did to the LIVING.
+            view.ReportBlast(tally.Prisms);
+            view.ReportEchoTally(tally.Vessels, fauna);
+        }
+
+        /// <summary>
+        /// A creature died somewhere in the cell. The channel carries the KILLER'S NAME (stamped by
+        /// the destroyed body prism), which is the ecology's own attribution and the same string
+        /// StatsManager scores off — so filtering on our own display name credits exactly the kills
+        /// this pilot caused, with no second bookkeeping path to keep in sync.
+        /// </summary>
+        void HandleFaunaKilled(string killerName)
+        {
+            if (!_blastWindowOpen || string.IsNullOrEmpty(killerName)) return;
+
+            // IPlayer.Name is the exact string StatsManager.LifeformKilled compares against, so the
+            // tally credits the same kills the scoreboard does. Note Fauna.Die only publishes
+            // PLAYER-attributed deaths - starvation and predation are filtered there - so this can
+            // never count a creature the food web ate.
+            var mine = _status?.Player?.Name;
+            if (string.IsNullOrEmpty(mine) || killerName != mine) return;
+
+            _faunaKilledThisBlast++;
         }
     }
 }

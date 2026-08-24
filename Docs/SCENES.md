@@ -51,6 +51,8 @@ scene and `ServerPlayerVesselInitializerWithAI` backfills AI.
 | **MinigameRibcage** | `_Scenes/Multiplayer Scenes/` | `Ribcage (39)` | `RibcageController` — Rhino-only layered-cage destruction race ("Peel the Cage") |
 | **MinigameWildlifeLiberation** | `_Scenes/Multiplayer Scenes/` | `WildlifeLiberation (40)` | `WildlifeLiberationController` — Sparrow-only caged hunt (free-for-all, per-PLAYER kill target) |
 | **MinigameDogFight** | `_Scenes/Multiplayer Scenes/` | `DogFight (41)` | `DogFightController` — Sparrow-only gun duel in the Boneyard |
+| **MinigameBends** | `_Scenes/Multiplayer Scenes/` | `Bends (42)` | `BendsController` — Dolphin-only debuff duel ("The Bends"), scored on catching an opposing pilot in the crystal blast |
+| **MinigameScarabScramble** | `_Scenes/Multiplayer Scenes/` | `ScarabScramble (43)` | `ScarabScrambleController` — Scarab-only hoop court; omni crystals become your ball |
 | **MinigameTournamentMultuplayer** | `_Scenes/Multiplayer Scenes/` | Tournament variant | Multi-round tournament format |
 | **BenchmarkStressTest** | `_Scenes/Multiplayer Scenes/` | Settings → Run Benchmark (`GameModes.Benchmark`) | `SandboxBenchmarkController` — endless auto-start, no monitors, no scoring |
 
@@ -238,7 +240,9 @@ was deleted 2026-07-20 — solo play runs the multiplayer spine as a party of on
 | 39 | `Ribcage` | MP | MinigameRibcage | `RibcageController` — "Peel the Cage", Rhino-only (see `RIBCAGE.md`) |
 | 40 | `WildlifeLiberation` | MP | MinigameWildlifeLiberation | `WildlifeLiberationController` — Sparrow-only hunt, free-for-all (see `WILDLIFE_LIBERATION.md`) |
 | 41 | `DogFight` | MP | MinigameDogFight | `DogFightController` — Sparrow-only gun duel (see `DOGFIGHT.md`) |
-| 42 | `Benchmark` | Tooling | BenchmarkStressTest | `SandboxBenchmarkController` — not an arcade mode: no card, no scoring, endless |
+| 42 | `Bends` | MP | MinigameBends | `BendsController` — "The Bends", Dolphin-only debuff duel (see `BENDS.md`) |
+| 43 | `ScarabScramble` | MP | MinigameScarabScramble | `ScarabScrambleController` — Scarab-only hoop court (see `SCARABSCRAMBLE.md`) |
+| 44 | `Benchmark` | Tooling | BenchmarkStressTest | `SandboxBenchmarkController` — not an arcade mode: no card, no scoring, endless |
 
 Note: IDs 7 and 31 are skipped in the enum. 31 was never assigned; 7 was the retired standalone arcade Freestyle game (freestyle now lives in Menu_Main as the lava lamp — see the naming note at the top of this document). Solo modes were retired 2026-07-20: every game runs the networked single-host model, and a solo launch is simply a party of one plus AI backfill. The one exception is `Rampage(2)` — its legacy solo ID was deliberately repurposed for the multiplayer destruction race, which has its own `MinigameRampage` scene (see `_Scripts/Controller/Arcade/RAMPAGE.md`).
 
@@ -268,10 +272,11 @@ objective monitor, score keeper, rule, HUD, stats provider, card, blitz SOAP eve
 The benchmark scene, originally built on the blitz stack, was decoupled: its
 `SandboxBenchmarkController` now extends `MultiplayerMiniGameControllerBase` directly
 and the scene carries no scoring. The benchmark has its own honest mode id
-(`GameModes.Benchmark = 42` — authored as 39 on Ys-bleeding-edge, then 40; it landed at 42
-on the merge with bleeding-edge, which had already shipped `Ribcage = 39`,
-`WildlifeLiberation = 40` and `DogFight = 41`. Benchmark is set in code only
-(`BenchmarkSceneLauncher`), so no serialized asset carried the old id).
+(`GameModes.Benchmark = 44` — authored as 39 on Ys-bleeding-edge, then 40, then 42; it
+landed at 44 on the merge with bleeding-edge, which had already shipped `Ribcage = 39`,
+`WildlifeLiberation = 40`, `DogFight = 41`, `Bends = 42` and `ScarabScramble = 43`.
+Benchmark is set in code only (`BenchmarkSceneLauncher`), so no serialized asset ever
+carried an old id and every renumber has been safe).
 
 ### HexRace (Multiplayer)
 

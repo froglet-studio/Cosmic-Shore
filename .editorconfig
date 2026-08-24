@@ -1,0 +1,131 @@
+# Cosmic Shore — root EditorConfig
+#
+# Two jobs:
+#   1. Formatting basics, matched to what the tree already does (LF, 4 spaces).
+#   2. Severities for the Roslyn analyzers in Assets/Analyzers/, so rules CLAUDE.md
+#      already states are enforced by the compiler instead of by review.
+#
+# Severities are WARNING at most, never error - a build must not fail on a lint rule.
+# Rules with a large existing backlog are set to `suggestion` on purpose (see § Backlog);
+# they show in the IDE and stay out of the Unity console until the backlog is burned down.
+#
+# Unknown diagnostic IDs are ignored by Roslyn, so this file is harmless if the analyzer
+# DLL is ever removed.
+
+root = true
+
+[*]
+end_of_line = lf
+insert_final_newline = true
+trim_trailing_whitespace = true
+indent_style = space
+indent_size = 4
+
+[*.{yml,yaml,json,asmdef}]
+indent_size = 2
+
+[*.{asset,prefab,unity,mat,meta,anim,controller,shadergraph}]
+# Unity-owned YAML. Never reformat these - a whitespace change here is a merge conflict
+# in a scene, and trailing whitespace can be significant in serialized string fields.
+trim_trailing_whitespace = false
+insert_final_newline = false
+indent_size = unset
+
+[*.cs]
+charset = utf-8
+csharp_new_line_before_open_brace = all
+csharp_new_line_before_else = true
+csharp_new_line_before_catch = true
+csharp_new_line_before_finally = true
+csharp_indent_case_contents = true
+csharp_indent_switch_labels = true
+csharp_prefer_braces = when_multiline:silent
+
+# ---------------------------------------------------------------------------
+# Correctness — a hit here is a bug, not a style opinion. WARNING.
+# ---------------------------------------------------------------------------
+
+# Unity message (Awake/Update/OnTriggerEnter/...) with a signature Unity will never call.
+# Fails silently: the method simply never runs.
+dotnet_diagnostic.UNT0006.severity = warning
+dotnet_diagnostic.UNT0015.severity = warning
+
+# Time.fixedDeltaTime read in Update / Time.deltaTime read in FixedUpdate.
+dotnet_diagnostic.UNT0004.severity = warning
+dotnet_diagnostic.UNT0005.severity = warning
+
+# A coroutine whose return value is dropped never runs.
+dotnet_diagnostic.UNT0012.severity = warning
+
+# [SerializeField] on something Unity cannot serialize - silently not persisted.
+dotnet_diagnostic.UNT0013.severity = warning
+
+# GetComponent<T> with a T that can never be on a GameObject.
+dotnet_diagnostic.UNT0014.severity = warning
+
+# new MonoBehaviour() / new ScriptableObject() - never valid; use AddComponent/CreateInstance.
+dotnet_diagnostic.UNT0010.severity = warning
+dotnet_diagnostic.UNT0011.severity = warning
+
+# [MenuItem] on a non-static method - the menu entry silently does not appear.
+# Directly relevant to the FrogletTools board (Docs/TOOLING.md).
+dotnet_diagnostic.UNT0020.severity = warning
+
+# ---------------------------------------------------------------------------
+# Performance — CLAUDE.md § Performance Standards. WARNING where the count is small.
+# ---------------------------------------------------------------------------
+
+# Empty Unity message: an empty Update() still costs a native->managed call every frame,
+# on every instance. Directly relevant to the 147 Update() methods in the tree.
+dotnet_diagnostic.UNT0001.severity = warning
+
+# gameObject.tag == "x" allocates; CompareTag does not.
+dotnet_diagnostic.UNT0002.severity = warning
+
+# Non-generic GetComponent(string/Type) - slower and unchecked.
+dotnet_diagnostic.UNT0003.severity = warning
+
+# Allocating physics queries. CLAUDE.md mandates non-allocating APIs, and prism queries
+# must go through PrismSpatialIndex (Docs/SPATIAL_INDEX.md) rather than Physics at all.
+dotnet_diagnostic.UNT0028.severity = warning
+
+# Two transform writes where SetPositionAndRotation does one.
+dotnet_diagnostic.UNT0022.severity = warning
+
+# scalar * vector * matrix ordering - free win, no behaviour change.
+dotnet_diagnostic.UNT0024.severity = warning
+
+# Texture SetPixels -> SetPixels32.
+dotnet_diagnostic.UNT0016.severity = warning
+dotnet_diagnostic.UNT0017.severity = warning
+
+# ---------------------------------------------------------------------------
+# Backlog — real rules with a large existing violation count. SUGGESTION for now.
+#
+# These are correct and worth fixing; they are held at `suggestion` so the Unity console
+# does not gain hundreds of warnings the day this lands, which would bury the warnings
+# above. Promote each to `warning` once its backlog is cleared. Measured 2026-08-21:
+#   UNT0026  571 GetComponent<T> call sites (an upper bound; only null-checked ones hit)
+#   UNT0007/0008/0023/0029  1,711 lines using `?.` and 480 using `??` (upper bound;
+#                           these fire only on UnityEngine.Object operands)
+# ---------------------------------------------------------------------------
+
+# GetComponent + null check -> TryGetComponent. CLAUDE.md states this rule explicitly.
+dotnet_diagnostic.UNT0026.severity = suggestion
+
+# ?. / ?? / ??= / `is null` on a UnityEngine.Object. These bypass Unity's overloaded
+# lifetime check, so a destroyed object reads as non-null and the branch is wrong.
+dotnet_diagnostic.UNT0007.severity = suggestion
+dotnet_diagnostic.UNT0008.severity = suggestion
+dotnet_diagnostic.UNT0023.severity = suggestion
+dotnet_diagnostic.UNT0029.severity = suggestion
+
+# ---------------------------------------------------------------------------
+# NOT covered here - do not assume these are enforced.
+#
+# `async void` (31), the FindObjectOfType family (13 legacy + 61 ByType), and the raw
+# count of Update() methods (147) have NO analyzer rule in this package. They are
+# CLAUDE.md rules enforced by review today. Enforcing them automatically needs either a
+# second analyzer package or a grep-based gate alongside Tools/CI/validate_project.py -
+# see Docs/ASSEMBLY_SPLIT.md § "Not enforced automatically".
+# ---------------------------------------------------------------------------

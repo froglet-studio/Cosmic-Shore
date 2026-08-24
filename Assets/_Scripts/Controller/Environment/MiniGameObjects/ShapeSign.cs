@@ -74,6 +74,9 @@ namespace CosmicShore.Gameplay
     {
         public static event System.Action<ShapeDefinition, Vector3, Domains> OnShapeSelected;
 
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        static void ResetStatics() => OnShapeSelected = null;
+
         public static void RaiseShapeSelected(ShapeDefinition def, Vector3 worldPos, Domains shapeDomain = Domains.Blue)
         {
             OnShapeSelected?.Invoke(def, worldPos, shapeDomain);

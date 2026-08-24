@@ -49,6 +49,23 @@ run the `/reorient` skill first and act on its verdict before shipping.
   runs C1…C13b with C6 sitting mid-table. Grep for the id you intend to claim BEFORE writing
   it into code comments, doc prose, tool docstrings and commit messages — by the time you
   notice, it is spread across a dozen files and the fix is a sweep, not an edit.
+- **A parallel mode/feature branch will have claimed the same ENUM VALUES.** The id-collision
+  rule above is not only about doc sections and tracker rows: two branches adding a game mode, a
+  toast situation, a log-channel bit, or any hand-numbered enum member both pick "the next one",
+  and git merges the two additions cleanly into an enum with duplicate values. One session hit
+  this on THREE enums at once (`GameModes` 42, `GameToastSituation` 60-62, `CSLogChannel 1 << 2`).
+  Resolve by renumbering YOURS (theirs already merged), then sweep every place the NUMBER travels
+  rather than the name — for a game mode that is the enum, the arcade card asset's `Mode:`, and
+  the toast config's `gameMode:`/`situation:`/`resetOnSituation:` ids. Code that switches on the
+  enum by NAME needs no change, which is exactly why the stale numbers hide in assets. Verify with
+  a duplicate-value check over the whole enum, not just your own rows.
+- **"Keep both sides" is right for list entries and WRONG inside a chain.** Resolving conflicts by
+  concatenating HEAD and theirs works for independent fields, list items and doc paragraphs. It
+  produces invalid code when both sides are links in one expression: two halves of a `&&` chain
+  become two statements, and two halves of a `+` string chain become two ARGUMENTS (a `HelpBox`
+  call silently gaining a third parameter). Compile after every keep-both resolution — and treat
+  any conflict hunk whose last non-blank character is `&&`, `+`, `,` or `?` as one needing a
+  hand-joined merge, not a concatenation.
 - **A parallel branch may have fixed the SAME root cause while you worked.** Read the base
   branch's new commits by subject before you resolve anything — this is not a merge
   conflict, it is a design collision, and git will happily interleave two fixes for one
@@ -127,7 +144,7 @@ For each hit, read it and decide from the CODE, not the name:
 
 | Kind | Evidence in the source | What the branch must contain |
 |---|---|---|
-| **READER** | only logs / `Debug.Log` / builds a report; no `AssetDatabase.Save*`, `PrefabUtility.*`, `EditorSceneManager.Mark*`, `ApplyModifiedProperties`, `CreateAsset`, `File.Write*` | nothing — say so explicitly in the report |
+| **READER** | only logs / `Debug.Log` / builds a report; no `AssetDatabase.Save*`, `PrefabUtility.*`, `EditorSceneManager.Mark*`, `ApplyModifiedProperties`, `AssetDatabase.CreateAsset`, `File.Write*` | nothing — say so explicitly in the report |
 | **WRITER** | any of the above | its output, committed |
 
 **2. Prove a WRITER's output is on the branch.** Two independent checks, both required:
@@ -144,6 +161,11 @@ git diff --stat <merge-base>..HEAD -- '*.unity' '*.prefab' '*.asset'
   saved and never committed. You cannot tell from here — **ask** (step 3).
 - Also check `Library/FrogletToolChangeLedger.json` when it exists (machine-local, and
   absent in a remote container): it names the exact paths each tool wrote.
+- **Grep for `AssetDatabase.CreateAsset`, never a bare `CreateAsset`** — `[CreateAssetMenu]` is
+  an attribute on hundreds of ScriptableObject classes and matches the short form, so a bare grep
+  reports ordinary gameplay SOs as WRITER tools. Confirm every hit by reading the matching line;
+  a hit whose line is an attribute is not a writer, and a branch whose only "writers" are
+  `[CreateAssetMenu]` attributes has **no tools at all**.
 
 **3. Prompt the human — this is a blocking question, not a note.** Use
 `AskUserQuestion`, name each WRITER tool and the asset paths it targets, and ask which

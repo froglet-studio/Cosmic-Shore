@@ -19,9 +19,11 @@ namespace CosmicShore.Gameplay
     /// already declines own-domain vessels unless the blast is authored/overridden affectSelf, so
     /// adding a second domain test here would silently double-gate friendly fire.
     ///
-    /// Elemental immunity (<see cref="ResourceSystem.IsElementallyImmune"/>) is honoured inside
-    /// ApplyElementalEffect, so an immune pilot eats the blast's other consequences and keeps
-    /// their levels — the same contract danger prisms run under.
+    /// Elemental immunity is honoured inside ApplyElementalEffect, so a pilot warded against
+    /// <see cref="ElementalDebuffSources.Explosion"/> eats the blast's other consequences and keeps
+    /// their levels — the same contract danger prisms run under. The class matters: the Dolphin's
+    /// Drift Ward covers <see cref="ElementalDebuffSources.DangerPrism"/> only, so drifting does
+    /// NOT shrug off this blast (which is the entire scoring event of The Bends).
     /// </summary>
     [CreateAssetMenu(
         fileName = "VesselElementalDebuffByExplosionEffect",
@@ -48,6 +50,10 @@ namespace CosmicShore.Gameplay
         // prism debuff uses, so the two share a mental model even though the tables are separate.
         private static readonly Dictionary<ResourceSystem, float> _lastEffectTime = new();
 
+        // No prune path — destroyed ResourceSystem keys accumulate for the editor session.
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        static void ResetStatics() => _lastEffectTime.Clear();
+
         public override void Execute(VesselImpactor impactor, ExplosionImpactor impactee)
         {
             if (!impactor || impactor.Vessel == null) return;
@@ -60,8 +66,11 @@ namespace CosmicShore.Gameplay
                 return;
             _lastEffectTime[rs] = now;
 
+            // Classed Explosion, NOT DangerPrism: a blast is a weapon another pilot aimed, and a
+            // ward earned against the arena must not cancel one (ElementalDebuffSources).
             for (int i = 0; i < AllElements.Length; i++)
-                rs.ApplyElementalEffect(AllElements[i], debuffMagnitude, debuffDuration);
+                rs.ApplyElementalEffect(AllElements[i], debuffMagnitude, debuffDuration,
+                                        ElementalDebuffSources.Explosion);
         }
     }
 }

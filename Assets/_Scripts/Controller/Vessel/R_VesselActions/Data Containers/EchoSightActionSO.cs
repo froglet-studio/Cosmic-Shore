@@ -18,7 +18,12 @@ namespace CosmicShore.Gameplay
     /// domain), authored on the explosion effect rather than here.
     /// </summary>
     [CreateAssetMenu(fileName = "EchoSightAction", menuName = "ScriptableObjects/Vessel Actions/Echo Sight")]
-    public class EchoSightActionSO : ShipActionSO
+    /// <remarks>
+    /// It is an <see cref="IAimTelegraphAction"/>: an autonomous pilot may hold it for the length
+    /// of a drift onto its objective, because it costs nothing, spends nothing and moves nothing —
+    /// it only announces. See that interface for the contract.
+    /// </remarks>
+    public class EchoSightActionSO : ShipActionSO, IAimTelegraphAction
     {
         [Header("Highlight")]
         [Tooltip("Seconds the highlight takes to fade all the way in, and back out. Nothing pops - " +

@@ -70,7 +70,10 @@ namespace CosmicShore.Gameplay
             int spawnSerial = ++s_spawnSerial;
             for (int ringIndex = 0; ringIndex < ringCount; ringIndex++)
             {
-                Trail trail = new Trail();
+                // isLoop: a ring CLOSES. The last prism's neighbour is the first, so the
+                // walks wrap by modulo instead of reflecting at an end, and a rider circles
+                // it indefinitely in either direction rather than parking at a phantom edge.
+                Trail trail = new Trail(isLoop: true);
                 trails.Add(trail);
 
                 Vector3 ringCenter = transform.position + transform.forward * (ringIndex * ringSpacing + initialOffset);

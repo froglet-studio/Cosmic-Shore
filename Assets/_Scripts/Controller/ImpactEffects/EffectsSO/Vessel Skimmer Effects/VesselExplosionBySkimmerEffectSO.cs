@@ -50,6 +50,11 @@ namespace CosmicShore.Gameplay
         private static readonly Dictionary<int, float> _lastExplosionTimeByImpactor
             = new();
 
+        // Instance-ID keys get reused across play sessions while Time.time restarts at 0 — a
+        // stale stamp reads as a negative delta and suppresses the explosion outright.
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        static void ResetStatics() => _lastExplosionTimeByImpactor.Clear();
+
         public override void Execute(VesselImpactor impactor, SkimmerImpactor impactee)
         {
             if (impactor == null || impactor.Vessel == null)

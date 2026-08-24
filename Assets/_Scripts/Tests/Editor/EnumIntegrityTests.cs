@@ -136,8 +136,12 @@ namespace CosmicShore.Tests
         [Test]
         public void GameModes_HasExpectedMemberCount()
         {
+            // 37 = IDs 0..44 minus the eight that carry no member: 7 (retired Freestyle),
+            // 8 / 26 / 28 / 29 / 30 (retired members deleted with their content), 31 (reserved,
+            // never assigned) and 32 (retired co-op blitz). Every one of those IDs stays
+            // annotated do-not-reuse in GameModes.cs. Highest is Benchmark(44).
             var values = Enum.GetValues(typeof(GameModes));
-            Assert.AreEqual(32, values.Length,
+            Assert.AreEqual(37, values.Length,
                 "GameModes member count changed. Update tests if a game mode was added/removed.");
         }
 
@@ -280,6 +284,28 @@ namespace CosmicShore.Tests
         public void ResourceType_HasExpectedMemberCount()
         {
             Assert.AreEqual(2, Enum.GetValues(typeof(ResourceType)).Length);
+        }
+
+        #endregion
+
+        #region PrismscapeDimension
+
+        // The values ARE the dimension (0D singleton .. 3D volume) - consumers may do
+        // arithmetic/ordering on them, so drift here is worse than a wrong label.
+        [Test]
+        [TestCase(PrismscapeDimension.Singleton, 0)]
+        [TestCase(PrismscapeDimension.Trail, 1)]
+        [TestCase(PrismscapeDimension.Surface, 2)]
+        [TestCase(PrismscapeDimension.Volume, 3)]
+        public void PrismscapeDimension_ValueIsTheDimension(PrismscapeDimension d, int expectedValue)
+        {
+            Assert.AreEqual(expectedValue, (int)d);
+        }
+
+        [Test]
+        public void PrismscapeDimension_HasExpectedMemberCount()
+        {
+            Assert.AreEqual(4, Enum.GetValues(typeof(PrismscapeDimension)).Length);
         }
 
         #endregion
