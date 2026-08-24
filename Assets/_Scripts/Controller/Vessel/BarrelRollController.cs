@@ -1,5 +1,6 @@
 using System;
 using System.Collections;
+using CosmicShore.Data;
 using CosmicShore.Utility;
 using UnityEngine;
 
@@ -10,12 +11,18 @@ namespace CosmicShore.Gameplay
     /// elemental unlock (it was the TIME level-5 upgrade until the boost redesign; TIME-5 is now the
     /// elemental-debuff immunity held while boosting, see VesselElementalImmunity).
     ///
-    /// One roll per BOOST press:
-    /// while boosting with the stick at FULL deflection the vessel rolls once — holding the
-    /// stick at the perimeter is fine (it never repeats; the next boost press grants the next
-    /// roll, and a stick already pinned at max when boost starts rolls immediately). That
-    /// once-per-press charge is what the boost ability icon displays
-    /// (<see cref="OnRollChargeChanged"/> → SparrowHUDView.SetRollCharge).
+    /// One roll per BOOST press, inside a SHORT WINDOW after that press:
+    /// pressing boost arms a roll for <see cref="rollArmWindowSeconds"/> (0.3 s); while it is
+    /// armed, the stick at FULL deflection rolls the vessel once. Let the window lapse and the
+    /// charge is spent unfired — the boost keeps running, but another roll needs another press.
+    /// That window is what stops the spin firing unintentionally: without it a single press
+    /// armed the roll for the WHOLE boost hold, so any later moment the stick happened to reach
+    /// the perimeter — a hard turn seconds into an indefinite boost — spun the vessel. The roll
+    /// now only answers a deliberate press-then-slam. Holding the stick at the perimeter still
+    /// never repeats, and a stick already pinned at max when boost starts still rolls
+    /// immediately. That charge is what the boost ability icon displays
+    /// (<see cref="OnRollChargeChanged"/> → SparrowHUDView.SetRollCharge), and it now empties
+    /// when the window lapses, so the pip reads real availability rather than "boost is held".
     ///
     /// It works IDENTICALLY in the stationary/turret stance. Boost gives no speed there —
     /// VesselTransformer skips throttle and course travel while IsTranslationRestricted — but
@@ -50,6 +57,12 @@ namespace CosmicShore.Gameplay
                  "normalized (radially clamped) stick vector, never the eased one — the " +
                  "per-axis ease makes diagonal magnitudes direction-dependent.")]
         [SerializeField, Range(0.5f, 1f)] float perimeterThreshold = 1f;
+        [Tooltip("How long a boost press keeps a roll armed. The stick must reach the " +
+                 "perimeter inside this window or the charge is spent unfired and the boost " +
+                 "button must be pressed again to arm another. Stops a stick that drifts to " +
+                 "full deflection later in a long boost hold from spinning the vessel. " +
+                 "0 = no window (legacy: armed for the whole boost press).")]
+        [SerializeField, Min(0f)] float rollArmWindowSeconds = 0.3f;
         [Tooltip("Flip the CW/CCW mapping if the roll direction reads backwards in playtest.")]
         [SerializeField] bool invertRollDirection;
 
@@ -78,16 +91,22 @@ namespace CosmicShore.Gameplay
         bool _rolling;
         bool _wasBoosting;
         bool _rollArmed;
+        float _armExpiresAt;
         Quaternion _visualRestRotation;
 
         /// <summary>
-        /// Raised when the once-per-press roll charge is armed (true, on a fresh boost press) or spent
-        /// (false, the instant a roll triggers). The Sparrow HUD binds this to the boost ability icon's
-        /// charge ring, which is why the roll is legible without a heat gauge.
+        /// Raised when the once-per-press roll charge is armed (on a fresh boost press), spent (the
+        /// instant a roll triggers) or lapsed (the arm window ran out unfired). The Sparrow HUD binds
+        /// this to the boost ability icon's charge ring, which is why the roll is legible without a
+        /// heat gauge.
         /// </summary>
-        public event Action<bool> OnRollChargeChanged;
+        public event Action<RollChargeState> OnRollChargeChanged;
 
-        /// <summary>True while a strafing roll is available on the current boost press.</summary>
+        /// <summary>
+        /// True while a strafing roll is available — i.e. inside the
+        /// <see cref="rollArmWindowSeconds"/> window opened by the current boost press, and not
+        /// yet spent.
+        /// </summary>
         public bool IsRollArmed => _rollArmed;
 
         void Awake()
@@ -99,14 +118,28 @@ namespace CosmicShore.Gameplay
         {
             if (_status == null) return;
 
-            // One roll per BOOST press: a fresh IsBoosting false→true transition arms a
-            // roll; triggering consumes it. The stick only needs to BE at the perimeter
-            // when the gates pass — a stick already pinned at max when boost starts
-            // rolls immediately, and holding it there never repeats (the next boost
-            // press grants the next roll).
+            // One roll per BOOST press, and only for a short window after it: a fresh
+            // IsBoosting false→true transition arms a roll and starts the clock;
+            // triggering consumes it, and the clock running out spends it unfired. The
+            // stick only needs to BE at the perimeter while the charge is live — a stick
+            // already pinned at max when boost starts rolls immediately, and holding it
+            // there never repeats (the next boost press grants the next roll).
+            //
+            // The window is the whole point: IsBoosting stays true for an indefinite hold,
+            // so an arm that lasted the hold fired on any later full-deflection stick — a
+            // hard turn mid-boost read as a spin nobody asked for.
             bool boosting = _status.IsBoosting;
-            if (boosting && !_wasBoosting) SetRollArmed(true);
+            if (boosting && !_wasBoosting)
+            {
+                _armExpiresAt = Time.time + rollArmWindowSeconds;
+                SetRollCharge(RollChargeState.Armed);
+            }
             _wasBoosting = boosting;
+
+            // Expire before the _rolling gate, so a press landing mid-roll can't bank a
+            // spin that fires the instant the current one ends.
+            if (_rollArmed && rollArmWindowSeconds > 0f && Time.time >= _armExpiresAt)
+                SetRollCharge(RollChargeState.Lapsed);
 
             if (!_rollArmed || _rolling) return;
             if (!boosting) return;
@@ -152,17 +185,18 @@ namespace CosmicShore.Gameplay
                         $"stick ({stick.x:F2}, {stick.y:F2}), nudge dir {nudge.normalized}" +
                         (restricted ? " (stopped — dodge)" : string.Empty));
 
-            SetRollArmed(false);
+            SetRollCharge(RollChargeState.Spent);
             transformer.ModifyVelocity(nudge.normalized * nudgeSpeed, rollDurationSeconds,
                                        ignoresTranslationRestriction: true);
             StartCoroutine(RollRoutine(rollSign, transformer));
         }
 
-        void SetRollArmed(bool armed)
+        void SetRollCharge(RollChargeState state)
         {
+            bool armed = state == RollChargeState.Armed;
             if (armed == _rollArmed) return;
             _rollArmed = armed;
-            OnRollChargeChanged?.Invoke(armed);
+            OnRollChargeChanged?.Invoke(state);
         }
 
         IEnumerator RollRoutine(float rollSign, VesselTransformer transformer)
@@ -247,7 +281,8 @@ namespace CosmicShore.Gameplay
             // A re-enabled vessel must not inherit a stale charge — the next boost PRESS arms it,
             // and the HUD re-seeds from IsRollArmed at init.
             _wasBoosting = false;
-            SetRollArmed(false);
+            _armExpiresAt = 0f;
+            SetRollCharge(RollChargeState.Lapsed);
         }
     }
 }

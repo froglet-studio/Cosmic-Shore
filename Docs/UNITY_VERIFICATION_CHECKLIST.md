@@ -23,6 +23,67 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Sparrow — the strafing roll's arm is a 0.3 s WINDOW, not the whole boost hold (`claude/sparrow-spin-cooldown-p8agtv`, 2026-08-24)
+
+Authored without a Unity compile or play-test (remote session, no editor, no `unity` CLI binary in
+this environment). Touches `BarrelRollController.cs`, `SparrowHUDController.cs`,
+`SparrowHUDView.cs`, the new `Data/Enums/RollChargeState.cs`, `Sparrow.prefab` (one added
+serialized field), plus `SPARROW_AFTERBURNER.md` and `FLEET_MAPS.md`.
+
+**What landed.** A boost press arms the strafing roll for `rollArmWindowSeconds` (**0.3 s**) instead
+of for the whole press. Reach full stick deflection inside the window and you roll; let it lapse and
+the charge is spent unfired — the boost keeps running, another roll needs another press. The reported
+bug is the direct consequence of the boost being indefinite: `IsBoosting` stays true for the whole
+hold, so an arm that lived for the press fired on the first later moment the stick touched the
+perimeter — an ordinary hard turn — and the vessel spun for no reason the pilot could name.
+
+Unchanged by design: a stick already pinned at max when boost starts still rolls immediately;
+holding at the perimeter still never repeats; the roll still works identically in the turret stance;
+the AI is still inert (no stick input). `rollArmWindowSeconds = 0` restores the old
+armed-for-the-whole-press behaviour.
+
+The charge now carries **why** it changed (`CosmicShore.Data.RollChargeState`: `Spent` / `Armed` /
+`Lapsed`) because every boost press now ends in a charge change. The pip empties for both `Spent`
+and `Lapsed`; only `Spent` gets the consume punch, so the HUD can't announce a roll the pilot never
+got. The enum is in the `CosmicShore.Data` leaf assembly (read by UI, written by gameplay);
+`SparrowHUDView` already imported that namespace and `Assembly-CSharp` auto-references the asmdef,
+so no wiring changed.
+
+**Verified offline** (more than inspection): .NET 8 installed in-session, and all four **real
+shipped files** (`RollChargeState.cs`, `BarrelRollController.cs`, `SparrowHUDController.cs`,
+`SparrowHUDView.cs`, plus the real `InputEvents.cs`) **type-check clean under Roslyn** at
+`-langversion:9.0` against a transcribed stub harness — 0 errors, 0 warnings; every error the
+harness ever surfaced was a stub gap (`Mathf.Clamp`, `Vector3.one`, `InputEvents`), which is what a
+working harness looks like. It caught one real defect before it shipped: `SparrowHUDView.cs` has no
+`using CosmicShore.Gameplay`, so the enum's first home would not have compiled — which is what moved
+it to `CosmicShore.Data`. Blast radius grepped: `OnRollChargeChanged` / `SetRollCharge` have exactly
+one subscriber and one caller each (`SparrowHUDController`), no scene overrides any
+`BarrelRollController` field, and no name in the new `using CosmicShore.Data` collides with anything
+`SparrowHUDController` references.
+
+**Verify in editor**
+1. **Compile clean.** Confirm `Sparrow.prefab` shows **Roll Arm Window Seconds = 0.3** on
+   `BarrelRollController` (the field was added to the prefab YAML as well as the C# initializer —
+   check it did not import as 0, which would restore the old behaviour silently).
+2. **The bug is gone.** Fly the Sparrow, hold boost through a long hard turn with the stick pinned
+   at the perimeter — it should **not** roll. This is the whole point of the change.
+3. **The move still works.** Tap boost and slam the stick to full deflection in the same beat — it
+   should roll exactly as before (same 0.6 s, same strafe distance, same direction mapping).
+4. **Stick already pinned.** With the stick at max, press boost — should roll immediately.
+5. **Turret stance.** Stop (`ToggleStationaryModeAction`), then press-and-slam — the dodge should
+   still strafe.
+6. **The pip.** On every boost press the boost icon's ring fills, then wipes empty ~0.3 s later
+   with **no scale punch**; a press that actually rolls wipes empty **with** the punch. If the
+   fill/wipe on every press reads as busy at speed, that is the tuning to report — the honest
+   alternatives are a shorter `rollChargeTweenDuration` (0.15 s today) or leaving the ring full
+   while boosting, which would be a lie about availability.
+
+**First-pass tuning (NOT settled).** `rollArmWindowSeconds = 0.3` is the number asked for. If a
+deliberate press-then-slam misses on a gamepad it is too tight (try 0.4–0.5); if accidental spins
+survive it is too loose. Serialized per-vessel, so it is one inspector field either way.
+
+---
+
 ### 🔴 Flora — TIME breeds faster, the second elemental law (`claude/flora-reproduction-balance-y9gaij`, 2026-08-24)
 
 Authored without a Unity compile or play-test (remote session, no editor, no `unity` CLI binary in

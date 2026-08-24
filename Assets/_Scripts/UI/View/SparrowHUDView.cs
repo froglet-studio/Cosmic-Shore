@@ -112,14 +112,18 @@ namespace CosmicShore.UI
         #region Strafing Roll Charge
 
         /// <summary>
-        /// Shows whether the strafing roll is available on the current boost press. Driven by
+        /// Shows whether the strafing roll is available right now. Driven by
         /// <see cref="CosmicShore.Gameplay.BarrelRollController.OnRollChargeChanged"/> — the boost
         /// itself is indefinite and has nothing to meter, so this ring is a binary charge pip, not a
-        /// gauge: full = armed, empty = spent until the next boost press.
+        /// gauge: full while the boost press's short arm window is live, empty once the roll is
+        /// spent OR the window lapses unfired. Only a real spend gets the punch — see
+        /// <see cref="CosmicShore.Data.RollChargeState"/>.
         /// </summary>
-        public void SetRollCharge(bool armed)
+        public void SetRollCharge(RollChargeState state)
         {
             if (!rollChargeIndicator) return;
+
+            bool armed = state == RollChargeState.Armed;
 
             _rollChargeTween?.Kill();
             _rollChargeTween = rollChargeIndicator
@@ -129,8 +133,10 @@ namespace CosmicShore.UI
 
             rollChargeIndicator.color = armed ? rollArmedColor : rollSpentColor;
 
-            // Spending the roll is the beat worth feeling; arming it rides the fill.
-            if (armed || rollSpendPunchScale <= 0f) return;
+            // Spending the roll is the beat worth feeling; arming it rides the fill, and a window
+            // that lapsed unfired consumed nothing — punching there would announce a roll the
+            // pilot never got.
+            if (state != RollChargeState.Spent || rollSpendPunchScale <= 0f) return;
 
             _rollPunchTween?.Kill();
             rollChargeIndicator.rectTransform.localScale = Vector3.one;

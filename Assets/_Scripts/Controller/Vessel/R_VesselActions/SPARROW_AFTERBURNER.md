@@ -116,6 +116,30 @@ consumes it, and holding the stick at the perimeter never repeats. With an indef
 once-per-press rule is what keeps the roll from becoming a continuous barrel spin — so it is now the
 thing the icon has to display.
 
+### 2.0 The arm is a WINDOW, not the whole boost hold
+
+**A press arms the roll for `rollArmWindowSeconds` (0.3 s), not for the press's whole lifetime.**
+Reach the perimeter inside that window and you roll; let it lapse and the charge is spent unfired —
+the boost keeps running, but the next roll needs another press.
+
+Once-per-press was the right rule and the wrong *duration*, and making the boost indefinite is what
+exposed it. `IsBoosting` stays true for as long as the trigger is held, so an arm that lived for the
+press lived for the whole flight: minutes later, the first moment the stick happened to touch full
+deflection — an ordinary hard turn — cashed the charge and spun the vessel. Nothing about that read
+as an ability; it read as the ship losing composure at random. The roll now only answers a
+**deliberate press-then-slam**, which is what a pilot doing it on purpose does anyway.
+
+What is deliberately unchanged: a stick already pinned at max when boost starts still rolls
+immediately (the window opens the same frame it is tested), holding the stick at the perimeter still
+never repeats, and the AI is still inert (it produces no stick input). `0` disables the window and
+restores the armed-for-the-whole-press behaviour, which is the escape hatch, not a mode.
+
+The window is why the charge now has **three** states rather than two
+(`CosmicShore.Data.RollChargeState`: `Spent` / `Armed` / `Lapsed`). Every boost press now ends in a
+charge change, so "no roll available" had to split by cause: the pip empties for both, and only a
+real `Spent` earns the consume punch — a punch on a lapse would be the HUD announcing a roll the
+pilot never got.
+
 ### 2.1 It works identically in the stationary (turret) stance
 
 Stopped — `IsTranslationRestricted`, from `ToggleStationaryModeAction` — the boost gives no speed:
@@ -174,9 +198,14 @@ one inspector field, no code.
 New surface for the HUD (and nothing else):
 
 ```csharp
-public event Action<bool> OnRollChargeChanged;   // true = armed, false = spent
-public bool IsRollArmed { get; }                 // for the HUD's initial seed
+public event Action<RollChargeState> OnRollChargeChanged;   // Armed | Spent | Lapsed
+public bool IsRollArmed { get; }                            // for the HUD's initial seed
 ```
+
+`RollChargeState` lives in `CosmicShore.Data` (`_Scripts/Data/Enums/`) rather than beside the
+controller: it is read by the UI layer as well as written by the gameplay one, so it belongs in the
+extracted leaf both can see — `SparrowHUDView` already imports that namespace, and
+`Assembly-CSharp` auto-references the asmdef, so nothing had to be wired.
 
 `OnDisable` clears the charge, so a pooled / swapped vessel can't inherit a stale armed state.
 
@@ -188,8 +217,9 @@ a **binary charge pip** for the roll:
 
 | Roll state | Ring |
 |---|---|
-| Armed (a roll is available on this press) | fill 1, `rollArmedColor` |
-| Spent (rolled; next boost press re-arms) | wipes to fill 0, `rollSpentColor`, one scale punch |
+| `Armed` (the press's 0.3 s window is live — a roll is available *now*) | fill 1, `rollArmedColor` |
+| `Spent` (rolled; next boost press re-arms) | wipes to fill 0, `rollSpentColor`, one scale punch |
+| `Lapsed` (window ran out unfired; next boost press re-arms) | wipes to fill 0, `rollSpentColor`, **no punch** |
 
 It is not a gauge: it only ever holds 0 or 1 and the transition between them is a wipe, not a
 readout. The ring is a *sibling* of the ability icon, never the icon itself — so the four-icon
