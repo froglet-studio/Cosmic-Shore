@@ -168,13 +168,26 @@ feature dies of the exit path nobody remembered.
 
 ### 5.1 Shipped definitions
 
-| Mode | Cell | Objective | Notes |
-|---|---|---|---|
-| Rampage | Rampage Cell Config 1 | 150 prisms destroyed / 90 s | Forest and crystals are all cell-owned |
-| Ribcage | Ribcage Cell Config 1 | 200 prisms destroyed / 90 s | Spawn 500 — no nucleus, cage outer radius 360 |
-| Wildlife Liberation | WL Cell Config 1 | 5 lifeforms killed / 90 s | Spawn 1200 — outside the 1050 outer cage |
-| Dog Fight | Boneyard Cell Config 1 | open-ended / 60 s | Scores on gunnery; solo has nobody to shoot |
-| Scarab Scramble | Scarab Scramble Cell Config | open-ended / 60 s | Hoops are controller-built; see §6 |
+| Mode | Cell | Objective | Diorama | Notes |
+|---|---|---|---|---|
+| Rampage | Rampage Cell Config 1 | 150 prisms destroyed / 90 s | ✗ | Arena is GROWN flora — see §5.2 |
+| Ribcage | Ribcage Cell Config 1 | 200 prisms destroyed / 90 s | ✓ | Spawn 500 — no nucleus, cage outer radius 360 |
+| Wildlife Liberation | WL Cell Config 1 | 5 lifeforms killed / 90 s | ✓ | Spawn 1200 — outside the 1050 outer cage |
+| Dog Fight | Boneyard Cell Config 1 | open-ended / 60 s | ✓ | Scores on gunnery; solo has nobody to shoot |
+| Scarab Scramble | Scarab Scramble Cell Config | open-ended / 60 s | ✗ | Court IS the nucleus; hoops controller-built, see §6 |
+
+### 5.2 A grown arena has no diorama, and that is not a gap
+
+`CellMiniatureBuilder` samples a **generator's** output, so a cell only has a scale model if it
+authors an `EnvironmentPrefab`. Two of the five shipped modes do not: **Rampage**'s arena is a
+flora forest seeded by its `SpawnProfile`, and **Scarab Scramble**'s court *is* the nucleus.
+`ModePreviewDefinitionSO.HasDiorama` is the gate, and the modal falls those modes back to the
+legacy video while **still** offering a Test Flight — which is the right split, because the
+flight shows a grown arena perfectly and only the static model cannot. Taking the diorama branch
+for them would render an empty black window, which reads as broken rather than as absent.
+
+Modelling grown mass (flora populations, the nucleus) is the obvious extension, and it is the
+same question the Cell Selector's mini-cells already have.
 
 **Maelstrom (Tournament) is excluded in code**, not by omission: it draws *other* modes per round,
 so it has no arena of its own to shrink.

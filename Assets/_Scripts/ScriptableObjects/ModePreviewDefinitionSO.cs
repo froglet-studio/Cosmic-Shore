@@ -107,5 +107,18 @@ namespace CosmicShore.ScriptableObjects
         /// chrome gone.
         /// </summary>
         public bool CanTestFlight => PreviewCell != null;
+
+        /// <summary>
+        /// True when there is something for the modal's scale model to be built FROM.
+        ///
+        /// <para>Not every previewable mode has one, and that is not a gap in the authoring: a
+        /// cell's arena can be <b>grown rather than laid</b>. Rampage's forest is flora seeded by
+        /// its <c>SpawnProfile</c> and Scarab Scramble's court is the nucleus itself, so neither
+        /// authors an <c>EnvironmentPrefab</c> and neither has generator lay data to sample.
+        /// Those modes keep the legacy preview video and still offer a Test Flight - which is the
+        /// correct split, because the Test Flight shows the grown arena perfectly and only the
+        /// static model cannot.</para>
+        /// </summary>
+        public bool HasDiorama => PreviewCell != null && PreviewCell.EnvironmentPrefab != null;
     }
 }

@@ -638,7 +638,12 @@ namespace CosmicShore.UI
             var previewDefinition = ResolvePreviewDefinition(game.Mode);
             ApplyTestFlightAvailability(previewDefinition);
 
-            if (previewDefinition && previewDiorama)
+            // HasDiorama, not just "has a definition": a cell whose arena is GROWN rather than
+            // laid (Rampage's seeded forest, Scarab Scramble's nucleus court) authors no
+            // EnvironmentPrefab and so has no generator output to model. Those modes keep the
+            // video and still get a Test Flight - taking the diorama branch for them would show
+            // an empty black window, which reads as broken rather than as absent.
+            if (previewDefinition && previewDefinition.HasDiorama && previewDiorama)
             {
                 previewDiorama.Show(previewDefinition);
                 if (_previewVideo) _previewVideo.gameObject.SetActive(false);

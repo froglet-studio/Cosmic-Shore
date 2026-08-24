@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: ModePreview_ScarabScramble
   m_EditorClassIdentifier: 
   Mode: 43
-  Notes: 'OPEN-ENDED because the hoops are built by ScarabScrambleController from its settings asset, not by the cell - so without a structure prop there is nothing to score through. The ball forge, the juke dash and the sphere court''s centre-focusing walls all work here, which is most of what the mode feels like. Give this a StructurePrefab (a local, NetworkObject-free hoop ring) and switch the metric to Goals to make it a real objective.'
+  Notes: 'OPEN-ENDED because the hoops are built by ScarabScrambleController from its settings asset, not by the cell - so without a structure prop there is nothing to score through. The ball forge, the juke dash and the sphere court''s centre-focusing walls all work here, which is most of what the mode feels like. Give this a StructurePrefab (a local, NetworkObject-free hoop ring) and switch the metric to Goals to make it a real objective. NO DIORAMA either: the court IS the nucleus, so this cell authors no EnvironmentPrefab.'
   PreviewCell: {fileID: 11400000, guid: 4c79db5a1791ff3060644ec7d2aee0db, type: 2}
   StructurePrefab: {fileID: 0}
   Vessel: -1
