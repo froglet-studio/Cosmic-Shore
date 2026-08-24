@@ -1,0 +1,27 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9f1780f039eb88d45a9cd7a4a75f9e13, type: 3}
+  m_Name: ModePreview_Ribcage
+  m_EditorClassIdentifier: 
+  Mode: 39
+  Notes: 'Intensity 1 = two rinds, the lightest cage (10,620 prisms). SpawnDistance is 500 rather than the 70 default because this cell has NO NUCLEUS, so the radius it is added to is 0 - at the default the preview would open INSIDE the cage, which is the opposite of the mode''s premise. 500 clears the 360u outer shell.'
+  PreviewCell: {fileID: 11400000, guid: 919fc3cbaa210b46ebacd865c8688b44, type: 2}
+  StructurePrefab: {fileID: 0}
+  Vessel: -1
+  ObjectiveText: 'Break in. Shatter every bar you can reach.'
+  ObjectiveMetric: 5
+  ObjectiveTarget: 200
+  DurationSeconds: 90
+  SpawnDistanceOutsideNucleus: 500
+  DioramaPointBudget: 900
+  DioramaSignatureCoverage: 1
+  DioramaSpinRate: 14

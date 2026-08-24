@@ -100,6 +100,23 @@ namespace CosmicShore.UI
         [Tooltip("'Waiting for others...' label - shown after a player confirms, hidden when choosing.")]
         [SerializeField] private GameObject waitingForOthersLabel;
 
+        [Header("Mode Preview (replaces the preview video)")]
+        [Tooltip("Which modes have a playable preview. Leave empty to load " +
+                 "Resources/ModePreviewLibrary. A mode with no entry keeps the legacy " +
+                 "PreviewClip path, so this rolls out one mode at a time.")]
+        [SerializeField] private ModePreviewLibrarySO previewLibrary;
+
+        [Tooltip("Live scale model of the mode's real arena, shown in the preview window in " +
+                 "place of the video. Optional - without it the video path still runs.")]
+        [SerializeField] private ModePreviewDiorama previewDiorama;
+
+        [Tooltip("Owns the in-menu Test Flight. Leave empty to find the one in the scene.")]
+        [SerializeField] private ModePreviewSession previewSession;
+
+        [Tooltip("Starts a Test Flight. Hidden for any mode with no flyable preview definition " +
+                 "(which is most of them, and all 27 modes whose scenes no longer exist).")]
+        [SerializeField] private Button testFlightButton;
+
         [Header("Network Sync")]
         [SerializeField] private ArcadeConfigSyncManager arcadeConfigSyncManager;
 
@@ -149,6 +166,13 @@ namespace CosmicShore.UI
         SO_ArcadeGame _selectedGame;
         VideoPlayer   _previewVideo;
         bool _isClientMode;
+
+        // The game a Test Flight was started from, so the modal can reopen on the same card
+        // when the flight ends. Cleared the moment it is used - a stale one would reopen the
+        // modal over an unrelated screen.
+        SO_ArcadeGame _previewReturnGame;
+        ModePreviewSession _resolvedPreviewSession;
+        bool _previewSessionSubscribed;
 
         // Modal-side single-shot guard for the host's "Confirm Configuration"
         // button. Set true on first click; gates re-entry into OnConfirmConfiguration
@@ -210,6 +234,9 @@ namespace CosmicShore.UI
                 item.Button.onClick.AddListener(() => HandleDomainSelected(captured));
             }
 
+            if (testFlightButton)
+                testFlightButton.onClick.AddListener(OnTestFlightClicked);
+
             if (configChangedEvent != null)
                 configChangedEvent.OnRaised += HandleConfigChangedExternal;
 
@@ -248,6 +275,14 @@ namespace CosmicShore.UI
                 if (item && item.Button)
                     item.Button.onClick.RemoveAllListeners();
             }
+
+            if (testFlightButton)
+                testFlightButton.onClick.RemoveListener(OnTestFlightClicked);
+
+            UnsubscribeFromPreviewSession();
+
+            // The stage camera and its render texture are live only while the modal is up.
+            if (previewDiorama) previewDiorama.Hide();
 
             if (configChangedEvent != null)
                 configChangedEvent.OnRaised -= HandleConfigChangedExternal;
@@ -431,6 +466,128 @@ namespace CosmicShore.UI
 
         #endregion
 
+        #region Mode preview (diorama + Test Flight)
+
+        /// <summary>
+        /// The preview definition for <paramref name="mode"/>, or null when the mode has none.
+        /// Null is the ordinary answer: the arcade lists 42 games while only ~15 have a scene,
+        /// and Maelstrom is excluded on principle (it draws OTHER modes, so it has no arena of
+        /// its own to shrink).
+        /// </summary>
+        ModePreviewDefinitionSO ResolvePreviewDefinition(GameModes mode)
+        {
+            if (!previewLibrary)
+                previewLibrary = Resources.Load<ModePreviewLibrarySO>(ModePreviewLibrarySO.ResourcePath);
+
+            return previewLibrary ? previewLibrary.Resolve(mode) : null;
+        }
+
+        /// <summary>
+        /// Show the Test Flight button only when there is something flyable behind it. A button
+        /// that enters a preview with no world would drop the player into a menu with the chrome
+        /// gone, which is the worst failure this feature has available to it.
+        /// </summary>
+        void ApplyTestFlightAvailability(ModePreviewDefinitionSO definition)
+        {
+            if (!testFlightButton) return;
+
+            bool flyable = definition && definition.CanTestFlight && PreviewSession;
+            testFlightButton.gameObject.SetActive(flyable);
+            testFlightButton.interactable = flyable;
+        }
+
+        /// <summary>The scene's preview session, resolved once and cached.</summary>
+        ModePreviewSession PreviewSession
+        {
+            get
+            {
+                if (previewSession)
+                {
+                    SubscribeToPreviewSession(previewSession);
+                    return previewSession;
+                }
+                if (_resolvedPreviewSession) return _resolvedPreviewSession;
+
+                // One lookup per modal lifetime, not per frame - this is the sanctioned shape
+                // for a scene-singleton the inspector forgot, not a hot path.
+                _resolvedPreviewSession = FindFirstObjectByType<ModePreviewSession>(FindObjectsInactive.Exclude);
+                if (_resolvedPreviewSession) SubscribeToPreviewSession(_resolvedPreviewSession);
+                return _resolvedPreviewSession;
+            }
+        }
+
+        void SubscribeToPreviewSession(ModePreviewSession session)
+        {
+            if (!session || _previewSessionSubscribed) return;
+
+            session.OnPreviewEnded += HandlePreviewEnded;
+            _previewSessionSubscribed = true;
+        }
+
+        void UnsubscribeFromPreviewSession()
+        {
+            if (!_previewSessionSubscribed) return;
+
+            var session = previewSession ? previewSession : _resolvedPreviewSession;
+            if (session) session.OnPreviewEnded -= HandlePreviewEnded;
+            _previewSessionSubscribed = false;
+        }
+
+        /// <summary>
+        /// Test Flight button. Hands the session the mode's own hull, starts the flight, and
+        /// closes the modal - the flight takes the whole screen, because a mode cannot be
+        /// played inside a thumbnail while the card grid is still taking input.
+        /// </summary>
+        public void OnTestFlightClicked()
+        {
+            if (_selectedGame == null) return;
+
+            var definition = ResolvePreviewDefinition(_selectedGame.Mode);
+            var session = PreviewSession;
+            if (!definition || !session) return;
+
+            session.SetModeVessel(ResolveModeVessel(_selectedGame));
+
+            if (!session.TryBegin(definition)) return;
+
+            audioSystem.PlayMenuAudio(MenuAudioCategory.LetsGo);
+            _previewReturnGame = _selectedGame;
+            CloseAndNotifyClients();
+        }
+
+        /// <summary>
+        /// The hull a mode locks to, or <see cref="VesselClassType.Any"/> when it allows several
+        /// (in which case the preview keeps whatever the player is already flying). Four of the
+        /// live modes are single-vessel, and this is the list they already declare.
+        /// </summary>
+        static VesselClassType ResolveModeVessel(SO_ArcadeGame game)
+        {
+            if (game.Vessels == null || game.Vessels.Count != 1 || !game.Vessels[0])
+                return VesselClassType.Any;
+
+            return game.Vessels[0].Class;
+        }
+
+        /// <summary>
+        /// A flight ended - however it ended. Reopen the card the player left from, so a Test
+        /// Flight reads as a detour rather than as being thrown back to the grid.
+        /// </summary>
+        void HandlePreviewEnded(GameModes mode, ModePreviewOutcome outcome)
+        {
+            var game = _previewReturnGame;
+            _previewReturnGame = null;
+
+            // isActiveAndEnabled, not just non-null: ScreenSwitcher restores whichever screen
+            // the player entered freestyle from, and reopening a game modal over the Home or
+            // Store screen would read as a bug rather than as coming back from a detour.
+            if (game == null || game.Mode != mode ||
+                arcadeExploreView == null || !arcadeExploreView.isActiveAndEnabled) return;
+
+            arcadeExploreView.SelectGame(game);
+        }
+
+        #endregion
+
         #region Initialization helpers
 
         int CurrentPartyHumanCount
@@ -474,8 +631,26 @@ namespace CosmicShore.UI
             if (selectedGameFavoriteIcon)
                 selectedGameFavoriteIcon.Favorited = FavoriteSystem.IsFavorited(game.Mode);
 
+            // A live scale model of the arena the mode actually builds beats a pre-rendered
+            // clip: it cannot go stale when a generator changes, and it is the same model the
+            // Cell Selector toy already shows. Modes with no preview definition fall through to
+            // the legacy video, so this rolls out one mode at a time rather than as a flag day.
+            var previewDefinition = ResolvePreviewDefinition(game.Mode);
+            ApplyTestFlightAvailability(previewDefinition);
+
+            if (previewDefinition && previewDiorama)
+            {
+                previewDiorama.Show(previewDefinition);
+                if (_previewVideo) _previewVideo.gameObject.SetActive(false);
+                return;
+            }
+
+            if (previewDiorama) previewDiorama.Hide();
+
             if (!game.PreviewClip || !selectedGamePreviewWindow)
                 return;
+
+            if (_previewVideo) _previewVideo.gameObject.SetActive(true);
 
             if (!_previewVideo)
             {
@@ -1218,6 +1393,10 @@ namespace CosmicShore.UI
             // Re-arm the modal-side commit guard so the next session's
             // OnConfirmConfiguration is allowed to fire.
             ResetCommitGuard();
+
+            // Stop the preview stage rendering the instant the window goes: the camera and its
+            // render texture exist only while somebody is looking at them.
+            if (previewDiorama) previewDiorama.Hide();
 
             ModalWindowOut();
         }

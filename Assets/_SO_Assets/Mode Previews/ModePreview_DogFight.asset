@@ -1,0 +1,27 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9f1780f039eb88d45a9cd7a4a75f9e13, type: 3}
+  m_Name: ModePreview_DogFight
+  m_EditorClassIdentifier: 
+  Mode: 41
+  Notes: 'OPEN-ENDED on purpose: this mode scores on vessel-vs-vessel gunnery, and a solo preview has nobody to shoot - a target here would be unreachable, which is worse than no target. What the preview can honestly teach is the arena and the Sparrow''s guns. The Boneyard has no nucleus (it is why the mode authors CrystalManager.noNucleusSpawnRadius), so SpawnDistance carries the whole standoff.'
+  PreviewCell: {fileID: 11400000, guid: cc21823da49bd38535c54796c4a1c168, type: 2}
+  StructurePrefab: {fileID: 0}
+  Vessel: -1
+  ObjectiveText: 'Learn the Boneyard. Find the lines through the wrecks.'
+  ObjectiveMetric: 8
+  ObjectiveTarget: 0
+  DurationSeconds: 60
+  SpawnDistanceOutsideNucleus: 600
+  DioramaPointBudget: 900
+  DioramaSignatureCoverage: 1
+  DioramaSpinRate: 14

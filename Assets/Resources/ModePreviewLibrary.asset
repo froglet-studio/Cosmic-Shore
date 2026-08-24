@@ -1,0 +1,20 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f4393b353f6b7286d166e12f75fd66c2, type: 3}
+  m_Name: ModePreviewLibrary
+  m_EditorClassIdentifier: 
+  Definitions:
+  - {fileID: 11400000, guid: c433d159ced3931d77dce8586a3bf6e6, type: 2}
+  - {fileID: 11400000, guid: c5bb5b794d504f4a525ea0b494f6935f, type: 2}
+  - {fileID: 11400000, guid: 0b83d15c90fde01aca2cd9561105a0b2, type: 2}
+  - {fileID: 11400000, guid: 500c3871bedcb29e8c13fae0855aaf74, type: 2}
+  - {fileID: 11400000, guid: 0559798949b2e9a9c84e7543a8df5e1c, type: 2}
