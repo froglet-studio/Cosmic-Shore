@@ -106,16 +106,13 @@ namespace CosmicShore.UI
                  "PreviewClip path, so this rolls out one mode at a time.")]
         [SerializeField] private ModePreviewLibrarySO previewLibrary;
 
-        [Tooltip("Live scale model of the mode's real arena, shown in the preview window in " +
-                 "place of the video. Optional - without it the video path still runs.")]
-        [SerializeField] private ModePreviewDiorama previewDiorama;
+        [Tooltip("The preview window itself: an idle scale model of the mode's arena, and - once " +
+                 "clicked - the live game playing in the same frame at the same size. Optional; " +
+                 "without it the legacy video path still runs.")]
+        [SerializeField] private ModePreviewWindow previewWindow;
 
-        [Tooltip("Owns the in-menu Test Flight. Leave empty to find the one in the scene.")]
+        [Tooltip("Owns the windowed preview. Leave empty to find the one in the scene.")]
         [SerializeField] private ModePreviewSession previewSession;
-
-        [Tooltip("Starts a Test Flight. Hidden for any mode with no flyable preview definition " +
-                 "(which is most of them, and all 27 modes whose scenes no longer exist).")]
-        [SerializeField] private Button testFlightButton;
 
         [Header("Network Sync")]
         [SerializeField] private ArcadeConfigSyncManager arcadeConfigSyncManager;
@@ -234,9 +231,6 @@ namespace CosmicShore.UI
                 item.Button.onClick.AddListener(() => HandleDomainSelected(captured));
             }
 
-            if (testFlightButton)
-                testFlightButton.onClick.AddListener(OnTestFlightClicked);
-
             if (configChangedEvent != null)
                 configChangedEvent.OnRaised += HandleConfigChangedExternal;
 
@@ -276,13 +270,7 @@ namespace CosmicShore.UI
                     item.Button.onClick.RemoveAllListeners();
             }
 
-            if (testFlightButton)
-                testFlightButton.onClick.RemoveListener(OnTestFlightClicked);
-
-            UnsubscribeFromPreviewSession();
-
-            // The stage camera and its render texture are live only while the modal is up.
-            if (previewDiorama) previewDiorama.Hide();
+            ShutDownPreview();
 
             if (configChangedEvent != null)
                 configChangedEvent.OnRaised -= HandleConfigChangedExternal;
@@ -483,17 +471,36 @@ namespace CosmicShore.UI
         }
 
         /// <summary>
-        /// Show the Test Flight button only when there is something flyable behind it. A button
-        /// that enters a preview with no world would drop the player into a menu with the chrome
-        /// gone, which is the worst failure this feature has available to it.
+        /// Arm the session for this card: bind it to the window, hand it the definition, and give
+        /// it the hull the mode locks to. The window is the affordance - there is no separate
+        /// button, because the thing you click to play is the thing the game plays in.
         /// </summary>
-        void ApplyTestFlightAvailability(ModePreviewDefinitionSO definition)
+        void ArmPreviewForGame(SO_ArcadeGame game, ModePreviewDefinitionSO definition)
         {
-            if (!testFlightButton) return;
+            var session = PreviewSession;
+            if (!session) return;
 
-            bool flyable = definition && definition.CanTestFlight && PreviewSession;
-            testFlightButton.gameObject.SetActive(flyable);
-            testFlightButton.interactable = flyable;
+            session.Attach(previewWindow);
+            session.SetDefinition(definition && definition.CanTestFlight ? definition : null,
+                                  ResolveModeVessel(game));
+        }
+
+        /// <summary>
+        /// Stop anything running in the window and let go of it. Called from every route that
+        /// takes the window off screen - the modal closing, the modal being disabled, a launch.
+        /// </summary>
+        void ShutDownPreview()
+        {
+            UnsubscribeFromPreviewSession();
+
+            var session = previewSession ? previewSession : _resolvedPreviewSession;
+            if (session)
+            {
+                session.Stop();
+                session.Detach();
+            }
+
+            if (previewWindow) previewWindow.Hide();
         }
 
         /// <summary>The scene's preview session, resolved once and cached.</summary>
@@ -534,57 +541,23 @@ namespace CosmicShore.UI
         }
 
         /// <summary>
-        /// Test Flight button. Hands the session the mode's own hull, starts the flight, and
-        /// closes the modal - the flight takes the whole screen, because a mode cannot be
-        /// played inside a thumbnail while the card grid is still taking input.
-        /// </summary>
-        public void OnTestFlightClicked()
-        {
-            if (_selectedGame == null) return;
-
-            var definition = ResolvePreviewDefinition(_selectedGame.Mode);
-            var session = PreviewSession;
-            if (!definition || !session) return;
-
-            session.SetModeVessel(ResolveModeVessel(_selectedGame));
-
-            if (!session.TryBegin(definition)) return;
-
-            audioSystem.PlayMenuAudio(MenuAudioCategory.LetsGo);
-            _previewReturnGame = _selectedGame;
-            CloseAndNotifyClients();
-        }
-
-        /// <summary>
         /// The hull a mode locks to, or <see cref="VesselClassType.Any"/> when it allows several
         /// (in which case the preview keeps whatever the player is already flying). Four of the
         /// live modes are single-vessel, and this is the list they already declare.
         /// </summary>
         static VesselClassType ResolveModeVessel(SO_ArcadeGame game)
         {
-            if (game.Vessels == null || game.Vessels.Count != 1 || !game.Vessels[0])
+            if (game == null || game.Vessels == null || game.Vessels.Count != 1 || !game.Vessels[0])
                 return VesselClassType.Any;
 
             return game.Vessels[0].Class;
         }
 
         /// <summary>
-        /// A flight ended - however it ended. Reopen the card the player left from, so a Test
-        /// Flight reads as a detour rather than as being thrown back to the grid.
+        /// A preview stopped - by the player clicking away, by the card changing, or by the modal
+        /// closing. Nothing to restore: the modal never went anywhere.
         /// </summary>
-        void HandlePreviewEnded(GameModes mode, ModePreviewOutcome outcome)
-        {
-            var game = _previewReturnGame;
-            _previewReturnGame = null;
-
-            // isActiveAndEnabled, not just non-null: ScreenSwitcher restores whichever screen
-            // the player entered freestyle from, and reopening a game modal over the Home or
-            // Store screen would read as a bug rather than as coming back from a detour.
-            if (game == null || game.Mode != mode ||
-                arcadeExploreView == null || !arcadeExploreView.isActiveAndEnabled) return;
-
-            arcadeExploreView.SelectGame(game);
-        }
+        void HandlePreviewEnded(GameModes mode, ModePreviewOutcome outcome) { }
 
         #endregion
 
@@ -636,21 +609,24 @@ namespace CosmicShore.UI
             // Cell Selector toy already shows. Modes with no preview definition fall through to
             // the legacy video, so this rolls out one mode at a time rather than as a flag day.
             var previewDefinition = ResolvePreviewDefinition(game.Mode);
-            ApplyTestFlightAvailability(previewDefinition);
+            ArmPreviewForGame(game, previewDefinition);
 
-            // HasDiorama, not just "has a definition": a cell whose arena is GROWN rather than
-            // laid (Rampage's seeded forest, Scarab Scramble's nucleus court) authors no
-            // EnvironmentPrefab and so has no generator output to model. Those modes keep the
-            // video and still get a Test Flight - taking the diorama branch for them would show
-            // an empty black window, which reads as broken rather than as absent.
-            if (previewDefinition && previewDefinition.HasDiorama && previewDiorama)
+            // Arm the window for this card. The window shows an idle scale model until it is
+            // clicked, and clicking it plays the mode in that same frame - it never resizes and
+            // the modal never closes.
+            //
+            // ShowIdle returns false when the mode's arena is GROWN rather than laid (Rampage's
+            // seeded forest, Scarab Scramble's nucleus court author no EnvironmentPrefab, so
+            // there is no generator output to model). Those modes fall back to the legacy video
+            // and are still flyable - an empty black frame would read as broken rather than as
+            // absent.
+            if (previewWindow && previewDefinition && previewWindow.ShowIdle(previewDefinition))
             {
-                previewDiorama.Show(previewDefinition);
                 if (_previewVideo) _previewVideo.gameObject.SetActive(false);
                 return;
             }
 
-            if (previewDiorama) previewDiorama.Hide();
+            if (previewWindow) previewWindow.Hide();
 
             if (!game.PreviewClip || !selectedGamePreviewWindow)
                 return;
@@ -1399,9 +1375,9 @@ namespace CosmicShore.UI
             // OnConfirmConfiguration is allowed to fire.
             ResetCommitGuard();
 
-            // Stop the preview stage rendering the instant the window goes: the camera and its
-            // render texture exist only while somebody is looking at them.
-            if (previewDiorama) previewDiorama.Hide();
+            // A satellite arena is the expensive half of the preview - it must never outlive the
+            // window somebody was looking at it through.
+            ShutDownPreview();
 
             ModalWindowOut();
         }

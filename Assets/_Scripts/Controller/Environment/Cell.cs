@@ -1785,7 +1785,9 @@ namespace CosmicShore.Gameplay
                        $"Cell environment spawn (cell {ID}, {cellConfigData.EnvironmentPrefab.name})"))
             {
                 // Raised BEFORE Spawn() so the first lay slice sees the gate's boosted budget.
-                if (Application.isPlaying)
+                // NEVER for a satellite: the veil is a full-screen hold, and a satellite builds
+                // beside a scene the player is still using (see InitializeSatellite).
+                if (Application.isPlaying && !IsSatellite)
                     EnvironmentLoadVeil.Hold(cellConfigData.CellName);
                 environment = cellConfigData.EnvironmentPrefab.Spawn(Mathf.Max(1, cellConfigData.EnvironmentIntensity));
                 if (environment == null) return;
@@ -2016,6 +2018,112 @@ namespace CosmicShore.Gameplay
                 }
                 return EnvironmentFreeConfig;
             }
+        }
+
+        // ── Satellite cells ──────────────────────────────────────────────────
+
+        /// <summary>
+        /// True when this cell was brought up by <see cref="InitializeSatellite"/> rather than by
+        /// the scene's own <c>OnInitializeGame</c>. A satellite must never raise the
+        /// <see cref="EnvironmentLoadVeil"/>: the veil is a full-screen hold, and a satellite by
+        /// definition builds while the player is still using the scene it sits beside.
+        /// </summary>
+        public bool IsSatellite { get; private set; }
+
+        /// <summary>
+        /// Bring this cell up at runtime as a <b>satellite</b> of an already-running scene: a
+        /// second, fully-isolated cell that lives alongside the scene's own one instead of
+        /// replacing it.
+        ///
+        /// <para>Everything that makes two cells safe together is already per-instance — the
+        /// volume summation id (<c>_volumeCellId</c>, handed out from a static counter in
+        /// <c>OnEnable</c>), the spatial-index bindings keyed by it, the block/domain/fauna books,
+        /// and every lattice colony frontier (all keyed by <c>this</c>). What is NOT per-instance
+        /// is the <see cref="CellRuntimeDataSO"/>, which is a shared ASSET — so a satellite must be
+        /// handed its own <b>instance</b> (<c>Instantiate</c> the asset), or it would fight the
+        /// scene's cell over one Config, one crystal list and one stats table.</para>
+        ///
+        /// <para>This is the opposite trade from <see cref="RequestCellSwap"/>: a swap replaces the
+        /// world and keeps the collider budget flat, a satellite keeps the world and pays for a
+        /// second one. Use it only when the scene's own cell must survive untouched — the mode
+        /// preview's windowed arena is the case it was written for — and state the collider-budget
+        /// impact when you do (Docs/ECOSYSTEM_MASTERPLAN.md §4).</para>
+        ///
+        /// <para>Mass is conserved: nothing here is on a clock. A satellite is created by an
+        /// explicit player action and removed by one, the same event class as a cell swap or a
+        /// scene load (Docs/ECOSYSTEM.md §19).</para>
+        /// </summary>
+        /// <param name="config">The world this satellite becomes. Latched before
+        /// <c>AssignConfig</c> runs, so the scene's own config-choice rules never apply to it.</param>
+        /// <param name="runtimeData">A runtime data instance this cell OWNS. Pass
+        /// <c>Instantiate(asset)</c>, never the shared asset.</param>
+        /// <summary>The runtime data this cell is bound to. Clone it to bring up a satellite.</summary>
+        public CellRuntimeDataSO RuntimeData => runtime;
+
+        /// <summary>
+        /// Hand this cell its OWN runtime data instance. <b>Must be called while the cell is still
+        /// inactive</b>, before <c>OnEnable</c> has run.
+        ///
+        /// <para>That timing is the whole point and it is not a nicety: <c>OnEnable</c> clears
+        /// <c>runtime.Config</c> to stop a stale config leaking across a scene load, and
+        /// <see cref="CellRuntimeDataSO"/> is a shared ASSET — so a satellite instantiated straight
+        /// from the prefab would wipe the config out from under the live scene cell that is using
+        /// the same asset. Instantiate the cell under an INACTIVE parent, bind here, then activate.</para>
+        /// </summary>
+        public void BindSatelliteRuntime(CellRuntimeDataSO instance)
+        {
+            if (!instance)
+            {
+                CSDebug.LogWarning($"[Cell {ID}] BindSatelliteRuntime needs an instance - ignored.");
+                return;
+            }
+
+            IsSatellite = true;
+            runtime = instance;
+        }
+
+        /// <summary>
+        /// Bring this satellite up on <paramref name="config"/>. Call after the cell has been
+        /// activated and <see cref="BindSatelliteRuntime"/> has given it its own runtime data.
+        /// </summary>
+        public bool InitializeSatellite(CellConfigDataSO config)
+        {
+            if (!Application.isPlaying) return false;
+
+            if (!config)
+            {
+                CSDebug.LogWarning($"[Cell {ID}] InitializeSatellite needs a config - ignored.");
+                return false;
+            }
+
+            if (!runtime)
+            {
+                CSDebug.LogError($"[Cell {ID}] InitializeSatellite before BindSatelliteRuntime - " +
+                                 "a satellite sharing the scene cell's runtime asset would fight it " +
+                                 "over one Config, one crystal list and one stats table.");
+                return false;
+            }
+
+            IsSatellite = true;
+
+            // A satellite is not part of the scene's game lifecycle: OnInitializeGame belongs to
+            // the scene's own cell, and letting a later raise reach this one would re-run its
+            // whole bootstrap underneath a player who is flying in it.
+            if (gameData != null)
+                gameData.OnInitializeGame.OnRaised -= Initialize;
+
+            // Latch the config before Initialize: AssignConfig is deliberately sticky on
+            // runtime.Config, so pre-setting it makes the scene's Random / IntensityWise /
+            // EnvironmentFree choice rules a no-op here rather than something to work around.
+            runtime.Config = config;
+
+            // AssignConfig also seeds the fauna release gate, and we just made it return early -
+            // so seed it here or a sealed biome opens itself on the first spawner tick.
+            if (config.SpawnProfile)
+                FaunaReleaseTier = config.SpawnProfile.InitialFaunaReleaseTier;
+
+            Initialize();
+            return true;
         }
 
         bool _swapping;

@@ -1,8 +1,8 @@
-# Mode Preview — the live diorama and the in-menu Test Flight
+# Mode Preview — the window the game plays in
 
-Replaces the arcade card's pre-rendered preview video with two things: a **live scale model of
-the arena the mode actually builds**, shown in the configure modal, and a **Test Flight** — a
-short, single-player, full-screen taste of the mode played inside Menu_Main.
+Replaces the arcade card's pre-rendered preview video with a window that is a **live scale model
+of the arena the mode actually builds** while you browse, and **the mode itself, playing**, once
+you click into it. It never leaves the modal and never changes size.
 
 ---
 
@@ -22,28 +22,36 @@ rolls out one mode at a time rather than as a flag day — and it has to, becaus
 
 ## 1. The shape, and why it is this shape
 
-The request was "press a card and play a mini version of that game, rendered into the card's
-preview image". Three things in that are load-bearing and one is not.
+The window has two states and **never changes size in either of them**:
 
-**A preview cannot be playable inside the thumbnail.** Input ownership on this platform is
-*exclusive*: `ScreenSwitcher.HandleEnterFreestyle` sets `EventSystem.sendNavigationEvents = false`
-so the pad flies the ship instead of double-driving the UI. A vessel under player control behind a
-live, interactive card grid is two consumers of one stick — and a 300 px window is not a viewport.
-So the two halves were split: the **diorama** is what you look at while choosing, the **Test
-Flight** takes the whole screen when you commit.
+1. **Idle** — a slowly turning scale model of the arena the mode actually builds. Cheap; this is
+   what you see while browsing cards.
+2. **Live** — the real gameplay camera, following the real vessel in the mode's own arena,
+   rendered into that same frame. The game is simply playing in there.
 
-**The preview must not stand a second world up beside the menu.** Menu_Main boots the Lattice cell
-— the largest collider budget of any cell, ~42,840 grown prisms at cap. So a Test Flight
-**replaces** the menu world through `Cell.RequestCellSwap`, the one sanctioned runtime world-swap
-door, exactly as the Wanderway run and the Cell Selector toy already do. Collider budget stays
-flat, and there is never any ambiguity about which cell the vessel is in.
+**Clicking the window gives it FOCUS.** Input moves from the UI to the vessel. Clicking away, or
+Cancel / Escape, moves it back. The window does not grow, the modal does not close, and the menu
+scene behind it never changes. It is a focusable widget that happens to contain a game.
 
-**The preview must not be the mode.** Every mode is a scene-placed `MiniGameControllerBase`
-(`NetworkBehaviour`) expecting turn monitors, a countdown, a scoreboard, an end-game sequencer and
-a replicated `GameDataSO`. Standing one up inside the menu would fight `MainMenuController`'s state
-machine and spawn `NetworkObject`s onto every party member. So the preview reuses the two things
-that actually make a mode look and feel like itself — **its `CellConfigDataSO`** (the Cell owns the
-environment, so the mode's own cell config *is* its arena) and **its vessel** — and nothing else.
+Three things follow from that, and each is a constraint the code obeys rather than a preference:
+
+**Input ownership is exclusive, so focus has to be explicit.** `ScreenSwitcher` already kills
+`EventSystem.sendNavigationEvents` when the pad is flying a ship; a live vessel behind an
+interactive card grid would be two consumers of one stick. Focus is that same handoff — AI off,
+input unpaused, navigation off — **without** the fades, the camera blend or the `MainMenuState`
+change, because none of those belong in a window.
+
+**The menu world must survive untouched, so the arena is a SATELLITE, not a swap.**
+`Cell.RequestCellSwap` would replace the menu world — cheap on colliders, but it changes the scene,
+which is exactly what this must not do. Instead `Cell.InitializeSatellite` stands a second,
+fully-isolated cell up 120,000 units away. The menu's Lattice cell keeps its own volume ladder, its
+own spawner and its own bookkeeping; the satellite gets its own of each.
+
+**There is exactly one local pilot, so the preview flies the player's OWN vessel.** The occlusion
+corridor and the speed tunnel are single-writer globals bound to `IsLocalPilot`; a second vessel
+would be a second local pilot, which the platform does not support. The menu vessel is relocated to
+the arena for the duration and put back afterwards — so the lava lamp has no player ship in it
+while you are previewing, which is fine, because the ship is the thing you are watching.
 
 ---
 
@@ -51,104 +59,105 @@ environment, so the mode's own cell config *is* its arena) and **its vessel** �
 
 | Piece | Location | Job |
 |---|---|---|
-| `ModePreviewDefinitionSO` | `_Scripts/ScriptableObjects/` | Per-mode: preview cell, optional structure prop, vessel, objective metric/target, duration, spawn standoff, diorama settings |
+| `ModePreviewDefinitionSO` | `_Scripts/ScriptableObjects/` | Per-mode: preview cell, optional structure prop, vessel, objective metric/target, duration, spawn standoff, idle-model settings |
 | `ModePreviewLibrarySO` | `_Scripts/ScriptableObjects/` | Mode → definition lookup. `Resources/ModePreviewLibrary`. Excludes Tournament in code |
-| `ModePreviewSession` | `_Scripts/Controller/Arcade/Preview/` | Owns a Test Flight: enter, exit, and the ONE way out |
+| `ModePreviewWindow` | `_Scripts/UI/View/` | The two-state window and the focus interaction. Owns the RenderTexture |
+| `ModePreviewSession` | `_Scripts/Controller/Arcade/Preview/` | Stands the arena, parks the vessel, lends the camera, routes focus, and stops |
+| `ModePreviewArena` | `_Scripts/Controller/Arcade/Preview/` | The satellite cell: stand and strike |
 | `ModePreviewRunner` | `_Scripts/Controller/Arcade/Preview/` | Watches one stat and a clock. Plain MonoBehaviour |
-| `ModePreviewDiorama` | `_Scripts/UI/View/` | The modal's live scale model: private stage, one culled camera, one RenderTexture |
-| `ModePreviewHUD` | `_Scripts/UI/View/` | Objective, progress, timer, exit |
-| `ModePreviewSetupTool` | `_Scripts/Editor/` | `FrogletTools > Scene Setup > Setup Mode Preview` — wires the modal prefab and Menu_Main |
+| `ModePreviewHUD` | `_Scripts/UI/View/` | Objective, progress, timer, exit — beside the window, never over the screen |
+| `ModePreviewSetupTool` | `_Scripts/Editor/` | `FrogletTools > Scene Setup > Setup Mode Preview` |
+| `Cell.InitializeSatellite` | `_Scripts/Controller/Environment/` | The platform capability this needed: a second cell beside a running one |
 
-Assets: `Assets/_SO_Assets/Mode Previews/` (definitions), `Assets/Resources/ModePreviewLibrary.asset`.
+Assets: `Assets/_SO_Assets/Mode Previews/`, `Assets/Resources/ModePreviewLibrary.asset`.
 
 ---
 
-## 3. The diorama
+## 3. The idle model
 
 `CellMiniatureBuilder` — the same builder the Cell Selector toy uses — strides the environment
-generator's own output (`SpawnableBase.GetTrailData` + `CellEnvironmentSpawnableBase.CachedLays`)
-into **one mesh with a submesh per domain**, spawning **no prisms**. Generation is pure math; the
-~97%-of-cost part of a real build is the per-prism `Instantiate`, which never happens.
+generator's own output into **one mesh with a submesh per domain**, spawning **no prisms**.
 
-Three rules keep it off the frame budget, and all three are load-bearing:
+Three rules keep it off the frame budget:
 
-1. **A private layer.** The stage lives on `ModePreview` (layer 19) and the preview camera's
-   `cullingMask` is *that layer alone*. This camera therefore never renders the menu world. Without
-   the layer the feature would be a second full pass over the Lattice cell, which is the one thing
-   it must not be — so `ModePreviewDiorama.EnsureStage` **fails loud and refuses to render** when
-   the layer is missing rather than falling back to `Everything`.
-2. **Distance.** The stage sits 50,000 units up, well beyond every gameplay camera's far clip
-   (8,000 in Menu_Main; `CameraSettingsSO` defaults to 1,000). So no game camera can see it even if
-   somebody later widens a culling mask. Float spacing at that distance is ~0.004 units against a
-   50-unit model — invisible.
-3. **Lifetime.** The camera and its RenderTexture (384×216) are enabled only while the modal is
-   open. `Hide()` is called from the modal's `OnDisable` **and** from `CloseAndNotifyClients`,
-   because `ModalWindowOut` hides via CanvasGroup and does not deactivate the object.
+1. **A private layer.** The idle stage lives on `ModePreview` (layer 19) and its camera's
+   `cullingMask` is *that layer alone*, so it never renders the menu world. Without the layer the
+   idle view would be a second full pass over the Lattice cell — so `EnsureStage` **fails loud and
+   refuses to render** rather than falling back to `Everything`.
+2. **Distance.** The stage sits 50,000 units up, beyond every gameplay camera's far clip (8,000 in
+   Menu_Main).
+3. **Lifetime.** The idle camera is enabled only while the window is idle and shown; it is switched
+   off the moment the window goes live or hides.
 
-The stage light also carries a `cullingMask` — lights ignore layers unless told to, and a stage
-light falling on the whole menu world would be a subtle, hard-to-attribute bug.
-
-Models are built **one frame after the modal opens** (so opening is never gated on a generation)
-and cached per cell config, with the generator's lay data released immediately after sampling.
-Meshes are owned here and destroyed in `OnDestroy`, the same contract `CellSelectorToy` follows.
+The stage light also carries a `cullingMask` — lights ignore layers unless told to.
 
 ---
 
-## 4. The Test Flight
-
-Every step is an existing, shipped path:
+## 4. Going live
 
 ```
-OnTestFlightClicked
- └─ session.SetModeVessel(mode's own hull from SO_ArcadeGame.Vessels)
- └─ session.TryBegin(definition)
-     ├─ MenuCrystalClickHandler.ToggleTransition()      chrome fade, camera blend, input gate
-     ├─ MenuServerPlayerVesselInitializer.RequestSwap() the mode's hull (pose/speed/domain kept)
-     ├─ Cell.RequestCellSwap(definition.PreviewCell)    menu world suctions out, mode world blooms in
-     ├─ CellSpawnFormation.Build(1, …)                  opens on the framing the real mode opens on
-     ├─ Instantiate(StructurePrefab)                    local prop only, if the mode needs one
-     └─ ModePreviewRunner.Begin(...)                    watch one stat, watch the clock
- └─ CloseAndNotifyClients()
+click the window
+ └─ ModePreviewWindow.OnFocusRequested
+     └─ ModePreviewSession.StartArena
+         ├─ ModePreviewArena.Stand(...)              satellite cell, 120k units out
+         ├─ RequestSwap(mode's hull)                 pose / speed / domain preserved
+         ├─ wait for the world to finish building    no veil - a satellite never holds the screen
+         ├─ vessel.SetPose(arena.SpawnPose)          the framing the real mode opens on
+         ├─ CameraManager.BeginWindowedPlayerCamera  the REAL gameplay rig → the window's texture
+         ├─ window.GoLive()                          same frame, same size, different source
+         └─ TakeFocus()                              AI off, input on, UI navigation off
 ```
 
-Exit reverses it and reopens the card the player left from.
+Releasing focus does **not** strike the arena — clicking back in is instant, which is why it is
+kept standing. The arena is struck when the card changes, the modal closes, a game launches, or the
+session is torn down.
 
-### 4.1 One way out
+### 4.1 The camera
 
-Every exit funnels through the single idempotent `ModePreviewSession.End`:
+`CameraManager.BeginWindowedPlayerCamera` is deliberately **not** `SetupGamePlayCameras`: that
+routes through `SetActiveCamera`, which deactivates every other managed camera and claims
+`_activeController`. A windowed camera is an *additional* view — the menu keeps whatever camera is
+drawing the screen and nothing else's idea of "the active camera" changes. Using the real gameplay
+rig is what makes the window show the real game: the occlusion corridor and the speed tunnel are
+already bound to it.
 
-| Route | How it reaches `End` |
-|---|---|
-| HUD **LEAVE** button | `RequestExit()` |
-| Gamepad **Start**, on-screen Volume/Pause | freestyle drops → `Update` sees it |
-| Objective reached / timer expired | `ModePreviewRunner` callback |
-| Launching the real game | `GameDataSO.OnLaunchGame` → `AbortHard` |
-| Scene teardown / destroy | `OnDestroy` → `AbortHard` |
+`EndWindowedPlayerCamera` only stands the rig down when it is not the active controller, so a
+preview can never switch off the screen camera in a gameplay scene.
 
-The freestyle check is a **state test, not a falling edge**, so a drop that lands mid-entry (before
-the watcher ever saw a `true`) is caught too. `End` is a no-op while `Idle` or `Exiting`, so the
-exit it triggers — dropping freestyle — can never feed back in as a second exit.
+### 4.2 The satellite cell
 
-This discipline is copied deliberately from `WanderwayRun`: a "leave the world and come back"
-feature dies of the exit path nobody remembered.
+`Cell.InitializeSatellite` is the platform capability this feature needed. Everything that makes two
+cells safe together was already per-instance — the volume summation id, the spatial-index bindings
+keyed by it, the block/domain/fauna books, every lattice colony frontier. What is **not**
+per-instance is `CellRuntimeDataSO`, a shared *asset*, so a satellite is handed its own instance.
 
-### 4.2 The invariants it respects
+Two ordering rules are load-bearing:
 
-- **Local only.** Nothing carries a `NetworkObject`; `SpawnStructure` refuses a prefab that does,
-  loudly. Menu_Main runs a live host, so a networked prop would land on every party member. A party
-  member keeps flying the menu world while you fly the preview — the same thing that already
-  happens when you pick a different world with the Cell Selector toy.
-- **`GameDataSO` is never written.** It is the real launch config and it syncs to clients.
-- **Mass is conserved.** A cell swap is an explicit, player-initiated world change — the same class
-  of event as a scene load, and `Docs/ECOSYSTEM.md §19`'s sanctioned removal. Nothing here runs on
-  a clock, ages a prism out, or culls a population. The preview's `DurationSeconds` ends the
-  **flight**, not the world.
-- **Continuity of existence.** Both swaps suction out and bloom in behind the standard
-  `EnvironmentLoadVeil`; the diorama model grows in from zero; the HUD fades.
-- **The objective reads the mode's own metric.** `ScoringMetrics.Read` against the same
-  `ScoringMetric` the mode scores on — but **relative to a baseline** taken at `Begin`, because
-  `RoundStats` live on the persistent Player object and have been accumulating for the whole menu
-  session.
+- **Bind the runtime while the cell is still INACTIVE.** `Cell.OnEnable` clears `runtime.Config` to
+  stop a stale config leaking across a scene load — so a satellite instantiated straight from the
+  prefab would wipe the config out from under the live menu cell using the same asset.
+  `ModePreviewArena` instantiates under an inactive root, binds, then activates.
+- **A satellite never raises the `EnvironmentLoadVeil`.** The veil is a full-screen hold, and a
+  satellite builds beside a scene the player is still using.
+
+### 4.3 One way out
+
+Every route — releasing focus, changing card, closing the modal, launching the real game, leaving
+the menu, teardown — funnels through `ModePreviewSession.Stop`, which is a no-op while idle or
+already striking. `AbortHard` is the teardown-only variant that drops everything without unwinding.
+
+### 4.4 The invariants it respects
+
+- **Local only.** No `NetworkObject` is created; `ModePreviewArena.SpawnStructure` refuses a prefab
+  that carries one, loudly. `GameDataSO`'s launch fields are never written.
+- **Mass is conserved.** The arena is created by an explicit player action and struck by one — the
+  same event class as a cell swap or a scene load (`Docs/ECOSYSTEM.md §19`). Nothing is on a clock;
+  nothing is culled. The objective's duration ends the **counting**, not the world.
+- **Collider budget.** This is the expensive half and it is deliberate: a satellite pays for a
+  second cell on top of the menu's, where a swap would have kept it flat. The trade buys "the menu
+  never changes". Keep preview cells to their lightest authored intensity.
+- **The objective reads the mode's own metric** through `ScoringMetrics.Read`, relative to a
+  baseline taken when the preview starts.
 
 ---
 
@@ -196,36 +205,42 @@ so it has no arena of its own to shrink.
 
 ## 6. Known limitations
 
+- **A satellite cell doubles the live ecology while a preview is standing.** That is the price of
+  "the menu never changes" and it is the one hard number to watch
+  (`Docs/ECOSYSTEM_MASTERPLAN.md §4`): Menu_Main already boots the Lattice cell, the heaviest in
+  the game. Prefer the lightest authored intensity for a preview cell, and if a mode's arena is too
+  heavy, author a lighter variant and **re-measure its `PhaseThresholds`**
+  (`FrogletTools > Ecology > Measure Cell Environment Baselines`) — a small world inheriting a big
+  world's volume ladder pins at Frenzy immediately. `SpawnProfileSO.FloraPopulationScale` /
+  `FaunaPopulationScale` / `FloraPlantBudgetScale` scale a forest without forking per-species assets.
+- **Two cameras render while a preview is live.** The menu camera draws the screen and the gameplay
+  rig draws the window. The window's texture is small, but both cameras still cull.
+- **The vessel swap is a networked round-trip.** Clicking into a vessel-locked mode despawns and
+  respawns the player's hull, and leaving swaps it back. Party members see it.
+- **If the active menu camera rig frames the VESSEL rather than the cell, the screen follows the
+  ship out to the arena.** Menu_Main's lava-lamp rig frames the cell (`MenuCameraRigKind.LavaLamp`),
+  so this does not bite today — but an orbit/trail/chase/top-down menu config would.
 - **A mode whose gameplay structure is built by its controller previews as an empty arena.**
   Scarab's hoops, Astro League's goals and HexRace's track are built by the controller from a
   settings SO with `NetworkVariable`s, not by the cell. `StructurePrefab` is the hook for a local,
-  `NetworkObject`-free stand-in prop; nothing authors one yet. The better long-term fix is to
-  extract each of those arena builders so the controller and the preview call the same code — the
-  preview should never grow its own copy of a mode's geometry.
-- **A preview reuses the mode's shipped cell config at intensity 1.** Nothing is scaled down. If a
-  mode's arena turns out to be too heavy to build inside the menu, author a lighter variant config
-  and **re-measure its `PhaseThresholds`** (`FrogletTools > Ecology > Measure Cell Environment
-  Baselines`) — a small world inheriting a big world's volume ladder pins at Frenzy immediately.
-  Prefer `SpawnProfileSO.FloraPopulationScale` / `FaunaPopulationScale` / `FloraPlantBudgetScale`
-  over forking per-species assets.
+  `NetworkObject`-free stand-in; nothing authors one yet. The better fix is extracting those arena
+  builders so the controller and the preview call the same code.
 - **A stat channel that only fires in a real match reads 0 here.** The runner treats that as a
-  flight with no counter rather than as an error, which is the right failure: the arena is most of
-  the value.
-- **In a party, a Test Flight is visually solo.** Your world swaps, theirs does not; the vessels
-  still replicate, so you see each other in what look like different places. Identical to the
-  existing Cell Selector behaviour.
-- **The generated UI is functional, not designed.** The setup tool places a Test Flight button and
-  a HUD panel at sane coordinates; both want a layout pass.
-- **Not verified in the Editor.** The C# is Roslyn syntax-clean and `Tools/CI/validate_project.py`
-  passes, but no Unity compile or play-mode run has happened on this branch — see §7.
-
----
+  flight with no counter rather than as an error.
+- **The generated UI is functional, not designed.** The setup tool places a focus frame, a hint and
+  a HUD panel at sane coordinates; all three want a layout pass.
+- **Not verified in the Editor.** See §7.
 
 ## 7. Verification still owed
 
-- `/verify-unity` (Editor compile + load) — not run; no Unity in the authoring environment.
-- Play-mode: open the arcade, select each of the five shipped modes, confirm the diorama renders
-  and turns, and that the main camera never shows the stage.
-- Test Flight each of the five: entry, objective counting, all five exits (button, Start, timer,
-  target, launch), and that the menu world comes back intact each time.
-- Frame cost with the modal open, on the Lattice cell, on a mobile target.
+- `/verify-unity` (Editor compile + load) — not run; no Unity in the authoring environment. The C#
+  is Roslyn syntax-clean and `Tools/CI/validate_project.py` passes, which is not the same thing.
+- **The satellite cell is the highest-risk piece.** Confirm the menu cell keeps its config and its
+  world when a preview stands and strikes (the inactive-bind ordering in §4.2 is what protects it),
+  and that striking leaves no orphaned prisms, crystals or lifeforms behind.
+- Play-mode: for each shipped mode, confirm the idle model renders and turns; click in and confirm
+  the window goes live **without resizing**, input reaches the vessel, and the arcade grid stops
+  taking the stick; click away / Escape / B and confirm input returns.
+- Confirm the main camera never shows the idle stage or the satellite arena.
+- Frame cost with a preview live, on the Lattice cell, on a mobile target — two cameras and two
+  cells is the worst case this feature has.

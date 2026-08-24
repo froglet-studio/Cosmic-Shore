@@ -13,20 +13,20 @@ using UnityEngine.UI;
 namespace CosmicShore.Editor
 {
     /// <summary>
-    /// One-click wiring for the <b>mode preview</b> — the live arena diorama that replaces the
-    /// arcade card's preview video, and the in-menu Test Flight it launches.
+    /// One-click wiring for the <b>mode preview</b> — the window that replaces the arcade card's
+    /// preview video, showing an idle scale model of the mode's arena until it is clicked and the
+    /// real game playing in that same frame afterwards.
     ///
     /// <para>It writes two things and records both in the tool ledger:</para>
     /// <list type="number">
     /// <item><b>The configure-modal PREFAB</b> (not a scene override — per Docs/GAMECANVAS.md a
-    /// shared prefab is the single source of truth): a <see cref="ModePreviewDiorama"/> plus its
-    /// RawImage surface inside the existing preview window, a Test Flight button, and the
-    /// library reference.</item>
-    /// <item><b>Menu_Main</b>: a <see cref="ModePreviewSession"/> on the freestyle hub (the
-    /// object already carrying <c>MenuCrystalClickHandler</c>, exactly where the toybox goes)
-    /// wired to that handler and the menu vessel initializer, plus a small
-    /// <see cref="ModePreviewHUD"/> under the freestyle "Game UI" group so it fades with the
-    /// rest of the flight UI.</item>
+    /// shared prefab is the single source of truth): a <see cref="ModePreviewWindow"/> plus its
+    /// RawImage surface, the transparent focus button that covers it, a focus frame, a
+    /// "tap to play" hint, and the library reference.</item>
+    /// <item><b>Menu_Main</b>: a <see cref="ModePreviewSession"/> on the freestyle hub (the object
+    /// already carrying <c>MenuCrystalClickHandler</c>, exactly where the toybox goes) wired to
+    /// the menu vessel initializer, plus a small <see cref="ModePreviewHUD"/> to position beside
+    /// the window.</item>
     /// </list>
     ///
     /// <para>The modal's <c>previewSession</c> field is deliberately left empty: a prefab cannot
@@ -87,9 +87,10 @@ namespace CosmicShore.Editor
                 string.Join("\n\n", report) +
                 "\n\nThe modal's 'previewSession' field stays EMPTY on purpose - a prefab cannot " +
                 "reference a scene object, so the modal finds the session in the scene instead.\n\n" +
-                "The generated UI is functional, not designed: nudge the Test Flight button and the " +
-                "HUD panel to taste, then ship BOTH through FrogletTools > Build > Pending Tool " +
-                "Changes. A tool's output lands in your working tree, not on the branch.\n\n" +
+                "The generated UI is functional, not designed: nudge the focus frame, the hint and " +
+                "the HUD panel to taste, then ship BOTH the prefab and the scene through " +
+                "FrogletTools > Build > Pending Tool Changes. A tool's output lands in your working " +
+                "tree, not on the branch.\n\n" +
                 "See Docs/ModePreview/ARCHITECTURE.md.",
                 "OK");
         }
@@ -126,23 +127,39 @@ namespace CosmicShore.Editor
                     Stretch(surface as RectTransform);
                 }
 
-                // 2. The diorama itself, on the window (so it dies with the window).
-                if (!window.TryGetComponent(out ModePreviewDiorama diorama))
-                    diorama = window.AddComponent<ModePreviewDiorama>();
+                // 2. The focus button, covering the surface. A Button rather than a raw pointer
+                //    handler, so the window is reachable with a gamepad's Submit as well as a tap -
+                //    and it is TRANSPARENT, because the thing you click is the picture itself.
+                var focus = FindChild(window.transform, "ModePreviewFocus");
+                if (!focus)
+                {
+                    focus = NewUIChild(window.transform, "ModePreviewFocus");
+                    Stretch(focus as RectTransform);
+                    var hit = focus.gameObject.AddComponent<Image>();
+                    hit.color = new Color(1f, 1f, 1f, 0f);   // invisible, still raycastable
+                    var btn = focus.gameObject.AddComponent<Button>();
+                    btn.targetGraphic = hit;
+                }
 
-                var dso = new SerializedObject(diorama);
-                SetObjectIfEmpty(dso, "surface", surface.GetComponent<RawImage>());
-                dso.ApplyModifiedPropertiesWithoutUndo();
+                // 3. The focus frame and the hint - the two pieces of chrome that say where input
+                //    is going. Neither resizes the window; that is the whole point.
+                var indicator = EnsureFocusIndicator(window.transform);
+                var hint = EnsureFocusHint(window.transform);
 
-                // 3. The Test Flight button, under the window's parent so it sits beside the frame
-                //    rather than on top of the render.
-                var buttonHost = window.transform.parent ? window.transform.parent : window.transform;
-                var button = EnsureTestFlightButton(buttonHost);
+                // 4. The window component itself.
+                if (!window.TryGetComponent(out ModePreviewWindow previewWindow))
+                    previewWindow = window.AddComponent<ModePreviewWindow>();
 
-                // 4. Bind them.
+                var wso = new SerializedObject(previewWindow);
+                SetObjectIfEmpty(wso, "surface", surface.GetComponent<RawImage>());
+                SetObjectIfEmpty(wso, "focusButton", focus.GetComponent<Button>());
+                SetObjectIfEmpty(wso, "focusIndicator", indicator);
+                SetObjectIfEmpty(wso, "focusHint", hint);
+                wso.ApplyModifiedPropertiesWithoutUndo();
+
+                // 5. Bind them.
                 SetObjectIfEmpty(so, "previewLibrary", library);
-                SetObjectIfEmpty(so, "previewDiorama", diorama);
-                SetObjectIfEmpty(so, "testFlightButton", button);
+                SetObjectIfEmpty(so, "previewWindow", previewWindow);
                 so.ApplyModifiedPropertiesWithoutUndo();
 
                 PrefabUtility.SaveAsPrefabAsset(root, ModalPrefabPath);
@@ -157,35 +174,41 @@ namespace CosmicShore.Editor
             }
         }
 
-        static Button EnsureTestFlightButton(Transform host)
+        /// <summary>A frame drawn over the window's edge while it has focus.</summary>
+        static GameObject EnsureFocusIndicator(Transform window)
         {
-            var existing = FindChild(host, "TestFlightButton");
-            if (existing && existing.TryGetComponent(out Button found)) return found;
+            var existing = FindChild(window, "FocusFrame");
+            if (existing) return existing.gameObject;
 
-            var rt = NewUIChild(host, "TestFlightButton") as RectTransform;
-            // Under the preview frame, centred, a comfortable tap target.
-            rt.anchorMin = new Vector2(0.5f, 0f);
-            rt.anchorMax = new Vector2(0.5f, 0f);
-            rt.pivot = new Vector2(0.5f, 1f);
-            rt.anchoredPosition = new Vector2(0f, -12f);
-            rt.sizeDelta = new Vector2(260f, 64f);
-
+            var rt = NewUIChild(window, "FocusFrame") as RectTransform;
+            Stretch(rt);
             var image = rt.gameObject.AddComponent<Image>();
             image.color = new Color(0.20f, 0.90f, 1.00f, 0.85f);
+            image.raycastTarget = false;
+            image.type = Image.Type.Sliced;
+            rt.gameObject.SetActive(false);
+            return rt.gameObject;
+        }
 
-            var button = rt.gameObject.AddComponent<Button>();
-            button.targetGraphic = image;
+        /// <summary>The "tap to play" hint, shown until the window takes focus.</summary>
+        static GameObject EnsureFocusHint(Transform window)
+        {
+            var existing = FindChild(window, "FocusHint");
+            if (existing) return existing.gameObject;
 
-            var labelRt = NewUIChild(rt, "Label") as RectTransform;
-            Stretch(labelRt);
-            var label = labelRt.gameObject.AddComponent<TextMeshProUGUI>();
-            label.text = "TEST FLIGHT";
+            var rt = NewUIChild(window, "FocusHint") as RectTransform;
+            rt.anchorMin = new Vector2(0.5f, 0f);
+            rt.anchorMax = new Vector2(0.5f, 0f);
+            rt.pivot = new Vector2(0.5f, 0f);
+            rt.anchoredPosition = new Vector2(0f, 10f);
+            rt.sizeDelta = new Vector2(320f, 40f);
+
+            var label = rt.gameObject.AddComponent<TextMeshProUGUI>();
+            label.text = "TAP TO PLAY";
             label.alignment = TextAlignmentOptions.Center;
-            label.fontSize = 28f;
-            label.color = Color.black;
+            label.fontSize = 24f;
             label.raycastTarget = false;
-
-            return button;
+            return rt.gameObject;
         }
 
         // ── Menu_Main ────────────────────────────────────────────────────────
@@ -207,17 +230,17 @@ namespace CosmicShore.Editor
 
             try
             {
+                // The freestyle hub is where the toybox goes too - one obvious home for the
+                // scene's menu-gameplay components.
                 var handler = FindInScene<MenuCrystalClickHandler>(scene);
-                if (!handler)
-                    return "• Menu_Main has no MenuCrystalClickHandler - a preview cannot take " +
-                           "control of the vessel, so the session was not added.";
-
-                var host = handler.gameObject;
+                var host = handler ? handler.gameObject : null;
+                if (!host)
+                    return "• Menu_Main has no MenuCrystalClickHandler to host the session - " +
+                           "add ModePreviewSession to the Game object by hand.";
                 if (!host.TryGetComponent(out ModePreviewSession session))
                     session = Undo.AddComponent<ModePreviewSession>(host);
 
                 var sso = new SerializedObject(session);
-                SetObjectIfEmpty(sso, "freestyleHandler", handler);
                 SetObjectIfEmpty(sso, "vesselInitializer",
                     FindInScene<MenuServerPlayerVesselInitializer>(scene));
 
@@ -231,7 +254,7 @@ namespace CosmicShore.Editor
                 written.Add(MenuScenePath);
 
                 return "• Menu_Main wired: ModePreviewSession on the freestyle hub" +
-                       (hud ? ", plus a preview HUD under the freestyle Game UI group." : ".");
+                       (hud ? ", plus a preview HUD to position beside the modal." : ".");
             }
             finally
             {
@@ -249,12 +272,12 @@ namespace CosmicShore.Editor
             var existing = FindInScene<ModePreviewHUD>(scene);
             if (existing) return existing;
 
-            var parent = FindTransformNamed(scene, "Game UI");
-            if (!parent)
-            {
-                var canvas = FindInScene<Canvas>(scene);
-                parent = canvas ? canvas.transform : null;
-            }
+            // Beside the modal, not over the whole screen: a windowed preview must never put
+            // full-screen chrome up. The modal prefab is where it belongs, but a prefab cannot
+            // hold the scene reference the session needs, so it is built in the scene next to the
+            // canvas the modal lives on and positioned by hand afterwards.
+            var canvasHost = FindInScene<Canvas>(scene);
+            var parent = canvasHost ? canvasHost.transform : null;
             if (!parent) return null;
 
             var rt = NewUIChild(parent, "ModePreviewHUD") as RectTransform;
