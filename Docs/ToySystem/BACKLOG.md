@@ -297,6 +297,12 @@ teardown). Everything below is remaining polish / not-yet-play-verified.
    `ToyVesselRoster.Default` roster). Fly one: an AI-piloted vessel of that class, in your domain,
    appears one spacing back toward the cell centre facing inward, and flies off on autopilot.
    The console logs `[MenuServerVesselInit] Released AI companion '<Class> Bot N' (...)`.
+2b. **Watch the trail.** It starts ~2.1s after release (`VesselPrismController.startDelay`) and
+   must then stay on. A companion with no trail means it is under the spawner's 3 u/s gate — check
+   `companionLaunchSpeed` on the menu initializer, and check the bot is not stuck in a drift (a
+   held drift pins cruise speed at the value carried in). Release several of DIFFERENT classes:
+   only Dolphin / Rhino / Serpent / Sparrow have an authored AI ability, and the Dolphin's is a
+   drift, so that hull is the one that exposes a launch-speed regression first.
 3. Change domain at the domain-changer toy and come back: every mini hull re-tints in place, and
    the next companion you release joins the new domain.
 4. **Party check (the point of the ServerRpc):** with a second client joined, release a companion

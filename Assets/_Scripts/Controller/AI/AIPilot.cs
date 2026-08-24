@@ -548,6 +548,14 @@ namespace CosmicShore.Gameplay
 
         public void StartAIPilot()
         {
+            // Idempotent. StartCoroutine below is per-call and StopAIPilot's StopCoroutine is a
+            // no-op (it is handed a FRESH iterator, which matches nothing), so a second start
+            // duplicates every ability coroutine permanently - two overlapping drift cycles on a
+            // hull whose AI ability is a drift, and no way back. Two callers can legitimately
+            // both fire (Player.StartPlayer's AI branch and any explicit ToggleAIPilot), so the
+            // guard belongs here rather than in each of them.
+            if (AutoPilotEnabled) return;
+
             AutoPilotEnabled = true;
 
             // A pilot that manages its own drift (the commit loop: line up a crystal, lock the

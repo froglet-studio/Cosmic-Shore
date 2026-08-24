@@ -40,6 +40,16 @@ namespace CosmicShore.Gameplay
                  "toy. The menu has no intensity to derive one from, so it is authored here.")]
         [SerializeField, Range(0f, 1f)] float companionSkill = 0.5f;
 
+        [Tooltip("Speed a released AI companion is launched at. A companion is RELEASED under way, " +
+                 "never dropped at a standstill: the pair-init hands every vessel a dead stop " +
+                 "(ResetForPlay zeroes speed), and a vessel below VesselPrismController's 3 u/s " +
+                 "gate lays NO TRAIL - which a pilot reads as a broken bot, not a slow one. Worse, " +
+                 "the AI's own drift PINS the cruise speed at whatever the vessel carried in " +
+                 "(VesselTransformer.StepTowardTarget), so a bot that drifts before it has " +
+                 "accelerated stays pinned near zero. 60 is the low end of the fleet's flight " +
+                 "band - no hull is launched faster than it would cruise.")]
+        [SerializeField, Min(0f)] float companionLaunchSpeed = 60f;
+
         bool _isSwapping;
 
         /// <summary>Whether a vessel swap is currently in progress.</summary>
@@ -360,13 +370,21 @@ namespace CosmicShore.Gameplay
 
             clientPlayerVesselInitializer.InitializePlayerAndVessel(aiPlayer, vessel);
 
-            // AddPlayer (inside the pair init) hands out one of the menu's authored spawn poses.
-            // Override it with the pose the player actually asked for, so the bot appears at the
-            // station they flew rather than across the cell.
+            // AddPlayer (inside the pair init) hands out one of the menu's authored spawn poses,
+            // and ResetForPlay zeroes the speed. Override BOTH, in the same order the vessel swap
+            // does: the pose the player actually asked for, then a launch speed - a companion is
+            // released under way, not dropped at a standstill (see companionLaunchSpeed).
             vessel.SetPose(pose);
+            vessel.SetInitialSpeed(companionLaunchSpeed);
 
             ConfigureCompanionPilot(vesselNO);
-            ActivateAutopilot(aiPlayer);
+
+            // StartPlayer, NOT ActivateAutopilot: for a player whose NetIsAI is set it already
+            // does the autopilot branch itself (ToggleAIPilot + ToggleInputPause), and calling
+            // both started the AI pilot TWICE - which duplicates every UseAbilityCoroutine, and
+            // AIPilot.StopAIPilot cannot clean the duplicate up. ActivateAutopilot exists for the
+            // menu's HUMAN vessel, where StartPlayer deliberately does not touch autopilot.
+            aiPlayer.StartPlayer();
 
             CSDebug.Log($"[MenuServerVesselInit] Released AI companion '{aiPlayer.NetName.Value}' " +
                         $"({vesselClass}, {domain}) at {pose.position}.");

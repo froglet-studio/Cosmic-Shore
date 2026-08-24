@@ -151,7 +151,16 @@ spawn the vessel → `InitializePlayerAndVessel` → `ConfigureForGameMode(seekP
 conserved trail mass the food web can graze, and is despawned with every other AI on the way out
 of the menu (`SceneLoader.ClearPlayerVesselReferences`).
 
-Three details that are load-bearing:
+Four details that are load-bearing:
+
+- **A companion is released UNDER WAY, never dropped at a standstill.** The pair-init hands every
+  vessel a dead stop (`ResetForPlay` zeroes speed), and `VesselPrismController`'s spawn loop only
+  lays a prism above **3 u/s** — so a bot released at zero lays no trail at all, which reads as a
+  broken bot rather than a slow one. The AI's own drift compounds it: a held drift PINS the
+  smoothed cruise speed at the value the vessel carried in (`VesselTransformer.StepTowardTarget`),
+  so a bot that drifts before it has accelerated stays pinned near zero indefinitely. The release
+  therefore does what the vessel swap does — `SetPose` then `SetInitialSpeed`, in that order — with
+  `companionLaunchSpeed` (60, the low end of the fleet's flight band) authored on the initializer.
 
 - **The domain is YOURS.** `ToyVesselRoster.PlayerDomain` reads the live local-player mirror at the
   moment of the pass, so the companion joins your side and the mini hulls wear your domain colour —
@@ -166,6 +175,13 @@ Three details that are load-bearing:
 - **It lands one spacing back toward the cell centre**, facing in. The player is still flying
   OUTWARD through the matrix when it appears, so the two are moving apart — a bot materialising on
   the nose would be a vessel-vs-vessel impact, not a release.
+- **The release calls `Player.StartPlayer`, not `ActivateAutopilot`.** For a player whose `NetIsAI`
+  is set, `StartPlayer` already runs the autopilot branch itself; calling both started the AI pilot
+  TWICE, which duplicates every `UseAbilityCoroutine` — and `AIPilot.StopAIPilot` cannot clean the
+  duplicate up, because its `StopCoroutine` is handed a fresh iterator that matches nothing.
+  `StartAIPilot` is now idempotent as well, so no caller can reintroduce it.
+  `ActivateAutopilot` remains what the menu's HUMAN vessel needs, where `StartPlayer` deliberately
+  does not touch autopilot.
 
 **The roster is shared with the Vessel Changer** (`ToyVesselRoster`): one curated default list, one
 meta-value/duplicate filter, one hull builder, one domain-preview colour, one re-tint. The two toys
