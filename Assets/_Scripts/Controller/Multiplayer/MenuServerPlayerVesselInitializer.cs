@@ -2,6 +2,7 @@ using System.Threading;
 using CosmicShore.Data;
 using CosmicShore.Utility;
 using Cysharp.Threading.Tasks;
+using Reflex.Injectors;
 using Unity.Netcode;
 using UnityEngine;
 
@@ -34,6 +35,11 @@ namespace CosmicShore.Gameplay
                  "the ONLY menu domain reset - client code must never write domain locally.")]
         [SerializeField] Domains menuVesselDomain = Domains.Jade;
 
+        [Header("Freestyle AI Companions")]
+        [Tooltip("Pilot skill (0..1) for AI companions released by the freestyle Lifeform Matrix " +
+                 "toy. The menu has no intensity to derive one from, so it is authored here.")]
+        [SerializeField, Range(0f, 1f)] float companionSkill = 0.5f;
+
         bool _isSwapping;
 
         /// <summary>Whether a vessel swap is currently in progress.</summary>
@@ -61,16 +67,22 @@ namespace CosmicShore.Gameplay
         {
             base.OnNetworkSpawn();
 
-            // Register the swap callback so client-originated swap requests
-            // route to HandleSwapRequest on the server.
+            // Register the swap + AI-companion callbacks so client-originated requests
+            // route to the server-side handlers.
             if (NetworkManager.Singleton.IsServer)
+            {
                 clientPlayerVesselInitializer.OnSwapRequested += HandleSwapRequest;
+                clientPlayerVesselInitializer.OnAiCompanionRequested += HandleAiCompanionRequest;
+            }
         }
 
         protected override void OnNetworkDespawn()
         {
             if (clientPlayerVesselInitializer)
+            {
                 clientPlayerVesselInitializer.OnSwapRequested -= HandleSwapRequest;
+                clientPlayerVesselInitializer.OnAiCompanionRequested -= HandleAiCompanionRequest;
+            }
 
             base.OnNetworkDespawn();
         }
@@ -243,6 +255,152 @@ namespace CosmicShore.Gameplay
                 clientPlayerVesselInitializer.ReplaceVesselForPlayer_ClientRpc(
                     player.PlayerNetId, newVessel.VesselNetId, target);
             }
+        }
+
+        // ---------------------------------------------------------
+        // AI COMPANIONS (freestyle)
+        // ---------------------------------------------------------
+
+        // Menu bots are named, not numbered, so two of the same hull are tellable apart in the
+        // lava lamp AND so GameDataSO.AddPlayer's name-keyed dedup can never collapse them onto
+        // one roster entry. Instance-scoped: the initializer dies with the scene, and so do its
+        // bots (SceneLoader.ClearPlayerVesselReferences despawns every AI on the way out).
+        int _aiCompanionCount;
+
+        /// <summary>
+        /// Release an AI-piloted vessel into the menu cell - the freestyle Lifeform Matrix's
+        /// VESSELS branch. Host does it directly; a party client asks the host over the same
+        /// request/handler shape as <see cref="RequestSwap"/>, so the bot exists once, on the
+        /// server, and replicates to everyone (a locally-spawned one would be invisible to the
+        /// rest of the party).
+        /// </summary>
+        public void RequestSpawnAiCompanion(VesselClassType vesselClass, Domains domain, Pose pose)
+        {
+            if (NetworkManager.Singleton == null || !NetworkManager.Singleton.IsListening || _cts == null)
+            {
+                CSDebug.LogWarning("[MenuServerVesselInit] No live network session - cannot release an AI companion.");
+                return;
+            }
+
+            if (NetworkManager.Singleton.IsServer)
+                SpawnAiCompanionAsync(vesselClass, domain, pose, _cts.Token).Forget();
+            else
+                clientPlayerVesselInitializer.RequestAiCompanion_ServerRpc(
+                    vesselClass, domain, pose.position, pose.rotation);
+        }
+
+        void HandleAiCompanionRequest(VesselClassType vesselClass, Domains domain, Pose pose)
+        {
+            SpawnAiCompanionAsync(vesselClass, domain, pose, _cts.Token).Forget();
+        }
+
+        /// <summary>
+        /// The server-side release. Deliberately the SAME chain a backfill AI goes through in
+        /// <see cref="ServerPlayerVesselInitializerWithAI"/> - spawn the Player NetworkObject,
+        /// stamp its NetworkVariables, spawn its vessel, initialize the pair, configure the pilot,
+        /// autopilot it - so a menu companion is an ordinary networked AI player rather than a
+        /// second, parallel kind of bot.
+        /// </summary>
+        async UniTaskVoid SpawnAiCompanionAsync(
+            VesselClassType vesselClass, Domains domain, Pose pose, CancellationToken ct)
+        {
+            var playerPrefab = ResolveAiPlayerPrefab();
+            if (!playerPrefab)
+            {
+                CSDebug.LogError("[MenuServerVesselInit] No AI Player prefab available - cannot release a companion.");
+                return;
+            }
+
+            if (!vesselPrefabContainer.TryGetShipPrefab(vesselClass, out _))
+            {
+                CSDebug.LogError($"[MenuServerVesselInit] No prefab for vessel type {vesselClass} - companion not released.");
+                return;
+            }
+
+            var aiPlayerNO = Instantiate(playerPrefab);
+            GameObjectInjector.InjectRecursive(aiPlayerNO.gameObject, _container);
+            // destroyWithScene: false, matching every other menu spawn - the explicit
+            // SceneLoader.ClearPlayerVesselReferences despawn is what removes these.
+            aiPlayerNO.Spawn(false);
+
+            if (!aiPlayerNO.TryGetComponent(out Player aiPlayer))
+            {
+                CSDebug.LogError("[MenuServerVesselInit] AI Player prefab is missing its Player component.");
+                aiPlayerNO.Despawn(true);
+                return;
+            }
+
+            // Claim it in the SAME frame as the spawn. A server-owned Player carries the HOST's
+            // OwnerClientId, and Player.OnNetworkSpawn has already raised the spawn event from
+            // inside Spawn() above (its owner branch fills in a name and vessel type), so without
+            // this the human path would read that event as the host asking for a second vessel.
+            // The handler defers 200ms for NetworkVariable replication, which is what gives this
+            // synchronous claim time to land.
+            ClaimExternallySpawnedPlayer(aiPlayer);
+
+            aiPlayer.NetIsAI.Value = true;
+            aiPlayer.NetDefaultVesselType.Value = vesselClass;
+            aiPlayer.NetDomain.Value = domain;
+            aiPlayer.NetName.Value = $"{vesselClass} Bot {++_aiCompanionCount}";
+
+            var vesselNO = SpawnVesselForPlayer(aiPlayer.OwnerClientId, aiPlayer, vesselClass);
+            if (!vesselNO)
+            {
+                aiPlayerNO.Despawn(true);
+                return;
+            }
+
+            if (!vesselNO.TryGetComponent(out IVessel vessel))
+            {
+                CSDebug.LogError("[MenuServerVesselInit] Spawned companion vessel missing IVessel component.");
+                vesselNO.Despawn(true);
+                aiPlayerNO.Despawn(true);
+                return;
+            }
+
+            clientPlayerVesselInitializer.InitializePlayerAndVessel(aiPlayer, vessel);
+
+            // AddPlayer (inside the pair init) hands out one of the menu's authored spawn poses.
+            // Override it with the pose the player actually asked for, so the bot appears at the
+            // station they flew rather than across the cell.
+            vessel.SetPose(pose);
+
+            ConfigureCompanionPilot(vesselNO);
+            ActivateAutopilot(aiPlayer);
+
+            CSDebug.Log($"[MenuServerVesselInit] Released AI companion '{aiPlayer.NetName.Value}' " +
+                        $"({vesselClass}, {domain}) at {pose.position}.");
+
+            // Let the vessel NetworkObject replicate before telling clients to bind the pair.
+            await UniTask.Delay(postSpawnDelayMs, DelayType.UnscaledDeltaTime, cancellationToken: ct);
+            NotifyClients(aiPlayer);
+        }
+
+        /// <summary>
+        /// The AI Player prefab, resolved from the live <see cref="NetworkConfig.PlayerPrefab"/>.
+        /// That IS the prefab every game scene wires by hand into
+        /// <c>ServerPlayerVesselInitializerWithAI.aiPlayerPrefab</c> (<c>_Prefabs/CORE/Player</c>),
+        /// so reading it here keeps the menu's companion path from carrying a second scene
+        /// reference that can drift out of sync with the registered NetworkPrefab.
+        /// </summary>
+        static NetworkObject ResolveAiPlayerPrefab()
+        {
+            var prefab = NetworkManager.Singleton != null
+                ? NetworkManager.Singleton.NetworkConfig?.PlayerPrefab
+                : null;
+            return prefab ? prefab.GetComponent<NetworkObject>() : null;
+        }
+
+        /// <summary>
+        /// A menu companion flies the lava lamp: it seeks the cell's crystals and mass like any
+        /// backfill bot, and it never seeks PILOTS - freestyle has no objective, and a bot the
+        /// player released should not then hunt them.
+        /// </summary>
+        void ConfigureCompanionPilot(NetworkObject vesselNO)
+        {
+            var aiPilot = vesselNO.GetComponentInChildren<AIPilot>();
+            if (!aiPilot) return;
+            aiPilot.ConfigureForGameMode(gameData, shouldSeekPlayers: false, companionSkill);
         }
 
         // ---------------------------------------------------------

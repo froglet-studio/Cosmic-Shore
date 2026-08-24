@@ -35,6 +35,9 @@ ASSET_DIR = ROOT / "Assets/_SO_Assets/Toys"
 # station builder; and a variant station at level L is `StationRadius * (1 + 0.35 * (L - 1))`.
 STATION_TRIGGER_FACTOR = 1.6
 LIFEFORM_LEVEL5_FACTOR = 1.0 + 0.35 * (5 - 1)
+# LifeformMatrixToy.BuildKingdomGrid: the KINGDOM row (Fauna / Flora / Vessels) is half again the
+# radius of the species stations behind it, so the first row you meet is the biggest thing there.
+LIFEFORM_KINGDOM_FACTOR = 1.5
 
 
 def read(path: Path) -> str:
@@ -99,7 +102,13 @@ def main() -> int:
         ("toy root", body_r, trigger_r, None),
         ("Cell Selector station", cell_r, cell_r * STATION_TRIGGER_FACTOR, cell_sp),
         ("Vessel Changer station", body_r, body_r * STATION_TRIGGER_FACTOR, vessel_sp),
+        ("Lifeform kingdom station",
+         life_r * LIFEFORM_KINGDOM_FACTOR,
+         life_r * LIFEFORM_KINGDOM_FACTOR * STATION_TRIGGER_FACTOR, life_sp),
+        # The hangar row uses the species station's exact geometry (same radius, same spacing), so
+        # it is listed rather than re-derived - if the two ever diverge, this row is where it shows.
         ("Lifeform species station", life_r, life_r * STATION_TRIGGER_FACTOR, life_sp),
+        ("Lifeform hangar station", life_r, life_r * STATION_TRIGGER_FACTOR, life_sp),
         ("Lifeform variant L5",
          life_r * LIFEFORM_LEVEL5_FACTOR,
          life_r * LIFEFORM_LEVEL5_FACTOR * STATION_TRIGGER_FACTOR, life_sp),
