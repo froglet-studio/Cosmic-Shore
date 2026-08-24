@@ -2114,7 +2114,92 @@ namespace CosmicShore.Gameplay
                 FaunaReleaseTier = config.SpawnProfile.InitialFaunaReleaseTier;
 
             Initialize();
+
+            // A scene cell finishes its bootstrap (cytoplasm, modifiers, SPAWNER) on the first
+            // crystal event - see OnCellItemUpdated. A satellite has its own runtime instance
+            // and no CrystalManager feeding it, so that event never comes: run the completion
+            // here or the satellite builds its environment and then stands lifeless, with no
+            // flora, no fauna, and - for a GROWN world like Rampage's cactus forest, whose whole
+            // arena IS its spawner's planting - nothing at all.
+            InitilizePostFirstCellItem();
             return true;
+        }
+
+        /// <summary>
+        /// Retire this satellite's world the way a cell swap retires one — and NOT the way a
+        /// plain <c>Destroy(root)</c> would, which is how the first preview teardown corrupted
+        /// the prism pool: pooled prisms (the vessel's trail laid in the arena) were destroyed
+        /// outright, and a pool whose accounting is corrupted breaks every trail in the scene,
+        /// including the menu world the player returns to.
+        ///
+        /// <para>What it does, in the swap's own order: cancel any pending deferred build, stop
+        /// the spawner, detach every vessel's trail bookkeeping (a <c>Trail</c> dereferences its
+        /// prisms without null guards, so nothing may hold a reference to mass that is about to
+        /// leave), gather the world into a retiring root, return the POOLED prisms to their pool,
+        /// clear this cell's bookkeeping, and un-pause the spawners. The retiring root — now
+        /// holding only instantiated mass — is <b>returned to the caller to drain over frames</b>
+        /// (a 10-20k-prism world destroyed in one frame is a multi-second freeze), because this
+        /// cell is itself about to be destroyed and cannot outlive its own drain coroutine.</para>
+        ///
+        /// <para>There is no suction animation on the way out: the arena sits far outside every
+        /// camera's far clip and the window that showed it is already gone, so the removal is
+        /// unseen — the same clause the microscene conveyor's off-screen transport rides.
+        /// Mass conservation holds: this runs only from the explicit player action of leaving
+        /// the preview (Docs/ECOSYSTEM.md §19).</para>
+        /// </summary>
+        /// <returns>The retiring root for the caller to drain and destroy, or null when there
+        /// was nothing to retire.</returns>
+        public GameObject StrikeSatelliteWorld()
+        {
+            if (!IsSatellite)
+            {
+                CSDebug.LogError($"[Cell {ID}] StrikeSatelliteWorld on a non-satellite cell - " +
+                                 "refused. A scene cell's world is retired by RequestCellSwap.");
+                return null;
+            }
+
+            if (_deferredEnvironmentBuild != null)
+            {
+                StopCoroutine(_deferredEnvironmentBuild);
+                _deferredEnvironmentBuild = null;
+            }
+
+            StopSpawner();
+            SetVesselTrailsDetached(pauseSpawners: true);
+
+            var retiring = RetireWorldIntoSuctionRoot(clearLooseTrailMass: true, out var pooledRetiring);
+
+            for (int i = 0; i < pooledRetiring.Count; i++)
+            {
+                var block = pooledRetiring[i];
+                if (!block) continue;
+                block.transform.SetParent(null, false);
+                block.ReturnToPool();
+            }
+            pooledRetiring.Clear();
+
+            // The same bookkeeping reset the swap performs once its drain completes. Here it runs
+            // BEFORE the drain: the caller drains after this cell is gone, and a prism destroyed
+            // then finds its cell binding already cleared instead of dangling.
+            trackedBlocks.Clear();
+            domainBlockCounts.Clear();
+            PrismSpatialIndex.Instance?.ClearAllCellBindings(_volumeCellId);
+            gridTracked.Clear();
+            _replicatedDominantDomain = null;
+            ResetVolumeAccounting();
+            liveFaunaCounts.Clear();
+            liveFloraCounts.Clear();
+            liveFauna.Clear();
+            GyroidColonyFrontier.Clear(this);
+            SchwarzPColonyFrontier.Clear(this);
+            SchwarzPTileRegistry.Clear(this);
+            QuasicrystalColonyFrontier.Clear(this);
+            QuasicrystalHeartRegistry.Clear(this);
+            phase = CellPhase.Calm;
+
+            SetVesselTrailsDetached(pauseSpawners: false);
+
+            return retiring;
         }
 
         bool _swapping;

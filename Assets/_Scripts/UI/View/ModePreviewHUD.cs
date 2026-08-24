@@ -39,18 +39,12 @@ namespace CosmicShore.UI
         [SerializeField, Tooltip("Optional fill image driven 0..1 by objective progress.")]
         Image progressFill;
 
-        [Header("Controls")]
-        [SerializeField, Tooltip("Leaves the preview and returns to the arcade. The gamepad's own " +
-                                 "Start exit already works - this is the touch/mouse equivalent.")]
-        Button exitButton;
-
         [Header("Feel")]
         [SerializeField, Tooltip("Seconds for the HUD to fade in and out, so it never pops.")]
         float fadeSeconds = 0.35f;
 
         CanvasGroup _canvasGroup;
         ModePreviewRunner _runner;
-        ModePreviewSession _session;
         bool _hasTimer;
         float _fadeTarget;
 
@@ -58,24 +52,19 @@ namespace CosmicShore.UI
         {
             _canvasGroup = GetComponent<CanvasGroup>();
             ApplyAlpha(0f);
-
-            if (exitButton) exitButton.onClick.AddListener(HandleExitClicked);
         }
 
         void OnDestroy()
         {
             Unbind();
-            if (exitButton) exitButton.onClick.RemoveListener(HandleExitClicked);
         }
 
         /// <summary>Bind to a running flight and fade in.</summary>
-        public void Show(ModePreviewRunner runner, ModePreviewDefinitionSO definition,
-                         ModePreviewSession session)
+        public void Show(ModePreviewRunner runner, ModePreviewDefinitionSO definition)
         {
             Unbind();
 
             _runner = runner;
-            _session = session;
             _hasTimer = definition && definition.DurationSeconds > 0f;
 
             if (modeLabel) modeLabel.text = definition ? definition.Mode.ToString() : string.Empty;
@@ -106,7 +95,6 @@ namespace CosmicShore.UI
         {
             if (_runner != null) _runner.OnProgressChanged -= Repaint;
             _runner = null;
-            _session = null;
         }
 
         void Update()
@@ -148,11 +136,6 @@ namespace CosmicShore.UI
             bool visible = alpha > 0.01f;
             _canvasGroup.blocksRaycasts = visible;
             _canvasGroup.interactable = visible;
-        }
-
-        void HandleExitClicked()
-        {
-            if (_session) _session.RequestExit();
         }
     }
 }

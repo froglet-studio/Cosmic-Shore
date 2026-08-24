@@ -86,20 +86,6 @@ namespace CosmicShore.ScriptableObjects
                  "opens on the same framing the real mode does.")]
         [Min(0f)] public float SpawnDistanceOutsideNucleus = 70f;
 
-        [Header("Diorama (modal preview window)")]
-        [Tooltip("Samples taken across the environment for the modal's scale model. The " +
-                 "silhouette is what reads at thumbnail size, so ~1k carries it; higher just " +
-                 "costs vertices (24 per sample).")]
-        [Min(64)] public int DioramaPointBudget = 900;
-
-        [Tooltip("Fraction of the environment's mass kept when filtering down to its signature " +
-                 "structures. 1 keeps everything.")]
-        [Range(0.05f, 1f)] public float DioramaSignatureCoverage = 1f;
-
-        [Tooltip("Degrees per second the modal's scale model turns. It is a thing you watch, so " +
-                 "it must move - but slowly enough to read.")]
-        public float DioramaSpinRate = 14f;
-
         /// <summary>
         /// True when this definition can actually be flown. A definition with no cell has
         /// nothing to swap the menu world for, so the Test Flight button must stay hidden
@@ -108,17 +94,5 @@ namespace CosmicShore.ScriptableObjects
         /// </summary>
         public bool CanTestFlight => PreviewCell != null;
 
-        /// <summary>
-        /// True when there is something for the modal's scale model to be built FROM.
-        ///
-        /// <para>Not every previewable mode has one, and that is not a gap in the authoring: a
-        /// cell's arena can be <b>grown rather than laid</b>. Rampage's forest is flora seeded by
-        /// its <c>SpawnProfile</c> and Scarab Scramble's court is the nucleus itself, so neither
-        /// authors an <c>EnvironmentPrefab</c> and neither has generator lay data to sample.
-        /// Those modes keep the legacy preview video and still offer a Test Flight - which is the
-        /// correct split, because the Test Flight shows the grown arena perfectly and only the
-        /// static model cannot.</para>
-        /// </summary>
-        public bool HasDiorama => PreviewCell != null && PreviewCell.EnvironmentPrefab != null;
     }
 }

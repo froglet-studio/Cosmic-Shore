@@ -28,6 +28,13 @@ namespace CosmicShore.Gameplay
         /// <summary>The live satellite cell, or null when nothing is standing.</summary>
         public Cell Cell { get; private set; }
 
+        /// <summary>
+        /// The arena's own runtime data instance — what the previewing vessel's
+        /// <see cref="AIPilot"/> is retargeted onto so it hunts THIS cell's contents instead of
+        /// the menu's. Null when nothing is standing.
+        /// </summary>
+        public CellRuntimeDataSO RuntimeInstance => _runtimeInstance;
+
         /// <summary>Where the arena was parked.</summary>
         public Vector3 Origin { get; private set; }
 
@@ -80,7 +87,7 @@ namespace CosmicShore.Gameplay
             if (!Cell)
             {
                 CSDebug.LogError("[ModePreview] The Cell prefab carries no Cell component - arena aborted.");
-                Strike();
+                FinishStrike();
                 return false;
             }
 
@@ -93,7 +100,7 @@ namespace CosmicShore.Gameplay
 
             if (!Cell.InitializeSatellite(definition.PreviewCell))
             {
-                Strike();
+                FinishStrike();
                 return false;
             }
 
@@ -127,18 +134,38 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// Take the arena down. Explicit removal by a player action, which is the only thing
-        /// allowed to remove this mass - and the runtime data instance goes with it, since nothing
-        /// else ever held it.
+        /// Phase one of the teardown: retire the world POOL-SAFELY through
+        /// <see cref="Cell.StrikeSatelliteWorld"/> — pooled prisms (the vessel's trail laid here)
+        /// go back to their pool, never through <c>Destroy</c>, which corrupts the pool's
+        /// accounting and with it every trail in the scene. Returns the retiring root holding the
+        /// instantiated remainder for the CALLER to drain over frames (destroying a 10-20k-prism
+        /// world in one frame is a multi-second freeze), because everything this class owns is
+        /// about to be destroyed and cannot host the drain itself.
+        ///
+        /// <para>Explicit removal by a player action — the only thing allowed to remove this mass
+        /// (Docs/ECOSYSTEM.md §19). Call <see cref="FinishStrike"/> once the drain completes.</para>
         /// </summary>
-        public void Strike()
+        public GameObject BeginStrike()
         {
+            GameObject retiring = null;
+            if (Cell) retiring = Cell.StrikeSatelliteWorld();
+
             if (_structure)
             {
                 Object.Destroy(_structure);
                 _structure = null;
             }
 
+            return retiring;
+        }
+
+        /// <summary>
+        /// Phase two: destroy the cell, its root, and the runtime data instance. Runs after the
+        /// drain so a prism destroyed mid-drain never dereferences a dead cell. Idempotent, and
+        /// also the whole teardown for an arena that never finished standing.
+        /// </summary>
+        public void FinishStrike()
+        {
             if (_root)
             {
                 Object.Destroy(_root);

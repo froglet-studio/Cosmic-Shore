@@ -14,19 +14,22 @@ namespace CosmicShore.Editor
 {
     /// <summary>
     /// One-click wiring for the <b>mode preview</b> — the window that replaces the arcade card's
-    /// preview video, showing an idle scale model of the mode's arena until it is clicked and the
-    /// real game playing in that same frame afterwards.
+    /// preview video: the mode's own arena playing live under AI the moment a card is selected,
+    /// taken over by tapping the window, with "LEVEL PREVIEW NOT AVAILABLE" as the only fallback.
     ///
     /// <para>It writes two things and records both in the tool ledger:</para>
     /// <list type="number">
     /// <item><b>The configure-modal PREFAB</b> (not a scene override — per Docs/GAMECANVAS.md a
-    /// shared prefab is the single source of truth): a <see cref="ModePreviewWindow"/> plus its
-    /// RawImage surface, the transparent focus button that covers it, a focus frame, a
-    /// "tap to play" hint, and the library reference.</item>
+    /// shared prefab is the single source of truth): a <see cref="ModePreviewWindow"/> with its
+    /// RawImage surface, status label, transparent focus button and "tap to play" hint. It also
+    /// DELETES the chrome earlier revisions authored — the TestFlightButton, the FocusFrame (a
+    /// sprite-less sliced Image renders as a solid colour fill, the "blue overlay"), and any
+    /// legacy VideoPlayer instances under the preview frame.</item>
     /// <item><b>Menu_Main</b>: a <see cref="ModePreviewSession"/> on the freestyle hub (the object
     /// already carrying <c>MenuCrystalClickHandler</c>, exactly where the toybox goes) wired to
-    /// the menu vessel initializer, plus a small <see cref="ModePreviewHUD"/> to position beside
-    /// the window.</item>
+    /// the menu vessel initializer, plus a small <see cref="ModePreviewHUD"/> — whose ExitButton,
+    /// if an earlier revision built one, is deleted (leaving the preview is tapping outside the
+    /// window, not a button).</item>
     /// </list>
     ///
     /// <para>The modal's <c>previewSession</c> field is deliberately left empty: a prefab cannot
@@ -34,7 +37,7 @@ namespace CosmicShore.Editor
     /// per modal lifetime instead.</para>
     ///
     /// <para>Idempotent — safe to re-run. It never overwrites a reference somebody has already
-    /// set by hand.</para>
+    /// set by hand, and re-running is also the MIGRATION path off the earlier revisions.</para>
     /// </summary>
     public static class ModePreviewSetupTool
     {
@@ -42,7 +45,6 @@ namespace CosmicShore.Editor
         const string ModalPrefabPath = "Assets/_Prefabs/ArcadeGameConfigureModal.prefab";
         const string MenuScenePath = "Assets/_Scenes/Menu_Main.unity";
         const string LibraryAssetPath = "Assets/Resources/ModePreviewLibrary.asset";
-        const string PreviewLayerName = "ModePreview";
 
         [MenuItem("FrogletTools/Scene Setup/Setup Mode Preview")]
         [FrogletTool(FrogletToolCategory.SceneSetup, Importance = 4,
@@ -51,17 +53,6 @@ namespace CosmicShore.Editor
         {
             var written = new List<string>();
             var report = new List<string>();
-
-            if (LayerMask.NameToLayer(PreviewLayerName) < 0)
-            {
-                EditorUtility.DisplayDialog(ToolName,
-                    $"The '{PreviewLayerName}' layer does not exist.\n\n" +
-                    "Add it in Project Settings > Tags and Layers before running this. Without a " +
-                    "private layer the diorama camera would render the whole menu world a second " +
-                    "time, which is the one thing this feature must not do.",
-                    "OK");
-                return;
-            }
 
             var library = AssetDatabase.LoadAssetAtPath<ModePreviewLibrarySO>(LibraryAssetPath);
             if (!library)
@@ -117,7 +108,18 @@ namespace CosmicShore.Editor
                     return "• The modal has no 'selectedGamePreviewWindow' assigned - assign the " +
                            "preview frame and re-run.";
 
-                // 1. The surface the stage renders into, stretched to fill the existing frame.
+                // Migration: delete the chrome earlier revisions authored. The FocusFrame is the
+                // reported "blue overlay" - an Image with type Sliced and NO sprite renders as a
+                // solid colour fill over the whole window. The TestFlightButton belongs to the
+                // retired full-screen design. Legacy VideoPlayer instances under the frame are
+                // what leaked through as stale video / white rectangles.
+                DeleteChild(window.transform, "FocusFrame");
+                DeleteChild(window.transform.parent, "TestFlightButton");
+                DeleteChild(window.transform, "TestFlightButton");
+                foreach (var video in window.GetComponentsInChildren<UnityEngine.Video.VideoPlayer>(true))
+                    Object.DestroyImmediate(video.gameObject);
+
+                // 1. The surface the live camera renders into, stretched to fill the frame.
                 var surface = FindChild(window.transform, "ModePreviewSurface");
                 if (!surface)
                 {
@@ -127,9 +129,22 @@ namespace CosmicShore.Editor
                     Stretch(surface as RectTransform);
                 }
 
-                // 2. The focus button, covering the surface. A Button rather than a raw pointer
-                //    handler, so the window is reachable with a gamepad's Submit as well as a tap -
-                //    and it is TRANSPARENT, because the thing you click is the picture itself.
+                // 2. The status label - the window's only voice when it is not live.
+                var status = FindChild(window.transform, "ModePreviewStatus");
+                if (!status)
+                {
+                    status = NewUIChild(window.transform, "ModePreviewStatus");
+                    Stretch(status as RectTransform);
+                    var label = status.gameObject.AddComponent<TextMeshProUGUI>();
+                    label.text = "LEVEL PREVIEW\nNOT AVAILABLE";
+                    label.alignment = TextAlignmentOptions.Center;
+                    label.fontSize = 30f;
+                    label.raycastTarget = false;
+                }
+
+                // 3. The focus button, covering the surface. A Button rather than a raw pointer
+                //    handler, so the window is reachable with a gamepad's Submit as well as a tap
+                //    - and it is TRANSPARENT, because the thing you tap is the picture itself.
                 var focus = FindChild(window.transform, "ModePreviewFocus");
                 if (!focus)
                 {
@@ -139,11 +154,10 @@ namespace CosmicShore.Editor
                     hit.color = new Color(1f, 1f, 1f, 0f);   // invisible, still raycastable
                     var btn = focus.gameObject.AddComponent<Button>();
                     btn.targetGraphic = hit;
+                    // No visual transition: a tint on press would flash the whole live view.
+                    btn.transition = Selectable.Transition.None;
                 }
 
-                // 3. The focus frame and the hint - the two pieces of chrome that say where input
-                //    is going. Neither resizes the window; that is the whole point.
-                var indicator = EnsureFocusIndicator(window.transform);
                 var hint = EnsureFocusHint(window.transform);
 
                 // 4. The window component itself.
@@ -152,8 +166,8 @@ namespace CosmicShore.Editor
 
                 var wso = new SerializedObject(previewWindow);
                 SetObjectIfEmpty(wso, "surface", surface.GetComponent<RawImage>());
+                SetObjectIfEmpty(wso, "statusLabel", status.GetComponent<TextMeshProUGUI>());
                 SetObjectIfEmpty(wso, "focusButton", focus.GetComponent<Button>());
-                SetObjectIfEmpty(wso, "focusIndicator", indicator);
                 SetObjectIfEmpty(wso, "focusHint", hint);
                 wso.ApplyModifiedPropertiesWithoutUndo();
 
@@ -165,8 +179,9 @@ namespace CosmicShore.Editor
                 PrefabUtility.SaveAsPrefabAsset(root, ModalPrefabPath);
                 written.Add(ModalPrefabPath);
 
-                return "• Modal prefab wired: diorama + surface inside the preview window, a Test " +
-                       "Flight button beside it, and the preview library.";
+                return "• Modal prefab wired: surface + status label + focus button + hint inside " +
+                       "the preview frame; stale TestFlightButton / FocusFrame / video instances " +
+                       "deleted.";
             }
             finally
             {
@@ -174,23 +189,7 @@ namespace CosmicShore.Editor
             }
         }
 
-        /// <summary>A frame drawn over the window's edge while it has focus.</summary>
-        static GameObject EnsureFocusIndicator(Transform window)
-        {
-            var existing = FindChild(window, "FocusFrame");
-            if (existing) return existing.gameObject;
-
-            var rt = NewUIChild(window, "FocusFrame") as RectTransform;
-            Stretch(rt);
-            var image = rt.gameObject.AddComponent<Image>();
-            image.color = new Color(0.20f, 0.90f, 1.00f, 0.85f);
-            image.raycastTarget = false;
-            image.type = Image.Type.Sliced;
-            rt.gameObject.SetActive(false);
-            return rt.gameObject;
-        }
-
-        /// <summary>The "tap to play" hint, shown until the window takes focus.</summary>
+        /// <summary>The "TAP TO PLAY" hint, shown while live and unfocused.</summary>
         static GameObject EnsureFocusHint(Transform window)
         {
             var existing = FindChild(window, "FocusHint");
@@ -211,7 +210,14 @@ namespace CosmicShore.Editor
             return rt.gameObject;
         }
 
-        // ── Menu_Main ────────────────────────────────────────────────────────
+        static void DeleteChild(Transform parent, string name)
+        {
+            if (!parent) return;
+            var child = FindChild(parent, name);
+            if (child) Object.DestroyImmediate(child.gameObject);
+        }
+
+        // ── Menu_Main ─        // ── Menu_Main ────────────────────────────────────────────────────────
 
         static string WireMenuScene(List<string> written)
         {
@@ -294,30 +300,16 @@ namespace CosmicShore.Editor
             var progress = MakeLabel(rt, "ProgressLabel", new Vector2(-200f, -92f), 30f, TextAlignmentOptions.Left);
             var timer = MakeLabel(rt, "TimerLabel", new Vector2(200f, -92f), 30f, TextAlignmentOptions.Right);
 
-            var exitRt = NewUIChild(rt, "ExitButton") as RectTransform;
-            exitRt.anchorMin = new Vector2(0.5f, 0f);
-            exitRt.anchorMax = new Vector2(0.5f, 0f);
-            exitRt.pivot = new Vector2(0.5f, 1f);
-            exitRt.anchoredPosition = new Vector2(0f, -8f);
-            exitRt.sizeDelta = new Vector2(200f, 52f);
-            var exitImage = exitRt.gameObject.AddComponent<Image>();
-            exitImage.color = new Color(1f, 1f, 1f, 0.18f);
-            var exitButton = exitRt.gameObject.AddComponent<Button>();
-            exitButton.targetGraphic = exitImage;
-            var exitLabelRt = NewUIChild(exitRt, "Label") as RectTransform;
-            Stretch(exitLabelRt);
-            var exitLabel = exitLabelRt.gameObject.AddComponent<TextMeshProUGUI>();
-            exitLabel.text = "LEAVE";
-            exitLabel.alignment = TextAlignmentOptions.Center;
-            exitLabel.fontSize = 24f;
-            exitLabel.raycastTarget = false;
+            // No exit button (an earlier revision built one - delete it): leaving the preview
+            // is tapping OUTSIDE the window, and while flying, on-screen buttons are exactly the
+            // UI the focus gate exists to keep out of the pad's way.
+            DeleteChild(rt, "ExitButton");
 
             var hso = new SerializedObject(hud);
             SetObjectIfEmpty(hso, "modeLabel", mode);
             SetObjectIfEmpty(hso, "objectiveLabel", objective);
             SetObjectIfEmpty(hso, "progressLabel", progress);
             SetObjectIfEmpty(hso, "timerLabel", timer);
-            SetObjectIfEmpty(hso, "exitButton", exitButton);
             hso.ApplyModifiedPropertiesWithoutUndo();
             EditorUtility.SetDirty(hud);
 

@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: ModePreview_WildlifeLiberation
   m_EditorClassIdentifier: 
   Mode: 40
-  Notes: 'Spawns outside the 1050u outer cage, where the real mode spawns players. LifeformsKilled is credited locally through CellRuntimeDataSO.OnFaunaKilled, so it counts in a solo preview - the mode made every creature killable by shooting its body prisms, which is exactly what a preview should teach.'
+  Notes: 'Spawns outside the 1050u outer cage, where the real mode spawns players. LifeformsKilled is credited locally through CellRuntimeDataSO.OnFaunaKilled, so it counts in a solo preview.'
   PreviewCell: {fileID: 11400000, guid: 2a3473b06ae520a967e964789f574d2a, type: 2}
   StructurePrefab: {fileID: 0}
   Vessel: -1
@@ -22,6 +22,3 @@ MonoBehaviour:
   ObjectiveTarget: 5
   DurationSeconds: 90
   SpawnDistanceOutsideNucleus: 1200
-  DioramaPointBudget: 900
-  DioramaSignatureCoverage: 1
-  DioramaSpinRate: 14

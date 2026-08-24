@@ -15,7 +15,6 @@ using UnityEngine;
 using UnityEngine.Serialization;
 using UnityEngine.UI;
 using UnityEngine.InputSystem;
-using UnityEngine.Video;
 
 namespace CosmicShore.UI
 {
@@ -100,10 +99,10 @@ namespace CosmicShore.UI
         [Tooltip("'Waiting for others...' label - shown after a player confirms, hidden when choosing.")]
         [SerializeField] private GameObject waitingForOthersLabel;
 
-        [Header("Mode Preview (replaces the preview video)")]
+        [Header("Mode Preview")]
         [Tooltip("Which modes have a playable preview. Leave empty to load " +
-                 "Resources/ModePreviewLibrary. A mode with no entry keeps the legacy " +
-                 "PreviewClip path, so this rolls out one mode at a time.")]
+                 "Resources/ModePreviewLibrary. A mode with no entry shows 'LEVEL PREVIEW NOT " +
+                 "AVAILABLE' in the window - there is no video fallback any more.")]
         [SerializeField] private ModePreviewLibrarySO previewLibrary;
 
         [Tooltip("The preview window itself: an idle scale model of the mode's arena, and - once " +
@@ -161,7 +160,6 @@ namespace CosmicShore.UI
 
         // Runtime state
         SO_ArcadeGame _selectedGame;
-        VideoPlayer   _previewVideo;
         bool _isClientMode;
 
         ModePreviewSession _resolvedPreviewSession;
@@ -291,6 +289,11 @@ namespace CosmicShore.UI
             var pad = Gamepad.current;
             if (pad == null) return;
             if (IsClientMode) return;
+
+            // While the preview window holds focus the pad belongs to the VESSEL - the d-pad
+            // and A button must not silently drive the intensity rows behind the game the
+            // player is flying. Same gate the base applies to its B-to-close.
+            if (ModePreviewWindow.AnyHasFocus) return;
             if (!configurationDetailView || !configurationDetailView.activeSelf) return;
 
             if (pad.dpad.up.wasPressedThisFrame)
@@ -474,7 +477,13 @@ namespace CosmicShore.UI
         void ArmPreviewForGame(SO_ArcadeGame game, ModePreviewDefinitionSO definition)
         {
             var session = PreviewSession;
-            if (!session) return;
+            if (!session)
+            {
+                // No session in the scene: the window still owes the player an answer, and the
+                // honest one is the label - never a stale image or an empty frame.
+                if (previewWindow) previewWindow.ShowUnavailable();
+                return;
+            }
 
             session.Attach(previewWindow);
             session.SetDefinition(definition && definition.CanTestFlight ? definition : null,
@@ -600,54 +609,12 @@ namespace CosmicShore.UI
             if (selectedGameFavoriteIcon)
                 selectedGameFavoriteIcon.Favorited = FavoriteSystem.IsFavorited(game.Mode);
 
-            // A live scale model of the arena the mode actually builds beats a pre-rendered
-            // clip: it cannot go stale when a generator changes, and it is the same model the
-            // Cell Selector toy already shows. Modes with no preview definition fall through to
-            // the legacy video, so this rolls out one mode at a time rather than as a flag day.
-            var previewDefinition = ResolvePreviewDefinition(game.Mode);
-            ArmPreviewForGame(game, previewDefinition);
-
-            // Arm the window for this card. The window shows an idle scale model until it is
-            // clicked, and clicking it plays the mode in that same frame - it never resizes and
-            // the modal never closes.
-            //
-            // ShowIdle returns false when the mode's arena is GROWN rather than laid (Rampage's
-            // seeded forest, Scarab Scramble's nucleus court author no EnvironmentPrefab, so
-            // there is no generator output to model). Those modes fall back to the legacy video
-            // and are still flyable - an empty black frame would read as broken rather than as
-            // absent.
-            if (previewWindow && previewDefinition && previewWindow.ShowIdle(previewDefinition))
-            {
-                if (_previewVideo) _previewVideo.gameObject.SetActive(false);
-                return;
-            }
-
-            if (previewWindow) previewWindow.Hide();
-
-            if (!game.PreviewClip || !selectedGamePreviewWindow)
-                return;
-
-            if (_previewVideo) _previewVideo.gameObject.SetActive(true);
-
-            if (!_previewVideo)
-            {
-                _previewVideo = Instantiate(game.PreviewClip, selectedGamePreviewWindow.transform, false);
-                var rt = _previewVideo.GetComponent<RectTransform>();
-                if (rt)
-                {
-                    // Stretch to fill the preview window. The prefab's authored fixed
-                    // size predates the canvas resolution upgrade and no longer matches
-                    // the parent, leaving the video floating small in its frame.
-                    rt.anchorMin = Vector2.zero;
-                    rt.anchorMax = Vector2.one;
-                    rt.offsetMin = Vector2.zero;
-                    rt.offsetMax = Vector2.zero;
-                }
-            }
-            else
-            {
-                _previewVideo.clip = game.PreviewClip.clip;
-            }
+            // The session drives the window through its three states - 'LEVEL PREVIEW NOT
+            // AVAILABLE' (no definition, or the build failed), 'LOADING' (the arena standing
+            // up), and live (the mode already playing under AI until the player taps in).
+            // Every card lands in exactly one of those; the video path is gone, so nothing
+            // stale, white, or leaked-through can ever draw in the frame.
+            ArmPreviewForGame(game, ResolvePreviewDefinition(game.Mode));
         }
 
         void InitializeScreen1Controls(SO_ArcadeGame game)

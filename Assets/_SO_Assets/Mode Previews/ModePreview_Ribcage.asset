@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: ModePreview_Ribcage
   m_EditorClassIdentifier: 
   Mode: 39
-  Notes: 'Intensity 1 = two rinds, the lightest cage (10,620 prisms). SpawnDistance is 500 rather than the 70 default because this cell has NO NUCLEUS, so the radius it is added to is 0 - at the default the preview would open INSIDE the cage, which is the opposite of the mode''s premise. 500 clears the 360u outer shell.'
+  Notes: 'Intensity 1 = two rinds, the lightest cage (10,620 prisms). SpawnDistance 500 because this cell has NO NUCLEUS (radius reads 0) - the default 70 would open INSIDE the cage. 500 clears the 360u outer shell.'
   PreviewCell: {fileID: 11400000, guid: 919fc3cbaa210b46ebacd865c8688b44, type: 2}
   StructurePrefab: {fileID: 0}
   Vessel: -1
@@ -22,6 +22,3 @@ MonoBehaviour:
   ObjectiveTarget: 200
   DurationSeconds: 90
   SpawnDistanceOutsideNucleus: 500
-  DioramaPointBudget: 900
-  DioramaSignatureCoverage: 1
-  DioramaSpinRate: 14

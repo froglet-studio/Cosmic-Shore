@@ -12,35 +12,32 @@ using UnityEngine.EventSystems;
 namespace CosmicShore.Gameplay
 {
     /// <summary>
-    /// Runs a mode preview <b>inside the arcade modal's window</b>. The window never grows, the
-    /// modal never closes, and the menu scene behind it never changes — clicking the window simply
-    /// moves input from the UI to the vessel, and clicking away moves it back.
+    /// Runs a mode preview <b>inside the arcade modal's window</b>. Selecting a card starts the
+    /// preview on its own: the mode's arena stands up as a satellite cell, the player's vessel is
+    /// relocated into it, and the <b>AI flies it</b> — the window shows a game already being
+    /// played, the way the old video showed one. Tapping the window takes the stick from the AI;
+    /// tapping outside (or Escape / gamepad Start) gives it back, and the AI keeps flying. The
+    /// window never grows, the modal never closes, and the menu scene behind it never changes.
     ///
-    /// <para><b>How the game gets into a window.</b> Three existing pieces, no new ones:</para>
-    /// <list type="bullet">
-    /// <item><see cref="ModePreviewArena"/> stands the mode's own cell up as a SATELLITE far from
-    /// the menu world — the menu's cell is untouched, so there is no swap and nothing on screen
-    /// changes.</item>
-    /// <item><c>CameraManager.BeginWindowedPlayerCamera</c> points the ordinary gameplay rig at the
-    /// vessel and renders it into the window's texture. It is the real gameplay camera, so the
-    /// occlusion corridor and the speed tunnel come with it for free.</item>
-    /// <item>Focus is the input handoff freestyle already performs — AI off, input unpaused,
-    /// <c>sendNavigationEvents</c> off — <b>without</b> the fades, the camera blend or the
-    /// <c>MainMenuState</c> change, because none of those belong to a windowed preview.</item>
-    /// </list>
+    /// <para><b>The AI retarget is load-bearing.</b> <see cref="AIPilot"/> carries a serialized
+    /// <c>CellRuntimeDataSO</c> — the scene's shared asset — so a vessel relocated 120k units into
+    /// a satellite arena would keep hunting the MENU cell's crystals and immediately fly back out
+    /// of the arena, leaving the window showing a lone vessel in empty space. The session
+    /// retargets the pilot onto the satellite's own runtime instance for the duration and restores
+    /// it on the way out.</para>
     ///
     /// <para><b>Local only.</b> No <c>NetworkObject</c> is created and <see cref="GameDataSO"/>'s
     /// launch fields are never written — Menu_Main hosts the party and that asset is the real
-    /// launch config. The vessel is the player's OWN menu vessel, relocated for the duration:
-    /// there is exactly one local pilot at any moment, which is what the occlusion corridor and
-    /// speed tunnel (single-writer globals bound to the local pilot) require. A second vessel
-    /// would be a second local pilot, which this platform does not support.</para>
+    /// launch config. The vessel is the player's OWN menu vessel: there is exactly one local pilot
+    /// at any moment, which the occlusion corridor and speed tunnel (single-writer globals bound
+    /// to the local pilot) require.</para>
     ///
-    /// <para><b>Mass is conserved.</b> The arena is created by an explicit player action and struck
-    /// by one; nothing runs on a clock and nothing is culled (Docs/ECOSYSTEM.md §19).</para>
-    ///
-    /// <para><b>One way out.</b> Every route — releasing focus, changing card, closing the modal,
-    /// launching the real game, leaving the menu, teardown — funnels through <see cref="Stop"/>.</para>
+    /// <para><b>Mass is conserved, and the teardown is POOL-SAFE.</b> The arena is created by an
+    /// explicit player action and struck by one; the strike goes through
+    /// <see cref="Cell.StrikeSatelliteWorld"/>, which returns pooled prisms to their pool and
+    /// hands back the instantiated remainder for a frame-sliced drain — never a bare
+    /// <c>Destroy</c>, which corrupts the pool's accounting and with it every trail in the scene
+    /// (Docs/ECOSYSTEM.md §19; Docs/ModePreview/ARCHITECTURE.md).</para>
     /// </summary>
     public class ModePreviewSession : MonoBehaviour
     {
@@ -55,8 +52,8 @@ namespace CosmicShore.Gameplay
                                  "to keep whatever the player is already flying.")]
         MenuServerPlayerVesselInitializer vesselInitializer;
 
-        [SerializeField, Tooltip("HUD shown beside the window while a preview is live (objective, " +
-                                 "progress, timer). Optional.")]
+        [SerializeField, Tooltip("HUD shown beside the window once the player takes control " +
+                                 "(objective, progress, timer). Optional.")]
         ModePreviewHUD hud;
 
         [Header("Placement")]
@@ -67,11 +64,11 @@ namespace CosmicShore.Gameplay
 
         [Header("Timing")]
         [SerializeField, Tooltip("Seconds to wait for the arena's world to finish building before " +
-                                 "giving up. A wedged build must not leave the window stuck.")]
+                                 "giving up and showing 'preview not available'.")]
         float buildTimeoutSeconds = 45f;
 
-        [SerializeField, Tooltip("Seconds to let the arena settle after it builds, before the vessel " +
-                                 "is placed and the objective starts counting.")]
+        [SerializeField, Tooltip("Seconds to let the arena settle after it builds, before the " +
+                                 "vessel is placed and the window goes live.")]
         float settleSeconds = 0.5f;
 
         [Inject] GameDataSO gameData;
@@ -82,18 +79,22 @@ namespace CosmicShore.Gameplay
         ModePreviewWindow _window;
         ModePreviewDefinitionSO _definition;
         ModePreviewRunner _runner;
+        bool _runnerStarted;
+        bool _autoStartPending;
         Pose _vesselHomePose;
         bool _hasVesselHome;
         VesselClassType _modeVessel = VesselClassType.Any;
         VesselClassType _restoreVesselClass = VesselClassType.Any;
+        CellRuntimeDataSO _restoreAICellData;
+        bool _hasAIRetarget;
         bool _navigationWasEnabled = true;
         CancellationTokenSource _cts;
         bool _subscribed;
 
-        /// <summary>Raised whenever a preview stops, for any reason.</summary>
+        /// <summary>Raised when a preview stops, for any reason.</summary>
         public event Action<GameModes, ModePreviewOutcome> OnPreviewEnded;
 
-        /// <summary>True from the moment an arena starts standing until it is struck.</summary>
+        /// <summary>True from the moment an arena starts standing until its strike completes.</summary>
         public bool IsActive => _state != State.Idle;
 
         /// <summary>The mode being previewed, or <see cref="GameModes.Random"/> when idle.</summary>
@@ -108,7 +109,6 @@ namespace CosmicShore.Gameplay
         {
             Unsubscribe();
             Detach();
-            // Teardown, not a player exit: the scene is going away, so just let go.
             AbortHard();
         }
 
@@ -124,6 +124,22 @@ namespace CosmicShore.Gameplay
             if (!_subscribed || gameData == null) return;
             gameData.OnLaunchGame.OnRaised -= HandleLaunchRequested;
             _subscribed = false;
+        }
+
+        void Update()
+        {
+            // Auto-start driver. Deferred to Update rather than fired inside SetDefinition so a
+            // card change lands AFTER the previous arena's strike has fully completed (state
+            // returns to Idle), and so a click that arrives before the local vessel exists just
+            // waits instead of failing.
+            if (!_autoStartPending || _state != State.Idle) return;
+            if (!_definition || !_definition.CanTestFlight) { _autoStartPending = false; return; }
+
+            var player = gameData?.LocalPlayer;
+            if (player?.Vessel == null || !player.IsLocalUser) return;   // not ready yet - retry
+
+            _autoStartPending = false;
+            StartArena(player);
         }
 
         // ── Attachment (the modal owns both ends) ────────────────────────────
@@ -144,7 +160,7 @@ namespace CosmicShore.Gameplay
             _window.OnFocusReleased += HandleFocusReleased;
         }
 
-        /// <summary>Unbind from the window and stop anything running.</summary>
+        /// <summary>Unbind from the window. Anything running keeps running until Stop.</summary>
         public void Detach()
         {
             if (!_window) { _window = null; return; }
@@ -155,90 +171,44 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// Arm the window for <paramref name="definition"/>. Switching to a different mode strikes
-        /// whatever arena is standing — a satellite cell is the expensive half of this feature and
-        /// must never outlive the card it belongs to.
+        /// A card was selected: preview <paramref name="definition"/>, starting on its own —
+        /// no tap required, the AI flies until the player takes over. A null (or unflyable)
+        /// definition shows the honest "preview not available" state instead. Switching cards
+        /// strikes the standing arena first; a satellite cell is the expensive half of this
+        /// feature and must never outlive the card it belongs to.
         /// </summary>
         public void SetDefinition(ModePreviewDefinitionSO definition, VesselClassType modeVessel)
         {
             _modeVessel = modeVessel;
-            if (_definition == definition) return;
+
+            bool sameAndRunning = _definition == definition && _state is State.Standing or State.Live;
+            if (sameAndRunning) return;
 
             if (IsActive) Stop(ModePreviewOutcome.Abandoned);
             _definition = definition;
-        }
 
-        // ── Focus ────────────────────────────────────────────────────────────
-
-        void HandleFocusRequested()
-        {
-            if (!_definition || !_definition.CanTestFlight) return;
-
-            switch (_state)
+            if (definition && definition.CanTestFlight)
             {
-                case State.Idle:
-                    StartArena();
-                    break;
-                case State.Live:
-                    // The arena is already standing from an earlier focus - clicking back in is
-                    // instant, which is the whole reason it is not struck on every release.
-                    TakeFocus();
-                    break;
+                _window?.ShowLoading(definition.Mode.ToString());
+                _autoStartPending = true;
             }
-        }
-
-        void HandleFocusReleased() => GiveBackFocus();
-
-        /// <summary>Move input from the UI to the vessel. The visual half is the window's.</summary>
-        void TakeFocus()
-        {
-            var player = gameData?.LocalPlayer;
-            if (player?.Vessel == null) return;
-
-            player.Vessel.ToggleAIPilot(false);
-            player.InputController?.SetPause(false);
-
-            // The pad flies the ship, so it must stop driving the UI at the same time. Exactly the
-            // gate ScreenSwitcher applies for freestyle - a focused window is the same situation
-            // in a smaller frame.
-            if (EventSystem.current)
+            else
             {
-                _navigationWasEnabled = EventSystem.current.sendNavigationEvents;
-                EventSystem.current.sendNavigationEvents = false;
+                _window?.ShowUnavailable();
+                _autoStartPending = false;
             }
-
-            if (_window) _window.GrantFocus();
-        }
-
-        /// <summary>Move input back to the UI and let the vessel fly itself.</summary>
-        void GiveBackFocus()
-        {
-            var player = gameData?.LocalPlayer;
-            if (player?.Vessel != null)
-            {
-                player.InputController?.SetPause(true);
-                player.Vessel.ToggleAIPilot(true);
-            }
-
-            if (EventSystem.current)
-                EventSystem.current.sendNavigationEvents = _navigationWasEnabled;
         }
 
         // ── Standing the arena ───────────────────────────────────────────────
 
-        void StartArena()
+        void StartArena(IPlayer player)
         {
-            var player = gameData?.LocalPlayer;
-            if (player?.Vessel == null || !player.IsLocalUser)
-            {
-                CSDebug.LogWarning("[ModePreview] No locally-owned menu vessel yet - preview refused.");
-                return;
-            }
-
             var template = ResolveTemplateCell(player);
             if (!template)
             {
-                CSDebug.LogWarning("[ModePreview] No active Cell to clone a satellite from - refused.");
+                CSDebug.LogWarning("[ModePreview] No active Cell to clone a satellite from - " +
+                                   "preview unavailable.");
+                _window?.ShowUnavailable();
                 return;
             }
 
@@ -267,23 +237,28 @@ namespace CosmicShore.Gameplay
                 // Rampage, and RequestSwap already preserves pose, speed and domain.
                 await SwapVessel(ResolveVessel(definition), remember: true, ct);
 
-                // The satellite builds its world without a veil (it is beside the menu, not
-                // instead of it), so we wait on the cell rather than on a screen hold.
+                // The satellite builds without a veil (it is beside the menu, not instead of
+                // it), so we wait on the cell rather than on a screen hold.
                 if (!await WaitWhile(() => _arena.Cell && _arena.Cell.IsSwappingConfig, ct))
-                    throw new TimeoutException("the arena's world never finished building");
+                    throw new TimeoutException($"{definition.PreviewCell.CellName} never finished building");
 
                 if (settleSeconds > 0f)
                     await UniTask.Delay((int)(settleSeconds * 1000f),
                         ignoreTimeScale: true, cancellationToken: ct);
 
+                // Relocate the vessel and point its autopilot at the ARENA's runtime data -
+                // without this the AI keeps hunting the menu cell's crystals 120k units away
+                // and flies straight back out of the arena.
                 ParkVesselInArena(definition);
-                if (!HandCameraToWindow()) throw new InvalidOperationException("no gameplay camera to lend");
+                RetargetAIToArena();
 
-                _window?.GoLive();
-                StartRunner(definition);
+                if (!HandCameraToWindow())
+                    throw new InvalidOperationException("no gameplay camera to lend");
 
                 _state = State.Live;
-                TakeFocus();
+                _window?.GoLive();
+                // No TakeFocus here: the AI flies. The window is a game already in progress;
+                // the tap is what makes it yours.
             }
             catch (OperationCanceledException)
             {
@@ -291,12 +266,140 @@ namespace CosmicShore.Gameplay
             }
             catch (Exception e)
             {
-                CSDebug.LogError($"[ModePreview] Preview of {definition.Mode} failed: {e.Message}. " +
-                                 "Returning the window to its idle model.");
+                CSDebug.LogError($"[ModePreview] Preview of {definition.Mode} failed: {e.Message}.");
                 _state = State.Live;      // so Stop() has something to unwind
                 Stop(ModePreviewOutcome.Abandoned);
+                _window?.ShowUnavailable();
             }
         }
+
+        // ── Focus (who holds the stick) ──────────────────────────────────────
+
+        void HandleFocusRequested()
+        {
+            if (_state != State.Live) return;
+
+            var player = gameData?.LocalPlayer;
+            if (player?.Vessel == null) return;
+
+            // Take the stick from the AI.
+            player.Vessel.ToggleAIPilot(false);
+            player.InputController?.SetPause(false);
+
+            // The pad flies the ship, so it must stop driving the UI at the same time. The
+            // EventSystem half; direct device polls (the modal's B-to-close) check
+            // ModePreviewWindow.AnyHasFocus instead.
+            if (EventSystem.current)
+            {
+                _navigationWasEnabled = EventSystem.current.sendNavigationEvents;
+                EventSystem.current.sendNavigationEvents = false;
+            }
+
+            _window?.GrantFocus();
+
+            // The objective starts counting from the player's first take-over - the AI's
+            // warm-up flight is a demo, not their progress.
+            if (!_runnerStarted) StartRunner(_definition);
+        }
+
+        void HandleFocusReleased()
+        {
+            var player = gameData?.LocalPlayer;
+            if (player?.Vessel != null)
+            {
+                // Hand the stick back to the AI - the preview keeps playing in the window,
+                // exactly as it did before the tap.
+                player.InputController?.SetPause(true);
+                player.Vessel.ToggleAIPilot(true);
+            }
+
+            if (EventSystem.current)
+                EventSystem.current.sendNavigationEvents = _navigationWasEnabled;
+        }
+
+        // ── Stopping ─────────────────────────────────────────────────────────
+
+        /// <summary>Stop the preview and put everything back. Idempotent.</summary>
+        public void Stop(ModePreviewOutcome outcome = ModePreviewOutcome.Abandoned)
+        {
+            if (_state is State.Idle or State.Striking) return;
+
+            var mode = ActiveMode;
+            _state = State.Striking;
+
+            _cts?.Cancel();
+            _cts?.Dispose();
+            _cts = null;
+
+            StopRunner();
+            if (hud) hud.Hide();
+
+            _window?.ReleaseFocus();          // routes through HandleFocusReleased → AI back on
+            CameraManager.Instance?.EndWindowedPlayerCamera();
+
+            // Home first, THEN strike: the strike detaches every vessel's trail bookkeeping,
+            // so the ribbon the vessel laid in the arena is let go before its prisms are
+            // returned to the pool - and the vessel is already out of the arena when they go.
+            RestoreAITarget();
+            ReturnVesselHome();
+            RestoreVessel().Forget();
+
+            StrikeArenaAsync(mode, outcome).Forget();
+        }
+
+        async UniTaskVoid StrikeArenaAsync(GameModes mode, ModePreviewOutcome outcome)
+        {
+            try
+            {
+                // Pool-safe retire + frame-sliced drain. Never a bare Destroy: pooled prisms
+                // destroyed outright corrupt the pool and break every trail in the scene -
+                // which is precisely how the first teardown killed the lava lamp.
+                var retiring = _arena.BeginStrike();
+                if (retiring)
+                {
+                    const int PrismsPerFrame = 500;
+                    var prisms = retiring.GetComponentsInChildren<Prism>(true);
+                    for (int i = 0; i < prisms.Length; i++)
+                    {
+                        if (prisms[i]) Destroy(prisms[i].gameObject);
+                        if ((i + 1) % PrismsPerFrame == 0)
+                            await UniTask.Yield(PlayerLoopTiming.Update,
+                                this.GetCancellationTokenOnDestroy());
+                    }
+                    Destroy(retiring);
+                }
+            }
+            catch (OperationCanceledException)
+            {
+                // Scene teardown mid-drain - the unload destroys the remainder.
+            }
+            finally
+            {
+                _arena.FinishStrike();
+                _state = State.Idle;
+                ActiveMode = GameModes.Random;
+                OnPreviewEnded?.Invoke(mode, outcome);
+            }
+        }
+
+        /// <summary>Drop everything with no unwind. Teardown only.</summary>
+        void AbortHard()
+        {
+            if (_state == State.Idle) return;
+
+            _cts?.Cancel();
+            _cts?.Dispose();
+            _cts = null;
+
+            StopRunner();
+            _arena.FinishStrike();
+            _state = State.Idle;
+            ActiveMode = GameModes.Random;
+        }
+
+        void HandleLaunchRequested() => AbortHard();
+
+        // ── Vessel + AI bookkeeping ──────────────────────────────────────────
 
         void ParkVesselInArena(ModePreviewDefinitionSO definition)
         {
@@ -313,10 +416,49 @@ namespace CosmicShore.Gameplay
             vessel.SetPose(_arena.SpawnPose(definition));
         }
 
+        void ReturnVesselHome()
+        {
+            if (!_hasVesselHome) return;
+
+            var vessel = gameData?.LocalPlayer?.Vessel;
+            if (vessel != null) vessel.SetPose(_vesselHomePose);
+            _hasVesselHome = false;
+        }
+
+        void RetargetAIToArena()
+        {
+            var pilot = ResolveAIPilot();
+            if (!pilot || _arena.RuntimeInstance == null) return;
+
+            if (!_hasAIRetarget)
+            {
+                _restoreAICellData = pilot.CellData;
+                _hasAIRetarget = true;
+            }
+
+            pilot.RetargetCell(_arena.RuntimeInstance);
+        }
+
+        void RestoreAITarget()
+        {
+            if (!_hasAIRetarget) return;
+            _hasAIRetarget = false;
+
+            var pilot = ResolveAIPilot();
+            if (pilot) pilot.RetargetCell(_restoreAICellData);
+            _restoreAICellData = null;
+        }
+
+        AIPilot ResolveAIPilot()
+        {
+            var vessel = gameData?.LocalPlayer?.Vessel;
+            return vessel?.VesselStatus?.AIPilot;
+        }
+
         /// <summary>
         /// The hull the preview flies. The definition wins when it names one; otherwise
-        /// <see cref="VesselClassType.Any"/> defers to the mode's own vessel list, which is what a
-        /// vessel-locked mode already declares on its <c>SO_ArcadeGame</c>.
+        /// <see cref="VesselClassType.Any"/> defers to the mode's own vessel list, which is what
+        /// a vessel-locked mode already declares on its <c>SO_ArcadeGame</c>.
         /// </summary>
         VesselClassType ResolveVessel(ModePreviewDefinitionSO definition) =>
             definition.Vessel != VesselClassType.Any ? definition.Vessel : _modeVessel;
@@ -345,15 +487,6 @@ namespace CosmicShore.Gameplay
             await SwapVessel(target, remember: false, this.GetCancellationTokenOnDestroy());
         }
 
-        void ReturnVesselHome()
-        {
-            if (!_hasVesselHome) return;
-
-            var vessel = gameData?.LocalPlayer?.Vessel;
-            if (vessel != null) vessel.SetPose(_vesselHomePose);
-            _hasVesselHome = false;
-        }
-
         bool HandCameraToWindow()
         {
             var manager = CameraManager.Instance;
@@ -364,83 +497,31 @@ namespace CosmicShore.Gameplay
             return manager.BeginWindowedPlayerCamera(vessel.VesselStatus.CameraFollowTarget, texture) != null;
         }
 
-        // ── Stopping ─────────────────────────────────────────────────────────
-
-        /// <summary>Stop the preview and put everything back. Idempotent.</summary>
-        public void Stop(ModePreviewOutcome outcome = ModePreviewOutcome.Abandoned)
-        {
-            if (_state is State.Idle or State.Striking) return;
-
-            var mode = ActiveMode;
-            _state = State.Striking;
-
-            _cts?.Cancel();
-            _cts?.Dispose();
-            _cts = null;
-
-            StopRunner();
-            if (hud) hud.Hide();
-
-            GiveBackFocus();
-            if (_window)
-            {
-                _window.ReleaseFocus();
-                _window.GoIdle();
-            }
-
-            CameraManager.Instance?.EndWindowedPlayerCamera();
-            ReturnVesselHome();
-            _arena.Strike();
-
-            // Give the hull back. Fire-and-forget: the swap is a networked round-trip and the
-            // window is already idle, so nothing downstream waits on it.
-            RestoreVessel().Forget();
-
-            _state = State.Idle;
-            ActiveMode = GameModes.Random;
-            OnPreviewEnded?.Invoke(mode, outcome);
-        }
-
-        /// <summary>Drop everything with no unwind. Teardown only.</summary>
-        void AbortHard()
-        {
-            if (_state == State.Idle) return;
-
-            _cts?.Cancel();
-            _cts?.Dispose();
-            _cts = null;
-
-            StopRunner();
-            _arena.Strike();
-            _state = State.Idle;
-            ActiveMode = GameModes.Random;
-        }
-
-        void HandleLaunchRequested() => AbortHard();
-
         // ── Objective ────────────────────────────────────────────────────────
 
         void StartRunner(ModePreviewDefinitionSO definition)
         {
+            if (!definition) return;
             if (!_runner) _runner = gameObject.AddComponent<ModePreviewRunner>();
 
+            _runnerStarted = true;
             _runner.Begin(gameData?.LocalPlayer?.RoundStats, definition, HandleRunnerFinished);
-            if (hud) hud.Show(_runner, definition, this);
+            if (hud) hud.Show(_runner, definition);
         }
 
         void StopRunner()
         {
+            _runnerStarted = false;
             if (_runner) _runner.Stop();
         }
 
         /// <summary>
-        /// The objective completing does NOT tear the arena down: the window is a place you can
-        /// keep flying in, and yanking the world away the instant a counter fills would be the
-        /// full-screen mode-launcher behaviour in miniature. It just stops counting.
+        /// The objective completing does not tear anything down — the window is a place you can
+        /// keep flying in. It just stops counting.
         /// </summary>
         void HandleRunnerFinished(ModePreviewOutcome outcome) { }
 
-        /// <summary>Exit button on the preview HUD.</summary>
+        /// <summary>Kept for the HUD's API surface; nothing binds it to a button any more.</summary>
         public void RequestExit() => Stop();
 
         // ── Helpers ──────────────────────────────────────────────────────────
@@ -457,10 +538,10 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// Poll until <paramref name="condition"/> is false or the build timeout elapses; false on
-        /// timeout. Written out rather than composed from a timeout combinator because a wedged
-        /// build is an ordinary outcome here, not an exceptional one. Unscaled, because the menu is
-        /// free to touch timeScale around it.
+        /// Poll until <paramref name="condition"/> is false or the build timeout elapses; false
+        /// on timeout. Written out rather than composed from a timeout combinator because a
+        /// wedged build is an ordinary outcome here, not an exceptional one. Unscaled, because
+        /// the menu is free to touch timeScale around it.
         /// </summary>
         async UniTask<bool> WaitWhile(Func<bool> condition, CancellationToken ct)
         {
