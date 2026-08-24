@@ -11,7 +11,13 @@ namespace CosmicShore.Gameplay
     /// <summary>
     /// A placed Scarab switch (design: R_VesselActions/SCARAB.md §5) — a low-poly ring in the
     /// toy shape language (the same <see cref="ToyFactory"/> ring the connect-the-dots gates
-    /// wear) with its interior filled by prisms, which pays out when a ball threads it.
+    /// wear), empty at the mouth, which pays out when a ball threads it.
+    ///
+    /// <para><b>The ring itself carries no fill.</b> An earlier revision laid a Vogel-spiral
+    /// disc of prisms across the mouth at placement (and a MASS-5 "Armored Switch" upgrade built
+    /// that disc from shielded prisms); both are retired (2026-08-24) — the switch now blooms in
+    /// as a bare ring, and the payout below is the only prism mass a switch ever carries. See the
+    /// "Superseded" note in SCARAB.md §5.1.</para>
     ///
     /// <para><b>The payout is a scarab-wing DAIS.</b> A struck switch does not scatter prisms —
     /// it lays a <see cref="ScarabWingDais"/>: super-shielded SUN CORES ringing the spent switch,
@@ -21,8 +27,8 @@ namespace CosmicShore.Gameplay
     /// Nothing overlaps and nothing clips, by construction. The rosette draws itself outward over
     /// several frames — every wing's first blade, then every wing's second — with the suns
     /// igniting last, so the payout READS as a monument being raised rather than as mass
-    /// appearing. The switch's own membrane is blown out on the strike
-    /// (<see cref="BlowOutInterior"/>), so it rises around a clear mouth.</para>
+    /// appearing. The mouth the switch struck through is already clear (there is no fill left
+    /// to blow out), so the rosette rises around it cleanly.</para>
     ///
     /// <para><b>The tiers are gameplay AND geometry.</b> Blades alternate plain → danger, with
     /// SHIELDED octahedra capping both ends of every wing and recurring as its hinges — and that
@@ -40,78 +46,39 @@ namespace CosmicShore.Gameplay
     ///
     /// Detection is plane-crossing math against <see cref="AstroLeagueBall.Live"/> (a ball passing
     /// through the ring's mouth in either direction), the shape <see cref="AstroLeagueGoal"/>
-    /// already uses: no trigger collider, and no per-frame FindObjectsByType. The ring's own
-    /// interior prisms are the Scarab's domain, so its OWNER's ball shields them and sails
-    /// through, while an opposing ball has to eat its way in — which is what makes a switch worth
-    /// placing in front of someone else's shot.
+    /// already uses: no trigger collider, and no per-frame FindObjectsByType. The mouth is open to
+    /// any ball, owner's or opponent's — there is no fill in the way, so threading it costs
+    /// nothing but the crossing.
     /// </summary>
     public class ScarabSwitch : MonoBehaviour
     {
-        // Vogel spiral: the golden angle is what keeps successive points from lining up into
-        // spokes, so the disc fills evenly at any count.
-        const float GoldenAngleRadians = 2.39996323f;
-
         PrismEventChannelWithReturnSO _spawnChannel;
-        /// <summary>Debris speed for the membrane when no ball velocity is available — only the
-        /// editor/tooling path, since a real trigger always arrives with the ball that caused
-        /// it.</summary>
-        const float InteriorBlowOutSpeed = 60f;
 
         Domains _domain;
         string _playerName;
         Vector3 _axis, _basisU, _basisV;
         float _ringRadius;
-        Vector3 _brickScale;
         float _growthRate;
-        int _interiorCount;
 
         ScarabWingDaisSettings _dais;
         int _daisPrismsPerFrame;
 
-        bool _shieldPrisms;
         GameObject _ring;
-        /// <summary>
-        /// The membrane, each prism remembered WITH the <c>TimeCreated</c> it was laid at.
-        ///
-        /// <para>The switch lives for the whole match and its fill is ordinary mass — a ball eats
-        /// it, fauna graze it, a blast takes it — so by the time it is struck an entry may name a
-        /// prism that died, went back to the pool, and was re-issued to a completely different lay
-        /// site. <c>prism.destroyed</c> does NOT catch that (the recycled prism is alive), and
-        /// blowing it out would yank live mass out from under its new owner. <c>Prism.Initialize</c>
-        /// re-stamps <c>prismProperties.TimeCreated</c> on every pool issue, so the timestamp is
-        /// the identity test: same object AND same life.</para>
-        /// </summary>
-        readonly List<(Prism prism, float laidAt)> _interior = new();
         readonly List<ScarabWingDais.Element> _daisElements = new();
         readonly Dictionary<AstroLeagueBall, Vector3> _lastBallPos = new();
         readonly List<AstroLeagueBall> _scratchDead = new();
         bool _spent;
 
-        /// <summary>Lay the ring and its interior fill. Call immediately after AddComponent.</summary>
+        /// <summary>Lay the ring. Call immediately after AddComponent.</summary>
         public void Build(PrismEventChannelWithReturnSO spawnChannel, IVesselStatus status,
-                          Vector3 center, Vector3 axis, float ringRadius, Vector3 brickScale,
-                          float growthRate, int interiorCount,
-                          in ScarabWingDaisSettings dais, int daisPrismsPerFrame)
+                          Vector3 center, Vector3 axis, float ringRadius,
+                          float growthRate, in ScarabWingDaisSettings dais, int daisPrismsPerFrame)
         {
             _spawnChannel = spawnChannel;
             _domain = status.Domain;
             _playerName = status.PlayerName;
-            // MASS 5 — "Armored Switch": the switch's BODY arrives SHIELDED (regular shield, the
-            // sanctioned primitive; never SuperShield). Snapshotted at placement, so a switch
-            // keeps the armour it was built with even if the level drops later. Note the
-            // interplay it creates with the ball rules: an OPPOSING ball now caroms off this
-            // switch and sheds one shield per prism instead of eating straight through it.
-            //
-            // It deliberately does NOT reach the dais. The upgrade armours the switch you PLACE;
-            // the rosette it pays out keeps its authored tier pattern, because there the tier is
-            // also the SHAPE — the shielded blades are the hinges the wing turns at, so re-tiering
-            // them at an element level would rebuild the curve rather than re-skin it.
-            _shieldPrisms = status.ElementalAbilityHandler != null
-                            && status.ElementalAbilityHandler.IsUpgradeActive(Element.Mass);
             _ringRadius = Mathf.Max(1f, ringRadius);
-            _brickScale = brickScale;
             _growthRate = growthRate;
-            _interiorCount = Mathf.Max(0, interiorCount);
             _dais = dais;
             _daisPrismsPerFrame = Mathf.Max(1, daisPrismsPerFrame);
 
@@ -126,18 +93,9 @@ namespace CosmicShore.Gameplay
             // The same builder every freestyle toy's ring comes from: this IS the switch the toy
             // rings borrow their meaning from, and CrossedMouth tests exactly _ringRadius, so the
             // ring is its trigger volume drawn at its own radius (Docs/ToySystem/ARCHITECTURE.md
-            // § "The switch").
+            // § "The switch"). The mouth is left empty — no interior fill (see the class doc
+            // comment) — so the ring blooms in on its own.
             _ring = ToyFactory.AddSwitchRing(transform, _ringRadius, DomainAccent(_domain));
-
-            // Interior: a Vogel spiral inside the ring — the switch's own body.
-            for (int i = 0; i < _interiorCount; i++)
-            {
-                var kind = _shieldPrisms ? PrismKind.Shielded : PrismKind.Plain;
-                if (TryLay(SpiralPoint(i, _interiorCount, 0f, _ringRadius), InteriorRotation(),
-                           _brickScale, kind, out var prism))
-                    _interior.Add((prism, prism.prismProperties != null
-                                          ? prism.prismProperties.TimeCreated : 0f));
-            }
         }
 
         void BuildBasis()
@@ -148,25 +106,6 @@ namespace CosmicShore.Gameplay
             // Right-handed with the axis: basisU x basisV == axis, which ScarabWingDais assumes.
             _basisV = Vector3.Cross(_axis, _basisU).normalized;
         }
-
-        /// <summary>
-        /// Point <paramref name="i"/> of the interior spiral, mapped into the annulus
-        /// [<paramref name="rInner"/>, <paramref name="rOuter"/>]. sqrt() on the normalized index
-        /// is what makes the AREA density uniform — a linear radius would crowd the centre.
-        /// </summary>
-        Vector3 SpiralPoint(int i, int count, float rInner, float rOuter)
-        {
-            float t = count <= 1 ? 1f : (i + 0.5f) / count;
-            float r = Mathf.Lerp(rInner * rInner, rOuter * rOuter, t);
-            r = Mathf.Sqrt(r);
-            float a = i * GoldenAngleRadians;
-            return transform.position + (_basisU * Mathf.Cos(a) + _basisV * Mathf.Sin(a)) * r;
-        }
-
-        /// <summary>Interior bricks face along the ring axis so the fill reads as a membrane
-        /// across the mouth rather than a scatter of loose blocks.</summary>
-        Quaternion InteriorRotation() =>
-            SafeLookRotation.TryGet(_axis, _basisU, out var rotation, this) ? rotation : Quaternion.identity;
 
         /// <summary>
         /// Lay one prism of this switch. The ordering below is the whole contract and every step
@@ -296,7 +235,7 @@ namespace CosmicShore.Gameplay
             return lateral.sqrMagnitude <= _ringRadius * _ringRadius;
         }
 
-        /// <summary>Struck: the switch is spent, its membrane blows out, and its dais is raised.</summary>
+        /// <summary>Struck: the switch is spent and its dais is raised.</summary>
         void Trigger(AstroLeagueBall ball)
         {
             _spent = true;
@@ -304,48 +243,8 @@ namespace CosmicShore.Gameplay
             // The ring is the switch, and the switch has been used.
             if (_ring) Destroy(_ring);
 
-            BlowOutInterior(ball);
             RaiseDaisAsync(ball != null ? ball.LastHitDomain : Domains.Blue,
                            this.GetCancellationTokenOnDestroy()).Forget();
-        }
-
-        /// <summary>
-        /// The ball punched through the membrane, so the membrane goes with it — and the dais
-        /// rises around a clear mouth rather than around the wreck of the switch that paid for it.
-        ///
-        /// <para><b>This is active removal, not decay</b>, which is the only kind conserved mass
-        /// allows (CLAUDE.md, "Mass is conserved"). A specific ball threaded a specific switch at
-        /// a specific instant and the prisms it hit are destroyed by that impact, exactly as if it
-        /// had eaten them on the way through — which, laid one prism further apart, is what would
-        /// have happened. There is no timer, no cull and no lifespan here: an unstruck switch
-        /// holds its membrane for the whole match.</para>
-        ///
-        /// <para>It explodes along the ball's own velocity, so the debris reads as having been
-        /// knocked through rather than as having been switched off — continuity of existence
-        /// applies to a membrane as much as to anything else. <c>devastate</c> is set because a
-        /// MASS-5 armoured body must go with the switch instead of shedding its shield and
-        /// standing there in the middle of the rosette.</para>
-        ///
-        /// <para>Only prisms still living the life this switch laid them into are touched — a
-        /// pooled prism that has since been re-issued elsewhere is skipped, because destroying it
-        /// would take live mass from whoever owns it now.</para>
-        /// </summary>
-        void BlowOutInterior(AstroLeagueBall ball)
-        {
-            Vector3 through = ball != null && ball.Velocity.sqrMagnitude > 1e-4f
-                ? ball.Velocity
-                : _axis * InteriorBlowOutSpeed;
-
-            for (int i = 0; i < _interior.Count; i++)
-            {
-                var (prism, laidAt) = _interior[i];
-                if (prism == null || prism.prismProperties == null) continue;
-                // Identity, not liveness — see the field's note. A recycled prism carries a
-                // different TimeCreated and belongs to someone else now.
-                if (!Mathf.Approximately(prism.prismProperties.TimeCreated, laidAt)) continue;
-                prism.Damage(through, _domain, _playerName, devastate: true);
-            }
-            _interior.Clear();
         }
 
         /// <summary>
@@ -385,7 +284,7 @@ namespace CosmicShore.Gameplay
 
         /// <summary>Ring tint. The domain PRISM material is the eventual right answer (the toy
         /// gates take one); until that is plumbed through the action SO the ring wears a neutral
-        /// accent and the interior prisms carry the domain colour.</summary>
+        /// accent, and the dais prisms it eventually pays out carry the domain colour.</summary>
         static Color DomainAccent(Domains domain) => domain switch
         {
             Domains.Jade => new Color(0.19f, 0.82f, 0.86f),
