@@ -210,6 +210,23 @@ namespace CosmicShore.Utility
             return true;
         }
 
+        /// <summary>
+        /// The explosion config, for the ONE other producer of explosion-debris entities:
+        /// the shield shatter (<see cref="PrismShieldShatter"/>), which spawns the SAME
+        /// effect on the shield's own mesh — same material, same clamp band, same
+        /// duration — so a shield coming apart IS a prism explosion, not an imitation of
+        /// one. False while unconfigured (no pool yet): the caller refuses rather than
+        /// inventing its own numbers.
+        /// </summary>
+        internal static bool TryGetExplosionConfig(out Material material,
+            out float minSpeed, out float maxSpeed)
+        {
+            material = s_material;
+            minSpeed = s_minSpeed;
+            maxSpeed = s_maxSpeed;
+            return s_configured;
+        }
+
         /// <summary>Implosion counterpart of <see cref="Configure"/> — same contract,
         /// reading the mesh/material/timings off the pooled implosion prefab so the
         /// batched suction is visually identical to the pooled one.</summary>
