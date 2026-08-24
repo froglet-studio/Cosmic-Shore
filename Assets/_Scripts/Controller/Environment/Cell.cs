@@ -319,6 +319,16 @@ namespace CosmicShore.Gameplay
         // ---------------------------------------------------------------------
         static readonly List<Cell> ActiveCells = new();
 
+        // OnEnable/OnDisable keep the registry balanced across a clean play exit; the reset
+        // covers the unclean one (a crash mid-play) and restarts the id counter so the short
+        // can never wrap into PrismSpatialIndex's 0/-1 sentinels across many sessions.
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        static void ResetStatics()
+        {
+            ActiveCells.Clear();
+            s_nextVolumeCellId = 1;
+        }
+
         /// <summary>
         /// Read-only view of the enabled cells in the scene. Exposed for read-only
         /// diagnostics (e.g. <see cref="EcosystemPerfProbe"/> summing prisms + live
@@ -1222,6 +1232,10 @@ namespace CosmicShore.Gameplay
             // daughters into lattice that no longer exists (the Cell Selector swaps worlds in
             // the very scene this colony ships in). Keyed by cell, so this touches no other.
             GyroidColonyFrontier.Clear(this);
+            SchwarzPColonyFrontier.Clear(this);
+            SchwarzPTileRegistry.Clear(this);
+            QuasicrystalColonyFrontier.Clear(this);
+            QuasicrystalHeartRegistry.Clear(this);
             phase = CellPhase.Calm;
 
             if (spawnedCytoplasm)
@@ -1461,6 +1475,10 @@ namespace CosmicShore.Gameplay
             // daughters into lattice that no longer exists (the Cell Selector swaps worlds in
             // the very scene this colony ships in). Keyed by cell, so this touches no other.
             GyroidColonyFrontier.Clear(this);
+            SchwarzPColonyFrontier.Clear(this);
+            SchwarzPTileRegistry.Clear(this);
+            QuasicrystalColonyFrontier.Clear(this);
+            QuasicrystalHeartRegistry.Clear(this);
             phase = CellPhase.Calm;
 
             // Bind runtime -> this cell
@@ -1938,10 +1956,17 @@ namespace CosmicShore.Gameplay
         public bool IsSwappingConfig => _swapping;
 
         /// <summary>
-        /// The first config with no authored <c>EnvironmentPrefab</c> — the cheap "empty" world
-        /// (Blob) that <see cref="CellTypeChoiceOptions.EnvironmentFree"/> boots into. Null when
-        /// every config authors an environment. Exposed so a mode that wants a bare canvas (the
-        /// Wanderway run) can ask for it by MEANING rather than by index or by name.
+        /// The first config with no authored <c>EnvironmentPrefab</c> — the world
+        /// <see cref="CellTypeChoiceOptions.EnvironmentFree"/> boots into, chosen because an
+        /// authored environment costs a multi-second veiled build and entering Menu_Main should
+        /// not. Null when every config authors an environment.
+        ///
+        /// <para><b>Environment-free is NOT the same as BARE</b>, and conflating them shipped a
+        /// bug the moment a second environment-free config existed. This property answers "what
+        /// is cheap to BUILD" — it says nothing about what the cell then grows. The Lattice cell
+        /// authors no environment at all (so it boots instantly, correctly) and then grows a
+        /// 21,600-prism forest out of eight seeds. Anything that wants an EMPTY WORLD rather than
+        /// a cheap load wants <see cref="BareCanvasConfig"/>.</para>
         /// </summary>
         public CellConfigDataSO EnvironmentFreeConfig
         {
@@ -1952,6 +1977,44 @@ namespace CosmicShore.Gameplay
                     if (CellConfigs[i] && CellConfigs[i].EnvironmentPrefab == null)
                         return CellConfigs[i];
                 return null;
+            }
+        }
+
+        /// <summary>
+        /// The first config that grows NOTHING: no authored <c>EnvironmentPrefab</c> <b>and</b> a
+        /// <c>SpawnProfile</c> that lists no flora and no fauna. This is the empty world — what
+        /// the Wanderway run hands the cell so a wander happens in open space instead of inside
+        /// a world the player is trying to leave.
+        ///
+        /// <para>It is a PREDICATE over the authored data rather than a new serialized field, so
+        /// there is no reference to forget to wire and no way for a cell to claim a canvas that
+        /// is not actually bare. Falls back to <see cref="EnvironmentFreeConfig"/> so a cell that
+        /// authors no bare config still gets the cheapest world it has rather than nothing —
+        /// degraded, never broken.</para>
+        ///
+        /// <para>Split out from <see cref="EnvironmentFreeConfig"/> when the Lattice cell landed:
+        /// it is environment-free (cheap to build) but the opposite of bare (it grows a forest),
+        /// so the single "first config with no EnvironmentPrefab" test stopped meaning one thing.
+        /// See Docs/ECOSYSTEM.md §36.10.</para>
+        /// </summary>
+        public CellConfigDataSO BareCanvasConfig
+        {
+            get
+            {
+                if (CellConfigs == null) return null;
+                for (int i = 0; i < CellConfigs.Count; i++)
+                {
+                    var cfg = CellConfigs[i];
+                    if (!cfg || cfg.EnvironmentPrefab != null) continue;
+
+                    var profile = cfg.SpawnProfile;
+                    // No profile at all is as bare as it gets.
+                    if (!profile) return cfg;
+                    if (profile.SupportedFloras is { Count: > 0 }) continue;
+                    if (profile.SupportedFaunas is { Count: > 0 }) continue;
+                    return cfg;
+                }
+                return EnvironmentFreeConfig;
             }
         }
 
@@ -2076,6 +2139,10 @@ namespace CosmicShore.Gameplay
             // daughters into lattice that no longer exists (the Cell Selector swaps worlds in
             // the very scene this colony ships in). Keyed by cell, so this touches no other.
             GyroidColonyFrontier.Clear(this);
+            SchwarzPColonyFrontier.Clear(this);
+            SchwarzPTileRegistry.Clear(this);
+            QuasicrystalColonyFrontier.Clear(this);
+            QuasicrystalHeartRegistry.Clear(this);
             phase = CellPhase.Calm;
             _nucleusControlRadiusSqr = 0f;
 

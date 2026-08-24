@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: fe040efad3307fb449b6b72ad15362da, type: 3}
   m_Name: ArcadeGameSalvo
   m_EditorClassIdentifier:
-  Mode: 42
+  Mode: 44
   IsMultiplayer: 1
   DisplayName: Salvo
   Description: Sparrows only, and this time the Boneyard is the target. Guns chip,

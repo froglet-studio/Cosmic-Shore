@@ -77,12 +77,25 @@ namespace CosmicShore.Data
         // only mode whose score comes from vessel-vs-vessel gunnery. See
         // _Scripts/Controller/Arcade/DOGFIGHT.md.
         DogFight = 41,
-        // Salvo (42): the Sparrow-only demolition race, and Dog Fight's inverse in the same
+        // Bends (42, display name "The Bends"): the Dolphin-only debuff duel. Two to four pilots
+        // fight in a cactus forest with no guns at all - the only weapon is the Dolphin's crystal
+        // blast, and the only thing that scores is catching an OPPOSING pilot in it. A caught
+        // pilot takes the all-element decaying debuff (the blast's elemental expression), which is
+        // one "bend"; first DOMAIN to the bend target wins. See
+        // _Scripts/Controller/Arcade/BENDS.md.
+        Bends = 42,
+        // ScarabScramble (43): the Scarab-only party game - the accessible sibling of Astro
+        // League. Every white (omni) crystal you fly through becomes YOUR ball, permanently
+        // your colour; roll it through any of the arena's glowing hoops and your DOMAIN scores.
+        // Goals stop nothing (continuous play, no kickoffs), there are no own goals, and the
+        // first domain to the goal target wins. See _Scripts/Controller/Arcade/SCARABSCRAMBLE.md.
+        ScarabScramble = 43,
+        // Salvo (44): the Sparrow-only demolition race, and Dog Fight's inverse in the same
         // Boneyard - here tearing the wreck apart IS the score. Guns chip, missiles level whole
         // hulks, and the arena is stocked with omni crystals: every one collected reloads the
         // missile bays of EVERY pilot on the collector's domain, so a wingman running crystals
         // keeps the strikers firing. First DOMAIN to the prism target wins. See
         // _Scripts/Controller/Arcade/SALVO.md.
-        Salvo = 42,
+        Salvo = 44,
     }
 }

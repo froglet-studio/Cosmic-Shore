@@ -50,11 +50,15 @@ namespace CosmicShore.ScriptableObjects
         public const int DefaultRibcagePrismTarget = 2000;
 
         /// <summary>Wildlife Liberation kill target used when <see cref="wildlifeKillTarget"/> is 0 (auto/default).</summary>
-        public const int DefaultWildlifeKillTarget = 250;
+        public const int DefaultWildlifeKillTarget = 30;
 
         /// <summary>Dog Fight point target used when <see cref="dogFightPointTarget"/> is 0 (auto/default).</summary>
         public const int DefaultDogFightPointTarget = 90;
 
+        /// <summary>The Bends bend target used when <see cref="bendsPointTarget"/> is 0 (auto/default).</summary>
+        public const int DefaultBendsPointTarget = 3;
+        /// <summary>Scarab Scramble goal target used when <see cref="scarabScrambleGoalTarget"/> is 0 (auto/default).</summary>
+        public const int DefaultScarabScrambleGoalTarget = 10;
         /// <summary>Salvo hostile-prism target used when <see cref="salvoPrismTarget"/> is 0 (auto/default).</summary>
         public const int DefaultSalvoPrismTarget = 1500;
 
@@ -88,8 +92,8 @@ namespace CosmicShore.ScriptableObjects
 
         [Tooltip("Wildlife Liberation: creatures a domain must kill between them to win " +
                  "(race to N), summed across that domain's players like every other target " +
-                 "here. 0 = default (250).")]
-        [Min(0)] public int wildlifeKillTarget = 250;
+                 "here. 0 = default (30).")]
+        [Min(0)] public int wildlifeKillTarget = 30;
 
         [Tooltip("Dog Fight points a DOMAIN needs to win. Points come from landed gunnery: a " +
                  "bullet hit scores 1 and a missile hit (direct strike or caught in the blast) " +
@@ -98,6 +102,16 @@ namespace CosmicShore.ScriptableObjects
                  "0 = default (120).")]
         [Min(0)] public int dogFightPointTarget = 90;
 
+        [Tooltip("The Bends: BENDS a DOMAIN needs to win - opposing pilots caught in your " +
+                 "Dolphin crystal blast, one point each. Race to 3, like Joust: three clean " +
+                 "hits, or one blast that catches a pair plus one more. Teammates pool. " +
+                 "0 = default (3).")]
+        [Min(0)] public int bendsPointTarget = 3;
+        [Tooltip("Scarab Scramble goals a DOMAIN needs to win (race to N). A goal = one of your " +
+                 "domain's forged balls threaded through any hoop; teammates pool. With abundant " +
+                 "crystals and continuous play, 10 reads as a 3-5 minute party match. " +
+                 "0 = default (10).")]
+        [Min(0)] public int scarabScrambleGoalTarget = 10;
         [Tooltip("Salvo: hostile prisms (the Boneyard's wreckage, rival trails, fauna bodies) a " +
                  "domain must destroy between them to win (race to N), summed across that " +
                  "domain's players. Lower than Rampage's target because the Sparrow's salvos " +
@@ -112,8 +126,10 @@ namespace CosmicShore.ScriptableObjects
         [Min(0)] public int nucleusRushWaveTargetBuild = 3;
         [Min(0)] public int rampagePrismTargetBuild = 2000;
         [Min(0)] public int ribcagePrismTargetBuild = 2000;
-        [Min(0)] public int wildlifeKillTargetBuild = 250;
+        [Min(0)] public int wildlifeKillTargetBuild = 30;
         [Min(0)] public int dogFightPointTargetBuild = 90;
+        [Min(0)] public int bendsPointTargetBuild = 3;
+        [Min(0)] public int scarabScrambleGoalTargetBuild = 10;
         [Min(0)] public int salvoPrismTargetBuild = 1500;
 
         [Tooltip("When on, a build first copies the Build baseline onto the Live counts, so test values are never shipped.")]
@@ -192,6 +208,18 @@ namespace CosmicShore.ScriptableObjects
         public int GetDogFightPointTarget() => dogFightPointTarget > 0 ? dogFightPointTarget : DefaultDogFightPointTarget;
 
         /// <summary>
+        /// The Bends bend target ("first domain to N bends"): the configured value when
+        /// &gt; 0, otherwise <see cref="DefaultBendsPointTarget"/>. Compared against a DOMAIN
+        /// SUM of <see cref="CosmicShore.Data.IRoundStats.CombatPoints"/> - the same field Dog
+        /// Fight races on, because both modes score vessel-vs-vessel hits and only the WEIGHTING
+        /// (which lives on each mode's ScoringRule) differs.
+        /// </summary>
+        public int GetBendsPointTarget() => bendsPointTarget > 0 ? bendsPointTarget : DefaultBendsPointTarget;
+        /// Scarab Scramble goal target ("first domain to N goals"): the configured value when
+        /// &gt; 0, otherwise <see cref="DefaultScarabScrambleGoalTarget"/>. Compared against a
+        /// DOMAIN SUM of <see cref="CosmicShore.Data.IRoundStats.GoalsScored"/>, so teammates pool.
+        /// </summary>
+        public int GetScarabScrambleGoalTarget() => scarabScrambleGoalTarget > 0 ? scarabScrambleGoalTarget : DefaultScarabScrambleGoalTarget;
         /// Salvo prism target ("race to N" hostile prisms destroyed): the configured value when
         /// &gt; 0, otherwise <see cref="DefaultSalvoPrismTarget"/>. Compared against a DOMAIN's
         /// summed destruction count, so teammates pool.
@@ -209,6 +237,8 @@ namespace CosmicShore.ScriptableObjects
             ribcagePrismTarget == ribcagePrismTargetBuild &&
             wildlifeKillTarget == wildlifeKillTargetBuild &&
             dogFightPointTarget == dogFightPointTargetBuild &&
+            bendsPointTarget == bendsPointTargetBuild &&
+            scarabScrambleGoalTarget == scarabScrambleGoalTargetBuild &&
             salvoPrismTarget == salvoPrismTargetBuild;
 
         /// <summary>Copy the Build baseline onto the Live counts (build → live) - used by the build auto-restore.</summary>
@@ -223,6 +253,8 @@ namespace CosmicShore.ScriptableObjects
             ribcagePrismTarget = ribcagePrismTargetBuild;
             wildlifeKillTarget = wildlifeKillTargetBuild;
             dogFightPointTarget = dogFightPointTargetBuild;
+            bendsPointTarget = bendsPointTargetBuild;
+            scarabScrambleGoalTarget = scarabScrambleGoalTargetBuild;
             salvoPrismTarget = salvoPrismTargetBuild;
         }
 
@@ -238,6 +270,8 @@ namespace CosmicShore.ScriptableObjects
             ribcagePrismTargetBuild = ribcagePrismTarget;
             wildlifeKillTargetBuild = wildlifeKillTarget;
             dogFightPointTargetBuild = dogFightPointTarget;
+            bendsPointTargetBuild = bendsPointTarget;
+            scarabScrambleGoalTargetBuild = scarabScrambleGoalTarget;
             salvoPrismTargetBuild = salvoPrismTarget;
         }
     }

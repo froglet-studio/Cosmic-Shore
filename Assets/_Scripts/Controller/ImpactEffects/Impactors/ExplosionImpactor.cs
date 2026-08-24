@@ -104,6 +104,10 @@ namespace CosmicShore.Gameplay
         /// </summary>
         public static bool ForceLegacyPhysics { get; set; }
 
+        // A/B switch owned by the benchmark overlay; must not survive into a normal session.
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        static void ResetForceLegacy() => ForceLegacyPhysics = false;
+
         // --- ProfilerMarkers ---
         private static readonly ProfilerMarker s_onTriggerEnter = new("AOE.OnTriggerEnter");
         private static readonly ProfilerMarker s_onTriggerSkipped = new("AOE.OnTriggerEnter.Skipped");
@@ -219,6 +223,53 @@ namespace CosmicShore.Gameplay
                 return registry.ProcessExplosionConeFrame(
                     apex, axis, gapeAxis, sliceMin, sliceMax,
                     tanCoreHalfAngle, tanGapePerUnit, impulse,
+                    explosion.Domain,
+                    affectSelf, destructive, devastating, shielding,
+                    explosion.AnonymousExplosion,
+                    explosion.Vessel,
+                    _batchHitTracker,
+                    _batchPending);
+            }
+        }
+
+        /// <summary>
+        /// Processes one frame of batch AOE damage for the CYLINDRICAL explosion: an exact test
+        /// against the swept plate over the axial slab [sliceMin, sliceMax] it newly covers this
+        /// frame. Successive slabs tile the sweep exactly, so coverage does not depend on frame
+        /// rate and never reaches past the visible end cap.
+        ///
+        /// The cross-section is a DISC of constant <paramref name="radius"/>, and every prism the
+        /// plate claims is shoved along <paramref name="axis"/> — the blast's own velocity —
+        /// rather than radially from an origin.
+        /// Returns true if the explosion should continue, false if it should be destroyed
+        /// (e.g. hit a super-shielded enemy prism).
+        /// </summary>
+        public bool ProcessBatchCylinderFrame(
+            Vector3 origin, Vector3 axis, float sliceMin, float sliceMax, float radius,
+            in ExplosionImpulse impulse)
+        {
+            using (s_processBatch.Auto())
+            {
+                // Bounding sphere of the swept-so-far cylinder (centre at its axial midpoint,
+                // radius the half-diagonal) as the BROADPHASE, plus the exact cylinder as the
+                // narrowphase. The cone gets away with a bare bounding sphere; a squat cylinder
+                // does not. At the Scarab's 45-wide, 54-long plate the sphere reaches ~43 units
+                // BEHIND the pilot on the first frame, and a crystal conversion is not a soft
+                // outcome — it SPENDS the crystal and forges a ball — so the blast would have
+                // built a ball out of mass it visibly missed while its prism half, running the
+                // exact slab, agreed it had touched nothing there.
+                float depth = Mathf.Max(sliceMax, 0f);
+                float half = depth * 0.5f;
+                SweepCrystals(origin + axis * half,
+                              Mathf.Sqrt(half * half + radius * radius),
+                              new SweptCylinder(origin, axis, depth, radius));
+
+                if (!_useBatchProcessing) return true;
+                var registry = PrismSpatialIndex.Instance;
+                if (registry == null) return true;
+
+                return registry.ProcessExplosionCylinderFrame(
+                    origin, axis, sliceMin, sliceMax, radius, impulse,
                     explosion.Domain,
                     affectSelf, destructive, devastating, shielding,
                     explosion.AnonymousExplosion,
@@ -392,7 +443,45 @@ namespace CosmicShore.Gameplay
         /// same shape as the prism batch tracker: a blast grows over many frames and would
         /// otherwise re-convert the same crystal on each of them.
         /// </summary>
-        void SweepCrystals(Vector3 centre, float radius)
+        /// <summary>
+        /// Exact swept-CYLINDER narrowphase for the crystal sweep, when the caller's blast is one.
+        /// A sphere cannot bound a squat cylinder tightly — for the Scarab's 45-wide, 54-long plate
+        /// the bounding sphere reaches ~43 units BEHIND the pilot on the first frame — so without
+        /// this the two halves of one blast disagree about what it contained: prisms come off the
+        /// exact slab while crystals came off the broadphase, and a crystal plainly astern got
+        /// consumed and forged into a ball. <see cref="Radius"/> 0 means "no narrowphase", which is
+        /// what the spherical and conic blasts pass.
+        /// </summary>
+        private readonly struct SweptCylinder
+        {
+            public readonly Vector3 Origin;
+            public readonly Vector3 Axis;
+            public readonly float Depth;
+            public readonly float Radius;
+
+            public SweptCylinder(Vector3 origin, Vector3 axis, float depth, float radius)
+            {
+                Origin = origin; Axis = axis; Depth = depth; Radius = radius;
+            }
+
+            public bool IsValid => Radius > 0f;
+
+            /// <summary>The same predicate <c>AOECylinderSweepQueryJob.Execute</c> runs on prisms,
+            /// over the whole swept-so-far volume rather than one frame's slab (the caller dedupes,
+            /// so a crystal the blast has ever contained resolves exactly once).</summary>
+            public bool Contains(Vector3 point)
+            {
+                Vector3 rel = point - Origin;
+                float s = Vector3.Dot(rel, Axis);
+                if (s < 0f || s > Depth) return false;
+                return Vector3.ProjectOnPlane(rel, Axis).sqrMagnitude <= Radius * Radius;
+            }
+        }
+
+        void SweepCrystals(Vector3 centre, float radius) =>
+            SweepCrystals(centre, radius, default);
+
+        void SweepCrystals(Vector3 centre, float radius, in SweptCylinder narrowphase)
         {
             if (!explosionImpactorDataContainer || radius <= 0f) return;
             var effects = explosionImpactorDataContainer.explosionCrystalEffects;
@@ -414,6 +503,8 @@ namespace CosmicShore.Gameplay
                 var col = s_crystalHits[i];
                 if (col == null) continue;
                 if (!col.TryGetComponent(out OmniCrystalImpactor crystal)) continue;
+                // The sphere is only the broadphase when the caller supplied a real shape.
+                if (narrowphase.IsValid && !narrowphase.Contains(col.transform.position)) continue;
                 if (!crystal.CanBlastConsume(explosion.Domain)) continue;
                 if (!_crystalsHit.Add(crystal.GetInstanceID())) continue;
 

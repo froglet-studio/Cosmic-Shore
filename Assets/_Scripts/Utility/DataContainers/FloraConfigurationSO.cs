@@ -46,7 +46,14 @@ namespace CosmicShore.Utility
                  "Set it at (or near) the plant's own live-prism budget and the species reads as " +
                  "a colonizer: a plant completes itself, seeds one neighbour, and only funds " +
                  "another after grazing forces it to regrow. Lower converts growth to population " +
-                 "faster.")]
+                 "faster.\n\n" +
+                 "This is the SPECIES baseline, not the final number: THE TIME LAW scales it by " +
+                 "the plant's own ELEMENT at spawn (Time x1.25 rate, so a smaller quota; the " +
+                 "other three x0.8). It has to be code rather than data because this field is " +
+                 "authored per CONFIG while the element is ROLLED per plant - see " +
+                 "Flora.ResolveGrowthPerOffspring and Docs/ECOSYSTEM.md \u00a738. A LATTICE " +
+                 "species ignores this field entirely: its births are a population event on the " +
+                 "cell's fauna-wave clock (\u00a732.7).")]
         [Min(0)] public int GrowthPerOffspring = 0;
 
         [Tooltip("Offspring seeded per birth.")]
@@ -279,6 +286,14 @@ namespace CosmicShore.Utility
         [Tooltip("Seconds between growth steps - the element's tempo (Time gyroid: 0.15, " +
                  "Space: 0.8). -1 = keep prefab.")]
         public float GrowPeriod = -1f;
+
+        [Tooltip("LATTICE species only: scales this element's whole lattice - every distance " +
+                 "between prisms, and so between their spindles - while keeping the plant's " +
+                 "TOPOLOGY and PRISM COUNT identical to its elemental peers. Only the spacings " +
+                 "change, so a longer prism gains room without the plant becoming a different " +
+                 "plant. The Space element uses it to be skeletal: a long thin strut on a lattice " +
+                 "widened to match. -1 = keep prefab. See Docs/ECOSYSTEM.md 34.7.")]
+        public float LatticeScale = -1f;
 
         [Tooltip("Seconds between shield refreshes on the health prisms (the Charge gyroid " +
                  "ships shielded leaves at 1). -1 = keep prefab.")]

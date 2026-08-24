@@ -1,0 +1,79 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 86d1715b8f104fcc87cb60e015d4b563, type: 3}
+  m_Name: GameToastConfig_ScarabScramble
+  m_EditorClassIdentifier:
+  gameMode: 43
+  toasts:
+  - situation: 63
+    messageTemplate: '{0} rings one home - {1}/{2}'
+    tintWithDomainColor: 0
+    useDomainColoredNames: 1
+    alpha: 1
+    isIdleHint: 0
+    resetOnSituation: 0
+    idleSeconds: 60
+    repeatWhileIdle: 1
+  - situation: 68
+    messageTemplate: 'BANK x{3}! {0} banks one home - {1}/{2}'
+    tintWithDomainColor: 0
+    useDomainColoredNames: 1
+    alpha: 1
+    isIdleHint: 0
+    resetOnSituation: 0
+    idleSeconds: 60
+    repeatWhileIdle: 1
+  - situation: 64
+    messageTemplate: 'MATCH POINT - {0} needs one more ring'
+    tintWithDomainColor: 1
+    useDomainColoredNames: 0
+    alpha: 1
+    isIdleHint: 0
+    resetOnSituation: 0
+    idleSeconds: 60
+    repeatWhileIdle: 1
+  - situation: 65
+    messageTemplate: '{0} takes the lead - {1}/{2}'
+    tintWithDomainColor: 1
+    useDomainColoredNames: 0
+    alpha: 1
+    isIdleHint: 0
+    resetOnSituation: 0
+    idleSeconds: 60
+    repeatWhileIdle: 1
+  - situation: 69
+    messageTemplate: 'OVERLOAD! one ball too many - <b>everything blows</b>'
+    tintWithDomainColor: 0
+    useDomainColoredNames: 0
+    alpha: 0.9
+    isIdleHint: 0
+    resetOnSituation: 0
+    idleSeconds: 60
+    repeatWhileIdle: 1
+  - situation: 66
+    messageTemplate: '<i>Follow the marker - fly through the bright crystal and it becomes your ball</i>'
+    tintWithDomainColor: 0
+    useDomainColoredNames: 0
+    alpha: 0.9
+    isIdleHint: 1
+    resetOnSituation: 63
+    idleSeconds: 25
+    repeatWhileIdle: 1
+  - situation: 67
+    messageTemplate: '<i>Roll or bat your ball through any glowing ring - bumping enemy balls is always safe, and a juke dash steals one</i>'
+    tintWithDomainColor: 0
+    useDomainColoredNames: 0
+    alpha: 0.9
+    isIdleHint: 1
+    resetOnSituation: 63
+    idleSeconds: 50
+    repeatWhileIdle: 1

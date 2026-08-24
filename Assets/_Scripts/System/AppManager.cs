@@ -620,8 +620,12 @@ namespace CosmicShore.Core
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
         static void EnsureBootstrapOnStartup()
         {
-            // Reset between domain reloads in the editor.
+            // Reset between domain reloads in the editor. The two static events are nulled too:
+            // with domain reload disabled they otherwise carry last session's subscribers (the
+            // edit-mode tests re-subscribe per [SetUp], so nulling costs them nothing).
             _hasBootstrapped = false;
+            OnBootstrapComplete = null;
+            OnBootstrapFailed = null;
         }
 
         /// <summary>

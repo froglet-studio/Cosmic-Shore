@@ -5,6 +5,11 @@ using TMPro;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.UI;
+// `using System;` (for Array/Enum below) collides with `using UnityEngine;` on the name
+// Object — CS0104. The repo's convention for this collision is an alias, not per-site
+// qualification (see InterfaceReference.cs, AOERadialBlocks.cs, CSDebug.cs): it also means a
+// future bare `Object` in this file resolves instead of reintroducing the error.
+using Object = UnityEngine.Object;
 
 namespace CosmicShore.Editor
 {
@@ -173,8 +178,6 @@ namespace CosmicShore.Editor
         /// An adopted slot's own Image. Never created: it is authored art, often with nested glyphs,
         /// so a missing one is a fault to report rather than to paper over with a generated square.
         /// </summary>
-        // UnityEngine.Object is spelled out because this file imports System for Array/Enum
-        // (OrdinalOf below), which makes a bare `Object` ambiguous with System.Object (CS0104).
         static Image Adopt(Transform band, string childName, UnityEngine.Object context)
         {
             var existing = band.Find(childName);

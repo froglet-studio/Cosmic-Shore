@@ -30,23 +30,30 @@ Every buff and debuff in the game routes through `ResourceSystem.ApplyElementalE
 
 ```csharp
 // ResourceSystem.ApplyElementalEffect
-if (magnitude < 0f && IsElementallyImmune) return;
+if (magnitude < 0f && IsImmuneTo(source)) return;
 ```
+
+`source` is the debuff's **class** (`ElementalDebuffSources`: `DangerPrism` / `Explosion` /
+`VesselContact` / `Other`) and a grant holds a **mask** of the classes it wards. That second
+dimension arrived with the Dolphin's Drift Ward (§1.1) — the state was a bare bool until a ward
+needed to promise less than "nothing can debuff me".
 
 Three pieces, all vessel-agnostic:
 
 | Piece | Where | What it is |
 |---|---|---|
-| The state | `ResourceSystem.IsElementallyImmune` + `SetElementalDebuffImmunity(source, immune)` + `OnElementalImmunityChanged` | Source-keyed grants (a `HashSet`), so two concurrent holders can't clear each other. Immune while any grant stands. |
-| The read | `IVesselStatus.IsElementallyImmune` | Convenience accessor for HUD / VFX / gameplay, alongside `IsSlowed` / `IsBoosting`. |
-| The driver | `VesselElementalImmunity` (vessel root) | Declarative: pick a `Condition` (`Always` / `WhileBoosting` / `WhileTranslationRestricted`) and an optional `upgradeGate` element. |
+| The classes | `ElementalDebuffSources` (`[Flags]`, `CosmicShore.Data`) | What applied the debuff: `DangerPrism` / `Explosion` / `VesselContact` / `Other` (the bucket for a call that names nothing) / `All` = `~0`. A debuff names ONE; a grant holds a MASK; blocked iff they overlap. |
+| The state | `ResourceSystem.ImmuneDebuffSources` + `IsImmuneTo(source)` + `SetElementalDebuffImmunity(source, immune, wardedSources)` + `OnElementalImmunityChanged` | Grantor-keyed grants (`Dictionary<Object, ElementalDebuffSources>`), so two concurrent holders can't clear each other. Warded against the union of every standing grant's mask. |
+| The read | `IVesselStatus.IsImmuneToElementalDebuff(source)` (+ `ImmuneDebuffSources` for HUD / VFX) | There is deliberately **no bare `IsElementallyImmune` bool** any more — a caller that reads "immune" and assumes *total* immunity is wrong for the Dolphin and wrong silently, so every reader must name the class it cares about. |
+| The driver | `VesselElementalImmunity` (vessel root) | Declarative: pick a `Condition` (`Always` / `WhileBoosting` / `WhileTranslationRestricted` / `WhileDrifting`), an optional `upgradeGate` element, and the `wardedSources` mask. |
 
 Wired today:
 
-| Vessel | Condition | Upgrade gate |
-|---|---|---|
-| Sparrow | `WhileBoosting` | `Time` (level 5 — "Elemental Ward") |
-| Serpent | `WhileTranslationRestricted` (stopped to weave) | `None` — ungated, stopping is the whole cost |
+| Vessel | Condition | Upgrade gate | Wards (`wardedSources`) |
+|---|---|---|---|
+| Sparrow | `WhileBoosting` | `Time` (level 5 — "Elemental Ward") | `All` (`-1`) |
+| Serpent | `WhileTranslationRestricted` (stopped to weave) | `None` — ungated, stopping is the whole cost | `All` (`-1`) |
+| Dolphin | `WhileDrifting` | `Time` (level 5 — "Drift Ward") | **`DangerPrism` only** (`1`) — see §1.1 |
 
 **Scope, deliberately narrow:**
 - Blocks **negative** magnitudes only. Buffs still land while immune.
@@ -54,9 +61,12 @@ Wired today:
   the state would be a spammable purge (tap boost to wipe a debuff) rather than a shield.
 - **Not** gated: `AdjustLevel`. That is the persistent crystal/comeback progression writer, not the
   debuff channel — collecting a crystal is a player action, not something to be immune to.
-- What it therefore covers today: `VesselElementalDebuffByDangerPrismEffectSO` (the all-element
-  danger-prism debuff) and `VesselOvertakeBySkimmerEffectSO`'s debuff direction. It does **not**
-  cover the non-elemental danger-prism punishments — the speed slam
+- **Scoped by class.** The three classed debuffs today are
+  `VesselElementalDebuffByDangerPrismEffectSO` → `DangerPrism`,
+  `VesselElementalDebuffByExplosionEffectSO` → `Explosion`, and
+  `VesselOvertakeBySkimmerEffectSO`'s debuff direction → `VesselContact`. An `All` ward covers all
+  three plus anything added later; the Dolphin's covers the first alone.
+- It does **not** cover the non-elemental danger-prism punishments — the speed slam
   (`VesselChangeSpeedByPrismEffectSO`) and the Rhino's input mute
   (`SparrowDebuffByRhinoDangerPrismEffectSO`) still land. Danger prisms still hurt; they just can't
   drain your elements.
@@ -65,6 +75,34 @@ The upgrade gate resolves through `IsUpgradeActive(Element.Time)` — the **repl
 `NetElementUnlocks` bits, never a raw local level read, so every peer agrees on who is warded.
 AI reaches the identical component with its own `IVesselStatus`, so an AI Sparrow at Time 5 is
 warded too, with nothing extra wired.
+
+### 1.1 A ward has a SCOPE, because "immune" is not one promise
+
+The state shipped as a bare bool, which was right while its only two holders wanted total
+immunity. The Dolphin's Time-5 **Drift Ward** broke that: it was authored to answer *danger
+prisms* — the drift is a manoeuvre through your own hazardous arena — and an unscoped grant made
+it answer everything, including `VesselElementalDebuffByExplosionEffectSO`. That effect is the
+Dolphin crystal blast's debuff, which is **the entire scoring event of The Bends**, a mode in
+which every pilot is a Dolphin. The interaction was worse than a coincidence: `Bends`'
+comeback buff hands the *trailing* pilot Time 5, so falling behind bought a hard counter to the
+only way you could be scored on, and `VesselCombatHitByExplosionEffectSO.requireDebuffableVictim`
+(correctly) then scored the attacker nothing either. `BENDS.md` shipped it as that branch's top
+open risk with three ugly levers, one of which was "gate the ward out of this mode — no
+mechanism exists for that today".
+
+The fix is not a mode gate. It is that the **debuff channel now carries its source class**, so a
+ward states what it wards. Danger prisms are terrain; a blast is a weapon another pilot aimed;
+an overtake is a duel. An ability earned against one of those has no business cancelling the
+others, and now cannot be authored to by accident: narrowing is one inspector mask, and the
+default (`All`) is what every existing grant already meant.
+
+Two properties worth keeping:
+
+- **`All` is `~0`, not the OR of today's members.** It is serialized on prefabs, so an
+  "everything" ward authored today must keep covering a class added tomorrow.
+- **An unclassified debuff lands in `Other`**, which only an `All` ward blocks. So adding a
+  source class can never silently *widen* a narrow ward, and forgetting to classify a new debuff
+  fails in the safe direction (it still lands on the Dolphin).
 
 ## 2. The strafing roll is base kit
 
@@ -165,8 +203,9 @@ Time icon and blooms its Time petal badge), and rule 9 of the vessel contract do
 
 | File | Change |
 |---|---|
-| `_Scripts/Controller/Vessel/ResourceSystem.cs` | **+** the general immunity state (grants, `IsElementallyImmune`, `OnElementalImmunityChanged`) and the one gate in `ApplyElementalEffect` |
-| `_Scripts/Controller/Vessel/IVesselStatus.cs` | **+** `IsElementallyImmune`; **−** the now-dead `IsOverheating` |
+| `_Scripts/Controller/Vessel/ResourceSystem.cs` | **+** the general immunity state (grants, `ImmuneDebuffSources` / `IsImmuneTo`, `OnElementalImmunityChanged`) and the one gate in `ApplyElementalEffect`. *Later (§1.1): grants became masks and `ApplyElementalEffect` took a source class; the bare `IsElementallyImmune` bool is gone.* |
+| `_Scripts/Data/Enums/ElementalDebuffSources.cs` | **NEW** (§1.1) — the source classes a debuff names and a ward is held against |
+| `_Scripts/Controller/Vessel/IVesselStatus.cs` | **+** `IsImmuneToElementalDebuff(source)` / `ImmuneDebuffSources`; **−** the now-dead `IsOverheating` |
 | `_Scripts/Controller/Vessel/VesselElementalImmunity.cs` | **NEW** — the shared declarative driver |
 | `_Scripts/Controller/Vessel/VesselStatus.cs` | **−** `IsOverheating` (declaration + `ResetForPlay`) |
 | `_Scripts/Controller/Vessel/BarrelRollController.cs` | **−** the Time-upgrade gate; **+** `OnRollChargeChanged` / `IsRollArmed`; charge cleared on disable. **−** the `IsTranslationRestricted` gate (§2.1); facing-plane projection + no bridging-prism override while stopped |
@@ -258,6 +297,10 @@ Not editor-verified — I cannot run Unity. Every step below is unrun. Mirrored 
    > mutes an input and raises events, nothing more.
 7. **Serpent, ungated.** Serpent in the same scene, Time at any level. Stopped (turret/weave
    stance) + danger prism → no flower dip. Moving → normal dip.
+7b. **Dolphin, SCOPED (§1.1).** Dolphin at Time 5, drifting. (a) danger prism → **no** flower dip;
+   (b) caught in another Dolphin's crystal blast while still drifting → flowers **do** dip, and in
+   The Bends the attacker **scores the bend**. (b) failing is the regression this scope exists to
+   prevent, and it is invisible in single-vessel play.
 8. **No stuck immunity.** Boost into a vessel swap / turn end while immune, then take a danger hit
    while not boosting → flowers dip. (`VesselElementalImmunity.OnDisable` revokes; the
    `RemoveWhere(!o)` prune in `ResourceSystem` is the backstop.)

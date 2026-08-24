@@ -13,6 +13,14 @@ namespace CosmicShore.Core
         const string ProgressSaveFileName = "training_progress.data";
         static Dictionary<GameModes, TrainingGameProgress> Progress;
 
+        // Re-read the disk store each play session instead of trusting last session's dict.
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        static void ResetStatics()
+        {
+            Initialized = false;
+            Progress = null;
+        }
+
         static void LoadProgress()
         {
             Progress = DataAccessor.Load<Dictionary<GameModes, TrainingGameProgress>>(ProgressSaveFileName);

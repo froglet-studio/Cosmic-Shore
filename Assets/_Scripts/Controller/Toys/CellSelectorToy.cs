@@ -223,15 +223,24 @@ namespace CosmicShore.Gameplay
             // station exists (see OnMatrixOpened), so the matrix is legible immediately and the
             // generation cost is spread.
             //
-            // "The world you are in" is told by a SHAPE, not by the word RESET: the current cell's
-            // model wears a halo ring, the one piece of the toy shape vocabulary that means "this
-            // one is already yours". Everything else is a plain model, and an environment-free
-            // config has nothing to model, so its slot reads visibly empty (= instant).
+            // "The world you are in" is told by a SHAPE, not by the word RESET: every station wears
+            // the switch ring that says "fly me", and the current cell's model wears a SECOND,
+            // inner halo hugging the model itself - "this one is already yours". Everything else is
+            // a plain model, and an environment-free config has nothing to model, so its slot reads
+            // visibly empty (= instant).
             if (isCurrent)
-                ToyFactory.AddRingBody(station.transform, radius * 1.25f, Definition.AccentColor);
+            {
+                var halo = ToyFactory.AddRingBody(station.transform, radius * 1.25f, Definition.AccentColor);
+                halo.name = "CurrentWorldHalo";
+                // Hugging the model, well inside the station's own switch ring, and turning the
+                // OTHER way: two concentric rings spinning together would read as one thick rim
+                // rather than as "a model that is already ringed".
+                if (halo.TryGetComponent(out ToyIdleSpin haloSpin))
+                    haloSpin.Configure(Vector3.forward, -15f);
+            }
 
-            var text = ToyFactory.AddLabel(station.transform, DisplayNameOf(config),
-                Definition.AccentColor, radius * 1.9f);
+            var text = ToyFactory.AddRingedLabel(station.transform, DisplayNameOf(config),
+                Definition.AccentColor, StationRingRadius(radius * 1.6f), radius);
             if (isCurrent && text) text.fontStyle = TMPro.FontStyles.Bold;
 
             var capturedConfig = config;

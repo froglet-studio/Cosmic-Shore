@@ -33,6 +33,15 @@ quota funded by GROWTH. Two rules decide the numbers:
    - Everyone else: 35% of the per-plant budget, so a plant colonises several times over its
      life rather than once.
 
+   NOTE: what this file writes is the SPECIES baseline. THE TIME LAW (Docs/ECOSYSTEM.md 38)
+   scales it by the plant's ELEMENT at spawn - Time breeds at 1.25x the fleet rate, the other
+   three at 0.8x. That lives in code (Flora.ResolveGrowthPerOffspring) and NOT here, because
+   this field is authored per CONFIG while the element is ROLLED per plant, and every species
+   that actually spends this quota sets SpreadElements with a four-element palette - so a
+   per-element fork in this script would reach none of them. Do not add one; the same law
+   reaches the lattice species through their colony CYCLE PERIOD instead
+   (AssembledFlora.ColonyCyclePeriod), since the quota below is inert for them.
+
 Nothing here removes anything. A lowered cap stops PRODUCTION; it never culls a live plant
 (Docs/ECOSYSTEM.md §0).
 
@@ -86,19 +95,45 @@ MATURITY = 0.5
 # whole cell of one element and quietly waste the config's authored element spread. Four
 # independent founders keep several elements in the cell, and double as the extinction floor.
 # (The pick used to carry a rolled spawn LEVEL too; that is retired - every plant seeds at
-# level 1 and earns the rest by reproducing, Docs/ECOSYSTEM.md §33 - so size variety inside a
+# level 1 and earns the rest by reproducing, Docs/ECOSYSTEM.md §34 - so size variety inside a
 # colony now comes from which plants have bred, not from which founder they descend from.)
 LATTICE_MIN_FOUNDERS = 4
 
 # Species whose growth rule is a LATTICE: an offspring is handed a real bond site off the
 # parent's own frontier (AssembledFlora.TryResolveOffspringPlacement), so many small plants
 # add up to one continuous minimal surface. Matched on the flora prefab.
-LATTICE_PREFABS = {"GyroidFlora.prefab"}
+LATTICE_PREFABS = {"GyroidFlora.prefab", "SchwarzPFlora.prefab", "QuasicrystalFlora.prefab"}
 
 # Per-plant budget for a lattice species: the 24-prism octagon patch plus headroom for the
 # boundary prisms the ownership epsilon lets a plant win (measured patches run 22-28; the
 # ownership gate, not this budget, is the real bound - see AssembledFlora.OwnsLatticeSite).
 LATTICE_BUDGET = 30
+
+# Per-species unit cell and per-plant budget. The two lattice species do NOT share these:
+# a gyroid plant owns a 24-prism octagon and is given 30 for the boundary prisms its
+# ownership epsilon lets it win, while a Schwarz P plant owns one TILE - an exact integer
+# partition of the surface (Docs/ECOSYSTEM.md 34) - so its patch is exactly
+# SchwarzPTileData.SiteCount(level) and it needs no headroom at all: there is no contested
+# boundary to win. 36 is the level the shipped separation 6 / periodScale 60 resolves to.
+LATTICE_PATCH = {
+    "GyroidFlora.prefab":   (OCTAGON_PATCH, LATTICE_BUDGET),   # 24 owned, 30 budget
+    "SchwarzPFlora.prefab": (36, 36),                          # 36 owned, 36 budget - exact
+    # Quasicrystal: a plant owns ONE HEART's tree territory on the icosahedral
+    # quasilattice (Docs/ECOSYSTEM.md 37). Tree cells are exact but their size
+    # legitimately varies - measured 44..97 struts, mean 58.8, over 1,461 simulated
+    # plants (Tools/Build/measure_icosahedral_quasilattice.py) - so the conversion
+    # basis is the MEAN and the budget sits above the measured MAX, because the
+    # ownership tree, not the budget, is the real bound: a plant whose cell the
+    # budget truncated would leave permanent holes in the colony's scaffold.
+    "QuasicrystalFlora.prefab": (59, 110),                     # 59 mean owned, 110 budget
+}
+
+# No per-CONFIG override is needed, and that is the point of FloraVariantTuning.LatticeScale.
+# Space authors a wider lattice, but it scales periodScale and separationDistance TOGETHER, so
+# SchwarzPTileData.ResolveLevel returns its peers' level unchanged: 36 sites per tile, the same
+# mesh, the same prism count. Only the distances grow. (An earlier pass scaled separation alone,
+# which re-resolved to 6 sites and did need an override here - that is exactly the topology
+# change LatticeScale exists to avoid, and the override going away is the evidence it worked.)
 
 # INERT for lattice species since reproduction became a POPULATION event (Docs/ECOSYSTEM.md
 # §32.7, organic-growth pass): the colony births ONE plant per fauna-wave period at a random
@@ -118,6 +153,26 @@ LATTICE_OFFSPRING_PER_BIRTH = 1
 # about itself - the shipped biomes are the honest test. Keep the hook: the next lab goes here.
 EXCLUDE = set()
 
+# Configs owned by ANOTHER authoring script, by asset-name prefix. Not an exclusion: it is a
+# hand-off, and it prints who the owner is. Two scripts silently writing one field is a
+# run-order hazard that only surfaces months later when somebody re-runs the older tool
+# (Docs/ECOSYSTEM.md 34.5 / the /ecology skill's "two fitters must not own one asset").
+#
+# "Lattice ": the Lattice cell (Docs/ECOSYSTEM.md 36). Its eight colonies are not a conversion
+# of an authored plant - the cell's whole environment IS the colony - so this file's rule
+# (cap = old_single_plant_budget / patch) has no input to work from and would silently shrink
+# them back to the Blob caps.
+OWNED_ELSEWHERE = {
+    "Lattice ": "Tools/Build/author_lattice_cell.py",
+}
+
+
+def owner_of(name):
+    for prefix, script in OWNED_ELSEWHERE.items():
+        if name.startswith(prefix):
+            return script
+    return None
+
 # The AUTHORED single-plant budget each lattice config carried BEFORE the conversion. Recorded
 # explicitly rather than read back off the asset, because the conversion overwrites that value -
 # deriving the cap from the live file would make a second run compute cap = 27/27 = 1 and quietly
@@ -135,6 +190,22 @@ LATTICE_SOURCE_BUDGET = {
     "Gyroid Flora Mass": 1500,
     "Gyroid Flora Space": 800,
     "Gyroid Flora Time": 1000,
+    # Schwarz P: the prefab's authored 800 (the four element assets keep the prefab value with
+    # the -1 sentinel, so 800 is what each of them actually ran with) and the topiary's 150.
+    "Blob SchwarzP Flora Config Data": 800,
+    "Hesperides SchwarzP Topiary Config Data": 150,
+    "SchwarzP Flora Charge": 800,
+    "SchwarzP Flora Mass": 800,
+    "SchwarzP Flora Space": 800,
+    "SchwarzP Flora Time": 800,
+    # Quasicrystal: the prefab's authored 800, same convention as Schwarz P.
+    # cap = round(800 / 59) = 14 plants - 14 always-on heart colliders at cap,
+    # under Schwarz P's 22 because a star plant carries ~59 struts to a tile's 36.
+    "Blob Quasicrystal Flora Config Data": 800,
+    "Quasicrystal Flora Charge": 800,
+    "Quasicrystal Flora Mass": 800,
+    "Quasicrystal Flora Space": 800,
+    "Quasicrystal Flora Time": 800,
 }
 
 
@@ -241,10 +312,11 @@ def plan(path, guids, defaults):
                 f"LATTICE_SOURCE_BUDGET (its authored MaxTotalSpawnedObjects) - the conversion "
                 f"overwrites that field, so it cannot be recovered from the asset.")
         old_budget = LATTICE_SOURCE_BUDGET[name]
-        budget = LATTICE_BUDGET
+        patch, budget = LATTICE_PATCH[prefab_name(path, guids)]
         # Same mass, many plants: this is the conversion, stated as arithmetic. The divisor is
-        # the PATCH (what a plant actually settles at), so cap x 24 = the old single-plant mass.
-        cap = max(1, round(old_budget / OCTAGON_PATCH))
+        # the PATCH (what a plant actually settles at), so cap x patch = the old single-plant
+        # mass.
+        cap = max(1, round(old_budget / patch))
         quota = LATTICE_QUOTA
     else:
         budget = old_budget
@@ -296,7 +368,7 @@ def apply(path, p, check):
     # The lattice budget lives in the Variant block (the element's identity).
     if p["lattice"]:
         text = re.sub(r"(\n    MaxTotalSpawnedObjects: )-?\d+",
-                      rf"\g<1>{LATTICE_BUDGET}", text, count=1)
+                      rf"\g<1>{p['budget']}", text, count=1)
 
     if text == original:
         return False, None
@@ -315,8 +387,14 @@ def main():
     print(f"{'config':<50}{'kind':<9}{'budget':>12}{'floor':>7}{'cap':>6}{'quota':>7}{'prisms@cap':>12}")
     print("-" * 103)
     drift, total_plants, total_prisms = [], 0, 0
+    handed_off = []
     for path in targets:
-        if os.path.basename(path)[:-6] in EXCLUDE:
+        name = os.path.basename(path)[:-6]
+        if name in EXCLUDE:
+            continue
+        owner = owner_of(name)
+        if owner:
+            handed_off.append((name, owner))
             continue
         p = plan(path, guids, defaults)
         changed, err = apply(path, p, check)
@@ -336,6 +414,11 @@ def main():
     print("-" * 103)
     print(f"{'TOTAL (all cells, at cap)':<50}{'':<9}{'':>12}{'':>7}"
           f"{total_plants:>6}{'':>7}{total_prisms:>12}")
+    if handed_off:
+        print("\nHANDED OFF (owned by another authoring script, untouched here):")
+        for name, owner in handed_off:
+            print(f"  {name:<50} -> {owner}")
+
     print("\nNOTE: 'prisms@cap' is a per-species ceiling, not a prediction - the cell's Frenzy\n"
           "volume gate stops growth first in every shipped biome. Each plant also carries ONE\n"
           "heart crystal (an always-on collider), so 'cap' IS the crystal count that species\n"

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Authors every serialized asset the Salvo game mode needs (GameModes.Salvo = 42).
+Authors every serialized asset the Salvo game mode needs (GameModes.Salvo = 44).
 
 Salvo is the Sparrow-only demolition race in the Boneyard - Dog Fight's inverse: there the
 wreckage is cover and shooting it scores nothing; here tearing it apart IS the score
@@ -180,7 +180,7 @@ emit("Assets/_SO_Assets/Scoring Rules/SalvoScoringRule.asset.meta",
 # MinDomainsAllowed 2 because a race needs a rival: destruction sums per DOMAIN, and a lobby
 # that launched with everyone on one colour would be a co-op timer with no opponent.
 emit("Assets/_SO_Assets/Games/ArcadeGameSalvo.asset",
-     HEADER_FOR(EXISTING["SO_ArcadeGame"], "ArcadeGameSalvo") + f"""  Mode: 42
+     HEADER_FOR(EXISTING["SO_ArcadeGame"], "ArcadeGameSalvo") + f"""  Mode: 44
   IsMultiplayer: 1
   DisplayName: Salvo
   Description: Sparrows only, and this time the Boneyard is the target. Guns chip,
@@ -283,8 +283,8 @@ emit(LIST_PATH, games)
 # ── 6. Always-unlocked so the card is clickable on a fresh account ──────────
 PROG_PATH = "Assets/_SO_Assets/GameModeQuest/ProgressionConfig.asset"
 prog = read(PROG_PATH)
-if re.search(r"^  alwaysUnlockedModes:\n(?:  - \d+\n)*  - 42\n", prog, re.M) is None:
-    prog, n = re.subn(r"(  alwaysUnlockedModes:\n(?:  - \d+\n)*)", r"\g<1>  - 42\n", prog, count=1)
+if re.search(r"^  alwaysUnlockedModes:\n(?:  - \d+\n)*  - 44\n", prog, re.M) is None:
+    prog, n = re.subn(r"(  alwaysUnlockedModes:\n(?:  - \d+\n)*)", r"\g<1>  - 44\n", prog, count=1)
     assert n == 1, "alwaysUnlockedModes block not found"
 emit(PROG_PATH, prog)
 
@@ -467,8 +467,8 @@ elif int(m.group(1)) != SALVO_PRISM_TARGET:
 
 # GameModes.Salvo must exist with the value this card authors
 gamemodes_cs = read("Assets/_Scripts/Data/Enums/GameModes.cs")
-if not re.search(r"^\s*Salvo = 42,", gamemodes_cs, re.M):
-    errors.append("GameModes.cs has no 'Salvo = 42' - the card would launch nothing")
+if not re.search(r"^\s*Salvo = 44,", gamemodes_cs, re.M):
+    errors.append("GameModes.cs has no 'Salvo = 44' - the card would launch nothing")
 
 if errors:
     print("VALIDATION FAILED - nothing written:")

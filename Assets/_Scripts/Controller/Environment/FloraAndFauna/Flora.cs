@@ -206,6 +206,62 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
+        /// Seconds between shield refreshes on a CHARGE plant's leaves - the cadence the nine
+        /// already-authored Charge flora assets carry, hoisted here so the law and the data
+        /// state the same number.
+        /// </summary>
+        public const float ChargeShieldPeriod = 1f;
+
+        /// <summary>
+        /// THE CHARGE LAW: a Charge plant armours its leaves. Charge is the element whose
+        /// identity is that its mass is SHIELDED - a shielded prism sheds its shield instead
+        /// of being eaten (<c>Prism.Consume</c>), so a herbivore must strip a Charge plant
+        /// before it can graze it, and the plant re-armours one leaf every
+        /// <see cref="ChargeShieldPeriod"/> seconds. Nothing is culled and nothing is immune:
+        /// grazing simply takes two passes, which is the cost the element buys.
+        ///
+        /// <para>It is a rule here rather than a number on every asset because the cadence is
+        /// authored per CONFIG while the element is ROLLED per plant
+        /// (<c>FloraConfigurationSO.SpreadElements</c>). A config with no element palette rolls
+        /// an element and then applies its OWN variant block to it, so the two Hesperides
+        /// topiary configs would hand a Charge plant a cadence of 0 and no amount of asset
+        /// authoring could reach them without re-shaping the other three elements too. The
+        /// canonical per-element assets still author 1 - this only floors what they say.</para>
+        ///
+        /// <para>An authored cadence still wins: a Charge species may be armoured FASTER or
+        /// SLOWER than the fleet, it just may not be unarmoured. Fauna are deliberately
+        /// untouched (this override is on <see cref="Flora"/>, not <c>LifeForm</c>): a
+        /// creature's body prisms are not the food web's mass, and shielding them would
+        /// change what it takes to kill a creature.</para>
+        /// </summary>
+        protected override float ResolveShieldPeriod(float authored)
+            => Element == CosmicShore.Data.Element.Charge && authored <= 0f
+                ? ChargeShieldPeriod
+                : authored;
+
+        /// <summary>
+        /// THE TIME LAW: a Time plant breeds faster, every other element a little slower
+        /// (<see cref="FloraReproductionRules.ReproductionRateFor"/>). Reproduction is the one
+        /// clock a plant owns, and the clock is Time's identity - the same kind of elemental
+        /// expression as <see cref="ResolveShieldPeriod"/>, which is why it lives here rather
+        /// than in the assets.
+        ///
+        /// <para>It CANNOT be authored per config: the quota is authored per CONFIG (by
+        /// <c>Tools/Build/author_flora_populations.py</c>) while the element is ROLLED per
+        /// plant (<c>FloraConfigurationSO.SpreadElements</c>) - and every species that actually
+        /// spends this quota rolls its element, so there is no asset field that could express
+        /// it. The authored number stays the SPECIES baseline and the element scales it at
+        /// spawn, so the authoring script needs no per-element fork and cannot drift from
+        /// this rule.</para>
+        ///
+        /// <para>An authored 0 stays 0: that is the species saying it does not reproduce at
+        /// all, and no element may scale a species into breeding.</para>
+        /// </summary>
+        protected int ResolveGrowthPerOffspring(int authored)
+            => FloraReproductionRules.ScaleGrowthQuota(
+                authored, FloraReproductionRules.ReproductionRateFor(Element));
+
+        /// <summary>
         /// True when this species' prism SIZE is dictated by its growth rule rather than being
         /// free, so LEVEL must not scale it. A LATTICE species is the case
         /// (<see cref="AssembledFlora"/>): its neighbour offsets are a measured bond table in
@@ -241,6 +297,10 @@ namespace CosmicShore.Gameplay
         public override void AddHealthBlock(HealthPrism healthPrism)
         {
             base.AddHealthBlock(healthPrism);
+            // leafSize is AUTHORED, not grown, so it must survive PrismScaleAnimator's per-axis
+            // [minScale, maxScale] clamp - default [0.5, 10], which no flora prefab overrides.
+            // Without this a config asking for 60 x 1 x 1 silently becomes 10 x 1 x 1.
+            healthPrism.AdmitTargetScale(leafSize);
             healthPrism.TargetScale = leafSize;
         }
 
@@ -338,7 +398,7 @@ namespace CosmicShore.Gameplay
             // (SpawnProfileSO.FloraPopulationScale) has to scale what reproduction may fill to,
             // or the seeder and the plants would be working to two different ceilings.
             if (!FloraReproductionRules.ShouldSeed(
-                    _growthSinceBirth, cfg.GrowthPerOffspring,
+                    _growthSinceBirth, ResolveGrowthPerOffspring(cfg.GrowthPerOffspring),
                     Time.time - _lastBirthTime, cfg.ReproductionCooldownSeconds,
                     healthTracker != null ? healthTracker.Count : 0, PrismBudget, cfg.MaturityFraction,
                     host.GetLiveFloraCount(cfg), host.ResolveFloraCap(cfg)))

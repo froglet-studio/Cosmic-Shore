@@ -248,6 +248,13 @@ namespace CosmicShore.Gameplay
             }
         }
 
+        /// <summary>Widens this prism's scale-constraint window so an AUTHORED size survives
+        /// <see cref="TargetScale"/>'s per-axis clamp. See PrismScaleAnimator.AdmitTargetScale.</summary>
+        public void AdmitTargetScale(Vector3 target)
+        {
+            if (scaleAnimator is not null) scaleAnimator.AdmitTargetScale(target);
+        }
+
         public void ChangeSize()
         {
             if (scaleAnimator is not null)
@@ -717,7 +724,21 @@ namespace CosmicShore.Gameplay
             destroyed = false;
             devastated = false;
             _destroyedByCreature = false; // pool reuse: clear stale creature-kill flag
+            // Pool reuse: a prism whose scale window was widened for an AUTHORED size
+            // (AdmitTargetScale) must not carry that ceiling into its next life.
+            scaleAnimator?.RestoreAuthoredScaleWindow();
             ProjectileImmuneUntil = 0f;   // pool reuse: immunity never survives into a new life
+
+            // Pool-reuse safety: trail MEMBERSHIP never survives into a new life. A reused
+            // prism kept its previous container here for years, and the consequences were
+            // structural, not cosmetic: a vessel's wake block could wear a dead spawnable's
+            // Trail, so the attach effect's Trail gate passed against the WRONG ribbon,
+            // GetBlockIndex said "not a member" (-1) and refused the ride, and
+            // PrismscapeTopology read a stale container's dimension. Every layer that puts a
+            // prism IN a trail stamps it explicitly AFTER Initialize (AssignTrail) - the
+            // builder and the vessel spawner both do.
+            Trail = null;
+            if (prismProperties != null) prismProperties.Trail = null;
 
             // Pool-reuse safety: no spawner requests super-shield via prismProperties
             // before Initialize (it's engaged post-spawn via ActivateSuperShield /
@@ -821,6 +842,11 @@ namespace CosmicShore.Gameplay
         // (ConveyorConfig.MinPlacementDistance) so the faster drain is invisible either way.
         const int BulkTransportCreationCompletionsPerFrame = 64;
         static int s_bulkTransportsInFlight;
+
+        // A play exit mid-transport skips the caller's finally, pinning the raised budget on
+        // forever once domain reload no longer clears it.
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        static void ResetBulkTransportStatics() => s_bulkTransportsInFlight = 0;
 
         /// <summary>Open a bulk-transport bracket (raises the per-frame creation-completion
         /// budget). ALWAYS pair with <see cref="EndBulkTransport"/> in a finally.</summary>
@@ -1258,8 +1284,13 @@ namespace CosmicShore.Gameplay
             // That sequence clears the flag before it gets here, so a BREAKING hit never
             // reaches this gate; only an unbreaking one does, and it now deflects (below).
             if (AbsorbSuperShieldHit(impactVector.magnitude)) return;
+            // The shield pops instead of the prism, AS the prism explosion: the shed shards
+            // are ordinary explosion debris on the shield's own mesh, handed the same impact
+            // vector and ceiling Explode would have received — so the armour being knocked
+            // off looks exactly like mass coming apart, because it is the same effect
+            // (Docs/PRISM_ANIMATION.md §4.8.1).
             if (prismProperties.IsShielded && !devastate)
-                DeactivateShields();
+                DeactivateShields(impactVector, debrisSpeedLimit);
             else
             {
                 _destroyedByCreature = byCreature;
@@ -1274,6 +1305,10 @@ namespace CosmicShore.Gameplay
             // describes where the mass was being pulled, not how hard it was struck.
             if (destroyed) return;
             if (AbsorbSuperShieldHit(0f)) return;
+            // Impact-less on purpose, for the same reason the deflection above is stamped
+            // at the floor: a consume carries no impact vector, only a suction sink, and
+            // grazing armour off is not a blow. The debris path degrades a zero vector to
+            // the same quiet minimum-speed puff an impactless prism death gets.
             if (prismProperties.IsShielded && !devastate)
                 DeactivateShields();
             else
@@ -1329,6 +1364,17 @@ namespace CosmicShore.Gameplay
         // State Management Methods
         public void MakeDangerous() => stateManager?.MakeDangerous();
         public void DeactivateShields() => stateManager?.DeactivateShields();
+
+        /// <summary>
+        /// Drops every shield tier and hands the disengage overlay the WORLD-space impact
+        /// vector of the force that BROKE it. The overlay is ordinary prism-explosion
+        /// debris (Docs/PRISM_ANIMATION.md §4.8.1), so the vector and the optional
+        /// true-velocity ceiling carry EXACTLY the semantics of <see cref="Damage"/>'s own
+        /// parameters — the shards fly, rotate away per face, erode and fade the way the
+        /// prism's own pieces would have. Zero degrades to the impactless-death puff.
+        /// </summary>
+        public void DeactivateShields(Vector3 breakVelocity, float debrisSpeedLimit = 0f) =>
+            stateManager?.DeactivateShields(null, breakVelocity, debrisSpeedLimit);
         public void ActivateShield() => stateManager?.ActivateShield();
         public void ActivateShield(float duration) => stateManager?.ActivateShield(duration);
         public void ActivateSuperShield() => stateManager?.ActivateSuperShield();
@@ -1338,6 +1384,20 @@ namespace CosmicShore.Gameplay
         public void Steal(string playerName, Domains domain, bool superSteal = false) =>
             teamManager.Steal(playerName, domain, superSteal);
         public void ChangeTeam(Domains domain) => teamManager?.ChangeTeam(domain);
+
+        /// <summary>
+        /// Declare this prism a member of <paramref name="trail"/> - the ONE way to stamp
+        /// trail membership, keeping the public field and the prismProperties mirror coherent.
+        /// Call it AFTER <see cref="Initialize"/>: pool-reuse reset clears membership
+        /// (a reused prism must never wear its previous life's container), so a stamp made
+        /// before Initialize is silently wiped.
+        /// </summary>
+        public void AssignTrail(Trail trail)
+        {
+            Trail = trail;
+            if (prismProperties != null) prismProperties.Trail = trail;
+        }
+
         
         public void RegisterProjectileCreated(string playerName)
         {

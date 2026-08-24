@@ -288,6 +288,51 @@ teardown). Everything below is remaining polish / not-yet-play-verified.
 
 ## Lifeform Matrix follow-ups
 
+**Kingdom pass (shipped) — verification, none of it play-verified:**
+
+1. Fly the toy in freestyle. Three kingdom stations bloom one layer out: **Fauna** wearing a mini
+   tadpole, **Flora** wearing a gyroid growth preview, **Vessels** wearing a mini hull in *your*
+   domain colour. Anonymous spheres mean an icon builder failed — check the console.
+2. Fly **Vessels**. Eight mini hulls bloom a layer further out (the shared
+   `ToyVesselRoster.Default` roster). Fly one: an AI-piloted vessel of that class, in your domain,
+   appears one spacing back toward the cell centre facing inward, and flies off on autopilot.
+   The console logs `[MenuServerVesselInit] Released AI companion '<Class> Bot N' (...)`.
+2b. **Watch the trail.** It starts ~2.1s after release (`VesselPrismController.startDelay`) and
+   must then stay on. A companion with no trail means it is under the spawner's 3 u/s gate — check
+   `companionLaunchSpeed` on the menu initializer, and check the bot is not stuck in a drift (a
+   held drift pins cruise speed at the value carried in). Release several of DIFFERENT classes:
+   only Dolphin / Rhino / Serpent / Sparrow have an authored AI ability, and the Dolphin's is a
+   drift, so that hull is the one that exposes a launch-speed regression first.
+   **The RHINO is the known exception and is NOT a toy bug**: its trail is 0.75 volume per prism
+   (4x smaller than any other hull's) and reads as absent at any distance, because its
+   trail-growing ability has never run. Cause, the reason the one-line fix is unsafe alone, and
+   the design fork it needs: `Docs/ElementalAbilitySystem/BACKLOG.md` item 27.
+3. Change domain at the domain-changer toy and come back: every mini hull re-tints in place, and
+   the next companion you release joins the new domain.
+4. **Party check (the point of the ServerRpc):** with a second client joined, release a companion
+   from the CLIENT. It must appear on both machines. Releasing from the host must likewise show on
+   the client.
+5. Launch an arcade game and return to the menu: every companion is gone
+   (`SceneLoader.ClearPlayerVesselReferences`), and no `[FLOW-5] ... returned NULL` warnings.
+6. Fauna/Flora branches must behave exactly as before, one layer further out.
+
+**Open follow-ups from that pass:**
+
+- **No cap on companions.** Every hangar pass releases another AI player + vessel, and nothing
+  removes them until you leave the menu. That is toy-faithful (no timer, no cull) but it IS a real
+  collider + simulation cost, unlike the transient stations. If it needs a bound, the honest shape
+  is a per-cell ceiling read off what is actually in the cell — the same lesson
+  `AstroLeagueBall.cellBallLimit` records (a rule enforced at one PRODUCER only ever sees that
+  producer) — plus an active, visible removal, never a clock.
+- **Companion names are generated** (`"<Class> Bot N"`) rather than drawn from
+  `SO_AIProfileList`, because the menu initializer has no profile-list reference and adding one
+  means scene wiring. Wire `aiProfileList` on `MenuServerPlayerVesselInitializer` if the bots
+  should read as characters.
+- **`companionSkill` is authored at 0.5** on the menu initializer, since the menu has no intensity
+  to derive one from. Tune in play.
+- **The hangar has no "release N" affordance** — one pass, one bot. A held pass or a level-style
+  size telegraph (the way variant stations encode level as size) is the obvious extension.
+
 - **Charge tadpole is NEW and untuned** (authored from the Space baseline with a Charge
   crystal) — tune via the matrix, then bake into `Tadpole Fauna Charge.asset`.
 - **Not in the elemental contract yet**: Seaweed (`SpawnableCord`, not a `Flora`), drone
@@ -299,15 +344,17 @@ teardown). Everything below is remaining polish / not-yet-play-verified.
   system are unwired (Squirrel only); fill each view's `abilityIcons` in its prefab.
 - **Squirrel HUD tube/energy icons repaint colours per-frame**, so the upgrade highlight
   reads via scale only there — teach those repaints to respect the highlight tint.
-- **Variant matrix stations beyond the membrane**: layered outward they can cross the
-  membrane; spawns resolve the cell from the toy's position so they work, but station
-  placement could clamp to the membrane radius for tidiness.
-- **The four element-crystal "moons" are probably invisible.** `LifeformMatrixToy.OnInitialized`
-  places them 2.2 raw world units from the toy centre at scale 0.35, but the toybox places toys
-  with `toyBodyRadius = 22`, so a 44-unit body sphere swallows them. `Toy.Placement` is now
-  exposed (added for the Cell Selector, which sizes its moons off `Placement.BodyRadius`) — scale
-  these the same way. Confirm in-editor before changing, since the crystal models carry their own
-  authored scale.
+- **Variant matrix stations beyond the membrane**, and the kingdom pass made it further out.
+  Layers sit at `(1.5 + 2n) × stationSpacing` from the toy along the outward radial, so with
+  `spacing 90` the variant matrix is now 495u out (was 315u) from a toy placed at ~0.82 of the
+  1200u membrane — roughly 280u outside it (was ~100u). Spawns still work (they resolve the cell
+  from the TOY's position, which is always inside), and fauna hatch on the cell's densest mass
+  rather than at the station, so only FLORA actually root out there. Options if it reads badly:
+  clamp the flora plant position back inside the membrane, or tighten the per-layer gap from 2
+  spacings to 1.5 (which costs the corridor's readability). Play-test before choosing.
+- ~~**The four element-crystal "moons" are probably invisible**~~ — resolved by the toy-root
+  emblem: the crystals moved onto `ToyEmblem`'s core sub-ring, which is sized off
+  `Placement.BodyRadius` like every other emblem. Item kept only so the fix is not re-litigated.
 
 ## Cell Selector follow-ups
 
@@ -496,5 +543,64 @@ unchanged by this work.
   falloff and `WallAssembler`'s bond offsets, which are re-expressed rather than shared. If either
   changes, re-check the icon.
 - **Emblem legibility vs. the label position.** The emblem's outer extent (33.4u) and the label
-  height (41.8u) are independent numbers that happen to clear each other at R=22. If the toybox's
-  `toyBodyRadius` is ever retuned, re-check both against the trigger radius.
+  height are independent numbers. Since the switch-ring pass the label is *derived* from the ring
+  (`ToyFactory.SwitchRingLabelHeight`) rather than from the body radius, so the pair that has to
+  keep clearing each other is now **emblem outer (33.4u) vs. ring inner (38.6u)** — 5.2u at R=22.
+  If the toybox's `toyBodyRadius` or `toyTriggerRadius` is retuned, re-check that gap.
+
+## The switch (rings) — known-remaining follow-ups
+
+- **Label crowding in the dense matrices is PRE-EXISTING and got no worse where it matters, but it
+  is still there.** A station's label hangs clear of its own ring; in the tight grids it still ends
+  up inside the *neighbour's* footprint. Measured: the Vessel Changer (spacing 60, ships fitted to
+  radius 22 → only 16u of clear air between hulls) and the Painting gallery (spacing 140.8, rings
+  63.4 → 3.9u between rings) both already overlapped their neighbours' models *before* rings
+  existed; the ring only makes it visible. The three real fixes, in preference order: (1) drop the
+  labels — the ring now carries the far read the label used to, which is the gate the emblem
+  section already describes; (2) widen `VesselChangerToyDefinitionSO.stationSpacing` (and
+  compensate `matrixDistanceFactor`, since the matrix distance is a multiple of the spacing);
+  (3) shrink the ringed-label font, which is deliberately left at its historic
+  `contentRadius × 1.425` so this pass changed affordance and not typography. **Do not "fix" it by
+  lowering the label back onto its own ring.**
+- **The clamp is holding three matrices, not one.** `ToyFactory.MaxRingSpacingFraction` (0.45) is
+  what keeps the Vessel Changer (1.7u between rings), the level-5 Lifeform variants (2.5u) and the
+  Painting gallery (3.9u) from interpenetrating. It cannot go much lower: at 0.36 the Vessel
+  Changer's ring inner radius (21.6) would fall *inside* its own 22-radius ship. If a matrix's
+  spacing or station radius is retuned, re-run the geometry check in `ARCHITECTURE.md` §
+  "The switch" rather than nudging the constant.
+- **Not yet play-verified.** In-editor pass should confirm: every toy root and every matrix station
+  blooms in already ringed; the ring reads as the thing you aim at from the far side of the
+  membrane; the Cell Selector's current world is legible as *two* rings (outer switch, inner
+  counter-spinning halo) rather than one thick rim; the domain changer is visibly unchanged; and
+  the Wanderway return station's hoop turns to face you as you fly back down the tether.
+
+## Cell Selector — a GROWN cell has no scale model (Aug 2026, Lattice cell)
+
+`CellMiniatureBuilder` builds a station's model by striding the environment generator's own output
+(`GetTrailData` + `CellEnvironmentSpawnableBase.CachedLays`). A config with no `EnvironmentPrefab`
+has no generator, so its slot reads visibly empty — which was exactly right while Blob was the only
+such config ("you are in the empty one") and is now only *half* right, because the matrix carries
+**two** blank stations:
+
+- **`Barren`** (`CellConfigs[9]`) — blank is the truth. It is open water: no environment, no flora,
+  no fauna. Nothing to fix.
+- **`Lattice`** (`CellConfigs[0]`) — blank is a **lie**. It grows eight lattice superstructures to
+  ~21,600 prisms; it is one of the densest worlds in the game and it previews as nothing. Its label
+  is currently the only thing distinguishing it from the empty option.
+
+This is not a `CellMiniatureBuilder` bug — there is genuinely no lay data to stride, because the
+mass does not exist until plants grow it. Three directions, in preference order:
+
+1. **Sample the LIVE cell when it is the current world.** `CellSelectorToy` already prefers the
+   live environment's cached lays for its own emblem; a grown cell could feed the same path from
+   the prism spatial index instead of from `CachedLays`. Only works for the world you are already
+   in, which is the one case where the halo already tells you.
+2. **Bake a still.** Author a small mesh (or a sprite) on `CellConfigDataSO` for configs that have
+   no generator, so a grown world can advertise its shape without one. Costs an authored asset per
+   such cell, and drifts from what the cell actually grows.
+3. **Run the assembler headless for N plants.** Exact and self-maintaining, but it is a real
+   simulation — the reason `CellMiniatureBuilder` strides lay data in the first place is that
+   generating is the expensive part.
+
+Until one lands, a grown cell in the selector is identified by its **label** alone. Note this
+becomes more pressing, not less, if more grown-environment cells ship.

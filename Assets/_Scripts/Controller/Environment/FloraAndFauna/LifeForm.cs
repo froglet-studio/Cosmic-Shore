@@ -157,6 +157,12 @@ namespace CosmicShore.Gameplay
 
         public static event Action<string, int> OnLifeFormDeath;
 
+        // Scoring subscribers (BaseScoring) are plain C# objects that unsubscribe on a GAMEPLAY
+        // event (turn end), not a lifecycle one — with domain reload disabled a mid-turn play
+        // exit would carry their dead handlers into the next session.
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        static void ResetStatics() => OnLifeFormDeath = null;
+
         // --- Composition: extracted trackers (SRP) ---
         protected HealthBlockTracker healthTracker;
         protected SpindleTracker spindleTracker;
@@ -215,6 +221,14 @@ namespace CosmicShore.Gameplay
             if (crystal) crystal.SetEmbeddedIn(this);
 
             BindEmbeddedParts();
+
+            // The ELEMENT gets the last word on the cadence - after the prefab, after the
+            // config's variant block, and after the cell's overrides, because it is the only
+            // point where every one of them has already been applied AND the crystal that
+            // carries the element has been resolved (two lines up). See
+            // Flora.ResolveShieldPeriod: Charge armours its mass, and a config must not be
+            // able to author that away by leaving the field at 0.
+            shieldPeriod = ResolveShieldPeriod(shieldPeriod);
 
             if (shieldPeriod > 0)
                 StartCoroutine(ShieldRegenCoroutine());
@@ -423,6 +437,20 @@ namespace CosmicShore.Gameplay
         }
 
         // --- Shield Regeneration ---
+
+        /// <summary>
+        /// The last word on this lifeform's shield cadence, asked once at
+        /// <see cref="Initialize"/> with whatever the prefab + config + cell overrides
+        /// resolved to. The base keeps it exactly as authored; a subclass overrides only to
+        /// express an ELEMENTAL law that must hold on every spawn path
+        /// (<c>Flora.ResolveShieldPeriod</c> - Charge armours its leaves).
+        ///
+        /// <para>It is a hook rather than a line in <see cref="ApplyVariantTuning"/> because
+        /// the element is not known there: the crystal is resolved in Initialize, and the
+        /// variant block itself arrives BEFORE it and would be overwritten by the cell's
+        /// overrides afterwards.</para>
+        /// </summary>
+        protected virtual float ResolveShieldPeriod(float authored) => authored;
 
         IEnumerator ShieldRegenCoroutine()
         {

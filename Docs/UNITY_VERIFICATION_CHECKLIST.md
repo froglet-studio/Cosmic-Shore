@@ -23,6 +23,1193 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Flora — TIME breeds faster, the second elemental law (`claude/flora-reproduction-balance-y9gaij`, 2026-08-24)
+
+Authored without a Unity compile or play-test (remote session, no editor, no `unity` CLI binary in
+this environment). Touches `FloraReproductionRules.cs`, `Flora.cs`, `AssembledFlora.cs`,
+`FloraConfigurationSO.cs` (tooltip only), `FloraReproductionRulesTests.cs`, plus docs and the
+`author_flora_populations.py` docstring. **No assets changed** — the law is code, and
+`author_flora_populations.py --check` is clean.
+
+**What landed.** A Time plant reproduces at 1.25× the fleet rate, Charge/Mass/Space at 0.8×. One
+rate constant divides both reproduction paths, because both measure *cost per child*: the
+per-plant growth quota (prisms/child, `Flora.ResolveGrowthPerOffspring`) and the lattice colonies'
+cycle period (seconds/child, `AssembledFlora.ColonyCyclePeriod`). Caps are untouched, so the
+always-on heart-collider ceiling is exactly unchanged — only how fast a species reaches it.
+
+**Verified offline** (more than inspection): .NET 8 installed in-session, the real shipped
+`FloraReproductionRules.cs` + `FloraReproductionRulesTests.cs` compiled and executed against a
+`Mathf`/NUnit shim — **20/20 tests pass, 50 assertions**; all five edited C# files parse with 0
+Roslyn syntax errors; the `Element`-is-both-a-property-and-a-type resolution (used in
+`ColonyCyclePeriod`) compiled as a standalone case; `check_conditional_compilation.py` OK;
+`author_flora_populations.py --check` clean. Blast radius grepped: all three `TryBeginCycle` sites
+take the shared period, the one remaining raw `cfg.GrowthPerOffspring` read is the
+does-this-species-reproduce gate (correctly keyed on the authored value), and
+`Cell.CurrentFaunaSpawnPeriod` itself is **not** modified — the fauna wave clock and Brood Rush's
+scoring heartbeat are untouched.
+
+**Verify in editor**
+1. **Compile clean**, then run the edit-mode suite — `FloraReproductionRulesTests` should be 20/20
+   inside Unity as it is offline.
+2. **Menu_Main** (the Lattice cell is the boot world: twelve colonies, one per element, sharing one
+   cell clock and one cap — the cleanest read there is). Over ~10 minutes the four **Time** colonies
+   should visibly out-grow their eight neighbours. Colony cycle at the 30 s heartbeat is
+   **Time 24 s / others 37.5 s**.
+3. **Rampage** or **Hesperides** for the per-plant quota path: those species roll all four elements
+   from one config, so a mature cell should show noticeably more Time plants than
+   Charge/Mass/Space. (Quota 56 → Time 45, others 70.)
+4. **No cell should reach Frenzy earlier than before.** The volume ladder is untouched, but Time
+   colonies now arrive at their share of the volume sooner — if a cell freezes early, that is the
+   thing to report.
+5. Confirm nothing is culled and no plant pops out: this change alters only the *price* of a child,
+   never the removal path.
+
+**First-pass tuning (NOT settled).** `FloraReproductionRules.TimeReproductionRate = 1.25f` and
+`OtherReproductionRate = 0.8f` — two constants at the top of the file, deliberately symmetric.
+"A bit" was interpreted as ±20–25%; expect a balancing pass once it is observable.
+
+---
+
+### 🔴 Scarab switch — interior fill removed, ring 20% larger (`claude/scarab-switch-prism-cleanup-bxhsm0`, 2026-08-24)
+
+Authored without a Unity compile or play-test (remote session, no editor, no `unity` CLI binary
+in this environment). Touches `ScarabSwitch.cs`, `PlaceSwitchActionSO.cs`,
+`PlaceSwitchActionExecutor.cs`, `PlaceSwitchAction.asset`, and `SCARAB.md`. Verified offline by
+manual read-through: the only call site of `ScarabSwitch.Build` is
+`PlaceSwitchActionExecutor.PlaceSwitch`, updated to the new (shorter) argument list in the same
+change; grepped the whole `_Scripts` tree for `InteriorPrismCount`/`BrickScale`/`interiorPrismCount`/
+`brickScale` and for any other `ScarabSwitch.Build(`/`AddComponent<ScarabSwitch>` call site —
+none remain outside the two edited files; grepped `_Scripts/Editor` and `_Scripts/Tests` for
+`ScarabSwitch`/`PlaceSwitchActionSO` — no editor tooling or tests reference the removed fields by
+name (reflection-based drift risk is nil). `PlaceSwitchAction.asset` YAML hand-edited to match the
+new field set exactly (Unity will happily read a MonoBehaviour asset missing a field it no longer
+declares; no leftover `interiorPrismCount`/`brickScale` keys remain in the file).
+
+**What landed.** Requested directly: "the switch fills with prisms when placed — remove those,
+keep the payout dais, make the ring 20% bigger in diameter."
+- `ScarabSwitch.Build` no longer lays a Vogel-spiral disc of body prisms across the ring's mouth
+  at placement. The ring now blooms in **empty** and stays that way until a ball threads it; the
+  scarab-wing dais payout (255 prisms) is completely unchanged.
+- `PlaceSwitchActionSO.ringRadius` raised **20 → 24** (20%), both the C# default and the shipped
+  `PlaceSwitchAction.asset` value. `switchScale` (the MASS element multiplier) still scales from
+  the new base, so a Mass-10 switch is now 24×2.5=60 instead of 20×2.5=50.
+- `interiorPrismCount` and `brickScale` fields deleted from `PlaceSwitchActionSO` (not just
+  zeroed) along with their public accessors; `ScarabSwitch.BlowOutInterior`, `SpiralPoint`,
+  `InteriorRotation`, and the `_interior`/`_shieldPrisms`/`_brickScale`/`_interiorCount` fields
+  are all deleted from `ScarabSwitch`.
+- **Known consequence, flagged rather than silently absorbed**: the MASS-5 "Armored Switch"
+  upgrade (built the interior fill from shielded prisms) has nothing left to apply to and is
+  currently a no-op. `SCARAB.md` §7's table and the playtest checklist are marked accordingly.
+  This was not asked for and is not fixed here — it needs a design call on where (if anywhere)
+  Armored Switch's effect should live now.
+- The Astro-League-integration volume-ladder math in `SCARAB.md` §8 (already authored onto
+  `Astro League Cell Config.asset`'s `PhaseThresholds`) is unaffected — it is derived from the
+  dais's 50,773 volume per spent switch, not the retired ~840-volume interior fill, which was
+  only ever a transient pre-strike blip on top of it. No asset in that path was touched.
+
+**Verify in editor**
+1. Open `Assets/_SO_Assets/VesselActions/Scarab/PlaceSwitchAction.asset` — confirm it inspects
+   cleanly (no missing-field warnings), `Ring Radius` reads `24`, and there is no leftover
+   `Interior Prism Count` / `Brick Scale` field drawn (they should simply not exist any more).
+2. Fly the Scarab, place a switch (Mass ability button) in Freestyle or Scarab Scramble — confirm
+   the ring blooms in with a visibly **empty** mouth (no disc of prisms), and that the ring reads
+   noticeably larger than before (20% diameter).
+3. Thread it with a ball — confirm the scarab-wing dais still raises exactly as before (255
+   prisms, sun cores igniting last) with nothing left over to "blow out" first.
+4. With the Mass-5 upgrade active, place and thread a switch — confirm (per the flagged
+   consequence above) that it behaves identically to an unupgraded switch, i.e. Armored Switch
+   currently does nothing observable. This is expected until a follow-up decides its new home.
+
+---
+
+### 🔴 Bends AI aim: wavefront intercept lead + human focus (`claude/pensive-hopper-35d6h4`, 2026-08-21)
+
+Authored without a Unity compile or play-test (remote session, no editor). Touches
+`BendsController.cs`, docs, `author_bends_assets.py`, and `MinigameBends.unity` — the scene
+edit is three new name-keyed float fields on the existing BendsController block, emitted by the
+re-synced generator (no structural YAML, minimal import risk). Verified offline: Roslyn compile
+of the file is clean of every syntax/scope/duplicate error class,
+`check_conditional_compilation.py` passes, `author_bends_assets.py --check` passes again (it
+had been failing — the generator still emitted the old `aiAimMaxRange: 900`, so a re-run would
+have reverted the shipped 2400), and the intercept math was simulated (old flat lead missed a
+60 u/s crossing rival by 99 u at range 1500; the new lead holds a constant ~21 u overlead,
+which is the safe side of the beam).
+
+**What landed.** The Bends AI Dolphin now (1) leads its drift aim by the blast wavefront's REAL
+travel time — `WavefrontLeadTime` inverts the cone's sin-eased growth against the new
+`aiAimBlastReach` (2400) / `aiAimBlastDuration` (2.7) mirrors of `AOEConicExplosion.prefab` —
+with a two-pass intercept; and (2) prefers aiming at HUMAN pilots (`aiAimHumanFocus` 3: an AI
+rival must be 3× closer to steal the aim).
+
+**2026-08-22 follow-up (same branch).** The first playtest (5 matches) showed the AI still
+never landing a bend — "roams around the player, tries to aim, always fails". Root cause found
+and fixed in `AIPilot.StartAIPilot`, not in the aim math: the AI's blind 2s/2s ability cycler
+was stopping the SHARED drift executor mid-commit (and its own random drifts were locking the
+AI's course for half of every cycle — the roaming). A pilot with `drift` enabled no longer
+blind-cycles abilities bound to the commit control (`LeftStickAction`); the commit loop drives
+that trio itself. Affects only the Dolphin AI (the one vessel with `drift: 1`), in every mode
+it flies — Bends, Rampage, menu autopilot. Full analysis: `BENDS.md` § 2026-08-22.
+
+**Verify in editor.**
+0. **The headline retest (the 2026-08-22 fix):** a Bends match vs 1 AI — the AI should now fly
+   visibly straighter between crystals (no more 2-second locked-course wanders), hold its drift
+   all the way onto the crystal with its nose tracking you, and actually land bends. If it
+   still never scores, the next suspect is the vessel-hit dispatch itself, not the AI — test
+   whether a HUMAN blast bends the AI (checklist item 2 of the mode's own doc).
+1. Open `MinigameBends.unity`; confirm `BendsController` shows the three new inspector fields at
+   their defaults (Blast Reach 2400, Blast Duration 2.7, Human Focus 3) with no missing-script
+   or serialization warnings.
+2. Solo match vs 1 AI (2 players, 2 domains): fly a straight line at mid-range while the AI
+   collects a crystal — its announced cone (Echo Sight) should point visibly AHEAD of you, and
+   the blast should actually land. This is the headline: before this pass the AI's shot trailed
+   any moving target at range.
+3. 3–4 player match with AI backfill: confirm the AIs' cones come for the human rather than for
+   each other, unless an AI rival is much closer.
+4. **First-pass tuning:** `aiAimHumanFocus` 3 is a starting point — drop toward 1 if being
+   hunted by every bot reads as unfair at intensity 1, where the platform skill floor is low.
+   `aiAimLeadSeconds` 0.35 is now pure padding on top of the computed intercept; if the AI
+   reads as over-leading a slow target up close, this is the dial, not the wavefront numbers.
+
+---
+
+### 🔴 Dolphin minimum speed → 0 (`claude/dolphin-minimum-speed-59q8ay`, 2026-08-20)
+
+Authored without a Unity compile or play-test. **One authored scalar changed in an existing
+serialized asset** — no new keys, no new components, no hand-built YAML structure — so import
+risk is minimal, but the feel is unflown.
+
+**What landed.** `Dolphin.prefab` → `VesselTransformer.DefaultMinimumSpeed: 10 → 0`.
+(The serialized `MinimumSpeed` was already 0; `VesselTransformer` overwrites it from
+`DefaultMinimumSpeed` on every spawn, so the Default is the only authority.) Nothing else moved —
+no other vessel carries this asset, and no scene overrides the field.
+
+**The knock-on is the whole speed ladder**, because the floor is added AFTER the throttle multiply
+(`ComputeThrottleTarget`), so it padded both ends:
+
+| quantity | before | after |
+|---|---|---|
+| max cruise (`68 × 1 + floor`) | 78 | **68** |
+| max boost (`68 × 2.259² + floor`) | 357 | **347** |
+| throttle released | crawls at 10 u/s | **full stop** |
+
+**Verify in editor** (Menu_Main, freestyle, Dolphin)
+
+1. **Release the throttle** — the vessel comes to a genuine stop rather than settling on a 10 u/s
+   crawl, and it stops *smoothly* (the speed lerp, not a snap). A dead-stopped Dolphin is the
+   intended new state, so check it is recoverable: throttle back up from zero must feel responsive,
+   not like a stall.
+2. **Full throttle, no boost** — `VesselStatus.Speed` settles at **68** (was 78).
+3. **Release a full boost meter** — peak near **347** (was 357). The 10 u/s difference is inside
+   speed-tunnel noise; if the top end should be held at 357, the lever is
+   `DefaultThrottleScaler` 68 → 70.2, **not** re-adding the floor.
+4. **Drift at zero throttle.** The Dolphin's `driftThrottlePolicy` is `Locked` and its `Grip` is 0,
+   so a drift entered at speed freezes the velocity vector — but a drift entered at *rest* now has
+   no floor pushing it along. Confirm that reads as "parked", not as a stuck/unrecoverable state.
+5. **AI Dolphins** (Rampage, The Bends) still fly — the AI has no floor-specific logic, but an AI
+   that lets the throttle go now actually stops.
+6. **Speed tunnel.** Cruise crosses the law's floor in the *other* direction: 78 was just above
+   `minEffectSpeed` 70 (effect 0.04), 68 is just below it (effect 0.00), so unboosted flight now
+   has literally no tunnel instead of a barely-perceptible one. Boosted is unchanged — 347 and 357
+   both saturate at 1.00. Expect no visible difference; noted because it is a threshold crossing,
+   not because it should read.
+
+**Collider budget:** unchanged — no spawning, geometry, or query change.
+
+---
+
+### 🔴 Urchin — end-of-ribbon launch, merged spike trigger, Track Projector (`claude/urchin-detach-trigger-abilities-2y7e2s`, 2026-08-18)
+
+Authored without a Unity compile or play-test. The C# was type-checked out of editor with Roslyn
+(the two new ability files against a stub harness transcribed from the real declarations; the
+transformer/follower edits against the syntax/scope filter), and the prefab was edited as YAML —
+so anchor integrity, dangling references and duplicate ids were machine-checked, but **the import
+was not**.
+
+**What landed**
+
+1. **Running out of rail LAUNCHES instead of parking.** `TrailFollower` reports the reflection at
+   an open ribbon's end (`ReachedEnd`) instead of zeroing the ride speed;
+   `GunVesselTransformer.LaunchOffRibbonEnd` clears the attach flags and fences that ONE ribbon
+   for `endLaunchReattachGrace` (0.35 s). A **loop** never reaches this and is still ridden
+   forever.
+2. **Momentum survives every detach.** `EndRide` carries the ride's last speed into free flight
+   (writing `speed` directly, and flooring `ComputeThrottleTarget` with it), bled off at a
+   constant `detachSpeedDecayRate` = **12 u/s** — so a 150 u/s grind takes ~8 s to fall back to
+   the ~50 u/s cruise. Only EXCESS carries: a 10 u/s hostile grind hands over nothing. Cleared on
+   `Initialize` and on an overridden `ResetTransformer`.
+3. **A pre-existing hole closed on the way**: the "follower let go on its own" path cleared the
+   attach flags in place, so `EndRide` could never run for it — `_rideMode` stayed stale and the
+   ride camera stayed pulled in. Every exit now goes through one `LeaveRide`.
+4. **The two spike abilities MERGED onto the right trigger.** Tap = the aimed ring shotgun
+   (semi-auto, one blast per press, 0.15 ammo); hold = charge; release = an omni burst of
+   **6 → 36** spikes across a **0.35 → 2.5 s** window, free. `repeatWhileHeld` authored **off**.
+   The charge timer lives on the per-vessel executor, and a teardown (`End(null)`) drops it
+   without firing.
+5. **The left trigger carries a new ability — the Track Projector.** A straight **100 u**
+   single-lane stretch of the pilot's own trail, laid `max(40, speed × 0.35)` u ahead of the
+   NOSE, 13 prisms at 8 u spacing, scale (3, 3, 6), on a flat **20 s** cooldown (the Squirrel
+   boost ring's). Laid through `BoostRingBuilder.LayOne` → full-size collider from frame 0 +
+   `AssignTrail`-after-`Initialize`, into its own `Trail` declared `PrismscapeDimension.Trail`.
+6. **Element map re-cut.** Charge = the whole spike weapon (depth × reach; map multiplier moved
+   2.0 → **2.5**, the value Space used to carry). Space = the track's LENGTH (authored on the SO,
+   map multiplier pinned 1.0). "Overcharge" is now the merged L5: +1 generation **and**
+   `ChainRangeFalloff` → 1. Mass and Time unchanged.
+7. **Assets:** `UrchinSpikeVolleyAction.asset` / `UrchinSpikeBarrageAction.asset` **deleted**,
+   replaced by `UrchinSpikeAction.asset`; `UrchinTrackAction.asset` added. All authored by
+   `Tools/Build/author_urchin_assets.py` (re-run it rather than hand-editing).
+
+**Verify in editor**
+
+1. **Import check.** `Urchin.prefab` shows a **TrackActionExecutor** child under `VesselActions`
+   with `prismSpawnChannel` (`EventOnSpawnPrismAndReturn`) and `OnMiniGameTurnEnd` wired, and
+   `ActionExecutorRegistry._executors` has **three** entries. `R_VesselActionHandler`'s
+   `_inputEventShipActions` binds `1 → UrchinSpikeAction`, `2 → UrchinTrackAction`,
+   `7 → UrchinSlipAction` — no missing-script or unassigned-reference warnings.
+2. **`Assets/Resources/ElementalAbilityMaps/Urchin.asset`** opens with four entries and the new
+   labels (Chain Spikes / Trail Rider / Track Projector / Slip).
+3. Work `URCHIN_TRAIL_RIDER.md` § "In-editor verification" steps **16a–16e** (the launch, the
+   re-attach fence, coasting to a stop, loops, and that the carry does not survive a respawn).
+4. Work `URCHIN_CHAIN_SPIKES.md` steps **14–16** (tap = one blast, hold = blast + burst, and the
+   charge dropped by a mid-hold vessel swap).
+5. Work `URCHIN_TRACK_PROJECTOR.md` § "In-editor verification" in full.
+
+**First-pass tuning (expect a balancing pass)**
+
+| Knob | Where | Value | Move it if… |
+|---|---|---|---|
+| `detachSpeedDecayRate` | `GunVesselTransformer` | **12** u/s | the launch outstays its welcome (raise) or ends too abruptly (lower). ~8 s from 150 → 50 today. |
+| `endLaunchReattachGrace` | `GunVesselTransformer` | **0.35** s | a curved ribbon still re-latches you at its own end (raise). |
+| `minChargeSeconds` / `maxChargeSeconds` | `UrchinSpikeAction.asset` | **0.35** / **2.5** s | every tap ends in a burst (raise the min) or a full charge feels like a chore (lower the max). |
+| `chargedSpikesAtMin` / `chargedSpikesAtMax` | `UrchinSpikeAction.asset` | **6** / **36** | the burst reads as weak at a short hold (raise the min) or floods the pool at a full one (lower the max; the Normal pool's `maxSize` is 400 **per vessel**). |
+| `trackLength` / `prismSpacing` / `prismScale` | `UrchinTrackAction.asset` | **100** u / **8** u / **(3, 3, 6)** | the ramp is hard to catch at grind speed (tighten spacing, fatten the prism) or too easy to trip over. |
+| `cooldown` | `UrchinTrackAction.asset` | **20** s | matched to `SquirrelTubeAction.cooldown` on purpose — move both together. |
+| Charge `MultiplierAtFullLevel` | `Urchin.asset` map | **2.5** (was 2.0) | spike reach at high Charge is now the old Space behaviour; retune here, not on the asset. |
+
+**Known gaps (not this branch's to fix)**
+
+- The Urchin still has **no HUD** (`URCHIN_BACKLOG.md` U3), so neither the charge nor the track's
+  cooldown is visible. `UrchinTrackActionExecutor.CooldownRemaining01` is exposed and unread for
+  the day it exists.
+- Three `EventReference` fields ship **empty** (charge start, charged release, track deploy) —
+  the abilities are silent by design until they are given a voice.
+- The continuous Space/Charge element dials are still LOCAL level reads (`URCHIN_BACKLOG.md` U1);
+  only the L5 unlock bits replicate.
+### 🔴 Scarab Scramble — the Scarab-only hoop-court party mode (`claude/scarab-party-game-pxe569`, 2026-08-18)
+
+Authored fully headless (code + SO assets + scene YAML cloned from the DogFight scene with
+in-place component swaps); Roslyn-compiled and machine-validated, never opened in Unity. Full
+mode doc + the 11-step in-editor verification list live in
+`Assets/_Scripts/Controller/Arcade/SCARABSCRAMBLE.md` — work that list rather than a copy here.
+The editor-riskiest items:
+
+- **Scene import**: `MinigameScarabScramble.unity` must open with zero Missing (Mono Script)
+  rows — the controller/monitor swaps were done by rewriting `m_Script` guids at the donor's
+  fileIDs, and a rejected guid shows up nowhere else. GlobalObjectIdHash values were cloned
+  from the DogFight scene; Unity will regenerate them on first save — save the scene once.
+- **Forge → hoop loop end-to-end** (SCARABSCRAMBLE.md steps 2–8): the SKIMMER converts a
+  crystal into a ball in place and at rest, the ball blooms in, the hull then strikes a real
+  ball; arming gate blocks enemy shoves; juke-steal converts (works from a client too, via
+  `NotifyJukeFired_ServerRpc`); bank toast on 2+ caroms.
+- **Elemental crystals are NOT forged any more.** Fly the Scarab's skimmer through an
+  ELEMENTAL crystal (a lifeform heart, or one of the cell's element crystals): it must COLLECT
+  normally and raise that element's HUD flower — no ball. Then fly through a bright OMNI
+  crystal: that one must still become a ball in place. The omni case is the one to re-check
+  after this change, because the hull's `vesselCrystalEffects` (the OMNI branch) is now EMPTY
+  on `ScarabImpactorDataContainer` — if an omni crystal ever reaches the hull and does nothing
+  at all, the skimmer is not converting it (check `VesselStatus.NearFieldSkimmer` /
+  `FarFieldSkimmer` actually point at the live skimmer — FrogletTools > Vessels > Audit Vessel
+  Skimmers).
+- **The CELL overloads at 4 loose balls, regardless of domain** (the per-domain forge cap is
+  gone). Get a FOURTH ball loose in the court — any mix of domains, any mix of forged and
+  knocked-loose-from-the-nucleus — and all four should detonate at once, each in its own
+  domain-coloured blast, with the court-wide overload toast. Watch that own-domain prisms take
+  a temporary shield rather than being destroyed (the no-perceived-clipping rule). **Check both
+  entry routes**, because the old cap could only see one: forge a fourth from a crystal, and
+  separately knock a fourth inward off the nucleus wall. An EMBEDDED ball must not count —
+  three loose plus any number still studded in the shell is quiet.
+- **MPPM two-client: the overload is ONE synced event.** The count and the detonation are
+  server-side (`TickCellMembershipServer`), announced by `CellOverload_ClientRpc`, so both
+  peers must see the same balls vanish on the same beat and BOTH must get the toast — a
+  client-side count would fire twice or not at all. Trigger it once from the host's Scarab and
+  once from the client's.
+- **Scarab nucleus seeding** (SCARAB.md §4.6, a PLATFORM vessel ability — it is live in
+  freestyle and the menu too, not just this mode): balls of your domain appear embedded in the
+  nucleus on a ~14s clock. Strike one OUTWARD → it should leave into the cytoplasm and bounce
+  off the nucleus from outside; strike one INWARD → it enters the court as an ordinary scoring
+  ball. **Both directions must read as a HIT, not a radial shove** — that is what the new 1s
+  `nucleusReleaseGraceSeconds` buys, and it is the single most likely thing to still look
+  wrong. Bank a fourth into the nucleus to see the overload.
+- **Scarab skimmer is 50% larger — for real this time** (SPACE band 20..40 → **30..60**, so the
+  live world radius goes 10..20 → **15..30**). The previous pass raised only the authored
+  `m_LocalScale` (60 → 90) and was a **no-op in play**: `Skimmer.ApplyScaleIfChanged` overwrites
+  `localScale` with the `Scale` ElementalFloat on the first live frame, so the shipped skimmer had
+  been 20..40 the whole time and the "30 → 45" claim above it described a number nothing read. The
+  authored `localScale` is now parked on the resting size (30) so the prefab reads what the game
+  runs. Confirm the forge triggers at a comfortable stand-off, and that the wider sphere has not
+  made skim-energy gain or prism interaction feel different on the Scarab elsewhere.
+- **MPPM two-client**: forged-ball SIZE on the client (the new `n_SizeScale` — seed the forger
+  SPACE 10 so the ×4 ball is unmistakable), colour permanence under enemy strikes.
+- **PhaseThresholds are an estimate** (Restless 12000/11000, Frenzy 36000/32000 volume, zero
+  structural floor): run FrogletTools ▸ Ecology ▸ Measure Cell Environment Baselines on the
+  new cell and retune; Restless is the fauna-release gate.
+- **First-pass tuning table**: court 480/560/640/720 · hoops 4/3/2/1 · mouths 60/54/48/42 ·
+  ring fraction 0.45 · balls/player 2 · goal target 10 (End Game Conditions window) ·
+  crystals players+2 · comeback rate 0.5 on the card · AI lead 45u / intercept 0.5s.
+
+### 🔴 Urchin revival — chain-reaction spikes + trail rider (`claude/restore-urchin-vessel-9qacdk`, 2026-08-15)
+
+Authored without a Unity compile or play-test. This one is **unusually editor-heavy**: the code
+and the SO assets are complete, but the Urchin has been unplayable for long enough that its
+prefabs never received the modern impact-effect wiring at all. Several of the steps below are
+*authoring*, not verification — nothing in this feature runs until they are done, and none of it
+fails loudly when they are not.
+
+**ROUND 2 (same day, after the first live repro).** Playtest report: the Urchin showed in the
+vessel changer toy, selecting it did not load the vessel. Root cause found and fixed, plus the
+two structural gaps closed:
+
+- **The swap crash.** `VesselCameraCustomizer` on the Urchin had BOTH fields null.
+  `OnInitializePlayerCamera` is a SOAP event raised unguarded in `Initialize` (fail-loud policy),
+  and that line runs only for the LOCAL USER — exactly the swap path. The NRE killed
+  `vessel.Initialize` after the old vessel was already despawned, and `SwapVesselAsync` had no
+  try/finally, so `_isSwapping` latched true and every later swap of ANY vessel was silently
+  refused until scene reload. Fixed at the source per fail-loud: wired
+  `OnInitializePlayerCamera` (the shared event asset) and `settings` →
+  `UrchinCameraSettingsSO.asset` (salvaged byte-exact from the abandoned restore branch;
+  `Configure()` dereferences `settings.mode` unguarded, so this was the second crash in line).
+  `SwapVesselAsync` now runs in try/catch/finally — a failed swap costs one console error naming
+  the vessel class, never a bricked changer. Same failure shape as upstream's Scarab fix
+  (`5be5121cd`), different root: the Scarab's was the prefab lookup + duplicate network hash; the
+  Urchin's lookup was fine (the mini model rendered, which proves it).
+- **No trail.** `VesselPrismController._onPrismSpawnedEventChannel` was null — guarded in code,
+  but a null channel means the vessel lays NO trail, fatal to a trail rider in a quieter way than
+  a crash. Wired to the shared prism channel.
+- **The attach Rigidbody fix landed** (the round-1 blocker below). Dolphin pattern: the 13
+  per-part kinematic Rigidbodies are deleted and ONE kinematic root Rigidbody (Sparrow-exact
+  values) added, so every hull collider's `attachedRigidbody` is the root and trigger events
+  reach `VesselImpactor` — the trail ATTACH and the shell contact tier are now routable.
+  12 hull BoxColliders (all solid) compound onto the root body; re-fit by eye if the editor shows
+  a bad compound. **Verify: fly into a trail → the vessel latches and rides.**
+- Found by a two-direction sweep of every component the Urchin shares with a working donor:
+  fields the donor wires that the Urchin nulls, AND donor fields absent from the Urchin's
+  documents (an absent key deserializes to the C# initializer — null for references). The
+  remaining absences are benign (stale donor keys, warn-and-degrade petal bars, tuning
+  defaults).
+
+**ROUND 3 (2026-08-15, after the second live repro).** Playtest report: "I was getting attached,
+but I was not able to slide" — plus the design directive that prismscapes span dimensions 0-3
+(singleton / trail / surface / volume), trails are what players lay, and the Urchin should also
+ROLL across the 2D prismscapes that gyroid and Schwarz flora make. What landed:
+
+- **The freeze root cause was in `Trail.IndexSafetyCheck`**: on a NON-LOOP trail, an index
+  stepping past the head ran `index %= maxRange` → index 0, the far tail — so `Project()` saw a
+  phantom segment spanning the whole trail as the crow flies and advanced `finalLerp` by
+  `1/chordLength` per frame. Attaching near the head (the common case — you attach where the
+  trail is being laid) froze the ride. The non-loop branch now REFLECTS (bounce to `count-2`,
+  incrementor flipped), mirroring the existing below-zero bounce. Loops keep the modulo.
+- **Signed throttle around XDiff's ACTUAL rest.** XDiff rests at **0.5** on the current input
+  scale (`GamepadInputStrategy`), not the 0.2 the 2023 formula assumed — hands-off read as 37%
+  creep. `ReadThrottle` is now signed around `throttleRestPosition` (0.5): push slides the way
+  the nose points along the ribbon, pull slides back. The look-over-the-shoulder reverse gesture
+  is retired; direction = `sign(throttle × dot(forward, Course))`.
+- **`PrismscapeDimension` (0-3, values = the dimension) + `PrismscapeTopology.DimensionOf`** —
+  authored evidence first: `Trail.Dimension`, declared by the LAYER (default 1D = the vessel
+  wake; the gyroid/Schwarz spawnables declare `Surface` — `Trail` is the general lay container
+  that `PrismTrailBuilder` stamps on everything, so its presence is membership evidence, never
+  shape evidence). Container-less prisms (flora growth) get a `PrismSpatialIndex.QuerySphere`
+  census (shell fills a ball like r², solid like r³). Never physics, never per-frame. Enum
+  values pinned by `EnumIntegrityTests`.
+- **`BlockscapeFollower` finished as the 2D kernel**: face crawl (pilot keeps full steering —
+  `Slide()` runs the protected `Roll()`/`Yaw()`/`Pitch()` passes), edge fold, and **prism hop**
+  via QuerySphere with an `OnPrismCrossed` event. Its box math moved to local unit space — the
+  old code compared `InverseTransformPoint` output (±0.5 space) against `localScale/2` (world
+  half extents), so on a 4×4×1 block the fold fired 4× late and the snap parked the rider off
+  the surface.
+- **`GunVesselTransformer` routes by topology**: `prism.Trail != null` → TrailFollower slide,
+  else BlockscapeFollower roll; ONE `ApplyPrismscapePayoff` (restore/grow+L5-shield/steal) serves
+  both, fed by `FinalBlockSlideEffects` (1D callback) and `OnPrismCrossed` (2D event).
+
+**ROUND 4 (2026-08-15, after the third live repro).** Playtest of round 3: "horribly unsmooth
+... horribly jittery" on a trail — and the design spec stated plainly: a 1D ride is seamless
+movement along the ribbon (trail prisms are authored with **Z parallel to the trail**), and a 2D
+ride is smooth rolling on a continuous curved surface (gyroid/Schwarz prisms are authored with
+**Z orthogonal to the surface**) — the rider must NEVER feel prism edges or gaps. What landed:
+
+- **The jitter's root: direction recomputed per frame from a facing dot, against a hull that
+  never rotates.** `Slide()` replaces `base.MoveShip()`, and `RotateShip` lives inside
+  `MoveShip` — so during a ride nothing wrote `transform.rotation`, and round 3's
+  `sign(dot(frozen forward, curving Course))` FLAPPED as the ribbon curved. Every flap ran
+  `SetDirection`, which shifts the block index ±1 — a teleport per flap, up to every frame.
+  The AI break-off lesson again: directional decisions are LATCHED, never per-frame geometry.
+  Now `GunVesselTransformer` keeps a latched `_facingSign`, flipped only when `dot(transform.forward, RibbonAxis())` crosses `facingFlipThreshold` (0.35) the OTHER way — true hysteresis, so a bend sweeping the axis under a steady nose cannot flap it — and the signed throttle maps onto that sign before `TrailFollower.SetDirection` is told anything.
+- **Attach snap killed**: the 2023 `percentTowardNextBlock = 0` TODO is implemented — the lerp
+  seeds from the actual touch point projected onto the segment ahead.
+- **The head parks instead of bouncing**: round 3's reflection stopped the freeze but bounced
+  the rider at an open ribbon's end, and the throttle mapping flipped it back — oscillation at
+  the exact place players attach. `RideTheTrail` now discards the bounced frame entirely (no
+  snap, bookkeeping untouched) and resumes when the trail grows or the pilot reverses.
+  `SetDirection` range-clamps the terminal-block flip that used to index off the list.
+- **Ride attitude applied the free-flight way**: rides write `accumulatedRotation` (trail:
+  forward eased onto the travel heading; surface: pilot steering + belly eased onto the
+  smoothed normal) and apply it with `RotateShip`'s own `LERP_AMOUNT` slerp; ride boundaries
+  sync `accumulatedRotation = transform.rotation` both directions so no backlog fires as an
+  uncommanded turn.
+- **The 2D roll is a NEW model**: round 3's face-crawl/edge-fold/hop kernel (per-prism boxes —
+  structurally incapable of hiding edges) is deleted. `BlockscapeFollower` now rides a
+  smoothed plane over the prisms' AUTHORED normals (`transform.forward`, sign resolved toward
+  the ridden side): normal slerps at `normalTrackingRate`, hover is a soft spring at
+  `hoverHeight`, ground is the nearest live prism (`QuerySphere`, one bounded query per frame
+  per rolling vessel — replaced, never dropped, so gaps and shot-out ground are coasted).
+  `OnPrismCrossed` still pays the shared payoff per prism visited.
+
+Round-4 verify (detail in `URCHIN_TRAIL_RIDER.md` steps 7/8/8b): the slide is SMOOTH — hull
+lies along the ribbon, no jitter, reverse turns the vessel around, the head parks and resumes;
+the roll is CONTINUOUS — belly on the surface, steering live, no facets/bumps/edge feel, holes
+coasted.
+
+**ROUND 5 (2026-08-16, design pass on round 4).** Feedback: good start, but each ride needs its
+OWN logic, keyed to its prismscape's z-axis relationship (trail prisms: z parallel; surface
+prisms: z orthogonal) — and the 2D ride wants marble-madness vibes with wrap-around at edges.
+What landed:
+
+- **The 1D ride is a RAIL GRIND**: throttle = signed speed along the ribbon; forward/reverse
+  from the pilot's FACING via `dot(forward, IndexOrderHeading)` — the original Urchin's
+  dot-product scheme, stable because the index-order axis (unlike Course) never flips with
+  travel, plus a `facingDeadband` hysteresis; **roll ORBITS the hull around the trail** at the
+  attach radius (parallel-transported radial, handedness corrected by facing); **pitch/yaw stay
+  free for aiming**; the only imposed attitude is a twist easing up radially out.
+  `TrailFollower` became a pure centerline kernel (`CenterlinePoint`/`TravelHeading`, no
+  transform writes) and the transformer composes `position = centerline + radial × radius`.
+  Round 4's latched-at-attach throttle mapping and forward-onto-Course alignment are replaced.
+- **The 2D ride is a MARBLE**: surface velocity now CHASES the steered target
+  (`surfaceInertiaRate`) — release glides, turns carve, momentum re-projected onto the curving
+  plane each frame, follower ticks every frame so the glide survives the deadband; and past a
+  sheet's boundary the target normal blends toward the radial from the RIM POINT with the hover
+  anchor moving to that rim point — the floor swings around the edge at hover distance and the
+  rider **wraps onto the far side** (holes wrap around their lip the same way; the two frames
+  meet continuously at the rim).
+
+Round-5 verify (detail in `URCHIN_TRAIL_RIDER.md` steps 7/8/8b): grind = slide/aim independent,
+facing decides forward, roll orbits the ribbon, head parks; marble = momentum glide + carve,
+rolling off a sheet's edge wraps around the rim onto the other side. Feel dials:
+`orbitDegreesPerSecond`/`minOrbitRadius`/`trailUpAlignRate`/`facingDeadband`/`surfaceAlignRate`
+(transformer), `normalTrackingRate`/`hoverTrackingRate`/`hoverHeight`/`surfaceInertiaRate`/
+`rimWrapMargin` (BlockscapeFollower).
+
+**ROUND 6 (2026-08-16).** Playtest verdict: the gyroid roll "felt better than ever"; the 1D
+ride still wrong, with the right question attached — "check whether vessels that leave two
+trails are properly leaving two separate trails... it feels like it might incorrectly be 2
+trails in 1" — plus: smaller trail prisms, wider twin gap, camera at half distance, chains to
+generation 4, the ring-shotgun volley back, and a far denser omni barrage. What landed:
+
+- **THE structural find: wake prisms were never members of their trail.** `CreateBlock` did
+  `trail.Add(prism)` but nothing set `prism.Trail` (the only stamper was the spawnable
+  builder), and **pool reuse preserved the stale reference** — so a wake block either had no
+  container (the attach effect's null-Trail gate refused it, with an error) or a DEAD
+  spawnable's container (the gate passed against the wrong ribbon, `GetBlockIndex` = −1, ride
+  followed garbage; the census read the un-containered twin-ribbon blob as one *Surface* —
+  the literal "2 trails in 1" feel, marble-rolling on trail prisms whose z points ALONG the
+  ribbon). Fix is a set: `Prism.ResetState` clears membership (Trail + properties mirror);
+  `Prism.AssignTrail` is the one stamping API, called AFTER Initialize by BOTH layers
+  (builder reordered; wake spawner now stamps at all); the attach effect dropped its
+  null-Trail refusal (container-less prisms are legitimate Singleton/Surface prismscapes —
+  routing decides).
+- **Wake geometry**: `BaseScale (10,5,5) → (10,2.5,4)`, `Gap 1 → 6` — two clearly separate
+  2-wide lanes with a 6u clear gap (was 4.5-wide slabs 1u apart). **Camera**:
+  `UrchinCameraSettingsSO` followOffset z −40 → −20, dynamic band 30/50 → 15/25.
+- **Chains at generation 4** (both spike assets' `generationsAtFullCharge`), with
+  `ChainReactionBudget.VolleysPerFrame` 4 → 6 (frame ceiling ≤ 84 chain spikes) so depth
+  reads as a rolling cascade; territory conversion stays the primary brake.
+- **The volley is a ring SHOTGUN again**: `FiringPatterns.ConcentricRings` +
+  `Gun.FireRingBlast` — 3 staggered rings in a 25° cone + center spike = 37/pull, one blast
+  per pull from the hull, zero RNG (peer-identical by construction).
+- **The barrage is dense**: `barrageSpikeCount` 36 golden-spiral points for the ship's own
+  volley at ANY depth (was 4 tetrahedral at depth 0); chain children keep energy-derived
+  counts. The 2023 hull's 18 authored ShootPoint port vectors were recovered from the old
+  prefab and are recorded in `URCHIN_CHAIN_SPIKES.md`; the spiral supersedes them.
+
+Round-6 verify: fly the Urchin, lay trail — two visibly separate thin ribbons; attach to one
+and grind IT (not a phantom blob); camera noticeably closer. Volley: shotgun rings that chain
+deep at high Charge. Barrage: a dense full sphere. Watch the console for chain-budget drop
+reports under sustained deep cascades — expected under stress, but constant reporting at
+casual play means the budget wants another look.
+
+**ROUND 7 (2026-08-16).** Playtest: shotgun needed real velocity inheritance + tighter spread;
+the grind still jerked — "a jump to another prism and back again very quickly... at a
+periodicity that matches the prisms along the trail." That description was the diagnosis:
+
+- **`Trail.Project` lerped along a CHORD on every crossing frame.** The walk loop advanced
+  `startIndex`/`nextBlock` but never re-read `currentBlock`, so a frame that crossed a block
+  boundary measured — and lerped along — a two-segment chord from the frame's ORIGINAL block,
+  cutting the corner at a parameter computed against the wrong length; the next frame
+  re-derived cleanly and snapped back. One bad frame per crossing = the per-prism jerk. Fixed
+  with the missing `currentBlock = TrailList[startIndex]` inside the loop.
+- **The centerline is now a Catmull-Rom arc** through the block centres (position + heading;
+  bookkeeping stays segment-linear; outer control points wrap on loops, clamp at open ends) —
+  a straight lerp kinks direction at every block centre, the opposite of the rail-slide feel.
+- **Spikes always inherit the vessel's live velocity** — the executor passed inherited
+  velocity only while attached, so free-flight volleys fired as if from a standing gun and
+  dropped behind the ship at cruise. And the shotgun cone tightened 25° → 15°.
+
+Round-7 verify: grind a trail at full throttle — NO per-prism tick, position AND heading sweep
+smoothly through block centres like a rail slide; fire the shotgun at cruise speed — the fan
+travels with the ship (rings hold shape relative to the pilot) in a visibly tighter cone.
+
+**ROUND 8 (2026-08-16, "this was a huge improvement").** Two features on the now-working grind:
+
+- **Trail integrity over missing prisms.** Destroyed-in-place prisms already rode (transforms
+  intact, payoff restores them) — but a real hole (null at teardown, pooled-away object) broke
+  the walks, and `DestroyedTerrainSpeed: 10` halted the slide to a crawl over every destroyed
+  stretch. Now: `Trail.IsRidable` + `TryStepRidable` bridge holes in `Project`/`LookAhead`
+  (same wrap/reflect end semantics, so parking still works; spline control points fall back to
+  segment endpoints; a walk with no survivors parks instead of throwing), and
+  `DestroyedTerrainSpeed` is 150 on both followers — holes keep pace and get rebuilt under
+  the payoff as you cross.
+- **Junctions.** On every block crossing the ride probes (`QuerySphere`,
+  `junctionSearchRadiusScale`×extent) for a DIFFERENT 1D container passing nearby; if its
+  heading runs more along the pilot's forward than the current ribbon's axis (by
+  `junctionSwitchMargin` hysteresis), the ride FORKS onto it (`Attach` + `SeedTrailRide` —
+  positionally continuous), then the grind radius settles in (`orbitRadiusSettleRate`). Aim
+  down the branch you want; the ride takes it. Ribbons only — a nearby gyroid is not a fork.
+
+Round-8 verify: blow holes in a ridden trail (spike it, fly a Dolphin through it) then grind
+across — full pace, no snap, prisms restore under you. Attach to a trail your wake meets: ride
+back to the meeting point aiming down your wake — the ride forks onto it; aim along the
+original trail instead — it keeps straight. Linger at a junction — no flip-flopping.
+
+**ROUND 9 (2026-08-16).** Riding a SQUIRREL trail was still wrong ("strange axes and between
+both trails"). Its trails are correct — `BaseScale.x 20` / `Gap 18.5` = two 0.75-wide ribbons
+19.25 apart in two separate `Trail` objects — and every fault was in the ride, all from the
+same blind spot: **the Urchin's own wake is not a representative trail**.
+
+- **A parallel ribbon is not a fork.** A vessel's second ribbon runs alongside the first for
+  its whole length, so it was a junction candidate at every crossing and the rider hopped the
+  pair's 19u gap repeatedly. `junctionParallelThreshold` (0.9): a junction is a DIVERGENCE.
+- **Probe radius keyed off block size → 160u on a Squirrel.** Its block scale is dynamic
+  (`SetNormalizedXScale` from skimming, `SetDotProduct` from drift, `maxBlockScale: 5` →
+  blocks ~40u wide), so `4 × largest extent` swept the arena. Now a flat
+  `junctionSearchRadius` (12 world units).
+- **Unbounded grind radius**: a fork onto a 19u-distant ribbon seeded a 19u orbit. Clamped by
+  `maxOrbitRadius` (8).
+- **A gapped wake's block CENTRES are not its spine.** The lay holds the inner edge at a fixed
+  offset (that is what keeps the gap constant as blocks widen), so the centres swing sideways
+  ~20u as a Squirrel skim-widens — in straight flight. `Trail.LateralAnchor` (declared by the
+  layer; a prism cannot tell which face points at its sibling) + `Trail.RidePoint` recover the
+  width-independent line, used by every geometry read in the walks. 0 for ungapped wakes and
+  all spawnable lays.
+
+**Finding, NOT changed — a drifting Squirrel's prisms are not axis-aligned to their trail.**
+Prisms lay with `blockRotation` = the vessel's rotation, so mid-drift they point where the ship
+was AIMED, not down the ribbon. The platform already has the fix mechanism
+(`BlockRotationOverride`, used by `BarrelRollController`/`ScarabJukeController` to lay
+travel-aligned bridging prisms); drift does not use it. The ride is immune (it takes its axis
+from the curve of block positions, never prism rotation), so this is a visual/design call —
+but it does mean the stated invariant "trail prisms have z down the trail" is currently false
+for the drift vessel.
+
+Round-9 verify: ride a Squirrel trail — no hopping between the pair, no lateral swerve as the
+Squirrel's blocks change width, no fling on attach. Ride an Urchin trail — unchanged from
+round 8.
+
+**ROUND 10 (2026-08-16) — junctions REMOVED, single-trail ride polished.** Junction forking is
+gone by design call: it worked, but every block crossing carried a chance of leaving the rail
+you were on, and two rounds went into stopping it firing when it shouldn't. A ride has to be
+excellent on ONE trail before choosing between two means anything. Everything the junction work
+left behind is kept and still earning its place — hole bridging, `Trail.HeadingAt`,
+`SeedTrailRide`, the orbit-radius settle. (If it returns: a junction is a DIVERGENCE, and the
+probe radius must be in world units — both recorded in `URCHIN_TRAIL_RIDER.md`.)
+
+The polish, all on the 1D grind:
+
+- **Speed is smoothed in the follower** (`speedTrackingRate`), where terrain changes happen: a
+  friendly→hostile boundary is a 15× cliff (150→10) and the old walk re-read terrain per block
+  *within* a frame, publishing each value in turn. This replaced the per-block time-accounting
+  walk entirely — including `LookAhead`'s "<2 blocks" early-out, which fought hole bridging by
+  refusing to move on a sparse ribbon.
+- **Throttle has inertia** (`trailInertiaRate`) and direction only re-latches outside the
+  deadband, so a reversal coasts through zero instead of an about-face at speed. The follower
+  is ticked EVERY frame now (it owns the coast); gating it at the deadband made release a hard
+  stop.
+- **The orbit frame rides the continuous spline tangent** (`RibbonAxis()`), not the per-block
+  `IndexOrderHeading` step function — the same class of once-per-block tick as the round-7
+  chord bug, one layer up.
+- **Attach carries your speed and never pops**: `_rideSpeed` seeds from arrival speed, the
+  grind throttle seeds from the stick, and the orbit radius seeds at the hull's ACTUAL distance
+  and eases in (clamping the seed — what the junction work did — teleported the hull sideways
+  on contact).
+
+**ROUND 11 (2026-08-16) — the ride restored to what shipped years ago.** Playtest: attaching to
+a Squirrel trail and pushing forward "swung me around"; backward worked better; *"we had
+something years ago on the main branch that felt better than this."* Went and read it —
+`GunShipController.Slide` at `d895f329a`, intent named by `023d53cc7 "When attached move down
+the direction you are looking"`. The original is three lines: position is a lerp between block
+centres (**ON** the trail), the rotation lerp is **deliberately commented out** (attitude is
+never touched while sliding), and direction flips on `dot(forward, segment) < 0`.
+
+- **The positional orbit and the up-twist are REMOVED.** Both came from an over-literal reading
+  of round 5's "roll should rotate them around the trail" — but while riding, the hull's
+  forward IS the rail, so ordinary `Roll()` already spins the pilot around it. The imposed
+  twist fought the stick every frame and, on a curving ribbon (a Squirrel drift line — exactly
+  the test case), swung the hull bodily as the radial turned. `Roll()`/`Yaw()`/`Pitch()` now
+  all run exactly as in free flight, and position is the centreline plus a contact offset that
+  decays (`railSettleRate`).
+- **The forward/backward asymmetry was the facing seed.** It latched from `dot(nose, axis)` —
+  but you fly INTO a trail, so at contact the nose is across the ribbon, that dot is ~0 and its
+  sign is noise: push forward and you were as likely to be sent back the way you came. It now
+  seeds from the direction `Attach` latched, which comes from the vessel's **Course**.
+- Kept, because none of it fights the original: Catmull-Rom centreline (a smoother version of
+  the original's segment lerp), hole bridging, speed/throttle inertia, `RidePoint`, the payoff.
+
+Round-11 verify: attach to a Squirrel trail and push forward → you continue the way you flew
+in, no swing; roll → the view spins around the rail and nothing fights the stick; pitch/yaw →
+free aim while the rail carries you.
+
+**ROUND 12 (2026-08-16) — "still orbiting like crazy": the RAIL was a helix; ride the SPINE.**
+Round 11's transformer was right and the ride still orbited, because the geometry it rode was a
+corkscrew. Every gapped block is laid at `spine + vesselRight × (width/2 + halfGap)` with the
+vessel's right AT LAY TIME — **roll included** — so a rolling layer (the Squirrel, constantly)
+braids each of its two ribbons into a HELIX around its flight path, radius ≥ ~9.6u (up to ~30u
+skim-widened). Every ride line at a fixed offset along each block's lay-time right inherits the
+helix — block centres (pre-round-9) and the inner edge (round 9's `RidePoint`) alike. Riding a
+9u+ helix at 150 u/s IS "orbiting like crazy", in every round so far, under every transformer.
+
+`Trail.RidePoint` now undoes the ENTIRE lay offset — `blockPos − blockRight × (width/2 +
+halfGap)` — recovering the SPINE the laying vessel's centre actually flew. Exact under full
+roll (the block's rotation preserves the lay-time right). `Trail.LateralHalfGap` joins
+`LateralAnchor` (both stamped by the spawner). Both ribbons of a pair map to the SAME spine —
+the pair is one wake, and you slide down the corridor between the twins, prisms streaming past
+on either side. `Attach` seeds via `RidePoint`/`HeadingAt` too (raw-position seeding would snap
+a lay-offset on the first moving frame). Accepted approximation: `LateralHalfGap` is
+trail-level, so a per-block `ApplyBoostGap` variance (boosting Sparrow) gets a slightly
+approximate spine mid-boost.
+
+Round-12 verify: lay a ROLLING trail with the Squirrel (hold roll while flying), then attach
+and ride it — the ride runs straight down the corridor between the braided ribbons, no orbit,
+no swing; attach to either ribbon of the pair → same road; the Urchin's own trail rides as
+before.
+
+**ROUND 13 (2026-08-16) — the spine cannot be reconstructed; the lay STAMPS it.** Playtest of
+round 12: rode a Squirrel, swapped to Urchin, attached to the Squirrel trail → "immediately
+bobbing up and down and over to the other trail, shielding both trails". Round 12's premise —
+"the block's rotation preserves the lay-time right vector" — is FALSE for exactly the blocks a
+DRIFTING Squirrel lays: the lay offset rides the SHIP's right, but drift/barrel-roll bridging
+sets `BlockRotationOverride` so those blocks are rotated to the TRAVEL direction. `block.right`
+is then the wrong axis, and subtracting ~10u along a wrong, per-block-varying direction is the
+bob-and-swing (the flailing hull then contacted and paid both ribbons — the shielding).
+
+Reconstruction of the lay offset from block geometry has now failed twice (fixed offset along
+right → helix under roll; undo along block.right → wrong axis under the override), so it is
+dead as a concept: **`Prism.TrailLayOffset`** — the exact world-space vector the spawner added
+to the spawn position — is stamped per block (after `Initialize`, cleared on pool reuse) and
+`Trail.RidePoint` subtracts it. Immune to roll, to the rotation override, to per-block boost
+gap variance (round 12's approximation note is void — per-block exact), and to the payoff
+GROWING ridden blocks (no live width read). `Trail.LateralAnchor`/`LateralHalfGap` deleted.
+
+Round-13 verify: fly the Squirrel and DRIFT + roll while laying, swap to the Urchin, attach to
+that trail — the ride runs clean down the wake's spine, no bobbing, no crossing to the sibling
+ribbon, payoff only on the ribbon you ride. Straight-flight trails unchanged.
+
+**ROUND 14 (2026-08-17) — the REAL Squirrel bug: `OnDisable` orphaned the wake; plus true bend
+hysteresis.** Playtest: the Urchin's own trail rode well (bend jitter aside); the Squirrel's
+was still chaos even on DEAD-STRAIGHT sections — which ruled out geometry (the 1D follower on
+a straight ribbon cannot wander). The chaos was the MARBLE: `VesselPrismController.OnDisable`
+called `ClearTrails()`, so the vessel-changer swap EMPTIED the despawned Squirrel's Trail
+containers while every prism still pointed at them → `DimensionOf` read Count ≤ 1 → Singleton
+→ surface follower, whose along-z "normal" on trail prisms flung the hull everywhere, hopped
+nearest-ground between BOTH ribbons, and paid/shielded every hop. All three rounds of Squirrel
+symptoms were this one line; the geometry fixes were real but only ever reached the live-trail
+ride.
+
+- **The wake OUTLIVES its vessel** (mass is conserved — so must bookkeeping be): `OnDisable`
+  no longer clears; the Trail objects live as long as their prisms reference them. Explicit
+  resets (turn reset, cell drain) still clear — and `Trail.Clear()` now un-stamps membership
+  first, so even they leave honest container-less prisms, never members of an empty list.
+- **`IsRidable` requires membership** (`p.Trail == this`): persistent trails can accumulate
+  pool-REUSED entries over a session; membership tells a survivor from a phantom parked at its
+  new life's position — phantoms bridge as holes.
+- **`facingFlipThreshold` (0.35) replaces the re-latch band**: TRUE hysteresis — the
+  forward/reverse mapping flips only when the aim crosses well past broadside the OTHER way,
+  so a bend sweeping the axis under a steady nose holds direction instead of flapping.
+
+**ROUND 15 (2026-08-17) — rings loop; 0D unattachable; 2D stops fighting aim.** Playtest: "best
+yet — I could ride both my own and the Squirrel's trail great", with three follow-ups.
+
+- **Six lay paths were stamping trail membership BEFORE `Initialize`**, which round 13's
+  pool-reuse clear wipes — so their prisms came out container-less, censused as 0D Singletons,
+  and routed to the MARBLE. That is the ring's "strange behavior", and it was a **regression
+  beyond the Urchin**: `SpawnableWaypointTrack` and `SpawnableRaceTrack` (HexRace) lost their
+  `Trail` too, which `Skimmer` and `SkimmerAlignPrismEffectSO` read for trail alignment. All
+  six — `BoostRingBuilder`, `SpawnableFlower`, `SpawnableCord`, `SpawnableDartBoard`,
+  `SpawnableRaceTrack`, `SpawnableWaypointTrack` — now call `AssignTrail` after `Initialize`.
+  **Regression-check the HexRace track and any skimmer trail-alignment.**
+- **Rings are LOOPS**: `SpawnableRings` + `SpawnableDartBoard` build `new Trail(isLoop: true)`,
+  so walks wrap by modulo and a rider circles indefinitely either way. Ray-shaped AOEs stay
+  open (a spoke has two ends).
+- **0D is not rideable**: `TryBeginRide` refuses Singleton; the vessel flies on.
+- **2D no longer fights aim**: the belly-onto-normal ease is REMOVED (with `surfaceAlignRate`).
+  The surface constrains POSITION, never attitude — the round-11 rule, now applied to both
+  dimensions. Motion still follows the plane (crawl direction is the steered forward projected
+  onto it).
+
+**ROUND 16 (2026-08-17) — ride the prism SURFACE; roll walks you around it; camera to 1/3.**
+A SPARROW trail is a single ribbon (no gap — that vessel flies with one thumb), so its block
+centres sit exactly on the ride line and riding the line bare put the Urchin INSIDE every
+prism. The ride now offsets out to the prism's surface, both halves derived:
+
+- **Which way**: the hull's own UP flattened across the trail. Rolling sweeps up around
+  forward — which while riding IS the trail axis — so the ship walks around the prism's z axis,
+  belly toward the rail. No new state, and it cannot fight the stick (attitude stays the
+  pilot's; position follows it).
+- **How far**: the exact box cross-section `min(halfX/u, halfY/v)` from the prism's authored
+  `TargetScale`, so a wide flat trail rides close on its broad faces and further at its edges.
+  `rideSurfaceClearance` (1.5) adds the hull's half-thickness.
+
+Gapped wakes are unchanged in feel (their ride line is the corridor spine, so the offset is a
+small clearance within it). Camera: `UrchinCameraSettingsSO` followOffset z −20 → −6.67,
+dynamic band 15/25 → 5/8.33.
+
+**ROUND 17 (2026-08-17) — ribbons ride separately; shielded/skewed prisms ride their envelope;
+Urchin hull opacity.**
+
+- **A gapped wake is TWO SEPARATE SINGLE TRAILS.** The spine ride (rounds 12-13) is retired by
+  design call — consistency beats the corridor. `RidePoint` is the block's own centre;
+  `Prism.TrailLayOffset` + its spawner stamp are deleted. Accepted: a wake laid by a rolling
+  vessel is ridden as the helix it genuinely is.
+- **Shielded/super-shielded → the cuboid the shell nests in**: half-extents × 3, read from
+  `OctahedronMeshGenerator.CIRCUMSCRIBING_SCALE` (both shield meshes are the box's
+  circumscribing dual, so one factor covers both tiers).
+- **Skewed prisms → the SUPPORT envelope in the trail's frame**: `Σ halfᵢ·|axisᵢ·radial|`, so a
+  drift block yawed off the ribbon reads as effectively wider and the rider clears it. Support
+  rather than a trail-aligned AABB because an AABB about an axis needs an arbitrary "up" choice
+  and changes with it; support needs none, is continuous under roll, and reduces exactly to the
+  box half-extent for a square-on prism (Sparrow ride unchanged).
+- **Urchin hull opacity**: `VesselHelper.ApplyShipMaterial` paints slot **[1]** on a
+  MeshRenderer, so slot [0] keeps its authored material — and on the Urchin that was the
+  TRANSPARENT `BlueBaseVesselMaterial` on 12 of 13 renderers. Only `ShroudLeft` had the pair
+  reversed (opaque `GreenAccent` in slot 0), which is why one submodel looked right and the
+  rest looked see-through. All 13 now match ShroudLeft. **Materials were NOT edited** —
+  `BlueBaseVesselMaterial` is shared by nine vessels; this is a per-renderer slot-order fix on
+  the Urchin prefab only.
+
+**ROUND 21 (2026-08-17) — reorient merge; the steal chain was abortable; round 20's material
+conclusion reversed by the Squirrel's own material map.**
+
+- **Merged `origin/bleeding-edge`** (43 commits: Dolphin elemental re-cut, self-trail contact
+  grace, logging channels, ecology fixes). One docs conflict, both sides kept.
+- **"Spikes stick but nothing steals or chains"** — the container is `[Embed, Steal, ChainFire]`
+  with no per-effect isolation, so a throw inside Steal killed both the flip (it sat upstream)
+  and the chain volley, while Embed had already landed. Fixed four ways: wired the 9 authored
+  `{fileID: 0}` holes on `TrailRing.prefab` / `GreenDartBlock.prefab` (`onPrismStolen`,
+  `_themeManagerData` — an unstealable prism family under the fail-loud SOAP policy);
+  `PrismTeamManager.Steal` now flips BEFORE it reports (capture payload → `ChangeTeam` →
+  `Raise`), so reporting can never veto gameplay; `ProjectileImpactor` runs every effect
+  through `ImpactorBase.RunEffectIsolated` (throw = ONE named console error with stack,
+  siblings still run); and `Gun.FireSingle` authors projectile scale in WORLD terms — the
+  Urchin's muzzles sit under guns at scale 1.75, which had been multiplying into every
+  round's size, collider and sweep radius since round 19.
+- **Materials: round 20 reversed.** The Squirrel FBX's `externalObjects` map names the roles:
+  `Body` = BlueBase (dark glass, fixed), **`Domain` = GreenAccent (the placeholder the runtime
+  REPLACES — authored jade because jade is the menu default)**, `Window` = Screen (fixed).
+  Squirrel proportions: Domain 26% / Body 64% / Window 2% / Engine 6% — the domain is an
+  ACCENT. The Urchin's authored mapping matches exactly, so `_domainReplacesMaterials` now
+  names ONLY `GreenAccentVesselMaterial` and the vessel is two-tone again: domain accents +
+  dark body + screen. Rendered the FBX submeshes offline (three orthographic views): the left
+  gun is clean, every part is Body-majority + Domain-accent, and the "Window" is the authored
+  front dome (33 polys, a third of the silhouette — left as authored; if it should be dark
+  hull, the change is one slot on the Body renderer).
+
+Round-21 verify: change domain to Ruby on the Urchin → the ACCENTS (ribs, rings, gun rings) go
+ruby, the body stays dark navy glass, the front dome stays the screen material, **no jade
+anywhere, and NOT one uniform material**. Fire the aimed volley into a hostile trail → prisms
+recolour to your domain (the steal) and child volleys erupt from converted prisms (the chain);
+fire at a Squirrel crystal RING → it steals and chains too (this was structurally impossible
+before — the ring prefab's steal event was unwired). Shotgun spikes are back to their normal
+size (they were 1.75× oversized since round 19). If anything in the chain still fails, the
+console now names the exact effect and stack — paste that line back.
+
+**ROUND 20 (2026-08-17) — the jade that survived a Ruby swap: BOTH of the Urchin's authored
+materials are domain-bearing.** *(Conclusion REVERSED by round 21 — GreenAccent is the Domain
+placeholder by fleet convention; painting both erased the two-tone read. The colour measurements
+remain valid.)*
+
+- **`GreenAccentVesselMaterial` IS Jade, hardcoded.** Its `_Color2` (the fresnel rim, the part
+  that glows) is `(0, 0.7765, 1.4980)` = `JadeColors.ShipColor2 × 2` **exactly, to 7 decimals**;
+  `_Color1` matches ×2 on blue and one 8-bit step off on green. `ThemeManager` drives the live
+  ship material through those same two properties, so any slot wearing this material stays jade
+  on every domain — which is precisely what a Ruby pilot photographed.
+- **`BlueBaseVesselMaterial`'s rim is pure black** `(0,0,0)` — a base with no rim, which is the
+  round-17 "too transparent" report.
+- So neither authored material is a neutral the vessel should keep. `_domainReplacesMaterial`
+  became the **list** `_domainReplacesMaterials`, and the Urchin declares BOTH; every slot on all
+  13 renderers takes the domain colour. `Body`'s third material (`ScreenVesselMaterial`, a neutral
+  cockpit screen shared with Rhino/Dolphin) is untouched. No other vessel changes.
+- **The left gun has no model error.** Parsed `Urchan_Test.fbx` directly (binary FBX 7400): all 14
+  geometries declare materials in the SAME order `[Material.004, Material.009]` (`Body` adds
+  `Material.002`), mapped `ByPolygon`; mirrored halves match poly-for-poly (276/276, 400/400,
+  370/370 ×2, 324/324, 281/281); each of the 13 prefab renderers points at its own distinct mesh,
+  none shared. The one oddity is `ShootPoints` (`Sphere.041`) — a zero-polygon holder for the 18
+  historical firing ports, not wired into the prefab. The real anomaly was prefab authoring
+  (`ShroudLeft`'s two materials reversed vs its twelve siblings), already fixed; painting every
+  slot makes slot order unable to matter again.
+
+Round-20 verify: on the Urchin, change domain at the toy → **no cyan/jade survives anywhere on the
+hull** on Ruby or Gold; the whole ship reads in the new domain's colour, and nothing is
+see-through. Change back to Jade → it reads jade again (that one is not a no-op check: compare
+against Ruby first). Console: no `[VesselCustomization] '<part>' wears none of the vessel's domain
+materials` warning. Other vessels' hulls unchanged.
+
+**ROUND 19 (2026-08-17) — the domain colour is painted by IDENTITY, not by index; the shotgun
+fires from both guns with a tighter spread.** *(The identity mechanism is right; round 20 found it
+needed to name TWO materials, not one.)*
+
+- **Round 18's domain fix was a no-op, and the reason generalises.** It restored the authored
+  material order (`BlueBase` back to slot 0) *and* moved the index 1 → 0 in the same commit;
+  those cancel exactly, so the domain colour landed on the same submesh as before and the
+  cockpit reading was "changing domain did not swap the correct material." **Never move an
+  array order and the index that reads it in one change** — one of the two is the fix, and
+  doing both is a rename.
+- **The durable repair drops the index.** New optional
+  `VesselCustomization._domainReplacesMaterial` names the AUTHORED material the domain colour
+  replaces; `ResolveDomainSlots` finds every slot wearing it per renderer (whatever index),
+  and `ShipHelper.ApplyShipMaterialToSlots` paints those. Empty = the existing slot-index path,
+  so **no other vessel changes**. The Urchin declares `BlueBaseVesselMaterial` — which is also
+  the transparent one, so this removes the see-through hull and the mis-coloured hull together,
+  and it is correct on `ShroudLeft` (authored in the opposite order to its twelve siblings) and
+  on `Body` (three materials) alike, which no single index can be.
+  The slot map is resolved ONCE and cached — after the first paint the slot holds the domain
+  material, so re-resolving would find nothing and the vessel would stop responding to its
+  domain. It reads `sharedMaterials` (not `materials`, which clones and would never match the
+  asset by identity). A geometry wearing none of the named material warns once, by name.
+- **The shotgun fires from every muzzle** (`ResolveMuzzles`), each fan spun by
+  `360/spikesPerRing · i / muzzleCount` about the aim axis via the new
+  `Gun.FireRingBlast(phaseOffsetDegrees)`, so two guns interleave into one denser cone instead
+  of drawing the same spokes twice. `spikesPerRing` is now authored PER MUZZLE and halved
+  6 → **3**, so the pull still throws ~38 spikes (2 × 19) rather than 74 into a 160-deep pool.
+- **Tighter spread**: `coneHalfAngleDegrees` 15° → **9°**.
+
+Round-19 verify: fly to the domain-changer toy on the Urchin and change domain → the **hull**
+recolours immediately (this is the check round 18 appeared to pass and did not); trim stays
+accent; nothing see-through. Other vessels' hulls unchanged. Pull the aimed trigger → spikes
+leave **both gun muzzles**, not the hull centre, and the fan is visibly narrower than before;
+count reads about the same density as round 18, not double. Console: no
+`[VesselCustomization] '<part>' wears none of 'BlueBaseVesselMaterial'` warning.
+
+**ROUND 18 (2026-08-17) — spike dwell x3; the omni barrage chains; domain colour on the right
+submesh.** *(Superseded in part by round 19 — the domain-colour item below did not take effect.)*
+
+- **Embedded spikes persist 3x**: `ProjectileEmbedPrismEffect.dwellSeconds` 1.25 → **3.75**.
+  Pure look — the steal and the child volley have both already happened by then.
+- **The omni barrage never chain-reacted.** `FireSpherical` decremented `energy` before
+  spawning while the ring volley's `FireSingle` did not, so the barrage came out one tier
+  shallower from the same authored number — at its resting depth its spikes landed terminal.
+  The decrement is right for a chain HOP (it IS the depth ladder), so it is now conditioned,
+  not removed: `if (pointsOverride <= 0) energy--`. Only the ship's own volley authors a point
+  count; a hop never does. Barrage `generationsAtRestingCharge` 0 → **1** so both triggers
+  chain from rest.
+- **Domain colour was on the wrong submesh.** Platform contract (`ScarabHullBuilder`): a
+  MeshRenderer hull is painted on **slot 1** (submesh 0 = shared body, submesh 1 = domain). The
+  Urchin's FBX authors its submeshes the other way round. New
+  `VesselCustomization._domainMaterialSlot` (default 1 — **no other vessel changes**), passed
+  through to `VesselHelper.ApplyShipMaterial` and clamped to the renderer's slot count; the
+  Urchin declares **0** and its round-17 material swap is REVERTED to the authored order. Net:
+  domain colour on the hull, opaque accent showing elsewhere, nothing transparent.
+
+Round-18 verify: shoot a prism → spikes stand in it noticeably longer before fading. Fire the
+ALL-DIRECTIONS trigger at enemy mass → it chains like the aimed one does (raise Charge → deeper
+on both). Look at the Urchin → the HULL wears the domain colour (change domain at the toy and
+the hull changes), trim stays accent, nothing see-through. Other vessels' hulls unchanged.
+
+Round-17 verify: attach to ONE ribbon of a Squirrel wake → you ride that ribbon's own prisms,
+not the corridor; the other ribbon is a separate trail you can attach to independently. Ride a
+SHIELDED trail → the ship clears the octahedron shells instead of passing through them. Ride a
+drift-laid (yawed) trail → the ship goes around the wider effective prism, no corner clipping.
+Look at the Urchin in the hangar/menu → the whole hull reads solid, matching the left shroud;
+no part is see-through. Other vessels' hulls unchanged.
+
+Round-16 verify: ride a SPARROW trail — the Urchin sits ON the prisms, not in them; roll and
+it walks around the trail's axis, belly always to the rail; roll continuously and it circles
+smoothly with no fight. Ride a wide flat trail — it hugs the broad face and stands off at the
+edges. Squirrel twin trail — unchanged. Camera sits noticeably closer.
+
+Round-15 verify: Squirrel-hit-crystal ring → the Urchin rides it as a LOOP, forward and
+backward, round and round, never rolling onto it as a surface. Fly at an isolated prism → no
+attach. Ride a gyroid → pitch/roll/aim are completely free, camera never fights, and you can
+shoot where you please while rolling. HexRace: skimmer trail alignment on the waypoint track
+still works.
+
+Round-14 verify: fly the Squirrel STRAIGHT to the vessel changer, swap to Urchin, attach to
+the Squirrel trail — it now rides as a TRAIL (clean 1D slide down the spine, no marble
+flailing, no ribbon-hopping, no shielding both trails). Ride the Urchin's own trail around a
+tight bend — direction holds through the apex, no rapid forward/back swapping. Turn-reset
+modes (any minigame turn end) still clear trails cleanly.
+
+Round-10 verify (`URCHIN_TRAIL_RIDER.md` steps 7/8/8a): release mid-grind → coasts to a stop;
+grind onto an enemy trail → brakes rather than snaps; latch on at speed holding forward →
+carries the speed, eases onto the rail, no sideways pop; full-speed run down a long ribbon → no
+tick in position, heading OR the orbit frame; reverse → swings through zero.
+
+Full mechanics, historical record and follow-ups:
+`_Scripts/Controller/Vessel/R_VesselActions/URCHIN_CHAIN_SPIKES.md` and `URCHIN_TRAIL_RIDER.md`.
+Element map: `Docs/ElementalAbilitySystem/FLEET_MAPS.md` §2 Urchin.
+
+**What landed**
+
+- **Chain-reaction spikes.** A spike lands on a prism, **embeds**, **steals** it (domain flip —
+  mass conserved, nothing destroyed), then fires its own `LoadedGun` to spray the next generation
+  out of the converted mass. Three effect SOs run in list order —
+  `ProjectileEmbedPrismEffectSO`, `ProjectileStealPrismEffectSO` (pre-existing),
+  `ProjectileChainFirePrismEffectSO` — which is the modern form of the 2023 enum list
+  `[Stop(12), Steal(7), Fire(13)]` still sitting as orphaned YAML on three of the four spike
+  prefabs. **Order is load-bearing**: steal before fire, or every child re-converts ground the
+  parent already took.
+- **Three brakes, in order of authority.** (1) *Territory conversion*, emergent and **PRIMARY** —
+  `Projectile.DisallowImpactOnPrism` refuses a prism already wearing the firing domain, so the
+  wavefront extinguishes as it eats its own frontier. This was the only brake in 2023 and is
+  deliberately kept primary. (2) *Depth* — `Projectile.ChainGeneration`, zero terminal, scaled by
+  CHARGE, **shipping at 2** (3 and 4 supported and deliberately unshipped, on collider budget).
+  (3) *Load shedding* — `ChainReactionBudget.VolleysPerFrame` = **4**, which **drops** excess
+  volleys (never queues) and warns on a 5 s throttle. At depth 2 a volley is 10 spikes, so one
+  frame's chain contribution is bounded at **40** live trigger colliders.
+- **Two 2023 defects fixed rather than reproduced.** The original had **no depth cap** (its base
+  tier fired children of the same tier, so only territory ever stopped it) and **leaked its pool
+  permanently on success** (`Stop` killed the coroutine whose terminal statement was the only
+  cleanup call, so every spike that actually hit something was immortal — after the pool port that
+  drains the pool). `Projectile.EmbedAndRetire` now owns the retirement explicitly and **fades**
+  the spike rather than popping it.
+- **Determinism.** `Gun.FireSpherical` uses `Gun.DeterministicOrientation(origin, depth)` — a
+  quantized position hash — instead of `UnityEngine.Random.rotation`, so every peer's cascade
+  agrees, **and** so a gun firing dozens of times a second cannot perturb the global RNG stream
+  that deterministic systems seed (the HexRace track calls `Random.InitState`).
+- **Spike domain paint** moved out of `Start()` (which ran before `Initialize` on a fresh instance
+  and never again on pool reuse) into `LaunchProjectile`, via `sharedMaterial` + a
+  `MaterialPropertyBlock`.
+- **Trail rider.** Attach is two flags (`IVesselStatus.IsAttached` + `.AttachedPrism`) set by
+  `VesselAttachPrismEffectSO`; `GunVesselTransformer` edge-detects them and `Slide()` replaces
+  `base.MoveShip()`. Crossing a prism boundary fires `FinalBlockSlideEffects()` — restore if
+  destroyed, **grow** if friendly, **steal** if hostile. Riding recharges ammo (doubled on
+  shielded prisms).
+- **Three ways it was broken, all fixed.** The transformer resolved `BlockscapeFollower` (a
+  surface-crawl experiment) instead of `TrailFollower` (the maintained along-the-trail kernel) —
+  identical member names, so it compiled, but only `TrailFollower` calls back into
+  `FinalBlockSlideEffects`, so the entire payoff never ran. The throttle was hardcoded
+  `var throttle = 0;`, so a vessel could attach and then sit motionless forever. And the ride never
+  fed `AdvanceSpeed`, so detaching snapped the pilot back to a stale cruise speed.
+- **PLATFORM: `VesselDamagePrismEffectSO` declines while `IsAttached`** (new `skipWhileAttached`,
+  default **on**). Riding and ramming are the same collision through one flat effect list with no
+  ordering guarantee, so **any** attaching vessel would destroy the prism it latched onto — the
+  2023 "urchin destroying first block when attaching to a trail" bug, whose fix lived in a
+  collision path that no longer exists. Guarded once, for the fleet. This is the change most
+  likely to have unintended reach: it touches an effect asset every vessel lists.
+- **Element map (APPROVED this session).** SPACE → Spike Volley (`RightStickAction`), CHARGE →
+  Spike Barrage (`LeftStickAction`), MASS → Trail Rider (**passive**, `Input 0`), TIME → Slip
+  (`Button2Action`). All four L5 upgrades gate on
+  `R_VesselElementalAbilityHandler.IsUpgradeActive(element)` — the replicated unlock bit — never a
+  raw local level read.
+- **Scoring.** `Player.ReportPrismStolen_ServerRpc(float volume)` + `StatsManager.CreditPrismSteal`.
+  `StatsManager.PrismStolen` opened with `if (!_allowRecord) return;` and `_allowRecord` is false
+  on clients, so **a client's steals scored nothing** — a gap that predates the Urchin and affects
+  every steal source in the game. Only the stealer's half travels (identity comes from RPC
+  ownership); the victim's remaining-mass tally drifts on a client-side steal, a deliberate trade
+  (an untrusted client-supplied name is worse than a soft tally).
+- **Registration.** `Urchin.prefab`'s `VesselStatus.vesselType` was `Random(0)`, so
+  `TryGetShipPrefab` could never match it even once listed. Now `Urchin(4)`, and added to
+  `SO_Classlist_Classes.asset` and `Vessel Prefab Container.asset`.
+
+**Wiring — confirm it landed, and close the one that has not**
+
+*State below is as of commit `b3bc963bc`. The branch was still moving while this was written, so
+re-check each line against the prefab rather than trusting the tick.*
+
+1. **Spike prefabs — authored, needs an import check.** Three new fully-wired prefabs exist:
+   `_Prefabs/Projectile/UrchinSpikeProjectile{,Energized,SuperEnergized}.prefab`, each a trigger
+   `SphereCollider` (r 0.25) + `Rigidbody` + `Projectile` + `ProjectileImpactor` (container
+   pre-wired to `UrchinSpikeProjectileImpactContainer.asset`) + `ImpactCollider` + `LoadedGun`.
+   They were written as YAML **outside the editor**, so open all three and confirm no missing
+   scripts and no unassigned container — a spike with no impactor passes through everything,
+   silently.
+   The four **2023** prefabs under `_Prefabs/Environment/*SpikeProjectile.prefab` are superseded
+   and referenced by nothing; three still serialize the orphan keys
+   (`trailBlockImpactEffects: 0c000000070000000d000000`, plus `Team`, `Ship`, `Velocity`,
+   `ProjectileTime`) that the script no longer declares. Leave or delete, but do not wire them.
+2. **Projectile pools — landed, sanity-check the ceilings.** `Urchin.prefab` now carries its own
+   `ProjectileFactory` with three `ProjectilePoolManager`s: Normal → `UrchinSpikeProjectile`
+   (capacity 120, **max 400**), Energized → `…Energized` (40 / **160**), SuperEnergized →
+   `…SuperEnergized` (12 / **48**). `maxSize` is the real ceiling on live spike colliders — a
+   drained pool is a hard stop (`No pool registered` / a factory miss), but an unbounded pool is a
+   collider leak with no ceiling at all, so a bound is the right trade. Cross-check these against
+   the **depth-2** row in `URCHIN_CHAIN_SPIKES.md` § "Collider budget" once the cascade is
+   observable — and note this is a **per-vessel** factory, so four Urchins in a match multiply
+   these numbers by four.
+3. **Action wiring — landed.** `Urchin.prefab` now has `_executors` pointing at an
+   `ActionExecutorRegistry` and `_inputEventShipActions` binding `RightStickAction(1)` →
+   `UrchinSpikeVolleyAction`, `LeftStickAction(2)` → `UrchinSpikeBarrageAction`,
+   `Button2Action(7)` → `UrchinSlipAction`. Trail Rider is correctly **unbound** — it is passive.
+   The spike executor's `gun` and `barrageOrigin` are assigned; **confirm `muzzles` is populated**
+   (it falls back to `barrageOrigin` if empty, which turns the aimed volley into a single-origin
+   shot).
+4. **Ammo resource — STILL OPEN, and it breaks two things.** `ResourceSystem.Resources` on
+   `Urchin.prefab` is `[]` and every `ammoIndex` is 0. The volley (`ammoCost` 0.15) refuses to fire
+   with `Invalid ammo index or ResourceSystem`, and `GunVesselTransformer.SlideActions` throws an
+   **`ArgumentOutOfRangeException` every frame of a ride** (`ResourceSystem.ChangeResourceAmount`
+   indexes without a bounds check). The barrage is free, so it will fire and mask this.
+5. **`VesselCustomization._shipGeometries` — landed**, 13 entries. Without it
+   `UrchinSlipActionExecutor` warns `found no ShipGeometries` and Slip detaches **without** phasing
+   out, so the vessel re-latches on the very next prism — exactly the failure the ghost exists to
+   prevent. Confirm those 13 objects actually carry `Collider`s; the executor collects only the
+   ones that do.
+6. **Vessel impact container — landed.** `vesselImpactorDataContainerSO` points at
+   `UrchinImpactorDataContainer.asset`.
+6b. **Netcode components are deliberately NOT wired** — no `NetcodeHooks`,
+   `NetworkVesselClientCache`, `NetworkVesselImpactor` or `ClientNetworkTransform` on
+   `Urchin.prefab`. Multiplayer spawn is its own pass, so the MPPM steps below cannot run until it
+   lands. Do the single-player steps first and treat the MPPM block as blocked, not as failing.
+7. **HUD row — STILL OPEN.** `UrchinVesselHUDView` exists (ammo fill + a deliberately binary riding
+   indicator); the four `abilityIcons` bindings still have to be authored on the HUD prefab in
+   charge → mass → space → time order. Run **FrogletTools > Vessels > Audit Vessel Ability Rows**
+   afterwards — Trail Rider's `Input = 0` will look like an unset field and is **correct** (it is
+   passive; the map cannot distinguish the two).
+8. **Three `GunVesselTransformer` fields are not serialized on the prefab** — `throttleDeadband`
+   (**0.1**), `throttleRestPosition` (**0.5**), `facingFlipThreshold` (**0.35**). (An earlier
+   revision of this list named `throttleZeroPosition` and `reverseLookThreshold`; neither ever
+   shipped.) They deserialize to their
+   C# initializers, which is correct behaviour, but they will only appear in the inspector after a
+   re-save. Never let `throttleDeadband` reach 0: `RideTheTrail` divides by `Throttle × speed`.
+
+**Verify in editor**
+
+9. Project compiles with zero errors, the `CosmicShore.Tests.EditMode` suite passes (it gained
+   `_Scripts/Tests/Editor/UrchinChainReactionTests.cs`), and
+   `python3 Tools/Build/author_urchin_assets.py --check` passes (it validates every YAML key
+   against the serialized fields of the class each asset's `m_Script` points at — a key Unity does
+   not recognise is silently dropped and the field reads its initializer forever).
+10. **Urchin is selectable and spawns.** Menu_Main → vessel changer toy, or any mode's vessel
+   select. It flies and lays a trail. **NO HUD APPEARS, and that is the known state** — there is
+   no `UrchinHUDVariant.prefab`, `vesselHUDController` is `{fileID: 0}`, and the
+   `UrchinVesselHUDController`/`View` pair is referenced by nothing. Do not treat a missing HUD
+   as a failure of this step. (`vesselType` was `Random(0)`; if it fails to SPAWN,
+   `TryGetShipPrefab` is not matching.)
+11. **One spike, one steal.** Fire the volley (RT) at an **enemy** trail at Charge 0 (depth 1): the
+    spike stops in the prism, the prism changes to your domain, **8** children spray out of it, and
+    the original spike fades out ~3.75 s later rather than popping or standing there forever.
+12. **The cascade dies by eating its frontier.** Same volley into a trail that is *already yours*:
+    nothing beyond the spike stopping — no steal, no children. Into open space: the spike expires
+    at 2 s and returns to its pool.
+13. **Depth scales with CHARGE.** At Charge 10 the first landing should spray **10** and each of
+    those should spray again. Still 8 means the level read is not reaching `ResolveGenerations`.
+14. **Reach scales with SPACE, and decays.** Space 0 vs Space 10 should visibly differ (muzzle
+    speed × 0.4 vs × 2.5), and within one cascade each generation should reach shorter than the
+    last (falloff 0.75). At Space 5 ("Deep Cascade") the last generation reaches as far as the
+    first.
+15. **The barrage is free and shallow.** LT at Charge 0: a golden-spiral burst from the hull that
+    steals and does **not** chain, costing no ammo. At Charge 5 ("Overcharge") the same press
+    should chain one generation.
+16. **Shielded mass costs no generation.** Spike a shielded prism: the shield sheds, the prism
+    stays hostile, **no** children fire. Super-shielded: nothing happens at all.
+17. **Pool integrity — the 2023 regression.** Fire ~50 volleys into dense enemy mass, then keep
+    firing. The gun must not go quiet. A silent stop means a spike that HIT (step 10's fade) or a
+    spike that MISSED (`projectileEndEffects` on the container) failed to return.
+18. **The frame brake reports itself.** Drive a deep cascade into a wall of enemy trail; the
+    console should show `[ChainReactionBudget] Shed a chain volley - ceiling is 6/frame`. Seeing it
+    is correct — it is how you tell a short cascade caused by brake 1 from one caused by brake 3.
+19. **Domain paint.** Fire as Jade, change domain at the domain-changer toy, fire again: spikes
+    must wear the **new** colour. The previous domain's material means the paint drifted back to
+    `Start`.
+20. **Attach — and the prism survives.** Fly into your own trail: the vessel snaps onto the ribbon,
+    the camera pulls in, the stick stops steering. **The prism you touched must still be there.**
+    A prism that explodes on contact means `skipWhileAttached` is not taking effect — that is the
+    2023 bug, and it is the single most important observation in this list.
+21. **The ride moves, and the payoff runs.** On the throttle the vessel travels the ribbon; off it,
+    it holds still. Your own trail's prisms visibly **grow** as you cross them; an enemy's change
+    to your domain. Moving but no grow/steal means the transformer resolved `BlockscapeFollower`.
+22. **Reverse.** Riding, look back past ~126° from your course while on the throttle: direction
+    flips.
+23. **Destroyed prisms restore**, and the ammo meter climbs while riding — visibly faster over
+    shielded prisms.
+24. **Hostile trail is a slog, until Time 5.** Ride an enemy ribbon at Time 0 (10 vs 150 — a
+    fifteenth of the speed). At Time 5 ("Slipstream") it should run at full pace while still
+    stealing.
+25. **Reinforced Wake.** Mass 5, ride your own trail: grown prisms come up **shielded**
+    (octahedron shells), and riding back over them pays double ammo.
+26. **Slip.** Riding, press B: you let go and can fly out through the trail for ~0.6 s without
+    re-latching. Fly back in — you must re-latch, i.e. the colliders came back.
+27. **Interrupted slip (the dangerous one).** Slip, then immediately swap vessels / end the turn /
+    respawn. The hull must be **solid** afterwards. A vessel that can now fly through the whole
+    prismscape means the `finally` restore did not run.
+28. **Detach speed.** Ride at full pelt, then slip: the vessel carries a sensible speed out instead
+    of snapping back to the cruise it had when it latched on.
+29. **Refused attach.** Touch a prism with **no trail** (an environment/flora prism, a fauna body
+    prism). The vessel must keep flying normally. Freezing in place means `IsAttached` stayed set
+    on a refusal.
+30. **A domain change mid-ride.** Ride your own trail, change domain at the toy, ride the *same*
+    trail: it must now read as **hostile** (slow, and it steals). Still growing means the live
+    `Domain` property got snapshotted again.
+31. **REGRESSION — the rest of the fleet still rams.** `skipWhileAttached` lives on an effect asset
+    every vessel lists, so spot-check a Squirrel and a Rhino destroying prisms by hull contact, and
+    a Rhino sword swipe. They never set `IsAttached`, so the guard must be a no-op for them.
+32. **REGRESSION — the HexRace track is unchanged.** Load `MinigameHexRace` twice at the same
+    intensity and confirm the track is identical, then do it again after an Urchin has fired
+    several hundred spikes in a prior match in the same session. This is the
+    `Random.rotation` → `DeterministicOrientation` fix; a track that differs means something still
+    perturbs the global stream.
+
+**MPPM — two clients** (the replicated unlock bits and the steal RPC)
+
+33. **Same cascade on both screens.** Client A's Urchin fires a depth-2+ volley into a trail; host
+    and client must see the same fan and the same set of converted prisms. A visibly different
+    spray is `Random.rotation` creeping back into `FireSpherical`.
+34. **Space 5 on the CLIENT.** Take the client's Urchin to Space 5 and fire a deep cascade — the
+    **host** must see the same non-decaying reach and the same converted prisms.
+35. **Charge 5 on the CLIENT.** Fire the barrage — both peers must see it chain.
+36. **Mass 5 on the CLIENT.** Ride the client's own trail — the **host** must see the grown prisms
+    arrive **shielded**. Unshielded on the host means the gate is reading a local level instead of
+    `IsUpgradeActive`.
+37. **Time 5 on the CLIENT.** Ride a hostile ribbon — the host must see it move at the fast speed.
+38. **Steal RPC — the client scores.** With the client's Urchin, convert ~20 prisms by spike and
+    ~20 by riding, then read the client's own `PrismStolen` / `VolumeStolen` on the scoreboard.
+    Both must be non-zero; before `ReportPrismStolen_ServerRpc` they were zero. Then check the
+    **victim's** `PrismsRemaining` / `VolumeRemaining`: it will **not** have been debited for the
+    client-side steals. That is the deliberate trade, not a bug — but confirm it does not put a
+    scoreboard into a nonsensical state (negatives, a total that exceeds the cell's mass) in the
+    modes that display remaining mass.
+39. **Do the same from the HOST's Urchin** and confirm the server does not **double-credit** —
+    `StatsManager.OwnsAttacker` is what stops the server also recording a steal a remote player
+    already reported for itself.
+
+**First-pass tuning** (starting points, not settled)
+
+| Knob | Where | Value |
+|---|---|---|
+| Cascade depth | `UrchinSpikeVolleyAction.asset` `generationsAtRestingCharge` / `generationsAtFullCharge` | **1 → 2.** Linear in level, anchored at 0 and 10, extrapolated across `[-5, 15]`, clamped `[0, 4]`. Worst case per seeded hit: depth 1 → 8 spikes, **depth 2 → 90 (what ships)**, depth 3 → 1,092, depth 4 → 15,302. Depth 3 was authored first and pulled: it is indefensible against a per-cell collider budget already at 3–4k against a 1,500 target. 3 and 4 stay supported by the SO and deliberately unshipped. |
+| Barrage depth | `UrchinSpikeBarrageAction.asset` same pair | **0 → 1**, plus `chainsOnChargeUpgrade: 1` (the L5 floor). The barrage is free and pays for it with shallowness. |
+| Per-generation reach decay | both spike assets `generationRangeFalloff` | **0.75**, clamped `[0.05, 1]`. 1 is the SPACE-5 upgrade. Lower makes a deep cascade read as a *wave*; 1 makes it read as an expanding sphere. |
+| Frame ceiling | `ChainReactionBudget.VolleysPerFrame` (public static, **code**) | **4**, global across every Urchin in the match. If cascades feel truncated, check the console warning first — this drops, it does not queue. |
+| Volley cost / rate | `UrchinSpikeVolleyAction.asset` | 0.15 ammo @ 3/s, muzzle speed 60 × SPACE (0.4 … 2.5), flight 2 s |
+| Barrage cost / rate | `UrchinSpikeBarrageAction.asset` | **free** @ 1/s, muzzle speed 40 × SPACE, flight 2 s |
+| Spike dwell / fade | `ProjectileEmbedPrismEffect.asset` | **3.75 s** / 0.35 s — pure look; the steal and the volley already happened. `fadeSeconds` must stay > 0 (continuity of existence). |
+| Ride speeds | `Urchin.prefab` `TrailFollower` | Friendly **150** / Hostile **10** / Destroyed **10**. The 15× gap is what Slipstream buys, and it is the biggest single number in the vessel. Note `BlockscapeFollower` on the same GameObject serializes an identical trio that nothing reads. |
+| Growth per ridden prism | `Urchin.prefab` `GunVesselTransformer.growthAmount` | `ElementalFloat`, element Mass, 0.6 → 1.2 (`Value` 1) |
+| Ride ammo recharge | `Urchin.prefab` `GunVesselTransformer.rechargeRate` | 0.1/s, **×2** on a shielded prism |
+| Throttle shaping | `GunVesselTransformer` (C# defaults, **not yet serialized on the prefab**) | `throttleDeadband` **0.1** · `throttleRestPosition` **0.5** · `facingFlipThreshold` **0.35**. A deadband of 0 means the ride never parks at rest (there is no divide by throttle — an earlier revision of this row claimed one). |
+| Slip ghost | `UrchinSlipAction.asset` | 0.6 s → 1.6 s, `detachImpulse` **0** (off) |
+| Steal→score weight | mode `ScoringRuleSO` | unchanged; the RPC only makes a client's steals *count*, it does not weight them |
+
+**Known gaps at time of writing** — no audio is authored on any Urchin surface (per the FMOD
+convention the spike embed/steal/chain-fire and the attach/ride/slip each want their own
+`EventReference`, shipped **empty**); `AIPilot` has no notion of either ability, so an AI Urchin
+neither fires nor rides and will sit at zero throttle if it attaches by accident; edit-mode
+coverage is narrow — `UrchinChainReactionTests` pins the depth curve, the ghost window and volley
+determinism, but nothing covers the effect trio or the budget; the Urchin lists no
+`VesselChangeSpeedByPrismEffectSO`, so it takes **no speed penalty from any prism** (danger prisms
+included), joining Rhino and Serpent in that gap; `StatsManager.CreditPrismSteal` is called only
+by the RPC while `PrismStolen`'s server branch still hand-rolls the same four lines its docstring
+says it was extracted to share; the steal-scoring trade is **not** recorded in
+`Docs/ScoringSystem/BUGS.md` despite `Player.cs` saying it is; and the four 2023
+`_Prefabs/Environment/*SpikeProjectile.prefab` are now superseded by the three under
+`_Prefabs/Projectile/` — `RecursiveSpikeProjectile.prefab` in particular is an artefact of the
+same-tier recursion loop with no tier in `ProjectileFactory`.
+
+---
+
 ### 🔴 Dolphin elemental map re-cut around one weapon (`claude/dolphin-elemental-upgrades-umokil`)
 
 Authored without a Unity compile or play-test. Every element on the Dolphin now owns one
@@ -704,8 +1891,11 @@ occurrence names itself.
    `ScarabHullBuilder`; right-click the component ▸ **Rebuild Hull** to see the mesh without
    entering play mode. In flight the Scarab must read as a BEETLE — domed shell with a seam down
    the middle, a forward horn, six legs — and the inherited Sparrow mesh must be invisible (its
-   renderers are disabled at build time; its GameObjects stay, because the vessel's BoxCollider and
-   ImpactCollider live on them, so collisions must still work). The domain colour must land on the
+   renderers are disabled at build time; its GameObjects stay, because the vessel's collider and
+   ImpactCollider live on them, so collisions must still work). **Its hull collider is now a single
+   `SphereCollider`, r 4.5 at the origin** (was a Sparrow-shaped 10.31 x 0.46 x 4.38 box parked
+   3.5 u behind the ship) — confirm the component renders as *Sphere Collider*, not
+   "Missing", and that the gizmo wraps the carapace rather than sitting behind it. The domain colour must land on the
    CARAPACE and horn (submesh 1), not the underside. Camera sits directly behind with **no vertical
    lift** — `followOffset {0, 0, -50}`; the old `y: 10` was inherited from the Sparrow, the only
    vessel that carries one.
@@ -714,8 +1904,28 @@ occurrence names itself.
    up and splay as you slow, the horn swings against the nose. A rigid hull means
    `ScarabAnimation` resolved no parts — check the console for its unresolved-part report.
    Right-stick dash: the whole visible ship must spin 360° (it previously rolled the hidden FBX).
-   And the dash must now throw a **visible spherical blast** ~45u ahead — if nothing appears,
-   `Detonate()` regressed.
+   **The one thing no offline check can settle:** select the Scarab's hull GameObject
+   (`SparrowModel1`, the nested FBX instance) and read its **world scale** in the inspector. The
+   blast measures the hull collider in world units, so the shipped `m_Radius: 4.5` only means a
+   4.5-unit hull — and therefore an r 45 / 54-long plate — if that root is unit-scaled. It is
+   *sized correctly either way*; what needs one look is whether 4.5 is the intended world radius.
+   (Circumstantial evidence says yes: the hull mesh measures ~12.5 u wide after its 0.2034 armature
+   scale, against the 10.31-wide box that used to be the hull collider — same order, not 5x apart.)
+   **MPPM two-client, the load-bearing one:** dash on the CLIENT and count the plates — there must
+   be exactly **ONE**, and the ball must take a single kick, not two. Before the `IsLocalPilot`
+   gate the replicated right stick made every peer fire, so a 4-player lobby threw 4 plates per
+   dash. Also confirm the OTHER machine still sees your ship spin 360° (that is now an explicit
+   `BroadcastJukeRoll_ClientRpc`, not a side effect), and that the spinning replica does not drift
+   sideways — a replica must play the visual only.
+   And the dash must now throw a **visible cylindrical plate** — a broad disc lying flat ACROSS
+   your course, starting on the hull and sweeping **54 u** along the dash in **~0.21 s** at
+   **r 45** (10× the 4.5 hull radius; length 1.2× that radius). It is a fast slap, not a bloom. If
+   nothing appears, `Detonate()` regressed; if it draws as a sphere, the prefab's `plateVisual`
+   child lost its built-in Cylinder mesh. Check three things beyond "it appears": every prism it
+   claims flies the SAME way — down-range along the dash, not outward from a point; a ball it
+   reaches launches that same direction **even when the ball is out near the plate's rim** (that is
+   the circumscribing box trigger doing its job — an inscribed sphere would have covered only the
+   inner 27 u); and an opposing pilot caught in it takes the all-element debuff.
 1. **Open `Assets/_Prefabs/Spacevessels/Scarab.prefab` and SAVE it** — this is load-bearing, not
    a smoke test: the clone carries Sparrow's `NetworkObject.GlobalObjectIdHash` until the editor
    re-serializes it, and two registered network prefabs sharing a hash collide. Open, confirm no
@@ -730,25 +1940,33 @@ occurrence names itself.
    A / Space = a low-poly toy RING blooms ~150u ahead on the COURSE with its interior filled by a
    Vogel-spiral prism disc (drift then place — the ring should appear where you're going, not where
    you're pointing), second+third presses spend the remaining charges, fourth refuses.
-4. **Crystals → a ball.** **EVERY omni crystal forges a ball** — the energy gate is authored OFF
-   (`_requireEnergy: 0`) by request. Fly through one: a ball appears ahead of your nose carrying
-   your speed and domain colour, and the console prints `[ScarabBallForge] … forged a {domain}
-   ball … @ N u/s`. Each crystal also brightens the **Switch icon** one step (0→3 charges).
-   ⚠ If a ball spawns but sits still, the freeze/velocity ordering in `LaunchServer` regressed; if
-   TWO balls appear per crystal in MPPM, the server gate regressed.
-   ⚠ **Balls accumulate without bound** while the gate is off and freestyle has no arena boundary
-   — nothing despawns them, and each live ball costs a per-tick prism scan plus a sweep over every
-   vessel. Fine for a short session; if a long one degrades, that is the population cap (§15.5),
-   not a new bug.
+4. **Crystals → a ball.** **Every OMNI crystal forges a ball; an ELEMENTAL one never does** —
+   the energy gate is authored OFF (`_requireEnergy: 0`) by request. The forge is the **SKIMMER**,
+   not the hull: fly at a bright crystal and it becomes a ball **in place and at rest** before the
+   ship arrives (blooming in over `spawnBloomSeconds`), and the hull then strikes a real ball. It
+   does NOT appear ahead of your nose carrying your speed — that was the retired hull forge, and
+   seeing it would mean the old path came back. Console prints `[ScarabBallForge] … turned a
+   crystal into a {domain} ball at …` on the `ScarabNucleus` verbose channel. Each crystal also
+   brightens the **Switch icon** one step (0→3 charges).
+   ⚠ If TWO balls appear per crystal in MPPM, the server gate regressed.
+   ⚠ Balls no longer accumulate without bound: **four loose in one cell detonates all four**
+   (see the Scramble section above) — that is the population answer (§15.5), and it is live in
+   freestyle too, because it is a ball rule rather than a mode rule.
    *(The energy economy still exists behind that one flag: turn `_requireEnergy` on and the meter
    gates forging again — four crystals fill the ring, the fifth forges. While it is off the HUD's
    energy ring fills but gates nothing.)*
-3b. **The cavitation blast.** Every right-stick dash that finds the blast off cooldown throws a
-   small SPHERICAL explosion ~45u ahead along the dash direction (diameter 90). It must:
-   destroy prisms in that volume (fly at your own trail and dash into it); **kill fauna** caught in
-   it (a creature dies when its body prisms go — dash through a swarm in a populated cell); and
-   **debuff an opposing pilot** it engulfs — all four of their element flowers drop ~half a level
-   and recover over 4s. It must NOT hit your own domain's mass or teammates (`affectSelf 0`).
+3b. **The cavitation blast is a SWEPT PLATE, not a sphere** (rewritten on this branch — if it
+   reads as a ball of destruction around the ship, the old `AOEExplosion` prefab came back). A
+   circular plate is born centred ON the vessel with its face normal along the DASH direction
+   (perpendicular to your course), and sweeps forward along that normal: **radius 45** (10× the
+   4.5-unit hull collider), **length 54**, crossed in **0.21 s**. So the destruction is a disc
+   punched sideways out of the world — stand in a wall of your own trail, dash into it, and the
+   hole should be a broad flat slab across your dash line, not a crater at arm's length. It must
+   also **kill fauna** caught in it (a creature dies when its body prisms go — dash through a swarm
+   in a populated cell) and **debuff an opposing pilot** it engulfs (all four element flowers drop
+   ~half a level, recovering over 4 s), and must NOT touch your own domain's mass or teammates
+   (`affectSelf 0`). Debris carries the **blast velocity** (257 u/s along the plate normal), so
+   opposing prisms should be thrown along the dash, not radially.
    ⚠ Dash again immediately: the DASH must still fire even while the blast is recharging — if the
    dodge is blocked by the cooldown, the split regressed.
 4a. **Gauges**: the CHARGE icon (leftmost) is bright orange when the blast is ready and dims for
@@ -769,15 +1987,18 @@ occurrence names itself.
    - **Space L10** → a forged ball is **4× the size** of one forged at rest. Balls already in flight
      keep the size they were born with (stamped once) — that is correct, not a bug.
    - **Time L10** → higher throttle ceiling (~270). **Time L5** → double-tap RT dashes forward.
-8. **Dash-into-crystal parity** (the trajectory check): hold a heading, dash sideways, and clip an
-   omni crystal *during* the dash. The forged ball must leave along the DASH-blended heading, not
-   the throttle line — the same trajectory a stationary ball would take if you dashed into it.
+8. **Dash-into-crystal parity** — *retired, and its replacement is the opposite check.* This
+   step tested the hull forge's inherited velocity, which no longer exists: the skimmer converts
+   the crystal AT REST and the hull then strikes it. So dash into a crystal and watch that the ball
+   is briefly **stationary** before the ship reaches it, then leaves on a real collision. A ball
+   that departs on the dash heading without being touched is the retired forge resurfacing.
 
 **First-pass tuning (expect a balancing pass):** accel 90 u/s², coast drag 120 (release-only —
 holding the trigger must never decay), top speed 180 (×1.5 at Time 10), dash 80 u/s / 0.5s /
-**no cooldown**, Snap Dash 100 u/s / 0.4s / 0.3s double-tap window, cavitation blast scale 90 /
-offset 45 / 2.5s cooldown (×0.5 at Charge 10) / duration 0.85s / `proportionalDebris` with
-restitution 1/3 × Inertia 1.8 (the Dolphin's shipped group), blast debuff −0.5 on all four
+**no cooldown**, Snap Dash 100 u/s / 0.4s / 0.3s double-tap window, cavitation **plate** radius
+45 (`radiusPerVesselRadius` 10 × the 4.5 hull) / length 54 (`lengthPerRadius` 1.2) / sweep
+257.14 u/s ⇒ duration 0.21s / 2.5s cooldown (×0.5 at Charge 10) / `proportionalDebris` with
+restitution 1/3 × Inertia **3** (so debris speed IS the blast velocity), blast debuff −0.5 on all four
 elements over 4s with 1s per-victim anti-spam, ring radius 20 (×2.5 at Mass 10), 28 interior +
 44 burst prisms (2.5, 1.5, 8), place distance flat 150 (Space no longer scales it), 3 switch
 charges, crystal grants +0.334 charge / +0.25 energy, ball size ×1 → ×4 at Space 10.
@@ -989,7 +2210,7 @@ Follow-ups there.
 | Knob | Value | Where it lives |
 |---|---|---|
 | Throttle top | **68** (+ `MinimumSpeed` 10 = 78) | `Dolphin.prefab` → `VesselTransformer.DefaultThrottleScaler` |
-| Speed floor | **10** (unchanged) | `Dolphin.prefab` → `VesselTransformer.DefaultMinimumSpeed` |
+| Speed floor | ~~10~~ → **0** (superseded, see the minimum-speed entry above) | `Dolphin.prefab` → `VesselTransformer.DefaultMinimumSpeed` |
 | Boost peak multiplier | **2.259** (**squared** in use → ×5.103) | `ChargeBoostAction.maxBoostMultiplier` |
 | Charge time to full | **3.636 s** | `ChargeBoostAction.chargeTimeToFull` |
 | Discharge time to empty | **2.5 s** | `ChargeBoostAction.dischargeTimeToEmpty` |
@@ -1170,12 +2391,14 @@ GameObject, a removed resource slot, and renamed serialized fields.
   `BoostAction.asset`; boost is now unlimited in duration.
 - The **strafing roll dropped to base kit** — `BarrelRollController` lost its
   `IsUpgradeActive(Element.Time)` gate. Still one roll per boost press.
-- **TIME-5 is now "Elemental Ward"** — a general, source-keyed
+- **TIME-5 is now "Elemental Ward"** — a general, grantor-keyed
   elemental-debuff immunity on `ResourceSystem`
-  (`SetElementalDebuffImmunity` / `IsElementallyImmune`), gated in one place:
+  (`SetElementalDebuffImmunity` / `IsImmuneTo`), gated in one place:
   the negative branch of `ApplyElementalEffect`. Driven declaratively by the new
   `VesselElementalImmunity` component: **Sparrow** `WhileBoosting` + Time gate,
-  **Serpent** `WhileTranslationRestricted` ungated.
+  **Serpent** `WhileTranslationRestricted` ungated. A ward also declares WHICH
+  debuff classes it stops (`ElementalDebuffSources`); these two stop all of
+  them, the **Dolphin's** Drift Ward stops `DangerPrism` alone.
 - The Sparrow boost icon's radial gauge became a **binary roll-charge pip**
   (`SparrowHUDView.SetRollCharge`), driven by
   `BarrelRollController.OnRollChargeChanged`.
@@ -1196,8 +2419,11 @@ GameObject, a removed resource slot, and renamed serialized fields.
    `ResourceSystem` list reads Missiles / FullAuto / ExhaustBarrage (3 entries,
    no Heat); `SparrowHUDController.barrelRollController` points at the root's
    `BarrelRollController`; `VesselElementalImmunity` is on the root reading
-   `WhileBoosting` + `Time`. Then `Serpent.prefab`: `VesselElementalImmunity`
-   on the root reading `WhileTranslationRestricted` + `None`.
+   `WhileBoosting` + `Time` + `wardedSources: Everything`. Then
+   `Serpent.prefab`: `VesselElementalImmunity` on the root reading
+   `WhileTranslationRestricted` + `None` + `Everything`. Then `Dolphin.prefab`:
+   `WhileDrifting` + `Time` + **`DangerPrism` only** — if that mask reads
+   `Everything`, a drifting Dolphin cannot be scored on in The Bends.
 3. Hold boost 60 s — no force-release, no danger trail, no self-slam.
 4. Time at 0: boost + full stick deflection rolls **once** per press.
 5. The boost (rightmost) ability icon's ring: full on press, wipes empty with a
@@ -1206,6 +2432,8 @@ GameObject, a removed resource slot, and renamed serialized fields.
    boosting** → element flowers do not dip; **not boosting** → they dip. Slow
    and input-mute land either way (by design).
 7. Serpent stopped + danger prism → no flower dip, at any Time level.
+7b. Dolphin at Time 5, drifting: danger prism → no flower dip; caught in another
+   Dolphin's crystal blast → flowers **do** dip and the attacker scores the bend.
 8. **MPPM two clients**, both Sparrows, one at Time 5: both machines must agree
    on who resists the drain. This is the replicated-`NetElementUnlocks` path —
    a local level read would pass step 6 and fail here.

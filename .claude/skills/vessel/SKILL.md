@@ -107,7 +107,7 @@ un-implemented until Garrett marks them up. If your task requires a mapping that
 STOP and ask (AskUserQuestion), presenting the FLEET_MAPS proposal for that row. The same gate
 applies to new abilities, new resources on the meter list, and anything that adds a fundamental.
 
-## 4. Implement — the twenty-four rules that keep getting relearned
+## 4. Implement — the rules that keep getting relearned
 
 1. **Ability SOs are shared and stateless.** Per-vessel state lives in executors / vessel-root
    MonoBehaviours; SOs receive `(registry, status)` per call. Never bind state to an SO asset.
@@ -284,6 +284,156 @@ applies to new abilities, new resources on the meter list, and anything that add
     and every consumer sizing real geometry off it is wrong by the same factor. When you fix one,
     document the accessor as a base term so the next reader does not re-adopt it.
     (Self-trail contact, 2026-08-17.)
+
+26. **RE-SCOPING an L5 upgrade means finding and switching OFF the old one — the map's prose is
+    not the wiring.** An `ElementalAbilityMapSO` entry's `UpgradeLabel`/`UpgradeDescription` is
+    documentation; the upgrade itself lives in whatever SO gates on `IsUpgradeActive(<element>)`.
+    Re-author the map alone and the element now grants TWO upgrades, with the map describing only
+    the new one — a balance change invisible in the diff and in the HUD. So: grep
+    `IsUpgradeActive` across the effect/action SOs, resolve each hit's per-vessel ASSET, and
+    confirm which ones name the element you are re-scoping. (Dolphin Time 5, 2026-08-18: the
+    retired "Live Current" was `_dangerBonusElement: 4` on
+    `DolphinSkimmerChangeResourceByPrismEffect` and had to be set back to `None`.)
+    **Two effects can describe the same sentence and be different mechanisms.** "Danger prisms
+    pay more" is `SkimmerBoostPrismEffect.dangerEnergyMultiplier` (10x, BOOST, hardcoded to the
+    CHARGE upgrade, platform-wide) *and* `SkimmerChangeResourceByPrismEffectSO._dangerBonusElement`
+    (per-asset element, a different RESOURCE). CLAUDE.md and the fleet map each described one of
+    them; reading either alone gives a confident wrong answer about which gate you are moving.
+
+27. **Before writing "X still lands" about an upgrade's SCOPE, read that vessel's own effect
+    containers.** The platform's danger-prism paragraph lists slow + elemental drain + boost
+    reset + input mute, and it is tempting to inherit that list wholesale into a per-vessel
+    upgrade description. Per-vessel reality differs: the Dolphin carries the slow and an energy
+    halving, its boost effect is a `retainedFraction` halving that deliberately **skips its
+    correction while drifting** (i.e. exactly inside a drift-gated ward's window), and the input
+    mute (`SparrowDebuffByRhinoDangerPrismEffectSO`) is wired into **no container on any
+    vessel**. Resolve every guid in the vessel's `VesselImpactorDataContainerSO` /
+    `SkimmerImpactorDataContainerSO` and read the effects you are about to make claims about —
+    the ship protocol's "find the PRODUCER" rule, aimed at your own new prose rather than at
+    inherited docs. (Dolphin Drift Ward, 2026-08-18.)
+
+28. **MERGING two abilities merges their ELEMENTS and their L5s — an element carries exactly
+    one level-5, so a merge forces a choice.** Two abilities on two triggers own two elements;
+    fold them into one and you have a spare element that must be given a REAL parameter (not left
+    dangling, and not left scaling the merged ability as a second dial nobody documented), and two
+    level-5 upgrades competing for one slot. Resolve both explicitly and say so in the map's
+    `UpgradeDescription`: either FUSE them when they are two halves of one idea (the Urchin's
+    "Overcharge" became +1 cascade generation **and** no reach falloff, absorbing the retired
+    SPACE-5 "Deep Cascade") or drop one on the record. Also move every element READ with the
+    ability — `Multiplier(Element.X)` calls inside the SO are the half that silently keeps
+    pointing at the old element, and the map multiplier has to move with them (the Urchin's
+    Charge entry went 2.0 → 2.5 to inherit the reach behaviour Space had authored).
+    (Urchin trigger merge, 2026-08-18.)
+
+29. **Clearing a state flag mid-routine: check what the REST of that frame still reads off it.**
+    An ability that ends a mode part-way through a frame (`VesselStatus.IsAttached = false;
+    AttachedPrism = null;` inside the ride's own `Slide()`) leaves the remaining ~30 lines running
+    against the state it just deleted. The Urchin's end-of-ribbon launch survived only because
+    `RideSurfaceOffset` happens to read `trailFollower.AttachedPrism` rather than
+    `VesselStatus.AttachedPrism` and null-guards it — one line's difference from an NRE on every
+    launch. Grep the rest of the method for every field you nulled before you null it, and prefer
+    letting the next frame's edge detector do the teardown over unwinding in place.
+    **Its companion:** a state-machine exit that clears BOTH sides of a mirrored flag at once
+    makes the edge-detecting branch unreachable. `GunVesselTransformer` had a path that set
+    `VesselStatus.IsAttached = false` *and* its own `attached = false` in the same block, so the
+    `else if (!IsAttached && attached)` that runs `EndRide` could never fire for it — `_rideMode`
+    stayed stale and the ride camera stayed pulled in for the rest of the vessel's life, silently,
+    since the vessel still flew. Route every exit through one method.
+
+30. **A pooled-object teardown must prove the object is still YOURS.** An ability that keeps a
+    `List<Prism>` of what it laid and returns them at a turn boundary will, sooner or later, hold
+    a prism that died mid-match, went back to the pool, and was handed to a different lay site —
+    at which point the teardown yanks live mass out from under its new owner. `p.destroyed` does
+    not catch it (the recycled prism is alive). Test IDENTITY, not liveness: keep the `Trail`s you
+    laid into and skip anything whose `Prism.Trail` is no longer one of them, since pool reuse
+    clears membership (`Prism.ResetState`) and the next lay stamps its own.
+    `SquirrelTubeActionExecutor` still carries the unguarded version — do not copy it verbatim.
+
+31. **A DEFENSIVE ability is a MODE-level rule in every mode where its vessel is mandatory — and
+    the comeback system hands it to whoever is LOSING.** The fleet has mono-vessel modes (Bends +
+    Rampage = Dolphin, Dog Fight + Wildlife Liberation = Sparrow, Astro League + Ribcage = Rhino,
+    Scarab Scramble = Scarab), so a ward / immunity / invulnerability authored as one vessel's
+    upgrade is simultaneously a rule that every pilot in those modes holds. Ask the question the
+    per-vessel view cannot: **does this ability deny the thing a mono-vessel mode SCORES on?** The
+    Dolphin's Time-5 Drift Ward, held as an unscoped elemental-debuff immunity, denied the crystal
+    blast's debuff — the entire scoring event of The Bends — and because
+    `ElementalComebackSystem` unlocks L5 by DEFICIT, falling one bend behind out of three bought
+    the trailing pilot a hard counter to the only way they could be scored on. Nothing errored;
+    they simply became unscoreable. Two follow-on rules: **check the mode's `ScoringRuleSO` and
+    its scoring EFFECT, not just the mode doc** (here `VesselCombatHitByExplosionEffectSO`'s
+    `requireDebuffableVictim` correctly refused to score an event that did not happen, which turned
+    a defensive bug into a silent scoring bug), and **when the ability must keep its promise, scope
+    the promise rather than gating the ability out of the mode** — a per-mode carve-out is the
+    thing to avoid; classing the EVENT (`ElementalDebuffSources`) and masking the GRANT keeps one
+    rule for the whole platform. More generally: **a bare bool platform state grows a scope the
+    moment a third holder wants to promise less than the first two.** When you add that scope,
+    make "everything" `~0` rather than the OR of today's members (it is serialized on prefabs and
+    must cover a class added later) and give unclassified events their own default bucket, so
+    neither adding a class nor forgetting to classify one can silently widen a narrow grant.
+    (Dolphin Drift Ward scoping, 2026-08-19.)
+
+### 4.x Placing prisms from a vessel ability — shield sizing
+
+An ability that BUILDS with prisms (the Scarab's switch dais, the Urchin's track, a boost ring)
+inherits two traps that have each cost a round-trip:
+
+- **`AdmitTargetScale` goes AFTER `Initialize`**, never before — `Initialize` -> `ResetState` ->
+  `RestoreAuthoredScaleWindow()` undoes the widening and re-clamps against the restored window.
+  The interactive prism pool's window is `(0.5,0.5,0.5)..(40,10,10)`, so a stated size outside it
+  is silently trimmed with no error anywhere.
+- **A shielded or super-shielded prism is 3x the box it replaces**, and the two tiers differ:
+  the octahedron's vertices are ON THE AXES, the stella octangula's spikes are at the CUBE
+  CORNERS (circumsphere `3S*sqrt(3)`, i.e. `sqrt(3)` bigger than its own bounding box). Size from
+  the measure the design cares about and derive it from `CIRCUMSCRIBING_SCALE`. Full table:
+  the `asset-surgery` skill, "Trap: a SHIELD's size is not the prism's size".
+- **Anything you keep a PRISM REFERENCE in must be identity-tested before you act on it later.**
+  Rule 30's trail-membership test only exists for prisms in a `Trail`; an ability that lays loose
+  prisms (a switch's membrane, a ring, a placed structure) has no such stamp, and `p.destroyed` is
+  useless because the recycled prism is ALIVE. Use `prismProperties.TimeCreated`: `Prism.Initialize`
+  re-stamps it on every pool issue, so remembering `(prism, laidAt)` and skipping any entry whose
+  stamp has moved is an exact "same object AND same life" test. Without it, tearing your own
+  structure down destroys live mass belonging to whoever the pool handed it to.
+- **When a value has both a FLOOR and an invariant-preserving CEILING, the ceiling must be applied
+  LAST.** A generated structure whose no-overlap guarantee comes from clipping each element into
+  its own region loses that guarantee entirely if a "minimum size" clamp runs afterwards — the
+  clamp cheerfully pushes an element back out of the region, and nothing announces it. Order the
+  clamps so the invariant wins, and prove it with a test that sets the floor absurdly high.
+- **ROTATING a super-shielded prism changes how far it reaches in your plane**, so a pose is a
+  clearance change. Axis-aligned it reaches `1.5S*sqrt(2)` in-plane; aim a spike into the plane
+  (e.g. `(1,1,1)` at a target) and the reach becomes the full `1.5S*sqrt(3)` — 22.5% more, for
+  free, with nothing to warn you. Re-derive the clearance whenever you re-pose one, and compute
+  its silhouette as the projected hull of its eight spike tips rather than a hard-coded octagon,
+  which is only the outline of an AXIS-ALIGNED sun.
+
+### 4.y Spawning a vessel outside the turn flow (a toy, a rig, a mid-match release)
+
+Anything that spawns a vessel somewhere other than the standard spawn-then-turn-start chain
+inherits four traps. All four presented as "the ship is there but does nothing / has no trail",
+which is the least diagnostic symptom in the fleet.
+
+- **A vessel released at speed 0 lays NO TRAIL, and the reason is a threshold you cannot see
+  from the vessel.** `VesselPrismController`'s spawn loop only lays a prism above **3 u/s**, and
+  the pair-init hands every vessel a dead stop (`GameDataSO.AddPlayer` -> `Player.ResetForPlay`
+  -> `VesselController.ResetForPlay` zeroes `Speed`). The menu vessel SWAP already solves this -
+  `SetPose` then `SetInitialSpeed`, in that order - so copy both halves, not just the pose.
+- **The AI's own drift PINS the cruise speed at the value the vessel carried in**
+  (`VesselTransformer.StepTowardTarget`, `_driftSpeedHeld`; the vector model's equivalent is
+  `DriftThrottlePolicy.Locked`). A bot that drifts before it has accelerated stays pinned near
+  zero *indefinitely* - so the trail never comes on at all rather than coming on late. Whichever
+  hull's authored `AIPilot.abilities` entry is a drift exposes this first (today: the Dolphin).
+- **`Player.StartPlayer` ALREADY runs the autopilot branch for a player whose `NetIsAI` is set** -
+  `ToggleAIPilot(true)` + `ToggleInputPause(true)`. Calling a second `ToggleAIPilot(true)` on top
+  (e.g. the menu's `ActivateAutopilot`, which exists for the HUMAN menu vessel, where StartPlayer
+  deliberately does not touch autopilot) used to duplicate every `UseAbilityCoroutine` forever.
+  `AIPilot.StartAIPilot` now sweeps its own coroutines first, so it is idempotent - **by clearing,
+  not by an `if (AutoPilotEnabled) return`**, because `OnDisable` leaves that flag true while Unity
+  kills the coroutines, and an early-out would refuse to restart them on the next enable.
+- **A SERVER-OWNED `Player` carries the HOST's `OwnerClientId`**, so its spawn event is
+  indistinguishable from the host's own and the human spawn path will try to give it a second
+  vessel. Call `ServerPlayerVesselInitializer.ClaimExternallySpawnedPlayer` in the SAME frame as
+  `NetworkObject.Spawn()` - `Player.OnNetworkSpawn` raises the event from inside that call. And
+  the AI Player prefab needs no scene reference: `NetworkManager.NetworkConfig.PlayerPrefab` IS
+  the prefab every game scene wires by hand into `aiPlayerPrefab`.
 
 ## 5. Audit, then hand back verification (you cannot run Unity; the human is the gate)
 

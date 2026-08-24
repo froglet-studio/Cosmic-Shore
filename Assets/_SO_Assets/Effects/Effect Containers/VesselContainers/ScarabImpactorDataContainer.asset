@@ -17,27 +17,20 @@ MonoBehaviour:
   - {fileID: 11400000, guid: ca2d1be3880b82941a0465a1f7e45280, type: 2}
   - {fileID: 11400000, guid: 4da62d4eefe03594ba35027dd537aff0, type: 2}
   - {fileID: 11400000, guid: c7ccaca885824b24b716b12148d77ce1, type: 2}
-  vesselCrystalEffects:
-  - {fileID: 11400000, guid: 48b503c9bdb303ef5dde7e2c82aaad37, type: 2}
-  - {fileID: 11400000, guid: 9e03e6bcea14d66e175086272769ef39, type: 2}
-  - {fileID: 11400000, guid: 47838aa5b885a1320c138ba3419a6a47, type: 2}
+  vesselCrystalEffects: []
   vesselMassCrystalEffects:
-  - {fileID: 11400000, guid: 48b503c9bdb303ef5dde7e2c82aaad37, type: 2}
   - {fileID: 11400000, guid: 8de915fb00503344ca89a92a0a127b00, type: 2}
   - {fileID: 11400000, guid: 9e03e6bcea14d66e175086272769ef39, type: 2}
   - {fileID: 11400000, guid: 47838aa5b885a1320c138ba3419a6a47, type: 2}
   vesselChargeCrystalEffects:
-  - {fileID: 11400000, guid: 48b503c9bdb303ef5dde7e2c82aaad37, type: 2}
   - {fileID: 11400000, guid: 8de915fb00503344ca89a92a0a127b00, type: 2}
   - {fileID: 11400000, guid: 9e03e6bcea14d66e175086272769ef39, type: 2}
   - {fileID: 11400000, guid: 47838aa5b885a1320c138ba3419a6a47, type: 2}
   vesselSpaceCrystalEffects:
-  - {fileID: 11400000, guid: 48b503c9bdb303ef5dde7e2c82aaad37, type: 2}
   - {fileID: 11400000, guid: 8de915fb00503344ca89a92a0a127b00, type: 2}
   - {fileID: 11400000, guid: 9e03e6bcea14d66e175086272769ef39, type: 2}
   - {fileID: 11400000, guid: 47838aa5b885a1320c138ba3419a6a47, type: 2}
   vesselTimeCrystalEffects:
-  - {fileID: 11400000, guid: 48b503c9bdb303ef5dde7e2c82aaad37, type: 2}
   - {fileID: 11400000, guid: 8de915fb00503344ca89a92a0a127b00, type: 2}
   - {fileID: 11400000, guid: 9e03e6bcea14d66e175086272769ef39, type: 2}
   - {fileID: 11400000, guid: 47838aa5b885a1320c138ba3419a6a47, type: 2}

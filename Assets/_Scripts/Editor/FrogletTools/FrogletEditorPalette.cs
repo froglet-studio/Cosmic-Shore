@@ -25,6 +25,7 @@ namespace CosmicShore.Editor.Froglet
         public static readonly Color Magenta = new(0.90f, 0.36f, 0.71f);
         public static readonly Color Slate = new(0.48f, 0.55f, 0.64f);
         public static readonly Color Lime = new(0.62f, 0.83f, 0.24f);
+        public static readonly Color Indigo = new(0.42f, 0.47f, 0.96f);
 
         // ── Semantics ────────────────────────────────────────────────────────────
         public static readonly Color Ok = Jade;
@@ -45,6 +46,7 @@ namespace CosmicShore.Editor.Froglet
             { FrogletToolCategory.Interface, Cyan },
             { FrogletToolCategory.Services, Magenta },
             { FrogletToolCategory.Misc, Slate },
+            { FrogletToolCategory.Diagnostics, Indigo },
         };
 
         public static Color ColorFor(FrogletToolCategory c)
@@ -61,6 +63,7 @@ namespace CosmicShore.Editor.Froglet
             FrogletToolCategory.Validation => "Validation",
             FrogletToolCategory.Interface => "Interface",
             FrogletToolCategory.Services => "Services & Data",
+            FrogletToolCategory.Diagnostics => "Diagnostics & Health",
             _ => "Misc",
         };
 
@@ -126,7 +129,7 @@ namespace CosmicShore.Editor.Froglet
 
         // ── Styles ───────────────────────────────────────────────────────────────
 
-        static GUIStyle _title, _subtitle, _section, _cardTitle, _cardBody, _pill, _sectionHeader;
+        static GUIStyle _title, _subtitle, _section, _cardTitle, _cardBody, _cardBodyWrapped, _pill, _sectionHeader;
 
         public static GUIStyle Title => _title ??= new GUIStyle(EditorStyles.boldLabel)
         {
@@ -167,6 +170,12 @@ namespace CosmicShore.Editor.Froglet
             wordWrap = false,
             alignment = TextAnchor.MiddleLeft,
             normal = { textColor = Muted },
+        };
+
+        /// <summary>Multi-line flavour of <see cref="CardBody"/> for message/stack excerpts.</summary>
+        public static GUIStyle CardBodyWrapped => _cardBodyWrapped ??= new GUIStyle(CardBody)
+        {
+            wordWrap = true,
         };
 
         public static GUIStyle Pill => _pill ??= new GUIStyle(EditorStyles.miniLabel)

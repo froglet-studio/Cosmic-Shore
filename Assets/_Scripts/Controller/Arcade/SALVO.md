@@ -1,9 +1,14 @@
 # Salvo — Technical Documentation
 
-> **Naming.** `GameModes.Salvo = 42` is the code/data/enum identity, and the player-facing
+> **Naming.** `GameModes.Salvo = 44` is the code/data/enum identity, and the player-facing
 > `DisplayName` on `ArcadeGameSalvo.asset` is **"Salvo"** too. Do not rename the enum, the
 > controller, the scene, or this file (the Tournament/"Maelstrom" precedent covers a display
 > split if one is ever wanted).
+>
+> **ID history:** authored as 42, renumbered to **44** when this branch merged
+> bleeding-edge — upstream had already taken 42 (`Bends`) and 43 (`ScarabScramble`).
+> The number is set in `Tools/Build/author_salvo_assets.py`; re-run the generator
+> rather than hand-editing the card.
 
 ## Overview
 
@@ -25,7 +30,7 @@ parallel solo demolition.
 - **Scene**: `Assets/_Scenes/Multiplayer Scenes/MinigameSalvo.unity` — cloned from
   `MinigameDogFight.unity`, so the arena, spawn sphere, AI templates and cell wiring are the
   Boneyard's, verbatim
-- **GameMode enum**: `GameModes.Salvo = 42`
+- **GameMode enum**: `GameModes.Salvo = 44`
 - **Controller**: `SalvoController : MultiplayerDomainGamesController` — a structural sibling
   of `RampageController` (1 round / 1 turn, `HasEndGame=false`, server winner detection in
   `OnTurnEndedCustom`, snapshot `SyncFinalScores_ClientRpc`), plus the wingman-reload RPC
@@ -172,7 +177,7 @@ break to repair.
 
 | Site | Change |
 |---|---|
-| `GameModes` | `Salvo = 42` |
+| `GameModes` | `Salvo = 44` |
 | `SalvoController` | new controller (Rampage shape + wingman reload + elemental scatter) |
 | `SalvoPrismTurnMonitor` | new turn monitor reading `GetSalvoPrismTarget()` |
 | `SalvoScoringRuleSO` | new rule subclass (`RampageScoringRuleSO` + "SALVO TIME" reveal) |

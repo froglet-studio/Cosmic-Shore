@@ -337,6 +337,8 @@ namespace CosmicShore.UI
                     return CreateProviderComponent<DogFightObjectiveProvider>("ObjectiveProvider_DogFight");
                 case GameModes.Rampage:
                     return CreateProviderComponent<RampageObjectiveProvider>("ObjectiveProvider_Rampage");
+                case GameModes.ScarabScramble:
+                    return CreateProviderComponent<ScarabScrambleObjectiveProvider>("ObjectiveProvider_ScarabScramble");
                 case GameModes.Salvo:
                     // Same provider as Rampage on purpose: the arrow answers "where is the
                     // nearest managed omni crystal", and in Salvo that crystal IS the missile

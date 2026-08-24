@@ -24,6 +24,17 @@ namespace CosmicShore.Core
         // PlayFab Economy API instance
         static PlayFabEconomyInstanceAPI _playFabEconomyInstanceAPI;
 
+        // See AuthenticationManager.ResetStatics — a stale API handle wraps a dead AuthContext,
+        // and CatalogLoaded gates the load path for StoreScreen/DailyChallengeModal.
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        static void ResetStatics()
+        {
+            _playFabEconomyInstanceAPI = null;
+            StoreShelve = new();
+            Inventory = new();
+            CatalogLoaded = false;
+        }
+
         // Player inventory and items
         public static StoreShelve StoreShelve { get; private set; } = new();
 

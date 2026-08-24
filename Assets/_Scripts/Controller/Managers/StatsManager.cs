@@ -438,6 +438,21 @@ namespace CosmicShore.Gameplay
                 netPlayer.ReportEnvironmentPrismDestroyed_ServerRpc(prismStats.Volume, (int)prismStats.OwnDomain);
         }
 
+        /// <summary>
+        /// CLIENT: forward this machine's OWN steal to the server. Only the local player's, and
+        /// only when the name matches - every peer simulates every vessel, so without the check
+        /// each client would report the same steal on everyone's behalf. Identity on the far
+        /// side still comes from RPC ownership, never from this name.
+        /// </summary>
+        void ForwardPrismSteal(PrismStats prismStats)
+        {
+            if (string.IsNullOrEmpty(prismStats.OwnName)) return;
+
+            var local = gameData.LocalPlayer;
+            if (local is Player netPlayer && local.IsLocalUser && local.Name == prismStats.OwnName)
+                netPlayer.ReportPrismStolen_ServerRpc(prismStats.Volume);
+        }
+
         public void PrismRestored(PrismStats prismStats)
         {
             if (!_allowRecord) return;
@@ -466,9 +481,37 @@ namespace CosmicShore.Gameplay
             roundStats.VolumeRemaining += prismStats.Volume;
         }
 
+        /// <summary>
+        /// SERVER: credit one stolen prism to the thief. Split out of
+        /// <see cref="PrismStolen"/> so the client round-trip
+        /// (<c>Player.ReportPrismStolen_ServerRpc</c>) and the server's own local detection
+        /// share one accounting rule instead of two copies that drift.
+        /// </summary>
+        internal static void CreditPrismSteal(IRoundStats thief, float volume)
+        {
+            if (thief == null) return;
+            thief.PrismStolen++;
+            thief.PrismsRemaining++;
+            thief.VolumeStolen += volume;
+            thief.VolumeRemaining += volume;
+        }
+
         public void PrismStolen(PrismStats prismStats)
         {
-            if (!_allowRecord) return;
+            // CLIENT: the server never saw this steal - Prism.Steal is entirely local, exactly
+            // like the environment-kill and fauna-kill cases below and above. Forward our OWN
+            // player's steal and return; without this a client's steals scored nothing at all,
+            // for every steal source in the game.
+            if (!_allowRecord)
+            {
+                ForwardPrismSteal(prismStats);
+                return;
+            }
+
+            // The server must not double-credit a steal a REMOTE player made and then reported
+            // for themselves. Same rule as environment kills: each machine accounts only for
+            // the players it simulates.
+            if (!OwnsAttacker(prismStats.OwnName)) return;
 
             var stealingPlayerName = prismStats.OwnName;
             if (!gameData.TryGetRoundStats(stealingPlayerName, out IRoundStats stealingPlayerStats))
