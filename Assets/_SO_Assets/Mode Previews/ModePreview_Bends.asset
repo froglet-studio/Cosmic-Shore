@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: ModePreview_Bends
   m_EditorClassIdentifier: 
   Mode: 42
-  Notes: 'Reuses Rampage''s arena outright - referenced, not forked, exactly as the mode itself does. OPEN-ENDED: it scores on debuffing rival pilots, and a solo preview has none; what it teaches is the Dolphin economy the whole mode is built on. Vessel pinned to Dolphin(2) here because the definition, not the card, is what the session reads first.'
+  Notes: 'Reuses Rampage''s arena outright - referenced, not forked, exactly as the mode itself does. OPEN-ENDED: it scores on debuffing rival pilots, and a solo preview has none; what it teaches is the Dolphin economy the whole mode is built on. Vessel pinned to Dolphin(2).'
   PreviewCell: {fileID: 11400000, guid: fc20698b2b983f9e1e9c20733ea92760, type: 2}
   StructurePrefab: {fileID: 0}
   Vessel: 2

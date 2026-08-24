@@ -72,6 +72,7 @@ namespace CosmicShore.Gameplay
         float settleSeconds = 0.5f;
 
         [Inject] GameDataSO gameData;
+        [Inject] MenuFreestyleEventsContainerSO freestyleEvents;
 
         readonly ModePreviewArena _arena = new();
 
@@ -116,6 +117,14 @@ namespace CosmicShore.Gameplay
         {
             if (_subscribed || gameData == null) return;
             gameData.OnLaunchGame.OnRaised += HandleLaunchRequested;
+
+            // Entering freestyle (the lava lamp) while a preview holds the vessel would leave
+            // the player flying 120k units from the world they think they are in, with the
+            // gameplay camera still rendering into a window nobody can see. Normally the modal
+            // closing stops the preview first, but this is the guarantee, not the usual path.
+            if (freestyleEvents && freestyleEvents.OnGameStateTransitionStart)
+                freestyleEvents.OnGameStateTransitionStart.OnRaised += HandleFreestyleEntered;
+
             _subscribed = true;
         }
 
@@ -123,8 +132,14 @@ namespace CosmicShore.Gameplay
         {
             if (!_subscribed || gameData == null) return;
             gameData.OnLaunchGame.OnRaised -= HandleLaunchRequested;
+
+            if (freestyleEvents && freestyleEvents.OnGameStateTransitionStart)
+                freestyleEvents.OnGameStateTransitionStart.OnRaised -= HandleFreestyleEntered;
+
             _subscribed = false;
         }
+
+        void HandleFreestyleEntered() => Stop(ModePreviewOutcome.Abandoned);
 
         void Update()
         {
@@ -319,7 +334,16 @@ namespace CosmicShore.Gameplay
 
         // ── Stopping ─────────────────────────────────────────────────────────
 
-        /// <summary>Stop the preview and put everything back. Idempotent.</summary>
+        /// <summary>
+        /// Stop the preview and put everything back. Idempotent. The unwind is a single
+        /// SERIALIZED sequence (~a second: vessel home, hull swap AWAITED, arena struck and
+        /// drained) and the session stays in <c>Striking</c> until every step lands — which is
+        /// what lets the auto-start driver re-enter the NEXT preview safely: the first playtest's
+        /// "leave and come back and everything goes to chaos" was this teardown racing the next
+        /// entry, most concretely the fire-and-forget restore swap still holding
+        /// <c>MenuServerPlayerVesselInitializer.IsSwapping</c> while the next preview's
+        /// <c>RequestSwap</c> arrived and was silently dropped.
+        /// </summary>
         public void Stop(ModePreviewOutcome outcome = ModePreviewOutcome.Abandoned)
         {
             if (_state is State.Idle or State.Striking) return;
@@ -335,22 +359,31 @@ namespace CosmicShore.Gameplay
             if (hud) hud.Hide();
 
             _window?.ReleaseFocus();          // routes through HandleFocusReleased → AI back on
-            CameraManager.Instance?.EndWindowedPlayerCamera();
 
-            // Home first, THEN strike: the strike detaches every vessel's trail bookkeeping,
-            // so the ribbon the vessel laid in the arena is let go before its prisms are
-            // returned to the pool - and the vessel is already out of the arena when they go.
-            RestoreAITarget();
-            ReturnVesselHome();
-            RestoreVessel().Forget();
-
-            StrikeArenaAsync(mode, outcome).Forget();
+            StopAsync(mode, outcome).Forget();
         }
 
-        async UniTaskVoid StrikeArenaAsync(GameModes mode, ModePreviewOutcome outcome)
+        async UniTaskVoid StopAsync(GameModes mode, ModePreviewOutcome outcome)
         {
+            var ct = this.GetCancellationTokenOnDestroy();
+
             try
             {
+                // Pen the local trail up across the teleport: a spawner left live for even a
+                // frame after SetPose lays a prism bridging 120k units of empty space.
+                SetLocalTrailPaused(true);
+
+                CameraManager.Instance?.EndWindowedPlayerCamera();
+                RestoreAITarget();
+                ReturnVesselHome();
+
+                // AWAITED, not fire-and-forget: the next preview cannot be allowed to start
+                // until the hull restore has fully landed, or its own swap request is dropped
+                // by the initializer's in-flight guard.
+                await RestoreVessel(ct);
+
+                SetLocalTrailPaused(false);
+
                 // Pool-safe retire + frame-sliced drain. Never a bare Destroy: pooled prisms
                 // destroyed outright corrupt the pool and break every trail in the scene -
                 // which is precisely how the first teardown killed the lava lamp.
@@ -363,23 +396,38 @@ namespace CosmicShore.Gameplay
                     {
                         if (prisms[i]) Destroy(prisms[i].gameObject);
                         if ((i + 1) % PrismsPerFrame == 0)
-                            await UniTask.Yield(PlayerLoopTiming.Update,
-                                this.GetCancellationTokenOnDestroy());
+                            await UniTask.Yield(PlayerLoopTiming.Update, ct);
                     }
                     Destroy(retiring);
                 }
             }
             catch (OperationCanceledException)
             {
-                // Scene teardown mid-drain - the unload destroys the remainder.
+                // Scene teardown mid-unwind - the unload destroys the remainder.
+            }
+            catch (Exception e)
+            {
+                CSDebug.LogError($"[ModePreview] Unwinding the {mode} preview hit: {e.Message}.");
             }
             finally
             {
                 _arena.FinishStrike();
+                SetLocalTrailPaused(false);
                 _state = State.Idle;
                 ActiveMode = GameModes.Random;
                 OnPreviewEnded?.Invoke(mode, outcome);
             }
+        }
+
+        /// <summary>
+        /// Pen-up for the LOCAL vessel's trail spawner. Last-writer-wins with the painting toy's
+        /// pen (same flag), which is acceptable here: the window is seconds wide and the runner
+        /// re-asserts its pen at the next stroke boundary.
+        /// </summary>
+        void SetLocalTrailPaused(bool paused)
+        {
+            var controller = gameData?.LocalPlayer?.Vessel?.VesselStatus?.VesselPrismController;
+            if (controller) controller.SetSpawnerPaused(paused);
         }
 
         /// <summary>Drop everything with no unwind. Teardown only.</summary>
@@ -393,6 +441,7 @@ namespace CosmicShore.Gameplay
 
             StopRunner();
             _arena.FinishStrike();
+            SetLocalTrailPaused(false);
             _state = State.Idle;
             ActiveMode = GameModes.Random;
         }
@@ -469,6 +518,11 @@ namespace CosmicShore.Gameplay
             if (!vesselInitializer || player?.Vessel == null) return;
             if (target is VesselClassType.Any or VesselClassType.Random) return;
 
+            // An in-flight swap must FINISH first: RequestSwap silently drops a request while
+            // one is running (its _isSwapping guard), which is how a rapid leave-and-re-enter
+            // ended up flying the wrong hull.
+            await WaitWhile(() => vesselInitializer && vesselInitializer.IsSwapping, ct);
+
             var current = player.Vessel.VesselStatus.VesselType;
             if (target == current) return;
 
@@ -478,13 +532,13 @@ namespace CosmicShore.Gameplay
             await WaitWhile(() => vesselInitializer && vesselInitializer.IsSwapping, ct);
         }
 
-        async UniTaskVoid RestoreVessel()
+        async UniTask RestoreVessel(CancellationToken ct)
         {
             var target = _restoreVesselClass;
             _restoreVesselClass = VesselClassType.Any;
             if (target is VesselClassType.Any or VesselClassType.Random) return;
 
-            await SwapVessel(target, remember: false, this.GetCancellationTokenOnDestroy());
+            await SwapVessel(target, remember: false, ct);
         }
 
         bool HandCameraToWindow()

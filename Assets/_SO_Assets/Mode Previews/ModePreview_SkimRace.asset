@@ -1,0 +1,24 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9f1780f039eb88d45a9cd7a4a75f9e13, type: 3}
+  m_Name: ModePreview_SkimRace
+  m_EditorClassIdentifier: 
+  Mode: 33
+  Notes: 'Skim Race = HexRace(33). Its TRACK is controller-built (SegmentSpawner from a replicated seed), so the preview shows the Skim Race cell - nucleus, spawn profile wildlife - and the Squirrel to fly in it. OPEN-ENDED: the satellite has no crystals to race for.'
+  PreviewCell: {fileID: 11400000, guid: 52de45c2fab54ea0a35bc37a311d80e6, type: 2}
+  StructurePrefab: {fileID: 0}
+  Vessel: -1
+  ObjectiveText: 'Skim everything. Speed is the whole game.'
+  ObjectiveMetric: 0
+  ObjectiveTarget: 0
+  DurationSeconds: 60
+  SpawnDistanceOutsideNucleus: 70

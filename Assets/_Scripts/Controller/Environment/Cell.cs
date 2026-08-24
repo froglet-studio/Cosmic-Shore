@@ -1487,7 +1487,14 @@ namespace CosmicShore.Gameplay
 
             // Elemental integration: any scene with a living cell gets the domain fauna buff
             // system — living fauna hearts empower their domain's vessels, platform-wide.
-            DomainFaunaBuffSystem.EnsureExists(gameObject, gameData, runtime);
+            // NEVER for a satellite: EnsureExists REBINDS the existing system's runtime
+            // subscription (AttachRuntime swaps it onto the instance passed in), so a satellite
+            // would steal the scene system off the scene cell's runtime and leave it holding a
+            // destroyed SO when the satellite is struck — which is a chaos that only shows up
+            // AFTER the first preview is left. The satellite's fauna simply don't feed the buff
+            // pool, which is correct: a preview arena's hearts are not the menu's economy.
+            if (!IsSatellite)
+                DomainFaunaBuffSystem.EnsureExists(gameObject, gameData, runtime);
 
             AssignConfig();
 

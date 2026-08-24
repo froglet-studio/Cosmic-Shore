@@ -106,6 +106,36 @@ its prisms are returned. No suction animation: the arena is beyond every camera'
 window that showed it is gone — the same unseen-removal clause the microscene conveyor rides.
 Mass conservation holds: created by a player action, removed by one (`Docs/ECOSYSTEM.md §19`).
 
+### 4.1 The teardown is one SERIALIZED sequence — that is the "leave and come back" fix
+
+The second playtest's "first time is cool, leave and come back and everything goes to chaos" was
+the teardown racing the next entry. Three concrete races, all closed:
+
+- **The hull-restore swap was fire-and-forget.** `MenuServerPlayerVesselInitializer.RequestSwap`
+  silently drops a request while a swap is in flight (its `_isSwapping` guard) — so re-entering a
+  preview while the restore swap was still running dropped the mode-hull swap on the floor.
+  `Stop` now runs one awaited sequence (~a second: camera back → AI retarget restored → vessel
+  home → hull swap **awaited** → arena struck and drained) and the session stays in `Striking`
+  until every step lands; the auto-start driver only fires from `Idle`. `SwapVessel` additionally
+  waits out any in-flight swap *before* requesting, so a request can never be dropped.
+- **`DomainFaunaBuffSystem.EnsureExists` rebinds the scene's buff system onto whatever runtime it
+  is handed** — a satellite's `Initialize` was handing it the satellite's instance, which the
+  strike then destroyed, leaving the menu's fauna-buff system holding a dead SO. Satellites now
+  skip that call outright (`Cell.Initialize` guards on `IsSatellite`); a preview arena's hearts
+  are not the menu's economy.
+- **The local trail spawner is penned up across the teleport home** — a spawner live for one
+  frame after `SetPose` lays a prism bridging 120k units of empty space.
+
+Entering freestyle (the lava lamp) also stops any running preview outright — the session
+subscribes to `OnGameStateTransitionStart`. Normally the modal closing gets there first; this is
+the guarantee. When the arcade modal is later restored (ScreenSwitcher's return-state), the card's
+`SetSelectedGame` re-arms the preview from scratch, which the serialized teardown makes safe.
+
+**A scene-reload cleanup (routing through Bootstrap) was considered and declined**: it would tear
+down the Netcode host and the party session with it, and it treats the symptom — the races above
+are the disease. If play-testing still finds teardown corruption, that fallback stays on the
+table, but it cannot be the shipped shape.
+
 ## 5. The pieces
 
 | Piece | Location | Job |
@@ -120,21 +150,21 @@ Mass conservation holds: created by a player action, removed by one (`Docs/ECOSY
 | `CameraManager.BeginWindowedPlayerCamera` | `Controller/Managers/` | The real gameplay rig → a RenderTexture, additively (never `SetActiveCamera`) |
 | `ModePreviewSetupTool` | `_Scripts/Editor/` | `FrogletTools > Scene Setup > Setup Mode Preview` — also the MIGRATION off earlier revisions (deletes TestFlightButton / FocusFrame / ExitButton / legacy video instances) |
 
-## 6. Shipped definitions (8)
+## 6. Shipped definitions (17) — every playable card
 
-| Mode | Cell | Objective | Notes |
-|---|---|---|---|
-| Rampage | Rampage 1 | 150 prisms / 90s | Grown forest — needs the satellite bootstrap fix |
-| Ribcage | Ribcage 1 | 200 prisms / 90s | No nucleus → spawn 500 clears the 360u cage |
-| Wildlife Liberation | WL 1 | 5 kills / 90s | Spawn 1200, outside the outer cage |
-| Dog Fight | Boneyard 1 | open-ended / 60s | Solo has nobody to shoot; teaches the arena |
-| Scarab Scramble | Scarab | open-ended / 60s | Hoops are controller-built; see §7 |
-| The Bends | Rampage 1 | open-ended / 60s | Same arena as the mode itself reuses; Dolphin pinned |
-| Nucleus Rush | Nucleus Rush | open-ended / 60s | The cell IS the loop (nucleus claim + fauna waves) |
-| Astro League | Astro League | open-ended / 60s | Goals/ball are controller-built; Rhino pinned |
+Every arcade card whose scene exists on disk now has a definition, so **every playable mode
+previews** and only genuinely dead modes (the ~24 single-player cards whose scenes were deleted)
+show the label. The display names that hid three of them: **Skim Race = HexRace(33), Joust =
+MultiplayerJoust(34), Scurry = MultiplayerCrystalCapture(35)**.
 
-Maelstrom (Tournament) is excluded **in code** — it draws other modes; it has no arena to shrink.
-Every other mode without a definition shows the label.
+| Group | Modes | Arena source |
+|---|---|---|
+| Full arenas | Rampage, Ribcage, Wildlife Liberation, Dog Fight, Scarab Scramble, The Bends, Nucleus Rush, Astro League, Skim Race, Scurry, Wildlife Blitz ×2 | The mode's own cell config — authored environment or grown via its spawn profile |
+| Barren-cell modes | Joust, Duel for the Cell ×2, Multiplayer Freestyle, 2v2 CoOp | Their own scenes run on the Barren cell: open water + nucleus + the vessel. Sparse by construction, and the definitions' Notes say so |
+
+Objectives count only where a stat fires solo (prisms destroyed, lifeforms killed); everything
+else is open-ended — the satellite has no `CrystalManager`, so crystal-scored modes cannot count
+yet (§7). Maelstrom (Tournament) stays excluded in code.
 
 ## 7. Known limitations
 
