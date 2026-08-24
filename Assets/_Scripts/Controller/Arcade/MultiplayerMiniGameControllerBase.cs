@@ -69,8 +69,9 @@ namespace CosmicShore.Gameplay
             // REQUIRED for every party game: the elemental comeback system. Scene-authored
             // instances are respected; a scene that forgot one gets it created and configured
             // for this game mode (comeback runs locally on every machine, so this executes on
-            // host and clients alike).
-            ElementalComebackSystem.EnsureExists(gameObject, gameData);
+            // host and clients alike). UseGolfRules travels with it so a Score-sourced mode
+            // knows which direction "ahead" is.
+            ElementalComebackSystem.EnsureExists(gameObject, gameData, UseGolfRules);
 
             InitializeAfterDelay().Forget();
         }
