@@ -214,11 +214,30 @@ namespace CosmicShore.Gameplay
         // a frictionless ball bouncing or skimming the wall can't spam the camera shake (see HandleWallBounce).
         float _lastWallJuiceTime;
 
-        // Court play boundary (the cell nucleus) - set by AstroLeagueArena.Build via SetBoundary. The
-        // ball is contained by a server-side reflect off the boundary's walls (no collider) - flat
-        // polytope faces BANK the ball (billiards/air-hockey), a sphere focuses it toward center. The
-        // shape is chosen per intensity. null means "not set yet" (frozen showpiece pre-kickoff).
-        AstroLeagueBoundary _boundary;
+        // MODE OVERRIDE court boundary - installed by AstroLeagueArena.Build via SetBoundary, and
+        // ONLY for a court whose shape the nucleus sphere cannot express (Astro League's polytopes).
+        // The ball is contained by a server-side reflect off the boundary's walls (no collider) -
+        // flat polytope faces BANK the ball (billiards/air-hockey), a sphere focuses it toward
+        // center. null (the normal case, including every mode-less context) means the ball falls
+        // back to its OWN nucleus containment below.
+        AstroLeagueBoundary _courtBoundary;
+
+        // The ball's own containment: the nucleus of whatever cell it is currently in, ridden from
+        // whichever side it is on (see ResolveNucleusBoundary). Cached because building one walks
+        // the boundary's plane/extent setup; the cache key is every input it was built from, so it
+        // rebuilds by itself when the ball crosses the surface, drifts into another cell, or a Cell
+        // Selector swap resizes the world underneath it.
+        AstroLeagueBoundary _nucleusBoundary;
+        Cell _nucleusBoundaryCell;
+        float _nucleusBoundaryNucleusRadius = -1f;
+        float _nucleusBoundaryOuterRadius = -1f;
+        bool _nucleusBoundaryOutside;      // which side the CACHED boundary was built for
+
+        // Which side of the nucleus this ball plays on. STICKY, with a dead band either side of
+        // the surface (see ResolveNucleusBoundary) — cleared on a teleport so a relaunched ball
+        // re-reads it rather than inheriting the side it had somewhere else.
+        bool _outsideNucleus;
+        bool _nucleusSideResolved;
 
         // Server-side velocity estimates for transform-driven vessels (root → last pos + velocity)
         readonly Dictionary<Transform, Vector3> _vesselLastPos = new();
@@ -675,10 +694,11 @@ namespace CosmicShore.Gameplay
                 // post-solver) reads it for the true impact speed.
                 _velocityBeforePhysics = rb.linearVelocity;
 
-                // Spherical boundary: bounce the ball off the inner surface of the nucleus sphere.
-                // Skipped briefly after a nucleus release: the ball starts part-sunk in the shell,
-                // which is outside BOTH the court and the cytoplasm volumes, so containing it on
-                // that first frame reads as a radial shove rather than a hit (SCARAB.md §4.6).
+                // Bounce the ball off the nucleus - its own boundary in any cell, a mode's court
+                // override where one is installed. Skipped briefly after a nucleus release: the
+                // ball starts part-sunk in the shell, which is outside BOTH the court and the
+                // cytoplasm volumes, so containing it on that first frame reads as a radial shove
+                // rather than a hit (SCARAB.md §4.6).
                 if (Time.time >= _containmentGraceUntil)
                     ContainWithinBoundary();
             }
@@ -1070,31 +1090,144 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// Set the court play boundary (the cell nucleus). Called by <c>AstroLeagueArena.Build</c> once
-        /// the intensity scale + shape are known. The ball bounces off its walls (see
-        /// <see cref="ContainWithinBoundary"/>); a box/prism BANKS the ball off flat faces, a sphere
-        /// focuses it. This replaced the six BoxCollider arena walls (and now the single sphere too).
+        /// Install a MODE'S court boundary, overriding the ball's own nucleus containment
+        /// (<see cref="ResolveNucleusBoundary"/>). Called by <c>AstroLeagueArena.Build</c> once the
+        /// intensity scale + shape are known; a box/prism BANKS the ball off flat faces, a sphere
+        /// focuses it. This replaced the six BoxCollider arena walls.
+        ///
+        /// A MODE ONLY NEEDS THIS FOR A COURT THE NUCLEUS SPHERE CANNOT EXPRESS - which today means
+        /// Astro League's polytopes, whose walls are flat and whose nucleus is mesh-morphed to match
+        /// (<c>Cell.SetNucleusMesh</c>). A mode whose court simply IS the nucleus sphere (Scarab
+        /// Scramble, which resizes it with <c>Cell.SetNucleusWorldRadius</c>) must install NOTHING:
+        /// the ball already bounces off its cell's nucleus everywhere, so a mode that installs the
+        /// same sphere is re-declaring a platform behaviour it would then own the bugs in.
+        /// Pass null to hand containment back to the ball.
         /// </summary>
         public void SetBoundary(AstroLeagueBoundary boundary)
         {
-            _boundary = boundary;
+            _courtBoundary = boundary;
         }
 
         /// <summary>
-        /// Server: keep the ball inside the court by reflecting its velocity off the boundary walls and
+        /// THE BALL BOUNCES OFF THE NUCLEUS, IN EVERY CELL IT CAN REACH - and that is a property of
+        /// the ball rather than of any mode (SCARAB.md §4.6). It is the same reasoning that puts the
+        /// ownership lock at the forge (§4.2) and the ball limit on the cell (§4.6): a rule a mode
+        /// installs is a rule every other context silently lacks, and a Scarab forges balls in
+        /// freestyle, in the menu, and in any future mode.
+        ///
+        /// ONE SURFACE SERVES BOTH SIDES, and which side is read from where the ball IS:
+        ///   • inside  → a Sphere at the nucleus radius: the court, ridden from within.
+        ///   • outside → the cytoplasm: outer sphere = the membrane (scaled in a little so a ball
+        ///     never rides the literal skin), core obstacle = that same nucleus, ridden from without.
+        ///
+        /// Position, not the strike direction the seeding field knows, because each regime pushes
+        /// AWAY from the surface (<c>ContainSphere</c> clamps distance to a maximum,
+        /// <c>ContainCore</c> to a minimum) - so a ball settles into whichever side it is on and
+        /// cannot oscillate, and a ball that gets across by any route is contained correctly with
+        /// nobody having to tell it. <c>nucleusReleaseGraceSeconds</c> is what lets a struck embed
+        /// carry across the shell before this engages.
+        ///
+        /// Returns null - no containment at all, exactly as before - for a cell with NO nucleus
+        /// (Dog Fight's Boneyard), or with no cell in reach. The <c>outsideNucleusDrag</c> ramp is
+        /// still the soft boundary out there; nothing is teleported or culled either way.
+        ///
+        /// NUCLEUS SIZE COMES FROM <c>NucleusVisualWorldRadius</c>, NEVER <c>NucleusWorldRadius</c>:
+        /// the latter reports 0 whenever a mode has declared the nucleus play geometry rather than a
+        /// territorial claim (<c>NucleusIsControlZone = false</c>, which both Scramble and Astro
+        /// League set), and this needs the shape, not the claim. Docs/ECOSYSTEM.md §25.1.
+        /// </summary>
+        AstroLeagueBoundary ResolveNucleusBoundary()
+        {
+            var cell = ResolveCell();
+            if (cell == null) return null;
+
+            float nucleus = cell.NucleusVisualWorldRadius;
+            if (nucleus <= 1e-3f) return null;          // no nucleus here - nothing to bounce off
+
+            Vector3 centre = cell.transform.position;
+            bool outside = ResolveNucleusSide(cell, centre, nucleus);
+
+            // Outside, the membrane is the far wall. Floored just clear of the nucleus so a cell
+            // whose membrane read is missing or tiny still leaves the ball somewhere to be.
+            float outer = outside
+                ? Mathf.Max(nucleus * 1.2f, cell.MembraneRadius * CytoplasmOuterFraction())
+                : nucleus;
+
+            bool cached = _nucleusBoundary != null
+                          && _nucleusBoundaryCell == cell
+                          && _nucleusBoundaryOutside == outside
+                          && Mathf.Approximately(_nucleusBoundaryNucleusRadius, nucleus)
+                          && Mathf.Approximately(_nucleusBoundaryOuterRadius, outer);
+            if (cached) return _nucleusBoundary;
+
+            _nucleusBoundary = new AstroLeagueBoundary(
+                AstroLeagueBoundaryShape.Sphere, centre,
+                new Vector3(outer, outer, outer), outer,
+                coreObstacleRadius: outside ? nucleus : 0f);
+            _nucleusBoundaryCell = cell;
+            _nucleusBoundaryOutside = outside;
+            _nucleusBoundaryNucleusRadius = nucleus;
+            _nucleusBoundaryOuterRadius = outer;
+            return _nucleusBoundary;
+        }
+
+        /// <summary>
+        /// Which side of the nucleus the ball is playing on — read from position ONCE, then STICKY
+        /// behind a dead band, because a bare per-tick position test would let the containment
+        /// defeat itself. Containment runs BEFORE the physics step, so a ball can legitimately end
+        /// a tick slightly past the wall it was just reflected off; re-classifying on that would
+        /// flip a court ball to cytoplasm mode, which EJECTS it instead of pulling it back, and the
+        /// court would leak balls at exactly the moment it was working.
+        ///
+        /// The band is the largest a ball can be past the surface WITHOUT having genuinely left:
+        /// its own radius (containment parks its centre one radius short of the wall) plus one
+        /// tick of travel at top speed. So the only thing that ever flips the side is a real
+        /// crossing — which in practice means a nucleus release, whose containment grace is
+        /// precisely the window that lets the strike carry the ball across.
+        ///
+        /// Note the two regimes are self-reinforcing once set: inside, ContainSphere holds the ball
+        /// at most `nucleus - r` and it can never reach `+band`; outside, ContainCore holds it at
+        /// least `nucleus + r` and it can never reach `-band`.
+        /// </summary>
+        bool ResolveNucleusSide(Cell cell, Vector3 centre, float nucleus)
+        {
+            float distance = Vector3.Distance(rb.position, centre);
+
+            // A different cell is a different nucleus — re-read rather than carrying the old side.
+            if (!_nucleusSideResolved || _nucleusBoundaryCell != cell)
+            {
+                _outsideNucleus = distance > nucleus;
+                _nucleusSideResolved = true;
+                return _outsideNucleus;
+            }
+
+            float band = BallWorldRadius() + settings.maxSpeed * Time.fixedDeltaTime;
+            if (_outsideNucleus && distance < nucleus - band) _outsideNucleus = false;
+            else if (!_outsideNucleus && distance > nucleus + band) _outsideNucleus = true;
+            return _outsideNucleus;
+        }
+
+        float CytoplasmOuterFraction() =>
+            settings != null ? Mathf.Clamp(settings.cytoplasmOuterFraction, 0.1f, 1f) : 0.95f;
+
+        /// <summary>
+        /// Server: keep the ball inside its containment by reflecting its velocity off the walls and
         /// clamping its position (no collider, no decay) - flat polytope faces preserve the wall-parallel
         /// component (the bank), curved shapes reflect radially. Runs once per server tick after the
         /// speed cap. Fires the shared wall juice at the contact point on a real bounce.
+        ///
+        /// A mode's installed court wins outright; otherwise the ball rides its own cell's nucleus.
         /// </summary>
         void ContainWithinBoundary()
         {
-            if (_boundary == null) return; // not configured yet (frozen showpiece pre-kickoff)
+            var boundary = _courtBoundary ?? ResolveNucleusBoundary();
+            if (boundary == null) return; // no court installed and no nucleus in reach
 
             Vector3 pos = rb.position;
             Vector3 vel = rb.linearVelocity;
             // wallRestitution, not ballBounciness: a carom LOSES energy (that is what stops the ball
             // pinballing forever), while a vessel strike stays fully elastic so the sword still fires it.
-            if (!_boundary.Contain(ref pos, ref vel, BallWorldRadius(), settings.wallRestitution,
+            if (!boundary.Contain(ref pos, ref vel, BallWorldRadius(), settings.wallRestitution,
                     out Vector3 contactPoint, out Vector3 contactNormal))
                 return;
 
@@ -2162,6 +2295,7 @@ namespace CosmicShore.Gameplay
             n_LastHitDomain.Value = Domains.Blue;
             ResetTouchLedgerServer();
             _shieldPoppedThisVisit.Clear();
+            _nucleusSideResolved = false;   // teleported: re-read which side of the nucleus it is on
             _lastPrismScanPos = spawnPosition;
             if (trail != null) trail.Clear();
         }
@@ -2234,6 +2368,7 @@ namespace CosmicShore.Gameplay
 
             ResetTouchLedgerServer(); // fresh forge: untouched, so it still carries its maker's launch
             _shieldPoppedThisVisit.Clear();
+            _nucleusSideResolved = false;   // teleported: re-read which side of the nucleus it is on
             _lastPrismScanPos = position;   // or the first scan sweeps from the origin
             if (trail != null) trail.Clear();
         }
