@@ -7,7 +7,7 @@ namespace CosmicShore.Gameplay
 {
     /// <summary>
     /// Turn monitor for Wildlife Liberation. The KILL TARGET - how many creatures a DOMAIN
-    /// must kill between them to win (default 250) - is resolved at <see cref="StartMonitor"/> from
+    /// must kill between them to win (default 30) - is resolved at <see cref="StartMonitor"/> from
     /// <see cref="EndConditionOverridesSO"/> (FrogletTools ▸ Game Modes ▸ End Game Conditions;
     /// never a per-scene field, per the /EndGameConditions skill), synced to every client via
     /// NetworkVariable, and published to <see cref="GameDataSO.LifeformTargetCount"/>.

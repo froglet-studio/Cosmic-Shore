@@ -3,6 +3,7 @@ using UnityEngine;
 using System.Collections;
 using System;
 using CosmicShore.Core;
+using CosmicShore.Data;
 
 namespace CosmicShore.Gameplay
 {
@@ -73,6 +74,29 @@ namespace CosmicShore.Gameplay
                 octahedronShield = gameObject.AddComponent<PrismOctahedronShield>();
         }
 
+        /// <summary>
+        /// The shed-shard palette for a shield that is about to come off: the SO_ColorSet
+        /// tier pair for what the shield was SHOWING — the octahedron wears the Shielded
+        /// tier; the stellation deliberately wears the OPAQUE PLAIN team material, so its
+        /// pair is Plain. Same source as PrismFactory's death debris, so shed armour can
+        /// never drift from the mass it guarded. The renderer cannot be read instead:
+        /// every state change below binds its END-STATE material before it disengages, so
+        /// by then the renderer already wears the INCOMING tier (which is exactly the
+        /// plain-coloured-shards defect this fixes). Null colours (unauthored domain) fall
+        /// back to RequestShatter's renderer read.
+        /// </summary>
+        void GetShedColors(PrismKind wornTier, out Color? bright, out Color? dark)
+        {
+            bright = null;
+            dark = null;
+            if (_themeManagerData == null || _themeManagerData.ColorSet == null || teamManager == null) return;
+            if (_themeManagerData.ColorSet.TryGetPrismKindColors(teamManager.Domain, wornTier, out var b, out var d))
+            {
+                bright = b;
+                dark = d;
+            }
+        }
+
         public void MakeDangerous()
         {
             prism.prismProperties.IsDangerous = true;
@@ -92,8 +116,10 @@ namespace CosmicShore.Gameplay
             CurrentState = BlockState.Dangerous;
 
             bool birth = IsBirthTransition;
-            if (octahedronShield != null) octahedronShield.Disengage(birth);
-            if (stellatedShield != null) stellatedShield.Disengage(birth);
+            GetShedColors(PrismKind.Shielded, out var octBright, out var octDark);
+            GetShedColors(PrismKind.Plain, out var stellaBright, out var stellaDark);
+            if (octahedronShield != null) octahedronShield.Disengage(birth, default, 0f, octBright, octDark);
+            if (stellatedShield != null) stellatedShield.Disengage(birth, default, 0f, stellaBright, stellaDark);
 
             // Mirror the cleared IsShielded flag into the spatial index so the
             // shell view retires this prism's analytic shell. Without this, a
@@ -138,7 +164,8 @@ namespace CosmicShore.Gameplay
             // lazily-added stellation cache the octahedron mesh as its "original"), then engage
             // the stellation - lazily added so only super-shielded prisms pay its mesh cost.
             bool birth = IsBirthTransition;
-            if (octahedronShield != null) octahedronShield.Disengage(birth);
+            GetShedColors(PrismKind.Shielded, out var octBright, out var octDark);
+            if (octahedronShield != null) octahedronShield.Disengage(birth, default, 0f, octBright, octDark);
             if (stellatedShield == null)
                 stellatedShield = GetComponent<PrismStellatedOctahedronShield>()
                                   ?? gameObject.AddComponent<PrismStellatedOctahedronShield>();
@@ -147,7 +174,18 @@ namespace CosmicShore.Gameplay
             SyncAOERegistryShieldState();
         }
 
-        public void DeactivateShields(float? delay = null)
+        /// <param name="breakVelocity">
+        /// RAW impact vector of the force that BROKE the shield, when the caller has one
+        /// (Prism.Damage's vector, the Rhino sword's contact velocity). The disengage
+        /// overlay is ordinary prism-explosion debris, so this is the same vector — with
+        /// the same clamp semantics — a prism death hands its own debris
+        /// (Docs/PRISM_ANIMATION.md §4.8.1). Zero degrades to the impactless-death puff.
+        /// A DELAYED deactivation deliberately drops it: by the time that timer fires,
+        /// whatever was moving when it was scheduled has moved on.
+        /// </param>
+        /// <param name="debrisSpeedLimit">True-velocity ceiling, as on Prism.Damage; 0 = authored band.</param>
+        public void DeactivateShields(float? delay = null, Vector3 breakVelocity = default,
+            float debrisSpeedLimit = 0f)
         {
             PrismTimerManager.EnsureInstance().CancelTimers(this);
 
@@ -157,7 +195,7 @@ namespace CosmicShore.Gameplay
             }
             else
             {
-                ApplyNormalState();
+                ApplyNormalState(breakVelocity, debrisSpeedLimit);
             }
         }
 
@@ -189,7 +227,7 @@ namespace CosmicShore.Gameplay
             if (!birth) AudioSystem.Instance.PlayGameplaySFX(GameplaySFXCategory.ShieldActivate);
         }
 
-        private void ApplyNormalState()
+        private void ApplyNormalState(Vector3 breakVelocity = default, float debrisSpeedLimit = 0f)
         {
             var wasShielded = prism.prismProperties.IsShielded || prism.prismProperties.IsSuperShielded;
 
@@ -202,9 +240,15 @@ namespace CosmicShore.Gameplay
             prism.prismProperties.IsSuperShielded = false;
             CurrentState = BlockState.Normal;
 
+            // Only THIS teardown carries a breaking force. MakeDangerous and
+            // ActivateSuperShield also disengage, but those are state changes, not
+            // blows — they stay impactless, which the debris path renders as the same
+            // quiet minimum-speed puff an impactless prism death gets.
             bool birth = IsBirthTransition;
-            if (octahedronShield != null) octahedronShield.Disengage(birth);
-            if (stellatedShield != null) stellatedShield.Disengage(birth);
+            GetShedColors(PrismKind.Shielded, out var octBright, out var octDark);
+            GetShedColors(PrismKind.Plain, out var stellaBright, out var stellaDark);
+            if (octahedronShield != null) octahedronShield.Disengage(birth, breakVelocity, debrisSpeedLimit, octBright, octDark);
+            if (stellatedShield != null) stellatedShield.Disengage(birth, breakVelocity, debrisSpeedLimit, stellaBright, stellaDark);
 
             SyncAOERegistryShieldState();
 

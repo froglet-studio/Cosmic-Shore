@@ -210,6 +210,18 @@ namespace CosmicShore.Gameplay
                 Ease(2 * rightStick.x),
                 Ease(2 * rightStick.y));
 
+            // Publish the NORMALIZED sticks too, exactly as the other three strategies do
+            // (GamepadInputStrategy / KeyboardInputStrategy / TouchInputStrategy all set these
+            // beside the eased pair). This strategy set only the eased pair, so every consumer of
+            // the radially-clamped stick read a permanent (0,0) on dual mouse: the Scarab's dash —
+            // and therefore its cavitation blast — could never fire, the Sparrow's gun aim
+            // (GunTransformer) never tracked, and the thumb-perimeter UI never moved. UpdateVirtualStick
+            // already ClampMagnitude's to 1, so these are the same contract the perimeter test
+            // (|stick| >= 1 - epsilon) is written against; nothing here is newly computed, it was
+            // simply never handed over.
+            inputStatus.RightNormalizedJoystickPosition = rightStick;
+            inputStatus.LeftNormalizedJoystickPosition = leftStick;
+
             // Match gamepad / keyboard reparameterization so the downstream
             // vessel controllers see identical XSum/YSum/XDiff/YDiff shapes.
             // For dual mouse, pitch and roll are swapped relative to gamepad:

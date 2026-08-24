@@ -29,6 +29,50 @@ namespace CosmicShore.Gameplay
         // one authoring hole logs once rather than once per contact.
         static readonly HashSet<long> s_reportedEmptyEffectSlots = new();
 
+        // Warn-once means once per PLAY SESSION, and instance IDs get reused across sessions
+        // with domain reload disabled — clear all three report keys per play.
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        static void ResetWarnOnceKeys()
+        {
+            s_reportedEmptyEffectSlots.Clear();
+            s_reportedThrowingEffects.Clear();
+            s_reportedMissingContainers.Clear();
+        }
+
+        // Impactors whose whole effect container is unassigned, keyed by impactor instance so
+        // an unwired prefab names itself once rather than once per physics contact.
+        static readonly HashSet<int> s_reportedMissingContainers = new();
+
+        /// <summary>
+        /// True when the impactor's serialized effect CONTAINER is unassigned — the level above
+        /// <see cref="IsEffectSlotEmpty"/>, same doctrine. Dispatch sites deref the container
+        /// directly, so an unwired prefab used to surface as a bare
+        /// <see cref="NullReferenceException"/> inside a PhysX callback, once per contact for as
+        /// long as anything touched the collider — thousands of console exceptions that read as
+        /// the editor freezing (the 2026-08-21 'Run managed callbacks' hang reports carried
+        /// exactly this storm from the legacy Components/Skimmer.prefab, whose serialized data
+        /// predates the container refactor on six vessels). Name the hole ONCE with the full
+        /// hierarchy path and skip dispatch: the missing container cannot be invented, but the
+        /// editor must stay alive to say so.
+        /// </summary>
+        protected bool IsEffectContainerMissing(UnityEngine.Object container, string containerField)
+        {
+            if (container) return false;
+
+            if (s_reportedMissingContainers.Add(GetInstanceID()))
+            {
+                var t = transform;
+                string path = t.name;
+                while (t.parent != null) { t = t.parent; path = t.name + "/" + path; }
+                CSDebug.LogError(
+                    $"[{GetType().Name}] '{path}'.{containerField} is not assigned — this impactor " +
+                    "dispatches no effects until it is wired (reported once; contacts are skipped, " +
+                    "not thrown). Run FrogletTools > Vessels > Audit Vessel Skimmers to see every " +
+                    "unwired skimmer.", this);
+            }
+            return true;
+        }
+
         /// <summary>
         /// True when a serialized effect slot holds nothing runnable — never assigned in the
         /// inspector, or its asset failed to load (missing script, unresolved GUID).

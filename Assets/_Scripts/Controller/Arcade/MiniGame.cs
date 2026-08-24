@@ -48,6 +48,24 @@ namespace CosmicShore.Gameplay
         static VesselClassType _playerVesselType = VesselClassType.Dolphin;
         static bool playerShipTypeInitialized;
 
+        // These are written by the menu launch path (Arcade.cs); a direct Play into a gameplay
+        // scene must see the declared defaults, not last session's launch config.
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        static void ResetStatics()
+        {
+            NumberOfPlayers = 1;
+            IntensityLevel = 1;
+            IsDailyChallenge = false;
+            IsMission = false;
+            IsTraining = false;
+            _playerVesselType = VesselClassType.Dolphin;
+            playerShipTypeInitialized = false;
+            ResourceCollection = new(0f, 0f, 0f, 0f);
+            TimedCallbacks.Clear();
+            OnMiniGameStart = null;
+            OnMiniGameEnd = null;
+        }
+
         public static VesselClassType PlayerVesselType
         {
             get => _playerVesselType;

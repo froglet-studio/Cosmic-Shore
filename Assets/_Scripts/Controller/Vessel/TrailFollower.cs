@@ -65,6 +65,27 @@ namespace CosmicShore.Gameplay
         public float Throttle;
 
         public bool IsAttached { get { return attachedTrail != null; } }
+
+        /// <summary>
+        /// The ribbon this follower is riding, or null when detached. Exposed so the
+        /// transformer can tell "the trail I just launched off" from any other ribbon it
+        /// touches in the next moment (the re-attach grace after an end-of-ribbon launch).
+        /// </summary>
+        public Trail AttachedTrail => attachedTrail;
+
+        /// <summary>
+        /// Set on the frame the ride runs off the end of an OPEN ribbon, and cleared at the top
+        /// of every <see cref="RideTheTrail"/>. The follower does NOT act on it - it owns the
+        /// 1D kernel, never <c>VesselStatus.IsAttached</c> - so the transformer reads it
+        /// immediately after ticking the ride and turns it into a LAUNCH: detach, carry the
+        /// speed off the end, and let it bleed back down to cruise in free flight.
+        ///
+        /// Parking here instead (the previous behaviour) killed the carried speed and left the
+        /// rider pinned to the terminal block, so a long fast grind ended in a dead stop at the
+        /// exact moment the pilot had the most momentum to spend.
+        /// </summary>
+        public bool ReachedEnd { get; private set; }
+
         /// <summary>
         /// Null when this follower is not attached. <see cref="Detach"/> nulls the trail
         /// without touching VesselStatus, so a consumer can legitimately still be asking.
@@ -157,6 +178,8 @@ namespace CosmicShore.Gameplay
                 ? heading * (int)direction
                 : Vector3.forward;
 
+            ReachedEnd = false;
+
             // Carry the arrival speed onto the rail. Starting the grind at a dead stop and
             // ramping back up brakes the pilot for latching on, which is the opposite of what
             // a rail grind should reward; the smoothing then eases it to the ride's own pace.
@@ -169,6 +192,7 @@ namespace CosmicShore.Gameplay
             if (attachedTrail != null) attachedTrail.OnOldestRemoved -= HandleOldestRemoved;
             attachedTrail = null;
             _rideSpeed = 0f;
+            ReachedEnd = false;
         }
 
         /// <summary>
@@ -201,6 +225,7 @@ namespace CosmicShore.Gameplay
 
         public void RideTheTrail()
         {
+            ReachedEnd = false;
             if (!IsAttached) return;
 
             // ONE speed for the frame, smoothed toward the block-under-the-rider's target.
@@ -234,19 +259,23 @@ namespace CosmicShore.Gameplay
 
             if (outDirection != direction)
             {
-                // The projection bounced off the end of an open ribbon. PARK instead of adopting
-                // the reflection: discard this frame's move entirely (position, index and lerp
-                // all keep their pre-projection values, so there is no snap - the rider stops
-                // within one frame-step of the end) and hold direction, so the ride continues
-                // the instant the trail grows a new head block or the pilot pulls the throttle
-                // the other way. Adopting the bounce is what made the head UNRIDEABLE: the
-                // transformer's throttle mapping would flip it straight back next frame, and the
-                // two flips oscillated the rider around the terminal block.
+                // The projection bounced off the end of an open ribbon: the ride is OUT OF RAIL.
                 //
-                // Parking kills the carried speed as well, or the rider keeps "coasting"
-                // against an end it cannot pass.
-                _rideSpeed = 0f;
-                vesselData.Speed = 0f;
+                // The reflection itself is still discarded - position, index and lerp all keep
+                // their pre-projection values, so there is no snap and no oscillation around the
+                // terminal block (adopting the bounce is what made the head unrideable: the
+                // transformer's throttle mapping flipped it straight back the next frame).
+                //
+                // What CHANGED is what happens next. This used to PARK - zeroing the ride speed
+                // and holding the rider against the end - so the reward for a long fast grind
+                // was a dead stop with nothing to spend. Now it reports the end and the
+                // transformer LAUNCHES: the ribbon runs out, the vessel flies off it carrying
+                // the speed it had, and free flight bleeds that back down to cruise.
+                //
+                // A LOOP never reaches here (Project wraps rather than reflecting), so a closed
+                // ribbon is still ridden forever - the difference between the two topologies is
+                // now something the pilot can feel.
+                ReachedEnd = true;
                 return;
             }
 

@@ -5,7 +5,7 @@
 			<value>Gun Fire</value>
 		</property>
 		<property name="outputFormat">
-			<value>1</value>
+			<value>0</value>
 		</property>
 		<relationship name="folder">
 			<destination>{2bbab971-3f3e-4f99-a6e0-584fa1d58d64}</destination>
@@ -59,18 +59,11 @@
 	<object class="EventAutomatableProperties" id="{f2750e65-7a97-4506-93cf-8e1a83f7bfdc}" />
 	<object class="MarkerTrack" id="{d1c5e9d2-2094-4de0-9c78-75c2e543c5fa}" />
 	<object class="GroupTrack" id="{ed9c6e95-abb4-483f-b50e-8dfbe85713ec}">
-		<relationship name="modules">
-			<destination>{008461a2-eab7-427c-9689-ab9f741f0453}</destination>
-		</relationship>
 		<relationship name="mixerGroup">
 			<destination>{cfedbe7a-abe6-4177-85ac-5de887fce393}</destination>
 		</relationship>
 	</object>
-	<object class="Timeline" id="{bfdcec53-605c-4ef5-925f-55c49e8f1195}">
-		<relationship name="modules">
-			<destination>{008461a2-eab7-427c-9689-ab9f741f0453}</destination>
-		</relationship>
-	</object>
+	<object class="Timeline" id="{bfdcec53-605c-4ef5-925f-55c49e8f1195}" />
 	<object class="EventMixerMaster" id="{cb4263bc-9891-47dd-94cd-074285fa1342}">
 		<relationship name="effectChain">
 			<destination>{a72cd371-1551-4e49-9027-2ff594df9df7}</destination>
@@ -88,17 +81,6 @@
 		</relationship>
 	</object>
 	<object class="MixerBusPanner" id="{67725009-0adf-4a3c-8874-b68532720c5c}" />
-	<object class="SingleSound" id="{008461a2-eab7-427c-9689-ab9f741f0453}">
-		<property name="length">
-			<value>0.6875</value>
-		</property>
-		<relationship name="modulators">
-			<destination>{ef9d80a0-7b70-4003-bb2a-1dd9570cd1fd}</destination>
-		</relationship>
-		<relationship name="audioFile">
-			<destination>{6dcbf907-2c04-41bb-b4f7-13a980ec9941}</destination>
-		</relationship>
-	</object>
 	<object class="EventMixerGroup" id="{cfedbe7a-abe6-4177-85ac-5de887fce393}">
 		<property name="name">
 			<value>Audio 1</value>
@@ -120,14 +102,6 @@
 	</object>
 	<object class="MixerBusPanner" id="{2a0bbacb-6194-4fc7-8150-5093c111c07e}" />
 	<object class="MixerBusFader" id="{466ac48e-78c3-4c02-80c7-e171c07f00ef}" />
-	<object class="RandomizerModulator" id="{ef9d80a0-7b70-4003-bb2a-1dd9570cd1fd}">
-		<property name="nameOfPropertyBeingModulated">
-			<value>pitch</value>
-		</property>
-		<property name="amount">
-			<value>8.5</value>
-		</property>
-	</object>
 	<object class="MixerBusEffectChain" id="{bd5b5f90-1bbf-455b-823b-1446046f796a}">
 		<relationship name="effects">
 			<destination>{6a435e8c-8a57-4a91-80ac-edc36386070f}</destination>

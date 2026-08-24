@@ -44,6 +44,10 @@ namespace CosmicShore.Gameplay
         // Per-vessel anti-spam: last time an overtake effect was applied to a vessel.
         private static readonly Dictionary<ResourceSystem, float> _lastEffectTime = new();
 
+        // No prune path — destroyed ResourceSystem keys accumulate for the editor session.
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        static void ResetStatics() => _lastEffectTime.Clear();
+
         public override void Execute(VesselImpactor impactor, SkimmerImpactor impactee)
         {
             if (impactor == null || impactor.Vessel == null) return;
@@ -75,8 +79,11 @@ namespace CosmicShore.Gameplay
             bool isAlly = overtakenStatus.Domain == impacteeVessel.VesselStatus.Domain;
             float magnitude = isAlly ? buffMagnitude : debuffMagnitude;
 
+            // Classed VesselContact - the source class only matters on the debuff branch, where it
+            // decides which wards stop it (ElementalDebuffSources).
             for (int i = 0; i < AllElements.Length; i++)
-                rs.ApplyElementalEffect(AllElements[i], magnitude, effectDuration);
+                rs.ApplyElementalEffect(AllElements[i], magnitude, effectDuration,
+                                        ElementalDebuffSources.VesselContact);
 
             // Friendly buff audio: all four elements are buffed at once, so play a
             // single representative element's buff SFX (chosen at random for variety)

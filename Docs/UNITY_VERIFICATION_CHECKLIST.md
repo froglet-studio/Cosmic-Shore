@@ -30,6 +30,339 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Flora — TIME breeds faster, the second elemental law (`claude/flora-reproduction-balance-y9gaij`, 2026-08-24)
+
+Authored without a Unity compile or play-test (remote session, no editor, no `unity` CLI binary in
+this environment). Touches `FloraReproductionRules.cs`, `Flora.cs`, `AssembledFlora.cs`,
+`FloraConfigurationSO.cs` (tooltip only), `FloraReproductionRulesTests.cs`, plus docs and the
+`author_flora_populations.py` docstring. **No assets changed** — the law is code, and
+`author_flora_populations.py --check` is clean.
+
+**What landed.** A Time plant reproduces at 1.25× the fleet rate, Charge/Mass/Space at 0.8×. One
+rate constant divides both reproduction paths, because both measure *cost per child*: the
+per-plant growth quota (prisms/child, `Flora.ResolveGrowthPerOffspring`) and the lattice colonies'
+cycle period (seconds/child, `AssembledFlora.ColonyCyclePeriod`). Caps are untouched, so the
+always-on heart-collider ceiling is exactly unchanged — only how fast a species reaches it.
+
+**Verified offline** (more than inspection): .NET 8 installed in-session, the real shipped
+`FloraReproductionRules.cs` + `FloraReproductionRulesTests.cs` compiled and executed against a
+`Mathf`/NUnit shim — **20/20 tests pass, 50 assertions**; all five edited C# files parse with 0
+Roslyn syntax errors; the `Element`-is-both-a-property-and-a-type resolution (used in
+`ColonyCyclePeriod`) compiled as a standalone case; `check_conditional_compilation.py` OK;
+`author_flora_populations.py --check` clean. Blast radius grepped: all three `TryBeginCycle` sites
+take the shared period, the one remaining raw `cfg.GrowthPerOffspring` read is the
+does-this-species-reproduce gate (correctly keyed on the authored value), and
+`Cell.CurrentFaunaSpawnPeriod` itself is **not** modified — the fauna wave clock and Brood Rush's
+scoring heartbeat are untouched.
+
+**Verify in editor**
+1. **Compile clean**, then run the edit-mode suite — `FloraReproductionRulesTests` should be 20/20
+   inside Unity as it is offline.
+2. **Menu_Main** (the Lattice cell is the boot world: twelve colonies, one per element, sharing one
+   cell clock and one cap — the cleanest read there is). Over ~10 minutes the four **Time** colonies
+   should visibly out-grow their eight neighbours. Colony cycle at the 30 s heartbeat is
+   **Time 24 s / others 37.5 s**.
+3. **Rampage** or **Hesperides** for the per-plant quota path: those species roll all four elements
+   from one config, so a mature cell should show noticeably more Time plants than
+   Charge/Mass/Space. (Quota 56 → Time 45, others 70.)
+4. **No cell should reach Frenzy earlier than before.** The volume ladder is untouched, but Time
+   colonies now arrive at their share of the volume sooner — if a cell freezes early, that is the
+   thing to report.
+5. Confirm nothing is culled and no plant pops out: this change alters only the *price* of a child,
+   never the removal path.
+
+**First-pass tuning (NOT settled).** `FloraReproductionRules.TimeReproductionRate = 1.25f` and
+`OtherReproductionRate = 0.8f` — two constants at the top of the file, deliberately symmetric.
+"A bit" was interpreted as ±20–25%; expect a balancing pass once it is observable.
+
+---
+
+### 🔴 Scarab switch — interior fill removed, ring 20% larger (`claude/scarab-switch-prism-cleanup-bxhsm0`, 2026-08-24)
+
+Authored without a Unity compile or play-test (remote session, no editor, no `unity` CLI binary
+in this environment). Touches `ScarabSwitch.cs`, `PlaceSwitchActionSO.cs`,
+`PlaceSwitchActionExecutor.cs`, `PlaceSwitchAction.asset`, and `SCARAB.md`. Verified offline by
+manual read-through: the only call site of `ScarabSwitch.Build` is
+`PlaceSwitchActionExecutor.PlaceSwitch`, updated to the new (shorter) argument list in the same
+change; grepped the whole `_Scripts` tree for `InteriorPrismCount`/`BrickScale`/`interiorPrismCount`/
+`brickScale` and for any other `ScarabSwitch.Build(`/`AddComponent<ScarabSwitch>` call site —
+none remain outside the two edited files; grepped `_Scripts/Editor` and `_Scripts/Tests` for
+`ScarabSwitch`/`PlaceSwitchActionSO` — no editor tooling or tests reference the removed fields by
+name (reflection-based drift risk is nil). `PlaceSwitchAction.asset` YAML hand-edited to match the
+new field set exactly (Unity will happily read a MonoBehaviour asset missing a field it no longer
+declares; no leftover `interiorPrismCount`/`brickScale` keys remain in the file).
+
+**What landed.** Requested directly: "the switch fills with prisms when placed — remove those,
+keep the payout dais, make the ring 20% bigger in diameter."
+- `ScarabSwitch.Build` no longer lays a Vogel-spiral disc of body prisms across the ring's mouth
+  at placement. The ring now blooms in **empty** and stays that way until a ball threads it; the
+  scarab-wing dais payout (255 prisms) is completely unchanged.
+- `PlaceSwitchActionSO.ringRadius` raised **20 → 24** (20%), both the C# default and the shipped
+  `PlaceSwitchAction.asset` value. `switchScale` (the MASS element multiplier) still scales from
+  the new base, so a Mass-10 switch is now 24×2.5=60 instead of 20×2.5=50.
+- `interiorPrismCount` and `brickScale` fields deleted from `PlaceSwitchActionSO` (not just
+  zeroed) along with their public accessors; `ScarabSwitch.BlowOutInterior`, `SpiralPoint`,
+  `InteriorRotation`, and the `_interior`/`_shieldPrisms`/`_brickScale`/`_interiorCount` fields
+  are all deleted from `ScarabSwitch`.
+- **Known consequence, flagged rather than silently absorbed**: the MASS-5 "Armored Switch"
+  upgrade (built the interior fill from shielded prisms) has nothing left to apply to and is
+  currently a no-op. `SCARAB.md` §7's table and the playtest checklist are marked accordingly.
+  This was not asked for and is not fixed here — it needs a design call on where (if anywhere)
+  Armored Switch's effect should live now.
+- The Astro-League-integration volume-ladder math in `SCARAB.md` §8 (already authored onto
+  `Astro League Cell Config.asset`'s `PhaseThresholds`) is unaffected — it is derived from the
+  dais's 50,773 volume per spent switch, not the retired ~840-volume interior fill, which was
+  only ever a transient pre-strike blip on top of it. No asset in that path was touched.
+
+**Verify in editor**
+1. Open `Assets/_SO_Assets/VesselActions/Scarab/PlaceSwitchAction.asset` — confirm it inspects
+   cleanly (no missing-field warnings), `Ring Radius` reads `24`, and there is no leftover
+   `Interior Prism Count` / `Brick Scale` field drawn (they should simply not exist any more).
+2. Fly the Scarab, place a switch (Mass ability button) in Freestyle or Scarab Scramble — confirm
+   the ring blooms in with a visibly **empty** mouth (no disc of prisms), and that the ring reads
+   noticeably larger than before (20% diameter).
+3. Thread it with a ball — confirm the scarab-wing dais still raises exactly as before (255
+   prisms, sun cores igniting last) with nothing left over to "blow out" first.
+4. With the Mass-5 upgrade active, place and thread a switch — confirm (per the flagged
+   consequence above) that it behaves identically to an unupgraded switch, i.e. Armored Switch
+   currently does nothing observable. This is expected until a follow-up decides its new home.
+
+---
+
+### 🔴 Bends AI aim: wavefront intercept lead + human focus (`claude/pensive-hopper-35d6h4`, 2026-08-21)
+
+Authored without a Unity compile or play-test (remote session, no editor). Touches
+`BendsController.cs`, docs, `author_bends_assets.py`, and `MinigameBends.unity` — the scene
+edit is three new name-keyed float fields on the existing BendsController block, emitted by the
+re-synced generator (no structural YAML, minimal import risk). Verified offline: Roslyn compile
+of the file is clean of every syntax/scope/duplicate error class,
+`check_conditional_compilation.py` passes, `author_bends_assets.py --check` passes again (it
+had been failing — the generator still emitted the old `aiAimMaxRange: 900`, so a re-run would
+have reverted the shipped 2400), and the intercept math was simulated (old flat lead missed a
+60 u/s crossing rival by 99 u at range 1500; the new lead holds a constant ~21 u overlead,
+which is the safe side of the beam).
+
+**What landed.** The Bends AI Dolphin now (1) leads its drift aim by the blast wavefront's REAL
+travel time — `WavefrontLeadTime` inverts the cone's sin-eased growth against the new
+`aiAimBlastReach` (2400) / `aiAimBlastDuration` (2.7) mirrors of `AOEConicExplosion.prefab` —
+with a two-pass intercept; and (2) prefers aiming at HUMAN pilots (`aiAimHumanFocus` 3: an AI
+rival must be 3× closer to steal the aim).
+
+**2026-08-22 follow-up (same branch).** The first playtest (5 matches) showed the AI still
+never landing a bend — "roams around the player, tries to aim, always fails". Root cause found
+and fixed in `AIPilot.StartAIPilot`, not in the aim math: the AI's blind 2s/2s ability cycler
+was stopping the SHARED drift executor mid-commit (and its own random drifts were locking the
+AI's course for half of every cycle — the roaming). A pilot with `drift` enabled no longer
+blind-cycles abilities bound to the commit control (`LeftStickAction`); the commit loop drives
+that trio itself. Affects only the Dolphin AI (the one vessel with `drift: 1`), in every mode
+it flies — Bends, Rampage, menu autopilot. Full analysis: `BENDS.md` § 2026-08-22.
+
+**Verify in editor.**
+0. **The headline retest (the 2026-08-22 fix):** a Bends match vs 1 AI — the AI should now fly
+   visibly straighter between crystals (no more 2-second locked-course wanders), hold its drift
+   all the way onto the crystal with its nose tracking you, and actually land bends. If it
+   still never scores, the next suspect is the vessel-hit dispatch itself, not the AI — test
+   whether a HUMAN blast bends the AI (checklist item 2 of the mode's own doc).
+1. Open `MinigameBends.unity`; confirm `BendsController` shows the three new inspector fields at
+   their defaults (Blast Reach 2400, Blast Duration 2.7, Human Focus 3) with no missing-script
+   or serialization warnings.
+2. Solo match vs 1 AI (2 players, 2 domains): fly a straight line at mid-range while the AI
+   collects a crystal — its announced cone (Echo Sight) should point visibly AHEAD of you, and
+   the blast should actually land. This is the headline: before this pass the AI's shot trailed
+   any moving target at range.
+3. 3–4 player match with AI backfill: confirm the AIs' cones come for the human rather than for
+   each other, unless an AI rival is much closer.
+4. **First-pass tuning:** `aiAimHumanFocus` 3 is a starting point — drop toward 1 if being
+   hunted by every bot reads as unfair at intensity 1, where the platform skill floor is low.
+   `aiAimLeadSeconds` 0.35 is now pure padding on top of the computed intercept; if the AI
+   reads as over-leading a slow target up close, this is the dial, not the wavefront numbers.
+
+---
+
+### 🔴 Dolphin minimum speed → 0 (`claude/dolphin-minimum-speed-59q8ay`, 2026-08-20)
+
+Authored without a Unity compile or play-test. **One authored scalar changed in an existing
+serialized asset** — no new keys, no new components, no hand-built YAML structure — so import
+risk is minimal, but the feel is unflown.
+
+**What landed.** `Dolphin.prefab` → `VesselTransformer.DefaultMinimumSpeed: 10 → 0`.
+(The serialized `MinimumSpeed` was already 0; `VesselTransformer` overwrites it from
+`DefaultMinimumSpeed` on every spawn, so the Default is the only authority.) Nothing else moved —
+no other vessel carries this asset, and no scene overrides the field.
+
+**The knock-on is the whole speed ladder**, because the floor is added AFTER the throttle multiply
+(`ComputeThrottleTarget`), so it padded both ends:
+
+| quantity | before | after |
+|---|---|---|
+| max cruise (`68 × 1 + floor`) | 78 | **68** |
+| max boost (`68 × 2.259² + floor`) | 357 | **347** |
+| throttle released | crawls at 10 u/s | **full stop** |
+
+**Verify in editor** (Menu_Main, freestyle, Dolphin)
+
+1. **Release the throttle** — the vessel comes to a genuine stop rather than settling on a 10 u/s
+   crawl, and it stops *smoothly* (the speed lerp, not a snap). A dead-stopped Dolphin is the
+   intended new state, so check it is recoverable: throttle back up from zero must feel responsive,
+   not like a stall.
+2. **Full throttle, no boost** — `VesselStatus.Speed` settles at **68** (was 78).
+3. **Release a full boost meter** — peak near **347** (was 357). The 10 u/s difference is inside
+   speed-tunnel noise; if the top end should be held at 357, the lever is
+   `DefaultThrottleScaler` 68 → 70.2, **not** re-adding the floor.
+4. **Drift at zero throttle.** The Dolphin's `driftThrottlePolicy` is `Locked` and its `Grip` is 0,
+   so a drift entered at speed freezes the velocity vector — but a drift entered at *rest* now has
+   no floor pushing it along. Confirm that reads as "parked", not as a stuck/unrecoverable state.
+5. **AI Dolphins** (Rampage, The Bends) still fly — the AI has no floor-specific logic, but an AI
+   that lets the throttle go now actually stops.
+6. **Speed tunnel.** Cruise crosses the law's floor in the *other* direction: 78 was just above
+   `minEffectSpeed` 70 (effect 0.04), 68 is just below it (effect 0.00), so unboosted flight now
+   has literally no tunnel instead of a barely-perceptible one. Boosted is unchanged — 347 and 357
+   both saturate at 1.00. Expect no visible difference; noted because it is a threshold crossing,
+   not because it should read.
+
+**Collider budget:** unchanged — no spawning, geometry, or query change.
+
+---
+
+### 🔴 Urchin — end-of-ribbon launch, merged spike trigger, Track Projector (`claude/urchin-detach-trigger-abilities-2y7e2s`, 2026-08-18)
+
+Authored without a Unity compile or play-test. The C# was type-checked out of editor with Roslyn
+(the two new ability files against a stub harness transcribed from the real declarations; the
+transformer/follower edits against the syntax/scope filter), and the prefab was edited as YAML —
+so anchor integrity, dangling references and duplicate ids were machine-checked, but **the import
+was not**.
+
+**What landed**
+
+1. **Running out of rail LAUNCHES instead of parking.** `TrailFollower` reports the reflection at
+   an open ribbon's end (`ReachedEnd`) instead of zeroing the ride speed;
+   `GunVesselTransformer.LaunchOffRibbonEnd` clears the attach flags and fences that ONE ribbon
+   for `endLaunchReattachGrace` (0.35 s). A **loop** never reaches this and is still ridden
+   forever.
+2. **Momentum survives every detach.** `EndRide` carries the ride's last speed into free flight
+   (writing `speed` directly, and flooring `ComputeThrottleTarget` with it), bled off at a
+   constant `detachSpeedDecayRate` = **12 u/s** — so a 150 u/s grind takes ~8 s to fall back to
+   the ~50 u/s cruise. Only EXCESS carries: a 10 u/s hostile grind hands over nothing. Cleared on
+   `Initialize` and on an overridden `ResetTransformer`.
+3. **A pre-existing hole closed on the way**: the "follower let go on its own" path cleared the
+   attach flags in place, so `EndRide` could never run for it — `_rideMode` stayed stale and the
+   ride camera stayed pulled in. Every exit now goes through one `LeaveRide`.
+4. **The two spike abilities MERGED onto the right trigger.** Tap = the aimed ring shotgun
+   (semi-auto, one blast per press, 0.15 ammo); hold = charge; release = an omni burst of
+   **6 → 36** spikes across a **0.35 → 2.5 s** window, free. `repeatWhileHeld` authored **off**.
+   The charge timer lives on the per-vessel executor, and a teardown (`End(null)`) drops it
+   without firing.
+5. **The left trigger carries a new ability — the Track Projector.** A straight **100 u**
+   single-lane stretch of the pilot's own trail, laid `max(40, speed × 0.35)` u ahead of the
+   NOSE, 13 prisms at 8 u spacing, scale (3, 3, 6), on a flat **20 s** cooldown (the Squirrel
+   boost ring's). Laid through `BoostRingBuilder.LayOne` → full-size collider from frame 0 +
+   `AssignTrail`-after-`Initialize`, into its own `Trail` declared `PrismscapeDimension.Trail`.
+6. **Element map re-cut.** Charge = the whole spike weapon (depth × reach; map multiplier moved
+   2.0 → **2.5**, the value Space used to carry). Space = the track's LENGTH (authored on the SO,
+   map multiplier pinned 1.0). "Overcharge" is now the merged L5: +1 generation **and**
+   `ChainRangeFalloff` → 1. Mass and Time unchanged.
+7. **Assets:** `UrchinSpikeVolleyAction.asset` / `UrchinSpikeBarrageAction.asset` **deleted**,
+   replaced by `UrchinSpikeAction.asset`; `UrchinTrackAction.asset` added. All authored by
+   `Tools/Build/author_urchin_assets.py` (re-run it rather than hand-editing).
+
+**Verify in editor**
+
+1. **Import check.** `Urchin.prefab` shows a **TrackActionExecutor** child under `VesselActions`
+   with `prismSpawnChannel` (`EventOnSpawnPrismAndReturn`) and `OnMiniGameTurnEnd` wired, and
+   `ActionExecutorRegistry._executors` has **three** entries. `R_VesselActionHandler`'s
+   `_inputEventShipActions` binds `1 → UrchinSpikeAction`, `2 → UrchinTrackAction`,
+   `7 → UrchinSlipAction` — no missing-script or unassigned-reference warnings.
+2. **`Assets/Resources/ElementalAbilityMaps/Urchin.asset`** opens with four entries and the new
+   labels (Chain Spikes / Trail Rider / Track Projector / Slip).
+3. Work `URCHIN_TRAIL_RIDER.md` § "In-editor verification" steps **16a–16e** (the launch, the
+   re-attach fence, coasting to a stop, loops, and that the carry does not survive a respawn).
+4. Work `URCHIN_CHAIN_SPIKES.md` steps **14–16** (tap = one blast, hold = blast + burst, and the
+   charge dropped by a mid-hold vessel swap).
+5. Work `URCHIN_TRACK_PROJECTOR.md` § "In-editor verification" in full.
+
+**First-pass tuning (expect a balancing pass)**
+
+| Knob | Where | Value | Move it if… |
+|---|---|---|---|
+| `detachSpeedDecayRate` | `GunVesselTransformer` | **12** u/s | the launch outstays its welcome (raise) or ends too abruptly (lower). ~8 s from 150 → 50 today. |
+| `endLaunchReattachGrace` | `GunVesselTransformer` | **0.35** s | a curved ribbon still re-latches you at its own end (raise). |
+| `minChargeSeconds` / `maxChargeSeconds` | `UrchinSpikeAction.asset` | **0.35** / **2.5** s | every tap ends in a burst (raise the min) or a full charge feels like a chore (lower the max). |
+| `chargedSpikesAtMin` / `chargedSpikesAtMax` | `UrchinSpikeAction.asset` | **6** / **36** | the burst reads as weak at a short hold (raise the min) or floods the pool at a full one (lower the max; the Normal pool's `maxSize` is 400 **per vessel**). |
+| `trackLength` / `prismSpacing` / `prismScale` | `UrchinTrackAction.asset` | **100** u / **8** u / **(3, 3, 6)** | the ramp is hard to catch at grind speed (tighten spacing, fatten the prism) or too easy to trip over. |
+| `cooldown` | `UrchinTrackAction.asset` | **20** s | matched to `SquirrelTubeAction.cooldown` on purpose — move both together. |
+| Charge `MultiplierAtFullLevel` | `Urchin.asset` map | **2.5** (was 2.0) | spike reach at high Charge is now the old Space behaviour; retune here, not on the asset. |
+
+**Known gaps (not this branch's to fix)**
+
+- The Urchin still has **no HUD** (`URCHIN_BACKLOG.md` U3), so neither the charge nor the track's
+  cooldown is visible. `UrchinTrackActionExecutor.CooldownRemaining01` is exposed and unread for
+  the day it exists.
+- Three `EventReference` fields ship **empty** (charge start, charged release, track deploy) —
+  the abilities are silent by design until they are given a voice.
+- The continuous Space/Charge element dials are still LOCAL level reads (`URCHIN_BACKLOG.md` U1);
+  only the L5 unlock bits replicate.
+### 🔴 Scarab Scramble — the Scarab-only hoop-court party mode (`claude/scarab-party-game-pxe569`, 2026-08-18)
+
+Authored fully headless (code + SO assets + scene YAML cloned from the DogFight scene with
+in-place component swaps); Roslyn-compiled and machine-validated, never opened in Unity. Full
+mode doc + the 11-step in-editor verification list live in
+`Assets/_Scripts/Controller/Arcade/SCARABSCRAMBLE.md` — work that list rather than a copy here.
+The editor-riskiest items:
+
+- **Scene import**: `MinigameScarabScramble.unity` must open with zero Missing (Mono Script)
+  rows — the controller/monitor swaps were done by rewriting `m_Script` guids at the donor's
+  fileIDs, and a rejected guid shows up nowhere else. GlobalObjectIdHash values were cloned
+  from the DogFight scene; Unity will regenerate them on first save — save the scene once.
+- **Forge → hoop loop end-to-end** (SCARABSCRAMBLE.md steps 2–8): the SKIMMER converts a
+  crystal into a ball in place and at rest, the ball blooms in, the hull then strikes a real
+  ball; arming gate blocks enemy shoves; juke-steal converts (works from a client too, via
+  `NotifyJukeFired_ServerRpc`); bank toast on 2+ caroms.
+- **Elemental crystals are NOT forged any more.** Fly the Scarab's skimmer through an
+  ELEMENTAL crystal (a lifeform heart, or one of the cell's element crystals): it must COLLECT
+  normally and raise that element's HUD flower — no ball. Then fly through a bright OMNI
+  crystal: that one must still become a ball in place. The omni case is the one to re-check
+  after this change, because the hull's `vesselCrystalEffects` (the OMNI branch) is now EMPTY
+  on `ScarabImpactorDataContainer` — if an omni crystal ever reaches the hull and does nothing
+  at all, the skimmer is not converting it (check `VesselStatus.NearFieldSkimmer` /
+  `FarFieldSkimmer` actually point at the live skimmer — FrogletTools > Vessels > Audit Vessel
+  Skimmers).
+- **The CELL overloads at 4 loose balls, regardless of domain** (the per-domain forge cap is
+  gone). Get a FOURTH ball loose in the court — any mix of domains, any mix of forged and
+  knocked-loose-from-the-nucleus — and all four should detonate at once, each in its own
+  domain-coloured blast, with the court-wide overload toast. Watch that own-domain prisms take
+  a temporary shield rather than being destroyed (the no-perceived-clipping rule). **Check both
+  entry routes**, because the old cap could only see one: forge a fourth from a crystal, and
+  separately knock a fourth inward off the nucleus wall. An EMBEDDED ball must not count —
+  three loose plus any number still studded in the shell is quiet.
+- **MPPM two-client: the overload is ONE synced event.** The count and the detonation are
+  server-side (`TickCellMembershipServer`), announced by `CellOverload_ClientRpc`, so both
+  peers must see the same balls vanish on the same beat and BOTH must get the toast — a
+  client-side count would fire twice or not at all. Trigger it once from the host's Scarab and
+  once from the client's.
+- **Scarab nucleus seeding** (SCARAB.md §4.6, a PLATFORM vessel ability — it is live in
+  freestyle and the menu too, not just this mode): balls of your domain appear embedded in the
+  nucleus on a ~14s clock. Strike one OUTWARD → it should leave into the cytoplasm and bounce
+  off the nucleus from outside; strike one INWARD → it enters the court as an ordinary scoring
+  ball. **Both directions must read as a HIT, not a radial shove** — that is what the new 1s
+  `nucleusReleaseGraceSeconds` buys, and it is the single most likely thing to still look
+  wrong. Bank a fourth into the nucleus to see the overload.
+- **Scarab skimmer is 50% larger — for real this time** (SPACE band 20..40 → **30..60**, so the
+  live world radius goes 10..20 → **15..30**). The previous pass raised only the authored
+  `m_LocalScale` (60 → 90) and was a **no-op in play**: `Skimmer.ApplyScaleIfChanged` overwrites
+  `localScale` with the `Scale` ElementalFloat on the first live frame, so the shipped skimmer had
+  been 20..40 the whole time and the "30 → 45" claim above it described a number nothing read. The
+  authored `localScale` is now parked on the resting size (30) so the prefab reads what the game
+  runs. Confirm the forge triggers at a comfortable stand-off, and that the wider sphere has not
+  made skim-energy gain or prism interaction feel different on the Scarab elsewhere.
+- **MPPM two-client**: forged-ball SIZE on the client (the new `n_SizeScale` — seed the forger
+  SPACE 10 so the ×4 ball is unmistakable), colour permanence under enemy strikes.
+- **PhaseThresholds are an estimate** (Restless 12000/11000, Frenzy 36000/32000 volume, zero
+  structural floor): run FrogletTools ▸ Ecology ▸ Measure Cell Environment Baselines on the
+  new cell and retune; Restless is the fauna-release gate.
+- **First-pass tuning table**: court 480/560/640/720 · hoops 4/3/2/1 · mouths 60/54/48/42 ·
+  ring fraction 0.45 · balls/player 2 · goal target 10 (End Game Conditions window) ·
+  crystals players+2 · comeback rate 0.5 on the card · AI lead 45u / intercept 0.5s.
+
 ### 🔴 Urchin revival — chain-reaction spikes + trail rider (`claude/restore-urchin-vessel-9qacdk`, 2026-08-15)
 
 Authored without a Unity compile or play-test. This one is **unusually editor-heavy**: the code
@@ -1565,8 +1898,11 @@ occurrence names itself.
    `ScarabHullBuilder`; right-click the component ▸ **Rebuild Hull** to see the mesh without
    entering play mode. In flight the Scarab must read as a BEETLE — domed shell with a seam down
    the middle, a forward horn, six legs — and the inherited Sparrow mesh must be invisible (its
-   renderers are disabled at build time; its GameObjects stay, because the vessel's BoxCollider and
-   ImpactCollider live on them, so collisions must still work). The domain colour must land on the
+   renderers are disabled at build time; its GameObjects stay, because the vessel's collider and
+   ImpactCollider live on them, so collisions must still work). **Its hull collider is now a single
+   `SphereCollider`, r 4.5 at the origin** (was a Sparrow-shaped 10.31 x 0.46 x 4.38 box parked
+   3.5 u behind the ship) — confirm the component renders as *Sphere Collider*, not
+   "Missing", and that the gizmo wraps the carapace rather than sitting behind it. The domain colour must land on the
    CARAPACE and horn (submesh 1), not the underside. Camera sits directly behind with **no vertical
    lift** — `followOffset {0, 0, -50}`; the old `y: 10` was inherited from the Sparrow, the only
    vessel that carries one.
@@ -1575,8 +1911,28 @@ occurrence names itself.
    up and splay as you slow, the horn swings against the nose. A rigid hull means
    `ScarabAnimation` resolved no parts — check the console for its unresolved-part report.
    Right-stick dash: the whole visible ship must spin 360° (it previously rolled the hidden FBX).
-   And the dash must now throw a **visible spherical blast** ~45u ahead — if nothing appears,
-   `Detonate()` regressed.
+   **The one thing no offline check can settle:** select the Scarab's hull GameObject
+   (`SparrowModel1`, the nested FBX instance) and read its **world scale** in the inspector. The
+   blast measures the hull collider in world units, so the shipped `m_Radius: 4.5` only means a
+   4.5-unit hull — and therefore an r 45 / 54-long plate — if that root is unit-scaled. It is
+   *sized correctly either way*; what needs one look is whether 4.5 is the intended world radius.
+   (Circumstantial evidence says yes: the hull mesh measures ~12.5 u wide after its 0.2034 armature
+   scale, against the 10.31-wide box that used to be the hull collider — same order, not 5x apart.)
+   **MPPM two-client, the load-bearing one:** dash on the CLIENT and count the plates — there must
+   be exactly **ONE**, and the ball must take a single kick, not two. Before the `IsLocalPilot`
+   gate the replicated right stick made every peer fire, so a 4-player lobby threw 4 plates per
+   dash. Also confirm the OTHER machine still sees your ship spin 360° (that is now an explicit
+   `BroadcastJukeRoll_ClientRpc`, not a side effect), and that the spinning replica does not drift
+   sideways — a replica must play the visual only.
+   And the dash must now throw a **visible cylindrical plate** — a broad disc lying flat ACROSS
+   your course, starting on the hull and sweeping **54 u** along the dash in **~0.21 s** at
+   **r 45** (10× the 4.5 hull radius; length 1.2× that radius). It is a fast slap, not a bloom. If
+   nothing appears, `Detonate()` regressed; if it draws as a sphere, the prefab's `plateVisual`
+   child lost its built-in Cylinder mesh. Check three things beyond "it appears": every prism it
+   claims flies the SAME way — down-range along the dash, not outward from a point; a ball it
+   reaches launches that same direction **even when the ball is out near the plate's rim** (that is
+   the circumscribing box trigger doing its job — an inscribed sphere would have covered only the
+   inner 27 u); and an opposing pilot caught in it takes the all-element debuff.
 1. **Open `Assets/_Prefabs/Spacevessels/Scarab.prefab` and SAVE it** — this is load-bearing, not
    a smoke test: the clone carries Sparrow's `NetworkObject.GlobalObjectIdHash` until the editor
    re-serializes it, and two registered network prefabs sharing a hash collide. Open, confirm no
@@ -1591,25 +1947,33 @@ occurrence names itself.
    A / Space = a low-poly toy RING blooms ~150u ahead on the COURSE with its interior filled by a
    Vogel-spiral prism disc (drift then place — the ring should appear where you're going, not where
    you're pointing), second+third presses spend the remaining charges, fourth refuses.
-4. **Crystals → a ball.** **EVERY omni crystal forges a ball** — the energy gate is authored OFF
-   (`_requireEnergy: 0`) by request. Fly through one: a ball appears ahead of your nose carrying
-   your speed and domain colour, and the console prints `[ScarabBallForge] … forged a {domain}
-   ball … @ N u/s`. Each crystal also brightens the **Switch icon** one step (0→3 charges).
-   ⚠ If a ball spawns but sits still, the freeze/velocity ordering in `LaunchServer` regressed; if
-   TWO balls appear per crystal in MPPM, the server gate regressed.
-   ⚠ **Balls accumulate without bound** while the gate is off and freestyle has no arena boundary
-   — nothing despawns them, and each live ball costs a per-tick prism scan plus a sweep over every
-   vessel. Fine for a short session; if a long one degrades, that is the population cap (§15.5),
-   not a new bug.
+4. **Crystals → a ball.** **Every OMNI crystal forges a ball; an ELEMENTAL one never does** —
+   the energy gate is authored OFF (`_requireEnergy: 0`) by request. The forge is the **SKIMMER**,
+   not the hull: fly at a bright crystal and it becomes a ball **in place and at rest** before the
+   ship arrives (blooming in over `spawnBloomSeconds`), and the hull then strikes a real ball. It
+   does NOT appear ahead of your nose carrying your speed — that was the retired hull forge, and
+   seeing it would mean the old path came back. Console prints `[ScarabBallForge] … turned a
+   crystal into a {domain} ball at …` on the `ScarabNucleus` verbose channel. Each crystal also
+   brightens the **Switch icon** one step (0→3 charges).
+   ⚠ If TWO balls appear per crystal in MPPM, the server gate regressed.
+   ⚠ Balls no longer accumulate without bound: **four loose in one cell detonates all four**
+   (see the Scramble section above) — that is the population answer (§15.5), and it is live in
+   freestyle too, because it is a ball rule rather than a mode rule.
    *(The energy economy still exists behind that one flag: turn `_requireEnergy` on and the meter
    gates forging again — four crystals fill the ring, the fifth forges. While it is off the HUD's
    energy ring fills but gates nothing.)*
-3b. **The cavitation blast.** Every right-stick dash that finds the blast off cooldown throws a
-   small SPHERICAL explosion ~45u ahead along the dash direction (diameter 90). It must:
-   destroy prisms in that volume (fly at your own trail and dash into it); **kill fauna** caught in
-   it (a creature dies when its body prisms go — dash through a swarm in a populated cell); and
-   **debuff an opposing pilot** it engulfs — all four of their element flowers drop ~half a level
-   and recover over 4s. It must NOT hit your own domain's mass or teammates (`affectSelf 0`).
+3b. **The cavitation blast is a SWEPT PLATE, not a sphere** (rewritten on this branch — if it
+   reads as a ball of destruction around the ship, the old `AOEExplosion` prefab came back). A
+   circular plate is born centred ON the vessel with its face normal along the DASH direction
+   (perpendicular to your course), and sweeps forward along that normal: **radius 45** (10× the
+   4.5-unit hull collider), **length 54**, crossed in **0.21 s**. So the destruction is a disc
+   punched sideways out of the world — stand in a wall of your own trail, dash into it, and the
+   hole should be a broad flat slab across your dash line, not a crater at arm's length. It must
+   also **kill fauna** caught in it (a creature dies when its body prisms go — dash through a swarm
+   in a populated cell) and **debuff an opposing pilot** it engulfs (all four element flowers drop
+   ~half a level, recovering over 4 s), and must NOT touch your own domain's mass or teammates
+   (`affectSelf 0`). Debris carries the **blast velocity** (257 u/s along the plate normal), so
+   opposing prisms should be thrown along the dash, not radially.
    ⚠ Dash again immediately: the DASH must still fire even while the blast is recharging — if the
    dodge is blocked by the cooldown, the split regressed.
 4a. **Gauges**: the CHARGE icon (leftmost) is bright orange when the blast is ready and dims for
@@ -1630,15 +1994,18 @@ occurrence names itself.
    - **Space L10** → a forged ball is **4× the size** of one forged at rest. Balls already in flight
      keep the size they were born with (stamped once) — that is correct, not a bug.
    - **Time L10** → higher throttle ceiling (~270). **Time L5** → double-tap RT dashes forward.
-8. **Dash-into-crystal parity** (the trajectory check): hold a heading, dash sideways, and clip an
-   omni crystal *during* the dash. The forged ball must leave along the DASH-blended heading, not
-   the throttle line — the same trajectory a stationary ball would take if you dashed into it.
+8. **Dash-into-crystal parity** — *retired, and its replacement is the opposite check.* This
+   step tested the hull forge's inherited velocity, which no longer exists: the skimmer converts
+   the crystal AT REST and the hull then strikes it. So dash into a crystal and watch that the ball
+   is briefly **stationary** before the ship reaches it, then leaves on a real collision. A ball
+   that departs on the dash heading without being touched is the retired forge resurfacing.
 
 **First-pass tuning (expect a balancing pass):** accel 90 u/s², coast drag 120 (release-only —
 holding the trigger must never decay), top speed 180 (×1.5 at Time 10), dash 80 u/s / 0.5s /
-**no cooldown**, Snap Dash 100 u/s / 0.4s / 0.3s double-tap window, cavitation blast scale 90 /
-offset 45 / 2.5s cooldown (×0.5 at Charge 10) / duration 0.85s / `proportionalDebris` with
-restitution 1/3 × Inertia 1.8 (the Dolphin's shipped group), blast debuff −0.5 on all four
+**no cooldown**, Snap Dash 100 u/s / 0.4s / 0.3s double-tap window, cavitation **plate** radius
+45 (`radiusPerVesselRadius` 10 × the 4.5 hull) / length 54 (`lengthPerRadius` 1.2) / sweep
+257.14 u/s ⇒ duration 0.21s / 2.5s cooldown (×0.5 at Charge 10) / `proportionalDebris` with
+restitution 1/3 × Inertia **3** (so debris speed IS the blast velocity), blast debuff −0.5 on all four
 elements over 4s with 1s per-victim anti-spam, ring radius 20 (×2.5 at Mass 10), 28 interior +
 44 burst prisms (2.5, 1.5, 8), place distance flat 150 (Space no longer scales it), 3 switch
 charges, crystal grants +0.334 charge / +0.25 energy, ball size ×1 → ×4 at Space 10.
@@ -1850,7 +2217,7 @@ Follow-ups there.
 | Knob | Value | Where it lives |
 |---|---|---|
 | Throttle top | **68** (+ `MinimumSpeed` 10 = 78) | `Dolphin.prefab` → `VesselTransformer.DefaultThrottleScaler` |
-| Speed floor | **10** (unchanged) | `Dolphin.prefab` → `VesselTransformer.DefaultMinimumSpeed` |
+| Speed floor | ~~10~~ → **0** (superseded, see the minimum-speed entry above) | `Dolphin.prefab` → `VesselTransformer.DefaultMinimumSpeed` |
 | Boost peak multiplier | **2.259** (**squared** in use → ×5.103) | `ChargeBoostAction.maxBoostMultiplier` |
 | Charge time to full | **3.636 s** | `ChargeBoostAction.chargeTimeToFull` |
 | Discharge time to empty | **2.5 s** | `ChargeBoostAction.dischargeTimeToEmpty` |
@@ -2031,12 +2398,14 @@ GameObject, a removed resource slot, and renamed serialized fields.
   `BoostAction.asset`; boost is now unlimited in duration.
 - The **strafing roll dropped to base kit** — `BarrelRollController` lost its
   `IsUpgradeActive(Element.Time)` gate. Still one roll per boost press.
-- **TIME-5 is now "Elemental Ward"** — a general, source-keyed
+- **TIME-5 is now "Elemental Ward"** — a general, grantor-keyed
   elemental-debuff immunity on `ResourceSystem`
-  (`SetElementalDebuffImmunity` / `IsElementallyImmune`), gated in one place:
+  (`SetElementalDebuffImmunity` / `IsImmuneTo`), gated in one place:
   the negative branch of `ApplyElementalEffect`. Driven declaratively by the new
   `VesselElementalImmunity` component: **Sparrow** `WhileBoosting` + Time gate,
-  **Serpent** `WhileTranslationRestricted` ungated.
+  **Serpent** `WhileTranslationRestricted` ungated. A ward also declares WHICH
+  debuff classes it stops (`ElementalDebuffSources`); these two stop all of
+  them, the **Dolphin's** Drift Ward stops `DangerPrism` alone.
 - The Sparrow boost icon's radial gauge became a **binary roll-charge pip**
   (`SparrowHUDView.SetRollCharge`), driven by
   `BarrelRollController.OnRollChargeChanged`.
@@ -2057,8 +2426,11 @@ GameObject, a removed resource slot, and renamed serialized fields.
    `ResourceSystem` list reads Missiles / FullAuto / ExhaustBarrage (3 entries,
    no Heat); `SparrowHUDController.barrelRollController` points at the root's
    `BarrelRollController`; `VesselElementalImmunity` is on the root reading
-   `WhileBoosting` + `Time`. Then `Serpent.prefab`: `VesselElementalImmunity`
-   on the root reading `WhileTranslationRestricted` + `None`.
+   `WhileBoosting` + `Time` + `wardedSources: Everything`. Then
+   `Serpent.prefab`: `VesselElementalImmunity` on the root reading
+   `WhileTranslationRestricted` + `None` + `Everything`. Then `Dolphin.prefab`:
+   `WhileDrifting` + `Time` + **`DangerPrism` only** — if that mask reads
+   `Everything`, a drifting Dolphin cannot be scored on in The Bends.
 3. Hold boost 60 s — no force-release, no danger trail, no self-slam.
 4. Time at 0: boost + full stick deflection rolls **once** per press.
 5. The boost (rightmost) ability icon's ring: full on press, wipes empty with a
@@ -2067,6 +2439,8 @@ GameObject, a removed resource slot, and renamed serialized fields.
    boosting** → element flowers do not dip; **not boosting** → they dip. Slow
    and input-mute land either way (by design).
 7. Serpent stopped + danger prism → no flower dip, at any Time level.
+7b. Dolphin at Time 5, drifting: danger prism → no flower dip; caught in another
+   Dolphin's crystal blast → flowers **do** dip and the attacker scores the bend.
 8. **MPPM two clients**, both Sparrows, one at Time 5: both machines must agree
    on who resists the drain. This is the replicated-`NetElementUnlocks` path —
    a local level read would pass step 6 and fail here.

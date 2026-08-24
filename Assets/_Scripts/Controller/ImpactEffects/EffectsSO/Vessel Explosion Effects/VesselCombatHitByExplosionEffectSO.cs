@@ -41,6 +41,30 @@ namespace CosmicShore.Gameplay
                  "its own blast) on a clean hit.")]
         [SerializeField, Min(0f)] float sameVictimCooldownSeconds = 0.5f;
 
+        [Tooltip("Only score if the victim could actually BE debuffed - i.e. is not warded against " +
+                 "Explosion-class elemental debuffs. Off for a missile (a rocket that hits you hit " +
+                 "you, whatever your immunity state); ON for a DEBUFF-class blast, where the whole " +
+                 "event being scored IS the element drain and a warded pilot takes none of it " +
+                 "(ResourceSystem.ApplyElementalEffect drops negative magnitudes while immune). " +
+                 "Without this the scoring effect and the debuff effect - siblings in one " +
+                 "container, dispatched from one contact - would disagree about whether " +
+                 "anything happened.")]
+        [SerializeField] bool requireDebuffableVictim = false;
+
+        [Tooltip("Only report the hit on the machine that OWNS the shooting vessel. Off for a " +
+                 "weapon whose blast exists on exactly one machine - a projectile is a pooled " +
+                 "local object, so the machine that spawned it is the only one that can raise " +
+                 "anything. ON for a blast that is REPLAYED onto more than one machine: the " +
+                 "Dolphin's crystal blast is, because a crystal collection resolves server-side " +
+                 "and NetworkCrystalManager.ReplayVesselCrystalEffects then re-runs the vessel " +
+                 "effects on the owning client, so a client's one blast exists on BOTH the " +
+                 "server and that client. StatsManager would then credit it twice - once from " +
+                 "the server's own copy, once from the client's forwarded RPC - and the " +
+                 "per-machine VesselCombatHitLatch cannot see across machines to stop it. " +
+                 "IsNetworkOwner (not IsLocalUser) is the test, because an AI's vessel is " +
+                 "server-owned and its hits must still be recorded.")]
+        [SerializeField] bool requireOwningMachine = false;
+
         public override void Execute(VesselImpactor impactor, ExplosionImpactor impactee)
         {
             // As in the projectile effect, ExplosionImpactor.AcceptImpactee passes the VESSEL
@@ -51,6 +75,15 @@ namespace CosmicShore.Gameplay
             // An anonymous blast has no pilot to credit - SourceVessel is null and it silently
             // scores for nobody, which is correct: nobody fired it.
             if (victimStatus == null || shooterStatus == null) return;
+
+            // Exactly one machine may report a blast that exists on several. See the field.
+            if (requireOwningMachine && shooterStatus.Player is { IsNetworkOwner: false }) return;
+
+            // The score follows the effect: no drain, no point. Asked about THIS blast's own debuff
+            // class - a victim warded only against danger prisms is still fully debuffable here, and
+            // scoring must agree with the sibling debuff effect rather than with a broader state.
+            if (requireDebuffableVictim &&
+                victimStatus.IsImmuneToElementalDebuff(ElementalDebuffSources.Explosion)) return;
 
             // Never score a pilot for their own blast, and never for a teammate's. The
             // ExplosionImpactor already skips own-domain vessels unless the blast is running

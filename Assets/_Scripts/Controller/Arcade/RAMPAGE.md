@@ -488,6 +488,24 @@ can only ever aim at mass the AI is allowed to attack. It falls back to the lega
 there is no cell, no mass, or the cluster lies in the same direction as the crystal (where
 the drift would not turn the vessel at all).
 
+3. **It announces the commit, and re-seeks when the commit ends** (added 2026-08-19, in
+   `AIPilot`, for every mode). While the AI is drifting AND its course is locked on the
+   crystal, it holds the Dolphin's **Echo Sight**, so every other player sees the cone it is
+   lining up — drawn in that AI's own domain colour, since the sight became visible to peers.
+   The drift is exactly the right window: the course is locked, so the direction of the blast
+   is already decided. When the course swings off the crystal the AI straightens up, stops
+   announcing, and picks a new target — the last step being what actually closes the loop,
+   since `UpdateCellContent` is otherwise driven only by the cell's `OnCellItemsUpdated`,
+   which is a *crystal* event rather than a *this pilot needs a new goal* event.
+
+   Nothing here is Rampage-specific and nothing was added to this controller. The AI finds the
+   telegraph through the vessel's own bindings (`IAimTelegraphAction` →
+   `R_VesselActionHandler.TryGetInputForAction`), so a hull without one is a silent no-op, and
+   the press is replicated (`PerformShipControllerActionsReplicated`) because an AI pilot runs
+   on the server only and a telegraph nobody else can see is not a telegraph. Note the
+   contrast with the drift itself, which stays a local call: the drift's output is MOTION and
+   the transform already replicates it. Detail: `BENDS.md` § AI, `DOLPHIN_CRYSTAL_SEEDING.md` §15.
+
 **A mode-local two-phase provider was written here and removed.** It read the pilot's
 Energy and switched between "graze the densest mass" and "break for the crystal" via
 `AIPilot.SetExternalTargetProvider`. It worked, but an external provider **overrides crystal
