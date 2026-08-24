@@ -8230,11 +8230,6 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 8430789392085818735, guid: abd30ad4cfca9ae4a8aecfde9f650cf3,
         type: 3}
-      propertyPath: m_MatchWidthOrHeight
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 8430789392085818735, guid: abd30ad4cfca9ae4a8aecfde9f650cf3,
-        type: 3}
       propertyPath: m_ReferenceResolution.x
       value: 1920
       objectReference: {fileID: 0}
@@ -8989,10 +8984,6 @@ PrefabInstance:
       insertIndex: 0
       addedObject: {fileID: 720688917}
     m_AddedComponents:
-    - targetCorrespondingSourceObject: {fileID: 3784480884928854614, guid: abd30ad4cfca9ae4a8aecfde9f650cf3,
-        type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 330573872}
   m_SourcePrefab: {fileID: 100100000, guid: abd30ad4cfca9ae4a8aecfde9f650cf3, type: 3}
 --- !u!224 &330573867 stripped
 RectTransform:
@@ -9030,22 +9021,6 @@ GameObject:
     type: 3}
   m_PrefabInstance: {fileID: 330573866}
   m_PrefabAsset: {fileID: 0}
---- !u!114 &330573872
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 330573871}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: c8d87ab4f1e16b86371735d62c7e58a2, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::CosmicShore.UI.AdaptiveCanvasScaler
-  referenceAspect: 1.7777778
-  blendRange: 0.15
-  safeZone: {fileID: 0}
-  safeZoneMaxAspect: 1.7777778
 --- !u!1 &420213765
 GameObject:
   m_ObjectHideFlags: 0
