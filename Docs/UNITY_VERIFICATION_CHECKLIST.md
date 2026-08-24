@@ -23,6 +23,55 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 UI — `SafeAreaFitter` component + test scene (`claude/safe-area-fitter-component-wrmdva`, 2026-08-24)
+
+Authored without a Unity compile or play-test (remote session, no editor, no `unity` CLI binary in
+this environment). **Not applied to any prefab** — this branch ships the component, an edit-mode
+suite, and a standalone test scene only. `ProjectSettings` is untouched:
+`androidRenderOutsideSafeArea: 1` was already enabled and stays enabled, which is the contract this
+component serves — background art bleeds under the notch while a separate content layer is pulled in.
+
+**What landed.**
+- `Assets/_Scripts/UI/SafeAreaFitter.cs` — drives its RectTransform's `anchorMin`/`anchorMax` from
+  `Screen.safeArea`, recomputing only when the safe area, resolution, or orientation changes
+  (cached; the steady-state per-frame cost is one `Screen.safeArea` read plus a `Rect`/int compare).
+  A full-screen safe area (desktop) is a true no-op — nothing is written, and if insets *had* been
+  applied earlier (a device rotating a cutout off-axis) the authored anchors are restored. Only
+  anchors are written; authored `offsetMin`/`offsetMax` are preserved, so padding survives.
+  A rect that is point-anchored on both axes gets one `CSDebug.LogWarning` at enable, since driving
+  its anchors would slide it rather than resize it.
+- `Assets/_Scripts/Tests/Editor/SafeAreaFitterTests.cs` — the pure halves
+  (`IsFullScreenSafeArea`, `ComputeAnchors`) against real iPhone-class landscape/portrait safe
+  areas, sub-pixel rounding, out-of-range clamping, and a degenerate mid-rotation screen.
+- `Assets/_Scenes/Game_TestDesign/SafeAreaFitterTestScene.unity` (+ `SafeAreaTestReadout.cs`
+  beside it) — hand-authored scene YAML: a magenta full-bleed background under a translucent
+  content layer carrying the fitter and four corner markers, plus an IMGUI readout of the live
+  safe area / resolution / orientation / applied anchors. Not in Build Settings; open it by hand.
+
+**Verified out of editor** (what was actually run here, so nobody re-does it): all three sources
+compile under Roslyn against a faithful `UnityEngine` stub, and the shipped NUnit suite was executed
+for real — 7/7 pass. The scene YAML parses and has zero dangling local `fileID` references.
+
+**Verify in editor**
+1. **Compile clean**, then Test Runner ▸ EditMode → `SafeAreaFitterTests` 7/7 green.
+2. Open `SafeAreaFitterTestScene`, press Play on a normal Game view → readout says
+   `full screen True`, `insets none`, and the content-layer anchors are still `0,0 – 1,1`
+   (the desktop no-op: the teal layer exactly covers the magenta one).
+3. Window ▸ General ▸ **Device Simulator**, pick a device with a cutout (e.g. iPhone X/14 Pro),
+   press Play → the magenta background still fills the whole panel *including under the notch*,
+   the teal content layer and its four corner markers pull in to the safe rect, and the readout's
+   anchors match `safeArea / resolution`.
+4. Rotate the simulated device (portrait ↔ landscape) while in Play → the content layer
+   re-fits on the same frame; the notch inset moves to the correct edge.
+5. Resize the Game view / toggle fullscreen with no simulator → nothing moves and nothing is
+   logged (the change check runs, the apply does not).
+
+**Not done on purpose:** no prefab or shipping canvas has the component attached yet. Wiring it
+(most likely onto the content layer under `GameCanvas.prefab`, applied to the prefab rather than
+per-scene — see `Docs/GAMECANVAS.md`) is a separate pass.
+
+---
+
 ### 🔴 Flora — TIME breeds faster, the second elemental law (`claude/flora-reproduction-balance-y9gaij`, 2026-08-24)
 
 Authored without a Unity compile or play-test (remote session, no editor, no `unity` CLI binary in
