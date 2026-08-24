@@ -27,10 +27,7 @@ The properties it asserts are the ones a regression here would break silently:
   7. a face struck dead-on (cross ~ 0) is pushed rather than tumbled
   8. a degenerate object frame (a prism still at localScale 0) bails to the plain puff
   9. a stamp that outlives its scheduled retirement freezes instead of flying away
- 10. a mirrored BACK face (negated normal — the baked two-sided shard) moves identically
-     to its front twin, with and without an impulse, via the sign(dot(N, centroid))
-     motion normal
- 11. a NaN velocity falls back to the impulse-less tumble rather than poisoning the shard
+ 10. a NaN velocity falls back to the plain puff rather than poisoning the shard
 
 Requires clang++ (no Unity, no GPU). Read-only: it copies the shipped file into a temp
 dir and never writes to the repo.
@@ -307,26 +304,7 @@ int main(){
         check("a stamp that outlives its retirement freezes at Duration", near(A,B));
     }
 
-    // 11. THE MIRRORED BACK COPY: the shield meshes bake every face twice (front + back,
-    //     negated normal) so a tumbling shard is lit correctly from both sides. The morph
-    //     re-derives its MOTION normal as sign(dot(N, centroid))*N, so both copies must
-    //     move IDENTICALLY — fly-out, tumble and drift — or the pair tears apart. Uses a
-    //     centroid with a real dot against the normal (the pivot checks above use one with
-    //     dot exactly 0, the knife edge, which the >= keeps on the front side).
-    {
-        float3 cen2(0.2f,0.1f,0.5f);
-        float3 F,B;
-        PrismShieldMorph_float(2.0f,0,D,-1,OFF, vCross, pos, float3(0,0,1),  cen2, F, op);
-        PrismShieldMorph_float(2.0f,0,D,-1,OFF, vCross, pos, float3(0,0,-1), cen2, B, op);
-        check("a mirrored back face moves identically to its front twin", near(F,B));
-
-        // and with no impulse too (the fallback-axis path)
-        PrismShieldMorph_float(2.0f,0,D,-1,OFF, float3(0,0,0), pos, float3(0,0,1),  cen2, F, op);
-        PrismShieldMorph_float(2.0f,0,D,-1,OFF, float3(0,0,0), pos, float3(0,0,-1), cen2, B, op);
-        check("the back twin matches on the impulse-less tumble as well", near(F,B));
-    }
-
-    // 12. a NaN velocity degrades to the impulse-less tumble rather than poisoning the shard
+    // 11. a NaN velocity degrades to the impulse-less tumble rather than poisoning the shard
     float nan = std::nanf("");
     float3 clean;
     PrismShieldMorph_float(2.0f,0,D,-1,OFF, float3(nan,nan,nan), pos,nrm,cent, P, op);

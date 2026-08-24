@@ -1781,39 +1781,51 @@ shielded renders its shards on ExplodingBlockGraph, where the erosion is driven 
 explosion clock — which is unstamped for a shard, so `TransparentPrismMaterial`'s resting
 `_Opacity` of 0 makes those shards invisible. That predates this pass and is unchanged by it.
 
-**The shards are CLOSED, like the debris they imitate — and that closure was the grain.**
-Playtest reported "very grainy dithering artifacts" on the shatter, and the alpha chain was
-provably innocent: every material a shard can wear is `_Alpha: 1` on BlockGraph, the erosion's
-Survival is binary, and the corridor only dithers fractional alpha — so the grain could not be
-alpha-side. The real mechanism was the one structural divergence from base-prism debris left
-standing: **a debris cube is a closed volume, a shield shard was an open single-sided face.**
-Prisms render two-sided (`_Cull: 0`) and `FresnelPower4` is `(1 − dot(N,V))⁴` with **no
-saturate**, so every time a tumbling shard showed its back — half of every revolution, for the
-full 7.5 s — the un-flipped normal drove the fresnel to `dot(N,V) < 0`, extrapolating the rim
-colour up to **16×**: flickering, oversaturated, high-frequency shimmer. Base debris never
-shows this because a closed cube's back faces are always z-occluded by its own front.
+**The grain was the BACK-FACE FRESNEL, and the fix is one `abs` — after a wrong fix
+shipped and was reverted the same day.** Playtest reported "very grainy dithering
+artifacts" on the shatter. The alpha chain was provably innocent (every material a shard
+can wear is `_Alpha: 1` on BlockGraph, the erosion's Survival is binary, the corridor only
+dithers fractional alpha), which left the one structural divergence from base-prism
+debris: **a debris cube is a closed volume; a shield shard is an open single-sided face**,
+and prism materials render `Cull Off`. `FresnelPower4` computed its fresnel coordinate
+with an authored branch — `x = (N·V > 0) ? N·V : (N·V + 1) × 0.2` — which crushes every
+BACK-facing fragment into `x ∈ [0, 0.2]`, i.e. fresnel **0.41–1.0: any back face renders
+41–100% rim**, and the rim is the bright, bloomy half of the palette (`Docs/PALETTE.md`
+§4.0). Closed boxes never show a back face, so this was invisible for the life of the
+graph; a tumbling shard shows its back half of every revolution and flashed bright each
+time — the grain.
 
-The fix is geometric, free at runtime, and keeps the batch: both generators now bake a
-**mirrored back copy of every face** (reversed winding, negated normal, same centroid, same
-UV0 — octahedron 24 → 48 verts, stella 72 → 144), so every visible side of a shard carries a
-correct outward normal. At rest the shield is closed, so the interior copies are z-occluded
-and the settled look is unchanged; mid-bloom the glimpsed inner surfaces are now correctly lit
-too. The one thing the mirror must not split is the MOTION: the morph re-derives its motion
-normal as `sign(dot(N, centroid)) · N` — valid because every front face of both shield shapes
-has `dot(N, centroid) > 0`, proven across aspect ratios — so both copies fly, bloom and tumble
-as ONE shard while raster lighting keeps the authored per-side normal.
-`verify_prism_shield_shatter.py` asserts the twins move identically (mutation-tested: putting
-one motion term back on the raw normal fails it), and the edit-mode suite asserts the mirror
-pairing and the sign premise on the real meshes. **General rule worth keeping: a single-sided
-shard on a two-sided material with an unsaturated fresnel is a grain generator** — any future
-effect that breaks a closed prism shape into open faces needs the same closure.
+The shipped fix replaces that branch chain with the mirror, in
+`FresnelPower4.shadersubgraph` itself: `x = |N·V|`
+(`Tools/Shaders/wire_fresnel_two_sided.py`). `abs` only clears the sign bit, so **every
+front-facing fragment in the game is bit-identical to before** — live prisms, crystal
+shells, debris exteriors. Back-facing fragments now shade exactly like their mirror-image
+front view: a thin open face looks the same from both sides. The two non-prism consumers
+were checked before touching the shared asset: ShepardGraph's Mass-crystal shells are
+closed (no-op in practice), and the Fringe spindle planes become side-symmetric instead of
+rim-crushed on the back — the natural read for a fringe. One deliberate visible change:
+prism INTERIORS glimpsed through the corridor/erosion screen door now shade like prism
+surfaces instead of glowing rim-heavy.
 
-**Pressure parity (same pass).** The shatter now runs the explosion's own pressure model —
-`PrismExplosion.PressuredDuration`, one curve for both death visuals, over the shatter's own
-live count — so a mass disengage (a Rhino swipe stripping a lined wall, the overcharge
-skimmer) completes as smaller, quicker bursts instead of holding hundreds of 7.5 s shard
-entities live. `ObjectDrift` scales with the pressured duration, so the culling envelope
-stays exact.
+**The rejected fix is worth its record.** The first attempt baked mirrored back faces
+into the shield meshes (correct outward normal per side, motion normal re-derived from
+`sign(dot(N, centroid))`). Every per-vertex property was machine-verified — the twins
+provably moved identically — and it was still wrong on screen: under `Cull Off` **both
+coincident copies rasterize at every pixel**, and two coplanar triangles with reversed
+winding carry ULP-different depth planes, so the shard z-fought between two
+differently-shaded surfaces and read as the faces "separating". Two rules to carry: under
+`Cull Off`, two-sidedness is a FRAGMENT problem, never a geometry problem — never add
+coincident mirrored geometry to a two-sided material; and **a per-vertex proof is
+structurally blind to rasterization phenomena** (depth ties, interpolation setup,
+coverage) — the verifier could not have caught this, and claiming it verified the fix was
+overreach.
+
+**Pressure parity (kept from the same pass).** The shatter runs the explosion's own
+pressure model — `PrismExplosion.PressuredDuration`, one curve for both death visuals,
+over the shatter's own live count — so a mass disengage (a Rhino swipe stripping a lined
+wall, the overcharge skimmer) completes as smaller, quicker bursts instead of holding
+hundreds of 7.5 s shard entities live. `ObjectDrift` scales with the pressured duration,
+so the culling envelope stays exact.
 
 **Duration is the base explosion's.** Both tiers default `shatterDuration` to
 `PrismExplosion.DefaultDuration` rather than a number of their own: a shield coming apart and
