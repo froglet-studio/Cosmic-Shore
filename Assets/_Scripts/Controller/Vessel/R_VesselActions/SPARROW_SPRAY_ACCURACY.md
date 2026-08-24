@@ -10,7 +10,7 @@ The Sparrow's cannons are a **saturation** weapon, not a marksman's rifle.
 | tap the trigger (≤ 0.12 s) | a perfectly accurate burst — a scalpel, at a fraction of the volume |
 | hold it down | a cone that opens over ~1.6 s to a 1.5° cap, filled at **180 rounds/s** — nothing along the path survives, and the buzz in your hands climbs the whole way |
 | release and re-pull | full accuracy back, instantly. This is the "3-shot burst" the design asks for |
-| collect Mass crystals | rounds swell **harder** as they fly — 3× over a flight at rest, **6× at Mass 10**. Huge projectiles, earned |
+| collect Mass crystals | rounds swell **harder** as they fly — 3× over a flight at rest, **6× at Mass 10**. The tracer stays a needle; a see-through charge shell grows around it to exactly the hit radius. Huge projectiles, earned |
 
 ---
 
@@ -138,9 +138,9 @@ size is back, as something you earn rather than something the gun always had.
 
 ### Sized honestly, the whole way
 
-The visual and the hit volume are scaled by the **same factor every frame**, so the ratio the
-round-6 collider fix established (hit radius = visible cross-section +10%) is invariant through
-the flight. What you see is what you hit, at every instant, at every Mass level.
+The visual and the hit volume are scaled by the **same factor every frame**, so what you see is
+what you hit, at every instant, at every Mass level. **Which visual carries that is round 4's
+subject — see "Growth is a hit volume, not a size" below.**
 
 **Cross-section only.** The tracer mesh is a unit sphere at (1.5, 1.5, 20) — a 20-long dart — so
 scaling it uniformly at 6× would draw a 120-unit needle across a ~72-unit range. Width is what a
@@ -152,6 +152,99 @@ One deliberate scope line falls out of that: the **swept prism** radius grows, w
 radius the **vessel/mine** path uses does not (for the dart — the turret's uniformly-scaled
 carried sphere does grow on both). Growing bullets against vessels is a Dog Fight balance change,
 not a prism-clearing one, so it is not in this pass.
+
+---
+
+## Round 4 (2026-08-24): growth is a HIT VOLUME, not a size
+
+Playtest report: *"as the sparrow's bullets travel they grow. Mechanically this is great, but
+this doesn't look right."*
+
+Round 2 fixed the silliness of a small ship firing cannonballs by making the cannonball
+something you grow into — and then re-created it inside every single flight, because the thing
+being scaled was the **tracer model**. A 1.5-wide needle at 6× is a 9-wide red lozenge: the exact
+"giant bullets from a small vessel" the whole pass exists to avoid, arriving 0.3 s at a time.
+
+> **The model is the size it left the muzzle, for the whole flight. What grows is the volume it
+> deletes — and a see-through charge shell is what draws that volume.**
+
+|  | before | after |
+|---|---|---|
+| tracer model | swells 1.5 → 9 wide | **fixed at 1.5**, for every Mass level |
+| swept prism hit radius | 0.825 → 4.95 | **unchanged** — 0.825 → 4.95 |
+| PhysX radius (dart) | unchanged (max lossy stays the z-stretch) | unchanged |
+| turret's carried collider | grows (it *is* the hit volume) | **unchanged** — still grows |
+| what the player reads growth off | a fattening model | a crackling shell at exactly the hit radius |
+
+Nothing mechanical moved. `ApplyFlightGrowth` still scales `_sweepRadius` by the same factor on
+the same curve; it just no longer writes the transform when that transform is drawing something.
+
+### Why the shell is a better instrument than the model ever was
+
+The old read was **dishonest by a fixed 10%** — the hit radius was the visible cross-section
++10%, so the thing you aimed with was never the thing that hit. The shell is sized to
+`_sweepRadius` itself, so it *is* the hit volume rather than a proxy for it, and
+`SparrowRoundGrowthTests.TheChargeShellIsExactlyTheHitVolume` asserts that at every level and
+every point of the flight. (The test it replaced compared `hit·s / visible·s` against
+`hit / visible` — the same factor top and bottom. It was true for any code at all.)
+
+It is also **see-through**, which a solid model can never be. Measured over the shipped shader:
+mean alpha **0.036 at the muzzle → 0.079 fully charged**, arcs ~34% of the light. An enormous
+round no longer hides the arena behind it.
+
+### Which transform is a model and which is a hit volume — derived, not authored
+
+Two structurally different things call themselves a `Projectile` here, and growth has to treat
+them oppositely:
+
+| | `SparrowProjectile` (bullets) | `ProjectileCollider` (turret's carried sphere) |
+|---|---|---|
+| has a renderer | **yes** — the tracer mesh is on its own root | no — it is a bare hit sphere under the fired prism |
+| so its transform is | the **model** | the **hit volume** |
+| growth scales the transform | **no** | **yes** (the only way growth reaches its PhysX radius) |
+| carries a charge shell | yes | no — its visible half is the prism, which never bloated |
+
+`Projectile.CacheTransformRole` answers this from the prefab's own contents at `Awake` rather
+than from a serialized flag, because "a projectile must not grow a visible body" is true of every
+prefab present and future, and a flag is a thing you can forget to set.
+
+### The shell: `Shader Graphs/ProjectileChargeField`
+
+Same visual language as the skimmer's forcefield crackle — arcs, an expanding ring, a fresnel rim
+— with a different **driver**. `ForcefieldCrackleController` pushes impact points into a
+MaterialPropertyBlock every frame, which is right for one skimmer and ruinous here: at 90
+volleys/s over a 0.3 s flight one Sparrow keeps **~54 rounds in the air**, and a per-renderer
+property block is a per-renderer draw call plus two 16-element vector arrays, every frame.
+
+So the shell drives itself:
+
+- **Arcs are a function of `_Time` and the shell's own object-to-world matrix.** Zero per-frame
+  CPU writes, no property block, every round in the match batching through one material
+  (`UnityPerMaterial` cbuffer → SRP Batcher compatible).
+- **Growth needs no stamp.** The vertex shader reads the shell's own world radius off the model
+  matrix. The CPU already had to write that scale, so the visual comes free with it.
+- **Rounds are decorrelated by their own SIZE.** Two shots fired 11 ms apart are at different
+  points of their growth, therefore different radii, therefore different animation phases — a
+  stable per-round offset that drifts *continuously* as the round grows, so nothing ever pops. A
+  world-position hash would re-roll every frame; a constant would strobe a whole volley in unison.
+  Measured across 8 consecutive volleys the phases land at 0.41 / 0.97 / 0.53 / 0.09 / 0.64 /
+  0.20 / 0.76 / 0.31 — spread across the cycle.
+- **`Cull Back`, additive, `ZWrite Off`.** Front faces only: a pilot is never inside their own
+  round, and one shell instead of two halves the overdraw of ~54 transparent spheres.
+- **Charge is absolute and fleet-wide**, like the speed tunnel's mapping: `_ChargeReferenceRadius`
+  (4.95 = the Mass 10 end-of-flight radius) is the "fully charged" size, so the same hit radius
+  looks the same on any round and a Mass 10 shot reads hotter because it *is* bigger.
+
+Cost, measured by compiling the shipped HLSL with clang and censusing it over the sphere: **~4.2
+FBM evaluations per fragment**, out of a 15-iteration worst case — the per-seed envelope and
+per-seed spatial early-outs discard most of it.
+
+### One thing to keep
+
+The shell must stay **unrotated**. The dart's transform is non-uniform (1.5, 1.5, 20), and a
+uniform world sphere under it needs a per-axis divide (`Projectile.ChargeFieldLocalScale`) — which
+is only valid because the child is axis-aligned. A non-uniform parent above a *rotated* child is a
+shear, and no local scale can undo one.
 
 ### What was deliberately NOT done
 
@@ -286,16 +379,19 @@ dogfighters and the Menu_Main autopilot all fire and none of them may buzz your 
 | `R_VesselActions/Executors/FullAutoBlockShootActionExecutor.cs` | Same for the turret, plus the roll-preserving shot rotation. |
 | `Controller/Projectiles/Gun.cs` | `FireGun(..., aimDirection)` — the gun is *handed* a direction; it owns no spread policy and rolls no dice. |
 | `Controller/Managers/PrismSpatialIndex.cs` | `QuerySegment` — the swept counterpart of `QuerySphere`, plus the public `DistanceToSegmentSq` metric. |
-| `Controller/Projectiles/Projectile.cs` | `sweptPrismDetection`, `SweepPrismsAlong` (nearest-first dispatch, contact-point repositioning), `CacheSweepRadius`. |
+| `Controller/Projectiles/Projectile.cs` | `sweptPrismDetection`, `SweepPrismsAlong` (nearest-first dispatch, contact-point repositioning), `CacheSweepRadius`; `ApplyFlightGrowth` + `CacheTransformRole` + `ChargeFieldLocalScale` (round 4). |
 | `Controller/ImpactEffects/Impactors/ImpactorBase.cs` | `AcceptImpacteeFromSweep` + `IsSweepDispatch` — the swept analogue of the shell tier's entry point. |
 | `Controller/ImpactEffects/Impactors/ProjectileImpactor.cs` | Suppresses the trigger's prism case when the sweep owns it. |
 | `Controller/IO/HapticController.cs` | `PlaySpray(strength01)` + the extended gate + the buzz clip. |
 | `_Scripts/Tests/Editor/GunSpreadMathTests.cs` | Ramp, cap, cone containment, pole safety, determinism, distribution, roll preservation. |
-| `_Scripts/Tests/Editor/SparrowRoundGrowthTests.cs` | The MASS growth curve: anchors, extrapolation, linearity, and that the hit radius tracks the visible cross-section. |
+| `_Scripts/Tests/Editor/SparrowRoundGrowthTests.cs` | The MASS growth curve: anchors, extrapolation, linearity, flight clamping, and that the charge shell IS the hit volume (round 4). |
 | `_Scripts/Tests/Editor/PrismSweptQueryTests.cs` | The point-to-segment metric: endpoint clamping, degenerate steps, and the shipped mid-step geometry PhysX was missing. |
 | `_SO_Assets/VesselActions/Sparrow/FullAutoAction.asset` | The shipped numbers. |
 | `_Prefabs/Spacevessels/Sparrow.prefab` | `GunSprayAccuracy` executor + resized pools. |
-| `_Prefabs/Projectile/SparrowProjectile.prefab`, `_Prefabs/Trails/Prisms With Pools/Sparrow Projectile Prism.prefab` | `sweptPrismDetection: 1`. |
+| `_Graphics/Materials/Graphs/ProjectileChargeField.shader` + `.hlsl` | The self-driven charge shell — the forcefield-crackle language with `_Time` + the model matrix as its driver instead of a per-frame property block. |
+| `_Graphics/Materials/ProjectileChargeFieldMaterial.mat` | The one material every round in the match batches through. |
+| `_Prefabs/Projectile/SparrowProjectile.prefab` | `sweptPrismDetection: 1`, plus the `ChargeField` child wired to `Projectile.chargeField` (round 4). |
+| `_Prefabs/Trails/Prisms With Pools/Sparrow Projectile Prism.prefab` | `sweptPrismDetection: 1`. Its carried `ProjectileCollider` has no renderer, so growth still scales its transform and it carries no shell. |
 
 ## Tuning knobs
 
@@ -312,6 +408,21 @@ Everything that moves **both** fire modes lives on `FullAutoAction.asset`:
 | `spread.distributionBias` | **0.5** | 0.5 = uniform over the disc (even saturation). 1.0 = dense core + thin halo. |
 | `spread.hapticFloor01` | **0.15** | Buzz strength before any accuracy is lost — above zero so the gun is felt from round one. |
 | `spread.hapticIntervalAtRest` / `AtMaxSpread` | **0.10 / 0.045** | Pulse cadence at each end of the ramp. Keep the max-spread value above ~0.04 s: NiceVibrations holds one clip at a time, so pulses closer than the clip just cut each other off. |
+
+The charge shell's own dials are **not** here — they live on
+`_Graphics/Materials/ProjectileChargeFieldMaterial.mat`, because they are a look, not a weapon
+parameter, and because the shell is a general `Projectile` capability rather than a Sparrow one:
+
+| Knob | Shipped | Effect |
+|---|---|---|
+| `_ArcSeeds` / `_ArcDensity` | **3 / 5** | Simultaneous discharge points, and branches per discharge. The inner loop, so this is also the cost dial — measured 4.2 FBM evals/fragment at these values. |
+| `_ArcSharpness` | **0.12** | Arc width in radians. Lower reads as lightning, higher as a smear. |
+| `_ArcIntensity` | **1** | Arc brightness. At the shipped values arcs are ~34% of the shell's light and the rest is the rim. |
+| `_CrackleRate` | **6** | Discharges per second per seed. Also what spreads consecutive volleys' phases apart — drop it far and a burst starts flashing in unison. |
+| `_FresnelRimIntensity` | **0.18** | The always-on rim. **This is the see-through dial**: it sets the shell's floor alpha (0.036 at the muzzle, 0.079 fully charged). Raise it far and an enormous round starts hiding the arena. |
+| `_ChargeReferenceRadius` | **4.95** | The hit radius that reads as fully charged — the Mass 10 end-of-flight radius. Absolute and fleet-wide by design: the same hit radius must look the same on any round. |
+| `_ChargeFloor` | **0.35** | What a just-launched round gets. Deliberately not 0 — a round must always show the volume it deletes. |
+| `_PhaseByRadius` | **1.7** | Radians of animation phase per world unit of radius; the per-round decorrelation. Zero strobes the whole volley together. |
 
 Pool sizes on `Sparrow.prefab` (resized for the doubled rate — the fire rate is the only reason
 they are what they are):
