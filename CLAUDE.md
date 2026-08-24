@@ -400,10 +400,10 @@ outcome is optimization, not life). Use the `/ecology` skill for any change here
   It is ONE constant because both reproduction paths measure **cost per child** in different
   units and both divide by the rate: the per-plant **growth quota** (prisms per child) and the
   lattice colonies' **cycle period** (seconds per child, `AssembledFlora.ColonyCyclePeriod`).
-  Scaling the quota alone would have been **dead tuning on 26 of 50 configs — including every
-  asset named "…Flora Time"** — because a lattice birth is a POPULATION event on the cell's
-  fauna-wave clock and the per-plant quota is inert there (`Docs/ECOSYSTEM.md §32.7`; the §4.6
-  "prove WHICH gate binds" trap from a new direction). The colony period keys on the **CONFIG's**
+  Scaling the quota alone would have been **dead tuning on 34 of the 50 breeding configs —
+  including every asset named "…Flora Time"** — because a lattice birth is a POPULATION event on the cell's
+  fauna-wave clock and the per-plant quota is inert there (`Docs/ECOSYSTEM.md §32.7`; the ecology skill's
+  §4.6 "prove WHICH gate binds" trap from a new direction). The colony period keys on the **CONFIG's**
   authored element, never the ticking plant's — the cycle book is shared per `(cell, species)` and
   every plant ticks it, so a per-plant period would be set by whichever plant ticked first, and a
   colony is mixed-element by construction (`LATTICE_MIN_FOUNDERS = 4`). An authored `0` stays `0`

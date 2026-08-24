@@ -207,7 +207,7 @@ namespace CosmicShore.Tests
         [Test]
         public void ScalingNeverTurnsReproductionOnOrOff()
         {
-            // 0 is the species saying "I do not reproduce" (56 of 85 flora configs). No element
+            // 0 is the species saying "I do not reproduce" (52 of the 102 flora configs). No element
             // may scale a species into breeding...
             foreach (var element in new[] { Element.Time, Element.Charge, Element.Mass, Element.Space })
             {

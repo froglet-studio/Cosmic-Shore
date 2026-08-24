@@ -6247,9 +6247,9 @@ exists to make.
 
 `GrowthPerOffspring` is authored per **config** by `Tools/Build/author_flora_populations.py`
 (§32), so the obvious move is a per-element fork in that script. It would have been **silently
-wrong on every species that actually spends the quota**: of the 50 flora configs, the ones on the
-per-plant quota path — Rampage ×5, Hesperides ×8, Wildlife ×3 — all set `SpreadElements: 1` with a
-four-entry palette, so one config with one quota spawns plants of all four elements. There is no
+wrong on every species that actually spends the quota**: of the 102 flora configs, 50 reproduce at
+all, and the 16 of those on the per-plant quota path — Rampage ×5, Hesperides ×8, Wildlife ×3 —
+*all* set `SpreadElements: 1` with a four-entry palette, so one config with one quota spawns plants of all four elements. There is no
 asset field that could express "the Time ones breed faster".
 
 This is exactly the case §35.1 records for the Charge shield law: **an elemental law cannot live in
@@ -6279,10 +6279,10 @@ Both are *per child*, so the law is expressed as a **rate** and both are divided
 
 For the three lattice species the per-plant quota is **inert** — a birth there is a POPULATION
 event, one per cycle for the whole colony on the cell's fauna-wave clock (§32.7), and
-`author_flora_populations.py` says so in its own comment. **26 of 50 configs are lattice, including
+`author_flora_populations.py` says so in its own comment. **34 of the 50 breeding configs are lattice, including
 every asset literally named "…Flora Time".** Scaling the quota alone would have changed nothing on
-exactly the plants the change is most visible on — the §4.6 "prove WHICH gate binds" trap, hit from
-a new direction. Hence `AssembledFlora.ColonyCyclePeriod`, which also de-duplicates the
+exactly the plants the change is most visible on — the ecology skill's §4.6 "prove WHICH gate
+binds" trap, hit from a new direction. Hence `AssembledFlora.ColonyCyclePeriod`, which also de-duplicates the
 `period = cell.CurrentFaunaSpawnPeriod; if (period <= 0f) period = 30f;` block the three assemblers
 each carried.
 
@@ -6304,7 +6304,7 @@ element (`Blob Quasicrystal`, `Blob SchwarzP`) simply keep the fleet rate.
 - **Volume is the spine.** Reproduction is production, so it still freezes at Frenzy;
   `Cell.FloraPlantingEnabled` is unchanged.
 - **0 stays 0.** An authored `GrowthPerOffspring: 0` is the species saying it does not reproduce
-  (56 of 85 flora configs). No element may scale a species into breeding — and the Time rate can
+  (52 of the 102 flora configs). No element may scale a species into breeding — and the Time rate can
   never floor a small quota to 0, which `ShouldSeed` would read as the same thing.
 
 ### 38.5 Collider budget — the ceiling is EXACTLY unchanged
