@@ -139,11 +139,14 @@ namespace CosmicShore.Gameplay
         // proportional branch reproduces its two lines here rather than forking the helper).
         void PopSuperShield(IVesselStatus status, Prism prism, Vector3 contactVelocity)
         {
-            // Synchronously clears IsSuperShielded; plays shatter + SFX. The contact velocity
-            // goes in so the stellation's shards blow off along the SWING (the point of the
-            // blade that touched, per SkimmerSwingKinematics) rather than puffing outward —
-            // the same vector the devastating Damage below hands the debris.
-            prism.DeactivateShields(contactVelocity);
+            // Synchronously clears IsSuperShielded; sheds the stellation as explosion debris
+            // + SFX. Each branch hands the shed the SAME vector and ceiling it hands the
+            // devastating Damage below, so the shield's pieces and the prism's pieces fly on
+            // identical terms — one effect, two meshes (Docs/PRISM_ANIMATION.md §4.8.1).
+            if (proportionalDebris)
+                prism.DeactivateShields(contactVelocity * restitution, debrisSpeedLimit);
+            else
+                prism.DeactivateShields(contactVelocity * inertia);
 
             if (proportionalDebris)
             {

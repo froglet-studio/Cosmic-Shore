@@ -70,9 +70,9 @@ namespace CosmicShore.Gameplay
 
             if (prismImpactee.Prism.CurrentState == BlockState.Shielded)
             {
-                // The armour blows off along the skim, not symmetrically
-                // (Docs/PRISM_ANIMATION.md §4.8.1). Magnitude is clamped by the shield
-                // component's own cap, so the raw flight velocity is safe to hand over.
+                // The armour is shed as ordinary explosion debris along the skim
+                // (Docs/PRISM_ANIMATION.md §4.8.1); the debris pipeline clamps the raw
+                // flight velocity with its own band, as it would a ram.
                 var status = impactor.Skimmer.VesselStatus;
                 prismImpactee.Prism.DeactivateShields(status.Course * status.Speed);
                 return;

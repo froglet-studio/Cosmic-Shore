@@ -148,15 +148,17 @@ namespace CosmicShore.Gameplay
         }
 
         /// <param name="breakVelocity">
-        /// WORLD-space velocity of the force that BROKE the shield, when the caller has one
-        /// (Prism.Damage's impact vector, the Rhino sword's contact velocity). The shatter
-        /// shards drift and tumble along it — the prism explosion's own initial condition,
-        /// applied per face (Docs/PRISM_ANIMATION.md §4.8.1). Default zero is the identity:
-        /// a shed with no direction to speak of renders the symmetric puff it always did.
-        /// A DELAYED deactivation deliberately drops it — by the time that timer fires,
+        /// RAW impact vector of the force that BROKE the shield, when the caller has one
+        /// (Prism.Damage's vector, the Rhino sword's contact velocity). The disengage
+        /// overlay is ordinary prism-explosion debris, so this is the same vector — with
+        /// the same clamp semantics — a prism death hands its own debris
+        /// (Docs/PRISM_ANIMATION.md §4.8.1). Zero degrades to the impactless-death puff.
+        /// A DELAYED deactivation deliberately drops it: by the time that timer fires,
         /// whatever was moving when it was scheduled has moved on.
         /// </param>
-        public void DeactivateShields(float? delay = null, Vector3 breakVelocity = default)
+        /// <param name="debrisSpeedLimit">True-velocity ceiling, as on Prism.Damage; 0 = authored band.</param>
+        public void DeactivateShields(float? delay = null, Vector3 breakVelocity = default,
+            float debrisSpeedLimit = 0f)
         {
             PrismTimerManager.EnsureInstance().CancelTimers(this);
 
@@ -166,7 +168,7 @@ namespace CosmicShore.Gameplay
             }
             else
             {
-                ApplyNormalState(breakVelocity);
+                ApplyNormalState(breakVelocity, debrisSpeedLimit);
             }
         }
 
@@ -198,7 +200,7 @@ namespace CosmicShore.Gameplay
             if (!birth) AudioSystem.Instance.PlayGameplaySFX(GameplaySFXCategory.ShieldActivate);
         }
 
-        private void ApplyNormalState(Vector3 breakVelocity = default)
+        private void ApplyNormalState(Vector3 breakVelocity = default, float debrisSpeedLimit = 0f)
         {
             var wasShielded = prism.prismProperties.IsShielded || prism.prismProperties.IsSuperShielded;
 
@@ -212,11 +214,12 @@ namespace CosmicShore.Gameplay
             CurrentState = BlockState.Normal;
 
             // Only THIS teardown carries a breaking force. MakeDangerous and
-            // ActivateSuperShield also disengage, but those are state changes, not blows —
-            // they stay direction-less, which is the symmetric puff.
+            // ActivateSuperShield also disengage, but those are state changes, not
+            // blows — they stay impactless, which the debris path renders as the same
+            // quiet minimum-speed puff an impactless prism death gets.
             bool birth = IsBirthTransition;
-            if (octahedronShield != null) octahedronShield.Disengage(birth, breakVelocity);
-            if (stellatedShield != null) stellatedShield.Disengage(birth, breakVelocity);
+            if (octahedronShield != null) octahedronShield.Disengage(birth, breakVelocity, debrisSpeedLimit);
+            if (stellatedShield != null) stellatedShield.Disengage(birth, breakVelocity, debrisSpeedLimit);
 
             SyncAOERegistryShieldState();
 

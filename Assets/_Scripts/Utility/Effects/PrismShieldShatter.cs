@@ -6,42 +6,36 @@ using UnityEngine;
 namespace CosmicShore.Utility
 {
     /// <summary>
-    /// Batched PURE-ENTITY debris for the SHIELD DISENGAGE overlay — the shards of a
-    /// dropped octahedron / stellated super-shield flying out along their own face
-    /// normals while shrinking to points (Docs/PRISM_ANIMATION.md §5 B4), now DRIFTING
-    /// and TUMBLING along the impulse that broke the shield: the prism explosion's own
-    /// initial condition, applied per face (§4.8.1). A shield does not fall apart on its
-    /// own, so the effect takes the same input the explosion takes — a velocity — and a
-    /// zero one degrades exactly to the symmetric puff it always was.
+    /// The shield disengage overlay IS the prism explosion, applied to the shield's own
+    /// mesh (Docs/PRISM_ANIMATION.md §4.8.1). A dropped octahedron / stellated
+    /// super-shield spawns ONE explosion-debris entity per disengage — the same entity
+    /// family, material (ExplodingBlockMaterial → ExplodingBlockGraph), clock stamps,
+    /// per-face rotation (RotateFacesAlongAxis), erosion wipe and fade that a dying
+    /// prism's debris gets — with the shield mesh in place of the cube: 1 triangle per
+    /// octahedral face where the cube carries 4 per side. The shield meshes author the
+    /// same attribute set the cube has (UV0 + per-face normals and tangents), which is
+    /// the WHOLE port: the pipeline is never forked, the mesh conforms to it.
     ///
-    /// The prism itself snaps back to its box mesh and its own companion entity the
-    /// instant the shield drops (gameplay and rendering both final at t = 0), so the
-    /// shards are necessarily a SEPARATE, short-lived visual — and a separate visual
-    /// with one pose, one clock stamp and one retirement is exactly what an entity
-    /// serves for free. What this replaces: a lazily-created child GameObject per
-    /// prism, carrying a MeshFilter + MeshRenderer, whose mesh was REBUILT ON THE CPU
-    /// every frame for the whole 0.6–0.7 s overlay, driven by the last sanctioned
-    /// per-frame prism ticker (PrismOctahedronShieldManager, now deleted).
+    /// This class therefore owns only what the debris path does not: grouping a frame's
+    /// disengages into one batch PER SHIELD MESH (shields vary in size where death debris
+    /// share one cube — PrismDebris batches on its single mesh), carrying the dying
+    /// shield's own team palette, and the flat time-ordered retirement sweep. The
+    /// velocity/clamp semantics are PrismDebris.TryRequestExplosion's, byte for byte,
+    /// against the SAME pool-prefab band (PrismDebris.TryGetExplosionConfig) — including
+    /// the zero-vector → up·minSpeed fallback, so a shield timer expiring sheds exactly
+    /// the way an arena teardown explodes a prism.
     ///
-    /// Batching: shards render with the prism's own BlockGraph material on the
-    /// cache-SHARED settled shield mesh, so a frame's worth of same-size, same-domain
-    /// disengages is ONE draw — and it shares its (mesh × material) pair with every
-    /// settled shielded prism of that size and domain, which is why the pending queue
-    /// is grouped by (mesh, material, layer) rather than assuming one global pair the
-    /// way <see cref="PrismDebris"/> can.
+    /// History, so nobody re-walks it: this effect shipped three bespoke shapes first — a
+    /// shield-morph shatter branch re-expressing the rotation in HLSL, a mirrored
+    /// back-face mesh bake (z-fought under Cull Off), and a BlockGraph erosion splice.
+    /// All reverted. When the base effect already looks right, port the MESH into the
+    /// pipeline, never the pipeline into the mesh.
     ///
-    /// Continuity law: a shatter is never cancelled. Re-engaging a shield while its
-    /// predecessor's shards are still in the air lets them finish — instantly deleting
-    /// visible mass-shaped geometry is precisely what "nothing pops out of existence"
-    /// forbids, and the old code's StopShatter() did exactly that.
-    ///
-    /// Clock-material law: one stamp at spawn, ZERO further writes (there is no moving
-    /// target here — unlike the suction, this effect is write-once), one scheduled
-    /// retirement via a flat time-ordered sweep, never per-entity progress polling.
-    ///
-    /// There is no fallback carrier. Strict mode has no CPU animation tier: with the
-    /// render service off, a disengage simply has no overlay (the shield still drops
-    /// correctly), and <see cref="PrismClockDiagnostics"/> says so once.
+    /// Continuity law: a shatter is never cancelled — re-engaging a shield while its
+    /// predecessor's shards fly lets them finish. Clock-material law: one stamp at spawn,
+    /// zero further writes, one scheduled retirement via the sweep. Strict mode: with the
+    /// render service off a disengage has no overlay (the shield still drops), said once
+    /// by PrismClockDiagnostics.
     /// </summary>
     public static class PrismShieldShatter
     {
@@ -51,14 +45,16 @@ namespace CosmicShore.Utility
             public float EndTime;
         }
 
-        /// <summary>One frame's queued shatters for a single (mesh, material, layer)
-        /// triple — the granularity a batch spawn accepts.</summary>
+        /// <summary>One frame's queued shatters for a single (mesh, layer) pair — the
+        /// granularity a batch spawn accepts. The material is always the debris
+        /// pipeline's own (PrismDebris.TryGetExplosionConfig), so it is not part of the
+        /// key; the team palette rides per-entity color overrides exactly as it does on
+        /// death debris.</summary>
         sealed class PendingGroup
         {
             public Mesh Mesh;
-            public Material Material;
             public int Layer;
-            public readonly List<PrismRenderService.ShieldShatterSpawn> Spawns = new(32);
+            public readonly List<PrismRenderService.ExplosionDebrisSpawn> Spawns = new(32);
         }
 
         // Distinct groups in a frame are few (shield sizes × domains), so a linear scan
@@ -70,11 +66,10 @@ namespace CosmicShore.Utility
 
         static readonly List<Entity> s_scratchEntities = new(256);
 
-        // Live records in append order. Both tiers default to PrismExplosion.DefaultDuration
-        // (a shield coming apart and a prism coming apart are the same event class), so
-        // append order IS expiry order unless a prefab authors its own length; a
-        // shorter-lived entry queued behind a longer one is destroyed late by at most that
-        // authored spread, by which point its faces have already collapsed to points.
+        // Live records in append order. Shield durations are per-component constants
+        // (0.6 s octahedron / 0.7 s stellation), so append order is expiry order up to
+        // that spread; a shorter-lived entry queued behind a longer one is destroyed at
+        // most 0.1 s late, by which point its faces have already collapsed to points.
         static readonly List<Record> s_live = new(256);
         static int s_liveHead;
         static int s_liveEpoch = -1;
@@ -110,78 +105,85 @@ namespace CosmicShore.Utility
         }
 
         /// <summary>
-        /// Queues one shield disengage's shards for this frame's batch.
-        /// <paramref name="sharedShieldMesh"/> MUST be the cache-shared settled shield
-        /// mesh (Octahedron/StellatedOctahedronMeshGenerator.GetSharedShieldMesh) — it
-        /// carries the per-face centroids in TEXCOORD1 that the GPU morph needs, and
-        /// sharing it is what keeps the shards batched. Returns false when the render
-        /// service is off or unusable, in which case the disengage has no overlay
-        /// (strict mode: no CPU fallback tier).
+        /// Queues one shield disengage as a prism-explosion debris entity on the shield's
+        /// own mesh. <paramref name="sharedShieldMesh"/> MUST be the cache-shared settled
+        /// shield mesh (Octahedron/StellatedOctahedronMeshGenerator.GetSharedShieldMesh) —
+        /// it carries the debris attribute set (UV0, per-face normals + tangents), and
+        /// sharing it is what keeps same-size shields batched. Velocity/clamp semantics
+        /// are EXACTLY PrismDebris.TryRequestExplosion's, against the same pool-prefab
+        /// band; <paramref name="breakVelocity"/> is the RAW impact vector of whatever
+        /// broke the shield (zero/NaN degrade exactly as the base does), and a positive
+        /// <paramref name="speedLimitOverride"/> replaces the authored ceiling for
+        /// true-velocity impacts, as on the death path. Returns false when the render
+        /// service or the debris config is unavailable (strict mode: no fallback tier).
         /// </summary>
-        /// <param name="velocity">
-        /// WORLD-space velocity of the force that BROKE the shield — the prism explosion's
-        /// own initial condition (Docs/PRISM_ANIMATION.md §4.8.1). Already clamped by the
-        /// caller: the shield components own the speed cap, so the GPU stays a pure
-        /// function of what it is handed. Zero (a timer expiring, an arena teardown, a
-        /// herbivore stripping armour) is the identity — the symmetric puff.
-        /// </param>
-        /// <param name="objectDrift">
-        /// The same velocity × duration mapped into the prism's object space, for the
-        /// culling envelope. Passed in rather than derived because the caller already holds
-        /// the Transform, and inverting <paramref name="localToWorld"/> per spawn would pay
-        /// for that Transform twice.
-        /// </param>
-        public static bool TryRequest(Mesh sharedShieldMesh, Material material, int layer,
-            in Matrix4x4 localToWorld, float duration, float offset,
-            Vector3 velocity = default, Vector3 objectDrift = default)
+        public static bool TryRequest(Mesh sharedShieldMesh, int layer, Transform host,
+            Color bright, Color dark, Vector3 breakVelocity, float speedLimitOverride)
         {
-            if (sharedShieldMesh == null || material == null) return false;
-            if (duration <= 0f) return false;
+            if (sharedShieldMesh == null || host == null) return false;
             if (!PrismRenderService.Enabled) return false;
             if (Time.unscaledTime < s_suspendedUntil) return false;
+            if (!PrismDebris.TryGetExplosionConfig(out _, out float minSpeed, out float maxSpeed))
+                return false;
 
-            // The explosion's pressure model, over THIS effect's live population
-            // (PrismExplosion.PressuredDuration — one curve for both death visuals, so the
-            // two cannot drift apart). At the shared 7.5 s default a mass disengage — a
-            // Rhino swipe stripping a lined wall, the overcharge skimmer — would otherwise
-            // hold hundreds of shard entities live at once; under pressure each new shatter
-            // completes as a smaller, quicker burst instead of piling up, exactly like a
-            // dense blast's explosions. ObjectDrift is linear in duration, so it scales
-            // with it and the culling envelope stays exact.
-            float pressured = PrismExplosion.PressuredDuration(LiveShatterCount + s_pendingCount);
-            if (pressured < duration)
-            {
-                objectDrift *= pressured / duration;
-                duration = pressured;
-            }
+            // From here, PrismDebris.TryRequestExplosion's computation verbatim (shields
+            // are never the danger tier — PrismStateManager keeps danger and the shield
+            // tiers mutually exclusive — so the detonation gain is structurally 1).
+            Vector3 velocity = breakVelocity;
+            if (float.IsNaN(velocity.x) || float.IsNaN(velocity.y) || float.IsNaN(velocity.z))
+                velocity = Vector3.up * minSpeed;
 
-            GetOrCreateGroup(sharedShieldMesh, material, layer).Spawns.Add(
-                new PrismRenderService.ShieldShatterSpawn
+            bool hasOverride = speedLimitOverride > 0f;
+            float ceiling = hasOverride ? speedLimitOverride : maxSpeed;
+            velocity = GeometryUtils.ClampMagnitude(velocity, minSpeed, ceiling, out float speed);
+            if (hasOverride) speed = velocity.magnitude;
+
+            float duration = PrismExplosion.DefaultDuration;
+
+            Vector3 position = host.position;
+            Quaternion rotation = host.rotation;
+            Vector3 scale = host.lossyScale;
+            Vector3 flight = Quaternion.Inverse(rotation) * (velocity * duration);
+            var objDisp = new Unity.Mathematics.float3(
+                flight.x / Mathf.Max(1e-4f, Mathf.Abs(scale.x)),
+                flight.y / Mathf.Max(1e-4f, Mathf.Abs(scale.y)),
+                flight.z / Mathf.Max(1e-4f, Mathf.Abs(scale.z)));
+            float pad = 4f + 0.25f * Unity.Mathematics.math.length(objDisp);
+
+            GetOrCreateGroup(sharedShieldMesh, layer).Spawns.Add(
+                new PrismRenderService.ExplosionDebrisSpawn
                 {
-                    LocalToWorld = localToWorld,
-                    Duration = duration,
-                    Offset = Mathf.Max(0f, offset),
+                    LocalToWorld = Matrix4x4.TRS(position, rotation, scale),
+                    BrightColor = PrismRenderService.ToFloat4(bright),
+                    DarkColor = PrismRenderService.ToFloat4(dark),
                     Velocity = new Unity.Mathematics.float3(velocity.x, velocity.y, velocity.z),
-                    ObjectDrift = new Unity.Mathematics.float3(objectDrift.x, objectDrift.y, objectDrift.z),
+                    Speed = speed,
+                    Duration = duration,
+                    ObjectDisplacement = objDisp,
+                    BoundsPadding = pad,
                 });
             s_pendingCount++;
+
+            if (CSDebug.IsVerbose(CSLogChannel.PrismShieldShatter))
+                CSDebug.LogVerbose(CSLogChannel.PrismShieldShatter,
+                    $"[ShieldShatter] {host.name}: queued debris |v|={speed:F2} u/s " +
+                    $"dur={duration:F2}s mesh={sharedShieldMesh.vertexCount}v layer={layer}", host);
 
             EnsureHost();
             return true;
         }
 
-        static PendingGroup GetOrCreateGroup(Mesh mesh, Material material, int layer)
+        static PendingGroup GetOrCreateGroup(Mesh mesh, int layer)
         {
             for (int i = 0; i < s_pending.Count; i++)
             {
                 var g = s_pending[i];
-                if (ReferenceEquals(g.Mesh, mesh) && ReferenceEquals(g.Material, material) && g.Layer == layer)
+                if (ReferenceEquals(g.Mesh, mesh) && g.Layer == layer)
                     return g;
             }
 
             var group = s_groupPool.Count > 0 ? s_groupPool.Pop() : new PendingGroup();
             group.Mesh = mesh;
-            group.Material = material;
             group.Layer = layer;
             group.Spawns.Clear();
             s_pending.Add(group);
@@ -233,8 +235,14 @@ namespace CosmicShore.Utility
                     if (group.Spawns.Count == 0) continue;
 
                     s_scratchEntities.Clear();
-                    bool spawned = PrismRenderService.SpawnShieldShatterBatch(
-                        group.Mesh, group.Material, group.Layer, group.Spawns, now, s_scratchEntities);
+                    // The shards ARE explosion debris: same batch spawner, same override
+                    // set, same material as a dying prism's pieces — only the mesh is the
+                    // shield's. The config re-resolves at drain (not cached from the
+                    // request) so a pool prefab swap between the two is honoured.
+                    bool spawned = PrismDebris.TryGetExplosionConfig(
+                            out Material debrisMaterial, out _, out _) &&
+                        PrismRenderService.SpawnExplosionDebrisBatch(
+                            group.Mesh, debrisMaterial, group.Layer, group.Spawns, now, s_scratchEntities);
 
                     if (spawned)
                     {
@@ -282,10 +290,9 @@ namespace CosmicShore.Utility
                 {
                     var group = s_pending[gi];
                     group.Spawns.Clear();
-                    // Drop the material/mesh references so a retired group cannot root
-                    // a domain material or a shared mesh in a static pool.
+                    // Drop the mesh reference so a retired group cannot root a shared
+                    // shield mesh in a static pool.
                     group.Mesh = null;
-                    group.Material = null;
                     s_groupPool.Push(group);
                 }
                 s_pending.Clear();

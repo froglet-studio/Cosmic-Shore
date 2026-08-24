@@ -98,45 +98,45 @@ namespace CosmicShore.Gameplay
             ClearRig(renderer);
         }
 
+        static readonly int BrightColorId = Shader.PropertyToID("_BrightColor");
+        static readonly int DarkColorId = Shader.PropertyToID("_DarkColor");
+
         /// <summary>
-        /// Queues the disengage overlay: the shards of the shield just dropped, flying
-        /// out along their own face normals — and, when the shield was BROKEN by something,
-        /// drifting and tumbling along that impulse (Docs/PRISM_ANIMATION.md §4.8.1).
-        /// Fire-and-forget — <see cref="PrismShieldShatter"/> owns the entities and retires
-        /// them on a flat time sweep.
+        /// Queues the disengage overlay: the shield's faces, shed as ORDINARY PRISM
+        /// EXPLOSION DEBRIS (Docs/PRISM_ANIMATION.md §4.8.1) — the same entities, stamps,
+        /// per-face rotation, erosion and fade a dying prism's pieces get, on the shield's
+        /// own mesh. Fire-and-forget — <see cref="PrismShieldShatter"/> owns the entities
+        /// and retires them on a flat time sweep.
         /// </summary>
         /// <param name="breakVelocity">
-        /// WORLD-space velocity of the breaking force, ALREADY CLAMPED by the shield
-        /// component (which owns the speed cap). Zero is the identity: every disengage with
-        /// no direction to speak of — a shield timer expiring, an arena teardown, a domain
-        /// change, a herbivore stripping armour — renders the symmetric puff it always did.
+        /// RAW impact vector of whatever broke the shield (Prism.Damage's vector, the
+        /// Rhino sword's contact velocity). Clamped by the debris pipeline's own band,
+        /// exactly as a prism death clamps it; zero (a shield timer expiring, an arena
+        /// teardown, a herbivore stripping armour) degrades to the same up·minSpeed puff
+        /// an impactless prism death gets.
+        /// </param>
+        /// <param name="debrisSpeedLimit">
+        /// Per-impact ceiling for TRUE-velocity impacts, forwarded like
+        /// <see cref="Prism.Damage"/>'s own; 0 keeps the authored band.
         /// </param>
         public static void RequestShatter(GameObject host, MeshRenderer renderer, Mesh sharedShieldMesh,
-            float duration, float maxOffset, Vector3 breakVelocity = default)
+            Vector3 breakVelocity = default, float debrisSpeedLimit = 0f)
         {
-            if (duration <= 0f || sharedShieldMesh == null || renderer == null) return;
+            if (sharedShieldMesh == null || renderer == null) return;
 
-            // The culling envelope wants the drift in OBJECT space. Do it here, where the
-            // Transform is already in hand — the batch spawner would otherwise have to
-            // invert a matrix per shard to recover what this one call gives it for free.
-            Vector3 objectDrift = breakVelocity == Vector3.zero
-                ? Vector3.zero
-                : host.transform.InverseTransformVector(breakVelocity) * duration;
+            // The shards wear the shield's CURRENT palette — the material the renderer
+            // holds at the instant of the drop (already the post-transition domain
+            // material; PrismStateManager repaints before it disengages) — carried the
+            // same way death debris carries a dying prism's tier colors: per-entity
+            // overrides on the shared debris material.
+            var material = renderer.sharedMaterial;
+            Color bright = material != null && material.HasProperty(BrightColorId)
+                ? material.GetColor(BrightColorId) : Color.white;
+            Color dark = material != null && material.HasProperty(DarkColorId)
+                ? material.GetColor(DarkColorId) : Color.white;
 
-            bool queued = PrismShieldShatter.TryRequest(sharedShieldMesh, renderer.sharedMaterial,
-                host.layer, host.transform.localToWorldMatrix, duration, maxOffset,
-                breakVelocity, objectDrift);
-
-            // The two ways this effect reads as "unchanged" are indistinguishable on screen:
-            // no overlay at all, or an overlay carrying no impulse (zero velocity is the
-            // identity by design). Guarded on IsVerbose because the interpolation is not free
-            // and a disengage is not rare. FrogletTools > Toolbox > Logging turns it on.
-            if (CSDebug.IsVerbose(CSLogChannel.PrismShieldShatter))
-                CSDebug.LogVerbose(CSLogChannel.PrismShieldShatter,
-                    $"[ShieldShatter] {host.name}: queued={queued} " +
-                    $"|v|={breakVelocity.magnitude:F2} u/s dur={duration:F2}s " +
-                    $"drift={(breakVelocity.magnitude * duration):F1}u " +
-                    $"objDrift={objectDrift.magnitude:F1} mat={renderer.sharedMaterial?.name}", host);
+            bool queued = PrismShieldShatter.TryRequest(sharedShieldMesh, host.layer,
+                host.transform, bright, dark, breakVelocity, debrisSpeedLimit);
 
             // Strict mode is silent about nothing: the shards ride the instanced path, so
             // if there is none the disengage simply has no overlay and that must be said
@@ -144,34 +144,7 @@ namespace CosmicShore.Gameplay
             // birth-engaged shield dropped later), so the engage warning may never fire.
             if (!queued)
                 PrismClockDiagnostics.WarnNoRenderEntity("shieldShatter", host,
-                    $"batched shield-shatter debris was refused [service: {PrismRenderService.StatusLine()}]");
-        }
-
-        /// <summary>
-        /// The ONE rule for turning a breaking force into shatter drift, shared by both
-        /// shield tiers so they cannot drift apart.
-        ///
-        /// A shield is broken by whatever impact vector the damage site happened to carry,
-        /// and those magnitudes are not comparable: the legacy inertia gain and the
-        /// true-velocity (proportional) path differ by orders of magnitude for the same
-        /// blow (see PrismExplosion.TriggerExplosion's clamp note, which exists for exactly
-        /// this reason). Only the DIRECTION is reliably meaningful, so the magnitude is
-        /// clamped to the shield's authored cap — which is therefore the single dial for
-        /// how violently a shield comes apart, since the tumble angle rides the same speed.
-        ///
-        /// Clamped on the CPU, once, so the GPU stays a pure function of what it is handed.
-        /// A zero or non-finite vector returns zero: the symmetric puff, never a fabricated
-        /// direction.
-        /// </summary>
-        public static Vector3 ClampBreakVelocity(Vector3 velocity, float speedCap)
-        {
-            if (speedCap <= 0f) return Vector3.zero;
-            float sqr = velocity.sqrMagnitude;
-            // Negated finite test: every comparison against NaN is false, so NaN falls out.
-            if (!(sqr > 1e-6f) || !(sqr < 1e12f)) return Vector3.zero;
-
-            float speed = Mathf.Sqrt(sqr);
-            return speed > speedCap ? velocity * (speedCap / speed) : velocity;
+                    $"shield debris was refused [service: {PrismRenderService.StatusLine()}]");
         }
 
         // -- standalone rig only (see Stamp) ----------------------------------

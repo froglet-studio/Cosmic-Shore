@@ -452,7 +452,6 @@ namespace CosmicShore.ECS
                         em.AddComponentData(prototype, new PrismShieldMorphDurationOverride { Value = 0f });
                         em.AddComponentData(prototype, new PrismShieldMorphDirectionOverride { Value = ShieldMorphBloom });
                         em.AddComponentData(prototype, new PrismShieldMorphOffsetOverride { Value = 0f });
-                        em.AddComponentData(prototype, new PrismShieldMorphVelocityOverride { Value = float3.zero });
                         em.AddComponentData(prototype, new PrismJiggleStartTimeOverride { Value = 0f });
                         em.AddComponentData(prototype, new PrismJiggleDurationOverride { Value = 0f });
                         em.AddComponentData(prototype, new PrismJiggleParamsOverride { Value = float3.zero });
@@ -808,13 +807,9 @@ namespace CosmicShore.ECS
         /// stage collapses/expands its faces about the per-face centroids baked into
         /// TEXCOORD1, so gameplay state, collider, mass and render mesh are all final
         /// from the stamp and the shield never leaves the instanced path.
-        ///
-        /// <paramref name="velocity"/> is the WORLD-space impulse that broke the shield —
-        /// the shatter drifts and tumbles its faces along it (§4.8.1). It is meaningless to
-        /// a bloom and defaults to zero, which is the identity for both terms.
         /// </summary>
         public static bool StampShieldMorph(in PrismRenderHandle handle, float startTime,
-            float duration, float direction, float offset, float3 velocity = default)
+            float duration, float direction, float offset)
         {
             if (!ClockAnimationEnabled || !IsUsable(in handle)) return false;
             var em = _world.EntityManager;
@@ -823,7 +818,6 @@ namespace CosmicShore.ECS
             em.SetComponentData(handle.Entity, new PrismShieldMorphDurationOverride { Value = duration });
             em.SetComponentData(handle.Entity, new PrismShieldMorphDirectionOverride { Value = direction });
             em.SetComponentData(handle.Entity, new PrismShieldMorphOffsetOverride { Value = offset });
-            em.SetComponentData(handle.Entity, new PrismShieldMorphVelocityOverride { Value = velocity });
             return true;
         }
 
@@ -840,7 +834,6 @@ namespace CosmicShore.ECS
             em.SetComponentData(handle.Entity, new PrismShieldMorphDurationOverride { Value = 0f });
             em.SetComponentData(handle.Entity, new PrismShieldMorphDirectionOverride { Value = ShieldMorphBloom });
             em.SetComponentData(handle.Entity, new PrismShieldMorphOffsetOverride { Value = 0f });
-            em.SetComponentData(handle.Entity, new PrismShieldMorphVelocityOverride { Value = float3.zero });
         }
 
         /// <summary>
@@ -1292,118 +1285,14 @@ namespace CosmicShore.ECS
             }
         }
 
-        // ------------------------------------------------------------------
-        // Batched pure-entity SHIELD SHATTER — the disengage overlay
-        // (Docs/PRISM_ANIMATION.md §5 B4). The prism itself snaps back to its box
-        // and its own entity the instant the shield drops, so the shards flying
-        // away are a separate, short-lived visual with exactly the shape an entity
-        // serves for free: one pose, one clock stamp, one retirement. It replaces
-        // a lazily-created child GameObject per prism whose mesh was rebuilt every
-        // frame. Shards ride the PRISM override set because they render with the
-        // prism's own BlockGraph material on the shared shield mesh — so a batch of
-        // shattering shields of one size and domain is ONE draw, and it shares its
-        // (mesh × material) pair with every settled shield like it.
-        // ------------------------------------------------------------------
-
-        /// <summary>One shield-shatter entity's complete initial conditions. Everything
-        /// is stamped once at spawn and never written again — there is no moving target
-        /// here (unlike the suction), so the whole effect is write-once.</summary>
-        public struct ShieldShatterSpawn
-        {
-            /// <summary>Initial pose — the prism's transform at the moment the shield
-            /// dropped. The entity matrix never moves; the GPU flies the faces.</summary>
-            public Matrix4x4 LocalToWorld;
-            /// <summary>Seconds of shatter.</summary>
-            public float Duration;
-            /// <summary>Fly-out distance in LOCAL units at t = 1.</summary>
-            public float Offset;
-            /// <summary>WORLD-space velocity of the force that broke the shield, already
-            /// clamped by the caller (the shader does the world→object conversion). Zero
-            /// is the identity — the symmetric puff.</summary>
-            public float3 Velocity;
-            /// <summary>Object-space displacement the drift covers over the WHOLE shatter
-            /// (velocity × duration, mapped through the inverse of <see cref="LocalToWorld"/>)
-            /// — the culling envelope, exactly as <see cref="ExplosionDebrisSpawn"/> carries
-            /// it. Computed by the caller, which already holds the Transform.</summary>
-            public float3 ObjectDrift;
-        }
-
-        /// <summary>
-        /// Spawns every entry as a shatter entity in ONE prototype-instantiate + ONE
-        /// batched visibility strip, exactly like <see cref="SpawnExplosionDebrisBatch"/>.
-        /// Colors come from the MATERIAL's authored values — matching the child-renderer
-        /// overlay this replaced, which carried no MaterialPropertyBlock and therefore
-        /// always drew the material as authored. Entities are appended to
-        /// <paramref name="appendEntitiesTo"/> index-aligned with <paramref name="spawns"/>.
-        /// Returns false — spawning nothing — when the service is off or no world exists.
-        /// </summary>
-        public static bool SpawnShieldShatterBatch(Mesh mesh, Material material, int layer,
-            System.Collections.Generic.List<ShieldShatterSpawn> spawns, float startTime,
-            System.Collections.Generic.List<Entity> appendEntitiesTo)
-        {
-            if (!Enabled || mesh == null || material == null ||
-                spawns == null || spawns.Count == 0 || !TryEnsure())
-                return false;
-
-            var em = _world.EntityManager;
-            var prototype = GetPrototype(layer, PrismRenderOverrideSet.Prism, mesh, material);
-
-            var entities = new Unity.Collections.NativeArray<Entity>(
-                spawns.Count, Unity.Collections.Allocator.Temp);
-            em.Instantiate(prototype, entities);
-            // Clones are born hidden (the prototype ships DisableRendering); strip the
-            // whole batch in one structural op. The stamp below IS the correct initial
-            // state — at t = 0 the shards are the whole, un-shattered shield.
-            em.RemoveComponent(entities, ComponentType.ReadWrite<DisableRendering>());
-
-            var mmi = new MaterialMeshInfo(GetMaterialID(material), GetMeshID(mesh));
-            float4 bright = ReadColor(material, BrightColorId);
-            float4 dark = ReadColor(material, DarkColorId);
-            float3 spread = ReadVector3(material, SpreadId);
-            float3 meshCenter = mesh.bounds.center;
-            float3 meshExtents = mesh.bounds.extents;
-
-            for (int i = 0; i < spawns.Count; i++)
-            {
-                var s = spawns[i];
-                var entity = entities[i];
-                em.SetComponentData(entity, mmi);
-                em.SetComponentData(entity, new LocalToWorld { Value = ToFloat4x4(in s.LocalToWorld) });
-                // ReadColor already applied the color-space transform.
-                em.SetComponentData(entity, new PrismBrightColorOverride { Value = bright });
-                em.SetComponentData(entity, new PrismDarkColorOverride { Value = dark });
-                em.SetComponentData(entity, new PrismSpreadOverride { Value = spread });
-                em.SetComponentData(entity, new PrismShieldMorphStartTimeOverride { Value = startTime });
-                em.SetComponentData(entity, new PrismShieldMorphDurationOverride { Value = s.Duration });
-                em.SetComponentData(entity, new PrismShieldMorphDirectionOverride { Value = ShieldMorphShatter });
-                em.SetComponentData(entity, new PrismShieldMorphOffsetOverride { Value = s.Offset });
-                em.SetComponentData(entity, new PrismShieldMorphVelocityOverride { Value = s.Velocity });
-
-                // Culling envelope, two terms. Faces travel `Offset` LOCAL units along
-                // their own normals — the mesh AABB grown by Offset on every axis covers
-                // that — and the whole cloud DRIFTS `ObjectDrift` over the shatter, which
-                // is re-centred exactly like the explosion debris' envelope. The tumble
-                // adds nothing: a face rotating about its own centroid stays within its own
-                // circumradius of it, already inside the mesh AABB. Without this the shards
-                // cull against the un-shattered shield box and pop out at the frustum edge.
-                float pad = math.max(0f, s.Offset);
-                float3 half = s.ObjectDrift * 0.5f;
-                em.SetComponentData(entity, new RenderBounds
-                {
-                    Value = new AABB
-                    {
-                        Center = meshCenter + half,
-                        Extents = meshExtents + math.abs(half) + new float3(pad),
-                    }
-                });
-
-                appendEntitiesTo.Add(entity);
-            }
-
-            LiveEntityCount += spawns.Count;
-            entities.Dispose();
-            return true;
-        }
+        // The former SHIELD SHATTER batch spawner lived here. It is GONE on purpose
+        // (Docs/PRISM_ANIMATION.md §4.8.1): a shield's shards are ordinary explosion
+        // debris now — PrismShieldShatter groups a frame's disengages per shield mesh and
+        // spawns them through SpawnExplosionDebrisBatch above, so the two death visuals
+        // cannot drift apart. Do not reintroduce a shield-specific spawner: any look
+        // difference between a shield coming apart and a prism coming apart is a MESH
+        // AUTHORING question (the shield generators bake the debris attribute set), never
+        // a pipeline fork.
 
         /// <summary>Destroys the companion entity (prism GameObject destruction / scene teardown).</summary>
         public static void Destroy(ref PrismRenderHandle handle)

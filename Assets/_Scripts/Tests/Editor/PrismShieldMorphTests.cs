@@ -44,10 +44,6 @@ namespace CosmicShore.Tests
         {
             "_ShieldMorphStartTime", "_ShieldMorphDuration",
             "_ShieldMorphDirection", "_ShieldMorphOffset",
-            // The breaking impulse — the prism explosion's own initial condition, applied
-            // per face (Docs/PRISM_ANIMATION.md §4.8.1). Per-instance for the same reason
-            // as the other four: it is what was known at THIS prism's disengage.
-            "_ShieldMorphVelocity",
         };
 
         const string OctahedronShieldPath = "Assets/_Scripts/Controller/Vessel/PrismOctahedronShield.cs";
@@ -352,12 +348,16 @@ namespace CosmicShore.Tests
         }
 
         [Test]
-        public void BothGenerators_BakeTheErosionFrameIntoUV0()
+        public void BothGenerators_BakeTheDebrisAttributeSet()
         {
-            // The shatter is removed by PrismErosionFade sweeping ONE front across each
-            // face, and that front lives in the face's own UV0 frame. An empty UV0 is not a
-            // missing detail: every vertex would share one wipe coordinate, so the whole
-            // face would cross the threshold on the same frame and POP instead of eroding.
+            // A shield SHATTERS as ordinary prism-explosion debris on ExplodingBlockGraph
+            // (Docs/PRISM_ANIMATION.md §4.8.1), whose vertex chain and fade are pure
+            // functions of the mesh's own attributes. The port therefore lives HERE, in
+            // the mesh: UV0 is the frame PrismErosionFade wipes across (an empty channel
+            // makes each face POP instead of eroding), and the TANGENT is one of
+            // RotateFacesAlongAxis' two rotation axes (a missing tangent hands the
+            // subgraph a zero axis and the per-face rotation silently degenerates —
+            // exactly the "faces do not rotate away" regression this task was about).
             foreach (var (mesh, verts) in new[]
                      {
                          (OctahedronMeshGenerator.Generate(new Vector3(0.5f, 1.25f, 2f)), 24),
@@ -373,6 +373,13 @@ namespace CosmicShore.Tests
                         "UV0 must carry one erosion-frame coordinate per vertex — an empty " +
                         "channel makes every face pop instead of eroding.");
 
+                    var tangents = mesh.tangents;
+                    var normals = mesh.normals;
+                    var positions = mesh.vertices;
+                    Assert.AreEqual(verts, tangents.Length,
+                        "the debris pipeline's per-face rotation reads mesh tangents — " +
+                        "an empty channel degenerates the rotation to nothing");
+
                     for (int f = 0; f < verts; f += 3)
                     {
                         // A real 2D frame: three distinct, non-collinear coordinates. Any
@@ -387,6 +394,17 @@ namespace CosmicShore.Tests
                             Assert.That(uv.x, Is.InRange(0f, 1f), "UV0 must stay inside the unit square");
                             Assert.That(uv.y, Is.InRange(0f, 1f), "UV0 must stay inside the unit square");
                         }
+
+                        // The tangent: unit length, in the face plane (the standard dP/dU an
+                        // imported mesh carries — v0→v1 IS the U axis of the frame above).
+                        Vector3 t = tangents[f];
+                        Assert.That(t.magnitude, Is.EqualTo(1f).Within(1e-3f),
+                            $"face {f / 3}'s tangent is not unit length");
+                        Assert.That(Mathf.Abs(Vector3.Dot(t, normals[f])), Is.LessThan(1e-3f),
+                            $"face {f / 3}'s tangent is not in the face plane");
+                        Assert.That(Vector3.Dot(t, (positions[f + 1] - positions[f]).normalized),
+                            Is.EqualTo(1f).Within(1e-3f),
+                            $"face {f / 3}'s tangent is not dP/dU of its UV frame");
                     }
                 }
                 finally { Object.DestroyImmediate(mesh); }

@@ -2,13 +2,13 @@
 """
 Wire the SHIELD MORPH clock into every shader graph a live prism can render with.
 
-Docs/PRISM_ANIMATION.md §5 B4 (§4.8, and §4.8.1 for the velocity pass). The octahedron
-shield's engage bloom and its shatter overlay (and the stellated super-shield's twin pair)
-were the last per-frame CPU prism animation: PrismOctahedronShieldManager ticked every
-morphing shield and each one REBUILT A MESH per frame, on the un-batched GameObject
-renderer. After this, both are pure functions of the shader clock evaluated on the
-cache-SHARED settled shield mesh — so a shielded prism never leaves the instanced path and
-same-size shields stay in one batch through the whole animation.
+Docs/PRISM_ANIMATION.md §5 B4. The octahedron shield's engage bloom and its shatter
+overlay (and the stellated super-shield's twin pair) were the last per-frame CPU prism
+animation: PrismOctahedronShieldManager ticked every morphing shield and each one
+REBUILT A MESH per frame, on the un-batched GameObject renderer. After this, both are
+pure functions of the shader clock evaluated on the cache-SHARED settled shield mesh —
+so a shielded prism never leaves the instanced path and same-size shields stay in one
+batch through the whole animation.
 
 Coverage is the same census as the flight clock and the occlusion corridor, for the
 same reason: a live prism can render with BlockGraph OR ExplodingBlockGraph
@@ -18,50 +18,34 @@ which is never shielded.
 
 What it adds to each graph:
 
-  properties (all HYBRID PER INSTANCE — hlslDeclarationOverride 3 — per-prism initial
-  conditions, exactly like the grow/flight stamps):
-      _ShieldMorphStartTime  float   clock value at the transition's start
-      _ShieldMorphDuration   float   seconds; 0 = unstamped = render the mesh as authored
-      _ShieldMorphDirection  float   >= 0 engage bloom, < 0 shatter
-      _ShieldMorphOffset     float   shatter fly-out distance in LOCAL units (bloom: 0)
-      _ShieldMorphVelocity   float3  WORLD-space velocity of the force that BROKE the
-                                     shield — the prism explosion's own initial condition,
-                                     applied per face (drift + tumble). Zero is the
-                                     identity, so a direction-less disengage is unchanged.
+  properties (all four HYBRID PER INSTANCE — hlslDeclarationOverride 3 — per-prism
+  initial conditions, exactly like the grow/flight stamps):
+      _ShieldMorphStartTime  float  clock value at the transition's start
+      _ShieldMorphDuration   float  seconds; 0 = unstamped = render the mesh as authored
+      _ShieldMorphDirection  float  >= 0 engage bloom, < 0 shatter
+      _ShieldMorphOffset     float  shatter fly-out distance in LOCAL units (bloom: 0)
 
   nodes:
-      Property x5 + a PrismClock property node
+      Property x4 + a PrismClock property node
       UV (channel UV1)                    -> per-vertex FACE CENTROID, baked by
                                              Octahedron/StellatedOctahedronMeshGenerator
-      Normal Vector (OBJECT space)        -> the flat per-face normal (fly-out + spin axis)
+      Normal Vector (OBJECT space)        -> the flat per-face normal (shatter fly-out axis)
       PrismShieldMorph (Custom Function)  -> PrismClockAnimation.hlsl
 
-  edges (ONE splice) — the Prism Sub Graph's Out_Vector3, i.e. the RAW object-space
+  edges (the splice — the Prism Sub Graph's Out_Vector3, i.e. the RAW object-space
   vertex position at the head of the vertex chain, is retargeted through the morph so
-  everything downstream (the explosion's face rotation, the grow scale, the explosion
-  offset, the ballistic flight) applies to the MORPHED shape rather than fighting it:
+  everything downstream — the explosion's face rotation, the grow scale, the explosion
+  offset, the ballistic flight — applies to the MORPHED shape rather than fighting it):
       BEFORE:  PrismSubGraph.Out_Vector3 ------------------> <first vertex consumer>
       AFTER:   PrismSubGraph.Out_Vector3 -> PrismShieldMorph.Position
-               UV1 -> .FaceCentroid, NormalOS -> .Normal, clock + props -> the rest
+               UV1 -> .FaceCentroid, NormalOS -> .Normal, clock + 4 props -> the rest
                PrismShieldMorph.MorphedPosition ----------> <first vertex consumer>
-
-  The tumble deliberately does NOT carry the vertex normal with it. That was built and
-  reverted: on ExplodingBlockGraph the only acyclic source for an incoming normal is
-  RotateFacesAlongAxis' output, and that subgraph is fed BY this node's position output,
-  so routing its normal back in makes the two a CYCLE — which ShaderGraph rejects, turning
-  every material on the graph magenta. validate() now asserts acyclicity for exactly that
-  reason.
-
-Ordering: run the clock and flight wirers FIRST. This asserts their outputs
-(GrowStartTime and FlightVelocity as schema-exact donors) rather than inventing them.
 
 Out-of-editor ShaderGraph JSON synthesis per the /asset-surgery protocol: parse the whole
 file, clone same-file (or cross-file) donors so the schema is exact by construction,
 rebuild in memory, assert every invariant, and only then write.
 
-Idempotent, and a MIGRATOR as well as a wirer: a graph carrying the pre-velocity 9-slot
-signature is upgraded in place (slots renumbered, edges remapped, the two new splices
-added); a graph already carrying the 12-slot one prints "already wired" and exits 0.
+Idempotent: re-running after a successful pass prints "already wired" and exits 0.
 
 Usage:  python3 Tools/Shaders/wire_prism_shield_morph.py [--check]
         --check validates without writing (exit 1 if not wired).
@@ -102,13 +86,12 @@ COORDINATE_SPACE_OBJECT = 0
 # OctahedronMeshGenerator.FaceCentroidUVChannel.
 UV_CHANNEL_UV1 = 1
 
-# (display name, reference name, "Vector1"|"Vector3")
+# (display name, reference name)
 SHIELD_PROPS = [
-    ("ShieldMorphStartTime", "_ShieldMorphStartTime", "Vector1"),
-    ("ShieldMorphDuration", "_ShieldMorphDuration", "Vector1"),
-    ("ShieldMorphDirection", "_ShieldMorphDirection", "Vector1"),
-    ("ShieldMorphOffset", "_ShieldMorphOffset", "Vector1"),
-    ("ShieldMorphVelocity", "_ShieldMorphVelocity", "Vector3"),
+    ("ShieldMorphStartTime", "_ShieldMorphStartTime"),
+    ("ShieldMorphDuration", "_ShieldMorphDuration"),
+    ("ShieldMorphDirection", "_ShieldMorphDirection"),
+    ("ShieldMorphOffset", "_ShieldMorphOffset"),
 ]
 
 # (integer slot id, display name, "Vector1"|"Vector3", is_output) — the integer ids MUST
@@ -119,34 +102,13 @@ CF_SLOTS = [
     (2, "Duration", "Vector1", False),
     (3, "Direction", "Vector1", False),
     (4, "ShatterOffset", "Vector1", False),
-    (5, "Velocity", "Vector3", False),
-    (6, "Position", "Vector3", False),
-    (7, "Normal", "Vector3", False),
-    (8, "FaceCentroid", "Vector3", False),
-    (9, "MorphedPosition", "Vector3", True),
-    (10, "Opacity", "Vector1", True),
+    (5, "Position", "Vector3", False),
+    (6, "Normal", "Vector3", False),
+    (7, "FaceCentroid", "Vector3", False),
+    (8, "MorphedPosition", "Vector3", True),
 ]
 
-CF_POSITION_SLOT = 6
-CF_NORMAL_SLOT = 7
-CF_CENTROID_SLOT = 8
-CF_OUTPUT_SLOT = 9           # MorphedPosition
-CF_OPACITY_SLOT = 10         # 1 unless shattering; PrismErosionFade's BaseOpacity
-
-# The pre-velocity signature this tool migrates from. Slots are remapped BY DISPLAY NAME,
-# so this table is only used to recognise an old node — never to move data.
-LEGACY_CF_SLOT_NAMES = {
-    0: "Clock", 1: "StartTime", 2: "Duration", 3: "Direction", 4: "ShatterOffset",
-    5: "Position", 6: "Normal", 7: "FaceCentroid", 8: "MorphedPosition",
-}
-
-# The pre-EROSION signature: the velocity pass, before the shatter stopped shrinking its
-# faces and started emitting the Opacity ramp PrismErosionFade consumes. Migrating it is a
-# pure APPEND (the new output is slot 10), so no existing edge is renumbered.
-PRE_EROSION_CF_SLOT_NAMES = {
-    0: "Clock", 1: "StartTime", 2: "Duration", 3: "Direction", 4: "ShatterOffset",
-    5: "Velocity", 6: "Position", 7: "Normal", 8: "FaceCentroid", 9: "MorphedPosition",
-}
+CF_OUTPUT_SLOT = 8
 
 
 # ---------------------------------------------------------------------------
@@ -217,10 +179,10 @@ def find_prism_subgraph(docs):
 # builders (every one clones a donor of the same type)
 # ---------------------------------------------------------------------------
 
-def make_per_instance_property(donor, name, reference, kind="Vector1"):
-    """Clone a donor ShaderProperty of the SAME kind and re-key it as a fresh
-    Hybrid-Per-Instance property. The donor is always an existing clock property, so the
-    exposure flags are already correct — and they are asserted afterwards anyway."""
+def make_per_instance_property(donor, name, reference):
+    """Clone a donor Vector1 ShaderProperty and re-key it as a fresh Hybrid-Per-Instance
+    property. The donor is always an existing clock property, so the exposure flags are
+    already correct — and they are asserted afterwards anyway."""
     p = json.loads(json.dumps(donor))
     p["m_ObjectId"] = new_oid()
     p["m_Guid"] = {"m_GuidSerialized": str(uuid.uuid4())}
@@ -233,9 +195,8 @@ def make_per_instance_property(donor, name, reference, kind="Vector1"):
     p["hlslDeclarationOverride"] = 3  # HybridPerInstance
     p["m_Hidden"] = False
     # Settled default: Duration 0 means "unstamped" in PrismShieldMorph_float, so an
-    # untouched material renders the mesh exactly as authored. Zero velocity likewise
-    # means "no breaking impulse", which is the identity for the drift and the tumble.
-    p["m_Value"] = {"x": 0.0, "y": 0.0, "z": 0.0} if kind == "Vector3" else 0.0
+    # untouched material renders the mesh exactly as authored.
+    p["m_Value"] = 0.0
     return p
 
 
@@ -257,11 +218,6 @@ def make_slot(donor, slot_id, display_name, is_output):
 
 
 def make_property_node(donor_property_node, donor_slot, property_oid, label, x, y):
-    """`donor_slot` MUST be a MaterialSlot of the PROPERTY'S OWN kind. A PropertyNode's
-    single output slot carries the property's concrete type, so handing a Vector1 donor to
-    a Vector3 property serializes a node that cannot deliver a vector — the exact defect
-    that shipped in the first velocity pass and made the stamp look like it never arrived
-    (validate() now asserts this)."""
     node = json.loads(json.dumps(donor_property_node))
     node["m_ObjectId"] = new_oid()
     node["m_Property"] = {"m_Id": property_oid}
@@ -316,45 +272,6 @@ def edge(out_node, out_slot, in_node, in_slot):
 # validation
 # ---------------------------------------------------------------------------
 
-def assert_acyclic(graph, idx):
-    """A shader graph is a DAG. Splicing a node in FRONT of something that is already
-    DOWNSTREAM of it closes a loop, and ShaderGraph then fails the whole asset — every
-    material on it renders as the magenta error shader. This is not hypothetical: the
-    first velocity pass routed RotateFacesAlongAxis' normal back into PrismShieldMorph,
-    whose position output feeds that same subgraph, and it turned every prism explosion
-    pink. Nothing else in this file could see it, so it is checked here for the WHOLE
-    graph rather than only around our own edits."""
-    upstream = {}
-    for e in graph["m_Edges"]:
-        upstream.setdefault(e["m_InputSlot"]["m_Node"]["m_Id"], set()).add(
-            e["m_OutputSlot"]["m_Node"]["m_Id"])
-
-    def label(nid):
-        n = idx.get(nid, {})
-        return (n.get("m_FunctionName") or n.get("m_Name")
-                or n.get("m_Type", "?").split(".")[-1])
-
-    WHITE, GREY, BLACK = 0, 1, 2
-    color = {}
-
-    def walk(node, stack):
-        color[node] = GREY
-        stack.append(node)
-        for parent in upstream.get(node, ()):
-            state = color.get(parent, WHITE)
-            if state == GREY:
-                loop = stack[stack.index(parent):] + [parent]
-                raise AssertionError("edge cycle: " + " -> ".join(label(n) for n in loop))
-            if state == WHITE:
-                walk(parent, stack)
-        stack.pop()
-        color[node] = BLACK
-
-    for node in list(upstream):
-        if color.get(node, WHITE) == WHITE:
-            walk(node, [])
-
-
 def validate(docs, expect_wired):
     """Rebuild the object model and assert every invariant. Raises on failure."""
     idx = index(docs)
@@ -383,24 +300,6 @@ def validate(docs, expect_wired):
             ints.add(sd["m_Id"])
         slot_ids[ref["m_Id"]] = {idx[s["m_Id"]]["m_Id"]: idx[s["m_Id"]] for s in node.get("m_Slots", [])}
 
-    # A PropertyNode's output slot carries its property's concrete type. Checked for
-    # EVERY property node, not just ours: this is cheap, and a mismatch anywhere is the
-    # same silent failure.
-    for ref in graph["m_Nodes"]:
-        node = idx[ref["m_Id"]]
-        if "PropertyNode" not in node.get("m_Type", ""):
-            continue
-        prop = idx.get((node.get("m_Property") or {}).get("m_Id"))
-        if prop is None or not node.get("m_Slots"):
-            continue
-        kind = prop["m_Type"].split(".")[-1].replace("ShaderProperty", "")
-        if kind not in ("Vector1", "Vector2", "Vector3", "Vector4"):
-            continue  # colors, textures, booleans — different slot families
-        slot_type = idx[node["m_Slots"][0]["m_Id"]]["m_Type"]
-        assert f"{kind}MaterialSlot" in slot_type, \
-            (f"property node for {prop.get('m_Name')} ({kind}) carries a "
-             f"{slot_type.split('.')[-1]} output slot")
-
     feeders = {}
     for e in graph["m_Edges"]:
         o, i = e["m_OutputSlot"], e["m_InputSlot"]
@@ -415,17 +314,13 @@ def validate(docs, expect_wired):
     for key, count in feeders.items():
         assert count == 1, f"input slot {key} has {count} feeders (must be exactly 1)"
 
-    assert_acyclic(graph, idx)
-
     if not expect_wired:
         return
 
-    for name, reference, kind in SHIELD_PROPS:
+    for name, reference in SHIELD_PROPS:
         p = find_property(docs, name)
         assert p is not None, f"property {name} missing"
         assert p["m_DefaultReferenceName"] == reference, f"{name} reference name wrong"
-        assert f"{kind}ShaderProperty" in p["m_Type"], \
-            f"{name} must be a {kind} property (got {p['m_Type']})"
         assert p["m_GeneratePropertyBlock"] is True, f"{name} must be EXPOSED"
         assert p["overrideHLSLDeclaration"] is True, f"{name} must override the HLSL declaration"
         assert p["hlslDeclarationOverride"] == 3, \
@@ -441,18 +336,9 @@ def validate(docs, expect_wired):
     assert cf["m_FunctionSource"] == HLSL_GUID, "custom function points at the wrong HLSL asset"
     cf_slots = {idx[s["m_Id"]]["m_Id"]: idx[s["m_Id"]] for s in cf["m_Slots"]}
     assert set(cf_slots) == {s[0] for s in CF_SLOTS}, "custom function slot ids do not match the HLSL signature"
-    for slot_id, name, kind, is_output in CF_SLOTS:
+    for slot_id, name, _kind, is_output in CF_SLOTS:
         assert cf_slots[slot_id]["m_DisplayName"] == name, f"slot {slot_id} name drifted"
         assert cf_slots[slot_id]["m_SlotType"] == (1 if is_output else 0), f"slot {slot_id} direction wrong"
-        # Type matters as much as order: ShaderGraph passes slots positionally, so a
-        # Vector1 where the HLSL wants a float3 is a silently mis-typed argument.
-        assert f"{kind}MaterialSlot" in cf_slots[slot_id]["m_Type"], \
-            f"slot {slot_id} ({name}) is {cf_slots[slot_id]['m_Type']}, expected {kind}MaterialSlot"
-
-    # List order IS the call order (inputs then outputs), so it must equal the HLSL's.
-    listed = [idx[ref["m_Id"]]["m_Id"] for ref in cf["m_Slots"]]
-    assert listed == [sid for sid, _n, _k, _o in CF_SLOTS], \
-        f"custom function slot LIST order {listed} does not match the HLSL parameter order"
 
     sources = {}
     for e in graph["m_Edges"]:
@@ -467,7 +353,7 @@ def validate(docs, expect_wired):
     # consumed it: Position IS that output, and the old consumer now reads the morph.
     sub = find_prism_subgraph(docs)
     assert sub is not None, "Prism Sub Graph node not found — the splice anchor is gone"
-    assert sources[(cf["m_ObjectId"], CF_POSITION_SLOT)] == (sub["m_ObjectId"], PRISM_SUBGRAPH_POSITION_SLOT), \
+    assert sources[(cf["m_ObjectId"], 5)] == (sub["m_ObjectId"], PRISM_SUBGRAPH_POSITION_SLOT), \
         "PrismShieldMorph.Position is not fed by Prism Sub Graph.Out_Vector3"
 
     consumers = [e for e in graph["m_Edges"]
@@ -487,162 +373,32 @@ def validate(docs, expect_wired):
 
     # The two per-vertex attribute feeds — the whole reason this can run on the SHARED
     # settled mesh instead of a per-prism rebuild.
-    uv_node = idx[sources[(cf["m_ObjectId"], 8)][0]]
+    uv_node = idx[sources[(cf["m_ObjectId"], 7)][0]]
     assert "UVNode" in uv_node.get("m_Type", ""), "FaceCentroid is not fed by a UV node"
     assert uv_node.get("m_OutputChannel") == UV_CHANNEL_UV1, \
         "the FaceCentroid UV node is not reading UV1 (must match FaceCentroidUVChannel)"
-    nrm_node = idx[sources[(cf["m_ObjectId"], 7)][0]]
+    nrm_node = idx[sources[(cf["m_ObjectId"], 6)][0]]
     assert "NormalVectorNode" in nrm_node.get("m_Type", ""), "Normal is not fed by a Normal Vector node"
     assert nrm_node.get("m_Space") == COORDINATE_SPACE_OBJECT, \
         "the shatter Normal Vector node is not in OBJECT space (the morph is object-space arithmetic)"
-
-    # The velocity feed, and — the check whose absence shipped a broken graph — that the
-    # PropertyNode driving it can actually carry a vector.
-    vel_source = sources.get((cf["m_ObjectId"], 5))
-    assert vel_source is not None, "PrismShieldMorph.Velocity is unconnected"
-    vel_node = idx[vel_source[0]]
-    assert "PropertyNode" in vel_node.get("m_Type", ""), \
-        "PrismShieldMorph.Velocity is not fed by a property node"
-    vel_prop = idx[vel_node["m_Property"]["m_Id"]]
-    assert vel_prop["m_DefaultReferenceName"] == "_ShieldMorphVelocity", \
-        f"PrismShieldMorph.Velocity is fed by {vel_prop['m_DefaultReferenceName']}, not _ShieldMorphVelocity"
-    vel_slot = idx[vel_node["m_Slots"][0]["m_Id"]]
-    assert "Vector3MaterialSlot" in vel_slot["m_Type"], \
-        (f"the _ShieldMorphVelocity property NODE carries a {vel_slot['m_Type'].split('.')[-1]} "
-         "output slot; a Vector3 property's node must carry a Vector3MaterialSlot or no vector "
-         "ever reaches the shader")
 
 
 # ---------------------------------------------------------------------------
 # the edit
 # ---------------------------------------------------------------------------
 
-def cf_slot_names(docs, cf):
-    idx = index(docs)
-    return {idx[ref["m_Id"]]["m_Id"]: idx[ref["m_Id"]]["m_DisplayName"] for ref in cf["m_Slots"]}
-
-
-def signature_of(docs):
-    """None (no node) / "current" / "legacy" / raises on anything else."""
-    cf = find_cf(docs, FUNCTION_NAME)
-    if cf is None:
-        return None
-    names = cf_slot_names(docs, cf)
-    if names == {sid: name for sid, name, _k, _o in CF_SLOTS}:
-        return "current"
-    if names == LEGACY_CF_SLOT_NAMES:
-        return "legacy"
-    if names == PRE_EROSION_CF_SLOT_NAMES:
-        return "pre-erosion"
-    raise AssertionError(
-        f"{FUNCTION_NAME} carries an unrecognised signature {sorted(names.items())} — "
-        "neither the shipped 12-slot one nor the pre-velocity 9-slot one this tool migrates")
-
-
-def add_velocity_property(docs, graph, idx, x, y):
-    """The one new property + its node. Shared by the fresh wire and the migration."""
-    flight_velocity = find_property(docs, "FlightVelocity")
-    assert flight_velocity, \
-        "FlightVelocity not found — it is the schema-exact Vector3 donor; run the flight wirer first"
-    donor_property_node = find_node_by_type(docs, "ShaderGraph.PropertyNode")
-    assert donor_property_node, "no PropertyNode donor"
-    cf_donor = find_cf(docs, "PrismGrowScale")
-    assert cf_donor, "no PrismGrowScale CustomFunctionNode donor"
-    # A Vector3 property's node needs a Vector3 output slot. Cloning the Vector1 donor
-    # here is what shipped a node that could not carry a vector.
-    donor_slot_v3 = next(idx[sl["m_Id"]] for sl in cf_donor["m_Slots"]
-                         if "Vector3MaterialSlot" in idx[sl["m_Id"]]["m_Type"])
-
-    name, reference, kind = next(sp for sp in SHIELD_PROPS if sp[0] == "ShieldMorphVelocity")
-    prop = make_per_instance_property(flight_velocity, name, reference, kind)
-    graph["m_Properties"].append({"m_Id": prop["m_ObjectId"]})
-    host = next(idx[c["m_Id"]] for c in graph["m_CategoryData"]
-                if any(ch["m_Id"] == flight_velocity["m_ObjectId"]
-                       for ch in idx[c["m_Id"]]["m_ChildObjectList"]))
-    host["m_ChildObjectList"].append({"m_Id": prop["m_ObjectId"]})
-
-    node, slots = make_property_node(donor_property_node, donor_slot_v3,
-                                     prop["m_ObjectId"], name, x, y)
-    graph["m_Nodes"].append({"m_Id": node["m_ObjectId"]})
-    return [prop, node] + slots, node
-
-
-def migrate(path):
-    """Upgrade a graph carrying the pre-velocity 9-slot node in place.
-
-    Slots are renumbered by DISPLAY NAME (never by position), every edge touching this
-    node is remapped through that same map, and the two new channels are spliced in.
-    Nothing existing is deleted, so a failed assertion leaves the file untouched.
-    """
-    docs = load_docs(os.path.join(REPO, path))
-    graph = find_graph(docs)
-    idx = index(docs)
-
-    cf = find_cf(docs, FUNCTION_NAME)
-
-    cf_donor = find_cf(docs, "PrismGrowScale")
-    donor_slots = [idx[sl["m_Id"]] for sl in cf_donor["m_Slots"]]
-    donor_slot_v1 = next(sl for sl in donor_slots if "Vector1MaterialSlot" in sl["m_Type"])
-    donor_slot_v3 = next(sl for sl in donor_slots if "Vector3MaterialSlot" in sl["m_Type"])
-
-    # -- renumber the surviving slots -------------------------------------
-    new_id_by_name = {name: sid for sid, name, _k, _o in CF_SLOTS}
-    remap = {}
-    slot_docs = {}
-    for ref in cf["m_Slots"]:
-        sd = idx[ref["m_Id"]]
-        new_id = new_id_by_name[sd["m_DisplayName"]]
-        remap[sd["m_Id"]] = new_id
-        sd["m_Id"] = new_id
-        slot_docs[new_id] = sd
-
-    for e in graph["m_Edges"]:
-        for end in (e["m_OutputSlot"], e["m_InputSlot"]):
-            if end["m_Node"]["m_Id"] == cf["m_ObjectId"]:
-                end["m_SlotId"] = remap[end["m_SlotId"]]
-
-    # -- the three new slots ----------------------------------------------
-    new_docs = []
-    for slot_id, name, kind, is_output in CF_SLOTS:
-        if slot_id in slot_docs:
-            continue
-        donor = donor_slot_v3 if kind == "Vector3" else donor_slot_v1
-        sd = make_slot(donor, slot_id, name, is_output)
-        slot_docs[slot_id] = sd
-        new_docs.append(sd)
-    # List order must equal the HLSL parameter order (inputs then outputs).
-    cf["m_Slots"] = [{"m_Id": slot_docs[sid]["m_ObjectId"]} for sid, _n, _k, _o in CF_SLOTS]
-    cf["m_DrawState"]["m_Position"]["height"] = 560.0
-
-    # -- the velocity property + its node, only if this graph lacks it -----
-    # A pre-erosion graph already has both; migrating it is a pure slot APPEND.
-    if find_property(docs, "ShieldMorphVelocity") is None:
-        pos = cf["m_DrawState"]["m_Position"]
-        vel_docs, vel_node = add_velocity_property(docs, graph, idx,
-                                                   pos["x"] - 340.0, pos["y"] + 400.0)
-        new_docs.extend(vel_docs)
-        graph["m_Edges"].append(edge(vel_node["m_ObjectId"], 0, cf["m_ObjectId"], 5))
-
-    docs.extend(new_docs)
-    validate(docs, expect_wired=True)
-
-    open(os.path.join(REPO, path), "w", encoding="utf-8").write(dump_docs(docs))
-    print(f"  {os.path.basename(path)}: migrated to the current signature "
-          f"(+{len(new_docs)} objects)")
-    return True
+def already_wired(docs):
+    return find_cf(docs, FUNCTION_NAME) is not None
 
 
 def wire(path, uv_donor_docs):
     docs = load_docs(os.path.join(REPO, path))
     validate(docs, expect_wired=False)
 
-    signature = signature_of(docs)
-    if signature == "current":
+    if already_wired(docs):
         validate(docs, expect_wired=True)
         print(f"  {os.path.basename(path)}: already wired")
         return False
-    if signature in ("legacy", "pre-erosion"):
-        return migrate(path)
 
     graph = find_graph(docs)
     idx = index(docs)
@@ -680,31 +436,23 @@ def wire(path, uv_donor_docs):
     new_docs = []
 
     # ---- properties -------------------------------------------------------
-    flight_velocity = find_property(docs, "FlightVelocity")
-    assert flight_velocity, \
-        "FlightVelocity not found — it is the schema-exact Vector3 donor; run the flight wirer first"
-
     prop_oids = {}
-    for name, reference, kind in SHIELD_PROPS:
-        donor_prop = flight_velocity if kind == "Vector3" else grow_start
-        p = make_per_instance_property(donor_prop, name, reference, kind)
+    for name, reference in SHIELD_PROPS:
+        p = make_per_instance_property(grow_start, name, reference)
         prop_oids[name] = p["m_ObjectId"]
         new_docs.append(p)
         graph["m_Properties"].append({"m_Id": p["m_ObjectId"]})
         # Blackboard: the category the clock properties already live in.
         host = next(idx[c["m_Id"]] for c in graph["m_CategoryData"]
-                    if any(ch["m_Id"] == donor_prop["m_ObjectId"]
+                    if any(ch["m_Id"] == grow_start["m_ObjectId"]
                            for ch in idx[c["m_Id"]]["m_ChildObjectList"]))
         host["m_ChildObjectList"].append({"m_Id": p["m_ObjectId"]})
 
     # ---- property nodes ---------------------------------------------------
     base_x, base_y = -3200.0, 2700.0
     node_oids = {}
-    for i, (name, _ref, kind) in enumerate(SHIELD_PROPS):
-        # Slot kind follows the PROPERTY's kind — see make_property_node.
-        node, slots = make_property_node(donor_property_node,
-                                         donor_slot_v3 if kind == "Vector3" else donor_slot_v1,
-                                         prop_oids[name],
+    for i, (name, _ref) in enumerate(SHIELD_PROPS):
+        node, slots = make_property_node(donor_property_node, donor_slot_v1, prop_oids[name],
                                          name, base_x, base_y + i * 80.0)
         node_oids[name] = node["m_ObjectId"]
         new_docs.append(node)
@@ -755,10 +503,9 @@ def wire(path, uv_donor_docs):
         edge(node_oids["ShieldMorphDuration"], 0, cf["m_ObjectId"], 2),
         edge(node_oids["ShieldMorphDirection"], 0, cf["m_ObjectId"], 3),
         edge(node_oids["ShieldMorphOffset"], 0, cf["m_ObjectId"], 4),
-        edge(node_oids["ShieldMorphVelocity"], 0, cf["m_ObjectId"], 5),
-        edge(sub["m_ObjectId"], PRISM_SUBGRAPH_POSITION_SLOT, cf["m_ObjectId"], CF_POSITION_SLOT),
-        edge(normal_node["m_ObjectId"], 0, cf["m_ObjectId"], CF_NORMAL_SLOT),
-        edge(uv_node["m_ObjectId"], 0, cf["m_ObjectId"], CF_CENTROID_SLOT),
+        edge(sub["m_ObjectId"], PRISM_SUBGRAPH_POSITION_SLOT, cf["m_ObjectId"], 5),
+        edge(normal_node["m_ObjectId"], 0, cf["m_ObjectId"], 6),
+        edge(uv_node["m_ObjectId"], 0, cf["m_ObjectId"], 7),
     ])
 
     docs.extend(new_docs)

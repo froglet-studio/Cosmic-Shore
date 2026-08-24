@@ -252,21 +252,6 @@ namespace CosmicShore.ECS
     {
         public float Value;
     }
-
-    /// WORLD-space velocity of the force that BROKE the shield — the prism explosion's own
-    /// initial condition, applied per face (Docs/PRISM_ANIMATION.md §4.8.1). The shatter
-    /// drifts each shard along it and tumbles each face about
-    /// normalize(cross(velocity, faceNormal)), which is RotateFacesAlongAxis' model with the
-    /// explosion's speed x seconds gain. The shader does the world->object conversion with a
-    /// raw inverse-model multiply (never a normalizing Transform node), exactly like
-    /// _Velocity and _FlightVelocity. ZERO is the identity for both terms, so a
-    /// direction-less disengage renders the symmetric puff it always did, and the bloom
-    /// ignores it entirely.
-    [MaterialProperty("_ShieldMorphVelocity")]
-    public struct PrismShieldMorphVelocityOverride : IComponentData
-    {
-        public float3 Value;
-    }
     // -- Prism set: super-shield deflection jiggle (Docs/PRISM_ANIMATION.md §5 C14) --
     // A SUPER-SHIELDED prism that absorbed a hit without being destroyed
     // (Prism.AbsorbSuperShieldHit). The vertex stage wobbles each face about the prism's

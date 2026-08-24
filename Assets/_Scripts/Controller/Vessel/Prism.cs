@@ -1284,14 +1284,13 @@ namespace CosmicShore.Gameplay
             // That sequence clears the flag before it gets here, so a BREAKING hit never
             // reaches this gate; only an unbreaking one does, and it now deflects (below).
             if (AbsorbSuperShieldHit(impactVector.magnitude)) return;
-            // The shield pops instead of the prism, and it pops ALONG THE BLOW: the shatter
-            // takes the same initial condition Explode would have taken, so a shed reads as
-            // the armour being knocked off rather than as a symmetric puff that looks the
-            // same from every direction (Docs/PRISM_ANIMATION.md §4.8.1). The magnitude is
-            // clamped by the shield component — this vector's scale is not comparable across
-            // the legacy and proportional damage paths.
+            // The shield pops instead of the prism, AS the prism explosion: the shed shards
+            // are ordinary explosion debris on the shield's own mesh, handed the same impact
+            // vector and ceiling Explode would have received — so the armour being knocked
+            // off looks exactly like mass coming apart, because it is the same effect
+            // (Docs/PRISM_ANIMATION.md §4.8.1).
             if (prismProperties.IsShielded && !devastate)
-                DeactivateShields(impactVector);
+                DeactivateShields(impactVector, debrisSpeedLimit);
             else
             {
                 _destroyedByCreature = byCreature;
@@ -1306,10 +1305,10 @@ namespace CosmicShore.Gameplay
             // describes where the mass was being pulled, not how hard it was struck.
             if (destroyed) return;
             if (AbsorbSuperShieldHit(0f)) return;
-            // Direction-less on purpose, for the same reason the deflection above is stamped
+            // Impact-less on purpose, for the same reason the deflection above is stamped
             // at the floor: a consume carries no impact vector, only a suction sink, and
-            // grazing armour off is not a blow. The shatter's velocity terms are the identity
-            // at zero, so this is the symmetric puff.
+            // grazing armour off is not a blow. The debris path degrades a zero vector to
+            // the same quiet minimum-speed puff an impactless prism death gets.
             if (prismProperties.IsShielded && !devastate)
                 DeactivateShields();
             else
@@ -1367,14 +1366,15 @@ namespace CosmicShore.Gameplay
         public void DeactivateShields() => stateManager?.DeactivateShields();
 
         /// <summary>
-        /// Drops every shield tier and hands the shatter the WORLD-space velocity of the
-        /// force that BROKE it, so the shards drift and tumble along the blow instead of
-        /// puffing symmetrically (Docs/PRISM_ANIMATION.md §4.8.1). Magnitude is clamped by
-        /// the shield component's own cap, so passing a legacy inertia-scaled vector is
-        /// safe — only the direction survives unclamped. Zero is the identity.
+        /// Drops every shield tier and hands the disengage overlay the WORLD-space impact
+        /// vector of the force that BROKE it. The overlay is ordinary prism-explosion
+        /// debris (Docs/PRISM_ANIMATION.md §4.8.1), so the vector and the optional
+        /// true-velocity ceiling carry EXACTLY the semantics of <see cref="Damage"/>'s own
+        /// parameters — the shards fly, rotate away per face, erode and fade the way the
+        /// prism's own pieces would have. Zero degrades to the impactless-death puff.
         /// </summary>
-        public void DeactivateShields(Vector3 breakVelocity) =>
-            stateManager?.DeactivateShields(null, breakVelocity);
+        public void DeactivateShields(Vector3 breakVelocity, float debrisSpeedLimit = 0f) =>
+            stateManager?.DeactivateShields(null, breakVelocity, debrisSpeedLimit);
         public void ActivateShield() => stateManager?.ActivateShield();
         public void ActivateShield(float duration) => stateManager?.ActivateShield(duration);
         public void ActivateSuperShield() => stateManager?.ActivateSuperShield();
