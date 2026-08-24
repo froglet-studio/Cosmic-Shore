@@ -547,10 +547,18 @@ namespace CosmicShore.Gameplay
 
             if ((prism.Domain == explosion.Domain && !affectSelf) || !destructive)
             {
+                // The blast is ACCEPTED, not ignored: the prism armours up instead of the
+                // explosion visibly passing through it. It carries this blow's magnitude
+                // and ceiling so the pop that ends the shield sheds at half of it - see
+                // PrismStateManager.ExecuteTimerDeactivation. Same numbers the Burst twin
+                // hands over (PrismSpatialIndex.ResolveExplosionHit); these two must not
+                // drift, or a blast pops shields differently with the spatial index up.
+                float impactSpeed = impactVector.magnitude;
+                float limit = explosion.Impulse.DebrisSpeedLimit;
                 if (shielding && prism.Domain == explosion.Domain)
-                    prism.ActivateShield();
+                    prism.ActivateShieldFromImpact(impactSpeed, limit);
                 else 
-                    prism.ActivateShield(2f);
+                    prism.ActivateShield(2f, impactSpeed, limit);
                 return;
             }
             

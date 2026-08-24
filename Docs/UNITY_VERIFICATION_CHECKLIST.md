@@ -2649,8 +2649,15 @@ compiled or play-tested. It is one method plus one helper in
 What changed: the end of a TEMPORARY shield — `ActivateShield(duration)` and
 `DeactivateShields(delay)`, the one shield teardown with no breaking force behind it, and the path
 every own-domain explosion takes when it shields a prism rather than clipping through it — now
-hands the shatter a random direction on the unit sphere at the debris band's authored `minSpeed`,
-instead of a zero vector (which `GeometryUtils.ClampMagnitude` resolves to `Vector3.up * minSpeed`).
+hands the shatter a random direction on the unit sphere at **half the magnitude of the impact
+vector that caused the shield** (carried from both explosion call sites, with the blast's own
+`DebrisSpeedLimit` so the halving survives the clamp), instead of a zero vector (which
+`GeometryUtils.ClampMagnitude` resolves to `Vector3.up * minSpeed`). A shield with no blow behind
+it — an ability, a skim, a spawner — still pops at the debris band's authored `minSpeed`.
+
+The shed itself is unchanged and already on the clock path: ONE batched clock-stamped debris entity
+per disengage (`PrismShieldMorph.RequestShatter` → `PrismShieldShatter` → `PrismRenderService`),
+zero per-frame CPU, and `PrismTimerManager`'s single scheduled swap for the timer.
 
 1. **Compile clean.**
 2. Fire an AOE blast into your OWN domain's mass (Rampage/Bends Dolphin cone, or any explosion with
@@ -2659,6 +2666,12 @@ instead of a zero vector (which `GeometryUtils.ClampMagnitude` resolves to `Vect
    other prism in the blast.
 3. Two blasts over the same mass → the second pop's direction differs from the first's (the vector
    is drawn per pop, not per prism).
-4. A shield broken by a real force (Rhino sword, `Prism.Damage` shedding a shield) is unchanged —
+4. A weak blast vs. a strong one: the pop should read HALF as hard as the blast that caused it, so
+   a Dolphin cone at full charge should throw its shed armour visibly further than a small blast
+   does. (A blast with no `DebrisSpeedLimit` of its own still saturates at the prefab clamp — that
+   is the pre-existing legacy band, not this change.)
+5. A shield with no blow behind it (skim overcharge, `SeedAssembler`, a spawner) still pops with the
+   quiet minimum puff, now in a random direction.
+6. A shield broken by a real force (Rhino sword, `Prism.Damage` shedding a shield) is unchanged —
    it still throws along the breaking vector, not a random one.
-5. Prism count is unchanged by the pop (this is photons only: no mass is created or destroyed).
+7. Prism count is unchanged by the pop (this is photons only: no mass is created or destroyed).

@@ -34,6 +34,24 @@ namespace CosmicShore.Gameplay
         public BlockState CurrentState { get; private set; } = BlockState.Normal;
 
         /// <summary>
+        /// Magnitude of the impact vector that CAUSED this temporary shield, and the
+        /// true-velocity ceiling that came with it — carried from the shielding blow to
+        /// the timed pop that ends it (see <see cref="ExecuteTimerDeactivation"/>).
+        /// 0 = nobody supplied one (an ability, a skim, a spawner), which pops at the
+        /// debris band's authored floor instead.
+        /// </summary>
+        float _popImpactSpeed;
+        float _popSpeedLimit;
+
+        /// <summary>
+        /// The shielding blow is ABSORBED, so the pop it schedules must not read as the
+        /// full blast arriving late: the shed carries HALF the magnitude the explosion
+        /// handed the prism. Half of an absorbed hit, in a random direction — the shield
+        /// gave the rest back to the mass it was protecting.
+        /// </summary>
+        const float TimedPopImpactFraction = 0.5f;
+
+        /// <summary>
         /// True while this prism is still being CREATED — a shield engaged here is part
         /// of the prism's birth, not a transition on live mass, so it engages/disengages
         /// INSTANTLY (no per-face bloom, no shatter overlay, no state SFX).
@@ -130,10 +148,30 @@ namespace CosmicShore.Gameplay
             SyncAOERegistryShieldState();
         }
 
-        public void ActivateShield(float? duration = null)
+        /// <param name="popImpactSpeed">
+        /// Magnitude of the impact vector of whatever caused this shield, when the caller
+        /// has one — an explosion's <c>Speed x Inertia</c>. A TIMED shield sheds along
+        /// <see cref="TimedPopImpactFraction"/> of it when it pops; 0 falls back to the
+        /// debris band's authored floor. Recorded even for an untimed shield, so a later
+        /// <c>DeactivateShields(delay)</c> pops on the same terms.
+        /// </param>
+        /// <param name="popSpeedLimit">
+        /// True-velocity ceiling that rode with that impact (<c>ExplosionImpulse.
+        /// DebrisSpeedLimit</c>), as on <see cref="Prism.Damage"/>; 0 = authored band.
+        /// Without it a halved AOE magnitude is meaningless — every AOE impulse sits far
+        /// above the explosion prefab's 33.33 u/s clamp, so full and half both saturate
+        /// to the same speed.
+        /// </param>
+        public void ActivateShield(float? duration = null, float popImpactSpeed = 0f,
+            float popSpeedLimit = 0f)
         {
             // Cancel any pending timer before applying new state
             PrismTimerManager.EnsureInstance().CancelTimers(this);
+
+            // Written unconditionally: a re-shield by a different force must not pop on
+            // the previous force's magnitude.
+            _popImpactSpeed = popImpactSpeed;
+            _popSpeedLimit = popSpeedLimit;
 
             ApplyShieldState();
 
@@ -180,9 +218,9 @@ namespace CosmicShore.Gameplay
         /// overlay is ordinary prism-explosion debris, so this is the same vector — with
         /// the same clamp semantics — a prism death hands its own debris
         /// (Docs/PRISM_ANIMATION.md §4.8.1). Zero degrades to the impactless-death puff.
-        /// A DELAYED deactivation drops it — by the time that timer fires, whatever was
-        /// moving when it was scheduled has moved on — and sheds isotropically instead
-        /// (see <see cref="ExecuteTimerDeactivation"/>).
+        /// A DELAYED deactivation drops the VECTOR — by the time that timer fires, that
+        /// direction is a lie — and sheds along half the recorded blow's magnitude in a
+        /// random direction instead (see <see cref="ExecuteTimerDeactivation"/>).
         /// </param>
         /// <param name="debrisSpeedLimit">True-velocity ceiling, as on Prism.Damage; 0 = authored band.</param>
         public void DeactivateShields(float? delay = null, Vector3 breakVelocity = default,
@@ -204,38 +242,56 @@ namespace CosmicShore.Gameplay
         /// Called by PrismTimerManager when a scheduled deactivation timer expires — the
         /// end of every TEMPORARY shield (<c>ActivateShield(duration)</c> and
         /// <c>DeactivateShields(delay)</c> both land here), and the one and only place a
-        /// shield comes off with no breaking force behind it.
+        /// shield comes off with no BREAKING force behind it.
         ///
         /// That is exactly the case the temporary shield exists for: an explosion meeting
         /// its own domain's mass shields the prism rather than passing through it, so the
         /// blast reads as ACCEPTED instead of as clipping. The pop that ends it therefore
         /// has to read as a pop — so the shards are shed along
-        /// <see cref="TimedPopBreakVelocity"/>, a random direction on the unit sphere at
-        /// the debris band's own authored minimum speed. Without it every timed pop handed
-        /// the shatter a zero vector, which <c>GeometryUtils.ClampMagnitude</c> resolves to
-        /// the stable <c>Vector3.up</c> fallback: the whole arena's shields drifting
-        /// upward in lockstep at one speed.
+        /// <see cref="TimedPopBreakVelocity"/>: a random direction on the unit sphere at
+        /// HALF the magnitude of the blast that shielded it. Without it every timed pop
+        /// handed the shatter a zero vector, which <c>GeometryUtils.ClampMagnitude</c>
+        /// resolves to the stable <c>Vector3.up</c> fallback — the whole arena's shields
+        /// drifting upward in lockstep at one speed.
+        ///
+        /// Cost is the pooled-debris path's, unchanged: the shed is ONE clock-stamped
+        /// batched debris entity (PrismShieldMorph.RequestShatter → PrismShieldShatter →
+        /// PrismRenderService), stamped once and run out on the GPU shader clock with zero
+        /// further CPU writes, and the timer itself is PrismTimerManager's single
+        /// scheduled end-state swap. This method adds three floats and a
+        /// <c>Random.onUnitSphere</c> — no per-frame work exists here to make performant.
         /// </summary>
         internal void ExecuteTimerDeactivation()
         {
-            ApplyNormalState(TimedPopBreakVelocity());
+            ApplyNormalState(TimedPopBreakVelocity(), _popSpeedLimit);
         }
 
         /// <summary>
-        /// The isotropic minimum puff a timed shield pop sheds along. Magnitude is the
-        /// debris pipeline's OWN authored floor (the pooled <c>PrismExplosion</c> prefab's
-        /// <c>minSpeed</c>, read through <see cref="CosmicShore.Utility.PrismDebris.TryGetExplosionConfig"/>),
-        /// never a number of this class's own: a shield shard is ordinary prism-explosion
-        /// debris (Docs/PRISM_ANIMATION.md §4.8.1), so "small" is already authored once for
-        /// the whole game and a local constant would be a second, drifting copy of it. Only
-        /// the DIRECTION is added here. If the config is unavailable the shatter is refused
-        /// upstream anyway, so the unit vector that falls out is inert.
+        /// What a timed pop sheds along: <see cref="TimedPopImpactFraction"/> of the
+        /// magnitude the shielding blow carried, in a random direction on the unit sphere.
+        /// The direction is randomized because the impact vector's own direction is a lie
+        /// by the time the timer fires — the blast is over, and re-using it would fan every
+        /// prism in the blast outward in one coherent sheet a beat after the explosion that
+        /// would explain it has gone.
+        ///
+        /// With no magnitude recorded (an ability, a skim, a spawner — anything that
+        /// shields without a blow), it falls back to the debris pipeline's OWN authored
+        /// floor: the pooled <c>PrismExplosion</c> prefab's <c>minSpeed</c>, read through
+        /// <see cref="CosmicShore.Utility.PrismDebris.TryGetExplosionConfig"/>, never a
+        /// number of this class's own. A shield shard is ordinary prism-explosion debris
+        /// (Docs/PRISM_ANIMATION.md §4.8.1), so "small" is already authored once for the
+        /// whole game and a local constant would be a second, drifting copy of it. If that
+        /// config is unavailable the shatter is refused upstream anyway, so the unit vector
+        /// that falls out is inert.
         /// </summary>
-        static Vector3 TimedPopBreakVelocity()
+        Vector3 TimedPopBreakVelocity()
         {
-            float speed = CosmicShore.Utility.PrismDebris.TryGetExplosionConfig(out _, out float minSpeed, out _)
-                ? minSpeed
-                : 1f;
+            float speed = _popImpactSpeed > 0f
+                ? _popImpactSpeed * TimedPopImpactFraction
+                : (CosmicShore.Utility.PrismDebris.TryGetExplosionConfig(out _, out float minSpeed, out _)
+                    ? minSpeed
+                    : 1f);
+
             return UnityEngine.Random.onUnitSphere * speed;
         }
 
@@ -283,6 +339,11 @@ namespace CosmicShore.Gameplay
             if (stellatedShield != null) stellatedShield.Disengage(birth, breakVelocity, debrisSpeedLimit, stellaBright, stellaDark);
 
             SyncAOERegistryShieldState();
+
+            // Spent: the next shield brings its own blow (or none). Leaving it set would
+            // let an ability-granted shield pop on an explosion that happened minutes ago.
+            _popImpactSpeed = 0f;
+            _popSpeedLimit = 0f;
 
             if (wasShielded && !birth)
                 AudioSystem.Instance.PlayGameplaySFX(GameplaySFXCategory.ShieldDeactivate);
