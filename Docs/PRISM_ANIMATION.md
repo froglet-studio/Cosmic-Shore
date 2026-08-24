@@ -1699,9 +1699,17 @@ the same clock stamps, the same whole-body flight along the breaking impulse
 UV0-anchored erosion wipe and fade, at the same `PrismExplosion.DefaultDuration`, with
 the same velocity clamp band, as base debris. The only differences are the ones that
 SHOULD differ: the mesh (1 triangle per octahedral face where the cube carries 4 per
-side) and the palette (the colours the shield was SHOWING, carried per-entity exactly as
-death debris carries a dying prism's tier colours — see the capture rule below).
-`Prism.Damage`'s shield-shed branch
+side) and the palette (the tier the shield was SHOWING, carried per-entity exactly as
+death debris carries a dying prism's tier colours). The palette is a
+`GetPrismKindColors` LOOKUP passed down by `PrismStateManager.GetShedColors` — the same
+source as `PrismFactory`'s death debris — never a read of the renderer at disengage
+time: every state change binds its END-STATE material before it disengages
+(gameplay-final-at-start), so by then the renderer already wears the INCOMING tier and
+reading it painted every shard in plain colours. The octahedron sheds the Shielded
+pair; the stellation sheds the Plain pair, because it deliberately wears the opaque
+plain team material (a SuperShielded-tier lookup would hand it colours it never wore).
+With no pair supplied (the standalone rig, the ContextMenu toggles — where nothing
+repaints), `RequestShatter` still reads the renderer, which is correct there. `Prism.Damage`'s shield-shed branch
 forwards its impact vector and true-velocity ceiling — `DeactivateShields(impactVector,
 debrisSpeedLimit)` — so armour knocked off a prism flies on precisely the terms the prism
 itself would have; an impactless disengage (a shield timer, an arena teardown, a
@@ -1729,32 +1737,6 @@ correctly means authoring the attributes the cube has:
 TEXCOORD1 (the face centroid) stays for the ENGAGE bloom — the one shield-specific
 animation that remains, and it is not a shatter: `PrismShieldMorph` still stamps the
 per-face bloom on the prism's own entity, unchanged from §4.8.
-
-**The shed palette must be CAPTURED, because by the time armour comes off the renderer no
-longer describes the screen.** A prism state change binds its END-STATE material first —
-gameplay-final-at-start, `MaterialPropertyAnimator.ClockColorTransition` — and only then
-disengages the shield, so `PrismStateManager.ApplyNormalState` has already put the *plain*
-domain material on the renderer before `Disengage` runs. Reading the renderer there is
-therefore reading the tier the prism is BECOMING, and every shard flew off in plain prism
-colours while the octahedron on screen had been frosty shielded. The fix is a two-line
-ordering rule, not a lookup: `PrismStateManager.CaptureShedPalette()` reads
-`MaterialPropertyAnimator.TryGetDisplayedColors` **before** the repaint and hands the pair
-down through `Disengage` → `RequestShatter` as a `PrismShedPalette`. That accessor returns
-the analytic current of an in-flight colour travel when there is one, so a shield broken
-mid-transition sheds the colour that was actually on screen, not a resting pair — and it is
-the same value the repaint's own travel starts FROM, which is the whole read: *the prism
-travels plain-ward while its shed armour keeps the frozen start.*
-
-Two things it deliberately is NOT. It is **not** a `GetPrismKindColors(SuperShielded)`
-lookup: `ActivateSuperShield` binds the OPAQUE PLAIN team material on purpose (the
-stellation itself is the tier's read), so a tier lookup would hand those shards colours the
-shield never wore — capture beats lookup precisely because it cannot disagree with the
-screen. And it is **not** an argument for reordering the repaint after the disengage: an
-implicit "must run before" between two statements is the coupling that caused this, so the
-value travels explicitly. A default `PrismShedPalette` still falls back to the renderer,
-which is correct exactly where nothing repaints — the standalone rig and the ContextMenu
-toggles — and an authored `shieldMaterialOverride` (null on every shipped prefab) outranks
-the capture, since that material IS that shield's own look.
 
 **The record of how it went wrong, kept so nobody re-walks it.** Four bespoke shapes
 shipped before the port, each fixing the previous one's symptom:

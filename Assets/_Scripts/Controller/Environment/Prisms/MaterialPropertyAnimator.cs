@@ -126,34 +126,6 @@ namespace CosmicShore.Gameplay
             return true;
         }
 
-        /// <summary>
-        /// The colour pair the prism is DISPLAYING at this instant: the analytic current of
-        /// an in-flight clock transition, else the authored pair of the bound material. It is
-        /// exactly the pair a transition started now would lerp FROM.
-        ///
-        /// Read it BEFORE the repaint that supersedes it. <see cref="ClockColorTransition"/>
-        /// binds the end-state material immediately (gameplay-final-at-start), so once a state
-        /// change has run, the renderer no longer describes what is on screen — which is why
-        /// shed shield armour cannot resolve its own colours from the renderer at disengage
-        /// time (Docs/PRISM_ANIMATION.md §4.8.1).
-        /// </summary>
-        internal bool TryGetDisplayedColors(out Color bright, out Color dark)
-        {
-            if (TryGetClockColorCurrent(out bright, out dark, out _)) return true;
-
-            var current = MeshRenderer != null ? MeshRenderer.sharedMaterial : null;
-            if (current == null)
-            {
-                bright = default;
-                dark = default;
-                return false;
-            }
-
-            bright = current.HasProperty(BrightColorId) ? current.GetColor(BrightColorId) : Color.white;
-            dark = current.HasProperty(DarkColorId) ? current.GetColor(DarkColorId) : Color.white;
-            return true;
-        }
-
         public void UpdateMaterial(Material transparentMaterial, Material opaqueMaterial, float duration = 0.8f, Action onComplete = null)
         {
             if (!enabled || MeshRenderer == null) return;

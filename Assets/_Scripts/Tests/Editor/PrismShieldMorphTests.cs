@@ -6,7 +6,6 @@ using System.Text.RegularExpressions;
 using NUnit.Framework;
 using UnityEngine;
 using CosmicShore.Utility;
-using CosmicShore.Gameplay;
 
 namespace CosmicShore.Tests
 {
@@ -465,51 +464,6 @@ namespace CosmicShore.Tests
                 Assert.IsFalse(src.Contains("public static void PopulateMeshFaceShatter"),
                     $"{Path.GetFileName(path)} still offers a CPU per-face shatter rebuild.");
             }
-        }
-
-        [Test]
-        public void ShedPalette_DistinguishesCapturedFromResolved()
-        {
-            // The sentinel that routes RequestShatter: default means "nobody captured the
-            // outgoing look", which is the ONLY case allowed to fall back to the renderer.
-            Assert.IsFalse(default(PrismShedPalette).HasValue,
-                "A default PrismShedPalette must read as 'not captured'.");
-            Assert.IsTrue(new PrismShedPalette(Color.red, Color.blue).HasValue,
-                "A constructed PrismShedPalette must read as captured.");
-
-            // A resolved palette is never the black an uninitialised struct carries — a
-            // shatter that falls back must still be visible.
-            var noMaterial = PrismShedPalette.FromMaterial(null);
-            Assert.IsTrue(noMaterial.HasValue);
-            Assert.AreEqual(Color.white, noMaterial.Bright);
-            Assert.AreEqual(Color.white, noMaterial.Dark);
-        }
-
-        [Test]
-        public void EveryShieldDisengage_IsHandedACapturedPalette()
-        {
-            // Docs/PRISM_ANIMATION.md §4.8.1: a state change binds its END-STATE material
-            // first, so PrismStateManager's renderer already wears the incoming tier by the
-            // time it disengages. Any Disengage call there that does not carry the capture
-            // paints its shards in the tier the prism is BECOMING — which is exactly the
-            // defect this rule exists to prevent, and it is invisible without a playtest.
-            const string path = "Assets/_Scripts/Controller/Managers/PrismStateManager.cs";
-            string src = File.ReadAllText(path);
-
-            Assert.IsTrue(Regex.IsMatch(src, @"CaptureShedPalette\s*\(\s*\)\s*=>"),
-                "PrismStateManager must own the capture helper (CaptureShedPalette).");
-
-            var calls = Regex.Matches(src, @"\.Disengage\(([^)]*)\)")
-                             .Cast<Match>()
-                             .Select(m => m.Groups[1].Value)
-                             .ToList();
-            Assert.IsNotEmpty(calls, "Expected PrismStateManager to disengage shields.");
-
-            foreach (var args in calls)
-                Assert.IsTrue(args.TrimEnd().EndsWith("shed"),
-                    $"PrismStateManager calls Disengage({args}) without the captured shed " +
-                    "palette as its last argument — those shards will wear the INCOMING " +
-                    "tier's colours (Docs/PRISM_ANIMATION.md §4.8.1).");
         }
     }
 }
