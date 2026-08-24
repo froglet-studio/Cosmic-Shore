@@ -2031,36 +2031,6 @@ namespace CosmicShore.Gameplay
         public bool IsSatellite { get; private set; }
 
         /// <summary>
-        /// Bring this cell up at runtime as a <b>satellite</b> of an already-running scene: a
-        /// second, fully-isolated cell that lives alongside the scene's own one instead of
-        /// replacing it.
-        ///
-        /// <para>Everything that makes two cells safe together is already per-instance — the
-        /// volume summation id (<c>_volumeCellId</c>, handed out from a static counter in
-        /// <c>OnEnable</c>), the spatial-index bindings keyed by it, the block/domain/fauna books,
-        /// and every lattice colony frontier (all keyed by <c>this</c>). What is NOT per-instance
-        /// is the <see cref="CellRuntimeDataSO"/>, which is a shared ASSET — so a satellite must be
-        /// handed its own <b>instance</b> (<c>Instantiate</c> the asset), or it would fight the
-        /// scene's cell over one Config, one crystal list and one stats table.</para>
-        ///
-        /// <para>This is the opposite trade from <see cref="RequestCellSwap"/>: a swap replaces the
-        /// world and keeps the collider budget flat, a satellite keeps the world and pays for a
-        /// second one. Use it only when the scene's own cell must survive untouched — the mode
-        /// preview's windowed arena is the case it was written for — and state the collider-budget
-        /// impact when you do (Docs/ECOSYSTEM_MASTERPLAN.md §4).</para>
-        ///
-        /// <para>Mass is conserved: nothing here is on a clock. A satellite is created by an
-        /// explicit player action and removed by one, the same event class as a cell swap or a
-        /// scene load (Docs/ECOSYSTEM.md §19).</para>
-        /// </summary>
-        /// <param name="config">The world this satellite becomes. Latched before
-        /// <c>AssignConfig</c> runs, so the scene's own config-choice rules never apply to it.</param>
-        /// <param name="runtimeData">A runtime data instance this cell OWNS. Pass
-        /// <c>Instantiate(asset)</c>, never the shared asset.</param>
-        /// <summary>The runtime data this cell is bound to. Clone it to bring up a satellite.</summary>
-        public CellRuntimeDataSO RuntimeData => runtime;
-
-        /// <summary>
         /// Hand this cell its OWN runtime data instance. <b>Must be called while the cell is still
         /// inactive</b>, before <c>OnEnable</c> has run.
         ///
@@ -2083,9 +2053,30 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// Bring this satellite up on <paramref name="config"/>. Call after the cell has been
-        /// activated and <see cref="BindSatelliteRuntime"/> has given it its own runtime data.
+        /// Bring this cell up at runtime as a <b>satellite</b> of an already-running scene: a
+        /// second, fully-isolated cell that lives alongside the scene's own one instead of
+        /// replacing it. Call after the cell has been activated and
+        /// <see cref="BindSatelliteRuntime"/> has given it its own runtime data.
+        ///
+        /// <para>Everything that makes two cells safe together is already per-instance — the
+        /// volume summation id (<c>_volumeCellId</c>, handed out from a static counter in
+        /// <c>OnEnable</c>), the spatial-index bindings keyed by it, the block/domain/fauna books,
+        /// and every lattice colony frontier (all keyed by <c>this</c>). What is NOT per-instance
+        /// is the <see cref="CellRuntimeDataSO"/>, which is a shared ASSET — which is what
+        /// <see cref="BindSatelliteRuntime"/> exists to hand over, and why it must run first.</para>
+        ///
+        /// <para>This is the opposite trade from <see cref="RequestCellSwap"/>: a swap replaces the
+        /// world and keeps the collider budget flat, a satellite keeps the world and pays for a
+        /// second one. Use it only when the scene's own cell must survive untouched — the mode
+        /// preview's windowed arena is the case it was written for — and state the collider-budget
+        /// impact when you do (Docs/ECOSYSTEM_MASTERPLAN.md §4).</para>
+        ///
+        /// <para>Mass is conserved: nothing here is on a clock. A satellite is created by an
+        /// explicit player action and removed by one, the same event class as a cell swap or a
+        /// scene load (Docs/ECOSYSTEM.md §19).</para>
         /// </summary>
+        /// <param name="config">The world this satellite becomes. Latched before
+        /// <c>AssignConfig</c> runs, so the scene's own config-choice rules never apply to it.</param>
         public bool InitializeSatellite(CellConfigDataSO config)
         {
             if (!Application.isPlaying) return false;

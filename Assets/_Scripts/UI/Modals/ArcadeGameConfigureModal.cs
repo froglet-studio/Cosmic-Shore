@@ -164,10 +164,6 @@ namespace CosmicShore.UI
         VideoPlayer   _previewVideo;
         bool _isClientMode;
 
-        // The game a Test Flight was started from, so the modal can reopen on the same card
-        // when the flight ends. Cleared the moment it is used - a stale one would reopen the
-        // modal over an unrelated screen.
-        SO_ArcadeGame _previewReturnGame;
         ModePreviewSession _resolvedPreviewSession;
         bool _previewSessionSubscribed;
 
