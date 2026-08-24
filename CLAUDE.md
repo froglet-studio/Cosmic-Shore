@@ -2766,11 +2766,18 @@ scale bump** with a one-shot unlock punch.
 - **Fleet status** (audit it yourself: **FrogletTools > Vessels > Audit Vessel Ability Rows**, which
   reports every vessel's compliance against this contract from assets alone, no play mode):
 
+  Measured scorecard, the six open design decisions and the sequenced prompts that close
+  them: `Docs/ElementalAbilitySystem/COMPLETION_PUSH.md`. Only **Squirrel, Manta and
+  Serpent** HUDs are true variants of `VesselHUDPrefab` and so inherit its
+  `InputDeviceIconSetSwitcher`; Sparrow, Dolphin, Scarab and Rhino are hard copies and
+  their control hints cannot bind until one is added.
+
   | vessel | map | icons | order | uniform | hints |
   |---|---|---|---|---|---|
   | Squirrel | complete | 4/4 | ✅ | ✅ | ✅ bound |
   | Sparrow | 4/4 named, **4/4 upgrades** (Time re-scoped 2026-08: indefinite boost, base roll, Elemental Ward. **Mass L5 = Shielded Prisms again** — it briefly moved to Space 5 in 2026-08 round 4 and was returned by design sign-off on 2026-08-13, settling the split: **MASS owns the SUBSTANCE of what you fire** (turret prism stretch, in-flight round growth, armour) and **SPACE owns its REACH** (range, and pierce on both fire modes)) | 4/4 | ✅ | ✅ | ⚠ no switcher on its HUD |
   | Dolphin | complete | 4/4 | ✅ | ✅ | ⚠ no switcher on its HUD |
+  | Scarab | 4/4 named, **3/4 upgrades** — Space 5 is deliberately open (`SCARAB.md` §7 and the asset's own `UpgradeDescription` say do not invent one without sign-off) | 4/4 | ✅ | ✅ | ⚠ no switcher — its HUD is a hard copy, not a variant of `VesselHUDPrefab` |
   | Urchin | complete (4/4 named, 4/4 upgrades; re-cut 2026-08-18 — Charge owns the merged spike weapon, Space the new track projector) | 0/4 | — | — | n/a — **no `UrchinHUDVariant.prefab` exists**, so `UrchinVesselHUDController`/`View` are unreferenced code |
   | Manta | 3/4 named, 0/4 upgrades | 0/4 | — | — | n/a |
   | Rhino | 1/4 named, 0/4 upgrades | 0/4 | — | — | n/a |

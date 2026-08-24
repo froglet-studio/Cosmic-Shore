@@ -11,6 +11,10 @@ fundamentals).
 
 ## 1. What is live on every vessel now
 
+> **Fleet completion status, the measured scorecard, the six open design decisions and the
+> sequenced prompts that close them live in `COMPLETION_PUSH.md` (2026-08-24).** That doc is
+> derived from the assets; where it and a table here disagree, the asset wins.
+
 - **Display (required, structural):** any vessel without an authored `ElementalBarsView`
   auto-creates one on its HUD canvas (`ElementalBarsController.CreateDefaultElementBars`), and a
   view with no authored bindings self-populates the standard four flowers
@@ -80,8 +84,8 @@ beside the code: `_Scripts/Controller/Vessel/R_VesselActions/SPARROW_AFTERBURNER
 | Element | Quantitative (LIVE) | L5 upgrade (LIVE) |
 |---|---|---|
 | Charge | skyburst blast radius (authored on the skyburst effect assets, 100→170) | **Domain-Safe Skybursts** — explosions spare your own domain's prisms |
-| Mass | turret-fired prism stretch (2.5) | *(open again — Shielded Prisms moved to Space 5, 2026-08 round 4)* |
-| Space | gun range (steepened: base halved twice, atFull 9 — SPACE 15 unchanged) | **Piercing Bullets** — shots pierce, and turret prisms arrive SHIELDED with a wider hit sphere (moved from Mass 5, 2026-08 round 4) |
+| Mass | turret-fired prism stretch (2.5) | **Shielded Prisms** — prisms fired in the turret stance arrive shielded. It spent 2026-08 rounds 4–6 on Space 5 and was **returned to Mass by design sign-off on 2026-08-13**; `Sparrow.asset` is the record |
+| Space | gun range (steepened: base halved twice, atFull 9 — SPACE 15 unchanged) | **Piercing Bullets** — shots pierce instead of being destroyed on first prism impact, on BOTH fire modes. The shielded-turret-prism half briefly rode here in 2026-08 rounds 4–6 and went back to Mass 5 |
 | Time | boost SPEED (1.5), consumed by `VesselTransformer.CurrentBoostAmount()` | **Elemental Ward** — while boosting, negative `ApplyElementalEffect` calls are dropped, for every debuff source class (`VesselElementalImmunity.wardedSources: All` → `ResourceSystem.IsImmuneTo`) |
 
 **TIME row, changed 2026-08 — do not restore the old design:**
@@ -367,7 +371,12 @@ the record; do not re-litigate from a superseded pass.**
 - Domain-sparing: explosion/collection layer only — never `Prism.Damage`, never danger effects.
 - Fill in each map's `UpgradeLabel`/`UpgradeDescription` when a row is approved; the HUD reads
   the map.
-- The `Input` fields are filled on Sparrow (4/4), Dolphin (3/4), Squirrel (2/4) and Urchin (3/4 —
-  Trail Rider is deliberately 0 because it is **passive**, not because it is unset). Manta, Rhino
-  and Serpent are 0 across the board — fill during HUD icon work. A genuine 0 and a passive
-  ability are indistinguishable in the asset, so say which it is in the row.
+- The `Input` fields, re-measured against the assets 2026-08-24: **Sparrow 4/4**; **Dolphin 2/4
+  named** (Charge `1`, Time `2`) **+ 2 passive by design** (Mass is the seeding loop, Space is
+  released by flying into a crystal); **Squirrel 2/4 named + 2 passive** — and note its two named
+  values `12`/`11` are the **touch** bindings while gamepad runs `2`/`1` via
+  `_gamepadActionOverrides`; **Urchin 3/4 + 1 passive** (Trail Rider is deliberately `0`);
+  **Scarab 2/4 named** (Mass `6`, Time `1`) **+ 2 passive** (Charge rides the base-kit RT dash,
+  Space is the fly-through forge). Manta, Rhino and Serpent are 0 across the board and genuinely
+  unset — fill during HUD icon work. Because `InputEvents.FullSpeedStraightAction = 0`, a genuine 0
+  and a passive ability are indistinguishable in the asset, so say which it is in the row.

@@ -284,8 +284,12 @@ an ability that *is* bound to an input but has no hint labelling it.
 Reassigning an ability to a different input event in the action handler, or moving an icon in the
 row, now carries the label along with no manual repositioning.
 
-**Fleet status.** Squirrel, Sparrow and Dolphin author the row (four buttons, four bindings, uniform
-pitch and slot size, charge → mass → space → time). The Dolphin runs with **both**
+**Fleet status** (re-measured from the prefabs 2026-08-24). Squirrel, Sparrow, Dolphin **and Scarab**
+author the row (four buttons, four bindings, uniform pitch and slot size, charge → mass → space →
+time). Manta, Rhino and Serpent have HUD variants with **no** `abilityIcons` bindings; the **Urchin
+has no HUD variant at all**, so its complete map has nowhere to draw. Nothing binds the row from a
+*vessel* prefab — checked, since the Rhino's row was once missed by looking only at the HUD side.
+See `COMPLETION_PUSH.md` for the full scorecard. The Dolphin runs with **both**
 `tintIconOnUpgrade` and `showUpgradeBadge` off, because all four of its icons are live gauges — the
 persistent scale bump is its only upgrade signal, and its Time-slot jaw tint is a *gauge* colour on
 the jaw halves, not an upgrade tint on the (transparent) Time icon. It has no
