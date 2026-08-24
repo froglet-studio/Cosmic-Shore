@@ -1,3 +1,4 @@
+using CosmicShore.Data;
 using CosmicShore.Utility;
 using NUnit.Framework;
 
@@ -140,6 +141,99 @@ namespace CosmicShore.Tests
         {
             Assert.IsFalse(FloraReproductionRules.HasPopulationModel(0));
             Assert.IsTrue(FloraReproductionRules.HasPopulationModel(1));
+        }
+
+        // ── THE TIME LAW ──────────────────────────────────────────────────────
+        //
+        // Time breeds faster, the other three a little slower. Pinned here because the law
+        // lives in CODE rather than in the assets - the quota is authored per config while
+        // the element is ROLLED per plant, so there is no asset a --check could defend it in.
+
+        [Test]
+        public void TimeReproducesFasterThanEveryOtherElement()
+        {
+            float time = FloraReproductionRules.ReproductionRateFor(Element.Time);
+            Assert.Greater(time, 1f, "Time must breed faster than the fleet.");
+
+            foreach (var other in new[] { Element.Charge, Element.Mass, Element.Space })
+            {
+                float rate = FloraReproductionRules.ReproductionRateFor(other);
+                Assert.Less(rate, 1f, $"{other} must breed slower than the fleet.");
+                Assert.Less(rate, time, $"{other} must breed slower than Time.");
+            }
+        }
+
+        [Test]
+        public void EveryNonTimeElementSharesOneRate()
+        {
+            // "Everyone else" is ONE rate, not three - the law is a Time law, not a per-element
+            // ladder, and three drifting constants is how it would become one.
+            Assert.AreEqual(FloraReproductionRules.ReproductionRateFor(Element.Charge),
+                            FloraReproductionRules.ReproductionRateFor(Element.Mass));
+            Assert.AreEqual(FloraReproductionRules.ReproductionRateFor(Element.Charge),
+                            FloraReproductionRules.ReproductionRateFor(Element.Space));
+        }
+
+        [Test]
+        public void ElementlessPlantKeepsTheFleetRate()
+        {
+            // None means "no crystal resolved yet", not "a fourth element" - it must not
+            // silently inherit the penalty.
+            Assert.AreEqual(1f, FloraReproductionRules.ReproductionRateFor(Element.None));
+            Assert.AreEqual(1f, FloraReproductionRules.ReproductionRateFor(Element.Omni));
+        }
+
+        [Test]
+        public void RateIsAppliedAsACostPerChild_SoFasterMeansCheaper()
+        {
+            // The quota (prisms per child) and the colony cycle (seconds per child) are the
+            // same quantity in different units, which is why ONE constant drives both.
+            int fleetQuota = 100;
+            int timeQuota = FloraReproductionRules.ScaleGrowthQuota(
+                fleetQuota, FloraReproductionRules.ReproductionRateFor(Element.Time));
+            int massQuota = FloraReproductionRules.ScaleGrowthQuota(
+                fleetQuota, FloraReproductionRules.ReproductionRateFor(Element.Mass));
+
+            Assert.Less(timeQuota, fleetQuota);
+            Assert.Greater(massQuota, fleetQuota);
+
+            float fleetPeriod = 30f;
+            Assert.Less(FloraReproductionRules.ScaleCostPerChild(
+                fleetPeriod, FloraReproductionRules.ReproductionRateFor(Element.Time)), fleetPeriod);
+            Assert.Greater(FloraReproductionRules.ScaleCostPerChild(
+                fleetPeriod, FloraReproductionRules.ReproductionRateFor(Element.Mass)), fleetPeriod);
+        }
+
+        [Test]
+        public void ScalingNeverTurnsReproductionOnOrOff()
+        {
+            // 0 is the species saying "I do not reproduce" (56 of 85 flora configs). No element
+            // may scale a species into breeding...
+            foreach (var element in new[] { Element.Time, Element.Charge, Element.Mass, Element.Space })
+            {
+                float rate = FloraReproductionRules.ReproductionRateFor(element);
+                Assert.AreEqual(0, FloraReproductionRules.ScaleGrowthQuota(0, rate));
+                Assert.AreEqual(0f, FloraReproductionRules.ScaleCostPerChild(0f, rate));
+            }
+
+            // ...nor out of it: a small quota scaled by the Time rate must never floor to 0,
+            // which ShouldSeed would read as "does not reproduce".
+            Assert.GreaterOrEqual(
+                FloraReproductionRules.ScaleGrowthQuota(
+                    1, FloraReproductionRules.ReproductionRateFor(Element.Time)), 1);
+        }
+
+        [Test]
+        public void ScaledQuotaStillGatesSeeding()
+        {
+            // The scaled quota is what ShouldSeed actually spends (Flora.TryReproduce), so a
+            // Time plant seeds on growth a fleet plant could not yet afford.
+            int authored = 100;
+            int timeQuota = FloraReproductionRules.ScaleGrowthQuota(
+                authored, FloraReproductionRules.ReproductionRateFor(Element.Time));
+
+            Assert.IsTrue(Seed(growthSinceBirth: timeQuota, growthPerOffspring: timeQuota));
+            Assert.IsFalse(Seed(growthSinceBirth: timeQuota, growthPerOffspring: authored));
         }
     }
 }
