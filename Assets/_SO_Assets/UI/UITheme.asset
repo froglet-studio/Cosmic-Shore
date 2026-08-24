@@ -1,0 +1,48 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e32e064df5d24411b14aaa8edd2feed0, type: 3}
+  m_Name: UITheme
+  m_EditorClassIdentifier: 
+  surfaceVoid: {r: 0.02745098, g: 0.03529412, b: 0.05882353, a: 1}
+  surfaceHull: {r: 0.05490196, g: 0.0745098, b: 0.10980392, a: 1}
+  surfacePlate: {r: 0.09019608, g: 0.11764706, b: 0.16470588, a: 1}
+  surfaceRaise: {r: 0.12941176, g: 0.16862745, b: 0.22745098, a: 1}
+  borderRule: {r: 0.16470588, g: 0.20392157, b: 0.26666667, a: 1}
+  borderRuleHigh: {r: 0.23921569, g: 0.29019608, b: 0.36862745, a: 1}
+  textSignal: {r: 0.90980392, g: 0.92941176, b: 0.96078431, a: 1}
+  textBody: {r: 0.7254902, g: 0.76862745, b: 0.82352941, a: 1}
+  textMuted: {r: 0.48627451, g: 0.53333333, b: 0.6, a: 1}
+  textFaint: {r: 0.30588235, g: 0.35294118, b: 0.41960784, a: 1}
+  systemAccent: {r: 0.30980392, g: 0.83529412, b: 0.90980392, a: 1}
+  systemDim: {r: 0.16470588, g: 0.54117647, b: 0.6, a: 1}
+  attention: {r: 0.65098039, g: 0.48627451, b: 1.0, a: 1}
+  danger: {r: 1.0, g: 0.36078431, b: 0.22745098, a: 1}
+  spacing:
+  - 4
+  - 8
+  - 12
+  - 16
+  - 24
+  - 32
+  - 48
+  - 64
+  - 96
+  chamferLarge: 14
+  chamferSmall: 10
+  hairline: 1
+  stroke: 2
+  durMicro: 0.12
+  durStd: 0.2
+  durPanel: 0.32
+  durCeremony: 0.5
+  staggerStep: 0.04
+  staggerCap: 8
