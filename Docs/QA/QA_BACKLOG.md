@@ -30,28 +30,6 @@ fill the table, commit. Full workflow: `Docs/QA/README.md`.
 
 ## Priority 0 — gates. Nothing below matters if these fail.
 
-### QA-BUILD-COMPILE ⬜ — the project compiles, imports and boots
-**Source:** every headless branch since #583; the newest wave is #675–#710 plus the
-Dog Fight / Wildlife Liberation / Astro League direct merges. **Why P0:** ~30
-branches of hand-authored C#, prefab, scene and ScriptableObject YAML have never
-been through Unity's importer or compiler.
-
-1. Open the project in Unity. Wait until it has finished importing and compiling —
-   the progress bar is gone and the spinner in the bottom-right has stopped.
-2. Read the whole Console. Record every **compile error**, every `Missing (Mono Script)`,
-   every "broken/dangling reference", and every meta-file regeneration warning.
-3. Launch to `Menu_Main`. Enter freestyle. Return to the menu. Launch one arcade
-   game (any) and return home.
-
-**PASS:** zero compile errors; no `Missing (Mono Script)` on any object you touched;
-the app reaches `Menu_Main`, freestyle and one game round without an exception.
-**FAIL:** any compile error, any missing script, or an exception that stops the boot
-or the round. Record the full first error verbatim — everything else on this list is
-blocked behind it.
-**Known, do not fail on:** `SerpentHUDVariant.prefab` and `VesselHUDPrefab.prefab`
-carry a pre-existing missing script (guid `57dc27a3f7264d548b51007c0615f701`), and
-Manta/Serpent carry pre-existing dangling package `m_Script` guids.
-
 ### QA-BUILD-WINDOWS-PLAYER ⬜ — a Windows IL2CPP player reaches the main menu
 **Source:** PRs #688, #690, #692, #693, #698, #699. **Why P0 and why it is separate
 from QA-BUILD-COMPILE:** every defect in this chain was **invisible in the Editor**.

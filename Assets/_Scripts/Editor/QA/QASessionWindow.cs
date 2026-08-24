@@ -343,6 +343,157 @@ var sb = new StringBuilder();
             }
         }
 
+        // ── Finishing a session ───────────────────────────────────────────────────
+
+        /// <summary>
+        /// The whole end of the process behind ONE button: validate + publish the
+        /// verdicts, hand the file to git, say what happened, and offer the next test.
+        ///
+        /// Deliberately NOT included: <c>apply_results.py</c>. That rewrites the three
+        /// SHARED generated files (QA_BACKLOG / ARCHIVE / DEV_TASKS), so running it per
+        /// tester would have every session racing the same three files, and a FAIL would
+        /// land as a bare dev task — the `/qa-backlog` skill enriches each one with its
+        /// source PR and likely files, which is the difference between a task and a
+        /// research assignment. Applying stays a central batch step; the tester's job
+        /// ends when their results are pushed.
+        /// </summary>
+        void SubmitAndFinish()
+        {
+            var offered = 0;
+            foreach (var row in _state.rows)
+                if (!row.frozen && !string.IsNullOrWhiteSpace(row.verdict)) offered++;
+
+            Run("submit");
+
+            if (_state == null || !_state.submitted)
+            {
+                EditorUtility.DisplayDialog("Not sent yet",
+                    "Your results were NOT sent — something still needs fixing.\n\n" +
+                    "Each problem is written in red next to the thing it belongs to. " +
+                    "Fix them and press Submit again.\n\nNothing you have typed is lost.",
+                    "Back to the form");
+                return;
+            }
+
+            var publish = PublishSession();
+            var next = NextBacklogItemId();
+
+            var message = offered == 1
+                ? "1 verdict sent. Thank you — that is one more thing that is no longer untested."
+                : offered + " verdicts sent. Thank you — that is " + offered +
+                  " more things that are no longer untested.";
+            message += "\n\n" + publish;
+
+            if (string.IsNullOrEmpty(next))
+            {
+                EditorUtility.DisplayDialog("Results submitted", message +
+                    "\n\nThere are no more tests on the list. Nothing else to do.", "Close");
+                Close();
+                return;
+            }
+
+            var title = TitleOf(next);
+            if (EditorUtility.DisplayDialog("Results submitted",
+                    message + "\n\nWould you like to run the next test?\n\n" + next +
+                    (string.IsNullOrEmpty(title) ? "" : "\n" + title),
+                    "Yes — start the next test", "No — I am done for now"))
+            {
+                Run("set", "--item", next, "--verdict", "");
+                _instructionsOpen[next] = true;
+                _scroll = Vector2.zero;
+            }
+            else
+            {
+                Close();
+            }
+        }
+
+        /// <summary>
+        /// Commit and push the session file, its evidence and the ledger — and NOTHING
+        /// else (FrogletGit's pathspec keeps the tester's own staged work untouched).
+        ///
+        /// Never switches branch: a checkout mid-session is the one git operation that
+        /// could disturb the build being tested. On a protected branch (bleeding-edge)
+        /// it pushes to a `qa/results-…` branch via a refspec instead, which needs no
+        /// local checkout at all.
+        /// </summary>
+        string PublishSession()
+        {
+            var stem = _state.sessionFile.EndsWith(".md")
+                ? _state.sessionFile.Substring(0, _state.sessionFile.Length - 3)
+                : _state.sessionFile;
+            var paths = new List<string>
+            {
+                "Docs/QA/RESULTS/" + _state.sessionFile,
+                "Docs/QA/.applied.json",
+            };
+            var evidence = Path.Combine(RepoRoot, "Docs", "QA", "RESULTS", "evidence", stem);
+            if (Directory.Exists(evidence)) paths.Add("Docs/QA/RESULTS/evidence/" + stem);
+
+            var manual = "Your results are saved in the file, but they are NOT on the " +
+                         "server yet. In GitHub Desktop, commit and push these:\n" +
+                         "    Docs/QA/RESULTS/" + _state.sessionFile + "\n" +
+                         "    Docs/QA/.applied.json";
+
+            if (!FrogletGit.IsAvailable) return manual;
+
+            try
+            {
+                EditorUtility.DisplayProgressBar("Sending your results", "Saving to git…", 0.3f);
+                var add = FrogletGit.Add(paths);
+                if (!add.Ok) return manual + "\n\n(git add failed: " + add.Text.Trim() + ")";
+
+                var commit = FrogletGit.Commit(
+                    "docs(qa): " + _state.tester + " session results, " + _state.date, paths);
+                if (!commit.Ok && !FrogletGit.NothingToCommit(commit))
+                    return manual + "\n\n(git commit failed: " + commit.Text.Trim() + ")";
+
+                EditorUtility.DisplayProgressBar("Sending your results", "Uploading…", 0.7f);
+                var branch = FrogletGit.CurrentBranch();
+                if (FrogletGit.IsProtectedBranch(branch))
+                {
+                    // Shared branch — publish to a QA branch of this session's own name.
+                    var qa = "qa/results-" + stem;
+                    var push = FrogletGit.Run("push", "-u", "origin",
+                                              "HEAD:refs/heads/" + qa);
+                    return push.Ok
+                        ? "Sent to the server on branch " + qa + ". Engineering picks it " +
+                          "up from there — nothing more for you to do."
+                        : manual + "\n\n(git push failed: " + push.Text.Trim() + ")";
+                }
+
+                var pushed = FrogletGit.PushWithRetry(branch);
+                return pushed.Ok
+                    ? "Sent to the server on branch " + branch + " — nothing more for you to do."
+                    : manual + "\n\n(git push failed: " + pushed.Text.Trim() + ")";
+            }
+            catch (System.Exception e)
+            {
+                return manual + "\n\n(" + e.GetType().Name + ": " + e.Message + ")";
+            }
+            finally
+            {
+                EditorUtility.ClearProgressBar();
+            }
+        }
+
+        /// <summary>Top of the backlog that is not already in this session.</summary>
+        string NextBacklogItemId()
+        {
+            if (_state?.backlog == null) return null;
+            var present = new HashSet<string>();
+            foreach (var r in _state.rows) present.Add(r.id);
+            foreach (var b in _state.backlog)
+                if (!present.Contains(b.id)) return b.id;
+            return null;
+        }
+
+        string TitleOf(string id)
+        {
+            var item = ItemFor(id);
+            return item == null ? "" : item.priority + " — " + item.title;
+        }
+
         /// <summary>Drop pending edits that the file now agrees with.</summary>
         void PruneNoteEdits()
         {
@@ -975,9 +1126,11 @@ var sb = new StringBuilder();
                 // label together, which is what made this button unreadable; the
                 // palette's own disabled state is a legible Surface/Muted pair.
                 if (FrogletEditorPalette.ColorButton("Submit session", tone, 150f, 26f,
-                        HasUnsavedNotes ? "Save your edited notes first" : null,
+                        HasUnsavedNotes
+                            ? "Save your edited notes first"
+                            : "Sends your verdicts, pushes them, and offers the next test",
                         enabled: _state.canSubmit && !HasUnsavedNotes))
-                    Defer(() => Run("submit"));
+                    Defer(SubmitAndFinish);
             }
             EditorGUILayout.Space(4);
         }

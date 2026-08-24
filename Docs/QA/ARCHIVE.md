@@ -12,5 +12,6 @@ the record of when it last passed and on what build.
 
 | ID | Passed on (commit) | Date | Tester | Notes |
 |---|---|---|---|---|
+| QA-BUILD-COMPILE | `5144ad269` | 2026-08-14 | Caleb |  |
 
 <!-- /qa-archive -->

@@ -296,6 +296,10 @@ Two flags worth knowing:
 
 ## Step 7 — submit
 
+**In the QA Session window this step does not exist** — pressing **Submit session**
+validates, publishes, commits and pushes your results in one go, then tells you what
+happened and offers you the next test. The rest of this step is the by-hand equivalent.
+
 Say to Claude:
 
 > **"My QA results are in `Docs/QA/RESULTS/<date>-<yourname>.md` — apply them."**
