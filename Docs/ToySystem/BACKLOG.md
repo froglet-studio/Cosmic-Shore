@@ -303,6 +303,10 @@ teardown). Everything below is remaining polish / not-yet-play-verified.
    held drift pins cruise speed at the value carried in). Release several of DIFFERENT classes:
    only Dolphin / Rhino / Serpent / Sparrow have an authored AI ability, and the Dolphin's is a
    drift, so that hull is the one that exposes a launch-speed regression first.
+   **The RHINO is the known exception and is NOT a toy bug**: its trail is 0.75 volume per prism
+   (4x smaller than any other hull's) and reads as absent at any distance, because its
+   trail-growing ability has never run. Cause, the reason the one-line fix is unsafe alone, and
+   the design fork it needs: `Docs/ElementalAbilitySystem/BACKLOG.md` item 27.
 3. Change domain at the domain-changer toy and come back: every mini hull re-tints in place, and
    the next companion you release joins the new domain.
 4. **Party check (the point of the ServerRpc):** with a second client joined, release a companion

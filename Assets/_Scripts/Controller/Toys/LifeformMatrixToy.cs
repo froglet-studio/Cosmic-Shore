@@ -669,8 +669,12 @@ namespace CosmicShore.Gameplay
             var pose = new Pose(position, Quaternion.LookRotation(inward, transform.up));
 
             Domains domain = ToyVesselRoster.PlayerDomain(Context);
+            // "Requested", not "released": on a party CLIENT this is a ServerRpc going out, and
+            // the server is the only thing that can say whether a companion actually appeared
+            // (it logs that end itself). Claiming completion here would be a lie on every
+            // machine that is not the host.
             init.RequestSpawnAiCompanion(vessel, domain, pose);
-            CSDebug.Log($"[LifeformMatrix] Released a {vessel} companion ({domain}) at {position}.");
+            CSDebug.Log($"[LifeformMatrix] Requested a {vessel} companion ({domain}) at {position}.");
         }
 
         // ── Stations ─────────────────────────────────────────────────────────
