@@ -27,6 +27,22 @@
 > must not make balls a resource you can waste); it remains available per-mode via
 > `destroyedBySuperShielded` + a lined court. Astro League itself is unchanged (its ball never
 > locks ownership; the touch ledger is inert bookkeeping there).
+>
+> **STATUS UPDATE 3 (2026-08-24): the switch's Vogel-spiral interior fill is RETIRED, and the
+> ring is 20% larger.** `ScarabSwitch` no longer lays a disc of body prisms across the mouth at
+> placement — it blooms in as a bare ring and stays that way until struck, at which point the
+> **payout dais is unchanged** (still the only prism mass a switch ever carries). Requested
+> directly: the placement-time fill read as clutter, the dais is the payout everyone wants kept.
+> Two things this retires along with it, both now dead until a future pass revives them
+> intentionally: the **MASS-5 "Armored Switch" upgrade** (§7's table) has no body left to build
+> from shielded prisms, so it currently has no gameplay effect; and an opposing ball threading the
+> mouth no longer has to "eat its way in" (§5's original framing) — the mouth is unobstructed for
+> every ball. `PlaceSwitchActionSO.ringRadius` moved **20 → 24** (`switchScale`/MASS still scales
+> from there); `interiorPrismCount` and `brickScale` are deleted fields, not just zeroed. The §8
+> Astro-League-integration volume-ladder derivation (`RestlessEnterVolume` et al., already
+> authored onto `Astro League Cell Config.asset`) is **unaffected** — it is built from the DAIS's
+> 50,773 volume per spent switch, not the retired 840-volume interior fill, which was only ever a
+> transient blip on top.
 
 > **Original design gate note — nothing beyond the foundation is implemented.** Written for Garrett to
 > mark up before any code or asset lands (the `/vessel` design-approval gate). The element map is
@@ -1035,15 +1051,22 @@ sun in its crook. Geometry: `ScarabWingDais` (pure closed-form, no scene depende
 `ScarabWingDaisSettings` on `PlaceSwitchActionSO`; tests: `ScarabWingDaisTests`, which are the
 gate on any retune.
 
-**The mouth is cleared on the strike.** The switch's own membrane — the Vogel-spiral interior fill
-inside the ring — is blown out along the ball's velocity when the ball threads it
-(`ScarabSwitch.BlowOutInterior`), so the dais rises around a clear ring rather than around the
-wreck of the switch that paid for it. That is **active removal, not decay**: a specific ball
-threaded a specific switch at a specific instant and the prisms it hit are destroyed by that
-impact — exactly what would have happened anyway had they been laid one prism further apart. There
-is no timer and no cull; an unstruck switch holds its membrane for the whole match. It is
-`devastate`d because a MASS-5 armoured body has to go with the switch instead of shedding its
-shield and standing there in the middle of the rosette.
+> **Superseded (2026-08-24).** This paragraph described the Vogel-spiral interior fill's
+> `BlowOutInterior` blast, which no longer exists — see STATUS UPDATE 3. The mouth is simply
+> never occupied: the ring blooms in empty and stays that way until struck, so the dais rises
+> around a clear ring with nothing to blow out first. Kept below for the record of *why* an
+> active-removal design was chosen over decay, which still governs anything conserved-mass this
+> vessel places in the future.
+
+**The mouth used to be cleared on the strike.** The switch's own membrane — the Vogel-spiral
+interior fill inside the ring — was blown out along the ball's velocity when the ball threaded it,
+so the dais rose around a clear ring rather than around the wreck of the switch that paid for it.
+That was **active removal, not decay**: a specific ball threaded a specific switch at a specific
+instant and the prisms it hit were destroyed by that impact — exactly what would have happened
+anyway had they been laid one prism further apart. There was no timer and no cull; an unstruck
+switch held its membrane for the whole match. It was `devastate`d because a MASS-5 armoured body
+had to go with the switch instead of shedding its shield and standing there in the middle of the
+rosette.
 
 **Four shape rules, all asserted rather than eyeballed.** The wings **begin at the switch ring**
 (`EveryWingBeginsAtTheSwitchRing` — the nearest prism in the whole rosette is a blade 0; it stops
@@ -1292,7 +1315,7 @@ Map asset: `Assets/Resources/ElementalAbilityMaps/Scarab.asset` (exact folder + 
 | Element | Ability | Quantitative | L5 upgrade |
 |---|---|---|---|
 | **Charge (1)** | **Cavitation blast** | Blast **cooldown** — `ScarabCavitationBlast.cooldownSeconds 2.5` × `cooldownMultiplierAtFullCharge 0.5` at Charge 10 (authored-cooldown idiom; map multiplier pinned to 1) | **Cavitation Shear** — the blast destroys **shielded** prisms outright instead of only shedding their shields (`DevastatingOverride`, per-use snapshot). Super-shielded mass is still untouchable |
-| **Mass (2)** | **Switch** | Switch structure size — ring aperture + fill span (`switchScale` ElementalFloat 1 → 2.5; map multiplier pinned to 1) | **Armored Switch** — the switch is built from **shielded** prisms (snapshotted at placement), so an opposing ball caroms off it and sheds one shield per prism instead of eating through |
+| **Mass (2)** | **Switch** | Switch ring aperture (`switchScale` ElementalFloat 1 → 2.5; map multiplier pinned to 1) | **Armored Switch** — ⚠ **currently a no-op** (2026-08-24): built the switch's interior fill from **shielded** prisms so an opposing ball caromed off it and shed one shield per prism instead of eating through, but that fill is retired (STATUS UPDATE 3) and the ring itself carries no prisms to shield. Needs a new home before this upgrade means anything again |
 | **Space (3)** | **Ball forge** | Forged **ball size** — ×1 at rest, **×4 at Space 10** (`MultiplierAtFullLevel 4` on the map itself; stamped once at forge time, a ball keeps the size it was born with) | **(open design slot)** |
 | **Time (4)** | **Throttle** | Top speed of the throttle ramp (`ThrottleScalerMultiplier` ElementalFloat 1 → 1.5, the existing dormant `VesselTransformer` field, enabled; map multiplier pinned to 1) | **Snap Dash** — double-tap the **throttle** (RT) for a burst gap-closer along the nose (§3.6) |
 
@@ -1599,11 +1622,12 @@ Vessel Elemental Morphs**, **Audit Corridor Vessel Radii**, **Validate Speed Tun
     Also fly the rim and a hinge: blades alternate plain/danger, so brushing the run must slow and
     debuff you about half the time. Frame time during the draw is the perf question —
     `daisPrismsPerFrame` is the dial, and 75 always-on mesh colliders per dais is the standing
-    cost. Also check the mouth: the switch's own membrane should blow out along the ball's travel
-    as the dais starts, leaving the ring clear — if a clump of interior prisms is still sitting in
-    the middle of the rosette, `BlowOutInterior` is not running.
+    cost. Also check the mouth: an unstruck switch's ring should be visibly EMPTY (no interior
+    fill, retired 2026-08-24) — a clump of prisms sitting in it before it is struck means the old
+    Vogel-spiral fill has regressed back in.
 11. **Mass 5 / Charge 5** (seeded): switch survives its first trigger; threshold hit yields two
-    balls.
+    balls. ⚠ The Mass-5 half is currently untestable as written — Armored Switch has no fill left
+    to shield (STATUS UPDATE 3).
 12. **Conversion rate**: over ~20 generated balls, count goals — target ~80%. This is the headline
     balance number and the one most likely to demand retuning arena scale or inherited velocity.
 13. **Freestyle**: in Menu_Main, the full make-ball → place-ring → thread-ring loop runs with no

@@ -23,6 +23,105 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Flora — TIME breeds faster, the second elemental law (`claude/flora-reproduction-balance-y9gaij`, 2026-08-24)
+
+Authored without a Unity compile or play-test (remote session, no editor, no `unity` CLI binary in
+this environment). Touches `FloraReproductionRules.cs`, `Flora.cs`, `AssembledFlora.cs`,
+`FloraConfigurationSO.cs` (tooltip only), `FloraReproductionRulesTests.cs`, plus docs and the
+`author_flora_populations.py` docstring. **No assets changed** — the law is code, and
+`author_flora_populations.py --check` is clean.
+
+**What landed.** A Time plant reproduces at 1.25× the fleet rate, Charge/Mass/Space at 0.8×. One
+rate constant divides both reproduction paths, because both measure *cost per child*: the
+per-plant growth quota (prisms/child, `Flora.ResolveGrowthPerOffspring`) and the lattice colonies'
+cycle period (seconds/child, `AssembledFlora.ColonyCyclePeriod`). Caps are untouched, so the
+always-on heart-collider ceiling is exactly unchanged — only how fast a species reaches it.
+
+**Verified offline** (more than inspection): .NET 8 installed in-session, the real shipped
+`FloraReproductionRules.cs` + `FloraReproductionRulesTests.cs` compiled and executed against a
+`Mathf`/NUnit shim — **20/20 tests pass, 50 assertions**; all five edited C# files parse with 0
+Roslyn syntax errors; the `Element`-is-both-a-property-and-a-type resolution (used in
+`ColonyCyclePeriod`) compiled as a standalone case; `check_conditional_compilation.py` OK;
+`author_flora_populations.py --check` clean. Blast radius grepped: all three `TryBeginCycle` sites
+take the shared period, the one remaining raw `cfg.GrowthPerOffspring` read is the
+does-this-species-reproduce gate (correctly keyed on the authored value), and
+`Cell.CurrentFaunaSpawnPeriod` itself is **not** modified — the fauna wave clock and Brood Rush's
+scoring heartbeat are untouched.
+
+**Verify in editor**
+1. **Compile clean**, then run the edit-mode suite — `FloraReproductionRulesTests` should be 20/20
+   inside Unity as it is offline.
+2. **Menu_Main** (the Lattice cell is the boot world: twelve colonies, one per element, sharing one
+   cell clock and one cap — the cleanest read there is). Over ~10 minutes the four **Time** colonies
+   should visibly out-grow their eight neighbours. Colony cycle at the 30 s heartbeat is
+   **Time 24 s / others 37.5 s**.
+3. **Rampage** or **Hesperides** for the per-plant quota path: those species roll all four elements
+   from one config, so a mature cell should show noticeably more Time plants than
+   Charge/Mass/Space. (Quota 56 → Time 45, others 70.)
+4. **No cell should reach Frenzy earlier than before.** The volume ladder is untouched, but Time
+   colonies now arrive at their share of the volume sooner — if a cell freezes early, that is the
+   thing to report.
+5. Confirm nothing is culled and no plant pops out: this change alters only the *price* of a child,
+   never the removal path.
+
+**First-pass tuning (NOT settled).** `FloraReproductionRules.TimeReproductionRate = 1.25f` and
+`OtherReproductionRate = 0.8f` — two constants at the top of the file, deliberately symmetric.
+"A bit" was interpreted as ±20–25%; expect a balancing pass once it is observable.
+
+---
+
+### 🔴 Scarab switch — interior fill removed, ring 20% larger (`claude/scarab-switch-prism-cleanup-bxhsm0`, 2026-08-24)
+
+Authored without a Unity compile or play-test (remote session, no editor, no `unity` CLI binary
+in this environment). Touches `ScarabSwitch.cs`, `PlaceSwitchActionSO.cs`,
+`PlaceSwitchActionExecutor.cs`, `PlaceSwitchAction.asset`, and `SCARAB.md`. Verified offline by
+manual read-through: the only call site of `ScarabSwitch.Build` is
+`PlaceSwitchActionExecutor.PlaceSwitch`, updated to the new (shorter) argument list in the same
+change; grepped the whole `_Scripts` tree for `InteriorPrismCount`/`BrickScale`/`interiorPrismCount`/
+`brickScale` and for any other `ScarabSwitch.Build(`/`AddComponent<ScarabSwitch>` call site —
+none remain outside the two edited files; grepped `_Scripts/Editor` and `_Scripts/Tests` for
+`ScarabSwitch`/`PlaceSwitchActionSO` — no editor tooling or tests reference the removed fields by
+name (reflection-based drift risk is nil). `PlaceSwitchAction.asset` YAML hand-edited to match the
+new field set exactly (Unity will happily read a MonoBehaviour asset missing a field it no longer
+declares; no leftover `interiorPrismCount`/`brickScale` keys remain in the file).
+
+**What landed.** Requested directly: "the switch fills with prisms when placed — remove those,
+keep the payout dais, make the ring 20% bigger in diameter."
+- `ScarabSwitch.Build` no longer lays a Vogel-spiral disc of body prisms across the ring's mouth
+  at placement. The ring now blooms in **empty** and stays that way until a ball threads it; the
+  scarab-wing dais payout (255 prisms) is completely unchanged.
+- `PlaceSwitchActionSO.ringRadius` raised **20 → 24** (20%), both the C# default and the shipped
+  `PlaceSwitchAction.asset` value. `switchScale` (the MASS element multiplier) still scales from
+  the new base, so a Mass-10 switch is now 24×2.5=60 instead of 20×2.5=50.
+- `interiorPrismCount` and `brickScale` fields deleted from `PlaceSwitchActionSO` (not just
+  zeroed) along with their public accessors; `ScarabSwitch.BlowOutInterior`, `SpiralPoint`,
+  `InteriorRotation`, and the `_interior`/`_shieldPrisms`/`_brickScale`/`_interiorCount` fields
+  are all deleted from `ScarabSwitch`.
+- **Known consequence, flagged rather than silently absorbed**: the MASS-5 "Armored Switch"
+  upgrade (built the interior fill from shielded prisms) has nothing left to apply to and is
+  currently a no-op. `SCARAB.md` §7's table and the playtest checklist are marked accordingly.
+  This was not asked for and is not fixed here — it needs a design call on where (if anywhere)
+  Armored Switch's effect should live now.
+- The Astro-League-integration volume-ladder math in `SCARAB.md` §8 (already authored onto
+  `Astro League Cell Config.asset`'s `PhaseThresholds`) is unaffected — it is derived from the
+  dais's 50,773 volume per spent switch, not the retired ~840-volume interior fill, which was
+  only ever a transient pre-strike blip on top of it. No asset in that path was touched.
+
+**Verify in editor**
+1. Open `Assets/_SO_Assets/VesselActions/Scarab/PlaceSwitchAction.asset` — confirm it inspects
+   cleanly (no missing-field warnings), `Ring Radius` reads `24`, and there is no leftover
+   `Interior Prism Count` / `Brick Scale` field drawn (they should simply not exist any more).
+2. Fly the Scarab, place a switch (Mass ability button) in Freestyle or Scarab Scramble — confirm
+   the ring blooms in with a visibly **empty** mouth (no disc of prisms), and that the ring reads
+   noticeably larger than before (20% diameter).
+3. Thread it with a ball — confirm the scarab-wing dais still raises exactly as before (255
+   prisms, sun cores igniting last) with nothing left over to "blow out" first.
+4. With the Mass-5 upgrade active, place and thread a switch — confirm (per the flagged
+   consequence above) that it behaves identically to an unupgraded switch, i.e. Armored Switch
+   currently does nothing observable. This is expected until a follow-up decides its new home.
+
+---
+
 ### 🔴 Bends AI aim: wavefront intercept lead + human focus (`claude/pensive-hopper-35d6h4`, 2026-08-21)
 
 Authored without a Unity compile or play-test (remote session, no editor). Touches

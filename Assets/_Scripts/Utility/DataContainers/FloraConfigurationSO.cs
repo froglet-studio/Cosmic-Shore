@@ -46,7 +46,14 @@ namespace CosmicShore.Utility
                  "Set it at (or near) the plant's own live-prism budget and the species reads as " +
                  "a colonizer: a plant completes itself, seeds one neighbour, and only funds " +
                  "another after grazing forces it to regrow. Lower converts growth to population " +
-                 "faster.")]
+                 "faster.\n\n" +
+                 "This is the SPECIES baseline, not the final number: THE TIME LAW scales it by " +
+                 "the plant's own ELEMENT at spawn (Time x1.25 rate, so a smaller quota; the " +
+                 "other three x0.8). It has to be code rather than data because this field is " +
+                 "authored per CONFIG while the element is ROLLED per plant - see " +
+                 "Flora.ResolveGrowthPerOffspring and Docs/ECOSYSTEM.md \u00a738. A LATTICE " +
+                 "species ignores this field entirely: its births are a population event on the " +
+                 "cell's fauna-wave clock (\u00a732.7).")]
         [Min(0)] public int GrowthPerOffspring = 0;
 
         [Tooltip("Offspring seeded per birth.")]

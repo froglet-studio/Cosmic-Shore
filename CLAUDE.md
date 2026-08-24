@@ -388,6 +388,29 @@ outcome is optimization, not life). Use the `/ecology` skill for any change here
   exterior canopy/trail is deliberately contested churn (voracious any-domain grazing). In
   nucleus-less cells the legacy rule stands: fauna eat only opposing mass, so the dominant
   canopy is never culled. Oscillation lives in the fauna churn *under* that constraint.
+- **TIME breeds faster — the second elemental law.** A Time plant reproduces at **1.25x** the
+  fleet rate and Charge/Mass/Space at **0.8x** (`FloraReproductionRules.ReproductionRateFor`).
+  Tempo is Time's identity the way armour is Charge's, and reproduction is the only clock a plant
+  owns. Like the Charge law it **cannot be authored per config**: `GrowthPerOffspring` is authored
+  per CONFIG by `author_flora_populations.py` while the element is ROLLED per plant, and *every*
+  species that actually spends that quota (Rampage, Hesperides, Wildlife) sets `SpreadElements`
+  with a four-element palette — so no asset field could express it. The authored number stays the
+  SPECIES baseline and the element scales it at spawn (`Flora.ResolveGrowthPerOffspring`, the
+  sibling of `ResolveShieldPeriod`); the authoring script is unchanged and still `--check` clean.
+  It is ONE constant because both reproduction paths measure **cost per child** in different
+  units and both divide by the rate: the per-plant **growth quota** (prisms per child) and the
+  lattice colonies' **cycle period** (seconds per child, `AssembledFlora.ColonyCyclePeriod`).
+  Scaling the quota alone would have been **dead tuning on 34 of the 50 breeding configs —
+  including every asset named "…Flora Time"** — because a lattice birth is a POPULATION event on the cell's
+  fauna-wave clock and the per-plant quota is inert there (`Docs/ECOSYSTEM.md §32.7`; the ecology skill's
+  §4.6 "prove WHICH gate binds" trap from a new direction). The colony period keys on the **CONFIG's**
+  authored element, never the ticking plant's — the cycle book is shared per `(cell, species)` and
+  every plant ticks it, so a per-plant period would be set by whichever plant ticked first, and a
+  colony is mixed-element by construction (`LATTICE_MIN_FOUNDERS = 4`). An authored `0` stays `0`
+  (the species saying it does not reproduce), and the Time rate can never floor a small quota to
+  `0`, which `ShouldSeed` would read as the same thing. `MaxLivePopulation` is untouched, so the
+  always-on heart-collider **ceiling is exactly unchanged** — only how fast a species reaches it.
+  `Docs/ECOSYSTEM.md §38`.
 - **Endogenous selection only.** When evolution lands, fitness is **survival itself**
   (starvation/predation/reproduction cost), never a designer-scored fitness function — the line
   between artificial life and a mere optimizer, identical to "don't cheat emergence."
