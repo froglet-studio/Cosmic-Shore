@@ -106,8 +106,10 @@ what produced the omission.
 > parent: `m_TransformParent` in the instance's modification block **always**, plus an entry in the
 > parent Transform's `m_Children` **iff that parent is a plain (non-stripped) Transform**.
 
-Census across all twelve vessel prefabs is currently clean: 36 tail/jet instances with a
-plain-Transform parent are all listed there; the Squirrel's four are the only stripped-parent case.
+Census across all twelve vessel prefabs, re-measured at ship time: 45 tail/jet instances have a
+plain-Transform parent and all 45 are listed in it; the Squirrel's four are the only
+stripped-parent case; zero are unreachable. That third number is the invariant — the first two
+move whenever a vessel gains or loses FX, so re-measure rather than trusting them.
 
 ### 3.4 The Manta family draws two coincident hulls — open question, not yet a verdict
 
