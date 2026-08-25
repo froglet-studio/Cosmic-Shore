@@ -10,31 +10,43 @@
 
 | File | What |
 |---|---|
-| `Assets/_Scripts/UI/UIThemeSO.cs` | The SO. Exactly the 25 fields in §10, in document order, with the §10 values as hardcoded defaults. |
+| `Assets/_Scripts/UI/UIThemeSO.cs` | The SO. **25 serialized fields and nothing else** — no constants, no helpers, no accessors — in §10's document order, with §10's values as hardcoded defaults. |
+| `Assets/_Scripts/UI/UIThemeHelper.cs` | Read access and the fallbacks. Everything that is not a token lives here. |
 | `Assets/_SO_Assets/UI/UITheme.asset` | An authored instance, sibling to `HUDAnimationSettings.asset`. |
+| `Assets/_Scripts/UI/Scoreboard.cs` | One `[SerializeField] UIThemeSO uiTheme` — the reference, nothing restyled. |
 
 Pattern follows `HUDAnimationSettingsSO`: a plain `ScriptableObject` of public fields with
-`[Header]`/`[Tooltip]`, referenced per-consumer, degrading gracefully when unassigned. Three
-accessors were added because two of the §10 fields are meaningless read raw:
+`[Header]`/`[Tooltip]`, referenced per-consumer, degrading gracefully when unassigned.
 
-- **`UIThemeSO.Resolve(theme)`** — returns the asset, or a hidden defaults instance. Lets a call
-  site read `UIThemeSO.Resolve(theme).textBody` instead of restating a hex, which is how
-  `HUDAnimationSettingsSO`'s fallbacks ended up duplicated inline in `ScoreNumberAnimator`
-  (lines 131–132 below — the same two colours written twice).
-- **`Spacing(step)`** — 1-based, so `Spacing(4)` is `s4`. Falls back to the shipped scale, with a
-  one-shot warning, if the serialized array is resized in the inspector. A silent fallback there
-  would be indistinguishable from a theme that never applied.
-- **`StaggerFor(index)`** — `min(index, staggerCap) * staggerStep`. §8's cap is only meaningful
-  applied together with the step; split across two raw fields it is the exact mistake the hangar
-  grid already makes (80 ms across an unbounded list).
+**The type carries no members but its 25 fields**, so "authored to §10 verbatim" is a claim a
+script can check against the document's table rather than a judgement call. Read access lives in
+`UIThemeHelper` as extension methods — safe on an unassigned reference, since an extension method
+may be invoked on a null `this`:
+
+- **`theme.Resolve()`** — the asset, or a hidden defaults instance. Lets a call site read
+  `theme.Resolve().textBody` instead of restating a hex, which is how `HUDAnimationSettingsSO`'s
+  fallbacks ended up duplicated inline in `ScoreNumberAnimator` (lines 131–132 below — the same
+  two colours written twice).
+- **`theme.Spacing(step)`** — 1-based, so `Spacing(4)` is `s4`. Falls back to the shipped scale,
+  with a one-shot warning per asset, if the serialized array is resized in the inspector. A silent
+  fallback there would be indistinguishable from a theme that never applied.
+- **`theme.StaggerFor(index)`** — `min(index, staggerCap) * staggerStep`. §8's cap is only
+  meaningful applied together with the step; split across two raw fields it is the exact mistake
+  the hangar grid already makes (80 ms across an unbounded list).
+
+The one consumer is `Scoreboard`, which sits on `GameCanvas.prefab` — so the eventual inspector
+assignment is a single prefab edit reaching every game mode, and adds no scene override. Nothing
+is restyled: the field is declared and unread.
 
 **Team colours are not in the asset.** Jade/Ruby/Gold stay in `SO_ColorSet`, reached through
 `GetDomainUIColor` / `GetDomainSignalColor` / `GetDomainUIAccentColor`.
 
-Verified: compiles clean (0 errors, 0 warnings) against Unity-shaped stubs; all 14 colour fields,
-the 9 spacing steps, the clamp behaviour and the stagger cap assert against §10's literal values
-(25/25 pass); the `.asset` YAML round-trips to the same 14 hex values. **Not** verified in the
-Editor — no Unity instance is reachable from this session, so `/verify-unity` did not run.
+Verified: compiles clean (0 errors, 0 warnings) against Unity-shaped stubs; field names, types and
+declaration order are an exact match against `Docs/STYLE_FOUNDATION.md` §10's table; all 14 colour
+fields, the 9 spacing steps, the clamp behaviour and the stagger cap assert against §10's literal
+values (25/25 pass, including the null-reference path); the `.asset` YAML round-trips to the same
+14 hex values. **Not** verified in the Editor — no Unity instance is reachable from this session,
+so `/verify-unity` did not run, and the inspector assignment on `GameCanvas.prefab` is outstanding.
 
 ---
 

@@ -91,6 +91,15 @@ namespace CosmicShore.UI
         [Header("Animation (optional)")]
         [SerializeField] private HUDAnimationSettingsSO animSettings;
 
+        [Header("Theme (optional)")]
+        [Tooltip("Chrome tokens from Docs/STYLE_FOUNDATION.md §10 - surfaces, borders, text " +
+                 "ramp, system hues, spacing, chamfers, motion. Team colours are NOT here; " +
+                 "they stay in SO_ColorSet. Read through UIThemeHelper (theme.Resolve(), " +
+                 "theme.Spacing(4), theme.StaggerFor(i)), which falls back to the shipped " +
+                 "tokens when this is unassigned. Assigned on GameCanvas.prefab, so one " +
+                 "reference serves every game mode and no scene override is needed.")]
+        [SerializeField] private UIThemeSO uiTheme;
+
         #endregion
 
         #region Private Fields

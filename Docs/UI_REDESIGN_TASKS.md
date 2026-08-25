@@ -96,13 +96,15 @@ Acceptance criteria:
 - [x] `UIThemeSO` authored to §10 **verbatim** — 25 fields, no additions
 - [x] Follows `HUDAnimationSettingsSO` pattern with hardcoded fallbacks
 - [x] **No team colour fields** — they stay in `SO_ColorSet`
-- [ ] Live asset created and referenced — created, **referenced by nothing** (see Deviations)
+- [~] Live asset created and referenced — created; reference declared at `Scoreboard.uiTheme`. **Editor step outstanding:** assign `UITheme.asset` to that field on `GameCanvas.prefab` (0 GUID references today).
 - [x] Mapping report covers all 165 literals in `Assets/_Scripts/UI/`
 - [x] Unmapped literals bucketed: (a) missing token, (b) feature-level SO, (c) never designed
-- [x] No call sites changed yet
+- [x] No call sites **restyled** *(amended from "changed" — see Deviations)*
 
 **Deliverables:**
-- `Assets/_Scripts/UI/UIThemeSO.cs` — 25 serialized fields; names, types and declaration order verified as an exact match against §10's table. Values are hardcoded defaults, so an unassigned reference degrades to the shipped tokens.
+- `Assets/_Scripts/UI/UIThemeSO.cs` — **25 serialized fields and nothing else**: no constants, no static state, no accessors. Names, types and declaration order verified as an exact match against §10's table. Values are hardcoded defaults, so an unassigned reference degrades to the shipped tokens.
+- `Assets/_Scripts/UI/UIThemeHelper.cs` — everything that is not a token: `Resolve()`, `Spacing(step)`, `StaggerFor(index)` as extension methods (safe on a null reference), the fallback instance, and `Rgb(0xRRGGBB)` so §10's hex stays visible in the field initialisers.
+- `Assets/_Scripts/UI/Scoreboard.cs` — one `[SerializeField] UIThemeSO uiTheme`, declared and unread.
 - `Assets/_SO_Assets/UI/UITheme.asset` (+ `.meta`) — authored instance, sibling to `HUDAnimationSettings.asset`. All 14 colour fields round-trip to §10's hex.
 - `Docs/UI_COLOR_TOKEN_MAP.md` — the mapping report. 184 occurrences classified across 180 sites, every site cited by `file:line`.
 
@@ -117,10 +119,11 @@ Acceptance criteria:
 - **Both companion docs landed mid-task** (`bleeding-edge` `8b3a7692`). T4 was implemented from copies supplied directly, before either was in the repo. The committed `Docs/STYLE_FOUNDATION.md` was diffed against the copy used and is **byte-identical**, and §10 was re-verified against the committed file: 25 fields, names/types/order an exact match, and all 14 authored colours matching. The report's citations now point at the canonical paths.
 
 **Deviations from spec:**
-- **"Live asset created and referenced" cannot hold while "no call sites changed yet" holds.** An SO asset can only be referenced by a `[SerializeField] UIThemeSO` on a consumer, which is a call-site change. Verified: 0 references to the asset GUID in any prefab/scene/asset, and 0 scripts declaring a `UIThemeSO` field. The asset is created and authored; it is deliberately unreferenced. **Needs a ruling on which clause wins** — the criterion as written is unsatisfiable.
-- **Four non-field members were added beyond the 25 fields.** The serialized surface is exactly 25 and the inspector shows nothing extra, but the class also declares `SpacingSteps` (public const), `DefaultSpacing` (static readonly), `_warnedSpacing` (private bool) and `_fallback` (static), supporting three accessors — `Resolve(theme)`, `Spacing(step)`, `StaggerFor(index)`. Reasons: `spacing[9]` is an array a designer can resize, so a bounds-safe 1-based reader that warns once is needed or a mis-sized asset fails silently; `staggerStep`/`staggerCap` are meaningless apart, and read as two loose floats they reproduce the unbounded-stagger bug the hangar grid already has; and without `Resolve` every call site must restate a hex, which is how `HUDAnimationSettingsSO`'s defaults ended up duplicated inline at `ScoreNumberAnimator.cs:131-132`. **If the criterion is read strictly, all of this moves to a separate static class and `UIThemeSO` becomes 25 fields and nothing else** — a contained change, offered rather than assumed.
+- **Criterion 7 amended, by decision: "no call sites changed" → "no call sites restyled."** The original wording made criterion 4 unsatisfiable — an SO asset can only be referenced by a `[SerializeField]` on a consumer, which is itself a call-site change. The ban is on swapping literals for tokens, not on establishing the reference. Verified against the amended wording: **0 colour literals removed** from `Assets/_Scripts/UI/` on this branch, and the one added field is declared and never read.
+- **Consumer choice is `Scoreboard`, deliberately.** It sits on `GameCanvas.prefab`, so the eventual inspector assignment is a single prefab edit that reaches every game mode and creates **no scene override** — which matters because the sibling `HUDAnimationSettingsSO` is assigned per-scene across 12 scenes, exactly the pattern T3 exists to unwind. Choosing a per-scene consumer here would have added 12 new overrides for T3 to clean up.
+- **The three accessors moved out of `UIThemeSO` into `UIThemeHelper`, by decision.** The SO is now 25 serialized fields and nothing else, which is what makes "verbatim to §10" mechanically checkable. `Rgb(0xRRGGBB)` moved with them, so the field initialisers still show §10's hex rather than 14 inlined float triples — which would also have added 14 colour literals to `Assets/_Scripts/UI/`, against the cross-cutting check. Accessors are extension methods, so `theme.Resolve()` is safe on an unassigned reference; the null path is covered by the value assertions.
 - **Report scope is 184, not 165** (see Findings). Superset, fully reconciled in the report's §2.
-- **`UIThemeSO.cs` adds one `new Color(` to `Assets/_Scripts/UI/`** — the private `Rgb(int hex)` helper the tokens are built from. A strict cross-cutting grep reads this as +1; the count of *hardcoded* literals is unchanged at 184.
+- **One `new Color(` is added to `Assets/_Scripts/UI/`** — `UIThemeHelper.Rgb(int hex)`, the constructor the tokens are built from. A strict cross-cutting grep reads this as +1; the count of *hardcoded* literals is unchanged at 184.
 - Report was published as an artifact as well as committed: https://claude.ai/code/artifact/b9c74280-7c9a-4f4d-9b6b-e7e03f65c048 — `Docs/UI_COLOR_TOKEN_MAP.md` is canonical.
 
 ---
