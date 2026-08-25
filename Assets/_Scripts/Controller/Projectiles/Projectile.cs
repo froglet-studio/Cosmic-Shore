@@ -701,7 +701,7 @@ namespace CosmicShore.Gameplay
         /// that volume with the charge shell — the size you see is the size that hits.
         ///
         /// **Growth is a hit volume, not a size.** The tracer mesh is a unit sphere at
-        /// (1.5, 1.5, 20) — a 20-long dart — and swelling its cross-section 6× drew a fat red
+        /// (0.75, 0.75, 20) — a 20-long dart — and swelling its cross-section 6× drew a fat
         /// lozenge: mechanically right, and it read as a small ship firing cannonballs, which
         /// is the exact silliness the growth pass set out to avoid. So the MODEL now stays the
         /// size it left the muzzle for the whole flight and <see cref="chargeField"/> — a
@@ -745,7 +745,7 @@ namespace CosmicShore.Gameplay
         /// Puts the charge shell at exactly <paramref name="worldRadius"/> in the WORLD, given
         /// whatever the parent's scale happens to be.
         ///
-        /// The dart's own transform is non-uniform — (1.5, 1.5, 20) — so a uniform world sphere
+        /// The dart's own transform is non-uniform — (0.75, 0.75, 20) — so a uniform world sphere
         /// under it needs a per-axis divide. That is only safe because the shell is authored
         /// with identity rotation: a non-uniform parent above a ROTATED child is a shear, and no
         /// local scale can undo one. Keep the shell unrotated.

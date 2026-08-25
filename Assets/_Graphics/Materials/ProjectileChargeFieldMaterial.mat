@@ -32,6 +32,7 @@ Material:
     - _ArcSeeds: 3
     - _ArcSharpness: 0.12
     - _CenterFillAmount: 0.12
+    - _CoreThreshold: 0.75
     - _ChargeFloor: 0.35
     - _ChargeReferenceRadius: 4.95
     - _CrackleRate: 6
@@ -42,8 +43,8 @@ Material:
     - _RingThickness: 0.9
     - _RippleSpeed: 1.6
     m_Colors:
-    - _CrackleColorA: {r: 1, g: 0.86, b: 0.55, a: 1}
-    - _CrackleColorB: {r: 1, g: 0.42, b: 0.12, a: 1}
-    - _FresnelRimColor: {r: 1, g: 0.55, b: 0.25, a: 1}
+    - _CrackleColorA: {r: 1.4979111, g: 0.0058463, b: 0.0068495, a: 1}
+    - _CrackleColorB: {r: 0.1, g: 0.35, b: 1, a: 1}
+    - _FresnelRimColor: {r: 0.25, g: 0.55, b: 1, a: 1}
   m_BuildTextureStacks: []
   m_AllowLocking: 1

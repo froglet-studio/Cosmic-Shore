@@ -2,23 +2,26 @@ Shader "Shader Graphs/ProjectileChargeField"
 {
     Properties
     {
-        [Header(Crackle Colors)]
-        _CrackleColorA ("Core Arc Color", Color) = (1.0, 0.86, 0.55, 1.0)
-        _CrackleColorB ("Outer Glow Color", Color) = (1.0, 0.42, 0.12, 1.0)
-
+        // NEUTRAL is blue, DANGER is red. _CrackleColorA is EnvironmentColors.Danger
+        // from OriginalColorSetSO, verbatim — the shared, domain-independent danger
+        // colour, so a round's hot core is the same red the arena's danger mass wears.
+        [Header(Crackle Colors   neutral blue plus danger red)]
+        _CrackleColorA ("Core Arc Color", Color) = (1.4979111, 0.0058463, 0.0068495, 1.0)
+        _CrackleColorB ("Outer Glow Color", Color) = (0.10, 0.35, 1.0, 1.0)
         [Header(Arc Pattern)]
         _ArcSeeds ("Discharge Points", Range(1, 6)) = 3
         _ArcDensity ("Arc Count", Range(1, 6)) = 5
         _ArcSharpness ("Arc Width", Range(0.01, 0.5)) = 0.12
         _ArcIntensity ("Arc Intensity", Range(0, 1)) = 1
         _ArcReach ("Arc Reach", Range(0.1, 1)) = 1
+        _CoreThreshold ("Danger Core Threshold", Range(0, 0.99)) = 0.75
         [Header(Wave and Expansion)]
         _RingThickness ("Ring Thickness", Range(0.05, 1)) = 0.9
         _CenterFillAmount ("Center Fill", Range(0, 1)) = 0.12
         _RippleSpeed ("Ripple Speed", Range(0.2, 3)) = 1.6
         _CrackleRate ("Discharges Per Second", Range(0.1, 12)) = 6
         [Header(Fresnel Rim)]
-        _FresnelRimColor ("Rim Color", Color) = (1.0, 0.55, 0.25, 1.0)
+        _FresnelRimColor ("Rim Color", Color) = (0.25, 0.55, 1.0, 1.0)
         _FresnelRimIntensity ("Rim Intensity", Range(0, 1)) = 0.18
         _FresnelRimPower ("Rim Power", Range(1, 8)) = 2.5
 
@@ -83,6 +86,7 @@ Shader "Shader Graphs/ProjectileChargeField"
                 float  _ArcSharpness;
                 float  _ArcIntensity;
                 float  _ArcReach;
+                float  _CoreThreshold;
                 float  _RingThickness;
                 float  _CenterFillAmount;
                 float  _RippleSpeed;

@@ -182,7 +182,13 @@ void ProjectileChargeField_float(
 
         float contribution = spatialEnvelope * arcContrib * env * arcGain * _ArcIntensity;
 
-        float3 arcColor = lerp(_CrackleColorB.rgb, _CrackleColorA.rgb, arcHeat * arcHeat);
+        // Blue body, DANGER-RED hot core — and the threshold is what keeps them two
+        // colours instead of one. A plain lerp between a saturated blue and a saturated
+        // red spends most of its range in MAGENTA, which is neither, and at `arcHeat^2`
+        // that magenta was most of every arc. `_CoreThreshold` confines the red to the
+        // hot centreline so the arc reads blue with a red filament inside it.
+        float core = smoothstep(_CoreThreshold, 1.0, arcHeat);
+        float3 arcColor = lerp(_CrackleColorB.rgb, _CrackleColorA.rgb, core);
         arcColor *= 1.0 + arcHeat * 2.0;
 
         totalContribution += contribution;

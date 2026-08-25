@@ -71,15 +71,17 @@ namespace CosmicShore.Tests
                 Assert.AreEqual(1f, FullAutoActionSO.GrowthFactorForLevel(level, 1f, 1f), 1e-4f);
         }
 
-        // ------------------------------------------------------------------ honesty
+        // ------------------------------------------------------- the flight-growth curve
 
         // The tracer's authored launch hit radius: SparrowProjectile's SphereCollider radius
         // 0.04125 against its largest lossy-scale component, the z-stretch of 20.
         const float LaunchHitRadius = 0.825f;
 
         // SparrowProjectile's own transform — deliberately NON-UNIFORM, which is the whole
-        // reason the shell needs a per-axis divide rather than a uniform scale.
-        static readonly Vector3 DartScale = new Vector3(1.5f, 1.5f, 20f);
+        // reason the shell needs a per-axis divide rather than a uniform scale. The z-stretch
+        // is also the largest lossy component, which is why halving the model's cross-section
+        // (1.5 → 0.75) left the collider's world radius at 0.825 untouched.
+        static readonly Vector3 DartScale = new Vector3(0.75f, 0.75f, 20f);
 
         [Test]
         public void GrowthRunsFromOneAtTheMuzzleToTheFullFactorAtTheEnd()
@@ -137,7 +139,7 @@ namespace CosmicShore.Tests
         [Test]
         public void TheChargeShellCancelsTheDartsNonUniformTransform()
         {
-            // A uniform world sphere under a (1.5, 1.5, 20) parent needs a per-axis divide.
+            // A uniform world sphere under a (0.75, 0.75, 20) parent needs a per-axis divide.
             // If this ever collapses to a single divisor the shell renders as a lens, not a
             // ball — and a lens is a lie about a sphere-swept hit volume.
             Vector3 local = Projectile.ChargeFieldLocalScale(LaunchHitRadius, DartScale);

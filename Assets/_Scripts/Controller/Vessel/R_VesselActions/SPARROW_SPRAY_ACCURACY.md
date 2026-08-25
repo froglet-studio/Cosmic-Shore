@@ -10,7 +10,7 @@ The Sparrow's cannons are a **saturation** weapon, not a marksman's rifle.
 | tap the trigger (≤ 0.12 s) | a perfectly accurate burst — a scalpel, at a fraction of the volume |
 | hold it down | a cone that opens over ~1.6 s to a 1.5° cap, filled at **180 rounds/s** — nothing along the path survives, and the buzz in your hands climbs the whole way |
 | release and re-pull | full accuracy back, instantly. This is the "3-shot burst" the design asks for |
-| collect Mass crystals | rounds swell **harder** as they fly — 3× over a flight at rest, **6× at Mass 10**. The tracer stays a needle; a see-through charge shell grows around it to exactly the hit radius. Huge projectiles, earned |
+| collect Mass crystals | rounds swell **harder** as they fly — 3× over a flight at rest, **6× at Mass 10**. The tracer stays a thin pale-blue needle; a see-through blue charge shell, arcing with danger red, grows around it to exactly the hit radius. Huge projectiles, earned |
 
 ---
 
@@ -142,7 +142,7 @@ The visual and the hit volume are scaled by the **same factor every frame**, so 
 what you hit, at every instant, at every Mass level. **Which visual carries that is round 4's
 subject — see "Growth is a hit volume, not a size" below.**
 
-**Cross-section only.** The tracer mesh is a unit sphere at (1.5, 1.5, 20) — a 20-long dart — so
+**Cross-section only.** The tracer mesh is a unit sphere at (0.75, 0.75, 20) — a 20-long dart — so
 scaling it uniformly at 6× would draw a 120-unit needle across a ~72-unit range. Width is what a
 hit volume is made of; length is just the streak. The swept hit radius is therefore scaled
 *explicitly* rather than re-derived from `lossyScale`, because a SphereCollider takes the largest
@@ -162,7 +162,7 @@ this doesn't look right."*
 
 Round 2 fixed the silliness of a small ship firing cannonballs by making the cannonball
 something you grow into — and then re-created it inside every single flight, because the thing
-being scaled was the **tracer model**. A 1.5-wide needle at 6× is a 9-wide red lozenge: the exact
+being scaled was the **tracer model**. A Ø1.5 needle at 6× is a Ø9 red lozenge: the exact
 "giant bullets from a small vessel" the whole pass exists to avoid, arriving 0.3 s at a time.
 
 > **The model is the size it left the muzzle, for the whole flight. What grows is the volume it
@@ -241,10 +241,91 @@ per-seed spatial early-outs discard most of it.
 
 ### One thing to keep
 
-The shell must stay **unrotated**. The dart's transform is non-uniform (1.5, 1.5, 20), and a
+The shell must stay **unrotated**. The dart's transform is non-uniform (0.75, 0.75, 20), and a
 uniform world sphere under it needs a per-axis divide (`Projectile.ChargeFieldLocalScale`) — which
 is only valid because the child is axis-aligned. A non-uniform parent above a *rotated* child is a
 shear, and no local scale can undo one.
+
+### The size and palette pass (same day)
+
+Follow-up: *"make the model diameter half as much, and change its colour to a desaturated whiteish
+blue. Use more saturated blues and the danger red instead of yellows (neutral and danger) on the
+effect."*
+
+**Halving the model was free, and the reason is worth stating.** A `SphereCollider` scales by the
+**largest** lossy-scale component, which on this dart is the untouched z-stretch of 20. So taking
+the transform from `(1.5, 1.5, 20)` to `(0.75, 0.75, 20)` moved the tracer's cross-section from
+Ø1.52 to Ø0.77 and left the hit radius at exactly **0.825** — the same accident that once made the
+collider 8× too big (`SPARROW_TURRET_STANCE.md` § Round 6) is what now makes the model's size a
+purely visual dial. It is only safe to say that *because the shell, not the model, is the hit
+volume's instrument*; before round 4 this edit would have silently shrunk what the player aims
+with.
+
+Two other things the halving touches, both handled: the shell's authored local scale divides the
+parent's lossy scale, so it moved `1.1 → 2.2` on x/y (`SizeChargeField` recomputes it at every
+launch — the authored value is only what the editor shows before one), and `_Spread` on
+`SpreadFresnelShader` displaces vertices by `_Spread / objectScale`, so a smaller object gets a
+*larger* displacement. At the parent material's authored `0.01` that is 0.013 local units and the
+halving is exact to within 3%; at a larger `_Spread` it would not have been.
+
+**The dart's own material is new, because the old one was shared.** `DangerProjectileMaterial` is
+on five prefabs (`ExplodableProjectile`, `ProjectileFX`, `BrightNucleus`, `TimeDandruff` and this
+one), so recolouring it would have repainted four unrelated things. `SparrowProjectileMaterial` is
+a fresh variant of the same parent, `BlueSpreadFresnelMaterial`, overriding only the three
+properties `SpreadFresnelShader` actually declares — the donor's `_Color1` / `_Color2` /
+`_DullColor` / `_CellDensity` / `_SrcBlend` keys are residue from a shader that material no longer
+uses, and are deliberately not carried over.
+
+| | linear value | on screen (ACES + sRGB) | role |
+|---|---|---|---|
+| `_DarkColor` (body) | `(0.26, 0.38, 0.70)` | rgb(154–175, 183–196, 217–220), hue 213°, **sat 0.25** | the needle |
+| `_BrightColor` (rim) | `(0.50, 0.70, 1.20)` | rgb(205, 219, 236), **sat 0.13**, val 0.92 | brighter, whiter silhouette edge |
+
+**"Desaturated" is a screen measurement, not an authored one** — and this is the PALETTE.md trap
+(§4.1) arriving from a new direction. The first candidates were authored *as* pale blues
+(`(0.72, 0.78, 0.92)`, and the palette's own `BlueColors.SpikeLightColor`), and both rendered at
+screen saturation **0.03–0.06**, i.e. white. ACES compresses highlights, so a bright colour
+desaturates on the way to the screen and a linear value that looks blue in the inspector does not
+read blue in game. The shipped pair was picked by measuring the post-tonemap sRGB and hunting for
+the 0.20–0.30 saturation band — pale enough to read "whitish", blue enough to read "blue". Judge
+this class of colour after tonemapping, never in the inspector swatch.
+
+### Neutral is blue, danger is red — and the threshold is what keeps them two colours
+
+The shell's palette:
+
+| slot | value | source |
+|---|---|---|
+| `_FresnelRimColor` (always-on shell) | `(0.25, 0.55, 1.0)` | **neutral** — a saturated blue |
+| `_CrackleColorB` (arc body) | `(0.10, 0.35, 1.0)` | **neutral** — a deeper saturated blue |
+| `_CrackleColorA` (arc core) | `(1.4979111, 0.0058463, 0.0068495)` | **danger** — `EnvironmentColors.Danger` from `OriginalColorSetSO`, **verbatim** |
+
+The danger colour is taken from the live colour set rather than eyeballed, because it is the one
+shared, domain-independent red the arena already uses for danger mass — so a round's hot core is
+literally the same red as the thing that hurts you.
+
+**The composition needed a new dial, and this generalises.** The arc colour was
+`lerp(blue, red, arcHeat²)`, and a lerp between a saturated blue and a saturated red spends most
+of its range in **MAGENTA** — which is neither colour, and was most of every arc. `_CoreThreshold`
+(0.75) replaces the square with `smoothstep(_CoreThreshold, 1, arcHeat)`, confining the red to the
+hot centreline so the arc reads blue with a red filament inside it. Measured over the shipped
+shader, by hue-bucketing every lit fragment after tonemapping:
+
+| `_CoreThreshold` | blue | magenta | red |
+|---|---|---|---|
+| 0 (the old `arcHeat²`) | 54.5% | 12.6% | 32.9% |
+| **0.75 (shipped)** | **77.7%** | **7.4%** | **14.9%** |
+| 0.92 | 87.5% | 4.3% | 8.1% |
+
+> **Two saturated colours at opposite ends of the wheel cannot be blended — they have to be
+> SEPARATED.** Any lerp between them passes through a third hue that belongs to neither, and on an
+> additive surface it also *sums* with whatever is behind it. If a two-colour effect is reading as
+> one muddy colour, the fix is a threshold, not a different pair of colours.
+
+A note on why the small-panel render lied: at 300 px the blue arc and its red filament average
+together and the whole thing reads magenta. The hue census said 7% magenta while the thumbnail
+said "all magenta" — the census was right, and rendering **one large panel** settled it. Measure
+the pixels, and view a candidate at the size it will actually be judged.
 
 ### What was deliberately NOT done
 
@@ -389,8 +470,9 @@ dogfighters and the Menu_Main autopilot all fire and none of them may buzz your 
 | `_SO_Assets/VesselActions/Sparrow/FullAutoAction.asset` | The shipped numbers. |
 | `_Prefabs/Spacevessels/Sparrow.prefab` | `GunSprayAccuracy` executor + resized pools. |
 | `_Graphics/Materials/Graphs/ProjectileChargeField.shader` + `.hlsl` | The self-driven charge shell — the forcefield-crackle language with `_Time` + the model matrix as its driver instead of a per-frame property block. |
-| `_Graphics/Materials/ProjectileChargeFieldMaterial.mat` | The one material every round in the match batches through. |
-| `_Prefabs/Projectile/SparrowProjectile.prefab` | `sweptPrismDetection: 1`, plus the `ChargeField` child wired to `Projectile.chargeField` (round 4). |
+| `_Graphics/Materials/ProjectileChargeFieldMaterial.mat` | The one material every round in the match batches through. Neutral blue + `EnvironmentColors.Danger` red. |
+| `_Graphics/Materials/SparrowProjectileMaterial.mat` | The dart's own pale-blue material — a variant of `BlueSpreadFresnelMaterial`, split off `DangerProjectileMaterial` because that one is shared by five prefabs. |
+| `_Prefabs/Projectile/SparrowProjectile.prefab` | `sweptPrismDetection: 1`, the `ChargeField` child wired to `Projectile.chargeField`, the halved model scale `(0.75, 0.75, 20)` and its own material (round 4). |
 | `_Prefabs/Trails/Prisms With Pools/Sparrow Projectile Prism.prefab` | `sweptPrismDetection: 1`. Its carried `ProjectileCollider` has no renderer, so growth still scales its transform and it carries no shell. |
 
 ## Tuning knobs
@@ -418,6 +500,9 @@ parameter, and because the shell is a general `Projectile` capability rather tha
 | `_ArcSeeds` / `_ArcDensity` | **3 / 5** | Simultaneous discharge points, and branches per discharge. The inner loop, so this is also the cost dial — measured 4.2 FBM evals/fragment at these values. |
 | `_ArcSharpness` | **0.12** | Arc width in radians. Lower reads as lightning, higher as a smear. |
 | `_ArcIntensity` | **1** | Arc brightness. At the shipped values arcs are ~34% of the shell's light and the rest is the rim. |
+| `_CoreThreshold` | **0.75** | Where the arc stops being neutral blue and becomes danger red. **Lower it and the two colours blend into magenta** — this is a separation dial, not a blend dial. Measured hue split at 0.75: 78% blue / 15% red / 7% magenta. |
+| `_CrackleColorA` | **`EnvironmentColors.Danger`** | The hot core. Taken verbatim from `OriginalColorSetSO` so a round's core is the same red as the arena's danger mass. |
+| `_CrackleColorB` / `_FresnelRimColor` | **(0.10,0.35,1) / (0.25,0.55,1)** | The neutral blues — the arc body and the always-on shell. |
 | `_CrackleRate` | **6** | Discharges per second per seed. Also what spreads consecutive volleys' phases apart — drop it far and a burst starts flashing in unison. |
 | `_FresnelRimIntensity` | **0.18** | The always-on rim. **This is the see-through dial**: it sets the shell's floor alpha (0.036 at the muzzle, 0.079 fully charged). Raise it far and an enormous round starts hiding the arena. |
 | `_ChargeReferenceRadius` | **4.95** | The hit radius that reads as fully charged — the Mass 10 end-of-flight radius. Absolute and fleet-wide by design: the same hit radius must look the same on any round. |

@@ -96,6 +96,12 @@ collider was never sized to the projectile at all.
   world radius = **1.65 diameter**. Author it that way: pick the world radius you want and
   divide by the max scale component; changing the tracer's z-stretch silently rescales the
   hit sphere unless you re-derive.
+  > **Superseded as a live claim** (`SPARROW_SPRAY_ACCURACY.md` § Round 4, 2026-08-24): the
+  > collider is still 0.825, but the tracer's cross-section was halved to 0.375 and the
+  > "+10% of the visible radius" relationship is gone with it. The bullet's hit volume is
+  > now drawn by its **charge shell**, sized to the hit radius exactly, so the model is free
+  > to be whatever size reads best. The z-stretch caveat above still stands: z is still the
+  > largest lossy component, which is *why* halving x/y left the collider untouched.
 - **The prism shots follow it, as they must** (round 4's rule stands — one collision
   approach for both fire modes): `collisionDiameter` **12 → 1.65**, and
   `shieldedCollisionDiameter` **18 → 2.475**, preserving the authored ×1.5 so the armored
