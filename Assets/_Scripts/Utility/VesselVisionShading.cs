@@ -29,7 +29,7 @@ namespace CosmicShore.Utility
     ///      fail on a graph that has come unwired, on a hull material outside the wired shader,
     ///      and on a config authored into a state that does nothing.
     ///
-    /// WHAT IT COSTS. Three <c>Shader.SetGlobalVector</c> calls per frame and nothing else that
+    /// WHAT IT COSTS. Four <c>Shader.SetGlobalVector</c> calls per frame and nothing else that
     /// scales — no per-vessel per-frame write, no material clone, no extra draw call, no depth
     /// read, no second pass. The distance test is per fragment in
     /// <c>VesselVisionShading.hlsl</c>, which is where it belongs: distance-to-camera is
@@ -58,6 +58,7 @@ namespace CosmicShore.Utility
         static readonly int BandId = Shader.PropertyToID("_VesselVisionBand");
         static readonly int ShapeId = Shader.PropertyToID("_VesselVisionShape");
         static readonly int RimId = Shader.PropertyToID("_VesselVisionRim");
+        static readonly int BreakupId = Shader.PropertyToID("_VesselVisionBreakup");
 
         /// <summary>
         /// The per-vessel datum: rgb is the domain's signal colour, and ALPHA IS A MARKER rather
@@ -283,6 +284,7 @@ namespace CosmicShore.Utility
             Shader.SetGlobalVector(BandId, Vector4.zero);   // w <= 0 is the shader's "off" sentinel
             Shader.SetGlobalVector(ShapeId, Vector4.zero);
             Shader.SetGlobalVector(RimId, Vector4.zero);
+            Shader.SetGlobalVector(BreakupId, Vector4.zero);
             _publishedActive = false;
         }
 
@@ -297,10 +299,11 @@ namespace CosmicShore.Utility
 
             // Re-published every frame rather than once at startup so an edit to the asset is live
             // in play mode, and so a scene load or a camera stack change can never leave the band
-            // holding a value nothing owns. Three writes; it does not scale with anything.
+            // holding a value nothing owns. Four writes; it does not scale with anything.
             Shader.SetGlobalVector(BandId, config.PackBand());
             Shader.SetGlobalVector(ShapeId, config.PackShape());
             Shader.SetGlobalVector(RimId, config.PackRim());
+            Shader.SetGlobalVector(BreakupId, config.PackBreakup());
             _publishedActive = true;
         }
 

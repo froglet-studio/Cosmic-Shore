@@ -215,6 +215,64 @@ namespace CosmicShore.Tests
 
         #endregion
 
+        #region The centre break-up
+
+        [TestCase("breakupStrength", TestName = "Breakup_off_via_strength")]
+        [TestCase("breakupReach", TestName = "Breakup_off_via_reach")]
+        [TestCase("breakupCells", TestName = "Breakup_off_via_cells")]
+        public void Breakup_AnyOfItsThreeSwitchesTurnsItOff(string field)
+        {
+            var config = NewConfig();
+            Assert.IsTrue(config.BreakupActive, "the shipped defaults should have it on.");
+
+            var so = new SerializedObject(config);
+            so.FindProperty(field).floatValue = 0f;
+            so.ApplyModifiedPropertiesWithoutUndo();
+
+            Assert.IsFalse(config.BreakupActive,
+                $"{field} = 0 must switch the break-up off — the shader early-outs on exactly this " +
+                "condition, so a config that disagrees would pay for a feature it thinks is off.");
+        }
+
+        [Test]
+        public void PackBreakup_CarriesTheAuthoredValuesInSlotOrder()
+        {
+            var config = NewConfig();
+            var packed = config.PackBreakup();
+            Assert.AreEqual(config.BreakupCells, packed.x, Tolerance, "slot x is the cell count");
+            Assert.AreEqual(config.BreakupReach, packed.y, Tolerance, "slot y is the reach");
+            Assert.AreEqual(config.BreakupStrength, packed.z, Tolerance, "slot z is the strength");
+            Assert.AreEqual(config.BreakupEndDistance, packed.w, Tolerance, "slot w is the end distance");
+        }
+
+        [Test]
+        public void IsSane_RejectsABreakupThatClosesBeforeTheMarkIsFull()
+        {
+            var config = NewConfig();
+            var so = new SerializedObject(config);
+            so.FindProperty("breakupEndDistance").floatValue = 200f;   // below nearFullStart 350
+            so.ApplyModifiedPropertiesWithoutUndo();
+
+            Assert.IsFalse(config.IsSane(out _),
+                "a break-up that has closed before the band reaches full strength can never be " +
+                "seen, and nothing at runtime would say so.");
+        }
+
+        [Test]
+        public void IsSane_DoesNotPoliceTheEndDistanceOfADisabledBreakup()
+        {
+            var config = NewConfig();
+            var so = new SerializedObject(config);
+            so.FindProperty("breakupStrength").floatValue = 0f;
+            so.FindProperty("breakupEndDistance").floatValue = 0f;
+            so.ApplyModifiedPropertiesWithoutUndo();
+
+            Assert.IsTrue(config.IsSane(out string reason), reason +
+                " — switching the break-up off is a choice (a solid mark), not a mis-configuration.");
+        }
+
+        #endregion
+
         #region The shipped assets
 
         [Test]

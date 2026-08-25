@@ -155,6 +155,11 @@ namespace CosmicShore.Editor
             report.AppendLine($"    ok    band {config.NearFadeStart:0}→{config.NearFullStart:0} .. " +
                               $"{config.FarFullEnd:0}→{config.FarFadeEnd:0} u, strength " +
                               $"{config.Strength:0.00}, {config.CelSteps} cel tones.");
+            report.AppendLine(config.BreakupActive
+                ? $"    ok    centre break-up: {config.BreakupCells:0.0} cells, reach " +
+                  $"{config.BreakupReach:0.00}, strength {config.BreakupStrength:0.00}, closed by " +
+                  $"{config.BreakupEndDistance:0} u."
+                : "    note  centre break-up is OFF — the mark is a flat fill at every distance.");
             return true;
         }
 

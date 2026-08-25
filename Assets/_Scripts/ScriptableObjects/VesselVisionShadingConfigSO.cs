@@ -98,6 +98,33 @@ namespace CosmicShore.ScriptableObjects
         [Min(0f)]
         [SerializeField] float rimGain = 1.1f;
 
+        [Header("Centre Break-up")]
+        [Tooltip("How many cells fan out from the ship's centre. The cell address is a quantized " +
+                 "DIRECTION from the object origin, so it is scale-free: the same number of cells " +
+                 "spans a Squirrel and a Rhino, at every distance. Raise for finer texture.")]
+        [Range(0f, 16f)]
+        [SerializeField] float breakupCells = 3.5f;
+
+        [Tooltip("How far out from the centre the break-up reaches, measured on 1 - dot(normal, " +
+                 "view): 0 is dead-centre, 1 is the silhouette. At 0 the mark is a solid fill " +
+                 "again. The silhouette rim is exempt whatever this says.")]
+        [Range(0f, 1f)]
+        [SerializeField] float breakupReach = 0.75f;
+
+        [Tooltip("How much of the mark the dither is allowed to remove at the centre. 0 turns the " +
+                 "break-up off entirely; 1 lets the ship's own art show through completely between " +
+                 "the cells.")]
+        [Range(0f, 1f)]
+        [SerializeField] float breakupStrength = 0.85f;
+
+        [Tooltip("Distance by which the break-up has closed back into a solid mark. The cells hold " +
+                 "a constant angular size, so past a certain range they fall under a pixel and " +
+                 "would read as noise rather than texture — a distant ship goes back to the clean, " +
+                 "maximally readable silhouette. Keep this above nearFullStart or the break-up is " +
+                 "gone before the mark is even at full strength.")]
+        [Min(0f)]
+        [SerializeField] float breakupEndDistance = 900f;
+
         public bool Enabled => enabled;
 
         public float NearFadeStart => Mathf.Max(0f, nearFadeStart);
@@ -117,6 +144,18 @@ namespace CosmicShore.ScriptableObjects
         /// <summary>Held above the inner edge so the rim smoothstep can never invert.</summary>
         public float RimOuter => Mathf.Max(rimOuter, RimInner + MinEdgeWidth);
         public float RimGain => Mathf.Max(0f, rimGain);
+
+        public float BreakupCells => Mathf.Clamp(breakupCells, 0f, 16f);
+        public float BreakupReach => Mathf.Clamp01(breakupReach);
+        public float BreakupStrength => Mathf.Clamp01(breakupStrength);
+        public float BreakupEndDistance => Mathf.Max(0f, breakupEndDistance);
+
+        /// <summary>
+        /// True when the break-up is authored to do something at all. Three fields can each switch
+        /// it off on their own, and the shader early-outs on exactly this condition.
+        /// </summary>
+        public bool BreakupActive =>
+            BreakupStrength > 0f && BreakupReach > 0f && BreakupCells > 0f;
 
         /// <summary>Narrowest legal grade, so no edge in the law is ever a step function.</summary>
         public const float MinEdgeWidth = 0.01f;
@@ -156,6 +195,10 @@ namespace CosmicShore.ScriptableObjects
 
         /// <summary>(rimInner, rimOuter, rimGain, unused).</summary>
         public Vector4 PackRim() => new(RimInner, RimOuter, RimGain, 0f);
+
+        /// <summary>(cellCount, reach, strength, endDistance).</summary>
+        public Vector4 PackBreakup() =>
+            new(BreakupCells, BreakupReach, BreakupStrength, BreakupEndDistance);
 
         /// <summary>
         /// One rule, three gates: the runtime, the FrogletTools validator and the edit-mode test
@@ -209,6 +252,16 @@ namespace CosmicShore.ScriptableObjects
             if (strength <= 0f)
             {
                 reason = "strength is zero — the law is authored to do nothing.";
+                return false;
+            }
+
+            // Only meaningful when the break-up is on: an author who has switched it off has not
+            // mis-configured anything, they have chosen a solid mark.
+            if (BreakupActive && breakupEndDistance <= nearFullStart)
+            {
+                reason = $"breakupEndDistance ({breakupEndDistance}) is at or below nearFullStart " +
+                         $"({nearFullStart}) — the centre break-up would close before the mark ever " +
+                         "reaches full strength, so it could never be seen.";
                 return false;
             }
 

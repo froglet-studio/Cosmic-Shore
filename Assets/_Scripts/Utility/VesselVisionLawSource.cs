@@ -165,6 +165,24 @@ namespace CosmicShore.Utility
                 return false;
             }
 
+            if (hlslText.IndexOf("lerp(BaseColor, cel, amount * mix)", StringComparison.Ordinal) < 0)
+            {
+                reason = "the centre break-up no longer modulates the BLEND AMOUNT. A dither applied " +
+                         "to the cel colour instead drives the interior toward black and punches " +
+                         "holes in the ship; applied to the blend it can only ever hand a fragment " +
+                         "back to the hull's own shading.";
+                return false;
+            }
+
+            if (hlslText.IndexOf("max(VesselVisionBreakup01(", StringComparison.Ordinal) < 0 ||
+                hlslText.IndexOf(", rim01)", StringComparison.Ordinal) < 0)
+            {
+                reason = "the silhouette rim is no longer exempt from the centre break-up. The rim " +
+                         "is the part of the mark that survives at range and the part a pilot " +
+                         "actually reads; dithering it trades the aid for the decoration.";
+                return false;
+            }
+
             reason = null;
             return true;
         }

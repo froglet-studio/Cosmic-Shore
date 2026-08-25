@@ -74,10 +74,65 @@ the same accessor the HUD and the Dolphin's Echo Sight read):
    separates a marked hull from lit mass tangled up with it.
 3. **A blend, not a replacement.** `strength` caps how far the hull is driven to the mark, so a
    marked vessel still reads as *that* vessel.
+4. **A centre break-up** (§2.3) that dissolves the flat interior and leaves the outline solid.
 
 Colour is the **domain's, always** — never derived from the hull's own materials, for the purple
 reason in §1. Domain identity is the palette's job and this must not borrow its space for something
 else (`Docs/PALETTE.md`).
+
+## §2.3 The centre break-up — why the mark is not a flat fill
+
+A fully-marked hull at close range reads as **paint**: one flat domain colour with no interior form
+left. The rim and the silhouette are what carry the aid, so the interior is where something can be
+given back. The mark is therefore dissolved away **from the centre outward** through a hard-edged
+cellular dither — the ship's own art shows through the middle, the outline stays solid.
+
+**The cells radiate from the object's own centre.** A cell's address is a *quantized direction* from
+the object origin, so the cells are angular wedges fanning out from the middle of the ship — which
+is what "dithered from the centre" means literally, not just in the coverage ramp. Three properties
+fall out of that choice:
+
+- **Scale-free.** A direction carries no length, so this needs no hull measurement, no second
+  per-vessel property, and no per-vessel tuning: the same cell count spans a Squirrel and a Rhino,
+  at every distance.
+- **No crawl, no swim.** Computed in *object* space, the cells ride the hull rigidly. A
+  screen-anchored pattern would crawl as the ship flies; a world-anchored one would swim as it rolls.
+- **One parameter, three layers.** The radial coverage rides `1 - dot(N, V)`, the same facing term
+  the cel bands and the rim already use — three layers keyed off one number cannot disagree about
+  where the middle of the ship is.
+
+Two rules keep it from eating the aid it is decorating:
+
+> **It modulates the blend amount, never the colour.** A dither applied to the cel colour drives the
+> interior toward black and punches holes in the ship. Applied to the blend it can only ever hand a
+> fragment back to the hull's own shading, so the mark can never darken anything the *undithered*
+> mark would not have darkened. Proven, not asserted — the verifier checks every sample lies on the
+> segment between the hull colour and the undithered mark.
+
+> **The rim is exempt, and the break-up closes with distance.** The silhouette outline is the part
+> that survives at range, so it is never dithered. And because the cells hold a constant angular
+> size, at long range they would fall below a pixel and read as *noise* rather than as texture — so
+> the break-up fades out and a distant ship returns to the solid, maximally readable silhouette.
+
+Measured on a spherical hull at the shipped defaults (`mix` = the fraction of the mark that
+survives; 20,000 samples per row):
+
+| distance | whole hull | dead centre | silhouette |
+|---|---|---|---|
+| 200 u | 0.611 | **0.241** | **1.000** |
+| 300 u | 0.602 | 0.239 | 1.000 |
+| 450 u | 0.625 | 0.294 | 1.000 |
+| 600 u | 0.762 | 0.555 | 1.000 |
+| 800 u | 0.963 | 0.931 | 1.000 |
+| 900 u | 1.000 | 1.000 | 1.000 |
+| 1200 u | 1.000 | 1.000 | 1.000 |
+
+Read with §2's band, that produces the behaviour the aid wants: a ship entering the band gets an
+**outline first** (at 200 u the band itself is only at 0.16, and the centre keeps 24% of that — so
+roughly 3% of the mark lands in the middle and the rim carries it), and **fills in as it recedes**,
+arriving at the plateau as a clean solid shape.
+
+Texture where the ship is big enough to have form; a clean shape where it is not.
 
 ## §2.2 It applies in the menu too, deliberately
 
@@ -175,6 +230,10 @@ with zero authoring.
 | `gain` | 1.15 | Gameplay bloom is clamped at 0.5 (`Docs/PALETTE.md §3`), so the signal colour already blooms at 1.0 and this buys presence rather than glow. |
 | `rimInner` / `rimOuter` | 0.55 / 0.95 | Closer together = harder outline; further apart = glow. |
 | `rimGain` | 1.1 | How much the rim adds on top of the cel tone. |
+| `breakupCells` | 3.5 | How many cells fan out from the centre. Scale-free — the same count spans every hull. |
+| `breakupReach` | 0.75 | How far out the break-up extends, on `1 - dot(N,V)`. 0 = solid fill again. |
+| `breakupStrength` | 0.85 | How much of the mark the dither may remove at the centre. Any of these three at 0 switches the break-up off. |
+| `breakupEndDistance` | 900 | Where it has closed back into a solid mark. Must exceed `nearFullStart`, or the break-up closes before the mark is ever full. |
 
 ## §5 Files
 
@@ -196,7 +255,7 @@ with zero authoring.
 
 | Check | How | Catches |
 |---|---|---|
-| The shipped HLSL behaves | `python3 Tools/Shaders/verify_vessel_vision_band.py` | An inert off sentinel, a plateau that never reaches 1, a non-monotone or popping edge, a quantizer that overshoots its top tone, a stamped-but-near vessel being modified, an unstamped object being modified. Compiles and **runs** the shipped file with clang++ — no Unity needed. |
+| The shipped HLSL behaves | `python3 Tools/Shaders/verify_vessel_vision_band.py` | An inert off sentinel, a plateau that never reaches 1, a non-monotone or popping edge, a quantizer that overshoots its top tone, a stamped-but-near vessel being modified, an unstamped object being modified. **And for the break-up:** that it is bit-identical to off when any of its three switches is 0, that the centre really is broken up, that the silhouette is never dithered, that it has closed by `breakupEndDistance`, that it produces no NaN, and that no fragment lands outside the segment between the hull colour and the undithered mark. Compiles and **runs** the shipped file with clang++ — no Unity needed. |
 | The graph is still spliced | `python3 Tools/Shaders/wire_vessel_vision_shading.py --check` | A reverted or hand-edited graph. Exits non-zero; re-run without `--check` to repair. |
 | Guards + assets | **FrogletTools > Vessels > Validate Vessel Vision Band** | A severed tint channel, a lost cutoff, a second stamp site, an insane config, a vessel prefab with no hull material on the wired shader. |
 | Guards + assets, in CI | `VesselVisionLawTests` (edit mode) | The same, from the test runner. |

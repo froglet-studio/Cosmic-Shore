@@ -24,3 +24,7 @@ MonoBehaviour:
   rimInner: 0.55
   rimOuter: 0.95
   rimGain: 1.1
+  breakupCells: 3.5
+  breakupReach: 0.75
+  breakupStrength: 0.85
+  breakupEndDistance: 900
