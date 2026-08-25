@@ -531,6 +531,17 @@ utility code, not just `MonoBehaviour`/`NetworkBehaviour` bodies** — and a "ve
 from the no-stub pass alone, on a file touched by an additive merge resolution, should be treated
 as unverified until re-checked with real signatures for the specific APIs that expression calls.
 
+**Stub a reference type as a `class`, never a `struct` — the diagnostic does not name the
+mistake.** Getting a stub's KIND wrong is a different failure from getting its members wrong:
+a member gap says `CS1061 'Foo' does not contain a definition for 'Bar'` and points straight at
+the fix, while declaring `PrismProperties` as a `struct` when the real type is a `class` surfaces
+as `CS0173: Type of conditional expression cannot be determined because there is no implicit
+conversion between 'PrismProperties' and '<null>'` — an error about the CALLER's ternary, in a
+file you did not write, naming nothing about the stub. Anything the target code compares to
+`null`, pattern-matches with `is { … }`, or assigns `null` to must be a class. Grep
+`class X` / `struct X` in the real source rather than inferring from usage; it is one grep and it
+is the difference between a five-minute harness and a confusing one.
+
 ### Fallback: `mcs` (only when dotnet can't be installed)
 
 `apt-get install mono-mcs` gives you `mcs`, and a Unity gameplay file usually touches a
@@ -2255,6 +2266,23 @@ signature of one prefab instanced in all of them, and it is the evidence.
   unresolvable and a naive check reports dozens of phantom "Missing (Mono Script)" rows. Compare
   the unresolved set in your version against the unresolved set in `git show <base>:<file>`; only
   the difference is yours.
+- **`field_parity.py` reads ONE `.cs` and does not walk the INHERITANCE CHAIN.** A component
+  whose class derives from another serializable MonoBehaviour (`WormSegmentFauna : Fauna`,
+  and every `Flora`/`Fauna` subclass in this repo) has its base class's serialized fields
+  written into the asset by Unity, and the checker — which only knows the leaf file — reports
+  every one of them as an *orphan key*. On the worm prefabs that is eight phantom orphans
+  (`cellData`, `domain`, `diet`, `starvationSeconds`, …) and a red `FAIL` on a tree that is
+  perfectly correct. It reads exactly like the wrapped-attribute case below and has the
+  opposite cause. **Union the chain before comparing**:
+
+  ```python
+  base   = serialized_fields("…/Fauna.cs")
+  fields = serialized_fields("…/WormSegmentFauna.cs") | base
+  ```
+
+  A useful side effect: the *missing* direction (a C# field with no key in the asset) is the
+  honest signal that a newly added field has never been written by an editor import — worth
+  reading rather than filtering out.
 - **`field_parity.py` is LINE-BASED, so a WRAPPED attribute hides a serialized field from it —
   and it fails in the direction that reads as your fault.** The checker asks "does this line carry
   `SerializeField` or `public`?", so a declaration whose attribute spilled onto earlier lines —
