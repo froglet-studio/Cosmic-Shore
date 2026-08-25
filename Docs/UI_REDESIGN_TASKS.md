@@ -211,7 +211,9 @@ Acceptance criteria:
 > bought with TMP `<mspace>` on Aldrich rather than by a mono family. Most of the criteria above
 > therefore name assets that should no longer be installed, and the Space Grotesk fallback-chain
 > and default-font criteria contradict v0.3. Re-derive the criteria from v0.3 §4 before starting.
-> Status and criteria are left as written pending that pass.
+> The Typography source page also requires a **Chakra Petch Italic** face for the emphasis rule,
+> which no criterion asks for — see queue #6. Status and criteria are left as written pending that
+> pass.
 
 **Deliverables:**
 **Findings:**
@@ -275,7 +277,11 @@ Anything found during implementation that needs a design decision. The implement
 | 2 | T1 impl | T1 | Which layer of `GameCanvas.prefab` becomes the constrained content layer, and does background art move to a sibling above it? The two-layer contract needs a home in the prefab before T1 can be applied — likely settled inside T3. | OPEN |
 | 3 | T1 impl | T1 | §8's 24 px minimum edge inset is currently authored padding on the content layer (nothing enforces it). Should it stay authored — which is what lets it survive the desktop no-op — or become a serialized floor on `SafeAreaFitter`? And is 24 px canvas units at the 1920×1080 reference, or device pixels? | OPEN |
 | 4 | v0.3 intake | — | **`STYLE_FOUNDATION.md` §3 cross-references "§11.9" for the end-of-game victory banner, but §11 is the UIThemeSO field map and has no subsections — the banner is §10.9.** Broken internal citation in the spec, left unfixed here because the tracker may not edit the spec. Correct it to §10.9 in the next spec revision. | OPEN |
-| 5 | v0.3 intake | T5/T6 | **§4's type scale has no source art backing it.** The eight style-guide pages supplied were Main Colors, Additional Colors, Icons (supplied twice), Buttons, and three UI Elements pages — there was no Typography page. Either supply it, or confirm §4 is spec-authored rather than transcribed from the guide. See `Docs/StyleGuide/README.md`. | OPEN |
+| 5 | v0.3 intake | T5/T6 | ~~**§4's type scale has no source art backing it.**~~ **RESOLVED** — the Typography page was supplied. §4's *Mobile @800* column is a faithful transcription (H1 24 / H2 20 / H3 16 / Body 16 / Button 16 / Button small 12 all match), as is the emphasis rule. Transcription of record in `Docs/StyleGuide/README.md`; the divergences it surfaced are queue #6–#9. | RESOLVED |
+| 6 | Typography art | T5 | **Emphasis needs a Chakra Petch *Italic* face.** §4 and the source page both say emphasis is a colour shift *or* Chakra Petch italic, but T5's criteria list Chakra Petch 400/500/600/700 with no italic. Confirm which weight's italic to install, or drop italic from the emphasis rule and leave colour as the only channel. | OPEN |
+| 7 | Typography art | T5/T6 | **Display, Body small, and the three Data roles are spec-authored, not on the source page** — it defines only H1/H2/H3, Body, and two button sizes. Their PC sizes (48 / 15 / 44 / 20 / 15) have no guide backing. This matters most for the Data roles, which carry the whole `<mspace>` decision. Confirm they are intended additions. | OPEN |
+| 8 | Typography art | — | **The button caps rule has a documented exception that v0.3 dropped.** The source page states buttons are "almost always in caps, with the exception of the 'used' state of the 'request knowledge' button on the port". §4 and §10.1 both say caps unconditionally. Restore the exception, or confirm it dies with the Port screen (already cut from the overhaul — see Deferred). | OPEN |
+| 9 | Typography art | T5 | **A live countdown renders in the button face, not a Data role.** The page's Button-small example is `Next request in 3:25:19` — mixed-case ticking numerals in Chakra Petch 12 pt. v0.3 scopes `<mspace>` to the Aldrich Data roles, so this timer is outside the tabular rule and will jitter as digits change. Does `<mspace>` extend to numerals in button text? | OPEN |
 
 ---
 

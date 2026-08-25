@@ -29,18 +29,42 @@ rather than editing `STYLE_FOUNDATION.md` in passing.
 
 ## Status — art not yet committed
 
-⚠ **The eight JPGs are not in this folder yet.** They were attached to the
-session that wrote this README as inline conversation images rather than as
-files, so there were no binaries on disk to commit. The table above is the
-agreed naming so the art can be dropped in without renegotiating filenames.
+⚠ **The JPGs are not in this folder yet.** Every page has been supplied to a
+session as an inline conversation image rather than as a file, so there were no
+binaries on disk to commit. The table above is the agreed naming so the art can
+be dropped in without renegotiating filenames. Nothing under `Docs/` is
+gitignored (verified with `git check-ignore`), so the files add normally — no
+`-f` needed.
 
-Two things to know when adding them:
+Pages seen so far: Main Colors, Additional Colors, **Typography**, Icons
+(supplied twice), Buttons, and three UI Elements pages.
 
-- **`03-typography.jpg` was not among the eight pages supplied.** The eight
-  images were: Main Colors, Additional Colors, Icons (**supplied twice**),
-  Buttons, and three UI Elements pages. There was no typography page, so §4's
-  type scale currently has **no source art backing it** — it rests on the
-  v0.3 spec text alone. Supply that page, or treat §4 as spec-authored rather
-  than guide-authored.
-- Nothing under `Docs/` is gitignored (verified with `git check-ignore`), so the
-  files add normally — no `-f` needed.
+## Typography page — transcription of record
+
+The Typography page arrived after `STYLE_FOUNDATION.md` v0.3 was written, so
+until the JPG lands this is the record of what it says. **It is source art and
+therefore outranks §4.**
+
+| Block | Content |
+|---|---|
+| Headings — Aldrich | Heading 1 (24) · Heading 2 (20) · Heading 3 (16) |
+| Body — Aldrich | 16 px. "Normal type. Information text in the hangar, chat text in the port, descriptions in the store." |
+| Text Emphasis | Different colours **or** *italics in the Chakra Petch font* |
+| Buttons — Chakra Petch Semibold | 16 pt. "Text used on buttons is almost always in caps, **with the exception of the 'used' state of the 'request knowledge' button on the port**." A second button size is **12 pt** — the example is a mixed-case countdown, `Next request in 3:25:19`, with a Knowledge icon. |
+
+**§4's Mobile @800 column is a faithful transcription** — H1 24, H2 20, H3 16,
+Body 16, Button 16, Button small 12 all match the page exactly, and the emphasis
+rule matches. Four things the page settles that the spec does not:
+
+1. **The guide sheet spells the family "Aldritch"; the real font is "Aldrich".**
+   The spec is right and the art has the typo — do not "correct" the spec to
+   match the art here. (~1,670 project references use Aldrich.)
+2. **Display, Body small, and the three Data roles do not exist on the page.**
+   They are spec-authored additions, not transcriptions. That matters most for
+   the Data roles, since they carry the whole `<mspace>` decision.
+3. **The button caps rule has a documented exception** — the "used" state of the
+   Port's "request knowledge" button is not caps. §4 and §10.1 both state caps
+   unconditionally, so this rule is currently lost.
+4. **Emphasis requires a Chakra Petch *Italic* face.** No task asks for one.
+
+All four are logged in the design feedback queue in `Docs/UI_REDESIGN_TASKS.md`.
