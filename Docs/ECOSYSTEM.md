@@ -1354,10 +1354,11 @@ as a petal surge that settles back to 10.
   dead scene-population paths wired through the removed `Cell.fauna2` field, §7) never enter
   `Cell.LiveFauna`, so they would drop collectibles without having granted a buff — acceptable
   while those paths stay dead; fold them into `AssignLineage` if they ever revive. Worm colony
-  segments (§21): body segments carry no crystal (body parts, not lifeforms — no buff, no
-  drop); head/tail capital segments DO carry and drop hearts but are not lineage-registered,
-  so they grant no buff either — drop-without-buff is a deliberate §21 ruling (a kaiju must
-  not destabilize the elemental economy), not the manager-fauna accident described above.
+  segments (§23): EVERY segment carries and drops a heart (§23.8 — head, body and tail alike),
+  and none of them is lineage-registered, so none grants a buff — drop-without-buff is a
+  deliberate §23.3 ruling (a kaiju must not destabilize the elemental economy), not the
+  manager-fauna accident described above. §23.8 multiplied the DROPS without touching the
+  pool, which is the same ruling held rather than a new one.
 - **Client-local divergence:** fauna have no NetworkObject and element levels don't replicate,
   so peers can disagree on exact buff values — the same accepted divergence the fauna sim
   itself has (§7 caveat 4). Each client is self-consistent. Server-authoritative pools are the
@@ -2486,7 +2487,8 @@ riding along here.
 ## 23. The worm colony kaiju — a connected population as a boss fight (Aug 2026)
 
 The worm returns as what it was always meant to be: a **colony fauna** — head, body
-segment, and tail are three fauna types forming one connected population — rebuilt from
+segment, and tail are three fauna types forming one connected population, and every one of
+them is a genuine individual carrying its own elemental heart (§23.8) — rebuilt from
 scratch on the modern `Fauna` substrate as a cooperative **kaiju boss**. The 2024 trio
 (`Worm`/`WormManager`/`BodySegmentFauna`) and its ten orphaned prefabs were audited across
 every prior attempt (shipped shell, ancient commits, the `Sharks-and-worms` branch) and
@@ -2510,15 +2512,18 @@ movement model — plus the `Sharks-and-worms` branch's telegraph→burst attack
   genuine fauna: body `HealthPrism`s under a `Spindle` (LifeForm deliberately null — a
   creature body, not consumable cell mass), registered in `PrismSpatialIndex` and synced
   per frame (movers contract). Head and tail author **danger prisms** (`DangerBlock`
-  instances — the standard domain-blind danger effect chain does all contact damage) and
-  carry an elemental **heart** provisioned to the authored element
+  instances — the standard domain-blind danger effect chain does all contact damage);
+  body segments carry one high-volume core prism (volume is the spine — big volume, ONE
+  collider). **Every role carries an elemental heart** provisioned to the authored element
   (`LifeFormCrystal.EnsureElementalCrystal(this, heartElement)` — the element-as-data
-  channel). Body segments carry one high-volume core prism (volume is the spine — big
-  volume, ONE collider).
+  channel), because a worm is a POPULATION and a segment is an individual in it (§23.8).
 
 ### 23.2 The fight (all of it emergent from the rules)
 
-- **Kill a BODY segment** (its core prism) → the worm **splits in two**; both halves
+- **Kill a BODY segment** (its core prism, or joust its heart) → it drops its crystal
+  and the **population splits in two**: the head and every segment still attached to it
+  stay the original colony, while the tail and everything attached to IT become a new
+  colony that strongly separates from every other worm population (§23.8). Both halves
   begin regrowing their missing ends. Mid-body kills multiply the problem.
 - **Kill an END** (strip its danger prisms, or joust its heart — hearts are joustable,
   and `CurrentSpeed` is the live head speed, so out-race the kaiju to joust it) → the
@@ -2569,13 +2574,13 @@ movement model — plus the `Sharks-and-worms` branch's telegraph→burst attack
 - **No imposed death**: the only clocks are differentiation (state change of existing
   mass, gated on being fed) and starvation shedding (the standard
   consumption-bounded-population channel). Growth has NO clock — feeds only.
-- **Crystal contract**: the colony's hearts live on its capital segments (head + tail,
-  one each; a split provisions the new worm's ends as they differentiate). Body
-  segments are connective tissue — body parts, not lifeforms — per the §15 stance,
-  which this section supersedes in part: worm capital segments now DO carry and drop
-  hearts. Colony hearts deliberately do not join the §15 domain buff pool in v1
-  (segments are not lineage-registered), so a kaiju can't destabilize the elemental
-  economy — revisit deliberately if wanted.
+- **Crystal contract**: **every segment is a lifeform and carries exactly one heart** —
+  head, body and tail alike — so the invariant lands on the MEMBER, not on the colony
+  (see §23.8; the earlier "body segments are body parts and carry none" ruling is
+  RETRACTED, not superseded in part). The colony ROOT stays heartless: it is the
+  population's anchor, not an organism. Colony hearts deliberately do not join the §15
+  domain buff pool (segments are not lineage-registered), so a kaiju can't destabilize
+  the elemental economy — unchanged by §23.8, and still revisitable deliberately.
 - **No domain asymmetry**: the colony spawns through the standard controlling-color
   pipeline (`RandomLifeSpawner` → `SpawnFaunaWithDomain`); nothing special-cases color.
 - **Fauna senses**: prism sensing via `PrismSpatialIndex.QuerySphere`; vessel sensing
@@ -2589,10 +2594,11 @@ Two things the first passes left out, both found in play:
 
 - **Worms didn't repel each other.** Colonies are boids like everything else in the
   cell: `TickSeparation` walks the cell's fauna registry for other `WormFauna` and
-  pushes this worm's HEAD away from each neighbour's **nearest segment** (a worm is
-  long — head-to-head distance is the wrong read), inverse-square weighted, summed
-  into the steering alongside the goal pull (`ColonySeparationRadius` /
-  `ColonySeparationWeight`). Separation applies while free-steering (Cruise, Pursue,
+  pushes this worm's HEAD away, summed into the steering alongside the goal pull
+  (`ColonySeparationRadius` / `ColonySeparationWeight`). *(The read and the falloff
+  were both rebuilt in §23.8 — the term measures the two worms' **closest approach**
+  rather than head-to-their-nearest-segment, and the inverse-square weighting described
+  here turned out to be numerically inert.)* Separation applies while free-steering (Cruise, Pursue,
   Recover) but **not** during Telegraph or Lunge: a committed strike must stay
   readable and dodgeable-by-moving, not get deflected by a neighbour. The per-instance
   `GoalOrbitOffset` is kept in the goal (below) so two colonies never seek the
@@ -2615,12 +2621,14 @@ Two things the first passes left out, both found in play:
 
 Per segment: body = 1 BoxCollider (one high-volume core prism); head = 11 (the 8
 recovered armor plates + 3 danger fangs); tail = 8 (the recovered two-tier stinger:
-4 blades + 4 tip spikes); + 1 heart SphereCollider on each capital segment. A
-spawn-size-8 worm = 12+6×1+9 = **27 active colliders**; at the
-`MaxSegmentsPerWorm=16` growth cap = **35**. Splits conserve segment totals (never
-exceed the cap) and add at most one heart per differentiated end. Against the
-~1,500/cell target this is negligible — the deleted 2024 worm cost 28 colliders per
-worm *and grew unboundedly on a timer*.
+4 blades + 4 tip spikes); **+ 1 heart SphereCollider on EVERY segment** (§23.8 — it was
+the capitals only). Verified against the shipped prefabs (11 / 1 / 8 nested prism
+instances). A spawn-size-8 worm = 12+6×2+9 = **33 active colliders** (was 27); at the
+`MaxSegmentsPerWorm=16` growth cap = **49** (was 35). Splits now conserve the collider
+total EXACTLY — segment totals were already conserved, and a differentiated end no
+longer provisions a heart because the body it grew from already had one (that used to
+add up to +2 per split). Against the ~1,500/cell target this is still negligible — the
+deleted 2024 worm cost 28 colliders per worm *and grew unboundedly on a timer*.
 
 ### 23.4.1 The recovered 2024 geometry (Aug 2026 second pass)
 
@@ -2660,9 +2668,10 @@ it: the ORIGINAL authoring had the good bones. Recovered verbatim from git histo
 Species entries in `_SO_Assets/Lifeforms/`: `WormColonyFaunaConfig.asset`
 (Element=None — keeps the prefab-authored Mass hearts) plus the menagerie-convention
 four `Worm Colony Charge/Mass/Space/Time.asset` (Element authored; the colony root
-forwards the pick to its capital segments' hearts via the `Fauna.ProvisionHeart`
-override — the root itself stays heartless, and wounds differentiate into the picked
-element). All are `PopulationSize=1` (a lone kaiju; the seed floor sees split-children
+forwards the pick to EVERY segment's heart via the `Fauna.ProvisionHeart` override —
+the root itself stays heartless, segments grown later inherit the pick in
+`AddSegmentToChain`, and a split inherits the parent's whole variant pick, so a colony
+breeds true). All are `PopulationSize=1` (a lone kaiju; the seed floor sees split-children
 via lineage registration, so it never re-seeds while any worm lives).
 
 **Spawnable NOW from the Lifeform Matrix toy** (freestyle): the four element configs
@@ -2685,8 +2694,9 @@ First pass, in Menu_Main freestyle:
 
 1. **Import clean.** Pull, let Unity reimport, confirm zero compile errors and that the
    four new prefabs open without "Missing (Mono Script)" rows. Run
-   **FrogletTools > Validation > Validate Lifeform Crystals** — head/tail hearts are
-   runtime-provisioned by design, so it should stay quiet about the worm.
+   **FrogletTools > Validation > Validate Lifeform Crystals** — every segment's heart is
+   runtime-provisioned by design (and the validator only inspects `LifeForm`/`LightFauna`
+   prefabs anyway), so it should stay quiet about the worm.
 2. **Spawn**: freestyle → Lifeform Matrix toy → "Worm Colony" → any element station.
    Expect 8 segments hatching **on the cell's densest mass** in your domain: a plated
    head, 6 tapering bodies, a bladed tail — segments nearly touching, tapering to the
@@ -2730,6 +2740,174 @@ crowding `ColonySeparationRadius`/`ColonySeparationWeight`.
 - **The Lifeform Matrix station for the colony is an anonymous labeled sphere** — the
   root prefab carries no renderer for `ToyModelBuilder` to sample. A mini-worm station
   model is cosmetic follow-up.
+
+### 23.8 A worm is a POPULATION — every segment is an individual with its own heart (Aug 2026, fourth pass)
+
+The prompter corrected the framing this section was built on, and the correction runs
+deeper than a field: **a worm colony is not one creature with body parts, it is a
+POPULATION of creatures that happen to be connected.** Every segment — head, body and
+tail alike — is its own fauna carrying its own elemental heart, and killing one drops
+that heart like any other lifeform death.
+
+**The retracted ruling.** §23.3 previously read: "the colony's hearts live on its capital
+segments … body segments are connective tissue — body parts, not lifeforms". That was
+recorded as a *composite-creature* reading of the locked crystal invariant ("every
+lifeform drops one elemental crystal … COMPOSITE creatures satisfy it at the CREATURE
+level, not per part"), and it was wrong about which level this creature lives at. The
+invariant is not being bent here: it lands on **each member**, exactly as written, once
+you accept that the members are the lifeforms. It is **retracted**, not amended — do not
+cite the old wording, and do not "fix" a heart-bearing body segment by taking its crystal
+away.
+
+What changed in code is small, because the substrate was already right:
+`WormSegmentFauna` was already a full `Fauna` with a sealed `Die`, a wither, a joust path
+and a body-prism kill path; only the `if (role != WormSegmentRole.Body)` gate around
+provisioning stood between it and a heart. `WormBodySegment.prefab` now authors
+`heartElement: Mass`, matching its siblings, so nothing rolls at random.
+`WormFauna.ProvisionHeart` forwards a species config's element pick to *every* segment,
+`AddSegmentToChain` stamps the colony's pick onto a segment grown after the pick landed,
+and a split inherits the parent's whole variant pick (`Fauna.VariantPick`, newly exposed
+`protected`) instead of re-rolling — **a colony breeds true**, and the two halves of a
+split worm stay the same animal.
+
+**Three consequences worth stating.**
+
+1. **Jousting a body segment now splits the worm.** A body segment's heart is embedded and
+   therefore joustable (`Crystal.SetEmbeddedIn` enables its collider), and
+   `WormSegmentFauna.CurrentSpeed` reports the colony's live head speed — so a pilot who
+   can outrace the kaiju can take a heart out of its middle and sever it, without
+   destroying a single prism. That is a new tactic, and it is entirely emergent: nothing
+   was written to enable it.
+2. **The reward now tracks the work.** Stripping a body segment's high-volume core prism
+   used to pay nothing at all; the whole soft middle of a kaiju was worth zero crystals.
+   It now pays exactly what any other lifeform death pays, at the one size the level curve
+   says (below).
+3. **Differentiation stopped provisioning hearts**, because the body it promotes already
+   has one. A split is now collider-neutral as well as mass-neutral.
+
+**The per-prefab heart scale went with it (§33 enforcement).** `WormSegmentFauna` carried
+a `heartLocalScale` field, authored `2.5` on the head, applied *after*
+`Crystal.SetEmbeddedIn` — i.e. it overwrote the one curve §33 exists to make universal.
+At `KaijuScale 3` that rendered a level-1 heart at world scale 7.5 against the law's 3.5,
+and a crystal's world scale is read twice AS GAMEPLAY (the collect reward and the live
+domain fauna buff), so it was a per-prefab REWARD sitting inside the very method this
+pass was multiplying across every segment. The field is deleted from the class and from
+all three prefabs. `heartLocalPosition` stays — a **seat is not a size**, and the head's
+authored `(0,0,-13.14)` is what nests its heart inside the armour cage.
+
+#### The split, stated as the prompter did
+
+Killing an interior segment severs the population:
+
+- the **head** and every segment still attached to it stay the **original** colony (it
+  takes a tail wound);
+- the **tail** and everything attached to *it* become a **new** colony (it takes a head
+  wound), spawned as a clone of the parent brain so it inherits the exact same tuning.
+
+That much was already the shipped behaviour (`WormFauna.HandleSegmentDeath` →
+`SpawnSplitColony`). What was **not** shipped was the second half of the sentence: that
+the new population has a *strong separation* from the other worm populations.
+
+#### Separation was numerically inert, and that is why it never read
+
+`TickSeparation` summed `(head - point) / sqr` — an inverse-square falloff, whose
+**magnitude is `1/|d|`** — and blended it into a **normalized** desired direction. So the
+term's size was a function of the units the cell happens to be measured in, and at real
+worm distances it was a rounding error. Measured against the shipped
+`ColonySeparationRadius 160` / `ColonySeparationWeight 2.5`, as the maximum deflection it
+could apply to the head's heading:
+
+| separation (u) | OLD `\|sep\|` | OLD × weight | OLD deflection | NEW `\|sep\|` | NEW × weight | NEW deflection |
+|---:|---:|---:|---:|---:|---:|---:|
+| 5   | 0.2000 | 0.500 | 26.6° | 0.9385 | 2.346 | 66.9° |
+| 15  | 0.0667 | 0.167 |  9.5° | 0.8213 | 2.053 | 64.0° |
+| 25  | 0.0400 | 0.100 |  5.7° | 0.7119 | 1.780 | 60.7° |
+| 40  | 0.0250 | 0.063 |  3.6° | 0.5625 | 1.406 | 54.6° |
+| 60  | 0.0167 | 0.042 |  2.4° | 0.3906 | 0.977 | 44.3° |
+| 80  | 0.0125 | 0.031 |  1.8° | 0.2500 | 0.625 | 32.0° |
+| 120 | 0.0083 | 0.021 |  1.2° | 0.0625 | 0.156 |  8.9° |
+
+One link of a `KaijuScale 3` worm is `8.4 × 3 = 25.2u`, so **25u is touching distance** —
+and the old rule answered that with 5.7°. No value of `ColonySeparationWeight` fixes it:
+the term is 0.04 long, so reaching parity with the goal pull needed a weight of 25, at
+which point a worm 5u away would have been thrown around by a factor of 5. The term is now
+a **unit direction scaled by a falloff in `[0,1]`** — `(1 - d/radius)²`, 1 where the bodies
+touch, 0 at the radius — which makes `ColonySeparationWeight` a **true ratio against the
+goal pull**: at 2.5 the repulsion beats the pull toward food inside **58.8u** and is
+2.35× it at contact. Nothing was retuned; the authored number simply started meaning what
+its tooltip always said.
+
+Two smaller repairs came with it, both needed for a split specifically:
+
+- **The read is the two worms' CLOSEST APPROACH** (`TryGetNearestApproach`), not
+  head-to-their-nearest-segment. Both animals are long; measuring only from my own head
+  means a worm being trailed along its flank feels nothing while the worm doing the
+  trailing feels everything — which at a split is exactly backwards, because the front
+  half's head is a body-length away from the cut while the rear half's head is *at* it.
+  Cost is O(mine × theirs) per neighbouring colony at the behaviour-tick cadence — ≤16×16
+  over a handful of colonies, no physics, no prism queries.
+- **Both halves evaluate separation immediately** at the split rather than waiting up to a
+  behaviour tick (1.5s × the aggression cadence). The two bodies are interpenetrating at
+  the instant of the cut, which is where the falloff is strongest; a tick of delay is the
+  whole window in which they would otherwise read as one animal drawn twice.
+
+The new colony also rolls its **own** `GoalOrbitOffset` (`Fauna.Start`, per-instance), so
+the two halves stop seeking the identical point — anti-convergence and separation are
+complementary, as §23.3.1 already recorded.
+
+#### Invariant review
+
+- **Crystal contract**: strengthened, not bent — every lifeform in the population drops
+  exactly one heart, sized by the one level curve.
+- **Continuity of existence**: untouched. Every segment already bloomed in and withered
+  out; a heart is provisioned at spawn and released through the sealed `Die`.
+- **No imposed death**: untouched. No clock was added. The only new death *route* is a
+  joust, which is an active force.
+- **Mass conserved**: improved — the soft middle of a kaiju now returns a crystal instead
+  of nothing.
+- **No domain asymmetry**: untouched (segments take the colony's domain).
+- **Endogenous selection**: a split inherits the parent's variant pick rather than
+  re-rolling; acquired level is still not heritable.
+- **§15 domain buff pool**: deliberately unchanged. Segments are still not
+  lineage-registered, so a 16-heart kaiju still grants no standing buff — see the §15
+  bullet. Multiplying the drops without touching the pool is the *existing* ruling held.
+- **Collider budget**: +1 SphereCollider per body segment. §23.4 restated: 33 for a
+  spawn-8 worm (was 27), 49 at the growth cap (was 35), and a split is now exactly
+  collider-neutral.
+
+#### Verify in-editor (the human is the gate — none of this has run in Unity)
+
+Everything here is machine-validated only: the four changed C# files were type-checked
+with a real Roslyn build against a transcribed stub harness (bodies bind — proven by
+injecting a `CS0103` and a `CS1503` into the new code and watching both fire), and
+`check_conditional_compilation.py` is clean. On top of §23.6:
+
+1. **Spawn** a colony from the Lifeform Matrix toy. Every segment should now show a heart:
+   8 crystals on a spawn-8 worm, one per segment, all the same element and all the same
+   size (level 1 → world 3.5). If the head's heart looks conspicuously bigger than the
+   rest, `heartLocalScale` has come back from somewhere.
+2. **Shoot a mid-body core prism.** Expect a crystal to drop *and* the worm to split; the
+   two halves should visibly shoulder apart within a second rather than swimming in
+   convoy.
+3. **Joust a mid-body heart** (outrace the kaiju). Same split, no prism destroyed.
+4. **Collect a body heart** and confirm the element level gain matches any other level-1
+   creature's (this is the §33 half — a per-prefab scale would show up here as a bigger
+   reward off the head).
+5. **Two colonies**: they should give each other a genuinely wide berth now, not graze.
+   `ColonySeparationWeight` is the dial and it finally has authority; `ColonySeparationRadius`
+   sets where the term starts.
+
+#### Known gaps carried forward
+
+- The §23.7 list still stands (client-local fauna, no scoring event for segment kills,
+  level inert for the colony, differentiated ends keep the body mesh).
+- **A long worm is now a lot of collectible crystals in a small volume.** Nothing bounds
+  how much a co-op team banks by dismantling one kaiju, because nothing ever has — but
+  the number went from 2 per colony to `SegmentCount`. If that reads as too rich in a
+  play test, the honest lever is `FeedsPerSegment` (how expensive length is), not taking
+  hearts back off the members.
+
+---
 
 ---
 

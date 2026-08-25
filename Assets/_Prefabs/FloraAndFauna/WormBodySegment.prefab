@@ -57,9 +57,8 @@ MonoBehaviour:
   predationImmunitySeconds: 6
   starvationSeconds: 0
   role: 0
-  heartElement: 0
+  heartElement: 2
   heartLocalPosition: {x: 0, y: 0, z: 0}
-  heartLocalScale: 0
   shieldArmor: 0
 --- !u!1 &2000
 GameObject:

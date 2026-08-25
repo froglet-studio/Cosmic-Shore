@@ -337,9 +337,9 @@ teardown). Everything below is remaining polish / not-yet-play-verified.
   crystal) — tune via the matrix, then bake into `Tadpole Fauna Charge.asset`.
 - **Not in the elemental contract yet**: Seaweed (`SpawnableCord`, not a `Flora`), drone
   populations (BoidManager path — now all spawn the base tadpole; needs its own config pass
-  for per-element identity). (Worms: the legacy trio was deleted; the rebuilt worm colony's
-  capital segments carry authored elemental hearts — Docs/ECOSYSTEM.md §23 — though the
-  colony doesn't yet roll the element × level spread.)
+  for per-element identity). (Worms: the legacy trio was deleted; every segment of the
+  rebuilt worm colony carries an authored elemental heart — Docs/ECOSYSTEM.md §23.8 — though
+  the colony doesn't yet roll the element × level spread.)
 - **Sparrow (and other vessels') HUD ability-icon bindings** for the shared upgrade-highlight
   system are unwired (Squirrel only); fill each view's `abilityIcons` in its prefab.
 - **Squirrel HUD tube/energy icons repaint colours per-frame**, so the upgrade highlight

@@ -7,10 +7,11 @@ using UnityEngine;
 namespace CosmicShore.Gameplay
 {
     /// <summary>
-    /// The worm colony brain — the kaiju boss (Docs/ECOSYSTEM.md §23). A connected
-    /// population of three segment fauna types (<see cref="WormSegmentFauna"/>:
-    /// Head / Body / Tail) driven by one coordinator so the whole chain costs one
-    /// behavior tick and one movement pass, however long it grows.
+    /// The worm colony — a POPULATION, not a creature with body parts (Docs/ECOSYSTEM.md
+    /// §23). Its members are individual fauna (<see cref="WormSegmentFauna"/>:
+    /// Head / Body / Tail), each carrying its own elemental heart; this root is the
+    /// population's anchor and brain, driving the whole chain from one behavior tick and
+    /// one movement pass however long it grows.
     ///
     /// The fight, expressed through the fundamentals:
     ///  • The HEAD is the mouth: it grazes prism mass voraciously (canonical
@@ -18,7 +19,10 @@ namespace CosmicShore.Gameplay
     ///    length is a record of what the colony has eaten (mass conserved).
     ///  • Danger prisms on head and tail make the ends the threat surface (the
     ///    standard domain-blind danger effect chain — no bespoke damage code).
-    ///  • Killing a BODY segment SPLITS the worm in two — both halves regrow their
+    ///  • Killing a BODY segment SPLITS the population in two — the head and the
+    ///    segments still attached to it stay THIS colony; the tail and everything
+    ///    attached to it become a NEW colony that strongly separates from every other
+    ///    worm population (see <see cref="TickSeparation"/>). Both halves regrow their
     ///    missing ends by DIFFERENTIATING the wound segment (a state change of
     ///    existing mass), so mid-body kills multiply the problem.
     ///  • Optimal play emerges: chain end-kills faster than EndRegrowSeconds and you
@@ -30,10 +34,11 @@ namespace CosmicShore.Gameplay
     ///    prisms' existing impact pipeline.
     ///
     /// The colony root is lineage-registered (spawner pipeline, live-count, cleanup)
-    /// but carries no heart — the colony's crystal contract lives on its capital
-    /// segments, which drop their hearts when killed. The root is classified
-    /// Predator so nothing in the food web preys on it (nothing eats a kaiju), and
-    /// <see cref="Predated"/> is sealed off — the segments are the killable surface.
+    /// but carries no heart of its own: it is the population anchor, and the crystal
+    /// invariant lands on the MEMBERS — every segment drops its heart when killed. The
+    /// root is classified Predator so nothing in the food web preys on it (nothing eats
+    /// a kaiju), and <see cref="Predated"/> is sealed off — the segments are the
+    /// killable surface.
     /// </summary>
     public class WormFauna : Fauna
     {
@@ -119,6 +124,34 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
+        /// Closest approach between this colony's body and <paramref name="other"/>'s — the
+        /// two points, one on each worm, that are nearest each other. Both worms are long, so
+        /// neither head-to-head nor head-to-their-nearest-segment describes how close the two
+        /// populations actually are: a worm being trailed along its flank has to feel it from
+        /// the segment that is being crowded, not from its nose. O(mine × theirs) at the
+        /// behavior-tick cadence over a handful of colonies — no physics, no prism queries.
+        /// </summary>
+        bool TryGetNearestApproach(WormFauna other, out Vector3 mine, out Vector3 theirs,
+            out float sqrDistance)
+        {
+            mine = default;
+            theirs = default;
+            sqrDistance = float.PositiveInfinity;
+            for (int i = 0; i < segments.Count; i++)
+            {
+                var seg = segments[i];
+                if (!seg) continue;
+                Vector3 from = seg.transform.position;
+                if (!other.TryGetNearestBodyPoint(from, out var point, out float sqr)) continue;
+                if (sqr >= sqrDistance) continue;
+                sqrDistance = sqr;
+                mine = from;
+                theirs = point;
+            }
+            return sqrDistance < float.PositiveInfinity;
+        }
+
+        /// <summary>
         /// An apex FORAGER hunts mass, so the colony overrides the base fauna goal
         /// (which idles at the cell crystal while Calm): head for the densest sensed
         /// region at every phase — the same "voracious" read LightFauna gets in nucleus
@@ -151,12 +184,12 @@ namespace CosmicShore.Gameplay
             _pickedHeartElement != Element.None ? _pickedHeartElement : config.RegrownEndElement;
 
         /// <summary>
-        /// Element-as-data for a COMPOSITE creature: the colony root stays heartless
-        /// (its crystal contract lives on its capital segments — Docs/ECOSYSTEM.md
-        /// §21), so a per-element species config (the Lifeform Matrix toy, an
-        /// element-authored SpawnProfile entry) forwards its pick to the head/tail
-        /// hearts instead of provisioning a crystal on this empty anchor. Remembered
-        /// so wound differentiation regrows hearts of the same element.
+        /// Element-as-data for a POPULATION: the colony root stays heartless (it is the
+        /// anchor; the crystal invariant lands on its members — Docs/ECOSYSTEM.md §23.3),
+        /// so a per-element species config (the Lifeform Matrix toy, an element-authored
+        /// SpawnProfile entry) forwards its pick to EVERY segment's heart instead of
+        /// provisioning a crystal on this empty anchor. Remembered so newly grown segments
+        /// and wound differentiation carry the same element — a colony breeds true.
         /// </summary>
         protected override void ProvisionHeart(Element element)
         {
@@ -164,8 +197,7 @@ namespace CosmicShore.Gameplay
             for (int i = 0; i < segments.Count; i++)
             {
                 var seg = segments[i];
-                if (seg && seg.Role != WormSegmentRole.Body)
-                    seg.ReprovisionHeart(element);
+                if (seg) seg.ReprovisionHeart(element);
             }
         }
 
@@ -283,6 +315,11 @@ namespace CosmicShore.Gameplay
             seg.domain = domain;
             seg.Colony = this;
             seg.Initialize(cell);
+            // A colony breeds true: a member grown after the species config picked an
+            // element carries that element's heart, not the body prefab's authored one.
+            // No-ops when they already agree (EnsureElementalCrystal keeps a match).
+            if (_pickedHeartElement != Element.None)
+                seg.ReprovisionHeart(_pickedHeartElement);
             if (cell) cell.RegisterSpawnedObject(seg.gameObject);
             segments.Insert(index, seg);
         }
@@ -566,29 +603,45 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// Boid separation from other colonies: each neighbour pushes this worm's head
-        /// away from ITS NEAREST SEGMENT, inverse-square weighted, so two kaiju sharing
-        /// a cell swim around each other instead of interpenetrating. Colonies are
-        /// lineage-registered, so this is a walk of the cell's small fauna registry —
-        /// no physics, no prism queries. O(colonies × segments) at the tick cadence.
+        /// Boid separation between worm POPULATIONS — the rule that makes a split read as
+        /// two animals rather than one animal drawn twice. Each neighbouring colony pushes
+        /// this worm along the axis of CLOSEST APPROACH between the two bodies, so two kaiju
+        /// sharing a cell swim around each other instead of interpenetrating, and a
+        /// freshly-severed rear half peels away from the front half it was part of a moment
+        /// ago. Colonies are lineage-registered, so this is a walk of the cell's small fauna
+        /// registry — no physics, no prism queries.
+        ///
+        /// The term is a NORMALIZED direction scaled by a falloff in [0,1] — 1 where the two
+        /// bodies touch, 0 at <c>ColonySeparationRadius</c>. The raw inverse-square form this
+        /// replaced (<c>diff/|diff|²</c>) has magnitude <c>1/|diff|</c>, which at real worm
+        /// distances (30–160u) is 0.006–0.03 against a UNIT goal direction: the weight could
+        /// not deflect the steering by more than a few degrees no matter how it was tuned, so
+        /// worms only nominally repelled. With the falloff, <c>ColonySeparationWeight</c> is a
+        /// true ratio against the goal pull — above 1 the repulsion wins at close range, which
+        /// is what "strong separation" means here.
         /// </summary>
         void TickSeparation()
         {
             _separation = Vector3.zero;
-            if (config.ColonySeparationRadius <= 0f) return;
+            // Null-guarded because this now runs from the SPLIT path too, not only from the
+            // behavior coroutine (which already gates on config). Initialize reports a missing
+            // config loudly; a death must not also cascade an NRE on top of it.
+            if (!config) return;
+            float radius = config.ColonySeparationRadius;
+            if (radius <= 0f) return;
             var host = cell;
             if (host == null) return;
 
-            Vector3 head = segments[0].transform.position;
-            float radiusSqr = config.ColonySeparationRadius * config.ColonySeparationRadius;
+            float radiusSqr = radius * radius;
             var fauna = host.LiveFauna;
             for (int i = 0; i < fauna.Count; i++)
             {
                 if (fauna[i] is not WormFauna other || ReferenceEquals(other, this)) continue;
-                if (!other.TryGetNearestBodyPoint(head, out var point, out float sqr)) continue;
+                if (!TryGetNearestApproach(other, out var mine, out var theirs, out float sqr)) continue;
                 if (sqr > radiusSqr || sqr <= DegenerateSteeringSqr) continue;
-                // Inverse-square falloff: diff/|diff|² == diff.normalized/|diff|.
-                _separation += (head - point) / sqr;
+
+                float falloff = 1f - Mathf.Sqrt(sqr) / radius;
+                _separation += (mine - theirs).normalized * (falloff * falloff);
             }
         }
 
@@ -810,10 +863,12 @@ namespace CosmicShore.Gameplay
         // -------------------------------------------------------------------
 
         /// <summary>
-        /// A segment died (through the sealed Fauna.Die — its heart, if any, already
-        /// dropped). End deaths open a wound; an interior death SPLITS the worm: the
-        /// rear half becomes a new colony, and both halves start regrowing their
-        /// missing ends. The last segment's death is the colony's death.
+        /// A member died (through the sealed Fauna.Die — its heart already dropped; every
+        /// segment carries one). End deaths open a wound; an interior death SPLITS the
+        /// POPULATION: the head and every segment still attached to it stay this colony,
+        /// while the tail and everything attached to IT become a new colony that strongly
+        /// separates from this one. Both halves start regrowing their missing ends. The
+        /// last member's death is the colony's death.
         /// </summary>
         public void HandleSegmentDeath(WormSegmentFauna segment, string killerName = "")
         {
@@ -842,9 +897,11 @@ namespace CosmicShore.Gameplay
             }
             else
             {
-                // Interior kill: sever. This colony keeps the front half (tail wound);
-                // the rear half becomes a new worm with a head wound. Segment totals
-                // are conserved — splitting punishes, it never multiplies mass.
+                // Interior kill: sever. This colony keeps the HEAD side (head + every
+                // segment still attached to it) and takes a tail wound; the TAIL side
+                // (everything from the dead member's successor to the tail, inclusive)
+                // becomes a new population with a head wound. Segment totals are
+                // conserved — splitting punishes, it never multiplies mass.
                 var rear = segments.GetRange(index, segments.Count - index);
                 segments.RemoveRange(index, segments.Count - index);
                 _tailWoundedAt = Time.time;
@@ -853,13 +910,20 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// The severed rear half becomes its own colony. The new brain is a CLONE OF
+        /// The severed tail side becomes its own POPULATION. The new brain is a CLONE OF
         /// THIS ONE rather than a fresh prefab instantiation, which is both simpler and
         /// biologically right: the two halves of a split worm are the same animal, so
         /// the child inherits this colony's exact tuning (config, segment prefabs, diet,
         /// starvation clock) with no serialized self-reference to keep wired. The
         /// segments are not children of the root, so the clone brings no body with it —
         /// it adopts the severed half in Initialize.
+        ///
+        /// It is a genuinely SEPARATE population from the moment it exists: it rolls its
+        /// own goal orbit offset (Fauna.Start) so the two halves stop seeking the identical
+        /// point, and both sides evaluate separation immediately rather than waiting up to a
+        /// behavior tick — the two bodies are interpenetrating at the instant of the cut,
+        /// which is exactly where the falloff in <see cref="TickSeparation"/> is strongest,
+        /// so they shoulder apart on the next frame instead of swimming home in convoy.
         /// </summary>
         void SpawnSplitColony(List<WormSegmentFauna> rear)
         {
@@ -871,12 +935,19 @@ namespace CosmicShore.Gameplay
             colony._pendingAdoption = rear;
             colony.Initialize(cell);
             colony._headWoundedAt = Time.time;
-            // Same lineage: the split registers in the cell's live count (so the
-            // spawner's seed floor sees two worms) and inherits the species config.
+            // Same lineage AND the same identity: the split registers in the cell's live
+            // count (so the spawner's seed floor sees two worms), inherits the species
+            // config, and is handed this colony's own variant pick rather than re-rolling
+            // one — the halves of a split worm are the same animal and must keep the same
+            // element (heredity, exactly as an offspring inherits its parent's pick).
             if (cell && SourceConfig)
-                colony.AssignLineage(cell, SourceConfig);
+                colony.AssignLineage(cell, SourceConfig, VariantPick);
             if (cell)
                 cell.RegisterSpawnedObject(colony.gameObject);
+
+            // Both populations feel each other NOW (see the summary above).
+            colony.TickSeparation();
+            TickSeparation();
         }
 
         /// <summary>

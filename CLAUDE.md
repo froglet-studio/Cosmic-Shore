@@ -109,12 +109,21 @@ outcome is optimization, not life). Use the `/ecology` skill for any change here
   Cell-owned visual, check what SEMANTICS it borrowed with the geometry.** (`Docs/ECOSYSTEM.md §25.1`.)
 - **Every lifeform drops one elemental crystal** (Charge/Mass/Space/Time) as a powerup on death,
   enforced by `LifeFormCrystal`. It must not be possible to make a lifeform that violates this.
-  **Composite creatures** (the worm colony) satisfy this at the CREATURE level, not per part:
-  its capital segments (head/tail) carry and drop hearts, its body segments are body-parts and
-  carry none, and the colony root is a heartless anchor that forwards a config's element pick to
-  the capitals (`Fauna.ProvisionHeart`). Do not "fix" a heartless body segment by giving it a
-  crystal, and do not cite one as precedent for a crystal-less standalone fauna — the ruling and
-  its reasoning are `Docs/ECOSYSTEM.md §23.3`.
+  **A connected COLONY is a population, not a creature with body parts** (the worm colony):
+  every segment — head, body and tail — is its own fauna and carries and drops its own heart,
+  because the members are the lifeforms. Only the colony ROOT is heartless: it is the
+  population's anchor, and it forwards a config's element pick to every member
+  (`Fauna.ProvisionHeart`), so a colony breeds true across growth and across a split
+  (which inherits the parent's variant pick). The earlier "body segments are body-parts and
+  carry none" ruling is **RETRACTED** — do not cite it, and do not take a body segment's
+  crystal away to restore it (`Docs/ECOSYSTEM.md §23.3` + `§23.8`). A split is the same rule
+  at the population level: the head and everything attached to it stay the ORIGINAL colony,
+  the tail and everything attached to it become a NEW one that strongly separates from every
+  other worm population — and "strongly" is load-bearing, because the separation term was a
+  normalized-direction-vs-inverse-square mismatch giving 5.7° of deflection at touching
+  distance, i.e. numerically inert at any weight (`§23.8`). **A boid term blended into a
+  NORMALIZED direction must itself be bounded** — scale a unit vector by a falloff in [0,1]
+  so the authored weight is a real ratio, never a raw `1/d`.
   **A heart's SIZE is ONE curve keyed on LEVEL — never per species, element or prefab.**
   `ElementalCrystalSet.levelOneWorldScale × worldScalePerLevel^(L-1)` (3.5 → 4.25 across
   levels 1..5), applied at the single gate every heart passes through (`Crystal.SetEmbeddedIn`)
