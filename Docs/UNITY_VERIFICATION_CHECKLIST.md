@@ -33,10 +33,19 @@ generators already bake into TEXCOORD1, under a new Hybrid-Per-Instance float
 `_FacePivotFromCentroid` (0 = legacy derived pivot, 1 = mesh centroid).
 
 **Authored out-of-editor — no Unity available in the authoring session** (no editor, no
-`unity` CLI), so `/verify-unity` did not run. What DID run: `Roslyn` compile of every
-changed `.cs` (clean; only the expected missing-Unity-type noise), the conditional-compilation
-gate, `Tools/Shaders/wire_prism_face_pivot.py --check`, and
-`Tools/Shaders/verify_prism_face_pivot.py` (which evaluates the SHIPPED subgraph JSON).
+`unity` CLI), so `/verify-unity` did not run. What DID run, and what each pass is worth:
+
+| pass | proves |
+|---|---|
+| Roslyn, no stubs, all 19 changed `.cs` | syntax + declaration shape only. **Blind to method bodies** once a base class is unresolved — confirmed by injecting a `CS0103` into this branch's own test file and watching it go unreported (`asset-surgery` §4, corrected 2026-08-24) |
+| Roslyn + a stub harness, **executing** `PrismFacePivotTests` against the real mesh generators and the real shipped graph files | **7/7 pass.** Body-level compile errors and the assertions themselves. Gate proven to fail on three injected defects: an undeclared identifier in a body, the stella geometry claim inverted, and the producer constant flipped |
+| `Tools/Shaders/wire_prism_face_pivot.py --check` | graph topology: registries resolve, one feeder per input, acyclic, property-node slot types |
+| `Tools/Shaders/verify_prism_face_pivot.py` | the SHIPPED subgraph's arithmetic, evaluated as a dataflow graph |
+| `Tools/Build/check_conditional_compilation.py` | the `#if` guard rules |
+
+**Still unproven offline, and the reason the steps below exist:** that Unity IMPORTS both
+graphs without rejecting them (a rejected graph is magenta, and no offline pass can see it),
+and how any of it looks in motion.
 
 **Import first.** Two shader graphs were edited out-of-editor
 (`ExplodingBlockGraph.shadergraph` + `PrismGraphs/Subgraphs/RotateFacesAlongAxis.shadersubgraph`).
