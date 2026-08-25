@@ -161,6 +161,14 @@ namespace CosmicShore.Utility
                     Duration = duration,
                     ObjectDisplacement = objDisp,
                     BoundsPadding = pad,
+                    // A shield face is ONE triangle, not a wedge of a four-wedge face, so
+                    // the cube's derived pivot is wrong for it — off centre on the
+                    // octahedron and outside the triangle entirely on the stellation,
+                    // whose three lateral spike faces share one tetrahedron-face plane.
+                    // Both generators bake the true per-face centroid into TEXCOORD1 for
+                    // the engage bloom; this is the shatter reading the same channel.
+                    // Docs/PRISM_ANIMATION.md §4.8.2.
+                    FacePivotFromCentroid = 1f,
                 });
             s_pendingCount++;
 

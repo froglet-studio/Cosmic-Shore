@@ -23,6 +23,52 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Debris face pivot reads the mesh's baked centroid (2026-08-25)
+
+`Docs/PRISM_ANIMATION.md` §4.8.2. `RotateFacesAlongAxis` was spinning every face about a
+pivot derived for the prism CUBE's four-wedge faces; on a shield shard (one triangle per
+face) that lands off centre on the octahedron and **outside the triangle on all 24
+stellation faces**. The graphs now lerp the pivot onto the per-face centroid the shield
+generators already bake into TEXCOORD1, under a new Hybrid-Per-Instance float
+`_FacePivotFromCentroid` (0 = legacy derived pivot, 1 = mesh centroid).
+
+**Authored out-of-editor — no Unity available in the authoring session** (no editor, no
+`unity` CLI), so `/verify-unity` did not run. What DID run: `Roslyn` compile of every
+changed `.cs` (clean; only the expected missing-Unity-type noise), the conditional-compilation
+gate, `Tools/Shaders/wire_prism_face_pivot.py --check`, and
+`Tools/Shaders/verify_prism_face_pivot.py` (which evaluates the SHIPPED subgraph JSON).
+
+**Import first.** Two shader graphs were edited out-of-editor
+(`ExplodingBlockGraph.shadergraph` + `PrismGraphs/Subgraphs/RotateFacesAlongAxis.shadersubgraph`).
+They need a Unity import pass to regenerate their shaders. If anything looks wrong, first
+check for magenta (a rejected graph) and re-import both.
+
+1. **Compile clean**, then run the edit-mode suite → `PrismFacePivotTests` all green. Its
+   `TheRotateNodeSlotIds_MatchWhatUnityWillRecompute` is the important one: it asserts the
+   offline `Guid.GetHashCode()` derivation the wiring rests on against the real runtime.
+2. FrogletTools > Ecology > Prism Animation > **Validate Clock Wiring** →
+   `_FacePivotFromCentroid` reported ✅ (Hybrid Per Instance) on ExplodingBlockGraph.
+3. **Nothing is magenta.** Any prism material rendering magenta means a graph was rejected on
+   import — `git checkout` both graph files and re-run the wirer.
+4. **A dying PRISM looks exactly as it did.** This is the no-regression check and it should be
+   indistinguishable; the change is bit-identical at weight 0. Blow up a trail with the
+   Dolphin's crystal blast and compare against `bleeding-edge` if in any doubt.
+5. **Drop a SHIELD** (shoot shielded mass until the shield sheds, or a shield timer expires) →
+   the octahedron's eight triangles tumble about their own centres instead of being flung on a
+   lever. Then a **SUPER-shielded** prism (Skim Race track, or the Rhino's energy sword, which
+   breaks the tier) → the stella's 24 spike faces should read the same way; that tier is where
+   the defect was worst.
+6. **Both at once** — a blast that kills plain and shielded mass in one volume → shards of both
+   kinds fly in the same batch, same speed, same erosion wipe. A visible difference in anything
+   OTHER than the spin centre means something beyond this change moved.
+
+**Known limitation, deliberate.** The weight is per debris entity, not per mesh: a future
+generated mesh that bakes TEXCOORD1 centroids must pass `FacePivotFromCentroid = 1` at its own
+spawn site. `PrismFacePivotTests.TheTwoDebrisProducers_DeclareTheirOwnFaceLayout` gates the two
+that exist today.
+
+---
+
 ### 🔴 Flora — TIME breeds faster, the second elemental law (`claude/flora-reproduction-balance-y9gaij`, 2026-08-24)
 
 Authored without a Unity compile or play-test (remote session, no editor, no `unity` CLI binary in
