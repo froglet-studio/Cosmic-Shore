@@ -508,6 +508,29 @@ the escalation for "when a wrong member name matters" — and prove your own gat
 was produced: inject the defect you care about, confirm the gate fires, restore, `cmp` the file.
 A gate you have not seen fail is not a gate.
 
+**A second, distinct blind spot: an error-typed OPERAND suppresses diagnostics on the whole
+expression it sits inside — even in a class whose base DOES bind.** The table above is about a
+base class failing to resolve (`MonoBehaviour`/`NetworkBehaviour` with no Unity assemblies), which
+stops an entire method body from being checked. This is different and applies even to an ordinary
+`EditorWindow` subclass, whose declaration and body both bind fine: **any single unresolved API
+inside an expression** (a no-stub reference-less compile means `EditorGUILayout.HelpBox`,
+`MessageType`, and every other editor-only type ARE unresolved) makes that whole expression
+error-typed, and Roslyn does not bother emitting secondary diagnostics — `CS1503` (argument type
+mismatch), `CS0201` (invalid expression statement) — on an expression it has already flagged as
+broken by an unrelated unresolved symbol. A merge-damaged `HelpBox(...)` call that had silently
+gained a third string argument (a diff3 "keep both" resolution splitting one string-concat argument
+into two — see the ship skill's "keep both is wrong inside a chain") and a `return` statement split
+into two statements by the same pattern **both compiled with zero errors** under the no-stub
+30-second pass, because the call target `EditorGUILayout.HelpBox` was itself unresolved and every
+diagnostic downstream of that got swallowed. Reproduced directly: compiling the actual broken
+commit with the no-stub filter reported NOTHING; the faithful-stub harness (real `EditorWindow`,
+real `EditorGUILayout.HelpBox(string, MessageType)`, real `MessageType` enum) caught both errors
+immediately. **The practical rule: the no-stub 30-second pass is not a safe substitute for the
+stub harness on ANY file that calls into an API area you have not stubbed — including plain editor
+utility code, not just `MonoBehaviour`/`NetworkBehaviour` bodies** — and a "verified clean" claim
+from the no-stub pass alone, on a file touched by an additive merge resolution, should be treated
+as unverified until re-checked with real signatures for the specific APIs that expression calls.
+
 ### Fallback: `mcs` (only when dotnet can't be installed)
 
 `apt-get install mono-mcs` gives you `mcs`, and a Unity gameplay file usually touches a

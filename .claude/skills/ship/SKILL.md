@@ -66,6 +66,22 @@ run the `/reorient` skill first and act on its verdict before shipping.
   call silently gaining a third parameter). Compile after every keep-both resolution — and treat
   any conflict hunk whose last non-blank character is `&&`, `+`, `,` or `?` as one needing a
   hand-joined merge, not a concatenation.
+  **The same trap exists in hand-authored YAML, and it is invisible to a compiler.** A Unity
+  `EditorBuildSettings.asset`-style list item is multiple lines wide (`- enabled: 1` /
+  `path: ...` / `guid: ...`), so when two branches both append a new scene entry after the SAME
+  anchor entry, the diff's shared anchor line is the leading `- enabled: 1` of the LAST entry
+  before the split — additive "keep both" can concatenate the second entry's `path`/`guid` lines
+  directly onto the first's body, without ever inserting the second entry's own `- enabled: 1`
+  marker. The result parses as ONE list item with duplicate `path`/`guid` keys, not two — no
+  syntax error, no build failure, just a scene silently missing from `m_Scenes` while its name
+  string is still technically present in the file (which also defeats an idempotency guard that
+  checks `"SceneName.unity" in text` rather than well-formedness). It reads at runtime as "Scene
+  'X' couldn't be loaded because it has not been added to the build settings scenes list" with no
+  compile error anywhere to point at it. There is no compiler to catch this for a `.asset`/`.unity`
+  file — after resolving ANY multi-line-list-item YAML conflict, mechanically count entries
+  (`grep -c '^  - enabled:'` for `EditorBuildSettings.asset`, or the equivalent leading marker for
+  the list in question) against what both sides should sum to, and verify every entry has exactly
+  its expected key set with no stray duplicate keys — do not eyeball it.
 - **A parallel branch may have fixed the SAME root cause while you worked.** Read the base
   branch's new commits by subject before you resolve anything — this is not a merge
   conflict, it is a design collision, and git will happily interleave two fixes for one
