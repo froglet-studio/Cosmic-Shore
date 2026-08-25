@@ -92,7 +92,10 @@ beside the code: `_Scripts/Controller/Vessel/R_VesselActions/SPARROW_AFTERBURNER
 - **The strafing roll dropped to BASE kit** (was the TIME-5 upgrade). `BarrelRollController` lost
   its `IsUpgradeActive(Element.Time)` gate. Still one roll per boost press — and since the boost is
   indefinite, that press only arms the roll for a **0.3 s window** (`rollArmWindowSeconds`), so a
-  stick that reaches full deflection later in a long hold no longer spins the vessel.
+  stick that reaches full deflection later in a long hold no longer spins the vessel. The roll also
+  owns the **roll axis** for its duration (`VesselTransformer.BankIntoTurnSuppressed`) so its
+  authored `rootRollDegrees` bank is the tilt the pilot actually sees — un-suppressed it landed
+  under ~20-25° of opposing bank-into-turn and read backwards.
 - **The roll also works in the stationary stance** (2026-08, a later branch). It lost its
   `IsTranslationRestricted` gate too: stopped, the boost gives no speed but the roll still arms on
   the press and still strafes — the stopped Sparrow's dodge. The displacement survives the

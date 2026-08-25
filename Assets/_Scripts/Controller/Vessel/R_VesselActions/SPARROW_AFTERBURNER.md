@@ -140,6 +140,46 @@ charge change, so "no roll available" had to split by cause: the pip empties for
 real `Spent` earns the consume punch — a punch on a lapse would be the HUD announcing a roll the
 pilot never got.
 
+### 2.0.1 The root roll: the ability owns the roll axis for its duration
+
+The roll has always applied a small **real** roll to the vessel root alongside the visual 360°
+(`rootRollDegrees`, 15°) — the up vector rotated about the vessel's own forward, which is exactly
+what the two-stick `VesselTransformer.Roll()` does with a little `YDiff`. Since the camera reads the
+**root's** rotation, that is the horizon tilt the pilot actually feels while the model spins.
+
+**It was landing and reading backwards, and the arithmetic says why.** The bank-into-turn and the
+root roll are the same rotation about the same axis, so they simply add — and the roll's trigger is
+a **full stick deflection**, i.e. precisely when the bank is at its maximum:
+
+| | rate | over the 0.6 s roll |
+|---|---|---|
+| `SingleStickVesselTransformer.Roll()` at full stick, cruise (speed 35) | `35 × 0.1 + 30` = **33.5 °/s** | **20.1°** |
+| …boosting (speed 110 = `25 × 4 + 10`) | `110 × 0.1 + 30` = **41.0 °/s** | **24.6°** |
+| `rootRollDegrees`, signed to match the animation | 25 °/s | **15°** |
+
+The bank is signed `-stick.x` and the roll `+rollSign` (`= +1` for `stick.x ≥ 0`), so they are
+**opposite**: the net was ~5–10° of bank *into the turn*, and the pilot saw the horizon tilt the
+wrong way by a wide margin. The authored 15° described nothing that happened on screen — the
+`§4a` "the authored number is not the effective one" trap, reached through vector addition.
+
+**The fix is a handover, not a bigger number.** `VesselTransformer.BankIntoTurnSuppressed` (default
+false, cleared by `ResetTransformer`) suspends the bank for the roll's duration, so the 15° is the
+whole roll the vessel gets and the authored number is honest at any speed and whether or not the
+pilot keeps holding the stick. **Pitch and yaw are untouched** — the vessel still turns exactly as
+hard while it rolls; only the cosmetic bank stands down. It is the same "an ability owns one
+transformer property for its duration" shape the roll already uses for `BlockRotationOverride`, and
+it is cleared in the routine's tail *and* in `OnDisable`.
+
+**It is honoured in all three `Roll()` bodies** — the base, `SingleStickVesselTransformer` and
+`ScarabVesselTransformer` — because the overrides do not call base. `GunVesselTransformer` inherits
+the base body and is covered for free. A base-only gate would have reached **neither** the Sparrow
+nor the Serpent, which is the same trap `TurnScalar` already documents in that file.
+
+The roll is also now advanced by the **delta of the animation's own smoothstep** rather than a flat
+`dt / duration`, so the tilt accelerates and settles *with* the spin instead of drifting across it —
+and the authored degrees land exactly (summing `dt / duration` overshoots on the frame that ends the
+loop).
+
 ### 2.1 It works identically in the stationary (turret) stance
 
 Stopped — `IsTranslationRestricted`, from `ToggleStationaryModeAction` — the boost gives no speed:

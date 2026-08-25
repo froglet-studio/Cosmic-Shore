@@ -40,8 +40,20 @@ namespace CosmicShore.Gameplay
     /// The 360° spin lives on the visual child only — the camera reads the root's
     /// rotation/up, Course stays untouched, and a 360° root roll cannot be expressed through
     /// the accumulatedRotation slerp target. A very small REAL root roll (rootRollDegrees,
-    /// same handedness as the animation) IS applied through VesselTransformer.ApplyRotation
-    /// so the flight orientation banks subtly with the roll.
+    /// same handedness as the animation) IS applied through VesselTransformer.ApplyRotation:
+    /// it rotates the vessel's UP about its own forward/z axis, which is exactly what the
+    /// two-stick Roll() does with a little YDiff, and — because the camera reads the root's
+    /// up — it is the horizon tilt the pilot actually feels during the spin. It follows the
+    /// animation's own smoothstep, so the tilt eases in and out WITH the spin instead of
+    /// drifting linearly across it, and the authored degrees land exactly.
+    ///
+    /// For the roll's duration the ability OWNS THE ROLL AXIS
+    /// (VesselTransformer.BankIntoTurnSuppressed). That is not decoration: the bank-into-turn
+    /// and this roll are the same rotation about the same axis, so they add — and the trigger
+    /// is a FULL stick deflection, i.e. precisely when the bank is at maximum and pointing the
+    /// other way. Un-suppressed, 15° of authored roll landed under ~20-25° of opposing bank and
+    /// the pilot saw the horizon tilt the WRONG way. Pitch and yaw are untouched, so the vessel
+    /// still turns exactly as hard while it rolls.
     ///
     /// Owner-driven: input polling only acts on the locally controlled vessel; the
     /// displacement replicates via the owner-authoritative NetworkTransform. Autopilot/AI
@@ -68,11 +80,17 @@ namespace CosmicShore.Gameplay
 
         [Header("Roll")]
         [SerializeField, Min(0.1f)] float rollDurationSeconds = 0.6f;
-        [Tooltip("Very small REAL roll applied to the vessel root over the roll duration, in " +
-                 "the same direction (handedness) as the visual animation. Routed through " +
-                 "VesselTransformer.ApplyRotation (accumulatedRotation), so the flight " +
-                 "orientation keeps the new bank after the roll. 0 = visual-only.")]
-        [SerializeField, Range(0f, 30f)] float rootRollDegrees = 15f;
+        [Tooltip("Very small REAL roll applied to the vessel ROOT over the roll duration — the " +
+                 "vessel's up vector rotated about its own forward/z axis, the same thing a " +
+                 "two-stick vessel does with a little YDiff, in the same direction as the visual " +
+                 "animation. The camera reads the root's up, so this IS the horizon tilt the " +
+                 "pilot feels. Routed through VesselTransformer.ApplyRotation " +
+                 "(accumulatedRotation), so the flight orientation keeps the new bank after the " +
+                 "roll, and shaped by the animation's own smoothstep so it eases in and out with " +
+                 "the spin. The transformer's bank-into-turn is suspended for the duration, so " +
+                 "this number is the whole roll the vessel gets rather than a correction on top " +
+                 "of a larger opposing bank. 0 = visual-only.")]
+        [SerializeField, Range(0f, 45f)] float rootRollDegrees = 15f;
         [Tooltip("Peak sideways displacement speed injected through ModifyVelocity (world " +
                  "units/second; the transformer clamps its channel at 100).")]
         [SerializeField, Min(0f)] float nudgeSpeed = 60f;
@@ -217,24 +235,42 @@ namespace CosmicShore.Gameplay
                 localRollAxis = Vector3.forward;
 
             float elapsed = 0f;
+            float rootRollProgress = 0f;
+
+            // The ability owns the roll axis for the duration: the transformer's bank-into-turn
+            // is the same rotation about the same axis and would otherwise swamp (and reverse)
+            // the root roll below, because the trigger is a full stick deflection — peak bank.
+            // Pitch and yaw are untouched. Cleared in the tail AND in OnDisable.
+            transformer.BankIntoTurnSuppressed = true;
 
             while (elapsed < rollDurationSeconds)
             {
                 elapsed += Time.deltaTime;
                 float t = Mathf.Clamp01(elapsed / rollDurationSeconds);
-                float angle = rollSign * 360f * (t * t * (3f - 2f * t)); // smoothstep 0→360
+                float eased = t * t * (3f - 2f * t);                 // smoothstep 0→1
+                float angle = rollSign * 360f * eased;
 
                 if (visual)
                     visual.localRotation = visualStart * Quaternion.AngleAxis(angle, localRollAxis);
 
-                // Very small REAL roll on the root, same handedness as the visual spin —
-                // distributed linearly across the duration and routed through
-                // accumulatedRotation (which a small angle CAN express, unlike the 360°),
-                // so the flight orientation banks with the roll and keeps the tilt after.
+                // Very small REAL roll on the vessel ROOT, same handedness as the visual spin:
+                // the up vector rotated about the vessel's own forward, i.e. what the two-stick
+                // Roll() does with a little YDiff. Routed through accumulatedRotation (which a
+                // small angle CAN express, unlike the 360°), so the flight orientation keeps the
+                // tilt after the roll — and the camera reads the root's up, so this is the
+                // horizon tilt the pilot feels.
+                //
+                // Advanced by the DELTA of the same smoothstep the animation uses, so the tilt
+                // accelerates and settles WITH the spin rather than drifting across it at a
+                // constant rate, and the authored degrees land exactly (summing dt/duration
+                // overshoots on the frame that ends the loop).
                 if (rootRollDegrees > 0f)
+                {
                     transformer.ApplyRotation(
-                        rollSign * rootRollDegrees * (Time.deltaTime / rollDurationSeconds),
+                        rollSign * rootRollDegrees * (eased - rootRollProgress),
                         transform.forward);
+                    rootRollProgress = eased;
+                }
 
                 // Bridging prisms: orient along the actual travel direction each frame while
                 // the displacement is live. Skipped while stopped — the stance has already
@@ -257,6 +293,7 @@ namespace CosmicShore.Gameplay
 
             if (visual) visual.localRotation = visualStart;
             transformer.BlockRotationOverride = null;
+            transformer.BankIntoTurnSuppressed = false;
             _rolling = false;
         }
 
@@ -273,7 +310,10 @@ namespace CosmicShore.Gameplay
             // Never leave a half-applied roll behind (pooling / vessel swap safety).
             StopAllCoroutines();
             if (_status?.VesselTransformer)
+            {
                 _status.VesselTransformer.BlockRotationOverride = null;
+                _status.VesselTransformer.BankIntoTurnSuppressed = false;
+            }
             if (rollVisualTarget && _rolling)
                 rollVisualTarget.localRotation = _visualRestRotation;
             _rolling = false;

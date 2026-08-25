@@ -82,6 +82,39 @@ one subscriber and one caller each (`SparrowHUDController`), no scene overrides 
 deliberate press-then-slam misses on a gamepad it is too tight (try 0.4–0.5); if accidental spins
 survive it is too loose. Serialized per-vessel, so it is one inspector field either way.
 
+**Second commit on this branch — the root roll now reads.** The vessel's small REAL roll
+(`rootRollDegrees`, 15°: the up vector rotated about its own forward, the two-stick `YDiff` roll,
+signed to match the animation) was landing and reading **backwards**. The bank-into-turn is the same
+rotation about the same axis so they add, and the roll triggers on a FULL stick deflection — peak
+bank: `35 × 0.1 + 30 = 33.5 °/s` at cruise (**20.1°** over the roll) and `41.0 °/s` boosting
+(**24.6°**), against the roll's 15° the other way. Since the camera reads the ROOT's up, that is the
+horizon tilt the pilot feels, and it tilted the wrong way.
+
+Fixed by a handover rather than a bigger number: `VesselTransformer.BankIntoTurnSuppressed` (new,
+default false, cleared by `ResetTransformer`, set/cleared by the roll routine and `OnDisable`)
+suspends the bank for the roll's 0.6 s, so 15° is the whole roll the vessel gets at any speed. Pitch
+and yaw untouched. Honoured in **all three** `Roll()` bodies — base, `SingleStickVesselTransformer`,
+`ScarabVesselTransformer` — because the overrides do not call base and a base-only gate would reach
+neither the Sparrow nor the Serpent (`TurnScalar`'s recorded trap). `GunVesselTransformer` inherits
+the base body. The roll is also advanced by the delta of the animation's own smoothstep, so the tilt
+eases in and out with the spin and the authored degrees land exactly.
+
+**Verify in editor (root roll)**
+1. **Direction.** Boost + slam the stick right, then left. The horizon should tilt the **same way
+   the model spins**, both times. If it tilts against the spin, flip `invertRollDirection` — that
+   one toggle now moves the animation and the root roll together, since both read `rollSign`.
+2. **Magnitude.** 15° is deliberately slight; the vessel should end the roll a touch off level and
+   **stay there** (there is no auto-level, and a two-stick `YDiff` application is permanent too).
+   `rootRollDegrees` is the knob, `Range(0, 45)` now.
+3. **The turn is unaffected.** Mid-roll the vessel must still pitch and yaw at full rate — only the
+   cosmetic bank stands down. If the ship feels like it stops turning, that is a bug, not tuning.
+4. **The bank comes back.** Hold the stick through the end of the roll: the bank-into-turn should
+   resume normally the frame the roll ends.
+5. **Nothing else banks differently.** Scarab and Serpent share the touched `Roll()` bodies but
+   nothing sets the flag on them — confirm their banking is unchanged.
+6. **Interrupt safety.** Trigger a roll and immediately swap vessels / disable the ship; the next
+   vessel must bank normally (the flag is cleared in `OnDisable` and `ResetTransformer`).
+
 ---
 
 ### 🔴 Flora — TIME breeds faster, the second elemental law (`claude/flora-reproduction-balance-y9gaij`, 2026-08-24)
