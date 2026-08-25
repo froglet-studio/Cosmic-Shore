@@ -11352,6 +11352,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1620958886857746772}
   - component: {fileID: 3927961660903825489}
+  - component: {fileID: 7855772663762000945}
   m_Layer: 5
   m_Name: Slider
   m_TagString: Untagged
@@ -11431,7 +11432,32 @@ MonoBehaviour:
   m_Value: 71
   m_OnValueChanged:
     m_PersistentCalls:
-      m_Calls: []
+      m_Calls:
+      - m_Target: {fileID: 7855772663762000945}
+        m_TargetAssemblyTypeName: CosmicShore.Mixer, Assembly-CSharp
+        m_MethodName: SetVolume
+        m_Mode: 0
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
+--- !u!114 &7855772663762000945
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3602355106814161257}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8cf19f18ea4fe48d291e92a3a0eef608, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CosmicShore.Mixer
+  VCA: Music
 --- !u!1 &3602545725645306872
 GameObject:
   m_ObjectHideFlags: 0
@@ -14692,6 +14718,7 @@ GameObject:
   m_Component:
   - component: {fileID: 252278558418895591}
   - component: {fileID: 3263913853263700188}
+  - component: {fileID: 4973859829610143236}
   m_Layer: 5
   m_Name: Slider
   m_TagString: Untagged
@@ -14771,7 +14798,32 @@ MonoBehaviour:
   m_Value: 71
   m_OnValueChanged:
     m_PersistentCalls:
-      m_Calls: []
+      m_Calls:
+      - m_Target: {fileID: 4973859829610143236}
+        m_TargetAssemblyTypeName: CosmicShore.Mixer, Assembly-CSharp
+        m_MethodName: SetVolume
+        m_Mode: 0
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
+--- !u!114 &4973859829610143236
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4419845834840926326}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8cf19f18ea4fe48d291e92a3a0eef608, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CosmicShore.Mixer
+  VCA: SFX
 --- !u!1 &4452328947704852036
 GameObject:
   m_ObjectHideFlags: 0
