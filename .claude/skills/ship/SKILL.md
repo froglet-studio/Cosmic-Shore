@@ -114,6 +114,19 @@ Walk every changed file against these gates:
   `vesselSlowedByRhinoDangerPrismEvent` under a `"Slow Viewer Integration"` header belonged to
   an effect that only muted an input. Treat "the docs say so" and "the identifier says so" as
   hypotheses to check, never as the check.
+- **A number read off a ScriptableObject's FIELD INITIALIZER is not the number the game runs
+  on.** The SO declares `public float dynamicMaxDistance = 40f;` and the ASSETS say 250. Reading
+  the class is fast, feels authoritative, and is the wrong source — the assets are the game. One
+  session built a platform law's central premise ("a pilot's own hull is always 10-40 units from
+  its camera, so the near cutoff excludes it for free") on exactly that, and the shipped fleet
+  spanned 6.7 to 250, so two of eight vessels marked their own ship. The premise then propagated
+  into an `IsSane` branch, an edit-mode test and three documents, **all self-consistent**, because
+  every one of them traced back to the same default rather than to any asset. Self-consistency
+  across artifacts is not corroboration when they share one upstream source. So: whenever a claim
+  turns on an authored value, enumerate the ASSETS (`AssetDatabase.FindAssets("t:Foo")`, or grep
+  the `.asset` YAML) and tabulate the real spread — and where the claim must keep holding, make the
+  gate re-measure from the assets rather than restating the number, so it fails loudly when an
+  artist re-authors one.
 - **The mirror of that rule: a "dead surface" claim decays into a live path, and nothing
   announces it.** "Unreferenced", "no producer anywhere", "provably dead" are true *as of a
   date* — the next feature branch is free to wire the thing up, and it will not think to go
