@@ -20,6 +20,7 @@ import subprocess
 import sys
 import shutil
 import tempfile
+import re
 import zlib
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -76,6 +77,7 @@ int main()
                 PCF_Sample(posOS, nrmOS, viewOS, ph[i], ch[i], g_seed[i], vaOS, em, a);
                 acc += em;
             }
+            g_light += (double)(acc.x + acc.y + acc.z);
             for (int k = 0; k < 3; k++) {
                 float v = (k==0?acc.x:(k==1?acc.y:acc.z));
                 v = v / (1.0f + v);                              // filmic-ish shoulder
@@ -85,6 +87,7 @@ int main()
         }
     }
     std::fwrite(img.data(), 1, img.size(), stdout);
+    std::fprintf(stderr, "LIGHT %.6f PIXELS %d\n", g_light, W*H);
     return 0;
 }
 """
@@ -95,7 +98,8 @@ def build(tmp, tag, src, mat):
     exe = os.path.join(tmp, tag)
     body = V.translate(src, mat)
     body = body.replace("static long g_fbmCalls = 0;",
-                        "static float g_seed[512];\nstatic long g_fbmCalls = 0;")
+                        "static float g_seed[512];\nstatic double g_light = 0.0;\n"
+                        "static long g_fbmCalls = 0;")
     with open(cpp, "w", encoding="utf-8") as f:
         f.write(body)
         f.write(RENDER)
@@ -115,7 +119,21 @@ def render(exe, W, H, fov, rounds):
     p = subprocess.run([exe], input=("\n".join(lines) + "\n").encode(), capture_output=True)
     if p.returncode != 0 or len(p.stdout) != W * H * 3:
         raise SystemExit("render failed: %s" % p.stderr[-2000:].decode(errors="replace"))
+    m = re.search(rb"LIGHT ([\d.eE+-]+) PIXELS (\d+)", p.stderr)
+    render.last_light = float(m.group(1)) if m else 0.0
     return bytearray(p.stdout)
+
+
+def screen_stats(buf):
+    """What the frame actually costs the eye: how much of the screen it lights, and how hard."""
+    n = len(buf) // 3
+    lit05 = lit20 = lit50 = 0
+    for i in range(0, len(buf), 3):
+        v = max(buf[i], buf[i + 1], buf[i + 2])
+        if v >= 13: lit05 += 1
+        if v >= 51: lit20 += 1
+        if v >= 128: lit50 += 1
+    return (lit05 / n, lit20 / n, lit50 / n)
 
 
 def png(path, W, H, rgb):
@@ -153,7 +171,7 @@ def _seed():
     return (_SEED[0] >> 8) / float(1 << 23)
 
 
-def stream_rounds(t0, growth=V.GROWTH_AT_REST, volleys=13, cam_back=26.0):
+def stream_rounds(t0, growth=V.GROWTH_AT_REST, volleys=V.ROUNDS_IN_FLIGHT, cam_back=26.0):
     """What the player actually sees: a live burst streaming away down the flight axis, both
     muzzles, at their true positions and sizes. Judging a VFX on isolated pairs is how three
     passes of measurement all missed that most rounds were showing no stroke at all."""

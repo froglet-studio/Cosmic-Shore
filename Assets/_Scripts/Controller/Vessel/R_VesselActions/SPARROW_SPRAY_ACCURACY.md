@@ -368,7 +368,8 @@ honest instrument for the volume it deletes even when only one stroke is showing
 | a volley's two rounds, lit-set overlap | 100% | **1.3% median, 2.1% same stroke** |
 | the same shader with the seed disabled | — | **100% overlap** (negative control) |
 | union after 0.25 s of fire | 99.9% | **100%** |
-| FBM evaluations per fragment | 3.93 (worst case 15) | **0.93 (worst case 1)** |
+| **light emitted by one frame of full auto** | 8,031 | **623 (0.08×)** |
+| FBM evaluations per fragment | 3.93 (worst case 15) | **0.59 (worst case 1)** |
 
 **Planarity is the number that carries the claim.** Raw lit *area* is nearly useless here: the old
 shell lit *few* pixels *everywhere* and so measured a **smaller** lit fraction than a single fat
@@ -458,6 +459,58 @@ that thin. Two changes fix it:
 > per-round brightness measurements all passed while the effect was invisible on screen. The
 > renderer now exists so that never costs a fourth pass.
 
+### The tone pass: a burst is the tuning surface, not a round
+
+Third playtest note: *"no longer looking duplicated, but at this firing rate the effect is still
+overtuned. We need to tone it down far more, so that the cumulative effect of full auto isn't
+overwhelming."*
+
+Rendering the live stream and totalling the **linear light the frame emits** says why, and it is
+not a near miss:
+
+| | light emitted by one frame of full auto | vs the shell this pass replaced |
+|---|---|---|
+| baseline (the crackling ball) | 8,031 | 1.00× |
+| the one-stroke design, first cut | 16,933 | **2.11×** |
+| **shipped** | **623** | **0.08×** |
+
+> **The one-stroke design toned down a single round and made a burst nearly twice as bright.**
+
+Every per-round metric said it was restrained — 2.5% of one shell lit, one planar curve, a
+quarter of the light of a crackling ball *per round*. None of them can see the sum, and the sum is
+what the player is looking at: a Sparrow keeps **54 shells on screen at once** and their emission
+is additive by construction (`Blend One One`). A 4× per-round reduction against a 54× multiplier
+is not a reduction.
+
+> **General rule: when N instances of an effect are on screen simultaneously, the tuning surface
+> is the SUM over N, not the instance. A per-instance metric is structurally blind to it, and N
+> is usually set by a system that has nothing to do with the effect** — here, the fire rate.
+
+`verify_projectile_charge_field.py` test 6 now owns that budget: it renders the live stream
+through the real perspective camera, totals the emission, and **fails above 0.25× the baseline**.
+The knobs it constrains are labelled as a light budget in the shader.
+
+What actually bought the 26× reduction, in order of contribution:
+
+| | | |
+|---|---|---|
+| `_HoldTime` | 0.5 → **0.06** | the envelope's bright plateau is gone; most rounds are dim at any instant |
+| `_FadeShape` | 1 → **3.2** | and what is left decays hard |
+| `_ArcSpan` | 5.0 → **1.8** | a short slash, not a 286° sweep |
+| `_ArcIntensity` | 2.4 → **1.5** | |
+| `_ArcSharpness` | 0.075 → **0.055** | |
+| `_FresnelRimIntensity` | 0.05 → **0.022** | the rim is on every round, always — it multiplies by 54 |
+
+**Sparseness is the mechanism, so the duty-cycle criterion inverted.** A round now shows a stroke
+**42.6%** of the time rather than 88.8%, and the harness's old "must be lit at least 70% of the
+time" floor — added to stop a single round twinkling — became a **ceiling** (fail above 85%).
+"Most rounds are dark most of the time" is precisely how 54 simultaneous shells stay quiet, and
+individual twinkle stopped mattering the moment the rounds became individually unresolvable.
+Continuity of existence is unaffected: the requirement was only ever that a round is never *fully*
+dark, and the rim whisper still holds it at peak alpha **0.011**.
+
+The cost fell with it: **0.59 FBM evaluations per fragment**, down from 3.93 on the baseline.
+
 ### Things that would take it straight back
 
 - **`_ArcCount` above 1.** It exists as a knob for a future weapon, not as a tuning dial for this
@@ -475,6 +528,9 @@ that thin. Two changes fix it:
 - **Thinning the stroke to hold lit area below the baseline.** That is what made it invisible.
   Judge it in `render_projectile_charge_field.py`, not in a coverage number.
 - **Un-anchoring the circle from the view axis.** Most rounds go back to showing nothing.
+- **Raising any arc knob without re-running test 6.** They are a light budget: at 54 shells on
+  screen, a 4× per-round increase is a 4× increase in the thing the player complained about.
+- **Re-adding a duty-cycle FLOOR.** Sparseness is the mechanism now, not a defect.
 
 ---
 

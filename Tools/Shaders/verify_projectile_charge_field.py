@@ -66,10 +66,10 @@ NEW_MAT = dict(
     _CrackleColorA=(1.4979111, 0.0058463, 0.0068495, 1.0),
     _CrackleColorB=(0.10, 0.35, 1.0, 1.0),
     _FresnelRimColor=(0.25, 0.55, 1.0, 1.0),
-    _ArcCount=1.0, _ArcSpan=5.0, _ArcSharpness=0.075, _ArcTiltRange=0.55, _ArcStartSpread=1.2, _ArcWander=0.26,
-    _ArcWanderScale=2.6, _ArcIntensity=2.4, _TipGlow=0.9, _CoreThreshold=0.7,
-    _CrackleRate=3.5, _StrikeTime=0.25, _HoldTime=0.5, _FadeShape=1.0,
-    _FresnelRimIntensity=0.05, _FresnelRimPower=3.5,
+    _ArcCount=1.0, _ArcSpan=1.8, _ArcSharpness=0.055, _ArcTiltRange=0.55, _ArcStartSpread=0.9, _ArcWander=0.26,
+    _ArcWanderScale=2.6, _ArcIntensity=1.5, _TipGlow=0.9, _CoreThreshold=0.7,
+    _CrackleRate=3.5, _StrikeTime=0.25, _HoldTime=0.06, _FadeShape=3.2,
+    _FresnelRimIntensity=0.022, _FresnelRimPower=3.5,
     _ChargeReferenceRadius=4.95, _ChargeFloor=0.4, _PhaseByRadius=0.43, _PhaseSpeed=2.6,
     _SeedSpin=6.283, _SeedTilt=6.283, _SeedWobble=40.0, _PhaseBySeed=1.0,
 )
@@ -588,9 +588,42 @@ def main():
               % (worst, worst_at[1], worst_at[0]))
         if worst <= 0.0:
             failures.append("a round goes completely dark mid-flight")
-        if duty < 0.70:
-            failures.append("a round is only showing a stroke %.0f%% of the time — the stream "
-                            "will read as twinkling" % (duty * 100))
+        # No duty FLOOR any more: the shell is deliberately sparse, and "most rounds are dark
+        # most of the time" is the mechanism by which 54 simultaneous shells stay quiet. The
+        # requirement is only that a round is never *fully* dark — the rim whisper — and that is
+        # the `worst` check above. A duty CEILING is the real guard, and test 6 owns it.
+        if duty > 0.85:
+            failures.append("a round is showing a stroke %.0f%% of the time — at 54 shells on "
+                            "screen that sums into a solid rope" % (duty * 100))
+
+        # ── 6. The cumulative light of a full-auto stream ────────────────────────────────
+        # Imported here rather than at module scope because the renderer imports THIS module;
+        # by the time a test runs, this one is fully loaded and the cycle is harmless.
+        import render_projectile_charge_field as RND
+        print("\n== 6. FULL AUTO IS NOT OVERWHELMING ==")
+        print("   A Sparrow keeps %d shells on screen at once and their emission SUMS. This"
+              % (ROUNDS_IN_FLIGHT * 2))
+        print("   renders the live stream — every round at its true position, size and seed —")
+        print("   and totals the LINEAR light the frame emits, before any tonemap.\n")
+        BW, BH = 1100, 420
+        bfov = 2 * math.degrees(math.atan(math.tan(math.radians(30.0)) * BH / 1080.0))
+        budget = []
+        for tag, src, mat in (("baseline (crackling ball)", old_src, OLD_MAT),
+                              ("shipped", new_src, NEW_MAT)):
+            RND._SEED[0] = 20260825
+            ex = RND.build(tmp, "budget_" + tag.split()[0], src, mat)
+            buf = RND.render(ex, BW, BH, bfov, RND.stream_rounds(2.4, cam_back=15.0))
+            budget.append((tag, RND.render.last_light, RND.screen_stats(buf)))
+        base_light = budget[0][1]
+        print("   %-28s %12s %9s %9s" % ("", "light", "vs base", "screen >20%"))
+        for tag, light, st in budget:
+            print("   %-28s %12.0f %8.2fx %8.2f%%" % (tag, light, light / base_light, st[1] * 100))
+        ratio = budget[1][1] / max(base_light, 1e-9)
+        print("\n   The first cut of the one-stroke design measured 2.11x here — it toned down a")
+        print("   single round and made a burst WORSE, which no per-round metric could see.")
+        if ratio > 0.25:
+            failures.append("a full-auto stream emits %.2fx the baseline's light — the point of "
+                            "this pass is that it emits far less" % ratio)
 
         # ── 5. Cost ──────────────────────────────────────────────────────────────────────
         print("\n== 5. COST ==")

@@ -27,10 +27,10 @@ Material:
     m_Ints: []
     m_Floats:
     - _ArcCount: 1
-    - _ArcIntensity: 2.4
-    - _ArcSharpness: 0.075
-    - _ArcSpan: 5
-    - _ArcStartSpread: 1.2
+    - _ArcIntensity: 1.5
+    - _ArcSharpness: 0.055
+    - _ArcSpan: 1.8
+    - _ArcStartSpread: 0.9
     - _ArcTiltRange: 0.55
     - _ArcWander: 0.26
     - _ArcWanderScale: 2.6
@@ -38,9 +38,9 @@ Material:
     - _ChargeReferenceRadius: 4.95
     - _CoreThreshold: 0.7
     - _CrackleRate: 3.5
-    - _FadeShape: 1
-    - _HoldTime: 0.5
-    - _FresnelRimIntensity: 0.05
+    - _FadeShape: 3.2
+    - _HoldTime: 0.06
+    - _FresnelRimIntensity: 0.022
     - _FresnelRimPower: 3.5
     - _PhaseBySeed: 1
     - _PhaseByRadius: 0.43

@@ -13,20 +13,26 @@ Shader "Shader Graphs/ProjectileChargeField"
         // single wobbling bolt on a single randomly-oriented great circle, and the SPHERE
         // is assembled by the player out of a burst's worth of them. Raising _ArcCount
         // past 1, or the rim past a whisper, hands the sphere back to one round.
+        // TONE: these are a LIGHT BUDGET, not free dials. At 90 volleys/s a Sparrow keeps 54
+        // shells on screen and their emission SUMS — the first cut of this design measured
+        // 2.11x the light of the crackling ball it replaced, i.e. it toned down one round and
+        // made full auto worse. `verify_projectile_charge_field.py` test 6 renders the live
+        // stream and holds the total under a fraction of that baseline. Raise any of these and
+        // re-run it.
         [Header(The Arc)]
         _ArcCount ("Simultaneous Arcs", Range(1, 4)) = 1
-        _ArcSpan ("Arc Length (radians)", Range(0.2, 6.283)) = 5
+        _ArcSpan ("Arc Length (radians)", Range(0.2, 6.283)) = 1.8
         // How far the circle's pole may lean toward the camera. 0 = the circle passes through
         // the disc's centre (a straight slash); larger = an offset, more curved chord. It must
         // stay well under pi/2 or the stroke retreats to the limb and the round reads as a plain
         // disc — the failure this whole pass exists to fix.
         _ArcTiltRange ("Arc Tilt Range (radians)", Range(0, 1.2)) = 0.55
         // How far the stroke's centre may wander from the camera-facing point of the circle.
-        _ArcStartSpread ("Arc Centre Spread (radians)", Range(0, 3.14)) = 1.2
-        _ArcSharpness ("Arc Width", Range(0.005, 0.25)) = 0.075
+        _ArcStartSpread ("Arc Centre Spread (radians)", Range(0, 3.14)) = 0.9
+        _ArcSharpness ("Arc Width", Range(0.005, 0.25)) = 0.055
         _ArcWander ("Bolt Wander Off Circle", Range(0, 0.5)) = 0.26
         _ArcWanderScale ("Bolt Wander Frequency", Range(0.2, 8)) = 2.6
-        _ArcIntensity ("Arc Intensity", Range(0, 4)) = 2.4
+        _ArcIntensity ("Arc Intensity", Range(0, 4)) = 1.5
         _TipGlow ("Striking Tip Glow", Range(0, 2)) = 0.9
         _CoreThreshold ("Danger Core Threshold", Range(0, 0.99)) = 0.7
 
@@ -37,14 +43,14 @@ Shader "Shader Graphs/ProjectileChargeField"
         // apart, because a round's radius is simultaneously its identity and its progress.
         _CrackleRate ("Discharges Per Phase Unit", Range(0.1, 12)) = 3.5
         _StrikeTime ("Strike Time (fraction of cycle)", Range(0.02, 0.9)) = 0.25
-        _HoldTime ("Hold Until (fraction of cycle)", Range(0.05, 0.95)) = 0.5
-        _FadeShape ("Fade Falloff", Range(0.3, 4)) = 1
+        _HoldTime ("Hold Until (fraction of cycle)", Range(0.05, 0.95)) = 0.06
+        _FadeShape ("Fade Falloff", Range(0.3, 4)) = 3.2
 
         [Header(Fresnel Rim)]
         // A whisper, on purpose: enough that a round is never fully dark between strokes
         // (continuity of existence), nowhere near enough to read as a sphere.
         _FresnelRimColor ("Rim Color", Color) = (0.25, 0.55, 1.0, 1.0)
-        _FresnelRimIntensity ("Rim Intensity", Range(0, 1)) = 0.05
+        _FresnelRimIntensity ("Rim Intensity", Range(0, 1)) = 0.022
         _FresnelRimPower ("Rim Power", Range(1, 8)) = 3.5
 
         [Header(Charge)]
