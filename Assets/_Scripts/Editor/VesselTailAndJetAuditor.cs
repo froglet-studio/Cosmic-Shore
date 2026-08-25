@@ -17,12 +17,12 @@ namespace CosmicShore.Editor
     /// <list type="bullet">
     /// <item>A vessel with a tail but no <see cref="VesselTailAndJets"/> flies one domain's
     ///       colour and streaks another. Nothing errors; it just looks like somebody else's
-    ///       ship at range. Four of the eleven hulls shipped that way.</item>
-    /// <item>A jet with no <see cref="VesselJet"/> marker is drawn on every screen instead of
-    ///       its pilot's, and nothing distinguishes that from a deliberate Serpent-style
-    ///       telegraph.</item>
-    /// <item>A vessel with neither has no beacon at all, which reads as a balance problem
+    ///       ship at range.</item>
+    /// <item>A vessel with no tail has no beacon at all, which reads as a balance problem
     ///       ("nobody can find me") rather than as missing FX.</item>
+    /// <item>A vessel at width scale 1 that is nothing like the Dolphin's size has a ribbon
+    ///       that either engulfs it or vanishes — a TrailRenderer's width is world-space, so
+    ///       one authored number cannot serve a fleet spanning a 40x range.</item>
     /// </list>
     ///
     /// Asset-only, no play mode. It reads the merged prefab hierarchy via
@@ -46,7 +46,7 @@ namespace CosmicShore.Editor
             report.AppendLine("   tail = beacon for OTHER players · jets = engine plumes for THIS pilot");
             report.AppendLine();
 
-            var rows = new List<(string name, int tails, int jets, int shown, bool tint, string verdict)>();
+            var rows = new List<(string name, int tails, int jets, float width, bool tint, string verdict)>();
 
             foreach (var guid in AssetDatabase.FindAssets("t:Prefab", new[] { VesselFolder }))
             {
@@ -64,12 +64,15 @@ namespace CosmicShore.Editor
                 var jets  = root.GetComponentsInChildren<VesselJet>(true);
                 bool tint = root.GetComponentInChildren<VesselTailAndJets>(true) != null;
 
-                int shownToOthers = 0;
-                foreach (var jet in jets)
+                // The authored per-vessel ribbon width. Reported because it is the one number a
+                // hull cannot inherit: a TrailRenderer's width is world-space, so a vessel far
+                // from the Dolphin's size and still sitting at 1 has almost certainly not been
+                // considered rather than deliberately left alone.
+                float width = 0f;
+                foreach (var tail in tails)
                 {
-                    var so = new SerializedObject(jet);
-                    var prop = so.FindProperty("visibleToOtherPilots");
-                    if (prop != null && prop.boolValue) shownToOthers++;
+                    var prop = new SerializedObject(tail).FindProperty("widthScale");
+                    if (prop != null) width = prop.floatValue;
                 }
 
                 string verdict;
@@ -79,20 +82,21 @@ namespace CosmicShore.Editor
                 else if (jets.Length == 0) verdict = "NO JETS — pilot gets no thrust read";
                 else verdict = "ok";
 
-                rows.Add((root.name, tails.Length, jets.Length, shownToOthers, tint, verdict));
+                rows.Add((root.name, tails.Length, jets.Length, width, tint, verdict));
             }
 
             rows.Sort((a, b) => string.CompareOrdinal(a.name, b.name));
-            report.AppendLine($"   {"vessel",-12} {"tails",5} {"jets",5} {"shown",5}  {"tint",-5} verdict");
+            report.AppendLine($"   {"vessel",-12} {"tails",5} {"jets",5} {"width",7}  {"tint",-5} verdict");
             foreach (var r in rows)
-                report.AppendLine($"   {r.name,-12} {r.tails,5} {r.jets,5} {r.shown,5}  {(r.tint ? "yes" : "NO"),-5} {r.verdict}");
+                report.AppendLine($"   {r.name,-12} {r.tails,5} {r.jets,5} {r.width,7:0.###}  {(r.tint ? "yes" : "NO"),-5} {r.verdict}");
 
             int ok = 0;
             foreach (var r in rows) if (r.verdict == "ok") ok++;
             report.AppendLine();
             report.AppendLine($"   {ok} of {rows.Count} vessels are on the standard.");
-            report.AppendLine("   'shown' counts jets deliberately revealed to other pilots — the Serpent's case. " +
-                              "Every other jet is drawn on its own pilot's screen only.");
+            report.AppendLine("   'width' is the vessel's authored ribbon width scale (camera distance / 20, the " +
+                              "Dolphin being 1). Tails and jets are both drawn on every machine — a jet is TUNED " +
+                              "for its own pilot, not hidden from anybody.");
 
             Debug.Log(report.ToString());
         }

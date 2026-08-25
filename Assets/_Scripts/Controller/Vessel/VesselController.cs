@@ -164,15 +164,6 @@ namespace CosmicShore.Gameplay
                 VesselSpeedTunnel.SetTarget(VesselStatus, transform);
             }
 
-            // TAIL + JETS (Docs/VESSEL_TAIL_AND_JETS.md) — bound here for the same reason as the
-            // laws above: Initialize is the one method every vessel calls on every spawn path, so
-            // a hull cannot be authored, nor a mode written, in which a pilot sees somebody else's
-            // engine plumes. NOT gated on IsLocalPilot — the call is made on every machine and the
-            // flag is the argument, because a remote replica must be told to HIDE its jets just as
-            // deliberately as the local one is told to show them. Ordered BEFORE SetShipProperties
-            // so the domain paint below lands on the set this pass just settled.
-            TailAndJets?.SetViewerIsOwnPilot(player.IsLocalPilot);
-
             if (gameData != null)
                 ShipHelper.SetShipProperties(gameData.ThemeManagerData, this);
             else
@@ -304,10 +295,6 @@ namespace CosmicShore.Gameplay
                 PrismOcclusionCorridor.ClearTarget(transform);
                 VesselSpeedTunnel.ClearTarget(transform);
             }
-
-            // Same handover, same reason: the vessel the local pilot just gave up must stop
-            // drawing its jets on this screen, and the one they just took up must start.
-            TailAndJets?.SetViewerIsOwnPilot(player.IsLocalPilot);
 
             // If the player is AI in general, or if it is a network client
             if (player.IsInitializedAsAI || player.IsNetworkClient)

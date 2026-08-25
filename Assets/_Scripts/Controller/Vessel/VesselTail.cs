@@ -28,5 +28,13 @@ namespace CosmicShore.Gameplay
     [DisallowMultipleComponent]
     public class VesselTail : MonoBehaviour
     {
+        [Tooltip("Multiplies the prefab's authored ribbon width for THIS vessel. A TrailRenderer's " +
+                 "width is world-space and ignores transform scale, so a hull much larger or " +
+                 "smaller than the Dolphin (the tuned reference) has to say so here. The fleet " +
+                 "derives it from the vessel's own camera distance / 20 — see " +
+                 "Docs/VESSEL_TAIL_AND_JETS.md.")]
+        [SerializeField] float widthScale = 1f;
+
+        void Awake() => VesselFXWidth.Apply(this, widthScale);
     }
 }

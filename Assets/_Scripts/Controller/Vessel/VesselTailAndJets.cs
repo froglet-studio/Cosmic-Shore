@@ -8,20 +8,16 @@ namespace CosmicShore.Gameplay
     /// <see cref="VesselCustomization"/>, which does the same job for the hull's materials.
     /// Full contract: <c>Docs/VESSEL_TAIL_AND_JETS.md</c>.
     ///
-    /// It does two things, and both are STANDARD for every vessel rather than per-hull authoring:
+    /// Every <see cref="TrailRenderer"/> under the vessel is repainted with the vessel's live
+    /// domain, exactly as its prism trail and its hull are. A vessel's tail and jets are identity
+    /// at range; a hull that flies one colour and streaks another is a lie about whose it is. The
+    /// component deliberately does not know which layer a renderer belongs to — anything under the
+    /// vessel that draws a streak IS the vessel's colour, which is why a new FX layer inherits the
+    /// tint for free and cannot be authored into the wrong domain.
     ///
-    /// <list type="number">
-    /// <item><b>Domain colour.</b> Every <see cref="TrailRenderer"/> under the vessel is repainted
-    ///       with the vessel's live domain, exactly as its prism trail and its hull are. A vessel's
-    ///       tail and jets are identity at range; a hull that flies one colour and streaks another
-    ///       is a lie about whose it is. The component deliberately does not know which layer a
-    ///       renderer belongs to — anything under the vessel that draws a streak IS the vessel's
-    ///       colour, which is why a new FX layer inherits the tint for free and cannot be authored
-    ///       into the wrong domain.</item>
-    /// <item><b>Viewer visibility.</b> Jets are shown to their own pilot only (see
-    ///       <see cref="VesselJet"/>); the tail is shown to everyone, because being seen is the
-    ///       entire point of a tail.</item>
-    /// </list>
+    /// Tails and jets are both drawn on every machine. A jet is TUNED for its own pilot (size,
+    /// placement, a short life, all judged against that vessel's own camera) but is not hidden
+    /// from anybody — a rival's plumes are how you read their thrust up close.
     ///
     /// <b>Discovery is LIVE, never cached at Awake.</b> A vessel's FX arrive across several frames
     /// — prefab children at Awake, a runtime swap later — so a set captured once would silently
@@ -49,21 +45,6 @@ namespace CosmicShore.Gameplay
         Color _coreColor = Color.white;
 
         static readonly List<TrailRenderer> TrailScratch = new();
-        static readonly List<VesselJet> JetScratch = new();
-
-        /// <summary>
-        /// Bind this vessel's FX to the machine that is watching it. Called from
-        /// <see cref="VesselController.Initialize"/> and again from
-        /// <see cref="VesselController.ChangePlayer"/>, which hands a LIVE vessel to a different
-        /// player and never re-runs Initialize.
-        /// </summary>
-        public void SetViewerIsOwnPilot(bool viewerIsOwnPilot)
-        {
-            JetScratch.Clear();
-            GetComponentsInChildren(true, JetScratch);
-            for (int i = 0; i < JetScratch.Count; i++)
-                JetScratch[i].SetViewerIsOwnPilot(viewerIsOwnPilot);
-        }
 
         /// <summary>Repaint every tail and jet with the vessel's domain colours.</summary>
         public void SetColors(Color highlightColor, Color coreColor)
@@ -110,8 +91,8 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// Authored list wins; otherwise discover live, including inactive objects so a jet that
-        /// is currently hidden from this viewer is already the right colour when it is revealed.
+        /// Authored list wins; otherwise discover live, including inactive objects so FX a mode or
+        /// an ability has switched off are already the right colour when they come back.
         /// The shared scratch list keeps the per-domain-change allocation at zero.
         /// </summary>
         List<TrailRenderer> ResolveTrails()
