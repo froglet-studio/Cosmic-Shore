@@ -194,10 +194,14 @@ namespace CosmicShore.UI
         void OnDisable()
         {
             // Pooled / swapped HUDs must not resume mid-tween.
+            // energyRing is this view's OWN gauge image, not a bound ability icon, so it rests at
+            // one. ballIcon / blastIcon ARE ability icons (Space / Charge): resting them at one
+            // would wipe the lockup's kerning and the upgrade bump on the first hide, and nothing
+            // re-applies either until the next Initialize. Rest them where the row says.
             if (energyRing) { energyRing.DOKill(); energyRing.transform.localScale = Vector3.one; }
-            if (ballIcon) { ballIcon.DOKill(); ballIcon.transform.localScale = Vector3.one; }
+            if (ballIcon) { ballIcon.DOKill(); ballIcon.transform.localScale = AbilityIconRestScale(Element.Space); }
             if (switchIcon) switchIcon.DOKill();
-            if (blastIcon) { blastIcon.DOKill(); blastIcon.transform.localScale = Vector3.one; }
+            if (blastIcon) { blastIcon.DOKill(); blastIcon.transform.localScale = AbilityIconRestScale(Element.Charge); }
             if (blastCooldownRing) blastCooldownRing.DOKill();
         }
     }

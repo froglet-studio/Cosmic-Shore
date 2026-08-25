@@ -2977,3 +2977,12 @@ so neither mark touches the card's 12px corner sliver. This also fixed a latent 
 scale as well (1.15² = 1.32 when upgraded; would have been 0.56 with kerning). Verify the Charge
 profile and the Space jaws still fill their icons correctly, and that an upgraded card's icon rests
 noticeably — but not doubly — larger.
+
+**Update — fleet rollout.** The lockup is now ensured for every vessel with an ability row via
+`VesselHUDController.Initialize`; no prefabs were edited beyond the Dolphin's explicit component.
+Verify in play mode, per vessel: **Squirrel** (its AUTHORED flowers must be re-homed into the cards
+— check there is no leftover flower row at the old bottom-right position, and NO
+`[ElementalBarsView] Created N petal(s) at RUNTIME` warning, which would mean the authored petals
+were abandoned), **Sparrow**, **Scarab** (hide/show the HUD, e.g. between turns, and confirm the
+Charge/Space icons keep their kerned size — this is the `OnDisable` fix), and **Dolphin** again.
+Then run **FrogletTools > Vessels > Audit Ability Lockups** and expect OK with four vessels listed.

@@ -194,37 +194,72 @@ namespace CosmicShore.UI
             StretchTo(slot.Rim.rectTransform, 0f);
             slot.Rim.color = style.hairlineColor;
 
-            string socketName = "ElementFlower";
-            var socket = card.Find(socketName) as RectTransform;
+            slot.FlowerSocket = ResolveFlowerSocket(card, element);
+            return slot;
+        }
+
+        /// <summary>
+        /// The flower container for one card. A vessel that AUTHORED its flowers (the Squirrel) has
+        /// its container RE-HOMED into the card rather than replaced: moving the authored transform
+        /// keeps its authored petals, so nothing is built at runtime, nothing warns, and no orphan
+        /// flower is left rendering at the old row position. A vessel with no authored flower gets a
+        /// fresh socket instead.
+        ///
+        /// <para>Re-homing also makes docking order-independent: reparenting works whether or not
+        /// <see cref="ElementalBarsView"/> has already built its petals, whereas injecting a socket
+        /// only works before the build.</para>
+        /// </summary>
+        RectTransform ResolveFlowerSocket(RectTransform card, Element element)
+        {
+            EnsureElementBars();
+
+            RectTransform socket = null;
+            if (elementBars && elementBars.TryGetPetalRoot(element, out var authored) && authored)
+                socket = authored;
+
             if (!socket)
             {
-                var go = new GameObject(socketName, typeof(RectTransform));
-                socket = (RectTransform)go.transform;
-                socket.SetParent(card, false);
+                const string socketName = "ElementFlower";
+                socket = card.Find(socketName) as RectTransform;
+                if (!socket)
+                {
+                    var go = new GameObject(socketName, typeof(RectTransform));
+                    socket = (RectTransform)go.transform;
+                }
             }
+
+            if (socket.parent != card) socket.SetParent(card, false);
+
             socket.anchorMin = socket.anchorMax = socket.pivot = new Vector2(0.5f, 0.5f);
             socket.sizeDelta = new Vector2(style.petalFlowerSize, style.petalFlowerSize);
             socket.anchoredPosition = new Vector2(0f, style.FlowerLocalY);
             socket.localScale = Vector3.one;
-            slot.FlowerSocket = socket;
-
-            return slot;
+            socket.localRotation = Quaternion.identity;
+            return socket;
         }
 
         /// <summary>
         /// Hands each card's flower socket to the shared element-bar view, so the SAME petals the
         /// rest of the fleet draws are rendered inside the lockup instead of in a separate row.
+        /// A re-homed authored container is already bound, so the injection is a no-op there.
         /// </summary>
         void DockElementFlowers()
         {
-            if (!elementBars) elementBars = GetComponentInChildren<ElementalBarsView>(true);
-            if (!elementBars) elementBars = gameObject.AddComponent<ElementalBarsView>();
+            EnsureElementBars();
+            if (!elementBars) return;
 
             foreach (var pair in _slots)
             {
                 if (!pair.Value.FlowerSocket) continue;
                 elementBars.TrySetPetalRoot(pair.Key, pair.Value.FlowerSocket);
             }
+        }
+
+        void EnsureElementBars()
+        {
+            if (elementBars) return;
+            elementBars = GetComponentInChildren<ElementalBarsView>(true);
+            if (!elementBars) elementBars = gameObject.AddComponent<ElementalBarsView>();
         }
 
         /// <summary>The flower socket for an element, if a card was built for it.</summary>

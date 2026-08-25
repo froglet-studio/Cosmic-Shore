@@ -252,6 +252,35 @@ namespace CosmicShore.UI
             return abilityLockups;
         }
 
+        /// <summary>
+        /// Guarantees this HUD wears the ability lockup. Called from
+        /// <see cref="VesselHUDController.Initialize"/> - the one method every vessel HUD routes
+        /// through on every spawn path - so the style is STRUCTURAL rather than something a prefab
+        /// can be authored without. A vessel that has no ability row yet is left alone: there is
+        /// nothing to lock up, and the row's own validator already reports that.
+        ///
+        /// <para>Idempotent. The component is added rather than warned about because the lockup is
+        /// pure composition over icons that are already authored - there is no per-vessel art or
+        /// wiring for a human to supply, so a warning would only ever be noise telling someone to
+        /// click Add Component.</para>
+        /// </summary>
+        public void EnsureAbilityLockup()
+        {
+            if (!HasAbilityIconRow) return;
+
+            var lockups = ResolveAbilityLockups();
+            if (!lockups)
+            {
+                lockups = gameObject.AddComponent<AbilityLockupView>();
+                abilityLockups = lockups;
+            }
+
+            // Build now rather than waiting on Awake: a component added this frame has not Awoken,
+            // and a HUD that starts inactive would not Awake until it is first shown - which is
+            // after the controller seeds the upgrade state through SetAbilityUpgraded.
+            lockups.Build();
+        }
+
         // ---------------------------------------------------------------
         // Upgrade badge - the element's own petal, in the level-5 white, pinned to a corner of the
         // ability icon. It is a child of the icon, so per-frame icon repaints can never stomp it,

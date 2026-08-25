@@ -1,7 +1,7 @@
 # The Ability Lockup (TOTEM) — one system for ability icons + element indicators
 
-**Status:** shipped on the **Dolphin**. Fleet-wide capability; opt-in per vessel by adding one
-component. Design canvas: the "Ability Lockups" artifact (Totem — shipped page).
+**Status:** **fleet-wide and structural.** Every vessel HUD that binds an ability row wears the
+lockup; there is nothing per-vessel to author. Design canvas: the "Ability Lockups" artifact (Totem — shipped page).
 
 ## The problem it closes
 
@@ -50,6 +50,43 @@ Two properties make it cheap to adopt:
 - **No authored rect moves.** The card is inserted as a SIBLING behind the icon and its lower cell
   is centred on wherever that icon already sits; the upper cell is *added above*. A vessel adopts
   the style without one authored RectTransform changing.
+
+## Rollout + enforcement (all vessels)
+
+`VesselHUDController.Initialize` — the one method every vessel HUD routes through, on every spawn
+path — calls `VesselHUDView.EnsureAbilityLockup()`, which adds and builds the lockup whenever the
+HUD binds an ability row. So the style is not opt-in and no prefab has to be edited to adopt it;
+a NEW vessel inherits it the moment it binds its four icons. It is added rather than warned about
+because the lockup is pure composition over icons that are already authored — there is no
+per-vessel art or wiring for a human to supply.
+
+| vessel | row | lockup |
+|---|---|---|
+| Dolphin | 4/4 | ✅ (component also authored on the prefab — explicit, and equivalent) |
+| Scarab | 4/4 | ✅ ensured at runtime |
+| Sparrow | 4/4 | ✅ ensured at runtime |
+| Squirrel | 4/4 | ✅ ensured at runtime; its AUTHORED flowers are re-homed, not replaced |
+| Manta · Rhino · Serpent | 0/4 | — nothing to lock up; blocked on ability DESIGN, not on this style |
+| Urchin | 0/4 | — no HUD prefab exists |
+
+**A vessel that authored its own flowers keeps them.** The Squirrel authors all four containers with
+their petals in the prefab. Docking RE-HOMES that container into the card (a reparent) rather than
+pointing the bars view at a new socket — otherwise the authored flowers would be left rendering at
+the old row position while a second set was built at runtime, warnings and all. Re-homing is also
+order-independent: it works whether or not the bars view has already built.
+
+**Three guards, per the contract's enforcement ladder:**
+
+1. **Single source** — `Resources/AbilityLockupStyle`; no per-prefab geometry fields exist.
+2. **Runtime** — `EnsureAbilityLockup` on the shared init path (above).
+3. **Fleet audit** — **FrogletTools > Vessels > Audit Ability Lockups**: asset-only, no play mode.
+   It checks the shared style is sane AND the one thing a single shared style *cannot* absorb —
+   **per-vessel icon fit**. The card is a fixed 104 wide while icon size is per-prefab, so a vessel
+   authored much larger than the fleet's 80 would overflow after kerning, invisibly, until someone
+   flew it.
+4. **Edit-mode tests** — `AbilityLockupStyleTests` asserts the RELATIONSHIPS (kerning leaves air,
+   flower stays under the drawn icon, the two cells stack exactly, states travel), so retuning is
+   free and only a change that breaks the composition fails.
 
 ## How it composes (and why it is not authored per vessel)
 
@@ -123,7 +160,7 @@ plate/rim, 48 on bloom), so one asset set serves every vessel and every size.
 8. **Vessel swap.** Swap to the Dolphin from another vessel in Menu_Main freestyle and confirm
    exactly one set of cards (Build is idempotent; cards are adopted by name).
 
-## A latent bug this closed
+## Two latent bugs this closed
 
 `blastProfile` and the jaw pair are **children** of the Charge and Space ability icons, so they
 already inherit the icon's scale — and `DolphinVesselHUDView` was *also* resting them at
@@ -133,6 +170,17 @@ rest at `Vector3.one`; only the slot whose gauge IS the icon (Mass) re-anchors.
 
 **The rule:** `AbilityIconRestScale` is for the ICON's own transform. Anything nested inside an
 ability icon inherits it by being a child, and must not re-apply it.
+
+**And its mirror, on the Scarab.** `ScarabHUDView.OnDisable` reset `ballIcon` and `blastIcon` — both
+BOUND ability icons — to `Vector3.one`. That silently wiped the upgrade bump on the first hide and
+never restored it (nothing re-applies until the next `Initialize`), and it would have wiped the
+kerning too. They now rest at `AbilityIconRestScale`. `energyRing` is this view's own gauge image,
+not a bound icon, so it correctly stays at one.
+
+**The general shape of both:** any write to a bound ability icon's `localScale` must go through
+`AbilityIconRestScale`. A literal `Vector3.one` is only correct for something that is *not* a bound
+icon. The fleet auditor cannot see this — it is a code rule, and it is why the sweep for it is part
+of rolling this style onto any further vessel.
 
 ## Follow-ups
 

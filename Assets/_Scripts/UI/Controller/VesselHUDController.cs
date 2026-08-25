@@ -39,6 +39,11 @@ namespace CosmicShore.UI
 
             baseView?.Initialize();
 
+            // Fleet-wide ability lockup (Docs/ABILITY_LOCKUP.md): the totem card that fuses each
+            // ability icon with the element flower that upgrades it. Ensured HERE, before the
+            // upgrade state is seeded below, because the card is what carries the upgrade signal.
+            baseView?.EnsureAbilityLockup();
+
             // Elemental upgrade highlight - shared across all vessel HUDs: the view binds each
             // ability icon to the element that upgrades it (per the vessel's ElementalAbilityMapSO)
             // and the icon glows while that upgrade is active. Idempotent across re-inits.
