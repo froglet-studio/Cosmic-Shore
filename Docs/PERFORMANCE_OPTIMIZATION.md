@@ -178,6 +178,129 @@ per-capture analyses; `Docs/SPATIAL_INDEX.md` documents the summation view
 
 ---
 
+## 0.4 FMOD — the REAL cause: a LOOPING event fired as a one-shot (2026-08-18, SHIPPED)
+
+**This is the one that mattered.** 0.3 (the prism one-shot throttle) was a real defect and
+is kept, but it was not the dominant cost: after it, the capture still showed
+`RuntimeManager.Update()` at **693 ms**, and — the tell that redirected the hunt —
+**sustained on every frame** with the rest of the scene idle. A burst being drained is
+spiky; a flat per-frame cost means a fixed, permanent population of live instances.
+
+**Root cause.** `FMODOneShotVolumeHelper` does `CreateInstance` → `start()` → `release()`.
+That contract is only safe for an event that **stops by itself**: FMOD frees a released
+instance when it stops. An event with a **loop region** never stops, so `release()` never
+frees it — every call leaks one immortal, forever-playing instance, and
+`studioSystem.update()` re-processes all of them every frame. Hence: grows over the
+session, all *self* time, **0 B GC alloc**, nothing in the Unity hierarchy to point at.
+
+Cross-referencing the in-repo FMOD Studio project (`Cosmic Shore/Metadata/Event/*.xml`,
+which records loop regions) against the 47 `EventReference`s the Bootstrap scene wires
+found **exactly one** offender:
+
+| event | loops? | fired as |
+|---|---|---|
+| `event:/SFX/Oneshots/Gameplay sfx/Boost Activate` | **yes** | fire-and-forget one-shot |
+| the other 46 wired events | no | one-shot (correct) |
+
+A **looping** event, in a folder called *Oneshots*, fired by **five** boost call sites
+(`BoostActionSO`, `RampBoostActionSO`, `ChargeBoostActionExecutor`,
+`ConsumeBoostActionExecutor`, `MantaAnalogTurnBoostExecutor`) — on every vessel and every
+AI, repeatedly, all match.
+
+**Fix:** `FMODOneShotVolumeHelper` now asks FMOD itself (`EventDescription.isOneshot`)
+before firing and forgetting, and **refuses** a looping/sustaining event, reporting it once
+with the event path. Cached per event GUID (one native query per event, not per call). The
+check is dynamic, so removing the loop region in FMOD Studio makes it play again with **no
+code change**. An undeterminable answer (banks still loading) counts as safe, so a query
+failure can never silently mute audio — only a definite "this loops" refuses.
+
+**Known cost of the fix:** the boost sting is **silent** until the event is corrected. That
+is deliberate (fail-loud policy) and it is the cheaper half of the trade against an
+unplayable frame rate. Given five *momentary* call sites, the loop region is almost
+certainly the authoring bug and the remedy is one click in FMOD Studio; if boost is instead
+meant to be a sustained bed, it needs its own `EventReference` with an owned instance
+(start on begin, stop on end), per CLAUDE.md's audio policy — not a one-shot.
+
+**The standing rule this bought:** *`start()` + `release()` is a contract that the event
+stops by itself.* Any looping/sustaining event must be owned by a component that stops it
+(`ShipAudioController` / `DriftAudioController` / `FloraAmbientAudioController` are the
+right shape). A folder named "Oneshots" is not evidence — check `isOneshot`.
+
+**Verifying FMOD code without Unity:** `Assets/Plugins/FMOD/src/{fmod,fmod_dsp,fmod_errors,fmod_studio}.cs`
+depend only on the BCL — no `UnityEngine` — so they compile standalone. Mirror your FMOD
+calls into a probe file, add a five-line `RuntimeManager` stub, and Roslyn type-checks every
+signature for real. A reference-less compile can NOT do this: it reports missing Unity types
+and stays silent about a wrong member on a type it never resolved, which is exactly how
+`core.isValid()` shipped here (the *core* `FMOD.System` has `hasHandle()`; only the *studio*
+`FMOD.Studio.System` has `isValid()` — two different types in two different files).
+
+**Tooling:** `FrogletTools ▸ Performance ▸ FMOD Live Diagnostics` (reader, writes nothing)
+shows live instance count **per event**, real/total channels, and FMOD's own CPU split.
+A four-figure count on one row names an offender of this class outright. Use it before
+theorising about FMOD again — the Unity profiler structurally cannot.
+
+---
+
+## 0.3 FMOD — `RuntimeManager.Update()` eating a whole frame (2026-08-18, SHIPPED)
+
+**Capture:** `RuntimeManager.Update() [Invoke]` — **1,158.77 ms**, 98.2 % of a
+1,179 ms frame, **1 call, 0 B GC alloc**. Everything else on the frame was
+noise (`PrismColliderLodManager` 4.99 ms, the rest under 0.3 ms).
+
+**Read the signature before hunting.** All *self* time with zero managed
+children and zero allocation means the cost is **native**, inside
+`studioSystem.update()` — FMOD paying, on the main thread, for commands that
+managed code queued on earlier frames. So the culprit is never in the
+`RuntimeManager` row; it is whatever created event instances. Nothing in the
+Unity hierarchy points at it, which is why this reads as "FMOD is slow".
+
+**Root cause: the burst throttle guarded the one category the ecology never
+uses.** `Prism.PlayDestructionSFX` plays one spatialized one-shot **per prism
+destroyed**, from BOTH `Explode` and `Implode`. Each is a
+`RuntimeManager.CreateInstance` + `set3DAttributes` + `start` + `release`
+(`FMODOneShotVolumeHelper`). `AudioSystem.PassesGameplaySFXThrottle` capped
+that at 4 per 0.1 s — but only for `GameplaySFXCategory.BlockDestroy`, and
+both high-volume paths route around it:
+
+| path | category | throttled before? | wired? |
+|---|---|---|---|
+| plain prism | `BlockDestroy` | **yes** | yes |
+| flora health prism (`HealthPrism.DestructionSFX`) | `FloraCollision` | **no** | **yes** (`event:/SFX/Oneshots/Gameplay sfx/Creature colide`) |
+| any prism killed by a creature (`Prism.PlayDestructionSFX`) | `CreatureBlockHit` | **no** | no — unwired, so free *today*, and a landmine the moment someone wires it |
+
+So the **food web** — fauna imploding flora — and every AOE blast through a
+forest queued an unbounded number of instances per frame. The throttle existed
+and was correct in intent; it just keyed on a single enum member while two
+subclass/branch overrides changed the member out from under it.
+
+**Fix:** `throttledCategories` is now a serialized array (defaulting to
+`BlockDestroy` + `FloraCollision` + `CreatureBlockHit`) with **independent**
+sliding windows per category, so a burning forest cannot starve plain block
+destruction. `blockDestroyMaxPerWindow` / `blockDestroyThrottleWindow` became
+`burstThrottleMaxPerWindow` / `burstThrottleWindow` (`[FormerlySerializedAs]`;
+neither was authored in any prefab or scene, so both take their initializers —
+4 per 0.1 s, unchanged). Lookup is a linear scan of a three-entry array, not a
+Dictionary: it runs once per prism destroyed and an enum-keyed dictionary boxes.
+
+**Measured (offline harness against the shipped logic):** 5,000 flora one-shots
+in one frame → **4** voices; 500/frame sustained for 100 frames → **60** voices
+instead of 50,000; an unlisted category still always passes.
+
+**The standing rule this bought:** *a rate limit must key on the BEHAVIOUR
+(one voice per destroyed prism), not on one enum member.* Any new
+prism-destruction category must be added to `throttledCategories` — it is
+serialized precisely so that is a data edit, not a code edit.
+
+> **Not yet field-verified.** The defect is proven and the gate is tested, but
+> nobody has re-run the capture. To confirm on the next run: the
+> `Prism.Destroy.Sfx` marker's **call count** in the stalled frame is the
+> number of one-shots queued — if it is in the thousands, this was the cause;
+> if it is single digits while `RuntimeManager.Update()` is still seconds long,
+> the cost is elsewhere in FMOD (start with `AutomaticSampleLoading: 0` in
+> `FMODStudioSettings`, which loads sample data on demand).
+
+---
+
 ## 0.2 PLATFORM NOTE — macOS / Metal (2026-08-03)
 
 Branch `claude/mac-game-unity-performance-p35x60`. Triggered by a report of
@@ -944,9 +1067,7 @@ fix spreads or de-allocates the same work.
   `PoolMiss.<prefab>` (on-demand Get miss = buffer empty on the caller's
   frame), `PoolActivate.<prefab>` (pooled Get `SetActive(true)` — first-Awake
   vs OnEnable attribution).
-- **DiagnosticsHUD**: "Animators" section shows `active / registered` per
-  animation manager, live (updates only when the count changes — no GC).
-  Console commands: `prisms N` / `prisms off` / `prismcolors`.
+- **Console commands**: `prisms N` / `prisms off` / `prismcolors`.
 - **Collider-LOD telemetry**: `PrismColliderLodManager.LastNearCount` /
   `LastLiveCount`.
 - **Shell-contact tier markers**: `ShellContact.Build` (per-frame probe

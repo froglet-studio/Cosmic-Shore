@@ -394,16 +394,8 @@ namespace CosmicShore.Gameplay
                 return;
             }
 
-            StartCoroutine(WitherOutwardCoroutine(spindles));
-        }
-
-        IEnumerator WitherOutwardCoroutine(List<Spindle> orderedFromHeart)
-        {
-            for (int i = 0; i < orderedFromHeart.Count; i++)
-            {
-                if (orderedFromHeart[i]) orderedFromHeart[i].ForceWither();
-                yield return new WaitForSeconds(witherRingInterval);
-            }
+            for (int i = 0; i < spindles.Count; i++)
+                if (spindles[i]) spindles[i].ForceWither(i * witherRingInterval);
         }
 
         IEnumerator DieCoroutine(int cellId)

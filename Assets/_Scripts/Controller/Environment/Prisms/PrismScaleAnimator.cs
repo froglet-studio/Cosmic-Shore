@@ -82,6 +82,13 @@ namespace CosmicShore.Gameplay
             _clockActive ? PrismClock.Now >= _clockSettleTime
                          : IsAtTarget;
 
+        /// <summary>
+        /// Analytic <see cref="PrismClock"/> time when the bloom settles under the active stamp,
+        /// or 0 when no clock grow is active. The arena-ready gate waits on this instead of
+        /// force-snapping <c>CompleteGrowthImmediately</c>.
+        /// </summary>
+        public float AnalyticSettleTime => _clockActive ? _clockSettleTime : 0f;
+
         /// <summary>Pool-reuse reset — called from Prism.ResetState so a recycled
         /// prism can't inherit the previous life's clock state.</summary>
         internal void ResetClockState()

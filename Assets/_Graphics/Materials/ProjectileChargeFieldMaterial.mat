@@ -14,7 +14,7 @@ Material:
   m_ValidKeywords: []
   m_InvalidKeywords: []
   m_LightmapFlags: 4
-  m_EnableInstancingVariants: 0
+  m_EnableInstancingVariants: 1
   m_DoubleSidedGI: 0
   m_CustomRenderQueue: 3000
   stringTagMap:
@@ -26,22 +26,31 @@ Material:
     m_TexEnvs: []
     m_Ints: []
     m_Floats:
-    - _ArcDensity: 5
-    - _ArcIntensity: 1
-    - _ArcReach: 1
-    - _ArcSeeds: 3
-    - _ArcSharpness: 0.12
-    - _CenterFillAmount: 0.12
-    - _CoreThreshold: 0.75
-    - _ChargeFloor: 0.35
+    - _ArcCount: 1
+    - _ArcIntensity: 1.25
+    - _ArcSharpness: 0.055
+    - _ArcSpan: 1.45
+    - _ArcStartSpread: 0.9
+    - _ArcTiltRange: 0.55
+    - _ArcWander: 0.26
+    - _ArcWanderScale: 2.6
+    - _ChargeFloor: 0.4
     - _ChargeReferenceRadius: 4.95
-    - _CrackleRate: 6
-    - _FresnelRimIntensity: 0.18
-    - _FresnelRimPower: 2.5
-    - _PhaseByRadius: 1.7
-    - _PhaseSpeed: 1
-    - _RingThickness: 0.9
-    - _RippleSpeed: 1.6
+    - _CoreThreshold: 0.7
+    - _CrackleRate: 3.5
+    - _FadeShape: 3.9
+    - _HoldTime: 0.042
+    - _FresnelRimIntensity: 0.014
+    - _FresnelRimPower: 3.5
+    - _PhaseBySeed: 1
+    - _PhaseByRadius: 0.43
+    - _PhaseSpeed: 2.6
+    - _RoundSeed: 0
+    - _SeedSpin: 6.283
+    - _SeedTilt: 6.283
+    - _SeedWobble: 40
+    - _StrikeTime: 0.25
+    - _TipGlow: 0.9
     m_Colors:
     - _CrackleColorA: {r: 1.4979111, g: 0.0058463, b: 0.0068495, a: 1}
     - _CrackleColorB: {r: 0.1, g: 0.35, b: 1, a: 1}

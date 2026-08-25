@@ -132,8 +132,8 @@ reach on fine detail, bench/resume via the station, cross-session stroke progres
   replace `PaintingRunner.BenchOtherRunners`'s `FindObjectsByType` scan with a static
   registry (runs only on activation — rare); extract the ring fan-layout math shared with
   `SwapToySetCoordinator.Layout` into one helper; unify the LineRenderer config duplicated
-  by `ShapeDrawingManager.ConfigureLineRenderer` with `ToyFactory.CreateLine` (touches the
-  shape-drawing system, so it belongs in its own change).
+  by `ToyFactory.CreateLine` (`ShapeDrawingManager.ConfigureLineRenderer` was deleted
+  with C15; remaining LineRenderer config lives on the toy side).
 - **Reviewed and deliberately deferred (pre-PR review pass).** Verified findings fixed in that
   pass: closed-loop instant-complete, disengaged-milestone latch, milestone-trigger NRE during
   vessel swap (shared null-guarded `Toy.TryGetLocalVessel`), benched-gate forever-lerp, ridden
@@ -174,9 +174,9 @@ reach on fine detail, bench/resume via the station, cross-session stroke progres
   - *Phoenix preset fallback*: the flame fill's Ruby branch is dead (seed y-range never crosses
     the threshold) — all flames come out Gold; harmless (single recolour), fix with the next
     preset-content pass.
-- **Full experience (optional).** For a gameplay scene with ecology infra, the original
-  `ShapeDrawingManager` (preview cinematic, scoring, reveal, `EndShapeDetailHUD`) remains a
-  separate, score-bearing mode — the toy stays scoreless by design.
+- **Full experience (optional).** The scored `ShapeDrawingManager` minigame was
+  **deleted 2026-08-25** (C15). Recover from git if a scored gameplay scene is
+  wanted. The toy stays scoreless by design.
 
 ## Branch: conveyor ("Wanderway") polish
 
@@ -337,9 +337,9 @@ teardown). Everything below is remaining polish / not-yet-play-verified.
   crystal) — tune via the matrix, then bake into `Tadpole Fauna Charge.asset`.
 - **Not in the elemental contract yet**: Seaweed (`SpawnableCord`, not a `Flora`), drone
   populations (BoidManager path — now all spawn the base tadpole; needs its own config pass
-  for per-element identity). (Worms: the legacy trio was deleted; the rebuilt worm colony's
-  capital segments carry authored elemental hearts — Docs/ECOSYSTEM.md §23 — though the
-  colony doesn't yet roll the element × level spread.)
+  for per-element identity). (Worms: the legacy trio was deleted; every segment of the
+  rebuilt worm colony carries an authored elemental heart — Docs/ECOSYSTEM.md §23.8 — though
+  the colony doesn't yet roll the element × level spread.)
 - **Sparrow (and other vessels') HUD ability-icon bindings** for the shared upgrade-highlight
   system are unwired (Squirrel only); fill each view's `abilityIcons` in its prefab.
 - **Squirrel HUD tube/energy icons repaint colours per-frame**, so the upgrade highlight
@@ -604,3 +604,23 @@ mass does not exist until plants grow it. Three directions, in preference order:
 
 Until one lands, a grown cell in the selector is identified by its **label** alone. Note this
 becomes more pressing, not less, if more grown-environment cells ship.
+
+## Vessel matrices — live hulls (2026-08-25)
+
+Stations in the vessel changer and the Lifeform Matrix hangar now show the ACTUAL ship
+(`ToyVesselRoster.TryBuildLiveHull`) rather than a flat silhouette, with the vessel vision band
+supplying the domain read (`Docs/VESSEL_VISION.md`, `Docs/ToySystem/ARCHITECTURE.md` § "Vessel
+Changer"). Open items:
+
+- **Glyphs still use the flat fill, and that is deliberate** — a toy's emblem and the kingdom icons
+  sit inside the band's near cutoff where a real hull is a black blob. If emblems ever want real
+  hulls, they need their own lighting answer, not the band.
+- **The station's mark depends on the matrix geometry.** It works because the matrix blooms
+  `StationSpacing × MatrixDistanceFactor` = 360 u, just past the band's `nearFullStart` (350).
+  Anyone re-tuning `stationSpacing` or `matrixDistanceFactor` on `Toy_VesselChanger.asset` should
+  re-check that the stations still land inside the band, or they will silently go unmarked.
+- **Skinned mini hulls show their bind pose.** Unchanged by this work, but more visible now that the
+  real materials are on: a skinned ship's mini model is static in its authored pose.
+- **Not verified in-editor yet** — the live-hull path, the domain-material swap and the re-tint
+  dispatch are machine-type-checked only. See `Docs/VESSEL_VISION.md` § "What a human still has to
+  check in the editor", step 6.

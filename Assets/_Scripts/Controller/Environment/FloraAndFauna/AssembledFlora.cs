@@ -549,7 +549,7 @@ namespace CosmicShore.Gameplay
 
             var growthInfo = order.info;
 
-            HealthPrism newHealthPrism = Instantiate(healthPrism, growthInfo.Position, growthInfo.Rotation);
+            HealthPrism newHealthPrism = EnvironmentPrismPool.Get(healthPrism, growthInfo.Position, growthInfo.Rotation);
             AddHealthBlock(newHealthPrism);
             Branch newBranch = new Branch(newHealthPrism);
 
@@ -2037,7 +2037,7 @@ namespace CosmicShore.Gameplay
 
             ScaleSpindleToLattice(newSpindle);
 
-            HealthPrism newHealthPrism = Instantiate(healthPrism, newSpindle.transform.position, newSpindle.transform.rotation);
+            HealthPrism newHealthPrism = EnvironmentPrismPool.Get(healthPrism, newSpindle.transform.position, newSpindle.transform.rotation);
             AddHealthBlock(newHealthPrism);
             // Zero the locals AFTER SetParent - worldPositionStays:false KEEPS the local
             // values, which at this point are the world coordinates Instantiate assigned, so
