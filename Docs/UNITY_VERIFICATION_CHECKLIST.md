@@ -2685,3 +2685,42 @@ error**, so check this before concluding the sight is broken.
 (`TeamCrystal.prefab` has no NetworkObject, matching the previous hold-to-plant scope), and the
 sight ignores Space L5 "Clean Blast" friendly fire — it highlights everything geometrically inside
 the volume.
+
+---
+
+## Timed shield pop sheds isotropically (`claude/prism-shield-explosion-vector-3s36o0`)
+
+**Not verified in-editor.** No Unity Editor and no `unity` CLI were reachable in the session that
+wrote this (the container carries no editor and no C# compiler), so the change below has NOT been
+compiled or play-tested. It is one method plus one helper in
+`PrismStateManager` (`ExecuteTimerDeactivation` / `TimedPopBreakVelocity`).
+
+What changed: the end of a TEMPORARY shield — `ActivateShield(duration)` and
+`DeactivateShields(delay)`, the one shield teardown with no breaking force behind it, and the path
+every own-domain explosion takes when it shields a prism rather than clipping through it — now
+hands the shatter a random direction on the unit sphere at **half the magnitude of the impact
+vector that caused the shield** (carried from both explosion call sites, with the blast's own
+`DebrisSpeedLimit` so the halving survives the clamp), instead of a zero vector (which
+`GeometryUtils.ClampMagnitude` resolves to `Vector3.up * minSpeed`). A shield with no blow behind
+it — an ability, a skim, a spawner — still pops at the debris band's authored `minSpeed`.
+
+The shed itself is unchanged and already on the clock path: ONE batched clock-stamped debris entity
+per disengage (`PrismShieldMorph.RequestShatter` → `PrismShieldShatter` → `PrismRenderService`),
+zero per-frame CPU, and `PrismTimerManager`'s single scheduled swap for the timer.
+
+1. **Compile clean.**
+2. Fire an AOE blast into your OWN domain's mass (Rampage/Bends Dolphin cone, or any explosion with
+   `shielding` on). The prisms shield rather than taking damage, and ~2 s later each pops: its
+   shards should fly off in **its own random direction**, not straight up in lockstep with every
+   other prism in the blast.
+3. Two blasts over the same mass → the second pop's direction differs from the first's (the vector
+   is drawn per pop, not per prism).
+4. A weak blast vs. a strong one: the pop should read HALF as hard as the blast that caused it, so
+   a Dolphin cone at full charge should throw its shed armour visibly further than a small blast
+   does. (A blast with no `DebrisSpeedLimit` of its own still saturates at the prefab clamp — that
+   is the pre-existing legacy band, not this change.)
+5. A shield with no blow behind it (skim overcharge, `SeedAssembler`, a spawner) still pops with the
+   quiet minimum puff, now in a random direction.
+6. A shield broken by a real force (Rhino sword, `Prism.Damage` shedding a shield) is unchanged —
+   it still throws along the breaking vector, not a random one.
+7. Prism count is unchanged by the pop (this is photons only: no mass is created or destroyed).
