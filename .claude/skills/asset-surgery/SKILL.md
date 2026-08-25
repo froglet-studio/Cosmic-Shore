@@ -1936,6 +1936,12 @@ signature of one prefab instanced in all of them, and it is the evidence.
   Always compute `worldRadius = m_Radius × max(|sx|,|sy|,|sz|)`, and when writing one,
   invert it: `m_Radius = desiredWorldRadius / maxScaleComponent`. Sweep siblings while you
   are there — the same authored `0.3` sat in two more projectile prefabs in this repo.
+  **The corollary is a FREE DIAL, and it is worth knowing deliberately**: when the winning
+  component is an axis you are not touching, every *other* axis is a purely visual dial. The
+  same dart's cross-section was later halved (`1.5 → 0.75`) with the hit radius provably
+  unchanged at 0.825, because `z = 20` still won the `max`. Compute it and assert it rather
+  than assuming either way — the identical geometry that once made a collider 8× too big is
+  what makes this edit free, and only arithmetic tells you which case you are in.
 - **An EFFECTIVE number that everything agrees on may never have been AUTHORED at all.**
   The mirror of "the authored number is not the effective one" (`/vessel` §2.4a): here the
   effective number was 12, three assets had been tuned to match it, a config default and a
@@ -2110,6 +2116,24 @@ signature of one prefab instanced in all of them, and it is the evidence.
   point is a write on a despawned object. Give the tick a `bool` return ("I removed myself") and
   bail on it; a `void` tick that can self-destruct is a latent write-after-free that only shows
   up as Netcode warnings under a condition nobody reproduces on purpose.
+- **Transform scale is not visible size when the shader displaces vertices — and the error is
+  INVERSE in the scale.** Before resizing any model, read its shader for a vertex offset. This
+  repo's `SpreadFresnelShader` does `v.vertex += normal * (_Spread / objectScale)`, so shrinking
+  an object *grows* its displacement and the visible size does not track the transform. At the
+  authored `_Spread: 0.01` a 2× shrink came out at 0.507× (fine, 1.4% off); at `_Spread: 1` the
+  same edit would have moved a Ø1.75 dart to Ø1.38 — a 21% change sold as a 50% one. Compute
+  `2 × (meshRadius + _Spread/scale) × scale` for both the old and new scale and check the ratio
+  is what you promised, rather than reasoning from `localScale` alone. Note the property may be
+  authored on a PARENT material and absent from the variant you are reading.
+- **A rendered candidate judged at thumbnail size lies, and it lies by AVERAGING.** §4.5b says
+  render the candidates and look at them; the completion is *look at them at the size they will
+  be judged, and count pixels rather than trusting the look*. A 300 px contact sheet of an
+  additive shell read as uniformly magenta and nearly triggered a colour retune; a hue census
+  over the same shipped shader measured 7% magenta, and one large panel proved the census right
+  — at that scale a blue arc and its red core simply average into the third colour. Build the
+  census (bucket the output of the shipped entry point over a population of fragments, after
+  tonemapping) *and* render one full-size panel before changing anything on the strength of a
+  sheet.
 - **A rule that only a SERVER can carry out must be gated on being one, or a local session
   announces work it cannot do.** `IsServer` is false in a no-network local session (the freestyle
   toys mint networked objects with no `NetworkManager`), and the surrounding code often runs
