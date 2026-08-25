@@ -21,7 +21,7 @@ them as separate branches.
 | 4 | **Prompt 4** — C9 cell-swap suction (re-scoped, C8 shipped) | The largest world-scale per-frame CPU flow left. Ranked below the gates because it needs a prerequisite decision: `StampSuctionClock` **silently no-ops on live prisms** today. |
 | 5 | **Prompt 13** — C11 spindle `_DeathAnimation` fade | The only §5 tracker row with zero coverage anywhere in this doc. Since prisms leave as a skeleton *before* the wither runs, this is the *entire* remaining CPU cost of the wither visual, not a leftover. |
 | 6 | **Prompt 3** — C6 remainder (re-scoped; C7 closes ✅) | Two parent-transform scale animations that re-sync every child prism's entity matrix per frame. Real but low-traffic, and needs a design ruling first. |
-| 7 | **Prompt 7** — C12/B1 cleanup sweep (re-scoped) | All six items verified still open, but two had false premises and are corrected below. No player-visible change. |
+| 7 | ~~**Prompt 7**~~ — C12/B1 cleanup sweep | ✅ **DONE 2026-08-25** — six items closed (watchdog→scheduler; SkimFxRunner = vessel FX recorded; dead CloakSeedWallAction.cs only; HoldCollider deleted; CreateBlock window kept+documented; analytic grow end + arena settle). |
 | 8 | **Prompt 9b** — D4: retire the pooled path (gated on Prompt 11) | A refactor, not a deletion. The pooled `PrismImplosion` has a live gameplay consumer (`PrismType.Grow` / Sparrow ReverseSuction) — do not delete that surface. |
 | 9 | **Prompt 14** — C13b environment-lay pooling | Not a clock fix. Kills the `Domains.Blue` → domain spawn repaint and alloc churn. Told to be "re-ranked with the rest" on 2026-08-02 and never was; this row is that re-rank. |
 | 10 | **Prompt 15** — `ShapeDrawingManager` ruling (§3.8 #8) | A textbook clock-law violation on dormant code — which is exactly why every sweep has missed it. Cheap to decide; expensive if Phase-2 shape drawing is revived carrying it. |
@@ -38,6 +38,7 @@ them would now cause harm; the DONE blocks below keep the lesson.
 | ~~Prompt 6~~ — B4 shield morphs on the GPU | ✅ **DONE 2026-08-15** — PR #729, `37f9596a`. **Phase B is complete**; the last sanctioned CPU prism ticker is deleted. |
 | ~~Prompt 9~~ (build half) — batched entity debris | ✅ **DONE 2026-08-04** — implosions on the batch carrier + the death-path marker split. Editor half → Prompt 11; D4 → Prompt 9b. |
 | ~~Prompt 10~~ — cross-doc truth reconcile | ✅ **DONE 2026-08-24** — Grow is live (Sparrow ReverseSuction); §6 is a completed-handoff; PhaseThresholds re-baseline ✅ 2026-08-02; C7 ✅ by construction; unsatisfiable Animators-HUD rows gone. Do not re-open. |
+| ~~Prompt 7~~ — C12/B1 cleanup sweep | ✅ **DONE 2026-08-25** — watchdog→scheduler; SkimFxRunner = vessel FX; dead `CloakSeedWallAction.cs` only; HoldCollider deleted; CreateBlock window kept+documented; analytic grow end + arena settle. |
 
 Shared context every prompt inherits (do not restate in the session):
 `Docs/PRISM_ANIMATION.md` is the LOCKED law — one stamp → GPU clock → one
@@ -314,69 +315,29 @@ branches and both non-obvious:
 > `[PrismClock]` errors, and the old world genuinely converges rather than
 > snapping.
 
-## Prompt 7 — C12 remainder + B1 simplifications (cleanup sweep, re-scoped)
+## Prompt 7 — C12 remainder + B1 simplifications ✅ DONE 2026-08-25
 
-> Read `Docs/PRISM_ANIMATION.md` §5 C12 + B1's pending list. Small independent
-> items, one commit each. **Two of the six had false premises in the previous
-> revision of this doc — the corrections are load-bearing, not pedantic.**
+> Documentation + cleanup remainder. **Do not re-run this prompt.**
 >
-> **(1) `PrismImplosion` wall-clock watchdog → scheduler.** `PrismImplosion.cs:438`
-> still has a `void Update()`; `PrismExplosion` has none and schedules at `:376`.
-> Careful: the watchdog deliberately does **not** gate on `IsActive` (comment
-> `:441-447`), so a `ScheduleAction` issued from `StartImplosion` would miss the
-> failure mode it covers (pool re-activation where `StartImplosion` never runs).
-> Schedule from `OnEnable`, cancel/re-arm at `StartImplosion` / `StartGrow` /
-> `OnEffectComplete`.
+> **Lesson.** Two earlier wordings were actively harmful: (3) would have deleted the
+> only live `IsTransparent` producer (checklist Phase 3); (4)/(5)/(6) needed the
+> corrected premises (HoldCollider was itself a per-frame writer; TryReserve is
+> growth-only so the 0.6 s window stays; arena settle needed an exposed analytic
+> grow end first) — not "colliders already final / just shorten waitTime / just
+> rewrite settle."
 >
-> **(2) `SkimFxRunner` stretch-beam review.** Verified: it writes only the beam
-> (`:83`/`:85`), never a prism — the per-frame loop at `:65` with
-> `UniTask.Yield` at `:78`/`:93` is vessel FX, not prism animation. **The
-> deliverable is recording that outcome** in §5 C12 so it stops being
-> re-litigated (`PRISM_ANIMATION.md:406` and `:1826` still list it pending).
-> Optional and out of clock-law scope: it runs one loop per skim contact and
-> `Instantiate`/`Destroy`s per contact instead of pooling.
->
-> **(3) `CloakSeedWall` — delete ONE file, not the family.** ⚠ The previous
-> wording invited deleting all of it. Only
-> `_Scripts/Controller/Vessel/VesselActions/CloakSeedWallAction.cs` (+ meta, guid
-> `e4f432f2…`) is dead — the legacy `ShipAction`, zero asset references.
-> `CloakSeedWallActionSO.cs`, `CloakSeedWallActionExecutor.cs` and
-> `_SO_Assets/VesselActions/Serpent/CloakSeedWallAction.asset` are all wired into
-> `Serpent.prefab`, and the executor (`:387`) is the project's **only live
-> `IsTransparent` producer** — which the last outstanding checklist **Phase 3**
-> transparent-steal test depends on (`PRISM_CLOCK_WIRING_CHECKLIST.md` § Phase 3).
-> Deleting it would make that test unrunnable.
->
-> **(4) `Prism.HoldColliderAtFullSize` — the premise "colliders are final-at-start
-> now" is false on this very path.** ⚠ `HoldColliderAtFullSizeCoroutine`
-> (`Prism.cs:298-331`) writes `transform.localScale` (`:323`) **and**
-> `blockCollider.size` (`:325-328`) inside `while (!destroyed && blockCollider)`
-> (`:302`, yielding at `:330`) — it is itself a surviving per-frame prism-transform
-> writer, which makes it *more* worth removing, not less. There is exactly **one**
-> live caller, `BoostRingBuilder.cs:115` (the other six hits are comments/doc
-> prose). Deleting it means replacing two things that caller depends on: a
-> full-size collider from frame 0 on a just-spawned ring, AND the deferred
-> `onGrown` callback that delays `Shielded`/`SuperShielded` application until the
-> bloom ends.
->
-> **(5) `CreateBlockCoroutine` spawn-window simplification.** The 0.6 s
-> collider-disable window is `Prism.cs:31` / `:843-861`. Before shortening it,
-> confirm the trail and environment lay paths also claim before spawn — the only
-> `PrismSpatialIndex.TryReserve` callers found are the growth/assembler spawners
-> (Gyroid, SchwarzP, PhyllotacticFlora), so the window may still be the sole
-> protection for `PrismTrailBuilder.LayOne` and `PrismFactory`.
->
-> **(6) Arena-gate simplification is blocked — two commits, not one.**
-> `PrismTrailBuilder.cs:264 PollArenaReady` → `:292 SettleGrowWatch` (2000 at
-> `:213`) → `:342 CompleteGrowthImmediately`. No per-prism analytic grow end time
-> (start stamp + duration) is exposed on `Prism`/`PrismScaleAnimator`. Expose it
-> first, then rewrite the settle logic.
->
-> **B1's PhaseThresholds re-baseline is DONE 2026-08-02** (Prompt 10(d) closed
-> the tracker contradiction). Do not re-author the six freestyle configs.
->
-> Each: grep blast radius first, brace-check, verify no behavior change beyond
-> the stated one.
+> **Outcomes.**
+> 1. `PrismImplosion` watchdog → `PrismTimerManager` from `OnEnable` (re-arm after
+>    stamp; cancel on complete/disable; never gates on `IsActive`).
+> 2. `SkimFxRunner` writes only the beam particle — vessel FX, not prism animation;
+>    recorded in §5 C12 / inventory so it stops being re-litigated.
+> 3. Deleted only `CloakSeedWallAction.cs` (+ meta). SO / executor / asset kept on Serpent.
+> 4. `HoldColliderAtFullSize` DELETED; `BoostRingBuilder.LayOne` applies all kinds at lay.
+> 5. `CreateBlockCoroutine` 0.6 s window **kept** — `TryReserve` is growth/assembler-only;
+>    trail/`PrismFactory` still rely on the disable window.
+> 6. Exposed `PrismScaleAnimator.AnalyticSettleTime` / `Prism.AnalyticGrowSettleTime`;
+>    arena `SettleGrowWatch` waits on clock predicates (no force-snap).
+
 
 ## Prompt 8 — Validator coverage + the wirer divergence (re-scoped)
 
