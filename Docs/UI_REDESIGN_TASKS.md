@@ -19,8 +19,10 @@ Maintained by the `ui-redesign-tracker` skill. Do not hand-edit the status table
 | T4 | UIThemeSO + literal inventory | TODO | — | | | |
 | T5 | Download & install TMP fonts | TODO | — | | | |
 | T6 | TMP Style Sheet + Aldrich audit | TODO | T5 | | | |
+| T9 | ScreenSwitcher re-layout on resolution change | TODO | — | | | |
 
 **Critical path:** T2 → T3 is the long pole. T1, T4, T5 are independent and can run in parallel. T6 needs T5's font assets to exist.
+**T9 is the highest-priority open item** — a live, Steam-visible bug in the shipping window config, independent of everything above, and `resizableWindow` must stay `0` until it lands.
 
 ---
 
@@ -52,11 +54,23 @@ Acceptance criteria:
 - [x] `_Prefabs/CORE/GameCanvas.prefab` at 1920×1080 / PPU 240
 - [x] `_Prefabs/GameCanvas-HexRace.prefab` at 1920×1080 / PPU 240
 - [x] `_Scenes/Singleplayer Scenes/SplashScreen.unity` migrated
-- [ ] `_Prefabs/UI Elements/Loadout Container.prefab` migrated — **not a migration target**, see Deviations
+- [ ] `_Prefabs/UI Elements/Loadout Container.prefab` migrated — **OPEN. Blocked on an owner decision,
+      not on work.** The asset is not a migration target (ConstantPixelSize at Unity's default 800×600;
+      the audit records it as such in §1.2 and §1.3). Unblocked by amending or removing this criterion.
+      Nothing to implement.
 - [x] `CanvasUpgraderUpgradedPrefabs.txt` respected — no double pass (×5.76 check)
 - [x] `AdaptiveCanvasScaler` on every scene canvas that lacked it
 - [x] Static `matchWidthOrHeight` overrides removed from those scenes
-- [ ] No remaining reference resolution outside 1920×1080 project-wide — 9 remain, see Findings
+- [ ] No remaining reference resolution outside 1920×1080 project-wide — **OPEN. 9 remain.** Blocked on
+      three separate decisions, none of them T2.6: (a) the four **ConstantPixelSize 800×600** prefabs
+      (`Loadout Container`, `StarShapeSign`, `HeartShapeSign`, `LightningShapeSign`) — a different
+      migration class, needs its own task; (b) `_Scenes/Tools/PhotoBooth.unity` (800×600
+      ScaleWithScreenSize, tool scene) — needs a keep-or-migrate call; (c) 4 **third-party** demo
+      scenes (NiceVibrations, QuickScenePro ×3) — out of scope by definition.
+      ⚠ **Not blocked on T2.6.** The seven nested fragments carry **zero** `Canvas`/`CanvasScaler`
+      components, so they have no reference resolution to report and cannot move this criterion. The
+      *adjacent* statement is true and worth tracking separately: "no 800-space UI content remains" is
+      partly blocked on T2.6, but that is not what this criterion measures.
 - [~] Project builds; no canvas visibly regressed in a smoke pass — editor-only, human to confirm
 
 **Deliverables:**
@@ -240,14 +254,32 @@ Acceptance criteria:
 - [ ] Prefab Kit Validate run, output recorded
 - [ ] Prefab Kit Consolidate run
 - [ ] Identical overrides (**1,719** byte-identical / 1,735 same-key across all **11** fork scenes; audit's "~1,734 across 6" superseded — see T2 Findings) pushed into the prefab
-- [ ] **One scene only** re-placed, diff reported, explicit go-ahead received before the rest
-- [ ] Override count per canvas instance below 25 in each migrated scene
+- [ ] The **16** genuinely-differing (target, propertyPath) pairs reconciled — this is the real
+      reconciliation work; everything else in the set is byte-identical and consolidates mechanically
+- [ ] **One scene only** re-placed, diff reported, explicit go-ahead received before the rest —
+      the gate matters **more** at 11 scenes, not less
+- [ ] Override count per canvas instance below 25 in **each of the 11 fork scenes**
 - [ ] `statsToTrack` preserved per mode (the one real per-mode value)
-- [ ] Joust toast feed rect normalised from ~(-1416, -463)
+- [ ] Joust toast feed rect normalised from ~(-1416, -463), and `NotificationUI.prefab`'s 800-space
+      interior migrated in the same pass (folded in from T2.6)
 - [ ] 8 cross-asset dangling refs into the CORE prefab resolved
-- [ ] Dangling `CountdownDisplay` ref into never-instantiated `MiniGameHUD.prefab` resolved
-- [ ] All six modes launch and reach the Ready gate
-- [ ] End-game scoreboard renders in each mode
+- [ ] Dangling `CountdownDisplay` ref into never-instantiated `MiniGameHUD.prefab` resolved;
+      `MiniGameHUD.prefab` deleted rather than migrated (folded in from T2.6)
+- [ ] **All 11 fork modes** launch and reach the Ready gate (not 6)
+- [ ] End-game scoreboard renders in **each of the 11**
+
+**Second deliverable — stop the debt regrowing.** 9 of the 11 fork scenes share one
+`PrefabInstance` anchor fileID, i.e. each new mode was cloned from an existing mode scene and
+inherited its whole override set (T2 Findings). The debt is therefore **self-replicating**: unifying
+11 scenes without closing the cloning path buys roughly one sprint before the next mode re-creates it.
+`Docs/GAMECANVAS.md` already states the policy ("a variant, never a copy"), so this is **enforcement,
+not new policy**.
+
+- [ ] A supported path to stand up a new mode scene with a **clean** canvas instance — a Prefab Kit
+      action, or a written procedure if a tool is not warranted
+- [ ] `CLAUDE.md` states that duplicating an existing mode scene is **prohibited**, and names the
+      supported path instead
+- [ ] The new path produces a scene whose canvas instance starts at **0** overrides
 
 **Deliverables:**
 **Findings:**
@@ -316,6 +348,42 @@ Acceptance criteria:
 
 ---
 
+## T9 — ScreenSwitcher re-layout on resolution change
+
+**Audit ref:** §2 · **Raised by:** T2 · **Priority: highest open item — this is a live, Steam-visible
+bug in the shipping configuration, not a future risk.**
+
+`ScreenSwitcher.LayoutScreensToViewport()` sizes every screen panel to `Screen.width` **and** positions
+it at `i * viewportWidth`. It has exactly **one** caller — `Start()`. There is no
+`OnRectTransformDimensionsChange` and no resolution poll; `Update()` handles only the freestyle and
+modal input gates. So any resolution change leaves the menu filmstrip **both mis-sized and mis-offset**,
+and navigation lands off-centre.
+
+It is reachable today: `allowFullscreenSwitch: 1`, so alt-enter drops the player into a windowed mode
+at `defaultScreenWidth/Height` (1024×768) mid-session and the layout never re-runs. `resizableWindow: 0`
+is the **only** thing containing the blast radius.
+
+Acceptance criteria:
+- [ ] `LayoutScreensToViewport()` re-runs on resolution change — `OnRectTransformDimensionsChange` on
+      the driven canvas rect, or a cached-`Screen.width/height` poll, following the
+      `AdaptiveCanvasScaler` precedent (two cached-int compares per frame, work only on the frame it changes)
+- [ ] Re-anchors to the **current** screen index after re-layout, **without animating** — a resize must
+      not read as a navigation
+- [ ] No per-frame work when the resolution is unchanged
+- [ ] Verified by alt-entering mid-session on **every** menu screen (STORE, ARK, HOME, PORT, HANGAR)
+- [ ] Verified with a modal open and while in freestyle
+- [ ] **`resizableWindow` stays `0` until this lands** — see the dependency below
+
+**Dependency — do not enable `resizableWindow` before T9 ships.** The desktop window configuration
+(`resizableWindow: 0`, `fullscreenMode: 1`, 1024×768) is currently the only containment for this bug.
+Order is T9 first, then reconsider the window config as its own decision.
+
+**Deliverables:**
+**Findings:**
+**Deviations from spec:**
+
+---
+
 ## Design feedback queue
 
 Anything found during implementation that needs a design decision. The implementer **adds** entries here and does not resolve them or edit `STYLE_FOUNDATION.md` directly.
@@ -324,7 +392,7 @@ Anything found during implementation that needs a design decision. The implement
 |---|---|---|---|---|
 | 1 | T2 | T2.6 | Cut `Pip.prefab`? It is raised by no gameplay code in any audited mode. Held out of the 1920-space migration until this is decided. | OPEN |
 | 2 | T2 | T2.6 | Cut `ThumbPerimeter.prefab`? It belongs to the thumb cursors, which are self-disabled in code under a "TEMP for SUSPEND" comment. Held out of the 1920-space migration until this is decided. | OPEN |
-| 3 | T2 | T2 | Should `AdaptiveCanvasScaler.safeZone` be assigned on the two GameCanvas prefabs? It is unassigned in every instance project-wide (audit §1.3), so ultrawide HUD containment is off. Assigning it pins HUD content to a centered 16:9 region on 21:9/32:9 — a framing decision, not an implementation one. | OPEN |
+| 3 | T2 | T2 | Should `AdaptiveCanvasScaler.safeZone` be assigned on the two GameCanvas prefabs? It is unassigned in every instance project-wide (audit §1.3), so ultrawide HUD containment is off. Assigning it pins HUD content to a centered 16:9 region on 21:9/32:9 — a framing decision, not an implementation one. | DEFERRED — post-EA, see Deferred / out of scope |
 
 ---
 
@@ -345,4 +413,5 @@ Decisions taken during the redesign to explicitly not do something. Recorded so 
 | UI Toolkit migration | Deferred past Steam EA | Framework migration on top of the fork debt risks the EA date |
 | Store / ARK screen | Cut from overhaul | Needs a product decision, not a visual one |
 | Port / Leaderboards screen | Cut from overhaul | Same — 104 sprites feeding a disabled screen |
+| Ultrawide HUD containment (`AdaptiveCanvasScaler.safeZone`, `WidescreenLayoutAdapter`) | Post-EA decision; no action in T2 | `safeZone` is unassigned in all 6 instances and `WidescreenLayoutAdapter` has 0 attachments — both confirmed as audit findings, both deliberately left alone. Assigning either changes HUD framing on every ultrawide display and is a design call, not an implementation one |
 | Android `maxAspectRatio` 2.1 → 2.4 | Dropped from T2; change reverted | Mobile is deferred, desktop is the platform. The raise was applied and then reverted so the PR carries no unowned platform-settings change. One line in `ProjectSettings.asset` to restore when mobile resumes; at 2.1, 20:9 and 21:9 phones letterbox or crop per OEM |
