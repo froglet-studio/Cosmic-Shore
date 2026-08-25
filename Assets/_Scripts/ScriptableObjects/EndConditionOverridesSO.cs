@@ -215,11 +215,15 @@ namespace CosmicShore.ScriptableObjects
         /// (which lives on each mode's ScoringRule) differs.
         /// </summary>
         public int GetBendsPointTarget() => bendsPointTarget > 0 ? bendsPointTarget : DefaultBendsPointTarget;
+
+        /// <summary>
         /// Scarab Scramble goal target ("first domain to N goals"): the configured value when
         /// &gt; 0, otherwise <see cref="DefaultScarabScrambleGoalTarget"/>. Compared against a
         /// DOMAIN SUM of <see cref="CosmicShore.Data.IRoundStats.GoalsScored"/>, so teammates pool.
         /// </summary>
         public int GetScarabScrambleGoalTarget() => scarabScrambleGoalTarget > 0 ? scarabScrambleGoalTarget : DefaultScarabScrambleGoalTarget;
+
+        /// <summary>
         /// Salvo prism target ("race to N" hostile prisms destroyed): the configured value when
         /// &gt; 0, otherwise <see cref="DefaultSalvoPrismTarget"/>. Compared against a DOMAIN's
         /// summed destruction count, so teammates pool.
