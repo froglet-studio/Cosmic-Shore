@@ -237,10 +237,6 @@ namespace CosmicShore.Gameplay
         /// is still about to schedule its own) so a momentary zero can't slip the screen open.</summary>
         const float ReadyStableSeconds = 0.5f;
 
-        /// <summary>Grow-in snaps applied per gate poll — bounds the per-frame cost of
-        /// force-settling a 25k cohort (each snap runs full completion bookkeeping).</summary>
-        const int SettleSnapsPerPoll = 2000;
-
         /// <summary>
         /// Announce an arena build whose SegmentSpawner.Initialize happens LATER than scene
         /// start (e.g. HexRace initializes only after the netcode track seed arrives). While
@@ -286,9 +282,11 @@ namespace CosmicShore.Gameplay
         /// THE arena-complete predicate the connecting screen holds on: every announced build
         /// has executed, every streamed lay has drained, and every laid prism is settled for
         /// reveal — creation complete (renderer ON — creation completions are frame-budgeted,
-        /// so scale alone proves nothing) AND at final scale. Stragglers are force-settled
-        /// behind the covered screen, and the all-clear must hold ReadyStableSeconds before the
-        /// gate releases. Nothing lays, materializes, or blooms after this returns true.
+        /// so scale alone proves nothing) AND visual bloom settled
+        /// (<see cref="Prism.IsSettledForReveal"/> / <see cref="Prism.AnalyticGrowSettleTime"/>).
+        /// Grow-ins finish naturally behind the covered screen (no force-snap); the all-clear
+        /// must hold ReadyStableSeconds before the gate releases. Nothing lays, materializes,
+        /// or blooms after this returns true.
         /// </summary>
         public static bool PollArenaReady()
         {
@@ -318,7 +316,7 @@ namespace CosmicShore.Gameplay
                 return false;
             }
 
-            if (SettleGrowWatch(SettleSnapsPerPoll) > 0)
+            if (SettleGrowWatch() > 0)
             {
                 s_allClearSince = -1f;
                 // Everything is laid; the cohort is materializing/settling behind the covered
@@ -348,31 +346,20 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// Gate-only pass: force-settle watched prisms that are created but still growing (the
-        /// screen is covered — snapping is invisible and saves the multi-second grow-in tail),
-        /// drop everything settled or dead, keep prisms whose creation the frame-budgeted
-        /// queue hasn't reached yet. Returns (and caches) how many are still not reveal-ready.
+        /// Gate-only pass: drop watched prisms that are settled for reveal or dead; keep those
+        /// still in the creation queue or whose GPU grow bloom has not yet reached
+        /// <see cref="Prism.AnalyticGrowSettleTime"/>. Does NOT force-snap
+        /// (<see cref="Prism.CompleteGrowthImmediately"/>) — continuity of existence holds
+        /// behind the veil; the gate simply waits. Returns (and caches) how many are still
+        /// not reveal-ready.
         /// </summary>
-        static int SettleGrowWatch(int snapBudget)
+        static int SettleGrowWatch()
         {
             var list = s_growWatch;
             for (int i = list.Count - 1; i >= 0; i--)
             {
                 var p = list[i];
-                bool drop;
-                if (p == null || !p.isActiveAndEnabled)
-                {
-                    drop = true; // destroyed / pooled away — can never pop in later
-                }
-                else
-                {
-                    if (snapBudget > 0 && p.IsCreationComplete && !p.IsSettledForReveal)
-                    {
-                        p.CompleteGrowthImmediately();
-                        snapBudget--;
-                    }
-                    drop = p.IsSettledForReveal;
-                }
+                bool drop = p == null || !p.isActiveAndEnabled || p.IsSettledForReveal;
 
                 if (drop)
                 {
