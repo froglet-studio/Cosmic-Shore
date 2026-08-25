@@ -638,8 +638,9 @@ one.
 
 `GunSpreadStages` is the parameter object the curve consumes, and a profile with no blow-out
 authored (`blowoutGrowthDegreesPerSecond = 0`, or a `blowoutMaxMultiplier` of 1) produces
-**bit-identical** output to the single-ramp formula this replaced — `Staged_WithoutASecondRamp_
-IsExactlyTheSingleRampCurve` proves it over the whole domain, both opt-out halves independently,
+**bit-identical** output to the single-ramp formula this replaced —
+`Staged_WithoutASecondRamp_IsExactlyTheSingleRampCurve` proves it over the whole domain, both
+opt-out halves independently,
 and the four-argument `HalfAngleDegrees` overload is kept as exactly that case. So the blow-out is
 opt-in for any future gun, and this pass changed no behaviour anywhere except through the
 Sparrow's own asset.
@@ -727,6 +728,13 @@ Note the caps are **angles**, so miss distance scales with range. A Sparrow at S
 ~645 u and groups within **16.9 u** / **84.9 u**. That is correct — you are shooting nine times
 further. It is also why the blow-out bites hardest exactly where a Sparrow is strongest: a
 high-SPACE pilot who never lets go is spraying an 85-unit-radius circle.
+
+> **Where those ranges come from, because the obvious arithmetic is wrong.** A round does not
+> fly `speed × projectileTime`. `Projectile.MoveProjectileAsync` scales each step by
+> `cos(π·t / 2T)`, so the round *decelerates to a stop* and the flight integrates to
+> **`speed × 2T/π`** — at `375 u/s × 0.3 s` that is **71.6 u**, not 112.5. (SPACE 10 is ×9:
+> `3375 × 0.191 = 644.6 u`.) Re-derive with the `2/π` factor before "correcting" any range
+> figure in this doc; it is the reason 72 and 645 look wrong and are not.
 
 ---
 

@@ -113,7 +113,7 @@ namespace CosmicShore.Utility
         /// never letting go: the second ramp is authored FASTER than the first, so the failure
         /// accelerates and the gun stops being a weapon you can aim at all.
         ///
-        /// Continuous at both joins by construction, and monotonic non-decreasing everywhere.
+        /// Continuous at all three joins by construction, and monotonic non-decreasing everywhere.
         /// A profile with no blow-out authored holds at the cap forever, which is exactly the
         /// single-ramp curve this replaced.
         /// </summary>
