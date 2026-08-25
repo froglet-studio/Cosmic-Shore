@@ -10,7 +10,7 @@ The Sparrow's cannons are a **saturation** weapon, not a marksman's rifle.
 | tap the trigger (≤ 0.12 s) | a perfectly accurate burst — a scalpel, at a fraction of the volume |
 | hold it down | a cone that opens over ~1.6 s to a 1.5° cap, filled at **180 rounds/s** — nothing along the path survives, and the buzz in your hands climbs the whole way |
 | release and re-pull | full accuracy back, instantly. This is the "3-shot burst" the design asks for |
-| collect Mass crystals | rounds swell **harder** as they fly — 3× over a flight at rest, **6× at Mass 10**. The tracer stays a thin pale-blue needle; a see-through blue charge shell, arcing with danger red, grows around it to exactly the hit radius. Huge projectiles, earned |
+| collect Mass crystals | rounds swell **harder** as they fly — 3× over a flight at rest, **6× at Mass 10**. The tracer stays a thin pale-blue needle; a see-through charge shell grows around it to exactly the hit radius, drawing **one** blue-and-danger-red bolt across a randomly-oriented great circle — a burst's worth of them is what draws the sphere. Huge projectiles, earned |
 
 ---
 
@@ -334,6 +334,131 @@ cracking its neighbours) and **pierce depth** (rounds boring through N prisms be
 Both break the one-round-one-prism ceiling too, and both were rejected in favour of growth —
 "keep everything else the same, we will get this feel through the mass scaling effect." SPACE 5
 remains the only thing that lets a round pass through a prism.
+
+---
+
+## Round 5 (2026-08-25): one round is one STROKE — the volley is the sphere
+
+Playtest report: *"tone down the Sparrow's projectile effect so each projectile reads less like a
+sphere, but together they build a spherical effect over time. In other words, just a single arc on
+each projectile — after many projectiles those arcs will stochastically fill in the circle as an
+after-image in the mind of the player."*
+
+Round 4 gave growth an honest instrument and then let the instrument draw too much. Three seeds,
+each throwing five radiating filaments, over a lit centre and a standing fresnel rim, re-rolled
+~62 times a second: every one of those terms is somewhere else on the shell, and a shell that is
+lit *everywhere, faintly, all the time* is a glowing ball. Measured, one round painted **73% of
+its own shell** over a single 0.3 s flight — it was assembling the sphere by itself.
+
+> **The sphere is the PLAYER's to assemble, not the fragment's.** One round draws ONE bolt, lying
+> on ONE randomly-oriented great circle. A burst lays stroke after stroke at different
+> orientations and the shape accumulates as an after-image.
+
+A **great circle** rather than a squiggle, because it does two jobs at once: superimposed at random
+orientations, great circles are a sphere's wireframe — the most legible thing a stream of them can
+add up to — and a single one is still a curve of exactly the hit radius, so the shell stays an
+honest instrument for the volume it deletes even when only one stroke is showing.
+
+### What the shell draws now
+
+| | Round 4 | Round 5 |
+|---|---|---|
+| simultaneous discharge seeds | 3 | **1** |
+| filaments per discharge | 5, radiating from a point | **1**, lying along a great circle |
+| centre glow | yes (`_CenterFillAmount`) | **gone** |
+| expanding ring wavefront | yes (`_RingThickness`, `_RippleSpeed`, `_ArcReach`) | **gone** — the stroke draws itself instead |
+| fresnel rim | 0.18, the shell's loudest always-on term | **0.05** — a whisper, so a round is never *dark*, never a boundary |
+| envelope | strike, decay | strike, **hold**, snuff |
+
+The bolt strikes outward from a random point on its circle **both ways at once** (so any span up
+to the full circle needs no wrap handling, and a round caught early in its cycle reads as a stroke
+rather than a dot), wanders off the exact circle on 1-D FBM so it is lightning that happens to be
+following one, and carries the danger-red hot core on its centreline and its two advancing tips.
+
+### The constraint nobody gets out of: radius is BOTH the identity and the progress
+
+The shell has no per-instance CPU write by design — that is what makes ~54 simultaneous rounds
+affordable — so its only per-round signal is its own world radius. And that one number is
+simultaneously *which round is this* and *how far along is it*. Consequently:
+
+- decorrelating **simultaneous rounds** (so the stream is not one synchronised flash) costs
+  per-round **flicker**, because a round sweeps the whole radius range over its flight;
+- and it costs it at a bad exchange rate — a round's radius moves at `(g−1)·r₀/T` = **5.5 u/s** at
+  resting Mass, while the radius *spread* across the whole stream is only **1.65 u**. Every unit of
+  spatial variety buys 3.3 units of flicker.
+
+The **time** term has no such penalty: it advances everyone equally, so it buys temporal variety
+1:1 — but it buys *no* spatial variety at all, and `_PhaseByRadius = 0` would strobe an entire
+volley in unison. So the shipped split leans on time for most of the variety and keeps just enough
+radius term to break the stream up:
+
+| | contributes | at a per-round flicker cost of |
+|---|---|---|
+| `_PhaseSpeed 2.6 × _CrackleRate 3.5` | **9.1 new circles per second** | 9.1 Hz |
+| `_PhaseByRadius 0.43 × _CrackleRate 3.5` | **2.5 circles across the live stream** | 8.3 Hz |
+
+→ **17.4 discharges/s per round (58 ms a stroke)** at resting Mass, **11.6 new great circles per
+second** across a burst. (A Mass 10 round runs faster on both counts — 29.8 Hz, 6.2 circles across
+the stream — because its radius range is 2.5× wider. It is also 2.5× bigger on screen, so more
+crackle suits it.)
+
+**Do not tune `_CrackleRate` alone.** It multiplies both terms, so it moves stroke lifetime and
+fill rate together and cannot separate them. The two `_Phase*` values are the real balance.
+
+### The envelope holds, and that is not cosmetic
+
+The first cut used the donor's strike-and-decay envelope and the stream read as *twinkling*: a
+round spent a third of every cycle below the eye's threshold, so at any instant a third of the
+rounds in the air were showing nothing but the rim whisper. The shipped envelope rises fast, **holds
+at full** until `_HoldTime`, then eases to zero — measured **86.3% of the time showing a stroke**,
+and it still reaches zero at **both** ends of the cycle, which is the property that lets the great
+circle be re-rolled at the boundary without the stroke visibly teleporting. A round's dimmest
+moment is peak alpha **0.025** — the rim — so it never pops out of existence.
+
+### Measured, by compiling and running the shipped HLSL
+
+`Tools/Shaders/verify_projectile_charge_field.py` translates the shipped `ProjectileChargeField.hlsl`
+to C++ (swizzle accessors, `out` → reference, one rename wrapping `ChargeFBM1D` in a call counter),
+compiles it with `clang++`, pulls the previous revision out of git, and runs both through the
+identical harness over 20,000 Fibonacci samples of the front hemisphere `Cull Back` actually draws.
+It is a CI-able gate, not a one-off (~5 min, no Unity):
+
+| | Round 4 | Round 5 |
+|---|---|---|
+| lit at one instant (one round) | 3.69% | **2.50%** |
+| **planarity of the lit set** | **14.1°** | **2.8°** |
+| one round paints, over its whole flight | 73.1% | **19.8%** |
+| one *instant* of the whole 27-round stream | 68.0% | **9.5%** |
+| union after 0.25 s of fire | 99.9% | 14.8% |
+| union after 1.0 s of fire | 100% | 40.1% |
+| union after 3.0 s of fire | 100% | **71.0%** |
+| FBM evaluations per fragment | 3.94 (worst case 15) | **1.00 (worst case 1)** |
+
+**Planarity is the number that carries the claim, and finding that out is half of what the harness
+was for.** Raw lit *area* is nearly useless here: the old shell lit *few* pixels *everywhere* and
+so measured a **smaller** lit fraction than a single fat stroke would, while reading as a ball.
+What separates a stroke from a scatter is whether the lit set lies in one plane through the centre
+— 2.8° of RMS deviation is a curve on a great circle; 14.1° is sparks all over a sphere. The area
+number is kept only as a "did not go up" guard.
+
+> **General rule: when a visual is a claim about a DISTRIBUTION over many instances, the metric is
+> almost never the per-instance total. Measure the SHAPE of one instance and the UNION over many.**
+
+The two union rows either side of "0.25 s" are the mechanic working: at any frozen instant the
+stream shows **9.5%** of a sphere (~2.5 circles, shared by neighbouring rounds whose radii are
+close), and three seconds later the accumulation is at 71% and still climbing. Nothing about a
+single frame looks like a ball; the burst does.
+
+### Things that would take it straight back
+
+- **`_ArcCount` above 1.** It exists as a knob for a future weapon, not as a tuning dial for this
+  one. Two strokes is two planes and the read collapses toward a ball immediately.
+- **Raising `_FresnelRimIntensity`.** The rim is a standing, view-aligned, always-on sphere — the
+  purest possible "this is a ball" term. If the shell needs to be louder, raise `_ArcIntensity`.
+- **Re-introducing a centre fill.** A lit blob at the seed point is a small sphere inside the big
+  one.
+- **Dropping the hold out of the envelope** to get "snappier" strokes. That is where the twinkle
+  came from.
 
 ---
 

@@ -26,22 +26,24 @@ Material:
     m_TexEnvs: []
     m_Ints: []
     m_Floats:
-    - _ArcDensity: 5
-    - _ArcIntensity: 1
-    - _ArcReach: 1
-    - _ArcSeeds: 3
-    - _ArcSharpness: 0.12
-    - _CenterFillAmount: 0.12
-    - _CoreThreshold: 0.75
-    - _ChargeFloor: 0.35
+    - _ArcCount: 1
+    - _ArcIntensity: 1.6
+    - _ArcSharpness: 0.038
+    - _ArcSpan: 5
+    - _ArcWander: 0.26
+    - _ArcWanderScale: 2.6
+    - _ChargeFloor: 0.4
     - _ChargeReferenceRadius: 4.95
-    - _CrackleRate: 6
-    - _FresnelRimIntensity: 0.18
-    - _FresnelRimPower: 2.5
-    - _PhaseByRadius: 1.7
-    - _PhaseSpeed: 1
-    - _RingThickness: 0.9
-    - _RippleSpeed: 1.6
+    - _CoreThreshold: 0.7
+    - _CrackleRate: 3.5
+    - _FadeShape: 1
+    - _HoldTime: 0.5
+    - _FresnelRimIntensity: 0.05
+    - _FresnelRimPower: 3.5
+    - _PhaseByRadius: 0.43
+    - _PhaseSpeed: 2.6
+    - _StrikeTime: 0.25
+    - _TipGlow: 0.9
     m_Colors:
     - _CrackleColorA: {r: 1.4979111, g: 0.0058463, b: 0.0068495, a: 1}
     - _CrackleColorB: {r: 0.1, g: 0.35, b: 1, a: 1}

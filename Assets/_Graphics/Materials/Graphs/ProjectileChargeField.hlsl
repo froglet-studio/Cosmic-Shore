@@ -17,6 +17,24 @@
 // object-to-world matrix, so there is no per-frame CPU write, no property block, and
 // every round in the match batches through one material.
 //
+// ─── ONE ROUND IS ONE STROKE. THE VOLLEY IS THE SPHERE. ─────────────────────────────
+//
+// A round draws a SINGLE arc: one wobbling bolt lying on one randomly-oriented great
+// circle of the shell, striking outward from a point and fading. It is deliberately
+// NOT a crackling ball — three simultaneous seeds each throwing five radiating
+// filaments, over a lit centre and a standing fresnel rim, averaged into exactly the
+// glowing sphere this shell exists to avoid drawing. The sphere is meant to be
+// assembled by the PLAYER, not by the fragment: consecutive rounds get different great
+// circles (see Phase, below), so a burst lays down stroke after stroke at different
+// orientations and the shape accumulates as an after-image. Anything that puts a second
+// bright always-on term on this shell — a centre glow, a bright rim, more simultaneous
+// arcs — takes that back and hands the sphere to one round again.
+//
+// The stroke is also what still makes the shell an honest INSTRUMENT for the hit
+// volume: it lies exactly on the shell's surface, so it is a curve of exactly the hit
+// radius. The rim is kept only as a whisper — enough that a round is never fully dark
+// between discharges (continuity of existence), far too dim to read as a boundary.
+//
 // Inputs:
 //   float3 ObjectPosition - object-space fragment position (unit sphere, radius 0.5)
 //   float3 ObjectNormal   - object-space normal
@@ -24,11 +42,12 @@
 //   float  Phase          - animation phase in seconds, already carrying this round's
 //                           own offset (see the vertex shader: the shell's world radius
 //                           is what decorrelates rounds, so two shots fired 11 ms apart
-//                           are at different sizes and therefore different phases —
-//                           a stable per-round offset that drifts CONTINUOUSLY as the
-//                           round grows, so nothing ever pops. A world-POSITION hash
-//                           would re-roll every frame; a constant would strobe the
-//                           whole volley in unison.)
+//                           are at different sizes and therefore land on different
+//                           great circles — a stable per-round offset that drifts
+//                           CONTINUOUSLY as the round grows, so nothing ever pops. A
+//                           world-POSITION hash would re-roll every frame; a constant
+//                           would strobe the whole volley in unison, which is the one
+//                           thing that would stop the strokes from filling anything in.)
 //   float  Charge01       - 0..1, how far this round has charged, from its world radius
 //
 // Outputs:
@@ -38,6 +57,8 @@
 
 #ifndef PROJECTILE_CHARGE_FIELD_INCLUDED
 #define PROJECTILE_CHARGE_FIELD_INCLUDED
+
+#define PCF_TAU 6.28318530718
 
 // ─── Noise helpers ──────────────────────────────────────────────────────────
 // Deliberately the same functions ForcefieldCrackle.hlsl uses, duplicated rather
@@ -86,110 +107,117 @@ void ProjectileChargeField_float(
     out float  Alpha)
 {
     float3 fragDir = normalize(ObjectPosition);
+    float charge = saturate(Charge01);
+    float gain = lerp(_ChargeFloor, 1.0, charge);
 
-    // Fresnel rim — the shell's only always-on term, and what makes an otherwise
-    // near-empty sphere read as a boundary at all. Scaled by charge so a round that
-    // has barely grown is a hint and a fully-charged one is a lantern.
+    // Fresnel rim — deliberately a WHISPER, and the only always-on term. It exists so a
+    // round is never *fully* dark between strokes, not so it can be read as a boundary:
+    // a bright standing rim is a sphere drawn by one round, which is the thing this pass
+    // removed. Raise `_ArcIntensity` if the shell needs to be louder; never this.
     float3 N = normalize(ObjectNormal);
     float3 V = normalize(ViewDirOS);
     float NdotV = saturate(dot(N, V));
-    float charge = saturate(Charge01);
-    float fresnel = pow(1.0 - NdotV, _FresnelRimPower) * _FresnelRimIntensity
-                  * lerp(_ChargeFloor, 1.0, charge);
+    float fresnel = pow(1.0 - NdotV, _FresnelRimPower) * _FresnelRimIntensity * gain;
 
-    Alpha = fresnel;
-    EmissionColor = _FresnelRimColor.rgb * fresnel;
+    int arcCount = (int)_ArcCount;
+    float totalContribution = 0.0;
+    float3 totalColor = float3(0.0, 0.0, 0.0);
 
-    int seedCount = (int)_ArcSeeds;
-    float arcGain = lerp(_ChargeFloor, 1.0, charge);
-
-    float totalContribution = 0;
-    float3 totalColor = float3(0, 0, 0);
-
-    for (int i = 0; i < 6; i++)
+    for (int i = 0; i < 4; i++)
     {
-        if (i >= seedCount) break;
+        if (i >= arcCount) break;
 
-        // One discharge CYCLE per seed. The envelope is zero at BOTH ends of a cycle
+        // One discharge CYCLE per arc. The envelope is zero at BOTH ends of a cycle
         // (unlike the skimmer's impact, which starts at full flash because something
-        // just hit it) — that is what lets the seed point be re-rolled at the cycle
-        // boundary without the arcs visibly teleporting.
+        // just hit it) — that is what lets the great circle be re-rolled at the cycle
+        // boundary without the stroke visibly teleporting.
         float offset = ChargeHash1(float(i) * 7.3 + 0.5) * 11.0;
         float cycle = Phase * _CrackleRate + offset;
         float life = frac(cycle);
         float idx = floor(cycle);
 
-        float env = smoothstep(0.0, 0.15, life) * pow(1.0 - life, 1.5);
-        if (env < 0.001) continue;
+        // Strike, HOLD, snuff. The hold is what stops the shell twinkling: with a bare
+        // strike-and-decay a round spent a third of every cycle below the eye's threshold
+        // and the stream read as a third of its rounds being dark. A plateau keeps a bolt
+        // on the shell essentially always (measured 84% of the cycle above threshold at the
+        // dimmest charge) while still reaching zero at BOTH ends, which is the property that
+        // lets the great circle be re-rolled at the boundary without the stroke teleporting.
+        float strike01 = saturate(life / max(_StrikeTime, 1e-3));
+        float env = smoothstep(0.0, 0.07, life)
+                  * pow(smoothstep(1.0, min(_HoldTime, 0.98), life), _FadeShape);
+        if (env < 0.002) continue;
 
-        // Seed direction, uniform on the sphere (z uniform in [-1,1], azimuth uniform).
+        // ── The great circle this stroke is drawn on ──
+        // Its pole is uniform on the sphere (z uniform in [-1,1], azimuth uniform), so
+        // over a burst the strokes have no preferred plane and the accumulated shape is
+        // a sphere rather than a band.
         float h1 = ChargeHash1(idx * 3.7 + float(i) * 11.3);
         float h2 = ChargeHash1(idx * 5.1 + float(i) * 17.9);
-        float z = h1 * 2.0 - 1.0;
-        float az = h2 * 6.28318;
-        float rr = sqrt(saturate(1.0 - z * z));
-        float3 seedDir = float3(rr * cos(az), rr * sin(az), z);
+        float h3 = ChargeHash1(idx * 9.3 + float(i) * 23.1);
 
-        // Great-circle distance from the seed point.
-        float angle = acos(clamp(dot(fragDir, seedDir), -1.0, 1.0));
+        float pz = h1 * 2.0 - 1.0;
+        float paz = h2 * PCF_TAU;
+        float pr = sqrt(saturate(1.0 - pz * pz));
+        float3 pole = float3(pr * cos(paz), pr * sin(paz), pz);
 
-        // Local frame on the sphere around the seed, for the azimuthal arc pattern.
-        float3 tangent = normalize(cross(seedDir, float3(0.123, 0.456, 0.789)));
-        float3 bitangent = cross(seedDir, tangent);
-        float azimuth = atan2(dot(fragDir, bitangent), dot(fragDir, tangent));
+        // Orthonormal basis IN the great-circle plane. The reference vector swaps away
+        // from the pole so the cross product never degenerates.
+        float3 refv = abs(pole.z) < 0.9 ? float3(0.0, 0.0, 1.0) : float3(1.0, 0.0, 0.0);
+        float3 u = normalize(cross(refv, pole));
+        float3 v = cross(pole, u);
 
-        // ── Expanding wavefront ──
-        float wavefrontAngle = _ArcReach * 3.14159 * saturate(life * _RippleSpeed);
-        float ringWidth = _ArcReach * _RingThickness;
+        // Fragment coordinates on that frame: signed height off the plane (the sine of
+        // the angle away from the circle) and the angle along it.
+        float height = dot(fragDir, pole);
+        float theta = atan2(dot(fragDir, v), dot(fragDir, u));
 
-        float distBehindFront = wavefrontAngle - angle;
-        float waveBand = smoothstep(-ringWidth * 0.1, 0.0, distBehindFront)
-                       * smoothstep(ringWidth, 0.0, distBehindFront);
-        waveBand *= step(angle, wavefrontAngle + ringWidth * 0.2);
+        // ── The bolt wanders off the exact circle ──
+        // Without this the stroke is a drafted arc; with it, it is lightning that happens
+        // to be following one.
+        float wob = ChargeFBM1D(theta * _ArcWanderScale + idx * 4.7 + float(i) * 3.1, 3)
+                  * _ArcWander;
+        float d = height - wob;
+        float sharp = max(_ArcSharpness, 1e-3);
+        float stroke = exp(-(d * d) / (sharp * sharp));
+        if (stroke < 0.002) continue;
 
-        float centerGlow = smoothstep(_ArcReach * 3.14159 * _CenterFillAmount, 0.0, angle)
-                         * (1.0 - life * life);
+        // ── The stroke DRAWS ITSELF, outward from a random point on the circle ──
+        // Both ways at once, so the segment needs no wrap handling for any span up to the
+        // full circle, and so a round caught early in its cycle still reads as a stroke
+        // rather than as a dot. Rounds that share a great circle (neighbours in the
+        // stream, whose radii are close) are at different points of this draw, so they
+        // are never clones of each other.
+        float start = h3 * PCF_TAU;
+        float dTheta = theta - start;
+        dTheta = dTheta - PCF_TAU * round(dTheta / PCF_TAU);   // wrap to [-pi, pi]
+        float away = abs(dTheta);
 
-        float spatialEnvelope = max(waveBand, centerGlow);
-        if (spatialEnvelope < 0.001) continue;
+        float halfSpan = _ArcSpan * 0.5;
+        float reach = halfSpan * strike01;
+        float soften = max(halfSpan * 0.35, 0.08);
+        float along = 1.0 - smoothstep(reach - soften, reach, away);
 
-        // ── Electrical arcs radiating from the seed ──
-        int arcCount = (int)_ArcDensity;
-        float arcContrib = 0.0;
-        float arcHeat = 0.0;
+        // The advancing ends are the hot part, while the bolt is still striking.
+        float tipWidth = max(soften * 0.5, 0.04);
+        float tipDist = away - reach;
+        float tip = exp(-(tipDist * tipDist) / (tipWidth * tipWidth))
+                  * (1.0 - strike01) * _TipGlow;
 
-        for (int a = 0; a < 6; a++)
-        {
-            if (a >= arcCount) break;
-
-            float baseAngle = (float(a) / float(arcCount)) * 6.28318
-                            + ChargeHash1(idx * 2.9 + float(i) * 7.3) * 6.28318;
-
-            float dAzimuth = azimuth - baseAngle;
-            dAzimuth = dAzimuth - 6.28318 * round(dAzimuth / 6.28318);
-
-            float noiseInput = angle * 15.0 + float(a) * 13.7 + float(i) * 5.3;
-            float wobble = ChargeFBM1D(noiseInput, 3) * 0.3 * (angle + 0.1);
-
-            float arcDist = abs(dAzimuth - wobble);
-            float arcLine = exp(-arcDist * arcDist / (_ArcSharpness * _ArcSharpness));
-
-            arcLine *= smoothstep(0.0, 0.05, angle);
-
-            arcContrib = max(arcContrib, arcLine);
-            arcHeat = max(arcHeat, arcLine);
-        }
-
-        float contribution = spatialEnvelope * arcContrib * env * arcGain * _ArcIntensity;
+        float lit = along + tip;
+        float body = stroke * lit;
+        float contribution = body * env * gain * _ArcIntensity;
+        if (contribution < 0.001) continue;
 
         // Blue body, DANGER-RED hot core — and the threshold is what keeps them two
         // colours instead of one. A plain lerp between a saturated blue and a saturated
-        // red spends most of its range in MAGENTA, which is neither, and at `arcHeat^2`
+        // red spends most of its range in MAGENTA, which is neither, and at `body^2`
         // that magenta was most of every arc. `_CoreThreshold` confines the red to the
-        // hot centreline so the arc reads blue with a red filament inside it.
-        float core = smoothstep(_CoreThreshold, 1.0, arcHeat);
+        // hot centreline (and to the striking tips) so the arc reads blue with a red
+        // filament inside it.
+        float heat = saturate(body);
+        float core = smoothstep(_CoreThreshold, 1.0, heat);
         float3 arcColor = lerp(_CrackleColorB.rgb, _CrackleColorA.rgb, core);
-        arcColor *= 1.0 + arcHeat * 2.0;
+        arcColor *= 1.0 + heat * 2.0;
 
         totalContribution += contribution;
         totalColor += arcColor * contribution;

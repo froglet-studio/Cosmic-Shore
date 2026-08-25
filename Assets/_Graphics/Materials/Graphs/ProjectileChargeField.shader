@@ -5,25 +5,40 @@ Shader "Shader Graphs/ProjectileChargeField"
         // NEUTRAL is blue, DANGER is red. _CrackleColorA is EnvironmentColors.Danger
         // from OriginalColorSetSO, verbatim — the shared, domain-independent danger
         // colour, so a round's hot core is the same red the arena's danger mass wears.
-        [Header(Crackle Colors   neutral blue plus danger red)]
+        [Header(Arc Colors   neutral blue plus danger red)]
         _CrackleColorA ("Core Arc Color", Color) = (1.4979111, 0.0058463, 0.0068495, 1.0)
         _CrackleColorB ("Outer Glow Color", Color) = (0.10, 0.35, 1.0, 1.0)
-        [Header(Arc Pattern)]
-        _ArcSeeds ("Discharge Points", Range(1, 6)) = 3
-        _ArcDensity ("Arc Count", Range(1, 6)) = 5
-        _ArcSharpness ("Arc Width", Range(0.01, 0.5)) = 0.12
-        _ArcIntensity ("Arc Intensity", Range(0, 1)) = 1
-        _ArcReach ("Arc Reach", Range(0.1, 1)) = 1
-        _CoreThreshold ("Danger Core Threshold", Range(0, 0.99)) = 0.75
-        [Header(Wave and Expansion)]
-        _RingThickness ("Ring Thickness", Range(0.05, 1)) = 0.9
-        _CenterFillAmount ("Center Fill", Range(0, 1)) = 0.12
-        _RippleSpeed ("Ripple Speed", Range(0.2, 3)) = 1.6
-        _CrackleRate ("Discharges Per Second", Range(0.1, 12)) = 6
+
+        // ONE ROUND IS ONE STROKE. Every knob here is bounded by that: the shell draws a
+        // single wobbling bolt on a single randomly-oriented great circle, and the SPHERE
+        // is assembled by the player out of a burst's worth of them. Raising _ArcCount
+        // past 1, or the rim past a whisper, hands the sphere back to one round.
+        [Header(The Arc)]
+        _ArcCount ("Simultaneous Arcs", Range(1, 4)) = 1
+        _ArcSpan ("Arc Length (radians)", Range(0.2, 6.283)) = 5
+        _ArcSharpness ("Arc Width", Range(0.005, 0.25)) = 0.038
+        _ArcWander ("Bolt Wander Off Circle", Range(0, 0.5)) = 0.26
+        _ArcWanderScale ("Bolt Wander Frequency", Range(0.2, 8)) = 2.6
+        _ArcIntensity ("Arc Intensity", Range(0, 4)) = 1.6
+        _TipGlow ("Striking Tip Glow", Range(0, 2)) = 0.9
+        _CoreThreshold ("Danger Core Threshold", Range(0, 0.99)) = 0.7
+
+        [Header(Discharge Timing)]
+        // Discharges per unit of Phase. Phase carries BOTH time and the round's own world
+        // radius, so this scales the per-round stroke rate AND how quickly consecutive
+        // rounds in a stream land on different great circles — the two cannot be tuned
+        // apart, because a round's radius is simultaneously its identity and its progress.
+        _CrackleRate ("Discharges Per Phase Unit", Range(0.1, 12)) = 3.5
+        _StrikeTime ("Strike Time (fraction of cycle)", Range(0.02, 0.9)) = 0.25
+        _HoldTime ("Hold Until (fraction of cycle)", Range(0.05, 0.95)) = 0.5
+        _FadeShape ("Fade Falloff", Range(0.3, 4)) = 1
+
         [Header(Fresnel Rim)]
+        // A whisper, on purpose: enough that a round is never fully dark between strokes
+        // (continuity of existence), nowhere near enough to read as a sphere.
         _FresnelRimColor ("Rim Color", Color) = (0.25, 0.55, 1.0, 1.0)
-        _FresnelRimIntensity ("Rim Intensity", Range(0, 1)) = 0.18
-        _FresnelRimPower ("Rim Power", Range(1, 8)) = 2.5
+        _FresnelRimIntensity ("Rim Intensity", Range(0, 1)) = 0.05
+        _FresnelRimPower ("Rim Power", Range(1, 8)) = 3.5
 
         [Header(Charge)]
         // The shell reads its OWN world radius, so growth needs no per-instance CPU write.
@@ -33,11 +48,12 @@ Shader "Shader Graphs/ProjectileChargeField"
         _ChargeReferenceRadius ("Fully Charged Radius", Float) = 4.95
         // What an un-grown round gets. Not zero: a round that has just left the muzzle must
         // still show the volume it deletes.
-        _ChargeFloor ("Uncharged Floor", Range(0, 1)) = 0.35
+        _ChargeFloor ("Uncharged Floor", Range(0, 1)) = 0.4
         // How strongly the shell's own radius offsets its animation phase — the thing that
-        // stops a whole volley discharging in unison. Radians per world unit.
-        _PhaseByRadius ("Phase Offset Per Radius", Float) = 1.7
-        _PhaseSpeed ("Phase Speed", Float) = 1
+        // stops a whole volley discharging in unison, and the thing that puts consecutive
+        // rounds on different great circles. Radians per world unit.
+        _PhaseByRadius ("Phase Offset Per Radius", Float) = 0.43
+        _PhaseSpeed ("Phase Speed", Float) = 2.6
     }
 
     SubShader
@@ -81,16 +97,18 @@ Shader "Shader Graphs/ProjectileChargeField"
                 float4 _CrackleColorA;
                 float4 _CrackleColorB;
                 float4 _FresnelRimColor;
-                float  _ArcSeeds;
-                float  _ArcDensity;
+                float  _ArcCount;
+                float  _ArcSpan;
                 float  _ArcSharpness;
+                float  _ArcWander;
+                float  _ArcWanderScale;
                 float  _ArcIntensity;
-                float  _ArcReach;
+                float  _TipGlow;
                 float  _CoreThreshold;
-                float  _RingThickness;
-                float  _CenterFillAmount;
-                float  _RippleSpeed;
                 float  _CrackleRate;
+                float  _StrikeTime;
+                float  _HoldTime;
+                float  _FadeShape;
                 float  _FresnelRimIntensity;
                 float  _FresnelRimPower;
                 float  _ChargeReferenceRadius;
@@ -129,8 +147,10 @@ Shader "Shader Graphs/ProjectileChargeField"
                 output.viewDirOS = cameraPosOS - input.positionOS.xyz;
 
                 // The shell's own world radius IS the round's hit radius — the CPU sizes it
-                // to exactly that every frame (Projectile.SizeHitVolumeField). Reading it back
-                // off the model matrix is what lets growth drive the visual with no stamp.
+                // to exactly that every frame (Projectile.SizeChargeField). Reading it back
+                // off the model matrix is what lets growth drive the visual with no stamp,
+                // and it is ALSO this shader's only per-round signal: it is what decides
+                // which great circle this round's stroke lands on.
                 // The mesh is Unity's built-in sphere, object radius 0.5.
                 float4x4 m = GetObjectToWorldMatrix();
                 float worldRadius = 0.5 * length(float3(m[0][0], m[1][0], m[2][0]));
