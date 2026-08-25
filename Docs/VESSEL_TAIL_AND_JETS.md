@@ -120,7 +120,7 @@ animates. Where it does not, the jet is placed at the measured rear of the hull 
 | **Squirrel** | −17 | ±4, −12 (authored pair) | 0.85 | 4 | parented to model nodes (authored) |
 | **Sparrow** | −50 | −52.5 | 2.5 | 1 | `(0, 0.40, −0.09)` — ONE centred plume at width×5, at the middle tail-feather ring's depth |
 | **Urchin** | −6.67 | −7.0 | 0.334 | 4 | parented to `JetTopLeft/Right`, `JetBottomLeft/Right` |
-| **Rhino** | −120 | −126 | 6.0 | 4 | 2 on `engine left`/`engine right` at width×10 (the main engines); 2 on the body's engine assemblies `(±0.50, 0.25, −2.05)` at width×1.5 (the little ones) |
+| **Rhino** | −120 | −126 | 6.0 | 10 | 2 on `engine left`/`engine right` at width×10 (the wing pods); 8 on `fusalage`, one per nozzle — table below |
 | **Grizzly** | −30 † | −31.5 | 1.5 | 4 | parented to `Ship_Wedge_Jet_UL/UR/BL/BR` |
 | **Scarab** | −50 | −52.5 | 2.5 | 2 | `(±1.50, 0.10, −4.40)` — the carapace rear |
 | **Manta** | −30 | −31.5 | 1.5 | — | see §5 |
@@ -133,14 +133,20 @@ measured — re-derive them when those vessels get real camera settings.
 
 ### How the mount numbers were measured
 
-Nothing here was eyeballed. Two methods, both offline:
+Nothing here was eyeballed. Three methods, all offline:
 
-- **Named engine nodes** (Dolphin, Urchin, Rhino, Grizzly): the node's own `BoxCollider` gives its
-  size and centre in Unity space directly, so the jet sits at that centre with `z` pulled to the
-  collider's rear face. The Dolphin instead measures its FBX vertices, because its engine cases
-  carry their offset in mesh space: the case spans `z [−0.422, −0.012]` after the ÷100 import and
-  the x-mirror, and its local −z maps to `(·,·,−0.917)` in vessel space, so `z = −0.422` is the
-  rear. Cross-checked against the case's own collider `(0.1815, 0.1310, 0.4101)`.
+- **Named engine nodes** (Dolphin, Urchin, Rhino's wing pods, Grizzly): the node's own
+  `BoxCollider` gives its size and centre in Unity space directly, so the jet sits at that centre
+  with `z` pulled to the collider's rear face. The Dolphin instead measures its FBX vertices,
+  because its engine cases carry their offset in mesh space: the case spans `z [−0.422, −0.012]`
+  after the ÷100 import and the x-mirror, and its local −z maps to `(·,·,−0.917)` in vessel space,
+  so `z = −0.422` is the rear. Cross-checked against the case's own collider
+  `(0.1815, 0.1310, 0.4101)`.
+- **Nozzles cut into the hull** (Rhino's body, Sparrow's nacelle rings): an opening cut as a lathe
+  is found rather than guessed — group vertices by quantized z, cluster in `(x, y)`, keep the
+  clusters that fit a circle, then merge coaxial clusters into axes. Each axis is one nozzle; its
+  rearmost ring is the mouth plane and that ring's inner radius is the aperture. Thresholds and
+  what it found on the Rhino are below.
 - **No engine node** (Sparrow, Scarab): the hull's own geometry. For the Sparrow, binning the mesh
   by the length axis shows the rear three slices collapsing to `|x| ∈ [1.59, 1.64]` — two clean
   lobes, which is where the jets go. For the Scarab the hull is procedural, so the numbers come
@@ -162,23 +168,55 @@ is what prompted this pass.
   Note how far forward that is: `z −0.09` against a hull that reaches `z −4.65`. Everything behind
   it is the fanned wing assembly, which is why the rearmost geometry read as "the tail" and was not.
 
-- The **Rhino** first got four jets at `y 1.55…3.30`, measured off `Rhino_Test.fbx`'s `fusalage`.
-  That was the wrong source, and it was convincing for a bad reason: `fusalage` reproduces the
-  body's authored `BoxCollider` `(5.618, 15.309, 16.816)` to three decimals, and every other
-  position on the vessel — wings at `(±3.92, 0.46, 1.58)`, engines at `(±5.42, 0.46, −4.32)` — is
-  that FBX's node transforms at ÷100 with x mirrored. But every `MeshFilter` on the prefab points
-  at `Vessel_Placeholder_1.fbx`: the layout is `Rhino_Test`'s and only the MESHES were re-pointed.
-  The hull that renders is `supermatic sky cruiser.001`, `x ∈ [−1.85, 1.85]`, `y ∈ [−0.92, 0.89]`,
-  `z ∈ [−2.60, 4.10]` — so the jets floated in empty space above a ship a fifth their height away.
+- The **Rhino** took four passes. The first sampled `fusalage` — the right mesh — but only the top
+  of its rear face, and put four jets where there is one nozzle. The next two abandoned that mesh
+  for the wrong one. Its prefab's `MeshFilter`s all carry guid
+  `4a586f927b9527f469c6d95a0ac32051`, and resolving that with
+  `grep -rl "guid: $g" Assets --include=*.meta | head -1` returned
+  `Placeholder/Vessel_Placeholder_1.fbx.meta`, which merely sorts first. That file is a REFERENCE —
+  the placeholder points its own filters at the Rhino's meshes. `Rhino_Test.fbx.meta` is the one
+  whose top-level `guid:` line carries it, so the Rhino renders `Rhino_Test.fbx`'s `fusalage`.
 
-  Connected components of that mesh's rear give the answer exactly: **two** engine assemblies, each
-  a stack of five concentric shells at `(±0.50, 0.25, −2.05)`, radius ~0.25–0.30. Those carry the
-  little jets at `widthScale 1.5`; the wing pods are the main engines and run at `10`.
+  **Exactly one `.meta` OWNS a guid; every other hit is something referencing it.** `head -1`
+  picks by filename order, which has nothing to do with ownership — the check is
+  `grep -c "^guid: $g"` per candidate, and the answer is the file that returns 1. Cross-check the
+  result against something the prefab itself authored: the Rhino body's `BoxCollider` reproduces
+  `fusalage`'s extents
+  `(5.6182, 15.3091, 16.8157)` and centre `(0, −1.1999, −1.9744)` to four decimals. Getting this
+  wrong is quiet — the placeholder hull is a fifth the Rhino's height, so the jets sat in empty
+  space above a ship that was never there, and the first, correct `fusalage` measurement was
+  discarded as the mistake.
 
-**The rule both of them are instances of: a collider is not evidence of what RENDERS.** Both are
-authored, they agree on most vessels, and when they disagree it is the collider that has silently
-gone stale. Read the `MeshFilter`, and render the mesh before placing anything on it — a wireframe
-of the rear takes a minute and settles what an hour of binning statistics will not.
+  With the right mesh the eight body nozzles fall out of it exactly. Each is a lathe about a
+  z-parallel axis, so grouping vertices by quantized z, clustering in `(x, y)` and keeping the
+  clusters that fit a circle (radial σ/r < 0.08, largest angular gap < 0.9 rad) finds them with
+  nothing seeded by eye: eight axes, each a stack of coaxial rings ending at the rear in a
+  64-point rolled lip band whose INNER radius is the aperture.
+
+  | nozzle | mount (vessel space) | lip band | aperture | `widthScale` |
+  |---|---|---|---|---|
+  | body engine top | `(0, 3.197, −10.382)` | 0.766–0.882 | 0.766 | 3.3 |
+  | body engine upper | `(0, 1.539, −9.898)` | 0.282–0.397 | 0.282 | 1.2 |
+  | body engine mid L/R | `(∓1.359, −1.349, −9.067)` | 0.822–0.944 | 0.822 | 3.5 |
+  | body engine low L/R | `(∓1.220, −3.445, −6.436)` | 0.582–0.704 | 0.582 | 2.5 |
+  | body engine keel L/R | `(∓0.803, −5.271, −3.180)` | 0.452–0.574 | 0.452 | 1.9 |
+
+  `widthScale` is ONE rule for all eight rather than eight judgements: `VesselJet`'s TrailRenderer
+  is authored 0.3 wide, so `widthScale = 0.64 × 2r / 0.3 = 4.267 r` makes every plume the same
+  fraction of its own aperture. That is what makes a ten-jet stern read as one machine — the
+  apertures span 2.9× across it, and what has to be held constant is the RATIO, not the width.
+
+  The five mouth planes step forward and down (`−10.382 → −9.898 → −9.067 → −6.436 → −3.180`)
+  because the Rhino's belly rakes up toward the nose, and checking that is not optional: a plume
+  tube of aperture radius swept aft from each mouth contains **zero** hull vertices, which is the
+  property that says a jet will not fire through the ship. Treating the stern as one plane would
+  have buried all six lower jets in several units of hull.
+
+**The rule the Sparrow and the Rhino are both instances of: the rearmost geometry is not the
+exhaust, and the way to stop guessing is to LOOK.** A wireframe of the stern plus a stack of thin
+z-slabs through it takes a minute and settles what an hour of binning statistics will not — both
+ships were placed correctly within one pass of rendering them, and wrongly in every pass before
+that.
 
 ## 5. Why five vessels have tails but no jets
 
