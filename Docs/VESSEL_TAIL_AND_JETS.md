@@ -118,9 +118,9 @@ animates. Where it does not, the jet is placed at the measured rear of the hull 
 |---|---|---|---|---|---|
 | **Dolphin** | −20 | −21 | 1.0 | 6 | parented to the six `Engine case *`, at each pod's measured exhaust mouth |
 | **Squirrel** | −17 | ±4, −12 (authored pair) | 0.85 | 4 | parented to model nodes (authored) |
-| **Sparrow** | −50 | −52.5 | 2.5 | 1 | `(0, −0.10, −4.65)` — ONE centred plume at width×5, see below |
+| **Sparrow** | −50 | −52.5 | 2.5 | 1 | `(0, 0.40, −0.09)` — ONE centred plume at width×5, at the middle tail-feather ring's depth |
 | **Urchin** | −6.67 | −7.0 | 0.334 | 4 | parented to `JetTopLeft/Right`, `JetBottomLeft/Right` |
-| **Rhino** | −120 | −126 | 6.0 | 6 | 2 parented to `engine left` / `engine right`; 4 on the main body's rear face at width×6 |
+| **Rhino** | −120 | −126 | 6.0 | 4 | 2 on `engine left`/`engine right` at width×10 (the main engines); 2 on the body's engine assemblies `(±0.50, 0.25, −2.05)` at width×1.5 (the little ones) |
 | **Grizzly** | −30 † | −31.5 | 1.5 | 4 | parented to `Ship_Wedge_Jet_UL/UR/BL/BR` |
 | **Scarab** | −50 | −52.5 | 2.5 | 2 | `(±1.50, 0.10, −4.40)` — the carapace rear |
 | **Manta** | −30 | −31.5 | 1.5 | — | see §5 |
@@ -150,24 +150,35 @@ Nothing here was eyeballed. Two methods, both offline:
 The Sparrow's tail was at `z = −4.72` — on the hull, in the pilot's face, doing a jet's job. That
 is what prompted this pass.
 
-**Two placements were corrected after the first playtest, and both are worth recording:**
+**These two took three passes each, and what the passes cost is the useful part:**
 
-- The **Sparrow** got two jets at the measured rear lobes `(±1.60, …)`. Those lobes are real
-  geometry, but the ship reads as having ONE big exhaust, not a separated pair — so it now carries
-  a single centred plume at `(0, −0.10, −4.65)` with `widthScale 5` (the pair's combined width in
-  one). *Measuring where the hull ends is not the same as reading how many exhausts it has.*
-- The **Rhino** had only its two wing engines, and the main body shows a bank of exhausts of its
-  own. Its rear face measures `x ∈ [−1.00, 1.00]`, `y ∈ [1.02, 4.20]` at `z = −10.38`, and an
-  occupancy map of that slab shows two stacked nozzle structures — an annular one centred near
-  `y 3.30` and a solid column near `y 1.55`. Four plumes span them:
-  `(±0.55, 3.30, −10.38)` and `(±0.30, 1.55, −10.38)`, parented to `Rhino_Test (1)`.
+- The **Sparrow** first got two jets at the measured rear lobes `|x| ∈ [1.59, 1.64]`, then one
+  centred plume at the hull's rearmost point `z = −4.65`. Both were wrong, for the same reason:
+  the rear of the *bounding geometry* is not where the ship's exhaust is. Its tail feathers are a
+  nacelle stack of three concentric rings at `x ≈ ±3.03, y ≈ 0.40`, growing backwards —
+  `r 0.07 @ z +0.22`, `r 0.19 @ z −0.09`, `r 0.25 @ z −1.00` — and the jet is pinned to the
+  MIDDLE ring's depth and height, held on the centreline: `(0, 0.40, −0.09)`.
 
-  That geometry comes from `Rhino_Test.fbx`'s `fusalage`, **not** from the placeholder meshes the
-  prefab currently renders. It is the right source anyway: `fusalage` reproduces the body's
-  authored `BoxCollider` `(5.618, 15.309, 16.816)` to three decimals, and every other position on
-  this vessel — wings at `(±3.92, 0.46, 1.58)`, engines at `(±5.42, 0.46, −4.32)` — is that FBX's
-  node transforms at ÷100 with x mirrored. The whole prefab layout is `Rhino_Test`'s; only the
-  meshes were later re-pointed at `Vessel_Placeholder_1.fbx`. Re-measure when the real art lands.
+  Note how far forward that is: `z −0.09` against a hull that reaches `z −4.65`. Everything behind
+  it is the fanned wing assembly, which is why the rearmost geometry read as "the tail" and was not.
+
+- The **Rhino** first got four jets at `y 1.55…3.30`, measured off `Rhino_Test.fbx`'s `fusalage`.
+  That was the wrong source, and it was convincing for a bad reason: `fusalage` reproduces the
+  body's authored `BoxCollider` `(5.618, 15.309, 16.816)` to three decimals, and every other
+  position on the vessel — wings at `(±3.92, 0.46, 1.58)`, engines at `(±5.42, 0.46, −4.32)` — is
+  that FBX's node transforms at ÷100 with x mirrored. But every `MeshFilter` on the prefab points
+  at `Vessel_Placeholder_1.fbx`: the layout is `Rhino_Test`'s and only the MESHES were re-pointed.
+  The hull that renders is `supermatic sky cruiser.001`, `x ∈ [−1.85, 1.85]`, `y ∈ [−0.92, 0.89]`,
+  `z ∈ [−2.60, 4.10]` — so the jets floated in empty space above a ship a fifth their height away.
+
+  Connected components of that mesh's rear give the answer exactly: **two** engine assemblies, each
+  a stack of five concentric shells at `(±0.50, 0.25, −2.05)`, radius ~0.25–0.30. Those carry the
+  little jets at `widthScale 1.5`; the wing pods are the main engines and run at `10`.
+
+**The rule both of them are instances of: a collider is not evidence of what RENDERS.** Both are
+authored, they agree on most vessels, and when they disagree it is the collider that has silently
+gone stale. Read the `MeshFilter`, and render the mesh before placing anything on it — a wireframe
+of the rear takes a minute and settles what an hour of binning statistics will not.
 
 ## 5. Why five vessels have tails but no jets
 
@@ -193,9 +204,12 @@ the same pass that gives them real art, when "where is the engine" has an answer
   0.334 scale is doing real work. Check it first.
 - **Jet count on the Dolphin.** Six mouths sit ~0.3 apart with a 0.3-wide ribbon each, so they may
   merge into one sheet. Levers in order: `widthScale`, then dropping to the outer pair.
-- **Count is a look question, not a geometry one.** The Sparrow proved it: two measured lobes, one
-  apparent exhaust. Where the hull's structures are ambiguous, place from the geometry, then check
-  it against what the ship reads as.
+- **Count and location are look questions, not bounding-box ones.** The Sparrow proved both: two
+  measured lobes but one apparent exhaust, and the exhaust nowhere near the hull's rearmost point.
+  Render the model, find the structure the artist built as an engine, and mount on that.
+- **A prefab instance needs no `m_Children` entry** — `m_TransformParent` is the authoritative
+  link. The Squirrel's four original hand-authored jets carry none and have always worked, so a
+  missing entry is not a defect and not worth "fixing".
 - **`VesselTail.prefab` carries six disabled particle systems**, dead experiments that make the
   asset ~690 KB. They are inactive, so they cost nothing at runtime; deleting them is a separate,
   purely subtractive change.
