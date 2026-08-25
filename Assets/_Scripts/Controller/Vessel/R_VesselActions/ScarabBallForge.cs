@@ -57,9 +57,17 @@ namespace CosmicShore.Gameplay
 
         /// <summary>
         /// Raised on the peer that minted a ball (the server, or a no-network local session),
-        /// immediately after launch. This is how a mode ADOPTS a forged ball — boundary handoff,
-        /// ownership lock, per-ball attribution — without the vessel knowing any mode exists.
+        /// immediately after launch. This is how a mode ADOPTS a forged ball — per-ball
+        /// attribution, mode-specific bookkeeping — without the vessel knowing any mode exists.
         /// The forger is the ball's maker; the ball already carries their domain.
+        ///
+        /// Two things a mode must NOT do here, because both are already properties of the ball:
+        /// the ownership lock (installed below, at the mint point) and the WALL. A ball bounces
+        /// off its cell's nucleus by itself, in every cell, so a mode whose court is that nucleus
+        /// installs nothing (`AstroLeagueBall.ResolveNucleusBoundary`); `SetBoundary` is only for
+        /// a court whose shape a nucleus radius cannot express. Scarab Scramble pushed a matching
+        /// sphere onto every adopted ball for its first two passes, which left every ball forged
+        /// outside that mode with no containment at all.
         /// </summary>
         public static event Action<AstroLeagueBall, IVesselStatus> OnForged;
 

@@ -71,10 +71,12 @@ platform-law) shaped the final rule set:
 5. **Goals stop nothing** (§15.13's party answer): the scored ball detonates
    (`SpendServer` — the goal-mouth burst, continuity of existence) and play flows on. No
    kickoffs, no world-stop celebrations, nobody waits.
-6. **The court is a sphere and walls REFLECT.** `AstroLeagueBoundary` Sphere is the
-   centre-focusing shape: every carom returns the ball toward the middle, where the hoops
-   ring the centre at `hoopRingRadiusFraction` (0.45) — a new player's wild shots are
-   recycled into chances. §4.3's boundary-death idea is deliberately NOT used here (a
+6. **The court is a sphere and walls REFLECT — and the mode installs none of it.** The
+   court IS the nucleus (`SetNucleusWorldRadius(courtRadius)`), and **a ball bounces off
+   its cell's nucleus as a property of the BALL** (`SCARAB.md §4.6`), so resizing the
+   nucleus is the entire act of building the court. Sphere is the centre-focusing shape:
+   every carom returns the ball toward the middle, where the hoops ring the centre at
+   `hoopRingRadiusFraction` (0.45) — a new player's wild shots are recycled into chances. §4.3's boundary-death idea is deliberately NOT used here (a
    resource you can waste is the wrong feel for a beachhead mode). The sphere physics also
    manufactures the mode's signature moment — the multi-carom **bank goal** — which the
    controller celebrates by bounce count (`ScarabScrambleBankGoal` toast, "BANK x{n}").
@@ -100,7 +102,7 @@ platform-law) shaped the final rule set:
 
 | Class | Role |
 |---|---|
-| `ScarabScrambleController` | Match director: court/hoop build on every peer (resolved-geometry NVs), forge adoption (`ScarabBallForge.OnForged`: boundary handoff, forger ledger), hoop scoring + arming gate + toast beats (goal / bank / match point / lead change / cell overload), AI rollers, fauna exclusion sweep, final-score snapshot |
+| `ScarabScrambleController` | Match director: court/hoop build on every peer (resolved-geometry NVs — the court is the nucleus resize; no per-ball boundary), forge adoption (`ScarabBallForge.OnForged`: forger ledger), hoop scoring + arming gate + toast beats (goal / bank / match point / lead change / cell overload), AI rollers, fauna exclusion sweep, final-score snapshot |
 | `ScarabScrambleHoop` | One scoring ring: ToyFactory ring body (the toy "portal you thread" shape language), bloom-in (continuity law; detection live at full radius from t=0 — state final at start, photons animate), per-ball segment-crossing detection vs `AstroLeagueBall.Live` (either direction, teleport-guarded), MPB flare on goals |
 | `ScarabScrambleSettingsSO` | Court/hoop/AI/fauna-exclusion tunables (per-intensity lists). The ball ceiling is **not** here — it is `AstroLeagueBall.cellBallLimit` on the ball prefab, because it is a per-CELL platform rule, not a mode policy |
 | `ScarabScrambleScoringRuleSO` | Thin subclass of the AL rule so the mode owns its asset |
@@ -244,7 +246,12 @@ the **cleanup crew waits outside the court** until the volume ladder leaves Calm
 (`Cell.FaunaExclusionRadius` swept by the controller — the Astro League pattern, reading
 "the pitch is crowded" from the spine). The nucleus IS the court:
 `SetNucleusWorldRadius(courtRadius)` + **`NucleusIsControlZone = false`** (play geometry,
-not a claim — skip this and the whole pitch is inedible, ECOSYSTEM §25.1). Crystals spawn
+not a claim — skip this and the whole pitch is inedible, ECOSYSTEM §25.1). Those two calls
+ARE the court: the ball supplies the wall itself, so the mode pushes no boundary onto any
+ball (`AstroLeagueBall.ResolveNucleusBoundary`). It used to, and that made a platform
+behaviour read as a mode feature while every ball a Scarab forged anywhere else — freestyle,
+the menu — bounced off nothing at all. Astro League still overrides `SetBoundary`, because
+its polytope court is a shape a nucleus radius cannot express. Crystals spawn
 inside the court by the platform's own rule (the omni respawn volume IS the nucleus),
 count = players + 2 (`NetworkCrystalManager` PlayerCountPlusExtra), neutral domain.
 Collider budget: hoops and court add ZERO colliders (analytic boundary + plane-crossing

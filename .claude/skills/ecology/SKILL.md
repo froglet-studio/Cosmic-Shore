@@ -102,6 +102,25 @@ what the carve-out silently broke — see the traps below.
   caps at 6, so a floor-only scalar is clamped away above ~1.5× and reads as *doing nothing*.
   Move floor and cap together. (Scaling either is production gating, which §0 permits; culling
   to meet a lowered scale is not.)
+- **FLORA REPRODUCE TWO WAYS, and tuning one is dead tuning on the other.** A species is on
+  exactly one of two paths and the config gives no hint which: the **per-plant growth quota**
+  (`FloraConfigurationSO.GrowthPerOffspring`, spent in `Flora.TryReproduce`) or the **colony
+  cycle** (a lattice species — gyroid / Schwarz P / quasicrystal — births ONE plant per
+  `Cell.CurrentFaunaSpawnPeriod` for the whole population, `AssembledFlora`, §32.7). The quota
+  field is **written on every config by `author_flora_populations.py` and is inert on the lattice
+  ones**, which is what makes this invisible: the asset says `GrowthPerOffspring: 22`, the tests
+  pass, and nothing reports that the number is never read. Measured today: of 102 flora configs,
+  50 reproduce at all — and **34 of those 50 are lattice**, including every asset literally named
+  "…Flora Time". So a reproduction change applied to the quota alone misses two-thirds of the
+  breeding population *and* the families that breed most. Before touching either, split the
+  species list by `FloraPrefab in {GyroidFlora, SchwarzPFlora, QuasicrystalFlora}` and state which
+  path each change reaches. Sibling of §4.6, one level up: that one asks which CEILING binds, this
+  one asks which PRODUCER runs at all.
+  **Corollary — a colony's cadence is per (cell, species), never per plant.** The frontier cycle
+  book is shared and every plant in the colony ticks it, so a per-plant period is set by whichever
+  plant happened to tick first. A colony is mixed-element by construction
+  (`LATTICE_MIN_FOUNDERS = 4`, and a colony inherits its founder's element pick), so any
+  element-keyed cadence must key on the CONFIG's authored element.
 - **A shared species asset is the reason the scalar belongs on the PROFILE.** Rampage's two
   species are referenced straight out of `Blob Cell/`, so stocking its arena by editing them
   would have restocked Menu_Main's lava lamp too. Before tuning any lifeform config, grep who

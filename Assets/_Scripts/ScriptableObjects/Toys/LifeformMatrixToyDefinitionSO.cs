@@ -1,4 +1,5 @@
 using System;
+using CosmicShore.Data;
 using CosmicShore.Gameplay;
 using CosmicShore.Utility;
 using UnityEngine;
@@ -6,15 +7,19 @@ using UnityEngine;
 namespace CosmicShore.ScriptableObjects
 {
     /// <summary>
-    /// The <b>Lifeform Matrix</b> toy - the ecology tuning bench. Fly through the station and a
-    /// matrix of every registered lifeform SPECIES blooms in beside it. Fly through a species
-    /// and a second matrix blooms: that species' variants, 4 elements x levels {1, 3, 5}
-    /// (the extremes and the middle of the 4x5 contract). Fly through a variant and that exact
-    /// lifeform spawns live into the containing cell - the fastest way to see the whole range
-    /// of each element and tune it into a good place.
+    /// The <b>Lifeform Matrix</b> toy - the bench for everything you can RELEASE into the cell.
     ///
-    /// Toy-faithful: no score, no end condition, no timers. Spawned lifeforms are ordinary
-    /// citizens of the cell's food web (they feed, starve, reproduce, drop crystals).
+    /// Fly the toy and three KINGDOM switches bloom out ahead: <b>Fauna</b>, <b>Flora</b> and
+    /// <b>Vessels</b>. Fly Fauna or Flora and that kingdom's SPECIES matrix blooms a layer
+    /// further out; fly a species and its VARIANT matrix blooms further still - 4 elements x
+    /// levels {1, 3, 5} (the extremes and the middle of the 4x5 contract) - and flying a variant
+    /// spawns that exact lifeform live into the containing cell. Fly Vessels and a matrix of mini
+    /// hulls blooms instead; flying one releases an <b>AI-piloted vessel of that class in your own
+    /// domain</b> through the menu's ordinary networked spawn pipeline.
+    ///
+    /// Toy-faithful: no score, no end condition, no timers. Everything released is an ordinary
+    /// citizen - lifeforms feed, starve, reproduce and drop crystals; a companion vessel flies the
+    /// lava lamp like any other pilot and lays conserved trail mass the food web can graze.
     /// </summary>
     [CreateAssetMenu(fileName = "Toy_LifeformMatrix", menuName = "ScriptableObjects/Toys/Lifeform Matrix Toy")]
     public class LifeformMatrixToyDefinitionSO : ToyDefinitionSO
@@ -43,6 +48,13 @@ namespace CosmicShore.ScriptableObjects
         [SerializeField] FaunaSpecies[] faunaSpecies;
         [SerializeField] FloraSpecies[] floraSpecies;
 
+        [Header("Hangar")]
+        [SerializeField, Tooltip("Vessel classes offered by the VESSELS branch, each a mini hull. " +
+                                 "Flying one releases an AI companion of that class in your own " +
+                                 "domain. Leave empty for the shared curated default roster " +
+                                 "(ToyVesselRoster.Default) - the same list the vessel changer uses.")]
+        VesselClassType[] vesselRoster;
+
         [Header("Layout")]
         [SerializeField, Min(10f), Tooltip("Spacing between stations in a matrix row/column.")]
         float stationSpacing = 90f;
@@ -57,6 +69,7 @@ namespace CosmicShore.ScriptableObjects
 
         public FaunaSpecies[] Fauna => faunaSpecies;
         public FloraSpecies[] Flora => floraSpecies;
+        public VesselClassType[] VesselRoster => vesselRoster;
         public float StationSpacing => stationSpacing;
         public float StationRadius => stationRadius;
 

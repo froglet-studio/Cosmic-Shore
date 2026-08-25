@@ -548,6 +548,20 @@ namespace CosmicShore.Gameplay
 
         public void StartAIPilot()
         {
+            // Idempotent, by clearing rather than by refusing. StartCoroutine below is per-call
+            // and StopAIPilot's StopCoroutine is a no-op (it is handed a FRESH iterator, which
+            // matches nothing), so a second start used to duplicate every ability coroutine
+            // permanently - two overlapping drift cycles on a hull whose AI ability is a drift,
+            // and no way back. Several callers can legitimately both fire (Player.StartPlayer's
+            // AI branch and any explicit ToggleAIPilot), so this belongs here, not in each.
+            //
+            // NOT an `if (AutoPilotEnabled) return` guard: OnDisable leaves AutoPilotEnabled TRUE
+            // while Unity kills every coroutine on the component, so an early-out would refuse to
+            // restart them on the next enable and silently leave the pilot steering with no
+            // abilities. Clearing first is correct in both cases. Every coroutine this component
+            // runs is started below and restarted below, so the sweep is exactly this method's own.
+            StopAllCoroutines();
+
             AutoPilotEnabled = true;
 
             // A pilot that manages its own drift (the commit loop: line up a crystal, lock the

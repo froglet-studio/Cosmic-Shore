@@ -176,6 +176,12 @@ namespace CosmicShore.Gameplay
                     continue;
                 }
 
+                // Claim BEFORE the NetworkVariable writes below: they raise the deferred spawn
+                // event, and this loop is only safe today because it runs before base.OnNetworkSpawn
+                // subscribes. Claiming per-spawn makes that ordering non-load-bearing (the sweep
+                // after the loop stays as the belt to this suspenders).
+                ClaimExternallySpawnedPlayer(aiPlayer);
+
                 // Use template data if available, otherwise derive values dynamically
                 var hasTemplate = aiInitializeDatas != null && i < aiInitializeDatas.Length;
 

@@ -6236,3 +6236,98 @@ units of each species' own lattice — so every colony grows to the same number 
 even though the quasicrystal's are larger. Equalising prism counts instead would shrink the
 quasicrystal superstructure below its neighbours', which is precisely the comparison the cell
 exists to make.
+
+---
+
+## 38. TIME breeds faster — the second elemental law (Aug 2026)
+
+**The ask:** bring all Time flora's reproduction rate up a bit, and everyone else's down a bit.
+
+### 38.1 Why this is a LAW in code, not a column in the authoring script
+
+`GrowthPerOffspring` is authored per **config** by `Tools/Build/author_flora_populations.py`
+(§32), so the obvious move is a per-element fork in that script. It would have been **silently
+wrong on every species that actually spends the quota**: of the 102 flora configs, 50 reproduce at
+all, and the 16 of those on the per-plant quota path — Rampage ×5, Hesperides ×8, Wildlife ×3 —
+*all* set `SpreadElements: 1` with a four-entry palette, so one config with one quota spawns plants of all four elements. There is no
+asset field that could express "the Time ones breed faster".
+
+This is exactly the case §35.1 records for the Charge shield law: **an elemental law cannot live in
+per-element config when the element is ROLLED.** So the authored number stays the *species*
+baseline and the element scales it where the element is known — `Flora.ResolveGrowthPerOffspring`,
+the sibling of `Flora.ResolveShieldPeriod`. `author_flora_populations.py` needed **no change** and
+still passes `--check`, which is the point: the law cannot drift from the assets because it does
+not live in them.
+
+### 38.2 One constant, because both paths measure "cost per child"
+
+Flora reproduce two ways and they measure the same thing in opposite units:
+
+| path | species | what it spends | faster = |
+|---|---|---|---|
+| per-plant quota (`Flora.TryReproduce`) | every non-lattice flora | a GROWTH QUOTA — prisms per child | smaller quota |
+| population cycle (`AssembledFlora`) | gyroid · Schwarz P · quasicrystal | a CYCLE PERIOD — seconds per child | shorter period |
+
+Both are *per child*, so the law is expressed as a **rate** and both are divided by it
+(`FloraReproductionRules.ReproductionRateFor` / `ScaleCostPerChild` / `ScaleGrowthQuota`). Rate up
+= quota down = period down. Time **×1.25**, the other three **×0.8** — symmetric, and "a bit".
+
+    authored quota   22 → Time 18, others 28      109 → Time 87, others 136
+    colony period    30s → Time 24s, others 37.5s
+
+### 38.3 The lattice half is the half that matters, and it was nearly dead tuning
+
+For the three lattice species the per-plant quota is **inert** — a birth there is a POPULATION
+event, one per cycle for the whole colony on the cell's fauna-wave clock (§32.7), and
+`author_flora_populations.py` says so in its own comment. **34 of the 50 breeding configs are lattice, including
+every asset literally named "…Flora Time".** Scaling the quota alone would have changed nothing on
+exactly the plants the change is most visible on — the ecology skill's §4.6 "prove WHICH gate
+binds" trap, hit from a new direction. Hence `AssembledFlora.ColonyCyclePeriod`, which also de-duplicates the
+`period = cell.CurrentFaunaSpawnPeriod; if (period <= 0f) period = 30f;` block the three assemblers
+each carried.
+
+**It is keyed on the CONFIG's authored element, never the ticking plant's.** The cycle book is
+shared per `(cell, species)` and every plant in the colony ticks it, so a per-plant period would be
+decided by whichever plant happened to tick first — incoherent for a mixed-element colony (a colony
+inherits its founder's element pick, and `LATTICE_MIN_FOUNDERS = 4`). A colony's cadence belongs to
+the population; the population's element identity is its config's. The two configs that author no
+element (`Blob Quasicrystal`, `Blob SchwarzP`) simply keep the fleet rate.
+
+### 38.4 Invariants
+
+- **No imposed death.** Nothing is culled, no clock removes anything. A plant still funds a child
+  only out of growth it actually did; the law changes the price, never the currency.
+- **Mass conservation / continuity of existence.** No removal path is touched.
+- **Endogenous selection.** This is an elemental *identity* — tempo is Time's, the way armour is
+  Charge's — not a designer-scored fitness function. Element is heritable (a lineage breeds true),
+  so the differential is a trait the food web selects on, not a score applied to a winner.
+- **Volume is the spine.** Reproduction is production, so it still freezes at Frenzy;
+  `Cell.FloraPlantingEnabled` is unchanged.
+- **0 stays 0.** An authored `GrowthPerOffspring: 0` is the species saying it does not reproduce
+  (52 of the 102 flora configs). No element may scale a species into breeding — and the Time rate can
+  never floor a small quota to 0, which `ShouldSeed` would read as the same thing.
+
+### 38.5 Collider budget — the ceiling is EXACTLY unchanged
+
+`MaxLivePopulation` is untouched on all 50 configs (`--check` clean), and the cap is what bounds
+the always-on heart-crystal colliders (§21.6). This changes only **how fast** a species approaches
+its own cap, never the cap. Peak collider count per cell: **no change.** Time colonies reach their
+ceiling ~20% sooner and the other three ~25% later, so the *transient* mid-match collider load
+tilts slightly toward Time-heavy cells and away from the rest — well inside the existing budget,
+since every ceiling is the one already play-tested.
+
+### 38.6 Verification (the human is the gate)
+
+Offline, run: the 20 edit-mode tests in `FloraReproductionRulesTests` pass (compiled and executed
+against the real shipped rules file), `Tools/Build/author_flora_populations.py --check` is clean,
+and all four edited files parse without error. **Not verified in Unity** — no editor was reachable
+from the session, so `/verify-unity` did not run.
+
+In-editor:
+1. **Menu_Main** (the Lattice cell is the boot world, twelve colonies, one per element). Watch the
+   four Time colonies out-grow their eleven neighbours over ~10 minutes — that is the law's most
+   visible read, since all twelve share one cell clock and one cap.
+2. **Rampage** or **Hesperides** for the quota path: those species roll all four elements from one
+   config, so a mature cell should show visibly more Time plants than Charge/Mass/Space.
+3. Confirm no cell reaches Frenzy earlier than it did — the ladder is untouched, but Time colonies
+   now arrive at their share of the volume sooner.

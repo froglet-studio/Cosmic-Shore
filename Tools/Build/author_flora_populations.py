@@ -33,6 +33,15 @@ quota funded by GROWTH. Two rules decide the numbers:
    - Everyone else: 35% of the per-plant budget, so a plant colonises several times over its
      life rather than once.
 
+   NOTE: what this file writes is the SPECIES baseline. THE TIME LAW (Docs/ECOSYSTEM.md 38)
+   scales it by the plant's ELEMENT at spawn - Time breeds at 1.25x the fleet rate, the other
+   three at 0.8x. That lives in code (Flora.ResolveGrowthPerOffspring) and NOT here, because
+   this field is authored per CONFIG while the element is ROLLED per plant, and every species
+   that actually spends this quota sets SpreadElements with a four-element palette - so a
+   per-element fork in this script would reach none of them. Do not add one; the same law
+   reaches the lattice species through their colony CYCLE PERIOD instead
+   (AssembledFlora.ColonyCyclePeriod), since the quota below is inert for them.
+
 Nothing here removes anything. A lowered cap stops PRODUCTION; it never culls a live plant
 (Docs/ECOSYSTEM.md §0).
 

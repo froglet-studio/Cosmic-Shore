@@ -240,6 +240,28 @@ namespace CosmicShore.Gameplay
                 : authored;
 
         /// <summary>
+        /// THE TIME LAW: a Time plant breeds faster, every other element a little slower
+        /// (<see cref="FloraReproductionRules.ReproductionRateFor"/>). Reproduction is the one
+        /// clock a plant owns, and the clock is Time's identity - the same kind of elemental
+        /// expression as <see cref="ResolveShieldPeriod"/>, which is why it lives here rather
+        /// than in the assets.
+        ///
+        /// <para>It CANNOT be authored per config: the quota is authored per CONFIG (by
+        /// <c>Tools/Build/author_flora_populations.py</c>) while the element is ROLLED per
+        /// plant (<c>FloraConfigurationSO.SpreadElements</c>) - and every species that actually
+        /// spends this quota rolls its element, so there is no asset field that could express
+        /// it. The authored number stays the SPECIES baseline and the element scales it at
+        /// spawn, so the authoring script needs no per-element fork and cannot drift from
+        /// this rule.</para>
+        ///
+        /// <para>An authored 0 stays 0: that is the species saying it does not reproduce at
+        /// all, and no element may scale a species into breeding.</para>
+        /// </summary>
+        protected int ResolveGrowthPerOffspring(int authored)
+            => FloraReproductionRules.ScaleGrowthQuota(
+                authored, FloraReproductionRules.ReproductionRateFor(Element));
+
+        /// <summary>
         /// True when this species' prism SIZE is dictated by its growth rule rather than being
         /// free, so LEVEL must not scale it. A LATTICE species is the case
         /// (<see cref="AssembledFlora"/>): its neighbour offsets are a measured bond table in
@@ -376,7 +398,7 @@ namespace CosmicShore.Gameplay
             // (SpawnProfileSO.FloraPopulationScale) has to scale what reproduction may fill to,
             // or the seeder and the plants would be working to two different ceilings.
             if (!FloraReproductionRules.ShouldSeed(
-                    _growthSinceBirth, cfg.GrowthPerOffspring,
+                    _growthSinceBirth, ResolveGrowthPerOffspring(cfg.GrowthPerOffspring),
                     Time.time - _lastBirthTime, cfg.ReproductionCooldownSeconds,
                     healthTracker != null ? healthTracker.Count : 0, PrismBudget, cfg.MaturityFraction,
                     host.GetLiveFloraCount(cfg), host.ResolveFloraCap(cfg)))

@@ -405,6 +405,36 @@ inherits two traps that have each cost a round-trip:
   its silhouette as the projected hull of its eight spike tips rather than a hard-coded octagon,
   which is only the outline of an AXIS-ALIGNED sun.
 
+### 4.y Spawning a vessel outside the turn flow (a toy, a rig, a mid-match release)
+
+Anything that spawns a vessel somewhere other than the standard spawn-then-turn-start chain
+inherits four traps. All four presented as "the ship is there but does nothing / has no trail",
+which is the least diagnostic symptom in the fleet.
+
+- **A vessel released at speed 0 lays NO TRAIL, and the reason is a threshold you cannot see
+  from the vessel.** `VesselPrismController`'s spawn loop only lays a prism above **3 u/s**, and
+  the pair-init hands every vessel a dead stop (`GameDataSO.AddPlayer` -> `Player.ResetForPlay`
+  -> `VesselController.ResetForPlay` zeroes `Speed`). The menu vessel SWAP already solves this -
+  `SetPose` then `SetInitialSpeed`, in that order - so copy both halves, not just the pose.
+- **The AI's own drift PINS the cruise speed at the value the vessel carried in**
+  (`VesselTransformer.StepTowardTarget`, `_driftSpeedHeld`; the vector model's equivalent is
+  `DriftThrottlePolicy.Locked`). A bot that drifts before it has accelerated stays pinned near
+  zero *indefinitely* - so the trail never comes on at all rather than coming on late. Whichever
+  hull's authored `AIPilot.abilities` entry is a drift exposes this first (today: the Dolphin).
+- **`Player.StartPlayer` ALREADY runs the autopilot branch for a player whose `NetIsAI` is set** -
+  `ToggleAIPilot(true)` + `ToggleInputPause(true)`. Calling a second `ToggleAIPilot(true)` on top
+  (e.g. the menu's `ActivateAutopilot`, which exists for the HUMAN menu vessel, where StartPlayer
+  deliberately does not touch autopilot) used to duplicate every `UseAbilityCoroutine` forever.
+  `AIPilot.StartAIPilot` now sweeps its own coroutines first, so it is idempotent - **by clearing,
+  not by an `if (AutoPilotEnabled) return`**, because `OnDisable` leaves that flag true while Unity
+  kills the coroutines, and an early-out would refuse to restart them on the next enable.
+- **A SERVER-OWNED `Player` carries the HOST's `OwnerClientId`**, so its spawn event is
+  indistinguishable from the host's own and the human spawn path will try to give it a second
+  vessel. Call `ServerPlayerVesselInitializer.ClaimExternallySpawnedPlayer` in the SAME frame as
+  `NetworkObject.Spawn()` - `Player.OnNetworkSpawn` raises the event from inside that call. And
+  the AI Player prefab needs no scene reference: `NetworkManager.NetworkConfig.PlayerPrefab` IS
+  the prefab every game scene wires by hand into `aiPlayerPrefab`.
+
 ## 5. Audit, then hand back verification (you cannot run Unity; the human is the gate)
 
 - State which auditors to run and the expected result: **Audit Vessel Ability Rows**,

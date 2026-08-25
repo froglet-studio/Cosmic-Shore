@@ -22,8 +22,11 @@ namespace CosmicShore.Utility
     /// shield's own team palette, and the flat time-ordered retirement sweep. The
     /// velocity/clamp semantics are PrismDebris.TryRequestExplosion's, byte for byte,
     /// against the SAME pool-prefab band (PrismDebris.TryGetExplosionConfig) — including
-    /// the zero-vector → up·minSpeed fallback, so a shield timer expiring sheds exactly
-    /// the way an arena teardown explodes a prism.
+    /// the zero-vector → up·minSpeed fallback, so an impactless disengage (an arena
+    /// teardown, a herbivore stripping armour) sheds exactly the way an impactless prism
+    /// death explodes. A TIMED pop is no longer one of those: it arrives carrying HALF the
+    /// magnitude of the blast that raised the shield, in a random unit-sphere direction
+    /// (PrismStateManager.ExecuteTimerDeactivation; Docs/PRISM_ANIMATION.md §4.8.1).
     ///
     /// History, so nobody re-walks it: this effect shipped three bespoke shapes first — a
     /// shield-morph shatter branch re-expressing the rotation in HLSL, a mirrored

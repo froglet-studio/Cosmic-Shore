@@ -108,6 +108,15 @@ namespace CosmicShore.Gameplay
         protected readonly HashSet<ulong> _processedPlayers = new();
 
         /// <summary>
+        /// Owner client ids for which at least one player was spawned by somebody OTHER than this
+        /// spawner's human path (see <see cref="ClaimExternallySpawnedPlayer"/>). Server-owned AI
+        /// players share the host's owner id, so their spawn event arrives here looking exactly
+        /// like the host's own - this is how the handler tells "already handled elsewhere" from
+        /// "a player went missing".
+        /// </summary>
+        readonly HashSet<ulong> _claimedForeignOwners = new();
+
+        /// <summary>
         /// Players whose persistent state has been re-initialized for THIS scene
         /// (<see cref="Player.PrepareForNewScene"/>, which zeroes RoundStats). Separate from
         /// <see cref="_processedPlayers"/> because that set is removed from on the not-ready
@@ -241,7 +250,21 @@ namespace CosmicShore.Gameplay
             Player player = FindUnprocessedPlayerByOwnerClientId(ownerClientId);
             if (player == null)
             {
-                Debug.LogWarning($"<color=#FFA500>[FLOW-5] [ServerVesselInit] FindUnprocessedPlayerByOwnerClientId({ownerClientId}) returned NULL</color>");
+                // A SERVER-OWNED Player (AI) shares the host's OwnerClientId, so its spawn event
+                // is indistinguishable here from the host's own. Whoever created it has already
+                // claimed it (ClaimExternallySpawnedPlayer), so there is genuinely nothing for the
+                // human path to do and this is not a fault - only an unclaimed owner is.
+                //
+                // This is not a rare edge: ProcessPreExistingPlayers calls the handler once per
+                // entry in gameData.Players, so a scene with N backfill AI produced N of these
+                // warnings on every load. The warning that survives below is the one that was
+                // always meant - an owner whose player really did go missing.
+                if (_claimedForeignOwners.Contains(ownerClientId))
+                    CSDebug.LogVerbose(CSLogChannel.NetworkFlow,
+                        $"<color=#FFA500>[FLOW-5] [ServerVesselInit] Spawn event for {ownerClientId} " +
+                        "resolved to an already-claimed server-owned player - nothing to do.</color>");
+                else
+                    Debug.LogWarning($"<color=#FFA500>[FLOW-5] [ServerVesselInit] FindUnprocessedPlayerByOwnerClientId({ownerClientId}) returned NULL</color>");
                 return;
             }
 
@@ -515,6 +538,23 @@ namespace CosmicShore.Gameplay
                     return player;
             }
             return null;
+        }
+
+        /// <summary>
+        /// Adopt a <see cref="Player"/> that some OTHER code spawned - an AI backfill bot, a
+        /// freestyle AI companion - so this spawner never tries to give it a second vessel.
+        ///
+        /// Call it in the SAME frame as <c>NetworkObject.Spawn()</c>. <c>Player.OnNetworkSpawn</c>
+        /// raises <c>OnPlayerNetworkSpawnedUlong</c> from inside that call (and again, deferred,
+        /// when the owner-written name / vessel type land), so the handler must already see the
+        /// player as processed - which the handler's 200ms replication delay is what allows.
+        /// </summary>
+        protected void ClaimExternallySpawnedPlayer(Player player)
+        {
+            if (!player) return;
+            _processedPlayers.Add(player.NetworkObjectId);
+            _preparedForScene.Add(player.NetworkObjectId);
+            _claimedForeignOwners.Add(player.OwnerClientId);
         }
 
         protected NetworkObject SpawnVesselForPlayer(ulong clientId, Player networkPlayer) =>
