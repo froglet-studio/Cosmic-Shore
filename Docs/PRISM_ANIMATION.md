@@ -1712,12 +1712,39 @@ With no pair supplied (the standalone rig, the ContextMenu toggles — where not
 repaints), `RequestShatter` still reads the renderer, which is correct there. `Prism.Damage`'s shield-shed branch
 forwards its impact vector and true-velocity ceiling — `DeactivateShields(impactVector,
 debrisSpeedLimit)` — so armour knocked off a prism flies on precisely the terms the prism
-itself would have; an impactless disengage (a shield timer, an arena teardown, a
-herbivore stripping armour, `Prism.Consume`) degrades through the same
-`GeometryUtils.ClampMagnitude` zero-vector fallback to the same quiet up·minSpeed puff an
-impactless prism death gets. Nothing is authored per shield any more: no shatter
+itself would have; an impactless disengage (an arena teardown, a herbivore stripping
+armour, `Prism.Consume`) degrades through the same `GeometryUtils.ClampMagnitude`
+zero-vector fallback to the same quiet up·minSpeed puff an impactless prism death gets.
+Nothing is authored per shield any more: no shatter
 duration, no fly-out offset, no speed cap — the base effect owns all of it, and the two
 death visuals cannot drift apart because they are one visual.
+
+**A TIMED pop is the one disengage with no breaking force, and it carries HALF the blow
+that shielded it** (2026-08-24). The temporary shield exists to stop a blast reading as
+clipping: an explosion meeting its own domain's mass shields the prism instead of passing
+through it, so the hit reads as ACCEPTED. The pop that ends that shield therefore has to
+read as a pop — and it is exactly the case with no impact vector to forward, so on the
+zero-vector fallback above every shielded prism in a blast drifted its shards straight up
+at `minSpeed`, in lockstep, a beat after the explosion. Both explosion paths now hand the
+shield the blow's magnitude and ceiling as they raise it — `ExplosionImpactor.
+ExecuteCommonPrismCommands` and its Burst twin `PrismSpatialIndex.ResolveExplosionHit`,
+both as `Impulse.Speed × Impulse.Inertia` (`CalculateImpactVector` is `Impulse.Along(unit)`,
+so the two are equal by construction and neither spends a root) — `PrismStateManager` holds
+them for the life of the shield, and `ExecuteTimerDeactivation` sheds along
+`Random.onUnitSphere × (speed × 0.5)` with the blast's own `DebrisSpeedLimit`.
+
+Three things about that are load-bearing. **Half**, because the blow was absorbed: the pop
+is an echo of the blast, not the whole blast arriving late. **The ceiling has to ride
+along**, or the halving never reaches the screen — every AOE impulse sits far above the
+explosion prefab's authored 33.33 u/s clamp (§4.6), so full and half both saturate to one
+speed, the same trap `ExplosionImpulse` exists to prevent. **The DIRECTION is randomized
+rather than remembered**, because by the time the timer fires the impact vector's direction
+is a lie: re-using it fans a whole blast's shields outward in one coherent sheet with no
+visible cause. A shield raised with no blow behind it (an ability, a skim, a spawner) still
+pops at the debris band's authored `minSpeed`, now in a random direction. Cost is two floats
+of state on `PrismStateManager` and one `Random.onUnitSphere` at the pop — the shed itself
+is unchanged, still ONE clock-stamped batched debris entity on `PrismTimerManager`'s single
+scheduled swap.
 
 **The port lives in the MESH, never in the pipeline.** ExplodingBlockGraph's vertex chain
 and fade are pure per-vertex functions of mesh attributes, so making a new shape explode
@@ -1769,6 +1796,96 @@ bleeding-edge. The change is two mesh generators, the debris hand-off
 exposing the one config both producers must share), and the velocity plumbing from
 `Prism.Damage` down. `CSLogChannel.PrismShieldShatter` logs one line per queued disengage
 (off by default; FrogletTools > Toolbox > Logging).
+
+### 4.8.2 The face pivot comes from the MESH (shipped 2026-08-25)
+
+§4.8.1 put the shield shards on ExplodingBlockGraph and authored the attribute set the
+graph reads. It left one thing un-ported: a **constant inside the pipeline that is itself
+a measurement of the cube.**
+
+`RotateFacesAlongAxis` rotates each face about a pivot it derives —
+
+```
+Pn    = dot(P, N) * N            the foot of the perpendicular from the object origin
+                                 onto the face's plane
+slide = 0.5 * (0.5 + Spread) * T a fixed step along the face TANGENT
+pivot = Pn + slide               the rotation is rot(P - pivot) + pivot
+```
+
+— and the `0.5` in `slide` is not a fact about faces. It is the prism CUBE's geometry: that
+mesh carries twice a normal cube's triangles so every face is four isoceles wedges fanned
+from a face-centre vertex, and a wedge's own centre sits half a face-half-width along its
+tangent. `Pn + 0.25*T` therefore lands on the wedge, the four wedges spin in place, and the
+prism comes apart the way it is supposed to.
+
+For a mesh whose faces are single triangles it is simply wrong, in two different ways:
+
+| mesh | where the derived pivot lands |
+|---|---|
+| octahedron, cubic prism | exactly the centroid (the foot IS the centroid on an equilateral face) — then the slide pushes it off |
+| octahedron, 20:1 trail slab | inside the face but **0.33 edge lengths** off centre |
+| stellated octahedron | **OUTSIDE the triangle on all 24 faces**, up to 0.67 edge lengths |
+
+The stella is the bad one and the reason is structural: its 24 faces are the lateral faces
+of eight spike tetrahedra, and each group of three shares ONE tetrahedron-face plane — so
+the perpendicular foot is that big triangle's centre, i.e. the hole between the three small
+ones. A face spinning about a point outside itself reads as the shard being flung on a
+lever rather than tumbling.
+
+**The fix asks the mesh.** Both shield generators already bake the exact per-face centroid
+into TEXCOORD1 for the ENGAGE bloom, and ExplodingBlockGraph already samples that channel.
+The subgraph now lerps its pivot onto it:
+
+```
+pivot' = lerp(Pn + slide, FaceCentroid, CentroidPivotWeight)
+```
+
+implemented as a delta subtracted before the rotation and added back after it — which IS a
+pivot shift, since the rotation is `rot(P - pivot) + pivot`. This is §4.8.1's own governing
+rule applied one level up: **port the mesh into the pipeline, never the pipeline into the
+mesh — and when the pipeline has hardcoded a mesh's shape, that constant is part of the
+pipeline that has to give.**
+
+**The weight is one Hybrid-Per-Instance float** (`_FacePivotFromCentroid`,
+`PrismFacePivotFromCentroidOverride`), stamped 0 by `PrismDebris` and 1 by
+`PrismShieldShatter`. It cannot be a material constant, because the two producers share
+ExplodingBlockMaterial by design (§4.8.1) — that shared material is exactly what keeps the
+two death visuals from drifting, so the mesh's face layout has to travel with the ENTITY
+instead. The two alternatives both cost more and buy less: a shader **keyword** doubles the
+variant count of a 70-node graph and is still per-material, so it needs a second material
+anyway; a **duplicate graph** splits the batch AND forks the pipeline §4.8.1 exists to keep
+whole. What shipped costs one float per debris entity and one `mad` in the vertex stage.
+
+Four properties worth carrying:
+
+- **At weight 0 the change is BIT-IDENTICAL.** `0 * finite` is exactly `0`, so the delta
+  vanishes and the cube path is the pre-edit graph — measured, not argued
+  (`Tools/Shaders/verify_prism_face_pivot.py` evaluates both files over 400 randomized
+  vertices and reports max |delta| = 0). No prism retune, nothing to re-approve.
+- **At weight 1 the map collapses to an exact rotation about the centroid**, algebraically,
+  whatever `Spread` is doing — the delta cancels the whole `Pn + slide` construction. This
+  matters because `SpreadValue` is a **Vector3** multiplied COMPONENTWISE by the tangent, so
+  the legacy slide is not generally parallel to `T` and the legacy map is not a rigid
+  rotation about any point at all. That is pre-existing behaviour, deliberately preserved at
+  weight 0; do not "fix" it as a side effect of something else.
+- **A SubGraphNode's input slot ids are `Guid.GetHashCode()` of the subgraph's property
+  guids** — the XOR of the guid's four little-endian 32-bit words, serialized alongside them
+  in `m_PropertyGuids` / `m_PropertyIds`. That is why the two new subgraph property guids are
+  PINNED constants in the wirer rather than minted per run: change one and Unity recomputes a
+  different id, silently drops the edge on import, and the fix evaporates while the file still
+  reads as wired. `PrismFacePivotTests` asserts the shipped ids against the real
+  `Guid.GetHashCode()`.
+- **Nothing else in the pipeline moved.** Colliders, mass, spatial registration, the erosion
+  wipe, the fade, the flight, the velocity clamp band and both shield generators' meshes are
+  untouched; this changes which point a face rotates about and nothing else.
+
+Gates: `python3 Tools/Shaders/wire_prism_face_pivot.py --check` (graph topology, idempotent —
+so it is also the resolver if either graph hits a merge conflict),
+`python3 Tools/Shaders/verify_prism_face_pivot.py` (the shipped subgraph's arithmetic, plus
+the face geometry above re-derived from the generators' own construction),
+`PrismFacePivotTests` (edit-mode: the per-instance declaration, the slot-id derivation, the
+geometry, and both producers), and FrogletTools > Ecology > Prism Animation > **Validate Clock
+Wiring**, which now requires `_FacePivotFromCentroid` on ExplodingBlockGraph.
 
 ### 4.9 The super-shield deflection jiggle (shipped 2026-08-15, C14)
 

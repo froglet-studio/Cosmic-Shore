@@ -107,6 +107,26 @@ every other block is one object keyed by 32-hex `m_ObjectId`.
   `{m_OutputSlot:{m_Node:{m_Id}, m_SlotId}, m_InputSlot:{...}}`. To intercept
   a feed, RETARGET the existing edge's end (don't add a duplicate feeder into
   the same input slot — assert exactly one feeder per input).
+- **Add an INPUT to a SUBGRAPH**: the consuming `SubGraphNode`'s input slot integer id is
+  **`Guid.GetHashCode()` of the subgraph property's guid** — in .NET that is the XOR of the
+  guid's four little-endian 32-bit words (`struct.unpack("<4I", uuid.UUID(g).bytes_le)`), NOT
+  the older `_a ^ (_b<<16|_c) ^ (_f<<24|_k)` formula and NOT any string hash. The node also
+  serializes the mapping outright in **`m_PropertyGuids` / `m_PropertyIds`**, index-aligned, so
+  you can verify your derivation against every id the file already carries before writing one —
+  do that, it is a five-line check and it is the difference between wiring an input and adding
+  a slot Unity will silently drop on import. Two consequences: **PIN the new property's guid** as
+  a constant in the wirer (minting it per run re-mints the slot id, so a re-run produces a
+  different graph and any edge you wrote to the old id dies), and append to BOTH arrays. A stale
+  entry in those arrays for a property that no longer exists is normal and harmless — the shipped
+  `RotateFacesAlongAxis` node carries one — so do not "clean it up" and do not treat array length
+  as the slot count. Output slots need none of this: they mirror the `SubGraphOutputNode`'s own
+  small integer ids (1, 2, …).
+- **A pivot/anchor constant buried in a subgraph is a MESH MEASUREMENT in disguise.** Before
+  reusing a vertex-animation subgraph on a second mesh, look for bare numeric literals in its
+  position math: `RotateFacesAlongAxis` carried a `0.5` that was really "half a cube face's
+  half-width", correct for the one mesh it was written against and wrong (pivot outside the
+  polygon) for every other. Porting the new mesh's attributes in cannot reach a constant like
+  that — it has to become an input.
 - **Remove**: drop the block, drop its entry from every registry
   (`m_Nodes`/`m_Properties`/category child list), assert no edge references it.
 - **READ a graph before you touch it — dump the edge list, don't eyeball JSON.**
@@ -463,10 +483,30 @@ filter is real. **Bucket the diagnostics before reading any of them** —
 the shape of that histogram tells you instantly whether anything real is in there. If you add
 `-nostdlib -noconfig` (useful when the SDK's own ref assemblies muddy the output) then
 `CS0518`, `CS8179` and `CS8137` join the expected-noise list, since they are all "predefined
-type not defined" in disguise — filter those three too or they read as findings. It catches every syntax error, duplicate/conflicting declaration, and
-scope collision — including the ones an edit inside a `switch` section or a nested loop
-creates (`CS0128`/`CS0136`), which is exactly where mechanical edits go wrong. It cannot
-catch a wrong member name or arity; when that matters, build the stubs.
+type not defined" in disguise — filter those three too or they read as findings.
+
+**Know exactly what this pass is blind to, because it is blinder than it looks.** Once a type's
+BASE CLASS is unresolved — which is every `MonoBehaviour`/`NetworkBehaviour` in this repo when no
+Unity assemblies are present — Roslyn stops binding that type's METHOD BODIES, and every
+body-level diagnostic silently vanishes. Measured on `AstroLeagueBall` (base `NetworkBehaviour`)
+by injecting one defect at a time and counting the hits:
+
+| injected defect | caught? |
+|---|---|
+| syntax error (`CS1xxx`) | **yes** (3 hits) |
+| duplicate member declaration (`CS0102`) | **yes** (1 hit) |
+| undeclared identifier inside a method body (`CS0103`) | **NO** (0) |
+| shadowed local in a nested scope (`CS0136`) | **NO** (0) |
+
+The line is **declaration level vs body level**: declarations still bind, bodies do not. So this
+pass proves syntax and the shape of the type, and proves *nothing whatsoever* about the code you
+wrote inside a method — an earlier version of this skill claimed it caught `CS0128`/`CS0136`
+"inside a `switch` section or a nested loop", and that is precisely the half it misses. A session
+shipped a dropped field declaration straight through a green full-file pass; only the stub harness
+caught it. **So treat the stub harness as mandatory for any new code in a method body**, not as
+the escalation for "when a wrong member name matters" — and prove your own gate the way this table
+was produced: inject the defect you care about, confirm the gate fires, restore, `cmp` the file.
+A gate you have not seen fail is not a gate.
 
 ### Fallback: `mcs` (only when dotnet can't be installed)
 
@@ -699,6 +739,27 @@ Two things this buys beyond a compile:
 
 Use it for the pure/static core of a change (a predicate, a mask, a formula). It still cannot see
 name resolution or whole-class consistency — see the two traps below.
+
+**For an `#if UNITY_EDITOR` TEST file, skip the extraction — compile the WHOLE file, unmodified,
+and drive it by reflection.** A test file's Unity surface is usually small and entirely stubbable
+(`Vector3`, `Mathf`, `Mesh`'s vertex/UV accessors, `Object.DestroyImmediate`), and NUnit is ~40
+lines of stub (`[Test]`, `Assert.IsTrue/IsNotNull/AreEqual/That`, `Is.GreaterThan/LessThan` as a
+tiny constraint interface). Compile it together with the REAL subject files it tests, `-main:` a
+driver that reflects over `[Test]` methods, and you have executed the shipped assertions against
+the shipped code. This is what makes the body-level blindness above survivable: the 2026-08-24
+table says the no-stubs pass proves nothing inside a method, and a whole-file test harness proves
+everything inside every method the suite covers. Two mechanics that cost a cycle each:
+
+- **`rm` the output assembly before every rebuild.** A failed build leaves the previous `.dll` in
+  place, the driver runs it, and a *broken* file reports the previous run's "7 passed" — the exact
+  false green a gate exists to prevent.
+- **Run from the PROJECT ROOT**, not the harness directory: Unity runs edit-mode tests with cwd =
+  project root, so every `File.Exists("Assets/...")` in the suite is project-relative and fails
+  everywhere else. Four passing tests read as four failures until you notice.
+
+And prove the harness the way the table above was produced — inject each defect class you care
+about, confirm it fires, restore, `cmp`. A run that only ever passes is indistinguishable from a
+run that cannot fail.
 ### Trap: a SHIELD's size is not the prism's size, and the two tiers scale DIFFERENTLY
 
 Origin: the Scarab wing dais (2026-08-18). A super-shielded "sun core" was sized so its
@@ -1986,6 +2047,21 @@ signature of one prefab instanced in all of them, and it is the evidence.
   does — and leave a comment saying why, or the next formatter re-wraps it and the field silently
   drops out of the checker again. The mirror failure is worse and quieter: a field that SHOULD be
   flagged but is wrapped will never be flagged at all.
+
+- **A correction that runs BEFORE the step it corrects must not also be what CLASSIFIES the
+  state.** Server-side containment (reflect + depenetrate) typically runs at the top of a
+  FixedUpdate, before the solver integrates — so an object can legitimately END a tick slightly
+  past the wall it was just reflected off. Harmless while there is one containment volume. The
+  moment there are two mutually-exclusive regimes chosen by a bare position test ("inside the
+  sphere" vs "outside it"), that overshoot re-classifies the object and the correction INVERTS:
+  the regime that would have pulled it back is replaced by the one that pushes it away, and the
+  volume leaks at exactly the moment it was working. Nothing errors, and it is rare enough to read
+  as a physics glitch. Fix with a STICKY side plus a dead band sized from the physical bound —
+  object radius (containment parks the centre one radius short of the wall) plus one tick of
+  travel at top speed (`v * Time.fixedDeltaTime`, read LIVE so hitstop scales it too). Then check
+  the regimes are self-reinforcing: each must push AWAY from the boundary, so neither can reach
+  the other's flip threshold on its own and only a deliberate crossing (during a suspension of
+  containment) ever switches sides.
 
 - **A comparison that mixes a SQUARED quantity with a LINEAR one is invisible to review and to
   every static check, and its symptom is a behaviour nobody attributes to arithmetic.** A field
