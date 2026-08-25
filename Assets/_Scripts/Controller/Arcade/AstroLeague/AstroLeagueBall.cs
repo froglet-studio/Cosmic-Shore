@@ -227,6 +227,11 @@ namespace CosmicShore.Gameplay
         // the boundary's plane/extent setup; the cache key is every input it was built from, so it
         // rebuilds by itself when the ball crosses the surface, drifts into another cell, or a Cell
         // Selector swap resizes the world underneath it.
+        //
+        // The one input NOT in the key is the cell's CENTRE, which the boundary bakes at
+        // construction — verified safe because nothing in the project writes a Cell's transform
+        // (cells are scene-placed and a Cell Selector swap replaces the world INSIDE one, not the
+        // object). Make a cell movable and this key needs the centre too.
         AstroLeagueBoundary _nucleusBoundary;
         Cell _nucleusBoundaryCell;
         float _nucleusBoundaryNucleusRadius = -1f;
