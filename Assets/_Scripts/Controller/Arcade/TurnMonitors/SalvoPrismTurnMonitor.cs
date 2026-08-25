@@ -7,7 +7,7 @@ namespace CosmicShore.Gameplay
 {
     /// <summary>
     /// Turn monitor for Salvo. The prism TARGET - how many hostile prisms a domain must
-    /// destroy to win (default 1500) - is resolved at <see cref="StartMonitor"/> from
+    /// destroy to win (default 700) - is resolved at <see cref="StartMonitor"/> from
     /// <see cref="EndConditionOverridesSO"/> (FrogletTools &gt; Game Modes &gt; End Game
     /// Conditions; never a per-scene field), synced to every client via NetworkVariable, and
     /// published to <see cref="GameDataSO.PrismTargetCount"/>. The turn ends (server-side)
