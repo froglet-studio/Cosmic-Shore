@@ -23,6 +23,66 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 UI — `SafeAreaFitter` component + test scene (`claude/safe-area-fitter-component-wrmdva`, 2026-08-24)
+
+Authored without a Unity compile or play-test (remote session, no editor, no `unity` CLI binary in
+this environment). **Not applied to any prefab** — this branch ships the component, an edit-mode
+suite, and a standalone test scene only. `ProjectSettings` is untouched:
+`androidRenderOutsideSafeArea: 1` was already enabled and stays enabled, which is the contract this
+component serves — background art bleeds under the notch while a separate content layer is pulled in.
+
+**What landed.**
+- `Assets/_Scripts/UI/SafeAreaFitter.cs` — drives its RectTransform's `anchorMin`/`anchorMax` from
+  `Screen.safeArea`, recomputing only when the safe area, resolution, or orientation changes
+  (cached; the steady-state per-frame cost is one `Screen.safeArea` read plus a `Rect`/int compare).
+  A full-screen safe area (desktop) is a true no-op — nothing is written, and if insets *had* been
+  applied earlier (a device rotating a cutout off-axis) the authored anchors are restored. Only
+  anchors are written; authored `offsetMin`/`offsetMax` are preserved, so padding survives.
+  A rect that is point-anchored on both axes gets one `CSDebug.LogWarning` at enable, since driving
+  its anchors would slide it rather than resize it.
+- `Assets/_Scripts/Tests/Editor/SafeAreaFitterTests.cs` — the pure halves
+  (`IsFullScreenSafeArea`, `ComputeAnchors`) against real iPhone-class landscape/portrait safe
+  areas, an Android single-edge cutout mirrored across landscape-left/landscape-right, sub-pixel
+  rounding, out-of-range clamping, and a degenerate mid-rotation screen.
+- `Assets/_Scenes/Game_TestDesign/SafeAreaFitterTestScene.unity` (+ `SafeAreaTestReadout.cs`
+  beside it) — hand-authored scene YAML: a magenta full-bleed background under a translucent
+  content layer carrying the fitter and four corner markers, plus an IMGUI readout of the live
+  safe area / resolution / orientation / applied anchors. The content layer is authored with the
+  24 px minimum edge inset from `Docs/STYLE_FOUNDATION.md` §8 (`sizeDelta -48,-48`), which the
+  fitter preserves — so the scene demonstrates the full §8 contract, inset included, and the inset
+  still reads on desktop where the fit itself is a no-op. Not in Build Settings; open it by hand.
+
+**Verified out of editor** (what was actually run here, so nobody re-does it): all three sources
+compile under Roslyn against a faithful `UnityEngine` stub, and the shipped NUnit suite was executed
+for real — 8/8 pass. The scene YAML parses and has zero dangling local `fileID` references.
+
+**Verify in editor**
+1. **Compile clean**, then Test Runner ▸ EditMode → `SafeAreaFitterTests` 8/8 green.
+2. Open `SafeAreaFitterTestScene`, press Play on a normal Game view → readout says
+   `full screen True`, `insets none`, and the content-layer anchors are still `0,0 – 1,1`
+   (the desktop no-op: the teal layer sits at its authored 24 px inset and is otherwise unmoved).
+3. Window ▸ General ▸ **Device Simulator**, pick a device with a cutout (e.g. iPhone X/14 Pro),
+   press Play → the magenta background still fills the whole panel *including under the notch*,
+   the teal content layer and its four corner markers pull in to the safe rect, and the readout's
+   anchors match `safeArea / resolution`.
+4. Rotate the simulated device **landscape-left ↔ landscape-right** while in Play → the content
+   layer re-fits on the same frame and the cutout inset moves to the other edge. This is the only
+   rotation the game allows (`allowedAutorotateToPortrait: 0`), and the resolution is IDENTICAL
+   across it, so it is the case a width/height-only change check would sleep through.
+5. Resize the Game view / toggle fullscreen with no simulator → nothing moves and nothing is
+   logged (the change check runs, the apply does not).
+6. Per §8's test aspects, repeat step 3 at **16:9 · 16:10 · 21:9** → the content layer stays inside
+   the safe rect at each, and the background still fills the panel.
+   *(Style Foundation v0.3 moved safe area §9 → §8 and changed this list; it read
+   16:9 · 20:9 · 4:3 under v0.2, which is what the scene was originally authored against.
+   Running the two retired aspects as well costs nothing and is worth doing once.)*
+
+**Not done on purpose:** no prefab or shipping canvas has the component attached yet. Wiring it
+(most likely onto the content layer under `GameCanvas.prefab`, applied to the prefab rather than
+per-scene — see `Docs/GAMECANVAS.md`) is a separate pass.
+
+---
+
 ### 🔴 Flora — TIME breeds faster, the second elemental law (`claude/flora-reproduction-balance-y9gaij`, 2026-08-24)
 
 Authored without a Unity compile or play-test (remote session, no editor, no `unity` CLI binary in
@@ -2636,3 +2696,42 @@ error**, so check this before concluding the sight is broken.
 (`TeamCrystal.prefab` has no NetworkObject, matching the previous hold-to-plant scope), and the
 sight ignores Space L5 "Clean Blast" friendly fire — it highlights everything geometrically inside
 the volume.
+
+---
+
+## Timed shield pop sheds isotropically (`claude/prism-shield-explosion-vector-3s36o0`)
+
+**Not verified in-editor.** No Unity Editor and no `unity` CLI were reachable in the session that
+wrote this (the container carries no editor and no C# compiler), so the change below has NOT been
+compiled or play-tested. It is one method plus one helper in
+`PrismStateManager` (`ExecuteTimerDeactivation` / `TimedPopBreakVelocity`).
+
+What changed: the end of a TEMPORARY shield — `ActivateShield(duration)` and
+`DeactivateShields(delay)`, the one shield teardown with no breaking force behind it, and the path
+every own-domain explosion takes when it shields a prism rather than clipping through it — now
+hands the shatter a random direction on the unit sphere at **half the magnitude of the impact
+vector that caused the shield** (carried from both explosion call sites, with the blast's own
+`DebrisSpeedLimit` so the halving survives the clamp), instead of a zero vector (which
+`GeometryUtils.ClampMagnitude` resolves to `Vector3.up * minSpeed`). A shield with no blow behind
+it — an ability, a skim, a spawner — still pops at the debris band's authored `minSpeed`.
+
+The shed itself is unchanged and already on the clock path: ONE batched clock-stamped debris entity
+per disengage (`PrismShieldMorph.RequestShatter` → `PrismShieldShatter` → `PrismRenderService`),
+zero per-frame CPU, and `PrismTimerManager`'s single scheduled swap for the timer.
+
+1. **Compile clean.**
+2. Fire an AOE blast into your OWN domain's mass (Rampage/Bends Dolphin cone, or any explosion with
+   `shielding` on). The prisms shield rather than taking damage, and ~2 s later each pops: its
+   shards should fly off in **its own random direction**, not straight up in lockstep with every
+   other prism in the blast.
+3. Two blasts over the same mass → the second pop's direction differs from the first's (the vector
+   is drawn per pop, not per prism).
+4. A weak blast vs. a strong one: the pop should read HALF as hard as the blast that caused it, so
+   a Dolphin cone at full charge should throw its shed armour visibly further than a small blast
+   does. (A blast with no `DebrisSpeedLimit` of its own still saturates at the prefab clamp — that
+   is the pre-existing legacy band, not this change.)
+5. A shield with no blow behind it (skim overcharge, `SeedAssembler`, a spawner) still pops with the
+   quiet minimum puff, now in a random direction.
+6. A shield broken by a real force (Rhino sword, `Prism.Damage` shedding a shield) is unchanged —
+   it still throws along the breaking vector, not a random one.
+7. Prism count is unchanged by the pop (this is photons only: no mass is created or destroyed).
