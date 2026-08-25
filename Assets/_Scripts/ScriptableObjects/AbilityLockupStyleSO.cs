@@ -39,9 +39,16 @@ namespace CosmicShore.ScriptableObjects
                  "card a totem, and it is why no authored rect has to change to adopt the style.")]
         [Min(1f)] public float petalCellHeight = 62f;
 
-        [Tooltip("Size of the element flower inside the upper cell. Keep it BELOW the vessel's icon " +
-                 "size (80 on the shipped rows): the ability is the headline, the element qualifies it.")]
-        [Min(1f)] public float petalFlowerSize = 50f;
+        [Tooltip("Size of the element flower inside the upper cell. Keep it BELOW the ability icon's " +
+                 "drawn size: the ability is the headline, the element qualifies it.")]
+        [Min(1f)] public float petalFlowerSize = 44f;
+
+        [Tooltip("Scale applied to the vessel's ability icon inside the card - the lockup's KERNING. " +
+                 "A shipped icon is 80 square in a 104 cell whose corner sliver already eats 12, so at " +
+                 "1.0 its corners run into the sliver and the card reads packed. 0.75 draws it at 60, " +
+                 "leaving an even 22 of negative space on every side. It multiplies the upgrade bump " +
+                 "rather than replacing it, so an upgraded icon rests at scale x 1.15 as before.")]
+        [Range(0.4f, 1f)] public float iconContentScale = 0.75f;
 
         [Tooltip("Horizontal inset of the divider from the plate edge.")]
         [Min(0f)] public float dividerInset = 8f;

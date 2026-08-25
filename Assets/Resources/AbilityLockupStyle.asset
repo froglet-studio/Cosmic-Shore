@@ -15,7 +15,8 @@ MonoBehaviour:
   plateWidth: 104
   abilityCellHeight: 104
   petalCellHeight: 62
-  petalFlowerSize: 50
+  petalFlowerSize: 44
+  iconContentScale: 0.75
   dividerInset: 8
   dividerThickness: 1
   bloomPadding: 26

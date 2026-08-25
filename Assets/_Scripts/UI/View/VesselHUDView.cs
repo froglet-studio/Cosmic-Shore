@@ -125,12 +125,29 @@ namespace CosmicShore.UI
         public bool HasAbilityIconRow => abilityIcons is { Count: > 0 };
 
         /// <summary>
-        /// The scale an ability icon should rest at right now - one, or the upgrade bump. Per-vessel
-        /// views that run their own scale tweens capture THIS as their icon's rest scale so the
-        /// persistent upgrade bump survives every tween they play.
+        /// The lockup's icon KERNING - how much of the ability cell the icon fills. 1 when this HUD
+        /// has no lockup, so an unstyled vessel is unaffected.
+        /// </summary>
+        protected float AbilityIconContentScale
+        {
+            get
+            {
+                var lockups = ResolveAbilityLockups();
+                return lockups ? lockups.IconContentScale : 1f;
+            }
+        }
+
+        /// <summary>
+        /// The scale an ability icon should rest at right now - the lockup's content scale, times
+        /// the upgrade bump when the upgrade is live. Per-vessel views that run their own scale
+        /// tweens capture THIS as their icon's rest scale, so both the kerning and the persistent
+        /// upgrade bump survive every tween they play.
+        ///
+        /// <para><b>For the ICON itself only.</b> Graphics NESTED inside an ability icon already
+        /// inherit its scale by being children; resting them here too multiplies the two.</para>
         /// </summary>
         protected Vector3 AbilityIconRestScale(Element element)
-            => Vector3.one * (IsAbilityUpgraded(element) ? upgradeHighlightScale : 1f);
+            => Vector3.one * (AbilityIconContentScale * (IsAbilityUpgraded(element) ? upgradeHighlightScale : 1f));
 
         public void Show()
         {
@@ -199,10 +216,11 @@ namespace CosmicShore.UI
                         binding.icon.color = upgradeHighlightColor;
 
                     // Rest at the highlight scale (survives views that repaint colors per-frame),
-                    // with a one-shot punch around it to telegraph the unlock.
-                    binding.icon.rectTransform.localScale = Vector3.one * upgradeHighlightScale;
+                    // with a one-shot punch around it to telegraph the unlock. Both go through
+                    // AbilityIconRestScale so the lockup's kerning is never re-derived here.
+                    binding.icon.rectTransform.localScale = AbilityIconRestScale(element);
                     _abilityIconTweens[element] = binding.icon.rectTransform
-                        .DOPunchScale(Vector3.one * (upgradePunchScale - upgradeHighlightScale),
+                        .DOPunchScale(Vector3.one * ((upgradePunchScale - upgradeHighlightScale) * AbilityIconContentScale),
                             upgradePunchDuration, 1, 0.5f)
                         .SetUpdate(true)
                         .SetLink(binding.icon.gameObject);
@@ -215,7 +233,7 @@ namespace CosmicShore.UI
                     if (tintIconOnUpgrade)
                         binding.icon.color = _abilityIconRestColors[element];
 
-                    binding.icon.rectTransform.localScale = Vector3.one;
+                    binding.icon.rectTransform.localScale = AbilityIconRestScale(element);
                 }
 
                 SetBadgeVisible(element, binding.icon, upgraded);

@@ -38,8 +38,15 @@ Two properties make it cheap to adopt:
 
 - **The flower is the SHIPPED radial one, unchanged** — same sprites, same 72° fan, same ladder
   colours, same pop-and-shake juice, driven by the same `ElementalBarsView`. Only its *home* moved.
-  It is drawn at **50px against the icon's 80px**: the ability is the headline, the element
+  It is drawn at **44px against the icon's 60px**: the ability is the headline, the element
   qualifies it.
+- **Both marks are KERNED, not packed.** The card's corner sliver already eats 12 of the 104 cell,
+  so the shipped 80px icon ran its corners into the sliver and the card read solid. `iconContentScale
+  0.75` draws it at **60**, leaving an even 22 of negative space on every side, and the flower came
+  down 50 → 44 with it so the hierarchy the row was approved with (icon clearly larger) is preserved
+  rather than quietly inverted. Same principle as optical kerning: equal *apparent* space, not equal
+  metrics — the flower is a sparse radial fan and reads lighter than a solid glyph at equal size,
+  which is why it keeps a tighter margin.
 - **No authored rect moves.** The card is inserted as a SIBLING behind the icon and its lower cell
   is centred on wherever that icon already sits; the upper cell is *added above*. A vessel adopts
   the style without one authored RectTransform changing.
@@ -81,7 +88,8 @@ so `enforceStandardPlacement` stays `1` fleet-wide and no other vessel is affect
 | `plateWidth` | 104 | card width; sits inside the shipped 150px ability cell |
 | `abilityCellHeight` | 104 | lower cell, centred on the existing icon |
 | `petalCellHeight` | 62 | upper cell, added ABOVE — this is what makes it a totem |
-| `petalFlowerSize` | 50 | element flower; keep BELOW the vessel's icon size (80) |
+| `petalFlowerSize` | 44 | element flower; keep BELOW the icon's DRAWN size (60) |
+| `iconContentScale` | 0.75 | the card's KERNING — draws an 80 icon at 60. Multiplies the upgrade bump rather than replacing it |
 | `dividerInset` / `dividerThickness` | 8 / 1 | the hairline between cells |
 | `bloomPadding` | 26 | how far the upgraded bloom reaches past the card |
 | `plateColor` / `hairlineColor` | `#060810` @0.86 / `#5C5F70` @0.9 | resting fill + outline |
@@ -99,18 +107,32 @@ plate/rim, 48 on bloom), so one asset set serves every vessel and every size.
 2. **Row.** Four cards in the lower right, charge → mass → space → time. Each shows a small element
    flower above the Dolphin's existing gauge (Echo Sight profile / crystal / jaws / boost ring).
    The gauges must still animate exactly as before — the icons were not moved or restyled.
-3. **Console.** No `[ElementalBarsView] Created N petal(s) … at RUNTIME` warning and no
+3. **Kerning.** Neither the icon nor the flower should touch the plate's corner sliver — even air
+   on every side, and the icon still visibly larger than the flower. Retune with `iconContentScale`
+   / `petalFlowerSize`; nothing here needs a recompile.
+4. **Console.** No `[ElementalBarsView] Created N petal(s) … at RUNTIME` warning and no
    `Auto-creating the '…' flower container` warning: the sockets are supplied, so both paths are
    skipped. Also confirm **no second flower row** appears at the fleet-standard position.
-4. **Ladder.** Collect elemental crystals and watch a flower fill grey → white → blue → lime; take a
+5. **Ladder.** Collect elemental crystals and watch a flower fill grey → white → blue → lime; take a
    danger-prism hit and watch it flash and shake down through fire. Same juice as before.
-5. **Upgrade.** Drive an element to level 5 (crystals, or the comeback buff in a mode where you are
+6. **Upgrade.** Drive an element to level 5 (crystals, or the comeback buff in a mode where you are
    behind). That card's rim should cross to white and a soft bloom come up behind the plate over
    ~0.2s, with a small one-shot punch. Drop below 4 and it should travel back, not snap.
-6. **Chips.** LT/RT glyphs sit below the cards (Charge = RT, Time = LT on the Dolphin); Mass and
+7. **Chips.** LT/RT glyphs sit below the cards (Charge = RT, Time = LT on the Dolphin); Mass and
    Space are passive and correctly show none.
-7. **Vessel swap.** Swap to the Dolphin from another vessel in Menu_Main freestyle and confirm
+8. **Vessel swap.** Swap to the Dolphin from another vessel in Menu_Main freestyle and confirm
    exactly one set of cards (Build is idempotent; cards are adopted by name).
+
+## A latent bug this closed
+
+`blastProfile` and the jaw pair are **children** of the Charge and Space ability icons, so they
+already inherit the icon's scale — and `DolphinVesselHUDView` was *also* resting them at
+`AbilityIconRestScale`, squaring it. Invisible while rest was 1 (1×1), a quiet 1.15² = **1.32** when
+upgraded, and it would have become 0.75² = **0.56** the moment kerning arrived. Nested graphics now
+rest at `Vector3.one`; only the slot whose gauge IS the icon (Mass) re-anchors.
+
+**The rule:** `AbilityIconRestScale` is for the ICON's own transform. Anything nested inside an
+ability icon inherits it by being a child, and must not re-apply it.
 
 ## Follow-ups
 

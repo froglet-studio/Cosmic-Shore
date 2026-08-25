@@ -69,6 +69,26 @@ namespace CosmicShore.UI
         /// </summary>
         public ElementalBarsView ElementBars => elementBars;
 
+        /// <summary>
+        /// The card's icon kerning - how much of the ability cell the vessel's icon is allowed to
+        /// fill. Readable BEFORE <see cref="Build"/>, because per-vessel views ask for their rest
+        /// scales during Initialize and a HUD that starts inactive has not Awoken yet.
+        /// </summary>
+        public float IconContentScale
+        {
+            get
+            {
+                var s = ResolveStyle();
+                return s ? s.iconContentScale : 1f;
+            }
+        }
+
+        AbilityLockupStyleSO ResolveStyle()
+        {
+            if (!style) style = Resources.Load<AbilityLockupStyleSO>(styleResourcePath);
+            return style;
+        }
+
         void Awake() => Build();
 
         /// <summary>
@@ -79,8 +99,7 @@ namespace CosmicShore.UI
         {
             if (_built) return;
 
-            if (!style)
-                style = Resources.Load<AbilityLockupStyleSO>(styleResourcePath);
+            ResolveStyle();
             if (!style)
             {
                 Debug.LogError($"[AbilityLockupView] No AbilityLockupStyleSO assigned and none found at " +

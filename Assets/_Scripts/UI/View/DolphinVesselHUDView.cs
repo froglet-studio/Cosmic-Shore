@@ -191,7 +191,10 @@ namespace CosmicShore.UI
             ResolveProfileColors();
             if (blastProfile)
             {
-                _profileRestScale = AbilityIconRestScale(Element.Charge);
+                // The profile is a CHILD of the Charge ability icon, so it already inherits that
+                // icon's rest scale (the lockup's kerning and the upgrade bump alike). Resting it
+                // at the icon's scale as well would multiply the two.
+                _profileRestScale = Vector3.one;
                 blastProfile.rectTransform.localScale = _profileRestScale;
                 blastProfile.color = _profileRest;
             }
@@ -208,7 +211,8 @@ namespace CosmicShore.UI
             _lastSeedsTeam = false;
             ApplyCrystalTierColor(false, immediate: true);
 
-            if (jawUpper) _jawRestScale = AbilityIconRestScale(Element.Space);
+            // Same as the profile: the jaws are CHILDREN of the Space ability icon and inherit it.
+            if (jawUpper) _jawRestScale = Vector3.one;
             // Empty energy is the MIN gape, not a shut jaw - the blast is a short capsule at rest.
             SetJawAngleImmediate(minJawAngle);
 
@@ -243,20 +247,14 @@ namespace CosmicShore.UI
         {
             base.SetAbilityUpgraded(element, upgraded);
 
-            var rest = AbilityIconRestScale(element);
+            // Only the slot whose gauge IS the ability icon re-anchors. Charge (the profile) and
+            // Space (the jaws) draw into CHILDREN of their icons, so they inherit both the lockup's
+            // kerning and the upgrade bump from the parent and must stay at one - resting them at
+            // the icon's scale as well squares it (1.15 became 1.32; with kerning it would be 0.56).
             switch (element)
             {
-                case Element.Charge:
-                    _profileRestScale = rest;
-                    // The profile is driven by mesh regeneration, so nothing else re-scales it.
-                    if (blastProfile) blastProfile.rectTransform.localScale = rest;
-                    break;
                 case Element.Mass:
-                    _crystalIconRestScale = rest;
-                    break;
-                case Element.Space:
-                    _jawRestScale = rest;
-                    ApplyJawRestScale(); // the jaws are driven by rotation, so nothing else re-scales them
+                    _crystalIconRestScale = AbilityIconRestScale(element);
                     break;
                 // Time needs no re-anchor: nothing in this view writes the boost ring's scale, so
                 // the base class's bump is never contested.
