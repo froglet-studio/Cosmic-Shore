@@ -460,6 +460,9 @@ namespace CosmicShore.ECS
                         em.AddComponentData(prototype, new PrismExplodeStartTimeOverride { Value = 0f });
                         em.AddComponentData(prototype, new PrismExplodeSpeedOverride { Value = 0f });
                         em.AddComponentData(prototype, new PrismExplodeDurationOverride { Value = 0f });
+                        // Default 0 = the cube's derived face pivot, so a producer that
+                        // never sets it renders exactly as it did (§4.8.2).
+                        em.AddComponentData(prototype, new PrismFacePivotFromCentroidOverride { Value = 0f });
                         break;
                     case PrismRenderOverrideSet.Implosion:
                         em.AddComponentData(prototype, new PrismSuctionStartTimeOverride { Value = 0f });
@@ -1060,6 +1063,11 @@ namespace CosmicShore.ECS
             /// <see cref="ExpandBoundsForClockAnimation"/>).</summary>
             public float3 ObjectDisplacement;
             public float BoundsPadding;
+            /// <summary>0 = spin each face about the pivot RotateFacesAlongAxis derives for
+            /// the prism CUBE; 1 = spin it about the per-face centroid this MESH bakes into
+            /// TEXCOORD1. Leave at 0 for any mesh without that channel — see
+            /// Docs/PRISM_ANIMATION.md §4.8.2 and PrismFacePivotFromCentroidOverride.</summary>
+            public float FacePivotFromCentroid;
         }
 
         /// <summary>
@@ -1108,6 +1116,7 @@ namespace CosmicShore.ECS
                 em.SetComponentData(entity, new PrismExplodeSpeedOverride { Value = s.Speed });
                 em.SetComponentData(entity, new PrismExplodeDurationOverride { Value = s.Duration });
                 em.SetComponentData(entity, new PrismVelocityOverride { Value = s.Velocity });
+                em.SetComponentData(entity, new PrismFacePivotFromCentroidOverride { Value = s.FacePivotFromCentroid });
 
                 float3 half = s.ObjectDisplacement * 0.5f;
                 em.SetComponentData(entity, new RenderBounds

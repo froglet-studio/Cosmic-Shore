@@ -23,7 +23,7 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
-### 🔴 Skyburst — the missile grows 20× in the first fifth of its flight, on a subdivided mesh (`cece/gallant-noether-o4jugw`, 2026-08-24)
+### 🔴 Skyburst — the missile grows 20× in the first fifth of its flight, on a subdivided mesh (`cece/gallant-noether-o4jugw`, 2026-08-25)
 
 Authored without a Unity compile or play-test (remote session, no editor, no `unity` CLI binary in
 this environment). Touches `Projectile.cs`, `ElementalScaling.cs`, `FireGunActionSO.cs`,
@@ -119,6 +119,217 @@ its nose; `SparrowRoundGrowthTests.TheMissileIsBroadsideContainedByItsHitSphere`
 a retune crosses it. Mesh resolution is `subdivide_sparrow_missile.py --levels` (2 shipped);
 `--check` proves the shipped mesh's invariants without needing the original, which now lives only
 in git history.
+### 🔴 Debris face pivot reads the mesh's baked centroid (2026-08-25)
+
+`Docs/PRISM_ANIMATION.md` §4.8.2. `RotateFacesAlongAxis` was spinning every face about a
+pivot derived for the prism CUBE's four-wedge faces; on a shield shard (one triangle per
+face) that lands off centre on the octahedron and **outside the triangle on all 24
+stellation faces**. The graphs now lerp the pivot onto the per-face centroid the shield
+generators already bake into TEXCOORD1, under a new Hybrid-Per-Instance float
+`_FacePivotFromCentroid` (0 = legacy derived pivot, 1 = mesh centroid).
+
+**Authored out-of-editor — no Unity available in the authoring session** (no editor, no
+`unity` CLI), so `/verify-unity` did not run. What DID run, and what each pass is worth:
+
+| pass | proves |
+|---|---|
+| Roslyn, no stubs, all 19 changed `.cs` | syntax + declaration shape only. **Blind to method bodies** once a base class is unresolved — confirmed by injecting a `CS0103` into this branch's own test file and watching it go unreported (`asset-surgery` §4, corrected 2026-08-24) |
+| Roslyn + a stub harness, **executing** `PrismFacePivotTests` against the real mesh generators and the real shipped graph files | **7/7 pass.** Body-level compile errors and the assertions themselves. Gate proven to fail on three injected defects: an undeclared identifier in a body, the stella geometry claim inverted, and the producer constant flipped |
+| `Tools/Shaders/wire_prism_face_pivot.py --check` | graph topology: registries resolve, one feeder per input, acyclic, property-node slot types |
+| `Tools/Shaders/verify_prism_face_pivot.py` | the SHIPPED subgraph's arithmetic, evaluated as a dataflow graph |
+| `Tools/Build/check_conditional_compilation.py` | the `#if` guard rules |
+
+**Still unproven offline, and the reason the steps below exist:** that Unity IMPORTS both
+graphs without rejecting them (a rejected graph is magenta, and no offline pass can see it),
+and how any of it looks in motion.
+
+**Import first.** Two shader graphs were edited out-of-editor
+(`ExplodingBlockGraph.shadergraph` + `PrismGraphs/Subgraphs/RotateFacesAlongAxis.shadersubgraph`).
+They need a Unity import pass to regenerate their shaders. If anything looks wrong, first
+check for magenta (a rejected graph) and re-import both.
+
+1. **Compile clean**, then run the edit-mode suite → `PrismFacePivotTests` all green. Its
+   `TheRotateNodeSlotIds_MatchWhatUnityWillRecompute` is the important one: it asserts the
+   offline `Guid.GetHashCode()` derivation the wiring rests on against the real runtime.
+2. FrogletTools > Ecology > Prism Animation > **Validate Clock Wiring** →
+   `_FacePivotFromCentroid` reported ✅ (Hybrid Per Instance) on ExplodingBlockGraph.
+3. **Nothing is magenta.** Any prism material rendering magenta means a graph was rejected on
+   import — `git checkout` both graph files and re-run the wirer.
+4. **A dying PRISM looks exactly as it did.** This is the no-regression check and it should be
+   indistinguishable; the change is bit-identical at weight 0. Blow up a trail with the
+   Dolphin's crystal blast and compare against `bleeding-edge` if in any doubt.
+5. **Drop a SHIELD** (shoot shielded mass until the shield sheds, or a shield timer expires) →
+   the octahedron's eight triangles tumble about their own centres instead of being flung on a
+   lever. Then a **SUPER-shielded** prism (Skim Race track, or the Rhino's energy sword, which
+   breaks the tier) → the stella's 24 spike faces should read the same way; that tier is where
+   the defect was worst.
+6. **Both at once** — a blast that kills plain and shielded mass in one volume → shards of both
+   kinds fly in the same batch, same speed, same erosion wipe. A visible difference in anything
+   OTHER than the spin centre means something beyond this change moved.
+
+**Known limitation, deliberate.** The weight is per debris entity, not per mesh: a future
+generated mesh that bakes TEXCOORD1 centroids must pass `FacePivotFromCentroid = 1` at its own
+spawn site. `PrismFacePivotTests.TheTwoDebrisProducers_DeclareTheirOwnFaceLayout` gates the two
+that exist today.
+
+---
+
+### 🔴 Sparrow — the strafing roll's arm is a 0.3 s WINDOW, not the whole boost hold (`claude/sparrow-spin-cooldown-p8agtv`, 2026-08-25)
+
+Authored without a Unity compile or play-test (remote session, no editor, no `unity` CLI binary in
+this environment). Touches `BarrelRollController.cs`, `SparrowHUDController.cs`,
+`SparrowHUDView.cs`, the new `Data/Enums/RollChargeState.cs`, `Sparrow.prefab` (one added
+serialized field), plus `SPARROW_AFTERBURNER.md` and `FLEET_MAPS.md`.
+
+**What landed.** A boost press arms the strafing roll for `rollArmWindowSeconds` (**0.3 s**) instead
+of for the whole press. Reach full stick deflection inside the window and you roll; let it lapse and
+the charge is spent unfired — the boost keeps running, another roll needs another press. The reported
+bug is the direct consequence of the boost being indefinite: `IsBoosting` stays true for the whole
+hold, so an arm that lived for the press fired on the first later moment the stick touched the
+perimeter — an ordinary hard turn — and the vessel spun for no reason the pilot could name.
+
+Unchanged by design: a stick already pinned at max when boost starts still rolls immediately;
+holding at the perimeter still never repeats; the roll still works identically in the turret stance;
+the AI is still inert (no stick input). `rollArmWindowSeconds = 0` restores the old
+armed-for-the-whole-press behaviour.
+
+The charge now carries **why** it changed (`CosmicShore.Data.RollChargeState`: `Spent` / `Armed` /
+`Lapsed`) because every boost press now ends in a charge change. The pip empties for both `Spent`
+and `Lapsed`; only `Spent` gets the consume punch, so the HUD can't announce a roll the pilot never
+got. The enum is in the `CosmicShore.Data` leaf assembly (read by UI, written by gameplay);
+`SparrowHUDView` already imported that namespace and `Assembly-CSharp` auto-references the asmdef,
+so no wiring changed.
+
+**Verified offline** (more than inspection): .NET 8 installed in-session, and all four **real
+shipped files** (`RollChargeState.cs`, `BarrelRollController.cs`, `SparrowHUDController.cs`,
+`SparrowHUDView.cs`, plus the real `InputEvents.cs`) **type-check clean under Roslyn** at
+`-langversion:9.0` against a transcribed stub harness — 0 errors, 0 warnings; every error the
+harness ever surfaced was a stub gap (`Mathf.Clamp`, `Vector3.one`, `InputEvents`), which is what a
+working harness looks like. It caught one real defect before it shipped: `SparrowHUDView.cs` has no
+`using CosmicShore.Gameplay`, so the enum's first home would not have compiled — which is what moved
+it to `CosmicShore.Data`. Blast radius grepped: `OnRollChargeChanged` / `SetRollCharge` have exactly
+one subscriber and one caller each (`SparrowHUDController`), no scene overrides any
+`BarrelRollController` field, and no name in the new `using CosmicShore.Data` collides with anything
+`SparrowHUDController` references.
+
+**Verify in editor**
+1. **Compile clean.** Confirm `Sparrow.prefab` shows **Roll Arm Window Seconds = 0.3** on
+   `BarrelRollController` (the field was added to the prefab YAML as well as the C# initializer —
+   check it did not import as 0, which would restore the old behaviour silently).
+2. **The bug is gone.** Fly the Sparrow, hold boost through a long hard turn with the stick pinned
+   at the perimeter — it should **not** roll. This is the whole point of the change.
+3. **The move still works.** Tap boost and slam the stick to full deflection in the same beat — it
+   should roll exactly as before (same 0.6 s, same strafe distance, same direction mapping).
+4. **Stick already pinned.** With the stick at max, press boost — should roll immediately.
+5. **Turret stance.** Stop (`ToggleStationaryModeAction`), then press-and-slam — the dodge should
+   still strafe.
+6. **The pip.** On every boost press the boost icon's ring fills, then wipes empty ~0.3 s later
+   with **no scale punch**; a press that actually rolls wipes empty **with** the punch. If the
+   fill/wipe on every press reads as busy at speed, that is the tuning to report — the honest
+   alternatives are a shorter `rollChargeTweenDuration` (0.15 s today) or leaving the ring full
+   while boosting, which would be a lie about availability.
+
+**First-pass tuning (NOT settled).** `rollArmWindowSeconds = 0.3` is the number asked for. If a
+deliberate press-then-slam misses on a gamepad it is too tight (try 0.4–0.5); if accidental spins
+survive it is too loose. Serialized per-vessel, so it is one inspector field either way.
+
+**Second commit on this branch — the root roll now reads.** The vessel's small REAL roll
+(`rootRollDegrees`, 15°: the up vector rotated about its own forward, the two-stick `YDiff` roll,
+signed to match the animation) was landing and reading **backwards**. The bank-into-turn is the same
+rotation about the same axis so they add, and the roll triggers on a FULL stick deflection — peak
+bank: `35 × 0.1 + 30 = 33.5 °/s` at cruise (**20.1°** over the roll) and `41.0 °/s` boosting
+(**24.6°**), against the roll's 15° the other way. Since the camera reads the ROOT's up, that is the
+horizon tilt the pilot feels, and it tilted the wrong way.
+
+Fixed by a handover rather than a bigger number: `VesselTransformer.BankIntoTurnSuppressed` (new,
+default false, cleared by `ResetTransformer`, set/cleared by the roll routine and `OnDisable`)
+suspends the bank for the roll's 0.6 s, so 15° is the whole roll the vessel gets at any speed. Pitch
+and yaw untouched. Honoured in **all three** `Roll()` bodies — base, `SingleStickVesselTransformer`,
+`ScarabVesselTransformer` — because the overrides do not call base and a base-only gate would reach
+neither the Sparrow nor the Serpent (`TurnScalar`'s recorded trap). `GunVesselTransformer` inherits
+the base body. The roll is also advanced by the delta of the animation's own smoothstep, so the tilt
+eases in and out with the spin and the authored degrees land exactly.
+
+**Verify in editor (root roll)**
+1. **Direction.** Boost + slam the stick right, then left. The horizon should tilt the **same way
+   the model spins**, both times. If it tilts against the spin, flip `invertRollDirection` — that
+   one toggle now moves the animation and the root roll together, since both read `rollSign`.
+2. **Magnitude.** 15° is deliberately slight; the vessel should end the roll a touch off level and
+   **stay there** (there is no auto-level, and a two-stick `YDiff` application is permanent too).
+   `rootRollDegrees` is the knob, `Range(0, 45)` now.
+3. **The turn is unaffected.** Mid-roll the vessel must still pitch and yaw at full rate — only the
+   cosmetic bank stands down. If the ship feels like it stops turning, that is a bug, not tuning.
+4. **The bank comes back.** Hold the stick through the end of the roll: the bank-into-turn should
+   resume normally the frame the roll ends.
+5. **Nothing else banks differently.** Scarab and Serpent share the touched `Roll()` bodies but
+   nothing sets the flag on them — confirm their banking is unchanged.
+6. **Interrupt safety.** Trigger a roll and immediately swap vessels / disable the ship; the next
+   vessel must bank normally (the flag is cleared in `OnDisable` and `ResetTransformer`).
+7. **Console is quiet.** The per-roll `[BarrelRoll] Triggered:` line moved onto the new
+   `CSLogChannel.SparrowStrafingRoll` (off by default) — it was logging unconditionally on every
+   input for a finished ability, the same spam `ScarabDash` records for the sibling. Turn it on in
+   **FrogletTools > Toolbox > Logging** while verifying steps 1-5; it prints direction, the stick
+   vector and the nudge, which is the cheapest way to confirm the 0.3 s window is gating.
+
+---
+
+### 🔴 UI — `SafeAreaFitter` component + test scene (`claude/safe-area-fitter-component-wrmdva`, 2026-08-24)
+
+Authored without a Unity compile or play-test (remote session, no editor, no `unity` CLI binary in
+this environment). **Not applied to any prefab** — this branch ships the component, an edit-mode
+suite, and a standalone test scene only. `ProjectSettings` is untouched:
+`androidRenderOutsideSafeArea: 1` was already enabled and stays enabled, which is the contract this
+component serves — background art bleeds under the notch while a separate content layer is pulled in.
+
+**What landed.**
+- `Assets/_Scripts/UI/SafeAreaFitter.cs` — drives its RectTransform's `anchorMin`/`anchorMax` from
+  `Screen.safeArea`, recomputing only when the safe area, resolution, or orientation changes
+  (cached; the steady-state per-frame cost is one `Screen.safeArea` read plus a `Rect`/int compare).
+  A full-screen safe area (desktop) is a true no-op — nothing is written, and if insets *had* been
+  applied earlier (a device rotating a cutout off-axis) the authored anchors are restored. Only
+  anchors are written; authored `offsetMin`/`offsetMax` are preserved, so padding survives.
+  A rect that is point-anchored on both axes gets one `CSDebug.LogWarning` at enable, since driving
+  its anchors would slide it rather than resize it.
+- `Assets/_Scripts/Tests/Editor/SafeAreaFitterTests.cs` — the pure halves
+  (`IsFullScreenSafeArea`, `ComputeAnchors`) against real iPhone-class landscape/portrait safe
+  areas, an Android single-edge cutout mirrored across landscape-left/landscape-right, sub-pixel
+  rounding, out-of-range clamping, and a degenerate mid-rotation screen.
+- `Assets/_Scenes/Game_TestDesign/SafeAreaFitterTestScene.unity` (+ `SafeAreaTestReadout.cs`
+  beside it) — hand-authored scene YAML: a magenta full-bleed background under a translucent
+  content layer carrying the fitter and four corner markers, plus an IMGUI readout of the live
+  safe area / resolution / orientation / applied anchors. The content layer is authored with the
+  24 px minimum edge inset from `Docs/STYLE_FOUNDATION.md` §8 (`sizeDelta -48,-48`), which the
+  fitter preserves — so the scene demonstrates the full §8 contract, inset included, and the inset
+  still reads on desktop where the fit itself is a no-op. Not in Build Settings; open it by hand.
+
+**Verified out of editor** (what was actually run here, so nobody re-does it): all three sources
+compile under Roslyn against a faithful `UnityEngine` stub, and the shipped NUnit suite was executed
+for real — 8/8 pass. The scene YAML parses and has zero dangling local `fileID` references.
+
+**Verify in editor**
+1. **Compile clean**, then Test Runner ▸ EditMode → `SafeAreaFitterTests` 8/8 green.
+2. Open `SafeAreaFitterTestScene`, press Play on a normal Game view → readout says
+   `full screen True`, `insets none`, and the content-layer anchors are still `0,0 – 1,1`
+   (the desktop no-op: the teal layer sits at its authored 24 px inset and is otherwise unmoved).
+3. Window ▸ General ▸ **Device Simulator**, pick a device with a cutout (e.g. iPhone X/14 Pro),
+   press Play → the magenta background still fills the whole panel *including under the notch*,
+   the teal content layer and its four corner markers pull in to the safe rect, and the readout's
+   anchors match `safeArea / resolution`.
+4. Rotate the simulated device **landscape-left ↔ landscape-right** while in Play → the content
+   layer re-fits on the same frame and the cutout inset moves to the other edge. This is the only
+   rotation the game allows (`allowedAutorotateToPortrait: 0`), and the resolution is IDENTICAL
+   across it, so it is the case a width/height-only change check would sleep through.
+5. Resize the Game view / toggle fullscreen with no simulator → nothing moves and nothing is
+   logged (the change check runs, the apply does not).
+6. Per §8's test aspects, repeat step 3 at **16:9 · 16:10 · 21:9** → the content layer stays inside
+   the safe rect at each, and the background still fills the panel.
+   *(Style Foundation v0.3 moved safe area §9 → §8 and changed this list; it read
+   16:9 · 20:9 · 4:3 under v0.2, which is what the scene was originally authored against.
+   Running the two retired aspects as well costs nothing and is worth doing once.)*
+
+**Not done on purpose:** no prefab or shipping canvas has the component attached yet. Wiring it
+(most likely onto the content layer under `GameCanvas.prefab`, applied to the prefab rather than
+per-scene — see `Docs/GAMECANVAS.md`) is a separate pass.
 
 ---
 
@@ -2735,3 +2946,42 @@ error**, so check this before concluding the sight is broken.
 (`TeamCrystal.prefab` has no NetworkObject, matching the previous hold-to-plant scope), and the
 sight ignores Space L5 "Clean Blast" friendly fire — it highlights everything geometrically inside
 the volume.
+
+---
+
+## Timed shield pop sheds isotropically (`claude/prism-shield-explosion-vector-3s36o0`)
+
+**Not verified in-editor.** No Unity Editor and no `unity` CLI were reachable in the session that
+wrote this (the container carries no editor and no C# compiler), so the change below has NOT been
+compiled or play-tested. It is one method plus one helper in
+`PrismStateManager` (`ExecuteTimerDeactivation` / `TimedPopBreakVelocity`).
+
+What changed: the end of a TEMPORARY shield — `ActivateShield(duration)` and
+`DeactivateShields(delay)`, the one shield teardown with no breaking force behind it, and the path
+every own-domain explosion takes when it shields a prism rather than clipping through it — now
+hands the shatter a random direction on the unit sphere at **half the magnitude of the impact
+vector that caused the shield** (carried from both explosion call sites, with the blast's own
+`DebrisSpeedLimit` so the halving survives the clamp), instead of a zero vector (which
+`GeometryUtils.ClampMagnitude` resolves to `Vector3.up * minSpeed`). A shield with no blow behind
+it — an ability, a skim, a spawner — still pops at the debris band's authored `minSpeed`.
+
+The shed itself is unchanged and already on the clock path: ONE batched clock-stamped debris entity
+per disengage (`PrismShieldMorph.RequestShatter` → `PrismShieldShatter` → `PrismRenderService`),
+zero per-frame CPU, and `PrismTimerManager`'s single scheduled swap for the timer.
+
+1. **Compile clean.**
+2. Fire an AOE blast into your OWN domain's mass (Rampage/Bends Dolphin cone, or any explosion with
+   `shielding` on). The prisms shield rather than taking damage, and ~2 s later each pops: its
+   shards should fly off in **its own random direction**, not straight up in lockstep with every
+   other prism in the blast.
+3. Two blasts over the same mass → the second pop's direction differs from the first's (the vector
+   is drawn per pop, not per prism).
+4. A weak blast vs. a strong one: the pop should read HALF as hard as the blast that caused it, so
+   a Dolphin cone at full charge should throw its shed armour visibly further than a small blast
+   does. (A blast with no `DebrisSpeedLimit` of its own still saturates at the prefab clamp — that
+   is the pre-existing legacy band, not this change.)
+5. A shield with no blow behind it (skim overcharge, `SeedAssembler`, a spawner) still pops with the
+   quiet minimum puff, now in a random direction.
+6. A shield broken by a real force (Rhino sword, `Prism.Damage` shedding a shield) is unchanged —
+   it still throws along the breaking vector, not a random one.
+7. Prism count is unchanged by the pop (this is photons only: no mass is created or destroyed).
