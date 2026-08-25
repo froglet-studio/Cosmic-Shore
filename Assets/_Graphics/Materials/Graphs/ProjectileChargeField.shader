@@ -16,10 +16,17 @@ Shader "Shader Graphs/ProjectileChargeField"
         [Header(The Arc)]
         _ArcCount ("Simultaneous Arcs", Range(1, 4)) = 1
         _ArcSpan ("Arc Length (radians)", Range(0.2, 6.283)) = 5
-        _ArcSharpness ("Arc Width", Range(0.005, 0.25)) = 0.038
+        // How far the circle's pole may lean toward the camera. 0 = the circle passes through
+        // the disc's centre (a straight slash); larger = an offset, more curved chord. It must
+        // stay well under pi/2 or the stroke retreats to the limb and the round reads as a plain
+        // disc — the failure this whole pass exists to fix.
+        _ArcTiltRange ("Arc Tilt Range (radians)", Range(0, 1.2)) = 0.55
+        // How far the stroke's centre may wander from the camera-facing point of the circle.
+        _ArcStartSpread ("Arc Centre Spread (radians)", Range(0, 3.14)) = 1.2
+        _ArcSharpness ("Arc Width", Range(0.005, 0.25)) = 0.075
         _ArcWander ("Bolt Wander Off Circle", Range(0, 0.5)) = 0.26
         _ArcWanderScale ("Bolt Wander Frequency", Range(0.2, 8)) = 2.6
-        _ArcIntensity ("Arc Intensity", Range(0, 4)) = 1.6
+        _ArcIntensity ("Arc Intensity", Range(0, 4)) = 2.4
         _TipGlow ("Striking Tip Glow", Range(0, 2)) = 0.9
         _CoreThreshold ("Danger Core Threshold", Range(0, 0.99)) = 0.7
 
@@ -54,19 +61,17 @@ Shader "Shader Graphs/ProjectileChargeField"
         // rounds on different great circles. Radians per world unit.
         _PhaseByRadius ("Phase Offset Per Radius", Float) = 0.43
         _PhaseSpeed ("Phase Speed", Float) = 2.6
-        // The gun fires BOTH muzzles in one tick, so a volley's pair shares a radius exactly
-        // and the two terms above cannot tell them apart. These separate them off the one
-        // thing that differs by construction — the muzzles are 6.4 units apart across the
-        // ship — and cost no extra flicker, because a round's lateral position is invariant
-        // along its own flight. Noise period 8 world units, so the pair samples ~0.8 of a
-        // period apart; the swing spans ~3 discharge cycles.
-        _PhaseByLateral ("Phase Offset Per Lateral", Float) = 0.43
-        _LateralNoiseScale ("Lateral Noise Scale", Float) = 0.125
-        // Radians of circle spin per unit of lateral read (which spans 0..2). This is the
-        // half that actually splits the pair onto different PLANES — the phase offset above
-        // only moves them to different points of the SAME cycle, and inside one cycle that
-        // is the same great circle.
-        _LateralPoleSpin ("Lateral Circle Spin", Float) = 4
+        // A round's identity is an explicit per-instance SEED (see the include). These say what
+        // the seed CHANGES: the circle's angle around the view axis, its tilt, the bolt's
+        // jaggedness, and where the round sits in its own discharge cycle.
+        _SeedSpin ("Seed -> Circle Angle", Float) = 6.283
+        _SeedTilt ("Seed -> Circle Tilt", Float) = 6.283
+        _SeedWobble ("Seed -> Bolt Shape", Float) = 40
+        _PhaseBySeed ("Seed -> Phase Offset", Float) = 1
+        // Written per SHOT by Projectile.StampChargeFieldSeed through a MaterialPropertyBlock,
+        // and read out of the GPU-instancing buffer. The material default only matters for a
+        // renderer nothing ever stamps, which would draw every round alike.
+        [PerRendererData] _RoundSeed ("Round Seed", Float) = 0
     }
 
     SubShader
@@ -98,6 +103,7 @@ Shader "Shader Graphs/ProjectileChargeField"
             #pragma vertex vert
             #pragma fragment frag
             #pragma multi_compile_fog
+            #pragma multi_compile_instancing
             #pragma target 3.0
 
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
@@ -112,6 +118,8 @@ Shader "Shader Graphs/ProjectileChargeField"
                 float4 _FresnelRimColor;
                 float  _ArcCount;
                 float  _ArcSpan;
+                float  _ArcTiltRange;
+                float  _ArcStartSpread;
                 float  _ArcSharpness;
                 float  _ArcWander;
                 float  _ArcWanderScale;
@@ -128,10 +136,19 @@ Shader "Shader Graphs/ProjectileChargeField"
                 float  _ChargeFloor;
                 float  _PhaseByRadius;
                 float  _PhaseSpeed;
-                float  _PhaseByLateral;
-                float  _LateralNoiseScale;
-                float  _LateralPoleSpin;
+                float  _SeedSpin;
+                float  _SeedTilt;
+                float  _SeedWobble;
+                float  _PhaseBySeed;
             CBUFFER_END
+
+            // The ONE per-instance value. Declared outside UnityPerMaterial on purpose: this
+            // material is GPU-instanced rather than SRP-batched, because ~54 identical spheres
+            // that must all look DIFFERENT need per-instance data more than they need one
+            // uniform buffer. Cost is one SetPropertyBlock per shot, never per frame.
+            UNITY_INSTANCING_BUFFER_START(PCFPerRound)
+                UNITY_DEFINE_INSTANCED_PROP(float, _RoundSeed)
+            UNITY_INSTANCING_BUFFER_END(PCFPerRound)
 
             #include "Assets/_Graphics/Materials/Graphs/ProjectileChargeField.hlsl"
 
@@ -139,6 +156,7 @@ Shader "Shader Graphs/ProjectileChargeField"
             {
                 float4 positionOS : POSITION;
                 float3 normalOS   : NORMAL;
+                UNITY_VERTEX_INPUT_INSTANCE_ID
             };
 
             struct Varyings
@@ -147,13 +165,17 @@ Shader "Shader Graphs/ProjectileChargeField"
                 float3 positionOS : TEXCOORD0;
                 float3 normalOS   : TEXCOORD1;
                 float3 viewDirOS  : TEXCOORD2;
-                float3 charge     : TEXCOORD3;   // phase (seconds), charge 0..1, lateral 0..2
+                float3 charge     : TEXCOORD3;   // phase (seconds), charge 0..1, round seed
+                float3 viewAxisOS : TEXCOORD5;   // object-space camera direction, per OBJECT
                 float  fogFactor  : TEXCOORD4;
+                UNITY_VERTEX_INPUT_INSTANCE_ID
             };
 
             Varyings vert(Attributes input)
             {
                 Varyings output;
+                UNITY_SETUP_INSTANCE_ID(input);
+                UNITY_TRANSFER_INSTANCE_ID(input, output);
                 output.positionCS = TransformObjectToHClip(input.positionOS.xyz);
                 output.positionOS = input.positionOS.xyz;
                 output.normalOS   = input.normalOS;
@@ -171,23 +193,28 @@ Shader "Shader Graphs/ProjectileChargeField"
                 // exactly the round's hit radius every frame — Projectile.SizeChargeField —
                 // so growth drives the visual for free. Mesh is Unity's built-in sphere.)
                 float4x4 m = GetObjectToWorldMatrix();
+                output.charge.z = UNITY_ACCESS_INSTANCED_PROP(PCFPerRound, _RoundSeed);
                 ProjectileChargeFieldPhase_float(
                     float3(m[0][0], m[1][0], m[2][0]),
-                    float3(m[0][1], m[1][1], m[2][1]),
-                    float3(m[0][3], m[1][3], m[2][3]),
+                    output.charge.z,
                     _Time.y,
-                    output.charge.x, output.charge.y, output.charge.z);
+                    output.charge.x, output.charge.y);
+
+                // Per-OBJECT view axis (camera -> the round's centre), NOT the per-fragment view
+                // direction: the circle's orientation has to be one answer for the whole shell.
+                output.viewAxisOS = cameraPosOS;
 
                 return output;
             }
 
             half4 frag(Varyings input) : SV_Target
             {
+                UNITY_SETUP_INSTANCE_ID(input);
                 float3 emissionColor;
                 float alpha;
                 ProjectileChargeField_float(
                     input.positionOS, input.normalOS, input.viewDirOS,
-                    input.charge.x, input.charge.y, input.charge.z,
+                    input.charge.x, input.charge.y, input.charge.z, input.viewAxisOS,
                     emissionColor, alpha);
 
                 emissionColor = MixFog(emissionColor, input.fogFactor);

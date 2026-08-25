@@ -48,6 +48,7 @@ import tempfile
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 HLSL_REL = "Assets/_Graphics/Materials/Graphs/ProjectileChargeField.hlsl"
 HLSL = os.path.join(ROOT, HLSL_REL)
+BASELINE_REV = "c3f2f856~1"   # the crackling-ball shell this pass replaced
 
 # ── The Sparrow's real stream, from SPARROW_SPRAY_ACCURACY.md and Sparrow.prefab ─────────────
 LAUNCH_HIT_RADIUS = 0.825        # dart collider radius x its largest lossy component
@@ -65,12 +66,12 @@ NEW_MAT = dict(
     _CrackleColorA=(1.4979111, 0.0058463, 0.0068495, 1.0),
     _CrackleColorB=(0.10, 0.35, 1.0, 1.0),
     _FresnelRimColor=(0.25, 0.55, 1.0, 1.0),
-    _ArcCount=1.0, _ArcSpan=5.0, _ArcSharpness=0.038, _ArcWander=0.26,
-    _ArcWanderScale=2.6, _ArcIntensity=1.6, _TipGlow=0.9, _CoreThreshold=0.7,
+    _ArcCount=1.0, _ArcSpan=5.0, _ArcSharpness=0.075, _ArcTiltRange=0.55, _ArcStartSpread=1.2, _ArcWander=0.26,
+    _ArcWanderScale=2.6, _ArcIntensity=2.4, _TipGlow=0.9, _CoreThreshold=0.7,
     _CrackleRate=3.5, _StrikeTime=0.25, _HoldTime=0.5, _FadeShape=1.0,
     _FresnelRimIntensity=0.05, _FresnelRimPower=3.5,
     _ChargeReferenceRadius=4.95, _ChargeFloor=0.4, _PhaseByRadius=0.43, _PhaseSpeed=2.6,
-    _PhaseByLateral=0.43, _LateralNoiseScale=0.125, _LateralPoleSpin=4.0,
+    _SeedSpin=6.283, _SeedTilt=6.283, _SeedWobble=40.0, _PhaseBySeed=1.0,
 )
 OLD_MAT = dict(
     _CrackleColorA=(1.4979111, 0.0058463, 0.0068495, 1.0),
@@ -105,7 +106,12 @@ struct float4 {
     float4(float a,float b,float c,float d):x(a),y(b),z(c),w(d){}
     float3 v3() const { return float3(x,y,z); }
 };
-typedef float3 half3; typedef float half;
+struct float2 {
+    float x=0,y=0;
+    float2(){}
+    float2(float a,float b):x(a),y(b){}
+};
+typedef float3 half3; typedef float half; typedef float2 half2;
 
 static inline float3 operator+(float3 a,float3 b){return float3(a.x+b.x,a.y+b.y,a.z+b.z);}
 static inline float3 operator-(float3 a,float3 b){return float3(a.x-b.x,a.y-b.y,a.z-b.z);}
@@ -154,21 +160,20 @@ static inline float ChargeFBM1D(float x, int octaves){ g_fbmCalls++; return Char
 # radius, which IS the defect being measured. These two wrappers are the entire difference, so the
 # driver below is identical for both.
 ADAPT_NEW = r"""
-static inline void PCF_Phase(float3 ax,float3 ay,float3 org,float t,float &ph,float &ch,float &lat)
-{ ProjectileChargeFieldPhase_float(ax,ay,org,t,ph,ch,lat); }
-static inline void PCF_Sample(float3 p,float3 n,float3 v,float ph,float ch,float lat,float3 &em,float &a)
-{ ProjectileChargeField_float(p,n,v,ph,ch,lat,em,a); }
+static inline void PCF_Phase(float3 ax,float3 ay,float3 org,float t,float seed,float &ph,float &ch)
+{ ProjectileChargeFieldPhase_float(ax, seed, t, ph, ch); }
+static inline void PCF_Sample(float3 p,float3 n,float3 v,float ph,float ch,float seed,float3 va,float3 &em,float &a)
+{ ProjectileChargeField_float(p,n,v,ph,ch,seed,va,em,a); }
 """
 ADAPT_OLD = r"""
 // The baseline's vertex shader, transcribed. What it IGNORES (AxisY, OriginWS) is the defect.
-static inline void PCF_Phase(float3 ax,float3 ay,float3 org,float t,float &ph,float &ch,float &lat)
+static inline void PCF_Phase(float3 ax,float3 ay,float3 org,float t,float seed,float &ph,float &ch)
 {
     float worldRadius = 0.5f * length(ax);
     ph  = t * _PhaseSpeed + worldRadius * _PhaseByRadius;
     ch  = saturate(worldRadius / max(_ChargeReferenceRadius, 1e-3f));
-    lat = 0.0f;
 }
-static inline void PCF_Sample(float3 p,float3 n,float3 v,float ph,float ch,float lat,float3 &em,float &a)
+static inline void PCF_Sample(float3 p,float3 n,float3 v,float ph,float ch,float seed,float3 va,float3 &em,float &a)
 { ProjectileChargeField_float(p,n,v,ph,ch,em,a); }
 """
 
@@ -199,14 +204,13 @@ int main()
     // front hemisphere — which is what `Cull Back` actually draws.
     const float3 camOS = float3(0.0f, 0.0f, 60.0f);
 
-    float t, rad, ox, oy, oz, rx, ry, rz, ux, uy, uz;
-    while (std::scanf("%f %f %f %f %f %f %f %f %f %f %f",
-                      &t,&rad,&ox,&oy,&oz,&rx,&ry,&rz,&ux,&uy,&uz) == 11) {
+    float t, rad, ox, oy, oz, rx, ry, rz, ux, uy, uz, seed;
+    while (std::scanf("%f %f %f %f %f %f %f %f %f %f %f %f",
+                      &t,&rad,&ox,&oy,&oz,&rx,&ry,&rz,&ux,&uy,&uz,&seed) == 12) {
         float dia = 2.0f * rad;
         float phase, charge;
-        float lateral;
         PCF_Phase(float3(rx,ry,rz) * dia, float3(ux,uy,uz) * dia,
-                  float3(ox,oy,oz), t, phase, charge, lateral);
+                  float3(ox,oy,oz), t, seed, phase, charge);
         int visible = 0; float peak = 0.0f;
         std::vector<int> lit;
         if (RENDER) {
@@ -217,7 +221,7 @@ int main()
                 if (dot(normalize(nrmOS), normalize(viewOS)) <= 0.0f) continue;   // Cull Back
                 float3 em; float alpha;
                 g_fragments++;
-                PCF_Sample(posOS, nrmOS, viewOS, phase, charge, lateral, em, alpha);
+                PCF_Sample(posOS, nrmOS, viewOS, phase, charge, seed, camOS, em, alpha);
                 visible++;
                 if (alpha > peak) peak = alpha;
                 if (alpha >= LIT) lit.push_back(i);
@@ -236,7 +240,10 @@ int main()
 # ── HLSL -> C++ ──────────────────────────────────────────────────────────────────────────────
 def translate(hlsl_src, mat):
     src = hlsl_src
-    src = re.sub(r"\bout\s+(float3|float|half3|half)\s+(\w+)", r"\1 &\2", src)
+    # Longest-first alternation: `float` would otherwise match the prefix of `float2` and then
+    # fail on the missing whitespace, silently leaving an `out` in the C++.
+    src = re.sub(r"\bout\s+(float4|float3|float2|float|half4|half3|half2|half)\s+(\w+)",
+                 r"\1 &\2", src)
     src = src.replace(".rgb", ".v3()").replace(".xyz", ".v3()")
     src = src.replace("float ChargeFBM1D(float x, int octaves)\n",
                       "float ChargeFBM1D_shipped(float x, int octaves)\n")
@@ -272,9 +279,9 @@ def build(tmp, tag, hlsl_src, mat, samples, render=True):
 def run(exe, poses):
     """-> (list of (visible, peak, phase, lit_index_set), fbm_calls, fragments)"""
     stdin = "".join(
-        "%.9f %.9f %.9f %.9f %.9f %.9f %.9f %.9f %.9f %.9f %.9f\n"
-        % (t, rad, o[0], o[1], o[2], r[0], r[1], r[2], u[0], u[1], u[2])
-        for (t, rad, o, r, u) in poses)
+        "%.9f %.9f %.9f %.9f %.9f %.9f %.9f %.9f %.9f %.9f %.9f %.9f\n"
+        % (t, rad, o[0], o[1], o[2], r[0], r[1], r[2], u[0], u[1], u[2], sd)
+        for (t, rad, o, r, u, sd) in poses)
     p = subprocess.run([exe], input=stdin, capture_output=True, text=True)
     if p.returncode != 0:
         raise SystemExit("shell executable failed: %s" % p.stderr[-2000:])
@@ -299,6 +306,16 @@ def _cross(a, b):
     return (a[1]*b[2]-a[2]*b[1], a[2]*b[0]-a[0]*b[2], a[0]*b[1]-a[1]*b[0])
 
 
+_SEED_STATE = [20260825]
+
+
+def round_seed():
+    """A per-SHOT random number, exactly what Projectile.StampChargeFieldSeed writes. Drawn from
+    a fixed sequence so the two revisions under test see the identical stream."""
+    _SEED_STATE[0] = (_SEED_STATE[0] * 1103515245 + 12345) & 0x7fffffff
+    return (_SEED_STATE[0] >> 8) / float(1 << 23)
+
+
 def round_pose(t, progress, growth, side=-1.0, roll=0.0,
                ship_pos=SHIP_POS, forward=SHIP_FORWARD):
     """One round in flight.
@@ -313,7 +330,7 @@ def round_pose(t, progress, growth, side=-1.0, roll=0.0,
     travel = MUZZLE_SPEED * FLIGHT_SECONDS * progress
     org = tuple(ship_pos[i] + F[i] * travel + ship_right[i] * MUZZLE_HALF_SPACING * side
                 for i in range(3))
-    return (t, LAUNCH_HIT_RADIUS * (1.0 + (growth - 1.0) * progress), org, R, U)
+    return (t, LAUNCH_HIT_RADIUS * (1.0 + (growth - 1.0) * progress), org, R, U, round_seed())
 
 
 def stream(t0, growth, count=ROUNDS_IN_FLIGHT, side=-1.0, roll=0.0):
@@ -371,13 +388,13 @@ def main():
     if not shutil.which("clang++"):
         raise SystemExit("clang++ not found")
     new_src = open(HLSL, encoding="utf-8").read()
-    old = subprocess.run(["git", "-C", ROOT, "show", "HEAD~1:%s" % HLSL_REL],
+    # Pinned to the revision BEFORE this pass began, not to HEAD~1 — once the pass has more than
+    # one commit, HEAD~1 is an intermediate of the very thing under test and the "before" column
+    # silently becomes a comparison against a half-finished design.
+    old = subprocess.run(["git", "-C", ROOT, "show", "%s:%s" % (BASELINE_REV, HLSL_REL)],
                          capture_output=True, text=True)
     if old.returncode != 0:
-        old = subprocess.run(["git", "-C", ROOT, "show", "HEAD:%s" % HLSL_REL],
-                             capture_output=True, text=True)
-    if old.returncode != 0:
-        raise SystemExit("could not read the baseline revision from git")
+        raise SystemExit("could not read baseline %s from git" % BASELINE_REV)
     old_src = old.stdout
 
     SAMPLES = 8000
@@ -418,9 +435,15 @@ def main():
         # what this harness is for: the old shell lit *few* pixels *everywhere* (15 thin filaments
         # from 3 seeds scattered over the whole sphere), so it read as a ball while measuring a
         # smaller lit fraction than one fat stroke would. What separates the two is SHAPE.
-        if mean_new > mean_old:
-            failures.append("a single round now lights MORE of the shell than before "
-                            "(%.2f%% vs %.2f%%)" % (mean_new * 100, mean_old * 100))
+        # Deliberately no "must not light more than before" guard. It was here as a cheap
+        # tone-down check and it was wrong twice over: raw lit AREA does not distinguish a
+        # coherent bolt from a scatter (that is what planarity is for), and holding area below
+        # the baseline is what drove the stroke down to 2 px, which — rendered at true pixel
+        # density — was invisible past ~40 units and left every round a plain identical disc.
+        if mean_new > mean_old * 2.5:
+            failures.append("a single round lights %.1fx more of the shell than the baseline "
+                            "(%.2f%% vs %.2f%%) — this is a tone-DOWN"
+                            % (mean_new / max(mean_old, 1e-6), mean_new * 100, mean_old * 100))
         if ang_new > 8.0:
             failures.append("the lit set is not a great-circle stroke (mean planarity %.1f deg)"
                             % ang_new)
@@ -457,19 +480,20 @@ def main():
             vis = nrows[0][0]
             fill = len(nu) / vis
             print("   %-34s %11.1f%% %11.1f%%" % (label, fill * 100, 100.0 * len(ou) / vis))
-            if label == "one round, its whole flight":
-                # The round must NOT assemble the sphere by itself — that is the job the
-                # player's eye is supposed to do across a burst.
-                if fill > 0.5 or fill > (len(ou) / vis) * 0.7:
-                    failures.append("one round paints %.0f%% of its own shell over its flight "
-                                    "(old %.0f%%) — it is still drawing the sphere itself"
-                                    % (fill * 100, 100.0 * len(ou) / vis))
+            # No guard on the whole-flight row any more. It was written when the circle was
+            # oriented in OBJECT space; the stroke is now anchored to the VIEW, so a round's
+            # successive discharges necessarily land on the face you are looking at and the row
+            # measures the discharge rate rather than the design. What matters is that at any
+            # INSTANT a round is one stroke, which test 1 measures.
             if label == "1.0 s of fire":
                 fill_at_1s = fill
             if label == "3.0 s of fire":
                 if fill < 0.70:
                     failures.append("a sustained burst only fills %.0f%% of the sphere" % (fill * 100))
-                if fill <= fill_at_1s:
+                # "still growing" only means anything below saturation; once every round in a
+                # burst is an independent stroke the union tops out inside the first quarter
+                # second, which is the goal rather than a stall.
+                if fill <= fill_at_1s and fill < 0.99:
                     failures.append("the union stops growing — strokes are stacking, not accumulating")
 
         # ── 3. The two muzzles do not draw the same stroke ───────────────────────────────
@@ -495,13 +519,15 @@ def main():
         # NEGATIVE CONTROL: the shipped shader with the circle spin switched off, i.e. the
         # lateral read feeding the phase offset ALONE. It is the intermediate that was built
         # first and rejected, and it is here so the reason stays measured rather than asserted.
-        no_spin = dict(NEW_MAT); no_spin["_LateralPoleSpin"] = 0.0
-        nospin_exe = build(tmp, "nospin", new_src, no_spin, SAMPLES)
+        no_seed = dict(NEW_MAT)
+        for k in ("_SeedSpin", "_SeedTilt", "_SeedWobble", "_PhaseBySeed"):
+            no_seed[k] = 0.0
+        nospin_exe = build(tmp, "nospin", new_src, no_seed, SAMPLES)
         print("   %-14s %14s %16s %26s"
               % ("", "median overlap", "same stroke (>50%)", "worst 10-deg roll bucket"))
         results = {}
         for exe, rt, tag in ((new_exe, NEW_MAT["_CrackleRate"], "shipped"),
-                             (nospin_exe, NEW_MAT["_CrackleRate"], "offset only"),
+                             (nospin_exe, NEW_MAT["_CrackleRate"], "no seed"),
                              (old_exe, OLD_MAT["_CrackleRate"], "baseline")):
             rows, _, _ = run(exe, pair_poses)
             overlaps, by_roll, deltas = [], {}, []
@@ -515,6 +541,10 @@ def main():
                 d = abs(rows[2 * j][2] - rows[2 * j + 1][2]) * rt
                 deltas.append(abs(d - round(d)))
             overlaps.sort()
+            if not overlaps:
+                print("   %-14s (nothing lit — cannot compare)" % tag)
+                results[tag] = (1.0, 1.0, 1.0, 0.0)
+                continue
             med = overlaps[len(overlaps) // 2]
             same = sum(1 for o in overlaps if o > 0.5) / len(overlaps)
             worst_ri, worst_med = max(
@@ -522,14 +552,11 @@ def main():
             results[tag] = (med, same, worst_med, sorted(deltas)[len(deltas) // 2])
             print("   %-14s %13.1f%% %15.1f%% %19d deg %6.1f%%"
                   % (tag, med * 100, same * 100, worst_ri * 10, worst_med * 100))
-        print("\n   Median |cycle difference| within a volley, folded to [0, 0.5]: shipped %.3f,"
-              % results["shipped"][3])
-        print("   offset only %.3f, baseline %.3f. Note the offset-only row moves the pair through"
-              % (results["offset only"][3], results["baseline"][3]))
-        print("   the cycle and STILL draws the same stroke %.0f%% of the time: two rounds a fifth"
-              % (results["offset only"][1] * 100))
-        print("   of a cycle apart share floor(cycle), so they are the SAME great circle at two")
-        print("   draw stages. Splitting the pair is the circle SPIN's job, not the offset's.")
+        print("\n   The 'no seed' row is this exact shader with the per-round seed's four")
+        print("   contributions zeroed — i.e. the state that shipped and was reported as still")
+        print("   reading identical. It is kept as a permanent negative control, because three")
+        print("   passes of geometry-derived identity all measured decorrelated and all still")
+        print("   looked the same.")
         med, same, worst_med, _ = results["shipped"]
         if med > 0.35:
             failures.append("a volley's two rounds overlap %.0f%% of the time (median)" % (med * 100))

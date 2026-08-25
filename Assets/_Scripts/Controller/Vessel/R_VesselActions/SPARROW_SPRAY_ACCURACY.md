@@ -363,151 +363,100 @@ honest instrument for the volume it deletes even when only one stroke is showing
 
 | | Round 4 | Round 5 |
 |---|---|---|
-| simultaneous discharge seeds | 3 | **1** |
-| filaments per discharge | 5, radiating from a point | **1**, lying along a great circle |
-| centre glow | yes (`_CenterFillAmount`) | **gone** |
-| expanding ring wavefront | yes (`_RingThickness`, `_RippleSpeed`, `_ArcReach`) | **gone** — the stroke draws itself instead |
-| fresnel rim | 0.18, the shell's loudest always-on term | **0.05** — a whisper, so a round is never *dark*, never a boundary |
-| envelope | strike, decay | strike, **hold**, snuff |
+| **planarity of the lit set** | 13.9° | **4.2°** |
+| lit at one instant (one round) | 3.72% | 6.24% |
+| a volley's two rounds, lit-set overlap | 100% | **1.3% median, 2.1% same stroke** |
+| the same shader with the seed disabled | — | **100% overlap** (negative control) |
+| union after 0.25 s of fire | 99.9% | **100%** |
+| FBM evaluations per fragment | 3.93 (worst case 15) | **0.93 (worst case 1)** |
 
-The bolt strikes outward from a random point on its circle **both ways at once** (so any span up
-to the full circle needs no wrap handling, and a round caught early in its cycle reads as a stroke
-rather than a dot), wanders off the exact circle on 1-D FBM so it is lightning that happens to be
-following one, and carries the danger-red hot core on its centreline and its two advancing tips.
-
-### The constraint nobody gets out of: radius is BOTH the identity and the progress
-
-The shell has no per-instance CPU write by design — that is what makes ~54 simultaneous rounds
-affordable — so its only per-round signal is its own world radius. And that one number is
-simultaneously *which round is this* and *how far along is it*. Consequently:
-
-- decorrelating **simultaneous rounds** (so the stream is not one synchronised flash) costs
-  per-round **flicker**, because a round sweeps the whole radius range over its flight;
-- and it costs it at a bad exchange rate — a round's radius moves at `(g−1)·r₀/T` = **5.5 u/s** at
-  resting Mass, while the radius *spread* across the whole stream is only **1.65 u**. Every unit of
-  spatial variety buys 3.3 units of flicker.
-
-The **time** term has no such penalty: it advances everyone equally, so it buys temporal variety
-1:1 — but it buys *no* spatial variety at all, and `_PhaseByRadius = 0` would strobe an entire
-volley in unison. So the shipped split leans on time for most of the variety and keeps just enough
-radius term to break the stream up:
-
-| | contributes | at a per-round flicker cost of |
-|---|---|---|
-| `_PhaseSpeed 2.6 × _CrackleRate 3.5` | **9.1 new circles per second** | 9.1 Hz |
-| `_PhaseByRadius 0.43 × _CrackleRate 3.5` | **2.5 circles across the live stream** | 8.3 Hz |
-
-→ **17.4 discharges/s per round (58 ms a stroke)** at resting Mass, **11.6 new great circles per
-second** across a burst. (A Mass 10 round runs faster on both counts — 29.8 Hz, 6.2 circles across
-the stream — because its radius range is 2.5× wider. It is also 2.5× bigger on screen, so more
-crackle suits it.)
-
-**Do not tune `_CrackleRate` alone.** It multiplies both terms, so it moves stroke lifetime and
-fill rate together and cannot separate them. The two `_Phase*` values are the real balance.
-
-### The envelope holds, and that is not cosmetic
-
-The first cut used the donor's strike-and-decay envelope and the stream read as *twinkling*: a
-round spent a third of every cycle below the eye's threshold, so at any instant a third of the
-rounds in the air were showing nothing but the rim whisper. The shipped envelope rises fast, **holds
-at full** until `_HoldTime`, then eases to zero — measured **86.3% of the time showing a stroke**,
-and it still reaches zero at **both** ends of the cycle, which is the property that lets the great
-circle be re-rolled at the boundary without the stroke visibly teleporting. A round's dimmest
-moment is peak alpha **0.025** — the rim — so it never pops out of existence.
-
-### Measured, by compiling and running the shipped HLSL
-
-`Tools/Shaders/verify_projectile_charge_field.py` translates the shipped `ProjectileChargeField.hlsl`
-to C++ (swizzle accessors, `out` → reference, one rename wrapping `ChargeFBM1D` in a call counter),
-compiles it with `clang++`, pulls the previous revision out of git, and runs both through the
-identical harness over 20,000 Fibonacci samples of the front hemisphere `Cull Back` actually draws.
-It is a CI-able gate, not a one-off (~5 min, no Unity):
-
-| | Round 4 | Round 5 |
-|---|---|---|
-| lit at one instant (one round) | 3.72% | **2.28%** |
-| **planarity of the lit set** | **13.9°** | **2.8°** |
-| one round paints, over its whole flight | 73.9% | **19.3%** |
-| one frozen frame of the fight (27 × 2 muzzles) | 69.4% | **17.9%** |
-| union after 0.25 s of fire | 99.9% | 26.3% |
-| union after 1.0 s of fire | 100% | 62.4% |
-| union after 3.0 s of fire | 100% | **90.5%** |
-| a volley's two rounds, lit-set overlap | 100% | **0.0% median** |
-| FBM evaluations per fragment | 3.93 (worst case 15) | **1.00 (worst case 1)** |
-
-**Planarity is the number that carries the claim, and finding that out is half of what the harness
-was for.** Raw lit *area* is nearly useless here: the old shell lit *few* pixels *everywhere* and
-so measured a **smaller** lit fraction than a single fat stroke would, while reading as a ball.
-What separates a stroke from a scatter is whether the lit set lies in one plane through the centre
-— 2.8° of RMS deviation is a curve on a great circle; 14.1° is sparks all over a sphere. The area
-number is kept only as a "did not go up" guard.
+**Planarity is the number that carries the claim.** Raw lit *area* is nearly useless here: the old
+shell lit *few* pixels *everywhere* and so measured a **smaller** lit fraction than a single fat
+stroke would, while reading as a ball. What separates a stroke from a scatter is whether the lit
+set lies in one plane through the centre — 4.2° of RMS deviation is a curve on a great circle;
+13.9° is sparks all over a sphere. The area number is now only bounded loosely: enforcing "must not
+exceed the baseline" is exactly what drove the stroke down to 2 px and made it invisible.
 
 > **General rule: when a visual is a claim about a DISTRIBUTION over many instances, the metric is
 > almost never the per-instance total. Measure the SHAPE of one instance and the UNION over many.**
 
-The union rows are the mechanic working: a frozen frame of a full-rate fight — every round in
-the air, both muzzles — shows **17.9%** of a sphere, and three seconds later the accumulation is
-at **90.5%** and still climbing. Nothing about a single frame looks like a ball; the burst does.
+The union saturates inside a quarter second now, which is the goal rather than a stall: once every
+round is an independent stroke, a burst covers the sphere almost immediately while any *single*
+round is still one 6% curve. That is the whole proposition — the shape is assembled by the stream,
+never by the fragment.
 
-### The two muzzles were drawing the same stroke
+### Why every round looked the same — and the three wrong answers
 
-Second playtest note on the same pass: *"the gun shoots a projectile out of two guns, so the
-randomness of the effect is spoiled by the simultaneity of two projectiles acting in phase with
-each other."*
+Second playtest note: *"the gun shoots a projectile out of two guns, so the randomness of the
+effect is spoiled by the simultaneity of two projectiles acting in phase with each other."* Then,
+after a fix: *"nope. they still read as identical."*
 
-Correct, and structural. `FullAutoActionExecutor` walks `muzzles[]` inside one tick, so a volley's
-two rounds get the **same** growth factor, the **same** flight progress and therefore the **same
-world radius — exactly**. Radius was the shell's entire per-round signal. The pair were clones:
-same great circle, same point in the cycle, flying side by side for their whole 0.3 s. Measured,
-their lit sets overlapped **100%**. Two synchronised strokes read as one deliberate shape, which
-is the exact opposite of a stochastic fill — and it halved the fill rate, because half the rounds
-in the air were contributing a duplicate.
+The twin muzzles were the visible symptom of a much larger problem, and the number that settles it
+is this:
 
-> **The pair is split by the one thing that differs about them by construction: the muzzles are
-> 6.4 units apart across the ship** (`Sparrow.prefab`, `LeftGun`/`RightGun` local x = ∓3.2).
+> **Consecutive volleys differ in world radius by 0.0183 units** — and radius was the shell's only
+> signal that changes along the stream.
 
-A round flies along its own forward and `SafeLookRotation` builds its frame with forward as +z, so
-its two **lateral** world coordinates are invariant along the flight while differing between the
-muzzles by that 6.4. `ProjectileChargeFieldPhase_float` reads them straight off the object-to-world
-matrix — still no CPU write, still one batch, still SRP-batcher compatible.
+At 90 volleys/s over a 0.3 s flight, turning that into half a discharge cycle needs
+`_PhaseByRadius × _CrackleRate ≈ 27`, which makes **one round discharge at ~159 Hz** — thirty
+bolts inside its own flight. The other two candidate signals are worse, not better: **time** is
+identical for every round alive at a given instant, and **lateral position** is identical for every
+round from one muzzle while the ship flies straight, which is most of the time it is firing. So to
+this shader, rounds fired 11 ms apart *were the same round* — the volley's pair merely made it
+obvious by putting two of them side by side.
 
-Three things about that read are load-bearing:
+Three passes tried to derive identity from the geometry, each measured decorrelated, each still
+read as identical:
 
-- **Two axes, not one.** The round's frame comes from a **world-up** `LookRotation`, so it does not
-  roll with the ship: at zero roll the muzzle separation lands entirely on the round's +x, at 90°
-  entirely on its +y. A single-axis read resynchronises the pair every quarter roll.
-- **Noise, not a linear term.** Any linear combination `a·latX + b·latY` has a null direction, so
-  there is always a roll angle at which the pair collapses back together. Two independent smooth
-  noises have none — and "the two muzzles get unrelated strokes" is the claim being made.
-- **It SPINS THE CIRCLE, and that — not the phase offset it also feeds — is what splits them.**
-  This one was measured the hard way. The first version fed the lateral read into the phase only,
-  which moves the pair to different points of the same cycle; but inside one cycle `floor(cycle)`
-  is unchanged, so they were still drawing the **same great circle** at two draw stages. The
-  harness keeps that intermediate as a permanent **negative control**:
+| attempt | what it measured | what it missed |
+|---|---|---|
+| radius alone | — | the pair share it exactly |
+| lateral read → phase offset | median 0.309 cycles apart | inside one cycle `floor(cycle)` is unchanged, so it is the **same great circle** at two draw stages |
+| lateral read → circle spin | 0.0% median lit-set overlap | the lateral read is *also* identical for every round from one muzzle |
 
-  | | median overlap | drawing the same stroke | worst 10° roll bucket |
-  |---|---|---|---|
-  | before (radius only) | 100% | 100% | 100% |
-  | lateral → phase offset only | 1.0% | **34.9%** | **72.8%** (at 70°) |
-  | **shipped** (offset **+ circle spin**) | **0.0%** | **2.2%** | **1.9%** |
+> **When a periodic effect is keyed on `floor(x)`, a sub-unit offset in `x` changes WHEN, never
+> WHICH.** And more importantly: **a metric can only decorrelate a difference the signal actually
+> carries.** All three passes were arithmetic on quantities that do not distinguish the objects.
 
-  Both rows have the same median cycle separation (0.309). The offset alone is simply not the
-  mechanism.
+### The answer: an explicit per-round seed
 
-> **General rule: when a periodic effect is keyed on `floor(x)`, a sub-unit offset in `x` changes
-> WHEN, never WHICH. If two instances must look different rather than merely out of step, the
-> decorrelating signal has to reach the thing that picks the identity.**
+`Projectile.StampChargeFieldSeed` writes one random float per **shot** into a
+`MaterialPropertyBlock` on the shell's renderer, and the shader reads it out of the GPU-instancing
+buffer. That seed picks the circle's angle and tilt, the bolt's jaggedness, and where the round
+sits in its own discharge cycle. Every round is now genuinely independent.
 
-The spin enters through `cos`/`sin` only, so it is perfectly continuous and wraps for free. A
-pilot drifting hard inherits lateral velocity into the shot (`inheritVel = Course × Speed`), which
-makes the plane **walk** slowly around the shell rather than pop — the same property the envelope
-relies on at cycle boundaries. A round flying straight has an exactly constant lateral read and
-therefore an exactly fixed plane. It costs **no extra discharge rate**, which the radius term
-cannot say.
+The cost is **one `SetPropertyBlock` per shot — never per frame**, which is the thing the shell was
+designed to avoid, and the material moves from **SRP-batched to GPU-instanced**. That is the right
+trade for ~54 identical spheres that must all look different: they still batch into one instanced
+draw, and now they can differ. The earlier "no per-instance write" claim was defending a batching
+strategy that had made the effect impossible.
 
-Fixing the pair also roughly **doubled the fill rate** — 40.1% → **62.4%** after one second of
-fire, 71.0% → **90.5%** after three — because half the rounds in the air stopped contributing a
-duplicate of the other half.
+### And the real reason it read as identical: most rounds were showing nothing
+
+The three failed passes share one root cause, and it was only found by **rendering the shader
+through a real perspective camera at true 1080p pixel density**
+(`Tools/Shaders/render_projectile_charge_field.py`):
+
+> `Cull Back` draws only the front hemisphere, so a great circle at a uniformly random pole spends
+> most of its length **behind** the round. Past ~40 units most rounds showed **no stroke at all**
+> and collapsed to a plain dark disc — and every plain dark disc looks exactly like every other
+> one.
+
+A round is **15–77 px** at combat range and the stroke was **2–6 px**. Holding lit area below the
+baseline (a well-intentioned tone-down guard in the verification harness) is what had driven it
+that thin. Two changes fix it:
+
+- **The circle is built around the VIEW AXIS**, not around object space: the pole is anchored near
+  the plane perpendicular to the view and the stroke's centre is biased toward the camera-facing
+  point, so a round always shows a slash across its visible face. `_ArcTiltRange` and
+  `_ArcStartSpread` are how far each may wander.
+- **The stroke is twice as wide and brighter** (`_ArcSharpness` 0.038 → 0.075, `_ArcIntensity`
+  1.6 → 2.4). A filament you cannot see is not an aesthetic.
+
+> **General rule, and this project already had it written down (`Docs/PALETTE.md` §4.3): judge a
+> candidate at the size it will be judged.** Three rounds of planarity, lit-set overlap and
+> per-round brightness measurements all passed while the effect was invisible on screen. The
+> renderer now exists so that never costs a fourth pass.
 
 ### Things that would take it straight back
 
@@ -519,10 +468,13 @@ duplicate of the other half.
   one.
 - **Dropping the hold out of the envelope** to get "snappier" strokes. That is where the twinkle
   came from.
-- **Reading only one lateral axis, or combining the two linearly.** Both resynchronise the volley's
-  pair at some roll angle; the harness sweeps every 10° precisely to catch that.
-- **Setting `_LateralPoleSpin` to 0** and trusting `_PhaseByLateral` to separate the muzzles. It
-  does not — see the negative control above.
+- **Trying to re-derive per-round identity from the geometry** to get back on the SRP Batcher.
+  Radius, time and lateral position are all near-identical for rounds fired 11 ms apart; the
+  harness keeps a `no seed` negative control that reproduces the failure exactly (100% lit-set
+  overlap) so this cannot be re-litigated by measurement alone.
+- **Thinning the stroke to hold lit area below the baseline.** That is what made it invisible.
+  Judge it in `render_projectile_charge_field.py`, not in a coverage number.
+- **Un-anchoring the circle from the view axis.** Most rounds go back to showing nothing.
 
 ---
 

@@ -43,9 +43,11 @@
 //                           own offset — see ProjectileChargeFieldPhase_float below, which
 //                           is where every per-round difference is decided.)
 //   float  Charge01       - 0..1, how far this round has charged, from its world radius
-//   float  Lateral        - the round's lateral identity, 0..2 (see the phase resolver): it
-//                           spins this round's great circle, which is what stops a volley's
-//                           two muzzles drawing the same stroke twice
+//   float  Seed           - this round's identity, 0..1, stamped per SHOT through the GPU
+//                           instancing buffer. It picks the circle's angle and tilt, the bolt's
+//                           jaggedness and the round's point in its own discharge cycle — see
+//                           the phase resolver for why nothing implicit could do that job.
+//   float3 ViewAxisOS     - object-space direction from the round to the CAMERA, per OBJECT
 //
 // Outputs:
 //   float3 EmissionColor  - additive emission RGB
@@ -95,60 +97,54 @@ float ChargeFBM1D(float x, int octaves)
 
 // ─── Per-round phase ────────────────────────────────────────────────────────
 //
-// Everything that makes one round's stroke different from another's is decided here, out
-// of the shell's own object-to-world matrix and nothing else. It lives in this file rather
-// than inline in the vertex shader so the verification harness measures the SHIPPED
-// decorrelation instead of a transcription of it.
+// A round's identity is an explicit per-instance SEED, stamped once at launch by
+// `Projectile.StampChargeFieldSeed` and delivered through the GPU-instancing buffer. It is
+// there because the shell has NO implicit signal that can tell two rounds apart, and that is
+// arithmetic rather than opinion:
 //
-// The gun has TWO muzzles and fires both in the same tick, so a volley's pair shares a
-// growth factor, a flight progress and therefore a world radius — EXACTLY. Radius alone
-// was the whole per-round signal, so the pair were clones: same great circle, same point
-// in the cycle, side by side for their whole flight. Two synchronised strokes read as one
-// deliberate shape, which is the opposite of the stochastic fill the shell exists for.
+//   * WORLD RADIUS changes by 0.0183 u between consecutive volleys (90 volleys/s over a 0.3 s
+//     flight). Turning that into half a discharge cycle needs `_PhaseByRadius * _CrackleRate`
+//     ~= 27, which makes ONE round discharge at ~159 Hz — thirty bolts over its own flight.
+//   * TIME is identical for every round alive at a given instant.
+//   * LATERAL POSITION is identical for every round from one muzzle while the ship flies
+//     straight, which is most of the time it is firing.
 //
-// What separates them is the one thing that is different about them by construction: the
-// muzzles sit 6.4 units apart across the ship (local x = ±3.2). A round flies along its
-// own forward, and `SafeLookRotation` builds its frame with forward as +z — so its two
-// LATERAL world coordinates are invariant along the flight while differing between the
-// muzzles by that 6.4. Free per-round identity out of a matrix that was already being read.
+// So rounds fired 11 ms apart were, to this shader, the same round — and at 90 volleys/s that
+// is every round in the stream, not just the volley's pair. Three passes tried to derive
+// identity from the geometry (radius, then a lateral read, then a lateral read spinning the
+// circle) and all three were measured decorrelated and still read as identical, because what
+// they decorrelated was a difference the signal did not actually carry.
 //
-// Two details are load-bearing:
-//   * TWO axes, not one. The round's frame comes from `LookRotation(aim)` with WORLD up, so
-//     it does not roll with the ship — the muzzle separation lands on +x at zero roll and on
-//     +y at 90°. Reading only one axis would resynchronise the pair every quarter roll.
-//   * NOISE, not a linear term. Any linear combination `a·latX + b·latY` has a null
-//     direction, so there is always a roll angle at which the pair collapses back together.
-//     Two independent smooth noises have no such direction, and "the two muzzles get
-//     unrelated strokes" is exactly the stochastic claim being made.
-//
-// The lateral term costs NO extra per-round flicker — it is constant along a straight
-// flight — unlike the radius term, which is simultaneously a round's identity and its
-// progress. (A vessel drifting hard inherits some lateral velocity into the shot, which
-// makes it drift slowly rather than sit still. That is extra variety, not a defect.)
+// The cost is one `SetPropertyBlock` per SHOT — not per frame — and the material moves from
+// SRP-batched to GPU-INSTANCED. That is the right trade for ~54 identical spheres: they still
+// batch, and now they can differ. The previous "no per-instance write" claim was defending a
+// batching strategy that had made the effect impossible.
 void ProjectileChargeFieldPhase_float(
     float3 AxisX,        // object-to-world column 0 — its LENGTH is the shell's diameter
-    float3 AxisY,        // object-to-world column 1
-    float3 OriginWS,     // object-to-world column 3 — the round's world position
+    float  Seed,         // per-round, 0..1
     float  TimeSeconds,
     out float Phase,
-    out float Charge01,
-    out float Lateral)
+    out float Charge01)
 {
-    float diameter = length(AxisX);
-    float worldRadius = 0.5 * diameter;
+    float worldRadius = 0.5 * length(AxisX);
 
-    float3 right = AxisX / max(diameter, 1e-6);
-    float3 up    = AxisY / max(length(AxisY), 1e-6);
-
-    Lateral = ChargeValueNoise1D(dot(OriginWS, right) * _LateralNoiseScale)
-            + ChargeValueNoise1D(dot(OriginWS, up) * _LateralNoiseScale * 1.37 + 19.7);
-    float lateral = Lateral;
-
+    // The seed spans several discharge cycles, so every round is at its own point in its own
+    // cycle. The radius term is what makes a single round EVOLVE across its flight; the seed is
+    // what makes it different from its neighbours.
     Phase = TimeSeconds * _PhaseSpeed
           + worldRadius * _PhaseByRadius
-          + lateral * _PhaseByLateral;
+          + Seed * _PhaseBySeed;
 
     Charge01 = saturate(worldRadius / max(_ChargeReferenceRadius, 1e-3));
+}
+
+void ProjectileChargeFieldPhase_half(
+    half3 AxisX, half Seed, half TimeSeconds, out half Phase, out half Charge01)
+{
+    float p, c;
+    ProjectileChargeFieldPhase_float(AxisX, Seed, TimeSeconds, p, c);
+    Phase = (half)p;
+    Charge01 = (half)c;
 }
 
 // ─── Main function ──────────────────────────────────────────────────────────
@@ -159,7 +155,8 @@ void ProjectileChargeField_float(
     float3 ViewDirOS,
     float  Phase,
     float  Charge01,
-    float  Lateral,
+    float  Seed,
+    float3 ViewAxisOS,
     out float3 EmissionColor,
     out float  Alpha)
 {
@@ -212,26 +209,34 @@ void ProjectileChargeField_float(
         float h2 = ChargeHash1(idx * 5.1 + float(i) * 17.9);
         float h3 = ChargeHash1(idx * 9.3 + float(i) * 23.1);
 
-        // `Lateral` SPINS the circle about the shell's z axis, and that — not the phase
-        // offset it also feeds — is what actually splits a volley's pair onto different
-        // PLANES. Two rounds 0.2 of a cycle apart still share `idx`, so they draw the SAME
-        // great circle at two draw stages, which is exactly the twinning being fixed; a
-        // spin changes the circle itself no matter how close their cycles are.
+        // ── The circle is built around the VIEW AXIS, and that is the difference between
+        //    an effect and an invisible one. ──
+        // `Cull Back` draws only the FRONT hemisphere, so a great circle at a uniformly random
+        // pole spends most of its length behind the round. Rendered at true 1080p pixel density
+        // (Tools/Shaders/render_projectile_charge_field.py) most rounds past ~40 units showed no
+        // stroke at all and collapsed to a plain dark disc — and every plain dark disc looks
+        // exactly like every other one, which is the whole of the "they still read as identical"
+        // report. Three passes of measurement (planarity, lit-set overlap, per-round brightness)
+        // all said the pair were decorrelated and all of them were answering the wrong question,
+        // because they counted samples over the sphere instead of asking what is on the screen.
         //
-        // It enters through cos/sin only, so it is perfectly continuous and wraps for free:
-        // a pilot drifting hard inherits lateral velocity into the shot, which makes the
-        // stroke's plane WALK slowly around the shell instead of popping — the same reason
-        // the envelope goes to zero at both ends of a cycle. A round flying straight has an
-        // exactly constant Lateral and therefore an exactly fixed plane.
-        float pz = h1 * 2.0 - 1.0;
-        float paz = h2 * PCF_TAU + Lateral * _LateralPoleSpin;
-        float pr = sqrt(saturate(1.0 - pz * pz));
-        float3 pole = float3(pr * cos(paz), pr * sin(paz), pz);
+        // Anchoring the pole near the plane PERPENDICULAR to the view puts the stroke across the
+        // visible face every time, so a round always shows a slash at some angle — the one
+        // feature still resolvable when the whole round is 30 px wide. The per-round `Seed` sets that
+        // angle and its tilt, so neighbouring rounds differ in the thing the eye can actually see.
+        float3 va = normalize(ViewAxisOS);
+        float3 refv = abs(va.z) < 0.9 ? float3(0.0, 0.0, 1.0) : float3(1.0, 0.0, 0.0);
+        float3 e1 = normalize(cross(va, refv));
+        float3 e2 = cross(va, e1);
 
-        // Orthonormal basis IN the great-circle plane. The reference vector swaps away
-        // from the pole so the cross product never degenerates.
-        float3 refv = abs(pole.z) < 0.9 ? float3(0.0, 0.0, 1.0) : float3(1.0, 0.0, 0.0);
-        float3 u = normalize(cross(refv, pole));
+        float ang  = h2 * PCF_TAU + Seed * _SeedSpin;
+        float tilt = _ArcTiltRange * sin(h1 * PCF_TAU + Seed * _SeedTilt);
+        float3 pole = normalize(cos(tilt) * (cos(ang) * e1 + sin(ang) * e2) + sin(tilt) * va);
+
+        // With the pole perpendicular to the view, `v` comes out exactly along the view axis,
+        // so theta = 0 is the point of the circle facing the camera. That is what lets the
+        // stroke's centre be biased toward the visible face below.
+        float3 u = normalize(cross(va, pole));
         float3 v = cross(pole, u);
 
         // Fragment coordinates on that frame: signed height off the plane (the sine of
@@ -242,7 +247,12 @@ void ProjectileChargeField_float(
         // ── The bolt wanders off the exact circle ──
         // Without this the stroke is a drafted arc; with it, it is lightning that happens
         // to be following one.
-        float wob = ChargeFBM1D(theta * _ArcWanderScale + idx * 4.7 + float(i) * 3.1, 3)
+        // The bolt's JAGGEDNESS is seeded per round too, not just per discharge — otherwise
+        // neighbouring rounds draw the *same* squiggle at two angles, which at 30 px reads as
+        // one shape repeated. The seed enters as a SHIFT of the noise input rather than as a
+        // hash of it, so it stays continuous.
+        float wob = ChargeFBM1D(theta * _ArcWanderScale + idx * 4.7 + float(i) * 3.1
+                                + Seed * _SeedWobble, 3)
                   * _ArcWander;
         float d = height - wob;
         float sharp = max(_ArcSharpness, 1e-3);
@@ -255,7 +265,10 @@ void ProjectileChargeField_float(
         // rather than as a dot. Rounds that share a great circle (neighbours in the
         // stream, whose radii are close) are at different points of this draw, so they
         // are never clones of each other.
-        float start = h3 * PCF_TAU;
+        // Centred NEAR the camera-facing point (theta = 0) rather than anywhere on the circle:
+        // a stroke centred on the back half is culled down to two slivers at the limb, which is
+        // the plain-disc failure again. `_ArcStartSpread` is how far it may wander.
+        float start = (h3 * 2.0 - 1.0) * _ArcStartSpread;
         float dTheta = theta - start;
         dTheta = dTheta - PCF_TAU * round(dTheta / PCF_TAU);   // wrap to [-pi, pi]
         float away = abs(dTheta);
@@ -299,30 +312,20 @@ void ProjectileChargeField_float(
         : _FresnelRimColor.rgb * fresnel;
 }
 
-void ProjectileChargeFieldPhase_half(
-    half3 AxisX, half3 AxisY, half3 OriginWS, half TimeSeconds,
-    out half Phase, out half Charge01, out half Lateral)
-{
-    float p, c, l;
-    ProjectileChargeFieldPhase_float(AxisX, AxisY, OriginWS, TimeSeconds, p, c, l);
-    Phase = (half)p;
-    Charge01 = (half)c;
-    Lateral = (half)l;
-}
-
 void ProjectileChargeField_half(
     half3 ObjectPosition,
     half3 ObjectNormal,
     half3 ViewDirOS,
     half  Phase,
     half  Charge01,
-    half  Lateral,
+    half  Seed,
+    half3 ViewAxisOS,
     out half3 EmissionColor,
     out half  Alpha)
 {
     float3 emOut;
     float aOut;
-    ProjectileChargeField_float(ObjectPosition, ObjectNormal, ViewDirOS, Phase, Charge01, Lateral, emOut, aOut);
+    ProjectileChargeField_float(ObjectPosition, ObjectNormal, ViewDirOS, Phase, Charge01, Seed, ViewAxisOS, emOut, aOut);
     EmissionColor = (half3)emOut;
     Alpha = (half)aOut;
 }

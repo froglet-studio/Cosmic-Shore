@@ -464,7 +464,11 @@ namespace CosmicShore.Gameplay
             if (chargeField)
             {
                 bool grows = _flightGrowthFactor != 1f;
-                if (grows) SizeChargeField();
+                if (grows)
+                {
+                    SizeChargeField();
+                    StampChargeFieldSeed();
+                }
                 if (chargeField.gameObject.activeSelf != grows)
                     chargeField.gameObject.SetActive(grows);
             }
@@ -760,6 +764,46 @@ namespace CosmicShore.Gameplay
                 diameter / Mathf.Max(Mathf.Abs(parentLossyScale.x), 1e-4f),
                 diameter / Mathf.Max(Mathf.Abs(parentLossyScale.y), 1e-4f),
                 diameter / Mathf.Max(Mathf.Abs(parentLossyScale.z), 1e-4f));
+        }
+
+        static readonly int RoundSeedId = Shader.PropertyToID("_RoundSeed");
+        Renderer _chargeFieldRenderer;
+        MaterialPropertyBlock _chargeFieldProps;
+
+        /// <summary>
+        /// Gives this shot's charge shell its own identity — one random number, written ONCE per
+        /// launch, read by <c>Shader Graphs/ProjectileChargeField</c> out of the GPU-instancing
+        /// buffer.
+        ///
+        /// It exists because the shell has no implicit signal that can tell two rounds apart, and
+        /// that is arithmetic rather than taste. At 90 volleys/s over a 0.3 s flight, consecutive
+        /// volleys differ in world radius by <b>0.0183 units</b>; turning that into half a
+        /// discharge cycle needs a per-round discharge rate of ~159 Hz, i.e. thirty bolts inside
+        /// one round's own flight. The other two candidates are worse: TIME is identical for every
+        /// round alive at an instant, and LATERAL POSITION is identical for every round from one
+        /// muzzle while the ship flies straight — which is most of the time it is firing. So every
+        /// round in the stream drew the same stroke, and the twin muzzles were only the most
+        /// obvious symptom of it.
+        ///
+        /// The cost is one <see cref="Renderer.SetPropertyBlock"/> per SHOT — never per frame,
+        /// which is the thing the shell was designed to avoid (see <see cref="SizeChargeField"/>).
+        /// It moves the material off the SRP Batcher and onto GPU instancing, which is the right
+        /// trade for ~54 identical spheres that must all look different: they still batch into one
+        /// instanced draw, and now they can differ.
+        /// </summary>
+        void StampChargeFieldSeed()
+        {
+            if (!_chargeFieldRenderer)
+            {
+                if (!chargeField) return;
+                _chargeFieldRenderer = chargeField.GetComponentInChildren<Renderer>();
+                if (!_chargeFieldRenderer) return;
+            }
+
+            _chargeFieldProps ??= new MaterialPropertyBlock();
+            _chargeFieldRenderer.GetPropertyBlock(_chargeFieldProps);
+            _chargeFieldProps.SetFloat(RoundSeedId, UnityEngine.Random.value);
+            _chargeFieldRenderer.SetPropertyBlock(_chargeFieldProps);
         }
 
         /// <summary>
