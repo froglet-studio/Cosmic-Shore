@@ -367,9 +367,9 @@ honest instrument for the volume it deletes even when only one stroke is showing
 | lit at one instant (one round) | 3.72% | 6.24% |
 | a volley's two rounds, lit-set overlap | 100% | **1.3% median, 2.1% same stroke** |
 | the same shader with the seed disabled | — | **100% overlap** (negative control) |
-| union after 0.25 s of fire | 99.9% | **100%** |
-| **light emitted by one frame of full auto** | 8,031 | **623 (0.08×)** |
-| FBM evaluations per fragment | 3.93 (worst case 15) | **0.59 (worst case 1)** |
+| union after 0.25 / 1 / 3 s of fire | 99.9% / 100% / 100% | **72.8% / 95.1% / 98.4%** |
+| **light emitted by one frame of full auto** | 8,031 | **333 (0.04×)** |
+| FBM evaluations per fragment | 3.93 (worst case 15) | **0.56 (worst case 1)** |
 
 **Planarity is the number that carries the claim.** Raw lit *area* is nearly useless here: the old
 shell lit *few* pixels *everywhere* and so measured a **smaller** lit fraction than a single fat
@@ -472,7 +472,8 @@ not a near miss:
 |---|---|---|
 | baseline (the crackling ball) | 8,031 | 1.00× |
 | the one-stroke design, first cut | 16,933 | **2.11×** |
-| **shipped** | **623** | **0.08×** |
+| after the first tone pass | 623 | 0.08× |
+| **shipped** (second tone pass) | **333** | **0.04×** |
 
 > **The one-stroke design toned down a single round and made a burst nearly twice as bright.**
 
@@ -490,26 +491,46 @@ is not a reduction.
 through the real perspective camera, totals the emission, and **fails above 0.25× the baseline**.
 The knobs it constrains are labelled as a light budget in the shader.
 
-What actually bought the 26× reduction, in order of contribution:
+It took **two** passes to get there — the first landed at 0.08× and playtest still called it
+overtuned, so the budget was halved again. What bought the 51× reduction, in order of contribution:
 
-| | | |
-|---|---|---|
-| `_HoldTime` | 0.5 → **0.06** | the envelope's bright plateau is gone; most rounds are dim at any instant |
-| `_FadeShape` | 1 → **3.2** | and what is left decays hard |
-| `_ArcSpan` | 5.0 → **1.8** | a short slash, not a 286° sweep |
-| `_ArcIntensity` | 2.4 → **1.5** | |
-| `_ArcSharpness` | 0.075 → **0.055** | |
-| `_FresnelRimIntensity` | 0.05 → **0.022** | the rim is on every round, always — it multiplies by 54 |
+| | first pass | shipped | |
+|---|---|---|---|
+| `_HoldTime` | 0.5 → 0.06 | **0.042** | the envelope's bright plateau is gone; most rounds are dim at any instant |
+| `_FadeShape` | 1 → 3.2 | **3.9** | and what is left decays hard |
+| `_ArcSpan` | 5.0 → 1.8 | **1.45** | a short slash, not a 286° sweep |
+| `_ArcIntensity` | 2.4 → 1.5 | **1.25** | |
+| `_ArcSharpness` | 0.075 → **0.055** | 0.055 | |
+| `_FresnelRimIntensity` | 0.05 → 0.022 | **0.014** | the rim is on every round, always — it multiplies by 54 |
+
+**The second halving is spread across duty, brightness AND length on purpose.** Four routes to the
+same budget were rendered and compared; pushing any single one far enough to hit it alone changes
+what the effect *is* — a 1.0-radian span (the cheapest single route, 0.48×) stops reading as a
+curve on a sphere and becomes a dash. Taking a share from each keeps the stroke a stroke.
+
+> **A light budget is a constraint on the SUM, not a mandate for which knob pays it.** When one
+> knob can pay the whole bill, check what that knob also encodes before letting it.
 
 **Sparseness is the mechanism, so the duty-cycle criterion inverted.** A round now shows a stroke
-**42.6%** of the time rather than 88.8%, and the harness's old "must be lit at least 70% of the
+**31.3%** of the time rather than 88.8%, and the harness's old "must be lit at least 70% of the
 time" floor — added to stop a single round twinkling — became a **ceiling** (fail above 85%).
 "Most rounds are dark most of the time" is precisely how 54 simultaneous shells stay quiet, and
 individual twinkle stopped mattering the moment the rounds became individually unresolvable.
 Continuity of existence is unaffected: the requirement was only ever that a round is never *fully*
-dark, and the rim whisper still holds it at peak alpha **0.011**.
+dark, and the rim whisper still holds it at peak alpha **0.007**.
 
-The cost fell with it: **0.59 FBM evaluations per fragment**, down from 3.93 on the baseline.
+The cost fell with it: **0.56 FBM evaluations per fragment**, down from 3.93 on the baseline.
+
+**Test 6's ceiling is 0.06×, and the odd number is the point:** it has to be tight enough to catch
+the value it replaced. 0.08× was itself a 26× cut and still read as overtuned in play, so a
+round-number 0.25× ceiling would have passed the very thing the playtest rejected. *A budget that
+the rejected version would pass is not a gate.*
+
+At this tone the union curve finally describes the original request rather than saturating: one
+round paints **4.9%** of its own shell across its whole flight, one frozen frame of a full-rate
+fight is **19.5%** of a sphere, and the accumulation reaches 72.8% / 95.1% / 98.4% over
+0.25 / 1 / 3 s of fire. The shape is assembled by the stream over about a second — the after-image
+the report asked for.
 
 ### Things that would take it straight back
 

@@ -66,10 +66,10 @@ NEW_MAT = dict(
     _CrackleColorA=(1.4979111, 0.0058463, 0.0068495, 1.0),
     _CrackleColorB=(0.10, 0.35, 1.0, 1.0),
     _FresnelRimColor=(0.25, 0.55, 1.0, 1.0),
-    _ArcCount=1.0, _ArcSpan=1.8, _ArcSharpness=0.055, _ArcTiltRange=0.55, _ArcStartSpread=0.9, _ArcWander=0.26,
-    _ArcWanderScale=2.6, _ArcIntensity=1.5, _TipGlow=0.9, _CoreThreshold=0.7,
-    _CrackleRate=3.5, _StrikeTime=0.25, _HoldTime=0.06, _FadeShape=3.2,
-    _FresnelRimIntensity=0.022, _FresnelRimPower=3.5,
+    _ArcCount=1.0, _ArcSpan=1.45, _ArcSharpness=0.055, _ArcTiltRange=0.55, _ArcStartSpread=0.9, _ArcWander=0.26,
+    _ArcWanderScale=2.6, _ArcIntensity=1.25, _TipGlow=0.9, _CoreThreshold=0.7,
+    _CrackleRate=3.5, _StrikeTime=0.25, _HoldTime=0.042, _FadeShape=3.9,
+    _FresnelRimIntensity=0.014, _FresnelRimPower=3.5,
     _ChargeReferenceRadius=4.95, _ChargeFloor=0.4, _PhaseByRadius=0.43, _PhaseSpeed=2.6,
     _SeedSpin=6.283, _SeedTilt=6.283, _SeedWobble=40.0, _PhaseBySeed=1.0,
 )
@@ -621,9 +621,12 @@ def main():
         ratio = budget[1][1] / max(base_light, 1e-9)
         print("\n   The first cut of the one-stroke design measured 2.11x here — it toned down a")
         print("   single round and made a burst WORSE, which no per-round metric could see.")
-        if ratio > 0.25:
-            failures.append("a full-auto stream emits %.2fx the baseline's light — the point of "
-                            "this pass is that it emits far less" % ratio)
+        # 0.06x, not a round number: it has to be tight enough to CATCH the previous shipped
+        # value (0.078x, itself already a 26x cut and still called overtuned in playtest). A
+        # ceiling that the thing it replaced would pass is not a gate.
+        if ratio > 0.06:
+            failures.append("a full-auto stream emits %.3fx the baseline's light — over the 0.06x "
+                            "budget, which is the value playtest settled on" % ratio)
 
         # ── 5. Cost ──────────────────────────────────────────────────────────────────────
         print("\n== 5. COST ==")
