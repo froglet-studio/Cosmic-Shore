@@ -1,129 +1,122 @@
 #!/usr/bin/env python3
 """
-Render the Style Foundation §4 type scale at the 1920x1080 reference, from the
-GENERATED TMP font assets. Verifies T5's "type-scale test scene screenshot"
-criterion outside the editor: every row at its specified family, weight, size
-and tracking, on the §2 surface/text ramp.
+Render Style Foundation §4 (v0.3.1) at the 1920x1080 PC reference.
+
+Reads the GENERATED/installed TMP .asset files — atlas pixels, glyph rects, face
+metrics — and reproduces TMP_SDF.shader's alpha rule, so what it verifies is the
+shipped assets rather than the source TTFs.
+
+v0.3 §0-C cancelled Space Grotesk and JetBrains Mono: the scale is Aldrich for
+headings and body, Chakra Petch SemiBold for buttons (always caps), and the Data
+roles are Aldrich under TMP <mspace> rather than a mono family.
 """
 import os, sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import numpy as np
-from tmp_font_preview import TMPFontAsset, draw_text, measure, save
+from tmp_font_preview import TMPFontAsset, draw_text, save
 
-ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-FONTS = os.path.join(ROOT, "Assets", "_Graphics", "Fonts")
-WNAME = {300: "Light", 400: "Regular", 500: "Medium", 600: "SemiBold", 700: "Bold"}
-FOLDER = {"Chakra Petch": "ChakraPetch", "Space Grotesk": "SpaceGrotesk",
-          "JetBrains Mono": "JetBrainsMono"}
+ROOT   = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+FONTS  = os.path.join(ROOT, "Assets", "_Graphics", "Fonts")
+VENDOR = os.path.join(ROOT, "Assets", "Unity Assests", "TextMesh Pro", "Resources",
+                      "Fonts & Materials")
+# Aldrich is still vendored; moving it into project space is T6's job, not T5's.
+PATHS = {
+    "Aldrich":               os.path.join(VENDOR, "ALDRICH-REGULAR SDF.asset"),
+    "Chakra Petch SemiBold": os.path.join(FONTS, "ChakraPetch", "ChakraPetch-SemiBold SDF.asset"),
+    "Chakra Petch":          os.path.join(FONTS, "ChakraPetch", "ChakraPetch-Regular SDF.asset"),
+}
 _cache = {}
-
-
-def font(family, weight):
-    key = (family, weight)
-    if key not in _cache:
-        stem = FOLDER[family]
-        _cache[key] = TMPFontAsset(
-            os.path.join(FONTS, stem, f"{stem}-{WNAME[weight]} SDF.asset"))
-    return _cache[key]
-
+def font(name):
+    if name not in _cache:
+        _cache[name] = TMPFontAsset(PATHS[name])
+    return _cache[name]
 
 def hexc(h):
-    h = h.lstrip('#')
-    return tuple(int(h[i:i + 2], 16) for i in (0, 2, 4))
+    h = h.lstrip('#'); return tuple(int(h[i:i+2], 16) for i in (0, 2, 4))
 
-
-VOID, HULL, PLATE, RULE, RULE_HI = map(hexc, ("07090F", "0E131C", "171E2A", "2A3444", "3D4A5E"))
+HULL, PLATE, RULE, RULE_HI = map(hexc, ("0E131C", "171E2A", "2A3444", "3D4A5E"))
 SIGNAL, BODY, MUTED, FAINT = map(hexc, ("E8EDF5", "B9C4D2", "7C8899", "4E5A6B"))
-SYS = hexc("4FD5E8")
+SYS, ATTN = hexc("4FD5E8"), hexc("A67CFF")
 
-# role, family, weight, size, tracking(em), sample
+# Measured from hmtx / unitsPerEm — the X in <mspace=Xem>, per face (v0.3.1, queue #9).
+MSPACE = {"Aldrich": 0.730, "Chakra Petch SemiBold": 0.644}
+
+# role, family, mobile@800, pc@1920, caps, mspace, spec-authored(†), sample
 SCALE = [
-    ("Display", "Chakra Petch",  600, 48, +0.01, "Victory"),
-    ("H1",      "Chakra Petch",  600, 32,  0.00, "Screen headers"),
-    ("H2",      "Chakra Petch",  500, 24,  0.00, "Panel headers, modal titles"),
-    ("H3",      "Chakra Petch",  500, 18,  0.00, "Card titles, tab labels"),
-    ("Body",    "Space Grotesk", 400, 16,  0.00, "Descriptions and dialogue set at the body size."),
-    ("BodySm",  "Space Grotesk", 400, 14,  0.00, "Secondary copy and hints sit one step down."),
-    ("Label",   "JetBrains Mono",500, 12, +0.10, "FIELD LABEL / EYEBROW / STATUS"),
-    ("DataLg",  "JetBrains Mono",700, 44, -0.01, "1 284 730"),
-    ("Data",    "JetBrains Mono",500, 20,  0.00, "0123456789  ·  42 / 120"),
-    ("DataSm",  "JetBrains Mono",400, 13, +0.04, "0123456789  rank 07"),
+    ("Display",      "Aldrich",               None, 48, False, False, True,  "Victory"),
+    ("H1",           "Aldrich",               24,   36, False, False, False, "Screen headers"),
+    ("H2",           "Aldrich",               20,   28, False, False, False, "Panel headers, modal titles"),
+    ("H3",           "Aldrich",               16,   22, False, False, False, "Card titles, tab labels"),
+    ("Body",         "Aldrich",               16,   18, False, False, False, "Descriptions and dialogue set at the body size."),
+    ("Body small",   "Aldrich",               None, 15, False, False, True,  "Secondary copy and hints sit one step down."),
+    ("Button",       "Chakra Petch SemiBold", 16,   18, True,  False, False, "START MATCH"),
+    ("Button small", "Chakra Petch SemiBold", 12,   14, True,  False, False, "CANCEL"),
+    ("Data (large)", "Aldrich",               None, 44, False, True,  True,  "1 284 730"),
+    ("Data",         "Aldrich",               None, 20, False, True,  True,  "0123456789   42 / 120"),
+    ("Data (small)", "Aldrich",               None, 15, False, True,  True,  "0123456789   rank 07"),
 ]
-SYMBOLS = "× · — – … ← → ↑ ↓ + −"          # §4 v0.2: U+2011 and U+2715 removed
 
 W, H = 1920, 1080
 img = np.zeros((H, W, 3), np.float32); img[:] = HULL
+ald, cps = font("Aldrich"), font("Chakra Petch SemiBold")
 
-lab   = font("JetBrains Mono", 500)
-labr  = font("JetBrains Mono", 400)
-head  = font("Chakra Petch", 600)
-bodyf = font("Space Grotesk", 400)
+draw_text(img, ald, "Type scale", 64, 84, 34, 0.0, SIGNAL)
+draw_text(img, ald, "Style Foundation sec.4 (v0.3.1) - PC @1920 - rendered from the installed TMP SDF assets",
+          64, 114, 15, 0.0, MUTED)
+img[136:137, 64:W-64, :] = RULE_HI
 
-# ---- header
-draw_text(img, head,  "Type scale", 64, 84, 34, 0.0, SIGNAL)
-draw_text(img, bodyf, "Style Foundation §4 · rendered at the 1920×1080 reference "
-                      "from the generated TMP SDF assets", 64, 116, 16, 0.0, MUTED)
-img[140:141, 64:W-64, :] = RULE_HI
+COLX, SAMPX = 64, 660
+for x, t in ((COLX, "ROLE"), (COLX+150, "FAMILY"), (COLX+360, "@800"),
+             (COLX+430, "@1920"), (COLX+510, "MSPACE"), (SAMPX, "SAMPLE")):
+    draw_text(img, cps, t, x, 172, 12, 0.10, FAINT)
+img[186:187, 64:W-64, :] = RULE
 
-# ---- column headings
-COLX, SAMPX = 64, 580
-for x, t in ((COLX, "ROLE"), (COLX + 118, "FAMILY"), (COLX + 268, "WT"),
-             (COLX + 318, "SIZE"), (COLX + 382, "TRACK"), (SAMPX, "SAMPLE")):
-    draw_text(img, lab, t, x, 176, 12, 0.10, FAINT)
-img[190:191, 64:W-64, :] = RULE
+y = 214
+for i, (role, fam, m800, pc, caps, ms, authored, sample) in enumerate(SCALE):
+    f = font(fam)
+    band = max(pc * 1.26, 38)
+    if i % 2 == 1:
+        img[int(y-band*0.70):int(y+band*0.30), 56:W-56, :] = PLATE
+    draw_text(img, cps, role.upper() + (" *" if authored else ""), COLX, y, 13, 0.06, BODY)
+    draw_text(img, ald, fam, COLX+150, y, 13, 0.0, MUTED)
+    draw_text(img, ald, str(m800) if m800 else "-", COLX+360, y, 13, 0.0,
+              MUTED if m800 else FAINT)
+    draw_text(img, ald, str(pc), COLX+430, y, 13, 0.0, SIGNAL)
+    draw_text(img, ald, f"{MSPACE[fam]:.3f}em" if ms else "-", COLX+510, y, 13, 0.0,
+              SYS if ms else FAINT)
+    draw_text(img, f, sample, SAMPX, y, pc, 0.0, SIGNAL,
+              mspace_em=MSPACE[fam] if ms else 0.0)
+    y += band + 11
 
-y = 240
-for i, (role, fam, wt, size, trk, sample) in enumerate(SCALE):
-    f = font(fam, wt)
-    band_h = max(size * 1.45, 42)
-    if i % 2 == 1:                                   # zebra on `plate`
-        img[int(y - band_h * 0.72):int(y + band_h * 0.28), 56:W-56, :] = PLATE
-    draw_text(img, lab,  role.upper(),        COLX,        y, 13, 0.06, BODY)
-    draw_text(img, labr, fam,                 COLX + 118,  y, 13, 0.02, MUTED)
-    draw_text(img, labr, str(wt),             COLX + 268,  y, 13, 0.02, MUTED)
-    draw_text(img, labr, str(size),           COLX + 318,  y, 13, 0.02, MUTED)
-    draw_text(img, labr, f"{trk:+.2f}em" if trk else "0", COLX + 382, y, 13, 0.02,
-              SYS if trk else FAINT)
-    draw_text(img, f,    sample,              SAMPX,       y, size, trk, SIGNAL)
-    y += band_h + 12
+img[int(y)-18:int(y)-17, 64:W-64, :] = RULE
+draw_text(img, cps, "* SPEC-AUTHORED - NOT ON THE SOURCE TYPOGRAPHY PAGE", COLX, y+16, 12, 0.10, ATTN)
+draw_text(img, ald,
+          "Those five rows carry no guide backing and are open to revision in a way the transcribed six are not.",
+          COLX, y+42, 14, 0.0, MUTED)
+draw_text(img, ald,
+          "Buttons are always caps. Data roles are Aldrich under <mspace>, not a mono family - v0.3 sec.0-C cancelled Space Grotesk and JetBrains Mono.",
+          COLX, y+66, 14, 0.0, MUTED)
+draw_text(img, cps, "ALDRICH CHARSET GAP - FOR T6", COLX, y+100, 12, 0.10, hexc("FF5C3A"))
+_ald_lat1 = sum(1 for c in range(0xA0, 0x100) if c in ald.chars)
+draw_text(img, ald,
+          f"The installed Aldrich asset covers ASCII 95/95 but Latin-1 Supplement only {_ald_lat1}/96, and none of - x . <- -> arrows.",
+          COLX, y+126, 14, 0.0, MUTED)
+draw_text(img, ald,
+          "Under v0.3 Aldrich is the primary face, so an em-dash or an accent in UI copy falls through to Liberation Sans and",
+          COLX, y+148, 14, 0.0, MUTED)
+draw_text(img, ald,
+          "changes typeface mid-sentence. Nothing vanishes (Liberation covers it) but the face shifts. Regenerating Aldrich at",
+          COLX, y+170, 14, 0.0, MUTED)
+draw_text(img, ald,
+          "90/9/1024 with the project charset closes it - the generator on this branch already does exactly that. T6 owns it.",
+          COLX, y+192, 14, 0.0, MUTED)
 
-# ---- symbol coverage
-img[int(y)-24:int(y)-23, 64:W-64, :] = RULE
-draw_text(img, lab, "REQUIRED SYMBOL SET", COLX, y + 14, 12, 0.10, FAINT)
-yy = y + 52
-for fam, wt in (("Chakra Petch", 400), ("Space Grotesk", 400), ("JetBrains Mono", 400)):
-    f = font(fam, wt)
-    draw_text(img, labr, fam, COLX, yy, 13, 0.02, MUTED)
-    pen, absent = SAMPX, []
-    for ch in SYMBOLS:
-        if ch == ' ':
-            pen += 11; continue
-        slot = max(f.advance(ch, 22), f.advance(' ', 22), 14)
-        if f.has(ch):
-            draw_text(img, f, ch, pen, yy, 22, 0.0, SIGNAL)
-        else:                                        # box the slot the font cannot fill
-            absent.append(f"U+{ord(ch):04X}")
-            x0, x1 = int(pen) - 2, int(pen + slot) + 2
-            y0, y1 = int(yy) - 20, int(yy) + 5
-            for a, b in ((y0, y0 + 1), (y1, y1 + 1)):
-                img[a:b, x0:x1, :] = hexc("FF5C3A")
-            for a, b in ((x0, x0 + 1), (x1, x1 + 1)):
-                img[y0:y1, a:b, :] = hexc("FF5C3A")
-        pen += slot + 14
-    if absent:
-        draw_text(img, labr, "absent: " + " ".join(absent), pen + 24, yy, 13, 0.02,
-                  hexc("FF5C3A"))
-    yy += 32
-
-draw_text(img, bodyf,
-          "Boxed slots are glyphs the family does not contain; they resolve through the fallback chain "
-          "(Space Grotesk → Chakra Petch → Liberation Sans → dynamic overflow).",
-          COLX, H - 34, 14, 0.0, MUTED)
 out = os.path.join(ROOT, "Docs", "Fonts", "type-scale-1920x1080.png")
 save(img, out)
 print("wrote", os.path.relpath(out, ROOT))
-for role, fam, wt, size, trk, sample in SCALE:
-    f = font(fam, wt)
+for role, fam, m800, pc, caps, ms, authored, sample in SCALE:
+    f = font(fam)
     miss = [c for c in sample if c != ' ' and not f.has(c)]
-    print(f"  {role:8s} {fam:15s} {wt} {size:>2}px trk{trk:+.2f}  "
-          f"advance={measure(f, sample, size, trk):7.1f}px  missing={miss or '-'}")
+    print(f"  {role:13s}{'†' if authored else ' '} {fam:22s} @1920 {pc:>2}px "
+          f"{'mspace ' + format(MSPACE[fam], '.3f') + 'em' if ms else 'proportional':>18s}"
+          f"  missing={miss or '-'}")

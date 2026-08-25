@@ -16,7 +16,7 @@ Maintained by the `ui-redesign-tracker` skill. Do not hand-edit the status table
 | T2 | Finish canvas resolution migration | TODO | — | | | |
 | T3 | Unify GameCanvas fork | TODO | T2 | | | |
 | T4 | UIThemeSO + literal inventory | TODO | — | | | |
-| T5 | Download & install TMP fonts | NEEDS DESIGN | — | `claude/tmp-font-assets-setup-9z96he` | #797 | |
+| T5 | Download & install TMP fonts | IN PROGRESS | — | `claude/tmp-font-assets-setup-9z96he` | #797 | |
 | T6 | TMP Style Sheet + Aldrich audit | TODO | T5 | | | |
 | T7 | Component sprite kit | TODO | — | | | |
 
@@ -188,6 +188,111 @@ Acceptance criteria:
 
 ## T5 — Download & install TMP fonts
 
+**Spec:** Style Foundation §4 (v0.3.1)
+
+Acceptance criteria — **re-derived from v0.3 §4**, as the note below requires:
+- [x] Chakra Petch (400/500/600/700) TTFs in `Assets/_Graphics/Fonts/ChakraPetch/`
+- [x] **Not** placed in `Assets/Unity Assests/TextMesh Pro/`
+- [x] `OFL.txt` shipped; credits attribution added
+- [x] TMP font assets generated: SDFAA, sampling 90, padding 9, atlas 1024²
+- [x] Charset: ASCII + Latin-1 Supplement + `× · — – … ← → ↑ ↓ + −`
+- [x] Multi Atlas Textures on; dynamic overflow fallback set
+- [x] Base material presets only — no outline, glow, or bevel
+- [x] **Widest digit advance reported for Aldrich and Chakra Petch SemiBold** (v0.3.1, queue #9)
+- [x] Tabular figures verified via `<mspace>`, per face
+- [~] Type-scale screenshot captured at 1920×1080
+- ~~Space Grotesk / JetBrains Mono installed~~ — **cancelled by v0.3 §0-C**
+- ~~Fallback chain Space Grotesk → Chakra Petch~~ — **cancelled**; nothing to chain to
+- ~~TMP default = Space Grotesk 400~~ — **cancelled**; reverted to Liberation Sans, see below
+
+> **Re-scoped against Style Foundation v0.3.** Safe area moved **§9 → §8** and shrank to a
+> paragraph. Two rules this task's record cites no longer read the same: the test aspects are now
+> **16:9 · 16:10 · 21:9** (v0.2 said 16:9 · 20:9 · 4:3), and **the Android max-aspect 2.1 → 2.4
+> rule is gone from the spec entirely** — v0.3 §8 defers mobile and says `SafeAreaFitter` ships
+> dormant, which is what this task built. The 24 px inset survives, and v0.3 now states it is a
+> **floor, authored as padding** — i.e. it ratifies this task's deviation. Status and criteria are
+> unchanged; re-check the verification-checklist aspect list before closing.
+
+## T2 — Finish canvas resolution migration
+
+**Spec:** Style Foundation §5 · **Audit ref:** §1.3
+
+Acceptance criteria:
+- [ ] `_Prefabs/CORE/GameCanvas.prefab` at 1920×1080 / PPU 240
+- [ ] `_Prefabs/GameCanvas-HexRace.prefab` at 1920×1080 / PPU 240
+- [ ] `_Scenes/Singleplayer Scenes/SplashScreen.unity` migrated
+- [ ] `_Prefabs/UI Elements/Loadout Container.prefab` migrated
+- [ ] `CanvasUpgraderUpgradedPrefabs.txt` respected — no double pass (×5.76 check)
+- [ ] `AdaptiveCanvasScaler` on every scene canvas that lacked it
+- [ ] Static `matchWidthOrHeight` overrides removed from those scenes
+- [ ] Android max aspect raised 2.1 → 2.4
+- [ ] No remaining reference resolution outside 1920×1080 project-wide
+- [ ] Project builds; no canvas visibly regressed in a smoke pass
+
+> **Re-scoped against Style Foundation v0.3.** §5 still exists but is now *Geometry — the corner
+> sliver*; the 1920×1080 / PPU 240 reference this task migrates to is stated in the **document
+> header**, not in §5. The **Android max aspect 2.1 → 2.4** criterion has no spec home in v0.3 —
+> §8 defers mobile — so that criterion is currently unbacked and needs a design call before it is
+> actioned. Status and criteria are unchanged.
+
+**Deliverables:**
+**Findings:**
+**Deviations from spec:**
+
+---
+
+## T3 — Unify GameCanvas fork
+
+**Spec:** `Docs/GAMECANVAS.md` · **Audit ref:** §5.1
+
+Acceptance criteria:
+- [ ] Prefab Kit Validate run, output recorded
+- [ ] Prefab Kit Consolidate run
+- [ ] Identical overrides (~1,734) pushed into the prefab
+- [ ] **One scene only** re-placed, diff reported, explicit go-ahead received before the rest
+- [ ] Override count per canvas instance below 25 in each migrated scene
+- [ ] `statsToTrack` preserved per mode (the one real per-mode value)
+- [ ] Joust toast feed rect normalised from ~(-1416, -463)
+- [ ] 8 cross-asset dangling refs into the CORE prefab resolved
+- [ ] Dangling `CountdownDisplay` ref into never-instantiated `MiniGameHUD.prefab` resolved
+- [ ] All six modes launch and reach the Ready gate
+- [ ] End-game scoreboard renders in each mode
+
+**Deliverables:**
+**Findings:**
+**Deviations from spec:**
+
+---
+
+## T4 — UIThemeSO + literal inventory
+
+**Spec:** Style Foundation §11 · **Audit ref:** §1.4, §5.4
+
+Acceptance criteria:
+- [ ] `UIThemeSO` authored to §11 **verbatim** — 25 fields, no additions
+- [ ] Follows `HUDAnimationSettingsSO` pattern with hardcoded fallbacks
+- [ ] **No team colour fields** — they stay in `SO_ColorSet`
+- [ ] Live asset created and referenced
+- [ ] Mapping report covers all 165 literals in `Assets/_Scripts/UI/`
+- [ ] Unmapped literals bucketed: (a) missing token, (b) feature-level SO, (c) never designed
+- [ ] No call sites changed yet
+
+> **Re-scoped against Style Foundation v0.3.** The field map moved **§10 → §11** (§10 is now the
+> component library). The field list itself was rebuilt on the studio palette: the criterion's
+> **"25 fields"** and every v0.1 hex it implied are superseded — v0.3 §11 lists ~15 rows keyed to
+> the guide colours (`textLight E6E9FF`, `surfaceBlack 00010A`, `cta 99FF80`, …), and `chamfer*`
+> is now `sliver*`. `danger FF4B3A` is still **proposed, not approved**. Author to v0.3 §11, not to
+> the field count in the criteria. The no-team-colours rule is unchanged. Status and criteria are
+> unchanged.
+
+**Deliverables:**
+**Findings:**
+**Deviations from spec:**
+
+---
+
+## T5 — Download & install TMP fonts
+
 **Spec:** Style Foundation §4
 
 Acceptance criteria:
@@ -214,140 +319,75 @@ Acceptance criteria:
 > No italic face is needed — emphasis resolved to colour shift only (queue #6), so the four
 > upright Chakra Petch weights stand. **T5 gains one output:** report the widest digit advance for
 > **both Aldrich and Chakra Petch SemiBold**, since v0.3.1 scopes `<mspace>` per face rather than
-> to Aldrich alone (queue #9). Status and criteria are left as written pending that pass.
-
-> **This branch (#797) was built against the pre-v0.3 §4 and predates the re-scope above.** The
-> ticks are factually accurate about what is installed; they are *not* a claim that T5 is done
-> under v0.3. Status is **NEEDS DESIGN** pending one scope decision — see *Awaiting decision*.
-
-**Delivered and still valid under v0.3:**
-- **Widest digit advance per face — the `X` in `<mspace=Xem>`** (the one output v0.3.1 newly asks
-  T5 for, queue #9). Measured from `hmtx` ÷ `unitsPerEm`:
-
-  | Face | upem | Widest digit | `<mspace>` |
-  |---|---|---|---|
-  | Aldrich | 2048 | `0` = 1495 | **`0.730em`** |
-  | Chakra Petch SemiBold | 1000 | `0` = 644 | **`0.644em`** |
-
-  Both faces are proportional, so `<mspace>` is genuinely required rather than belt-and-braces —
-  and Aldrich is the worse offender: its `1` is 717 units against its `0`'s 1495, so an Aldrich
-  digit can change width by **2.09×** as a counter ticks. Chakra Petch SemiBold's spread is 1.72×.
-  Confirms `X` must be per-face: one global value would over-space one of them by ~13%.
-- **Chakra Petch 400/500/600/700** in `Assets/_Graphics/Fonts/ChakraPetch/` with `OFL.txt` — v0.3
-  keeps Chakra Petch (SemiBold for buttons) and the re-scope note keeps all four upright weights.
-- **The vendored `ChakraPetch-Regular` duplicate is deleted** from `Assets/Unity Assests/TextMesh
-  Pro/` and its 180 references repointed to project space. Independent of which families ship;
-  §4 has warned about that folder since v0.1.
-- **The generator** (`Tools/Build/build_tmp_font_assets.py`) and its donor fixture. Family-agnostic:
-  re-pointing `FAMILIES` at a different set is a few lines, so it serves v0.3's set as well.
-- `Docs/Legal/THIRD_PARTY_NOTICES.md`, the attribution register.
-
-**Awaiting decision (blocks status):**
-1. **Space Grotesk ×4 and JetBrains Mono ×3 are cancelled by v0.3 §0-C but are installed on this
-   branch** (7 assets, ~15 MB, plus TTFs and two `OFL.txt`). Strip them from the branch, or land
-   them and remove them separately?
-2. **`TMP Settings` currently defaults to `SpaceGrotesk-Regular SDF`, which contradicts v0.3.**
-   Before this branch it was Liberation Sans. Under v0.3 the default should almost certainly be
-   **Aldrich** — but naming it is T6's call (*TMP Style Sheet + Aldrich audit*), so this branch
-   should either revert to Liberation Sans or set Aldrich on T6's behalf. The global fallback tail
-   (Liberation Sans → dynamic overflow) is unaffected either way and should stay.
-3. The type-scale render targets the pre-v0.3 scale (Chakra Petch / Space Grotesk / JetBrains Mono
-   roles). v0.3's scale is Aldrich-based with a Mobile @800 column, so the sheet needs re-rendering
-   against the new table once (1) and (2) are settled — Aldrich is already in the repo, so the
-   renderer needs no new capability.
+> to Aldrich alone (queue #9).
 
 **Deliverables:**
-- 11 static TTFs + 3 `OFL.txt` under `Assets/_Graphics/Fonts/{ChakraPetch,SpaceGrotesk,JetBrainsMono}/`.
-  Chakra Petch is upstream `google/fonts` static; Space Grotesk and JetBrains Mono ship
-  variable-only there, so their per-weight **static** instances come from Google Fonts' own
-  gstatic builds (woff wrapper unwrapped to TTF, outlines untouched).
-- 11 TMP font assets, one per weight, SDFAA / pointSize 90 / padding 9 / 1024² Alpha8,
-  every family fitting a **single** atlas (65–75% fill). ~23 MB total.
-- `Tools/Build/tmp_font_lib.py` + `Tools/Build/build_tmp_font_assets.py` — the generator.
-  `--fetch` / `--build` / `--check` / `--verify-donor`. The assets are the build; `--check`
-  proves the committed output still matches, so the generator cannot silently drift behind it.
-- `Tools/Build/render_type_scale.py`, `Tools/Build/render_tabular_proof.py` and the two
-  1920×1080 captures in `Docs/Fonts/`.
-- `Docs/Legal/THIRD_PARTY_NOTICES.md` — the attribution register, with paste-ready credits copy;
-  indexed from `Docs/Legal/README.md`.
-- `TMP Settings`: default font asset → `SpaceGrotesk-Regular SDF`; global fallbacks →
-  `LiberationSans SDF` then `LiberationSans SDF - Fallback` (the dynamic overflow).
-- **T5 cleanup:** the vendored `ChakraPetch-Regular` TTF + SDF asset deleted from
-  `Assets/Unity Assests/TextMesh Pro/Resources/Fonts & Materials/`, its 180 references
-  repointed to `Assets/_Graphics/Fonts/ChakraPetch/ChakraPetch-Regular SDF.asset`. Post-delete
-  sweep confirms neither guid nor the old material fileID survives anywhere in the repo.
-- `Tools/Build/fixtures/chakrapetch-regular-sdf-donor.json.gz` (66 KB) — a frozen snapshot of
-  that asset's face info, glyph and character tables, top-level key list **and atlas**, so
-  `--verify-donor` still re-proves the generator against a genuinely TMP-authored asset now
-  that the live one is gone. Deleting the duplicate must not delete the proof.
+- **Chakra Petch 400/500/600/700** — TTFs (byte-identical to upstream `google/fonts`), `OFL.txt`,
+  and four TMP SDF assets at SDFAA / pointSize 90 / padding 9 / 1024² Alpha8, each in one atlas.
+- **The `<mspace=Xem>` advance per face**, which is what v0.3.1 replaced a mono family with:
+
+  | Face | upem | Widest digit | `<mspace>` | Digit width spread |
+  |---|---|---|---|---|
+  | Aldrich | 2048 | `0` = 1495 | **`0.730em`** | 2.09× (`1` = 717) |
+  | Chakra Petch SemiBold | 1000 | `0` = 644 | **`0.644em`** | 1.72× (`1` = 374) |
+
+  Verified by render, not just arithmetic: untagged, a digit's centre moves up to **8.0 px**
+  between `0123456789` and `1111111111` at 56 px; tagged, **≤1.0 px** — the ink-threshold floor.
+  `Docs/Fonts/tabular-mspace-proof.png`.
+- **`Docs/Fonts/type-scale-1920x1080.png`** — v0.3 §4's PC @1920 column, Aldrich + Chakra Petch
+  SemiBold, Data roles under `<mspace>`, spec-authored rows marked.
+- **The vendored `ChakraPetch-Regular` duplicate deleted** and its 180 references repointed to
+  project space.
+- `Tools/Build/` — the generator (`--fetch` / `--build` / `--check` / `--verify-donor`), its donor
+  fixture, and the two renderers. `Docs/Legal/THIRD_PARTY_NOTICES.md`, the attribution register.
 
 **Findings:**
-- **`U+2011` and `U+2715` existed in no font in the chain** — not in the three new families,
-  not in the static `LiberationSans SDF`, not in `LiberationSans.ttf` behind the dynamic
-  fallback. Raised as queue entries 1 and 2 and **resolved as §4 v0.2**: `U+2011` dropped (no
-  use case; the regular hyphen serves), `U+2715` dropped in favour of the close/kick **icon
-  sprite** — a glyph present in only one of three families would have rendered inconsistently.
-  Both are now out of the generator's charset.
-- With v0.2 applied, **every codepoint in the charset is reachable**: Space Grotesk — the
-  default — is missing none at all, and Chakra Petch's only gap (`U+00B5` µ) resolves through
-  Liberation Sans. Verified by sweeping each asset's character table against the chain.
-- The **current TMP version no longer serializes `hashCode` / `materialHashCode`** and has
-  renamed `material` → `m_Material`, adding `m_SourceFontFilePath` and `InternalDynamicOS`.
-  A font asset written to the older field names loads with a **null material**. The generator
-  is keyed to the newest in-repo asset (`ChakraPetch-Regular SDF`) and asserts key parity.
-- TMP's SDF encoding is `alpha = 0.5 + d / (2·(padding+1))`, and the material's
-  `_GradientScale` **is** `padding + 1` — measured, not assumed, off the shipped atlas.
-- The pre-existing vendored `ChakraPetch-Regular` TTF + SDF asset **was in live use** — 90
-  `m_fontAsset` + 90 `m_sharedMaterial` references across `GameCanvas.prefab`,
-  `GameCanvas-HexRace.prefab`, `R_GameOverPanel.prefab` and `Goodies.prefab`. Confirmed the
-  same font (glyph order, cmap and `hmtx` identical; **0 of 773 outlines differ**), repointed
-  to the project-space asset, and deleted. See *T5 cleanup* below.
-- **A material reference is a second, independent pointer.** Repointing a TMP label means
-  rewriting `m_sharedMaterial`'s *fileID* as well as its guid — the material lives inside the
-  font asset at an asset-specific fileID, so carrying the guid across alone would have left
-  180 labels pointing at a material that does not exist in the new file.
-- Fonts are not under a `Resources/` folder, so rich-text `<font="…">` tags cannot find them by
-  name. Direct references (the default asset, the fallback tables, inspector fields) are
-  unaffected. Same as every other font in `Assets/_Graphics/Fonts/`.
+- **The installed Aldrich asset is ASCII-only — ASCII 95/95, Latin-1 Supplement 1/96** — and
+  carries none of `— – × · ← → ↑ ↓ −`. Under v0.3 Aldrich is the primary heading/body face, so an
+  em-dash, a `×`, or any accented character in UI copy **falls through to Liberation Sans and
+  changes typeface mid-sentence**. Nothing vanishes — Liberation Sans covers all of ASCII+Latin-1,
+  verified — but the face shifts visibly. Regenerating Aldrich at 90/9/1024 with the project
+  charset closes it, and the generator on this branch already does exactly that: it is one row in
+  `FAMILIES`. **This is T6's to take** (*TMP Style Sheet + Aldrich audit*), flagged here because
+  T5 is where it surfaced. It is also called out on the type-scale sheet itself.
+- **`<mspace>` must centre the glyph, not merely fix the advance.** TMP shifts each glyph by
+  `cell/2 − (width/2 + bearingX)·scale`; reproducing only the advance leaves the digits shuffling
+  *inside* fixed columns, which still jitters. The renderer implements the shift.
+- Both faces are genuinely proportional, so the tag is required rather than belt-and-braces, and
+  a single global `X` would mis-space one of them by ~13%. v0.3.1's per-face scoping is load-bearing.
+- The pre-existing vendored `ChakraPetch-Regular` was **in live use** — 90 `m_fontAsset` + 90
+  `m_sharedMaterial` references. **A material reference is a second, independent pointer**: the
+  material lives inside the font asset at an asset-specific fileID, so carrying only the guid
+  across would have left 180 labels pointing at a material that does not exist in the new file.
+- The current TMP version no longer serializes `hashCode` / `materialHashCode` and renamed
+  `material` → `m_Material`. An asset written to the older field names loads with a **null
+  material**. Caught by asserting key parity against a real TMP-authored asset.
 
 **Deviations from spec:**
-- **The font assets were generated programmatically, not through the Font Asset Creator.**
-  No Unity editor is available in this environment. Mitigation: the generator was validated by
-  regenerating the shipped `ChakraPetch-Regular SDF` and diffing it — face info **15/15**,
-  glyph table **97/97** on metrics and rect size, character table identical, top-level key
-  parity exact — and its SDF pixels match that atlas to a mean **0.054 px**, below the
-  0.055 px that one 8-bit alpha step can represent. **A Unity import pass is still owed**
-  (see below); this is the one thing offline validation cannot stand in for.
-- **The type-scale capture is an offline render, not a Unity test scene** — hence `[~]`.
-  `Tools/Build/render_type_scale.py` reads the generated `.asset` files (atlas pixels, glyph
-  rects, face metrics) and reproduces `TMP_SDF.shader`'s alpha rule, so it verifies the shipped
-  assets rather than the source TTFs — but it does not exercise TMP's own layout code.
-- **Fallback chain split across two places.** Space Grotesk → Chakra Petch is per-asset and
-  **weight-matched** (SG Light → CP Regular, since Chakra Petch has no 300); the
-  Liberation Sans → dynamic tail is global in TMP Settings so Chakra Petch and JetBrains Mono
-  inherit it without duplicating the tail on 11 assets. The spec states the chain but not where
-  it lives.
-- **`m_UsedGlyphRects` / `m_FreeGlyphRects` are emitted empty.** They only matter for dynamic
-  population; the shipped static `Rajdhani-*` assets do the same.
-- Folder names follow the acceptance criteria (`ChakraPetch/`), not §4's prose spelling
-  ("Chakra Petch"). The human-readable names are used in the credits register.
-- **The charset is §4 v0.2, so it is two symbols shorter than this task's criterion as
-  originally written.** The criterion line above has been updated to match; the design
-  decision is logged in the version log and queue entries 1–2 are RESOLVED.
-- **Chakra Petch source fonts are now shipped as upstream's exact bytes.** `fetch()` used to
-  round-trip every download through fontTools, which re-compiles and so changed `glyf`/`loca`
-  without changing a single outline. Woff downloads still need unwrapping; a file that arrives
-  as a TTF is now written verbatim, which is the better provenance story for an OFL font.
+- **The font assets were generated programmatically, not through the Font Asset Creator** — no
+  Unity editor is available here. Validated by regenerating a real TMP-authored asset and diffing:
+  face info **15/15**, glyph table **97/97**, character table identical, top-level key parity exact,
+  and SDF pixels to a mean **0.054 px** — below the 0.055 px one 8-bit alpha step can represent.
+  A Unity import pass is still owed.
+- **The type-scale capture is an offline render, not a Unity test scene** — hence `[~]`. It reads
+  the installed `.asset` files and reproduces `TMP_SDF.shader`'s alpha rule, so it verifies the
+  shipped assets; it does not exercise TMP's own layout code.
+- **`TMP Settings` default reverted to Liberation Sans, not set to Aldrich.** v0.3 retains Aldrich,
+  but naming the default is T6's call, so this branch does not pre-empt it. The consequence is
+  explicit: **text left on the default still renders Liberation Sans until T6 lands.** The global
+  fallback list keeps *only* the dynamic overflow entry — family-agnostic, and what stops a missing
+  glyph drawing as a box; the static Liberation Sans entry was dropped as redundant with the default.
+- Space Grotesk and JetBrains Mono were built and then **removed from this branch** after v0.3
+  cancelled them. The generator is family-agnostic, so the work is recoverable from history if
+  design reverses; nothing else references them.
 
 **What still needs the Unity editor:**
-1. Open the project and confirm all 11 assets import clean — each shows its atlas, a non-null
-   material, and a populated glyph table in the inspector.
-2. Confirm `TMP Settings` shows `SpaceGrotesk-Regular SDF` as the default and the two global
-   fallbacks in order.
-3. Drop a TMP label in a scene at 1920×1080 and eyeball the §4 rows against
-   `Docs/Fonts/type-scale-1920x1080.png` — this is what promotes the `[~]` to `[x]`.
-4. If anything looks wrong, re-run `python3 Tools/Build/build_tmp_font_assets.py --verify-donor`
-   first; it re-proves the model against the shipped TMP asset in ~2 s.
+1. Confirm the four Chakra Petch assets import clean — atlas, non-null material, populated glyph table.
+2. Confirm `TMP Settings` shows Liberation Sans as default and the dynamic fallback in the list.
+3. Confirm the four repointed prefabs (`GameCanvas`, `GameCanvas-HexRace`, `R_GameOverPanel`,
+   `Goodies`) still render their Chakra Petch labels — 180 references moved.
+4. Set a TMP label at 1920×1080 against `Docs/Fonts/type-scale-1920x1080.png` — this promotes the
+   `[~]` to `[x]`.
 
 ---
 

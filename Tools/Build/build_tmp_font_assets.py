@@ -46,10 +46,13 @@ CHARSET  = sorted(set(CHARSET + [0x200B]))
 WEIGHT_NAME = {300: "Light", 400: "Regular", 500: "Medium", 600: "SemiBold", 700: "Bold"}
 # key = folder name under Assets/_Graphics/Fonts/ (Style Foundation T5 spells these
 # without spaces); value = (file stem, weights, human-readable family name).
+# Style Foundation v0.3 §0-C CANCELLED Space Grotesk and JetBrains Mono: Aldrich is
+# retained for headings and body, Chakra Petch SemiBold serves buttons, and tabular
+# figures are bought with TMP <mspace> rather than a mono family. Do not re-add either
+# without a §4 revision. The generator itself is family-agnostic — a new family is one
+# row here plus its OFL/source entry below.
 FAMILIES = {
-    "ChakraPetch":   ("ChakraPetch",   [400, 500, 600, 700], "Chakra Petch"),
-    "SpaceGrotesk":  ("SpaceGrotesk",  [300, 400, 500, 600], "Space Grotesk"),
-    "JetBrainsMono": ("JetBrainsMono", [400, 500, 700],      "JetBrains Mono"),
+    "ChakraPetch": ("ChakraPetch", [400, 500, 600, 700], "Chakra Petch"),
 }
 
 
@@ -433,12 +436,13 @@ def verify_donor():
 LIB_SANS       = "8f586378b4e144a9851e7b34d9b748ee"      # LiberationSans SDF
 LIB_SANS_DYN   = "2e498d1c8094910479dc3e1b768306a4"      # LiberationSans SDF - Fallback (DYNAMIC)
 GH             = "https://raw.githubusercontent.com/google/fonts/main"
-OFL_DIR        = {"ChakraPetch": "ofl/chakrapetch",
-                  "SpaceGrotesk": "ofl/spacegrotesk",
-                  "JetBrainsMono": "ofl/jetbrainsmono"}
+OFL_DIR        = {"ChakraPetch": "ofl/chakrapetch"}
 # Space Grotesk and JetBrains Mono ship variable-only in google/fonts; Google Fonts'
 # own per-weight STATIC instances come from gstatic (woff wrapper, unwrapped to ttf).
-CSS_QUERY      = {"SpaceGrotesk": "Space+Grotesk", "JetBrainsMono": "JetBrains+Mono"}
+# Families whose google/fonts upstream is variable-only, so their per-weight STATIC
+# instances come from Google Fonts' own gstatic builds. Empty since v0.3 (Chakra Petch
+# ships real statics upstream); the woff-unwrapping path below is kept for the next one.
+CSS_QUERY      = {}
 UA_LEGACY      = ("Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 "
                   "(KHTML, like Gecko) Chrome/27.0.1453.116 Safari/537.36")
 
@@ -525,13 +529,10 @@ def fetch():
 
 
 def fallbacks_for(family, weight):
-    """Space Grotesk -> Chakra Petch (weight-matched). Liberation Sans and the
-    DYNAMIC overflow fallback are global, set in TMP Settings, so every family
-    inherits them without duplicating the tail of the chain on 11 assets."""
-    if family != "SpaceGrotesk":
-        return []
-    cp = weight if weight in FAMILIES["ChakraPetch"][1] else 400    # CP has no Light
-    return [(11400000, stable_guid(f"asset/ChakraPetch-{WEIGHT_NAME[cp]} SDF"))]
+    """Per-asset fallback chain. Empty under v0.3: with one family installed there is
+    nothing to chain to, and the DYNAMIC overflow fallback is global (TMP Settings), so
+    every asset inherits it without duplicating a tail on each one."""
+    return []
 
 
 def all_targets():

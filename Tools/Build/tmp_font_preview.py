@@ -18,7 +18,8 @@ class TMPFontAsset:
         g = lambda k, d='0': (re.search(rf"^  {k}: (-?[\d.]+)", t, re.M) or
                               re.match(r"(-?[\d.]+)", d)).group(1)
         f = lambda k: float(re.search(rf"^    {k}: (-?[\d.E-]+)", t, re.M).group(1))
-        self.name        = re.search(r"^  m_Name: (.*)$", t, re.M).group(1).strip()
+        mono = t.split("MonoBehaviour:")[1] if "MonoBehaviour:" in t else t
+        self.name        = re.search(r"^  m_Name: (.*)$", mono, re.M).group(1).strip()
         self.point_size  = f('m_PointSize')
         self.padding     = float(g('m_AtlasPadding'))
         self.line_height = f('m_LineHeight')
@@ -45,24 +46,35 @@ class TMPFontAsset:
     def has(self, ch):
         return ord(ch) in self.chars
 
-    def advance(self, ch, size, tracking_em=0.0):
+    def advance(self, ch, size, tracking_em=0.0, mspace_em=0.0):
+        if mspace_em:
+            return mspace_em * size          # <mspace> fixes the advance for every glyph
         gi = self.chars.get(ord(ch))
         if gi is None:
             return 0.0
         return self.glyphs[gi]['adv'] * size / self.point_size + tracking_em * size
 
 
-def draw_text(img, font, text, x, baseline, size, tracking_em=0.0, rgb=(255, 255, 255)):
-    """Composite text onto an HxWx3 float image. Returns the advanced pen x."""
+def draw_text(img, font, text, x, baseline, size, tracking_em=0.0, rgb=(255, 255, 255),
+              mspace_em=0.0):
+    """Composite text onto an HxWx3 float image. Returns the advanced pen x.
+
+    mspace_em reproduces TMP's <mspace=Xem>: every glyph gets the same advance AND is
+    CENTRED in that cell, which is what actually stops a live counter jittering. Getting
+    only the advance right would leave the digits shuffling inside their columns."""
     k    = size / font.point_size
     grad = font.padding + 1.0
     pen  = float(x)
     for ch in text:
         gi = font.chars.get(ord(ch))
         if gi is None:                       # missing glyph: advance a space, draw nothing
-            pen += font.advance(' ', size) + tracking_em * size
+            pen += (mspace_em * size) if mspace_em else (font.advance(' ', size) + tracking_em * size)
             continue
         g = font.glyphs[gi]
+        # <mspace>: centre the glyph in the fixed cell (TMP shifts by half the cell minus
+        # half the glyph's own advanced width)
+        cell = mspace_em * size
+        shift = (cell / 2.0 - (g['w'] / 2.0 + g['bx']) * k) if mspace_em else 0.0
         if g['rw'] and g['rh']:
             p   = int(font.padding)
             atl = font.atlases[g['ai']]
@@ -73,7 +85,7 @@ def draw_text(img, font, text, x, baseline, size, tracking_em=0.0, rgb=(255, 255
             win = np.flipud(win)             # -> top-down for image space
 
             # destination box, in pixels
-            dx0 = pen + (g['bx'] - p) * k
+            dx0 = pen + shift + (g['bx'] - p) * k
             dy0 = baseline - (g['by'] + p) * k
             dw, dh = aw * k, ah * k
             ix0, iy0 = int(np.floor(dx0)), int(np.floor(dy0))
@@ -96,12 +108,12 @@ def draw_text(img, font, text, x, baseline, size, tracking_em=0.0, rgb=(255, 255
                 cov = np.clip(sd + 0.5, 0.0, 1.0)[:, :, None]
                 dst = img[iy0c:iy1c, ix0c:ix1c, :]
                 img[iy0c:iy1c, ix0c:ix1c, :] = dst * (1 - cov) + np.array(rgb, np.float32) * cov
-        pen += g['adv'] * k + tracking_em * size
+        pen += cell if mspace_em else (g['adv'] * k + tracking_em * size)
     return pen
 
 
-def measure(font, text, size, tracking_em=0.0):
-    return sum(font.advance(c, size, tracking_em) for c in text)
+def measure(font, text, size, tracking_em=0.0, mspace_em=0.0):
+    return sum(font.advance(c, size, tracking_em, mspace_em) for c in text)
 
 
 def save(img, path):
