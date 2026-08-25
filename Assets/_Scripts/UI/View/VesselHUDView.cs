@@ -32,6 +32,12 @@ namespace CosmicShore.UI
                      "reaches its unlock level and restored on re-lock. Leave empty to keep the base " +
                      "sprite - the lockup card still marks the upgrade either way.")]
             public Sprite upgradedSprite;
+
+            [Tooltip("Optional meter for this ability - energy, heat, charge, cooldown. The lockup " +
+                     "re-homes it into the card and restyles it as the fleet's one gauge: a linear " +
+                     "fill rising through the icon's cell. The vessel keeps writing fillAmount, so " +
+                     "no gameplay wiring changes; only where and how it draws does.")]
+            public Image gauge;
         }
 
         /// <summary>
@@ -61,10 +67,11 @@ namespace CosmicShore.UI
         readonly Dictionary<Element, Tween>   _abilityIconTweens      = new();
         readonly HashSet<Element>             _upgraded               = new();
 
-        [Header("Ability lockup (optional)")]
-        [Tooltip("Composes the totem card - plate, element flower, rim and bloom - around each " +
-                 "ability icon. Resolved from this GameObject when empty; a vessel without one is " +
-                 "simply unstyled, which is how the rollout stays opt-in per vessel.")]
+        [Header("Ability lockup")]
+        [Tooltip("Composes the totem card - plate, element flower, gauge, rim and bloom - around " +
+                 "each ability icon, and owns the whole row's position, pitch and icon size. " +
+                 "STRUCTURAL, not optional: VesselHUDController.Initialize adds one if a prefab " +
+                 "lacks it, so leaving this empty is fine. See Docs/ABILITY_LOCKUP.md.")]
         [SerializeField] private AbilityLockupView abilityLockups;
 
         [Header("Animation (optional)")]
@@ -86,6 +93,19 @@ namespace CosmicShore.UI
         /// binder so an (LT)/(RT) label can find the ability it belongs to instead of being pinned to
         /// a hand-authored position.
         /// </summary>
+        /// <summary>The meter this ability drives, if the vessel wired one.</summary>
+        public bool TryGetAbilityGauge(Element element, out Image gauge)
+        {
+            foreach (var binding in abilityIcons)
+            {
+                if (binding.element != element || !binding.gauge) continue;
+                gauge = binding.gauge;
+                return true;
+            }
+            gauge = null;
+            return false;
+        }
+
         public bool TryGetAbilityIcon(Element element, out Image icon)
         {
             foreach (var binding in abilityIcons)
@@ -100,6 +120,33 @@ namespace CosmicShore.UI
 
         /// <summary>True when this HUD authors the four-icon ability row at all (opt-in rollout).</summary>
         public bool HasAbilityIconRow => abilityIcons is { Count: > 0 };
+
+        /// <summary>
+        /// The fleet's one "this ability is firing" signal: the lockup card lights while the
+        /// control is held and decays on release. Replaces the per-vessel circular glow that used
+        /// to be switched on behind the icon - that chrome is retired by the lockup, and drawing a
+        /// second shape for a state the card can carry itself is exactly the divergence the totem
+        /// exists to remove.
+        /// </summary>
+        public void SetAbilityPressed(Element element, bool pressed)
+        {
+            var lockups = ResolveAbilityLockups();
+            if (lockups) lockups.SetAbilityPressed(element, pressed);
+        }
+
+        /// <summary>
+        /// Where this element's control chip belongs on the lockup card. The control-hint binder
+        /// places its (LT)/(RT) glyph HERE at zero offset rather than at a per-vessel offset from
+        /// the icon - which is what locks the label TO the totem instead of leaving it floating
+        /// near one. Returns false only on a HUD that has no lockup at all.
+        /// </summary>
+        public bool TryGetAbilityChipSocket(Element element, out RectTransform socket)
+        {
+            var lockups = ResolveAbilityLockups();
+            if (lockups) return lockups.TryGetChipSocket(element, out socket);
+            socket = null;
+            return false;
+        }
 
         /// <summary>
         /// The lockup's icon KERNING - how much of the ability cell the icon fills. 1 when this HUD
@@ -224,8 +271,12 @@ namespace CosmicShore.UI
         /// Guarantees this HUD wears the ability lockup. Called from
         /// <see cref="VesselHUDController.Initialize"/> - the one method every vessel HUD routes
         /// through on every spawn path - so the style is STRUCTURAL rather than something a prefab
-        /// can be authored without. A vessel that has no ability row yet is left alone: there is
-        /// nothing to lock up, and the row's own validator already reports that.
+        /// can be authored without.
+        ///
+        /// <para>The row is built even when the vessel binds NO icons: it is always four cards, and a
+        /// slot whose ability does not exist yet renders LOCKED rather than being absent. That is
+        /// what stops a vessel like the Rhino - one named ability, three open design slots - from
+        /// simply keeping the old UI while it waits for design.</para>
         ///
         /// <para>Idempotent. The component is added rather than warned about because the lockup is
         /// pure composition over icons that are already authored - there is no per-vessel art or
@@ -234,8 +285,6 @@ namespace CosmicShore.UI
         /// </summary>
         public void EnsureAbilityLockup()
         {
-            if (!HasAbilityIconRow) return;
-
             var lockups = ResolveAbilityLockups();
             if (!lockups)
             {

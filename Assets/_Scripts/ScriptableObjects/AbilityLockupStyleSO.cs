@@ -67,8 +67,19 @@ namespace CosmicShore.ScriptableObjects
         [Tooltip("Divider thickness. 1 = the hairline the style guide specifies.")]
         [Min(0f)] public float dividerThickness = 1f;
 
+        [Tooltip("Height of the control chip below the card. The chip is placed by the lockup, so a " +
+                 "vessel can no longer author its own offset for the (LT)/(RT) label.")]
+        [Min(1f)] public float chipHeight = 24f;
+
+        [Tooltip("Gap between the bottom of the card and the control chip.")]
+        [Min(0f)] public float chipGap = 8f;
+
         [Tooltip("How far the bloom extends past the plate on every side.")]
         [Min(0f)] public float bloomPadding = 26f;
+
+        [Tooltip("Height of the gauge that fills the ability cell behind the icon, as a fraction of " +
+                 "that cell. 1 = the gauge rises the full height of the icon's cell.")]
+        [Range(0.2f, 1f)] public float gaugeCellFraction = 1f;
 
         [Header("Sprites (white + alpha, tinted at runtime)")]
         [Tooltip("9-sliced plate body with the corner sliver on two opposite corners.")]
@@ -96,6 +107,26 @@ namespace CosmicShore.ScriptableObjects
         public Color bloomColor = new(0.96f, 0.96f, 1f, 0.24f);
         [Tooltip("Plate fill while upgraded. Kept close to the resting fill: the RIM changes, not the body.")]
         public Color upgradedPlateColor = new(0.024f, 0.031f, 0.063f, 0.9f);
+
+        [Header("Gauge - fills the ability cell linearly, behind the icon")]
+        [Tooltip("The gauge's unfilled track. Sits behind the icon and reads as part of the plate.")]
+        public Color gaugeTrackColor = new(0.086f, 0.094f, 0.129f, 0.9f);
+        [Tooltip("The filled part. Rises bottom-to-top through the icon's cell, so the icon reads as " +
+                 "filling up - one gauge shape for every meter on every vessel.")]
+        public Color gaugeFillColor = new(0.22f, 0.51f, 1f, 0.55f);
+
+        [Header("Locked slot - an ability that is not designed yet")]
+        [Tooltip("Plate fill for a slot whose ability does not exist. Honest rather than empty: the " +
+                 "element flower above it is still live, because the element IS real.")]
+        public Color lockedPlateColor = new(0.024f, 0.031f, 0.063f, 0.55f);
+        [Tooltip("The locked slot's hairline and its placeholder mark.")]
+        public Color lockedMarkColor = new(0.361f, 0.373f, 0.439f, 0.55f);
+
+        [Header("Press feedback")]
+        [Tooltip("Flash the CARD takes on an ability press. Replaces the per-vessel circular glow, " +
+                 "which was authored for the old round button and reads as a foreign shape now.")]
+        public Color pressFlashColor = new(0.96f, 0.96f, 1f, 0.22f);
+        [Min(0.01f)] public float pressFlashDuration = 0.18f;
 
         [Header("Motion (states travel, nothing pops)")]
         [Tooltip("Seconds the rim/bloom take to cross between resting and upgraded.")]

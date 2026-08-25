@@ -99,15 +99,42 @@ namespace CosmicShore.UI
         private void HandleStart(InputEvents ev) => Toggle(ev, true);
         private void HandleStop(InputEvents ev)  => Toggle(ev, false);
 
+        /// <summary>
+        /// Press feedback. The lockup CARD carries it - one signal, identical on every vessel -
+        /// resolved from the input through the vessel's own ability map, so a hull that rebinds an
+        /// ability to another control needs no HUD change.
+        ///
+        /// <para>The legacy per-vessel <c>highlights</c> list is still driven for a HUD the lockup
+        /// could not claim. On a lockup vessel those images are retired chrome, so writing them is
+        /// a deliberate no-op rather than a second, divergent press glow.</para>
+        /// </summary>
         private void Toggle(InputEvents ev, bool on)
         {
             if (!baseView) return;
+
+            if (TryResolveAbilityElement(ev, out var element))
+                baseView.SetAbilityPressed(element, on);
 
             foreach (var h in baseView.highlights)
             {
                 if (h.input == ev && h.image)
                     h.image.enabled = on;
             }
+        }
+
+        bool TryResolveAbilityElement(InputEvents ev, out Element element)
+        {
+            element = Element.None;
+            var map = _abilityHandler ? _abilityHandler.Map : null;
+            if (map == null) return false;
+
+            foreach (var entry in map.Entries)
+            {
+                if (entry == null || entry.Input != ev) continue;
+                element = entry.Element;
+                return true;
+            }
+            return false;
         }
     }
 }

@@ -1027,6 +1027,7 @@ MonoBehaviour:
   - element: 3
     icon: {fileID: 4990196459091587280}
     upgradedSprite: {fileID: 0}
+    gauge: {fileID: 6877628874251343197}
   - element: 4
     icon: {fileID: 3258612490553136050}
     upgradedSprite: {fileID: 0}

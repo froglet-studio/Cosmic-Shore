@@ -2995,3 +2995,42 @@ identical size on all four vessels, **no decagon behind any icon**, and touch/cl
 Sparrow · Squirrel · Scarab (the card's plate is the button's target graphic now). Watch for
 anything that used to sit at the Sparrow's old row position and may now be uncovered or collided
 with. Also retired: the upgrade corner badge and the icon tint — the card is the only upgrade signal.
+
+**Update — chips, gauges, press state, locked slots (this round). NOT EDITOR-VERIFIED.**
+Four defects reported from play, four fixes, all still unverified in the Editor:
+
+1. **Control chips lock to the totem.** A hint now lands on its card's `ControlChip` socket at ZERO
+   offset (`VesselHUDView.TryGetAbilityChipSocket` → `AbilityLockupView.TryGetChipSocket`); the
+   per-vessel `attachOffset` is a legacy fallback used only on a HUD with no lockup. **Verify:** on
+   Dolphin · Sparrow · Squirrel · Scarab every (LT)/(RT)/button glyph sits centred directly under
+   its own card, moves with the row, and none is clipped off the bottom of the screen. Switch input
+   device (pad → keyboard → pad) and confirm each set lands in the same place.
+2. **Gauges are linear, and on the right card.** `AbilityIconBinding.gauge` was wired on three
+   prefabs: **Squirrel** `boostFill` → **Time** (it was authored under the *skimming* button),
+   **Sparrow** `rollChargeIndicator` → Time, **Scarab** `energyRing` → **Space** (authored under the
+   *throttle* button). **Verify:** boost/roll/ball-energy each fill a straight vertical bar inside
+   their own card's icon cell over a dim track — no ring anywhere — and each is on the ability it
+   reports on. The Squirrel's boost must still tint to the pilot's domain colour (the vessel keeps
+   driving colour; the lockup only sets a default).
+3. **The press glow is the card.** `VesselHUDController.Toggle` resolves the input to an element
+   through the vessel's own `ElementalAbilityMapSO` and lights that card, held while down and decayed
+   on release. **Verify:** hold each bound control on each vessel — the whole card lights, and NO
+   circular glow appears behind any icon. The Squirrel's undriven `overheatHighlight` halo should be
+   gone entirely.
+4. **Locked slots / the Rhino.** The row is always four cards; an unbound slot draws locked.
+   **Verify:** fly a **Rhino** — four cards, Mass live (Trail Slabs), three drawn locked, element
+   flowers docked above all four, and no old ability-icon UI left in the corner. Same for **Manta**
+   and **Serpent**. Confirm the locked cards are clearly quieter than a live one and are not
+   clickable.
+
+Also verify **touch** on a device or the simulator: retiring the host's chrome deliberately makes a
+button's `targetGraphic` invisible rather than disabling it, because an absent graphic does not
+raycast. Every on-screen ability button must still respond.
+
+Then run **FrogletTools > Vessels > Audit Ability Lockups** (expect OK, with a `gauge on <element>`
+line per bound meter naming where it was authored) and the **`AbilityLockupStyleTests`** edit-mode
+suite (four new tests: gauge readability, locked-slot quietness, chip clearance, press-flash decay).
+
+**Asset cleanup in the same pass:** `Scarab.prefab` carried a stale prefab-instance name override
+renaming its HUD instance to `SparrowHUDVariant`. It references `ScarabHUDVariant` and always did;
+the override is deleted. **Verify** the Scarab's HUD still appears and its Space gauge moves.

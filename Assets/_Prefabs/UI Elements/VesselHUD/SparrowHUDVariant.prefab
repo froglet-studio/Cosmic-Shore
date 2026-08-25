@@ -1030,6 +1030,7 @@ MonoBehaviour:
   - element: 4
     icon: {fileID: 3258612490553136050}
     upgradedSprite: {fileID: 0}
+    gauge: {fileID: 6877628874251343197}
   upgradeHighlightScale: 1.15
   upgradePunchScale: 1.35
   upgradePunchDuration: 0.35

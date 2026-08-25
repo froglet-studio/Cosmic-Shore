@@ -1,7 +1,9 @@
 # The Ability Lockup (TOTEM) — one system for ability icons + element indicators
 
-**Status:** **fleet-wide and structural.** Every vessel HUD that binds an ability row wears the
-lockup; there is nothing per-vessel to author. Design canvas: the "Ability Lockups" artifact (Totem — shipped page).
+**Status:** **fleet-wide and structural.** Every vessel HUD wears the lockup — a vessel that binds
+no ability icons yet still gets the four-card row with its open slots drawn LOCKED, so no hull is
+left on the old UI while it waits for design. There is nothing per-vessel to author. Design canvas:
+the "Ability Lockups" artifact (Totem — shipped page).
 
 ## The problem it closes
 
@@ -23,10 +25,12 @@ The lockup fuses them into one card per ability, so a glance answers four questi
 | 3 | **Which ability** | the vessel's own icon, in the lower cell — never redrawn |
 | 4 | **Is it upgraded** | the card's rim to the level-5 white + bloom behind the plate |
 | 5 | **How to fire it** | the device chip below the card. No chip = passive |
+| 6 | **How much of the ability is ready** | the card's own linear gauge, rising through the icon's cell |
+| 7 | **Is it firing right now** | the whole card lights and decays |
 
-**The gauge rule survives.** The icon remains the vessel's live-gauge channel (fill · tint · lean).
-Petals, rim and chip never carry gauge meaning, and the card — not the icon — carries the upgrade.
-That is precisely what lets a row of four live gauges show an upgrade at all.
+**The gauge rule survives, and now has a home.** The icon remains the vessel's live-gauge channel
+(fill · tint · lean). Petals, rim and chip never carry gauge meaning, and the card — not the icon —
+carries the upgrade. That is precisely what lets a row of four live gauges show an upgrade at all.
 
 ## Shape (why TOTEM)
 
@@ -65,23 +69,72 @@ Two properties make it cheap to adopt:
   is centred on wherever that icon already sits; the upper cell is *added above*. A vessel adopts
   the style without one authored RectTransform changing.
 
+## The gauge — one shape, and it is not a ring
+
+A meter belonged to whatever the vessel happened to draw it as: a radial ring around the Sparrow's
+boost icon, another around the Scarab's Ball Forge, a chevron fill on the Squirrel, an undriven
+circular heat halo behind the Squirrel's skimming icon. Three different shapes for one idea, all of
+them circles wrapped around a square-ish icon inside a square-ish card.
+
+**The fleet's gauge is a linear fill that takes over the icon's cell.** A vessel binds its existing
+meter `Image` as `AbilityIconBinding.gauge` and the lockup re-homes it into the card, sizes it to the
+ability cell and re-forms it to `Filled` / `Vertical` / origin `Bottom`, behind the icon and above a
+dim track. **The vessel keeps writing `fillAmount` on the very same Image** — no gameplay wiring
+changes, only where and how it draws. Colour is a default the vessel is free to keep driving where
+colour carries meaning (the Squirrel's boost tints to the pilot's domain).
+
+**A meter is regularly authored on the WRONG card, and the build is ordered around that.** The
+Squirrel's boost fill sits under its *skimming* button and the Scarab's ball-energy ring under its
+*throttle* button — both inherited layouts. Binding fixes it: the gauge is adopted onto the card its
+ability actually owns. That is why `Build` runs three passes — place every host, then adopt every
+gauge, then retire chrome. Doing it per-element would deactivate a meter a later element was about
+to claim, silently, and only on the vessels whose authoring had drifted.
+
+| vessel | slot | meter |
+|---|---|---|
+| Squirrel | Time (Boost Ring) | `boostFill` — authored under the skimming button, re-homed |
+| Sparrow | Time (Afterburner) | `rollChargeIndicator` — the strafing-roll pip, already on the right card |
+| Scarab | Space (Ball Forge) | `energyRing` — authored under the throttle button, re-homed |
+
+## The press state — the card lights, not a circle behind it
+
+An ability firing used to switch on a per-vessel `highlights` image: a circular glow behind the
+icon, a different one per hull. The card carries it now (`VesselHUDView.SetAbilityPressed` →
+`AbilityLockupView`), resolved from the input through the vessel's **own** ability map, so a hull
+that rebinds an ability to another control needs no HUD change. It is **held** while the control is
+down and **decays** on release — nothing pops out of existence.
+
+The legacy `highlights` list is still written, for a HUD the lockup could not claim. On a lockup
+vessel those images are retired chrome, so the write is a deliberate no-op rather than a second,
+divergent press glow.
+
+## Locked slots — the row is always four cards
+
+`AbilityDisplayOrder` is four elements, so the row is four cards, always. A slot the vessel binds no
+icon for renders **locked**: a quieter plate, a hairline mark where the icon would be, no gauge
+track. Deliberately **not a padlock** — the ability is not locked to the *player*, it does not exist
+yet. This is what puts the Rhino (one named ability, three open design slots) on the fleet's UI
+today instead of leaving it on the old one until design lands, and its element flowers dock into the
+locked cards exactly as they would into live ones.
+
 ## Rollout + enforcement (all vessels)
 
 `VesselHUDController.Initialize` — the one method every vessel HUD routes through, on every spawn
-path — calls `VesselHUDView.EnsureAbilityLockup()`, which adds and builds the lockup whenever the
-HUD binds an ability row. So the style is not opt-in and no prefab has to be edited to adopt it;
-a NEW vessel inherits it the moment it binds its four icons. It is added rather than warned about
+path — calls `VesselHUDView.EnsureAbilityLockup()`, which adds and builds the lockup on **every** HUD —
+including one that binds no icons at all, which is what gets the Rhino its locked row. So the style
+is not opt-in and no prefab has to be edited to adopt it; a NEW vessel inherits it before it has a
+single icon. It is added rather than warned about
 because the lockup is pure composition over icons that are already authored — there is no
 per-vessel art or wiring for a human to supply.
 
 | vessel | row | lockup |
 |---|---|---|
 | Dolphin | 4/4 | ✅ (component also authored on the prefab — explicit, and equivalent) |
-| Scarab | 4/4 | ✅ ensured at runtime |
-| Sparrow | 4/4 | ✅ ensured at runtime |
-| Squirrel | 4/4 | ✅ ensured at runtime; its AUTHORED flowers are re-homed, not replaced |
-| Manta · Rhino · Serpent | 0/4 | — nothing to lock up; blocked on ability DESIGN, not on this style |
-| Urchin | 0/4 | — no HUD prefab exists |
+| Scarab | 4/4 | ✅ ensured at runtime; `energyRing` re-homed onto the Space card as its gauge |
+| Sparrow | 4/4 | ✅ ensured at runtime; `rollChargeIndicator` becomes the Time card's gauge |
+| Squirrel | 4/4 | ✅ ensured at runtime; AUTHORED flowers re-homed, `boostFill` re-homed onto Time |
+| Manta · Rhino · Serpent | 0/4 | ✅ four LOCKED cards — the row exists, the flowers dock, the slots read as undesigned. Blocked on ability DESIGN, not on this style |
+| Urchin | 0/4 | — no HUD prefab exists at all, so there is no view to ensure |
 
 **Row ownership is why `EnsureAbilityLockup` runs BEFORE `view.Initialize`.** Per-vessel views
 capture their icons' rest scales during Initialize, and those scales are only right once the lockup
@@ -132,9 +185,14 @@ so `enforceStandardPlacement` stays `1` fleet-wide and no other vessel is affect
 | The composer | `Assets/_Scripts/UI/View/AbilityLockupView.cs` |
 | Upgrade hook (shared) | `Assets/_Scripts/UI/View/VesselHUDView.cs` — `SetAbilityUpgraded` → `SetUpgraded` |
 | Flower socket injection | `Assets/_Scripts/UI/View/ElementalBarsView.cs` — `TrySetPetalRoot` |
+| Press state + chip binding (shared init) | `Assets/_Scripts/UI/Controller/VesselHUDController.cs` |
+| Control chips land on the card | `Assets/_Scripts/UI/Elements/InputDeviceIconSetSwitcher.cs` — `BindHintsToAbilities` |
 | Adoption (no duplicate row) | `Assets/_Scripts/Controller/Vessel/ElementalBarsController.cs` |
 | Sprites (white + alpha, 9-sliced) | `Assets/_Graphics/Design Assests/HUD UI/AbilityLockup/Lockup{Plate,PlateRim,Bloom}.png` |
 | Dolphin wiring | `Assets/_Prefabs/UI Elements/VesselHUD/DolphinHUDVariant.prefab` (one component on the root) |
+| Gauge bindings | `{Squirrel,Sparrow,Scarab}HUDVariant.prefab` — one `gauge` field per bound slot |
+| Fleet audit | `Assets/_Scripts/Editor/AbilityLockupAuditor.cs` |
+| Edit-mode tests | `Assets/_Scripts/Tests/Editor/AbilityLockupStyleTests.cs` |
 
 ## Tuning knobs — `Assets/Resources/AbilityLockupStyle.asset`
 
@@ -148,10 +206,15 @@ so `enforceStandardPlacement` stays `1` fleet-wide and no other vessel is affect
 | `cardPitch` | 137.7 | centre-to-centre card spacing — one number for the fleet |
 | `rowMarginRight` / `rowMarginBottom` | 65.1 / 53 | where the row sits, from the screen's bottom-right corner |
 | `dividerInset` / `dividerThickness` | 8 / 1 | the hairline between cells |
+| `chipHeight` / `chipGap` | 24 / 8 | the control chip's socket below the card. `chipGap + chipHeight` must stay under `rowMarginBottom` or every label clips off the screen |
+| `gaugeCellFraction` | 1 | how much of the ability cell the linear gauge fills |
 | `bloomPadding` | 26 | how far the upgraded bloom reaches past the card |
 | `plateColor` / `hairlineColor` | `#060810` @0.86 / `#5C5F70` @0.9 | resting fill + outline |
 | `upgradedRimColor` | `#F5F5FF` | the level-5 white the flowers already speak |
 | `bloomColor` | `#F5F5FF` @0.24 | alpha carries it — in engine bloom clamps at max-channel 0.5, so glow is bought with lit AREA |
+| `gaugeTrackColor` / `gaugeFillColor` | `#161822` @0.9 / `#3882FF` @0.55 | the meter. The fill must out-read its own track in luminance, or the gauge is invisible — asserted by both the auditor and the tests |
+| `lockedPlateColor` / `lockedMarkColor` | `#060810` @0.55 / `#5C5F70` @0.55 | an undesigned slot. Must stay QUIETER than a live card, or the row advertises abilities that do not exist |
+| `pressFlashColor` / `pressFlashDuration` | `#F5F5FF` @0.22 / 0.18 | the card's fire signal, held while the control is down and decayed on release |
 | `upgradeTransitionDuration` | 0.2 | states travel; nothing pops |
 | `unlockPunchScale` / `unlockPunchDuration` | 1.05 / 0.5 | one-shot ceremony on unlock only, never on re-lock |
 
@@ -165,7 +228,7 @@ plate/rim, 48 on bloom), so one asset set serves every vessel and every size.
    flower above the Dolphin's existing gauge (Echo Sight profile / crystal / jaws / boost ring).
    The gauges must still animate exactly as before — the icons were not moved or restyled.
 3. **Kerning.** Neither the icon nor the flower should touch the plate's corner sliver — even air
-   on every side, and the icon still visibly larger than the flower. Retune with `iconContentScale`
+   on every side, and the icon still visibly larger than the flower. Retune with `iconBoxSize`
    / `petalFlowerSize`; nothing here needs a recompile.
 4. **Console.** No `[ElementalBarsView] Created N petal(s) … at RUNTIME` warning and no
    `Auto-creating the '…' flower container` warning: the sockets are supplied, so both paths are
@@ -175,10 +238,21 @@ plate/rim, 48 on bloom), so one asset set serves every vessel and every size.
 6. **Upgrade.** Drive an element to level 5 (crystals, or the comeback buff in a mode where you are
    behind). That card's rim should cross to white and a soft bloom come up behind the plate over
    ~0.2s, with a small one-shot punch. Drop below 4 and it should travel back, not snap.
-7. **Chips.** LT/RT glyphs sit below the cards (Charge = RT, Time = LT on the Dolphin); Mass and
-   Space are passive and correctly show none.
-8. **Vessel swap.** Swap to the Dolphin from another vessel in Menu_Main freestyle and confirm
-   exactly one set of cards (Build is idempotent; cards are adopted by name).
+7. **Chips.** LT/RT glyphs sit **centred under their own card**, not floating near it — the hint
+   lands on the card's `ControlChip` socket at zero offset, so it moves with the totem. Charge = RT,
+   Time = LT on the Dolphin; Mass and Space are passive and correctly show none.
+8. **Press.** Hold each bound control. The whole CARD lights and decays on release — and no circular
+   glow appears anywhere behind an icon.
+9. **Gauge (Squirrel / Sparrow / Scarab).** Fly a Squirrel and boost: the Time card fills from the
+   bottom in a straight line, inside the icon's cell, over a dim track — no ring anywhere. Sparrow:
+   the Time card wipes empty when a strafing roll is spent, refills on re-arm. Scarab: the Space
+   card fills with ball energy and goes READY. Confirm each meter is on the card of the ability it
+   reports on (boost on Boost Ring, ball energy on Ball Forge), not the one it was authored under.
+10. **Rhino.** Fly a Rhino: four cards, Mass live (Trail Slabs) and the other three drawn locked —
+    quieter plate, a short hairline where the icon would be, no gauge track — with the element
+    flowers docked above all four. No old ability-icon UI left in the corner.
+11. **Vessel swap.** Swap to the Dolphin from another vessel in Menu_Main freestyle and confirm
+    exactly one set of cards (Build is idempotent; cards are adopted by name).
 
 ## What this retired
 
@@ -190,6 +264,15 @@ now says once:
 | The upgrade **corner badge** (`showUpgradeBadge` + its six tuning fields, and `VesselHUDView`'s whole badge implementation) | The card's rim and bloom carry the upgrade. The badge was a petal pinned to an icon corner saying the same thing, and it was already switched off on the Dolphin. |
 | The upgrade **icon tint** (`tintIconOnUpgrade`, `upgradeHighlightColor`) | Colour on an ability icon is a GAUGE channel on most vessels, so the tint was unusable on exactly the vessels that needed a signal most. It could never be the fleet's answer. |
 | The **decagon button plate** on Sparrow / Squirrel / Scarab | The card is the plate now. Left on, it sat behind the totem as a second, differently-shaped background. |
+| The **ring gauges** (Sparrow roll ring, Scarab energy ring, Squirrel chevron fill and its frame) | Four hulls, four shapes, one idea. The card's linear fill is the fleet's one gauge; the same Images are re-formed rather than replaced, so nothing is re-authored and no drive site changes. |
+| The **circular press glow** behind each icon (`highlights`) | The card lights instead. A second shape drawn for a state the card already carries is exactly the divergence the totem removes. |
+| The Squirrel's **undriven heat halo** (`overheatHighlight`) | A circular glow left over from the Sparrow's retired overheat mechanic — its driver was deleted in 2026, so it had never moved. Retired positionally with the rest of the host's chrome. |
+
+**Chrome is retired POSITIONALLY, not by name** — a direct child of the host that is not the icon
+and not the card is chrome the card supersedes. Naming them would have missed the ones nobody
+remembered. The one exception is a **touch target**: a UGUI button raycasts through its
+`targetGraphic`, so that graphic is made invisible rather than disabled — an absent graphic does not
+raycast, and disabling it would silently delete the on-screen ability control on every touch device.
 
 `VesselAbilityRowWirer` no longer sets the two retired flags, and the stale serialized keys were
 stripped from all four HUD prefabs. The remaining icon-level signal is the authored
@@ -222,9 +305,16 @@ of rolling this style onto any further vessel.
 - **Bake tool.** A `FrogletTools > Vessels > Bake Ability Lockups` that writes the composed chrome
   into the prefab (the pattern `Bake Elemental Petal Bars Into All Vessel HUDs` already sets), so
   the authored state is inspectable. Runtime composition is the shipping path today.
-- **Fleet auditor.** An asset-only `Audit Ability Lockups` reusing the runtime discovery, per the
-  contract's enforcement ladder step 4.
-- **Roll out** to Squirrel / Sparrow / Urchin (maps complete). Manta / Rhino / Serpent are blocked
-  on ability DESIGN, not on this style.
+- **Urchin.** The only hull the lockup cannot reach: `UrchinHUDVariant.prefab` does not exist, so
+  there is no `VesselHUDView` to ensure. Its map is complete — it needs a HUD prefab, not a style.
+- **Gauges on the remaining hulls.** Dolphin, Manta, Rhino and Serpent bind no `gauge` yet. The
+  Dolphin's four icons are already live gauges in their own right, so it may never want one; the
+  other three are waiting on ability design anyway.
+- ~~`Scarab.prefab` wires `SparrowHUDVariant`~~ — **not true, and now cleaned up.** It references
+  `ScarabHUDVariant` (guid `4f3ce7d760a1e0c76f3bc8c6a6842a92`); what it carried was a stale
+  prefab-instance **name override** setting `m_Name: SparrowHUDVariant`, a leftover from when the
+  variant was duplicated. The override is removed. General trap: *a prefab-instance name override
+  is not a prefab reference* — reading the name is how this was recorded backwards in `CLAUDE.md`
+  for months, and it made `ScarabHUDVariant` look orphaned when it was the live asset.
 - **Upgraded icon art** (`AbilityIconBinding.upgradedSprite`) is still unauthored fleet-wide; the
   lockup carries the upgrade without it, so it is now optional rather than missing.

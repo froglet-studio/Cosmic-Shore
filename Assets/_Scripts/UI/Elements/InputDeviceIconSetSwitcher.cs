@@ -80,14 +80,17 @@ namespace CosmicShore.UI
                      "ability (or on a HUD with no ability row) are left exactly where they were " +
                      "authored, so this is safe to leave on.")]
             public bool attachToAbilityIcon = true;
-            [Tooltip("Offset from the ability icon's centre, in reference pixels. Negative Y sits the " +
-                     "label below the icon.")]
+            [Tooltip("LEGACY fallback offset, used ONLY on a HUD with no ability lockup. When the " +
+                     "lockup is present the hint lands on that card's ControlChip socket at zero " +
+                     "offset, so this value is ignored - the totem owns the chip's position.")]
             public Vector2 attachOffset = new Vector2(0f, -76f);
 
             [NonSerialized] public bool Lit;
             [NonSerialized] public bool Applied;
-            /// <summary>Resolved ability icon this hint labels; null until bound (or unresolvable).</summary>
+            /// <summary>Resolved ability icon (or lockup chip socket) this hint labels; null until bound.</summary>
             [NonSerialized] public RectTransform AbilityTarget;
+            /// <summary>Offset actually used - zero when the target is a lockup chip socket.</summary>
+            [NonSerialized] public Vector2 ResolvedOffset;
             /// <summary>Latches the off-screen warning so it is reported once, not every frame.</summary>
             [NonSerialized] public bool OffScreenReported;
         }
@@ -166,7 +169,7 @@ namespace CosmicShore.UI
         /// </summary>
         public void BindHintsToAbilities(IVesselStatus status, VesselHUDView view)
         {
-            if (status == null || !view || !view.HasAbilityIconRow) return;   // opt-in rollout
+            if (status == null || !view) return;
 
             var map = status.ElementalAbilityHandler ? status.ElementalAbilityHandler.Map : null;
             if (map == null) return;
@@ -187,14 +190,27 @@ namespace CosmicShore.UI
                         continue;
                     }
 
-                    if (!view.TryGetAbilityIcon(element, out var abilityIcon))
+                    // The lockup's chip socket is the canonical target: it is a child of the card,
+                    // so the label moves with the totem and needs no per-vessel offset. The icon is
+                    // the fallback for a HUD that predates the lockup.
+                    if (view.TryGetAbilityChipSocket(element, out var chipSocket))
+                    {
+                        hint.AbilityTarget = chipSocket;
+                        hint.ResolvedOffset = Vector2.zero;
+                    }
+                    else if (view.TryGetAbilityIcon(element, out var abilityIcon))
+                    {
+                        hint.AbilityTarget = abilityIcon.rectTransform;
+                        hint.ResolvedOffset = hint.attachOffset;
+                    }
+                    else
                     {
                         Debug.LogWarning($"[InputDeviceIconSetSwitcher] Control hint '{hint.label}' labels the " +
-                                         $"'{element}' ability but the HUD binds no icon for it.", this);
+                                         $"'{element}' ability but the HUD binds neither a lockup card nor an " +
+                                         "icon for it.", this);
                         continue;
                     }
 
-                    hint.AbilityTarget = abilityIcon.rectTransform;
                     _labelledElements.Add(element);
                 }
             }
@@ -245,7 +261,7 @@ namespace CosmicShore.UI
                     if (hint?.AbilityTarget == null) continue;
                     var rt = HintRect(hint);
                     if (!rt) continue;
-                    if (!PlaceOnAbilityIcon(rt, hint.AbilityTarget, hint.attachOffset))
+                    if (!PlaceOnAbilityIcon(rt, hint.AbilityTarget, hint.ResolvedOffset))
                         allPlaced = false;
                     else
                         WarnIfPlacedOffScreen(hint, rt);
@@ -286,7 +302,7 @@ namespace CosmicShore.UI
             hint.OffScreenReported = true;
             Debug.LogWarning($"[InputDeviceIconSetSwitcher] Control hint '{hint.label}' was placed where it " +
                              $"cannot be seen: rect {rt.rect.size} at canvas-local {local}, canvas {canvasRect}. " +
-                             $"Check its attachOffset ({hint.attachOffset}) and the ability icon it targets.");
+                             $"Check its offset ({hint.ResolvedOffset}) and the ability card it targets.");
         }
 
         static RectTransform HintRect(HintVisual hint)

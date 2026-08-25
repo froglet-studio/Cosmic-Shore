@@ -22,7 +22,10 @@ MonoBehaviour:
   rowMarginBottom: 53
   dividerInset: 8
   dividerThickness: 1
+  chipHeight: 24
+  chipGap: 8
   bloomPadding: 26
+  gaugeCellFraction: 1
   plateSprite: {fileID: 21300000, guid: 0ada93d6a57b4d0b9ce0dc89ee21cd9d, type: 3}
   rimSprite: {fileID: 21300000, guid: 6cbf88182f2143dca7681f2749540626, type: 3}
   bloomSprite: {fileID: 21300000, guid: 006e134e05ff461bbd48ab3fd31629b4, type: 3}
@@ -32,6 +35,12 @@ MonoBehaviour:
   upgradedRimColor: {r: 0.96, g: 0.96, b: 1, a: 1}
   bloomColor: {r: 0.96, g: 0.96, b: 1, a: 0.24}
   upgradedPlateColor: {r: 0.024, g: 0.031, b: 0.063, a: 0.9}
+  gaugeTrackColor: {r: 0.086, g: 0.094, b: 0.129, a: 0.9}
+  gaugeFillColor: {r: 0.22, g: 0.51, b: 1, a: 0.55}
+  lockedPlateColor: {r: 0.024, g: 0.031, b: 0.063, a: 0.55}
+  lockedMarkColor: {r: 0.361, g: 0.373, b: 0.439, a: 0.55}
+  pressFlashColor: {r: 0.96, g: 0.96, b: 1, a: 0.22}
+  pressFlashDuration: 0.18
   upgradeTransitionDuration: 0.2
   unlockPunchScale: 1.05
   unlockPunchDuration: 0.5

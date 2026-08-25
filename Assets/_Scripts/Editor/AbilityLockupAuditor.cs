@@ -31,6 +31,11 @@ namespace CosmicShore.Editor
     /// replaces.</item>
     /// <item>The one thing the lockup CANNOT normalise: an icon whose authored size cannot be read
     /// (a stretch anchor with no laid-out rect), because the drawn scale is derived from it.</item>
+    /// <item><b>Where each bound gauge is authored.</b> A vessel's meter is regularly parented under
+    /// a DIFFERENT ability's button than the ability it reports on (the Squirrel's boost fill sits
+    /// under the skimming button; the Scarab's ball-energy ring under the throttle button). The
+    /// lockup re-homes it onto the right card, so the game is correct either way - but the drift is
+    /// still in the asset and a reader will believe it.</item>
     /// </list>
     ///
     /// Runs entirely on assets - no play mode, no writes. Reuses the runtime geometry accessors on
@@ -76,8 +81,9 @@ namespace CosmicShore.Editor
 
                 if (!view.HasAbilityIconRow)
                 {
-                    report.AppendLine($"  {vessel,-10} —  no ability row yet (blocked on ability DESIGN, " +
-                                      "not on this style). Nothing to lock up.");
+                    report.AppendLine($"  {vessel,-10} —  binds no ability icons; the lockup still builds " +
+                                      "four LOCKED cards so the row exists and the element flowers have " +
+                                      "somewhere to dock. Blocked on ability DESIGN, not on this style.");
                     continue;
                 }
 
@@ -86,8 +92,9 @@ namespace CosmicShore.Editor
             }
 
             report.AppendLine();
-            report.AppendLine($"{withRow} of {vessels} vessel HUD(s) carry an ability row; all of them are " +
-                              "lockup-styled at runtime (VesselHUDView.EnsureAbilityLockup).");
+            report.AppendLine($"{withRow} of {vessels} vessel HUD(s) bind ability icons; ALL {vessels} are " +
+                              "lockup-styled at runtime (VesselHUDView.EnsureAbilityLockup), the rest as " +
+                              "four locked cards.");
 
             if (problems == 0)
             {
@@ -135,8 +142,52 @@ namespace CosmicShore.Editor
                                   $"{style.iconBoxSize} - the hierarchy inverts.");
                 problems++;
             }
+
+            // The gauge that replaced every ring: a fill nobody can tell from its own track is the
+            // exact failure the rings were retired for, so check the READ rather than the values.
+            float track = Luminance(style.gaugeTrackColor) * style.gaugeTrackColor.a;
+            float fill  = Luminance(style.gaugeFillColor)  * style.gaugeFillColor.a;
+            if (fill - track < 0.1f)
+            {
+                report.AppendLine($"  ✗ the gauge fill (lum {fill:0.###}) does not read against its track " +
+                                  $"(lum {track:0.###}) - the meter would be invisible.");
+                problems++;
+            }
+            if (style.gaugeCellFraction <= 0f || style.gaugeCellFraction > 1f)
+            {
+                report.AppendLine($"  ✗ gaugeCellFraction {style.gaugeCellFraction} is outside (0,1] - the " +
+                                  "gauge has no height, or overflows into the element cell.");
+                problems++;
+            }
+
+            // A control chip that reaches past the row's bottom margin is clipped off the screen,
+            // which is how the hint placement failed three times before it was moved onto the card.
+            float chipReach = style.chipGap + style.chipHeight;
+            if (chipReach >= style.rowMarginBottom)
+            {
+                report.AppendLine($"  ✗ the control chip reaches {chipReach:0.#}px below the card but the " +
+                                  $"row sits only {style.rowMarginBottom}px off the bottom - labels clip.");
+                problems++;
+            }
+
+            if (style.pressFlashColor.a <= 0f || style.pressFlashDuration <= 0f)
+            {
+                report.AppendLine("  ✗ the press flash is invisible or snaps - a fired ability would show " +
+                                  "nothing, which is what the retired circular glow did.");
+                problems++;
+            }
+
+            if (Luminance(style.lockedPlateColor) * style.lockedPlateColor.a >
+                Luminance(style.plateColor) * style.plateColor.a + 0.001f)
+            {
+                report.AppendLine("  ✗ a LOCKED card is brighter than a live one - the row would advertise " +
+                                  "abilities that do not exist yet.");
+                problems++;
+            }
             return problems;
         }
+
+        static float Luminance(Color c) => 0.2126f * c.r + 0.7152f * c.g + 0.0722f * c.b;
 
         static int AuditVesselFit(string vessel, VesselHUDView view, AbilityLockupStyleSO style, StringBuilder report)
         {
@@ -172,7 +223,33 @@ namespace CosmicShore.Editor
 
             report.AppendLine($"  {vessel,-10} ✓ {sizes.Count} slot(s); {normalising}. " +
                               "Row position, pitch, cell size and host scale are taken over by the lockup.");
+            ReportGauges(vessel, view, report);
             return problems;
+        }
+
+        /// <summary>
+        /// Which slots bind a meter, and whether that meter is authored under a DIFFERENT ability's
+        /// button. Not a failure - the lockup re-homes it - but it is the drift a reader of the
+        /// prefab would get wrong, and the reason the build adopts every gauge before retiring any
+        /// chrome.
+        /// </summary>
+        static void ReportGauges(string vessel, VesselHUDView view, StringBuilder report)
+        {
+            foreach (var element in VesselHUDView.AbilityDisplayOrder)
+            {
+                if (!view.TryGetAbilityGauge(element, out var gauge) || !gauge) continue;
+
+                var ownHost = view.TryGetAbilityIcon(element, out var icon) && icon
+                    ? icon.rectTransform.parent
+                    : null;
+                bool authoredHere = ownHost && gauge.transform.IsChildOf(ownHost);
+
+                report.AppendLine(authoredHere
+                    ? $"             gauge on {element}: {gauge.name} (authored on this card)"
+                    : $"             gauge on {element}: {gauge.name} — authored under " +
+                      $"'{(gauge.transform.parent ? gauge.transform.parent.name : "?")}', re-homed onto " +
+                      "the card at runtime.");
+            }
         }
 
         /// <summary>

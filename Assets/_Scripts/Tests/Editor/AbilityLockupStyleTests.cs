@@ -107,6 +107,67 @@ namespace CosmicShore.Tests
         }
 
         [Test]
+        public void Gauge_FillsTheAbilityCellAndReadsAgainstItsTrack()
+        {
+            var s = Load();
+
+            Assert.Greater(s.gaugeCellFraction, 0f, "the gauge would have no height to fill");
+            Assert.LessOrEqual(s.gaugeCellFraction, 1f,
+                "the gauge would overflow the ability cell and run under the element flower");
+
+            // A fill the same colour as its track is a gauge you cannot read. Compare in luminance
+            // rather than per-channel: the two are authored as a dim track and a bright fill.
+            float track = Luminance(s.gaugeTrackColor) * s.gaugeTrackColor.a;
+            float fill  = Luminance(s.gaugeFillColor)  * s.gaugeFillColor.a;
+            Assert.Greater(fill - track, 0.1f,
+                "the gauge fill does not read against its own track - a meter nobody can see is the " +
+                "state the ring gauges were replaced to fix");
+        }
+
+        [Test]
+        public void LockedSlot_ReadsAsQuieterThanALiveOne()
+        {
+            var s = Load();
+
+            // An undesigned slot must be legible as a slot and unmistakable for a live ability -
+            // otherwise the Rhino's three open slots read as three abilities the player cannot find.
+            Assert.Less(Luminance(s.lockedPlateColor) * s.lockedPlateColor.a,
+                        Luminance(s.plateColor) * s.plateColor.a + 0.001f,
+                "a locked card is brighter than a live one - the row would advertise abilities that " +
+                "do not exist yet");
+            Assert.Greater(s.lockedMarkColor.a, 0f,
+                "the locked slot draws nothing at all, so the row silently loses a column");
+        }
+
+        [Test]
+        public void ControlChip_SitsBelowTheCardWithClearance()
+        {
+            var s = Load();
+            Assert.Greater(s.chipHeight, 0f, "the control chip has no height, so no hint can land on it");
+            Assert.GreaterOrEqual(s.chipGap, 0f, "a negative gap puts the chip inside the card");
+
+            // The chip must clear the card AND still be inside the row's bottom margin, or every
+            // control label lands off the bottom of the screen (which is how this failed before).
+            float reach = s.chipGap + s.chipHeight;
+            Assert.Less(reach, s.rowMarginBottom,
+                $"the control chip reaches {reach}px below the card but the row only sits " +
+                $"{s.rowMarginBottom}px off the bottom of the screen - the labels would be clipped");
+        }
+
+        [Test]
+        public void PressFlash_IsVisibleAndDecays()
+        {
+            var s = Load();
+            Assert.Greater(s.pressFlashColor.a, 0f,
+                "the press flash is transparent - a fired ability would show nothing, which is what " +
+                "the retired circular glow used to do");
+            Assert.Greater(s.pressFlashDuration, 0f,
+                "a zero decay snaps the flash off; nothing pops out of existence");
+        }
+
+        static float Luminance(Color c) => 0.2126f * c.r + 0.7152f * c.g + 0.0722f * c.b;
+
+        [Test]
         public void Upgrade_IsVisibleAndTravels()
         {
             var s = Load();
