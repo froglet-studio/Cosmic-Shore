@@ -42,29 +42,37 @@ component serves — background art bleeds under the notch while a separate cont
   its anchors would slide it rather than resize it.
 - `Assets/_Scripts/Tests/Editor/SafeAreaFitterTests.cs` — the pure halves
   (`IsFullScreenSafeArea`, `ComputeAnchors`) against real iPhone-class landscape/portrait safe
-  areas, sub-pixel rounding, out-of-range clamping, and a degenerate mid-rotation screen.
+  areas, an Android single-edge cutout mirrored across landscape-left/landscape-right, sub-pixel
+  rounding, out-of-range clamping, and a degenerate mid-rotation screen.
 - `Assets/_Scenes/Game_TestDesign/SafeAreaFitterTestScene.unity` (+ `SafeAreaTestReadout.cs`
   beside it) — hand-authored scene YAML: a magenta full-bleed background under a translucent
   content layer carrying the fitter and four corner markers, plus an IMGUI readout of the live
-  safe area / resolution / orientation / applied anchors. Not in Build Settings; open it by hand.
+  safe area / resolution / orientation / applied anchors. The content layer is authored with the
+  24 px minimum edge inset from `Docs/STYLE_FOUNDATION.md` §9 (`sizeDelta -48,-48`), which the
+  fitter preserves — so the scene demonstrates the full §9 contract, inset included, and the inset
+  still reads on desktop where the fit itself is a no-op. Not in Build Settings; open it by hand.
 
 **Verified out of editor** (what was actually run here, so nobody re-does it): all three sources
 compile under Roslyn against a faithful `UnityEngine` stub, and the shipped NUnit suite was executed
-for real — 7/7 pass. The scene YAML parses and has zero dangling local `fileID` references.
+for real — 8/8 pass. The scene YAML parses and has zero dangling local `fileID` references.
 
 **Verify in editor**
-1. **Compile clean**, then Test Runner ▸ EditMode → `SafeAreaFitterTests` 7/7 green.
+1. **Compile clean**, then Test Runner ▸ EditMode → `SafeAreaFitterTests` 8/8 green.
 2. Open `SafeAreaFitterTestScene`, press Play on a normal Game view → readout says
    `full screen True`, `insets none`, and the content-layer anchors are still `0,0 – 1,1`
-   (the desktop no-op: the teal layer exactly covers the magenta one).
+   (the desktop no-op: the teal layer sits at its authored 24 px inset and is otherwise unmoved).
 3. Window ▸ General ▸ **Device Simulator**, pick a device with a cutout (e.g. iPhone X/14 Pro),
    press Play → the magenta background still fills the whole panel *including under the notch*,
    the teal content layer and its four corner markers pull in to the safe rect, and the readout's
    anchors match `safeArea / resolution`.
-4. Rotate the simulated device (portrait ↔ landscape) while in Play → the content layer
-   re-fits on the same frame; the notch inset moves to the correct edge.
+4. Rotate the simulated device **landscape-left ↔ landscape-right** while in Play → the content
+   layer re-fits on the same frame and the cutout inset moves to the other edge. This is the only
+   rotation the game allows (`allowedAutorotateToPortrait: 0`), and the resolution is IDENTICAL
+   across it, so it is the case a width/height-only change check would sleep through.
 5. Resize the Game view / toggle fullscreen with no simulator → nothing moves and nothing is
    logged (the change check runs, the apply does not).
+6. Per §9's test aspects, repeat step 3 at **16:9 · 20:9 · 4:3** → the content layer stays inside
+   the safe rect at each, and the background still fills the panel.
 
 **Not done on purpose:** no prefab or shipping canvas has the component attached yet. Wiring it
 (most likely onto the content layer under `GameCanvas.prefab`, applied to the prefab rather than

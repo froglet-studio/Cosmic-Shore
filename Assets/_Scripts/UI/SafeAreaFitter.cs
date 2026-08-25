@@ -10,24 +10,35 @@ namespace CosmicShore.UI
     /// <see cref="Screen.safeArea"/>. Attach to the CONTENT layer of a canvas — never to the
     /// canvas root and never to background art.
     ///
-    /// The contract this component exists to serve: <c>androidRenderOutsideSafeArea</c> is ON in
-    /// ProjectSettings and stays on, so background art deliberately bleeds under the notch and fills
-    /// the whole panel; only the layer carrying readable/tappable content is pulled in. Two siblings
-    /// solve the horizontal half of the same problem — <see cref="AdaptiveCanvasScaler"/> (aspect
-    /// matching + an optional ultrawide HUD safe zone) and <see cref="WidescreenLayoutAdapter"/>
-    /// (pillarboxing). This one handles device cutouts and composes with both: it writes anchors, so
-    /// a parent constrained by either of those still bounds it.
+    /// The contract this component exists to serve (<c>Docs/STYLE_FOUNDATION.md</c> §9):
+    /// <c>androidRenderOutsideSafeArea</c> is ON in ProjectSettings and stays on, so background art
+    /// deliberately bleeds under the notch and fills the whole panel; only the layer carrying
+    /// readable/tappable content is pulled in. Two siblings solve the horizontal half of the same
+    /// problem — <see cref="AdaptiveCanvasScaler"/> (aspect matching + an optional ultrawide HUD
+    /// safe zone) and <see cref="WidescreenLayoutAdapter"/> (pillarboxing). This one handles device
+    /// cutouts and composes with both: it writes anchors, so a parent constrained by either of
+    /// those still bounds it.
     ///
     /// Only ANCHORS are written. Authored offsets (<c>offsetMin</c>/<c>offsetMax</c>) are left alone,
     /// so a rect authored full-stretch with zero offsets ends up exactly the safe rect, and one
-    /// authored with padding keeps that padding relative to the safe rect. The rect must therefore
-    /// be STRETCH-anchored on the axes you want constrained (anchorMin != anchorMax); a fixed-size,
-    /// point-anchored rect is warned about once at initialization, because moving its anchors alone
-    /// would slide it without resizing it.
+    /// authored with padding keeps that padding relative to the safe rect. That is how §9's 24 px
+    /// MINIMUM EDGE INSET is expressed — as authored padding on the content layer, which composes
+    /// with the fit and, unlike a fitter-enforced inset, still holds on desktop where the fit itself
+    /// is a no-op. Zeroing offsets here would make the two rules unable to coexist.
+    ///
+    /// The rect must therefore be STRETCH-anchored on the axes you want constrained
+    /// (anchorMin != anchorMax); a fixed-size, point-anchored rect is warned about once at
+    /// initialization, because moving its anchors alone would slide it without resizing it.
     ///
     /// Desktop and any other display whose safe area IS the full screen is a true no-op: the
     /// component detects it, writes nothing, and — if it had previously applied insets (a device
     /// rotating a cutout off-axis) — restores the anchors the rect was authored with.
+    ///
+    /// The project is LANDSCAPE-ONLY (auto-rotate between landscape left and right; portrait is
+    /// disabled), so the rotation that matters here swaps which side the cutout is on while the
+    /// resolution stays identical. That is why the change check reads the safe-area rect and
+    /// <see cref="Screen.orientation"/> and not just width/height — a width/height cache alone
+    /// would sleep through the one rotation this game can actually do.
     ///
     /// Runtime cost when nothing changed: one <see cref="Screen.safeArea"/> read plus a Rect and
     /// two int comparisons per frame, no allocations. All real work happens only on the frame the

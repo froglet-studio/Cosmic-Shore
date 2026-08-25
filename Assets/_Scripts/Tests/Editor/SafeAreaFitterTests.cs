@@ -20,7 +20,18 @@ namespace CosmicShore.Tests
         const int NotchLandscapeWidth = 2436;
         const int NotchLandscapeHeight = 1125;
 
-        // Same device, portrait: notch on top, home indicator at the bottom.
+        // An Android-style single-edge cutout, landscape left then landscape right. The project is
+        // LANDSCAPE-ONLY (portrait auto-rotate is off in ProjectSettings), so this — not a portrait
+        // flip — is the orientation change the fitter has to survive, and it happens at an
+        // IDENTICAL resolution. Note the iPhone rects above are SYMMETRIC (the OS insets both ends
+        // in landscape), so they cannot demonstrate a side swap; this device can.
+        static readonly Rect CutoutLandscapeLeft = new(88f, 0f, 2252f, 1080f);
+        static readonly Rect CutoutLandscapeRight = new(0f, 0f, 2252f, 1080f);
+        const int CutoutWidth = 2340;
+        const int CutoutHeight = 1080;
+
+        // Same device held in portrait. Portrait is disabled project-wide; kept as math coverage on
+        // the other axis, since the conversion is orientation-agnostic.
         static readonly Rect NotchPortrait = new(0f, 102f, 1125f, 2202f);
         const int NotchPortraitWidth = 1125;
         const int NotchPortraitHeight = 2436;
@@ -76,6 +87,24 @@ namespace CosmicShore.Tests
             Assert.AreEqual(102f / NotchPortraitHeight, anchorMin.y, Tolerance, "home indicator");
             Assert.AreEqual(1f, anchorMax.x, Tolerance, "right edge is flush");
             Assert.AreEqual(2304f / NotchPortraitHeight, anchorMax.y, Tolerance, "notch");
+        }
+
+        [Test]
+        public void Anchors_MirrorWhenTheCutoutSwapsSides()
+        {
+            // Landscape left vs landscape right: same resolution, same safe-area SIZE, opposite
+            // side. A change check keyed on width/height alone would sleep through this, which is
+            // why the fitter also compares the safe-area rect and Screen.orientation.
+            SafeAreaFitter.ComputeAnchors(CutoutLandscapeLeft, CutoutWidth, CutoutHeight,
+                out Vector2 leftMin, out Vector2 leftMax);
+            SafeAreaFitter.ComputeAnchors(CutoutLandscapeRight, CutoutWidth, CutoutHeight,
+                out Vector2 rightMin, out Vector2 rightMax);
+
+            Assert.AreNotEqual(leftMin.x, rightMin.x, "the two landscape orientations must not agree");
+            Assert.AreEqual(leftMin.x, 1f - rightMax.x, Tolerance, "the inset mirrors across the screen");
+            Assert.AreEqual(leftMax.x, 1f - rightMin.x, Tolerance, "the flush edge mirrors too");
+            Assert.AreEqual(leftMax.x - leftMin.x, rightMax.x - rightMin.x, Tolerance,
+                "the safe span is the same width in both orientations");
         }
 
         [Test]

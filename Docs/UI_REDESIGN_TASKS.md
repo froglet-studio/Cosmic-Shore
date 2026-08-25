@@ -43,47 +43,61 @@ Acceptance criteria:
   `orientation`, so the steady-state per-frame cost is one `safeArea` read and a `Rect`/int compare;
   resizes are also caught event-style via `OnRectTransformDimensionsChange`. Exposes two pure
   statics (`IsFullScreenSafeArea`, `ComputeAnchors`) so the math is testable without a device.
-- `Assets/_Scripts/Tests/Editor/SafeAreaFitterTests.cs` — 7 tests over those statics: real
-  iPhone-class landscape (`132,63,2172,1062` @ 2436×1125) and portrait safe areas, sub-pixel
-  rounding, out-of-range clamping, degenerate mid-rotation screen.
+- `Assets/_Scripts/Tests/Editor/SafeAreaFitterTests.cs` — 8 tests over those statics: real
+  iPhone-class landscape (`132,63,2172,1062` @ 2436×1125) and portrait safe areas, an Android
+  single-edge cutout mirrored across landscape-left/landscape-right, sub-pixel rounding,
+  out-of-range clamping, degenerate mid-rotation screen.
 - `Assets/_Scenes/Game_TestDesign/SafeAreaFitterTestScene.unity` — two full-stretch sibling layers
   under one Canvas: `Background Art (bleeds under notch)` (magenta, no fitter) and
-  `Safe Area Content` (translucent, carries the fitter, four corner markers). Not in Build Settings.
+  `Safe Area Content` (translucent, carries the fitter, four corner markers, authored at §9's
+  24 px edge inset via `sizeDelta -48,-48`). Not in Build Settings.
 - `Assets/_Scenes/Game_TestDesign/SafeAreaTestReadout.cs` — scene-local IMGUI readout of live
   safe area / resolution / orientation / applied anchors, drawn in the full screen rect.
-- `Docs/UNITY_VERIFICATION_CHECKLIST.md` — 🔴 entry with the in-editor steps.
+- `Docs/UNITY_VERIFICATION_CHECKLIST.md` — 🔴 entry with the in-editor steps, including §9's
+  16:9 · 20:9 · 4:3 test aspects.
 
 **Findings:**
-- `Screen.safeArea` appeared **zero times** in the codebase before this; there was no prior pattern
-  to match. The nearest siblings solve the horizontal half of the same problem —
-  `AdaptiveCanvasScaler` (aspect matching + optional ultrawide HUD safe zone) and
-  `WidescreenLayoutAdapter` (pillarboxing). This component writes anchors, so it composes under
-  either without contention.
+- `Screen.safeArea` appeared **zero times** in the codebase before this, as §1.3 records; there was
+  no prior pattern to match. The nearest siblings solve the horizontal half of the same problem —
+  `AdaptiveCanvasScaler` and `WidescreenLayoutAdapter`. This component writes anchors, so it
+  composes under either without contention.
 - `androidRenderOutsideSafeArea: 1` at `ProjectSettings/ProjectSettings.asset:74`, already enabled
   before this branch and untouched by it (branch diff over `ProjectSettings/` is empty).
-- The spec source this task cites — `Docs/STYLE_FOUNDATION.md` §9 — **does not exist in the repo**,
-  nor does `Docs/UI_ARCHITECTURE_AUDIT.md` §1.3. The implementation was written against this
-  tracker's acceptance criteria alone. Anything §9 says beyond them has not been checked.
+- **The project is landscape-only** — `allowedAutorotateToPortrait: 0`, portrait-upside-down `0`,
+  both landscape orientations `1`. So the rotation this component must survive is landscape-left ↔
+  landscape-right, where the **resolution is identical** and only the safe-area rect moves. A change
+  check keyed on width/height alone would sleep through the only rotation the game permits; this one
+  compares the safe-area rect and `Screen.orientation` too. There is now a test for it.
+- **Real iPhone landscape safe areas are symmetric** (the OS insets both ends, e.g. 132 px each side
+  at 2436×1125), so they cannot demonstrate a cutout swapping sides — the mirror test needed an
+  Android-style single-edge cutout. Caught by running the test, not by reading it.
 - `com.unity.device-simulator.devices` is in the manifest, so the Device Simulator is the in-editor
   way to exercise this — it is what overrides `Screen.safeArea` in the editor.
 - Verified out of editor: all three new sources compile under Roslyn against a faithful
-  `UnityEngine` stub, and the shipped NUnit suite was **executed** — 7/7 pass. The hand-authored
+  `UnityEngine` stub, and the shipped NUnit suite was **executed** — 8/8 pass. The hand-authored
   scene YAML parses with zero dangling local `fileID` references, and its three UGUI script GUIDs
   are the ones `Menu_Main.unity` already uses.
 
 **Deviations from spec:**
-- **Only anchors are written.** Authored `offsetMin`/`offsetMax` are deliberately left alone, where
-  most reference implementations zero them. A full-stretch zero-offset rect is unaffected; a rect
-  authored with padding keeps that padding relative to the safe rect.
-- **The no-op is reversible.** Beyond "full-screen safeArea does nothing", the component captures
-  the anchors the rect was authored with and restores them if a device that *had* insets returns to
-  a full-screen safe area (rotating a cutout off-axis). Without this the rect would keep a stale
-  inset. On desktop nothing is ever written, so the criterion holds literally.
+- **§9's 24 px minimum edge inset is authored padding, not enforced by the component**, and the two
+  §9 rules cannot both hold any other way: a fitter-enforced inset would break "full-screen safeArea
+  is a no-op" on desktop, where §9 still wants content 24 px off the edge. So the component writes
+  **anchors only** and leaves authored `offsetMin`/`offsetMax` alone (most reference implementations
+  zero them), and the inset is authored on the content layer, where it composes with the fit and
+  survives the no-op. Demonstrated in the test scene. Nothing enforces it on a future content layer
+  — see queue #3.
+- **The no-op is reversible.** Beyond "full-screen safeArea does nothing", the component captures the
+  anchors the rect was authored with and restores them if a device that *had* insets returns to a
+  full-screen safe area. Without this the rect would keep a stale inset. On desktop nothing is ever
+  written, so the criterion holds literally.
 - **Additions not in the criteria:** the edit-mode suite; the scene-local `SafeAreaTestReadout`
   diagnostic; and one `CSDebug.LogWarning` at enable when the rect is point-anchored on both axes
   (driving its anchors would slide it, not resize it).
 - **"Compiles" is `[~]`, not `[x]`.** No Unity compile has happened — this branch was authored in a
   remote session with no editor and no `unity` CLI binary.
+- §9's other two rules are **out of T1's scope and untouched here**: Android max aspect 2.1 → 2.4 is
+  T2's criterion, and the 16:9 · 20:9 · 4:3 test aspects are an editor check, carried into the
+  verification checklist.
 
 ## T2 — Finish canvas resolution migration
 
@@ -199,6 +213,7 @@ Anything found during implementation that needs a design decision. The implement
 |---|---|---|---|---|
 | 1 | T1 impl | T1 | Should the fitter conform BOTH axes always, or expose a per-axis / per-edge opt-out? A HUD often wants the notch inset but not the bottom gesture-bar inset. Currently both axes, always. | OPEN |
 | 2 | T1 impl | T1 | Which layer of `GameCanvas.prefab` becomes the constrained content layer, and does background art move to a sibling above it? The two-layer contract needs a home in the prefab before T1 can be applied — likely settled inside T3. | OPEN |
+| 3 | T1 impl | T1 | §9's 24 px minimum edge inset is currently authored padding on the content layer (nothing enforces it). Should it stay authored — which is what lets it survive the desktop no-op — or become a serialized floor on `SafeAreaFitter`? And is 24 px canvas units at the 1920×1080 reference, or device pixels? | OPEN |
 
 ---
 
