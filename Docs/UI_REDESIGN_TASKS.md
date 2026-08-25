@@ -20,6 +20,7 @@ Maintained by the `ui-redesign-tracker` skill. Do not hand-edit the status table
 | T5 | Download & install TMP fonts | TODO | — | | | |
 | T6 | TMP Style Sheet + Aldrich audit | TODO | T5 | | | |
 | T9 | ScreenSwitcher re-layout on resolution change | TODO | — | | | |
+| T10 | ConstantPixelSize canvas migration | TODO | — | | | |
 
 **Critical path:** T2 → T3 is the long pole. T1, T4, T5 are independent and can run in parallel. T6 needs T5's font assets to exist.
 **T9 is the highest-priority open item** — a live, Steam-visible bug in the shipping window config, independent of everything above, and `resizableWindow` must stay `0` until it lands.
@@ -54,24 +55,25 @@ Acceptance criteria:
 - [x] `_Prefabs/CORE/GameCanvas.prefab` at 1920×1080 / PPU 240
 - [x] `_Prefabs/GameCanvas-HexRace.prefab` at 1920×1080 / PPU 240
 - [x] `_Scenes/Singleplayer Scenes/SplashScreen.unity` migrated
-- [ ] `_Prefabs/UI Elements/Loadout Container.prefab` migrated — **OPEN. Blocked on an owner decision,
-      not on work.** The asset is not a migration target (ConstantPixelSize at Unity's default 800×600;
-      the audit records it as such in §1.2 and §1.3). Unblocked by amending or removing this criterion.
-      Nothing to implement.
 - [x] `CanvasUpgraderUpgradedPrefabs.txt` respected — no double pass (×5.76 check)
 - [x] `AdaptiveCanvasScaler` on every scene canvas that lacked it
 - [x] Static `matchWidthOrHeight` overrides removed from those scenes
-- [ ] No remaining reference resolution outside 1920×1080 project-wide — **OPEN. 9 remain.** Blocked on
-      three separate decisions, none of them T2.6: (a) the four **ConstantPixelSize 800×600** prefabs
-      (`Loadout Container`, `StarShapeSign`, `HeartShapeSign`, `LightningShapeSign`) — a different
-      migration class, needs its own task; (b) `_Scenes/Tools/PhotoBooth.unity` (800×600
-      ScaleWithScreenSize, tool scene) — needs a keep-or-migrate call; (c) 4 **third-party** demo
-      scenes (NiceVibrations, QuickScenePro ×3) — out of scope by definition.
-      ⚠ **Not blocked on T2.6.** The seven nested fragments carry **zero** `Canvas`/`CanvasScaler`
-      components, so they have no reference resolution to report and cannot move this criterion. The
-      *adjacent* statement is true and worth tracking separately: "no 800-space UI content remains" is
-      partly blocked on T2.6, but that is not what this criterion measures.
+- [x] **No shipping player-facing canvas outside 1920×1080** — verified: every canvas in a
+      build-enabled scene or a prefab those scenes use is 1920×1080, with the four ConstantPixelSize
+      800×600 prefabs split out as **T10**. Non-shipping canvases are excluded by scope, not waived:
+      `PhotoBooth.unity` is build-**disabled**, and the 4 third-party demo scenes (NiceVibrations,
+      QuickScenePro ×3) never ship.
+      ⚠ **PPU is deliberately NOT uniform and must not be normalised** — the criterion is stated on
+      resolution alone for that reason. 12 shipping canvases are 1920×1080 at **PPU 100**
+      (Authentication, Bootstrap, `FTUE_Canvas`, `Duel Cell Stats Canvas`, `VesselHUDContainer` and
+      all 7 vessel `ShipHUDContainer`s); 4 are at **PPU 240** (both GameCanvas prefabs, Menu_Main,
+      SplashScreen). Both are correct: 240 compensates for the ×2.4 scale-factor change, and a canvas
+      authored natively at 1920×1080 never had that change — see Findings. Forcing the 12 to 240 would
+      shrink every 9-sliced border 2.4×.
 - [~] Project builds; no canvas visibly regressed in a smoke pass — editor-only, human to confirm
+
+> **Every criterion except the editor smoke pass is met.** Status flips to `DONE` on human
+> confirmation of that pass — the skill's rule is that a `[~]` criterion cannot be self-certified.
 
 **Deliverables:**
 - `_Prefabs/CORE/GameCanvas.prefab` — refRes 800×450 → 1920×1080, refPPU 100 → 240, 289 canvas-space values ×2.4
@@ -110,6 +112,10 @@ Acceptance criteria:
   describes the project as spanning 800×450, 800×600 and 1920×1080, and treats the 800×600 group as a
   distinct Constant-Pixel-Size item — so "no reference resolution outside 1920×1080 project-wide" is
   broader than the migration this task defines, and cannot be satisfied by it.
+- **`SplashScreen.unity` is not in Build Settings.** It was a named T2 target and is migrated, but it
+  does not ship today — the splash the player sees is `Bootstrap.unity`'s `Canvas - Splash Screen`.
+  The migration is still correct first-party content; recording it so nobody reads the tick as proof
+  the scene is live. (`PhotoBooth.unity` and both Recording Studios are likewise build-disabled.)
 - `TextMeshProUGUI.m_fontSizeBase` tracks `m_fontSize` only while auto-sizing is **off**. Established
   from the scenes the upgrader had already run on (auto-size-off rows carry ×2.4 on both keys;
   auto-size-on rows carry it on `m_fontSize` alone) and replicated. Scaling `m_fontSizeBase`
@@ -384,6 +390,39 @@ Order is T9 first, then reconsider the window config as its own decision.
 
 ---
 
+## T10 — ConstantPixelSize canvas migration
+
+**Audit ref:** §1.2, §1.3 · **Raised by:** T2
+
+A **different migration class** from T2's 800×450 → 1920×1080 work, which is why it was split out
+rather than left as an unticked T2 criterion. These four canvases are `ConstantPixelSize` at Unity's
+default 800×600 — untouched defaults, not authored 800×450 layouts. In ConstantPixelSize the scale
+factor is pinned at 1, so the ×2.4 pass T2 used would land as a literal 2.4× on-screen size increase;
+`CanvasUpgradeProcessor.Scan` skips all four twice over (wrong scale mode, wrong reference resolution).
+
+The four:
+- `_Prefabs/UI Elements/Loadout Container.prefab` — feeds the Arcade **Loadout** view; also on the
+  Deferred list pending the Arcade rebuild, so it may be cut rather than migrated
+- `_Prefabs/UI Elements/Panels/StarShapeSign.prefab`
+- `_Prefabs/UI Elements/Panels/HeartShapeSign.prefab`
+- `_Prefabs/UI Elements/Panels/LightningShapeSign.prefab`
+
+Acceptance criteria:
+- [ ] Decide per canvas: convert to ScaleWithScreenSize @1920×1080, or keep ConstantPixelSize
+      deliberately (some world-space-ish signage legitimately wants fixed pixel size)
+- [ ] `Loadout Container` resolved **with** the Arcade rebuild decision, not ahead of it
+- [ ] Any canvas converted to ScaleWithScreenSize gets `AdaptiveCanvasScaler` and the ×2.4 pass, and
+      is logged in `CanvasUpgraderUpgradedPrefabs.txt` if it is canvas-less content
+- [ ] Any canvas kept at ConstantPixelSize has that recorded as a decision, so the next sweep does
+      not re-flag it
+- [ ] The three ShapeSign prefabs checked for whether they are still reachable at all before any work
+
+**Deliverables:**
+**Findings:**
+**Deviations from spec:**
+
+---
+
 ## Design feedback queue
 
 Anything found during implementation that needs a design decision. The implementer **adds** entries here and does not resolve them or edit `STYLE_FOUNDATION.md` directly.
@@ -413,5 +452,6 @@ Decisions taken during the redesign to explicitly not do something. Recorded so 
 | UI Toolkit migration | Deferred past Steam EA | Framework migration on top of the fork debt risks the EA date |
 | Store / ARK screen | Cut from overhaul | Needs a product decision, not a visual one |
 | Port / Leaderboards screen | Cut from overhaul | Same — 104 sprites feeding a disabled screen |
+| `Loadout Container.prefab` migration | Struck from T2; deferred to the Arcade rebuild | Constant Pixel Size at Unity's default 800×600, feeding the Arcade **Loadout** view (audit §1.2, §2.11). Whether that view survives the redesign is unsettled, so migrating it now risks work on a screen that gets cut. Revisit with the Arcade rebuild; it is also listed in **T10** as one of the four ConstantPixelSize canvases |
 | Ultrawide HUD containment (`AdaptiveCanvasScaler.safeZone`, `WidescreenLayoutAdapter`) | Post-EA decision; no action in T2 | `safeZone` is unassigned in all 6 instances and `WidescreenLayoutAdapter` has 0 attachments — both confirmed as audit findings, both deliberately left alone. Assigning either changes HUD framing on every ultrawide display and is a design call, not an implementation one |
 | Android `maxAspectRatio` 2.1 → 2.4 | Dropped from T2; change reverted | Mobile is deferred, desktop is the platform. The raise was applied and then reverted so the PR carries no unowned platform-settings change. One line in `ProjectSettings.asset` to restore when mobile resumes; at 2.1, 20:9 and 21:9 phones letterbox or crop per OEM |

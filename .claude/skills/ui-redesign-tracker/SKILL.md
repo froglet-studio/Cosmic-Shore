@@ -1,6 +1,6 @@
 ---
 name: ui-redesign-tracker
-description: Verify and record completion of a Cosmic Shore UI redesign task (T1-T6) before merging its PR into bleeding-edge. Use when a UI redesign task branch is ready to merge, when asked to update the redesign tracker or checklist, or when asked whether a redesign task is actually done. Verifies acceptance criteria against the working tree rather than trusting a completion claim, updates Docs/UI_REDESIGN_TASKS.md, and routes design questions to the feedback queue.
+description: Verify and record completion of a Cosmic Shore UI redesign task (T1-T10, including sub-tasks such as T2.6) before merging its PR into bleeding-edge. Use when a UI redesign task branch is ready to merge, when asked to update the redesign tracker or checklist, or when asked whether a redesign task is actually done. Verifies acceptance criteria against the working tree rather than trusting a completion claim, updates Docs/UI_REDESIGN_TASKS.md, and routes design questions to the feedback queue.
 ---
 
 # UI Redesign Tracker
@@ -19,7 +19,7 @@ A partially complete task stays `IN PROGRESS`. Do not round up.
 
 ### 1. Identify the task
 
-Determine which of T1–T6 this branch addresses, from the branch name, the commit range against `bleeding-edge`, and the changed files. If more than one task is touched, handle each separately. If none maps to a tracked task, stop and say so — this skill does not track ad-hoc work.
+Determine which tracked task this branch addresses, from the branch name, the commit range against `bleeding-edge`, and the changed files. The set is not fixed at T1–T6 — it grows as work is split out (T2.6, T9, T10 so far), so read the status table rather than assuming a range. If more than one task is touched, handle each separately. If none maps to a tracked task, stop and say so — this skill does not track ad-hoc work.
 
 ### 2. Verify each acceptance criterion
 
@@ -38,8 +38,16 @@ reflowing, re-wrapping, tidying another task's checkboxes, renumbering the queue
 conflict into a manual merge. Leave whitespace, column widths and line breaks exactly as found, even
 where they are ugly. If another task's content looks wrong, say so in the report; do not fix it here.
 
-The one exception is step 4: unblocking a dependent means writing that task's **Status cell and
-nothing else** — not its criteria, not its notes, not its row's spacing.
+Two standing exceptions:
+
+- **Step 4** — unblocking a dependent means writing that task's **Status cell and nothing else**: not
+  its criteria, not its notes, not its row's spacing.
+- **Shared sections are editable by any task.** The Critical path line, the Design feedback queue, the
+  Style Foundation version log and the Deferred / out of scope table belong to the tracker as a whole,
+  not to one task. Surfacing the highest-priority item on the Critical path line is exactly what that
+  line is for. The rule above exists to stop parallel branches colliding on unrelated diffs — it is not
+  a reason to bury a finding where no reader will see it. Keep such edits additive and one line where
+  you can. **Another task's own section stays off limits.**
 
 - Set the status. `DONE` only when every criterion is `[x]`, or every remaining one is `[~]` and the human has confirmed them.
 - Fill in branch, PR number, and completion date.
