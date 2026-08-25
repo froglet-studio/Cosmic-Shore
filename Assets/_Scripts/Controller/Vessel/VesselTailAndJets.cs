@@ -8,12 +8,18 @@ namespace CosmicShore.Gameplay
     /// <see cref="VesselCustomization"/>, which does the same job for the hull's materials.
     /// Full contract: <c>Docs/VESSEL_TAIL_AND_JETS.md</c>.
     ///
-    /// Every <see cref="TrailRenderer"/> under the vessel is repainted with the vessel's live
-    /// domain, exactly as its prism trail and its hull are. A vessel's tail and jets are identity
-    /// at range; a hull that flies one colour and streaks another is a lie about whose it is. The
-    /// component deliberately does not know which layer a renderer belongs to — anything under the
-    /// vessel that draws a streak IS the vessel's colour, which is why a new FX layer inherits the
-    /// tint for free and cannot be authored into the wrong domain.
+    /// Every tail and jet is repainted with the vessel's live domain, exactly as its prism trail
+    /// and its hull are. A vessel's tail and jets are identity at range; a hull that flies one
+    /// colour and streaks another is a lie about whose it is.
+    ///
+    /// <b>Scope is the MARKERS, not every TrailRenderer under the vessel.</b> That distinction is
+    /// the whole reason <see cref="VesselTail"/> and <see cref="VesselJet"/> exist as components
+    /// rather than as a naming convention. A vessel can carry streaks that are not identity at
+    /// all — the Rhino's five <c>RhinoSwordBladeTracer</c>s are a STATE readout owned by
+    /// <c>RhinoSwordFXController</c>, which drives their colour from the blade's energy and its
+    /// impact flash. Sweeping every trail under the vessel repaints those with the domain and
+    /// fights the controller for them every frame. Anything that wants the domain says so by
+    /// carrying a marker.
     ///
     /// Tails and jets are both drawn on every machine. A jet is TUNED for its own pilot (size,
     /// placement, a short life, all judged against that vessel's own camera) but is not hidden
@@ -45,6 +51,8 @@ namespace CosmicShore.Gameplay
         Color _coreColor = Color.white;
 
         static readonly List<TrailRenderer> TrailScratch = new();
+        static readonly List<VesselTail> TailScratch = new();
+        static readonly List<VesselJet> JetScratch = new();
 
         /// <summary>Repaint every tail and jet with the vessel's domain colours.</summary>
         public void SetColors(Color highlightColor, Color coreColor)
@@ -91,17 +99,32 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// Authored list wins; otherwise discover live, including inactive objects so FX a mode or
-        /// an ability has switched off are already the right colour when they come back.
-        /// The shared scratch list keeps the per-domain-change allocation at zero.
+        /// Authored list wins; otherwise collect the trails under this vessel's TAIL and JET
+        /// markers — never every TrailRenderer under the vessel, see the class doc. Inactive
+        /// objects are included so FX a mode or an ability has switched off are already the right
+        /// colour when they come back. The shared scratch lists keep the allocation at zero.
         /// </summary>
         List<TrailRenderer> ResolveTrails()
         {
             if (_trails is { Count: > 0 }) return _trails;
 
             TrailScratch.Clear();
-            GetComponentsInChildren(true, TrailScratch);
+            TailScratch.Clear();
+            JetScratch.Clear();
+            GetComponentsInChildren(true, TailScratch);
+            GetComponentsInChildren(true, JetScratch);
+            for (int i = 0; i < TailScratch.Count; i++) Collect(TailScratch[i]);
+            for (int i = 0; i < JetScratch.Count; i++) Collect(JetScratch[i]);
             return TrailScratch;
+        }
+
+        static readonly List<TrailRenderer> CollectScratch = new();
+
+        static void Collect(Component marker)
+        {
+            CollectScratch.Clear();
+            marker.GetComponentsInChildren(true, CollectScratch);
+            TrailScratch.AddRange(CollectScratch);
         }
     }
 }

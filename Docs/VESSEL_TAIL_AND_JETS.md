@@ -69,9 +69,13 @@ end of the gradient; those palette field names predate this vocabulary and are s
 domain UI colour, so they keep their names). The authored **alpha** curve is preserved per trail —
 only the colour keys are rebuilt.
 
-The pass deliberately does **not** know which layer a renderer belongs to. Anything under the
-vessel that draws a streak IS the vessel's colour. That is what makes a new FX layer inherit the
-tint for free, and what makes it impossible to author one into the wrong domain.
+**Scope is the markers, not every trail under the vessel** — which is the whole reason `VesselTail`
+and `VesselJet` are components rather than a naming convention. A vessel can carry streaks that are
+not identity at all: the Rhino's five `RhinoSwordBladeTracer`s are a STATE readout owned by
+`RhinoSwordFXController`, which drives their colour from the blade's energy and its impact flash.
+An earlier pass swept every `TrailRenderer` under the vessel and repainted those with the domain,
+fighting the controller for them every frame. Anything that wants the domain says so by carrying a
+marker.
 
 **Discovery is live, never cached at Awake.** A vessel's FX arrive across several frames, and a
 runtime vessel swap brings a whole new set; a set captured once silently omits everything that
@@ -114,9 +118,9 @@ animates. Where it does not, the jet is placed at the measured rear of the hull 
 |---|---|---|---|---|---|
 | **Dolphin** | −20 | −21 | 1.0 | 6 | parented to the six `Engine case *`, at each pod's measured exhaust mouth |
 | **Squirrel** | −17 | ±4, −12 (authored pair) | 0.85 | 4 | parented to model nodes (authored) |
-| **Sparrow** | −50 | −52.5 | 2.5 | 2 | `(±1.60, −0.10, −4.65)` — the two rear lobes, measured |
+| **Sparrow** | −50 | −52.5 | 2.5 | 1 | `(0, −0.10, −4.65)` — ONE centred plume at width×5, see below |
 | **Urchin** | −6.67 | −7.0 | 0.334 | 4 | parented to `JetTopLeft/Right`, `JetBottomLeft/Right` |
-| **Rhino** | −120 | −126 | 6.0 | 2 | parented to `engine left` / `engine right` |
+| **Rhino** | −120 | −126 | 6.0 | 6 | 2 parented to `engine left` / `engine right`; 4 on the main body's rear face at width×6 |
 | **Grizzly** | −30 † | −31.5 | 1.5 | 4 | parented to `Ship_Wedge_Jet_UL/UR/BL/BR` |
 | **Scarab** | −50 | −52.5 | 2.5 | 2 | `(±1.50, 0.10, −4.40)` — the carapace rear |
 | **Manta** | −30 | −31.5 | 1.5 | — | see §5 |
@@ -146,6 +150,25 @@ Nothing here was eyeballed. Two methods, both offline:
 The Sparrow's tail was at `z = −4.72` — on the hull, in the pilot's face, doing a jet's job. That
 is what prompted this pass.
 
+**Two placements were corrected after the first playtest, and both are worth recording:**
+
+- The **Sparrow** got two jets at the measured rear lobes `(±1.60, …)`. Those lobes are real
+  geometry, but the ship reads as having ONE big exhaust, not a separated pair — so it now carries
+  a single centred plume at `(0, −0.10, −4.65)` with `widthScale 5` (the pair's combined width in
+  one). *Measuring where the hull ends is not the same as reading how many exhausts it has.*
+- The **Rhino** had only its two wing engines, and the main body shows a bank of exhausts of its
+  own. Its rear face measures `x ∈ [−1.00, 1.00]`, `y ∈ [1.02, 4.20]` at `z = −10.38`, and an
+  occupancy map of that slab shows two stacked nozzle structures — an annular one centred near
+  `y 3.30` and a solid column near `y 1.55`. Four plumes span them:
+  `(±0.55, 3.30, −10.38)` and `(±0.30, 1.55, −10.38)`, parented to `Rhino_Test (1)`.
+
+  That geometry comes from `Rhino_Test.fbx`'s `fusalage`, **not** from the placeholder meshes the
+  prefab currently renders. It is the right source anyway: `fusalage` reproduces the body's
+  authored `BoxCollider` `(5.618, 15.309, 16.816)` to three decimals, and every other position on
+  this vessel — wings at `(±3.92, 0.46, 1.58)`, engines at `(±5.42, 0.46, −4.32)` — is that FBX's
+  node transforms at ÷100 with x mirrored. The whole prefab layout is `Rhino_Test`'s; only the
+  meshes were later re-pointed at `Vessel_Placeholder_1.fbx`. Re-measure when the real art lands.
+
 ## 5. Why five vessels have tails but no jets
 
 Manta, Falcon, Shrike, Termite and Serpent get the tail and the tint, and no jets, because their
@@ -170,6 +193,9 @@ the same pass that gives them real art, when "where is the engine" has an answer
   0.334 scale is doing real work. Check it first.
 - **Jet count on the Dolphin.** Six mouths sit ~0.3 apart with a 0.3-wide ribbon each, so they may
   merge into one sheet. Levers in order: `widthScale`, then dropping to the outer pair.
+- **Count is a look question, not a geometry one.** The Sparrow proved it: two measured lobes, one
+  apparent exhaust. Where the hull's structures are ambiguous, place from the geometry, then check
+  it against what the ship reads as.
 - **`VesselTail.prefab` carries six disabled particle systems**, dead experiments that make the
   asset ~690 KB. They are inactive, so they cost nothing at runtime; deleting them is a separate,
   purely subtractive change.
