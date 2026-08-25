@@ -23,6 +23,61 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Debris face pivot reads the mesh's baked centroid (2026-08-25)
+
+`Docs/PRISM_ANIMATION.md` §4.8.2. `RotateFacesAlongAxis` was spinning every face about a
+pivot derived for the prism CUBE's four-wedge faces; on a shield shard (one triangle per
+face) that lands off centre on the octahedron and **outside the triangle on all 24
+stellation faces**. The graphs now lerp the pivot onto the per-face centroid the shield
+generators already bake into TEXCOORD1, under a new Hybrid-Per-Instance float
+`_FacePivotFromCentroid` (0 = legacy derived pivot, 1 = mesh centroid).
+
+**Authored out-of-editor — no Unity available in the authoring session** (no editor, no
+`unity` CLI), so `/verify-unity` did not run. What DID run, and what each pass is worth:
+
+| pass | proves |
+|---|---|
+| Roslyn, no stubs, all 19 changed `.cs` | syntax + declaration shape only. **Blind to method bodies** once a base class is unresolved — confirmed by injecting a `CS0103` into this branch's own test file and watching it go unreported (`asset-surgery` §4, corrected 2026-08-24) |
+| Roslyn + a stub harness, **executing** `PrismFacePivotTests` against the real mesh generators and the real shipped graph files | **7/7 pass.** Body-level compile errors and the assertions themselves. Gate proven to fail on three injected defects: an undeclared identifier in a body, the stella geometry claim inverted, and the producer constant flipped |
+| `Tools/Shaders/wire_prism_face_pivot.py --check` | graph topology: registries resolve, one feeder per input, acyclic, property-node slot types |
+| `Tools/Shaders/verify_prism_face_pivot.py` | the SHIPPED subgraph's arithmetic, evaluated as a dataflow graph |
+| `Tools/Build/check_conditional_compilation.py` | the `#if` guard rules |
+
+**Still unproven offline, and the reason the steps below exist:** that Unity IMPORTS both
+graphs without rejecting them (a rejected graph is magenta, and no offline pass can see it),
+and how any of it looks in motion.
+
+**Import first.** Two shader graphs were edited out-of-editor
+(`ExplodingBlockGraph.shadergraph` + `PrismGraphs/Subgraphs/RotateFacesAlongAxis.shadersubgraph`).
+They need a Unity import pass to regenerate their shaders. If anything looks wrong, first
+check for magenta (a rejected graph) and re-import both.
+
+1. **Compile clean**, then run the edit-mode suite → `PrismFacePivotTests` all green. Its
+   `TheRotateNodeSlotIds_MatchWhatUnityWillRecompute` is the important one: it asserts the
+   offline `Guid.GetHashCode()` derivation the wiring rests on against the real runtime.
+2. FrogletTools > Ecology > Prism Animation > **Validate Clock Wiring** →
+   `_FacePivotFromCentroid` reported ✅ (Hybrid Per Instance) on ExplodingBlockGraph.
+3. **Nothing is magenta.** Any prism material rendering magenta means a graph was rejected on
+   import — `git checkout` both graph files and re-run the wirer.
+4. **A dying PRISM looks exactly as it did.** This is the no-regression check and it should be
+   indistinguishable; the change is bit-identical at weight 0. Blow up a trail with the
+   Dolphin's crystal blast and compare against `bleeding-edge` if in any doubt.
+5. **Drop a SHIELD** (shoot shielded mass until the shield sheds, or a shield timer expires) →
+   the octahedron's eight triangles tumble about their own centres instead of being flung on a
+   lever. Then a **SUPER-shielded** prism (Skim Race track, or the Rhino's energy sword, which
+   breaks the tier) → the stella's 24 spike faces should read the same way; that tier is where
+   the defect was worst.
+6. **Both at once** — a blast that kills plain and shielded mass in one volume → shards of both
+   kinds fly in the same batch, same speed, same erosion wipe. A visible difference in anything
+   OTHER than the spin centre means something beyond this change moved.
+
+**Known limitation, deliberate.** The weight is per debris entity, not per mesh: a future
+generated mesh that bakes TEXCOORD1 centroids must pass `FacePivotFromCentroid = 1` at its own
+spawn site. `PrismFacePivotTests.TheTwoDebrisProducers_DeclareTheirOwnFaceLayout` gates the two
+that exist today.
+
+---
+
 ### 🔴 Sparrow — the strafing roll's arm is a 0.3 s WINDOW, not the whole boost hold (`claude/sparrow-spin-cooldown-p8agtv`, 2026-08-25)
 
 Authored without a Unity compile or play-test (remote session, no editor, no `unity` CLI binary in
