@@ -114,10 +114,11 @@ Shader "Shader Graphs/ProjectileChargeField"
 
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
 
-            // SRP Batcher compatibility: every material property lives in UnityPerMaterial,
-            // and nothing here is per-instance, so every round in the match draws from one
-            // material with no property block. This is what makes the effect affordable at
-            // 180 rounds/s per Sparrow.
+            // Shared material state. Everything a ROUND does not decide for itself lives here;
+            // the one per-round value is `_RoundSeed` in the instancing buffer below. This
+            // material is GPU-INSTANCED rather than SRP-batched — ~54 identical spheres that
+            // must all look different need per-instance data more than one uniform buffer, and
+            // they still collapse into one instanced draw.
             CBUFFER_START(UnityPerMaterial)
                 float4 _CrackleColorA;
                 float4 _CrackleColorB;
@@ -190,11 +191,11 @@ Shader "Shader Graphs/ProjectileChargeField"
                 float3 cameraPosOS = TransformWorldToObject(GetCameraPositionWS());
                 output.viewDirOS = cameraPosOS - input.positionOS.xyz;
 
-                // Every per-round difference — which great circle this round's stroke lands
-                // on, and how charged it reads — comes out of the shell's own object-to-world
-                // matrix and nothing else: no stamp, no property block, one batch for the
-                // whole match. The resolution itself lives in the include so the verification
-                // harness can compile and run the SHIPPED version of it.
+                // How charged this round reads comes out of its own object-to-world matrix —
+                // no stamp needed, because the CPU had to write that scale anyway. WHICH
+                // stroke it draws comes from `_RoundSeed` above, which nothing implicit could
+                // supply (see the include). The resolution itself lives in the include so the
+                // verification harness can compile and run the SHIPPED version of it.
                 // (Column 0's LENGTH is the shell's diameter, and the CPU sizes the shell to
                 // exactly the round's hit radius every frame — Projectile.SizeChargeField —
                 // so growth drives the visual for free. Mesh is Unity's built-in sphere.)

@@ -10,12 +10,14 @@
 // see the arena through their own enormous bullets.
 //
 // The difference from `ForcefieldCrackle.hlsl` is the DRIVER, not the language. There,
-// arcs radiate from impact points a controller pushes in every frame through a
+// arcs radiate from impact points a controller pushes in EVERY FRAME through a
 // MaterialPropertyBlock — correct for one skimmer, ruinous for the ~54 rounds a single
-// Sparrow has in the air at 90 volleys/s (a per-renderer property block is also a per-
-// renderer draw call). Here every arc is a function of TIME and the shell's OWN
-// object-to-world matrix, so there is no per-frame CPU write, no property block, and
-// every round in the match batches through one material.
+// Sparrow has in the air at 90 volleys/s. Here an arc is a function of TIME, the shell's
+// OWN object-to-world matrix, and ONE float stamped per SHOT — so there is no per-frame
+// CPU write at all, and the material is GPU-INSTANCED: every shell shares mesh and
+// material and they batch into one instanced draw, with that float as per-instance data.
+// (It used to claim "no property block, SRP-batched". That was true and it was also why
+// every round in a burst drew the identical stroke — see the phase resolver below.)
 //
 // ─── ONE ROUND IS ONE STROKE. THE VOLLEY IS THE SPHERE. ─────────────────────────────
 //
@@ -62,9 +64,7 @@
 // ─── Noise helpers ──────────────────────────────────────────────────────────
 // Deliberately the same functions ForcefieldCrackle.hlsl uses, duplicated rather
 // than shared: that file declares its impact arrays and every visual property at
-// FILE SCOPE, which would collide with this shader's UnityPerMaterial cbuffer and
-// cost it SRP Batcher compatibility — the one thing that makes 54 simultaneous
-// shells affordable.
+// FILE SCOPE, which would collide with this shader's UnityPerMaterial cbuffer.
 
 float ChargeHash1(float n)
 {

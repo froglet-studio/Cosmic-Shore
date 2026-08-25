@@ -882,13 +882,16 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// One transform write per live round per frame, which is why the shell's whole
-        /// appearance is otherwise a function of TIME and its own object-to-world matrix: at 90
-        /// volleys/s over a 0.3 s flight a single Sparrow keeps ~54 of these in the air, and a
-        /// per-renderer MaterialPropertyBlock (the skimmer crackle's driver) would be ~54 extra
-        /// draw calls plus two 16-element vector arrays each, every frame. The shader reads its
-        /// own world radius instead, so growth needs no stamp and every round in the match
-        /// batches through one material.
+        /// One transform write per live round per frame — and that is the ONLY per-frame cost
+        /// the shell has. At 90 volleys/s over a 0.3 s flight a single Sparrow keeps ~54 of
+        /// these in the air, so the skimmer crackle's driver (a per-renderer
+        /// MaterialPropertyBlock carrying two 16-element vector arrays, pushed EVERY FRAME)
+        /// would be ruinous here. Growth needs no stamp at all: the shader reads the shell's
+        /// own world radius back off the model matrix, which the CPU had to write anyway.
+        ///
+        /// Note this is not an argument against <see cref="StampChargeFieldSeed"/>, which
+        /// writes one float ONCE PER SHOT. Per-frame is the cost that scales with 54 live
+        /// rounds; per-shot does not.
         /// </summary>
         void SizeChargeField()
         {

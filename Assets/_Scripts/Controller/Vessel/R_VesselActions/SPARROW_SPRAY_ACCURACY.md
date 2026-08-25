@@ -685,7 +685,7 @@ dogfighters and the Menu_Main autopilot all fire and none of them may buzz your 
 | `R_VesselActions/Executors/FullAutoBlockShootActionExecutor.cs` | Same for the turret, plus the roll-preserving shot rotation. |
 | `Controller/Projectiles/Gun.cs` | `FireGun(..., aimDirection)` — the gun is *handed* a direction; it owns no spread policy and rolls no dice. |
 | `Controller/Managers/PrismSpatialIndex.cs` | `QuerySegment` — the swept counterpart of `QuerySphere`, plus the public `DistanceToSegmentSq` metric. |
-| `Controller/Projectiles/Projectile.cs` | `sweptPrismDetection`, `SweepPrismsAlong` (nearest-first dispatch, contact-point repositioning), `CacheSweepRadius`; `ApplyFlightGrowth` + `CacheTransformRole` + `ChargeFieldLocalScale` (round 4). |
+| `Controller/Projectiles/Projectile.cs` | `sweptPrismDetection`, `SweepPrismsAlong` (nearest-first dispatch, contact-point repositioning), `CacheSweepRadius`; `ApplyFlightGrowth` + `CacheTransformRole` + `ChargeFieldLocalScale` (round 4); `StampChargeFieldSeed` — one float per SHOT, the shell's only per-round signal (round 5). |
 | `Controller/ImpactEffects/Impactors/ImpactorBase.cs` | `AcceptImpacteeFromSweep` + `IsSweepDispatch` — the swept analogue of the shell tier's entry point. |
 | `Controller/ImpactEffects/Impactors/ProjectileImpactor.cs` | Suppresses the trigger's prism case when the sweep owns it. |
 | `Controller/IO/HapticController.cs` | `PlaySpray(strength01)` + the extended gate + the buzz clip. |
@@ -695,8 +695,10 @@ dogfighters and the Menu_Main autopilot all fire and none of them may buzz your 
 | `_Scripts/Tests/Editor/PrismSweptQueryTests.cs` | The point-to-segment metric: endpoint clamping, degenerate steps, and the shipped mid-step geometry PhysX was missing. |
 | `_SO_Assets/VesselActions/Sparrow/FullAutoAction.asset` | The shipped numbers. |
 | `_Prefabs/Spacevessels/Sparrow.prefab` | `GunSprayAccuracy` executor + resized pools. |
-| `_Graphics/Materials/Graphs/ProjectileChargeField.shader` + `.hlsl` | The self-driven charge shell — the forcefield-crackle language with `_Time` + the model matrix as its driver instead of a per-frame property block. |
-| `_Graphics/Materials/ProjectileChargeFieldMaterial.mat` | The one material every round in the match batches through. Neutral blue + `EnvironmentColors.Danger` red. |
+| `_Graphics/Materials/Graphs/ProjectileChargeField.shader` + `.hlsl` | The charge shell — the forcefield-crackle language driven by `_Time`, the model matrix, and one per-SHOT `_RoundSeed` out of the GPU-instancing buffer. No per-frame CPU write (round 5). |
+| `_Graphics/Materials/ProjectileChargeFieldMaterial.mat` | The one material every round draws with — GPU-instanced, so 54 live shells collapse to one instanced draw and still differ. Neutral blue + `EnvironmentColors.Danger` red. Its arc knobs are a LIGHT BUDGET (round 5). |
+| `Tools/Shaders/verify_projectile_charge_field.py` | Compiles and RUNS the shipped HLSL against the revision it replaced: stroke planarity, a volley pair's lit-set overlap (with a `no seed` negative control), the burst union, continuity, and the full-auto light budget. CI-able, ~5 min, no Unity. |
+| `Tools/Shaders/render_projectile_charge_field.py` | Rasterizes the shipped HLSL through a real perspective camera at true 1080p density — isolated volley pairs, or the live stream. The tool that found what three rounds of measurement missed. |
 | `_Graphics/Materials/SparrowProjectileMaterial.mat` | The dart's own pale-blue material — a variant of `BlueSpreadFresnelMaterial`, split off `DangerProjectileMaterial` because that one is shared by five prefabs. |
 | `_Prefabs/Projectile/SparrowProjectile.prefab` | `sweptPrismDetection: 1`, the `ChargeField` child wired to `Projectile.chargeField`, the halved model scale `(0.75, 0.75, 20)` and its own material (round 4). |
 | `_Prefabs/Trails/Prisms With Pools/Sparrow Projectile Prism.prefab` | `sweptPrismDetection: 1`. Its carried `ProjectileCollider` has no renderer, so growth still scales its transform and it carries no shell. |
