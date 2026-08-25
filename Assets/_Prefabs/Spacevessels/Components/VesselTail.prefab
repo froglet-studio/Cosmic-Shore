@@ -9698,8 +9698,9 @@ GameObject:
   m_Component:
   - component: {fileID: 8790614297745682555}
   - component: {fileID: 6798498245059046558}
+  - component: {fileID: 3901220100011000771}
   m_Layer: 8
-  m_Name: TrailEmpty
+  m_Name: VesselTail
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -9768,7 +9769,7 @@ TrailRenderer:
   m_SortingLayerID: 0
   m_SortingLayer: 0
   m_SortingOrder: 0
-  m_Time: 2
+  m_Time: 4
   m_PreviewTimeScale: 1
   m_Parameters:
     serializedVersion: 3
@@ -29206,3 +29207,15 @@ ParticleSystemRenderer:
   m_MeshWeighting2: 1
   m_MeshWeighting3: 1
   m_MaskInteraction: 0
+--- !u!114 &3901220100011000771
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 961892902783783222}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4a2dd7f2f538419ba67f511f3eaa3148, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 

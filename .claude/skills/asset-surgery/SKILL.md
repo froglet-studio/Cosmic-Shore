@@ -368,6 +368,53 @@ its GameObject lists it in `m_Component`.
   — intra-face deviation (5.21°) against the shallowest genuine dihedral (57.5°) leaves a
   50° window, and picking from inside a measured gap is not the same act as guessing 1°.
 
+- **Exactly one `.meta` OWNS a guid — resolve with `grep -c "^guid: $g"` per candidate, NEVER
+  `grep -rl … | head -1`.** `head -1` picks by filename order, which has nothing to do with
+  ownership, and a model file's `.meta` is a completely ordinary place for another model's
+  guid to appear: an FBX `.meta` can carry an `externalObjects` MATERIAL REMAP into a
+  different FBX. That produced a placeholder hull as the confident answer for "which mesh does
+  this vessel render", and two rounds of geometry were measured against a ship a fifth the
+  real one's height. Then cross-check the winner against something the PREFAB itself authored
+  — a BoxCollider reproducing the mesh's extents to four decimals turns a resolution into a
+  fact.
+- **Unity's FBX sub-asset fileIDs are NOT derivable offline — reference model sub-objects by
+  NAME at runtime instead.** When a model's `.meta` has `internalIDToNameTable: []` (the
+  normal case), the ids Unity assigns to bones/meshes inside the FBX exist nowhere you can
+  read, and they are not a plain hash of the name (MD4 over name/class, both byte orders and
+  offsets, tested against seven known meshes: zero hits). So you cannot hand-author a prefab
+  reference to a bone inside a nested model prefab. Do not burn the session
+  reverse-engineering it: add a serialized NAME and resolve it in `Awake`, which also survives
+  a re-export — the ids do not. This is the same choice the project's own `ResolvePart` makes.
+- **A nested prefab instance is reachable TWO ways, and needs both when its parent is PLAIN.**
+  `m_TransformParent` in the instance's modification block always, PLUS an entry in the parent
+  Transform's `m_Children` **iff that parent is a plain (non-stripped) Transform**. The
+  exception that looks like a counter-example: an instance parented to a STRIPPED Transform
+  cannot carry the entry, because a stripped document is a reference stub with no children
+  list. Generalising "no entry needed" from that one case shipped eight prefab instances that
+  were in the file and not in the hierarchy. Audit it as a predicate over the whole family,
+  not per-instance.
+- **To learn what a bone actually drives, read the SKIN WEIGHTS — not the bone's position, and
+  not its name.** A `Deformer` of subtype `Cluster` carries `Indexes` + `Weights` and links to
+  one bone `Model`; the indices name exactly the vertices it moves. Ranking every bone by the
+  centroid of the geometry it skins describes a whole model with no interpretation, and it is
+  decisive where names and geometry disagree — four passes of guessing which structure was an
+  engine were settled in one query that showed those vertices belonged to `b_ShipGun1`.
+  Corollary: an artist's bone NAME is a hypothesis (bones named `b_Tail*` drove the blades at
+  the model's opposite end).
+- **Validate a model→world axis mapping against an AUTHORED anchor before you measure anything
+  with it.** Unity's Z-up→Y-up conversion is `(−x, z, −y)`, but a mis-signed axis still
+  produces a plausible-looking hull, and every measurement after it is confidently wrong. The
+  anchor is something a human placed BY HAND in the prefab against the same geometry — a
+  muzzle transform landing on the gun bone's barrel end on all three axes, a collider
+  reproducing a mesh's extents. Prefer two independent anchors; one coincidence is not a
+  proof.
+- **Render the geometry and LOOK at it — a wireframe costs a minute and settles what an hour
+  of binning statistics will not.** Vertex histograms, bounding boxes and "rearmost point"
+  queries described the wrong structure on two different models in one session; a rear view
+  plus a stack of thin slices along the view axis showed the real openings immediately. Both
+  models were placed correctly within one pass of rendering them, and wrongly in every pass
+  before it.
+
 ### Technique: REMOVING a component (or a whole GameObject) from a prefab
 
 Deleting the `MonoBehaviour` document is the part everyone remembers and the smallest
