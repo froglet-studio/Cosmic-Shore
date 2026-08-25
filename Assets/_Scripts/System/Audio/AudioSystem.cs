@@ -8,6 +8,7 @@ using FMODUnity;
 using Reflex.Attributes;
 using UnityEngine;
 using UnityEngine.Audio;
+using UnityEngine.Serialization;
 
 /// <summary>
 /// Central audio service. Two parallel pipelines:
@@ -304,18 +305,35 @@ namespace CosmicShore.Core
             "the SFX slider.")]
         float explosionVolumeScale = 0.6f;
 
+        [SerializeField, Tooltip(
+            "Categories that fire in BURSTS - one one-shot per prism destroyed - " +
+            "and are therefore rate-limited, each category counted independently. " +
+            "EVERY prism-destruction category belongs here: Prism.PlayDestructionSFX " +
+            "plays one per prism from BOTH Explode and Implode, so a blast through a " +
+            "forest or a creature grazing a canopy queues thousands of FMOD instances " +
+            "in a single frame - which shows up as native time inside " +
+            "RuntimeManager.Update(), not in the prism code that caused it.")]
+        GameplaySFXCategory[] throttledCategories =
+        {
+            GameplaySFXCategory.BlockDestroy,
+            GameplaySFXCategory.FloraCollision,
+            GameplaySFXCategory.CreatureBlockHit,
+        };
+
+        [FormerlySerializedAs("blockDestroyMaxPerWindow")]
         [SerializeField, Min(1), Tooltip(
-            "Max BlockDestroy one-shots allowed to start within " +
-            "blockDestroyThrottleWindow seconds. Breaks beyond this cap in the " +
+            "Max one-shots per throttled category allowed to start within " +
+            "burstThrottleWindow seconds. Breaks beyond this cap in the " +
             "same window are dropped - the sound is already saturated, so the " +
             "extra voices are inaudible individually but would otherwise stack " +
             "into harsh noise and waste FMOD voices.")]
-        int blockDestroyMaxPerWindow = 4;
+        int burstThrottleMaxPerWindow = 4;
 
+        [FormerlySerializedAs("blockDestroyThrottleWindow")]
         [SerializeField, Min(0.01f), Tooltip(
-            "Sliding window (seconds) over which blockDestroyMaxPerWindow is " +
-            "counted.")]
-        float blockDestroyThrottleWindow = 0.1f;
+            "Sliding window (seconds) over which burstThrottleMaxPerWindow is " +
+            "counted, per throttled category.")]
+        float burstThrottleWindow = 0.1f;
 
         [Header("Logging")]
         [SerializeField, Tooltip(
@@ -347,11 +365,12 @@ namespace CosmicShore.Core
         readonly HashSet<MenuAudioCategory> _warnedMenuCategories = new();
         readonly HashSet<GameplaySFXCategory> _warnedGameplayCategories = new();
 
-        // Sliding-window throttle for BlockDestroy. When many prisms break in
-        // the same instant, only the first blockDestroyMaxPerWindow voices per
-        // blockDestroyThrottleWindow are allowed to start; the rest are dropped.
-        float _blockDestroyWindowStart;
-        int _blockDestroyWindowCount;
+        // Sliding-window throttle state, one slot per entry in throttledCategories
+        // (parallel arrays rather than a dictionary: this is consulted once per prism
+        // destroyed, so it must not allocate or box an enum key). Allocated once, on
+        // first use, by EnsureThrottleState.
+        float[] _throttleWindowStart;
+        int[] _throttleWindowCount;
 
         public bool MusicEnabled { get { return musicEnabled; } }
         public bool SFXEnabled { get { return sfxEnabled; } }
@@ -757,27 +776,61 @@ namespace CosmicShore.Core
         };
 
         /// <summary>
-        /// Sliding-window concurrency gate for categories that can fire in
-        /// large bursts. Currently only BlockDestroy is throttled: at most
-        /// <see cref="blockDestroyMaxPerWindow"/> voices may start per
-        /// <see cref="blockDestroyThrottleWindow"/> seconds. Returns false to
-        /// drop the one-shot. Non-throttled categories always pass.
+        /// Sliding-window concurrency gate for the categories that fire in large
+        /// bursts (<see cref="throttledCategories"/>): at most
+        /// <see cref="burstThrottleMaxPerWindow"/> voices may start per
+        /// <see cref="burstThrottleWindow"/> seconds, counted INDEPENDENTLY per
+        /// category so a burning forest cannot starve plain block destruction.
+        /// Returns false to drop the one-shot; non-throttled categories always pass.
+        ///
+        /// <para>This used to gate BlockDestroy alone, which is the one prism
+        /// destruction category the ecology does NOT use: HealthPrism overrides
+        /// flora to FloraCollision and Prism.PlayDestructionSFX swaps a
+        /// creature kill to CreatureBlockHit, so the food web and every AOE blast
+        /// through a forest routed straight around the guard - queueing an
+        /// unbounded number of CreateInstance/start commands that FMOD then paid
+        /// for inside RuntimeManager.Update().</para>
         /// </summary>
         bool PassesGameplaySFXThrottle(GameplaySFXCategory category)
         {
-            if (category != GameplaySFXCategory.BlockDestroy) return true;
+            int slot = ThrottleSlotOf(category);
+            if (slot < 0) return true;   // not a burst category - always passes
+
+            EnsureThrottleState();
 
             float now = Time.unscaledTime;
-            if (now - _blockDestroyWindowStart > blockDestroyThrottleWindow)
+            if (now - _throttleWindowStart[slot] > burstThrottleWindow)
             {
-                _blockDestroyWindowStart = now;
-                _blockDestroyWindowCount = 0;
+                _throttleWindowStart[slot] = now;
+                _throttleWindowCount[slot] = 0;
             }
 
-            if (_blockDestroyWindowCount >= blockDestroyMaxPerWindow) return false;
+            if (_throttleWindowCount[slot] >= burstThrottleMaxPerWindow) return false;
 
-            _blockDestroyWindowCount++;
+            _throttleWindowCount[slot]++;
             return true;
+        }
+
+        /// <summary>
+        /// Index of <paramref name="category"/> in <see cref="throttledCategories"/>, or -1
+        /// when it is not throttled. A linear scan over a three-entry array, deliberately:
+        /// it is allocation-free (an enum-keyed Dictionary boxes) and this runs once per
+        /// prism destroyed.
+        /// </summary>
+        int ThrottleSlotOf(GameplaySFXCategory category)
+        {
+            if (throttledCategories == null) return -1;
+            for (int i = 0; i < throttledCategories.Length; i++)
+                if (throttledCategories[i] == category) return i;
+            return -1;
+        }
+
+        void EnsureThrottleState()
+        {
+            int n = throttledCategories.Length;
+            if (_throttleWindowStart != null && _throttleWindowStart.Length == n) return;
+            _throttleWindowStart = new float[n];
+            _throttleWindowCount = new int[n];
         }
 
         void InitializeMenuAudioEvents()
