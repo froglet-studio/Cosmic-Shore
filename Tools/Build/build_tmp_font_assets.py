@@ -38,10 +38,12 @@ CHARSET  = sorted(set(list(range(0x20, 0x7F)) + list(range(0xA0, 0x100)) + EXPLI
 CHARSET  = sorted(set(CHARSET + [0x200B]))
 
 WEIGHT_NAME = {300: "Light", 400: "Regular", 500: "Medium", 600: "SemiBold", 700: "Bold"}
+# key = folder name under Assets/_Graphics/Fonts/ (Style Foundation T5 spells these
+# without spaces); value = (file stem, weights, human-readable family name).
 FAMILIES = {
-    "Chakra Petch":   ("ChakraPetch",   [400, 500, 600, 700]),
-    "Space Grotesk":  ("SpaceGrotesk",  [300, 400, 500, 600]),
-    "JetBrains Mono": ("JetBrainsMono", [400, 500, 700]),
+    "ChakraPetch":   ("ChakraPetch",   [400, 500, 600, 700], "Chakra Petch"),
+    "SpaceGrotesk":  ("SpaceGrotesk",  [300, 400, 500, 600], "Space Grotesk"),
+    "JetBrainsMono": ("JetBrainsMono", [400, 500, 700],      "JetBrains Mono"),
 }
 
 
@@ -51,12 +53,17 @@ def asset_name(stem):
 
 # ------------------------------------------------------------------ emission
 def fmt(v):
-    """Serialize a float the way Unity's YAML writer does (shortest round-trip)."""
-    if isinstance(v, int):
-        return str(v)
-    if v == int(v) and abs(v) < 1e15:
+    """Serialize a float the way Unity's YAML writer does: the SHORTEST decimal that
+    round-trips through float32. Truncating to a fixed width instead writes noise like
+    `_GlowOuter: 0.0500000007`, which parses to the same value but is unreviewable."""
+    if isinstance(v, int) or (v == int(v) and abs(v) < 1e15):
         return str(int(v))
-    return repr(float(np.float32(v)))[:12].rstrip('0').rstrip('.') or '0'
+    f = np.float32(v)
+    for prec in range(1, 10):
+        s = "%.*g" % (prec, float(f))
+        if np.float32(float(s)) == f:
+            return s
+    return repr(float(f))
 
 
 def build_font_asset(ttf_path, name, point_size=POINT_SIZE, padding=PADDING,
@@ -389,12 +396,12 @@ def verify_donor():
 LIB_SANS       = "8f586378b4e144a9851e7b34d9b748ee"      # LiberationSans SDF
 LIB_SANS_DYN   = "2e498d1c8094910479dc3e1b768306a4"      # LiberationSans SDF - Fallback (DYNAMIC)
 GH             = "https://raw.githubusercontent.com/google/fonts/main"
-OFL_DIR        = {"Chakra Petch": "ofl/chakrapetch",
-                  "Space Grotesk": "ofl/spacegrotesk",
-                  "JetBrains Mono": "ofl/jetbrainsmono"}
+OFL_DIR        = {"ChakraPetch": "ofl/chakrapetch",
+                  "SpaceGrotesk": "ofl/spacegrotesk",
+                  "JetBrainsMono": "ofl/jetbrainsmono"}
 # Space Grotesk and JetBrains Mono ship variable-only in google/fonts; Google Fonts'
 # own per-weight STATIC instances come from gstatic (woff wrapper, unwrapped to ttf).
-CSS_QUERY      = {"Space Grotesk": "Space+Grotesk", "JetBrains Mono": "JetBrains+Mono"}
+CSS_QUERY      = {"SpaceGrotesk": "Space+Grotesk", "JetBrainsMono": "JetBrains+Mono"}
 UA_LEGACY      = ("Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 "
                   "(KHTML, like Gecko) Chrome/27.0.1453.116 Safari/537.36")
 
@@ -438,13 +445,13 @@ def fetch():
         req = urllib.request.Request(url, headers={'User-Agent': ua or 'Mozilla/5.0'})
         return urllib.request.urlopen(req, timeout=90).read()
 
-    for family, (stem, weights) in FAMILIES.items():
+    for family, (stem, weights, display) in FAMILIES.items():
         d = os.path.join(FONT_DIR, family)
         os.makedirs(d, exist_ok=True)
         with open(d + ".meta", "w") as f:
             f.write(folder_meta(stable_guid(f"dir/{family}")))
         blobs = {}
-        if family == "Chakra Petch":
+        if family == "ChakraPetch":
             for w in weights:
                 blobs[w] = get(f"{GH}/{OFL_DIR[family]}/{stem}-{WEIGHT_NAME[w]}.ttf")
         else:
@@ -460,7 +467,7 @@ def fetch():
             fo.flavor = None                       # woff -> plain ttf, outlines untouched
             path = os.path.join(d, f"{stem}-{WEIGHT_NAME[w]}.ttf")
             fo.save(path)
-            fam = fo['name'].getDebugName(1) or family
+            fam = fo['name'].getDebugName(1) or display
             with open(path + ".meta", "w") as f:
                 f.write(ttf_meta(stable_guid(f"ttf/{stem}-{WEIGHT_NAME[w]}"), fam))
             print(f"  {os.path.relpath(path, ROOT)}")
@@ -476,14 +483,14 @@ def fallbacks_for(family, weight):
     """Space Grotesk -> Chakra Petch (weight-matched). Liberation Sans and the
     DYNAMIC overflow fallback are global, set in TMP Settings, so every family
     inherits them without duplicating the tail of the chain on 11 assets."""
-    if family != "Space Grotesk":
+    if family != "SpaceGrotesk":
         return []
-    cp = weight if weight in FAMILIES["Chakra Petch"][1] else 400   # CP has no Light
+    cp = weight if weight in FAMILIES["ChakraPetch"][1] else 400    # CP has no Light
     return [(11400000, stable_guid(f"asset/ChakraPetch-{WEIGHT_NAME[cp]} SDF"))]
 
 
 def all_targets():
-    for family, (stem, weights) in FAMILIES.items():
+    for family, (stem, weights, _display) in FAMILIES.items():
         for w in weights:
             base = f"{stem}-{WEIGHT_NAME[w]}"
             yield dict(family=family, weight=w, stem=base,

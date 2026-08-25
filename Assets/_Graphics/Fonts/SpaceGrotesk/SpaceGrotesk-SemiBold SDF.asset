@@ -20,15 +20,15 @@ MonoBehaviour:
     m_PointSize: 90
     m_Scale: 1
     m_UnitsPerEM: 1000
-    m_LineHeight: 114.83999633
-    m_AscentLine: 88.559997558
+    m_LineHeight: 114.84
+    m_AscentLine: 88.56
     m_CapLine: 63
     m_MeanLine: 45
     m_Baseline: 0
-    m_DescentLine: -26.28000068
-    m_SuperscriptOffset: 88.559997558
+    m_DescentLine: -26.28
+    m_SuperscriptOffset: 88.56
     m_SuperscriptSize: 0.5
-    m_SubscriptOffset: -26.28000068
+    m_SubscriptOffset: -26.28
     m_SubscriptSize: 0.5
     m_UnderlineOffset: -11.25
     m_UnderlineThickness: 4.5
@@ -3997,12 +3997,12 @@ Material:
     - _FaceDilate: 0
     - _FaceUVSpeedX: 0
     - _FaceUVSpeedY: 0
-    - _GlowInner: 0.0500000007
+    - _GlowInner: 0.05
     - _GlowOffset: 0
-    - _GlowOuter: 0.0500000007
+    - _GlowOuter: 0.05
     - _GlowPower: 0.75
     - _GradientScale: 10
-    - _LightAngle: 3.1415998935
+    - _LightAngle: 3.1416
     - _MaskSoftnessX: 0
     - _MaskSoftnessY: 0
     - _OutlineSoftness: 0
@@ -4011,9 +4011,9 @@ Material:
     - _OutlineWidth: 0
     - _PerspectiveFilter: 0.875
     - _Reflectivity: 10
-    - _ScaleRatioA: 0.8999999761
+    - _ScaleRatioA: 0.9
     - _ScaleRatioB: 1
-    - _ScaleRatioC: 0.731249988
+    - _ScaleRatioC: 0.73125
     - _ScaleX: 1
     - _ScaleY: 1
     - _ShaderFlags: 0
