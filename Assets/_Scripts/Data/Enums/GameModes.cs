@@ -90,5 +90,12 @@ namespace CosmicShore.Data
         // Goals stop nothing (continuous play, no kickoffs), there are no own goals, and the
         // first domain to the goal target wins. See _Scripts/Controller/Arcade/SCARABSCRAMBLE.md.
         ScarabScramble = 43,
+        // Salvo (44): the Sparrow-only demolition race, and Dog Fight's inverse in the same
+        // Boneyard - here tearing the wreck apart IS the score. Guns chip, missiles level whole
+        // hulks, and the arena is stocked with omni crystals: every one collected reloads the
+        // missile bays of EVERY pilot on the collector's domain, so a wingman running crystals
+        // keeps the strikers firing. First DOMAIN to the prism target wins. See
+        // _Scripts/Controller/Arcade/SALVO.md.
+        Salvo = 44,
     }
 }

@@ -327,7 +327,11 @@ namespace CosmicShore.Gameplay
             for (int i = _hullBodies.Count - 1; i >= 0; i--)
             {
                 if (!_hullBodies[i]) { _hullBodies.RemoveAt(i); continue; }
-                ToyVesselRoster.Recolor(_hullBodies[i], color);
+                // Dispatches: the kingdom GLYPH in this list is flat and gets repainted, the hangar
+                // STATIONS are live hulls drawing with shared project materials and get their
+                // domain material swapped plus their vision mark re-stamped. Repainting a live one
+                // would recolour every ship in the game.
+                ToyVesselRoster.ApplyDomain(Context, _hullBodies[i], color);
             }
         }
 
@@ -485,7 +489,10 @@ namespace CosmicShore.Gameplay
                 var vessel = _offeredVessels[i];
                 Vector3 pos = GridPosition(origin, i, _offeredVessels.Count, 1);
 
-                bool built = ToyVesselRoster.TryBuildHull(Context, vessel, radius, color, out var model);
+                // The ACTUAL ship, wearing its own materials and marked by the vessel vision band -
+                // same reasoning as the vessel changer's stations: you choose at range, where the
+                // band is at full mark, and arrive at a real hull.
+                bool built = ToyVesselRoster.TryBuildLiveHull(Context, vessel, radius, out var model);
                 if (built)
                 {
                     model.AddComponent<ToyIdleSpin>().Configure(Vector3.up, 16f);

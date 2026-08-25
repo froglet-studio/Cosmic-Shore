@@ -318,3 +318,31 @@ Mechanics reference: `_Scripts/Controller/Vessel/R_VesselActions/DOLPHIN_ENERGY_
     (both Rhino-only) and their `PhaseThresholds` would need re-deriving against the grown
     slab — see CLAUDE.md, "a cell whose prisms are not nominal must author its volume ladder".
     That is why this is its own branch and not a toy fix.
+
+---
+
+## Scarab juke — the root roll has the Sparrow's bank-cancellation defect (opened by `claude/sparrow-spin-cooldown-p8agtv`)
+
+`ScarabJukeController` is the structural twin of `BarrelRollController` — same perimeter trigger
+(`stick.magnitude >= perimeterThreshold`), same `rollSign = stick.x >= 0 ? +1 : -1`, same visual
+360° smoothstep, same `rootRollDegrees` (15) applied through `VesselTransformer.ApplyRotation`
+about `transform.forward` — and it therefore carries the same defect the Sparrow branch fixed:
+
+- **The bank cancels it.** `ScarabVesselTransformer.Roll()` is `-EasedLeftJoystickPosition.x × (…)`
+  about the same axis, so the two rotations add and the trigger (a full stick deflection) is
+  precisely when the bank is at maximum, pointing the other way. The camera reads the ROOT's up,
+  so the pilot's horizon tilts against the juke rather than with it.
+- **The roll is linear, the animation is smoothstep.** `rollSign * rootRollDegrees *
+  (Time.deltaTime / jukeDurationSeconds)` drifts across the dash at a constant rate instead of
+  easing with it, and summing `dt / duration` overshoots on the frame that ends the loop.
+
+**The mechanism is already landed.** `VesselTransformer.BankIntoTurnSuppressed` is honoured in
+`ScarabVesselTransformer.Roll()` as of that branch, so the fix is: set it around the juke routine
+(clearing it in the tail AND in `OnDisable`), and advance the root roll by the delta of the
+animation's own smoothstep. `BarrelRollController.RollRoutine` is the reference implementation.
+
+**Deliberately NOT done on the Sparrow branch.** The Scarab is a different vessel with its own
+play-tested feel, and removing its bank mid-juke is a change nobody has judged on screen. It wants
+its own branch and its own playtest — a Scarab pilot should confirm the juke reads better, not
+merely differently. Verify in **Scarab Scramble**: juke left and right, confirm the horizon tilts
+the same way the model spins and that the dash still turns at full rate.

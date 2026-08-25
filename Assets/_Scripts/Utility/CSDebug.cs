@@ -86,6 +86,15 @@ namespace CosmicShore.Utility
         /// this is what tells them apart. Off by default like every channel.
         /// </summary>
         PrismShieldShatter = 1 << 6,
+        /// <summary>
+        /// <c>[BarrelRoll]</c> — the Sparrow's strafing roll: direction, the stick vector that
+        /// triggered it, and the nudge direction (plus whether it fired stopped, as the turret
+        /// stance's dodge). Logged unconditionally on every roll until 2026-08-25, which is the
+        /// same per-input console spam <see cref="ScarabDash"/> records for the sibling ability.
+        /// Off by default like every channel; a real fault here is still a warning or an error
+        /// and is unaffected by this flag.
+        /// </summary>
+        SparrowStrafingRoll = 1 << 7,
         All = ~0
     }
 

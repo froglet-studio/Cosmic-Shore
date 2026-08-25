@@ -1584,6 +1584,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   perimeterThreshold: 1
+  rollArmWindowSeconds: 0.3
   invertRollDirection: 0
   rollDurationSeconds: 0.6
   rootRollDegrees: 15

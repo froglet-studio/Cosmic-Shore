@@ -105,7 +105,7 @@ namespace CosmicShore.Gameplay
 
         protected override void Roll()
         {
-            if (InputStatus == null) return;
+            if (InputStatus == null || BankIntoTurnSuppressed) return;
             accumulatedRotation = Quaternion.AngleAxis(
                 -InputStatus.EasedLeftJoystickPosition.x * (speed * RotationThrottleScaler + RollScaler) * Time.deltaTime,
                 transform.forward) * accumulatedRotation;

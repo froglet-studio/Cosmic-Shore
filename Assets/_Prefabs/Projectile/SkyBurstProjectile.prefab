@@ -59,8 +59,8 @@ SphereCollider:
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 3
-  m_Radius: 0.85
-  m_Center: {x: 0, y: 0, z: 0}
+  m_Radius: 0.019053
+  m_Center: {x: -0.000149, y: 0.001277, z: 0.066087}
 --- !u!54 &7669076058770026044
 Rigidbody:
   m_ObjectHideFlags: 0
@@ -4905,6 +4905,9 @@ MonoBehaviour:
   projectileImpactor: {fileID: 2638094848372366872}
   spike: 0
   friendlyFire: 1
+  flightGrowthTarget: {fileID: 4620259339888721002}
+  flightGrowthUniform: 1
+  flightGrowthCompleteAt01: 0.2
   _themeManagerData: {fileID: 11400000, guid: d45a23e6bd2da304988606fba6c97628, type: 2}
 --- !u!114 &2638094848372366872
 MonoBehaviour:

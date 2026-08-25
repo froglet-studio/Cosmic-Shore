@@ -1797,6 +1797,96 @@ exposing the one config both producers must share), and the velocity plumbing fr
 `Prism.Damage` down. `CSLogChannel.PrismShieldShatter` logs one line per queued disengage
 (off by default; FrogletTools > Toolbox > Logging).
 
+### 4.8.2 The face pivot comes from the MESH (shipped 2026-08-25)
+
+§4.8.1 put the shield shards on ExplodingBlockGraph and authored the attribute set the
+graph reads. It left one thing un-ported: a **constant inside the pipeline that is itself
+a measurement of the cube.**
+
+`RotateFacesAlongAxis` rotates each face about a pivot it derives —
+
+```
+Pn    = dot(P, N) * N            the foot of the perpendicular from the object origin
+                                 onto the face's plane
+slide = 0.5 * (0.5 + Spread) * T a fixed step along the face TANGENT
+pivot = Pn + slide               the rotation is rot(P - pivot) + pivot
+```
+
+— and the `0.5` in `slide` is not a fact about faces. It is the prism CUBE's geometry: that
+mesh carries twice a normal cube's triangles so every face is four isoceles wedges fanned
+from a face-centre vertex, and a wedge's own centre sits half a face-half-width along its
+tangent. `Pn + 0.25*T` therefore lands on the wedge, the four wedges spin in place, and the
+prism comes apart the way it is supposed to.
+
+For a mesh whose faces are single triangles it is simply wrong, in two different ways:
+
+| mesh | where the derived pivot lands |
+|---|---|
+| octahedron, cubic prism | exactly the centroid (the foot IS the centroid on an equilateral face) — then the slide pushes it off |
+| octahedron, 20:1 trail slab | inside the face but **0.33 edge lengths** off centre |
+| stellated octahedron | **OUTSIDE the triangle on all 24 faces**, up to 0.67 edge lengths |
+
+The stella is the bad one and the reason is structural: its 24 faces are the lateral faces
+of eight spike tetrahedra, and each group of three shares ONE tetrahedron-face plane — so
+the perpendicular foot is that big triangle's centre, i.e. the hole between the three small
+ones. A face spinning about a point outside itself reads as the shard being flung on a
+lever rather than tumbling.
+
+**The fix asks the mesh.** Both shield generators already bake the exact per-face centroid
+into TEXCOORD1 for the ENGAGE bloom, and ExplodingBlockGraph already samples that channel.
+The subgraph now lerps its pivot onto it:
+
+```
+pivot' = lerp(Pn + slide, FaceCentroid, CentroidPivotWeight)
+```
+
+implemented as a delta subtracted before the rotation and added back after it — which IS a
+pivot shift, since the rotation is `rot(P - pivot) + pivot`. This is §4.8.1's own governing
+rule applied one level up: **port the mesh into the pipeline, never the pipeline into the
+mesh — and when the pipeline has hardcoded a mesh's shape, that constant is part of the
+pipeline that has to give.**
+
+**The weight is one Hybrid-Per-Instance float** (`_FacePivotFromCentroid`,
+`PrismFacePivotFromCentroidOverride`), stamped 0 by `PrismDebris` and 1 by
+`PrismShieldShatter`. It cannot be a material constant, because the two producers share
+ExplodingBlockMaterial by design (§4.8.1) — that shared material is exactly what keeps the
+two death visuals from drifting, so the mesh's face layout has to travel with the ENTITY
+instead. The two alternatives both cost more and buy less: a shader **keyword** doubles the
+variant count of a 70-node graph and is still per-material, so it needs a second material
+anyway; a **duplicate graph** splits the batch AND forks the pipeline §4.8.1 exists to keep
+whole. What shipped costs one float per debris entity and one `mad` in the vertex stage.
+
+Four properties worth carrying:
+
+- **At weight 0 the change is BIT-IDENTICAL.** `0 * finite` is exactly `0`, so the delta
+  vanishes and the cube path is the pre-edit graph — measured, not argued
+  (`Tools/Shaders/verify_prism_face_pivot.py` evaluates both files over 400 randomized
+  vertices and reports max |delta| = 0). No prism retune, nothing to re-approve.
+- **At weight 1 the map collapses to an exact rotation about the centroid**, algebraically,
+  whatever `Spread` is doing — the delta cancels the whole `Pn + slide` construction. This
+  matters because `SpreadValue` is a **Vector3** multiplied COMPONENTWISE by the tangent, so
+  the legacy slide is not generally parallel to `T` and the legacy map is not a rigid
+  rotation about any point at all. That is pre-existing behaviour, deliberately preserved at
+  weight 0; do not "fix" it as a side effect of something else.
+- **A SubGraphNode's input slot ids are `Guid.GetHashCode()` of the subgraph's property
+  guids** — the XOR of the guid's four little-endian 32-bit words, serialized alongside them
+  in `m_PropertyGuids` / `m_PropertyIds`. That is why the two new subgraph property guids are
+  PINNED constants in the wirer rather than minted per run: change one and Unity recomputes a
+  different id, silently drops the edge on import, and the fix evaporates while the file still
+  reads as wired. `PrismFacePivotTests` asserts the shipped ids against the real
+  `Guid.GetHashCode()`.
+- **Nothing else in the pipeline moved.** Colliders, mass, spatial registration, the erosion
+  wipe, the fade, the flight, the velocity clamp band and both shield generators' meshes are
+  untouched; this changes which point a face rotates about and nothing else.
+
+Gates: `python3 Tools/Shaders/wire_prism_face_pivot.py --check` (graph topology, idempotent —
+so it is also the resolver if either graph hits a merge conflict),
+`python3 Tools/Shaders/verify_prism_face_pivot.py` (the shipped subgraph's arithmetic, plus
+the face geometry above re-derived from the generators' own construction),
+`PrismFacePivotTests` (edit-mode: the per-instance declaration, the slot-id derivation, the
+geometry, and both producers), and FrogletTools > Ecology > Prism Animation > **Validate Clock
+Wiring**, which now requires `_FacePivotFromCentroid` on ExplodingBlockGraph.
+
 ### 4.9 The super-shield deflection jiggle (shipped 2026-08-15, C14)
 
 Super-shielded mass is **fully invulnerable** — `Prism.Damage`, `Prism.Consume`, the Burst AOE
