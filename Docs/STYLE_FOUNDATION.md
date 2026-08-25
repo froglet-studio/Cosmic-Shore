@@ -1,6 +1,6 @@
 # Cosmic Shore — Style Foundation
 
-**Version:** 0.3 · **Reference:** 1920×1080, PPU 240 · **Stack:** uGUI + TextMeshPro
+**Version:** 0.3.1 · **Reference:** 1920×1080, PPU 240 · **Stack:** uGUI + TextMeshPro
 
 **v0.3 supersedes v0.1 and v0.2.** The existing Cosmic Shore style guide — Main Colors, Additional Colors, Typography, Icons, Buttons, UI Elements — is **authoritative**. This document records it, resolves the open items, and adds only what the guide does not cover: spacing, layering, motion, safe area, and the numeric type role.
 
@@ -14,7 +14,7 @@ Direction: Helldivers 2 **discipline only** — the rigour, not the look.
 |---|---|---|
 | A | Team naming | **Jade = Team 1 (cyan `00D4FF`), Ruby = Team 2 (purple `A600FF`), Gold = Team 3 (amber `FFAE00`).** Legacy names, current art — confirmed by the end-of-game victory banners. Green `99FF80` is outside the team gamut and is therefore safe as the interactive hue. |
 | B | Type scale | Guide was authored for mobile at 800×450. Launch is PC. Do **not** apply a mechanical ×2.4 — see §4 for the PC scale. |
-| C | Numeric type | **Aldrich with TMP `<mspace>`** for tabular figures. JetBrains Mono and Space Grotesk are cancelled. |
+| C | Numeric type | **TMP `<mspace>`** for tabular figures, in whichever face the numeral renders in — see §4. JetBrains Mono and Space Grotesk are cancelled. |
 | D | Currency vs Gold | **Accepted overlap.** Currency and Gold share amber. They never appear in the same component — currency lives in the Store and Hangar, team score in the HUD. |
 
 ---
@@ -23,7 +23,7 @@ Direction: Helldivers 2 **discipline only** — the rigour, not the look.
 
 1. **Colour is information, never decoration.**
 2. **Form disambiguates before hue does.** Opaque vs transparent, glow vs no glow, and sliver orientation all carry meaning independent of colour.
-3. **Numeric data is column-aligned and does not reflow.** Aldrich digits are not tabular; `<mspace>` fixes this without touching the font asset.
+3. **Numeric data is column-aligned and does not reflow.** Neither Aldrich nor Chakra Petch has tabular digits; `<mspace>` fixes this without touching the font asset, in any face.
 4. **Glow and gradient are reserved for state, never for decoration.** Daily Deals glow to signal free vs purchasable; the PLAY button gradients because it is the primary action in the game. Nothing else glows.
 5. **The corner sliver is the shape language.** Opposite-corner diagonal cuts, flippable. Nothing is rounded.
 6. **Motion is short and functional.** Under 200ms for player-triggered; ceremony rationed to two moments.
@@ -90,25 +90,33 @@ Three main colours carry both team identity and a UI function. **Green is the in
 
 ## 4. Typography
 
-**Aldrich** for headings and body. **Chakra Petch SemiBold** for buttons, almost always caps.
+**Aldrich** for headings and body. **Chakra Petch SemiBold** for buttons, **always caps**.
 
 | Role | Family | Mobile @800 | **PC @1920** |
 |---|---|---|---|
-| Display | Aldrich | — | **48** |
+| Display † | Aldrich | — | **48** |
 | H1 | Aldrich | 24 | **36** |
 | H2 | Aldrich | 20 | **28** |
 | H3 | Aldrich | 16 | **22** |
 | Body | Aldrich | 16 | **18** |
-| Body small | Aldrich | — | **15** |
+| Body small † | Aldrich | — | **15** |
 | Button | Chakra Petch SemiBold | 16 | **18** caps |
 | Button small | Chakra Petch SemiBold | 12 | **14** caps |
-| Data (large) | Aldrich + `<mspace>` | — | **44** |
-| Data | Aldrich + `<mspace>` | — | **20** |
-| Data (small) | Aldrich + `<mspace>` | — | **15** |
+| Data (large) † | Aldrich + `<mspace>` | — | **44** |
+| Data † | Aldrich + `<mspace>` | — | **20** |
+| Data (small) † | Aldrich + `<mspace>` | — | **15** |
 
-Emphasis: colour shift, or Chakra Petch italic.
+**† Spec-authored additions.** The source guide's Typography page defines only H1–H3, Body, and the two button sizes; those six are transcriptions and their Mobile @800 column matches the page exactly. Display, Body small, and the three Data roles do not appear on it — they are additions this document makes, and their sizes carry no guide backing. Treat them as open to revision in a way the transcribed six are not.
 
-**Tabular numerics:** wrap score, timer, count, and rank fields in `<mspace=Xem>`, where X is Aldrich's widest digit advance. Use a `TabularText` helper rather than scattering the tag.
+**Emphasis: colour shift only.** *(Resolved — the guide's alternative "italics in the Chakra Petch font" is retired. Colour is the single emphasis channel, so no italic face is installed.)*
+
+**Caps on buttons is unconditional.** *(Resolved — the guide records one exception, the "used" state of the Port's "request knowledge" button. The Port screen is cut from the overhaul, so the exception is retired with it. Do not reintroduce a per-button caps opt-out.)*
+
+**Tabular numerics:** any numeric that **updates live** — score, timer, countdown, count, rank, balance — is wrapped in `<mspace=Xem>`, **in whichever face it renders in**. This is not scoped to the Data roles: a countdown set in Chakra Petch SemiBold inside a button jitters exactly as an Aldrich score does, and gets the same treatment.
+
+`X` is that face's widest digit advance, so there is one value per face rather than one globally. **T5 reports the digit advance for both Aldrich and Chakra Petch SemiBold.** Use a `TabularText` helper that **takes the face as a parameter** rather than scattering the tag or hardcoding a single advance.
+
+Static numerals that never change after layout do not need it.
 
 ---
 
@@ -293,3 +301,4 @@ Chrome only. **Team colours stay in `SO_ColorSet`.**
 | 0.1 | Invented token system — **superseded** |
 | 0.2 | Rebuilt on the studio palette and typography |
 | 0.3 | Team names resolved (Jade cyan / Ruby purple / Gold amber). PC type scale set. Aldrich `<mspace>` for numerics. Chamfer corrected to the flippable corner sliver. Glow/gradient admitted as state carriers. Component library §10 added from the guide. |
+| 0.3.1 | Typography source page received; §4's transcribed rows confirmed against it. Four resolutions applied: emphasis is **colour shift only** (italic clause dropped); Display / Body small / Data ×3 marked **spec-authored**; button caps **unconditional** (the Port exception retired with the Port screen); `<mspace>` **generalised to any live-updating numeric in any face**, with `TabularText` taking the face as a parameter. Section numbering unchanged. |

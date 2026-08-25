@@ -1,49 +1,43 @@
 # Cosmic Shore — Style Guide source art
 
-The JPG pages in this folder are the **authoritative source** for
-`Docs/STYLE_FOUNDATION.md` §9 (Icons) and §10 (Components), and for the colour
-tables in §2.
+**The source art is not in this repository.** The studio style guide — Main
+Colors, Additional Colors, Typography, Icons, Buttons, and three UI Elements
+pages — lives outside version control. No JPGs will be committed here.
 
-**Where the written spec and these images disagree, the images win and the spec
-gets corrected.** `STYLE_FOUNDATION.md` is a transcription of this guide plus the
-things the guide does not cover (spacing, layering, motion, safe area, the
-numeric type role). A transcription can drift; the art cannot. If you find a
-mismatch, fix the spec — do not "fix" the art, and do not implement from the
-spec's version of a disputed detail.
+**Inside this repo, the transcriptions in this folder are authoritative.** They
+are the record of what the art says, and they are what `STYLE_FOUNDATION.md` was
+written against. If you need to check a detail and cannot reach the original
+guide, this folder is the reference — not a placeholder for one.
 
-Raise the mismatch in the design feedback queue in `Docs/UI_REDESIGN_TASKS.md`
-rather than editing `STYLE_FOUNDATION.md` in passing.
+## How this ranks against the spec
+
+`Docs/STYLE_FOUNDATION.md` is a transcription of the guide plus the things the
+guide does not cover (spacing, layering, motion, safe area, the numeric type
+role). Where the two disagree **by accident**, the guide wins and the spec is
+corrected — a transcription can drift.
+
+**But some divergences are deliberate.** Design has resolved specific points
+*against* the guide, and those resolutions are recorded in the spec with a
+`*(Resolved — …)*` note. **A resolution outranks the art.** Do not "restore" a
+guide detail that the spec explicitly retires; see §4 for the four current ones.
+
+Anything else that looks like a mismatch goes in the design feedback queue in
+`Docs/UI_REDESIGN_TASKS.md` — do not edit `STYLE_FOUNDATION.md` in passing.
 
 ## Pages
 
-| File | Guide page | Feeds |
-|---|---|---|
-| `01-colors-main.jpg` | Main Colors | §2 Main colours |
-| `02-colors-additional.jpg` | Additional Colors | §2 Additional colours |
-| `03-typography.jpg` | Typography | §4 |
-| `04-icons.jpg` | Icons | §9 |
-| `05-buttons.jpg` | Buttons | §10.1 |
-| `06-ui-elements-headers-nav.jpg` | UI Elements — end-of-game headers, port side navigation, class selection nav | §10.9, §10.12, §10.13 |
-| `07-ui-elements-configure-leaderboard.jpg` | UI Elements — game configure, arcade explore cards, settings slider, settings toggle, leaderboard | §10.6, §10.7, §10.8, §10.10, §10.11 |
-| `08-ui-elements-input-popups-deals.jpg` | UI Elements — text input, popups, currency bars, secondary tab nav, daily deals | §10.2, §10.3, §10.4, §10.5, §10.6 |
-
-## Status — art not yet committed
-
-⚠ **The JPGs are not in this folder yet.** Every page has been supplied to a
-session as an inline conversation image rather than as a file, so there were no
-binaries on disk to commit. The table above is the agreed naming so the art can
-be dropped in without renegotiating filenames. Nothing under `Docs/` is
-gitignored (verified with `git check-ignore`), so the files add normally — no
-`-f` needed.
-
-Pages seen so far: Main Colors, Additional Colors, **Typography**, Icons
-(supplied twice), Buttons, and three UI Elements pages.
+| Guide page | Feeds |
+|---|---|
+| Main Colors | §2 Main colours |
+| Additional Colors | §2 Additional colours |
+| Typography | §4 |
+| Icons | §9 |
+| Buttons | §10.1 |
+| UI Elements — end-of-game headers, port side navigation, class selection nav | §10.9, §10.12, §10.13 |
+| UI Elements — game configure, arcade explore cards, settings slider, settings toggle, leaderboard | §10.6, §10.7, §10.8, §10.10, §10.11 |
+| UI Elements — text input, popups, currency bars, secondary tab nav, daily deals | §10.2, §10.3, §10.4, §10.5, §10.6 |
 
 ## Typography page — transcription of record
-
-The Typography page arrived after `STYLE_FOUNDATION.md` v0.3 was written, so
-until the JPG lands this is the record of what it says. **It is source art and
-therefore outranks §4.**
 
 | Block | Content |
 |---|---|
@@ -52,19 +46,23 @@ therefore outranks §4.**
 | Text Emphasis | Different colours **or** *italics in the Chakra Petch font* |
 | Buttons — Chakra Petch Semibold | 16 pt. "Text used on buttons is almost always in caps, **with the exception of the 'used' state of the 'request knowledge' button on the port**." A second button size is **12 pt** — the example is a mixed-case countdown, `Next request in 3:25:19`, with a Knowledge icon. |
 
-**§4's Mobile @800 column is a faithful transcription** — H1 24, H2 20, H3 16,
-Body 16, Button 16, Button small 12 all match the page exactly, and the emphasis
-rule matches. Four things the page settles that the spec does not:
+**§4's six transcribed rows match this page exactly** — H1 24, H2 20, H3 16,
+Body 16, Button 16, Button small 12.
 
-1. **The guide sheet spells the family "Aldritch"; the real font is "Aldrich".**
-   The spec is right and the art has the typo — do not "correct" the spec to
-   match the art here. (~1,670 project references use Aldrich.)
-2. **Display, Body small, and the three Data roles do not exist on the page.**
-   They are spec-authored additions, not transcriptions. That matters most for
-   the Data roles, since they carry the whole `<mspace>` decision.
-3. **The button caps rule has a documented exception** — the "used" state of the
-   Port's "request knowledge" button is not caps. §4 and §10.1 both state caps
-   unconditionally, so this rule is currently lost.
-4. **Emphasis requires a Chakra Petch *Italic* face.** No task asks for one.
+### What §4 does with it — all four settled in v0.3.1
 
-All four are logged in the design feedback queue in `Docs/UI_REDESIGN_TASKS.md`.
+| Page says | Spec says | Why |
+|---|---|---|
+| Emphasis is colour **or** Chakra Petch italic | **Colour only** — italic retired | One emphasis channel; no italic face is installed |
+| Buttons "almost always" caps, one Port exception | **Caps, unconditional** | The Port screen is cut from the overhaul, so the exception retires with it |
+| Only H1–H3, Body, and two button sizes exist | Display, Body small, Data ×3 **kept, daggered `†`** | They are spec-authored additions with no guide backing, and §4 now says so |
+| Button-small example is a live countdown in Chakra Petch | `<mspace>` applies to **any live-updating numeric in any face** | A countdown in the button face jitters exactly as an Aldrich score does |
+
+The first two are **deliberate divergences** — the resolution outranks the art.
+The last two are the spec absorbing what the page revealed.
+
+### One trap
+
+**The guide sheet spells the family "Aldritch". The real font is "Aldrich"** —
+which is what the spec uses and what ~1,670 project references bind to. This is
+a typo in the art, not a naming decision. Do not apply the "art wins" rule here.
