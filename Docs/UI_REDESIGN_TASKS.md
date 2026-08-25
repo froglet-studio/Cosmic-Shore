@@ -13,7 +13,7 @@ Maintained by the `ui-redesign-tracker` skill. Do not hand-edit the status table
 | ID | Task | Status | Depends on | Branch | PR | Completed |
 |---|---|---|---|---|---|---|
 | T1 | Safe area component | TODO | — | | | |
-| T2 | Finish canvas resolution migration | IN PROGRESS | — | `claude/canvas-resolution-ppu-migration-azv16k` | | |
+| T2 | Finish canvas resolution migration | IN PROGRESS | — | `claude/canvas-resolution-ppu-migration-azv16k` | #781 | |
 | T2.6 | Nested UI fragment migration | TODO | T2 | | | |
 | T3 | Unify GameCanvas fork | TODO | T2 | | | |
 | T4 | UIThemeSO + literal inventory | TODO | — | | | |
