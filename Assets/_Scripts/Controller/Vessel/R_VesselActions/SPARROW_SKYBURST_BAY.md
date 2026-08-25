@@ -80,92 +80,54 @@ latches it), so holding for 80% of the flight costs nothing.
 
 To take Mass out of it and fly one fixed size, author both endpoints equal.
 
-**It grows the MODEL, not the hit sphere — and that makes it the ONE exception to the
-platform rule.** Since PR #786, *MASS in-flight growth is a HIT VOLUME, not a size*: a round's
-model stays the size it left the muzzle, and a see-through `chargeField` shell, sized every frame
-to the swept hit radius, is what carries the read. `Projectile.CacheTransformRole` enforces it by
-deriving from the prefab's own renderers, so nothing that draws a body can grow it by accident.
+**The model IS the hit volume — the other way of satisfying the same law.** Since PR #786 the
+platform rule is *MASS in-flight growth is a HIT VOLUME, not a size*: a round's model stays the
+size it left the muzzle and a see-through `chargeField` shell, sized every frame to the swept hit
+radius, is what carries the read. That is right for the bullets, whose model is a 20-long tracer
+**streak** — a smear, not a body; growing it drew a cannonball.
 
-The skyburst does not fit that rule, for a specific reason rather than a preference: **it is the
-only round whose MODEL was authored far smaller than the hit volume it already had** — ~1.7 u long
-inside an **8.5 u-radius** sphere, a 10× mismatch in every axis. It has no *growing* hit volume, so
-a shell would draw a sphere that never moves; and growing the model walks it INTO its own reach
-rather than out past it, which is the opposite of the cannonball problem the rule was written
-against. `Projectile.flightGrowthTarget` carries that exception and is **empty on every other round
-in the game** — it is not a general "make this round bigger" dial.
+The skyburst has a readable **body** worth growing, and no growing hit volume for a shell to draw.
+So it satisfies the same law from the other end: **the model grows and the sphere collider is
+fitted to it, every frame.** `Projectile.flightGrowthTarget` selects that path, and
+`ModelHitRadius` / `ModelHitCentre` do the fit:
 
-Its reach is untouched either way: growth writes only `MissileVisual.localScale`, never the root
-that carries the collider, and never its launch scale. (`_sweepRadius` does still track the growth
-curve, as it does for every round — but this prefab has no `sweptPrismDetection`, so nothing ever
-reads it. The PhysX sphere, which is what a missile actually hits with, does not move.) Growing the
-root instead would have multiplied an 8.5 u hit radius by up to 38 and silently rewritten a Dog
-Fight missile's reach — a missile hit is 50 points.
+- **Radius = the model at its WIDEST across the flight axis.** For a body of revolution that is
+  its radius — never the bounding-box *diagonal*, which would overstate a round missile by √2.
+- **The sphere's FRONT surface sits exactly on the model's tip.** That is the contract, and the
+  reason the tail is free to trail: a model may stick out the **back** of its collider (a tail
+  that has already passed you cannot cause a false read) but never out the **front**, where the
+  nose would visibly reach a target before the hit registered.
 
-### What the 20× size costs, stated plainly
+Both are linear in growth, because the model scales about the root origin — so the fit is one
+multiply, and the settle latch stops it entirely once the size is final.
 
-At 5× the model arrived at roughly its own hit radius and the visual/hit relationship was honest.
-At 20× it is not, and the mismatch is **asymmetric** — worth knowing which half is which:
-
-- **Girth is still contained.** Even at full overcharge the missile is 14.5 u across against a
-  17 u hit diameter, so a round crossing your view never looks wider than the volume that would
-  have caught you. That is the read that matters for a near miss, and
-  `SparrowRoundGrowthTests.TheMissileIsBroadsideContainedByItsHitSphere` holds it. The budget
-  runs out at **~44.6×**; past there the round looks bigger than it hits in every direction,
-  which is where the mismatch stops being an overhang and starts being a lie.
-- **Length is not, and cannot be.** A 20× missile is 33 u nose to tail inside a 17 u hit sphere,
-  so the nose reaches ~8 u past it (~23 u at Mass 15) and visually arrives a beat before the hit
-  registers — at 120 u/s, roughly 0.07 s at rest and 0.19 s at overcharge. Accepted as the cost
-  of the authored size.
-
-If that beat ever reads as a missed hit rather than a big missile, the fix is the **hit sphere**,
-not the growth — see the follow-up below. Shrinking the model back down would just undo the size
-that was asked for.
-
-## The mesh, at 20x
-
-The extracted missile is an **eight-sided barrel** — 312 quads, 314 verts — which is fine at
-the ~1.7 u it was authored for and reads as a faceted tube once growth puts a 33 u missile on
-screen. The shading was never the problem: the mesh is already fully smooth (every control point
-carries exactly one normal, measured). The **silhouette** was — an octagon deviates 7.6% from the
-circle it is standing in for.
-
-`Tools/Build/subdivide_sparrow_missile.py` applies **two Catmull-Clark steps in place**:
-
-| | quads | verts | tris | barrel | silhouette deviation |
+| Mass level | −5 (14×) | **0 (20×)** | 5 (26×) | 10 (32×) | 15 (38×) |
 |---|---|---|---|---|---|
-| as authored | 312 | 314 | 624 | 8-sided | 7.61% |
-| level 1 | 1,248 | 1,250 | 2,496 | 16-sided | 1.92% |
-| **level 2 (shipped)** | **4,992** | **4,994** | **9,984** | **32-sided** | **0.48%** |
+| Hit radius | 2.67 u | **3.81 u** | 4.95 u | 6.10 u | 7.24 u |
+| Model length | 23.2 u | 33.2 u | 43.1 u | 53.1 u | 63.0 u |
+| Tail behind the sphere | 17.9 u | 25.6 u | 33.2 u | 40.9 u | 48.6 u |
 
-**In place is the point.** The geometry keeps its name (`Cube.003`) so it keeps its Unity fileID,
-the file keeps its guid, and the material layer, submesh order, UV layout and FBX unit scale are
-untouched — so the projectile prefab, its material array and its import settings did not change
-and did not need to. Verified with `assimp` as an independent reader: 2 meshes in the same order
-(1,152 quads on material 1, 3,840 on material 0 — exactly 16x the authored 72/240 split), 2
-materials, 1 animation, closed genus-0 surface.
+Nothing hardcodes the missile: the fit is measured per flight from the growth target's own
+renderer bounds through the renderer→root matrix, so it is correct for any nesting, rotation or
+child scale.
 
-**It is renormalized back onto the authored bounding box.** Catmull-Clark converges to a limit
-surface *inside* its control mesh — measured 9.8% radially, 3.9% along the length here — and the
-missile's launch size is not a free parameter: 1.659 u x 0.381 u is what
-`SPARROW_SKYBURST_BAY.md` and `SparrowRoundGrowthTests` are both written against, and it is what
-makes the round match the bay missile at the handoff. The tool restores the box exactly (x and z
-share one factor so the barrel stays circular) and `--check` fails if it ever drifts more than 1%.
+### What this costs, stated plainly
 
-**Subdivision rounds sharp features, and two show.** The shoulder at y ≈ -1.2 (a hard step from
-r 0.79 to 0.96 in one segment) becomes a fillet, and the nose tip is ~17% blunter at its last
-ring. Both are what subdivision does; both read as improvements on a model that was already
-smooth-shaded, where a hard step under smooth normals reads as a pinch. Everywhere else the
-radius profile tracks the original within 0.5%.
+**The missile's reach dropped.** It used to hit with a fixed **8.5 u** sphere; at resting Mass it
+now hits with **3.81 u** — 45%. That is a deliberate Dog Fight balance change (a missile hit is 50
+points), made because the 8.5 was never authored: it is `0.85 × ProjectileScale 10` arithmetic
+that happened to dwarf the 1.7 u model nobody could see. `SparrowRoundGrowthTests` pins 3.81 so a
+future change has to argue with the number rather than drift past it.
 
-**The four element blend shapes were dropped** (Space / Charge / Time / Mass). They index control
-points by position in the original 314, which a subdivided mesh no longer has; keeping them would
-leave a shape key that tears the mesh if anything ever drove one. Nothing does — the projectile
-renders through a `MeshFilter`, not a `SkinnedMeshRenderer`, and the elemental hull morphs are a
-VESSEL system that never looked at this asset.
+Three consequences worth knowing:
 
-The original mesh is recoverable from git history; the tool's docstring carries the exact
-`git show` command for re-deriving, and `--check` proves the shipped file's invariants without
-needing it.
+- **Reach now varies with MASS**, from 2.67 u to 7.24 u. It did not before. Mass buying reach is
+  consistent with *MASS owns the substance of what you fire*, but it is new for this weapon.
+- **Reach is small for the first fifth of the flight** (0.19 u at the muzzle, rising to full at
+  20%). The missile is leaving the bay through that window, so it will not detonate on something
+  it brushes past the hull — arguably a feature, but it is a change.
+- **The forward overhang is gone**; what remains is up to 48 u of tail behind the sphere, which is
+  the permitted direction.
 
 ## Files
 
@@ -183,7 +145,7 @@ needing it.
 | `_Scripts/Controller/Projectiles/Projectile.cs` | + `flightGrowthTarget` (empty = the root, i.e. every existing round unchanged), `flightGrowthUniform` and `flightGrowthCompleteAt01`; the launch pass rebases a child target off its authored scale so a pooled reissue cannot compound last flight's growth, and re-arms the settled latch |
 | `_Scripts/Controller/Projectiles/RoundGrowthRamp.cs` | The growth SHAPE as a pure function — swell across the whole flight, or swell early and hold — plus the latch that lets a settled round stop writing its transform |
 | `Assets/_SO_Assets/VesselActions/Sparrow/SkyBurstGunAction.asset` | `launchDelaySeconds: 0.2`; `growthFactorAtRestingMass: 20` / `growthFactorAtFullMass: 32` |
-| `Assets/_Prefabs/Projectile/SkyBurstProjectile.prefab` | `Projectile.flightGrowthTarget` → `MissileVisual`, `flightGrowthUniform: 1`, `flightGrowthCompleteAt01: 0.2` (the model grows, early, and the hit sphere does not). Visual moved to a `MissileVisual` child: missile mesh + embedded material (+ 2× `BlueBaseOpaqueVesselMaterial` submeshes), rotated X+90° so the nose (+Y in mesh space, the radially-symmetric end) points along flight (+Z), child scale 2 (≈1.7 u world at ProjectileScale 10 — matches the bay missile's world size, armature scale 0.2034 × 8.3-unit mesh). Root scale/collider untouched → the gameplay hit sphere is byte-identical |
+| `Assets/_Prefabs/Projectile/SkyBurstProjectile.prefab` | `Projectile.flightGrowthTarget` → `MissileVisual`, `flightGrowthUniform: 1`, `flightGrowthCompleteAt01: 0.2`; `SphereCollider` re-authored to the **launch** fit (`r 0.019053`, centred on the model's tip) and re-fitted per frame while the model swells. Visual moved to a `MissileVisual` child: missile mesh + embedded material (+ 2× `BlueBaseOpaqueVesselMaterial` submeshes), rotated X+90° so the nose (+Y in mesh space, the radially-symmetric end) points along flight (+Z), child scale 2 (≈1.7 u world at ProjectileScale 10 — matches the bay missile's world size, armature scale 0.2034 × 8.3-unit mesh). Root scale/collider untouched → the gameplay hit sphere is byte-identical |
 | `Assets/_Prefabs/Spacevessels/Sparrow.prefab` | Animation component swapped `MantaAnimationContoller` → `SparrowAnimationController` (same fileID, same serialized fields) + `missileExecutor` wired to the SkyBurst executor |
 
 ## Tuning knobs
@@ -195,9 +157,9 @@ needing it.
 | Visual scale | `SkyBurstProjectile.prefab` → `MissileVisual.localScale` | 2 | World missile length ≈ 1.66 u at ProjectileScale 10 |
 | Mesh resolution | `subdivide_sparrow_missile.py --levels` | 2 | Catmull-Clark steps. Each step is 4x the triangles; drop to 1 (2,496 tris, 16-sided) if 9,984 is too heavy |
 | Bay side predicate | `FireGunActionExecutor.Fire` | ammo ≥ 2×cost → right | Keep single-sourced; do not re-derive in the animation |
-| `growthFactorAtRestingMass` / `growthFactorAtFullMass` | `SkyBurstGunAction.asset` | 20 / 32 | HOW MUCH the missile MODEL swells. Bounded above by the broadside budget (~44.6×) — see the section above before raising it |
+| `growthFactorAtRestingMass` / `growthFactorAtFullMass` | `SkyBurstGunAction.asset` | 20 / 32 | HOW MUCH the missile swells — and, since the collider follows the model, its REACH too (3.81 u at rest). There is no size ceiling any more; there is a balance consequence. See the section above before raising it |
 | `flightGrowthCompleteAt01` | `SkyBurstProjectile.prefab` → `Projectile` | 0.2 | WHEN. Fraction of the flight the swell takes; it holds after. 1 = swell all the way in, the tracer's shape |
-| Growth target / uniform | `SkyBurstProjectile.prefab` → `Projectile` | `MissileVisual` / on | WHAT grows — and the ONE prefab in the game that sets it (see the exception above). Clearing it puts the missile back under the platform rule, where it would not grow at all: it has no growing hit volume and no `chargeField` |
+| Growth target / uniform | `SkyBurstProjectile.prefab` → `Projectile` | `MissileVisual` / on | Selects the model-IS-the-hit-volume path: the model grows and the collider is fitted to it. The only prefab in the game that sets it. Clearing it puts the missile on the shell path, where it would not grow at all — it has no `chargeField` |
 
 ## In-editor verification
 

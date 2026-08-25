@@ -31,7 +31,10 @@ this environment). Touches `Projectile.cs`, `ElementalScaling.cs`, `FireGunActio
 plus two hand-edited assets — `SkyBurstGunAction.asset` and `SkyBurstProjectile.prefab` — and a
 **machine-edited model**, `Assets/_Models/Sparrow Missile.fbx`.
 
-**What landed.** The Sparrow's skyburst missile now swells in flight the way its bullets do — the
+**What landed.** (Reconciled with PR #786, which merged mid-branch and made growth a HIT VOLUME
+rather than a size. The missile satisfies that law from the other end: its MODEL grows and its
+sphere collider is FITTED to the model every frame — so its reach changed, see step 5.)
+The Sparrow's skyburst missile now swells in flight the way its bullets do — the
 SAME curve, moved to one home (`ElementalScaling.RoundGrowthFactorForLevel`, off
 `FullAutoActionSO`) — but on the opposite *shape*: it reaches **20×** at resting Mass in the
 **first 20% of the flight** (0.6 s, ~70 u from the bay) and holds that size for the remaining 80%,
@@ -83,14 +86,18 @@ nodes (one of them `AnimationLayer`) carry. Fixed and re-proved before the asset
 4. **The handoff.** At the 0.2 s bay handoff the live projectile should still match the animated
    bay missile's size — the swell starts *after* it clears the hull, so a pop there is a
    launch-size problem, not a growth one.
-5. **The hit sphere must NOT have changed.** A missile that used to connect at a given miss
-   distance should still connect; one that used to miss should still miss. A missile hit is 50
-   points, so this is the balance-sensitive line.
-6. **The nose overhang — the judgement call to sign off on.** At 20× the model is 33 u long inside
-   a 17 u hit sphere, so the nose passes ~8 u through a target before the hit registers (~0.07 s
-   at 120 u/s; ~0.19 s at Mass 15, where it is 63 u long). Watch a few point-blank hits and decide
-   whether that reads as a big missile or as a missed hit. If it is the latter, the lever is the
-   collider radius, not the growth — the size is the thing that was asked for.
+5. **The hit sphere DID change, deliberately — this is the balance-sensitive line.** The missile
+   used to hit with a fixed 8.5 u sphere (`0.85 × ProjectileScale 10` arithmetic, never authored,
+   dwarfing a 1.7 u model). It now hits with the model's own widest cross-section: **3.81 u at
+   resting Mass**, 45% of the old reach, and varying with Mass (2.67 u → 7.24 u). Expect missiles
+   to be meaningfully harder to land in Dog Fight and say whether that reads as fair. Two sub-checks:
+   the sphere's front surface should sit on the missile's nose (a hit should register the instant
+   the nose touches, never after it has passed through), and reach should be visibly small for the
+   first ~0.6 s while the model is still swelling.
+6. **The trailing tail.** The forward overhang is gone by construction, but the model now extends
+   up to ~48 u BEHIND its hit sphere (25.6 u at resting Mass). That is the permitted direction — a
+   tail that has already passed you cannot cause a false read — but it is worth one look in play to
+   confirm it reads as a missile with a long body rather than as a hit that landed early.
 7. **Pool reuse.** Fire many missiles in one turn (ammo cost 0.5, two per full bar — reload and
    repeat a dozen times). Every one must launch at the SAME small size. Growing launches mean the
    child-scale rebase in `LaunchProjectile` is not running.
@@ -113,10 +120,10 @@ nodes (one of them `AnimationLayer`) carry. Fixed and re-proved before the asset
 
 **First-pass tuning** (starting points, expect a balancing pass): `growthFactorAtRestingMass: 20`,
 `growthFactorAtFullMass: 32` on `SkyBurstGunAction.asset`; `flightGrowthCompleteAt01: 0.2` on the
-prefab. Raising the factors is bounded at **~44.6×**, where the missile's girth would exceed its
-17 u hit diameter and it would look bigger than it hits in every direction rather than only along
-its nose; `SparrowRoundGrowthTests.TheMissileIsBroadsideContainedByItsHitSphere` fails the suite if
-a retune crosses it. Mesh resolution is `subdivide_sparrow_missile.py --levels` (2 shipped);
+prefab. There is no longer a size CEILING — the collider follows the model, so growing it further
+grows the reach with it. That makes the growth factors a **reach** dial as well as a size one:
+`SparrowRoundGrowthTests.TheMissileHitSphereShrankFromTheOldEmergentOne` pins 3.81 u at resting
+Mass so a retune has to argue with the number rather than drift past it. Mesh resolution is `subdivide_sparrow_missile.py --levels` (2 shipped);
 `--check` proves the shipped mesh's invariants without needing the original, which now lives only
 in git history.
 ### 🔴 Debris face pivot reads the mesh's baked centroid (2026-08-25)

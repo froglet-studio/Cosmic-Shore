@@ -56,16 +56,17 @@ namespace CosmicShore.Gameplay
                  "collider) — an unassigned shell is simply never shown.")]
         [SerializeField] private Transform chargeField;
 
-        [Tooltip("The ONE case the hit-volume rule above does not describe: a round whose MODEL " +
-                 "was authored far SMALLER than the hit volume it already had, where growing " +
-                 "the model walks it INTO that volume instead of out past it.\n\n" +
-                 "Empty (every round today but one) = growth never touches a drawn transform; " +
-                 "the shell carries the read. Point it at a VISUAL CHILD and that child grows " +
-                 "instead, while the collider and the sweep radius are left exactly alone.\n\n" +
-                 "The skyburst missile is that case and the reason this exists: it launches at " +
-                 "bay size (~1.7 u long) inside an 8.5 u-RADIUS hit sphere — a 10x mismatch in " +
-                 "every axis — so it has no growing hit volume to draw and nothing for a shell " +
-                 "to show. Do not reach for this to make an ordinary round bigger.")]
+        [Tooltip("The SECOND way to satisfy \"the size you see is the size that hits\": instead of " +
+                 "a fixed model and a shell drawing the growing hit volume, the MODEL grows and " +
+                 "the round's sphere collider is FITTED to it every frame — same radius as the " +
+                 "model at its widest, front surface exactly on the model's tip.\n\n" +
+                 "Empty (every round but the skyburst) = the shell path above. Point it at a " +
+                 "VISUAL CHILD and that child grows while the collider tracks it.\n\n" +
+                 "Use it where the round has a READABLE BODY worth growing, and the shell would " +
+                 "have nothing to draw. The skyburst is that case: it launches at bay size " +
+                 "(~1.7 u long) and swells into the warhead that detonates, so the missile IS " +
+                 "the hit volume. A round whose model is a 20-long tracer streak is not — the " +
+                 "streak is a smear, not a body, and growing it draws a cannonball.")]
         [SerializeField] private Transform flightGrowthTarget;
 
         [Tooltip("On: grow every axis, keeping the round's proportions — for a compact round " +
@@ -501,6 +502,12 @@ namespace CosmicShore.Gameplay
             _launchScale = growthTarget.localScale;
             _launchSweepRadius = _sweepRadius;
 
+            // A model that IS the hit volume needs its sphere measured from the model, at the
+            // authored scale restored just above. Re-measured per flight rather than at Awake
+            // because the parent chain (and so the root-local matrix) is only final here.
+            CaptureModelHitSphere();
+            FitColliderToModel(1f);
+
             // The charge shell only exists to sell growth, so a round that does not grow never
             // shows one. Sized here as well as in the flight loop: the loop's first tick lands a
             // frame later, and until then the shell would render at whatever scale the prefab
@@ -797,9 +804,12 @@ namespace CosmicShore.Gameplay
             _sweepRadius = _launchSweepRadius * g;
 
             if (flightGrowthTarget)
+            {
                 flightGrowthTarget.localScale = flightGrowthUniform
                     ? _launchScale * g
                     : new Vector3(_launchScale.x * g, _launchScale.y * g, _launchScale.z);
+                FitColliderToModel(g);
+            }
             else if (_transformIsHitVolume)
                 transform.localScale = new Vector3(_launchScale.x * g, _launchScale.y * g, _launchScale.z);
 
@@ -842,6 +852,82 @@ namespace CosmicShore.Gameplay
             var parent = chargeField.parent;
             chargeField.localScale = ChargeFieldLocalScale(
                 _sweepRadius, parent ? parent.lossyScale : Vector3.one);
+        }
+
+        // ---- the model-IS-the-hit-volume path (flightGrowthTarget) ----
+        Vector3 _modelHitCentre;      // root-local, at growth 1
+        Vector3 _modelHitExtents;     // root-local half-extents, at growth 1
+        bool _fitsColliderToModel;
+
+        /// <summary>
+        /// Measures the growth target's drawn geometry in THIS projectile's local space, so the
+        /// hit sphere can be fitted to the model rather than authored beside it.
+        ///
+        /// Read from the renderer's own local bounds through the renderer→root matrix, so it is
+        /// correct for any nesting, rotation or child scale and hardcodes nothing about the one
+        /// prefab that uses it. Mesh bounds need no Read/Write enabled.
+        /// </summary>
+        void CaptureModelHitSphere()
+        {
+            _fitsColliderToModel = false;
+            if (!flightGrowthTarget || _rootCollider is not SphereCollider) return;
+
+            var renderer = flightGrowthTarget.GetComponentInChildren<Renderer>();
+            if (!renderer) return;
+
+            var toRoot = transform.worldToLocalMatrix * renderer.transform.localToWorldMatrix;
+            var local = renderer.localBounds;
+            Vector3 c = local.center, e = local.extents;
+
+            var min = new Vector3(float.MaxValue, float.MaxValue, float.MaxValue);
+            var max = new Vector3(float.MinValue, float.MinValue, float.MinValue);
+            for (int i = 0; i < 8; i++)
+            {
+                var corner = toRoot.MultiplyPoint3x4(new Vector3(
+                    c.x + ((i & 1) == 0 ? -e.x : e.x),
+                    c.y + ((i & 2) == 0 ? -e.y : e.y),
+                    c.z + ((i & 4) == 0 ? -e.z : e.z)));
+                min = Vector3.Min(min, corner);
+                max = Vector3.Max(max, corner);
+            }
+
+            _modelHitCentre  = (min + max) * 0.5f;
+            _modelHitExtents = (max - min) * 0.5f;
+            _fitsColliderToModel = true;
+        }
+
+        /// <summary>
+        /// The hit sphere's radius: the model at its WIDEST across the flight axis. For a body
+        /// of revolution that is its radius; the box DIAGONAL would overstate a round missile by
+        /// √2, which is the mistake to avoid here.
+        /// </summary>
+        public static float ModelHitRadius(Vector3 halfExtents, float growth)
+            => Mathf.Max(halfExtents.x, halfExtents.y) * growth;
+
+        /// <summary>
+        /// The hit sphere's centre, placed so its FRONT surface sits exactly on the model's tip.
+        ///
+        /// That is the whole contract: a projectile model may stick out the BACK of its collider
+        /// — a tail that has already passed you cannot cause a false read — but never out the
+        /// FRONT, where the nose would visibly reach a target before the hit registers. Both this
+        /// and the radius are linear in growth, because the model scales about the root origin.
+        /// </summary>
+        public static Vector3 ModelHitCentre(Vector3 centre, Vector3 halfExtents, float growth)
+        {
+            float radius = ModelHitRadius(halfExtents, 1f);
+            return new Vector3(centre.x, centre.y, centre.z + halfExtents.z - radius) * growth;
+        }
+
+        /// <summary>
+        /// Re-fits the sphere collider to the grown model. Runs only while the round is still
+        /// swelling — the settle latch stops the growth pass once the size is final, and a held
+        /// size needs no further write.
+        /// </summary>
+        void FitColliderToModel(float growth)
+        {
+            if (!_fitsColliderToModel || _rootCollider is not SphereCollider sphere) return;
+            sphere.radius = ModelHitRadius(_modelHitExtents, growth);
+            sphere.center = ModelHitCentre(_modelHitCentre, _modelHitExtents, growth);
         }
 
         /// <summary>

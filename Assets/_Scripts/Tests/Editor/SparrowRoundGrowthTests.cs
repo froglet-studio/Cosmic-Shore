@@ -83,13 +83,13 @@ namespace CosmicShore.Tests
 
         // ------------------------------------------------------- the skyburst missile
 
-        // The missile's own geometry, measured rather than assumed: Sparrow Missile.fbx vertex
-        // bounds span 8.2951 mesh units along the nose axis and 1.9054 across it, at
-        // UnitScaleFactor 1 (Unity import factor 0.01), and the prefab flies the mesh at
-        // MissileVisual 2 × root ProjectileScale 10.
-        const float LaunchLength = 0.0829514f * 2f * 10f;   // ≈ 1.659 u
-        const float LaunchGirth  = 0.0190535f * 2f * 10f;   // ≈ 0.381 u
-        const float HitDiameter  = 0.85f * 10f * 2f;        // = 17 u (SphereCollider 0.85 × 10)
+        // The missile's own geometry, measured from Sparrow Missile.fbx and expressed in the
+        // projectile's ROOT-LOCAL space — the frame the sphere collider lives in. The mesh is
+        // rotated +90° about X under MissileVisual, so the model's long axis is root +z (flight)
+        // and its cross-section is root x/y. Half-extents at growth 1, child scale 2 included.
+        static readonly Vector3 ModelCentre  = new Vector3(-0.000149f, 0.001277f, 0.002190f);
+        static readonly Vector3 ModelExtents = new Vector3(0.019053f, 0.019053f, 0.082950f);
+        const float RootScale = 10f;        // ProjectileScale, applied to the projectile root
 
         [Test]
         public void TheMissileHitsItsOwnAuthoredAnchors()
@@ -103,40 +103,55 @@ namespace CosmicShore.Tests
         }
 
         [Test]
-        public void TheMissileIsBroadsideContainedByItsHitSphere()
+        public void TheMissileHitSphereIsTheModelAtItsWidest()
         {
-            // The skyburst grows its MODEL, not its collider (Projectile.flightGrowthTarget →
-            // MissileVisual), so no amount of growth changes what it hits. What growth CAN do
-            // is make the model disagree with the hit volume, and at the shipped 20× it does —
-            // deliberately, and asymmetrically, which is the part worth pinning:
-            //
-            //   GIRTH is contained. Even at full overcharge the missile is 14.5 u across
-            //   against a 17 u hit diameter, so a round crossing your view never looks wider
-            //   than the volume that would have caught you. This is the read that matters for
-            //   a near miss, and it is the one held here.
-            //
-            //   LENGTH is not, and cannot be: a 20× missile is 33 u nose to tail. The nose
-            //   therefore reaches ~8 u past the hit sphere (~23 u at Mass 15), so it visually
-            //   arrives a fraction of a second before the hit registers. Accepted as the cost
-            //   of the authored size — see SPARROW_SKYBURST_BAY.md.
-            for (int level = -5; level <= 15; level++)
-                Assert.That(LaunchGirth * M(level), Is.LessThan(HitDiameter),
-                    $"grown missile girth at Mass level {level}");
-
-            // The headroom left in the girth is what bounds a future retune: past ~44.6× the
-            // round would look wider than it hits in every direction, which is where the
-            // mismatch stops being a nose-overhang and starts being a lie.
-            Assert.That(M(15), Is.LessThan(HitDiameter / LaunchGirth),
-                "the top of the Mass band must stay inside the broadside budget");
+            // The skyburst satisfies "the size you see is the size that hits" the other way
+            // round from the bullets: the MODEL grows and the collider is fitted to it, rather
+            // than the model standing still while a shell draws the hit volume. So the sphere's
+            // radius must be the model's widest cross-section at every growth, never the box
+            // DIAGONAL (which would overstate a round missile by √2).
+            foreach (int level in new[] { -5, 0, 5, 10, 15 })
+            {
+                float g = M(level);
+                float widest = Mathf.Max(ModelExtents.x, ModelExtents.y) * g;
+                Assert.AreEqual(widest, Projectile.ModelHitRadius(ModelExtents, g), 1e-6f,
+                    $"level {level}");
+            }
         }
 
         [Test]
-        public void TheMissileNoseOverhangIsWhatWeThinkItIs()
+        public void TheMissileNoseSitsExactlyOnTheHitSphereSurface()
         {
-            // Pinned because it is the one thing the size buys that a player can be surprised
-            // by. Nose-to-hit-sphere overhang, per end, in world units.
-            Assert.AreEqual(8.09f, (LaunchLength * M(0) - HitDiameter) / 2f, 0.05f);
-            Assert.AreEqual(23.02f, (LaunchLength * M(15) - HitDiameter) / 2f, 0.05f);
+            // The contract, and the reason the tail is allowed to trail: a model may stick out
+            // the BACK of its collider — a tail that has already passed you cannot cause a false
+            // read — but never out the FRONT, where the nose would visibly reach a target before
+            // the hit registered. Front surface == model tip, at every growth.
+            foreach (int level in new[] { -5, 0, 5, 10, 15 })
+            {
+                float g = M(level);
+                float radius = Projectile.ModelHitRadius(ModelExtents, g);
+                Vector3 centre = Projectile.ModelHitCentre(ModelCentre, ModelExtents, g);
+
+                float nose = (ModelCentre.z + ModelExtents.z) * g;
+                Assert.AreEqual(nose, centre.z + radius, 1e-5f, $"nose, level {level}");
+
+                // ...and the tail is behind the sphere's back, which is the permitted overhang.
+                float tail = (ModelCentre.z - ModelExtents.z) * g;
+                Assert.That(tail, Is.LessThan(centre.z - radius), $"tail, level {level}");
+            }
+        }
+
+        [Test]
+        public void TheMissileHitSphereShrankFromTheOldEmergentOne()
+        {
+            // The 8.5 u sphere it replaced was `0.85 × ProjectileScale 10` arithmetic rather
+            // than an authored size, and it dwarfed the model it belonged to. Pinned so a future
+            // change has to argue with the number: at resting Mass the fitted sphere is 3.81 u,
+            // 45% of what the missile used to hit with. That is a Dog Fight reach change and is
+            // the point of the fit, not a side effect of it.
+            float rest = Projectile.ModelHitRadius(ModelExtents, M(0)) * RootScale;
+            Assert.AreEqual(3.811f, rest, 0.01f);
+            Assert.That(rest, Is.LessThan(8.5f));
         }
 
         [Test]
