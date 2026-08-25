@@ -277,14 +277,32 @@ def base_props(rng):
                 ExplosiveSpread=0.05)
 
 
+def pre_edit_docs():
+    """The last revision of the subgraph that does NOT carry the pivot inputs.
+
+    Found by walking the file's own history rather than assuming HEAD is pre-change —
+    an assumption that is true exactly once, on the day the change is written, and makes
+    the script un-runnable forever after. Returns None when no such revision is reachable,
+    which is the normal state of a shallow clone; proof 1 is then reported as SKIPPED
+    rather than silently passing.
+    """
+    revs = subprocess.run(["git", "-C", REPO, "log", "--format=%H", "--", SUBGRAPH],
+                          capture_output=True, text=True).stdout.split()
+    for rev in revs:
+        got = subprocess.run(["git", "-C", REPO, "show", f"{rev}:{SUBGRAPH}"],
+                             capture_output=True, text=True)
+        if got.returncode != 0:
+            continue
+        docs = load_docs_text(got.stdout)
+        if not any(d.get("m_Name") == "FaceCentroid" for d in docs):
+            return rev, docs
+    return None, None
+
+
 def main():
     path = os.path.join(REPO, SUBGRAPH)
     new_docs = load_docs(path)
-    old_text = subprocess.run(["git", "-C", REPO, "show", f"HEAD:{SUBGRAPH}"],
-                              capture_output=True, text=True, check=True).stdout
-    old_docs = load_docs_text(old_text)
-    assert not any(d.get("m_Name") == "FaceCentroid" for d in old_docs), \
-        "HEAD already carries the change — commit is in, compare against the pre-change revision"
+    old_rev, old_docs = pre_edit_docs()
 
     rng = random.Random(20260825)
     worst_identical = worst_fixed = worst_rigid = motion = 0.0
@@ -294,12 +312,13 @@ def main():
         vertex, p, c = make_case(rng)
         props = base_props(rng)
         new = Graph(new_docs, vertex)
-        old = Graph(old_docs, vertex)
+        old = Graph(old_docs, vertex) if old_docs is not None else None
 
         # (1) weight 0 reproduces the pre-edit graph, bit for bit.
         a = new.output(POSITION_OUT, Position=p, FaceCentroid=c, CentroidPivotWeight=0.0, **props)
-        b = old.output(POSITION_OUT, Position=p, **props)
-        worst_identical = max(worst_identical, max(abs(a[i] - b[i]) for i in range(3)))
+        if old is not None:
+            b = old.output(POSITION_OUT, Position=p, **props)
+            worst_identical = max(worst_identical, max(abs(a[i] - b[i]) for i in range(3)))
 
         # (4) and the rotation is not a no-op, so (1) is not vacuous.
         motion = max(motion, max(abs(a[i] - p[i]) for i in range(3)))
@@ -325,12 +344,19 @@ def main():
         least_legacy_drift = min(least_legacy_drift, drift)
 
     print("SHIPPED SUBGRAPH — 400 randomized vertices, faces and explosion states")
-    print(f"  1. weight 0 vs the pre-edit graph .......... max |delta|   = {worst_identical:.3e}")
+    if old_docs is None:
+        print("  1. weight 0 vs the pre-edit graph .......... SKIPPED — no pre-change revision "
+              "of the subgraph is reachable (shallow clone). Deepen with "
+              "`git fetch --deepen=50` to run it.")
+    else:
+        print(f"  1. weight 0 vs the pre-edit graph .......... max |delta|   = "
+              f"{worst_identical:.3e}   (vs {old_rev[:8]})")
     print(f"  2a. weight 1: centroid is the fixed point .. max |delta|   = {worst_fixed:.3e}")
     print(f"  2b. weight 1: distances about it preserved . max rel error = {worst_rigid:.3e}")
     print(f"  3. weight 0: the centroid MOVES (the bug) .. min |drift|   = {least_legacy_drift:.3f}")
     print(f"  4. a generic vertex actually moves ......... max |delta|   = {motion:.3f}")
-    assert worst_identical == 0.0, "weight 0 is NOT bit-identical to the pre-edit graph"
+    if old_docs is not None:
+        assert worst_identical == 0.0, "weight 0 is NOT bit-identical to the pre-edit graph"
     assert worst_fixed < 1e-12, "the centroid is not the fixed point at weight 1"
     assert worst_rigid < 1e-12, "the face is not rigid about the centroid at weight 1"
     assert least_legacy_drift > 1e-3, \
