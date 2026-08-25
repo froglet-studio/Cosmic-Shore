@@ -56,6 +56,9 @@ namespace CosmicShore.UI
             public TrapezoidGraphic GaugeTrack;
             public RectTransform GaugeClip;
             public TrapezoidGraphic Flash;
+            public RectTransform CooldownClip;
+            public Image CooldownSweep;
+            public bool OnCooldown;
             public RectTransform FlowerSocket;
             public RectTransform ChipSocket;
             public Tween Tween;
@@ -302,6 +305,7 @@ namespace CosmicShore.UI
             slot.ElementPlate = ResolveTrapezoid(card, "ElementPlate", narrow, 1f);
             SetCellRect(slot.ElementPlate.rectTransform, elementY, style.plateWidth, style.petalCellHeight);
             slot.ElementPlate.color = slot.Locked ? style.lockedPlateColor : style.plateColor;
+            ApplySlantEdge(slot.ElementPlate, slot.Locked, upgraded: false);
 
             slot.AbilityBloom = ResolveChildImage(card, "AbilityBloom", style.bloomSprite);
             SetCellRect(slot.AbilityBloom.rectTransform, abilityY,
@@ -312,6 +316,7 @@ namespace CosmicShore.UI
             slot.AbilityPlate = ResolveTrapezoid(card, "AbilityPlate", 1f, narrow);
             SetCellRect(slot.AbilityPlate.rectTransform, abilityY, style.plateWidth, style.abilityCellHeight);
             slot.AbilityPlate.color = slot.Locked ? style.lockedPlateColor : style.plateColor;
+            ApplySlantEdge(slot.AbilityPlate, slot.Locked, upgraded: false);
             slot.AbilityPlate.raycastTarget = false;
             AdoptButtonTarget(host, slot.AbilityPlate);
 
@@ -582,6 +587,11 @@ namespace CosmicShore.UI
             Color bloomTarget = upgraded ? style.bloomColor : WithAlpha(style.bloomColor, 0f);
             Color plateTarget = upgraded ? style.upgradedPlateColor : style.plateColor;
 
+            // The slant edge crosses with them - it is part of the plate, not a separate frame, and
+            // it is the one channel with enough contrast left to read at a glance on a dark plate.
+            ApplySlantEdge(slot.ElementPlate, locked: false, upgraded);
+            ApplySlantEdge(slot.AbilityPlate, locked: false, upgraded);
+
             if (!animate)
             {
                 if (slot.ElementBloom) slot.ElementBloom.color = bloomTarget;
@@ -613,6 +623,122 @@ namespace CosmicShore.UI
         /// Lights the CARD on a press. This is the totem's answer to the per-vessel circular glow,
         /// which was authored to sit behind a round button and reads as a foreign shape now.
         /// </summary>
+        /// <summary>
+        /// The fleet's ONE recharge readout: a radial veil swept over the ability plate while an
+        /// ability is recovering, ending in a one-shot flash the moment it comes back.
+        /// <paramref name="remaining01"/> is 1 the instant the ability fires and 0 when it is ready.
+        ///
+        /// <para><b>Radial, where the gauge is linear - and OVER the icon, where the gauge is
+        /// behind it.</b> Two motions that cannot be mistaken for each other is what lets one card
+        /// carry both, which several vessels need (an ability that both banks a resource and has a
+        /// recharge). A cooldown drawn as another rising fill would read as the meter running
+        /// backwards.</para>
+        ///
+        /// <para>The overlay is built LAZILY, on the first call: a card whose ability has no
+        /// cooldown pays nothing - no object, no mask, no draw calls. That is also why this is a
+        /// VALUE the vessel pushes rather than an <c>Image</c> it binds like the gauge: there is no
+        /// existing per-vessel artwork to preserve, so the lockup owns the whole presentation and a
+        /// vessel supplies one float.</para>
+        /// </summary>
+        public void SetAbilityCooldown(Element element, float remaining01)
+        {
+            if (!_slots.TryGetValue(element, out var slot) || !style || slot.Locked) return;
+
+            remaining01 = Mathf.Clamp01(remaining01);
+            bool active = remaining01 > 0.0001f;
+
+            // Sitting ready is the common case and this is polled every frame, so it costs nothing:
+            // writing fillAmount dirties the Image's mesh, which is fine while a sweep is moving and
+            // pure waste while it is parked at zero.
+            if (!active && !slot.OnCooldown) return;
+
+            if (!slot.CooldownSweep)
+            {
+                if (!active) return;                                // never fired: build nothing
+                BuildCooldownOverlay(element, slot);
+                if (!slot.CooldownSweep) return;
+            }
+
+            slot.CooldownSweep.fillAmount = remaining01;
+            if (slot.CooldownClip.gameObject.activeSelf != active)
+                slot.CooldownClip.gameObject.SetActive(active);
+
+            // The beat the player is actually waiting for. Only on the falling edge - driving this
+            // per frame would restart the flash every frame it sat at ready.
+            if (slot.OnCooldown && !active) PlayReadyFlash(slot);
+            slot.OnCooldown = active;
+        }
+
+        /// <summary>True while this ability is drawn as recharging.</summary>
+        public bool IsOnCooldown(Element element)
+            => _slots.TryGetValue(element, out var slot) && slot.OnCooldown;
+
+        /// <summary>
+        /// The cooldown veil is the ONE piece of the lockup that lives outside the card: it has to
+        /// darken the ICON as well as the plate, and the icon is a later sibling of the card, so a
+        /// child of the card could only ever draw behind it. It is parented to the host and pushed
+        /// to the end of the sibling list instead.
+        /// </summary>
+        void BuildCooldownOverlay(Element element, Slot slot)
+        {
+            var host = slot.Card.parent as RectTransform;
+            if (!host) return;
+
+            const string clipName = "AbilityCooldown";
+            var clip = host.Find(clipName) as RectTransform;
+            if (!clip)
+            {
+                var go = new GameObject(clipName, typeof(RectTransform), typeof(CanvasRenderer),
+                                        typeof(TrapezoidGraphic), typeof(Mask));
+                clip = (RectTransform)go.transform;
+                clip.SetParent(host, false);
+            }
+
+            var shape = clip.GetComponent<TrapezoidGraphic>();
+            shape.SetEdges(1f, style.NarrowEdgeFraction);
+            shape.color = Color.white;      // a stencil reads ALPHA; its colour never renders
+            shape.raycastTarget = false;
+            clip.GetComponent<Mask>().showMaskGraphic = false;
+
+            // Sized and placed on the ability plate in HOST space, where the plate sits at zero.
+            clip.anchorMin = clip.anchorMax = clip.pivot = new Vector2(0.5f, 0.5f);
+            clip.sizeDelta = new Vector2(style.plateWidth, style.abilityCellHeight);
+            clip.anchoredPosition = Vector2.zero;
+            clip.localScale = Vector3.one;
+            clip.localRotation = Quaternion.identity;
+            clip.SetAsLastSibling();        // over the icon - the point of living out here
+
+            var sweep = ResolveChildImage(clip, "Sweep", PlainSprite);
+            // The sweep has to cover the trapezoid's corners at every angle, so it is squared off to
+            // the plate's diagonal rather than its width - a disc inscribed in the rect would leave
+            // the corners permanently lit.
+            float reach = Mathf.Sqrt(style.plateWidth * style.plateWidth +
+                                     style.abilityCellHeight * style.abilityCellHeight);
+            SetCellRect(sweep.rectTransform, 0f, reach, reach);
+            sweep.type = Image.Type.Filled;
+            sweep.fillMethod = Image.FillMethod.Radial360;
+            sweep.fillOrigin = (int)Image.Origin360.Top;
+            sweep.fillClockwise = true;
+            sweep.preserveAspect = false;
+            sweep.color = style.cooldownVeilColor;
+
+            slot.CooldownClip = clip;
+            slot.CooldownSweep = sweep;
+        }
+
+        void PlayReadyFlash(Slot slot)
+        {
+            if (!slot.Flash) return;
+
+            slot.FlashTween?.Kill();
+            slot.Flash.color = style.cooldownReadyFlashColor;
+            slot.FlashTween = slot.Flash
+                .DOFade(0f, style.cooldownReadyFlashDuration)
+                .SetEase(Ease.OutQuad)
+                .SetUpdate(true)
+                .SetLink(slot.Flash.gameObject);
+        }
+
         public void PlayPressFlash(Element element) => SetPressed(element, true, releaseImmediately: true);
 
         /// <summary>
@@ -667,6 +793,21 @@ namespace CosmicShore.UI
         /// are edge widths as fractions of the rect - both always derived from the style's single
         /// inset, mirrored, so the two halves of a totem can never disagree about the slant.
         /// </summary>
+        /// <summary>
+        /// The hairline on a plate's two SLOPED sides - solid across the middle, graded to nothing
+        /// before it reaches the top or bottom, so it accents the edges that carry the shape and
+        /// never closes into the border this style retired. A locked slot wears it at the locked
+        /// mark's colour, so an undesigned slot is quiet in every channel at once.
+        /// </summary>
+        void ApplySlantEdge(TrapezoidGraphic plate, bool locked, bool upgraded)
+        {
+            plate.EdgeThickness = style.slantEdgeThickness;
+            plate.EdgeFade = style.slantEdgeFade;
+            plate.EdgeColor = locked ? style.lockedMarkColor
+                                     : upgraded ? style.upgradedSlantEdgeColor
+                                                : style.slantEdgeColor;
+        }
+
         TrapezoidGraphic ResolveTrapezoid(RectTransform parent, string childName, float top, float bottom)
         {
             var existing = parent.Find(childName);

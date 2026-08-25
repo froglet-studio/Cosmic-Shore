@@ -49,6 +49,9 @@ namespace CosmicShore.Editor
         /// <summary>Minimum air we insist on between the drawn icon and the plate edge.</summary>
         const float MinIconMarginPx = 8f;
 
+        /// <summary>How far the two plates may drift from mirror heights before it reads as a coffin.</summary>
+        const float MaxPlateImbalance = 0.25f;
+
         [MenuItem("FrogletTools/Vessels/Audit Ability Lockups")]
         [FrogletTool(FrogletToolCategory.Vessels, Importance = 4,
             Description = "Ability lockup: style sanity + per-vessel icon fit inside the totem card.")]
@@ -114,7 +117,8 @@ namespace CosmicShore.Editor
             int problems = 0;
             report.AppendLine($"STYLE  totem {style.plateWidth}x{style.PlateHeight}  " +
                               $"(ability plate {style.abilityCellHeight}, gap {style.cellGap}, element plate " +
-                              $"{style.petalCellHeight})  slant inset {style.trapezoidInset} " +
+                              $"{style.petalCellHeight}, imbalance {style.PlateImbalance:P0})  " +
+                              $"slant inset {style.trapezoidInset} edge {style.slantEdgeThickness} " +
                               $"(narrow edge {style.NarrowEdgeFraction:0.###} of wide)  " +
                               $"icon {style.iconBoxSize}  flower {style.petalFlowerSize}  " +
                               $"pitch {style.cardPitch}  margin R{style.rowMarginRight}/B{style.rowMarginBottom}");
@@ -136,6 +140,43 @@ namespace CosmicShore.Editor
             {
                 report.AppendLine("  ✗ cellGap 0 - the gap IS the divider now, so the two plates would " +
                                   "fuse into one shape with no separation at all.");
+                problems++;
+            }
+
+            // Two plates of very different heights read as a coffin rather than as a totem, and a
+            // single field edit can put it back there silently.
+            if (style.PlateImbalance > MaxPlateImbalance)
+            {
+                report.AppendLine($"  ✗ the plates are {style.PlateImbalance:P0} out of balance " +
+                                  $"({style.abilityCellHeight} vs {style.petalCellHeight}); above " +
+                                  $"{MaxPlateImbalance:P0} the totem stops reading as symmetric.");
+                problems++;
+            }
+
+            if (style.slantEdgeThickness > 0f && style.slantEdgeColor.a <= 0f)
+            {
+                report.AppendLine("  ✗ the slant edge has thickness but no opacity - it would cost " +
+                                  "geometry and draw nothing.");
+                problems++;
+            }
+            if (style.slantEdgeThickness > style.trapezoidInset)
+            {
+                report.AppendLine($"  ✗ slantEdgeThickness {style.slantEdgeThickness} exceeds the " +
+                                  $"{style.trapezoidInset} slant it rides - the hairline would read " +
+                                  "as a chamfer instead of an edge.");
+                problems++;
+            }
+
+            if (style.cooldownVeilColor.a <= 0f)
+            {
+                report.AppendLine("  ✗ the cooldown veil is transparent - a recharging ability would " +
+                                  "look identical to a ready one.");
+                problems++;
+            }
+            if (style.cooldownReadyFlashColor.a <= style.pressFlashColor.a)
+            {
+                report.AppendLine("  ✗ the ready flash is no louder than an ordinary press - coming " +
+                                  "back off cooldown is the beat the player is waiting for.");
                 problems++;
             }
 

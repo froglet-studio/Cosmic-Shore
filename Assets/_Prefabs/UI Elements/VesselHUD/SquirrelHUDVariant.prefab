@@ -3175,6 +3175,7 @@ MonoBehaviour:
   - element: 1
     icon: {fileID: 6559234619875545904}
     upgradedSprite: {fileID: 0}
+    gauge: {fileID: 6390265052795311443}
   - element: 2
     icon: {fileID: 5199230409720723880}
     upgradedSprite: {fileID: 0}
@@ -3184,7 +3185,6 @@ MonoBehaviour:
   - element: 4
     icon: {fileID: 8778855275387912087}
     upgradedSprite: {fileID: 0}
-    gauge: {fileID: 6390265052795311443}
   upgradeHighlightScale: 1.15
   upgradePunchScale: 1.35
   upgradePunchDuration: 0.35
@@ -3203,10 +3203,6 @@ MonoBehaviour:
   joustFlashColor: {r: 1, g: 0, b: 0, a: 1}
   crystalFlashColor: {r: 0.4, g: 0.9, b: 1, a: 1}
   tubeCooldownIcon: {fileID: 8778855275387912087}
-  tubeCoolingColor: {r: 0.5, g: 0.5, b: 0.55, a: 0.9}
-  tubeReadyColor: {r: 1, g: 0.2, b: 0.2, a: 1}
-  tubeReadyPulseAmount: 0.08
-  tubeReadyPulseDuration: 0.8
   overheatIcon: {fileID: 6559234619875545904}
   overheatHighlight: {fileID: 6579145379464768125}
   overheatHotColor: {r: 1, g: 0.45, b: 0.15, a: 1}

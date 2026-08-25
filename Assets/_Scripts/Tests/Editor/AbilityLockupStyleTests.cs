@@ -58,6 +58,43 @@ namespace CosmicShore.Tests
         }
 
         [Test]
+        public void Plates_AreBalancedEnoughToReadAsSymmetric()
+        {
+            var s = Load();
+            // Two stacked plates of very different heights read as a coffin, not a totem. The
+            // hierarchy that matters lives in the MARKS - flower smaller than icon - not in the
+            // plates, so nothing is lost by mirroring them and a great deal of shape is gained.
+            Assert.LessOrEqual(s.PlateImbalance, 0.25f,
+                $"the plates are {s.PlateImbalance:P0} out of balance " +
+                $"({s.abilityCellHeight} vs {s.petalCellHeight}) - the totem stops reading as symmetric");
+        }
+
+        [Test]
+        public void SlantEdge_RidesTheSlantItAccents()
+        {
+            var s = Load();
+            if (s.slantEdgeThickness <= 0f) return;   // off is a legitimate authored state
+
+            Assert.Greater(s.slantEdgeColor.a, 0f,
+                "the slant edge has thickness but no opacity - geometry that draws nothing");
+            Assert.LessOrEqual(s.slantEdgeThickness, s.trapezoidInset,
+                "the edge is thicker than the slant it rides, so it reads as a chamfer, not a hairline");
+            Assert.Greater(s.upgradedSlantEdgeColor.a, 0f, "the upgraded slant edge is transparent");
+        }
+
+        [Test]
+        public void Cooldown_ReadsAsRechargingAndIsLoudWhenItReturns()
+        {
+            var s = Load();
+            Assert.Greater(s.cooldownVeilColor.a, 0f,
+                "the cooldown veil is transparent - a recharging ability would look ready");
+            Assert.Greater(s.cooldownReadyFlashColor.a, s.pressFlashColor.a,
+                "the ready flash is no louder than an ordinary press, but coming back off cooldown " +
+                "is the beat the player is actually waiting for");
+            Assert.Greater(s.cooldownReadyFlashDuration, 0f, "the ready flash snaps off");
+        }
+
+        [Test]
         public void Icon_ClearsTheAbilityPlatesNarrowEdge()
         {
             var s = Load();

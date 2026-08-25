@@ -27,6 +27,7 @@ The lockup fuses them into one card per ability, so a glance answers four questi
 | 5 | **How to fire it** | the device chip below the card. No chip = passive |
 | 6 | **How much of the ability is ready** | the card's own linear gauge, rising through the ability plate |
 | 7 | **Is it firing right now** | the ability plate lights and decays |
+| 8 | **Is it recharging** | a radial veil sweeping off the ability plate, over the icon |
 
 **The gauge rule survives, and now has a home.** The icon remains the vessel's live-gauge channel
 (fill · tint · lean). Petals and chip never carry gauge meaning, and the card — not the icon —
@@ -37,7 +38,14 @@ carries the upgrade. That is precisely what lets a row of four live gauges show 
 **Two borderless trapezoids meeting at their wide edges across a small gap** — the element flower in
 the upper one, the ability icon in the lower one, the control chip below. The element plate narrows
 *upward*, the ability plate narrows *downward*, so the pair mirrors about the seam and the totem has
-a waist. House motif is **soft-hard-soft** — bloom (soft) around flat, radius-0 plates (hard)
+a waist.
+
+**The two plates are the same height** (88 / 88), which makes the totem a true mirror image about
+the gap. Unequal plates — the first pass ran 62 above 104 — stack into a tall lopsided hexagon that
+reads as a coffin rather than a totem. Nothing is lost by mirroring them: **the hierarchy lives in
+the marks, not in the plates** (flower 44 against icon 60), so the element still reads as
+qualifying the ability while the shape gains its symmetry. `PlateImbalance` is asserted at ≤25% by
+both the auditor and the tests, because a single field edit can put the coffin back silently. House motif is **soft-hard-soft** — bloom (soft) around flat, radius-0 plates (hard)
 carrying the icon.
 
 **The gap is the divider and the silhouette is the frame.** A hairline between two halves of one
@@ -47,6 +55,14 @@ does the work the outline used to: two trapezoids facing wide-edge to wide-edge 
 where two borderless *rectangles* would read as a list. **The upgrade is a bloom behind both plates
 plus a lift in their fill** — with no rim, those two are the whole signal, which is why the upgraded
 plate now lifts much further from the resting one than it did when the rim carried the change.
+
+**A thin graded edge rides the two sloped sides.** Solid across the middle of each slant, graded to
+nothing before it reaches the top or bottom — so it accents the two edges that carry the shape's
+identity and **never closes into a border**. That is the distinction worth keeping: the rim (a
+closed outline around everything) stays retired; this is an edge on the slants only. It is generated
+into the *same mesh* as the plate — one draw call for an edged plate — with per-vertex alpha, and
+its alpha multiplies the plate's own so a fade takes both together. `slantEdgeThickness` must stay
+at or below `trapezoidInset` or the hairline reads as a chamfer.
 
 **The plates are generated, not sprited** (`TrapezoidGraphic`, one small `MaskableGraphic` in the
 shape of `BlastProfileGraphic`). A trapezoid has no 9-slice — slanted edges do not tile — so a
@@ -120,9 +136,37 @@ to claim, silently, and only on the vessels whose authoring had drifted.
 
 | vessel | slot | meter |
 |---|---|---|
-| Squirrel | Time (Boost Ring) | `boostFill` — authored under the skimming button, re-homed |
+| Squirrel | **Charge** (Skimming) | `boostFill` — the skim-energy meter. It sits under the skimming button and belongs on the skimming card; a first pass put it on Time, which is the Boost Ring |
 | Sparrow | Time (Afterburner) | `rollChargeIndicator` — the strafing-roll pip, already on the right card |
 | Scarab | Space (Ball Forge) | `energyRing` — authored under the throttle button, re-homed |
+
+## The cooldown — one recharge readout for the fleet
+
+`VesselHUDView.SetAbilityCooldown(element, remaining01)` — 1 the instant the ability fires, 0 when
+it is ready. The lockup draws a **radial veil swept over the ability plate**, clipped to the
+trapezoid, ending in a one-shot flash the moment the ability comes back.
+
+**Radial where the gauge is linear, and OVER the icon where the gauge is behind it.** Two motions
+that cannot be mistaken for each other is what lets one card carry both — which several vessels
+need, since an ability can bank a resource *and* have a recharge. A cooldown drawn as another rising
+fill would read as the meter running backwards.
+
+**A value, not an `Image` binding.** The gauge is bound because a vessel already authored a meter
+worth preserving; a cooldown has no such artwork, so the lockup owns the whole presentation and the
+vessel supplies one float. The overlay is built **lazily on first use**, so a card whose ability
+never recharges costs no object, no mask and no draw calls.
+
+It is the one piece of the lockup that lives **outside the card**: it has to darken the icon as well
+as the plate, and the icon is a later sibling of the card, so a child of the card could only ever
+draw behind it. The clip is parented to the host and pushed to the end of the sibling list. The
+sweep is sized to the plate's **diagonal**, not its width — a disc inscribed in the rect would leave
+the corners permanently lit.
+
+The Squirrel's Boost Ring is the first user, and it **replaced a per-vessel reload animation**: the
+icon sank to a seat and rose back as it loaded, breathed on a looping yoyo, wiped a radial fill on
+*itself*, and slammed home with a colour flash. Four channels saying one thing, all on the icon, on
+one hull. The signature stayed (`SetTubeCooldownReady` still takes the same value from the same
+controller); the presentation left, along with six tuning fields and three tweens.
 
 ## The press state — the card lights, not a circle behind it
 
@@ -163,7 +207,7 @@ per-vessel art or wiring for a human to supply.
 | Dolphin | 4/4 | ✅ (component also authored on the prefab — explicit, and equivalent) |
 | Scarab | 4/4 | ✅ ensured at runtime; `energyRing` re-homed onto the Space card as its gauge |
 | Sparrow | 4/4 | ✅ ensured at runtime; `rollChargeIndicator` becomes the Time card's gauge |
-| Squirrel | 4/4 | ✅ ensured at runtime; AUTHORED flowers re-homed, `boostFill` re-homed onto Time |
+| Squirrel | 4/4 | ✅ ensured at runtime; AUTHORED flowers re-homed, `boostFill` re-homed onto **Charge** as the skim-energy gauge, Boost Ring recharge on the standard cooldown |
 | Manta · Rhino · Serpent | 0/4 | ✅ four LOCKED cards — the row exists, the flowers dock, the slots read as undesigned. Blocked on ability DESIGN, not on this style |
 | Urchin | 0/4 | — no HUD prefab exists at all, so there is no view to ensure |
 
@@ -233,8 +277,9 @@ so `enforceStandardPlacement` stays `1` fleet-wide and no other vessel is affect
 | `plateWidth` | 104 | the plate's WIDE edge — the seam where the two trapezoids face each other |
 | `trapezoidInset` | 9 | how far each side pulls in at a plate's NARROW edge. **0 makes both plates rectangles and the totem reads as a list.** Both plates read it mirrored |
 | `cellGap` | 6 | gap between the two plates. This IS the divider — a real gap is what lets the plates be borderless |
-| `abilityCellHeight` | 104 | lower plate, centred on the existing icon |
-| `petalCellHeight` | 62 | upper plate, added ABOVE — this is what makes it a totem |
+| `abilityCellHeight` | 88 | lower plate, centred on the existing icon |
+| `petalCellHeight` | 88 | upper plate, added ABOVE. **Keep it equal to the ability plate** — unequal plates read as a coffin; the hierarchy lives in the marks, not the plates |
+| `slantEdgeThickness` / `slantEdgeFade` | 1.5 / 0.34 | the hairline on the sloped sides only, and how much of each side it spends fading in and out. Thickness must stay ≤ `trapezoidInset` |
 | `petalFlowerSize` | 44 | element flower; keep BELOW the icon's DRAWN size (60) |
 | `iconBoxSize` | 60 | the ONE drawn size for every vessel's icons; each icon's scale is derived from it. Multiplies the upgrade bump rather than replacing it |
 | `cardPitch` | 137.7 | centre-to-centre card spacing — one number for the fleet |
@@ -246,6 +291,9 @@ so `enforceStandardPlacement` stays `1` fleet-wide and no other vessel is affect
 | `bloomColor` | `#F5F5FF` @0.30 | alpha carries it — in engine bloom clamps at max-channel 0.5, so glow is bought with lit AREA |
 | `upgradedPlateColor` | `#1C1F2B` @0.92 | the plate's lift. Raised well clear of the resting fill because, with the rim retired, this and the bloom are the WHOLE upgrade signal |
 | `lockedMarkThickness` | 2 | thickness of the locked slot's placeholder bar |
+| `slantEdgeColor` / `upgradedSlantEdgeColor` | `#82879C` @0.85 / `#F5F5FF` | the slant edge at rest and upgraded |
+| `cooldownVeilColor` | `#060810` @0.72 | the radial veil swept over a recharging ability |
+| `cooldownReadyFlashColor` / `cooldownReadyFlashDuration` | `#F5F5FF` @0.5 / 0.32 | the beat the player is waiting for — must be louder than an ordinary press flash |
 | `gaugeTrackColor` / `gaugeFillColor` | `#161822` @0.9 / `#3882FF` @0.55 | the meter. The fill must out-read its own track in luminance, or the gauge is invisible — asserted by both the auditor and the tests |
 | `lockedPlateColor` / `lockedMarkColor` | `#060810` @0.55 / `#5C5F70` @0.55 | an undesigned slot. Must stay QUIETER than a live card, or the row advertises abilities that do not exist |
 | `pressFlashColor` / `pressFlashDuration` | `#F5F5FF` @0.22 / 0.18 | the card's fire signal, held while the control is down and decayed on release |
@@ -294,7 +342,16 @@ notches inside the trapezoid.
 10. **Rhino.** Fly a Rhino: four cards, Mass live (Trail Slabs) and the other three drawn locked —
     quieter plate, a short hairline where the icon would be, no gauge track — with the element
     flowers docked above all four. No old ability-icon UI left in the corner.
-11. **Vessel swap.** Swap to the Dolphin from another vessel in Menu_Main freestyle and confirm
+11. **Balance + edge.** Both plates the same height, mirrored about the gap — no coffin. A thin
+    bright line down each sloped side, solid in the middle and dissolved before the top and bottom
+    corners, on both plates; **no line across the top or bottom of either plate.**
+12. **Cooldown (Squirrel Time).** Fire the Boost Ring: a dark veil sweeps radially off the card,
+    over the icon, and clears with a bright flash when it comes back. The icon itself must NOT sink,
+    rise, breathe, tint or wipe any more — if it does, the old animation is still wired.
+13. **Two readouts on one row.** Squirrel Charge shows the linear skim-energy fill; Squirrel Time
+    shows the radial cooldown. Confirm they read as different things at a glance, which is the whole
+    reason the cooldown is radial.
+14. **Vessel swap.** Swap to the Dolphin from another vessel in Menu_Main freestyle and confirm
     exactly one set of cards (Build is idempotent; cards are adopted by name).
 
 ## What this retired
@@ -308,7 +365,8 @@ now says once:
 | The upgrade **icon tint** (`tintIconOnUpgrade`, `upgradeHighlightColor`) | Colour on an ability icon is a GAUGE channel on most vessels, so the tint was unusable on exactly the vessels that needed a signal most. It could never be the fleet's answer. |
 | The **decagon button plate** on Sparrow / Squirrel / Scarab | The card is the plate now. Left on, it sat behind the totem as a second, differently-shaped background. |
 | The **hairline divider** between the two cells | The cells are two separate plates with a real gap. A line drawn to separate two halves of one shape is redundant once they are two shapes. |
-| The **rim** (`rimSprite`, `hairlineColor`, `upgradedRimColor`) and `LockupPlate`/`LockupPlateRim` art | Borderless by request. The trapezoid silhouette is the frame; the upgrade moved onto the bloom plus a bigger plate lift. Both PNGs are deleted — nothing referenced them. |
+| The **rim** (`rimSprite`, `hairlineColor`, `upgradedRimColor`) and `LockupPlate`/`LockupPlateRim` art | Borderless by request. The trapezoid silhouette is the frame; the upgrade moved onto the bloom plus a bigger plate lift. Both PNGs are deleted — nothing referenced them. The slant edge that arrived later is **not** the rim returning: it rides the sloped sides only and never closes. |
+| The Squirrel's **bespoke Boost Ring reload animation** (`tubeCoolingColor`, `tubeReadyColor`, `tubeLoadPulseAmount`, `tubeLoadPulseDuration`, `tubeLoadDropOffset`, `tubeSlamFlashColor`, three tweens, `StartTubeLoadPulse`, `JuiceTubeSlamHome`) | Four channels on one icon on one hull, all saying "recharging". The fleet's standard cooldown says it once, the same way, everywhere. `SetTubeCooldownReady` kept its signature, so the controller did not change. |
 | The **ring gauges** (Sparrow roll ring, Scarab energy ring, Squirrel chevron fill and its frame) | Four hulls, four shapes, one idea. The card's linear fill is the fleet's one gauge; the same Images are re-formed rather than replaced, so nothing is re-authored and no drive site changes. |
 | The **circular press glow** behind each icon (`highlights`) | The card lights instead. A second shape drawn for a state the card already carries is exactly the divergence the totem removes. |
 | The Squirrel's **undriven heat halo** (`overheatHighlight`) | A circular glow left over from the Sparrow's retired overheat mechanic — its driver was deleted in 2026, so it had never moved. Retired positionally with the rest of the host's chrome. |

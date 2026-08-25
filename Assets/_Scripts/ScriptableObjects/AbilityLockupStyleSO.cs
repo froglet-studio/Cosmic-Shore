@@ -48,13 +48,15 @@ namespace CosmicShore.ScriptableObjects
                  "borderless.")]
         [Min(0f)] public float cellGap = 6f;
 
-        [Tooltip("Height of the LOWER cell - the one centred on the vessel's existing ability icon. " +
+        [Tooltip("Height of the LOWER plate - the one centred on the vessel's existing ability icon. " +
                  "The icon is never moved; the lockup is built around wherever it already sits.")]
-        [Min(1f)] public float abilityCellHeight = 104f;
+        [Min(1f)] public float abilityCellHeight = 88f;
 
-        [Tooltip("Height of the UPPER cell, added ABOVE the ability cell. This is what makes the " +
-                 "card a totem, and it is why no authored rect has to change to adopt the style.")]
-        [Min(1f)] public float petalCellHeight = 62f;
+        [Tooltip("Height of the UPPER plate, added ABOVE the ability plate. Keep it EQUAL to the " +
+                 "ability plate: mirrored heights make the pair symmetric about the gap, and a tall " +
+                 "narrow stack of two unequal plates reads as a coffin rather than as a totem. The " +
+                 "hierarchy lives in the MARKS (flower smaller than icon), not in the plates.")]
+        [Min(1f)] public float petalCellHeight = 88f;
 
         [Tooltip("Size of the element flower inside the upper cell. Keep it BELOW the ability icon's " +
                  "drawn size: the ability is the headline, the element qualifies it.")]
@@ -87,6 +89,22 @@ namespace CosmicShore.ScriptableObjects
 
         [Tooltip("How far the bloom extends past the plate on every side.")]
         [Min(0f)] public float bloomPadding = 26f;
+
+        [Header("Slant edge (sloped sides only)")]
+        [Tooltip("Thickness of the hairline drawn INSIDE each plate along its two sloped sides, " +
+                 "solid across the middle and graded to nothing before the top and bottom. It is " +
+                 "not a border - it never closes - so the plates stay borderless while the two " +
+                 "edges that carry the shape's identity get an accent. 0 = off.")]
+        [Min(0f)] public float slantEdgeThickness = 1.5f;
+
+        [Tooltip("Fraction of each sloped side spent fading in at one end and out at the other.")]
+        [Range(0.01f, 0.5f)] public float slantEdgeFade = 0.34f;
+
+        [Tooltip("Resting colour of the slant edge.")]
+        public Color slantEdgeColor = new(0.51f, 0.53f, 0.61f, 0.85f);
+
+        [Tooltip("Slant edge while upgraded - the level-5 white the flowers already speak.")]
+        public Color upgradedSlantEdgeColor = new(0.96f, 0.96f, 1f, 1f);
 
         [Tooltip("Height of the gauge that fills the ability cell behind the icon, as a fraction of " +
                  "that cell. 1 = the gauge rises the full height of the icon's cell.")]
@@ -127,6 +145,18 @@ namespace CosmicShore.ScriptableObjects
         public Color lockedMarkColor = new(0.361f, 0.373f, 0.439f, 0.55f);
         [Tooltip("Thickness of that mark.")]
         [Min(0.5f)] public float lockedMarkThickness = 2f;
+
+        [Header("Cooldown - the fleet's ONE recharge readout")]
+        [Tooltip("The veil swept over the ability plate while an ability recharges. Deliberately a " +
+                 "RADIAL sweep over the icon, where the gauge is a LINEAR fill behind it: two " +
+                 "motions that cannot be confused for each other, which is the whole reason a mode " +
+                 "can show both on one card.")]
+        public Color cooldownVeilColor = new(0.024f, 0.031f, 0.063f, 0.72f);
+
+        [Tooltip("One-shot flash the moment an ability comes back. This is the beat the player is " +
+                 "actually waiting for, so it is the loudest thing the card ever does.")]
+        public Color cooldownReadyFlashColor = new(0.96f, 0.96f, 1f, 0.5f);
+        [Min(0.01f)] public float cooldownReadyFlashDuration = 0.32f;
 
         [Header("Press feedback")]
         [Tooltip("Flash the CARD takes on an ability press. Replaces the per-vessel circular glow, " +
@@ -174,6 +204,20 @@ namespace CosmicShore.ScriptableObjects
         /// anyone editing a prefab: the Dolphin authors 80 on three slots and 96 on its fourth, the
         /// Squirrel scales its whole button 0.7, and all of them still draw at iconBoxSize.
         /// </summary>
+        /// <summary>
+        /// How far the two plates are from being mirror images. 0 = perfectly balanced. The auditor
+        /// and the tests both key off this, because "the totem drifted back into a coffin" is a
+        /// thing a single field edit can do silently.
+        /// </summary>
+        public float PlateImbalance
+        {
+            get
+            {
+                float max = Mathf.Max(abilityCellHeight, petalCellHeight);
+                return max > 0.01f ? Mathf.Abs(abilityCellHeight - petalCellHeight) / max : 0f;
+            }
+        }
+
         public float IconScaleFor(float authoredSize)
             => authoredSize > 0.01f ? iconBoxSize / authoredSize : 1f;
     }

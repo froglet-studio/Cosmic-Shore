@@ -15,8 +15,8 @@ MonoBehaviour:
   plateWidth: 104
   trapezoidInset: 9
   cellGap: 6
-  abilityCellHeight: 104
-  petalCellHeight: 62
+  abilityCellHeight: 88
+  petalCellHeight: 88
   petalFlowerSize: 44
   iconBoxSize: 60
   cardPitch: 137.7
@@ -25,6 +25,10 @@ MonoBehaviour:
   chipHeight: 24
   chipGap: 8
   bloomPadding: 26
+  slantEdgeThickness: 1.5
+  slantEdgeFade: 0.34
+  slantEdgeColor: {r: 0.51, g: 0.53, b: 0.61, a: 0.85}
+  upgradedSlantEdgeColor: {r: 0.96, g: 0.96, b: 1, a: 1}
   gaugeCellFraction: 1
   bloomSprite: {fileID: 21300000, guid: 006e134e05ff461bbd48ab3fd31629b4, type: 3}
   plateColor: {r: 0.024, g: 0.031, b: 0.063, a: 0.86}
@@ -35,6 +39,9 @@ MonoBehaviour:
   lockedPlateColor: {r: 0.024, g: 0.031, b: 0.063, a: 0.55}
   lockedMarkColor: {r: 0.361, g: 0.373, b: 0.439, a: 0.55}
   lockedMarkThickness: 2
+  cooldownVeilColor: {r: 0.024, g: 0.031, b: 0.063, a: 0.72}
+  cooldownReadyFlashColor: {r: 0.96, g: 0.96, b: 1, a: 0.5}
+  cooldownReadyFlashDuration: 0.32
   pressFlashColor: {r: 0.96, g: 0.96, b: 1, a: 0.22}
   pressFlashDuration: 0.18
   upgradeTransitionDuration: 0.2

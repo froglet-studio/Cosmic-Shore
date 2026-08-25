@@ -135,6 +135,22 @@ namespace CosmicShore.UI
         }
 
         /// <summary>
+        /// The fleet's ONE recharge readout: a radial veil swept over the ability plate while the
+        /// ability recovers, ending in a flash when it comes back. <paramref name="remaining01"/>
+        /// is 1 the instant it fires and 0 when it is ready.
+        ///
+        /// <para>A VALUE, not an <c>Image</c> binding like the gauge - a cooldown has no per-vessel
+        /// artwork worth preserving, so the lockup owns the whole presentation and a vessel supplies
+        /// one float. Deliberately radial where the gauge is linear, and OVER the icon where the
+        /// gauge is behind it: a card can then show both without the two reading as one meter.</para>
+        /// </summary>
+        public void SetAbilityCooldown(Element element, float remaining01)
+        {
+            var lockups = ResolveAbilityLockups();
+            if (lockups) lockups.SetAbilityCooldown(element, remaining01);
+        }
+
+        /// <summary>
         /// Where this element's control chip belongs on the lockup card. The control-hint binder
         /// places its (LT)/(RT) glyph HERE at zero offset rather than at a per-vessel offset from
         /// the icon - which is what locks the label TO the totem instead of leaving it floating
