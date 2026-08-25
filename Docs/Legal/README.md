@@ -17,6 +17,7 @@ drafted for us.**
 | **Terms of Sale (virtual items)** | **Only if we sell tokens** | Draft written → counsel reviews | Public URL, linked from store page | Draft written, **on hold pending DLC-vs-tokens** |
 | **Refund policy** | Steam's applies to the app | Us, for the spent-token case | Same page as terms of sale | Covered in the terms draft |
 | **Support contact** | Yes (Steam requires one) | Garrett/Caleb | Steam store page | Checklist F2 |
+| **Third-party notices** | **Yes, for shipped assets** | Us | In-game credits screen (does not exist yet) | Register written: `THIRD_PARTY_NOTICES.md`; **needs a credits surface** |
 
 **The privacy policy is required whether or not we ever sell anything** — the game already collects
 analytics, crash reports, and Cloud Save data. It is checklist item F1 and it blocks launch.
