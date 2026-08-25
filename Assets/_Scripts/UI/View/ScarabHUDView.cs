@@ -24,11 +24,11 @@ namespace CosmicShore.UI
     ///    punch rather than a bar that quietly tops out. Without that a player cannot tell a
     ///    working forge from a broken one — which is exactly how the first playtest went.
     ///
-    /// Because three of these paint ability ICONS, the view sets <c>tintIconOnUpgrade = false</c>
-    /// on the prefab and overrides <see cref="SetAbilityUpgraded"/> to re-anchor its captured rest
-    /// scales — otherwise the base class's upgrade tint fights the gauge colour, and the upgrade
-    /// scale bump is erased by the next gauge write (the Squirrel learned both). The element-petal
-    /// BADGE still carries the upgrade signal, so nothing is lost.
+    /// Because three of these paint ability ICONS, colour here is a GAUGE channel and can carry no
+    /// second meaning. That is settled platform-wide now: the ability lockup's card carries the
+    /// upgrade (Docs/ABILITY_LOCKUP.md), so this view only has to re-anchor its captured rest
+    /// scales in <see cref="SetAbilityUpgraded"/> — otherwise the next gauge write erases the
+    /// upgrade's scale bump, which the Squirrel learned first.
     /// </summary>
     public class ScarabHUDView : VesselHUDView
     {

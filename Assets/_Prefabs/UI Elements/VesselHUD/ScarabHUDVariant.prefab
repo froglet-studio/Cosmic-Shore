@@ -1030,17 +1030,9 @@ MonoBehaviour:
   - element: 4
     icon: {fileID: 3258612490553136050}
     upgradedSprite: {fileID: 0}
-  tintIconOnUpgrade: 0
-  upgradeHighlightColor: {r: 1, g: 0.85, b: 0.3, a: 1}
   upgradeHighlightScale: 1.15
   upgradePunchScale: 1.35
   upgradePunchDuration: 0.35
-  showUpgradeBadge: 1
-  elementalBarsConfig: {fileID: 0}
-  elementalBarsConfigResourcePath: ElementalBarsConfig
-  badgeSizeFraction: 0.45
-  badgeAnchor: {x: 1, y: 1}
-  badgeTransitionDuration: 0.3
   energyRing: {fileID: 6877628874251343197}
   ballIcon: {fileID: 4990196459091587280}
   energyFillingColor: {r: 0.35, g: 0.55, b: 0.75, a: 0.85}

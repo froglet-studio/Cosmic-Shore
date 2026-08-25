@@ -18,8 +18,6 @@ namespace CosmicShore.Tests
     /// </summary>
     public class AbilityLockupStyleTests
     {
-        /// <summary>The size every shipped vessel authors its ability icons at.</summary>
-        const float FleetIconSize = 80f;
         const float MinMarginPx = 8f;
 
         static AbilityLockupStyleSO Load()
@@ -40,27 +38,47 @@ namespace CosmicShore.Tests
         }
 
         [Test]
-        public void Kerning_LeavesNegativeSpaceAroundTheFleetIcon()
+        public void Kerning_LeavesNegativeSpaceAroundTheDrawnIcon()
         {
             var s = Load();
-            float drawn  = FleetIconSize * s.iconContentScale;
             float cell   = Mathf.Min(s.plateWidth, s.abilityCellHeight);
-            float margin = (cell - drawn) * 0.5f;
+            float margin = (cell - s.iconBoxSize) * 0.5f;
 
             Assert.GreaterOrEqual(margin, MinMarginPx,
-                $"an {FleetIconSize} icon draws at {drawn} inside a {cell} cell, leaving {margin} of " +
-                "air. The card's corner sliver alone eats 12, so the icon would run into it.");
+                $"an icon drawn at {s.iconBoxSize} inside a {cell} cell leaves {margin} of air. " +
+                "The card's corner sliver alone eats 12, so the icon would run into it.");
         }
 
         [Test]
         public void Flower_StaysSmallerThanTheDrawnIcon()
         {
             var s = Load();
-            float drawn = FleetIconSize * s.iconContentScale;
-            Assert.Less(s.petalFlowerSize, drawn,
+            Assert.Less(s.petalFlowerSize, s.iconBoxSize,
                 "the element flower must stay under the ability icon's DRAWN size - the ability is " +
                 "the headline and the element qualifies it. Shrinking the icon without shrinking " +
                 "the flower is how that hierarchy inverts unnoticed.");
+        }
+
+        [Test]
+        public void IconScale_NormalisesEveryAuthoredSizeToOneDrawnSize()
+        {
+            var s = Load();
+            // The three sizes the fleet actually authors today, plus a nonsense one.
+            foreach (var authored in new[] { 80f, 96f, 148f })
+                Assert.AreEqual(s.iconBoxSize, authored * s.IconScaleFor(authored), 0.01f,
+                    $"an icon authored at {authored} must still draw at {s.iconBoxSize} - that is what " +
+                    "makes icon size uniform across the fleet without anyone editing a prefab.");
+
+            Assert.AreEqual(1f, s.IconScaleFor(0f), 0.001f,
+                "an unreadable authored size must fall back to scale 1, never divide by zero");
+        }
+
+        [Test]
+        public void Row_IsSpacedWiderThanTheCardsAreWide()
+        {
+            var s = Load();
+            Assert.Greater(s.cardPitch, s.plateWidth,
+                "cards would overlap: the row pitch is narrower than a card");
         }
 
         [Test]

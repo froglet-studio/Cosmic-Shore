@@ -3184,17 +3184,9 @@ MonoBehaviour:
   - element: 4
     icon: {fileID: 8778855275387912087}
     upgradedSprite: {fileID: 0}
-  tintIconOnUpgrade: 0
-  upgradeHighlightColor: {r: 1, g: 0.85, b: 0.3, a: 1}
   upgradeHighlightScale: 1.15
   upgradePunchScale: 1.35
   upgradePunchDuration: 0.35
-  showUpgradeBadge: 1
-  elementalBarsConfig: {fileID: 0}
-  elementalBarsConfigResourcePath: ElementalBarsConfig
-  badgeSizeFraction: 0.45
-  badgeAnchor: {x: 1, y: 1}
-  badgeTransitionDuration: 0.3
   animSettings: {fileID: 11400000, guid: e1e99ce577ae9be408463160f475ed8d, type: 2}
   boostFill: {fileID: 6390265052795311443}
   colorLerpSpeed: 4

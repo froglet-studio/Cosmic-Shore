@@ -43,12 +43,23 @@ namespace CosmicShore.ScriptableObjects
                  "drawn size: the ability is the headline, the element qualifies it.")]
         [Min(1f)] public float petalFlowerSize = 44f;
 
-        [Tooltip("Scale applied to the vessel's ability icon inside the card - the lockup's KERNING. " +
-                 "A shipped icon is 80 square in a 104 cell whose corner sliver already eats 12, so at " +
-                 "1.0 its corners run into the sliver and the card reads packed. 0.75 draws it at 60, " +
-                 "leaving an even 22 of negative space on every side. It multiplies the upgrade bump " +
-                 "rather than replacing it, so an upgraded icon rests at scale x 1.15 as before.")]
-        [Range(0.4f, 1f)] public float iconContentScale = 0.75f;
+        [Tooltip("The size EVERY vessel's ability icon is drawn at, whatever size its prefab authored. " +
+                 "The lockup derives each icon's scale from this (iconBoxSize / its authored size), so " +
+                 "apparent size is uniform across the fleet and nobody re-authors an icon to match. " +
+                 "60 in a 104 cell whose corner sliver eats 12 leaves an even 22 of air on every side - " +
+                 "the lockup's KERNING. It multiplies the upgrade bump rather than replacing it.")]
+        [Min(1f)] public float iconBoxSize = 60f;
+
+        [Header("Row (the lockup owns the whole row, on every vessel)")]
+        [Tooltip("Centre-to-centre distance between cards. One number for the fleet - a vessel cannot " +
+                 "space its own row.")]
+        [Min(1f)] public float cardPitch = 137.7f;
+
+        [Tooltip("Distance from the screen's RIGHT edge to the right edge of the last card.")]
+        public float rowMarginRight = 65.1f;
+
+        [Tooltip("Distance from the screen's BOTTOM edge to the bottom of the ability cell.")]
+        public float rowMarginBottom = 53f;
 
         [Tooltip("Horizontal inset of the divider from the plate edge.")]
         [Min(0f)] public float dividerInset = 8f;
@@ -107,5 +118,14 @@ namespace CosmicShore.ScriptableObjects
 
         /// <summary>Local Y of the element flower's centre, measured from the card's centre.</summary>
         public float FlowerLocalY => abilityCellHeight * 0.5f;
+
+        /// <summary>
+        /// The scale that draws an icon authored at <paramref name="authoredSize"/> at the fleet's
+        /// one drawn size. This is what makes "every vessel's icons are the same size" true without
+        /// anyone editing a prefab: the Dolphin authors 80 on three slots and 96 on its fourth, the
+        /// Squirrel scales its whole button 0.7, and all of them still draw at iconBoxSize.
+        /// </summary>
+        public float IconScaleFor(float authoredSize)
+            => authoredSize > 0.01f ? iconBoxSize / authoredSize : 1f;
     }
 }

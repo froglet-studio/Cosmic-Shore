@@ -1030,17 +1030,9 @@ MonoBehaviour:
   - element: 4
     icon: {fileID: 3258612490553136050}
     upgradedSprite: {fileID: 0}
-  tintIconOnUpgrade: 1
-  upgradeHighlightColor: {r: 1, g: 0.85, b: 0.3, a: 1}
   upgradeHighlightScale: 1.15
   upgradePunchScale: 1.35
   upgradePunchDuration: 0.35
-  showUpgradeBadge: 1
-  elementalBarsConfig: {fileID: 0}
-  elementalBarsConfigResourcePath: ElementalBarsConfig
-  badgeSizeFraction: 0.45
-  badgeAnchor: {x: 1, y: 1}
-  badgeTransitionDuration: 0.3
   missileIcons:
   - {fileID: 21300000, guid: 4326cd8fb95b3e34ab41f098e75730a2, type: 3}
   - {fileID: 21300000, guid: 8306bc28766790c4e95529f8ed9ca0cb, type: 3}

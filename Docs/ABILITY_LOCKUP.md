@@ -40,9 +40,23 @@ Two properties make it cheap to adopt:
   colours, same pop-and-shake juice, driven by the same `ElementalBarsView`. Only its *home* moved.
   It is drawn at **44px against the icon's 60px**: the ability is the headline, the element
   qualifies it.
+- **The lockup owns the ROW, not just the card.** Position, pitch, cell size, host scale and icon
+  size all come from the one style asset and are written onto every vessel at build time. Before
+  this the prefabs disagreed on every one of them: the Sparrow and Scarab anchored their row in a
+  different container entirely (x 0.076–0.996 of a sub-rect, not the screen), the Squirrel scaled
+  its buttons **0.7**, and the Dolphin authored one icon at **96** against its other three at 80.
+  None of that is read any more — a prefab cannot make the row diverge, and nobody re-authors an
+  icon to match the fleet.
+- **Icon size is DERIVED, never authored.** Each icon is scaled by `iconBoxSize / its authored size`
+  (`AbilityLockupStyleSO.IconScaleFor`), so an 80, a 96 and a 148 all draw at 60. This is the
+  difference between "every vessel was edited to agree" and "disagreeing is impossible".
+- **The legacy button plate is retired.** The Sparrow, Squirrel and Scarab each drew a decagon
+  `Ability Background Small` behind their icons; the card replaces it, so the lockup disables it and
+  hands the button's target graphic to the card's plate — which also means the touch area finally
+  matches the shape the player can see. The Dolphin never had one.
 - **Both marks are KERNED, not packed.** The card's corner sliver already eats 12 of the 104 cell,
-  so the shipped 80px icon ran its corners into the sliver and the card read solid. `iconContentScale
-  0.75` draws it at **60**, leaving an even 22 of negative space on every side, and the flower came
+  so an 80px icon ran its corners into the sliver and the card read solid. `iconBoxSize` draws every
+  icon at **60**, leaving an even 22 of negative space on every side, and the flower came
   down 50 → 44 with it so the hierarchy the row was approved with (icon clearly larger) is preserved
   rather than quietly inverted. Same principle as optical kerning: equal *apparent* space, not equal
   metrics — the flower is a sparse radial fan and reads lighter than a solid glyph at equal size,
@@ -68,6 +82,10 @@ per-vessel art or wiring for a human to supply.
 | Squirrel | 4/4 | ✅ ensured at runtime; its AUTHORED flowers are re-homed, not replaced |
 | Manta · Rhino · Serpent | 0/4 | — nothing to lock up; blocked on ability DESIGN, not on this style |
 | Urchin | 0/4 | — no HUD prefab exists |
+
+**Row ownership is why `EnsureAbilityLockup` runs BEFORE `view.Initialize`.** Per-vessel views
+capture their icons' rest scales during Initialize, and those scales are only right once the lockup
+has normalised each icon to the fleet's drawn size. Ensure first, initialize second.
 
 **A vessel that authored its own flowers keeps them.** The Squirrel authors all four containers with
 their petals in the prefab. Docking RE-HOMES that container into the card (a reparent) rather than
@@ -126,7 +144,9 @@ so `enforceStandardPlacement` stays `1` fleet-wide and no other vessel is affect
 | `abilityCellHeight` | 104 | lower cell, centred on the existing icon |
 | `petalCellHeight` | 62 | upper cell, added ABOVE — this is what makes it a totem |
 | `petalFlowerSize` | 44 | element flower; keep BELOW the icon's DRAWN size (60) |
-| `iconContentScale` | 0.75 | the card's KERNING — draws an 80 icon at 60. Multiplies the upgrade bump rather than replacing it |
+| `iconBoxSize` | 60 | the ONE drawn size for every vessel's icons; each icon's scale is derived from it. Multiplies the upgrade bump rather than replacing it |
+| `cardPitch` | 137.7 | centre-to-centre card spacing — one number for the fleet |
+| `rowMarginRight` / `rowMarginBottom` | 65.1 / 53 | where the row sits, from the screen's bottom-right corner |
 | `dividerInset` / `dividerThickness` | 8 / 1 | the hairline between cells |
 | `bloomPadding` | 26 | how far the upgraded bloom reaches past the card |
 | `plateColor` / `hairlineColor` | `#060810` @0.86 / `#5C5F70` @0.9 | resting fill + outline |
@@ -159,6 +179,21 @@ plate/rim, 48 on bloom), so one asset set serves every vessel and every size.
    Space are passive and correctly show none.
 8. **Vessel swap.** Swap to the Dolphin from another vessel in Menu_Main freestyle and confirm
    exactly one set of cards (Build is idempotent; cards are adopted by name).
+
+## What this retired
+
+Three things existed only because there was no card, and each was a second way to say what the card
+now says once:
+
+| retired | why |
+|---|---|
+| The upgrade **corner badge** (`showUpgradeBadge` + its six tuning fields, and `VesselHUDView`'s whole badge implementation) | The card's rim and bloom carry the upgrade. The badge was a petal pinned to an icon corner saying the same thing, and it was already switched off on the Dolphin. |
+| The upgrade **icon tint** (`tintIconOnUpgrade`, `upgradeHighlightColor`) | Colour on an ability icon is a GAUGE channel on most vessels, so the tint was unusable on exactly the vessels that needed a signal most. It could never be the fleet's answer. |
+| The **decagon button plate** on Sparrow / Squirrel / Scarab | The card is the plate now. Left on, it sat behind the totem as a second, differently-shaped background. |
+
+`VesselAbilityRowWirer` no longer sets the two retired flags, and the stale serialized keys were
+stripped from all four HUD prefabs. The remaining icon-level signal is the authored
+`upgradedSprite` (optional, still unauthored fleet-wide) and the persistent scale bump.
 
 ## Two latent bugs this closed
 

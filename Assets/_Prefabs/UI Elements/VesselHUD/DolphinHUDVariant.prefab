@@ -281,8 +281,6 @@ MonoBehaviour:
   - element: 4
     icon: {fileID: 4926312112814601564}
     upgradedSprite: {fileID: 0}
-  tintIconOnUpgrade: 0
-  showUpgradeBadge: 0
   blastProfile: {fileID: 7710000000000000133}
   profileRestColor: {r: 0.51, g: 0.51, b: 0.54, a: 1}
   profileEngagedColor: {r: 0.96, g: 0.96, b: 1, a: 1}

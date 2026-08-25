@@ -16,7 +16,10 @@ MonoBehaviour:
   abilityCellHeight: 104
   petalCellHeight: 62
   petalFlowerSize: 44
-  iconContentScale: 0.75
+  iconBoxSize: 60
+  cardPitch: 137.7
+  rowMarginRight: 65.1
+  rowMarginBottom: 53
   dividerInset: 8
   dividerThickness: 1
   bloomPadding: 26

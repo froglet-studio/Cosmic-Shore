@@ -58,6 +58,7 @@ namespace CosmicShore.UI
         }
 
         readonly Dictionary<Element, Slot> _slots = new();
+        readonly HashSet<Image> _retiredChrome = new();
         bool _built;
 
         public bool IsBuilt => _built;
@@ -70,17 +71,34 @@ namespace CosmicShore.UI
         public ElementalBarsView ElementBars => elementBars;
 
         /// <summary>
-        /// The card's icon kerning - how much of the ability cell the vessel's icon is allowed to
-        /// fill. Readable BEFORE <see cref="Build"/>, because per-vessel views ask for their rest
-        /// scales during Initialize and a HUD that starts inactive has not Awoken yet.
+        /// The scale that draws THIS element's icon at the fleet's one drawn size, whatever size the
+        /// vessel's prefab authored for it. Per-element because icon sizes differ WITHIN a vessel as
+        /// well as between them (the Dolphin authors 80 on three slots and 96 on its fourth).
+        ///
+        /// <para>Readable before <see cref="Build"/> has laid the row out - the authored size comes
+        /// straight off the icon's rect - because per-vessel views capture their rest scales during
+        /// Initialize.</para>
         /// </summary>
-        public float IconContentScale
+        public float IconContentScale(Element element)
         {
-            get
-            {
-                var s = ResolveStyle();
-                return s ? s.iconContentScale : 1f;
-            }
+            var s = ResolveStyle();
+            if (!s) return 1f;
+
+            if (!hudView) hudView = GetComponent<VesselHUDView>();
+            if (!hudView || !hudView.TryGetAbilityIcon(element, out var icon) || !icon) return 1f;
+
+            return s.IconScaleFor(AuthoredIconSize(icon.rectTransform));
+        }
+
+        /// <summary>
+        /// The size a vessel authored its icon at. A prefab rect is not laid out, so a point-anchored
+        /// icon's size is its sizeDelta; a stretch-anchored one falls back to whatever rect it has.
+        /// </summary>
+        static float AuthoredIconSize(RectTransform rt)
+        {
+            var size = rt.anchorMin == rt.anchorMax ? rt.sizeDelta : rt.rect.size;
+            if (size.sqrMagnitude < 1f) size = rt.sizeDelta;
+            return Mathf.Max(size.x, size.y);
         }
 
         AbilityLockupStyleSO ResolveStyle()
@@ -123,15 +141,104 @@ namespace CosmicShore.UI
                 return;
             }
 
-            foreach (var binding in hudView.abilityIcons)
+            var row = ResolveRow();
+
+            // Right-aligned: the LAST slot sits at the row's corner and the others step left, so a
+            // vessel that ever binds fewer than four still ends flush with the fleet's row edge.
+            int count = VesselHUDView.AbilityDisplayOrder.Length;
+            for (int i = 0; i < count; i++)
             {
-                if (!binding.icon) continue;
-                var slot = BuildSlot(binding.element, binding.icon);
-                if (slot != null) _slots[binding.element] = slot;
+                var element = VesselHUDView.AbilityDisplayOrder[i];
+                if (!hudView.TryGetAbilityIcon(element, out var icon) || !icon) continue;
+
+                PlaceHost(row, icon.rectTransform, i, count);
+                var slot = BuildSlot(element, icon);
+                if (slot != null) _slots[element] = slot;
             }
 
             DockElementFlowers();
             _built = true;
+        }
+
+        /// <summary>
+        /// The one container every lockup card hangs off, pinned to the screen's bottom-right corner
+        /// by the shared style. Anchoring the ROW rather than each card is what makes the row's
+        /// position and pitch identical on every vessel: a prefab's own anchors stop mattering.
+        /// </summary>
+        RectTransform ResolveRow()
+        {
+            const string rowName = "AbilityLockupRow";
+            var self = (RectTransform)transform;
+            var row = self.Find(rowName) as RectTransform;
+            if (!row)
+            {
+                var go = new GameObject(rowName, typeof(RectTransform));
+                row = (RectTransform)go.transform;
+                row.SetParent(self, false);
+            }
+
+            row.anchorMin = row.anchorMax = row.pivot = new Vector2(1f, 0f);
+            row.sizeDelta = Vector2.zero;
+            row.anchoredPosition = new Vector2(-style.rowMarginRight, style.rowMarginBottom);
+            row.localScale = Vector3.one;
+            row.localRotation = Quaternion.identity;
+            return row;
+        }
+
+        /// <summary>
+        /// Re-homes the vessel's own ability button into the row at the fleet slot position, and
+        /// normalises the things a prefab is otherwise free to disagree on: cell size, scale, and
+        /// the legacy button chrome the card replaces.
+        ///
+        /// <para>The HOST is moved rather than the icon so that the button, its touch target, its
+        /// press juice and any gauge children all travel together and keep working.</para>
+        ///
+        /// <para>This is deliberately destructive of per-prefab layout: the Squirrel scaled its
+        /// buttons 0.7, the Sparrow and Scarab anchor theirs in a different container entirely, and
+        /// the Dolphin authored one icon at 96 against its others' 80. Reading any of that would
+        /// make the row a per-vessel negotiation, which is the thing this system exists to end.</para>
+        /// </summary>
+        void PlaceHost(RectTransform row, RectTransform iconRT, int index, int count)
+        {
+            var host = iconRT.parent as RectTransform;
+            if (!host || host == row) return;
+
+            if (host.parent != row) host.SetParent(row, false);
+
+            host.anchorMin = host.anchorMax = host.pivot = new Vector2(0.5f, 0.5f);
+            host.sizeDelta = new Vector2(style.plateWidth, style.abilityCellHeight);
+            host.localScale = Vector3.one;
+            host.localRotation = Quaternion.identity;
+            host.anchoredPosition = new Vector2(
+                -(count - 1 - index) * style.cardPitch - style.plateWidth * 0.5f,
+                style.abilityCellHeight * 0.5f);
+            host.SetSiblingIndex(index);
+
+            // The icon sits dead centre of the ability cell at the fleet's one drawn size. Its scale
+            // is applied by VesselHUDView through AbilityIconRestScale, so it composes with the
+            // upgrade bump and survives every per-vessel tween.
+            iconRT.anchorMin = iconRT.anchorMax = iconRT.pivot = new Vector2(0.5f, 0.5f);
+            iconRT.anchoredPosition = Vector2.zero;
+
+            RetireLegacyChrome(host);
+        }
+
+        /// <summary>
+        /// Switches off the button plate the card replaces - the decagon
+        /// <c>Ability Background Small</c> that the Sparrow, Squirrel and Scarab draw behind their
+        /// icons. Left on, it sits behind the totem as a second, differently-shaped plate.
+        ///
+        /// <para>A disabled Graphic no longer raycasts, so a button whose target it was would stop
+        /// taking touches. The card's plate takes that job instead, which also means the touch area
+        /// now matches the shape the player can see.</para>
+        /// </summary>
+        void RetireLegacyChrome(RectTransform host)
+        {
+            var legacy = host.GetComponent<Image>();
+            if (!legacy || !legacy.enabled) return;
+
+            _retiredChrome.Add(legacy);
+            legacy.enabled = false;
         }
 
         Slot BuildSlot(Element element, Image icon)
@@ -182,6 +289,7 @@ namespace CosmicShore.UI
             slot.Plate = ResolveChildImage(card, "Plate", style.plateSprite);
             StretchTo(slot.Plate.rectTransform, 0f);
             slot.Plate.color = style.plateColor;
+            AdoptButtonTarget(card, slot.Plate);
 
             slot.Divider = ResolveChildImage(card, "Divider", null);
             var dRT = slot.Divider.rectTransform;
@@ -309,6 +417,25 @@ namespace CosmicShore.UI
             }
 
             slot.Tween = seq;
+        }
+
+        /// <summary>
+        /// Hands the host button its new visual. Only touches a button whose target graphic was the
+        /// legacy plate we just switched off - a vessel that points its button somewhere deliberate
+        /// keeps it.
+        /// </summary>
+        void AdoptButtonTarget(RectTransform card, Image plate)
+        {
+            var host = card.parent as RectTransform;
+            if (!host) return;
+
+            var button = host.GetComponent<Button>();
+            if (!button) return;
+
+            if (button.targetGraphic && !_retiredChrome.Contains(button.targetGraphic as Image)) return;
+
+            button.targetGraphic = plate;
+            plate.raycastTarget = true;   // the card is the touch target now, so it must be hittable
         }
 
         Image ResolveChildImage(RectTransform parent, string childName, Sprite sprite)

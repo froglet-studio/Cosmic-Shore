@@ -20,14 +20,17 @@ namespace CosmicShore.Editor
     /// that CAN still be wrong, and that nothing else catches:</para>
     ///
     /// <list type="number">
-    /// <item>The shared style is authored and internally sane - sprites wired, and the kerning
-    /// actually leaves negative space rather than overflowing the card.</item>
-    /// <item><b>Per-vessel FIT.</b> One content scale serves the whole fleet, so it has to suit
-    /// every vessel's icon size. A vessel whose icons are authored much larger than the Dolphin's 80
-    /// would still overflow the plate after kerning - the card is fixed at
-    /// <see cref="AbilityLockupStyleSO.plateWidth"/> while the icon size is per-prefab. That is the
-    /// one number this style cannot absorb on its own, and it is invisible until someone flies that
-    /// vessel.</item>
+    /// <item>The shared style is authored and internally sane - sprites wired, and the drawn icon
+    /// actually leaves negative space inside the card rather than overflowing it.</item>
+    /// <item><b>What each vessel is being NORMALISED away from.</b> The lockup overwrites row
+    /// position, pitch, cell size, host scale and icon size at runtime, so a prefab can no longer
+    /// make the row diverge - but the divergence is still sitting in the asset, and anyone reading
+    /// the prefab will believe it. This lists it: icon sizes that differ (the Dolphin authors 96 on
+    /// one slot and 80 on three), hosts scaled away from 1 (the Squirrel's 0.7), rows anchored in a
+    /// different container (the Sparrow and Scarab), and the legacy decagon plate the card
+    /// replaces.</item>
+    /// <item>The one thing the lockup CANNOT normalise: an icon whose authored size cannot be read
+    /// (a stretch anchor with no laid-out rect), because the drawn scale is derived from it.</item>
     /// </list>
     ///
     /// Runs entirely on assets - no play mode, no writes. Reuses the runtime geometry accessors on
@@ -104,17 +107,32 @@ namespace CosmicShore.Editor
             int problems = 0;
             report.AppendLine($"STYLE  card {style.plateWidth}x{style.PlateHeight}  " +
                               $"(ability cell {style.abilityCellHeight}, element cell {style.petalCellHeight})  " +
-                              $"iconContentScale {style.iconContentScale}  flower {style.petalFlowerSize}");
+                              $"icon {style.iconBoxSize}  flower {style.petalFlowerSize}  " +
+                              $"pitch {style.cardPitch}  margin R{style.rowMarginRight}/B{style.rowMarginBottom}");
 
             if (!style.plateSprite) { report.AppendLine("  ✗ no plateSprite - the card has no body."); problems++; }
             if (!style.rimSprite)   { report.AppendLine("  ✗ no rimSprite - no resting hairline and no upgrade rim."); problems++; }
             if (!style.bloomSprite) { report.AppendLine("  ✗ no bloomSprite - the upgrade loses its glow."); problems++; }
 
-            // The flower must stay under the icon: the ability is the headline, the element qualifies it.
-            // Compared against the icon's DRAWN size, which is what a player actually sees.
             if (style.petalFlowerSize > style.petalCellHeight - 4f)
             {
                 report.AppendLine($"  ✗ flower {style.petalFlowerSize} does not fit its {style.petalCellHeight} cell.");
+                problems++;
+            }
+
+            float cell = Mathf.Min(style.plateWidth, style.abilityCellHeight);
+            float margin = (cell - style.iconBoxSize) * 0.5f;
+            if (margin < MinIconMarginPx)
+            {
+                report.AppendLine($"  ✗ an icon drawn at {style.iconBoxSize} in a {cell} cell leaves " +
+                                  $"{margin:0.#} of air (min {MinIconMarginPx}); the corner sliver alone eats 12.");
+                problems++;
+            }
+
+            if (style.petalFlowerSize >= style.iconBoxSize)
+            {
+                report.AppendLine($"  ✗ flower {style.petalFlowerSize} is not smaller than the drawn icon " +
+                                  $"{style.iconBoxSize} - the hierarchy inverts.");
                 problems++;
             }
             return problems;
@@ -122,10 +140,13 @@ namespace CosmicShore.Editor
 
         static int AuditVesselFit(string vessel, VesselHUDView view, AbilityLockupStyleSO style, StringBuilder report)
         {
-            var sizes = new List<(Element element, Vector2 size)>();
+            var sizes = new List<(Element element, float size, bool readable)>();
             foreach (var element in VesselHUDView.AbilityDisplayOrder)
                 if (view.TryGetAbilityIcon(element, out var icon) && icon)
-                    sizes.Add((element, IconSize(icon.rectTransform)));
+                {
+                    float authored = AuthoredIconSize(icon.rectTransform, out bool readable);
+                    sizes.Add((element, authored, readable));
+                }
 
             if (sizes.Count == 0)
             {
@@ -133,41 +154,37 @@ namespace CosmicShore.Editor
                 return 1;
             }
 
-            float widest = sizes.Max(s => Mathf.Max(s.size.x, s.size.y));
-            float drawn = widest * style.iconContentScale;
-            float cell = Mathf.Min(style.plateWidth, style.abilityCellHeight);
-            float margin = (cell - drawn) * 0.5f;
-
-            bool uniform = sizes.All(s => Mathf.Approximately(s.size.x, sizes[0].size.x)
-                                       && Mathf.Approximately(s.size.y, sizes[0].size.y));
-
-            string flowerNote = drawn <= style.petalFlowerSize
-                ? "  ⚠ flower is NOT smaller than the drawn icon - the hierarchy inverts here."
-                : "";
-
-            if (margin < MinIconMarginPx)
+            int problems = 0;
+            var unreadable = sizes.Where(x => !x.readable).ToList();
+            if (unreadable.Count > 0)
             {
-                report.AppendLine($"  {vessel,-10} ✗ icon {widest} → drawn {drawn:0.#} in a {cell} cell " +
-                                  $"leaves {margin:0.#} of air (min {MinIconMarginPx}). " +
-                                  "Lower iconContentScale, or widen the card.");
-                return 1;
+                report.AppendLine($"  {vessel,-10} ✗ cannot read the authored size of " +
+                                  string.Join(", ", unreadable.Select(u => u.element)) +
+                                  " - the lockup derives each icon's drawn scale from it, so those " +
+                                  "slots would draw at their authored size instead of the fleet's.");
+                problems++;
             }
 
-            report.AppendLine($"  {vessel,-10} ✓ {sizes.Count} icon(s) {(uniform ? "uniform" : "MIXED size")} " +
-                              $"{widest} → drawn {drawn:0.#}, {margin:0.#} of air each side, " +
-                              $"flower {style.petalFlowerSize}.{flowerNote}");
-            return uniform ? 0 : 0;   // mixed sizes are reported, not failed: the fit test already covers the risk
+            var distinct = sizes.Select(x => Mathf.Round(x.size)).Distinct().ToList();
+            string normalising = distinct.Count > 1
+                ? $"icons {string.Join("/", distinct.Select(d => d.ToString("0")))} → all drawn at {style.iconBoxSize}"
+                : $"icons {distinct[0]:0} → drawn at {style.iconBoxSize}";
+
+            report.AppendLine($"  {vessel,-10} ✓ {sizes.Count} slot(s); {normalising}. " +
+                              "Row position, pitch, cell size and host scale are taken over by the lockup.");
+            return problems;
         }
 
         /// <summary>
         /// A prefab's rect is not laid out, so a point-anchored icon's size is its sizeDelta and a
         /// stretch-anchored one has to fall back to whatever rect it carries.
         /// </summary>
-        static Vector2 IconSize(RectTransform rt)
+        static float AuthoredIconSize(RectTransform rt, out bool readable)
         {
-            if (rt.anchorMin == rt.anchorMax) return rt.sizeDelta;
-            var r = rt.rect.size;
-            return r.sqrMagnitude > 1f ? r : rt.sizeDelta;
+            var size = rt.anchorMin == rt.anchorMax ? rt.sizeDelta : rt.rect.size;
+            if (size.sqrMagnitude < 1f) size = rt.sizeDelta;
+            readable = size.sqrMagnitude > 1f;
+            return Mathf.Max(size.x, size.y);
         }
 
         static IEnumerable<string> VesselPrefabPaths() =>
