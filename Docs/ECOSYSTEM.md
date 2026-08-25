@@ -6687,3 +6687,86 @@ In-editor:
    config, so a mature cell should show visibly more Time plants than Charge/Mass/Space.
 3. Confirm no cell reaches Frenzy earlier than it did — the ladder is untouched, but Time colonies
    now arrive at their share of the volume sooner.
+
+## 39. A prefab that predates a field-set refactor keeps its DEAD keys and silently loses the live one (Aug 2026)
+
+**The rule: when a component's serialized field set is refactored, Unity does not migrate the
+prefabs that were authored against the old one — it keeps every key it cannot resolve and simply
+leaves the new required one absent.** The prefab still opens, still spawns, still passes every
+static check, and the only evidence is a runtime log line from whatever guard the component
+happens to carry. `QuadFish.prefab` sat in that state long enough to ship into three modes.
+
+Its `LightFauna` component was still serialized against the pre-`LightFaunaDataSO` shape:
+`healthPrism`, `spindle`, `healthBlocksForMaturity`, `minHealthBlocks`, `shieldPeriod`,
+`onLifeFormCreated`, `onLifeFormDestroyed`, `Population` — none of which the class has declared
+for a long time — plus the eight tuning floats that later moved *into* `LightFaunaDataSO`. Every
+one of those keys is inert. The one key that matters, `data`, was never written, so
+`LightFauna.Initialize` hit its guard and returned:
+
+```
+LightFauna on QuadFish(Clone) is missing LightFaunaDataSO.
+```
+
+**The early return is TOTAL, not partial** — that is the half worth remembering, because a
+"missing config" error reads like "it will use defaults":
+
+| Skipped in `Initialize` | Consequence |
+|---|---|
+| `CacheBodyPrisms()` → `HealthPrism.Initialize` | `PrismScaleAnimator.Awake` zeroes `localScale` and only `Prism.Initialize` grows it — so all four body prisms stayed at **scale 0**: invisible, never registered in `PrismSpatialIndex`, never stamped `OwnerFauna` |
+| `LifeFormCrystal.EnsureElementalCrystal` | no heart — it could not satisfy §23's *every lifeform drops one elemental crystal* on any death path |
+| `StartCoroutine(UpdateBehaviorCoroutine())` + the initial `currentVelocity` | never swam, grazed, fled, reproduced or starved |
+
+Cost: **Wildlife Liberation** seeds 383 of them (cap 893) — 74% of that mode's 519-creature roster,
+in a mode scored on kills; the **Boneyard scavengers** shared by Dog Fight and Salvo seed 60
+(cap 150); plus the four `QuadFish Fauna *` species assets on the Lifeform Matrix bench. Twelve
+`FaunaConfigurationSO` assets point at the one component.
+
+Fixed by authoring `_SO_Assets/Light Fauna Data/QuadFishFaunaDataSO.asset` and migrating the
+prefab block to the ten fields `Fauna` + `LightFauna` actually serialize. Two adjacent defects
+came out with it: `cellData` referenced guid `16d80244…`, which **no asset in the project
+carries and none ever did** (repointed at `Runtime Cell Data`), and a stripped `HealthPrism`
+stub survived whose only referrer was the deleted `healthPrism` field.
+
+### 39.1 The tuning could not be inherited, because two of the stranded floats cannot work
+
+The eight floats stranded in the prefab are the only authored intent that existed for this
+species, and two of them are unusable against the current model — so the values derive from the
+shipped herbivore sibling (`MassBrittleStarFaunaDataSO`) instead, keeping the stranded
+`consumeRadius 40` and `goalWeight 1.5` verbatim:
+
+| field | stranded | shipped | why |
+|---|---:|---:|---|
+| `separationRadius` | 4 | 30 | **smaller than the fish** — its quad spans ~9×7 world units and its own body prisms sit 5.85 out, so separation could only engage between fish already interpenetrating |
+| `minSpeed` / `maxSpeed` | 3 / 6 | 16 / 28 | a ~6-minute crossing of an 1180u arena, where a bottom-crawling brittlestar swims 15–25. `maxSpeed` stays under the shark's 35 so the predator can still close |
+| `behaviorUpdateRate` | 1 | 2 | both siblings tick at 2s; this is the most populous species in the game and the tick is a per-creature `OverlapSphere` + spatial-index query |
+| `detectionRadius` | 100 | 70 | 100 is the shark's number; 70 is the herbivore's, and the swarm is 7× the brittlestar's headcount |
+
+**`LightFauna` speed is set ONCE and then held**, which is why the stranded 3/6 was permanent
+rather than something the sim recovers from: `UpdateBehavior` declares `averageSpeed`, divides by
+`neighborCount` and clamps — but **never accumulates into it**, so the `averageSpeed > 0` branch is
+dead and the clamp always sees `currentVelocity.magnitude`, i.e. the `Random.Range(minSpeed,
+maxSpeed)` rolled at `Initialize`. The boid "match neighbours' velocity" rule it was written for
+was never wired. Harmless (the clamp keeps every creature in its authored band) but worth knowing
+before tuning a speed and expecting the swarm to converge on it.
+
+Collider budget: **unchanged.** The prefab carried four body prisms before and after; nothing is
+added, removed or resized.
+
+### 39.2 Two follow-ups this uncovered
+
+1. **The Wildlife Liberation roster understates the QuadFish 4×.**
+   `Tools/Build/wildlife_cage_budget.py`'s `ROSTER` declares its `prisms` column "measured from
+   the prefabs" and gives QuadFish **1**; the prefab carries **4** (the brittlestar's 10 matches;
+   the shark measures 10 against a declared 11). At cap that is 3,572 body prisms rather than 893
+   — the fauna half of the budget goes 4,155 → 6,834 and the totals 13,361–18,111 → 16,040–20,790.
+   Correcting it is a separate change because `fauna_totals` is printed into an authored
+   description string by `author_wildlife_liberation_assets.py`, so the fix is: correct both
+   measurements, re-run the generator and the budget script, then update both tables in
+   `WILDLIFE_LIBERATION.md` **and** its verification step 7, which still tells a tester to shoot a
+   tadpole (removed in the same pass that gave QuadFish the swarm role).
+2. **Seven other files carry the same dangling `cellData` guid** (`16d80244…`): the Clawfish,
+   oldWallFlora and TermiteDrone prefabs, both cytoplasm prefabs, and two multiplayer scenes.
+   `Fauna` already tolerates it by design — `hostCell` is the primary and `cellData` only the
+   hostless fallback, and `Fauna.RaiseFaunaHeartsChanged` carries the note saying so in as many
+   words (*"several fauna prefabs author cellData null or dangling"*) — so this is tidying
+   rather than a defect.
