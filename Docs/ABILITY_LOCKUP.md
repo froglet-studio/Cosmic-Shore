@@ -150,6 +150,14 @@ writing `fillAmount` on the very same Image** — no gameplay wiring changes, on
 draws. Colour is a default the vessel is free to keep driving where colour carries meaning (the
 Squirrel's boost tints to the pilot's domain).
 
+**It is inset inside the slant band, not laid flush over it.** The track is drawn *after* the plate
+and, at `gaugeCellFraction 1`, is exactly the same trapezoid — so at full width it painted over the
+plate's band and that card silently lost its edge. Only the cards that actually *bind a meter*,
+which is why it showed up on the Squirrel's Charge slot alone. Everything laid on a plate now insets
+by `PlateEdgeReach` (`slantEdgeThickness + slantEdgeAntialias`), so the band **frames** the meter —
+the better read anyway. General shape of the bug worth remembering: *a decoration that exactly
+covers the thing beneath it is invisible until something else needs what is underneath.*
+
 **It is masked to the trapezoid, not reshaped into one.** A `Filled` Image is a rectangle, so on a
 tapering plate it would overhang by up to `trapezoidInset` per side at the base. The fill is drawn
 through a `GaugeClip` — a `TrapezoidGraphic` carrying a `Mask` — which shapes it exactly while
@@ -159,6 +167,14 @@ no business owning. Cost is two extra draw calls on a card that HAS a meter; thr
 carry one today. The track's own taper is **derived from the plate at the track's top**, not assumed
 to be the full width — identical at `gaugeCellFraction 1`, which is why that seam would have stayed
 invisible until someone lowered the fraction.
+
+**A hidden hint set is never placed, and every set change re-places.** Unity does not lay out
+inactive hierarchies, so placing a hidden device set's glyphs measured a stale or zero parent rect
+and baked a wrong anchor into them — which is why switching pad → keyboard → pad brought the pad
+glyphs back somewhere else. `TryApplyAbilityPlacement` now skips anything not
+`activeInHierarchy`, and `ApplySet` re-arms placement every time a set is shown, so each set is
+placed from live rects on the frame it appears. That also makes the placement self-healing against
+anything that moves the row later.
 
 **A meter is regularly authored on the WRONG card, and the build is ordered around that.** The
 Squirrel's boost fill sits under its *skimming* button and the Scarab's ball-energy ring under its
@@ -315,9 +331,9 @@ so `enforceStandardPlacement` stays `1` fleet-wide and no other vessel is affect
 | `slantEdgeThickness` / `slantEdgeWrap` / `slantEdgeAntialias` | 3 / 14 / 1 | the band on the sloped sides only, how far it wraps around each corner (the whole grade lives on that wrap), and the zero-alpha feather baked on both sides — the antialiasing. `thickness + antialias` must stay ≤ `trapezoidInset` |
 | `petalFlowerSize` | 60 | element flower — authored EQUAL to `iconBoxSize`, because mirrored plates give both marks the same negative space. Guard band: `0.75 ≤ flower/icon ≤ 1.0` |
 | `iconBoxSize` | 60 | the ONE drawn size for every vessel's icons; each icon's scale is derived from it. Multiplies the upgrade bump rather than replacing it |
-| `cardPitch` | 137.7 | centre-to-centre card spacing — one number for the fleet |
-| `rowMarginRight` / `rowMarginBottom` | 65.1 / 53 | where the row sits, from the screen's bottom-right corner |
-| `chipHeight` / `chipGap` | 24 / 8 | the control chip's socket below the card. `chipGap + chipHeight` must stay under `rowMarginBottom` or every label clips off the screen |
+| `cardPitch` | 116 | centre-to-centre card spacing — one number for the fleet. Authored as `plateWidth + 2 × cellGap`, so the space **between** totems is exactly twice the space **within** one |
+| `rowMarginRight` / `rowMarginBottom` | 40 / 44 | where the row sits, from the screen's bottom-right corner. `rowMarginBottom` measures to the **ability plate**, and the chip hangs below it — the row's real bottom margin is `rowMarginBottom − chipGap − chipHeight` (14px) |
+| `chipHeight` / `chipGap` | 24 / 6 | the control chip's socket below the card. `chipGap` is authored **equal to `cellGap`** — the chip is a third element in the same stack, so it clears the ability plate by the same distance the element plate does. `chipGap + chipHeight` must stay under `rowMarginBottom` or every label clips off the screen |
 | `gaugeCellFraction` | 1 | how much of the ability cell the linear gauge fills |
 | `bloomPadding` | 26 | how far the upgraded bloom reaches past the card |
 | `plateColor` | `#060810` @0.86 | resting fill. Borderless — there is no resting outline, by design |

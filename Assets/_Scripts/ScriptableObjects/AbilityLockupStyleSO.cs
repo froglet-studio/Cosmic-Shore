@@ -74,22 +74,29 @@ namespace CosmicShore.ScriptableObjects
         [Min(1f)] public float iconBoxSize = 60f;
 
         [Header("Row (the lockup owns the whole row, on every vessel)")]
-        [Tooltip("Centre-to-centre distance between cards. One number for the fleet - a vessel cannot " +
-                 "space its own row.")]
-        [Min(1f)] public float cardPitch = 137.7f;
+        [Tooltip("Centre-to-centre distance between cards. One number for the fleet - a vessel " +
+                 "cannot space its own row. Authored as plateWidth + 2x cellGap, so the space " +
+                 "BETWEEN totems is exactly twice the space WITHIN one: the same relationship as " +
+                 "inter-word against inter-letter spacing, and what makes four cards read as four " +
+                 "objects rather than one strip.")]
+        [Min(1f)] public float cardPitch = 116f;
 
         [Tooltip("Distance from the screen's RIGHT edge to the right edge of the last card.")]
-        public float rowMarginRight = 65.1f;
+        public float rowMarginRight = 40f;
 
-        [Tooltip("Distance from the screen's BOTTOM edge to the bottom of the ability cell.")]
-        public float rowMarginBottom = 53f;
+        [Tooltip("Distance from the screen's BOTTOM edge to the bottom of the ability plate. The " +
+                 "CONTROL CHIP hangs below that, so this must clear chipGap + chipHeight or every " +
+                 "label falls off the screen - the row's real bottom margin is the remainder.")]
+        public float rowMarginBottom = 44f;
 
         [Tooltip("Height of the control chip below the card. The chip is placed by the lockup, so a " +
                  "vessel can no longer author its own offset for the (LT)/(RT) label.")]
         [Min(1f)] public float chipHeight = 24f;
 
-        [Tooltip("Gap between the bottom of the card and the control chip.")]
-        [Min(0f)] public float chipGap = 8f;
+        [Tooltip("Gap between the bottom of the card and the control chip. Authored EQUAL to " +
+                 "cellGap: the chip is a third element in the same stack, so it should sit off the " +
+                 "ability plate by the same distance the element plate does.")]
+        [Min(0f)] public float chipGap = 6f;
 
         [Tooltip("How far the bloom extends past the plate on every side.")]
         [Min(0f)] public float bloomPadding = 26f;
@@ -205,6 +212,12 @@ namespace CosmicShore.ScriptableObjects
         /// ONE number, mirrored - the element plate narrows upward, the ability plate downward - so
         /// the slant can never disagree between the two halves of one totem.
         /// </summary>
+        /// <summary>
+        /// How far the slant band reaches inward from a plate's outline. Anything drawn ON a plate
+        /// that is not meant to cover the band - the gauge and its clip - insets by this.
+        /// </summary>
+        public float PlateEdgeReach => slantEdgeThickness + slantEdgeAntialias;
+
         public float NarrowEdgeFraction =>
             plateWidth > 0.01f ? Mathf.Clamp01((plateWidth - trapezoidInset * 2f) / plateWidth) : 1f;
 

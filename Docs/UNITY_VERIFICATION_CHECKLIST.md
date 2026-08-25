@@ -3108,3 +3108,19 @@ slant are both non-zero, the icon clears the narrow edge, the plates face each o
    deliberate while the numbers are being tuned; the PNG bake path is in
    `Docs/ABILITY_LOCKUP.md` § "Finalizing: the PNG bake" and should be taken once the look is
    signed off.
+
+**Update — gauge inset, tighter row, chip placement (this round). NOT EDITOR-VERIFIED.**
+
+1. **Every card has its band, including the one with a meter.** The gauge track exactly covered the
+   ability plate at `gaugeCellFraction 1`, so it painted over the band — visible only on a card
+   that binds a meter, which is why it showed on the Squirrel's **Charge** slot alone. The gauge is
+   now inset 4px inside the band. **Verify on Squirrel Charge, Sparrow Time and Scarab Space**: the
+   band is present, and the meter reads as sitting inside it rather than replacing it.
+2. **Tighter row.** Pitch 137.7 → 116 (12px between cards, exactly 2× the 6px gap inside a totem),
+   right margin 65.1 → 40, bottom margin 53 → 44 (chip bottom 21px → 14px). Check the row does not
+   crowd the screen edge on a 16:9 and that four cards still read as four objects, not one strip.
+3. **Control chips.** `chipGap` 8 → 6, matching `cellGap`, so the glyph clears the ability plate by
+   the same distance the element plate does. **The device-switch test is the point**: go pad →
+   keyboard → pad and confirm the pad glyphs return to *exactly* the same place. They are now
+   placed only while visible and re-placed on every set change, because Unity does not lay out
+   inactive hierarchies and the old code baked a stale rect into hidden sets.

@@ -334,11 +334,25 @@ namespace CosmicShore.UI
             // at gaugeCellFraction 1, which is why the seam was invisible until someone lowered it.
             float gaugeTopEdge = Mathf.Lerp(narrow, 1f, gaugeFrac);
 
-            slot.GaugeTrack = ResolveTrapezoid(card, "GaugeTrack", gaugeTopEdge, narrow);
-            SetCellRect(slot.GaugeTrack.rectTransform, gaugeY, style.plateWidth, gaugeH);
+            // INSET inside the slant band. The track is drawn after the plate and, at
+            // gaugeCellFraction 1, is exactly the same trapezoid - so at full width it painted over
+            // the plate's band and the card lost its edge. That is invisible on three cards out of
+            // four and shows up only on whichever slot a vessel happens to bind a meter to.
+            // Insetting makes the band FRAME the meter, which is the better read anyway.
+            float d = style.PlateEdgeReach;
+            float gaugeW = style.plateWidth - d * 2f;
+            var gauge = new PlateRect(
+                width: gaugeW,
+                height: Mathf.Max(1f, gaugeH - d * 2f),
+                centreY: gaugeY,
+                topEdge: gaugeW > 0.01f ? (style.plateWidth * gaugeTopEdge - d * 2f) / gaugeW : 1f,
+                bottomEdge: gaugeW > 0.01f ? (style.plateWidth * narrow - d * 2f) / gaugeW : 1f);
+
+            slot.GaugeTrack = ResolveTrapezoid(card, "GaugeTrack", gauge.TopEdge, gauge.BottomEdge);
+            SetCellRect(slot.GaugeTrack.rectTransform, gauge.CentreY, gauge.Width, gauge.Height);
             slot.GaugeTrack.color = Color.clear;
 
-            slot.GaugeClip = ResolveGaugeClip(card, gaugeTopEdge, narrow, gaugeY, gaugeH);
+            slot.GaugeClip = ResolveGaugeClip(card, gauge);
 
             if (slot.Locked) BuildLockedMark(card, abilityY);
 
@@ -366,8 +380,18 @@ namespace CosmicShore.UI
         /// <para>Costs two extra draw calls on a card that HAS a meter (stencil in, stencil out).
         /// Three cards fleet-wide carry one today, so it is six.</para>
         /// </summary>
-        RectTransform ResolveGaugeClip(RectTransform card, float top, float bottom,
-                                       float gaugeY, float gaugeH)
+        /// <summary>The rect + taper of something laid on a plate, already inset inside its band.</summary>
+        readonly struct PlateRect
+        {
+            public readonly float Width, Height, CentreY, TopEdge, BottomEdge;
+            public PlateRect(float width, float height, float centreY, float topEdge, float bottomEdge)
+            {
+                Width = width; Height = height; CentreY = centreY;
+                TopEdge = Mathf.Clamp01(topEdge); BottomEdge = Mathf.Clamp01(bottomEdge);
+            }
+        }
+
+        RectTransform ResolveGaugeClip(RectTransform card, PlateRect rect)
         {
             const string name = "GaugeClip";
             var clip = card.Find(name) as RectTransform;
@@ -380,14 +404,14 @@ namespace CosmicShore.UI
             }
 
             var shape = clip.GetComponent<TrapezoidGraphic>();
-            shape.SetEdges(top, bottom);
+            shape.SetEdges(rect.TopEdge, rect.BottomEdge);
             shape.color = Color.white;          // the stencil reads ALPHA; colour is irrelevant
             shape.raycastTarget = false;
 
             var mask = clip.GetComponent<Mask>();
             mask.showMaskGraphic = false;       // the track already draws the shape
 
-            SetCellRect(clip, gaugeY, style.plateWidth, gaugeH);
+            SetCellRect(clip, rect.CentreY, rect.Width, rect.Height);
             return clip;
         }
 

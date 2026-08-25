@@ -122,7 +122,9 @@ namespace CosmicShore.Editor
                               $"wrap {style.slantEdgeWrap} " +
                               $"(narrow edge {style.NarrowEdgeFraction:0.###} of wide)  " +
                               $"icon {style.iconBoxSize}  flower {style.petalFlowerSize}  " +
-                              $"pitch {style.cardPitch}  margin R{style.rowMarginRight}/B{style.rowMarginBottom}");
+                              $"pitch {style.cardPitch} (gap {style.cardPitch - style.plateWidth:0.#})  " +
+                              $"margin R{style.rowMarginRight}/B{style.rowMarginBottom}  " +
+                              $"gauge inset {style.PlateEdgeReach}");
 
             // The plates are generated geometry, so the bloom is the only sprite left - and with the
             // rim retired it is also half the upgrade signal, which makes a missing one worse than
@@ -171,6 +173,29 @@ namespace CosmicShore.Editor
             {
                 report.AppendLine("  ✗ the slant band has no antialias feather - a generated diagonal " +
                                   "gets none from the canvas, so it will stair-step.");
+                problems++;
+            }
+
+            float betweenCards = style.cardPitch - style.plateWidth;
+            if (betweenCards <= style.cellGap)
+            {
+                report.AppendLine($"  ✗ cards sit {betweenCards:0.#} apart but a totem's own plates sit " +
+                                  $"{style.cellGap} apart - the row groups the wrong way and four cards " +
+                                  "read as one strip.");
+                problems++;
+            }
+            if (!Mathf.Approximately(style.chipGap, style.cellGap))
+            {
+                report.AppendLine($"  ✗ chipGap {style.chipGap} has drifted from cellGap {style.cellGap} - " +
+                                  "the chip is a third element in the same stack and should clear the " +
+                                  "plate by the same distance the element plate does.");
+                problems++;
+            }
+            if (style.PlateEdgeReach <= 0f && style.slantEdgeThickness > 0f)
+            {
+                report.AppendLine("  ✗ the gauge would sit flush with the plate outline and paint over " +
+                                  "the slant band - the card loses its edge, but only on slots that " +
+                                  "actually bind a meter.");
                 problems++;
             }
 

@@ -150,11 +150,41 @@ namespace CosmicShore.Tests
         }
 
         [Test]
-        public void Row_IsSpacedWiderThanTheCardsAreWide()
+        public void Row_SpacesCardsFurtherApartThanTheirOwnPlates()
         {
             var s = Load();
             Assert.Greater(s.cardPitch, s.plateWidth,
                 "cards would overlap: the row pitch is narrower than a card");
+
+            // The space BETWEEN totems must beat the space WITHIN one, or four cards read as one
+            // strip - the same relationship as inter-word against inter-letter spacing.
+            float betweenCards = s.cardPitch - s.plateWidth;
+            Assert.Greater(betweenCards, s.cellGap,
+                $"cards sit {betweenCards} apart but a totem's own plates sit {s.cellGap} apart - " +
+                "the row would group the wrong way");
+        }
+
+        [Test]
+        public void ControlChip_SitsOffTheCardByTheSameGapThePlatesUse()
+        {
+            var s = Load();
+            // The chip is a third element in the same vertical stack, so it should clear the ability
+            // plate by exactly the distance the element plate does.
+            Assert.AreEqual(s.cellGap, s.chipGap, 0.001f,
+                "the control chip's gap has drifted from the gap between the plates");
+        }
+
+        [Test]
+        public void Gauge_SitsInsideTheSlantBandRatherThanOverIt()
+        {
+            var s = Load();
+            // The gauge track is drawn AFTER the plate and, at gaugeCellFraction 1, is the same
+            // trapezoid - so at full width it paints over the plate's band and that card silently
+            // loses its edge. Only the cards that HAVE a meter, which is how it hid.
+            Assert.Greater(s.PlateEdgeReach, 0f,
+                "the gauge would sit flush with the plate outline and cover the band");
+            Assert.Less(s.PlateEdgeReach * 2f, s.plateWidth * 0.25f,
+                "the gauge is inset so far it no longer reads as filling the plate");
         }
 
         [Test]

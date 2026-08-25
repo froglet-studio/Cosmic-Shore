@@ -245,9 +245,18 @@ namespace CosmicShore.UI
             }
         }
 
-        // Placement needs a laid-out canvas, which may not exist on the frame the vessel spawns, so
-        // it retries for a short while. Inactive set roots are placed too - switching sets later must
-        // not need any extra work.
+        /// <summary>
+        /// Placement needs a laid-out canvas, which may not exist on the frame the vessel spawns, so
+        /// it retries for a short while.
+        ///
+        /// <para><b>Only VISIBLE hints are placed</b>, and <see cref="ApplySet"/> re-arms this every
+        /// time a set is shown. Unity does not lay out inactive hierarchies, so placing a hidden
+        /// set's glyphs measured a stale or zero parent rect and baked a wrong anchor into them -
+        /// which is exactly why switching pad → keyboard → pad brought the pad glyphs back somewhere
+        /// else. A hidden set is left alone entirely; it gets placed, from live rects, on the frame
+        /// it is shown. That also makes the placement self-healing against anything that moves the
+        /// row later, since every set change recomputes from scratch.</para>
+        /// </summary>
         void TryApplyAbilityPlacement()
         {
             if (!_placementPending) return;
@@ -260,7 +269,7 @@ namespace CosmicShore.UI
                 {
                     if (hint?.AbilityTarget == null) continue;
                     var rt = HintRect(hint);
-                    if (!rt) continue;
+                    if (!rt || !rt.gameObject.activeInHierarchy) continue;   // placed when shown
                     if (!PlaceOnAbilityIcon(rt, hint.AbilityTarget, hint.ResolvedOffset))
                         allPlaced = false;
                     else
@@ -489,8 +498,9 @@ namespace CosmicShore.UI
                 foreach (var hint in visuals.hints)
                     if (hint != null) { hint.Lit = false; hint.Applied = false; }
 
-            // A root that was inactive when the hints were bound had no laid-out rect, so re-place
-            // now that this one is active and measurable.
+            // The set that just became visible has never been placed against a live rect - hidden
+            // hierarchies are skipped by TryApplyAbilityPlacement precisely so a stale one can never
+            // be baked in. Re-arm so it is placed on the next frame, every time.
             _placementPending = true;
             _placementAttempts = 0;
         }
