@@ -199,9 +199,14 @@ namespace CosmicShore.Gameplay
             if (nudge.sqrMagnitude < 1e-4f)
                 nudge = ship.right * rollSign;
 
-            CSDebug.Log($"[BarrelRoll] Triggered: {(rollSign > 0f ? "CW" : "CCW")}, " +
-                        $"stick ({stick.x:F2}, {stick.y:F2}), nudge dir {nudge.normalized}" +
-                        (restricted ? " (stopped — dodge)" : string.Empty));
+            // Channelled, not unconditional: a finished ability must not log once per input.
+            // IsVerbose first because the message interpolates (a [Conditional] method still
+            // evaluates its arguments in the Editor).
+            if (CSDebug.IsVerbose(CSLogChannel.SparrowStrafingRoll))
+                CSDebug.LogVerbose(CSLogChannel.SparrowStrafingRoll,
+                    $"[BarrelRoll] Triggered: {(rollSign > 0f ? "CW" : "CCW")}, " +
+                    $"stick ({stick.x:F2}, {stick.y:F2}), nudge dir {nudge.normalized}" +
+                    (restricted ? " (stopped — dodge)" : string.Empty));
 
             SetRollCharge(RollChargeState.Spent);
             transformer.ModifyVelocity(nudge.normalized * nudgeSpeed, rollDurationSeconds,

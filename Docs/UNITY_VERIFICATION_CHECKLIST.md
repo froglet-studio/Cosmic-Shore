@@ -114,6 +114,11 @@ eases in and out with the spin and the authored degrees land exactly.
    nothing sets the flag on them — confirm their banking is unchanged.
 6. **Interrupt safety.** Trigger a roll and immediately swap vessels / disable the ship; the next
    vessel must bank normally (the flag is cleared in `OnDisable` and `ResetTransformer`).
+7. **Console is quiet.** The per-roll `[BarrelRoll] Triggered:` line moved onto the new
+   `CSLogChannel.SparrowStrafingRoll` (off by default) — it was logging unconditionally on every
+   input for a finished ability, the same spam `ScarabDash` records for the sibling. Turn it on in
+   **FrogletTools > Toolbox > Logging** while verifying steps 1-5; it prints direction, the stick
+   vector and the nudge, which is the cheapest way to confirm the 0.3 s window is gating.
 
 ---
 
