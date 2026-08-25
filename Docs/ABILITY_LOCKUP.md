@@ -42,10 +42,17 @@ a waist.
 
 **The two plates are the same height** (88 / 88), which makes the totem a true mirror image about
 the gap. Unequal plates — the first pass ran 62 above 104 — stack into a tall lopsided hexagon that
-reads as a coffin rather than a totem. Nothing is lost by mirroring them: **the hierarchy lives in
-the marks, not in the plates** (flower 44 against icon 60), so the element still reads as
-qualifying the ability while the shape gains its symmetry. `PlateImbalance` is asserted at ≤25% by
-both the auditor and the tests, because a single field edit can put the coffin back silently. House motif is **soft-hard-soft** — bloom (soft) around flat, radius-0 plates (hard)
+reads as a coffin rather than a totem. `PlateImbalance` is asserted at ≤25% by both the auditor and
+the tests, because a single field edit can put the coffin back silently.
+
+**And the two marks are the same size too** (60 / 60). Mirrored plates present each mark with the
+same negative space, so an equal mark in each is what makes the pair kern as one object. *This
+supersedes an earlier rationale here* — the first mirroring pass kept the flower at 44 "because the
+hierarchy lives in the marks, not the plates". That was wrong in practice: against a mirrored plate
+a smaller flower does not read as hierarchy, it reads as the upper plate being under-filled. Nothing
+was ever telling the two apart by size anyway — they are different *kinds* of mark (a five-petal
+meter and a solid glyph) in fixed columns. The guard is now a band, `0.75 ≤ flower/icon ≤ 1.0`:
+larger inverts the row, much smaller is the under-filled read. House motif is **soft-hard-soft** — bloom (soft) around flat, radius-0 plates (hard)
 carrying the icon.
 
 **The gap is the divider and the silhouette is the frame.** A hairline between two halves of one
@@ -56,13 +63,39 @@ where two borderless *rectangles* would read as a list. **The upgrade is a bloom
 plus a lift in their fill** — with no rim, those two are the whole signal, which is why the upgraded
 plate now lifts much further from the resting one than it did when the rim carried the change.
 
-**A thin graded edge rides the two sloped sides.** Solid across the middle of each slant, graded to
-nothing before it reaches the top or bottom — so it accents the two edges that carry the shape's
-identity and **never closes into a border**. That is the distinction worth keeping: the rim (a
-closed outline around everything) stays retired; this is an edge on the slants only. It is generated
-into the *same mesh* as the plate — one draw call for an edged plate — with per-vertex alpha, and
-its alpha multiplies the plate's own so a fade takes both together. `slantEdgeThickness` must stay
-at or below `trapezoidInset` or the hairline reads as a chamfer.
+**A graded band rides the two sloped sides.** Solid for the *whole length* of each slant, then
+**wrapping around both corners** onto the horizontals where it grades to nothing — so it accents the
+two edges that carry the shape's identity and **never closes into a border**. That is the
+distinction worth keeping: the rim (a closed outline around everything) stays retired; this is an
+edge on the slants only, and the plate's core stays transparent behind it.
+
+Wrapping is what makes the corner readable. A gradient that died *on* the slant left the corner
+itself unlit, which reads as the shape being unfinished rather than as an accent; putting the whole
+grade on the wrap means the slant is solid end to end and the corner is the brightest part of it.
+
+**Antialiasing is baked into the geometry.** A canvas gives a generated diagonal no AA at all, so a
+3px diagonal strip is pure stair-steps without help. The band is emitted as three quads across its
+width — a zero-alpha feather outside, the solid core, a zero-alpha feather inside — and the
+bilinear interpolation between those vertex alphas *is* the antialiasing, at no texture cost. It is
+generated into the *same mesh* as the plate, so an edged plate is still one draw call, and its alpha
+multiplies the plate's own so a fade takes both together. `slantEdgeThickness + slantEdgeAntialias`
+must stay at or below `trapezoidInset` or the band reads as a chamfer.
+
+### Finalizing: the PNG bake
+
+The generated plates cost **~200 vertices per card, ~800 per row** (48 per band side, ×2 sides, ×2
+plates, plus 4 for each fill). That is small for UI and it is what makes the shape *tunable* — every
+number above is live. Once the numbers are final, swap geometry for texture:
+
+1. Render `LockupPlateElement.png` and `LockupPlateAbility.png` at 2× (208 × 176), each carrying its
+   fill, its wrapped band and its baked AA. The aspect is fixed fleet-wide, so neither needs a
+   9-slice; a plain `Image` at `Type.Simple` is exact.
+2. Replace each plate's `TrapezoidGraphic` with an `Image` — 4 verts, one draw call, no per-frame
+   mesh build.
+3. **The clips still need the shape, and a PNG serves them too**: `Mask` reads alpha, so the gauge
+   and cooldown clips can carry the same ability-plate sprite.
+4. Keep `TrapezoidGraphic` in the tree as the generator the PNGs were baked from — it is how the
+   next retune is done, and re-deriving it from the sprites would not be possible.
 
 **The plates are generated, not sprited** (`TrapezoidGraphic`, one small `MaskableGraphic` in the
 shape of `BlastProfileGraphic`). A trapezoid has no 9-slice — slanted edges do not tile — so a
@@ -279,8 +312,8 @@ so `enforceStandardPlacement` stays `1` fleet-wide and no other vessel is affect
 | `cellGap` | 6 | gap between the two plates. This IS the divider — a real gap is what lets the plates be borderless |
 | `abilityCellHeight` | 88 | lower plate, centred on the existing icon |
 | `petalCellHeight` | 88 | upper plate, added ABOVE. **Keep it equal to the ability plate** — unequal plates read as a coffin; the hierarchy lives in the marks, not the plates |
-| `slantEdgeThickness` / `slantEdgeFade` | 1.5 / 0.34 | the hairline on the sloped sides only, and how much of each side it spends fading in and out. Thickness must stay ≤ `trapezoidInset` |
-| `petalFlowerSize` | 44 | element flower; keep BELOW the icon's DRAWN size (60) |
+| `slantEdgeThickness` / `slantEdgeWrap` / `slantEdgeAntialias` | 3 / 14 / 1 | the band on the sloped sides only, how far it wraps around each corner (the whole grade lives on that wrap), and the zero-alpha feather baked on both sides — the antialiasing. `thickness + antialias` must stay ≤ `trapezoidInset` |
+| `petalFlowerSize` | 60 | element flower — authored EQUAL to `iconBoxSize`, because mirrored plates give both marks the same negative space. Guard band: `0.75 ≤ flower/icon ≤ 1.0` |
 | `iconBoxSize` | 60 | the ONE drawn size for every vessel's icons; each icon's scale is derived from it. Multiplies the upgrade bump rather than replacing it |
 | `cardPitch` | 137.7 | centre-to-centre card spacing — one number for the fleet |
 | `rowMarginRight` / `rowMarginBottom` | 65.1 / 53 | where the row sits, from the screen's bottom-right corner |
@@ -292,7 +325,7 @@ so `enforceStandardPlacement` stays `1` fleet-wide and no other vessel is affect
 | `upgradedPlateColor` | `#1C1F2B` @0.92 | the plate's lift. Raised well clear of the resting fill because, with the rim retired, this and the bloom are the WHOLE upgrade signal |
 | `lockedMarkThickness` | 2 | thickness of the locked slot's placeholder bar |
 | `slantEdgeColor` / `upgradedSlantEdgeColor` | `#82879C` @0.85 / `#F5F5FF` | the slant edge at rest and upgraded |
-| `cooldownVeilColor` | `#060810` @0.72 | the radial veil swept over a recharging ability |
+| `cooldownVeilColor` | `#060810` @0.72 | the radial veil swept over a recharging ability. It sweeps **clockwise** — note that this needs `fillClockwise = false` on the Image, because the veil DEPLETES: the flag names the direction the wedge is drawn, and the edge the player watches is its far end travelling the other way |
 | `cooldownReadyFlashColor` / `cooldownReadyFlashDuration` | `#F5F5FF` @0.5 / 0.32 | the beat the player is waiting for — must be louder than an ordinary press flash |
 | `gaugeTrackColor` / `gaugeFillColor` | `#161822` @0.9 / `#3882FF` @0.55 | the meter. The fill must out-read its own track in luminance, or the gauge is invisible — asserted by both the auditor and the tests |
 | `lockedPlateColor` / `lockedMarkColor` | `#060810` @0.55 / `#5C5F70` @0.55 | an undesigned slot. Must stay QUIETER than a live card, or the row advertises abilities that do not exist |
@@ -342,11 +375,14 @@ notches inside the trapezoid.
 10. **Rhino.** Fly a Rhino: four cards, Mass live (Trail Slabs) and the other three drawn locked —
     quieter plate, a short hairline where the icon would be, no gauge track — with the element
     flowers docked above all four. No old ability-icon UI left in the corner.
-11. **Balance + edge.** Both plates the same height, mirrored about the gap — no coffin. A thin
-    bright line down each sloped side, solid in the middle and dissolved before the top and bottom
-    corners, on both plates; **no line across the top or bottom of either plate.**
-12. **Cooldown (Squirrel Time).** Fire the Boost Ring: a dark veil sweeps radially off the card,
-    over the icon, and clears with a bright flash when it comes back. The icon itself must NOT sink,
+11. **Balance + band.** Both plates the same height AND both marks the same size, mirrored about
+    the gap — no coffin, and neither plate looking under-filled. A white band down each sloped side,
+    **solid the whole length including the corners**, wrapping a short way onto the top and bottom
+    before dissolving; the plate's core stays transparent behind it. Look at the diagonals close up:
+    they must be smooth, not stair-stepped. **No band across the middle of the top or bottom edge.**
+12. **Cooldown (Squirrel Time).** Fire the Boost Ring: a dark veil sweeps **clockwise** off the
+    card, over the icon, and clears with a bright flash when it comes back. If it unwinds
+    anticlockwise, `fillClockwise` has been "corrected" back to true. The icon itself must NOT sink,
     rise, breathe, tint or wipe any more — if it does, the old animation is still wired.
 13. **Two readouts on one row.** Squirrel Charge shows the linear skim-energy fill; Squirrel Time
     shows the radial cooldown. Confirm they read as different things at a glance, which is the whole

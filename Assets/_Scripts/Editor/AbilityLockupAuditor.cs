@@ -118,7 +118,8 @@ namespace CosmicShore.Editor
             report.AppendLine($"STYLE  totem {style.plateWidth}x{style.PlateHeight}  " +
                               $"(ability plate {style.abilityCellHeight}, gap {style.cellGap}, element plate " +
                               $"{style.petalCellHeight}, imbalance {style.PlateImbalance:P0})  " +
-                              $"slant inset {style.trapezoidInset} edge {style.slantEdgeThickness} " +
+                              $"slant inset {style.trapezoidInset} edge {style.slantEdgeThickness}+{style.slantEdgeAntialias}aa " +
+                              $"wrap {style.slantEdgeWrap} " +
                               $"(narrow edge {style.NarrowEdgeFraction:0.###} of wide)  " +
                               $"icon {style.iconBoxSize}  flower {style.petalFlowerSize}  " +
                               $"pitch {style.cardPitch}  margin R{style.rowMarginRight}/B{style.rowMarginBottom}");
@@ -159,11 +160,17 @@ namespace CosmicShore.Editor
                                   "geometry and draw nothing.");
                 problems++;
             }
-            if (style.slantEdgeThickness > style.trapezoidInset)
+            if (style.slantEdgeThickness + style.slantEdgeAntialias > style.trapezoidInset)
             {
-                report.AppendLine($"  ✗ slantEdgeThickness {style.slantEdgeThickness} exceeds the " +
-                                  $"{style.trapezoidInset} slant it rides - the hairline would read " +
-                                  "as a chamfer instead of an edge.");
+                report.AppendLine($"  ✗ the slant band reaches " +
+                                  $"{style.slantEdgeThickness + style.slantEdgeAntialias} inward against a " +
+                                  $"{style.trapezoidInset} slant - it would read as a chamfer, not an edge.");
+                problems++;
+            }
+            if (style.slantEdgeThickness > 0f && style.slantEdgeAntialias <= 0f)
+            {
+                report.AppendLine("  ✗ the slant band has no antialias feather - a generated diagonal " +
+                                  "gets none from the canvas, so it will stair-step.");
                 problems++;
             }
 
@@ -197,10 +204,19 @@ namespace CosmicShore.Editor
                 problems++;
             }
 
-            if (style.petalFlowerSize >= style.iconBoxSize)
+            // Mirrored plates want equal marks: the same mark in each lands on the same negative
+            // space. Smaller is allowed, much smaller reads as an under-filled plate, larger inverts
+            // what the row is built around.
+            if (style.petalFlowerSize > style.iconBoxSize)
             {
-                report.AppendLine($"  ✗ flower {style.petalFlowerSize} is not smaller than the drawn icon " +
-                                  $"{style.iconBoxSize} - the hierarchy inverts.");
+                report.AppendLine($"  ✗ flower {style.petalFlowerSize} is drawn LARGER than the icon " +
+                                  $"{style.iconBoxSize}.");
+                problems++;
+            }
+            else if (style.petalFlowerSize < style.iconBoxSize * 0.75f)
+            {
+                report.AppendLine($"  ✗ flower {style.petalFlowerSize} against icon {style.iconBoxSize} - " +
+                                  "in mirrored plates that reads as the upper plate being under-filled.");
                 problems++;
             }
 

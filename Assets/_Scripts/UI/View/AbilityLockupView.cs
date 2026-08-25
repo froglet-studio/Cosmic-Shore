@@ -718,7 +718,14 @@ namespace CosmicShore.UI
             sweep.type = Image.Type.Filled;
             sweep.fillMethod = Image.FillMethod.Radial360;
             sweep.fillOrigin = (int)Image.Origin360.Top;
-            sweep.fillClockwise = true;
+
+            // fillClockwise FALSE is what makes the sweep read CLOCKWISE, which looks backwards
+            // until you remember the veil DEPLETES. The flag describes the direction the filled
+            // wedge is drawn from the origin; we animate fillAmount DOWNWARD, so the edge the player
+            // actually watches is the wedge's far end travelling the other way. Clockwise-true drew
+            // the wedge clockwise from the top and therefore retreated anticlockwise. False sweeps
+            // the cleared area clockwise out of the top, which is the classic cooldown read.
+            sweep.fillClockwise = false;
             sweep.preserveAspect = false;
             sweep.color = style.cooldownVeilColor;
 
@@ -794,15 +801,16 @@ namespace CosmicShore.UI
         /// inset, mirrored, so the two halves of a totem can never disagree about the slant.
         /// </summary>
         /// <summary>
-        /// The hairline on a plate's two SLOPED sides - solid across the middle, graded to nothing
-        /// before it reaches the top or bottom, so it accents the edges that carry the shape and
-        /// never closes into the border this style retired. A locked slot wears it at the locked
+        /// The band on a plate's two SLOPED sides - solid the whole length of each slant, wrapping
+        /// around both corners onto the horizontals and grading to nothing there, so it accents the
+        /// edges that carry the shape and never closes into the border this style retired. A locked slot wears it at the locked
         /// mark's colour, so an undesigned slot is quiet in every channel at once.
         /// </summary>
         void ApplySlantEdge(TrapezoidGraphic plate, bool locked, bool upgraded)
         {
             plate.EdgeThickness = style.slantEdgeThickness;
-            plate.EdgeFade = style.slantEdgeFade;
+            plate.EdgeWrap = style.slantEdgeWrap;
+            plate.EdgeAntialias = style.slantEdgeAntialias;
             plate.EdgeColor = locked ? style.lockedMarkColor
                                      : upgraded ? style.upgradedSlantEdgeColor
                                                 : style.slantEdgeColor;

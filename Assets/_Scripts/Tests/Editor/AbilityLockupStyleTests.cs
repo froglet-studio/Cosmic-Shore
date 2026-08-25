@@ -77,8 +77,11 @@ namespace CosmicShore.Tests
 
             Assert.Greater(s.slantEdgeColor.a, 0f,
                 "the slant edge has thickness but no opacity - geometry that draws nothing");
-            Assert.LessOrEqual(s.slantEdgeThickness, s.trapezoidInset,
-                "the edge is thicker than the slant it rides, so it reads as a chamfer, not a hairline");
+            Assert.LessOrEqual(s.slantEdgeThickness + s.slantEdgeAntialias, s.trapezoidInset,
+                "the band reaches further inward than the slant it rides, so it reads as a chamfer");
+            Assert.Greater(s.slantEdgeAntialias, 0f,
+                "no antialias feather - a generated diagonal gets none from the canvas and will " +
+                "stair-step; the feather IS the antialiasing");
             Assert.Greater(s.upgradedSlantEdgeColor.a, 0f, "the upgraded slant edge is transparent");
         }
 
@@ -118,13 +121,18 @@ namespace CosmicShore.Tests
         }
 
         [Test]
-        public void Flower_StaysSmallerThanTheDrawnIcon()
+        public void Marks_AreBalancedAgainstTheirMirroredPlates()
         {
             var s = Load();
-            Assert.Less(s.petalFlowerSize, s.iconBoxSize,
-                "the element flower must stay under the ability icon's DRAWN size - the ability is " +
-                "the headline and the element qualifies it. Shrinking the icon without shrinking " +
-                "the flower is how that hierarchy inverts unnoticed.");
+
+            // The plates are mirror images, so equal marks land on the SAME negative-space solution
+            // and the pair kerns as one object. Equality is the intent; the flower may be smaller
+            // but must never exceed the icon, which would invert what the row is built around.
+            Assert.LessOrEqual(s.petalFlowerSize, s.iconBoxSize,
+                "the element flower is drawn larger than the ability icon");
+            Assert.GreaterOrEqual(s.petalFlowerSize / s.iconBoxSize, 0.75f,
+                $"the flower ({s.petalFlowerSize}) is much smaller than the icon ({s.iconBoxSize}); " +
+                "in mirrored plates that reads as the upper plate being under-filled, not as hierarchy");
         }
 
         [Test]

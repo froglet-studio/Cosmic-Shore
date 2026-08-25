@@ -17,7 +17,7 @@ MonoBehaviour:
   cellGap: 6
   abilityCellHeight: 88
   petalCellHeight: 88
-  petalFlowerSize: 44
+  petalFlowerSize: 60
   iconBoxSize: 60
   cardPitch: 137.7
   rowMarginRight: 65.1
@@ -25,8 +25,9 @@ MonoBehaviour:
   chipHeight: 24
   chipGap: 8
   bloomPadding: 26
-  slantEdgeThickness: 1.5
-  slantEdgeFade: 0.34
+  slantEdgeThickness: 3
+  slantEdgeWrap: 14
+  slantEdgeAntialias: 1
   slantEdgeColor: {r: 0.51, g: 0.53, b: 0.61, a: 0.85}
   upgradedSlantEdgeColor: {r: 0.96, g: 0.96, b: 1, a: 1}
   gaugeCellFraction: 1

@@ -58,9 +58,13 @@ namespace CosmicShore.ScriptableObjects
                  "hierarchy lives in the MARKS (flower smaller than icon), not in the plates.")]
         [Min(1f)] public float petalCellHeight = 88f;
 
-        [Tooltip("Size of the element flower inside the upper cell. Keep it BELOW the ability icon's " +
-                 "drawn size: the ability is the headline, the element qualifies it.")]
-        [Min(1f)] public float petalFlowerSize = 44f;
+        [Tooltip("Size of the element flower inside the upper plate. Authored EQUAL to iconBoxSize: " +
+                 "the two plates are mirror images, so an equal mark in each lands on the same " +
+                 "negative-space solution and the pair kerns as one object. (An earlier pass drew " +
+                 "the flower smaller to keep the ability the 'headline'; with mirrored plates that " +
+                 "just made the top one look under-filled - the two marks are different KINDS of " +
+                 "thing, always in the same columns, so size was never what told them apart.)")]
+        [Min(1f)] public float petalFlowerSize = 60f;
 
         [Tooltip("The size EVERY vessel's ability icon is drawn at, whatever size its prefab authored. " +
                  "The lockup derives each icon's scale from this (iconBoxSize / its authored size), so " +
@@ -91,14 +95,20 @@ namespace CosmicShore.ScriptableObjects
         [Min(0f)] public float bloomPadding = 26f;
 
         [Header("Slant edge (sloped sides only)")]
-        [Tooltip("Thickness of the hairline drawn INSIDE each plate along its two sloped sides, " +
-                 "solid across the middle and graded to nothing before the top and bottom. It is " +
-                 "not a border - it never closes - so the plates stay borderless while the two " +
-                 "edges that carry the shape's identity get an accent. 0 = off.")]
-        [Min(0f)] public float slantEdgeThickness = 1.5f;
+        [Tooltip("Thickness of the band drawn INSIDE each plate along its two sloped sides. It is " +
+                 "not a border - it never closes - so the plate's core stays transparent while the " +
+                 "two edges that carry the shape's identity get an accent. 0 = off.")]
+        [Min(0f)] public float slantEdgeThickness = 3f;
 
-        [Tooltip("Fraction of each sloped side spent fading in at one end and out at the other.")]
-        [Range(0.01f, 0.5f)] public float slantEdgeFade = 0.34f;
+        [Tooltip("How far the band wraps around each corner onto the horizontal edges, in px. The " +
+                 "whole grade to nothing happens along that wrap, so the sloped side stays solid " +
+                 "end to end and the CORNER is lit rather than being where the accent died.")]
+        [Min(0f)] public float slantEdgeWrap = 14f;
+
+        [Tooltip("Width of the zero-alpha feather baked onto both sides of the band - the " +
+                 "antialiasing. A generated diagonal gets none from the canvas, so without this it " +
+                 "is stair-stepped. ~1px at the reference resolution.")]
+        [Min(0f)] public float slantEdgeAntialias = 1f;
 
         [Tooltip("Resting colour of the slant edge.")]
         public Color slantEdgeColor = new(0.51f, 0.53f, 0.61f, 0.85f);

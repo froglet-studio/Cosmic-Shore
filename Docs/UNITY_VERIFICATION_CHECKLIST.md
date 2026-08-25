@@ -3089,3 +3089,22 @@ slant are both non-zero, the icon clears the narrow edge, the plates face each o
 5. **Draw order.** The cooldown clip is parented to the HOST and pushed last, so it is the one
    lockup element in front of the icon. Confirm nothing else on the card got pushed in front of the
    icon by mistake, and that the mask has not clipped anything it should not.
+
+**Update — clockwise cooldown, wrapped + antialiased band, equal marks. NOT EDITOR-VERIFIED.**
+
+1. **Cooldown direction.** The veil must sweep **clockwise** off the card. This required
+   `fillClockwise = FALSE`, which looks like a bug until you remember the veil depletes — if
+   someone "fixes" it back to true it will unwind anticlockwise again.
+2. **The band.** Thicker (3px + 1px feather each side), **solid the whole length of each slant
+   including the corners**, wrapping 14px onto the top and bottom edges before dissolving. Check
+   three things at 100%: no band across the middle of a horizontal edge; the corners are lit rather
+   than being where the accent died; and the diagonals are smooth, not stair-stepped — that AA is
+   baked as vertex alpha, so if it stair-steps the feather is not reaching the mesh.
+3. **Plate core stays transparent.** The thicker band must not have been compensated for by making
+   the plate opaque — the arena still reads through the middle of every card.
+4. **Equal marks.** Flower and icon are both 60 now. Neither plate should look under-filled, and
+   the flower must not be larger than the icon.
+5. **Perf note, not a defect:** the plates are generated geometry, ~800 verts for the row. That is
+   deliberate while the numbers are being tuned; the PNG bake path is in
+   `Docs/ABILITY_LOCKUP.md` § "Finalizing: the PNG bake" and should be taken once the look is
+   signed off.
