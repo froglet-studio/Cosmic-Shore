@@ -9,7 +9,7 @@ namespace CosmicShore.Tests
     /// "the only thing that felt fun was huge projectiles". Rounds leave the muzzle small
     /// and swell as they travel; MASS decides how much. The bullets' shipped pair is 3× at
     /// resting Mass and 6× at Mass 10, extrapolated across the element system's [-5, 15]
-    /// band; the skyburst missile points at the SAME curve with its own 5×/8× pair.
+    /// band; the skyburst missile points at the SAME curve with its own 20×/32× pair.
     ///
     /// Lives under an Editor/ folder per CLAUDE.md — a test anywhere else compiles into the
     /// player and breaks the Windows build at the IL2CPP linker.
@@ -25,8 +25,8 @@ namespace CosmicShore.Tests
         // The same ONE curve with its own authored pair: the missile leaves the bay at the
         // size of the one the bay animation just ejected and swells into the warhead that
         // detonates.
-        const float MissileAtRest = 5f;
-        const float MissileAtFull = 8f;
+        const float MissileAtRest = 20f;
+        const float MissileAtFull = 32f;
 
         static float M(int level) => ElementalScaling.RoundGrowthFactorForLevel(level, MissileAtRest, MissileAtFull);
 
@@ -83,49 +83,68 @@ namespace CosmicShore.Tests
 
         // ------------------------------------------------------- the skyburst missile
 
+        // The missile's own geometry, measured rather than assumed: Sparrow Missile.fbx vertex
+        // bounds span 8.2951 mesh units along the nose axis and 1.9054 across it, at
+        // UnitScaleFactor 1 (Unity import factor 0.01), and the prefab flies the mesh at
+        // MissileVisual 2 × root ProjectileScale 10.
+        const float LaunchLength = 0.0829514f * 2f * 10f;   // ≈ 1.659 u
+        const float LaunchGirth  = 0.0190535f * 2f * 10f;   // ≈ 0.381 u
+        const float HitDiameter  = 0.85f * 10f * 2f;        // = 17 u (SphereCollider 0.85 × 10)
+
         [Test]
         public void TheMissileHitsItsOwnAuthoredAnchors()
         {
             // A different weapon with its own endpoints, but NOT its own curve — one home
             // (ElementalScaling.RoundGrowthFactorForLevel) for every round that grows.
-            Assert.AreEqual(5f, M(0), 1e-4f);
-            Assert.AreEqual(8f, M(10), 1e-4f);
-            Assert.AreEqual(3.5f, M(-5), 1e-4f);
-            Assert.AreEqual(9.5f, M(15), 1e-4f);
+            Assert.AreEqual(20f, M(0), 1e-4f);
+            Assert.AreEqual(32f, M(10), 1e-4f);
+            Assert.AreEqual(14f, M(-5), 1e-4f);
+            Assert.AreEqual(38f, M(15), 1e-4f);
         }
 
         [Test]
-        public void TheMissileNeverOutgrowsItsOwnHitSphere()
+        public void TheMissileIsBroadsideContainedByItsHitSphere()
         {
             // The skyburst grows its MODEL, not its collider (Projectile.flightGrowthTarget →
-            // MissileVisual), so growth walks a visual that was ~10× too small INTO the hit
-            // volume it already had. The authored ceiling is chosen so it never overshoots:
-            // past the hit sphere the round would start claiming reach it does not have.
+            // MissileVisual), so no amount of growth changes what it hits. What growth CAN do
+            // is make the model disagree with the hit volume, and at the shipped 20× it does —
+            // deliberately, and asymmetrically, which is the part worth pinning:
             //
-            // Measured, not assumed: Sparrow Missile.fbx vertex bounds span 8.2951 mesh units
-            // along the nose axis at UnitScaleFactor 1 (Unity import factor 0.01), and the
-            // prefab flies it at MissileVisual 2 × root ProjectileScale 10.
-            const float launchLength = 0.0829514f * 2f * 10f;   // ≈ 1.659 u
-            const float hitDiameter  = 0.85f * 10f * 2f;        // = 17 u (SphereCollider 0.85)
-
-            Assert.That(launchLength, Is.LessThan(hitDiameter),
-                "the missile already launches inside its own hit sphere");
-
+            //   GIRTH is contained. Even at full overcharge the missile is 14.5 u across
+            //   against a 17 u hit diameter, so a round crossing your view never looks wider
+            //   than the volume that would have caught you. This is the read that matters for
+            //   a near miss, and it is the one held here.
+            //
+            //   LENGTH is not, and cannot be: a 20× missile is 33 u nose to tail. The nose
+            //   therefore reaches ~8 u past the hit sphere (~23 u at Mass 15), so it visually
+            //   arrives a fraction of a second before the hit registers. Accepted as the cost
+            //   of the authored size — see SPARROW_SKYBURST_BAY.md.
             for (int level = -5; level <= 15; level++)
-                Assert.That(launchLength * M(level), Is.LessThan(hitDiameter),
-                    $"grown missile length at Mass level {level}");
+                Assert.That(LaunchGirth * M(level), Is.LessThan(HitDiameter),
+                    $"grown missile girth at Mass level {level}");
 
-            // ...and at rest it arrives at the hit RADIUS, which is the read the pair was
-            // authored for: by the time it lands, the model is the size of the thing that
-            // detonates rather than a speck inside it.
-            Assert.AreEqual(hitDiameter / 2f, launchLength * M(0), 0.5f);
+            // The headroom left in the girth is what bounds a future retune: past ~44.6× the
+            // round would look wider than it hits in every direction, which is where the
+            // mismatch stops being a nose-overhang and starts being a lie.
+            Assert.That(M(15), Is.LessThan(HitDiameter / LaunchGirth),
+                "the top of the Mass band must stay inside the broadside budget");
+        }
+
+        [Test]
+        public void TheMissileNoseOverhangIsWhatWeThinkItIs()
+        {
+            // Pinned because it is the one thing the size buys that a player can be surprised
+            // by. Nose-to-hit-sphere overhang, per end, in world units.
+            Assert.AreEqual(8.09f, (LaunchLength * M(0) - HitDiameter) / 2f, 0.05f);
+            Assert.AreEqual(23.02f, (LaunchLength * M(15) - HitDiameter) / 2f, 0.05f);
         }
 
         [Test]
         public void TheMissileGrowsMoreThanABulletDoes()
         {
             // Deliberate: a bullet launches at a size you can already see; the missile
-            // launches at bay size (~1.7 u) inside a 17 u hit sphere and has further to go.
+            // launches at bay size (~1.7 u) inside a 17 u hit sphere and has further to go —
+            // and unlike a bullet it does all of it in the first fifth of the flight.
             for (int level = -5; level <= 15; level++)
                 Assert.That(M(level), Is.GreaterThan(G(level)), $"level {level}");
         }

@@ -15,16 +15,20 @@ namespace CosmicShore.Gameplay
         [SerializeField] ElementalFloat projectileTime;
 
         [Header("Round Growth (MASS)")]
-        [Tooltip("How many times its launch size the round swells to by the END of its flight, " +
-                 "at RESTING Mass (level 0). The skyburst leaves the bay at the size of the " +
-                 "missile the bay animation just ejected and swells into the warhead that will " +
-                 "detonate — the same in-flight growth the Sparrow's bullets have. 1 = no growth.")]
-        [SerializeField, Min(0.01f)] float growthFactorAtRestingMass = 5f;
+        [Tooltip("How many times its launch size the round swells to, at RESTING Mass " +
+                 "(level 0). The skyburst leaves the bay at the size of the missile the bay " +
+                 "animation just ejected and swells into the warhead that will detonate — the " +
+                 "same in-flight growth the Sparrow's bullets have. 1 = no growth.\n\n" +
+                 "WHEN it reaches this size is the projectile's business, not the action's: " +
+                 "the missile prefab's Flight Growth Complete At is 0.2, so it swells over the " +
+                 "first fifth of its flight and holds.")]
+        [SerializeField, Min(0.01f)] float growthFactorAtRestingMass = 20f;
 
         [Tooltip("The same factor at Mass level 10. Linear in level and extrapolated across the " +
-                 "whole [-5, 15] band, so at the shipped 5/8 a starved Mass level (-5) grows 3.5x " +
-                 "and full overcharge (15) grows 9.5x.")]
-        [SerializeField, Min(0.01f)] float growthFactorAtFullMass = 8f;
+                 "whole [-5, 15] band, so at the shipped 20/32 a starved Mass level (-5) grows " +
+                 "14x and full overcharge (15) grows 38x. Author both endpoints equal to take " +
+                 "Mass out of it and fly one fixed size.")]
+        [SerializeField, Min(0.01f)] float growthFactorAtFullMass = 32f;
 
         [Header("Bay Launch")]
         [Tooltip("Seconds between the fire input (which starts the missile-bay animation) and the " +
@@ -52,9 +56,10 @@ namespace CosmicShore.Gameplay
         /// the vessel launches grows with it. Charge still owns the skyburst's BLAST radius —
         /// different quantity, different element.
         ///
-        /// What the growth is applied TO is the projectile's business
-        /// (<c>Projectile.flightGrowthTarget</c>): the skyburst grows its missile MODEL and
-        /// leaves its hit sphere alone, so this factor is a look, not a reach.
+        /// This is HOW MUCH. WHAT grows and WHEN are the projectile's business
+        /// (<c>Projectile.flightGrowthTarget</c> / <c>flightGrowthCompleteAt01</c>): the
+        /// skyburst grows its missile MODEL over the first fifth of its flight and then holds,
+        /// so this factor is a look, not a reach — its hit sphere is untouched.
         /// </summary>
         public float ResolveGrowthFactor(IVesselStatus status)
             => ElementalScaling.RoundGrowthFactor(status, growthFactorAtRestingMass, growthFactorAtFullMass);

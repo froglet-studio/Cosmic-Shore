@@ -4907,6 +4907,7 @@ MonoBehaviour:
   friendlyFire: 1
   flightGrowthTarget: {fileID: 4620259339888721002}
   flightGrowthUniform: 1
+  flightGrowthCompleteAt01: 0.2
   _themeManagerData: {fileID: 11400000, guid: d45a23e6bd2da304988606fba6c97628, type: 2}
 --- !u!114 &2638094848372366872
 MonoBehaviour:

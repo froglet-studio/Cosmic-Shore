@@ -61,6 +61,15 @@ namespace CosmicShore.Gameplay
                  "width is what a hit volume is made of, length is just the streak.")]
         [SerializeField] private bool flightGrowthUniform = false;
 
+        [Tooltip("What FRACTION of the flight the swell takes. 1 (default) = the round is " +
+                 "still growing when it arrives, so its size reports how far it has come — " +
+                 "the full-auto tracer.\n\n" +
+                 "Below 1 it reaches full size that early and HOLDS for the rest of the " +
+                 "flight. The skyburst missile is 0.2: it swells over the first fifth (~0.6 s, " +
+                 "~70 u from the bay) and then flies as the thing it will arrive as, so what " +
+                 "you are looking at from the moment it clears the hull is the real round.")]
+        [SerializeField, Range(0.01f, 1f)] private float flightGrowthCompleteAt01 = 1f;
+
         [Header("Data Containers")]
         [SerializeField] private ThemeManagerDataContainerSO _themeManagerData;
 
@@ -429,6 +438,7 @@ namespace CosmicShore.Gameplay
             if (growthTarget != transform)
                 growthTarget.localScale = _growthTargetAuthoredScale;
 
+            _flightGrowthSettled = false;
             _launchScale = growthTarget.localScale;
             _launchSweepRadius = _sweepRadius;
 
@@ -556,7 +566,10 @@ namespace CosmicShore.Gameplay
 
                     // Grow BEFORE the step is swept, so this frame's hit volume is the size the
                     // round has actually reached rather than the one it left the muzzle at.
-                    if (_flightGrowthFactor != 1f)
+                    // Latched: a round that finished swelling early holds a size that will not
+                    // change again, and re-writing that transform every frame for the rest of
+                    // the flight would dirty its hierarchy for nothing.
+                    if (_flightGrowthFactor != 1f && !_flightGrowthSettled)
                         ApplyFlightGrowth(elapsedTime / projectileTime);
 
                     Vector3 sweepFrom = t.position;
@@ -651,6 +664,7 @@ namespace CosmicShore.Gameplay
         float _flightGrowthFactor = 1f;
         Vector3 _launchScale = Vector3.one;
         Vector3 _growthTargetAuthoredScale = Vector3.one;
+        bool _flightGrowthSettled;
         float _launchSweepRadius = 0.5f;
 
         /// <summary>
@@ -684,13 +698,18 @@ namespace CosmicShore.Gameplay
         /// **A CHILD target grows nothing but photons.** It carries no collider and feeds no
         /// sweep radius, so the round's reach — PhysX and swept alike — is exactly what it was
         /// before the growth was wired. That is the whole point for the skyburst, whose model
-        /// is ~10× smaller than its authored hit sphere in every axis: growing the model walks
-        /// it INTO the hit volume, while growing the root would have carried the mismatch up
-        /// with it and silently rewritten a Dog Fight missile's reach.
+        /// launches ~10× smaller than its authored hit sphere: growing the model walks it into
+        /// that hit volume, while growing the root would have silently rewritten a Dog Fight
+        /// missile's reach.
+        ///
+        /// **When it grows is <see cref="flightGrowthCompleteAt01"/>** — the whole flight
+        /// (the tracer, whose size therefore reports how far it has come) or an early window
+        /// it then holds (the missile). See <see cref="RoundGrowthRamp"/>.
         /// </summary>
         void ApplyFlightGrowth(float progress01)
         {
-            float g = Mathf.LerpUnclamped(1f, _flightGrowthFactor, Mathf.Clamp01(progress01));
+            float g = RoundGrowthRamp.At(progress01, _flightGrowthFactor, flightGrowthCompleteAt01);
+            _flightGrowthSettled = RoundGrowthRamp.IsComplete(progress01, flightGrowthCompleteAt01);
 
             var target = GrowthTarget;
             target.localScale = flightGrowthUniform
