@@ -794,6 +794,36 @@ everything inside every method the suite covers. Two mechanics that cost a cycle
 And prove the harness the way the table above was produced — inject each defect class you care
 about, confirm it fires, restore, `cmp`. A run that only ever passes is indistinguishable from a
 run that cannot fail.
+### Technique: when you WIDEN a pure function, pin the old behaviour as a whole-domain test
+
+Extending a formula — a two-stage curve becoming four, a flag gaining a mode, a cap gaining a
+second cap — always ships with the claim *"and everything that doesn't opt in is unchanged."*
+That claim is free to make, invisible to review, and the single most likely thing to be wrong,
+because the new branch structure has to reproduce the old one exactly rather than approximately.
+
+Make it a test, and make it cover the whole domain rather than a few sample points:
+
+```csharp
+for (float t = 0f; t <= 30f; t += 0.05f)
+    Assert.AreEqual(OldFormula(t), New(t, optedOutStages), 1e-5f, $"held {t}s");
+```
+
+Three things that turn it from a formality into a real gate:
+
+- **Test every opt-out half INDEPENDENTLY.** A guard like `rate > 0 && headroom > 0` has two
+  ways to be off; a test that only zeroes both proves neither.
+- **Keep the old signature as an overload that constructs the opted-out case**, rather than
+  deleting it. Every existing caller then keeps compiling *and* is provably on the old curve,
+  so the blast radius of the change is exactly "the assets that authored the new fields."
+- **Report the measured delta, not "identical".** Run the old closed form alongside in a driver
+  and print `max |Δ|`; `0` is a fact, "should be equivalent" is a hope. (This session's staged
+  gun-spread curve measured exactly 0 over 20,001 samples — which is what made it safe to say
+  the change could not reach any other vessel.)
+
+Note for the `mcs` fallback: pass **`-langversion:latest`**. mcs 6.8 defaults to C# 7.0 and will
+reject `readonly struct` / `in` parameters that Unity's C# 9 accepts, which reads as a genuine
+error in your new file rather than as a harness limitation.
+
 ### Trap: a SHIELD's size is not the prism's size, and the two tiers scale DIFFERENTLY
 
 Origin: the Scarab wing dais (2026-08-18). A super-shielded "sun core" was sized so its

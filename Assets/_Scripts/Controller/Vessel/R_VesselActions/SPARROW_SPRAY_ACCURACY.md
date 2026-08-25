@@ -1,15 +1,17 @@
 # Sparrow — Spray Accuracy (the walking gun)
 
-> **The rule, in one line:** *hold the trigger and the cone opens — the danger zone grows and
-> your hands feel it; let go for an instant and you are pin-accurate again.*
+> **The rule, in one line:** *the first two seconds of every pull are perfect; hold past them and
+> the cone opens, levels off at a spread you can still fight in, and then — if you never let go —
+> blows out to five times that. Let go for an instant and you are pin-accurate again.*
 
 The Sparrow's cannons are a **saturation** weapon, not a marksman's rifle.
 
 | you do | you get |
 |---|---|
-| tap the trigger (≤ 0.12 s) | a perfectly accurate burst — a scalpel, at a fraction of the volume |
-| hold it down | a cone that opens over ~1.6 s to a 1.5° cap, filled at **180 rounds/s** — nothing along the path survives, and the buzz in your hands climbs the whole way |
-| release and re-pull | full accuracy back, instantly. This is the "3-shot burst" the design asks for |
+| fire in disciplined bursts (≤ 2 s a pull) | **perfect** accuracy — a scalpel at 180 rounds/s, for as long as you keep letting go |
+| hold past 2 s | the cone opens over the next 2 s to a **1.5°** cap and then **holds there for 2 s** — a danger zone you can still fight in, and the buzz in your hands climbs the whole way |
+| hold past 6 s | it **blows out**: the cone widens again, twice as fast, to **7.5°** at 10 s. You are no longer aiming at anything — you are denying a volume |
+| release and re-pull | full accuracy back, instantly, at any point on that curve. This is the "3-shot burst" the design asks for, and the only counter to the blow-out |
 | collect Mass crystals | rounds swell **harder** as they fly — 3× over a flight at rest, **6× at Mass 10**. The tracer stays a thin pale-blue needle; a see-through charge shell grows around it to exactly the hit radius, drawing **one** blue-and-danger-red bolt across a randomly-oriented great circle — a burst's worth of them is what draws the sphere. Huge projectiles, earned |
 
 ---
@@ -560,6 +562,91 @@ the report asked for.
 
 ---
 
+## Round 6 (2026-08-25): the cone is a FOUR-part curve, and the third part is a punishment
+
+Design request: *"a nonlinear curve with three parts — accurate for 2 seconds, then ramp up a bit
+slower than before and hold at the previous maximum for another 2 seconds, then ramp up again to
+5× the current max."*
+
+The single ramp only ever said one thing: **hold and you get worse, up to a point.** It reached
+that point at 1.62 s and then stopped having an opinion, so "held for two seconds" and "held for
+two minutes" were the same weapon and the only thing the trigger could express was *how much* you
+had already lost. The curve now has three things to say, in order.
+
+### The three beats
+
+| | window | half-angle | what the pilot is being told |
+|---|---|---|---|
+| **1. free** | 0 → **2 s** | 0° | *this is a marksman's rifle.* 360 rounds of pin-accurate fire per pull — a whole engagement, not a tap |
+| **2. opening** | 2 → **4 s** | 0° → **1.5°** | *your accuracy is going.* The buzz climbs in strength and cadence the whole way |
+| **3. sustainable** | 4 → **6 s** | **1.5°** (held) | *this is the gun's floor.* Wide enough to saturate a danger zone, narrow enough to still kill what you point at |
+| **4. blow-out** | 6 → **10 s** | 1.5° → **7.5°** | *you are not aiming any more.* Area denial, and nothing else |
+
+Sampled, at the shipped `firingRate 90` (180 rounds/s across two muzzles):
+
+| held | half-angle | group radius @ SPACE 0 (~72 u) | @ SPACE 10 (~645 u) | rounds spent |
+|---|---|---|---|---|
+| 0 – 2.0 s | **0°** | 0 u | 0 u | 360 |
+| 3.0 s | 0.75° | 0.9 u | 8.4 u | 540 |
+| 4.0 s | **1.50°** | 1.9 u | 16.9 u | 720 |
+| 6.0 s | **1.50°** | 1.9 u | 16.9 u | 1,080 |
+| 8.0 s | 4.50° | 5.7 u | 50.8 u | 1,440 |
+| 10.0 s → ∞ | **7.50°** | 9.5 u | 84.9 u | 1,800+ |
+
+### Why a plateau at all, rather than one long ramp
+
+Because a curve that only ever rises has no **band** in it, and a band is the part a pilot can
+learn. Stage 3 is a promise: *there is a spread you can fight at, and holding a little longer will
+not cost you more.* It is also what makes stage 4 legible — the cone stopping and then starting
+again is an unmistakable event, where a single continuous ramp of the same total travel would
+just be a slope nobody can locate.
+
+### Why the second ramp is FASTER than the first
+
+The first ramp is authored **slower** than the one it replaced (0.75 °/s against 1.0 °/s) because
+it now has 2 s of grace in front of it and should not feel abrupt when it finally arrives. The
+second is authored at **1.5 °/s** — double the first — so the failure *accelerates*. A gun that
+degrades at a constant rate reads as a design parameter; a gun that degrades faster the longer you
+hold reads as a gun losing control, which is the thing being punished. It is the whole reason the
+word "nonlinear" is in the request: the curve's slope is 0, then 0.75, then 0, then 1.5.
+
+### What this grants, and it is a lot
+
+**Two seconds of perfect accuracy is 360 rounds.** That is not a tap — it is most of a real
+engagement, and it makes the Sparrow a genuinely accurate weapon for any pilot with the
+discipline to pulse the trigger. The old 0.12 s onset (~22 rounds) made accuracy a reflex; this
+makes it a habit. Expect Dog Fight's point target and Salvo's prism target to both need
+re-checking in play — both are authored (FrogletTools ▸ Game Modes ▸ End Game Conditions), so
+retuning either is one field and no code.
+
+The counterweight is stage 4: a pilot who simply welds the trigger down now ends up at **five
+times** the spread they used to cap out at, and at high SPACE that is an 85-unit-radius circle.
+The gun did not get more forgiving — the forgiveness moved to the front and the punishment moved
+to the back.
+
+### The haptic ramp deliberately does NOT measure the blow-out
+
+`GunSprayAccuracy.Saturation01` still reads against the **sustainable** cap and pins at 1 for the
+whole blow-out. That is not an oversight: both haptic channels are already at their ceiling when
+the plateau is reached (strength 1.0, and the 45 ms interval is the floor NiceVibrations can hold
+without pulses cutting each other off), so there is no headroom left to spend, and re-scaling
+against the far cap would only make the first six seconds — the part a pilot actually flies in —
+read weaker. The buzz going flat *is* the stage-3 signal; the widening tracers are the stage-4
+one.
+
+### Back-compatibility is a test, not a claim
+
+`GunSpreadStages` is the parameter object the curve consumes, and a profile with no blow-out
+authored (`blowoutGrowthDegreesPerSecond = 0`, or a `blowoutMaxMultiplier` of 1) produces
+**bit-identical** output to the single-ramp formula this replaced —
+`Staged_WithoutASecondRamp_IsExactlyTheSingleRampCurve` proves it over the whole domain, both
+opt-out halves independently,
+and the four-argument `HalfAngleDegrees` overload is kept as exactly that case. So the blow-out is
+opt-in for any future gun, and this pass changed no behaviour anywhere except through the
+Sparrow's own asset.
+
+---
+
 ## The three moving parts
 
 ### 1. Rate of fire — 30 → 60 → **90 volleys/s** (180 rounds/s across two muzzles)
@@ -590,12 +677,33 @@ the same rounds downrange. The cap sustains the full rate down to ~23 fps.
 
 ### 3. The cone
 
-`GunSpreadMath.HalfAngleDegrees` — flat zero through the onset window, then linear, then hard
-capped:
+`GunSpreadMath.HalfAngleDegrees` — a **four-part piecewise curve**: flat, ramp, plateau,
+blow-out (see Round 6 for why it is four and not two):
 
 ```
-half-angle(t) = clamp( (t − onset) × growth , 0 , max )
+                                                       7.5° ┤          ╭────────────
+                                                            │        ╭─╯
+half-angle(t) =                                             │      ╭─╯
+  1. hold     0                        t < onset            │    ╭─╯
+  2. ramp     (t−onset) × growth       → the cap        1.5°┤────╯
+  3. plateau  cap                      for plateauSecs      │  ╭─╯
+  4. blow-out cap + excess × blowGrow  → blowout cap      0°┼──╯
+                                                            0   2  4  6   8  10   t (s)
 ```
+
+The shipped curve is `2 s free → 2 s opening → 2 s held → 4 s blowing out`, and the second ramp
+is authored at **twice** the first one's rate: the failure *accelerates*, which is what makes a
+too-long hold read as a gun losing control rather than one degrading evenly. Both caps are
+`Mathf.Min`-hard, and the curve is continuous at all three joins and monotonic non-decreasing
+everywhere (both proven in `GunSpreadMathTests`) — the cone may only ever widen while the
+trigger is down. **Accuracy comes back on RELEASE, which is `GunSprayAccuracy`'s job, not the
+curve's.**
+
+The blow-out is **authored as a multiple** of the sustainable cap (`blowoutMaxMultiplier`, 5×),
+never as a second absolute angle, so retuning the cap carries the blow-out with it and the two
+can never drift apart — one authored number per displayed quantity. A profile that authors no
+blow-out (zero rate, or a 1× multiplier) holds at the cap forever, which is **bit-identical** to
+the single-ramp curve this replaced; that equality is a test, not a claim.
 
 `GunSpreadMath.Perturb` deflects each round to a point inside that cone, sampling the deflection
 as `max × u^bias`. At the shipped **bias 0.5** that is *uniform over the cone's disc*: the whole
@@ -615,9 +723,18 @@ prisms. The serial is **monotonic across the session** and deliberately *not* re
 resetting it would make every trigger pull replay the same deflection sequence, which is a
 learnable pattern rather than a stochastic cone.
 
-Note the cap is an **angle**, so miss distance scales with range. A Sparrow at SPACE 0 shoots
-~72 u and groups within ~5 u; at SPACE 10 it shoots ~645 u and groups within ~45 u. That is
-correct — you are shooting nine times further.
+Note the caps are **angles**, so miss distance scales with range. A Sparrow at SPACE 0 shoots
+~72 u and groups within **1.9 u** at the plateau / **9.5 u** blown out; at SPACE 10 it shoots
+~645 u and groups within **16.9 u** / **84.9 u**. That is correct — you are shooting nine times
+further. It is also why the blow-out bites hardest exactly where a Sparrow is strongest: a
+high-SPACE pilot who never lets go is spraying an 85-unit-radius circle.
+
+> **Where those ranges come from, because the obvious arithmetic is wrong.** A round does not
+> fly `speed × projectileTime`. `Projectile.MoveProjectileAsync` scales each step by
+> `cos(π·t / 2T)`, so the round *decelerates to a stop* and the flight integrates to
+> **`speed × 2T/π`** — at `375 u/s × 0.3 s` that is **71.6 u**, not 112.5. (SPACE 10 is ×9:
+> `3375 × 0.191 = 644.6 u`.) Re-derive with the `2/π` factor before "correcting" any range
+> figure in this doc; it is the reason 72 and 645 look wrong and are not.
 
 ---
 
@@ -674,7 +791,7 @@ dogfighters and the Menu_Main autopilot all fire and none of them may buzz your 
 
 | File | Role |
 |---|---|
-| `_Scripts/Utility/GunSpreadMath.cs` | The pure cone math — ramp, hash-sampled deflection, roll-preserving `DeflectionOf`. No Unity state, no global RNG. |
+| `_Scripts/Utility/GunSpreadMath.cs` | The pure cone math — the four-stage curve, hash-sampled deflection, roll-preserving `DeflectionOf`. No Unity state, no global RNG. Also declares `GunSpreadStages`, the parameter object the curve consumes (six loose floats at a call site are transposable, and a transposed pair produces a plausible wrong curve rather than an error). |
 | `R_VesselActions/Data Containers/GunSpreadProfile.cs` | The authored profile (cone + haptic ramp). Serialized on the bullet action. |
 | `R_VesselActions/Executors/GunSprayAccuracy.cs` | Per-vessel hold state, the spread clock, the haptic ramp, and the deferred reset. |
 | `R_VesselActions/Data Containers/FullAutoActionSO.cs` | Owns `Spread` and the authored growth pair; `ResolveGrowthFactor` reads the shared curve. Hands the accuracy component to its executor. |
@@ -712,12 +829,15 @@ Everything that moves **both** fire modes lives on `FullAutoAction.asset`:
 | `firingRate` | **90** | Volleys/s for guns **and** turret. The single lever for volume of fire — and for the turret's permanent-mass rate. |
 | `growthFactorAtRestingMass` | **3** | How many times its launch cross-section a round swells to by the end of its flight at resting Mass. |
 | `growthFactorAtFullMass` | **6** | The same at Mass 10; the curve is linear in level and extrapolated to [-5, 15]. |
-| `spread.onsetSeconds` | **0.12** | Grace window of perfect accuracy at the start of every pull (~11 volleys / 22 rounds). Size it to the burst length that should stay surgical. |
-| `spread.growthDegreesPerSecond` | **1.0** | How fast the cone opens. Full at `onset + max/growth` ≈ **1.62 s**; only 0.88° after a full second. |
-| `spread.maxHalfAngleDegrees` | **1.5** | The cap (≈1.9 u radius at the SPACE-0 range of 72 u). Raise it and held fire starts missing what you aimed at; drop it to 0 to disable spread entirely (sanctioned opt-out). |
+| `spread.onsetSeconds` | **2.0** | **Stage 1.** Grace window of PERFECT accuracy at the start of every pull (~180 volleys / 360 rounds). Size it to the engagement length that should stay free. |
+| `spread.growthDegreesPerSecond` | **0.75** | **Stage 2.** How fast the cone opens. The first ramp takes `max/growth` = **2 s**, landing the cap at 4 s of unbroken fire. |
+| `spread.maxHalfAngleDegrees` | **1.5** | The SUSTAINABLE cap and the height of the plateau (≈1.9 u radius at the SPACE-0 range of 72 u). Raise it and held fire starts missing what you aimed at; drop it to 0 to disable spread entirely, blow-out included (sanctioned opt-out). |
+| `spread.plateauSeconds` | **2.0** | **Stage 3.** How long the cone HOLDS at the sustainable cap before blowing out. This is the band a pilot can fight in; 0 welds the two ramps into one kinked climb. |
+| `spread.blowoutGrowthDegreesPerSecond` | **1.5** | **Stage 4.** The second ramp's rate — deliberately 2× the first, so the failure accelerates. 0 is the opt-out: hold at the cap forever, exactly the single-ramp curve. |
+| `spread.blowoutMaxMultiplier` | **5** | The final cap, as a MULTIPLE of the sustainable one (→ 7.5°), so retuning the cap carries the blow-out with it. Full spread lands at **10 s**. 1 disables the blow-out. |
 | `spread.distributionBias` | **0.5** | 0.5 = uniform over the disc (even saturation). 1.0 = dense core + thin halo. |
 | `spread.hapticFloor01` | **0.15** | Buzz strength before any accuracy is lost — above zero so the gun is felt from round one. |
-| `spread.hapticIntervalAtRest` / `AtMaxSpread` | **0.10 / 0.045** | Pulse cadence at each end of the ramp. Keep the max-spread value above ~0.04 s: NiceVibrations holds one clip at a time, so pulses closer than the clip just cut each other off. |
+| `spread.hapticIntervalAtRest` / `AtMaxSpread` | **0.10 / 0.045** | Pulse cadence at each end of the ramp. Keep the max-spread value above ~0.04 s: NiceVibrations holds one clip at a time, so pulses closer than the clip just cut each other off. Both channels reach their ceiling at the **plateau**, not at the blow-out — see Round 6. |
 
 The charge shell's own dials are **not** here — they live on
 `_Graphics/Materials/ProjectileChargeFieldMaterial.mat`, because they are a look, not a weapon
@@ -771,11 +891,19 @@ Sparrow, fire on input 1.
 > (the `GamepadRumble` path drives Input System motors) or run on device. The **cone** is fully
 > visible on desktop — the tracers fan out — so the spread mechanic can be judged without one.
 
-1. **Tap accuracy.** Tap the trigger repeatedly. Every burst must be a tight line — no visible
-   fan at all. This is the onset window; if short taps spread, `onsetSeconds` is too small.
-2. **The cone opens.** Hold the trigger on a distant wall and watch the impacts: a point that
-   grows into a widening circle over ~1.4 s, then **stops growing**. If it never stops, the cap
-   is not being applied.
+1. **Burst accuracy.** Fire in pulls of under two seconds, repeatedly. Every burst must be a
+   tight line — no visible fan at all, ever. This is the onset window; if a sub-2 s pull spreads,
+   `onsetSeconds` is not being applied.
+2. **Stage 2 — the cone opens.** Hold the trigger on a distant wall and watch the impacts. A
+   point for **2 s**, then a circle that grows for the next **2 s**, then **stops growing**. If
+   it starts opening immediately, the onset window is not reaching the curve.
+2a. **Stage 3 — the plateau.** Keep holding. From 4 s to 6 s the circle must be visibly *static*
+   — this is the beat the whole shape rests on, and it is also the one most likely to be lost by
+   a mis-authored `plateauSeconds`.
+2b. **Stage 4 — the blow-out.** Keep holding past 6 s. The circle must start growing **again**,
+   noticeably faster than the first time, and stop for good at **10 s** roughly 5× wider. If it
+   never stops, `blowoutMaxMultiplier` is not being applied; if it never starts, the profile is
+   reading `blowoutGrowthDegreesPerSecond` as 0.
 3. **Release resets.** Hold until fully open, release for a fraction of a second, re-pull. The
    first rounds of the new pull must be dead-on again.
 4. **Stance flip does NOT reset.** Hold fire while flying, open the cone fully, then toggle
@@ -787,8 +915,10 @@ Sparrow, fire on input 1.
 6. **Rate.** 180 rounds/s should read as a solid stream. Then **cap the editor to 30 fps**
    (Game view ▸ or `Application.targetFrameRate = 30`) and confirm the stream looks the same
    density — that is the accumulator working. Before this pass it would have halved.
-7. **Haptic ramp** (gamepad/device). Hold the trigger: a light buzz from the first round that
-   climbs in strength *and* rate for ~1.6 s, then holds steady at the cap. Release → silence.
+7. **Haptic ramp** (gamepad/device). Hold the trigger: a light buzz from the first round, flat
+   through the 2 s grace, climbing in strength *and* rate from 2 s to 4 s, then **flat again for
+   the rest of the hold — blow-out included**. That flatness is correct and deliberate (Round 6);
+   it is the signal that the gun has nothing worse left to tell you. Release → silence.
 8. **Haptics stay legible.** While spraying, ram a prism with the hull — the punish **thud** must
    cut cleanly through the buzz. Confirm the buzz never plays for a remote player's Sparrow, an
    AI dogfighter, or the Menu_Main autopilot.
@@ -808,8 +938,8 @@ Sparrow, fire on input 1.
 
 - **Cross-peer turret prism placement.** The deflection is deterministic in the shot serial, so
   peers agree exactly as long as their shot counts agree — but the loops run on each peer's own
-  clock, so counts drift and the spread makes that drift *visible* (up to 4°) instead of
-  sub-degree. This is the same open item `SPARROW_TURRET_STANCE.md` already records ("the turret's
+  clock, so counts drift and the spread makes that drift *visible* (up to 7.5° once a hold blows
+  out) instead of sub-degree. This is the same open item `SPARROW_TURRET_STANCE.md` already records ("the turret's
   prism spawning is not networked at all today"); it settles when the stance becomes
   server-authoritative, not before.
 - **No HUD readout.** The cone is visible in the tracers and audible in the hands, but there is no

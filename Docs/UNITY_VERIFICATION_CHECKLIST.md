@@ -23,6 +23,57 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Sparrow — the spread cone becomes a four-stage curve with a blow-out (`claude/sparrows-gun-spread-curve-hacjka`, 2026-08-25)
+
+Authored without a Unity compile or play-test (remote session, no editor, no `unity` CLI binary in
+this environment). Every changed C# file **was** compiled for real, against a Unity/NUnit stub
+harness under Mono 6.8, and the whole `GunSpreadMathTests` suite was executed there — **27/27
+pass**, including the 16 pre-existing tests. What is unverified is Unity-side: the asset import,
+the inspector foldout, and the feel.
+
+**What landed.** `GunSpreadMath.HalfAngleDegrees` grew from a single ramp into a four-part
+piecewise curve — grace, ramp, plateau, blow-out — consumed through a new `GunSpreadStages`
+parameter object. `GunSpreadProfile` gained three authored fields (`plateauSeconds`,
+`blowoutGrowthDegreesPerSecond`, `blowoutMaxMultiplier`) and derives the blow-out cap from the
+sustainable one rather than authoring it twice. `GunSprayAccuracy` passes `_profile.Stages`.
+`FullAutoAction.asset` retuned: onset `0.12 → 2`, growth `1 → 0.75`, plus the three new keys.
+Files: `_Scripts/Utility/GunSpreadMath.cs`, `R_VesselActions/Data Containers/GunSpreadProfile.cs`,
+`R_VesselActions/Executors/GunSprayAccuracy.cs`,
+`_Scripts/Tests/Editor/GunSpreadMathTests.cs`, `_SO_Assets/VesselActions/Sparrow/FullAutoAction.asset`.
+
+**The shipped curve** (proven by running it, not by reading it):
+
+| held | half-angle |
+|---|---|
+| 0 – 2 s | 0° (perfect) |
+| 2 → 4 s | 0° → 1.5° at 0.75 °/s |
+| 4 → 6 s | 1.5° held |
+| 6 → 10 s | 1.5° → 7.5° at 1.5 °/s |
+| 10 s → ∞ | 7.5° (hard cap) |
+
+**Verify in editor**
+1. `FullAutoAction.asset` imports clean and the inspector shows a **Blow-out** foldout with
+   `plateauSeconds 2`, `blowoutGrowthDegreesPerSecond 1.5`, `blowoutMaxMultiplier 5`. A field
+   showing its C# default instead of the asset value means the YAML key did not bind.
+2. `MinigameDogFight`, Sparrow, hold fire on a distant wall and watch the impact circle through
+   all four stages: point → growing → **static from 4 s to 6 s** → growing again, faster → stops
+   at 10 s about 5× wider. The static beat is the one most likely to be lost.
+3. Release and re-pull anywhere on that curve — the next rounds must be dead-on.
+4. Toggle Turret Stance mid-hold without releasing: prisms must start laying at the *open* cone
+   (the deferred-reset hand-off), and the turret must reach the same blow-out.
+5. Gamepad: the buzz climbs from 2 s to 4 s and then goes **flat for the rest of the hold**,
+   blow-out included. That is deliberate — see `SPARROW_SPRAY_ACCURACY.md` Round 6.
+6. Console clean through a 15 s hold, both fire modes.
+
+**First-pass tuning (expect a balancing pass).** Two seconds of perfect accuracy is **360 rounds**
+per pull — much more forgiving than the 0.12 s / 22-round window it replaces. **Re-check Dog
+Fight's point target and Salvo's prism target in play** (FrogletTools ▸ Game Modes ▸ End Game
+Conditions; both authored, no code change to retune). If the free window reads as too generous,
+`onsetSeconds` is the one field; if the blow-out never gets met in practice, shorten
+`plateauSeconds` before touching the multiplier.
+
+---
+
 ### 🔴 Skyburst — the missile grows 20× in the first fifth of its flight, on a subdivided mesh (`cece/gallant-noether-o4jugw`, 2026-08-25)
 
 Authored without a Unity compile or play-test (remote session, no editor, no `unity` CLI binary in
