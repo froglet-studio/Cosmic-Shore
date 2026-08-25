@@ -172,11 +172,18 @@ namespace CosmicShore.Gameplay
             body.SetParent(station.transform, false);
 
             Color previewColor = PreviewColor();
-            if (ToyVesselRoster.TryBuildHull(Context, vessel, radius, previewColor, out var model))
+
+            // The ACTUAL ship, wearing its own materials, marked by the vessel vision band. The
+            // matrix blooms 360 units out (StationSpacing 60 x MatrixDistanceFactor 6), which is
+            // just past the band's nearFullStart - so a station arrives already at full mark, reads
+            // as a domain-coloured cel silhouette for the whole approach while you are choosing,
+            // and resolves into the real hull over the last stretch as you commit to it. That is
+            // what retired the flat silhouette fill: something else supplies the at-a-glance read
+            // now, so the station can show the thing itself.
+            if (ToyVesselRoster.TryBuildLiveHull(Context, vessel, radius, out var model))
             {
                 model.transform.SetParent(body, false);
-                // Only real models are recolour targets: each owns a preview material built for
-                // it, so tinting its renderers is local. The fallback sphere wears ToyFactory's
+                // Only real models are re-tint targets. The fallback sphere wears ToyFactory's
                 // SHARED accent material - re-tinting that would repaint every toy using it.
                 _stationBodies.Add(body);
             }
@@ -230,7 +237,7 @@ namespace CosmicShore.Gameplay
 
             Color color = PreviewColor();
             foreach (var body in _stationBodies)
-                ToyVesselRoster.Recolor(body, color);
+                ToyVesselRoster.ApplyDomain(Context, body, color);
         }
 
         /// <summary>

@@ -315,6 +315,29 @@ namespace CosmicShore.Tests
                 reason);
         }
 
+        [Test]
+        public void DisplayStamp_IsNotCountedAsAVesselStampSite()
+        {
+            // The display surface's name STARTS with the vessel stamp's, so the census needle's
+            // trailing parenthesis is the only thing keeping the two apart. If someone renames the
+            // vessel stamp to a prefix of another method, this fails before the single-owner test
+            // starts reporting phantom owners.
+            int display = 0, vessel = 0;
+            foreach (var file in Directory.EnumerateFiles(ScriptRoot, "*.cs", SearchOption.AllDirectories))
+            {
+                string body = File.ReadAllText(file);
+                display += CountOccurrences(body, VesselVisionLawSource.DisplayStampInvocation);
+                vessel += CountOccurrences(body, VesselVisionLawSource.StampInvocation);
+            }
+
+            Assert.Greater(display, 0,
+                "nothing calls StampDisplayModel — the toy matrices' mini hulls would render " +
+                "unmarked, which is the whole reason the display surface exists.");
+            Assert.AreEqual(1, vessel,
+                $"{display} display-model stamp(s) leaked into the VESSEL stamp census — the " +
+                "needle's trailing parenthesis is what separates them.");
+        }
+
         static int CountOccurrences(string haystack, string needle)
         {
             int count = 0;

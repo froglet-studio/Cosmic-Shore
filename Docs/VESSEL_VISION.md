@@ -182,6 +182,30 @@ publisher also **re-stamps one vessel per frame, round-robin**. With a full lobb
 sweep every twelve frames for a twelfth of the cost, it needs no cooperation from any other system,
 and it repairs a stale renderer list after a rig swap for free.
 
+### §3.1.1 The display-model surface, and why it is not the stamp
+
+`VesselVisionShading.StampDisplayModel` marks a **display-only** model — a mini hull in a toy
+matrix, built from a ship prefab asset and never instantiated as a vessel — so the band shades it
+like the real thing. It is deliberately **not** `Stamp`, and the distinction is the law's rather
+than a convenience:
+
+- `Stamp` takes **ownership** of a vessel's per-renderer channel and joins the heal roster, because
+  a real vessel's renderers are also written by the Echo Sight, the cloak and the sword FX.
+- A display model has none of that — nothing else writes it, it has no domain that can change under
+  it, and it lives for one pass of a matrix. Joining the roster would only put a prop in the queue
+  ahead of real ships.
+
+So the single-owner rule the gates enforce stays exactly as strict (`Stamp` still has **one** call
+site, in `VesselHelper.SetShipProperties`), and the toybox gets an honest, separately-named door.
+One trap worth knowing: `StampDisplayModel`'s name *starts with* `Stamp`'s, so the census needle's
+trailing parenthesis is the only thing keeping the two apart — `DisplayStamp_IsNotCountedAsAVessel
+StampSite` fails loudly if that ever stops being true.
+
+Consumers today are the vessel-changer matrix and the Lifeform Matrix's hangar row
+(`Docs/ToySystem/ARCHITECTURE.md` § "Vessel Changer"). The geometry is a happy accident worth
+recording: a vessel matrix blooms 360 units out, just past `nearFullStart`, so a station **arrives
+at full mark** and **resolves into its real hull as you close on it**.
+
 ### §3.2 Where the work happens, and why
 
 | Quantity | Where | Why not the other place |

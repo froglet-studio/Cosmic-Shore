@@ -39,8 +39,21 @@ namespace CosmicShore.Utility
         /// on a perfectly correct tree, forever. The general trap: <b>a source census that names
         /// its own needle counts itself</b>. Adding the parenthesis distinguishes an invocation
         /// from a mention, which is the distinction the rule was always about.
+        ///
+        /// It also does a second job that is easy to lose: it keeps the census off
+        /// <see cref="DisplayStampInvocation"/>, whose name STARTS with the stamp's. Without the
+        /// parenthesis every toy mini hull would be counted as a second owner of the vessel
+        /// channel and the law would read as broken.
         /// </summary>
         public const string StampInvocation = StampCall + "(";
+
+        /// <summary>
+        /// The display-only sibling: a mini hull in a toy matrix, marked so the band shades it but
+        /// deliberately NOT joining the heal roster (see
+        /// <c>VesselVisionShading.StampDisplayModel</c>). Unlimited call sites — it takes ownership
+        /// of nothing, so there is nothing for a second caller to fight over.
+        /// </summary>
+        public const string DisplayStampInvocation = "VesselVisionShading.StampDisplayModel(";
 
         /// <summary>The method that call must sit in.</summary>
         public const string StampHost = "SetShipProperties";

@@ -78,6 +78,7 @@ namespace CosmicShore.Utility
         static bool _publishedActive;
 
         static readonly List<Entry> _entries = new();
+        static readonly List<Target> _scratchTargets = new();
         static MaterialPropertyBlock _block;
         static int _healCursor;
 
@@ -139,6 +140,35 @@ namespace CosmicShore.Utility
 
             if (entry.Targets.Count == 0)
                 VesselVisionDiagnostics.WarnUnmarkableVessel(vessel);
+        }
+
+        /// <summary>
+        /// Mark a DISPLAY-ONLY model — a mini hull in a toy matrix, built from a ship prefab asset
+        /// and never instantiated as a vessel — so the vision band shades it like the real thing.
+        ///
+        /// <para>Deliberately NOT <see cref="Stamp"/>, and the distinction is the law's, not a
+        /// convenience. <see cref="Stamp"/> takes ownership of a VESSEL's per-renderer channel: it
+        /// joins the heal roster, because a real vessel's renderers are also written by the Echo
+        /// Sight, the Serpent's cloak and the Rhino's sword FX, and one of them clearing its block
+        /// would otherwise switch a pilot's mark off for the rest of the match. A display model has
+        /// none of that — nothing else writes it, it has no domain that can change under it, and it
+        /// lives for one pass of a matrix — so joining the roster would only put a prop in the
+        /// queue ahead of real ships. The single-owner rule the gates enforce is about VESSELS, and
+        /// this is not one.</para>
+        ///
+        /// <para>The model's renderers must already wear the vessel's own materials for this to
+        /// reach anything; a model painted with a flat preview material has no
+        /// <c>_VesselVisionTint</c> to write and this is a silent no-op by construction — which is
+        /// correct, since a flat glyph is already showing its domain in the only way it can.</para>
+        /// </summary>
+        public static void StampDisplayModel(Transform model, Color domainSignalColor)
+        {
+            if (model == null) return;
+            domainSignalColor.a = 1f;
+
+            CollectTargets(model, _scratchTargets);
+            WriteTint(_scratchTargets, domainSignalColor);
+            _scratchTargets.Clear();
         }
 
         /// <summary>
@@ -216,20 +246,22 @@ namespace CosmicShore.Utility
             }
         }
 
-        static void Apply(Entry entry)
+        static void Apply(Entry entry) => WriteTint(entry.Targets, entry.Tint);
+
+        static void WriteTint(List<Target> targets, Color tint)
         {
             _block ??= new MaterialPropertyBlock();
 
-            for (int i = 0; i < entry.Targets.Count; i++)
+            for (int i = 0; i < targets.Count; i++)
             {
-                var target = entry.Targets[i];
+                var target = targets[i];
                 if (!target.Renderer) continue;
 
                 // Get-modify-set, never a bare Set: a vessel's renderers carry other systems'
                 // overrides (the Echo Sight hull tint, the cloak's alpha) and clobbering the block
                 // would be the very defect the heal exists to repair.
                 target.Renderer.GetPropertyBlock(_block, target.MaterialIndex);
-                _block.SetColor(TintId, entry.Tint);
+                _block.SetColor(TintId, tint);
                 target.Renderer.SetPropertyBlock(_block, target.MaterialIndex);
             }
         }
