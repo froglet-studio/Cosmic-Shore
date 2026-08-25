@@ -1476,6 +1476,18 @@ whenever the producer is a serialized reference, and it is three greps, not a ju
 Report the resulting table (owner → source → field state) in the ship report. An exhaustive
 "all 16 resolve to 4 prefabs, all 4 SET, no site overrides it" is evidence; "I checked one" is not.
 
+**Counting the same way answers "how many Y per X?", with one trap that silently inflates the
+count: a `stripped` MonoBehaviour document MATCHES your script-guid grep.** §4.8b records the
+other face of this (a stripped stub reads as *unwired*); for a census it reads as *an extra
+instance*. A stripped doc is a reference stub — it exists only so something else in the file can
+point at a nested instance's component — so the count is inflated by exactly the number of
+cross-references into that instance, which is usually 0 or 1 and therefore looks plausible.
+Filter on the DOC HEADER (`--- !u!114 &<id> stripped`), not on the body, and recurse
+`m_SourcePrefab` for the real instances. Measured on Cosmic Shore's fauna: naive counting gave
+QuadFish 5 / shark 11; filtered, 4 / 10 — and the shipped budget table asserting "11, measured
+from the prefabs" had made the same mistake. **Validate the counter against a prefab whose
+number you already trust** (the brittlestar's 10) before believing it about the one you don't.
+
 ## 4.9b Technique: stripping a dead serialized key from many prefabs
 
 > **Not the same case as the dead-`m_Modification` trap in §5** (which says record it, don't
@@ -2370,6 +2382,23 @@ from a C# file (the attribute-stripping trap above is already handled);
 document. ~20 lines of glue maps guid → `.cs` and asserts `keys` are a subset of
 `fields` for every doc in every asset you authored. Run it before committing any
 hand-written YAML — it is what turns "looks right" into "provably resolves".
+
+**Two scope corrections, both learned by shipping a bug the tool would have caught.**
+(1) **The ABSENT direction is the dangerous one, and it is not benign.** The trap above
+frames a missing key as "silently takes its initializer", which sounds like a tuning
+risk; when the field is a REFERENCE type the initializer is `null`, and a component
+that guards on null and returns is not degraded — it is **inert**. Everything after the
+guard never runs, so the object can spawn, render nothing, and behave not at all, with
+one log line in one mode as the only evidence. Diff BOTH ways, always, and treat an
+absent reference-typed field as a failure rather than a default.
+(2) **Point it at the WHOLE project, not just at YAML you wrote.** The likeliest source
+of key drift is not your authoring — it is a prefab Unity serialized years ago against a
+field set that has since been refactored. Unity does not migrate those and does not prune
+what it cannot resolve, so the dead keys sit there looking authoritative while the new
+required one is simply absent. A repo-wide sweep (every `!u!114` doc → its `m_Script`
+guid → that `.cs`'s field set) is a cheap standing audit that finds rot no diff will ever
+show you. Cosmic Shore's `QuadFish.prefab` carried EIGHT dead keys and lacked its data SO
+for long enough to ship inert into three game modes.
 
 ## 6. When the editor genuinely IS required
 
