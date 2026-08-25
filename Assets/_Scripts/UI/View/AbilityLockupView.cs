@@ -16,6 +16,13 @@ namespace CosmicShore.UI
     /// ability, three open slots) still wears the fleet's UI and reads honestly, instead of keeping
     /// the old one until its abilities are finished.</para>
     ///
+    /// <para><b>The card is TWO BORDERLESS TRAPEZOIDS</b> meeting at their wide edges across a
+    /// small gap - the element flower in the upper one, the ability icon in the lower one. The gap
+    /// replaces the hairline divider and the silhouette replaces the rim, so the plates carry no
+    /// outline at all; the upgrade is a bloom behind both plus a lift in their fill. Both plates
+    /// are generated (<see cref="TrapezoidGraphic"/>) rather than sprited, because a trapezoid has
+    /// no 9-slice and a sprited one would freeze the slant into the art.</para>
+    ///
     /// <para><b>It owns geometry the prefabs used to disagree on</b> - row position, pitch, cell
     /// size, host scale, icon size - all read from one <see cref="AbilityLockupStyleSO"/> and
     /// written onto every vessel. It also retires the chrome the card replaces: the legacy decagon
@@ -42,12 +49,13 @@ namespace CosmicShore.UI
         sealed class Slot
         {
             public RectTransform Card;
-            public Image Bloom;
-            public Image Plate;
-            public Image Rim;
-            public Image Divider;
-            public Image GaugeTrack;
-            public Image Flash;
+            public Image ElementBloom;
+            public Image AbilityBloom;
+            public TrapezoidGraphic ElementPlate;
+            public TrapezoidGraphic AbilityPlate;
+            public TrapezoidGraphic GaugeTrack;
+            public RectTransform GaugeClip;
+            public TrapezoidGraphic Flash;
             public RectTransform FlowerSocket;
             public RectTransform ChipSocket;
             public Tween Tween;
@@ -276,41 +284,63 @@ namespace CosmicShore.UI
 
             var slot = new Slot { Card = card, Locked = !icon };
 
-            slot.Bloom = ResolveChildImage(card, "Bloom", style.bloomSprite);
-            StretchTo(slot.Bloom.rectTransform, style.bloomPadding);
-            slot.Bloom.color = WithAlpha(style.bloomColor, 0f);   // nothing glows at rest
+            float narrow = style.NarrowEdgeFraction;
+            float elementY = style.FlowerLocalY;
+            float abilityY = style.AbilityPlateLocalY;
 
-            slot.Plate = ResolveChildImage(card, "Plate", style.plateSprite);
-            StretchTo(slot.Plate.rectTransform, 0f);
-            slot.Plate.color = slot.Locked ? style.lockedPlateColor : style.plateColor;
-            AdoptButtonTarget(host, slot.Plate);
+            // Sibling order IS draw order, and a bloom has to sit BEHIND the plate it haloes - so
+            // each bloom is a sibling placed before its plate rather than a child of it. Building
+            // them in this order is the whole layering contract.
+            slot.ElementBloom = ResolveChildImage(card, "ElementBloom", style.bloomSprite);
+            SetCellRect(slot.ElementBloom.rectTransform, elementY,
+                        style.plateWidth + style.bloomPadding * 2f,
+                        style.petalCellHeight + style.bloomPadding * 2f);
+            slot.ElementBloom.color = WithAlpha(style.bloomColor, 0f);   // nothing glows at rest
 
-            // The gauge track lines the ABILITY cell only, so the fill reads as the icon filling up.
-            // It stays INVISIBLE until a meter is actually adopted onto this card (AdoptGauge turns
-            // it on): an empty track under an ability that has no meter is a false affordance -
-            // it reads as a gauge stuck at zero.
-            slot.GaugeTrack = ResolveChildImage(card, "GaugeTrack", null);
-            SetCellRect(slot.GaugeTrack.rectTransform, -style.petalCellHeight * 0.5f,
-                        style.plateWidth, style.abilityCellHeight * style.gaugeCellFraction);
+            // The element plate narrows UPWARD and the ability plate narrows DOWNWARD, so the pair
+            // meets wide-edge to wide-edge across the gap and reads as one waisted object.
+            slot.ElementPlate = ResolveTrapezoid(card, "ElementPlate", narrow, 1f);
+            SetCellRect(slot.ElementPlate.rectTransform, elementY, style.plateWidth, style.petalCellHeight);
+            slot.ElementPlate.color = slot.Locked ? style.lockedPlateColor : style.plateColor;
+
+            slot.AbilityBloom = ResolveChildImage(card, "AbilityBloom", style.bloomSprite);
+            SetCellRect(slot.AbilityBloom.rectTransform, abilityY,
+                        style.plateWidth + style.bloomPadding * 2f,
+                        style.abilityCellHeight + style.bloomPadding * 2f);
+            slot.AbilityBloom.color = WithAlpha(style.bloomColor, 0f);
+
+            slot.AbilityPlate = ResolveTrapezoid(card, "AbilityPlate", 1f, narrow);
+            SetCellRect(slot.AbilityPlate.rectTransform, abilityY, style.plateWidth, style.abilityCellHeight);
+            slot.AbilityPlate.color = slot.Locked ? style.lockedPlateColor : style.plateColor;
+            slot.AbilityPlate.raycastTarget = false;
+            AdoptButtonTarget(host, slot.AbilityPlate);
+
+            // The gauge lines the ABILITY plate, so the fill reads as the icon filling up. It stays
+            // INVISIBLE until a meter is actually adopted onto this card (AdoptGauge turns it on):
+            // an empty track under an ability that has no meter is a false affordance - it reads as
+            // a gauge stuck at zero.
+            float gaugeFrac = Mathf.Clamp01(style.gaugeCellFraction);
+            float gaugeH = style.abilityCellHeight * gaugeFrac;
+            float gaugeY = abilityY - (style.abilityCellHeight - gaugeH) * 0.5f;   // sits on the base
+
+            // A gauge shorter than its plate must take the plate's width AT ITS OWN TOP, not the
+            // plate's full width - the ability plate is already tapering by then, so a track that
+            // assumed 1.0 would overhang the shape it is supposed to line. Identical to (1, narrow)
+            // at gaugeCellFraction 1, which is why the seam was invisible until someone lowered it.
+            float gaugeTopEdge = Mathf.Lerp(narrow, 1f, gaugeFrac);
+
+            slot.GaugeTrack = ResolveTrapezoid(card, "GaugeTrack", gaugeTopEdge, narrow);
+            SetCellRect(slot.GaugeTrack.rectTransform, gaugeY, style.plateWidth, gaugeH);
             slot.GaugeTrack.color = Color.clear;
 
-            slot.Divider = ResolveChildImage(card, "Divider", null);
-            var dRT = slot.Divider.rectTransform;
-            dRT.anchorMin = dRT.anchorMax = dRT.pivot = new Vector2(0.5f, 0.5f);
-            dRT.sizeDelta = new Vector2(style.plateWidth - style.dividerInset * 2f, style.dividerThickness);
-            dRT.anchoredPosition = new Vector2(0f, style.DividerLocalY);
-            slot.Divider.color = slot.Locked ? style.lockedMarkColor : style.dividerColor;
+            slot.GaugeClip = ResolveGaugeClip(card, gaugeTopEdge, narrow, gaugeY, gaugeH);
 
-            if (slot.Locked) BuildLockedMark(card);
+            if (slot.Locked) BuildLockedMark(card, abilityY);
 
-            slot.Rim = ResolveChildImage(card, "Rim", style.rimSprite);
-            StretchTo(slot.Rim.rectTransform, 0f);
-            slot.Rim.color = slot.Locked ? style.lockedMarkColor : style.hairlineColor;
-
-            // Press flash sits ABOVE the plate and below the icon, so a press lights the card rather
-            // than blooming a circle behind it.
-            slot.Flash = ResolveChildImage(card, "PressFlash", style.plateSprite);
-            StretchTo(slot.Flash.rectTransform, 0f);
+            // Press flash sits ABOVE the plate and below the icon, so a press lights the ability
+            // trapezoid rather than blooming a circle behind it.
+            slot.Flash = ResolveTrapezoid(card, "PressFlash", 1f, narrow);
+            SetCellRect(slot.Flash.rectTransform, abilityY, style.plateWidth, style.abilityCellHeight);
             slot.Flash.color = WithAlpha(style.pressFlashColor, 0f);
 
             slot.FlowerSocket = ResolveFlowerSocket(card, element);
@@ -319,44 +349,78 @@ namespace CosmicShore.UI
         }
 
         /// <summary>
+        /// The stencil the vessel's own meter is drawn through, so a rectangular <c>Filled</c> Image
+        /// reads as the trapezoid it sits in.
+        ///
+        /// <para>Masking rather than re-shaping is what keeps the gauge contract intact: the vessel
+        /// keeps writing <c>fillAmount</c> on the very same <see cref="Image"/> it always did. The
+        /// alternative - mirroring that value onto a <see cref="TrapezoidGraphic"/> - would need a
+        /// per-frame poll of somebody else's field, which is a drive site this style has no business
+        /// owning.</para>
+        ///
+        /// <para>Costs two extra draw calls on a card that HAS a meter (stencil in, stencil out).
+        /// Three cards fleet-wide carry one today, so it is six.</para>
+        /// </summary>
+        RectTransform ResolveGaugeClip(RectTransform card, float top, float bottom,
+                                       float gaugeY, float gaugeH)
+        {
+            const string name = "GaugeClip";
+            var clip = card.Find(name) as RectTransform;
+            if (!clip)
+            {
+                var go = new GameObject(name, typeof(RectTransform), typeof(CanvasRenderer),
+                                        typeof(TrapezoidGraphic), typeof(Mask));
+                clip = (RectTransform)go.transform;
+                clip.SetParent(card, false);
+            }
+
+            var shape = clip.GetComponent<TrapezoidGraphic>();
+            shape.SetEdges(top, bottom);
+            shape.color = Color.white;          // the stencil reads ALPHA; colour is irrelevant
+            shape.raycastTarget = false;
+
+            var mask = clip.GetComponent<Mask>();
+            mask.showMaskGraphic = false;       // the track already draws the shape
+
+            SetCellRect(clip, gaugeY, style.plateWidth, gaugeH);
+            return clip;
+        }
+
+        /// <summary>
         /// The placeholder an undesigned slot shows: a short bar where the icon would be. Deliberately
         /// not a padlock - the ability is not locked to the PLAYER, it does not exist yet.
         /// </summary>
-        void BuildLockedMark(RectTransform card)
+        void BuildLockedMark(RectTransform card, float abilityY)
         {
             var mark = ResolveChildImage(card, "LockedMark", null);
             var rt = mark.rectTransform;
             rt.anchorMin = rt.anchorMax = rt.pivot = new Vector2(0.5f, 0.5f);
-            rt.sizeDelta = new Vector2(style.iconBoxSize * 0.4f, style.dividerThickness * 2f);
-            rt.anchoredPosition = new Vector2(0f, -style.petalCellHeight * 0.5f);
+            rt.sizeDelta = new Vector2(style.iconBoxSize * 0.4f, style.lockedMarkThickness);
+            rt.anchoredPosition = new Vector2(0f, abilityY);
             mark.color = style.lockedMarkColor;
         }
 
         /// <summary>
         /// Re-homes the vessel's meter into the card and restyles it as the fleet's one gauge: a
-        /// linear fill rising through the icon's cell, behind the icon. The vessel keeps writing
-        /// <c>fillAmount</c> on the very same Image, so no gameplay wiring changes - only where and
-        /// how it draws. The legacy chevron bar and its frame are retired with the rest of the
-        /// host's chrome.
+        /// linear fill rising through the ability trapezoid, behind the icon, clipped to that
+        /// trapezoid's slant. The vessel keeps writing <c>fillAmount</c> on the very same Image, so
+        /// no gameplay wiring changes - only where and how it draws. The legacy ring and its frame
+        /// are retired with the rest of the host's chrome.
         /// </summary>
         void AdoptGauge(Element element, Slot slot)
         {
             if (slot.Locked || !hudView.TryGetAbilityGauge(element, out var gauge) || !gauge) return;
 
             var rt = gauge.rectTransform;
-            if (rt.parent != slot.Card) rt.SetParent(slot.Card, false);
+            if (rt.parent != slot.GaugeClip) rt.SetParent(slot.GaugeClip, false);
 
-            SetCellRect(rt, -style.petalCellHeight * 0.5f,
-                        style.plateWidth, style.abilityCellHeight * style.gaugeCellFraction);
-            rt.localScale = Vector3.one;
-            rt.localRotation = Quaternion.identity;
-            rt.SetSiblingIndex(slot.GaugeTrack.rectTransform.GetSiblingIndex() + 1);
+            StretchTo(rt, 0f);                              // the clip owns the size and the shape
+            slot.GaugeTrack.color = style.gaugeTrackColor;  // there IS a meter here now
 
-            slot.GaugeTrack.color = style.gaugeTrackColor;   // there IS a meter here now
-
-            // Filled needs a sprite - Image draws a plain quad and ignores fillAmount when the
-            // sprite is null - and the plate's own shape is the one the card already speaks.
-            gauge.sprite = style.plateSprite;
+            // Filled needs a sprite - Image draws a plain quad and IGNORES fillAmount when the
+            // sprite is null - and it must be a plain box, because the stencil is what shapes this,
+            // not the art. Any silhouette in the sprite would punch notches inside the trapezoid.
+            gauge.sprite = PlainSprite;
             gauge.type = Image.Type.Filled;
             gauge.fillMethod = Image.FillMethod.Vertical;
             gauge.fillOrigin = (int)Image.OriginVertical.Bottom;
@@ -364,6 +428,19 @@ namespace CosmicShore.UI
             gauge.raycastTarget = false;
             gauge.color = style.gaugeFillColor;
         }
+
+        /// <summary>
+        /// A plain white box for anything that needs a sprite only because Unity demands one - the
+        /// gauge's <c>Type.Filled</c>. Built from <c>Texture2D.whiteTexture</c> so it costs no
+        /// asset, no import settings and nothing to keep in sync with the style.
+        /// </summary>
+        static Sprite _plainSprite;
+        static Sprite PlainSprite =>
+            _plainSprite ? _plainSprite
+                         : _plainSprite = Sprite.Create(Texture2D.whiteTexture,
+                                                        new Rect(0f, 0f, Texture2D.whiteTexture.width,
+                                                                 Texture2D.whiteTexture.height),
+                                                        new Vector2(0.5f, 0.5f));
 
         /// <summary>
         /// Switches off everything the host drew that the card now replaces - the decagon
@@ -499,23 +576,27 @@ namespace CosmicShore.UI
             slot.Upgraded = upgraded;
             slot.Tween?.Kill();
 
-            Color rimTarget   = upgraded ? style.upgradedRimColor : style.hairlineColor;
+            // Borderless: with the rim retired, the bloom and the plate lift ARE the upgrade signal,
+            // and BOTH trapezoids take it - the element upgraded the ability, so the pair is what
+            // changed state, not one half of it.
             Color bloomTarget = upgraded ? style.bloomColor : WithAlpha(style.bloomColor, 0f);
             Color plateTarget = upgraded ? style.upgradedPlateColor : style.plateColor;
 
             if (!animate)
             {
-                if (slot.Rim)   slot.Rim.color   = rimTarget;
-                if (slot.Bloom) slot.Bloom.color = bloomTarget;
-                if (slot.Plate) slot.Plate.color = plateTarget;
+                if (slot.ElementBloom) slot.ElementBloom.color = bloomTarget;
+                if (slot.AbilityBloom) slot.AbilityBloom.color = bloomTarget;
+                if (slot.ElementPlate) slot.ElementPlate.color = plateTarget;
+                if (slot.AbilityPlate) slot.AbilityPlate.color = plateTarget;
                 return;
             }
 
             float d = style.upgradeTransitionDuration;
             var seq = DOTween.Sequence().SetUpdate(true).SetLink(slot.Card.gameObject);
-            if (slot.Rim)   seq.Join(slot.Rim.DOColor(rimTarget, d).SetEase(Ease.OutCubic));
-            if (slot.Bloom) seq.Join(slot.Bloom.DOColor(bloomTarget, d).SetEase(Ease.OutCubic));
-            if (slot.Plate) seq.Join(slot.Plate.DOColor(plateTarget, d).SetEase(Ease.OutCubic));
+            if (slot.ElementBloom) seq.Join(slot.ElementBloom.DOColor(bloomTarget, d).SetEase(Ease.OutCubic));
+            if (slot.AbilityBloom) seq.Join(slot.AbilityBloom.DOColor(bloomTarget, d).SetEase(Ease.OutCubic));
+            if (slot.ElementPlate) seq.Join(slot.ElementPlate.DOColor(plateTarget, d).SetEase(Ease.OutCubic));
+            if (slot.AbilityPlate) seq.Join(slot.AbilityPlate.DOColor(plateTarget, d).SetEase(Ease.OutCubic));
 
             if (upgraded && style.unlockPunchScale > 1f)
             {
@@ -539,6 +620,10 @@ namespace CosmicShore.UI
         /// per-vessel circular glow that used to be switched on behind the icon. It lights the whole
         /// card rather than drawing a second shape, so a held ability reads at a glance and a card
         /// never grows chrome the totem does not own.
+        ///
+        /// <para>It lights the ABILITY trapezoid, not the whole totem: an upgrade is a change to
+        /// the ability-plus-element pair and lights both plates, a press is the ability firing and
+        /// lights the one you pressed. Two states that lit the same area would be one signal.</para>
         ///
         /// <para>Held while the control is down, then decayed rather than switched off - the same
         /// continuity rule the rest of the game follows: nothing pops out of existence.</para>
@@ -568,13 +653,35 @@ namespace CosmicShore.UI
         // Helpers
         // ---------------------------------------------------------------
 
-        void AdoptButtonTarget(RectTransform host, Image plate)
+        void AdoptButtonTarget(RectTransform host, TrapezoidGraphic plate)
         {
             var button = host.GetComponent<Button>();
             if (!button) return;
 
             button.targetGraphic = plate;
-            plate.raycastTarget = true;   // the card is the touch target now, so it must be hittable
+            plate.raycastTarget = true;   // the plate is the touch target now, so it must be hittable
+        }
+
+        /// <summary>
+        /// One of the card's generated plates. <paramref name="top"/> and <paramref name="bottom"/>
+        /// are edge widths as fractions of the rect - both always derived from the style's single
+        /// inset, mirrored, so the two halves of a totem can never disagree about the slant.
+        /// </summary>
+        TrapezoidGraphic ResolveTrapezoid(RectTransform parent, string childName, float top, float bottom)
+        {
+            var existing = parent.Find(childName);
+            var shape = existing ? existing.GetComponent<TrapezoidGraphic>() : null;
+            if (!shape)
+            {
+                var go = new GameObject(childName, typeof(RectTransform), typeof(CanvasRenderer),
+                                        typeof(TrapezoidGraphic));
+                go.transform.SetParent(parent, false);
+                shape = go.GetComponent<TrapezoidGraphic>();
+            }
+
+            shape.SetEdges(top, bottom);
+            shape.raycastTarget = false;   // decorative by default; AdoptButtonTarget opts one in
+            return shape;
         }
 
         Image ResolveChildImage(RectTransform parent, string childName, Sprite sprite)

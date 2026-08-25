@@ -29,24 +29,55 @@ namespace CosmicShore.Tests
         }
 
         [Test]
-        public void Style_ShipsEverySprite()
+        public void Style_ShipsTheOneSpriteItStillNeeds()
         {
             var s = Load();
-            Assert.IsNotNull(s.plateSprite, "no plate sprite - the card has no body");
-            Assert.IsNotNull(s.rimSprite,   "no rim sprite - no resting hairline and no upgrade rim");
-            Assert.IsNotNull(s.bloomSprite, "no bloom sprite - the upgrade loses its glow");
+            // The plates are generated geometry now, so the bloom is the last authored asset - and
+            // with the rim retired it is half the upgrade signal, not a flourish on top of one.
+            Assert.IsNotNull(s.bloomSprite, "no bloom sprite - the upgrade loses its glow, and the " +
+                                            "plates are borderless, so only the plate lift would remain");
+        }
+
+        [Test]
+        public void Totem_IsTwoTrapezoidsSeparatedByARealGap()
+        {
+            var s = Load();
+
+            // The gap IS the divider and the slant IS the frame. Either at zero and the totem falls
+            // back to the two stacked rectangles this shape was chosen over.
+            Assert.Greater(s.cellGap, 0f,
+                "cellGap 0 fuses the two plates into one shape - the gap is what replaced the hairline");
+            Assert.Greater(s.trapezoidInset, 0f,
+                "trapezoidInset 0 makes both plates rectangles; borderless rectangles read as a list, " +
+                "not as one waisted object");
+
+            Assert.Less(s.trapezoidInset * 2f, s.plateWidth * 0.5f,
+                "the slant eats more than half the plate - the totem becomes a pair of wedges");
+            Assert.Less(s.NarrowEdgeFraction, 1f, "the narrow edge is not narrower than the wide edge");
+            Assert.Greater(s.NarrowEdgeFraction, 0.5f, "the taper is extreme enough to read as a funnel");
+        }
+
+        [Test]
+        public void Icon_ClearsTheAbilityPlatesNarrowEdge()
+        {
+            var s = Load();
+            // The ability plate tapers DOWNWARD, so the tightest place the icon must clear is its
+            // base - measuring against the rect would pass a size that overhangs the visible shape.
+            float narrowEdge = s.plateWidth * s.NarrowEdgeFraction;
+            Assert.Greater((narrowEdge - s.iconBoxSize) * 0.5f, 0f,
+                $"an icon drawn at {s.iconBoxSize} overhangs the ability plate's {narrowEdge} narrow edge");
         }
 
         [Test]
         public void Kerning_LeavesNegativeSpaceAroundTheDrawnIcon()
         {
             var s = Load();
-            float cell   = Mathf.Min(s.plateWidth, s.abilityCellHeight);
+            float cell   = Mathf.Min(s.plateWidth * s.NarrowEdgeFraction, s.abilityCellHeight);
             float margin = (cell - s.iconBoxSize) * 0.5f;
 
             Assert.GreaterOrEqual(margin, MinMarginPx,
-                $"an icon drawn at {s.iconBoxSize} inside a {cell} cell leaves {margin} of air. " +
-                "The card's corner sliver alone eats 12, so the icon would run into it.");
+                $"an icon drawn at {s.iconBoxSize} leaves {margin} of air against the ability plate's " +
+                $"tightest dimension ({cell}) - kerned, not packed.");
         }
 
         [Test]
@@ -90,20 +121,24 @@ namespace CosmicShore.Tests
         }
 
         [Test]
-        public void Geometry_StacksTheTwoCellsWithoutOverlapOrGap()
+        public void Geometry_StacksTheTwoPlatesAcrossExactlyTheAuthoredGap()
         {
             var s = Load();
-            Assert.AreEqual(s.abilityCellHeight + s.petalCellHeight, s.PlateHeight, 0.001f,
-                "the card is not exactly its two cells");
+            Assert.AreEqual(s.abilityCellHeight + s.cellGap + s.petalCellHeight, s.PlateHeight, 0.001f,
+                "the totem is not exactly its two plates plus the gap");
 
-            // The divider sits on the seam, and the flower is centred in the cell above it.
-            Assert.AreEqual(s.DividerLocalY + s.petalCellHeight * 0.5f, s.FlowerLocalY, 0.001f,
-                "the flower is not centred in the element cell the divider opens");
+            // Facing edges: the top of the ability plate and the bottom of the element plate must be
+            // exactly cellGap apart, or the seam the shape is built around is not where it says.
+            float abilityTop   = s.AbilityPlateLocalY + s.abilityCellHeight * 0.5f;
+            float elementBottom = s.FlowerLocalY - s.petalCellHeight * 0.5f;
+            Assert.AreEqual(s.cellGap, elementBottom - abilityTop, 0.001f,
+                "the plates do not face each other across the authored gap");
 
-            // The lower cell is centred on the icon, so the card's centre rides half the upper cell
-            // above it - this is what lets a vessel adopt the style with no authored rect moving.
-            Assert.AreEqual(s.petalCellHeight * 0.5f, s.CardCenterOffsetY, 0.001f,
-                "the ability cell would not be centred on the icon it is built around");
+            // The lower plate is centred on the icon, so the card's centre rides half of
+            // (upper plate + gap) above it - this is what lets a vessel adopt the style with no
+            // authored rect moving.
+            Assert.AreEqual(0f, s.AbilityPlateLocalY + s.CardCenterOffsetY, 0.001f,
+                "the ability plate would not be centred on the icon it is built around");
         }
 
         [Test]
@@ -171,8 +206,14 @@ namespace CosmicShore.Tests
         public void Upgrade_IsVisibleAndTravels()
         {
             var s = Load();
+            // Borderless: the bloom and the plate lift are the WHOLE upgrade signal now, so both
+            // have to be real. A bloom alone on an unchanged plate was the state the rim used to
+            // rescue.
             Assert.Greater(s.bloomColor.a, 0f, "the upgraded bloom is fully transparent");
-            Assert.Greater(s.upgradedRimColor.a, 0f, "the upgraded rim is fully transparent");
+            Assert.Greater(Luminance(s.upgradedPlateColor) * s.upgradedPlateColor.a
+                         - Luminance(s.plateColor) * s.plateColor.a, 0.01f,
+                "the upgraded plate does not lift off the resting plate - with no rim, that leaves " +
+                "the bloom carrying the upgrade by itself");
             Assert.Greater(s.upgradeTransitionDuration, 0f,
                 "states must travel, never pop - a zero duration snaps the card between states");
             Assert.GreaterOrEqual(s.unlockPunchScale, 1f, "the unlock punch must not shrink the card");

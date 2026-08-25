@@ -23,20 +23,38 @@ The lockup fuses them into one card per ability, so a glance answers four questi
 | 1 | **Which element upgrades this** | the COLUMN — charge → mass → space → time, locked fleet-wide |
 | 2 | **How much of that element** | the five petals, on the shipped ladder fire → grey → white → blue → lime |
 | 3 | **Which ability** | the vessel's own icon, in the lower cell — never redrawn |
-| 4 | **Is it upgraded** | the card's rim to the level-5 white + bloom behind the plate |
+| 4 | **Is it upgraded** | bloom behind BOTH plates + a lift in their fill (borderless — there is no rim) |
 | 5 | **How to fire it** | the device chip below the card. No chip = passive |
-| 6 | **How much of the ability is ready** | the card's own linear gauge, rising through the icon's cell |
-| 7 | **Is it firing right now** | the whole card lights and decays |
+| 6 | **How much of the ability is ready** | the card's own linear gauge, rising through the ability plate |
+| 7 | **Is it firing right now** | the ability plate lights and decays |
 
 **The gauge rule survives, and now has a home.** The icon remains the vessel's live-gauge channel
-(fill · tint · lean). Petals, rim and chip never carry gauge meaning, and the card — not the icon —
+(fill · tint · lean). Petals and chip never carry gauge meaning, and the card — not the icon —
 carries the upgrade. That is precisely what lets a row of four live gauges show an upgrade at all.
 
 ## Shape (why TOTEM)
 
-One silhouette, two stacked cells: the element flower in the upper cell, the ability icon in the
-lower one, a hairline divider between, the control chip below. House motif is **soft-hard-soft** —
-bloom (soft) around a flat, radius-0, corner-slivered plate (hard) carrying the icon.
+**Two borderless trapezoids meeting at their wide edges across a small gap** — the element flower in
+the upper one, the ability icon in the lower one, the control chip below. The element plate narrows
+*upward*, the ability plate narrows *downward*, so the pair mirrors about the seam and the totem has
+a waist. House motif is **soft-hard-soft** — bloom (soft) around flat, radius-0 plates (hard)
+carrying the icon.
+
+**The gap is the divider and the silhouette is the frame.** A hairline between two halves of one
+plate, and an outline around that plate, were both drawing a boundary the shape can state on its
+own — so the divider and the rim are both retired and the plates carry no border at all. The slant
+does the work the outline used to: two trapezoids facing wide-edge to wide-edge read as one object,
+where two borderless *rectangles* would read as a list. **The upgrade is a bloom behind both plates
+plus a lift in their fill** — with no rim, those two are the whole signal, which is why the upgraded
+plate now lifts much further from the resting one than it did when the rim carried the change.
+
+**The plates are generated, not sprited** (`TrapezoidGraphic`, one small `MaskableGraphic` in the
+shape of `BlastProfileGraphic`). A trapezoid has no 9-slice — slanted edges do not tile — so a
+sprited version would freeze the slant into the art, need a re-export every time the number moved,
+and need one asset per direction. Generated, the slant is a single float (`trapezoidInset`) that
+both plates read *mirrored*, so the two halves of one totem can never disagree about it. One graphic
+type serves the plate, the gauge track, the gauge clip and the press flash; **`bloomSprite` is the
+only authored asset the lockup still needs.**
 
 Two properties make it cheap to adopt:
 
@@ -76,12 +94,22 @@ boost icon, another around the Scarab's Ball Forge, a chevron fill on the Squirr
 circular heat halo behind the Squirrel's skimming icon. Three different shapes for one idea, all of
 them circles wrapped around a square-ish icon inside a square-ish card.
 
-**The fleet's gauge is a linear fill that takes over the icon's cell.** A vessel binds its existing
-meter `Image` as `AbilityIconBinding.gauge` and the lockup re-homes it into the card, sizes it to the
-ability cell and re-forms it to `Filled` / `Vertical` / origin `Bottom`, behind the icon and above a
-dim track. **The vessel keeps writing `fillAmount` on the very same Image** — no gameplay wiring
-changes, only where and how it draws. Colour is a default the vessel is free to keep driving where
-colour carries meaning (the Squirrel's boost tints to the pilot's domain).
+**The fleet's gauge is a linear fill that takes over the ability plate.** A vessel binds its existing
+meter `Image` as `AbilityIconBinding.gauge` and the lockup re-homes it into the card and re-forms it
+to `Filled` / `Vertical` / origin `Bottom`, behind the icon and above a dim track. **The vessel keeps
+writing `fillAmount` on the very same Image** — no gameplay wiring changes, only where and how it
+draws. Colour is a default the vessel is free to keep driving where colour carries meaning (the
+Squirrel's boost tints to the pilot's domain).
+
+**It is masked to the trapezoid, not reshaped into one.** A `Filled` Image is a rectangle, so on a
+tapering plate it would overhang by up to `trapezoidInset` per side at the base. The fill is drawn
+through a `GaugeClip` — a `TrapezoidGraphic` carrying a `Mask` — which shapes it exactly while
+leaving the vessel's `fillAmount` contract untouched. The alternative, mirroring that value onto a
+`TrapezoidGraphic`, would need a per-frame poll of somebody else's field: a drive site this style has
+no business owning. Cost is two extra draw calls on a card that HAS a meter; three cards fleet-wide
+carry one today. The track's own taper is **derived from the plate at the track's top**, not assumed
+to be the full width — identical at `gaugeCellFraction 1`, which is why that seam would have stayed
+invisible until someone lowered the fraction.
 
 **A meter is regularly authored on the WRONG card, and the build is ordered around that.** The
 Squirrel's boost fill sits under its *skimming* button and the Scarab's ball-energy ring under its
@@ -99,7 +127,10 @@ to claim, silently, and only on the vessels whose authoring had drifted.
 ## The press state — the card lights, not a circle behind it
 
 An ability firing used to switch on a per-vessel `highlights` image: a circular glow behind the
-icon, a different one per hull. The card carries it now (`VesselHUDView.SetAbilityPressed` →
+icon, a different one per hull. The **ability plate** carries it now — not the whole totem: an
+upgrade is a change to the ability-plus-element pair and lights both plates, a press is the ability
+firing and lights the one you pressed. Two states lighting the same area would be one signal. It is
+driven (`VesselHUDView.SetAbilityPressed` →
 `AbilityLockupView`), resolved from the input through the vessel's **own** ability map, so a hull
 that rebinds an ability to another control needs no HUD change. It is **held** while the control is
 down and **decays** on release — nothing pops out of existence.
@@ -111,8 +142,8 @@ divergent press glow.
 ## Locked slots — the row is always four cards
 
 `AbilityDisplayOrder` is four elements, so the row is four cards, always. A slot the vessel binds no
-icon for renders **locked**: a quieter plate, a hairline mark where the icon would be, no gauge
-track. Deliberately **not a padlock** — the ability is not locked to the *player*, it does not exist
+icon for renders **locked**: both plates quieter, a hairline mark where the icon would be, no gauge
+track, no chip. Deliberately **not a padlock** — the ability is not locked to the *player*, it does not exist
 yet. This is what puts the Rhino (one named ability, three open design slots) on the fleet's UI
 today instead of leaving it on the old one until design lands, and its element flowers dock into the
 locked cards exactly as they would into live ones.
@@ -183,12 +214,13 @@ so `enforceStandardPlacement` stays `1` fleet-wide and no other vessel is affect
 | Style tokens (single source of truth) | `Assets/_Scripts/ScriptableObjects/AbilityLockupStyleSO.cs` |
 | Style asset | `Assets/Resources/AbilityLockupStyle.asset` |
 | The composer | `Assets/_Scripts/UI/View/AbilityLockupView.cs` |
+| The generated plate | `Assets/_Scripts/UI/View/TrapezoidGraphic.cs` |
 | Upgrade hook (shared) | `Assets/_Scripts/UI/View/VesselHUDView.cs` — `SetAbilityUpgraded` → `SetUpgraded` |
 | Flower socket injection | `Assets/_Scripts/UI/View/ElementalBarsView.cs` — `TrySetPetalRoot` |
 | Press state + chip binding (shared init) | `Assets/_Scripts/UI/Controller/VesselHUDController.cs` |
 | Control chips land on the card | `Assets/_Scripts/UI/Elements/InputDeviceIconSetSwitcher.cs` — `BindHintsToAbilities` |
 | Adoption (no duplicate row) | `Assets/_Scripts/Controller/Vessel/ElementalBarsController.cs` |
-| Sprites (white + alpha, 9-sliced) | `Assets/_Graphics/Design Assests/HUD UI/AbilityLockup/Lockup{Plate,PlateRim,Bloom}.png` |
+| Sprite (white + alpha, 9-sliced) | `Assets/_Graphics/Design Assests/HUD UI/AbilityLockup/LockupBloom.png` |
 | Dolphin wiring | `Assets/_Prefabs/UI Elements/VesselHUD/DolphinHUDVariant.prefab` (one component on the root) |
 | Gauge bindings | `{Squirrel,Sparrow,Scarab}HUDVariant.prefab` — one `gauge` field per bound slot |
 | Fleet audit | `Assets/_Scripts/Editor/AbilityLockupAuditor.cs` |
@@ -198,35 +230,44 @@ so `enforceStandardPlacement` stays `1` fleet-wide and no other vessel is affect
 
 | Knob | Shipped | Meaning |
 |---|---|---|
-| `plateWidth` | 104 | card width; sits inside the shipped 150px ability cell |
-| `abilityCellHeight` | 104 | lower cell, centred on the existing icon |
-| `petalCellHeight` | 62 | upper cell, added ABOVE — this is what makes it a totem |
+| `plateWidth` | 104 | the plate's WIDE edge — the seam where the two trapezoids face each other |
+| `trapezoidInset` | 9 | how far each side pulls in at a plate's NARROW edge. **0 makes both plates rectangles and the totem reads as a list.** Both plates read it mirrored |
+| `cellGap` | 6 | gap between the two plates. This IS the divider — a real gap is what lets the plates be borderless |
+| `abilityCellHeight` | 104 | lower plate, centred on the existing icon |
+| `petalCellHeight` | 62 | upper plate, added ABOVE — this is what makes it a totem |
 | `petalFlowerSize` | 44 | element flower; keep BELOW the icon's DRAWN size (60) |
 | `iconBoxSize` | 60 | the ONE drawn size for every vessel's icons; each icon's scale is derived from it. Multiplies the upgrade bump rather than replacing it |
 | `cardPitch` | 137.7 | centre-to-centre card spacing — one number for the fleet |
 | `rowMarginRight` / `rowMarginBottom` | 65.1 / 53 | where the row sits, from the screen's bottom-right corner |
-| `dividerInset` / `dividerThickness` | 8 / 1 | the hairline between cells |
 | `chipHeight` / `chipGap` | 24 / 8 | the control chip's socket below the card. `chipGap + chipHeight` must stay under `rowMarginBottom` or every label clips off the screen |
 | `gaugeCellFraction` | 1 | how much of the ability cell the linear gauge fills |
 | `bloomPadding` | 26 | how far the upgraded bloom reaches past the card |
-| `plateColor` / `hairlineColor` | `#060810` @0.86 / `#5C5F70` @0.9 | resting fill + outline |
-| `upgradedRimColor` | `#F5F5FF` | the level-5 white the flowers already speak |
-| `bloomColor` | `#F5F5FF` @0.24 | alpha carries it — in engine bloom clamps at max-channel 0.5, so glow is bought with lit AREA |
+| `plateColor` | `#060810` @0.86 | resting fill. Borderless — there is no resting outline, by design |
+| `bloomColor` | `#F5F5FF` @0.30 | alpha carries it — in engine bloom clamps at max-channel 0.5, so glow is bought with lit AREA |
+| `upgradedPlateColor` | `#1C1F2B` @0.92 | the plate's lift. Raised well clear of the resting fill because, with the rim retired, this and the bloom are the WHOLE upgrade signal |
+| `lockedMarkThickness` | 2 | thickness of the locked slot's placeholder bar |
 | `gaugeTrackColor` / `gaugeFillColor` | `#161822` @0.9 / `#3882FF` @0.55 | the meter. The fill must out-read its own track in luminance, or the gauge is invisible — asserted by both the auditor and the tests |
 | `lockedPlateColor` / `lockedMarkColor` | `#060810` @0.55 / `#5C5F70` @0.55 | an undesigned slot. Must stay QUIETER than a live card, or the row advertises abilities that do not exist |
 | `pressFlashColor` / `pressFlashDuration` | `#F5F5FF` @0.22 / 0.18 | the card's fire signal, held while the control is down and decayed on release |
 | `upgradeTransitionDuration` | 0.2 | states travel; nothing pops |
 | `unlockPunchScale` / `unlockPunchDuration` | 1.05 / 0.5 | one-shot ceremony on unlock only, never on re-lock |
 
-Sprites are white + alpha and tinted at runtime (the T7 sprite-kit rule), 9-sliced (border 16 on
-plate/rim, 48 on bloom), so one asset set serves every vessel and every size.
+`bloomSprite` is the last authored asset — white + alpha, tinted at runtime (the T7 sprite-kit rule),
+9-sliced (border 48). `LockupPlate.png` and `LockupPlateRim.png` are **deleted**: the plates are
+generated and the rim no longer exists. The gauge fill needs *a* sprite only because Unity's
+`Image.Type.Filled` ignores `fillAmount` when the sprite is null; it uses a plain white box built
+from `Texture2D.whiteTexture`, so it costs no asset and cannot drift from the style — and it must
+stay plain, because the stencil is what shapes the fill and any silhouette in the sprite would punch
+notches inside the trapezoid.
 
 ## In-editor verification
 
 1. Open a scene with a Dolphin (`MinigameBends` or `MinigameRampage`) and enter play mode.
-2. **Row.** Four cards in the lower right, charge → mass → space → time. Each shows a small element
-   flower above the Dolphin's existing gauge (Echo Sight profile / crystal / jaws / boost ring).
-   The gauges must still animate exactly as before — the icons were not moved or restyled.
+2. **Row.** Four totems in the lower right, charge → mass → space → time. Each is TWO trapezoids —
+   the element flower in the upper one, the Dolphin's existing gauge (Echo Sight profile / crystal /
+   jaws / boost ring) in the lower — meeting at their wide edges across a visible gap, with **no
+   outline on either plate** and no hairline between them. The gauges must still animate exactly as
+   before: the icons were not moved or restyled.
 3. **Kerning.** Neither the icon nor the flower should touch the plate's corner sliver — even air
    on every side, and the icon still visibly larger than the flower. Retune with `iconBoxSize`
    / `petalFlowerSize`; nothing here needs a recompile.
@@ -236,8 +277,10 @@ plate/rim, 48 on bloom), so one asset set serves every vessel and every size.
 5. **Ladder.** Collect elemental crystals and watch a flower fill grey → white → blue → lime; take a
    danger-prism hit and watch it flash and shake down through fire. Same juice as before.
 6. **Upgrade.** Drive an element to level 5 (crystals, or the comeback buff in a mode where you are
-   behind). That card's rim should cross to white and a soft bloom come up behind the plate over
-   ~0.2s, with a small one-shot punch. Drop below 4 and it should travel back, not snap.
+   behind). **Both** of that totem's plates should lift in fill and a soft bloom come up behind each
+   over ~0.2s, with a small one-shot punch — and still no border. Drop below 4 and it should travel
+   back, not snap. This is the read most worth judging: the rim used to carry it, so if the upgrade
+   is hard to spot, raise `upgradedPlateColor` and `bloomColor` before adding anything back.
 7. **Chips.** LT/RT glyphs sit **centred under their own card**, not floating near it — the hint
    lands on the card's `ControlChip` socket at zero offset, so it moves with the totem. Charge = RT,
    Time = LT on the Dolphin; Mass and Space are passive and correctly show none.
@@ -261,9 +304,11 @@ now says once:
 
 | retired | why |
 |---|---|
-| The upgrade **corner badge** (`showUpgradeBadge` + its six tuning fields, and `VesselHUDView`'s whole badge implementation) | The card's rim and bloom carry the upgrade. The badge was a petal pinned to an icon corner saying the same thing, and it was already switched off on the Dolphin. |
+| The upgrade **corner badge** (`showUpgradeBadge` + its six tuning fields, and `VesselHUDView`'s whole badge implementation) | The card's own state carries the upgrade. The badge was a petal pinned to an icon corner saying the same thing, and it was already switched off on the Dolphin. |
 | The upgrade **icon tint** (`tintIconOnUpgrade`, `upgradeHighlightColor`) | Colour on an ability icon is a GAUGE channel on most vessels, so the tint was unusable on exactly the vessels that needed a signal most. It could never be the fleet's answer. |
 | The **decagon button plate** on Sparrow / Squirrel / Scarab | The card is the plate now. Left on, it sat behind the totem as a second, differently-shaped background. |
+| The **hairline divider** between the two cells | The cells are two separate plates with a real gap. A line drawn to separate two halves of one shape is redundant once they are two shapes. |
+| The **rim** (`rimSprite`, `hairlineColor`, `upgradedRimColor`) and `LockupPlate`/`LockupPlateRim` art | Borderless by request. The trapezoid silhouette is the frame; the upgrade moved onto the bloom plus a bigger plate lift. Both PNGs are deleted — nothing referenced them. |
 | The **ring gauges** (Sparrow roll ring, Scarab energy ring, Squirrel chevron fill and its frame) | Four hulls, four shapes, one idea. The card's linear fill is the fleet's one gauge; the same Images are re-formed rather than replaced, so nothing is re-authored and no drive site changes. |
 | The **circular press glow** behind each icon (`highlights`) | The card lights instead. A second shape drawn for a state the card already carries is exactly the divergence the totem removes. |
 | The Squirrel's **undriven heat halo** (`overheatHighlight`) | A circular glow left over from the Sparrow's retired overheat mechanic — its driver was deleted in 2026, so it had never moved. Retired positionally with the rest of the host's chrome. |

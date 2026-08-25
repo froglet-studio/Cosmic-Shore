@@ -112,14 +112,32 @@ namespace CosmicShore.Editor
         static int AuditStyle(AbilityLockupStyleSO style, StringBuilder report)
         {
             int problems = 0;
-            report.AppendLine($"STYLE  card {style.plateWidth}x{style.PlateHeight}  " +
-                              $"(ability cell {style.abilityCellHeight}, element cell {style.petalCellHeight})  " +
+            report.AppendLine($"STYLE  totem {style.plateWidth}x{style.PlateHeight}  " +
+                              $"(ability plate {style.abilityCellHeight}, gap {style.cellGap}, element plate " +
+                              $"{style.petalCellHeight})  slant inset {style.trapezoidInset} " +
+                              $"(narrow edge {style.NarrowEdgeFraction:0.###} of wide)  " +
                               $"icon {style.iconBoxSize}  flower {style.petalFlowerSize}  " +
                               $"pitch {style.cardPitch}  margin R{style.rowMarginRight}/B{style.rowMarginBottom}");
 
-            if (!style.plateSprite) { report.AppendLine("  ✗ no plateSprite - the card has no body."); problems++; }
-            if (!style.rimSprite)   { report.AppendLine("  ✗ no rimSprite - no resting hairline and no upgrade rim."); problems++; }
-            if (!style.bloomSprite) { report.AppendLine("  ✗ no bloomSprite - the upgrade loses its glow."); problems++; }
+            // The plates are generated geometry, so the bloom is the only sprite left - and with the
+            // rim retired it is also half the upgrade signal, which makes a missing one worse than
+            // it used to be, not milder.
+            if (!style.bloomSprite) { report.AppendLine("  ✗ no bloomSprite - the upgrade loses its glow, " +
+                                                        "and the plates are borderless, so half the signal " +
+                                                        "would be the plate lift alone."); problems++; }
+
+            if (style.trapezoidInset * 2f >= style.plateWidth * 0.5f)
+            {
+                report.AppendLine($"  ✗ trapezoidInset {style.trapezoidInset} collapses a {style.plateWidth} " +
+                                  "plate past half its width - the totem becomes a pair of wedges.");
+                problems++;
+            }
+            if (style.cellGap <= 0f)
+            {
+                report.AppendLine("  ✗ cellGap 0 - the gap IS the divider now, so the two plates would " +
+                                  "fuse into one shape with no separation at all.");
+                problems++;
+            }
 
             if (style.petalFlowerSize > style.petalCellHeight - 4f)
             {
@@ -127,12 +145,14 @@ namespace CosmicShore.Editor
                 problems++;
             }
 
-            float cell = Mathf.Min(style.plateWidth, style.abilityCellHeight);
+            // Measure the icon against the NARROW edge, not the wide one: the ability plate tapers
+            // downward, so the tightest place the icon has to clear is its base, not its rect.
+            float cell = Mathf.Min(style.plateWidth * style.NarrowEdgeFraction, style.abilityCellHeight);
             float margin = (cell - style.iconBoxSize) * 0.5f;
             if (margin < MinIconMarginPx)
             {
-                report.AppendLine($"  ✗ an icon drawn at {style.iconBoxSize} in a {cell} cell leaves " +
-                                  $"{margin:0.#} of air (min {MinIconMarginPx}); the corner sliver alone eats 12.");
+                report.AppendLine($"  ✗ an icon drawn at {style.iconBoxSize} leaves {margin:0.#} of air " +
+                                  $"against the ability plate's narrow edge ({cell:0.#}), min {MinIconMarginPx}.");
                 problems++;
             }
 
