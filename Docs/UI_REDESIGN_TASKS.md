@@ -74,12 +74,11 @@ Acceptance criteria:
 - `ProjectSettings/ProjectSettings.asset` — `androidMaxAspectRatio` 2.1 → 2.4
 
 **Findings:**
-- **The two canvas prefabs were the stale half of an already-completed migration.** No gameplay scene
-  owns a canvas; all 21 instance one of the two prefabs, and 12 of them had already been migrated at
-  the prefab-instance override level (scaler pinned to 1920/240, children ×2.4) while the prefab
-  assets stayed at 800×450 / PPU 100. The 11 HexRace-fork scenes plus Maelstrom were therefore
-  running 800-space prefab children under a 1920 scaler — every child not covered by a scene
-  override was rendering 2.4× too small. Migrating the prefabs is what fixes that.
+- Audit §1.3 already records that both prefab **assets** sat at 800×450 / PPU 100 while only their
+  scene instances carried the 1920/240 overrides. What it does not record is the **consequence**: the
+  11 HexRace-fork scenes plus Maelstrom were running 800-space prefab children under a 1920 scaler,
+  so every child not covered by a scene override was rendering **2.4× too small**. That is what
+  migrating the prefab assets fixes; it was not a cosmetic tidy-up of an inert asset.
 - Migration correctness was checked against those pre-existing scene overrides as an oracle: the
   migrated prefab values match the scenes' independently-authored ×2.4 values on **199 of 231**
   comparable properties. The 32 differences are all elements those scenes deliberately repositioned
@@ -95,27 +94,44 @@ Acceptance criteria:
   (`NiceVibrations` 1080×1920, 3 × `QuickScenePro` 800×600), 4 first-party at Unity's default
   800×600 in **ConstantPixelSize** mode where the field is inert (`Loadout Container`,
   `StarShapeSign`, `HeartShapeSign`, `LightningShapeSign`), and `_Scenes/Tools/PhotoBooth.unity`
-  (800×600, ScaleWithScreenSize, tool scene). None is an 800×450-authored canvas.
+  (800×600, ScaleWithScreenSize, tool scene). None is an 800×450-authored canvas. Audit §1.3 already
+  describes the project as spanning 800×450, 800×600 and 1920×1080, and treats the 800×600 group as a
+  distinct Constant-Pixel-Size item — so "no reference resolution outside 1920×1080 project-wide" is
+  broader than the migration this task defines, and cannot be satisfied by it.
 - `TextMeshProUGUI.m_fontSizeBase` tracks `m_fontSize` only while auto-sizing is **off**. Established
   from the scenes the upgrader had already run on (auto-size-off rows carry ×2.4 on both keys;
   auto-size-on rows carry it on `m_fontSize` alone) and replicated. Scaling `m_fontSizeBase`
   unconditionally would corrupt every auto-sizing label.
-- **The GameCanvas fork spans 11 scenes, not the 6 the audit records** — `GameCanvas-HexRace.prefab`
-  is instanced by AstroLeague, Bends, CrystalCapture, DogFight, HexRace, Joust, NucleusRush, Rampage,
-  Ribcage, ScarabScramble and WildlifeLiberation; `GameCanvas.prefab` by 10 more. The audit document
-  is not present on this branch so the 6 could not be cross-checked here. **Not resolved here — T2.5.**
+- **The GameCanvas fork spans 11 scenes, not the 6 the audit records — and it is still growing.**
+  Audit §3 lists the fork's modes as HexRace, Joust, Crystal Capture, AstroLeague, NucleusRush,
+  Rampage (6), and §3 quotes "the six HexRace-fork scenes". Measured against the working tree,
+  `GameCanvas-HexRace.prefab` is instanced by **11** scenes; `GameCanvas.prefab` by 10 more (21 total).
+  The five the audit misses are **Ribcage, WildlifeLiberation, DogFight, Bends and ScarabScramble** —
+  `GameModes` 39, 40, 41, 42, 43, i.e. the five newest modes, every one added after the audit's fork
+  survey. So the figure is **stale rather than wrong**, and the mechanism matters more than the number:
+  each new mode is copying the fork, so T3's cost grows with every mode shipped until it is unified.
+  **Not resolved here — T2.5.**
 - **T3 precondition, now satisfied:** both forks sit in the same coordinate space, so consolidation no
   longer has to reconcile a resolution delta mid-merge. Migrating them in parallel rather than
   unifying first was deliberate scoping, not a deviation — unifying the fork is T3's job.
 - Override pressure is unchanged for T3: the gameplay scenes still carry ~1,828 prefab-instance
-  modifications each (T3 target: under 25).
+  modifications each (audit §3 quotes ~1,770; T3 target: under 25).
+- Audit §1.3 notes `AdaptiveCanvasScaler.safeZone` is unassigned in every instance it found, so the
+  ultrawide HUD-containment feature is effectively off. The 5 instances added here also leave it
+  unassigned — the component's own default, and not a call this task can make. Raised as design
+  queue #3 rather than guessed at, since assigning it changes HUD framing on every ultrawide display.
+- Audit §1.3's `AdaptiveCanvasScaler` coverage list ("5 of ~20 scenes": Menu_Main, HexRace, Joust,
+  Maelstrom, CrystalCapture) is confirmed exactly. Four of those five carried it as a per-instance
+  override rather than on the prefab, which is why the count read as scene-level coverage.
 
 **Deviations from spec:**
 - **`Loadout Container.prefab` was not migrated.** Its CanvasScaler is `ConstantPixelSize` at Unity's
   default 800×600 — not an 800×450-authored canvas — so `CanvasUpgradeProcessor.Scan` skips it twice
   over (wrong scale mode, wrong reference resolution). In ConstantPixelSize the scale factor is pinned
-  at 1, so a ×2.4 pass would land as a literal 2.4× on-screen size increase. The criterion appears to
-  have been written from an assumption the asset does not meet; it needs amending rather than ticking.
+  at 1, so a ×2.4 pass would land as a literal 2.4× on-screen size increase. **The audit itself records
+  this** — §1.2's canvas table lists the prefab as Constant Pixel Size / 800×600, and §1.3 lists it
+  alongside the three ShapeSign prefabs as "still Constant Pixel Size at 800×600", a separate item from
+  the 800×450 migration. The criterion contradicts its own source and needs amending rather than ticking.
 - **`AdaptiveCanvasScaler` was placed on the two GameCanvas prefabs rather than per scene.** The
   gameplay scenes own no canvas, so the prefab is the only single-source-of-truth placement; this
   covers all 21 scenes at once and matches `Docs/GAMECANVAS.md`. Four scenes that already carried it
@@ -274,6 +290,7 @@ Anything found during implementation that needs a design decision. The implement
 |---|---|---|---|---|
 | 1 | T2 | T2.6 | Cut `Pip.prefab`? It is raised by no gameplay code in any audited mode. Held out of the 1920-space migration until this is decided. | OPEN |
 | 2 | T2 | T2.6 | Cut `ThumbPerimeter.prefab`? It belongs to the thumb cursors, which are self-disabled in code under a "TEMP for SUSPEND" comment. Held out of the 1920-space migration until this is decided. | OPEN |
+| 3 | T2 | T2 | Should `AdaptiveCanvasScaler.safeZone` be assigned on the two GameCanvas prefabs? It is unassigned in every instance project-wide (audit §1.3), so ultrawide HUD containment is off. Assigning it pins HUD content to a centered 16:9 region on 21:9/32:9 — a framing decision, not an implementation one. | OPEN |
 
 ---
 
