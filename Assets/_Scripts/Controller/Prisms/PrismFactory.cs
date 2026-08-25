@@ -122,8 +122,8 @@ namespace CosmicShore.Gameplay
                  "clamps the derived rate (PrismScaleAnimator.ClockRateK: growthRate * 0.04 " +
                  "into [0.05, 0.1]), so values below ~6 are indistinguishable from the " +
                  "default; 8 pins the bloom at the max speed across framerates. The collider " +
-                 "never waits on this - boost prisms hold a full-size collider from frame 0 " +
-                 "(Prism.HoldColliderAtFullSize).")]
+                 "never waits on this — under the clock law the transform is final at stamp, " +
+                 "so boost prisms have a full-size world footprint from frame 0.")]
         [SerializeField] private float boostPrismGrowthRate = 8f;
 
         [Header("Data Containers")]

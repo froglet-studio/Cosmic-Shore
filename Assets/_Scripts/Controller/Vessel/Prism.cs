@@ -28,6 +28,9 @@ namespace CosmicShore.Gameplay
         [Header("Prism Growth")]
         public Vector3 GrowthVector = new Vector3(0, 2, 0);
         public float growthRate = 0.01f;
+        // DO NOT shorten without claim-before-spawn on trail/env lays:
+        // PrismSpatialIndex.TryReserve is growth/assembler-only today — PrismTrailBuilder.LayOne
+        // and PrismFactory still rely on this disable window as the sole spawn-site protection.
         public float waitTime = 0.6f;
 
         // One yield token per prism life, reused across pool reuses — a fresh
@@ -67,8 +70,8 @@ namespace CosmicShore.Gameplay
         public Action<Prism> OnReturnToPool;
         private Vector3 _lastDestructionScale = Vector3.one;
 
-        // Authored BoxCollider size, cached in Awake so HoldColliderAtFullSize can compensate the
-        // collider against the animated transform scale and ResetState can restore it on pool reuse.
+        // Authored BoxCollider size, cached in Awake so ResetState can restore it on
+        // pool reuse (a prior life must not leak an inflated size into the next).
         Vector3 _authoredColliderSize = Vector3.one;
         bool _authoredColliderSizeCached;
 
@@ -96,7 +99,7 @@ namespace CosmicShore.Gameplay
         /// (shieldScale × authored half-extents), in the prism's LOCAL frame —
         /// the index applies the live world transform. Reads the shield
         /// components' Awake-cached geometry (never the live BoxCollider.size,
-        /// which HoldColliderAtFullSize mutates during the bloom).
+        /// which must stay at the authored size for shell geometry).
         /// </summary>
         internal bool TryGetShellGeometry(out Vector3 centerLocal, out Vector3 semiAxesLocal)
         {
@@ -229,15 +232,24 @@ namespace CosmicShore.Gameplay
             (IsCreationComplete && scaleAnimator.IsVisuallySettled);
 
         /// <summary>
-        /// Snap this prism's grow-in to its final scale NOW (loading-screen use only — the world
-        /// must be covered). No-op until creation completes: CreateBlockCoroutine owns the
-        /// pre-visibility state and must not be raced.
+        /// Snap this prism's grow-in to its final scale NOW (loading-screen / emergency use —
+        /// the world must be covered). The arena-ready gate no longer force-snaps; it waits on
+        /// <see cref="IsSettledForReveal"/> / <see cref="AnalyticGrowSettleTime"/>. No-op until
+        /// creation completes: CreateBlockCoroutine owns the pre-visibility state and must not
+        /// be raced.
         /// </summary>
         public void CompleteGrowthImmediately()
         {
             if (destroyed || !IsCreationComplete) return;
             scaleAnimator?.CompleteImmediately();
         }
+
+        /// <summary>
+        /// Analytic <see cref="PrismClock"/> time when the GPU grow bloom settles, or 0 when no
+        /// clock stamp is active. Used by the arena-ready gate to wait without force-snapping.
+        /// </summary>
+        public float AnalyticGrowSettleTime =>
+            scaleAnimator != null ? scaleAnimator.AnalyticSettleTime : 0f;
 
         public Vector3 MaxScale
         {
@@ -274,74 +286,6 @@ namespace CosmicShore.Gameplay
         {
             growthRate = rate;
             if (scaleAnimator is not null) scaleAnimator.GrowthRate = rate;
-        }
-
-        /// <summary>
-        /// Guarantees this prism's collider covers its FULL target world size from the frame of the
-        /// call, while the visual still blooms in from (near) zero - the continuity law is visual;
-        /// the physics footprint doesn't have to grow with it. The collider is enabled immediately
-        /// and its BoxCollider.size is compensated inversely against the animated transform scale
-        /// each frame, then restored to the authored size once growth completes. Call AFTER
-        /// <see cref="Initialize"/> (ResetState would stop the coroutine).
-        ///
-        /// Used by <c>BoostRingBuilder</c> (omnicrystal ring / joust ring / Squirrel tube) so a
-        /// skimmer collides with a just-spawned ring deterministically no matter how fast the
-        /// vessel arrives.
-        /// </summary>
-        /// <param name="onGrown">Invoked once the visual reaches its target scale (skipped if the
-        /// prism is destroyed or recycled first). Lets callers defer state that swaps colliders -
-        /// e.g. shield engage, whose octahedron MeshCollider scales with the transform and would
-        /// defeat the full-size hold during the bloom.</param>
-        public void HoldColliderAtFullSize(Action onGrown = null)
-        {
-            if (!blockCollider || !_authoredColliderSizeCached)
-            {
-                onGrown?.Invoke();
-                return;
-            }
-            StartCoroutine(HoldColliderAtFullSizeCoroutine(onGrown));
-        }
-
-        private IEnumerator HoldColliderAtFullSizeCoroutine(Action onGrown)
-        {
-            blockCollider.enabled = true;
-
-            while (!destroyed && blockCollider)
-            {
-                Vector3 target = TargetScale;
-                if (target.x <= 0f || target.y <= 0f || target.z <= 0f)
-                {
-                    // Target not set yet - wait, a zero target has no meaningful footprint.
-                    yield return null;
-                    continue;
-                }
-
-                Vector3 current = transform.localScale;
-                if ((current - target).sqrMagnitude <= 1e-4f)
-                    break;
-
-                // A zero transform scale zeroes the collider's world footprint no matter how large
-                // its size is - floor the bloom at 1% of target so the compensation below can
-                // always reconstruct the full-size world box (world = size * scale = target).
-                current = new Vector3(
-                    Mathf.Max(current.x, target.x * 0.01f),
-                    Mathf.Max(current.y, target.y * 0.01f),
-                    Mathf.Max(current.z, target.z * 0.01f));
-                transform.localScale = current;
-
-                blockCollider.size = new Vector3(
-                    _authoredColliderSize.x * target.x / current.x,
-                    _authoredColliderSize.y * target.y / current.y,
-                    _authoredColliderSize.z * target.z / current.z);
-
-                yield return null;
-            }
-
-            if (blockCollider)
-                blockCollider.size = _authoredColliderSize;
-
-            if (!destroyed)
-                onGrown?.Invoke();
         }
 
         private void Awake()
@@ -783,9 +727,8 @@ namespace CosmicShore.Gameplay
             if (blockCollider) blockCollider.enabled = false;
             SetRenderVisible(false);
 
-            // Pool-reuse safety: a HoldColliderAtFullSize bloom interrupted by recycle (deactivate
-            // stops its coroutine before the restore step) must not leak an inflated collider size
-            // into the next use of this instance.
+            // Pool-reuse safety: restore authored BoxCollider.size so a prior life cannot leak
+            // an inflated size into the next instance.
             if (blockCollider && _authoredColliderSizeCached) blockCollider.size = _authoredColliderSize;
 
             StopAllCoroutines();
