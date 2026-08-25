@@ -3034,12 +3034,64 @@ arc cores.
    again. The shell must never persist after a round dies, never reappear at a stale size, and never
    show on a projectile that does not grow.
 8. **Perf at volume.** Hold full-auto (90 volleys/s ≈ 54 live rounds per Sparrow) with 2–4 Sparrows
-   and watch frame time + draw calls. The shell has no MaterialPropertyBlock by design, so every
-   round should SRP-batch through one material — if the batch count climbs with round count,
-   something is minting per-renderer state and that is a bug, not a tuning issue.
+   and watch frame time + draw calls. ⚠ **This item's original claim is now INVERTED — see the
+   round-5 entry below.** The shell deliberately carries a per-round `MaterialPropertyBlock` (one
+   float, stamped once per SHOT) and is GPU-INSTANCED rather than SRP-batched. Rounds must still
+   collapse into ONE instanced draw; what would be a bug is a draw count that climbs *linearly*
+   with live rounds, which would mean instancing is off on the material.
 9. **The four other users of `DangerProjectileMaterial` are untouched**: `ExplodableProjectile`,
    `ProjectileFX`, `BrightNucleus`, `TimeDandruff`. Confirm none of them changed colour.
 10. **Depth/sort sanity.** The dart (opaque, `ZWrite On`, queue 3000) and the shell (`ZWrite Off`,
     `Cull Back`, additive, queue 3000) sit in the same queue. `Cull Back` should make draw order
     irrelevant — watch for any flicker between tracer and shell at close range, which would be the
     one symptom this reasoning missed.
+
+
+---
+
+## 🔴 Sparrow charge shell round 5 — one stroke per round, per-round seed, light budget (`claude/sparrow-projectile-effect-xuis0s`)
+
+**Supersedes items 3, 4 and 8 of the round-4 entry above** — the rim, the core threshold and
+especially the batching expectation all changed. Read this entry, not that one, where they differ.
+
+Machine-verified out of editor (no Unity available in that session): the shipped
+`ProjectileChargeField.hlsl` was compiled with `clang++` and executed, and additionally
+**rasterized through a real perspective camera at true 1080p density**
+(`Tools/Shaders/render_projectile_charge_field.py`). `verify_projectile_charge_field.py` passes all
+six gates. Shader Properties / `UnityPerMaterial` / instancing buffer / material values / harness
+constants were cross-checked programmatically and agree.
+
+**Never imported by Unity.** `Projectile.cs`, `ProjectileChargeField.shader` and
+`ProjectileChargeFieldMaterial.mat` have not been through an Editor compile. The shader gained
+GPU-instancing macros (`#pragma multi_compile_instancing`, `UNITY_INSTANCING_BUFFER`,
+`UNITY_SETUP_INSTANCE_ID`) — that is the highest-risk part of the change.
+
+1. **It compiles at all.** Enter play, fire full-auto. A **magenta** shell means the shader failed
+   to import — most likely the instancing macros. `git checkout` the two shader files and report;
+   do not patch it live.
+2. **Instancing is actually on.** `ProjectileChargeFieldMaterial` must show **Enable GPU Instancing
+   ticked** (`m_EnableInstancingVariants: 1` in the asset). With it off, every shell becomes its own
+   draw call — 54 per Sparrow.
+3. **Every round looks different.** Hold full-auto and watch the two streams. Each round should show
+   ONE short bolt at its own angle; the two muzzles must not draw mirror-image or identical strokes.
+   If they look identical, `_RoundSeed` is not reaching the shader — check that
+   `Projectile.StampChargeFieldSeed` runs (the `ChargeField` child must have a `Renderer`).
+4. **It is quiet.** The whole point of the last two commits. A sustained burst should read as
+   occasional sparks along two dark tubes, **not** a continuous lightning rope. Measured at 0.04× the
+   light of the pre-round-5 shell. If it reads bright, the knobs are a documented light budget —
+   `_ArcIntensity`, `_ArcSpan`, `_HoldTime`, `_FresnelRimIntensity` — and
+   `Tools/Shaders/verify_projectile_charge_field.py` test 6 is the gate to re-run after changing any
+   of them.
+5. **Nothing pops.** A round must never go fully dark and then re-light. Between strokes it keeps a
+   faint rim (peak alpha ≈ 0.007). Watch a single round's whole flight at low Mass.
+6. **Pool reuse.** Hold fire, release, hold again; swap vessels; change Mass level. The seed is
+   re-stamped per shot, so no round should ever inherit the previous one's stroke, and the shell must
+   not persist after a round dies.
+7. **Perf at volume.** 2–4 Sparrows on full auto. Draw calls for the shells should stay flat (one
+   instanced draw), not climb with live round count. Per-frame CPU is unchanged — one transform write
+   per live round, exactly as before; the seed is per-SHOT.
+8. **The mechanic is untouched.** Hit radius, growth curve, rate and range are all unchanged by this
+   branch. Any felt change in how much a round deletes is a regression.
+9. **The skyburst missile is unaffected.** It takes the `flightGrowthTarget` path added on
+   `bleeding-edge` and carries no charge shell (the material has exactly one user,
+   `SparrowProjectile.prefab`). Confirm missiles still swell and detonate normally.
