@@ -255,7 +255,7 @@ namespace CosmicShore.Utility
             // Sparrow turret ReverseSuction (`PrismType.Grow`, 2026-08-09). Every
             // batched suction is an implosion, which starts immediately (delay 0),
             // exactly like StartImplosion. The stamp still carries GrowDelay so the
-            // shader contract stays complete for StartGrow on the pooled fallback path.
+            // shader contract stays complete for StartGrow on the pooled gameplay path.
             s_impDuration = prefab.ImplosionDuration;
             s_impSourcePrefab = prefab;
             s_impConfigured = true;

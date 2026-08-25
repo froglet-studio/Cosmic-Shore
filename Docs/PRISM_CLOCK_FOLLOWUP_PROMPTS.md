@@ -5,31 +5,27 @@ branch. Each is self-contained for a FRESH session: it names the docs to read
 first, the scope, the constraints, and the in-editor test that closes it. Run
 them as separate branches.
 
-> **Audited + re-set 2026-08-15.** The doc's content had not been touched since
-> **2026-08-07**, and four items shipped in the interval. Every prompt below was
-> re-verified against the tree (not against the tracker) before this revision.
-> Four statements in the previous revision were not merely stale but **actively
-> harmful** — a session following them would have deleted a live code path,
-> resurrected deleted code, deleted the only asset the last outstanding Phase-3
-> test depends on, and re-wired already-wired graphs. Those are corrected in
-> place and called out under Prompt 10.
+> **Audited + re-set 2026-08-15; Prompt 10 shipped 2026-08-24.** Four statements
+> in the 2026-08-07 revision were not merely stale but **actively harmful** —
+> a session following them would have deleted a live code path, resurrected
+> deleted code, deleted the only asset the last outstanding Phase-3 test
+> depends on, and re-wired already-wired graphs. Prompt 10 closed that drift.
 
-**PRIORITY ORDER (re-set 2026-08-15) — work top-down:**
+**PRIORITY ORDER (re-set 2026-08-24) — work top-down:**
 
 | # | Prompt | Why this rank |
 |---|---|---|
-| 1 | **Prompt 10** — cross-doc truth reconcile | Cheap (one commit, no gameplay change) and it prevents three regressions. `PRISM_ANIMATION.md` §6 still tells a fresh session the graphs are unwired; §5 asserts three times that `PrismType.Grow` has no producer, which is false and would license deleting a live Sparrow path. Do it before any build prompt. |
-| 2 | **Prompt 11** — the one editor session (measure + every outstanding playtest) | Six separate items all need the same scarce resource — a human in the editor. Three shipped systems (corridor, shield morph, jiggle remainder) have never been look-verified, D3/Phase 5 has never run, and the debris carrier has never been measured. One session instead of six, and it is the gate on D4. |
-| 3 | **Prompt 12** — CI-gate the clock wiring | The five foundational clusters (grow, color, explosion, suction, flight) have **no automated gate at all**: `PrismClockWiringValidator` is a menu item with zero callers. A graph revert on any of them merges silently today. B4/C1/C14 each shipped a CI-run edit-mode test; the core did not. |
-| 4 | **Prompt 8** — validator coverage (re-scoped) | Its original ask is code-complete; what replaced it is real — four live shader families the validator never names, and an Auto-Wire → Validate loop that no longer closes. Pairs naturally with Prompt 12. No longer a ride-along. |
-| 5 | **Prompt 4** — C9 cell-swap suction (re-scoped, C8 shipped) | The largest world-scale per-frame CPU flow left. Ranked below the gates because it needs a prerequisite decision: `StampSuctionClock` **silently no-ops on live prisms** today. |
-| 6 | **Prompt 13** — C11 spindle `_DeathAnimation` fade | The only §5 tracker row with zero coverage anywhere in this doc. Since prisms leave as a skeleton *before* the wither runs, this is the *entire* remaining CPU cost of the wither visual, not a leftover. |
-| 7 | **Prompt 3** — C6 remainder (re-scoped; C7 closes ✅) | Two parent-transform scale animations that re-sync every child prism's entity matrix per frame. Real but low-traffic, and needs a design ruling first. |
-| 8 | **Prompt 7** — C12/B1 cleanup sweep (re-scoped) | All six items verified still open, but two had false premises and are corrected below. No player-visible change. |
-| 9 | **Prompt 9b** — D4: retire the pooled path (gated on Prompt 11) | A refactor, not a deletion, and it acquired a **new blocker** the tracker does not know about: the pooled `PrismImplosion` now has a live gameplay consumer. |
-| 10 | **Prompt 14** — C13b environment-lay pooling | Not a clock fix. Kills the `Domains.Blue` → domain spawn repaint and alloc churn. Told to be "re-ranked with the rest" on 2026-08-02 and never was; this row is that re-rank. |
-| 11 | **Prompt 15** — `ShapeDrawingManager` ruling (§3.8 #8) | A textbook clock-law violation on dormant code — which is exactly why every sweep has missed it. Cheap to decide; expensive if Phase-2 shape drawing is revived carrying it. |
-| 12 | **Prompt 16** — corridor dither strobe successor | An open *look* problem the checklist names explicitly, with the successor direction already reasoned out and two live levers holding the line. Pure polish; no correctness risk in deferring. |
+| 1 | **Prompt 11** — the one editor session (measure + every outstanding playtest) | Six separate items all need the same scarce resource — a human in the editor. Three shipped systems (corridor, shield morph, jiggle remainder) have never been look-verified, D3/Phase 5 has never run, and the debris carrier has never been measured. One session instead of six, and it is the gate on D4. |
+| 2 | **Prompt 12** — CI-gate the clock wiring | The five foundational clusters (grow, color, explosion, suction, flight) have **no automated gate at all**: `PrismClockWiringValidator` is a menu item with zero callers. A graph revert on any of them merges silently today. B4/C1/C14 each shipped a CI-run edit-mode test; the core did not. |
+| 3 | **Prompt 8** — validator coverage (re-scoped) | Its original ask is code-complete; what replaced it is real — four live shader families the validator never names, and an Auto-Wire → Validate loop that no longer closes. Pairs naturally with Prompt 12. No longer a ride-along. |
+| 4 | **Prompt 4** — C9 cell-swap suction (re-scoped, C8 shipped) | The largest world-scale per-frame CPU flow left. Ranked below the gates because it needs a prerequisite decision: `StampSuctionClock` **silently no-ops on live prisms** today. |
+| 5 | **Prompt 13** — C11 spindle `_DeathAnimation` fade | The only §5 tracker row with zero coverage anywhere in this doc. Since prisms leave as a skeleton *before* the wither runs, this is the *entire* remaining CPU cost of the wither visual, not a leftover. |
+| 6 | **Prompt 3** — C6 remainder (re-scoped; C7 closes ✅) | Two parent-transform scale animations that re-sync every child prism's entity matrix per frame. Real but low-traffic, and needs a design ruling first. |
+| 7 | **Prompt 7** — C12/B1 cleanup sweep (re-scoped) | All six items verified still open, but two had false premises and are corrected below. No player-visible change. |
+| 8 | **Prompt 9b** — D4: retire the pooled path (gated on Prompt 11) | A refactor, not a deletion. The pooled `PrismImplosion` has a live gameplay consumer (`PrismType.Grow` / Sparrow ReverseSuction) — do not delete that surface. |
+| 9 | **Prompt 14** — C13b environment-lay pooling | Not a clock fix. Kills the `Domains.Blue` → domain spawn repaint and alloc churn. Told to be "re-ranked with the rest" on 2026-08-02 and never was; this row is that re-rank. |
+| 10 | **Prompt 15** — `ShapeDrawingManager` ruling (§3.8 #8) | A textbook clock-law violation on dormant code — which is exactly why every sweep has missed it. Cheap to decide; expensive if Phase-2 shape drawing is revived carrying it. |
+| 11 | **Prompt 16** — corridor dither strobe successor | An open *look* problem the checklist names explicitly, with the successor direction already reasoned out and two live levers holding the line. Pure polish; no correctness risk in deferring. |
 
 **Shipped — do not re-open.** Their prompt bodies are deleted where following
 them would now cause harm; the DONE blocks below keep the lesson.
@@ -41,6 +37,7 @@ them would now cause harm; the DONE blocks below keep the lesson.
 | ~~Prompt 5~~ — projectile prism paths | ✅ **DONE 2026-08-07** — C5 shipped as `PrismFlightClock`; C4 resolved by deletion (`cc9a1f5b`). |
 | ~~Prompt 6~~ — B4 shield morphs on the GPU | ✅ **DONE 2026-08-15** — PR #729, `37f9596a`. **Phase B is complete**; the last sanctioned CPU prism ticker is deleted. |
 | ~~Prompt 9~~ (build half) — batched entity debris | ✅ **DONE 2026-08-04** — implosions on the batch carrier + the death-path marker split. Editor half → Prompt 11; D4 → Prompt 9b. |
+| ~~Prompt 10~~ — cross-doc truth reconcile | ✅ **DONE 2026-08-24** — Grow is live (Sparrow ReverseSuction); §6 is a completed-handoff; PhaseThresholds re-baseline ✅ 2026-08-02; C7 ✅ by construction; unsatisfiable Animators-HUD rows gone. Do not re-open. |
 
 Shared context every prompt inherits (do not restate in the session):
 `Docs/PRISM_ANIMATION.md` is the LOCKED law — one stamp → GPU clock → one
@@ -68,77 +65,43 @@ branches and both non-obvious:
 
 ---
 
-## Prompt 10 — Cross-doc truth reconcile (do this first, one commit)
+## ~~Prompt 10~~ — Cross-doc truth reconcile ✅ DONE 2026-08-24
 
-> The prism-clock docs have drifted apart and four claims are actively
-> dangerous. This is a documentation-only commit — **no gameplay change** — and
-> it exists so the next build session is not led into a regression. Verify each
-> against the tree before changing it (do not trust this list either), then fix:
+> Documentation-only. Closed so a fresh session is not led into a regression.
+> **Do not re-run this prompt** — several of its own cited line numbers were
+> already stale (do not trust them; the verified sites are below).
 >
-> **(a) `PrismType.Grow` is NOT dead — three docs and two code comments say it
-> is.** It acquired its first producer on 2026-08-09: the Sparrow turret's
-> ReverseSuction visual at
-> `_Scripts/Controller/Vessel/R_VesselActions/Executors/FullAutoBlockShootActionExecutor.cs:476`
-> (self-documented at `:55` as "PrismType.Grow's first producer"), dispatched at
-> `PrismFactory.cs:190`. Fix `Docs/PRISM_ANIMATION.md` lines **465**, **897**,
-> **959**, and the stale comments at `PrismDebris.cs:237` and
-> `PrismImplosion.cs:54-56`. This is load-bearing: it is a **new constraint on
-> D4** — the pooled `PrismImplosion` now has a gameplay consumer, not just a
-> fallback route.
+> **(a)** `PrismType.Grow` is LIVE. First producer 2026-08-09: Sparrow turret
+> ReverseSuction (`FullAutoBlockShootActionExecutor.cs:476`, self-documented at
+> `:55`), dispatched `PrismFactory.cs:198` → `SpawnGrow` `:448` → pooled
+> `PrismImplosion.StartGrow` `:263`. D4 must keep that surface or port it onto
+> the batched carrier. §4.6.1 opener no longer licenses deleting `PrismImplosion`.
 >
-> **(b) `PRISM_ANIMATION.md` §6 (lines 1850-1874) is obsolete and still reads as
-> the live next step.** It says "STRICT MODE is live … **and the graphs are not
-> wired yet**" and instructs "wire the graphs per §4.4". All four phases are
-> ✅ WIRED + PLAYTEST-CONFIRMED (§5 A1, line 1798). Rewrite §6 as a
-> completed-handoff record whose live remainder is Phase 5 (D3) + the Phase
-> 8/9/10 playtests.
+> **(b)** §6 is a completed-handoff. Live remainder is Phase 5 / D3 + Phases 8/9/10.
 >
-> **(c) §7 Enforcement's last bullet (lines 1884-1886) references three deleted
-> classes** ("the three CPU animation managers carry header comments pointing
-> here"). All three went in D2. The enforcement carrier is now the edit-mode
-> suites (`PrismShieldMorphTests`, `PrismOcclusionCoverageTests`,
-> `PrismSuperShieldJiggleTests`, `PrismDeathVisualTierTests` — CI-run via
-> `bleeding-edge-guard.yml`) plus the two FrogletTools validators, which are
-> **editor-only and NOT CI-gated** (that gap is Prompt 12).
+> **(c)** §7 Enforcement is the edit-mode suites (CI via `bleeding-edge-guard.yml`)
+> plus the two FrogletTools validators (editor-only, **not** CI — Prompt 12).
 >
-> **(d) The PhaseThresholds re-baseline is a contradiction, not open work.**
-> `PRISM_CLOCK_WIRING_CHECKLIST.md:255` records it `[x] ✅ DONE 2026-08-02` with
-> the six freestyle configs re-authored; `PRISM_ANIMATION.md` still lists it
-> pending in **four** places (`:574`, `:1806`, `:1836`, `:1872`). Establish which
-> is true (check the config assets' git history) and make them agree.
+> **(d)** PhaseThresholds re-baseline is ✅ DONE 2026-08-02 (checklist Phase 6;
+> `Docs/ECOSYSTEM.md` §18). Not open work.
 >
-> **(e) Mark C7 ✅ in §5.** Flora growth is done *by construction*, verified end
-> to end: `PhyllotacticFlora.cs:420` `Instantiate` → `:427` `AddHealthBlock` →
-> `:428` `leaf.Initialize` → `Prism.cs` `BeginGrowthAnimation` →
-> `PrismScaleAnimator.cs:219-237`, whose body is STRICT-mode and ends in
-> `StampClockGrowth()`. There is no flora-specific work; C7 closes with C6.
+> **(e)** C7 ✅ by construction. Verified chain:
+> `PhyllotacticFlora.cs:432` Instantiate → `:439` `AddHealthBlock` → `:440`
+> `Initialize` → `Prism.BeginGrowthAnimation` → `PrismScaleAnimator.cs:219-237`
+> (`StampClockGrowth`). Closes with C6; no flora-specific clock work.
 >
-> **(f) Smaller factual fixes**, each verified before changing:
-> `PRISM_ANIMATION.md:1823` cites a `§3.8.1` that does not exist (it is §3.8 #1,
-> line 433); `:437-438` cites `Microscene.AnimateScaleAsync`, deleted with C8;
-> §3.7's inventory cites `Cell.cs:1237-1273` / `:1345-1361` / `:1262-1273` when
-> the real sites are suction `Cell.cs:1932-1943` and drain `Cell.cs:2015-2031`;
-> `:1819` reads as if `PrismFlightClock` were a new file (it is a function in the
-> shared `PrismClockAnimation.hlsl:172`); `:1836` says `GameLoadSampler` is
-> re-sourced to `PrismSpatialIndex.LiveCount` + `EnabledInstances` when it also
-> adds `PrismDebris.LiveDebrisCount` (`GameLoadSampler.cs:43`), which is where
-> most deaths now live.
+> **(f)** Cell suction/drain cites are `Cell.cs:2097-2108` /
+> `:2191-2206` / `:2218` (the original prompt's `:1932` / `:2015` were already
+> stale). `PrismFlightClock` is a function in `PrismClockAnimation.hlsl`.
+> `GameLoadSampler` also adds `PrismDebris.LiveDebrisCount` (`:43`).
 >
-> **(g) Delete two unsatisfiable checklist rows.**
-> `PRISM_CLOCK_WIRING_CHECKLIST.md:229-230` requires "DiagnosticsHUD Animators:
-> `PrismScaleManager` / `MaterialStateManager` **0 active**". Both classes are
-> deleted and `DiagnosticsHUD.cs` has no Animators section — the row can never be
-> ticked, which **blocks D3 from ever completing**. Also strike the matching
-> present-tense claim at `Docs/PERFORMANCE_OPTIMIZATION.md:947` (leave `:849`,
-> `:1009`, `:1079` — those are historical log entries), `PRISM_ANIMATION.md:783-785`,
-> and the comment at `PrismClockSmokeTest.cs:12`. Retitle checklist Phase 6:
-> all seven of its boxes are ticked, so "(one item left)" is wrong.
+> **(g)** Unsatisfiable DiagnosticsHUD Animators rows deleted. Phase 5 is
+> Validate Clock Wiring + zero `[PrismClock]` errors. Phase 6 title is
+> "✅ DONE PROGRAMMATICALLY".
 >
-> **(h) Add a cross-reference between checklist Phase 3 and Prompt 7 item (3).**
-> Phase 3's one outstanding test is "steal a TRANSPARENT prism", and the Serpent
-> cloak (`CloakSeedWallActionExecutor.cs:387`) is the project's **only** live
-> `IsTransparent` producer. Prompt 7's wording invites deleting that family. Each
-> doc must name the other.
+> **(h)** Checklist Phase 3 ↔ Prompt 7 item (3): Serpent cloak
+> (`CloakSeedWallActionExecutor.cs:387`) is the only live `IsTransparent`
+> producer. Do not delete that family.
 
 ## Prompt 11 — The one editor session: measure the carrier, then close every outstanding playtest
 
@@ -167,10 +130,12 @@ branches and both non-obvious:
 > (`N exp / N imp`) returns to `0 imp` when feeding stops. There is currently no
 > place in the docs holding such a record — make one in §4.6.
 >
-> **(3) Phase 5 / D3 — the full verification pass.** Five checks across both
-> render paths + load-gate / hitstop / pause. **Delete checklist rows :229-230
-> first** (Prompt 10g) or the pass cannot complete: they reference deleted
-> classes and a HUD section that does not exist.
+> **(3) Phase 5 / D3 — the full verification pass.** Validate Clock Wiring →
+> `RESULT: ✅ ALL REQUIRED WIRING PRESENT`, then a full play session with
+> **zero `[PrismClock]` errors**, a just-laid ring colliding at full size while
+> blooming, and hitstop/pause freezing prism animation. The old Animators-HUD
+> rows are gone (Prompt 10g shipped) — do not hunt for
+> `PrismScaleManager` / `MaterialStateManager` counts.
 >
 > **(4) Phase 8 — occlusion corridor (C1), 8 steps, never playtested.** Includes
 > the nose-clearance buffer, the SHATTER lattice look at speed, the debris UV
@@ -253,9 +218,9 @@ branches and both non-obvious:
 ## Prompt 3 — C6 remainder: two parent-scale animations (re-scoped)
 
 > **C7 is done by construction — do not migrate flora.** Leaf spawn already
-> routes `PhyllotacticFlora.cs:420` → `AddHealthBlock` → `Prism.Initialize` →
-> `BeginGrowthAnimation` → `PrismScaleAnimator.StampClockGrowth`. Prompt 10(e)
-> closes the tracker row.
+> routes `PhyllotacticFlora.cs:432` Instantiate → `:439` `AddHealthBlock` →
+> `:440` `Initialize` → `BeginGrowthAnimation` →
+> `PrismScaleAnimator.StampClockGrowth`. Tracker row is ✅.
 >
 > **The wither does not touch prisms either** (see Prompt 13 — the prisms are
 > left standing as a skeleton and the fade is the *spindle's*). What is genuinely
@@ -321,26 +286,26 @@ branches and both non-obvious:
 > Decide which visual is wanted before starting.
 >
 > Sites — all in `Assets/_Scripts/Controller/Environment/Cell.cs`. **Line numbers
-> are a hint, the symbol is the anchor**: this file shifted 22 lines under this
-> doc during the very session that wrote it, so re-grep before trusting a number.
-> - **Stamp at** `RetireWorldIntoSuctionRoot` (`:2058-2107`) — note it re-parents
->   the authored environment as ONE container (`:2066-2067`), so a per-prism stamp
+> are a hint, the symbol is the anchor**: this file keeps shifting, so re-grep
+> before trusting a number. Verified 2026-08-24:
+> - **Stamp at** `RetireWorldIntoSuctionRoot` (`:2218`) — it re-parents the
+>   authored environment as ONE container (`:2226-2227`), so a per-prism stamp
 >   needs an explicit `GetComponentsInChildren<Prism>` there, or reuse the walk
->   `ReleaseRetiredWorld` already does (`:2036`).
+>   `ReleaseRetiredWorld` already does (`:2196`).
 > - **Delete** the per-frame root `localScale` write — the `while (elapsed <
->   duration)` suction loop at `:1951-1959`, writing at `:1957`. Keep a plain
+>   duration)` suction loop at `:2097-2108`, writing at `:2106`. Keep a plain
 >   wall-clock wait for `duration`.
-> - **Keep** `ReleaseRetiredWorld`'s drain cadence (`:2031-2041`, `const int
->   PrismsPerFrame = 500` at `:2035`) — that is gameplay de-registration, state
+> - **Keep** `ReleaseRetiredWorld`'s drain cadence (`:2191-2206`, `const int
+>   PrismsPerFrame = 500` at `:2195`) — that is gameplay de-registration, state
 >   not photons.
 >
 > Three things not to miss: pair any suction stamp with `ResetBoundsToMesh` +
 > `EncapsulateBoundsPoint(objectPoint(cellCentre), padding)` — copy the shape at
 > `PrismImplosion.cs:315-320`, it is the same culling bug class as explosions; add
 > `ClearSuctionClockStamp` coverage for the pooled prisms returned to their pool at
-> `Cell.cs:1964-1971` (`ClearPrismStamps` does not include it); and note the
+> `Cell.cs:2110-2119` (`ClearPrismStamps` does not include it); and note the
 > retiring root also carries **non-prism** objects — membrane / nucleus /
-> cytoplasm are re-parented onto it at `Cell.cs:2099-2104`, and lifeform bodies
+> cytoplasm are re-parented onto it at `Cell.cs:2259-2263`, and lifeform bodies
 > just above — which ride the root transform correctly today. Removing the root
 > animation removes their suction, so either keep the root scale for those and
 > stamp only prisms, or give them their own transition.
@@ -407,8 +372,8 @@ branches and both non-obvious:
 > (start stamp + duration) is exposed on `Prism`/`PrismScaleAnimator`. Expose it
 > first, then rewrite the settle logic.
 >
-> **B1's fourth pending item, the PhaseThresholds re-baseline, is NOT in this
-> sweep** — it is a doc contradiction, handled by Prompt 10(d).
+> **B1's PhaseThresholds re-baseline is DONE 2026-08-02** (Prompt 10(d) closed
+> the tracker contradiction). Do not re-author the six freestyle configs.
 >
 > Each: grep blast radius first, brace-check, verify no behavior change beyond
 > the stated one.
@@ -417,10 +382,10 @@ branches and both non-obvious:
 
 > **The original ask is already done — do not redo it.** `DiagnosticsHUD.cs` has
 > zero references to Animators or to any deleted manager; `GameLoadSampler` is
-> re-sourced (and adds `PrismDebris.LiveDebrisCount`, which the tracker line
-> omits — Prompt 10f); and `PrismClockWiringValidator` already requires all four
-> `_ShieldMorph*`, all three `_Flight*` and all three `_Jiggle*`. The residual
-> "Animators" text is doc-only and belongs to Prompt 10(g).
+> re-sourced (and adds `PrismDebris.LiveDebrisCount` at `:43`); and
+> `PrismClockWiringValidator` already requires all four `_ShieldMorph*`, all
+> three `_Flight*` and all three `_Jiggle*`. Residual present-tense Animators-HUD
+> text was struck in Prompt 10(g).
 >
 > What is actually open:
 >
@@ -471,11 +436,11 @@ branches and both non-obvious:
 > `PrismEventData.OnGrowCompleted`) — it has no producer anywhere in Assets."
 > **That is false as of 2026-08-09.** It has a live producer: the Sparrow turret's
 > ReverseSuction visual
-> (`FullAutoBlockShootActionExecutor.cs:476`, dispatched at `PrismFactory.cs:190`).
-> So the pooled `PrismImplosion` is now a live **gameplay carrier**, not just a
-> fallback route — D4 must either port `StartGrow` onto the batched carrier or
-> keep the pooled class for it. Do not delete that surface. (Prompt 10a fixes the
-> mirror claims in `PRISM_ANIMATION.md` and the two stale code comments.)
+> (`FullAutoBlockShootActionExecutor.cs:476`, dispatched at `PrismFactory.cs:198`
+> → `SpawnGrow` `:448`). So the pooled `PrismImplosion` is now a live **gameplay
+> carrier**, not just a fallback route — D4 must either port `StartGrow` onto the
+> batched carrier or keep the pooled class for it. Do not delete that surface.
+> Mirror claims in `PRISM_ANIMATION.md` §3.8 #8 / §4.6.1 are closed (Prompt 10a).
 
 ## Prompt 14 — C13b: environment-lay pooling (finally its own row)
 
@@ -493,8 +458,8 @@ branches and both non-obvious:
 > touching the call site.
 >
 > Adjacent, same class, worth folding in or at least naming so the next session
-> does not re-discover them: `PhyllotacticFlora.cs:420` and `BranchingFlora.cs:248`
-> also spawn leaves with raw `Instantiate`.
+> does not re-discover them: `PhyllotacticFlora.cs:432` and
+> `BranchingFlora.cs:180` also spawn leaves with raw `Instantiate`.
 >
 > Test: build a freestyle cell environment and the Wanderway belt — prisms spawn
 > `Domains.Blue` and repaint to domain on the clock, allocation churn drops in the
@@ -559,6 +524,6 @@ Maintenance: when a prompt ships, move its row to the **Shipped** table with the
 date + commit, delete the prompt body if following it would now cause harm
 (otherwise keep it under a `✅ DONE` block for the lesson), and update
 `Docs/PRISM_ANIMATION.md` §5. **That protocol lapsed between 2026-08-07 and
-2026-08-15 — four items shipped without it, and the resulting drift is what
-Prompt 10 exists to repair.** If a session discovers a new trap or technique,
+2026-08-15 — four items shipped without it; Prompt 10 closed the resulting
+drift on 2026-08-24.** If a session discovers a new trap or technique,
 fold it into the `/asset-surgery` skill (that's the `/ship` retrospective step).

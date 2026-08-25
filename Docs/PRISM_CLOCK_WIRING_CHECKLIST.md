@@ -20,14 +20,17 @@ one `[PrismClock]` error per unwired material.
 **Your tools:**
 
 - `FrogletTools > Ecology > Prism Animation> Validate Clock Wiring` — run after every
-  phase. Out of the box it should show every property row ✅ and the Custom Function
-  node rows ❌ — the node wiring is exactly what's left.
+  phase. Phases 1–4 are ✅ WIRED: it should show **`RESULT: ✅ ALL REQUIRED WIRING
+  PRESENT`**. A Custom Function node row ❌ means a graph **reverted**, not that
+  wiring is still the next step (`Docs/PRISM_ANIMATION.md` §6).
 - `FrogletTools > Ecology > Prism Animation> Auto-Wire Clock Properties` — idempotent
   repair tool: re-adds any clock property that's missing (e.g. after a graph revert).
   Normally reports "already present".
 - `FrogletTools > Ecology > Prism Animation> Smoke Test - Re-Bloom Nearby Prisms`
   (play mode) — stamps a from-zero regrow on nearby prisms: wired = smooth GPU
-  bloom with 0 active CPU animators; unwired = snap + errors.
+  bloom, **zero `[PrismClock]` errors**, collider at full size throughout;
+  unwired = snap + errors. (The CPU animation managers are deleted — there is
+  no Animators HUD to watch.)
 
 **First open**: if Unity flags anything on importing the modified graphs (they were
 edited out-of-editor — expected clean, every block is schema-exact), the recovery is
@@ -253,7 +256,8 @@ across code AND scenes/prefabs before deletion):
       `LastStepTime`, `OwnerPrism`, `Initialize`, manager registration); callers
       updated (`Prism`, `FullAutoBlockShootActionExecutor`); benchmark counts
       re-sourced (`GameLoadSampler` → `PrismSpatialIndex.LiveCount` +
-      effect `EnabledInstances`)
+      effect `EnabledInstances` + `PrismDebris.LiveDebrisCount` —
+      `GameLoadSampler.cs:43`, where most deaths now live)
 - [x] `TrailViewer` component removed from `Urchin.prefab`; file deleted
 - [x] Re-baseline PhaseThresholds — ✅ DONE 2026-08-02: the prompter ran
       `Measure Cell Environment Baselines` and the six freestyle configs were
@@ -284,8 +288,10 @@ them) ·
 `Tools/Shaders/wire_prism_shield_morph.py`; the last sanctioned CPU prism ticker,
 `PrismOctahedronShieldManager`, is DELETED. Gates: **Validate Clock Wiring** now
 requires them, plus the `PrismShieldMorphTests` edit-mode suite. Phase 9 below) ·
-C6 fauna wither/devour/level-up · C7 flora growth · C8 microscene conveyor ·
-C9 cell-swap suction · C11 spindle fade · C13 environment-lay
+C6 fauna wither/devour/level-up · ~~C7 flora growth~~ (✅ by construction —
+closes with C6; `PhyllotacticFlora.cs:432` → `:439` `AddHealthBlock` → `:440`
+`Initialize` → `StampClockGrowth`) · ~~C8 microscene conveyor~~ (✅ shipped
+2026-08-02) · C9 cell-swap suction · C11 spindle fade · C13 environment-lay
 pooling. (C10 worm shift is resolved by deletion — the
 worm-colony rebuild removed the legacy shift; see Docs/ECOSYSTEM.md §23.)
 

@@ -55,7 +55,7 @@ namespace CosmicShore.Utility
         /// is deliberately not exposed on the pooled component: it belongs to StartGrow
         /// (reverse suction), which Sparrow turret ReverseSuction uses via PrismType.Grow
         /// (2026-08-09). Batched implosion debris never delays; the pooled StartGrow
-        /// fallback can.</summary>
+        /// gameplay consumer can.</summary>
         public float ImplosionDuration => implosionDuration;
 
         internal bool IsActive { get; private set; }
