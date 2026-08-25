@@ -56,7 +56,6 @@ Acceptance criteria:
 - [x] `CanvasUpgraderUpgradedPrefabs.txt` respected — no double pass (×5.76 check)
 - [x] `AdaptiveCanvasScaler` on every scene canvas that lacked it
 - [x] Static `matchWidthOrHeight` overrides removed from those scenes
-- [x] Android max aspect raised 2.1 → 2.4
 - [ ] No remaining reference resolution outside 1920×1080 project-wide — 9 remain, see Findings
 - [~] Project builds; no canvas visibly regressed in a smoke pass — editor-only, human to confirm
 
@@ -71,7 +70,6 @@ Acceptance criteria:
 - Static `m_MatchWidthOrHeight: 0` override removed from all 12 scenes that pinned it
 - All 36 now-no-op `m_ReferenceResolution.x/.y` + `m_ReferencePixelsPerUnit` overrides removed from
   those 12 scenes — no CanvasScaler override of any kind now survives on any GameCanvas instance
-- `ProjectSettings/ProjectSettings.asset` — `androidMaxAspectRatio` 2.1 → 2.4
 
 **Findings:**
 - Audit §1.3 already records that both prefab **assets** sat at 800×450 / PPU 100 while only their
@@ -102,24 +100,60 @@ Acceptance criteria:
   from the scenes the upgrader had already run on (auto-size-off rows carry ×2.4 on both keys;
   auto-size-on rows carry it on `m_fontSize` alone) and replicated. Scaling `m_fontSizeBase`
   unconditionally would corrupt every auto-sizing label.
-- **The GameCanvas fork spans 11 scenes, not the 6 the audit records — and it is still growing.**
-  Audit §3 lists the fork's modes as HexRace, Joust, Crystal Capture, AstroLeague, NucleusRush,
-  Rampage (6), and §3 quotes "the six HexRace-fork scenes". Measured against the working tree,
-  `GameCanvas-HexRace.prefab` is instanced by **11** scenes; `GameCanvas.prefab` by 10 more (21 total).
-  The five the audit misses are **Ribcage, WildlifeLiberation, DogFight, Bends and ScarabScramble** —
-  `GameModes` 39, 40, 41, 42, 43, i.e. the five newest modes, every one added after the audit's fork
-  survey. So the figure is **stale rather than wrong**, and the mechanism matters more than the number:
-  each new mode is copying the fork, so T3's cost grows with every mode shipped until it is unified.
+- **Fork census re-measured for T3 scoping. Audit figures of "6 fork scenes" and "~1,734 identical
+  overrides" (22 Aug) are SUPERSEDED.** Measured against the working tree:
+
+  | | audit (22 Aug) | measured |
+  |---|---|---|
+  | `GameCanvas-HexRace.prefab` scenes | 6 | **11** |
+  | `CORE/GameCanvas.prefab` scenes | "the remaining" | **10** (21 total) |
+  | identical overrides across the fork set | ~1,734 | **1,719** byte-identical / **1,735** same-key |
+  | overrides per fork-scene canvas instance | ~1,770 | **1,748–1,760** (1,752–1,764 before this branch) |
+
+  Fork scenes (11): AstroLeague, Bends, CrystalCapture, DogFight, HexRace, Joust, NucleusRush,
+  Rampage, Ribcage, ScarabScramble, WildlifeLiberation.
+  CORE scenes (10): 2v2 CoOp, Maelstrom, DuelForCell, MultiplayerFreestyle, WildlifeBlitz CoOp,
+  BenchmarkStressTest, CellularDuel, WildlifeBlitz, Recording Studio, MattsRecording Studio.
+  The five the audit misses are `GameModes` 39–43 (Ribcage, WildlifeLiberation, DogFight, Bends,
+  ScarabScramble) — the five newest modes, all added after the audit's survey. The figure is **stale
+  rather than wrong**.
+- **Widening the set from 6 to 11 costs T3 nothing.** The identical-override core is *the same number*
+  measured across the audit's 6 and across all 11 (1,719 byte-identical / 1,735 same-key, both sets).
+  Only **16** (target, propertyPath) pairs genuinely differ in value across the whole fork set. So the
+  consolidation payload T3 has to push into the prefab does not grow with the extra 5 scenes — only
+  the re-placement work does. The audit's ~1,734 sits between the two measures and is consistent with
+  a same-key count taken before this branch removed 4 scaler overrides per scene.
+- **The newer fork scenes were duplicated, not authored fresh — this is why the override baggage is
+  identical.** 9 of the 11 fork scenes carry the *same scene-local `PrefabInstance` anchor fileID*
+  (`2113049457`): AstroLeague, Bends, CrystalCapture, DogFight, NucleusRush, Rampage, Ribcage,
+  ScarabScramble, WildlifeLiberation. Only HexRace (`330573866`) and Joust (`377908207`) differ. A
+  scene-local fileID is minted per scene, so an identical anchor across 9 scenes is a scene-copy
+  signature: each new mode was cloned from an existing fork scene and inherited its full override set.
+  (Creation dates from `git log --diff-filter=A` are **not** usable as corroboration here — the clone
+  is shallow, so those dates are when each file entered the clone, not when it was authored.)
   **Not resolved here — T2.5.**
 - **T3 precondition, now satisfied:** both forks sit in the same coordinate space, so consolidation no
   longer has to reconcile a resolution delta mid-merge. Migrating them in parallel rather than
   unifying first was deliberate scoping, not a deviation — unifying the fork is T3's job.
 - Override pressure is unchanged for T3: the gameplay scenes still carry ~1,828 prefab-instance
   modifications each (audit §3 quotes ~1,770; T3 target: under 25).
-- Audit §1.3 notes `AdaptiveCanvasScaler.safeZone` is unassigned in every instance it found, so the
-  ultrawide HUD-containment feature is effectively off. The 5 instances added here also leave it
-  unassigned — the component's own default, and not a call this task can make. Raised as design
-  queue #3 rather than guessed at, since assigning it changes HUD framing on every ultrawide display.
+- `AdaptiveCanvasScaler.safeZone` is unassigned in **all 6** instances project-wide — the 5 added by
+  this branch plus Menu_Main's — every one `{fileID: 0}`. Audit §1.3's reading is confirmed: ultrawide
+  HUD containment is off everywhere. Raised as design queue #3 rather than guessed at, since assigning
+  it changes HUD framing on every ultrawide display.
+- `WidescreenLayoutAdapter`'s guid appears in **0** scenes and **0** prefabs. Audit §1.3 confirmed.
+- **Desktop player settings — the audit is NOT stale, it is accurate.** `defaultScreenWidth: 1024`,
+  `defaultScreenHeight: 768`, `resizableWindow: 0`, `fullscreenMode: 1` (`FullScreenWindow`, i.e.
+  borderless), `defaultIsNativeResolution: 1`, `allowFullscreenSwitch: 1`. So the shipping default is
+  borderless-fullscreen at native resolution and the 1024×768 pair only applies to a windowed launch.
+- **`ScreenSwitcher` has no re-layout path on resolution change** (report only, not fixed here).
+  `LayoutScreensToViewport()` sizes every screen panel to `Screen.width` and positions it at
+  `i * viewportWidth`; it has exactly **one** caller — `Start()`. There is no
+  `OnRectTransformDimensionsChange`, and `Update()` handles only the freestyle/modal input gates. A
+  resolution change therefore leaves the filmstrip sized *and* offset to the old viewport, so panels
+  are the wrong width and navigation lands off-centre. `resizableWindow: 0` currently masks this — but
+  `allowFullscreenSwitch: 1` means an alt-enter fullscreen toggle already reaches it, and it becomes
+  a live desktop bug the moment the window is made resizable.
 - Audit §1.3's `AdaptiveCanvasScaler` coverage list ("5 of ~20 scenes": Menu_Main, HexRace, Joust,
   Maelstrom, CrystalCapture) is confirmed exactly. Four of those five carried it as a per-instance
   override rather than on the prefab, which is why the count read as scene-level coverage.
@@ -141,7 +175,7 @@ Acceptance criteria:
   reference. Tool scene, no shipping impact.
 - **The 36 no-op CanvasScaler overrides were removed although the task did not ask for it.** A no-op
   override still beats the prefab, so those 12 scenes would have silently ignored any future re-tune —
-  the mechanism that produced the ~1,734 identical overrides T3 now has to unwind.
+  the mechanism that produced the 1,719 identical overrides T3 now has to unwind.
 - Migration was performed as validated YAML surgery, not by running the editor tool: no Unity editor
   is available in this environment. Document counts, anchor counts and dangling-reference sets are
   unchanged on all 18 files, and the authored `AdaptiveCanvasScaler` keys were checked field-for-field
@@ -205,7 +239,7 @@ Acceptance criteria:
 Acceptance criteria:
 - [ ] Prefab Kit Validate run, output recorded
 - [ ] Prefab Kit Consolidate run
-- [ ] Identical overrides (~1,734) pushed into the prefab
+- [ ] Identical overrides (**1,719** byte-identical / 1,735 same-key across all **11** fork scenes; audit's "~1,734 across 6" superseded — see T2 Findings) pushed into the prefab
 - [ ] **One scene only** re-placed, diff reported, explicit go-ahead received before the rest
 - [ ] Override count per canvas instance below 25 in each migrated scene
 - [ ] `statsToTrack` preserved per mode (the one real per-mode value)
@@ -311,3 +345,4 @@ Decisions taken during the redesign to explicitly not do something. Recorded so 
 | UI Toolkit migration | Deferred past Steam EA | Framework migration on top of the fork debt risks the EA date |
 | Store / ARK screen | Cut from overhaul | Needs a product decision, not a visual one |
 | Port / Leaderboards screen | Cut from overhaul | Same — 104 sprites feeding a disabled screen |
+| Android `maxAspectRatio` 2.1 → 2.4 | Dropped from T2; change reverted | Mobile is deferred, desktop is the platform. The raise was applied and then reverted so the PR carries no unowned platform-settings change. One line in `ProjectSettings.asset` to restore when mobile resumes; at 2.1, 20:9 and 21:9 phones letterbox or crop per OEM |
