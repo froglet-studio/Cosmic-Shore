@@ -468,12 +468,36 @@ primitive meshes (the skimmer sphere, scaled 15–60× — it otherwise dominate
 and crushed the hull to an invisible speck; this is why only Rhino, the one ship whose skimmer
 has no builtin sphere, used to render), anything named skimmer/trail/jet/forcefield/crackle/pip/
 vfx, and inactive/disabled renderers (read via `activeSelf` up the chain — `activeInHierarchy` is
-always false on a prefab asset). Each hull mesh is painted with one **opaque, self-lit preview
-material** (`TryBuild(prefab, radius, previewColor, out model)`), because the ship's real hull
-material is a transparent, runtime-theme-driven shader that renders dim/invisible at rest. The
-`previewColor` is the local player's **domain colour**, so the mini ships preview "you, a
-different hull". Vessels whose body isn't statically extractable fall back to the labelled
-tinted sphere.
+always false on a prefab asset). Vessels whose body isn't statically extractable fall back to the
+labelled tinted sphere.
+
+**A station shows the ACTUAL ship; a glyph stays flat.** The mini hulls used to be painted with
+one opaque, self-lit preview fill in the local player's domain colour, because a vessel's real
+materials are dark unlit theme shaders that read as a black blob with nothing to say which team
+they belong to. The **vessel vision band** (`Docs/VESSEL_VISION.md`) answers both halves of that
+now, so the fill is retired for anything you fly AT:
+
+| | Built by | Materials | Domain read |
+|---|---|---|---|
+| **Station** (vessel-changer matrix, Lifeform Matrix hangar) | `ToyVesselRoster.TryBuildLiveHull` | the ship's **own** materials, with the domain-role slots swapped for the live domain ship material | the vision band's mark, stamped via `VesselVisionShading.StampDisplayModel` |
+| **Glyph** (a toy's emblem, the kingdom icons) | `ToyVesselRoster.TryBuildHull` | one flat, self-lit preview fill | the fill's own colour |
+
+The split is a distance argument, and the geometry already made it: a vessel matrix blooms
+`StationSpacing × MatrixDistanceFactor` = **360 units** out along the outward radial, which lands
+the whole grid just past the band's `nearFullStart` (350). So the stations **arrive already at full
+mark**, read as domain-coloured cel silhouettes for the entire approach while you are choosing
+between them, and **resolve into their real hulls over the last stretch as you commit to one** —
+choosing at range, arriving at a ship. A glyph sits *on* the toy, inside the band's near cutoff
+where the mark is correctly zero and where a real hull would be a black blob, so it keeps the fill.
+
+**Two kinds of mini hull must be re-tinted in opposite ways, and one list holds both** (the
+Lifeform Matrix's `_hullBodies` carries its kingdom glyph *and* its hangar stations). A flat model
+owns a preview material built for it, so a domain change repaints that material. A **live** model
+draws with shared **project assets** — repainting one would recolour every ship in the game,
+permanently, in the editor. So live models carry a `ToyLiveHull` marker and everything routes
+through `ToyVesselRoster.ApplyDomain`, which dispatches; `Recolor` is now documented as flat-only.
+The marker is deliberate rather than a heuristic ("is this material a project asset?"), because
+the cost of guessing wrong is corrupting shipped assets.
 
 **Recolour on domain change.** The mini ships are tinted to your domain, but they are built once
 when the matrix opens. So `VesselChangerToy.Update` watches the local player's domain and, on a

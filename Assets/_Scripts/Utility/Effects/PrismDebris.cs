@@ -315,6 +315,9 @@ namespace CosmicShore.Utility
                 Duration = duration,
                 ObjectDisplacement = objDisp,
                 BoundsPadding = pad,
+                // The prism cube's faces are four wedges fanned from a face-centre vertex,
+                // which is exactly the layout RotateFacesAlongAxis derives its pivot for.
+                FacePivotFromCentroid = 0f,
             });
 
             EnsureHost();

@@ -20,9 +20,10 @@ In one or two lines, state which invariants the change touches and confirm it vi
 **continuity of existence** (nothing pops in/out — everything grows/fades/suctions/withers; PLATFORM-WIDE) ·
 no imposed death/decay/lifespan · no domain asymmetry (controlling-color spawn only) ·
 wither-to-crystal + mass conservation · volume is the spine (not count) · the lifeform→elemental-
-crystal invariant (COMPOSITE creatures satisfy it at the CREATURE level — the worm
-colony's capital segments carry the hearts, its body segments are body-parts and carry
-none; `Docs/ECOSYSTEM.md` §23.3) · territorial permanence (don't cull the dominant canopy) · endogenous
+crystal invariant (a connected COLONY is a POPULATION, so every member carries and drops its
+own heart — the worm colony's head, body AND tail segments all do, and only its heartless root
+anchor does not; the old "body segments are body parts" ruling is RETRACTED,
+`Docs/ECOSYSTEM.md` §23.3 + §23.8) · territorial permanence (don't cull the dominant canopy) · endogenous
 selection only (survival = fitness, never a scripted fitness function) · the collider budget.
 **If a change might violate one, STOP and ask (AskUserQuestion). Do not guess the design.**
 
@@ -86,6 +87,38 @@ what the carve-out silently broke — see the traps below.
   `RandomLifeSpawner` for everyone else. Any spawn-loop feature (a density scalar, a gate, a
   new roll) implemented in only one of them is **dead code in exactly the modes that asked for
   it**. Implement in both, or state why one is deliberately excluded.
+- **A POPULATION's cadence must read `Cell.CurrentFaunaSpawnPeriod`, never
+  `OnFaunaWaveSpawned`.** This is the spawner-swap trap wearing a different hat: the wave
+  EVENT is raised by `RandomLifeSpawner` alone, so subscribing to it makes a colony's
+  production dead code in every `IntensityWise` cell — and it is dead in exactly the modes
+  (Rampage, Ribcage, Scarab Scramble, Wildlife Liberation…) most likely to want it. The
+  PERIOD is served by the `Cell` itself off `SpawnProfileSO.BaseFaunaSpawnTime` and is
+  therefore correct under both spawners; both `AssembledFlora`'s colony cycle and
+  `WormFauna.TickProduction` read it. Two consequences to carry: the period is authored
+  per BIOME (shipped range 5s–30s, and the freestyle Lattice boot world's 5s is authored
+  for its FLORA build clock), so anything riding it inherits a rate somebody else tuned;
+  and a self-clocked cycle must **stamp its clock when the period elapses, before any
+  can-I-produce gate** — stamping only on success lets a population sitting at its cap bank
+  unbounded elapsed time and then produce instantly the moment a slot opens.
+- **A boid term blended into a NORMALIZED direction must itself be BOUNDED.** Steering code
+  normalizes the goal pull to unit length and then adds `weight × term`, so a term whose
+  magnitude carries world units is being compared against 1. An inverse-square separation
+  written `diff / sqrMagnitude` has magnitude `1/|d|` — at real creature spacing (25–160u)
+  that is 0.006–0.04, i.e. a few degrees of deflection *at any weight*, and no amount of
+  tuning fixes it because reaching parity needs a weight that then explodes at contact. Scale
+  a UNIT vector by a falloff in `[0,1]` (`(1 - d/radius)²`) so the authored weight is a true
+  ratio against the goal pull. The symptom is "the flocking rule does nothing and the number
+  in the config looks reasonable"; check the term's MAGNITUDE at a real distance before
+  touching the weight.
+- **An "it is wired nowhere" claim is true only on the date it was written.** Deployment
+  absence rots faster than anything else in an ecology doc — the next branch adds the species
+  to a `SpawnProfileSO.SupportedFaunas` and will never think to go correct a claim it never
+  read. The worm colony's "deliberately wired into no SpawnProfile — a boss is opt-in" survived
+  into a ship review while Wildlife Liberation's four profiles were running a standing
+  population of nine at `InitialLevel 3`, which is the one deployment any worm change has to be
+  sized against. Re-prove absence by grepping the CONFIG ASSET'S GUID across `_SO_Assets`
+  before you inherit the claim — and size collider/volume budgets against the tightest real
+  consumer, not against the toy-released case.
 - **"Both spawners" is not enough for FAUNA — there are FOUR producers.** `RandomLifeSpawner`,
   `IntensityWiseLifeSpawner`, **`Fauna.TryReproduce`** (reproduction is the actual population
   driver, not the spawner) and the freestyle **`Microscene`** conveyor all read the per-species

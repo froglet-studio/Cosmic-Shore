@@ -175,6 +175,9 @@ namespace CosmicShore.Editor
                 RequiredProps = new[]
                 {
                     "_ExplodeStartTime", "_ExplodeSpeed", "_ExplodeDuration",
+                    // Which point each face spins about — 0 = the prism cube's derived
+                    // pivot, 1 = the per-face centroid the shield meshes bake (§4.8.2).
+                    "_FacePivotFromCentroid",
                     "_GrowStartTime", "_GrowRate", "_GrowStartFrac",
                     "_ColorStartTime", "_ColorDuration",
                     "_StartBrightColor", "_StartDarkColor", "_StartSpread",

@@ -910,7 +910,7 @@ The loop, and what each direction means:
 | Act | Result |
 |---|---|
 | Scarab flies (passive, `seedIntervalSeconds`) | One ball of its domain embeds in the nucleus surface, up to `maxEmbeddedPerDomain` |
-| Anyone strikes it **outward** | It flies into the **CYTOPLASM** and lives there — bouncing off the nucleus from the *outside* and the membrane from the inside. Deliberately inconsequential: a toy, not a scoring path |
+| Anyone strikes it **outward** | It flies into the **CYTOPLASM** and lives there — bouncing off the nucleus from the *outside* and the membrane from the inside (the ball's own containment, below). Deliberately inconsequential: a toy, not a scoring path |
 | Anyone strikes it **inward** | It enters the **NUCLEUS** — which in Scarab Scramble *is* the court — so it becomes a ball of consequence. This is the mode's **second source of balls**, alongside the crystal forge |
 | One ball too many goes in (`nucleusEntryLimit`) | **Overload**: every ball detonates with an explosion `detonationRadiusScale`× its own radius. Feeding the core is the greedy line, and the greedy line has a cliff |
 
@@ -949,11 +949,34 @@ bails on frozen — a kickoff ball must ignore the ships stacked on it — and a
 purpose is to *be* struck. So `n_Embedded` skips physics integration like frozen while leaving
 contact live. Getting this wrong yields a ball nobody can hit, with no error anywhere.
 
-**The nucleus surface is ONE surface serving both sides.** The court ball rides it from within
-(`Sphere` outer containment); the cytoplasm ball rides it from without
-(`AstroLeagueBoundary(coreObstacleRadius:)`, a central sphere obstacle added as an *orthogonal*
-feature composable with every outer shape, mirroring the existing `NotchedRing` torus). No second
-geometry, no duplicated radius.
+**The nucleus surface is ONE surface serving both sides, and riding it is a property of the
+BALL — not of any mode.** The court ball rides it from within (`Sphere` outer containment); the
+cytoplasm ball rides it from without (`AstroLeagueBoundary(coreObstacleRadius:)`, a central sphere
+obstacle added as an *orthogonal* feature composable with every outer shape, mirroring the existing
+`NotchedRing` torus). No second geometry, no duplicated radius.
+
+The ball resolves that surface itself, every tick, from whatever cell it is in
+(`AstroLeagueBall.ResolveNucleusBoundary`), so it holds in freestyle, in the menu, and in any
+future mode — the same reasoning that puts the ownership lock at the forge (§4.2) and the ball
+limit on the cell (above). **Which side is read from POSITION**, not from the strike direction this
+field knows, because each regime pushes *away* from the surface (`ContainSphere` clamps distance to
+a maximum, `ContainCore` to a minimum): a ball settles into whichever side it is on and cannot
+oscillate, and one that gets across by any route is contained correctly with nobody having to tell
+it. The side is then **sticky behind a dead band** of one ball radius plus one tick of travel at
+top speed — the largest a ball can be past the surface without having genuinely left. Without it a
+court ball that ended a tick just past the wall it was reflected off would re-classify as *outside*
+and be ejected, so the containment would leak balls at exactly the moment it was working;
+`nucleusReleaseGraceSeconds` is what carries a struck embed across that band deliberately.
+
+This is what a mode gets for free: **Scarab Scramble installs no boundary at all** — its court IS
+the nucleus, so `Cell.SetNucleusWorldRadius(courtRadius)` builds it. It used to push a matching
+sphere onto every ball it adopted, which made a platform behaviour read as a mode feature while a
+ball forged anywhere *else* bounced off nothing. `AstroLeagueBall.SetBoundary` survives as the
+override for a court whose shape a nucleus radius **cannot** express — Astro League's polytopes,
+whose nucleus is mesh-morphed to match. Tuning for the cytoplasm half is
+`AstroLeagueSettingsSO.cytoplasmOuterFraction`, beside its siblings `outsideNucleusDragMultiplier`
+/ `Falloff`; it is deliberately **not** on `ScarabNucleusFieldConfig`, because containment belongs
+to every ball rather than to the ability that seeded one.
 
 **Read `NucleusVisualWorldRadius`, never `NucleusWorldRadius`.** The latter reports **0** whenever a
 mode has declared the nucleus play geometry rather than a territorial claim

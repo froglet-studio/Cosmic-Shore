@@ -1364,6 +1364,23 @@ namespace CosmicShore.Gameplay
             stateManager?.DeactivateShields(null, breakVelocity, debrisSpeedLimit);
         public void ActivateShield() => stateManager?.ActivateShield();
         public void ActivateShield(float duration) => stateManager?.ActivateShield(duration);
+
+        /// <summary>
+        /// Shield this prism because something HIT it — an explosion accepting its own
+        /// domain's mass rather than clipping through it. <paramref name="impactSpeed"/>
+        /// is the magnitude of that impact vector (a blast's <c>Speed x Inertia</c>) and
+        /// <paramref name="debrisSpeedLimit"/> its true-velocity ceiling, as on
+        /// <see cref="Damage"/>. The timed pop that ends the shield sheds along HALF that
+        /// magnitude in a random direction, so an absorbed blow still reads as one when
+        /// the armour comes off (PrismStateManager.ExecuteTimerDeactivation).
+        /// </summary>
+        public void ActivateShield(float duration, float impactSpeed, float debrisSpeedLimit = 0f) =>
+            stateManager?.ActivateShield(duration, impactSpeed, debrisSpeedLimit);
+
+        /// <summary>Untimed <see cref="ActivateShield(float,float,float)"/> — records the
+        /// blow for a later <c>DeactivateShields(delay)</c> without scheduling one.</summary>
+        public void ActivateShieldFromImpact(float impactSpeed, float debrisSpeedLimit = 0f) =>
+            stateManager?.ActivateShield(null, impactSpeed, debrisSpeedLimit);
         public void ActivateSuperShield() => stateManager?.ActivateSuperShield();
         public void SetTransparency(bool transparent) => materialAnimator?.SetTransparency(transparent);
 

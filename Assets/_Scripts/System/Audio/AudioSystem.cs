@@ -8,6 +8,7 @@ using FMODUnity;
 using Reflex.Attributes;
 using UnityEngine;
 using UnityEngine.Audio;
+using UnityEngine.Serialization;
 
 /// <summary>
 /// Central audio service. Two parallel pipelines:
@@ -110,19 +111,6 @@ namespace CosmicShore.Core
             "FMOD events do NOT route through this mixer - their volume is " +
             "applied per-instance via FMODOneShotVolumeHelper.")]
         AudioMixer masterMixer;
-
-        [Header("SFX Bus Routing (FMOD)")]
-        [SerializeField, Tooltip(
-            "FMOD bus whose volume + mute are driven by the in-game SFX slider " +
-            "(GameSetting.SFXLevel / SFXEnabled). Every FMOD SFX event - the " +
-            "continuous emitters (engine, drift, proximity, flora ambient) AND " +
-            "the one-shots - routes through this bus, so this is what makes the " +
-            "whole SFX bank obey the slider, not just the one-shots. Defaults to " +
-            "the FMOD master bus \"bus:/\", which is correct while FMOD carries " +
-            "only SFX (music runs on the legacy Unity AudioSource path). If an " +
-            "explicit SFX bus is later authored in FMOD Studio, point this at " +
-            "\"bus:/SFX\".")]
-        string sfxBusPath = "bus:/";
 
         [SerializeField, Tooltip(
             "AudioSource used by the legacy PlaySFXClip(AudioClip) API. " +
@@ -304,18 +292,35 @@ namespace CosmicShore.Core
             "the SFX slider.")]
         float explosionVolumeScale = 0.6f;
 
+        [SerializeField, Tooltip(
+            "Categories that fire in BURSTS - one one-shot per prism destroyed - " +
+            "and are therefore rate-limited, each category counted independently. " +
+            "EVERY prism-destruction category belongs here: Prism.PlayDestructionSFX " +
+            "plays one per prism from BOTH Explode and Implode, so a blast through a " +
+            "forest or a creature grazing a canopy queues thousands of FMOD instances " +
+            "in a single frame - which shows up as native time inside " +
+            "RuntimeManager.Update(), not in the prism code that caused it.")]
+        GameplaySFXCategory[] throttledCategories =
+        {
+            GameplaySFXCategory.BlockDestroy,
+            GameplaySFXCategory.FloraCollision,
+            GameplaySFXCategory.CreatureBlockHit,
+        };
+
+        [FormerlySerializedAs("blockDestroyMaxPerWindow")]
         [SerializeField, Min(1), Tooltip(
-            "Max BlockDestroy one-shots allowed to start within " +
-            "blockDestroyThrottleWindow seconds. Breaks beyond this cap in the " +
+            "Max one-shots per throttled category allowed to start within " +
+            "burstThrottleWindow seconds. Breaks beyond this cap in the " +
             "same window are dropped - the sound is already saturated, so the " +
             "extra voices are inaudible individually but would otherwise stack " +
             "into harsh noise and waste FMOD voices.")]
-        int blockDestroyMaxPerWindow = 4;
+        int burstThrottleMaxPerWindow = 4;
 
+        [FormerlySerializedAs("blockDestroyThrottleWindow")]
         [SerializeField, Min(0.01f), Tooltip(
-            "Sliding window (seconds) over which blockDestroyMaxPerWindow is " +
-            "counted.")]
-        float blockDestroyThrottleWindow = 0.1f;
+            "Sliding window (seconds) over which burstThrottleMaxPerWindow is " +
+            "counted, per throttled category.")]
+        float burstThrottleWindow = 0.1f;
 
         [Header("Logging")]
         [SerializeField, Tooltip(
@@ -334,11 +339,6 @@ namespace CosmicShore.Core
         bool musicEnabled = true;
         bool sfxEnabled = true;
 
-        // FMOD SFX bus (resolved lazily from sfxBusPath). Volume + mute are
-        // driven from the SFX slider so the entire SFX bank is governed.
-        FMOD.Studio.Bus _sfxBus;
-        bool _sfxBusResolved;
-
         Dictionary<MenuAudioCategory, EventReference> MenuAudioEvents;
         Dictionary<GameplaySFXCategory, EventReference> GameplaySFXEvents;
 
@@ -347,11 +347,12 @@ namespace CosmicShore.Core
         readonly HashSet<MenuAudioCategory> _warnedMenuCategories = new();
         readonly HashSet<GameplaySFXCategory> _warnedGameplayCategories = new();
 
-        // Sliding-window throttle for BlockDestroy. When many prisms break in
-        // the same instant, only the first blockDestroyMaxPerWindow voices per
-        // blockDestroyThrottleWindow are allowed to start; the rest are dropped.
-        float _blockDestroyWindowStart;
-        int _blockDestroyWindowCount;
+        // Sliding-window throttle state, one slot per entry in throttledCategories
+        // (parallel arrays rather than a dictionary: this is consulted once per prism
+        // destroyed, so it must not allocate or box an enum key). Allocated once, on
+        // first use, by EnsureThrottleState.
+        float[] _throttleWindowStart;
+        int[] _throttleWindowCount;
 
         public bool MusicEnabled { get { return musicEnabled; } }
         public bool SFXEnabled { get { return sfxEnabled; } }
@@ -387,10 +388,6 @@ namespace CosmicShore.Core
             ChangeMusicLevel(gameSetting.MusicLevel);
             ChangeSFXLevel(gameSetting.SFXLevel);
             ChangeMusicEnabledStatus(musicEnabled);
-
-            // The FMOD bus may not be loaded the instant Start runs; apply once
-            // it resolves so the SFX slider takes effect on first frame too.
-            StartCoroutine(ApplySfxBusWhenReady());
         }
 
         void OnEnable()
@@ -420,7 +417,6 @@ namespace CosmicShore.Core
         void ChangeSFXEnabledStatus(bool status)
         {
             sfxEnabled = status;
-            ApplySfxBus();
         }
 
         void ChangeMusicLevel(float level)
@@ -433,8 +429,7 @@ namespace CosmicShore.Core
 
         void ChangeSFXLevel(float level)
         {
-            sfxVolume = level / 5f;   // legacy Unity AudioSource SFX path
-            ApplySfxBus();            // FMOD SFX bus carries the raw 0..1 slider
+            sfxVolume = level / 5f;   // max .2 -- default max volume is too high
         }
 
         // ---------- Music API (Unity AudioSource - legacy) ----------
@@ -662,85 +657,19 @@ namespace CosmicShore.Core
         // ---------- Internals ----------
 
         /// <summary>
-        /// Per-instance linear volume for FMOD SFX one-shots. Returns 0 when
-        /// SFX is muted (so muted SFX creates zero FMOD voices). When the SFX
-        /// bus is active it returns 1 - the slider is applied globally by the
-        /// bus (see <see cref="ApplySfxBus"/>), so folding it in per-instance
-        /// would double-attenuate. Only when the bus fails to resolve does this
-        /// fall back to the raw slider value (legacy per-instance behavior).
-        /// Decoupled from <see cref="sfxVolume"/> (the /5-scaled legacy
-        /// AudioSource path).
+        /// Linear 0..1 volume for FMOD SFX one-shots. Returns 0 when SFX is
+        /// muted via the settings panel; otherwise returns the slider value.
+        /// Decoupled from <see cref="sfxVolume"/> (which uses a /5 scale for
+        /// the legacy AudioSource path) - FMOD events are authored at
+        /// project-appropriate levels in FMOD Studio so we pass the slider
+        /// through unscaled.
         /// </summary>
         float ResolveFMODSFXVolume()
         {
             if (!sfxEnabled) return 0f;
-
-            // When the SFX bus is driving global SFX volume, one-shots pass
-            // through at full and the bus applies the slider - folding the
-            // slider in here too would attenuate one-shots by slider². If the
-            // bus failed to resolve, fall back to applying the slider
-            // per-instance so the slider still controls one-shot volume.
-            if (_sfxBusResolved) return 1f;
-
             var gs = gameSetting != null ? gameSetting : GameSetting.Instance;
-            return gs != null ? Mathf.Clamp01(gs.SFXLevel) : 1f;
-        }
-
-        // ---------- FMOD SFX bus ----------
-
-        /// <summary>
-        /// Drives the FMOD <see cref="sfxBusPath"/> bus volume + mute from the
-        /// in-game SFX slider (<see cref="GameSetting.SFXLevel"/> /
-        /// <see cref="GameSetting.SFXEnabled"/>). Because every FMOD SFX event
-        /// routes through this bus, this governs the ENTIRE SFX bank - the
-        /// continuous emitters (engine, drift, proximity, flora ambient) as
-        /// well as the one-shots - not just the one-shots that flow through
-        /// <see cref="FMODOneShotVolumeHelper"/>.
-        /// </summary>
-        void ApplySfxBus()
-        {
-            if (!TryResolveSfxBus()) return;
-
-            float level = gameSetting != null ? gameSetting.SFXLevel : 1f;
-            _sfxBus.setVolume(Mathf.Clamp01(level));
-            _sfxBus.setMute(!sfxEnabled);
-        }
-
-        bool TryResolveSfxBus()
-        {
-            if (_sfxBusResolved && _sfxBus.isValid()) return true;
-            try
-            {
-                _sfxBus = RuntimeManager.GetBus(sfxBusPath);
-                _sfxBusResolved = _sfxBus.isValid();
-            }
-            catch
-            {
-                _sfxBusResolved = false;
-            }
-            return _sfxBusResolved;
-        }
-
-        IEnumerator ApplySfxBusWhenReady()
-        {
-            // FMOD banks (and thus the bus) may not be loaded the instant
-            // AudioSystem.Start runs. Retry briefly until the bus resolves,
-            // then apply the current slider state.
-            for (int i = 0; i < 120; i++)
-            {
-                if (TryResolveSfxBus())
-                {
-                    ApplySfxBus();
-                    yield break;
-                }
-                yield return null;
-            }
-
-            Debug.LogWarning(
-                $"[AudioSystem] FMOD SFX bus '{sfxBusPath}' did not resolve. " +
-                $"SFX one-shots fall back to per-instance slider volume, but " +
-                $"continuous emitters won't follow the slider. Check the bus " +
-                $"path and that the Master (strings) bank is loaded.");
+            if (gs == null) return 1f;
+            return Mathf.Clamp01(gs.SFXLevel);
         }
 
         /// <summary>
@@ -757,27 +686,61 @@ namespace CosmicShore.Core
         };
 
         /// <summary>
-        /// Sliding-window concurrency gate for categories that can fire in
-        /// large bursts. Currently only BlockDestroy is throttled: at most
-        /// <see cref="blockDestroyMaxPerWindow"/> voices may start per
-        /// <see cref="blockDestroyThrottleWindow"/> seconds. Returns false to
-        /// drop the one-shot. Non-throttled categories always pass.
+        /// Sliding-window concurrency gate for the categories that fire in large
+        /// bursts (<see cref="throttledCategories"/>): at most
+        /// <see cref="burstThrottleMaxPerWindow"/> voices may start per
+        /// <see cref="burstThrottleWindow"/> seconds, counted INDEPENDENTLY per
+        /// category so a burning forest cannot starve plain block destruction.
+        /// Returns false to drop the one-shot; non-throttled categories always pass.
+        ///
+        /// <para>This used to gate BlockDestroy alone, which is the one prism
+        /// destruction category the ecology does NOT use: HealthPrism overrides
+        /// flora to FloraCollision and Prism.PlayDestructionSFX swaps a
+        /// creature kill to CreatureBlockHit, so the food web and every AOE blast
+        /// through a forest routed straight around the guard - queueing an
+        /// unbounded number of CreateInstance/start commands that FMOD then paid
+        /// for inside RuntimeManager.Update().</para>
         /// </summary>
         bool PassesGameplaySFXThrottle(GameplaySFXCategory category)
         {
-            if (category != GameplaySFXCategory.BlockDestroy) return true;
+            int slot = ThrottleSlotOf(category);
+            if (slot < 0) return true;   // not a burst category - always passes
+
+            EnsureThrottleState();
 
             float now = Time.unscaledTime;
-            if (now - _blockDestroyWindowStart > blockDestroyThrottleWindow)
+            if (now - _throttleWindowStart[slot] > burstThrottleWindow)
             {
-                _blockDestroyWindowStart = now;
-                _blockDestroyWindowCount = 0;
+                _throttleWindowStart[slot] = now;
+                _throttleWindowCount[slot] = 0;
             }
 
-            if (_blockDestroyWindowCount >= blockDestroyMaxPerWindow) return false;
+            if (_throttleWindowCount[slot] >= burstThrottleMaxPerWindow) return false;
 
-            _blockDestroyWindowCount++;
+            _throttleWindowCount[slot]++;
             return true;
+        }
+
+        /// <summary>
+        /// Index of <paramref name="category"/> in <see cref="throttledCategories"/>, or -1
+        /// when it is not throttled. A linear scan over a three-entry array, deliberately:
+        /// it is allocation-free (an enum-keyed Dictionary boxes) and this runs once per
+        /// prism destroyed.
+        /// </summary>
+        int ThrottleSlotOf(GameplaySFXCategory category)
+        {
+            if (throttledCategories == null) return -1;
+            for (int i = 0; i < throttledCategories.Length; i++)
+                if (throttledCategories[i] == category) return i;
+            return -1;
+        }
+
+        void EnsureThrottleState()
+        {
+            int n = throttledCategories.Length;
+            if (_throttleWindowStart != null && _throttleWindowStart.Length == n) return;
+            _throttleWindowStart = new float[n];
+            _throttleWindowCount = new int[n];
         }
 
         void InitializeMenuAudioEvents()

@@ -43,10 +43,11 @@ namespace CosmicShore.Gameplay
                  "balls banked inside the nucleus. A dial for playtest, not a design fork.")]
         public bool detonateAllLiveBalls = true;
 
-        [Header("Cytoplasm")]
-        [Tooltip("A ball knocked OUTWARD lives on out here, bouncing off the nucleus from the " +
-                 "outside and off the membrane from the inside. This scales the membrane radius it " +
-                 "is held inside; 1 = the cell's own membrane.")]
-        [Range(0.1f, 1f)] public float cytoplasmOuterFraction = 0.95f;
+        // NO CYTOPLASM FIELD. A ball knocked outward is held inside the membrane and bounced off the
+        // nucleus from outside by the BALL itself (AstroLeagueBall.ResolveNucleusBoundary), which
+        // applies in every cell a ball can reach rather than only to one this ability released — so
+        // that dial lives with its siblings on AstroLeagueSettingsSO (`cytoplasmOuterFraction`,
+        // beside outsideNucleusDragMultiplier/Falloff). Do not re-add it here: two assets holding
+        // one number is two numbers.
     }
 }
