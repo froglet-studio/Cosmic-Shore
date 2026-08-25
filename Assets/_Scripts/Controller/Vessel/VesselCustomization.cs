@@ -43,6 +43,17 @@ namespace CosmicShore.Gameplay
 
         IVesselStatus vesselStatus;
 
+        /// <summary>
+        /// The authored materials the domain colour REPLACES, read-only. Exposed so a DISPLAY-ONLY
+        /// mini hull (the toybox's vessel matrices, built straight from the prefab asset) can be
+        /// painted the same way the live ship is, instead of guessing at which slot is the domain
+        /// one. Empty means this vessel uses <see cref="DomainMaterialSlot"/> instead.
+        /// </summary>
+        public IReadOnlyList<Material> DomainReplacesMaterials => _domainReplacesMaterials;
+
+        /// <summary>The slot index the domain colour lands on when no material identities are authored.</summary>
+        public int DomainMaterialSlot => _domainMaterialSlot;
+
         public void Initialize(IVesselStatus vesselStatus)
         {
             if (!TryPassNullChecks(vesselStatus))

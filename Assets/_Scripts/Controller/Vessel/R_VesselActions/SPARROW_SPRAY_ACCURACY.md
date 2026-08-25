@@ -118,9 +118,14 @@ they travel**, and MASS decides how much.
 
 ### The growth curve
 
-`FullAutoActionSO.ResolveGrowthFactor` → `GrowthFactorForLevel(massLevel, 3, 6)`: linear in
-LEVEL with the authored pair anchored at 0 and 10, **extrapolated** (not clamped) across the
-element system's full [-5, 15] band.
+`FullAutoActionSO.ResolveGrowthFactor` → `ElementalScaling.RoundGrowthFactorForLevel(massLevel,
+3, 6)`: linear in LEVEL with the authored pair anchored at 0 and 10, **extrapolated** (not
+clamped) across the element system's full [-5, 15] band.
+
+The curve itself moved off this asset in 2026-08-25 so it could have ONE home — the skyburst
+missile now swells in flight too, with its own authored pair and its own SHAPE (all of it in the
+first fifth of the flight, then held; see `SPARROW_SKYBURST_BAY.md`). The bullets' numbers and
+behaviour are unchanged.
 
 | Mass level | grows to | end-of-flight hit radius | swath vs. a non-growing round |
 |---|---|---|---|
@@ -672,7 +677,9 @@ dogfighters and the Menu_Main autopilot all fire and none of them may buzz your 
 | `_Scripts/Utility/GunSpreadMath.cs` | The pure cone math — ramp, hash-sampled deflection, roll-preserving `DeflectionOf`. No Unity state, no global RNG. |
 | `R_VesselActions/Data Containers/GunSpreadProfile.cs` | The authored profile (cone + haptic ramp). Serialized on the bullet action. |
 | `R_VesselActions/Executors/GunSprayAccuracy.cs` | Per-vessel hold state, the spread clock, the haptic ramp, and the deferred reset. |
-| `R_VesselActions/Data Containers/FullAutoActionSO.cs` | Owns `Spread` and `ResolveGrowthFactor`/`GrowthFactorForLevel`; hands the accuracy component to its executor. |
+| `R_VesselActions/Data Containers/FullAutoActionSO.cs` | Owns `Spread` and the authored growth pair; `ResolveGrowthFactor` reads the shared curve. Hands the accuracy component to its executor. |
+| `Controller/Vessel/ElementalScaling.cs` | `RoundGrowthFactorForLevel` / `RoundGrowthFactor` — the ONE in-flight growth curve, shared with the skyburst missile so the two cannot drift apart. |
+| `Controller/Projectiles/RoundGrowthRamp.cs` | The growth SHAPE (swell across the whole flight, or swell early and hold). Bullets use the full-flight shape. |
 | `R_VesselActions/Data Containers/FullAutoBlockShootActionSO.cs` | Adopts `bulletAction.Spread` — the turret authors no cone. |
 | `R_VesselActions/Executors/FullAutoActionExecutor.cs` | Accumulator cadence + per-round deflection for the bullets. |
 | `R_VesselActions/Executors/FullAutoBlockShootActionExecutor.cs` | Same for the turret, plus the roll-preserving shot rotation. |
@@ -683,7 +690,8 @@ dogfighters and the Menu_Main autopilot all fire and none of them may buzz your 
 | `Controller/ImpactEffects/Impactors/ProjectileImpactor.cs` | Suppresses the trigger's prism case when the sweep owns it. |
 | `Controller/IO/HapticController.cs` | `PlaySpray(strength01)` + the extended gate + the buzz clip. |
 | `_Scripts/Tests/Editor/GunSpreadMathTests.cs` | Ramp, cap, cone containment, pole safety, determinism, distribution, roll preservation. |
-| `_Scripts/Tests/Editor/SparrowRoundGrowthTests.cs` | The MASS growth curve: anchors, extrapolation, linearity, flight clamping, and that the charge shell IS the hit volume (round 4). |
+| `_Scripts/Tests/Editor/SparrowRoundGrowthTests.cs` | The MASS growth curve: anchors, extrapolation, linearity, flight clamping, that the charge shell IS the hit volume (round 4) — and the skyburst missile's own authored pair. |
+| `_Scripts/Tests/Editor/RoundGrowthRampTests.cs` | The growth SHAPE: the full-flight ramp the bullets use, the early-and-hold one the missile uses, and the settle latch. |
 | `_Scripts/Tests/Editor/PrismSweptQueryTests.cs` | The point-to-segment metric: endpoint clamping, degenerate steps, and the shipped mid-step geometry PhysX was missing. |
 | `_SO_Assets/VesselActions/Sparrow/FullAutoAction.asset` | The shipped numbers. |
 | `_Prefabs/Spacevessels/Sparrow.prefab` | `GunSprayAccuracy` executor + resized pools. |

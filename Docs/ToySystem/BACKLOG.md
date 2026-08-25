@@ -604,3 +604,23 @@ mass does not exist until plants grow it. Three directions, in preference order:
 
 Until one lands, a grown cell in the selector is identified by its **label** alone. Note this
 becomes more pressing, not less, if more grown-environment cells ship.
+
+## Vessel matrices — live hulls (2026-08-25)
+
+Stations in the vessel changer and the Lifeform Matrix hangar now show the ACTUAL ship
+(`ToyVesselRoster.TryBuildLiveHull`) rather than a flat silhouette, with the vessel vision band
+supplying the domain read (`Docs/VESSEL_VISION.md`, `Docs/ToySystem/ARCHITECTURE.md` § "Vessel
+Changer"). Open items:
+
+- **Glyphs still use the flat fill, and that is deliberate** — a toy's emblem and the kingdom icons
+  sit inside the band's near cutoff where a real hull is a black blob. If emblems ever want real
+  hulls, they need their own lighting answer, not the band.
+- **The station's mark depends on the matrix geometry.** It works because the matrix blooms
+  `StationSpacing × MatrixDistanceFactor` = 360 u, just past the band's `nearFullStart` (350).
+  Anyone re-tuning `stationSpacing` or `matrixDistanceFactor` on `Toy_VesselChanger.asset` should
+  re-check that the stations still land inside the band, or they will silently go unmarked.
+- **Skinned mini hulls show their bind pose.** Unchanged by this work, but more visible now that the
+  real materials are on: a skinned ship's mini model is static in its authored pose.
+- **Not verified in-editor yet** — the live-hull path, the domain-material swap and the re-tint
+  dispatch are machine-type-checked only. See `Docs/VESSEL_VISION.md` § "What a human still has to
+  check in the editor", step 6.
