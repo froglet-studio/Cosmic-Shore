@@ -49,7 +49,7 @@ SCALE = [
     ("Data",    "JetBrains Mono",500, 20,  0.00, "0123456789  ·  42 / 120"),
     ("DataSm",  "JetBrains Mono",400, 13, +0.04, "0123456789  rank 07"),
 ]
-SYMBOLS = "× · — – ‑ … ← → ↑ ↓ ✕ + −"
+SYMBOLS = "× · — – … ← → ↑ ↓ + −"          # §4 v0.2: U+2011 and U+2715 removed
 
 W, H = 1920, 1080
 img = np.zeros((H, W, 3), np.float32); img[:] = HULL

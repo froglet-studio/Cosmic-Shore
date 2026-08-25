@@ -49,7 +49,7 @@ MonoBehaviour:
     atlasWidth: 1024
     atlasHeight: 1024
     characterSetSelectionMode: 0
-    characterSequence: 32-126,160-255,8203,8209,8211-8212,8230,8592-8595,8722,10005
+    characterSequence: 32-126,160-255,8203,8211-8212,8230,8592-8595,8722
     referencedFontAssetGUID: 
     referencedTextAssetGUID: 
     fontStyle: 0

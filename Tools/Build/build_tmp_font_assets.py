@@ -31,8 +31,14 @@ SDF_SHADER    = "68e6db2ebdc24f95958faec2be5558d6"      # TMP_SDF.shader (projec
 MULTI_ATLAS   = 1
 
 # ---- charset: ASCII + Latin-1 Supplement + the explicitly required symbols -----
-EXPLICIT = [0x00D7, 0x00B7, 0x2014, 0x2013, 0x2011, 0x2026,
-            0x2190, 0x2192, 0x2191, 0x2193, 0x2715, 0x002B, 0x2212]
+# Style Foundation §4 v0.2 dropped two of the originally-listed symbols:
+#   U+2011 non-breaking hyphen — no use case in this UI; the regular hyphen is fine.
+#   U+2715 ✕                   — it is the close/kick icon, so it ships as an icon
+#                                 sprite. It also existed in only one of the three
+#                                 families, which would have rendered inconsistently.
+# Do not re-add either without a §4 revision.
+EXPLICIT = [0x00D7, 0x00B7, 0x2014, 0x2013, 0x2026,
+            0x2190, 0x2192, 0x2191, 0x2193, 0x002B, 0x2212]
 CHARSET  = sorted(set(list(range(0x20, 0x7F)) + list(range(0xA0, 0x100)) + EXPLICIT))
 # TMP's own conventional extras: zero-width space keeps <nobr>/wrapping well behaved.
 CHARSET  = sorted(set(CHARSET + [0x200B]))
@@ -326,68 +332,99 @@ def charset_sequence(charset):
 
 
 # ---------------------------------------------------------------- donor check
+FIXTURE = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                       "fixtures", "chakrapetch-regular-sdf-donor.json.gz")
+
+
 def verify_donor():
-    """Regenerate the shipped ChakraPetch-Regular SDF and diff every field."""
-    ttf = os.path.join(TMP_RES, "Fonts & Materials", "ChakraPetch-Regular.ttf")
-    ref = open(DONOR, encoding='utf-8', errors='replace').read()
-    pt  = int(re.search(r"^    m_PointSize: (\d+)", ref, re.M).group(1))
-    pad = int(re.search(r"^  m_AtlasPadding: (\d+)", ref, re.M).group(1))
-    aw  = int(re.search(r"^  m_AtlasWidth: (\d+)", ref, re.M).group(1))
-    seq = re.search(r"^    characterSequence: (.*)$", ref, re.M).group(1)
-    cs  = []
-    for part in seq.split(','):
+    """Re-prove the generator against a real TMP-authored asset.
+
+    The donor is a frozen snapshot (see the fixture's own _comment) rather than a live
+    asset: the ChakraPetch-Regular SDF it was taken from was a duplicate of a font the
+    project now owns, sitting in the package-reimport-exposed TMP folder, and was deleted
+    under T5 cleanup. The snapshot keeps this proof reproducible without keeping the
+    duplicate. It carries the atlas too, so the SDF pixels are checked, not just the tables.
+    """
+    import gzip, json, base64, zlib
+    with gzip.open(FIXTURE, "rt", encoding="utf-8") as f:
+        fx = json.load(f)
+    pad, pt, aw = fx["padding"], fx["pointSize"], fx["atlasWidth"]
+    cs = []
+    for part in fx["characterSequence"].split(","):
         part = part.strip()
-        if '-' in part.strip('-') and not part.startswith('-'):
-            lo, hi = part.split('-'); cs += list(range(int(lo), int(hi) + 1))
+        if "-" in part.strip("-") and not part.startswith("-"):
+            lo, hi = part.split("-"); cs += list(range(int(lo), int(hi) + 1))
         else:
             cs.append(int(part))
+    ttf = os.path.join(FONT_DIR, "ChakraPetch", "ChakraPetch-Regular.ttf")
     got, stats = build_font_asset(ttf, "ChakraPetch-Regular SDF", pt, pad, aw, aw,
-                                  sorted(set(cs)), src_font_guid="cb20184e6a04dfe4fb60ff40327baa64")
+                                  sorted(set(cs)),
+                                  src_font_guid=stable_guid("ttf/ChakraPetch-Regular"))
+    ok = True
 
-    def faces(t):
-        return {k: float(v) for k, v in re.findall(
-            r"^    (m_LineHeight|m_AscentLine|m_CapLine|m_MeanLine|m_Baseline|m_DescentLine|"
-            r"m_SuperscriptOffset|m_SuperscriptSize|m_SubscriptOffset|m_SubscriptSize|"
-            r"m_UnderlineOffset|m_UnderlineThickness|m_StrikethroughOffset|"
-            r"m_StrikethroughThickness|m_TabWidth): (-?[\d.E-]+)$", t, re.M)}
+    fg = {k: float(v) for k, v in re.findall(
+        r"^    (m_\w+): (-?[\d.E-]+)$", got.split("m_FaceInfo:")[1].split("  m_Material:")[0], re.M)}
+    bad = [(k, v, fg.get(k)) for k, v in fx["face"].items() if abs(v - fg.get(k, 1e9)) > 0.002]
+    print(f"FaceInfo  : {len(fx['face']) - len(bad)}/{len(fx['face'])} fields match")
+    for k, r, g in bad:
+        print(f"    MISMATCH {k}: donor={r} generated={g}"); ok = False
 
-    def glyphtable(t):
-        return {int(b[0]): tuple(round(float(x), 4) for x in b[1:6]) + tuple(int(x) for x in b[8:10])
-                for b in re.findall(
+    def tables(txt):
+        gl = {int(b[0]): [round(float(x), 4) for x in b[1:6]] + [int(x) for x in b[6:]]
+              for b in re.findall(
             r"- m_Index: (\d+)\n    m_Metrics:\n      m_Width: (-?[\d.E-]+)\n      m_Height: (-?[\d.E-]+)\n"
             r"      m_HorizontalBearingX: (-?[\d.E-]+)\n      m_HorizontalBearingY: (-?[\d.E-]+)\n"
             r"      m_HorizontalAdvance: (-?[\d.E-]+)\n    m_GlyphRect:\n      m_X: (-?\d+)\n"
-            r"      m_Y: (-?\d+)\n      m_Width: (-?\d+)\n      m_Height: (-?\d+)", t)}
+            r"      m_Y: (-?\d+)\n      m_Width: (-?\d+)\n      m_Height: (-?\d+)", txt)}
+        ch = {int(u): int(i) for u, i in re.findall(
+            r"- m_ElementType: 1\n    m_Unicode: (\d+)\n    m_GlyphIndex: (\d+)", txt)}
+        return gl, ch
 
-    def chartable(t):
-        return dict((int(u), int(g)) for u, g in re.findall(
-            r"- m_ElementType: 1\n    m_Unicode: (\d+)\n    m_GlyphIndex: (\d+)", t))
-
-    fr, fg = faces(ref), faces(got)
-    bad = [(k, fr[k], fg.get(k)) for k in fr if abs(fr[k] - fg.get(k, 1e9)) > 0.002]
-    print(f"FaceInfo  : {len(fr) - len(bad)}/{len(fr)} fields match")
-    for k, r, g in bad:
-        print(f"    MISMATCH {k}: donor={r} generated={g}")
-
-    gr, gg = glyphtable(ref), glyphtable(got)
-    # compare by UNICODE (glyph index order may differ), metrics + rect SIZE only
-    cr, cg = chartable(ref), chartable(got)
-    shared = sorted(set(cr) & set(cg))
-    gbad = [u for u in shared if gr.get(cr[u]) != gg.get(cg[u])]
+    ggl, gch = tables(got)
+    dgl = {int(k): v for k, v in fx["glyphTable"].items()}
+    dch = {int(k): v for k, v in fx["charTable"].items()}
+    shared = sorted(set(dch) & set(gch))
+    # metrics + rect SIZE (rect position is the packer's, and need not match)
+    gbad = [u for u in shared
+            if [round(x, 4) for x in dgl[dch[u]][:5]] + dgl[dch[u]][7:9] !=
+               ggl[gch[u]][:5] + ggl[gch[u]][7:9]]
     print(f"Glyphs    : {len(shared) - len(gbad)}/{len(shared)} metric+rect-size match")
     for u in gbad[:8]:
-        print(f"    MISMATCH U+{u:04X} donor={gr.get(cr[u])} generated={gg.get(cg[u])}")
-    print(f"Chars     : donor {len(cr)}, generated {len(cg)}, "
-          f"symmetric difference {sorted(set(cr) ^ set(cg))}")
+        print(f"    MISMATCH U+{u:04X} donor={dgl[dch[u]]} generated={ggl[gch[u]]}"); ok = False
+    if set(dch) != set(gch):
+        print(f"    CHAR TABLE differs: {sorted(set(dch) ^ set(gch))}"); ok = False
+    else:
+        print(f"Chars     : {len(dch)} identical")
 
-    # key parity: every top-level key the donor writes, we write, and vice versa
-    keys = lambda t, doc: set(re.findall(r"^  (\w+):", t.split(doc)[1].split("--- !u!")[0], re.M))
-    kr, kg = keys(ref, "MonoBehaviour:"), keys(got, "MonoBehaviour:")
-    print(f"Keys      : donor-only {sorted(kr - kg)}  generated-only {sorted(kg - kr)}")
+    kg = re.findall(r"^  (\w+):", got.split("MonoBehaviour:")[1].split("--- !u!")[0], re.M)
+    if kg != fx["monoKeys"]:
+        print(f"    KEY PARITY differs: donor-only {sorted(set(fx['monoKeys']) - set(kg))} "
+              f"generated-only {sorted(set(kg) - set(fx['monoKeys']))}"); ok = False
+    else:
+        print(f"Keys      : {len(kg)} top-level keys, same names AND same order")
 
-    # SDF fidelity: the 0.5 crossing must land on the glyph-rect edge
-    print(f"Atlases   : {stats['atlases']}  fill={['%.1f%%' % (f*100) for f in stats['fill']]}")
-    ok = not bad and not gbad and set(cr) == set(cg) and not (kr ^ kg)
+    # ---- SDF pixels, against the donor's own atlas ----
+    atlas = np.frombuffer(zlib.decompress(base64.b64decode(fx["atlasZlibB64"])),
+                          dtype=np.uint8).reshape(fx["atlasHeight"], aw)
+    face = freetype.Face(ttf)
+    errs = []
+    for u in shared:
+        _, _, _, _, _, rx, ry, rw, rh = dgl[dch[u]]
+        if not rw or not rh:
+            continue
+        ref = atlas[ry - pad:ry + rh + pad, rx - pad:rx + rw + pad].astype(int)
+        _, tile = render_glyph(face, u, pt, pad)
+        if tile is None or np.flipud(tile).shape != ref.shape:
+            continue
+        errs.append(np.abs(np.flipud(tile).astype(int) - ref).mean())
+    mean = float(np.mean(errs))
+    step = 2.0 * (pad + 1) / 255.0
+    print(f"SDF pixels: mean |dalpha| = {mean:.3f}/255 over {len(errs)} glyphs "
+          f"= {mean / 255 * 2 * (pad + 1):.4f} px (one alpha step = {step:.4f} px)")
+    if mean / 255 * 2 * (pad + 1) > step:
+        print("    SDF error exceeds one alpha quantisation step"); ok = False
+
+    print(f"Atlases   : {stats['atlases']}  fill={['%.1f%%' % (f * 100) for f in stats['fill']]}")
     print("\nDONOR MODEL VALIDATED" if ok else "\nDONOR MODEL **NOT** VALIDATED")
     return 0 if ok else 1
 
@@ -463,10 +500,14 @@ def fetch():
             for ws, url in faces:
                 blobs[int(ws)] = get(url)
         for w, data in blobs.items():
-            fo = _TT(io.BytesIO(data))
-            fo.flavor = None                       # woff -> plain ttf, outlines untouched
             path = os.path.join(d, f"{stem}-{WEIGHT_NAME[w]}.ttf")
-            fo.save(path)
+            fo = _TT(io.BytesIO(data))
+            if fo.flavor:                          # woff wrapper -> plain ttf
+                fo.flavor = None                   # (outlines untouched; only the container)
+                fo.save(path)
+            else:                                  # already a TTF: ship upstream's bytes
+                with open(path, "wb") as raw:      # verbatim, so the shipped OFL font is
+                    raw.write(data)                # bit-for-bit what google/fonts serves
             fam = fo['name'].getDebugName(1) or display
             with open(path + ".meta", "w") as f:
                 f.write(ttf_meta(stable_guid(f"ttf/{stem}-{WEIGHT_NAME[w]}"), fam))

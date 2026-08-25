@@ -118,7 +118,7 @@ Acceptance criteria:
 - [x] **Not** placed in `Assets/Unity Assests/TextMesh Pro/`
 - [x] `OFL.txt` shipped per family; credits attribution added
 - [x] TMP font assets generated: SDFAA, sampling 90, padding 9, atlas 1024²
-- [x] Charset: ASCII + Latin-1 Supplement + `× · — – ‑ … ← → ↑ ↓ ✕ + −`
+- [x] Charset: ASCII + Latin-1 Supplement + `× · — – … ← → ↑ ↓ + −` (§4 **v0.2**)
 - [x] Multi Atlas Textures on; dynamic overflow fallback set
 - [x] Fallback chain: Space Grotesk → Chakra Petch → Liberation Sans
 - [x] TMP Settings default font asset = Space Grotesk 400
@@ -142,24 +142,40 @@ Acceptance criteria:
   indexed from `Docs/Legal/README.md`.
 - `TMP Settings`: default font asset → `SpaceGrotesk-Regular SDF`; global fallbacks →
   `LiberationSans SDF` then `LiberationSans SDF - Fallback` (the dynamic overflow).
+- **T5 cleanup:** the vendored `ChakraPetch-Regular` TTF + SDF asset deleted from
+  `Assets/Unity Assests/TextMesh Pro/Resources/Fonts & Materials/`, its 180 references
+  repointed to `Assets/_Graphics/Fonts/ChakraPetch/ChakraPetch-Regular SDF.asset`. Post-delete
+  sweep confirms neither guid nor the old material fileID survives anywhere in the repo.
+- `Tools/Build/fixtures/chakrapetch-regular-sdf-donor.json.gz` (66 KB) — a frozen snapshot of
+  that asset's face info, glyph and character tables, top-level key list **and atlas**, so
+  `--verify-donor` still re-proves the generator against a genuinely TMP-authored asset now
+  that the live one is gone. Deleting the duplicate must not delete the proof.
 
 **Findings:**
-- **`U+2011` (non-breaking hyphen) and `U+2715` (✕) exist in no font in the chain.** Not in any
-  of the three new families, not in the static `LiberationSans SDF`, and not in
-  `LiberationSans.ttf` (the dynamic fallback's own source) — so no link can rescue them and
-  they will render as nothing. `U+2715` *is* present in JetBrains Mono. Queue entries 1 and 2.
-- `U+00B5` (µ, Latin-1 Supplement) is absent from Chakra Petch but present in Liberation Sans,
-  so it resolves through the fallback and needs no decision.
+- **`U+2011` and `U+2715` existed in no font in the chain** — not in the three new families,
+  not in the static `LiberationSans SDF`, not in `LiberationSans.ttf` behind the dynamic
+  fallback. Raised as queue entries 1 and 2 and **resolved as §4 v0.2**: `U+2011` dropped (no
+  use case; the regular hyphen serves), `U+2715` dropped in favour of the close/kick **icon
+  sprite** — a glyph present in only one of three families would have rendered inconsistently.
+  Both are now out of the generator's charset.
+- With v0.2 applied, **every codepoint in the charset is reachable**: Space Grotesk — the
+  default — is missing none at all, and Chakra Petch's only gap (`U+00B5` µ) resolves through
+  Liberation Sans. Verified by sweeping each asset's character table against the chain.
 - The **current TMP version no longer serializes `hashCode` / `materialHashCode`** and has
   renamed `material` → `m_Material`, adding `m_SourceFontFilePath` and `InternalDynamicOS`.
   A font asset written to the older field names loads with a **null material**. The generator
   is keyed to the newest in-repo asset (`ChakraPetch-Regular SDF`) and asserts key parity.
 - TMP's SDF encoding is `alpha = 0.5 + d / (2·(padding+1))`, and the material's
   `_GradientScale` **is** `padding + 1` — measured, not assumed, off the shipped atlas.
-- `Assets/Unity Assests/TextMesh Pro/` still contains a **pre-existing** vendored
-  `ChakraPetch-Regular` TTF + SDF asset from before this task. Nothing references the new
-  assets to it, but it is exactly the package-reimport exposure §4 calls out, and it is now a
-  duplicate of a font we own in project space. Left in place — deleting it is outside T5.
+- The pre-existing vendored `ChakraPetch-Regular` TTF + SDF asset **was in live use** — 90
+  `m_fontAsset` + 90 `m_sharedMaterial` references across `GameCanvas.prefab`,
+  `GameCanvas-HexRace.prefab`, `R_GameOverPanel.prefab` and `Goodies.prefab`. Confirmed the
+  same font (glyph order, cmap and `hmtx` identical; **0 of 773 outlines differ**), repointed
+  to the project-space asset, and deleted. See *T5 cleanup* below.
+- **A material reference is a second, independent pointer.** Repointing a TMP label means
+  rewriting `m_sharedMaterial`'s *fileID* as well as its guid — the material lives inside the
+  font asset at an asset-specific fileID, so carrying the guid across alone would have left
+  180 labels pointing at a material that does not exist in the new file.
 - Fonts are not under a `Resources/` folder, so rich-text `<font="…">` tags cannot find them by
   name. Direct references (the default asset, the fallback tables, inspector fields) are
   unaffected. Same as every other font in `Assets/_Graphics/Fonts/`.
@@ -185,6 +201,13 @@ Acceptance criteria:
   population; the shipped static `Rajdhani-*` assets do the same.
 - Folder names follow the acceptance criteria (`ChakraPetch/`), not §4's prose spelling
   ("Chakra Petch"). The human-readable names are used in the credits register.
+- **The charset is §4 v0.2, so it is two symbols shorter than this task's criterion as
+  originally written.** The criterion line above has been updated to match; the design
+  decision is logged in the version log and queue entries 1–2 are RESOLVED.
+- **Chakra Petch source fonts are now shipped as upstream's exact bytes.** `fetch()` used to
+  round-trip every download through fontTools, which re-compiles and so changed `glyf`/`loca`
+  without changing a single outline. Woff downloads still need unwrapping; a file that arrives
+  as a TTF is now written verbatim, which is the better provenance story for an OFL font.
 
 **What still needs the Unity editor:**
 1. Open the project and confirm all 11 assets import clean — each shows its atlas, a non-null
@@ -221,8 +244,8 @@ Anything found during implementation that needs a design decision. The implement
 
 | # | Raised by | Task | Question | Status |
 |---|---|---|---|---|
-| 1 | T5 | T5 | `U+2011` (non-breaking hyphen) is in the §4 charset but exists in **none** of the three families, nor in Liberation Sans or the dynamic fallback's source font — it can render nowhere. Drop it from the charset, or substitute `U+2010`/`U+002D`? | OPEN |
-| 2 | T5 | T5 | `U+2715` (✕) is in the §4 charset but is present **only** in JetBrains Mono; Chakra Petch, Space Grotesk and Liberation Sans all lack it, so it cannot resolve for UI text. Add JetBrains Mono to the fallback chain for it, use a different close glyph, or make ✕ an icon rather than type? | OPEN |
+| 1 | T5 | T5 | `U+2011` (non-breaking hyphen) is in the §4 charset but exists in **none** of the three families, nor in Liberation Sans or the dynamic fallback's source font — it can render nowhere. Drop it from the charset, or substitute `U+2010`/`U+002D`? | **RESOLVED** — dropped; no use case in this UI, regular hyphen serves. §4 v0.2. |
+| 2 | T5 | T5 | `U+2715` (✕) is in the §4 charset but is present **only** in JetBrains Mono; Chakra Petch, Space Grotesk and Liberation Sans all lack it, so it cannot resolve for UI text. Add JetBrains Mono to the fallback chain for it, use a different close glyph, or make ✕ an icon rather than type? | **RESOLVED** — it is the close/kick icon, so it ships as an icon sprite, not type. §4 v0.2. |
 
 ---
 
@@ -231,6 +254,7 @@ Anything found during implementation that needs a design decision. The implement
 | Version | Date | Change | Driven by |
 |---|---|---|---|
 | 0.1 | — | Initial token system, team-colour contract, type scale | Design |
+| 0.2 | 2026-08-25 | §4 charset: `U+2011` (non-breaking hyphen) removed — no use case, regular hyphen serves. `U+2715` (✕) removed — it is the close/kick **icon sprite**, and a glyph present in only one of the three families renders inconsistently. | Design, via T5 queue 1–2 |
 
 ---
 
