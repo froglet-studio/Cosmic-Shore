@@ -41,7 +41,9 @@ namespace CosmicShore.Gameplay
     /// individually simulated, and this runs only while a trigger is held — so a
     /// MaterialPropertyBlock per renderer plus one additive quad per target is the ordinary tool.
     /// No material is ever cloned (<c>renderer.material</c> is never touched) and the block is
-    /// written per material INDEX, so the restore is exact.</para>
+    /// written per material INDEX, so the restore is exact — and the restore puts back only the
+    /// three properties this class drives rather than clearing the block, because a vessel's
+    /// renderers carry other systems' overrides now (see <see cref="Restore"/>).</para>
     ///
     /// <para><b>Continuity of existence applies.</b> Nothing pops: a vessel entering the volume
     /// blooms up over <c>fadeSeconds</c> and a vessel leaving it fades back down, so sweeping the
@@ -339,13 +341,36 @@ namespace CosmicShore.Gameplay
             UpdateHalo(entry);
         }
 
+        /// <summary>
+        /// Put back exactly the three properties this class drives, and NOTHING else.
+        ///
+        /// It used to clear the whole block (<c>SetPropertyBlock(null, index)</c>), which was
+        /// correct while the highlight was the only thing writing a vessel's renderers and became
+        /// destructive the moment it was not: a released trigger wiped the VESSEL VISION BAND's
+        /// <c>_VesselVisionTint</c> along with its own tint, so a ship swept by an Echo Sight came
+        /// out of the beam permanently unmarkable at range. The general rule is the one the speed
+        /// tunnel records for the Panini override — <b>when several systems write one channel, each
+        /// one restores what IT changed; only an owner may clear</b>. The vision band heals its own
+        /// stamp round-robin, so this is belt and braces rather than the only defence, but a
+        /// one-frame flicker on every beam pass is not something to leave in.
+        /// </summary>
         void Restore(Entry entry)
         {
+            _block ??= new MaterialPropertyBlock();
+
             for (int i = 0; i < entry.Targets.Count; i++)
             {
                 var target = entry.Targets[i];
                 if (!target.Renderer) continue;
-                target.Renderer.SetPropertyBlock(null, target.MaterialIndex);
+
+                target.Renderer.GetPropertyBlock(_block, target.MaterialIndex);
+                _block.SetFloat(ColorMultiplierId, target.RestMultiplier);
+                if (target.HasColorPair)
+                {
+                    _block.SetColor(Color1Id, target.RestColor1);
+                    _block.SetColor(Color2Id, target.RestColor2);
+                }
+                target.Renderer.SetPropertyBlock(_block, target.MaterialIndex);
             }
             entry.BlockApplied = false;
         }

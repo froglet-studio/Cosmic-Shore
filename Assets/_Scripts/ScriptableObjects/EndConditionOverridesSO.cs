@@ -59,6 +59,8 @@ namespace CosmicShore.ScriptableObjects
         public const int DefaultBendsPointTarget = 3;
         /// <summary>Scarab Scramble goal target used when <see cref="scarabScrambleGoalTarget"/> is 0 (auto/default).</summary>
         public const int DefaultScarabScrambleGoalTarget = 10;
+        /// <summary>Salvo hostile-prism target used when <see cref="salvoPrismTarget"/> is 0 (auto/default).</summary>
+        public const int DefaultSalvoPrismTarget = 700;
 
         [Header("Live counts - used at runtime. 0 = auto/default (edit via FrogletTools > Game Modes > End Game Conditions)")]
         [Tooltip("HexRace crystals to end the race. 0 = auto-calc from the track waypoints.")]
@@ -110,6 +112,11 @@ namespace CosmicShore.ScriptableObjects
                  "crystals and continuous play, 10 reads as a 3-5 minute party match. " +
                  "0 = default (10).")]
         [Min(0)] public int scarabScrambleGoalTarget = 10;
+        [Tooltip("Salvo: hostile prisms (the Boneyard's wreckage, rival trails, fauna bodies) a " +
+                 "domain must destroy between them to win (race to N), summed across that " +
+                 "domain's players. Lower than Rampage's target because the Sparrow's salvos " +
+                 "are crystal-rationed. 0 = default (700).")]
+        [Min(0)] public int salvoPrismTarget = 700;
 
         [Header("Build baseline - what a shipping build uses. Set via the tool's \"Set Build Values\" button.")]
         [Min(0)] public int hexRaceCrystalCountBuild = 0;
@@ -123,6 +130,7 @@ namespace CosmicShore.ScriptableObjects
         [Min(0)] public int dogFightPointTargetBuild = 90;
         [Min(0)] public int bendsPointTargetBuild = 3;
         [Min(0)] public int scarabScrambleGoalTargetBuild = 10;
+        [Min(0)] public int salvoPrismTargetBuild = 700;
 
         [Tooltip("When on, a build first copies the Build baseline onto the Live counts, so test values are never shipped.")]
         public bool autoRestoreBuildValuesBeforeBuild = true;
@@ -207,11 +215,20 @@ namespace CosmicShore.ScriptableObjects
         /// (which lives on each mode's ScoringRule) differs.
         /// </summary>
         public int GetBendsPointTarget() => bendsPointTarget > 0 ? bendsPointTarget : DefaultBendsPointTarget;
+
+        /// <summary>
         /// Scarab Scramble goal target ("first domain to N goals"): the configured value when
         /// &gt; 0, otherwise <see cref="DefaultScarabScrambleGoalTarget"/>. Compared against a
         /// DOMAIN SUM of <see cref="CosmicShore.Data.IRoundStats.GoalsScored"/>, so teammates pool.
         /// </summary>
         public int GetScarabScrambleGoalTarget() => scarabScrambleGoalTarget > 0 ? scarabScrambleGoalTarget : DefaultScarabScrambleGoalTarget;
+
+        /// <summary>
+        /// Salvo prism target ("race to N" hostile prisms destroyed): the configured value when
+        /// &gt; 0, otherwise <see cref="DefaultSalvoPrismTarget"/>. Compared against a DOMAIN's
+        /// summed destruction count, so teammates pool.
+        /// </summary>
+        public int GetSalvoPrismTarget() => salvoPrismTarget > 0 ? salvoPrismTarget : DefaultSalvoPrismTarget;
 
         /// <summary>True when every Live count (used at runtime) already equals its Build baseline.</summary>
         public bool LiveMatchesBuild =>
@@ -225,7 +242,8 @@ namespace CosmicShore.ScriptableObjects
             wildlifeKillTarget == wildlifeKillTargetBuild &&
             dogFightPointTarget == dogFightPointTargetBuild &&
             bendsPointTarget == bendsPointTargetBuild &&
-            scarabScrambleGoalTarget == scarabScrambleGoalTargetBuild;
+            scarabScrambleGoalTarget == scarabScrambleGoalTargetBuild &&
+            salvoPrismTarget == salvoPrismTargetBuild;
 
         /// <summary>Copy the Build baseline onto the Live counts (build → live) - used by the build auto-restore.</summary>
         public void ApplyBuildValues()
@@ -241,6 +259,7 @@ namespace CosmicShore.ScriptableObjects
             dogFightPointTarget = dogFightPointTargetBuild;
             bendsPointTarget = bendsPointTargetBuild;
             scarabScrambleGoalTarget = scarabScrambleGoalTargetBuild;
+            salvoPrismTarget = salvoPrismTargetBuild;
         }
 
         /// <summary>Snapshot the current Live counts as the Build baseline (live → build) - used by "Set Build Values".</summary>
@@ -257,6 +276,7 @@ namespace CosmicShore.ScriptableObjects
             dogFightPointTargetBuild = dogFightPointTarget;
             bendsPointTargetBuild = bendsPointTarget;
             scarabScrambleGoalTargetBuild = scarabScrambleGoalTarget;
+            salvoPrismTargetBuild = salvoPrismTarget;
         }
     }
 }

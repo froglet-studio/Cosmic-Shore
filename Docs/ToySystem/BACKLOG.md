@@ -288,26 +288,73 @@ teardown). Everything below is remaining polish / not-yet-play-verified.
 
 ## Lifeform Matrix follow-ups
 
+**Kingdom pass (shipped) — verification, none of it play-verified:**
+
+1. Fly the toy in freestyle. Three kingdom stations bloom one layer out: **Fauna** wearing a mini
+   tadpole, **Flora** wearing a gyroid growth preview, **Vessels** wearing a mini hull in *your*
+   domain colour. Anonymous spheres mean an icon builder failed — check the console.
+2. Fly **Vessels**. Eight mini hulls bloom a layer further out (the shared
+   `ToyVesselRoster.Default` roster). Fly one: an AI-piloted vessel of that class, in your domain,
+   appears one spacing back toward the cell centre facing inward, and flies off on autopilot.
+   The console logs `[MenuServerVesselInit] Released AI companion '<Class> Bot N' (...)`.
+2b. **Watch the trail.** It starts ~2.1s after release (`VesselPrismController.startDelay`) and
+   must then stay on. A companion with no trail means it is under the spawner's 3 u/s gate — check
+   `companionLaunchSpeed` on the menu initializer, and check the bot is not stuck in a drift (a
+   held drift pins cruise speed at the value carried in). Release several of DIFFERENT classes:
+   only Dolphin / Rhino / Serpent / Sparrow have an authored AI ability, and the Dolphin's is a
+   drift, so that hull is the one that exposes a launch-speed regression first.
+   **The RHINO is the known exception and is NOT a toy bug**: its trail is 0.75 volume per prism
+   (4x smaller than any other hull's) and reads as absent at any distance, because its
+   trail-growing ability has never run. Cause, the reason the one-line fix is unsafe alone, and
+   the design fork it needs: `Docs/ElementalAbilitySystem/BACKLOG.md` item 27.
+3. Change domain at the domain-changer toy and come back: every mini hull re-tints in place, and
+   the next companion you release joins the new domain.
+4. **Party check (the point of the ServerRpc):** with a second client joined, release a companion
+   from the CLIENT. It must appear on both machines. Releasing from the host must likewise show on
+   the client.
+5. Launch an arcade game and return to the menu: every companion is gone
+   (`SceneLoader.ClearPlayerVesselReferences`), and no `[FLOW-5] ... returned NULL` warnings.
+6. Fauna/Flora branches must behave exactly as before, one layer further out.
+
+**Open follow-ups from that pass:**
+
+- **No cap on companions.** Every hangar pass releases another AI player + vessel, and nothing
+  removes them until you leave the menu. That is toy-faithful (no timer, no cull) but it IS a real
+  collider + simulation cost, unlike the transient stations. If it needs a bound, the honest shape
+  is a per-cell ceiling read off what is actually in the cell — the same lesson
+  `AstroLeagueBall.cellBallLimit` records (a rule enforced at one PRODUCER only ever sees that
+  producer) — plus an active, visible removal, never a clock.
+- **Companion names are generated** (`"<Class> Bot N"`) rather than drawn from
+  `SO_AIProfileList`, because the menu initializer has no profile-list reference and adding one
+  means scene wiring. Wire `aiProfileList` on `MenuServerPlayerVesselInitializer` if the bots
+  should read as characters.
+- **`companionSkill` is authored at 0.5** on the menu initializer, since the menu has no intensity
+  to derive one from. Tune in play.
+- **The hangar has no "release N" affordance** — one pass, one bot. A held pass or a level-style
+  size telegraph (the way variant stations encode level as size) is the obvious extension.
+
 - **Charge tadpole is NEW and untuned** (authored from the Space baseline with a Charge
   crystal) — tune via the matrix, then bake into `Tadpole Fauna Charge.asset`.
 - **Not in the elemental contract yet**: Seaweed (`SpawnableCord`, not a `Flora`), drone
   populations (BoidManager path — now all spawn the base tadpole; needs its own config pass
-  for per-element identity). (Worms: the legacy trio was deleted; the rebuilt worm colony's
-  capital segments carry authored elemental hearts — Docs/ECOSYSTEM.md §23 — though the
-  colony doesn't yet roll the element × level spread.)
+  for per-element identity). (Worms: the legacy trio was deleted; every segment of the
+  rebuilt worm colony carries an authored elemental heart — Docs/ECOSYSTEM.md §23.8 — though
+  the colony doesn't yet roll the element × level spread.)
 - **Sparrow (and other vessels') HUD ability-icon bindings** for the shared upgrade-highlight
   system are unwired (Squirrel only); fill each view's `abilityIcons` in its prefab.
 - **Squirrel HUD tube/energy icons repaint colours per-frame**, so the upgrade highlight
   reads via scale only there — teach those repaints to respect the highlight tint.
-- **Variant matrix stations beyond the membrane**: layered outward they can cross the
-  membrane; spawns resolve the cell from the toy's position so they work, but station
-  placement could clamp to the membrane radius for tidiness.
-- **The four element-crystal "moons" are probably invisible.** `LifeformMatrixToy.OnInitialized`
-  places them 2.2 raw world units from the toy centre at scale 0.35, but the toybox places toys
-  with `toyBodyRadius = 22`, so a 44-unit body sphere swallows them. `Toy.Placement` is now
-  exposed (added for the Cell Selector, which sizes its moons off `Placement.BodyRadius`) — scale
-  these the same way. Confirm in-editor before changing, since the crystal models carry their own
-  authored scale.
+- **Variant matrix stations beyond the membrane**, and the kingdom pass made it further out.
+  Layers sit at `(1.5 + 2n) × stationSpacing` from the toy along the outward radial, so with
+  `spacing 90` the variant matrix is now 495u out (was 315u) from a toy placed at ~0.82 of the
+  1200u membrane — roughly 280u outside it (was ~100u). Spawns still work (they resolve the cell
+  from the TOY's position, which is always inside), and fauna hatch on the cell's densest mass
+  rather than at the station, so only FLORA actually root out there. Options if it reads badly:
+  clamp the flora plant position back inside the membrane, or tighten the per-layer gap from 2
+  spacings to 1.5 (which costs the corridor's readability). Play-test before choosing.
+- ~~**The four element-crystal "moons" are probably invisible**~~ — resolved by the toy-root
+  emblem: the crystals moved onto `ToyEmblem`'s core sub-ring, which is sized off
+  `Placement.BodyRadius` like every other emblem. Item kept only so the fix is not re-litigated.
 
 ## Cell Selector follow-ups
 
@@ -557,3 +604,23 @@ mass does not exist until plants grow it. Three directions, in preference order:
 
 Until one lands, a grown cell in the selector is identified by its **label** alone. Note this
 becomes more pressing, not less, if more grown-environment cells ship.
+
+## Vessel matrices — live hulls (2026-08-25)
+
+Stations in the vessel changer and the Lifeform Matrix hangar now show the ACTUAL ship
+(`ToyVesselRoster.TryBuildLiveHull`) rather than a flat silhouette, with the vessel vision band
+supplying the domain read (`Docs/VESSEL_VISION.md`, `Docs/ToySystem/ARCHITECTURE.md` § "Vessel
+Changer"). Open items:
+
+- **Glyphs still use the flat fill, and that is deliberate** — a toy's emblem and the kingdom icons
+  sit inside the band's near cutoff where a real hull is a black blob. If emblems ever want real
+  hulls, they need their own lighting answer, not the band.
+- **The station's mark depends on the matrix geometry.** It works because the matrix blooms
+  `StationSpacing × MatrixDistanceFactor` = 360 u, just past the band's `nearFullStart` (350).
+  Anyone re-tuning `stationSpacing` or `matrixDistanceFactor` on `Toy_VesselChanger.asset` should
+  re-check that the stations still land inside the band, or they will silently go unmarked.
+- **Skinned mini hulls show their bind pose.** Unchanged by this work, but more visible now that the
+  real materials are on: a skinned ship's mini model is static in its authored pose.
+- **Not verified in-editor yet** — the live-hull path, the domain-material swap and the re-tint
+  dispatch are machine-type-checked only. See `Docs/VESSEL_VISION.md` § "What a human still has to
+  check in the editor", step 6.
