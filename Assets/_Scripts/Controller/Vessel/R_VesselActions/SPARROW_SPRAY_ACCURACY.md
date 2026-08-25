@@ -425,14 +425,15 @@ It is a CI-able gate, not a one-off (~5 min, no Unity):
 
 | | Round 4 | Round 5 |
 |---|---|---|
-| lit at one instant (one round) | 3.69% | **2.50%** |
-| **planarity of the lit set** | **14.1°** | **2.8°** |
-| one round paints, over its whole flight | 73.1% | **19.8%** |
-| one *instant* of the whole 27-round stream | 68.0% | **9.5%** |
-| union after 0.25 s of fire | 99.9% | 14.8% |
-| union after 1.0 s of fire | 100% | 40.1% |
-| union after 3.0 s of fire | 100% | **71.0%** |
-| FBM evaluations per fragment | 3.94 (worst case 15) | **1.00 (worst case 1)** |
+| lit at one instant (one round) | 3.72% | **2.28%** |
+| **planarity of the lit set** | **13.9°** | **2.8°** |
+| one round paints, over its whole flight | 73.9% | **19.3%** |
+| one frozen frame of the fight (27 × 2 muzzles) | 69.4% | **17.9%** |
+| union after 0.25 s of fire | 99.9% | 26.3% |
+| union after 1.0 s of fire | 100% | 62.4% |
+| union after 3.0 s of fire | 100% | **90.5%** |
+| a volley's two rounds, lit-set overlap | 100% | **0.0% median** |
+| FBM evaluations per fragment | 3.93 (worst case 15) | **1.00 (worst case 1)** |
 
 **Planarity is the number that carries the claim, and finding that out is half of what the harness
 was for.** Raw lit *area* is nearly useless here: the old shell lit *few* pixels *everywhere* and
@@ -444,10 +445,69 @@ number is kept only as a "did not go up" guard.
 > **General rule: when a visual is a claim about a DISTRIBUTION over many instances, the metric is
 > almost never the per-instance total. Measure the SHAPE of one instance and the UNION over many.**
 
-The two union rows either side of "0.25 s" are the mechanic working: at any frozen instant the
-stream shows **9.5%** of a sphere (~2.5 circles, shared by neighbouring rounds whose radii are
-close), and three seconds later the accumulation is at 71% and still climbing. Nothing about a
-single frame looks like a ball; the burst does.
+The union rows are the mechanic working: a frozen frame of a full-rate fight — every round in
+the air, both muzzles — shows **17.9%** of a sphere, and three seconds later the accumulation is
+at **90.5%** and still climbing. Nothing about a single frame looks like a ball; the burst does.
+
+### The two muzzles were drawing the same stroke
+
+Second playtest note on the same pass: *"the gun shoots a projectile out of two guns, so the
+randomness of the effect is spoiled by the simultaneity of two projectiles acting in phase with
+each other."*
+
+Correct, and structural. `FullAutoActionExecutor` walks `muzzles[]` inside one tick, so a volley's
+two rounds get the **same** growth factor, the **same** flight progress and therefore the **same
+world radius — exactly**. Radius was the shell's entire per-round signal. The pair were clones:
+same great circle, same point in the cycle, flying side by side for their whole 0.3 s. Measured,
+their lit sets overlapped **100%**. Two synchronised strokes read as one deliberate shape, which
+is the exact opposite of a stochastic fill — and it halved the fill rate, because half the rounds
+in the air were contributing a duplicate.
+
+> **The pair is split by the one thing that differs about them by construction: the muzzles are
+> 6.4 units apart across the ship** (`Sparrow.prefab`, `LeftGun`/`RightGun` local x = ∓3.2).
+
+A round flies along its own forward and `SafeLookRotation` builds its frame with forward as +z, so
+its two **lateral** world coordinates are invariant along the flight while differing between the
+muzzles by that 6.4. `ProjectileChargeFieldPhase_float` reads them straight off the object-to-world
+matrix — still no CPU write, still one batch, still SRP-batcher compatible.
+
+Three things about that read are load-bearing:
+
+- **Two axes, not one.** The round's frame comes from a **world-up** `LookRotation`, so it does not
+  roll with the ship: at zero roll the muzzle separation lands entirely on the round's +x, at 90°
+  entirely on its +y. A single-axis read resynchronises the pair every quarter roll.
+- **Noise, not a linear term.** Any linear combination `a·latX + b·latY` has a null direction, so
+  there is always a roll angle at which the pair collapses back together. Two independent smooth
+  noises have none — and "the two muzzles get unrelated strokes" is the claim being made.
+- **It SPINS THE CIRCLE, and that — not the phase offset it also feeds — is what splits them.**
+  This one was measured the hard way. The first version fed the lateral read into the phase only,
+  which moves the pair to different points of the same cycle; but inside one cycle `floor(cycle)`
+  is unchanged, so they were still drawing the **same great circle** at two draw stages. The
+  harness keeps that intermediate as a permanent **negative control**:
+
+  | | median overlap | drawing the same stroke | worst 10° roll bucket |
+  |---|---|---|---|
+  | before (radius only) | 100% | 100% | 100% |
+  | lateral → phase offset only | 1.0% | **34.9%** | **72.8%** (at 70°) |
+  | **shipped** (offset **+ circle spin**) | **0.0%** | **2.2%** | **1.9%** |
+
+  Both rows have the same median cycle separation (0.309). The offset alone is simply not the
+  mechanism.
+
+> **General rule: when a periodic effect is keyed on `floor(x)`, a sub-unit offset in `x` changes
+> WHEN, never WHICH. If two instances must look different rather than merely out of step, the
+> decorrelating signal has to reach the thing that picks the identity.**
+
+The spin enters through `cos`/`sin` only, so it is perfectly continuous and wraps for free. A
+pilot drifting hard inherits lateral velocity into the shot (`inheritVel = Course × Speed`), which
+makes the plane **walk** slowly around the shell rather than pop — the same property the envelope
+relies on at cycle boundaries. A round flying straight has an exactly constant lateral read and
+therefore an exactly fixed plane. It costs **no extra discharge rate**, which the radius term
+cannot say.
+
+Fixing the pair also roughly **doubled the fill rate** — 40.1% → **62.4%** after one second of
+fire, 71.0% → **90.5%** after three — because half the rounds in the air stopped contributing a
+duplicate of the other half.
 
 ### Things that would take it straight back
 
@@ -459,6 +519,10 @@ single frame looks like a ball; the burst does.
   one.
 - **Dropping the hold out of the envelope** to get "snappier" strokes. That is where the twinkle
   came from.
+- **Reading only one lateral axis, or combining the two linearly.** Both resynchronise the volley's
+  pair at some roll angle; the harness sweeps every 10° precisely to catch that.
+- **Setting `_LateralPoleSpin` to 0** and trusting `_PhaseByLateral` to separate the muzzles. It
+  does not — see the negative control above.
 
 ---
 

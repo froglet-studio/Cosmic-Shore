@@ -54,6 +54,19 @@ Shader "Shader Graphs/ProjectileChargeField"
         // rounds on different great circles. Radians per world unit.
         _PhaseByRadius ("Phase Offset Per Radius", Float) = 0.43
         _PhaseSpeed ("Phase Speed", Float) = 2.6
+        // The gun fires BOTH muzzles in one tick, so a volley's pair shares a radius exactly
+        // and the two terms above cannot tell them apart. These separate them off the one
+        // thing that differs by construction — the muzzles are 6.4 units apart across the
+        // ship — and cost no extra flicker, because a round's lateral position is invariant
+        // along its own flight. Noise period 8 world units, so the pair samples ~0.8 of a
+        // period apart; the swing spans ~3 discharge cycles.
+        _PhaseByLateral ("Phase Offset Per Lateral", Float) = 0.43
+        _LateralNoiseScale ("Lateral Noise Scale", Float) = 0.125
+        // Radians of circle spin per unit of lateral read (which spans 0..2). This is the
+        // half that actually splits the pair onto different PLANES — the phase offset above
+        // only moves them to different points of the SAME cycle, and inside one cycle that
+        // is the same great circle.
+        _LateralPoleSpin ("Lateral Circle Spin", Float) = 4
     }
 
     SubShader
@@ -115,6 +128,9 @@ Shader "Shader Graphs/ProjectileChargeField"
                 float  _ChargeFloor;
                 float  _PhaseByRadius;
                 float  _PhaseSpeed;
+                float  _PhaseByLateral;
+                float  _LateralNoiseScale;
+                float  _LateralPoleSpin;
             CBUFFER_END
 
             #include "Assets/_Graphics/Materials/Graphs/ProjectileChargeField.hlsl"
@@ -131,7 +147,7 @@ Shader "Shader Graphs/ProjectileChargeField"
                 float3 positionOS : TEXCOORD0;
                 float3 normalOS   : TEXCOORD1;
                 float3 viewDirOS  : TEXCOORD2;
-                float2 charge     : TEXCOORD3;   // x = phase (seconds), y = charge 0..1
+                float3 charge     : TEXCOORD3;   // phase (seconds), charge 0..1, lateral 0..2
                 float  fogFactor  : TEXCOORD4;
             };
 
@@ -146,17 +162,21 @@ Shader "Shader Graphs/ProjectileChargeField"
                 float3 cameraPosOS = TransformWorldToObject(GetCameraPositionWS());
                 output.viewDirOS = cameraPosOS - input.positionOS.xyz;
 
-                // The shell's own world radius IS the round's hit radius — the CPU sizes it
-                // to exactly that every frame (Projectile.SizeChargeField). Reading it back
-                // off the model matrix is what lets growth drive the visual with no stamp,
-                // and it is ALSO this shader's only per-round signal: it is what decides
-                // which great circle this round's stroke lands on.
-                // The mesh is Unity's built-in sphere, object radius 0.5.
+                // Every per-round difference — which great circle this round's stroke lands
+                // on, and how charged it reads — comes out of the shell's own object-to-world
+                // matrix and nothing else: no stamp, no property block, one batch for the
+                // whole match. The resolution itself lives in the include so the verification
+                // harness can compile and run the SHIPPED version of it.
+                // (Column 0's LENGTH is the shell's diameter, and the CPU sizes the shell to
+                // exactly the round's hit radius every frame — Projectile.SizeChargeField —
+                // so growth drives the visual for free. Mesh is Unity's built-in sphere.)
                 float4x4 m = GetObjectToWorldMatrix();
-                float worldRadius = 0.5 * length(float3(m[0][0], m[1][0], m[2][0]));
-
-                output.charge.x = _Time.y * _PhaseSpeed + worldRadius * _PhaseByRadius;
-                output.charge.y = saturate(worldRadius / max(_ChargeReferenceRadius, 1e-3));
+                ProjectileChargeFieldPhase_float(
+                    float3(m[0][0], m[1][0], m[2][0]),
+                    float3(m[0][1], m[1][1], m[2][1]),
+                    float3(m[0][3], m[1][3], m[2][3]),
+                    _Time.y,
+                    output.charge.x, output.charge.y, output.charge.z);
 
                 return output;
             }
@@ -167,7 +187,7 @@ Shader "Shader Graphs/ProjectileChargeField"
                 float alpha;
                 ProjectileChargeField_float(
                     input.positionOS, input.normalOS, input.viewDirOS,
-                    input.charge.x, input.charge.y,
+                    input.charge.x, input.charge.y, input.charge.z,
                     emissionColor, alpha);
 
                 emissionColor = MixFog(emissionColor, input.fogFactor);

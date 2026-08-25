@@ -1,32 +1,40 @@
 #!/usr/bin/env python3
-"""Prove the SHIPPED ProjectileChargeField.hlsl draws ONE STROKE per round — by compiling and
-running it, and by running the version it replaced beside it.
+"""Prove the SHIPPED ProjectileChargeField.hlsl draws ONE STROKE per round, and that a VOLLEY'S
+TWO ROUNDS are not the same stroke — by compiling and running it, and by running the version it
+replaced beside it.
 
 The 2026-08-25 pass answers a playtest note: *"tone it down so each projectile reads less like a
 sphere, but together they build a spherical effect over time — a single arc on each projectile,
-and after many projectiles those arcs stochastically fill in the circle as an after-image."*
+and after many projectiles those arcs stochastically fill in the circle as an after-image"* — and
+its follow-up: *"the gun shoots a projectile out of two guns, so the randomness is spoiled by the
+simultaneity of two projectiles acting in phase with each other."*
 
-That is a claim about a DISTRIBUTION over rounds, and it is exactly the kind of claim static
-reading cannot settle. Three things have to hold at once, and two of them pull against each other:
+Those are claims about a DISTRIBUTION over rounds, which is exactly what static reading cannot
+settle. Four things have to hold at once, and several of them pull against each other:
 
   1. ONE ROUND, AT ONE INSTANT, IS NOT A SPHERE. Its lit set must be a small fraction of the
      visible hemisphere, and it must be a CURVE — lit fragments lying close to one plane through
      the centre, i.e. on one great circle — not a blob and not a scatter.
-  2. THE VOLLEY IS. The union of what a burst lights must climb toward covering the sphere. If
-     consecutive rounds landed on the same great circle (they differ only in world radius, which
-     is simultaneously their identity AND their progress — see the shader header) the strokes
-     would stack instead of accumulating and nothing would ever fill in.
-  3. NO ROUND IS EVER FULLY DARK. Continuity of existence: between strokes the rim whisper has to
+  2. THE VOLLEY IS. The union of what a burst lights must climb toward covering the sphere.
+  3. A VOLLEY'S TWO MUZZLES MUST NOT BE IN PHASE. Both guns fire in the same tick with the same
+     growth factor, so the pair share a world radius EXACTLY — and radius used to be the shell's
+     entire per-round signal, which made them clones flying side by side. The fix reads the two
+     LATERAL world coordinates of the round's own frame (invariant along a flight, 6.4 apart
+     across the ship), and it has to hold at EVERY ROLL ANGLE: the round's frame comes from a
+     world-up LookRotation and does not roll with the ship, so the muzzle separation migrates
+     from one lateral axis to the other as the pilot rolls.
+  4. NO ROUND IS EVER FULLY DARK. Continuity of existence: between strokes the rim whisper has to
      keep the shell present, or a round pops out of and back into existence mid-flight.
 
-What is measured is the shipped file, not a paraphrase of it: the HLSL is translated to
-compilable C++ with the smallest possible edit set (swizzle accessors, `out` -> reference, and one
-rename that wraps ChargeFBM1D in a call counter so the cost claim is measured too), compiled with
-clang++, and executed. The previous revision is pulled from git and run through the identical
-harness so the before/after is one measurement, not two.
+What is measured is the shipped file, not a paraphrase of it. The HLSL is translated to compilable
+C++ with the smallest possible edit set (swizzle accessors, `out` -> reference, and one rename that
+wraps ChargeFBM1D in a call counter so the cost claim is measured too), compiled with clang++, and
+executed — INCLUDING `ProjectileChargeFieldPhase_float`, which is why that function lives in the
+include rather than inline in the vertex shader. The previous revision is pulled from git and run
+through the identical harness, so the before/after is one measurement rather than two.
 
 Usage:  python3 Tools/Shaders/verify_projectile_charge_field.py [--keep]
-Exit 0 on pass. Needs clang++ and git; nothing else, and no Unity.
+Exit 0 on pass. Needs clang++ and git; nothing else, and no Unity. Takes ~5 minutes.
 """
 
 import math
@@ -41,13 +49,16 @@ ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)
 HLSL_REL = "Assets/_Graphics/Materials/Graphs/ProjectileChargeField.hlsl"
 HLSL = os.path.join(ROOT, HLSL_REL)
 
-# ── The Sparrow's real stream, from SPARROW_SPRAY_ACCURACY.md ────────────────────────────────
-LAUNCH_HIT_RADIUS = 0.825      # dart collider radius x its largest lossy component
+# ── The Sparrow's real stream, from SPARROW_SPRAY_ACCURACY.md and Sparrow.prefab ─────────────
+LAUNCH_HIT_RADIUS = 0.825        # dart collider radius x its largest lossy component
 FLIGHT_SECONDS = 0.30
 VOLLEYS_PER_SECOND = 90.0
 ROUNDS_IN_FLIGHT = int(round(FLIGHT_SECONDS * VOLLEYS_PER_SECOND))   # 27 distinct radii
-GROWTH_AT_REST = 3.0           # FullAutoAction.asset, Mass level 0
-GROWTH_AT_MASS_10 = 6.0
+GROWTH_AT_REST = 3.0             # FullAutoAction.asset, Mass level 0
+MUZZLE_HALF_SPACING = 3.2        # Sparrow.prefab: LeftGun/RightGun local x = -/+3.2
+MUZZLE_SPEED = 375.0             # SPACE 0 muzzle speed
+SHIP_POS = (312.0, -140.0, 455.0)   # somewhere in a 1200-radius arena, off every axis
+SHIP_FORWARD = (0.31, 0.12, 0.94)
 
 # ── Material values, so the harness measures what SHIPS, not what the shader defaults to ─────
 NEW_MAT = dict(
@@ -59,6 +70,7 @@ NEW_MAT = dict(
     _CrackleRate=3.5, _StrikeTime=0.25, _HoldTime=0.5, _FadeShape=1.0,
     _FresnelRimIntensity=0.05, _FresnelRimPower=3.5,
     _ChargeReferenceRadius=4.95, _ChargeFloor=0.4, _PhaseByRadius=0.43, _PhaseSpeed=2.6,
+    _PhaseByLateral=0.43, _LateralNoiseScale=0.125, _LateralPoleSpin=4.0,
 )
 OLD_MAT = dict(
     _CrackleColorA=(1.4979111, 0.0058463, 0.0068495, 1.0),
@@ -69,8 +81,6 @@ OLD_MAT = dict(
     _CrackleRate=6.0, _FresnelRimIntensity=0.18, _FresnelRimPower=2.5,
     _ChargeReferenceRadius=4.95, _ChargeFloor=0.35, _PhaseByRadius=1.7, _PhaseSpeed=1.0,
 )
-
-# Every uniform either revision can reference. Declaring the union lets one shim compile both.
 ALL_UNIFORMS = sorted(set(NEW_MAT) | set(OLD_MAT))
 
 LIT = 0.15   # above the rim whisper's ceiling in BOTH revisions, so this measures arcs
@@ -125,7 +135,7 @@ static inline float smoothstep(float e0,float e1,float v){
     return t*t*(3.0f-2.0f*t);
 }
 // Deliberately NOT `using namespace std`: unqualified pow/exp/sqrt/sin/cos/atan2/acos/floor/
-// abs/round/max/min resolve to the <cmath> float overloads, which is what HLSL means by them.
+// round resolve to the <cmath> float overloads, which is what HLSL means by them.
 
 // ── Material uniforms, set from the shipped .mat by the driver ──
 __UNIFORMS__
@@ -138,15 +148,44 @@ float ChargeFBM1D_shipped(float x, int octaves);
 static inline float ChargeFBM1D(float x, int octaves){ g_fbmCalls++; return ChargeFBM1D_shipped(x, octaves); }
 """
 
+# Entry-point adapters. The shipped revision resolves phase in the include (so the harness can
+# compile and run it) and hands the fragment a `Lateral` identity; the baseline revision did
+# neither — it resolved phase inline in its VERTEX shader and had no per-round signal beyond world
+# radius, which IS the defect being measured. These two wrappers are the entire difference, so the
+# driver below is identical for both.
+ADAPT_NEW = r"""
+static inline void PCF_Phase(float3 ax,float3 ay,float3 org,float t,float &ph,float &ch,float &lat)
+{ ProjectileChargeFieldPhase_float(ax,ay,org,t,ph,ch,lat); }
+static inline void PCF_Sample(float3 p,float3 n,float3 v,float ph,float ch,float lat,float3 &em,float &a)
+{ ProjectileChargeField_float(p,n,v,ph,ch,lat,em,a); }
+"""
+ADAPT_OLD = r"""
+// The baseline's vertex shader, transcribed. What it IGNORES (AxisY, OriginWS) is the defect.
+static inline void PCF_Phase(float3 ax,float3 ay,float3 org,float t,float &ph,float &ch,float &lat)
+{
+    float worldRadius = 0.5f * length(ax);
+    ph  = t * _PhaseSpeed + worldRadius * _PhaseByRadius;
+    ch  = saturate(worldRadius / max(_ChargeReferenceRadius, 1e-3f));
+    lat = 0.0f;
+}
+static inline void PCF_Sample(float3 p,float3 n,float3 v,float ph,float ch,float lat,float3 &em,float &a)
+{ ProjectileChargeField_float(p,n,v,ph,ch,em,a); }
+"""
+
 DRIVER = r"""
-// ── Driver: sample the shell over the unit sphere. Emits only what the harness needs —
-//    per round, the count of VISIBLE samples, the peak alpha, and the indices of the LIT
-//    ones. (Printing every sample is ~1% signal and 99% I/O, and at 65M fragments that I/O
-//    is the whole runtime.) ──
+// ── Driver. Each stdin line is one round POSE:
+//      t radius  ox oy oz  rx ry rz  ux uy uz
+//    (time, hit radius, world position, and the round's own right / up axes). The driver
+//    rebuilds the object-to-world columns the vertex shader reads and calls the SHIPPED phase
+//    resolver, then samples the shell over the unit sphere. It emits only what the harness
+//    needs — visible-sample count, peak alpha, the phase, and the indices of the LIT samples.
+//    (Printing every sample is ~1% signal and 99% I/O, and at 65M fragments that I/O is the
+//    whole runtime.) ──
 int main()
 {
     const int N = __SAMPLES__;
     const float LIT = __LIT__f;
+    const bool RENDER = __RENDER__;
     std::vector<float3> dirs; dirs.reserve(N);
     const float ga = (float)(M_PI * (3.0 - std::sqrt(5.0)));   // Fibonacci sphere
     for (int i = 0; i < N; i++) {
@@ -160,25 +199,31 @@ int main()
     // front hemisphere — which is what `Cull Back` actually draws.
     const float3 camOS = float3(0.0f, 0.0f, 60.0f);
 
-    float t, worldRadius;
-    while (std::scanf("%f %f", &t, &worldRadius) == 2) {
-        float phase  = t * _PhaseSpeed + worldRadius * _PhaseByRadius;
-        float charge = saturate(worldRadius / std::max(_ChargeReferenceRadius, 1e-3f));
+    float t, rad, ox, oy, oz, rx, ry, rz, ux, uy, uz;
+    while (std::scanf("%f %f %f %f %f %f %f %f %f %f %f",
+                      &t,&rad,&ox,&oy,&oz,&rx,&ry,&rz,&ux,&uy,&uz) == 11) {
+        float dia = 2.0f * rad;
+        float phase, charge;
+        float lateral;
+        PCF_Phase(float3(rx,ry,rz) * dia, float3(ux,uy,uz) * dia,
+                  float3(ox,oy,oz), t, phase, charge, lateral);
         int visible = 0; float peak = 0.0f;
         std::vector<int> lit;
-        for (int i = 0; i < N; i++) {
-            float3 posOS = dirs[i] * 0.5f;          // built-in sphere, object radius 0.5
-            float3 nrmOS = dirs[i];
-            float3 viewOS = camOS - posOS;
-            if (dot(normalize(nrmOS), normalize(viewOS)) <= 0.0f) continue;   // Cull Back
-            float3 em; float alpha;
-            g_fragments++;
-            ProjectileChargeField_float(posOS, nrmOS, viewOS, phase, charge, em, alpha);
-            visible++;
-            if (alpha > peak) peak = alpha;
-            if (alpha >= LIT) lit.push_back(i);
+        if (RENDER) {
+            for (int i = 0; i < N; i++) {
+                float3 posOS = dirs[i] * 0.5f;      // built-in sphere, object radius 0.5
+                float3 nrmOS = dirs[i];
+                float3 viewOS = camOS - posOS;
+                if (dot(normalize(nrmOS), normalize(viewOS)) <= 0.0f) continue;   // Cull Back
+                float3 em; float alpha;
+                g_fragments++;
+                PCF_Sample(posOS, nrmOS, viewOS, phase, charge, lateral, em, alpha);
+                visible++;
+                if (alpha > peak) peak = alpha;
+                if (alpha >= LIT) lit.push_back(i);
+            }
         }
-        std::printf("R %d %.6f %d", visible, peak, (int)lit.size());
+        std::printf("R %d %.6f %.9f %d", visible, peak, phase, (int)lit.size());
         for (size_t k = 0; k < lit.size(); k++) std::printf(" %d", lit[k]);
         std::printf("\n");
     }
@@ -188,38 +233,34 @@ int main()
 """
 
 
+# ── HLSL -> C++ ──────────────────────────────────────────────────────────────────────────────
 def translate(hlsl_src, mat):
-    """Smallest edit set that makes the shipped HLSL compilable C++."""
     src = hlsl_src
-    # `out` parameters become references.
     src = re.sub(r"\bout\s+(float3|float|half3|half)\s+(\w+)", r"\1 &\2", src)
-    # Swizzles on the colour float4s.
     src = src.replace(".rgb", ".v3()").replace(".xyz", ".v3()")
-    # Count FBM calls without touching its maths.
     src = src.replace("float ChargeFBM1D(float x, int octaves)\n",
                       "float ChargeFBM1D_shipped(float x, int octaves)\n")
     if "float ChargeFBM1D_shipped" not in src:
         raise SystemExit("ChargeFBM1D definition not found in the expected shape")
-    # Include guards are harmless; the #define of PCF_TAU is valid C++.
+    src += ADAPT_NEW if "ProjectileChargeFieldPhase_float" in hlsl_src else ADAPT_OLD
     uniforms = []
     for name in ALL_UNIFORMS:
-        v = mat.get(name)
-        if v is None:
-            v = (0.0, 0.0, 0.0, 0.0) if name.endswith("Color") or "Color" in name else 0.0
+        v = mat.get(name, (0.0, 0.0, 0.0, 0.0) if "Color" in name else 0.0)
         if isinstance(v, tuple):
             uniforms.append("static float4 %s = float4(%.7ff,%.7ff,%.7ff,%.7ff);" % ((name,) + v))
         else:
             uniforms.append("static float %s = %.7ff;" % (name, v))
-    shim = SHIM.replace("__UNIFORMS__", "\n".join(uniforms))
-    return shim + "\n" + src + "\n"
+    return SHIM.replace("__UNIFORMS__", "\n".join(uniforms)) + "\n" + src + "\n"
 
 
-def build(tmp, tag, hlsl_src, mat, samples):
+def build(tmp, tag, hlsl_src, mat, samples, render=True):
     cpp = os.path.join(tmp, "%s.cpp" % tag)
     exe = os.path.join(tmp, tag)
     with open(cpp, "w", encoding="utf-8") as f:
         f.write(translate(hlsl_src, mat))
-        f.write(DRIVER.replace("__SAMPLES__", str(samples)).replace("__LIT__", repr(LIT)))
+        f.write(DRIVER.replace("__SAMPLES__", str(samples))
+                      .replace("__LIT__", repr(LIT))
+                      .replace("__RENDER__", "true" if render else "false"))
     r = subprocess.run(["clang++", "-O2", "-std=c++17", "-o", exe, cpp],
                        capture_output=True, text=True)
     if r.returncode != 0:
@@ -228,21 +269,56 @@ def build(tmp, tag, hlsl_src, mat, samples):
     return exe
 
 
-def run(exe, states, samples):
-    """-> (list of per-round (visible, peak, lit_index_set), fbm_calls, fragments)"""
-    stdin = "".join("%.9f %.9f\n" % (t, r) for (t, r) in states)
-    r = subprocess.run([exe], input=stdin, capture_output=True, text=True)
-    if r.returncode != 0:
-        raise SystemExit("shell executable failed: %s" % r.stderr[-2000:])
-    rounds = []
-    for line in r.stdout.splitlines():
-        p = line.split()
-        if not p or p[0] != "R":
+def run(exe, poses):
+    """-> (list of (visible, peak, phase, lit_index_set), fbm_calls, fragments)"""
+    stdin = "".join(
+        "%.9f %.9f %.9f %.9f %.9f %.9f %.9f %.9f %.9f %.9f %.9f\n"
+        % (t, rad, o[0], o[1], o[2], r[0], r[1], r[2], u[0], u[1], u[2])
+        for (t, rad, o, r, u) in poses)
+    p = subprocess.run([exe], input=stdin, capture_output=True, text=True)
+    if p.returncode != 0:
+        raise SystemExit("shell executable failed: %s" % p.stderr[-2000:])
+    out = []
+    for line in p.stdout.splitlines():
+        f = line.split()
+        if not f or f[0] != "R":
             continue
-        visible, peak, n = int(p[1]), float(p[2]), int(p[3])
-        rounds.append((visible, peak, set(int(x) for x in p[4:4 + n])))
-    m = re.search(r"FBM (\d+) FRAG (\d+)", r.stderr)
-    return rounds, int(m.group(1)), int(m.group(2))
+        n = int(f[4])
+        out.append((int(f[1]), float(f[2]), float(f[3]), set(int(x) for x in f[5:5 + n])))
+    m = re.search(r"FBM (\d+) FRAG (\d+)", p.stderr)
+    return out, int(m.group(1)), int(m.group(2))
+
+
+# ── Round poses: where a round actually is, and in which frame ───────────────────────────────
+def _n(v):
+    l = math.sqrt(sum(x * x for x in v)) or 1.0
+    return tuple(x / l for x in v)
+
+
+def _cross(a, b):
+    return (a[1]*b[2]-a[2]*b[1], a[2]*b[0]-a[0]*b[2], a[0]*b[1]-a[1]*b[0])
+
+
+def round_pose(t, progress, growth, side=-1.0, roll=0.0,
+               ship_pos=SHIP_POS, forward=SHIP_FORWARD):
+    """One round in flight.
+
+    Its frame is a world-up LookRotation of its aim (`SafeLookRotation`), so it does NOT roll
+    with the ship — which is why the muzzle separation, which IS along the ship's right, has to
+    be resolved into both lateral axes."""
+    F = _n(forward)
+    R = _n(_cross((0.0, 1.0, 0.0), F))
+    U = _cross(F, R)
+    ship_right = tuple(R[i] * math.cos(roll) + U[i] * math.sin(roll) for i in range(3))
+    travel = MUZZLE_SPEED * FLIGHT_SECONDS * progress
+    org = tuple(ship_pos[i] + F[i] * travel + ship_right[i] * MUZZLE_HALF_SPACING * side
+                for i in range(3))
+    return (t, LAUNCH_HIT_RADIUS * (1.0 + (growth - 1.0) * progress), org, R, U)
+
+
+def stream(t0, growth, count=ROUNDS_IN_FLIGHT, side=-1.0, roll=0.0):
+    """One instant of a sustained burst: `count` rounds spread across their flight."""
+    return [round_pose(t0, (k + 0.5) / count, growth, side, roll) for k in range(count)]
 
 
 def fib_dirs(n):
@@ -251,25 +327,22 @@ def fib_dirs(n):
     for i in range(n):
         z = 1.0 - 2.0 * (i + 0.5) / n
         rr = math.sqrt(max(0.0, 1.0 - z * z))
-        a = ga * i
-        out.append((rr * math.cos(a), rr * math.sin(a), z))
+        out.append((rr * math.cos(ga * i), rr * math.sin(ga * i), z))
     return out
 
 
-
 def coverage(rec):
-    visible, _peak, lit = rec
+    visible, _peak, _phase, lit = rec
     return (len(lit) / max(1, visible)), lit, visible
 
 
 def planarity(lit_idx, dirs):
-    """RMS |dot(dir, n)| for the best-fit plane through the origin.
+    """RMS |dot(dir, n)| for the best-fit plane through the origin, as an angle.
 
-    A great-circle stroke sits in one plane -> small. A blob or a many-seeded scatter -> ~0.5.
-    Reported as an angle so it is comparable to the shader's own _ArcSharpness."""
+    A great-circle stroke sits in one plane -> small. A blob or a many-seeded scatter -> large."""
     pts = [dirs[i] for i in lit_idx]
     if len(pts) < 8:
-        return None, None
+        return None
     c = [[0.0] * 3 for _ in range(3)]
     for p in pts:
         for a in range(3):
@@ -279,7 +352,6 @@ def planarity(lit_idx, dirs):
     for a in range(3):
         for b in range(3):
             c[a][b] /= n
-    # Smallest eigenvector by inverse power iteration on the 3x3 covariance (shifted).
     tr = c[0][0] + c[1][1] + c[2][2]
     m = [[tr * 1.001 * (1 if a == b else 0) - c[a][b] for b in range(3)] for a in range(3)]
     v = [0.3, 0.5, 0.81]
@@ -288,16 +360,10 @@ def planarity(lit_idx, dirs):
         ln = math.sqrt(sum(x * x for x in w)) or 1.0
         v = [x / ln for x in w]
     rms = math.sqrt(sum((sum(p[a] * v[a] for a in range(3))) ** 2 for p in pts) / n)
-    return rms, math.degrees(math.asin(min(1.0, rms)))
+    return math.degrees(math.asin(min(1.0, rms)))
 
 
-def stream_states(t0, growth, count=ROUNDS_IN_FLIGHT):
-    """One instant of a sustained burst: `count` rounds spread across their flight."""
-    out = []
-    for k in range(count):
-        p = (k + 0.5) / count
-        out.append((t0, LAUNCH_HIT_RADIUS * (1.0 + (growth - 1.0) * p)))
-    return out
+SYNCED = 0.12   # |cycle difference| below which two strokes read as the same stroke
 
 
 def main():
@@ -305,13 +371,16 @@ def main():
     if not shutil.which("clang++"):
         raise SystemExit("clang++ not found")
     new_src = open(HLSL, encoding="utf-8").read()
-    old_src = subprocess.run(["git", "-C", ROOT, "show", "HEAD:%s" % HLSL_REL],
+    old = subprocess.run(["git", "-C", ROOT, "show", "HEAD~1:%s" % HLSL_REL],
+                         capture_output=True, text=True)
+    if old.returncode != 0:
+        old = subprocess.run(["git", "-C", ROOT, "show", "HEAD:%s" % HLSL_REL],
                              capture_output=True, text=True)
-    if old_src.returncode != 0:
-        raise SystemExit("could not read the previous revision from git")
-    old_src = old_src.stdout
+    if old.returncode != 0:
+        raise SystemExit("could not read the baseline revision from git")
+    old_src = old.stdout
 
-    SAMPLES = 20000
+    SAMPLES = 8000
     dirs = fib_dirs(SAMPLES)
     tmp = tempfile.mkdtemp(prefix="chargefield_")
     failures = []
@@ -323,16 +392,14 @@ def main():
         # ── 1. One round, one instant ────────────────────────────────────────────────────
         print("== 1. ONE ROUND AT ONE INSTANT (resting Mass, 3x growth) ==")
         print("   lit = alpha >= %.2f over the front hemisphere `Cull Back` actually draws\n" % LIT)
-        header = "   %-9s %10s %10s   %10s %10s" % ("", "new cov", "old cov", "new planar", "old planar")
-        print(header)
-        rows = []
-        states = stream_states(1.7, GROWTH_AT_REST)
-        nr, nfbm, nfrag = run(new_exe, states, SAMPLES)
-        orr, ofbm, ofrag = run(old_exe, states, SAMPLES)
+        print("   %-9s %10s %10s   %10s %10s" % ("", "new cov", "old cov", "new planar", "old planar"))
+        poses = stream(1.7, GROWTH_AT_REST)
+        nr, nfbm, nfrag = run(new_exe, poses)
+        orr, ofbm, ofrag = run(old_exe, poses)
         new_covs, old_covs, new_ang, old_ang = [], [], [], []
         for k in (0, 6, 13, 20, 26):
             ncov, nidx, _ = coverage(nr[k]); ocov, oidx, _ = coverage(orr[k])
-            _, na = planarity(nidx, dirs); _, oa = planarity(oidx, dirs)
+            na, oa = planarity(nidx, dirs), planarity(oidx, dirs)
             new_covs.append(ncov); old_covs.append(ocov)
             if na is not None: new_ang.append(na)
             if oa is not None: old_ang.append(oa)
@@ -342,23 +409,18 @@ def main():
                 ("%.1f deg" % oa) if oa is not None else "-"))
         mean_new = sum(new_covs) / len(new_covs)
         mean_old = sum(old_covs) / len(old_covs)
-        print("\n   mean lit coverage: %.2f%% -> %.2f%%  (%.1fx less of the shell lit at once)"
-              % (mean_old * 100, mean_new * 100, mean_old / max(mean_new, 1e-6)))
-        if new_ang and old_ang:
-            print("   mean planarity:    %.1f deg -> %.1f deg  (a stroke on one great circle "
-                  "vs a scatter over the shell)" % (
-                      sum(old_ang) / len(old_ang), sum(new_ang) / len(new_ang)))
-        # Raw lit AREA is deliberately NOT the pass criterion, and finding that out is half
-        # of what this harness is for: the old shell lit *few* pixels *everywhere* (15 thin
-        # filaments from 3 seeds scattered over the whole sphere), so it read as a ball while
-        # measuring a smaller lit fraction than a single fat stroke would. What separates the
-        # two is SHAPE — whether the lit set is one curve on one plane — and how much of its
-        # own shell one round paints. Area only has to not go UP.
+        ang_new = sum(new_ang) / len(new_ang) if new_ang else 99.0
+        ang_old = sum(old_ang) / len(old_ang) if old_ang else 0.0
+        print("\n   mean lit coverage: %.2f%% -> %.2f%%" % (mean_old * 100, mean_new * 100))
+        print("   mean planarity:    %.1f deg -> %.1f deg  (a stroke on one great circle "
+              "vs a scatter over the shell)" % (ang_old, ang_new))
+        # Raw lit AREA is deliberately NOT the pass criterion, and finding that out is half of
+        # what this harness is for: the old shell lit *few* pixels *everywhere* (15 thin filaments
+        # from 3 seeds scattered over the whole sphere), so it read as a ball while measuring a
+        # smaller lit fraction than one fat stroke would. What separates the two is SHAPE.
         if mean_new > mean_old:
             failures.append("a single round now lights MORE of the shell than before "
                             "(%.2f%% vs %.2f%%)" % (mean_new * 100, mean_old * 100))
-        ang_new = sum(new_ang) / len(new_ang) if new_ang else 99.0
-        ang_old = sum(old_ang) / len(old_ang) if old_ang else 0.0
         if ang_new > 8.0:
             failures.append("the lit set is not a great-circle stroke (mean planarity %.1f deg)"
                             % ang_new)
@@ -369,34 +431,32 @@ def main():
         # ── 2. The burst fills the sphere ────────────────────────────────────────────────
         print("\n== 2. THE BURST ASSEMBLES THE SPHERE ==")
         print("   union of what a sustained burst lights, in the shell's own object space\n")
-        fill_at_1s = 0.0
         print("   %-34s %12s %12s" % ("", "new", "old"))
+        fill_at_1s = 0.0
         for label, secs in (("one round, its whole flight", -1.0),
-                            ("one instant of the stream (27)", -2.0),
+                            ("one frozen frame (27 x 2 muzzles)", -2.0),
                             ("0.25 s of fire", 0.25),
                             ("1.0 s of fire", 1.0),
                             ("3.0 s of fire", 3.0)):
-            if secs == 0.0:
-                st = [stream_states(1.7, GROWTH_AT_REST)[13]]
-            elif secs == -1.0:
-                st = [(1.7 + FLIGHT_SECONDS * (j / 24.0),
-                       LAUNCH_HIT_RADIUS * (1.0 + (GROWTH_AT_REST - 1.0) * (j / 24.0)))
+            if secs == -1.0:
+                st = [round_pose(1.7 + FLIGHT_SECONDS * (j / 24.0), j / 24.0, GROWTH_AT_REST)
                       for j in range(25)]
             elif secs == -2.0:
-                st = stream_states(1.7, GROWTH_AT_REST)
+                st = stream(1.7, GROWTH_AT_REST, side=-1.0) + stream(1.7, GROWTH_AT_REST, side=+1.0)
             else:
-                st = []
-                steps = max(1, int(secs * 40))
-                for s in range(steps):
-                    st += stream_states(1.7 + s * (secs / steps), GROWTH_AT_REST)
-            nrows, _, _ = run(new_exe, st, SAMPLES)
-            orows, _, _ = run(old_exe, st, SAMPLES)
+                st, steps = [], max(1, int(secs * 40))
+                for s_i in range(steps):
+                    tt = 1.7 + s_i * (secs / steps)
+                    st += stream(tt, GROWTH_AT_REST, side=-1.0)
+                    st += stream(tt, GROWTH_AT_REST, side=+1.0)
+            nrows, _, _ = run(new_exe, st)
+            orows, _, _ = run(old_exe, st)
             nu, ou = set(), set()
-            for r in nrows: nu |= coverage(r)[1]
-            for r in orows: ou |= coverage(r)[1]
-            vis = coverage(nrows[0])[2]
-            print("   %-34s %11.1f%% %11.1f%%" % (label, 100.0 * len(nu) / vis, 100.0 * len(ou) / vis))
+            for r in nrows: nu |= r[3]
+            for r in orows: ou |= r[3]
+            vis = nrows[0][0]
             fill = len(nu) / vis
+            print("   %-34s %11.1f%% %11.1f%%" % (label, fill * 100, 100.0 * len(ou) / vis))
             if label == "one round, its whole flight":
                 # The round must NOT assemble the sphere by itself — that is the job the
                 # player's eye is supposed to do across a burst.
@@ -404,28 +464,98 @@ def main():
                     failures.append("one round paints %.0f%% of its own shell over its flight "
                                     "(old %.0f%%) — it is still drawing the sphere itself"
                                     % (fill * 100, 100.0 * len(ou) / vis))
+            if label == "1.0 s of fire":
+                fill_at_1s = fill
             if label == "3.0 s of fire":
                 if fill < 0.70:
                     failures.append("a sustained burst only fills %.0f%% of the sphere" % (fill * 100))
                 if fill <= fill_at_1s:
                     failures.append("the union stops growing — strokes are stacking, not accumulating")
-            if label == "1.0 s of fire":
-                fill_at_1s = fill
 
-        # ── 3. Never fully dark ──────────────────────────────────────────────────────────
-        print("\n== 3. A ROUND IS ALWAYS SHOWING SOMETHING (continuity of existence) ==")
+        # ── 3. The two muzzles do not draw the same stroke ───────────────────────────────
+        print("\n== 3. A VOLLEY'S TWO ROUNDS ARE DIFFERENT STROKES ==")
+        print("   Both guns fire in one tick with the same growth factor, so the pair share a")
+        print("   world radius EXACTLY — and radius used to be the shell's entire per-round")
+        print("   signal. Measured on the OBSERVABLE: the overlap (Jaccard) of the two rounds'")
+        print("   lit sets. Swept over every 10 deg of roll, because the round's frame comes")
+        print("   from a world-up LookRotation and does NOT roll with the ship, so the 6.4-unit")
+        print("   muzzle separation migrates from one lateral axis to the other as you roll.\n")
+        pair_poses, roll_of = [], []
+        for ri in range(36):
+            roll = ri * math.pi / 18.0
+            for si in range(3):
+                sp = (SHIP_POS[0] * (0.2 + 0.4 * si), SHIP_POS[1] * (1.0 - 0.3 * si),
+                      SHIP_POS[2] * (0.15 + 0.45 * si))
+                for k in (2, 8, 14, 20, 25):
+                    pr01 = (k + 0.5) / ROUNDS_IN_FLIGHT
+                    tt = 1.7 + 0.013 * k
+                    pair_poses.append(round_pose(tt, pr01, GROWTH_AT_REST, -1.0, roll, ship_pos=sp))
+                    pair_poses.append(round_pose(tt, pr01, GROWTH_AT_REST, +1.0, roll, ship_pos=sp))
+                    roll_of.append(ri)
+        # NEGATIVE CONTROL: the shipped shader with the circle spin switched off, i.e. the
+        # lateral read feeding the phase offset ALONE. It is the intermediate that was built
+        # first and rejected, and it is here so the reason stays measured rather than asserted.
+        no_spin = dict(NEW_MAT); no_spin["_LateralPoleSpin"] = 0.0
+        nospin_exe = build(tmp, "nospin", new_src, no_spin, SAMPLES)
+        print("   %-14s %14s %16s %26s"
+              % ("", "median overlap", "same stroke (>50%)", "worst 10-deg roll bucket"))
+        results = {}
+        for exe, rt, tag in ((new_exe, NEW_MAT["_CrackleRate"], "shipped"),
+                             (nospin_exe, NEW_MAT["_CrackleRate"], "offset only"),
+                             (old_exe, OLD_MAT["_CrackleRate"], "baseline")):
+            rows, _, _ = run(exe, pair_poses)
+            overlaps, by_roll, deltas = [], {}, []
+            for j, ri in enumerate(roll_of):
+                a, b = rows[2 * j][3], rows[2 * j + 1][3]
+                if not a and not b:
+                    continue                     # both between strokes; nothing to compare
+                ov = len(a & b) / max(1, len(a | b))
+                overlaps.append(ov)
+                by_roll.setdefault(ri, []).append(ov)
+                d = abs(rows[2 * j][2] - rows[2 * j + 1][2]) * rt
+                deltas.append(abs(d - round(d)))
+            overlaps.sort()
+            med = overlaps[len(overlaps) // 2]
+            same = sum(1 for o in overlaps if o > 0.5) / len(overlaps)
+            worst_ri, worst_med = max(
+                ((ri, sorted(v)[len(v) // 2]) for ri, v in by_roll.items()), key=lambda kv: kv[1])
+            results[tag] = (med, same, worst_med, sorted(deltas)[len(deltas) // 2])
+            print("   %-14s %13.1f%% %15.1f%% %19d deg %6.1f%%"
+                  % (tag, med * 100, same * 100, worst_ri * 10, worst_med * 100))
+        print("\n   Median |cycle difference| within a volley, folded to [0, 0.5]: shipped %.3f,"
+              % results["shipped"][3])
+        print("   offset only %.3f, baseline %.3f. Note the offset-only row moves the pair through"
+              % (results["offset only"][3], results["baseline"][3]))
+        print("   the cycle and STILL draws the same stroke %.0f%% of the time: two rounds a fifth"
+              % (results["offset only"][1] * 100))
+        print("   of a cycle apart share floor(cycle), so they are the SAME great circle at two")
+        print("   draw stages. Splitting the pair is the circle SPIN's job, not the offset's.")
+        med, same, worst_med, _ = results["shipped"]
+        if med > 0.35:
+            failures.append("a volley's two rounds overlap %.0f%% of the time (median)" % (med * 100))
+        if same > 0.25:
+            failures.append("a volley's two rounds draw the same stroke %.0f%% of the time" % (same * 100))
+        if worst_med > 0.6:
+            failures.append("at some roll angle the pair still overlaps %.0f%% (median) — a "
+                            "lateral axis is being lost to the roll" % (worst_med * 100))
+
+        # ── 4. Never fully dark ──────────────────────────────────────────────────────────
+        print("\n== 4. A ROUND IS ALWAYS SHOWING SOMETHING (continuity of existence) ==")
         worst, worst_at, showing, total = 1.0, None, 0, 0
+        small = build(tmp, "small", new_src, NEW_MAT, 800)
+        dark_poses = []
         for s_i in range(120):
-            st = stream_states(1.7 + s_i * 0.004, GROWTH_AT_REST)
-            rows, _, _ = run(new_exe, st, 800)
-            for k, rec in enumerate(rows):
-                total += 1
-                if rec[1] >= LIT:
-                    showing += 1
-                if rec[1] < worst:
-                    worst, worst_at = rec[1], (s_i, k)
+            for side in (-1.0, +1.0):
+                dark_poses += stream(1.7 + s_i * 0.004, GROWTH_AT_REST, side=side)
+        rows, _, _ = run(small, dark_poses)
+        for j, rec in enumerate(rows):
+            total += 1
+            if rec[1] >= LIT:
+                showing += 1
+            if rec[1] < worst:
+                worst, worst_at = rec[1], (j // (2 * ROUNDS_IN_FLIGHT), j % ROUNDS_IN_FLIGHT)
         duty = showing / max(1, total)
-        print("   over 0.48 s x 27 rounds (%d round-states):" % total)
+        print("   over 0.48 s x 27 rounds x 2 muzzles (%d round-states):" % total)
         print("      showing a stroke (peak alpha >= %.2f): %.1f%% of the time" % (LIT, duty * 100))
         print("      dimmest any round ever gets:           peak alpha %.4f (round %d @ step %d)"
               % (worst, worst_at[1], worst_at[0]))
@@ -435,8 +565,8 @@ def main():
             failures.append("a round is only showing a stroke %.0f%% of the time — the stream "
                             "will read as twinkling" % (duty * 100))
 
-        # ── 4. Cost ──────────────────────────────────────────────────────────────────────
-        print("\n== 4. COST ==")
+        # ── 5. Cost ──────────────────────────────────────────────────────────────────────
+        print("\n== 5. COST ==")
         print("   FBM evaluations per fragment: %.2f -> %.2f   (worst case %d -> %d)"
               % (ofbm / ofrag, nfbm / nfrag, 15, 1))
         if nfbm / nfrag > ofbm / ofrag:
@@ -453,7 +583,8 @@ def main():
         for f in failures:
             print("FAIL: %s" % f)
         return 1
-    print("PASS: one round is a stroke, the burst is the sphere, and nothing ever pops.")
+    print("PASS: one round is a stroke, a volley's two rounds are different strokes, "
+          "the burst is the sphere, and nothing ever pops.")
     return 0
 
 

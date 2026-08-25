@@ -39,7 +39,10 @@ Material:
     - _FadeShape: 1
     - _HoldTime: 0.5
     - _FresnelRimIntensity: 0.05
+    - _LateralNoiseScale: 0.125
+    - _LateralPoleSpin: 4
     - _FresnelRimPower: 3.5
+    - _PhaseByLateral: 0.43
     - _PhaseByRadius: 0.43
     - _PhaseSpeed: 2.6
     - _StrikeTime: 0.25

@@ -40,15 +40,12 @@
 //   float3 ObjectNormal   - object-space normal
 //   float3 ViewDirOS      - object-space view direction (camera - fragment)
 //   float  Phase          - animation phase in seconds, already carrying this round's
-//                           own offset (see the vertex shader: the shell's world radius
-//                           is what decorrelates rounds, so two shots fired 11 ms apart
-//                           are at different sizes and therefore land on different
-//                           great circles — a stable per-round offset that drifts
-//                           CONTINUOUSLY as the round grows, so nothing ever pops. A
-//                           world-POSITION hash would re-roll every frame; a constant
-//                           would strobe the whole volley in unison, which is the one
-//                           thing that would stop the strokes from filling anything in.)
+//                           own offset — see ProjectileChargeFieldPhase_float below, which
+//                           is where every per-round difference is decided.)
 //   float  Charge01       - 0..1, how far this round has charged, from its world radius
+//   float  Lateral        - the round's lateral identity, 0..2 (see the phase resolver): it
+//                           spins this round's great circle, which is what stops a volley's
+//                           two muzzles drawing the same stroke twice
 //
 // Outputs:
 //   float3 EmissionColor  - additive emission RGB
@@ -95,6 +92,65 @@ float ChargeFBM1D(float x, int octaves)
     return value;
 }
 
+
+// ─── Per-round phase ────────────────────────────────────────────────────────
+//
+// Everything that makes one round's stroke different from another's is decided here, out
+// of the shell's own object-to-world matrix and nothing else. It lives in this file rather
+// than inline in the vertex shader so the verification harness measures the SHIPPED
+// decorrelation instead of a transcription of it.
+//
+// The gun has TWO muzzles and fires both in the same tick, so a volley's pair shares a
+// growth factor, a flight progress and therefore a world radius — EXACTLY. Radius alone
+// was the whole per-round signal, so the pair were clones: same great circle, same point
+// in the cycle, side by side for their whole flight. Two synchronised strokes read as one
+// deliberate shape, which is the opposite of the stochastic fill the shell exists for.
+//
+// What separates them is the one thing that is different about them by construction: the
+// muzzles sit 6.4 units apart across the ship (local x = ±3.2). A round flies along its
+// own forward, and `SafeLookRotation` builds its frame with forward as +z — so its two
+// LATERAL world coordinates are invariant along the flight while differing between the
+// muzzles by that 6.4. Free per-round identity out of a matrix that was already being read.
+//
+// Two details are load-bearing:
+//   * TWO axes, not one. The round's frame comes from `LookRotation(aim)` with WORLD up, so
+//     it does not roll with the ship — the muzzle separation lands on +x at zero roll and on
+//     +y at 90°. Reading only one axis would resynchronise the pair every quarter roll.
+//   * NOISE, not a linear term. Any linear combination `a·latX + b·latY` has a null
+//     direction, so there is always a roll angle at which the pair collapses back together.
+//     Two independent smooth noises have no such direction, and "the two muzzles get
+//     unrelated strokes" is exactly the stochastic claim being made.
+//
+// The lateral term costs NO extra per-round flicker — it is constant along a straight
+// flight — unlike the radius term, which is simultaneously a round's identity and its
+// progress. (A vessel drifting hard inherits some lateral velocity into the shot, which
+// makes it drift slowly rather than sit still. That is extra variety, not a defect.)
+void ProjectileChargeFieldPhase_float(
+    float3 AxisX,        // object-to-world column 0 — its LENGTH is the shell's diameter
+    float3 AxisY,        // object-to-world column 1
+    float3 OriginWS,     // object-to-world column 3 — the round's world position
+    float  TimeSeconds,
+    out float Phase,
+    out float Charge01,
+    out float Lateral)
+{
+    float diameter = length(AxisX);
+    float worldRadius = 0.5 * diameter;
+
+    float3 right = AxisX / max(diameter, 1e-6);
+    float3 up    = AxisY / max(length(AxisY), 1e-6);
+
+    Lateral = ChargeValueNoise1D(dot(OriginWS, right) * _LateralNoiseScale)
+            + ChargeValueNoise1D(dot(OriginWS, up) * _LateralNoiseScale * 1.37 + 19.7);
+    float lateral = Lateral;
+
+    Phase = TimeSeconds * _PhaseSpeed
+          + worldRadius * _PhaseByRadius
+          + lateral * _PhaseByLateral;
+
+    Charge01 = saturate(worldRadius / max(_ChargeReferenceRadius, 1e-3));
+}
+
 // ─── Main function ──────────────────────────────────────────────────────────
 
 void ProjectileChargeField_float(
@@ -103,6 +159,7 @@ void ProjectileChargeField_float(
     float3 ViewDirOS,
     float  Phase,
     float  Charge01,
+    float  Lateral,
     out float3 EmissionColor,
     out float  Alpha)
 {
@@ -155,8 +212,19 @@ void ProjectileChargeField_float(
         float h2 = ChargeHash1(idx * 5.1 + float(i) * 17.9);
         float h3 = ChargeHash1(idx * 9.3 + float(i) * 23.1);
 
+        // `Lateral` SPINS the circle about the shell's z axis, and that — not the phase
+        // offset it also feeds — is what actually splits a volley's pair onto different
+        // PLANES. Two rounds 0.2 of a cycle apart still share `idx`, so they draw the SAME
+        // great circle at two draw stages, which is exactly the twinning being fixed; a
+        // spin changes the circle itself no matter how close their cycles are.
+        //
+        // It enters through cos/sin only, so it is perfectly continuous and wraps for free:
+        // a pilot drifting hard inherits lateral velocity into the shot, which makes the
+        // stroke's plane WALK slowly around the shell instead of popping — the same reason
+        // the envelope goes to zero at both ends of a cycle. A round flying straight has an
+        // exactly constant Lateral and therefore an exactly fixed plane.
         float pz = h1 * 2.0 - 1.0;
-        float paz = h2 * PCF_TAU;
+        float paz = h2 * PCF_TAU + Lateral * _LateralPoleSpin;
         float pr = sqrt(saturate(1.0 - pz * pz));
         float3 pole = float3(pr * cos(paz), pr * sin(paz), pz);
 
@@ -231,18 +299,30 @@ void ProjectileChargeField_float(
         : _FresnelRimColor.rgb * fresnel;
 }
 
+void ProjectileChargeFieldPhase_half(
+    half3 AxisX, half3 AxisY, half3 OriginWS, half TimeSeconds,
+    out half Phase, out half Charge01, out half Lateral)
+{
+    float p, c, l;
+    ProjectileChargeFieldPhase_float(AxisX, AxisY, OriginWS, TimeSeconds, p, c, l);
+    Phase = (half)p;
+    Charge01 = (half)c;
+    Lateral = (half)l;
+}
+
 void ProjectileChargeField_half(
     half3 ObjectPosition,
     half3 ObjectNormal,
     half3 ViewDirOS,
     half  Phase,
     half  Charge01,
+    half  Lateral,
     out half3 EmissionColor,
     out half  Alpha)
 {
     float3 emOut;
     float aOut;
-    ProjectileChargeField_float(ObjectPosition, ObjectNormal, ViewDirOS, Phase, Charge01, emOut, aOut);
+    ProjectileChargeField_float(ObjectPosition, ObjectNormal, ViewDirOS, Phase, Charge01, Lateral, emOut, aOut);
     EmissionColor = (half3)emOut;
     Alpha = (half)aOut;
 }
