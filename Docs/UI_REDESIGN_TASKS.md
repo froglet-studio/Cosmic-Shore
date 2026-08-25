@@ -12,7 +12,7 @@ Maintained by the `ui-redesign-tracker` skill. Do not hand-edit the status table
 
 | ID | Task | Status | Depends on | Branch | PR | Completed |
 |---|---|---|---|---|---|---|
-| T1 | Safe area component | TODO | — | | | |
+| T1 | Safe area component | IN PROGRESS | — | `claude/safe-area-fitter-component-wrmdva` | #777 | |
 | T2 | Finish canvas resolution migration | TODO | — | | | |
 | T3 | Unify GameCanvas fork | TODO | T2 | | | |
 | T4 | UIThemeSO + literal inventory | TODO | — | | | |
@@ -28,20 +28,62 @@ Maintained by the `ui-redesign-tracker` skill. Do not hand-edit the status table
 **Spec:** Style Foundation §9 · **Audit ref:** §1.3
 
 Acceptance criteria:
-- [ ] `Assets/_Scripts/UI/SafeAreaFitter.cs` exists and compiles
-- [ ] Reads `Screen.safeArea`, drives `anchorMin`/`anchorMax`
-- [ ] Recalculates on resolution and orientation change
-- [ ] Caches last-applied rect — no per-frame work when unchanged
-- [ ] Full-screen safeArea (desktop) is a no-op
-- [ ] `androidRenderOutsideSafeArea` confirmed still enabled
-- [ ] Not yet applied to any shipping prefab
-- [ ] Test scene demonstrates the two-layer contract
+- [~] `Assets/_Scripts/UI/SafeAreaFitter.cs` exists and compiles
+- [x] Reads `Screen.safeArea`, drives `anchorMin`/`anchorMax`
+- [x] Recalculates on resolution and orientation change
+- [x] Caches last-applied rect — no per-frame work when unchanged
+- [x] Full-screen safeArea (desktop) is a no-op
+- [x] `androidRenderOutsideSafeArea` confirmed still enabled
+- [x] Not yet applied to any shipping prefab
+- [x] Test scene demonstrates the two-layer contract
 
 **Deliverables:**
-**Findings:**
-**Deviations from spec:**
+- `Assets/_Scripts/UI/SafeAreaFitter.cs` — reads `Screen.safeArea`, drives the RectTransform's
+  `anchorMin`/`anchorMax`. Change-gated on the safe-area `Rect` + `Screen.width`/`height`/
+  `orientation`, so the steady-state per-frame cost is one `safeArea` read and a `Rect`/int compare;
+  resizes are also caught event-style via `OnRectTransformDimensionsChange`. Exposes two pure
+  statics (`IsFullScreenSafeArea`, `ComputeAnchors`) so the math is testable without a device.
+- `Assets/_Scripts/Tests/Editor/SafeAreaFitterTests.cs` — 7 tests over those statics: real
+  iPhone-class landscape (`132,63,2172,1062` @ 2436×1125) and portrait safe areas, sub-pixel
+  rounding, out-of-range clamping, degenerate mid-rotation screen.
+- `Assets/_Scenes/Game_TestDesign/SafeAreaFitterTestScene.unity` — two full-stretch sibling layers
+  under one Canvas: `Background Art (bleeds under notch)` (magenta, no fitter) and
+  `Safe Area Content` (translucent, carries the fitter, four corner markers). Not in Build Settings.
+- `Assets/_Scenes/Game_TestDesign/SafeAreaTestReadout.cs` — scene-local IMGUI readout of live
+  safe area / resolution / orientation / applied anchors, drawn in the full screen rect.
+- `Docs/UNITY_VERIFICATION_CHECKLIST.md` — 🔴 entry with the in-editor steps.
 
----
+**Findings:**
+- `Screen.safeArea` appeared **zero times** in the codebase before this; there was no prior pattern
+  to match. The nearest siblings solve the horizontal half of the same problem —
+  `AdaptiveCanvasScaler` (aspect matching + optional ultrawide HUD safe zone) and
+  `WidescreenLayoutAdapter` (pillarboxing). This component writes anchors, so it composes under
+  either without contention.
+- `androidRenderOutsideSafeArea: 1` at `ProjectSettings/ProjectSettings.asset:74`, already enabled
+  before this branch and untouched by it (branch diff over `ProjectSettings/` is empty).
+- The spec source this task cites — `Docs/STYLE_FOUNDATION.md` §9 — **does not exist in the repo**,
+  nor does `Docs/UI_ARCHITECTURE_AUDIT.md` §1.3. The implementation was written against this
+  tracker's acceptance criteria alone. Anything §9 says beyond them has not been checked.
+- `com.unity.device-simulator.devices` is in the manifest, so the Device Simulator is the in-editor
+  way to exercise this — it is what overrides `Screen.safeArea` in the editor.
+- Verified out of editor: all three new sources compile under Roslyn against a faithful
+  `UnityEngine` stub, and the shipped NUnit suite was **executed** — 7/7 pass. The hand-authored
+  scene YAML parses with zero dangling local `fileID` references, and its three UGUI script GUIDs
+  are the ones `Menu_Main.unity` already uses.
+
+**Deviations from spec:**
+- **Only anchors are written.** Authored `offsetMin`/`offsetMax` are deliberately left alone, where
+  most reference implementations zero them. A full-stretch zero-offset rect is unaffected; a rect
+  authored with padding keeps that padding relative to the safe rect.
+- **The no-op is reversible.** Beyond "full-screen safeArea does nothing", the component captures
+  the anchors the rect was authored with and restores them if a device that *had* insets returns to
+  a full-screen safe area (rotating a cutout off-axis). Without this the rect would keep a stale
+  inset. On desktop nothing is ever written, so the criterion holds literally.
+- **Additions not in the criteria:** the edit-mode suite; the scene-local `SafeAreaTestReadout`
+  diagnostic; and one `CSDebug.LogWarning` at enable when the rect is point-anchored on both axes
+  (driving its anchors would slide it, not resize it).
+- **"Compiles" is `[~]`, not `[x]`.** No Unity compile has happened — this branch was authored in a
+  remote session with no editor and no `unity` CLI binary.
 
 ## T2 — Finish canvas resolution migration
 
@@ -155,7 +197,8 @@ Anything found during implementation that needs a design decision. The implement
 
 | # | Raised by | Task | Question | Status |
 |---|---|---|---|---|
-| | | | | |
+| 1 | T1 impl | T1 | Should the fitter conform BOTH axes always, or expose a per-axis / per-edge opt-out? A HUD often wants the notch inset but not the bottom gesture-bar inset. Currently both axes, always. | OPEN |
+| 2 | T1 impl | T1 | Which layer of `GameCanvas.prefab` becomes the constrained content layer, and does background art move to a sibling above it? The two-layer contract needs a home in the prefab before T1 can be applied — likely settled inside T3. | OPEN |
 
 ---
 
