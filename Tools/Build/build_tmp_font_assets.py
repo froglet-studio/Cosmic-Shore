@@ -501,7 +501,11 @@ def fetch():
                 blobs[int(ws)] = get(url)
         for w, data in blobs.items():
             path = os.path.join(d, f"{stem}-{WEIGHT_NAME[w]}.ttf")
-            fo = _TT(io.BytesIO(data))
+            # recalcTimestamp=False: fontTools otherwise stamps head.modified with the
+            # save time, so every --fetch rewrote these files with new bytes (and a new
+            # checkSumAdjustment) for no change in the font. recalcBBoxes=False keeps the
+            # source's own glyph bboxes, so unwrapping changes the container and nothing else.
+            fo = _TT(io.BytesIO(data), recalcTimestamp=False, recalcBBoxes=False)
             if fo.flavor:                          # woff wrapper -> plain ttf
                 fo.flavor = None                   # (outlines untouched; only the container)
                 fo.save(path)
