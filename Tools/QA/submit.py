@@ -78,7 +78,8 @@ def table_rows(text):
     return rows, fenced is not None
 
 
-def validate(text, fname, known, archived, applied_items, head=None):
+def validate(text, fname, known, archived, applied_items, head=None,
+             nothing_new=False):
     problems = []
     meta, _ = parse_session(text)
 
@@ -87,7 +88,16 @@ def validate(text, fname, known, archived, applied_items, head=None):
             problems.append(Problem(True, key, "is empty",
                                     "fill it in at the top of the file"))
 
-    if head and meta.get("Commit") and meta["Commit"] != head:
+    # The Commit row records the build the verdicts in this file were RUN ON, and
+    # the check exists so a verdict is never filed against a build it was not run
+    # on. Once everything here is submitted, that row is a historical fact rather
+    # than a claim about the current checkout — so re-comparing it to HEAD is
+    # wrong, and it is wrong in a way that gets WORSE with time: every later push
+    # to the branch moves HEAD, so a finished session would go permanently
+    # unsubmittable, with the Submit button dead and the footer still saying
+    # "Sent." The moment a new verdict is added the comparison is meaningful
+    # again, and fires again.
+    if head and meta.get("Commit") and meta["Commit"] != head and not nothing_new:
         problems.append(Problem(
             True, "Commit", "says %s but you have %s checked out" % (meta["Commit"], head),
             "a result recorded against the wrong build sends engineering into the "
@@ -230,10 +240,13 @@ def main(argv=None):
     text = utf8_open(path).read()
     known = {i for i, _ in split_items(utf8_open(BACKLOG).read())}
     archived = set(re.findall(r"^\|\s*(QA-[A-Z0-9-]+)\s*\|", utf8_open(ARCHIVE).read(), re.M))
-    applied = load_ledger()["sessions"].get(fname, {}).get("items", {})
+    entry = load_ledger()["sessions"].get(fname, {})
+    applied = entry.get("items", {})
+    from apply_results import file_hash
+    nothing_new = entry.get("submitted_hash") == file_hash(text)
 
     print("\nChecking %s" % os.path.relpath(path, ROOT))
-    problems, rows = validate(text, fname, known, archived, applied, head)
+    problems, rows = validate(text, fname, known, archived, applied, head, nothing_new)
     blocking = [p for p in problems if p.blocking]
 
     new_rows = [r for r in rows if r[0] not in applied]
@@ -262,14 +275,16 @@ def main(argv=None):
 def selftest():
     known, archived = {"QA-ONE", "QA-TWO"}, {"QA-OLD"}
 
-    def check(rows, applied=None, head=None, meta_ok=True, markers=True):
+    def check(rows, applied=None, head=None, meta_ok=True, markers=True,
+              nothing_new=False):
         meta = ("| Tester | Ada |\n| Date | 2026-08-14 |\n| Commit | abc1234 |\n"
                 "| Unity version | 6000.3.17f1 |\n| Platform(s) | Editor |\n"
                 if meta_ok else "| Tester |  |\n")
         body = "".join("| %s | %s | %s |\n" % r for r in rows)
         text = meta + (("<!-- qa-results-table -->\n%s<!-- /qa-results-table -->\n" % body)
                        if markers else body)
-        return validate(text, "s.md", known, archived, applied or {}, head)[0]
+        return validate(text, "s.md", known, archived, applied or {}, head,
+                        nothing_new)[0]
 
     def blockers(ps):
         return [p.what for p in ps if p.blocking]
@@ -290,6 +305,11 @@ def selftest():
     # Wrong build is blocking; matching build is silent.
     assert "checked out" in blockers(check([("QA-ONE", "PASS", "")], head="zzz9999"))[0]
     assert blockers(check([("QA-ONE", "PASS", "")], head="abc1234")) == []
+    # ...but once everything is submitted the Commit row is HISTORY, not a claim
+    # about the current checkout. Re-blocking on it would make a finished session
+    # permanently unsubmittable as the branch moves on (dead Submit button).
+    assert blockers(check([("QA-ONE", "PASS", "")], head="zzz9999",
+                          nothing_new=True)) == []
 
     # Missing markers and missing metadata both block.
     assert any("markers" in b for b in blockers(check([("QA-ONE", "PASS", "")],
@@ -325,7 +345,7 @@ def selftest():
                                    "at line 214, full trace in the console")])
     assert blockers(ps) == [] and len(ps) == 1 and not ps[0].blocking
 
-    print("submit selftest: 17/17 checks passed")
+    print("submit selftest: 18/18 checks passed")
     return 0
 
 

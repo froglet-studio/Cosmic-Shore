@@ -517,6 +517,25 @@ var sb = new StringBuilder();
             return item == null ? "" : item.priority + " — " + item.title;
         }
 
+        /// <summary>
+        /// " — see step 2" / " — see the test(s) marked in red". A blocked tester must
+        /// be told WHERE to look, not just that some number of things are wrong.
+        /// </summary>
+        string BlockingHint()
+        {
+            var step2 = false;
+            var inTests = false;
+            foreach (var p in _state.problems)
+                if (p.blocking && p.where == "Commit") step2 = true;
+            foreach (var r in _state.rows)
+                if (r.problemBlocking) inTests = true;
+
+            if (step2 && inTests) return " — see step 2 and the test(s) marked in red";
+            if (step2) return " — see step 2 above";
+            if (inTests) return " — see the test(s) marked in red above";
+            return " — each one is explained in red where it belongs, above";
+        }
+
         /// <summary>Drop pending edits that the file now agrees with.</summary>
         void PruneNoteEdits()
         {
@@ -1150,28 +1169,33 @@ var sb = new StringBuilder();
                 "step someone runs periodically (the /qa-backlog skill); it needs the " +
                 "whole picture, so it is not yours to run.";
 
+            // A BLOCKING PROBLEM OUTRANKS EVERYTHING, including "Sent". Checking
+            // `submitted` first hid the reason the button was dead: a finished session
+            // showed "Sent. Keep testing…" beside a greyed-out Submit and no way to
+            // learn why. A disabled control must always be able to say what would
+            // re-enable it.
             string status;
             Color tone;
-            if (_state.submitted)
+            if (!_state.canSubmit)
             {
-                status = "Sent. Keep testing and press Submit again whenever you finish more.";
-                tone = FrogletEditorPalette.Ok;
+                status = _state.blocking + " thing(s) to fix before you can submit" +
+                         BlockingHint() + ".";
+                tone = FrogletEditorPalette.Error;
             }
             else if (HasUnsavedNotes)
             {
                 status = "Save your edited note first — the Save note button is on that test.";
                 tone = FrogletEditorPalette.Warn;
             }
-            else if (_state.canSubmit)
+            else if (_state.submitted)
             {
-                status = "Everything checks out — press Submit to send your results.";
+                status = "Sent. Keep testing and press Submit again whenever you finish more.";
                 tone = FrogletEditorPalette.Ok;
             }
             else
             {
-                status = _state.blocking + " thing(s) to fix first — each one is " +
-                         "explained in red where it belongs, above.";
-                tone = FrogletEditorPalette.Error;
+                status = "Everything checks out — press Submit to send your results.";
+                tone = FrogletEditorPalette.Ok;
             }
 
             StepHeader("5", "Submit", help);

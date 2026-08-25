@@ -367,7 +367,9 @@ def state(path):
     known = {i["id"] for i in items}
     archived = set(re.findall(r"^\|\s*(QA-[A-Z0-9-]+)\s*\|",
                               utf8_open(ARCHIVE).read(), re.M))
-    problems, rows = submit_mod.validate(text, fname, known, archived, applied, head)
+    nothing_new = entry.get("submitted_hash") == file_hash(text)
+    problems, rows = submit_mod.validate(text, fname, known, archived, applied, head,
+                                         nothing_new)
 
     by_item = {}
     for p in problems:
