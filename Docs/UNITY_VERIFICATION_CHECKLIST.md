@@ -23,6 +23,105 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Sparrow — the strafing roll's arm is a 0.3 s WINDOW, not the whole boost hold (`claude/sparrow-spin-cooldown-p8agtv`, 2026-08-25)
+
+Authored without a Unity compile or play-test (remote session, no editor, no `unity` CLI binary in
+this environment). Touches `BarrelRollController.cs`, `SparrowHUDController.cs`,
+`SparrowHUDView.cs`, the new `Data/Enums/RollChargeState.cs`, `Sparrow.prefab` (one added
+serialized field), plus `SPARROW_AFTERBURNER.md` and `FLEET_MAPS.md`.
+
+**What landed.** A boost press arms the strafing roll for `rollArmWindowSeconds` (**0.3 s**) instead
+of for the whole press. Reach full stick deflection inside the window and you roll; let it lapse and
+the charge is spent unfired — the boost keeps running, another roll needs another press. The reported
+bug is the direct consequence of the boost being indefinite: `IsBoosting` stays true for the whole
+hold, so an arm that lived for the press fired on the first later moment the stick touched the
+perimeter — an ordinary hard turn — and the vessel spun for no reason the pilot could name.
+
+Unchanged by design: a stick already pinned at max when boost starts still rolls immediately;
+holding at the perimeter still never repeats; the roll still works identically in the turret stance;
+the AI is still inert (no stick input). `rollArmWindowSeconds = 0` restores the old
+armed-for-the-whole-press behaviour.
+
+The charge now carries **why** it changed (`CosmicShore.Data.RollChargeState`: `Spent` / `Armed` /
+`Lapsed`) because every boost press now ends in a charge change. The pip empties for both `Spent`
+and `Lapsed`; only `Spent` gets the consume punch, so the HUD can't announce a roll the pilot never
+got. The enum is in the `CosmicShore.Data` leaf assembly (read by UI, written by gameplay);
+`SparrowHUDView` already imported that namespace and `Assembly-CSharp` auto-references the asmdef,
+so no wiring changed.
+
+**Verified offline** (more than inspection): .NET 8 installed in-session, and all four **real
+shipped files** (`RollChargeState.cs`, `BarrelRollController.cs`, `SparrowHUDController.cs`,
+`SparrowHUDView.cs`, plus the real `InputEvents.cs`) **type-check clean under Roslyn** at
+`-langversion:9.0` against a transcribed stub harness — 0 errors, 0 warnings; every error the
+harness ever surfaced was a stub gap (`Mathf.Clamp`, `Vector3.one`, `InputEvents`), which is what a
+working harness looks like. It caught one real defect before it shipped: `SparrowHUDView.cs` has no
+`using CosmicShore.Gameplay`, so the enum's first home would not have compiled — which is what moved
+it to `CosmicShore.Data`. Blast radius grepped: `OnRollChargeChanged` / `SetRollCharge` have exactly
+one subscriber and one caller each (`SparrowHUDController`), no scene overrides any
+`BarrelRollController` field, and no name in the new `using CosmicShore.Data` collides with anything
+`SparrowHUDController` references.
+
+**Verify in editor**
+1. **Compile clean.** Confirm `Sparrow.prefab` shows **Roll Arm Window Seconds = 0.3** on
+   `BarrelRollController` (the field was added to the prefab YAML as well as the C# initializer —
+   check it did not import as 0, which would restore the old behaviour silently).
+2. **The bug is gone.** Fly the Sparrow, hold boost through a long hard turn with the stick pinned
+   at the perimeter — it should **not** roll. This is the whole point of the change.
+3. **The move still works.** Tap boost and slam the stick to full deflection in the same beat — it
+   should roll exactly as before (same 0.6 s, same strafe distance, same direction mapping).
+4. **Stick already pinned.** With the stick at max, press boost — should roll immediately.
+5. **Turret stance.** Stop (`ToggleStationaryModeAction`), then press-and-slam — the dodge should
+   still strafe.
+6. **The pip.** On every boost press the boost icon's ring fills, then wipes empty ~0.3 s later
+   with **no scale punch**; a press that actually rolls wipes empty **with** the punch. If the
+   fill/wipe on every press reads as busy at speed, that is the tuning to report — the honest
+   alternatives are a shorter `rollChargeTweenDuration` (0.15 s today) or leaving the ring full
+   while boosting, which would be a lie about availability.
+
+**First-pass tuning (NOT settled).** `rollArmWindowSeconds = 0.3` is the number asked for. If a
+deliberate press-then-slam misses on a gamepad it is too tight (try 0.4–0.5); if accidental spins
+survive it is too loose. Serialized per-vessel, so it is one inspector field either way.
+
+**Second commit on this branch — the root roll now reads.** The vessel's small REAL roll
+(`rootRollDegrees`, 15°: the up vector rotated about its own forward, the two-stick `YDiff` roll,
+signed to match the animation) was landing and reading **backwards**. The bank-into-turn is the same
+rotation about the same axis so they add, and the roll triggers on a FULL stick deflection — peak
+bank: `35 × 0.1 + 30 = 33.5 °/s` at cruise (**20.1°** over the roll) and `41.0 °/s` boosting
+(**24.6°**), against the roll's 15° the other way. Since the camera reads the ROOT's up, that is the
+horizon tilt the pilot feels, and it tilted the wrong way.
+
+Fixed by a handover rather than a bigger number: `VesselTransformer.BankIntoTurnSuppressed` (new,
+default false, cleared by `ResetTransformer`, set/cleared by the roll routine and `OnDisable`)
+suspends the bank for the roll's 0.6 s, so 15° is the whole roll the vessel gets at any speed. Pitch
+and yaw untouched. Honoured in **all three** `Roll()` bodies — base, `SingleStickVesselTransformer`,
+`ScarabVesselTransformer` — because the overrides do not call base and a base-only gate would reach
+neither the Sparrow nor the Serpent (`TurnScalar`'s recorded trap). `GunVesselTransformer` inherits
+the base body. The roll is also advanced by the delta of the animation's own smoothstep, so the tilt
+eases in and out with the spin and the authored degrees land exactly.
+
+**Verify in editor (root roll)**
+1. **Direction.** Boost + slam the stick right, then left. The horizon should tilt the **same way
+   the model spins**, both times. If it tilts against the spin, flip `invertRollDirection` — that
+   one toggle now moves the animation and the root roll together, since both read `rollSign`.
+2. **Magnitude.** 15° is deliberately slight; the vessel should end the roll a touch off level and
+   **stay there** (there is no auto-level, and a two-stick `YDiff` application is permanent too).
+   `rootRollDegrees` is the knob, `Range(0, 45)` now.
+3. **The turn is unaffected.** Mid-roll the vessel must still pitch and yaw at full rate — only the
+   cosmetic bank stands down. If the ship feels like it stops turning, that is a bug, not tuning.
+4. **The bank comes back.** Hold the stick through the end of the roll: the bank-into-turn should
+   resume normally the frame the roll ends.
+5. **Nothing else banks differently.** Scarab and Serpent share the touched `Roll()` bodies but
+   nothing sets the flag on them — confirm their banking is unchanged.
+6. **Interrupt safety.** Trigger a roll and immediately swap vessels / disable the ship; the next
+   vessel must bank normally (the flag is cleared in `OnDisable` and `ResetTransformer`).
+7. **Console is quiet.** The per-roll `[BarrelRoll] Triggered:` line moved onto the new
+   `CSLogChannel.SparrowStrafingRoll` (off by default) — it was logging unconditionally on every
+   input for a finished ability, the same spam `ScarabDash` records for the sibling. Turn it on in
+   **FrogletTools > Toolbox > Logging** while verifying steps 1-5; it prints direction, the stick
+   vector and the nudge, which is the cheapest way to confirm the 0.3 s window is gating.
+
+---
+
 ### 🔴 UI — `SafeAreaFitter` component + test scene (`claude/safe-area-fitter-component-wrmdva`, 2026-08-24)
 
 Authored without a Unity compile or play-test (remote session, no editor, no `unity` CLI binary in

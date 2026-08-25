@@ -372,6 +372,49 @@ applies to new abilities, new resources on the meter list, and anything that add
     neither adding a class nor forgetting to classify one can silently widen a narrow grant.
     (Dolphin Drift Ward scoping, 2026-08-19.)
 
+32. **An ability that ROTATES the vessel shares an axis with the flight model, and the two ADD —
+    check whether the ability's TRIGGER correlates with the flight model's peak output on that
+    axis.** This is rules 4a/4b's third face: there the authored number was not the effective one
+    because a *consumer* multiplied it or because nothing ever *chose* it; here the number is
+    applied exactly as authored and still describes nothing on screen, because a **sibling writer**
+    adds a bigger term of the same kind. The Sparrow's strafing roll applied its authored 15° root
+    bank through `ApplyRotation(angle, transform.forward)` — correct call, correct sign, correct
+    axis — while `SingleStickVesselTransformer.Roll()` applied `-stick.x × (speed ×
+    RotationThrottleScaler + RollScaler)` about the *same* axis. The roll's trigger is a **full
+    stick deflection**, i.e. exactly the input that maximises the bank: `33.5 °/s` at cruise
+    (20.1° over the 0.6 s roll) and `41.0 °/s` boosting (24.6°), against 15° the other way. Net
+    was a few degrees of bank INTO the turn, so the pilot's horizon tilted AGAINST the spin and
+    the whole feature read as absent for as long as it shipped. **Do not answer this by raising
+    the number** — the sum depends on speed and on whether the pilot keeps holding the stick, so
+    a bigger number is a bigger lie. Hand the axis over for the ability's duration
+    (`VesselTransformer.BankIntoTurnSuppressed`, the same "an ability owns one transformer
+    property while it runs" shape as `BlockRotationOverride`), suppress only the axis you are
+    writing, and honour the flag in **every** `Roll()` body — the overrides do not call base, so a
+    base-only gate reaches neither the Sparrow nor the Serpent (rule 16's trap, in the roll axis
+    this time). Three companions worth carrying: **the camera reads the ROOT's rotation**, so a
+    root-level roll is the horizon tilt the pilot actually feels and a visual-child spin is not;
+    **advance a cosmetic rotation by the DELTA of the animation's own easing curve** rather than a
+    flat `dt / duration`, or the tilt drifts across a spin that is easing and the total overshoots
+    on the frame that ends the loop; and **grep for the structural twin before you close the
+    branch** — `ScarabJukeController` is a near-copy of `BarrelRollController` and carries the
+    identical defect (recorded in `Docs/ElementalAbilitySystem/BACKLOG.md`, deliberately not fixed
+    in the Sparrow's branch because it is another vessel's play-tested feel).
+    (Sparrow strafing roll, 2026-08-25.)
+
+33. **A type that crosses the gameplay→UI boundary belongs in the `CosmicShore.Data` leaf, and the
+    COMPILER is the only thing that will tell you.** A per-vessel HUD view does not necessarily
+    import `CosmicShore.Gameplay` — `SparrowHUDView` imports `CosmicShore.Data`, `DG.Tweening`,
+    `UnityEngine*` and nothing else — so an enum declared beside its gameplay owner (the ordinary,
+    correct home for a single-owner enum: `DriftThrottlePolicy`, `MenuCameraRigKind`,
+    `FloraSiteKind`) is invisible to the view that has to switch on it. Put a cross-layer enum in
+    `_Scripts/Data/Enums/` (namespace `CosmicShore.Data`): every UI view already imports it,
+    `Assembly-CSharp` auto-references the asmdef so gameplay needs one `using`, and the direction
+    stays legal for the assembly split. **Nothing static catches the wrong home** — it is a plain
+    `CS0246` at compile time, which a session with no editor never sees. Type-check the files you
+    actually wrote against a stub harness before committing (`asset-surgery` §4); that is what
+    caught this one.
+    (Sparrow roll-charge state, 2026-08-25.)
+
 ### 4.x Placing prisms from a vessel ability — shield sizing
 
 An ability that BUILDS with prisms (the Scarab's switch dais, the Urchin's track, a boost ring)
