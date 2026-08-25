@@ -201,6 +201,12 @@ namespace CosmicShore.Gameplay
             // shooter's own domain. Per-shot snapshot at the moment the missile leaves.
             var spareOwnDomain = status.ElementalAbilityHandler.IsUpgradeActive(Element.Charge);
 
+            // MASS → in-flight growth, exactly as the full-auto bullets do it: the missile
+            // leaves the bay at the size of the one the bay animation just ejected and swells
+            // as it travels. Live level, read at the moment the missile actually leaves (the
+            // vessel keeps playing through the launch delay), never at press.
+            var growth = so.ResolveGrowthFactor(status);
+
             gun.FireGun(
                 _worldMuzzleAnchor,
                 so.Speed,
@@ -212,7 +218,8 @@ namespace CosmicShore.Gameplay
                 FiringPatterns.Default,
                 so.Energy,
                 detachAfterSpawn: _detachFromContainer,
-                spareOwnDomain: spareOwnDomain
+                spareOwnDomain: spareOwnDomain,
+                flightGrowthFactor: growth
             );
         }
 
