@@ -229,6 +229,14 @@ _No existing literal maps here — greenfield token._
 13 occurrences that the §10 vocabulary cannot express. Listed for discussion; **no fields were
 invented for them.**
 
+Bucketed against T4's three categories:
+
+| Bucket | Count | Which |
+|---|---:|---|
+| **(a) missing token** — the foundation should name it | 10 | negative/urgent ×4, positive ×2, affordability ×2, locked tint ×1, disabled alpha ×1 |
+| **(b) belongs to a feature-level SO** — not chrome | 2 | gauge-at-full ×1, input-denied ×1 (both `ElementalBarsConfigSO`, alongside §5.2's 34) |
+| **(c) never designed** — no intent behind it | 1 | the decorative magenta cycle stop |
+
 
 **Negative / urgent feedback — 4 occurrences.** The biggest gap. §3 pins `danger` to destructive fill *only*, never a tint or a border, so score-loss text, the countdown-urgent tint, and the consent overlay's validation error have nowhere to go. Three of the four are already the *same colour* (`1, 0.3, 0.2` ≈ `#FF4D33`), a hair off `danger`'s `#FF5C3A` — the vocabulary is missing a word the codebase already has a value for. Options: a `warn` token distinct from `danger`; or rule that this is gameplay feedback and belongs in `ElementalBarsConfigSO` beside the existing fire/negative-debuff colour.
 
@@ -435,6 +443,54 @@ Separately worth noting against the project's own logging rule: the five `[FLOW-
 `ArcadeGameConfigureModal` and the `PartyInviteNotificationPanel` `[INVITE-UI]` traces are
 bring-up telemetry of exactly the kind CLAUDE.md says should sit on a `CSLogChannel`. Three of them
 already do; `Debug.LogError` at line 1320 and the three `LogColored` calls do not.
+
+**Console rich text (14)**
+
+| Site | Current | Reading |
+|---|---|---|
+| `Modals/ArcadeGameConfigureModal.cs:1232` | `CSDebug.LogVerbose(CSLogChannel.NetworkFlow, "<color=#FFD700>[FLOW-2] [ArcadeConfigModal…` | FLOW-2 trace |
+| `Modals/ArcadeGameConfigureModal.cs:1288` | `CSDebug.LogVerbose(CSLogChannel.NetworkFlow, "<color=#FFD700>[FLOW-2] [ArcadeConfigModal…` | FLOW-2 trace |
+| `Modals/ArcadeGameConfigureModal.cs:1305` | `CSDebug.LogVerbose(CSLogChannel.NetworkFlow, $"<color=#FFD700>[FLOW-2] [ArcadeConfigModa…` | FLOW-2 trace |
+| `Modals/ArcadeGameConfigureModal.cs:1320` | `Debug.LogError("<color=#FF0000>[FLOW-2] [ArcadeConfigModal] SyncAllGameDataForLaunch - g…` | FLOW-2 error trace |
+| `Modals/ArcadeGameConfigureModal.cs:1335` | `CSDebug.LogVerbose(CSLogChannel.NetworkFlow, $"<color=#FFD700>[FLOW-2] [ArcadeConfigModa…` | FLOW-2 trace |
+| `Screens/PartyInviteNotificationPanel.cs:146` | `Color.green);` | LogColored |
+| `Screens/PartyInviteNotificationPanel.cs:73` | `Color.magenta);` | LogColored |
+| `Screens/PartyInviteNotificationPanel.cs:79` | `Color.red);` | LogErrorColored |
+| `TestMiniGameEvents.cs:25` | `DebugExtensions.LogColored("OnMiniGameRoundStarted", Color.cyan);` | DebugExtensions.LogColored |
+| `TestMiniGameEvents.cs:30` | `DebugExtensions.LogColored("OnMiniGameRoundEnd", Color.cyan);` | DebugExtensions.LogColored |
+| `UniversalStatsProviderEditor.cs:413` | `CSDebug.Log($"<color=cyan><b>  STATS PREVIEW ({stats.Count} total)</b></color>");` | console rich text |
+| `UniversalStatsProviderEditor.cs:419` | `CSDebug.Log($"<color=cyan>[{icon}] <b>{stat.Label}</b>: {stat.Value}</color>");` | console rich text |
+| `WildlifeBlitzHUD.cs:57` | `CSDebug.Log($"<color=cyan>[WildlifeBlitzHUD] Target set to {targetScoreToWin}</color>");` | console rich text |
+| `WildlifeBlitzHUD.cs:93` | `CSDebug.Log("<color=yellow>[WildlifeBlitzHUD] Round ended - clearing displays</color>");` | console rich text |
+
+**Editor-window chrome (24)**
+
+| Site | Current | Reading |
+|---|---|---|
+| `ActiveGameModesWindow.cs:160` | `GUI.backgroundColor = new Color(0.5f, 0.8f, 0.5f);` | editor window |
+| `ActiveGameModesWindow.cs:168` | `GUI.backgroundColor = new Color(0.8f, 0.5f, 0.5f);` | editor window |
+| `LeaderboardConfigSOEditor.cs:145` | `GUI.backgroundColor = new Color(0.5f, 0.8f, 0.5f);` | — |
+| `LeaderboardConfigSOEditor.cs:151` | `GUI.backgroundColor = new Color(0.8f, 0.7f, 0.5f);` | — |
+| `LeaderboardConfigSOEditor.cs:199` | `EditorGUI.DrawRect(dotRect, new Color(0.3f, 0.8f, 0.3f));` | — |
+| `LeaderboardConfigSOEditor.cs:213` | `GUI.backgroundColor = new Color(0.6f, 0.8f, 1f);` | — |
+| `LeaderboardConfigSOEditor.cs:22` | `private static readonly Color headerColor = new Color(0.3f, 0.5f, 0.7f, 0.3f);` | — |
+| `LeaderboardConfigSOEditor.cs:23` | `private static readonly Color activeGameModeColor = new Color(0.4f, 0.7f, 0.4f, 0.15f);` | — |
+| `LeaderboardConfigSOEditor.cs:24` | `private static readonly Color inactiveGameModeColor = new Color(0.5f, 0.5f, 0.5f, 0.1f);` | — |
+| `LeaderboardConfigSOEditor.cs:25` | `private static readonly Color missingMappingColor = new Color(0.8f, 0.6f, 0.2f, 0.2f);` | — |
+| `LeaderboardConfigSOEditor.cs:290` | `GUI.backgroundColor = new Color(1f, 0.5f, 0.5f);` | — |
+| `Model/MinigameHUDInspector.cs:10` | `Color headerColor = new Color(0.09f, 0.24f, 0.48f);` | — |
+| `Model/MinigameHUDInspector.cs:11` | `Color sectionBlue = new Color(0.14f, 0.22f, 0.36f);` | — |
+| `Model/MinigameHUDInspector.cs:12` | `Color sectionGreen = new Color(0.14f, 0.32f, 0.21f);` | — |
+| `Model/MinigameHUDInspector.cs:23` | `MiniGameType.Freestyle => new Color(0.2f, 0.6f, 0.2f),// greenish` | — |
+| `Model/MinigameHUDInspector.cs:24` | `MiniGameType.CellularDuel => new Color(0.6f, 0.2f, 0.6f),// purple` | — |
+| `Model/MinigameHUDInspector.cs:77` | `normal = { textColor = Color.white },` | — |
+| `Model/MinigameHUDInspector.cs:93` | `normal = { textColor = Color.white },` | — |
+| `UniversalStatsProviderEditor.cs:17` | `private static readonly Color TrackerColor = new Color(0.4f, 0.6f, 0.9f);` | — |
+| `UniversalStatsProviderEditor.cs:18` | `private static readonly Color SuccessColor = new Color(0.3f, 0.8f, 0.4f);` | — |
+| `UniversalStatsProviderEditor.cs:19` | `private static readonly Color ErrorColor = new Color(0.9f, 0.35f, 0.35f);` | — |
+| `UniversalStatsProviderEditor.cs:20` | `private static readonly Color ListHeaderColor = new Color(0.5f, 0.5f, 0.5f);` | — |
+| `UniversalStatsProviderEditor.cs:303` | `miniLabelStyle.normal.textColor = Color.gray;` | — |
+| `UniversalStatsProviderEditor.cs:317` | `previewStyle.normal.textColor = new Color(0.6f, 0.8f, 0.6f);` | — |
 
 ---
 

@@ -15,7 +15,7 @@ Maintained by the `ui-redesign-tracker` skill. Do not hand-edit the status table
 | T1 | Safe area component | TODO | — | | | |
 | T2 | Finish canvas resolution migration | TODO | — | | | |
 | T3 | Unify GameCanvas fork | TODO | T2 | | | |
-| T4 | UIThemeSO + literal inventory | TODO | — | | | |
+| T4 | UIThemeSO + literal inventory | IN PROGRESS | — | `claude/uithemeso-color-audit-0zfqjz` | | |
 | T5 | Download & install TMP fonts | TODO | — | | | |
 | T6 | TMP Style Sheet + Aldrich audit | TODO | T5 | | | |
 
@@ -93,17 +93,35 @@ Acceptance criteria:
 **Spec:** Style Foundation §10 · **Audit ref:** §1.4, §5.4
 
 Acceptance criteria:
-- [ ] `UIThemeSO` authored to §10 **verbatim** — 25 fields, no additions
-- [ ] Follows `HUDAnimationSettingsSO` pattern with hardcoded fallbacks
-- [ ] **No team colour fields** — they stay in `SO_ColorSet`
-- [ ] Live asset created and referenced
-- [ ] Mapping report covers all 165 literals in `Assets/_Scripts/UI/`
-- [ ] Unmapped literals bucketed: (a) missing token, (b) feature-level SO, (c) never designed
-- [ ] No call sites changed yet
+- [x] `UIThemeSO` authored to §10 **verbatim** — 25 fields, no additions
+- [x] Follows `HUDAnimationSettingsSO` pattern with hardcoded fallbacks
+- [x] **No team colour fields** — they stay in `SO_ColorSet`
+- [ ] Live asset created and referenced — created, **referenced by nothing** (see Deviations)
+- [x] Mapping report covers all 165 literals in `Assets/_Scripts/UI/`
+- [x] Unmapped literals bucketed: (a) missing token, (b) feature-level SO, (c) never designed
+- [x] No call sites changed yet
 
 **Deliverables:**
+- `Assets/_Scripts/UI/UIThemeSO.cs` — 25 serialized fields; names, types and declaration order verified as an exact match against §10's table. Values are hardcoded defaults, so an unassigned reference degrades to the shipped tokens.
+- `Assets/_SO_Assets/UI/UITheme.asset` (+ `.meta`) — authored instance, sibling to `HUDAnimationSettings.asset`. All 14 colour fields round-trip to §10's hex.
+- `Docs/UI_COLOR_TOKEN_MAP.md` — the mapping report. 184 occurrences classified across 180 sites, every site cited by `file:line`.
+
 **Findings:**
+- The literal count is **184 occurrences on 180 lines**, not 165, under the rule `new Color(` · `new Color32(` · `Color.<named>` · `<color=` over `Assets/_Scripts/UI/**/*.cs`. Same population — the audit's own worst-offender figures run approximate in the same direction (`PrivacyConsentOverlay` cited at 14 vs an actual 15; `SquirrelVesselHUDView` at "7–8" vs 16, counting only the authored `[SerializeField]` tints). The `new Color(` + named-`Color.X` subset alone is 170. All 184 are classified and the buckets sum, so nothing is unaccounted for either way.
+- Only **58** of the 184 are chrome. The rest: 34 vessel-HUD gauge states, 24 editor-window chrome, 22 team identity, 19 that carry no authored colour at all (alpha re-packs, `Color.clear`, captured-rest initialisers), 14 console rich text, 13 gaps.
+- **`danger` and `borderRule` have zero call sites.** Nothing in the UI currently draws a destructive fill or a code-side divider. Both are greenfield rather than consolidations.
+- **`attention` has one accidental match**: `IconRotator`'s violet cycle stop is `#A673FF`, four units off the token. Nothing else in the UI is violet.
+- **Two live defects, independent of any theming work.** `DomainVolumeHexGraphic.cs:84` hardcodes `{ Color.green, Color.red, Color.yellow }` as the three domain colours and never consults `SO_ColorSet`, so a domain re-colour silently misses that gauge. `ObjectiveArrowGraphic`'s three constants are fixed lime regardless of domain, so §3's "objective arrow … existing behaviour — keep" describes an intent the code does not implement.
+- **The census floor is a floor.** `HangarCaptainsView.cs:51-52` carries `"FFF"` / `"888"` as bare 3-digit hex strings, which match no colour-literal pattern. Colours authored on prefabs are invisible to the sweep entirely — and §7 replaces a per-prefab `_pressed`/`_selected`/`_inactive` sprite-swap approach, so the real interactive-state surface is larger than 58.
+- **Do not sweep `Color.white` globally.** 17 of the 64 are `textSignal`; the rest are untint resets, domain fallbacks, gauge rests and field initialisers. A blanket replace would dim invisible raycast targets, break domain fallbacks and change gauge semantics.
+- **`Docs/STYLE_FOUNDATION.md` and `Docs/UI_ARCHITECTURE_AUDIT.md` are not in the repo.** This tracker names both as companion docs at those paths; neither exists on `bleeding-edge`. T4 was implemented from copies supplied directly, and the report cites `STYLE_FOUNDATION.md` without a `Docs/` path for that reason.
+
 **Deviations from spec:**
+- **"Live asset created and referenced" cannot hold while "no call sites changed yet" holds.** An SO asset can only be referenced by a `[SerializeField] UIThemeSO` on a consumer, which is a call-site change. Verified: 0 references to the asset GUID in any prefab/scene/asset, and 0 scripts declaring a `UIThemeSO` field. The asset is created and authored; it is deliberately unreferenced. **Needs a ruling on which clause wins** — the criterion as written is unsatisfiable.
+- **Four non-field members were added beyond the 25 fields.** The serialized surface is exactly 25 and the inspector shows nothing extra, but the class also declares `SpacingSteps` (public const), `DefaultSpacing` (static readonly), `_warnedSpacing` (private bool) and `_fallback` (static), supporting three accessors — `Resolve(theme)`, `Spacing(step)`, `StaggerFor(index)`. Reasons: `spacing[9]` is an array a designer can resize, so a bounds-safe 1-based reader that warns once is needed or a mis-sized asset fails silently; `staggerStep`/`staggerCap` are meaningless apart, and read as two loose floats they reproduce the unbounded-stagger bug the hangar grid already has; and without `Resolve` every call site must restate a hex, which is how `HUDAnimationSettingsSO`'s defaults ended up duplicated inline at `ScoreNumberAnimator.cs:131-132`. **If the criterion is read strictly, all of this moves to a separate static class and `UIThemeSO` becomes 25 fields and nothing else** — a contained change, offered rather than assumed.
+- **Report scope is 184, not 165** (see Findings). Superset, fully reconciled in the report's §2.
+- **`UIThemeSO.cs` adds one `new Color(` to `Assets/_Scripts/UI/`** — the private `Rgb(int hex)` helper the tokens are built from. A strict cross-cutting grep reads this as +1; the count of *hardcoded* literals is unchanged at 184.
+- Report was published as an artifact as well as committed: https://claude.ai/code/artifact/b9c74280-7c9a-4f4d-9b6b-e7e03f65c048 — `Docs/UI_COLOR_TOKEN_MAP.md` is canonical.
 
 ---
 
@@ -155,7 +173,10 @@ Anything found during implementation that needs a design decision. The implement
 
 | # | Raised by | Task | Question | Status |
 |---|---|---|---|---|
-| | | | | |
+| 1 | T4 | T4 | No token for **negative / urgent feedback**. §3 pins `danger` to destructive *fill* only, so score-loss text, the countdown-urgent tint and the consent overlay's validation error have nowhere legal to go. Three of the four sites are already the same value (`1, 0.3, 0.2` ≈ `#FF4D33`), a hair off `danger`'s `#FF5C3A`. Add a `warn` token distinct from `danger`, or rule that this is gameplay feedback and belongs in `ElementalBarsConfigSO`? | OPEN |
+| 2 | T4 | T4 | No token for **positive feedback** (score gain). §2 has no success hue and green is Jade, so a success token collides with team identity the way §1.2 says Ruby collides with danger. §1.2's own answer — form disambiguates before hue — suggests motion or a glyph rather than a colour. Which? | OPEN |
+| 3 | T4 | T4 | **Disabled is defined for chrome controls, not for dimmed content.** §7 gives disabled a transparent surface, `rule` border and `faint` text; `GameCard.lockedTintColor` is a `(0.3,0.3,0.3)` multiply over card art and `DomainInfoData` swaps alpha `1.0`/`0.4`. Add a disabled tint/alpha token, or rule that content dims via `CanvasGroup` alpha? | OPEN |
+| 4 | T4 | T4 | **Requirement met / unmet** (`HangarCaptainsView` crystal and XP affordability) maps cleanly onto `textSignal` / `textMuted`, but "can I afford this" is arguably a status rather than a text weight. Confirm the text-ramp reading, or name it? | OPEN |
 
 ---
 
