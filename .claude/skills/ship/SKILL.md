@@ -154,6 +154,18 @@ Walk every changed file against these gates:
   are the most dangerous kind of stale doc, because acting on one is irreversible and the
   code that proves them wrong is somewhere you were told not to look.
 
+- **A comment asserting an ABSENCE rots exactly as silently as one asserting a presence.**
+  §2's producer rule and its dead-surface mirror both cover claims about what the code DOES.
+  The third shape is a comment that argues why something is NOT there — "no property block",
+  "nothing here is per-instance", "no per-frame write" — written as justification for a design
+  the branch then changed. It reads as doctrine, it sits next to the code that now contradicts
+  it, and a future reader takes it as forbidding what the code already does. One session left
+  five such sites across an HLSL header, a shader cbuffer note and a C# docstring, the worst of
+  which argued against the method directly above it. When a branch adds the very mechanism an
+  old comment rules out, grep the touched files for the old justification — the missing
+  distinction is usually a qualifier the original never needed (here: per-FRAME is ruinous,
+  per-SHOT is not).
+
 ## 2.5 Tool-output gate — NEVER SKIPPED, IN EVERY MODE
 
 **An editor tool's deliverable is the DATA it writes, not the tool.** The tool lands in
