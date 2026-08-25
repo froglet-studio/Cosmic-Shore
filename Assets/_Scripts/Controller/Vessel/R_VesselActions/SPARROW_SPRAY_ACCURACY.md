@@ -10,7 +10,7 @@ The Sparrow's cannons are a **saturation** weapon, not a marksman's rifle.
 | tap the trigger (≤ 0.12 s) | a perfectly accurate burst — a scalpel, at a fraction of the volume |
 | hold it down | a cone that opens over ~1.6 s to a 1.5° cap, filled at **180 rounds/s** — nothing along the path survives, and the buzz in your hands climbs the whole way |
 | release and re-pull | full accuracy back, instantly. This is the "3-shot burst" the design asks for |
-| collect Mass crystals | rounds swell **harder** as they fly — 3× over a flight at rest, **6× at Mass 10**. The tracer stays a thin pale-blue needle; a see-through blue charge shell, arcing with danger red, grows around it to exactly the hit radius. Huge projectiles, earned |
+| collect Mass crystals | rounds swell **harder** as they fly — 3× over a flight at rest, **6× at Mass 10**. The tracer stays a thin pale-blue needle; a see-through charge shell grows around it to exactly the hit radius, drawing **one** blue-and-danger-red bolt across a randomly-oriented great circle — a burst's worth of them is what draws the sphere. Huge projectiles, earned |
 
 ---
 
@@ -342,6 +342,224 @@ remains the only thing that lets a round pass through a prism.
 
 ---
 
+## Round 5 (2026-08-25): one round is one STROKE — the volley is the sphere
+
+Playtest report: *"tone down the Sparrow's projectile effect so each projectile reads less like a
+sphere, but together they build a spherical effect over time. In other words, just a single arc on
+each projectile — after many projectiles those arcs will stochastically fill in the circle as an
+after-image in the mind of the player."*
+
+Round 4 gave growth an honest instrument and then let the instrument draw too much. Three seeds,
+each throwing five radiating filaments, over a lit centre and a standing fresnel rim, re-rolled
+~62 times a second: every one of those terms is somewhere else on the shell, and a shell that is
+lit *everywhere, faintly, all the time* is a glowing ball. Measured, one round painted **73% of
+its own shell** over a single 0.3 s flight — it was assembling the sphere by itself.
+
+> **The sphere is the PLAYER's to assemble, not the fragment's.** One round draws ONE bolt, lying
+> on ONE randomly-oriented great circle. A burst lays stroke after stroke at different
+> orientations and the shape accumulates as an after-image.
+
+A **great circle** rather than a squiggle, because it does two jobs at once: superimposed at random
+orientations, great circles are a sphere's wireframe — the most legible thing a stream of them can
+add up to — and a single one is still a curve of exactly the hit radius, so the shell stays an
+honest instrument for the volume it deletes even when only one stroke is showing.
+
+### What the shell draws now
+
+| | Round 4 | Round 5 |
+|---|---|---|
+| **planarity of the lit set** | 13.9° | **4.2°** |
+| lit at one instant (one round) | 3.72% | 6.24% |
+| a volley's two rounds, lit-set overlap | 100% | **1.3% median, 2.1% same stroke** |
+| the same shader with the seed disabled | — | **100% overlap** (negative control) |
+| union after 0.25 / 1 / 3 s of fire | 99.9% / 100% / 100% | **72.8% / 95.1% / 98.4%** |
+| **light emitted by one frame of full auto** | 8,031 | **333 (0.04×)** |
+| FBM evaluations per fragment | 3.93 (worst case 15) | **0.56 (worst case 1)** |
+
+**Planarity is the number that carries the claim.** Raw lit *area* is nearly useless here: the old
+shell lit *few* pixels *everywhere* and so measured a **smaller** lit fraction than a single fat
+stroke would, while reading as a ball. What separates a stroke from a scatter is whether the lit
+set lies in one plane through the centre — 4.2° of RMS deviation is a curve on a great circle;
+13.9° is sparks all over a sphere. The area number is now only bounded loosely: enforcing "must not
+exceed the baseline" is exactly what drove the stroke down to 2 px and made it invisible.
+
+> **General rule: when a visual is a claim about a DISTRIBUTION over many instances, the metric is
+> almost never the per-instance total. Measure the SHAPE of one instance and the UNION over many.**
+
+The union saturates inside a quarter second now, which is the goal rather than a stall: once every
+round is an independent stroke, a burst covers the sphere almost immediately while any *single*
+round is still one 6% curve. That is the whole proposition — the shape is assembled by the stream,
+never by the fragment.
+
+### Why every round looked the same — and the three wrong answers
+
+Second playtest note: *"the gun shoots a projectile out of two guns, so the randomness of the
+effect is spoiled by the simultaneity of two projectiles acting in phase with each other."* Then,
+after a fix: *"nope. they still read as identical."*
+
+The twin muzzles were the visible symptom of a much larger problem, and the number that settles it
+is this:
+
+> **Consecutive volleys differ in world radius by 0.0183 units** — and radius was the shell's only
+> signal that changes along the stream.
+
+At 90 volleys/s over a 0.3 s flight, turning that into half a discharge cycle needs
+`_PhaseByRadius × _CrackleRate ≈ 27`, which makes **one round discharge at ~159 Hz** — thirty
+bolts inside its own flight. The other two candidate signals are worse, not better: **time** is
+identical for every round alive at a given instant, and **lateral position** is identical for every
+round from one muzzle while the ship flies straight, which is most of the time it is firing. So to
+this shader, rounds fired 11 ms apart *were the same round* — the volley's pair merely made it
+obvious by putting two of them side by side.
+
+Three passes tried to derive identity from the geometry, each measured decorrelated, each still
+read as identical:
+
+| attempt | what it measured | what it missed |
+|---|---|---|
+| radius alone | — | the pair share it exactly |
+| lateral read → phase offset | median 0.309 cycles apart | inside one cycle `floor(cycle)` is unchanged, so it is the **same great circle** at two draw stages |
+| lateral read → circle spin | 0.0% median lit-set overlap | the lateral read is *also* identical for every round from one muzzle |
+
+> **When a periodic effect is keyed on `floor(x)`, a sub-unit offset in `x` changes WHEN, never
+> WHICH.** And more importantly: **a metric can only decorrelate a difference the signal actually
+> carries.** All three passes were arithmetic on quantities that do not distinguish the objects.
+
+### The answer: an explicit per-round seed
+
+`Projectile.StampChargeFieldSeed` writes one random float per **shot** into a
+`MaterialPropertyBlock` on the shell's renderer, and the shader reads it out of the GPU-instancing
+buffer. That seed picks the circle's angle and tilt, the bolt's jaggedness, and where the round
+sits in its own discharge cycle. Every round is now genuinely independent.
+
+The cost is **one `SetPropertyBlock` per shot — never per frame**, which is the thing the shell was
+designed to avoid, and the material moves from **SRP-batched to GPU-instanced**. That is the right
+trade for ~54 identical spheres that must all look different: they still batch into one instanced
+draw, and now they can differ. The earlier "no per-instance write" claim was defending a batching
+strategy that had made the effect impossible.
+
+### And the real reason it read as identical: most rounds were showing nothing
+
+The three failed passes share one root cause, and it was only found by **rendering the shader
+through a real perspective camera at true 1080p pixel density**
+(`Tools/Shaders/render_projectile_charge_field.py`):
+
+> `Cull Back` draws only the front hemisphere, so a great circle at a uniformly random pole spends
+> most of its length **behind** the round. Past ~40 units most rounds showed **no stroke at all**
+> and collapsed to a plain dark disc — and every plain dark disc looks exactly like every other
+> one.
+
+A round is **15–77 px** at combat range and the stroke was **2–6 px**. Holding lit area below the
+baseline (a well-intentioned tone-down guard in the verification harness) is what had driven it
+that thin. Two changes fix it:
+
+- **The circle is built around the VIEW AXIS**, not around object space: the pole is anchored near
+  the plane perpendicular to the view and the stroke's centre is biased toward the camera-facing
+  point, so a round always shows a slash across its visible face. `_ArcTiltRange` and
+  `_ArcStartSpread` are how far each may wander.
+- **The stroke is twice as wide and brighter** (`_ArcSharpness` 0.038 → 0.075, `_ArcIntensity`
+  1.6 → 2.4). A filament you cannot see is not an aesthetic.
+
+> **General rule, and this project already had it written down (`Docs/PALETTE.md` §4.3): judge a
+> candidate at the size it will be judged.** Three rounds of planarity, lit-set overlap and
+> per-round brightness measurements all passed while the effect was invisible on screen. The
+> renderer now exists so that never costs a fourth pass.
+
+### The tone pass: a burst is the tuning surface, not a round
+
+Third playtest note: *"no longer looking duplicated, but at this firing rate the effect is still
+overtuned. We need to tone it down far more, so that the cumulative effect of full auto isn't
+overwhelming."*
+
+Rendering the live stream and totalling the **linear light the frame emits** says why, and it is
+not a near miss:
+
+| | light emitted by one frame of full auto | vs the shell this pass replaced |
+|---|---|---|
+| baseline (the crackling ball) | 8,031 | 1.00× |
+| the one-stroke design, first cut | 16,933 | **2.11×** |
+| after the first tone pass | 623 | 0.08× |
+| **shipped** (second tone pass) | **333** | **0.04×** |
+
+> **The one-stroke design toned down a single round and made a burst nearly twice as bright.**
+
+Every per-round metric said it was restrained — 2.5% of one shell lit, one planar curve, a
+quarter of the light of a crackling ball *per round*. None of them can see the sum, and the sum is
+what the player is looking at: a Sparrow keeps **54 shells on screen at once** and their emission
+is additive by construction (`Blend One One`). A 4× per-round reduction against a 54× multiplier
+is not a reduction.
+
+> **General rule: when N instances of an effect are on screen simultaneously, the tuning surface
+> is the SUM over N, not the instance. A per-instance metric is structurally blind to it, and N
+> is usually set by a system that has nothing to do with the effect** — here, the fire rate.
+
+`verify_projectile_charge_field.py` test 6 now owns that budget: it renders the live stream
+through the real perspective camera, totals the emission, and **fails above 0.25× the baseline**.
+The knobs it constrains are labelled as a light budget in the shader.
+
+It took **two** passes to get there — the first landed at 0.08× and playtest still called it
+overtuned, so the budget was halved again. What bought the 51× reduction, in order of contribution:
+
+| | first pass | shipped | |
+|---|---|---|---|
+| `_HoldTime` | 0.5 → 0.06 | **0.042** | the envelope's bright plateau is gone; most rounds are dim at any instant |
+| `_FadeShape` | 1 → 3.2 | **3.9** | and what is left decays hard |
+| `_ArcSpan` | 5.0 → 1.8 | **1.45** | a short slash, not a 286° sweep |
+| `_ArcIntensity` | 2.4 → 1.5 | **1.25** | |
+| `_ArcSharpness` | 0.075 → **0.055** | 0.055 | |
+| `_FresnelRimIntensity` | 0.05 → 0.022 | **0.014** | the rim is on every round, always — it multiplies by 54 |
+
+**The second halving is spread across duty, brightness AND length on purpose.** Four routes to the
+same budget were rendered and compared; pushing any single one far enough to hit it alone changes
+what the effect *is* — a 1.0-radian span (the cheapest single route, 0.48×) stops reading as a
+curve on a sphere and becomes a dash. Taking a share from each keeps the stroke a stroke.
+
+> **A light budget is a constraint on the SUM, not a mandate for which knob pays it.** When one
+> knob can pay the whole bill, check what that knob also encodes before letting it.
+
+**Sparseness is the mechanism, so the duty-cycle criterion inverted.** A round now shows a stroke
+**31.3%** of the time rather than 88.8%, and the harness's old "must be lit at least 70% of the
+time" floor — added to stop a single round twinkling — became a **ceiling** (fail above 85%).
+"Most rounds are dark most of the time" is precisely how 54 simultaneous shells stay quiet, and
+individual twinkle stopped mattering the moment the rounds became individually unresolvable.
+Continuity of existence is unaffected: the requirement was only ever that a round is never *fully*
+dark, and the rim whisper still holds it at peak alpha **0.007**.
+
+The cost fell with it: **0.56 FBM evaluations per fragment**, down from 3.93 on the baseline.
+
+**Test 6's ceiling is 0.06×, and the odd number is the point:** it has to be tight enough to catch
+the value it replaced. 0.08× was itself a 26× cut and still read as overtuned in play, so a
+round-number 0.25× ceiling would have passed the very thing the playtest rejected. *A budget that
+the rejected version would pass is not a gate.*
+
+At this tone the union curve finally describes the original request rather than saturating: one
+round paints **4.9%** of its own shell across its whole flight, one frozen frame of a full-rate
+fight is **19.5%** of a sphere, and the accumulation reaches 72.8% / 95.1% / 98.4% over
+0.25 / 1 / 3 s of fire. The shape is assembled by the stream over about a second — the after-image
+the report asked for.
+
+### Things that would take it straight back
+
+- **`_ArcCount` above 1.** It exists as a knob for a future weapon, not as a tuning dial for this
+  one. Two strokes is two planes and the read collapses toward a ball immediately.
+- **Raising `_FresnelRimIntensity`.** The rim is a standing, view-aligned, always-on sphere — the
+  purest possible "this is a ball" term. If the shell needs to be louder, raise `_ArcIntensity`.
+- **Re-introducing a centre fill.** A lit blob at the seed point is a small sphere inside the big
+  one.
+- **Dropping the hold out of the envelope** to get "snappier" strokes. That is where the twinkle
+  came from.
+- **Trying to re-derive per-round identity from the geometry** to get back on the SRP Batcher.
+  Radius, time and lateral position are all near-identical for rounds fired 11 ms apart; the
+  harness keeps a `no seed` negative control that reproduces the failure exactly (100% lit-set
+  overlap) so this cannot be re-litigated by measurement alone.
+- **Thinning the stroke to hold lit area below the baseline.** That is what made it invisible.
+  Judge it in `render_projectile_charge_field.py`, not in a coverage number.
+- **Un-anchoring the circle from the view axis.** Most rounds go back to showing nothing.
+- **Raising any arc knob without re-running test 6.** They are a light budget: at 54 shells on
+  screen, a 4× per-round increase is a 4× increase in the thing the player complained about.
+- **Re-adding a duty-cycle FLOOR.** Sparseness is the mechanism now, not a defect.
+
+---
+
 ## The three moving parts
 
 ### 1. Rate of fire — 30 → 60 → **90 volleys/s** (180 rounds/s across two muzzles)
@@ -467,7 +685,7 @@ dogfighters and the Menu_Main autopilot all fire and none of them may buzz your 
 | `R_VesselActions/Executors/FullAutoBlockShootActionExecutor.cs` | Same for the turret, plus the roll-preserving shot rotation. |
 | `Controller/Projectiles/Gun.cs` | `FireGun(..., aimDirection)` — the gun is *handed* a direction; it owns no spread policy and rolls no dice. |
 | `Controller/Managers/PrismSpatialIndex.cs` | `QuerySegment` — the swept counterpart of `QuerySphere`, plus the public `DistanceToSegmentSq` metric. |
-| `Controller/Projectiles/Projectile.cs` | `sweptPrismDetection`, `SweepPrismsAlong` (nearest-first dispatch, contact-point repositioning), `CacheSweepRadius`; `ApplyFlightGrowth` + `CacheTransformRole` + `ChargeFieldLocalScale` (round 4). |
+| `Controller/Projectiles/Projectile.cs` | `sweptPrismDetection`, `SweepPrismsAlong` (nearest-first dispatch, contact-point repositioning), `CacheSweepRadius`; `ApplyFlightGrowth` + `CacheTransformRole` + `ChargeFieldLocalScale` (round 4); `StampChargeFieldSeed` — one float per SHOT, the shell's only per-round signal (round 5). |
 | `Controller/ImpactEffects/Impactors/ImpactorBase.cs` | `AcceptImpacteeFromSweep` + `IsSweepDispatch` — the swept analogue of the shell tier's entry point. |
 | `Controller/ImpactEffects/Impactors/ProjectileImpactor.cs` | Suppresses the trigger's prism case when the sweep owns it. |
 | `Controller/IO/HapticController.cs` | `PlaySpray(strength01)` + the extended gate + the buzz clip. |
@@ -477,8 +695,10 @@ dogfighters and the Menu_Main autopilot all fire and none of them may buzz your 
 | `_Scripts/Tests/Editor/PrismSweptQueryTests.cs` | The point-to-segment metric: endpoint clamping, degenerate steps, and the shipped mid-step geometry PhysX was missing. |
 | `_SO_Assets/VesselActions/Sparrow/FullAutoAction.asset` | The shipped numbers. |
 | `_Prefabs/Spacevessels/Sparrow.prefab` | `GunSprayAccuracy` executor + resized pools. |
-| `_Graphics/Materials/Graphs/ProjectileChargeField.shader` + `.hlsl` | The self-driven charge shell — the forcefield-crackle language with `_Time` + the model matrix as its driver instead of a per-frame property block. |
-| `_Graphics/Materials/ProjectileChargeFieldMaterial.mat` | The one material every round in the match batches through. Neutral blue + `EnvironmentColors.Danger` red. |
+| `_Graphics/Materials/Graphs/ProjectileChargeField.shader` + `.hlsl` | The charge shell — the forcefield-crackle language driven by `_Time`, the model matrix, and one per-SHOT `_RoundSeed` out of the GPU-instancing buffer. No per-frame CPU write (round 5). |
+| `_Graphics/Materials/ProjectileChargeFieldMaterial.mat` | The one material every round draws with — GPU-instanced, so 54 live shells collapse to one instanced draw and still differ. Neutral blue + `EnvironmentColors.Danger` red. Its arc knobs are a LIGHT BUDGET (round 5). |
+| `Tools/Shaders/verify_projectile_charge_field.py` | Compiles and RUNS the shipped HLSL against the revision it replaced: stroke planarity, a volley pair's lit-set overlap (with a `no seed` negative control), the burst union, continuity, and the full-auto light budget. CI-able, ~5 min, no Unity. |
+| `Tools/Shaders/render_projectile_charge_field.py` | Rasterizes the shipped HLSL through a real perspective camera at true 1080p density — isolated volley pairs, or the live stream. The tool that found what three rounds of measurement missed. |
 | `_Graphics/Materials/SparrowProjectileMaterial.mat` | The dart's own pale-blue material — a variant of `BlueSpreadFresnelMaterial`, split off `DangerProjectileMaterial` because that one is shared by five prefabs. |
 | `_Prefabs/Projectile/SparrowProjectile.prefab` | `sweptPrismDetection: 1`, the `ChargeField` child wired to `Projectile.chargeField`, the halved model scale `(0.75, 0.75, 20)` and its own material (round 4). |
 | `_Prefabs/Trails/Prisms With Pools/Sparrow Projectile Prism.prefab` | `sweptPrismDetection: 1`. Its carried `ProjectileCollider` has no renderer, so growth still scales its transform and it carries no shell. |
