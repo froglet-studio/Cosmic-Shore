@@ -515,7 +515,11 @@ namespace CosmicShore.Gameplay
             if (chargeField)
             {
                 bool grows = _flightGrowthFactor != 1f;
-                if (grows) SizeChargeField();
+                if (grows)
+                {
+                    SizeChargeField();
+                    StampChargeFieldSeed();
+                }
                 if (chargeField.gameObject.activeSelf != grows)
                     chargeField.gameObject.SetActive(grows);
             }
@@ -837,14 +841,57 @@ namespace CosmicShore.Gameplay
                 diameter / Mathf.Max(Mathf.Abs(parentLossyScale.z), 1e-4f));
         }
 
+        static readonly int RoundSeedId = Shader.PropertyToID("_RoundSeed");
+        Renderer _chargeFieldRenderer;
+        MaterialPropertyBlock _chargeFieldProps;
+
         /// <summary>
-        /// One transform write per live round per frame, which is why the shell's whole
-        /// appearance is otherwise a function of TIME and its own object-to-world matrix: at 90
-        /// volleys/s over a 0.3 s flight a single Sparrow keeps ~54 of these in the air, and a
-        /// per-renderer MaterialPropertyBlock (the skimmer crackle's driver) would be ~54 extra
-        /// draw calls plus two 16-element vector arrays each, every frame. The shader reads its
-        /// own world radius instead, so growth needs no stamp and every round in the match
-        /// batches through one material.
+        /// Gives this shot's charge shell its own identity — one random number, written ONCE per
+        /// launch, read by <c>Shader Graphs/ProjectileChargeField</c> out of the GPU-instancing
+        /// buffer.
+        ///
+        /// It exists because the shell has no implicit signal that can tell two rounds apart, and
+        /// that is arithmetic rather than taste. At 90 volleys/s over a 0.3 s flight, consecutive
+        /// volleys differ in world radius by <b>0.0183 units</b>; turning that into half a
+        /// discharge cycle needs a per-round discharge rate of ~159 Hz, i.e. thirty bolts inside
+        /// one round's own flight. The other two candidates are worse: TIME is identical for every
+        /// round alive at an instant, and LATERAL POSITION is identical for every round from one
+        /// muzzle while the ship flies straight — which is most of the time it is firing. So every
+        /// round in the stream drew the same stroke, and the twin muzzles were only the most
+        /// obvious symptom of it.
+        ///
+        /// The cost is one <see cref="Renderer.SetPropertyBlock"/> per SHOT — never per frame,
+        /// which is the thing the shell was designed to avoid (see <see cref="SizeChargeField"/>).
+        /// It moves the material off the SRP Batcher and onto GPU instancing, which is the right
+        /// trade for ~54 identical spheres that must all look different: they still batch into one
+        /// instanced draw, and now they can differ.
+        /// </summary>
+        void StampChargeFieldSeed()
+        {
+            if (!_chargeFieldRenderer)
+            {
+                if (!chargeField) return;
+                _chargeFieldRenderer = chargeField.GetComponentInChildren<Renderer>();
+                if (!_chargeFieldRenderer) return;
+            }
+
+            _chargeFieldProps ??= new MaterialPropertyBlock();
+            _chargeFieldRenderer.GetPropertyBlock(_chargeFieldProps);
+            _chargeFieldProps.SetFloat(RoundSeedId, UnityEngine.Random.value);
+            _chargeFieldRenderer.SetPropertyBlock(_chargeFieldProps);
+        }
+
+        /// <summary>
+        /// One transform write per live round per frame — and that is the ONLY per-frame cost
+        /// the shell has. At 90 volleys/s over a 0.3 s flight a single Sparrow keeps ~54 of
+        /// these in the air, so the skimmer crackle's driver (a per-renderer
+        /// MaterialPropertyBlock carrying two 16-element vector arrays, pushed EVERY FRAME)
+        /// would be ruinous here. Growth needs no stamp at all: the shader reads the shell's
+        /// own world radius back off the model matrix, which the CPU had to write anyway.
+        ///
+        /// Note this is not an argument against <see cref="StampChargeFieldSeed"/>, which
+        /// writes one float ONCE PER SHOT. Per-frame is the cost that scales with 54 live
+        /// rounds; per-shot does not.
         /// </summary>
         void SizeChargeField()
         {

@@ -1178,6 +1178,62 @@ derivation attached, and re-running the harness after any shader edit re-checks 
 ratio in the harness, so a later change to the motion that widens the envelope fails there
 rather than as prisms popping at the screen edge.
 
+## 4.5c-r Technique: RASTERIZE the shipped shader — the rung above compiling it
+
+§4.5c proves a shader *computes* what you think. It cannot tell you the effect is **invisible**,
+and that is a different failure with the same symptom: everything passes and the human says it
+still looks wrong.
+
+Compiling the HLSL gets you a function. Wrap that function in a ~60-line rasterizer and you get
+the **picture**: a perspective camera, a ray-primitive intersection per pixel, the shipped
+fragment entry point evaluated at the hit, the pass's real blend mode accumulated over black, a
+tonemap, and a PNG written with `zlib` + `struct` (no image library needed).
+
+```
+ray from camera -> intersect the primitive -> object-space pos/normal/viewdir
+   -> call the SHIPPED fragment function -> accumulate per the pass's Blend
+   -> tonemap -> PNG
+```
+
+Three things to get right or the render lies:
+
+- **Match the pass's render state**, not just its maths. `Cull Back` means you take the NEAR
+  intersection only; `Blend One One` means you sum, never lerp. A rasterizer that draws both
+  hemispheres will show you an effect the player never sees.
+- **Render at the game's PIXEL DENSITY, not at a comfortable panel size.** A 300 px panel at a
+  60° FOV is 3.6× coarser than a 1080p frame, which flatters every fine feature. Pick the panel's
+  FOV so it is a 1:1 crop: `fov = 2·atan(tan(fov_game/2)·panel_px / frame_px)`.
+- **Render the real POPULATION, not one instance.** Place the objects where the game puts them, at
+  the density the game produces (fire rate × flight time), each with its own per-instance data.
+
+> **Trap: a per-instance metric is structurally blind to the sum over N instances.** A projectile
+> shell measured 2.5% of one sphere lit, one planar curve, a quarter of the light of the effect it
+> replaced — and a burst of 54 of them emitted **2.11×** that baseline, because the pass is
+> additive and N is set by the fire rate. When an effect appears many times at once, total the
+> LINEAR emission over a rendered frame and treat THAT as the tuning surface. Per-instance numbers
+> answer a question nobody asked.
+
+> **Trap: a metric can only decorrelate a difference the signal actually carries.** Three separate
+> passes derived per-instance identity from geometry (a radius, then a lateral position, then that
+> position spinning a plane), each measured well-decorrelated, each still read as identical on
+> screen — because the underlying quantities differ by ~0.02 units between instances. Before
+> tuning a decorrelation, print the raw spread of the signal across the instances you need to tell
+> apart. If it is near zero, no function of it will help; you need real per-instance data.
+
+> **Trap: `floor(x)` keying.** When an effect picks its identity with `floor(x)` and its timing
+> with `frac(x)`, a sub-unit offset in `x` changes WHEN, never WHICH. Two instances a fifth of a
+> cycle apart are the SAME choice at two stages. Decorrelating "which" means reaching the argument
+> of the `floor`, not adding to `x`.
+
+> **Trap: a ceiling the rejected version would pass is not a gate.** When a tuning budget comes out
+> of a playtest rejection, set the threshold tight enough to FAIL the value that was rejected —
+> even if that makes it an odd number. A round-number ceiling picked for tidiness is how the
+> regression walks straight back in.
+
+Worked example: `Tools/Shaders/render_projectile_charge_field.py` (isolated instances and the live
+stream, both revisions side by side) with `verify_projectile_charge_field.py` owning the numeric
+gates including the frame's light budget.
+
 ## 4.5d Technique: offline simulation of a CONTROL LOOP (steering, pursuit, any feedback law)
 
 §4.5 simulates a *generator* — deterministic, one pass, compare the output. A **control
