@@ -2985,3 +2985,54 @@ zero per-frame CPU, and `PrismTimerManager`'s single scheduled swap for the time
 6. A shield broken by a real force (Rhino sword, `Prism.Damage` shedding a shield) is unchanged —
    it still throws along the breaking vector, not a random one.
 7. Prism count is unchanged by the pop (this is photons only: no mass is created or destroyed).
+
+## 🔴 Sparrow round growth — model fixed + charge shell, halved dart, blue/danger palette (`claude/sparrow-bullet-growth-visuals-mglwak`)
+
+**Nothing here was opened in Unity** — no editor, no `unity` CLI in the container. What WAS
+machine-verified, out of editor: the shipped `ProjectileChargeField.hlsl` compiled with clang and
+censused over a sphere of fragments (see-through numbers, arc share, hue split, per-fragment cost);
+the 12 edit-mode tests in `SparrowRoundGrowthTests` compiled and **executed** against code sliced
+verbatim from the shipped `Projectile.cs` / `FullAutoActionSO.cs` (167 assertions, all green);
+Roslyn on `Projectile.cs`; `validate_project.py`; `check_conditional_compilation.py`; prefab
+field-parity; shader↔HLSL↔material property sets 19/19/19; every hand-authored guid owned by exactly
+one `.meta`. **None of that is an import, a compile of the whole assembly, or a play test.**
+
+What changed: MASS in-flight growth no longer scales the tracer MODEL — it scales the hit volume
+only, and a new see-through additive shell (`ChargeField`, a child of `SparrowProjectile.prefab`)
+draws that volume at exactly the swept hit radius. The dart's cross-section was then halved
+(`1.5 → 0.75`; the collider is provably unchanged at 0.825 because `z = 20` still wins the
+`SphereCollider` max) and recoloured pale blue via a new `SparrowProjectileMaterial`, split off the
+5-prefab-shared `DangerProjectileMaterial`. The shell is neutral blue with `EnvironmentColors.Danger`
+arc cores.
+
+1. **Compile clean**, and **no magenta**: open `SparrowProjectile.prefab` and confirm both the dart
+   and its `ChargeField` child render. A magenta shell means `ProjectileChargeField.shader` failed
+   to import — `git checkout` the two shader files and report, do not try to patch it live.
+2. **The dart is a thin pale-blue needle** and **stays that size for the whole flight** at every
+   Mass level. This is the whole point: at Mass 10 it must NOT swell into a lozenge.
+3. **The shell grows and is see-through.** Fire at a wall of prisms and watch a round travel: the
+   shell should start hugging the tracer and end roughly 6× wider at Mass 10, and you must be able
+   to see the arena (and the tracer) *through* it the whole way. If it reads solid, lower
+   `_FresnelRimIntensity` (0.18) on `ProjectileChargeFieldMaterial` — that is the see-through dial.
+4. **Blue arcs, red cores** — not magenta. Measured 78/7/15 blue/magenta/red at the shipped
+   `_CoreThreshold` 0.75; if it reads magenta in motion, RAISE that value (a separation dial), do
+   not change the colours.
+5. **The mechanic must be unchanged.** Clear a patch of trail at resting Mass and at high Mass and
+   compare against `bleeding-edge`: destruction footprint, range and rate should feel identical.
+   Any felt change in how much a round deletes is a regression — the hit radius was not touched.
+6. **Turret Stance is unaffected.** Right-trigger prism rounds: the fired prism is unchanged and its
+   carried collider still grows (it has no renderer, so it keeps the old transform-scaling path and
+   carries no shell). Confirm turret shots still clear a widening tunnel.
+7. **Pool reuse.** Hold fire, release, hold again; then swap vessels / change Mass level and fire
+   again. The shell must never persist after a round dies, never reappear at a stale size, and never
+   show on a projectile that does not grow.
+8. **Perf at volume.** Hold full-auto (90 volleys/s ≈ 54 live rounds per Sparrow) with 2–4 Sparrows
+   and watch frame time + draw calls. The shell has no MaterialPropertyBlock by design, so every
+   round should SRP-batch through one material — if the batch count climbs with round count,
+   something is minting per-renderer state and that is a bug, not a tuning issue.
+9. **The four other users of `DangerProjectileMaterial` are untouched**: `ExplodableProjectile`,
+   `ProjectileFX`, `BrightNucleus`, `TimeDandruff`. Confirm none of them changed colour.
+10. **Depth/sort sanity.** The dart (opaque, `ZWrite On`, queue 3000) and the shell (`ZWrite Off`,
+    `Cull Back`, additive, queue 3000) sit in the same queue. `Cull Back` should make draw order
+    irrelevant — watch for any flicker between tracer and shell at close range, which would be the
+    one symptom this reasoning missed.

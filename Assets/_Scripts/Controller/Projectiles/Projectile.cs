@@ -43,14 +43,29 @@ namespace CosmicShore.Gameplay
         public bool UsesSweptPrismDetection => sweptPrismDetection;
 
         [Header("In-flight Growth (MASS)")]
-        [Tooltip("What the MASS in-flight growth scales. Empty = this projectile's ROOT, " +
-                 "which carries the collider — so the round's HIT VOLUME grows with it (the " +
-                 "full-auto tracer: what you see is what you hit).\n\n" +
-                 "Point it at a VISUAL CHILD instead when the round's model is much smaller " +
-                 "than its authored hit volume and growing both would only widen that gap. " +
-                 "The skyburst missile is that case: it launches at the size of the bay " +
-                 "missile (~1.7 u long) inside an 8.5 u hit sphere, so it grows its model " +
-                 "INTO the hit volume it already had, and its reach is unchanged.")]
+        [Tooltip("A see-through shell that DRAWS this round's hit volume while MASS in-flight " +
+                 "growth swells it (Shader Graphs/ProjectileChargeField).\n\n" +
+                 "Growth is a HIT VOLUME, not a size. The tracer MODEL is the size it left the " +
+                 "muzzle for the whole flight — swelling it turned a small ship firing needles " +
+                 "into a small ship firing cannonballs — so this shell is what the player " +
+                 "actually reads the growth off, and it is additive and mostly empty so an " +
+                 "enormous round never hides the arena behind it.\n\n" +
+                 "Sized every frame to exactly the swept hit radius, so the shell IS the hit " +
+                 "volume rather than an impression of it. Leave empty on a round that does not " +
+                 "grow, or on one whose transform IS its hit volume (the turret's carried " +
+                 "collider) — an unassigned shell is simply never shown.")]
+        [SerializeField] private Transform chargeField;
+
+        [Tooltip("The ONE case the hit-volume rule above does not describe: a round whose MODEL " +
+                 "was authored far SMALLER than the hit volume it already had, where growing " +
+                 "the model walks it INTO that volume instead of out past it.\n\n" +
+                 "Empty (every round today but one) = growth never touches a drawn transform; " +
+                 "the shell carries the read. Point it at a VISUAL CHILD and that child grows " +
+                 "instead, while the collider and the sweep radius are left exactly alone.\n\n" +
+                 "The skyburst missile is that case and the reason this exists: it launches at " +
+                 "bay size (~1.7 u long) inside an 8.5 u-RADIUS hit sphere — a 10x mismatch in " +
+                 "every axis — so it has no growing hit volume to draw and nothing for a shell " +
+                 "to show. Do not reach for this to make an ordinary round bigger.")]
         [SerializeField] private Transform flightGrowthTarget;
 
         [Tooltip("On: grow every axis, keeping the round's proportions — for a compact round " +
@@ -212,6 +227,11 @@ namespace CosmicShore.Gameplay
         private void OnDisable()
         {
             PrismColliderLodManager.UnregisterFocus(transform);
+
+            // A pooled round is reissued to a different pilot at a different MASS level, so it
+            // must not carry the last flight's shell back out with it. LaunchProjectile decides
+            // the state again from that shot's own growth factor.
+            if (chargeField) chargeField.gameObject.SetActive(false);
         }
 
         private void Awake()
@@ -227,7 +247,46 @@ namespace CosmicShore.Gameplay
 
             // cache whatever parent it has in the pool (ship container or pool root)
             _pooledParent = transform.parent;
+
+            CacheTransformRole();
+
+            if (chargeField) chargeField.gameObject.SetActive(false);
         }
+
+        /// <summary>
+        /// Decides — once, from the prefab itself — whether MASS growth may scale this
+        /// projectile's TRANSFORM, and the rule is exactly "does this transform draw a model?"
+        ///
+        /// Two structurally different things call themselves a projectile here. The bullets'
+        /// <c>SparrowProjectile</c> puts its tracer mesh on its own root, so its transform IS
+        /// the model and scaling it is what made growth look wrong. The Turret Stance's carried
+        /// <c>ProjectileCollider</c> (a child of the fired prism) has no renderer at all — it is
+        /// a bare hit sphere, its transform IS the hit volume, and scaling it is the only way
+        /// its growth reaches PhysX.
+        ///
+        /// Derived rather than authored so it cannot be mis-set: a projectile that grows a
+        /// visible body is a bug in any prefab, present or future, and this answers it from the
+        /// prefab's own contents. The charge shell is excluded — it draws the hit volume, not
+        /// the round.
+        /// </summary>
+        void CacheTransformRole()
+        {
+            _transformIsHitVolume = true;
+
+            var renderers = GetComponentsInChildren<Renderer>(true);
+            for (int i = 0; i < renderers.Length; i++)
+            {
+                var r = renderers[i];
+                if (!r) continue;
+                if (chargeField && r.transform.IsChildOf(chargeField)) continue;
+                _transformIsHitVolume = false;
+                return;
+            }
+        }
+
+        /// <summary>True when nothing visible hangs off this transform, so growth may scale
+        /// it. See <see cref="CacheTransformRole"/>.</summary>
+        bool _transformIsHitVolume = true;
 
         /// The gun a chain spike fires its next generation from; null on every ordinary round.
         private LoadedGun _loadedGun;
@@ -441,6 +500,18 @@ namespace CosmicShore.Gameplay
             _flightGrowthSettled = false;
             _launchScale = growthTarget.localScale;
             _launchSweepRadius = _sweepRadius;
+
+            // The charge shell only exists to sell growth, so a round that does not grow never
+            // shows one. Sized here as well as in the flight loop: the loop's first tick lands a
+            // frame later, and until then the shell would render at whatever scale the prefab
+            // happened to author.
+            if (chargeField)
+            {
+                bool grows = _flightGrowthFactor != 1f;
+                if (grows) SizeChargeField();
+                if (chargeField.gameObject.activeSelf != grows)
+                    chargeField.gameObject.SetActive(grows);
+            }
 
             _moveCts = CancellationTokenSource.CreateLinkedTokenSource(
                 this.GetCancellationTokenOnDestroy());
@@ -677,30 +748,36 @@ namespace CosmicShore.Gameplay
         public void SetFlightGrowth(float factor) => _flightGrowthFactor = Mathf.Max(0.01f, factor);
 
         /// <summary>
-        /// Grows the round toward its full factor across the flight, and — when the growth
-        /// target is the ROOT — grows the swept hit radius by the SAME factor, so the size you
-        /// see is the size that hits.
+        /// Grows the round's HIT VOLUME toward its full factor across the flight, and draws
+        /// that volume with the charge shell — the size you see is the size that hits.
         ///
-        /// **Cross-section by default.** The tracer mesh is a unit sphere at (1.5, 1.5, 20) —
-        /// a 20-long dart — so scaling it uniformly at 6× would draw a 120-unit needle across
-        /// a ~72-unit range. Width is what a hit volume is made of; length is just the streak.
-        /// <see cref="flightGrowthUniform"/> opts a compact round (the skyburst missile) out
-        /// of that rule: there the length is the round, not a streak, and holding it fixed
-        /// would inflate the model into a pancake.
+        /// **Growth is a hit volume, not a size.** The tracer mesh is a unit sphere at
+        /// (0.75, 0.75, 20) — a 20-long dart — and swelling its cross-section 6× drew a fat
+        /// lozenge: mechanically right, and it read as a small ship firing cannonballs, which
+        /// is the exact silliness the growth pass set out to avoid. So the MODEL now stays the
+        /// size it left the muzzle for the whole flight and <see cref="chargeField"/> — a
+        /// see-through, additive, mostly-empty shell — is what carries the read. It is sized to
+        /// exactly <see cref="_sweepRadius"/>, so it is not an impression of the hit volume, it
+        /// IS the hit volume, and a pilot can still see the arena through their own enormous
+        /// round.
+        ///
+        /// The transform is scaled only when it is not drawing anything
+        /// (<see cref="CacheTransformRole"/>) — the Turret Stance's carried collider, where the
+        /// transform IS the hit volume and scaling it is the only way growth reaches PhysX.
         ///
         /// The hit radius is scaled EXPLICITLY rather than re-derived from lossyScale, because
-        /// a SphereCollider takes the largest lossy component: with the length left alone, that
-        /// stays the z-stretch and the derived radius would never move. (Consequence, and a
-        /// deliberate scope line: the swept PRISM radius grows, while the PhysX radius the
-        /// vessel/mine path uses is unchanged for the dart. Growing bullets against vessels is
-        /// a Dog Fight balance change, not a prism-clearing one.)
+        /// a SphereCollider takes the largest lossy component: with the dart's length left
+        /// alone, that stays the z-stretch and the derived radius would never move. (Consequence,
+        /// and a deliberate scope line kept from the growth pass: the swept PRISM radius grows,
+        /// while the PhysX radius the vessel/mine path uses is unchanged for the dart. Growing
+        /// bullets against vessels is a Dog Fight balance change, not a prism-clearing one.)
         ///
-        /// **A CHILD target grows nothing but photons.** It carries no collider and feeds no
-        /// sweep radius, so the round's reach — PhysX and swept alike — is exactly what it was
-        /// before the growth was wired. That is the whole point for the skyburst, whose model
-        /// launches ~10× smaller than its authored hit sphere: growing the model walks it into
-        /// that hit volume, while growing the root would have silently rewritten a Dog Fight
-        /// missile's reach.
+        /// **<see cref="flightGrowthTarget"/> is the one exception, and it is a narrow one.**
+        /// A round whose MODEL was authored far smaller than the hit volume it already had has
+        /// no growing hit volume to draw — a shell would show a sphere that never moves — and
+        /// growing that model walks it INTO its own reach rather than out past it. The skyburst
+        /// missile is the only one: ~1.7 u long inside an 8.5 u-RADIUS sphere. Its collider and
+        /// its launch scale are untouched, so its reach does not move either.
         ///
         /// **When it grows is <see cref="flightGrowthCompleteAt01"/>** — the whole flight
         /// (the tracer, whose size therefore reports how far it has come) or an early window
@@ -709,15 +786,62 @@ namespace CosmicShore.Gameplay
         void ApplyFlightGrowth(float progress01)
         {
             float g = RoundGrowthRamp.At(progress01, _flightGrowthFactor, flightGrowthCompleteAt01);
-            _flightGrowthSettled = RoundGrowthRamp.IsComplete(progress01, flightGrowthCompleteAt01);
 
-            var target = GrowthTarget;
-            target.localScale = flightGrowthUniform
-                ? _launchScale * g
-                : new Vector3(_launchScale.x * g, _launchScale.y * g, _launchScale.z);
+            // A settled round stops re-writing its transform — but a charge shell has to keep
+            // tracking whatever its parent's scale is doing, so a round that draws one never
+            // latches. Rounds on the full-flight shape never settle mid-flight anyway (the
+            // mover's progress only reaches 1 at the end), so this costs the tracer nothing.
+            _flightGrowthSettled = !chargeField
+                && RoundGrowthRamp.IsComplete(progress01, flightGrowthCompleteAt01);
 
-            if (target == transform)
-                _sweepRadius = _launchSweepRadius * g;
+            _sweepRadius = _launchSweepRadius * g;
+
+            if (flightGrowthTarget)
+                flightGrowthTarget.localScale = flightGrowthUniform
+                    ? _launchScale * g
+                    : new Vector3(_launchScale.x * g, _launchScale.y * g, _launchScale.z);
+            else if (_transformIsHitVolume)
+                transform.localScale = new Vector3(_launchScale.x * g, _launchScale.y * g, _launchScale.z);
+
+            SizeChargeField();
+        }
+
+        /// <summary>
+        /// Puts the charge shell at exactly <paramref name="worldRadius"/> in the WORLD, given
+        /// whatever the parent's scale happens to be.
+        ///
+        /// The dart's own transform is non-uniform — (0.75, 0.75, 20) — so a uniform world sphere
+        /// under it needs a per-axis divide. That is only safe because the shell is authored
+        /// with identity rotation: a non-uniform parent above a ROTATED child is a shear, and no
+        /// local scale can undo one. Keep the shell unrotated.
+        ///
+        /// The mesh is Unity's built-in sphere, whose object-space radius is 0.5 — hence the
+        /// diameter, not the radius, is what the scale has to produce.
+        /// </summary>
+        public static Vector3 ChargeFieldLocalScale(float worldRadius, Vector3 parentLossyScale)
+        {
+            float diameter = 2f * Mathf.Max(worldRadius, 0f);
+            return new Vector3(
+                diameter / Mathf.Max(Mathf.Abs(parentLossyScale.x), 1e-4f),
+                diameter / Mathf.Max(Mathf.Abs(parentLossyScale.y), 1e-4f),
+                diameter / Mathf.Max(Mathf.Abs(parentLossyScale.z), 1e-4f));
+        }
+
+        /// <summary>
+        /// One transform write per live round per frame, which is why the shell's whole
+        /// appearance is otherwise a function of TIME and its own object-to-world matrix: at 90
+        /// volleys/s over a 0.3 s flight a single Sparrow keeps ~54 of these in the air, and a
+        /// per-renderer MaterialPropertyBlock (the skimmer crackle's driver) would be ~54 extra
+        /// draw calls plus two 16-element vector arrays each, every frame. The shader reads its
+        /// own world radius instead, so growth needs no stamp and every round in the match
+        /// batches through one material.
+        /// </summary>
+        void SizeChargeField()
+        {
+            if (!chargeField) return;
+            var parent = chargeField.parent;
+            chargeField.localScale = ChargeFieldLocalScale(
+                _sweepRadius, parent ? parent.lossyScale : Vector3.one);
         }
 
         /// <summary>

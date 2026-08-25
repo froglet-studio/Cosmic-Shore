@@ -64,7 +64,7 @@ missile reaches full size in the first fifth of its flight — **0.6 s, about 70
 and flies the remaining 80% at that size. That is the opposite shape from the bullets, which are
 still growing when they arrive, and it is the point: a tracer's size reports how far it has come,
 whereas a missile should read as a fixed object you are watching cross the arena. Growth is also
-**uniform** (`flightGrowthUniform`), unlike the bullets' cross-section-only rule — that rule
+**uniform** (`flightGrowthUniform`), unlike the cross-section-only rule the hit-volume path uses — that rule
 exists because the tracer mesh is a 20-long dart whose length is a *streak*, and the missile is a
 compact round whose length is the round.
 
@@ -80,11 +80,26 @@ latches it), so holding for 80% of the flight costs nothing.
 
 To take Mass out of it and fly one fixed size, author both endpoints equal.
 
-**It grows the MODEL, not the hit sphere.** `Projectile.flightGrowthTarget` points at
-`MissileVisual`, so growth never touches the root — which carries the collider — and the
-missile's reach is byte-identical to before any of this landed. Growing the root instead would
-have multiplied an 8.5 u hit radius by up to 38 and silently rewritten a Dog Fight missile's reach
-(a missile hit is 50 points).
+**It grows the MODEL, not the hit sphere — and that makes it the ONE exception to the
+platform rule.** Since PR #786, *MASS in-flight growth is a HIT VOLUME, not a size*: a round's
+model stays the size it left the muzzle, and a see-through `chargeField` shell, sized every frame
+to the swept hit radius, is what carries the read. `Projectile.CacheTransformRole` enforces it by
+deriving from the prefab's own renderers, so nothing that draws a body can grow it by accident.
+
+The skyburst does not fit that rule, for a specific reason rather than a preference: **it is the
+only round whose MODEL was authored far smaller than the hit volume it already had** — ~1.7 u long
+inside an **8.5 u-radius** sphere, a 10× mismatch in every axis. It has no *growing* hit volume, so
+a shell would draw a sphere that never moves; and growing the model walks it INTO its own reach
+rather than out past it, which is the opposite of the cannonball problem the rule was written
+against. `Projectile.flightGrowthTarget` carries that exception and is **empty on every other round
+in the game** — it is not a general "make this round bigger" dial.
+
+Its reach is untouched either way: growth writes only `MissileVisual.localScale`, never the root
+that carries the collider, and never its launch scale. (`_sweepRadius` does still track the growth
+curve, as it does for every round — but this prefab has no `sweptPrismDetection`, so nothing ever
+reads it. The PhysX sphere, which is what a missile actually hits with, does not move.) Growing the
+root instead would have multiplied an 8.5 u hit radius by up to 38 and silently rewritten a Dog
+Fight missile's reach — a missile hit is 50 points.
 
 ### What the 20× size costs, stated plainly
 
@@ -182,7 +197,7 @@ needing it.
 | Bay side predicate | `FireGunActionExecutor.Fire` | ammo ≥ 2×cost → right | Keep single-sourced; do not re-derive in the animation |
 | `growthFactorAtRestingMass` / `growthFactorAtFullMass` | `SkyBurstGunAction.asset` | 20 / 32 | HOW MUCH the missile MODEL swells. Bounded above by the broadside budget (~44.6×) — see the section above before raising it |
 | `flightGrowthCompleteAt01` | `SkyBurstProjectile.prefab` → `Projectile` | 0.2 | WHEN. Fraction of the flight the swell takes; it holds after. 1 = swell all the way in, the tracer's shape |
-| Growth target / uniform | `SkyBurstProjectile.prefab` → `Projectile` | `MissileVisual` / on | WHAT grows. Moving the target to the root would grow the hit sphere with it (a Dog Fight balance change) |
+| Growth target / uniform | `SkyBurstProjectile.prefab` → `Projectile` | `MissileVisual` / on | WHAT grows — and the ONE prefab in the game that sets it (see the exception above). Clearing it puts the missile back under the platform rule, where it would not grow at all: it has no growing hit volume and no `chargeField` |
 
 ## In-editor verification
 
