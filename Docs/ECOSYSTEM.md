@@ -2627,11 +2627,12 @@ recovered armor plates + 3 danger fangs); tail = 8 (the recovered two-tier sting
 4 blades + 4 tip spikes); **+ 1 heart SphereCollider on EVERY segment** (§23.8 — it was
 the capitals only). Verified against the shipped prefabs (11 / 1 / 8 nested prism
 instances). A spawn-size-8 worm = 12+6×2+9 = **33 active colliders** (was 27); at the
-`MaxSegmentsPerWorm=16` growth cap = **49** (was 35). Splits now conserve the collider
-total EXACTLY — segment totals were already conserved, and a differentiated end no
-longer provisions a heart because the body it grew from already had one (that used to
-add up to +2 per split). Against the ~1,500/cell target this is still negligible — the
-deleted 2024 worm cost 28 colliders per worm *and grew unboundedly on a timer*.
+`MaxSegmentsPerWorm=16` growth cap = **49** (was 35). Splits conserve the collider total
+EXACTLY: segment totals were already conserved, and severing no longer costs an extra
+heart the way wound differentiation used to. **§23.9 restates this budget against the
+cell that actually deploys worms** — the composition is unchanged, but the cap is now
+reliably reached, so read that section's table rather than assuming the ~1,500/cell
+target is comfortable everywhere.
 
 ### 23.4.1 The recovered 2024 geometry (Aug 2026 second pass)
 
@@ -2684,11 +2685,24 @@ cell in your domain. (Level is inert for the colony in v1 — `SetLevel` scales 
 empty root anchor, so L1/L3/L5 stations spawn the same-size worm; size lives on
 `KaijuScale`.)
 
-**Deliberately wired into no SpawnProfile** — a boss is opt-in. To deploy ambiently:
-add a worm config to a cell's `SpawnProfileSO.SupportedFaunas`. Natural host for the
-co-op fight: `MinigameWildlifeBlitzMultuplayerCoOp` (note §10.3: that scene uses
-`IntensityWiseLifeSpawner`, which spawns 1/tick — fine for a PopulationSize-1 boss).
-All feel/fight tuning lives on `WormColonyConfig.asset` (`WormColonyConfigSO`).
+**Deployed ambiently in ONE cell** — ~~wired into no SpawnProfile~~. That claim was true
+when it was written and is not now: `Wildlife Spawn Profile 1..4` each reference a
+`Wildlife WormColony L3 <n>.asset` (a `FaunaConfigurationSO` on the same
+`WormColony.prefab`, but authored `InitialSpawnCount 5` / `PopulationSize 5` /
+**`MaxLivePopulation 9`** / `InitialLevel 3` / `SpreadElements`), so Wildlife Liberation
+runs a standing worm population rather than a lone opt-in boss. **That cell is the one to
+size any worm change against** — it is the tightest consumer by an order of magnitude
+(§23.9's collider table). Everywhere else the colony is still opt-in through the Lifeform
+Matrix toy. To deploy in another cell, add a worm config to its
+`SpawnProfileSO.SupportedFaunas`.
+
+*General rule this cost: an "it is wired nowhere" claim is true only on the date it was
+written — the next branch is free to wire it up and will never think to come correct the
+claim. Re-prove absence by grepping the config's GUID across `_SO_Assets`, do not inherit
+it.*
+
+All feel/fight tuning lives on `WormColonyConfig.asset` (`WormColonyConfigSO`) — except
+the growth RATE, which is the host cell's `SpawnProfileSO.BaseFaunaSpawnTime` (§23.9).
 
 ### 23.6 In-editor verification (the human is the gate)
 
@@ -2905,8 +2919,8 @@ injecting a `CS0103` and a `CS1503` into the new code and watching both fire), a
 
 #### Known gaps carried forward
 
-- The §23.7 list still stands (client-local fauna, no scoring event for segment kills,
-  level inert for the colony, differentiated ends keep the body mesh).
+- The §23.7 list still stands, minus the stump-mesh item that §23.9 closed (so:
+  client-local fauna, no scoring event for segment kills, level inert for the colony).
 - **A long worm is now a lot of collectible crystals in a small volume.** Nothing bounds
   how much a co-op team banks by dismantling one kaiju, because nothing ever has — but
   the number went from 2 per colony to `SegmentCount`. If that reads as too rich in a
@@ -3002,8 +3016,10 @@ against the cell's next cycle — which is a fight, not a foregone conclusion.
   clocks). A member's **role is now fixed at birth**. This *closes* the §23.7 gap: a
   regrown head is the real `WormHeadSegment` prefab with its 8 armour plates and 3 fangs,
   not a body segment with its one core prism made dangerous. That matters mechanically as
-  well as visually — the fangs ARE the jaws (`MouthPoint`) the feeding and devouring paths
-  read, and an 11-prism head is a real threat surface where a 1-prism stump was not.
+  well as visually: grazing is gated on the leader BEING a Head (`TickFeeding` queries a
+  `MouthRadius` sphere at the head transform) and a devoured creature suctions into the
+  **fang centroid** (`WormSegmentFauna.MouthPoint`, which reads live DANGER prisms only), so
+  a one-prism stump was a poorer mouth as well as a poorer threat surface.
 
 One refactor came with it: the build-time and follow-time spacing formulas were duplicated
 (`RestSpacingForBuild` vs `RestSpacing`) and every growth site needed a third. They are now

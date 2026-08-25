@@ -835,9 +835,10 @@ namespace CosmicShore.Gameplay
         /// <summary>
         /// The elemental crystal this fauna conserves its mass into on death. Set by
         /// concrete creature subclasses in Initialize via
-        /// <see cref="LifeFormCrystal.EnsureElementalCrystal"/>; null for manager /
-        /// composite-segment fauna that are not standalone lifeforms (their crystal is
-        /// owned at the whole-creature level).
+        /// <see cref="LifeFormCrystal.EnsureElementalCrystal"/>; null only for MANAGER
+        /// fauna and for a colony ROOT, which is a population anchor rather than an
+        /// organism — every actual member of a colony carries its own heart
+        /// (Docs/ECOSYSTEM.md §23.3).
         /// </summary>
         protected Crystal crystal;
 

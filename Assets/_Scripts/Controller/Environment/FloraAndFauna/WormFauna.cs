@@ -173,8 +173,7 @@ namespace CosmicShore.Gameplay
         public override bool Predated(string predatorName, Transform devourTarget) => false;
 
         // The element a per-element species config picked for this colony (None = the
-        // config didn't say; segments keep their authored hearts and wounds use the
-        // WormColonyConfigSO.RegrownEndElement fallback).
+        // config didn't say, so every member keeps its prefab-authored heart).
         Element _pickedHeartElement = Element.None;
 
         /// <summary>
@@ -829,10 +828,13 @@ namespace CosmicShore.Gameplay
 
         /// <summary>
         /// Grows a real HEAD at the front of the chain — the whole armored prefab, not a
-        /// hardened stump: a regrown mouth has its plate cage, its fangs (which ARE the
-        /// jaws the feeding and devouring paths read) and its own heart. It blooms from
-        /// zero and takes over the steering, inheriting the outgoing leader's heading so
-        /// the body does not snap.
+        /// hardened stump: a regrown mouth has its plate cage, its danger fangs and its own
+        /// heart. Both halves of the colony's appetite key off it — grazing is gated on the
+        /// leader BEING a Head (TickFeeding) and a devoured creature suctions into the fang
+        /// centroid (<see cref="WormSegmentFauna.MouthPoint"/>, tracked by the mouth
+        /// transform) — so a stump with one dangerous core prism was a much poorer mouth as
+        /// well as a much poorer threat. It blooms from zero and takes over the steering,
+        /// inheriting the outgoing leader's heading so the body does not snap.
         /// </summary>
         void GrowHead()
         {
