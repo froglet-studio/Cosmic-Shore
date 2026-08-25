@@ -12,7 +12,7 @@ any of them could move.
 |---|---|
 | 165 | the original audit |
 | 184 | a later recount |
-| **167** | **this pass** |
+| **187** | **this pass** (167 before this branch added the token definitions) |
 
 My extractor is `new Color(...)` / `new Color32(...)` with **all-constant arguments**, plus the
 eleven `Color.<named>` statics, plus `#RRGGBB[AA]` in string literals, over `Assets/_Scripts/UI/**.cs`.
@@ -27,15 +27,24 @@ The drift is almost certainly definitional, not a disagreement about the files:
 - The remaining ~6 to reach 184 are most likely `Color.Lerp`/`Color.clear` style hits, or a scan that
   reached past `_Scripts/UI` (vessel HUD colour also lives under `Controller/Vessel/`).
 
-I did not try to reproduce either prior number. **Use 167**, and note the extractor definition
+I did not try to reproduce either prior number. **Use 187**, and note the extractor definition
 travels with it — a colour-literal count is meaningless without one.
 
-## Scope: 34 of the 167 are not player-facing UI
+**This branch itself proved that.** The first version of the extractor tested arguments against
+`^[0-9.]+f?$`, which rejects `0xE6` — so the 20 `new Color32(0xE6, 0xE9, 0xFF, 0xFF)` literals this
+branch *added*, in `UIThemeSO.cs` and `UITheme.cs`, were silently uncounted. The raw total read 167
+and looked clean. They are legitimate (the token values have to be written down exactly once, and
+that is where), but they are now excluded **by filename**, as a stated decision, rather than by a
+regex that happened not to match them. An exclusion you cannot see is indistinguishable from a bug.
+The in-scope population is unchanged at 133.
+
+## Scope: 54 of the 187 are not in the mapping population
 
 | Class | n | Files |
 |---|---|---|
 | Editor-inspector chrome (`GUI.backgroundColor`, `EditorGUI.DrawRect`) | 24 | `ActiveGameModesWindow`, `LeaderboardConfigSOEditor`, `UniversalStatsProviderEditor`, `Model/MinigameHUDInspector` |
 | Debug / console markup (`<color=#FFD700>` FLOW tags, `DebugExtensions.LogColored`) | 10 | `Modals/ArcadeGameConfigureModal`, `Screens/PartyInviteNotificationPanel`, `TestMiniGameEvents` |
+| §11 token definitions | 20 | `UIThemeSO.cs`, `UITheme.cs` |
 
 The style foundation governs the game's UI, not the Editor's or the console's. These are excluded
 from the mapping population and should stay excluded from any future count.

@@ -45,6 +45,11 @@ OUT_DEBUG = {
     "TestMiniGameEvents.cs",
 }
 
+# The token definitions themselves. §11's values have to be written down exactly once, and this is
+# where. Excluded BY NAME rather than by a regex that happens not to match 0xE6 -- an exclusion you
+# cannot see is indistinguishable from a bug, and this one hid 20 literals until it was checked.
+OUT_TOKENS = {"UIThemeSO.cs", "UITheme.cs"}
+
 TOKENS = {
     "textLight", "textInactive", "inactiveLight", "surfaceBlack", "surfaceVeryDark",
     "surfaceDark", "surfaceLight", "neutralLightest", "cta", "danger",
@@ -187,7 +192,7 @@ VERDICTS = {
 RE_CTOR  = re.compile(r"\bnew\s+Color(32)?\s*\(([^)]*)\)")
 RE_NAMED = re.compile(r"\bColor\.(" + "|".join(NAMED) + r")\b")
 RE_HEX   = re.compile(r"#[0-9A-Fa-f]{6}(?:[0-9A-Fa-f]{2})?")
-RE_NUM   = re.compile(r"^[0-9.]+f?$")
+RE_NUM   = re.compile(r"^(?:[0-9.]+f?|0[xX][0-9A-Fa-f]{1,2})$")
 
 
 def hex_rgb(h):
@@ -209,8 +214,11 @@ def collect():
                         args = [a.strip() for a in m.group(2).split(",") if a.strip()]
                         if not args or not all(RE_NUM.match(a) for a in args):
                             continue  # derived from a variable -- not a literal
-                        vals = [float(a.rstrip("f")) for a in args]
-                        if m.group(1):
+                        vals = [
+                            float(int(a, 16)) if a[:2].lower() == "0x" else float(a.rstrip("f"))
+                            for a in args
+                        ]
+                        if m.group(1) or any(a[:2].lower() == "0x" for a in args):
                             vals = [v / 255 for v in vals]
                         yield rel, lineno, tuple(vals[:3]), (vals[3] if len(vals) > 3 else 1.0), src
                     for m in RE_NAMED.finditer(line):
@@ -230,7 +238,9 @@ def main():
     scope, skipped = [], Counter()
     for rec in raw:
         f = rec[0]
-        if f in OUT_EDITOR:
+        if f in OUT_TOKENS:
+            skipped["§11 token definitions"] += 1
+        elif f in OUT_EDITOR:
             skipped["editor-inspector chrome"] += 1
         elif f in OUT_DEBUG:
             skipped["debug/console markup"] += 1

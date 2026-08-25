@@ -47,7 +47,7 @@ namespace CosmicShore.UI
         [Header("Signal")]
         [Tooltip("99FF80 — call to action; primary buttons, focus, selection, online status, app shell before a team exists")]
         public Color cta = new Color32(0x99, 0xFF, 0x80, 0xFF);
-        [Tooltip("FF4B3A — destructive / danger. PROPOSED in §2, not yet approved. Full-bleed fill only.")]
+        [Tooltip("FF4B3A — destructive / danger. Approved in v0.3.2. Full-bleed fill only.")]
         public Color danger = new Color32(0xFF, 0x4B, 0x3A, 0xFF);
 
         // ── Spacing ───────────────────────────────────────────────────────────────────
