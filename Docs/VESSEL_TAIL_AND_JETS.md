@@ -1,5 +1,10 @@
 # Vessel Tails and Jets
 
+> **Vessel construction, guid ownership, nested-instance parenting and what the unreferenced
+> vessel models actually carry are in `Docs/VESSEL_CONSTRUCTION.md`.** Two of the three
+> discrepancy classes recorded there were found by this pass; read it before swapping a
+> vessel's model, because a rig swap moves every mount measured here.
+
 **Status:** standard shipped, fleet migrated. Every vessel has a tail; 7 of 12 have jets.
 Audit with **FrogletTools ▸ Vessels ▸ Audit Vessel Tails and Jets**.
 
