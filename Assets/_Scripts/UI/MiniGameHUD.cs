@@ -756,7 +756,7 @@ namespace CosmicShore.UI
         }
 
         /// <summary>
-        /// Resets UI state for re-entering the game flow after shape drawing.
+        /// Resets UI state for re-entering the game flow after a connecting sequence.
         /// </summary>
         public void ShowConnectingFlow() => ResetForReplay();
         public void UpdateTurnMonitorDisplay(string message) => view.UpdateCountdownTimer(message);

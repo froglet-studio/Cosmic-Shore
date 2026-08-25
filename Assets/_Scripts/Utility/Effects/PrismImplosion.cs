@@ -445,8 +445,8 @@ namespace CosmicShore.Utility
         /// Cleans up, notifies pool, and force-deactivates the GameObject as a
         /// safety net so the implosion VFX can never visually loop even if the
         /// pool callback chain is broken (e.g., OnReturnToPool was nulled by an
-        /// external owner like ShapeDrawingManager, or a duplicate Get/Release
-        /// cycle left subscriptions in an inconsistent state).
+        /// external owner, or a duplicate Get/Release cycle left subscriptions
+        /// in an inconsistent state).
         /// </summary>
         internal void OnEffectComplete()
         {

@@ -10,6 +10,7 @@ using UnityEngine.Serialization;
 using CosmicShore.Data;
 using CosmicShore.ECS;
 using System.Linq;
+using Unity.Mathematics;
 namespace CosmicShore.Gameplay
 {
     [RequireComponent(typeof(MaterialPropertyAnimator))]
@@ -168,6 +169,9 @@ namespace CosmicShore.Gameplay
         private MeshRenderer meshRenderer;
         private MeshFilter meshFilter;
         private BoxCollider blockCollider;
+
+        static readonly int SuctionStartTimeId = Shader.PropertyToID("_SuctionStartTime");
+        const float ConvergenceBoundsPadding = 2f;
 
         // --- Instanced rendering (Entities Graphics companion entity) -----------
         // While the instanced path is active the MeshRenderer stays disabled and a
@@ -624,6 +628,46 @@ namespace CosmicShore.Gameplay
         {
             if (blockCollider) blockCollider.enabled = false;
             SetRenderVisible(false);
+        }
+
+        /// <summary>
+        /// Whole-prism GPU suction toward a world-space point (Docs/PRISM_ANIMATION.md §5 C9).
+        /// Collider off at stamp — gameplay state is FINAL; only photons animate. Pair with
+        /// <see cref="ClearSuctionClockStamp"/> on pool return.
+        /// </summary>
+        public void StampSuctionToward(Vector3 worldLocation, float duration)
+        {
+            if (duration <= 0.01f) return;
+            if (blockCollider) blockCollider.enabled = false;
+
+            var handle = RenderHandle;
+            if (!PrismRenderService.IsHandleUsable(in handle))
+            {
+                PrismClockDiagnostics.WarnNoRenderEntity("cellSwapSuction", this,
+                    PrismRenderService.StatusLine());
+                return;
+            }
+
+            var mat = meshRenderer != null ? meshRenderer.sharedMaterial : null;
+            if (mat == null || !mat.HasProperty(SuctionStartTimeId))
+                PrismClockDiagnostics.WarnUnwiredMaterial(mat, "_SuctionStartTime", this);
+
+            var loc = new float3(worldLocation.x, worldLocation.y, worldLocation.z);
+            if (!PrismRenderService.StampSuctionClock(in handle, PrismClock.Now, duration, 1f, 0f, loc))
+                return;
+
+            if (meshFilter != null)
+                PrismRenderService.ResetBoundsToMesh(in handle, meshFilter.sharedMesh);
+            var objectPoint = transform.InverseTransformPoint(worldLocation);
+            PrismRenderService.EncapsulateBoundsPoint(in handle,
+                new float3(objectPoint.x, objectPoint.y, objectPoint.z), ConvergenceBoundsPadding);
+        }
+
+        /// <summary>Pool hygiene: Duration 0 is identity on live graphs. Initialize also
+        /// routes through <see cref="PrismRenderService.ClearPrismStamps"/>.</summary>
+        public void ClearSuctionClockStamp()
+        {
+            PrismRenderService.ClearSuctionClockStamp(in RenderHandle);
         }
 
         /// <summary>
@@ -1467,6 +1511,8 @@ namespace CosmicShore.Gameplay
 
         private void OnDestroy()
         {
+            EnvironmentPrismPool.ForgetDestroyed(this);
+
             // No material cleanup needed - we use sharedMaterial exclusively,
             // so no per-instance material clones are created.
 

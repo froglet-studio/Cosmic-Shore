@@ -603,6 +603,15 @@ namespace CosmicShore.Gameplay
                 LifeFormCrystal.SetWorldScale(crystal, worldTarget);
         }
 
+        /// <summary>
+        /// Creature-rig scale bloom over <paramref name="seconds"/>. Parent scale
+        /// is mover-contract (C6 (b), 2026-08-25): a per-prism grow stamp cannot
+        /// express a parent transform — the entity matrix is the composed world
+        /// matrix. Locomotion already re-syncs every body prism from Update
+        /// (<c>Boid</c> / <c>LightFauna</c> / <c>WormFauna</c>); do not call
+        /// <see cref="NotifyBodyPrismsMoved"/> here or the grow doubles the
+        /// per-frame prism write.
+        /// </summary>
         IEnumerator GrowToScale(Vector3 target, float seconds)
         {
             Vector3 start = transform.localScale;
@@ -611,7 +620,6 @@ namespace CosmicShore.Gameplay
             {
                 t += Time.deltaTime / Mathf.Max(0.05f, seconds);
                 transform.localScale = Vector3.Lerp(start, target, Mathf.Clamp01(t));
-                NotifyBodyPrismsMoved(); // keep the spatial index honest while the body grows
                 yield return null;
             }
             _levelGrowRoutine = null;

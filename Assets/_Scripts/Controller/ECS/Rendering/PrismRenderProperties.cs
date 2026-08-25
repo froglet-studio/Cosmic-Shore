@@ -164,7 +164,8 @@ namespace CosmicShore.ECS
         public float Value;
     }
 
-    // -- Implosion set (SuctionGraph): suction/reverse-grow clock --
+    // -- Implosion set (SuctionGraph) AND live Prism set (BlockGraph /
+    // ExplodingBlockGraph, Docs/PRISM_ANIMATION.md §5 C9 cell-swap suction) --
 
     [MaterialProperty("_SuctionStartTime")]
     public struct PrismSuctionStartTimeOverride : IComponentData

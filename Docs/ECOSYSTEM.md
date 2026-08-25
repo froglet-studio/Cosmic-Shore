@@ -269,8 +269,10 @@ prefab per element. The element is data on `FaunaConfigurationSO.Element` — at
 (`LifeFormCrystal.EnsureElementalCrystal(owner, element)` replaces a disagreeing authored
 crystal; `None` keeps the legacy per-variant-prefab path). Level scales the creature via
 config (`InitialLevel`, `BodyScalePerLevel`, `LevelGrowSeconds`): spawns arrive AT size;
-in-world level-ups **grow** over `LevelGrowSeconds` (continuity — never a pop) with
-`NotifyBodyPrismsMoved` keeping the spatial index honest, and the heart grows a step per
+in-world level-ups **grow** over `LevelGrowSeconds` (continuity — never a pop). Parent
+scale is mover-contract (`Docs/PRISM_ANIMATION.md` §1 / C6 (b)): locomotion already
+re-syncs body prisms every `Update` (`NotifyBodyPrismsMoved` / `SyncBodyPrismsToIndex`);
+`GrowToScale` does **not** notify separately. The heart grows a step per
 level so a higher-level creature drops a **bigger** elemental powerup on death (mass
 rewarded, still conserved).
 
@@ -1895,7 +1897,7 @@ code.
 | 1 | `StopSpawner()` — nothing new seeds into a world that is leaving. |
 | 2 | Every vessel drops its trail bookkeeping (`ClearTrails`, `AttachedPrism = null`) and pens up (`SetSpawnerPaused`). `Trail.LookAhead`/`Project` and `TrailFollower` dereference their prisms **without null guards**, so this must precede the teardown. `ClearTrails` drops bookkeeping only — it removes no prism. |
 | 3 | Everything the cell owns — the environment container, the lifeforms, the old membrane/nucleus/cytoplasm, and (optionally) the pooled trail prisms — is gathered under **one root** that **suctions to a point** over `retireSuctionSeconds`. The authored environment is a single container, so the 35k-prism case costs one re-parent. |
-| 4 | Pooled prisms `ReturnToPool()` (destroying one corrupts the pool's accounting); the rest are destroyed in **500-per-frame slices** while the root is already invisible — a 35k-prism teardown in one frame is a multi-second freeze. |
+| 4 | Vessel-trail pooled prisms `ReturnToPool()` *before* this drain (destroying one corrupts that pool's accounting). Issued environment/flora prisms `EnvironmentPrismPool.TryRelease` into an unbounded inactive stack (C13b 2026-08-25 — never overflow-Destroy). The rest are destroyed in **500-per-frame slices** while the root is already invisible — a 35k-prism teardown in one frame is a multi-second freeze. Wanderway conveyor stock is **not gathered** (`OnReturnToPool` discriminator in `RetireWorldIntoSuctionRoot` is vessel-trail only). |
 | 5 | Bookkeeping reset (the same set `ResetCell` clears), then `runtime.Config = config` — the one sanctioned bypass of `AssignConfig`'s deliberate stickiness. |
 | 6 | Membrane + nucleus → **then** `SetupDensityGrids()` (grids are sized off the membrane) → cytoplasm → modifiers → **then** `BuildEnvironmentNow()`. Ordering matters: an immediate build before the grids would file its first prisms into grids that are about to be disposed. On boot this cannot happen because the build is deferred past scene start. |
 | 7 | The standard `EnvironmentLoadVeil` holds the screen while the world streams in; the spawner restarts and the trails un-pen only once the lay has drained, so flora/fauna seed into a **finished** world. |
@@ -1943,9 +1945,11 @@ is free before you read the `RESET` / `LOAD` / `INSTANT` label.
 - **No imposed death / no domain asymmetry / volume is the spine / territorial permanence** —
   untouched. The new cell runs its own authored `SpawnProfile` and `PhaseThresholds` from the
   first frame, so a swapped-in Yggdra gets Yggdra's ladder, not Blob's.
-- **Toy-owned closed systems are left alone.** The reset retires **pooled** prisms (the
-  vessels' trail); instantiated toy mass — the Wanderway conveyor transports its own fixed,
-  conserved stock — has no pool handler and is never touched, so a cell swap cannot break the
+- **Toy-owned closed systems are left alone.** The reset retires **vessel-trail**
+  pooled prisms (`OnReturnToPool`); issued environment/flora under the retiring
+  root now `TryRelease` into `EnvironmentPrismPool` (C13b). Instantiated toy mass —
+  the Wanderway conveyor transports its own fixed, conserved stock — has no
+  pool-return delegate and is never gathered, so a cell swap cannot break the
   conveyor's conservation.
 - **Collider budget: net negative.** The default menu cell is now the *empty* one, so the
   steady-state active-collider count in Menu_Main drops from "one of six 31–36k-prism worlds"
@@ -3149,7 +3153,11 @@ as ordinary cell mass:
 
 **Ordering is load-bearing.** A body prism is parented to a *spindle*, so the skeleton must be
 detached **before** any spindle withers — evaporating a spindle first destroys the very mass the
-skeleton is conserving.
+skeleton is conserving. The wither **pacing** is stamped once as per-spindle start-time offsets
+(`ForceWither(i * interval)` after a one-time distance sort — `Docs/PRISM_ANIMATION.md` §5 C11);
+the visual is still extremity-first (starvation) / heart-outward (joust). Heart release still
+waits until the wither has reached the core (`count × interval`). Continuity of existence is
+the fade itself, not a snap.
 
 ### 26.3 Why the spindles had to be isolated first
 

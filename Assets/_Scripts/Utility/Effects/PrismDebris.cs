@@ -41,20 +41,18 @@ namespace CosmicShore.Utility
     /// retirement (the sweep — a flat time-ordered walk, never per-entity
     /// progress polling).
     ///
-    /// The pooled path still exists as the route taken when this one declines a
-    /// request, but do NOT read it as a visual fallback: with the render service
-    /// off, a pooled explosion draws nothing and a pooled implosion draws a
-    /// static block, both loudly (strict clock mode has no CPU animation tier by
-    /// design). The pool prefabs' real remaining job is being the CONFIG source
-    /// this class reads — mesh, material, layer, clamp band, duration — which is
-    /// why retiring the pooled spawn path is a refactor rather than a deletion.
+    /// Death pooling is retired (D4): a declined request is dropped, not routed
+    /// to a pooled GameObject. Fail loud (PrismFactory warn-once). The pool
+    /// prefabs' remaining job is being the CONFIG source this class reads —
+    /// mesh, material, layer, clamp band, duration. Pooled PrismImplosion is
+    /// kept only for Grow (Sparrow ReverseSuction / StartGrow).
     /// Docs/PRISM_ANIMATION.md §4.6.
     /// </summary>
     public static class PrismDebris
     {
-        // ── Explosion config (resolved once from the pooled effect prefab, so
-        //    both paths ship IDENTICAL debris: same mesh, material, clamp band,
-        //    duration) ─────────────────────────────────────────────────────────
+        // ── Explosion config (resolved once from the pool prefab — never spawned
+        //    for death after D4. Same mesh / material / clamp / duration the
+        //    batched carrier always used.) ─────────────────────────────────────
 
         static Mesh s_mesh;
         static Material s_material;
@@ -134,9 +132,9 @@ namespace CosmicShore.Utility
         static TickHost s_host;
 
         // After a failed batch spawn (world vanished between request and drain),
-        // requests route to the pooled fallback for a few seconds instead of
-        // being accepted and silently dropped again. Time-based so a rebuilt
-        // world (playmode transition) re-enables the path on its own.
+        // hold new requests for a few seconds instead of accepting and silently
+        // dropping them again. There is no pooled death fallback (D4). Time-based
+        // so a rebuilt world (playmode transition) re-enables the path on its own.
         static float s_suspendedUntil;
         static float s_implosionSuspendedUntil;
         const float SuspendSeconds = 5f;
@@ -270,8 +268,9 @@ namespace CosmicShore.Utility
         /// impacts), and the shatter-rate channel keeps the pre-clamp magnitude on the legacy
         /// gain (load-bearing tuning). <paramref name="kind"/> is the tier the dying prism was
         /// wearing — the caller has already resolved its PALETTE from the same tier, this only
-        /// drives the dynamics. Returns false when unconfigured or the render service is off —
-        /// caller uses the pooled path.
+        /// drives the dynamics. Returns false when unconfigured, the render service is off,
+        /// or a drain-fail hold is live — caller drops the visual (pooled death spawn is
+        /// retired; D4).
         /// </summary>
         public static bool TryRequestExplosion(Vector3 position, Quaternion rotation, Vector3 scale,
             Color bright, Color dark, Vector3 velocity, float speedLimitOverride,
@@ -292,8 +291,8 @@ namespace CosmicShore.Utility
             if (hasOverride) speed = velocity.magnitude;
 
             // Full length, always: on the entity path a live effect costs zero
-            // per-frame CPU, so the pooled path's pressure model (which bounds
-            // pool size and per-instance churn) has nothing to protect here.
+            // per-frame CPU, so the retired pooled path's pressure model (which
+            // bounded pool size and per-instance churn) has nothing to protect.
             float duration = PrismExplosion.DefaultDuration;
 
             // Culling envelope: object-space end-of-flight offset (the entity
@@ -327,17 +326,18 @@ namespace CosmicShore.Utility
         /// EXACTLY PrismImplosion.StartImplosion's: progress 0→1 over the authored
         /// duration, converging on <paramref name="target"/> — which is RETAINED (not
         /// snapshotted) so the sink tracks the creature as it swims, the §1 exception.
-        /// Returns false when unconfigured, targetless, or the render service is off —
-        /// caller uses the pooled path.
+        /// Returns false when unconfigured, targetless, the render service is off,
+        /// or a drain-fail hold is live — caller drops the visual (pooled death
+        /// spawn is retired; D4). Grow still uses pooled StartGrow.
         /// </summary>
         public static bool TryRequestImplosion(Vector3 position, Quaternion rotation, Vector3 scale,
             Color bright, Color dark, Transform target)
         {
             if (!s_impConfigured || !PrismRenderService.Enabled) return false;
             if (Time.unscaledTime < s_implosionSuspendedUntil) return false;
-            // A suction with nothing to converge on is not an implosion. The pooled
-            // path guards the same way (PrismFactory's deferred-implosion drain drops
-            // entries whose consumer died), so this defers rather than inventing a point.
+            // A suction with nothing to converge on is not an implosion. StartImplosion
+            // (and the retired factory deferred drain) guarded the same way — drop
+            // rather than inventing a point.
             if (target == null) return false;
 
             var localToWorld = Matrix4x4.TRS(position, rotation, scale);
@@ -461,13 +461,13 @@ namespace CosmicShore.Utility
                 {
                     // Requests were accepted while the service looked usable but the
                     // world vanished before the drain — this batch's visuals are lost.
-                    // Suspend so new requests actually route to the pooled fallback
-                    // instead of being accepted and dropped again; time-based so a
-                    // rebuilt world re-enables the path. One log per suspension.
+                    // Suspend so new requests are not accepted and dropped again;
+                    // time-based so a rebuilt world re-enables the path. One log per
+                    // suspension. There is no pooled death fallback (D4).
                     s_suspendedUntil = Time.unscaledTime + SuspendSeconds;
                     Debug.LogWarning($"[PrismDebris] Batch spawn failed for {s_pending.Count} queued " +
                                      $"deaths (render service: {PrismRenderService.StatusLine()}). " +
-                                     $"Routing to the pooled path for {SuspendSeconds:F0}s.");
+                                     $"Holding new requests for {SuspendSeconds:F0}s (no pooled fallback).");
                 }
 
                 s_pending.Clear();
@@ -520,7 +520,7 @@ namespace CosmicShore.Utility
                     Debug.LogWarning($"[PrismDebris] Suction batch spawn failed for " +
                                      $"{s_pendingImplosions.Count} queued consumptions (render service: " +
                                      $"{PrismRenderService.StatusLine()}). " +
-                                     $"Routing to the pooled path for {SuspendSeconds:F0}s.");
+                                     $"Holding new requests for {SuspendSeconds:F0}s (no pooled fallback).");
                 }
 
                 s_pendingImplosions.Clear();

@@ -28,7 +28,7 @@ namespace CosmicShore.Gameplay
     /// THE canonical "lay a prism into a trail" primitive, shared by every environment builder - the
     /// static/procedural spawnables (<see cref="SpawnableBase"/>, <c>SpawnableShapeBase</c>) and the
     /// freestyle microscene conveyor (<c>Microscene</c>). Consolidates the previously-triplicated
-    /// sequence - Instantiate → ChangeTeam → ownerID → pose → TargetScale → Trail → Initialize →
+    /// sequence - pool Get → ChangeTeam → ownerID → pose → TargetScale → Trail → Initialize →
     /// kind → trail.Add - into one place, so a change to the prism spawn contract lands once, not
     /// three times (the drift surface the environment audit flagged).
     ///
@@ -49,8 +49,8 @@ namespace CosmicShore.Gameplay
             long t = LoadInsights.AccumulateStart();
             if (t != 0L) LoadInsights.Count("Prisms laid during load");
 
-            var block = UnityEngine.Object.Instantiate(prefab, parent);
-            t = LoadInsights.AccumulateSample("Prism lay: Instantiate + component Awakes", t);
+            var block = EnvironmentPrismPool.Get(prefab, parent);
+            t = LoadInsights.AccumulateSample("Prism lay: pool Get + component Awakes", t);
 
             ConfigureLaid(block, e, trail, ownerId, t);
             return block;
@@ -412,10 +412,10 @@ namespace CosmicShore.Gameplay
             return s_budgetSpentMs >= budgetMs;
         }
 
-        // ── Batched clone (Unity 6 multithreaded InstantiateAsync) ───────────
+        // ── Batched clone (pool GetBatchAsync; stall watchdog lives on the pool) ─
 
         /// <summary>
-        /// Prisms cloned per InstantiateAsync call. The engine spreads the clone/deserialize work
+        /// Prisms cloned per async batch. The engine spreads the clone/deserialize work
         /// for one call across worker threads, so bigger batches parallelize better — but the
         /// whole batch integrates before we can configure any of it, so an oversized batch stalls
         /// the progress readout. A few hundred keeps both.
@@ -434,57 +434,16 @@ namespace CosmicShore.Gameplay
         public static bool UseBatchedInstantiate = true;
 
         /// <summary>
-        /// Clone <paramref name="count"/> prisms as children of <paramref name="parent"/> using
-        /// Unity 6's multithreaded batched instantiate. Raw per-item Instantiate was ~97% of a
-        /// mass environment lay and is the one part the engine can parallelize; everything after
-        /// the clone (Awake integration, our spawn contract) still runs on the main thread.
-        /// Falls back to per-item cloning if the batched path is unavailable or returns short.
+        /// Clone <paramref name="count"/> prisms as children of <paramref name="parent"/>
+        /// through <see cref="EnvironmentPrismPool.GetBatchAsync"/>. The builder keeps
+        /// <see cref="UseBatchedInstantiate"/> as the demotion flag; the pool owns the
+        /// clone work and the stall watchdog.
         /// </summary>
         static async UniTask<Prism[]> CloneBatchAsync(Prism prefab, int count, Transform parent)
         {
-            if (UseBatchedInstantiate)
-            {
-                try
-                {
-                    var op = UnityEngine.Object.InstantiateAsync(prefab, count, parent);
-                    float waitStart = Time.unscaledTime;
-                    while (!op.isDone)
-                    {
-                        await UniTask.Yield(PlayerLoopTiming.Update);
-                        if (!parent) return null; // container destroyed mid-flight
-
-                        // Watchdog: batched instantiate integration shares the engine's async
-                        // loading budget, and a busy scene (Menu_Main boot: Netcode spawn chain,
-                        // Relay/session setup, audio banks) can starve it indefinitely - observed
-                        // as a build frozen at an exact 256-batch boundary. Force the batch to
-                        // integrate synchronously rather than wedging the whole lay.
-                        if (Time.unscaledTime - waitStart > CloneStallSeconds)
-                        {
-                            Debug.LogWarning($"[PrismTrailBuilder] Async clone batch ({count} prisms) not " +
-                                             $"integrated after {CloneStallSeconds:F0}s — forcing WaitForCompletion. " +
-                                             "The engine's async-instantiate budget is being starved by other loading.");
-                            op.WaitForCompletion();
-                            break;
-                        }
-                    }
-
-                    var result = op.Result;
-                    if (result != null && result.Length == count) return result;
-                }
-                catch (Exception ex)
-                {
-                    // Any failure demotes the whole session to the per-item path — the sync
-                    // clone below is the behavioural baseline, so a level still builds.
-                    UseBatchedInstantiate = false;
-                    Debug.LogWarning($"[PrismTrailBuilder] Batched InstantiateAsync failed " +
-                                     $"({ex.GetType().Name}: {ex.Message}) — falling back to per-item cloning.");
-                }
-            }
-
-            if (!parent) return null;
-            var clones = new Prism[count];
-            for (int i = 0; i < count; i++)
-                clones[i] = UnityEngine.Object.Instantiate(prefab, parent);
+            var (clones, batchedFailed) = await EnvironmentPrismPool.GetBatchAsync(
+                prefab, count, parent, UseBatchedInstantiate, CloneStallSeconds);
+            if (batchedFailed) UseBatchedInstantiate = false;
             return clones;
         }
 

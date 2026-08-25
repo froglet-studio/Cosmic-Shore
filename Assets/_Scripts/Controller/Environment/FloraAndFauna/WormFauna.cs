@@ -479,6 +479,9 @@ namespace CosmicShore.Gameplay
         /// Every segment glides to its taper target (continuity): a freshly grown
         /// segment blooms from zero, and the whole chain re-proportions smoothly when
         /// topology changes (growth, splits, end deaths). Early-outs once settled.
+        /// Parent scale is mover-contract (C6 (b), 2026-08-25) — the scale twin of
+        /// <see cref="FollowChain"/>. <c>Update</c> already
+        /// <c>SyncBodyPrismsToIndex</c> after this; no extra notify.
         /// </summary>
         void GlideScales(float dt)
         {

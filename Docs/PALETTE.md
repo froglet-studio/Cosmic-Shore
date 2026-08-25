@@ -63,8 +63,9 @@ debris and read as a plain prism dying. Shielded and super-shielded mass had the
 defect (visible whenever a devastating hit explodes shielded mass rather than shedding
 its shield). The dying prism's tier now travels on the event
 (`PrismEventData.Kind`, stamped in `Prism.Explode` / `Prism.Implode` from
-`PrismKinds.Of` **before** the destruction pass), and both routes — the batched
-pure-entity debris and the pooled fallback — tint from it.
+`PrismKinds.Of` **before** the destruction pass), and the batched pure-entity
+debris path tints from it. Grow (Sparrow ReverseSuction) still uses pooled
+`PrismImplosion.ConfigureForTeam` and is not a death tint.
 
 This costs nothing at runtime: debris colour is already a **per-entity** override
 (`PrismBrightColorOverride` / `PrismDarkColorOverride`) inside the one

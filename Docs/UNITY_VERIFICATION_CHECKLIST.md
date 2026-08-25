@@ -23,6 +23,121 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Prompt 16 — corridor dither 3D-SHARD kernel 6 (2026-08-25)
+
+Authored without a Unity compile. `/verify-unity` did not run. Clang harness (`Tools/Shaders/verify_prism_shard3d.py --check`) is green: LO=0.155 HI=0.915, compiled |coverage−alpha|=0.00783; glancing-plane proof passed. **Look on real mass at speed is unearned — do not Bake as CURRENT.**
+
+**What landed.** Kernel 6 (`PRISM_OCCLUSION_KERNEL_SHARD3D`) in `PrismOcclusionCorridor.hlsl` — Euclidean distance-to-owner fill, same world anchoring + octave ladder as SHATTER3D. Dispatch in both LIVE_TUNING chains. Occlusion Dither Lab popup + dials (cell, no wall) + bake confirm. CDF clang-baked. Shipped kernel remains SHATTER.
+
+**Verify in editor**
+1. FrogletTools > Ecology > Prism Animation > Occlusion Dither Lab. Enable design mode. Select **Shard3D (distance fill)**. Measure should PASS vs Worley (~≤1.35×). The preview is a z=0 slice and cannot see plate-flash — do not treat Measure as the look call.
+2. Drive the running game. Menu_Main freestyle, fly through Lattice/trail mass at speed. SHARD3D should read as volumetric roundish blobs / spherical shells, not cracked walls, and must not plate-flash face-sized plates around the vessel (that is still SHATTER3D).
+3. Shatter3D in the Lab still shows the REJECTED ON LOOK warning; baking either volumetric kernel as CURRENT requires a confirm dialog.
+4. Compile: no errors from `PrismOcclusionDitherLab.cs`. `PRISM_OCCLUSION_LIVE_TUNING` stays 0 in shipped source after you leave the Lab.
+
+**Do not tick this green on Measure alone.**
+
+---
+
+### 🔴 Prompt 15 — ShapeDrawingManager deletion / C15 (2026-08-25)
+
+Authored without a Unity compile. `/verify-unity` did not run. Human: Menu_Main has no missing-script for the deleted GUIDs. Compile is the remaining gate. **Do not claim a compile that did not run.** There is no clock path to playtest — the code is gone.
+
+**What landed.** `ShapeDrawingManager` + exclusive dependents deleted (`ShapeDrawingCrystalManager`, `EndShapeDetailHUD`, `ShapeScoreDisplay`, `ShapeScoreData`). GUID `d375b1129a0a4e29b505296c9e510bdc` was only on its own `.meta`. SOAP events `EventOnShapeGameModeStarted` / `EventOnShapePrismReturnToPool` **kept** on live prism prefabs (inert landmine — they dump every listener to `Prism.ReturnToPool`; **never Raise them**; do not strip the EventListeners). `ShapeDefinition`, spawnable shapes, `ShapeSign` / `ShapeCollisionTrigger`, `SegmentSpawner` kept. Tracker: `Docs/PRISM_ANIMATION.md` C15 / §3.8 #11.
+
+**Verify in editor**
+1. Compile clean. No missing-script on Menu_Main (or any other scene) for the five deleted GUIDs.
+2. Painting toy still paints from `ShapeDefinition` / `PaintingDefinitionSO.sourceShape`. HexRace still uses `SegmentSpawner`.
+3. Do **not** Raise `EventOnShapeGameModeStarted` or `EventOnShapePrismReturnToPool` as a "cleanup" — that would dump every listening prism to the pool.
+
+---
+
+### 🔴 Prompt 14 — C13b environment-lay pooling (2026-08-25)
+
+Authored without a Unity play-test. `/verify-unity` did not compile this change: `unity doctor` succeeds unsandboxed (~70s; CLI 1.0.0-beta.5 on PATH, Hub editors 6000.3.17f1 / 6000.5.9f1) but is not logged in, and pipeline commands against the open Editor have been timing out (`editor_status`, `recompile_status`, `list_tests`). A restricted shell reports `The required instruction sets are not supported by the current CPU`. Human look-verify is the remaining gate. **Do not claim a compile that did not run.**
+
+**What landed.** Dedicated unbounded prefab-keyed `EnvironmentPrismPool`. `PrismTrailBuilder.LayOne` / `CloneBatchAsync` pull from it. `PrepareForLay` **snaps Blue** materials (`ResetToNeutralForReuse` + `BindMaterialsImmediate`) so `ChangeTeam` is a real Blue→domain clock lerp — a raw Instantiate cloned the prefab already wearing the final domain material (Jade→Jade no-op). Flora HealthPrism Instantiates folded (`PhyllotacticFlora` / `BranchingFlora` / `AssembledFlora`). Cell drain: issued prisms `TryRelease`; remainder Destroy 500/frame. **Never** wires the prism pool-return delegate (Wanderway would be vacuumed). Named, not folded: `Boid.cs`, `SpawnableBase` non-prism `leafPrefab`, `SpawnableCord`. Structural gate: `EnvironmentPrismPoolTests`.
+
+**Verify in editor**
+1. Compile clean. Edit-mode: `EnvironmentPrismPoolTests`. Zero `[PrismClock]` regressions on an environment lay.
+2. **Freestyle cell environment.** Load a heavy authored world (Cell Selector). Prisms spawn `Domains.Blue` and **repaint to domain on the clock** (visible Blue→Jade/Ruby/Gold lerp). They must not appear already in the final domain material from frame 0.
+3. **Wanderway belt.** Fly the conveyor toy. Conserved stock is **unchanged** across a Cell Selector swap — the belt is not suctioned/TryReleased with the authored environment.
+4. **Profiler.** Environment-lay allocation churn drops vs a raw-Instantiate baseline (Get reuses inactive after the first cell-swap return; first populate of Atlantis / Wanderway still Instantiates the shortfall — that is expected).
+5. **Flora leaves.** A growing plant's new HealthPrisms also spawn Blue and clock-repaint. Plant death leaves the skeleton as cell mass (no TryRelease on wither).
+
+---
+
+### 🔴 Prompt 9b — D4 retire pooled death spawn (2026-08-25)
+
+Authored without a Unity play-test. `/verify-unity` did not compile this change: `unity doctor` succeeds unsandboxed (~70s; CLI 1.0.0-beta.5 on PATH, Hub editors 6000.3.17f1 / 6000.5.9f1) but is not logged in, and pipeline commands against the open Editor have been timing out (`editor_status`, `recompile_status`, `list_tests`). A restricted shell reports `The required instruction sets are not supported by the current CPU`. Human look-verify is the remaining gate. **Do not claim a compile that did not run.**
+
+**What landed.** Death pooling retired; Grow kept. Factory `SpawnExplosion` / `SpawnImplosion` are batch-only (`PrismDebris.TryRequest*`). A declined batch **warns once and returns null** — no pooled death GameObject. Authored config stays on the pool prefabs. Explosion pool is never Get()d and is not prewarmed. Implosion pool prewarm 64 → 12. `PrismType.Grow` / `StartGrow` / `OnGrowCompleted` stay on pooled `PrismImplosion` (Sparrow ReverseSuction). `GameLoadSampler`: explosions = `PrismDebris.LiveDebrisCount`; implosions = `LiveImplosionDebrisCount` + `PrismImplosion.EnabledInstances`.
+
+**Verify in editor**
+1. Compile clean. Zero `[PrismClock]` regressions on a blast. No pooled `PrismExplosion` GameObject appears in the Hierarchy on a detonation.
+2. **Death still draws.** AOE explosion debris and fauna-consumption suction still animate on the batched carrier. Failed batch: Console has one `[PrismFactory] Batched … declined` error, no pooled spawn.
+3. **Sparrow turret ReverseSuction.** Grow still Get()s `implosionPool`, runs `StartGrow`, and fires `OnGrowCompleted` (real prism appears after the reverse suction). Do **not** treat a missing Grow visual as a D4 success — that would be a regression.
+4. Explosion pool does not prewarm 64 at scene load. Implosion prewarm is ~12.
+5. GameLoadSampler / harness HUD: `exp` counts batched death only; `imp` includes batched suction **and** live Grow instances.
+
+---
+
+### 🔴 Prompt 3 — C6 parent-scale as mover-contract (2026-08-25)
+
+Authored without a Unity play-test (one-line delete + comments + docs). Human look-verify is the remaining gate. **Do not claim this play-test passed.**
+
+**What landed.** Ruling **(b)**: creature-root / worm-segment scale is mover-contract, same class as locomotion. `Fauna.GrowToScale` still lerps `localScale` (continuity). The redundant `NotifyBodyPrismsMoved()` inside that lerp is deleted — `Boid` / `LightFauna` / `WormFauna` already sync every `Update`. `WormFauna.GlideScales` was already on that path. (a) — snap root final + per-prism grow-clock stamps — was rejected. Colliders ride the live transform (zero new colliders).
+
+**Verify in editor**
+1. Compile clean. No new tests (one-line delete). Zero `[PrismClock]` errors on a live cell.
+2. **Squirrel Space-5 joust growth.** Body bloom is smooth (root lerp, not a pop). Profiler: locomotion's per-frame prism-entity writes remain; `GrowToScale` must **not** add a second `NotifyBodyPrismsMoved` / `SyncRenderTransform` storm on top of `Boid`/`LightFauna` Update.
+3. **Worm-colony glide.** Segment taper on growth/split/death is smooth. Same profiler read: `Update` → `GlideScales` then `SyncBodyPrismsToIndex` is the one sync, not two.
+
+---
+
+### 🔴 Prompt 13 — C11 spindle `_DeathAnimation` fade on the clock (2026-08-25)
+
+Authored without a Unity play-test (session wired graphs + C# + tests; `wire_prism_spindle_death_clock.py --check` green). Human look-verify is the remaining gate. **Do not claim this play-test passed.**
+
+**What landed.** Spindle evaporate / condense is a one-shot stamp. `PrismDeathClock_float` spliced into SpindleGraph + AnimatedSpindleGraph only (not BlockGraph). Stamp `_DeathStartTime` / `_DeathDuration` / `_DeathDirection` once via MPB; `PrismTimerManager` settle; `SetPropertyBlock(null)` at settle. Ordered wither is `ForceWither(i * interval)` StartTime offsets after a one-time distance sort. `LeaveSkeleton()` still runs **before** any spindle stamp. Heart release still waits until the wither has reached the core (`count × interval`). **SRP honesty:** a renderer WITH an MPB is still excluded from the SRP Batcher during the ~1s fade; this recovers zero per-frame CPU and the Batcher **after** settle.
+
+**Verify in editor**
+1. Compile clean. Edit-mode: `PrismSpindleDeathClockTests`. Validate Clock Wiring does **not** need to name spindle CFs — python `--check` owns them. Do not dump `PrismDeathClock` onto BlockGraph Specs.
+2. **Starve a creature.** Spindles evaporate extremity-first (farthest-from-heart before the core). Smooth; body prisms stay as a skeleton. Crystal becomes collectable when the wither reaches the core. Zero per-frame spindle writes in the profiler. Zero `[PrismClock]` `_DeathStartTime` errors.
+3. **Joust a creature.** Same geometry backwards (heart-outward). Crystal already freed at strike. Smooth; skeleton remains.
+
+---
+
+### 🔴 Prompt 4 — C9 cell-swap world suction on the clock (2026-08-25)
+
+Authored without a Unity play-test (session wired graphs + C# + tests; `wire_prism_suction_clock.py --check` green). Human look-verify is the remaining gate.
+
+**What landed.** True suction (whole-prism lerp toward the cell centre) on live prisms. `PrismSuctionConverge_float` spliced into BlockGraph + ExplodingBlockGraph; four `PrismSuction*Override` + `PrismImplosionLocationOverride` on the Prism entity prototype; `Cell.StampRetiredWorldSuction` → `Prism.StampSuctionToward`. Root `localScale` wait kept for membrane / nucleus / cytoplasm / lifeform spindles. Drain 500/frame unchanged. SuctionGraph still SequentialFaceConverger (fauna consumption) — no Converge there.
+
+**Auto-Wire property counts** will rise vs Prompt 8's snapshot: **BlockGraph 24 / ExplodingBlockGraph 27 / SuctionGraph 5** (live graphs gain the four `_Suction*` floats + `_Location`). Prompt 8's 19 / 22 / 5 is a historical snapshot of that day's verification, not a regression.
+
+**Verify in editor**
+1. Compile clean. Edit-mode: `PrismClockWiringTests` + `PrismCellSwapSuctionTests`.
+2. FrogletTools > Ecology > Prism Animation > **Validate Clock Wiring** — ALL PRESENT; live graphs name `PrismSuctionClock` + `PrismSuctionConverge`; SuctionGraph has Clock and must NOT have Converge.
+3. Auto-Wire Clock Properties — BlockGraph 24 / ExplodingBlockGraph 27 / SuctionGraph 5 already present. No unexpected graph writes.
+4. **Cell Selector** (Menu_Main freestyle): swap cells. Old world converges on the cell centre behind the veil (does not snap, does not collapse in place). Zero `[PrismClock]` errors. Membrane / nucleus / cytoplasm still suction with the root.
+
+---
+
+### 🟡 Prompt 8 — clock validator families + Auto-Wire `_ShieldMorph*` + SuctionGraph corridor ruling (2026-08-25)
+
+C# + tests + docs only (no `.shadergraph` edits). Human-verified in-editor 2026-08-25: Validate Clock Wiring + Auto-Wire. Edit-mode NUnit still unrun (Unity CLI pipeline was unresponsive in-session).
+
+**What landed.** (1) `PrismClockWiringValidator.Specs` names `PrismErosionFade` / `PrismBackFaceFade` / `PrismDestructionSight` + the five unexposed `_PrismSight*` globals + load-bearing edges; Validate Clock Wiring ANDs `PrismOcclusionWiringValidator.CheckGraphWiring` (corridor stays one SoT). (2) `PrismClockGraphWirer` stamps `_ShieldMorph*` on both live graphs and declares node splices python-owned. (3) SuctionGraph is a named **live** corridor exclusion (`KnownCorridorExcludedGraphs`), distinct from dead `KnownLegacyPrismPrefabs`.
+
+**Verify in editor**
+1. ✅ Compile clean (validator ran from the menu).
+2. Edit-mode: `PrismClockWiringTests` + `PrismOcclusionCoverageTests` (incl. `SuctionGraph_IsANamedCorridorExclusion_NotASilentOmission`).
+3. ✅ FrogletTools > Ecology > Prism Animation > **Validate Clock Wiring** — ALL PRESENT; corridor census ANDed; SuctionGraph named as live exclusion; 22 materials declare clock props; instanced rendering ON.
+4. ✅ Auto-Wire Clock Properties — BlockGraph 19 / ExplodingBlockGraph 22 / SuctionGraph 5 already present (incl. `_ShieldMorph*`); node splices declared python-owned. No graph writes.
+
+---
+
 ### 🔴 Flora — TIME breeds faster, the second elemental law (`claude/flora-reproduction-balance-y9gaij`, 2026-08-24)
 
 Authored without a Unity compile or play-test (remote session, no editor, no `unity` CLI binary in
