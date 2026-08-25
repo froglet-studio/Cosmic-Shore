@@ -16,7 +16,7 @@ Maintained by the `ui-redesign-tracker` skill. Do not hand-edit the status table
 | T2 | Finish canvas resolution migration | TODO | — | | | |
 | T3 | Unify GameCanvas fork | TODO | T2 | | | |
 | T4 | UIThemeSO + literal inventory | TODO | — | | | |
-| T5 | Download & install TMP fonts | IN PROGRESS | — | `claude/tmp-font-assets-setup-9z96he` | | |
+| T5 | Download & install TMP fonts | NEEDS DESIGN | — | `claude/tmp-font-assets-setup-9z96he` | #797 | |
 | T6 | TMP Style Sheet + Aldrich audit | TODO | T5 | | | |
 | T7 | Component sprite kit | TODO | — | | | |
 
@@ -197,7 +197,7 @@ Acceptance criteria:
 - [x] **Not** placed in `Assets/Unity Assests/TextMesh Pro/`
 - [x] `OFL.txt` shipped per family; credits attribution added
 - [x] TMP font assets generated: SDFAA, sampling 90, padding 9, atlas 1024²
-- [x] Charset: ASCII + Latin-1 Supplement + `× · — – … ← → ↑ ↓ + −` (§4 **v0.2**)
+- [x] Charset: ASCII + Latin-1 Supplement + `× · — – … ← → ↑ ↓ + −` *(pre-v0.3 §4)*
 - [x] Multi Atlas Textures on; dynamic overflow fallback set
 - [x] Fallback chain: Space Grotesk → Chakra Petch → Liberation Sans
 - [x] TMP Settings default font asset = Space Grotesk 400
@@ -215,6 +215,46 @@ Acceptance criteria:
 > upright Chakra Petch weights stand. **T5 gains one output:** report the widest digit advance for
 > **both Aldrich and Chakra Petch SemiBold**, since v0.3.1 scopes `<mspace>` per face rather than
 > to Aldrich alone (queue #9). Status and criteria are left as written pending that pass.
+
+> **This branch (#797) was built against the pre-v0.3 §4 and predates the re-scope above.** The
+> ticks are factually accurate about what is installed; they are *not* a claim that T5 is done
+> under v0.3. Status is **NEEDS DESIGN** pending one scope decision — see *Awaiting decision*.
+
+**Delivered and still valid under v0.3:**
+- **Widest digit advance per face — the `X` in `<mspace=Xem>`** (the one output v0.3.1 newly asks
+  T5 for, queue #9). Measured from `hmtx` ÷ `unitsPerEm`:
+
+  | Face | upem | Widest digit | `<mspace>` |
+  |---|---|---|---|
+  | Aldrich | 2048 | `0` = 1495 | **`0.730em`** |
+  | Chakra Petch SemiBold | 1000 | `0` = 644 | **`0.644em`** |
+
+  Both faces are proportional, so `<mspace>` is genuinely required rather than belt-and-braces —
+  and Aldrich is the worse offender: its `1` is 717 units against its `0`'s 1495, so an Aldrich
+  digit can change width by **2.09×** as a counter ticks. Chakra Petch SemiBold's spread is 1.72×.
+  Confirms `X` must be per-face: one global value would over-space one of them by ~13%.
+- **Chakra Petch 400/500/600/700** in `Assets/_Graphics/Fonts/ChakraPetch/` with `OFL.txt` — v0.3
+  keeps Chakra Petch (SemiBold for buttons) and the re-scope note keeps all four upright weights.
+- **The vendored `ChakraPetch-Regular` duplicate is deleted** from `Assets/Unity Assests/TextMesh
+  Pro/` and its 180 references repointed to project space. Independent of which families ship;
+  §4 has warned about that folder since v0.1.
+- **The generator** (`Tools/Build/build_tmp_font_assets.py`) and its donor fixture. Family-agnostic:
+  re-pointing `FAMILIES` at a different set is a few lines, so it serves v0.3's set as well.
+- `Docs/Legal/THIRD_PARTY_NOTICES.md`, the attribution register.
+
+**Awaiting decision (blocks status):**
+1. **Space Grotesk ×4 and JetBrains Mono ×3 are cancelled by v0.3 §0-C but are installed on this
+   branch** (7 assets, ~15 MB, plus TTFs and two `OFL.txt`). Strip them from the branch, or land
+   them and remove them separately?
+2. **`TMP Settings` currently defaults to `SpaceGrotesk-Regular SDF`, which contradicts v0.3.**
+   Before this branch it was Liberation Sans. Under v0.3 the default should almost certainly be
+   **Aldrich** — but naming it is T6's call (*TMP Style Sheet + Aldrich audit*), so this branch
+   should either revert to Liberation Sans or set Aldrich on T6's behalf. The global fallback tail
+   (Liberation Sans → dynamic overflow) is unaffected either way and should stay.
+3. The type-scale render targets the pre-v0.3 scale (Chakra Petch / Space Grotesk / JetBrains Mono
+   roles). v0.3's scale is Aldrich-based with a Mobile @800 column, so the sheet needs re-rendering
+   against the new table once (1) and (2) are settled — Aldrich is already in the repo, so the
+   renderer needs no new capability.
 
 **Deliverables:**
 - 11 static TTFs + 3 `OFL.txt` under `Assets/_Graphics/Fonts/{ChakraPetch,SpaceGrotesk,JetBrainsMono}/`.
