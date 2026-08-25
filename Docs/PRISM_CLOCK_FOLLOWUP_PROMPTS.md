@@ -378,8 +378,9 @@ branches and both non-obvious:
 > `CloakSeedWallActionSO.cs`, `CloakSeedWallActionExecutor.cs` and
 > `_SO_Assets/VesselActions/Serpent/CloakSeedWallAction.asset` are all wired into
 > `Serpent.prefab`, and the executor (`:387`) is the project's **only live
-> `IsTransparent` producer** — which the last outstanding checklist Phase-3 test
-> depends on. Deleting it would make that test unrunnable.
+> `IsTransparent` producer** — which the last outstanding checklist **Phase 3**
+> transparent-steal test depends on (`PRISM_CLOCK_WIRING_CHECKLIST.md` § Phase 3).
+> Deleting it would make that test unrunnable.
 >
 > **(4) `Prism.HoldColliderAtFullSize` — the premise "colliders are final-at-start
 > now" is false on this very path.** ⚠ `HoldColliderAtFullSizeCoroutine`

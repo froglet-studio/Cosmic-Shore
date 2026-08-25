@@ -250,12 +250,12 @@ namespace CosmicShore.Utility
             s_impMesh = meshFilter.sharedMesh;
             s_impMaterial = renderer.sharedMaterial;
             s_impLayer = prefab.gameObject.layer;
-            // NOTE: the prefab's growDelay is deliberately NOT read. It belongs to
-            // StartGrow (the reverse suction), and PrismType.Grow has no producer
-            // anywhere in the project — PrismFactory.SpawnGrow is unreachable. Every
+            // NOTE: the prefab's growDelay is deliberately NOT read for batched
+            // implosion debris. It belongs to StartGrow (reverse suction) — used by
+            // Sparrow turret ReverseSuction (`PrismType.Grow`, 2026-08-09). Every
             // batched suction is an implosion, which starts immediately (delay 0),
-            // exactly like StartImplosion. The stamp still carries a GrowDelay field
-            // so the shader contract stays complete if a grow producer ever lands.
+            // exactly like StartImplosion. The stamp still carries GrowDelay so the
+            // shader contract stays complete for StartGrow on the pooled fallback path.
             s_impDuration = prefab.ImplosionDuration;
             s_impSourcePrefab = prefab;
             s_impConfigured = true;

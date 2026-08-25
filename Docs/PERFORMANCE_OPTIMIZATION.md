@@ -944,9 +944,7 @@ fix spreads or de-allocates the same work.
   `PoolMiss.<prefab>` (on-demand Get miss = buffer empty on the caller's
   frame), `PoolActivate.<prefab>` (pooled Get `SetActive(true)` — first-Awake
   vs OnEnable attribution).
-- **DiagnosticsHUD**: "Animators" section shows `active / registered` per
-  animation manager, live (updates only when the count changes — no GC).
-  Console commands: `prisms N` / `prisms off` / `prismcolors`.
+- **Console commands**: `prisms N` / `prisms off` / `prismcolors`.
 - **Collider-LOD telemetry**: `PrismColliderLodManager.LastNearCount` /
   `LastLiveCount`.
 - **Shell-contact tier markers**: `ShellContact.Build` (per-frame probe

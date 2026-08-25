@@ -52,8 +52,10 @@ namespace CosmicShore.Utility
         /// <summary>Authored suction length — PrismDebris reads it off the pool prefab
         /// so the batched entity path animates for exactly as long as the pooled one
         /// (same reasoning as PrismExplosion.MinDebrisSpeed/MaxDebrisSpeed). growDelay
-        /// is deliberately not exposed: it belongs to StartGrow, whose producer
-        /// (PrismType.Grow) does not exist, so no batched effect ever delays.</summary>
+        /// is deliberately not exposed on the pooled component: it belongs to StartGrow
+        /// (reverse suction), which Sparrow turret ReverseSuction uses via PrismType.Grow
+        /// (2026-08-09). Batched implosion debris never delays; the pooled StartGrow
+        /// fallback can.</summary>
         public float ImplosionDuration => implosionDuration;
 
         internal bool IsActive { get; private set; }

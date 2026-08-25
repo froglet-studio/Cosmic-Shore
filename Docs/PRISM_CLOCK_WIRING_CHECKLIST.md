@@ -1,8 +1,9 @@
 # Prism Clock Wiring — In-Editor Checklist
 
 Companion to `Docs/PRISM_ANIMATION.md` (§4.4, §6). **STRICT MODE is live: no legacy
-fallback.** All four wiring phases below are ✅ wired programmatically in-branch —
-what remains is in-editor verification (Phase 5) and the deletion pass (Phase 6).
+fallback.** All four wiring phases below are ✅ wired programmatically in-branch.
+Phase 6 / D2 ✅ programmatically complete (including PhaseThresholds re-baseline).
+**Live remainder:** Phase 5 (D3 verification), Phase 8/9/10 playtests — see §6.
 If any graph reverts to unwired, prisms SNAP to end states and the console logs
 one `[PrismClock]` error per unwired material.
 
@@ -121,6 +122,10 @@ steal/repaint instead of snapping, and the last expected one-time
 repaint on one) — the recolor fades over ~0.8s like the opaque prisms do, with
 zero `[PrismClock]` errors.
 
+**Cross-ref — do not delete the Serpent cloak family (Prompt 7 item (3)).** This
+test is the only live producer of `IsTransparent` prisms (`CloakSeedWallActionExecutor.cs:387`).
+See `Docs/PRISM_CLOCK_FOLLOWUP_PROMPTS.md` Prompt 7 §(3).
+
 **UN-DEFERRED 2026-08-04, and re-pointed.** This test used to wait on the
 camera↔vessel occlusion system. That system is restored (C1, `Docs/PRISM_ANIMATION.md`
 §4.7) — but it is now a **shader-side fade off global uniforms** and deliberately
@@ -226,12 +231,10 @@ exact broken gate (`Prism.DescribeRenderEntityState`), so paste it verbatim.
 - [ ] **Validate Clock Wiring** → `RESULT: ✅ ALL REQUIRED WIRING PRESENT`
 - [ ] Full play session (menu freestyle + one HexRace) with **zero `[PrismClock]`
       errors**
-- [ ] DiagnosticsHUD Animators: `PrismScaleManager` / `MaterialStateManager` **0
-      active** everywhere, under any load
 - [ ] A just-laid ring collides at full size while still visibly blooming
 - [ ] Hitstop / pause freezes prism animation (scaled clock — expected)
 
-## Phase 6 — Deletion pass (D2) + chores — ✅ DONE PROGRAMMATICALLY (one item left)
+## Phase 6 — Deletion pass (D2) + chores — ✅ DONE PROGRAMMATICALLY
 
 Executed in-branch 2026-08-02 (every removal machine-verified reference-free
 across code AND scenes/prefabs before deletion):
@@ -529,7 +532,7 @@ prism really is super-shielded (`PrismStateManager.CurrentState == SuperShielded
 | Debris flies in the wrong direction | A Direction-mode Transform node in the velocity chain — `TransformWorldToObjectDir` NORMALIZES (magnitude gone, skewed by non-uniform scale) | The conversion lives inside `PrismExplosionClock`'s HLSL (raw unnormalized `GetWorldToObjectMatrix()` multiply); feed it the world-space `_Velocity` directly |
 | Debris vanishes mid-flight / draws when it shouldn't | `RenderBounds` still the unexploded box | Stamp site must call `ResetBoundsToMesh` + `ExpandBoundsForClockAnimation` (any vertex-displacing clock animation needs this) |
 | `[PrismClock] ... no companion render entity` | Instanced rendering off / no ECS world | `PrismRenderConfig` ▸ Use Instanced Rendering ON |
-| DiagnosticsHUD shows active CPU animators | Something re-engaged a retired manager | Law regression — find the caller; it should not exist |
+| Something re-engaged retired CPU animation managers | `PrismScaleManager` / `MaterialStateManager` / `AdaptiveAnimationManager` were deleted (D2, 2026-08-02) | Law regression — find the caller; those classes must not return |
 | Shield appears full-size with no bloom | `_ShieldMorph*` missing on the material's graph | `python3 Tools/Shaders/wire_prism_shield_morph.py`; reimport |
 | A prism collapses toward its own origin | A shield-morph stamp survived onto the prism's BOX mesh (no centroids in UV1) | `Disengage` / `Prism.Initialize` must reach `ClearShieldMorphStamp` — check the clear path, not the shader |
 | Shields bloom but shatter shows nothing | Batched shatter refused (service off / no world) — logged once as `shieldShatter` | Same fix as any missing companion entity: instanced rendering ON |
