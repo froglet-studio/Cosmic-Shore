@@ -1712,12 +1712,39 @@ With no pair supplied (the standalone rig, the ContextMenu toggles — where not
 repaints), `RequestShatter` still reads the renderer, which is correct there. `Prism.Damage`'s shield-shed branch
 forwards its impact vector and true-velocity ceiling — `DeactivateShields(impactVector,
 debrisSpeedLimit)` — so armour knocked off a prism flies on precisely the terms the prism
-itself would have; an impactless disengage (a shield timer, an arena teardown, a
-herbivore stripping armour, `Prism.Consume`) degrades through the same
-`GeometryUtils.ClampMagnitude` zero-vector fallback to the same quiet up·minSpeed puff an
-impactless prism death gets. Nothing is authored per shield any more: no shatter
+itself would have; an impactless disengage (an arena teardown, a herbivore stripping
+armour, `Prism.Consume`) degrades through the same `GeometryUtils.ClampMagnitude`
+zero-vector fallback to the same quiet up·minSpeed puff an impactless prism death gets.
+Nothing is authored per shield any more: no shatter
 duration, no fly-out offset, no speed cap — the base effect owns all of it, and the two
 death visuals cannot drift apart because they are one visual.
+
+**A TIMED pop is the one disengage with no breaking force, and it carries HALF the blow
+that shielded it** (2026-08-24). The temporary shield exists to stop a blast reading as
+clipping: an explosion meeting its own domain's mass shields the prism instead of passing
+through it, so the hit reads as ACCEPTED. The pop that ends that shield therefore has to
+read as a pop — and it is exactly the case with no impact vector to forward, so on the
+zero-vector fallback above every shielded prism in a blast drifted its shards straight up
+at `minSpeed`, in lockstep, a beat after the explosion. Both explosion paths now hand the
+shield the blow's magnitude and ceiling as they raise it — `ExplosionImpactor.
+ExecuteCommonPrismCommands` and its Burst twin `PrismSpatialIndex.ResolveExplosionHit`,
+both as `Impulse.Speed × Impulse.Inertia` (`CalculateImpactVector` is `Impulse.Along(unit)`,
+so the two are equal by construction and neither spends a root) — `PrismStateManager` holds
+them for the life of the shield, and `ExecuteTimerDeactivation` sheds along
+`Random.onUnitSphere × (speed × 0.5)` with the blast's own `DebrisSpeedLimit`.
+
+Three things about that are load-bearing. **Half**, because the blow was absorbed: the pop
+is an echo of the blast, not the whole blast arriving late. **The ceiling has to ride
+along**, or the halving never reaches the screen — every AOE impulse sits far above the
+explosion prefab's authored 33.33 u/s clamp (§4.6), so full and half both saturate to one
+speed, the same trap `ExplosionImpulse` exists to prevent. **The DIRECTION is randomized
+rather than remembered**, because by the time the timer fires the impact vector's direction
+is a lie: re-using it fans a whole blast's shields outward in one coherent sheet with no
+visible cause. A shield raised with no blow behind it (an ability, a skim, a spawner) still
+pops at the debris band's authored `minSpeed`, now in a random direction. Cost is two floats
+of state on `PrismStateManager` and one `Random.onUnitSphere` at the pop — the shed itself
+is unchanged, still ONE clock-stamped batched debris entity on `PrismTimerManager`'s single
+scheduled swap.
 
 **The port lives in the MESH, never in the pipeline.** ExplodingBlockGraph's vertex chain
 and fade are pure per-vertex functions of mesh attributes, so making a new shape explode
