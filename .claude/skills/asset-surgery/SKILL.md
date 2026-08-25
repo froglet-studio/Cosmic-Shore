@@ -814,6 +814,59 @@ Rules that fall out:
   not tuned. Get the pivot wrong — rotate about the chain point instead of the shared root
   tip — and every hinge overlaps, at a rate that looks like a global spacing problem.
 
+### Technique: a synthetic CALL-SITE PROOF for files too dependency-heavy to compile
+
+A change to a shared helper's signature has to be checked at its callers, and the callers are
+often the very files whose dependency chain makes them unstubbable (a toy that pulls in the whole
+toy framework, UniTask, Netcode). Stubbing all of that to type-check three lines is the wrong
+trade. Instead write a small synthetic file into the harness that REPRODUCES the caller's argument
+shapes against the real signatures:
+
+```csharp
+internal static class _CallSiteProof
+{
+    static readonly List<Transform> HullBodies = new();   // the real field's type
+    internal static void RealCallSite(ToyContext ctx, VesselClassType v, float r)
+    {
+        if (Roster.TryBuildLiveHull(ctx, v, r, out var model)) HullBodies.Add(model.transform);
+        foreach (var body in HullBodies) Roster.ApplyDomain(ctx, body, Color.white);
+    }
+}
+```
+
+It proves the thing actually at risk — that the overloads still bind for those argument types —
+without pretending to compile the caller. Do the same for every PRE-EXISTING overload shape you
+preserved when adding a new one: three one-line calls prove you did not silently break the two
+other files that use the old forms. Pair it with a CS1xxx-only syntax check of the real callers
+(compile them alone, filter for `error CS1[0-9]{3}`; the flood of CS0246 is just missing Unity).
+
+### Trap: an HLSL→C++ transform written per-SIGNATURE stops translating when the file grows
+
+The clang harness (§4.5c) works by applying a short list of mechanical substitutions to the
+shipped shader. It is tempting to write them as exact strings — `src.replace("out float3 Color",
+"float3 &Color")`. That is a landmine: the day the file gains a SECOND `out` parameter, the
+substitution silently does not apply to it, and the harness fails to compile for a reason that
+looks like a shim gap. Write the substitutions as patterns over the LANGUAGE feature, not over the
+current text (`re.sub(r"\bout (float3|float2|float) ", r"\1 &", src)`), and keep the guard-rail
+loop that asserts every function name you expect is still present in the file.
+
+Two more shim gaps from the same family, both of which read as "my code is broken": HLSL's `max`
+and `min` promote across float and double literals, so `max(x, 1.0)` is legal HLSL and will not
+bind to `std::max`; and swizzles you have not shimmed (`.zyx`) are member-access errors, not
+maths errors. Add float/double overloads and accessor methods rather than editing the shipped file
+to suit the harness.
+
+### Trap: a source-census needle counts itself, and matches its own PREFIXES
+
+A gate that enforces "this call has exactly one call site" is written by grepping the codebase for
+`"Namespace.Method"` — and the file that DECLARES that string as a constant is itself a hit, so
+the gate reports two sites and fails on a correct tree forever. Adding the opening parenthesis
+(`"Namespace.Method("`) fixes it, and does a second job that is easy to lose: it keeps the census
+off any longer symbol that starts with the same name. One session added a deliberate sibling
+(`Stamp` for vessels, `StampDisplayModel` for display-only props) and the parenthesis was the only
+thing separating them — so the sibling got its own test asserting it is NOT counted, which is what
+fails if someone later renames the primary to a prefix of something else.
+
 ### Trap: a stub-harness error is a STUB GAP until proven otherwise — but not always
 
 Running the shipped file against transcribed stubs means every compile error has two possible
