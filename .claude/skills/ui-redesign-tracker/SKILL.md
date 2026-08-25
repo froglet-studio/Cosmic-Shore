@@ -32,6 +32,15 @@ Read the task's criteria from the tracker and check each one against the actual 
 
 ### 3. Update the tracker
 
+**Touch only this task's own section and its own row in the status table.** Parallel branches
+edit this file at the same time, so any change outside those two places — reformatting, reordering,
+reflowing, re-wrapping, tidying another task's checkboxes, renumbering the queue — turns a one-line
+conflict into a manual merge. Leave whitespace, column widths and line breaks exactly as found, even
+where they are ugly. If another task's content looks wrong, say so in the report; do not fix it here.
+
+The one exception is step 4: unblocking a dependent means writing that task's **Status cell and
+nothing else** — not its criteria, not its notes, not its row's spacing.
+
 - Set the status. `DONE` only when every criterion is `[x]`, or every remaining one is `[~]` and the human has confirmed them.
 - Fill in branch, PR number, and completion date.
 - **Deliverables** — what actually landed, with paths.
