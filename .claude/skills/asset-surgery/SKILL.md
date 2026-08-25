@@ -1,6 +1,6 @@
 ---
 name: asset-surgery
-description: Do "editor-only" Unity work programmatically instead of handing the human an in-editor checklist - ShaderGraph node wiring via JSON synthesis, prefab/scene YAML component surgery, SO asset re-authoring, and REAL compilation of the C#/HLSL you are about to commit (dotnet-sdk/Roslyn + clang are installable here - see 4 and 4.5c; do not settle for inspection). Use whenever the plan is drifting toward "I'll prepare instructions and you do it in the editor", whenever a task touches .shadergraph/.prefab/.unity/.asset files directly, or when the human says some flavor of "you can do this" / "write a tool for it". The human's editor time is for PLAY TESTING and things that genuinely need the running editor - not for mechanical asset edits you can machine-validate.
+description: Do "editor-only" Unity work programmatically instead of handing the human an in-editor checklist - ShaderGraph node wiring via JSON synthesis, prefab/scene YAML component surgery, SO asset re-authoring, binary FBX read AND write (edit a model in place, keeping its guid and fileID, validated with assimp - see 4.8/4.8c), and REAL compilation of the C#/HLSL you are about to commit (dotnet-sdk/Roslyn + clang are installable here - see 4 and 4.5c; do not settle for inspection). Use whenever the plan is drifting toward "I'll prepare instructions and you do it in the editor", whenever a task touches .shadergraph/.prefab/.unity/.asset/.fbx files directly, or when the human says some flavor of "you can do this" / "write a tool for it". The human's editor time is for PLAY TESTING and things that genuinely need the running editor - not for mechanical asset edits you can machine-validate.
 ---
 
 # Asset Surgery — do it programmatically, prove it before writing
@@ -1317,6 +1317,61 @@ entirely dead.
   affected content too — 21 species assets per element turned "two crystals look odd" into "half
   the ecosystem", which is what set the priority.
 
+## 4.8c Technique: binary FBX SURGERY — edit an artist's model without a DCC
+
+§4.8 reads an FBX. The same parser, given a WRITER, edits one: replace the geometry arrays,
+delete a subtree, and write the file back. That turns "we need the artist to re-export" into a
+tool run — and, crucially, it lets an edit keep the file's IDENTITY, which is what makes the
+change reference-free.
+
+**Why in place beats a new file.** Unity's `fileIdsGeneration: 2` derives a sub-asset's fileID
+from its TYPE and NAME, not its ordinal. Keep the geometry's name and you keep its fileID; keep
+the file and you keep its guid. Then the prefab that references the mesh, the material array, the
+submesh order and the import settings all keep working with **no edit at all** — the whole change
+is one binary. (A subdivision that went out as `… Subdivided.fbx` would have needed a prefab
+re-point and a bet on the fileID hash. Reference stability beats tooling elegance.)
+
+**The codec** (`Tools/Build/fbx_binary.py` is the worked example):
+
+- Keep property values as `(type_char, value)` pairs. A parser that returns bare Python objects
+  loses the distinction between `D`/`F` and `L`/`I`, and a writer that guesses wrong produces a
+  file that reads fine in YOUR parser and is rejected downstream.
+- Node record (< 7500): `endOffset u32, numProperties u32, propertyListLen u32, nameLen u8, name,
+  properties…, [children…, 13-byte NULL record]`. `endOffset` is ABSOLUTE, so serialization is a
+  recursion that needs the node's own file offset passed in.
+- Write arrays with `encoding=1` (zlib) to match what exports do; `encoding=0` is equally legal
+  and reads back identically, but it inflated one 58 KB file to 646 KB.
+- Copy the FOOTER verbatim (everything after the top-level NULL record). Nothing in the Unity or
+  assimp path validates its scrambled id, and reproducing it is pure risk.
+- **Prove the round trip before you use the writer for anything.** Read → write → read, and
+  compare full property VALUES (not just node names and lengths). Then run an independent reader
+  over both — see below. A round trip that survives both is a writer you can trust.
+
+**Validate with `assimp`, the model-format analogue of §4.5c's clang.**
+
+```sh
+apt-get install -y assimp-utils            # available in this container
+assimp info "Assets/_Models/Thing.fbx"     # meshes, submesh ORDER, verts, faces, materials,
+                                           # animations, bounds — from a real FBX reader
+```
+
+Diff the report for the original against the report for your output. It catches what your own
+parser structurally cannot: your parser agrees with itself by construction. It confirmed a
+subdivided missile kept its 2 submeshes IN THE SAME ORDER (so the prefab's material array still
+lined up), its 2 materials, its animation and its bounds — and it caught the trap below, which no
+amount of re-reading the tree would have.
+
+**Editing geometry**: rewrite `Vertices`, `PolygonVertexIndex` (last index of each polygon is
+`~i`), `Edges`, and the `LayerElement*` children. Mind the domains: `LayerElementMaterial` is
+usually `ByPolygon`, normals/UVs `ByPolygonVertex` + `IndexToDirect`. **Read UVs in the CORNER
+domain, never collapsed to per-vertex** — a UV seam IS one control point carrying different UVs
+in different faces, and flattening welds it shut.
+
+**Deleting a subtree** (blend shapes, a deformer, a camera): remove the `Objects` children, then
+remove every `Connections` record whose src OR dst is a doomed id, then fix the `Definitions`
+`ObjectType → Count` rows. Assert afterwards that no connection references a missing object —
+that one check is worth more than re-reading the diff.
+
 ## 4.9 Technique: answering "does every X actually carry Y?" THROUGH prefab nesting
 
 Origin: the crystal-capture rework (2026-08). The branch's whole payoff was routed through
@@ -1422,6 +1477,39 @@ signature of one prefab instanced in all of them, and it is the evidence.
   the full parameter space (grid + refinement) and say which parameters you searched**; if you
   quote a bound from a subset, label it as such. Re-deriving it honestly is minutes of compute
   and is the difference between a fix and a detour.
+
+- **A binary FBX node can open an EMPTY scope, and dropping that 13-byte NULL record silently
+  destroys data — with a byte-for-byte identical node tree.** A childless record that is
+  nevertheless followed by a nested-list terminator is not the same thing as a leaf: the
+  terminator is how a reader tells "this node opens a (empty) scope" from "this node has no
+  scope". Blender writes it on a handful of nodes per file (7 in one 58 KB model, among them
+  `AnimationLayer` and several `Properties70`). A naive reader parses those as childless, a naive
+  writer then omits the record, and the file loses its ANIMATION — while a full-value comparison
+  of every node and every property reports the two trees as *identical*, because the bit that
+  differs is not in any node or property. Round-trip the flag (`empty_scope`: set it when a node
+  has no children but `pos < end_offset`; emit the terminator when it is set). **The general
+  lesson is about verification, not FBX**: a codec validated only against its own reader is
+  validated against its own blind spots — the defect was invisible to the obvious check and
+  instantly visible to an independent one (`assimp info` reporting `Animations: 0`). Get a second
+  reader before you trust a writer.
+- **Any "smoothing" mesh operation SHRINKS the model, and the size may be load-bearing.**
+  Catmull-Clark converges to a limit surface strictly INSIDE its control mesh — measured 9.8%
+  radially and 3.9% lengthwise on a missile after two levels. If anything downstream is written
+  against the model's bounds (a growth factor derived from its launch length, a doc table, a test
+  constant), a smoother model is wanted and a smaller one is a regression nobody will attribute to
+  the subdivision. Renormalize the result affinely back onto the ORIGINAL bounding box, share one
+  factor across the axes that must stay circular, and make the tool's `--check` fail if the box
+  ever drifts. Subdivision also FILLETS sharp features — a hard shoulder becomes a curve, a near-
+  point tip becomes a cap — so measure the radius profile end to end and state which features
+  moved, rather than only reporting the poly count.
+- **"Looks low poly" is a hypothesis about geometry that is usually a hypothesis about SHADING —
+  measure which before fixing either.** The reflexive fix is to smooth normals; on the model that
+  prompted it, the normals were already fully smooth (**zero** control points carried more than
+  one normal) and the real defect was an eight-sided barrel, 7.61% off the circle it stood in for.
+  The measurement is cheap: build `control point → set of distinct normals` from
+  `PolygonVertexIndex` + `NormalsIndex`; all-ones means smooth-shaded, one-normal-per-FACE means
+  faceted. Then count verts per ring along the long axis for the radial resolution. Two numbers,
+  and they point at opposite fixes (an import-setting change vs. a mesh change).
 
 - **`HideFlags.HideAndDontSave` includes `DontUnloadUnusedAsset`, so a runtime-created Mesh or
   Material with it LEAKS.** It is the reflexive flag for a procedurally-built helper object, and
