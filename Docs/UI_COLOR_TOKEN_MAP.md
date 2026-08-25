@@ -1,8 +1,8 @@
 # UI colour-literal → `UIThemeSO` token map
 
 **Status:** audit, no call sites changed · **Scope:** `Assets/_Scripts/UI/**/*.cs`
-**Derives from:** `STYLE_FOUNDATION.md` §10 (field map), §2 (colour), §3 (team-colour contract), §7 (interactive states)
-**Companion to:** `Docs/PALETTE.md`, the UI Architecture Audit §1.4 / §5.4
+**Derives from:** `Docs/STYLE_FOUNDATION.md` §10 (field map), §2 (colour), §3 (team-colour contract), §7 (interactive states)
+**Companion to:** `Docs/PALETTE.md`, `Docs/UI_ARCHITECTURE_AUDIT.md` §1.4 / §5.4
 
 ---
 
@@ -500,7 +500,7 @@ Eleven of the 25 fields are non-colour and therefore have **zero** overlap with 
 `spacing[9]`, `chamferLarge`, `chamferSmall`, `hairline`, `stroke`, `durMicro`, `durStd`,
 `durPanel`, `durCeremony`, `staggerStep`, `staggerCap`.
 
-Their call sites are the *other* two piles the UI Architecture Audit §5.4 counts, which this report
+Their call sites are the *other* two piles `Docs/UI_ARCHITECTURE_AUDIT.md` §5.4 counts, which this report
 did not enumerate:
 
 - **~50 hardcoded `sizeDelta` / `anchoredPosition` writes** → `spacing`, `chamfer*`
