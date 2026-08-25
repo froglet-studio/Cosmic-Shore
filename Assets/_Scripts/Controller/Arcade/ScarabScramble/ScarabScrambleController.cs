@@ -53,9 +53,10 @@ namespace CosmicShore.Gameplay
         [SerializeField] ScoringRuleSO rule;
 
         [Header("Arena")]
-        [Tooltip("The court cell. Its NUCLEUS is resized to the court radius and the ball " +
-                 "reflects off it; NucleusIsControlZone is cleared because the nucleus here " +
-                 "is play geometry, not a territorial claim (Docs/ECOSYSTEM.md §25.1).")]
+        [Tooltip("The court cell. Its NUCLEUS is resized to the court radius — which IS the " +
+                 "court, because every ball bounces off its cell's nucleus on its own. " +
+                 "NucleusIsControlZone is cleared because the nucleus here is play geometry, " +
+                 "not a territorial claim (Docs/ECOSYSTEM.md §25.1).")]
         [SerializeField] Cell arenaCell;
 
         [Tooltip("The cell's runtime data (the same asset the scene's NetworkCrystalManager " +
@@ -71,7 +72,6 @@ namespace CosmicShore.Gameplay
         readonly NetworkVariable<float> n_HoopMouthRadius =
             new(readPerm: NetworkVariableReadPermission.Everyone, writePerm: NetworkVariableWritePermission.Server);
 
-        AstroLeagueBoundary _boundary;
         readonly List<ScarabScrambleHoop> _hoops = new();
         GameObject _hoopRoot;
 
@@ -152,17 +152,19 @@ namespace CosmicShore.Gameplay
 
             Vector3 centre = arenaCell ? arenaCell.transform.position : Vector3.zero;
 
-            // Sphere court: the ball's containment surface. HalfExtents are unused by the
-            // sphere branch but keep MaxExtent honest for the fauna exclusion read.
-            _boundary = new AstroLeagueBoundary(
-                AstroLeagueBoundaryShape.Sphere, centre,
-                new Vector3(radius, radius, radius), radius);
-
             if (arenaCell)
             {
                 // The court IS the nucleus: resize the standard nucleus sphere to the court
                 // radius so the wall the ball bounces off is the surface the player sees —
                 // no bespoke cage, no mesh morph, the Cell's own visual at a new size.
+                //
+                // AND THAT IS THE ENTIRE COURT. This mode installs no per-ball boundary: a ball
+                // bounces off its cell's nucleus by itself, everywhere, so resizing the nucleus IS
+                // building the court (AstroLeagueBall.ResolveNucleusBoundary). Pushing the same
+                // sphere onto each ball as well used to be how the wall existed here, which dressed
+                // a platform behaviour up as a mode feature — and left every ball a Scarab forges
+                // anywhere ELSE with no containment at all. Astro League still overrides, because
+                // its polytope court is a shape a nucleus radius cannot express.
                 arenaCell.SetNucleusWorldRadius(radius);
                 // …and declare it play geometry, NOT a territorial claim: without this every
                 // prism in the match reads as "inside the nucleus" and the food web starves
@@ -171,11 +173,6 @@ namespace CosmicShore.Gameplay
             }
 
             BuildHoops(centre, radius, hoopCount, mouth);
-
-            // Balls forged before a config change keep playing against the new court.
-            if (IsServer)
-                foreach (var ball in _forgerByBall.Keys)
-                    if (ball != null) ball.SetBoundary(_boundary);
         }
 
         void BuildHoops(Vector3 centre, float courtRadius, int count, float mouthRadius)
@@ -276,7 +273,8 @@ namespace CosmicShore.Gameplay
             // mints, so "the ball is its maker's and only a dash steals it" is a Scarab property
             // the mode inherits rather than configures. This is what makes "knock the enemy's
             // ball AWAY" the only sensible defence — pushing it through a hoop scores for them.
-            ball.SetBoundary(_boundary);
+            // Containment is inherited the same way and so is likewise absent here: the ball
+            // bounces off this cell's nucleus — the court — without being told to.
             _forgerByBall[ball] = forger != null ? forger.PlayerName : string.Empty;
 
             // No cap check here any more. A forged ball is only ONE of the ways a ball enters a
@@ -556,11 +554,11 @@ namespace CosmicShore.Gameplay
         void UpdateFaunaExclusion()
         {
             if (arenaCell == null || settings == null || !settings.faunaWaitOutsideCourt) return;
-            if (_boundary == null) return;
+            if (_appliedCourtRadius <= 0f) return;   // court not published yet
 
             // "The pitch is crowded" is read from the cell's own volume ladder, never a
             // bespoke signal: Calm holds the swarm out; Restless+ lets it pour in to graze.
-            float closed = _boundary.MaxExtent * settings.faunaExclusionCourtFraction;
+            float closed = _appliedCourtRadius * settings.faunaExclusionCourtFraction;
             float target = arenaCell.Phase == CellPhase.Calm ? closed : 0f;
 
             float rate = closed / Mathf.Max(0.1f, settings.faunaExclusionSweepSeconds);
