@@ -2685,21 +2685,6 @@ PrefabInstance:
       propertyPath: m_AnchoredPosition.x
       value: 0
       objectReference: {fileID: 0}
-    - target: {fileID: 5497835173863578961, guid: 65bf1ed35b752374ca46ae214710e41c,
-        type: 3}
-      propertyPath: m_ReferenceResolution.x
-      value: 1920
-      objectReference: {fileID: 0}
-    - target: {fileID: 5497835173863578961, guid: 65bf1ed35b752374ca46ae214710e41c,
-        type: 3}
-      propertyPath: m_ReferenceResolution.y
-      value: 1080
-      objectReference: {fileID: 0}
-    - target: {fileID: 5497835173863578961, guid: 65bf1ed35b752374ca46ae214710e41c,
-        type: 3}
-      propertyPath: m_ReferencePixelsPerUnit
-      value: 240
-      objectReference: {fileID: 0}
     - target: {fileID: 5497835173863578963, guid: 65bf1ed35b752374ca46ae214710e41c,
         type: 3}
       propertyPath: m_Name
