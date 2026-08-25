@@ -84,6 +84,12 @@ namespace CosmicShore.UI
         readonly Dictionary<Element, Tween>   _abilityBadgeTweens     = new();
         readonly HashSet<Element>             _upgraded               = new();
 
+        [Header("Ability lockup (optional)")]
+        [Tooltip("Composes the totem card - plate, element flower, rim and bloom - around each " +
+                 "ability icon. Resolved from this GameObject when empty; a vessel without one is " +
+                 "simply unstyled, which is how the rollout stays opt-in per vessel.")]
+        [SerializeField] private AbilityLockupView abilityLockups;
+
         [Header("Animation (optional)")]
         [SerializeField] private HUDAnimationSettingsSO animSettings;
 
@@ -214,6 +220,18 @@ namespace CosmicShore.UI
 
                 SetBadgeVisible(element, binding.icon, upgraded);
             }
+
+            // The lockup carries the same signal on the CARD - rim to the level-5 white plus the
+            // bloom behind the plate - which is what lets a vessel whose icons are all live gauges
+            // (the Dolphin) show an upgrade without overloading a gauge colour.
+            var lockups = ResolveAbilityLockups();
+            if (lockups) lockups.SetUpgraded(element, upgraded);
+        }
+
+        AbilityLockupView ResolveAbilityLockups()
+        {
+            if (!abilityLockups) abilityLockups = GetComponent<AbilityLockupView>();
+            return abilityLockups;
         }
 
         // ---------------------------------------------------------------

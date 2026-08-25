@@ -2940,3 +2940,33 @@ arc cores.
     `Cull Back`, additive, queue 3000) sit in the same queue. `Cull Back` should make draw order
     irrelevant — watch for any flicker between tracer and shell at close range, which would be the
     one symptom this reasoning missed.
+
+---
+
+## 🔴 Ability Lockup (TOTEM) — Dolphin — NOT EDITOR-VERIFIED
+
+Landed on `claude/ability-icon-design-system-whstrh`. Written and **compile-checked outside Unity**
+(Roslyn against a stub harness: `AbilityLockupStyleSO`, `AbilityLockupView`, plus the edited
+`VesselHUDView`, `ElementalBarsView`, `ElementalBarsController` all build clean). Prefab/asset
+reference integrity verified statically (every guid resolves; no duplicate fileIDs).
+**Nothing has been seen running.**
+
+**What landed:** the four Dolphin ability icons each gain a lockup card — a flat corner-slivered
+plate with the element flower docked above the icon, a hairline divider, and an upgrade signal
+carried by the card's rim + bloom instead of by icon colour. The Dolphin's icons are untouched.
+
+**Verify:** follow `Docs/ABILITY_LOCKUP.md` § "In-editor verification" (7 steps).
+
+**Highest-risk items, in order:**
+1. **Card geometry on screen.** `plateWidth 104 × 166` was derived from the prefab's anchor bands,
+   not seen. If cards read too tall/short or collide with the `BlastCount` / `PilotCount` labels,
+   tune `petalCellHeight` / `abilityCellHeight` in `Resources/AbilityLockupStyle` — no code change.
+2. **Two flower rows.** If a fleet-standard row ALSO appears bottom-centre-right, the controller's
+   adoption did not find the lockup — check `ElementalBarsController.InitializeElementBars`.
+3. **9-slice corners.** The plate/rim sprites are generated (64px, sliver 12, border 16). If the
+   sliver corners look stretched or the rim thickens unevenly, the importer border needs adjusting.
+4. **Draw order.** The card is inserted at the icon's sibling index so it draws behind. If any card
+   covers its icon, that insertion is wrong for that slot's nesting.
+
+**First-pass tuning table:** all knobs are in `Assets/Resources/AbilityLockupStyle.asset` — see the
+tuning table in `Docs/ABILITY_LOCKUP.md`. Nothing in this feature requires a recompile to retune.

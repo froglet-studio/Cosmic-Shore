@@ -107,16 +107,7 @@ namespace CosmicShore.UI
             // silently building nothing (petal roots auto-create; sprites come from
             // Resources; placement from the shared config). Authored bindings (label
             // icons, sprite overrides) take precedence when present.
-            if (bars == null || bars.Length == 0)
-            {
-                bars = new[]
-                {
-                    new ElementBarBinding { element = Element.Charge },
-                    new ElementBarBinding { element = Element.Mass },
-                    new ElementBarBinding { element = Element.Space },
-                    new ElementBarBinding { element = Element.Time },
-                };
-            }
+            EnsureDefaultBars();
 
             if (!config)
                 config = Resources.Load<ElementalBarsConfigSO>(configResourcePath);
@@ -189,6 +180,42 @@ namespace CosmicShore.UI
             }
 
             _built = true;
+        }
+
+        void EnsureDefaultBars()
+        {
+            if (bars is { Length: > 0 }) return;
+            bars = new[]
+            {
+                new ElementBarBinding { element = Element.Charge },
+                new ElementBarBinding { element = Element.Mass },
+                new ElementBarBinding { element = Element.Space },
+                new ElementBarBinding { element = Element.Time },
+            };
+        }
+
+        /// <summary>
+        /// Points one element's flower at an externally supplied container, before the petals are
+        /// built. This is how <see cref="AbilityLockupView"/> docks the flowers INTO the ability
+        /// lockup cards instead of leaving them in a separate row - same petals, same ladder, same
+        /// juice, just parented into the card that the element upgrades.
+        ///
+        /// Refused once the petals exist: re-homing a built flower would orphan five live images.
+        /// Supplying every root also stands the shared config's standard placement down, which is
+        /// correct - the socket is now the authored position.
+        /// </summary>
+        public bool TrySetPetalRoot(Element element, RectTransform root)
+        {
+            if (_built || !root) return false;
+
+            EnsureDefaultBars();
+            for (int i = 0; i < bars.Length; i++)
+            {
+                if (bars[i].element != element) continue;
+                bars[i].petalRoot = root;
+                return true;
+            }
+            return false;
         }
 
         Image[] BuildPetals(ref ElementBarBinding bar, int index)
