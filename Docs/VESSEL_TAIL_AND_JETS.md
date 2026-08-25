@@ -123,7 +123,7 @@ animates. Where it does not, the jet is placed at the measured rear of the hull 
 |---|---|---|---|---|---|
 | **Dolphin** | −20 | −21 | 1.0 | 6 | parented to the six `Engine case *`, at each pod's measured exhaust mouth |
 | **Squirrel** | −17 | ±4, −12 (authored pair) | 0.85 | 4 | parented to model nodes (authored) |
-| **Sparrow** | −50 | −52.5 | 2.5 | 1 | `(0, 0.40, −0.09)` — ONE centred plume at width×5, at the middle tail-feather ring's depth |
+| **Sparrow** | −50 | −52.5 | 2.5 | 2 | `(∓3.03, 0.40, −0.96)` at width×2 — the two nacelle cowl mouths |
 | **Urchin** | −6.67 | −7.0 | 0.334 | 4 | parented to `JetTopLeft/Right`, `JetBottomLeft/Right` |
 | **Rhino** | −120 | −126 | 6.0 | 10 | 2 on `engine left`/`engine right` at width×10 (the wing pods); 8 on `fusalage`, one per nozzle — table below |
 | **Grizzly** | −30 † | −31.5 | 1.5 | 4 | parented to `Ship_Wedge_Jet_UL/UR/BL/BR` |
@@ -152,27 +152,37 @@ Nothing here was eyeballed. Three methods, all offline:
   clusters that fit a circle, then merge coaxial clusters into axes. Each axis is one nozzle; its
   rearmost ring is the mouth plane and that ring's inner radius is the aperture. Thresholds and
   what it found on the Rhino are below.
-- **No engine node** (Sparrow, Scarab): the hull's own geometry. For the Sparrow, binning the mesh
-  by the length axis shows the rear three slices collapsing to `|x| ∈ [1.59, 1.64]` — two clean
-  lobes, which is where the jets go. For the Scarab the hull is procedural, so the numbers come
-  from the builder: `ZAt(t) = (t − 0.5) × length` with `length 9` puts the tail at `z = −4.5`, and
-  the authored taper leaves it at ~⅔ of the `width 7.2`.
+- **No engine node** (Scarab): the hull's own geometry. The Scarab's is procedural, so the numbers
+  come from the builder: `ZAt(t) = (t − 0.5) × length` with `length 9` puts the tail at
+  `z = −4.5`, and the authored taper leaves it at ~⅔ of the `width 7.2`.
 
 The Sparrow's tail was at `z = −4.72` — on the hull, in the pilot's face, doing a jet's job. That
 is what prompted this pass.
 
-**These two took three passes each, and what the passes cost is the useful part:**
+**These two took four passes each, and what the passes cost is the useful part:**
 
-- The **Sparrow** first got two jets at the measured rear lobes `|x| ∈ [1.59, 1.64]`, then one
-  centred plume at the hull's rearmost point `z = −4.65`. Both were wrong, for the same reason:
-  the rear of the *bounding geometry* is not where the ship's exhaust is. Its tail feathers are a
-  nacelle stack of three concentric rings at `x ≈ ±3.03, y ≈ 0.40`, growing backwards —
-  `r 0.07 @ z +0.22`, `r 0.19 @ z −0.09`, `r 0.25 @ z −1.00` — and the jet is pinned to the
-  MIDDLE ring's depth and height, held on the centreline: `(0, 0.40, −0.09)`.
+- The **Sparrow** took four passes, and the first three all put the plume somewhere the ship has
+  no engine: two jets at the measured rear lobes `|x| ∈ [1.59, 1.64]`, then one centred plume at
+  the hull's rearmost point `z = −4.65`, then one centred plume pulled forward to `(0, 0.40,
+  −0.09)`. The last of those was the closest and still wrong — it read the nacelle's DEPTH off the
+  geometry and then held the jet on the centreline, which on this hull is the fuselage fan.
+  Measured after the fact: 69 hull vertices sit within 0.5 of that mount. The jet was inside the
+  ship.
 
-  Note how far forward that is: `z −0.09` against a hull that reaches `z −4.65`. Everything behind
-  it is the fanned wing assembly, which is why the rearmost geometry read as "the tail" and was not.
+  The engines are two plug nozzles, one per nacelle, on z-parallel axes at `(±3.03, +0.40)`.
+  Slicing the nacelle along z shows the whole anatomy: a central plug protruding aft to `z −1.35`
+  (r ≈ 0.09), the cowl mouth appearing at **`z = −0.96`** as a clean octagon of outer radius
+  **0.31**, then concentric inner rings forward of it. That cowl face is the mount. `widthScale 2`
+  puts a 0.60-wide plume in a 0.62-wide cowl, so the nozzle reads as full.
 
+  Three things about this hull are worth carrying, because none of them is visible in a bounding
+  box or a vertex histogram. The rearmost geometry (`z −4.65`) is fanned wing feathers, not a
+  tail. The rear view shows rings at `x ≈ 2.15`, `2.60` and `3.03` that look like one nacelle
+  stack and are three different structures at three different depths — only `x 3.03` is an engine
+  (1,091 verts, 61 coaxial rings, spanning `z [−2.25, +1.75]`; the other two run forward to `z
+  +6.8` and `z +1.9`). And each nacelle's own tail feather forms a shroud behind the mouth with an
+  inner clearance of ~0.23, so the plume threads it rather than passing through solid — which a
+  clearance check against the hull as a whole would have called a collision.
 - The **Rhino** took four passes. The first sampled `fusalage` — the right mesh — but only the top
   of its rear face, and put four jets where there is one nozzle. The next two abandoned that mesh
   for the wrong one. Its prefab's `MeshFilter`s all carry guid
@@ -250,9 +260,14 @@ the same pass that gives them real art, when "where is the engine" has an answer
 - **Count and location are look questions, not bounding-box ones.** The Sparrow proved both: two
   measured lobes but one apparent exhaust, and the exhaust nowhere near the hull's rearmost point.
   Render the model, find the structure the artist built as an engine, and mount on that.
-- **A prefab instance needs no `m_Children` entry** — `m_TransformParent` is the authoritative
-  link. The Squirrel's four original hand-authored jets carry none and have always worked, so a
-  missing entry is not a defect and not worth "fixing".
+- **A nested prefab instance is reachable TWO ways, and needs both when its parent is a plain
+  Transform.** `m_TransformParent` in the instance's own modification block always, PLUS an entry
+  in the parent Transform's `m_Children`. An earlier version of this list claimed the second was
+  unnecessary, reasoning from the Squirrel's four jets, which carry none and work — they attach to
+  a STRIPPED Transform inside the nested model prefab, and a stripped document has no children
+  list to write into. That is the one case that structurally cannot carry the entry, and
+  generalising from it shipped eight unreachable Rhino jets. Full record:
+  `Docs/VESSEL_CONSTRUCTION.md` §3.
 - **`VesselTail.prefab` carries six disabled particle systems**, dead experiments that make the
   asset ~690 KB. They are inactive, so they cost nothing at runtime; deleting them is a separate,
   purely subtractive change.

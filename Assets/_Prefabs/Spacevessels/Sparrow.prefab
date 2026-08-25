@@ -987,7 +987,8 @@ Transform:
   - {fileID: 2285003040825308999}
   - {fileID: 3239361814751565711}
   - {fileID: 2643841253389033401}
-  - {fileID: 3901220300008003}
+  - {fileID: 3901220600000002}
+  - {fileID: 3901220600000004}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &2386735669300085014
@@ -3197,7 +3198,7 @@ Transform:
     type: 3}
   m_PrefabInstance: {fileID: 6723389074232520642}
   m_PrefabAsset: {fileID: 0}
---- !u!1001 &3901220300008002
+--- !u!1001 &3901220600000001
 PrefabInstance:
   m_ObjectHideFlags: 0
   serializedVersion: 2
@@ -3208,12 +3209,12 @@ PrefabInstance:
     - target: {fileID: 1007919433217068806, guid: 55ceca573be662744948afc745f8840b,
         type: 3}
       propertyPath: m_Name
-      value: VesselJet
+      value: VesselJet (nacelle L)
       objectReference: {fileID: 0}
     - target: {fileID: 1007919433217068805, guid: 55ceca573be662744948afc745f8840b,
         type: 3}
       propertyPath: m_LocalPosition.x
-      value: 0
+      value: -3.03
       objectReference: {fileID: 0}
     - target: {fileID: 1007919433217068805, guid: 55ceca573be662744948afc745f8840b,
         type: 3}
@@ -3223,7 +3224,7 @@ PrefabInstance:
     - target: {fileID: 1007919433217068805, guid: 55ceca573be662744948afc745f8840b,
         type: 3}
       propertyPath: m_LocalPosition.z
-      value: -0.09
+      value: -0.96
       objectReference: {fileID: 0}
     - target: {fileID: 1007919433217068805, guid: 55ceca573be662744948afc745f8840b,
         type: 3}
@@ -3263,16 +3264,95 @@ PrefabInstance:
     - target: {fileID: 3901220100011000772, guid: 55ceca573be662744948afc745f8840b,
         type: 3}
       propertyPath: widthScale
-      value: 5
+      value: 2
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 55ceca573be662744948afc745f8840b, type: 3}
---- !u!4 &3901220300008003 stripped
+--- !u!4 &3901220600000002 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 1007919433217068805, guid: 55ceca573be662744948afc745f8840b,
     type: 3}
-  m_PrefabInstance: {fileID: 3901220300008002}
+  m_PrefabInstance: {fileID: 3901220600000001}
+  m_PrefabAsset: {fileID: 0}
+--- !u!1001 &3901220600000003
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 4853044355858455827}
+    m_Modifications:
+    - target: {fileID: 1007919433217068806, guid: 55ceca573be662744948afc745f8840b,
+        type: 3}
+      propertyPath: m_Name
+      value: VesselJet (nacelle R)
+      objectReference: {fileID: 0}
+    - target: {fileID: 1007919433217068805, guid: 55ceca573be662744948afc745f8840b,
+        type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 3.03
+      objectReference: {fileID: 0}
+    - target: {fileID: 1007919433217068805, guid: 55ceca573be662744948afc745f8840b,
+        type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0.4
+      objectReference: {fileID: 0}
+    - target: {fileID: 1007919433217068805, guid: 55ceca573be662744948afc745f8840b,
+        type: 3}
+      propertyPath: m_LocalPosition.z
+      value: -0.96
+      objectReference: {fileID: 0}
+    - target: {fileID: 1007919433217068805, guid: 55ceca573be662744948afc745f8840b,
+        type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 1007919433217068805, guid: 55ceca573be662744948afc745f8840b,
+        type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1007919433217068805, guid: 55ceca573be662744948afc745f8840b,
+        type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1007919433217068805, guid: 55ceca573be662744948afc745f8840b,
+        type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1007919433217068805, guid: 55ceca573be662744948afc745f8840b,
+        type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1007919433217068805, guid: 55ceca573be662744948afc745f8840b,
+        type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1007919433217068805, guid: 55ceca573be662744948afc745f8840b,
+        type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3901220100011000772, guid: 55ceca573be662744948afc745f8840b,
+        type: 3}
+      propertyPath: widthScale
+      value: 2
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: 55ceca573be662744948afc745f8840b, type: 3}
+--- !u!4 &3901220600000004 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 1007919433217068805, guid: 55ceca573be662744948afc745f8840b,
+    type: 3}
+  m_PrefabInstance: {fileID: 3901220600000003}
   m_PrefabAsset: {fileID: 0}
