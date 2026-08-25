@@ -463,10 +463,30 @@ filter is real. **Bucket the diagnostics before reading any of them** —
 the shape of that histogram tells you instantly whether anything real is in there. If you add
 `-nostdlib -noconfig` (useful when the SDK's own ref assemblies muddy the output) then
 `CS0518`, `CS8179` and `CS8137` join the expected-noise list, since they are all "predefined
-type not defined" in disguise — filter those three too or they read as findings. It catches every syntax error, duplicate/conflicting declaration, and
-scope collision — including the ones an edit inside a `switch` section or a nested loop
-creates (`CS0128`/`CS0136`), which is exactly where mechanical edits go wrong. It cannot
-catch a wrong member name or arity; when that matters, build the stubs.
+type not defined" in disguise — filter those three too or they read as findings.
+
+**Know exactly what this pass is blind to, because it is blinder than it looks.** Once a type's
+BASE CLASS is unresolved — which is every `MonoBehaviour`/`NetworkBehaviour` in this repo when no
+Unity assemblies are present — Roslyn stops binding that type's METHOD BODIES, and every
+body-level diagnostic silently vanishes. Measured on `AstroLeagueBall` (base `NetworkBehaviour`)
+by injecting one defect at a time and counting the hits:
+
+| injected defect | caught? |
+|---|---|
+| syntax error (`CS1xxx`) | **yes** (3 hits) |
+| duplicate member declaration (`CS0102`) | **yes** (1 hit) |
+| undeclared identifier inside a method body (`CS0103`) | **NO** (0) |
+| shadowed local in a nested scope (`CS0136`) | **NO** (0) |
+
+The line is **declaration level vs body level**: declarations still bind, bodies do not. So this
+pass proves syntax and the shape of the type, and proves *nothing whatsoever* about the code you
+wrote inside a method — an earlier version of this skill claimed it caught `CS0128`/`CS0136`
+"inside a `switch` section or a nested loop", and that is precisely the half it misses. A session
+shipped a dropped field declaration straight through a green full-file pass; only the stub harness
+caught it. **So treat the stub harness as mandatory for any new code in a method body**, not as
+the escalation for "when a wrong member name matters" — and prove your own gate the way this table
+was produced: inject the defect you care about, confirm the gate fires, restore, `cmp` the file.
+A gate you have not seen fail is not a gate.
 
 ### Fallback: `mcs` (only when dotnet can't be installed)
 
@@ -1986,6 +2006,21 @@ signature of one prefab instanced in all of them, and it is the evidence.
   does — and leave a comment saying why, or the next formatter re-wraps it and the field silently
   drops out of the checker again. The mirror failure is worse and quieter: a field that SHOULD be
   flagged but is wrapped will never be flagged at all.
+
+- **A correction that runs BEFORE the step it corrects must not also be what CLASSIFIES the
+  state.** Server-side containment (reflect + depenetrate) typically runs at the top of a
+  FixedUpdate, before the solver integrates — so an object can legitimately END a tick slightly
+  past the wall it was just reflected off. Harmless while there is one containment volume. The
+  moment there are two mutually-exclusive regimes chosen by a bare position test ("inside the
+  sphere" vs "outside it"), that overshoot re-classifies the object and the correction INVERTS:
+  the regime that would have pulled it back is replaced by the one that pushes it away, and the
+  volume leaks at exactly the moment it was working. Nothing errors, and it is rare enough to read
+  as a physics glitch. Fix with a STICKY side plus a dead band sized from the physical bound —
+  object radius (containment parks the centre one radius short of the wall) plus one tick of
+  travel at top speed (`v * Time.fixedDeltaTime`, read LIVE so hitstop scales it too). Then check
+  the regimes are self-reinforcing: each must push AWAY from the boundary, so neither can reach
+  the other's flip threshold on its own and only a deliberate crossing (during a suspension of
+  containment) ever switches sides.
 
 - **A comparison that mixes a SQUARED quantity with a LINEAR one is invisible to review and to
   every static check, and its symptom is a behaviour nobody attributes to arithmetic.** A field

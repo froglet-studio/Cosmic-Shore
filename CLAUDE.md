@@ -867,7 +867,7 @@ wrong way to touch anything), the one enemy act that converts a ball is the **ju
 skill move converts, the casual bump never does), goals **stop nothing** (the scored ball
 detonates and play flows on — no kickoffs, no world-stops), and the court is a **sphere** whose
 centre-focusing walls recycle wild shots back toward the hoops (SCARAB.md §4.3's boundary-death
-is deliberately NOT used — walls reflect). Multi-carom goals get the "BANK x{n}" toast — the
+is deliberately NOT used — walls reflect) — a wall the mode does not build, see below. Multi-carom goals get the "BANK x{n}" toast — the
 sphere manufactures the mode's signature screamer for novices. It lands the mode-side ball work
 SCARAB.md §4.2-§4.5 left open (multi-ball via `AstroLeagueBall.Live` + `ScarabBallForge.OnForged`
 adoption, per-ball attribution via a forger/last-toucher ledger, and a ball ceiling) and fixed
@@ -884,7 +884,21 @@ was blind to half of them by construction. Counting what is actually IN the cell
 route, needs no producer to remember to ask, and is the count the player can see. Its own
 corollary is an ORDERING one: a forged ball is DESPAWNED by its own detonation, so the
 announcement RPC must be sent BEFORE the detonation loop, and the ball's server tick must stop
-touching itself after triggering one. The Scarab also brings a PLATFORM ability the mode
+touching itself after triggering one. **The WALL lives on the ball for the sibling reason** — a
+ball bounces off its cell's nucleus by itself, in every cell, from whichever side it is on
+(`AstroLeagueBall.ResolveNucleusBoundary`), so this mode's court is nothing but
+`Cell.SetNucleusWorldRadius(courtRadius)` and it installs no per-ball boundary. It used to push a
+matching sphere onto every ball it adopted, and the generalisation there is the mirror of the
+producer rule above: **a rule a MODE installs can only ever hold in that mode** — every ball a
+Scarab forged in freestyle or the menu flew straight through the core, because nothing outside
+Scramble was there to hand it a wall. `AstroLeagueBall.SetBoundary` survives as the override for a
+court whose shape a nucleus radius cannot express (Astro League's polytopes, whose nucleus is
+mesh-morphed to match). Two details that generalise to any such self-resolved boundary: which side
+is read from POSITION rather than from the event that put the ball there (each regime pushes
+*away* from the surface, so it is self-reinforcing and cannot oscillate), and the side must be
+STICKY behind a dead band of one ball radius plus one tick of travel at top speed — containment
+runs BEFORE the physics step, so a ball can legitimately end a tick just past the wall it was
+reflected off, and re-classifying on that would eject it rather than pull it back. The Scarab also brings a PLATFORM ability the mode
 merely inherits: it passively seeds balls of its domain **embedded in the nucleus**, which anyone
 can knock OUTWARD into the cytoplasm (where they live on, bouncing off the nucleus from outside)
 or INWARD into the nucleus — in this mode the court, so that is a second source of scoring balls.
