@@ -60,7 +60,7 @@ namespace CosmicShore.ScriptableObjects
         /// <summary>Scarab Scramble goal target used when <see cref="scarabScrambleGoalTarget"/> is 0 (auto/default).</summary>
         public const int DefaultScarabScrambleGoalTarget = 10;
         /// <summary>Salvo hostile-prism target used when <see cref="salvoPrismTarget"/> is 0 (auto/default).</summary>
-        public const int DefaultSalvoPrismTarget = 1500;
+        public const int DefaultSalvoPrismTarget = 700;
 
         [Header("Live counts - used at runtime. 0 = auto/default (edit via FrogletTools > Game Modes > End Game Conditions)")]
         [Tooltip("HexRace crystals to end the race. 0 = auto-calc from the track waypoints.")]
@@ -115,8 +115,8 @@ namespace CosmicShore.ScriptableObjects
         [Tooltip("Salvo: hostile prisms (the Boneyard's wreckage, rival trails, fauna bodies) a " +
                  "domain must destroy between them to win (race to N), summed across that " +
                  "domain's players. Lower than Rampage's target because the Sparrow's salvos " +
-                 "are crystal-rationed. 0 = default (1500).")]
-        [Min(0)] public int salvoPrismTarget = 1500;
+                 "are crystal-rationed. 0 = default (700).")]
+        [Min(0)] public int salvoPrismTarget = 700;
 
         [Header("Build baseline - what a shipping build uses. Set via the tool's \"Set Build Values\" button.")]
         [Min(0)] public int hexRaceCrystalCountBuild = 0;
@@ -130,7 +130,7 @@ namespace CosmicShore.ScriptableObjects
         [Min(0)] public int dogFightPointTargetBuild = 90;
         [Min(0)] public int bendsPointTargetBuild = 3;
         [Min(0)] public int scarabScrambleGoalTargetBuild = 10;
-        [Min(0)] public int salvoPrismTargetBuild = 1500;
+        [Min(0)] public int salvoPrismTargetBuild = 700;
 
         [Tooltip("When on, a build first copies the Build baseline onto the Live counts, so test values are never shipped.")]
         public bool autoRestoreBuildValuesBeforeBuild = true;

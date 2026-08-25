@@ -909,7 +909,7 @@ See `_Scripts/Controller/Arcade/SCARABSCRAMBLE.md` § Known limitations and `SCA
 Boneyard (the cell configs, spawn profiles, scavengers and `SpawnableBoneyard` variants are
 reused verbatim, not forked — the cell is per-arena, not per-mode): there the wreckage is
 cover and shooting it scores nothing; here **tearing it apart IS the score**. First DOMAIN to
-destroy the hostile-prism target (default **1500**, `EndConditionOverridesSO.salvoPrismTarget`)
+destroy the hostile-prism target (default **700**, `EndConditionOverridesSO.salvoPrismTarget`)
 wins on `ScoringMetric.PrismsDestroyed` — the Rampage/Ribcage metric and machinery, zero new
 scoring code. The mode is built on the Sparrow's SHIPPED missile economy: guns are free chip
 damage, a skyburst costs **half the missile tank** (`SkyBurstGunAction.ammoCost 0.5` against

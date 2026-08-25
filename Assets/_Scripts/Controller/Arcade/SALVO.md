@@ -15,7 +15,7 @@
 Salvo is the **Sparrow-only demolition race** — Dog Fight's inverse in the same Boneyard.
 There, the wreckage is cover and a pilot who spends the match demolishing scenery loses; here
 **tearing the wreck apart IS the score**. Two to four pilots race by DOMAIN to destroy the
-hostile-prism target (default **1500**): guns chip one prism at a time for free, skyburst
+hostile-prism target (default **700**): guns chip one prism at a time for free, skyburst
 missiles level whole hulks, and the missiles run on a **crystal economy** — the tank does not
 regenerate, a rocket costs half of it, and the only refuel is an omni crystal.
 
@@ -38,7 +38,7 @@ parallel solo demolition.
   metric `ScoringMetric.PrismsDestroyed`, golf-timed; the subclass only changes the end-game
   reveal label to "SALVO TIME")
 - **Turn monitor**: `SalvoPrismTurnMonitor` — resolves the target from
-  `EndConditionOverridesSO.GetSalvoPrismTarget()` (default **1500**, FrogletTools ▸ Game Modes
+  `EndConditionOverridesSO.GetSalvoPrismTarget()` (default **700**, FrogletTools ▸ Game Modes
   ▸ End Game Conditions — never a per-scene field), syncs via NetworkVariable →
   `GameDataSO.PrismTargetCount`
 - **Players**: **2–4** with AI backfill. `MinDomainsAllowed = 2` (a race needs a rival),
@@ -48,7 +48,8 @@ parallel solo demolition.
 - **Crystals**: `CrystalCountMode.PlayerCountPlusExtra` **+5** (7 omni crystals in a 2-player
   lobby, 9 in a full one) **plus** 14 scattered elemental pickups (seed 42)
 - **Comeback**: `ScoreDifferenceSource.PrismsDestroyed`, rate **0.013** (a quarter-of-target
-  deficit ≈ 4.9 element levels — Rampage's footing)
+  deficit ≈ 2.3 element levels — clears the "must buy a whole level" floor, well under
+  Rampage's ~4.9-level footing since the target came down and the rate did not)
 - **Environment**: the Boneyard cell assets **reused verbatim** (`Boneyard Cell Config
   {1..4}`, spawn profiles, scavengers, `SpawnableBoneyard{1..4}`) — 9,043 → 34,654 prisms by
   intensity
@@ -148,13 +149,14 @@ at.
 ## End condition
 
 Authored ONLY through **FrogletTools ▸ Game Modes ▸ End Game Conditions**
-(`EndConditionOverridesSO.salvoPrismTarget`, 0 = default **1500**) — the hostile prisms **one
+(`EndConditionOverridesSO.salvoPrismTarget`, 0 = default **700**) — the hostile prisms **one
 domain** must destroy. Live/Build split + build auto-restore work like every other mode.
 
-1500 vs Rampage's 2000: the Sparrow's destruction comes in crystal-rationed bursts (a rocket
+700 vs Rampage's 2000: the Sparrow's destruction comes in crystal-rationed bursts (a rocket
 costs half the tank) rather than the Dolphin's continuous graze-and-blast loop, and the
-Boneyard's intensity-1 arena is 9,043 prisms against Rampage's 9,830 seeded forest. Both
-numbers are single editor fields; neither has a measured match behind it yet.
+Boneyard's intensity-1 arena is 9,043 prisms against Rampage's 9,830 seeded forest. Retuned
+down from the launch value of 1500 for a shorter match; neither number has a measured match
+behind it yet.
 
 ## Assets
 
@@ -181,7 +183,7 @@ break to repair.
 | `SalvoController` | new controller (Rampage shape + wingman reload + elemental scatter) |
 | `SalvoPrismTurnMonitor` | new turn monitor reading `GetSalvoPrismTarget()` |
 | `SalvoScoringRuleSO` | new rule subclass (`RampageScoringRuleSO` + "SALVO TIME" reveal) |
-| `EndConditionOverridesSO` (+ window + asset) | `salvoPrismTarget` live/build/getter, default 1500 |
+| `EndConditionOverridesSO` (+ window + asset) | `salvoPrismTarget` live/build/getter, default 700 |
 | `ElementalComebackSystem.DefaultSourceFor` | Salvo → `PrismsDestroyed` |
 | `MiniGameHUD.CreateObjectiveProviderForGameMode` | Salvo → `RampageObjectiveProvider` |
 
@@ -211,11 +213,11 @@ edits. The mode is deliberately a composition of shipped systems.
    a blast spending a crystal must not reload anyone — the empty-name guard).
 7. **Elementals don't refuel.** Skim an elemental crystal with an empty tank: element level
    rises, missile gauge stays empty.
-8. **Win + scoreboard.** First domain to 1500 ends the turn; winners show "SALVO TIME" +
+8. **Win + scoreboard.** First domain to 700 ends the turn; winners show "SALVO TIME" +
    time, losers "N Prisms Left" with individual "N Prisms" secondary lines. Teammates share
    the win. Replay (scene reload) resets everything to 0.
-9. **Comeback.** Let one domain fall ~375 prisms behind: the trailing pilots' element flowers
-   fill ~5 levels; their turret prisms grow (Mass). Closing the gap drains it.
+9. **Comeback.** Let one domain fall ~175 prisms behind: the trailing pilots' element flowers
+   fill ~2 levels; their turret prisms grow (Mass). Closing the gap drains it.
 10. **AI participates.** AI Sparrows fly at crystals, fire guns/rockets into wreckage, and
     their domain's score climbs. They must NOT orbit enemy pilots (that is Dog Fight's brain;
     Salvo must not be in the seek-players set).
@@ -230,8 +232,8 @@ edits. The mode is deliberately a composition of shipped systems.
 
 ## Known limitations / follow-ups
 
-- **1500 is unmeasured** — authored from the Rampage analogy, not a playtest. The intended
-  match length is 3–6 minutes; the target is the dial.
+- **700 is still unmeasured** — retuned down from the launch value of 1500 on request, not from
+  a playtest. The intended match length is 3–6 minutes; the target is the dial.
 - **No refuel FEEDBACK beyond the gauge.** The wingman reload lands silently (the ammo gauge
   fills). A `GameToastSituation` ("WINGMAN RELOAD — <name>") + a small SFX would sell the
   cooperation; the toast enum + config authoring was deliberately left out of v1 (the same

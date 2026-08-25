@@ -78,15 +78,16 @@ PREVIEW_FILEID = 241334157148977051
 # The prism target - the race metric. Lower than Rampage's 2000 because the Sparrow's salvos
 # are crystal-rationed: a skyburst costs half the missile tank, the tank does not regenerate,
 # and the only refuel is an omni crystal - so destruction comes in bought bursts rather than a
-# Dolphin's continuous graze-and-blast loop. Kept in sync with
-# EndConditionOverridesSO.DefaultSalvoPrismTarget.
-SALVO_PRISM_TARGET = 1500
+# Dolphin's continuous graze-and-blast loop. Retuned down from the unmeasured 1500 launch value
+# to 700 for a shorter match. Kept in sync with EndConditionOverridesSO.DefaultSalvoPrismTarget.
+SALVO_PRISM_TARGET = 700
 
 # The comeback strength - a FUNCTION OF THE TARGET (`bonusLevels = deficit x rate`; see the
 # Dog Fight generator for the drift story this guards against). At 0.013 a quarter-of-target
-# deficit (375 prisms) buys ~4.9 element levels - the same footing as Rampage's 0.01 against
-# 2000. All four elements rise together (equal-elements is the law); Mass is the one a Sparrow
-# feels through its guns, since it stretches the fired prisms AND their hit sphere.
+# deficit (175 prisms) buys ~2.3 element levels - comfortably above the "must clear a whole
+# level" floor the generator asserts, and still legible against Rampage's 0.01 against 2000.
+# All four elements rise together (equal-elements is the law); Mass is the one a Sparrow feels
+# through its guns, since it stretches the fired prisms AND their hit sphere.
 COMEBACK_RATE = 0.013
 
 # The crystal economy - the mode's whole rhythm, and its reason to play together.
