@@ -207,6 +207,7 @@ GameObject:
   - component: {fileID: 377755876}
   - component: {fileID: 377755875}
   - component: {fileID: 377755879}
+  - component: {fileID: 377755880}
   m_Layer: 5
   m_Name: Canvas
   m_TagString: Untagged
@@ -244,9 +245,9 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_UiScaleMode: 1
-  m_ReferencePixelsPerUnit: 100
+  m_ReferencePixelsPerUnit: 240
   m_ScaleFactor: 1
-  m_ReferenceResolution: {x: 800, y: 450}
+  m_ReferenceResolution: {x: 1920, y: 1080}
   m_ScreenMatchMode: 0
   m_MatchWidthOrHeight: 0.5
   m_PhysicalUnit: 3
@@ -254,6 +255,22 @@ MonoBehaviour:
   m_DefaultSpriteDPI: 96
   m_DynamicPixelsPerUnit: 1
   m_PresetInfoIsWorld: 0
+--- !u!114 &377755880
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 377755874}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c8d87ab4f1e16b86371735d62c7e58a2, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CosmicShore.UI.AdaptiveCanvasScaler
+  referenceAspect: 1.7777778
+  blendRange: 0.15
+  safeZone: {fileID: 0}
+  safeZoneMaxAspect: 1.7777778
 --- !u!223 &377755877
 Canvas:
   m_ObjectHideFlags: 0
@@ -526,7 +543,7 @@ RectTransform:
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 1, y: 1}
   m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: -556, y: -241}
+  m_SizeDelta: {x: -1334.4, y: -578.4}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &843717274
 MonoBehaviour:

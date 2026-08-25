@@ -169,7 +169,7 @@ PlayerSettings:
   resolutionScalingMode: 0
   resetResolutionOnWindowResize: 0
   androidSupportedAspectRatio: 1
-  androidMaxAspectRatio: 2.1
+  androidMaxAspectRatio: 2.4
   androidMinAspectRatio: 1
   applicationIdentifier:
     Android: com.FrogletGames.TailGlider

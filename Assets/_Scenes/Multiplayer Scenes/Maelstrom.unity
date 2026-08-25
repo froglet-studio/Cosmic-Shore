@@ -2685,26 +2685,6 @@ PrefabInstance:
       propertyPath: m_AnchoredPosition.x
       value: 0
       objectReference: {fileID: 0}
-    - target: {fileID: 5497835173863578961, guid: 65bf1ed35b752374ca46ae214710e41c,
-        type: 3}
-      propertyPath: m_MatchWidthOrHeight
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 5497835173863578961, guid: 65bf1ed35b752374ca46ae214710e41c,
-        type: 3}
-      propertyPath: m_ReferenceResolution.x
-      value: 1920
-      objectReference: {fileID: 0}
-    - target: {fileID: 5497835173863578961, guid: 65bf1ed35b752374ca46ae214710e41c,
-        type: 3}
-      propertyPath: m_ReferenceResolution.y
-      value: 1080
-      objectReference: {fileID: 0}
-    - target: {fileID: 5497835173863578961, guid: 65bf1ed35b752374ca46ae214710e41c,
-        type: 3}
-      propertyPath: m_ReferencePixelsPerUnit
-      value: 240
-      objectReference: {fileID: 0}
     - target: {fileID: 5497835173863578963, guid: 65bf1ed35b752374ca46ae214710e41c,
         type: 3}
       propertyPath: m_Name
@@ -2914,10 +2894,6 @@ PrefabInstance:
         type: 3}
       insertIndex: -1
       addedObject: {fileID: 1556114766}
-    - targetCorrespondingSourceObject: {fileID: 5497835173863578963, guid: 65bf1ed35b752374ca46ae214710e41c,
-        type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 1556114767}
   m_SourcePrefab: {fileID: 100100000, guid: 65bf1ed35b752374ca46ae214710e41c, type: 3}
 --- !u!224 &1556114763 stripped
 RectTransform:
@@ -2974,22 +2950,6 @@ MonoBehaviour:
   onClickToMainMenu: {fileID: 11400000, guid: 7a1182f4329e5d645ad474c11a633a3e, type: 2}
   profileIconList: {fileID: 11400000, guid: 3e6cb5b838253c7468480627fd86af5f, type: 2}
   aiProfileList: {fileID: 11400000, guid: 32e9d97079547024991d0d39d1417f69, type: 2}
---- !u!114 &1556114767
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1556114764}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: c8d87ab4f1e16b86371735d62c7e58a2, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::CosmicShore.UI.AdaptiveCanvasScaler
-  referenceAspect: 1.7777778
-  blendRange: 0.15
-  safeZone: {fileID: 0}
-  safeZoneMaxAspect: 1.7777778
 --- !u!1 &1565475376
 GameObject:
   m_ObjectHideFlags: 0
