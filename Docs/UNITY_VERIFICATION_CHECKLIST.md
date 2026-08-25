@@ -23,12 +23,13 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
-### 🔴 Skyburst — the missile grows 20× in the first fifth of its flight (`cece/gallant-noether-o4jugw`, 2026-08-24)
+### 🔴 Skyburst — the missile grows 20× in the first fifth of its flight, on a subdivided mesh (`cece/gallant-noether-o4jugw`, 2026-08-24)
 
 Authored without a Unity compile or play-test (remote session, no editor, no `unity` CLI binary in
 this environment). Touches `Projectile.cs`, `ElementalScaling.cs`, `FireGunActionSO.cs`,
 `FireGunActionExecutor.cs`, `FullAutoActionSO.cs`, the new `RoundGrowthRamp.cs`, two test files,
-plus two hand-edited assets — `SkyBurstGunAction.asset` and `SkyBurstProjectile.prefab`.
+plus two hand-edited assets — `SkyBurstGunAction.asset` and `SkyBurstProjectile.prefab` — and a
+**machine-edited model**, `Assets/_Models/Sparrow Missile.fbx`.
 
 **What landed.** The Sparrow's skyburst missile now swells in flight the way its bullets do — the
 SAME curve, moved to one home (`ElementalScaling.RoundGrowthFactorForLevel`, off
@@ -43,6 +44,15 @@ byte-identical to before. Rationale, the size/geometry table, and what the 20× 
 `_Scripts/Controller/Vessel/R_VesselActions/SPARROW_SKYBURST_BAY.md` § "The missile grows as it
 travels (MASS)".
 
+**The mesh.** At 20× the model was an eight-sided barrel (312 quads) filling the screen, so
+`Tools/Build/subdivide_sparrow_missile.py` applies two Catmull-Clark steps **in place**: 624 →
+9,984 triangles, barrel 8- → 32-sided (silhouette deviation 7.61% → 0.48%), renormalized back onto
+the authored bounding box so the launch size the growth math is written against is unchanged. The
+geometry keeps its name, so it keeps its Unity fileID; the file keeps its guid; material layer,
+submesh order, UVs and unit scale are untouched — **the prefab and the .meta did not change**. The
+four element blend shapes were dropped (inert on this projectile — it renders through a
+`MeshFilter`; keeping them would leave a shape key that tears the subdivided mesh).
+
 **Verified offline** (more than inspection): .NET 8 installed in-session; the real shipped
 `ElementalScaling.cs`, `RoundGrowthRamp.cs`, `SparrowRoundGrowthTests.cs` and
 `RoundGrowthRampTests.cs` compiled and executed against a `Mathf`/NUnit shim — **21/21 tests
@@ -51,7 +61,12 @@ pass**; all five edited/added C# files Roslyn-parse with 0 syntax errors;
 assumed** — `Sparrow Missile.fbx` vertex bounds span 8.2951 × 1.9054 mesh units at
 `UnitScaleFactor 1`, which at the prefab's `MissileVisual` 2 × root `ProjectileScale` 10 is a
 1.659 u × 0.381 u launch size, independently reproducing the 1.7 u the bay doc measured a
-different way.
+different way. **The rewritten FBX was checked with `assimp`, an independent FBX reader** — 2
+meshes in the same order (1,152 / 3,840 quads = exactly 16× the authored 72 / 240 material split),
+2 materials, 1 animation, closed genus-0 surface, bounds matching to 6 decimals. That check earned
+its keep: a first pass produced a byte-for-byte identical node tree that assimp nonetheless read as
+having **no animation**, because the writer dropped the empty-scope terminator that 7 childless
+nodes (one of them `AnimationLayer`) carry. Fixed and re-proved before the asset was touched.
 
 **Verify in editor**
 1. **Compile clean**, then run the edit-mode suite — `SparrowRoundGrowthTests` (11) +
@@ -84,13 +99,26 @@ different way.
 9. **The exhaust.** The root `ParticleSystem` does not grow with the model, and against a 33 u
    missile it will read as much too small — this is the pre-existing follow-up in the bay doc, and
    the 20× size makes it the most likely thing to look wrong.
+10. **The model re-imported.** Highest-risk item of the three asset edits, because the FBX was
+    rewritten by a tool rather than by a modelling package. Check the Console for an import error,
+    then select `Sparrow Missile.fbx` — the preview should show ~9,984 tris and a smooth barrel.
+    The prefab reference is the thing to confirm: `SkyBurstProjectile.prefab` → `MissileVisual` →
+    `Mesh Filter` must still read `Cube.003` and not "Missing". (It resolves by fileID, which
+    `fileIdsGeneration: 2` derives from the mesh NAME — unchanged — but that is reasoning, not a
+    test.) In play, the two material zones must not have swapped colour.
+11. **The rounded nose.** Subdivision fillets sharp features: the shoulder at y ≈ -1.2 and the nose
+    tip (~17% blunter at its last ring) are rounder than the artist left them. Everywhere else the
+    radius profile tracks the original within 0.5%. If the nose reads as too soft, `--levels 1`
+    halves the rounding and quarters the triangles.
 
 **First-pass tuning** (starting points, expect a balancing pass): `growthFactorAtRestingMass: 20`,
 `growthFactorAtFullMass: 32` on `SkyBurstGunAction.asset`; `flightGrowthCompleteAt01: 0.2` on the
 prefab. Raising the factors is bounded at **~44.6×**, where the missile's girth would exceed its
 17 u hit diameter and it would look bigger than it hits in every direction rather than only along
 its nose; `SparrowRoundGrowthTests.TheMissileIsBroadsideContainedByItsHitSphere` fails the suite if
-a retune crosses it.
+a retune crosses it. Mesh resolution is `subdivide_sparrow_missile.py --levels` (2 shipped);
+`--check` proves the shipped mesh's invariants without needing the original, which now lives only
+in git history.
 
 ---
 

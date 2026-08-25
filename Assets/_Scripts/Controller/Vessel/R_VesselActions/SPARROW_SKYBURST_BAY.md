@@ -106,11 +106,59 @@ If that beat ever reads as a missed hit rather than a big missile, the fix is th
 not the growth — see the follow-up below. Shrinking the model back down would just undo the size
 that was asked for.
 
+## The mesh, at 20x
+
+The extracted missile is an **eight-sided barrel** — 312 quads, 314 verts — which is fine at
+the ~1.7 u it was authored for and reads as a faceted tube once growth puts a 33 u missile on
+screen. The shading was never the problem: the mesh is already fully smooth (every control point
+carries exactly one normal, measured). The **silhouette** was — an octagon deviates 7.6% from the
+circle it is standing in for.
+
+`Tools/Build/subdivide_sparrow_missile.py` applies **two Catmull-Clark steps in place**:
+
+| | quads | verts | tris | barrel | silhouette deviation |
+|---|---|---|---|---|---|
+| as authored | 312 | 314 | 624 | 8-sided | 7.61% |
+| level 1 | 1,248 | 1,250 | 2,496 | 16-sided | 1.92% |
+| **level 2 (shipped)** | **4,992** | **4,994** | **9,984** | **32-sided** | **0.48%** |
+
+**In place is the point.** The geometry keeps its name (`Cube.003`) so it keeps its Unity fileID,
+the file keeps its guid, and the material layer, submesh order, UV layout and FBX unit scale are
+untouched — so the projectile prefab, its material array and its import settings did not change
+and did not need to. Verified with `assimp` as an independent reader: 2 meshes in the same order
+(1,152 quads on material 1, 3,840 on material 0 — exactly 16x the authored 72/240 split), 2
+materials, 1 animation, closed genus-0 surface.
+
+**It is renormalized back onto the authored bounding box.** Catmull-Clark converges to a limit
+surface *inside* its control mesh — measured 9.8% radially, 3.9% along the length here — and the
+missile's launch size is not a free parameter: 1.659 u x 0.381 u is what
+`SPARROW_SKYBURST_BAY.md` and `SparrowRoundGrowthTests` are both written against, and it is what
+makes the round match the bay missile at the handoff. The tool restores the box exactly (x and z
+share one factor so the barrel stays circular) and `--check` fails if it ever drifts more than 1%.
+
+**Subdivision rounds sharp features, and two show.** The shoulder at y ≈ -1.2 (a hard step from
+r 0.79 to 0.96 in one segment) becomes a fillet, and the nose tip is ~17% blunter at its last
+ring. Both are what subdivision does; both read as improvements on a model that was already
+smooth-shaded, where a hard step under smooth normals reads as a pinch. Everywhere else the
+radius profile tracks the original within 0.5%.
+
+**The four element blend shapes were dropped** (Space / Charge / Time / Mass). They index control
+points by position in the original 314, which a subdivided mesh no longer has; keeping them would
+leave a shape key that tears the mesh if anything ever drove one. Nothing does — the projectile
+renders through a `MeshFilter`, not a `SkinnedMeshRenderer`, and the elemental hull morphs are a
+VESSEL system that never looked at this asset.
+
+The original mesh is recoverable from git history; the tool's docstring carries the exact
+`git show` command for re-deriving, and `--check` proves the shipped file's invariants without
+needing it.
+
 ## Files
 
 | File | Role |
 |---|---|
-| `Assets/_Models/Sparrow Missile.fbx` | The missile pulled out of the Sparrow model (guid `98d8cb0114a1ad04e9682869849be719`, from the old branch — the skyburst projectile prefab references its mesh + embedded material) |
+| `Assets/_Models/Sparrow Missile.fbx` | The missile pulled out of the Sparrow model (guid `98d8cb0114a1ad04e9682869849be719`, from the old branch — the skyburst projectile prefab references its mesh + embedded material). **Subdivided 2 Catmull-Clark levels in place** (624 → 9,984 tris) so it holds up at 20x; same guid, same mesh fileID, same bounding box |
+| `Tools/Build/subdivide_sparrow_missile.py` | The subdivision, with `--check` proving the shipped mesh's invariants (all-quad, closed, material split, authored bounds, unit normals) |
+| `Tools/Build/fbx_binary.py` | Round-trip codec for binary FBX 7.x — lets a tool edit an artist-authored file and write it back without a modelling package |
 | `Assets/_Models/Vessel Models/SparrowModel4.fbx` | Animation donor: the two "Missile Launch" takes |
 | `Assets/_Animations/SparrowAnimatorController.controller` | + additive layer **Missile Launching** (index 1, default weight 0) with states `Missile Launch 1` / `Missile Launch 2` at 2.5× speed |
 | `_Scripts/Controller/Animation/SparrowAnimationController.cs` | Resurrected (was dead code; the prefab ran `MantaAnimationContoller`): identical puppetry + bay-layer driving off `OnMissileFired` |
@@ -130,6 +178,7 @@ that was asked for.
 | `launchDelaySeconds` | `SkyBurstGunAction.asset` | 0.2 | Press → projectile spawn. The animated missile departs at 0.4 s ÷ 2.5 = 0.16 s; 0.2 lands the handoff just as it clears the hull |
 | State speed | animator states `Missile Launch 1/2` | 2.5 | Whole bay cycle ≈ 0.35 s |
 | Visual scale | `SkyBurstProjectile.prefab` → `MissileVisual.localScale` | 2 | World missile length ≈ 1.66 u at ProjectileScale 10 |
+| Mesh resolution | `subdivide_sparrow_missile.py --levels` | 2 | Catmull-Clark steps. Each step is 4x the triangles; drop to 1 (2,496 tris, 16-sided) if 9,984 is too heavy |
 | Bay side predicate | `FireGunActionExecutor.Fire` | ammo ≥ 2×cost → right | Keep single-sourced; do not re-derive in the animation |
 | `growthFactorAtRestingMass` / `growthFactorAtFullMass` | `SkyBurstGunAction.asset` | 20 / 32 | HOW MUCH the missile MODEL swells. Bounded above by the broadside budget (~44.6×) — see the section above before raising it |
 | `flightGrowthCompleteAt01` | `SkyBurstProjectile.prefab` → `Projectile` | 0.2 | WHEN. Fraction of the flight the swell takes; it holds after. 1 = swell all the way in, the tracer's shape |
@@ -151,8 +200,9 @@ compile/play-test — the donor-clip path binding and the visual seam both need 
   is still a DogFight balance change (a missile hit is 50 points), still flagged for Garrett,
   still not silently retuned. A sphere of radius ~16.6 would contain the resting missile end to
   end.
-- The root `ParticleSystem` exhaust was tuned against the 15 u wedge; it may need a size pass
-  against the smaller missile.
+- The root `ParticleSystem` exhaust was tuned against the 15 u wedge and never re-tuned. It sits
+  on the ROOT, so it does not grow with the model — against a 33 u missile it is the most likely
+  thing to read as wrong. Needs a size pass.
 - Remote peers: the bay animation rides the same executor event as the local projectile spawn,
   so it plays wherever the projectile spawns — if skyburst fire is ever server-relayed rather
   than locally simulated per client, the bay animation follows automatically.
