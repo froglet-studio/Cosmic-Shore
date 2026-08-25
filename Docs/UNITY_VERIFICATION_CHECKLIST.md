@@ -48,8 +48,8 @@ component serves — background art bleeds under the notch while a separate cont
   beside it) — hand-authored scene YAML: a magenta full-bleed background under a translucent
   content layer carrying the fitter and four corner markers, plus an IMGUI readout of the live
   safe area / resolution / orientation / applied anchors. The content layer is authored with the
-  24 px minimum edge inset from `Docs/STYLE_FOUNDATION.md` §9 (`sizeDelta -48,-48`), which the
-  fitter preserves — so the scene demonstrates the full §9 contract, inset included, and the inset
+  24 px minimum edge inset from `Docs/STYLE_FOUNDATION.md` §8 (`sizeDelta -48,-48`), which the
+  fitter preserves — so the scene demonstrates the full §8 contract, inset included, and the inset
   still reads on desktop where the fit itself is a no-op. Not in Build Settings; open it by hand.
 
 **Verified out of editor** (what was actually run here, so nobody re-does it): all three sources
@@ -71,8 +71,11 @@ for real — 8/8 pass. The scene YAML parses and has zero dangling local `fileID
    across it, so it is the case a width/height-only change check would sleep through.
 5. Resize the Game view / toggle fullscreen with no simulator → nothing moves and nothing is
    logged (the change check runs, the apply does not).
-6. Per §9's test aspects, repeat step 3 at **16:9 · 20:9 · 4:3** → the content layer stays inside
+6. Per §8's test aspects, repeat step 3 at **16:9 · 16:10 · 21:9** → the content layer stays inside
    the safe rect at each, and the background still fills the panel.
+   *(Style Foundation v0.3 moved safe area §9 → §8 and changed this list; it read
+   16:9 · 20:9 · 4:3 under v0.2, which is what the scene was originally authored against.
+   Running the two retired aspects as well costs nothing and is worth doing once.)*
 
 **Not done on purpose:** no prefab or shipping canvas has the component attached yet. Wiring it
 (most likely onto the content layer under `GameCanvas.prefab`, applied to the prefab rather than

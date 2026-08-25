@@ -18,14 +18,15 @@ Maintained by the `ui-redesign-tracker` skill. Do not hand-edit the status table
 | T4 | UIThemeSO + literal inventory | TODO | — | | | |
 | T5 | Download & install TMP fonts | TODO | — | | | |
 | T6 | TMP Style Sheet + Aldrich audit | TODO | T5 | | | |
+| T7 | Component sprite kit | TODO | — | | | |
 
-**Critical path:** T2 → T3 is the long pole. T1, T4, T5 are independent and can run in parallel. T6 needs T5's font assets to exist.
+**Critical path:** T2 → T3 is the long pole. T1, T4, T5, T7 are independent and can run in parallel. T6 needs T5's font assets to exist.
 
 ---
 
 ## T1 — Safe area component
 
-**Spec:** Style Foundation §9 · **Audit ref:** §1.3
+**Spec:** Style Foundation §8 · **Audit ref:** §1.3
 
 Acceptance criteria:
 - [~] `Assets/_Scripts/UI/SafeAreaFitter.cs` exists and compiles
@@ -49,12 +50,12 @@ Acceptance criteria:
   out-of-range clamping, degenerate mid-rotation screen.
 - `Assets/_Scenes/Game_TestDesign/SafeAreaFitterTestScene.unity` — two full-stretch sibling layers
   under one Canvas: `Background Art (bleeds under notch)` (magenta, no fitter) and
-  `Safe Area Content` (translucent, carries the fitter, four corner markers, authored at §9's
+  `Safe Area Content` (translucent, carries the fitter, four corner markers, authored at §8's
   24 px edge inset via `sizeDelta -48,-48`). Not in Build Settings.
 - `Assets/_Scenes/Game_TestDesign/SafeAreaTestReadout.cs` — scene-local IMGUI readout of live
   safe area / resolution / orientation / applied anchors, drawn in the full screen rect.
-- `Docs/UNITY_VERIFICATION_CHECKLIST.md` — 🔴 entry with the in-editor steps, including §9's
-  16:9 · 20:9 · 4:3 test aspects.
+- `Docs/UNITY_VERIFICATION_CHECKLIST.md` — 🔴 entry with the in-editor steps, including the
+  16:9 · 20:9 · 4:3 test aspects that v0.2 §9 called for — superseded, see the v0.3 note below.
 
 **Findings:**
 - `Screen.safeArea` appeared **zero times** in the codebase before this, as §1.3 records; there was
@@ -79,9 +80,9 @@ Acceptance criteria:
   are the ones `Menu_Main.unity` already uses.
 
 **Deviations from spec:**
-- **§9's 24 px minimum edge inset is authored padding, not enforced by the component**, and the two
-  §9 rules cannot both hold any other way: a fitter-enforced inset would break "full-screen safeArea
-  is a no-op" on desktop, where §9 still wants content 24 px off the edge. So the component writes
+- **§8's 24 px minimum edge inset is authored padding, not enforced by the component**, and the two
+  §8 rules cannot both hold any other way: a fitter-enforced inset would break "full-screen safeArea
+  is a no-op" on desktop, where §8 still wants content 24 px off the edge. So the component writes
   **anchors only** and leaves authored `offsetMin`/`offsetMax` alone (most reference implementations
   zero them), and the inset is authored on the content layer, where it composes with the fit and
   survives the no-op. Demonstrated in the test scene. Nothing enforces it on a future content layer
@@ -95,9 +96,17 @@ Acceptance criteria:
   (driving its anchors would slide it, not resize it).
 - **"Compiles" is `[~]`, not `[x]`.** No Unity compile has happened — this branch was authored in a
   remote session with no editor and no `unity` CLI binary.
-- §9's other two rules are **out of T1's scope and untouched here**: Android max aspect 2.1 → 2.4 is
-  T2's criterion, and the 16:9 · 20:9 · 4:3 test aspects are an editor check, carried into the
-  verification checklist.
+- v0.2 §9's other two rules were **out of T1's scope and untouched here**: Android max aspect
+  2.1 → 2.4 is T2's criterion, and the 16:9 · 20:9 · 4:3 test aspects are an editor check, carried
+  into the verification checklist. Both moved in v0.3 — see the note below.
+
+> **Re-scoped against Style Foundation v0.3.** Safe area moved **§9 → §8** and shrank to a
+> paragraph. Two rules this task's record cites no longer read the same: the test aspects are now
+> **16:9 · 16:10 · 21:9** (v0.2 said 16:9 · 20:9 · 4:3), and **the Android max-aspect 2.1 → 2.4
+> rule is gone from the spec entirely** — v0.3 §8 defers mobile and says `SafeAreaFitter` ships
+> dormant, which is what this task built. The 24 px inset survives, and v0.3 now states it is a
+> **floor, authored as padding** — i.e. it ratifies this task's deviation. Status and criteria are
+> unchanged; re-check the verification-checklist aspect list before closing.
 
 ## T2 — Finish canvas resolution migration
 
@@ -114,6 +123,12 @@ Acceptance criteria:
 - [ ] Android max aspect raised 2.1 → 2.4
 - [ ] No remaining reference resolution outside 1920×1080 project-wide
 - [ ] Project builds; no canvas visibly regressed in a smoke pass
+
+> **Re-scoped against Style Foundation v0.3.** §5 still exists but is now *Geometry — the corner
+> sliver*; the 1920×1080 / PPU 240 reference this task migrates to is stated in the **document
+> header**, not in §5. The **Android max aspect 2.1 → 2.4** criterion has no spec home in v0.3 —
+> §8 defers mobile — so that criterion is currently unbacked and needs a design call before it is
+> actioned. Status and criteria are unchanged.
 
 **Deliverables:**
 **Findings:**
@@ -146,16 +161,24 @@ Acceptance criteria:
 
 ## T4 — UIThemeSO + literal inventory
 
-**Spec:** Style Foundation §10 · **Audit ref:** §1.4, §5.4
+**Spec:** Style Foundation §11 · **Audit ref:** §1.4, §5.4
 
 Acceptance criteria:
-- [ ] `UIThemeSO` authored to §10 **verbatim** — 25 fields, no additions
+- [ ] `UIThemeSO` authored to §11 **verbatim** — 25 fields, no additions
 - [ ] Follows `HUDAnimationSettingsSO` pattern with hardcoded fallbacks
 - [ ] **No team colour fields** — they stay in `SO_ColorSet`
 - [ ] Live asset created and referenced
 - [ ] Mapping report covers all 165 literals in `Assets/_Scripts/UI/`
 - [ ] Unmapped literals bucketed: (a) missing token, (b) feature-level SO, (c) never designed
 - [ ] No call sites changed yet
+
+> **Re-scoped against Style Foundation v0.3.** The field map moved **§10 → §11** (§10 is now the
+> component library). The field list itself was rebuilt on the studio palette: the criterion's
+> **"25 fields"** and every v0.1 hex it implied are superseded — v0.3 §11 lists ~15 rows keyed to
+> the guide colours (`textLight E6E9FF`, `surfaceBlack 00010A`, `cta 99FF80`, …), and `chamfer*`
+> is now `sliver*`. `danger FF4B3A` is still **proposed, not approved**. Author to v0.3 §11, not to
+> the field count in the criteria. The no-team-colours rule is unchanged. Status and criteria are
+> unchanged.
 
 **Deliverables:**
 **Findings:**
@@ -182,6 +205,14 @@ Acceptance criteria:
 - [ ] Type-scale test scene screenshot captured at 1920×1080
 - [ ] Tabular figure check: `0123456789` over `1111111111` columns align
 
+> **Re-scoped against Style Foundation v0.3.** §4 is still §4 but the family set changed
+> fundamentally: v0.3 §0-C **cancels JetBrains Mono and Space Grotesk**, retains **Aldrich** for
+> headings and body, and keeps **Chakra Petch SemiBold** for buttons only. Tabular figures are now
+> bought with TMP `<mspace>` on Aldrich rather than by a mono family. Most of the criteria above
+> therefore name assets that should no longer be installed, and the Space Grotesk fallback-chain
+> and default-font criteria contradict v0.3. Re-derive the criteria from v0.3 §4 before starting.
+> Status and criteria are left as written pending that pass.
+
 **Deliverables:**
 **Findings:**
 **Deviations from spec:**
@@ -199,6 +230,35 @@ Acceptance criteria:
 - [ ] Liberation Sans leak list produced (~174 refs)
 - [ ] Migration **not** executed — estimate only
 
+> **Re-scoped against Style Foundation v0.3.** §4 is still §4, but v0.3 makes **Aldrich the
+> retained brand font**, not a font to migrate off — which inverts this task's premise. The
+> "Aldrich migration cost report" criterion is obsolete as written; what v0.3 needs instead is an
+> `<mspace>` / `TabularText` plan for the numeric roles. The named styles are now **11 roles**
+> (Display, H1–H3, Body, Body small, Button, Button small, Data large/Data/Data small), not 10.
+> The Liberation Sans leak list still stands. Status and criteria are left as written pending a
+> re-derive against v0.3 §4.
+
+**Deliverables:**
+**Findings:**
+**Deviations from spec:**
+
+---
+
+## T7 — Component sprite kit
+
+**Spec:** Style Foundation §5 (geometry) · §10 (components)
+
+Acceptance criteria:
+- [ ] 9-slice sprites authored for: button (two sliver sizes + flipped), panel/popup (border and
+      fill variants), card, hexagon tile, hexagon slider handle, currency pill, end-game banner +
+      end caps
+- [ ] Corner sliver is a **diagonal cut on two opposite corners, flippable** — not a rounded rect,
+      not a single chamfer
+- [ ] Border insets correct — slivers hold their shape at any width
+- [ ] All sprites **white + alpha, no baked colour** — tinted from `UIThemeSO` at runtime
+- [ ] Test scene shows each sprite at three widths
+- [ ] **No shipping prefab touched**
+
 **Deliverables:**
 **Findings:**
 **Deviations from spec:**
@@ -213,7 +273,9 @@ Anything found during implementation that needs a design decision. The implement
 |---|---|---|---|---|
 | 1 | T1 impl | T1 | Should the fitter conform BOTH axes always, or expose a per-axis / per-edge opt-out? A HUD often wants the notch inset but not the bottom gesture-bar inset. Currently both axes, always. | OPEN |
 | 2 | T1 impl | T1 | Which layer of `GameCanvas.prefab` becomes the constrained content layer, and does background art move to a sibling above it? The two-layer contract needs a home in the prefab before T1 can be applied — likely settled inside T3. | OPEN |
-| 3 | T1 impl | T1 | §9's 24 px minimum edge inset is currently authored padding on the content layer (nothing enforces it). Should it stay authored — which is what lets it survive the desktop no-op — or become a serialized floor on `SafeAreaFitter`? And is 24 px canvas units at the 1920×1080 reference, or device pixels? | OPEN |
+| 3 | T1 impl | T1 | §8's 24 px minimum edge inset is currently authored padding on the content layer (nothing enforces it). Should it stay authored — which is what lets it survive the desktop no-op — or become a serialized floor on `SafeAreaFitter`? And is 24 px canvas units at the 1920×1080 reference, or device pixels? | OPEN |
+| 4 | v0.3 intake | — | **`STYLE_FOUNDATION.md` §3 cross-references "§11.9" for the end-of-game victory banner, but §11 is the UIThemeSO field map and has no subsections — the banner is §10.9.** Broken internal citation in the spec, left unfixed here because the tracker may not edit the spec. Correct it to §10.9 in the next spec revision. | OPEN |
+| 5 | v0.3 intake | T5/T6 | **§4's type scale has no source art backing it.** The eight style-guide pages supplied were Main Colors, Additional Colors, Icons (supplied twice), Buttons, and three UI Elements pages — there was no Typography page. Either supply it, or confirm §4 is spec-authored rather than transcribed from the guide. See `Docs/StyleGuide/README.md`. | OPEN |
 
 ---
 
@@ -222,6 +284,8 @@ Anything found during implementation that needs a design decision. The implement
 | Version | Date | Change | Driven by |
 |---|---|---|---|
 | 0.1 | — | Initial token system, team-colour contract, type scale | Design |
+| 0.2 | — | Rebuilt on the studio palette and typography | Design |
+| 0.3 | 2026-08-25 | Team names resolved (Jade = Team 1 cyan, Ruby = Team 2 purple, Gold = Team 3 amber). PC type scale set. **Aldrich retained**, with TMP `<mspace>` for numerics — JetBrains Mono and Space Grotesk cancelled. Chamfer corrected to the **flippable corner sliver**. Component library §10 added from the source guide; UIThemeSO field map moved §10 → §11. | Design |
 
 ---
 
