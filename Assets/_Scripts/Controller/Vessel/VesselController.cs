@@ -164,6 +164,15 @@ namespace CosmicShore.Gameplay
                 VesselSpeedTunnel.SetTarget(VesselStatus, transform);
             }
 
+            // TAIL + JETS (Docs/VESSEL_TAIL_AND_JETS.md) — bound here for the same reason as the
+            // laws above: Initialize is the one method every vessel calls on every spawn path, so
+            // a hull cannot be authored, nor a mode written, in which a pilot sees somebody else's
+            // engine plumes. NOT gated on IsLocalPilot — the call is made on every machine and the
+            // flag is the argument, because a remote replica must be told to HIDE its jets just as
+            // deliberately as the local one is told to show them. Ordered BEFORE SetShipProperties
+            // so the domain paint below lands on the set this pass just settled.
+            TailAndJets?.SetViewerIsOwnPilot(player.IsLocalPilot);
+
             if (gameData != null)
                 ShipHelper.SetShipProperties(gameData.ThemeManagerData, this);
             else
@@ -205,13 +214,20 @@ namespace CosmicShore.Gameplay
         public virtual void SetSkimmerMaterial(Material material) =>
                 VesselStatus.SkimmerMaterial = material;
 
-        VesselTrailCustomization _trailCustomization;
-        public virtual void SetTrailColors(Color highlightColor, Color coreColor)
-        {
-            if (_trailCustomization == null)
-                _trailCustomization = GetComponentInChildren<VesselTrailCustomization>(includeInactive: true);
-            _trailCustomization?.SetTrailColors(highlightColor, coreColor);
-        }
+        VesselTailAndJets _tailAndJets;
+
+        /// <summary>
+        /// This vessel's TAIL and JETS (Docs/VESSEL_TAIL_AND_JETS.md). Resolved lazily and cached:
+        /// the component is optional today because the fleet is still being migrated onto the
+        /// standard, so a vessel without one simply has no tail or jets to paint or hide.
+        /// </summary>
+        VesselTailAndJets TailAndJets =>
+            _tailAndJets != null
+                ? _tailAndJets
+                : _tailAndJets = GetComponentInChildren<VesselTailAndJets>(includeInactive: true);
+
+        public virtual void SetTailAndJetColors(Color highlightColor, Color coreColor) =>
+            TailAndJets?.SetColors(highlightColor, coreColor);
 
         public virtual void BindElementalFloat(string name, Element element) =>
             VesselStatus.ElementalStatsHandler.BindElementalFloat(name, element);
@@ -288,6 +304,10 @@ namespace CosmicShore.Gameplay
                 PrismOcclusionCorridor.ClearTarget(transform);
                 VesselSpeedTunnel.ClearTarget(transform);
             }
+
+            // Same handover, same reason: the vessel the local pilot just gave up must stop
+            // drawing its jets on this screen, and the one they just took up must start.
+            TailAndJets?.SetViewerIsOwnPilot(player.IsLocalPilot);
 
             // If the player is AI in general, or if it is a network client
             if (player.IsInitializedAsAI || player.IsNetworkClient)
