@@ -25,9 +25,9 @@ namespace CosmicShore.Gameplay
     ///    worm population (see <see cref="TickSeparation"/>). Both halves regrow their
     ///    missing ends by DIFFERENTIATING the wound segment (a state change of
     ///    existing mass), so mid-body kills multiply the problem.
-    ///  • Optimal play emerges: chain end-kills faster than EndRegrowSeconds and you
-    ///    always face soft tissue; slower and every kill is armored. Starve it
-    ///    (deny mass) and it digests itself tail-first.
+    ///  • Optimal play emerges: chain end-kills faster than the cell's fauna production
+    ///    cycle and you always face soft tissue; slower and every kill is armored.
+    ///    Starve it (deny mass) and it digests itself tail-first.
     ///  • Souls-like attack grammar: rest pulses → readable telegraph coil → locked
     ///    lunge (dodgeable) → straightened recovery (the punish window), plus a
     ///    tail-whip against loiterers. Contact damage is entirely the danger
@@ -62,13 +62,11 @@ namespace CosmicShore.Gameplay
         // new brain wires the severed half instead of building a fresh chain.
         List<WormSegmentFauna> _pendingAdoption;
 
-        // Wound clocks (-1 = no wound). Set when an end dies or a split severs the
-        // chain; cleared when the wound differentiates into a new capital segment.
-        float _headWoundedAt = -1f;
-        float _tailWoundedAt = -1f;
-
-        // Feeding bank toward the next body segment (config.FeedsPerSegment).
-        int _feedsBanked;
+        // The colony's production clock: it rides the CELL's fauna production cycle, so a
+        // worm grows on the same heartbeat the biome spawns wildlife on (§23.9). Stamped
+        // at Initialize so a fresh colony — and each half of a split — waits a full cycle
+        // before its first production.
+        float _lastProductionTime;
         float _lastStarvationShed;
 
         // --- Attack state machine (souls-like grammar) ---
@@ -179,17 +177,13 @@ namespace CosmicShore.Gameplay
         // WormColonyConfigSO.RegrownEndElement fallback).
         Element _pickedHeartElement = Element.None;
 
-        /// <summary>The element wounds differentiate into: the config pick when present, else the tuning default.</summary>
-        Element RegrowElement =>
-            _pickedHeartElement != Element.None ? _pickedHeartElement : config.RegrownEndElement;
-
         /// <summary>
         /// Element-as-data for a POPULATION: the colony root stays heartless (it is the
         /// anchor; the crystal invariant lands on its members — Docs/ECOSYSTEM.md §23.3),
         /// so a per-element species config (the Lifeform Matrix toy, an element-authored
         /// SpawnProfile entry) forwards its pick to EVERY segment's heart instead of
-        /// provisioning a crystal on this empty anchor. Remembered so newly grown segments
-        /// and wound differentiation carry the same element — a colony breeds true.
+        /// provisioning a crystal on this empty anchor. Remembered so every member grown on
+        /// a later production cycle carries the same element — a colony breeds true.
         /// </summary>
         protected override void ProvisionHeart(Element element)
         {
@@ -238,6 +232,7 @@ namespace CosmicShore.Gameplay
             // fresh kaiju cruises and grazes before its first assault.
             _huntCycleAnchor = Time.time - Mathf.Min(config.HuntDurationSeconds, config.HuntIntervalSeconds);
             _lastStarvationShed = Time.time;
+            _lastProductionTime = Time.time;
         }
 
         protected override void Start()
@@ -254,19 +249,25 @@ namespace CosmicShore.Gameplay
             config.KaijuScale * Mathf.Pow(config.TaperPerSegment, index);
 
         /// <summary>
-        /// Rest distance between segments[linkIndex-1] and segments[linkIndex]: the body
-        /// gap, tapered down the chain, widened behind the HEAD (it needs room —
-        /// HeadGapMultiplier) and into the TAIL (TailGapMultiplier). Ratios recovered
-        /// from the 2024 chain layout.
+        /// Rest distance across the link between two adjacent members: the body gap,
+        /// tapered down the chain, widened behind the HEAD (it needs room —
+        /// HeadGapMultiplier) and into the TAIL (TailGapMultiplier). Ratios recovered from
+        /// the 2024 chain layout. Roles are passed rather than read off the list so the
+        /// build pass, the follow pass and every growth site share ONE formula — a member
+        /// being placed does not exist in the list yet.
         /// </summary>
-        float RestSpacing(int linkIndex)
+        float LinkSpacing(int linkIndex, WormSegmentRole prevRole, WormSegmentRole nextRole)
         {
             float s = config.SegmentSpacing * config.KaijuScale
-                      * Mathf.Pow(config.TaperPerSegment, linkIndex - 1);
-            if (segments[linkIndex - 1].Role == WormSegmentRole.Head) s *= config.HeadGapMultiplier;
-            if (segments[linkIndex].Role == WormSegmentRole.Tail) s *= config.TailGapMultiplier;
+                      * Mathf.Pow(config.TaperPerSegment, Mathf.Max(0, linkIndex - 1));
+            if (prevRole == WormSegmentRole.Head) s *= config.HeadGapMultiplier;
+            if (nextRole == WormSegmentRole.Tail) s *= config.TailGapMultiplier;
             return s;
         }
+
+        /// <summary>Rest distance between segments[linkIndex-1] and segments[linkIndex].</summary>
+        float RestSpacing(int linkIndex) =>
+            LinkSpacing(linkIndex, segments[linkIndex - 1].Role, segments[linkIndex].Role);
 
         /// <summary>Fresh spawn: head + bodies + tail laid out along -forward, kaiju-scaled and tapered.</summary>
         void BuildChain()
@@ -282,20 +283,15 @@ namespace CosmicShore.Gameplay
                 AddSegmentToChain(Instantiate(prefab, pos, facing), segments.Count,
                     Vector3.one * SegmentTargetScale(i));
                 if (i + 1 < count)
-                    pos -= dir * RestSpacingForBuild(i, i + 1 == count - 1);
+                    pos -= dir * LinkSpacing(i + 1, RoleForBuildIndex(i, count),
+                                             RoleForBuildIndex(i + 1, count));
             }
         }
 
-        // BuildChain-time spacing: RestSpacing reads roles from the live list, but during
-        // the build the NEXT segment doesn't exist yet — same math, roles known up front.
-        float RestSpacingForBuild(int prevIndex, bool nextIsTail)
-        {
-            float s = config.SegmentSpacing * config.KaijuScale
-                      * Mathf.Pow(config.TaperPerSegment, prevIndex);
-            if (prevIndex == 0) s *= config.HeadGapMultiplier;
-            if (nextIsTail) s *= config.TailGapMultiplier;
-            return s;
-        }
+        static WormSegmentRole RoleForBuildIndex(int index, int count) =>
+            index == 0 ? WormSegmentRole.Head
+            : index == count - 1 ? WormSegmentRole.Tail
+            : WormSegmentRole.Body;
 
         /// <summary>Split adoption: the severed rear half becomes this colony's chain.</summary>
         void AdoptChain(List<WormSegmentFauna> adopted)
@@ -582,8 +578,7 @@ namespace CosmicShore.Gameplay
                 TickThreatScan();
                 TickFeeding();
                 TickPredation();
-                TickGrowth();
-                TickDifferentiation();
+                TickProduction();
                 TickTailWhip();
             }
         }
@@ -705,7 +700,6 @@ namespace CosmicShore.Gameplay
                 if (!IsEdiblePrism(prism)) continue;
                 prism.Consume(head, domain, PLAYER_NAME, true, true);
                 NotifyFed();
-                _feedsBanked++;
                 bites++;
             }
         }
@@ -740,10 +734,7 @@ namespace CosmicShore.Gameplay
                 // Predated respects the prey's immunity and returns false if it
                 // couldn't be eaten — only feed on a real kill.
                 if (f.Predated(PLAYER_NAME, _mouth))
-                {
                     NotifyFed();
-                    _feedsBanked++;
-                }
             }
         }
 
@@ -772,77 +763,110 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// Growth is feeding-funded ONLY: every FeedsPerSegment consumed prisms, one
-        /// new body segment blooms in behind the head (mass in from consumption —
-        /// never a clock). Capped by MaxSegmentsPerWorm (the collider-budget backstop).
+        /// The colony's PRODUCTION cycle — a population grows on its biome's own heartbeat.
+        /// Once per <see cref="ProductionPeriod"/> (the host cell's fauna production cycle,
+        /// <see cref="Cell.CurrentFaunaSpawnPeriod"/>) the colony grows exactly ONE member,
+        /// in priority order:
+        ///
+        ///   1. a HEAD, if it has none — a decapitated colony cannot feed, so a mouth comes
+        ///      before length, and this is the only way a beheaded worm ever recovers;
+        ///   2. a TAIL, if it has none — the stinger that makes its rear dangerous again;
+        ///   3. otherwise a BODY segment behind the head — the colony simply gets longer.
+        ///
+        /// Same shape as the lattice flora colonies, which birth one plant per fauna-wave
+        /// period (Docs/ECOSYSTEM.md §32.7): the cell's fauna cadence is the platform's
+        /// "population production cycle", so a worm's growth rate is a property of the BIOME
+        /// it lives in rather than of the species. Reading the PERIOD rather than listening
+        /// for a wave event is deliberate — <c>OnFaunaWaveSpawned</c> is raised only by
+        /// <c>RandomLifeSpawner</c>, so an event subscription would be dead code in every
+        /// IntensityWise cell (the spawner-swap trap), and the period is served by the cell
+        /// itself either way.
+        ///
+        /// Invariants: this is PRODUCTION gating, which the conserved-mass law permits —
+        /// nothing here removes mass, there is no lifespan and no decay. Body growth is
+        /// gated on the colony being fed, so length still only accrues while the kaiju is
+        /// eating; head/tail regrowth is NOT, because a headless colony cannot feed and
+        /// gating its mouth on feeding is a deadlock. <see cref="WormColonyConfigSO.MaxSegmentsPerWorm"/>
+        /// still caps every path — it is the collider-budget backstop — and it needs no
+        /// exemption for the ends: reaching the cap requires a complete colony, so losing an
+        /// end always drops it below the cap first, and a missing end can never be blocked.
         /// </summary>
-        void TickGrowth()
+        void TickProduction()
         {
-            if (_feedsBanked < config.FeedsPerSegment) return;
+            if (segments.Count == 0) return;
+            if (Time.time - _lastProductionTime < ProductionPeriod) return;
+
+            // The cycle TURNS whether or not it produces. Stamping here rather than after a
+            // successful growth is what makes an end kill cost a real cycle: otherwise a
+            // colony sitting at the segment cap banks unbounded elapsed time and regrows a
+            // shot-off head on the next behavior tick (~1.5 s) instead of the next wave.
+            _lastProductionTime = Time.time;
+
             if (segments.Count >= config.MaxSegmentsPerWorm) return;
-            if (segments[0].Role != WormSegmentRole.Head) return;
 
-            _feedsBanked -= config.FeedsPerSegment;
-
-            Transform head = segments[0].transform;
-            Vector3 pos = head.position
-                          - head.forward * (config.SegmentSpacing * config.KaijuScale * config.HeadGapMultiplier);
-
-            var seg = Instantiate(bodyPrefab, pos, head.rotation);
-            // Blooms from zero (continuity): inserted at scale zero, the per-frame
-            // GlideScales pass grows it to its taper target while its prisms run their
-            // own growth stamps; the chain's follow springs absorb the insertion — no
-            // bespoke make-room animation. Every downstream segment re-proportions
-            // through the same glide (their taper index just shifted by one).
-            AddSegmentToChain(seg, 1, Vector3.zero);
+            if (segments[0].Role != WormSegmentRole.Head)
+                GrowHead();
+            else if (segments[segments.Count - 1].Role != WormSegmentRole.Tail)
+                GrowTail();
+            else if (!IsStarving)
+                GrowBody();
+            // else starving: the colony is digesting itself, not lengthening.
         }
 
         /// <summary>
-        /// Wound differentiation — the head/tail "regrow". The segment at a wounded
-        /// end hardens into the missing capital role once the wound is EndRegrowSeconds
-        /// old AND the colony is fed (a starving worm cannot differentiate). This is
-        /// a conversion of existing mass — the worm still net-shrank by the kill.
+        /// The host cell's fauna production period. Falls back to the config's own number
+        /// only for a cell that authors no SpawnProfile (a bare tool scene) — every real
+        /// biome answers this itself.
         /// </summary>
-        void TickDifferentiation()
+        float ProductionPeriod
         {
-            if (IsStarving) return;
-            float now = Time.time;
-
-            if (_headWoundedAt >= 0f && now - _headWoundedAt >= config.EndRegrowSeconds)
+            get
             {
-                var leader = segments[0];
-                if (leader.Role == WormSegmentRole.Body)
-                {
-                    leader.DifferentiateTo(WormSegmentRole.Head, RegrowElement);
-                    _headWoundedAt = -1f;
-                }
-                else if (leader.Role == WormSegmentRole.Head)
-                {
-                    _headWoundedAt = -1f; // already resolved
-                }
-                // A lone TAIL leads: no tissue to differentiate — keep the wound
-                // armed so the moment a Body exists it hardens. (In practice a
-                // headless worm can't feed, so this resolves as starvation.)
+                float period = cell ? cell.CurrentFaunaSpawnPeriod : 0f;
+                return period > 0f ? period : Mathf.Max(0.5f, config.FallbackProductionPeriodSeconds);
             }
+        }
 
-            if (_tailWoundedAt >= 0f && now - _tailWoundedAt >= config.EndRegrowSeconds)
-            {
-                var last = segments[segments.Count - 1];
-                if (last.Role == WormSegmentRole.Body)
-                {
-                    last.DifferentiateTo(WormSegmentRole.Tail, RegrowElement);
-                    _tailWoundedAt = -1f;
-                }
-                else if (last.Role == WormSegmentRole.Tail)
-                {
-                    _tailWoundedAt = -1f; // already resolved
-                }
-                // A lone HEAD holds the rear: keep the wound armed — it keeps
-                // feeding, and the first Body it grows differentiates into the
-                // missing Tail on the next tick (the wound is already past its
-                // window). Clearing here would leave a worm that regrows to full
-                // length with no tail danger prisms, ever.
-            }
+        /// <summary>
+        /// Grows a real HEAD at the front of the chain — the whole armored prefab, not a
+        /// hardened stump: a regrown mouth has its plate cage, its fangs (which ARE the
+        /// jaws the feeding and devouring paths read) and its own heart. It blooms from
+        /// zero and takes over the steering, inheriting the outgoing leader's heading so
+        /// the body does not snap.
+        /// </summary>
+        void GrowHead()
+        {
+            Transform leader = segments[0].transform;
+            Vector3 pos = leader.position
+                          + leader.forward * LinkSpacing(1, WormSegmentRole.Head, segments[0].Role);
+            var seg = Instantiate(headPrefab, pos, leader.rotation);
+            AddSegmentToChain(seg, 0, Vector3.zero);
+            _leaderBaseRotation = seg.transform.rotation;
+        }
+
+        /// <summary>Grows a real TAIL off the rear of the chain — stinger, tip tier and heart.</summary>
+        void GrowTail()
+        {
+            int index = segments.Count;
+            Transform last = segments[index - 1].transform;
+            Vector3 pos = last.position
+                          - last.forward * LinkSpacing(index, segments[index - 1].Role, WormSegmentRole.Tail);
+            AddSegmentToChain(Instantiate(tailPrefab, pos, last.rotation), index, Vector3.zero);
+        }
+
+        /// <summary>
+        /// Grows a BODY segment in behind the head. It is inserted at scale zero and blooms
+        /// to its taper target through the per-frame GlideScales pass while its prisms run
+        /// their own growth stamps; the chain's follow springs absorb the insertion, so
+        /// there is no bespoke make-room animation and every downstream member
+        /// re-proportions through the same glide (its taper index just shifted by one).
+        /// </summary>
+        void GrowBody()
+        {
+            Transform head = segments[0].transform;
+            Vector3 pos = head.position
+                          - head.forward * LinkSpacing(1, WormSegmentRole.Head, WormSegmentRole.Body);
+            AddSegmentToChain(Instantiate(bodyPrefab, pos, head.rotation), 1, Vector3.zero);
         }
 
         void TickTailWhip()
@@ -885,28 +909,26 @@ namespace CosmicShore.Gameplay
             if (index == 0)
             {
                 // Decapitated: the new leader inherits the steering base so the body
-                // doesn't snap, and the wound clock starts.
+                // doesn't snap. A replacement head is grown on the cell's next fauna
+                // production cycle (TickProduction) — until then the colony cannot feed.
                 _leaderBaseRotation = segments[0].transform.rotation;
-                _headWoundedAt = Time.time;
                 if (_state == AttackState.Telegraph || _state == AttackState.Lunge)
                     SetState(AttackState.Cruise); // the striking mouth is gone
             }
-            else if (index == segments.Count)
-            {
-                _tailWoundedAt = Time.time;
-            }
-            else
+            else if (index < segments.Count)
             {
                 // Interior kill: sever. This colony keeps the HEAD side (head + every
-                // segment still attached to it) and takes a tail wound; the TAIL side
-                // (everything from the dead member's successor to the tail, inclusive)
-                // becomes a new population with a head wound. Segment totals are
-                // conserved — splitting punishes, it never multiplies mass.
+                // segment still attached to it); the TAIL side (everything from the dead
+                // member's successor to the tail, inclusive) becomes a new population.
+                // Segment totals are conserved — splitting punishes, it never multiplies
+                // mass. Each half regrows the end it is now missing on its own next
+                // production cycle.
                 var rear = segments.GetRange(index, segments.Count - index);
                 segments.RemoveRange(index, segments.Count - index);
-                _tailWoundedAt = Time.time;
                 SpawnSplitColony(rear);
             }
+            // else: the TAIL died — the rear stays soft until the next production cycle
+            // grows a replacement stinger.
         }
 
         /// <summary>
@@ -934,7 +956,6 @@ namespace CosmicShore.Gameplay
             colony.Goal = Goal;
             colony._pendingAdoption = rear;
             colony.Initialize(cell);
-            colony._headWoundedAt = Time.time;
             // Same lineage AND the same identity: the split registers in the cell's live
             // count (so the spawner's seed floor sees two worms), inherits the species
             // config, and is handed this colony's own variant pick rather than re-rolling

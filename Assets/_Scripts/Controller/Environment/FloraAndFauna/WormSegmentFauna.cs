@@ -14,12 +14,17 @@ namespace CosmicShore.Gameplay
     /// (<see cref="WormFauna"/>) owns movement, feeding, and topology; a segment owns
     /// only itself: prism lifecycle, death detection, wither, and its heart.
     ///
+    /// A member's ROLE is fixed at birth. A colony that loses an end grows a real
+    /// replacement on its next production cycle (<see cref="WormFauna"/>) instead of
+    /// hardening a body segment into a stump — so a regrown head arrives with its whole
+    /// armour cage and its fangs, which are also the jaws the colony feeds through.
+    ///
     /// Death paths, all through the sealed <see cref="Fauna.Die"/> chokepoint:
     ///  • body stripped — every body prism destroyed by players/AOE
     ///    (<see cref="OnBodyPrismExploded"/>),
     ///  • heart jousted — a faster vessel jousts the embedded crystal
     ///    (<see cref="Fauna.Jousted"/> → Predated), and
-    ///  • starvation shed — the colony digests its tail-most segment
+    ///  • starvation shed — the colony digests its tail-most member
     ///    (<see cref="WormFauna"/>).
     /// EVERY death drops that individual's heart (mass conserved — the lifeform crystal
     /// invariant applies to each member, not to the colony as a whole); the husk withers —
@@ -38,8 +43,8 @@ namespace CosmicShore.Gameplay
         [Tooltip("Which of the three colony fauna types this prefab is. Head and Tail " +
                  "author danger prisms; Body is the soft tissue a kill splits the " +
                  "population at. EVERY role carries its own elemental heart — a segment " +
-                 "is an individual, not a body part (Docs/ECOSYSTEM.md §23.3). " +
-                 "Runtime differentiation (wound healing) can promote a Body in place.")]
+                 "is an individual, not a body part (Docs/ECOSYSTEM.md §23.3). Fixed at " +
+                 "birth: a missing end is GROWN, never hardened out of a body segment.")]
         [SerializeField] WormSegmentRole role = WormSegmentRole.Body;
         [Tooltip("Element of the heart THIS segment carries — the element-as-data path " +
                  "(LifeFormCrystal.EnsureElementalCrystal): the heart is provisioned from " +
@@ -50,7 +55,9 @@ namespace CosmicShore.Gameplay
         [SerializeField] Element heartElement = Element.Mass;
         [Tooltip("Where the provisioned heart SITS in segment space (recovered from the " +
                  "2024 wormhead authoring: the heart nests INSIDE the head's armor cage " +
-                 "at (0,0,-13.14)). Zero = segment centre. This is a SEAT, not a size — " +
+                 "at (0,0,-13.14); a body segment seats its heart at the FRONT face of " +
+                 "its core prism, z = 3, so the crystal LEADS and the body trails — the " +
+                 "tadpole arrangement). Zero = segment centre. This is a SEAT, not a size — " +
                  "a heart's scale is one curve keyed on LEVEL and is applied at " +
                  "Crystal.SetEmbeddedIn for every lifeform in the game " +
                  "(Docs/ECOSYSTEM.md §33); there is deliberately no per-prefab scale here.")]
@@ -64,7 +71,12 @@ namespace CosmicShore.Gameplay
         /// <summary>The colony this segment belongs to. Set by <see cref="WormFauna"/> on adoption.</summary>
         public WormFauna Colony { get; set; }
 
-        /// <summary>This segment's current role (differentiation can change it in-world).</summary>
+        /// <summary>
+        /// What this member is. FIXED at birth: a colony that loses an end GROWS a real
+        /// replacement on its next production cycle (WormFauna.TickProduction) rather than
+        /// hardening a body segment into a stump, so a regrown head arrives with its whole
+        /// armour cage and fangs instead of one dangerous core prism.
+        /// </summary>
         public WormSegmentRole Role => role;
 
         // Latched by the first death path to win; every other path no-ops after.
@@ -118,7 +130,13 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// Seats the provisioned heart at the authored anchor (see heartLocalPosition).
+        /// Seats the provisioned heart at the authored anchor (see heartLocalPosition) —
+        /// the TADPOLE arrangement: the heart rides at the FRONT of the member's own body
+        /// prisms with the body trailing behind it, never buried inside them. The body
+        /// segment's core prism spans local z ∈ [-3, +3] (measured off the prefab), so its
+        /// heart seats at z = 3; the head keeps its recovered 2024 seat INSIDE the armour
+        /// cage, which is a fight mechanic rather than an oversight.
+        ///
         /// Position ONLY: the heart's size is one curve keyed on LEVEL, applied for every
         /// lifeform at the single gate <see cref="Crystal.SetEmbeddedIn"/>
         /// (Docs/ECOSYSTEM.md §33) — a per-prefab scale here would be a per-prefab REWARD,
@@ -174,36 +192,6 @@ namespace CosmicShore.Gameplay
         {
             if (_dead) return;
             base.OnBodyPrismExploded(prism, killerName);
-        }
-
-        /// <summary>
-        /// Wound differentiation: this segment hardens into the given capital role in
-        /// place — its surviving prisms engage danger through the real pipeline
-        /// (PrismStateManager restyle, clock-stamped). A conversion of existing mass,
-        /// never creation: the segment already IS a fauna and already carries its own
-        /// heart, so differentiation only arms it. The provisioning below is the
-        /// belt-and-braces path for a segment that somehow reached here heartless.
-        /// </summary>
-        public void DifferentiateTo(WormSegmentRole newRole, Element element)
-        {
-            if (_dead || newRole == WormSegmentRole.Body || role == newRole) return;
-            role = newRole;
-
-            var prisms = BodyPrisms;
-            if (prisms != null)
-            {
-                for (int i = 0; i < prisms.Length; i++)
-                {
-                    var hp = prisms[i];
-                    if (hp && !hp.destroyed) hp.MakeDangerous();
-                }
-            }
-
-            if (crystal == null)
-            {
-                crystal = LifeFormCrystal.EnsureElementalCrystal(this, element);
-                if (crystal) crystal.SetEmbeddedIn(this);
-            }
         }
 
         /// <summary>

@@ -124,6 +124,19 @@ outcome is optimization, not life). Use the `/ecology` skill for any change here
   distance, i.e. numerically inert at any weight (`§23.8`). **A boid term blended into a
   NORMALIZED direction must itself be bounded** — scale a unit vector by a falloff in [0,1]
   so the authored weight is a real ratio, never a raw `1/d`.
+  **A colony GROWS on its host cell's fauna production cycle** (`Cell.CurrentFaunaSpawnPeriod`),
+  one member per cycle — a head if it has none, else a tail if it has none, else a body
+  segment — so growth rate is a property of the BIOME, not the species (5s in the freestyle
+  Lattice boot world, 30s in most cells). It is the same population heartbeat the lattice
+  flora colonies breed on (`§32.7`), and it is production gating, which `§0` permits. Read
+  the PERIOD, never `OnFaunaWaveSpawned` — only `RandomLifeSpawner` raises that, so an event
+  subscription is dead code in every IntensityWise cell. Body growth is gated on being fed;
+  head/tail regrowth deliberately is not, because a headless colony cannot feed and gating
+  its mouth on feeding is a deadlock. A missing end is **GROWN as its real prefab**, never
+  hardened out of a body segment — wound differentiation is retired and a member's role is
+  fixed at birth. And a heart is seated at the FRONT of its member's own prisms with the
+  body trailing (the tadpole arrangement — that prefab puts its crystal at the origin and
+  its body at z −5.81), never buried inside them (`§23.9`).
   **A heart's SIZE is ONE curve keyed on LEVEL — never per species, element or prefab.**
   `ElementalCrystalSet.levelOneWorldScale × worldScalePerLevel^(L-1)` (3.5 → 4.25 across
   levels 1..5), applied at the single gate every heart passes through (`Crystal.SetEmbeddedIn`)

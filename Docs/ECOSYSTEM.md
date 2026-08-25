@@ -2527,14 +2527,13 @@ movement model — plus the `Sharks-and-worms` branch's telegraph→burst attack
   begin regrowing their missing ends. Mid-body kills multiply the problem.
 - **Kill an END** (strip its danger prisms, or joust its heart — hearts are joustable,
   and `CurrentSpeed` is the live head speed, so out-race the kaiju to joust it) → the
-  heart drops as a collectible (mass conserved), and the wound's neighbor
-  **differentiates** into the missing role after `EndRegrowSeconds` — danger prisms
-  engage through `MakeDangerous` (a state change of existing mass, the same legal class
-  as shield regen; the worm still net-shrank by one segment).
-- **The optimal strategy emerges**: chain end-kills faster than the differentiation
-  window and you always face soft tissue; slower, and every kill is armored. This is
-  the "best killed tail-to-head or head-to-tail, and fast" rule — never scripted,
-  purely a consequence of split + differentiation timing.
+  heart drops as a collectible (mass conserved), and the colony **grows a real
+  replacement** — the whole armoured head prefab, or the whole stinger — on the host
+  cell's next fauna production cycle (§23.9). Until then its rear (or its mouth) is soft.
+- **The optimal strategy emerges**: chain end-kills faster than the cell's fauna
+  production cycle and you always face soft tissue; slower, and every kill is armored.
+  This is the "best killed tail-to-head or head-to-tail, and fast" rule — never scripted,
+  purely a consequence of split + production timing.
 - **An APEX OMNIVORE that also hunts pilots.** The head is the colony's mouth and it
   works three ways at once: it **grazes prism mass** by the canonical herbivore rule
   (`Cell.IsPreyForHerbivore` + `Fauna.IsShieldedMass` — shielded mass is never food);
@@ -2547,13 +2546,16 @@ movement model — plus the `Sharks-and-worms` branch's telegraph→burst attack
   in return: the colony root is classified Predator and its `Predated` is sealed false,
   and segments are Predator too so no shark can pick one as dinner. A headless worm
   cannot feed at all — regrow the head or starve.
-- **Growth is feeding-funded ONLY**: every `FeedsPerSegment` feeds (prisms grazed or
-  creatures eaten), one body segment **blooms in** behind the head. Length is a
-  readable record of consumption.
+- **Growth rides the CELL's fauna production cycle** (§23.9): once per
+  `Cell.CurrentFaunaSpawnPeriod` the colony grows exactly ONE member — a head if it has
+  none, else a tail if it has none, else a body segment blooming in behind the head.
+  Body growth is gated on the colony being FED, so length still only accrues while the
+  kaiju is eating; a mouth is not, because a headless colony cannot feed.
 - **Starvation digests the colony tail-first** (one segment per
   `StarvationShedIntervalSeconds`): deny the kaiju food and it shrinks; keep denying and
   it dies. Population bounded by consumption, never a lifespan. A starving worm also
-  cannot differentiate its wounds — denial is a real co-op strategy.
+  cannot lengthen — it may only regrow a missing end — so denial is a real co-op
+  strategy.
 - **The pilot hunt**: inside a hunt window, a vessel within `AggroRadius` (220) is
   **pursued** — the head goes nose-on, faster (`PursuitSpeedMultiplier`) and turning
   harder (`PursuitTurnMultiplier`) so it tracks a juking pilot. Closing inside
@@ -2571,9 +2573,10 @@ movement model — plus the `Sharks-and-worms` branch's telegraph→burst attack
 - **Continuity**: segments bloom in (prism growth stamps + root scale bloom), husks
   wither out (prisms suction inward, spindles evaporate, bounded-wait husk removal).
   Nothing pops, either direction.
-- **No imposed death**: the only clocks are differentiation (state change of existing
-  mass, gated on being fed) and starvation shedding (the standard
-  consumption-bounded-population channel). Growth has NO clock — feeds only.
+- **No imposed death**: the only clocks are the colony's PRODUCTION cycle (§23.9 — the
+  host cell's own fauna cadence, and production gating is what §0 permits) and
+  starvation shedding (the standard consumption-bounded-population channel). Nothing
+  here removes mass on a clock; there is no lifespan and no decay.
 - **Crystal contract**: **every segment is a lifeform and carries exactly one heart** —
   head, body and tail alike — so the invariant lands on the MEMBER, not on the colony
   (see §23.8; the earlier "body segments are body parts and carry none" ruling is
@@ -2708,15 +2711,17 @@ First pass, in Menu_Main freestyle:
    through recovery. Loiter at the tail for the whip.
 5. **Kill**: shoot a mid-body core prism → the worm splits in two. Strip a head plate
    twice (shield sheds, then the plate dies) — kill all 11 head prisms, or joust the
-   caged heart, and the head drops its crystal; ~18s later the next segment hardens
-   into a new danger head.
+   caged heart, and the head drops its crystal; on the cell's next fauna production
+   cycle a whole new armoured head grows on the front (§23.9).
 6. **Two worms**: spawn a second — they should visibly repel and orbit the same
    buildup from different sides rather than interpenetrating.
 
 Dials if it reads wrong, all on `WormColonyConfig.asset`: size `KaijuScale`;
 spacing `SegmentSpacing`/`TaperPerSegment`; aggression `AggroRadius`/`StrikeRange`/
-`HuntIntervalSeconds`; appetite `MouthRadius`/`FaunaBiteRange`/`FeedsPerSegment`;
-crowding `ColonySeparationRadius`/`ColonySeparationWeight`.
+`HuntIntervalSeconds`; appetite `MouthRadius`/`FaunaBiteRange`; length
+`MaxSegmentsPerWorm`; crowding `ColonySeparationRadius`/`ColonySeparationWeight`.
+**Growth RATE is not on this asset** — it is the host cell's
+`SpawnProfileSO.BaseFaunaSpawnTime` (§23.9).
 
 ### 23.7 Known gaps + follow-ups (scoped, not blockers)
 
@@ -2733,8 +2738,9 @@ crowding `ColonySeparationRadius`/`ColonySeparationWeight`.
 - **Level is inert for the colony.** `SetLevel` scales the empty root anchor, so the
   matrix's L1/L3/L5 stations all spawn the same-size worm; size lives on `KaijuScale`.
   Wiring level → `KaijuScale`/segment count is a clean follow-up.
-- **A differentiated end keeps its body-segment mesh** (a battle-scarred stump head —
-  the danger prisms and behavior carry the read; a mesh swap would be the polish).
+- ~~**A differentiated end keeps its body-segment mesh**~~ — **CLOSED by §23.9**: ends
+  are now GROWN as their real prefabs, so a regrown head arrives with its armour cage,
+  its fangs and its own mesh. Wound differentiation is retired entirely.
 - **Wither/bloom ride per-frame CPU** like all fauna today (C6 in the clock-material
   tracker covers that migration; the worm added no new CPU animation tier).
 - **The Lifeform Matrix station for the colony is an anonymous labeled sphere** — the
@@ -2906,6 +2912,162 @@ injecting a `CS0103` and a `CS1503` into the new code and watching both fire), a
   the number went from 2 per colony to `SegmentCount`. If that reads as too rich in a
   play test, the honest lever is `FeedsPerSegment` (how expensive length is), not taking
   hearts back off the members.
+
+---
+
+### 23.9 The colony grows on the CELL's production cycle — and the heart rides at the front (Aug 2026, fifth pass)
+
+Two corrections from the prompter, both about where §23.8 left things.
+
+#### The heart is a tadpole's, not a filling
+
+§23.8 gave every segment a heart and seated it at the segment's origin — which for a body
+segment is **inside its core prism** (measured: `CorePrism` is unrotated at local origin
+with `scale.z 6`, so it spans local z ∈ [−3, +3], and the heart sat dead centre in it).
+The reference the prompter named is the **tadpole**, and the shipped tadpole prefab is
+exactly that arrangement: its crystal sits at the root origin and its body spindle sits
+**behind it at z = −5.81**. Crystal leads, body trails.
+
+So a body segment now seats its heart on the **front face of its own core prism**,
+`heartLocalPosition = (0, 0, 3)`. Measured against the level-1 heart (world scale 3.5,
+rendering ~7 units across) and the shipped chain geometry:
+
+| body index | segment scale | seat (world, ahead of centre) | heart rear edge vs segment centre | clearance to the member ahead |
+|---:|---:|---:|---:|---:|
+| 1 | 2.700 | 8.10 | +4.60 | 47.4 (the head gap) |
+| 2 | 2.430 | 7.29 | +3.79 | 7.29 |
+| 4 | 1.968 | 5.90 | +2.40 | 5.90 |
+| 6 | 1.594 | 4.78 | +1.28 | 4.78 |
+| 8 | 1.291 | 3.87 | +0.37 | 3.87 |
+| 11 | 0.941 | 2.82 | −0.68 | 2.82 |
+
+The heart is entirely ahead of the prism's centre at every index and clear of the slab
+for the first eight; past index 9 the taper shrinks the segment while the heart stays
+level-locked at 3.5, so its back edge slips ≤0.7 units behind the front face and its
+front edge grazes ≤0.7 units into the member ahead. That is well inside the "segments
+nearly touch" authoring (§23.4.1) and is the correct trade — a heart's size is one curve
+keyed on LEVEL (§33) and must not be shrunk to fit a tapering body.
+
+**Head and tail keep their authored seats**, deliberately: the head's is the recovered
+2024 cage at `(0,0,−13.14)`, which is a fight mechanic (strip the plates or joust it),
+and the tail's blades splay *forward* past z = +8.6, so "the front" of a tail segment is
+inside the body it hangs off. If those should move too, they are one field each.
+
+#### Growth is the cell's fauna production cycle
+
+The prompter's rule, verbatim in behaviour: **once per fauna production cycle of the
+cell, a colony grows exactly ONE member** —
+
+1. a **head**, if it has none,
+2. else a **tail**, if it has none,
+3. else a **body segment** behind the head.
+
+This is not a new kind of clock. It is the platform's existing **population production
+heartbeat**: the lattice flora colonies already birth one plant per
+`Cell.CurrentFaunaSpawnPeriod` (§32.7), and this is the same read applied to a connected
+animal population. A worm's growth rate is therefore a property of the **biome** it lives
+in rather than of the species — which is the point.
+
+**Read the PERIOD, never the wave event.** `CellRuntimeDataSO.OnFaunaWaveSpawned` is
+raised by `RandomLifeSpawner` *only*; `IntensityWiseLifeSpawner` does not raise it. An
+event subscription would therefore have been dead code in every IntensityWise cell — the
+spawner-swap trap — and `Cell.CurrentFaunaSpawnPeriod` is served by the cell itself
+either way. (`WormColonyConfigSO.FallbackProductionPeriodSeconds`, 30s, covers only a
+cell that authors no SpawnProfile at all.)
+
+**The cycle turns whether or not it produces.** `_lastProductionTime` is stamped when the
+period elapses, before the cap check and before the priority ladder — otherwise a colony
+sitting at `MaxSegmentsPerWorm` banks unbounded elapsed time and regrows a shot-off head
+on the next behaviour tick (~1.5 s) instead of on the next wave, which would erase the
+whole souls-like window.
+
+**What is gated on food, and what is not.** Body growth requires `!IsStarving`, so length
+still only accrues while the kaiju is eating — the population stays consumption-bounded
+and this stays production gating, which §0 permits. Head and tail regrowth are
+deliberately **not** gated: a headless colony cannot feed at all, so gating its mouth on
+feeding is a deadlock, and §23.2's old note that "in practice a headless worm can't feed,
+so this resolves as starvation" was describing exactly that dead end. Now a decapitated
+colony races its own starvation shed (one segment per `StarvationShedIntervalSeconds`)
+against the cell's next cycle — which is a fight, not a foregone conclusion.
+
+#### What this retires
+
+- **`FeedsPerSegment`** — growth no longer counts feeds. Feeding still drives the
+  starvation clock and `FeedsPerLevel`, so it is still what keeps a colony growing; it is
+  no longer what meters length. Deleted from the config rather than left inert, per the
+  dead-field rule.
+- **`EndRegrowSeconds` and `RegrownEndElement`** — the wave is the clock, and a grown end
+  provisions its own heart from the prefab or the colony's element pick.
+- **Wound differentiation entirely** (`WormSegmentFauna.DifferentiateTo`, the two wound
+  clocks). A member's **role is now fixed at birth**. This *closes* the §23.7 gap: a
+  regrown head is the real `WormHeadSegment` prefab with its 8 armour plates and 3 fangs,
+  not a body segment with its one core prism made dangerous. That matters mechanically as
+  well as visually — the fangs ARE the jaws (`MouthPoint`) the feeding and devouring paths
+  read, and an 11-prism head is a real threat surface where a 1-prism stump was not.
+
+One refactor came with it: the build-time and follow-time spacing formulas were duplicated
+(`RestSpacingForBuild` vs `RestSpacing`) and every growth site needed a third. They are now
+one `LinkSpacing(linkIndex, prevRole, nextRole)`, with roles passed in because a member
+being placed is not in the list yet. Verified byte-exact against the retired build formula
+over every chain length 3..16 (max |Δ| = 0.000e+00), so the spawned chain layout is
+unchanged.
+
+#### Growth rate by biome, measured
+
+`SpawnProfileSO.BaseFaunaSpawnTime` across the shipped profiles is 5 / 15 / 20 / 30 s.
+Time for a fresh `SpawnSegmentCount = 8` colony to reach the 16-segment cap:
+
+| cell | period | 8 → 16 | colonies | colliders at cap |
+|---|---:|---:|---|---:|
+| Lattice (the freestyle **boot world**) | 5 s | **40 s** | toy-released, ~3 | 147 |
+| Blob profile | 15 s | 120 s | toy-released, ~3 | 147 |
+| **Wildlife Liberation** (ambient) | 20 s | 160 s | **9** (`MaxLivePopulation`) | **441** |
+| everything else | 30 s | 240 s | toy-released, ~3 | 147 |
+
+Note the Lattice cell's 5 s is authored for its *flora* colonies' build clock (§36.9), and
+a worm released there from the Lifeform Matrix toy inherits it — full length in 40 s.
+
+#### Collider budget — stated plainly, because this one moved
+
+Per member, prefab-measured (nested prism instances + one heart): head 11+1 = **12**,
+body 1+1 = **2**, tail 8+1 = **9**. So a colony is 23 colliders at 3 segments, 33 at the
+spawn size of 8, **49** at the `MaxSegmentsPerWorm = 16` cap — unchanged from §23.8,
+because the composition did not change.
+
+**What changed is that the cap is now reliably REACHED.** Growth used to cost 24 feeds
+per segment, so a worm in sparse mass rarely lengthened; now every fed colony walks to 16
+on a fixed clock. And a colony that loses ends no longer degrades into cheap stumps — it
+regrows real 12-collider heads. The honest worst case for the one cell that deploys worms
+ambiently is therefore **9 × 49 = 441 active colliders** (against 165 at seed, and against
+9 × 35 = 315 for the pre-§23.8 shape which was itself rarely reached). Wildlife Liberation
+is already documented as the heaviest collider budget in the game; this is a real addition
+to it and the dial is `MaxSegmentsPerWorm` (or that cell's own `MaxLivePopulation: 9`).
+
+Splits still conserve segment totals, but they do NOT respect `MaxLivePopulation` — that
+number gates the seeder and reproduction, not severance — so a heavily-fought match can
+hold more colonies than 9, each growing back toward 16. That was already true before this
+pass; the guaranteed growth rate is what makes it worth watching.
+
+#### Verify in-editor (the human is the gate — none of this has run in Unity)
+
+Machine-validated only: the changed C# type-checks clean under the Roslyn stub harness
+(bodies bind — re-proven by injecting a `CS0103` into `TickProduction` and a `CS1503` into
+`GrowHead` and watching both fire), the spacing refactor is proven byte-exact offline, and
+`check_conditional_compilation.py` passes. On top of §23.6 / §23.8:
+
+1. **Seat**: spawn a colony and look along it — each body segment's crystal should ride at
+   the NOSE of its slab with the body trailing, not buried in the middle.
+2. **Growth clock**: in Menu_Main freestyle (Lattice cell, 5 s) a spawn-8 worm should reach
+   16 segments in about 40 seconds. If it grows on a different cadence, the cell's
+   `BaseFaunaSpawnTime` is the number to check, not the worm's config.
+3. **Head regrow**: kill the head. The colony should stop grazing, start shedding its tail,
+   and then grow a WHOLE new armoured head (plates + fangs, not a stump) on the cell's next
+   cycle. Kill it again inside that window and the worm should stay soft.
+4. **Tail regrow**: kill the tail; a real stinger should grow back on a cycle boundary.
+5. **Starvation**: park a worm away from mass. It should stop lengthening entirely (but
+   still regrow a missing end) and shed tail-first.
+6. **Budget**: in Wildlife Liberation, watch the worm count and length after a few minutes —
+   this is the cell where the 441 number lands.
 
 ---
 
