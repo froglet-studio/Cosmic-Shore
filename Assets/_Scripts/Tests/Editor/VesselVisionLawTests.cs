@@ -1,6 +1,7 @@
 #if UNITY_EDITOR
 using System.IO;
 using System.Linq;
+using CosmicShore.Gameplay;
 using CosmicShore.ScriptableObjects;
 using CosmicShore.Utility;
 using NUnit.Framework;
@@ -33,6 +34,7 @@ namespace CosmicShore.Tests
         const string GraphPath = "Assets/_Graphics/Materials/Graphs/VesselGraph.shadergraph";
         const string HlslPath = "Assets/_Graphics/Materials/Graphs/VesselVisionShading.hlsl";
         const string HelperPath = "Assets/_Scripts/Controller/Vessel/VesselHelper.cs";
+        const string ControllerPath = "Assets/_Scripts/Controller/Vessel/VesselController.cs";
         const string ConfigAssetPath = "Assets/Resources/VesselVisionShadingConfig.asset";
         const string ScriptRoot = "Assets/_Scripts";
 
@@ -42,7 +44,7 @@ namespace CosmicShore.Tests
         #region The law: one absolute distance → mark mapping
 
         [TestCase(0f, 0f)]
-        [TestCase(40f, 0f)]        // the gameplay camera's own follow distance — your own hull
+        [TestCase(40f, 0f)]        // a rival right on top of you needs no help being found
         [TestCase(150f, 0f)]       // nearFadeStart itself
         [TestCase(250f, 0.5f)]     // midpoint of the rising grade
         [TestCase(350f, 1f)]
@@ -58,18 +60,6 @@ namespace CosmicShore.Tests
                 "The band is absolute and shared by the whole fleet — this mapping IS the law. " +
                 "A big hull is marked at the same range as a small one, because the question the " +
                 "aid answers does not depend on how big the pilot's ship is.");
-        }
-
-        [Test]
-        public void Effect01_IsZeroInsideTheLocalCameraFollowDistance()
-        {
-            var config = NewConfig();
-            for (float d = 0f; d <= VesselVisionShadingConfigSO.MinLocalHullClearance; d += 1f)
-                Assert.AreEqual(0f, config.Effect01(d), Tolerance,
-                    "The pilot's own vessel rides 10-40 units from its camera. The near floor is " +
-                    "what excludes it, and it is the ONLY thing that does — there is deliberately " +
-                    "no 'is this me' test in the law, because 'close things do not need help' is " +
-                    "the rule and your own ship is the closest thing there is.");
         }
 
         [Test]
@@ -184,7 +174,6 @@ namespace CosmicShore.Tests
 
         [TestCase("nearFullStart", 100f, TestName = "IsSane_rejects_inverted_rising_edge")]
         [TestCase("farFadeEnd", 1000f, TestName = "IsSane_rejects_inverted_falling_edge")]
-        [TestCase("nearFadeStart", 10f, TestName = "IsSane_rejects_a_floor_inside_the_camera")]
         [TestCase("strength", 0f, TestName = "IsSane_rejects_a_law_authored_to_do_nothing")]
         public void IsSane_RejectsAnAssetThatWouldFailSilently(string field, float value)
         {
@@ -269,6 +258,61 @@ namespace CosmicShore.Tests
 
             Assert.IsTrue(config.IsSane(out string reason), reason +
                 " — switching the break-up off is a choice (a solid mark), not a mis-configuration.");
+        }
+
+        #endregion
+
+        #region The local-pilot exclusion
+
+        [Test]
+        public void LocalPilotExclusion_IsBoundAtBothLawSites()
+        {
+            Assert.IsTrue(
+                VesselVisionLawSource.EveryLocalBindIsGatedOnLocalPilot(
+                    File.ReadAllText(ControllerPath), out string reason),
+                reason);
+        }
+
+        [Test]
+        public void ShippedFleet_HasCamerasInsideTheBand_WhichIsWhyTheExclusionIsExplicit()
+        {
+            // This test exists to stop the law's ORIGINAL reasoning from coming back. It was first
+            // built with no "is this me" test, on the belief that a pilot's own hull always rides
+            // 10-40 units from its camera and so falls out below the near floor. That number came
+            // from CameraSettingsSO's DEFAULTS; the ASSETS say otherwise, and two of eight vessels
+            // sat inside the rising grade marking their own ship.
+            var config = NewConfig();
+
+            float worst = 0f;
+            string worstName = "(none)";
+            foreach (var guid in AssetDatabase.FindAssets("t:CameraSettingsSO"))
+            {
+                string path = AssetDatabase.GUIDToAssetPath(guid);
+                var settings = AssetDatabase.LoadAssetAtPath<CameraSettingsSO>(path);
+                if (settings == null) continue;
+
+                // What CustomCameraController actually places the camera at:
+                // position = target.position + target.rotation * followOffset.
+                float distance = settings.followOffset.magnitude;
+                if (settings.enableAdaptiveZoom)
+                    distance = Mathf.Max(distance, Mathf.Abs(settings.adaptiveMaxDistance));
+
+                if (distance > worst)
+                {
+                    worst = distance;
+                    worstName = Path.GetFileNameWithoutExtension(path);
+                }
+            }
+
+            if (worst <= 0f) Assert.Ignore("No CameraSettingsSO assets found to measure.");
+
+            Assert.Greater(config.Effect01(worst), 0f,
+                $"The fleet's widest gameplay camera ({worstName}, {worst:0} units) now sits OUTSIDE " +
+                "the band, so the local-pilot exclusion has become belt-and-braces rather than " +
+                "load-bearing. That is not a failure — but do not delete the explicit exclusion on " +
+                "the strength of it without also re-checking the toybox's vessel matrices, which " +
+                "bloom at 360 units and depend on being just INSIDE the band. Update this test and " +
+                "Docs/VESSEL_VISION.md §2.1 together.");
         }
 
         #endregion

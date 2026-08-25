@@ -23,6 +23,8 @@ namespace CosmicShore.Editor
     ///   3. the shipped HLSL has lost one of the two cutoffs or the quantizer's guard;
     ///   4. the single stamp in <c>VesselHelper.SetShipProperties</c> is removed, moved, or
     ///      joined by a second owner;
+    ///   4b. the local-pilot exclusion loses one of its two bind sites, or one drifts off
+    ///      <c>IsLocalPilot</c> — which silently un-marks a rival rather than erroring;
     ///   5. a vessel prefab carries no hull material on the wired shader, so that ONE ship is
     ///      unmarkable while every other ship in the fleet is fine — the hardest failure to
     ///      notice and the one this exists for.
@@ -41,6 +43,7 @@ namespace CosmicShore.Editor
         const string GraphPath = "Assets/_Graphics/Materials/Graphs/VesselGraph.shadergraph";
         const string HlslPath = "Assets/_Graphics/Materials/Graphs/VesselVisionShading.hlsl";
         const string HelperPath = "Assets/_Scripts/Controller/Vessel/VesselHelper.cs";
+        const string ControllerPath = "Assets/_Scripts/Controller/Vessel/VesselController.cs";
         const string ConfigAssetPath = "Assets/Resources/VesselVisionShadingConfig.asset";
         const string ScriptRoot = "Assets/_Scripts";
 
@@ -61,6 +64,7 @@ namespace CosmicShore.Editor
             ok &= CheckGraph(report);
             ok &= CheckHlsl(report);
             ok &= CheckStampSite(report);
+            ok &= CheckLocalExclusion(report);
             ok &= CheckConfig(report);
             ok &= CheckVesselMaterials(report);
 
@@ -135,9 +139,42 @@ namespace CosmicShore.Editor
             return true;
         }
 
+        static bool CheckLocalExclusion(StringBuilder report)
+        {
+            report.AppendLine("[4] the local-pilot exclusion");
+            if (!VesselVisionLawSource.EveryLocalBindIsGatedOnLocalPilot(ReadAsset(ControllerPath),
+                                                                        out string reason))
+            {
+                report.AppendLine($"    FAIL  {reason}");
+                return false;
+            }
+            report.AppendLine("    ok    bound in VesselController.Initialize AND ChangePlayer, " +
+                              "both under IsLocalPilot.");
+
+            // The number that made the exclusion necessary, re-measured from the assets rather than
+            // asserted — the original law read it off CameraSettingsSO's DEFAULTS and was wrong for
+            // two of eight vessels.
+            float worst = 0f;
+            string worstName = "(none)";
+            foreach (var guid in AssetDatabase.FindAssets("t:CameraSettingsSO"))
+            {
+                string path = AssetDatabase.GUIDToAssetPath(guid);
+                var settings = AssetDatabase.LoadAssetAtPath<CosmicShore.Gameplay.CameraSettingsSO>(path);
+                if (settings == null) continue;
+                float distance = settings.followOffset.magnitude;
+                if (settings.enableAdaptiveZoom)
+                    distance = Mathf.Max(distance, Mathf.Abs(settings.adaptiveMaxDistance));
+                if (distance > worst) { worst = distance; worstName = Path.GetFileNameWithoutExtension(path); }
+            }
+            report.AppendLine($"    note  widest gameplay camera in the fleet: {worstName} at " +
+                              $"{worst:0} units — inside the band, which is why the exclusion is " +
+                              "explicit rather than a consequence of the near floor.");
+            return true;
+        }
+
         static bool CheckConfig(StringBuilder report)
         {
-            report.AppendLine("[4] Resources/VesselVisionShadingConfig");
+            report.AppendLine("[5] Resources/VesselVisionShadingConfig");
             var config = AssetDatabase.LoadAssetAtPath<VesselVisionShadingConfigSO>(ConfigAssetPath);
             if (config == null)
             {
@@ -165,7 +202,7 @@ namespace CosmicShore.Editor
 
         static bool CheckVesselMaterials(StringBuilder report)
         {
-            report.AppendLine("[5] every vessel can wear the mark");
+            report.AppendLine("[6] every vessel can wear the mark");
 
             var wiredShader = AssetDatabase.LoadAssetAtPath<Shader>(GraphPath);
             if (wiredShader == null)

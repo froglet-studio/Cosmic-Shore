@@ -58,6 +58,68 @@ namespace CosmicShore.Utility
         /// <summary>The method that call must sit in.</summary>
         public const string StampHost = "SetShipProperties";
 
+        /// <summary>The local-pilot exclusion's bind call.</summary>
+        public const string LocalBindCall = "VesselVisionShading.SetLocalVessel";
+
+        /// <summary>The gate every bind call must sit under.</summary>
+        public const string LocalPilotGate = "IsLocalPilot";
+
+        /// <summary>
+        /// Characters of source allowed between a bind call and the <c>IsLocalPilot</c> guard above
+        /// it. Generous enough for a guard with a comment block and a brace between it and the
+        /// call, far too small to reach out of the enclosing method.
+        /// </summary>
+        const int GateProximityChars = 400;
+
+        /// <summary>
+        /// EVERY <c>VesselVisionShading.SetLocalVessel</c> call site sits under an
+        /// <c>IsLocalPilot</c> guard, and there are at least two of them
+        /// (<c>Initialize</c> and <c>ChangePlayer</c>).
+        ///
+        /// A whole-file <c>Contains("IsLocalPilot")</c> cannot express this — the file has many
+        /// occurrences — and the failure it would miss is the expensive one: binding the exclusion
+        /// on a vessel the local player does NOT fly silently un-marks a rival, which reads as the
+        /// aid being weak rather than as a bug. Two sites are required because <c>ChangePlayer</c>
+        /// hands a live vessel to a different player without ever reaching <c>Initialize</c>
+        /// (the same reason the corridor and the speed tunnel bind twice).
+        /// </summary>
+        public static bool EveryLocalBindIsGatedOnLocalPilot(string controllerSource, out string reason)
+        {
+            if (string.IsNullOrEmpty(controllerSource))
+            {
+                reason = "VesselController source is empty or unreadable.";
+                return false;
+            }
+
+            int found = 0;
+            for (int i = controllerSource.IndexOf(LocalBindCall, StringComparison.Ordinal);
+                 i >= 0;
+                 i = controllerSource.IndexOf(LocalBindCall, i + 1, StringComparison.Ordinal))
+            {
+                found++;
+                int windowStart = Math.Max(0, i - GateProximityChars);
+                string window = controllerSource.Substring(windowStart, i - windowStart);
+                if (window.IndexOf(LocalPilotGate, StringComparison.Ordinal) < 0)
+                {
+                    reason = $"a {LocalBindCall} call site is not guarded by {LocalPilotGate} — the " +
+                             "exclusion would land on a vessel the local player does not fly, " +
+                             "silently un-marking a rival.";
+                    return false;
+                }
+            }
+
+            if (found < 2)
+            {
+                reason = $"{LocalBindCall} has {found} call site(s); the law needs one in " +
+                         "VesselController.Initialize AND one in ChangePlayer, which hands a live " +
+                         "vessel to a different player without ever reaching Initialize.";
+                return false;
+            }
+
+            reason = null;
+            return true;
+        }
+
         /// <summary>
         /// The graph still calls the law: the custom function node is present, it points at the
         /// right HLSL asset, and the tint property is EXPOSED.

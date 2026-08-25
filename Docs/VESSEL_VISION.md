@@ -38,19 +38,56 @@ stops being rendered as a person and starts being rendered as a **legible, team-
 
 | Region | Behaviour | Why |
 |---|---|---|
-| `d < nearStart` | exactly **0** | Close up the ship fills the screen and its own art is the better read. This is also what silently and correctly excludes **the pilot's own vessel**, which rides 10–40 units from its camera (`CameraSettingsSO.dynamicMin/MaxDistance`). |
+| `d < nearStart` | exactly **0** | Close up the ship fills the screen and its own art is the better read, and a rival right on top of you needs no help being found. |
 | `nearStart → nearFull` | graded 0 → 1 | A mark that pops on reads as a *new object appearing*. Continuity of existence is a platform law about things entering and leaving the world; this is the same rule applied to a thing entering and leaving **visibility**. |
 | `nearFull → farFull` | exactly **1** | The plateau must cover a full arena crossing (cell membrane radius 1200), because pilots on opposite sides of a cell are the case the aid exists for. |
 | `farFull → farEnd` | graded 1 → 0 | Same reason as the rising edge, in reverse. |
 | `d > farEnd` | exactly **0** | Past that a ship subtends a few pixels, and a saturated dot is not a ship any more — it is one more bright speck in an arena full of crystals and prisms. **A signal that cannot be told from noise is worse than no signal.** |
 
-**There is deliberately no "is this me" test anywhere in the law.** The rule is *"close things do
-not need help"*, and your own ship is the closest thing there is — the exclusion **falls out**, it
-is not special-cased. A broadcast or replay camera parked away from the fight therefore marks
-**every** ship including the local one, which is exactly what a broadcast view wants. That is also
-why this law, unlike the corridor and the speed tunnel, has **no `SetSuppressed` hold**: those two
-are effects for the pilot at the controls; this one is most useful precisely where they are
-suppressed.
+### The local pilot's own vessel is excluded EXPLICITLY — and that is a correction
+
+The law was first built with **no "is this me" test at all**, on the reasoning that a pilot's own
+hull rides 10–40 units from its camera — an order of magnitude inside the near floor — so the
+exclusion would simply *fall out* of "close things do not need help". It was an elegant argument and
+it is **false**. That 10–40 came from `CameraSettingsSO`'s **field defaults**; the shipped **assets**
+say something else entirely. Camera distance is `|followOffset|` (`CustomCameraController` places the
+camera at `target.position + target.rotation * followOffset`):
+
+| vessel | camera distance | inside the 150→350 grade? |
+|---|---|---|
+| Urchin | 6.7 | no |
+| Squirrel | 17 | no |
+| Dolphin | 20 | no |
+| Manta | 30 | no |
+| Scarab | 50 | no |
+| Sparrow | 51 | no |
+| Rhino | 120, **zooming to 200** | **yes, when zoomed** (mark ≈ 0.13) |
+| **Serpent** | **250** | **yes** (mark ≈ 0.43) |
+
+So two of eight vessels marked their own hull. The fix is an **explicit** binding —
+`VesselVisionShading.SetLocalVessel`, called from `VesselController.Initialize` **and**
+`ChangePlayer`, both under `IsLocalPilot`, the same two sites the corridor and the speed tunnel
+already use. The local vessel is stamped with a transparent tint, so it takes the same early-out as
+any unstamped object and the exclusion costs nothing on the GPU.
+
+**The alternative was rejected on a collateral cost.** Raising the near floor above the widest camera
+(≥ 300) would have restored the "it falls out" property — but the toybox's vessel matrices bloom at
+**360 units** and depend on being just inside the band, so a floor at 400 would have silently
+un-marked every station in the vessel changer (§3.1.1). The floor stays at 150 and the exclusion is
+named.
+
+**The cost, stated plainly:** a broadcast or replay camera no longer marks the local pilot's ship.
+That was previously written up as a virtue of the distance-only design; it is the price of the design
+being correct. Every *other* ship is still marked from such a camera, which is why this law still has
+**no `SetSuppressed` hold** — the corridor and the speed tunnel are effects for the pilot at the
+controls, and this one is most useful precisely where they are suppressed.
+
+> **The general trap, and it is the reason this survived review once:** a number read off a
+> `ScriptableObject`'s **field initializer** is not the number the game runs on. `IsSane` encoded
+> the false premise, a test asserted it, and three documents repeated it — all self-consistently,
+> because they all traced back to the same default rather than to any asset. `VesselVisionLawTests`
+> now re-measures the fleet from the assets and fails if the reasoning ever silently becomes valid
+> again.
 
 **The mapping is ABSOLUTE.** The same distance to *any* vessel produces the same mark — a big hull
 is marked at the same range as a small one, because the question the aid answers ("is there a pilot
@@ -162,7 +199,10 @@ Four layers, none of which can be defeated by authoring:
    no component to add and no scene to wire, so there is nothing to forget.
 3. **Fail-loud diagnostics.** `VesselVisionDiagnostics` names, once, any vessel that could not be
    stamped, and names both fixes (repaint the hull, or re-run the wirer).
-4. **Two gates that cannot drift.** `VesselVisionLawTests` (edit-mode) and **FrogletTools > Vessels
+4. **The local-pilot exclusion is bound at those same two sites**, under `IsLocalPilot`, and both
+   gates check that it has **two** call sites — `ChangePlayer` hands a live vessel to a different
+   player without ever reaching `Initialize`, so one site is a silent half-fix.
+5. **Two gates that cannot drift.** `VesselVisionLawTests` (edit-mode) and **FrogletTools > Vessels
    > Validate Vessel Vision Band** both call the *same* predicates in `VesselVisionLawSource` and
    `VesselVisionShadingConfigSO.IsSane`, so an asset that passes the audit cannot fail the test.
 

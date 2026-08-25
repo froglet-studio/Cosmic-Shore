@@ -36,12 +36,29 @@ namespace CosmicShore.Utility
     /// per-CAMERA live data, so a CPU implementation would have to pick one camera and be wrong
     /// in the scene view, in a replay view and in any future split screen.
     ///
-    /// THERE IS DELIBERATELY NO SUPPRESSION HOLD, and the absence is the point. The corridor and
-    /// the speed tunnel each carry a <c>SetSuppressed</c> for the manual replay camera, because
-    /// both are effects for the pilot at the controls. This one is the opposite: a broadcast
-    /// vantage parked away from the fight is exactly when telling three domains apart matters
-    /// most, so the replay camera gets the marks too — including on the local pilot's own ship,
-    /// which is simply another distant vessel from there.
+    /// THE LOCAL PILOT'S OWN VESSEL IS EXCLUDED EXPLICITLY, and the reason it is explicit is worth
+    /// keeping. The law was first built with NO "is this me" test, on the reasoning that a pilot's
+    /// own hull rides 10-40 units from its camera — an order of magnitude inside the near floor —
+    /// so the exclusion would simply FALL OUT of "close things do not need help". **The shipped
+    /// fleet falsifies that.** Camera distance is <c>|CameraSettingsSO.followOffset|</c>, and it
+    /// spans 6.7 (Urchin) to 250 (Serpent), with the Rhino's adaptive zoom reaching 200 — so a
+    /// Serpent pilot sat at half strength inside the rising grade and marked their own ship. The
+    /// premise was read off the SO's DEFAULTS and never off the assets.
+    ///
+    /// The alternative fix — raising the near floor above the widest camera in the fleet — was
+    /// rejected on a collateral cost: the toybox's vessel matrices bloom at 360 units and depend
+    /// on being just inside the band, so a floor at 400 would silently un-mark every station.
+    /// Binding an explicit local vessel is exact, immune to a camera being re-authored, and rides
+    /// the SAME two call sites the corridor and the speed tunnel already use.
+    ///
+    /// The cost, stated plainly: a broadcast or replay camera no longer marks the local pilot's
+    /// ship. That was previously documented as a virtue of the distance-only design; it is the
+    /// price of the design being correct.
+    ///
+    /// THERE IS STILL NO SUPPRESSION HOLD. The corridor and the speed tunnel each carry a
+    /// <c>SetSuppressed</c> for the manual replay camera, because both are effects for the pilot
+    /// at the controls. This one is the opposite: a broadcast vantage parked away from the fight
+    /// is exactly when telling three domains apart matters most, so every OTHER ship stays marked.
     ///
     /// WHY THE STAMP HEALS ITSELF. The tint rides a <c>MaterialPropertyBlock</c>, and a vessel's
     /// renderers are written by several other systems (the Echo Sight highlight, the Serpent's
@@ -79,6 +96,7 @@ namespace CosmicShore.Utility
 
         static readonly List<Entry> _entries = new();
         static readonly List<Target> _scratchTargets = new();
+        static Transform _localVessel;
         static MaterialPropertyBlock _block;
         static int _healCursor;
 
@@ -143,6 +161,63 @@ namespace CosmicShore.Utility
         }
 
         /// <summary>
+        /// Name the vessel the local pilot is flying, so it is never marked on this machine.
+        ///
+        /// The ONLY callers are <c>VesselController.Initialize</c> and
+        /// <c>VesselController.ChangePlayer</c>, both under <c>IPlayer.IsLocalPilot</c> — the same
+        /// two sites the prism occlusion corridor and the speed tunnel bind at, for the same
+        /// reason: <c>Initialize</c> is the one method every vessel must call on every spawn path,
+        /// and <c>ChangePlayer</c> hands a LIVE vessel to a different player (the Cellular Duel
+        /// ownership swap) without ever reaching <c>Initialize</c>. Binding here is what makes it
+        /// impossible to author a vessel or a mode in which the exclusion is missing.
+        ///
+        /// Re-applies immediately rather than waiting for the heal cursor, so an ownership swap
+        /// takes effect on the frame it happens instead of up to a dozen frames later.
+        /// </summary>
+        public static void SetLocalVessel(Transform vessel)
+        {
+            if (_localVessel == vessel) return;
+            var previous = _localVessel;
+            _localVessel = vessel;
+            ReapplyFor(previous);
+            ReapplyFor(vessel);
+        }
+
+        /// <summary>
+        /// Release the local-pilot binding, but only if <paramref name="vessel"/> is still the one
+        /// in force — so a losing vessel's teardown cannot cancel the winning vessel's bind,
+        /// whatever order the two arrive in. Same identity guard the sibling laws use.
+        /// </summary>
+        public static void ClearLocalVessel(Transform vessel)
+        {
+            if (_localVessel != vessel) return;
+            _localVessel = null;
+            ReapplyFor(vessel);
+        }
+
+        /// <summary>The vessel currently excluded as the local pilot's, or null.</summary>
+        public static Transform LocalVessel => _localVessel;
+
+        static void ReapplyFor(Transform vessel)
+        {
+            if (vessel == null) return;
+            for (int i = 0; i < _entries.Count; i++)
+                if (ReferenceEquals(_entries[i].Vessel, vessel))
+                {
+                    Apply(_entries[i]);
+                    return;
+                }
+        }
+
+        /// <summary>
+        /// What a vessel is actually stamped with: its domain colour, or a TRANSPARENT tint for the
+        /// local pilot's own ship. Alpha 0 is the shader's "not a vessel" sentinel, so the exclusion
+        /// costs nothing on the GPU — the fragment takes the early-out every unstamped object takes.
+        /// </summary>
+        static Color EffectiveTint(Entry entry) =>
+            ReferenceEquals(entry.Vessel, _localVessel) ? Color.clear : entry.Tint;
+
+        /// <summary>
         /// Mark a DISPLAY-ONLY model — a mini hull in a toy matrix, built from a ship prefab asset
         /// and never instantiated as a vessel — so the vision band shades it like the real thing.
         ///
@@ -180,6 +255,7 @@ namespace CosmicShore.Utility
         {
             _entries.Clear();
             _healCursor = 0;
+            _localVessel = null;
         }
 
         // ---------------- Internals ----------------
@@ -246,7 +322,7 @@ namespace CosmicShore.Utility
             }
         }
 
-        static void Apply(Entry entry) => WriteTint(entry.Targets, entry.Tint);
+        static void Apply(Entry entry) => WriteTint(entry.Targets, EffectiveTint(entry));
 
         static void WriteTint(List<Target> targets, Color tint)
         {

@@ -33,8 +33,10 @@ namespace CosmicShore.ScriptableObjects
 
         [Header("Distance Band (absolute world units — fleet-wide)")]
         [Tooltip("Below this the mark is exactly zero and costs nothing. Close up the hull's own " +
-                 "art is the better read. This floor is also what excludes the pilot's OWN vessel " +
-                 "— it rides 10-40 units from its camera — so the law needs no 'is this me' test.")]
+                 "art is the better read, and a rival right on top of you needs no help being " +
+                 "found. This does NOT exclude the pilot's own vessel — the fleet's cameras reach " +
+                 "250 units (Serpent), well inside the band — that exclusion is explicit, in " +
+                 "VesselVisionShading.SetLocalVessel.")]
         [Min(0f)]
         [SerializeField] float nearFadeStart = 150f;
 
@@ -238,17 +240,6 @@ namespace CosmicShore.ScriptableObjects
                 return false;
             }
 
-            // The gameplay camera rides 10-40 units behind its own ship (CameraSettingsSO). A floor
-            // at or below that marks the local pilot's own hull, which is the one ship nobody has
-            // ever had trouble finding.
-            if (nearFadeStart < MinLocalHullClearance)
-            {
-                reason = $"nearFadeStart ({nearFadeStart}) is inside the gameplay camera's own " +
-                         $"follow distance (up to {MinLocalHullClearance} units) — the local " +
-                         "pilot's own vessel would be marked.";
-                return false;
-            }
-
             if (strength <= 0f)
             {
                 reason = "strength is zero — the law is authored to do nothing.";
@@ -280,9 +271,18 @@ namespace CosmicShore.ScriptableObjects
         public const float MinUsefulReach = 2400f;
 
         /// <summary>
-        /// <c>CameraSettingsSO.dynamicMaxDistance</c> across the shipped fleet, with headroom.
-        /// The near floor must clear it or the law marks the ship the player is flying.
+        /// The largest gameplay camera distance in the shipped fleet — <c>|followOffset|</c> on the
+        /// Serpent's <c>CameraSettingsSO</c>, with the Rhino's adaptive zoom reaching 200.
+        ///
+        /// It is recorded here as a FACT, not as a constraint on the band: the near floor
+        /// deliberately sits BELOW it (150), because the toybox's vessel matrices bloom at 360
+        /// units and depend on being just inside the band. The local pilot's own vessel is
+        /// therefore excluded EXPLICITLY (<c>VesselVisionShading.SetLocalVessel</c>) rather than by
+        /// distance. An earlier version of this law asserted the opposite — that a pilot's own hull
+        /// is always inside the floor — from the SO's DEFAULTS rather than from the assets, and was
+        /// wrong for two of eight vessels. <c>VesselVisionLawTests</c> re-reads the assets so the
+        /// number cannot rot again.
         /// </summary>
-        public const float MinLocalHullClearance = 60f;
+        public const float LargestFleetCameraDistance = 250f;
     }
 }
