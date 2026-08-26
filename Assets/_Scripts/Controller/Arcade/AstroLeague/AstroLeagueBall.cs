@@ -117,10 +117,17 @@ namespace CosmicShore.Gameplay
         Vector3 _embedOutward = Vector3.up;
         Vector3 _embedAnchor;
 
-        // Squared world distance an embedded ball may sit off its anchor before the pin corrects
-        // it. Sub-millimetre: this exists so the steady state writes NO transform at all (see
-        // ServerFixedUpdate), not to tolerate real displacement.
-        const float EmbedDriftEpsilonSqr = 1e-6f;
+        // How far a studding ball must be shoved off its seed point, as a fraction of its own
+        // radius, before it counts as having LEFT the nucleus surface even though it is not
+        // moving (a vessel depenetration does exactly this). Half a radius: far enough that
+        // physics noise cannot trip it, near enough that the ball is visibly out of the shell.
+        const float NucleusDepartureRadiusFraction = 0.5f;
+
+        // Server-side, ONE WAY: set the first time this ball leaves the nucleus surface and never
+        // cleared. A ball that has been dislodged is a ball, permanently — it can be struck,
+        // blasted, banked and detonated like any other, and it can never be re-seeded into the
+        // shell, which would be the one state a player cannot reach on purpose.
+        bool _releasedFromNucleus;
 
         // While Time.time is below this, ContainWithinBoundary is skipped — see
         // AstroLeagueSettingsSO.nucleusReleaseGraceSeconds. Server-side; containment is server-only.
@@ -196,11 +203,19 @@ namespace CosmicShore.Gameplay
         // and the attacker domain for Prism.Damage. Blue = neutral (no strike yet) → smashes any team's mass.
         readonly NetworkVariable<Domains> n_LastHitDomain =
             new(Domains.Blue, readPerm: NetworkVariableReadPermission.Everyone, writePerm: NetworkVariableWritePermission.Server);
-        // EMBEDDED IN THE NUCLEUS (the Scarab's seeding ability, SCARAB.md §4.6): the ball is stuck
-        // in the nucleus surface waiting to be struck loose. Deliberately NOT expressed as n_Frozen:
-        // every vessel-contact gate bails on frozen (a kickoff ball must ignore the ships stacked on
-        // it), and an embedded ball's whole purpose is to BE struck. So it is its own state — physics
-        // integration is skipped like frozen, contact is live like a normal ball.
+        // STUDDING THE NUCLEUS (the Scarab's seeding ability, SCARAB.md §4.6): the ball was seeded
+        // part-sunk in the nucleus surface and nothing has dislodged it yet.
+        //
+        // IT IS BOOKKEEPING, NOT A PHYSICS MODE. The ball is an ordinary live body the whole time —
+        // dynamic, contactable, blastable, depenetrated like any other. This flag only says three
+        // things: its containment is suspended (it sits on the wrong side of both volumes), it is
+        // not counted among the cell's LOOSE balls, and the seeding field still has it on its
+        // books. It was a pinned kinematic state for two passes and both of that state's
+        // properties were defects: KINEMATIC meant no blast could move it (the Scarab's own dash
+        // included), and PINNED meant the anchor fought the vessel depenetration every contact
+        // frame, which is what made a seeded ball jitter in and out of the shell.
+        //
+        // It is also ONE WAY (see _releasedFromNucleus): once dislodged, a ball is just a ball.
         readonly NetworkVariable<bool> n_Embedded =
             new(readPerm: NetworkVariableReadPermission.Everyone, writePerm: NetworkVariableWritePermission.Server);
         // Size factor over the authored base scale (SetSizeScale). Replicated because a forged
@@ -298,18 +313,28 @@ namespace CosmicShore.Gameplay
         public bool IsFrozen => n_Frozen.Value;
         public bool IsHidden => n_Hidden.Value;
 
-        /// <summary>True while this ball is stuck in the nucleus surface awaiting a strike.</summary>
+        /// <summary>
+        /// True while this ball is still STUDDING the nucleus surface — seeded there and not yet
+        /// dislodged. It is an ordinary live body throughout; this only reports that it has not
+        /// moved off its seed point yet. Once false it never becomes true again for this ball.
+        /// </summary>
         public bool IsEmbeddedOnNucleus => n_Embedded.Value;
 
-        /// <summary>Server: the outward (away-from-cell-centre) normal at this ball's embed point.</summary>
-        public Vector3 EmbedOutwardServer => _embedOutward;
-
         /// <summary>
-        /// Server: raised the instant an embedded ball is struck loose, carrying whether it went
-        /// INWARD (into the nucleus — the court, where balls are of consequence) or OUTWARD (into the
-        /// cytoplasm — where it lives on, bouncing off the nucleus from the outside). The ball resolves
-        /// the direction because only it knows its own embed normal; <c>ScarabNucleusField</c> owns
-        /// what the two directions MEAN, so policy never leaks into the payload.
+        /// Server: raised the instant a studding ball is dislodged BY ANYTHING — a hull, a blade, a
+        /// blast, a shove — carrying whether it went INWARD (into the nucleus, the court, where balls
+        /// are of consequence) or OUTWARD (into the cytoplasm, where it lives on, bouncing off the
+        /// nucleus from the outside).
+        ///
+        /// It is raised from <see cref="TickNucleusDepartureServer"/>, which OBSERVES the ball rather
+        /// than being called by whatever moved it — so no force has to know this ability exists, and
+        /// one added tomorrow is covered for free. The ball resolves the direction because only it
+        /// knows its own embed normal; <c>ScarabNucleusField</c> owns what the two directions MEAN,
+        /// so policy never leaks into the payload.
+        ///
+        /// A SUBSCRIBER MAY DETONATE THE BALL (banking one too many overloads the nucleus, and the
+        /// shipped default takes every live ball with it), which is why it is raised on the closing
+        /// line of the server tick.
         /// </summary>
         public static event System.Action<AstroLeagueBall, bool> OnNucleusReleasedServer;
 
@@ -350,6 +375,16 @@ namespace CosmicShore.Gameplay
             rb.maxAngularVelocity = settings != null ? settings.maxAngularSpeed : 40f;
             rb.interpolation = RigidbodyInterpolation.Interpolate;
             rb.collisionDetectionMode = CollisionDetectionMode.ContinuousDynamic;
+            // NEVER SLEEP. The ball is DESIGNED to come to rest — `ballDrag` exists so an untouched
+            // ball settles and becomes a thing players contest — and a resting rigidbody sleeps,
+            // which drops it out of the simulation's active set. An AOE blast finds the ball
+            // through a trigger on a collider that has no rigidbody of its own and merely GROWS
+            // (AOECylindricalExplosion reshapes its box each frame); a pair with no awake actor in
+            // it is not something a physics engine owes you an event for. So a settled ball — and
+            // above all a ball studding the nucleus, which never moves at all — is exactly the ball
+            // a blast could silently fail to reach. One always-simulated sphere per live ball is a
+            // cheap price for "every force reaches every ball".
+            rb.sleepThreshold = 0f;
 
             sphereCol = GetComponent<SphereCollider>();
             sphereCol.material = new PhysicsMaterial("AstroLeagueBall")
@@ -448,7 +483,6 @@ namespace CosmicShore.Gameplay
             {
                 n_Position.Value = transform.position;
                 ApplyFrozenPhysics(n_Frozen.Value);
-                if (n_Embedded.Value) ApplyEmbeddedPhysics(true);
             }
             else
             {
@@ -671,23 +705,11 @@ namespace CosmicShore.Gameplay
 
             SampleVesselVelocities();
 
-            if (n_Embedded.Value)
-            {
-                // Pinned: hold the anchor. No integration, no containment, no drag — an embedded
-                // ball is scenery with a hitbox until somebody knocks it loose.
-                //
-                // The write is GUARDED on real drift rather than unconditional, and that is the
-                // whole of the old positional jank: nothing should be able to displace a pinned
-                // ball, so in the steady state this now writes nothing at all. It used to re-assert
-                // the anchor every physics step against a vessel depenetration that ran on the
-                // contact frame (VesselContact), so a hull resting on a seeded ball made it jump
-                // ~one clearance radius clear and snap back, over and over — a ball stopped at the
-                // same point simply gets pushed and stays pushed. A pin that has to keep
-                // re-asserting itself is a pin something else is fighting.
-                if ((transform.position - _embedAnchor).sqrMagnitude > EmbedDriftEpsilonSqr)
-                    transform.position = _embedAnchor;
-            }
-            else if (!n_Frozen.Value)
+            // A BALL STUDDING THE NUCLEUS RUNS THIS BRANCH LIKE ANY OTHER BALL. There is no
+            // pinned state any more: `n_Embedded` is BOOKKEEPING (it suspends containment, keeps
+            // the ball out of the cell's loose-ball count, and tells the seeding field it is still
+            // studding), never a physics mode. See EmbedOnNucleusServer.
+            if (!n_Frozen.Value)
             {
                 // Cap the top speed so strikes can't make the ball run away.
                 if (rb.linearVelocity.sqrMagnitude > settings.maxSpeed * settings.maxSpeed)
@@ -715,21 +737,68 @@ namespace CosmicShore.Gameplay
                 _velocityBeforePhysics = rb.linearVelocity;
 
                 // Bounce the ball off the nucleus - its own boundary in any cell, a mode's court
-                // override where one is installed. Skipped briefly after a nucleus release: the
-                // ball starts part-sunk in the shell, which is outside BOTH the court and the
-                // cytoplasm volumes, so containing it on that first frame reads as a radial shove
-                // rather than a hit (SCARAB.md §4.6).
-                if (Time.time >= _containmentGraceUntil)
+                // override where one is installed.
+                //
+                // CONTAINMENT IS THE ONE THING A STUDDING BALL IS EXEMPT FROM, and it is the only
+                // exemption the state has: the ball sits part-sunk in the shell, which is on the
+                // wrong side of BOTH the court and the cytoplasm volumes, so containing it there
+                // would shove it radially out of the surface the moment it was seeded. It resumes
+                // the tick after the ball leaves, and `nucleusReleaseGraceSeconds` then carries it
+                // clear of the shell rather than letting the walls correct it mid-flight — so
+                // leaving reads as a hit in either direction (SCARAB.md §4.6).
+                if (!n_Embedded.Value && Time.time >= _containmentGraceUntil)
                     ContainWithinBoundary();
             }
 
             if (IsSpawned)
             {
                 n_Position.Value = transform.position;
-                bool still = n_Frozen.Value || n_Embedded.Value;
-                n_Velocity.Value = still ? Vector3.zero : rb.linearVelocity;
-                n_AngularVelocity.Value = still ? Vector3.zero : rb.angularVelocity;
+                n_Velocity.Value = n_Frozen.Value ? Vector3.zero : rb.linearVelocity;
+                n_AngularVelocity.Value = n_Frozen.Value ? Vector3.zero : rb.angularVelocity;
             }
+
+            // LAST. A departure announcement can DETONATE this ball (banking one too many
+            // overloads the nucleus, and the shipped default takes every live ball with it), so
+            // nothing may touch this instance afterwards.
+            if (n_Embedded.Value) TickNucleusDepartureServer();
+        }
+
+        /// <summary>
+        /// Server: has this studding ball actually LEFT the nucleus surface? The whole release
+        /// mechanism, and it is a passive OBSERVATION rather than a call any force has to make.
+        ///
+        /// That is the point. A release used to be something each force announced for itself, so a
+        /// force nobody had wired announced nothing — and the ball being KINEMATIC meant such a
+        /// force could not move it either, which is how every AOE blast in the game came to pass
+        /// straight through a seeded ball. It is the same lesson this file already records for the
+        /// forge-time ball cap: A RULE ENFORCED AT ONE PRODUCER CAN ONLY EVER SEE THAT PRODUCER.
+        /// Watching the ball itself sees every force there is, including the ones added later.
+        ///
+        /// "Left" is either real motion or real displacement: a nudge the ball absorbs (below
+        /// `ballRestSpeed`, which the tick above snaps to zero) leaves it studding, exactly as the
+        /// same nudge would leave a ball stopped anywhere else stopped.
+        /// </summary>
+        void TickNucleusDepartureServer()
+        {
+            bool moving = rb.linearVelocity.sqrMagnitude > 0f;
+            float leaveDistance = BallWorldRadius() * NucleusDepartureRadiusFraction;
+            bool displaced = (transform.position - _embedAnchor).sqrMagnitude
+                             > leaveDistance * leaveDistance;
+            if (!moving && !displaced) return;
+
+            n_Embedded.Value = false;
+            _releasedFromNucleus = true;   // one way: a ball never studs the nucleus twice
+
+            // Let whatever freed it carry the ball out of the shell before the walls start
+            // correcting it, so leaving reads as a hit in either direction.
+            _containmentGraceUntil = Time.time
+                + (settings != null ? Mathf.Max(0f, settings.nucleusReleaseGraceSeconds) : 1f);
+            _lastPrismScanPos = transform.position;
+
+            // Which side of its own embed normal it left on — read off the velocity it actually
+            // carries, or off where it ended up when it was shoved rather than struck.
+            Vector3 heading = moving ? rb.linearVelocity : transform.position - _embedAnchor;
+            OnNucleusReleasedServer?.Invoke(this, Vector3.Dot(heading, _embedOutward) < 0f);
         }
 
         /// <summary>
@@ -1360,13 +1429,10 @@ namespace CosmicShore.Gameplay
             float bladeT = 0f;
             Vector3 strikerVelocity;
 
-            // Where the anti-clip depenetration pushes off, and with what clearance. CAPTURED
-            // rather than applied inline, because a PINNED ball must not be depenetrated: the
-            // server re-asserts its embed anchor every physics step, so an eject against the pin is
-            // undone on the next tick and the ball visibly jumps out of the nucleus surface and
-            // snaps back for as long as a hull overlaps it. It is applied after the strike instead,
-            // by which point the strike has un-pinned the ball and the push sticks — which is
-            // exactly the push a ball stopped at that point would have taken.
+            // Where the anti-clip depenetration pushes off, and with what clearance. Captured so
+            // the hull and blade branches can share one call site; it is applied unconditionally,
+            // to a studding ball exactly as to any other, because a studding ball is an ordinary
+            // body and nothing writes its position back (see EmbedOnNucleusServer).
             Vector3 ejectOrigin;
             float ejectClear;
 
@@ -1418,9 +1484,7 @@ namespace CosmicShore.Gameplay
                 strikerVelocity = ResolveStrikerVelocity(vessel);
             }
 
-            bool embedded = n_Embedded.Value;
-            if (!embedded)
-                EjectBallFromPoint(ejectOrigin, ejectClear); // anti-clip every frame - independent of the bounce/strike gating
+            EjectBallFromPoint(ejectOrigin, ejectClear); // anti-clip every frame - independent of the bounce/strike gating
 
             // Only respond when the ball is actually moving INTO the vessel - avoids re-launching a ball
             // that has already bounced away (self-limiting) and double-bouncing on the second collider path.
@@ -1435,12 +1499,6 @@ namespace CosmicShore.Gameplay
 
             VesselStrike(vessel, contactPoint, strikerVelocity, strikerSpeed, n, deliberate,
                 blade != null, bladeT);
-
-            // The strike un-pinned it, so NOW the anti-clip push is meaningful and permanent. A
-            // release can also detonate the ball (a nucleus overload takes every live ball with
-            // it), so this only ever runs on a ball that is still here to be pushed.
-            if (embedded && this != null && !n_Embedded.Value)
-                EjectBallFromPoint(ejectOrigin, ejectClear);
         }
 
         /// <summary>The ball's world-space radius (collider radius × max lossy scale) - tracks intensity scaling.</summary>
@@ -1516,24 +1574,15 @@ namespace CosmicShore.Gameplay
             RecordTouchServer(strikerDomain,
                 vessel.VesselStatus != null ? vessel.VesselStatus.PlayerName : string.Empty);
 
-            // EMBEDDED: UN-PIN FIRST, then fall through to the ordinary strike below. An embedded
-            // ball is a ball stopped at that point in the nucleus surface, so a hit has to resolve
-            // through the same maths any resting ball's would — the elastic moving-paddle bounce,
-            // the arcade pop, the off-centre torque, the feedback beat.
-            //
-            // It used to short-circuit into a SECOND impulse model of its own (the striker's speed
-            // along the striker's heading, floored at ballRestSpeed, no pop, no spin, no strike
-            // RPC), which is precisely why a seeded ball answered a hit differently from every
-            // other ball in the cell. Two models for one contact is one model too many.
-            //
-            // WHICH SIDE of the embed normal it left on is then read off the velocity the strike
-            // actually produced (AnnounceNucleusRelease, at the very end) rather than off a
-            // synthesised push, so the cytoplasm/nucleus routing describes where the ball is really
-            // going. The steal above already ran, so a dash can take an enemy's seeded ball and
-            // knock it loose in the same contact.
-            bool wasEmbedded = n_Embedded.Value;
-            if (wasEmbedded) UnpinFromNucleusServer();
-
+            // NOTHING HERE KNOWS ABOUT THE NUCLEUS, and that is the design. A ball studding the
+            // nucleus surface is an ordinary body at rest, so it takes the elastic moving-paddle
+            // bounce, the arcade pop, the off-centre torque and the feedback beat below exactly as
+            // any resting ball does; ServerFixedUpdate then NOTICES that it moved and reports the
+            // release. This replaced a short-circuit that carried a SECOND impulse model for the
+            // embedded case (the striker's speed along the striker's heading, floored at
+            // ballRestSpeed, no pop, no spin, no strike RPC) — two models for one contact is one
+            // model too many. The steal above already ran, so a dash can take an enemy's seeded
+            // ball and knock it loose in the same contact.
             Vector3 ballVel = rb.linearVelocity;
 
             // Elastic collision off the moving paddle (momentum-conserving against an infinite-mass
@@ -1596,12 +1645,6 @@ namespace CosmicShore.Gameplay
 
                 OnStruckServer?.Invoke(vessel, intensity); // controller recoils the vessel (it bounces off too)
             }
-
-            // LAST, and the ordering is load-bearing: announcing a release can DETONATE this ball
-            // (banking one too many overloads the nucleus, and the shipped default takes every live
-            // ball with it), so nothing may touch this instance afterwards. The old short-circuit
-            // got this right by returning immediately; a fall-through has to say it.
-            if (wasEmbedded) AnnounceNucleusRelease(rb.linearVelocity);
         }
 
         /// <summary>
@@ -1660,18 +1703,13 @@ namespace CosmicShore.Gameplay
             Vector3 kick = impactVector * settings.explosionKickMultiplier;
             if (kick.sqrMagnitude < 1e-6f) return;
 
-            // EMBEDDED: un-pin first, exactly as a vessel strike does — then the maths below is the
-            // maths a ball stopped at that point would get.
-            //
-            // THIS IS WHY THE SCARAB'S DASH DID NOTHING TO A SEEDED BALL. A pinned ball is
-            // KINEMATIC, so every line below wrote velocity into a body that does not integrate and
-            // the blast passed straight through it. The dash's whole reach onto a ball it does not
-            // physically touch is its cavitation blast (ScarabJukeController.OnJukeFired →
-            // ScarabCavitationBlast → ExplosionImpactor → here), so dashing at an embedded ball was
-            // a no-op with nothing reporting it. Every other blast in the game had the same hole.
-            bool wasEmbedded = n_Embedded.Value;
-            if (wasEmbedded) UnpinFromNucleusServer();
-
+            // NOTHING HERE KNOWS ABOUT THE NUCLEUS EITHER. A studding ball is a dynamic body, so
+            // the velocity write below actually moves it and ServerFixedUpdate reports the release
+            // — which is what makes the SCARAB'S DASH work on a seeded ball. Its reach onto a ball
+            // it does not physically touch is the cavitation blast (ScarabJukeController.OnJukeFired
+            // → ScarabCavitationBlast → ExplosionImpactor → here); while the ball was pinned and
+            // KINEMATIC, every line below wrote into a body that does not integrate, so the punch
+            // — and every other blast in the game — passed straight through it.
             Vector3 desired = rb.linearVelocity + kick;
             if (desired.sqrMagnitude > settings.maxSpeed * settings.maxSpeed)
                 desired = desired.normalized * settings.maxSpeed;
@@ -1719,9 +1757,6 @@ namespace CosmicShore.Gameplay
                 Strike_ClientRpc(transform.position - normal * BallWorldRadius(), normal,
                                  intensity, 0UL, tipHit: false);
             }
-
-            // LAST: announcing a release can detonate this ball (see VesselStrike's note).
-            if (wasEmbedded) AnnounceNucleusRelease(rb.linearVelocity);
         }
 
         /// <summary>
@@ -2122,134 +2157,48 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// Server: EMBED this ball in the nucleus surface at <paramref name="surfacePoint"/>, with
-        /// <paramref name="outward"/> pointing away from the cell centre. The ball stops simulating and
-        /// pins to the anchor, but stays contactable — being struck loose is the entire point of it.
+        /// Server: SEED this ball into the nucleus surface at <paramref name="surfacePoint"/>, with
+        /// <paramref name="outward"/> pointing away from the cell centre.
+        ///
+        /// IT IS PLACED, NOT PINNED. The ball is left a completely ordinary live body — dynamic,
+        /// contactable, blastable, depenetrable — that simply happens to be at rest inside a shell
+        /// with no collider in it. The only thing suspended is its containment, because the seed
+        /// point is on the wrong side of both the court and the cytoplasm volumes. Everything else
+        /// about it is a ball, so every force in the game reaches it with no force having to know
+        /// this ability exists.
+        ///
+        /// ONE WAY. A ball that has ever been dislodged refuses to be seeded again
+        /// (<c>_releasedFromNucleus</c>): studding the shell is a state the world puts a ball INTO,
+        /// never one it can fall back into, so a loose ball can never quietly stop behaving like a
+        /// ball because it drifted through the wrong place.
         ///
         /// It keeps its domain and its ownership lock, so a seeded ball is already its Scarab's, and an
         /// enemy who wants it must dash-steal it exactly like any other ball.
         /// </summary>
         public void EmbedOnNucleusServer(Vector3 surfacePoint, Vector3 outward)
         {
-            if (!IsServer) return;
+            if (!IsServer || _releasedFromNucleus) return;
 
             _embedAnchor = surfacePoint;
             _embedOutward = outward.sqrMagnitude > 1e-6f ? outward.normalized : Vector3.up;
 
             SetHiddenServer(false);
-            if (n_Frozen.Value) SetFrozenServer(false); // embedded is its own state, never frozen
+            SetFrozenServer(false);   // a studding ball is a LIVE body, never frozen and never pinned
             n_Embedded.Value = true;
-            ApplyEmbeddedPhysics(true);
 
             SetSpawnPosition(surfacePoint);
             transform.position = surfacePoint;
+            rb.position = surfacePoint;
+            rb.linearVelocity = Vector3.zero;
+            rb.angularVelocity = Vector3.zero;
             if (IsSpawned)
             {
                 n_Position.Value = surfacePoint;
                 n_Velocity.Value = Vector3.zero;
                 n_AngularVelocity.Value = Vector3.zero;
             }
+            _lastPrismScanPos = surfacePoint;
             if (trail != null) trail.Clear();
-        }
-
-        /// <summary>
-        /// Server: knock an embedded ball loose along <paramref name="velocity"/>. Returns true if it
-        /// went INWARD (toward the cell centre — into the nucleus/court), false if it went OUTWARD into
-        /// the cytoplasm. The caller supplies the push; the ball reports which side of its own embed
-        /// normal that push was on, and raises <see cref="OnNucleusReleasedServer"/> so the field can
-        /// count nucleus entries without duplicating the geometry test.
-        /// </summary>
-        public bool ReleaseFromNucleusServer(Vector3 velocity)
-        {
-            if (!UnpinFromNucleusServer()) return false;
-
-            rb.linearVelocity = velocity;
-            rb.angularVelocity = Vector3.zero;
-            if (IsSpawned)
-            {
-                n_Velocity.Value = velocity;
-                n_AngularVelocity.Value = Vector3.zero;
-            }
-
-            return AnnounceNucleusRelease(velocity);
-        }
-
-        /// <summary>
-        /// Server: the first half of a release — the ball stops being pinned and becomes an ORDINARY
-        /// BALL AT REST at the point it was embedded, carrying no launch of its own.
-        ///
-        /// It is split out of <see cref="ReleaseFromNucleusServer"/> because of the rule this whole
-        /// state answers to: AN EMBEDDED BALL IS A BALL STOPPED AT THAT LOCATION. A force that
-        /// reaches a resting ball must therefore reach an embedded one on the SAME terms — so the
-        /// strike path and the blast path un-pin first and then run their normal free-body maths,
-        /// rather than each carrying a second, weaker impulse model for the pinned case. Whoever
-        /// un-pins owes the ball an <see cref="AnnounceNucleusRelease"/> once its final velocity is
-        /// known, and owes it LAST, because the announcement can detonate the ball.
-        ///
-        /// Returns false when there was nothing to un-pin.
-        /// </summary>
-        bool UnpinFromNucleusServer()
-        {
-            if (!IsServer || !n_Embedded.Value) return false;
-
-            n_Embedded.Value = false;
-            ApplyEmbeddedPhysics(false);
-
-            // A kinematic body KEEPS its velocity fields, so "at rest" has to be said out loud —
-            // the strike and blast maths both read rb.linearVelocity as the ball's incoming
-            // velocity, and a stale value there would be a launch nobody asked for.
-            rb.linearVelocity = Vector3.zero;
-            rb.angularVelocity = Vector3.zero;
-
-            // Let the force itself carry the ball out of the shell before the walls start
-            // correcting it, so leaving the nucleus reads as a hit in either direction.
-            _containmentGraceUntil = Time.time
-                + (settings != null ? Mathf.Max(0f, settings.nucleusReleaseGraceSeconds) : 1f);
-
-            _lastPrismScanPos = transform.position;
-            return true;
-        }
-
-        /// <summary>
-        /// Server: the second half of a release — report which side of its own embed normal the ball
-        /// actually left on, once the force that freed it has written the ball's final velocity.
-        /// Returns true for INWARD (into the nucleus). See <see cref="OnNucleusReleasedServer"/>.
-        ///
-        /// CALL IT LAST. A subscriber may detonate this ball outright — banking one too many
-        /// overloads the nucleus, and the shipped default takes every live ball with it — so this
-        /// instance may not survive the invoke.
-        /// </summary>
-        bool AnnounceNucleusRelease(Vector3 velocity)
-        {
-            bool inward = Vector3.Dot(velocity, _embedOutward) < 0f;
-            OnNucleusReleasedServer?.Invoke(this, inward);
-            return inward;
-        }
-
-        /// <summary>
-        /// The embedded twin of <see cref="ApplyFrozenPhysics"/>: kinematic + pinned while embedded,
-        /// dynamic again on release. Deliberately does NOT snap to spawnPosition on the way out — the
-        /// release writes the ball's launch velocity immediately after, and a snap would fight it.
-        /// </summary>
-        void ApplyEmbeddedPhysics(bool embedded)
-        {
-            if (embedded)
-            {
-                rb.collisionDetectionMode = CollisionDetectionMode.ContinuousSpeculative;
-                rb.isKinematic = true;
-                // Say "at rest" out loud: a kinematic body KEEPS its velocity fields, and the
-                // contact gate in VesselContact reads rb.linearVelocity to decide whether the ball
-                // is moving into the striker. A stale value there makes a pinned ball answer a
-                // contact as though it were still travelling.
-                rb.linearVelocity = Vector3.zero;
-                rb.angularVelocity = Vector3.zero;
-                transform.position = _embedAnchor;
-            }
-            else if (!n_Frozen.Value)
-            {
-                rb.isKinematic = false;
-                rb.collisionDetectionMode = CollisionDetectionMode.ContinuousDynamic;
-            }
         }
 
         /// <summary>
