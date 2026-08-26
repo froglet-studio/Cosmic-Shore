@@ -321,6 +321,52 @@ Three consequences:
   cross-tool comparison silently rescales, and the constant differs per model (it is that rig's
   root-bone factor).
 
+### 4.6 A rig swap moves GEOMETRY. Two other things decide whether the ship works.
+
+The Dolphin swap passed every structural check — bones, colliders, renderers, morph magnitude,
+reachability, dangling references — and the vessel was still unusable when flown. Both defects were
+in things the swap did not touch, which is exactly why nothing caught them.
+
+**MATERIALS are authoring, not geometry.** A model ships its DCC materials unless its `.meta`
+REMAPS them onto the fleet's three roles through `externalObjects`. The Squirrel and Sparrow do;
+the Dolphin rig's map was empty, so `accent.001` — the material that should carry the DOMAIN
+colour — rendered as its Blender authoring: `EmissiveColor (1.0, 0.395, 0.0)` at `EmissiveFactor
+10`. Saturated orange, emissive 10×, on the one surface that is supposed to say which team you
+are.
+
+**And submesh ORDER is not a convention.** Measured across the fleet:
+
+| model | submesh order | slot 1 is |
+|---|---|---|
+| Sparrow | Body, Domain, Engine, Window | Domain ✔ |
+| Manta family (serialized) | Body, Window, Domain, ? | **Window** |
+| Dolphin rig | accent, BASE, windsheild, N | **BASE — the body** |
+
+`VesselCustomization._domainMaterialSlot` defaults to 1 and its tooltip calls that "the platform
+contract". It is not a contract, it is a coincidence that holds for models which happen to emit
+Domain second. On this rig it painted the team colour over the whole dark body — the exact outcome
+the same tooltip forbids ("erases the two-tone read"). **Use `_domainReplacesMaterials`**, which
+resolves the slot by material IDENTITY and cannot be wrong about order.
+
+> **A rig swap is three jobs, and the tool only ever did one.** Move the geometry; remap the
+> materials; make the animation rig-safe. Passing the first is not evidence about the other two —
+> and both of those failures render, so they are invisible to every asset-level check that exists.
+
+**REST POSITIONS are the other half of §4.4.** That section says a rig's rest pose is not the
+shipped pose, and the codebase had applied the lesson to ROTATION only: `RotatePartFromRest` existed,
+its positional sibling did not, so `RiptideAnimation` still wrote `localPosition` absolutely. An
+absolute local position assumes a part hangs off the model root. On a rig it is wrong twice — the
+value is relative to the PARENT BONE, and in Blender's convention every bone rests at
+`(0, boneLength, 0)` — so a constant meant as "just behind the hull" flung each of six engines
+1.7 units along a different rotated axis. `CaptureRestPositions` / `MovePartFromRest` complete the
+pair, with a detail worth keeping: the ANCHOR resolves through the part's HOME parent and the
+OFFSET through its CURRENT one, because these parts are re-parented onto a drift handle in flight
+and each half would be wrong under the other's parent.
+
+Translating those constants also exposed dead tuning: the "default" and "backward" thruster
+positions were the same vector, so the thrusters never had a positional animation at all. The one
+real positional effect in the Dolphin's whole puppetry is the wings sliding forward on a drift.
+
 ---
 
 ## 7. Phase 0 re-survey — what moved, and the two rows that were wrong about liveness

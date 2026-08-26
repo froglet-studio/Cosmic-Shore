@@ -3268,11 +3268,29 @@ GPU-instancing macros (`#pragma multi_compile_instancing`, `UNITY_INSTANCING_BUF
 
 ---
 
-## 🟡 Dolphin rig swap — RUN and asset-verified; still needs a flight (2026-08-26)
+## 🔴 Dolphin rig swap — FLOWN, BROKE, FIXED; needs a re-flight (2026-08-26)
 
-> **THE PR HOLD IS RELEASED.** The `/ship-deep` §2.5 gate held the PR until the swap was run;
-> Garrett ran it on 2026-08-26 and pushed the prefab, and steps 1–3 below are green. What remains
-> is step 7 — flying it — which no tool can do and which does not block the merge.
+> **DO NOT MERGE until step 7 passes.** The swap ran, every asset check passed, and the ship was
+> still broken in flight — the puppetry tore apart and the hull wore a leftover Blender colour.
+> Both causes are found, fixed and recorded below. The lesson is the entry's own headline:
+> **every structural check on this list passed while the vessel was unusable**, because both
+> defects lived in things the swap did not touch. Asset verification bounds what a swap BROKE; it
+> cannot tell you the ship is right.
+
+### What the flight found, and why nothing here caught it
+
+| symptom | cause | why the checks missed it |
+|---|---|---|
+| hull puppeteers wrongly | `RiptideAnimation` drove `localPosition` **absolutely**. `VesselAnimation` grew rest-relative ROTATION when the first rig landed and never grew the POSITION half. Every bone on this rig rests at `(0, boneLength, 0)` with large rest rotations, so `(0, .15, −1.7)` flung each of six engines 1.7u along a *different* axis and pulled the chassis and wings off their parents. | Nothing static reads an animation. The swap correctly cleared the animation's Transform fields so they bind by bone name — and binding to the right bone is exactly what exposed the latent absolute-position bug. |
+| yellow left from Blender | the rig's `.meta` had `externalObjects: {}`, so it imported its own DCC materials. `accent.001` — the material that should carry the DOMAIN colour — is `EmissiveColor (1.0, 0.395, 0.0)` at `EmissiveFactor 10`. | Material *remapping* is authoring, not geometry. Every renderer/collider/bone count was right. |
+| domain colour on the wrong surface | submesh ORDER is **not** a convention: this rig emits `[accent, BASE, windsheild, N]`, so the platform default `_domainMaterialSlot: 1` painted the team colour onto the BODY — which the field's own tooltip forbids. The Sparrow's order puts Domain at 1; the Manta family's puts it at 2. | The default is only correct for models that happen to emit Domain second. Nothing measured the order. |
+
+Fixed in `9493ebedf`: the three roles remapped in the rig's importer, the Dolphin moved to the
+order-independent `_domainReplacesMaterials`, and `CaptureRestPositions` / `MovePartFromRest` added
+as the sibling of the rotation trio (anchor through the HOME parent, offset through the CURRENT one,
+so the drift re-parenting still works). `VesselRigSwapper` now REFUSES a rig whose hull wears none of
+the fleet's materials — the Rhino and Urchin rigs have the same empty `externalObjects` and would
+have reproduced this exactly.
 
 `FrogletTools ▸ Vessels ▸ Swap Vessel Rig` is new and, like every writer tool, **its output is the
 deliverable and it lands in your working tree, not on the branch** — so the swapped
@@ -3334,7 +3352,7 @@ rather than merely disabled. Full table: `Docs/VESSEL_CONSTRUCTION_FOLLOWUP.md` 
    something else changed.
 6. ⬜ **`Audit Vessel Skimmers`** — unaffected by the swap (the skimmer is under `OrientationHandle`,
    not under the model), so it must still pass exactly as before.
-7. ⬜ **Fly it — THE ONE THAT MATTERS.** Element level 0 → 10 on each of the four elements and watch the hull morph; check the
+7. 🔴 **Fly it — THE ONE THAT MATTERS.** Failed once (see above), fixed, NOT yet re-flown. Element level 0 → 10 on each of the four elements and watch the hull morph; check the
    jaws, wings and six thrusters still animate (`RiptideAnimation` re-binds by bone name, so its
    inspector fields are deliberately left EMPTY); check the trail, the skim and the crystal blast
    are unchanged.
