@@ -575,12 +575,44 @@ up vector in a position relative to the camera."*
 same reason: **the property is only rotation-minimizing if nothing else writes the frame between
 steps**, and a parent writes it every frame.
 
-The fix is to stop using a Transform. The drift frame is now a **quaternion captured once at drift
-entry** (`RiptideAnimation._driftFrame`); it has no parent and nothing can perturb it, so it is still
-by construction — 0.000° over the same sweep. The Dolphin's drift locks its velocity vector, so an
-orientation captured at entry stays course-aligned for the whole manoeuvre. The appendages take
-`Quaternion.identity` as their turn while drifting: no puppetry at all, which is what the manoeuvre
-wants from them. `DriftHandle` survives in the prefab as an inert empty.
+The fix is to stop using a Transform, and the frame that replaced it went through one wrong answer
+first. **Freezing the hull's orientation at drift entry** is perfectly stable — nothing writes it —
+but it holds *where the ship was* rather than where it is going, so as the pilot rolls during the
+drift the appendages stop matching the hull and the camera (measured 8.20° adrift over an ordinary
+aim). The shipped frame is the **hull, re-aimed onto Course by the shortest arc**, rebuilt from
+scratch every frame:
+
+```csharp
+appendageFrame = Quaternion.FromToRotation(transform.forward, VesselStatus.Course)
+                 * transform.rotation;
+```
+
+Three properties fall out of that one line, and each was something an earlier version got wrong:
+
+* the appendages read as *"a dolphin flying straight along Course"*, because that is literally what
+  the frame is — the ship, pointed where it is going;
+* their **up stays the hull's up**, which is roughly the camera's, because the chase camera rolls
+  with the hull. `FromToRotation` is a pure swing about an axis perpendicular to the nose, so it
+  injects no roll of its own — verified as *zero* component of the residual rotation along the nose,
+  not by comparing up-vectors (the frame is legitimately tilted off the hull by the aim, which moves
+  up too; an earlier version of the check measured that tilt and called it roll);
+* it **cannot accumulate**, being a pure function of `(hull rotation, Course)` with no state.
+
+The appendages take `Quaternion.identity` as their turn while drifting — no puppetry at all, which is
+what the manoeuvre wants from them. `DriftHandle` survives in the prefab as an inert empty.
+
+**Position is resolved in a different frame from rotation, deliberately.** The clearance offsets
+(wings forward, engines back) are read in the **vessel's** frame, because a clearance is measured
+against the hull; reading them in the Course frame would make the parts *translate* as the hull aims,
+which is motion the manoeuvre does not want. `RotatePartFromRestInFrame` and `MovePartFromRest` take
+their frames separately, so this costs nothing structurally.
+
+A separate finding from the same pass, and a reminder of §4.4: **the rig's engines rest 0.15 units
+forward of the ship they replaced.** The legacy art authored its engine cases at `z −2.047`; the rig's
+jet bones rest at `z −1.90`. Both models are unit-1 (`UnitScaleFactor 1.0`, `useFileScale: 1`,
+`globalScale: 1`) and every scale in both prefab chains is 1, so those are directly comparable world
+units. `RiptideAnimation.jetRestBackward` (0.15) puts them back where the ship's engines have always
+been. That is a *resting* offset, not clearance — the drift gap is added on top of it.
 
 `VesselAnimation.RotatePartFromRestInFrame` and `MovePartFromRest` therefore take a **`Quaternion`**
 frame rather than a `Transform` — and the turn is a `Quaternion` too, for §4.6.1's composition. Both

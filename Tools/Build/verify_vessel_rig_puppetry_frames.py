@@ -21,7 +21,8 @@ could not fix because neither of them is a sign:
     Brake(throttle), zero unless braking, so losing it left them dead on that axis.
   * the drift frame was a `DriftHandle` Transform parented under the vessel, so the
     hull's own aiming carried it between one frame's write and the next read.
-    Re-pointing only its forward axis leaves that twist in place.
+    Re-pointing only its forward axis leaves that twist in place, and it
+    accumulates.
 
 This reproves all of it against the rig's own measured bone rest rotations,
 offline, with no Unity.
@@ -184,7 +185,7 @@ def main():
             failures.append("the no-chassis control unexpectedly pitched the wings")
 
     print()
-    print("6. the drift frame must be STILL - a Transform parented under the vessel cannot be")
+    print("6. the COURSE frame: aimed along Course, rolled with the hull, and stateless")
     def rotv(q, v):
         r = qmul(qmul(q, (v[0], v[1], v[2], 0.0)), qinv(q))
         return (r[0], r[1], r[2])
@@ -198,35 +199,81 @@ def main():
             return (0.0, 0.0, 0.0, 1.0)
         return axis_angle(ax, math.degrees(math.acos(d)))
 
+    def course_frame(hull, course):
+        """The shipped construction: the hull, swung onto Course by the shortest arc."""
+        return qmul(from_to(rotv(hull, (0, 0, 1)), course), hull)
+
     COURSE = (0.0, 0.0, 1.0)
-    entry = euler(0, 0, 0)                       # hull orientation the drift began at
+    entry = euler(0, 0, 0)
 
-    # (a) SHIPPED: a quaternion captured once. It has no parent, so nothing can perturb it.
-    frozen = entry
-    frozen_twist = 0.0
-
-    # (b) WHAT SHIPPED BEFORE: a handle parented under the vessel. Each frame the hull turns by
-    #     dR, which carries the child's world rotation with it; re-pointing only its FORWARD axis
-    #     leaves the twist that dR introduced about the Course axis.
-    handle, prev = entry, entry
-    handle_twist = 0.0
-    hull_prev = entry
+    # (a) the shipped frame, over a hull that aims AND rolls during the drift
+    worst_aim, worst_up, worst_state = 0.0, 0.0, 0.0
+    frozen_up = 0.0
     for step in range(1, 11):
-        hull = euler(6.0 * step, 5.0 * step, 0.0)      # the pilot aiming, pitch AND yaw
-        dR = qmul(hull, qinv(hull_prev))
-        hull_prev = hull
-        handle = qmul(dR, handle)                     # parented: the hull carries it
-        handle = qmul(from_to(rotv(handle, (0, 0, 1)), COURSE), handle)   # forward re-pointed
+        hull = euler(6.0 * step, 5.0 * step, 3.0 * step)      # pitch, yaw AND roll
+        f = course_frame(hull, COURSE)
+
+        # forward must be exactly Course
+        fwd = rotv(f, (0, 0, 1))
+        worst_aim = max(worst_aim, math.degrees(math.acos(max(-1.0, min(1.0, fwd[2])))))
+
+        # The frame must not ROLL the hull, only re-aim it: the parts keep the hull's up, which
+        # is roughly the camera's, because the chase camera rolls with the hull. FromToRotation is
+        # a pure swing about an axis perpendicular to both nose and Course, so the residual
+        # rotation f * inv(hull) must have NO component along the nose. (Comparing up-vectors
+        # directly is not this test - the frame is legitimately TILTED off the hull by the aim,
+        # which moves up too; an earlier version of this check measured that tilt and called it
+        # roll.)
+        d_ax, d_ang = to_axis_angle(qmul(f, qinv(hull)))
+        hf = rotv(hull, (0, 0, 1))
+        worst_up = max(worst_up, abs(sum(d_ax[i] * hf[i] for i in range(3)) * d_ang))
+
+        # STATELESS: rebuilding from the same hull must give the same frame, so nothing can
+        # accumulate however long the drift runs.
+        again = course_frame(hull, COURSE)
+        # component-wise, not through acos - see check 4
+        worst_state = max(worst_state, min(max(abs(a - b) for a, b in zip(f, again)),
+                                           max(abs(a + b) for a, b in zip(f, again))))
+
+        # (b) the FROZEN-at-entry control: perfectly stable, and wrong for a different reason -
+        #     it holds where the ship WAS at entry rather than where it is going, so as the hull
+        #     rolls during the drift the parts stop matching it (and the camera).
+        frozen_up = max(frozen_up, angle_between(entry, f))
+
+    if worst_aim > 1e-6:
+        failures.append("the course frame left Course by %.6f deg" % worst_aim)
+    if worst_up > 1e-6:
+        failures.append("the course frame injected %.6f deg of roll" % worst_up)
+    if worst_state > 1e-12:
+        failures.append("the course frame is not stateless (%.3e)" % worst_state)
+    print("   hull aims to 60 deg pitch / 50 deg yaw / 30 deg roll off a fixed Course")
+    print("   forward off Course:          %.9f deg%s" % (worst_aim, "" if worst_aim <= 1e-6 else "  <-- FAIL"))
+    print("   roll injected about Course:  %.9f deg%s" % (worst_up, "" if worst_up <= 1e-6 else "  <-- FAIL"))
+    print("   rebuild disagreement:        %.3e (quaternion components)%s"
+          % (worst_state, "" if worst_state <= 1e-12 else "  <-- FAIL"))
+    print("   controls, same sweep:")
+    print("     frozen-at-entry frame - ends %6.2f deg away from the frame it should be"
+          % frozen_up)
+    print("     (stable, but it holds the entry orientation instead of tracking the hull's roll)")
+
+    # (c) the parented-handle control, which is what a pilot actually saw
+    handle, prev, hull_prev = entry, entry, entry
+    handle_twist = 0.0
+    for step in range(1, 11):
+        hull = euler(6.0 * step, 5.0 * step, 3.0 * step)
+        dR = qmul(hull, qinv(hull_prev)); hull_prev = hull
+        handle = qmul(dR, handle)                                          # parented: hull carries it
+        handle = qmul(from_to(rotv(handle, (0, 0, 1)), COURSE), handle)    # only forward re-pointed
         handle_twist += angle_between(handle, prev); prev = handle
-        frozen_twist += angle_between(frozen, entry)  # exactly 0 - nothing writes it
-    if frozen_twist > 1e-9:
-        failures.append("the frozen frame moved %.6f deg" % frozen_twist)
-    if handle_twist < 1.0:
+    final = course_frame(euler(60.0, 50.0, 30.0), COURSE)
+    handle_error = angle_between(handle, final)
+    if handle_error < 1.0:
         failures.append("the parented-handle control did not reproduce the defect")
-    print("   hull aims 0 -> 60 deg pitch / 50 deg yaw off a fixed Course, zero pilot input")
-    print("   parented DriftHandle accumulated: %7.3f deg   <- what the pilot saw" % handle_twist)
-    print("   frozen quaternion accumulated:   %7.3f deg%s"
-          % (frozen_twist, "" if frozen_twist <= 1e-9 else "   <-- FAIL"))
+    print("     parented DriftHandle  - ends %6.2f deg away from the frame it should be"
+          % handle_error)
+    print("     (pure accumulated twist: a Transform under the vessel is carried by the hull,")
+    print("      and re-pointing only its forward axis leaves that rotation in place)")
+    _ = handle_twist
 
     print()
     print("7. a pure ROLL must bank the two wings EQUALLY; pitch is allowed to split them")
@@ -243,14 +290,23 @@ def main():
             failures.append("a pure roll splits the wings by %.2f deg" % split)
 
     print()
-    print("8. a DRIFT must also open the clearance gap")
-    # wings forward, engines back, both along the FROZEN frame's +z, rotation held.
-    wing_fwd, jet_back = 2.3, 2.3
-    print("   wings  offset +%.1f z (forward)   engines offset %.1f z (backward)"
-          % (wing_fwd, -jet_back))
-    if jet_back <= 0:
+    print("8. the offsets: a RESTING engine position, and a DRIFT gap on top of it")
+    # Both are read in the VESSEL's frame (+z forward), never the course frame - a clearance is
+    # measured against the hull, and reading it in the course frame would translate the parts as
+    # the hull aims. Both models are unit-1 with every scale in the chain at 1, so the legacy and
+    # rig numbers below are directly comparable world units.
+    wing_fwd, jet_drift, jet_rest = 2.3, 2.3, 0.15
+    LEGACY_ENGINE_Z, RIG_JET_BONE_Z = -2.047, -1.90
+    print("   legacy engine cases authored at z %.3f; rig jet bones rest at z %.3f"
+          % (LEGACY_ENGINE_Z, RIG_JET_BONE_Z))
+    print("   resting engine offset %.2f puts them at z %.3f%s"
+          % (-jet_rest, RIG_JET_BONE_Z - jet_rest,
+             "" if abs(RIG_JET_BONE_Z - jet_rest - LEGACY_ENGINE_Z) < 0.01 else "  (a feel value)"))
+    if jet_rest <= 0:
+        failures.append("the engines get no resting setback - they read pushed forward")
+    if jet_drift <= 0:
         failures.append("engines have no backward clearance - the gap never opens")
-    print("   gap opened between wing and engine: %.1f units" % (wing_fwd + jet_back))
+    print("   drift gap opened between wing and engine: %.1f units" % (wing_fwd + jet_drift))
 
     print()
     if failures:
@@ -258,7 +314,7 @@ def main():
         for f in failures:
             print("  !", f)
         return 1
-    print("OK - ship-axis turns, the chassis term restored, and a drift that is genuinely still.")
+    print("OK - ship-axis turns, the chassis term restored, and a stateless Course frame.")
     return 0
 
 if __name__ == "__main__":
