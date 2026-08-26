@@ -19,20 +19,31 @@ What it adds to ShepardGraph:
                               "unstamped", so every crystal in the game is unchanged.
 
   nodes
-      Property x2, UV (channel UV2 — the per-vertex TARGET baked by
-      CrystalMorphMeshBuilder), and the CrystalMorph custom function.
+      Property x2 (shared by both splices), UV x2 — channel UV2 carries the per-vertex target
+      POSITION and UV3 the target NORMAL, both baked by CrystalMorphMeshBuilder — and the two
+      custom function nodes.
 
-  the splice — at the very END of the vertex chain, on VertexDescription.Position:
+  TWO splices, both at the very END of their vertex chain:
 
-      BEFORE:  <vertex chain>.Out ------------------------> VertexDescription.Position
-      AFTER:   <vertex chain>.Out -> CrystalMorph.Position
+      BEFORE:  <position chain>.Out ---------------------> VertexDescription.Position
+      AFTER:   <position chain>.Out -> CrystalMorph.Position
                UV2 -> .Target, _PrismClock -> .Clock, _CrystalMorph -> .Morph
                CrystalMorph.Out ------------------------> VertexDescription.Position
 
-  It MUST be last. ShepardGraph's shells displace along the normal, and the morph ends by
-  lerping fully onto the target — so splicing after the displacement is what removes it at
-  t = 1 and lands the shape exactly on the octahedra. Splicing before would leave a shell
-  hovering off the geometry the mesh was fitted to.
+      BEFORE:  <normal chain>.Out -----------------------> VertexDescription.Normal
+      AFTER:   <normal chain>.Out -> CrystalMorphNormal.Normal
+               UV3 -> .Target, _PrismClock -> .Clock, _CrystalMorph -> .Morph
+               CrystalMorphNormal.Out ------------------> VertexDescription.Normal
+
+  Both MUST be last in their chain. ShepardGraph's shells displace along the normal AND rotate
+  the normal itself (the Shepard wave), and the morph ends by lerping fully onto the target —
+  so splicing after is what removes both at t = 1 and lands the shape, and its shading, exactly
+  on the octahedra. Splicing before would leave a shell hovering off the geometry the mesh was
+  fitted to, wearing a rotated normal.
+
+  The normal half is not optional. Both the crystal's shader and the prism's derive their base
+  colour from (1 - N.V)^4 through the same FresnelColors subgraph, so position alone lands the
+  cage's normals on the octahedron's faces: the right shape shaded by the wrong surface.
 
 Out-of-editor ShaderGraph JSON synthesis per the /asset-surgery protocol: parse the whole
 file, clone donors (same-file where one exists, cross-file where it does not) so the schema
@@ -64,27 +75,41 @@ UV_DONOR = "Assets/_Graphics/Materials/Graphs/ExplodingBlockGraph.shadergraph"
 # GUID of Assets/_Graphics/Materials/Graphs/CrystalMorph.hlsl, pinned by its committed
 # .meta so this reference can never drift.
 HLSL_GUID = "5b3d90c14f7a4e6ea0d5c2183be97f41"
-FUNCTION_NAME = "CrystalMorph"
-
-POSITION_BLOCK = "VertexDescription.Position"
-
-# ShaderGraph UVChannel enum: UV0 = 0 … UV3 = 3. Must match
-# CrystalMorphMeshBuilder.TargetUVChannel.
-UV_CHANNEL_UV2 = 2
 
 CLOCK_PROP = ("PrismClock", "_PrismClock")
 MORPH_PROP = ("CrystalMorph", "_CrystalMorph")
 
-# (integer slot id, display name, kind, is_output) — ids MUST match the HLSL parameter
-# order (every input first, then every output).
-CF_SLOTS = [
-    (0, "Position", "Vector3", False),
-    (1, "Target", "Vector4", False),
-    (2, "Clock", "Vector1", False),
-    (3, "Morph", "Vector3", False),
-    (4, "Out", "Vector3", True),
-]
 CF_OUTPUT_SLOT = 4
+
+
+def cf_slots(first_input):
+    """(integer slot id, display name, kind, is_output) — ids MUST match the HLSL parameter
+    order (every input first, then every output)."""
+    return [
+        (0, first_input, "Vector3", False),
+        (1, "Target", "Vector4", False),
+        (2, "Clock", "Vector1", False),
+        (3, "Morph", "Vector3", False),
+        (4, "Out", "Vector3", True),
+    ]
+
+
+# The two halves of one animation. `uv` is the ShaderGraph UVChannel enum (UV0 = 0 … UV3 = 3)
+# and MUST match CrystalMorphMeshBuilder.TargetUVChannel / TargetNormalUVChannel.
+SPLICES = [
+    {
+        "fn": "CrystalMorph",
+        "block": "VertexDescription.Position",
+        "uv": 2,
+        "slots": cf_slots("Position"),
+    },
+    {
+        "fn": "CrystalMorphNormal",
+        "block": "VertexDescription.Normal",
+        "uv": 3,
+        "slots": cf_slots("Normal"),
+    },
+]
 
 
 # --------------------------------------------------------------------------- parse
@@ -209,17 +234,17 @@ def clone_simple_node(donor, donor_idx, x, y, **overrides):
     return node, slots
 
 
-def make_custom_function_node(donor_cf, donors_by_kind, x, y):
+def make_custom_function_node(donor_cf, donors_by_kind, spec, x, y):
     node = json.loads(json.dumps(donor_cf))
     node["m_ObjectId"] = new_oid()
     node["m_Group"] = {"m_Id": ""}
-    node["m_Name"] = f"{FUNCTION_NAME} (Custom Function)"
-    node["m_FunctionName"] = FUNCTION_NAME
+    node["m_Name"] = f"{spec['fn']} (Custom Function)"
+    node["m_FunctionName"] = spec["fn"]
     node["m_FunctionSource"] = HLSL_GUID
     node["m_SourceType"] = 0
     node["m_FunctionBody"] = "Enter function body here..."
     node["m_DrawState"]["m_Position"].update({"x": x, "y": y, "width": 232.0, "height": 302.0})
-    slots = [make_slot(donors_by_kind[kind], sid, name, out) for sid, name, kind, out in CF_SLOTS]
+    slots = [make_slot(donors_by_kind[kind], sid, name, out) for sid, name, kind, out in spec["slots"]]
     node["m_Slots"] = [{"m_Id": s["m_ObjectId"]} for s in slots]
     return node, slots
 
@@ -311,53 +336,98 @@ def validate(docs, expect_wired):
         assert any(any(c["m_Id"] == p["m_ObjectId"] for c in idx[cat["m_Id"]]["m_ChildObjectList"])
                    for cat in graph["m_CategoryData"]), f"{name} not on the blackboard"
 
-    cf = find_cf(docs, FUNCTION_NAME)
-    assert cf is not None, f"{FUNCTION_NAME} custom function node missing"
-    assert cf["m_FunctionSource"] == HLSL_GUID, f"{FUNCTION_NAME} points at the wrong HLSL asset"
-    cslots = {idx[s["m_Id"]]["m_Id"]: idx[s["m_Id"]] for s in cf["m_Slots"]}
-    assert set(cslots) == {s[0] for s in CF_SLOTS}, "slot ids do not match the HLSL signature"
-    for slot_id, name, kind, is_output in CF_SLOTS:
-        assert cslots[slot_id]["m_DisplayName"] == name, f"slot {slot_id} name drifted"
-        assert cslots[slot_id]["m_SlotType"] == (1 if is_output else 0), f"slot {slot_id} direction wrong"
-        # A property/attribute node cloned from the wrong-width donor wires "successfully"
-        # and delivers a silently truncated value.
-        assert kind + "MaterialSlot" in cslots[slot_id]["m_Type"], \
-            f"slot {slot_id} ({name}) is {cslots[slot_id]['m_Type']}, expected {kind}"
-
     sources = {(e["m_InputSlot"]["m_Node"]["m_Id"], e["m_InputSlot"]["m_SlotId"]):
                (e["m_OutputSlot"]["m_Node"]["m_Id"], e["m_OutputSlot"]["m_SlotId"])
                for e in graph["m_Edges"]}
 
-    uv_src = sources.get((cf["m_ObjectId"], 1))
-    assert uv_src is not None, "Target unconnected"
-    assert "UVNode" in idx[uv_src[0]].get("m_Type", ""), "Target is not fed by a UV node"
-    assert idx[uv_src[0]].get("m_OutputChannel") == UV_CHANNEL_UV2, \
-        "Target UV node is not on UV2 — it must match CrystalMorphMeshBuilder.TargetUVChannel"
+    for spec in SPLICES:
+        fn = spec["fn"]
+        cf = find_cf(docs, fn)
+        assert cf is not None, f"{fn} custom function node missing"
+        assert cf["m_FunctionSource"] == HLSL_GUID, f"{fn} points at the wrong HLSL asset"
+        cslots = {idx[s["m_Id"]]["m_Id"]: idx[s["m_Id"]] for s in cf["m_Slots"]}
+        assert set(cslots) == {t[0] for t in spec["slots"]}, f"{fn} slot ids do not match the HLSL signature"
+        for slot_id, name, kind, is_output in spec["slots"]:
+            assert cslots[slot_id]["m_DisplayName"] == name, f"{fn} slot {slot_id} name drifted"
+            assert cslots[slot_id]["m_SlotType"] == (1 if is_output else 0), \
+                f"{fn} slot {slot_id} direction wrong"
+            # A property/attribute node cloned from the wrong-width donor wires "successfully"
+            # and delivers a silently truncated value.
+            assert kind + "MaterialSlot" in cslots[slot_id]["m_Type"], \
+                f"{fn} slot {slot_id} ({name}) is {cslots[slot_id]['m_Type']}, expected {kind}"
 
-    for slot, prop_name in ((2, CLOCK_PROP[0]), (3, MORPH_PROP[0])):
-        src = sources.get((cf["m_ObjectId"], slot))
-        assert src is not None, f"{prop_name} unconnected"
-        node = idx[src[0]]
-        assert "PropertyNode" in node.get("m_Type", ""), f"slot {slot} is not fed by a property node"
-        assert idx[node["m_Property"]["m_Id"]]["m_Name"] == prop_name, \
-            f"slot {slot} is fed by {idx[node['m_Property']['m_Id']]['m_Name']}, expected {prop_name}"
+        uv_src = sources.get((cf["m_ObjectId"], 1))
+        assert uv_src is not None, f"{fn}.Target unconnected"
+        assert "UVNode" in idx[uv_src[0]].get("m_Type", ""), f"{fn}.Target is not fed by a UV node"
+        assert idx[uv_src[0]].get("m_OutputChannel") == spec["uv"], \
+            (f"{fn}.Target UV node is on UV{idx[uv_src[0]].get('m_OutputChannel')}, expected "
+             f"UV{spec['uv']} — it must match CrystalMorphMeshBuilder's channel constants")
 
-    block = find_block(docs, POSITION_BLOCK)
-    assert block is not None, f"{POSITION_BLOCK} block missing"
-    assert sources.get((block["m_ObjectId"], 0)) == (cf["m_ObjectId"], CF_OUTPUT_SLOT), \
-        f"{POSITION_BLOCK} is not fed by {FUNCTION_NAME}.Out — the morph must be LAST in the vertex chain"
-    assert sources.get((cf["m_ObjectId"], 0)) is not None, "Position unconnected"
+        for slot, prop_name in ((2, CLOCK_PROP[0]), (3, MORPH_PROP[0])):
+            src = sources.get((cf["m_ObjectId"], slot))
+            assert src is not None, f"{fn}: {prop_name} unconnected"
+            node = idx[src[0]]
+            assert "PropertyNode" in node.get("m_Type", ""), \
+                f"{fn} slot {slot} is not fed by a property node"
+            assert idx[node["m_Property"]["m_Id"]]["m_Name"] == prop_name, \
+                f"{fn} slot {slot} is fed by {idx[node['m_Property']['m_Id']]['m_Name']}, expected {prop_name}"
+
+        block = find_block(docs, spec["block"])
+        assert block is not None, f"{spec['block']} block missing"
+        assert sources.get((block["m_ObjectId"], 0)) == (cf["m_ObjectId"], CF_OUTPUT_SLOT), \
+            f"{spec['block']} is not fed by {fn}.Out — the morph must be LAST in its vertex chain"
+        assert sources.get((cf["m_ObjectId"], 0)) is not None, f"{fn} first input unconnected"
+
+    # The two halves are ONE animation and must run off ONE stamp: a normal that eases on a
+    # different schedule than its own vertex is a face whose shading arrives before or after
+    # its shape, which is the seam this whole splice exists to remove.
+    pos_cf, nrm_cf = (find_cf(docs, sp["fn"]) for sp in SPLICES)
+    for slot in (2, 3):
+        assert sources[(pos_cf["m_ObjectId"], slot)] == sources[(nrm_cf["m_ObjectId"], slot)], \
+            "the position and normal splices read different clock/stamp sources"
 
 
 # ---------------------------------------------------------------------------- wire
+def ensure_property(docs, graph, idx, name, reference, exposed, donor, value, new_docs):
+    """The property, created and blackboarded if this graph does not carry it yet.
+
+    Shared by both splices on purpose: the two halves run off ONE stamp, so they must read
+    one `_CrystalMorph` and one `_PrismClock`. A second copy of either would be a second
+    authority for the same animation, and nothing would report the two drifting apart."""
+    existing = find_property(docs, name)
+    if existing is not None:
+        return existing
+
+    p = make_property(donor, name, reference, exposed=exposed, value=value)
+    new_docs.append(p)
+    graph["m_Properties"].append({"m_Id": p["m_ObjectId"]})
+    host = max((idx[c["m_Id"]] for c in graph["m_CategoryData"]),
+               key=lambda c: len(c["m_ChildObjectList"]))
+    host["m_ChildObjectList"].append({"m_Id": p["m_ObjectId"]})
+    return p
+
+
+def find_property_node(docs, property_oid):
+    """An existing PropertyNode for this property, if the graph already draws one. An output
+    slot may feed many inputs, so the second splice reuses the first's nodes rather than
+    minting a duplicate — fewer objects, and one place to look when tracing the stamp."""
+    for d in docs:
+        if "PropertyNode" in d.get("m_Type", "") and d.get("m_Property", {}).get("m_Id") == property_oid:
+            return d
+    return None
+
+
 def wire(rel_path, cf_donor_docs, uv_donor_docs):
     path = os.path.join(REPO, rel_path)
     docs = load_docs(path)
 
-    if find_cf(docs, FUNCTION_NAME) is not None:
+    if all(find_cf(docs, spec["fn"]) is not None for spec in SPLICES):
         validate(docs, expect_wired=True)
         return False, f"{os.path.basename(rel_path)}: already wired (validated)."
 
+    # Not-yet-wired is the normal case; a PARTLY wired graph (position spliced, normal not —
+    # every ShepardGraph committed before the normal half existed) is also valid input, and
+    # the generic half of the validator still has to pass on it.
     validate(docs, expect_wired=False)
 
     graph = find_graph(docs)
@@ -387,59 +457,69 @@ def wire(rel_path, cf_donor_docs, uv_donor_docs):
         donor_uv = find_node_by_type(uv_donor_docs, "ShaderGraph.UVNode")
         uv_idx = index(uv_donor_docs)
     assert donor_uv, "no UVNode donor in this graph or the cross-file donor"
-
-    block = find_block(docs, POSITION_BLOCK)
-    assert block, f"{rel_path}: no {POSITION_BLOCK} block — nothing to splice into"
+    uv_out = uv_idx[donor_uv["m_Slots"][0]["m_Id"]]["m_Id"]
 
     new_docs = []
 
-    # ---- properties -----------------------------------------------------------
-    clock = make_property(donor_v1_prop, CLOCK_PROP[0], CLOCK_PROP[1], exposed=False, value=0.0)
-    morph = make_property(donor_v3_prop, MORPH_PROP[0], MORPH_PROP[1], exposed=True,
-                          value={"x": 0.0, "y": 0.0, "z": 0.0})
-    host = max((idx[c["m_Id"]] for c in graph["m_CategoryData"]),
-               key=lambda c: len(c["m_ChildObjectList"]))
-    for p in (clock, morph):
-        new_docs.append(p)
-        graph["m_Properties"].append({"m_Id": p["m_ObjectId"]})
-        host["m_ChildObjectList"].append({"m_Id": p["m_ObjectId"]})
+    # ---- the two shared properties -------------------------------------------
+    clock = ensure_property(docs, graph, idx, CLOCK_PROP[0], CLOCK_PROP[1],
+                            exposed=False, donor=donor_v1_prop, value=0.0, new_docs=new_docs)
+    morph = ensure_property(docs, graph, idx, MORPH_PROP[0], MORPH_PROP[1],
+                            exposed=True, donor=donor_v3_prop,
+                            value={"x": 0.0, "y": 0.0, "z": 0.0}, new_docs=new_docs)
 
-    # ---- nodes ----------------------------------------------------------------
     base_x, base_y = -2400.0, -1400.0
-    clock_node, clock_slots = make_property_node(donor_property_node, donors_by_kind["Vector1"],
-                                                 clock["m_ObjectId"], CLOCK_PROP[0], base_x, base_y)
-    morph_node, morph_slots = make_property_node(donor_property_node, donors_by_kind["Vector3"],
-                                                 morph["m_ObjectId"], MORPH_PROP[0], base_x, base_y + 80.0)
-    uv_node, uv_slots = clone_simple_node(donor_uv, uv_idx, base_x, base_y + 160.0,
-                                          m_OutputChannel=UV_CHANNEL_UV2)
-    cf, cf_slots = make_custom_function_node(donor_cf, donors_by_kind, base_x + 340.0, base_y)
+    prop_nodes = {}
+    for prop, kind, label, dy in ((clock, "Vector1", CLOCK_PROP[0], 0.0),
+                                  (morph, "Vector3", MORPH_PROP[0], 80.0)):
+        node = find_property_node(docs, prop["m_ObjectId"])
+        if node is None:
+            node, slots = make_property_node(donor_property_node, donors_by_kind[kind],
+                                             prop["m_ObjectId"], label, base_x, base_y + dy)
+            new_docs.append(node)
+            new_docs.extend(slots)
+            graph["m_Nodes"].append({"m_Id": node["m_ObjectId"]})
+        prop_nodes[label] = node
 
-    for node, slots in ((clock_node, clock_slots), (morph_node, morph_slots),
-                        (uv_node, uv_slots), (cf, cf_slots)):
-        new_docs.append(node)
-        new_docs.extend(slots)
-        graph["m_Nodes"].append({"m_Id": node["m_ObjectId"]})
+    # ---- one splice per half --------------------------------------------------
+    added, retargeted_total = [], 0
+    for row, spec in enumerate(SPLICES):
+        if find_cf(docs, spec["fn"]) is not None:
+            continue
 
-    # ---- the splice -----------------------------------------------------------
-    # Retarget whatever feeds VertexDescription.Position into the morph's Position input,
-    # then feed the block from the morph. Exactly one feeder exists (asserted by the
-    # generic validator above), so this is a single rewrite — never a drop, never a
-    # duplicate feeder on one input.
-    retargeted = 0
-    for e in graph["m_Edges"]:
-        i = e["m_InputSlot"]
-        if i["m_Node"]["m_Id"] == block["m_ObjectId"] and i["m_SlotId"] == 0:
-            e["m_InputSlot"] = {"m_Node": {"m_Id": cf["m_ObjectId"]}, "m_SlotId": 0}
-            retargeted += 1
-    assert retargeted == 1, f"{rel_path}: expected one {POSITION_BLOCK} feeder, retargeted {retargeted}"
+        block = find_block(docs, spec["block"])
+        assert block, f"{rel_path}: no {spec['block']} block — nothing to splice into"
 
-    uv_out = uv_idx[donor_uv["m_Slots"][0]["m_Id"]]["m_Id"]
-    graph["m_Edges"].extend([
-        edge(uv_node["m_ObjectId"], uv_out, cf["m_ObjectId"], 1),
-        edge(clock_node["m_ObjectId"], 0, cf["m_ObjectId"], 2),
-        edge(morph_node["m_ObjectId"], 0, cf["m_ObjectId"], 3),
-        edge(cf["m_ObjectId"], CF_OUTPUT_SLOT, block["m_ObjectId"], 0),
-    ])
+        y = base_y + 200.0 + row * 400.0
+        uv_node, uv_slots = clone_simple_node(donor_uv, uv_idx, base_x, y,
+                                              m_OutputChannel=spec["uv"])
+        cf, cf_slots = make_custom_function_node(donor_cf, donors_by_kind, spec,
+                                                 base_x + 340.0, y)
+        for node, slots in ((uv_node, uv_slots), (cf, cf_slots)):
+            new_docs.append(node)
+            new_docs.extend(slots)
+            graph["m_Nodes"].append({"m_Id": node["m_ObjectId"]})
+
+        # Retarget whatever feeds the block into the morph's first input, then feed the block
+        # from the morph. Exactly one feeder exists (asserted by the generic validator above),
+        # so this is a single rewrite — never a drop, never a duplicate feeder on one input.
+        retargeted = 0
+        for e in graph["m_Edges"]:
+            i = e["m_InputSlot"]
+            if i["m_Node"]["m_Id"] == block["m_ObjectId"] and i["m_SlotId"] == 0:
+                e["m_InputSlot"] = {"m_Node": {"m_Id": cf["m_ObjectId"]}, "m_SlotId": 0}
+                retargeted += 1
+        assert retargeted == 1, \
+            f"{rel_path}: expected one {spec['block']} feeder, retargeted {retargeted}"
+        retargeted_total += retargeted
+
+        graph["m_Edges"].extend([
+            edge(uv_node["m_ObjectId"], uv_out, cf["m_ObjectId"], 1),
+            edge(prop_nodes[CLOCK_PROP[0]]["m_ObjectId"], 0, cf["m_ObjectId"], 2),
+            edge(prop_nodes[MORPH_PROP[0]]["m_ObjectId"], 0, cf["m_ObjectId"], 3),
+            edge(cf["m_ObjectId"], CF_OUTPUT_SLOT, block["m_ObjectId"], 0),
+        ])
+        added.append(spec["fn"])
 
     docs.extend(new_docs)
     validate(docs, expect_wired=True)          # nothing written yet
@@ -447,7 +527,8 @@ def wire(rel_path, cf_donor_docs, uv_donor_docs):
     open(path, "w", encoding="utf-8").write(dump_docs(docs))
     validate(load_docs(path), expect_wired=True)
     return True, (f"{os.path.basename(rel_path)}: wired and validated "
-                  f"(+2 properties, +4 nodes, 4 new edges, 1 retargeted).")
+                  f"({', '.join(added)}; +{len(new_docs)} objects, "
+                  f"{retargeted_total} retargeted).")
 
 
 def main():

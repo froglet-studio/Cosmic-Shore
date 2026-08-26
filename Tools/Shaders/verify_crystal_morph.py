@@ -17,6 +17,11 @@ the file that ships — not a paraphrase of it.
   4. THE PHASE ORDERS THE TWO JOBS. The crystal's leftover quad faces (phase 0) are fully
      absorbed before the panels (phase 1) begin to land, so nothing is left hanging around
      the shape it was absorbed into. Stagger 0 collapses both to one synchronised move.
+  5. THE NORMAL RUNS THE SAME ANIMATION AND ALWAYS ARRIVES UNIT. `CrystalMorphNormal` eases
+     on the same schedule as the position — bit-identical eased weights at every sample, so
+     a face's shading can never arrive before or after its shape — is identity when
+     unstamped, is exactly the target normal at t = 1, and never returns a non-unit vector,
+     including through the near-antipodal case where the chord passes close to zero.
 
 Usage:  python3 Tools/Shaders/verify_crystal_morph.py
 """
@@ -54,6 +59,7 @@ static inline float saturate(float v) { return v < 0 ? 0 : (v > 1 ? 1 : v); }
 static inline float3 lerp(float3 a, float3 b, float t) { return a + (b - a) * t; }
 // HLSL's max/min promote across float and double literals; C's do not.
 static inline float hlsl_max(float a, float b) { return a > b ? a : b; }
+static inline float length(float3 v) { return sqrtf(v.x*v.x + v.y*v.y + v.z*v.z); }
 #define max hlsl_max
 #include "CrystalMorph_extract.hlsl"
 #undef max
@@ -109,6 +115,54 @@ int main() {
     const float3 S0 = mk3(100.0f, 0.45f, 0.0f);
     if (fabsf(ease(DST0, 100.225f, S0) - ease(DST1, 100.225f, S0)) > 1e-7f) {
         printf("FAIL stagger 0 not synchronised\n"); return 1;
+    }
+
+    // 5. the normal half ---------------------------------------------------------------
+    const float3 N0 = mk3(0.0f, 0.0f, 1.0f);          // a source normal
+    float3 nout;
+
+    // unstamped is identity
+    CrystalMorphNormal_float(N0, (float4){1, 0, 0, 1}, 12345.0f, mk3(0, 0, 0), nout);
+    if (nout.x != 0 || nout.y != 0 || nout.z != 1) { printf("FAIL normal identity\n"); return 1; }
+
+    float worstUnit = 0.0f, worstSchedule = 0.0f;
+    for (float ph = 0; ph <= 1.0001f; ph += 0.125f) {
+        // the SAME eased weight as the position, sample for sample: solve the weight out of
+        // each and compare. A normal on its own schedule is a face lit before it lands.
+        for (int i = 0; i <= 200; i++) {
+            float clock = 100.0f + (i / 200.0f) * 0.45f;
+            float4 TP = (float4){10, 20, 30, ph};
+            float4 TN = (float4){1, 0, 0, ph};        // orthogonal to N0, so the chord is well conditioned
+            float ep = ease(TP, clock, M);
+            CrystalMorphNormal_float(N0, TN, clock, M, nout);
+            float len = length(nout);
+            worstUnit = hlsl_max(worstUnit, fabsf(len - 1.0f));
+            // recover the pre-normalisation weight from the x component: n = (e, 0, 1-e)/|n|
+            float en = nout.x / (nout.x + nout.z);
+            if (nout.x + nout.z <= 0) { printf("FAIL normal degenerate\n"); return 1; }
+            worstSchedule = hlsl_max(worstSchedule, fabsf(en - ep));
+        }
+        // t = 1 is the target normal, exactly
+        CrystalMorphNormal_float(N0, (float4){1, 0, 0, ph}, 100.45f, M, nout);
+        if (fabsf(nout.x - 1) > 1e-6f || fabsf(nout.y) > 1e-6f || fabsf(nout.z) > 1e-6f) {
+            printf("FAIL normal t1 phase %f\n", ph); return 1;
+        }
+        // t = 0 is the source normal, exactly
+        CrystalMorphNormal_float(N0, (float4){1, 0, 0, ph}, 100.0f, M, nout);
+        if (nout.x != 0 || nout.y != 0 || nout.z != 1) { printf("FAIL normal t0\n"); return 1; }
+    }
+    printf("  normal stays unit to %.3e, runs the position's schedule to %.3e\n",
+           worstUnit, worstSchedule);
+    if (worstUnit > 1e-6f) { printf("FAIL normal not unit\n"); return 1; }
+    if (worstSchedule > 1e-6f) { printf("FAIL normal off schedule\n"); return 1; }
+
+    // the near-antipodal case: the chord passes through ~0, and the guard must still hand
+    // back a usable unit vector rather than a NaN or a zero normal.
+    for (int i = 0; i <= 1000; i++) {
+        float clock = 100.0f + (i / 1000.0f) * 0.45f;
+        CrystalMorphNormal_float(N0, (float4){0, 0, -1, 0}, clock, M, nout);
+        float len = length(nout);
+        if (!(len > 0.99f && len < 1.01f)) { printf("FAIL antipodal len %f\n", len); return 1; }
     }
 
     printf("  OK\n");

@@ -15,14 +15,30 @@ namespace CosmicShore.Gameplay
     /// prism, 1:1, and the 660 leftover quads (the cage's struts and the panels' rims) collapse
     /// into whichever octahedron their own solid was assigned to and are absorbed.
     ///
-    /// ── The transition is between EQUIVALENT STATES ───────────────────────────────────────
-    /// The real prisms are revealed only at t = 1, when the morph's geometry IS their octahedra
-    /// — same corners, same orientation — and its colour has been carried onto their shielded
-    /// palette. Until that instant the prisms are held invisible; after it the morph is gone.
-    /// There is no cross-fade between two different-looking things, because there is no moment
-    /// at which they look different. (`HandoffFraction` can reveal them earlier for debugging;
-    /// at anything below 1 the swap happens while the panels are still arriving, which is
-    /// exactly the seam this design exists to remove.)
+    /// ── The window is MORPH then DISSOLVE ─────────────────────────────────────────────────
+    /// `MorphFraction` of the window is the geometry; the tail is the hand-off. At the boundary
+    /// the two states are EQUIVALENT — same corners, same face normals, same colour pair — so
+    /// the real prisms take the surface there, and the crystal's shells then dissolve off the
+    /// top of them rather than being cut. The shader's window is the geometry half ALONE, so the
+    /// last staggered panel has landed before the boundary; a stagger that runs past it would
+    /// leave late faces short of their corners exactly when the prisms come up behind them.
+    ///
+    /// The tail is a dissolve, not a cross-fade of two different-looking things. It exists
+    /// because the two are drawn by different shaders in different queues and no amount of
+    /// matched colour changes that: the prism is OPAQUE and z-writing, the crystal is four
+    /// alpha-blended non-z-writing shells in the transparent queue. So the object that WINS is
+    /// the real one, and the crystal stops contributing to it.
+    ///
+    /// ── Three things are carried across, not just position ────────────────────────────────
+    /// 1. **Geometry** — every panel's corners land ON its octahedron face's corners.
+    /// 2. **Normals** — each vertex's normal is carried to its target FACE's outward normal
+    ///    (TEXCOORD3, blended by `CrystalMorphNormal`). Without it the morph arrives with the
+    ///    CAGE's normals on the octahedron's faces, and since both shaders shade from
+    ///    `(1 − N·V)⁴`, the shape would be right and the shading nonsense.
+    /// 3. **Colour** — `_DullCrystalColor`/`_BrightCrystalColor` converge on the prisms' own
+    ///    `_DarkColor`/`_BrightColor`, read off the very material those prisms bound. Both
+    ///    graphs compose that pair through the SAME `FresnelColors` subgraph at power 4, so
+    ///    matching the pair matches the shading.
     ///
     /// ── What makes each half seamless ─────────────────────────────────────────────────────
     /// 1. **It draws the crystal's own renderers.** Mesh, materials and MaterialPropertyBlock
@@ -37,6 +53,8 @@ namespace CosmicShore.Gameplay
     ///    skimmable from frame 0 while the morph is still in flight — and
     ///    <see cref="Prism.SetVisualStandIn"/> holds nothing but their rendering. That is the
     ///    clock-material law's own division (Docs/PRISM_ANIMATION.md §4) applied to a hand-off.
+    /// 4. **It starts in the pose the crystal HAD.** Never the live transform — see
+    ///    <see cref="Begin"/>.
     ///
     /// ── It reports on itself, because its one dependency is invisible ─────────────────────
     /// The ring is laid by a SIBLING effect, and every way that can fail — the retirement never
@@ -59,9 +77,9 @@ namespace CosmicShore.Gameplay
         {
             public float Duration;
             public float Stagger;
-            /// <summary>Fraction of the window at which the real ring is revealed. 1 = only at
-            /// equivalence, which is the design; below 1 is a debugging aid.</summary>
-            public float HandoffFraction;
+            /// <summary>Fraction of the window the GEOMETRY gets. The remainder is the dissolve
+            /// that hands the surface over to the real prisms.</summary>
+            public float MorphFraction;
             public float FillerPhase;
             public float PanelPhaseStart;
             public float PanelPhaseEnd;
@@ -92,6 +110,7 @@ namespace CosmicShore.Gameplay
         bool _haveTargetColour;
         Mesh _mesh;
         float _startTime;
+        float _morphSeconds;   // wall-clock length of the GEOMETRY half
         float _giveUpAt;
         int _ringsSeen;
         bool _stamped;
@@ -100,16 +119,22 @@ namespace CosmicShore.Gameplay
         bool _subscribed;
 
         /// <summary>
-        /// Stands a morph up where the crystal WAS COLLECTED, wearing its shells, and waits for
-        /// the ring. Returns null when the crystal has nothing to copy — the caller then leaves
-        /// the shared husk spray in place rather than retiring the crystal invisibly.
+        /// Stands a morph up in the pose the crystal HAD WHEN IT WAS COLLECTED, wearing its
+        /// shells, and waits for the ring. Returns null when the crystal has nothing to copy —
+        /// the caller then leaves the shared husk spray in place rather than retiring the crystal
+        /// invisibly.
         ///
-        /// <paramref name="collectedAt"/> rather than the crystal's live position: collection
-        /// and respawn are independent RPC chains, so on a remote peer the crystal may already
-        /// have moved on. Rotation and scale still come from the crystal — a respawn moves it,
-        /// it does not resize it.
+        /// The whole pose is a PARAMETER and the crystal's transform is deliberately never read.
+        /// By the time a retirement runs, the crystal has usually been respawned — which both
+        /// moves it (tens of units, to its next home) and resets its rotation to identity — and
+        /// that can happen in the SAME PHYSICS STEP as the collect, because the two trigger
+        /// callbacks that service a pickup are unordered. Reading the live transform is therefore
+        /// not "usually right"; it is right only in one of two arbitrary orders, which is how
+        /// this animation first shipped starting in the wrong place. See
+        /// <see cref="Crystal.CollectPose"/> and <see cref="CrystalImpactData.Position"/>.
         /// </summary>
-        public static SquirrelCrystalMorph Begin(Crystal crystal, Vector3 collectedAt, Domains domain,
+        public static SquirrelCrystalMorph Begin(Crystal crystal, Pose collectedPose,
+                                                 Vector3 collectedScale, Domains domain,
                                                  in Settings settings)
         {
             if (crystal == null)
@@ -121,8 +146,8 @@ namespace CosmicShore.Gameplay
             }
 
             var go = new GameObject($"CrystalMorph_{crystal.name}");
-            go.transform.SetPositionAndRotation(collectedAt, crystal.transform.rotation);
-            go.transform.localScale = crystal.transform.lossyScale;
+            go.transform.SetPositionAndRotation(collectedPose.position, collectedPose.rotation);
+            go.transform.localScale = collectedScale;
 
             var morph = go.AddComponent<SquirrelCrystalMorph>();
             if (!morph.AdoptShells(crystal))
@@ -141,9 +166,9 @@ namespace CosmicShore.Gameplay
             morph._subscribed = true;
 
             CSDebug.LogVerbose(CSLogChannel.CrystalMorph,
-                $"[CrystalMorph] began on '{crystal.name}' at {collectedAt}, domain {domain}, " +
-                $"{morph._shells.Count} shells, waiting up to {settings.RingGraceSeconds:F2}s for a " +
-                $"{PrismKind.Shielded} ring.");
+                $"[CrystalMorph] began on '{crystal.name}' at {collectedPose.position} (the crystal " +
+                $"is now at {crystal.transform.position}), domain {domain}, {morph._shells.Count} " +
+                $"shells, waiting up to {settings.RingGraceSeconds:F2}s for a {PrismKind.Shielded} ring.");
             return morph;
         }
 
@@ -286,9 +311,14 @@ namespace CosmicShore.Gameplay
             }
 
             _startTime = PrismClock.Now;
+            _morphSeconds = _settings.Duration * Mathf.Clamp01(_settings.MorphFraction);
             _stamped = true;
             _fading = false;
-            var morph = new Vector3(_startTime, _settings.Duration, _settings.Stagger);
+            // The shader's window is the GEOMETRY half only, so the LAST staggered face has
+            // landed by the time the dissolve starts. Handing it the whole duration instead
+            // would leave the late panels short of their corners at the very moment the real
+            // prisms come up behind them — a stagger is only free if it finishes first.
+            var morph = new Vector3(_startTime, _morphSeconds, _settings.Stagger);
             for (int i = 0; i < _shells.Count; i++)
             {
                 _shells[i].GetPropertyBlock(_blocks[i]);
@@ -300,7 +330,8 @@ namespace CosmicShore.Gameplay
             CSDebug.LogVerbose(CSLogChannel.CrystalMorph,
                 $"[CrystalMorph] took ring #{_ringsSeen}: {lay.Prisms.Count} prisms held, " +
                 $"{_mesh.vertexCount} morph vertices, stamped at {_startTime:F2} for " +
-                $"{_settings.Duration:F2}s (colour target {(_haveTargetColour ? "read" : "NOT FOUND")}).");
+                $"{_morphSeconds:F2}s of morph + {_settings.Duration - _morphSeconds:F2}s of " +
+                $"dissolve (colour target {(_haveTargetColour ? "read" : "NOT FOUND")}).");
         }
 
         /// <summary>
@@ -401,14 +432,17 @@ namespace CosmicShore.Gameplay
         {
             if (!_stamped) { TickWaiting(); return; }
 
-            float t = Mathf.Clamp01((PrismClock.Now - _startTime) / Mathf.Max(1e-4f, _settings.Duration));
+            float elapsed = PrismClock.Now - _startTime;
+            float g = Mathf.Clamp01(elapsed / Mathf.Max(1e-4f, _morphSeconds));   // geometry progress
 
-            // Colour convergence: by the time the geometry IS the octahedra, the morph is already
-            // wearing the palette they are about to be handed over in — so the swap changes
-            // nothing the eye can catch.
-            if (_haveTargetColour)
+            // Colour convergence, finished BEFORE the hand-off so the two surfaces are already
+            // the same colour when they overlap. Both graphs compose their base colour the same
+            // way — Dark/Bright through the shared `FresnelColors` subgraph at power 4 — so
+            // matching the pair is matching the shading.
+            if (_haveTargetColour && !_handedOff)
             {
-                float c = Mathf.Clamp01(t / Mathf.Max(1e-4f, _settings.ColourBlendFraction));
+                float c = Mathf.Clamp01(g / Mathf.Clamp01(_settings.ColourBlendFraction <= 0f
+                    ? 1f : _settings.ColourBlendFraction));
                 c = c * c * (3f - 2f * c);
                 for (int i = 0; i < _shells.Count; i++)
                 {
@@ -420,19 +454,32 @@ namespace CosmicShore.Gameplay
                 }
             }
 
-            float handoff = Mathf.Clamp01(_settings.HandoffFraction);
-            if (!_handedOff && t >= handoff)
+            // The hand-off happens where the two states are EQUIVALENT: the geometry has landed
+            // on the octahedra, the colours have landed on the prisms' palette, and the normals
+            // have landed on the target faces. The prisms take over the surface there and the
+            // crystal's shells DISSOLVE off the top of them over the tail.
+            //
+            // The dissolve is not a cross-fade between two different-looking things — that is the
+            // seam this design exists to remove. It exists because the two are drawn by different
+            // shaders in different queues: the prism is OPAQUE and z-writing, the crystal's shells
+            // are four alpha-blended, non-z-writing surfaces stacked in the transparent queue, and
+            // no amount of matched colour makes those two identical. So the object that WINS is
+            // the real one, and the crystal simply stops contributing to it.
+            if (!_handedOff && elapsed >= _morphSeconds)
             {
                 Release();
                 _handedOff = true;
                 CSDebug.LogVerbose(CSLogChannel.CrystalMorph,
-                    $"[CrystalMorph] handed off at t={t:F2} — the ring is now drawing itself.");
+                    $"[CrystalMorph] geometry landed at {elapsed:F2}s — the ring is now drawing " +
+                    "itself; dissolving the crystal's shells off it.");
             }
 
-            if (t >= 1f)
+            if (_handedOff)
             {
-                Release();          // idempotent; guarantees the ring is visible before we vanish
-                Destroy(gameObject);
+                float tail = Mathf.Max(1e-4f, _settings.Duration - _morphSeconds);
+                float d = Mathf.Clamp01((elapsed - _morphSeconds) / tail);
+                SetOpacity(1f - (d * d * (3f - 2f * d)));
+                if (d >= 1f) Destroy(gameObject);
             }
         }
 

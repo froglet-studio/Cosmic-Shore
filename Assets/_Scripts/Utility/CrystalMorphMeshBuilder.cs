@@ -8,12 +8,18 @@ namespace CosmicShore.Utility
     /// octahedra — the geometry behind the Squirrel's omni-crystal morph
     /// (`Docs/…/SQUIRREL_CRYSTAL_MORPH.md`).
     ///
-    /// The mesh is the SOURCE mesh, vertex for vertex, plus one extra attribute per vertex:
-    /// TEXCOORD2 = (target position, phase). A vertex shader lerps position → target off one
-    /// stamped clock, so the animation costs zero CPU per frame and — critically — at t = 0 the
-    /// mesh renders EXACTLY as the crystal did, because it IS the crystal's geometry with the
-    /// crystal's own normals, tangents and UVs. That identity is what makes the hand-off
-    /// seamless; do not "optimise" it by re-generating a simplified cage.
+    /// The mesh is the SOURCE mesh, vertex for vertex, plus TWO extra attributes per vertex:
+    /// TEXCOORD2 = (target position, phase) and TEXCOORD3 = (target NORMAL, the same phase). A
+    /// vertex shader lerps both off one stamped clock, so the animation costs zero CPU per frame
+    /// and — critically — at t = 0 the mesh renders EXACTLY as the crystal did, because it IS
+    /// the crystal's geometry with the crystal's own normals, tangents and UVs. That identity is
+    /// what makes the hand-off seamless; do not "optimise" it by re-generating a simplified cage.
+    ///
+    /// **The normal is not decoration.** Both the crystal's shader and the prism's compose their
+    /// base colour from `(1 − N·V)⁴` through the same `FresnelColors` subgraph, so a morph that
+    /// carried only POSITION would arrive with the crystal cage's normals sitting on the
+    /// octahedron's faces: the right shape shaded by the wrong surface, which is a seam no
+    /// colour match can close.
     ///
     /// ── Why the face census is 1:1 ────────────────────────────────────────────────────────
     /// The omni crystal's cage is 122 disjoint solids: 90 box struts, 20 triangular prisms and
@@ -39,6 +45,12 @@ namespace CosmicShore.Utility
     {
         /// <summary>UV channel carrying (target position .xyz, phase .w). Read by CrystalMorph.hlsl.</summary>
         public const int TargetUVChannel = 2;
+
+        /// <summary>UV channel carrying (target normal .xyz, phase .w). Read by
+        /// CrystalMorphNormal in CrystalMorph.hlsl. The phase is duplicated rather than shared
+        /// because a Custom Function node reads one input: position and normal must travel on
+        /// the SAME schedule or a face's shading arrives before or after its shape.</summary>
+        public const int TargetNormalUVChannel = 3;
 
         /// <summary>Weld tolerance for the solid grouping, in the source mesh's own local units.</summary>
         const float WeldEpsilon = 1e-4f;
@@ -130,9 +142,11 @@ namespace CosmicShore.Utility
             }
 
             var vertexTarget = new Vector4[a.Vertices.Length];
-            Assign(a, targets, vertexTarget, fillerPhase, panelPhaseStart, panelPhaseEnd);
+            var vertexTargetNormal = new Vector4[a.Vertices.Length];
+            Assign(a, targets, vertexTarget, vertexTargetNormal,
+                   fillerPhase, panelPhaseStart, panelPhaseEnd);
 
-            return Emit(a, vertexTarget, source.name);
+            return Emit(a, vertexTarget, vertexTargetNormal, source.name);
         }
 
         // ── Analysis ─────────────────────────────────────────────────────────────────────
@@ -291,6 +305,7 @@ namespace CosmicShore.Utility
         // ── Assignment ───────────────────────────────────────────────────────────────────
 
         static void Assign(Analysis a, IReadOnlyList<OctahedronTarget> targets, Vector4[] vertexTarget,
+                           Vector4[] vertexTargetNormal,
                            float fillerPhase, float panelPhaseStart, float panelPhaseEnd)
         {
             int octCount = targets.Count;
@@ -363,7 +378,7 @@ namespace CosmicShore.Utility
                 float phase = targets[oct].FaceCount > 1
                     ? panelPhaseStart + phaseSpan * (face / (float)(targets[oct].FaceCount - 1))
                     : panelPhaseStart;
-                MapPanel(a, f, targets[oct], face, phase, vertexTarget);
+                MapPanel(a, f, targets[oct], face, phase, vertexTarget, vertexTargetNormal);
             }
 
             foreach (int f in a.Fillers)
@@ -377,7 +392,16 @@ namespace CosmicShore.Utility
                 var target = new Vector4(targets[k].Centre.x, targets[k].Centre.y, targets[k].Centre.z, fillerPhase);
                 foreach (int tri in a.FaceTriangles[f])
                     for (int c = 0; c < 3; c++)
-                        vertexTarget[a.Triangles[tri * 3 + c]] = target;
+                    {
+                        int v = a.Triangles[tri * 3 + c];
+                        vertexTarget[v] = target;
+                        // A leftover face collapses to a POINT, so it has no target orientation
+                        // to arrive at — it has no area left to shade. Its normal is therefore
+                        // held at the source's, which makes the blend a no-op for it: a filler
+                        // must not swing its shading on the way to becoming nothing.
+                        Vector3 n = a.Normals != null ? a.Normals[v] : Vector3.up;
+                        vertexTargetNormal[v] = new Vector4(n.x, n.y, n.z, fillerPhase);
+                    }
             }
         }
 
@@ -417,7 +441,7 @@ namespace CosmicShore.Utility
         /// candidates for a triangle and ≤ 60 for a pentagon — cheap, and done once per panel.
         /// </summary>
         static void MapPanel(Analysis a, int face, in OctahedronTarget target, int targetFace,
-                             float phase, Vector4[] vertexTarget)
+                             float phase, Vector4[] vertexTarget, Vector4[] vertexTargetNormal)
         {
             var corners = a.FaceCorners[face];
             int n = corners.Length;
@@ -455,8 +479,18 @@ namespace CosmicShore.Utility
                             for (int k = 0; k < n; k++) best[k] = mapped[k];
                         }
 
+            // The face's OUTWARD normal, oriented by the octahedron's own centre rather than by
+            // the target triangle's winding — the target is three corner POSITIONS and carries
+            // no winding, and OctahedronMeshGenerator's winding is not this array's anyway.
+            Vector3 fn = Vector3.Cross(dst[1] - dst[0], dst[2] - dst[0]);
+            fn = fn.sqrMagnitude > 1e-20f ? fn.normalized : SafeDir(dstCentre - target.Centre);
+            if (Vector3.Dot(fn, dstCentre - target.Centre) < 0f) fn = -fn;
+
             for (int k = 0; k < n; k++)
+            {
                 vertexTarget[corners[k]] = new Vector4(best[k].x, best[k].y, best[k].z, phase);
+                vertexTargetNormal[corners[k]] = new Vector4(fn.x, fn.y, fn.z, phase);
+            }
         }
 
         /// <summary>
@@ -504,7 +538,8 @@ namespace CosmicShore.Utility
         /// already stores) and costs ~4.3k vertices on this cage, so it buys correctness for
         /// nothing worth measuring.
         /// </summary>
-        static Mesh Emit(Analysis a, Vector4[] vertexTarget, string sourceName)
+        static Mesh Emit(Analysis a, Vector4[] vertexTarget, Vector4[] vertexTargetNormal,
+                         string sourceName)
         {
             int count = a.Triangles.Length;
             var verts = new Vector3[count];
@@ -512,6 +547,7 @@ namespace CosmicShore.Utility
             var tans = a.Tangents != null ? new Vector4[count] : null;
             var uv0 = a.Uv0 != null ? new Vector2[count] : null;
             var uv2 = new Vector4[count];
+            var uv3 = new Vector4[count];
             var tris = new int[count];
 
             for (int i = 0; i < count; i++)
@@ -522,6 +558,7 @@ namespace CosmicShore.Utility
                 if (tans != null) tans[i] = a.Tangents[src];
                 if (uv0 != null) uv0[i] = a.Uv0[src];
                 uv2[i] = vertexTarget[src];
+                uv3[i] = vertexTargetNormal[src];
                 tris[i] = i;
             }
 
@@ -541,6 +578,7 @@ namespace CosmicShore.Utility
             if (tans != null) mesh.SetTangents(tans);
             if (uv0 != null) mesh.SetUVs(0, uv0);
             mesh.SetUVs(TargetUVChannel, uv2);
+            mesh.SetUVs(TargetNormalUVChannel, uv3);
             mesh.SetTriangles(tris, 0, calculateBounds: true);
 
             // The morph SWEEPS from the crystal to the ring, so the mesh's own bounds (the

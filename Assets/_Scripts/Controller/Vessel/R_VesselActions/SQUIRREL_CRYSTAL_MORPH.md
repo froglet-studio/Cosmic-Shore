@@ -45,7 +45,7 @@ the choreography (`--render`).
 
 ---
 
-## 2. The three things that make it seamless
+## 2. What makes it seamless
 
 **1. It draws the crystal's own renderers.** The morph object copies the crystal's four shell
 models — mesh, shared materials and MaterialPropertyBlock — so its first frame *is* the crystal,
@@ -63,15 +63,29 @@ from frame 0 while the morph is still in flight* — and `Prism.SetVisualStandIn
 their rendering. That is the clock-material law's own division (`Docs/PRISM_ANIMATION.md` §4)
 applied to a hand-off: gameplay final at the start, only photons animate.
 
-**4. The swap happens ONLY between equivalent states.** The prisms are revealed at `t = 1` — not
-before — when the morph's geometry *is* their octahedra (same corners, same orientation) and its
-colour has been carried onto their shielded palette. There is no cross-fade between two
-different-looking things, because there is no moment at which they look different. The colour
-target is read off the material the laid prisms actually bound (`_DarkColor`/`_BrightColor`, the
-prism's base face and fresnel rim), lerped from what each crystal shell is drawing
-(`_DullCrystalColor`/`_BrightCrystalColor` — the same two roles). `handoffFraction` can reveal
-them earlier, but only as a debugging aid: below 1 it swaps while panels are still arriving,
-which is the seam this design exists to remove.
+**4. It starts in the pose the crystal HAD, never the one it has.** See §9.
+
+**5. THREE things are carried across, not just position.** The window is
+`morphFraction` of geometry and a short dissolve tail; at the boundary all three have landed:
+
+| carried | how | why it is not optional |
+|---|---|---|
+| geometry | TEXCOORD2, `CrystalMorph` | the shape |
+| **normals** | TEXCOORD3, `CrystalMorphNormal` | both shaders derive base colour from `(1 − N·V)⁴` through the **same** `FresnelColors` subgraph, so without it the morph arrives with the CAGE's normals sitting on the octahedron's faces — the right shape wearing the wrong surface |
+| colour | `_DullCrystalColor`/`_BrightCrystalColor` → the prisms' own `_DarkColor`/`_BrightColor`, read off the material the laid prisms actually bound | the pair IS the shading, given the shared subgraph and the shared power of 4 |
+
+The shader's window is the **geometry half alone**, so the last staggered panel has landed before
+the tail begins. Handing it the whole duration would leave the late panels short of their corners
+at the exact moment the real prisms come up behind them: *a stagger is only free if it finishes
+first.*
+
+**The tail is a dissolve, not a cross-fade of two different-looking things.** It exists because
+the two are drawn by different shaders in different queues, and no amount of matched colour
+changes that: the prism is **opaque and z-writing** (`BlockGraph`, alpha-clip dither), while the
+crystal is **four alpha-blended, non-z-writing shells in the transparent queue** (`ShepardGraph`,
+`_Surface 1`, `_ZWrite 0`, four `_QueueOffset`s). So the object that *wins* is the real one, and
+the crystal simply stops contributing to it — over ~15% of the window, from a state where the two
+already agree on corner positions, face normals and colour.
 
 ---
 
@@ -92,8 +106,9 @@ vessel hits omni crystal
                           ├─ prism.SetVisualStandIn(true)      (photons only)
                           └─ ONE stamp: _CrystalMorph = (PrismClock.Now, duration, stagger)
 
-  t = 0.72 · duration : the ring is revealed and the morph dissolves out over it
-  t = 1.00 · duration : the morph is destroyed
+  t = morphFraction · duration : geometry, normals and colour have landed → the REAL prisms
+                                 take the surface (SetVisualStandIn(false))
+  t = 1.00 · duration          : the crystal's shells have dissolved off them; morph destroyed
 ```
 
 **Replication needed no new networking.** The vessel's crystal effects are already broadcast by
@@ -112,9 +127,16 @@ existence holds either way.
 ## 4. The geometry, and the two traps it is written around
 
 `CrystalMorphMeshBuilder` emits the source mesh **vertex for vertex**, unshared (one vertex per
-triangle corner), plus one extra attribute: **TEXCOORD2 = (target position, phase)**. The vertex
-stage lerps position → target off `_PrismClock`, so the whole animation is one stamp and zero
-per-frame CPU.
+triangle corner), plus two extra attributes: **TEXCOORD2 = (target position, phase)** and
+**TEXCOORD3 = (target normal, the same phase)**. The vertex stage lerps both off `_PrismClock`, so
+the whole animation is one stamp and zero per-frame CPU.
+
+The phase is *duplicated* rather than shared because a Custom Function node reads one input: the
+position and the normal must travel on the same schedule, or a face is shaded before or after it
+lands. A panel's target normal is its octahedron face's **outward** normal, oriented by the
+octahedron's own centre (a target is three corner *positions* and carries no winding). A leftover
+collapses to a point and has no orientation to arrive at, so it keeps the source's normal and the
+blend is a no-op for it.
 
 **Trap 1 — a face is found STRUCTURALLY, never by coplanarity.** 60 of this cage's quads are
 non-planar by about 5°, so a plane test cuts them in half and reports **160** triangle panels
@@ -145,15 +167,26 @@ what keeps one strut's six faces travelling to the same octahedron.
 renders with — by `Tools/Shaders/wire_crystal_morph.py`, at the very **END** of the vertex chain:
 
 ```
-<vertex chain>.Out -> CrystalMorph.Position          UV2 -> .Target
+<position chain>.Out -> CrystalMorph.Position        UV2 -> .Target
 _PrismClock -> .Clock                                _CrystalMorph -> .Morph
 CrystalMorph.Out -----------------------------------> VertexDescription.Position
+
+<normal chain>.Out   -> CrystalMorphNormal.Normal    UV3 -> .Target
+_PrismClock -> .Clock                                _CrystalMorph -> .Morph
+CrystalMorphNormal.Out -----------------------------> VertexDescription.Normal
 ```
 
-Last is load-bearing in both directions. ShepardGraph's shells displace along the normal, so
-splicing after the displacement means t = 0 is the crystal *including* that displacement, and the
-lerp to the bare target removes it by t = 1 — which is what lands the shape exactly on the
-octahedra instead of hovering a shell above them.
+Both read the SAME clock and the SAME stamp — asserted by the wiring script, because a normal on
+its own schedule is exactly the seam this splice exists to remove.
+
+Last is load-bearing in both directions and in both chains. ShepardGraph's shells displace along
+the normal *and* rotate the normal itself (the Shepard wave, a `RotateAboutAxis` chain), so
+splicing after means t = 0 is the crystal *including* both, and the lerp to the bare target
+removes both by t = 1 — which is what lands the shape, and its shading, exactly on the octahedra
+instead of hovering a shell above them wearing a rotated normal.
+
+Every node in ShepardGraph's vertex chain is **object space** (measured: both `PositionNode`s and
+both vertex `NormalVectorNode`s), which is the space the baked targets are in.
 
 `_CrystalMorph` is `(start time, duration, stagger)`, written per renderer through a
 MaterialPropertyBlock. **Duration 0 is "unstamped" and returns the position untouched**, so every
@@ -170,16 +203,17 @@ so a MaterialPropertyBlock can reach it).
 | gate | what it proves | run |
 |---|---|---|
 | `Tools/Build/measure_omni_crystal_morph.py` | the 40 + 24 = 64 census against the shipped FBX; every panel matched; 8 per octahedron | `python3 …` (`--render` for the sheet) |
-| `Tools/Shaders/verify_crystal_morph.py` | compiles and RUNS the shipped HLSL: unstamped is identity, t=0 is the source exactly, t=1 is the target exactly at every phase, monotone, leftovers settle before panels move | `python3 …` |
-| `Tools/Shaders/wire_crystal_morph.py --check` | the graph splice is present, acyclic, one feeder per input, slot widths match the HLSL, UV2 not UV1, morph is last | `python3 …` |
-| `CrystalMorphMeshBuilderTests` (edit mode) | every panel covers its face exactly; each face claimed once; leftovers collapse to the centre at phase 0; frame 0 is the source vertex-for-vertex; a census mismatch is refused loudly; pentagons work | Unity Test Runner |
+| `Tools/Shaders/verify_crystal_morph.py` | compiles and RUNS the shipped HLSL: unstamped is identity, t=0 is the source exactly, t=1 is the target exactly at every phase, monotone, leftovers settle before panels move — **and the normal runs the position's schedule to 1.2e-7, always arrives unit, and survives the near-antipodal chord** | `python3 …` |
+| `Tools/Shaders/wire_crystal_morph.py --check` | BOTH splices present, acyclic, one feeder per input, slot widths match the HLSL, UV2/UV3 on the right channels, each morph last in its chain, and both reading one clock + one stamp | `python3 …` |
+| `CrystalMorphMeshBuilderTests` (edit mode) | every panel covers its face exactly; each face claimed once; leftovers collapse to the centre at phase 0; frame 0 is the source vertex-for-vertex; a census mismatch is refused loudly; pentagons work; **every panel arrives wearing its face's outward normal, and a leftover keeps its own** | Unity Test Runner |
 
 All four were run headlessly on this branch, and each gate was negative-controlled (a defect was
 injected, the gate was confirmed to fire, the file restored) — a gate that has only ever passed is
-indistinguishable from one that cannot fail.
+indistinguishable from one that cannot fail. On the REAL cage the normals measure 64/64 panels on
+their face's outward normal, worst dot 1.000000.
 
 **Not verified: how it looks.** Nothing here has been seen in the editor. Timings
-(`stagger 0.35`, `handoffFraction 0.72`, panel phases 0.55–1.0) are authored on
+(`stagger 0.35`, `morphFraction 0.85`, panel phases 0.55–1.0) are authored on
 `SquirrelOmniCrystalMorph.asset` and are a starting point for a playtest, not a tuned result.
 
 > ⚠ **`duration` is currently `9` — a 20× INSPECTION value, not a shipping one.** The intended
@@ -187,9 +221,9 @@ indistinguishable from one that cannot fail.
 > reads the same length whichever vessel took it. Every other timing is a FRACTION of `duration`,
 > so this one field slows the whole animation and nothing else needs touching. Two things to
 > expect while it is slow, both of which are the design running at 1/20 speed rather than faults:
-> the ring is **solid and skimmable but invisible for the whole 9 s**, so flying through it gives
-> boost off prisms you cannot see; and the morph holds the crystal static for up to 1.5 s first
-> while it waits for the ring to be laid.
+> the ring is **solid and skimmable but invisible for the first 7.65 s** (`morphFraction`), so
+> flying through it gives boost off prisms you cannot see; and the morph holds the crystal static
+> for up to 1.5 s first while it waits for the ring to be laid.
 
 ---
 
@@ -251,7 +285,50 @@ symptom.*
 
 ---
 
-## 10. Known limitations
+## 10. The second pass: the wrong START, and the seam at the END
+
+Once it could be seen running, two things were wrong with it.
+
+### 10.1 It started at the crystal's NEXT home
+
+A pickup is serviced by **two trigger callbacks in the same physics step** — the crystal's own
+`OmniCrystalImpactor` and the vessel's `VesselImpactor` — and Unity does not define which fires
+first. The crystal's ends in `Crystal.Respawn()`, which on a host writes the slot list and
+re-poses the crystal **synchronously**. So in one of the two orders,
+`CrystalImpactData.FromCrystal` read the crystal's *next* home; and `MoveToNewPos` also resets
+rotation to identity, so the orientation went with it. Across the wire it is worse and not even
+order-dependent: collection and respawn are independent RPC chains, so a remote peer nearly
+always sees the moved crystal.
+
+Three changes, and the middle one is the general lesson:
+
+1. **`Crystal.CollectPose`** — the pose the crystal had *before* it was moved this frame, or its
+   live pose if it has not been moved this frame. Exact by construction: the only way the pose can
+   be "new" at read time is that `MoveToNewPos` ran this very frame, which is the move being
+   serviced. No polling, no per-frame cost, and no assumption about callback order.
+2. ***Do not order the callbacks — report the pose that was.*** Ordering two PhysX trigger
+   callbacks cannot be done from inside either of them, and any arrangement that appeared to work
+   would hold only until the next collider was added to either object.
+3. **`CrystalImpactData` carries the whole pose** (position, rotation, world scale), and
+   `SquirrelCrystalMorph.Begin` takes it as a parameter and **never reads the crystal's
+   transform**. The crystal's *appearance* is still read live — that is what makes frame 0
+   identical — but its *pose* is not.
+
+### 10.2 The seam at the hand-off
+
+Four differences were found between the morph's last frame and the prisms' first. Two were real
+and are fixed; two are measured and deliberately left.
+
+| difference | verdict |
+|---|---|
+| **Normals** — the morph carried only position, so it arrived with the cage's normals on the octahedron's faces, and both shaders read `(1 − N·V)⁴` | **fixed** — TEXCOORD3 + `CrystalMorphNormal`, §4/§5 |
+| **Render mode** — `ShepardGraph` is transparent, alpha-blended, `_ZWrite 0`, four stacked shells; `BlockGraph` is opaque, z-writing, alpha-clip dithered | **answered structurally** — the real prisms take the surface at `morphFraction` and the shells dissolve off them (§2.5). No uniform can make a non-z-writing alpha-blended stack equal an opaque surface |
+| **Fresnel power** | **already identical** — both compose Dark/Bright through the shared `FresnelColors` subgraph, whose weight is the shared `FresnelPower4` (hardcoded 4, not `_Fresnel`, which feeds ShepardGraph's *alpha* chain instead) |
+| **Distance fade** — `BlockGraph` pulls its bright colour toward its dark by `SqrDistance / _SqrDistance` before the fresnel blend; the crystal has no such term | **left, measured** — the shielded prism material authors `_SqrDistance 100000` (≈ 316 u), so at the ~30–50 u a pickup is viewed from the term is 0.3–2.5% of the way. Reproducing it exactly would mean re-deriving a subgraph on the CPU for a difference below the dither |
+
+---
+
+## 11. Known limitations
 
 - **`FadeIn` cannot reach a ShepardGraph crystal.** `FadeIn` drives `_opacity` (lowercase) while
   ShepardGraph's property is `_Opacity`, so the bloom-in every crystal is supposed to play is a
@@ -261,7 +338,9 @@ symptom.*
   a couple of units further on. At normal Squirrel speeds that is a small extra reach on the
   panels' flight, not a visible seam — but it is the number to look at first if the motion reads
   as stretched.
-- **Rotation and scale come from the live crystal, position from the impact.** A respawn moves a
-  crystal without resizing or rotating it, so only the position needs to survive the race between
-  the collection and respawn RPC chains; if crystals ever gain a per-spawn rotation, that has to
-  travel too.
+- **The distance-fade term is not reproduced** (§10.2). It is measured at 0.3–2.5% of its range
+  at pickup distance and is the first thing to revisit if a hand-off ever reads as a brightness
+  step at long range.
+- **The normal blend is a chord, not a slerp.** `lerp` between two unit vectors and renormalise —
+  cheaper by a trig pair per vertex, and the endpoints are close for most of the assignment
+  (a panel is chosen by angular fit). The near-antipodal case is guarded and verified, not ignored.

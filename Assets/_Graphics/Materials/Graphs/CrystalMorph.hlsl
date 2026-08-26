@@ -11,6 +11,11 @@
 // PrismClock's publisher, from the SAME value the stamp uses) into Clock — never a Time
 // node, which is a different clock domain and renders every stamp pre-finished.
 //
+// There are TWO functions here and they are one animation: `CrystalMorph` moves the vertex and
+// `CrystalMorphNormal` turns its normal, both off the same stamp and the same per-face phase.
+// Splice both or neither — a shape that arrives without its shading is the seam this exists to
+// remove, wearing a different costume.
+//
 // Spliced onto the very END of the vertex-position chain, so `Position` arrives with every
 // other vertex effect already applied (on ShepardGraph, the shell's outward displacement).
 // That placement is load-bearing in BOTH directions: at t = 0 the output is that position
@@ -59,6 +64,52 @@ void CrystalMorph_float(float3 Position, float4 Target, float Clock, float3 Morp
 
     e = e * e * (3.0 - 2.0 * e);   // smoothstep: zero end tangents, so it settles rather than arrives
     Out = lerp(Position, Target.xyz, e);
+}
+
+// -----------------------------------------------------------------------------
+// Normal -> Target normal, on EXACTLY the same schedule as the position above.
+//
+//   Normal    object-space vertex normal, post every other vertex effect
+//   Target    xyz = this vertex's destination NORMAL, w = its face's PHASE (the same
+//             value baked into the position target, duplicated so the two cannot drift)
+//   Clock     _PrismClock
+//   Morph     the same (start, duration, stagger) the position node is given
+//
+// This is not a nicety. Both shaders involved in the hand-off derive their base colour from
+// `(1 - N.V)^4` (the shared FresnelColors subgraph), so a morph that carried only POSITION
+// would land the crystal cage's normals on the octahedron's faces: the right shape wearing
+// the wrong surface, which reads as a lighting pop at the exact instant the animation is
+// supposed to be invisible.
+//
+// The lerp is between two unit vectors and is renormalised, which is a chord rather than an
+// arc — it is not slerp, and near-antipodal endpoints pass close to zero. That is acceptable
+// here and deliberately not "fixed": a face's own normal and its target face's normal are
+// close for most of the assignment (the panel was chosen by angular fit), the traversal is a
+// fraction of a second, and slerp on a per-vertex path would cost a trig pair per vertex for
+// a difference nobody can see. The degenerate case is guarded, not ignored.
+//
+// Duration <= 0 means UNSTAMPED and returns Normal untouched, exactly like the position node.
+// -----------------------------------------------------------------------------
+void CrystalMorphNormal_float(float3 Normal, float4 Target, float Clock, float3 Morph,
+    out float3 Out)
+{
+    float duration = Morph.y;
+    if (duration <= 0.0)
+    {
+        Out = Normal;
+        return;
+    }
+
+    float t = saturate((Clock - Morph.x) / duration);
+
+    float stagger = saturate(Morph.z);
+    float span = max(1e-4, 1.0 - stagger);
+    float e = saturate((t - saturate(Target.w) * stagger) / span);
+
+    e = e * e * (3.0 - 2.0 * e);
+    float3 n = lerp(Normal, Target.xyz, e);
+    float len = length(n);
+    Out = len > 1e-5 ? n / len : Target.xyz;
 }
 
 #endif // CRYSTAL_MORPH_INCLUDED

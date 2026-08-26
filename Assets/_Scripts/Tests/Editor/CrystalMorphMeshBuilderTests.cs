@@ -187,6 +187,92 @@ namespace CosmicShore.Tests
             Object.DestroyImmediate(mesh);
         }
 
+        [Test]
+        public void EveryPanelArrivesWearingItsFacesOutwardNormal()
+        {
+            var mesh = BuildCage(prisms: 4, boxes: 2);
+            var target = Octahedron(Vector3.zero);
+            var targets = new List<CrystalMorphMeshBuilder.OctahedronTarget> { target };
+
+            var built = CrystalMorphMeshBuilder.TryBuild(mesh, targets, 0f, 0.55f, 1f, out var why);
+            Assert.IsNotNull(built, $"builder refused a valid cage: {why}");
+
+            var uv2 = TargetChannel(built, CrystalMorphMeshBuilder.TargetUVChannel);
+            var uv3 = TargetChannel(built, CrystalMorphMeshBuilder.TargetNormalUVChannel);
+            Assert.AreEqual(uv2.Length, uv3.Length, "every vertex carries a target NORMAL too");
+
+            for (int i = 0; i < uv3.Length; i++)
+            {
+                var n = new Vector3(uv3[i].x, uv3[i].y, uv3[i].z);
+                Assert.AreEqual(1f, n.magnitude, 1e-4f, "a target normal must be unit");
+                Assert.AreEqual(uv2[i].w, uv3[i].w, 1e-6f,
+                    "position and normal must carry the SAME phase, or a face is shaded before " +
+                    "or after it lands");
+            }
+
+            // Identified PER SOURCE PANEL, never per vertex: a panel corner lands ON a target
+            // corner, and a corner belongs to three faces, so a point-in-triangle test on one
+            // vertex is genuinely ambiguous. The panel's whole outline is not.
+            var (panels, _) = Split(mesh, built, target);
+            var normalOf = PanelNormals(mesh, built, target);
+            Assert.AreEqual(Faces, panels.Count, "one panel per octahedron face");
+
+            var seen = new HashSet<int>();
+            foreach (var kv in panels)
+            {
+                int face = FaceContainingAll(target, kv.Value);
+                Assert.GreaterOrEqual(face, 0, "a panel must land on ONE of the eight faces");
+                Assert.IsTrue(seen.Add(face), "two panels landed on the same face");
+
+                Vector3 a = target.FaceCorners[face * 3], b = target.FaceCorners[face * 3 + 1],
+                        c = target.FaceCorners[face * 3 + 2];
+                Vector3 want = Vector3.Cross(b - a, c - a).normalized;
+                if (Vector3.Dot(want, (a + b + c) / 3f - target.Centre) < 0f) want = -want;
+
+                Assert.AreEqual(1f, Vector3.Dot(normalOf[kv.Key], want), 1e-4f,
+                    "a panel's target normal is its FACE's OUTWARD normal — otherwise the morph " +
+                    "arrives with the cage's normals on the octahedron's faces, and both shaders " +
+                    "read (1-N.V)^4, so the shape is right and the shading is nonsense");
+            }
+            Assert.AreEqual(Faces, seen.Count, "every face received a normal");
+
+            Object.DestroyImmediate(built);
+            Object.DestroyImmediate(mesh);
+        }
+
+        [Test]
+        public void ALeftoverKeepsItsOwnNormalRatherThanSwingingIntoNothing()
+        {
+            var mesh = BuildCage(prisms: 4, boxes: 2);
+            mesh.RecalculateNormals();
+            var target = Octahedron(Vector3.zero);
+            var targets = new List<CrystalMorphMeshBuilder.OctahedronTarget> { target };
+
+            var built = CrystalMorphMeshBuilder.TryBuild(mesh, targets, 0f, 0.55f, 1f, out var why);
+            Assert.IsNotNull(built, $"builder refused a valid cage: {why}");
+
+            var uv2 = TargetChannel(built, CrystalMorphMeshBuilder.TargetUVChannel);
+            var uv3 = TargetChannel(built, CrystalMorphMeshBuilder.TargetNormalUVChannel);
+            var sourceNormals = mesh.normals;
+            var tris = mesh.triangles;
+            int leftovers = 0;
+
+            for (int i = 0; i < uv2.Length; i++)
+            {
+                var p = new Vector3(uv2[i].x, uv2[i].y, uv2[i].z);
+                if ((p - target.Centre).sqrMagnitude >= 1e-6f) continue;
+                leftovers++;
+                var n = new Vector3(uv3[i].x, uv3[i].y, uv3[i].z);
+                Assert.AreEqual(1f, Vector3.Dot(n, sourceNormals[tris[i]]), 1e-4f,
+                    "a leftover collapses to a POINT and has no orientation to arrive at, so its " +
+                    "normal must be held at the source's — the blend is a no-op for it");
+            }
+            Assert.Greater(leftovers, 0, "the cage contributed no leftover faces");
+
+            Object.DestroyImmediate(built);
+            Object.DestroyImmediate(mesh);
+        }
+
         // ── Synthetic source ─────────────────────────────────────────────────────────────
 
         /// <summary>
@@ -257,11 +343,56 @@ namespace CosmicShore.Tests
 
         // ── Readback ─────────────────────────────────────────────────────────────────────
 
-        static Vector4[] TargetChannel(Mesh built)
+        static Vector4[] TargetChannel(Mesh built, int channel = CrystalMorphMeshBuilder.TargetUVChannel)
         {
             var uv = new List<Vector4>();
-            built.GetUVs(CrystalMorphMeshBuilder.TargetUVChannel, uv);
+            built.GetUVs(channel, uv);
             return uv.ToArray();
+        }
+
+        /// <summary>The one octahedron face whose triangle contains EVERY point of a mapped
+        /// panel. Per-point is ambiguous — a panel corner lands on a target corner, which three
+        /// faces share — and the whole outline is not.</summary>
+        static int FaceContainingAll(in CrystalMorphMeshBuilder.OctahedronTarget t,
+                                     IList<Vector3> poly)
+        {
+            for (int f = 0; f < t.FaceCount; f++)
+            {
+                Vector3 a = t.FaceCorners[f * 3], b = t.FaceCorners[f * 3 + 1], c = t.FaceCorners[f * 3 + 2];
+                float whole = Area(a, b, c);
+                bool all = true;
+                foreach (var p in poly)
+                {
+                    float parts = Area(p, b, c) + Area(a, p, c) + Area(a, b, p);
+                    if (Mathf.Abs(parts - whole) > whole * 1e-3f) { all = false; break; }
+                }
+                if (all) return f;
+            }
+            return -1;
+        }
+
+        /// <summary>The baked target normal of each mapped source panel, keyed the same way
+        /// <see cref="Split"/> keys its polygons.</summary>
+        static Dictionary<int, Vector3> PanelNormals(Mesh source, Mesh built,
+            in CrystalMorphMeshBuilder.OctahedronTarget target)
+        {
+            var uv2 = TargetChannel(built, CrystalMorphMeshBuilder.TargetUVChannel);
+            var uv3 = TargetChannel(built, CrystalMorphMeshBuilder.TargetNormalUVChannel);
+            var faceOf = SourceFaces(source);
+            var tris = source.triangles;
+            var byFace = new Dictionary<int, Vector3>();
+            for (int i = 0; i < uv2.Length; i++)
+            {
+                var p = new Vector3(uv2[i].x, uv2[i].y, uv2[i].z);
+                if ((p - target.Centre).sqrMagnitude < 1e-6f) continue;
+                int f = faceOf[tris[i]];
+                var n = new Vector3(uv3[i].x, uv3[i].y, uv3[i].z);
+                if (byFace.TryGetValue(f, out var have))
+                    Assert.AreEqual(1f, Vector3.Dot(have, n), 1e-4f,
+                        "every vertex of one panel must carry the SAME target normal");
+                else byFace[f] = n;
+            }
+            return byFace;
         }
 
         /// <summary>Groups the emitted targets back into per-source-face polygons, split into

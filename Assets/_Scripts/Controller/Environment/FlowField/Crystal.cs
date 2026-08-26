@@ -509,8 +509,41 @@ namespace CosmicShore.Gameplay
             }
         }
 
+        /// <summary>
+        /// The pose this crystal had BEFORE it was moved this frame — or its live pose if it has
+        /// not been moved this frame.
+        ///
+        /// A collect is serviced by TWO trigger callbacks in the same physics step (the crystal's
+        /// own <see cref="OmniCrystalImpactor"/> and the vessel's <see cref="VesselImpactor"/>),
+        /// and Unity does not define which fires first. The crystal's ends in
+        /// <see cref="Respawn"/>, which on a host writes the slot list and re-poses the crystal
+        /// SYNCHRONOUSLY — so in one of the two orders anything that reads
+        /// <c>transform.position</c> for "where the crystal was collected" reads its NEXT HOME
+        /// instead, and every retirement animation starts in the wrong place. (That is exactly
+        /// how the Squirrel's morph shipped: it began at the crystal's new position, tens of
+        /// units away, with the respawn's identity rotation.)
+        ///
+        /// Rather than order the two callbacks — which cannot be done from here, and would only
+        /// hold until the next collider is added — this reports the pose the crystal HAD, and is
+        /// exact by construction: the only way the pose can be "new" at read time is that
+        /// <see cref="MoveToNewPos"/> ran this very frame, which is the move being serviced.
+        /// </summary>
+        public Pose CollectPose => _movedFrame == Time.frameCount
+            ? _poseBeforeMove
+            : new Pose(transform.position, transform.rotation);
+
+        /// <summary>World scale to match <see cref="CollectPose"/>. A respawn moves a crystal, it
+        /// does not resize it, so this is simply the live scale — carried alongside the pose so a
+        /// consumer never has to touch the transform at all.</summary>
+        public Vector3 CollectScale => transform.lossyScale;
+
+        Pose _poseBeforeMove;
+        int _movedFrame = -1;
+
         public void MoveToNewPos(Vector3 newPos)
         {
+            _poseBeforeMove = new Pose(transform.position, transform.rotation);
+            _movedFrame = Time.frameCount;
             transform.SetPositionAndRotation(newPos, Quaternion.identity);
         }
 
