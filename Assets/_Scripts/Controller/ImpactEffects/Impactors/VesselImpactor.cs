@@ -263,10 +263,28 @@ namespace CosmicShore.Gameplay
                 "is wired in its skimmer effect containers.");
         }
 
+        /// <summary>
+        /// This vessel's bespoke omni-crystal retirement, or null when it keeps the shared husk
+        /// spray. Read by <see cref="OmniCrystalImpactor"/> so a crystal a vessel retires itself
+        /// is not ALSO exploded — the two would draw over each other.
+        /// </summary>
+        public VesselOmniCrystalRetirementSO OmniCrystalRetirement =>
+            vesselImpactorDataContainerSO != null
+                ? vesselImpactorDataContainerSO.OmniCrystalRetirement
+                : null;
+
         public void ExecuteOmniCrystalImpact(CrystalImpactData data)
         {
             if (IsEffectContainerMissing(vesselImpactorDataContainerSO, nameof(vesselImpactorDataContainerSO)))
                 return;
+
+            // The retirement runs FIRST and on every peer: it takes over the crystal's body, and
+            // a sibling effect in the array below is what lays the mass it morphs into (the
+            // Squirrel's boost ring), so it has to be listening before that lands.
+            var retirement = vesselImpactorDataContainerSO.OmniCrystalRetirement;
+            if (retirement != null)
+                RunEffectIsolated(() => retirement.Execute(this, data), retirement);
+
             var effects = vesselImpactorDataContainerSO.VesselCrystalEffects;
             if (!DoesEffectExist(effects)) return;
             RunCrystalEffects(effects, nameof(VesselImpactorDataContainerSO.VesselCrystalEffects), data);

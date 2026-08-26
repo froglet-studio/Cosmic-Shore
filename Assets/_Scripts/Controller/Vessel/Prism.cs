@@ -365,7 +365,12 @@ namespace CosmicShore.Gameplay
             // shield's Disengage can route through here AFTER Prism.OnDisable
             // already hid the entity, and re-showing it would orphan a visible
             // entity until pool reuse.
-            bool show = _renderVisible && gameObject.activeInHierarchy;
+            // `live` is "this prism's rendering is its own to do"; `show` is "and nothing is
+            // standing in for it right now". They are separate because entity EXISTENCE must not
+            // depend on either (see below) — and because a stand-in hold is a photon hold, so it
+            // may never be allowed to cost a clock stamp.
+            bool live = _renderVisible && gameObject.activeInHierarchy;
+            bool show = live && !_visualStandIn;
 
             // Entity EXISTENCE is deliberately independent of which path currently
             // DRAWS. Clock stamps are one-shot initial-conditions writes
@@ -376,7 +381,7 @@ namespace CosmicShore.Gameplay
             // environment-laid prism — the C13 repro) had nothing to stamp and snapped.
             // The entity is simply created hidden while the exotic visual draws, and
             // queued visible when rendering returns to the instanced path.
-            if (show && PrismRenderService.Enabled)
+            if (live && PrismRenderService.Enabled)
                 EnsureRenderEntity();
 
             bool entityPath = !_exoticVisualActive && PrismRenderService.IsHandleUsable(in RenderHandle);
@@ -405,8 +410,38 @@ namespace CosmicShore.Gameplay
                 // entity + MeshRenderer for the rest of the frame.
                 if (PrismRenderService.IsHandleUsable(in RenderHandle))
                     PrismRenderService.SetVisible(in RenderHandle, false);
-                if (meshRenderer) meshRenderer.enabled = _renderVisible;
+                if (meshRenderer) meshRenderer.enabled = _renderVisible && !_visualStandIn;
             }
+        }
+
+        // While set, some OTHER object is drawing this prism's body for a moment and this
+        // prism must not double-draw. Photons only — see SetVisualStandIn.
+        bool _visualStandIn;
+
+        /// <summary>
+        /// Holds this prism's PHOTONS while a bespoke visual stands in for its body, and
+        /// nothing else: the collider stays live, the spatial index keeps its entry, the mass
+        /// is laid, the shield is engaged, every clock stamp still lands on a companion entity
+        /// that is created exactly as it would have been. This is the clock-material law's own
+        /// division applied to a hand-off — gameplay goes FINAL at the start, only photons
+        /// animate — so a ring laid under a stand-in is skimmable from frame 0 while something
+        /// else is still drawing it (Docs/PRISM_ANIMATION.md §4).
+        ///
+        /// It is NOT <see cref="HideForTransport"/>, which also drops the collider because the
+        /// mass is genuinely leaving. It is NOT <c>SetExoticVisualActive</c>, which hands
+        /// rendering from the instanced path to this prism's OWN renderer. Here the prism draws
+        /// on neither path, because a third object is drawing it.
+        ///
+        /// ALWAYS paired: the stand-in must clear the hold when it finishes or dies, or the
+        /// prism is invisible for the rest of its life. Pool reuse clears it in
+        /// <see cref="ResetState"/> so a stand-in that was destroyed mid-animation cannot
+        /// poison the next prism out of the pool.
+        /// </summary>
+        public void SetVisualStandIn(bool active)
+        {
+            if (_visualStandIn == active) return;
+            _visualStandIn = active;
+            ApplyRenderPath();
         }
 
         // While set, the companion entity renders this mesh (a cache-shared settled-shield
@@ -712,6 +747,9 @@ namespace CosmicShore.Gameplay
             destroyed = false;
             devastated = false;
             _destroyedByCreature = false; // pool reuse: clear stale creature-kill flag
+            // Pool reuse: a stand-in that died mid-animation without releasing its hold must not
+            // make the NEXT prism out of this pool slot invisible for its whole life.
+            _visualStandIn = false;
             // Pool reuse: a prism whose scale window was widened for an AUTHORED size
             // (AdmitTargetScale) must not carry that ceiling into its next life.
             scaleAnimator?.RestoreAuthoredScaleWindow();

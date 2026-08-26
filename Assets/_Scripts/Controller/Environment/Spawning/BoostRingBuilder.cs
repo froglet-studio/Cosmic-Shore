@@ -23,6 +23,23 @@ namespace CosmicShore.Gameplay
         }
     }
 
+    /// <summary>One ring that has just been laid: where it went, what it is, and its prisms.</summary>
+    public readonly struct BoostRingLay
+    {
+        public readonly Pose Pose;
+        public readonly BoostRingSpec Spec;
+        public readonly Domains Domain;
+        public readonly string OwnerPrefix;
+        /// <summary>The prisms, in ring order. Live mass — read it, never retire it.</summary>
+        public readonly IReadOnlyList<Prism> Prisms;
+
+        public BoostRingLay(Pose pose, in BoostRingSpec spec, Domains domain, string ownerPrefix,
+            IReadOnlyList<Prism> prisms)
+        {
+            Pose = pose; Spec = spec; Domain = domain; OwnerPrefix = ownerPrefix; Prisms = prisms;
+        }
+    }
+
     /// <summary>
     /// THE canonical "ring of prisms the skimmer WILL collide with" builder - shared by every
     /// feature that throws a fly-through boost ring around the flight path: the Squirrel
@@ -48,6 +65,19 @@ namespace CosmicShore.Gameplay
     public static class BoostRingBuilder
     {
         /// <summary>
+        /// Raised the instant a ring finishes laying, on the machine that laid it.
+        ///
+        /// It exists so a visual that has to LAND on a ring can read the ring the builder
+        /// actually made instead of re-deriving it from the same authored numbers. Those two
+        /// can drift; the ring cannot drift from itself. The Squirrel's omni-crystal morph is
+        /// the first listener — it ends on the real octahedra of the real prisms, so retuning
+        /// `SpawnableRings` moves the animation with it and no second authority exists.
+        ///
+        /// Listeners must be one-shot and must not retire the mass: these prisms are conserved.
+        /// </summary>
+        public static event System.Action<BoostRingLay> RingLaid;
+
+        /// <summary>
         /// Lays one ring of <see cref="BoostRingSpec.Segments"/> boost prisms around
         /// <paramref name="pose"/>'s forward axis. Pass a <paramref name="trail"/> to group them,
         /// and/or <paramref name="collected"/> to track them for later teardown.
@@ -62,6 +92,10 @@ namespace CosmicShore.Gameplay
                 return;
             }
 
+            // Collected unconditionally so RingLaid can hand listeners the ring it actually
+            // made; `collected` (the caller's own teardown list) still gets every prism too.
+            var laid = new List<Prism>(spec.Segments);
+
             for (int i = 0; i < spec.Segments; i++)
             {
                 float angle = i * (2f * Mathf.PI / spec.Segments);
@@ -70,9 +104,13 @@ namespace CosmicShore.Gameplay
                 // Long side runs along the ring axis; block "up" points outward radially.
                 Quaternion rotation = pose.rotation * Quaternion.LookRotation(Vector3.forward, radial);
 
-                LayOne(channel, position, rotation, spec.PrismScale, spec.Kind,
+                var prism = LayOne(channel, position, rotation, spec.PrismScale, spec.Kind,
                     domain, playerName, $"{ownerPrefix}::{i}", trail, collected);
+                if (prism) laid.Add(prism);
             }
+
+            if (laid.Count > 0)
+                RingLaid?.Invoke(new BoostRingLay(pose, spec, domain, ownerPrefix, laid));
         }
 
         /// <summary>

@@ -161,7 +161,15 @@ namespace CosmicShore.Gameplay
                 }
             );
 
-            if (shipStatus.VesselType != VesselClassType.Manta)
+            // A vessel that carries its own omni-crystal retirement RETIRES THE CRYSTAL ITSELF
+            // (the Squirrel morphs it into its boost ring), so the shared husk spray must not
+            // also fire — two retirements would claim the same body and draw over each other.
+            // That animation runs from VesselImpactor.ExecuteOmniCrystalImpact, which the owner
+            // routes through NetworkVesselImpactor and back out to every peer, so it reaches the
+            // same machines this broadcast would have.
+            bool vesselRetiresCrystal = vesselImpactee.OmniCrystalRetirement != null;
+
+            if (shipStatus.VesselType != VesselClassType.Manta && !vesselRetiresCrystal)
             {
                 var explode = new Crystal.ExplodeParams
                 {
