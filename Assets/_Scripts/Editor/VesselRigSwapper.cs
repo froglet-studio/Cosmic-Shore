@@ -79,6 +79,15 @@ namespace CosmicShore.Editor
             public string VesselPrefab;
             public string RigFbx;
             public string LegacyModelRoot;
+            /// <summary>
+            /// Where the rig instance goes so its hull lands ON the shipped hull. FITTED, not
+            /// guessed: solved by nearest-neighbour residual over the two files' world point
+            /// clouds, taking the residual to ~1e-4 of a unit. Getting this right is what lets
+            /// every existing collider and FX mount keep its world position, so nothing
+            /// downstream has to be re-measured.
+            /// </summary>
+            public Vector3 InstancePosition;
+            public float InstanceScale;
             public PartMove[] Parts;
             public JetMount[] Jets;
             /// <summary>Legacy objects that exist only to draw geometry the rig now draws itself.</summary>
@@ -99,6 +108,10 @@ namespace CosmicShore.Editor
                 VesselPrefab = "Dolphin",
                 RigFbx = "dolphin_shapekey_with_animations",
                 LegacyModelRoot = "Dolphin_Test",
+                // Fitted: IDENTITY. The two files' world bounds agree on all six faces to three
+                // decimals - the Dolphin rig needs no correction at all.
+                InstancePosition = Vector3.zero,
+                InstanceScale = 1f,
                 Parts = new[]
                 {
                     new PartMove("Dolphin_Test",        "fuse"),
@@ -128,6 +141,96 @@ namespace CosmicShore.Editor
                     "Engine Right.1", "Engine Right.2", "Engine Right.3",
                 },
             },
+
+            // -- Rhino ------------------------------------------------------------
+            //
+            // DECISION (2026-08-26, Garrett): swap for the PUPPETRY, and leave the morph honestly
+            // absent. The rig's four element shapes are empty and always have been - ONE blob for
+            // this file across all 364 remote branches, four shapes at one indexed vertex and
+            // delta 0.0000. So this buys the 12-bone armature RhinoAnimation names and 9 flight
+            // takes, and the morph audit must KEEP reporting the Rhino as un-morphed. Phase 4's
+            // magnitude check is what makes that honest instead of a false green.
+            //
+            // Fitted instance z = -1.5545: with it, 2000/2000 sampled fuselage vertices match at a
+            // median residual of 0.00019 (-1.5550 also matches, 3.6x worse). Every mount and
+            // collider therefore keeps its world position - the EIGHT body-jet mounts do not have
+            // to be re-measured, which is what this brief expected to cost.
+            //
+            // The bone map is VERIFIED, not inherited: each legacy collider contains 100% of its
+            // mapped bone's skinned geometry, Wing back L/R -> wing2.l/r included.
+            //
+            // ACCEPTED COST: the rig's bind pose has the wings 1.38x wider than the shipped pose
+            // (x half-span 7.998 vs 5.796, while y is EXACTLY 1.000 - which is what identifies it
+            // as a pose difference rather than a scale). The Rhino's resting silhouette changes.
+            new()
+            {
+                VesselPrefab = "Rhino",
+                RigFbx = "rhino_shapekey_with_animations",
+                LegacyModelRoot = "Rhino_Test (1)",
+                InstancePosition = new Vector3(0f, 0f, -1.5545f),
+                InstanceScale = 1f,
+                Parts = new[]
+                {
+                    new PartMove("Rhino_Test (1)",   "fuse"),
+                    new PartMove("Wing front left",  "wing1.l"),
+                    new PartMove("Wing front right", "wing1.r"),
+                    new PartMove("Wing back Left",   "wing2.l"),
+                    new PartMove("Wing back right",  "wing2.r"),
+                    // These two carry no gameplay of their own, but they HOST the two wing jets.
+                    // Re-homing them - rather than deleting them and re-mounting the jets by name -
+                    // carries each jet at its exact authored offset and introduces no new number.
+                    new PartMove("engine left",      "jet.l"),
+                    new PartMove("engine right",     "jet.r"),
+                },
+                Jets = System.Array.Empty<JetMount>(),
+                RedundantMeshObjects = System.Array.Empty<string>(),
+            },
+
+            // -- Urchin -----------------------------------------------------------
+            //
+            // DECISION (2026-08-26, Garrett): swap at 1/2.105 to PRESERVE THE SHIPPED SIZE. The rig
+            // is the shipped hull at a uniform 2.105x (per-axis 2.1068 / 2.1051 / 2.1051), and the
+            // Urchin is the fleet's extreme camera case - a ~0.43-unit hull at 6.67 units. Taking
+            // it to 0.91 would move camera framing, collider volumes, jet widthScale AND the
+            // occlusion-corridor radius at once; at localScale 0.474905 none of them move. Fit:
+            // 2000/2000 matched, median residual 0.00010 in a 0.43-unit hull.
+            //
+            // Its element shapes are empty too, so the morph stays honestly absent here as well.
+            //
+            // A NOTE ON THE COLLIDERS, because the obvious check reads as a failure: scoring "how
+            // much of the mapped bone's geometry sits inside this legacy collider" returns ~0% for
+            // most of the Urchin's appendages. That is NOT the swap's doing - the control says the
+            // same colliders bound the SHIPPED hull just as poorly (3.58% vs 3.54%, 0.80% vs 0.79%,
+            // 0.00% vs 0.00%): they were already loose, and the swap is collider-neutral. General
+            // rule worth carrying: an overlap score is meaningless when the baseline overlap is
+            // already ~0 - run the control against the shipped asset before reading a low score as
+            // a regression. (That the Urchin's colliders bound nothing is a real, separate defect.)
+            new()
+            {
+                VesselPrefab = "Urchin",
+                RigFbx = "urchan_shapekey_with_animations",
+                LegacyModelRoot = "Body",
+                InstancePosition = Vector3.zero,
+                InstanceScale = 0.474905f,
+                Parts = new[]
+                {
+                    new PartMove("Body",              "fuse"),
+                    new PartMove("LeftGun",           "gunM.l"),
+                    new PartMove("RightGun",          "gunM.r"),
+                    new PartMove("JetTopLeft",        "jetT.l"),
+                    new PartMove("JetTopRight",       "jetT.r"),
+                    new PartMove("JetBottomLeft",     "jetB.l"),
+                    new PartMove("JetBottomRight",    "jetB.r"),
+                    new PartMove("ShroudTopLeft",     "wingconrotT.l"),
+                    new PartMove("ShroudTopRight",    "wingconrotT.r"),
+                    new PartMove("ShroudBottomLeft",  "wingconrotB.l"),
+                    new PartMove("ShroudBottomRight", "wingconrotB.r"),
+                    new PartMove("ShroudLeft",        "sheildconrot.l"),
+                    new PartMove("ShroudRight",       "sheildconrot.r"),
+                },
+                Jets = System.Array.Empty<JetMount>(),
+                RedundantMeshObjects = System.Array.Empty<string>(),
+            },
         };
 
         int _selected;
@@ -155,10 +258,12 @@ namespace CosmicShore.Editor
                 Swaps.Select(s => s.VesselPrefab).ToArray());
 
             EditorGUILayout.HelpBox(
-                "Only the Dolphin is enabled. Its rig is the shipped hull in the SAME PLACE, so no " +
-                "collider needs re-fitting. The Rhino's rig is offset 1.5545 in z with its wings " +
-                "re-posed and the Urchin's is a uniform 2.105x scale — both need re-measuring " +
-                "before they can be added here (Docs/VESSEL_CONSTRUCTION.md §4.4).",
+                "Each rig instance is placed at a FITTED transform so its hull lands on the shipped " +
+                "hull - Dolphin identity, Rhino z -1.5545, Urchin scale 0.474905. That is what lets " +
+                "every collider and FX mount keep its world position instead of being re-measured." +
+                "\n\nOnly the DOLPHIN gains a morph. The Rhino's and Urchin's element shapes are " +
+                "empty and always have been, so those two buy the armature, the puppetry and the " +
+                "takes, and the morph audit must keep reporting them un-morphed.",
                 MessageType.Info);
 
             EditorGUILayout.Space(6f);
@@ -216,9 +321,10 @@ namespace CosmicShore.Editor
                 // ── instantiate the rig, so its bones exist to validate against ──
                 GameObject rig = (GameObject)PrefabUtility.InstantiatePrefab(rigAsset, handle ? handle : contents.transform);
                 rig.name = swap.RigFbx;
-                rig.transform.localPosition = Vector3.zero;
+                rig.transform.localPosition = swap.InstancePosition;
                 rig.transform.localRotation = Quaternion.identity;
-                rig.transform.localScale = Vector3.one;
+                float sc = swap.InstanceScale <= 0f ? 1f : swap.InstanceScale;
+                rig.transform.localScale = new Vector3(sc, sc, sc);
 
                 var bones = rig.GetComponentsInChildren<Transform>(true)
                     .GroupBy(t => t.name)

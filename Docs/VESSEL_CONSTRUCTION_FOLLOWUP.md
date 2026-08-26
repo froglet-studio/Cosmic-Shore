@@ -130,21 +130,61 @@ Acceptance: `Audit Vessel Elemental Morphs` reports the Dolphin **with non-zero 
 
 ---
 
-## Phase 3 — Rhino and Urchin: decide honestly, and record the decision
+## Phase 3 — Rhino and Urchin  ✅ DECIDED (2026-08-26, Garrett)
 
-Their rigs' element shapes are **empty placeholders** (§4). So a rig swap on these two buys the
-armature, the puppetry and the takes — **not** a morph. Two legitimate outcomes, and the wrong one
-is doing it silently:
+**The empty shapes were challenged and re-verified, exhaustively.** The question asked was *"are we
+sure there are no rhino blend shapes on any model?"* — and the first sweep was not sufficient to
+answer it, because this clone is **shallow with 2 of 363 remote branches fetched**, so "nothing
+found" would have been the confident-wrong answer the tooling notes warn about. After
+`git fetch --filter=blob:none` of all branches:
 
-- **(a) Swap for the puppetry, and leave the morph honestly absent.** The audit must keep reporting
-  these two as un-morphed, which requires Phase 4's magnitude check or it will report a false
-  green.
-- **(b) Get real shapes authored first** (art task) and swap once, with the morph.
+- **93 distinct FBX blobs** exist across all 364 refs (71 in the working tree).
+- `rhino_shapekey_with_animations.fbx` has **exactly one blob ever** (`46703a22fb`), at three
+  historical paths. Its four element shapes are 1 indexed vertex, Δ = 0.0000.
+- No other Rhino-named model has ever carried a blend shape: `Rhino_Test` and `RhinoModel` have
+  none at all, and the only other `.blend` in the project (`shield1.blend`) contains no "rhino".
+- Two files the parser could not open are ASCII-FBX crystal props with zero `BlendShape` records.
 
-Either way, if the Rhino rig is swapped in, re-measure the eight body-jet mounts against the rig —
-they are `z − 1.5545` from the shipped numbers, the wings merge into the single skinned mesh so the
-two wing jets re-parent to the bones `jet.l`/`jet.r`, and all five `BoxCollider`s need re-fitting
-(§4.2).
+So: **the Rhino has never had a hull morph, anywhere in this project's history.**
+
+### The decisions
+
+| vessel | decision | what it buys | what it costs |
+|---|---|---|---|
+| **Rhino** | **swap for the puppetry, morph honestly absent** | the 12-bone armature `RhinoAnimation` names + 9 flight takes — working wing/engine puppetry the Rhino does not have today | the rig's bind pose has the wings **1.38×** wider, so the resting silhouette changes |
+| **Urchin** | **swap at 1/2.105 to preserve the shipped size** | the 38-bone armature + 11 takes, with camera framing, colliders, `widthScale` and the corridor radius all unmoved | none measured |
+
+Both are in `VesselRigSwapper` with their fitted instance transforms. **The morph audit must keep
+reporting both as un-morphed** — that is the point of the decision, and Phase 4's magnitude check is
+what makes it honest rather than a false green.
+
+### Two things the brief expected to cost that measurement removed
+
+- **Nothing is re-measured.** Each rig instance is placed at a transform FITTED to put its hull on
+  the shipped hull — Rhino `z −1.5545` (2000/2000 fuselage vertices at a median residual of
+  0.00019; `−1.5550` also matches but 3.6× worse, so the doc's original number is the better one),
+  Urchin `localScale 0.474905` (2000/2000, median 0.00010 in a 0.43-unit hull). With that, every
+  collider and every FX mount keeps its world position. The **eight Rhino body-jet mounts and five
+  BoxColliders this brief said "must be re-fitted, not carried across" do not have to move at
+  all.** The two wing jets ride along on `engine left`/`engine right`, which are re-homed onto
+  `jet.l`/`jet.r`.
+- **The Rhino bone map is verified, not inherited.** Each legacy collider contains **100%** of its
+  mapped bone's skinned geometry, `Wing back L/R → wing2.l/r` included.
+
+### The rule that came out of verifying it
+
+> **An overlap score is meaningless when the baseline overlap is already ~0 — run the control
+> against the SHIPPED asset before reading a low score as a regression.**
+
+Scoring the Urchin's map the same way returned ~0% on most appendages, which reads as "the rig
+moved everything". The control says otherwise: those colliders bound the *shipped* hull just as
+poorly (3.58% vs 3.54%, 0.80% vs 0.79%, 0.00% vs 0.00%). They were already loose, the swap is
+collider-neutral, and the loose colliders are a real but **separate, pre-existing** defect — logged,
+not fixed here, and not a reason to hold the swap.
+
+Two weaker discriminators were tried first and both mis-reported, which is why the control matters:
+nearest-bone-**centroid** and nearest-**skinned-vertex** both collapse onto the body bone `fuse` on
+a radially symmetric hull, and both flagged correct mappings as wrong.
 
 Grizzly is not in this phase: no `grizzly_shapekey_*` rig exists. It is blocked on art.
 
