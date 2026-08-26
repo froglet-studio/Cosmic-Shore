@@ -128,12 +128,15 @@ namespace CosmicShore.Gameplay
 
         readonly Dictionary<Transform, Quaternion> _restRotations = new();
 
-        /// <summary>Records each part's authored local rotation as its rest pose. Call from ResolveParts.</summary>
+        /// <summary>Records each part's authored local rotation as its rest pose, AND the parent it
+        /// is relative to. Call from ResolveParts, before anything re-parents the part.</summary>
         protected void CaptureRestRotations(params Transform[] parts)
         {
             foreach (var part in parts)
-                if (part) _restRotations[part] = part.localRotation;
+                if (part) { _restRotations[part] = part.localRotation; _restParents[part] = part.parent; }
         }
+
+        readonly Dictionary<Transform, Transform> _restParents = new();
 
         /// <summary>The captured rest pose of a part, or identity when it has none.</summary>
         protected Quaternion RestRotationOf(Transform part) =>
@@ -153,6 +156,53 @@ namespace CosmicShore.Gameplay
                                         part.localRotation,
                                         targetRotation,
                                         lerpAmount * Time.deltaTime);
+        }
+
+        /// <summary>
+        /// <see cref="RotatePartFromRest"/> with an explicit REFERENCE FRAME, for parts whose own
+        /// local axes are not the ship's.
+        ///
+        /// <para><b>Why the plain version is not enough on a rig.</b> `Quaternion.Euler(pitch, yaw,
+        /// roll)` assigned to <c>localRotation</c> turns about the PARENT's axes. On part-per-mesh
+        /// art every part hangs off the model root, so those are the ship's axes and pitch means
+        /// pitch. A bone's parent is another BONE, pointing wherever the skeleton points - so the
+        /// same call rolls when it meant to pitch, and pitches backwards, which is exactly how a
+        /// rig-swapped hull reads. The fix is to conjugate: express the rotation in the frame the
+        /// animation MEANT, then carry it into the part's actual parent space.</para>
+        ///
+        /// <para><b>And the rest pose has to be re-anchored with it.</b> These parts get re-parented
+        /// onto a drift handle in flight, and <c>parent =</c> keeps the world pose - so a rest
+        /// rotation captured under a BONE, replayed under the handle, throws the part somewhere it
+        /// never was. That is a wing folding up the moment a drift starts. The anchor therefore
+        /// resolves through the part's HOME parent while the rotation resolves through the frame,
+        /// the same split <see cref="MovePartFromRest"/> makes for position.</para>
+        ///
+        /// <para>Deliberately a SEPARATE method rather than a change to
+        /// <see cref="RotatePartFromRest"/>: that one is shared with vessels whose animation was
+        /// authored and play-tested against its current behaviour, and silently re-framing them is
+        /// a regression with no evidence behind it.</para>
+        /// </summary>
+        protected void RotatePartFromRestInFrame(Transform part, float pitch, float yaw, float roll,
+                                                 Transform frame)
+        {
+            if (!part) return;
+
+            Transform home = _restParents.TryGetValue(part, out var h) ? h : part.parent;
+            Quaternion restWorld = home ? home.rotation * RestRotationOf(part)
+                                        : RestRotationOf(part);
+
+            Quaternion turn = Quaternion.Euler(pitch, yaw, roll);
+            Quaternion frameRot = frame ? frame.rotation : transform.rotation;
+
+            // Turn about the FRAME's axes, applied to where the part rests in the world.
+            Quaternion targetWorld = frameRot * turn * Quaternion.Inverse(frameRot) * restWorld;
+
+            Quaternion targetLocal = part.parent
+                ? Quaternion.Inverse(part.parent.rotation) * targetWorld
+                : targetWorld;
+
+            part.localRotation = Quaternion.Lerp(part.localRotation, targetLocal,
+                                                 lerpAmount * Time.deltaTime);
         }
 
         // ---- rest POSITIONS -------------------------------------------------------------
@@ -195,7 +245,7 @@ namespace CosmicShore.Gameplay
         /// offset holds the part exactly at rest. A part with no captured rest is left alone -
         /// silently, because it is a part this animation simply does not position.
         /// </summary>
-        protected void MovePartFromRest(Transform part, Vector3 offset)
+        protected void MovePartFromRest(Transform part, Vector3 offset, Transform frame = null)
         {
             if (!part || !_restPositions.TryGetValue(part, out var rest)) return;
 
@@ -204,7 +254,10 @@ namespace CosmicShore.Gameplay
 
             if (offset != Vector3.zero)
             {
-                Transform basis = part.parent ? part.parent : transform;
+                // The offset is a direction in the frame the animation MEANT - the ship, or the
+                // drift handle while drifting. It must never be read in the part's own parent
+                // space: at rest that parent is a BONE, pointing wherever the skeleton points.
+                Transform basis = frame ? frame : (part.parent ? part.parent : transform);
                 targetWorld += basis.TransformVector(offset);
             }
 

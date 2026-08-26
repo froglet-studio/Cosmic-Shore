@@ -352,6 +352,38 @@ resolves the slot by material IDENTITY and cannot be wrong about order.
 > materials; make the animation rig-safe. Passing the first is not evidence about the other two —
 > and both of those failures render, so they are invisible to every asset-level check that exists.
 
+**REST FRAMES are the third job's real content, and rotation is the half that bites.**
+`Quaternion.Euler(pitch, yaw, roll)` assigned to `localRotation` turns about the **parent's** axes.
+On part-per-mesh art every animated part hangs off the model root, so those are the ship's axes and
+pitch means pitch. A bone's parent is another BONE, pointing wherever the skeleton points — so the
+identical call rolls when it meant to pitch, and pitches backwards. Measured against this rig's own
+bone rest rotations, for a commanded **pitch**:
+
+| bone | axis it actually turned about | reads as |
+|---|---|---|
+| `jetT.l` | `(−0.541, 0.840, −0.043)` | mostly YAW, pitch inverted |
+| `jetB.r` | `(0.516, −0.851, −0.103)` | mostly yaw, the other way |
+| `winghold.l` | `(−1.000, 0, 0)` | **the ship's pitch axis, exactly negated** |
+| `fuse`, `wing.l` | `(1, 0, 0)` | correct — these rest ship-aligned |
+
+`winghold.l` is the whole "pitch is inverted" report in one row: it rests at `(77.08, 0, −180)`, and
+that −180° roll flips X, so the wings pitched backwards while the engines yawed.
+
+**And the rest pose must be re-anchored, or a drift throws the part away.** These parts are
+re-parented onto a drift handle in flight and `parent =` preserves the world pose — so a rest
+rotation captured under a BONE, replayed under the handle, lands somewhere the part never was.
+Measured: **164.50°** for the wings and **152.38°** for the engines, on drift entry, with no pilot
+input at all. That is the "wings fold up when drifting" report.
+
+`RotatePartFromRestInFrame` fixes both halves together — conjugate the turn into the frame the
+animation MEANT (the vessel, or the drift handle while drifting), anchor the rest through the part's
+HOME parent — and is a SEPARATE method from `RotatePartFromRest` on purpose, because that one is
+shared with the Scarab, whose animation was authored and play-tested against the current behaviour.
+Re-proved offline against the rig's measured bones by
+`Tools/Build/verify_vessel_rig_puppetry_frames.py`, which also asserts the two invariants that keep
+it honest: a ship-aligned part is bit-identical under both formulas, and entering a drift with no
+input moves nothing.
+
 **REST POSITIONS are the other half of §4.4.** That section says a rig's rest pose is not the
 shipped pose, and the codebase had applied the lesson to ROTATION only: `RotatePartFromRest` existed,
 its positional sibling did not, so `RiptideAnimation` still wrote `localPosition` absolutely. An

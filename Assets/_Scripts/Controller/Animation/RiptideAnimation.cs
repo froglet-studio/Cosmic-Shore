@@ -182,12 +182,15 @@ namespace CosmicShore.Gameplay
         {
             Vector3 wingOffset;
             Vector3 thrusterOffset;
+            Transform frame;
 
+            // The chassis is never re-parented, so its frame is always the vessel.
             AnimatePart(Chassis,
                         pitch * animationScaler,
                         yaw * animationScaler,
                         roll * animationScaler,
-                        Vector3.zero);
+                        Vector3.zero,
+                        transform);
 
             if (VesselStatus.IsDrifting)
             {
@@ -195,25 +198,29 @@ namespace CosmicShore.Gameplay
                 ReparentToDrift(DriftHandle);
                 wingOffset = forwardWingOffset;
                 thrusterOffset = backwardThrusterOffset;
+                frame = DriftHandle ? DriftHandle : transform;
             }
             else
             {
                 ReparentHome();
                 wingOffset = defaultWingOffset;
                 thrusterOffset = defaultThrusterOffset;
+                frame = transform;
             }
 
             AnimatePart(RightWing,
                         Brake(throttle) * animationScaler,
                         (yaw + throttle) * exaggeratedAnimationScaler,
                         (roll + pitch) * animationScaler,
-                        wingOffset);
+                        wingOffset,
+                        frame);
 
             AnimatePart(LeftWing,
                         Brake(throttle) * animationScaler,
                         (yaw - throttle) * exaggeratedAnimationScaler,
                         (roll - pitch) * animationScaler,
-                        wingOffset);
+                        wingOffset,
+                        frame);
 
             var pitchScalar = pitch * exaggeratedAnimationScaler;
             var yawScalar = yaw * exaggeratedAnimationScaler;
@@ -227,7 +234,7 @@ namespace CosmicShore.Gameplay
             // Dolphin's authored 26-169 degree engine cases and fatal on a rig.
             for (int partIndex = 0; partIndex < animationTransforms.Count; partIndex++)
             {
-                AnimatePart(animationTransforms[partIndex], pitchScalar, yawScalar, rollScalar, thrusterOffset);
+                AnimatePart(animationTransforms[partIndex], pitchScalar, yawScalar, rollScalar, thrusterOffset, frame);
             }
 
         }
@@ -284,11 +291,17 @@ namespace CosmicShore.Gameplay
         // yaw/roll twice, netting Euler(pitch, yaw, roll) * rest) - it just reads the part's own
         // captured rest instead of one indexed out of a misaligned list. The chassis and wings
         // rest at identity on the legacy art, so they are unaffected there.
-        void AnimatePart(Transform part, float pitch, float yaw, float roll, Vector3 offset)
+        // 'frame' is the space the animation's pitch/yaw/roll and its offset are MEANT in: the
+        // vessel normally, the drift handle while drifting (which is aimed along Course, and is
+        // the entire reason these parts are re-parented onto it). Never the part's own parent -
+        // on this rig that is a bone whose axes are nothing like the ship's, which is what made
+        // pitch read as roll and inverted it.
+        void AnimatePart(Transform part, float pitch, float yaw, float roll, Vector3 offset,
+                         Transform frame)
         {
             if (!part) return;
-            RotatePartFromRest(part, pitch, yaw, roll);
-            MovePartFromRest(part, offset);
+            RotatePartFromRestInFrame(part, pitch, yaw, roll, frame);
+            MovePartFromRest(part, offset, frame);
         }
 
         // The jaws open around their rest pose too - identity on the legacy nose halves, the rig's
