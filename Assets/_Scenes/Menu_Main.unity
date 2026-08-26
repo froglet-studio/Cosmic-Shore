@@ -7654,7 +7654,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 10fc721f61f84dc7b96af0e203e5b8ef, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CosmicShore.UI.VesselControlsPanel
-  rowContainer: {fileID: 3532361}
+  rowContainer: {fileID: 1627674937}
   rowPrefab: {fileID: 9063973933636354895, guid: d37bdcb670be39d449ea651a2a45d607,
     type: 3}
   flightControls:
@@ -7671,6 +7671,8 @@ MonoBehaviour:
   deviceSwitcher: {fileID: 0}
   vesselNameText: {fileID: 0}
   vesselIcon: {fileID: 0}
+  abilityDescriptionStyle: 1
+  descriptionCharacterCap: 120
   abilityHeadlineFormat: Press {0} to activate {1}
   passiveHeadlineFormat: '{0} (passive)'
   rowDwellSeconds: 2.2
@@ -9270,6 +9272,7 @@ MonoBehaviour:
   arenaDistance: 120000
   buildTimeoutSeconds: 45
   settleSeconds: 0.5
+  arenaOrbitDegreesPerSecond: 4
 --- !u!1 &1508311681
 GameObject:
   m_ObjectHideFlags: 0
@@ -15270,14 +15273,54 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 4357675176818844460, guid: 1cc3c5b34dfd8074b9e2f436955062b3,
         type: 3}
+      propertyPath: shipNameText
+      value: 
+      objectReference: {fileID: 0}
+    - target: {fileID: 4357675176818844460, guid: 1cc3c5b34dfd8074b9e2f436955062b3,
+        type: 3}
+      propertyPath: gameDetailView
+      value: 
+      objectReference: {fileID: 0}
+    - target: {fileID: 4357675176818844460, guid: 1cc3c5b34dfd8074b9e2f436955062b3,
+        type: 3}
+      propertyPath: nextShipButton
+      value: 
+      objectReference: {fileID: 0}
+    - target: {fileID: 4357675176818844460, guid: 1cc3c5b34dfd8074b9e2f436955062b3,
+        type: 3}
       propertyPath: screenSwitcher
       value: 
       objectReference: {fileID: 4216411968520269688}
     - target: {fileID: 4357675176818844460, guid: 1cc3c5b34dfd8074b9e2f436955062b3,
         type: 3}
+      propertyPath: startGameButton
+      value: 
+      objectReference: {fileID: 0}
+    - target: {fileID: 4357675176818844460, guid: 1cc3c5b34dfd8074b9e2f436955062b3,
+        type: 3}
       propertyPath: arcadeExploreView
       value: 
       objectReference: {fileID: 1267710959564374252}
+    - target: {fileID: 4357675176818844460, guid: 1cc3c5b34dfd8074b9e2f436955062b3,
+        type: 3}
+      propertyPath: previousShipButton
+      value: 
+      objectReference: {fileID: 0}
+    - target: {fileID: 4357675176818844460, guid: 1cc3c5b34dfd8074b9e2f436955062b3,
+        type: 3}
+      propertyPath: shipVesselNameText
+      value: 
+      objectReference: {fileID: 0}
+    - target: {fileID: 4357675176818844460, guid: 1cc3c5b34dfd8074b9e2f436955062b3,
+        type: 3}
+      propertyPath: shipPlaceholderIcon
+      value: 
+      objectReference: {fileID: 0}
+    - target: {fileID: 4357675176818844460, guid: 1cc3c5b34dfd8074b9e2f436955062b3,
+        type: 3}
+      propertyPath: shipConfigurationText
+      value: 
+      objectReference: {fileID: 0}
     - target: {fileID: 4357675176818844460, guid: 1cc3c5b34dfd8074b9e2f436955062b3,
         type: 3}
       propertyPath: arcadeConfigSyncManager
@@ -15308,6 +15351,26 @@ PrefabInstance:
       propertyPath: 'launchPanels.Array.data[1]'
       value: 
       objectReference: {fileID: 7498157360288036565}
+    - target: {fileID: 4357675176818844460, guid: 1cc3c5b34dfd8074b9e2f436955062b3,
+        type: 3}
+      propertyPath: 'domainInfoItems.Array.data[0]'
+      value: 
+      objectReference: {fileID: 0}
+    - target: {fileID: 4357675176818844460, guid: 1cc3c5b34dfd8074b9e2f436955062b3,
+        type: 3}
+      propertyPath: 'domainInfoItems.Array.data[1]'
+      value: 
+      objectReference: {fileID: 0}
+    - target: {fileID: 4357675176818844460, guid: 1cc3c5b34dfd8074b9e2f436955062b3,
+        type: 3}
+      propertyPath: 'domainInfoItems.Array.data[2]'
+      value: 
+      objectReference: {fileID: 0}
+    - target: {fileID: 4357675176818844460, guid: 1cc3c5b34dfd8074b9e2f436955062b3,
+        type: 3}
+      propertyPath: iconInConfigurationSelectionView
+      value: 
+      objectReference: {fileID: 0}
     - target: {fileID: 4390914579976862129, guid: 1cc3c5b34dfd8074b9e2f436955062b3,
         type: 3}
       propertyPath: m_IsActive
