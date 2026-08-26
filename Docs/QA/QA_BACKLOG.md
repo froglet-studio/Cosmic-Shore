@@ -1,6 +1,6 @@
 # QA Backlog — untested development on `bleeding-edge`
 
-Generated: 2026-08-22 · Scan covers: up to `3bbe4f7d` (PRs #583–#770) · **Owner of this file: the `/qa-backlog` skill — do not hand-edit.**
+Generated: 2026-08-26 · Scan covers: up to `c7195331` (PRs #583–#809) · **Owner of this file: the `/qa-backlog` skill — do not hand-edit.**
 
 > Note (2026-08-11): `bleeding-edge` was briefly force-pushed back to `0e855b24` (dropping PRs #674–#679) and then restored — the current tip `b0cf4f0f` re-includes all of that work plus PRs #680/#681/#695/#696. No items were pruned. The `windows-build-failures` build-fix branch is validated by QA-BUILD-COMPILE on Windows and has no separate item.
 
@@ -193,7 +193,67 @@ Source: `csharp-monolith-assembly-split` (merge `409afb21`). The "zero runtime a
 
 PASS: clean compile with the new `CosmicShore.Data` assembly; no missing-reference/type-load errors at import or runtime; the app boots + plays a round; tests still resolve Data types; the timing recorder works. FAIL: any compile error / missing-assembly-reference · a `TypeLoadException` at runtime · the app failing to boot or play a round · tests that no longer compile against `Data` · a circular/duplicate-assembly warning.
 
+### QA-SPARROW-SALVO-MODE ⬜ — "Salvo": the Sparrow party game
+Source: PR #790 (`sparrow-party-game`, incl. a "repair merge-damaged **Salvo** scene entry" in build settings) plus the Sparrow combat work around it. A new Sparrow-focused party game (scene "Salvo"), authored headless. **Depends on** the Sparrow visual/weapon rework (QA-SPARROW-VISUAL-REWORK) and the projectile pool (QA-SPARROW-PROJECTILE-POOL 🔴).
+
+1. Confirm the **Salvo** scene is in Build Settings and opens with no `Missing (Mono Script)`; controller + scoring rule wired.
+2. Launch the mode (any player count — AI backfill for solo): reaches gameplay without an exception; the arena builds; it is Sparrow-based.
+3. Play the core loop (gunplay / missiles) and confirm scoring works and the round resolves to a win/loss.
+4. Return to menu and relaunch once — no leaked state, no crash.
+
+PASS: the Salvo scene is wired and opens clean; the mode launches, plays its loop to a resolved scoreboard, and returns/relaunches without error. FAIL: a missing/merge-damaged scene entry · missing scripts · a controller that throws on load/launch · a round that won't score/resolve · a crash on return.
+
 ## Priority 1 — merged features that have never been played
+
+### QA-SPARROW-VISUAL-REWORK ⬜ — missile tail, spread cone, shell colours, dart, roll bank, bone-mounted jets
+Source: PRs #801 (missile TAIL), #794 (spread cone → plateau + blow-out), #791 (charge shell light budget), #787 (missile hit-sphere fit to model), #786 (halved dart, pale-blue model, neutral-blue + danger-red shell), #784 (strafing roll's root bank reaches the pilot), #798 (jets mounted on named bones — Sparrow's six on `b_Tail1..3 .L/.R`). A cluster of Sparrow weapon/model polish. Related: QA-SPARROW-PRISM-ATTACK, QA-VESSEL-SPARROW-ROLL (🔴).
+
+1. Project compiles; open `Sparrow.prefab` — no missing scripts; the tail-bone jets resolve.
+2. Fire full-auto: the dart/bullet reads as the new pale-blue smaller model; the spread widens as a plateau then blows out (not a linear cone).
+3. Fire a skyburst missile: it has a visible tail, and its hit sphere matches the model (hits land where the model is, not a larger/smaller sphere).
+4. The charge shell renders neutral-blue (danger-red when dangerous) and isn't over-bright.
+5. Do a strafing roll: the roll's bank visibly reaches the pilot/hull (cross-check QA-VESSEL-SPARROW-ROLL — the roll should read as a roll now).
+
+PASS: compiles; the new dart/spread/tail/shell all render correctly; missile hit volume matches the model; the roll banks the hull. FAIL: missing scripts/bones · wrong or missing dart/tail/shell visuals · a hit sphere that doesn't match the model · a spread that's still a plain linear cone · the roll not banking.
+
+### QA-UI-ABILITY-ICON-SYSTEM ⬜ — the ability-icon design system (no vessel authors the lockup)
+Source: PRs #803 (`ability-icon-design-system`, 40 files — "no vessel authors the lockup; correct two measured claims"), #804 (drop the Squirrel vessel-prefab override that masked the Time ability icon). A shared ability-icon lockup/design system across vessel HUDs. Related: QA-UI-ABILITY-ROW.
+
+1. Project compiles; the six HUD prefabs import with no missing scripts.
+2. Play Squirrel: the four ability icons render in charge → mass → space → time order, and the **Time** icon is now correct (the prefab override that masked it was removed).
+3. Play Sparrow/Dolphin: the ability-icon lockup renders consistently (spacing, size) — no vessel hand-authoring its own lockup.
+4. Run `FrogletTools ▸ Vessels ▸ Audit Vessel Ability Rows` — record its verdict (expect the documented state).
+
+PASS: compiles; icons render in the shared lockup on all wired vessels; the Squirrel Time icon shows correctly; the audit reports the expected/known state. FAIL: missing scripts · a masked/missing Time icon on Squirrel · inconsistent per-vessel lockups · a new audit failure.
+
+### QA-UI-THEME ⬜ — UIThemeSO + UITheme style foundation
+Source: PR #795 (`UIThemeSO + UITheme`, Style Foundation §11 — plus an audit of UI colour literals). A new UI theming system (a `UIThemeSO` asset + `UITheme` accessor) with a colour-literal audit. Reference: `Docs/STYLE_FOUNDATION.md` §11.
+
+1. Project compiles; no missing scripts on UI that adopted the theme.
+2. Navigate the menu (Home / Arcade / Store / Port / Hangar) and open a couple of modals — colours/typography read consistently, nothing renders un-themed (stark white/black) or with a broken palette.
+3. If a `UIThemeSO` asset exists, confirm menu UI reflects it (spot-check a themed element).
+
+PASS: compiles; themed UI renders consistently across screens/modals with no un-themed or broken-palette elements. FAIL: missing scripts · UI rendering with a wrong/broken palette · elements that ignore the theme and look stark/unstyled.
+
+### QA-ECOLOGY-TIME-BREEDING ⬜ — TIME breeds faster (the second elemental law)
+Source: PR #774 (`flora-reproduction-balance` — "TIME breeds faster, the second elemental law"). A new ecology law: the TIME element accelerates fauna/flora reproduction. LOCKED ecology surface — verify against continuity/mass invariants. Reference: `Docs/ECOSYSTEM.md`.
+
+1. Project compiles; a cell with lifeforms builds clean.
+2. Observe reproduction rate as a function of TIME: populations with higher TIME reproduce **faster** (more births per wave cycle) than low-TIME ones — a visible, consistent effect, not random.
+3. Confirm it composes with the existing reproduction rules (still one-birth-per-wave-cycle where applicable; still bounded by consumption/starvation, no imposed clock).
+4. Continuity/mass: births bloom in, nothing pops; no runaway or frozen population.
+
+PASS: compiles; higher TIME visibly speeds reproduction, composing with existing rules; continuity/mass hold; no runaway/frozen populations. FAIL: no TIME effect on breeding · reproduction that ignores the wave cycle or runs on an imposed clock · a runaway/exploding population · anything popping in/out.
+
+### QA-SCARAB-BALL-FIXES ⬜ — ball nucleus-bounce, studding retired, switch ring changes
+Source: PRs #807 (`scarab-ball-membrane-bugs` — "a studding ball is just a ball; retire the pinned state"), #780 (nucleus bounce is now a property of the BALL, not of Scarab Scramble), #773 (remove switch interior fill, enlarge ring 20%). Fixes to the already-passed Scarab (QA-SCARAB-MODE) — **re-verify the ball behaviour, especially the out-of-arena note filed on 2026-08-20**.
+
+1. Launch Scarab Scramble: no missing scripts; balls forge and play as before.
+2. **Ball containment:** try to push a ball toward/near the arena edge — with the nucleus-bounce now a ball property, does a ball near the membrane bounce back rather than leaving the arena unrecoverably? (This targets Andrew's 2026-08-20 out-of-arena note.)
+3. Confirm no "studding/pinned" ball state lingers — a ball is just a ball (it doesn't get stuck pinned to a surface).
+4. Switches: the interior fill is gone and the ring is ~20% larger; placing/threading a switch still works.
+
+PASS: balls forge/play cleanly; a ball near the edge bounces rather than escaping unrecoverably; no stuck/pinned ball state; switches still work with the new ring size. FAIL: missing scripts · a ball still escaping the arena unrecoverably · a stuck/pinned ball · a broken switch after the ring change.
 
 ### QA-ECOLOGY-WORM-KAIJU 🟡 — the worm colony boss
 > **Last result:** 🟡 PARTIAL — Almost every PASS condition is true; the outstanding one is "devours creatures at the jaws and pursues pilots" — not observed yet.  _(build bleeding-edge @ 9e8cf3f · Unity 6000.4.11f1.x · Windows, Unity Editor, 2026-08-10, andrew)_
@@ -836,16 +896,6 @@ Source: PRs #753 (`gyroid-schwarz-flora-cell` — seed the Lattice cell with EIG
 4. Continuity/mass: growth blooms/withers, nothing pops; population behaves (no frozen/runaway colony) per QA-ECOLOGY-GYROID-COLONY.
 
 PASS: compiles; the Lattice cell seeds with ~8 founders and grows to ~twelve colonies; the quasicrystal form renders and grows coherently; continuity/mass hold. FAIL: missing scripts/None refs · a 240-founder boot wall · a broken/degenerate quasicrystal · anything popping in/out · a frozen or runaway colony.
-
-### QA-MAELSTROM-POOL ⬜ — the four new modes join the Maelstrom (Tournament) pool
-Source: PR #766 (`1f0b235a` feat(tournament)). Maelstrom/Tournament now draws from a pool that includes **Rampage, Peel the Cage (Ribcage), Scarab Scramble, and The Bends** (plus a corrected pool-math fix and a scene-wiring check). `TournamentDataSO` + `TournamentData.asset`. **Depends on** the individual modes working (QA-RAMPAGE-REBUILD, QA-RIBCAGE-MODE, QA-SCARAB-MODE ✓, QA-BENDS-MODE). Reference: `Docs/TournamentSystem/ARCHITECTURE.md`.
-
-1. Launch **Maelstrom** (Tournament). Confirm the mode chains multiple minigames back-to-back and that the pool now includes the four new modes (over a few runs you should see them appear, not only the legacy HexRace/Joust/Crystal Capture).
-2. Play a chain through at least one of the new modes (e.g. it rolls Scarab Scramble or The Bends) and confirm the transition in/out of it works — scores fold into the standings, the next mode loads.
-3. Confirm the race-to-N standings / summary resolve correctly with the larger pool (the "stale 3-mode pool math" fix from this PR).
-4. No missing scripts / scene-wiring errors on any pool member as it loads.
-
-PASS: Maelstrom chains modes including the four new ones; transitions in/out of a new mode work; standings/summary resolve with the corrected pool math; no load errors. FAIL: a pool member that won't load or throws · standings math wrong (a mode not counted, or a wrong race-to-N) · a chain that wedges between modes · the new modes never appearing in the pool.
 
 ### QA-ENTER-PLAYMODE-OPTIONS ⬜ — no stale static state with fast play-mode entry
 Source: `managed-callbacks-performance` (`b3af31e1` "enable Enter Play Mode Options behind a full static-state audit", `4d97ba09` cut domain-reload cost). The editor now uses **Enter Play Mode Options** (domain/scene reload disabled for faster iteration) — which surfaces any static field that isn't reset between play sessions as a "works first time, breaks second time" bug. The audit is unverified in practice. **Editor-only concern.**

@@ -97,3 +97,17 @@ Source: `tools-docs-crash-detector` (`419590fb` add editor crash detector, `0448
 
 PASS: the tool opens and its Diagnostics/Ledger UI works without throwing; findings/links render. FAIL: the menu item missing or throwing on open · a Diagnostics/Ledger panel that errors · broken doc links / severity display.
 <!-- /archived:QA-CRASH-DETECTOR-TOOL -->
+
+<!-- archived:QA-MAELSTROM-POOL -->
+_Passed on build bleeding-edge @ 31210fa · Unity 6000.4.11f1.x · Windows, Unity Editor (2026-08-26, andrew)._
+
+### QA-MAELSTROM-POOL ⬜ — the four new modes join the Maelstrom (Tournament) pool
+Source: PR #766 (`1f0b235a` feat(tournament)). Maelstrom/Tournament now draws from a pool that includes **Rampage, Peel the Cage (Ribcage), Scarab Scramble, and The Bends** (plus a corrected pool-math fix and a scene-wiring check). `TournamentDataSO` + `TournamentData.asset`. **Depends on** the individual modes working (QA-RAMPAGE-REBUILD, QA-RIBCAGE-MODE, QA-SCARAB-MODE ✓, QA-BENDS-MODE). Reference: `Docs/TournamentSystem/ARCHITECTURE.md`.
+
+1. Launch **Maelstrom** (Tournament). Confirm the mode chains multiple minigames back-to-back and that the pool now includes the four new modes (over a few runs you should see them appear, not only the legacy HexRace/Joust/Crystal Capture).
+2. Play a chain through at least one of the new modes (e.g. it rolls Scarab Scramble or The Bends) and confirm the transition in/out of it works — scores fold into the standings, the next mode loads.
+3. Confirm the race-to-N standings / summary resolve correctly with the larger pool (the "stale 3-mode pool math" fix from this PR).
+4. No missing scripts / scene-wiring errors on any pool member as it loads.
+
+PASS: Maelstrom chains modes including the four new ones; transitions in/out of a new mode work; standings/summary resolve with the corrected pool math; no load errors. FAIL: a pool member that won't load or throws · standings math wrong (a mode not counted, or a wrong race-to-N) · a chain that wedges between modes · the new modes never appearing in the pool.
+<!-- /archived:QA-MAELSTROM-POOL -->
