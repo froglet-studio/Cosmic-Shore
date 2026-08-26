@@ -58,6 +58,21 @@ per card somebody browsed past is the trade this path exists to refuse.
 A config with no authored `EnvironmentPrefab` (a grown world, a barren cell) has no structure to
 model and says so, rather than showing an empty frame.
 
+### 1.1.1 A cell with no authored environment still has a SHAPE
+
+Joust, Scurry and Skim Race run on the Barren cell and Rampage GROWS its forest, so none of them
+authors an `EnvironmentPrefab` — and a model path that only understood authored environments told
+all four "LEVEL PREVIEW NOT AVAILABLE".
+
+`StandModel` now also stands the config's **membrane and nucleus** as display copies, scaled into
+the framing radius. Two objects, so it is free next to the environment model, and it is what those
+cells genuinely look like at the start of a match — a truer answer than a refusal. The copies are
+stripped of colliders and behaviours: nothing here is a `Cell`, so a live component would tick
+against one that does not exist.
+
+(This is not the "never hand-place a membrane" rule being broken — that rule protects a live
+`Cell`'s own tracked instance from being shadowed by a scene copy. There is no `Cell` here.)
+
 ### 1.2 Two camera rules, both learned the hard way
 
 - **The handover is ORDERED, both ways.** The incoming camera takes the texture *before* the

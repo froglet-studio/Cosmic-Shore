@@ -210,6 +210,13 @@ namespace CosmicShore.UI
             EnsureGlyphSet();
             EnsureBarsConfig();
 
+            // Every row goes DOWN before any goes up. Deactivating only the tail (rows the new
+            // card did not need) leaves a row visible whenever the new hull has at least as many
+            // as the old one - which is how a Sparrow card kept showing the Dolphin's drift: the
+            // row was not stale data, it was a row nobody rebuilt because the count matched.
+            foreach (var row in _rows)
+                if (row) row.gameObject.SetActive(false);
+
             int used = BuildFlightRows(0);
             used = BuildAbilityRows(vesselClass, vessel, used);
 

@@ -277,10 +277,26 @@ namespace CosmicShore.Gameplay
                                float radius, int pointBudget)
         {
             StrikeModel();
-            if (!config || !config.EnvironmentPrefab) return false;
+            if (!config) return false;
 
             Origin = origin;
             _modelRadius = Mathf.Max(1f, radius);
+            _modelRoot = new GameObject($"ModePreviewModel ({config.CellName})");
+            _modelRoot.transform.position = origin;
+
+            // A cell whose world is GROWN (Rampage's cactus forest) or deliberately empty (the
+            // Barren cell Joust, Scurry and Skim Race run on) authors no EnvironmentPrefab. It is
+            // still a real place with a real shape - membrane and core - and showing that is a
+            // truer answer than "preview not available", which is what those three cards said
+            // when the model path only understood authored environments.
+            bool shell = AddCellShell(config);
+
+            if (!config.EnvironmentPrefab)
+            {
+                if (shell) return true;
+                StrikeModel();
+                return false;
+            }
 
             var miniature = CellMiniatureBuilder.Build(config.EnvironmentPrefab, _modelRadius,
                                                       Mathf.Max(64, pointBudget));
@@ -295,17 +311,17 @@ namespace CosmicShore.Gameplay
                 CSDebug.LogVerbose(CSLogChannel.ArcadeLaunch,
                     $"[ModePreview] '{config.CellName}' produced no scale model - its generator " +
                     "emitted nothing.");
+                if (shell) return true;
+                StrikeModel();
                 return false;
             }
-
-            _modelRoot = new GameObject($"ModePreviewModel ({config.CellName})");
-            _modelRoot.transform.position = origin;
 
             var body = ToyFactory.AddMiniatureBody(_modelRoot.transform, miniature,
                                                    new ToyContext { GameData = gameData },
                                                    "ScaleModel");
             if (!body)
             {
+                if (shell) return true;
                 StrikeModel();
                 return false;
             }
@@ -315,6 +331,62 @@ namespace CosmicShore.Gameplay
                 $"(radius {_modelRadius}, {miniature.SubmeshDomains.Length} domain submeshes).");
             return true;
         }
+
+        /// <summary>
+        /// The cell's own SHAPE - its membrane and its core - as authored prefabs, scaled into the
+        /// model's radius. Two objects, so it is free next to the environment model, and it is what
+        /// a cell with no authored environment actually looks like at the start of a match.
+        ///
+        /// <para>These are display copies under the model root, never the Cell's own instances:
+        /// nothing here is a Cell, so none of the bookkeeping the platform-wide "never hand-place a
+        /// membrane" rule protects is in play (Docs/ECOSYSTEM.md - that rule is about a live
+        /// <c>Cell</c> whose tracked instance a scene copy would shadow).</para>
+        /// </summary>
+        bool AddCellShell(CellConfigDataSO config)
+        {
+            bool any = false;
+
+            if (config.MembranePrefab)
+            {
+                var membrane = Object.Instantiate(config.MembranePrefab, _modelRoot.transform);
+                membrane.name = "MembraneModel";
+                membrane.transform.localPosition = Vector3.zero;
+                membrane.transform.localScale = Vector3.one * (_modelRadius * MembraneShellScale);
+                StripInteractivity(membrane);
+                any = true;
+            }
+
+            if (config.NucleusPrefab)
+            {
+                var nucleus = Object.Instantiate(config.NucleusPrefab, _modelRoot.transform);
+                nucleus.name = "NucleusModel";
+                nucleus.transform.localPosition = Vector3.zero;
+                nucleus.transform.localScale = Vector3.one * (_modelRadius * NucleusShellScale);
+                StripInteractivity(nucleus);
+                any = true;
+            }
+
+            return any;
+        }
+
+        /// <summary>
+        /// A display copy must not act. Colliders would take part in physics queries the menu world
+        /// runs, and any behaviour on these prefabs would tick against a Cell that does not exist.
+        /// </summary>
+        static void StripInteractivity(GameObject go)
+        {
+            foreach (var collider in go.GetComponentsInChildren<Collider>(true))
+                collider.enabled = false;
+
+            foreach (var behaviour in go.GetComponentsInChildren<MonoBehaviour>(true))
+                if (behaviour) behaviour.enabled = false;
+        }
+
+        /// <summary>Membrane drawn a touch inside the framing radius so it stays in shot.</summary>
+        const float MembraneShellScale = 0.9f;
+
+        /// <summary>Core at roughly the fraction of a cell a real nucleus occupies.</summary>
+        const float NucleusShellScale = 0.3f;
 
         /// <summary>Take the scale model down. Safe when none is up.</summary>
         public void StrikeModel()

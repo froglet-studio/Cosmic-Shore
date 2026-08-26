@@ -186,6 +186,13 @@ rendering its placeholder copy ("Press RT to active drift") above every real row
 whatever hull was selected — so a Sparrow card advertised a Dolphin ability. A panel that owns a
 container has to own all of it; leaving one child to the scene is how that happens.
 
+### 4.2.3 Every row goes down before any goes up
+
+`Show` deactivates the whole row list first, then builds. Deactivating only the *tail* — rows the
+new card did not need — leaves a row visible whenever the new hull has at least as many as the old
+one, which is how a card kept showing the previous vessel's ability: the row was not stale data,
+it was a row nobody rebuilt because the count happened to match.
+
 ### 4.3.1 An authored ability description is a DESIGN NOTE, not player copy
 
 `ElementalAbilityMapSO.AbilityDescription` runs to several hundred characters of mechanism — the

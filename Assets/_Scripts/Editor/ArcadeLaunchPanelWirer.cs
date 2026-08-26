@@ -7,6 +7,7 @@ using CosmicShore.UI;
 using CosmicShore.Utility;
 using TMPro;
 using UnityEditor;
+using UnityEditor.Events;
 using UnityEditor.SceneManagement;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -151,6 +152,7 @@ namespace CosmicShore.Editor
             WirePanelList(arcadeModal, minigamePanel, maelstromPanel, dryRun);
             WireScreenSwitcher(maelstromPanel, dryRun);
 
+            WireMaelstromCard(arcadeModal, dryRun);
             ReportPreviewCoverage();
             AddStandingTodos();
 
@@ -421,6 +423,8 @@ namespace CosmicShore.Editor
                 return;
             }
 
+            TidyPreviewFrame(preview, dryRun);
+
             var window = preview.GetComponent<ModePreviewWindow>();
             if (window) SetRef(panel, "previewWindow", window, dryRun);
             else
@@ -590,6 +594,17 @@ namespace CosmicShore.Editor
             if (existing)
             {
                 _found.Add($"Row prefab already exists: {path}");
+
+                // Still deactivate the scene copy. Returning early because the PREFAB exists left
+                // the authored template rendering its placeholder ("Press RT to active drift") on
+                // top of every real row - the second run of a wirer has to reach the same end
+                // state as the first, not just skip the work the first one did.
+                if (source.activeSelf && !dryRun)
+                {
+                    Undo.RecordObject(source, "Deactivate row template");
+                    source.SetActive(false);
+                    _wrote.Add($"Deactivated the leftover scene template '{Path(source.transform)}'.");
+                }
                 return existing;
             }
 
@@ -696,6 +711,111 @@ namespace CosmicShore.Editor
                       "longer exists are excluded - those are correctly unpreviewable.");
         }
 
+        /// <summary>
+        /// Point the quick-play card at the Maelstrom.
+        ///
+        /// <para>That card is the Maelstrom's entry point now that the meta-mode is out of the
+        /// arcade grid. Two things have to happen together: the button gains a call to
+        /// <c>OpenMaelstrom</c>, and <c>QuickPlayButton</c> - which subscribes itself in Start and
+        /// launches HexRace instantly - is switched OFF. Leaving it on means one click both opens
+        /// the panel and launches a different game, and the launch wins.</para>
+        /// </summary>
+        void WireMaelstromCard(ArcadeGameConfigureModal modal, bool dryRun)
+        {
+            var quickPlay = FindComponentInScene<QuickPlayButton>();
+            if (!quickPlay)
+            {
+                _todo.Add("No QuickPlayButton in the scene, so the Maelstrom has no entry point. " +
+                          "Wire a button's onClick to ArcadeGameConfigureModal.OpenMaelstrom().");
+                return;
+            }
+
+            var button = quickPlay.GetComponent<Button>();
+            if (!button)
+            {
+                _problems.Add($"'{Path(quickPlay.transform)}' has a QuickPlayButton but no Button.");
+                return;
+            }
+
+            _found.Add($"Quick-play card: '{Path(quickPlay.transform)}'");
+
+            bool alreadyWired = false;
+            for (int i = 0; i < button.onClick.GetPersistentEventCount(); i++)
+                if (button.onClick.GetPersistentTarget(i) == modal &&
+                    button.onClick.GetPersistentMethodName(i) == nameof(ArcadeGameConfigureModal.OpenMaelstrom))
+                    alreadyWired = true;
+
+            if (!alreadyWired)
+            {
+                if (!dryRun)
+                {
+                    Undo.RecordObject(button, "Wire Maelstrom card");
+                    UnityEventTools.AddVoidPersistentListener(
+                        button.onClick, modal.OpenMaelstrom);
+                    EditorUtility.SetDirty(button);
+                }
+                _wrote.Add($"'{quickPlay.name}'.onClick += ArcadeGameConfigureModal.OpenMaelstrom()");
+            }
+
+            if (quickPlay.enabled)
+            {
+                if (!dryRun)
+                {
+                    Undo.RecordObject(quickPlay, "Disable QuickPlayButton");
+                    quickPlay.enabled = false;
+                    EditorUtility.SetDirty(quickPlay);
+                }
+                _wrote.Add("QuickPlayButton DISABLED - it launches HexRace instantly on the same " +
+                           "click, and that launch would win over the panel opening.");
+            }
+        }
+
+        /// <summary>
+        /// The white rectangle behind a preview frame.
+        ///
+        /// <para><see cref="ModePreviewWindow"/> disables its RawImage in every non-live state,
+        /// precisely so nothing draws while there is no camera. What then shows through is whatever
+        /// the frame has BEHIND it - and these frames still carry the old video path's placeholder
+        /// Image, which is white. So "the preview is a white box" is not the window failing; it is
+        /// the window correctly showing nothing, in front of something.</para>
+        /// </summary>
+        void TidyPreviewFrame(Transform preview, bool dryRun)
+        {
+            if (!preview) return;
+
+            var window = preview.GetComponent<ModePreviewWindow>();
+            var surface = preview.GetComponentInChildren<RawImage>(true);
+
+            foreach (var image in preview.GetComponentsInChildren<Image>(true))
+            {
+                if (!image || !image.enabled) continue;
+                // A Button's own target graphic is the focus hit-area and must keep raycasting.
+                if (image.GetComponent<Button>()) continue;
+
+                if (!dryRun)
+                {
+                    Undo.RecordObject(image, "Hide preview placeholder");
+                    image.enabled = false;
+                    EditorUtility.SetDirty(image);
+                }
+                _wrote.Add($"Disabled placeholder Image '{image.name}' behind the preview frame " +
+                           "(it is what shows as a white box whenever the preview is not live).");
+            }
+
+            if (!surface)
+                _problems.Add($"'{Path(preview)}' has no RawImage - the preview has no surface.");
+
+            if (window)
+            {
+                var wso = Edit(window);
+                var label = wso?.FindProperty("statusLabel");
+                if (label != null && !label.objectReferenceValue)
+                    _todo.Add($"ModePreviewWindow on '{Path(preview)}' has no statusLabel, so " +
+                              "'LEVEL PREVIEW NOT AVAILABLE' and 'LOADING…' render as an empty " +
+                              "frame. Wire a TMP_Text.");
+            }
+        }
+
         void AddStandingTodos()
         {
             _todo.Add("DELETE from the arcade modal once this run looks right: GameDetailView, " +
@@ -709,11 +829,6 @@ namespace CosmicShore.Editor
                       "description -> tip -> tip -> description in ONE text field; with no tips a " +
                       "card simply shows its description and never rotates, which is the correct " +
                       "resting state, not a broken one.");
-            _todo.Add("Wire a button to ArcadeGameConfigureModal.OpenMaelstrom(). The Maelstrom " +
-                      "is no longer one of the arcade grid's cards - it draws the OTHER modes, so " +
-                      "listing it beside them invites 'play this one' when it means 'play several " +
-                      "of these' - which leaves it needing an entry point of its own (the design's " +
-                      "big card above the grid).");
             _todo.Add("PLAY-TEST: open a minigame card (panel + live preview + controls sweep), " +
                       "change intensity (the preview rebuilds only for Ribcage / Dog Fight / The " +
                       "Bends / Wildlife Liberation), open the Maelstrom card (its own window, clip, " +
