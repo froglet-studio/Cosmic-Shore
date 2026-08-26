@@ -80,10 +80,6 @@ namespace CosmicShore.UI
             _iconSetSwitcher.OnSetChanged += HandleControlDeviceChanged;
             baseView?.SetControlDevice(_iconSetSwitcher.IsKeyboard);
 
-            // Legacy per-vessel hint glyphs, on the HUDs that still author them, still attach
-            // themselves to the ability they label.
-            if (baseView) _iconSetSwitcher.BindHintsToAbilities(vesselStatus, baseView);
-
 #if UNITY_EDITOR
             // Structural contract: four ability icons, charge/mass/space/time, left to right.
             baseView?.ValidateAbilityIconRow(vesselStatus.VesselType);

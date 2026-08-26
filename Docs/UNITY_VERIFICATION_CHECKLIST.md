@@ -23,6 +23,58 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 The icon-set switcher is a pure detector; the old glyph roots retire everywhere (2026-08-26)
+
+`Docs/ABILITY_LOCKUP.md` § "Retiring the old UI". The lockup already DREW each card's control
+chip, but `InputDeviceIconSetSwitcher` was still toggling three authored glyph roots on the
+`VesselHUDPrefab` variants — a second glyph display beside the card's chip. It survived the
+lockup's retire sweep only because the sweep consulted the switcher's own references, and
+`ApplySet` re-activated the roots on every device change, so switching them off could not have
+held. The switcher gave up the display entirely (**627 lines → 138**): the three root fields, the
+per-set `HintVisual` list, the ability-placement pass, `SetHintActive`, `DriveHintVisuals` and
+`BindHintsToAbilities` are deleted; `Current`, `IsKeyboard` and `OnSetChanged` remain.
+
+**Three bugs it surfaced, all previously masked by the authored glyphs:**
+
+1. `OnSetChanged` was declared and subscribed but **never raised** — chips could not follow a
+   device change at all. `ApplySet` now raises it.
+2. `KeyboardSet()` fell back to `Xbox` whenever `keyboardTextRoot` was null, and **no vessel wires
+   one** — so `IsKeyboard` was never true and the LSHIFT/RSHIFT labels could never appear on any
+   vessel. The fallback and its flag are deleted; keyboard input reports `KeyboardText`.
+3. `padGlyphHeld` / `heldColor` were authored (`L1 Active` / `R1 Active`) and read by nothing. The
+   chip now takes the held art off the card's existing press path.
+
+Also: `VesselAbilityRowAuditor`'s section 5 was retargeted. It used to read the switcher's
+`setVisuals` by name, which now resolves to nothing — it would have reported "no control hint
+labels it" for every pressable ability on every vessel. It now checks the thing that can still
+leave a card blank: an ability whose control has no pad sprite or no keyboard label in
+`Resources/ControlGlyphSet`.
+
+**Verify in editor**
+
+- [ ] Enter freestyle on the **Squirrel** (and Serpent/Manta — same `VesselHUDPrefab`): only ONE
+      set of control glyphs is on screen, in the cards' chip sockets. `XBOX_Icon_Root` and
+      `PS_Icon_Root` should be inactive in the hierarchy after `Initialize`.
+- [ ] **pad → keyboard → pad.** The chips must swap between the `L1`/`R1` sprites and the
+      `LSHIFT`/`RSHIFT` labels **in place**, both directions, repeatedly. This is the reported bug
+      — check it on the Squirrel and the Sparrow.
+- [ ] **Hold an ability** with a pad: its chip should swap to the held sprite and take `heldColor`,
+      then return on release. A tap must not leave it stuck held.
+- [ ] Sparrow's `A`/`B` cards are expected to be **blank on keyboard** — `InputHintBindingMap` maps
+      no keyboard control to `Button1/2/3`. That is the honest state, not a regression; the
+      auditor now reports it as a glyph-table gap.
+- [ ] Run **FrogletTools > Vessels > Audit Ability Rows**. Expect the Sparrow keyboard gap above
+      and no "no control hint labels it" findings at all.
+- [ ] `VesselHUDPrefab.prefab` was edited as YAML to drop the switcher's four dead serialized keys.
+      Confirm the component still shows `Stick Actuation Threshold` = 0.25 and no missing-script
+      or missing-reference warnings on import.
+
+**Not verified:** nothing here was opened in Unity. Both stub harnesses compile (including a
+generated probe that compiles the auditor's new check verbatim, negative-controlled), and
+`check_conditional_compilation.py` passes 1756 files.
+
+---
+
 ### 🔴 Debris face pivot reads the mesh's baked centroid (2026-08-25)
 
 `Docs/PRISM_ANIMATION.md` §4.8.2. `RotateFacesAlongAxis` was spinning every face about a

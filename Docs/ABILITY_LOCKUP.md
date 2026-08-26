@@ -313,15 +313,16 @@ placed — so when the lockup moved the row, they stayed where the old row used 
 So the lockup also retires **root-level content that no component on this HUD still references.** By
 the time it runs, everything the lockup owns has been moved into the row, so a root-level child that
 still draws is either something the vessel actively drives or something nothing drives — and which
-one is a *reference* question, asked rather than guessed. Sources are the components on the HUD root
-plus the icon-set switcher (found wherever it lives — the Squirrel keeps its on the vessel root).
+one is a *reference* question, asked rather than guessed. Sources are the components on the HUD
+root — and only those (see the switcher note below).
 
 Three guards make it safe:
 
 - **Only children that DRAW.** A subtree with no `Graphic` is logic, not UI; switching it off would
   stop behaviour rather than hide a picture.
 - **Sources are limited to the HUD root.** A component sitting *inside* a leftover branch would
-  reference its own children and spare the branch it belongs to.
+  reference its own children and spare the branch it belongs to — and a component that *drew* the
+  leftover would spare it outright, which is what the switcher did.
 - **A reference from `highlights` does not count.** That is the legacy per-vessel press glow the
   card superseded, and the Rhino's entry points inside its old boost container — honouring it would
   spare exactly the chrome the row replaced. *A reference from something the lockup retired is not
@@ -330,12 +331,51 @@ Three guards make it safe:
 What that clears, measured from the assets: Sparrow and Scarab lose `Boost Button/display`,
 `Ammo Count` (nothing writes to it — ammo is shown by sprite-swapping the missile icon),
 the emptied `ActionIconHolder` and both glyph roots; the Dolphin loses a stray `Image` and both
-glyph roots; the Rhino loses `BoostContainer`. The Serpent and Squirrel keep their glyph roots,
-because their switcher references them. The auditor lists the candidates per vessel.
+glyph roots; the Rhino loses `BoostContainer`. The auditor lists the candidates per vessel.
 
-**The real fix for those three HUDs is a switcher**, so their hints work like the Squirrel's rather
-than being retired. Until then they show no control hints, which is honest: static pad glyphs shown
-to a keyboard player were misinformation before they were also misplaced.
+### The switcher's own reference was the last thing propping the old glyphs up
+
+The sweep originally consulted the icon-set switcher too, so that a HUD with a live switcher kept
+its glyph roots. That spared exactly the wrong thing. Once the card **draws** its own chip, a second
+set of glyphs is a competing display no matter who can still toggle it — and on the Squirrel,
+Serpent and Manta (the `VesselHUDPrefab` variants, the only prefab that ever carried an authored
+switcher) that reference was the *only* thing keeping `XBOX_Icon_Root` and `PS_Icon_Root` alive.
+Worse, `ApplySet` re-activated them on every device change, so switching the branch off could not
+have held anyway.
+
+So `InputDeviceIconSetSwitcher` gave up the display entirely and is now a **pure detector** — it
+answers "which device is the player holding?" and draws nothing (627 lines → 138). The three root
+fields, the per-set hint visuals, the ability-placement pass, `SetHintActive` and `DriveHintVisuals`
+are gone; `Current`, `IsKeyboard` and `OnSetChanged` remain. With no reference left to spare them,
+those branches retire like any other leftover, and nothing can bring them back. Same rule as the
+press glow, reached from the other side: *a reference from something the lockup superseded is not
+evidence that anything still uses it* — **including a reference held by the superseded component
+itself.**
+
+### Three bugs that were invisible while the old display still drew
+
+Deleting the display half surfaced three defects that had all been masked by authored glyphs:
+
+1. **`OnSetChanged` was declared, subscribed, and never raised.** `ApplySet` set `Current` and
+   toggled the roots but never invoked the event, so `VesselHUDController.HandleControlDeviceChanged`
+   never fired and a card's chip could never follow a device change. The chips were frozen at
+   whatever `SetControlDevice` was seeded with at `Initialize`. *An event nobody raises looks
+   identical to an event nobody needs — the subscription compiles either way.*
+2. **The keyboard set was unreachable on every vessel.** `KeyboardSet()` read
+   `keyboardTextRoot || !showXboxSetWhenNoKeyboardRoot ? KeyboardText : Xbox`, and **no vessel wires
+   a keyboard root** — so pressing a key reported *Xbox*, `IsKeyboard` was never true, and the
+   LSHIFT/RSHIFT labels could never appear anywhere. That fallback was correct for an authored
+   display that might not exist; it is wrong for a drawn one that always does. *A fallback that
+   protected an authored display keeps firing after the display stops being authored.*
+3. **`padGlyphHeld` and `heldColor` were authored and read by nothing.** The asset wires
+   `L1 Active` / `R1 Active`, but the chip always drew the resting sprite in `restColor` — the
+   held-state swap regressed when chips replaced hints. The chip now takes it off the card's
+   existing press path (`SetPressed`), not a per-frame poll: **the card lights the ability, the chip
+   wears the button's own held art, and they are the same press.** A one-shot `PlayPressFlash` is
+   explicitly *not* a hold, or the control would read as held for good.
+
+Together those are why "pad → keyboard → pad" could not reach the keyboard: (1) meant no update
+ever arrived and (2) meant the answer would have been wrong if one had.
 
 ## Locked slots — the row is always four cards
 
@@ -527,6 +567,7 @@ now says once:
 | The **ring gauges** (Sparrow roll ring, Scarab energy ring, Squirrel chevron fill and its frame) | Four hulls, four shapes, one idea. The card's linear fill is the fleet's one gauge; the same Images are re-formed rather than replaced, so nothing is re-authored and no drive site changes. |
 | The **circular press glow** behind each icon (`highlights`) | The card lights instead. A second shape drawn for a state the card already carries is exactly the divergence the totem removes. |
 | The Squirrel's **undriven heat halo** (`overheatHighlight`) | A circular glow left over from the Sparrow's retired overheat mechanic — its driver was deleted in 2026, so it had never moved. Retired positionally with the rest of the host's chrome. |
+| The switcher's **whole display half** — three icon-set roots, the per-set `HintVisual` list, the ability-placement pass, `SetHintActive`, `DriveHintVisuals`, `BindHintsToAbilities` (627 lines → 138) | The card draws the chip from one glyph set, so authored glyphs are a competing display and there is nothing left to place or light. `InputDeviceIconSetSwitcher` keeps only what nothing else can do: *which device is the player holding?* |
 
 **Chrome is retired POSITIONALLY, not by name** — a direct child of the host that is not the icon
 and not the card is chrome the card supersedes. Naming them would have missed the ones nobody
@@ -538,7 +579,7 @@ raycast, and disabling it would silently delete the on-screen ability control on
 stripped from all four HUD prefabs. The remaining icon-level signal is the authored
 `upgradedSprite` (optional, still unauthored fleet-wide) and the persistent scale bump.
 
-## Two latent bugs this closed
+## Latent bugs this closed
 
 `blastProfile` and the jaw pair are **children** of the Charge and Space ability icons, so they
 already inherit the icon's scale — and `DolphinVesselHUDView` was *also* resting them at

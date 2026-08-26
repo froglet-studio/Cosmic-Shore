@@ -72,6 +72,7 @@ namespace CosmicShore.UI
             public InputDeviceIconSetSwitcher.HintBinding KeyBinding;
             public Tween Tween;
             public Tween FlashTween;
+            public bool Pressed;
             public bool Locked;
             public bool Upgraded;
         }
@@ -520,10 +521,9 @@ namespace CosmicShore.UI
         /// <para><see cref="RetireLegacyChrome"/> works per ability HOST, so it only ever reached
         /// what sat around an icon. Everything else a vessel drew before the lockup kept drawing
         /// beside the new row - old boost rings on the Rhino and Sparrow, an ammo readout nothing
-        /// writes to, and worst of all the device-glyph roots on the three HUDs that carry them
-        /// with no <c>InputDeviceIconSetSwitcher</c> to drive them. Those glyphs are never lit,
-        /// never switched for the player's actual device, and never placed - so when the lockup
-        /// moved the row they were left behind wherever the old row used to be.</para>
+        /// writes to, and the authored device-glyph roots. Every one of those glyph roots is now a
+        /// leftover: the card draws its own control chip, so a second set of glyphs is a competing
+        /// display no matter which vessel authored it or whether a switcher can still toggle it.</para>
         ///
         /// <para>By the time this runs the lockup has moved everything it owns into the row, so a
         /// root-level child that still draws is either something the vessel actively drives or
@@ -556,8 +556,16 @@ namespace CosmicShore.UI
 
         /// <summary>
         /// Everything the HUD's own drivers point at. Sources are deliberately limited to components
-        /// on the HUD ROOT plus the icon-set switcher: a component sitting INSIDE a leftover branch
-        /// would otherwise reference its own children and spare the branch it belongs to.
+        /// on the HUD ROOT: a component sitting INSIDE a leftover branch would otherwise reference
+        /// its own children and spare the branch it belongs to.
+        ///
+        /// <para>The icon-set switcher used to be consulted here too, to spare its three device-glyph
+        /// roots. That reference was the ONLY thing keeping those roots alive on the three HUDs that
+        /// authored them - a second glyph display drawn beside the card's own chip. The switcher now
+        /// detects the device and draws nothing, so it holds no reference to spare and the roots
+        /// retire like any other leftover. Same rule as the retired press glow:
+        /// <b>a reference from something the lockup superseded is not evidence anything still uses
+        /// it.</b></para>
         /// </summary>
         HashSet<Object> CollectReferencedObjects()
         {
@@ -565,12 +573,6 @@ namespace CosmicShore.UI
 
             foreach (var component in GetComponents<MonoBehaviour>())
                 if (component && component != this) CollectSerializedReferences(component, referenced);
-
-            // The switcher is not always on the HUD - the Squirrel keeps it on the vessel root, with
-            // its glyph roots alongside it - so it is found rather than assumed.
-            var switcher = GetComponentInChildren<InputDeviceIconSetSwitcher>(true)
-                        ?? GetComponentInParent<InputDeviceIconSetSwitcher>();
-            if (switcher) CollectSerializedReferences(switcher, referenced);
 
             return referenced;
         }
@@ -995,13 +997,20 @@ namespace CosmicShore.UI
             bool showGlyph = glyph != null && !_chipKeyboard && glyph.padGlyph;
             bool showLabel = glyph != null && _chipKeyboard && !string.IsNullOrEmpty(glyph.keyboardLabel);
 
+            // A chip depicts a BUTTON, so it wears the button's own held art while the ability is
+            // firing - the one thing the retired hint visuals did that the card cannot say, since
+            // the card lights the ability and this lights the control. Both are the same press.
+            bool held = slot.Pressed;
+
             if (showGlyph || slot.ChipGlyph)
             {
                 slot.ChipGlyph ??= ResolveChildImage(slot.ChipSocket, "Glyph", null);
                 StretchTo(slot.ChipGlyph.rectTransform, 0f);
                 slot.ChipGlyph.preserveAspect = true;
-                slot.ChipGlyph.sprite = showGlyph ? glyph.padGlyph : null;
-                slot.ChipGlyph.color = set.restColor;
+                slot.ChipGlyph.sprite = !showGlyph ? null
+                                      : held && glyph.padGlyphHeld ? glyph.padGlyphHeld
+                                                                   : glyph.padGlyph;
+                slot.ChipGlyph.color = held ? set.heldColor : set.restColor;
                 slot.ChipGlyph.enabled = showGlyph;
             }
 
@@ -1009,7 +1018,7 @@ namespace CosmicShore.UI
             {
                 slot.ChipLabel ??= ResolveChipLabel(slot.ChipSocket, set);
                 slot.ChipLabel.text = showLabel ? glyph.keyboardLabel : string.Empty;
-                slot.ChipLabel.color = set.restColor;
+                slot.ChipLabel.color = held ? set.heldColor : set.restColor;
                 slot.ChipLabel.enabled = showLabel;
             }
         }
@@ -1060,6 +1069,15 @@ namespace CosmicShore.UI
         void SetPressed(Element element, bool pressed, bool releaseImmediately)
         {
             if (!_slots.TryGetValue(element, out var slot) || !style || !slot.Flash) return;
+
+            // A one-shot flash is not a HOLD: PlayPressFlash presses and releases in the same call,
+            // so latching the chip on it would leave the control drawn as held for good.
+            bool holding = pressed && !releaseImmediately;
+            if (slot.Pressed != holding)
+            {
+                slot.Pressed = holding;
+                RefreshChip(slot);   // the chip wears the control's held art, the card the ability's
+            }
 
             slot.FlashTween?.Kill();
             slot.FlashTween = null;
