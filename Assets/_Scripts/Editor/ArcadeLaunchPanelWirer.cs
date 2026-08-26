@@ -173,10 +173,10 @@ namespace CosmicShore.Editor
             }
             _found.Add($"Minigame panel root: '{Path(content)}'");
 
+            // No early-out on a null panel: during a dry run nothing is created, and the rest of
+            // this method is exactly the part the human is scanning FOR.
             var panel = Ensure<MinigameLaunchPanel>(content.gameObject, dryRun, _wrote);
-            if (!panel) return null;
-
-            var so = new SerializedObject(panel);
+            var so = Edit(panel);
 
             // ── Controls block ──
             var controls = FindChild(content, ControlsDescName);
@@ -191,10 +191,10 @@ namespace CosmicShore.Editor
                     _found.Add($"Ability row template: '{Path(row)}'");
                     var prefab = MakeRowPrefab<VesselControlRow>(row.gameObject, "AbilityControlRow",
                                                                  dryRun, written, WireControlRow);
-                    var cso = new SerializedObject(controlsPanel);
+                    var cso = Edit(controlsPanel);
                     SetRef(cso, "rowPrefab", prefab, dryRun);
                     SetRef(cso, "rowContainer", controls, dryRun);
-                    if (!dryRun) cso.ApplyModifiedPropertiesWithoutUndo();
+                    Apply(cso, dryRun);
                 }
                 else
                 {
@@ -217,7 +217,7 @@ namespace CosmicShore.Editor
             // ── The controls the modal drives ──
             WireModalControls(so, FindChild(content, ConfigDetailName), dryRun, ConfigDetailName);
 
-            if (!dryRun) so.ApplyModifiedPropertiesWithoutUndo();
+            Apply(so, dryRun);
             return panel;
         }
 
@@ -244,17 +244,15 @@ namespace CosmicShore.Editor
                 if (!dryRun) window = Undo.AddComponent<ModalWindowManager>(modalGo);
                 _wrote.Add($"ModalWindowManager on '{MaelstromModalName}'");
             }
-            if (window)
+            var wso = Edit(window);
+            if (wso != null)
             {
-                var wso = new SerializedObject(window);
                 var type = wso.FindProperty("ModalType");
                 if (type != null && type.enumValueIndex != (int)ScreenSwitcher.ModalWindows.MAELSTROM_GAME_CONFIGURE)
                 {
                     if (!dryRun)
-                    {
                         type.enumValueIndex = (int)ScreenSwitcher.ModalWindows.MAELSTROM_GAME_CONFIGURE;
-                        wso.ApplyModifiedPropertiesWithoutUndo();
-                    }
+                    Apply(wso, dryRun);
                     _wrote.Add($"'{MaelstromModalName}'.ModalType = MAELSTROM_GAME_CONFIGURE");
                 }
             }
@@ -267,9 +265,7 @@ namespace CosmicShore.Editor
             }
 
             var panel = Ensure<MaelstromLaunchPanel>(content.gameObject, dryRun, _wrote);
-            if (!panel) return null;
-
-            var so = new SerializedObject(panel);
+            var so = Edit(panel);
             SetRef(so, "hostModal", window, dryRun);
 
             // ── Pool list ──
@@ -279,7 +275,7 @@ namespace CosmicShore.Editor
                 var listView = Ensure<MaelstromPoolListView>(list.gameObject, dryRun, _wrote);
                 SetRef(so, "poolList", listView, dryRun);
 
-                var lso = new SerializedObject(listView);
+                var lso = Edit(listView);
                 SetRef(lso, "rowContainer", list, dryRun);
 
                 var row = FindRowTemplate(list, PoolRowName, needsIcon: false);
@@ -300,7 +296,7 @@ namespace CosmicShore.Editor
                 if (tournament) SetRef(lso, "tournamentData", tournament, dryRun);
                 else _problems.Add("No TournamentDataSO found - the pool list has nothing to read.");
 
-                if (!dryRun) lso.ApplyModifiedPropertiesWithoutUndo();
+                Apply(lso, dryRun);
             }
             else
             {
@@ -311,7 +307,7 @@ namespace CosmicShore.Editor
             WireModalControls(so, FindChild(content, ConfigDetailName), dryRun,
                               $"{MaelstromModalName}/{ConfigDetailName}");
 
-            if (!dryRun) so.ApplyModifiedPropertiesWithoutUndo();
+            Apply(so, dryRun);
             return panel;
         }
 
@@ -326,8 +322,11 @@ namespace CosmicShore.Editor
         {
             if (!gameView)
             {
-                _todo.Add($"No '{GameViewName}' under '{panel.targetObject.name}' - no title, " +
-                          "briefing or preview will be drawn.");
+                // panel may be null on a scan (nothing is created), so the message names the
+                // WINDOW rather than the component that does not exist yet.
+                _todo.Add($"No '{GameViewName}' under the " +
+                          (wantVideo ? MaelstromModalName : ArcadeModalName) +
+                          $"'s '{ConfigContentName}' - no title, briefing or preview will be drawn.");
                 return;
             }
 
@@ -347,9 +346,9 @@ namespace CosmicShore.Editor
                 body = texts.FirstOrDefault(t => t.name != "Game Name") ?? texts.FirstOrDefault();
             }
 
-            var bso = new SerializedObject(briefing);
+            var bso = Edit(briefing);
             SetRef(bso, "bodyText", body, dryRun);
-            if (!dryRun) bso.ApplyModifiedPropertiesWithoutUndo();
+            Apply(bso, dryRun);
 
             if (!body)
                 _todo.Add($"'{Path(gameView)}' has no TMP_Text for the briefing to write into.");
@@ -371,9 +370,9 @@ namespace CosmicShore.Editor
                 }
                 SetRef(panel, "videoView", view, dryRun);
 
-                var vso = new SerializedObject(view);
+                var vso = Edit(view);
                 SetRef(vso, "surface", preview.GetComponentInChildren<RawImage>(true), dryRun);
-                if (!dryRun) vso.ApplyModifiedPropertiesWithoutUndo();
+                Apply(vso, dryRun);
 
                 if (preview.GetComponentInChildren<RawImage>(true) == null)
                     _todo.Add($"'{Path(preview)}' has no RawImage - the clip has no surface to " +
@@ -456,8 +455,8 @@ namespace CosmicShore.Editor
         void WirePanelList(ArcadeGameConfigureModal modal, ArcadeLaunchPanel minigame,
                            ArcadeLaunchPanel maelstrom, bool dryRun)
         {
-            var so = new SerializedObject(modal);
-            var list = so.FindProperty("launchPanels");
+            var so = Edit(modal);
+            var list = so?.FindProperty("launchPanels");
             if (list == null)
             {
                 _problems.Add("ArcadeGameConfigureModal has no 'launchPanels' field - the code on " +
@@ -468,15 +467,24 @@ namespace CosmicShore.Editor
             var panels = new List<ArcadeLaunchPanel>();
             if (minigame) panels.Add(minigame);
             if (maelstrom) panels.Add(maelstrom);
-            if (panels.Count == 0) return;
+            if (panels.Count == 0)
+            {
+                // Ordinary on a SCAN - the panel components are created by the write pass, so
+                // there is nothing to point the list at yet. Say what would happen rather than
+                // going quiet, which would read as "this step is not needed".
+                if (dryRun)
+                    _wrote.Add("WOULD set ArcadeGameConfigureModal.launchPanels once the panel " +
+                               "components exist (they are created by the write pass).");
+                return;
+            }
 
             if (!dryRun)
             {
                 list.arraySize = panels.Count;
                 for (int i = 0; i < panels.Count; i++)
                     list.GetArrayElementAtIndex(i).objectReferenceValue = panels[i];
-                so.ApplyModifiedPropertiesWithoutUndo();
             }
+            Apply(so, dryRun);
             _wrote.Add($"ArcadeGameConfigureModal.launchPanels = [{string.Join(", ", panels.Select(p => p.GetType().Name))}] " +
                        "(a scene override by necessity - a prefab cannot reference a scene object)");
         }
@@ -493,8 +501,8 @@ namespace CosmicShore.Editor
                 return;
             }
 
-            var so = new SerializedObject(switcher);
-            var list = so.FindProperty("Modals");
+            var so = Edit(switcher);
+            var list = so?.FindProperty("Modals");
             if (list == null)
             {
                 _problems.Add("ScreenSwitcher has no 'Modals' list.");
@@ -509,8 +517,8 @@ namespace CosmicShore.Editor
             {
                 list.arraySize++;
                 list.GetArrayElementAtIndex(list.arraySize - 1).objectReferenceValue = maelstrom.HostModal;
-                so.ApplyModifiedPropertiesWithoutUndo();
             }
+            Apply(so, dryRun);
             _wrote.Add("ScreenSwitcher.Modals += the Maelstrom modal");
         }
 
@@ -607,6 +615,22 @@ namespace CosmicShore.Editor
 
         // ── Small helpers ────────────────────────────────────────────────────────
 
+        /// <summary>
+        /// A SerializedObject, or null for a component that does not exist yet.
+        ///
+        /// <para>Load-bearing on a SCAN: Ensure deliberately adds nothing during a dry run, so
+        /// every component it would create is null, and <c>new SerializedObject(null)</c> throws.
+        /// A report that dies on the first not-yet-created component would tell the human about
+        /// one problem and hide every other - which is the opposite of what a scan is for.</para>
+        /// </summary>
+        static SerializedObject Edit(UnityEngine.Object target)
+            => target ? new SerializedObject(target) : null;
+
+        static void Apply(SerializedObject so, bool dryRun)
+        {
+            if (so != null && !dryRun) so.ApplyModifiedPropertiesWithoutUndo();
+        }
+
         static T Ensure<T>(GameObject go, bool dryRun, List<string> log) where T : Component
         {
             var existing = go.GetComponent<T>();
@@ -646,6 +670,7 @@ namespace CosmicShore.Editor
 
         void SetList(SerializedObject so, string field, UnityEngine.Object[] values, bool dryRun)
         {
+            if (so == null) return;
             var prop = so.FindProperty(field);
             if (prop == null) { _problems.Add($"No list '{field}' on {so.targetObject.GetType().Name}."); return; }
             if (values.Length == 0) return;
