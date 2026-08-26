@@ -384,6 +384,33 @@ Re-proved offline against the rig's measured bones by
 it honest: a ship-aligned part is bit-identical under both formulas, and entering a drift with no
 input moves nothing.
 
+**Two more the third flight found, both of which the frame fix made VISIBLE rather than caused.**
+
+*Roll was inverted.* Roll arrives as `InputStatus.YDiff` and now turns the parts about the ship's
++Z. Unity's positive Z rotation is counter-clockwise seen from **in front** of the ship, so a pilot
+rolling right got a left bank. Negated once at the top of `PerformShipPuppetry` rather than at each
+call site, because the wings' roll term is `(roll ± pitch)` and flipping the whole expression would
+invert the pitch DIFFERENTIAL — the aileron read — along with it. Only visible once the axes were
+right: while every part turned about its own bone, there was no consistent roll to be wrong about.
+
+*And the drift had lost half its purpose.* A drifting Dolphin swings its hull to aim while it keeps
+sliding, so **the wings slide forward and the engines slide back** to open a gap the fuselage and
+jaws can turn through without clipping. The engines' "backward" and "default" offsets were the
+**same vector**, so they never moved — the hull shipped with half its clearance missing, and
+translating the constants faithfully preserved that. Worse, both wings and engines were re-parented
+onto a handle aimed along `Course`, so they swung *with* the aim instead of clearing it. The frame
+is now always the vessel and the drift is purely translational; the re-parenting machinery
+(`CaptureHomeParents` / `DriftParts` / `ReparentToDrift` / `ReparentHome`, 45 lines) is deleted,
+because once the frame was fixed it did nothing at all.
+
+> **A degenerate constant is not a design.** `backwardThrusterPosition = defaultThrusterPosition`
+> reads as deliberate and is indistinguishable from a value nobody finished. Translating it
+> faithfully carried a missing feature forward into new code. When a pair of tuning constants are
+> equal, that is a question to ask, not a fact to preserve.
+
+The clearance is now authored (`driftWingForward`, `driftJetBackward`) rather than constant, because
+how much room the jaws need is a feel question.
+
 **REST POSITIONS are the other half of §4.4.** That section says a rig's rest pose is not the
 shipped pose, and the codebase had applied the lesson to ROTATION only: `RotatePartFromRest` existed,
 its positional sibling did not, so `RiptideAnimation` still wrote `localPosition` absolutely. An

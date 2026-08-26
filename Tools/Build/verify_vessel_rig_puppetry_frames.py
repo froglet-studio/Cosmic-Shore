@@ -119,6 +119,38 @@ def main():
         print("   %-12s difference %.9f deg%s" % (name, d, "" if same else "  (expected: its parent is a bone)"))
 
     print()
+    print("4. ROLL sign: a positive roll input must bank the ship RIGHT")
+    # Unity: +Z rotation is counter-clockwise seen from IN FRONT (looking down -Z at the nose),
+    # so a right-hand bank - the right wing dropping - is NEGATIVE z. The animation negates the
+    # incoming YDiff for exactly this reason; check the sign that reaches the wings.
+    roll_in = 1.0
+    applied = -roll_in                       # RiptideAnimation.PerformShipPuppetry
+    q = euler(0, 0, applied * 10)
+    # right wing sits at +x; where does its tip go?
+    def rotate(q, v):
+        qv = (v[0], v[1], v[2], 0.0)
+        r = qmul(qmul(q, qv), qinv(q))
+        return (r[0], r[1], r[2])
+    tip = rotate(q, (1.0, 0.0, 0.0))
+    banks_right = tip[1] < -1e-9            # right wing tip goes DOWN
+    if not banks_right:
+        failures.append("a positive roll input does not bank right")
+    print("   roll input +1 -> right wing tip y = %+.4f  (%s)"
+          % (tip[1], "banks RIGHT, correct" if banks_right else "banks LEFT -- FAIL"))
+    print("   (before the negation this was y = %+.4f, the inverted bank playtest found)"
+          % rotate(euler(0, 0, roll_in * 10), (1.0, 0.0, 0.0))[1])
+
+    print()
+    print("5. a DRIFT must move parts without re-aiming them")
+    # wings forward, engines back, both along the ship's +z, rotation unchanged by the drift.
+    wing_fwd, jet_back = 2.3, 2.3
+    print("   wings  offset +%.1f z (forward)   engines offset %.1f z (backward)"
+          % (wing_fwd, -jet_back))
+    if jet_back <= 0:
+        failures.append("engines have no backward clearance - the gap never opens")
+    print("   gap opened between wing and engine: %.1f units" % (wing_fwd + jet_back))
+
+    print()
     if failures:
         print("FAILED:")
         for f in failures:

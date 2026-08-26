@@ -1,6 +1,5 @@
 using CosmicShore.Gameplay;
 using System.Collections.Generic;
-using CosmicShore.Utility;
 using UnityEngine;
 namespace CosmicShore.Gameplay
 {
@@ -27,20 +26,34 @@ namespace CosmicShore.Gameplay
         const float animationScaler = 25f;
         const float exaggeratedAnimationScaler = 3 * animationScaler;
 
-        // OFFSETS FROM REST, not absolute local positions. They used to be the latter, which only
-        // ever worked because the legacy part-per-mesh art hung every part off the model root at
-        // roughly these places - the engines actually rested at z -2.047 against a constant saying
-        // -1.7, so even there the animation was dragging them 0.35 forward. On a rig a bone's local
-        // position is relative to its PARENT BONE, so absolute writes tore the hull apart.
+        // THE DRIFT CLEARANCE. A drifting Dolphin swings its hull to aim while it keeps sliding, so
+        // the wings slide FORWARD and the engines slide BACK to open a gap the fuselage and jaws can
+        // turn through without clipping. That is the whole purpose of the positional half of this
+        // puppetry, and it is stated here because the code lost it twice:
         //
-        // Note what survives that translation: default and backward were the SAME vector, so the
-        // thrusters never had a positional animation at all - the constant only ever pinned them.
-        // The one real positional effect in this whole puppetry is the wings sliding forward on a
-        // drift, and it is the only non-zero offset here.
+        //   * as absolute local positions, which only ever read correctly because the legacy
+        //     part-per-mesh art hung every part off the model root at roughly those places (the
+        //     engines rested at z -2.047 against a constant saying -1.7, so even there it dragged
+        //     them 0.35 forward). On a rig a bone's local position is relative to its PARENT BONE;
+        //   * and as a degenerate pair - the "default" and "backward" engine positions were the
+        //     SAME vector, so the engines never moved at all. Translating them faithfully preserved
+        //     that, which is how a hull shipped with half its clearance missing.
+        //
+        // Offsets are in the VESSEL's space (+z forward) and are authorable, because how much room
+        // the jaws need is a feel question, not a fact about the model.
+        [Header("Drift clearance")]
+        [Tooltip("How far FORWARD the wings slide while drifting, in vessel units, so the hull can " +
+                 "swing to aim without the wings fouling it.")]
+        [SerializeField] float driftWingForward = 2.3f;
+
+        [Tooltip("How far BACK the engines slide while drifting - the other half of the same gap. " +
+                 "Zero here is what shipped, and it is why the jaws clipped the engines.")]
+        [SerializeField] float driftJetBackward = 2.3f;
+
+        Vector3 ForwardWingOffset => new(0, 0, driftWingForward);
+        Vector3 BackwardThrusterOffset => new(0, 0, -driftJetBackward);
         static readonly Vector3 defaultThrusterOffset = Vector3.zero;
-        static readonly Vector3 backwardThrusterOffset = Vector3.zero;
         static readonly Vector3 defaultWingOffset = Vector3.zero;
-        static readonly Vector3 forwardWingOffset = new(0, 0, 2.3f);
 
         [Tooltip("Which ResourceSystem slot drives the jaw gape. 0 = Energy, the meter skimming " +
                  "fills and a crystal impact spends.")]
@@ -126,9 +139,8 @@ namespace CosmicShore.Gameplay
                                  ThrusterTopLeft, ThrusterTopRight, ThrusterLeft,
                                  ThrusterRight, ThrusterBottomLeft, ThrusterBottomRight);
 
-            // Only the parts this animation actually POSITIONS. Captured here, before
-            // CaptureHomeParents and before any drift re-parents them, so each part's anchor is
-            // the pose it was authored in under the parent it was authored under.
+            // Only the parts this animation actually POSITIONS - each anchored to the pose it was
+            // authored in, under the parent it was authored under.
             CaptureRestPositions(Chassis, LeftWing, RightWing,
                                  ThrusterTopLeft, ThrusterTopRight, ThrusterLeft,
                                  ThrusterRight, ThrusterBottomLeft, ThrusterBottomRight);
@@ -174,53 +186,54 @@ namespace CosmicShore.Gameplay
             AttachJawMeter(); // OnEnable ran before the status existed; bind now that it does.
 
             animationTransforms = new List<Transform>() { ThrusterTopRight, ThrusterRight, ThrusterBottomRight, ThrusterBottomLeft, ThrusterLeft, ThrusterTopLeft };
-
-            CaptureHomeParents();
         }
 
         protected override void PerformShipPuppetry(float pitch, float yaw, float roll, float throttle)
         {
+            // Roll arrives as InputStatus.YDiff and turns the parts about the ship's +Z. Unity's
+            // positive Z rotation is counter-clockwise seen from IN FRONT of the ship, so a pilot
+            // rolling right got a left bank. Negate once, here, rather than at each call site: the
+            // wings' roll term is (roll +/- pitch), and flipping the whole expression would invert
+            // the pitch DIFFERENTIAL - the aileron read - along with it.
+            roll = -roll;
+
             Vector3 wingOffset;
             Vector3 thrusterOffset;
-            Transform frame;
 
-            // The chassis is never re-parented, so its frame is always the vessel.
             AnimatePart(Chassis,
                         pitch * animationScaler,
                         yaw * animationScaler,
                         roll * animationScaler,
-                        Vector3.zero,
-                        transform);
+                        Vector3.zero);
 
+            // A drift MOVES these parts; it does not re-aim them. They used to be re-parented onto
+            // a handle pointed along Course, which made them swing with the aim - engines chasing
+            // the nose instead of clearing it, and wings doing something stranger still, since a
+            // rest pose captured under a bone means nothing under that handle. The frame is always
+            // the vessel: pitch is pitch whatever the ship is doing, and the drift shows up as the
+            // gap opening instead.
             if (VesselStatus.IsDrifting)
             {
-                SafeLookRotation.TrySet(DriftHandle, VesselStatus.Course, transform.up, DriftHandle ? DriftHandle.gameObject : gameObject, logError: false);
-                ReparentToDrift(DriftHandle);
-                wingOffset = forwardWingOffset;
-                thrusterOffset = backwardThrusterOffset;
-                frame = DriftHandle ? DriftHandle : transform;
+                wingOffset = ForwardWingOffset;
+                thrusterOffset = BackwardThrusterOffset;
             }
             else
             {
-                ReparentHome();
                 wingOffset = defaultWingOffset;
                 thrusterOffset = defaultThrusterOffset;
-                frame = transform;
             }
 
             AnimatePart(RightWing,
                         Brake(throttle) * animationScaler,
                         (yaw + throttle) * exaggeratedAnimationScaler,
                         (roll + pitch) * animationScaler,
-                        wingOffset,
-                        frame);
+                        wingOffset);
 
             AnimatePart(LeftWing,
                         Brake(throttle) * animationScaler,
                         (yaw - throttle) * exaggeratedAnimationScaler,
                         (roll - pitch) * animationScaler,
-                        wingOffset,
-                        frame);
+                        wingOffset);
 
             var pitchScalar = pitch * exaggeratedAnimationScaler;
             var yawScalar = yaw * exaggeratedAnimationScaler;
@@ -234,7 +247,7 @@ namespace CosmicShore.Gameplay
             // Dolphin's authored 26-169 degree engine cases and fatal on a rig.
             for (int partIndex = 0; partIndex < animationTransforms.Count; partIndex++)
             {
-                AnimatePart(animationTransforms[partIndex], pitchScalar, yawScalar, rollScalar, thrusterOffset, frame);
+                AnimatePart(animationTransforms[partIndex], pitchScalar, yawScalar, rollScalar, thrusterOffset);
             }
 
         }
@@ -246,62 +259,24 @@ namespace CosmicShore.Gameplay
         // parents ('winghold.l/r', 'jetholdT/m/B.l/r') carry the rest angles that fan the six
         // engines out, and re-homing them all onto 'fuse' would permanently flatten the armature
         // and collapse the jets onto one point.
-        readonly Dictionary<Transform, Transform> _homeParents = new();
+        // The drift RE-PARENTING is gone, deliberately. The methods that lived here hung the
+        // wings and engines off a handle aimed along Course, so they swung WITH the aim - the
+        // opposite of what a drift needs from them: those parts exist to get out of the hull's way
+        // while it turns, not to turn with it. Once the frame was fixed to the vessel and the
+        // clearance became an offset, that machinery did nothing at all, and inert machinery in
+        // this file has already cost three playtests. 'DriftHandle' survives as an empty anchor
+        // (no children, nothing reads it) in case a course-aligned frame is wanted again; git
+        // carries the removed methods.
 
-        void CaptureHomeParents()
-        {
-            _homeParents.Clear();
-            foreach (var part in DriftParts())
-                if (part) _homeParents[part] = part.parent;
-        }
-
-        IEnumerable<Transform> DriftParts()
-        {
-            yield return RightWing;
-            yield return LeftWing;
-            yield return ThrusterTopRight;
-            yield return ThrusterRight;
-            yield return ThrusterBottomRight;
-            yield return ThrusterBottomLeft;
-            yield return ThrusterLeft;
-            yield return ThrusterTopLeft;
-        }
-
-        void ReparentToDrift(Transform driftHandle)
-        {
-            if (!driftHandle) return;
-            foreach (var part in DriftParts())
-                SetParent(part, driftHandle);
-        }
-
-        void ReparentHome()
-        {
-            foreach (var part in DriftParts())
-                if (part && _homeParents.TryGetValue(part, out var home))
-                    SetParent(part, home);
-        }
-
-        static void SetParent(Transform part, Transform parent)
-        {
-            if (part && parent && part.parent != parent) part.parent = parent;
-        }
-
-        // Every animated part is driven around its OWN rest pose. This is the same rotation math
-        // the old InitialRotation overload produced (its caller and the base method swapped
-        // yaw/roll twice, netting Euler(pitch, yaw, roll) * rest) - it just reads the part's own
-        // captured rest instead of one indexed out of a misaligned list. The chassis and wings
-        // rest at identity on the legacy art, so they are unaffected there.
-        // 'frame' is the space the animation's pitch/yaw/roll and its offset are MEANT in: the
-        // vessel normally, the drift handle while drifting (which is aimed along Course, and is
-        // the entire reason these parts are re-parented onto it). Never the part's own parent -
-        // on this rig that is a bone whose axes are nothing like the ship's, which is what made
-        // pitch read as roll and inverted it.
-        void AnimatePart(Transform part, float pitch, float yaw, float roll, Vector3 offset,
-                         Transform frame)
+        // Every part is puppeteered in the VESSEL's frame - never its own parent, which on this
+        // rig is a bone whose axes are nothing like the ship's. That is what made pitch read as
+        // roll and inverted it. One frame for the whole hull is also what makes a drift read as
+        // parts sliding out of the way rather than swinging around.
+        void AnimatePart(Transform part, float pitch, float yaw, float roll, Vector3 offset)
         {
             if (!part) return;
-            RotatePartFromRestInFrame(part, pitch, yaw, roll, frame);
-            MovePartFromRest(part, offset, frame);
+            RotatePartFromRestInFrame(part, pitch, yaw, roll, transform);
+            MovePartFromRest(part, offset, transform);
         }
 
         // The jaws open around their rest pose too - identity on the legacy nose halves, the rig's
