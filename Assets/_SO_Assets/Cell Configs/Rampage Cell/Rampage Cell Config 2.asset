@@ -15,12 +15,15 @@ MonoBehaviour:
   CellName: Rampage
   Description: Demolition arena cell, intensity 2 of 4 - a stirring arena: 59 seeded plants totalling
     ~9830 prisms of cacti, spires, pines, rosettes and coral, filling the volume from just
-    outside the nucleus out to the membrane, across all three domains at levels 1-5. The
-    FOREST IS THE SAME AT EVERY INTENSITY (this is the shipped, play-tested arena);
-    intensity carries 2x the authored wildlife and - authored in the scene, not here - one
-    crystal per player. The nucleus stays clear; it is the crystals' contested ground.
-    PhaseThresholds ride the forest's real volume (~1,615,853 at full growth) - regenerate
-    with Tools/Build/rampage_intensity.py rather than hand-editing.
+    outside the nucleus out to the membrane, across all three domains, each plant one of the
+    four elemental variations. The FOREST IS THE SAME AT EVERY INTENSITY (this is the
+    shipped, play-tested arena); intensity carries 2x the authored wildlife and - authored
+    in the scene, not here - one crystal per player. The nucleus stays clear; it is the
+    crystals' contested ground. The mature forest is ~396,178 volume; the VOLUME thresholds
+    are held at their play-tested values rather than re-derived from that (lifeform levels
+    are retired, so the forest is 4.08x lighter than when they were set) and are pending an
+    in-editor re-measure - regenerate with Tools/Build/rampage_intensity.py rather than
+    hand-editing.
   Icon: {fileID: 21300000, guid: 6aa1c06e11b265744a5f9fa8858ac72a, type: 3}
   Difficulty: 2
   CellEndGameScore: 0

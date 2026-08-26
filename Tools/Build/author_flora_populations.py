@@ -94,9 +94,10 @@ MATURITY = 0.5
 # ELEMENT), exactly as a fauna lineage does - so a species seeded from ONE plant would grow a
 # whole cell of one element and quietly waste the config's authored element spread. Four
 # independent founders keep several elements in the cell, and double as the extinction floor.
-# (The pick used to carry a rolled spawn LEVEL too; that is retired - every plant seeds at
-# level 1 and earns the rest by reproducing, Docs/ECOSYSTEM.md §34 - so size variety inside a
-# colony now comes from which plants have bred, not from which founder they descend from.)
+# (The pick used to carry a spawn LEVEL too. Lifeform levels are retired outright - a lifeform
+# is its species and its ELEMENT, nothing else, Docs/ECOSYSTEM.md §39 - and a lattice plant's
+# leaf never changes size anyway (Flora.PrismSizeFixedByGrowthRule). So the founders are now
+# the ONLY thing that varies inside a colony, which is precisely why the floor below matters.)
 LATTICE_MIN_FOUNDERS = 4
 
 # Species whose growth rule is a LATTICE: an offspring is handed a real bond site off the

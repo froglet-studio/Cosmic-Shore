@@ -8,9 +8,25 @@ and the Hesperides cell folder. Kept in-repo so the exact authored values are re
 whole set can be regenerated after a tuning pass instead of being hand-edited in twelve places.
 
 Run from the repo root:  python3 Tools/ecosim/gen_hesperides_assets.py
+
+!! THIS SCRIPT IS NOT THE ONLY OWNER OF THE ASSETS IT WRITES. Step 4 rewrites the canonical
+   Assets/_SO_Assets/Lifeforms/{species} Flora {element}.asset files WHOLESALE, and two other
+   tools author fields inside them:
+     * Tools/Build/author_lifeform_heart_sizes.py owns Variant.HeartWorldScale (fitted per
+       ELEMENT to the lifeform's measured body). `carry_authored_heart` below quotes that
+       value back into the regenerated YAML, so a re-run preserves it byte for byte - proven
+       by regenerating all 88 canonical assets into a scratch tree and diffing: zero drift.
+     * Tools/Build/author_flora_populations.py owns the population block (PopulationSize /
+       MaxLivePopulation / GrowthPerOffspring / ...) on the Hesperides CELL configs, and
+       Tools/Build/fit_schwarz_p_leaf_sizes.py owns the SchwarzP topiary's LeafSize. Those
+       are NOT carried - re-run both after this script and check their diffs.
+   (Lifeform LEVELS are retired - a lifeform is its species and its ELEMENT, and that element's
+   variant block states the size of the heart it drops exactly once. Docs/ECOSYSTEM.md 39.2.)
 """
 import hashlib
 import os
+import re
+import sys
 
 REPO = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 
@@ -20,9 +36,38 @@ def guid(name: str) -> str:
     return hashlib.md5(("cosmicshore/hesperides/" + name).encode()).hexdigest()
 
 
+# HeartWorldScale is authored PER ELEMENT by Tools/Build/author_lifeform_heart_sizes.py, which
+# fits it to the lifeform's measured body. This generator does not know that number, and it
+# rewrites the canonical _SO_Assets/Lifeforms species assets wholesale - so without the carry
+# below, one re-run silently dropped every Hesperides species back to
+# ElementalCrystalSetSO.defaultHeartWorldScale. Two owners for one field is the trap
+# (Docs/ECOSYSTEM.md 39.2): QUOTE the authored value, never fork it. Same rule
+# Tools/Build/author_lattice_cell.py follows for the whole Variant block.
+_VARIANT_HEAD = "  Variant:\n    Enabled: 1\n"
+_HEART_LINE = re.compile(r"^    HeartWorldScale: [-\d.eE+]+$", re.M)
+
+
+def carry_authored_heart(path, text):
+    """Re-insert the existing asset's HeartWorldScale into freshly generated YAML."""
+    if not path.endswith(".asset") or not os.path.exists(path):
+        return text
+    if _VARIANT_HEAD not in text or _HEART_LINE.search(text):
+        return text
+    with open(path, encoding="utf-8") as f:
+        existing = f.read()
+    found = _HEART_LINE.search(existing)
+    if not found:
+        return text
+    return text.replace(_VARIANT_HEAD, _VARIANT_HEAD + found.group(0) + "\n", 1)
+
+
 def write(rel, text):
     path = os.path.join(REPO, rel)
     os.makedirs(os.path.dirname(path), exist_ok=True)
+    # Resolve the carry BEFORE opening for write: `open(path, "w")` truncates, so reading the
+    # existing asset from inside the `with` block reads an empty file and silently carries
+    # nothing.
+    text = carry_authored_heart(path, text)
     with open(path, "w", encoding="utf-8") as f:
         f.write(text)
     return path
@@ -505,8 +550,6 @@ MonoBehaviour:
   Crystal: {fileID: 1648936725651798775}
   elementalCrystalShipEffects:
   - {fileID: 11400000, guid: 0ac04a748b4c4ad8825e811431df45f4, type: 2}
-  moveToVesselDuration: 3
-  easeMoveToVessel: 1
 --- !u!114 &7383174847063407884
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -587,8 +630,6 @@ MonoBehaviour:
     ShieldPeriod: {e['shield']}
     MaxTotalSpawnedObjects: {budget}
     PlantRadiusCellFraction: {s['plantRadiusFraction']}
-  InitialLevel: 1
-  LeafScalePerLevel: 1.15
   SpreadElements: {1 if spread else 0}
 {palette_block}
 """
@@ -629,8 +670,6 @@ MonoBehaviour:
     ShieldPeriod: 0
     MaxTotalSpawnedObjects: {spec['budget']}
     PlantRadiusCellFraction: 0.5
-  InitialLevel: 1
-  LeafScalePerLevel: 1.15
   SpreadElements: 1
   ElementPalette: []
 """
@@ -721,6 +760,10 @@ MonoBehaviour:
     meta_prefab(env_rel, env_guid)
 
     # ── 4. Canonical per-element library configs (one per species x element) ─
+    # NOTE: this OVERWRITES the shipped library assets. The per-element HeartWorldScale
+    # authored by Tools/Build/author_lifeform_heart_sizes.py survives, because write()
+    # carries it across (see carry_authored_heart). Nothing else in those files is
+    # second-owned. Run that script's --check after this one anyway.
     library = {}
     for name in SPECIES:
         for element in ELEMENTS:
@@ -880,4 +923,21 @@ MonoBehaviour:
 
 
 if __name__ == "__main__":
+    # This script has NO read-only mode: main() writes assets unconditionally. Every other
+    # script under Tools/ takes --check as a read-only probe, so a caller reasonably reaches
+    # for it here to ask "would this revert anything?" - and silently rewrites 50 assets
+    # instead. That has happened. Refuse any argument rather than ignore it.
+    if len(sys.argv) > 1:
+        sys.exit(
+            f"{os.path.basename(__file__)} takes no arguments and has no --check mode: it "
+            f"WRITES unconditionally.\n"
+            f"Got: {' '.join(sys.argv[1:])}\n"
+            f"It overwrites the canonical _SO_Assets/Lifeforms species assets. The authored "
+            f"HeartWorldScale is carried across, but the flora POPULATION block and the "
+            f"SchwarzP topiary leaf are not.\n"
+            f"To ask whether anything has drifted, run the owning script's --check instead.\n"
+            f"To author for real, run this with no arguments, then re-run\n"
+            f"    python3 Tools/Build/author_lifeform_heart_sizes.py --check\n"
+            f"    python3 Tools/Build/author_flora_populations.py --check\n"
+            f"    python3 Tools/Build/fit_schwarz_p_leaf_sizes.py")
     main()

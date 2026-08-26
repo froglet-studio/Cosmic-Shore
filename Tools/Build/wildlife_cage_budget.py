@@ -276,12 +276,21 @@ def phase_thresholds(n, v):
 
 # ── The wildlife roster (the real objective, and the real collider budget) ───
 #
-# One entry per SPECIES x LEVEL - the spawner runs one loop per FaunaConfigurationSO, so each of
-# these becomes its own asset. Every one of them carries the SAME band (ROAM_INNER..ROAM_OUTER):
-# there is no room dimension any more, so a species that used to be split across two rooms is
-# one config now and the only thing that still separates two entries of the same species is the
-# LEVEL they start at - which is exactly the "big ones and small ones everywhere" mix the
-# dispersal is for.
+# One entry per SPECIES - the spawner runs one loop per FaunaConfigurationSO, so each of these
+# becomes its own asset. Every one of them carries the SAME band (ROAM_INNER..ROAM_OUTER).
+#
+# It used to be one entry per SPECIES x LEVEL. Lifeform LEVELS are retired (a lifeform is its
+# species and its ELEMENT, nothing else - Docs/ECOSYSTEM.md 39), which removed the last thing
+# separating two entries of one species: the room dimension had already gone, so a "level-5
+# shark" row and a "level-2 shark" row became two configs that differed in nothing at all.
+# They are merged by SUMMING their populations, which is arithmetic and not a retune - the
+# authored roster is still 610 creatures at seed and 1409 at cap, and after POPULATION_SCALE
+# still 519 / 1198 / 4155 body prisms, each identical to the six-row table row for row in
+# total. `prisms` was already equal across a species' rows, so nothing is lost in the merge.
+#
+# What the mode gives up with it: the deliberate "a level-5 shark among level-2 ones" size mix
+# inside one species. Variety within a species is now the ELEMENT (SpreadElements over the
+# four-element palette), not a starting tier.
 #
 # Populations are the seed FLOOR and the hard CAP: the spawner only tops a species back up to
 # the floor, and everything above it comes from reproduction and is bounded by starvation
@@ -293,32 +302,26 @@ def phase_thresholds(n, v):
 # index as the creature swims), which is why this roster and not the cage is the mode's headline
 # performance risk.
 #
-# `level` is InitialLevel, which stays a deliberate MODE surface (CLAUDE.md: level is EARNED,
-# never ROLLED - a mode may still author a starting tier). It is what makes a level-5 shark a
-# level-5 shark; it is no longer a statement about WHERE that shark lives.
-#
 # NOTE the Clawfish is deliberately absent: its prefab carries no HealthPrism at all, so it has
 # no body to shoot and cannot be killed by a Sparrow. Adding it would put un-scoreable creatures
 # in a hunt. See WILDLIFE_LIBERATION.md "Known limitations".
 
-#          species        seed   cap  level  prisms
+#          species        seed   cap  prisms
 ROSTER = [
     # The swarm - what you meet constantly, anywhere in the arena.
-    ("QuadFish",          450, 1050,   1,     1),
-    ("Brittlestar",        66,  153,   1,    10),
-    # Bigger, less common, and no longer parked in one room.
-    ("Brittlestar",        50,  115,   2,    10),
-    ("Shark",              24,   52,   2,    11),
-    # The apex tier. These used to be locked in the 200u core - the "big ones concentrated in
-    # the centre" this pass exists to end. Same numbers, whole arena.
-    ("Shark",              14,   28,   5,    11),
-    ("WormColony",          6,   11,   3,    26),
+    ("QuadFish",          450, 1050,    1),
+    # 66+50: the two level-1/level-2 rows of the six-row table, summed.
+    ("Brittlestar",       116,  268,   10),
+    # 24+14: the mid row plus the apex row. These used to be locked in the 200u core - the
+    # "big ones concentrated in the centre" the roam-band pass exists to end. Whole arena now.
+    ("Shark",              38,   80,   11),
+    ("WormColony",          6,   11,   26),
 ]
 
 # Before POPULATION_SCALE the roster is 610 creatures at seed rising to 1409 at cap - the
-# already-play-tested population, preserved exactly through the room merge (the two QuadFish
-# rows and the two level-1 Brittlestar rows were per-room splits of one population, so merging
-# them is arithmetic, not a retune).
+# already-play-tested population, preserved exactly through BOTH merges: the room merge (the
+# two QuadFish rows and the two level-1 Brittlestar rows were per-room splits of one
+# population) and the level merge above. Both are arithmetic, not a retune.
 #
 # POPULATION_SCALE then takes 15% off the whole roster (requested 2026-08): 519 at seed, 1198 at
 # cap, 4155 body prisms at cap against 4896. It is deliberately the dial rather than 12 edited
@@ -343,19 +346,19 @@ def _round_half_up(x):
 
 
 def roster_for(intensity):
-    """The roster at an intensity: (species, seed, cap, level, prisms_per_creature)."""
+    """The roster at an intensity: (species, seed, cap, prisms_per_creature)."""
     k = POPULATION_SCALE[max(1, min(intensity, 4)) - 1]
     return [(species, max(1, _round_half_up(seed * k)), max(1, _round_half_up(cap * k)),
-             level, prisms)
-            for species, seed, cap, level, prisms in ROSTER]
+             prisms)
+            for species, seed, cap, prisms in ROSTER]
 
 
 def fauna_totals(intensity):
     """(creatures at seed, creatures at cap, body prisms at cap) for an intensity."""
     r = roster_for(intensity)
-    return (sum(s for _, s, _, _, _ in r),
-            sum(c for _, _, c, _, _ in r),
-            sum(c * p for _, _, c, _, p in r))
+    return (sum(s for _, s, _, _ in r),
+            sum(c for _, _, c, _ in r),
+            sum(c * p for _, _, c, p in r))
 
 
 if __name__ == "__main__":
@@ -392,10 +395,10 @@ if __name__ == "__main__":
         cage, _, _ = cumulative(i)
         print(f"\nintensity {i}: {seed} creatures at seed, {cap} at cap, "
               f"{prisms} body prisms at cap  (scale {POPULATION_SCALE[i - 1]})")
-        print(f"{'species':<14}{'lvl':>5}{'seed':>7}{'cap':>6}{'prisms/ea':>11}{'prisms':>9}"
+        print(f"{'species':<14}{'seed':>7}{'cap':>6}{'prisms/ea':>11}{'prisms':>9}"
               f"{'band':>16}")
-        for species, s_, c, lvl, p in roster_for(i):
+        for species, s_, c, p in roster_for(i):
             band = f"{ROAM_INNER:.0f}..{ROAM_OUTER:.0f}"
-            print(f"{species:<14}{lvl:>5}{s_:>7}{c:>6}{p:>11}{c * p:>9}{band:>16}")
+            print(f"{species:<14}{s_:>7}{c:>6}{p:>11}{c * p:>9}{band:>16}")
         print(f"  COLLIDER BUDGET  cage {cage} + fauna {prisms} = {cage + prisms} "
               f"(fauna are MOVERS - see WILDLIFE_LIBERATION.md)")
