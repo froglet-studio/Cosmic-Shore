@@ -89,7 +89,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f35e7419ae174139b689e0522d892ed9, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CosmicShore.UI.MaelstromPoolEntry
-  icon: {fileID: 404604575313429005}
+  icon: {fileID: 0}
   nameText: {fileID: 7797072703496990648}
   lockedText: {fileID: 0}
   lockedFormat: Intensity {0}
