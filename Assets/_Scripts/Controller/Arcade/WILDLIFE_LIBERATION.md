@@ -281,8 +281,9 @@ score — dense, tight, five rinds. This is a sparse lattice of long bars with b
 openings, so the arena reads as mostly empty space: here the prisms are only the walls.
 
 - **Three shells, always**, at a **fixed** 1050 / 600 / 200. The shell count is deliberately
-  **not** the intensity dial: each shell walls in a tier of wildlife, so dropping one would
-  delete a third of the game rather than make it easier.
+  **not** the intensity dial: each shell is a ROOM you break into, so dropping one would delete a
+  third of the game rather than make it easier. (It was written when each shell also *penned* a
+  tier of wildlife; the pens are gone and the rooms are the reason now.)
 - **Enormous radial gaps** — 450u between the outer and middle cages, 400u between the middle
   and the core. Each room is a place you fly *into*, not a rind you pass through.
 - **The openings are TRIANGLES, from a GEODESIC** (subdivided icosahedron), not latitude hoops.
@@ -323,25 +324,42 @@ Measure Cell Environment Baselines):
 
 ## The wildlife (the objective)
 
-One `FaunaConfigurationSO` per **(species, level, intensity)** — the spawner runs one loop per
-config. Every one carries the **same** band (0..1180, the whole arena), so the only thing
-separating two entries of one species is the level it starts at, which is exactly the "big ones
-and small ones everywhere" mix the dispersal is for.
+**One `FaunaConfigurationSO` per (species, intensity)** — four species, four intensities, and
+the spawner runs one loop per config. Every one carries the **same** band (0..1180, the whole
+arena) and every one runs `SpreadElements` over its species' four canonical element assets, so a
+species' variety is its ELEMENT.
 
-| species | level | seed | cap | body prisms ea. | prisms at cap |
-|---|---:|---:|---:|---:|---:|
-| QuadFish | 1 | 383 | 893 | 1 | 893 |
-| Brittlestar | 1 | 56 | 130 | 10 | 1,300 |
-| Brittlestar | 2 | 43 | 98 | 10 | 980 |
-| Shark (predator) | 2 | 20 | 44 | 11 | 484 |
-| Shark (predator) | 5 | 12 | 24 | 11 | 264 |
-| Worm Colony (kaiju) | 3 | 5 | 9 | ~26 | 234 |
-| **total** | | **519** | **1,198** | | **4,155 prisms at cap** |
+| species | seed | cap | body prisms ea. | prisms at cap |
+|---|---:|---:|---:|---:|
+| QuadFish | 383 | 893 | 1 | 893 |
+| Brittlestar | 99 | 228 | 10 | 2,280 |
+| Shark (predator) | 32 | 68 | 11 | 748 |
+| Worm Colony (kaiju) | 5 | 9 | ~26 | 234 |
+| **total** | **519** | **1,198** | | **4,155 prisms at cap** |
 
-**The rooms are gone from the roster, and that is the shape of the change.** The pens used to
-give this table a `room` column, so a species that lived in two rooms needed two configs; with
-one band those collapse into one. The old roster's four rooms (8 configs) are 6 configs now, and
-the merge preserved the populations exactly — 610 seed / 1,409 cap — before the cut below.
+**The roster has been merged TWICE, and both merges were arithmetic.** It started as
+`species × room` — the pens gave this table a `room` column, so a species living in two rooms
+needed two configs (8 per intensity). Replacing the three pens with one arena-wide band collapsed
+those into `species × level` (6 per intensity). Then **`Docs/ECOSYSTEM.md` §39 retired lifeform
+levels**, and `species × level` collapsed into **`species` (4 per intensity)**. Populations were
+preserved exactly through both — 610 seed / 1,409 cap before `POPULATION_SCALE`, 519 / 1,198 /
+4,155 body prisms after it, identical to the six-row table row for row in total (`prisms` was
+already equal across a species' rows, so nothing is lost in the arithmetic).
+
+**What the second merge COST, stated plainly: the size tiers are gone.** This mode was built on
+"a very heavy swarm of small creatures, much bigger ones, and the biggest and toughest", and
+`InitialLevel` was how that read — a level-5 shark among level-2 ones, a level-2 brittlestar
+among level-1 ones. There is no level any more, so **the four species are now told apart by
+species and by element, not by size**: a shark is a shark, and every shark in the arena is the
+same size. The species themselves still span an order of magnitude (a 1-prism QuadFish against a
+~26-prism worm colony), so the swarm-to-kaiju read the mode is named for survives; what is gone
+is the *within-species* size mix, and with it the "that one's a big one" moment inside a school.
+If that mix is wanted back, the honest lever is a per-element `FaunaVariantTuning.BaseBodyScale`
+on the species' four canonical assets — an element that is genuinely a bigger animal — not a
+level axis. Note this also makes the heart a species constant: a shark heart is 4.60 world scale
+and a worm segment's 2.28, per element and for life (`Docs/ECOSYSTEM.md` §39.2), so **a shark
+kill pays double a worm segment's** — which is the size-reads-as-reward the tiers used to give,
+moved from within a species to between them.
 
 **No tadpoles** (removed on request, 2026-08). QuadFish inherits the swarm role — also a
 1-prism body, so the headcount survives, but the tadpoles were carrying a large share of it and

@@ -901,23 +901,47 @@ rider stays put as the tail recycles.
 count on the second wander · the station snapping or unreachable · a Squirrel thrown off
 its own tether · scenes visibly popping in or out of existence.
 
-### QA-ECOLOGY-ELEMENT-LEVEL-MATRIX ⬜ — full element × level spawn spread
-**Source:** PR #635.
-1. Open a spread-enabled spawn config in the inspector: confirm `Spread Elements`, a
-   4-entry `Element Palette`, and a populated `Levels` block. (If a field reads default,
-   re-save the asset from the inspector.)
-2. `Menu_Main` / Blob cell, freestyle, watch a few fauna waves.
-3. Kill a level-5 creature and look at the crystal it drops.
-4. Let a brood reproduce and compare the offspring's element with the parent's.
-5. Lifeform Matrix toy: spawn each station's advertised variant.
-6. Play Skim Race and Nucleus Rush briefly and judge whether cadence still feels right.
+### QA-ECOLOGY-ELEMENTAL-VARIATIONS ⬜ — four elemental variations, and a heart sized to its lifeform
+**Source:** PR #635 (the element spread), then the levels-retired pass. Reference:
+`Docs/ECOSYSTEM.md` §39. **Levels are gone**: a lifeform is its species and its element and
+nothing else, and each element authors its own heart size — so this item is no longer about
+finding giants, it is about the four elements being real and the heart sizes being right.
+1. Open a spread-enabled spawn config in the inspector: confirm `Spread Elements` and a
+   4-entry `Element Palette`. There must be **no** `Levels` block, `Initial Level`,
+   `Body Scale Per Level` or `Leaf Scale Per Level` field anywhere on it — if you see one,
+   the asset did not migrate. (If a field reads default, re-save the asset from the inspector.)
+2. `Menu_Main`, freestyle, watch a few fauna waves.
+3. Kill a **tadpole**, a **brittlestar** and a **shark** in one session and compare the
+   crystals they drop. Roughly 1.6 / 2.7 / 4.6 world scale — the shark's should read as
+   clearly the biggest prize; they used to be identical.
+4. **The size trap.** Spawn a **Mass or Time tadpole** and a **Charge or Space** one from the
+   Lifeform Matrix bench, kill both, and compare their hearts. They should be close — **1.56
+   and 2.07** world scale, a 1.33× difference. If a creature's heart is being shrunk by its own
+   body scale the two drop at **0.63 and 1.45** instead (a 2.5× and 1.43× cut), which reads as
+   a **2.3× gap** between them and as two conspicuously tiny crystals. Either signal — report
+   it; it is the regression this pass exists to prevent.
+5. Follow one grazer through several feeds and one plant through a birth: **nothing may change
+   size mid-life** — not body, not leaf, not heart. A visible step is a level surface that
+   survived.
+6. Let a brood reproduce and compare the offspring's element with the parent's.
+7. Lifeform Matrix toy: open a species. The variant layer must be **four stations, one per
+   element** — no level rows — and each station's crystal drawn at that variant's own heart
+   size.
+8. Play Skim Race and Nucleus Rush briefly and judge whether cadence still feels right.
+9. **Squirrel Shepherd** (Space level 5): joust an OWN-domain creature. It must **not** grow —
+   watch its brood instead; a nourished creature should reproduce sooner. Joust an own-domain
+   plant and expect an offspring, not an inflating plant.
 
-**PASS:** one species' brood shows all four crystal **models** (not just recolours) and
-visibly mixed body sizes with occasional giants; a level-5 death drops a visibly larger
-crystal; offspring match the parent's element; the matrix spawns exactly what each
-station advertises.
-**FAIL:** a single element across a whole brood · uniform body sizes · a brood whose
-offspring change element · a matrix station spawning the wrong variant.
+**PASS:** one species' brood shows all four crystal **models** (not just recolours);
+different SPECIES drop visibly different-sized hearts while two creatures of the same species
+and element match exactly; nothing grows mid-life; offspring match the parent's element; the
+variant layer is four element stations and spawns exactly what each advertises; shepherding
+breeds rather than enlarges.
+**FAIL:** a single element across a whole brood · a level/size field still on a config · two
+same-species hearts of visibly different size · tadpole hearts dropping at roughly 0.6 / 1.5
+rather than 1.6 / 2.1, i.e. a ~2.3× gap between the two tadpole elements (step 4) · anything
+growing mid-life · a brood whose offspring change element · a matrix station spawning the
+wrong variant · a shepherded lifeform getting bigger.
 
 ### QA-ECOLOGY-FAUNA-FEEDING ⬜ — intentional feeding + shark predation + jaw rig
 **Source:** PR #614, shark-jaw `438070a2`, checklist entry in

@@ -330,8 +330,9 @@ teardown). Everything below is remaining polish / not-yet-play-verified.
   should read as characters.
 - **`companionSkill` is authored at 0.5** on the menu initializer, since the menu has no intensity
   to derive one from. Tune in play.
-- **The hangar has no "release N" affordance** — one pass, one bot. A held pass or a level-style
-  size telegraph (the way variant stations encode level as size) is the obvious extension.
+- **The hangar has no "release N" affordance** — one pass, one bot. A held pass, or a size
+  telegraph on the station (the way a variant station draws its crystal at that variant's own
+  authored heart size), is the obvious extension.
 
 - **Charge tadpole is NEW and untuned** (authored from the Space baseline with a Charge
   crystal) — tune via the matrix, then bake into `Tadpole Fauna Charge.asset`.
@@ -339,7 +340,8 @@ teardown). Everything below is remaining polish / not-yet-play-verified.
   populations (BoidManager path — now all spawn the base tadpole; needs its own config pass
   for per-element identity). (Worms: the legacy trio was deleted; every segment of the
   rebuilt worm colony carries an authored elemental heart — Docs/ECOSYSTEM.md §23.8 — though
-  the colony doesn't yet roll the element × level spread.)
+  the colony doesn't yet roll the element spread. The level half of that spread is retired
+  outright: a lifeform is its species and its element, Docs/ECOSYSTEM.md §39.)
 - **Sparrow (and other vessels') HUD ability-icon bindings** for the shared upgrade-highlight
   system are unwired (Squirrel only); fill each view's `abilityIcons` in its prefab.
 - **Squirrel HUD tube/energy icons repaint colours per-frame**, so the upgrade highlight
@@ -562,9 +564,12 @@ unchanged by this work.
   (3) shrink the ringed-label font, which is deliberately left at its historic
   `contentRadius × 1.425` so this pass changed affordance and not typography. **Do not "fix" it by
   lowering the label back onto its own ring.**
-- **The clamp is holding three matrices, not one.** `ToyFactory.MaxRingSpacingFraction` (0.45) is
-  what keeps the Vessel Changer (1.7u between rings), the level-5 Lifeform variants (2.5u) and the
-  Painting gallery (3.9u) from interpenetrating. It cannot go much lower: at 0.36 the Vessel
+- **The clamp is holding two matrices now, not three.** `ToyFactory.MaxRingSpacingFraction` (0.45)
+  is what keeps the Vessel Changer (1.7u between rings) and the Painting gallery (3.9u) from
+  interpenetrating. The third used to be the level-5 Lifeform variant station at 2.5u, whose radius
+  scaled with level; levels are retired (Docs/ECOSYSTEM.md §39) so every variant station is now the
+  plain `StationRadius` with a 48.5u gap, and its clamp is no longer exercised. It cannot go much
+  lower: at 0.36 the Vessel
   Changer's ring inner radius (21.6) would fall *inside* its own 22-radius ship. If a matrix's
   spacing or station radius is retuned, re-run the geometry check in `ARCHITECTURE.md` §
   "The switch" rather than nudging the constant.

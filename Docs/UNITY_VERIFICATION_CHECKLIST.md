@@ -209,9 +209,11 @@ Authored without a Unity play-test (one-line delete + comments + docs). Human lo
 
 **What landed.** Ruling **(b)**: creature-root / worm-segment scale is mover-contract, same class as locomotion. `Fauna.GrowToScale` still lerps `localScale` (continuity). The redundant `NotifyBodyPrismsMoved()` inside that lerp is deleted — `Boid` / `LightFauna` / `WormFauna` already sync every `Update`. `WormFauna.GlideScales` was already on that path. (a) — snap root final + per-prism grow-clock stamps — was rejected. Colliders ride the live transform (zero new colliders).
 
+⚠ **SCOPE REDUCED 2026-08-26.** `Docs/ECOSYSTEM.md` §39 retired lifeform LEVELS, deleting `Fauna.GrowToScale` and `GrowCrystalWithPop` — a lifeform is sized at spawn and never re-sized mid-life. `WormFauna.GlideScales` is the only parent-scale animation left and the (b) ruling still governs it. **Step 2 below is VOID** (the Space-5 joust now `Nourish()`es — it breeds the ally rather than growing it); step 3 is the whole remaining gate.
+
 **Verify in editor**
 1. Compile clean. No new tests (one-line delete). Zero `[PrismClock]` errors on a live cell.
-2. **Squirrel Space-5 joust growth.** Body bloom is smooth (root lerp, not a pop). Profiler: locomotion's per-frame prism-entity writes remain; `GrowToScale` must **not** add a second `NotifyBodyPrismsMoved` / `SyncRenderTransform` storm on top of `Boid`/`LightFauna` Update.
+2. ~~**Squirrel Space-5 joust growth.**~~ **VOID** — nothing grows on a joust any more (§39.4). If you want to look at the ability, that is `QA-ECOLOGY-ELEMENTAL-VARIATIONS` step 9: the ally must **not** grow, its brood must arrive sooner.
 3. **Worm-colony glide.** Segment taper on growth/split/death is smooth. Same profiler read: `Update` → `GlideScales` then `SyncBodyPrismsToIndex` is the one sync, not two.
 
 ---

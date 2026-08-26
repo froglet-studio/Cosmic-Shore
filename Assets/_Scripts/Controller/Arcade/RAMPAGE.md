@@ -288,13 +288,16 @@ Five species, each with its own planting **band** (a min/max fraction of the mem
 radius). Plants are drawn **volume-uniformly** inside the band, not on a shell, so density
 is even through the whole volume rather than crowded onto one radius:
 
-| species | script | band | world radii | plants seeded | prisms/plant | leaf prism vol | scale/level |
-|---|---|---|---|---|---|---|---|
-| **Cacti** (hero) | `BranchingFlora` | 0.10–0.95 | 120–1140 | 26 | 160 | 5×5×3 = **75** | **1.30** |
-| Spire | `PhyllotacticFlora` | 0.30–0.97 | 360–1164 | 10 | 190 | ~15 | 1.25 |
-| Pine | `BranchingFlora` | 0.14–0.90 | 168–1080 | 10 | 150 | 4×4×1 = 16 | 1.25 |
-| Rosette | `PhyllotacticFlora` | 0.40–0.96 | 480–1152 | 7 | 170 | ~17 | 1.25 |
-| Coral | `PhyllotacticFlora` | 0.10–0.80 | 120–960 | 6 | 180 | ~10.6 | 1.25 |
+| species | script | band | world radii | plants seeded | prisms/plant | leaf prism vol |
+|---|---|---|---|---|---|---|
+| **Cacti** (hero) | `BranchingFlora` | 0.10–0.95 | 120–1140 | 26 | 160 | 5×5×3 = **75** |
+| Spire | `PhyllotacticFlora` | 0.30–0.97 | 360–1164 | 10 | 190 | ~15 |
+| Pine | `BranchingFlora` | 0.14–0.90 | 168–1080 | 10 | 150 | 4×4×1 = 16 |
+| Rosette | `PhyllotacticFlora` | 0.40–0.96 | 480–1152 | 7 | 170 | ~17 |
+| Coral | `PhyllotacticFlora` | 0.10–0.80 | 120–960 | 6 | 180 | ~10.6 |
+
+*(The table's old `scale/level` column — 1.30 on the cacti, 1.25 on the rest — is gone with
+`LeafScalePerLevel`; the leaf volumes above are what the arena actually builds.)*
 
 Seeded total ≈ **9,830 prisms** across 59 plants, and planting continues past the seed
 batch until the cell tops out (below).
@@ -312,14 +315,28 @@ rather than plants inside the core. Nucleus-interior mass is excluded from the f
 targeting grids and shares its volume with the crystal respawn, so a plant in there would
 be food the web can never reach *and* clutter in the one volume that has to stay legible.
 
-**The sizes are a range, not a size.** `Levels {1..5}` with `RarityFalloff 1.6` (flatter
-than the usual 2.0, so big plants are common rather than rare) crossed with
-`LeafScalePerLevel` 1.25–1.30 gives a **1.0× → 2.4×** linear span on the ordinary species
-and **1.0× → 2.9×** on the cacti. A level-5 cactus is a landmark; a level-1 one is a bush.
-Every config also runs `SpreadElements` over the species' four canonical element assets,
-and `CellLifeSpawnerBase.SpawnFlora` rolls the DOMAIN uniformly across all three — so the
-forest is a genuine mixture of colours, elements and sizes, and there is hostile mass in
-every direction for every pilot (no-domain-asymmetry invariant).
+**The sizes are a range, not a size — and that range is the ELEMENT.** This paragraph used
+to describe a LEVEL spread (`Levels {1..5}` × `RarityFalloff 1.6` × `LeafScalePerLevel`
+1.25–1.30, a 1.0× → 2.4× linear span, 1.0× → 2.9× on the cacti). Lifeform levels are
+**retired** (`Docs/ECOSYSTEM.md` §39): a lifeform is its species and its element, and
+nothing else — `InitialLevel`, `LeafScalePerLevel` and `RarityFalloff` no longer exist on
+`FloraConfigurationSO`, and no asset carries them. Size variation now comes entirely from
+the four canonical element assets, which author genuinely different leaves: measured off
+the shipped `_SO_Assets/Lifeforms` assets, Space → Mass spans **7.29× in leaf VOLUME** on
+Coral, Rosette and Spire alike — and because those leaves scale in TWO axes and hold the
+third (Coral 1.3×1.3×2.0 → 3.51×3.51×2.0), that is **2.7× linear**, not the 1.9× a cube
+root would suggest. It is a bigger on-screen spread than the level curve it replaced. Cacti and Pine author no `LeafSize` at
+all and take the prefab's. Every config still runs `SpreadElements` over those four, and
+`CellLifeSpawnerBase.SpawnFlora` still rolls the DOMAIN uniformly across all three — so
+the forest remains a genuine mixture of colours, elements and sizes, and there is hostile
+mass in every direction for every pilot (no-domain-asymmetry invariant).
+
+> ⚠ **The volume ladder is now light.** The `PhaseThresholds` on the four
+> `Rampage Cell Config N.asset` assets were play-tested against the old level multiplier,
+> so with levels retired the mature forest is **4.08× lighter** than when they were set.
+> They are deliberately held at their play-tested values (Frenzy arriving LATER is the safe
+> direction) and are pending an in-editor re-measure — regenerate with
+> `Tools/Build/rampage_intensity.py` rather than hand-editing.
 
 Each config's own `Variant` block is **disabled on purpose**: the element palette owns
 every plant's identity (leaf prism shape, growth tempo, shield cadence), and the cell
@@ -330,9 +347,8 @@ which are applied after the roll and therefore survive it. Authoring the band in
 forest would collapse onto each species' authored 0.5–0.6 shell.
 
 Cacti are the hero for a reason: `BranchingFlora` at 85–95° branch angles gives the
-right-angled arms, and its leaf prism is 5×5×3 = **75 volume, 4.7× nominal** before level
-scaling — so a single hit is a chunky, legible piece of destruction, while still counting
-exactly 1 toward the 2,000.
+right-angled arms, and its leaf prism is 5×5×3 = **75 volume, 4.7× nominal** — so a single hit
+is a chunky, legible piece of destruction, while still counting exactly 1 toward the 2,000.
 
 ### The phase ladder rides the forest's real volume
 
@@ -347,9 +363,12 @@ FrenzyEnterVolume    1630000   FrenzyExitVolume    1260000
 RestlessEnter 700  RestlessExit 500  FrenzyEnter 10000  FrenzyExit 8000   (count backstop)
 ```
 
-- **Frenzy volume ≈ the full-grown forest** (est. ~1,616,000: Σ plants × prisms × leaf
-  volume × E[level volume multiplier], which at falloff 1.6 is 3.21 on the ordinary species
-  and 4.31 on the cacti). Planting and growth freeze there — a growth gate, never a culler, so mass stays conserved.
+- **Frenzy volume ≈ the full-grown forest** — estimated at ~1,616,000 as
+  `Σ plants × prisms × leaf volume × E[level volume multiplier]`, where that last factor was
+  3.21 on the ordinary species and 4.31 on the cacti at falloff 1.6. ⚠ **That multiplier is now
+  1.0** (see the ladder warning above — the mature forest is 4.08× lighter than this figure), so
+  Frenzy arrives much later, if at all, from flora alone. Planting and growth still freeze there
+  — a growth gate, never a culler, so mass stays conserved.
 - **Frenzy exit at ~77%** of enter: regrowth resumes once roughly a quarter of the forest
   is gone, which at these numbers is a few hundred prisms of destruction — fast enough
   that the endgame never starves of targets.
@@ -361,8 +380,13 @@ RestlessEnter 700  RestlessExit 500  FrenzyEnter 10000  FrenzyExit 8000   (count
 
 **These volume numbers are an estimate and must be checked in-editor** — phyllotactic
 prisms are shaped per role (stem spans its segment, leaf spans its reach), so their
-volume cannot be read off a single authored field, and the level spread multiplies
-whatever it is. Watch `Cell.LiveVolume` on the DiagnosticsHUD through the first minute:
+volume cannot be read off a single authored field. They are also now an **over-estimate by
+4.08×**, because they were computed with a level multiplier that no longer exists. **FRENZY is
+the threshold that stopped describing anything** — the mature forest measures 396,178 against a
+1,630,000 gate, so flora alone can no longer reach it (only player trail mass on top can).
+**Restless is measured fine and needs no change**: 113,000 is ~28.5% of the mature forest, so
+fauna still start hunting on schedule. Watch `Cell.LiveVolume` on the DiagnosticsHUD through
+the first minute:
 if the forest tops out well under `FrenzyEnterVolume` the arena will keep planting past
 its intended density (watch the prism count and the collider budget), and if it hits
 Frenzy before the forest looks full, raise `FrenzyEnterVolume`/`FrenzyExitVolume`
@@ -623,8 +647,9 @@ Authored headless; every item below needs a play-mode pass.
    rather than clustered at the centre.
 3. **The forest** — after ~60 s, flora fill the cell in all directions from just outside
    the nucleus (~200 u) out to the membrane, in mixed colours, elements and visibly
-   different SIZES (a level-5 cactus should read as a landmark). Nothing planted inside
-   the nucleus; nothing outside the membrane.
+   different SIZES — **between species and between elements now, not within one species**
+   (a cactus should read as a landmark next to a coral; two cacti should read alike).
+   Nothing planted inside the nucleus; nothing outside the membrane.
 4. **The ladder** — watch `Cell.LiveVolume` and the live prism count on the
    DiagnosticsHUD as the forest fills. It should approach ~1.62M volume / ~9.8k prisms
    and stop growing at Frenzy, not top out early. Retune `FrenzyEnterVolume` /
