@@ -470,9 +470,17 @@ var sb = new StringBuilder();
                 if (FrogletGit.IsProtectedBranch(branch))
                 {
                     // Shared branch — publish to a QA branch of this session's own name.
+                    //
+                    // NO -u HERE. With a refspec, `-u` sets the upstream of the SOURCE
+                    // ref — which is the tester's current branch — so `push -u origin
+                    // HEAD:refs/heads/qa/results-x` re-points local bleeding-edge at
+                    // origin/qa/results-x ("branch 'bleeding-edge' set up to track
+                    // 'origin/qa/results-demo'", reproduced). Their next Pull in GitHub
+                    // Desktop would then pull a QA results branch into their build,
+                    // silently. Publishing the ref needs no upstream: nothing local
+                    // tracks it, and the tester never checks it out.
                     var qa = "qa/results-" + stem;
-                    var push = FrogletGit.Run("push", "-u", "origin",
-                                              "HEAD:refs/heads/" + qa);
+                    var push = FrogletGit.Run("push", "origin", "HEAD:refs/heads/" + qa);
                     return push.Ok
                         ? "Sent to the server on branch " + qa + ". Engineering picks it " +
                           "up from there — nothing more for you to do."
