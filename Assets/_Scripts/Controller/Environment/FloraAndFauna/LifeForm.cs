@@ -57,40 +57,33 @@ namespace CosmicShore.Gameplay
         public Element Element => crystal ? crystal.crystalProperties.Element : Element.None;
 
         /// <summary>
-        /// Elemental contract: this lifeform's level (1..5). <b>Level is EARNED, and never
-        /// ROLLED</b> (Docs/ECOSYSTEM.md §33): a plant earns a level by reproducing, a creature
-        /// by feeding a significant amount, and an ordinary spawn starts at 1. A MODE may still
-        /// author a higher hatch level deliberately (Wildlife Liberation's per-cage tiers) —
-        /// what is gone is the dice.
+        /// Elemental contract: the WORLD scale this lifeform's heart renders at — authored per
+        /// element in the species' variant tuning and sized to suit this body
+        /// (Docs/ECOSYSTEM.md §39.2). Non-positive means 'not authored': the set's default is
+        /// used instead, so a config nobody has sized yet still grows a heart.
+        ///
+        /// <para>There is no level. A lifeform is its species and its element; its heart is one
+        /// of the things that element states about it, exactly once.</para>
         /// </summary>
-        public int Level { get; protected set; } = 1;
+        public float HeartWorldScale => heartWorldScale;
+
+        // Authored by the config's per-element variant tuning (ApplyVariantTuning). 0 = the
+        // sentinel every un-sized config carries, resolved against the set's default.
+        float heartWorldScale;
 
         /// <summary>
-        /// Elemental contract: seeds the spawn level. Sizes the heart from the shared level
-        /// curve (<see cref="LifeFormCrystal"/> — one size per level for every species and
-        /// element); Flora also scales its leaf prisms. Call BEFORE Initialize - it spawns AT
-        /// size, nothing pops mid-life.
-        ///
-        /// <para>The ordinary spawn path passes level 1; anything above it is authored
-        /// deliberately — Wildlife Liberation's cage tiers, and the Lifeform Matrix bench,
-        /// which spawns a chosen level so a tuner can see the whole band.</para>
+        /// Elemental contract: sizes this lifeform's heart to the value its element authored.
+        /// Called from the spawn path BEFORE Initialize — it spawns AT size, nothing pops.
+        /// Idempotent, and safe before the crystal field is resolved.
         /// </summary>
-        public virtual void ApplyLevel(int level, float bodyScalePerLevel)
+        public void ApplyHeartSize(float authoredWorldScale)
         {
-            Level = Mathf.Clamp(level, 1, Fauna.MaxLifeformLevel);
-            _bodyScalePerLevel = Mathf.Max(1f, bodyScalePerLevel);
+            heartWorldScale = Mathf.Max(0f, authoredWorldScale);
             // Resolve early: the spawner calls this BEFORE Initialize, so the field it assigns
             // is not populated yet unless ApplyElement provisioned one.
             if (!crystal) crystal = GetComponentInChildren<Crystal>(true);
-            LifeFormCrystal.ApplyLevelSize(crystal, Level);
+            LifeFormCrystal.ApplyHeartSize(crystal, heartWorldScale);
         }
-
-        // Per-level body factor remembered from ApplyLevel so in-world LevelUp uses the same
-        // curve. The crystal has no per-species factor - its size is the shared level curve.
-        float _bodyScalePerLevel = 1.15f;
-
-        /// <summary>Per-level body scale factor (config-seeded); Flora reads it in LevelUp.</summary>
-        protected float BodyScalePerLevel => _bodyScalePerLevel;
 
         /// <summary>Rooted flora never travel - which makes them trivially joustable.</summary>
         public float CurrentSpeed => 0f;
@@ -114,21 +107,16 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// In-world level-up. For flora the earning event is <b>reproduction</b>
-        /// (<see cref="Flora"/>); the Squirrel Space-5 'Shepherd' joust on an ally also grants
-        /// one. The heart grows a step along the shared level curve; Flora also grows future
-        /// leaves. Capped at level 5.
+        /// NOURISH: an own-domain pilot fed this lifeform (the Squirrel's Space-5 'Shepherd'
+        /// joust). The base lifeform has no food web of its own to advance, so it declines;
+        /// <see cref="Flora"/> advances its growth quota toward the next seeding and
+        /// <see cref="Fauna"/> resets its starvation clock and advances its birth counter.
+        ///
+        /// <para>This replaces the level-up that used to be the ally joust's whole effect
+        /// (Docs/ECOSYSTEM.md §39.4). Shepherding now pays out as a POPULATION rather than as a
+        /// bigger individual — the food web makes the change, not a designer.</para>
         /// </summary>
-        public virtual bool LevelUp()
-        {
-            if (Level >= Fauna.MaxLifeformLevel) return false;
-            Level++;
-            // Grows, never pops (continuity of existence). The target is the LOCAL scale that
-            // lands the heart on this level's shared world size.
-            if (crystal)
-                crystal.GrowCrystal(1f, LifeFormCrystal.LocalScaleForLevel(crystal, Level));
-            return true;
-        }
+        public virtual bool Nourish() => false;
 
         /// <summary>
         /// Elemental contract: provisions this lifeform's crystal to EXACTLY the given element
@@ -153,6 +141,10 @@ namespace CosmicShore.Gameplay
             if (tuning == null) return;
             if (tuning.ShieldPeriod >= 0f) shieldPeriod = tuning.ShieldPeriod;
             if (tuning.WitherRingInterval > 0f) witherRingInterval = tuning.WitherRingInterval;
+            // The element states the size of this lifeform's heart, like everything else it
+            // states (Docs/ECOSYSTEM.md §39.2). 0 is the sentinel every un-sized config carries,
+            // which resolves to the set's default rather than to a zero-sized crystal.
+            if (tuning.HeartWorldScale > 0f) ApplyHeartSize(tuning.HeartWorldScale);
         }
 
         public static event Action<string, int> OnLifeFormDeath;

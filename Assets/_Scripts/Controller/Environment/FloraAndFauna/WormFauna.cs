@@ -190,7 +190,10 @@ namespace CosmicShore.Gameplay
             for (int i = 0; i < segments.Count; i++)
             {
                 var seg = segments[i];
-                if (seg) seg.ReprovisionHeart(element);
+                // The colony's authored heart SIZE rides along with its element: a segment is
+                // a MEMBER of the population and carries the species' own heart, and it never
+                // gets an AssignLineage of its own to read one from (Docs/ECOSYSTEM.md §39.2).
+                if (seg) seg.ReprovisionHeart(element, HeartWorldScale);
             }
         }
 
@@ -311,10 +314,12 @@ namespace CosmicShore.Gameplay
             seg.Colony = this;
             seg.Initialize(cell);
             // A colony breeds true: a member grown after the species config picked an
-            // element carries that element's heart, not the body prefab's authored one.
-            // No-ops when they already agree (EnsureElementalCrystal keeps a match).
+            // element carries that element's heart - its MODEL and its SIZE - not the body
+            // prefab's authored one. No-ops when they already agree (EnsureElementalCrystal
+            // keeps a match), and the size is re-applied either way so a segment grown at
+            // any point in the colony's life matches the ones it grew beside.
             if (_pickedHeartElement != Element.None)
-                seg.ReprovisionHeart(_pickedHeartElement);
+                seg.ReprovisionHeart(_pickedHeartElement, HeartWorldScale);
             if (cell) cell.RegisterSpawnedObject(seg.gameObject);
             segments.Insert(index, seg);
         }

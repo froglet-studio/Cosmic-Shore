@@ -252,12 +252,19 @@ namespace CosmicShore.Gameplay
         protected override int PrismBudget => maxTotalSpawnedObjects;
 
         /// <summary>
-        /// A LATTICE species: every assembler here (gyroid, SchwarzP, wall) bonds at offsets
-        /// measured in absolute local units, and <c>GyroidAssembler.Start</c> captures the
-        /// prism's target scale once, so a leaf that grows mid-life lays prisms the bond table
-        /// no longer describes - and the plant's own earlier prisms are still the old size.
-        /// Levels are still earned and the heart still grows; the leaf simply does not.
-        /// See <see cref="Flora.PrismSizeFixedByGrowthRule"/> and Docs/ECOSYSTEM.md §33.
+        /// A LATTICE species: every assembler here (gyroid, SchwarzP, quasicrystal, wall)
+        /// bonds at offsets measured in absolute local units, and <c>GyroidAssembler.Start</c>
+        /// captures the prism's target scale once, so a leaf that grows mid-life lays prisms
+        /// the bond table no longer describes - and the plant's own earlier prisms are still
+        /// the old size.
+        ///
+        /// <para>Lifeform LEVELS are retired (Docs/ECOSYSTEM.md §39, which supersedes §33), so
+        /// NOTHING reads this today: a leaf is its authored size for the whole of a plant's
+        /// life, and a heart is authored per element rather than grown. It is kept
+        /// deliberately, as a standing guard against a per-individual scale curve returning on
+        /// some future growth path - this is the species family that could never honour one,
+        /// because two prism sizes cannot tile one lattice.</para>
+        /// See <see cref="Flora.PrismSizeFixedByGrowthRule"/>.
         /// </summary>
         protected override bool PrismSizeFixedByGrowthRule => true;
 
