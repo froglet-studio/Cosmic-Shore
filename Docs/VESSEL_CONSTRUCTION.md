@@ -39,16 +39,24 @@ model each one's mesh subasset resolves to):
 | Scarab | 2 | 1 | `SparrowModel1` (via nested prefab) | 4 |
 | Serpent | 1 | 1 | `SerpentExport` + `serpent` (via nested prefab) | 4 † |
 | Squirrel | 0 | 1 | `SquirrelVessel_CosmicShoresTest1` (via nested prefab) | 4 |
-| **Dolphin** | **19** | **0** | `Dolphin_Test` ×17 | **0** |
+| Dolphin ‡ | 2 | 1 | `dolphin_shapekey_with_animations` (via nested prefab) | 4 ‡ |
 | **Urchin** | **13** | **0** | `Urchan_Test` ×13 | **0** |
 | **Rhino** | **8** | **0** | `Rhino_Test` ×7 | **0** |
 | **Grizzly** | **8** | **0** | `Vessel_Wedge_Scene (4)` ×8 | **0** |
 
-- **Skinned family** (top eight): one armature, one skinned hull, element shapes present. Parts are
+- **Skinned family** (top nine): one armature, one skinned hull, element shapes present. Parts are
   bones; a jet or an FX mount parents to a bone and follows it when the model animates.
-- **Part-per-mesh family** (bottom four): a static mesh per part, placed by translation. No
+- **Part-per-mesh family** (bottom three): a static mesh per part, placed by translation. No
   armature, no shapes, so no morph and no puppetry. Parts are GameObjects, and an FX mount parents
   to whichever GameObject the part happens to be.
+
+‡ **The Dolphin CHANGED FAMILIES in this pass** and is the only vessel that ever has. It shipped as
+`Dolphin_Test` ×17 static part meshes with no armature and no shapes; **FrogletTools ▸ Vessels ▸
+Swap Vessel Rig** re-homed its colliders and FX mounts onto the bones of
+`dolphin_shapekey_with_animations` and stripped the legacy art. Post-swap, measured off the shipped
+prefab: 2 MeshFilters (the skimmer sphere and the crackle overlay, both built-in meshes and neither
+part of the hull), 1 SkinnedMeshRenderer, and four element shapes that MOVE the hull. The row above
+is the measured state; the swap's own evidence is §4.3.
 
 † **The Serpent is in BOTH families at once** and is the counter-example to reading this table as a
 partition. Its `SkinnedMeshRenderer` draws `SerpentExport.fbx` (one skinned mesh, 27 bones, four
@@ -278,6 +286,40 @@ Two different phenomena, and telling them apart matters:
 > (`VESSEL_TAIL_AND_JETS.md` §6 calls it "the extreme case"), and 2.105× takes that hull to ~0.91.
 > Camera distance, collider volumes, `widthScale`, and the occlusion corridor's measured hull radius
 > are all functions of that number.
+
+### 4.5 The offline mirror and the in-editor audit disagree by a constant — and both are right
+
+Running **FrogletTools ▸ Vessels ▸ Audit Vessel Elemental Morphs** on the swapped Dolphin and
+`measure_vessel_models.py` on the same FBX gives two different sets of numbers for the same four
+shapes:
+
+| shape | in-editor | offline | ratio |
+|---|---|---|---|
+| Mass | 12.056% | 15.471% | 1.283 |
+| Charge | 4.314% | 5.535% | 1.283 |
+| Space | 3.140% | 4.030% | 1.283 |
+| Time | 13.538% | 17.372% | 1.283 |
+
+**The ratio is identical to four digits across all four shapes, so the disagreement is in the
+DENOMINATOR, not in the deltas.** Both tools report `farthest vertex delta / mesh diagonal`; they
+agree on the numerator and differ on what "the mesh's diagonal" means. Unity's `mesh.bounds` for a
+**skinned** mesh is the culling volume expressed in ROOT-BONE space, not the raw vertex AABB the
+offline reader computes — the same distinction `CLAUDE.md` already records for the prism occlusion
+corridor, where measuring a skinned hull off `sharedMesh.bounds` overstated the Sparrow by its
+whole armature factor.
+
+Three consequences:
+
+- **Neither number is wrong, and the verdict is unaffected.** The threshold is 0.1% and the real
+  shapes are 2.46–17.94% by either measure, while an inert one is 0.0000% by both — the gap the
+  threshold sits in is four orders of magnitude wide, so no plausible denominator can move a shape
+  across it.
+- **Do not "reconcile" them by changing either tool.** The in-editor audit must measure what Unity
+  measures, because that is what the runtime morphs against; the offline mirror must stay readable
+  without Unity, which is the whole reason it exists.
+- **Compare a magnitude only against numbers from the SAME tool.** A per-model constant means a
+  cross-tool comparison silently rescales, and the constant differs per model (it is that rig's
+  root-bone factor).
 
 ---
 

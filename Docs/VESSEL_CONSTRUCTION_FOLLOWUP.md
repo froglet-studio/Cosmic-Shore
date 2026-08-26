@@ -84,7 +84,7 @@ restoring them from git means restoring both.
 
 ---
 
-## Phase 2 — the Dolphin rig swap  ✅ TOOL SHIPPED · ⚠ NOT YET RUN
+## Phase 2 — the Dolphin rig swap  ✅ SHIPPED · RUN · VERIFIED
 
 The highest-value item, and the only rig carrying a real morph. Phase 0 changed two of this
 phase's own premises (`VESSEL_CONSTRUCTION.md` §4.3), both in the easier direction:
@@ -117,10 +117,43 @@ write; idempotent; refuses and writes nothing if a single mapped bone or object 
 its output to the ledger and draws the ship panel. `VesselRigSwapPlanner` stays as the report-only
 sibling and now points at it.
 
-⚠ **The tool has never been run.** This session had no Unity CLI, so the swapper is type-checked
-against transcribed stubs and nothing more, and **the branch carries the tool, not a swapped
-prefab**. The run-and-verify steps are in `Docs/UNITY_VERIFICATION_CHECKLIST.md`; use the window's
-**Validate & Push** so the prefab lands as its own commit.
+✅ **Run by Garrett on 2026-08-26** and pushed as its own commit (`Dolphin.prefab` only — the
+swapper can touch exactly one path per run). `Audit Vessel Elemental Morphs` reports the Dolphin at
+**all four elements** — Mass 12.056%, Charge 4.314%, Space 3.140%, Time 13.538% of the hull's own
+diagonal, every one of them three orders of magnitude above the 0.1% inert threshold — and the
+fleet line moved to **9/12 vessels ship element shapes that MOVE THE HULL**. (Those percentages are
+the in-editor figures; the offline mirror reports the same shapes 1.283× larger for a reason that is
+not a discrepancy — `VESSEL_CONSTRUCTION.md` §4.5.)
+
+**The pushed prefab was then verified against the YAML, not against the log.** Measured
+differentially versus the pre-swap revision:
+
+| check | result |
+|---|---|
+| GameObjects | 31 → 25 — exactly the six `Engine Left/Right.N` sub-pixel nozzles removed, nothing else |
+| MeshRenderer / MeshFilter | 18 → 1, 19 → 2 — legacy hull art stripped; what remains is the skimmer sphere and the crackle overlay, both built-in meshes |
+| SkinnedMeshRenderer | 0 → 1, `stripped`, belonging to the rig instance |
+| **colliders** | **11 Box + 1 Sphere, unchanged** — the fitted identity transform means nothing was re-fitted |
+| MonoBehaviour | 48 → 48 — no component lost |
+| rig instance | sourced from the guid **owned** by `dolphin_shapekey_with_animations.fbx` (resolved by declaration count, §2), parented under `OrientationHandle`, transform identity |
+| jets | six, `mountBone` = `jetint/jetinm/jetinb × .l/.r`; all six names **present in the rig's 30 Model nodes**, as are `jetT/jetm/jetB × .l/.r` and `jaw.u/.b` |
+| tail | `(0, 0, −21)` before and after — unmoved |
+| `RiptideAnimation` | `SkinnedMeshRenderer` bound to the rig; **all 13 Transform fields cleared to 0** so they bind by name |
+| `VesselCustomization` | `_shipGeometries` 11 legacy renderers → the one rig hull GameObject |
+| newly-serialized fields | `MinJawAngle 4.7636`, `MaxJawAngle 23.4287`, `_domainMaterialSlot 1`, `_domainReplacesMaterials []` — all exactly the C# field initializers, i.e. Unity writing out fields the old prefab predated, not invented values |
+| dangling intra-file fileIDs | **0 introduced**; one pre-existing dangle cleared |
+| missing scripts | the same 5 unresolvable guids before and after (package scripts; no `Library/PackageCache` in a fresh clone), 0 dropped |
+| §3 reachability | clean — every plain-Transform-parented instance still listed in `m_Children` |
+| §3.4 duplicate hulls | Dolphin **absent** from the list — the legacy art was stripped, not merely disabled |
+
+That last row is the one worth keeping: a swap that *disables* the old renderers instead of removing
+them passes every functional check and silently doubles the vessel's draw calls, which is exactly
+the state the Manta family is still in (§3.4).
+
+**What is still human-only.** None of the above proves the ship *moves* right. Fly it: element level
+0 → 10 on each of the four elements, and confirm the jaws, wings and six thrusters still animate and
+that the trail / skim / crystal blast are unchanged. That row stays open in
+`Docs/UNITY_VERIFICATION_CHECKLIST.md` until someone flies it.
 
 Constraints already handled in code, which must not be re-solved:
 

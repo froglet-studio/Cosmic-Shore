@@ -3268,17 +3268,31 @@ GPU-instancing macros (`#pragma multi_compile_instancing`, `UNITY_INSTANCING_BUF
 
 ---
 
-## 🔴 Dolphin rig swap — the swapper has never been RUN (2026-08-26)
+## 🟡 Dolphin rig swap — RUN and asset-verified; still needs a flight (2026-08-26)
 
-> **THE PR IS HELD ON THIS.** At the `/ship-deep` §2.5 gate the call was to hold rather than merge
-> tool-only, so this checklist entry is the blocker: run steps 1–3 below and the branch is
-> unblocked. Nothing else on the branch is waiting on anything.
+> **THE PR HOLD IS RELEASED.** The `/ship-deep` §2.5 gate held the PR until the swap was run;
+> Garrett ran it on 2026-08-26 and pushed the prefab, and steps 1–3 below are green. What remains
+> is step 7 — flying it — which no tool can do and which does not block the merge.
 
-`FrogletTools ▸ Vessels ▸ Swap Vessel Rig` is new and, like every writer tool, **its output is
-the deliverable and it lands in your working tree, not on the branch**. The branch carries the tool
-and the measurements; it does not carry a swapped `Dolphin.prefab`. Nothing was verified in an
-editor — this session had no Unity CLI (`unity` is not on PATH in the remote container), so the
-tool is type-checked against transcribed stubs and nothing more.
+`FrogletTools ▸ Vessels ▸ Swap Vessel Rig` is new and, like every writer tool, **its output is the
+deliverable and it lands in your working tree, not on the branch** — so the swapped
+`Dolphin.prefab` is a separate commit from the tool that wrote it. The tool itself was never run in
+an editor by the session that wrote it (no Unity CLI in the remote container; it is type-checked
+against transcribed stubs), which is exactly why its output was verified against the prefab YAML
+rather than against the tool's own log:
+
+**Asset verification of the pushed prefab, measured differentially against the pre-swap revision.**
+Six `Engine Left/Right.N` sub-pixel GameObjects removed and nothing else; MeshRenderer 18 → 1 and
+MeshFilter 19 → 2 (legacy hull art stripped — what remains is the skimmer sphere and the crackle
+overlay); one stripped `SkinnedMeshRenderer` from the rig instance; **11 Box + 1 Sphere colliders
+unchanged**; 48 → 48 MonoBehaviours; rig sourced from the guid *owned* by
+`dolphin_shapekey_with_animations.fbx`, parented under `OrientationHandle` at identity; six jets on
+`jetint/jetinm/jetinb × .l/.r`, all six names present among the rig's 30 Model nodes; tail unmoved
+at `(0, 0, −21)`; `RiptideAnimation`'s 13 Transform fields cleared to bind by name and its
+`SkinnedMeshRenderer` bound; `_shipGeometries` 11 → 1; **0 dangling fileIDs introduced** (one
+pre-existing dangle cleared); missing-script set identical before and after; §3 reachability clean;
+and the Dolphin **absent** from the §3.4 duplicate-hull list, proving the old renderers were removed
+rather than merely disabled. Full table: `Docs/VESSEL_CONSTRUCTION_FOLLOWUP.md` § Phase 2.
 
 **What the numbers rest on** (all measured, reproducible with
 `python3 Tools/Build/measure_vessel_models.py` and the derivations in
@@ -3292,27 +3306,29 @@ tool is type-checked against transcribed stubs and nothing more.
 
 ### Steps
 
-1. **Dry run first.** Open the window, leave the vessel on Dolphin, press **Dry run**. Every mapped
+1. ✅ **Dry run first.** Open the window, leave the vessel on Dolphin, press **Dry run**. Every mapped
    bone and legacy object must resolve and it must report **4 element shapes**. A refusal lists what
    is missing and writes nothing.
-2. **Perform the swap.** Then open `Dolphin.prefab` and look at it: one skinned hull, no doubled
+2. ✅ **Perform the swap.** Then open `Dolphin.prefab` and look at it: one skinned hull, no doubled
    geometry, the six engine pods showing open exhaust bells (the shipped hull's are sealed cones —
    that visible difference is the confirmation the rig is in).
-3. **`FrogletTools ▸ Vessels ▸ Audit Vessel Elemental Morphs`** — the Dolphin must now report four
+3. ✅ **`FrogletTools ▸ Vessels ▸ Audit Vessel Elemental Morphs`** — the Dolphin must report four
    element shapes **with non-zero magnitude**. Magnitude is the point: a rig can carry four
    correctly-named shapes that move nothing (Rhino's and Urchin's do), and before this branch the
-   audit could not tell the difference.
-4. **`Audit Vessel Tails and Jets`** — six jets, still resolving, now on the nozzle bones.
-5. **`Audit Corridor Vessel Radii`** — the occlusion corridor measures the hull at bind. The rig's
+   audit could not tell the difference. **Reported:** Mass 12.056%, Charge 4.314%, Space 3.140%,
+   Time 13.538% of the hull diagonal — every one three orders of magnitude clear of the 0.1% inert
+   threshold — and the fleet line moved to 9/12.
+4. ⬜ **`Audit Vessel Tails and Jets`** — six jets, still resolving, now on the nozzle bones.
+5. ⬜ **`Audit Corridor Vessel Radii`** — the occlusion corridor measures the hull at bind. The rig's
    bounds match the shipped hull's to three decimals, so this number should NOT move. If it does,
    something else changed.
-6. **`Audit Vessel Skimmers`** — unaffected by the swap (the skimmer is under `OrientationHandle`,
+6. ⬜ **`Audit Vessel Skimmers`** — unaffected by the swap (the skimmer is under `OrientationHandle`,
    not under the model), so it must still pass exactly as before.
-7. **Fly it.** Element level 0 → 10 on each of the four elements and watch the hull morph; check the
+7. ⬜ **Fly it — THE ONE THAT MATTERS.** Element level 0 → 10 on each of the four elements and watch the hull morph; check the
    jaws, wings and six thrusters still animate (`RiptideAnimation` re-binds by bone name, so its
    inspector fields are deliberately left EMPTY); check the trail, the skim and the crystal blast
    are unchanged.
-8. **Ship the output.** Use the window's **Validate & Push** button, which stages only the prefab
+8. ✅ **Ship the output.** Use the window's **Validate & Push** button, which stages only the prefab
    the tool recorded. Do not `git add -A`.
 
 If step 3 does not go green, **do not hand-fix the prefab** — say what it reported. The mapping is

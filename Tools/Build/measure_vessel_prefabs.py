@@ -192,6 +192,43 @@ def survey_prefab(path):
     }
 
 
+
+# Unity's built-in resources. A reference to a built-in mesh (the skimmer sphere, the
+# crackle overlay quad) is not a model wiring and must never be reported as one.
+BUILTIN_GUID = "0000000000000000e000000000000000"
+
+MODEL_EXTS = (".fbx", ".obj", ".blend", ".dae")
+
+
+def models_wired(s):
+    """Which MODEL files this vessel's hull actually draws from.
+
+    A hull reaches its model two ways, and reading only the first is what made a
+    rig-swapped vessel report UNRESOLVED:
+
+    * **Direct** - a MeshFilter/SkinnedMeshRenderer in the prefab holds `m_Mesh`
+      pointing into the model file. This is the part-per-mesh family, and the
+      skinned family while its renderer lives in the prefab itself.
+    * **Nested instance** - the model is instantiated as a nested prefab, so the
+      renderer document here is `stripped` and carries no `m_Mesh` at all; the
+      wiring is the instance's `m_SourcePrefab`. This is what a rig swap produces
+      (`VESSEL_CONSTRUCTION.md` s3), and the Dolphin is the first vessel to use it.
+
+    Built-in-resource references are excluded outright - they name Unity, not a model.
+    """
+    out = set()
+    for x in s["mesh_filters"] + s["skinned"]:
+        g = x["guid"]
+        if not g or g == BUILTIN_GUID:
+            continue
+        out.add(os.path.basename(x["model"]) if x["model"]
+                else "UNRESOLVED(%s)" % g)
+    for pi in s["instances"]:
+        f = pi.get("src_file")
+        if f and f.lower().endswith(MODEL_EXTS):
+            out.add(os.path.basename(f))
+    return out
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--only")
@@ -210,10 +247,7 @@ def main():
     for f in files:
         s = survey_prefab(f)
         rows.append(s)
-        models = sorted({
-            os.path.basename(x["model"]) if x["model"] else "UNRESOLVED(%s)" % (x["guid"] or "none")
-            for x in s["mesh_filters"] + s["skinned"] if x["guid"]
-        })
+        models = sorted(models_wired(s))
         print("%-10s %4d %4d  %s" % (s["vessel"], len(s["mesh_filters"]),
                                      len(s["skinned"]), ", ".join(models) or "-"))
 
