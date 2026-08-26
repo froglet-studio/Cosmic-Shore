@@ -86,6 +86,37 @@ namespace CosmicShore.Gameplay
                  "you are looking at from the moment it clears the hull is the real round.")]
         [SerializeField, Range(0.01f, 1f)] private float flightGrowthCompleteAt01 = 1f;
 
+        [Header("Tail")]
+        [Tooltip("This round's TAIL — the long streak that lets OTHER pilots see it coming " +
+                 "(Docs/VESSEL_TAIL_AND_JETS.md).\n\n" +
+                 "It is one of three things the platform keeps distinct and does NOT " +
+                 "interchange:\n" +
+                 "  • TRAIL — conserved prism mass, gameplay-bearing. Nothing here touches it.\n" +
+                 "  • TAIL — this. Pure photons, long-lived, legible across a cell, wearing " +
+                 "the firing pilot's DOMAIN exactly as their trail does.\n" +
+                 "  • JET — a short plume on an engine node, tuned for its own pilot.\n\n" +
+                 "A missile is the one projectile that wants a tail: it crosses a whole arena " +
+                 "over three seconds and everyone in that arena has a reason to know it is " +
+                 "coming. A bullet does not — it is a streak already.\n\n" +
+                 "Point it at the TrailRenderer of a nested VesselTail.prefab instance so the " +
+                 "look stays one shared asset. Leave empty on every round that has no tail.")]
+        [SerializeField] private TrailRenderer tail;
+
+        [Tooltip("The tail's ribbon width as a fraction of THIS ROUND'S OWN BODY DIAMETER, " +
+                 "measured per flight from the growth target's geometry.\n\n" +
+                 "A TrailRenderer's width is world-space and ignores transform scale, so a " +
+                 "round that swells 14x-38x with MASS would otherwise fly a constant thread. " +
+                 "The fleet's vessels solve the same problem with an authored widthScale " +
+                 "derived from their camera distance; a round has no camera, but it does have a " +
+                 "measured body, so its tail is sized by the thing it is streaming off.\n\n" +
+                 "0.4 is not a guess: it is the ratio the one hull the fleet actually tuned a " +
+                 "tail against already flies at (the Sparrow's widthScale 2.5 on a ~6.4 u hull), " +
+                 "so a missile's tail reads as the same KIND of streak as the ship's rather " +
+                 "than a fatter one.\n\n" +
+                 "This is the FIRST DIAL if the tail reads too heavy or too thin. Ignored on a " +
+                 "round with no measured body, which keeps the prefab's authored width.")]
+        [SerializeField, Range(0f, 3f)] private float tailWidthPerBodyDiameter = 0.4f;
+
         [Header("Data Containers")]
         [SerializeField] private ThemeManagerDataContainerSO _themeManagerData;
 
@@ -250,6 +281,7 @@ namespace CosmicShore.Gameplay
             _pooledParent = transform.parent;
 
             CacheTransformRole();
+            CaptureTailRest();
 
             if (chargeField) chargeField.gameObject.SetActive(false);
         }
@@ -267,8 +299,8 @@ namespace CosmicShore.Gameplay
         ///
         /// Derived rather than authored so it cannot be mis-set: a projectile that grows a
         /// visible body is a bug in any prefab, present or future, and this answers it from the
-        /// prefab's own contents. The charge shell is excluded — it draws the hit volume, not
-        /// the round.
+        /// prefab's own contents. Two renderers are excluded because neither draws the ROUND:
+        /// the charge shell (it draws the hit volume) and the TAIL (it draws the round's path).
         /// </summary>
         void CacheTransformRole()
         {
@@ -280,6 +312,11 @@ namespace CosmicShore.Gameplay
                 var r = renderers[i];
                 if (!r) continue;
                 if (chargeField && r.transform.IsChildOf(chargeField)) continue;
+                // The TAIL is a Renderer too, and it draws the round's PATH rather than the
+                // round. Counting it would tell a bare hit sphere (the turret's carried
+                // collider) that it draws a model, and silently switch its growth off the
+                // moment somebody gave it a tail.
+                if (tail && r.transform.IsChildOf(tail.transform)) continue;
                 _transformIsHitVolume = false;
                 return;
             }
@@ -508,6 +545,14 @@ namespace CosmicShore.Gameplay
             CaptureModelHitSphere();
             FitColliderToModel(1f);
 
+            // The TAIL, for the same reason and at the same point as the hit sphere: the
+            // round's parent chain, scale and position are all final here, and its body has
+            // just been measured. Re-done per flight rather than once, because a pooled round
+            // changes pilots, domains and MASS levels between shots.
+            ReclaimTail();
+            PaintTail();
+            PlaceAndSizeTail(1f);
+
             // The charge shell only exists to sell growth, so a round that does not grow never
             // shows one. Sized here as well as in the flight loop: the loop's first tick lands a
             // frame later, and until then the shell would render at whatever scale the prefab
@@ -537,6 +582,10 @@ namespace CosmicShore.Gameplay
             // and its own end-of-flight handler does the reattach. Returning here would
             // fall through to the null-factory branch and Destroy the host's child.
             if (IsCarriedByHost) return;
+
+            // Everything below deactivates this object, which would take a live ribbon with
+            // it. Cut the tail loose FIRST so it fades on its own clock.
+            ReleaseTailToFade();
 
             // Only reattach if we had detached for this flight
             if (_detachedThisFlight && _pooledParent != null && transform.parent == null)
@@ -813,6 +862,7 @@ namespace CosmicShore.Gameplay
                     ? _launchScale * g
                     : new Vector3(_launchScale.x * g, _launchScale.y * g, _launchScale.z);
                 FitColliderToModel(g);
+                PlaceAndSizeTail(g);
             }
             else if (_transformIsHitVolume)
                 transform.localScale = new Vector3(_launchScale.x * g, _launchScale.y * g, _launchScale.z);
@@ -982,6 +1032,202 @@ namespace CosmicShore.Gameplay
         /// or this projectile's own root when none is wired (every round that already grew).
         /// </summary>
         Transform GrowthTarget => flightGrowthTarget ? flightGrowthTarget : transform;
+
+        #region Tail
+
+        // The tail's authored mount on this prefab, captured once. Everything else about it is
+        // per FLIGHT: a pooled round changes pilots, domains and MASS levels between shots.
+        Transform _tailParent;
+        Vector3 _tailRestPosition;
+        Quaternion _tailRestRotation;
+        GradientAlphaKey[] _tailAlphaKeys;
+        bool _tailDetached;
+        CancellationTokenSource _tailFadeCts;
+
+        /// <summary>
+        /// Captures what the prefab authored, before any flight has moved or repainted it.
+        ///
+        /// The ALPHA keys in particular: <see cref="TailGradient"/> rebuilds only the colour
+        /// keys, so the ribbon's authored fade-out has to be read once here — read it after a
+        /// repaint and every subsequent domain change re-applies the keys of the previous one.
+        /// </summary>
+        void CaptureTailRest()
+        {
+            if (!tail) return;
+
+            var tailTransform = tail.transform;
+            _tailParent = tailTransform.parent;
+            _tailRestPosition = tailTransform.localPosition;
+            _tailRestRotation = tailTransform.localRotation;
+            _tailAlphaKeys = tail.colorGradient.alphaKeys;
+        }
+
+        /// <summary>
+        /// Puts the tail back on this round and wipes the last flight's ribbon.
+        ///
+        /// <b><see cref="TrailRenderer.Clear"/> is the load-bearing line.</b> A TrailRenderer
+        /// records world-space points and a pooled round is reissued somewhere else entirely,
+        /// so without it the first frame of every reissue draws one straight ribbon from
+        /// wherever the previous missile detonated to this one's launch bay — the classic
+        /// pooled-trail streak across the arena.
+        ///
+        /// It also cancels a fade still in progress (<see cref="ReleaseTailToFade"/>): a
+        /// 20-deep pool cycles faster than a 4-second ribbon, so a round can absolutely be
+        /// fired again while its last tail is still fading, and the live round outranks it.
+        /// </summary>
+        void ReclaimTail()
+        {
+            if (!tail) return;
+
+            _tailFadeCts?.Cancel();
+            _tailFadeCts?.Dispose();
+            _tailFadeCts = null;
+
+            if (_tailDetached)
+            {
+                var tailTransform = tail.transform;
+                tailTransform.SetParent(_tailParent, false);
+                tailTransform.localPosition = _tailRestPosition;
+                tailTransform.localRotation = _tailRestRotation;
+                _tailDetached = false;
+            }
+
+            tail.Clear();
+            tail.emitting = true;
+        }
+
+        /// <summary>
+        /// Paints the tail in the FIRING PILOT'S domain, from the same trail pair a vessel's
+        /// own tail and its prism trail read — so a missile crossing a cell says whose it is
+        /// exactly the way everything else that pilot puts in the world does.
+        ///
+        /// Per flight, never snapshotted, for the same reason
+        /// <see cref="ApplySpikeAppearance"/> is: domains re-pick at runtime, and a pooled
+        /// round recycled out of a Ruby pilot's hands would otherwise stay Ruby in a Jade
+        /// pilot's.
+        /// </summary>
+        void PaintTail()
+        {
+            if (!tail || _themeManagerData == null || _themeManagerData.ColorSet == null) return;
+            if (!_themeManagerData.ColorSet.TryGetColorSetByDomain(OwnDomain, out var colorSet)) return;
+
+            TailGradient.Apply(tail, colorSet.TrailHighlightColor, colorSet.TrailCoreColor, _tailAlphaKeys);
+        }
+
+        /// <summary>
+        /// Hangs the tail off the BACK of the round's body and sizes its ribbon to that body,
+        /// at the given growth.
+        ///
+        /// Both come out of the measurement <see cref="CaptureModelHitSphere"/> already took
+        /// for the hit sphere, so nothing here is authored per MASS level and nothing hardcodes
+        /// the missile:
+        ///
+        /// <list type="bullet">
+        /// <item><b>Where</b> — the model's rear face in root-local space. The model scales
+        /// about the root origin, so the rear is linear in growth exactly as the sphere's
+        /// centre is, and the emitter stays pinned to the exhaust end while the round swells
+        /// from 1.7 u to 33 u.</item>
+        /// <item><b>How wide</b> — a fraction of the body's own diameter. A TrailRenderer's
+        /// width is WORLD-space and ignores transform scale (the reason
+        /// <see cref="VesselFXWidth"/> exists at all), so a round that grows 14x-38x with MASS
+        /// would otherwise fly a constant thread. Multiplied out to world by the largest lossy
+        /// component, matching <see cref="CacheSweepRadius"/>'s convention.</item>
+        /// </list>
+        ///
+        /// A round with no measured body keeps whatever width and mount the prefab authored —
+        /// there is nothing to derive from, and inventing a number would be worse than the
+        /// authored one.
+        /// </summary>
+        void PlaceAndSizeTail(float growth)
+        {
+            if (!tail || !_fitsColliderToModel) return;
+
+            Vector3 lossy = transform.lossyScale;
+            float toWorld = Mathf.Max(Mathf.Abs(lossy.x), Mathf.Max(Mathf.Abs(lossy.y), Mathf.Abs(lossy.z)));
+
+            tail.transform.localPosition = TailMount(_modelHitCentre, _modelHitExtents, growth);
+            tail.widthMultiplier = TailWidth(_modelHitExtents, growth, toWorld, tailWidthPerBodyDiameter);
+        }
+
+        /// <summary>
+        /// Where a tail hangs off a round: the model's REAR face, root-local. The exact mirror
+        /// of <see cref="ModelHitCentre"/>'s nose, and linear in growth for the same reason —
+        /// the model scales about the root origin.
+        /// </summary>
+        public static Vector3 TailMount(Vector3 centre, Vector3 halfExtents, float growth)
+            => new Vector3(centre.x, centre.y, centre.z - halfExtents.z) * growth;
+
+        /// <summary>
+        /// A tail's WORLD ribbon width: a fraction of the round's own body diameter, where the
+        /// body's radius is the same measurement the hit sphere is fitted to.
+        ///
+        /// <paramref name="toWorld"/> is the round's largest lossy-scale component, matching
+        /// <see cref="CacheSweepRadius"/>'s convention, because a TrailRenderer's width is a
+        /// world-space quantity that transform scale does not reach.
+        /// </summary>
+        public static float TailWidth(Vector3 halfExtents, float growth, float toWorld,
+                                      float widthPerBodyDiameter)
+            => widthPerBodyDiameter * 2f * ModelHitRadius(halfExtents, growth) * toWorld;
+
+        /// <summary>
+        /// Cuts the tail loose at the end of a flight so its ribbon fades out where it was laid
+        /// instead of vanishing with the round.
+        ///
+        /// <b>This is continuity of existence, not polish.</b> The round is about to be
+        /// deactivated into the pool — 0.025 s after it detonates — and a tail is authored to
+        /// outlive four seconds of travel, so at 120 u/s several hundred units of ribbon would
+        /// blink out in one frame. The blast covers the head of it; the rest of it is nowhere
+        /// near the explosion.
+        ///
+        /// Detached in WORLD space, still emitting nothing: a TrailRenderer's points age out on
+        /// their own, so "fade" needs no animation — only for the ribbon to stop being a child
+        /// of something that is about to be switched off. It comes home either when the fade
+        /// runs out or when the round is fired again, whichever is first
+        /// (<see cref="ReclaimTail"/>).
+        /// </summary>
+        void ReleaseTailToFade()
+        {
+            if (!tail || _tailDetached || tail.positionCount == 0) return;
+
+            tail.transform.SetParent(null, true);
+            tail.emitting = false;
+            _tailDetached = true;
+
+            _tailFadeCts = CancellationTokenSource.CreateLinkedTokenSource(
+                this.GetCancellationTokenOnDestroy());
+            FadeTailAsync(tail.time, _tailFadeCts.Token).Forget();
+        }
+
+        async UniTaskVoid FadeTailAsync(float seconds, CancellationToken token)
+        {
+            try
+            {
+                await UniTask.Delay(TimeSpan.FromSeconds(seconds),
+                                    DelayType.DeltaTime, PlayerLoopTiming.Update, token);
+                ReclaimTail();
+            }
+            catch (OperationCanceledException) { }
+            catch (Exception ex)
+            {
+                CSDebug.LogError($"[Projectile] Tail fade error: {ex}");
+            }
+        }
+
+        /// <summary>
+        /// A round destroyed mid-fade (pool overflow, scene teardown) would leave its detached
+        /// tail behind with nothing owning it. It is invisible by then and scene-scoped, but an
+        /// orphan is still an orphan.
+        /// </summary>
+        void OnDestroy()
+        {
+            _tailFadeCts?.Cancel();
+            _tailFadeCts?.Dispose();
+            _tailFadeCts = null;
+
+            if (_tailDetached && tail) Destroy(tail.gameObject);
+        }
+
+        #endregion
 
         /// <summary>
         /// The projectile's hit radius in world units, cached per launch (the Sparrow's

@@ -3,7 +3,13 @@ using UnityEngine;
 namespace CosmicShore.Gameplay
 {
     /// <summary>
-    /// A vessel's <b>TAIL</b> — the long streak that lets OTHER players see and find it.
+    /// A <b>TAIL</b> — the long streak that lets OTHER players see and find whatever wears it.
+    ///
+    /// <b>Not a vessel's alone.</b> A tail is defined by its PURPOSE, not its owner, and the
+    /// Sparrow's skyburst missile carries this same marker on the same shared prefab: it crosses
+    /// ~360 u in three seconds and everyone in the arena has a reason to see it coming
+    /// (<c>Docs/VESSEL_TAIL_AND_JETS.md</c> §4.2). A round has no <see cref="VesselTailAndJets"/>
+    /// — its <c>Projectile</c> paints, mounts and sizes the tail itself, per flight.
     ///
     /// The platform has three distinct things streaming off the back of a vessel, and they are
     /// NOT interchangeable (<c>Docs/VESSEL_TAIL_AND_JETS.md</c>):
@@ -15,7 +21,9 @@ namespace CosmicShore.Gameplay
     ///       clear of its own pilot's view, whose whole job is legibility at range: it is how a
     ///       rival or a teammate spots you across a cell. Seen by everyone.</item>
     /// <item><b>Jet</b> — <see cref="VesselJet"/>. Short plumes at the model's engines that tell
-    ///       a pilot THEIR OWN ship is moving. Seen by that pilot only, by default.</item>
+    ///       a pilot THEIR OWN ship is moving. TUNED for that pilot, but drawn on every machine:
+    ///       a rival's plumes are how you read their thrust up close. (A per-viewer switch was
+    ///       added once and removed; this line still claimed it.)</item>
     /// </list>
     ///
     /// The component itself is deliberately a marker: it carries no tuning, because the tail's

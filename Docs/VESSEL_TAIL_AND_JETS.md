@@ -6,6 +6,7 @@
 > vessel's model, because a rig swap moves every mount measured here.
 
 **Status:** standard shipped, fleet migrated. Every vessel has a tail; 7 of 12 have jets.
+The Sparrow's **skyburst missile** has one too — the first non-vessel to carry a tail (§4.2).
 Audit with **FrogletTools ▸ Vessels ▸ Audit Vessel Tails and Jets**.
 
 ## 1. Three things stream off the back of a vessel, and they are not interchangeable
@@ -26,6 +27,13 @@ was literally a prefab called `TrailEmpty`. That is the confusion this document 
 
 The tail sits **between** the trail and the jets — longer-lived and more distant than a jet, far
 shorter-lived and non-physical compared to the trail.
+
+**A tail is not a vessel's alone.** The table says "vessel" because vessels were the only things
+that had one; the *definition* is a purpose, not an owner — a long streak whose whole job is
+legibility at range. The Sparrow's skyburst missile crosses 360 units of arena over three seconds
+and everybody in that arena has a reason to know it is coming, so it carries one, mounted on the
+round's own rear and wearing the firing pilot's domain (§4.2). A jet stays vessel-only: it is a
+readout of an *engine*, and a missile is one.
 
 **Nothing here touches the trail.** Conserved mass, its laws and its lifetime are
 `Docs/ECOSYSTEM.md` §0 and are unaffected: a tail and a jet are photons, carry no collider and no
@@ -54,7 +62,18 @@ Vessel root
       └── <engine node>
             └── VesselJet.prefab   ← a plume. TrailRenderer m_Time 0.5 width 0.3 + particles.
                   └── VesselJet (widthScale)
+
+SkyBurstProjectile (a ROUND, not a vessel - see 4.2)
+├── Projectile                 ← owns its own tail: paints, places, sizes, clears, releases it.
+├── MissileVisual              ← the body MASS grows; the tail is measured off it
+└── VesselTail.prefab          ← the SAME shared asset. widthScale inert; the code sizes it.
+      └── VesselTail
 ```
+
+`VesselTailAndJets` is a **vessel's** owner, and a round has none — its `Projectile` does that job
+itself, per flight, alongside the spike appearance and the charge shell it already owned. That is
+the existing shape rather than a new one: a round changes pilots, domains and MASS levels between
+shots, so everything about its look is re-decided at launch and nothing is snapshotted.
 
 `VesselTail` and `VesselJet` are **markers** carrying one number each. They hold no look — that is
 authored on the shared prefabs — and no colour, because a tail's colour is not the tail's to
@@ -73,6 +92,12 @@ Every `TrailRenderer` under the vessel is repainted with the vessel's live domai
 end of the gradient; those palette field names predate this vocabulary and are shared with the
 domain UI colour, so they keep their names). The authored **alpha** curve is preserved per trail —
 only the colour keys are rebuilt.
+
+That composition lives in **`TailGradient`**, not inline, because a vessel is no longer the only
+thing wearing a tail: two transcriptions of one gradient drift the first time either is retuned,
+and a tail that reads differently depending on what is wearing it has stopped being one signal.
+The caller keeps its own alpha-key capture (a vessel discovers a growing set of trails and keys
+them in a dictionary; a round has exactly one).
 
 **Scope is the markers, not every trail under the vessel** — which is the whole reason `VesselTail`
 and `VesselJet` are components rather than a naming convention. A vessel can carry streaks that are
@@ -256,6 +281,78 @@ z-slabs through it takes a minute and settles what an hour of binning statistics
 ships were placed correctly within one pass of rendering them, and wrongly in every pass before
 that.
 
+### 4.2 A missile carries one too — the Sparrow's skyburst
+
+The skyburst is the first non-vessel with a tail, and it is the one projectile that wants one: it
+crosses ~360 u of arena over three seconds at 120 u/s, and in Dog Fight a missile hit is worth 50
+points, so "there is one coming, and it is Ruby's" is the most useful fact on the field. A bullet
+gets nothing — a 20-long tracer is already a streak, and 90 volleys/s of them is the last thing
+that needs lengthening.
+
+It is a **tail**, not a jet and not a trail, on every axis of the §1 table: it hangs off the round's
+own rear rather than an engine node, it lives ~4 s rather than ~0.5, it wears the firing pilot's
+domain, and it carries no collider and no state — killing it destroys nothing.
+
+**It is the shared asset, not a copy.** `SkyBurstProjectile.prefab` nests
+`Components/VesselTail.prefab`, so a retune of the tail's look reaches the missile with no second
+edit. Two of the instance's fields are inert here and that is deliberate: `VesselTail.widthScale`
+stays 1 (a round has no camera to derive one from) and the authored local position stays 0 — the
+code owns both, per flight, because the missile's size is not a constant.
+
+| | how it is decided |
+|---|---|
+| **where it mounts** | the model's measured **rear face**, root-local, scaled by growth — the exact mirror of the hit sphere's nose fit (`Projectile.TailMount`) |
+| **how wide** | `0.4 × the round's own body diameter`, where the diameter is twice the radius the collider is fitted to (`Projectile.TailWidth`) |
+| **what colour** | the firing pilot's domain, re-read **per flight** — `TrailHighlightColor → TrailCoreColor`, the same pair a vessel's tail and its prism trail read |
+| **how long it lives** | the shared prefab's `m_Time` 4 s, unmodified |
+
+**Both numbers are measurements, not authoring.** `Projectile.CaptureModelHitSphere` already
+measures the growth target's drawn geometry in root-local space every launch — the skyburst is the
+one round where the MODEL grows and the collider is fitted to it (`SPARROW_SKYBURST_BAY.md`) — so
+the rear face and the body diameter come out of the same numbers the hit sphere does. The tail and
+the hit volume therefore cannot disagree about how big the round is, and nothing here hardcodes
+this missile.
+
+The width has to be derived because the round **swells 14×–38× with MASS**, and a `TrailRenderer`'s
+width is world-space: left alone it would fly a constant thread behind a 63-unit missile. This is
+the same problem `widthScale` solves for the fleet, answered from the other end — a vessel has a
+camera distance to scale by, a round has a measured body.
+
+| Mass level | −5 | **0 (rest)** | 5 | 10 | 15 |
+|---|---|---|---|---|---|
+| Body diameter | 5.33 u | **7.62 u** | 9.91 u | 12.19 u | 14.48 u |
+| Tail width | 2.13 u | **3.05 u** | 3.96 u | 4.88 u | 5.79 u |
+| Emitter behind the round's origin | 11.3 u | **16.2 u** | 21.0 u | 25.9 u | 30.7 u |
+
+**0.4 is not a taste call.** It is the ratio the one hull the fleet actually tuned a tail against
+already flies at — the Sparrow's `widthScale` 2.5 against a ~6.4 u hull (§3.1) — so the missile's
+tail reads as the same *kind* of streak as the ship's, a little wider because the missile is a
+little bigger than the ship that fired it. It is still the first dial
+(`Projectile.tailWidthPerBodyDiameter`), and `SparrowRoundGrowthTests` pins it so a retune has to
+argue with the number.
+
+#### The two things a pooled round gets wrong, and what fixes each
+
+Neither of these arises on a vessel, which is why the tail contract had not met them before.
+
+- **A pooled round is reissued somewhere else entirely.** A `TrailRenderer` records world-space
+  points, so without `Clear()` the first frame of every reissue draws one straight ribbon from
+  wherever the last missile detonated to this one's launch bay. `Projectile.ReclaimTail` is the
+  one line that matters here, and it runs at launch, where the round's parent chain, scale and
+  position are all final.
+- **A pooled round is switched off 0.025 s after it detonates**, which would take several hundred
+  units of live ribbon with it in a single frame. The blast covers the head of that ribbon; the
+  rest of it is nowhere near the explosion. So `Projectile.ReleaseTailToFade` cuts the tail loose
+  into world space at retirement and stops it emitting — a TrailRenderer's points age out on their
+  own, so the "fade" needs no animation, only for the ribbon to stop being a child of something
+  about to be deactivated. It comes home either when the fade runs out or when the round is fired
+  again, whichever is first: a 20-deep pool cycles faster than a 4-second ribbon, so a round
+  really can be re-fired mid-fade, and the live round outranks it.
+
+That second one is **continuity of existence** (`CLAUDE.md` § Ecosystem Design Principles), not
+polish. It applies to a tail the same way it applies to a prism: nothing the player can see may
+pop out of existence.
+
 ## 5. Why five vessels have tails but no jets
 
 Manta, Falcon, Shrike, Termite and Serpent get the tail and the tint, and no jets, because their
@@ -291,11 +388,28 @@ the same pass that gives them real art, when "where is the engine" has an answer
   list to write into. That is the one case that structurally cannot carry the entry, and
   generalising from it shipped eight unreachable Rhino jets. Full record:
   `Docs/VESSEL_CONSTRUCTION.md` §3.
-- **`VesselTail.prefab` carries six disabled particle systems**, dead experiments that make the
-  asset ~690 KB. They are inactive, so they cost nothing at runtime; deleting them is a separate,
-  purely subtractive change.
+- ~~**`VesselTail.prefab` carries six disabled particle systems**~~ — **done.** They were dead
+  experiments (`m_IsActive: 0`, referenced by nothing) making the asset ~690 KB, and they stopped
+  being free the moment the tail was nested into a POOLED projectile: the skyburst pool is 20 deep
+  per Sparrow, so a four-Sparrow match would have carried ~480 disabled `ParticleSystem`s that
+  nothing could ever play. Removing them took the asset to ~4 KB. Proven safe rather than assumed:
+  every reference into this prefab anywhere in the project resolves to one of the four surviving
+  objects (root GameObject, Transform, TrailRenderer, `VesselTail`), so no instance carried a
+  modification or a removal targeting a deleted child.
 - **`DriftJet`** on the Squirrel's four jets aims them along the drift course. It is a
   Squirrel-specific extra, not part of the standard, and nothing else uses it.
+- **The missile's tail width fraction (0.4) is derived, not play-tested** — like every vessel's
+  `widthScale`. It is one float on `SkyBurstProjectile.prefab`'s `Projectile`. Check it at Mass 15,
+  where the ribbon is 5.79 u wide behind a 63 u missile.
+- **The missile's tail lives 4 s against a 3 s flight**, so its ribbon is the whole flight path
+  rather than a steady-state streak — deliberate (that is what makes it a beacon rather than a
+  plume) but it means the ribbon reaches back toward the firing ship. If it reads as clutter, the
+  lever is an `m_Time` override on that instance, not a width change. Note that shortening it far
+  enough turns it into a jet, which is the thing it is not.
+- **The skyburst's root `ParticleSystem` exhaust is still untouched** and is now the odd one out:
+  it was tuned against the retired 15 u wedge, sits on the ROOT so it does not grow with the model,
+  and is the only thing streaming off that missile that is neither measured nor domain-coloured.
+  See `SPARROW_SKYBURST_BAY.md` § Follow-ups.
 - The retired branch `claude/vessel-jet-fx-audit-rdze50` attempted the whole fleet at once by
   resolving mounts from node NAMES at runtime. Its measurements are worth reading; the name
   heuristics are what made it unshippable, and hand-authoring each hull's mounts replaced it.

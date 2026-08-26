@@ -154,6 +154,89 @@ namespace CosmicShore.Tests
             Assert.That(rest, Is.LessThan(8.5f));
         }
 
+        // -------------------------------------------------------------------- the TAIL
+        //
+        // The missile is the one round that carries a TAIL — the long streak that lets other
+        // pilots see it coming (Docs/VESSEL_TAIL_AND_JETS.md). Both of its numbers fall out of
+        // the SAME measurement the hit sphere is fitted to, so nothing about it is authored per
+        // MASS level and nothing hardcodes this missile.
+
+        const float TailWidthFraction = 0.4f;   // the shipped SkyBurstProjectile.prefab value
+
+        [Test]
+        public void TheTailHangsOffTheModelsRearFace()
+        {
+            // Exactly the mirror of the nose contract above: the emitter sits on the back of
+            // the body at every growth, so it stays pinned to the exhaust end while the missile
+            // swells from 1.7 u to 33 u instead of drifting into the middle of it.
+            foreach (int level in new[] { -5, 0, 5, 10, 15 })
+            {
+                float g = M(level);
+                float rear = (ModelCentre.z - ModelExtents.z) * g;
+                Assert.AreEqual(rear, Projectile.TailMount(ModelCentre, ModelExtents, g).z, 1e-6f,
+                    $"level {level}");
+
+                // ...and it is BEHIND the hit sphere, which is the permitted overhang. A tail
+                // emitting from in front of the collider would draw the round's path starting
+                // ahead of where it can hit.
+                Vector3 centre = Projectile.ModelHitCentre(ModelCentre, ModelExtents, g);
+                float radius = Projectile.ModelHitRadius(ModelExtents, g);
+                Assert.That(Projectile.TailMount(ModelCentre, ModelExtents, g).z,
+                            Is.LessThan(centre.z - radius), $"behind the sphere, level {level}");
+            }
+        }
+
+        [Test]
+        public void TheTailIsAlwaysBehindTheRoundOrigin()
+        {
+            // The emitter slides backwards as the model grows, while the round flies forwards
+            // far faster (~70 u over the 0.6 s swell against ~15 u of slide at resting Mass), so
+            // the ribbon can never double back on itself. Sign is the invariant worth pinning.
+            foreach (int level in new[] { -5, 0, 5, 10, 15 })
+                Assert.That(Projectile.TailMount(ModelCentre, ModelExtents, M(level)).z,
+                            Is.LessThan(0f), $"level {level}");
+        }
+
+        [Test]
+        public void TheTailWidthTracksTheBodyItStreamsOff()
+        {
+            // A TrailRenderer's width is WORLD-space and ignores transform scale, so a round
+            // that swells 14x-38x would otherwise fly a constant thread. Width is a fraction of
+            // the body's own diameter, which is twice the radius the collider is fitted to — so
+            // the tail and the hit sphere can never disagree about how big the round is.
+            foreach (int level in new[] { -5, 0, 5, 10, 15 })
+            {
+                float g = M(level);
+                float expected = TailWidthFraction * 2f * Projectile.ModelHitRadius(ModelExtents, g) * RootScale;
+                Assert.AreEqual(expected,
+                    Projectile.TailWidth(ModelExtents, g, RootScale, TailWidthFraction), 1e-5f,
+                    $"level {level}");
+            }
+        }
+
+        [Test]
+        public void TheTailReadsLikeTheShipsOwnTail()
+        {
+            // 0.4 is not a taste call: it is the ratio the one hull the fleet actually tuned a
+            // tail against already flies at — the Sparrow's widthScale 2.5 on a ~6.4 u hull
+            // (Docs/VESSEL_TAIL_AND_JETS.md 3.1). At resting Mass the missile's tail lands at
+            // 3.05 u, a little wider than the ship's because the missile is a little bigger
+            // than the ship. Pinned so a retune has to argue with the number.
+            float rest = Projectile.TailWidth(ModelExtents, M(0), RootScale, TailWidthFraction);
+            Assert.AreEqual(3.05f, rest, 0.02f);
+            Assert.AreEqual(2.5f / 6.4f, TailWidthFraction, 0.02f);
+        }
+
+        [Test]
+        public void TheTailWidthIsMonotonicInMass()
+        {
+            // MASS owns the substance of what you fire; the streak it leaves has to say so.
+            for (int level = -5; level < 15; level++)
+                Assert.That(Projectile.TailWidth(ModelExtents, M(level + 1), RootScale, TailWidthFraction),
+                            Is.GreaterThan(Projectile.TailWidth(ModelExtents, M(level), RootScale, TailWidthFraction)),
+                            $"level {level}");
+        }
+
         [Test]
         public void TheMissileGrowsMoreThanABulletDoes()
         {
