@@ -14,7 +14,8 @@ other except in one respect, which is the point of writing them down together:
 > incompatible ways, so "how do I find X on this vessel" has a different answer per hull.
 
 Nothing here is a proposal. §1–§3 are what was measured; §4 is the inventory that must survive any
-cleanup; §5 is the unification target; §6 is the follow-up brief.
+cleanup; §5 is the unification target; §6 is the follow-up brief; **§7 is the re-survey that
+corrected two of §4's rows** and is the section to read before deleting anything.
 
 ---
 
@@ -36,7 +37,7 @@ model each one's mesh subasset resolves to):
 | Termite | 0 | 2 | same as Manta | 4 (×2) |
 | Sparrow | 1 | 1 | `SparrowModel1` (via nested prefab) | 4 |
 | Scarab | 2 | 1 | `SparrowModel1` (via nested prefab) | 4 |
-| Serpent | 1 | 1 | `SerpentExport` + `serpent` (via nested prefab) | 4 |
+| Serpent | 1 | 1 | `SerpentExport` + `serpent` (via nested prefab) | 4 † |
 | Squirrel | 0 | 1 | `SquirrelVessel_CosmicShoresTest1` (via nested prefab) | 4 |
 | **Dolphin** | **19** | **0** | `Dolphin_Test` ×17 | **0** |
 | **Urchin** | **13** | **0** | `Urchan_Test` ×13 | **0** |
@@ -48,6 +49,15 @@ model each one's mesh subasset resolves to):
 - **Part-per-mesh family** (bottom four): a static mesh per part, placed by translation. No
   armature, no shapes, so no morph and no puppetry. Parts are GameObjects, and an FX mount parents
   to whichever GameObject the part happens to be.
+
+† **The Serpent is in BOTH families at once** and is the counter-example to reading this table as a
+partition. Its `SkinnedMeshRenderer` draws `SerpentExport.fbx` (one skinned mesh, 27 bones, four
+*real* element shapes — Space Δ 2.14, Mass 0.85, Time 2.63, Charge 3.05), and its single
+`MeshFilter` draws `serpent.fbx`, a **16-mesh part-per-mesh model with no armature** whose only
+blend shape is `serpent_tendril_r` (not an element name, so `VesselAnimation` correctly ignores it).
+So the hull morphs and the static half does not. Note `serpent.fbx` is **FBX 7700** — 64-bit records
+— which the repo's codec refused to open until this pass; a model that no offline tool can read is a
+model whose contents are assumed rather than measured.
 
 The two families are why "where do I mount a jet on this vessel" has no single answer today
 (`VESSEL_TAIL_AND_JETS.md` §"How the mount numbers were measured" lists three methods, and which
@@ -144,15 +154,21 @@ Measured per file — base mesh, armature, and how far each element shape actual
 
 | file | verts | bones | takes | element shapes | **do the shapes move anything?** | refs |
 |---|---|---|---|---|---|---|
-| `dolphin_shapekey_with_animations.fbx` | 39,613 | 28 | 10 | 4 | **YES** — mass moves 10,909 verts (max Δ 1.17), time 9,272 (1.32), charge 4,187, space 2,650 | **0** |
-| `rhino_shapekey_with_animations.fbx` | 8,553 | 12 | 9 | 4 | **NO — all four are empty** (1 vertex, Δ = 0.0000) | **0** |
-| `urchan_shapekey_with_animations.fbx` | 6,084 | 38 | 11 | 4 | **NO — all four are empty** (1 vertex, Δ = 0.0000) | 5 (animator controllers only, no prefab) |
+| `dolphin_shapekey_with_animations.fbx` | 12,595 | 28 | 10 | 4 | **YES** — mass moves 10,909 verts (max Δ 1.173), time 7,473 (1.317), charge 2,339 (0.420), space 1,217 (0.306) | **0** |
+| `rhino_shapekey_with_animations.fbx` | 8,549 | 12 | 9 | 4 | **NO — all four are empty** (1 vertex, Δ = 0.0000) | **0** |
+| `urchan_shapekey_with_animations.fbx` | 6,080 | 38 | 11 | 4 | **NO — all four are empty** (1 vertex, Δ = 0.0000) | **LIVE** — 7 clips × 4 controllers → 9 vessels (§7.1) |
+| `SparrowModel4.fbx` | 13,426 | 65 | 93 | 4 | **YES** (same deltas as `SparrowModel1`) | **LIVE** — `Missile Launch` clips → Sparrow + Scarab (§7.1) |
 | `Vessel_Placeholder_1.fbx` | 110,850 | 0 | 288 | 0 | — | 0 |
 | `Vessel_Placeholder_2.fbx` | 68,995 | 0 | 0 | 0 | — | 0 |
-| `RhinoModel.fbx` | 8,087 | 0 | 0 | 0 | — | 0 (but `Vessel_Placeholder_1.fbx.meta` remaps materials into it) |
+| `RhinoModel.fbx` | 8,087 | 0 | 0 | 0 | — | 0 (but **both** placeholder `.meta`s remap materials into it) |
 | `Riptide.fbx` | 1,326 | 0 | 0 | 0 | — | 0 |
 | `Dolphin_split.fbx` | 137 | 0 | 0 | 0 | — | 0 |
 | `Hammerhead_split.fbx` | 116 | 0 | 0 | 0 | — | 0 |
+
+The `verts` column is the **base mesh** vertex count. An earlier revision summed the mesh *and*
+every blend-shape delta array, which is why it read 39,613 / 8,553 / 6,084 — a shape stores only the
+vertices it moves, so summing them counts moved vertices a second time. Both definitions are
+reproducible; only one describes the hull.
 
 **The finding that changes the plan: a labelled shape is not a shape.** `VesselAnimation`
 discovers element shapes **by name**, and `FrogletTools ▸ Vessels ▸ Audit Vessel Elemental Morphs`
@@ -198,6 +214,124 @@ Consequences for a rig swap, and they are not optional:
   `jet.l`/`jet.r`.
 - **Colliders were fitted to the split hulls.** Five `BoxCollider`s were authored against
   `Rhino_Test`'s parts. They must be re-fitted, not carried across.
+
+### 4.3 The Dolphin rig is the shipped hull too — at the same place, with no offset
+
+The Rhino answer (§4.2) is not the general one. `dolphin_shapekey_with_animations.fbx` is also the
+**same** ship, but its correspondence is *exact*: transform both files' geometry into world space
+and the bounding boxes agree on all six faces to three decimals —
+
+```
+Dolphin_Test  n=12,583  bbox (-264.363, -56.747, -247.074) .. (264.363, 64.173, 282.702)
+rig           n=12,595  bbox (-264.363, -56.747, -247.074) .. (264.363, 64.173, 282.702)
+```
+
+— and a nearest-neighbour match runs **8,311 of 12,583 shipped vertices to within 5.5 × 10⁻⁵** of a
+rig vertex, in a hull 758 units across (0.000007%). The rig's `dolohin` node carries `S = 100,
+R = −90x` against mesh vertices at 1/100 scale; both files import at the same 0.01 file scale, so
+they land at the same world size. **There is no offset to correct on the Dolphin.** Do not
+generalise the Rhino's 1.5545 to it, and do not generalise the Dolphin's zero to anything else —
+each rig has to be measured.
+
+**What the rig has that the shipped hull does not: six exhaust nozzles.** 4,284 rig vertices have no
+counterpart in `Dolphin_Test`, and they cluster into six symmetric groups at the stern
+(`x ±40…±147, y −15…60, z −229…−28`) — one per engine pod. The cause is in the shipped prefab:
+`Dolphin_Test`'s six `Engine Left/Right.N` inner meshes sit at **`localScale 0.01`** under their
+`Engine case *` parents. Their mesh is 9.5 × 9.5 × 18.3 file units, so after the 0.01 file scale
+*and* the 0.01 local scale they are **0.00095 Unity units** in a 5.3-unit ship — 1/5,600 of its
+length. They are not small; they are not drawn.
+
+Rendering both stems settles it by eye rather than by statistics: the shipped pods are smooth
+sealed cones, and the rig's have open, recessed exhaust bells cut into their rear faces. So the
+Dolphin rig swap does not only buy the morph and the puppetry — **it restores the six nozzle mouths
+the six jets are mounted at** (`VESSEL_TAIL_AND_JETS.md` §4 measures each jet to "each pod's
+measured exhaust mouth"; on the rig that mouth is real geometry rather than an inferred plane).
+
+### 4.4 A rig's REST POSE is not the shipped hull's pose — measure the silhouette, not just the mounts
+
+§4.2 proves the Rhino's *fuselage* is a rigid +1.5545 z translation, and re-measuring it confirms
+that exactly: **all 29 of the shipped fuselage's lathe rings** match the rig at `+1.5550` (this
+pass's z-quantisation is 0.005, so the two agree). But that is the fuselage alone. Whole-model
+bounds do **not** translate rigidly:
+
+| | shipped | rig | ratio |
+|---|---|---|---|
+| Rhino x half-span | 5.796 | 7.998 | **1.380** |
+| Rhino y span | 15.309 | 15.309 | 1.000 |
+| Rhino z span | 16.815 | 20.409 | 1.214 |
+| Urchin x/y/z span | 0.432 / 0.406 / 0.414 | 0.910 / 0.854 / 0.873 | **2.107 / 2.105 / 2.105** |
+
+Two different phenomena, and telling them apart matters:
+
+- The **Rhino** ratios are non-uniform with `y` exactly 1.000 — that is a **POSE** difference. The
+  rig's bind pose has the wings rotated further out than the pose `Rhino_Test` was authored in.
+- The **Urchin** ratios are uniform to four digits — that is a **SCALE** difference. Rescaling the
+  rig by `1/2.105` matches 2,500 of 2,500 sampled vertices at a median residual of 0.0158 in a
+  43.2-unit hull (0.04%). The Urchin rig is the shipped hull at **2.105×**.
+
+> **A rig swap changes the ship's resting silhouette, not only where its mounts are.** The Urchin's
+> is the sharper case: it flies a 6.67-unit camera against a ~0.43-unit hull
+> (`VESSEL_TAIL_AND_JETS.md` §6 calls it "the extreme case"), and 2.105× takes that hull to ~0.91.
+> Camera distance, collider volumes, `widthScale`, and the occlusion corridor's measured hull radius
+> are all functions of that number.
+
+---
+
+## 7. Phase 0 re-survey — what moved, and the two rows that were wrong about liveness
+
+Re-run before any of this document's cleanup was acted on, per
+`VESSEL_CONSTRUCTION_FOLLOWUP.md` § Phase 0. Reproduce with:
+
+```sh
+python3 Tools/Build/measure_vessel_models.py      # shapes + MAGNITUDE, bones, takes, referrers
+python3 Tools/Build/measure_vessel_prefabs.py     # renderers, guid ownership, §3 reachability, §3.4 dupes
+```
+
+**Confirmed unchanged**, and these are the load-bearing ones: §1's twelve-row renderer table
+exactly; §3's invariant (**zero** unreachable instances across all twelve prefabs); §3.4's duplicate
+coincident Manta-family renderers (four vessels, both enabled and active, the same hull from two
+files at 100× scale); §4's central finding (dolphin shapes real, rhino and urchan shapes empty at
+one indexed vertex and Δ = 0.0000); §2's guid ownership (`Rhino_Test.fbx` owns `4a58…`;
+`Vessel_Placeholder_1.fbx.meta` merely references it).
+
+### 7.1 "Referenced by nothing" was measured against prefabs and scenes — clips slipped through
+
+The rule this section exists to state:
+
+> **A model can have zero prefab references and still be load-bearing, because an
+> `AnimatorController` references CLIPS by the model's guid.** Deleting it does not break a
+> reference you can see in a prefab; it empties an animation state in a controller that a shipped
+> vessel is using.
+
+Two files are in exactly that position, and one of them this document never listed at all:
+
+| model | prefab refs | what actually uses it |
+|---|---|---|
+| `urchan_shapekey_with_animations.fbx` | **0** | **7 clips** in `_Models/Animations/MantaAnimatorController` (Manta, Termite, Falcon, Urchin, Shrike), `SerpentAnimController` (Serpent), `SparrowAnimatorController` (Sparrow, Scarab), `SquirrelAnimatorController 1` (Squirrel) — **nine vessels** |
+| `SparrowModel4.fbx` | **0** | the `Missile Launch` states in `SparrowAnimatorController` (Sparrow, Scarab). 93 takes against `SparrowModel1`'s 13 |
+
+`mantis_shapekey_with_animations.fbx` is in the same class but was never in doubt — it is also
+prefab-wired on four vessels.
+
+**And the mirror image: a controller that nothing uses.** There are two files named
+`MantaAnimatorController.controller`. The live one is **`Assets/_Models/Animations/`** (five vessels
+reference it); **`Assets/_Animations/MantaAnimatorController.controller` is referenced by nothing**
+and is the only reason four of the five "controller" hits in the old §4 count existed. A reference
+count is not a liveness measurement until each referrer is itself resolved.
+
+### 7.2 Smaller corrections
+
+- `RhinoModel.fbx` is material-remapped by **both** placeholder `.meta`s, not just
+  `Vessel_Placeholder_1`'s. Removing it breaks two files, not one.
+- `RhinoModel.fbx` is a **predecessor** of `Rhino_Test.fbx`, not an unrelated model: `Circle.003`
+  (5,135), both `Cylinder`s (864) and both `Circle.015/016` (367) are vertex-identical; only the
+  front wings differ (245 → 476). It is the same ship before the wings were subdivided.
+- `Vessel_Wedge_Scene (4).fbx` (the Grizzly's model) is referenced by **three** prefabs —
+  `Grizzly`, `TimeDandruff` and `ExplodableProjectile` — plus a `.meta` remap from
+  `TimeCrystalExport.fbx`. It is shared with the environment and projectile layers and is not a
+  vessel-only asset.
+- `serpent.fbx` is FBX **7700**; `Tools/Build/fbx_binary.py` now reads 64-bit records (writing them
+  is still refused, loudly, rather than emitting a 32-bit body under a 64-bit version stamp).
 
 ---
 
