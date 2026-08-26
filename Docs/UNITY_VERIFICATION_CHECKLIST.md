@@ -30,6 +30,33 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Ability lockup branch — verification matrix (2026-08-26)
+
+One row per changed system. This is the whole branch's honest verification state; a blank cell
+would be the problem, "compiles by inspection" is a legitimate value.
+
+| system | verified how | still needs a human |
+|---|---|---|
+| `TrapezoidGraphic` (generated plates, slant band, AA) | Roslyn stub-harness compile; geometry reasoned, not rendered | **yes** — look at the plates and the band at real size |
+| `AbilityLockupStyleSO` + `AbilityLockupStyle.asset` | compile; asset keys diffed against the class **both directions** (no unknown keys, no omitted fields); every referenced GUID resolves | tuning only |
+| `AbilityLockupView` (row, gauge, cooldown, press, chip, sweep) | compile; retire sweep **simulated offline** over all 8 HUD prefabs | **yes** — this is the bulk of the play-test |
+| `ControlGlyphSetSO` + `ControlGlyphSet.asset` | compile; all 6 sprite GUIDs resolve to real files; derived chip table computed per vessel | **yes** — pad → keyboard → pad, both directions |
+| `InputDeviceIconSetSwitcher` (627 → 138, pure detector) | compile in the InputSystem harness; every deleted public member grepped project-wide, **zero remaining callers** | **yes** — device switching still detects |
+| `VesselHUDController` / `VesselHUDView` | compile | via the vessels |
+| `SquirrelVesselHUDView` (bespoke reload retired) | compile | **yes** — boost-ring cooldown reads correctly |
+| `DolphinVesselHUDView`, `ScarabHUDView`, `ElementalBarsView/Controller` | compile | via the vessels |
+| `VesselAbilityRowAuditor` §5 retarget | **compiled verbatim** via a generated probe, negative-controlled | run the auditor once |
+| `AbilityLockupAuditor` (new, READER) | compile | run it once |
+| HUD prefab YAML edits (5 files + `Scarab.prefab`) | structural validator: no dangling component ids, no duplicate anchors, no empty `m_Script` guids; metas + GUID uniqueness clean | import without warnings |
+| `AbilityLockupStyleTests` (edit-mode) | **NOT RUN** — no Unity in this container | **yes — run the edit-mode suite** |
+| Anything on screen | **NOT VERIFIED** | everything |
+
+**Nothing on this branch has been opened in Unity.** Both stub harnesses compile,
+`check_conditional_compilation.py` passes 1771 files, and the offline checks above are the whole
+of the evidence.
+
+---
+
 ### 🔴 Zero-icon vessels get their whole HUD root cleared (2026-08-26)
 
 `Docs/ABILITY_LOCKUP.md` § "A vessel with no bound icons has its slate cleared". Reported as "the

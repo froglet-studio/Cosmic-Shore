@@ -506,6 +506,59 @@ consumer voids it: `VesselTail.prefab`'s six disabled `ParticleSystem`s were fre
 vessels and would have been ~480 live components across a 20-deep projectile pool per Sparrow.
 A cost claim about an asset is scoped to its current consumers; pooling a new one re-opens it.
 
+### Trap: a PREFAB ASSET does not tell you what its INSTANCE wires
+
+Reading a prefab asset to answer "what does this thing contain / reference / bind?" is fast,
+feels authoritative, and is the wrong source whenever something *instances* it. A prefab instance
+can do two things the asset cannot show you:
+
+- **Add GameObjects the asset has never heard of** — they live in the INSTANCING file, parented to
+  a *stripped* transform whose `m_CorrespondingSourceObject` points back at the asset.
+- **Populate serialized fields the asset leaves empty**, as `m_Modifications` entries.
+
+So a component that looks unwired in the asset can be fully wired in every real use of it. This
+shipped a wrong claim twice on one branch: a HUD asset whose view wired one field was documented
+as having three dead root branches, while the *vessel* prefab instancing it added three more
+branches and populated six live readout fields. Resolve an instance's added children by walking
+`m_Father` until you hit a stripped transform, then map that transform's
+`m_CorrespondingSourceObject` back into the asset to learn its name:
+
+```python
+# in the INSTANCING file: parent chain ends at a stripped rect
+src = re.search(r'm_CorrespondingSourceObject: \{fileID: (\d+), guid: (\w+)', stripped_body)
+# then look up src.group(1) in the ASSET to get the real parent's name
+```
+
+Same family as the `m_Name`-override trap below and the "field initializer is not the shipped
+value" rule: **an assertion about what an asset contains has to be read from whoever USES it.**
+
+### Trap: a multi-document regex silently spans documents and returns a plausible wrong answer
+
+Unity YAML is a stream of `--- !u!<type> &<id>` documents. A regex like
+
+```python
+re.search(r'--- !u!224 &\d+\n(.*?m_Father: \{fileID: 0\}.*?)', text, re.S)   # WRONG
+```
+
+does not "find the root transform" — with `re.S` the `.*?` crosses document boundaries, so it
+happily pairs the FIRST `224` header with some LATER document's `m_Father: 0`. It does not throw;
+it returns a well-formed match with the wrong body, and every number you read out of it is wrong.
+On the run this was written for it reported a HUD root as centre-anchored 100×100 when it is
+actually a full-canvas stretch — and the wrong number nearly went into a doc as a correction to a
+claim that had been right all along.
+
+**Always split into documents first, then query WITHIN one:**
+
+```python
+docs = {m.group(2): (m.group(1), m.group(3)) for m in
+        re.finditer(r'--- !u!(\d+) &(\d+)(?: stripped)?\n(.*?)(?=\n--- !u!|\Z)', text, re.S)}
+roots = [k for k,(t,b) in docs.items() if t=='224' and re.search(r'^  m_Father: \{fileID: 0\}', b, re.M)]
+```
+
+Note the `^  ` and `re.M` on the inner query too — without them a nested `m_Father` inside a
+modification block matches. **The tell that you have this bug is disagreement between two of your
+own measurements**; when that happens, do not pick the one you like, rebuild the parse.
+
 ### Trap: a `TrailRenderer` on a POOLED object draws a streak across the arena
 
 Two failures that do not exist on a scene-level object and both look like a rendering bug:
@@ -921,6 +974,25 @@ everything inside every method the suite covers. Two mechanics that cost a cycle
 And prove the harness the way the table above was produced — inject each defect class you care
 about, confirm it fires, restore, `cmp`. A run that only ever passes is indistinguishable from a
 run that cannot fail.
+
+**The most common way that goes wrong is not a weak assertion — it is a file the build never
+compiled.** A harness `.csproj` that enumerates its inputs explicitly
+(`<EnableDefaultCompileItems>false</EnableDefaultCompileItems>` plus a literal
+`<Compile Include="..."/>` list — which is the right shape, because it keeps the harness pinned to
+the files you meant) will silently ignore a new `.cs` you drop into its directory. You add a probe,
+run the build, read **`Build succeeded`**, and conclude the code is good; nothing was checked. The
+negative control is what separates those two states, and it takes one command:
+
+```sh
+sed -i 's/<the call you probe>/&; obj.NoSuchMember();/' Probe.cs
+dotnet build -v q --nologo | grep -E 'error|Build'      # MUST report CS1061
+git checkout -- Probe.cs || mv Probe.bak Probe.cs       # restore, rebuild, expect success
+```
+
+If the deliberate error does not fire, the file is not in the build — add it to the `<Compile>`
+list and start over. Treat "I added a file to the harness" as requiring this check every time; the
+failure mode is a green build that proves nothing, which is the exact thing a harness exists to
+rule out.
 ### Technique: when you WIDEN a pure function, pin the old behaviour as a whole-domain test
 
 Extending a formula — a two-stage curve becoming four, a flag gaining a mode, a cap gaining a
