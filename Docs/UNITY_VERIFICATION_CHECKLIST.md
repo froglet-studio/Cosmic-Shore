@@ -3153,3 +3153,32 @@ sprite-swapping the missile icon — but confirm no ammo readout was actually in
 ⚠ Sparrow, Dolphin and Scarab now show **no control hints at all**, because their HUDs have no
 `InputDeviceIconSetSwitcher` (they are standalone prefabs, not variants of `VesselHUDPrefab`).
 Authoring one on each is the real fix and is the open follow-up.
+
+
+## 🔴 Ability Lockup — fleet control chips + row frame — NOT EDITOR-VERIFIED
+
+**Chips are DRAWN by the lockup now**, from `Resources/ControlGlyphSet`, derived per card as
+ability → `InputEvents` → control → glyph. Expected, from the shipped assets:
+
+| vessel | Charge | Mass | Space | Time |
+|---|---|---|---|---|
+| Squirrel | — | `L1` / LSHIFT | — | `R1` / RSHIFT |
+| Sparrow | `L1` / LSHIFT | `A` | `R1` / RSHIFT | `B` |
+| Scarab | — | `A` | — | `R1` / RSHIFT |
+| Dolphin | `R1` / RSHIFT | — | — | `L1` / LSHIFT |
+| Rhino · Manta · Serpent | — | — | — | — |
+
+1. **Sparrow has chips again** — four of them, matching the table, under the right cards.
+2. **Device switch** — pad → keyboard → pad: the trigger chips swap between the `L1`/`R1` sprite and
+   the LSHIFT/RSHIFT label, in place. The Sparrow's `A`/`B` cards go **blank** on keyboard; that is
+   intended (no keyboard equivalent is authored for `Button1/2/3` in `InputHintBindingMap`) and the
+   open item is that keyboard map, not the lockup.
+3. **Row frame.** Every vessel's row must now sit in the SAME screen position with the same pitch —
+   this is the "different spacing" fix. `NormaliseHudRoot` stretches the HUD root to fill its
+   parent, because Rhino/Scarab/Sparrow stretched theirs while Dolphin/Squirrel/Serpent/Manta
+   point-anchored at the centre at 100×100. **Watch for anything else on those HUDs shifting** —
+   nothing should, since the sweep retires everything else at root level, but that is the assumption
+   worth checking on each vessel.
+4. **The switcher is ensured**, so every HUD has one even if it never authored glyphs. Confirm the
+   Squirrel and Serpent still show their own authored hints (they are still bound and placed) and
+   that they are not doubled by the new chips.

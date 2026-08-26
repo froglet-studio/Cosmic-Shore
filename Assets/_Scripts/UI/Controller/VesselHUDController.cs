@@ -28,6 +28,8 @@ namespace CosmicShore.UI
             UnsubscribeFromEvents();
             if (_abilityHandler)
                 _abilityHandler.OnUpgradeStateChanged -= HandleUpgradeStateChanged;
+            if (_iconSetSwitcher)
+                _iconSetSwitcher.OnSetChanged -= HandleControlDeviceChanged;
         }
 
         public virtual void Initialize(IVesselStatus vesselStatus)
@@ -62,13 +64,25 @@ namespace CosmicShore.UI
                     baseView.SetAbilityUpgraded(element, _abilityHandler.IsUpgradeActive(element));
             }
 
-            // Control hints (LT/RT/…) attach themselves to the ability icon their input actually
-            // drives, resolved from this vessel's action handler. Rearranging the row can never
-            // leave a label behind on the wrong ability.
+            // Control chips. The lockup DRAWS them, from the fleet's one glyph set, keyed by the
+            // control each ability's own map entry names - so a vessel authors no glyphs at all.
+            // This is where it happens because this is where the ability map lives.
+            SeedAbilityControls();
+
+            // The switcher is what knows which device the player is holding. It is ENSURED rather
+            // than required: three HUDs never had one, which is exactly why their authored glyphs
+            // were never lit, never device-matched and never placed.
             if (!_iconSetSwitcher)
-                _iconSetSwitcher = GetComponentInChildren<InputDeviceIconSetSwitcher>(true);
-            if (_iconSetSwitcher && baseView)
-                _iconSetSwitcher.BindHintsToAbilities(vesselStatus, baseView);
+                _iconSetSwitcher = GetComponentInChildren<InputDeviceIconSetSwitcher>(true)
+                                ?? gameObject.AddComponent<InputDeviceIconSetSwitcher>();
+
+            _iconSetSwitcher.OnSetChanged -= HandleControlDeviceChanged;
+            _iconSetSwitcher.OnSetChanged += HandleControlDeviceChanged;
+            baseView?.SetControlDevice(_iconSetSwitcher.IsKeyboard);
+
+            // Legacy per-vessel hint glyphs, on the HUDs that still author them, still attach
+            // themselves to the ability they label.
+            if (baseView) _iconSetSwitcher.BindHintsToAbilities(vesselStatus, baseView);
 
 #if UNITY_EDITOR
             // Structural contract: four ability icons, charge/mass/space/time, left to right.
@@ -78,6 +92,23 @@ namespace CosmicShore.UI
 
         private void HandleUpgradeStateChanged(Element element, bool active)
             => baseView?.SetAbilityUpgraded(element, active);
+
+        private void HandleControlDeviceChanged(InputDeviceIconSetSwitcher.IconSet set)
+            => baseView?.SetControlDevice(set == InputDeviceIconSetSwitcher.IconSet.KeyboardText);
+
+        /// <summary>
+        /// Hands every card the input its ability is bound to. An ability with no button
+        /// (<c>FullSpeedStraightAction</c>) is passive and its chip stays blank, which is the
+        /// contract the row has always had.
+        /// </summary>
+        private void SeedAbilityControls()
+        {
+            var map = _abilityHandler ? _abilityHandler.Map : null;
+            if (map == null || !baseView) return;
+
+            foreach (var entry in map.Entries)
+                if (entry != null) baseView.SetAbilityControl(entry.Element, entry.Input);
+        }
 
         public void SubscribeToEvents()
         {

@@ -129,6 +129,13 @@ namespace CosmicShore.UI
 
         public IconSet Current { get; private set; } = IconSet.None;
 
+        /// <summary>Raised whenever the visible device set changes, so the ability lockup can
+        /// re-draw its control chips for the device the player is actually holding.</summary>
+        public event Action<IconSet> OnSetChanged;
+
+        /// <summary>True while the player is on keyboard/mouse rather than a pad.</summary>
+        public bool IsKeyboard => Current == IconSet.KeyboardText;
+
         /// <summary>
         /// The three device-glyph roots this switcher shows and hides. Exposed so the ability lockup
         /// can EXEMPT them when it retires a HUD's legacy content: they are direct children of the

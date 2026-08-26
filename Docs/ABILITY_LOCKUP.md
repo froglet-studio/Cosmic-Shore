@@ -168,6 +168,40 @@ carry one today. The track's own taper is **derived from the plate at the track'
 to be the full width — identical at `gaugeCellFraction 1`, which is why that seam would have stayed
 invisible until someone lowered the fraction.
 
+**The lockup DRAWS the chip, from one fleet-wide glyph set.** A vessel authors no control glyphs at
+all. Each card resolves its own artwork down a chain that is derived at every step:
+
+> ability → its `ElementalAbilityMapSO` entry's `InputEvents` → `InputHintBindingMap.BindingFor`
+> → physical control → `ControlGlyphSetSO` → sprite (pad) or label (keyboard)
+
+Nothing is guessed and nothing is per-vessel, which is what makes a wrong label structurally
+impossible. A passive ability (`FullSpeedStraightAction`) has no button and draws nothing; several
+pad buttons have no keyboard equivalent and draw nothing there. **Blank is the honest state** — a
+pad glyph shown to a keyboard player is misinformation, and that is precisely what the old
+per-vessel roots did.
+
+Pad families deliberately share one sprite. The only working hint set in the project — the
+Squirrel's — already used the same `L1`/`R1` art for Xbox and PlayStation, and the one HUD that
+tried to differ authored a set that did not correspond (Xbox `A`/`B`/`R1`/`R2` against PS
+`circle`/`triangle`/`L2`/`square`). Device *detection* still comes from
+`InputDeviceIconSetSwitcher`, which `VesselHUDController` now **ensures** the same way it ensures
+the lockup — three HUDs never had one, which is exactly why their glyphs were never lit, never
+device-matched and never placed.
+
+What the fleet resolves to today, derived from the shipped assets:
+
+| vessel | Charge | Mass | Space | Time |
+|---|---|---|---|---|
+| Squirrel | — | `L1` / LSHIFT | — | `R1` / RSHIFT |
+| Sparrow | `L1` / LSHIFT | `A` | `R1` / RSHIFT | `B` |
+| Scarab | — | `A` | — | `R1` / RSHIFT |
+| Dolphin | `R1` / RSHIFT | — | — | `L1` / LSHIFT |
+| Rhino | — | — | — | — |
+
+*(A dash is a passive ability. The face-button entries are blank on keyboard because
+`InputHintBindingMap` authors no keyboard equivalent for `Button1/2/3` — the open item there is the
+keyboard map, not the lockup.)*
+
 **The lockup owns the chip's SIZE, not just its position.** The device sets author their glyphs at
 wildly different sizes — measured off `Squirrel.prefab`, the pad strips are 269 × 11 px with glyphs
 spanning 50 × 50, the PC strip is 366 × 22 with glyphs at 106 × 22. Centring all of them on one 24px
@@ -249,6 +283,22 @@ down and **decays** on release — nothing pops out of existence.
 The legacy `highlights` list is still written, for a HUD the lockup could not claim. On a lockup
 vessel those images are retired chrome, so the write is a deliberate no-op rather than a second,
 divergent press glow.
+
+## The row's frame — the HUD root IS the screen
+
+The row anchors to `(1, 0)` of the HUD root with the style's margins, which assumes that root is the
+screen. **It was not.** Measured off the prefabs: `RhinoHUDVariant`, `ScarabHUDVariant` and
+`SparrowHUDVariant` stretch their root to the full canvas, while `DolphinHUDVariant` and
+`VesselHUDPrefab` — and therefore the Squirrel, Serpent and Manta — point-anchor theirs at the
+**centre at 100 × 100**. So `(1, 0)` resolved to the screen's corner on one group and to a point
+50px from the canvas centre on the other: the margins meant two different things and the vessels
+visibly disagreed about where the row sits.
+
+`NormaliseHudRoot` stretches the root to fill its parent and flattens any per-vessel HUD scale. It
+is safe precisely because of the sweep below: by the time the lockup is done, everything it owns has
+moved into the row and everything else at root level has been retired, so nothing is left whose own
+anchors could be disturbed. *A container's rect is part of the contract for everything anchored
+inside it — standardising the contents while leaving the frame per-vessel standardises nothing.*
 
 ## Retiring the old UI
 

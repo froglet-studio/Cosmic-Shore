@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using System.Reflection;
 using CosmicShore.Data;
 using CosmicShore.ScriptableObjects;
+using TMPro;
 using DG.Tweening;
 using UnityEngine;
 using UnityEngine.UI;
@@ -40,6 +41,9 @@ namespace CosmicShore.UI
         [Tooltip("Loaded from Resources/AbilityLockupStyle when empty.")]
         [SerializeField] private AbilityLockupStyleSO style;
         [SerializeField] private string styleResourcePath = "AbilityLockupStyle";
+        [Tooltip("The fleet's control-glyph table. Loaded from Resources/ControlGlyphSet when empty.")]
+        [SerializeField] private ControlGlyphSetSO glyphSet;
+        [SerializeField] private string glyphSetResourcePath = "ControlGlyphSet";
 
         [Header("Bindings (resolved from siblings when empty)")]
         [Tooltip("The vessel HUD view whose abilityIcons this decorates. Defaults to this GameObject's.")]
@@ -62,6 +66,10 @@ namespace CosmicShore.UI
             public bool OnCooldown;
             public RectTransform FlowerSocket;
             public RectTransform ChipSocket;
+            public Image ChipGlyph;
+            public TMP_Text ChipLabel;
+            public InputDeviceIconSetSwitcher.HintBinding PadBinding;
+            public InputDeviceIconSetSwitcher.HintBinding KeyBinding;
             public Tween Tween;
             public Tween FlashTween;
             public bool Locked;
@@ -214,7 +222,7 @@ namespace CosmicShore.UI
         RectTransform ResolveRow()
         {
             const string rowName = "AbilityLockupRow";
-            var self = (RectTransform)transform;
+            var self = NormaliseHudRoot();
             var row = self.Find(rowName) as RectTransform;
             if (!row)
             {
@@ -229,6 +237,36 @@ namespace CosmicShore.UI
             row.localScale = Vector3.one;
             row.localRotation = Quaternion.identity;
             return row;
+        }
+
+        /// <summary>
+        /// Makes the HUD root the SCREEN, which is what the row's bottom-right anchoring has always
+        /// assumed.
+        ///
+        /// <para>It was not true. Measured off the prefabs, <c>RhinoHUDVariant</c>,
+        /// <c>ScarabHUDVariant</c> and <c>SparrowHUDVariant</c> stretch their root to the full
+        /// canvas, while <c>DolphinHUDVariant</c> and <c>VesselHUDPrefab</c> (and therefore the
+        /// Squirrel, Serpent and Manta) point-anchor theirs at the CENTRE at 100x100. Anchoring the
+        /// row to (1,0) of that resolves to the screen's corner on one group and to a point 50px
+        /// from the canvas centre on the other - so the row's margins meant two different things and
+        /// the vessels visibly disagreed about where the row sits.</para>
+        ///
+        /// <para>Normalising the root is safe because by the time the lockup is done, everything it
+        /// owns has moved into the row and everything else at root level has been retired - so there
+        /// is nothing left whose own anchors could be disturbed. It also flattens any per-vessel HUD
+        /// scale, which is the same divergence one level up.</para>
+        /// </summary>
+        RectTransform NormaliseHudRoot()
+        {
+            var self = (RectTransform)transform;
+            self.anchorMin = Vector2.zero;
+            self.anchorMax = Vector2.one;
+            self.pivot = new Vector2(0.5f, 0.5f);
+            self.offsetMin = Vector2.zero;
+            self.offsetMax = Vector2.zero;
+            self.localScale = Vector3.one;
+            self.localRotation = Quaternion.identity;
+            return self;
         }
 
         /// <summary>A host for a slot the vessel has no ability for yet.</summary>
@@ -501,7 +539,7 @@ namespace CosmicShore.UI
         /// </summary>
         void RetireLegacyHudContent(RectTransform row)
         {
-            var self = (RectTransform)transform;
+            var self = NormaliseHudRoot();
             var referenced = CollectReferencedObjects();
 
             for (int i = self.childCount - 1; i >= 0; i--)
@@ -910,6 +948,96 @@ namespace CosmicShore.UI
                 .SetEase(Ease.OutQuad)
                 .SetUpdate(true)
                 .SetLink(slot.Flash.gameObject);
+        }
+
+        /// <summary>
+        /// Tells this card which physical controls fire its ability, so the lockup can draw the
+        /// control chip itself from the fleet's one glyph set. Called by
+        /// <see cref="VesselHUDController"/>, which is where the vessel's ability map lives.
+        ///
+        /// <para>This is what replaced per-vessel authored glyphs. Three HUDs carried device-icon
+        /// roots with no switcher to drive them - never lit, never matched to the player's device,
+        /// and left stranded when the lockup moved the row - and one of them had authored a pad set
+        /// that did not even correspond between families. Deriving the chip means a vessel authors
+        /// no glyphs and none of that can recur.</para>
+        /// </summary>
+        public void SetAbilityControl(Element element, InputEvents input)
+        {
+            if (!_slots.TryGetValue(element, out var slot)) return;
+
+            slot.PadBinding = InputHintBindingMap.BindingFor(input, keyboard: false);
+            slot.KeyBinding = InputHintBindingMap.BindingFor(input, keyboard: true);
+            RefreshChip(slot);
+        }
+
+        /// <summary>Which device the chips should speak for. Pushed on every set change.</summary>
+        public void SetControlDevice(bool keyboard)
+        {
+            if (_chipKeyboard == keyboard && _chipDeviceKnown) return;
+            _chipKeyboard = keyboard;
+            _chipDeviceKnown = true;
+            foreach (var slot in _slots.Values) RefreshChip(slot);
+        }
+
+        bool _chipKeyboard;
+        bool _chipDeviceKnown;
+
+        void RefreshChip(Slot slot)
+        {
+            var set = ResolveGlyphSet();
+            if (!set || !slot.ChipSocket) return;
+
+            var binding = _chipKeyboard ? slot.KeyBinding : slot.PadBinding;
+            var glyph = set.For(binding);
+
+            // A passive ability has no button, and several pad buttons have no keyboard equivalent.
+            // Both draw NOTHING rather than borrowing another device's picture.
+            bool showGlyph = glyph != null && !_chipKeyboard && glyph.padGlyph;
+            bool showLabel = glyph != null && _chipKeyboard && !string.IsNullOrEmpty(glyph.keyboardLabel);
+
+            if (showGlyph || slot.ChipGlyph)
+            {
+                slot.ChipGlyph ??= ResolveChildImage(slot.ChipSocket, "Glyph", null);
+                StretchTo(slot.ChipGlyph.rectTransform, 0f);
+                slot.ChipGlyph.preserveAspect = true;
+                slot.ChipGlyph.sprite = showGlyph ? glyph.padGlyph : null;
+                slot.ChipGlyph.color = set.restColor;
+                slot.ChipGlyph.enabled = showGlyph;
+            }
+
+            if (showLabel || slot.ChipLabel)
+            {
+                slot.ChipLabel ??= ResolveChipLabel(slot.ChipSocket, set);
+                slot.ChipLabel.text = showLabel ? glyph.keyboardLabel : string.Empty;
+                slot.ChipLabel.color = set.restColor;
+                slot.ChipLabel.enabled = showLabel;
+            }
+        }
+
+        TMP_Text ResolveChipLabel(RectTransform socket, ControlGlyphSetSO set)
+        {
+            const string name = "Label";
+            var existing = socket.Find(name);
+            var label = existing ? existing.GetComponent<TMP_Text>() : null;
+            if (!label)
+            {
+                var go = new GameObject(name, typeof(RectTransform), typeof(CanvasRenderer),
+                                        typeof(TextMeshProUGUI));
+                go.transform.SetParent(socket, false);
+                label = go.GetComponent<TextMeshProUGUI>();
+            }
+
+            StretchTo(label.rectTransform, 0f);
+            label.alignment = TextAlignmentOptions.Center;
+            label.fontSize = set.keyboardLabelSize;
+            label.raycastTarget = false;
+            return label;
+        }
+
+        ControlGlyphSetSO ResolveGlyphSet()
+        {
+            if (!glyphSet) glyphSet = Resources.Load<ControlGlyphSetSO>(glyphSetResourcePath);
+            return glyphSet;
         }
 
         public void PlayPressFlash(Element element) => SetPressed(element, true, releaseImmediately: true);
