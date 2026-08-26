@@ -983,6 +983,36 @@ Two things this buys beyond a compile:
 Use it for the pure/static core of a change (a predicate, a mask, a formula). It still cannot see
 name resolution or whole-class consistency — see the two traps below.
 
+**Slice by METHOD SIGNATURE + brace matching, not by markers, when the change is a handful of
+methods inside a huge file.** `START_MARKER`/`END_MARKER` needs stable text you are not editing,
+which is exactly what a working session keeps moving. A ~30-line extractor that takes a LIST of
+signature regexes and walks braces from each match to its closing one is immune to that: the
+harness re-derives itself from the shipped file after every edit, so `extract → generate → compile`
+becomes one command you re-run between patch rounds. One session type-checked five edited bodies
+out of a 2,400-line `NetworkBehaviour` this way across six rounds of edits, in seconds each.
+
+```python
+def extract(sig_regex):                      # find the signature, then brace-match to the end
+    for i, l in enumerate(lines):
+        if re.search(sig_regex, l):
+            depth, started, out = 0, False, []
+            for j in range(i, len(lines)):
+                out.append(lines[j])
+                depth += lines[j].count('{') - lines[j].count('}')
+                started |= '{' in lines[j]
+                if started and depth == 0: return "\n".join(out)
+    sys.exit("not found: " + sig_regex)      # HARD FAIL — see below
+```
+
+**The extractor must HARD-FAIL on a signature it cannot find, and that line is the whole gate.**
+A signature list silently stops covering a method the moment you rename or delete one — and the
+harness then compiles clean, reports `errors: 0`, and is proving nothing. This is gate erosion by
+your own refactor: the failure looks exactly like success. `sys.exit` on a miss makes the harness
+break loudly the moment its subject moves, which is the only way you find out you renamed
+something. Pair it with the §4 rule (inject a defect, confirm it fires, restore, `cmp`) **after
+every restructuring pass**, not once at the start — the run that matters is the one against the
+code you are about to commit.
+
 **For an `#if UNITY_EDITOR` TEST file, skip the extraction — compile the WHOLE file, unmodified,
 and drive it by reflection.** A test file's Unity surface is usually small and entirely stubbable
 (`Vector3`, `Mathf`, `Mesh`'s vertex/UV accessors, `Object.DestroyImmediate`), and NUnit is ~40

@@ -1011,6 +1011,15 @@ something a physics engine owes you an event for. So a settled ball — and abov
 which never moves at all — is exactly the ball a blast can silently fail to reach. One
 always-simulated sphere per live ball is a cheap price for *every force reaches every ball*.
 
+Be honest about which half of this is proven. The KINEMATIC failure is certain and needs no
+experiment: a kinematic body does not integrate, so `ApplyBlastServer`'s velocity write could not
+have moved a pinned ball whether or not the trigger ever fired. The SLEEP failure is a
+hypothesis — reasoned from how PhysX schedules pairs, not measured — and `sleepThreshold = 0` is
+carried as cheap insurance against it rather than as a diagnosis. If a blast is ever found still
+missing a resting ball, this is the paragraph to test first, and the next thing to try is finding
+the ball actively off `AstroLeagueBall.Live` (the way `ScarabSwitch` already does) instead of
+through a physics trigger at all.
+
 **One thing a studding ball deliberately does NOT do: resolve prism mass.** `ProcessPrismInteractions`
 gates on `n_Embedded` beside `n_Frozen` and `n_Hidden`. The server had always skipped it while
 `ClientFixedUpdate` ran it for every non-frozen, non-hidden ball, so every peer but the host was
