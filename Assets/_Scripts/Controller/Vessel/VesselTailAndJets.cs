@@ -86,15 +86,10 @@ namespace CosmicShore.Gameplay
                     _originalAlphaKeys[trail] = alphaKeys;
                 }
 
-                var gradient = new Gradient();
-                gradient.SetKeys(
-                    new[]
-                    {
-                        new GradientColorKey(_highlightColor, 0f),
-                        new GradientColorKey(_coreColor, 1f),
-                    },
-                    alphaKeys);
-                trail.colorGradient = gradient;
+                // Composed by TailGradient, not inline: a vessel is no longer the only thing
+                // that wears a tail (the Sparrow's skyburst missile does too), and two
+                // transcriptions of one gradient drift the first time either is retuned.
+                TailGradient.Apply(trail, _highlightColor, _coreColor, alphaKeys);
             }
         }
 
