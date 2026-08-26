@@ -258,7 +258,7 @@ namespace CosmicShore.Gameplay
         /// the bond table no longer describes - and the plant's own earlier prisms are still
         /// the old size.
         ///
-        /// <para>Lifeform LEVELS are retired (Docs/ECOSYSTEM.md §39, which supersedes §33), so
+        /// <para>Lifeform LEVELS are retired (Docs/ECOSYSTEM.md §40, which supersedes §33), so
         /// NOTHING reads this today: a leaf is its authored size for the whole of a plant's
         /// life, and a heart is authored per element rather than grown. It is kept
         /// deliberately, as a standing guard against a per-individual scale curve returning on

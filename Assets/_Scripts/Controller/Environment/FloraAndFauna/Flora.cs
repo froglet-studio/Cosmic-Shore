@@ -272,7 +272,7 @@ namespace CosmicShore.Gameplay
         /// EARLIER prisms were laid at the old size, and two prism sizes cannot tile one lattice.
         ///
         /// <para><b>Nothing reads this today, deliberately.</b> Its one reader was the LEVEL
-        /// curve, which is retired (Docs/ECOSYSTEM.md §39) — a plant's leaf is now stated once
+        /// curve, which is retired (Docs/ECOSYSTEM.md §40) — a plant's leaf is now stated once
         /// by its element and never changes in life, so there is no curve left to exempt.
         /// It is kept because the RULE outlived the mechanism: <b>before adding any
         /// per-individual scale curve, ask which species' geometry is authored in absolute
@@ -418,7 +418,7 @@ namespace CosmicShore.Gameplay
         /// A plant has no mouth, so the nourishment lands where a plant's own effort lands —
         /// its GROWTH QUOTA, the currency it funds children from — and then immediately tests
         /// for a seeding, so a shepherded plant pays out as another plant rather than as a
-        /// bigger one (Docs/ECOSYSTEM.md §39.4).
+        /// bigger one (Docs/ECOSYSTEM.md §40.4).
         ///
         /// <para>The credit is one whole offspring's worth of growth, so shepherding is a
         /// meaningful act rather than a tap. It is bounded by every gate an ordinary birth

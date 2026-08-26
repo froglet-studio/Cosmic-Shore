@@ -318,7 +318,7 @@ be food the web can never reach *and* clutter in the one volume that has to stay
 **The sizes are a range, not a size — and that range is the ELEMENT.** This paragraph used
 to describe a LEVEL spread (`Levels {1..5}` × `RarityFalloff 1.6` × `LeafScalePerLevel`
 1.25–1.30, a 1.0× → 2.4× linear span, 1.0× → 2.9× on the cacti). Lifeform levels are
-**retired** (`Docs/ECOSYSTEM.md` §39): a lifeform is its species and its element, and
+**retired** (`Docs/ECOSYSTEM.md` §40): a lifeform is its species and its element, and
 nothing else — `InitialLevel`, `LeafScalePerLevel` and `RarityFalloff` no longer exist on
 `FloraConfigurationSO`, and no asset carries them. Size variation now comes entirely from
 the four canonical element assets, which author genuinely different leaves: measured off

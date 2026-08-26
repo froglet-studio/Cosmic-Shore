@@ -42,7 +42,7 @@ namespace CosmicShore.ScriptableObjects
     /// One variant WITHIN an entry - what the detail page shows when the player steps sideways.
     ///
     /// <para>For ecology that is the species' four elements (Gyroid Charge / Mass / Space / Time),
-    /// each of which is a real authored config asset — and since Docs/ECOSYSTEM.md 39 that is the
+    /// each of which is a real authored config asset — and since Docs/ECOSYSTEM.md 40 that is the
     /// WHOLE variation a lifeform has, because there is no level. An ethirion has no variants at
     /// all: its size is not a property of the crystal but of the LIFEFORM carrying it, so it is
     /// stated on the flora and fauna entries instead. The type stays general because a future

@@ -95,7 +95,7 @@ MATURITY = 0.5
 # whole cell of one element and quietly waste the config's authored element spread. Four
 # independent founders keep several elements in the cell, and double as the extinction floor.
 # (The pick used to carry a spawn LEVEL too. Lifeform levels are retired outright - a lifeform
-# is its species and its ELEMENT, nothing else, Docs/ECOSYSTEM.md §39 - and a lattice plant's
+# is its species and its ELEMENT, nothing else, Docs/ECOSYSTEM.md §40 - and a lattice plant's
 # leaf never changes size anyway (Flora.PrismSizeFixedByGrowthRule). So the founders are now
 # the ONLY thing that varies inside a colony, which is precisely why the floor below matters.)
 LATTICE_MIN_FOUNDERS = 4

@@ -101,7 +101,7 @@ namespace CosmicShore.Utility
         // THERE IS NO LEVEL, and there is no field here for one. A creature is its species
         // and its element; the four elemental variations ARE its whole variation, and each
         // states its own body scale, prism shape, survival numbers, flocking, audio and HEART
-        // SIZE exactly once (Docs/ECOSYSTEM.md §39, which retires §33 and §17's level half).
+        // SIZE exactly once (Docs/ECOSYSTEM.md §40, which retires §33 and §17's level half).
         // A rolled spawn level (the retired LifeformLevelSpread) and an earned one
         // (the retired FeedsPerLevel) are BOTH gone: the first handed a creature a life it had
         // not lived, and the second made "how big is this thing" a hidden per-individual

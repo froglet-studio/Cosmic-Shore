@@ -10,7 +10,7 @@ using NUnit.Framework;
 namespace CosmicShore.Tests
 {
     /// <summary>
-    /// The asset-side gate for Docs/ECOSYSTEM.md §39 — lifeform LEVELS are retired, and a
+    /// The asset-side gate for Docs/ECOSYSTEM.md §40 — lifeform LEVELS are retired, and a
     /// lifeform's HEART (the elemental crystal it drops) is sized by its species × element,
     /// authored once in that element's own variant tuning block.
     ///
@@ -324,7 +324,7 @@ namespace CosmicShore.Tests
             }
 
             Assert.IsEmpty(offenders,
-                "These serialized fields were removed with lifeform levels (Docs/ECOSYSTEM.md §39). " +
+                "These serialized fields were removed with lifeform levels (Docs/ECOSYSTEM.md §40). " +
                 "Unity never prunes a modification it cannot resolve, so they linger in the YAML and " +
                 "read as live authoring to the next person who opens the file. Delete the keys.\n" +
                 string.Join("\n", offenders));

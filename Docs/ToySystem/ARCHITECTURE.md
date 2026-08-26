@@ -131,7 +131,7 @@ model nor a growth preview keeps the anonymous sphere. Variant stations wear the
 model **drawn at that variant's own authored heart size**, as a ratio of the platform default, so
 the row shows the real size difference between the four hearts before you touch any of them (a
 shark row reads big, a SchwarzP row small). A lifeform is its species and its element and nothing
-else — there is no level, so there are no level rows (`Docs/ECOSYSTEM.md` §39).
+else — there is no level, so there are no level rows (`Docs/ECOSYSTEM.md` §40).
 
 **Lifeform release.** A variant spawns a POPULATION (fauna `PopulationSize` / flora
 `InitialSpawnCount`) through the canonical cell spawn paths, on a runtime CLONE of its per-element

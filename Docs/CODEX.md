@@ -168,7 +168,7 @@ every time a species or crystal is added.
 - **A grown flora icon is one plant at one seed.** The seed is fixed (12345) so a re-bake is
   reproducible, which also means a species with heavy `wander` always draws the same individual.
 - **Ethirions have no variants.** A heart's size is a property of the LIFEFORM, authored per
-  element in that species' own variant tuning (`Docs/ECOSYSTEM.md` §39.2), so the number belongs
+  element in that species' own variant tuning (`Docs/ECOSYSTEM.md` §40.2), so the number belongs
   on the flora and fauna entries where a reader can see whose heart it is. The ethirion entry
   states only the BAND the whole roster spans, measured from the shipped assets. Omni is not
   a lifeform heart.

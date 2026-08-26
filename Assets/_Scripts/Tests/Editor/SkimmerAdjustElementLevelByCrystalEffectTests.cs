@@ -17,7 +17,7 @@ namespace CosmicShore.Tests
     /// HexRace, Wildlife Blitz, and freestyle.
     ///
     /// <para>A LIFEFORM HEART is the biggest single consumer of this mapping, and since
-    /// Docs/ECOSYSTEM.md §39 its scale is AUTHORED PER LIFEFORM (per species × element) rather
+    /// Docs/ECOSYSTEM.md §40 its scale is AUTHORED PER LIFEFORM (per species × element) rather
     /// than produced by a level curve - the retired one was 3.5 world at level 1, ×1.05 per
     /// level. The shipped authored band is <b>1.04 (SchwarzP Charge) … 4.60 (Shark)</b>, so
     /// every heart pays 0.104 … 0.460 element levels and the whole band sits UNDER the 0.5 cap
@@ -89,7 +89,7 @@ namespace CosmicShore.Tests
         [Test]
         public void ComputeLevelGain_BiggerCrystal_GrantsBiggerBoost()
         {
-            // Since §39 this IS the ecology's reward gradient: heart size is authored from
+            // Since §40 this IS the ecology's reward gradient: heart size is authored from
             // the lifeform's own measured body, so a bigger kill pays more.
             float small = SkimmerAdjustElementLevelByCrystalEffectSO.ComputeLevelGain(1.041f, 0.1f, 0.5f);
             float large = SkimmerAdjustElementLevelByCrystalEffectSO.ComputeLevelGain(4.6f, 0.1f, 0.5f);

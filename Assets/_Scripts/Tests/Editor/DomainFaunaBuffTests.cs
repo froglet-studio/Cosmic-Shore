@@ -17,7 +17,7 @@ namespace CosmicShore.Tests
     /// 10..15 overcharge band belongs to transients only, so pool increases above the ceiling
     /// arrive as temporary spikes that drain back, keeping headroom for the next reward.
     ///
-    /// <para>The heart scales used below are the SHIPPED authored band (Docs/ECOSYSTEM.md §39:
+    /// <para>The heart scales used below are the SHIPPED authored band (Docs/ECOSYSTEM.md §40:
     /// 1.04 SchwarzP Charge … 4.60 Shark, cap 0.5 at world scale 5.0). There is no level curve
     /// any more — the retired one sized every heart 3.5 world at level 1, ×1.05 per level — so
     /// a heart's value is a property of its LIFEFORM. That makes promise (1) sharper, not

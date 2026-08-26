@@ -16,7 +16,7 @@ them as separate branches.
 
 | # | Prompt | Why this rank |
 |---|---|---|
-| 1 | **Prompt 11** — the one editor session (measure + remaining outstanding playtests) | Nine items all need a human in the editor. D4's measurement gate (items 1+2) landed; Prompt 9b retired death pooling; Prompt 14 shipped C13b pooling. Remaining look-verifies: corridor, shield morph, jiggle remainder, D3/Phase 5, C9 Cell Selector swap, C11 starve/joust wither, C6 parent-scale (worm glide only — the Space-5 growth half is void since `Docs/ECOSYSTEM.md` §39 deleted `GrowToScale`), **C13b Blue→domain spawn repaint + Wanderway conservation**. |
+| 1 | **Prompt 11** — the one editor session (measure + remaining outstanding playtests) | Nine items all need a human in the editor. D4's measurement gate (items 1+2) landed; Prompt 9b retired death pooling; Prompt 14 shipped C13b pooling. Remaining look-verifies: corridor, shield morph, jiggle remainder, D3/Phase 5, C9 Cell Selector swap, C11 starve/joust wither, C6 parent-scale (worm glide only — the Space-5 growth half is void since `Docs/ECOSYSTEM.md` §40 deleted `GrowToScale`), **C13b Blue→domain spawn repaint + Wanderway conservation**. |
 | 2 | ~~**Prompt 7**~~ — C12/B1 cleanup sweep | ✅ **DONE 2026-08-25** — six items closed (watchdog→scheduler; SkimFxRunner = vessel FX recorded; dead CloakSeedWallAction.cs only; HoldCollider deleted; CreateBlock window kept+documented; analytic grow end + arena settle). |
 | 3 | ~~**Prompt 9b**~~ — D4: retire pooled *death* spawn | ✅ **DONE 2026-08-25** — death pooling retired (batch-only; declined request dropped). Grow stays pooled (Sparrow ReverseSuction). Prefabs remain CONFIG. |
 | 4 | ~~**Prompt 14**~~ — C13b environment-lay pooling | ✅ **DONE 2026-08-25** — unbounded `EnvironmentPrismPool`; snap Blue then ChangeTeam clock-lerps. Flora HealthPrism Instantiates folded. Playtest → Prompt 11. |
@@ -177,7 +177,7 @@ branches and both non-obvious:
 > **Same session, C6 parent-scale (Prompt 3, shipped 2026-08-25):** ~~a Squirrel
 > Space-5 joust also fires `GrowToScale` — the body bloom is a root lerp, not
 > a per-prism grow stamp.~~ **VOID since 2026-08-26** — `Fauna.GrowToScale` was
-> deleted with lifeform levels (`Docs/ECOSYSTEM.md` §39) and that joust now
+> deleted with lifeform levels (`Docs/ECOSYSTEM.md` §40) and that joust now
 > `Nourish()`es rather than growing anything. Watch a worm-colony glide, which
 > is the whole remaining test. Smooth; zero extra per-frame prism writes beyond
 > locomotion's existing `NotifyBodyPrismsMoved` / `SyncBodyPrismsToIndex`.
@@ -266,7 +266,7 @@ branches and both non-obvious:
 > volume than snapping them final at stamp).
 >
 > ⚠ **SUPERSEDED 2026-08-26 — half of this is now gone.** `Docs/ECOSYSTEM.md`
-> §39 retired lifeform LEVELS outright, and `Fauna.GrowToScale` /
+> §40 retired lifeform LEVELS outright, and `Fauna.GrowToScale` /
 > `GrowCrystalWithPop` were deleted with them: a lifeform is sized at spawn and
 > never re-sized mid-life. `WormFauna.GlideScales` is the ONLY parent-scale
 > animation left, and the (b) ruling still governs it. The Squirrel Space-5

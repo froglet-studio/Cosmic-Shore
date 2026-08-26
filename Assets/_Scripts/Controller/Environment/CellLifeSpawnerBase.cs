@@ -189,7 +189,7 @@ namespace CosmicShore.Gameplay
                 // unchanged. An OFFSPRING passes its parent's pick, which RollVariant returns
                 // verbatim - a lineage breeds true. There is no level: a plant is its species
                 // and its element, and the element states everything - leaf, tempo, budget and
-                // the size of its heart (Docs/ECOSYSTEM.md §39).
+                // the size of its heart (Docs/ECOSYSTEM.md §40).
                 var pick = config.RollVariant(inherit);
 
                 flora.ApplyElement(pick.Element);

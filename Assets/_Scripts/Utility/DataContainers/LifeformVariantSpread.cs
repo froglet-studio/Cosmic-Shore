@@ -4,7 +4,7 @@ namespace CosmicShore.Utility
 {
     // A LEVEL spread (LifeformLevelSpread: Enabled / MinLevel / MaxLevel / RarityFalloff) used
     // to live here, rolling each spawn a level in 1..5 with higher levels rarer. Level itself is
-    // now RETIRED (Docs/ECOSYSTEM.md §39, superseding §33 and the level half of §17): a lifeform
+    // now RETIRED (Docs/ECOSYSTEM.md §40, superseding §33 and the level half of §17): a lifeform
     // is its species and its ELEMENT, and nothing else. The four elemental variations are the
     // whole variation a species has, and each one states everything about itself — body scale,
     // prism shape, tempo, budget, survival numbers and the size of its heart — exactly once.

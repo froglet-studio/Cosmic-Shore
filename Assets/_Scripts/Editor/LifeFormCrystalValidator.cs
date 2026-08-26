@@ -18,7 +18,7 @@ namespace CosmicShore.Editor
     /// this surfaces the same prefabs in the editor so they get fixed properly.</para>
     ///
     /// <para><b>2. Every lifeform config states how big that crystal is.</b> Since
-    /// Docs/ECOSYSTEM.md §39 a heart's size is a property of the LIFEFORM - authored per
+    /// Docs/ECOSYSTEM.md §40 a heart's size is a property of the LIFEFORM - authored per
     /// element in that species' own variant tuning - not of a retired level curve. A config
     /// that authors none silently takes <see cref="LifeFormCrystal.DefaultHeartWorldScale"/>,
     /// which is the floor under an unsized config rather than a size anyone chose for that
@@ -148,7 +148,7 @@ namespace CosmicShore.Editor
                     : "has no Variant tuning enabled, so its heart";
                 Debug.LogWarning($"[LifeFormCrystal] {path}: {tail} falls back to the platform default " +
                     $"({LifeFormCrystal.DefaultHeartWorldScale} world scale) instead of a size chosen for this " +
-                    $"{noun}. A heart is a property of the lifeform (Docs/ECOSYSTEM.md §39).", config);
+                    $"{noun}. A heart is a property of the lifeform (Docs/ECOSYSTEM.md §40).", config);
                 return 1;
             }
 

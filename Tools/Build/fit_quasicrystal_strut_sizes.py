@@ -46,7 +46,7 @@ heartSeatInset so the plant's crystal sits clear inside its twelve-ray star.
 The heart's SIZE is authored per ELEMENT, on that element's variant tuning
 block (FloraVariantTuning.HeartWorldScale) - lifeform LEVELS are retired, so a
 heart no longer grows over a plant's life and there is no level curve for it to
-ride (Docs/ECOSYSTEM.md 39.2). The four quasicrystal variants author 1.843
+ride (Docs/ECOSYSTEM.md 40.2). The four quasicrystal variants author 1.843
 (Charge) / 2.935 (Mass) / 2.669 (Space) / 2.454 (Time) world scale, apparent
 radius <= ~0.6 x scale - the Schwarz P flat-point seat shipped 4.2u across for
 the same crystals.

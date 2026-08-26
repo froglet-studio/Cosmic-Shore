@@ -216,7 +216,7 @@ namespace CosmicShore.Gameplay
             // it carries the species' heart rather than the platform default. A segment never
             // gets AssignLineage of its own (the COLONY holds the config), so this forward is
             // the only channel that reaches it - without it every worm member would render
-            // ElementalCrystalSet.defaultHeartWorldScale (Docs/ECOSYSTEM.md §39.2).
+            // ElementalCrystalSet.defaultHeartWorldScale (Docs/ECOSYSTEM.md §40.2).
             ApplyHeartSize(heartWorldScale);
             crystal = LifeFormCrystal.EnsureElementalCrystal(this, element);
             if (crystal) crystal.SetEmbeddedIn(this);

@@ -522,7 +522,7 @@ def main():
     # not the lattice, so a levelled plant interpenetrates itself - cannot arise at all any
     # more: lifeform LEVELS are retired outright, so a leaf is its authored size for the whole
     # of a plant's life and the fit below is the ONLY size that ever renders
-    # (Docs/ECOSYSTEM.md 39.2). Flora.PrismSizeFixedByGrowthRule is kept as a standing guard
+    # (Docs/ECOSYSTEM.md 40.2). Flora.PrismSizeFixedByGrowthRule is kept as a standing guard
     # against the rule coming back on a growth path; it is not this fitter's business either
     # way. What varies per plant now is its ELEMENT - which is what the four fitted leaves
     # below are - and the size of the heart that element drops
@@ -548,7 +548,7 @@ def main():
         # (Mass) and carries its own budget/planting decisions, so only its LeafSize row
         # moves. The Blob cell config is NOT written: it has no Variant of its own (it
         # delegates to the element palette above), and the level fields this fitter used to
-        # pin there no longer exist - lifeform levels are retired (Docs/ECOSYSTEM.md 39.2).
+        # pin there no longer exist - lifeform levels are retired (Docs/ECOSYSTEM.md 40.2).
         hesperides = (ROOT / "Assets/_SO_Assets/Cell Configs/Hesperides Cell"
                              "/Hesperides SchwarzP Topiary Config Data.asset")
         set_leaf_size_only(hesperides, chunky)

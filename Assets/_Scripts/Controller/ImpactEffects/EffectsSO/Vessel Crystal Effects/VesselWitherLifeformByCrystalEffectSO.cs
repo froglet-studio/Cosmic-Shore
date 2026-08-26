@@ -21,7 +21,7 @@ namespace CosmicShore.Gameplay
     /// seeding. Below the unlock an ally joust does nothing.
     ///
     /// <para>Shepherding used to LEVEL the ally instead - a bigger body and a bigger heart.
-    /// Lifeform levels are retired (Docs/ECOSYSTEM.md §39), and feeding is the better shape for
+    /// Lifeform levels are retired (Docs/ECOSYSTEM.md §40), and feeding is the better shape for
     /// the same fantasy: the shepherd's reward is MORE OF THE THING THEY PROTECTED, paid out by
     /// the food web through every gate an ordinary feed passes (reproduction quota, cooldown,
     /// the cell's per-species cap, the Frenzy production freeze) rather than scripted onto one

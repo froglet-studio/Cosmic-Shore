@@ -113,7 +113,7 @@ namespace CosmicShore.Utility
         // THERE IS NO LEVEL, and there is no field here for one. A plant is its species and
         // its element; the four elemental variations ARE its whole variation, and each states
         // its own leaf shape, growth tempo, shield cadence, prism budget and HEART SIZE exactly
-        // once (Docs/ECOSYSTEM.md §39, which retires §33 and §17's level half). A rolled seed
+        // once (Docs/ECOSYSTEM.md §40, which retires §33 and §17's level half). A rolled seed
         // level (the retired LifeformLevelSpread) and an earned one (LeafScalePerLevel, spent
         // per reproduction) are BOTH gone: the first handed a plant a life it had not lived,
         // and the second made a species' leaf a hidden per-individual history — which the three

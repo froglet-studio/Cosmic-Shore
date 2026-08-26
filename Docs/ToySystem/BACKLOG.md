@@ -341,7 +341,7 @@ teardown). Everything below is remaining polish / not-yet-play-verified.
   for per-element identity). (Worms: the legacy trio was deleted; every segment of the
   rebuilt worm colony carries an authored elemental heart — Docs/ECOSYSTEM.md §23.8 — though
   the colony doesn't yet roll the element spread. The level half of that spread is retired
-  outright: a lifeform is its species and its element, Docs/ECOSYSTEM.md §39.)
+  outright: a lifeform is its species and its element, Docs/ECOSYSTEM.md §40.)
 - **Sparrow (and other vessels') HUD ability-icon bindings** for the shared upgrade-highlight
   system are unwired (Squirrel only); fill each view's `abilityIcons` in its prefab.
 - **Squirrel HUD tube/energy icons repaint colours per-frame**, so the upgrade highlight
@@ -567,7 +567,7 @@ unchanged by this work.
 - **The clamp is holding two matrices now, not three.** `ToyFactory.MaxRingSpacingFraction` (0.45)
   is what keeps the Vessel Changer (1.7u between rings) and the Painting gallery (3.9u) from
   interpenetrating. The third used to be the level-5 Lifeform variant station at 2.5u, whose radius
-  scaled with level; levels are retired (Docs/ECOSYSTEM.md §39) so every variant station is now the
+  scaled with level; levels are retired (Docs/ECOSYSTEM.md §40) so every variant station is now the
   plain `StationRadius` with a 48.5u gap, and its clamp is no longer exercised. It cannot go much
   lower: at 0.36 the Vessel
   Changer's ring inner radius (21.6) would fall *inside* its own 22-radius ship. If a matrix's

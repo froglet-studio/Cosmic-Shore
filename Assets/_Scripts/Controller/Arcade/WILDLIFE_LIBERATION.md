@@ -340,7 +340,7 @@ species' variety is its ELEMENT.
 **The roster has been merged TWICE, and both merges were arithmetic.** It started as
 `species × room` — the pens gave this table a `room` column, so a species living in two rooms
 needed two configs (8 per intensity). Replacing the three pens with one arena-wide band collapsed
-those into `species × level` (6 per intensity). Then **`Docs/ECOSYSTEM.md` §39 retired lifeform
+those into `species × level` (6 per intensity). Then **`Docs/ECOSYSTEM.md` §40 retired lifeform
 levels**, and `species × level` collapsed into **`species` (4 per intensity)**. Populations were
 preserved exactly through both — 610 seed / 1,409 cap before `POPULATION_SCALE`, 519 / 1,198 /
 4,155 body prisms after it, identical to the six-row table row for row in total (`prisms` was
@@ -357,7 +357,7 @@ is the *within-species* size mix, and with it the "that one's a big one" moment 
 If that mix is wanted back, the honest lever is a per-element `FaunaVariantTuning.BaseBodyScale`
 on the species' four canonical assets — an element that is genuinely a bigger animal — not a
 level axis. Note this also makes the heart a species constant: a shark heart is 4.60 world scale
-and a worm segment's 2.28, per element and for life (`Docs/ECOSYSTEM.md` §39.2), so **a shark
+and a worm segment's 2.28, per element and for life (`Docs/ECOSYSTEM.md` §40.2), so **a shark
 kill pays double a worm segment's** — which is the size-reads-as-reward the tiers used to give,
 moved from within a species to between them.
 

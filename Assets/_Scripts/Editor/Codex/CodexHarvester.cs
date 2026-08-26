@@ -67,7 +67,7 @@ namespace CosmicShore.Editor.Codex
         ///
         /// <para>An ethirion has no variants of its own. Its SIZE is not a property of the
         /// crystal at all - a heart is sized to the LIFEFORM that carries it, authored per element
-        /// in that species' variant tuning (Docs/ECOSYSTEM.md 39.2), so the size belongs on the
+        /// in that species' variant tuning (Docs/ECOSYSTEM.md 40.2), so the size belongs on the
         /// flora and fauna entries where a reader can see whose heart it is. What this entry
         /// states instead is the BAND the whole roster spans, harvested from the shipped assets
         /// rather than restated, so it cannot drift from what was authored.</para>
@@ -568,7 +568,7 @@ namespace CosmicShore.Editor.Codex
         /// One lifeform's authored heart size. A non-positive value is the "not authored"
         /// sentinel, and it is worth SAYING so rather than hiding the row: it means that
         /// species renders the platform default, which is a real (and usually unintended)
-        /// state a reader of the codex should be able to see. Docs/ECOSYSTEM.md 39.2.
+        /// state a reader of the codex should be able to see. Docs/ECOSYSTEM.md 40.2.
         /// </summary>
         static string HeartSizeLine(float authored) => authored > 0f
             ? $"{authored:0.00} world scale"
@@ -580,7 +580,7 @@ namespace CosmicShore.Editor.Codex
         /// rather than restated, so this line cannot drift from what was authored. It also names
         /// the ceiling, because the band's whole design property is that it stays under the world
         /// scale at which the collect reward saturates - past that, two visibly different hearts
-        /// pay the same (Docs/ECOSYSTEM.md 39.2).
+        /// pay the same (Docs/ECOSYSTEM.md 40.2).
         /// </summary>
         static string HeartSizeBandLine(ElementalCrystalSetSO set)
         {

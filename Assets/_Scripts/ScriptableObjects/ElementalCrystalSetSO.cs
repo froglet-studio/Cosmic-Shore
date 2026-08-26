@@ -40,7 +40,7 @@ namespace CosmicShore.ScriptableObjects
 
         /// <summary>
         /// The world scale a heart renders at when its species authors none. There is no level
-        /// curve: a lifeform's heart size is a property of the lifeform (Docs/ECOSYSTEM.md §39.2).
+        /// curve: a lifeform's heart size is a property of the lifeform (Docs/ECOSYSTEM.md §40.2).
         /// </summary>
         public float DefaultHeartWorldScale => defaultHeartWorldScale;
 

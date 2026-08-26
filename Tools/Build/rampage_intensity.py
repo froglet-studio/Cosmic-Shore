@@ -123,7 +123,7 @@ def forest(intensity: int):
         b = max(1, round_half_up(budget * budget_scale))
         prisms = n * b
         # A prism's volume is its authored leafSize and never anything else: lifeform LEVELS
-        # are retired, so nothing multiplies a leaf after it is laid (Docs/ECOSYSTEM.md 39).
+        # are retired, so nothing multiplies a leaf after it is laid (Docs/ECOSYSTEM.md 40).
         volume = prisms * leaf_vol
         rows.append((name, n, b, prisms, volume))
         plants_total += n
@@ -485,7 +485,7 @@ def main() -> int:
     print("\nself-test OK: all four intensities reproduce the shipped, play-tested intensity-4 "
           "ladder, and the fauna ladder climbs from the authored population")
 
-    print("\nOPEN - RE-MEASURE THIS LADDER IN-EDITOR (Docs/ECOSYSTEM.md §39). Lifeform LEVELS "
+    print("\nOPEN - RE-MEASURE THIS LADDER IN-EDITOR (Docs/ECOSYSTEM.md §40). Lifeform LEVELS "
           "are retired\noutright - a lifeform is its species and its ELEMENT - so a prism's "
           "volume is its authored\nleafSize forever and the level-spread multiplier this model "
           "used to apply (4.31x on the\ncactus, 3.21x on the phyllotactics) is gone. The forest "

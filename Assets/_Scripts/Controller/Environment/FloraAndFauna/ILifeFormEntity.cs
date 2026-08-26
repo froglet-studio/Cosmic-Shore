@@ -22,7 +22,7 @@ namespace CosmicShore.Gameplay
         // THERE IS NO LEVEL. A lifeform is its species and its element, and nothing else — a
         // creature you meet is exactly what its four-variant config says it is, with no hidden
         // per-individual history multiplying its body, its leaves or its heart
-        // (Docs/ECOSYSTEM.md §39, which retires §33). Every value an element needs — including
+        // (Docs/ECOSYSTEM.md §40, which retires §33). Every value an element needs — including
         // the size of its heart — is authored ONCE in that element's own tuning block.
 
         /// <summary>The element this lifeform carries (its crystal's element; None if uncrystaled).</summary>
@@ -31,7 +31,7 @@ namespace CosmicShore.Gameplay
         /// <summary>
         /// The WORLD scale this lifeform's heart renders at — authored per element in the
         /// species' own variant tuning and sized to suit that lifeform's body, so a tadpole's
-        /// heart is a tadpole's heart and a shark's is a shark's (Docs/ECOSYSTEM.md §39.2).
+        /// heart is a tadpole's heart and a shark's is a shark's (Docs/ECOSYSTEM.md §40.2).
         /// Read at the one gate every heart passes through (<see cref="Crystal.SetEmbeddedIn"/>).
         /// A non-positive value means 'no authored size' and falls back to the set's default.
         /// </summary>
@@ -59,7 +59,7 @@ namespace CosmicShore.Gameplay
         /// Squirrel's Space-5 'Shepherd' joust). Returns true if the nourishment landed.
         ///
         /// <para>This replaces the level-up that used to be the ally joust's whole effect
-        /// (Docs/ECOSYSTEM.md §39.4). It is deliberately a FOOD-WEB event rather than a size
+        /// (Docs/ECOSYSTEM.md §40.4). It is deliberately a FOOD-WEB event rather than a size
         /// bump: a creature's starvation clock resets and its birth counter advances, a plant's
         /// growth quota advances toward its next seeding. So shepherding pays out as a
         /// POPULATION — more of the thing you protected — which is a change the food web makes,

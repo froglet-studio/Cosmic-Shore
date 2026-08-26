@@ -21,7 +21,7 @@ Run from the repo root:  python3 Tools/ecosim/gen_hesperides_assets.py
        Tools/Build/fit_schwarz_p_leaf_sizes.py owns the SchwarzP topiary's LeafSize. Those
        are NOT carried - re-run both after this script and check their diffs.
    (Lifeform LEVELS are retired - a lifeform is its species and its ELEMENT, and that element's
-   variant block states the size of the heart it drops exactly once. Docs/ECOSYSTEM.md 39.2.)
+   variant block states the size of the heart it drops exactly once. Docs/ECOSYSTEM.md 40.2.)
 """
 import hashlib
 import os
@@ -41,7 +41,7 @@ def guid(name: str) -> str:
 # rewrites the canonical _SO_Assets/Lifeforms species assets wholesale - so without the carry
 # below, one re-run silently dropped every Hesperides species back to
 # ElementalCrystalSetSO.defaultHeartWorldScale. Two owners for one field is the trap
-# (Docs/ECOSYSTEM.md 39.2): QUOTE the authored value, never fork it. Same rule
+# (Docs/ECOSYSTEM.md 40.2): QUOTE the authored value, never fork it. Same rule
 # Tools/Build/author_lattice_cell.py follows for the whole Variant block.
 _VARIANT_HEAD = "  Variant:\n    Enabled: 1\n"
 _HEART_LINE = re.compile(r"^    HeartWorldScale: [-\d.eE+]+$", re.M)

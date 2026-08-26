@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Author every lifeform's HEART SIZE, from its own measured body.
 
-Docs/ECOSYSTEM.md §39.2.  Run with --check in CI; --write to author.
+Docs/ECOSYSTEM.md §40.2.  Run with --check in CI; --write to author.
 
     python3 Tools/Build/author_lifeform_heart_sizes.py            # report only
     python3 Tools/Build/author_lifeform_heart_sizes.py --check    # fail on drift
@@ -9,12 +9,12 @@ Docs/ECOSYSTEM.md §39.2.  Run with --check in CI; --write to author.
 
 WHY THIS EXISTS
 ---------------
-Lifeform LEVELS are retired (§39).  A lifeform is its species and its ELEMENT, and
+Lifeform LEVELS are retired (§40).  A lifeform is its species and its ELEMENT, and
 nothing else — so everything an element states about itself, it states exactly once, in
 its own variant tuning block.  That now includes the size of its HEART, the elemental
 crystal it drops on death.
 
-Before §39, every heart in the game was ONE size (3.5 world scale, ×1.05 per level).
+Before §40, every heart in the game was ONE size (3.5 world scale, ×1.05 per level).
 That uniformity was itself a fix: §33 had found the per-prefab scales it replaced were an
 accident nobody authored — 0.7 on a tadpole up to 4.0 on a gyroid, a 5.7× reward spread
 that had never been a decision.  Flattening removed the accident and created a different

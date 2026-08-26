@@ -59,7 +59,7 @@ namespace CosmicShore.Gameplay
         /// <summary>
         /// Elemental contract: the WORLD scale this lifeform's heart renders at — authored per
         /// element in the species' variant tuning and sized to suit this body
-        /// (Docs/ECOSYSTEM.md §39.2). Non-positive means 'not authored': the set's default is
+        /// (Docs/ECOSYSTEM.md §40.2). Non-positive means 'not authored': the set's default is
         /// used instead, so a config nobody has sized yet still grows a heart.
         ///
         /// <para>There is no level. A lifeform is its species and its element; its heart is one
@@ -113,7 +113,7 @@ namespace CosmicShore.Gameplay
         /// <see cref="Fauna"/> resets its starvation clock and advances its birth counter.
         ///
         /// <para>This replaces the level-up that used to be the ally joust's whole effect
-        /// (Docs/ECOSYSTEM.md §39.4). Shepherding now pays out as a POPULATION rather than as a
+        /// (Docs/ECOSYSTEM.md §40.4). Shepherding now pays out as a POPULATION rather than as a
         /// bigger individual — the food web makes the change, not a designer.</para>
         /// </summary>
         public virtual bool Nourish() => false;
@@ -142,7 +142,7 @@ namespace CosmicShore.Gameplay
             if (tuning.ShieldPeriod >= 0f) shieldPeriod = tuning.ShieldPeriod;
             if (tuning.WitherRingInterval > 0f) witherRingInterval = tuning.WitherRingInterval;
             // The element states the size of this lifeform's heart, like everything else it
-            // states (Docs/ECOSYSTEM.md §39.2). 0 is the sentinel every un-sized config carries,
+            // states (Docs/ECOSYSTEM.md §40.2). 0 is the sentinel every un-sized config carries,
             // which resolves to the set's default rather than to a zero-sized crystal.
             if (tuning.HeartWorldScale > 0f) ApplyHeartSize(tuning.HeartWorldScale);
         }

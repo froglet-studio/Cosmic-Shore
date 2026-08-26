@@ -27,7 +27,7 @@ anchor does not; the old "body segments are body parts" ruling is RETRACTED,
 selection only (survival = fitness, never a scripted fitness function — and there is NO
 lifeform LEVEL, rolled or earned: a lifeform is its species and its ELEMENT, which states
 everything about itself exactly once, the size of the heart it drops included;
-`Docs/ECOSYSTEM.md` §39) · the collider budget.
+`Docs/ECOSYSTEM.md` §40) · the collider budget.
 **If a change might violate one, STOP and ask (AskUserQuestion). Do not guess the design.**
 
 ## 2.5 When sign-off IS granted — landing a carve-out that neither leaks nor gets reverted
@@ -119,7 +119,7 @@ what the carve-out silently broke — see the traps below.
   read. The worm colony's "deliberately wired into no SpawnProfile — a boss is opt-in" survived
   into a ship review while Wildlife Liberation's four profiles were running a standing
   population of nine (at what was then `InitialLevel 3` — a field retired with lifeform levels,
-  `Docs/ECOSYSTEM.md` §39), which is the one deployment any worm change has to be
+  `Docs/ECOSYSTEM.md` §40), which is the one deployment any worm change has to be
   sized against. Re-prove absence by grepping the CONFIG ASSET'S GUID across `_SO_Assets`
   before you inherit the claim — and size collider/volume budgets against the tightest real
   consumer, not against the toy-released case.
@@ -239,7 +239,7 @@ what the carve-out silently broke — see the traps below.
 - **A per-lifeform SCALE curve must exempt any species whose geometry is a LATTICE.**
   The MECHANISM that made this concrete is gone — `Flora.LevelUp` grew `leafSize` and
   `Flora.AddHealthBlock` stamped it onto every prism the plant laid, and lifeform LEVELS are now
-  retired outright (`Docs/ECOSYSTEM.md` §39), so a leaf is its authored size for the whole of a
+  retired outright (`Docs/ECOSYSTEM.md` §40), so a leaf is its authored size for the whole of a
   plant's life. **The rule is not gone.** `AssembledFlora`'s families (gyroid, SchwarzP,
   quasicrystal, wall) bond at offsets measured in ABSOLUTE local units
   (`OctagonNeighbor.Center`/`SeedPosition`, `GyroidAssembler.SeparationDistance`, captured once
@@ -431,9 +431,9 @@ dial the run never reaches, which reads in-game as "my fix did nothing".
 The arithmetic is cheap and offline. Per-prism volume is `LeafSize.x*y*z`, flat, for the whole
 of a plant's life. It used to be that TIMES a level spread (`LeafScalePerLevel` applied per
 axis, so `scale³` per level: 1.15 → ×1.52 each level, ×2.74 averaged over levels 1-5) and that
-factor was the one everybody forgot — lifeform LEVELS are retired (`Docs/ECOSYSTEM.md` §39), so
+factor was the one everybody forgot — lifeform LEVELS are retired (`Docs/ECOSYSTEM.md` §40), so
 **it is now exactly 1**. The trap inverted rather than disappeared: **any volume number measured
-before §39 is inflated by its cell's old spread**, so divide it out before reusing it. Multiply
+before §40 is inflated by its cell's old spread**, so divide it out before reusing it. Multiply
 the flat per-prism volume by the settled prisms per plant, then by the seed floor, and compare
 to `FrenzyEnterVolume` *before* the first birth.
 
@@ -506,7 +506,7 @@ as a Python script under `Tools/Build/` that:
 Note what is NO LONGER in that model. The level spread's expected VOLUME multiplier
 (`Σ s^(3(L-1))·f^-(L-1) / Σ f^-(L-1)` for scale-per-level `s` and rarity falloff `f`) used to be
 the biggest single factor in it — 4.3x at `s=1.30, f=1.6` — and lifeform LEVELS are retired
-(`Docs/ECOSYSTEM.md` §39), so the term is exactly 1 and is gone. Do not re-derive it, and treat
+(`Docs/ECOSYSTEM.md` §40), so the term is exactly 1 and is gone. Do not re-derive it, and treat
 any ladder authored against it as describing a forest heavier than the one that now grows
 (`Tools/Build/rampage_intensity.py` carries that note in-script).
 

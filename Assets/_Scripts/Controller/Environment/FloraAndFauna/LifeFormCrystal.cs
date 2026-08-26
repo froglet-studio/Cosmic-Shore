@@ -22,7 +22,7 @@ namespace CosmicShore.Gameplay
     /// </summary>
     public static class LifeFormCrystal
     {
-        // --- Heart sizing (Docs/ECOSYSTEM.md §39.2) -------------------------------------
+        // --- Heart sizing (Docs/ECOSYSTEM.md §40.2) -------------------------------------
         //
         // A lifeform heart's size is a function of its LIFEFORM: it is authored per element in
         // that species' own variant tuning (FaunaVariantTuning.HeartWorldScale /

@@ -192,7 +192,7 @@ namespace CosmicShore.Gameplay
                 var seg = segments[i];
                 // The colony's authored heart SIZE rides along with its element: a segment is
                 // a MEMBER of the population and carries the species' own heart, and it never
-                // gets an AssignLineage of its own to read one from (Docs/ECOSYSTEM.md §39.2).
+                // gets an AssignLineage of its own to read one from (Docs/ECOSYSTEM.md §40.2).
                 if (seg) seg.ReprovisionHeart(element, HeartWorldScale);
             }
         }

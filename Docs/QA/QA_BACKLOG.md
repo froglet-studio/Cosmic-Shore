@@ -903,7 +903,7 @@ its own tether · scenes visibly popping in or out of existence.
 
 ### QA-ECOLOGY-ELEMENTAL-VARIATIONS ⬜ — four elemental variations, and a heart sized to its lifeform
 **Source:** PR #635 (the element spread), then the levels-retired pass. Reference:
-`Docs/ECOSYSTEM.md` §39. **Levels are gone**: a lifeform is its species and its element and
+`Docs/ECOSYSTEM.md` §40. **Levels are gone**: a lifeform is its species and its element and
 nothing else, and each element authors its own heart size — so this item is no longer about
 finding giants, it is about the four elements being real and the heart sizes being right.
 1. Open a spread-enabled spawn config in the inspector: confirm `Spread Elements` and a

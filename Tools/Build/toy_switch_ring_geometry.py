@@ -34,7 +34,7 @@ ASSET_DIR = ROOT / "Assets/_SO_Assets/Toys"
 # `CreateBareRoot(..., radius * 1.6f)` is the shared station trigger factor, repeated at every
 # station builder. A VARIANT station uses the plain `StationRadius` like the species and hangar
 # rows: it used to be `StationRadius * (1 + 0.35 * (L - 1))`, but lifeform levels are retired
-# (Docs/ECOSYSTEM.md §39) and LifeformMatrixToy.BuildVariantGrid now passes `_def.StationRadius`.
+# (Docs/ECOSYSTEM.md §40) and LifeformMatrixToy.BuildVariantGrid now passes `_def.StationRadius`.
 # The variant's own crystal is scaled by its authored heart size, which is a MODEL-child scale
 # and does not touch the station radius this file models.
 STATION_TRIGGER_FACTOR = 1.6

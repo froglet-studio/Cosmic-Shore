@@ -17,7 +17,7 @@ namespace CosmicShore.Gameplay
     /// species); Vessels blooms the <b>HANGAR</b> row instead (one mini hull per class);</item>
     /// <item>a species blooms its <b>VARIANT</b> row - one station per ELEMENT, and that is the
     /// whole matrix: a lifeform is its species and its element, and nothing else
-    /// (Docs/ECOSYSTEM.md §39). Each station wears that element's crystal, and its sphere is
+    /// (Docs/ECOSYSTEM.md §40). Each station wears that element's crystal, and its sphere is
     /// sized from the variant's own authored heart, so the row shows the real size difference
     /// between the four before you touch any of them;</item>
     /// <item>a variant spawns that exact lifeform live into the containing cell through the

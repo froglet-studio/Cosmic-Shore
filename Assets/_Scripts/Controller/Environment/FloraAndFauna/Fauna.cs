@@ -318,7 +318,7 @@ namespace CosmicShore.Gameplay
                 // makes a conditional re-size wrong.
                 //
                 // Until 2026-08 this job was done by Fauna.SetLevel, as an incidental
-                // side-effect of seeding the spawn level (Docs/ECOSYSTEM.md §39.3).
+                // side-effect of seeding the spawn level (Docs/ECOSYSTEM.md §40.3).
                 ApplyHeartSize(_heartWorldScale);
             }
 
@@ -425,7 +425,7 @@ namespace CosmicShore.Gameplay
         public GameObject GetGameObject() => gameObject;
 
         // --- Elemental contract: one base prefab, FOUR data-defined variants ---
-        // There is no level (Docs/ECOSYSTEM.md §39). A creature is its species and its element;
+        // There is no level (Docs/ECOSYSTEM.md §40). A creature is its species and its element;
         // the element states its body scale, prism shape, survival numbers, flocking, audio and
         // the size of its heart, exactly once, in its own variant tuning block.
 
@@ -434,7 +434,7 @@ namespace CosmicShore.Gameplay
 
         /// <summary>
         /// The WORLD scale this creature's heart renders at — authored per element in the
-        /// species' variant tuning and sized to suit this body (Docs/ECOSYSTEM.md §39.2).
+        /// species' variant tuning and sized to suit this body (Docs/ECOSYSTEM.md §40.2).
         /// 0 means 'not authored' and resolves to the set's default.
         /// </summary>
         public float HeartWorldScale => _heartWorldScale;
@@ -479,7 +479,7 @@ namespace CosmicShore.Gameplay
         /// NOURISH: an own-domain pilot fed this creature (the Squirrel's Space-5 'Shepherd'
         /// joust). A creature's nourishment is a FEED — the starvation clock resets and the
         /// birth counter advances — so shepherding pays out as more of the thing you protected
-        /// rather than as a bigger individual (Docs/ECOSYSTEM.md §39.4).
+        /// rather than as a bigger individual (Docs/ECOSYSTEM.md §40.4).
         ///
         /// <para>It routes through the ordinary <see cref="NotifyFed"/> path, so every gate an
         /// eaten prism passes applies: the reproduction quota, the per-individual cooldown, the
@@ -510,7 +510,7 @@ namespace CosmicShore.Gameplay
                 starvationSeconds = tuning.StarvationSeconds;
 
             // The element states the size of this creature's heart, like everything else it
-            // states (Docs/ECOSYSTEM.md §39.2). 0 is the sentinel every un-sized config carries,
+            // states (Docs/ECOSYSTEM.md §40.2). 0 is the sentinel every un-sized config carries,
             // which resolves to the set's default rather than to a zero-sized crystal.
             if (tuning.HeartWorldScale > 0f) ApplyHeartSize(tuning.HeartWorldScale);
 

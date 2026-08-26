@@ -280,7 +280,7 @@ def phase_thresholds(n, v):
 # becomes its own asset. Every one of them carries the SAME band (ROAM_INNER..ROAM_OUTER).
 #
 # It used to be one entry per SPECIES x LEVEL. Lifeform LEVELS are retired (a lifeform is its
-# species and its ELEMENT, nothing else - Docs/ECOSYSTEM.md 39), which removed the last thing
+# species and its ELEMENT, nothing else - Docs/ECOSYSTEM.md 40), which removed the last thing
 # separating two entries of one species: the room dimension had already gone, so a "level-5
 # shark" row and a "level-2 shark" row became two configs that differed in nothing at all.
 # They are merged by SUMMING their populations, which is arithmetic and not a retune - the
