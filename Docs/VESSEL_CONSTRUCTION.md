@@ -386,12 +386,21 @@ input moves nothing.
 
 **Two more the third flight found, both of which the frame fix made VISIBLE rather than caused.**
 
-*Roll was inverted.* Roll arrives as `InputStatus.YDiff` and now turns the parts about the ship's
-+Z. Unity's positive Z rotation is counter-clockwise seen from **in front** of the ship, so a pilot
-rolling right got a left bank. Negated once at the top of `PerformShipPuppetry` rather than at each
-call site, because the wings' roll term is `(roll ± pitch)` and flipping the whole expression would
-invert the pitch DIFFERENTIAL — the aileron read — along with it. Only visible once the axes were
-right: while every part turned about its own bone, there was no consistent roll to be wrong about.
+*Roll reads backwards — and it is NOT this layer.* Reported as inverted, negated inside
+`RiptideAnimation`, then reported **still** swapped: a pure sign flip that does not change the
+symptom is telling you the lever is somewhere else. It is the **hull**. `VesselTransformer.Roll()`
+banks the ship about `transform.forward` from `InputStatus.YDiff`, is byte-identical to
+`bleeding-edge`, and is shared by **six vessels** (Manta, Squirrel, Falcon, Rhino, Shrike, Dolphin).
+Negating in the animation only made the wings disagree with the hull they are bolted to, so it was
+reverted; the puppetry passes roll through untouched and follows the flight model wherever it goes.
+
+> **When a sign flip does not change the symptom, stop flipping signs.** A pure negation is one of
+> the few edits whose effect is certain, so a symptom that survives it is evidence about WHERE the
+> defect is, not about which way it points. Two flights were spent on this before the question was
+> put to the pilot, who answered it in one sentence: *it's the whole ship, not the wings.*
+
+Changing it is a flight-model decision across six vessels, deliberately left out of a
+vessel-construction pass.
 
 *A DRIFT SPLITS THE SHIP IN TWO — and getting that backwards cost a flight.* The fuselage and jaws
 turn to **aim** wherever the pilot points, while the wings and engines stay lined up with **Course**,

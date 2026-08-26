@@ -191,12 +191,15 @@ namespace CosmicShore.Gameplay
 
         protected override void PerformShipPuppetry(float pitch, float yaw, float roll, float throttle)
         {
-            // Roll arrives as InputStatus.YDiff and turns the parts about the ship's +Z. Unity's
-            // positive Z rotation is counter-clockwise seen from IN FRONT of the ship, so a pilot
-            // rolling right got a left bank. Negate once, here, rather than at each call site: the
-            // wings' roll term is (roll +/- pitch), and flipping the whole expression would invert
-            // the pitch DIFFERENTIAL - the aileron read - along with it.
-            roll = -roll;
+            // NOTE ON ROLL DIRECTION. A previous pass negated roll here, on the theory that the
+            // bank read backwards. It does - but the puppetry is not where that lives: the HULL
+            // itself banks that way, from VesselTransformer.Roll(), which is byte-identical to
+            // bleeding-edge and shared by six vessels (Manta, Squirrel, Falcon, Rhino, Shrike and
+            // this one). Negating here only made the wings disagree with the hull they are bolted
+            // to. The puppetry must follow the flight model, whatever the flight model does, so
+            // roll is passed through untouched and the direction question belongs to
+            // VesselTransformer - fleet-wide, and a deliberate decision rather than a side effect
+            // of a vessel-construction pass.
 
             Vector3 wingOffset;
             Vector3 thrusterOffset;
