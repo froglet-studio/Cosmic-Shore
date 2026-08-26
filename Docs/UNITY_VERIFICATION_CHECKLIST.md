@@ -3270,6 +3270,10 @@ GPU-instancing macros (`#pragma multi_compile_instancing`, `UNITY_INSTANCING_BUF
 
 ## 🔴 Dolphin rig swap — the swapper has never been RUN (2026-08-26)
 
+> **THE PR IS HELD ON THIS.** At the `/ship-deep` §2.5 gate the call was to hold rather than merge
+> tool-only, so this checklist entry is the blocker: run steps 1–3 below and the branch is
+> unblocked. Nothing else on the branch is waiting on anything.
+
 `FrogletTools ▸ Vessels ▸ Swap Vessel Rig` is new and, like every writer tool, **its output is
 the deliverable and it lands in your working tree, not on the branch**. The branch carries the tool
 and the measurements; it does not carry a swapped `Dolphin.prefab`. Nothing was verified in an
