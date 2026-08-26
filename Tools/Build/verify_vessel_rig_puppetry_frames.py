@@ -290,23 +290,40 @@ def main():
             failures.append("a pure roll splits the wings by %.2f deg" % split)
 
     print()
-    print("8. the offsets: a RESTING engine position, and a DRIFT gap on top of it")
-    # Both are read in the VESSEL's frame (+z forward), never the course frame - a clearance is
-    # measured against the hull, and reading it in the course frame would translate the parts as
-    # the hull aims. Both models are unit-1 with every scale in the chain at 1, so the legacy and
-    # rig numbers below are directly comparable world units.
-    wing_fwd, jet_drift, jet_rest = 2.3, 2.3, 0.15
-    LEGACY_ENGINE_Z, RIG_JET_BONE_Z = -2.047, -1.90
-    print("   legacy engine cases authored at z %.3f; rig jet bones rest at z %.3f"
-          % (LEGACY_ENGINE_Z, RIG_JET_BONE_Z))
-    print("   resting engine offset %.2f puts them at z %.3f%s"
-          % (-jet_rest, RIG_JET_BONE_Z - jet_rest,
-             "" if abs(RIG_JET_BONE_Z - jet_rest - LEGACY_ENGINE_Z) < 0.01 else "  (a feel value)"))
-    if jet_rest <= 0:
+    print("8. the offsets must be SCALE-FREE - fractions of the hull, not world units")
+    # An absolute offset is an unstated dependency on a model's import scale, and the two Dolphin
+    # models disagree about it: the legacy FBX root carries no Lcl Scaling, the rig's carries
+    # (100,100,100), and both declare UnitScaleFactor 1.0. Whether Unity bakes that 100 into the
+    # bone rest poses or leaves it on the root decides whether this hull is ~3.4 units long or
+    # ~340 - and the same absolute 2.3 is then either 67% of the ship or 0.67% of it. The second
+    # reads as the parts not moving at all.
+    WING_FWD, JET_DRIFT, JET_REST = 0.25, 0.25, 0.08   # fractions of the hull radius
+    BONE_SPAN = 2.83                                    # nose bone to jet bone, armature units
+    print("   authored: wings +%.2f R forward, engines -%.2f R (drift), -%.2f R (rest)"
+          % (WING_FWD, JET_DRIFT, JET_REST))
+    print("   %-34s %-12s %-12s %s" % ("hull reading", "radius R", "wing slide", "as % of hull"))
+    fractions = []
+    for label, span in (("root's 100x normalised away", BONE_SPAN),
+                        ("root's 100x applied", BONE_SPAN * 100.0)):
+        # circumscribing radius scales with the ship, whatever the reading
+        R = span * 0.955                      # measured: wingtip 2.64 against a 2.83 bone span
+        slide = WING_FWD * R
+        frac = slide / span
+        fractions.append(frac)
+        print("   %-34s %-12.3f %-12.3f %.1f%%" % (label, R, slide, frac * 100.0))
+    if abs(fractions[0] - fractions[1]) > 1e-9:
+        failures.append("the offsets are not scale-free (%.4f vs %.4f of the hull)"
+                        % (fractions[0], fractions[1]))
+    print("   identical at both readings%s"
+          % ("" if abs(fractions[0] - fractions[1]) <= 1e-9 else "   <-- FAIL"))
+    # ... and the same offsets expressed in ABSOLUTE units are NOT, which is the defect being fixed.
+    abs_fracs = [2.3 / BONE_SPAN, 2.3 / (BONE_SPAN * 100.0)]
+    print("   the absolute 2.3 that shipped before: %.1f%% vs %.2f%% - a 100x disagreement"
+          % (abs_fracs[0] * 100.0, abs_fracs[1] * 100.0))
+    if JET_REST <= 0:
         failures.append("the engines get no resting setback - they read pushed forward")
-    if jet_drift <= 0:
+    if JET_DRIFT <= 0:
         failures.append("engines have no backward clearance - the gap never opens")
-    print("   drift gap opened between wing and engine: %.1f units" % (wing_fwd + jet_drift))
 
     print()
     if failures:

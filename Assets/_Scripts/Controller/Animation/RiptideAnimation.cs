@@ -1,6 +1,7 @@
 using CosmicShore.Gameplay;
 using System.Collections.Generic;
 using UnityEngine;
+using CosmicShore.Utility;
 namespace CosmicShore.Gameplay
 {
     public class RiptideAnimation : VesselAnimation
@@ -41,26 +42,47 @@ namespace CosmicShore.Gameplay
         //
         // Offsets are in the VESSEL's space (+z forward) and are authorable, because how much room
         // the jaws need is a feel question, not a fact about the model.
-        [Header("Drift clearance")]
-        [Tooltip("How far FORWARD the wings slide while drifting, in vessel units, so the hull can " +
-                 "swing to aim without the wings fouling it.")]
-        [SerializeField] float driftWingForward = 2.3f;
+        // THE OFFSETS ARE FRACTIONS OF THE HULL, NOT WORLD UNITS.
+        //
+        // They were absolute units inherited from the legacy art, and that is a dependency on a
+        // model's import scale that nothing states and nothing checks. The two Dolphin models do
+        // not agree about it: the legacy FBX's root node carries no scaling at all, the rig's
+        // carries `Lcl Scaling (100, 100, 100)`, and both declare `UnitScaleFactor 1.0`. Whether
+        // Unity bakes that 100 into the bone rest poses or leaves it on the root decides whether
+        // this ship is ~3.4 units long or ~340 - and an offset of 2.3 is either 67% of the hull or
+        // 0.67% of it. The second reads as the parts not moving at all, which is how it was
+        // reported: "their z value in the vessel frame remained near zero".
+        //
+        // So the clearance is expressed against the ship's OWN measured size and the question stops
+        // mattering. `PrismOcclusionCorridor.MeasureCircumscribedRadius` is the fleet's existing
+        // answer to "how big is this hull" - world units, hull only, rotation-invariant, already
+        // load-bearing for the occlusion corridor - so this reuses it rather than measuring a
+        // second way. A vessel of any scale, and any future re-export, is correct with nothing
+        // re-authored.
+        //
+        // The numbers below are feel values in a unit that finally means something: a fraction of
+        // the radius of the sphere that circumscribes the hull.
+        [Header("Drift clearance (fractions of the hull radius)")]
+        [Tooltip("How far FORWARD the wings slide while drifting, as a fraction of the hull's " +
+                 "circumscribing radius, so the hull can swing to aim without the wings fouling it.")]
+        [SerializeField] float driftWingForward = 0.25f;
 
-        [Tooltip("How far BACK the engines slide while drifting - the other half of the same gap. " +
-                 "Zero here is what shipped, and it is why the jaws clipped the engines.")]
-        [SerializeField] float driftJetBackward = 2.3f;
+        [Tooltip("How far BACK the engines slide while drifting - the other half of the same gap.")]
+        [SerializeField] float driftJetBackward = 0.25f;
 
-        [Tooltip("How far back the engines sit AT REST, in vessel units. This is not clearance: " +
-                 "it is where the engines live. The legacy art authored its engine cases at " +
-                 "z -2.047 and the rig's jet bones rest at z -1.90 (both models are unit-1 and " +
-                 "every scale in the chain is 1, so those are directly comparable world units), " +
-                 "so the rig sits them 0.15 further FORWARD than the ship they replaced. A feel " +
-                 "value from there - tune it here, not in code.")]
-        [SerializeField] float jetRestBackward = 0.15f;
+        [Tooltip("How far back the engines sit AT REST, as a fraction of the hull's circumscribing " +
+                 "radius. This is not clearance: it is where the engines live.")]
+        [SerializeField] float jetRestBackward = 0.08f;
 
-        Vector3 ForwardWingOffset => new(0, 0, driftWingForward);
-        Vector3 RestThrusterOffset => new(0, 0, -jetRestBackward);
-        Vector3 BackwardThrusterOffset => new(0, 0, -(jetRestBackward + driftJetBackward));
+        /// <summary>The hull's circumscribing radius in WORLD units, measured once at Initialize.
+        /// Every offset above is a multiple of this, so none of them depends on the model's import
+        /// scale. Falls back to 1 (offsets become plain world units) if the hull cannot be
+        /// measured, which is the old behaviour rather than a silent zero.</summary>
+        float _hullRadius = 1f;
+
+        Vector3 ForwardWingOffset => new(0, 0, driftWingForward * _hullRadius);
+        Vector3 RestThrusterOffset => new(0, 0, -jetRestBackward * _hullRadius);
+        Vector3 BackwardThrusterOffset => new(0, 0, -(jetRestBackward + driftJetBackward) * _hullRadius);
         static readonly Vector3 defaultWingOffset = Vector3.zero;
 
         [Tooltip("Which ResourceSystem slot drives the jaw gape. 0 = Energy, the meter skimming " +
@@ -192,6 +214,12 @@ namespace CosmicShore.Gameplay
             AttachJawMeter(); // OnEnable ran before the status existed; bind now that it does.
 
             animationTransforms = new List<Transform>() { ThrusterTopRight, ThrusterRight, ThrusterBottomRight, ThrusterBottomLeft, ThrusterLeft, ThrusterTopLeft };
+
+            // Measured once, in world units, off this vessel's own hull - see the note on the
+            // clearance fields. A vessel with no measurable hull keeps 1, which makes the
+            // fractions behave as the plain world units they used to be.
+            float radius = PrismOcclusionCorridor.MeasureCircumscribedRadius(transform);
+            if (radius > 0.0001f) _hullRadius = radius;
         }
 
         // POSITIONS MUST SETTLE WHEN THE STICK IS IDLE TOO.

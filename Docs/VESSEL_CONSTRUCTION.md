@@ -642,12 +642,44 @@ shipped colliders describe (wings centred at x ±1.68 with a 1.927-long box → 
 sits 20 units back. Both independent measurements agree the ship is ~3.45 units long, so the bone
 positions measured off the FBX **are** world units.
 
-A separate finding from the same pass, and a reminder of §4.4: **the rig's engines rest 0.15 units
-forward of the ship they replaced.** The legacy art authored its engine cases at `z −2.047`; the rig's
-jet bones rest at `z −1.90`. Both models are unit-1 (`UnitScaleFactor 1.0`, `useFileScale: 1`,
-`globalScale: 1`) and every scale in both prefab chains is 1, so those are directly comparable world
-units. `RiptideAnimation.jetRestBackward` (0.15) puts them back where the ship's engines have always
-been. That is a *resting* offset, not clearance — the drift gap is added on top of it.
+### 4.6.4 An absolute offset is an unstated dependency on a model's import scale
+
+**RETRACTION.** An earlier version of this section derived a resting engine offset of `0.15` world
+units from "the legacy art authored its engine cases at `z −2.047`, the rig's jet bones rest at
+`z −1.90`, and both models are unit-1 so those are comparable". **The last clause is false**, and the
+number it produced did nothing on screen — as did a `2.3` wing slide, which is either two-thirds of
+the hull or two-thirds of one percent of it depending on a fact neither model states:
+
+| | legacy `Dolphin_Test.fbx` | rig `dolphin_shapekey_with_animations.fbx` |
+|---|---|---|
+| root node | `Chassis` | `dolphin` (plus a stray duplicate `dolohin`) |
+| root `Lcl Scaling` | **none** | **`(100, 100, 100)`** |
+| `UnitScaleFactor` | 1.0 | 1.0 |
+| `useFileScale` | 1 | 1 |
+
+Whether Unity bakes that 100 into the bone rest poses or leaves it on the imported root decides
+whether this hull is ~3.4 units long or ~340 — and every static reading available offline
+contradicts one of the two. Simulating the shipped `MovePartFromRest` arithmetic against the real
+bone chain reproduces the playtest report *exactly* under the second reading, down to the local
+value: `wing.l` goes from `(0, 0.994, 0)` to `(0, 0.999, −0.022)`, i.e. **"their z value in the
+vessel frame remained near zero"**.
+
+The fix is not to pick a side. The clearance is now expressed as a **fraction of the hull's own
+circumscribing radius**, measured once at `Initialize` through
+`PrismOcclusionCorridor.MeasureCircumscribedRadius` — the fleet's existing world-unit hull
+measurement, already load-bearing for the occlusion corridor, reused rather than duplicated. The
+authored numbers become meaningful (`0.25` = a quarter of the hull radius) and are correct at any
+model scale, for any future re-export, with nothing re-authored.
+
+**The general rule: a distance authored in world units is a silent dependency on every scale between
+the asset and the scene.** Where the distance is really a proportion of the thing it acts on —
+clearance, reach, spacing — author the proportion and measure the thing. This is the same shape as
+the occlusion corridor sizing itself from the vessel's own radius, and it is why that system needs
+no per-vessel constants.
+
+The residue worth keeping is that **three ruled-out causes were each individually correct and
+collectively misleading** (§4.6.3's table): the write is not overwritten, the skin binding is rigid,
+and the arithmetic is exact — all true, and none of them the reason nothing moved.
 
 `VesselAnimation.RotatePartFromRestInFrame` and `MovePartFromRest` therefore take a **`Quaternion`**
 frame rather than a `Transform` — and the turn is a `Quaternion` too, for §4.6.1's composition. Both
