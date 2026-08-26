@@ -28,6 +28,13 @@ namespace CosmicShore.Gameplay
         /// <summary>The live satellite cell, or null when nothing is standing.</summary>
         public Cell Cell { get; private set; }
 
+        // The camera that shows the WORLD, with no vessel in it. Arena furniture - created with
+        // the arena and struck with it - deliberately NOT the gameplay camera: opening a card must
+        // not touch the player's ship or their camera at all, so that closing it again has nothing
+        // to put back.
+        Camera _arenaCamera;
+        float _orbitAngle;
+
         /// <summary>
         /// The arena's own runtime data instance — what the previewing vessel's
         /// <see cref="AIPilot"/> is retargeted onto so it hunts THIS cell's contents instead of
