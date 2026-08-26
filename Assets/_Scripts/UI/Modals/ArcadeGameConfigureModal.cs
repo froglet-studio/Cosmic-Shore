@@ -1938,6 +1938,19 @@ namespace CosmicShore.UI
         /// </summary>
         void HandleAllPlayersReady()
         {
+            // The scene now holds TWO of this component (the arcade modal and the Maelstrom's own
+            // window), and BOTH subscribe to the sync manager - so this fires on the instance that
+            // was never opened too, where _selectedGame is null and the launch sync can only log
+            // its red NULL error. An instance with no game selected has nothing to launch and
+            // nothing to close; the open instance handles everything, including InvokeGameLaunch.
+            if (_selectedGame == null)
+            {
+                CSDebug.LogVerbose(CSLogChannel.ArcadeLaunch,
+                    "[ArcadeConfigModal] AllPlayersReady ignored - no game selected on this " +
+                    "modal instance (the open instance launches).");
+                return;
+            }
+
             CSDebug.LogVerbose(CSLogChannel.NetworkFlow, "<color=#FFD700>[FLOW-2] [ArcadeConfigModal] All players ready!</color>");
 
             bool shouldLaunch = ShouldLocalPlayerLaunch(hostConnectionData, arcadeConfigSyncManager != null);

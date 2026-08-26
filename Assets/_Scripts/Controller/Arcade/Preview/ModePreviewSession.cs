@@ -154,7 +154,7 @@ namespace CosmicShore.Gameplay
         {
             Unsubscribe();
             Detach();
-            AbortHard();
+            AbortHard(strikeWorld: false);   // never create GameObjects while the scene closes
         }
 
         void Subscribe()
@@ -637,8 +637,31 @@ namespace CosmicShore.Gameplay
             if (controller) controller.SetSpawnerPaused(paused);
         }
 
-        /// <summary>Drop everything with no unwind. Teardown only.</summary>
-        void AbortHard()
+        /// <summary>
+        /// Drop everything immediately. "Hard" means no awaits and no animation - it does NOT mean
+        /// no unwind, and the first version read it that way with three separate consequences:
+        ///
+        /// <para>(1) <b>The camera loan was never returned.</b> CameraManager survives the scene
+        /// change (DontDestroyOnLoad), so after a launch mid-preview it sat following the menu
+        /// vessel the scene load then destroyed - the MissingReferenceException on VesselController
+        /// landed in the NEXT scene, seconds after anything preview-related was visible.</para>
+        ///
+        /// <para>(2) <b>The world was destroyed BLUNTLY.</b> FinishStrike on a standing arena
+        /// Destroy()s a built world outright: pooled trail prisms die by Destroy (the pool
+        /// corruption the strike path exists to prevent), live fauna die mid-teardown with their
+        /// death effects running, and shielded prisms request shed-shatter stamps on render
+        /// entities that are already gone (the [PrismClock] STRICT refusals). The launch path now
+        /// runs the same pool-safe BeginStrike as an ordinary tap-out and destroys the retiring
+        /// root at once - the scene is ending, so the over-frames drain buys nothing.</para>
+        ///
+        /// <para>(3) On the OnDestroy path the strike must be SKIPPED
+        /// (<paramref name="strikeWorld"/> false): StrikeSatelliteWorld creates the retiring-root
+        /// GameObject, and creating objects while the scene closes is exactly Unity's "some
+        /// objects were not cleaned up when closing the scene" complaint. Everything scene-owned
+        /// dies with the scene; only the camera loan, the AI retarget and the runtime SO instance
+        /// need explicit hands.</para>
+        /// </summary>
+        void AbortHard(bool strikeWorld = true)
         {
             if (_state == State.Idle) return;
 
@@ -647,6 +670,17 @@ namespace CosmicShore.Gameplay
             _cts = null;
 
             StopRunner();
+
+            CameraManager.Instance?.EndWindowedPlayerCamera();
+            RestoreAITarget();
+            ReturnVesselHome();
+
+            if (strikeWorld && _arena.IsStanding)
+            {
+                var retiring = _arena.BeginStrike();
+                if (retiring) Destroy(retiring);
+            }
+
             _arena.FinishStrike();
             SetLocalTrailPaused(false);
             _state = State.Idle;
