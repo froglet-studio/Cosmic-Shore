@@ -9,9 +9,22 @@ meant to pitch, and pitches backwards.  That is what a rig-swapped Dolphin looke
 like: "roll and pitch are mixed, pitch is inverted, the wings fold up on a drift".
 
 `VesselAnimation.RotatePartFromRestInFrame` conjugates the turn into the frame the
-animation MEANT (the vessel, or the drift handle while drifting) and re-anchors the
-rest pose through the part's HOME parent.  This reproves both halves against the
-rig's own measured bone rest rotations, offline, with no Unity.
+animation MEANT and re-anchors the rest pose through the part's HOME parent.
+
+Two further things the rig changed, which three passes of per-axis sign scalers
+could not fix because neither of them is a sign:
+
+  * the old art parented every animated part under the CHASSIS, so each inherited
+    the chassis's turn and added its own on top.  On the rig the wings hang off
+    `winghold.l|r` and the engines off `jetholdT|m|B.l|r` - a sibling branch of
+    `fuse` - so that inherited term is gone.  The wings' own pitch input is
+    Brake(throttle), zero unless braking, so losing it left them dead on that axis.
+  * the drift frame was a `DriftHandle` Transform parented under the vessel, so the
+    hull's own aiming carried it between one frame's write and the next read.
+    Re-pointing only its forward axis leaves that twist in place.
+
+This reproves all of it against the rig's own measured bone rest rotations,
+offline, with no Unity.
 
     python3 Tools/Build/verify_vessel_rig_puppetry_frames.py
 """
@@ -119,35 +132,59 @@ def main():
         print("   %-12s difference %.9f deg%s" % (name, d, "" if same else "  (expected: its parent is a bone)"))
 
     print()
-    print("4. a COURSE-aligned frame must carry the part onto Course, not onto the hull")
-    # A drifting Dolphin aims its fuselage away from its direction of travel; the wings and
-    # engines are handed a frame aimed along Course so they keep signalling where the ship is
-    # really going. With no pilot input, a part in that frame must sit exactly on Course.
-    hull  = euler(0, 40, 0)      # nose slewed 40 deg off the direction of travel
-    course = euler(0, 0, 0)      # Course = world forward
-    still = euler(0, 0, 0)
-    for name in ("wing.l", "jetT.l"):
-        bone = euler(*BONES[name])
-        rest_world = qmul(hull, bone)                    # where the part rests on the slewed hull
-        rest_in_vessel = qmul(qinv(hull), rest_world)    # ... expressed in the hull's own frame
-        on_course = qmul(course, qmul(still, rest_in_vessel))
-        on_hull   = qmul(hull,   qmul(still, rest_in_vessel))
-        # the part must differ from the hull-framed pose by exactly the hull's slew
-        slew = angle_between(on_course, on_hull)
-        ok = abs(slew - 40.0) < 1e-6
-        if not ok:
-            failures.append("%s does not follow Course (%.2f deg of 40)" % (name, slew))
-        print("   %-8s course-framed pose sits %6.2f deg off the hull-framed one%s"
-              % (name, slew, "" if ok else "   <-- FAIL"))
-    print("   (40.00 = the hull's slew: the appendages stay on Course while the fuselage aims)")
+    print("4. the composed turn must be BIT-IDENTICAL to the old chassis-as-parent hierarchy")
+    # Legacy: wing.localRotation = Euler(wing) * rest, under a chassis that was itself turning,
+    #   world = SHIP * Euler(chassis) * Euler(wing) * rest
+    # Rig:   the wing is a sibling branch, so the chassis turn is composed by hand and the pair
+    #   is conjugated into the ship frame. The two must agree exactly - composed, never added,
+    #   because Euler angles do not add at these amplitudes.
+    S, E = 25.0, 75.0
+    worst = 0.0
+    for (pi, ya, ro, th) in ((0.4, 0.0, 0.0, 0.0), (0.0, 0.7, 0.0, 0.0), (0.0, 0.0, 1.0, 0.0),
+                             (0.6, -0.5, 0.8, 0.3), (-1.0, 1.0, -1.0, 1.0)):
+        chassis = euler(pi * S, ya * S, ro * S)
+        own     = euler(0.0, (ya + th) * E, (ro + pi) * S)
+        rest_l  = euler(5.901, 0, 0)
+        legacy  = qmul(SHIP, qmul(chassis, qmul(own, rest_l)))
+        rest_world = qmul(SHIP, rest_l)                    # legacy rest: chassis rest = identity
+        rig     = qmul(SHIP, qmul(qmul(chassis, own), qmul(qinv(SHIP), rest_world)))
+        # Compared COMPONENT-WISE, not through angle_between: that goes via acos, which is
+        # ill-conditioned for near-identical quaternions and reports ~3e-6 deg of pure round-off
+        # for a product chain this long. A component difference is well-conditioned, so the
+        # tolerance can stay at float64 epsilon and actually mean something.
+        worst = max(worst, min(max(abs(a - b) for a, b in zip(legacy, rig)),
+                               max(abs(a + b) for a, b in zip(legacy, rig))))
+    if worst > 1e-12:
+        failures.append("composed turn differs from the legacy hierarchy by %.3e" % worst)
+    print("   worst quaternion component disagreement over 5 stick poses: %.3e%s"
+          % (worst, "" if worst <= 1e-12 else "   <-- FAIL"))
+    # ... and prove that ADDING the Eulers instead would NOT have been the same thing.
+    chassis = euler(0.6 * S, -0.5 * S, 0.8 * S)
+    own     = euler(0.0, (-0.5 + 0.3) * E, (0.8 + 0.6) * S)
+    added   = euler(0.6 * S, -0.5 * S + (-0.5 + 0.3) * E, 0.8 * S + (0.8 + 0.6) * S)
+    print("   the same thing done by ADDING Euler angles is off by %.2f deg (why it is composed)"
+          % angle_between(qmul(chassis, own), added))
 
     print()
-    print("5. the COURSE FRAME must not twist as the hull aims away")
-    # With Course fixed and zero pilot input, a part held in the course frame must be STILL.
-    # LookRotation(Course, hull.up) pins the frame's roll to a swinging up-vector and drags the
-    # part around the Course axis; rebuilding from the hull's current nose leaks less but still
-    # leaks. The shipped frame is rotation-minimizing: each step is the shortest arc from its OWN
-    # previous forward onto Course, which adds no twist by construction.
+    print("5. PITCH must reach the wings - the axis the rig went dead on")
+    # The wings' own X input is Brake(throttle): zero unless the pilot is braking. Every bit of
+    # pitch response they had came from the chassis they used to hang off.
+    # Stick: pitch 0.4, nothing else. The wing's own terms give it Brake(0)=0 on X and the
+    # aileron +-pitch on Z; the ship's pitch can only reach it through the chassis.
+    own = euler(0.0, 0.0, 0.4 * S)                      # roll 0 + pitch 0.4 -> aileron, about Z
+    for label, chassis in (("without the chassis term (the regression)", euler(0, 0, 0)),
+                           ("with it restored",                          euler(0.4 * S, 0, 0))):
+        ax, ang = to_axis_angle(qmul(chassis, own))
+        about_x = abs(ax[0] * ang)
+        print("   %-42s wing turns %6.2f deg, %5.2f of it about the ship's PITCH axis"
+              % (label, abs(ang), about_x))
+        if chassis != euler(0, 0, 0) and about_x < 1.0:
+            failures.append("the chassis term delivers no pitch to the wings")
+        if chassis == euler(0, 0, 0) and about_x > 1e-9:
+            failures.append("the no-chassis control unexpectedly pitched the wings")
+
+    print()
+    print("6. the drift frame must be STILL - a Transform parented under the vessel cannot be")
     def rotv(q, v):
         r = qmul(qmul(q, (v[0], v[1], v[2], 0.0)), qinv(q))
         return (r[0], r[1], r[2])
@@ -162,49 +199,52 @@ def main():
         return axis_angle(ax, math.degrees(math.acos(d)))
 
     COURSE = (0.0, 0.0, 1.0)
-    rmf = euler(15, 0, 25)
-    rmf = qmul(from_to(rotv(rmf, (0, 0, 1)), COURSE), rmf)
-    prev, total = rmf, 0.0
-    for yaw in range(5, 55, 5):
-        rmf = qmul(from_to(rotv(rmf, (0, 0, 1)), COURSE), rmf)
-        total += angle_between(rmf, prev)
-        prev = rmf
-        f = rotv(rmf, (0, 0, 1))
-        if abs(f[2] - 1.0) > 1e-6:
-            failures.append("the course frame left Course at yaw %d" % yaw)
-    # Tolerance is numerical, not physical: angle_between goes through acos, which is
-    # ill-conditioned for near-identical quaternions, so each step contributes ~1e-7 of noise.
-    # A thousandth of a degree over the whole sweep is four orders below what it replaces.
-    TWIST_TOL = 1e-3
-    if total > TWIST_TOL:
-        failures.append("the course frame twists %.6f deg with no input" % total)
-    print("   hull aims 0 -> 50 deg off a fixed Course, zero pilot input")
-    print("   twist accumulated by the shipped frame: %.6f deg (tolerance %.0e)%s"
-          % (total, TWIST_TOL, "" if total <= TWIST_TOL else "   <-- FAIL"))
-    print("   (LookRotation, what shipped before, accumulated 19.77 deg over the same sweep)")
+    entry = euler(0, 0, 0)                       # hull orientation the drift began at
+
+    # (a) SHIPPED: a quaternion captured once. It has no parent, so nothing can perturb it.
+    frozen = entry
+    frozen_twist = 0.0
+
+    # (b) WHAT SHIPPED BEFORE: a handle parented under the vessel. Each frame the hull turns by
+    #     dR, which carries the child's world rotation with it; re-pointing only its FORWARD axis
+    #     leaves the twist that dR introduced about the Course axis.
+    handle, prev = entry, entry
+    handle_twist = 0.0
+    hull_prev = entry
+    for step in range(1, 11):
+        hull = euler(6.0 * step, 5.0 * step, 0.0)      # the pilot aiming, pitch AND yaw
+        dR = qmul(hull, qinv(hull_prev))
+        hull_prev = hull
+        handle = qmul(dR, handle)                     # parented: the hull carries it
+        handle = qmul(from_to(rotv(handle, (0, 0, 1)), COURSE), handle)   # forward re-pointed
+        handle_twist += angle_between(handle, prev); prev = handle
+        frozen_twist += angle_between(frozen, entry)  # exactly 0 - nothing writes it
+    if frozen_twist > 1e-9:
+        failures.append("the frozen frame moved %.6f deg" % frozen_twist)
+    if handle_twist < 1.0:
+        failures.append("the parented-handle control did not reproduce the defect")
+    print("   hull aims 0 -> 60 deg pitch / 50 deg yaw off a fixed Course, zero pilot input")
+    print("   parented DriftHandle accumulated: %7.3f deg   <- what the pilot saw" % handle_twist)
+    print("   frozen quaternion accumulated:   %7.3f deg%s"
+          % (frozen_twist, "" if frozen_twist <= 1e-9 else "   <-- FAIL"))
 
     print()
-    print("6. the two wings must stay COPLANAR - no fold")
-    # The wings differ only by a cross-coupling: pitch into their roll, throttle into their yaw,
-    # one plus and one minus. That antisymmetry is what takes them out of a common plane. A bank
-    # is BOTH wings turning by the same angle (the plane tilts); unequal angles is the fold the
-    # sixth playtest photographed.
-    S = 25.0
-    for diff, label in ((1.0, "cross-coupling 1"), (0.0, "cross-coupling 0 (shipped)")):
-        worst = 0.0
-        for roll in (0.0, 0.5, 1.0):
-            for pitch in (0.0, 0.3, 0.6):
-                r_r = (roll * -1 + diff * pitch) * S
-                r_l = (roll * -1 - diff * pitch) * S
-                worst = max(worst, abs(r_r - r_l))
-        print("   %-28s worst wing-to-wing roll split: %5.1f deg%s"
-              % (label, worst, "" if diff == 0 else "   <- the fold"))
-        if diff == 0.0 and worst > 1e-9:
-            failures.append("wings are not coplanar with the cross-coupling off")
+    print("7. a pure ROLL must bank the two wings EQUALLY; pitch is allowed to split them")
+    # A bank is both wings turning by the same angle - the plane tilts, it does not fold. The
+    # authored +-pitch in the roll term is an AILERON and is meant to split them; the fold the
+    # sixth playtest photographed came from negating the wings' yaw alone, which broke the
+    # pairing between that term and the +-throttle one.
+    for pitch, throttle, label in ((0.0, 0.0, "pure roll"), (0.6, 0.0, "roll + pitch (aileron)")):
+        r_r = (1.0 + pitch) * S
+        r_l = (1.0 - pitch) * S
+        split = abs(r_r - r_l)
+        print("   %-24s wing-to-wing roll split: %5.1f deg" % (label, split))
+        if pitch == 0.0 and split > 1e-9:
+            failures.append("a pure roll splits the wings by %.2f deg" % split)
 
     print()
-    print("7. a DRIFT must also open the clearance gap")
-    # wings forward, engines back, both along the ship's +z, rotation unchanged by the drift.
+    print("8. a DRIFT must also open the clearance gap")
+    # wings forward, engines back, both along the FROZEN frame's +z, rotation held.
     wing_fwd, jet_back = 2.3, 2.3
     print("   wings  offset +%.1f z (forward)   engines offset %.1f z (backward)"
           % (wing_fwd, -jet_back))
@@ -218,7 +258,7 @@ def main():
         for f in failures:
             print("  !", f)
         return 1
-    print("OK - the puppetry turns about the ship's axes and a drift moves nothing by itself.")
+    print("OK - ship-axis turns, the chassis term restored, and a drift that is genuinely still.")
     return 0
 
 if __name__ == "__main__":

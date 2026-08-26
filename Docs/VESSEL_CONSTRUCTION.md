@@ -512,6 +512,84 @@ Translating those constants also exposed dead tuning: the "default" and "backwar
 positions were the same vector, so the thrusters never had a positional animation at all. The one
 real positional effect in the Dolphin's whole puppetry is the wings sliding forward on a drift.
 
+### 4.6.1 A rig can delete a PARENT/CHILD relationship the old art was giving you for free
+
+Every check above is about a part in isolation — is it bound, does it wear the right material, does
+its rest pose survive. None of them looks at what the part was a CHILD of, and on this hull that was
+carrying real animation.
+
+Before the swap, every animated Dolphin part hung off the chassis:
+
+```
+Dolphin ─ OrientationHandle ─┬─ DriftHandle          ← the Course-aligned frame
+                             └─ Dolphin_Test         ← Chassis
+                                ├─ LeftWing / RightWing.001
+                                ├─ Engine case Left.1-3 / Right.1-3
+                                └─ TopNose / bottomNose
+```
+
+`Chassis` is itself puppeteered — `(25·pitch, 25·yaw, 25·roll)` — so each appendage inherited that
+turn through the hierarchy and composed its own on top. On the rig the wings hang off
+`winghold.l|r` and the engines off `jetholdT|m|B.l|r`, a **sibling branch of `fuse`** (measured from
+the FBX: `root/root.001/winghold.*` against `root/fuse`). The inherited term is simply gone.
+
+Its loss is not subtle, and it is not symmetric across the axes: the wings' own PITCH input is
+`Brake(throttle)`, which is **zero unless the pilot is braking**, so every bit of pitch response the
+wings had came from the chassis. Without it they sit dead on that axis while yaw and roll — which do
+have their own terms — merely get quieter. The playtest report was exactly that shape: *"the wings
+are fixed in their x axes at all times, which loses previous puppeteering."*
+
+Two rules come out of it:
+
+* **When a rig swap re-homes a part, ask what its old PARENT was doing**, not just whether the part
+  still resolves. A parent that animates is a term in the child's motion, and it is invisible in
+  every per-part check.
+* **Put such a term back by COMPOSING rotations, never by adding Euler angles.** At this puppetry's
+  amplitudes (up to 75°) the two differ by 6.43° on an ordinary stick pose. Composed, the rig
+  reproduces the legacy hierarchy to one ULP (1.1e-16 per quaternion component, over five stick
+  poses) — proven offline by `Tools/Build/verify_vessel_rig_puppetry_frames.py` check 4.
+
+And the corollary that cost the most: **three passes of per-axis sign scalers were tried here first,
+and every one of them was wrong on playtest.** A missing composition term reads like a wrong sign —
+an axis that responds oddly or not at all — so the tempting fix is a `-1`, which then makes the
+appendage disagree with the hull it is bolted to. `RiptideAnimation` now carries no per-axis scaler
+at all, and a note saying that if an axis reads backwards the fault is in the flight model or the
+rig, and gets fixed there.
+
+### 4.6.2 A frame that must hold still cannot be a Transform parented under the thing that moves
+
+The other half of the Dolphin's drift. While drifting, the wings and engines must hold the direction
+of travel while the fuselage slews to aim — so they are posed in a Course-aligned frame rather than
+the hull's. That frame was `DriftHandle`, a GameObject **parented under the vessel**.
+
+A child's world rotation is stored as a local rotation, so between one frame's write and the next
+frame's read the hull's own aiming *carries the handle with it*. Re-pointing the handle's FORWARD
+axis back onto Course each frame corrects the direction and leaves the **twist about that axis**
+untouched. It accumulates. Measured over a hull aiming to 60° pitch / 50° yaw off a fixed Course
+with zero pilot input: **24.6° of twist**, applied to parts that were commanded to hold still. On
+screen that is unmistakable and was reported twice — *"they look like they are trying to keep their
+up vector in a position relative to the camera."*
+
+`LookRotation(Course, up)` is worse (its roll is pinned to a swinging up-vector) and a
+"rotation-minimizing" re-aim from the handle's own previous forward does not help either, for the
+same reason: **the property is only rotation-minimizing if nothing else writes the frame between
+steps**, and a parent writes it every frame.
+
+The fix is to stop using a Transform. The drift frame is now a **quaternion captured once at drift
+entry** (`RiptideAnimation._driftFrame`); it has no parent and nothing can perturb it, so it is still
+by construction — 0.000° over the same sweep. The Dolphin's drift locks its velocity vector, so an
+orientation captured at entry stays course-aligned for the whole manoeuvre. The appendages take
+`Quaternion.identity` as their turn while drifting: no puppetry at all, which is what the manoeuvre
+wants from them. `DriftHandle` survives in the prefab as an inert empty.
+
+`VesselAnimation.RotatePartFromRestInFrame` and `MovePartFromRest` therefore take a **`Quaternion`**
+frame rather than a `Transform` — and the turn is a `Quaternion` too, for §4.6.1's composition. Both
+are Dolphin-only; the shared `RotatePartFromRest` is untouched, so Scarab, Rhino and Urchin keep the
+behaviour they were play-tested against.
+
+General rule: **a reference frame is a value, not a place in the hierarchy.** If a frame's whole job
+is to NOT move with something, do not hang it off that something.
+
 ---
 
 ## 7. Phase 0 re-survey — what moved, and the two rows that were wrong about liveness

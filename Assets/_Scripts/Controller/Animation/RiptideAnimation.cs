@@ -5,7 +5,6 @@ namespace CosmicShore.Gameplay
 {
     public class RiptideAnimation : VesselAnimation
     {
-        [SerializeField] Transform DriftHandle;
         [SerializeField] Transform Chassis;
 
         [SerializeField] Transform NoseTop;
@@ -24,9 +23,11 @@ namespace CosmicShore.Gameplay
 
         List<Transform> animationTransforms;
 
-        /// <summary>Was the vessel drifting last frame? The course frame is rotation-minimizing,
-        /// so it needs seeding once at drift ENTRY and then only ever turning incrementally.</summary>
-        bool _wasAiming;
+        /// <summary>Was the vessel drifting last frame, and the hull orientation captured the
+        /// frame the drift began. While drifting, the wings and engines hold THAT orientation and
+        /// take no puppetry at all - see PerformShipPuppetry.</summary>
+        bool _wasDrifting;
+        Quaternion _driftFrame = Quaternion.identity;
         const float animationScaler = 25f;
         const float exaggeratedAnimationScaler = 3 * animationScaler;
 
@@ -53,37 +54,6 @@ namespace CosmicShore.Gameplay
         [Tooltip("How far BACK the engines slide while drifting - the other half of the same gap. " +
                  "Zero here is what shipped, and it is why the jaws clipped the engines.")]
         [SerializeField] float driftJetBackward = 2.3f;
-
-        // WING RESPONSE, PER AXIS. Signed scalers: +1 moves the wing with the hull, -1 against it,
-        // 0 stops that axis responding, and the magnitude exaggerates or damps the read.
-        //
-        // These are parameters rather than fixed signs because the authored values were chosen
-        // against the legacy art, where the wings hung off the model root at identity. On the rig
-        // they hang off 'winghold' bones carrying a -180 degree roll, and which axes come out
-        // reading backwards is not something the geometry predicts - the puppetry's own delta is
-        // provably identical for every part (verify_vessel_rig_puppetry_frames.py), yet the wings
-        // read differently on screen. Guessing signs in code cost three flights; a number that can
-        // be turned in the editor costs none.
-        [Header("Wing response")]
-        [Tooltip("Wing PITCH response. +1 with the hull, -1 against, 0 off.")]
-        [SerializeField] float wingPitchResponse = 1f;
-
-        [Tooltip("Wing YAW response. -1 by default: this is the axis playtest found reading " +
-                 "backwards on the rig.")]
-        [SerializeField] float wingYawResponse = -1f;
-
-        [Tooltip("Wing ROLL response. -1: playtest reports the wings' bank reading backwards " +
-                 "against the hull, whose own bank is correct (VesselTransformer.Roll, shared by " +
-                 "six vessels).")]
-        [SerializeField] float wingRollResponse = -1f;
-
-        [Tooltip("CROSS-COUPLING between the two wings: pitch bleeding into their roll and " +
-                 "throttle into their yaw, one wing plus and the other minus. That antisymmetry " +
-                 "is what makes them leave a common plane - at 1 a little pitch while rolling " +
-                 "turns a coplanar bank into one wing folding up and the other down, which is " +
-                 "what the rig was doing on screen. 0 keeps both wings rotating together (they " +
-                 "still bank, the plane just tilts); 1 restores the authored sweep.")]
-        [SerializeField] float wingDifferential;
 
         Vector3 ForwardWingOffset => new(0, 0, driftWingForward);
         Vector3 BackwardThrusterOffset => new(0, 0, -driftJetBackward);
@@ -164,8 +134,6 @@ namespace CosmicShore.Gameplay
             NoseTop = ResolvePart(NoseTop, "jaw.u", "TopNose");
             NoseBottom = ResolvePart(NoseBottom, "jaw.b", "bottomNose");
 
-            DriftHandle = ResolvePart(DriftHandle, "DriftHandle");
-
             // Drive every part around the pose it was authored in. The legacy wings and noses rest
             // at identity (unchanged), the six engine cases at 26-169 degrees, and the rig's bones
             // at their own fan-out angles - all now animate relative to that instead of toward a
@@ -235,127 +203,96 @@ namespace CosmicShore.Gameplay
             // VesselTransformer - fleet-wide, and a deliberate decision rather than a side effect
             // of a vessel-construction pass.
 
-            Vector3 wingOffset;
-            Vector3 thrusterOffset;
+            // THE TERMS BELOW ARE THE ONES THIS SHIP HAS ALWAYS USED. Three passes of per-axis
+            // sign scalers were tried here and every one of them was wrong on playtest, because
+            // the defect was never a sign: it was the CHASSIS TERM, which the old art delivered
+            // through the hierarchy and the rig does not (see the composition note below).
+            // Nothing in this method flips an axis. If an axis reads backwards, it is backwards
+            // in the flight model or in the rig, and that is where it gets fixed.
+            Quaternion chassisTurn = Quaternion.Euler(pitch * animationScaler,
+                                                      yaw * animationScaler,
+                                                      roll * animationScaler);
 
-            AnimatePart(Chassis,
-                        pitch * animationScaler,
-                        yaw * animationScaler,
-                        roll * animationScaler,
-                        Vector3.zero,
-                        transform);
+            AnimatePart(Chassis, chassisTurn, Vector3.zero, transform.rotation);
 
-            // A DRIFT SPLITS THE SHIP IN TWO, and this is the whole point of the manoeuvre's look:
-            // the fuselage and jaws turn to AIM wherever the pilot is pointing, while the wings and
-            // engines stay lined up with COURSE - the direction the ship is actually travelling -
-            // so the hull reads as slewing across its own path. The appendages are the instrument
-            // that tells everyone which way the Dolphin is really going. They also slide apart
-            // (wings forward, engines back) to open a gap the aiming fuselage can turn through
-            // without clipping them.
+            // A DRIFT SPLITS THE SHIP IN TWO. The fuselage and jaws turn to AIM wherever the pilot
+            // is pointing, while the wings and engines hold still and slide apart - wings forward,
+            // engines back - to open a gap the aiming fuselage can turn through without clipping
+            // them. They are the instrument that says which way the ship is really going, so they
+            // must be as fixed as the velocity is: no puppetry, and no tracking of anything.
             //
-            // So they are puppeteered in the DRIFT HANDLE's frame, which is aimed along Course,
-            // and the chassis and jaws stay in the vessel's. No re-parenting is involved: the frame
-            // carries the part's rest pose (VesselAnimation.RotatePartFromRestInFrame), which does
-            // the same job without moving anything in the hierarchy.
-            Transform courseFrame = transform;
-            if (VesselStatus.IsDrifting)
-            {
-                // THE COURSE FRAME MUST NOT TWIST.
-                //
-                // Built with LookRotation(Course, up) - as this was - the frame's roll is pinned to
-                // whatever 'up' it is handed, so as the hull aims away from Course that up swings
-                // and drags the frame around the Course axis. The parts then rotate with zero pilot
-                // input, and it reads exactly as it looks: like they are holding their up vector
-                // against the camera instead of letting the camera swing around them.
-                //
-                // Rebuilding it from the hull's CURRENT aim each frame is better but still not
-                // still: the shortest arc from a moving nose onto Course changes as the nose moves,
-                // which leaks roll back in (measured ~1.4 degrees per 10 degrees of aim, against
-                // ~4 for LookRotation).
-                //
-                // So the frame is ROTATION-MINIMIZING: seeded from the hull at drift entry, then
-                // each frame turned by the shortest arc from ITS OWN previous forward onto Course.
-                // Every step is a pure swing about an axis perpendicular to both, which adds no
-                // twist by construction - the frame tracks Course and nothing else, and a part
-                // sitting in it with no input is genuinely still while the hull turns around it.
-                if (DriftHandle)
-                {
-                    Vector3 course = VesselStatus.Course;
-                    if (!_wasAiming) DriftHandle.rotation = transform.rotation;   // seed at entry
-                    if (course.sqrMagnitude > 1e-6f)
-                        DriftHandle.rotation =
-                            Quaternion.FromToRotation(DriftHandle.forward, course) * DriftHandle.rotation;
-                    courseFrame = DriftHandle;
-                }
-                wingOffset = ForwardWingOffset;
-                thrusterOffset = BackwardThrusterOffset;
-            }
-            else
-            {
-                wingOffset = defaultWingOffset;
-                thrusterOffset = defaultThrusterOffset;
-            }
+            // THE FRAME THEY HOLD IS A QUATERNION CAPTURED ONCE, AT ENTRY. It was a Transform
+            // (`DriftHandle`) re-aimed along Course every frame, and that cannot be still: the
+            // handle is parented under the vessel, so the hull's own aiming carries it around
+            // between one frame's write and the next read, and re-pointing only its FORWARD axis
+            // leaves that twist in place. The parts then rotate with zero pilot input and it reads
+            // as them holding their up vector against the camera. A quaternion has no parent and
+            // cannot drift; the Dolphin's drift locks its velocity vector, so an orientation
+            // captured at entry stays course-aligned for the whole manoeuvre.
+            bool drifting = VesselStatus.IsDrifting;
+            if (drifting && !_wasDrifting) _driftFrame = transform.rotation;
+            _wasDrifting = drifting;
 
-            // WHILE DRIFTING THE APPENDAGES GO QUIET. They are the course indicator: they hold
-            // Course and say nothing else, so the only thing moving in response to the stick is
-            // the half of the ship that is aiming - the fuselage and the jaws. Leaving them
-            // responsive reads as the whole ship still flying while it is supposed to be sliding.
-            bool aiming = VesselStatus.IsDrifting;
-            float wingPitch = aiming ? 0f : Brake(throttle) * wingPitchResponse * animationScaler;
-            float yawCross  = throttle * wingDifferential;
-            float rollCross = pitch * wingDifferential;
-            float wingYawR  = aiming ? 0f : (yaw + yawCross) * wingYawResponse * exaggeratedAnimationScaler;
-            float wingYawL  = aiming ? 0f : (yaw - yawCross) * wingYawResponse * exaggeratedAnimationScaler;
-            float wingRollR = aiming ? 0f : (roll * wingRollResponse + rollCross) * animationScaler;
-            float wingRollL = aiming ? 0f : (roll * wingRollResponse - rollCross) * animationScaler;
+            Quaternion appendageFrame = drifting ? _driftFrame : transform.rotation;
+            Vector3 wingOffset = drifting ? ForwardWingOffset : defaultWingOffset;
+            Vector3 thrusterOffset = drifting ? BackwardThrusterOffset : defaultThrusterOffset;
 
-            AnimatePart(RightWing, wingPitch, wingYawR, wingRollR, wingOffset, courseFrame);
-            AnimatePart(LeftWing,  wingPitch, wingYawL, wingRollL, wingOffset, courseFrame);
+            // THE CHASSIS TERM, PUT BACK BY HAND. On the part-per-mesh art every one of these
+            // parts was a direct CHILD of the chassis (Dolphin.prefab before the rig swap:
+            // LeftWing / RightWing.001 / Engine case L|R.1-3 all hung off `Dolphin_Test`, which is
+            // what `Chassis` resolved to), so each inherited the chassis's own turn for free and
+            // added its own on top. On the rig the wings hang off `winghold.l|r` and the engines
+            // off `jetholdT|m|B.l|r` - a sibling branch of `fuse` - so that inherited term is
+            // simply gone. Its loss is not subtle: the wings' own PITCH input is Brake(throttle),
+            // which is zero unless the pilot is braking, so every bit of pitch response the wings
+            // had came from the chassis. Without it they sit dead on that axis. Composed, never
+            // added: Euler angles do not add at these amplitudes.
+            Quaternion rightWingTurn = drifting ? Quaternion.identity
+                : chassisTurn * Quaternion.Euler(Brake(throttle) * animationScaler,
+                                                 (yaw + throttle) * exaggeratedAnimationScaler,
+                                                 (roll + pitch) * animationScaler);
 
-            _wasAiming = aiming;
+            Quaternion leftWingTurn = drifting ? Quaternion.identity
+                : chassisTurn * Quaternion.Euler(Brake(throttle) * animationScaler,
+                                                 (yaw - throttle) * exaggeratedAnimationScaler,
+                                                 (roll - pitch) * animationScaler);
 
-            var pitchScalar = aiming ? 0f : pitch * exaggeratedAnimationScaler;
-            var yawScalar = aiming ? 0f : yaw * exaggeratedAnimationScaler;
-            var rollScalar = aiming ? 0f : roll * exaggeratedAnimationScaler;
-
+            AnimatePart(RightWing, rightWingTurn, wingOffset, appendageFrame);
+            AnimatePart(LeftWing, leftWingTurn, wingOffset, appendageFrame);
 
             // Each thruster is driven around ITS OWN rest pose, looked up per part. The previous
             // InitialRotations[partIndex] indexing was offset by two against animationTransforms
             // (InitialRotations starts with the two nose entries), so every engine animated around
             // a neighbour's rest pose - harmless while all six rested at identity, wrong on the
             // Dolphin's authored 26-169 degree engine cases and fatal on a rig.
-            for (int partIndex = 0; partIndex < animationTransforms.Count; partIndex++)
-            {
-                AnimatePart(animationTransforms[partIndex], pitchScalar, yawScalar, rollScalar, thrusterOffset, courseFrame);
-            }
+            Quaternion thrusterTurn = drifting ? Quaternion.identity
+                : chassisTurn * Quaternion.Euler(pitch * exaggeratedAnimationScaler,
+                                                 yaw * exaggeratedAnimationScaler,
+                                                 roll * exaggeratedAnimationScaler);
 
+            for (int partIndex = 0; partIndex < animationTransforms.Count; partIndex++)
+                AnimatePart(animationTransforms[partIndex], thrusterTurn, thrusterOffset, appendageFrame);
         }
 
-        // Swings the wings and thrusters out to the drift handle while drifting, and HOME again
-        // when not. "Home" is each part's own authored parent, captured at Initialize - never a
-        // single shared node. On the part-per-mesh art every one of these was a direct child of
-        // Chassis, so this is exactly the old behaviour; on the rigged model they are bones whose
-        // parents ('winghold.l/r', 'jetholdT/m/B.l/r') carry the rest angles that fan the six
-        // engines out, and re-homing them all onto 'fuse' would permanently flatten the armature
-        // and collapse the jets onto one point.
-        // The drift RE-PARENTING is gone, deliberately. The methods that lived here hung the
-        // wings and engines off a handle aimed along Course, so they swung WITH the aim - the
-        // opposite of what a drift needs from them: those parts exist to get out of the hull's way
-        // while it turns, not to turn with it. Once the frame was fixed to the vessel and the
-        // clearance became an offset, that machinery did nothing at all, and inert machinery in
-        // this file has already cost three playtests. 'DriftHandle' survives as an empty anchor
-        // (no children, nothing reads it) in case a course-aligned frame is wanted again; git
-        // carries the removed methods.
+        // NEITHER THE DRIFT RE-PARENTING NOR THE DRIFT HANDLE IS USED ANY MORE, deliberately.
+        // The old art hung the wings and engines off a `DriftHandle` GameObject aimed along
+        // Course; the rig reproduces that with a captured quaternion instead, which is both
+        // simpler and the only version that can actually hold still (see PerformShipPuppetry).
+        // Re-parenting a rig is separately unsafe: those bones' parents ('winghold.l|r',
+        // 'jetholdT|m|B.l|r') carry the rest angles that fan the six engines out, so re-homing
+        // them onto one node would flatten the armature and collapse the jets onto a point. The
+        // `DriftHandle` object survives in the prefab as an inert empty; nothing reads it, and
+        // git carries the removed methods.
 
-        // 'frame' is the space this part is puppeteered in - the vessel for anything that belongs
-        // to the hull, the Course-aligned drift handle for the parts that signal where the ship is
-        // really going. Never the part's OWN parent, which on this rig is a bone whose axes are
-        // nothing like the ship's; that is what made pitch read as roll and inverted it.
-        void AnimatePart(Transform part, float pitch, float yaw, float roll, Vector3 offset,
-                         Transform frame)
+        // 'frame' is the space this part is puppeteered in - the vessel's live rotation for
+        // anything that belongs to the hull, the orientation captured at drift entry for the
+        // parts that must hold still while it aims. Never the part's OWN parent, which on this
+        // rig is a bone whose axes are nothing like the ship's; that is what made pitch read as
+        // roll and inverted it.
+        void AnimatePart(Transform part, Quaternion turn, Vector3 offset, Quaternion frame)
         {
             if (!part) return;
-            RotatePartFromRestInFrame(part, pitch, yaw, roll, frame);
+            RotatePartFromRestInFrame(part, turn, frame);
             MovePartFromRest(part, offset, frame);
         }
 
@@ -384,7 +321,6 @@ namespace CosmicShore.Gameplay
 
         protected override void AssignTransforms()
         {
-            Transforms.Add(DriftHandle);
             Transforms.Add(NoseTop);
             Transforms.Add(RightWing);
             Transforms.Add(NoseBottom);
