@@ -18,33 +18,63 @@ And its companion, which cost this pass three rounds:
 
 ---
 
-## Phase 0 — re-establish ground truth (do not skip)
+## Phase 0 — re-establish ground truth  ✅ DONE
 
-The measurements in `VESSEL_CONSTRUCTION.md` were taken on one day against one branch. Before
-acting on any of them:
+Re-run with `Tools/Build/measure_vessel_models.py` and `measure_vessel_prefabs.py`; the diff is
+`VESSEL_CONSTRUCTION.md` **§7**. §1, §3, §3.4 and §4's central finding all reproduced exactly. Two
+things re-derived the plan and are folded into Phase 1 and Phase 5 below:
 
-- Re-run the per-model survey (shapes, shape **magnitude**, bones, takes, referrers) and diff it
-  against §1 and §4. Any disagreement means the tree moved and the plan needs re-deriving.
-- Confirm guid ownership for every model you are about to touch with `grep -c "^guid: $g"` per
-  candidate `.meta` — never `head -1` (§2).
+- **`urchan_shapekey_with_animations.fbx` and `SparrowModel4.fbx` are LIVE**, not vestiges — a model
+  with zero prefab references can still be supplying animation CLIPS to shipped vessels (§7.1).
+- **A rig's rest pose is not the shipped pose** (§4.4): the Rhino's wings sit 1.38× wider in the
+  rig's bind pose, and the Urchin rig is a uniform **2.105× scale** of the shipped hull. Phase 3's
+  decision has to price that in.
+
+Whenever this is re-run: confirm guid ownership with `grep -c "^guid: $g"` per candidate `.meta`,
+never `head -1` (§2) — `measure_vessel_prefabs.py` does this and reports an ambiguous answer rather
+than picking one.
 
 ---
 
-## Phase 1 — salvage inventory, before anything is removed
+## Phase 1 — salvage inventory  ✅ DONE (nothing deleted)
 
-For each of the eight unreferenced models in §4, produce a written answer to: *what is the only
-copy of something here?* The measured starting point:
+**The question each row answers: *what is the only copy of something here?*** Measured with
+`Tools/Build/measure_vessel_models.py`; liveness resolved per §7.1 of `VESSEL_CONSTRUCTION.md` —
+prefab references AND animator-clip references, with each referring controller itself resolved to
+the prefabs that use it.
 
-| file | the thing that might be unique | verdict needed |
+### 1a. NOT vestiges — these are live and must not be touched
+
+| file | why it is live |
+|---|---|
+| `urchan_shapekey_with_animations.fbx` | **7 animation clips on 9 vessels.** Zero prefab refs, but `_Models/Animations/MantaAnimatorController` (Manta, Termite, Falcon, Urchin, Shrike), `SerpentAnimController`, `SparrowAnimatorController` (Sparrow, Scarab) and `SquirrelAnimatorController 1` all pull clips out of it. Also the only copy of the 38-bone Urchin armature `UrchinAnimation` names. Its four element shapes are empty (§4). |
+| `SparrowModel4.fbx` | The `Missile Launch` states in the live `SparrowAnimatorController` (Sparrow + Scarab). 93 takes against `SparrowModel1`'s 13 — the only copy of 80 of them. Same hull, same 65 bones, same four real element shapes as `SparrowModel1`. |
+| `Vessel_Wedge_Scene (4).fbx` | The Grizzly's model, and also wired into `TimeDandruff.prefab` and `ExplodableProjectile.prefab`, plus a `.meta` remap from `TimeCrystalExport.fbx`. Not a vessel-only asset. |
+
+### 1b. Carries something unique — keep, and say what for
+
+| file | the only copy of | verdict |
 |---|---|---|
-| `dolphin_shapekey_with_animations.fbx` | **a real 4-element hull morph** (10,909 verts moved on mass) + 28-bone armature matching `RiptideAnimation` + 10 takes | **extract — this is the Dolphin's missing morph** |
-| `rhino_shapekey_with_animations.fbx` | 12-bone armature matching `RhinoAnimation` + 9 takes. **Element shapes are EMPTY** | keep for the armature; the shapes buy nothing |
-| `urchan_shapekey_with_animations.fbx` | 38-bone armature matching `UrchinAnimation` + 11 takes. **Element shapes are EMPTY** | keep for the armature; the shapes buy nothing |
-| `Vessel_Placeholder_1.fbx` | 288 animation takes, 110,850 verts | check the takes before removing — 288 is a lot to be nothing |
-| `RhinoModel.fbx` | materials that `Vessel_Placeholder_1.fbx.meta` remaps into | resolve the remap first, or removal breaks a `.meta` |
-| `Vessel_Placeholder_2.fbx`, `Riptide.fbx`, `Dolphin_split.fbx`, `Hammerhead_split.fbx` | nothing found | safe to retire once Phase 1 is written down |
+| `dolphin_shapekey_with_animations.fbx` | a **real** 4-element hull morph (mass moves 10,909 verts, Δ 1.173; time 7,473, Δ 1.317; charge 2,339; space 1,217) · the 28-bone armature `RiptideAnimation` names · 10 flight takes · **and the six engine exhaust nozzles the shipped hull scales to 0.00095 units** (§4.3) | **extract — this is Phase 2** |
+| `rhino_shapekey_with_animations.fbx` | the 12-bone armature `RhinoAnimation` names · 9 flight takes. Element shapes are **empty** (1 indexed vertex, Δ = 0.0000) | keep for the armature + takes; the shapes buy nothing (§Phase 3) |
+| `RhinoModel.fbx` | nothing of its own — it is `Rhino_Test.fbx` **before the front wings were subdivided** (`Circle.003`, both `Cylinder`s and both `Circle.015/016` are vertex-identical; wings 245 → 476). But **both** placeholder `.meta`s remap materials into it, so removing it breaks two files | keep until the placeholders go; then it goes with them |
 
-Do not delete anything in this phase. The deliverable is the inventory.
+### 1c. Nothing unique found — cleared for Phase 5
+
+Each was checked for shapes, bones, takes, referrers, and for geometry not present elsewhere.
+
+| file | what it is | why it carries nothing |
+|---|---|---|
+| `Riptide.fbx` | **the Dolphin's low-poly ancestor** — `Chassis`, `NoseTop/Bottom`, `LeftWing`, `RightWing` and six `Thruster*` where the shipped hull has six `Engine case *`. This is where the class name `RiptideAnimation` comes from. | 1,326 verts against `Dolphin_Test`'s 12,583; no armature, no takes, no shapes. Historically interesting, strictly superseded. |
+| `Dolphin_split.fbx` | a 137-vert sea-animal blockout (`Fusilage`, `Dorsalfin`, `LeftTail`, `RightTail`, wings) | no armature, no takes, no shapes, no referrer |
+| `Hammerhead_split.fbx` | a 116-vert hammerhead-shark blockout (`Fusilage`, `Head`, wings, `Tail`) | same — and note both of these read as **fauna** blockouts filed under Vessel Models |
+| `Vessel_Placeholder_1.fbx` | a third-party download — nodes `supermatic sky cruiser.001/.002`, 110,850 verts, 8.6 MB | its **288 takes are not 288 animations**: 288 stacks × 288 layers × 864 curve-nodes ≈ 3 TRS channels each, the combinatorial one-node-per-take artefact of a Sketchfab/Blender import. No vessel geometry, no armature, nothing the fleet references. Its `.meta` *depends on* `Rhino_Test`/`RhinoModel`, not the reverse. |
+| `Vessel_Placeholder_2.fbx` | another third-party download — nodes `Sketchfab_model`, `nitro blade.obj.cleaner.materialmerger.gles`, 68,995 verts | no armature, no takes, no shapes, no referrer. Also remaps materials into `RhinoModel`. |
+| `Assets/_Animations/MantaAnimatorController.controller` | a duplicate of the live `_Models/Animations/` controller | referenced by **nothing**; the live one is `_Models/Animations/MantaAnimatorController.controller` (5 vessels). Not a model, but it surfaced from the same sweep and is in the same class. |
+
+⚠ The two placeholders are **third-party Sketchfab assets** sitting in a shipping game's tree.
+That is a licensing question as well as a size one (12.2 MB between them), and it is Garrett's call,
+not a cleanup decision — flagged, not acted on.
 
 ---
 
