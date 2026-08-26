@@ -1,5 +1,7 @@
 using System;
 using System.Collections.Generic;
+using CosmicShore.Data;
+using CosmicShore.UI;
 using CosmicShore.Utility;
 using Reflex.Attributes;
 using UnityEngine;
@@ -43,6 +45,18 @@ namespace CosmicShore.Gameplay
         public event Action OnBayChanged;
         /// <summary>The planted-bomb set changed (plant, bloom, shed, carrier death).</summary>
         public event Action OnPlantedChanged;
+
+        // ── Juice beats. Distinct from the two state events above because a HUD reacts to a
+        //    BEAT differently from a VALUE: a gauge follows OnBayChanged every tick, while a
+        //    card flash has to fire exactly once, on the frame the thing happened.
+        /// <summary>A skim just paid charge into the bay.</summary>
+        public event Action OnSkimCharged;
+        /// <summary>The bay finished arming a whole bomb — "you may plant".</summary>
+        public event Action OnBombArmed;
+        /// <summary>A bomb went onto a target.</summary>
+        public event Action OnBombPlanted;
+        /// <summary>A crystal cashed the board; the argument is how many bombs are cascading.</summary>
+        public event Action<int> OnKabloom;
 
         static readonly Dictionary<IVesselStatus, MantaStingActionExecutor> Registry = new();
 
@@ -152,9 +166,7 @@ namespace CosmicShore.Gameplay
                 _lastChargeTimeByPrism[id] = Time.time;
             }
 
-            float before = _charge;
-            _charge = Mathf.Min(Capacity, _charge + config.ChargePerSkimFor(_status));
-            if (!Mathf.Approximately(before, _charge)) PushBayState();
+            PayCharge();
         }
 
         /// <summary>Vessel-graze charge tick (no prism identity to throttle on — uses the target).</summary>
@@ -169,9 +181,32 @@ namespace CosmicShore.Gameplay
                 return;
             _lastChargeTimeByPrism[id] = Time.time;
 
+            PayCharge();
+        }
+
+        /// <summary>
+        /// The one place charge is added, so every skim source produces the same feedback.
+        /// Two beats come out of it: the TICK (every paid skim — the card answers, so the
+        /// pilot can tell that grazing the reef is doing something) and the ARM (the charge
+        /// crossed a whole bomb — the moment the bay becomes usable, which deserves more).
+        /// </summary>
+        void PayCharge()
+        {
             float before = _charge;
+            int armedBefore = ArmedBombs;
+
             _charge = Mathf.Min(Capacity, _charge + config.ChargePerSkimFor(_status));
-            if (!Mathf.Approximately(before, _charge)) PushBayState();
+            if (Mathf.Approximately(before, _charge)) return;   // already at capacity
+
+            PushBayState();
+            OnSkimCharged?.Invoke();
+            PlayCue(config.SkimChargeEvent);
+
+            if (ArmedBombs > armedBefore)
+            {
+                OnBombArmed?.Invoke();
+                PlayCue(config.BombArmedEvent);
+            }
         }
 
         // ── Planting ─────────────────────────────────────────────────────────
@@ -193,7 +228,7 @@ namespace CosmicShore.Gameplay
             if (MantaBomb.IsBombed(root)) return false;
 
             var bomb = MantaBomb.Plant(root, BuildSnapshot(),
-                carrierFauna: null, carrierPlayerName: target.PlayerName);
+                carrierLifeform: null, carrierPlayerName: target.PlayerName);
             if (bomb == null) return false;
 
             SpendBomb();
@@ -203,11 +238,26 @@ namespace CosmicShore.Gameplay
         /// <summary>Grazed a living creature's body — plant on the creature.</summary>
         public bool TryPlantOnFauna(Fauna fauna)
         {
-            if (!CanPlant() || fauna == null || !fauna.HasLiveBodyPrisms) return false;
-            if (!AdmitPlantAttempt(fauna.gameObject.GetInstanceID())) return false;
-            if (MantaBomb.IsBombed(fauna.gameObject)) return false;
+            if (fauna != null && !fauna.HasLiveBodyPrisms) return false;
+            return TryPlantOnLifeform(fauna);
+        }
 
-            var bomb = MantaBomb.Plant(fauna.gameObject, BuildSnapshot(), carrierFauna: fauna);
+        /// <summary>
+        /// Plants on ANY living lifeform — a creature grazed by the skimmer, or a plant the
+        /// hull jousted through its heart. Flora and fauna are separate class hierarchies that
+        /// meet at <see cref="ILifeFormEntity"/>, which is the level this belongs at: a bomb
+        /// does not care what kind of life it is riding.
+        /// </summary>
+        public bool TryPlantOnLifeform(ILifeFormEntity lifeform)
+        {
+            if (!CanPlant() || lifeform == null) return false;
+
+            var root = lifeform.GetGameObject();
+            if (!root || !root.activeInHierarchy) return false;
+            if (!AdmitPlantAttempt(root.GetInstanceID())) return false;
+            if (MantaBomb.IsBombed(root)) return false;
+
+            var bomb = MantaBomb.Plant(root, BuildSnapshot(), carrierLifeform: lifeform);
             if (bomb == null) return false;
 
             SpendBomb();
@@ -230,6 +280,7 @@ namespace CosmicShore.Gameplay
         {
             _charge = Mathf.Max(0f, _charge - 1f);
             PushBayState();
+            OnBombPlanted?.Invoke();
         }
 
         /// <summary>
@@ -256,6 +307,9 @@ namespace CosmicShore.Gameplay
                 AffectSelf = !sparesAllies,
                 SpaceScaleMultiplier = config.BlastScaleMultiplierFor(_status),
                 FuseSeconds = MantaBombRules.FuseSecondsOverride ?? config.FuseSeconds,
+                // Markers and cues are for the pilot flying this ship, not for a host watching
+                // its AIs simulate theirs — the predicate the two haptic feels already use.
+                LocalHumanPlanter = _status.IsLocalUser && !_status.AutoPilotEnabled,
             };
         }
 
@@ -269,20 +323,47 @@ namespace CosmicShore.Gameplay
         {
             if (_status == null || !IsSimAuthority(_status)) return 0;
 
-            int cashed = 0;
-            // Detonation mutates _planted through NotifyBombResolved — walk a copy.
+            // Walk a copy: resolving a bomb mutates _planted through NotifyBombResolved.
+            var live = new List<MantaBomb>();
             var copy = _planted.ToArray();
             for (int i = 0; i < copy.Length; i++)
             {
-                var bomb = copy[i];
-                if (!bomb) continue;
-                bomb.Detonate(byCrystal: true);
-                cashed++;
+                // Skip bombs ALREADY cascading. They stay in _planted until they actually
+                // bloom (up to cascadeMaxSeconds), and the Kabloom cooldown is far shorter
+                // than that — so a pilot touching a second crystal mid-cascade would
+                // otherwise re-count them and be credited their fuses twice.
+                if (copy[i] && !copy[i].IsCascading) live.Add(copy[i]);
             }
 
-            // "Fuses beaten" — bombs the crystal cashed before their timers ran down. The
-            // owner machine is the only one that KNOWS (bombs are local), so it originates
-            // the credit; StatsManager arbitrates server-vs-client exactly like fauna kills.
+            int cashed = live.Count;
+            if (cashed == 0) return 0;
+
+            // NEAREST FIRST, so the chain reads as a wave rolling outward from the pilot who
+            // set it off rather than as an arbitrary order. Sorting by distance from the ship
+            // (not the crystal) is what ties the payoff to where the player is looking.
+            Vector3 origin = _status.Vessel?.Transform ? _status.Vessel.Transform.position
+                                                       : transform.position;
+            live.Sort((a, b) =>
+                (a.transform.position - origin).sqrMagnitude
+                    .CompareTo((b.transform.position - origin).sqrMagnitude));
+
+            // Commit every bomb up front — the whole board is spoken for on this frame, so a
+            // fuse cannot expire mid-cascade and pay the small blast by accident — then let
+            // each bomb bloom on its own beat. Every one of them holds its marker at full
+            // critical while it waits, which is what "watch the fuses turn into explosions"
+            // actually looks like.
+            for (int i = 0; i < live.Count; i++)
+                live[i].CommitToCascade(config ? config.CascadeDelayFor(i, live.Count) : 0f);
+
+            OnKabloom?.Invoke(cashed);
+            PlayCue(config ? config.KabloomEvent : default);
+            PostKabloomToast(cashed);
+
+            // "Fuses beaten" — bombs the crystal cashed before their timers ran down. Credited
+            // on COMMIT, not on bloom: the pilot beat those fuses the moment they touched the
+            // crystal, and a round that ends mid-cascade must still pay for them. The owner
+            // machine is the only one that KNOWS (bombs are local), so it originates the
+            // credit; StatsManager arbitrates server-vs-client exactly like fauna kills.
             if (cashed > 0 && statsManager)
                 statsManager.FusesBeaten(_status.PlayerName, cashed);
 
@@ -308,6 +389,37 @@ namespace CosmicShore.Gameplay
         {
             if (_relay && _relay.IsSpawned)
                 _relay.BroadcastBloom(position, maxScale, affectSelf);
+        }
+
+        /// <summary>
+        /// One-shot FMOD cue at the ship, local human pilot only. Empty references ship silent
+        /// by design — each of these is an authoring slot for the audio owner, never a
+        /// borrowed event (the audio law). Resolved through the live singleton so the executor
+        /// needs no extra injected field.
+        /// </summary>
+        void PlayCue(FMODUnity.EventReference reference)
+        {
+            if (reference.IsNull || _status == null) return;
+            if (!_status.IsLocalUser || _status.AutoPilotEnabled) return;
+
+            var audio = AudioSystem.Instance;
+            if (!audio) return;
+
+            var t = _status.Vessel?.Transform;
+            if (t) audio.PlaySFXEvent(reference, t.position);
+            else audio.PlaySFXEvent(reference);
+        }
+
+        /// <summary>
+        /// Announces the cash-out in the ONE place messages belong — the dedicated toast feed.
+        /// A situation a mode has not authored shows nothing, so this is silent everywhere
+        /// except Bloomrush, and it never draws anything mid-screen.
+        /// </summary>
+        void PostKabloomToast(int cashed)
+        {
+            if (_status == null || !_status.IsLocalUser || _status.AutoPilotEnabled) return;
+            GameToastAPI.Post(GameToastSituation.BloomrushKabloom, _status.Domain,
+                              _status.PlayerName, cashed.ToString());
         }
 
         void PushBayState()

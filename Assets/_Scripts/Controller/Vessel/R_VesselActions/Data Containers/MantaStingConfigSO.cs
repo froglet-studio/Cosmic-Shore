@@ -1,4 +1,5 @@
 using CosmicShore.Data;
+using FMODUnity;
 using UnityEngine;
 
 namespace CosmicShore.Gameplay
@@ -101,6 +102,66 @@ namespace CosmicShore.Gameplay
                  "catch test (a blast's reach is MaxScale/2; 1 = the full blast sphere).")]
         [SerializeField, Range(0.1f, 1.5f)] float contagionRadiusFraction = 1f;
 
+        [Header("Kabloom cascade (juice)")]
+        [Tooltip("Seconds between consecutive bombs in a crystal-cashed cascade. The board " +
+                 "detonating in ONE frame reads as a single event; a small stagger reads as " +
+                 "a chain reaction rolling outward from the pilot, which is the payoff the " +
+                 "whole loop is built toward. 0 = simultaneous (the pre-juice behaviour).")]
+        [SerializeField, Range(0f, 0.5f)] float cascadeStaggerSeconds = 0.09f;
+
+        [Tooltip("Ceiling on the total cascade time, seconds. A big board must not turn the " +
+                 "payoff into a slow drip - past this the stagger is compressed to fit.")]
+        [SerializeField, Min(0.1f)] float cascadeMaxSeconds = 1.2f;
+
+        [Header("Fuse marker (the planter sees their own bombs)")]
+        [Tooltip("Draw a halo on each bombed target, visible ONLY to the local human pilot " +
+                 "who planted it (bombs are local objects, so this needs no networking and " +
+                 "the target still gets no indication). Off = no marker at all.")]
+        [SerializeField] bool showFuseMarker = true;
+
+        [Tooltip("Marker radius in world units.")]
+        [SerializeField, Min(1f)] float markerRadius = 14f;
+
+        [Tooltip("Marker colour while the fuse is young - the planter's domain reads as " +
+                 "'mine, and it can wait'.")]
+        [SerializeField] Color markerCalmColor = new Color(0.35f, 0.8f, 1f, 1f);
+
+        [Tooltip("Marker colour as the fuse runs out, and the colour a cascading bomb wears " +
+                 "in the beat before it blooms.")]
+        [SerializeField] Color markerCriticalColor = new Color(1f, 0.35f, 0.1f, 1f);
+
+        [Tooltip("Seconds of fuse remaining at which the marker is fully critical - the " +
+                 "window in which 'cash in NOW' is the read.")]
+        [SerializeField, Min(0.5f)] float markerCriticalSeconds = 6f;
+
+        [Tooltip("Marker pulses per second at a fresh fuse, and at a critical one. The " +
+                 "quickening IS the fuse state - a number nobody has to read.")]
+        [SerializeField, Min(0.1f)] float markerCalmPulseHz = 0.9f;
+        [SerializeField, Min(0.1f)] float markerCriticalPulseHz = 5f;
+
+        [Tooltip("Seconds the marker takes to bloom in when a bomb is planted and to fade " +
+                 "out when it resolves. Continuity of existence applies to a view effect too.")]
+        [SerializeField, Min(0.01f)] float markerFadeSeconds = 0.22f;
+
+        [Header("Audio (FMOD) - one event per beat, EMPTY ships silent")]
+        [Tooltip("A skim paid charge into the bay. Fires on the local pilot only.")]
+        [SerializeField] EventReference skimChargeEvent;
+
+        [Tooltip("The bay finished arming a whole bomb - the 'you may plant' beat.")]
+        [SerializeField] EventReference bombArmedEvent;
+
+        [Tooltip("A bomb went onto a target.")]
+        [SerializeField] EventReference bombPlantedEvent;
+
+        [Tooltip("A fuse ran out on its own - the bomb the pilot did NOT cash in.")]
+        [SerializeField] EventReference fuseExpiredEvent;
+
+        [Tooltip("A crystal cashed the board. Fires once for the whole cascade, at the ship.")]
+        [SerializeField] EventReference kabloomEvent;
+
+        [Tooltip("One bomb in a cascade blooming. Fires per bomb, at the bomb.")]
+        [SerializeField] EventReference cascadeBloomEvent;
+
         public int BaseCapacity => baseCapacity;
         public float CapacityPerChargeLevel => capacityPerChargeLevel;
         public int MinCapacity => minCapacity;
@@ -121,6 +182,33 @@ namespace CosmicShore.Gameplay
         public float BlastScaleAtFullSpace => blastScaleAtFullSpace;
         public float MinBlastScaleMultiplier => minBlastScaleMultiplier;
         public float ContagionRadiusFraction => contagionRadiusFraction;
+        public float CascadeStaggerSeconds => cascadeStaggerSeconds;
+        public float CascadeMaxSeconds => cascadeMaxSeconds;
+        public bool ShowFuseMarker => showFuseMarker;
+        public float MarkerRadius => markerRadius;
+        public Color MarkerCalmColor => markerCalmColor;
+        public Color MarkerCriticalColor => markerCriticalColor;
+        public float MarkerCriticalSeconds => markerCriticalSeconds;
+        public float MarkerCalmPulseHz => markerCalmPulseHz;
+        public float MarkerCriticalPulseHz => markerCriticalPulseHz;
+        public float MarkerFadeSeconds => markerFadeSeconds;
+        public EventReference SkimChargeEvent => skimChargeEvent;
+        public EventReference BombArmedEvent => bombArmedEvent;
+        public EventReference BombPlantedEvent => bombPlantedEvent;
+        public EventReference FuseExpiredEvent => fuseExpiredEvent;
+        public EventReference KabloomEvent => kabloomEvent;
+        public EventReference CascadeBloomEvent => cascadeBloomEvent;
+
+        /// <summary>
+        /// Per-bomb delay in a cascade of <paramref name="count"/> bombs: the authored
+        /// stagger, compressed so the whole chain still lands inside the ceiling.
+        /// </summary>
+        public float CascadeDelayFor(int index, int count)
+        {
+            if (count <= 1 || cascadeStaggerSeconds <= 0f) return 0f;
+            float stagger = Mathf.Min(cascadeStaggerSeconds, cascadeMaxSeconds / (count - 1));
+            return index * stagger;
+        }
 
         /// <summary>Bomb capacity at an integer Charge level ([-5, 15]).</summary>
         public int CapacityForChargeLevel(int chargeLevel) =>

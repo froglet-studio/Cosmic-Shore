@@ -32,6 +32,7 @@ def guid_for(name: str) -> str:
 SCENE_GUID = guid_for("MinigameBloomrush.unity")
 CARD_GUID = guid_for("ArcadeGameBloomrush.asset")
 RULE_GUID = guid_for("BloomrushScoringRule.asset")
+TOAST_CONFIG_GUID = guid_for("GameToastConfig_Bloomrush.asset")
 
 BLOOMRUSH_CONTROLLER_SCRIPT = "69368ea7f6e0e391ec445493af126df4"
 BLOOMRUSH_RULE_SCRIPT = "a750b5dde5b98470d4e0cc9c58c16ae0"
@@ -39,6 +40,7 @@ BENDS_CONTROLLER_SCRIPT = "94ec6e4a35948f20e999eb581c8637e4"
 BENDS_MONITOR_SCRIPT = "55e3116c4ada864354f5693a022364a9"
 NETWORK_TIME_MONITOR_SCRIPT = "30f5bd573bfc4a29891fc9a175083c37"
 SO_ARCADE_GAME_SCRIPT = "fe040efad3307fb449b6b72ad15362da"
+GAME_TOAST_CONFIG_SCRIPT = "86d1715b8f104fcc87cb60e015d4b563"
 MANTA_CLASS_GUID = "b0e6ec5495dbfb6419332830d585f364"
 
 
@@ -195,8 +197,50 @@ MonoBehaviour:
 # first playtest's real prism counts (the trap recorded on Dog Fight/Bends/Wildlife).
 
 
+TOAST_CONFIG = """%%YAML 1.1
+%%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: %s, type: 3}
+  m_Name: GameToastConfig_Bloomrush
+  m_EditorClassIdentifier:
+  gameMode: 45
+  toasts:
+  - situation: 70
+    messageTemplate: '<b>{0}</b> KABLOOM - {1} bombs'
+    tintWithDomainColor: 1
+    useDomainColoredNames: 0
+    alpha: 1
+    isIdleHint: 0
+    resetOnSituation: 0
+    idleSeconds: 60
+    repeatWhileIdle: 1
+  - situation: 71
+    messageTemplate: 'Skim the reef to arm - graze anything to tag it - grab a crystal to set them all off'
+    tintWithDomainColor: 0
+    useDomainColoredNames: 0
+    alpha: 0.85
+    isIdleHint: 1
+    resetOnSituation: 70
+    idleSeconds: 25
+    repeatWhileIdle: 1
+""" % GAME_TOAST_CONFIG_SCRIPT
+# The mode is BUTTONLESS, so a pilot who has not been told has nothing to press and no
+# reason to guess. The hint resets on the cash-out toast: once you have Kabloomed, you know.
+
+
 def main() -> int:
     writes = {
+        "Assets/_SO_Assets/Game Toasts/GameToastConfig_Bloomrush.asset": TOAST_CONFIG,
+        "Assets/_SO_Assets/Game Toasts/GameToastConfig_Bloomrush.asset.meta":
+            ASSET_META.format(guid=TOAST_CONFIG_GUID),
         "Assets/_Scenes/Multiplayer Scenes/MinigameBloomrush.unity": build_scene(),
         "Assets/_Scenes/Multiplayer Scenes/MinigameBloomrush.unity.meta": SCENE_META,
         "Assets/_SO_Assets/Scoring Rules/BloomrushScoringRule.asset": RULE_ASSET,
@@ -212,6 +256,17 @@ def main() -> int:
     if entry not in gl:
         assert gl.endswith("type: 2}\n"), "game list tail moved"
         writes["Assets/_SO_Assets/Games/GameLists/OrganicRematchGames.asset"] = gl + entry
+
+    # Toast library: without this row the mode's situations resolve to nothing and the
+    # cash-out announces itself nowhere.
+    lib = os.path.join(ROOT, "Assets/_SO_Assets/Game Toasts/GameToastLibrary.asset")
+    lb = open(lib).read()
+    lib_entry = "  - {fileID: 11400000, guid: %s, type: 2}\n" % TOAST_CONFIG_GUID
+    if TOAST_CONFIG_GUID not in lb:
+        m = re.search(r"(  modeConfigs:\n(?:  - \{fileID: 11400000, guid: [0-9a-f]+, type: 2\}\n)+)", lb)
+        assert m, "GameToastLibrary.asset modeConfigs block moved"
+        lb = lb[:m.end(1)] + lib_entry + lb[m.end(1):]
+    writes["Assets/_SO_Assets/Game Toasts/GameToastLibrary.asset"] = lb
 
     prog = os.path.join(ROOT, "Assets/_SO_Assets/GameModeQuest/ProgressionConfig.asset")
     pg = open(prog).read()

@@ -1,3 +1,4 @@
+using CosmicShore.Data;
 using CosmicShore.Gameplay;
 using UnityEngine;
 
@@ -44,6 +45,10 @@ namespace CosmicShore.UI
             if (_bound || !stingExecutor) return;
             stingExecutor.OnBayChanged += HandleBayChanged;
             stingExecutor.OnPlantedChanged += HandlePlantedChanged;
+            stingExecutor.OnSkimCharged += HandleSkimCharged;
+            stingExecutor.OnBombArmed += HandleBombArmed;
+            stingExecutor.OnBombPlanted += HandleBombPlanted;
+            stingExecutor.OnKabloom += HandleKabloom;
             _bound = true;
             HandleBayChanged();
             HandlePlantedChanged();
@@ -54,6 +59,10 @@ namespace CosmicShore.UI
             if (!_bound || !stingExecutor) { _bound = false; return; }
             stingExecutor.OnBayChanged -= HandleBayChanged;
             stingExecutor.OnPlantedChanged -= HandlePlantedChanged;
+            stingExecutor.OnSkimCharged -= HandleSkimCharged;
+            stingExecutor.OnBombArmed -= HandleBombArmed;
+            stingExecutor.OnBombPlanted -= HandleBombPlanted;
+            stingExecutor.OnKabloom -= HandleKabloom;
             _bound = false;
         }
 
@@ -66,6 +75,20 @@ namespace CosmicShore.UI
             int planted = stingExecutor.PlantedBombs.Count;
             if (planted > 0)
                 view.SetPlantedBoard(planted, stingExecutor.ShortestFuseRemaining);
+        }
+
+        // ── Card juice. Each beat flashes the card of the ELEMENT that owns it, so the row
+        //    doubles as the feedback surface: Charge for everything the bomb bay does, Space
+        //    for the cash-out. PlayPressFlash is the fleet's existing press animation — the
+        //    same language every other vessel's abilities already speak.
+        void HandleSkimCharged() => Flash(Element.Charge);
+        void HandleBombArmed() => Flash(Element.Charge);
+        void HandleBombPlanted() => Flash(Element.Charge);
+        void HandleKabloom(int cashed) => Flash(Element.Space);
+
+        void Flash(Element element)
+        {
+            if (View) View.PlayAbilityFlash(element);
         }
 
         void HandleBayChanged()

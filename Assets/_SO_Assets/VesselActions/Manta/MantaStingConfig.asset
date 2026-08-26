@@ -33,3 +33,13 @@ MonoBehaviour:
   blastScaleAtFullSpace: 1.6
   minBlastScaleMultiplier: 0.5
   contagionRadiusFraction: 1
+  cascadeStaggerSeconds: 0.09
+  cascadeMaxSeconds: 1.2
+  showFuseMarker: 1
+  markerRadius: 14
+  markerCalmColor: {r: 0.35, g: 0.8, b: 1, a: 1}
+  markerCriticalColor: {r: 1, g: 0.35, b: 0.1, a: 1}
+  markerCriticalSeconds: 6
+  markerCalmPulseHz: 0.9
+  markerCriticalPulseHz: 5
+  markerFadeSeconds: 0.22

@@ -59,6 +59,22 @@ Comeback: `ElementalComebackSystem` maps Bloomrush to `PrismsDestroyed` (volume 
 large-grained for the deficit math). Card rate 0.027 — derivation and the re-derive note live
 beside the number in `Tools/Build/author_bloomrush_assets.py`.
 
+## Feel
+
+The loop is buttonless, so every beat has to announce itself or the mode reads as nothing
+happening. The full account is in `MANTA_STING_KABLOOM.md` §6a; what matters here:
+
+- **The cascade is the mode's payoff** — a cashed board detonates nearest-first with a small
+  stagger, so it reads as a chain rolling outward from the pilot instead of one bang.
+- **The planter sees their own fuses** — a halo on each bombed target, drawn through the reef,
+  quickening and going hot as its fuse burns down. Planter-local; the target sees nothing.
+- **The cash-out toasts** (`BloomrushKabloom`, `GameToastConfig_Bloomrush.asset`) in the
+  dedicated feed — the only place this mode puts a message.
+- **An idle hint** (`BloomrushStingHint`, 25 s, reset by the first Kabloom) tells a new pilot
+  what flying into things does, because there is no button to discover.
+- **Audio ships silent by design** — six `EventReference` slots on `MantaStingConfig.asset`
+  for the audio owner. No new haptic (the two-feel policy; see the doc).
+
 ## Registration (all authored by the generator)
 
 | Surface | Entry |
@@ -71,6 +87,7 @@ beside the number in `Tools/Build/author_bloomrush_assets.py`.
 | Progression | `ProgressionConfig.asset` (`- 45`) |
 | Rule | `Scoring Rules/BloomrushScoringRule.asset` (`BloomrushScoringRuleSO`) |
 | HUD objective | `MiniGameHUD` case → `RampageObjectiveProvider` ("ObjectiveProvider_Bloomrush") |
+| Toasts | `Game Toasts/GameToastConfig_Bloomrush.asset` + a row in `GameToastLibrary.asset` |
 
 Generator: `Tools/Build/author_bloomrush_assets.py` (donor-clone, deterministic guids,
 idempotent, `--check`). It asserts on the donor's exact field blocks — the day the Bends scene

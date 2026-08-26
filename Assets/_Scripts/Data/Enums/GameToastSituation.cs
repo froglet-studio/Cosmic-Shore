@@ -69,5 +69,12 @@ namespace CosmicShore.Data
         // domain (AstroLeagueBall.OnCellOverload). Court-wide and player-agnostic - it is
         // broadcast to every peer, so it names nobody and wears no domain colour.
         ScarabScrambleBallCap = 69,
+
+        // Bloomrush. The cash-out is the mode's whole payoff, so it is the one thing worth
+        // announcing: {0} = the pilot, {1} = how many bombs the crystal just cashed.
+        BloomrushKabloom = 70,
+        // Idle hint: the loop is buttonless, so a new pilot has nothing to press and needs
+        // telling what flying into things does.
+        BloomrushStingHint = 71,
     }
 }

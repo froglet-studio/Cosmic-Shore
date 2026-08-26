@@ -202,12 +202,86 @@ silhouettes** (bomb / turn arrow / bloom / chevrons —
 `Tools/Build/author_manta_icon_placeholders.py`, 128 px white-on-transparent at
 `_Graphics/Icons/AbilityIcons/Manta/`) so the cards read before the art pass replaces them 1:1.
 
+## 6a. The feel of the loop (the 2026-08-26 juice pass)
+
+The loop was mechanically complete and read as nothing happening: skims paid into an
+invisible number, a plant was silent on both ends, fuses burned where nobody could see them,
+and a cashed board went off as one flat bang. Every beat now answers, in four channels.
+
+| Beat | What it does |
+|---|---|
+| **Skim pays charge** | Charge card flashes (`VesselHUDView.PlayAbilityFlash`), gauge climbs, `skimChargeEvent`. The skim-pulse haptic was already wired. |
+| **A bomb finishes arming** | Charge card flashes again + `bombArmedEvent`, and the armed badge lights (≥1 bomb = highlight colour). This is the "you may plant" moment. |
+| **A bomb is planted** | Charge card flashes, badge decrements, `bombPlantedEvent`, and the **fuse marker blooms in** on the target. |
+| **A fuse burns down** | The marker crosses calm → critical and its pulse quickens from `markerCalmPulseHz` to `markerCriticalPulseHz`; the HUD board counts the shortest fuse. |
+| **A fuse runs out** | `fuseExpiredEvent` (its own cue — the opposite outcome to a cashed bloom) then the smaller fizzle blast. |
+| **Crystal → Kabloom** | Space card flashes, `kabloomEvent`, a `BloomrushKabloom` toast in the dedicated feed, and the board **cascades** rather than detonating at once. |
+
+**The fuse marker** (`MantaBombMarker`) is the instrument that answers "where are my bombs and
+how long have I got?". It reuses the Echo Sight halo outright (`Resources/EchoSightHalo`,
+`ZTest Always`, billboarded in the vertex shader, constant angular size) so a bomb stays
+findable *through* the reef and at any range, at the cost of one shared material and a
+per-renderer MaterialPropertyBlock. It is **planter-local for free**: bombs only exist on the
+machine simulating their planter, and the extra gate (`LocalHumanPlanter`, snapshotted at
+plant time) is only that the planter is the local human — the same predicate the two haptic
+feels use, so a host does not see its own bots' markers. **The target still gets nothing**;
+the spec's silence is intact.
+
+**The cascade** is the mode's payoff, so it is staggered rather than simultaneous
+(`cascadeStaggerSeconds` 0.09, compressed to fit `cascadeMaxSeconds` 1.2 on a big board) and
+ordered **nearest-first from the ship**, so the chain reads as a wave rolling outward from the
+pilot who set it off. Every committed bomb holds its marker at full critical while it waits —
+that is what "watch the fuses turn into explosions" actually looks like. Two ordering rules
+make it safe: the whole board is `CommitToCascade`'d on the crystal frame (so a fuse cannot
+expire mid-cascade and pay the small blast by accident), and **FusesBeaten is credited on
+COMMIT, not on bloom** — the pilot beat those fuses the moment they touched the crystal, and a
+round that ends mid-cascade must still pay for them. The third is the corollary of the first
+two: a bomb stays in the planted list until it actually blooms, and a cascade outlasts the
+Kabloom cooldown by an order of magnitude, so **an already-cascading bomb is excluded from a
+second cash-out** — otherwise touching two crystals a beat apart credits the same fuses twice.
+
+**Audio ships SILENT and that is the policy, not an omission.** All six cues are
+inspector-exposed `EventReference` fields on `MantaStingConfig.asset` (`skimChargeEvent`,
+`bombArmedEvent`, `bombPlantedEvent`, `fuseExpiredEvent`, `kabloomEvent`,
+`cascadeBloomEvent`). An empty reference is a clean no-op; a borrowed "temp" event is what the
+audio law forbids, because it survives to release disguised as an intentional sound. The audio
+owner fills them — one field per beat is exactly so they can be tuned independently.
+
+**No new haptic was added, deliberately.** `Docs/HAPTICS.md` is a locked two-feel policy
+(+ one rare alert, + one held-trigger texture) and the Manta already carries both everyday
+feels — the skim pulse on its skimmer container and the punish thud on its vessel container.
+A buzz per fuse expiry is precisely the "do NOT hang it on anything frequent" case the policy
+names, and hanging the rare alert on a bomb would weaken it everywhere it already means
+something. If a fuse-expiry haptic is wanted anyway it needs a deliberate decision and a
+dedicated `HapticController` method with the gate extended — the doc's stated bar.
+
+## 6b. Jousting a plant plants a bomb
+
+The Manta reaches a living lifeform's heart the same way the Squirrel does — the
+`VesselLifeformCrystalEffects` surface on its own impactor container — and does the **opposite
+thing** with it: `MantaPlantBombByLifeformJoustEffectSO` plants a bomb on the lifeform and
+leaves it alive. Rooted flora sit at `CurrentSpeed` 0, so they are trivially joustable, which
+makes the reef itself a board to tag; the same effect covers fauna the hull reaches.
+
+The Manta's container deliberately does **not** carry the Squirrel's
+`VesselWitherLifeformByCrystalEffectSO` — a withering joust would destroy the very target the
+bomb is riding. That is a per-vessel container question (rule 22), not a platform behaviour,
+which is why the two vessels can share one surface and disagree about the outcome.
+
+`MantaBomb`'s carrier is therefore `ILifeFormEntity` rather than `Fauna`: flora and fauna are
+separate class hierarchies that meet at that interface, and a bomb does not care what kind of
+life it rides. The fauna-only body-prism liveness test is kept for fauna carriers (a creature
+that dies takes its bomb with it); a plant that dies destroys the component with its
+GameObject, which `OnDestroy` already handles.
+
 ## 7. Files
 
 | Role | File |
 |---|---|
 | Bomb bay config (all Sting/Kabloom tuning) | `R_VesselActions/Data Containers/MantaStingConfigSO.cs` → `_SO_Assets/VesselActions/Manta/MantaStingConfig.asset` |
 | Bomb component + snapshot + bloom spawn | `Controller/Vessel/MantaBomb.cs` |
+| Fuse marker (planter-local halo) | `Controller/Vessel/MantaBombMarker.cs` |
+| Joust-plants on flora/fauna | `EffectsSO/Vessel Crystal Effects/MantaPlantBombByLifeformJoustEffectSO.cs` → `MantaPlantBombByLifeformJoustEffect.asset` |
 | Bay executor (charge, plant, detonate, registry) | `R_VesselActions/Executors/MantaStingActionExecutor.cs` |
 | Bloom/ring relay (NetworkBehaviour, Manta root) | `Controller/Vessel/MantaBombNetworkRelay.cs` |
 | Wake ring config / executor / switch | `.../MantaWakeRingConfigSO.cs`, `.../MantaWakeRingActionExecutor.cs` → `MantaWakeRingConfig.asset` |
@@ -234,6 +308,11 @@ silhouettes** (bomb / turn arrow / bloom / chevrons —
 | `knockOffGraceSeconds` / `ownFreshTrailGraceSeconds` | 1 / 6 | scrape-off exemptions |
 | `kabloomBlastScale` / `fuseBlastScale` / `blastScaleAtFullSpace` | (asset) | cashed vs fizzle vs Space growth — keep cashed > fizzle or "beat the fuse" stops meaning anything |
 | `contagionRadiusFraction` | (asset) | how far a bloom re-plants |
+| `cascadeStaggerSeconds` / `cascadeMaxSeconds` | 0.09 / 1.2 | the chain-reaction beat; 0 = simultaneous |
+| `markerRadius` / `markerCalmColor` / `markerCriticalColor` | 14 / cyan / hot orange | the fuse marker's look |
+| `markerCriticalSeconds` | 6 | when "cash in NOW" becomes the read |
+| `markerCalmPulseHz` / `markerCriticalPulseHz` | 0.9 / 5 | the quickening that IS the fuse state |
+| six `*Event` FMOD slots | EMPTY | one per beat, for the audio owner |
 | `MantaWakeRingConfig.asset` | — | ring period (base/Time-5), radius, surge strength/seconds |
 
 ## 9. In-editor verification (not yet run — no Unity CLI in the authoring session)

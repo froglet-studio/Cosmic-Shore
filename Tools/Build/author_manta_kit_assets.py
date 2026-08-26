@@ -40,6 +40,7 @@ SCRIPT = {
     "MantaStingSkimPrismEffectSO":     "2dcf021070794c32ad8fedb2fc9c5ede",
     "MantaStingPlantBombVesselEffectSO": "93535b5ea9fb9381d319896eae6b11f8",
     "MantaKabloomByCrystalEffectSO":   "4de6a983ee9f3d43306090bb86b07bf2",
+    "MantaPlantBombByLifeformJoustEffectSO": "99e1d40fff3139f2a58cf225fdea541b",
     "VesselElementalDebuffByExplosionEffectSO": "c2e449f647cc48e9be66d67fbc166a33",
     "ExplosionImpactorDataContainerSO": "841db4ce66da4384a711272307733e0f",
     "SkimmerImpactorDataContainerSO":  "07132fee89b7c9d4ea24a34ffcf1d9f3",  # resolved below
@@ -65,6 +66,7 @@ WAKE_CONFIG_GUID = guid_for("MantaWakeRingConfig.asset")
 SKIM_EFFECT_GUID = guid_for("MantaStingSkimPrismEffect.asset")
 PLANT_EFFECT_GUID = guid_for("MantaStingPlantBombVesselEffect.asset")
 KABLOOM_EFFECT_GUID = guid_for("MantaKabloomByCrystalEffect.asset")
+JOUST_PLANT_EFFECT_GUID = guid_for("MantaPlantBombByLifeformJoustEffect.asset")
 
 SO_HEADER = """%YAML 1.1
 %TAG !u! tag:unity3d.com,2011:
@@ -178,7 +180,20 @@ FILES["Assets/_SO_Assets/VesselActions/Manta/MantaStingConfig.asset"] = (
              "  kabloomSelfBlastScale: 140\n"
              "  blastScaleAtFullSpace: 1.6\n"
              "  minBlastScaleMultiplier: 0.5\n"
-             "  contagionRadiusFraction: 1\n"),
+             "  contagionRadiusFraction: 1\n"
+             # Juice (playtest 2026-08-26). The cascade stagger is the payoff beat; the marker
+             # is how a pilot reads a fuse without reading a number. Audio slots stay EMPTY -
+             # an unwired EventReference is silent by design and is the audio owner's to fill.
+             "  cascadeStaggerSeconds: 0.09\n"
+             "  cascadeMaxSeconds: 1.2\n"
+             "  showFuseMarker: 1\n"
+             "  markerRadius: 14\n"
+             "  markerCalmColor: {r: 0.35, g: 0.8, b: 1, a: 1}\n"
+             "  markerCriticalColor: {r: 1, g: 0.35, b: 0.1, a: 1}\n"
+             "  markerCriticalSeconds: 6\n"
+             "  markerCalmPulseHz: 0.9\n"
+             "  markerCriticalPulseHz: 5\n"
+             "  markerFadeSeconds: 0.22\n"),
     ASSET_META.format(guid=STING_CONFIG_GUID))
 
 FILES["Assets/_SO_Assets/VesselActions/Manta/MantaWakeRingConfig.asset"] = (
@@ -213,6 +228,11 @@ FILES["Assets/_SO_Assets/Effects/Vessel Crystal Effects/MantaKabloomByCrystalEff
              "  kabloomCooldown: 0.15\n"),
     ASSET_META.format(guid=KABLOOM_EFFECT_GUID))
 
+FILES["Assets/_SO_Assets/Effects/Vessel Crystal Effects/MantaPlantBombByLifeformJoustEffect.asset"] = (
+    so_asset("MantaPlantBombByLifeformJoustEffectSO", "MantaPlantBombByLifeformJoustEffect",
+             "  plantOnOwnDomain: 0\n"),
+    ASSET_META.format(guid=JOUST_PLANT_EFFECT_GUID))
+
 # The Sting skimmer container REPLACES the overcharge one at its own guid, so the
 # nested SkimmerImpactor override inside Manta.prefab keeps resolving untouched.
 FILES["Assets/_SO_Assets/Effects/Effect Containers/SkimmerContainers/MantaStingSkimmerImpactorDataContainer.asset"] = (
@@ -241,6 +261,11 @@ FILES["Assets/_SO_Assets/Effects/Effect Containers/VesselContainers/MantaImpacto
              "  - {fileID: 11400000, guid: c7ccaca885824b24b716b12148d77ce1, type: 2}\n"
              "  vesselCrystalEffects:\n"
              f"  - {{fileID: 11400000, guid: {KABLOOM_EFFECT_GUID}, type: 2}}\n"
+             # The JOUST surface: hull reaches a living lifeform's heart and PLANTS on it.
+             # Deliberately NOT the Squirrel's withering joust — a kill would destroy the
+             # target the bomb is riding, which is the opposite of this vessel.
+             "  vesselLifeformCrystalEffects:\n"
+             f"  - {{fileID: 11400000, guid: {JOUST_PLANT_EFFECT_GUID}, type: 2}}\n"
              "  vesselMassCrystalEffects: []\n"
              "  vesselChargeCrystalEffects: []\n"
              "  vesselSpaceCrystalEffects: []\n"

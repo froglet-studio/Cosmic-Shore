@@ -25,6 +25,7 @@ namespace CosmicShore.Gameplay
         public bool AffectSelf;                // true below SPACE 5: blooms catch allies
         public float SpaceScaleMultiplier;     // SPACE radius snapshot
         public float FuseSeconds;
+        public bool LocalHumanPlanter;         // may this machine draw the planter's markers?
     }
 
     /// <summary>
@@ -45,15 +46,23 @@ namespace CosmicShore.Gameplay
         static readonly List<Prism> ContagionPrismScratch = new();
 
         MantaBombSnapshot _snap;
-        Fauna _carrierFauna;              // null for vessel carriers
-        string _carrierPlayerName;        // null for fauna carriers
+        Fauna _carrierFauna;              // set only for FAUNA carriers (body-prism liveness)
+        ILifeFormEntity _carrierLifeform; // fauna OR flora; null for vessel carriers
+        string _carrierPlayerName;        // null for lifeform carriers
         float _plantedAt;
         float _fuseDeadline;
         bool _resolved;
+        bool _cascading;                  // committed to a Kabloom cascade, waiting its turn
+        float _cascadeAt;
+        MantaBombMarker _marker;
 
         public string PlanterName => _snap.PlanterName;
         public float FuseRemaining => Mathf.Max(0f, _fuseDeadline - Time.time);
         public float FuseSeconds => _snap.FuseSeconds;
+
+        /// <summary>Waiting its turn in a crystal-cashed cascade — the marker reads it as
+        /// fully critical, because it is about to bloom.</summary>
+        public bool IsCascading => _cascading;
 
         /// <summary>Is this root already carrying a live bomb? (Tagging is denial.)</summary>
         public static bool IsBombed(GameObject root) => root && root.TryGetComponent<MantaBomb>(out _);
@@ -63,19 +72,41 @@ namespace CosmicShore.Gameplay
         /// already bombed — the caller decides whether that refund charges.
         /// </summary>
         public static MantaBomb Plant(GameObject targetRoot, in MantaBombSnapshot snapshot,
-                                      Fauna carrierFauna = null, string carrierPlayerName = null)
+                                      ILifeFormEntity carrierLifeform = null,
+                                      string carrierPlayerName = null)
         {
             if (!targetRoot || IsBombed(targetRoot)) return null;
 
             var bomb = targetRoot.AddComponent<MantaBomb>();
             bomb._snap = snapshot;
-            bomb._carrierFauna = carrierFauna;
+            bomb._carrierLifeform = carrierLifeform;
+            bomb._carrierFauna = carrierLifeform as Fauna;   // flora carriers leave this null
             bomb._carrierPlayerName = carrierPlayerName;
             bomb._plantedAt = Time.time;
             bomb._fuseDeadline = Time.time + Mathf.Max(1f, snapshot.FuseSeconds);
 
+            // The planter's own read on the bomb: where it is, and how long it has. Local to
+            // the planter's machine and their human eyes only — the target sees nothing.
+            bomb._marker = MantaBombMarker.Attach(targetRoot, bomb, snapshot.Config,
+                                                  snapshot.LocalHumanPlanter);
+
+            bomb.PlayCue(snapshot.Config != null ? snapshot.Config.BombPlantedEvent : default);
+
             if (snapshot.Owner) snapshot.Owner.NotifyBombPlanted(bomb);
             return bomb;
+        }
+
+        /// <summary>
+        /// Commits this bomb to a Kabloom cascade <paramref name="delay"/> seconds from now.
+        /// The wait is what turns a cashed board into a chain rolling outward from the pilot
+        /// instead of one flat bang, and the marker holds critical for the whole of it — the
+        /// "watch every fuse turn into an explosion" beat. Its own fuse can no longer fire.
+        /// </summary>
+        public void CommitToCascade(float delay)
+        {
+            if (_resolved || _cascading) return;
+            _cascading = true;
+            _cascadeAt = Time.time + Mathf.Max(0f, delay);
         }
 
         void Update()
@@ -84,14 +115,27 @@ namespace CosmicShore.Gameplay
 
             // A creature that died with a bomb on it takes the bomb with it — there is nothing
             // left to destroy, and a bloom on a withering husk would double-kill conserved mass.
+            // (Flora carriers need no equivalent test: a plant that dies destroys this
+            // component with its GameObject, which OnDestroy already handles.)
             if (_carrierFauna && !_carrierFauna.HasLiveBodyPrisms)
             {
                 Shed();
                 return;
             }
 
+            if (_cascading)
+            {
+                if (Time.time >= _cascadeAt) Detonate(byCrystal: true);
+                return;                                  // a cascading fuse cannot also expire
+            }
+
             if (Time.time >= _fuseDeadline)
+            {
+                // The fuse the pilot did NOT beat. Its own cue, because it is the opposite
+                // outcome to a cashed bloom and must not sound like one.
+                PlayCue(_snap.Config != null ? _snap.Config.FuseExpiredEvent : default);
                 Detonate(byCrystal: false);
+            }
         }
 
         void OnTriggerEnter(Collider other)
@@ -99,7 +143,7 @@ namespace CosmicShore.Gameplay
             // Knock-off counterplay — vessel carriers only (a creature cannot deliberately
             // scrape). The compound-collider split is load-bearing: the skimmer child carries
             // its own kinematic Rigidbody, so only HULL contacts arrive here.
-            if (_resolved || _carrierFauna || _snap.Config == null) return;
+            if (_resolved || _cascading || _carrierLifeform != null || _snap.Config == null) return;
             if (Time.time - _plantedAt < _snap.Config.KnockOffGraceSeconds) return;
 
             if (!other.TryGetComponent<ImpactCollider>(out var ic)) return;
@@ -122,6 +166,7 @@ namespace CosmicShore.Gameplay
         {
             if (_resolved) return;
             _resolved = true;
+            RetireMarker();
             if (_snap.Owner) _snap.Owner.NotifyBombResolved(this, detonated: false, byCrystal: false);
             Destroy(this);
         }
@@ -140,6 +185,8 @@ namespace CosmicShore.Gameplay
             var cfg = _snap.Config;
             if (cfg != null)
             {
+                if (byCrystal) PlayCue(cfg.CascadeBloomEvent);
+
                 float scale = (byCrystal ? cfg.KabloomBlastScale : cfg.FuseBlastScale)
                               * Mathf.Max(0.05f, _snap.SpaceScaleMultiplier);
                 Vector3 position = transform.position;
@@ -154,6 +201,7 @@ namespace CosmicShore.Gameplay
                     SpreadContagion(position, scale * 0.5f * cfg.ContagionRadiusFraction);
             }
 
+            RetireMarker();
             if (_snap.Owner) _snap.Owner.NotifyBombResolved(this, detonated: true, byCrystal: byCrystal);
             Destroy(this);
         }
@@ -163,7 +211,27 @@ namespace CosmicShore.Gameplay
             // Carrier GameObject died under us (despawn, pool return): clear the HUD pip.
             if (_resolved) return;
             _resolved = true;
+            RetireMarker();
             if (_snap.Owner) _snap.Owner.NotifyBombResolved(this, detonated: false, byCrystal: false);
+        }
+
+        void RetireMarker()
+        {
+            if (_marker) _marker.Retire();
+            _marker = null;
+        }
+
+        /// <summary>
+        /// One-shot FMOD cue at the bomb, for the planter's machine only. Empty references are
+        /// silent by design — every one of these is an authoring slot, never a borrowed event
+        /// (the audio law). Resolved through the live singleton rather than an injected field:
+        /// a bomb is added to somebody else's GameObject at runtime and is never injected.
+        /// </summary>
+        void PlayCue(FMODUnity.EventReference reference)
+        {
+            if (!_snap.LocalHumanPlanter || reference.IsNull) return;
+            var audio = AudioSystem.Instance;
+            if (audio) audio.PlaySFXEvent(reference, transform.position);
         }
 
         /// <summary>
@@ -220,7 +288,7 @@ namespace CosmicShore.Gameplay
                     if (!_snap.AffectSelf && p.Domain == _snap.PlanterDomain) continue;
                     if ((root.transform.position - center).sqrMagnitude > radius * radius) continue;
 
-                    Plant(root, _snap, carrierFauna: null, carrierPlayerName: p.Name);
+                    Plant(root, _snap, carrierLifeform: null, carrierPlayerName: p.Name);
                 }
             }
 
@@ -235,7 +303,7 @@ namespace CosmicShore.Gameplay
                 if (fauna == null || !fauna.HasLiveBodyPrisms) continue;
                 if (IsBombed(fauna.gameObject)) continue;
 
-                Plant(fauna.gameObject, _snap, carrierFauna: fauna);
+                Plant(fauna.gameObject, _snap, carrierLifeform: fauna);
             }
             ContagionPrismScratch.Clear();
         }
