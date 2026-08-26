@@ -41,6 +41,13 @@ namespace CosmicShore.Gameplay
         GameObject _modelRoot;
         float _modelRadius;
 
+        // The one mesh this class generated. Tracked explicitly because the model root also holds
+        // membrane/nucleus display copies, whose MeshFilters point at PROJECT ASSETS - sweeping
+        // every MeshFilter under the root and destroying its sharedMesh asks Unity to delete those
+        // assets, which it refuses with "Destroying assets is not permitted". Owning a mesh is a
+        // fact about where it came from, never something to infer from where it is parented.
+        Mesh _generatedMesh;
+
         /// <summary>
         /// The arena's own runtime data instance — what the previewing vessel's
         /// <see cref="AIPilot"/> is retargeted onto so it hunts THIS cell's contents instead of
@@ -326,6 +333,8 @@ namespace CosmicShore.Gameplay
                 return false;
             }
 
+            _generatedMesh = miniature.Mesh;
+
             CSDebug.LogVerbose(CSLogChannel.ArcadeLaunch,
                 $"[ModePreview] Scale model of '{config.CellName}' up at {origin} " +
                 $"(radius {_modelRadius}, {miniature.SubmeshDomains.Length} domain submeshes).");
@@ -391,11 +400,13 @@ namespace CosmicShore.Gameplay
         /// <summary>Take the scale model down. Safe when none is up.</summary>
         public void StrikeModel()
         {
-            if (!_modelRoot) return;
+            if (_generatedMesh)
+            {
+                Object.Destroy(_generatedMesh);
+                _generatedMesh = null;
+            }
 
-            // The mesh is built for this model alone and nothing else references it.
-            foreach (var filter in _modelRoot.GetComponentsInChildren<MeshFilter>(true))
-                if (filter && filter.sharedMesh) Object.Destroy(filter.sharedMesh);
+            if (!_modelRoot) return;
 
             Object.Destroy(_modelRoot);
             _modelRoot = null;

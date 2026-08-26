@@ -16,7 +16,12 @@ namespace CosmicShore.UI
     public class MaelstromPoolEntry : MonoBehaviour
     {
         [Header("Content")]
-        [SerializeField, Tooltip("The mode's card icon.")] Image icon;
+        [SerializeField, Tooltip("OPTIONAL, and deliberately left EMPTY unless a row authors a " +
+                                 "dedicated icon slot. Wiring it at a row's BACKGROUND writes the " +
+                                 "mode's card sprite over that background - which is what turned " +
+                                 "every pool row into a cyan slab. A row's own art is the row's; " +
+                                 "this entry only fills what it was explicitly given.")]
+        Image icon;
         [SerializeField, Tooltip("The mode's DisplayName.")] TMP_Text nameText;
 
         [SerializeField, Tooltip("Written on a mode that is not in the pool yet. {0} is the " +
@@ -54,6 +59,8 @@ namespace CosmicShore.UI
                 if (sprite) icon.sprite = sprite;
             }
 
+            // Anything else the row draws is the row's own art and is left exactly as authored.
+
             if (nameText)
                 nameText.text = game ? game.DisplayName : string.Empty;
 
@@ -66,6 +73,8 @@ namespace CosmicShore.UI
                         : neverUnlockedText;
             }
 
+            // Alpha only - never a colour. A locked row is the same row, dimmed; tinting it would
+            // be this component deciding what the row looks like, which is the mistake above.
             ResolveGroup().alpha = unlocked ? 1f : lockedAlpha;
             gameObject.SetActive(true);
         }

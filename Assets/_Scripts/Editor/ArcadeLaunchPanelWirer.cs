@@ -654,12 +654,19 @@ namespace CosmicShore.Editor
             so.ApplyModifiedPropertiesWithoutUndo();
         }
 
+        /// <summary>
+        /// Only the NAME. The icon slot is deliberately left empty: "the first Image in the row" is
+        /// the row's BACKGROUND far more often than it is an icon slot, and writing the mode's card
+        /// sprite into a background repaints the whole row - which is exactly what turned every
+        /// Maelstrom pool row into a cyan slab. A row's own art belongs to the row; wire an icon by
+        /// hand if one is genuinely authored for it.
+        /// </summary>
         static void WirePoolEntry(MaelstromPoolEntry entry)
         {
             var so = new SerializedObject(entry);
             var t = entry.transform;
-            SetRefStatic(so, "icon", t.GetComponentInChildren<Image>(true));
             SetRefStatic(so, "nameText", FindComponentInChildren<TMP_Text>(t, "GameTitle")
+                                         ?? FindComponentInChildren<TMP_Text>(t, "Game Description Text")
                                          ?? t.GetComponentInChildren<TMP_Text>(true));
             so.ApplyModifiedPropertiesWithoutUndo();
         }
