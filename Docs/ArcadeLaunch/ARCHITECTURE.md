@@ -77,31 +77,78 @@ Two consequences worth knowing:
 *also* carry an inspector `onClick` to it, and a player can double-click — the second call is a
 no-op rather than a second sting and a second `ConfirmLocalPlayerReady`.
 
-## 4. The controls block is DERIVED, all the way down
+## 4. The controls block: flight first, then abilities — and the icon animates like the game
 
-`VesselControlsPanel` builds one row per ability from the hull's own `ElementalAbilityMapSO`:
-the map names the ability and the `InputEvents` it rides, `InputHintBindingMap.BindingFor`
-turns that into a physical control, and `ControlGlyphSetSO` turns the control into artwork —
-the same chain the ability lockup uses (`Docs/ABILITY_LOCKUP.md`). Nothing is authored per
-vessel here, so re-binding an ability moves its chip with it and a wrong label is structurally
-impossible.
+`VesselControlsPanel` draws two kinds of row, in the order a player needs them.
+
+**Flight rows come first and are AUTHORED**, because a flight axis is a property of the input
+scheme rather than of a vessel: the same two sticks fly every hull, so deriving them per vessel
+would be deriving a constant, and no asset in the project maps "yaw" to a sprite. They are a
+list of `FlightControl` (headline, description, icon, optional control) on the panel.
+
+**Ability rows are DERIVED, all the way down.** The hull's own `ElementalAbilityMapSO` names the
+ability and the `InputEvents` it rides, `InputHintBindingMap.BindingFor` turns that into a
+physical control, and `ControlGlyphSetSO` turns the control into artwork *and* into the name used
+in the sentence — the same chain the ability lockup uses (`Docs/ABILITY_LOCKUP.md`). Nothing is
+authored per vessel here, so re-binding an ability moves its whole row with it and a wrong label
+is structurally impossible.
+
+The headline is a sentence, not a noun: **"Press RT to activate Drift"**, with the
+`abilityHeadlineFormat` / `passiveHeadlineFormat` strings on the panel as the only copy.
 
 Three states are drawn honestly rather than papered over:
 
 | State | What is drawn | Why |
 |---|---|---|
-| a passive ability (no input) | no chip | there is no button to show |
-| a pad control with no keyboard equivalent | no chip, on keyboard | a pad glyph shown to a keyboard player is misinformation |
+| a passive ability (no input) | `"<name> (passive)"`, no chip, no recharge | there is no button to show and nothing to recharge |
+| a pad control with no keyboard equivalent | no chip and no control name, on keyboard | a pad glyph shown to a keyboard player is misinformation |
 | an unauthored map slot (`"(open design slot)"`) | no row at all | drawing it promises an ability that does not exist |
 
-Rows run **charge → mass → space → time**, the fleet's ability-row order, so the launch panel
-reads left-to-right the way the in-game HUD row does. A mode listing several hulls draws no
-rows — naming one of them arbitrarily would be worse than none.
+Rows run **charge → mass → space → time**, the fleet's ability-row order, so the block reads
+left-to-right the way the in-game HUD row does. A mode listing several hulls (`VesselClassType.Any`)
+still draws the **flight** rows — how you steer is true whatever you end up flying — and no
+ability rows, because naming one of several hulls arbitrarily would be worse than none.
 
-**The animation is one sweep, not N loops.** One phase advances in the panel and each row is
-handed its share of it, so the block reads as a single travelling highlight and an off-screen
-panel costs nothing (`Update` returns on the first line). Rows scale and fade only; nothing
-writes a rect, so a row sits inside a layout group without fighting it.
+### 4.1 The icon animates the way it animates in the game
+
+Not a decorative pulse. The row whose turn it is replays the **ability lockup's own three beats**:
+
+1. **press flash** — `AbilityLockupStyleSO.pressFlashColor`, decayed rather than switched off;
+2. **the recharge veil** — a *clockwise* radial sweeping off the icon, `cooldownVeilColor`;
+3. **the ready flash** — `cooldownReadyFlashColor`, the beat the player is actually waiting for
+   and the loudest thing the card ever does.
+
+Every colour comes out of `Resources/AbilityLockupStyle`, the same asset the HUD reads, so the
+preview **cannot drift from the game**: retune the recharge veil once and both follow.
+
+Two details carried over verbatim from `AbilityLockupView.BuildCooldownOverlay`, because getting
+either wrong looks like a bug rather than a difference:
+
+- **`fillClockwise = false` is what reads as clockwise.** The veil *depletes*, so the flag names
+  the direction the wedge is drawn and the edge the player watches is its far end travelling the
+  other way. True would draw the wedge clockwise and therefore retreat anticlockwise.
+- **The veil and the flash are siblings drawn after the icon, never children of it.** They have to
+  darken and light the icon — and a child would inherit the icon's scale, which this row animates,
+  and so draw at the wrong size on every pulse.
+
+Both overlays are built **lazily**, on the first row that needs them, and sized from the icon's own
+rect. A row that never demonstrates a recharge — a flight axis, a passive — builds neither and
+draws neither.
+
+### 4.2 One sweep, not N loops
+
+One phase advances in the panel: the row whose turn it is plays the three beats, every other row
+is dimmed, and the highlight wraps off the last row onto the first without a seam. So the block
+teaches one control at a time in the game's own visual language, and an off-screen panel costs
+nothing (`Update` returns on its first line). Rows scale and fade only; nothing writes a rect, so
+a row sits inside a layout group without fighting it.
+
+### 4.3 The row reads correctly on the simplest prefab
+
+A row needs exactly **one text field**. Given both a headline and a description field it uses
+them; given only a description it writes the headline first and the detail on the next line. The
+block has to be right on the plainest prefab anyone would author — an icon and a line of text —
+because that is what a controls row actually is.
 
 Ability ICONS are matched off the vessel asset by NAME (`SO_Vessel.Abilities` ↔
 `ElementalAbilityEntry.AbilityLabel`). No match is an ordinary answer: the row keeps its prefab
@@ -228,8 +275,12 @@ Authored data: `SO_ArcadeGame.Tips` (per-card play tips) and `SO_ArcadeGame.Prev
   alone — the tip line switches off rather than showing an empty `Tip:` prefix — so the panel is
   correct but says less than it could until tips are written.
 - **One glyph set serves both pad families**, inherited from the ability lockup: a PlayStation
-  player sees Xbox `A`/`B` on the Sparrow's rows. Closing it is `ControlGlyphSetSO`'s follow-up,
-  not this panel's (`Docs/ABILITY_LOCKUP.md`).
+  player sees Xbox `A`/`B` on the Sparrow's rows — and now reads them in the sentence too
+  ("Press RT to…"), since `ControlDisplayName` uses the same one-family vocabulary. Closing it is
+  one field on `ControlGlyphSetSO` and would fix both surfaces at once (`Docs/ABILITY_LOCKUP.md`).
+- **Flight rows are authored copy**, so they ship with two placeholder entries (left stick / right
+  stick) and no icons. They say something true out of the box and want a real pass — per-axis art
+  and wording — before they teach anything a player could not have guessed.
 - **Browsing cards stands and strikes a satellite arena per selection**, plus a networked hull
   swap for a vessel-locked mode — the pre-existing cost recorded in
   `Docs/ModePreview/ARCHITECTURE.md §7`, now paid on intensity changes too for the four modes
