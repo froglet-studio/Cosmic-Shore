@@ -3120,7 +3120,14 @@ slant are both non-zero, the icon clears the narrow edge, the plates face each o
    right margin 65.1 → 40, bottom margin 53 → 44 (chip bottom 21px → 14px). Check the row does not
    crowd the screen edge on a 16:9 and that four cards still read as four objects, not one strip.
 3. **Control chips.** `chipGap` 8 → 6, matching `cellGap`, so the glyph clears the ability plate by
-   the same distance the element plate does. **The device-switch test is the point**: go pad →
-   keyboard → pad and confirm the pad glyphs return to *exactly* the same place. They are now
-   placed only while visible and re-placed on every set change, because Unity does not lay out
-   inactive hierarchies and the old code baked a stale rect into hidden sets.
+   the same distance the element plate does.
+
+   **The device-switch symptom was a SIZE mismatch, not a drift** — measured off `Squirrel.prefab`,
+   the pad glyphs are 50×50 and the PC text hints 106×22, so centring both on one 24px socket left
+   the pad ones overhanging the card by 7px and the keyboard ones 7px clear. Hints are now re-homed
+   into the socket **as children**, stretched to it with `preserveAspect`, so the lockup owns the
+   chip's size as well as its position. **Verify:** go pad → keyboard → pad and confirm the glyphs
+   sit in exactly the same place at exactly the same size on every set, 6px below the card; confirm
+   only ONE device's glyphs are visible at a time (adopted hints left their icon-set root, so the
+   switcher toggles them directly — if all three sets show at once, `ApplyAdoptedVisibility` is not
+   running); and check the pad glyphs are not squashed (that is what `preserveAspect` is for).

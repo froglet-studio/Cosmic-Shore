@@ -168,13 +168,26 @@ carry one today. The track's own taper is **derived from the plate at the track'
 to be the full width — identical at `gaugeCellFraction 1`, which is why that seam would have stayed
 invisible until someone lowered the fraction.
 
-**A hidden hint set is never placed, and every set change re-places.** Unity does not lay out
-inactive hierarchies, so placing a hidden device set's glyphs measured a stale or zero parent rect
-and baked a wrong anchor into them — which is why switching pad → keyboard → pad brought the pad
-glyphs back somewhere else. `TryApplyAbilityPlacement` now skips anything not
-`activeInHierarchy`, and `ApplySet` re-arms placement every time a set is shown, so each set is
-placed from live rects on the frame it appears. That also makes the placement self-healing against
-anything that moves the row later.
+**The hint is RE-HOMED into the socket as a child, and the lockup owns its size.** Re-anchoring a
+hint over the socket without reparenting looked equivalent and was not, for a reason that took two
+attempts to find: **the device sets author their glyphs at wildly different sizes.** Measured off
+`Squirrel.prefab` — the pad strips are 269 × 11 px with glyphs spanning 50 × 50, the PC strip is
+366 × 22 with glyphs at 106 × 22. Centring both on one 24px socket therefore gave them *different
+clearances*: the pad glyph overhung the card by 7px while the keyboard one sat 7px clear. Switching
+pad → keyboard → pad looked like the label had moved; it never moved, the two sets were never the
+same size.
+
+So `AdoptIntoSocket` reparents each hint into its card's `ControlChip`, stretched to fill it, with
+`preserveAspect` on the image. The lockup owns the chip's **size** as well as its position, exactly
+as it owns the ability icon's, and a hint supplies only artwork. Being a child also makes the
+position structurally undriftable — no rect fractions, no retry, no dependence on when a set was
+last laid out. Its other half is `ApplyAdoptedVisibility`: an adopted hint has left its icon-set
+root, so activating that root can no longer reach it and the switcher must toggle the hints
+themselves — forget that and every device's glyphs show at once. `PlaceOnAbilityIcon` survives as
+the legacy path for a HUD with no lockup.
+
+*The general trap: two things that look interchangeable at one size are only interchangeable at that
+size. Anything centred on a fixed socket inherits the content's height as a variable.*
 
 **A meter is regularly authored on the WRONG card, and the build is ordered around that.** The
 Squirrel's boost fill sits under its *skimming* button and the Scarab's ball-energy ring under its

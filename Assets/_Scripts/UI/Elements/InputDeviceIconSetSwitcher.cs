@@ -91,6 +91,10 @@ namespace CosmicShore.UI
             [NonSerialized] public RectTransform AbilityTarget;
             /// <summary>Offset actually used - zero when the target is a lockup chip socket.</summary>
             [NonSerialized] public Vector2 ResolvedOffset;
+            /// <summary>The lockup chip socket this hint was re-homed into; null on a HUD with no lockup.</summary>
+            [NonSerialized] public RectTransform Socket;
+            /// <summary>True once this hint is a CHILD of its socket and can no longer drift.</summary>
+            [NonSerialized] public bool Adopted;
             /// <summary>Latches the off-screen warning so it is reported once, not every frame.</summary>
             [NonSerialized] public bool OffScreenReported;
         }
@@ -196,7 +200,9 @@ namespace CosmicShore.UI
                     if (view.TryGetAbilityChipSocket(element, out var chipSocket))
                     {
                         hint.AbilityTarget = chipSocket;
+                        hint.Socket = chipSocket;
                         hint.ResolvedOffset = Vector2.zero;
+                        AdoptIntoSocket(hint);
                     }
                     else if (view.TryGetAbilityIcon(element, out var abilityIcon))
                     {
@@ -215,6 +221,9 @@ namespace CosmicShore.UI
                 }
             }
 
+            // Adopted hints left their icon-set root, so the root can no longer show or hide them.
+            ApplyAdoptedVisibility();
+
             _placementPending = true;
             _placementAttempts = 0;
             TryApplyAbilityPlacement();
@@ -223,6 +232,58 @@ namespace CosmicShore.UI
         }
 
         readonly HashSet<Element> _labelledElements = new();
+
+        /// <summary>
+        /// Re-homes a hint INTO its lockup chip socket, as a child, stretched to fill it.
+        ///
+        /// <para>This replaces re-anchoring, and it fixes a defect re-anchoring could not: the
+        /// device sets author glyphs at wildly different sizes - the pad strip's are 50x50, the PC
+        /// text hints 106x22 - and centring both on one 24px socket gave them different clearances.
+        /// The pad glyphs overhung the card by 7px while the keyboard ones sat 7px clear, so
+        /// switching pad -> keyboard -> pad looked like the label had moved. It had not; the two
+        /// sets were never the same size.</para>
+        ///
+        /// <para>So the lockup owns the chip's SIZE as well as its position, exactly as it owns the
+        /// ability icon's, and a hint supplies only artwork. <c>preserveAspect</c> keeps a glyph's
+        /// shape inside the socket. Being a CHILD also makes the position structurally undriftable -
+        /// no rect fractions, no retry, no dependence on when a set was last laid out.</para>
+        /// </summary>
+        static void AdoptIntoSocket(HintVisual hint)
+        {
+            var rt = HintRect(hint);
+            if (!rt || !hint.Socket) return;
+
+            rt.SetParent(hint.Socket, worldPositionStays: false);
+            rt.anchorMin = Vector2.zero;
+            rt.anchorMax = Vector2.one;
+            rt.pivot = new Vector2(0.5f, 0.5f);
+            rt.offsetMin = Vector2.zero;
+            rt.offsetMax = Vector2.zero;
+            rt.localScale = Vector3.one;
+            rt.localRotation = Quaternion.identity;
+
+            if (hint.icon) hint.icon.preserveAspect = true;
+            hint.Adopted = true;
+        }
+
+        /// <summary>
+        /// Shows exactly the current set's adopted hints. They are no longer under their icon-set
+        /// root, so activating that root cannot reach them - this is the other half of adoption,
+        /// and forgetting it would leave every device's glyphs on screen at once.
+        /// </summary>
+        void ApplyAdoptedVisibility()
+        {
+            foreach (var visuals in setVisuals)
+            {
+                if (visuals?.hints == null) continue;
+                foreach (var hint in visuals.hints)
+                {
+                    if (hint == null || !hint.Adopted) continue;
+                    var rt = HintRect(hint);
+                    if (rt) rt.gameObject.SetActive(visuals.set == Current);
+                }
+            }
+        }
 
         /// <summary>
         /// The other half of the contract: an ability the player can actually press should have a
@@ -246,16 +307,15 @@ namespace CosmicShore.UI
         }
 
         /// <summary>
-        /// Placement needs a laid-out canvas, which may not exist on the frame the vessel spawns, so
-        /// it retries for a short while.
+        /// The LEGACY path, for a HUD with no ability lockup: re-anchor a hint over its ability icon
+        /// without reparenting it. Needs a laid-out canvas, which may not exist on the frame the
+        /// vessel spawns, so it retries for a short while.
         ///
-        /// <para><b>Only VISIBLE hints are placed</b>, and <see cref="ApplySet"/> re-arms this every
-        /// time a set is shown. Unity does not lay out inactive hierarchies, so placing a hidden
-        /// set's glyphs measured a stale or zero parent rect and baked a wrong anchor into them -
-        /// which is exactly why switching pad → keyboard → pad brought the pad glyphs back somewhere
-        /// else. A hidden set is left alone entirely; it gets placed, from live rects, on the frame
-        /// it is shown. That also makes the placement self-healing against anything that moves the
-        /// row later, since every set change recomputes from scratch.</para>
+        /// <para>Hints that were adopted into a lockup chip socket are skipped - they are CHILDREN
+        /// of the socket and cannot drift, so there is nothing to recompute. Of the rest, only
+        /// VISIBLE ones are placed (Unity does not lay out inactive hierarchies, so a hidden set
+        /// would measure a stale rect), and <see cref="ApplySet"/> re-arms this every time a set is
+        /// shown.</para>
         /// </summary>
         void TryApplyAbilityPlacement()
         {
@@ -267,7 +327,7 @@ namespace CosmicShore.UI
                 if (visuals?.hints == null) continue;
                 foreach (var hint in visuals.hints)
                 {
-                    if (hint?.AbilityTarget == null) continue;
+                    if (hint?.AbilityTarget == null || hint.Adopted) continue;   // a child cannot drift
                     var rt = HintRect(hint);
                     if (!rt || !rt.gameObject.activeInHierarchy) continue;   // placed when shown
                     if (!PlaceOnAbilityIcon(rt, hint.AbilityTarget, hint.ResolvedOffset))
