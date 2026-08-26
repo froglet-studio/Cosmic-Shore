@@ -2770,9 +2770,12 @@ a single blend shape. **That last one used to read "Rhino wires `Vessel_Placehol
 was this very document repeating the guid trap `VESSEL_CONSTRUCTION.md` §2 exists to warn about** —
 `Rhino_Test.fbx.meta` is the file whose own `guid:` line carries `4a58…`; the placeholder merely
 remapped its materials into it. Corrected 2026-08-26, and the placeholders have since been
-retired. Their `*_shapekey_with_animations.fbx` rigs are
-one skinned mesh on an armature **plus** the four element shapes — and each rig was authored FOR
-that vessel's script: the dolphin rig's `jetT/jetm/jetB × .l/.r` + `jaw.u`/`jaw.b` are exactly
+retired. Their `*_shapekey_with_animations.fbx` rigs are one skinned mesh on an armature plus four
+element shapes — **but only the DOLPHIN's four actually move the hull.** The Rhino's and the
+Urchin's each index ONE vertex and move it 0.0000 units, verified across all 93 FBX blobs in the
+project's history, so those two have never had a morph anywhere and a swap must leave the morph
+honestly absent (`VESSEL_CONSTRUCTION.md` §4, §7). Each rig was authored FOR that vessel's
+script: the dolphin rig's `jetT/jetm/jetB × .l/.r` + `jaw.u`/`jaw.b` are exactly
 `RiptideAnimation`'s six thrusters and two jaws; the rhino rig's `wing1.*`/`jet.*` are
 `RhinoAnimation`'s wings and engines (its `wing2.*` back wings host colliders, nothing drives them);
 the urchin rig's `gunM.*`/`jetT.*`/`jetB.*` are `UrchinAnimation`'s guns and jets. The three scripts
@@ -2792,12 +2795,17 @@ collapsed the six jets onto one point; it now restores each part's **own** captu
 animated around a neighbour's rest pose. **That second fix changes the Dolphin's current look** — its
 six engine cases rest at 26–169° and were being dragged toward identity.
 
-The prefab half is a **hands-on editor pass**, not an automated one: a `SkinnedMeshRenderer`'s bone
-list, bindposes, bounds and imported mesh IDs are owned by Unity's FBX importer, collider volumes
-were authored against the old silhouettes and must be re-fitted by eye, and every legacy part
-carries its `MeshRenderer` alongside its collider — so moving one onto a bone without retiring its
-renderer welds the placeholder ship to the new skeleton. Run **FrogletTools > Vessels > Plan Vessel
-Rig Swap** (report only, never writes): it prints, per vessel, which gameplay object belongs on
+The prefab half is **FrogletTools > Vessels > Swap Vessel Rig** (`VesselRigSwapper`, 2026-08-26),
+which performs it. A `SkinnedMeshRenderer`'s bone list, bindposes, bounds and imported mesh IDs are
+owned by Unity's FBX importer — that is the one part that genuinely needs the editor, and the reason
+the swap is a tool rather than hand-authored YAML. Everything else is measured: each rig instance is
+placed at a **fitted** transform that lands its hull on the shipped hull (Dolphin identity, Rhino
+`z −1.5545`, Urchin `localScale 0.474905`), so **no collider is re-fitted** — the volumes are
+re-homed onto bones with their world pose preserved. The standing warning still applies inside the
+tool: every legacy part carries its `MeshRenderer` alongside its collider, so it strips the art when
+it re-homes one, or the old hull welds to the new skeleton. Run **FrogletTools > Vessels > Plan
+Vessel Rig Swap** first (report only, never writes): it prints, per vessel, which gameplay object
+belongs on
 which bone, which objects have **no mapped bone** and would go dark when the old model is disabled
 (Rhino's `ForceFieldSkimmer` parents to the legacy root), the rig's element shapes, and the ship-
 geometry re-point. The printed procedure ends by clearing the animation's part fields — leave them

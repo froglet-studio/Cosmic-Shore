@@ -124,8 +124,25 @@ namespace CosmicShore.Editor
             var deltaTangents = new Vector3[mesh.vertexCount];
             float farthest = 0f;
             // The LAST frame is the shape's authored extreme, which is the pose the morph reaches.
-            mesh.GetBlendShapeFrameVertices(target.ShapeIndex, frames - 1,
-                                            deltaVertices, deltaNormals, deltaTangents);
+            //
+            // Every vessel model imports with `isReadable: 0`. That flag governs RUNTIME access —
+            // the editor keeps an imported model's full data — so this call is expected to work
+            // here. It is guarded anyway, because the failure mode is ambiguous in the one
+            // direction that matters: if the API ever returned zeros instead of throwing, a REAL
+            // morph would be reported INERT, which is indistinguishable from a genuinely empty
+            // shape. A throw becomes "CANNOT MEASURE" and is reported as such rather than silently
+            // becoming a verdict.
+            try
+            {
+                mesh.GetBlendShapeFrameVertices(target.ShapeIndex, frames - 1,
+                                                deltaVertices, deltaNormals, deltaTangents);
+            }
+            catch (System.Exception e)
+            {
+                Debug.LogWarning($"[MorphAudit] could not read blend shape '{target.ShapeName}' on " +
+                                 $"'{mesh.name}': {e.Message}. Reported as CANNOT MEASURE, not as inert.");
+                return -1f;
+            }
             for (int i = 0; i < deltaVertices.Length; i++)
             {
                 float m = deltaVertices[i].magnitude;

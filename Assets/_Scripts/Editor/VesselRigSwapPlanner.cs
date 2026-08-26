@@ -14,7 +14,7 @@ namespace CosmicShore.Editor
     ///
     /// Dolphin, Urchin and Rhino are the fleet's only vessels that cannot morph, and it is not a
     /// wiring oversight: their prefabs wire fundamentally different models (Dolphin_Test = 17
-    /// separate static part meshes, Urchan_Test = 14, and Rhino wires Vessel_Placeholder_1),
+    /// separate static part meshes, Urchan_Test = 14, and Rhino wires Rhino_Test = 7),
     /// none of which carries a single blend shape. Their *_shapekey_with_animations rigs are one
     /// skinned mesh on an armature plus the four element shapes, and each was authored FOR that
     /// vessel's animation script — so once the model is in place the animation re-binds itself by

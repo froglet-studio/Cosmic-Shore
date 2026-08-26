@@ -209,7 +209,9 @@ is what prompted this pass.
   for the wrong one. Its prefab's `MeshFilter`s all carry guid
   `4a586f927b9527f469c6d95a0ac32051`, and resolving that with
   `grep -rl "guid: $g" Assets --include=*.meta | head -1` returned
-  `Placeholder/Vessel_Placeholder_1.fbx.meta`, which merely sorts first. That file is a REFERENCE —
+  `Placeholder/Vessel_Placeholder_1.fbx.meta`, which merely sorts first. (Both placeholders were
+  retired in 2026-08 — `Docs/VESSEL_CONSTRUCTION.md` §7 — so the file this names is gone; the trap
+  it demonstrates is not, which is why the account is kept verbatim.) That file is a REFERENCE —
   the placeholder points its own filters at the Rhino's meshes. `Rhino_Test.fbx.meta` is the one
   whose top-level `guid:` line carries it, so the Rhino renders `Rhino_Test.fbx`'s `fusalage`.
 
