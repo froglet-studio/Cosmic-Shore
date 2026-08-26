@@ -1,6 +1,5 @@
 using CosmicShore.Gameplay;
 using System.Collections.Generic;
-using CosmicShore.Utility;
 using UnityEngine;
 namespace CosmicShore.Gameplay
 {
@@ -24,6 +23,10 @@ namespace CosmicShore.Gameplay
         [SerializeField] Transform bottomJaw;
 
         List<Transform> animationTransforms;
+
+        /// <summary>Was the vessel drifting last frame? The course frame is rotation-minimizing,
+        /// so it needs seeding once at drift ENTRY and then only ever turning incrementally.</summary>
+        bool _wasAiming;
         const float animationScaler = 25f;
         const float exaggeratedAnimationScaler = 3 * animationScaler;
 
@@ -51,18 +54,27 @@ namespace CosmicShore.Gameplay
                  "Zero here is what shipped, and it is why the jaws clipped the engines.")]
         [SerializeField] float driftJetBackward = 2.3f;
 
-        [Header("Bank")]
-        [Tooltip("How the wings bank relative to the HULL when you roll. +1 banks them with the " +
-                 "hull, -1 against it, and the magnitude exaggerates or damps the read; 0 stops " +
-                 "the wings responding to roll at all.\n\n" +
-                 "This is a signed scaler rather than a fixed sign because the authored value was " +
-                 "chosen against the legacy art, where the wings hung off the model root at " +
-                 "identity. On the rig they hang off 'winghold' bones carrying a -180 degree " +
-                 "roll, and the hull and wings read as banking opposite ways. The hull is the one " +
-                 "that is right (VesselTransformer.Roll, shared by six vessels), so the wings are " +
-                 "what moves - and it is exposed here so it can be judged in the editor instead " +
-                 "of guessed in code.")]
-        [SerializeField] float wingRollResponse = -1f;
+        // WING RESPONSE, PER AXIS. Signed scalers: +1 moves the wing with the hull, -1 against it,
+        // 0 stops that axis responding, and the magnitude exaggerates or damps the read.
+        //
+        // These are parameters rather than fixed signs because the authored values were chosen
+        // against the legacy art, where the wings hung off the model root at identity. On the rig
+        // they hang off 'winghold' bones carrying a -180 degree roll, and which axes come out
+        // reading backwards is not something the geometry predicts - the puppetry's own delta is
+        // provably identical for every part (verify_vessel_rig_puppetry_frames.py), yet the wings
+        // read differently on screen. Guessing signs in code cost three flights; a number that can
+        // be turned in the editor costs none.
+        [Header("Wing response")]
+        [Tooltip("Wing PITCH response. +1 with the hull, -1 against, 0 off.")]
+        [SerializeField] float wingPitchResponse = 1f;
+
+        [Tooltip("Wing YAW response. -1 by default: this is the axis playtest found reading " +
+                 "backwards on the rig.")]
+        [SerializeField] float wingYawResponse = -1f;
+
+        [Tooltip("Wing ROLL response. +1 - the hull's own bank is correct " +
+                 "(VesselTransformer.Roll, shared by six vessels) and the wings follow it.")]
+        [SerializeField] float wingRollResponse = 1f;
 
         Vector3 ForwardWingOffset => new(0, 0, driftWingForward);
         Vector3 BackwardThrusterOffset => new(0, 0, -driftJetBackward);
@@ -239,10 +251,33 @@ namespace CosmicShore.Gameplay
             Transform courseFrame = transform;
             if (VesselStatus.IsDrifting)
             {
-                SafeLookRotation.TrySet(DriftHandle, VesselStatus.Course, transform.up,
-                                        DriftHandle ? DriftHandle.gameObject : gameObject,
-                                        logError: false);
-                if (DriftHandle) courseFrame = DriftHandle;
+                // THE COURSE FRAME MUST NOT TWIST.
+                //
+                // Built with LookRotation(Course, up) - as this was - the frame's roll is pinned to
+                // whatever 'up' it is handed, so as the hull aims away from Course that up swings
+                // and drags the frame around the Course axis. The parts then rotate with zero pilot
+                // input, and it reads exactly as it looks: like they are holding their up vector
+                // against the camera instead of letting the camera swing around them.
+                //
+                // Rebuilding it from the hull's CURRENT aim each frame is better but still not
+                // still: the shortest arc from a moving nose onto Course changes as the nose moves,
+                // which leaks roll back in (measured ~1.4 degrees per 10 degrees of aim, against
+                // ~4 for LookRotation).
+                //
+                // So the frame is ROTATION-MINIMIZING: seeded from the hull at drift entry, then
+                // each frame turned by the shortest arc from ITS OWN previous forward onto Course.
+                // Every step is a pure swing about an axis perpendicular to both, which adds no
+                // twist by construction - the frame tracks Course and nothing else, and a part
+                // sitting in it with no input is genuinely still while the hull turns around it.
+                if (DriftHandle)
+                {
+                    Vector3 course = VesselStatus.Course;
+                    if (!_wasAiming) DriftHandle.rotation = transform.rotation;   // seed at entry
+                    if (course.sqrMagnitude > 1e-6f)
+                        DriftHandle.rotation =
+                            Quaternion.FromToRotation(DriftHandle.forward, course) * DriftHandle.rotation;
+                    courseFrame = DriftHandle;
+                }
                 wingOffset = ForwardWingOffset;
                 thrusterOffset = BackwardThrusterOffset;
             }
@@ -257,14 +292,16 @@ namespace CosmicShore.Gameplay
             // the half of the ship that is aiming - the fuselage and the jaws. Leaving them
             // responsive reads as the whole ship still flying while it is supposed to be sliding.
             bool aiming = VesselStatus.IsDrifting;
-            float wingPitch = aiming ? 0f : Brake(throttle) * animationScaler;
-            float wingYawR  = aiming ? 0f : (yaw + throttle) * exaggeratedAnimationScaler;
-            float wingYawL  = aiming ? 0f : (yaw - throttle) * exaggeratedAnimationScaler;
+            float wingPitch = aiming ? 0f : Brake(throttle) * wingPitchResponse * animationScaler;
+            float wingYawR  = aiming ? 0f : (yaw + throttle) * wingYawResponse * exaggeratedAnimationScaler;
+            float wingYawL  = aiming ? 0f : (yaw - throttle) * wingYawResponse * exaggeratedAnimationScaler;
             float wingRollR = aiming ? 0f : (roll * wingRollResponse + pitch) * animationScaler;
             float wingRollL = aiming ? 0f : (roll * wingRollResponse - pitch) * animationScaler;
 
             AnimatePart(RightWing, wingPitch, wingYawR, wingRollR, wingOffset, courseFrame);
             AnimatePart(LeftWing,  wingPitch, wingYawL, wingRollL, wingOffset, courseFrame);
+
+            _wasAiming = aiming;
 
             var pitchScalar = aiming ? 0f : pitch * exaggeratedAnimationScaler;
             var yawScalar = aiming ? 0f : yaw * exaggeratedAnimationScaler;

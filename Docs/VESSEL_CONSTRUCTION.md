@@ -415,6 +415,30 @@ question answerable in the editor in seconds instead of a round-trip per guess.
 > **When the math and the screen disagree, and the math is verified, the answer is a parameter.**
 > Three sign guesses cost three flights. A number the pilot can turn costs none.
 
+*A COURSE FRAME MUST NOT TWIST, and `LookRotation` cannot give you one.* Built as
+`LookRotation(Course, hull.up)`, the frame's roll is pinned to whatever up it is handed — so as the
+hull aims away from Course that up swings and drags the frame around the Course axis. The parts then
+rotate with **zero pilot input**, and it reads exactly as it looks: like they are holding their up
+vector against the camera instead of letting the camera swing around them. Measured over a 0→50°
+aim sweep with Course fixed:
+
+| frame construction | twist accumulated |
+|---|---|
+| `LookRotation(Course, hull.up)` | **19.77°** |
+| rebuild from the hull's current nose | 7.03° |
+| rotation-minimizing (shipped) | **0.000024°** |
+
+The middle row is the trap: it is the obvious fix, it is three times better, and it is still wrong —
+the shortest arc from a *moving* nose changes as the nose moves, which leaks roll back in. The frame
+is instead seeded from the hull at drift entry and thereafter turned by the shortest arc from **its
+own previous forward** onto Course. Every step is a pure swing about an axis perpendicular to both,
+so it adds no twist by construction.
+
+> **"Point this at that" is not enough to define a frame.** A direction leaves one degree of freedom
+> — the roll about it — and every look-at helper silently fills it in from an up-vector that is
+> usually moving. When something should hold still while the world turns around it, carry the frame
+> forward from its own last orientation instead of rebuilding it from a reference that moves.
+
 *And while drifting the appendages go QUIET.* Holding Course is the whole of their job during a
 drift; only the fuselage and jaws respond to the stick. Leaving the wings and engines responsive
 reads as the ship still flying while it is supposed to be sliding.

@@ -142,7 +142,49 @@ def main():
     print("   (40.00 = the hull's slew: the appendages stay on Course while the fuselage aims)")
 
     print()
-    print("5. a DRIFT must also open the clearance gap")
+    print("5. the COURSE FRAME must not twist as the hull aims away")
+    # With Course fixed and zero pilot input, a part held in the course frame must be STILL.
+    # LookRotation(Course, hull.up) pins the frame's roll to a swinging up-vector and drags the
+    # part around the Course axis; rebuilding from the hull's current nose leaks less but still
+    # leaks. The shipped frame is rotation-minimizing: each step is the shortest arc from its OWN
+    # previous forward onto Course, which adds no twist by construction.
+    def rotv(q, v):
+        r = qmul(qmul(q, (v[0], v[1], v[2], 0.0)), qinv(q))
+        return (r[0], r[1], r[2])
+
+    def from_to(a, b):
+        na = math.sqrt(sum(x * x for x in a)); nb = math.sqrt(sum(x * x for x in b))
+        a = [c / na for c in a]; b = [c / nb for c in b]
+        d = max(-1.0, min(1.0, sum(a[i] * b[i] for i in range(3))))
+        ax = [a[1]*b[2]-a[2]*b[1], a[2]*b[0]-a[0]*b[2], a[0]*b[1]-a[1]*b[0]]
+        if math.sqrt(sum(x * x for x in ax)) < 1e-9:
+            return (0.0, 0.0, 0.0, 1.0)
+        return axis_angle(ax, math.degrees(math.acos(d)))
+
+    COURSE = (0.0, 0.0, 1.0)
+    rmf = euler(15, 0, 25)
+    rmf = qmul(from_to(rotv(rmf, (0, 0, 1)), COURSE), rmf)
+    prev, total = rmf, 0.0
+    for yaw in range(5, 55, 5):
+        rmf = qmul(from_to(rotv(rmf, (0, 0, 1)), COURSE), rmf)
+        total += angle_between(rmf, prev)
+        prev = rmf
+        f = rotv(rmf, (0, 0, 1))
+        if abs(f[2] - 1.0) > 1e-6:
+            failures.append("the course frame left Course at yaw %d" % yaw)
+    # Tolerance is numerical, not physical: angle_between goes through acos, which is
+    # ill-conditioned for near-identical quaternions, so each step contributes ~1e-7 of noise.
+    # A thousandth of a degree over the whole sweep is four orders below what it replaces.
+    TWIST_TOL = 1e-3
+    if total > TWIST_TOL:
+        failures.append("the course frame twists %.6f deg with no input" % total)
+    print("   hull aims 0 -> 50 deg off a fixed Course, zero pilot input")
+    print("   twist accumulated by the shipped frame: %.6f deg (tolerance %.0e)%s"
+          % (total, TWIST_TOL, "" if total <= TWIST_TOL else "   <-- FAIL"))
+    print("   (LookRotation, what shipped before, accumulated 19.77 deg over the same sweep)")
+
+    print()
+    print("6. a DRIFT must also open the clearance gap")
     # wings forward, engines back, both along the ship's +z, rotation unchanged by the drift.
     wing_fwd, jet_back = 2.3, 2.3
     print("   wings  offset +%.1f z (forward)   engines offset %.1f z (backward)"
