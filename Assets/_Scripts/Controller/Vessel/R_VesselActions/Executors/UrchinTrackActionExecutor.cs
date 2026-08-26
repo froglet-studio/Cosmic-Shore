@@ -21,8 +21,8 @@ namespace CosmicShore.Gameplay
     /// omnicrystal ring, the joust ring and the Squirrel's tube — which is what buys the two
     /// properties this ability lives or dies on:
     ///
-    ///  1. <b>A FULL-SIZE collider from frame 0</b> (<see cref="PrismType.Boost"/>, waitTime 0 +
-    ///     <c>HoldColliderAtFullSize</c>). A ramp you cannot hit at grind speed is not a ramp,
+    ///  1. <b>A FULL-SIZE collider from frame 0</b> (<see cref="PrismType.Boost"/>, waitTime 0;
+    ///     transform final at stamp). A ramp you cannot hit at grind speed is not a ramp,
     ///     and the ordinary trail-prism spawn delay exists precisely to let a vessel get CLEAR
     ///     of the mass it lays — the opposite of what this ability wants.
     ///  2. <b>Trail membership stamped AFTER Initialize</b>. Pool reuse clears membership, so a

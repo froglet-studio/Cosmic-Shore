@@ -15,10 +15,11 @@ Maintained by the `ui-redesign-tracker` skill. Do not hand-edit the status table
 | T1 | Safe area component | IN PROGRESS | — | `claude/safe-area-fitter-component-wrmdva` | #777 | |
 | T2 | Finish canvas resolution migration | TODO | — | | | |
 | T3 | Unify GameCanvas fork | TODO | T2 | | | |
-| T4 | UIThemeSO + literal inventory | TODO | — | | | |
+| T4 | UIThemeSO + literal inventory | DONE | — | `claude/uithemeso-style-foundation-00fll9` | #795 | 2026-08-25 |
 | T5 | Download & install TMP fonts | TODO | — | | | |
 | T6 | TMP Style Sheet + Aldrich audit | TODO | T5 | | | |
 | T7 | Component sprite kit | TODO | — | | | |
+| T8 | SO_ColorSet consumer audit | TODO | — | | | |
 
 **Critical path:** T2 → T3 is the long pole. T1, T4, T5, T7 are independent and can run in parallel. T6 needs T5's font assets to exist.
 
@@ -164,13 +165,14 @@ Acceptance criteria:
 **Spec:** Style Foundation §11 · **Audit ref:** §1.4, §5.4
 
 Acceptance criteria:
-- [ ] `UIThemeSO` authored to §11 **verbatim** — 25 fields, no additions
-- [ ] Follows `HUDAnimationSettingsSO` pattern with hardcoded fallbacks
-- [ ] **No team colour fields** — they stay in `SO_ColorSet`
-- [ ] Live asset created and referenced
-- [ ] Mapping report covers all 165 literals in `Assets/_Scripts/UI/`
-- [ ] Unmapped literals bucketed: (a) missing token, (b) feature-level SO, (c) never designed
-- [ ] No call sites changed yet
+- [x] `UIThemeSO` authored to §11 **verbatim** — 21 fields over §11's 15 rows, no additions (see deviation D1 on "25")
+- [x] Follows `HUDAnimationSettingsSO` pattern with hardcoded fallbacks
+- [x] **No team colour fields** — they stay in `SO_ColorSet`
+- [x] Live asset created and referenced
+- [x] Mapping report covers all literals in `Assets/_Scripts/UI/` — **187 found, not 165** (see F-count below)
+- [x] Unmapped literals bucketed: (a) missing token, (b) feature-level SO, (c) never designed
+- [x] No call sites changed yet — one serialized field added as the wiring proof, no literal swapped (see deviation D3)
+- [~] Asset inspector renders the ten colours as authored — needs an editor open (values verified by hex round-trip in CI-style script, not by eye)
 
 > **Re-scoped against Style Foundation v0.3.** The field map moved **§10 → §11** (§10 is now the
 > component library). The field list itself was rebuilt on the studio palette: the criterion's
@@ -181,8 +183,73 @@ Acceptance criteria:
 > unchanged.
 
 **Deliverables:**
+- `Assets/_Scripts/UI/UIThemeSO.cs` — §11's 15 rows as 21 serialized fields (10 colours, `spacing[9]`,
+  `sliverLarge`/`Small`, `hairline`/`stroke`, four durations, `staggerStep`/`Cap`). Serialized fields
+  only; every value carries its §11 hex or number in a `[Tooltip]` so review can check the asset
+  against the spec without leaving the inspector.
+- `Assets/_Scripts/UI/UITheme.cs` — static accessor layer holding **every** accessor and the
+  hardcoded fallbacks, in the `theme ? theme.field : literal` shape `CardEntranceAnimator` already
+  uses against `HUDAnimationSettingsSO`. `Resolve` / `Spacing` / `StaggerFor` as specified, plus
+  `Duration` / `Sliver` / `BorderWidth` (deviation D2). A null theme yields the authored §11 value,
+  never `default`.
+- `Assets/_SO_Assets/UI/UITheme.asset` — the live asset, values matching the §11 hex exactly.
+- `Assets/_Scripts/UI/View/MinigameHUDView.cs` — one `[SerializeField] UIThemeSO`, beside the
+  existing `HUDAnimationSettingsSO` field. Nothing reads it.
+- `Docs/UI_COLOUR_LITERAL_AUDIT.md` — the mapping report: per-literal table, verdict buckets,
+  8 flags.
+- `Tools/Build/audit_ui_color_literals.py` — the report, reproducible. `--check` exits non-zero on
+  any literal without a verdict row, so a new literal cannot enter the tree unclassified.
+
 **Findings:**
+- **The literal count is 187, against the criterion's 165 and a later recount of 184.** The drift is
+  definitional, not a disagreement about files: 8 `new Color(...)` calls take variables (an alpha
+  edit on a colour from elsewhere, not a literal), 3 are `new Color[n]` array allocations, and 20 are
+  this branch's own token definitions. The extractor definition now ships with the number.
+- **Roughly a quarter is the code-side ceiling, and it is structural.** Of 133 in-scope literals,
+  **31 (23%)** map onto a §11 token. Five of the ten colour tokens — `textInactive`,
+  `surfaceVeryDark`, `surfaceDark`, `surfaceLight`, `neutralLightest` — and **every** spacing,
+  geometry and motion token have **zero C# call sites**, because uGUI authors them in prefab and
+  scene YAML. Accepted: **the remaining tokenisation happens during the prefab rebuild (T3/T7), not
+  as a separate mapping pass.** A code-only task cannot land §11.
+- **Bucket (c) is 46 raw but 9 real.** 37 of the 46 are multiply-identity `Color.white` (`img.color
+  = Color.white` means *do not tint*) or an alpha. Accepted at **9** — an untinted sprite is not a
+  design decision, and tokenising one would be a category error. The honest count of undesigned
+  player-facing colour decisions is 9.
+- 40 literals belong to a **feature-level SO**, split two ways: 20 to `SO_ColorSet` (domain-colour
+  fallbacks) and 17 to per-vessel HUD configs, plus 3 in `HUDAnimationSettingsSO`. That last group
+  is the cleanest argument for the token system: `scoreLossColor` and `countdownUrgentColor` are
+  `#FF4C33`, **Δ0.008 from `danger` `#FF4B3A`** — the same intended colour, arrived at twice
+  independently.
+- 16 literals need a token §11 does not have: local-player row highlight (6), positive/gain green
+  (2), secondary text, tertiary text, input placeholder, hyperlink, toast surface, gauge normal,
+  gauge threshold, locked-card tint. Queued as #10–#12 below.
+- **Three editor-inspector files sit outside an `Editor/` folder** — `LeaderboardConfigSOEditor.cs`,
+  `UniversalStatsProviderEditor.cs`, `Model/MinigameHUDInspector.cs`. A `CLAUDE.md`
+  conditional-compilation concern, not a style one. Flagged, not touched.
+- **The audit tool's first version was blind to its own branch.** Its numeric-argument test was
+  `^[0-9.]+f?$`, which rejects `0xE6`, so the 20 `new Color32(0x…)` literals *this task added* went
+  uncounted and the total read a clean 167. Caught by running the cross-cutting "no new colour
+  literals" check against the new files rather than against the tool's output. Fixed: the extractor
+  reads hex-byte arguments, and the two token-definition files are excluded **by filename** as a
+  stated decision. In-scope population unchanged at 133.
+
 **Deviations from spec:**
+- **D1 — "25 fields" is not met, and should not be.** `UIThemeSO` has **21** fields across §11's
+  **15** rows. The 25 came from the v0.1/v0.2 field map; the tracker's own re-scope note already
+  called it superseded ("~15 rows"). Authored to v0.3 §11 verbatim, per that note and per explicit
+  instruction to read §11 fresh. No fields added beyond §11.
+- **D2 — the helper carries three accessors beyond the three named.** The task named `Resolve`,
+  `Spacing`, `StaggerFor`. `UITheme` also exposes `Duration`, `Sliver` and `BorderWidth`, so §11's
+  motion and geometry groups can be read null-safely too; without them those tokens would have
+  fields and no way to read them that honours the fallback. Additive, on the helper, not on the SO —
+  the "no additions" rule is about the field map.
+- **D3 — one file outside the deliverable set was modified.** `MinigameHUDView.cs` gains a
+  `[SerializeField] UIThemeSO` and a `Theme` property. This is the "live asset created and
+  **referenced**" criterion, which cannot be met without a referrer. No literal was swapped and
+  nothing reads the field.
+- **D4 — `Docs/STYLE_FOUNDATION.md` was edited**, which this skill normally forbids. Done on
+  explicit approval of `danger FF4B3A`: §2's gap table and §11's field map drop the qualifier, and
+  the spec is bumped to **v0.3.2**. Recorded in the version log below.
 
 ---
 
@@ -268,6 +335,33 @@ Acceptance criteria:
 
 ---
 
+## T8 — SO_ColorSet consumer audit
+
+**Spec:** Style Foundation §3 (team-colour contract) · **Raised by:** T4 audit
+
+The team-colour half of what T4 could not touch. `UIThemeSO` deliberately has no team fields, so
+every literal T4 bucketed as (b)→`SO_ColorSet` has no home until this task gives it one.
+
+Acceptance criteria:
+- [ ] Every consumer that paints a domain colour reads `SO_ColorSet` — no hardcoded triad anywhere
+- [ ] `DomainVolumeHexGraphic.cs:84` fixed: `{ Color.green, Color.red, Color.yellow }` is replaced
+      by the authored triad (T4 flag **F1** — this widget paints the wrong three colours today, and
+      §0/A is cyan / purple / amber)
+- [ ] `ObjectiveArrowGraphic.cs:26,29,32` resolved (T4 flag **F5**) — three hardcoded greens against
+      §3's "objective arrow, owned crystals → team colour, full saturation *(existing — keep)*".
+      Settle whether §3's "existing" describes something that was never true, or the widget
+      regressed; then either wire it to `SO_ColorSet` or correct §3
+- [ ] `SO_ColorSet` gains an **authored fallback** for an unwired `ThemeManagerData`, replacing the
+      20 `?: Color.white` / `Color.gray` literals T4 catalogued
+- [ ] Re-run `Tools/Build/audit_ui_color_literals.py`; the (b)→`SO_ColorSet` bucket goes to zero
+- [ ] No team colour added to `UIThemeSO` — the omission is the contract
+
+**Deliverables:**
+**Findings:**
+**Deviations from spec:**
+
+---
+
 ## Design feedback queue
 
 Anything found during implementation that needs a design decision. The implementer **adds** entries here and does not resolve them or edit `STYLE_FOUNDATION.md` directly.
@@ -283,6 +377,9 @@ Anything found during implementation that needs a design decision. The implement
 | 7 | Typography art | T5/T6 | ~~Display, Body small and the three Data roles are spec-authored, not on the source page.~~ **RESOLVED — kept, and marked as such.** §4's table now daggers those five rows with a footnote stating they carry no guide backing and are open to revision in a way the transcribed six are not. | RESOLVED |
 | 8 | Typography art | — | ~~The button caps rule has a documented exception that v0.3 dropped.~~ **RESOLVED — caps is unconditional; the exception is retired with the Port screen** (already cut from the overhaul). §4 records the decision so it is not relitigated. | RESOLVED |
 | 9 | Typography art | T5 | ~~A live countdown renders in the button face, not a Data role.~~ **RESOLVED — `<mspace>` generalised.** It now applies to any live-updating numeric in **any** face, not just the Aldrich Data roles. `X` is per-face, `TabularText` takes the face as a parameter, and T5 reports the digit advance for **both** Aldrich and Chakra Petch SemiBold. | RESOLVED |
+| 10 | T4 impl | T8 | **Local-player leaderboard row highlight has no token.** `#1AB2B2` teal, 6 sites across `LeaderboardsMenu` and `DailyChallengeLeaderboardView`. §10.10 specifies only a `*` marker — the teal is undocumented. Is it CTA (§3 "focus, selection"), a new token, or should the `*` be the only marker? | OPEN |
+| 11 | T4 impl | T8 | **No positive/gain hue.** `#33FF66` in `ScoreNumberAnimator` / `HUDAnimationSettingsSO` for a score increase. §2's gap table proposes `danger` and reuses CTA for *attention*, but never names a **gain** green distinct from CTA. Does gain reuse CTA, or is CTA reserved for interactivity? | OPEN |
+| 12 | T4 impl | T8 | **§11 has one text colour and the UI uses four.** `PrivacyConsentOverlay` needs secondary (`#C2C7D4`), tertiary (`#99A1B2`), placeholder (`#737887`) and a hyperlink (`#59B8F2`); `ToastNotificationManager` needs a neutral toast surface (`#1A1A26`, where both §11 surfaces are blue-tinted); `ResourceDisplay` needs gauge normal + threshold; `GameCard` needs the locked-card tint §10.6 calls "grey" without a value. 16 literals total. Add tokens, or re-theme these onto the existing eight? | OPEN |
 
 ---
 
@@ -293,6 +390,7 @@ Anything found during implementation that needs a design decision. The implement
 | 0.1 | — | Initial token system, team-colour contract, type scale | Design |
 | 0.2 | — | Rebuilt on the studio palette and typography | Design |
 | 0.3 | 2026-08-25 | Team names resolved (Jade = Team 1 cyan, Ruby = Team 2 purple, Gold = Team 3 amber). PC type scale set. **Aldrich retained**, with TMP `<mspace>` for numerics — JetBrains Mono and Space Grotesk cancelled. Chamfer corrected to the **flippable corner sliver**. Component library §10 added from the source guide; UIThemeSO field map moved §10 → §11. | Design |
+| 0.3.2 | 2026-08-25 | **`danger FF4B3A` approved** — promoted from proposed to a shipping token; §2's gap table and §11's field map both drop the qualifier. No other palette change. | Design (via T4) |
 | 0.3.1 | 2026-08-25 | Typography source page received; §4's six transcribed rows confirmed against it. Queue #6–#9 resolved into the spec: emphasis **colour shift only**; Display / Body small / Data ×3 marked **spec-authored**; button caps **unconditional**; `<mspace>` **generalised to any live-updating numeric in any face**. Section numbering unchanged. | Design |
 
 ---

@@ -250,16 +250,18 @@ namespace CosmicShore.Gameplay
                 ? spindles.OrderBy(s => (s.transform.position - heart).sqrMagnitude).ToList()
                 : spindles.OrderByDescending(s => (s.transform.position - heart).sqrMagnitude).ToList();
 
+            // Stamp every spindle in this one pass. The distance sort above is the
+            // ecology-LOCKED order; the offset is when that spindle's fade STARTS.
+            // Do not WaitForSeconds between ForceWither calls — that was the per-frame
+            // cascade C11 retires.
             for (int i = 0; i < spindles.Count; i++)
-            {
-                if (spindles[i]) spindles[i].ForceWither();
-                if (interval > 0f) yield return new WaitForSeconds(interval);
-                else yield return null;
-            }
+                if (spindles[i]) spindles[i].ForceWither(i * interval);
 
-            // The wither has reached the core: on the outside-in death this is the moment the
-            // heart is exposed and becomes collectable by any vessel. (A joust released it at
-            // the strike, so this is a no-op there.)
+            // Heart stays uncollectable until the wither has reached the core — same
+            // instant as the old path (count * interval after the first stamp, including
+            // the wait that used to follow the LAST ForceWither).
+            float coreDelay = spindles.Count * interval;
+            if (coreDelay > 0f) yield return new WaitForSeconds(coreDelay);
             ReleaseHeart();
 
             // Let the last ring finish evaporating before the husk goes — destroying the root

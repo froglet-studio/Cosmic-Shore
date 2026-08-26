@@ -368,6 +368,53 @@ its GameObject lists it in `m_Component`.
   — intra-face deviation (5.21°) against the shallowest genuine dihedral (57.5°) leaves a
   50° window, and picking from inside a measured gap is not the same act as guessing 1°.
 
+- **Exactly one `.meta` OWNS a guid — resolve with `grep -c "^guid: $g"` per candidate, NEVER
+  `grep -rl … | head -1`.** `head -1` picks by filename order, which has nothing to do with
+  ownership, and a model file's `.meta` is a completely ordinary place for another model's
+  guid to appear: an FBX `.meta` can carry an `externalObjects` MATERIAL REMAP into a
+  different FBX. That produced a placeholder hull as the confident answer for "which mesh does
+  this vessel render", and two rounds of geometry were measured against a ship a fifth the
+  real one's height. Then cross-check the winner against something the PREFAB itself authored
+  — a BoxCollider reproducing the mesh's extents to four decimals turns a resolution into a
+  fact.
+- **Unity's FBX sub-asset fileIDs are NOT derivable offline — reference model sub-objects by
+  NAME at runtime instead.** When a model's `.meta` has `internalIDToNameTable: []` (the
+  normal case), the ids Unity assigns to bones/meshes inside the FBX exist nowhere you can
+  read, and they are not a plain hash of the name (MD4 over name/class, both byte orders and
+  offsets, tested against seven known meshes: zero hits). So you cannot hand-author a prefab
+  reference to a bone inside a nested model prefab. Do not burn the session
+  reverse-engineering it: add a serialized NAME and resolve it in `Awake`, which also survives
+  a re-export — the ids do not. This is the same choice the project's own `ResolvePart` makes.
+- **A nested prefab instance is reachable TWO ways, and needs both when its parent is PLAIN.**
+  `m_TransformParent` in the instance's modification block always, PLUS an entry in the parent
+  Transform's `m_Children` **iff that parent is a plain (non-stripped) Transform**. The
+  exception that looks like a counter-example: an instance parented to a STRIPPED Transform
+  cannot carry the entry, because a stripped document is a reference stub with no children
+  list. Generalising "no entry needed" from that one case shipped eight prefab instances that
+  were in the file and not in the hierarchy. Audit it as a predicate over the whole family,
+  not per-instance.
+- **To learn what a bone actually drives, read the SKIN WEIGHTS — not the bone's position, and
+  not its name.** A `Deformer` of subtype `Cluster` carries `Indexes` + `Weights` and links to
+  one bone `Model`; the indices name exactly the vertices it moves. Ranking every bone by the
+  centroid of the geometry it skins describes a whole model with no interpretation, and it is
+  decisive where names and geometry disagree — four passes of guessing which structure was an
+  engine were settled in one query that showed those vertices belonged to `b_ShipGun1`.
+  Corollary: an artist's bone NAME is a hypothesis (bones named `b_Tail*` drove the blades at
+  the model's opposite end).
+- **Validate a model→world axis mapping against an AUTHORED anchor before you measure anything
+  with it.** Unity's Z-up→Y-up conversion is `(−x, z, −y)`, but a mis-signed axis still
+  produces a plausible-looking hull, and every measurement after it is confidently wrong. The
+  anchor is something a human placed BY HAND in the prefab against the same geometry — a
+  muzzle transform landing on the gun bone's barrel end on all three axes, a collider
+  reproducing a mesh's extents. Prefer two independent anchors; one coincidence is not a
+  proof.
+- **Render the geometry and LOOK at it — a wireframe costs a minute and settles what an hour
+  of binning statistics will not.** Vertex histograms, bounding boxes and "rearmost point"
+  queries described the wrong structure on two different models in one session; a rear view
+  plus a stack of thin slices along the view axis showed the real openings immediately. Both
+  models were placed correctly within one pass of rendering them, and wrongly in every pass
+  before it.
+
 ### Technique: REMOVING a component (or a whole GameObject) from a prefab
 
 Deleting the `MonoBehaviour` document is the part everyone remembers and the smallest
@@ -398,6 +445,168 @@ reports**. Unity prefabs carry pre-existing dangling references — `Dolphin.pre
 a `view: {fileID: 257326519381942953}` pointing at nothing since before this session — and
 a checker run only on your output reports that as damage you caused. The signal you want is
 "document count fell by exactly the N I removed, and the dangling set is **unchanged**".
+
+### Technique: ADDING a nested prefab instance (and referencing a component inside it)
+
+The read side of nested instances is covered above (§3's two-ways rule, §4.9). Writing one is
+**three documents plus one list edit**, and the third is the one nobody expects:
+
+1. `--- !u!1001 &<newId>` **`PrefabInstance`** — `m_Modification.m_TransformParent` pointing at
+   the host Transform that will own it, an `m_Modifications` list (each entry a `target:
+   {fileID: <SOURCE object id>, guid: <source prefab guid>, type: 3}` + `propertyPath` + `value`
+   + `objectReference`), the four empty `m_Removed*`/`m_Added*` lists, and
+   `m_SourcePrefab: {fileID: 100100000, guid: <source prefab guid>, type: 3}`.
+   Always author `m_Name` plus the full local TRS (`m_LocalPosition.x/y/z`,
+   `m_LocalRotation.x/y/z/w`, `m_LocalEulerAnglesHint.x/y/z`) — Unity writes all of them and a
+   partial set reads as an instance that only half-overrides its pose.
+2. `--- !u!4 &<newId2> stripped` **Transform** stub —
+   `m_CorrespondingSourceObject: {fileID: <source transform id>, guid: <G>, type: 3}` +
+   `m_PrefabInstance: {fileID: <newId>}` + `m_PrefabAsset: {fileID: 0}`.
+3. **One `stripped` stub PER COMPONENT you need to reference.** This is the step that is easy to
+   miss, because nothing fails until a serialized field silently reads `None`. A
+   `[SerializeField] TrailRenderer tail;` on the HOST cannot point into the nested instance
+   without a `--- !u!96 &<newId3> stripped` / `TrailRenderer:` document of exactly the same
+   shape as (2). The class id must match the component (`!u!4` Transform, `!u!96` TrailRenderer,
+   `!u!114` MonoBehaviour, `!u!137` SkinnedMeshRenderer, …).
+4. The host Transform's `m_Children:` gains an entry for (2) — see §3's two-ways rule.
+
+Mint the new fileIDs **deterministically and collision-checked** against the ids already in the
+file (hash a stable key, reject on collision, re-salt) so re-running your script is idempotent and
+a second nested instance in the same file cannot land on the first one's id.
+
+Prefer this over hand-authoring a copy of the source prefab's contents: a copy severs
+propagation, which is the mistake `Docs/GAMECANVAS.md` exists to record.
+
+### Technique: deleting objects from a SHARED prefab — prove it project-wide first
+
+Stripping dead objects out of a prefab that a dozen other prefabs instance is safe **iff no
+instance anywhere references one of the objects you are removing** — an instance can carry a
+`m_Modifications` entry, an `m_RemovedComponents`/`m_RemovedGameObjects` entry, or a plain
+serialized reference targeting any source object by id.
+
+The query is not a name grep. Sweep every `.prefab`/`.unity` for references INTO the source
+prefab by guid and check each target id against the set you are keeping:
+
+```python
+# NOTE the \s*\n?\s* — Unity wraps the guid onto the NEXT line at ~80 columns, so a
+# single-line grep for 'fileID: N, guid: G' misses roughly half the real references.
+re.finditer(r'fileID: (-?\d+),\s*\n?\s*guid: ' + SOURCE_GUID, text)
+```
+
+A clean result is stronger than "I grepped the names": it enumerates every object the project
+actually depends on, so the survivors are proven rather than assumed. On the run this was written
+for, 13 files referenced exactly FOUR of the source prefab's 28 objects (plus the
+`100100000` prefab-asset id, which is not an object) — the other 24 were provably unused and
+went.
+
+**And re-open the "it costs nothing" claim.** Dead-but-inactive objects in a shared prefab are
+genuinely free while their only consumers are a handful of scene-level instances, and that is
+usually how the "leave them, deleting is a separate change" note got written. Adding a **POOLED**
+consumer voids it: `VesselTail.prefab`'s six disabled `ParticleSystem`s were free across 12
+vessels and would have been ~480 live components across a 20-deep projectile pool per Sparrow.
+A cost claim about an asset is scoped to its current consumers; pooling a new one re-opens it.
+
+### Trap: a PREFAB ASSET does not tell you what its INSTANCE wires
+
+Reading a prefab asset to answer "what does this thing contain / reference / bind?" is fast,
+feels authoritative, and is the wrong source whenever something *instances* it. A prefab instance
+can do two things the asset cannot show you:
+
+- **Add GameObjects the asset has never heard of** — they live in the INSTANCING file, parented to
+  a *stripped* transform whose `m_CorrespondingSourceObject` points back at the asset.
+- **Populate serialized fields the asset leaves empty**, as `m_Modifications` entries.
+- **Override serialized fields the asset DOES author** — the same `m_Modifications` mechanism, but
+  this one is worse, because the asset shows a plausible value that is simply never used.
+
+So a component that looks unwired in the asset can be fully wired in every real use of it. This
+shipped a wrong claim twice on one branch: a HUD asset whose view wired one field was documented
+as having three dead root branches, while the *vessel* prefab instancing it added three more
+branches and populated six live readout fields. Resolve an instance's added children by walking
+`m_Father` until you hit a stripped transform, then map that transform's
+`m_CorrespondingSourceObject` back into the asset to learn its name:
+
+```python
+# in the INSTANCING file: parent chain ends at a stripped rect
+src = re.search(r'm_CorrespondingSourceObject: \{fileID: (\d+), guid: (\w+)', stripped_body)
+# then look up src.group(1) in the ASSET to get the real parent's name
+```
+
+**The override direction has its own tell: the edit you make has NO effect and NOTHING errors.**
+A vessel prefab overrode `m_Sprite` on one HUD icon; editing that sprite in the HUD variant changed
+nothing on screen, and there is no warning anywhere because both values are valid. Two habits close
+it: when an asset edit does not show up in play, dump the INSTANCING file's `m_Modifications`
+filtered to the component's fileID *before* re-examining the asset — and note that a lone override
+among otherwise-unoverridden siblings (one of four icons) is the signature of a stray edit made on
+the instance, so **delete it** rather than repointing it, or you keep two authorities for one value.
+
+**Parse `m_Modifications` as RAW LINES, never with a one-line regex.** The entry wraps:
+
+```yaml
+    - target: {fileID: 8778855275387912087, guid: c1572db06ad4244469ad3f25d86940b8,
+        type: 3}
+      propertyPath: m_Sprite
+      value: 
+      objectReference: {fileID: 21300000, guid: 0cc6e2a2018ce2d43a02078b739adf9b,
+        type: 3}
+```
+
+`- target: {...}` and `objectReference: {...}` each break across two lines, so
+`r'- target: \{fileID: (\d+), guid: (\w+), type: \d\}\s*\n\s*propertyPath: ...'` matches **zero**
+entries and a 166-override instance reads as clean. Walk the lines instead — index every
+`propertyPath:` line, then scan backwards to the nearest `- target:` and forwards for the value and
+`objectReference` — and sanity-check the parse by asserting your count equals
+`body.count('propertyPath:')` before you trust a negative result. *A zero-match result from a
+hand-written Unity-YAML regex is a claim about your regex, not about the file.*
+
+Same family as the `m_Name`-override trap below and the "field initializer is not the shipped
+value" rule: **an assertion about what an asset contains has to be read from whoever USES it.**
+
+### Trap: a multi-document regex silently spans documents and returns a plausible wrong answer
+
+Unity YAML is a stream of `--- !u!<type> &<id>` documents. A regex like
+
+```python
+re.search(r'--- !u!224 &\d+\n(.*?m_Father: \{fileID: 0\}.*?)', text, re.S)   # WRONG
+```
+
+does not "find the root transform" — with `re.S` the `.*?` crosses document boundaries, so it
+happily pairs the FIRST `224` header with some LATER document's `m_Father: 0`. It does not throw;
+it returns a well-formed match with the wrong body, and every number you read out of it is wrong.
+On the run this was written for it reported a HUD root as centre-anchored 100×100 when it is
+actually a full-canvas stretch — and the wrong number nearly went into a doc as a correction to a
+claim that had been right all along.
+
+**Always split into documents first, then query WITHIN one:**
+
+```python
+docs = {m.group(2): (m.group(1), m.group(3)) for m in
+        re.finditer(r'--- !u!(\d+) &(\d+)(?: stripped)?\n(.*?)(?=\n--- !u!|\Z)', text, re.S)}
+roots = [k for k,(t,b) in docs.items() if t=='224' and re.search(r'^  m_Father: \{fileID: 0\}', b, re.M)]
+```
+
+Note the `^  ` and `re.M` on the inner query too — without them a nested `m_Father` inside a
+modification block matches. **The tell that you have this bug is disagreement between two of your
+own measurements**; when that happens, do not pick the one you like, rebuild the parse.
+
+### Trap: a `TrailRenderer` on a POOLED object draws a streak across the arena
+
+Two failures that do not exist on a scene-level object and both look like a rendering bug:
+
+- **Reuse.** A `TrailRenderer` records points in WORLD space, so a pooled object reissued
+  somewhere else draws one straight ribbon from wherever it died to wherever it respawned.
+  `Clear()` at the point the object is positioned for its new life — not in `OnEnable`, which
+  can run before the spawner has placed it.
+- **Retirement.** Returning the object to the pool deactivates it and the whole live ribbon
+  vanishes in one frame. A `TrailRenderer`'s points age out on their own, so the fix is not an
+  animation: detach it to world space, set `emitting = false`, and reclaim it either when its
+  own `time` elapses or on the next launch, whichever comes first — a pool cycles faster than a
+  multi-second ribbon, so both paths are real.
+
+Third, cheaper trap: **`TrailRenderer` IS a `Renderer`**, so any `GetComponentsInChildren<Renderer>()`
+used as a semantic test ("does this transform draw a model?") silently changes answer the day
+somebody adds a trail. Exclude it explicitly, the same way such sweeps already exclude a
+shell/overlay child.
+
 
 ## 4. Technique: C# verification — get a real compiler first
 
@@ -774,6 +983,36 @@ Two things this buys beyond a compile:
 Use it for the pure/static core of a change (a predicate, a mask, a formula). It still cannot see
 name resolution or whole-class consistency — see the two traps below.
 
+**Slice by METHOD SIGNATURE + brace matching, not by markers, when the change is a handful of
+methods inside a huge file.** `START_MARKER`/`END_MARKER` needs stable text you are not editing,
+which is exactly what a working session keeps moving. A ~30-line extractor that takes a LIST of
+signature regexes and walks braces from each match to its closing one is immune to that: the
+harness re-derives itself from the shipped file after every edit, so `extract → generate → compile`
+becomes one command you re-run between patch rounds. One session type-checked five edited bodies
+out of a 2,400-line `NetworkBehaviour` this way across six rounds of edits, in seconds each.
+
+```python
+def extract(sig_regex):                      # find the signature, then brace-match to the end
+    for i, l in enumerate(lines):
+        if re.search(sig_regex, l):
+            depth, started, out = 0, False, []
+            for j in range(i, len(lines)):
+                out.append(lines[j])
+                depth += lines[j].count('{') - lines[j].count('}')
+                started |= '{' in lines[j]
+                if started and depth == 0: return "\n".join(out)
+    sys.exit("not found: " + sig_regex)      # HARD FAIL — see below
+```
+
+**The extractor must HARD-FAIL on a signature it cannot find, and that line is the whole gate.**
+A signature list silently stops covering a method the moment you rename or delete one — and the
+harness then compiles clean, reports `errors: 0`, and is proving nothing. This is gate erosion by
+your own refactor: the failure looks exactly like success. `sys.exit` on a miss makes the harness
+break loudly the moment its subject moves, which is the only way you find out you renamed
+something. Pair it with the §4 rule (inject a defect, confirm it fires, restore, `cmp`) **after
+every restructuring pass**, not once at the start — the run that matters is the one against the
+code you are about to commit.
+
 **For an `#if UNITY_EDITOR` TEST file, skip the extraction — compile the WHOLE file, unmodified,
 and drive it by reflection.** A test file's Unity surface is usually small and entirely stubbable
 (`Vector3`, `Mathf`, `Mesh`'s vertex/UV accessors, `Object.DestroyImmediate`), and NUnit is ~40
@@ -794,6 +1033,25 @@ everything inside every method the suite covers. Two mechanics that cost a cycle
 And prove the harness the way the table above was produced — inject each defect class you care
 about, confirm it fires, restore, `cmp`. A run that only ever passes is indistinguishable from a
 run that cannot fail.
+
+**The most common way that goes wrong is not a weak assertion — it is a file the build never
+compiled.** A harness `.csproj` that enumerates its inputs explicitly
+(`<EnableDefaultCompileItems>false</EnableDefaultCompileItems>` plus a literal
+`<Compile Include="..."/>` list — which is the right shape, because it keeps the harness pinned to
+the files you meant) will silently ignore a new `.cs` you drop into its directory. You add a probe,
+run the build, read **`Build succeeded`**, and conclude the code is good; nothing was checked. The
+negative control is what separates those two states, and it takes one command:
+
+```sh
+sed -i 's/<the call you probe>/&; obj.NoSuchMember();/' Probe.cs
+dotnet build -v q --nologo | grep -E 'error|Build'      # MUST report CS1061
+git checkout -- Probe.cs || mv Probe.bak Probe.cs       # restore, rebuild, expect success
+```
+
+If the deliberate error does not fire, the file is not in the build — add it to the `<Compile>`
+list and start over. Treat "I added a file to the harness" as requiring this check every time; the
+failure mode is a green build that proves nothing, which is the exact thing a harness exists to
+rule out.
 ### Technique: when you WIDEN a pure function, pin the old behaviour as a whole-domain test
 
 Extending a formula — a two-stage curve becoming four, a flag gaining a mode, a cap gaining a

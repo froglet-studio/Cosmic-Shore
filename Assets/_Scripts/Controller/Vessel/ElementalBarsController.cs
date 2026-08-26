@@ -64,6 +64,25 @@ namespace CosmicShore.Gameplay
             // canvas. The view self-populates its four default bindings and the shared
             // ElementalBarsConfig stamps the fleet-standard placement, so no per-vessel
             // wiring is needed. Vessels with an authored view (Squirrel, Sparrow) keep it.
+            // Adopt a view already present on this vessel's HUD before making one; creating a
+            // second would draw the fleet-standard row on top of it with nothing to say why.
+            //
+            // The ability lockup is asked FIRST and is BUILT here rather than waited on: it docks
+            // the flowers into the four ability cards, and its own Awake has not necessarily run
+            // (a HUD that starts inactive doesn't Awake until it is shown, which is after this).
+            // Build() is idempotent, so asking early costs nothing and removes the ordering
+            // dependence entirely.
+            if (!elementBars)
+            {
+                var lockups = GetComponentInChildren<AbilityLockupView>(true);
+                if (lockups)
+                {
+                    lockups.Build();
+                    elementBars = lockups.ElementBars;
+                }
+            }
+            if (!elementBars)
+                elementBars = GetComponentInChildren<ElementalBarsView>(true);
             if (!elementBars)
                 elementBars = CreateDefaultElementBars();
             if (!elementBars) return;

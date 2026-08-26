@@ -155,6 +155,20 @@ it off — but because Scramble's court *is* the nucleus, the two meet:
 
 ## Known limitations / follow-ups
 
+- **A studding (nucleus-seeded) ball is no longer a pinned kinematic object, and the change is
+  UNVERIFIED IN THE EDITOR.** `n_Embedded` is now bookkeeping only — the ball is an ordinary live
+  body and reports its own departure (`AstroLeagueBall.TickNucleusDepartureServer`); see
+  SCARAB.md §4.6 for why the pin was wrong in both directions. Three things want a playtest:
+  a **dash near** a seeded ball should now fire it (the cavitation blast could not move a
+  kinematic body at all), a **hull strike** on one should feel like striking any resting ball
+  (it now runs the same elastic bounce, arcade pop and torque, so seeded balls hit noticeably
+  livelier than before), and a ship **parked on** one should push it aside once rather than
+  making it jitter.
+- **`rb.sleepThreshold = 0` is insurance, not a diagnosis.** The proven failure was the kinematic
+  body; the sleeping-actor-vs-growing-static-trigger failure is reasoned, not measured. If a blast
+  is ever seen missing a ball that had come to REST, test that first — and the next move is to
+  find balls actively off `AstroLeagueBall.Live` (the way `ScarabSwitch` already does) rather than
+  through a physics trigger at all.
 - **The cell overload is POLLED, not evented** (`AstroLeagueBall.cellPollSeconds` 0.2). A ball
   entering a cell is noticed within 200 ms, so four balls arriving inside one poll window all
   detonate on the same tick — which is the intended outcome anyway. There is no cell-entry

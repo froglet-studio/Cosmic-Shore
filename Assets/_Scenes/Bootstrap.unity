@@ -166,6 +166,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   waitBeforeLoading: 0.5
+  menuReturnSettleSeconds: 1.5
   _onClickToMainMenuButton: {fileID: 11400000, guid: 7a1182f4329e5d645ad474c11a633a3e,
     type: 2}
   _onActiveSessionEnd: {fileID: 11400000, guid: e7886dabf1acf704786153773a2d241a,
@@ -373,7 +374,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4d3275ef5da29b646a52d80c5b57244e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  cellData: {fileID: 11400000, guid: 8d4e8398eedc76c4dadb8604f89b9e1b, type: 2}
   _sceneNameList: {fileID: 11400000, guid: 1134fe3d3d53eb5478bfadbe98dc1004, type: 2}
   _themeManagerData: {fileID: 11400000, guid: d45a23e6bd2da304988606fba6c97628, type: 2}
   _onReturnToMainMenu: {fileID: 11400000, guid: ee5d65f9d27de024590573c0a92ca4d7,
@@ -4427,7 +4427,8 @@ PrefabInstance:
       propertyPath: elementChargeReceivedEvent.Guid.Data4
       value: -1867009068
       objectReference: {fileID: 0}
-    m_RemovedComponents: []
+    m_RemovedComponents:
+    - {fileID: 1452114705, guid: 9426870f37f271d4daf180ef32c4d10f, type: 3}
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
     m_AddedComponents:
@@ -4439,6 +4440,10 @@ PrefabInstance:
         type: 3}
       insertIndex: -1
       addedObject: {fileID: 3100000008}
+    - targetCorrespondingSourceObject: {fileID: 4302996649166915022, guid: 9426870f37f271d4daf180ef32c4d10f,
+        type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 3100000013}
   m_SourcePrefab: {fileID: 100100000, guid: 9426870f37f271d4daf180ef32c4d10f, type: 3}
 --- !u!1 &3100000002 stripped
 GameObject:
@@ -4478,6 +4483,25 @@ AudioListener:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 3100000002}
   m_Enabled: 1
+--- !u!114 &3100000013
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3100000002}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: eba9bd979e5754eacabe5a335beee262, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CosmicShore.AudioManager
+  music:
+    Guid:
+      Data1: 64921257
+      Data2: 1074436945
+      Data3: -863253584
+      Data4: -1759076078
+    Path: event:/Music/Music
 --- !u!1001 &4400000001
 PrefabInstance:
   m_ObjectHideFlags: 0

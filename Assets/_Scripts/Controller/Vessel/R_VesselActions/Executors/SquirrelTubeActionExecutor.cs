@@ -20,7 +20,7 @@ namespace CosmicShore.Gameplay
     /// Every ring is laid through the shared <see cref="BoostRingBuilder"/> - the same primitive
     /// behind the omnicrystal ring and the joust ring - so the prisms are POOLED
     /// (<see cref="PrismType.Boost"/>: fast bloom, waitTime 0) and carry a FULL-SIZE collider from
-    /// frame 0 (<see cref="Prism.HoldColliderAtFullSize"/>): the skimmer collides with the wall
+    /// frame 0 (transform final at stamp under the clock law): the skimmer collides with the wall
     /// deterministically at any speed, while a vessel flying the centre usually never touches it.
     /// Rings are laid a few per frame and the prisms returned to the pool on teardown - never
     /// Instantiate/Destroy. Each blooms in, registers with the spatial index, and is removed only by

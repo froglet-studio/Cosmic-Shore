@@ -133,7 +133,9 @@ namespace CosmicShore.Utility
             PrismFactory.EffectPressureScalingDisabled = true;
             _throttlesLifted = true;
             Debug.Log("[PrismGridExplosionHarness] Safety throttles LIFTED for this scene: " +
-                      "damage budget 48→unbounded, VFX caps 64→unbounded, pressure shortening off. " +
+                      "damage budget 48→unbounded, pressure shortening off. " +
+                      "VFXBudgetPerFrameOverride is still written (no-op after D4 — death " +
+                      "visuals are batched and unthrottled by construction). " +
                       "Restored automatically on scene exit.");
         }
 

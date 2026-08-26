@@ -15,11 +15,16 @@ namespace CosmicShore.UI
     ///   Space  → skimmer reach (impactIcon, joust + crystal)   → "Shepherd"
     ///   Time   → boost ring    (tubeCooldownIcon)              → "Twin Rings"
     ///
-    /// Every one of those icons is also a live gameplay gauge - cooldown fill, heat tint, drift lean,
-    /// impact flash - repainted per frame or per event. So the upgrade signal here is carried by the
-    /// element badge and a persistent scale bump rather than by the icon's colour (tintIconOnUpgrade
-    /// is off on this prefab), and the local rest scales below are re-anchored on every upgrade flip
-    /// so this view's own tweens can never wipe the bump.
+    /// <para>Two of those readouts are now the LOCKUP's, not this view's. The boost fill is bound as
+    /// the CHARGE card's gauge - skimming is what banks it, which is what that column says - and the
+    /// Boost Ring's recharge is the fleet's standard cooldown veil. This view keeps only what is
+    /// genuinely the Squirrel's own: the drift lean, the impact flash, the crystal surge.</para>
+    ///
+    /// Every one of those icons is also a live gameplay gauge - heat tint, drift lean, impact flash -
+    /// repainted per frame or per event. So the upgrade signal here is carried by the card rather
+    /// than by the icon's colour (tintIconOnUpgrade is off on this prefab), and the local rest
+    /// scales below are re-anchored on every upgrade flip so this view's own tweens can never wipe
+    /// the bump.
     /// </summary>
     public sealed class SquirrelVesselHUDView : VesselHUDView
     {
@@ -45,22 +50,13 @@ namespace CosmicShore.UI
         [Tooltip("Flash colour when the impact icon fires from collecting a crystal.")]
         [SerializeField] private Color crystalFlashColor = new Color(0.4f, 0.9f, 1f, 1f);
 
-        [Header("Tube Cooldown (repurposed shield slot)")]
-        [FormerlySerializedAs("shieldIcon")]
+        [Header("Boost Ring cooldown (Time slot)")]
+        [Tooltip("The Boost Ring ability's icon. Its RECHARGE is drawn by the fleet's standard " +
+                 "cooldown - a radial veil swept over this card by the ability lockup - so nothing " +
+                 "here animates the icon any more. The bespoke sink-and-rise reload, the breathing " +
+                 "pulse, the radial fill on the icon itself and the slam-home flash are all retired " +
+                 "with their tuning fields: one recharge readout for the fleet beats four per hull.")]
         [SerializeField] private Image tubeCooldownIcon;
-        [Tooltip("Colour of the tube cooldown icon while recharging - gray, reads as 'not available'.")]
-        [SerializeField] private Color tubeCoolingColor = new Color(0.5f, 0.5f, 0.55f, 0.9f);
-        [Tooltip("Colour of the tube cooldown icon once ready - red, reads as 'armed'.")]
-        [SerializeField] private Color tubeReadyColor = new Color(1f, 0.2f, 0.2f, 1f);
-        [Tooltip("Breathing scale amplitude while the tube is reloading (0 disables it).")]
-        [SerializeField, Range(0f, 0.5f)] private float tubeLoadPulseAmount = 0.07f;
-        [Tooltip("Seconds per half-breath of the reloading pulse.")]
-        [SerializeField, Min(0.05f)] private float tubeLoadPulseDuration = 0.5f;
-        [Tooltip("How far (px) the missile icon sits sunk below rest while the tube reloads - it " +
-                 "rises home as the cooldown recovers, then slams into place when ready.")]
-        [SerializeField, Min(0f)] private float tubeLoadDropOffset = 14f;
-        [Tooltip("Flash colour the instant the tube slams home fully loaded.")]
-        [SerializeField] private Color tubeSlamFlashColor = Color.white;
 
         [Header("Overheat")]
         [Tooltip("The overheat button's icon image (child 'Icon' of OverheatButton).")]
@@ -100,20 +96,14 @@ namespace CosmicShore.UI
         private Tween _impactScaleTween;
         private Tween _impactColorTween;
         private Tween _boostScaleTween;
-        private Tween _tubeSlamScaleTween;
-        private Tween _tubeSlamColorTween;
-        private Tween _tubeLoadPulseTween;
         private Tween _overheatThrobTween;
         private Tween _overheatIconColorTween;
 
         private Vector3 _driftIconOriginalScale;
         private Vector3 _impactIconOriginalScale;
-        private Vector3 _tubeIconOriginalScale = Vector3.one;
-        private Vector2 _tubeIconRestAnchoredPos;
         private Vector3 _overheatIconOriginalScale = Vector3.one;
         private Color _driftIconOriginalColor;
         private Color _overheatIconOriginalColor = Color.white;
-        private bool _tubeWasReady = true;
 
         public override void Initialize()
         {
@@ -137,14 +127,9 @@ namespace CosmicShore.UI
 
             if (tubeCooldownIcon)
             {
-                // Start ready (loaded + bright). The image keeps its authored type: a Filled
-                // sprite additionally shows the radial wipe; a plain sprite relies on the
-                // sink-and-rise loading motion alone.
+                // A plain, fully-drawn icon: the lockup's cooldown veil is what says "recharging",
+                // so the icon must NOT also be a partial fill or it reads as a second meter.
                 if (tubeCooldownIcon.type == Image.Type.Filled) tubeCooldownIcon.fillAmount = 1f;
-                tubeCooldownIcon.color = tubeReadyColor;
-                _tubeIconOriginalScale = AbilityIconRestScale(Element.Time);
-                _tubeIconRestAnchoredPos = tubeCooldownIcon.rectTransform.anchoredPosition;
-                _tubeWasReady = true;
             }
 
             if (overheatIcon)
@@ -184,14 +169,8 @@ namespace CosmicShore.UI
                     _impactIconOriginalScale = rest;
                     break;
                 case Element.Time:
-                    _tubeIconOriginalScale = rest;
-                    // The reload pulse is a looping tween around the old rest scale - restart it so it
-                    // breathes around the new one instead of dragging the icon back down.
-                    if (_tubeLoadPulseTween != null && _tubeLoadPulseTween.IsActive())
-                    {
-                        _tubeLoadPulseTween.Kill();
-                        StartTubeLoadPulse();
-                    }
+                    // Nothing local to re-anchor: the Boost Ring's recharge is the lockup's
+                    // standard cooldown, which never touches the icon's transform.
                     break;
             }
         }
@@ -353,88 +332,21 @@ namespace CosmicShore.UI
         }
 
         // ---------------------------------------------------------------
-        // Tube cooldown: radial fill in the freed slot. ready01: 0 = just
-        // deployed (empty), 1 = fully recharged (ready). Driven each frame
-        // by the controller polling the tube executor.
+        // Boost Ring cooldown - handed straight to the fleet's standard readout.
         // ---------------------------------------------------------------
+
+        /// <summary>
+        /// ready01: 0 = just deployed, 1 = fully recharged. Polled each frame by the controller off
+        /// the tube executor.
+        ///
+        /// <para>The whole body is now one call. What it replaced was a per-vessel reload animation
+        /// - the icon sank to a seat and rose back, breathed on a looping yoyo, wiped a radial fill
+        /// on itself and slammed home with a colour flash - which was four channels saying one
+        /// thing, all of them on the icon, on one hull. The lockup draws recharge the same way for
+        /// every vessel, so the signature stays and the presentation leaves.</para>
+        /// </summary>
         public void SetTubeCooldownReady(float ready01)
-        {
-            if (!tubeCooldownIcon) return;
-
-            ready01 = Mathf.Clamp01(ready01);
-            bool isReady = ready01 >= 0.999f;
-            var rt = tubeCooldownIcon.rectTransform;
-
-            if (tubeCooldownIcon.type == Image.Type.Filled)
-                tubeCooldownIcon.fillAmount = ready01;
-
-            // While the slam flash owns the icon colour, leave it alone.
-            if (_tubeSlamColorTween == null)
-                tubeCooldownIcon.color = Color.Lerp(tubeCoolingColor, tubeReadyColor, ready01);
-
-            if (isReady && !_tubeWasReady)
-            {
-                JuiceTubeSlamHome();
-            }
-            else if (!isReady)
-            {
-                if (_tubeWasReady)   // just fired: the tube ejects - drop the missile to the reload seat
-                {
-                    _tubeSlamScaleTween?.Kill();
-                    _tubeSlamColorTween?.Kill();
-                    rt.localScale = _tubeIconOriginalScale;
-                    StartTubeLoadPulse();
-                }
-
-                // Reloading: the missile rises from its sunk seat toward rest as the tube loads.
-                rt.anchoredPosition = _tubeIconRestAnchoredPos + Vector2.down * (tubeLoadDropOffset * (1f - ready01));
-            }
-
-            _tubeWasReady = isReady;
-        }
-
-        // Reloading breath: a slow scale yoyo while the tube is on cooldown - the tube is
-        // "working". Killed by the slam when the missile locks home (ready state is static).
-        private void StartTubeLoadPulse()
-        {
-            if (tubeLoadPulseAmount <= 0f || !tubeCooldownIcon) return;
-            _tubeLoadPulseTween?.Kill();
-            _tubeLoadPulseTween = tubeCooldownIcon.rectTransform
-                .DOScale(_tubeIconOriginalScale * (1f + tubeLoadPulseAmount), tubeLoadPulseDuration)
-                .SetEase(Ease.InOutSine)
-                .SetLoops(-1, LoopType.Yoyo)
-                .SetLink(tubeCooldownIcon.gameObject);
-        }
-
-        // Fully loaded: the missile slams home - snap to rest, overshoot punch, bright flash.
-        private void JuiceTubeSlamHome()
-        {
-            var rt = tubeCooldownIcon.rectTransform;
-
-            _tubeLoadPulseTween?.Kill();
-            _tubeSlamScaleTween?.Kill();
-            rt.anchoredPosition = _tubeIconRestAnchoredPos;
-            rt.localScale = _tubeIconOriginalScale;
-            _tubeSlamScaleTween = rt
-                .DOScale(_tubeIconOriginalScale * iconPunchScale, iconPunchDuration * 0.3f)
-                .SetEase(Ease.OutQuad)
-                .SetLink(tubeCooldownIcon.gameObject)
-                .OnComplete(() =>
-                {
-                    _tubeSlamScaleTween = rt
-                        .DOScale(_tubeIconOriginalScale, iconPunchDuration * 0.7f)
-                        .SetEase(Ease.OutBounce)
-                        .SetLink(tubeCooldownIcon.gameObject);
-                });
-
-            _tubeSlamColorTween?.Kill();
-            tubeCooldownIcon.color = tubeSlamFlashColor;
-            _tubeSlamColorTween = tubeCooldownIcon
-                .DOColor(tubeReadyColor, colorTweenDuration)
-                .SetEase(Ease.OutQuad)
-                .SetLink(tubeCooldownIcon.gameObject)
-                .OnKill(() => _tubeSlamColorTween = null);
-        }
+            => SetAbilityCooldown(Element.Time, 1f - Mathf.Clamp01(ready01));
 
         // ---------------------------------------------------------------
         // Overheat: the highlight image is a live heat gauge (alpha ramps
@@ -509,9 +421,6 @@ namespace CosmicShore.UI
             _impactScaleTween?.Kill();
             _impactColorTween?.Kill();
             _boostScaleTween?.Kill();
-            _tubeSlamScaleTween?.Kill();
-            _tubeSlamColorTween?.Kill();
-            _tubeLoadPulseTween?.Kill();
             _overheatThrobTween?.Kill();
             _overheatIconColorTween?.Kill();
         }

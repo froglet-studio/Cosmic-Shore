@@ -33,7 +33,9 @@ touching before editing; read all of it when creating or completing a vessel.
 | Abilities, actions, executors, input | §2 Actions | `R_VesselActions/*.md` for that ability |
 | Element scaling, map assets, L5 upgrades | §3 Map, §4 Elementals | `Docs/ElementalAbilitySystem/ARCHITECTURE.md` + `FLEET_MAPS.md` |
 | HUD icons, hints, gauges, HUD lifecycle | §5 Ability row, §8 HUD pair | ARCHITECTURE.md §7.1–7.4 |
-| Petal flowers / hull morphs / rig or FBX | §6 Bars, §7 Morphs | CLAUDE.md ▸ Elemental Bars / Hull Morphs |
+| Petal flowers / hull morphs / rig or FBX | §6 Bars, §7 Morphs | CLAUDE.md ▸ Elemental Bars / Hull Morphs; `Docs/VESSEL_CONSTRUCTION.md` |
+| Prefab construction, model swaps, deleting a model | — | **`Docs/VESSEL_CONSTRUCTION.md`** (guid ownership, nested-instance parenting, what the unreferenced rigs carry) |
+| Tails, jets, vessel FX mounts | — | `Docs/VESSEL_TAIL_AND_JETS.md` |
 | Collisions, crystals, skimmers, jousting | §9 Impact effects | CLAUDE.md ▸ Impact Effects; `RHINO_SHIELD_SWIPE.md` |
 | Docs, shipping, verification | §10 Paper trail | `GIT_RULES.md`, `Docs/UNITY_VERIFICATION_CHECKLIST.md` |
 

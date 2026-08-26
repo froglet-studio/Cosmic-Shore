@@ -146,6 +146,26 @@ jobs:
       - name: Check conditional compilation
         run: python3 Tools/Build/check_conditional_compilation.py --root Assets
 
+      # Authoritative --check gates for shader families the C# clock validator
+      # does not name (back-face fade, destruction sight, opaque+clip, corridor)
+      # plus the families it does (shield morph, flight, explosion erosion, jiggle, live suction,
+      # spindle death fade).
+      # No Unity licence; seconds. A graph revert that the edit-mode suite would
+      # also catch still fails here on a machine with no Editor.
+      - name: Check prism shader wiring
+        run: |
+          set -euo pipefail
+          python3 Tools/Shaders/wire_prism_backface_fade.py --check
+          python3 Tools/Shaders/wire_prism_destruction_sight.py --check
+          python3 Tools/Shaders/enable_prism_alpha_clip.py --check
+          python3 Tools/Shaders/wire_prism_occlusion_corridor.py --check
+          python3 Tools/Shaders/wire_prism_shield_morph.py --check
+          python3 Tools/Shaders/wire_prism_flight_clock.py --check
+          python3 Tools/Shaders/wire_prism_explosion_erosion.py --check
+          python3 Tools/Shaders/wire_prism_jiggle_clock.py --check
+          python3 Tools/Shaders/wire_prism_suction_clock.py --check
+          python3 Tools/Shaders/wire_prism_spindle_death_clock.py --check
+
   # ──────────────────────────────────────────────
   #  2. Unity compile - the only stage that sees a real build break
   # ──────────────────────────────────────────────
@@ -469,7 +489,17 @@ jobs:
             Reproduce first. Run, in this order, and read the output:
               python3 Tools/CI/validate_project.py
               python3 Tools/Build/check_conditional_compilation.py --root Assets
-            If both pass, the failure came from the Unity compile stage instead.
+              python3 Tools/Shaders/wire_prism_backface_fade.py --check
+              python3 Tools/Shaders/wire_prism_destruction_sight.py --check
+              python3 Tools/Shaders/enable_prism_alpha_clip.py --check
+              python3 Tools/Shaders/wire_prism_occlusion_corridor.py --check
+              python3 Tools/Shaders/wire_prism_shield_morph.py --check
+              python3 Tools/Shaders/wire_prism_flight_clock.py --check
+              python3 Tools/Shaders/wire_prism_explosion_erosion.py --check
+              python3 Tools/Shaders/wire_prism_jiggle_clock.py --check
+              python3 Tools/Shaders/wire_prism_suction_clock.py --check
+              python3 Tools/Shaders/wire_prism_spindle_death_clock.py --check
+            If those pass, the failure came from the Unity compile stage instead.
             Read the "Unity compile" job's log in this workflow run; it prints the
             first 40 `error CS...` lines directly, and the full editor log is
             attached to this run as the `editmode-results-${{ github.run_id }}`

@@ -101,14 +101,11 @@ namespace CosmicShore.Gameplay
             // pick any trunk
             var trunk = activeBranches.First();
 
-            var go = Instantiate(
+            var hp = EnvironmentPrismPool.Get(
                 healthPrism,
                 trunk.gameObject.transform.position + (branchingScaleFactor * trunk.gameObject.transform.forward),
                 trunk.gameObject.transform.rotation,
-                trunk.gameObject.transform
-            ).gameObject;
-
-            var hp = go.GetComponent<HealthPrism>();
+                trunk.gameObject.transform);
             if (!hp) return;
 
             hp.LifeForm = this;
@@ -177,7 +174,7 @@ namespace CosmicShore.Gameplay
                     Branch newBranch = new Branch();
                     if (Random.value < leafChance)
                     {
-                        newBranch.gameObject = Instantiate(healthPrism, branch.gameObject.transform.position + (branchingScaleFactor * branch.gameObject.transform.forward), branch.gameObject.transform.rotation).gameObject; // TODO: position and orient leaf
+                        newBranch.gameObject = EnvironmentPrismPool.Get(healthPrism, branch.gameObject.transform.position + (branchingScaleFactor * branch.gameObject.transform.forward), branch.gameObject.transform.rotation).gameObject; // TODO: position and orient leaf
                         ScaleAndPositionBranch(ref newBranch, branch);
                         var newHealthblock = newBranch.gameObject.GetComponent<HealthPrism>();
                         AddHealthBlock(newHealthblock);

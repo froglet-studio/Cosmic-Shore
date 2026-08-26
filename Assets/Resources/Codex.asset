@@ -1,0 +1,5310 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: acd5535c11936bd44a32180368621a10, type: 3}
+  m_Name: Codex
+  m_EditorClassIdentifier: Assembly-CSharp::CosmicShore.ScriptableObjects.CodexSO
+  ethirions:
+  - Id: ethirion.charge
+    Kingdom: 0
+    DisplayName: Charge
+    Tagline: 
+    Description: 
+    Image: {fileID: 21300000, guid: 80a6dc09b4e3d6743a5e99e083196006, type: 3}
+    SourcePrefab: {fileID: 6588436222817790470, guid: ba23c28d2d22a1b458f7b6e91c355d53,
+      type: 3}
+    AccentColor: {r: 0.98, g: 0.75, b: 0.18, a: 1}
+    UnlockedByDefault: 1
+    DiscoveryKey: collect.ethirion.charge
+    PreviewYaw: -28
+    PreviewPitch: 16
+    PreviewPadding: 1.05
+    FlatSilhouette: 0
+    SortOrder: 0
+    LockAutoHarvest: 0
+    Stats:
+    - Label: Element
+      Value: Charge
+      Authored: 0
+    - Label: Kind
+      Value: "Elemental \u2014 every lifeform's heart, and a loose pickup"
+      Authored: 0
+    - Label: Collection
+      Value: "Skim to collect \xB7 0.44 s capture"
+      Authored: 0
+    - Label: Dropped by
+      Value: "22 species \u2014 one of the four, per lifeform"
+      Authored: 0
+    - Label: Reward
+      Value: Raises the collecting vessel's Charge level, scaled by the crystal's
+        world size
+      Authored: 0
+    - Label: Model
+      Value: 2 parts, 1,728 triangles
+      Authored: 0
+    Variants:
+    - Label: Level 1
+      Element: 0
+      SourceConfig: {fileID: 0}
+      SourcePrefab: {fileID: 6588436222817790470, guid: ba23c28d2d22a1b458f7b6e91c355d53,
+        type: 3}
+      Image: {fileID: 0}
+      Stats:
+      - Label: Heart size
+        Value: 3.50 world scale
+        Authored: 0
+      - Label: Earned by
+        Value: "An ordinary spawn \u2014 every lifeform starts here"
+        Authored: 0
+    - Label: Level 2
+      Element: 0
+      SourceConfig: {fileID: 0}
+      SourcePrefab: {fileID: 6588436222817790470, guid: ba23c28d2d22a1b458f7b6e91c355d53,
+        type: 3}
+      Image: {fileID: 0}
+      Stats:
+      - Label: Heart size
+        Value: 3.68 world scale
+        Authored: 0
+      - Label: Earned by
+        Value: 'The lifeform lived: flora level on reproduction, fauna on feeding'
+        Authored: 0
+    - Label: Level 3
+      Element: 0
+      SourceConfig: {fileID: 0}
+      SourcePrefab: {fileID: 6588436222817790470, guid: ba23c28d2d22a1b458f7b6e91c355d53,
+        type: 3}
+      Image: {fileID: 0}
+      Stats:
+      - Label: Heart size
+        Value: 3.86 world scale
+        Authored: 0
+      - Label: Earned by
+        Value: 'The lifeform lived: flora level on reproduction, fauna on feeding'
+        Authored: 0
+    - Label: Level 4
+      Element: 0
+      SourceConfig: {fileID: 0}
+      SourcePrefab: {fileID: 6588436222817790470, guid: ba23c28d2d22a1b458f7b6e91c355d53,
+        type: 3}
+      Image: {fileID: 0}
+      Stats:
+      - Label: Heart size
+        Value: 4.05 world scale
+        Authored: 0
+      - Label: Earned by
+        Value: 'The lifeform lived: flora level on reproduction, fauna on feeding'
+        Authored: 0
+    - Label: Level 5
+      Element: 0
+      SourceConfig: {fileID: 0}
+      SourcePrefab: {fileID: 6588436222817790470, guid: ba23c28d2d22a1b458f7b6e91c355d53,
+        type: 3}
+      Image: {fileID: 0}
+      Stats:
+      - Label: Heart size
+        Value: 4.25 world scale
+        Authored: 0
+      - Label: Earned by
+        Value: 'The lifeform lived: flora level on reproduction, fauna on feeding'
+        Authored: 0
+  - Id: ethirion.mass
+    Kingdom: 0
+    DisplayName: Mass
+    Tagline: 
+    Description: 
+    Image: {fileID: 21300000, guid: ceb82b4797fac604188c491793e922d5, type: 3}
+    SourcePrefab: {fileID: 6588436222817790470, guid: cccc6ba7985893f43841fccfbb53dc71,
+      type: 3}
+    AccentColor: {r: 0.93, g: 0.27, b: 0.38, a: 1}
+    UnlockedByDefault: 1
+    DiscoveryKey: collect.ethirion.mass
+    PreviewYaw: -28
+    PreviewPitch: 16
+    PreviewPadding: 1.05
+    FlatSilhouette: 0
+    SortOrder: 0
+    LockAutoHarvest: 0
+    Stats:
+    - Label: Element
+      Value: Mass
+      Authored: 0
+    - Label: Kind
+      Value: "Elemental \u2014 every lifeform's heart, and a loose pickup"
+      Authored: 0
+    - Label: Collection
+      Value: "Skim to collect \xB7 0.44 s capture"
+      Authored: 0
+    - Label: Dropped by
+      Value: "22 species \u2014 one of the four, per lifeform"
+      Authored: 0
+    - Label: Reward
+      Value: Raises the collecting vessel's Mass level, scaled by the crystal's world
+        size
+      Authored: 0
+    - Label: Model
+      Value: 5 parts
+      Authored: 0
+    Variants:
+    - Label: Level 1
+      Element: 0
+      SourceConfig: {fileID: 0}
+      SourcePrefab: {fileID: 6588436222817790470, guid: cccc6ba7985893f43841fccfbb53dc71,
+        type: 3}
+      Image: {fileID: 0}
+      Stats:
+      - Label: Heart size
+        Value: 3.50 world scale
+        Authored: 0
+      - Label: Earned by
+        Value: "An ordinary spawn \u2014 every lifeform starts here"
+        Authored: 0
+    - Label: Level 2
+      Element: 0
+      SourceConfig: {fileID: 0}
+      SourcePrefab: {fileID: 6588436222817790470, guid: cccc6ba7985893f43841fccfbb53dc71,
+        type: 3}
+      Image: {fileID: 0}
+      Stats:
+      - Label: Heart size
+        Value: 3.68 world scale
+        Authored: 0
+      - Label: Earned by
+        Value: 'The lifeform lived: flora level on reproduction, fauna on feeding'
+        Authored: 0
+    - Label: Level 3
+      Element: 0
+      SourceConfig: {fileID: 0}
+      SourcePrefab: {fileID: 6588436222817790470, guid: cccc6ba7985893f43841fccfbb53dc71,
+        type: 3}
+      Image: {fileID: 0}
+      Stats:
+      - Label: Heart size
+        Value: 3.86 world scale
+        Authored: 0
+      - Label: Earned by
+        Value: 'The lifeform lived: flora level on reproduction, fauna on feeding'
+        Authored: 0
+    - Label: Level 4
+      Element: 0
+      SourceConfig: {fileID: 0}
+      SourcePrefab: {fileID: 6588436222817790470, guid: cccc6ba7985893f43841fccfbb53dc71,
+        type: 3}
+      Image: {fileID: 0}
+      Stats:
+      - Label: Heart size
+        Value: 4.05 world scale
+        Authored: 0
+      - Label: Earned by
+        Value: 'The lifeform lived: flora level on reproduction, fauna on feeding'
+        Authored: 0
+    - Label: Level 5
+      Element: 0
+      SourceConfig: {fileID: 0}
+      SourcePrefab: {fileID: 6588436222817790470, guid: cccc6ba7985893f43841fccfbb53dc71,
+        type: 3}
+      Image: {fileID: 0}
+      Stats:
+      - Label: Heart size
+        Value: 4.25 world scale
+        Authored: 0
+      - Label: Earned by
+        Value: 'The lifeform lived: flora level on reproduction, fauna on feeding'
+        Authored: 0
+  - Id: ethirion.space
+    Kingdom: 0
+    DisplayName: Space
+    Tagline: 
+    Description: 
+    Image: {fileID: 21300000, guid: 92c5e5dbea0c4374c819a1e9908cc934, type: 3}
+    SourcePrefab: {fileID: 6588436222817790470, guid: a4bde9d72595bfb43aa3b791d02f4db8,
+      type: 3}
+    AccentColor: {r: 0.24, g: 0.6, b: 0.95, a: 1}
+    UnlockedByDefault: 1
+    DiscoveryKey: collect.ethirion.space
+    PreviewYaw: -28
+    PreviewPitch: 16
+    PreviewPadding: 1.05
+    FlatSilhouette: 0
+    SortOrder: 0
+    LockAutoHarvest: 0
+    Stats:
+    - Label: Element
+      Value: Space
+      Authored: 0
+    - Label: Kind
+      Value: "Elemental \u2014 every lifeform's heart, and a loose pickup"
+      Authored: 0
+    - Label: Collection
+      Value: "Skim to collect \xB7 0.44 s capture"
+      Authored: 0
+    - Label: Dropped by
+      Value: "22 species \u2014 one of the four, per lifeform"
+      Authored: 0
+    - Label: Reward
+      Value: Raises the collecting vessel's Space level, scaled by the crystal's
+        world size
+      Authored: 0
+    - Label: Model
+      Value: 768 triangles
+      Authored: 0
+    Variants:
+    - Label: Level 1
+      Element: 0
+      SourceConfig: {fileID: 0}
+      SourcePrefab: {fileID: 6588436222817790470, guid: a4bde9d72595bfb43aa3b791d02f4db8,
+        type: 3}
+      Image: {fileID: 0}
+      Stats:
+      - Label: Heart size
+        Value: 3.50 world scale
+        Authored: 0
+      - Label: Earned by
+        Value: "An ordinary spawn \u2014 every lifeform starts here"
+        Authored: 0
+    - Label: Level 2
+      Element: 0
+      SourceConfig: {fileID: 0}
+      SourcePrefab: {fileID: 6588436222817790470, guid: a4bde9d72595bfb43aa3b791d02f4db8,
+        type: 3}
+      Image: {fileID: 0}
+      Stats:
+      - Label: Heart size
+        Value: 3.68 world scale
+        Authored: 0
+      - Label: Earned by
+        Value: 'The lifeform lived: flora level on reproduction, fauna on feeding'
+        Authored: 0
+    - Label: Level 3
+      Element: 0
+      SourceConfig: {fileID: 0}
+      SourcePrefab: {fileID: 6588436222817790470, guid: a4bde9d72595bfb43aa3b791d02f4db8,
+        type: 3}
+      Image: {fileID: 0}
+      Stats:
+      - Label: Heart size
+        Value: 3.86 world scale
+        Authored: 0
+      - Label: Earned by
+        Value: 'The lifeform lived: flora level on reproduction, fauna on feeding'
+        Authored: 0
+    - Label: Level 4
+      Element: 0
+      SourceConfig: {fileID: 0}
+      SourcePrefab: {fileID: 6588436222817790470, guid: a4bde9d72595bfb43aa3b791d02f4db8,
+        type: 3}
+      Image: {fileID: 0}
+      Stats:
+      - Label: Heart size
+        Value: 4.05 world scale
+        Authored: 0
+      - Label: Earned by
+        Value: 'The lifeform lived: flora level on reproduction, fauna on feeding'
+        Authored: 0
+    - Label: Level 5
+      Element: 0
+      SourceConfig: {fileID: 0}
+      SourcePrefab: {fileID: 6588436222817790470, guid: a4bde9d72595bfb43aa3b791d02f4db8,
+        type: 3}
+      Image: {fileID: 0}
+      Stats:
+      - Label: Heart size
+        Value: 4.25 world scale
+        Authored: 0
+      - Label: Earned by
+        Value: 'The lifeform lived: flora level on reproduction, fauna on feeding'
+        Authored: 0
+  - Id: ethirion.time
+    Kingdom: 0
+    DisplayName: Time
+    Tagline: 
+    Description: 
+    Image: {fileID: 21300000, guid: 153d96bf44575684faf5add0df874f01, type: 3}
+    SourcePrefab: {fileID: 6588436222817790470, guid: e707773a458187444a9dfbf3ec06568f,
+      type: 3}
+    AccentColor: {r: 0.62, g: 0.42, b: 0.94, a: 1}
+    UnlockedByDefault: 1
+    DiscoveryKey: collect.ethirion.time
+    PreviewYaw: -28
+    PreviewPitch: 16
+    PreviewPadding: 1.05
+    FlatSilhouette: 0
+    SortOrder: 0
+    LockAutoHarvest: 0
+    Stats:
+    - Label: Element
+      Value: Time
+      Authored: 0
+    - Label: Kind
+      Value: "Elemental \u2014 every lifeform's heart, and a loose pickup"
+      Authored: 0
+    - Label: Collection
+      Value: "Skim to collect \xB7 0.44 s capture"
+      Authored: 0
+    - Label: Dropped by
+      Value: "22 species \u2014 one of the four, per lifeform"
+      Authored: 0
+    - Label: Reward
+      Value: Raises the collecting vessel's Time level, scaled by the crystal's world
+        size
+      Authored: 0
+    - Label: Model
+      Value: 768 triangles
+      Authored: 0
+    Variants:
+    - Label: Level 1
+      Element: 0
+      SourceConfig: {fileID: 0}
+      SourcePrefab: {fileID: 6588436222817790470, guid: e707773a458187444a9dfbf3ec06568f,
+        type: 3}
+      Image: {fileID: 0}
+      Stats:
+      - Label: Heart size
+        Value: 3.50 world scale
+        Authored: 0
+      - Label: Earned by
+        Value: "An ordinary spawn \u2014 every lifeform starts here"
+        Authored: 0
+    - Label: Level 2
+      Element: 0
+      SourceConfig: {fileID: 0}
+      SourcePrefab: {fileID: 6588436222817790470, guid: e707773a458187444a9dfbf3ec06568f,
+        type: 3}
+      Image: {fileID: 0}
+      Stats:
+      - Label: Heart size
+        Value: 3.68 world scale
+        Authored: 0
+      - Label: Earned by
+        Value: 'The lifeform lived: flora level on reproduction, fauna on feeding'
+        Authored: 0
+    - Label: Level 3
+      Element: 0
+      SourceConfig: {fileID: 0}
+      SourcePrefab: {fileID: 6588436222817790470, guid: e707773a458187444a9dfbf3ec06568f,
+        type: 3}
+      Image: {fileID: 0}
+      Stats:
+      - Label: Heart size
+        Value: 3.86 world scale
+        Authored: 0
+      - Label: Earned by
+        Value: 'The lifeform lived: flora level on reproduction, fauna on feeding'
+        Authored: 0
+    - Label: Level 4
+      Element: 0
+      SourceConfig: {fileID: 0}
+      SourcePrefab: {fileID: 6588436222817790470, guid: e707773a458187444a9dfbf3ec06568f,
+        type: 3}
+      Image: {fileID: 0}
+      Stats:
+      - Label: Heart size
+        Value: 4.05 world scale
+        Authored: 0
+      - Label: Earned by
+        Value: 'The lifeform lived: flora level on reproduction, fauna on feeding'
+        Authored: 0
+    - Label: Level 5
+      Element: 0
+      SourceConfig: {fileID: 0}
+      SourcePrefab: {fileID: 6588436222817790470, guid: e707773a458187444a9dfbf3ec06568f,
+        type: 3}
+      Image: {fileID: 0}
+      Stats:
+      - Label: Heart size
+        Value: 4.25 world scale
+        Authored: 0
+      - Label: Earned by
+        Value: 'The lifeform lived: flora level on reproduction, fauna on feeding'
+        Authored: 0
+  - Id: ethirion.omni
+    Kingdom: 0
+    DisplayName: Omni
+    Tagline: 
+    Description: 
+    Image: {fileID: 21300000, guid: b592d632483050e40a6cf3d3240f2a92, type: 3}
+    SourcePrefab: {fileID: 5535990081244205914, guid: 54802b89e00a0ed4281025fa5e770811,
+      type: 3}
+    AccentColor: {r: 0.62, g: 0.83, b: 0.24, a: 1}
+    UnlockedByDefault: 1
+    DiscoveryKey: collect.ethirion.omni
+    PreviewYaw: -28
+    PreviewPitch: 16
+    PreviewPadding: 1.05
+    FlatSilhouette: 0
+    SortOrder: 0
+    LockAutoHarvest: 0
+    Stats:
+    - Label: Element
+      Value: "Omni \u2014 no element"
+      Authored: 0
+    - Label: Kind
+      Value: Free to every pilot, whatever their domain
+      Authored: 0
+    - Label: Collection
+      Value: Fly into it
+      Authored: 0
+    - Label: Used by
+      Value: Mode objectives, the Dolphin's blast trigger, the Sparrow's missile
+        reload, the Scarab's ball forge
+      Authored: 0
+    - Label: Model
+      Value: 5 parts
+      Authored: 0
+    Variants: []
+  ecology:
+  - Id: flora.arbor
+    Kingdom: 1
+    DisplayName: Arbor
+    Tagline: 
+    Description: 
+    Image: {fileID: 21300000, guid: ba76b9bc5a2fc344aad642e7f0aef9eb, type: 3}
+    SourcePrefab: {fileID: 6774738432424273872, guid: 38c135e3fee4b466a5ec7e946ee3415d,
+      type: 3}
+    AccentColor: {r: 0, g: 0, b: 0, a: 0}
+    UnlockedByDefault: 1
+    DiscoveryKey: see.arbor
+    PreviewYaw: -28
+    PreviewPitch: 16
+    PreviewPadding: 1.05
+    FlatSilhouette: 0
+    SortOrder: 0
+    LockAutoHarvest: 0
+    Stats:
+    - Label: Growth model
+      Value: "Phyllotactic \u2014 whorled leaves on a spiral"
+      Authored: 0
+    - Label: Prisms per plant
+      Value: 260
+      Authored: 0
+    - Label: Breeds
+      Value: "Yes \u2014 one child per 109 prisms grown"
+      Authored: 0
+    - Label: Population cap
+      Value: 15
+      Authored: 0
+    - Label: Planted on
+      Value: Bed
+      Authored: 0
+    - Label: Found in
+      Value: Hesperides
+      Authored: 0
+    Variants:
+    - Label: Charge
+      Element: 1
+      SourceConfig: {fileID: 11400000, guid: 8142092b395852d6b70857945eddf051, type: 2}
+      SourcePrefab: {fileID: 6774738432424273872, guid: 38c135e3fee4b466a5ec7e946ee3415d,
+        type: 3}
+      Image: {fileID: 0}
+      Stats:
+      - Label: Growth per child
+        Value: Does not reproduce
+        Authored: 0
+      - Label: Reproduction cooldown
+        Value: 5 s
+        Authored: 0
+      - Label: Initial seeding
+        Value: 1 plant
+        Authored: 0
+      - Label: Elemental law
+        Value: "Charge armours its leaves \u2014 grazing one costs two passes, because
+          the first only sheds the shield"
+        Authored: 0
+    - Label: Mass
+      Element: 2
+      SourceConfig: {fileID: 11400000, guid: 05aeba0b9463fd1338d0f885442e2048, type: 2}
+      SourcePrefab: {fileID: 6774738432424273872, guid: 38c135e3fee4b466a5ec7e946ee3415d,
+        type: 3}
+      Image: {fileID: 0}
+      Stats:
+      - Label: Seed floor
+        Value: 10 plants
+        Authored: 0
+      - Label: Live cap
+        Value: 15 plants
+        Authored: 0
+      - Label: Growth per child
+        Value: 109 prisms
+        Authored: 0
+      - Label: Reproduction cooldown
+        Value: 5 s
+        Authored: 0
+      - Label: Initial seeding
+        Value: 10 plants
+        Authored: 0
+    - Label: Mass
+      Element: 2
+      SourceConfig: {fileID: 11400000, guid: 789fa0009f601288c6868e7d32c734f9, type: 2}
+      SourcePrefab: {fileID: 6774738432424273872, guid: 38c135e3fee4b466a5ec7e946ee3415d,
+        type: 3}
+      Image: {fileID: 0}
+      Stats:
+      - Label: Growth per child
+        Value: Does not reproduce
+        Authored: 0
+      - Label: Reproduction cooldown
+        Value: 5 s
+        Authored: 0
+      - Label: Initial seeding
+        Value: 1 plant
+        Authored: 0
+    - Label: Space
+      Element: 3
+      SourceConfig: {fileID: 11400000, guid: e800b105afc6ed81fbbe4da2fc221c5d, type: 2}
+      SourcePrefab: {fileID: 6774738432424273872, guid: 38c135e3fee4b466a5ec7e946ee3415d,
+        type: 3}
+      Image: {fileID: 0}
+      Stats:
+      - Label: Growth per child
+        Value: Does not reproduce
+        Authored: 0
+      - Label: Reproduction cooldown
+        Value: 5 s
+        Authored: 0
+      - Label: Initial seeding
+        Value: 1 plant
+        Authored: 0
+    - Label: Time
+      Element: 4
+      SourceConfig: {fileID: 11400000, guid: 636374a00e41c98762163631b2e60477, type: 2}
+      SourcePrefab: {fileID: 6774738432424273872, guid: 38c135e3fee4b466a5ec7e946ee3415d,
+        type: 3}
+      Image: {fileID: 0}
+      Stats:
+      - Label: Growth per child
+        Value: Does not reproduce
+        Authored: 0
+      - Label: Reproduction cooldown
+        Value: 5 s
+        Authored: 0
+      - Label: Initial seeding
+        Value: 1 plant
+        Authored: 0
+      - Label: Elemental law
+        Value: "Time breeds at 1.25\xD7 the fleet rate; the other three run at 0.8\xD7"
+        Authored: 0
+  - Id: flora.branching
+    Kingdom: 1
+    DisplayName: Branching
+    Tagline: 
+    Description: 
+    Image: {fileID: 21300000, guid: d54baa24ff3f9f544b6187fba8bcda8c, type: 3}
+    SourcePrefab: {fileID: 6774738432424273872, guid: 3c58c4dd53a6a2240acd7f7b81a3adb5,
+      type: 3}
+    AccentColor: {r: 0, g: 0, b: 0, a: 0}
+    UnlockedByDefault: 1
+    DiscoveryKey: see.branching
+    PreviewYaw: -28
+    PreviewPitch: 16
+    PreviewPadding: 1.05
+    FlatSilhouette: 0
+    SortOrder: 0
+    LockAutoHarvest: 0
+    Stats:
+    - Label: Growth model
+      Value: "Branching \u2014 grows outward from a stem"
+      Authored: 0
+    - Label: Prisms per plant
+      Value: 5,000
+      Authored: 0
+    - Label: Breeds
+      Value: "Yes \u2014 one child per 400 prisms grown"
+      Authored: 0
+    - Label: Population cap
+      Value: 15
+      Authored: 0
+    - Label: Planted on
+      Value: Any
+      Authored: 0
+    - Label: Found in
+      Value: Branching
+      Authored: 0
+    Variants:
+    - Label: Charge
+      Element: 1
+      SourceConfig: {fileID: 11400000, guid: cf71852aad0c4f0594cbfe4bb6e8c48e, type: 2}
+      SourcePrefab: {fileID: 6774738432424273872, guid: 3c58c4dd53a6a2240acd7f7b81a3adb5,
+        type: 3}
+      Image: {fileID: 0}
+      Stats:
+      - Label: Growth per child
+        Value: Does not reproduce
+        Authored: 0
+      - Label: Reproduction cooldown
+        Value: 5 s
+        Authored: 0
+      - Label: Initial seeding
+        Value: 1 plant
+        Authored: 0
+      - Label: Elemental law
+        Value: "Charge armours its leaves \u2014 grazing one costs two passes, because
+          the first only sheds the shield"
+        Authored: 0
+    - Label: Mass
+      Element: 2
+      SourceConfig: {fileID: 11400000, guid: 455ae01743de46dfb4c4db5db22f2f49, type: 2}
+      SourcePrefab: {fileID: 6774738432424273872, guid: 3c58c4dd53a6a2240acd7f7b81a3adb5,
+        type: 3}
+      Image: {fileID: 0}
+      Stats:
+      - Label: Growth per child
+        Value: Does not reproduce
+        Authored: 0
+      - Label: Reproduction cooldown
+        Value: 5 s
+        Authored: 0
+      - Label: Initial seeding
+        Value: 1 plant
+        Authored: 0
+    - Label: Space
+      Element: 3
+      SourceConfig: {fileID: 11400000, guid: d38c973166384778a8dc3ddadb562620, type: 2}
+      SourcePrefab: {fileID: 6774738432424273872, guid: 3c58c4dd53a6a2240acd7f7b81a3adb5,
+        type: 3}
+      Image: {fileID: 0}
+      Stats:
+      - Label: Growth per child
+        Value: Does not reproduce
+        Authored: 0
+      - Label: Reproduction cooldown
+        Value: 5 s
+        Authored: 0
+      - Label: Initial seeding
+        Value: 1 plant
+        Authored: 0
+    - Label: Time
+      Element: 4
+      SourceConfig: {fileID: 11400000, guid: 983c56fb47a64c5888ed069f57f0a803, type: 2}
+      SourcePrefab: {fileID: 6774738432424273872, guid: 3c58c4dd53a6a2240acd7f7b81a3adb5,
+        type: 3}
+      Image: {fileID: 0}
+      Stats:
+      - Label: Growth per child
+        Value: Does not reproduce
+        Authored: 0
+      - Label: Reproduction cooldown
+        Value: 5 s
+        Authored: 0
+      - Label: Initial seeding
+        Value: 1 plant
+        Authored: 0
+      - Label: Elemental law
+        Value: "Time breeds at 1.25\xD7 the fleet rate; the other three run at 0.8\xD7"
+        Authored: 0
+    - Label: Wildlife Cell 3 Branching Flora Config Data
+      Element: 0
+      SourceConfig: {fileID: 11400000, guid: 85491b48d7564c94587b504e6608d88c, type: 2}
+      SourcePrefab: {fileID: 6774738432424273872, guid: 3c58c4dd53a6a2240acd7f7b81a3adb5,
+        type: 3}
+      Image: {fileID: 0}
+      Stats:
+      - Label: Seed floor
+        Value: 10 plants
+        Authored: 0
+      - Label: Live cap
+        Value: 15 plants
+        Authored: 0
+      - Label: Growth per child
+        Value: 400 prisms
+        Authored: 0
+      - Label: Reproduction cooldown
+        Value: 5 s
+        Authored: 0
+      - Label: Initial seeding
+        Value: 10 plants
+        Authored: 0
+  - Id: fauna.brittlestar
+    Kingdom: 2
+    DisplayName: Brittlestar
+    Tagline: 
+    Description: 
+    Image: {fileID: 21300000, guid: ce2eaed73c4f75a4989cce21947fc6b9, type: 3}
+    SourcePrefab: {fileID: 2988268804875292915, guid: c719f00ea7596c24185379994f7dc824,
+      type: 3}
+    AccentColor: {r: 0, g: 0, b: 0, a: 0}
+    UnlockedByDefault: 1
+    DiscoveryKey: see.brittlestar
+    PreviewYaw: -28
+    PreviewPitch: 16
+    PreviewPadding: 1.05
+    FlatSilhouette: 0
+    SortOrder: 0
+    LockAutoHarvest: 0
+    Stats:
+    - Label: Behaviour
+      Value: "Shoals \u2014 separation, cohesion and a shared goal"
+      Authored: 0
+    - Label: Diet
+      Value: "Herbivore \u2014 grazes prism mass (flora canopy and vessel trails)"
+      Authored: 0
+    - Label: Starves after
+      Value: 30 s
+      Authored: 0
+    - Label: Speed
+      Value: "15\u201325 units/s"
+      Authored: 0
+    - Label: Levels
+      Value: "1\u20135, earned by feeding \u2014 never rolled at spawn"
+      Authored: 0
+    - Label: Population cap
+      Value: "4\u2013130 (by element)"
+      Authored: 0
+    - Label: Found in
+      Value: Astro League, Caldera, Daedala, Geode, Hesperides, Orrery +6 more
+      Authored: 0
+    Variants:
+    - Label: Charge
+      Element: 1
+      SourceConfig: {fileID: 11400000, guid: 503de8d514bf4001a067b76f07c246c5, type: 2}
+      SourcePrefab: {fileID: 2988268804875292915, guid: c719f00ea7596c24185379994f7dc824,
+        type: 3}
+      Image: {fileID: 0}
+      Stats:
+      - Label: Shoal size
+        Value: 4 creatures
+        Authored: 0
+      - Label: Live cap
+        Value: 16 creatures
+        Authored: 0
+      - Label: Feeds per child
+        Value: 8
+        Authored: 0
+      - Label: Feeds per level
+        Value: 16
+        Authored: 0
+      - Label: Reproduction cooldown
+        Value: 10 s
+        Authored: 0
+      - Label: Body growth per level
+        Value: "\xD71.15"
+        Authored: 0
+      - Label: Initial spawn
+        Value: 4 creatures
+        Authored: 0
+    - Label: Mass
+      Element: 2
+      SourceConfig: {fileID: 11400000, guid: 26691ece54c94157aba5b832451ec2a2, type: 2}
+      SourcePrefab: {fileID: 2988268804875292915, guid: c719f00ea7596c24185379994f7dc824,
+        type: 3}
+      Image: {fileID: 0}
+      Stats:
+      - Label: Shoal size
+        Value: 4 creatures
+        Authored: 0
+      - Label: Live cap
+        Value: 16 creatures
+        Authored: 0
+      - Label: Feeds per child
+        Value: 8
+        Authored: 0
+      - Label: Feeds per level
+        Value: 16
+        Authored: 0
+      - Label: Reproduction cooldown
+        Value: 10 s
+        Authored: 0
+      - Label: Body growth per level
+        Value: "\xD71.15"
+        Authored: 0
+      - Label: Initial spawn
+        Value: 4 creatures
+        Authored: 0
+    - Label: Space
+      Element: 3
+      SourceConfig: {fileID: 11400000, guid: eb3b0459459a4ee0b1212c181ce80a11, type: 2}
+      SourcePrefab: {fileID: 2988268804875292915, guid: c719f00ea7596c24185379994f7dc824,
+        type: 3}
+      Image: {fileID: 0}
+      Stats:
+      - Label: Shoal size
+        Value: 4 creatures
+        Authored: 0
+      - Label: Live cap
+        Value: 16 creatures
+        Authored: 0
+      - Label: Feeds per child
+        Value: 8
+        Authored: 0
+      - Label: Feeds per level
+        Value: 16
+        Authored: 0
+      - Label: Reproduction cooldown
+        Value: 10 s
+        Authored: 0
+      - Label: Body growth per level
+        Value: "\xD71.15"
+        Authored: 0
+      - Label: Initial spawn
+        Value: 4 creatures
+        Authored: 0
+    - Label: Time
+      Element: 4
+      SourceConfig: {fileID: 11400000, guid: 135c28565d034815adaadd2e66233711, type: 2}
+      SourcePrefab: {fileID: 2988268804875292915, guid: c719f00ea7596c24185379994f7dc824,
+        type: 3}
+      Image: {fileID: 0}
+      Stats:
+      - Label: Shoal size
+        Value: 4 creatures
+        Authored: 0
+      - Label: Live cap
+        Value: 16 creatures
+        Authored: 0
+      - Label: Feeds per child
+        Value: 8
+        Authored: 0
+      - Label: Feeds per level
+        Value: 16
+        Authored: 0
+      - Label: Reproduction cooldown
+        Value: 10 s
+        Authored: 0
+      - Label: Body growth per level
+        Value: "\xD71.15"
+        Authored: 0
+      - Label: Initial spawn
+        Value: 4 creatures
+        Authored: 0
+    - Label: Astro League Brittlestar Fauna Config Data
+      Element: 0
+      SourceConfig: {fileID: 11400000, guid: f36f897ae32945e983b22ccacea5b86b, type: 2}
+      SourcePrefab: {fileID: 2988268804875292915, guid: c719f00ea7596c24185379994f7dc824,
+        type: 3}
+      Image: {fileID: 0}
+      Stats:
+      - Label: Shoal size
+        Value: 2 creatures
+        Authored: 0
+      - Label: Live cap
+        Value: 4 creatures
+        Authored: 0
+      - Label: Feeds per child
+        Value: 8
+        Authored: 0
+      - Label: Feeds per level
+        Value: 16
+        Authored: 0
+      - Label: Reproduction cooldown
+        Value: 10 s
+        Authored: 0
+      - Label: Body growth per level
+        Value: "\xD71.15"
+        Authored: 0
+      - Label: Initial spawn
+        Value: 2 creatures
+        Authored: 0
+    - Label: Blob Fauna Config Data
+      Element: 0
+      SourceConfig: {fileID: 11400000, guid: b3e5efaa5053ab748943e4c3433f72d1, type: 2}
+      SourcePrefab: {fileID: 2988268804875292915, guid: c719f00ea7596c24185379994f7dc824,
+        type: 3}
+      Image: {fileID: 0}
+      Stats:
+      - Label: Shoal size
+        Value: 3 creatures
+        Authored: 0
+      - Label: Live cap
+        Value: 9 creatures
+        Authored: 0
+      - Label: Feeds per child
+        Value: 16
+        Authored: 0
+      - Label: Feeds per level
+        Value: 32
+        Authored: 0
+      - Label: Reproduction cooldown
+        Value: 14 s
+        Authored: 0
+      - Label: Body growth per level
+        Value: "\xD71.15"
+        Authored: 0
+      - Label: Initial spawn
+        Value: 3 creatures
+        Authored: 0
+    - Label: Scarab Scramble Brittlestar Fauna Config Data
+      Element: 0
+      SourceConfig: {fileID: 11400000, guid: eceaaeea8d613d2053f8d39ea6d56e50, type: 2}
+      SourcePrefab: {fileID: 2988268804875292915, guid: c719f00ea7596c24185379994f7dc824,
+        type: 3}
+      Image: {fileID: 0}
+      Stats:
+      - Label: Shoal size
+        Value: 2 creatures
+        Authored: 0
+      - Label: Live cap
+        Value: 4 creatures
+        Authored: 0
+      - Label: Feeds per child
+        Value: 8
+        Authored: 0
+      - Label: Feeds per level
+        Value: 16
+        Authored: 0
+      - Label: Reproduction cooldown
+        Value: 10 s
+        Authored: 0
+      - Label: Body growth per level
+        Value: "\xD71.15"
+        Authored: 0
+      - Label: Initial spawn
+        Value: 2 creatures
+        Authored: 0
+    - Label: Skim Race Brittlestar Fauna Config Data
+      Element: 0
+      SourceConfig: {fileID: 11400000, guid: ab0dc8255c7c41f0a2f94c3e5f094da2, type: 2}
+      SourcePrefab: {fileID: 2988268804875292915, guid: c719f00ea7596c24185379994f7dc824,
+        type: 3}
+      Image: {fileID: 0}
+      Stats:
+      - Label: Shoal size
+        Value: 4 creatures
+        Authored: 0
+      - Label: Live cap
+        Value: 16 creatures
+        Authored: 0
+      - Label: Feeds per child
+        Value: 8
+        Authored: 0
+      - Label: Feeds per level
+        Value: 16
+        Authored: 0
+      - Label: Reproduction cooldown
+        Value: 10 s
+        Authored: 0
+      - Label: Body growth per level
+        Value: "\xD71.15"
+        Authored: 0
+      - Label: Initial spawn
+        Value: 4 creatures
+        Authored: 0
+    - Label: Wildlife Brittlestar L1 1
+      Element: 0
+      SourceConfig: {fileID: 11400000, guid: 437afdb206215afe937b34e797ddcadb, type: 2}
+      SourcePrefab: {fileID: 2988268804875292915, guid: c719f00ea7596c24185379994f7dc824,
+        type: 3}
+      Image: {fileID: 0}
+      Stats:
+      - Label: Shoal size
+        Value: 56 creatures
+        Authored: 0
+      - Label: Live cap
+        Value: 130 creatures
+        Authored: 0
+      - Label: Feeds per child
+        Value: 16
+        Authored: 0
+      - Label: Feeds per level
+        Value: 32
+        Authored: 0
+      - Label: Reproduction cooldown
+        Value: 14 s
+        Authored: 0
+      - Label: Body growth per level
+        Value: "\xD71.15"
+        Authored: 0
+      - Label: Initial spawn
+        Value: 56 creatures
+        Authored: 0
+      - Label: Roams
+        Value: "0\u20131180 units from the cell centre"
+        Authored: 0
+    - Label: Wildlife Brittlestar L1 2
+      Element: 0
+      SourceConfig: {fileID: 11400000, guid: 3f47eb7601fed233ecc7caeabbb6ab49, type: 2}
+      SourcePrefab: {fileID: 2988268804875292915, guid: c719f00ea7596c24185379994f7dc824,
+        type: 3}
+      Image: {fileID: 0}
+      Stats:
+      - Label: Shoal size
+        Value: 56 creatures
+        Authored: 0
+      - Label: Live cap
+        Value: 130 creatures
+        Authored: 0
+      - Label: Feeds per child
+        Value: 16
+        Authored: 0
+      - Label: Feeds per level
+        Value: 32
+        Authored: 0
+      - Label: Reproduction cooldown
+        Value: 14 s
+        Authored: 0
+      - Label: Body growth per level
+        Value: "\xD71.15"
+        Authored: 0
+      - Label: Initial spawn
+        Value: 56 creatures
+        Authored: 0
+      - Label: Roams
+        Value: "0\u20131180 units from the cell centre"
+        Authored: 0
+    - Label: Wildlife Brittlestar L1 3
+      Element: 0
+      SourceConfig: {fileID: 11400000, guid: 29b14f7ba93da476774e4fe2e89b8d77, type: 2}
+      SourcePrefab: {fileID: 2988268804875292915, guid: c719f00ea7596c24185379994f7dc824,
+        type: 3}
+      Image: {fileID: 0}
+      Stats:
+      - Label: Shoal size
+        Value: 56 creatures
+        Authored: 0
+      - Label: Live cap
+        Value: 130 creatures
+        Authored: 0
+      - Label: Feeds per child
+        Value: 16
+        Authored: 0
+      - Label: Feeds per level
+        Value: 32
+        Authored: 0
+      - Label: Reproduction cooldown
+        Value: 14 s
+        Authored: 0
+      - Label: Body growth per level
+        Value: "\xD71.15"
+        Authored: 0
+      - Label: Initial spawn
+        Value: 56 creatures
+        Authored: 0
+      - Label: Roams
+        Value: "0\u20131180 units from the cell centre"
+        Authored: 0
+    - Label: Wildlife Brittlestar L1 4
+      Element: 0
+      SourceConfig: {fileID: 11400000, guid: c574c8e2271b73ffbcd7bc46daddac6c, type: 2}
+      SourcePrefab: {fileID: 2988268804875292915, guid: c719f00ea7596c24185379994f7dc824,
+        type: 3}
+      Image: {fileID: 0}
+      Stats:
+      - Label: Shoal size
+        Value: 56 creatures
+        Authored: 0
+      - Label: Live cap
+        Value: 130 creatures
+        Authored: 0
+      - Label: Feeds per child
+        Value: 16
+        Authored: 0
+      - Label: Feeds per level
+        Value: 32
+        Authored: 0
+      - Label: Reproduction cooldown
+        Value: 14 s
+        Authored: 0
+      - Label: Body growth per level
+        Value: "\xD71.15"
+        Authored: 0
+      - Label: Initial spawn
+        Value: 56 creatures
+        Authored: 0
+      - Label: Roams
+        Value: "0\u20131180 units from the cell centre"
+        Authored: 0
+    - Label: Wildlife Brittlestar L2 1
+      Element: 0
+      SourceConfig: {fileID: 11400000, guid: ac6e43987db9869b42661191c937ca63, type: 2}
+      SourcePrefab: {fileID: 2988268804875292915, guid: c719f00ea7596c24185379994f7dc824,
+        type: 3}
+      Image: {fileID: 0}
+      Stats:
+      - Label: Shoal size
+        Value: 43 creatures
+        Authored: 0
+      - Label: Live cap
+        Value: 98 creatures
+        Authored: 0
+      - Label: Feeds per child
+        Value: 16
+        Authored: 0
+      - Label: Feeds per level
+        Value: 32
+        Authored: 0
+      - Label: Reproduction cooldown
+        Value: 14 s
+        Authored: 0
+      - Label: Starting level
+        Value: 2
+        Authored: 0
+      - Label: Body growth per level
+        Value: "\xD71.15"
+        Authored: 0
+      - Label: Initial spawn
+        Value: 43 creatures
+        Authored: 0
+      - Label: Roams
+        Value: "0\u20131180 units from the cell centre"
+        Authored: 0
+    - Label: Wildlife Brittlestar L2 2
+      Element: 0
+      SourceConfig: {fileID: 11400000, guid: 1d58ed5677d4f86989e9ffa098ff2f54, type: 2}
+      SourcePrefab: {fileID: 2988268804875292915, guid: c719f00ea7596c24185379994f7dc824,
+        type: 3}
+      Image: {fileID: 0}
+      Stats:
+      - Label: Shoal size
+        Value: 43 creatures
+        Authored: 0
+      - Label: Live cap
+        Value: 98 creatures
+        Authored: 0
+      - Label: Feeds per child
+        Value: 16
+        Authored: 0
+      - Label: Feeds per level
+        Value: 32
+        Authored: 0
+      - Label: Reproduction cooldown
+        Value: 14 s
+        Authored: 0
+      - Label: Starting level
+        Value: 2
+        Authored: 0
+      - Label: Body growth per level
+        Value: "\xD71.15"
+        Authored: 0
+      - Label: Initial spawn
+        Value: 43 creatures
+        Authored: 0
+      - Label: Roams
+        Value: "0\u20131180 units from the cell centre"
+        Authored: 0
+    - Label: Wildlife Brittlestar L2 3
+      Element: 0
+      SourceConfig: {fileID: 11400000, guid: 0bd6559f5c44275134e43e122b7754e7, type: 2}
+      SourcePrefab: {fileID: 2988268804875292915, guid: c719f00ea7596c24185379994f7dc824,
+        type: 3}
+      Image: {fileID: 0}
+      Stats:
+      - Label: Shoal size
+        Value: 43 creatures
+        Authored: 0
+      - Label: Live cap
+        Value: 98 creatures
+        Authored: 0
+      - Label: Feeds per child
+        Value: 16
+        Authored: 0
+      - Label: Feeds per level
+        Value: 32
+        Authored: 0
+      - Label: Reproduction cooldown
+        Value: 14 s
+        Authored: 0
+      - Label: Starting level
+        Value: 2
+        Authored: 0
+      - Label: Body growth per level
+        Value: "\xD71.15"
+        Authored: 0
+      - Label: Initial spawn
+        Value: 43 creatures
+        Authored: 0
+      - Label: Roams
+        Value: "0\u20131180 units from the cell centre"
+        Authored: 0
+    - Label: Wildlife Brittlestar L2 4
+      Element: 0
+      SourceConfig: {fileID: 11400000, guid: 13dc890b3089fccf26006e0c849b4745, type: 2}
+      SourcePrefab: {fileID: 2988268804875292915, guid: c719f00ea7596c24185379994f7dc824,
+        type: 3}
+      Image: {fileID: 0}
+      Stats:
+      - Label: Shoal size
+        Value: 43 creatures
+        Authored: 0
+      - Label: Live cap
+        Value: 98 creatures
+        Authored: 0
+      - Label: Feeds per child
+        Value: 16
+        Authored: 0
+      - Label: Feeds per level
+        Value: 32
+        Authored: 0
+      - Label: Reproduction cooldown
+        Value: 14 s
+        Authored: 0
+      - Label: Starting level
+        Value: 2
+        Authored: 0
+      - Label: Body growth per level
+        Value: "\xD71.15"
+        Authored: 0
+      - Label: Initial spawn
+        Value: 43 creatures
+        Authored: 0
+      - Label: Roams
+        Value: "0\u20131180 units from the cell centre"
+        Authored: 0
+  - Id: flora.cacti
+    Kingdom: 1
+    DisplayName: Cacti
+    Tagline: 
+    Description: 
+    Image: {fileID: 21300000, guid: d3e3774ed0ad61244aa631894095df20, type: 3}
+    SourcePrefab: {fileID: 6774738432424273872, guid: 82e04cfd7f5b93f478b5fbfe40c2a2d7,
+      type: 3}
+    AccentColor: {r: 0, g: 0, b: 0, a: 0}
+    UnlockedByDefault: 1
+    DiscoveryKey: see.cacti
+    PreviewYaw: -28
+    PreviewPitch: 16
+    PreviewPadding: 1.05
+    FlatSilhouette: 0
+    SortOrder: 0
+    LockAutoHarvest: 0
+    Stats:
+    - Label: Growth model
+      Value: "Branching \u2014 grows outward from a stem"
+      Authored: 0
+    - Label: Prisms per plant
+      Value: 5,000
+      Authored: 0
+    - Label: Breeds
+      Value: "Yes \u2014 one child per 56\u2013400 (by element) prisms grown"
+      Authored: 0
+    - Label: Population cap
+      Value: "6\u201339 (by element)"
+      Authored: 0
+    - Label: Planted on
+      Value: Any
+      Authored: 0
+    - Label: Found in
+      Value: Branching, Rampage
+      Authored: 0
+    Variants:
+    - Label: Charge
+      Element: 1
+      SourceConfig: {fileID: 11400000, guid: 58355313138d44a18893054ecabf494f, type: 2}
+      SourcePrefab: {fileID: 6774738432424273872, guid: 82e04cfd7f5b93f478b5fbfe40c2a2d7,
+        type: 3}
+      Image: {fileID: 0}
+      Stats:
+      - Label: Growth per child
+        Value: Does not reproduce
+        Authored: 0
+      - Label: Reproduction cooldown
+        Value: 5 s
+        Authored: 0
+      - Label: Initial seeding
+        Value: 1 plant
+        Authored: 0
+      - Label: Elemental law
+        Value: "Charge armours its leaves \u2014 grazing one costs two passes, because
+          the first only sheds the shield"
+        Authored: 0
+    - Label: Mass
+      Element: 2
+      SourceConfig: {fileID: 11400000, guid: 3c7234ddfb27413fa43e7640d54027c5, type: 2}
+      SourcePrefab: {fileID: 6774738432424273872, guid: 82e04cfd7f5b93f478b5fbfe40c2a2d7,
+        type: 3}
+      Image: {fileID: 0}
+      Stats:
+      - Label: Growth per child
+        Value: Does not reproduce
+        Authored: 0
+      - Label: Reproduction cooldown
+        Value: 5 s
+        Authored: 0
+      - Label: Initial seeding
+        Value: 1 plant
+        Authored: 0
+    - Label: Space
+      Element: 3
+      SourceConfig: {fileID: 11400000, guid: e2677134f5ac45c5985e5c24cdf31a20, type: 2}
+      SourcePrefab: {fileID: 6774738432424273872, guid: 82e04cfd7f5b93f478b5fbfe40c2a2d7,
+        type: 3}
+      Image: {fileID: 0}
+      Stats:
+      - Label: Growth per child
+        Value: Does not reproduce
+        Authored: 0
+      - Label: Reproduction cooldown
+        Value: 5 s
+        Authored: 0
+      - Label: Initial seeding
+        Value: 1 plant
+        Authored: 0
+    - Label: Time
+      Element: 4
+      SourceConfig: {fileID: 11400000, guid: d182188565e8421bb0fa6a13dfebb0bb, type: 2}
+      SourcePrefab: {fileID: 6774738432424273872, guid: 82e04cfd7f5b93f478b5fbfe40c2a2d7,
+        type: 3}
+      Image: {fileID: 0}
+      Stats:
+      - Label: Growth per child
+        Value: Does not reproduce
+        Authored: 0
+      - Label: Reproduction cooldown
+        Value: 5 s
+        Authored: 0
+      - Label: Initial seeding
+        Value: 1 plant
+        Authored: 0
+      - Label: Elemental law
+        Value: "Time breeds at 1.25\xD7 the fleet rate; the other three run at 0.8\xD7"
+        Authored: 0
+    - Label: Rampage Cacti Flora Config Data
+      Element: 0
+      SourceConfig: {fileID: 11400000, guid: f9232fe099904e69b63d12f1b0e28717, type: 2}
+      SourcePrefab: {fileID: 6774738432424273872, guid: 82e04cfd7f5b93f478b5fbfe40c2a2d7,
+        type: 3}
+      Image: {fileID: 0}
+      Stats:
+      - Label: Seed floor
+        Value: 26 plants
+        Authored: 0
+      - Label: Live cap
+        Value: 39 plants
+        Authored: 0
+      - Label: Growth per child
+        Value: 56 prisms
+        Authored: 0
+      - Label: Reproduction cooldown
+        Value: 5 s
+        Authored: 0
+      - Label: Initial seeding
+        Value: 26 plants
+        Authored: 0
+    - Label: Wildlife Cell 1 Cacti Flora Config Data
+      Element: 0
+      SourceConfig: {fileID: 11400000, guid: 74f2fbc5dffd2464e8bd8c49cd9784ea, type: 2}
+      SourcePrefab: {fileID: 6774738432424273872, guid: 82e04cfd7f5b93f478b5fbfe40c2a2d7,
+        type: 3}
+      Image: {fileID: 0}
+      Stats:
+      - Label: Seed floor
+        Value: 4 plants
+        Authored: 0
+      - Label: Live cap
+        Value: 6 plants
+        Authored: 0
+      - Label: Growth per child
+        Value: 400 prisms
+        Authored: 0
+      - Label: Reproduction cooldown
+        Value: 5 s
+        Authored: 0
+      - Label: Initial seeding
+        Value: 4 plants
+        Authored: 0
+    - Label: Wildlife Cell 2 Cacti Flora Config Data
+      Element: 0
+      SourceConfig: {fileID: 11400000, guid: 77cfd98717a1ad84190ccb36d4676495, type: 2}
+      SourcePrefab: {fileID: 6774738432424273872, guid: 82e04cfd7f5b93f478b5fbfe40c2a2d7,
+        type: 3}
+      Image: {fileID: 0}
+      Stats:
+      - Label: Seed floor
+        Value: 10 plants
+        Authored: 0
+      - Label: Live cap
+        Value: 15 plants
+        Authored: 0
+      - Label: Growth per child
+        Value: 400 prisms
+        Authored: 0
+      - Label: Reproduction cooldown
+        Value: 5 s
+        Authored: 0
+      - Label: Initial seeding
+        Value: 10 plants
+        Authored: 0
+  - Id: fauna.clawfish
+    Kingdom: 2
+    DisplayName: Clawfish
+    Tagline: 
+    Description: 
+    Image: {fileID: 21300000, guid: 70ee3c80799d0e8438866dda02f41a06, type: 3}
+    SourcePrefab: {fileID: 6455206541193087406, guid: a525483096f54bc44a73646161623bf5,
+      type: 3}
+    AccentColor: {r: 0, g: 0, b: 0, a: 0}
+    UnlockedByDefault: 1
+    DiscoveryKey: see.clawfish
+    PreviewYaw: -28
+    PreviewPitch: 16
+    PreviewPadding: 1.05
+    FlatSilhouette: 0
+    SortOrder: 0
+    LockAutoHarvest: 0
+    Stats:
+    - Label: Behaviour
+      Value: "Swimmer \u2014 steers to a goal on its own"
+      Authored: 0
+    - Label: Diet
+      Value: "Herbivore \u2014 grazes prism mass (flora canopy and vessel trails)"
+      Authored: 0
+    - Label: Starves after
+      Value: 30 s
+      Authored: 0
+    - Label: Levels
+      Value: "1\u20135, earned by feeding \u2014 never rolled at spawn"
+      Authored: 0
+    - Label: Population cap
+      Value: 6
+      Authored: 0
+    - Label: Found in
+      Value: "Released by hand \u2014 no cell seeds it"
+      Authored: 0
+    Variants:
+    - Label: Charge
+      Element: 1
+      SourceConfig: {fileID: 11400000, guid: 9a71c56e49ff4ee493c70be766f1b335, type: 2}
+      SourcePrefab: {fileID: 6455206541193087406, guid: a525483096f54bc44a73646161623bf5,
+        type: 3}
+      Image: {fileID: 0}
+      Stats:
+      - Label: Shoal size
+        Value: 2 creatures
+        Authored: 0
+      - Label: Live cap
+        Value: 6 creatures
+        Authored: 0
+      - Label: Feeds per child
+        Value: 20
+        Authored: 0
+      - Label: Feeds per level
+        Value: 40
+        Authored: 0
+      - Label: Reproduction cooldown
+        Value: 10 s
+        Authored: 0
+      - Label: Body growth per level
+        Value: "\xD71.15"
+        Authored: 0
+      - Label: Initial spawn
+        Value: 2 creatures
+        Authored: 0
+    - Label: Mass
+      Element: 2
+      SourceConfig: {fileID: 11400000, guid: d6d14731fd184959b837ab47e378f813, type: 2}
+      SourcePrefab: {fileID: 6455206541193087406, guid: a525483096f54bc44a73646161623bf5,
+        type: 3}
+      Image: {fileID: 0}
+      Stats:
+      - Label: Shoal size
+        Value: 2 creatures
+        Authored: 0
+      - Label: Live cap
+        Value: 6 creatures
+        Authored: 0
+      - Label: Feeds per child
+        Value: 20
+        Authored: 0
+      - Label: Feeds per level
+        Value: 40
+        Authored: 0
+      - Label: Reproduction cooldown
+        Value: 10 s
+        Authored: 0
+      - Label: Body growth per level
+        Value: "\xD71.15"
+        Authored: 0
+      - Label: Initial spawn
+        Value: 2 creatures
+        Authored: 0
+    - Label: Space
+      Element: 3
+      SourceConfig: {fileID: 11400000, guid: 0e87f3117e7141a7b5bce66b0385a2d0, type: 2}
+      SourcePrefab: {fileID: 6455206541193087406, guid: a525483096f54bc44a73646161623bf5,
+        type: 3}
+      Image: {fileID: 0}
+      Stats:
+      - Label: Shoal size
+        Value: 2 creatures
+        Authored: 0
+      - Label: Live cap
+        Value: 6 creatures
+        Authored: 0
+      - Label: Feeds per child
+        Value: 20
+        Authored: 0
+      - Label: Feeds per level
+        Value: 40
+        Authored: 0
+      - Label: Reproduction cooldown
+        Value: 10 s
+        Authored: 0
+      - Label: Body growth per level
+        Value: "\xD71.15"
+        Authored: 0
+      - Label: Initial spawn
+        Value: 2 creatures
+        Authored: 0
+    - Label: Time
+      Element: 4
+      SourceConfig: {fileID: 11400000, guid: c7ff7791587d4467ba9fbe88358b2119, type: 2}
+      SourcePrefab: {fileID: 6455206541193087406, guid: a525483096f54bc44a73646161623bf5,
+        type: 3}
+      Image: {fileID: 0}
+      Stats:
+      - Label: Shoal size
+        Value: 2 creatures
+        Authored: 0
+      - Label: Live cap
+        Value: 6 creatures
+        Authored: 0
+      - Label: Feeds per child
+        Value: 20
+        Authored: 0
+      - Label: Feeds per level
+        Value: 40
+        Authored: 0
+      - Label: Reproduction cooldown
+        Value: 10 s
+        Authored: 0
+      - Label: Body growth per level
+        Value: "\xD71.15"
+        Authored: 0
+      - Label: Initial spawn
+        Value: 2 creatures
+        Authored: 0
+  - Id: flora.coral
+    Kingdom: 1
+    DisplayName: Coral
+    Tagline: 
+    Description: 
+    Image: {fileID: 21300000, guid: 92dd81e34523eca43b20bdae35e66831, type: 3}
+    SourcePrefab: {fileID: 6774738432424273872, guid: 8aa5ae3e061dda708816cb0ffa750537,
+      type: 3}
+    AccentColor: {r: 0, g: 0, b: 0, a: 0}
+    UnlockedByDefault: 1
+    DiscoveryKey: see.coral
+    PreviewYaw: -28
+    PreviewPitch: 16
+    PreviewPadding: 1.05
+    FlatSilhouette: 0
+    SortOrder: 0
+    LockAutoHarvest: 0
+    Stats:
+    - Label: Growth model
+      Value: "Phyllotactic \u2014 whorled leaves on a spiral"
+      Authored: 0
+    - Label: Prisms per plant
+      Value: 200
+      Authored: 0
+    - Label: Breeds
+      Value: "Yes \u2014 one child per 63\u201384 (by element) prisms grown"
+      Authored: 0
+    - Label: Population cap
+      Value: "9\u201312 (by element)"
+      Authored: 0
+    - Label: Planted on
+      Value: Bed, Water / Any
+      Authored: 0
+    - Label: Found in
+      Value: Hesperides, Rampage
+      Authored: 0
+    Variants:
+    - Label: Charge
+      Element: 1
+      SourceConfig: {fileID: 11400000, guid: 3acc68af7174ace900e563f3a84834ab, type: 2}
+      SourcePrefab: {fileID: 6774738432424273872, guid: 8aa5ae3e061dda708816cb0ffa750537,
+        type: 3}
+      Image: {fileID: 0}
+      Stats:
+      - Label: Growth per child
+        Value: Does not reproduce
+        Authored: 0
+      - Label: Reproduction cooldown
+        Value: 5 s
+        Authored: 0
+      - Label: Initial seeding
+        Value: 1 plant
+        Authored: 0
+      - Label: Elemental law
+        Value: "Charge armours its leaves \u2014 grazing one costs two passes, because
+          the first only sheds the shield"
+        Authored: 0
+    - Label: Mass
+      Element: 2
+      SourceConfig: {fileID: 11400000, guid: 6d0af1c13dbab0a65e33bd38608c5094, type: 2}
+      SourcePrefab: {fileID: 6774738432424273872, guid: 8aa5ae3e061dda708816cb0ffa750537,
+        type: 3}
+      Image: {fileID: 0}
+      Stats:
+      - Label: Seed floor
+        Value: 8 plants
+        Authored: 0
+      - Label: Live cap
+        Value: 12 plants
+        Authored: 0
+      - Label: Growth per child
+        Value: 84 prisms
+        Authored: 0
+      - Label: Reproduction cooldown
+        Value: 5 s
+        Authored: 0
+      - Label: Initial seeding
+        Value: 8 plants
+        Authored: 0
+    - Label: Mass
+      Element: 2
+      SourceConfig: {fileID: 11400000, guid: 831655e9ccb93345f7c24990f7735e88, type: 2}
+      SourcePrefab: {fileID: 6774738432424273872, guid: 8aa5ae3e061dda708816cb0ffa750537,
+        type: 3}
+      Image: {fileID: 0}
+      Stats:
+      - Label: Growth per child
+        Value: Does not reproduce
+        Authored: 0
+      - Label: Reproduction cooldown
+        Value: 5 s
+        Authored: 0
+      - Label: Initial seeding
+        Value: 1 plant
+        Authored: 0
+    - Label: Space
+      Element: 3
+      SourceConfig: {fileID: 11400000, guid: 63904e33f924098b5fa6e08bbba75a1a, type: 2}
+      SourcePrefab: {fileID: 6774738432424273872, guid: 8aa5ae3e061dda708816cb0ffa750537,
+        type: 3}
+      Image: {fileID: 0}
+      Stats:
+      - Label: Growth per child
+        Value: Does not reproduce
+        Authored: 0
+      - Label: Reproduction cooldown
+        Value: 5 s
+        Authored: 0
+      - Label: Initial seeding
+        Value: 1 plant
+        Authored: 0
+    - Label: Time
+      Element: 4
+      SourceConfig: {fileID: 11400000, guid: 508ddc60ff84ab16a84c22dd6d2fe007, type: 2}
+      SourcePrefab: {fileID: 6774738432424273872, guid: 8aa5ae3e061dda708816cb0ffa750537,
+        type: 3}
+      Image: {fileID: 0}
+      Stats:
+      - Label: Growth per child
+        Value: Does not reproduce
+        Authored: 0
+      - Label: Reproduction cooldown
+        Value: 5 s
+        Authored: 0
+      - Label: Initial seeding
+        Value: 1 plant
+        Authored: 0
+      - Label: Elemental law
+        Value: "Time breeds at 1.25\xD7 the fleet rate; the other three run at 0.8\xD7"
+        Authored: 0
+    - Label: Rampage Coral Flora Config Data
+      Element: 0
+      SourceConfig: {fileID: 11400000, guid: c189b76be353421a9d7efae8ecb6cee0, type: 2}
+      SourcePrefab: {fileID: 6774738432424273872, guid: 8aa5ae3e061dda708816cb0ffa750537,
+        type: 3}
+      Image: {fileID: 0}
+      Stats:
+      - Label: Seed floor
+        Value: 6 plants
+        Authored: 0
+      - Label: Live cap
+        Value: 9 plants
+        Authored: 0
+      - Label: Growth per child
+        Value: 63 prisms
+        Authored: 0
+      - Label: Reproduction cooldown
+        Value: 5 s
+        Authored: 0
+      - Label: Initial seeding
+        Value: 6 plants
+        Authored: 0
+  - Id: flora.frond
+    Kingdom: 1
+    DisplayName: Frond
+    Tagline: 
+    Description: 
+    Image: {fileID: 21300000, guid: b6b7087f556d5594bae361047538c8dc, type: 3}
+    SourcePrefab: {fileID: 6774738432424273872, guid: d6d46fa85e530440efddea15c7a09bf2,
+      type: 3}
+    AccentColor: {r: 0, g: 0, b: 0, a: 0}
+    UnlockedByDefault: 1
+    DiscoveryKey: see.frond
+    PreviewYaw: -28
+    PreviewPitch: 16
+    PreviewPadding: 1.05
+    FlatSilhouette: 0
+    SortOrder: 0
+    LockAutoHarvest: 0
+    Stats:
+    - Label: Growth model
+      Value: "Phyllotactic \u2014 whorled leaves on a spiral"
+      Authored: 0
+    - Label: Prisms per plant
+      Value: 150
+      Authored: 0
+    - Label: Breeds
+      Value: "Yes \u2014 one child per 63 prisms grown"
+      Authored: 0
+    - Label: Population cap
+      Value: 18
+      Authored: 0
+    - Label: Planted on
+      Value: Bed, Water
+      Authored: 0
+    - Label: Found in
+      Value: Hesperides
+      Authored: 0
+    Variants:
+    - Label: Charge
+      Element: 1
+      SourceConfig: {fileID: 11400000, guid: c7112dce6c9a0c61a56246667dc0e483, type: 2}
+      SourcePrefab: {fileID: 6774738432424273872, guid: d6d46fa85e530440efddea15c7a09bf2,
+        type: 3}
+      Image: {fileID: 0}
+      Stats:
+      - Label: Growth per child
+        Value: Does not reproduce
+        Authored: 0
+      - Label: Reproduction cooldown
+        Value: 5 s
+        Authored: 0
+      - Label: Initial seeding
+        Value: 1 plant
+        Authored: 0
+      - Label: Elemental law
+        Value: "Charge armours its leaves \u2014 grazing one costs two passes, because
+          the first only sheds the shield"
+        Authored: 0
+    - Label: Mass
+      Element: 2
+      SourceConfig: {fileID: 11400000, guid: a0100b18ef44eed8358873ded59af56f, type: 2}
+      SourcePrefab: {fileID: 6774738432424273872, guid: d6d46fa85e530440efddea15c7a09bf2,
+        type: 3}
+      Image: {fileID: 0}
+      Stats:
+      - Label: Seed floor
+        Value: 12 plants
+        Authored: 0
+      - Label: Live cap
+        Value: 18 plants
+        Authored: 0
+      - Label: Growth per child
+        Value: 63 prisms
+        Authored: 0
+      - Label: Reproduction cooldown
+        Value: 5 s
+        Authored: 0
+      - Label: Initial seeding
+        Value: 12 plants
+        Authored: 0
+    - Label: Mass
+      Element: 2
+      SourceConfig: {fileID: 11400000, guid: 7606669db01dffea0f7acfedcb455448, type: 2}
+      SourcePrefab: {fileID: 6774738432424273872, guid: d6d46fa85e530440efddea15c7a09bf2,
+        type: 3}
+      Image: {fileID: 0}
+      Stats:
+      - Label: Growth per child
+        Value: Does not reproduce
+        Authored: 0
+      - Label: Reproduction cooldown
+        Value: 5 s
+        Authored: 0
+      - Label: Initial seeding
+        Value: 1 plant
+        Authored: 0
+    - Label: Space
+      Element: 3
+      SourceConfig: {fileID: 11400000, guid: 1509c65ca7a236ce04c57cd8e0f86259, type: 2}
+      SourcePrefab: {fileID: 6774738432424273872, guid: d6d46fa85e530440efddea15c7a09bf2,
+        type: 3}
+      Image: {fileID: 0}
+      Stats:
+      - Label: Growth per child
+        Value: Does not reproduce
+        Authored: 0
+      - Label: Reproduction cooldown
+        Value: 5 s
+        Authored: 0
+      - Label: Initial seeding
+        Value: 1 plant
+        Authored: 0
+    - Label: Time
+      Element: 4
+      SourceConfig: {fileID: 11400000, guid: 2793ffd53f8be9f6e91f7023014245cf, type: 2}
+      SourcePrefab: {fileID: 6774738432424273872, guid: d6d46fa85e530440efddea15c7a09bf2,
+        type: 3}
+      Image: {fileID: 0}
+      Stats:
+      - Label: Growth per child
+        Value: Does not reproduce
+        Authored: 0
+      - Label: Reproduction cooldown
+        Value: 5 s
+        Authored: 0
+      - Label: Initial seeding
+        Value: 1 plant
+        Authored: 0
+      - Label: Elemental law
+        Value: "Time breeds at 1.25\xD7 the fleet rate; the other three run at 0.8\xD7"
+        Authored: 0
+  - Id: flora.gyroid
+    Kingdom: 1
+    DisplayName: Gyroid
+    Tagline: 
+    Description: 
+    Image: {fileID: 21300000, guid: 7a07a16165c5e5746b8257eb72c32afa, type: 3}
+    SourcePrefab: {fileID: 8186157953239024494, guid: a84d160ac0bcaf94da22c5368e4d3962,
+      type: 3}
+    AccentColor: {r: 0, g: 0, b: 0, a: 0}
+    UnlockedByDefault: 1
+    DiscoveryKey: see.gyroid
+    PreviewYaw: -28
+    PreviewPitch: 16
+    PreviewPadding: 1.05
+    FlatSilhouette: 0
+    SortOrder: 0
+    LockAutoHarvest: 0
+    Stats:
+    - Label: Growth model
+      Value: "Lattice colony \u2014 tiles a repeating surface, one plant per site"
+      Authored: 0
+    - Label: Prisms per plant
+      Value: 1,500
+      Authored: 0
+    - Label: Breeds
+      Value: "Yes \u2014 one child per 22 prisms grown"
+      Authored: 0
+    - Label: Population cap
+      Value: "8\u201390 (by element)"
+      Authored: 0
+    - Label: Planted on
+      Value: Any / Bed
+      Authored: 0
+    - Label: Found in
+      Value: Branching, Caldera, Daedala, Geode, Hesperides, Lattice +4 more
+      Authored: 0
+    Variants:
+    - Label: Charge
+      Element: 1
+      SourceConfig: {fileID: 11400000, guid: c07e951a8a50a10a44f813dabb17af6b, type: 2}
+      SourcePrefab: {fileID: 8186157953239024494, guid: a84d160ac0bcaf94da22c5368e4d3962,
+        type: 3}
+      Image: {fileID: 0}
+      Stats:
+      - Label: Seed floor
+        Value: 1 plant
+        Authored: 0
+      - Label: Live cap
+        Value: 90 plants
+        Authored: 0
+      - Label: Growth per child
+        Value: 22 prisms
+        Authored: 0
+      - Label: Reproduction cooldown
+        Value: 5 s
+        Authored: 0
+      - Label: Initial seeding
+        Value: 1 plant
+        Authored: 0
+      - Label: Elemental law
+        Value: "Charge armours its leaves \u2014 grazing one costs two passes, because
+          the first only sheds the shield"
+        Authored: 0
+    - Label: Charge
+      Element: 1
+      SourceConfig: {fileID: 11400000, guid: a343fb01cc5b439ca5fa66beacf1a817, type: 2}
+      SourcePrefab: {fileID: 8186157953239024494, guid: a84d160ac0bcaf94da22c5368e4d3962,
+        type: 3}
+      Image: {fileID: 0}
+      Stats:
+      - Label: Seed floor
+        Value: 4 plants
+        Authored: 0
+      - Label: Live cap
+        Value: 42 plants
+        Authored: 0
+      - Label: Growth per child
+        Value: 22 prisms
+        Authored: 0
+      - Label: Reproduction cooldown
+        Value: 5 s
+        Authored: 0
+      - Label: Initial seeding
+        Value: 1 plant
+        Authored: 0
+      - Label: Elemental law
+        Value: "Charge armours its leaves \u2014 grazing one costs two passes, because
+          the first only sheds the shield"
+        Authored: 0
+    - Label: Mass
+      Element: 2
+      SourceConfig: {fileID: 11400000, guid: 1da6eb378abb68a4c926a3e744f64502, type: 2}
+      SourcePrefab: {fileID: 8186157953239024494, guid: a84d160ac0bcaf94da22c5368e4d3962,
+        type: 3}
+      Image: {fileID: 0}
+      Stats:
+      - Label: Seed floor
+        Value: 4 plants
+        Authored: 0
+      - Label: Live cap
+        Value: 60 plants
+        Authored: 0
+      - Label: Growth per child
+        Value: 22 prisms
+        Authored: 0
+      - Label: Reproduction cooldown
+        Value: 5 s
+        Authored: 0
+      - Label: Initial seeding
+        Value: 1 plant
+        Authored: 0
+    - Label: Mass
+      Element: 2
+      SourceConfig: {fileID: 11400000, guid: 4e4d2aa57519f8c461f0955dd262a5ea, type: 2}
+      SourcePrefab: {fileID: 8186157953239024494, guid: a84d160ac0bcaf94da22c5368e4d3962,
+        type: 3}
+      Image: {fileID: 0}
+      Stats:
+      - Label: Seed floor
+        Value: 4 plants
+        Authored: 0
+      - Label: Live cap
+        Value: 8 plants
+        Authored: 0
+      - Label: Growth per child
+        Value: 22 prisms
+        Authored: 0
+      - Label: Reproduction cooldown
+        Value: 5 s
+        Authored: 0
+      - Label: Initial seeding
+        Value: 3 plants
+        Authored: 0
+    - Label: Mass
+      Element: 2
+      SourceConfig: {fileID: 11400000, guid: 8b09dd1521ffe9964dfb9e181de41dcf, type: 2}
+      SourcePrefab: {fileID: 8186157953239024494, guid: a84d160ac0bcaf94da22c5368e4d3962,
+        type: 3}
+      Image: {fileID: 0}
+      Stats:
+      - Label: Seed floor
+        Value: 1 plant
+        Authored: 0
+      - Label: Live cap
+        Value: 90 plants
+        Authored: 0
+      - Label: Growth per child
+        Value: 22 prisms
+        Authored: 0
+      - Label: Reproduction cooldown
+        Value: 5 s
+        Authored: 0
+      - Label: Initial seeding
+        Value: 1 plant
+        Authored: 0
+    - Label: Mass
+      Element: 2
+      SourceConfig: {fileID: 11400000, guid: 0b882c8abd8e990428b25b92c13a059a, type: 2}
+      SourcePrefab: {fileID: 8186157953239024494, guid: a84d160ac0bcaf94da22c5368e4d3962,
+        type: 3}
+      Image: {fileID: 0}
+      Stats:
+      - Label: Seed floor
+        Value: 4 plants
+        Authored: 0
+      - Label: Live cap
+        Value: 60 plants
+        Authored: 0
+      - Label: Growth per child
+        Value: 22 prisms
+        Authored: 0
+      - Label: Reproduction cooldown
+        Value: 5 s
+        Authored: 0
+      - Label: Initial seeding
+        Value: 2 plants
+        Authored: 0
+    - Label: Mass
+      Element: 2
+      SourceConfig: {fileID: 11400000, guid: bcb09b7b37a24707a3934db2bf658d5f, type: 2}
+      SourcePrefab: {fileID: 8186157953239024494, guid: a84d160ac0bcaf94da22c5368e4d3962,
+        type: 3}
+      Image: {fileID: 0}
+      Stats:
+      - Label: Seed floor
+        Value: 4 plants
+        Authored: 0
+      - Label: Live cap
+        Value: 60 plants
+        Authored: 0
+      - Label: Growth per child
+        Value: 22 prisms
+        Authored: 0
+      - Label: Reproduction cooldown
+        Value: 5 s
+        Authored: 0
+      - Label: Initial seeding
+        Value: 1 plant
+        Authored: 0
+    - Label: Space
+      Element: 3
+      SourceConfig: {fileID: 11400000, guid: 92c5e1234c5572043a8656f6fe98225d, type: 2}
+      SourcePrefab: {fileID: 8186157953239024494, guid: a84d160ac0bcaf94da22c5368e4d3962,
+        type: 3}
+      Image: {fileID: 0}
+      Stats:
+      - Label: Seed floor
+        Value: 4 plants
+        Authored: 0
+      - Label: Live cap
+        Value: 33 plants
+        Authored: 0
+      - Label: Growth per child
+        Value: 22 prisms
+        Authored: 0
+      - Label: Reproduction cooldown
+        Value: 5 s
+        Authored: 0
+      - Label: Initial seeding
+        Value: 1 plant
+        Authored: 0
+    - Label: Space
+      Element: 3
+      SourceConfig: {fileID: 11400000, guid: 65a3bece78ba1c5d9ee64df409a7decf, type: 2}
+      SourcePrefab: {fileID: 8186157953239024494, guid: a84d160ac0bcaf94da22c5368e4d3962,
+        type: 3}
+      Image: {fileID: 0}
+      Stats:
+      - Label: Seed floor
+        Value: 1 plant
+        Authored: 0
+      - Label: Live cap
+        Value: 90 plants
+        Authored: 0
+      - Label: Growth per child
+        Value: 22 prisms
+        Authored: 0
+      - Label: Reproduction cooldown
+        Value: 5 s
+        Authored: 0
+      - Label: Initial seeding
+        Value: 1 plant
+        Authored: 0
+    - Label: Space
+      Element: 3
+      SourceConfig: {fileID: 11400000, guid: 3ff8a2dec637c534ab4a86f636f727c1, type: 2}
+      SourcePrefab: {fileID: 8186157953239024494, guid: a84d160ac0bcaf94da22c5368e4d3962,
+        type: 3}
+      Image: {fileID: 0}
+      Stats:
+      - Label: Seed floor
+        Value: 4 plants
+        Authored: 0
+      - Label: Live cap
+        Value: 33 plants
+        Authored: 0
+      - Label: Growth per child
+        Value: 22 prisms
+        Authored: 0
+      - Label: Reproduction cooldown
+        Value: 5 s
+        Authored: 0
+      - Label: Initial seeding
+        Value: 2 plants
+        Authored: 0
+    - Label: Space
+      Element: 3
+      SourceConfig: {fileID: 11400000, guid: 016e18462b534f838d81604470e4962e, type: 2}
+      SourcePrefab: {fileID: 8186157953239024494, guid: a84d160ac0bcaf94da22c5368e4d3962,
+        type: 3}
+      Image: {fileID: 0}
+      Stats:
+      - Label: Seed floor
+        Value: 4 plants
+        Authored: 0
+      - Label: Live cap
+        Value: 33 plants
+        Authored: 0
+      - Label: Growth per child
+        Value: 22 prisms
+        Authored: 0
+      - Label: Reproduction cooldown
+        Value: 5 s
+        Authored: 0
+      - Label: Initial seeding
+        Value: 1 plant
+        Authored: 0
+    - Label: Time
+      Element: 4
+      SourceConfig: {fileID: 11400000, guid: 1c42cd367fe439a48beba6cdb60ec9d4, type: 2}
+      SourcePrefab: {fileID: 8186157953239024494, guid: a84d160ac0bcaf94da22c5368e4d3962,
+        type: 3}
+      Image: {fileID: 0}
+      Stats:
+      - Label: Seed floor
+        Value: 4 plants
+        Authored: 0
+      - Label: Live cap
+        Value: 42 plants
+        Authored: 0
+      - Label: Growth per child
+        Value: 22 prisms
+        Authored: 0
+      - Label: Reproduction cooldown
+        Value: 5 s
+        Authored: 0
+      - Label: Initial seeding
+        Value: 1 plant
+        Authored: 0
+      - Label: Elemental law
+        Value: "Time breeds at 1.25\xD7 the fleet rate; the other three run at 0.8\xD7"
+        Authored: 0
+    - Label: Time
+      Element: 4
+      SourceConfig: {fileID: 11400000, guid: 4e941074773b98ed94c74f6eaf2586de, type: 2}
+      SourcePrefab: {fileID: 8186157953239024494, guid: a84d160ac0bcaf94da22c5368e4d3962,
+        type: 3}
+      Image: {fileID: 0}
+      Stats:
+      - Label: Seed floor
+        Value: 1 plant
+        Authored: 0
+      - Label: Live cap
+        Value: 90 plants
+        Authored: 0
+      - Label: Growth per child
+        Value: 22 prisms
+        Authored: 0
+      - Label: Reproduction cooldown
+        Value: 5 s
+        Authored: 0
+      - Label: Initial seeding
+        Value: 1 plant
+        Authored: 0
+      - Label: Elemental law
+        Value: "Time breeds at 1.25\xD7 the fleet rate; the other three run at 0.8\xD7"
+        Authored: 0
+    - Label: Time
+      Element: 4
+      SourceConfig: {fileID: 11400000, guid: a63d477b0b2f02b488a544dcb3604eec, type: 2}
+      SourcePrefab: {fileID: 8186157953239024494, guid: a84d160ac0bcaf94da22c5368e4d3962,
+        type: 3}
+      Image: {fileID: 0}
+      Stats:
+      - Label: Seed floor
+        Value: 4 plants
+        Authored: 0
+      - Label: Live cap
+        Value: 42 plants
+        Authored: 0
+      - Label: Growth per child
+        Value: 22 prisms
+        Authored: 0
+      - Label: Reproduction cooldown
+        Value: 5 s
+        Authored: 0
+      - Label: Initial seeding
+        Value: 2 plants
+        Authored: 0
+      - Label: Elemental law
+        Value: "Time breeds at 1.25\xD7 the fleet rate; the other three run at 0.8\xD7"
+        Authored: 0
+    - Label: Time
+      Element: 4
+      SourceConfig: {fileID: 11400000, guid: f27c9fe8e43d4c8bb0c7ea84c9f8050d, type: 2}
+      SourcePrefab: {fileID: 8186157953239024494, guid: a84d160ac0bcaf94da22c5368e4d3962,
+        type: 3}
+      Image: {fileID: 0}
+      Stats:
+      - Label: Seed floor
+        Value: 4 plants
+        Authored: 0
+      - Label: Live cap
+        Value: 42 plants
+        Authored: 0
+      - Label: Growth per child
+        Value: 22 prisms
+        Authored: 0
+      - Label: Reproduction cooldown
+        Value: 5 s
+        Authored: 0
+      - Label: Initial seeding
+        Value: 1 plant
+        Authored: 0
+      - Label: Elemental law
+        Value: "Time breeds at 1.25\xD7 the fleet rate; the other three run at 0.8\xD7"
+        Authored: 0
+  - Id: flora.lantern
+    Kingdom: 1
+    DisplayName: Lantern
+    Tagline: 
+    Description: 
+    Image: {fileID: 21300000, guid: a9cdf0e10ff3b544f824324ca822d4c2, type: 3}
+    SourcePrefab: {fileID: 6774738432424273872, guid: 02d6411760b77441c06bd767aae879cf,
+      type: 3}
+    AccentColor: {r: 0, g: 0, b: 0, a: 0}
+    UnlockedByDefault: 1
+    DiscoveryKey: see.lantern
+    PreviewYaw: -28
+    PreviewPitch: 16
+    PreviewPadding: 1.05
+    FlatSilhouette: 0
+    SortOrder: 0
+    LockAutoHarvest: 0
+    Stats:
+    - Label: Growth model
+      Value: "Phyllotactic \u2014 whorled leaves on a spiral"
+      Authored: 0
+    - Label: Prisms per plant
+      Value: 70
+      Authored: 0
+    - Label: Breeds
+      Value: "Yes \u2014 one child per 29 prisms grown"
+      Authored: 0
+    - Label: Population cap
+      Value: 12
+      Authored: 0
+    - Label: Planted on
+      Value: Basket
+      Authored: 0
+    - Label: Found in
+      Value: Hesperides
+      Authored: 0
+    Variants:
+    - Label: Charge
+      Element: 1
+      SourceConfig: {fileID: 11400000, guid: 5f677807a75e4c3dd300c74c2c08845c, type: 2}
+      SourcePrefab: {fileID: 6774738432424273872, guid: 02d6411760b77441c06bd767aae879cf,
+        type: 3}
+      Image: {fileID: 0}
+      Stats:
+      - Label: Growth per child
+        Value: Does not reproduce
+        Authored: 0
+      - Label: Reproduction cooldown
+        Value: 5 s
+        Authored: 0
+      - Label: Initial seeding
+        Value: 1 plant
+        Authored: 0
+      - Label: Elemental law
+        Value: "Charge armours its leaves \u2014 grazing one costs two passes, because
+          the first only sheds the shield"
+        Authored: 0
+    - Label: Mass
+      Element: 2
+      SourceConfig: {fileID: 11400000, guid: f95d5e3154eabc5565af1bde585fa850, type: 2}
+      SourcePrefab: {fileID: 6774738432424273872, guid: 02d6411760b77441c06bd767aae879cf,
+        type: 3}
+      Image: {fileID: 0}
+      Stats:
+      - Label: Seed floor
+        Value: 8 plants
+        Authored: 0
+      - Label: Live cap
+        Value: 12 plants
+        Authored: 0
+      - Label: Growth per child
+        Value: 29 prisms
+        Authored: 0
+      - Label: Reproduction cooldown
+        Value: 5 s
+        Authored: 0
+      - Label: Initial seeding
+        Value: 8 plants
+        Authored: 0
+    - Label: Mass
+      Element: 2
+      SourceConfig: {fileID: 11400000, guid: f9c6de2b9c6c7bac6b64b1ae759b74c1, type: 2}
+      SourcePrefab: {fileID: 6774738432424273872, guid: 02d6411760b77441c06bd767aae879cf,
+        type: 3}
+      Image: {fileID: 0}
+      Stats:
+      - Label: Growth per child
+        Value: Does not reproduce
+        Authored: 0
+      - Label: Reproduction cooldown
+        Value: 5 s
+        Authored: 0
+      - Label: Initial seeding
+        Value: 1 plant
+        Authored: 0
+    - Label: Space
+      Element: 3
+      SourceConfig: {fileID: 11400000, guid: 6a2756de008a569c5f02ba30dff53835, type: 2}
+      SourcePrefab: {fileID: 6774738432424273872, guid: 02d6411760b77441c06bd767aae879cf,
+        type: 3}
+      Image: {fileID: 0}
+      Stats:
+      - Label: Growth per child
+        Value: Does not reproduce
+        Authored: 0
+      - Label: Reproduction cooldown
+        Value: 5 s
+        Authored: 0
+      - Label: Initial seeding
+        Value: 1 plant
+        Authored: 0
+    - Label: Time
+      Element: 4
+      SourceConfig: {fileID: 11400000, guid: f3d94c9041756fb024d75b4adce9dc66, type: 2}
+      SourcePrefab: {fileID: 6774738432424273872, guid: 02d6411760b77441c06bd767aae879cf,
+        type: 3}
+      Image: {fileID: 0}
+      Stats:
+      - Label: Growth per child
+        Value: Does not reproduce
+        Authored: 0
+      - Label: Reproduction cooldown
+        Value: 5 s
+        Authored: 0
+      - Label: Initial seeding
+        Value: 1 plant
+        Authored: 0
+      - Label: Elemental law
+        Value: "Time breeds at 1.25\xD7 the fleet rate; the other three run at 0.8\xD7"
+        Authored: 0
+  - Id: flora.nerve
+    Kingdom: 1
+    DisplayName: Nerve
+    Tagline: 
+    Description: 
+    Image: {fileID: 21300000, guid: 451076d683eaebb4990b2ce5996d4b74, type: 3}
+    SourcePrefab: {fileID: 6774738432424273872, guid: 5f8219db5b2bd1d48b331f9eb3e04888,
+      type: 3}
+    AccentColor: {r: 0, g: 0, b: 0, a: 0}
+    UnlockedByDefault: 1
+    DiscoveryKey: see.nerve
+    PreviewYaw: -28
+    PreviewPitch: 16
+    PreviewPadding: 1.05
+    FlatSilhouette: 0
+    SortOrder: 0
+    LockAutoHarvest: 0
+    Stats:
+    - Label: Growth model
+      Value: "Branching \u2014 grows outward from a stem"
+      Authored: 0
+    - Label: Prisms per plant
+      Value: 400
+      Authored: 0
+    - Label: Breeds
+      Value: "No \u2014 a level-1 forest, seeded and grazed but never reproducing"
+      Authored: 0
+    - Label: Planted on
+      Value: Any
+      Authored: 0
+    - Label: Found in
+      Value: "Released by hand \u2014 no cell seeds it"
+      Authored: 0
+    Variants:
+    - Label: Charge
+      Element: 1
+      SourceConfig: {fileID: 11400000, guid: 5fb431867f214d01a6fcfb99d6d2e5ea, type: 2}
+      SourcePrefab: {fileID: 6774738432424273872, guid: 5f8219db5b2bd1d48b331f9eb3e04888,
+        type: 3}
+      Image: {fileID: 0}
+      Stats:
+      - Label: Growth per child
+        Value: Does not reproduce
+        Authored: 0
+      - Label: Reproduction cooldown
+        Value: 5 s
+        Authored: 0
+      - Label: Initial seeding
+        Value: 1 plant
+        Authored: 0
+      - Label: Elemental law
+        Value: "Charge armours its leaves \u2014 grazing one costs two passes, because
+          the first only sheds the shield"
+        Authored: 0
+    - Label: Mass
+      Element: 2
+      SourceConfig: {fileID: 11400000, guid: 0abdfac5a80d40789934b73f4e838046, type: 2}
+      SourcePrefab: {fileID: 6774738432424273872, guid: 5f8219db5b2bd1d48b331f9eb3e04888,
+        type: 3}
+      Image: {fileID: 0}
+      Stats:
+      - Label: Growth per child
+        Value: Does not reproduce
+        Authored: 0
+      - Label: Reproduction cooldown
+        Value: 5 s
+        Authored: 0
+      - Label: Initial seeding
+        Value: 1 plant
+        Authored: 0
+    - Label: Space
+      Element: 3
+      SourceConfig: {fileID: 11400000, guid: 951335f3d27448a3a496ab8ec29279a0, type: 2}
+      SourcePrefab: {fileID: 6774738432424273872, guid: 5f8219db5b2bd1d48b331f9eb3e04888,
+        type: 3}
+      Image: {fileID: 0}
+      Stats:
+      - Label: Growth per child
+        Value: Does not reproduce
+        Authored: 0
+      - Label: Reproduction cooldown
+        Value: 5 s
+        Authored: 0
+      - Label: Initial seeding
+        Value: 1 plant
+        Authored: 0
+    - Label: Time
+      Element: 4
+      SourceConfig: {fileID: 11400000, guid: 801c826e68b0477e89de35fae8ff128e, type: 2}
+      SourcePrefab: {fileID: 6774738432424273872, guid: 5f8219db5b2bd1d48b331f9eb3e04888,
+        type: 3}
+      Image: {fileID: 0}
+      Stats:
+      - Label: Growth per child
+        Value: Does not reproduce
+        Authored: 0
+      - Label: Reproduction cooldown
+        Value: 5 s
+        Authored: 0
+      - Label: Initial seeding
+        Value: 1 plant
+        Authored: 0
+      - Label: Elemental law
+        Value: "Time breeds at 1.25\xD7 the fleet rate; the other three run at 0.8\xD7"
+        Authored: 0
+  - Id: flora.pine
+    Kingdom: 1
+    DisplayName: Pine
+    Tagline: 
+    Description: 
+    Image: {fileID: 21300000, guid: 8a8a23e5176a1324eafc41996b43fe4b, type: 3}
+    SourcePrefab: {fileID: 6774738432424273872, guid: 5357031cd8403ba4b8f210b6971b9ce7,
+      type: 3}
+    AccentColor: {r: 0, g: 0, b: 0, a: 0}
+    UnlockedByDefault: 1
+    DiscoveryKey: see.pine
+    PreviewYaw: -28
+    PreviewPitch: 16
+    PreviewPadding: 1.05
+    FlatSilhouette: 0
+    SortOrder: 0
+    LockAutoHarvest: 0
+    Stats:
+    - Label: Growth model
+      Value: "Branching \u2014 grows outward from a stem"
+      Authored: 0
+    - Label: Prisms per plant
+      Value: 5,000
+      Authored: 0
+    - Label: Breeds
+      Value: "Yes \u2014 one child per 52 prisms grown"
+      Authored: 0
+    - Label: Population cap
+      Value: 15
+      Authored: 0
+    - Label: Planted on
+      Value: Any
+      Authored: 0
+    - Label: Found in
+      Value: Rampage
+      Authored: 0
+    Variants:
+    - Label: Charge
+      Element: 1
+      SourceConfig: {fileID: 11400000, guid: 12bd6f27581147c1a081ecef353dacd9, type: 2}
+      SourcePrefab: {fileID: 6774738432424273872, guid: 5357031cd8403ba4b8f210b6971b9ce7,
+        type: 3}
+      Image: {fileID: 0}
+      Stats:
+      - Label: Growth per child
+        Value: Does not reproduce
+        Authored: 0
+      - Label: Reproduction cooldown
+        Value: 5 s
+        Authored: 0
+      - Label: Initial seeding
+        Value: 1 plant
+        Authored: 0
+      - Label: Elemental law
+        Value: "Charge armours its leaves \u2014 grazing one costs two passes, because
+          the first only sheds the shield"
+        Authored: 0
+    - Label: Mass
+      Element: 2
+      SourceConfig: {fileID: 11400000, guid: 2eeb5320cd1c4f8bacc07e4af64e907c, type: 2}
+      SourcePrefab: {fileID: 6774738432424273872, guid: 5357031cd8403ba4b8f210b6971b9ce7,
+        type: 3}
+      Image: {fileID: 0}
+      Stats:
+      - Label: Growth per child
+        Value: Does not reproduce
+        Authored: 0
+      - Label: Reproduction cooldown
+        Value: 5 s
+        Authored: 0
+      - Label: Initial seeding
+        Value: 1 plant
+        Authored: 0
+    - Label: Space
+      Element: 3
+      SourceConfig: {fileID: 11400000, guid: a5d4c148308747ffbff241aac38f5912, type: 2}
+      SourcePrefab: {fileID: 6774738432424273872, guid: 5357031cd8403ba4b8f210b6971b9ce7,
+        type: 3}
+      Image: {fileID: 0}
+      Stats:
+      - Label: Growth per child
+        Value: Does not reproduce
+        Authored: 0
+      - Label: Reproduction cooldown
+        Value: 5 s
+        Authored: 0
+      - Label: Initial seeding
+        Value: 1 plant
+        Authored: 0
+    - Label: Time
+      Element: 4
+      SourceConfig: {fileID: 11400000, guid: 8143e68d2afd437cbf107584a54b246a, type: 2}
+      SourcePrefab: {fileID: 6774738432424273872, guid: 5357031cd8403ba4b8f210b6971b9ce7,
+        type: 3}
+      Image: {fileID: 0}
+      Stats:
+      - Label: Growth per child
+        Value: Does not reproduce
+        Authored: 0
+      - Label: Reproduction cooldown
+        Value: 5 s
+        Authored: 0
+      - Label: Initial seeding
+        Value: 1 plant
+        Authored: 0
+      - Label: Elemental law
+        Value: "Time breeds at 1.25\xD7 the fleet rate; the other three run at 0.8\xD7"
+        Authored: 0
+    - Label: Rampage Pine Flora Config Data
+      Element: 0
+      SourceConfig: {fileID: 11400000, guid: 77428610f484433586d594663b70385a, type: 2}
+      SourcePrefab: {fileID: 6774738432424273872, guid: 5357031cd8403ba4b8f210b6971b9ce7,
+        type: 3}
+      Image: {fileID: 0}
+      Stats:
+      - Label: Seed floor
+        Value: 10 plants
+        Authored: 0
+      - Label: Live cap
+        Value: 15 plants
+        Authored: 0
+      - Label: Growth per child
+        Value: 52 prisms
+        Authored: 0
+      - Label: Reproduction cooldown
+        Value: 5 s
+        Authored: 0
+      - Label: Initial seeding
+        Value: 10 plants
+        Authored: 0
+  - Id: fauna.quadfish
+    Kingdom: 2
+    DisplayName: QuadFish
+    Tagline: 
+    Description: 
+    Image: {fileID: 21300000, guid: 4aac03be612f7b84a840323fc6a150f5, type: 3}
+    SourcePrefab: {fileID: 6455206541193087406, guid: 19615ed0c903b1041973d70593d4b0a3,
+      type: 3}
+    AccentColor: {r: 0, g: 0, b: 0, a: 0}
+    UnlockedByDefault: 1
+    DiscoveryKey: see.quadfish
+    PreviewYaw: -28
+    PreviewPitch: 16
+    PreviewPadding: 1.05
+    FlatSilhouette: 0
+    SortOrder: 0
+    LockAutoHarvest: 0
+    Stats:
+    - Label: Behaviour
+      Value: "Shoals \u2014 separation, cohesion and a shared goal"
+      Authored: 0
+    - Label: Diet
+      Value: "Herbivore \u2014 grazes prism mass (flora canopy and vessel trails)"
+      Authored: 0
+    - Label: Starves after
+      Value: 30 s
+      Authored: 0
+    - Label: Speed
+      Value: "16\u201328 units/s"
+      Authored: 0
+    - Label: Levels
+      Value: "1\u20135, earned by feeding \u2014 never rolled at spawn"
+      Authored: 0
+    - Label: Population cap
+      Value: "8\u2013893 (by element)"
+      Authored: 0
+    - Label: Found in
+      Value: Boneyard, Wildlife Liberation
+      Authored: 0
+    Variants:
+    - Label: Charge
+      Element: 1
+      SourceConfig: {fileID: 11400000, guid: 4053ff006892420d8ca5efa51365570c, type: 2}
+      SourcePrefab: {fileID: 6455206541193087406, guid: 19615ed0c903b1041973d70593d4b0a3,
+        type: 3}
+      Image: {fileID: 0}
+      Stats:
+      - Label: Shoal size
+        Value: 4 creatures
+        Authored: 0
+      - Label: Live cap
+        Value: 8 creatures
+        Authored: 0
+      - Label: Feeds per child
+        Value: 20
+        Authored: 0
+      - Label: Feeds per level
+        Value: 40
+        Authored: 0
+      - Label: Reproduction cooldown
+        Value: 10 s
+        Authored: 0
+      - Label: Body growth per level
+        Value: "\xD71.15"
+        Authored: 0
+      - Label: Initial spawn
+        Value: 4 creatures
+        Authored: 0
+    - Label: Mass
+      Element: 2
+      SourceConfig: {fileID: 11400000, guid: 5697aa8685514f2ca9b9de9638fce1a1, type: 2}
+      SourcePrefab: {fileID: 6455206541193087406, guid: 19615ed0c903b1041973d70593d4b0a3,
+        type: 3}
+      Image: {fileID: 0}
+      Stats:
+      - Label: Shoal size
+        Value: 4 creatures
+        Authored: 0
+      - Label: Live cap
+        Value: 8 creatures
+        Authored: 0
+      - Label: Feeds per child
+        Value: 20
+        Authored: 0
+      - Label: Feeds per level
+        Value: 40
+        Authored: 0
+      - Label: Reproduction cooldown
+        Value: 10 s
+        Authored: 0
+      - Label: Body growth per level
+        Value: "\xD71.15"
+        Authored: 0
+      - Label: Initial spawn
+        Value: 4 creatures
+        Authored: 0
+    - Label: Space
+      Element: 3
+      SourceConfig: {fileID: 11400000, guid: 3107bcc776d54a74b110b883f10fba61, type: 2}
+      SourcePrefab: {fileID: 6455206541193087406, guid: 19615ed0c903b1041973d70593d4b0a3,
+        type: 3}
+      Image: {fileID: 0}
+      Stats:
+      - Label: Shoal size
+        Value: 4 creatures
+        Authored: 0
+      - Label: Live cap
+        Value: 8 creatures
+        Authored: 0
+      - Label: Feeds per child
+        Value: 20
+        Authored: 0
+      - Label: Feeds per level
+        Value: 40
+        Authored: 0
+      - Label: Reproduction cooldown
+        Value: 10 s
+        Authored: 0
+      - Label: Body growth per level
+        Value: "\xD71.15"
+        Authored: 0
+      - Label: Initial spawn
+        Value: 4 creatures
+        Authored: 0
+    - Label: Time
+      Element: 4
+      SourceConfig: {fileID: 11400000, guid: 414bce89d4dc495f87bbccfb02e5b847, type: 2}
+      SourcePrefab: {fileID: 6455206541193087406, guid: 19615ed0c903b1041973d70593d4b0a3,
+        type: 3}
+      Image: {fileID: 0}
+      Stats:
+      - Label: Shoal size
+        Value: 4 creatures
+        Authored: 0
+      - Label: Live cap
+        Value: 8 creatures
+        Authored: 0
+      - Label: Feeds per child
+        Value: 20
+        Authored: 0
+      - Label: Feeds per level
+        Value: 40
+        Authored: 0
+      - Label: Reproduction cooldown
+        Value: 10 s
+        Authored: 0
+      - Label: Body growth per level
+        Value: "\xD71.15"
+        Authored: 0
+      - Label: Initial spawn
+        Value: 4 creatures
+        Authored: 0
+    - Label: Boneyard Scavenger 1
+      Element: 0
+      SourceConfig: {fileID: 11400000, guid: bbfc9736a013933d808a638e7775a3d4, type: 2}
+      SourcePrefab: {fileID: 6455206541193087406, guid: 19615ed0c903b1041973d70593d4b0a3,
+        type: 3}
+      Image: {fileID: 0}
+      Stats:
+      - Label: Shoal size
+        Value: 60 creatures
+        Authored: 0
+      - Label: Live cap
+        Value: 150 creatures
+        Authored: 0
+      - Label: Feeds per child
+        Value: 20
+        Authored: 0
+      - Label: Feeds per level
+        Value: 40
+        Authored: 0
+      - Label: Reproduction cooldown
+        Value: 12 s
+        Authored: 0
+      - Label: Body growth per level
+        Value: "\xD71.15"
+        Authored: 0
+      - Label: Initial spawn
+        Value: 60 creatures
+        Authored: 0
+    - Label: Boneyard Scavenger 2
+      Element: 0
+      SourceConfig: {fileID: 11400000, guid: cbb064a57fce6300471ba8fb1b0815ec, type: 2}
+      SourcePrefab: {fileID: 6455206541193087406, guid: 19615ed0c903b1041973d70593d4b0a3,
+        type: 3}
+      Image: {fileID: 0}
+      Stats:
+      - Label: Shoal size
+        Value: 80 creatures
+        Authored: 0
+      - Label: Live cap
+        Value: 200 creatures
+        Authored: 0
+      - Label: Feeds per child
+        Value: 20
+        Authored: 0
+      - Label: Feeds per level
+        Value: 40
+        Authored: 0
+      - Label: Reproduction cooldown
+        Value: 12 s
+        Authored: 0
+      - Label: Body growth per level
+        Value: "\xD71.15"
+        Authored: 0
+      - Label: Initial spawn
+        Value: 80 creatures
+        Authored: 0
+    - Label: Boneyard Scavenger 3
+      Element: 0
+      SourceConfig: {fileID: 11400000, guid: ba6d23f731464cb531d1d793ddad4e10, type: 2}
+      SourcePrefab: {fileID: 6455206541193087406, guid: 19615ed0c903b1041973d70593d4b0a3,
+        type: 3}
+      Image: {fileID: 0}
+      Stats:
+      - Label: Shoal size
+        Value: 100 creatures
+        Authored: 0
+      - Label: Live cap
+        Value: 250 creatures
+        Authored: 0
+      - Label: Feeds per child
+        Value: 20
+        Authored: 0
+      - Label: Feeds per level
+        Value: 40
+        Authored: 0
+      - Label: Reproduction cooldown
+        Value: 12 s
+        Authored: 0
+      - Label: Body growth per level
+        Value: "\xD71.15"
+        Authored: 0
+      - Label: Initial spawn
+        Value: 100 creatures
+        Authored: 0
+    - Label: Boneyard Scavenger 4
+      Element: 0
+      SourceConfig: {fileID: 11400000, guid: 41eee6791f9579b4803f330a1d6c7f09, type: 2}
+      SourcePrefab: {fileID: 6455206541193087406, guid: 19615ed0c903b1041973d70593d4b0a3,
+        type: 3}
+      Image: {fileID: 0}
+      Stats:
+      - Label: Shoal size
+        Value: 120 creatures
+        Authored: 0
+      - Label: Live cap
+        Value: 300 creatures
+        Authored: 0
+      - Label: Feeds per child
+        Value: 20
+        Authored: 0
+      - Label: Feeds per level
+        Value: 40
+        Authored: 0
+      - Label: Reproduction cooldown
+        Value: 12 s
+        Authored: 0
+      - Label: Body growth per level
+        Value: "\xD71.15"
+        Authored: 0
+      - Label: Initial spawn
+        Value: 120 creatures
+        Authored: 0
+    - Label: Wildlife QuadFish L1 1
+      Element: 0
+      SourceConfig: {fileID: 11400000, guid: 0b3ccbc93e5c31c50e4e51929daf39b1, type: 2}
+      SourcePrefab: {fileID: 6455206541193087406, guid: 19615ed0c903b1041973d70593d4b0a3,
+        type: 3}
+      Image: {fileID: 0}
+      Stats:
+      - Label: Shoal size
+        Value: 383 creatures
+        Authored: 0
+      - Label: Live cap
+        Value: 893 creatures
+        Authored: 0
+      - Label: Feeds per child
+        Value: 20
+        Authored: 0
+      - Label: Feeds per level
+        Value: 40
+        Authored: 0
+      - Label: Reproduction cooldown
+        Value: 12 s
+        Authored: 0
+      - Label: Body growth per level
+        Value: "\xD71.15"
+        Authored: 0
+      - Label: Initial spawn
+        Value: 383 creatures
+        Authored: 0
+      - Label: Roams
+        Value: "0\u20131180 units from the cell centre"
+        Authored: 0
+    - Label: Wildlife QuadFish L1 2
+      Element: 0
+      SourceConfig: {fileID: 11400000, guid: bcc4322fab5c191b9504611806d894f4, type: 2}
+      SourcePrefab: {fileID: 6455206541193087406, guid: 19615ed0c903b1041973d70593d4b0a3,
+        type: 3}
+      Image: {fileID: 0}
+      Stats:
+      - Label: Shoal size
+        Value: 383 creatures
+        Authored: 0
+      - Label: Live cap
+        Value: 893 creatures
+        Authored: 0
+      - Label: Feeds per child
+        Value: 20
+        Authored: 0
+      - Label: Feeds per level
+        Value: 40
+        Authored: 0
+      - Label: Reproduction cooldown
+        Value: 12 s
+        Authored: 0
+      - Label: Body growth per level
+        Value: "\xD71.15"
+        Authored: 0
+      - Label: Initial spawn
+        Value: 383 creatures
+        Authored: 0
+      - Label: Roams
+        Value: "0\u20131180 units from the cell centre"
+        Authored: 0
+    - Label: Wildlife QuadFish L1 3
+      Element: 0
+      SourceConfig: {fileID: 11400000, guid: 5c3e3b3a6d536277f9f2ed2c8a4172ae, type: 2}
+      SourcePrefab: {fileID: 6455206541193087406, guid: 19615ed0c903b1041973d70593d4b0a3,
+        type: 3}
+      Image: {fileID: 0}
+      Stats:
+      - Label: Shoal size
+        Value: 383 creatures
+        Authored: 0
+      - Label: Live cap
+        Value: 893 creatures
+        Authored: 0
+      - Label: Feeds per child
+        Value: 20
+        Authored: 0
+      - Label: Feeds per level
+        Value: 40
+        Authored: 0
+      - Label: Reproduction cooldown
+        Value: 12 s
+        Authored: 0
+      - Label: Body growth per level
+        Value: "\xD71.15"
+        Authored: 0
+      - Label: Initial spawn
+        Value: 383 creatures
+        Authored: 0
+      - Label: Roams
+        Value: "0\u20131180 units from the cell centre"
+        Authored: 0
+    - Label: Wildlife QuadFish L1 4
+      Element: 0
+      SourceConfig: {fileID: 11400000, guid: 3553b416244dfb81fe8d69bcc75ec982, type: 2}
+      SourcePrefab: {fileID: 6455206541193087406, guid: 19615ed0c903b1041973d70593d4b0a3,
+        type: 3}
+      Image: {fileID: 0}
+      Stats:
+      - Label: Shoal size
+        Value: 383 creatures
+        Authored: 0
+      - Label: Live cap
+        Value: 893 creatures
+        Authored: 0
+      - Label: Feeds per child
+        Value: 20
+        Authored: 0
+      - Label: Feeds per level
+        Value: 40
+        Authored: 0
+      - Label: Reproduction cooldown
+        Value: 12 s
+        Authored: 0
+      - Label: Body growth per level
+        Value: "\xD71.15"
+        Authored: 0
+      - Label: Initial spawn
+        Value: 383 creatures
+        Authored: 0
+      - Label: Roams
+        Value: "0\u20131180 units from the cell centre"
+        Authored: 0
+  - Id: flora.quasicrystal
+    Kingdom: 1
+    DisplayName: Quasicrystal
+    Tagline: 
+    Description: 
+    Image: {fileID: 21300000, guid: 1b660a4b377c64b4c8b98f590befe8ba, type: 3}
+    SourcePrefab: {fileID: 8186157953239024494, guid: eff83db54b6d4f7d98bfc3b42b8d1487,
+      type: 3}
+    AccentColor: {r: 0, g: 0, b: 0, a: 0}
+    UnlockedByDefault: 1
+    DiscoveryKey: see.quasicrystal
+    PreviewYaw: -28
+    PreviewPitch: 16
+    PreviewPadding: 1.05
+    FlatSilhouette: 0
+    SortOrder: 0
+    LockAutoHarvest: 0
+    Stats:
+    - Label: Growth model
+      Value: "Lattice colony \u2014 tiles a repeating surface, one plant per site"
+      Authored: 0
+    - Label: Prisms per plant
+      Value: 800
+      Authored: 0
+    - Label: Breeds
+      Value: "Yes \u2014 one child per 22 prisms grown"
+      Authored: 0
+    - Label: Population cap
+      Value: "14\u201390 (by element)"
+      Authored: 0
+    - Label: Planted on
+      Value: Any
+      Authored: 0
+    - Label: Found in
+      Value: Caldera, Daedala, Geode, Lattice, Orrery, Ourobor +2 more
+      Authored: 0
+    Variants:
+    - Label: Charge
+      Element: 1
+      SourceConfig: {fileID: 11400000, guid: 270a5588974a865aa77bdddc41355503, type: 2}
+      SourcePrefab: {fileID: 8186157953239024494, guid: eff83db54b6d4f7d98bfc3b42b8d1487,
+        type: 3}
+      Image: {fileID: 0}
+      Stats:
+      - Label: Seed floor
+        Value: 1 plant
+        Authored: 0
+      - Label: Live cap
+        Value: 90 plants
+        Authored: 0
+      - Label: Growth per child
+        Value: 22 prisms
+        Authored: 0
+      - Label: Reproduction cooldown
+        Value: 5 s
+        Authored: 0
+      - Label: Initial seeding
+        Value: 1 plant
+        Authored: 0
+      - Label: Elemental law
+        Value: "Charge armours its leaves \u2014 grazing one costs two passes, because
+          the first only sheds the shield"
+        Authored: 0
+    - Label: Charge
+      Element: 1
+      SourceConfig: {fileID: 11400000, guid: fcf139eca19845ecbb5cea2d491214c6, type: 2}
+      SourcePrefab: {fileID: 8186157953239024494, guid: eff83db54b6d4f7d98bfc3b42b8d1487,
+        type: 3}
+      Image: {fileID: 0}
+      Stats:
+      - Label: Seed floor
+        Value: 4 plants
+        Authored: 0
+      - Label: Live cap
+        Value: 14 plants
+        Authored: 0
+      - Label: Growth per child
+        Value: 22 prisms
+        Authored: 0
+      - Label: Reproduction cooldown
+        Value: 5 s
+        Authored: 0
+      - Label: Initial seeding
+        Value: 1 plant
+        Authored: 0
+      - Label: Elemental law
+        Value: "Charge armours its leaves \u2014 grazing one costs two passes, because
+          the first only sheds the shield"
+        Authored: 0
+    - Label: Mass
+      Element: 2
+      SourceConfig: {fileID: 11400000, guid: a5f7464fc4dc342ffc2c1d140f2e078e, type: 2}
+      SourcePrefab: {fileID: 8186157953239024494, guid: eff83db54b6d4f7d98bfc3b42b8d1487,
+        type: 3}
+      Image: {fileID: 0}
+      Stats:
+      - Label: Seed floor
+        Value: 1 plant
+        Authored: 0
+      - Label: Live cap
+        Value: 90 plants
+        Authored: 0
+      - Label: Growth per child
+        Value: 22 prisms
+        Authored: 0
+      - Label: Reproduction cooldown
+        Value: 5 s
+        Authored: 0
+      - Label: Initial seeding
+        Value: 1 plant
+        Authored: 0
+    - Label: Mass
+      Element: 2
+      SourceConfig: {fileID: 11400000, guid: 47624b4efa994b9296f16723e5c87482, type: 2}
+      SourcePrefab: {fileID: 8186157953239024494, guid: eff83db54b6d4f7d98bfc3b42b8d1487,
+        type: 3}
+      Image: {fileID: 0}
+      Stats:
+      - Label: Seed floor
+        Value: 4 plants
+        Authored: 0
+      - Label: Live cap
+        Value: 14 plants
+        Authored: 0
+      - Label: Growth per child
+        Value: 22 prisms
+        Authored: 0
+      - Label: Reproduction cooldown
+        Value: 5 s
+        Authored: 0
+      - Label: Initial seeding
+        Value: 1 plant
+        Authored: 0
+    - Label: Space
+      Element: 3
+      SourceConfig: {fileID: 11400000, guid: f0b06ff37193c0b8cddb0946652954e1, type: 2}
+      SourcePrefab: {fileID: 8186157953239024494, guid: eff83db54b6d4f7d98bfc3b42b8d1487,
+        type: 3}
+      Image: {fileID: 0}
+      Stats:
+      - Label: Seed floor
+        Value: 1 plant
+        Authored: 0
+      - Label: Live cap
+        Value: 90 plants
+        Authored: 0
+      - Label: Growth per child
+        Value: 22 prisms
+        Authored: 0
+      - Label: Reproduction cooldown
+        Value: 5 s
+        Authored: 0
+      - Label: Initial seeding
+        Value: 1 plant
+        Authored: 0
+    - Label: Space
+      Element: 3
+      SourceConfig: {fileID: 11400000, guid: f2677d56069e48aa85354b70616a650b, type: 2}
+      SourcePrefab: {fileID: 8186157953239024494, guid: eff83db54b6d4f7d98bfc3b42b8d1487,
+        type: 3}
+      Image: {fileID: 0}
+      Stats:
+      - Label: Seed floor
+        Value: 4 plants
+        Authored: 0
+      - Label: Live cap
+        Value: 14 plants
+        Authored: 0
+      - Label: Growth per child
+        Value: 22 prisms
+        Authored: 0
+      - Label: Reproduction cooldown
+        Value: 5 s
+        Authored: 0
+      - Label: Initial seeding
+        Value: 1 plant
+        Authored: 0
+    - Label: Time
+      Element: 4
+      SourceConfig: {fileID: 11400000, guid: 54ca4ac86c0f1deea92f685a8d0ea1d0, type: 2}
+      SourcePrefab: {fileID: 8186157953239024494, guid: eff83db54b6d4f7d98bfc3b42b8d1487,
+        type: 3}
+      Image: {fileID: 0}
+      Stats:
+      - Label: Seed floor
+        Value: 1 plant
+        Authored: 0
+      - Label: Live cap
+        Value: 90 plants
+        Authored: 0
+      - Label: Growth per child
+        Value: 22 prisms
+        Authored: 0
+      - Label: Reproduction cooldown
+        Value: 5 s
+        Authored: 0
+      - Label: Initial seeding
+        Value: 1 plant
+        Authored: 0
+      - Label: Elemental law
+        Value: "Time breeds at 1.25\xD7 the fleet rate; the other three run at 0.8\xD7"
+        Authored: 0
+    - Label: Time
+      Element: 4
+      SourceConfig: {fileID: 11400000, guid: d8ebac2e7c7b4e64ad1e307c036b4a3f, type: 2}
+      SourcePrefab: {fileID: 8186157953239024494, guid: eff83db54b6d4f7d98bfc3b42b8d1487,
+        type: 3}
+      Image: {fileID: 0}
+      Stats:
+      - Label: Seed floor
+        Value: 4 plants
+        Authored: 0
+      - Label: Live cap
+        Value: 14 plants
+        Authored: 0
+      - Label: Growth per child
+        Value: 22 prisms
+        Authored: 0
+      - Label: Reproduction cooldown
+        Value: 5 s
+        Authored: 0
+      - Label: Initial seeding
+        Value: 1 plant
+        Authored: 0
+      - Label: Elemental law
+        Value: "Time breeds at 1.25\xD7 the fleet rate; the other three run at 0.8\xD7"
+        Authored: 0
+    - Label: Blob Quasicrystal Flora Config Data
+      Element: 0
+      SourceConfig: {fileID: 11400000, guid: 1dd44c4e9b1249aa8e41761185e61089, type: 2}
+      SourcePrefab: {fileID: 8186157953239024494, guid: eff83db54b6d4f7d98bfc3b42b8d1487,
+        type: 3}
+      Image: {fileID: 0}
+      Stats:
+      - Label: Seed floor
+        Value: 4 plants
+        Authored: 0
+      - Label: Live cap
+        Value: 14 plants
+        Authored: 0
+      - Label: Growth per child
+        Value: 22 prisms
+        Authored: 0
+      - Label: Reproduction cooldown
+        Value: 5 s
+        Authored: 0
+      - Label: Initial seeding
+        Value: 1 plant
+        Authored: 0
+  - Id: flora.reed
+    Kingdom: 1
+    DisplayName: Reed
+    Tagline: 
+    Description: 
+    Image: {fileID: 21300000, guid: ef048c6f334627c4cb75bc4ddce17572, type: 3}
+    SourcePrefab: {fileID: 6774738432424273872, guid: 28cd06ed9fc81c2474d9edc7b31a205f,
+      type: 3}
+    AccentColor: {r: 0, g: 0, b: 0, a: 0}
+    UnlockedByDefault: 1
+    DiscoveryKey: see.reed
+    PreviewYaw: -28
+    PreviewPitch: 16
+    PreviewPadding: 1.05
+    FlatSilhouette: 0
+    SortOrder: 0
+    LockAutoHarvest: 0
+    Stats:
+    - Label: Growth model
+      Value: "Phyllotactic \u2014 whorled leaves on a spiral"
+      Authored: 0
+    - Label: Prisms per plant
+      Value: 110
+      Authored: 0
+    - Label: Breeds
+      Value: "Yes \u2014 one child per 46 prisms grown"
+      Authored: 0
+    - Label: Population cap
+      Value: 12
+      Authored: 0
+    - Label: Planted on
+      Value: Water
+      Authored: 0
+    - Label: Found in
+      Value: Hesperides
+      Authored: 0
+    Variants:
+    - Label: Charge
+      Element: 1
+      SourceConfig: {fileID: 11400000, guid: 3984b71ff12f8dbcd72c010111f93450, type: 2}
+      SourcePrefab: {fileID: 6774738432424273872, guid: 28cd06ed9fc81c2474d9edc7b31a205f,
+        type: 3}
+      Image: {fileID: 0}
+      Stats:
+      - Label: Growth per child
+        Value: Does not reproduce
+        Authored: 0
+      - Label: Reproduction cooldown
+        Value: 5 s
+        Authored: 0
+      - Label: Initial seeding
+        Value: 1 plant
+        Authored: 0
+      - Label: Elemental law
+        Value: "Charge armours its leaves \u2014 grazing one costs two passes, because
+          the first only sheds the shield"
+        Authored: 0
+    - Label: Mass
+      Element: 2
+      SourceConfig: {fileID: 11400000, guid: 18bf6a9ca4db278ce09d1be3eff1fbf4, type: 2}
+      SourcePrefab: {fileID: 6774738432424273872, guid: 28cd06ed9fc81c2474d9edc7b31a205f,
+        type: 3}
+      Image: {fileID: 0}
+      Stats:
+      - Label: Seed floor
+        Value: 8 plants
+        Authored: 0
+      - Label: Live cap
+        Value: 12 plants
+        Authored: 0
+      - Label: Growth per child
+        Value: 46 prisms
+        Authored: 0
+      - Label: Reproduction cooldown
+        Value: 5 s
+        Authored: 0
+      - Label: Initial seeding
+        Value: 8 plants
+        Authored: 0
+    - Label: Mass
+      Element: 2
+      SourceConfig: {fileID: 11400000, guid: d4d9ebab8b93bb75c7466b69f343d901, type: 2}
+      SourcePrefab: {fileID: 6774738432424273872, guid: 28cd06ed9fc81c2474d9edc7b31a205f,
+        type: 3}
+      Image: {fileID: 0}
+      Stats:
+      - Label: Growth per child
+        Value: Does not reproduce
+        Authored: 0
+      - Label: Reproduction cooldown
+        Value: 5 s
+        Authored: 0
+      - Label: Initial seeding
+        Value: 1 plant
+        Authored: 0
+    - Label: Space
+      Element: 3
+      SourceConfig: {fileID: 11400000, guid: 2fc16005a219923d84c1d58712bf5732, type: 2}
+      SourcePrefab: {fileID: 6774738432424273872, guid: 28cd06ed9fc81c2474d9edc7b31a205f,
+        type: 3}
+      Image: {fileID: 0}
+      Stats:
+      - Label: Growth per child
+        Value: Does not reproduce
+        Authored: 0
+      - Label: Reproduction cooldown
+        Value: 5 s
+        Authored: 0
+      - Label: Initial seeding
+        Value: 1 plant
+        Authored: 0
+    - Label: Time
+      Element: 4
+      SourceConfig: {fileID: 11400000, guid: 27fbcbd0e434e9398397e93e662ef4e8, type: 2}
+      SourcePrefab: {fileID: 6774738432424273872, guid: 28cd06ed9fc81c2474d9edc7b31a205f,
+        type: 3}
+      Image: {fileID: 0}
+      Stats:
+      - Label: Growth per child
+        Value: Does not reproduce
+        Authored: 0
+      - Label: Reproduction cooldown
+        Value: 5 s
+        Authored: 0
+      - Label: Initial seeding
+        Value: 1 plant
+        Authored: 0
+      - Label: Elemental law
+        Value: "Time breeds at 1.25\xD7 the fleet rate; the other three run at 0.8\xD7"
+        Authored: 0
+  - Id: flora.rosette
+    Kingdom: 1
+    DisplayName: Rosette
+    Tagline: 
+    Description: 
+    Image: {fileID: 21300000, guid: 518a5f8b6fb6a984b82e0e2a9c78bf1c, type: 3}
+    SourcePrefab: {fileID: 6774738432424273872, guid: 6fa03dc8992ff35c13b3d9ef4bfa02d6,
+      type: 3}
+    AccentColor: {r: 0, g: 0, b: 0, a: 0}
+    UnlockedByDefault: 1
+    DiscoveryKey: see.rosette
+    PreviewYaw: -28
+    PreviewPitch: 16
+    PreviewPadding: 1.05
+    FlatSilhouette: 0
+    SortOrder: 0
+    LockAutoHarvest: 0
+    Stats:
+    - Label: Growth model
+      Value: "Phyllotactic \u2014 whorled leaves on a spiral"
+      Authored: 0
+    - Label: Prisms per plant
+      Value: 90
+      Authored: 0
+    - Label: Breeds
+      Value: "Yes \u2014 one child per 38\u201359 (by element) prisms grown"
+      Authored: 0
+    - Label: Population cap
+      Value: "10\u201324 (by element)"
+      Authored: 0
+    - Label: Planted on
+      Value: Bed / Any
+      Authored: 0
+    - Label: Found in
+      Value: Hesperides, Rampage
+      Authored: 0
+    Variants:
+    - Label: Charge
+      Element: 1
+      SourceConfig: {fileID: 11400000, guid: 33a38252d4dd18ab0a6c516cdd28bef3, type: 2}
+      SourcePrefab: {fileID: 6774738432424273872, guid: 6fa03dc8992ff35c13b3d9ef4bfa02d6,
+        type: 3}
+      Image: {fileID: 0}
+      Stats:
+      - Label: Growth per child
+        Value: Does not reproduce
+        Authored: 0
+      - Label: Reproduction cooldown
+        Value: 5 s
+        Authored: 0
+      - Label: Initial seeding
+        Value: 1 plant
+        Authored: 0
+      - Label: Elemental law
+        Value: "Charge armours its leaves \u2014 grazing one costs two passes, because
+          the first only sheds the shield"
+        Authored: 0
+    - Label: Mass
+      Element: 2
+      SourceConfig: {fileID: 11400000, guid: f417365b3a85ba43d599a8be27dd62f0, type: 2}
+      SourcePrefab: {fileID: 6774738432424273872, guid: 6fa03dc8992ff35c13b3d9ef4bfa02d6,
+        type: 3}
+      Image: {fileID: 0}
+      Stats:
+      - Label: Seed floor
+        Value: 16 plants
+        Authored: 0
+      - Label: Live cap
+        Value: 24 plants
+        Authored: 0
+      - Label: Growth per child
+        Value: 38 prisms
+        Authored: 0
+      - Label: Reproduction cooldown
+        Value: 5 s
+        Authored: 0
+      - Label: Initial seeding
+        Value: 16 plants
+        Authored: 0
+    - Label: Mass
+      Element: 2
+      SourceConfig: {fileID: 11400000, guid: 04b1d963d27c8adea25bffd0d5503e80, type: 2}
+      SourcePrefab: {fileID: 6774738432424273872, guid: 6fa03dc8992ff35c13b3d9ef4bfa02d6,
+        type: 3}
+      Image: {fileID: 0}
+      Stats:
+      - Label: Growth per child
+        Value: Does not reproduce
+        Authored: 0
+      - Label: Reproduction cooldown
+        Value: 5 s
+        Authored: 0
+      - Label: Initial seeding
+        Value: 1 plant
+        Authored: 0
+    - Label: Space
+      Element: 3
+      SourceConfig: {fileID: 11400000, guid: 7e7887db26aa8d9a1049f723352d9c6c, type: 2}
+      SourcePrefab: {fileID: 6774738432424273872, guid: 6fa03dc8992ff35c13b3d9ef4bfa02d6,
+        type: 3}
+      Image: {fileID: 0}
+      Stats:
+      - Label: Growth per child
+        Value: Does not reproduce
+        Authored: 0
+      - Label: Reproduction cooldown
+        Value: 5 s
+        Authored: 0
+      - Label: Initial seeding
+        Value: 1 plant
+        Authored: 0
+    - Label: Time
+      Element: 4
+      SourceConfig: {fileID: 11400000, guid: 5d7daa34312764d9a00abf1e4e843844, type: 2}
+      SourcePrefab: {fileID: 6774738432424273872, guid: 6fa03dc8992ff35c13b3d9ef4bfa02d6,
+        type: 3}
+      Image: {fileID: 0}
+      Stats:
+      - Label: Growth per child
+        Value: Does not reproduce
+        Authored: 0
+      - Label: Reproduction cooldown
+        Value: 5 s
+        Authored: 0
+      - Label: Initial seeding
+        Value: 1 plant
+        Authored: 0
+      - Label: Elemental law
+        Value: "Time breeds at 1.25\xD7 the fleet rate; the other three run at 0.8\xD7"
+        Authored: 0
+    - Label: Rampage Rosette Flora Config Data
+      Element: 0
+      SourceConfig: {fileID: 11400000, guid: 8514fbd281c347f0bea06cbc1db3a9c4, type: 2}
+      SourcePrefab: {fileID: 6774738432424273872, guid: 6fa03dc8992ff35c13b3d9ef4bfa02d6,
+        type: 3}
+      Image: {fileID: 0}
+      Stats:
+      - Label: Seed floor
+        Value: 7 plants
+        Authored: 0
+      - Label: Live cap
+        Value: 10 plants
+        Authored: 0
+      - Label: Growth per child
+        Value: 59 prisms
+        Authored: 0
+      - Label: Reproduction cooldown
+        Value: 5 s
+        Authored: 0
+      - Label: Initial seeding
+        Value: 7 plants
+        Authored: 0
+  - Id: flora.schwarzp
+    Kingdom: 1
+    DisplayName: SchwarzP
+    Tagline: 
+    Description: 
+    Image: {fileID: 21300000, guid: 0795b03ae8feb564cb9d6a05de45ab91, type: 3}
+    SourcePrefab: {fileID: 8186157953239024494, guid: 3bbc2887bdb944b39945e4a926291007,
+      type: 3}
+    AccentColor: {r: 0, g: 0, b: 0, a: 0}
+    UnlockedByDefault: 1
+    DiscoveryKey: see.schwarzp
+    PreviewYaw: -28
+    PreviewPitch: 16
+    PreviewPadding: 1.05
+    FlatSilhouette: 0
+    SortOrder: 0
+    LockAutoHarvest: 0
+    Stats:
+    - Label: Growth model
+      Value: "Lattice colony \u2014 tiles a repeating surface, one plant per site"
+      Authored: 0
+    - Label: Prisms per plant
+      Value: 800
+      Authored: 0
+    - Label: Breeds
+      Value: "Yes \u2014 one child per 22 prisms grown"
+      Authored: 0
+    - Label: Population cap
+      Value: "4\u201390 (by element)"
+      Authored: 0
+    - Label: Planted on
+      Value: Any / Bed
+      Authored: 0
+    - Label: Found in
+      Value: Caldera, Daedala, Geode, Hesperides, Lattice, Orrery +3 more
+      Authored: 0
+    Variants:
+    - Label: Charge
+      Element: 1
+      SourceConfig: {fileID: 11400000, guid: 7478e2d64278ac2e98551e93ee55f5ee, type: 2}
+      SourcePrefab: {fileID: 8186157953239024494, guid: 3bbc2887bdb944b39945e4a926291007,
+        type: 3}
+      Image: {fileID: 0}
+      Stats:
+      - Label: Seed floor
+        Value: 1 plant
+        Authored: 0
+      - Label: Live cap
+        Value: 90 plants
+        Authored: 0
+      - Label: Growth per child
+        Value: 22 prisms
+        Authored: 0
+      - Label: Reproduction cooldown
+        Value: 5 s
+        Authored: 0
+      - Label: Initial seeding
+        Value: 1 plant
+        Authored: 0
+      - Label: Elemental law
+        Value: "Charge armours its leaves \u2014 grazing one costs two passes, because
+          the first only sheds the shield"
+        Authored: 0
+    - Label: Charge
+      Element: 1
+      SourceConfig: {fileID: 11400000, guid: b1ad2c0dd95f4987a5b9cc786aafd673, type: 2}
+      SourcePrefab: {fileID: 8186157953239024494, guid: 3bbc2887bdb944b39945e4a926291007,
+        type: 3}
+      Image: {fileID: 0}
+      Stats:
+      - Label: Seed floor
+        Value: 4 plants
+        Authored: 0
+      - Label: Live cap
+        Value: 22 plants
+        Authored: 0
+      - Label: Growth per child
+        Value: 22 prisms
+        Authored: 0
+      - Label: Reproduction cooldown
+        Value: 5 s
+        Authored: 0
+      - Label: Initial seeding
+        Value: 1 plant
+        Authored: 0
+      - Label: Elemental law
+        Value: "Charge armours its leaves \u2014 grazing one costs two passes, because
+          the first only sheds the shield"
+        Authored: 0
+    - Label: Mass
+      Element: 2
+      SourceConfig: {fileID: 11400000, guid: b9e2c6e7516a215009922f1d6150a05c, type: 2}
+      SourcePrefab: {fileID: 8186157953239024494, guid: 3bbc2887bdb944b39945e4a926291007,
+        type: 3}
+      Image: {fileID: 0}
+      Stats:
+      - Label: Seed floor
+        Value: 4 plants
+        Authored: 0
+      - Label: Live cap
+        Value: 4 plants
+        Authored: 0
+      - Label: Growth per child
+        Value: 22 prisms
+        Authored: 0
+      - Label: Reproduction cooldown
+        Value: 5 s
+        Authored: 0
+      - Label: Initial seeding
+        Value: 2 plants
+        Authored: 0
+    - Label: Mass
+      Element: 2
+      SourceConfig: {fileID: 11400000, guid: 940c9bfef9ddd865bdf897f380a6b614, type: 2}
+      SourcePrefab: {fileID: 8186157953239024494, guid: 3bbc2887bdb944b39945e4a926291007,
+        type: 3}
+      Image: {fileID: 0}
+      Stats:
+      - Label: Seed floor
+        Value: 1 plant
+        Authored: 0
+      - Label: Live cap
+        Value: 90 plants
+        Authored: 0
+      - Label: Growth per child
+        Value: 22 prisms
+        Authored: 0
+      - Label: Reproduction cooldown
+        Value: 5 s
+        Authored: 0
+      - Label: Initial seeding
+        Value: 1 plant
+        Authored: 0
+    - Label: Mass
+      Element: 2
+      SourceConfig: {fileID: 11400000, guid: c79b896ebbd141d5b46fa76a9f151b1b, type: 2}
+      SourcePrefab: {fileID: 8186157953239024494, guid: 3bbc2887bdb944b39945e4a926291007,
+        type: 3}
+      Image: {fileID: 0}
+      Stats:
+      - Label: Seed floor
+        Value: 4 plants
+        Authored: 0
+      - Label: Live cap
+        Value: 22 plants
+        Authored: 0
+      - Label: Growth per child
+        Value: 22 prisms
+        Authored: 0
+      - Label: Reproduction cooldown
+        Value: 5 s
+        Authored: 0
+      - Label: Initial seeding
+        Value: 1 plant
+        Authored: 0
+    - Label: Space
+      Element: 3
+      SourceConfig: {fileID: 11400000, guid: ac2fa735ca00d6695deaa94c1a8edb27, type: 2}
+      SourcePrefab: {fileID: 8186157953239024494, guid: 3bbc2887bdb944b39945e4a926291007,
+        type: 3}
+      Image: {fileID: 0}
+      Stats:
+      - Label: Seed floor
+        Value: 1 plant
+        Authored: 0
+      - Label: Live cap
+        Value: 90 plants
+        Authored: 0
+      - Label: Growth per child
+        Value: 22 prisms
+        Authored: 0
+      - Label: Reproduction cooldown
+        Value: 5 s
+        Authored: 0
+      - Label: Initial seeding
+        Value: 1 plant
+        Authored: 0
+    - Label: Space
+      Element: 3
+      SourceConfig: {fileID: 11400000, guid: 5e33b2ff867d4bbebe6b690b11b22e7d, type: 2}
+      SourcePrefab: {fileID: 8186157953239024494, guid: 3bbc2887bdb944b39945e4a926291007,
+        type: 3}
+      Image: {fileID: 0}
+      Stats:
+      - Label: Seed floor
+        Value: 4 plants
+        Authored: 0
+      - Label: Live cap
+        Value: 22 plants
+        Authored: 0
+      - Label: Growth per child
+        Value: 22 prisms
+        Authored: 0
+      - Label: Reproduction cooldown
+        Value: 5 s
+        Authored: 0
+      - Label: Initial seeding
+        Value: 1 plant
+        Authored: 0
+    - Label: Time
+      Element: 4
+      SourceConfig: {fileID: 11400000, guid: 9ef92befc598d0b3e0136b7581179032, type: 2}
+      SourcePrefab: {fileID: 8186157953239024494, guid: 3bbc2887bdb944b39945e4a926291007,
+        type: 3}
+      Image: {fileID: 0}
+      Stats:
+      - Label: Seed floor
+        Value: 1 plant
+        Authored: 0
+      - Label: Live cap
+        Value: 90 plants
+        Authored: 0
+      - Label: Growth per child
+        Value: 22 prisms
+        Authored: 0
+      - Label: Reproduction cooldown
+        Value: 5 s
+        Authored: 0
+      - Label: Initial seeding
+        Value: 1 plant
+        Authored: 0
+      - Label: Elemental law
+        Value: "Time breeds at 1.25\xD7 the fleet rate; the other three run at 0.8\xD7"
+        Authored: 0
+    - Label: Time
+      Element: 4
+      SourceConfig: {fileID: 11400000, guid: 44339d43234c4273b7be825a8521387d, type: 2}
+      SourcePrefab: {fileID: 8186157953239024494, guid: 3bbc2887bdb944b39945e4a926291007,
+        type: 3}
+      Image: {fileID: 0}
+      Stats:
+      - Label: Seed floor
+        Value: 4 plants
+        Authored: 0
+      - Label: Live cap
+        Value: 22 plants
+        Authored: 0
+      - Label: Growth per child
+        Value: 22 prisms
+        Authored: 0
+      - Label: Reproduction cooldown
+        Value: 5 s
+        Authored: 0
+      - Label: Initial seeding
+        Value: 1 plant
+        Authored: 0
+      - Label: Elemental law
+        Value: "Time breeds at 1.25\xD7 the fleet rate; the other three run at 0.8\xD7"
+        Authored: 0
+    - Label: Blob SchwarzP Flora Config Data
+      Element: 0
+      SourceConfig: {fileID: 11400000, guid: 564fbc2b2f7a478188a03b4a7b4c313a, type: 2}
+      SourcePrefab: {fileID: 8186157953239024494, guid: 3bbc2887bdb944b39945e4a926291007,
+        type: 3}
+      Image: {fileID: 0}
+      Stats:
+      - Label: Seed floor
+        Value: 4 plants
+        Authored: 0
+      - Label: Live cap
+        Value: 22 plants
+        Authored: 0
+      - Label: Growth per child
+        Value: 22 prisms
+        Authored: 0
+      - Label: Reproduction cooldown
+        Value: 5 s
+        Authored: 0
+      - Label: Initial seeding
+        Value: 1 plant
+        Authored: 0
+  - Id: fauna.shark
+    Kingdom: 2
+    DisplayName: Shark
+    Tagline: 
+    Description: 
+    Image: {fileID: 21300000, guid: db908136b2b89d144ba09967515112a4, type: 3}
+    SourcePrefab: {fileID: 2988268804875292915, guid: a67ba7ddaecf6624ab37cd9f5f2210a6,
+      type: 3}
+    AccentColor: {r: 0, g: 0, b: 0, a: 0}
+    UnlockedByDefault: 1
+    DiscoveryKey: see.shark
+    PreviewYaw: -28
+    PreviewPitch: 16
+    PreviewPadding: 1.05
+    FlatSilhouette: 0
+    SortOrder: 0
+    LockAutoHarvest: 0
+    Stats:
+    - Label: Behaviour
+      Value: "Shoals \u2014 separation, cohesion and a shared goal"
+      Authored: 0
+    - Label: Diet
+      Value: "Predator \u2014 eats other creatures; ignores prism mass"
+      Authored: 0
+    - Label: Starves after
+      Value: 45 s
+      Authored: 0
+    - Label: Speed
+      Value: "25\u201335 units/s"
+      Authored: 0
+    - Label: Levels
+      Value: "1\u20135, earned by feeding \u2014 never rolled at spawn"
+      Authored: 0
+    - Label: Population cap
+      Value: "2\u201344 (by element)"
+      Authored: 0
+    - Label: Found in
+      Value: Caldera, Daedala, Geode, Hesperides, Orrery, Ourobor +4 more
+      Authored: 0
+    Variants:
+    - Label: Charge
+      Element: 1
+      SourceConfig: {fileID: 11400000, guid: 58835b82ea284255855af2649ef185a5, type: 2}
+      SourcePrefab: {fileID: 2988268804875292915, guid: a67ba7ddaecf6624ab37cd9f5f2210a6,
+        type: 3}
+      Image: {fileID: 0}
+      Stats:
+      - Label: Shoal size
+        Value: 2 creatures
+        Authored: 0
+      - Label: Live cap
+        Value: 6 creatures
+        Authored: 0
+      - Label: Feeds per child
+        Value: 8
+        Authored: 0
+      - Label: Feeds per level
+        Value: 16
+        Authored: 0
+      - Label: Reproduction cooldown
+        Value: 10 s
+        Authored: 0
+      - Label: Body growth per level
+        Value: "\xD71.15"
+        Authored: 0
+      - Label: Initial spawn
+        Value: 2 creatures
+        Authored: 0
+    - Label: Mass
+      Element: 2
+      SourceConfig: {fileID: 11400000, guid: a690f25bf21e486ba0e500563b90f1ea, type: 2}
+      SourcePrefab: {fileID: 2988268804875292915, guid: a67ba7ddaecf6624ab37cd9f5f2210a6,
+        type: 3}
+      Image: {fileID: 0}
+      Stats:
+      - Label: Shoal size
+        Value: 2 creatures
+        Authored: 0
+      - Label: Live cap
+        Value: 6 creatures
+        Authored: 0
+      - Label: Feeds per child
+        Value: 8
+        Authored: 0
+      - Label: Feeds per level
+        Value: 16
+        Authored: 0
+      - Label: Reproduction cooldown
+        Value: 10 s
+        Authored: 0
+      - Label: Body growth per level
+        Value: "\xD71.15"
+        Authored: 0
+      - Label: Initial spawn
+        Value: 2 creatures
+        Authored: 0
+    - Label: Space
+      Element: 3
+      SourceConfig: {fileID: 11400000, guid: eaf56c14345740849f35fc84467059e9, type: 2}
+      SourcePrefab: {fileID: 2988268804875292915, guid: a67ba7ddaecf6624ab37cd9f5f2210a6,
+        type: 3}
+      Image: {fileID: 0}
+      Stats:
+      - Label: Shoal size
+        Value: 2 creatures
+        Authored: 0
+      - Label: Live cap
+        Value: 6 creatures
+        Authored: 0
+      - Label: Feeds per child
+        Value: 8
+        Authored: 0
+      - Label: Feeds per level
+        Value: 16
+        Authored: 0
+      - Label: Reproduction cooldown
+        Value: 10 s
+        Authored: 0
+      - Label: Body growth per level
+        Value: "\xD71.15"
+        Authored: 0
+      - Label: Initial spawn
+        Value: 2 creatures
+        Authored: 0
+    - Label: Time
+      Element: 4
+      SourceConfig: {fileID: 11400000, guid: 78ce842bb8554d748af1e96abf430137, type: 2}
+      SourcePrefab: {fileID: 2988268804875292915, guid: a67ba7ddaecf6624ab37cd9f5f2210a6,
+        type: 3}
+      Image: {fileID: 0}
+      Stats:
+      - Label: Shoal size
+        Value: 2 creatures
+        Authored: 0
+      - Label: Live cap
+        Value: 6 creatures
+        Authored: 0
+      - Label: Feeds per child
+        Value: 8
+        Authored: 0
+      - Label: Feeds per level
+        Value: 16
+        Authored: 0
+      - Label: Reproduction cooldown
+        Value: 10 s
+        Authored: 0
+      - Label: Body growth per level
+        Value: "\xD71.15"
+        Authored: 0
+      - Label: Initial spawn
+        Value: 2 creatures
+        Authored: 0
+    - Label: Blob Shark Fauna Config Data
+      Element: 0
+      SourceConfig: {fileID: 11400000, guid: fb217959401746e1b09cac81ffce665b, type: 2}
+      SourcePrefab: {fileID: 2988268804875292915, guid: a67ba7ddaecf6624ab37cd9f5f2210a6,
+        type: 3}
+      Image: {fileID: 0}
+      Stats:
+      - Label: Shoal size
+        Value: 1 creature
+        Authored: 0
+      - Label: Live cap
+        Value: 2 creatures
+        Authored: 0
+      - Label: Feeds per child
+        Value: 6
+        Authored: 0
+      - Label: Feeds per level
+        Value: 12
+        Authored: 0
+      - Label: Reproduction cooldown
+        Value: 30 s
+        Authored: 0
+      - Label: Body growth per level
+        Value: "\xD71.15"
+        Authored: 0
+      - Label: Initial spawn
+        Value: 1 creature
+        Authored: 0
+    - Label: Skim Race Shark Fauna Config Data
+      Element: 0
+      SourceConfig: {fileID: 11400000, guid: 881e201ec5574db6979009c3b7a28998, type: 2}
+      SourcePrefab: {fileID: 2988268804875292915, guid: a67ba7ddaecf6624ab37cd9f5f2210a6,
+        type: 3}
+      Image: {fileID: 0}
+      Stats:
+      - Label: Shoal size
+        Value: 2 creatures
+        Authored: 0
+      - Label: Feeds per child
+        Value: Does not reproduce
+        Authored: 0
+      - Label: Feeds per level
+        Value: 25
+        Authored: 0
+      - Label: Reproduction cooldown
+        Value: 10 s
+        Authored: 0
+      - Label: Body growth per level
+        Value: "\xD71.15"
+        Authored: 0
+      - Label: Initial spawn
+        Value: 2 creatures
+        Authored: 0
+    - Label: Wildlife Shark L2 1
+      Element: 0
+      SourceConfig: {fileID: 11400000, guid: 68408780d209368f8248ec10c8fc74f5, type: 2}
+      SourcePrefab: {fileID: 2988268804875292915, guid: a67ba7ddaecf6624ab37cd9f5f2210a6,
+        type: 3}
+      Image: {fileID: 0}
+      Stats:
+      - Label: Shoal size
+        Value: 20 creatures
+        Authored: 0
+      - Label: Live cap
+        Value: 44 creatures
+        Authored: 0
+      - Label: Feeds per child
+        Value: 8
+        Authored: 0
+      - Label: Feeds per level
+        Value: 16
+        Authored: 0
+      - Label: Reproduction cooldown
+        Value: 30 s
+        Authored: 0
+      - Label: Starting level
+        Value: 2
+        Authored: 0
+      - Label: Body growth per level
+        Value: "\xD71.15"
+        Authored: 0
+      - Label: Initial spawn
+        Value: 20 creatures
+        Authored: 0
+      - Label: Roams
+        Value: "0\u20131180 units from the cell centre"
+        Authored: 0
+    - Label: Wildlife Shark L2 2
+      Element: 0
+      SourceConfig: {fileID: 11400000, guid: 869c863f5f534957f28667fdec4a85b4, type: 2}
+      SourcePrefab: {fileID: 2988268804875292915, guid: a67ba7ddaecf6624ab37cd9f5f2210a6,
+        type: 3}
+      Image: {fileID: 0}
+      Stats:
+      - Label: Shoal size
+        Value: 20 creatures
+        Authored: 0
+      - Label: Live cap
+        Value: 44 creatures
+        Authored: 0
+      - Label: Feeds per child
+        Value: 8
+        Authored: 0
+      - Label: Feeds per level
+        Value: 16
+        Authored: 0
+      - Label: Reproduction cooldown
+        Value: 30 s
+        Authored: 0
+      - Label: Starting level
+        Value: 2
+        Authored: 0
+      - Label: Body growth per level
+        Value: "\xD71.15"
+        Authored: 0
+      - Label: Initial spawn
+        Value: 20 creatures
+        Authored: 0
+      - Label: Roams
+        Value: "0\u20131180 units from the cell centre"
+        Authored: 0
+    - Label: Wildlife Shark L2 3
+      Element: 0
+      SourceConfig: {fileID: 11400000, guid: acbb449af53b04bdf23f77f7c5255d5c, type: 2}
+      SourcePrefab: {fileID: 2988268804875292915, guid: a67ba7ddaecf6624ab37cd9f5f2210a6,
+        type: 3}
+      Image: {fileID: 0}
+      Stats:
+      - Label: Shoal size
+        Value: 20 creatures
+        Authored: 0
+      - Label: Live cap
+        Value: 44 creatures
+        Authored: 0
+      - Label: Feeds per child
+        Value: 8
+        Authored: 0
+      - Label: Feeds per level
+        Value: 16
+        Authored: 0
+      - Label: Reproduction cooldown
+        Value: 30 s
+        Authored: 0
+      - Label: Starting level
+        Value: 2
+        Authored: 0
+      - Label: Body growth per level
+        Value: "\xD71.15"
+        Authored: 0
+      - Label: Initial spawn
+        Value: 20 creatures
+        Authored: 0
+      - Label: Roams
+        Value: "0\u20131180 units from the cell centre"
+        Authored: 0
+    - Label: Wildlife Shark L2 4
+      Element: 0
+      SourceConfig: {fileID: 11400000, guid: c76737c881612127e652c46f79e5e1f7, type: 2}
+      SourcePrefab: {fileID: 2988268804875292915, guid: a67ba7ddaecf6624ab37cd9f5f2210a6,
+        type: 3}
+      Image: {fileID: 0}
+      Stats:
+      - Label: Shoal size
+        Value: 20 creatures
+        Authored: 0
+      - Label: Live cap
+        Value: 44 creatures
+        Authored: 0
+      - Label: Feeds per child
+        Value: 8
+        Authored: 0
+      - Label: Feeds per level
+        Value: 16
+        Authored: 0
+      - Label: Reproduction cooldown
+        Value: 30 s
+        Authored: 0
+      - Label: Starting level
+        Value: 2
+        Authored: 0
+      - Label: Body growth per level
+        Value: "\xD71.15"
+        Authored: 0
+      - Label: Initial spawn
+        Value: 20 creatures
+        Authored: 0
+      - Label: Roams
+        Value: "0\u20131180 units from the cell centre"
+        Authored: 0
+    - Label: Wildlife Shark L5 1
+      Element: 0
+      SourceConfig: {fileID: 11400000, guid: c79167452de66c49bd1710070fc0eb20, type: 2}
+      SourcePrefab: {fileID: 2988268804875292915, guid: a67ba7ddaecf6624ab37cd9f5f2210a6,
+        type: 3}
+      Image: {fileID: 0}
+      Stats:
+      - Label: Shoal size
+        Value: 12 creatures
+        Authored: 0
+      - Label: Live cap
+        Value: 24 creatures
+        Authored: 0
+      - Label: Feeds per child
+        Value: 8
+        Authored: 0
+      - Label: Feeds per level
+        Value: 16
+        Authored: 0
+      - Label: Reproduction cooldown
+        Value: 30 s
+        Authored: 0
+      - Label: Starting level
+        Value: 5
+        Authored: 0
+      - Label: Body growth per level
+        Value: "\xD71.15"
+        Authored: 0
+      - Label: Initial spawn
+        Value: 12 creatures
+        Authored: 0
+      - Label: Roams
+        Value: "0\u20131180 units from the cell centre"
+        Authored: 0
+    - Label: Wildlife Shark L5 2
+      Element: 0
+      SourceConfig: {fileID: 11400000, guid: 9a82bb852f83d736091966902c7293eb, type: 2}
+      SourcePrefab: {fileID: 2988268804875292915, guid: a67ba7ddaecf6624ab37cd9f5f2210a6,
+        type: 3}
+      Image: {fileID: 0}
+      Stats:
+      - Label: Shoal size
+        Value: 12 creatures
+        Authored: 0
+      - Label: Live cap
+        Value: 24 creatures
+        Authored: 0
+      - Label: Feeds per child
+        Value: 8
+        Authored: 0
+      - Label: Feeds per level
+        Value: 16
+        Authored: 0
+      - Label: Reproduction cooldown
+        Value: 30 s
+        Authored: 0
+      - Label: Starting level
+        Value: 5
+        Authored: 0
+      - Label: Body growth per level
+        Value: "\xD71.15"
+        Authored: 0
+      - Label: Initial spawn
+        Value: 12 creatures
+        Authored: 0
+      - Label: Roams
+        Value: "0\u20131180 units from the cell centre"
+        Authored: 0
+    - Label: Wildlife Shark L5 3
+      Element: 0
+      SourceConfig: {fileID: 11400000, guid: cca00126169a5a551b6a0d51f5d68052, type: 2}
+      SourcePrefab: {fileID: 2988268804875292915, guid: a67ba7ddaecf6624ab37cd9f5f2210a6,
+        type: 3}
+      Image: {fileID: 0}
+      Stats:
+      - Label: Shoal size
+        Value: 12 creatures
+        Authored: 0
+      - Label: Live cap
+        Value: 24 creatures
+        Authored: 0
+      - Label: Feeds per child
+        Value: 8
+        Authored: 0
+      - Label: Feeds per level
+        Value: 16
+        Authored: 0
+      - Label: Reproduction cooldown
+        Value: 30 s
+        Authored: 0
+      - Label: Starting level
+        Value: 5
+        Authored: 0
+      - Label: Body growth per level
+        Value: "\xD71.15"
+        Authored: 0
+      - Label: Initial spawn
+        Value: 12 creatures
+        Authored: 0
+      - Label: Roams
+        Value: "0\u20131180 units from the cell centre"
+        Authored: 0
+    - Label: Wildlife Shark L5 4
+      Element: 0
+      SourceConfig: {fileID: 11400000, guid: 26bd4c71c35816e33d09c963fefa0d2b, type: 2}
+      SourcePrefab: {fileID: 2988268804875292915, guid: a67ba7ddaecf6624ab37cd9f5f2210a6,
+        type: 3}
+      Image: {fileID: 0}
+      Stats:
+      - Label: Shoal size
+        Value: 12 creatures
+        Authored: 0
+      - Label: Live cap
+        Value: 24 creatures
+        Authored: 0
+      - Label: Feeds per child
+        Value: 8
+        Authored: 0
+      - Label: Feeds per level
+        Value: 16
+        Authored: 0
+      - Label: Reproduction cooldown
+        Value: 30 s
+        Authored: 0
+      - Label: Starting level
+        Value: 5
+        Authored: 0
+      - Label: Body growth per level
+        Value: "\xD71.15"
+        Authored: 0
+      - Label: Initial spawn
+        Value: 12 creatures
+        Authored: 0
+      - Label: Roams
+        Value: "0\u20131180 units from the cell centre"
+        Authored: 0
+  - Id: flora.spire
+    Kingdom: 1
+    DisplayName: Spire
+    Tagline: 
+    Description: 
+    Image: {fileID: 21300000, guid: ce0a64a670a07384fb7b466893b929e1, type: 3}
+    SourcePrefab: {fileID: 6774738432424273872, guid: becb04107104ecb6768ae2d6766e681e,
+      type: 3}
+    AccentColor: {r: 0, g: 0, b: 0, a: 0}
+    UnlockedByDefault: 1
+    DiscoveryKey: see.spire
+    PreviewYaw: -28
+    PreviewPitch: 16
+    PreviewPadding: 1.05
+    FlatSilhouette: 0
+    SortOrder: 0
+    LockAutoHarvest: 0
+    Stats:
+    - Label: Growth model
+      Value: "Phyllotactic \u2014 whorled leaves on a spiral"
+      Authored: 0
+    - Label: Prisms per plant
+      Value: 170
+      Authored: 0
+    - Label: Breeds
+      Value: "Yes \u2014 one child per 66\u201371 (by element) prisms grown"
+      Authored: 0
+    - Label: Population cap
+      Value: "9\u201315 (by element)"
+      Authored: 0
+    - Label: Planted on
+      Value: Bed, Ledge / Any
+      Authored: 0
+    - Label: Found in
+      Value: Hesperides, Rampage
+      Authored: 0
+    Variants:
+    - Label: Charge
+      Element: 1
+      SourceConfig: {fileID: 11400000, guid: 25e619766581c4807de09c87fddf877c, type: 2}
+      SourcePrefab: {fileID: 6774738432424273872, guid: becb04107104ecb6768ae2d6766e681e,
+        type: 3}
+      Image: {fileID: 0}
+      Stats:
+      - Label: Growth per child
+        Value: Does not reproduce
+        Authored: 0
+      - Label: Reproduction cooldown
+        Value: 5 s
+        Authored: 0
+      - Label: Initial seeding
+        Value: 1 plant
+        Authored: 0
+      - Label: Elemental law
+        Value: "Charge armours its leaves \u2014 grazing one costs two passes, because
+          the first only sheds the shield"
+        Authored: 0
+    - Label: Mass
+      Element: 2
+      SourceConfig: {fileID: 11400000, guid: 4675fa496579bcaf8253112ead51eb38, type: 2}
+      SourcePrefab: {fileID: 6774738432424273872, guid: becb04107104ecb6768ae2d6766e681e,
+        type: 3}
+      Image: {fileID: 0}
+      Stats:
+      - Label: Seed floor
+        Value: 6 plants
+        Authored: 0
+      - Label: Live cap
+        Value: 9 plants
+        Authored: 0
+      - Label: Growth per child
+        Value: 71 prisms
+        Authored: 0
+      - Label: Reproduction cooldown
+        Value: 5 s
+        Authored: 0
+      - Label: Initial seeding
+        Value: 6 plants
+        Authored: 0
+    - Label: Mass
+      Element: 2
+      SourceConfig: {fileID: 11400000, guid: 10859a22ceb9349219eabe30541f5341, type: 2}
+      SourcePrefab: {fileID: 6774738432424273872, guid: becb04107104ecb6768ae2d6766e681e,
+        type: 3}
+      Image: {fileID: 0}
+      Stats:
+      - Label: Growth per child
+        Value: Does not reproduce
+        Authored: 0
+      - Label: Reproduction cooldown
+        Value: 5 s
+        Authored: 0
+      - Label: Initial seeding
+        Value: 1 plant
+        Authored: 0
+    - Label: Space
+      Element: 3
+      SourceConfig: {fileID: 11400000, guid: f46966ea66e278b0ad293ccecc672c1d, type: 2}
+      SourcePrefab: {fileID: 6774738432424273872, guid: becb04107104ecb6768ae2d6766e681e,
+        type: 3}
+      Image: {fileID: 0}
+      Stats:
+      - Label: Growth per child
+        Value: Does not reproduce
+        Authored: 0
+      - Label: Reproduction cooldown
+        Value: 5 s
+        Authored: 0
+      - Label: Initial seeding
+        Value: 1 plant
+        Authored: 0
+    - Label: Time
+      Element: 4
+      SourceConfig: {fileID: 11400000, guid: 6771e101fe9fa81ae0161ecbffc4c901, type: 2}
+      SourcePrefab: {fileID: 6774738432424273872, guid: becb04107104ecb6768ae2d6766e681e,
+        type: 3}
+      Image: {fileID: 0}
+      Stats:
+      - Label: Growth per child
+        Value: Does not reproduce
+        Authored: 0
+      - Label: Reproduction cooldown
+        Value: 5 s
+        Authored: 0
+      - Label: Initial seeding
+        Value: 1 plant
+        Authored: 0
+      - Label: Elemental law
+        Value: "Time breeds at 1.25\xD7 the fleet rate; the other three run at 0.8\xD7"
+        Authored: 0
+    - Label: Rampage Spire Flora Config Data
+      Element: 0
+      SourceConfig: {fileID: 11400000, guid: 5b18cd2b2ac647e48b78dd3e8e155f02, type: 2}
+      SourcePrefab: {fileID: 6774738432424273872, guid: becb04107104ecb6768ae2d6766e681e,
+        type: 3}
+      Image: {fileID: 0}
+      Stats:
+      - Label: Seed floor
+        Value: 10 plants
+        Authored: 0
+      - Label: Live cap
+        Value: 15 plants
+        Authored: 0
+      - Label: Growth per child
+        Value: 66 prisms
+        Authored: 0
+      - Label: Reproduction cooldown
+        Value: 5 s
+        Authored: 0
+      - Label: Initial seeding
+        Value: 10 plants
+        Authored: 0
+  - Id: fauna.tadpole
+    Kingdom: 2
+    DisplayName: Tadpole
+    Tagline: 
+    Description: 
+    Image: {fileID: 21300000, guid: bc17aa9f8cff4484d9b64254b164f813, type: 3}
+    SourcePrefab: {fileID: 5119337659833296837, guid: c7fd418d426de8740ac888dcc23a5d24,
+      type: 3}
+    AccentColor: {r: 0, g: 0, b: 0, a: 0}
+    UnlockedByDefault: 1
+    DiscoveryKey: see.tadpole
+    PreviewYaw: -28
+    PreviewPitch: 16
+    PreviewPadding: 1.05
+    FlatSilhouette: 0
+    SortOrder: 0
+    LockAutoHarvest: 0
+    Stats:
+    - Label: Behaviour
+      Value: "Boid shoal \u2014 the classic flocking three rules"
+      Authored: 0
+    - Label: Diet
+      Value: "Herbivore \u2014 grazes prism mass (flora canopy and vessel trails)"
+      Authored: 0
+    - Label: Starves after
+      Value: 90 s
+      Authored: 0
+    - Label: Speed
+      Value: "10\u201315 units/s"
+      Authored: 0
+    - Label: Levels
+      Value: "1\u20135, earned by feeding \u2014 never rolled at spawn"
+      Authored: 0
+    - Label: Population cap
+      Value: "6\u201340 (by element)"
+      Authored: 0
+    - Label: Found in
+      Value: Astro League, Caldera, Daedala, Geode, Hesperides, Lattice +8 more
+      Authored: 0
+    Variants:
+    - Label: Charge
+      Element: 1
+      SourceConfig: {fileID: 11400000, guid: b8f6ead6f21447acb7ac74b9e8ccf1a3, type: 2}
+      SourcePrefab: {fileID: 5119337659833296837, guid: c7fd418d426de8740ac888dcc23a5d24,
+        type: 3}
+      Image: {fileID: 0}
+      Stats:
+      - Label: Shoal size
+        Value: 8 creatures
+        Authored: 0
+      - Label: Live cap
+        Value: 22 creatures
+        Authored: 0
+      - Label: Feeds per child
+        Value: 4
+        Authored: 0
+      - Label: Feeds per level
+        Value: 8
+        Authored: 0
+      - Label: Reproduction cooldown
+        Value: 4 s
+        Authored: 0
+      - Label: Body growth per level
+        Value: "\xD71.15"
+        Authored: 0
+      - Label: Initial spawn
+        Value: 8 creatures
+        Authored: 0
+    - Label: Charge
+      Element: 1
+      SourceConfig: {fileID: 11400000, guid: 508c59d3c640345f9eda3929935fbf66, type: 2}
+      SourcePrefab: {fileID: 5119337659833296837, guid: c7fd418d426de8740ac888dcc23a5d24,
+        type: 3}
+      Image: {fileID: 0}
+      Stats:
+      - Label: Shoal size
+        Value: 8 creatures
+        Authored: 0
+      - Label: Live cap
+        Value: 22 creatures
+        Authored: 0
+      - Label: Feeds per child
+        Value: 4
+        Authored: 0
+      - Label: Feeds per level
+        Value: 8
+        Authored: 0
+      - Label: Reproduction cooldown
+        Value: 4 s
+        Authored: 0
+      - Label: Body growth per level
+        Value: "\xD71.15"
+        Authored: 0
+      - Label: Initial spawn
+        Value: 8 creatures
+        Authored: 0
+    - Label: Charge
+      Element: 1
+      SourceConfig: {fileID: 11400000, guid: ede43cd3ab5943c58c646065c1f57a1f, type: 2}
+      SourcePrefab: {fileID: 5119337659833296837, guid: c7fd418d426de8740ac888dcc23a5d24,
+        type: 3}
+      Image: {fileID: 0}
+      Stats:
+      - Label: Shoal size
+        Value: 4 creatures
+        Authored: 0
+      - Label: Live cap
+        Value: 6 creatures
+        Authored: 0
+      - Label: Feeds per child
+        Value: 20
+        Authored: 0
+      - Label: Feeds per level
+        Value: 40
+        Authored: 0
+      - Label: Reproduction cooldown
+        Value: 10 s
+        Authored: 0
+      - Label: Body growth per level
+        Value: "\xD71.15"
+        Authored: 0
+      - Label: Initial spawn
+        Value: 4 creatures
+        Authored: 0
+    - Label: Mass
+      Element: 2
+      SourceConfig: {fileID: 11400000, guid: 8c1ead101dc84a9eb4c3e33e9611ffc2, type: 2}
+      SourcePrefab: {fileID: 5119337659833296837, guid: c7fd418d426de8740ac888dcc23a5d24,
+        type: 3}
+      Image: {fileID: 0}
+      Stats:
+      - Label: Shoal size
+        Value: 4 creatures
+        Authored: 0
+      - Label: Live cap
+        Value: 8 creatures
+        Authored: 0
+      - Label: Feeds per child
+        Value: 8
+        Authored: 0
+      - Label: Feeds per level
+        Value: 16
+        Authored: 0
+      - Label: Reproduction cooldown
+        Value: 6 s
+        Authored: 0
+      - Label: Body growth per level
+        Value: "\xD71.15"
+        Authored: 0
+      - Label: Initial spawn
+        Value: 4 creatures
+        Authored: 0
+    - Label: Mass
+      Element: 2
+      SourceConfig: {fileID: 11400000, guid: 178e4d83e2fd4a4bae1ab253d7766ea7, type: 2}
+      SourcePrefab: {fileID: 5119337659833296837, guid: c7fd418d426de8740ac888dcc23a5d24,
+        type: 3}
+      Image: {fileID: 0}
+      Stats:
+      - Label: Shoal size
+        Value: 4 creatures
+        Authored: 0
+      - Label: Live cap
+        Value: 6 creatures
+        Authored: 0
+      - Label: Feeds per child
+        Value: 20
+        Authored: 0
+      - Label: Feeds per level
+        Value: 40
+        Authored: 0
+      - Label: Reproduction cooldown
+        Value: 10 s
+        Authored: 0
+      - Label: Body growth per level
+        Value: "\xD71.15"
+        Authored: 0
+      - Label: Initial spawn
+        Value: 4 creatures
+        Authored: 0
+    - Label: Mass
+      Element: 2
+      SourceConfig: {fileID: 11400000, guid: ee4d0869166fee37b21adbbff9120d6d, type: 2}
+      SourcePrefab: {fileID: 5119337659833296837, guid: c7fd418d426de8740ac888dcc23a5d24,
+        type: 3}
+      Image: {fileID: 0}
+      Stats:
+      - Label: Shoal size
+        Value: 4 creatures
+        Authored: 0
+      - Label: Live cap
+        Value: 8 creatures
+        Authored: 0
+      - Label: Feeds per child
+        Value: 20
+        Authored: 0
+      - Label: Feeds per level
+        Value: 40
+        Authored: 0
+      - Label: Reproduction cooldown
+        Value: 10 s
+        Authored: 0
+      - Label: Body growth per level
+        Value: "\xD71.15"
+        Authored: 0
+      - Label: Initial spawn
+        Value: 4 creatures
+        Authored: 0
+    - Label: Mass
+      Element: 2
+      SourceConfig: {fileID: 11400000, guid: b749ab154e34455d90af765d8f8faff4, type: 2}
+      SourcePrefab: {fileID: 5119337659833296837, guid: c7fd418d426de8740ac888dcc23a5d24,
+        type: 3}
+      Image: {fileID: 0}
+      Stats:
+      - Label: Shoal size
+        Value: 6 creatures
+        Authored: 0
+      - Label: Live cap
+        Value: 24 creatures
+        Authored: 0
+      - Label: Feeds per child
+        Value: Does not reproduce
+        Authored: 0
+      - Label: Feeds per level
+        Value: 25
+        Authored: 0
+      - Label: Reproduction cooldown
+        Value: 6 s
+        Authored: 0
+      - Label: Body growth per level
+        Value: "\xD71.15"
+        Authored: 0
+      - Label: Initial spawn
+        Value: 6 creatures
+        Authored: 0
+    - Label: Mass
+      Element: 2
+      SourceConfig: {fileID: 11400000, guid: 2d82ef8cbefd205db7a329bb37d2a79c, type: 2}
+      SourcePrefab: {fileID: 5119337659833296837, guid: c7fd418d426de8740ac888dcc23a5d24,
+        type: 3}
+      Image: {fileID: 0}
+      Stats:
+      - Label: Shoal size
+        Value: 4 creatures
+        Authored: 0
+      - Label: Live cap
+        Value: 8 creatures
+        Authored: 0
+      - Label: Feeds per child
+        Value: 8
+        Authored: 0
+      - Label: Feeds per level
+        Value: 16
+        Authored: 0
+      - Label: Reproduction cooldown
+        Value: 6 s
+        Authored: 0
+      - Label: Body growth per level
+        Value: "\xD71.15"
+        Authored: 0
+      - Label: Initial spawn
+        Value: 4 creatures
+        Authored: 0
+    - Label: Mass
+      Element: 2
+      SourceConfig: {fileID: 11400000, guid: 25d148d3058b434ea219fe0e5a5783f5, type: 2}
+      SourcePrefab: {fileID: 5119337659833296837, guid: c7fd418d426de8740ac888dcc23a5d24,
+        type: 3}
+      Image: {fileID: 0}
+      Stats:
+      - Label: Shoal size
+        Value: 12 creatures
+        Authored: 0
+      - Label: Live cap
+        Value: 40 creatures
+        Authored: 0
+      - Label: Feeds per child
+        Value: 8
+        Authored: 0
+      - Label: Feeds per level
+        Value: 16
+        Authored: 0
+      - Label: Reproduction cooldown
+        Value: 6 s
+        Authored: 0
+      - Label: Body growth per level
+        Value: "\xD71.15"
+        Authored: 0
+      - Label: Initial spawn
+        Value: 12 creatures
+        Authored: 0
+    - Label: Mass
+      Element: 2
+      SourceConfig: {fileID: 11400000, guid: 28c9a96388684fa0b3b10b9dbea56c70, type: 2}
+      SourcePrefab: {fileID: 5119337659833296837, guid: c7fd418d426de8740ac888dcc23a5d24,
+        type: 3}
+      Image: {fileID: 0}
+      Stats:
+      - Label: Shoal size
+        Value: 4 creatures
+        Authored: 0
+      - Label: Live cap
+        Value: 6 creatures
+        Authored: 0
+      - Label: Feeds per child
+        Value: 20
+        Authored: 0
+      - Label: Feeds per level
+        Value: 40
+        Authored: 0
+      - Label: Reproduction cooldown
+        Value: 10 s
+        Authored: 0
+      - Label: Body growth per level
+        Value: "\xD71.15"
+        Authored: 0
+      - Label: Initial spawn
+        Value: 4 creatures
+        Authored: 0
+    - Label: Space
+      Element: 3
+      SourceConfig: {fileID: 11400000, guid: 72fa98519b534214b89e9c29c44b89da, type: 2}
+      SourcePrefab: {fileID: 5119337659833296837, guid: c7fd418d426de8740ac888dcc23a5d24,
+        type: 3}
+      Image: {fileID: 0}
+      Stats:
+      - Label: Shoal size
+        Value: 4 creatures
+        Authored: 0
+      - Label: Live cap
+        Value: 6 creatures
+        Authored: 0
+      - Label: Feeds per child
+        Value: 20
+        Authored: 0
+      - Label: Feeds per level
+        Value: 40
+        Authored: 0
+      - Label: Reproduction cooldown
+        Value: 10 s
+        Authored: 0
+      - Label: Body growth per level
+        Value: "\xD71.15"
+        Authored: 0
+      - Label: Initial spawn
+        Value: 4 creatures
+        Authored: 0
+    - Label: Time
+      Element: 4
+      SourceConfig: {fileID: 11400000, guid: 62a30981533145a5b66304c04e7c50e0, type: 2}
+      SourcePrefab: {fileID: 5119337659833296837, guid: c7fd418d426de8740ac888dcc23a5d24,
+        type: 3}
+      Image: {fileID: 0}
+      Stats:
+      - Label: Shoal size
+        Value: 4 creatures
+        Authored: 0
+      - Label: Live cap
+        Value: 6 creatures
+        Authored: 0
+      - Label: Feeds per child
+        Value: 20
+        Authored: 0
+      - Label: Feeds per level
+        Value: 40
+        Authored: 0
+      - Label: Reproduction cooldown
+        Value: 10 s
+        Authored: 0
+      - Label: Body growth per level
+        Value: "\xD71.15"
+        Authored: 0
+      - Label: Initial spawn
+        Value: 4 creatures
+        Authored: 0
+  - Id: flora.tendril
+    Kingdom: 1
+    DisplayName: Tendril
+    Tagline: 
+    Description: 
+    Image: {fileID: 21300000, guid: 7e0b4cb3d85dfba47a25475ae9140cda, type: 3}
+    SourcePrefab: {fileID: 6774738432424273872, guid: 6a74ca1c30e05f9e311977a264ec5a55,
+      type: 3}
+    AccentColor: {r: 0, g: 0, b: 0, a: 0}
+    UnlockedByDefault: 1
+    DiscoveryKey: see.tendril
+    PreviewYaw: -28
+    PreviewPitch: 16
+    PreviewPadding: 1.05
+    FlatSilhouette: 0
+    SortOrder: 0
+    LockAutoHarvest: 0
+    Stats:
+    - Label: Growth model
+      Value: "Phyllotactic \u2014 whorled leaves on a spiral"
+      Authored: 0
+    - Label: Prisms per plant
+      Value: 120
+      Authored: 0
+    - Label: Breeds
+      Value: "Yes \u2014 one child per 50 prisms grown"
+      Authored: 0
+    - Label: Population cap
+      Value: 30
+      Authored: 0
+    - Label: Planted on
+      Value: Climb
+      Authored: 0
+    - Label: Found in
+      Value: Hesperides
+      Authored: 0
+    Variants:
+    - Label: Charge
+      Element: 1
+      SourceConfig: {fileID: 11400000, guid: 5b64944b81691f465735bd0a969e4d3a, type: 2}
+      SourcePrefab: {fileID: 6774738432424273872, guid: 6a74ca1c30e05f9e311977a264ec5a55,
+        type: 3}
+      Image: {fileID: 0}
+      Stats:
+      - Label: Growth per child
+        Value: Does not reproduce
+        Authored: 0
+      - Label: Reproduction cooldown
+        Value: 5 s
+        Authored: 0
+      - Label: Initial seeding
+        Value: 1 plant
+        Authored: 0
+      - Label: Elemental law
+        Value: "Charge armours its leaves \u2014 grazing one costs two passes, because
+          the first only sheds the shield"
+        Authored: 0
+    - Label: Mass
+      Element: 2
+      SourceConfig: {fileID: 11400000, guid: e82a9bd6fd68ca88774412408de0c9ff, type: 2}
+      SourcePrefab: {fileID: 6774738432424273872, guid: 6a74ca1c30e05f9e311977a264ec5a55,
+        type: 3}
+      Image: {fileID: 0}
+      Stats:
+      - Label: Seed floor
+        Value: 20 plants
+        Authored: 0
+      - Label: Live cap
+        Value: 30 plants
+        Authored: 0
+      - Label: Growth per child
+        Value: 50 prisms
+        Authored: 0
+      - Label: Reproduction cooldown
+        Value: 5 s
+        Authored: 0
+      - Label: Initial seeding
+        Value: 20 plants
+        Authored: 0
+    - Label: Mass
+      Element: 2
+      SourceConfig: {fileID: 11400000, guid: a3180b4a6df35fe482db094cd9418b6b, type: 2}
+      SourcePrefab: {fileID: 6774738432424273872, guid: 6a74ca1c30e05f9e311977a264ec5a55,
+        type: 3}
+      Image: {fileID: 0}
+      Stats:
+      - Label: Growth per child
+        Value: Does not reproduce
+        Authored: 0
+      - Label: Reproduction cooldown
+        Value: 5 s
+        Authored: 0
+      - Label: Initial seeding
+        Value: 1 plant
+        Authored: 0
+    - Label: Space
+      Element: 3
+      SourceConfig: {fileID: 11400000, guid: c408a1b8caed658f2d12c55d7bb235a7, type: 2}
+      SourcePrefab: {fileID: 6774738432424273872, guid: 6a74ca1c30e05f9e311977a264ec5a55,
+        type: 3}
+      Image: {fileID: 0}
+      Stats:
+      - Label: Growth per child
+        Value: Does not reproduce
+        Authored: 0
+      - Label: Reproduction cooldown
+        Value: 5 s
+        Authored: 0
+      - Label: Initial seeding
+        Value: 1 plant
+        Authored: 0
+    - Label: Time
+      Element: 4
+      SourceConfig: {fileID: 11400000, guid: 000b83422a748f6434eaeeecc2be7400, type: 2}
+      SourcePrefab: {fileID: 6774738432424273872, guid: 6a74ca1c30e05f9e311977a264ec5a55,
+        type: 3}
+      Image: {fileID: 0}
+      Stats:
+      - Label: Growth per child
+        Value: Does not reproduce
+        Authored: 0
+      - Label: Reproduction cooldown
+        Value: 5 s
+        Authored: 0
+      - Label: Initial seeding
+        Value: 1 plant
+        Authored: 0
+      - Label: Elemental law
+        Value: "Time breeds at 1.25\xD7 the fleet rate; the other three run at 0.8\xD7"
+        Authored: 0
+  - Id: flora.wall
+    Kingdom: 1
+    DisplayName: Wall
+    Tagline: 
+    Description: 
+    Image: {fileID: 21300000, guid: a07cdce4e7805f2488a6295c6b74e60e, type: 3}
+    SourcePrefab: {fileID: 8186157953239024494, guid: 9269c22caf2f5764aad52d77b9724a22,
+      type: 3}
+    AccentColor: {r: 0, g: 0, b: 0, a: 0}
+    UnlockedByDefault: 1
+    DiscoveryKey: see.wall
+    PreviewYaw: -28
+    PreviewPitch: 16
+    PreviewPadding: 1.05
+    FlatSilhouette: 0
+    SortOrder: 0
+    LockAutoHarvest: 0
+    Stats:
+    - Label: Growth model
+      Value: "Lattice colony \u2014 tiles a repeating surface, one plant per site"
+      Authored: 0
+    - Label: Prisms per plant
+      Value: 1,000
+      Authored: 0
+    - Label: Breeds
+      Value: "No \u2014 a level-1 forest, seeded and grazed but never reproducing"
+      Authored: 0
+    - Label: Planted on
+      Value: Any
+      Authored: 0
+    - Label: Found in
+      Value: "Released by hand \u2014 no cell seeds it"
+      Authored: 0
+    Variants:
+    - Label: Charge
+      Element: 1
+      SourceConfig: {fileID: 11400000, guid: a2df5b0a5bf945f4b006aea2767d5c3f, type: 2}
+      SourcePrefab: {fileID: 8186157953239024494, guid: 9269c22caf2f5764aad52d77b9724a22,
+        type: 3}
+      Image: {fileID: 0}
+      Stats:
+      - Label: Growth per child
+        Value: Does not reproduce
+        Authored: 0
+      - Label: Reproduction cooldown
+        Value: 5 s
+        Authored: 0
+      - Label: Initial seeding
+        Value: 1 plant
+        Authored: 0
+      - Label: Elemental law
+        Value: "Charge armours its leaves \u2014 grazing one costs two passes, because
+          the first only sheds the shield"
+        Authored: 0
+    - Label: Mass
+      Element: 2
+      SourceConfig: {fileID: 11400000, guid: 51dc2bc396024171803878cf4e035052, type: 2}
+      SourcePrefab: {fileID: 8186157953239024494, guid: 9269c22caf2f5764aad52d77b9724a22,
+        type: 3}
+      Image: {fileID: 0}
+      Stats:
+      - Label: Growth per child
+        Value: Does not reproduce
+        Authored: 0
+      - Label: Reproduction cooldown
+        Value: 5 s
+        Authored: 0
+      - Label: Initial seeding
+        Value: 1 plant
+        Authored: 0
+    - Label: Space
+      Element: 3
+      SourceConfig: {fileID: 11400000, guid: 85e8856e94374a069c04c20fe7cbef24, type: 2}
+      SourcePrefab: {fileID: 8186157953239024494, guid: 9269c22caf2f5764aad52d77b9724a22,
+        type: 3}
+      Image: {fileID: 0}
+      Stats:
+      - Label: Growth per child
+        Value: Does not reproduce
+        Authored: 0
+      - Label: Reproduction cooldown
+        Value: 5 s
+        Authored: 0
+      - Label: Initial seeding
+        Value: 1 plant
+        Authored: 0
+    - Label: Time
+      Element: 4
+      SourceConfig: {fileID: 11400000, guid: ba622a2159bd4a75b1b6107cf82d23b1, type: 2}
+      SourcePrefab: {fileID: 8186157953239024494, guid: 9269c22caf2f5764aad52d77b9724a22,
+        type: 3}
+      Image: {fileID: 0}
+      Stats:
+      - Label: Growth per child
+        Value: Does not reproduce
+        Authored: 0
+      - Label: Reproduction cooldown
+        Value: 5 s
+        Authored: 0
+      - Label: Initial seeding
+        Value: 1 plant
+        Authored: 0
+      - Label: Elemental law
+        Value: "Time breeds at 1.25\xD7 the fleet rate; the other three run at 0.8\xD7"
+        Authored: 0
+  - Id: fauna.worm-colony
+    Kingdom: 2
+    DisplayName: Worm Colony
+    Tagline: 
+    Description: 
+    Image: {fileID: 21300000, guid: 73ed9d40ee7b5324992ecafc98fb76cd, type: 3}
+    SourcePrefab: {fileID: 1000, guid: 8f79c97ef2bd4624a730a96900e4daaa, type: 3}
+    AccentColor: {r: 0, g: 0, b: 0, a: 0}
+    UnlockedByDefault: 1
+    DiscoveryKey: see.worm-colony
+    PreviewYaw: -28
+    PreviewPitch: 16
+    PreviewPadding: 1.05
+    FlatSilhouette: 0
+    SortOrder: 0
+    LockAutoHarvest: 0
+    Stats:
+    - Label: Behaviour
+      Value: "Colony \u2014 a chain of segments following the head; splits when cut"
+      Authored: 0
+    - Label: Diet
+      Value: "Predator \u2014 eats other creatures; ignores prism mass"
+      Authored: 0
+    - Label: Starves after
+      Value: 60 s
+      Authored: 0
+    - Label: Levels
+      Value: "1\u20135, earned by feeding \u2014 never rolled at spawn"
+      Authored: 0
+    - Label: Population cap
+      Value: "3\u20139 (by element)"
+      Authored: 0
+    - Label: Found in
+      Value: Wildlife Liberation
+      Authored: 0
+    Variants:
+    - Label: Charge
+      Element: 1
+      SourceConfig: {fileID: 11400000, guid: c1a7e2b45f0d4c1e8a6b9d3f2e7c5a10, type: 2}
+      SourcePrefab: {fileID: 1000, guid: 8f79c97ef2bd4624a730a96900e4daaa, type: 3}
+      Image: {fileID: 0}
+      Stats:
+      - Label: Shoal size
+        Value: 1 creature
+        Authored: 0
+      - Label: Live cap
+        Value: 3 creatures
+        Authored: 0
+      - Label: Feeds per child
+        Value: Does not reproduce
+        Authored: 0
+      - Label: Reproduction cooldown
+        Value: 10 s
+        Authored: 0
+      - Label: Body growth per level
+        Value: "\xD71.15"
+        Authored: 0
+      - Label: Initial spawn
+        Value: 1 creature
+        Authored: 0
+    - Label: Mass
+      Element: 2
+      SourceConfig: {fileID: 11400000, guid: a3d59c8e71b24f6a9c0e4d8b5f172c33, type: 2}
+      SourcePrefab: {fileID: 1000, guid: 8f79c97ef2bd4624a730a96900e4daaa, type: 3}
+      Image: {fileID: 0}
+      Stats:
+      - Label: Shoal size
+        Value: 1 creature
+        Authored: 0
+      - Label: Live cap
+        Value: 3 creatures
+        Authored: 0
+      - Label: Feeds per child
+        Value: Does not reproduce
+        Authored: 0
+      - Label: Reproduction cooldown
+        Value: 10 s
+        Authored: 0
+      - Label: Body growth per level
+        Value: "\xD71.15"
+        Authored: 0
+      - Label: Initial spawn
+        Value: 1 creature
+        Authored: 0
+    - Label: Space
+      Element: 3
+      SourceConfig: {fileID: 11400000, guid: e7f1b3a2c9d84e5fb6a08c7d4e392b55, type: 2}
+      SourcePrefab: {fileID: 1000, guid: 8f79c97ef2bd4624a730a96900e4daaa, type: 3}
+      Image: {fileID: 0}
+      Stats:
+      - Label: Shoal size
+        Value: 1 creature
+        Authored: 0
+      - Label: Live cap
+        Value: 3 creatures
+        Authored: 0
+      - Label: Feeds per child
+        Value: Does not reproduce
+        Authored: 0
+      - Label: Reproduction cooldown
+        Value: 10 s
+        Authored: 0
+      - Label: Body growth per level
+        Value: "\xD71.15"
+        Authored: 0
+      - Label: Initial spawn
+        Value: 1 creature
+        Authored: 0
+    - Label: Time
+      Element: 4
+      SourceConfig: {fileID: 11400000, guid: b9c4d7e2a1f34b8cd5e6f0a39b8d1c77, type: 2}
+      SourcePrefab: {fileID: 1000, guid: 8f79c97ef2bd4624a730a96900e4daaa, type: 3}
+      Image: {fileID: 0}
+      Stats:
+      - Label: Shoal size
+        Value: 1 creature
+        Authored: 0
+      - Label: Live cap
+        Value: 3 creatures
+        Authored: 0
+      - Label: Feeds per child
+        Value: Does not reproduce
+        Authored: 0
+      - Label: Reproduction cooldown
+        Value: 10 s
+        Authored: 0
+      - Label: Body growth per level
+        Value: "\xD71.15"
+        Authored: 0
+      - Label: Initial spawn
+        Value: 1 creature
+        Authored: 0
+    - Label: Wildlife WormColony L3 1
+      Element: 0
+      SourceConfig: {fileID: 11400000, guid: 3dc30cc5cb4b5f08009da649591cbf10, type: 2}
+      SourcePrefab: {fileID: 1000, guid: 8f79c97ef2bd4624a730a96900e4daaa, type: 3}
+      Image: {fileID: 0}
+      Stats:
+      - Label: Shoal size
+        Value: 5 creatures
+        Authored: 0
+      - Label: Live cap
+        Value: 9 creatures
+        Authored: 0
+      - Label: Feeds per child
+        Value: Does not reproduce
+        Authored: 0
+      - Label: Reproduction cooldown
+        Value: 60 s
+        Authored: 0
+      - Label: Starting level
+        Value: 3
+        Authored: 0
+      - Label: Body growth per level
+        Value: "\xD71.15"
+        Authored: 0
+      - Label: Initial spawn
+        Value: 5 creatures
+        Authored: 0
+      - Label: Roams
+        Value: "0\u20131180 units from the cell centre"
+        Authored: 0
+    - Label: Wildlife WormColony L3 2
+      Element: 0
+      SourceConfig: {fileID: 11400000, guid: 8b769a9103e8e483b224d9ae625f9c4d, type: 2}
+      SourcePrefab: {fileID: 1000, guid: 8f79c97ef2bd4624a730a96900e4daaa, type: 3}
+      Image: {fileID: 0}
+      Stats:
+      - Label: Shoal size
+        Value: 5 creatures
+        Authored: 0
+      - Label: Live cap
+        Value: 9 creatures
+        Authored: 0
+      - Label: Feeds per child
+        Value: Does not reproduce
+        Authored: 0
+      - Label: Reproduction cooldown
+        Value: 60 s
+        Authored: 0
+      - Label: Starting level
+        Value: 3
+        Authored: 0
+      - Label: Body growth per level
+        Value: "\xD71.15"
+        Authored: 0
+      - Label: Initial spawn
+        Value: 5 creatures
+        Authored: 0
+      - Label: Roams
+        Value: "0\u20131180 units from the cell centre"
+        Authored: 0
+    - Label: Wildlife WormColony L3 3
+      Element: 0
+      SourceConfig: {fileID: 11400000, guid: fa3ba8bc438bfd80b22e5e0d1ee339e6, type: 2}
+      SourcePrefab: {fileID: 1000, guid: 8f79c97ef2bd4624a730a96900e4daaa, type: 3}
+      Image: {fileID: 0}
+      Stats:
+      - Label: Shoal size
+        Value: 5 creatures
+        Authored: 0
+      - Label: Live cap
+        Value: 9 creatures
+        Authored: 0
+      - Label: Feeds per child
+        Value: Does not reproduce
+        Authored: 0
+      - Label: Reproduction cooldown
+        Value: 60 s
+        Authored: 0
+      - Label: Starting level
+        Value: 3
+        Authored: 0
+      - Label: Body growth per level
+        Value: "\xD71.15"
+        Authored: 0
+      - Label: Initial spawn
+        Value: 5 creatures
+        Authored: 0
+      - Label: Roams
+        Value: "0\u20131180 units from the cell centre"
+        Authored: 0
+    - Label: Wildlife WormColony L3 4
+      Element: 0
+      SourceConfig: {fileID: 11400000, guid: ffb81fdc15b1de2c899da39af01d6553, type: 2}
+      SourcePrefab: {fileID: 1000, guid: 8f79c97ef2bd4624a730a96900e4daaa, type: 3}
+      Image: {fileID: 0}
+      Stats:
+      - Label: Shoal size
+        Value: 5 creatures
+        Authored: 0
+      - Label: Live cap
+        Value: 9 creatures
+        Authored: 0
+      - Label: Feeds per child
+        Value: Does not reproduce
+        Authored: 0
+      - Label: Reproduction cooldown
+        Value: 60 s
+        Authored: 0
+      - Label: Starting level
+        Value: 3
+        Authored: 0
+      - Label: Body growth per level
+        Value: "\xD71.15"
+        Authored: 0
+      - Label: Initial spawn
+        Value: 5 creatures
+        Authored: 0
+      - Label: Roams
+        Value: "0\u20131180 units from the cell centre"
+        Authored: 0
+    - Label: Worm Colony Kaiju
+      Element: 0
+      SourceConfig: {fileID: 11400000, guid: eca04f08bc0448c2a0150f75ac23e83f, type: 2}
+      SourcePrefab: {fileID: 1000, guid: 8f79c97ef2bd4624a730a96900e4daaa, type: 3}
+      Image: {fileID: 0}
+      Stats:
+      - Label: Shoal size
+        Value: 1 creature
+        Authored: 0
+      - Label: Live cap
+        Value: 3 creatures
+        Authored: 0
+      - Label: Feeds per child
+        Value: Does not reproduce
+        Authored: 0
+      - Label: Reproduction cooldown
+        Value: 10 s
+        Authored: 0
+      - Label: Body growth per level
+        Value: "\xD71.15"
+        Authored: 0
+      - Label: Initial spawn
+        Value: 1 creature
+        Authored: 0

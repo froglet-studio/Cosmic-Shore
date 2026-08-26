@@ -91,8 +91,8 @@ namespace CosmicShore.Gameplay
         /// <summary>
         /// Local-space shell semi-axes (shieldScale × Awake-cached half-extents)
         /// for the spatial index's shell view — deliberately the frozen authored
-        /// geometry, never the live BoxCollider.size (HoldColliderAtFullSize
-        /// mutates that during the bloom).
+        /// geometry (transform is final at stamp under the clock law; do not
+        /// re-derive shell axes from a live BoxCollider.size).
         /// </summary>
         internal Vector3 ShellSemiAxesLocal => _halfExtents * shieldScale;
         private float _boxMass;

@@ -143,6 +143,52 @@ namespace CosmicShore.Gameplay
             ClockColorTransition(transparentMaterial, opaqueMaterial, duration, onComplete);
         }
 
+        /// <summary>
+        /// Snap the renderer to a material pair with no clock lerp. Used by
+        /// environment-pool reuse to restore Domains.Blue so the next ChangeTeam
+        /// is a real Blue → domain stamp. Works while inactive and before Awake.
+        /// Does not early-out on <c>!enabled</c>.
+        /// </summary>
+        public void BindMaterialsImmediate(Material transparentMaterial, Material opaqueMaterial)
+        {
+            if (MeshRenderer == null) MeshRenderer = GetComponent<MeshRenderer>();
+            if (cachedPrism == null) cachedPrism = GetComponent<Prism>();
+
+            if (MeshRenderer == null)
+            {
+                CSDebug.LogError($"MeshRenderer missing on {gameObject.name}");
+                return;
+            }
+            if (transparentMaterial == null || opaqueMaterial == null)
+            {
+                CSDebug.LogError($"Invalid materials provided to {gameObject.name}");
+                return;
+            }
+
+            var timers = PrismTimerManager.EnsureInstance();
+            timers.CancelScheduledActions(this);
+            _clockColorActive = false;
+            if (cachedPrism != null && PrismRenderService.IsHandleUsable(in cachedPrism.RenderHandle))
+                PrismRenderService.ClearColorTransitionStamp(in cachedPrism.RenderHandle);
+
+            bool transparent = cachedPrism != null && cachedPrism.prismProperties != null &&
+                               cachedPrism.prismProperties.IsTransparent;
+            var bindMaterial = transparent ? transparentMaterial : opaqueMaterial;
+
+            activeTransparentMaterial = transparentMaterial;
+            activeOpaqueMaterial = opaqueMaterial;
+            materialsDirty = false;
+            MeshRenderer.sharedMaterial = bindMaterial;
+            cachedPrism?.SyncRenderMaterial();
+
+            if (bindMaterial.HasProperty(BrightColorId))
+                StartBrightColor = TargetBrightColor = bindMaterial.GetColor(BrightColorId);
+            if (bindMaterial.HasProperty(DarkColorId))
+                StartDarkColor = TargetDarkColor = bindMaterial.GetColor(DarkColorId);
+            if (bindMaterial.HasProperty(SpreadId))
+                StartSpread = TargetSpread = bindMaterial.GetVector(SpreadId);
+        }
+
         static readonly int ColorStartTimeId = Shader.PropertyToID("_ColorStartTime");
 
         /// <summary>

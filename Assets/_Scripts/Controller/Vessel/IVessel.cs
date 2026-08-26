@@ -47,7 +47,7 @@ namespace CosmicShore.Gameplay
         void SetAOEExplosionMaterial(Material material);
         void SetAOEConicExplosionMaterial(Material material);
         void SetSkimmerMaterial(Material material);
-        void SetTrailColors(Color highlightColor, Color coreColor);
+        void SetTailAndJetColors(Color highlightColor, Color coreColor);
         void BindElementalFloat(string name, Element element);
         // void PerformButtonActions(int buttonNumber);
         void ToggleAIPilot(bool toggle);

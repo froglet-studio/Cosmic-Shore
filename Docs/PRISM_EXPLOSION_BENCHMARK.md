@@ -32,8 +32,9 @@ coverage work (`claude/dolphin-explosion-prism-coverage-qtbstp`).
   (`PrismSpatialIndex.DamageBudgetPerFrameOverride`, 48 → unbounded: prisms
   die the frame the wavefront contains them, no ~19s trickle-drain tail), the
   per-frame destruction-VFX spawn caps
-  (`PrismFactory.VFXBudgetPerFrameOverride`, 64 → unbounded: every death's
-  effect spawns the same frame), and the live-effect pressure model
+  (`PrismFactory.VFXBudgetPerFrameOverride` — **no-op after D4 2026-08-25**:
+  death is unthrottled by construction on the batched carrier; the harness
+  still writes the override so lift/restore compiles), and the live-effect pressure model
   (`PrismFactory.EffectPressureScalingDisabled`: every death animates the full
   5s instead of being squeezed to 0.22s under load). These guards were sized
   for the CPU-per-effect era; on the clock path a live effect costs no
@@ -96,6 +97,48 @@ frame, and the GC allocated-per-frame figure. Compare against a run at
 
 These are structural claims about allocation and interop counts, not predictions
 about frame time — the benchmark is what says whether they matter.
+
+### Re-measurement results (Prompt 11 / D4 gate)
+
+Record each session here. **A playtest nobody wrote down did not happen.**
+
+| run | branch / commit | grid | throttles | detonation-frame markers (total ms → self ms) | GC B/frame (detonation) | notes |
+|---|---|---|---|---|---|---|
+| **f0ddfc21 baseline** | gpu-clock @ `f0ddfc21` | 47³ (spec) | lifted | **not instrumented** — only `AOE.ResolveDamage` bucket: ~1,047 ms total / **~0.43 ms SELF per death** (2,408 deaths); included `PrismExplosion.OnDisable` 1,863 ms same frame | not recorded | Stale upper bound; see § "Re-profiling" above. Left as-is — this file fills blanks, it does not rewrite that row. |
+| **2026-08-24** | `ten-branch` (agent, no Editor) | — | — | **not run** | — | Static wiring `--check` only |
+| **2026-08-25** | `ten-branch` @ Unity 6000.3.17f1, Editor play | 47³ (103,823) | lifted (`blastRadius` 691, `explosionDuration` 3.0) | **peak death-frame 155004, 10,178 samples** — see per-marker grid below | **885,437 B** (whole frame, not death-path-only) | FPS envelope: series `20260825-041823` (5 runs). Markers: `BenchmarkResults/PrismExplosion/destroy_markers_playloop.json` from a PlayerLoop.Update sampler (EditorApplication.update recorders always peak at 0). Marker-era FPS series `20260825-042851` is **contaminated** (JSON writer on the hot path; mean 28.5 FPS) — do not use it for the envelope. |
+
+**Detonation-frame markers (2026-08-25, peak frame 155004, 10,178 deaths).** Recorders sampled inside PlayerLoop Update. Setup **nests** SpatialIndex + StatRaise; Setup self = Setup total − those two. SFX and EffectRequest are siblings after Setup returns. Sum of (Setup self + children + siblings) is the death-path wall time on that frame.
+
+| marker | total ms | self ms | ≈ µs/death |
+|---|---|---|---|
+| `Prism.Destroy.Setup` | 60.865 | **53.462** | 5.98 total / **5.25 self** |
+| `Prism.Destroy.SpatialIndex` | 5.872 | — (child of Setup) | 0.58 |
+| `Prism.Destroy.StatRaise` | 1.530 | — (child of Setup) | 0.15 |
+| `Prism.Destroy.SFX` | 0.735 | 0.735 | 0.07 |
+| `Prism.Destroy.EffectRequest` | 8.349 | 8.349 | 0.82 |
+| **sum (self + children + siblings)** | **69.948** | | **6.87** |
+
+Vs the stale **430 µs SELF/death** `AOE.ResolveDamage` figure: Setup total/death is **~72× cheaper**. **StatRaise did not dominate** (the doc expected it would) — Setup self is 53.5 of 69.9 ms. GC 885,437 B/frame ≈ 87 B/death *if attributed entirely to deaths*; that does **not** prove the “zero managed allocation on a plain trail-prism death” claim (whole-frame GC includes other work). `f0ddfc21` remains the uninstrumented baseline row.
+
+**Debris HUD caveat.** The sampler stored `PrismDebris.LiveDebrisCount` at write time, not at the peak frame. Peak-frame sample is 0/0 because debris spawns in `LateUpdate` (execution order 29000) after Update. First post-peak snapshot (~246 frames later) was also `0 exp / 0 imp`. EffectRequest 8.3 ms implies the queue ran; do not treat 0 as “batch spawn failed” without a same-frame HUD capture. Grid blast-only: **`imp` stayed 0** (negative control — AOE never implodes).
+
+**FPS envelope — series `20260825-041823`** (use this, not 042851). FPS = `n_frames / sum(dt)` (true mean). Phases 0–1 / 1–3 / 3+ are after preroll. First detonation of a cold session often pays a ~1.09 s hitch; later runs often do not.
+
+| run | n | mean | pre | post | min fps | min@postF | dt>0.1 | 0–1s | 1–3s | 3+s |
+|---|---|---|---|---|---|---|---|---|---|---|
+| 1 | 1064 | 50.6 | 59.5 | 50.2 | **0.92** | 13 | **1.088s @ t_post≈1.31s** | 10.7 | 47.4 | 53.5 |
+| 2 | 1144 | 54.4 | 60.0 | 54.2 | 19.68 | 109 | none | 59.9 | 33.6 | 56.3 |
+| 3 | 1054 | 50.2 | 60.0 | 49.7 | **0.85** | 577 | **1.171s @ t_post≈13.0s** + 0.131s | 59.5 | 34.0 | 50.9 |
+| 4 | 1132 | 53.8 | 60.0 | 53.5 | 10.03 | 505 | none (min dt 0.100s) | 59.6 | 33.7 | 55.5 |
+| 5 | 1122 | 53.4 | 60.0 | 53.1 | 11.25 | 1060 | none | 58.2 | 25.9 | 56.0 |
+
+Extra 1-run `20260825-042339_run01.json`: n=1099, mean 52.3, pre 59.9, post 51.9, min 13.71, no dt>0.1.
+
+**D4 (this file's half):** explosion-side measurement is **GO**. Pair with `Docs/PRISM_ANIMATION.md` §4.6.2 (Consume-on-grid `imp`→0 **and** live Lattice fauna HUD **0/4 → peak 15 imp**; live-cell retirement to 0 not shown — feeding still in progress at t=9657). One-line: **death pooling retired 2026-08-25 (Prompt 9b); Grow stays pooled.** The harness still writes `VFXBudgetPerFrameOverride` (no-op after D4).
+
+Markers nest: Setup's self time excludes SpatialIndex + StatRaise children.
+`Prism.cs` emits them at lines 1110–1114 (not 1084–1088).
 
 ## What one run records
 

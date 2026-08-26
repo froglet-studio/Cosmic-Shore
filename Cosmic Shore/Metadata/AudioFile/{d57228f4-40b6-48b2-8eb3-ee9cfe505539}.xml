@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<objects serializationModel="Studio.02.02.00">
+	<object class="AudioFile" id="{d57228f4-40b6-48b2-8eb3-ee9cfe505539}">
+		<property name="assetPath">
+			<value>End game outro updated.ogg</value>
+		</property>
+		<property name="isStreaming">
+			<value>true</value>
+		</property>
+		<property name="frequencyInKHz">
+			<value>22.0499992</value>
+		</property>
+		<property name="channelCount">
+			<value>2</value>
+		</property>
+		<property name="length">
+			<value>72</value>
+		</property>
+		<relationship name="masterAssetFolder">
+			<destination>{10bfe9dd-695d-4131-b664-efde45fc55f0}</destination>
+		</relationship>
+	</object>
+</objects>

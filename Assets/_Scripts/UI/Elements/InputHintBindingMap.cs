@@ -48,5 +48,29 @@ namespace CosmicShore.UI
         /// </summary>
         public static IReadOnlyList<InputEvents> InputEventsFor(HintBinding binding)
             => Map.TryGetValue(binding, out var events) ? events : Nothing;
+
+        /// <summary>
+        /// The INVERSE: which physical control an ability's authored input corresponds to, for the
+        /// pad or for the keyboard. This is what lets the ability lockup draw a control chip from
+        /// the vessel's own <c>ElementalAbilityMapSO</c> rather than from per-vessel authored
+        /// glyphs - the chain ability → input → control → artwork is derived at every step, so a
+        /// label can never be confidently wrong the way a hand-authored one can.
+        ///
+        /// <para>Returns <see cref="HintBinding.None"/> for an input no control raises: a passive
+        /// ability (<c>FullSpeedStraightAction</c>) has no button, and on the keyboard several pad
+        /// buttons have no equivalent at all. Both are honestly blank rather than mislabelled.</para>
+        /// </summary>
+        public static HintBinding BindingFor(InputEvents input, bool keyboard)
+        {
+            foreach (var pair in Map)
+            {
+                if (IsKeyboard(pair.Key) != keyboard) continue;
+                foreach (var candidate in pair.Value)
+                    if (candidate == input) return pair.Key;
+            }
+            return HintBinding.None;
+        }
+
+        static bool IsKeyboard(HintBinding binding) => binding >= HintBinding.KeyLeftShift;
     }
 }

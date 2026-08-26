@@ -129,6 +129,44 @@ Three consequences worth knowing:
 - **The forward overhang is gone**; what remains is up to 48 u of tail behind the sphere, which is
   the permitted direction.
 
+## It has a TAIL, and that word is precise
+
+The missile carries the fleet's **tail** — the long streak whose whole job is legibility at range
+(`Docs/VESSEL_TAIL_AND_JETS.md` §4.2). Not a *jet* (a short plume on an engine node, tuned for the
+pilot flying that engine) and not a *trail* (conserved prism mass, which this is emphatically not:
+the tail carries no collider, no state, and destroying it destroys nothing). It is the first
+non-vessel in the game to have one, and it earns it — the round crosses ~360 u in three seconds and
+a hit is worth 50 points in Dog Fight, so everyone in the arena has a reason to see it coming and to
+know whose it is.
+
+It is the **shared `VesselTail.prefab`**, nested — not a copy — so a retune of the tail's look
+reaches the missile with no second edit. What is missile-specific is decided in code, per flight,
+off the measurement `CaptureModelHitSphere` already takes for the hit sphere:
+
+| | value | where |
+|---|---|---|
+| mount | the model's measured **rear face**, scaled by growth (the mirror of the nose fit) | `Projectile.TailMount` |
+| width | `0.4 × the round's own body diameter` — 3.05 u at resting Mass | `Projectile.TailWidth` |
+| colour | the firing pilot's **domain**, re-read per flight | `Projectile.PaintTail` → `TailGradient` |
+| lifetime | the shared prefab's 4 s | `VesselTail.prefab` |
+
+Deriving the width is not optional: the round swells **14×–38×** with MASS and a `TrailRenderer`'s
+width is world-space, so a fixed ribbon would be a thread behind a 63 u missile. Because both
+numbers come out of the same measurement the collider is fitted to, the tail and the hit volume can
+never disagree about how big the round is.
+
+Two things a pooled round needs that a vessel does not, both in `Projectile`:
+
+- **`ReclaimTail`** clears the ribbon at launch. A `TrailRenderer` records world-space points, so
+  without it every reissue draws one straight line from wherever the last missile detonated to this
+  one's bay.
+- **`ReleaseTailToFade`** cuts the tail loose at retirement, 0.025 s after detonation, so several
+  hundred units of ribbon fade out where they were laid instead of blinking out with the round.
+  That is continuity of existence, not polish. It comes home when the fade ends or when the round
+  is fired again, whichever is first — a 20-deep pool cycles faster than a 4 s ribbon.
+
+`SparrowRoundGrowthTests` pins the mount sign, the rear-face fit, the width curve and the 0.4.
+
 ## Files
 
 | File | Role |
@@ -142,9 +180,11 @@ Three consequences worth knowing:
 | `_Scripts/Controller/Vessel/R_VesselActions/Executors/FireGunActionExecutor.cs` | `OnMissileFired(bool)` at press; bay-bone lazy resolution BY NAME (`b_Missile.R`/`.L`, warn + muzzle fallback); delayed bay-anchored spawn (UniTask, cancelled on disable/turn end/destroy) |
 | `_Scripts/Controller/Vessel/R_VesselActions/Data Containers/FireGunActionSO.cs` | + `launchDelaySeconds` (0 = legacy instant muzzle spawn — FullAuto-class actions unaffected); + the MASS growth pair and `ResolveGrowthFactor` |
 | `_Scripts/Controller/Vessel/ElementalScaling.cs` | `RoundGrowthFactorForLevel` / `RoundGrowthFactor` — the ONE in-flight growth curve, moved here off `FullAutoActionSO` so the bullets and the missile cannot drift apart |
-| `_Scripts/Controller/Projectiles/Projectile.cs` | + `flightGrowthTarget` (empty = the root, i.e. every existing round unchanged), `flightGrowthUniform` and `flightGrowthCompleteAt01`; the launch pass rebases a child target off its authored scale so a pooled reissue cannot compound last flight's growth, and re-arms the settled latch |
+| `_Scripts/Controller/Projectiles/Projectile.cs` | + the TAIL (`tail`, `tailWidthPerBodyDiameter`, `TailMount`/`TailWidth`, and the pooled-round reclaim/release pair); + `flightGrowthTarget` (empty = the root, i.e. every existing round unchanged), `flightGrowthUniform` and `flightGrowthCompleteAt01`; the launch pass rebases a child target off its authored scale so a pooled reissue cannot compound last flight's growth, and re-arms the settled latch |
 | `_Scripts/Controller/Projectiles/RoundGrowthRamp.cs` | The growth SHAPE as a pure function — swell across the whole flight, or swell early and hold — plus the latch that lets a settled round stop writing its transform |
 | `Assets/_SO_Assets/VesselActions/Sparrow/SkyBurstGunAction.asset` | `launchDelaySeconds: 0.2`; `growthFactorAtRestingMass: 20` / `growthFactorAtFullMass: 32` |
+| `Assets/_Prefabs/Spacevessels/Components/VesselTail.prefab` | The shared tail, nested here. Also stripped of six dead disabled particle systems in the same pass — they were free on a vessel and would not have been on a 20-deep projectile pool (`Docs/VESSEL_TAIL_AND_JETS.md` §6) |
+| `_Scripts/Controller/Vessel/TailGradient.cs` | The one composition of a tail's colour gradient, shared by `VesselTailAndJets` and `Projectile` so the two cannot drift |
 | `Assets/_Prefabs/Projectile/SkyBurstProjectile.prefab` | `Projectile.flightGrowthTarget` → `MissileVisual`, `flightGrowthUniform: 1`, `flightGrowthCompleteAt01: 0.2`; `SphereCollider` re-authored to the **launch** fit (`r 0.019053`, centred on the model's tip) and re-fitted per frame while the model swells. Visual moved to a `MissileVisual` child: missile mesh + embedded material (+ 2× `BlueBaseOpaqueVesselMaterial` submeshes), rotated X+90° so the nose (+Y in mesh space, the radially-symmetric end) points along flight (+Z), child scale 2 (≈1.7 u world at ProjectileScale 10 — matches the bay missile's world size, armature scale 0.2034 × 8.3-unit mesh). Root scale/collider untouched → the gameplay hit sphere is byte-identical |
 | `Assets/_Prefabs/Spacevessels/Sparrow.prefab` | Animation component swapped `MantaAnimationContoller` → `SparrowAnimationController` (same fileID, same serialized fields) + `missileExecutor` wired to the SkyBurst executor |
 
@@ -159,12 +199,22 @@ Three consequences worth knowing:
 | Bay side predicate | `FireGunActionExecutor.Fire` | ammo ≥ 2×cost → right | Keep single-sourced; do not re-derive in the animation |
 | `growthFactorAtRestingMass` / `growthFactorAtFullMass` | `SkyBurstGunAction.asset` | 20 / 32 | HOW MUCH the missile swells — and, since the collider follows the model, its REACH too (3.81 u at rest). There is no size ceiling any more; there is a balance consequence. See the section above before raising it |
 | `flightGrowthCompleteAt01` | `SkyBurstProjectile.prefab` → `Projectile` | 0.2 | WHEN. Fraction of the flight the swell takes; it holds after. 1 = swell all the way in, the tracer's shape |
+| `tailWidthPerBodyDiameter` | `SkyBurstProjectile.prefab` → `Projectile` | 0.4 | The tail's ribbon width as a fraction of the round's own body diameter (3.05 u at resting Mass). 0 hides the tail. Derived from the Sparrow's own `widthScale` 2.5 on a ~6.4 u hull, not play-tested |
 | Growth target / uniform | `SkyBurstProjectile.prefab` → `Projectile` | `MissileVisual` / on | Selects the model-IS-the-hit-volume path: the model grows and the collider is fitted to it. The only prefab in the game that sets it. Clearing it puts the missile on the shell path, where it would not grow at all — it has no `chargeField` |
 
 ## In-editor verification
 
-See the 🔴 entry in `Docs/UNITY_VERIFICATION_CHECKLIST.md` (authored without a Unity
-compile/play-test — the donor-clip path binding and the visual seam both need eyes).
+**The bay + growth pass:** see the 🔴 entries in `Docs/UNITY_VERIFICATION_CHECKLIST.md`
+(authored without a Unity compile/play-test — the donor-clip path binding and the visual seam
+both need eyes).
+
+**The tail:** also authored without a Unity compile. It is recorded through the current loop
+rather than that checklist — its PR body's *Verification status* section, which `/qa-backlog`
+scans into `Docs/QA/QA_BACKLOG.md`. The two things most worth an eye are the pooled-round cases:
+a reissued missile must not draw a straight ribbon from the last detonation to its launch bay
+(`ReclaimTail`'s `Clear()`), and a detonating one's ribbon must fade over ~4 s where it was laid
+rather than vanish with the round (`ReleaseTailToFade`). Everything else is a look call on the
+0.4 width fraction.
 
 ## Follow-ups
 
@@ -179,7 +229,10 @@ compile/play-test — the donor-clip path binding and the visual seam both need 
   end.
 - The root `ParticleSystem` exhaust was tuned against the 15 u wedge and never re-tuned. It sits
   on the ROOT, so it does not grow with the model — against a 33 u missile it is the most likely
-  thing to read as wrong. Needs a size pass.
+  thing to read as wrong. Needs a size pass. **The tail sharpens this**: it is now the only thing
+  streaming off this round that is neither measured off the model nor domain-coloured, so if the
+  stern reads as two unrelated effects, that is the one to fix (or delete — the tail may simply
+  have made it redundant).
 - Remote peers: the bay animation rides the same executor event as the local projectile spawn,
   so it plays wherever the projectile spawns — if skyburst fire is ever server-relayed rather
   than locally simulated per client, the bay animation follows automatically.

@@ -6,11 +6,13 @@ namespace CosmicShore.Gameplay
     public enum ShapePreset { None, Circle, Star, Heart, Lightning, Smiley, Spiral, Diamond, Infinity, Arrow, Wave }
 
     /// <summary>
-    /// Defines a drawable shape for Shape Drawing Mode.
-    /// Create via: Assets > Create > CosmicShore > Shape Drawing > Shape Definition
+    /// Defines a drawable shape. Create via:
+    /// Assets > Create > CosmicShore > Shape Drawing > Shape Definition
     ///
     /// Waypoints are defined in LOCAL space, normalized to roughly a 200-unit bounding box.
-    /// The ShapeDrawingManager will offset them into world space at runtime.
+    /// The painting toy consumes these via <c>PaintingDefinitionSO.sourceShape</c> /
+    /// <c>PaintingPresetLibrary.FromShape</c> (pen-up gaps become strokes).
+    /// Spawnable shape collisions raise <c>ShapeSignEvents</c> with this asset.
     ///
     /// trailEnabledPerSegment controls whether the player's trail is active WHILE flying
     /// TOWARD that waypoint. Index 0 = trail state while flying to waypoint[0], etc.

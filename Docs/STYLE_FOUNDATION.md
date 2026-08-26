@@ -1,6 +1,6 @@
 # Cosmic Shore — Style Foundation
 
-**Version:** 0.3.1 · **Reference:** 1920×1080, PPU 240 · **Stack:** uGUI + TextMeshPro
+**Version:** 0.3.2 · **Reference:** 1920×1080, PPU 240 · **Stack:** uGUI + TextMeshPro
 
 **v0.3 supersedes v0.1 and v0.2.** The existing Cosmic Shore style guide — Main Colors, Additional Colors, Typography, Icons, Buttons, UI Elements — is **authoritative**. This document records it, resolves the open items, and adds only what the guide does not cover: spacing, layering, motion, safe area, and the numeric type role.
 
@@ -57,12 +57,14 @@ Direction: Helldivers 2 **discipline only** — the rigour, not the look.
 | Ruby (Light) | `D280FF` | Ruby (Dark) | `530080` |
 | Gold (Light) | `FFD780` | Gold (Dark) | `805700` |
 
-### Gaps — proposed, needs approval
+### Gaps
 
 | Role | Proposal | Rationale |
 |---|---|---|
-| Destructive / danger | `FF4B3A` | No red in the palette. Red is outside the team gamut. **Full-bleed fill only.** |
+| Destructive / danger | `FF4B3A` **(approved)** | No red in the palette. Red is outside the team gamut. **Full-bleed fill only.** |
 | Attention / unclaimed | Reuse CTA `99FF80` | A second novel hue would weaken the CTA. |
+
+`danger FF4B3A` is **approved** as of v0.3.2 and is a shipping token. Attention/unclaimed remains a reuse of CTA rather than a token of its own.
 
 ---
 
@@ -285,7 +287,7 @@ Chrome only. **Team colours stay in `SO_ColorSet`.**
 | `surfaceLight` | `434C89` |
 | `neutralLightest` | `747BAD` |
 | `cta` | `99FF80` |
-| `danger` | `FF4B3A` *(proposed)* |
+| `danger` | `FF4B3A` |
 | `spacing[9]` | `4, 8, 12, 16, 24, 32, 48, 64, 96` |
 | `sliverLarge` / `sliverSmall` | `14` / `10` |
 | `hairline` / `stroke` | `1` / `2` |
@@ -302,3 +304,4 @@ Chrome only. **Team colours stay in `SO_ColorSet`.**
 | 0.2 | Rebuilt on the studio palette and typography |
 | 0.3 | Team names resolved (Jade cyan / Ruby purple / Gold amber). PC type scale set. Aldrich `<mspace>` for numerics. Chamfer corrected to the flippable corner sliver. Glow/gradient admitted as state carriers. Component library §10 added from the guide. |
 | 0.3.1 | Typography source page received; §4's transcribed rows confirmed against it. Four resolutions applied: emphasis is **colour shift only** (italic clause dropped); Display / Body small / Data ×3 marked **spec-authored**; button caps **unconditional** (the Port exception retired with the Port screen); `<mspace>` **generalised to any live-updating numeric in any face**, with `TabularText` taking the face as a parameter. Section numbering unchanged. |
+| 0.3.2 | **`danger FF4B3A` approved** and promoted from proposed to a shipping token — §2's gap table and §11's field map both drop the qualifier. No other palette change. |

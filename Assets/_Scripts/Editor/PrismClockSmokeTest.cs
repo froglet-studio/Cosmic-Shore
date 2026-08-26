@@ -9,10 +9,9 @@ namespace CosmicShore.Editor
     /// Play-mode smoke tests for the clock-material path (Docs/PRISM_ANIMATION.md
     /// §4.4 verification protocol). Re-blooms live prisms with a from-zero clock
     /// stamp: on a correctly wired BlockGraph every stamped prism regrows
-    /// per-vertex smooth with ZERO CPU animation (DiagnosticsHUD "Animators" rows
-    /// stay at 0 active) while colliding at full size throughout. On an unwired
-    /// graph they snap and the console carries [PrismClock] errors — which is the
-    /// strict mode telling you what to wire.
+    /// per-vertex smooth with ZERO CPU animation while colliding at full size
+    /// throughout. On an unwired graph they snap and the console carries
+    /// [PrismClock] errors — which is strict mode telling you what to wire.
     /// </summary>
     public static class PrismClockSmokeTest
     {

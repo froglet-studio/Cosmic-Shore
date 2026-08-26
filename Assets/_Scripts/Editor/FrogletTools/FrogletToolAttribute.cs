@@ -31,6 +31,9 @@ namespace CosmicShore.Editor.Froglet
         Misc = 9,
         /// <summary>Editor health: crash watchdog, bug ledger, triage.</summary>
         Diagnostics = 10,
+
+        /// <summary>QA sessions, test results, the untested-development backlog.</summary>
+        Qa = 11,
     }
 
     /// <summary>
