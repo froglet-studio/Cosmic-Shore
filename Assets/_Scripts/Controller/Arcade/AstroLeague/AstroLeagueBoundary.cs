@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using CosmicShore.Utility;
 using UnityEngine;
 
 namespace CosmicShore.Gameplay
@@ -75,6 +76,13 @@ namespace CosmicShore.Gameplay
         // whose outer is a separate court shape (default Cylinder) wrapped around the central ring.
         readonly AstroLeagueBoundaryShape _outerShape;
 
+        // Central SPHERE obstacle, orthogonal to Shape and composable with any outer court: the ball
+        // stays OUTSIDE it. This is how a ball plays in the CYTOPLASM — outer sphere = the membrane,
+        // core = the cell nucleus — so the same nucleus surface the court ball bounces off from the
+        // INSIDE is bounced off from the OUTSIDE out here. One obstacle, both sides.
+        readonly float _coreRadius;
+        readonly bool _hasCore;
+
         // Central torus ring obstacle (NotchedRing only): axis = Z (the goal axis), so the ring lies in
         // the mid-plane and the ball can shoot straight down the center hole or through the angular notch.
         readonly bool _hasRing;
@@ -102,6 +110,7 @@ namespace CosmicShore.Gameplay
         /// <param name="ringTubeFraction">0..1: ring thickness as a fraction of the cross-section radius.</param>
         /// <param name="notchCenterRadians">Angle (atan2(y,x)) of the notch center - the gap in the ring.</param>
         /// <param name="notchHalfWidthRadians">Half-angle of the notch gap; 0 = a solid ring (no gap).</param>
+        /// <param name="coreObstacleRadius">Radius of a central SPHERE the ball must stay OUTSIDE of; 0 (default) = none. Composes with every outer shape — used for cytoplasm play around the cell nucleus.</param>
         public AstroLeagueBoundary(
             AstroLeagueBoundaryShape shape,
             Vector3 center,
@@ -113,7 +122,8 @@ namespace CosmicShore.Gameplay
             float ringMajorFraction = 0.5f,
             float ringTubeFraction = 0.18f,
             float notchCenterRadians = 0f,
-            float notchHalfWidthRadians = 0.5f)
+            float notchHalfWidthRadians = 0.5f,
+            float coreObstacleRadius = 0f)
         {
             Shape = shape;
             Center = center;
@@ -143,7 +153,13 @@ namespace CosmicShore.Gameplay
                 _notchHalfWidth = Mathf.Max(0f, notchHalfWidthRadians);
                 _hasRing = _ringMajor > 1e-3f && _ringTube > 1e-3f;
             }
+
+            _coreRadius = Mathf.Max(0f, coreObstacleRadius);
+            _hasCore = _coreRadius > 1e-3f;
         }
+
+        /// <summary>Radius of the central sphere obstacle the ball stays outside of; 0 = none.</summary>
+        public float CoreRadius => _coreRadius;
 
         /// <summary>Build the planes / analytic params + MaxExtent for one (outer) court shape.</summary>
         void BuildOuterShape(AstroLeagueBoundaryShape shape, float hx, float hy, float hz,
@@ -368,6 +384,14 @@ namespace CosmicShore.Gameplay
                 contactPoint = rcp;
                 contactNormal = rcn;
             }
+
+            // Central SPHERE obstacle (the nucleus, seen from outside) - same ordering rule as the ring.
+            if (_hasCore && ContainCore(ref position, ref velocity, ballRadius, e, out Vector3 ccp, out Vector3 ccn))
+            {
+                bounced = true;
+                contactPoint = ccp;
+                contactNormal = ccn;
+            }
             return bounced;
         }
 
@@ -411,6 +435,31 @@ namespace CosmicShore.Gameplay
 
             cn = normal;
             cp = pos - normal * r; // the ball-surface contact point
+            return true;
+        }
+
+        /// <summary>
+        /// Central sphere obstacle: keep the ball OUTSIDE a core of radius <c>_coreRadius</c>. The exact
+        /// mirror of <see cref="ContainSphere"/> — that one clamps the ball's distance from center to a
+        /// MAXIMUM and reflects the outward velocity component; this clamps it to a MINIMUM and reflects
+        /// the inward one. A ball that starts dead-centre has no defined outward direction, so it is left
+        /// alone rather than being pushed in an arbitrary one (it cannot be there without having been
+        /// placed there, and the seeder never does that).
+        /// </summary>
+        bool ContainCore(ref Vector3 pos, ref Vector3 vel, float r, float e, out Vector3 cp, out Vector3 cn)
+        {
+            cp = pos; cn = Vector3.zero;
+            Vector3 fromCenter = pos - Center;
+            float minDist = _coreRadius + r;      // ball SURFACE kisses the core
+            float dist = fromCenter.magnitude;
+            if (dist >= minDist || dist < 1e-4f) return false;
+
+            Vector3 outward = fromCenter / dist;
+            float vn = Vector3.Dot(vel, outward);
+            if (vn < 0f) vel -= (1f + e) * vn * outward; // moving INTO the core → reflect the inward part
+            pos = Center + outward * minDist;
+            cn = outward;
+            cp = Center + outward * _coreRadius;
             return true;
         }
 
@@ -540,11 +589,12 @@ namespace CosmicShore.Gameplay
             var tris = new List<int>();
             var normals = new List<Vector3>();
 
-            if (_outerShape == AstroLeagueBoundaryShape.Cylinder)
+            if (_outerShape == AstroLeagueBoundaryShape.Sphere)
+                AppendSphereMesh(meshVerts, tris, normals);
+            else if (_outerShape == AstroLeagueBoundaryShape.Cylinder)
                 AppendCylinderMesh(meshVerts, tris, normals);
             else if (_planes.Count >= 4)
                 AppendPolytopeMesh(meshVerts, tris, normals);
-            // Sphere outer contributes no hull mesh (it is resized via Cell.SetNucleusWorldRadius).
 
             if (_hasRing)
                 AppendTorusMesh(meshVerts, tris, normals);
@@ -700,6 +750,44 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>Barrel (N segments) + flat ±Z caps, matching <see cref="ContainCylinder"/>'s walls.</summary>
+        /// <summary>
+        /// Flat-shaded icosphere hull at the sphere court's radius.
+        ///
+        /// The Sphere shape used to contribute NO hull mesh - the nucleus was merely resized
+        /// (<c>Cell.SetNucleusWorldRadius</c>) and kept the prefab's plain sphere. That is why the
+        /// faceted glowing "arena cover" every other court wears was missing at intensity 4: it is
+        /// the generated cage mesh rendered through the nucleus' CageMaterial, and the sphere never
+        /// generated one. Building it here means every shape gets the cover from ONE source, and -
+        /// as with the polytopes - the surface you see is the surface the ball reflects off.
+        ///
+        /// Reuses <see cref="IcosphereMeshGenerator"/> (the ball's mesh source) flat-shaded, so the
+        /// facets catch the cage material's fresnel exactly like the polytope faces do.
+        /// </summary>
+        void AppendSphereMesh(List<Vector3> meshVerts, List<int> tris, List<Vector3> normals)
+        {
+            // 3 subdivisions = 1280 tris - dense enough to read as a dome at arena scale, coarse
+            // enough that the facets stay legible (the whole point of the look). FinalizeMesh
+            // doubles it for the inside faces, as it does for every other shape.
+            var sphere = IcosphereMeshGenerator.Generate(3, _sphereRadius, flatShaded: true);
+            if (sphere == null) return;
+
+            var sv = sphere.vertices;
+            var st = sphere.triangles;
+            var sn = sphere.normals;
+            int baseIndex = meshVerts.Count;
+            for (int i = 0; i < sv.Length; i++)
+            {
+                meshVerts.Add(sv[i]);
+                normals.Add(sn != null && sn.Length == sv.Length ? sn[i] : sv[i].normalized);
+            }
+            for (int i = 0; i < st.Length; i++) tris.Add(baseIndex + st[i]);
+
+            // The generator hands back a fresh Mesh each call; this one only ever existed to be
+            // copied into the shared cage mesh. (Play-mode guard: Destroy is an error in edit mode,
+            // and a boundary is only ever built at runtime.)
+            if (Application.isPlaying) UnityEngine.Object.Destroy(sphere);
+        }
+
         void AppendCylinderMesh(List<Vector3> meshVerts, List<int> tris, List<Vector3> normals)
         {
             const int seg = 32;

@@ -187,6 +187,12 @@ namespace CosmicShore.Gameplay
         public Action<ulong> OnRosterRequested;
 
         /// <summary>
+        /// Server-side callback registered by <see cref="MenuServerPlayerVesselInitializer"/> to
+        /// release a freestyle AI companion. Parameters: vesselClass, domain, spawn pose.
+        /// </summary>
+        public Action<VesselClassType, Domains, Pose> OnAiCompanionRequested;
+
+        /// <summary>
         /// Direct server-side vessel replacement (called by MenuServerPlayerVesselInitializer on host).
         /// The player already has a vessel - this wires the new one in place.
         /// </summary>
@@ -212,6 +218,23 @@ namespace CosmicShore.Gameplay
                 playerNetId,
                 targetClass,
                 new Pose(snapshotPos, snapshotRot));
+        }
+
+        /// <summary>
+        /// Called by a non-host client to release an AI companion (the freestyle Lifeform Matrix's
+        /// VESSELS branch). Spawning a <see cref="Player"/> + vessel is server-only, exactly like a
+        /// vessel swap, so a client asks and the server does it - never a locally-spawned bot that
+        /// nobody else in the party can see.
+        /// </summary>
+        [ServerRpc(RequireOwnership = false)]
+        internal void RequestAiCompanion_ServerRpc(
+            VesselClassType vesselClass,
+            Domains domain,
+            Vector3 spawnPos,
+            Quaternion spawnRot,
+            ServerRpcParams rpcParams = default)
+        {
+            OnAiCompanionRequested?.Invoke(vesselClass, domain, new Pose(spawnPos, spawnRot));
         }
 
         /// <summary>
@@ -410,7 +433,7 @@ namespace CosmicShore.Gameplay
 
         void InitializePair(IPlayer player, IVessel vessel)
         {
-            Debug.Log($"<color=#00FF00>[FLOW-6] [ClientVesselInit] InitializePair - Player={player.Name}, IsLocalUser={player.IsLocalUser}, IsAI={player.IsInitializedAsAI}</color>");
+            CSDebug.LogVerbose(CSLogChannel.NetworkFlow, $"<color=#00FF00>[FLOW-6] [ClientVesselInit] InitializePair - Player={player.Name}, IsLocalUser={player.IsLocalUser}, IsAI={player.IsInitializedAsAI}</color>");
             // Explicit handle (not `using`): the local pair raises OnClientReady - the visual-ready
             // milestone - from inside this method, so the span must close before that call.
             int pairSpan = LoadInsights.Begin(
@@ -425,7 +448,7 @@ namespace CosmicShore.Gameplay
             // reset, NormalizeUnassignedHumans reroll, shape-mode SetDomain, etc).
             if (player is Player p) p._vesselThemeManagerData = themeManagerData;
             gameData.AddPlayer(player);
-            Debug.Log($"<color=#00FF00>[FLOW-6] [ClientVesselInit] AddPlayer done. Players.Count={gameData.Players.Count}, LocalPlayer={gameData.LocalPlayer?.Name}</color>");
+            CSDebug.LogVerbose(CSLogChannel.NetworkFlow, $"<color=#00FF00>[FLOW-6] [ClientVesselInit] AddPlayer done. Players.Count={gameData.Players.Count}, LocalPlayer={gameData.LocalPlayer?.Name}</color>");
 
             // Signal this specific player-vessel pair is fully initialized.
             // Subscribers (e.g. MainMenuController) activate non-local players
@@ -444,7 +467,7 @@ namespace CosmicShore.Gameplay
                 // Local pair resolved - stop the client-pull retry loop and clear the splash.
                 _localPairResolved = true;
                 _rosterRetryCts?.Cancel();
-                Debug.Log("<color=#FFFFFF><b>[FLOW-6] [ClientVesselInit] Raising OnClientReady (local player initialized)</b></color>");
+                CSDebug.LogVerbose(CSLogChannel.NetworkFlow, "<color=#FFFFFF><b>[FLOW-6] [ClientVesselInit] Raising OnClientReady (local player initialized)</b></color>");
                 gameData.InvokeClientReady();
             }
         }

@@ -20,12 +20,14 @@ namespace CosmicShore.Editor
     /// asset is reimported synchronously, and ANY import/compile error restores the
     /// original file automatically — a failed attempt costs nothing.
     ///
-    /// Node wiring is NOT manual: all four graphs' Custom Function nodes and edge
-    /// splices were synthesized out-of-editor with machine validation (donor-clone
-    /// JSON, every node/slot/edge reference resolved before writing — the
-    /// /asset-surgery skill documents the technique). This tool remains as the
-    /// idempotent PROPERTY repair path (e.g. after a graph revert); a reverted
-    /// node graph is restored from git, not re-drawn by hand.
+    /// Node splices are NOT this tool. Custom Function nodes and edge wiring were
+    /// synthesized out-of-editor by Tools/Shaders/wire_prism_*.py (corridor, erosion,
+    /// back-face, destruction sight, shield-morph CF, flight, jiggle — every node/slot/edge
+    /// reference resolved before writing; the /asset-surgery skill documents the
+    /// technique). This tool is the idempotent PROPERTY repair path: Hybrid-Per-Instance
+    /// stamps including the shield-morph quartet, so Auto-Wire → Validate Clock Wiring
+    /// closes on properties. A reverted node graph is restored from git / the python
+    /// wirer, not re-drawn by hand.
     ///
     /// FrogletTools > Ecology > Prism Animation> Auto-Wire Clock Properties.
     /// </summary>
@@ -95,6 +97,29 @@ namespace CosmicShore.Editor
                     F("_ColorStartTime", 0f), F("_ColorDuration", 0f),
                     C4("_StartBrightColor", 1f, 1f, 1f, 1f), C4("_StartDarkColor", 1f, 1f, 1f, 1f),
                     V3("_StartSpread", 0f, 0f, 0f),
+                    // Ballistic flight (Docs/PRISM_ANIMATION.md §5 C5): a prism FIRED as
+                    // a projectile. Duration 0 = unstamped = render at the transform,
+                    // which is every prism that is not in flight.
+                    F("_FlightStartTime", 0f), F("_FlightDuration", 0f),
+                    V3("_FlightVelocity", 0f, 0f, 0f),
+                    // Super-shield deflection jiggle (Docs/PRISM_ANIMATION.md §5 C14): a
+                    // super-shielded prism HIT but not destroyed. Duration 0 = unstamped =
+                    // identity, which is every prism that has never deflected anything.
+                    F("_JiggleStartTime", 0f), F("_JiggleDuration", 0f),
+                    V3("_JiggleParams", 0f, 0f, 0f),
+                    // Shield engage/shatter morph (Docs/PRISM_ANIMATION.md §4.8):
+                    // Duration 0 = unstamped identity. The CF + edges stay python-owned
+                    // (Tools/Shaders/wire_prism_shield_morph.py); these properties close
+                    // Auto-Wire → Validate.
+                    F("_ShieldMorphStartTime", 0f), F("_ShieldMorphDuration", 0f),
+                    F("_ShieldMorphDirection", 0f), F("_ShieldMorphOffset", 0f),
+                    // Cell-swap world suction (Docs/PRISM_ANIMATION.md §5 C9). Duration 0
+                    // = unstamped identity. The CF + edges stay python-owned
+                    // (Tools/Shaders/wire_prism_suction_clock.py); these properties close
+                    // Auto-Wire → Validate.
+                    F("_SuctionStartTime", 0f), F("_SuctionDuration", 0f),
+                    F("_SuctionDirection", 1f), F("_SuctionGrowDelay", 0f),
+                    V3("_Location", 0f, 0f, 0f),
                 },
             },
             new GraphJob
@@ -114,6 +139,29 @@ namespace CosmicShore.Editor
                     F("_ColorStartTime", 0f), F("_ColorDuration", 0f),
                     C4("_StartBrightColor", 1f, 1f, 1f, 1f), C4("_StartDarkColor", 1f, 1f, 1f, 1f),
                     V3("_StartSpread", 0f, 0f, 0f),
+                    // Ballistic flight (Docs/PRISM_ANIMATION.md §5 C5): a prism FIRED as
+                    // a projectile. Duration 0 = unstamped = render at the transform,
+                    // which is every prism that is not in flight.
+                    F("_FlightStartTime", 0f), F("_FlightDuration", 0f),
+                    V3("_FlightVelocity", 0f, 0f, 0f),
+                    // Super-shield deflection jiggle (Docs/PRISM_ANIMATION.md §5 C14): a
+                    // super-shielded prism HIT but not destroyed. Duration 0 = unstamped =
+                    // identity, which is every prism that has never deflected anything.
+                    F("_JiggleStartTime", 0f), F("_JiggleDuration", 0f),
+                    V3("_JiggleParams", 0f, 0f, 0f),
+                    // Shield engage/shatter morph (Docs/PRISM_ANIMATION.md §4.8):
+                    // Duration 0 = unstamped identity. The CF + edges stay python-owned
+                    // (Tools/Shaders/wire_prism_shield_morph.py); these properties close
+                    // Auto-Wire → Validate.
+                    F("_ShieldMorphStartTime", 0f), F("_ShieldMorphDuration", 0f),
+                    F("_ShieldMorphDirection", 0f), F("_ShieldMorphOffset", 0f),
+                    // Cell-swap world suction (Docs/PRISM_ANIMATION.md §5 C9). Duration 0
+                    // = unstamped identity. The CF + edges stay python-owned
+                    // (Tools/Shaders/wire_prism_suction_clock.py); these properties close
+                    // Auto-Wire → Validate.
+                    F("_SuctionStartTime", 0f), F("_SuctionDuration", 0f),
+                    F("_SuctionDirection", 1f), F("_SuctionGrowDelay", 0f),
+                    V3("_Location", 0f, 0f, 0f),
                 },
             },
             new GraphJob
@@ -161,7 +209,7 @@ namespace CosmicShore.Editor
 
             report.AppendLine(anyFailed
                 ? "RESULT: ❌ some graphs untouched/restored — add those properties manually per the checklist."
-                : "RESULT: ✅ all clock properties present (added or already there). NEXT: the Custom Function node wiring per Docs/PRISM_CLOCK_WIRING_CHECKLIST.md, then run Validate Clock Wiring.");
+                : "RESULT: ✅ all Hybrid-Per-Instance clock properties present (added or already there). Node splices (corridor, erosion, back-face, destruction sight, shield-morph CF, flight, jiggle, live suction) stay python-owned (Tools/Shaders/wire_*.py). Run Validate Clock Wiring to confirm.");
             if (anyFailed) Debug.LogWarning(report.ToString());
             else Debug.Log(report.ToString());
         }

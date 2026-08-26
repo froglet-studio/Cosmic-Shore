@@ -108,6 +108,15 @@ namespace CosmicShore.Gameplay
         protected readonly HashSet<ulong> _processedPlayers = new();
 
         /// <summary>
+        /// Owner client ids for which at least one player was spawned by somebody OTHER than this
+        /// spawner's human path (see <see cref="ClaimExternallySpawnedPlayer"/>). Server-owned AI
+        /// players share the host's owner id, so their spawn event arrives here looking exactly
+        /// like the host's own - this is how the handler tells "already handled elsewhere" from
+        /// "a player went missing".
+        /// </summary>
+        readonly HashSet<ulong> _claimedForeignOwners = new();
+
+        /// <summary>
         /// Players whose persistent state has been re-initialized for THIS scene
         /// (<see cref="Player.PrepareForNewScene"/>, which zeroes RoundStats). Separate from
         /// <see cref="_processedPlayers"/> because that set is removed from on the not-ready
@@ -139,12 +148,12 @@ namespace CosmicShore.Gameplay
         {
             if (!NetworkManager.Singleton.IsServer)
             {
-                Debug.Log("<color=#00FF00>[FLOW-5] [ServerVesselInit] OnNetworkSpawn - NOT server, disabling</color>");
+                CSDebug.LogVerbose(CSLogChannel.NetworkFlow, "<color=#00FF00>[FLOW-5] [ServerVesselInit] OnNetworkSpawn - NOT server, disabling</color>");
                 enabled = false;
                 return;
             }
 
-            Debug.Log($"<color=#00FF00>[FLOW-5] [ServerVesselInit] OnNetworkSpawn - IsServer=true, subscribing to OnPlayerNetworkSpawnedUlong. gameData.Players.Count={gameData.Players.Count}</color>");
+            CSDebug.LogVerbose(CSLogChannel.NetworkFlow, $"<color=#00FF00>[FLOW-5] [ServerVesselInit] OnNetworkSpawn - IsServer=true, subscribing to OnPlayerNetworkSpawnedUlong. gameData.Players.Count={gameData.Players.Count}</color>");
 
             // The computed ring needs the cell's nucleus, which the Cell spawns in Initialize -
             // deferred to the first vessel spawn (EnsureSpawnPosesReady) so it can't read a
@@ -230,7 +239,7 @@ namespace CosmicShore.Gameplay
 
         async UniTaskVoid HandlePlayerNetworkSpawnedAsync(ulong ownerClientId, CancellationToken ct)
         {
-            Debug.Log($"<color=#00FF00>[FLOW-5] [ServerVesselInit] HandlePlayerNetworkSpawnedAsync - ownerClientId={ownerClientId}, waiting {preSpawnDelayMs}ms for NetworkVariables</color>");
+            CSDebug.LogVerbose(CSLogChannel.NetworkFlow, $"<color=#00FF00>[FLOW-5] [ServerVesselInit] HandlePlayerNetworkSpawnedAsync - ownerClientId={ownerClientId}, waiting {preSpawnDelayMs}ms for NetworkVariables</color>");
             // Wait for NetworkVariables set in Player.OnNetworkSpawn to sync
             using (LoadInsights.Measure(LoadInsightCategory.ScriptedDelay,
                        $"preSpawnDelayMs before vessel spawn ({preSpawnDelayMs}ms)", isWait: true))
@@ -241,11 +250,25 @@ namespace CosmicShore.Gameplay
             Player player = FindUnprocessedPlayerByOwnerClientId(ownerClientId);
             if (player == null)
             {
-                Debug.LogWarning($"<color=#FFA500>[FLOW-5] [ServerVesselInit] FindUnprocessedPlayerByOwnerClientId({ownerClientId}) returned NULL</color>");
+                // A SERVER-OWNED Player (AI) shares the host's OwnerClientId, so its spawn event
+                // is indistinguishable here from the host's own. Whoever created it has already
+                // claimed it (ClaimExternallySpawnedPlayer), so there is genuinely nothing for the
+                // human path to do and this is not a fault - only an unclaimed owner is.
+                //
+                // This is not a rare edge: ProcessPreExistingPlayers calls the handler once per
+                // entry in gameData.Players, so a scene with N backfill AI produced N of these
+                // warnings on every load. The warning that survives below is the one that was
+                // always meant - an owner whose player really did go missing.
+                if (_claimedForeignOwners.Contains(ownerClientId))
+                    CSDebug.LogVerbose(CSLogChannel.NetworkFlow,
+                        $"<color=#FFA500>[FLOW-5] [ServerVesselInit] Spawn event for {ownerClientId} " +
+                        "resolved to an already-claimed server-owned player - nothing to do.</color>");
+                else
+                    Debug.LogWarning($"<color=#FFA500>[FLOW-5] [ServerVesselInit] FindUnprocessedPlayerByOwnerClientId({ownerClientId}) returned NULL</color>");
                 return;
             }
 
-            Debug.Log($"<color=#00FF00>[FLOW-5] [ServerVesselInit] Found player: Name={player.NetName.Value}, VesselType={player.NetDefaultVesselType.Value}, NetworkObjectId={player.NetworkObjectId}</color>");
+            CSDebug.LogVerbose(CSLogChannel.NetworkFlow, $"<color=#00FF00>[FLOW-5] [ServerVesselInit] Found player: Name={player.NetName.Value}, VesselType={player.NetDefaultVesselType.Value}, NetworkObjectId={player.NetworkObjectId}</color>");
 
             // Re-initialize the PERSISTENT Player for this scene - exactly once, for every player,
             // whichever way it was found. RoundStats lives on the Player NetworkObject and survives
@@ -270,7 +293,7 @@ namespace CosmicShore.Gameplay
 
             if (!_processedPlayers.Add(player.NetworkObjectId))
             {
-                Debug.Log($"<color=#FFA500>[FLOW-5] [ServerVesselInit] Player {player.NetworkObjectId} already processed, skipping</color>");
+                CSDebug.LogVerbose(CSLogChannel.NetworkFlow, $"<color=#FFA500>[FLOW-5] [ServerVesselInit] Player {player.NetworkObjectId} already processed, skipping</color>");
                 return;
             }
 
@@ -314,7 +337,7 @@ namespace CosmicShore.Gameplay
                 }
             }
 
-            Debug.Log($"<color=#00FF00>[FLOW-5] [ServerVesselInit] Player ready! Spawning vessel for {player.NetName.Value} (type={player.NetDefaultVesselType.Value})</color>");
+            CSDebug.LogVerbose(CSLogChannel.NetworkFlow, $"<color=#00FF00>[FLOW-5] [ServerVesselInit] Player ready! Spawning vessel for {player.NetName.Value} (type={player.NetDefaultVesselType.Value})</color>");
             await OnPlayerReadyToSpawnAsync(player, ct);
         }
 
@@ -388,10 +411,10 @@ namespace CosmicShore.Gameplay
         {
             EnsureSpawnPosesReady();
 
-            Debug.Log($"<color=#00FF00>[FLOW-5] [ServerVesselInit] OnPlayerReadyToSpawnAsync - SpawnVesselAndInitialize for {player.NetName.Value}</color>");
+            CSDebug.LogVerbose(CSLogChannel.NetworkFlow, $"<color=#00FF00>[FLOW-5] [ServerVesselInit] OnPlayerReadyToSpawnAsync - SpawnVesselAndInitialize for {player.NetName.Value}</color>");
             SpawnVesselAndInitialize(player.OwnerClientId, player);
 
-            Debug.Log($"<color=#00FF00>[FLOW-5] [ServerVesselInit] Vessel spawned. Waiting {postSpawnDelayMs}ms for replication...</color>");
+            CSDebug.LogVerbose(CSLogChannel.NetworkFlow, $"<color=#00FF00>[FLOW-5] [ServerVesselInit] Vessel spawned. Waiting {postSpawnDelayMs}ms for replication...</color>");
             // Wait for the vessel NetworkObject to fully replicate before telling clients
             using (LoadInsights.Measure(LoadInsightCategory.ScriptedDelay,
                        $"postSpawnDelayMs before NotifyClients ({postSpawnDelayMs}ms)", isWait: true))
@@ -399,7 +422,7 @@ namespace CosmicShore.Gameplay
                 await UniTask.Delay(postSpawnDelayMs, DelayType.UnscaledDeltaTime, cancellationToken: ct);
             }
 
-            Debug.Log($"<color=#00FF00>[FLOW-5] [ServerVesselInit] NotifyClients for {player.NetName.Value}</color>");
+            CSDebug.LogVerbose(CSLogChannel.NetworkFlow, $"<color=#00FF00>[FLOW-5] [ServerVesselInit] NotifyClients for {player.NetName.Value}</color>");
             NotifyClients(player);
         }
 
@@ -515,6 +538,23 @@ namespace CosmicShore.Gameplay
                     return player;
             }
             return null;
+        }
+
+        /// <summary>
+        /// Adopt a <see cref="Player"/> that some OTHER code spawned - an AI backfill bot, a
+        /// freestyle AI companion - so this spawner never tries to give it a second vessel.
+        ///
+        /// Call it in the SAME frame as <c>NetworkObject.Spawn()</c>. <c>Player.OnNetworkSpawn</c>
+        /// raises <c>OnPlayerNetworkSpawnedUlong</c> from inside that call (and again, deferred,
+        /// when the owner-written name / vessel type land), so the handler must already see the
+        /// player as processed - which the handler's 200ms replication delay is what allows.
+        /// </summary>
+        protected void ClaimExternallySpawnedPlayer(Player player)
+        {
+            if (!player) return;
+            _processedPlayers.Add(player.NetworkObjectId);
+            _preparedForScene.Add(player.NetworkObjectId);
+            _claimedForeignOwners.Add(player.OwnerClientId);
         }
 
         protected NetworkObject SpawnVesselForPlayer(ulong clientId, Player networkPlayer) =>

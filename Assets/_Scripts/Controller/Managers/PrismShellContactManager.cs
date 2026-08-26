@@ -48,6 +48,10 @@ namespace CosmicShore.Gameplay
         /// </summary>
         public static bool ForceLegacyBoxInteraction;
 
+        // A/B verification switch; must not survive into a normal session.
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        static void ResetForceLegacy() => ForceLegacyBoxInteraction = false;
+
         struct OwnerEntry
         {
             public ImpactorBase Owner;
@@ -74,6 +78,7 @@ namespace CosmicShore.Gameplay
         readonly List<ImpactorBase> _frameOwners = new(16);
         readonly Dictionary<long, ActivePair> _activePairs = new(64);
         readonly List<long> _staleKeys = new(32);
+        readonly List<ActivePair> _redispatchBuffer = new(8);
 
         public static PrismShellContactManager EnsureInstance()
         {
@@ -117,6 +122,41 @@ namespace CosmicShore.Gameplay
                     return;
             s_owners.Add(new OwnerEntry { Owner = owner, Colliders = colliders });
             EnsureInstance();
+        }
+
+        /// <summary>
+        /// Re-dispatches this owner's LIVE shell-owned pairs through the same
+        /// AcceptImpactee chain their entry used. The shell tier dispatches each pair
+        /// exactly once on ENTRY, so an impactor whose OWN state changes mid-contact —
+        /// the Rhino blade ENERGIZING against a resting super-shielded prism — calls
+        /// this to have the standing contact re-evaluated without waiting for an
+        /// exit/re-enter. Pairs whose prism died or whose shield dropped since entry
+        /// are skipped (the trigger path owns them again).
+        /// </summary>
+        public static void RedispatchPairsForOwner(ImpactorBase owner)
+        {
+            var inst = Instance;
+            if (inst == null || owner == null || ForceLegacyBoxInteraction) return;
+            if (inst._activePairs.Count == 0) return;
+
+            // Snapshot first: a dispatch can pop/destroy prisms, and nothing may mutate
+            // _activePairs while we enumerate it.
+            inst._redispatchBuffer.Clear();
+            foreach (var kvp in inst._activePairs)
+            {
+                if (ReferenceEquals(kvp.Value.Owner, owner))
+                    inst._redispatchBuffer.Add(kvp.Value);
+            }
+
+            for (int i = 0; i < inst._redispatchBuffer.Count; i++)
+            {
+                var pair = inst._redispatchBuffer[i];
+                var prism = pair.Prism;
+                if (prism == null || prism.destroyed || !ShellOwnsContact(prism))
+                    continue;
+                owner.AcceptImpacteeFromShellContact(pair.PrismImpactor);
+            }
+            inst._redispatchBuffer.Clear();
         }
 
         public static void UnregisterProbeOwner(ImpactorBase owner)

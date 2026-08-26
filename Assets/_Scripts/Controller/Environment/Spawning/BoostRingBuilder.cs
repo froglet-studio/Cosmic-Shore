@@ -32,18 +32,18 @@ namespace CosmicShore.Gameplay
     ///
     /// The two guarantees that make the skim deterministic:
     ///   1. <b>Full-size collider from frame 0.</b> Every prism comes from the dedicated Boost pool
-    ///      (<see cref="PrismType.Boost"/>: waitTime 0, fast bloom) and is put under
-    ///      <see cref="Prism.HoldColliderAtFullSize"/>, so its collider covers the full target
-    ///      world size the frame it spawns while the visual blooms in - no speed outruns it.
+    ///      (<see cref="PrismType.Boost"/>: waitTime 0, fast bloom). Under the clock-material law
+    ///      the transform is FINAL at stamp, so the authored BoxCollider is already a full-size
+    ///      world footprint from frame 0 while the GPU blooms the visual — no per-frame collider
+    ///      compensation (the retired <c>HoldColliderAtFullSize</c>).
     ///   2. <b>Speed-independent open geometry.</b> Prisms lie with their long side ALONG the ring
     ///      axis ("up" pointing outward radially) - the wide-open arrangement the old speed-tilted
     ///      ring only reached when fast - so the centre is always flyable and the wall is always
     ///      presented broadside to a skimmer coming down the axis.
     ///
-    /// Shielded/SuperShielded kinds are applied only AFTER the bloom completes (via the
-    /// <c>onGrown</c> callback): shield engage swaps to the octahedron MeshCollider, which scales
-    /// with the transform and would defeat the full-size hold during the bloom. Danger repaints on
-    /// the BoxCollider, so it applies immediately.
+    /// All kinds (including Shielded/SuperShielded) apply immediately: with transform-at-final
+    /// from stamp, shield shells are full-size at frame 0 and do not need a deferred onGrown
+    /// callback. Danger still repaints on the BoxCollider.
     /// </summary>
     public static class BoostRingBuilder
     {
@@ -77,7 +77,7 @@ namespace CosmicShore.Gameplay
 
         /// <summary>
         /// The one place a boost prism is born: Boost pool spawn → team → owner → target scale →
-        /// trail → Initialize → kind → full-size collider hold. Mirrors
+        /// trail → Initialize → kind (full-size collider from stamp). Mirrors
         /// <see cref="PrismTrailBuilder.LayOne"/> for the pooled path.
         /// </summary>
         public static Prism LayOne(PrismEventChannelWithReturnSO channel, Vector3 position, Quaternion rotation,
@@ -99,20 +99,19 @@ namespace CosmicShore.Gameplay
             prism.ChangeTeam(domain);
             prism.ownerID = ownerId;
             prism.TargetScale = scale;
-            if (trail != null)
-                prism.Trail = trail;
 
             if (string.IsNullOrEmpty(playerName)) prism.Initialize(); // environment-owned
             else prism.Initialize(playerName);
 
-            // Danger repaints on the BoxCollider - apply now so the ring reads as a hazard from
-            // frame 0. Shield kinds swap to the transform-scaled octahedron MeshCollider, so they
-            // wait for the bloom to finish (the hold guarantees the box footprint until then).
-            bool deferredKind = kind is PrismKind.Shielded or PrismKind.SuperShielded;
-            if (!deferredKind)
-                PrismKinds.Apply(prism, kind);
+            // AFTER Initialize - pool-reuse reset clears trail membership, so a stamp made
+            // before it is silently wiped and the ring's prisms become container-less. That
+            // reads as a 0D Singleton to the prismscape topology, which is how a boost ring
+            // stopped being rideable as the 1D LOOP it is.
+            if (trail != null) prism.AssignTrail(trail);
 
-            prism.HoldColliderAtFullSize(deferredKind ? () => PrismKinds.Apply(prism, kind) : null);
+            // Transform is final at stamp under the clock law — apply every kind immediately
+            // (including shield shells, which are full-size from frame 0).
+            PrismKinds.Apply(prism, kind);
 
             trail?.Add(prism);
             collected?.Add(prism);

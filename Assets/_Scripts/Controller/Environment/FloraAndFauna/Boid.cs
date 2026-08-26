@@ -237,7 +237,7 @@ namespace CosmicShore.Gameplay
                 // on `forager` so drone/mound boids (BoidController) never starve.
                 if (forager && IsStarving)
                 {
-                    Die("starvation");
+                    Die(StarvationKiller);
                     yield break;
                 }
 
@@ -526,13 +526,29 @@ namespace CosmicShore.Gameplay
             _pendingMeals.Clear();
             StopAllCoroutines();
             // Continuity rule — nothing pops out of existence. The sealed Fauna.Die already
-            // dropped this boid's elemental crystal (mass conserved). Starvation shrinks the
-            // body out (suction-like); a predation death with a devour target instead breaks
-            // the body prisms off and suctions them into the predator's mouth.
+            // dropped this boid's elemental crystal (mass conserved). A predation death with
+            // a devour target breaks the body prisms off and suctions them into the
+            // predator's mouth; every other death leaves the body prism standing as this
+            // creature's skeleton (Docs/ECOSYSTEM.md §26) and only the husk fades out — so
+            // the detach must happen BEFORE the fade, or the shrink would take the frame
+            // with it.
             if (isActiveAndEnabled && gameObject.activeInHierarchy)
-                StartCoroutine(DevourTarget ? DevouredCoroutine(DevourTarget, killerName) : FadeOutAndRemove());
+            {
+                if (DevourTarget)
+                {
+                    StartCoroutine(DevouredCoroutine(DevourTarget, killerName));
+                }
+                else
+                {
+                    currentVelocity = Vector3.zero; // wither in place, beside the frame it leaves
+                    LeaveSkeleton();
+                    StartCoroutine(FadeOutAndRemove());
+                }
+            }
             else
+            {
                 Destroy(gameObject);
+            }
         }
 
         /// <summary>
@@ -659,7 +675,13 @@ namespace CosmicShore.Gameplay
             if (blockCollider && prism.gameObject == blockCollider.gameObject) return false;
             if (IsShieldedMass(prism)) return false;
             if (prism is HealthPrism && prism.GetComponentInParent<Fauna>() != null) return false;
-            return cell == null || !cell.IsInsideNucleus(prism.transform.position);
+            if (cell == null) return true;
+            // Band + cell pen: mass outside this creature's own annulus is unreachable, so it
+            // is not food (Fauna.IsInsideBand). A forager's diet is otherwise any-domain, so
+            // it does not go through IsPreyForMe's domain leg.
+            if (!IsInsideBand(prism.transform.position)) return false;
+            if (!cell.IsInsideFaunaContainment(prism.transform.position)) return false;
+            return !cell.IsInsideNucleus(prism.transform.position);
         }
 
         /// <summary>

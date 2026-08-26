@@ -5,16 +5,22 @@ using CosmicShore.Utility;
 namespace CosmicShore.Gameplay
 {
     /// <summary>
-    /// Explosion/implosion VFX ride the GPU clock (Docs/PRISM_ANIMATION.md, STRICT
-    /// clock-material mode — PrismExplosion/PrismImplosion stamp once and schedule
-    /// ONE completion; the per-frame animation passes and their Burst jobs were
-    /// deleted in the D2 pass). The class remains for exactly two conforming jobs:
-    /// the implosion moving-convergence-target refresh (the doc's §1 exception —
-    /// location only, one float3/frame) and the dev-build zombie-VFX audit.
+    /// Death explosions/implosions ride batched PrismDebris (D4). This class
+    /// remains for two conforming jobs: Grow's moving-convergence-target refresh
+    /// (pooled PrismImplosion.StartGrow — Sparrow ReverseSuction; the doc's §1
+    /// exception, location only, one float3/frame) and the dev-build zombie-VFX
+    /// audit. The explosion EnabledInstances walk is empty in gameplay (pool
+    /// never Get()d); the implosion walk covers Grow pool zombies.
     /// </summary>
     public class PrismEffectsManager : Singleton<PrismEffectsManager>
     {
         private static bool _isQuitting;
+
+        // OnApplicationQuit fires on editor play-mode EXIT — with domain reload disabled a
+        // stale true makes EnsureInstance() return null for every later session, silently
+        // killing implosion convergence. Same shape as ApplicationLifecycleManager.ResetStatics.
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        static void ResetStatics() => _isQuitting = false;
 
         private void OnApplicationQuit() => _isQuitting = true;
 
@@ -75,13 +81,11 @@ namespace CosmicShore.Gameplay
             }
 
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
-            // Safety audit: detect explosion / implosion VFX with enabled renderers
-            // that aren't actively managed. Catches "zombie" pool instances whose
-            // OnReturnToPool callback chain failed to deactivate the GameObject.
-            // Iterates the effects' enabled-instance registries - O(live effects) -
-            // instead of FindObjectsByType full-scene scans, which showed up as a
-            // recurring multi-ms spike in dense scenes. Backwards, because
-            // SetActive(false) below removes the entry from the registry mid-walk.
+            // Safety audit: detect pooled VFX with enabled renderers that aren't
+            // actively managed. Explosion walk is empty in gameplay (D4 never
+            // Get()s that pool). Implosion walk covers Grow (Sparrow ReverseSuction)
+            // pool zombies. Backwards, because SetActive(false) below removes the
+            // entry from the registry mid-walk.
             if (zombieAuditIntervalSeconds > 0f && Time.unscaledTime >= _nextZombieAuditTime)
             {
                 _nextZombieAuditTime = Time.unscaledTime + zombieAuditIntervalSeconds;

@@ -1,6 +1,9 @@
 # QA Backlog — untested development on `bleeding-edge`
 
-**Generated:** 2026-08-06 · **Scan covers:** merges up to `2e2d3aaf` (PRs #583–#669)
+**Generated:** 2026-08-13 · **Scan covers:** merges up to `50b563f7` (PRs #583–#710
+plus the direct branch merges: Dog Fight, Wildlife Liberation, Astro League
+improvements, Ribcage scoring, game-data JSON schema, profile/ads, quit button,
+menu camera, pause-menu perf, display-name validation, Windows build failures)
 · **Owner of this file:** the `/qa-backlog` skill — do not hand-edit.
 
 Every item below landed on a shared branch **without ever being opened in Unity**
@@ -13,55 +16,132 @@ fill the table, commit. Full workflow: `Docs/QA/README.md`.
 · ⛔ blocked. Items that PASS leave this file (→ `ARCHIVE.md`).
 
 **Standing preconditions for every item** (do these once per session):
-- Pull the branch under test, let Unity **fully reimport** (a stale `Library/`
-  masks asset changes and is the single most common false failure here).
-- Keep the Console open with **Error Pause off** and *Clear on Play* off.
-- Unless an item says otherwise, "freestyle" means: launch to `Menu_Main`, tap the
-  centre crystal to take control of the vessel.
+- Get the build being tested (branch + commit), then let Unity **finish importing
+  it completely** before you judge anything — a leftover `Library/` folder from an
+  older build hides the changes and is the most common reason a test looks broken
+  when it is not.
+- Keep Unity's **Console** window open, with **Error Pause off** and *Clear on Play*
+  off, so nothing scrolls away or halts the game mid-test.
+- Unless an item says otherwise, **"freestyle"** means: start the game, wait for the
+  main menu, then take control of the ship — **click the centre of the screen**, or
+  press **Y** on a gamepad. (Press it again to hand control back.)
 
 ---
 
 ## Priority 0 — gates. Nothing below matters if these fail.
 
-### QA-BUILD-COMPILE ⬜ — the project compiles, imports and boots
-**Source:** every headless branch since #583. **Why P0:** ~15 branches of
-hand-authored C#, prefab, scene and ScriptableObject YAML have never been through
-Unity's importer or compiler.
+### QA-BUILD-WINDOWS-PLAYER ⬜ — a Windows IL2CPP player reaches the main menu
+**Source:** PRs #688, #690, #692, #693, #698, #699. **Why P0 and why it is separate
+from QA-BUILD-COMPILE:** every defect in this chain was **invisible in the Editor**.
+The edit-mode tests were compiling into `Assembly-CSharp` and shipping into the
+player, killing the UnityLinker (`IL1005` / `nunit.framework`); once that was fixed,
+the player crashed on **every** login inside `PauseMenu.Prewarm`; the root of that
+was a type-punned `pauseMenuPanel` reference in `Pause_Menu_Panel.prefab`. None of it
+can be judged from a running Editor — it needs a player build.
 
-1. Open the project on the branch under test. Wait for import + compile to settle.
-2. Read the whole Console. Record every **compile error**, every `Missing (Mono Script)`,
-   every "broken/dangling reference", and every meta-file regeneration warning.
-3. Launch to `Menu_Main`. Enter freestyle. Return to the menu. Launch one arcade
-   game (any) and return home.
+1. Produce a **Windows IL2CPP player build** (or take the one CI produced from this
+   branch). Record whether the build itself completes — the linker stage is the gate.
+2. Launch the player. Sign in and reach `Menu_Main`.
+3. Open and close the **pause menu** in a game round.
+4. Read `Player.log` end to end afterwards.
 
-**PASS:** zero compile errors; no `Missing (Mono Script)` on any object you touched;
-the app reaches `Menu_Main`, freestyle and one game round without an exception.
-**FAIL:** any compile error, any missing script, or an exception that stops the boot
-or the round. Record the full first error verbatim — everything else on this list is
-blocked behind it.
+**PASS:** the build completes with no `IL1005` / `Mono.Cecil` resolution failure; the
+player launches, signs in, and reaches `Menu_Main` without the crash handler firing;
+the pause menu opens and closes; `Player.log` contains no `Couldn't fetch Ads Service
+game Ids` (Unity Ads was removed in #694) and no `GetComponent` crash frame under
+`PauseMenu.Prewarm`.
+**FAIL:** a build that dies in the linker · a player that closes on reaching the menu
+· any managed exception in `Player.log` that does not appear in the Editor. Attach the
+last 100 lines of `Player.log` for any failure.
+
+### QA-MENU-CAMERA-RIG ⬜ — Menu_Main's camera is no longer Cinemachine
+**Source:** PR #671 (`4245cf8f` — 335 lines of vCam orchestration deleted, replaced by
+a direct-transform rig driven by four `MenuCameraConfigSO` assets in
+`_SO_Assets/Camera/`). **Why P0:** the menu camera is the surface almost every other
+item on this list is observed through, and both freestyle transitions were rewritten.
+
+1. Enter `Menu_Main`. Watch the idle menu shot for ~30 s. Confirm there is **no**
+   Cinemachine brain/vCam driving it (the scene camera moves under
+   `MainMenuCameraController`).
+2. Cycle the four rig kinds (**OrbitVessel / CinematicTrail / ChaseTight / TopDownPan**)
+   however the scene exposes them, and watch each config **glide** into the next.
+3. **Enter freestyle** (click the centre of the screen, or press **Y** on a gamepad)
+   and watch the whole transition.
+4. **Exit freestyle** back to the menu and watch the whole transition.
+5. Do steps 3–4 five times in a row, including while the AI vessel is turning hard.
+6. Swap vessel (Vessel Changer toy), then enter and exit freestyle again.
+7. Trigger a teleport / respawn while in the menu shot if you can reach one.
+
+**PASS:** the menu shot always frames the local vessel; entering freestyle blends
+seamlessly from the menu framing to the gameplay camera with **no snap at either end**
+and no swoop through world space while the vessel is moving; exiting is seamless the
+same way; config switches glide rather than cut; a vessel swap leaves the rig framing
+the new hull; no `MainMenuCameraController` / `NullReferenceException` in the Console.
+**FAIL:** a visible snap, jump or swoop at either end of a freestyle transition · the
+camera losing the vessel (framing empty space) · a camera left stuck in the gameplay
+pose after returning to the menu · any exception from the camera controller.
+
+### QA-SCORING-CLIENT-MIRROR ⬜ — non-host players no longer start with the last game's score
+**Source:** Ribcage second merge (`a6066b54`), logged as `Docs/ScoringSystem/BUGS.md`
+**B17**. **Why P0:** this was reproduced *every time* by the reporter and it corrupts
+the scoreboard of **every multiplayer mode** — so any score you read while testing
+another item is untrustworthy until this passes. Fix is
+`RoundStats.SyncLocalMirrorsFromNetwork()`, called from `Player.InitializeForMultiplayerMode`
+at every scene entry. Needs **MPPM with at least 2 virtual players** (host + client).
+
+1. Host + one client. Play a multiplayer game (any mode) to the end so scores are
+   non-zero. Note the client's final score.
+2. Return to the menu. Launch a **second** game. At the countdown, read the score on
+   **both** machines before anyone scores anything.
+3. Return to the menu again and launch a **third** game. Read both scores at the
+   countdown again — this is the launch the reporter saw fail.
+4. Repeat once with the client **exiting a game mid-way** before the next launch.
+5. Repeat once using **Play Again** (replay path) rather than returning to the menu.
+
+**PASS:** at the countdown of every game, **every** player reads 0 on **every**
+machine — the client's score is not carried over from the previous game, and the host
+and client agree throughout the round.
+**FAIL:** any non-host player starting a game with a non-zero score · host and client
+disagreeing on a score at any point · the score of a player who left mid-game
+reappearing in the next round. Record the exact game number (2nd, 3rd…) at which the
+drift first appears.
 
 ### QA-PRISM-OCCLUSION ⬜ — camera↔vessel prism corridor (shader, magenta risk)
-**Source:** PR #661. Platform law; `PrismOcclusionCorridor.hlsl` gained a Worley
-loop, `UNITY_MATRIX_V` and a `#define` kernel selector with **no compiler**.
-Reference: `Docs/PRISM_CLOCK_WIRING_CHECKLIST.md` Phase 8.
+**Source:** PRs #661, #677 (kernel goes hard-edged — ships as **SHATTER**), #702
+(screen-door dither becomes **all** prism transparency; the corridor now stops short
+of the nose; debris gains an erosion wipe). Platform law, hand-authored HLSL, no
+compiler. Reference: `Docs/PRISM_CLOCK_WIRING_CHECKLIST.md` § occlusion corridor.
 
 1. Load any scene with prisms. **Look at the prisms first** — an HLSL compile failure
-   turns every prism magenta on load. If magenta: stop, FAIL, attach the shader error.
+   turns every prism magenta on load. If magenta: reimport once (stale Library), and
+   if it persists, stop, FAIL, attach the shader error.
 2. Freestyle: lay a wall of trail, then fly so the wall sits between the camera and
    your ship.
-3. Fly away from the wall so nothing occludes you.
-4. Hold still with prisms in the corridor for ~10 s and watch the stipple.
-5. Fly to a boundary of the cleared cone and study the edge.
-6. Swap to a much larger/smaller vessel (Vessel Changer toy) and repeat step 2.
-7. Check the Console for `[PrismOcclusion]` messages.
+3. Study the stipple pattern in the fading band. It should read as a **cracked lattice
+   of walls** (SHATTER). Round flecks mean the kernel reverted to Worley; triangles
+   mean it reverted to SHARD — report which you see.
+4. **Ram a prism.** The corridor deliberately stops short of the nose so impacts read.
+5. Fly away from the wall so nothing occludes you; then hold still with prisms in the
+   corridor for ~10 s and watch for strobing.
+6. **Fly at speed** through dense mass and watch for a beat/flicker on the fade.
+7. **Shoot something and watch the debris** — each face should wipe with one hard
+   erosion front that finishes before the piece retires.
+8. Swap to a much larger/smaller vessel (Vessel Changer toy) and repeat step 2.
+9. Run **FrogletTools ▸ Vessels ▸ Audit Corridor Vessel Radii** and check the Console
+   for `[PrismOcclusion]` messages.
 
-**PASS:** prisms between camera and ship dissolve so the ship stays visible; they
-snap back opaque as you leave (the band is short *by design*); the boundary has no
-hard seam or banding; the stipple *flows/evolves* rather than strobing; the cleared
-cone rescales with vessel size; zero `[PrismOcclusion]` console errors.
-**FAIL:** magenta prisms · ship hidden behind prisms · visible flicker/strobe ·
-hard-edged rectangle or ring at the boundary · corridor obviously the wrong size on
-one vessel · any `[PrismOcclusion]` error.
+**PASS:** prisms between camera and ship dissolve so the ship stays visible; they snap
+back opaque as you leave; no hard seam or banding at the boundary; the stipple flows
+rather than strobes, including at speed; **mass at contact range does not hide the
+ship when you ram** and impacts still read; debris erodes with a clean front; the
+corridor rescales with vessel size; the radii audit reports ship-sized hulls for every
+vessel; zero `[PrismOcclusion]` errors.
+**FAIL:** magenta prisms · ship hidden behind prisms (especially at ram range) ·
+visible flicker/strobe at speed · hard-edged rectangle or ring at the boundary ·
+debris that never erodes or erodes after it retires · corridor obviously the wrong
+size on one vessel · any `[PrismOcclusion]` error.
+**Judgement call to report:** interiors read as thinner shells mid-fade (the cost of
+the back-face separation at power 3.0). Say whether that is acceptable.
 
 ### QA-SPEED-TUNNEL ⬜ — the speed tunnel as a fleet-wide law
 **Source:** PR #668 (deleted the per-vessel `SpeedTunnelEffectController`; a single
@@ -70,15 +150,18 @@ static driver now covers all 11 vessels). Reference: `Docs/SPEED_TUNNEL.md` §5.
 1. Fly **Rhino, Manta, Dolphin, Squirrel, Sparrow, Serpent** in turn (Vessel Changer
    toy in freestyle). For each: accelerate to top speed, then drop to cruise.
 2. Boost a **Dolphin** and a **Serpent** (both top out ≈210) and compare the effect.
+   *(Note: the Dolphin's boost was retuned in #681 — see QA-DOLPHIN-SPEED-TUNE. If its
+   peak now reads ≈357, this comparison moves; record what you see rather than forcing
+   the old equality.)*
 3. Swap vessels *while the tunnel is engaged* (boost → open Vessel Changer → swap).
 4. Play **Astro League** and score a goal — watch the replay camera.
 5. Change the FOV setting in Settings mid-session, then boost again.
 
 **PASS:** every vessel narrows FOV + relaxes Panini purely as a function of its own
-speed and returns *exactly* to its pre-boost framing; the same speed on two different
-vessels looks the same (step 2); a mid-effect vessel swap leaves the new vessel with
-a correct, non-stuck view; the goal replay camera is **not** tunnelled; after a FOV
-setting change the effect anchors to the new home value.
+speed and returns *exactly* to its pre-boost framing; two vessels at the same speed
+look the same; a mid-effect vessel swap leaves the new vessel with a correct,
+non-stuck view; the goal replay camera is **not** tunnelled; after a FOV setting
+change the effect anchors to the new home value.
 **FAIL:** any vessel with no effect · FOV stuck narrow after release or after a swap
 · the replay shot visibly zooming · a snap to a foreign FOV when the setting changes.
 
@@ -92,7 +175,7 @@ Strict mode is working as designed; QA's job is to bound the blast radius.
    it is bounded (one burst at build) or continuous.
 3. Fly the **Wanderway** conveyor toy in freestyle and watch scenes arrive.
 4. Note every *other* place prisms appear to snap rather than bloom (cell environments,
-   trails, flora, fauna, cage bars).
+   trails, flora, fauna, cage bars, the new Boneyard and Wildlife Liberation cages).
 
 **PASS (for this pass):** the snap and the STRICT MODE errors occur **only** on
 `SegmentSpawner` tracks and Wanderway scenes, are bounded to build time, and nothing
@@ -101,34 +184,104 @@ else in the game snaps.
 lifeforms), errors continuing every frame, or the errors accompanied by prisms that
 never appear at all.
 
-### QA-DOLPHIN-SKIM ⬜ — nobody has ever seen a Dolphin skim work
-**Source:** PR #660 + `Docs/UNITY_VERIFICATION_CHECKLIST.md`. The Dolphin's
-`VesselStatus` pointed at a **disabled** legacy skimmer, so every contact was dropped
-silently. The fix is unconfirmed. Reference: `DOLPHIN_ENERGY_ECONOMY.md` §6.
+### QA-DOGFIGHT-MODE ⬜ — "Dog Fight" has never been opened
+**Source:** PR #703 + the `claude/dog-fight-game-mode-it9xgy` merges. Whole new game
+mode (`GameModes.DogFight = 41`), Sparrow-only, authored headless — **the platform's
+first mode scored on vessel-vs-vessel combat**. Arena is the **Boneyard**. Reference:
+`_Scripts/Controller/Arcade/DOGFIGHT.md` § In-editor verification.
 
-1. Run **FrogletTools ▸ Vessels ▸ Audit Vessel Skimmers**. This is the gate.
-2. Freestyle as the Dolphin: fly through cell mass so prisms pass through the skimmer.
-3. Hold drift until the ring steps up, then release. Then fly **straight** for 10 s.
-   Then drift → release → drift again.
-4. Hit a crystal.
-5. Raise Charge to level 5 (elemental crystals) and plant two team crystals back to back.
-6. With a second client (MPPM), confirm both peers agree on the level-5 upgrades.
+1. Open `MinigameDogFight.unity`. Confirm no `Missing (Mono Script)`, the controller
+   shows `rule = DogFightScoringRule` with milestone fractions 0.25 / 0.5, AI fields
+   1.5 / 0.6 / 120, and the **Cell lists four configs with Cell Type Choice =
+   Intensity Wise**.
+2. Launch at intensity 1. The arena must build: a bowl of crust with 6 hulks, 9 leaning
+   spires, 4 girder cages, 3 broken overpasses and a central reactor.
+3. **Fly INTO a hulk** through its torn-open side and sit there. This is the headline
+   check — the ribs must leave gaps you can slip between and you must not be visible
+   from outside.
+4. Launch intensity 1 and intensity 4 back to back. Confirm 4 is **not** Atlantis
+   (Scurry's drowned garden-city with world-tree and terraces) — if it is, the
+   intensity-4 config points at the wrong prefab. Watch frame time at 4 (34,654 prisms,
+   the heaviest arena of any party game).
+5. Run **FrogletTools ▸ Ecology ▸ Measure Cell Environment Baselines**; expect
+   **9,043 / 16,100 / 24,807 / 34,654** prisms for intensities 1–4.
+6. Check spawns: everyone starts ~700 u out, spread over a **sphere**, facing the
+   arena, nobody inside it.
+7. **Bullets score.** Shoot an opponent with full-auto: **+1 per hit**. Shoot a hulk,
+   the crust or a scavenger: **no** score movement.
+8. **Missiles score 50, once.** Hit an opponent dead-on with a skyburst: **+50, not
+   +100**. Then detonate one *near* an opponent without touching them: also **+50**.
+9. **A client's hits score.** Host + at least one client; have the **client** do all
+   the shooting for 30 s. Their score must rise on **both** machines. (The reverse test
+   is not equivalent — the host records directly.)
+10. In a 2v2, shoot and splash a **teammate**: no damage, no points, scoreboard flat.
+11. Play a full round to the point target (default **120**) and watch the scoreboard.
 
-**PASS:** audit reports `Dolphin NearFieldSkimmer: 'EnergySkimmer' OK`; crackle arcs
-sweep the skimmer sphere per prism and the HUD jaw icon punches per skim; the gape
-widens as energy fills; drift fills the ring and flying straight does **not**; speed
-returns to normal after an interrupted discharge; the crystal fires the cone, empties
-energy and flashes the Space icon; two crystals plantable at Charge L5, preview tinted
-your domain and blooming (not popping); both peers agree.
-**FAIL:** audit reports anything else for Dolphin · no visible/audible skim feedback ·
-ring fills while flying straight · speed stuck high after drift→release→drift ·
-peers disagree on upgrade state.
-*(Serpent is expected to FAIL the same audit — that is a known, separate item.)*
+**PASS:** the scene opens clean; four visibly different intensities all reading as the
+Boneyard; hulks are hollow and hideable; baselines within a few hundred of the expected
+counts; spherical outside spawn; bullets = 1, missiles = 50 exactly once, scenery = 0;
+a client's hits register on both machines; friendly fire scores nothing; the round ends
+on the domain point target and the scoreboard shows domains.
+**FAIL:** every intensity looking the same (Cell not on `IntensityWise`, or configs out
+of order) · intensity 4 rendering Atlantis · solid, un-enterable hulks · baselines off
+by thousands · spawning inside the arena · a missile scoring 100 · scenery scoring ·
+a client's hits appearing only on the client · teammates damaging or scoring off each
+other · a non-Sparrow vessel spawning.
+
+### QA-WILDLIFE-LIBERATION ⬜ — "Wildlife Liberation" has never been opened
+**Source:** PR #678 + the `claude/wildlifeliberation-game-mode-j410ej` merges. Whole
+new game mode (`GameModes.WildlifeLiberation = 40`), Sparrow-only hunt, authored
+headless. Reference: `_Scripts/Controller/Arcade/WILDLIFE_LIBERATION.md` § In-editor
+verification.
+
+1. Open `MinigameWildlifeLiberation.unity`. No `Missing (Mono Script)`; controller
+   shows `rule = WildlifeLiberationScoringRule`, milestones 0.25 / 0.5, and the **Cell
+   lists four configs with Cell Type Choice = Intensity Wise**.
+2. Launch at intensity 1: **three concentric cages at 1050 / 600 / 200** with big empty
+   rooms between them. Headline check — one cage, or layers that look adjacent, means
+   the Cell is not on `IntensityWise` or the configs are out of order.
+3. Confirm the cage openings are **triangles** at intensity 1–2, with no dense polar
+   cap (fly a full orbit — the weave should look the same from every angle).
+4. Relaunch at intensity 3 → the **outer** cage is a BOX with square openings and heavy
+   corner posts. Intensity 4 → the **middle** cage is a box too and the core is the
+   tightest weave.
+5. Run **Measure Cell Environment Baselines**; expect **9,206 / 11,456 / 11,680 /
+   12,870** prisms for intensities 1–4.
+6. Check spawns: everyone on **one horizontal circle** ~1150 u out, facing the jail,
+   nobody inside.
+7. **The kill path.** Shoot a tadpole (1 body prism): it must **die** — wither/suction
+   out and drop an elemental crystal — not keep swimming. Then a brittlestar (10
+   prisms): ten hits, dies on the last. The counter ticks **once per creature**, not
+   once per prism.
+8. **Only your kills count.** Watch a shark eat a tadpole; watch one starve. Neither
+   moves any score. Shoot a cage bar: no score.
+9. Fly a full lap of each room. Each tier must stay in its room and be **spread around
+   it** — not clumped, and above all not clumped at the arena centre. Nothing swims
+   between rooms; nothing chews a cage bar.
+10. Note the rough headcount at the countdown (~610) and again three minutes in — it
+    must be visibly denser (heading toward ~1,409). That is reproduction, and it is
+    what makes the target reachable.
+11. **Sparrow-only, solo:** pick a different vessel in an earlier game, then launch
+    this — you should spawn a Sparrow with a `clamping selected vessel` log line.
+12. **Sparrow-only, multiplayer:** have the client pick a Dolphin — they must still get
+    a Sparrow.
+13. Play a round toward the kill target (default **250**).
+
+**PASS:** three well-separated cages whose shape changes with intensity; baselines
+within a few hundred; equatorial outside spawn; a 1-prism creature dies to one shot and
+drops a crystal; kills counted per creature and only when you caused them; tiers stay
+spread in their own rooms; the population visibly grows; both players get a Sparrow
+regardless of their pick.
+**FAIL:** one cage / adjacent layers · a creature that survives losing all its prisms ·
+a counter ticking per prism · score moving for a starvation or a shark kill · creatures
+clumped at the arena centre or wandering between rooms · a flat population three minutes
+in · a non-Sparrow vessel spawning on either machine.
 
 ### QA-RIBCAGE-MODE ⬜ — "Peel the Cage" has never been opened
-**Source:** PR #662 + later tuning. Whole new game mode (`GameModes.Ribcage = 39`),
-authored headless. Reference: `_Scripts/Controller/Arcade/RIBCAGE.md` § In-editor
-verification.
+**Source:** PR #662 + later tuning + the second `claude/rhino-cage-destruction-mode-1t9e3q`
+merge (`a6066b54`, which carried the B17 scoring fix — see QA-SCORING-CLIENT-MIRROR).
+Whole new game mode (`GameModes.Ribcage = 39`), authored headless. Reference:
+`_Scripts/Controller/Arcade/RIBCAGE.md` § In-editor verification.
 
 1. Open `MinigameRibcage.unity`. Confirm no `Missing (Mono Script)`, the controller
    shows `rule = RibcageScoringRule` with milestone fractions 0.25 / 0.5, and the Cell
@@ -156,6 +309,40 @@ out of order) · bubble-shaped openings · uniform spacing core-to-surface · ri
 aligned at the poles · a clean corridor to the centre · two-hit/shielded bars ·
 any fauna · baselines off by thousands.
 
+### QA-DOLPHIN-SKIM ⬜ — nobody has ever seen a Dolphin skim work
+**Source:** PR #660 + #695 (15× skim-energy nerf → exactly **150 skims / 50 danger
+skims** to fill; lime jaw CTA at full energy). The Dolphin's `VesselStatus` pointed at
+a **disabled** legacy skimmer, so every contact was dropped silently. The fix is
+unconfirmed. Reference: `DOLPHIN_ENERGY_ECONOMY.md` §5–6.
+
+1. Run **FrogletTools ▸ Vessels ▸ Audit Vessel Skimmers**. This is the gate.
+2. Freestyle as the Dolphin: fly through cell mass so prisms pass through the skimmer.
+   Watch the Console — a single `[DolphinVesselHUDView]` warning means the shared bars
+   config is missing or the jaw refs carry no `Graphic`, and the lime CTA is silently
+   dead.
+3. Skim continuously and count roughly: the meter should take on the order of **150**
+   skims to fill (50 on danger prisms), not a handful.
+4. Skim to full and watch the **jaws blend to lime**; then ram a prism and confirm they
+   go back to white.
+5. Hold drift until the ring steps up, then release. Then fly **straight** for 10 s.
+   Then drift → release → drift again.
+6. Hit a crystal.
+7. Raise Charge to level 5 (elemental crystals) and plant two team crystals back to back.
+8. Run **Audit Vessel Ability Rows** — Dolphin should read 4/4, order ✅.
+9. With a second client (MPPM), confirm both peers agree on the level-5 upgrades.
+
+**PASS:** audit reports `Dolphin NearFieldSkimmer: 'EnergySkimmer' OK`; crackle arcs
+sweep the skimmer sphere per prism and the HUD jaw icon punches per skim; energy takes
+~150 skims to fill; jaws go lime at full and white on a prism ram; the gape widens as
+energy fills; drift fills the ring and flying straight does **not**; speed returns to
+normal after an interrupted discharge; the crystal fires the cone, empties energy and
+flashes the Space icon; two crystals plantable at Charge L5, preview tinted your domain
+and blooming (not popping); no `[DolphinVesselHUDView]` warning; both peers agree.
+**FAIL:** audit reports anything else for Dolphin · no visible/audible skim feedback ·
+a meter that fills in a few skims · jaws that never go lime · ring fills while flying
+straight · speed stuck high after drift→release→drift · peers disagree on upgrade state.
+*(Serpent is expected to FAIL the same audit — that is a known, separate item.)*
+
 ### QA-SHELL-COLLISION ⬜ — shape-precise shielded-prism collision (Burst shell tier)
 **Source:** PR #627. Reference: `Docs/SPATIAL_INDEX.md` § "Shell view — in-editor
 verification". Touches every skim and every shield pop in the game.
@@ -178,22 +365,29 @@ double-fire (pop *and* destroy in one contact); the two markers stay sub-ms and
 that cannot be hit at all · marker spikes or a rising `Physics.SendEvents` train.
 
 ### QA-EDITMODE-TESTS ⬜ — run the test suites that were written but never executed
-**Source:** PRs #659, #639, #627, #641, #668, #651. These are NUnit suites authored
-headless — they have literally never been run.
+**Source:** PRs #659, #639, #627, #641, #668, #651, #673 + **#688/#690** (all 61 NUnit
+files were **moved under `Editor/` folders** so they stop shipping into the player, and
+`Assembly-CSharp-Editor` was given `InternalsVisibleTo`). That move touched 105 files
+and has never been run — a suite that silently stops compiling now looks like "no
+failures".
 
 1. **Window ▸ General ▸ Test Runner ▸ EditMode ▸ Run All.**
-2. Record every failing test by name, plus the total pass/fail count.
-3. Specifically confirm these suites are present and green: `CellSpawnFormationTests`,
+2. Record the **total test count** as well as pass/fail. The move preserved 762 `[Test]`
+   methods — a total far below that means suites are missing, not passing.
+3. Record every failing test by name and assertion message.
+4. Specifically confirm these suites are present and green: `CellSpawnFormationTests`,
    `SkimmerSwingKinematicsTests`, `ShieldShellMathTests`, `VesselElementalMorphTests`,
    `VesselRigPartResolutionTests`, `SpeedTunnelLawTests`, `SettingsAutoDetectorTests`,
-   `GeometryUtilsTests`, `PrismOcclusionCoverageTests`.
+   `GeometryUtilsTests`, `PrismOcclusionCoverageTests`, `DisplayNameValidatorTests`,
+   `ShipModifierTests`.
 
-**PASS:** all EditMode tests green and all nine suites present.
-**FAIL:** any red test (record the name + assertion message) or a suite that does not
-appear at all (means it did not compile into the test assembly).
+**PASS:** all EditMode tests green, the total is ≈762, and all eleven suites appear.
+**FAIL:** any red test (record the name + assertion message), a suite that does not
+appear at all (it did not compile into the editor assembly), or a total materially
+below 762.
 
 ### QA-AUDIT-TOOLS ⬜ — run every FrogletTools auditor and record its verdict
-**Source:** PRs #637, #641, #653, #659, #661, #668, #646, #650. Each auditor is a
+**Source:** PRs #637, #641, #653, #659, #661, #668, #646, #650, #702. Each auditor is a
 cheap, asset-only check that encodes a contract; several have never been run.
 
 Run each and paste its report into your results file:
@@ -201,23 +395,369 @@ Run each and paste its report into your results file:
 2. **Vessels ▸ Audit Vessel Ability Rows**
 3. **Vessels ▸ Audit Vessel Elemental Morphs**
 4. **Vessels ▸ Validate Speed Tunnel Law**
-5. **Ecology ▸ Audit Cell-Owned Visuals**
-6. **Ecology ▸ Validate Lifeform Crystals**
-7. **Ecology ▸ Prism Animation** (validator) **▸ Validate Occlusion Corridor**
-8. **Ecology ▸ Measure Cell Environment Baselines**
-9. **Game Modes ▸ Game Mode Prefab Kit ▸ Validate**
-10. **Build ▸ Pending Tool Changes** (should list nothing unexpected)
+5. **Vessels ▸ Audit Corridor Vessel Radii** *(new — re-run after the skimmer-exclusion
+   fix; every hull radius must read ship-sized)*
+6. **Ecology ▸ Audit Cell-Owned Visuals**
+7. **Ecology ▸ Validate Lifeform Crystals**
+8. **Ecology ▸ Prism Animation** (validator) **▸ Validate Occlusion Corridor**
+9. **Ecology ▸ Measure Cell Environment Baselines**
+10. **Game Modes ▸ End Game Conditions** — confirm it lists Wildlife Liberation **250**
+    and Dog Fight **120**
+11. **Game Modes ▸ Game Mode Prefab Kit ▸ Validate**
+12. **Build ▸ Pending Tool Changes** (should list nothing unexpected)
 
 **PASS:** every tool runs without throwing, and each reports either clean or *only*
 the known exceptions: Serpent fails the skimmer audit; Manta/Rhino/Serpent are listed
 as design-blocked in the ability-row audit; Dolphin/Urchin/Rhino/Grizzly lack elemental
 morphs; `SkyboxModel` entries listed under OK in the cell-visual audit.
 **FAIL:** any tool that throws, or any *new* failure beyond the known exceptions above
-— especially "SCENE-PLACED DUPLICATES" or "DEAD CELL OVERRIDES" being non-empty.
+— especially "SCENE-PLACED DUPLICATES" or "DEAD CELL OVERRIDES" being non-empty, or a
+corridor radius that is not ship-sized.
 
 ---
 
 ## Priority 1 — merged features that have never been played
+
+### QA-PALETTE-SHIELDED ⬜ — the four prism tiers across all three domains
+**Source:** PRs #644, #705 (danger prisms now paint on the domain's **shielded base
+face**), #707 (gold's shielded prism brought into the pastel family; the danger tier
+un-inverted). Colorimetry verified by simulation only — the engine has never rendered
+any of it. Reference: `Docs/PALETTE.md` §6.
+
+1. Pull and let `OriginalColorSetSO.asset` **reimport**. If nothing looks different,
+   suspect a stale Library and Reimport before suspecting the values.
+2. **Shielded prisms** — any cell with lifeforms in Menu_Main freestyle (every
+   flora/fauna health prism is shielded — the densest sample in the game). Confirm
+   **gold shifts to sand/cream**, the warm counterpart of Jade's mint and Ruby's pink.
+3. **Danger prisms** — Ribcage ("Peel the Cage") ships the same trap in all three
+   domains; the worm colony (Lifeform Matrix toy) and dangerous flora also work.
+   Confirm the rim reads as a **bright incandescent red glowing off a frostier body**,
+   not a dark edge.
+4. Compare a **gold danger** prism against a **gold plain** prism at speed.
+5. Compare a danger prism against a **shielded** prism of the same domain — they now
+   share a base face, so the danger rim is the only separator.
+6. Within one domain, compare all four tiers: plain → shielded → supershielded should
+   step visibly brighter, and danger should be unmistakably its own thing.
+7. Check **plain gold** still reads as gold and not amber-brown (its rim peak dropped
+   1.50 → 1.00).
+
+**PASS:** gold shielded reads sand/cream and not "gold, slightly lighter"; no domain
+blooms hotter or flatter than the others; danger reads as hue/chroma separation rather
+than pure brightness; gold danger is not confusable with gold plain at speed; danger is
+clearly distinct from shielded despite the shared base; the four tiers step visibly.
+**FAIL:** a domain blowing out under bloom · shielded reading *dimmer* than unshielded
+· gold shielded reading chalky/dead (came down too far) or barely changed (not far
+enough) · a flat-looking danger prism · gold danger confusable with gold plain.
+**Judgement call to report:** danger now sits at the palette's brightest tier alongside
+supershielded — a deliberate call, but a bigger jump than the numbers convey. Say
+whether it reads as alarming or as noise.
+**Known, do not fail on:** explosion/implosion debris is painted from the *plain*
+domain pair regardless of the source prism's tier, so danger and shielded prisms shed
+plain-coloured debris (pre-existing, `Docs/PALETTE.md` §7).
+
+### QA-ECOLOGY-SKELETON ⬜ — a joust takes the heart, starvation exposes it, both leave a skeleton
+**Source:** PR #709. Reference: `Docs/ECOSYSTEM.md` §26.8. Touches every lifeform death
+in the game, so a defect here is fleet-wide.
+1. **Joust a fauna** in `Menu_Main` freestyle (Squirrel is the menu vessel).
+2. **Joust a flora** — watch specifically for a detonation.
+3. **Starve a fauna**: lower `starvationSeconds` on the `LightFaunaDataSO` and watch a
+   creature run out.
+4. **Devour**: let a predator eat a creature at the jaws.
+5. Watch a herbivore approach the leftover **skeleton** prisms.
+6. Watch the Console throughout.
+
+**PASS:** a jousted creature does **not** explode — the crystal flies to *your* vessel,
+arms/fins evaporate **from the body outward**, and a skeleton is left hanging; a jousted
+flora likewise does not detonate; starvation is the mirror (extremities first, heart
+collectable only at the end, skeleton left); a devoured creature suctions into the mouth
+with **no** skeleton; herbivores eat skeleton prisms; no crystal-invariant errors.
+**FAIL:** an explosion on a joust · a creature vanishing instead of withering · no
+crystal, or a crystal that does not fly to you · a skeleton after a devour · herbivores
+ignoring skeleton prisms (the re-file did not land) · any crystal-invariant error.
+**Known, do not fail on:** the worm colony is deliberately excluded from the skeleton,
+and flora deaths *other than* the joust still detonate.
+**Report:** whether skeletons accumulate to a visually or performance-troubling degree
+over a long round — only a playtest can answer that.
+
+### QA-ASTROLEAGUE-REWORK ⬜ — blade strikes, the fauna pen, the smaller court, the settling ball
+**Source:** PRs #704 and #706 (#706 is a playtest follow-up to #704, itself unflown).
+Reference: `_Scripts/Controller/Arcade/ASTROLEAGUE.md`, `Docs/ECOSYSTEM.md`.
+1. Play **Astro League**. Judge the court size first — #706 cut it **40 %** linearly.
+2. **Strike the ball with a swung sword tip**, then with a **parked** sword at the same
+   closing speed.
+3. Strike the ball hard and let it run. Time roughly how long until it comes to rest.
+4. Bounce the ball off a **wall** repeatedly and watch the carom lose energy.
+5. Fly the pitch and watch the **fauna**: the nucleus is play geometry here, not a
+   control zone, so creatures must be edible inside it.
+6. Check the **sphere cage cover** renders on every intensity.
+7. Score a goal and watch the replay (also covered by QA-SPEED-TUNNEL step 4).
+8. Watch/listen for the new strike feedback: pop, shake, burst.
+
+**PASS:** a swung tip sends the ball dramatically harder than a parked sword's deflect;
+a struck ball loses roughly 65 % of its speed in ~3 s and genuinely reaches **rest**
+rather than creeping; wall bounces cost energy while a vessel strike stays fully
+elastic; fauna are eaten inside the court (no arena-wide sanctuary); the cage renders at
+every intensity; strike feedback fires on contact.
+**FAIL:** a parked sword firing the ball · a ball that never settles or that stops dead
+· fauna untouchable anywhere on the pitch · a missing cage at some intensity · no strike
+feedback.
+**Judgement calls to report (each a one-field edit on `AstroLeagueSettings.asset`):**
+`ballDrag = 0.35` (sluggish → drop toward 0.2; won't die → push toward 0.5),
+`wallRestitution = 0.72` (a billiards-ish guess), and the 40 % court cut (if it now
+reads too small, the right size is between this and #704).
+
+### QA-SPARROW-BOOST-WARD ⬜ — overheat removed, strafing roll freed, Elemental Ward added
+**Source:** PR #675. **Highest risk on the branch: two vessel prefabs were hand-edited
+as YAML** (a removed GameObject, a removed resource slot, a new component on each,
+renamed serialized fields). Reference: `SPARROW_AFTERBURNER.md` § In-editor verification.
+1. Open the **Sparrow** and **Serpent** prefabs. Confirm: no missing-script rows;
+   `OverheatingBoostActionExecutor` is **gone**; `ResourceSystem` reads Missiles /
+   FullAuto / ExhaustBarrage (**3 slots, no Heat**); `SparrowHUDController.barrelRollController`
+   is wired; `VesselElementalImmunity` sits on each root with the right condition.
+2. Hold boost for **60 s** continuously.
+3. At Time level 0: boost + full stick deflection.
+4. Watch the boost icon ring across a press → roll → release cycle.
+5. At Time ≥ 5 (set `TimeTestHarness = 0.5`): fly into a **danger prism while boosting**,
+   then into one **while not boosting**. Watch the elemental flowers each time.
+6. Repeat step 5 on a **stopped Serpent**.
+7. MPPM, two clients, one Sparrow at Time 5 — both machines must agree on who resists.
+
+**PASS:** both prefabs inspect cleanly; 60 s of boost produces no force-release, no
+danger trail and no self-slam; one press = exactly one roll; the boost ring is full on
+press, wipes empty on the roll, and stays empty until the next press (never a partial
+fill); at Time 5 a danger prism **while boosting** leaves the flowers undipped and
+**not boosting** dips them (the slow and input-mute still land either way, by design);
+the stopped Serpent never dips at any Time level; both peers agree.
+**FAIL:** a missing script or a Heat resource still present · boost force-releasing or
+laying a danger trail · more than one roll per press · a partially-filled boost ring ·
+the ward applying in the wrong boost state · peers disagreeing.
+**Open design question to report:** the ward holds `WhileBoosting` (mirrors the
+Serpent). With boost now unbounded, a pilot flying permanently full-throttle is
+permanently warded. Say whether it should be `Always` — it is one inspector field.
+
+### QA-SPARROW-STOPPED-ROLL ⬜ — the strafing roll works stopped, and the stance turns 3× faster
+**Source:** PR #679. Reference: `SPARROW_AFTERBURNER.md` §2.1–2.2 + items 4b–4e.
+1. **Regression first:** fly the Sparrow normally and confirm the **flying** roll is
+   unchanged — the shared modifier path was touched.
+2. **Stopped:** enter the stance, then boost + full left stick.
+3. Stopped, aim well away from the heading you had when you stopped, then dodge.
+4. Stopped, take a knockback (no movement), then release the stance.
+5. Time a **180° yaw** in the stance vs. out of it, then release the stance and time
+   again.
+6. **Serpent:** take a knockback and release — confirms the exemption is scoped to the
+   roll.
+7. MPPM two clients: a stopped roll must replicate like the flying one.
+
+**PASS:** the flying roll is unchanged; stopped, boost + full stick rolls **and**
+strafes, exactly one roll per press, and you are still stopped afterwards (stationary
+fire, no trail laid); the strafe follows **current facing**, not the heading you stopped
+with; releasing the stance produces no lurch; a 180° yaw takes about a third as long in
+the stance and the rate drops straight back on release; the Serpent holds knockback with
+no lurch; the stopped roll replicates.
+**FAIL:** a changed flying roll · no roll or no strafe when stopped · a strafe skewed
+toward the old heading · a banked lurch on release · a turn rate that stays fast after
+release (`TurnScalar` got cached) · a roll that does not replicate.
+
+### QA-SPARROW-TURRET-STANCE 🟡 — Turret Stance fires real prisms
+**Source:** PR #696. **Play-tested by the prompter through the final commit** (six
+rounds; the ShaderGraphs have been imported and rendered), so this item is only about
+the two things that report did not cover. Reference: `SPARROW_TURRET_STANCE.md`.
+1. **MPPM, two clients.** Enter Turret Stance and fire for 30 s while the other peer
+   watches. Turret prisms come from a local `blockFactory` and `ProjectileImmuneUntil`
+   is local `Time.time` state — nothing here is networked.
+2. **The CHARGE-5 skyburst flip.** Below Charge 5, confirm the skyburst blast
+   **friendly-fires**. At Charge 5, confirm the blast goes **domain-safe** while the
+   direct hit behaves as before.
+3. While at it, note whether `placementImmunitySeconds` still reads too long (you should
+   not be able to shoot your own just-placed prism, but the window should not feel like
+   a dead zone).
+
+**PASS:** both peers see a coherent turret volley with no desync or duplicated prisms
+and no exceptions on either machine; the blast friendly-fires below Charge 5 and is
+domain-safe at Charge 5.
+**FAIL:** prisms appearing on one machine only, or in different places · the blast
+friendly-firing at Charge 5, or going domain-safe below it · any exception during a
+sustained volley.
+**Known, do not fail on:** transform-moved triggers at high speed can tunnel through
+thin prisms — bullets do it too, and parity is the point.
+
+### QA-SPARROW-MISSILE-BAY ⬜ — bay-animated skyburst launch with the real missile model
+**Source:** PR #708. Authored without a Unity compile or play-test. Reference:
+`Docs/UNITY_VERIFICATION_CHECKLIST.md` 🔴 "Sparrow Skyburst Missile Bay".
+1. Fire a skyburst and **watch the hull** — this is the one thing only the editor can
+   prove (a **cross-FBX clip binding**).
+2. Fire several in a row and watch which side launches each time.
+3. Fire during a hard maneuver (roll + pitch together).
+4. Watch the launch seam: the bay opens, then the projectile leaves ~0.2 s later.
+5. Look at the exhaust particles against the missile's ~1.7 u visual.
+
+**PASS:** the bay physically opens on the hull before launch; sides alternate
+**right-then-left**; no puppetry fight (bay animation vs flight animation) during hard
+maneuvers; the handoff reads as one motion, not two; exhaust particles are sized for
+the missile.
+**FAIL:** a bay that never animates (the clip binding failed — the projectile still
+spawns at the bay-bone rest pose, so this fails quietly) · both missiles from the same
+side · the hull visibly fighting itself mid-maneuver · a visible gap or double-motion at
+the handoff.
+**Tuning to report:** `launchDelaySeconds` (0.2; useful range 0.16–0.26).
+**Known, flagged, do not fail on:** the skyburst's direct-hit sphere (world radius 8.5)
+now visibly dwarfs the missile — a Dog Fight balance call, already recorded.
+
+### QA-VESSEL-SPARROW-ROLL ⬜ — Sparrow rolls on prism hit
+**Source:** PR #669 (two hand-authored assets, never imported; 60° is a guess).
+1. Inspect the Sparrow's prism-effect container: `VesselRollByPrismEffect` in **slot 0**,
+   inspecting cleanly (no `Missing (Mono Script)`).
+2. Fly the Sparrow into prisms at a few angles and speeds.
+
+**PASS:** the asset inspects cleanly and every prism hit **rolls** the vessel rather
+than redirecting its course; control is recoverable.
+**FAIL:** missing script · no roll · the vessel still being deflected off-course · a
+roll so violent it reads as a loss of control.
+**Report the feel:** `rollDegrees` (60) is a single inspector value — say whether it
+wants to be larger or smaller.
+
+### QA-DOLPHIN-SPEED-TUNE ⬜ — +30 % cruise, +70 % charged boost
+**Source:** PR #681 (in-place scalar edits; the arithmetic is machine-checked, the
+*feel* is entirely unflown). Reference: `Docs/UNITY_VERIFICATION_CHECKLIST.md` 🔴
+"Dolphin speed + charged-boost retune".
+1. Menu_Main → freestyle → **Dolphin**. Full throttle, no boost — read
+   `VesselStatus.Speed`.
+2. Hold drift from an empty meter and time the boost ring filling.
+3. Release a full meter and read the peak speed, then time the fall back to cruise.
+4. Drift → release → drift again.
+5. Fly any other vessel as a regression check.
+
+**PASS:** cruise settles at **≈78** (was 60); the ring fills in **≈3.6 s** (was 4); the
+peak reads **≈357** and takes ~2.5 s to fall back (was 210 over 2 s); speed returns to
+normal with no stuck multiplier; no other vessel changed.
+**FAIL:** numbers materially off the targets above · a stuck multiplier after
+drift→release→drift · another vessel's speed changing.
+**Judgement call to report — this is the point of the item:** 357 is a big jump and the
+speed tunnel amplifies how it reads. Say plainly whether it is too much.
+
+### QA-VESSEL-AOE-IMPULSE ⬜ — explosion inertia, the Dolphin capsule cone, and debris spin
+**Source:** PRs #652, #632, #643, **#680** (the blast's collider was hand-swapped from a
+Sphere to a **Capsule** at the YAML class-id level — `!u!135` → `!u!136` — and aligned
+with the jaw gape).
+1. Select `_Prefabs/Projectile/AOEConicExplosion.prefab`. The root must show a
+   **Capsule Collider** (Is Trigger ✓, Radius 0.0667, Height 1, Direction **Z-Axis**,
+   Center 0/-0.5/0) — **not "Missing", not still a Sphere**. This is the riskiest edit
+   on the branch and shows up nowhere else. Also confirm **Inertia 1.8 / Proportional
+   Debris ✓ / Debris Restitution 0.333**.
+2. After a HexRace/Skim track spawn (so pools have cycled super-shielded prisms), lay a
+   Squirrel overheat **danger** trail, then detonate a Dolphin crystal blast into it.
+3. Dolphin + crystal in open space: watch the cone's reach and where destruction ends.
+   **Roll 90° and fire again** — the fan must roll with the ship (ship-up, not world-up).
+4. Watch the jaws at **zero energy** (slightly open) and at every charge step — they
+   must agree with the HUD icon.
+5. Watch the direction struck prisms fly.
+6. Fire one **spherical** AOE (e.g. Rhino) as a regression check, and check the Manta /
+   Rhino / Serpent / Squirrel crystal blasts and the Sparrow skyburst are unchanged.
+7. Blow up prisms at a range of impact speeds and watch debris **tumble**.
+
+**PASS:** the capsule collider is present and correct; the blast expands through danger
+and regular-shielded prisms (shields pop, danger takes damage) and stops **only** on
+stellated super-shielded prisms; the charged blast reads as a **fan** that rolls with
+the ship; the cone mesh and its destruction both reach ≈2400 units with a travelling
+wavefront; struck prisms fly radially from the **apex**, not from the wavefront; jaws
+agree with the HUD at every charge step; the spherical AOE and the other four vessels'
+blasts are unchanged; debris tumbles noticeably more than before **at the same flight
+speed and shatter timing**.
+**FAIL:** a Missing or still-Sphere collider · the blast stopping on a danger prism ·
+destruction falling short of the cone mesh · a fan bound to world-up · debris flying
+from the moving wavefront · flight speed or shatter pace changing with the spin tune.
+**Known cosmetic gaps (report, do not fail on):** the conic VFX spawn flash does not
+scale with the tripled height; the rendered cone widens with the capsule's length by
+construction, so full charge draws wider than it destroys off-axis.
+
+### QA-CRYSTAL-CHARGE-SHADER ⬜ — the dedicated charge-crystal shader
+**Source:** PR #710 (new `.hlsl` + ShaderGraph + `CrystalEdgeArcs` component, compiled
+and rendered offline with clang but never by Unity).
+1. Open `CrystalCharge.prefab`. Confirm `CrystalEdgeArcs` sits on `chargeShell` with no
+   *Missing (Mono Script)* row.
+2. Enter play in a scene that spawns **charge** crystals (freestyle with elemental
+   crystals is easiest).
+3. Watch one crystal for ~20 s at gameplay distance and again up close.
+4. Watch a crystal **appear**.
+5. Look at the crystal against a bright background / with bloom on.
+
+**PASS:** the crystal is a **static faceted solid** (not spreading or spinning its
+geometry); bolts crackle along the prism **edges only**, never across face interiors;
+no permanent starbursts at the vertices; the crystal **blooms in** rather than popping;
+nothing blows out against bloom.
+**FAIL:** a magenta crystal (stale Library — reimport the shader before failing) · bolts
+drawn straight across face interiors · always-on vertex starbursts · a crystal that pops
+into existence instead of blooming (that breaks the platform-wide continuity law) ·
+blowout against bloom.
+**Judgement call to report:** the screen-door emergence replaced an alpha blend — say
+whether it reads better or worse at gameplay distance.
+**Tuning lives on `ChargeCrystalMaterial`:** `_ArcWidth` / `_ArcIntensity` / `_ArcJitter`
+/ `_ArcDuty` / `_ArcSpeed` for the discharge; `_RimStrength` / `_FacetAmbient` /
+`_EmissionStrength` for the body.
+
+### QA-MENU-VEIL-PAUSE ⬜ — the menu-return veil hold and the prewarmed pause menu
+**Source:** PRs #672, #693, #698. The prewarm crashed the **Windows player** on every
+login (#693) and the root was a type-punned `pauseMenuPanel` reference (#698) — so this
+item is the Editor half; the player half is QA-BUILD-WINDOWS-PLAYER.
+1. Play any arcade game and **return to the menu**. Watch the transition closely.
+2. Do it three more times, from different modes.
+3. Reach `Menu_Main` from a **cold boot** and confirm the veil does *not* linger.
+4. In a game round, open the pause menu for the **first** time and watch for a hitch.
+5. Open and close it several more times.
+6. Open `Pause_Menu_Panel.prefab` and `R_Pause_Menu_Panel.prefab` and confirm both point
+   `pauseMenuPanel` at their own root GameObject.
+
+**PASS:** the game→menu teardown (vessel despawns, pooled-prism churn, GC) happens
+**behind** the opaque splash and the fade-in reveals a settled menu; cold boot and
+auth→menu are unaffected by the ~1.5 s settle hold; the first pause opens with no
+visible hitch; both prefabs reference their own root.
+**FAIL:** watching vessels despawn or prisms churn during a menu return · a veil that
+lingers on cold boot · a hitch on first pause · a pause menu that fails to open · any
+exception from `PauseMenu.Prewarm`.
+
+### QA-DISPLAY-NAME-VALIDATION ⬜ — display-name rules and global uniqueness
+**Source:** PRs #673, #674. New `DisplayNameValidator` (local rules + profanity/leetspeak
+handling) plus `DisplayNameRegistry` (UGS Cloud Save uniqueness). #674 was a *namespace
+collision fix on the Cloud Save API* — i.e. the registry path has never compiled in
+Unity until now. Surfaces: `AuthenticationSceneController`, `ProfileModal`,
+`ArcadeProfileWidget`, `ProfileIconSelectView`.
+1. Sign in as a **new** user and set a display name through the auth-scene username panel.
+2. Try each rejection class and read the message shown: too short, too long, illegal
+   characters, a reserved name, a plain profanity, a **leetspeak** profanity (`f4ck`), a
+   **separated** one (`f.u.c.k`), and a **repeated-letter** one.
+3. Try a name a second account already holds — expect a uniqueness rejection.
+4. Change your name from the **Profile modal** and confirm the new name appears on the
+   arcade profile widget, the party/online list and in a game round's scoreboard.
+5. Watch the Console for Cloud Save exceptions on every attempt.
+
+**PASS:** every rejection class is caught with a human-readable message; an accepted
+name is saved, is unique, and propagates to every surface listed in step 4; no Cloud
+Save exception anywhere.
+**FAIL:** a blocked term getting through (record it) · a legitimate name rejected ·
+a name that saves but does not propagate · **any** Cloud Save exception (that is the
+namespace-fix regression this item exists for) · a uniqueness check that never fires.
+
+### QA-PROFILE-ADS-REMOVAL ⬜ — Unity Ads gone, and the profile double-submit closed
+**Source:** PR #694. Ads were enabled with **Android/iOS game ids only**, so every
+desktop launch threw `Couldn't fetch Ads Service game Ids`.
+**⚠ This item carries a two-minute editor task:** the `AdButton` GameObject still exists
+in `Menu_Main.unity` and `Screens.prefab` and is only hidden at `Start`. **Delete it
+from both**, then report that you did — the code field can then be removed.
+1. Boot the game. Confirm no `Couldn't fetch Ads Service game Ids` in the Console/log.
+2. Open the **daily reward** card. It must run **free claim → clock** — there is no
+   ad-watch second claim, and no ad button visible in any state.
+3. Delete the `AdButton` object from `Menu_Main.unity` and `Screens.prefab`, save both,
+   and confirm nothing else in the layout shifts.
+4. **Double-submit:** in the profile modal, hit Save twice quickly (and mash it).
+5. Change the profile, back out without saving, and reopen.
+
+**PASS:** no ads exception on any platform; the daily reward is free-claim only with no
+stray ad button; deleting `AdButton` leaves both layouts intact; a double-tapped Save
+submits **once** with no duplicate write or error; profile state is consistent after a
+cancel-and-reopen.
+**FAIL:** the ads exception still appearing · a visible ad button or ad-mode claim ·
+a double Save producing two writes or an exception · a layout that breaks when
+`AdButton` is deleted (report it and revert rather than fighting it).
 
 ### QA-ECOLOGY-WORM-KAIJU ⬜ — the worm colony boss
 **Source:** PR #667. Reference: `Docs/ECOSYSTEM.md` §23.6 (spawn steps + dials).
@@ -234,6 +774,7 @@ rather than vanishing.
 **FAIL:** any segment popping out of existence · a split that strands a headless or
 tailless remnant · a body segment dropping a crystal, or a capital dropping none ·
 the colony feeding on nothing / never growing · exceptions in the Console.
+**Known, do not fail on:** the worm is deliberately excluded from the #709 skeleton.
 
 ### QA-ECOLOGY-HESPERIDES ⬜ — the garden cell
 **Source:** PR #646 (9 hand-authored prefabs + 56 SO assets, first import).
@@ -437,42 +978,6 @@ with prism size · debris pinned to one speed regardless of impact.
 **Judgement call to report:** shatter is now ~3× slower on gentle grazes (violence
 tracks force by design). Say whether the slow end reads as sluggish.
 
-### QA-VESSEL-AOE-IMPULSE ⬜ — explosion inertia, the Dolphin cone, and debris spin
-**Source:** PRs #652, #632, #643.
-1. Select `_Prefabs/Projectile/AOEConicExplosion.prefab`: confirm **Inertia 1.8 /
-   Proportional Debris ✓ / Debris Restitution 0.333** in the inspector.
-2. After a HexRace/Skim track spawn (so pools have cycled super-shielded prisms), lay a
-   Squirrel overheat **danger** trail, then detonate a Dolphin crystal blast into it.
-3. Dolphin + crystal in open space: watch the cone's reach and where destruction ends.
-4. Watch the direction struck prisms fly.
-5. Fire one **spherical** AOE (e.g. Rhino) as a regression check.
-6. Blow up prisms at a range of impact speeds and watch debris **tumble**.
-
-**PASS:** the blast expands through danger and regular-shielded prisms (shields pop,
-danger takes damage) and stops **only** on stellated super-shielded prisms; the cone
-mesh and its destruction both reach ≈2400 units with a travelling wavefront; struck
-prisms fly radially from the **apex**, not from the wavefront; the spherical AOE is
-unchanged; debris tumbles noticeably more than before **at the same flight speed and
-shatter timing**.
-**FAIL:** the blast stopping on a danger prism · destruction falling short of the cone
-mesh · debris flying from the moving wavefront · flight speed or shatter pace changing
-with the spin tune (that would mean something else moved).
-**Known cosmetic gap (report, do not fail on):** the conic VFX spawn flash does not
-scale with the tripled height.
-
-### QA-VESSEL-SPARROW-ROLL ⬜ — Sparrow rolls on prism hit
-**Source:** PR #669 (two hand-authored assets, never imported; 60° is a guess).
-1. Inspect the Sparrow's prism-effect container: `VesselRollByPrismEffect` in **slot 0**,
-   inspecting cleanly (no `Missing (Mono Script)`).
-2. Fly the Sparrow into prisms at a few angles and speeds.
-
-**PASS:** the asset inspects cleanly and every prism hit **rolls** the vessel rather
-than redirecting its course; control is recoverable.
-**FAIL:** missing script · no roll · the vessel still being deflected off-course · a
-roll so violent it reads as a loss of control.
-**Report the feel:** `rollDegrees` (60) is a single inspector value — say whether it
-wants to be larger or smaller.
-
 ### QA-UI-ABILITY-ROW ⬜ — the four-icon ability row and its control hints
 **Source:** PR #637. Note: hint placement failed in-editor three times on that branch
 after passing the author's arithmetic — treat play-mode confirmation as required.
@@ -483,7 +988,9 @@ after passing the author's arithmetic — treat play-mode confirmation as requir
    the **boost ring** (4th). Without a gamepad you should see the keyboard set
    (`LShift`/`RShift`).
 4. Raise one element to level 5 (elemental crystals or the comeback buff).
-5. Play **Sparrow**: same order, each glyph beside its own ability.
+5. Play **Sparrow**: same order, each glyph beside its own ability. *(The Sparrow's
+   ability set changed in #675 — overheat is gone — so also confirm the row still holds
+   four icons and no icon refers to a retired ability.)*
 6. Play **Serpent**: labels at the right edge (**not** mid-screen), silhouette/trail at
    the left, boost button unmoved.
 
@@ -491,7 +998,8 @@ after passing the author's arithmetic — treat play-mode confirmation as requir
 ability; a level-5 element grows a white petal badge on that ability's icon and the icon
 rests slightly larger; the Serpent HUD lands on-screen where described.
 **FAIL:** icons out of order or missing · a glyph under the wrong ability or off-screen
-· no upgrade signal at level 5 · Serpent labels mid-screen.
+· no upgrade signal at level 5 · Serpent labels mid-screen · a Sparrow icon still bound
+to overheat.
 **Known, do not fail on:** Sparrow renders Xbox **and** PlayStation glyph sets at once,
 and its glyph art is wrong (`R1` where RT is meant) — both already logged.
 
@@ -519,7 +1027,8 @@ Dolphin reading as a regression.
 
 ### QA-SCURRY-SPAWN-RING ⬜ — half-nucleus cell, crystal volume, cell-relative spawn ring
 **Source:** PR #659 (the ring's first version silently spawned players **inside** the
-nucleus — that class of bug is what this item exists to catch).
+nucleus — that class of bug is what this item exists to catch). Dog Fight and Wildlife
+Liberation now use the same formation code (sphere and equatorial ring respectively).
 1. Run `CellSpawnFormationTests` (covered by QA-EDITMODE-TESTS) — note the result here too.
 2. Run **Ecology ▸ Audit Cell-Owned Visuals**: expect *"SCENE-PLACED DUPLICATES: none"*
    and *"DEAD CELL OVERRIDES: none"*, with `SkyboxModel` entries under OK.
@@ -578,21 +1087,6 @@ continuous rattling on crashes · the setting not taking effect · iOS failing t
 the skim clip.
 **Report the feel:** the punish also fires when the Squirrel clips its own trail in a
 tight drift — say whether that reads as fair.
-
-### QA-PALETTE-SHIELDED ⬜ — Ruby + Gold shielded prisms
-**Source:** PR #644 (colorimetry verified by simulation, never by the engine).
-Reference: `Docs/PALETTE.md` §6.
-1. Pull and let the colour-set asset **reimport** (a stale Library masks this entirely).
-2. Get shielded prisms of all three domains on screen — easiest via a cell with
-   lifeforms in freestyle, a `SegmentSpawner` track (HexRace / Skim Race), or Astro League.
-3. Compare each domain's shielded vs unshielded prisms side by side.
-
-**PASS:** Ruby and Gold facets read clearly; shielded is obviously distinct from
-unshielded within each domain; no domain blooms hotter or reads flatter than the others
-(Ruby's rim peaks at 1.19 and Gold's at 1.05, both below Jade's 1.22 — if Jade does not
-blow out, neither should these).
-**FAIL:** a domain blowing out under bloom · shielded reading *dimmer* than unshielded
-in the same domain · a domain that reads flat/muddy next to the other two.
 
 ### QA-PERF-DEATH-PATH 🟡 — re-profile the batched suction/explosion death path
 **Source:** PR #658. Every frame-cost claim on that branch is structural, never measured.
@@ -670,15 +1164,26 @@ it has left your view); the field still holds ~7 scenes ahead at all speeds.
 **FAIL:** a scene appearing close in front of you · watching a scene shrink away on
 screen · the field starving (fewer scenes ahead) at high speed.
 
-### QA-UI-TRAIL-DISPLAY-REMOVAL ⬜ — nothing broke when the silhouette HUD was deleted
-**Source:** PR #634 (prefab YAML surgery across 6 vessel prefabs + 3 HUD prefabs).
-1. Open each vessel prefab and `GameCanvas.prefab`, `GameCanvas-HexRace.prefab`,
-   `MiniGameHUD.prefab`. Look for missing-script warnings.
+### QA-UI-TRAIL-DISPLAY-REMOVAL ⬜ — nothing broke when the vessel silhouette was deleted
+**Source:** PR #634, then **#695** (the fleet-wide excision: **13 prefabs, 177 objects**
+removed by YAML surgery, plus a stale-key purge across 13 more files — no Unity import
+has ever run on it).
+1. Open all six vessel prefabs plus the Sparrow / Rhino / Squirrel / Serpent / Manta HUD
+   variants, `GameCanvas.prefab`, `GameCanvas-HexRace.prefab` and `MiniGameHUD.prefab`.
+   Look for missing-script warnings and confirm the hierarchy and HUD layout are intact.
 2. Play a round on **Squirrel** and on **Sparrow** and watch the elemental petal bars.
+3. Fly **Rhino / Serpent / Manta** briefly — nothing should have disappeared **except**
+   the ship outline.
 
-**PASS:** no missing-script warnings anywhere; petal bars build, colour and animate
-correctly on both vessels.
-**FAIL:** any missing script · petal bars absent, mis-coloured or static.
+**PASS:** no *new* missing-script warnings anywhere; every HUD still lays out; petal bars
+build, colour and animate on every vessel; the only visible loss is the silhouette.
+**FAIL:** a new missing script · a HUD that lost more than the outline · petal bars
+absent, mis-coloured or static.
+**Known, do not fail on:** `SerpentHUDVariant.prefab` / `VesselHUDPrefab.prefab` carry a
+pre-existing missing script; `Dolphin.prefab` authors no `elementBars` so its flowers are
+built at runtime with a warning (fix: **Vessels ▸ Bake Elemental Petal Bars Into All
+Vessel HUDs**); every vessel prefab carries harmless stale `ElementalBarsController`
+keys from the `SilhouetteController` rename.
 
 ### QA-FTUE-QUEST-ROWS ⬜ — quest graphs lay out in venue rows
 **Source:** PR #633 (six graph assets rewritten by script).
@@ -718,7 +1223,8 @@ button is never left disabled.
 reopened after one of the close paths.
 
 ### QA-STATE-RESET ⬜ — runtime game state resets to defaults between sessions
-**Source:** PR #647.
+**Source:** PR #647. **Run this alongside QA-SCORING-CLIENT-MIRROR** — they are the two
+halves of "nothing leaks between games", and B17 is the networked half.
 1. Play a game to the end, return to the menu, and launch a **different** mode.
 2. Repeat with the same mode twice (use Play Again where available).
 
@@ -773,6 +1279,25 @@ not fail this item, but their current behaviour is what we need recorded.
 
 ## Priority 2 — lower risk, cosmetic, or data-gathering
 
+### QA-P2-QUIT-BUTTON ⬜ — the drop-in quit button
+**Source:** PR #701 (`QuitGameButton`, a self-wiring component for nested prefabs).
+Place/locate one on a desktop build: it must wire itself to `Button.onClick`, quit
+through `DesktopPlatformServices.Quit()` (normal shutdown — lifecycle events, state
+machine, analytics flush), and be **hidden on mobile/console/WebGL** unless `desktopOnly`
+is unticked. **PASS = it quits cleanly on desktop, is absent on a mobile build, and the
+shutdown log shows the normal quit path.** **FAIL = a hard exit with no shutdown, a
+visible button on mobile, or a listener left behind after destroy.**
+
+### QA-P2-ANALYTICS-FLIGHT-CLOCK ⬜ — flight clock, cloud stats and vessel unlock
+**Source:** the `claude/game-data-json-schema-u2mubn` merge (`FlightClock`,
+`UGSDataService`, `UGSStatsManager`, `VesselUnlockSystem`, `SO_Vessel`,
+`MenuCrystalClickHandler`). Fly freestyle and a game round, then check the analytics
+dashboard / Cloud Save entry for the recorded flight time and stats, and confirm vessel
+unlock state still resolves in the Hangar. **PASS = flight time accrues and lands in the
+cloud payload, stats write, unlock state is unchanged.** **FAIL = a Cloud Save exception,
+a clock that never accrues (or accrues while paused/in menu), or a vessel whose unlock
+state flipped.** Reference: `Docs/Analytics/DATA_ARCHITECTURE.md`.
+
 ### QA-P2-SERPENT-SKIMMER ⬜ — Serpent's dead skimmer (known, unfixed)
 Run **Audit Vessel Skimmers** and fly the Serpent through cell mass. Expected: it FAILS
 the audit (inactive `VacuumSkimmer`, no impactor/container) and does not skim. **PASS =
@@ -787,7 +1312,9 @@ exists and is attached to your results.** This item's deliverable is data.
 ### QA-P2-DEVICE-SOAK ⬜ — per-cell device soak
 Soak each freestyle cell plus Scurry/Atlantis on target mobile hardware for ~10 minutes
 each; record frame time, thermals and any hitching in
-`Docs/PERFORMANCE_OPTIMIZATION.md`. **PASS = numbers recorded for every cell.**
+`Docs/PERFORMANCE_OPTIMIZATION.md`. **PASS = numbers recorded for every cell.** Add the
+two new arenas to the sweep: **Dog Fight intensity 4** (34,654 prisms, the heaviest
+party-game arena) and **Wildlife Liberation intensity 4**.
 
 ### QA-P2-CONIC-VFX-FLASH ⬜ — Dolphin cone spawn flash does not scale
 Known cosmetic gap: the prefab's world-space ParticleSystem child ignores the container's
@@ -812,7 +1339,11 @@ value, not code).
 
 ## Not covered by this list
 
-- **Automated CI checks** (`Tools/CI/validate_project.py`, `check_conditional_compilation.py`,
-  the Thursday build promotion in PR #664) run in GitHub Actions and are verified there.
-  QA does not need to re-run them; if a build branch is red, that is an engineering item.
-- **Docs-only branches** (#653, #623, #666's doc half) — nothing to run.
+- **Automated CI checks** (`Tools/CI/validate_project.py`,
+  `check_conditional_compilation.py`, the bleeding-edge landing guard and its follow-ups
+  in PRs #683–#687, #692, #699) run in GitHub Actions and are verified there. QA does not
+  need to re-run them; if a build branch is red, that is an engineering item. The one
+  exception is the **player build itself** — see QA-BUILD-WINDOWS-PLAYER, which exists
+  because that tier catches what neither CI statics nor the Editor can.
+- **Docs-only branches** (#653, #623, #666's doc half, #697) — nothing to run.
+- **Reverts** (#670, #682) — restore a previous tree; nothing new to exercise.

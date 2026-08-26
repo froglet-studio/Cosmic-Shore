@@ -33,6 +33,9 @@ detection. On top of that base the `Toy` class adds:
   is on autopilot; they only activate once the player takes control
   (`ToyContext.IsFreestyleActive`).
 - **Continuity-law bloom-in** — every toy scales from zero on spawn (nothing pops in).
+- **A switch ring** — every toy is drawn inside one continuous ring, square across your flight
+  path, **at the radius of its own trigger collider**. The ring is the affordance: thread it and
+  something fires. See "The switch" below; the domain changer is the one deliberate exemption.
 - **Exit-gated re-arm** — a toy is *not consumed*, but it re-arms **only once the local vessel
   has flown clear of its trigger volume** (a per-frame distance poll with `exitRadiusMultiplier`
   hysteresis, robust to the swap's despawn/respawn which fires no `OnTriggerExit`). A swap toy
@@ -46,7 +49,8 @@ detection. On top of that base the `Toy` class adds:
 
 | Role | File |
 |---|---|
-| Toy base (trigger, bloom, gating, re-arm) | `Assets/_Scripts/Controller/Toys/Toy.cs` |
+| Toy base (trigger, bloom, gating, re-arm, **switch ring**) | `Assets/_Scripts/Controller/Toys/Toy.cs` |
+| Switch-ring layout gate (CI-style, no Unity) | `Tools/Build/toy_switch_ring_geometry.py` |
 | One-toy-opens-into-many base | `Assets/_Scripts/Controller/Toys/MatrixToy.cs` |
 | Shared matrix station (fly-through choice) | `Assets/_Scripts/Controller/Toys/ToyMatrixStation.cs` |
 | Cell Selector (world picker + reset) | `Assets/_Scripts/Controller/Toys/CellSelectorToy.cs` |
@@ -92,21 +96,98 @@ detection. On top of that base the `Toy` class adds:
 
 ## Lifeform Matrix (`LifeformMatrixToy` + `LifeformMatrixToyDefinitionSO`)
 
-The **ecology tuning bench** (`Toy_LifeformMatrix.asset`, placement angle 180°). Its root wears
-an emblem (see "Toy-root emblems"): a core of the four element crystal MODELS — elements have
-SHAPE signatures, never colours — orbited by four of its own species. Fly it and the SPECIES
-matrix blooms one layer OUTWARD from the cell centre: fauna on the
-lower row, flora on the upper (12 species) — **each species station is a mini MODEL of that
-creature** (fauna: meshes harvested off the prefab asset by `ToyModelBuilder`, never instantiated)
-or **of its growth pattern** (flora: simulated via `Flora.TryPreviewGrowth` — see "Station icons");
-only a species that can offer neither keeps the anonymous sphere. Fly a species and its VARIANT matrix blooms a
-further layer outward: 4 element columns × level rows {1, 3, 5}, each station wearing the
-element's crystal model sized by level. Fly a variant and a POPULATION of that exact lifeform
-(fauna `PopulationSize` / flora `InitialSpawnCount`) spawns live through the canonical cell
-spawn paths on a runtime CLONE of its per-element config (`_SO_Assets/Lifeforms/`) — flora
-root AT the station via `Flora.SetPlantPositionOverride`. Every spawn logs, including the
-cell's Frenzy growth-freeze state. Layered outward on purpose: the player flies at a matrix
-and keeps flying — each pass carries them toward the next layer, never back through the last.
+The **release bench** — everything you can let loose into the cell (`Toy_LifeformMatrix.asset`,
+placement angle 180°). Its root wears an emblem (see "Toy-root emblems"): a core of the four
+element crystal MODELS — elements have SHAPE signatures, never colours — orbited by its three
+KINGDOMS.
+
+**Four passes deep at most, each one a layer further out.** `LayerOrigin(n)` puts layer *n* at
+`(1.5 + 2n) × stationSpacing` from the toy along the outward radial — one clear gap of two
+spacings per layer, so a new layer *extends* the rhythm the player has already learned rather than
+re-tuning the ones before it. The player flies at a matrix and keeps flying: each pass carries
+them toward the next layer, never back through the last.
+
+| pass | layer | what blooms |
+|---|---|---|
+| the toy | 1.5 | the **KINGDOM** row — Fauna, Flora, Vessels (station radius ×1.5, so the first row you meet is the biggest thing in the corridor) |
+| Fauna / Flora | 3.5 | that kingdom's **SPECIES** row, one station per registered species |
+| Vessels | 3.5 | the **HANGAR** row, one mini hull per class |
+| a species | 5.5 | its **VARIANT** matrix — 4 element columns × level rows {1, 3, 5} |
+| a variant | — | that exact lifeform spawns live into the cell |
+| a hull | — | an **AI-piloted vessel of that class, in your own domain**, is released |
+
+**The kingdom layer exists because the flat menagerie had outgrown one wall** — 14 species on two
+rows (fauna lower, flora upper), with nowhere to put a third kind of thing. Splitting by kingdom
+first gives each branch its own row *and* makes "what else can I release?" a question the toy
+answers by shape. Opening a layer clears every layer below it, so the matrix is always a single
+path outward from the toy rather than an accumulating pile of walls.
+
+**Icons.** Each kingdom station shows a real member of its kingdom, drawn by that kingdom's own
+builder: the first fauna species (meshes harvested off the prefab asset by `ToyModelBuilder`,
+never instantiated), the first flora species (simulated via `Flora.TryPreviewGrowth` — see
+"Station icons"), and the first hull on the roster (`ToyVesselRoster` → `VesselModelBuilder`).
+Species and hangar stations are the same, one per entry; only a species that can offer neither a
+model nor a growth preview keeps the anonymous sphere. Variant stations wear the element's crystal
+model sized by level, so level 5 reads biggest before you touch it.
+
+**Lifeform release.** A variant spawns a POPULATION (fauna `PopulationSize` / flora
+`InitialSpawnCount`) through the canonical cell spawn paths, on a runtime CLONE of its per-element
+config (`_SO_Assets/Lifeforms/`) with `SpreadElements` off — the station spawns the EXACT variant
+it shows, and the authored assets are never mutated. Fauna hatch on the cell's densest mass (a
+creature released into empty space beyond the membrane has nothing to graze); flora root AT the
+station via `Flora.SetPlantPositionOverride`. Every spawn logs, including the cell's Frenzy
+growth-freeze state.
+
+**Vessel release.** A hangar station calls
+`MenuServerPlayerVesselInitializer.RequestSpawnAiCompanion(class, domain, pose)` — the menu's
+**ordinary networked spawn pipeline**, not a second kind of bot. The host spawns directly; a party
+client asks the host over `ClientPlayerVesselInitializer.RequestAiCompanion_ServerRpc`, the same
+request/handler shape the vessel swap already uses, so the companion exists once on the server and
+replicates to the whole party (a locally-spawned one would be invisible to everyone else). The
+server-side chain is deliberately the same one `ServerPlayerVesselInitializerWithAI` runs for a
+backfill bot: spawn the Player NetworkObject → stamp `NetIsAI` / vessel class / domain / name →
+spawn the vessel → `InitializePlayerAndVessel` → `ConfigureForGameMode(seekPlayers: false)` →
+`ActivateAutopilot`. It is an ordinary AI player from there on: it flies the lava lamp, lays
+conserved trail mass the food web can graze, and is despawned with every other AI on the way out
+of the menu (`SceneLoader.ClearPlayerVesselReferences`).
+
+Four details that are load-bearing:
+
+- **A companion is released UNDER WAY, never dropped at a standstill.** The pair-init hands every
+  vessel a dead stop (`ResetForPlay` zeroes speed), and `VesselPrismController`'s spawn loop only
+  lays a prism above **3 u/s** — so a bot released at zero lays no trail at all, which reads as a
+  broken bot rather than a slow one. The AI's own drift compounds it: a held drift PINS the
+  smoothed cruise speed at the value the vessel carried in (`VesselTransformer.StepTowardTarget`),
+  so a bot that drifts before it has accelerated stays pinned near zero indefinitely. The release
+  therefore does what the vessel swap does — `SetPose` then `SetInitialSpeed`, in that order — with
+  `companionLaunchSpeed` (60, the low end of the fleet's flight band) authored on the initializer.
+
+- **The domain is YOURS.** `ToyVesselRoster.PlayerDomain` reads the live local-player mirror at the
+  moment of the pass, so the companion joins your side and the mini hulls wear your domain colour —
+  and re-tint in place the instant you change domain, because here that colour is a *claim* about
+  which side the bot will fly for, not decoration.
+- **The bot is claimed, not adopted.** A server-owned Player carries the HOST's `OwnerClientId`, so
+  its spawn event is indistinguishable from the host's own. `ClaimExternallySpawnedPlayer` (new on
+  `ServerPlayerVesselInitializer`, and now also used per-spawn by the AI backfill) marks it
+  processed in the same frame as the spawn, which is what stops the human path from reading the
+  event as "the host wants a second vessel". The handler's 200 ms replication delay is what gives
+  the synchronous claim time to land.
+- **It lands one spacing back toward the cell centre**, facing in. The player is still flying
+  OUTWARD through the matrix when it appears, so the two are moving apart — a bot materialising on
+  the nose would be a vessel-vs-vessel impact, not a release.
+- **The release calls `Player.StartPlayer`, not `ActivateAutopilot`.** For a player whose `NetIsAI`
+  is set, `StartPlayer` already runs the autopilot branch itself; calling both started the AI pilot
+  TWICE, which duplicates every `UseAbilityCoroutine` — and `AIPilot.StopAIPilot` cannot clean the
+  duplicate up, because its `StopCoroutine` is handed a fresh iterator that matches nothing.
+  `StartAIPilot` is now idempotent as well, so no caller can reintroduce it.
+  `ActivateAutopilot` remains what the menu's HUMAN vessel needs, where `StartPlayer` deliberately
+  does not touch autopilot.
+
+**The roster is shared with the Vessel Changer** (`ToyVesselRoster`): one curated default list, one
+meta-value/duplicate filter, one hull builder, one domain-preview colour, one re-tint. The two toys
+differ in exactly one argument — the changer excludes the hull you are flying (you are about to
+become one of the others), the hangar excludes nothing (a wingman in the ship you are flying is a
+perfectly good thing to ask for). Author `vesselRoster` on the definition to override the default.
 
 ## Cell Selector (`CellSelectorToy` + `CellSelectorToyDefinitionSO`)
 
@@ -158,9 +239,11 @@ small fraction of the lay cost. A config with no environment has nothing to mode
 
 **What a selection does** is `Cell.RequestCellSwap` — suction the old world away over a visible
 transition, drain it in 500-prism-per-frame slices while it is invisible, then rebuild behind
-the standard veil. Full step table, ordering constraints (grids before the immediate build),
-and the invariant analysis (continuity upheld; this is active removal, not decay) live in
-**`Docs/ECOSYSTEM.md §19`**.
+the standard veil. Since C9 (2026-08-25) the prism half GPU-converges on the cell centre
+(`Cell.StampRetiredWorldSuction` → `Prism.StampSuctionToward`); the root `localScale` wait is
+for non-prism riders (membrane / nucleus / cytoplasm / spindles). Full step table, ordering
+constraints (grids before the immediate build), and the invariant analysis (continuity
+upheld; this is active removal, not decay) live in **`Docs/ECOSYSTEM.md §19`**.
 
 **Reset scope.** `clearLooseTrailMass` (default on) also retires the **pooled** prisms the cell
 tracks — the vessels' accumulated freestyle trail — which is what makes a selection a scene
@@ -201,7 +284,7 @@ selection itself — never a decorative stand-in, and never a hand-authored symb
 
 | Strategy | Meaning | Used by |
 |---|---|---|
-| **Scaled-down view** | the whole thing, small | Vessel Changer (mini hulls), Lifeform bench (mini creatures) |
+| **Scaled-down view** | the whole thing, small | Vessel Changer (mini hulls), Lifeform bench (mini creatures + its hangar's mini hulls) |
 | **Signature extract** | the few parts that identify it | Connect the Dots (under-budget icons), Cell Selector (signature structures) |
 | **Growth simulation** | the rule it grows by, run in the abstract | Lifeform bench flora (no model exists to shrink) |
 
@@ -257,8 +340,10 @@ only: no skimmer sphere, trails, jets, VFX), and the lifeform bench passes the e
 creature bodies. **Any new toy that offers prefabs gets its icons from this, not from a sphere.**
 
 State that used to be text is becoming shape too: the Cell Selector marks the world you are
-already in with a **halo ring** instead of the word `RESET` (an environment-free config has
-nothing to model, so its empty slot already reads as "instant").
+already in with a **second, inner halo ring** hugging the model — inside the switch ring every
+station wears, and counter-spinning so the two never read as one thick rim — instead of the word
+`RESET` (an environment-free config has nothing to model, so its empty slot already reads as
+"instant").
 
 ### Toy-root emblems (`ToyEmblem` + `ToyEmblemStreamer`)
 
@@ -275,7 +360,7 @@ stations use.
 |---|---|---|---|
 | **Vessel Changer** | the hull you're flying now | the next 3 you'd be offered | 10°/s |
 | **Connect the Dots** | the on-ramp painting you've taken furthest | the other 3 on-ramp canvases | 6°/s |
-| **Lifeform bench** | the 4 element crystals on a sub-ring | 2 fauna + 2 flora species | 8°/s |
+| **Lifeform bench** | the 4 element crystals on a sub-ring | its 3 kingdoms — a real creature, plant and hull | 8°/s |
 | **Wanderway** | a real microscene ("Gate Run") | 3 more recipes (Tunnel, Archway, Torus Knot) | **0 / 3 / 18** = off / dormant / flowing |
 | **Cell Selector** | the world you're in right now | **none, structurally** | core spins at 8°/s |
 | **Domain Changer** | *(no emblem — see below)* | | |
@@ -329,13 +414,18 @@ subscribe to, and the vessel source's existing mid-swap guard is exactly the "ho
 signal we want). A changed key rebuilds every slot; a changed tint writes the emblem's **own** one
 material — never `ToyFactory.AccentMaterial`'s shared per-colour cache and never a theme asset.
 
-**The Domain Changer deliberately has none.** Its slots already wear a domain-tinted cone in the
-domain's live *prism* material — content-derived, unique in silhouette, and the locked shape-
-language read for "this changes your trail." It also rebuilds its body on every flip, so an emblem
-there would be re-emitted constantly for no legibility gain. Do not "complete the set."
+**The Domain Changer deliberately has none** — no emblem, and (prompter-directed) **no switch
+ring either**. Its slots already wear a domain-tinted cone in the domain's live *prism* material —
+content-derived, unique in silhouette, and the locked shape-language read for "this changes your
+trail." It also rebuilds its body on every flip, so an emblem there would be re-emitted constantly
+for no legibility gain, and a ring around it would say a second time what the cone already says
+once. Do not "complete the set." The exemption is `SwapToySetCoordinator.SlotsWearSwitchRing`,
+overridden `false` exactly once.
 
-**Labels stay for now.** They come off once the ring-distance legibility pass confirms each toy is
-identifiable without them — a separate, gated change.
+**Labels stay for now**, hung clear above the switch ring (`ToyFactory.AddRingedLabel` — the font
+is unchanged, only the height moved). They come off once the ring-distance legibility pass
+confirms each toy is identifiable without them — a separate, gated change, and now a more likely
+one, since the ring carries the far read the label used to.
 
 ### Layout tuning (matrix scale & distance)
 
@@ -345,7 +435,7 @@ Icons only pay off if they're big enough to read on approach, so the matrices we
 |---|---|---|---|
 | Cell Selector | 9 → **18** | 55 → **110** | 3 (distance 165 → **330**, since distance = spacing × factor) |
 | Connect the Dots | body radius → **×2** (`iconScaleBodies`) | derived from radius, so ×2 | 3 → **4** |
-| Lifeform bench | 6 → **12** | 45 → **90** | derived (×1.5 / ×3.5 of spacing), so ×2 |
+| Lifeform bench | 6 → **12** | 45 → **90** | derived (×1.5 / ×3.5 / ×5.5 of spacing — one per hierarchy layer), so ×2 |
 | Vessel Changer | **unchanged** | **unchanged** (60) | 3 → **6** |
 
 Everything lands at roughly **2× size and 2× distance**. The Vessel Changer is the deliberate
@@ -378,12 +468,36 @@ primitive meshes (the skimmer sphere, scaled 15–60× — it otherwise dominate
 and crushed the hull to an invisible speck; this is why only Rhino, the one ship whose skimmer
 has no builtin sphere, used to render), anything named skimmer/trail/jet/forcefield/crackle/pip/
 vfx, and inactive/disabled renderers (read via `activeSelf` up the chain — `activeInHierarchy` is
-always false on a prefab asset). Each hull mesh is painted with one **opaque, self-lit preview
-material** (`TryBuild(prefab, radius, previewColor, out model)`), because the ship's real hull
-material is a transparent, runtime-theme-driven shader that renders dim/invisible at rest. The
-`previewColor` is the local player's **domain colour**, so the mini ships preview "you, a
-different hull". Vessels whose body isn't statically extractable fall back to the labelled
-tinted sphere.
+always false on a prefab asset). Vessels whose body isn't statically extractable fall back to the
+labelled tinted sphere.
+
+**A station shows the ACTUAL ship; a glyph stays flat.** The mini hulls used to be painted with
+one opaque, self-lit preview fill in the local player's domain colour, because a vessel's real
+materials are dark unlit theme shaders that read as a black blob with nothing to say which team
+they belong to. The **vessel vision band** (`Docs/VESSEL_VISION.md`) answers both halves of that
+now, so the fill is retired for anything you fly AT:
+
+| | Built by | Materials | Domain read |
+|---|---|---|---|
+| **Station** (vessel-changer matrix, Lifeform Matrix hangar) | `ToyVesselRoster.TryBuildLiveHull` | the ship's **own** materials, with the domain-role slots swapped for the live domain ship material | the vision band's mark, stamped via `VesselVisionShading.StampDisplayModel` |
+| **Glyph** (a toy's emblem, the kingdom icons) | `ToyVesselRoster.TryBuildHull` | one flat, self-lit preview fill | the fill's own colour |
+
+The split is a distance argument, and the geometry already made it: a vessel matrix blooms
+`StationSpacing × MatrixDistanceFactor` = **360 units** out along the outward radial, which lands
+the whole grid just past the band's `nearFullStart` (350). So the stations **arrive already at full
+mark**, read as domain-coloured cel silhouettes for the entire approach while you are choosing
+between them, and **resolve into their real hulls over the last stretch as you commit to one** —
+choosing at range, arriving at a ship. A glyph sits *on* the toy, inside the band's near cutoff
+where the mark is correctly zero and where a real hull would be a black blob, so it keeps the fill.
+
+**Two kinds of mini hull must be re-tinted in opposite ways, and one list holds both** (the
+Lifeform Matrix's `_hullBodies` carries its kingdom glyph *and* its hangar stations). A flat model
+owns a preview material built for it, so a domain change repaints that material. A **live** model
+draws with shared **project assets** — repainting one would recolour every ship in the game,
+permanently, in the editor. So live models carry a `ToyLiveHull` marker and everything routes
+through `ToyVesselRoster.ApplyDomain`, which dispatches; `Recolor` is now documented as flat-only.
+The marker is deliberate rather than a heuristic ("is this material a project asset?"), because
+the cost of guessing wrong is corrupting shipped assets.
 
 **Recolour on domain change.** The mini ships are tinted to your domain, but they are built once
 when the matrix opens. So `VesselChangerToy.Update` watches the local player's domain and, on a
@@ -552,8 +666,8 @@ How a run plays:
   runner tracks the *local* player; party members see the painted prisms replicate but not
   your gates/ghosts (same local-station model as every toy).
 
-(The full `ShapeDrawingManager` experience — preview cinematic, scoring, reveal — remains
-available for gameplay scenes; any existing `ShapeDefinition` can also become a painting via
+(`ShapeDrawingManager` — the scored preview/cinematic/reveal minigame — was **deleted
+2026-08-25**, C15. Any existing `ShapeDefinition` can still become a painting via
 `PaintingDefinitionSO.sourceShape`, which splits pen-up gaps into strokes.)
 
 #### Shape language — one vocabulary of interactables
@@ -565,20 +679,84 @@ shader the painted trail wears — `ToyFactory.DomainPrismMaterial` →
 
 | Shape | Meaning | Where |
 |---|---|---|
+| **Ring — the SWITCH** | *thread it and something fires* | **every toy root and every matrix station**, stroke start gates, stroke milestones, the SHARE/REPAINT completion gates, the Wanderway return station — and, outside the toybox, the Scarab's placed switches and Astro League's goals |
 | **Cone** (apex = "this way next") | *turns / keeps your trail ON* | stroke-gate hubs, every intermediate stroke point (apex points at the stroke's next point), and the **Domain Changer** bodies (apex points the way you fly through) |
 | **Jack** (three rods through a centre) | *turns your trail OFF* | each stroke's final point (reaching it ends the stroke and pens up) |
-| **Ring** (fly-through portal) | *crossing commits a choice* | stroke start gates, the SHARE/REPAINT completion gates |
 | **Emblem** (tilted ring of discrete objects around a hub) | *this is what I am, and what I'd offer* | the toy roots — see "Toy-root emblems" |
 
 The domain changer and the painting gates deliberately share the cone so meeting either one
-first sets up expectations for the other. Builders live in `ToyFactory` (`AddConeBody`,
-`AddJackBody`, `AddRingBody`).
+first sets up expectations for the other. Builders live in `ToyFactory` (`AddSwitchRing`,
+`AddConeBody`, `AddJackBody`; `AddRingBody` is the raw torus underneath).
 
 **Ring vs. emblem, the disambiguation rule:** *one continuous ring square across your flight
-path is a portal — cross it and something commits. A tilted ring of separate objects orbiting a
+path is a switch — thread it and something fires. A tilted ring of separate objects orbiting a
 hub is an emblem — it is a label, not an interactable.* Emblems are therefore built from models,
-never from `AddRingBody`, and they are tilted 32° so they never present as a portal. An emblem
+never from `AddRingBody`, and they are tilted 32° so they never present as a switch. An emblem
 adds **no collider**: the toy's own trigger sphere remains the entire interaction surface.
+
+#### The switch — a ring is how anything is activated
+
+> **A switch is a ring you thread, and threading it activates something.** It is the one word the
+> platform has for "this does something when you go through it", and it is deliberately
+> *threader-agnostic*: a **vessel** threads a toy, a **ball** threads a Scarab switch or an Astro
+> League goal. Same shape, same promise.
+
+Before this pass the toybox taught it inconsistently — the painting's stroke gates and milestones
+were rings, but a toy root was a tinted sphere with a name floating over it and an invisible 42-unit
+trigger, so "how do I use this thing?" was answered by flying at it and finding out. Now **every
+toy is drawn inside its ring**, and one rule makes it teachable rather than decorative:
+
+> **The ring IS the trigger volume, drawn at its own radius.**
+
+so a ring can never advertise a volume the collider does not have, and *fly through the ring* is a
+promise the code keeps. `PaintingRunner`'s milestones already worked this way (`trigger.radius =
+ringR; // the hit volume IS the ring`); this generalises it.
+
+**It is drawn by the base, not by each builder.** `Toy.Initialize` reads its own `SphereCollider` —
+the same collider `LocalVesselOutsideTrigger` measures for the exit gate — and draws the ring from
+it, so a toy authored tomorrow wears one without anybody remembering to add it (the same reason the
+bloom-in and the exit-gated re-arm live there). The ring is a child of the toy root, so it blooms in
+with the toy; it carries **no collider of its own** and costs one shared static mesh, one renderer
+and one `ToyIdleSpin` per station. Light `ToyMatrixStation`s (which are not `Toy`s) get theirs from
+`MatrixToy.CreateStation` / `LifeformMatrixToy.CreateStation`.
+
+**Exactly two opt-outs**, both explicit, both `Toy.ConfigureSwitchRing(...)` *before* `Initialize`:
+
+| Opt-out | Who uses it | Why |
+|---|---|---|
+| **A smaller radius** | painting gallery stations, and every `MatrixToy` station via `ToyFactory.StationRingRadius` | A station's trigger can legitimately overrun half the gap to its neighbour; rings that interpenetrate read as chain-link, not as a row of switches. Clamped to `MaxRingSpacingFraction` (0.45) of the matrix spacing. A ring **smaller** than its trigger still always fires when threaded, so the promise above survives the clamp — only "the trigger is no bigger than the ring" is given up. |
+| **Radius 0 (waived)** | the Domain Changer only, via `SwapToySetCoordinator.SlotsWearSwitchRing` | Its cones already carry the read (prompter-directed: "the domain switchers can stay how they are"). |
+
+**Measured geometry.** The law is enforced in code; its LAYOUT consequences are not, because they
+move in *data* — a station radius, a matrix spacing, `toyBodyRadius`/`toyTriggerRadius` — where no
+compiler sees them. **`Tools/Build/toy_switch_ring_geometry.py`** (`--check` to gate) re-derives
+them from the shipped constants (`ToyFactory`, `ToyEmblem`, `ToyboxController`) and the shipped
+authored assets (`_SO_Assets/Toys/Toy_*.asset`), and asserts three things per site: the ring
+**encloses its own content**, it **clears its own label**, and it **clears its neighbours**. Today:
+
+| Site | ring R | ring inner | neighbour gap | emblem/content | label |
+|---|---|---|---|---|---|
+| toy root (×5) | 42.0 | 38.6 | — (angularly spaced) | emblem outer 33.4 → **5.2 clear** | 72.0, block bottom 46.9 > outer 45.4 ✓ |
+| Cell Selector station | 28.8 | 26.5 | 47.8 ✓ | model 18, inner halo 22.5 | 52.9 ✓ |
+| Vessel Changer station | 27.0 *(clamped)* | 24.8 | 1.7 ✓ | ship 22 | 55.8 ✓ |
+| Lifeform kingdom station | 28.8 | 26.5 | 27.8 ✓ | kingdom sample 18 | 52.9 ✓ |
+| Lifeform species station | 19.2 | 17.7 | 48.5 ✓ | creature 12 | 35.3 ✓ |
+| Lifeform hangar station | 19.2 | 17.7 | 48.5 ✓ | hull 12 | 35.3 ✓ |
+| Lifeform variant, level 5 | 40.5 *(clamped)* | 37.3 | 2.5 ✓ | crystal 28.8 | 78.6 ✓ |
+| Painting gallery station | 63.4 *(clamped)* | 58.3 | 3.9 ✓ | miniature 44 | 121.7 ✓ |
+
+The Wanderway return station is not in the table because it is sized off its own
+`returnStationRadius` (22 authored → ring 48.4) rather than the toybox's placement, and it has no
+neighbours. The tightest margins — Vessel Changer 1.7, Lifeform L5 2.5, gallery 3.9 — come from
+station spacings that were already tight before rings existed, and are exactly what the clamp
+exists to hold; at 0.60 all three interpenetrate (the script's own negative control). Run the
+script rather than nudging the constant.
+
+**The Wanderway return station is the one ring with no fixed axis.** Every other toy faces the cell
+centre, which *is* the axis you approach it on. The return station rides the tether's tail and you
+come back at it from wherever you wandered, so it **turns to face the vessel** on the same easing it
+already used to follow the tail — a portal you can only ever see edge-on teaches nothing. (Roll is
+free here: a torus is symmetric about its own axis.)
 
 #### Stroke order — flight continuity first, computed at runtime
 
@@ -824,14 +1002,22 @@ continuity transitions may run:
 The belt is what you fly *through*; the **run** is what makes the wander a place you go to and come
 back from. Starting one does three things, and all three are undone when it ends:
 
-- **A bare canvas.** The host cell is handed back to its environment-free config — the Blob
-  (`Cell.EnvironmentFreeConfig`, new accessor) — through the one sanctioned entry point,
-  `Cell.RequestCellSwap(blob, clearLooseTrailMass: true)`. Re-selecting the config the cell is
+- **A bare canvas.** The host cell is handed its **bare-canvas** config — the one that grows
+  nothing (`Cell.BareCanvasConfig`: no `EnvironmentPrefab` **and** a `SpawnProfile` listing no
+  flora and no fauna, which is `Barren`) — through the one sanctioned entry point,
+  `Cell.RequestCellSwap(canvas, clearLooseTrailMass: true)`. Re-selecting the config the cell is
   already on is the documented freestyle **reset**, which is exactly what starting a wander should
   mean. It is requested *before* the belt's stock build so both join ONE load-veil hold instead of
   stacking two covers. Authored off (`revertCellOnStart`) if a designer wants the wander to happen
-  inside whatever world is up; with no environment-free config in the cell's list it warns and
-  leaves the world alone.
+  inside whatever world is up; with no bare config it falls back to the cheapest environment-free
+  one, and with none of those it warns and leaves the world alone.
+
+  This used to read `Cell.EnvironmentFreeConfig` — "the first config with no `EnvironmentPrefab`",
+  which was the Blob and was therefore also bare. **Those are two different properties**, and the
+  Lattice cell separated them: it authors no environment (so it boots instantly, and it is now
+  Menu_Main's boot world) and then grows a 21,600-prism forest out of eight seeds — cheap to
+  build, the opposite of empty. Reverting a wander onto it would have grown a garden under the
+  belt's own 30,000 transported prisms. See `Docs/ECOSYSTEM.md` §36.10.
 - **A rolling tether.** The trail follows you as a ribbon of exactly `tetherPrisms` (100): as you
   lay at the head, the oldest prism at the tail withers and **recycles back into the pool it came
   from**, so the next prism you lay is very often the one that just left. Turn around and your trail
@@ -997,15 +1183,22 @@ Selector still works, it just is not the only place the load is paid.
 - Each client runs its own `ToyboxController` and spawns its own local toy GameObjects
   (deterministic placement → they overlap visually across clients). Toys are **local
   interaction stations**, not networked objects; only the *effects* (vessel swap, domain
-  change) go over the network, through the existing server-authoritative paths. This matches
-  the "local-only freestyle toggle, network-replicated vessel behaviour" model in CLAUDE.md.
+  change, AI-companion release) go over the network, through the existing server-authoritative
+  paths. This matches the "local-only freestyle toggle, network-replicated vessel behaviour"
+  model in CLAUDE.md.
+- **The Lifeform Matrix's VESSELS branch is server-authoritative**, unlike its flora/fauna
+  branches. That is not an inconsistency: lifeforms are already client-local by construction
+  (every peer runs its own spawner off local `Random` rolls — `Docs/ECOSYSTEM.md`), while a
+  vessel is a `NetworkObject` with a `Player`, so there is no such thing as a local one. It
+  routes through the same host-does-it / client-asks shape as the vessel swap.
 - `IsLocalUser` ensures only your own vessel trips your toys; the freestyle gate ensures the
   autopilot lava-lamp vessel never does.
 
 ## Status & follow-up
 
 The framework + **six toys** are in (Vessel Changer, Domain Changer, Painting, the Wanderway
-microscene conveyor, the Lifeform Matrix, and the Cell Selector),
+microscene conveyor, the Lifeform Matrix — now three-kingdom, with an AI-companion hangar — and
+the Cell Selector),
 plus the vessel-changer second-pass fixes above: mini-model hull rendering,
 exit-gated re-arm + slow flip re-grow, swap continuity (domain / pose / speed), recolour-on-domain,
 HUD-after-swap, and gamepad-Start / input-ownership. The conveyor has been through two adversarial
@@ -1015,6 +1208,16 @@ the authoring environment) — an in-editor pass is the last step before/after m
 (per-toy tuning, skinned-mesh `BakeMesh` fidelity, painting pen-up, placement anchor, conveyor
 recipe/pacing tuning + audio, unlock persistence, tests) is tracked in **`BACKLOG.md`**, grouped so
 each area can be its own branch.
+
+### Files touched — Lifeform Matrix kingdom pass (for review)
+
+| Area | Files |
+|---|---|
+| The hierarchy (kingdom → species/hangar → variant) | `Controller/Toys/LifeformMatrixToy.cs`, `ScriptableObjects/Toys/LifeformMatrixToyDefinitionSO.cs` (`vesselRoster`), `_SO_Assets/Toys/Toy_LifeformMatrix.asset` |
+| Shared vessel roster + hull builder (recycled from the changer) | `Controller/Toys/ToyVesselRoster.cs` (new), `Controller/Toys/VesselChangerToy.cs` |
+| AI companion release (server-authoritative) | `Controller/Multiplayer/MenuServerPlayerVesselInitializer.cs` (`RequestSpawnAiCompanion`), `Controller/Multiplayer/ClientPlayerVesselInitializer.cs` (`RequestAiCompanion_ServerRpc`, `OnAiCompanionRequested`) |
+| Externally-spawned player claim | `Controller/Multiplayer/ServerPlayerVesselInitializer.cs` (`ClaimExternallySpawnedPlayer`), `Controller/Multiplayer/ServerPlayerVesselInitializerWithAI.cs` |
+| Ring geometry gate | `Tools/Build/toy_switch_ring_geometry.py` (kingdom + hangar sites) |
 
 ### Files touched — one-toy-opens-into-many pass (for review)
 

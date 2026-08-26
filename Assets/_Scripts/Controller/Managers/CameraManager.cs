@@ -13,9 +13,6 @@ namespace CosmicShore.Gameplay
     public class CameraManager : Singleton<CameraManager>
     {
         [SerializeField]
-        CellRuntimeDataSO cellData;
-
-        [SerializeField]
         SceneNameListSO _sceneNameList;
 
         [SerializeField] ThemeManagerDataContainerSO _themeManagerData;
@@ -36,7 +33,6 @@ namespace CosmicShore.Gameplay
         [SerializeField] private Transform endCameraLookAtTarget;
 
         private Transform _playerFollowTarget;
-        private const int ActivePriority = 10;
 
         public Transform PlayerFollowTarget
         {
@@ -247,15 +243,13 @@ namespace CosmicShore.Gameplay
 
         public void SetMainMenuCameraActive()
         {
+            // The menu view is the Menu_Main scene camera, driven directly by
+            // MainMenuCameraController (a plain-transform rig - no Cinemachine). The legacy
+            // "CM Main Menu" vCam is explicitly kept OFF so no CinemachineBrain anywhere has
+            // a live camera to grab; this method's job is simply to clear every gameplay
+            // camera off the top of the scene camera.
             if (mainMenuCamera != null)
-            {
-                mainMenuCamera.Priority = ActivePriority;
-                mainMenuCamera.gameObject.SetActive(true);
-            }
-            else
-            {
-                CSDebug.LogWarning("[CameraManager] Main menu camera is not assigned!");
-            }
+                mainMenuCamera.gameObject.SetActive(false);
 
             if (_playerCamera is CustomCameraController pcc)
                 pcc.Deactivate();
@@ -265,13 +259,6 @@ namespace CosmicShore.Gameplay
                 endCamera.Deactivate();
 
             _activeController = null;
-            Invoke("LookAtCrystal", 1f);
-        }
-
-        void LookAtCrystal()
-        {
-            if (mainMenuCamera && cellData != null)
-                mainMenuCamera.LookAt = cellData.CrystalTransform;
         }
 
         public void SetCloseCameraActive() => SetActiveCamera(_playerCamera);
@@ -296,7 +283,7 @@ namespace CosmicShore.Gameplay
 
         /// <summary>
         /// Deactivates all managed cameras (player, death, end) without activating a replacement.
-        /// Used by the menu to hand control to the Cinemachine-driven main menu camera.
+        /// Used by the menu to hand control to the scene camera driven by MainMenuCameraController.
         /// </summary>
         public void DeactivateAllCameras()
         {

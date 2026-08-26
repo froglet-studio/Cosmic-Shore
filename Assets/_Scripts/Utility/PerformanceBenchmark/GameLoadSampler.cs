@@ -37,11 +37,12 @@ namespace CosmicShore.Utility.PerformanceBenchmark
             if (spatialIndex != null)
                 metrics.activePrisms = spatialIndex.LiveCount;
 
-            // Effects ride the GPU clock (no manager-tracked active lists) — the
-            // enabled-instance registries the zombie audit walks are the live sets,
-            // plus the batched pure-entity debris that has no GameObject at all.
-            metrics.activeExplosions = PrismExplosion.EnabledInstances.Count + PrismDebris.LiveDebrisCount;
-            metrics.activeImplosions = PrismImplosion.EnabledInstances.Count;
+            // Death explosions are batched entities only (D4 — explosion pool is
+            // never Get()d). Implosions are batched death suctions PLUS pooled
+            // Grow (Sparrow ReverseSuction still uses PrismImplosion).
+            metrics.activeExplosions = PrismDebris.LiveDebrisCount;
+            metrics.activeImplosions = PrismDebris.LiveImplosionDebrisCount
+                + PrismImplosion.EnabledInstances.Count;
 
             if (gameData != null)
             {

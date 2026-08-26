@@ -47,8 +47,25 @@ namespace CosmicShore.ScriptableObjects
 
         public float Volume;
         public PrismType PrismType;
+
+        /// <summary>
+        /// Which prism TIER this event is about - the state the prism was wearing, orthogonal to
+        /// <see cref="ownDomain"/>. Death visuals (Explosion / Implosion) key their palette off it
+        /// so debris carries the colours of the mass it came from, and danger additionally gets a
+        /// harder detonation. Default <see cref="PrismKind.Plain"/>, so producers that do not set
+        /// it behave exactly as before.
+        /// </summary>
+        public PrismKind Kind;
         public Transform TargetTransform;
         public System.Action OnGrowCompleted;
+
+        /// <summary>
+        /// PrismType.Grow only: seconds the reverse-suction build-up runs. 0 (the
+        /// default) keeps the pool prefab's authored duration. Exists because the
+        /// Sparrow's turret rides the grow effect as its FLIGHT visual, so the effect
+        /// must last exactly one bullet lifetime, not the fauna-consumption 2s.
+        /// </summary>
+        public float GrowDuration;
     }
 
     [CreateAssetMenu(fileName = "EventChannel_Prism", menuName = "ScriptableObjects/Event Channels/PrismEventChannel")]

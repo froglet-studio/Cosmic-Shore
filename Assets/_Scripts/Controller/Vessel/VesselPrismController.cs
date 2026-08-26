@@ -93,7 +93,27 @@ namespace CosmicShore.Gameplay
         /// the mass. Read-only on purpose: the controller owns what goes in.
         /// </summary>
         public Trail SecondaryTrail => Trail2;
+        /// <summary>
+        /// The AUTHORED z extent of a trail prism — <see cref="BaseScale"/>.z alone.
+        ///
+        /// **This is not the length a prism is actually laid at.** `CreateBlock` multiplies it by
+        /// `ZScaler`, the boost scale, and the cube-rooted MASS volume multiplier before spawning,
+        /// so on an upgraded vessel the real prism is materially longer than this. Sizing anything
+        /// geometric off this property is how the `waitTillOutsideSkimmer` clearance delay came to
+        /// turn a prism's collider on while it was still inside the ship; that call site now
+        /// measures the local `scale.z` instead, leaving this with no consumer in the controller.
+        /// Kept as public surface, but reach for the spawn-time `scale` if you need real geometry.
+        /// </summary>
         public float TrailZScale => BaseScale.z; // <- from BaseScale now
+
+        // Guards on the waitTillOutsideSkimmer clearance delay (see CreateBlock). Neither is a
+        // tuning dial: the speed floor stops a stationary or near-stationary vessel dividing its
+        // way to an infinite delay, and the ceiling stops a slow lay leaving a prism collider-less
+        // (and therefore un-hittable by ANYONE, since this delay is not owner-scoped) for longer
+        // than the self-trail grace would have covered anyway.
+        const float MinClearanceSpeed = 1f;
+        const float MaxClearanceWaitSeconds = 2f;
+
         public event Action<Prism> OnBlockSpawned;
         /// <summary>Static event: fired each time a danger block is created during overheat. Param = owner player name.</summary>
         public static event Action<string> OnDangerBlockCreated;
@@ -101,7 +121,20 @@ namespace CosmicShore.Gameplay
         private void OnDisable()
         {
             StopSpawn();
-            ClearTrails();
+
+            // Deliberately NO ClearTrails() here. The wake OUTLIVES its vessel - mass is
+            // conserved, the prisms stay in the world, and a rider must still be able to ride
+            // them - so the Trail containers must stay live too. Clearing on disable emptied
+            // the lists while every laid prism still pointed at them, and "member of an empty
+            // container" reads as a one-block prismscape: the topology routed riders of any
+            // DESPAWNED vessel's trail (a swapped-away Squirrel's, always) onto the SURFACE
+            // follower, whose along-z "normal" on trail prisms flung the hull everywhere and
+            // whose nearest-ground search hopped it between both ribbons. The Trail objects
+            // are plain C# state kept alive by the prisms that reference them; they die with
+            // their last prism, which is the correct lifetime. Explicit resets that MEAN to
+            // drop the bookkeeping (a game-mode turn reset, the cell-swap drain) still call
+            // ClearTrails() themselves - and Clear() now un-stamps membership so even those
+            // leave honest container-less prisms behind, never members of an empty list.
         }
 
         /// <summary>Initializes and starts spawning.</summary>
@@ -216,6 +249,57 @@ namespace CosmicShore.Gameplay
             XScaler = to;
         }
 
+        /// <summary>
+        /// Widest each rail may be squeezed to, as a fraction of the slab's half-width. See
+        /// <see cref="ClampHalfGap"/>.
+        /// </summary>
+        const float RailFloorFraction = 0.95f;
+
+        bool _gapOverrunReported;
+
+        /// <summary>
+        /// Bound the two-rail lay's HOLE against the slab it is cutting into.
+        ///
+        /// A two-rail lay is a slab of total width <c>BaseScale.x * XScaler</c> with a hole of
+        /// width <see cref="Gap"/> taken out of its middle: each rail runs from <c>|halfGap|</c>
+        /// out to the slab's half-width, so its width is
+        /// <c>BaseScale.x * XScaler / 2 - |halfGap|</c> and the slab's OUTER edge stays put
+        /// however far the hole opens.
+        ///
+        /// Nothing else bounds the two against each other - <see cref="Gap"/> and
+        /// <see cref="XScaler"/> are driven independently (<c>GrowTrailActionExecutor</c> moves
+        /// both, on separate weights, with no clamp on the gap) - and a hole wider than its slab
+        /// gives a ZERO OR NEGATIVE rail. That does not fail loudly:
+        /// <c>PrismScaleAnimator.SetTargetScale</c> silently clamps the axis up to its 0.5 floor
+        /// while <c>xShift</c> still throws the rail <c>|halfGap|</c> out to the side, so the
+        /// vessel flies on with a pair of slivers somewhere off its flank and reads as having no
+        /// trail at all - the "a silent clamp is indistinguishable from a config that never
+        /// applied" trap, one layer down.
+        ///
+        /// So it is bounded here, at the one place that knows both numbers, leaving each rail
+        /// <see cref="RailFloorFraction"/> of the slab's half-width. Checked against every shipped
+        /// two-rail vessel AT REST - Rhino 1.00/1.425, Squirrel 9.25/9.50, Manta 9.00/9.50,
+        /// Dolphin 0.50/1.425, Serpent 0.50/1.425 - and against their <c>maxBlockScale</c>
+        /// ceilings, which only widen the slab and so only loosen the bound: no authored
+        /// configuration is touched, and this can only ever bite on runaway growth.
+        /// </summary>
+        float ClampHalfGap(float halfGap)
+        {
+            float limit = BaseScale.x * XScaler * 0.5f * RailFloorFraction;
+            if (Mathf.Abs(halfGap) <= limit) return halfGap;
+
+            if (!_gapOverrunReported)
+            {
+                _gapOverrunReported = true;
+                CSDebug.LogWarning(
+                    $"[PrismSpawner] {name}: trail Gap {Gap:0.##} is wider than the slab it cuts " +
+                    $"(BaseScale.x {BaseScale.x:0.##} x XScaler {XScaler:0.##}). Rails would be laid " +
+                    "with zero or negative width, off to the vessel's flank. Clamping - but whatever " +
+                    "drives Gap is the thing to fix. Reported once per vessel.");
+            }
+            return Mathf.Clamp(halfGap, -limit, limit);
+        }
+
         /// <summary>Creates a block at offset using PrismFactory via event channel.</summary>
         void CreateBlock(float halfGap, Trail trail)
         {
@@ -224,6 +308,8 @@ namespace CosmicShore.Gameplay
                 CSDebug.LogError("[PrismSpawner] Prism spawn event channel is not assigned.");
                 return;
             }
+
+            halfGap = ClampHalfGap(halfGap);
 
             // --- Compute scale from BaseScale ---
             Vector3 scale = ApplyBoostScale(new Vector3(
@@ -242,7 +328,8 @@ namespace CosmicShore.Gameplay
 
             // --- Position & Rotation ---
             float xShift = halfGap == 0 ? 0 : (scale.x / 2f + Mathf.Abs(halfGap)) * Mathf.Sign(halfGap);
-            Vector3 pos = transform.position - vesselStatus.Course * offset + vesselStatus.ShipTransform.right * xShift;
+            Vector3 pos = transform.position - vesselStatus.Course * offset
+                        + vesselStatus.ShipTransform.right * xShift;
             Quaternion rot = vesselStatus.blockRotation;
 
             // --- Ask factory to spawn Interactive prism (pooled) ---
@@ -269,9 +356,22 @@ namespace CosmicShore.Gameplay
             // Team
             prism.ChangeTeam(vesselStatus.Domain);
 
-            // Wait time (uses TrailZScale from BaseScale)
+            // Wait time — how long this prism's collider stays off so the vessel that laid it can
+            // get clear. Measured against `scale.z`, the length this prism is ACTUALLY being laid
+            // at, not the authored `TrailZScale` (= BaseScale.z) it used to use: BaseScale.z omits
+            // both ZScaler and the MASS volume multiplier applied above, so an upgraded vessel
+            // laying stretched mass had its collider come on while the prism was still inside the
+            // ship. Un-upgraded vessels are unchanged — with ZScaler 1 and no boost/volume scaling
+            // `scale.z` IS `BaseScale.z`, so this only ever lengthens the delay when the prism is
+            // genuinely longer.
+            //
+            // Note this delay hides the prism from EVERYONE, which is why it stays a geometry
+            // correction and is not the lever for self-trail contact: that is owner-scoped and
+            // lives in SelfTrailContactConfigSO.
             prism.waitTime = waitTillOutsideSkimmer
-                ? (skimmer.transform.localScale.z + TrailZScale) / vesselStatus.Speed
+                ? Mathf.Min((skimmer.transform.localScale.z + scale.z) /
+                            Mathf.Max(vesselStatus.Speed, MinClearanceSpeed),
+                            MaxClearanceWaitSeconds)
                 : waitTime;
 
             if (_dangerMode)
@@ -300,6 +400,14 @@ namespace CosmicShore.Gameplay
             trail.Add(prism);
             prism.prismProperties.Index = (ushort)trail.TrailList.IndexOf(prism);
             prism.Initialize(vesselStatus.PlayerName);
+
+            // AFTER Initialize (pool-reuse reset clears membership - AssignTrail's contract).
+            // This stamp is what makes a wake block a member of ITS ribbon: without it every
+            // wake prism either had NO container (fresh instance - the attach gate refused it)
+            // or a STALE one from a previous pooled life (the gate passed against the wrong
+            // ribbon and the ride followed garbage). The twin trails were always two separate
+            // Trail objects; this is what finally lets a rider see that.
+            prism.AssignTrail(trail);
 
             // Events
             OnBlockSpawned?.Invoke(prism);

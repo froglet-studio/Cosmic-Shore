@@ -23,8 +23,8 @@ namespace CosmicShore.ECS
 
     /// <summary>
     /// Which per-instance override components a companion entity carries.
-    /// Prism: the color trio. Explosion/Implosion: color trio + the effect
-    /// shader's animated parameters.
+    /// Prism: color trio + grow / color / flight / shieldMorph / jiggle / suction clocks.
+    /// Explosion/Implosion: color trio + the effect shader's animated parameters.
     /// </summary>
     public enum PrismRenderOverrideSet
     {
@@ -48,10 +48,12 @@ namespace CosmicShore.ECS
     ///
     /// Scope (Checkpoint A): rendering ONLY. Gameplay, physics, triggers,
     /// trails, and the spatial index are untouched — the MeshRenderer is simply
-    /// kept disabled while the entity draws in its place. Exotic visual states
-    /// (octahedron shield morph/shatter, which swap the MeshFilter mesh
-    /// per-frame) hand rendering back to the GameObject via
-    /// Prism.SetExoticVisualActive.
+    /// kept disabled while the entity draws in its place. A visual state that
+    /// genuinely needs per-prism-unique geometry hands rendering back to the
+    /// GameObject via Prism.SetExoticVisualActive — though as of the shield
+    /// morph's GPU migration (Docs/PRISM_ANIMATION.md §5 B4) nothing in the
+    /// project does: the shields animate their per-face bloom/shatter in the
+    /// vertex stage on the cache-SHARED settled mesh, so they stay batched.
     ///
     /// ⚠ TRAP — a bare MeshFilter/material swap on a prism renders NOTHING.
     /// The GameObject's MeshRenderer is disabled while the companion entity
@@ -60,13 +62,14 @@ namespace CosmicShore.ECS
     /// no change on screen — the entity keeps drawing the plain box. This is
     /// exactly how the stellated super-shield first shipped invisible
     /// (PrismStellatedOctahedronShield predated the handoff). The contract for
-    /// any new prism visual state: SetExoticVisualActive(true) while showing
-    /// per-prism-unique geometry, SetRenderMeshOverride(cachedSharedMesh) +
-    /// SetExoticVisualActive(false) once it settles (so same-size prisms
-    /// batch), ClearRenderMeshOverride + SetExoticVisualActive(false) on the
-    /// way back AND on pool-return OnDisable. Reference implementations:
-    /// PrismOctahedronShield / PrismStellatedOctahedronShield. Also listed in
-    /// CLAUDE.md ▸ Anti-Patterns.
+    /// any new prism visual state: SetRenderMeshOverride(cachedSharedMesh) +
+    /// SetExoticVisualActive(false) for anything shareable (so same-size
+    /// prisms batch), SetExoticVisualActive(true) ONLY while genuinely showing
+    /// per-prism-unique geometry — prefer a GPU morph over a shared mesh
+    /// instead, which is what the shields now do — and ClearRenderMeshOverride
+    /// + SetExoticVisualActive(false) on the way back AND on pool-return
+    /// OnDisable. Reference implementations: PrismOctahedronShield /
+    /// PrismStellatedOctahedronShield. Also listed in CLAUDE.md ▸ Anti-Patterns.
     ///
     /// All methods are main-thread only and no-op safely when the ECS world or
     /// EntitiesGraphicsSystem is unavailable (tool scenes, headless, teardown),
@@ -81,6 +84,15 @@ namespace CosmicShore.ECS
         // ------------------------------------------------------------------
 
         static bool? _runtimeOverride;
+
+        // Diagnostic overrides with no restore path of their own (the rest of this class's
+        // statics self-heal through TryEnsure's dead-world branch).
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        static void ResetOverrides()
+        {
+            _runtimeOverride = null;
+            _linearizeOverride = null;
+        }
         static bool _configLoaded;
         // OPT-IN: defaults OFF. The instanced path only renders correctly once the
         // prism ShaderGraphs expose their animated properties as Hybrid Per Instance
@@ -433,11 +445,33 @@ namespace CosmicShore.ECS
                         em.AddComponentData(prototype, new PrismStartBrightColorOverride { Value = new float4(1f) });
                         em.AddComponentData(prototype, new PrismStartDarkColorOverride { Value = new float4(1f) });
                         em.AddComponentData(prototype, new PrismStartSpreadOverride { Value = float3.zero });
+                        em.AddComponentData(prototype, new PrismFlightStartTimeOverride { Value = 0f });
+                        em.AddComponentData(prototype, new PrismFlightDurationOverride { Value = 0f });
+                        em.AddComponentData(prototype, new PrismFlightVelocityOverride { Value = float3.zero });
+                        em.AddComponentData(prototype, new PrismShieldMorphStartTimeOverride { Value = 0f });
+                        em.AddComponentData(prototype, new PrismShieldMorphDurationOverride { Value = 0f });
+                        em.AddComponentData(prototype, new PrismShieldMorphDirectionOverride { Value = ShieldMorphBloom });
+                        em.AddComponentData(prototype, new PrismShieldMorphOffsetOverride { Value = 0f });
+                        em.AddComponentData(prototype, new PrismJiggleStartTimeOverride { Value = 0f });
+                        em.AddComponentData(prototype, new PrismJiggleDurationOverride { Value = 0f });
+                        em.AddComponentData(prototype, new PrismJiggleParamsOverride { Value = float3.zero });
+                        // Cell-swap world suction (Docs/PRISM_ANIMATION.md §5 C9). Duration 0
+                        // = unstamped identity on live graphs (LegacyState default 0). Location
+                        // is the same override the Implosion set already carries — added here
+                        // too so StampSuctionClock's SetComponentData is non-structural.
+                        em.AddComponentData(prototype, new PrismSuctionStartTimeOverride { Value = 0f });
+                        em.AddComponentData(prototype, new PrismSuctionDurationOverride { Value = 0f });
+                        em.AddComponentData(prototype, new PrismSuctionDirectionOverride { Value = 1f });
+                        em.AddComponentData(prototype, new PrismSuctionGrowDelayOverride { Value = 0f });
+                        em.AddComponentData(prototype, new PrismImplosionLocationOverride { Value = float3.zero });
                         break;
                     case PrismRenderOverrideSet.Explosion:
                         em.AddComponentData(prototype, new PrismExplodeStartTimeOverride { Value = 0f });
                         em.AddComponentData(prototype, new PrismExplodeSpeedOverride { Value = 0f });
                         em.AddComponentData(prototype, new PrismExplodeDurationOverride { Value = 0f });
+                        // Default 0 = the cube's derived face pivot, so a producer that
+                        // never sets it renders exactly as it did (§4.8.2).
+                        em.AddComponentData(prototype, new PrismFacePivotFromCentroidOverride { Value = 0f });
                         break;
                     case PrismRenderOverrideSet.Implosion:
                         em.AddComponentData(prototype, new PrismSuctionStartTimeOverride { Value = 0f });
@@ -729,12 +763,141 @@ namespace CosmicShore.ECS
             return true;
         }
 
+        /// <summary>
+        /// Stamps a ballistic FLIGHT on a live prism (Docs/PRISM_ANIMATION.md §5 C5 —
+        /// the Sparrow's turret-fired prisms). The entity transform must already hold
+        /// the flight's END POINT: the shader walks the visual in from the muzzle and
+        /// reaches the transform exactly at <paramref name="duration"/>, so collider,
+        /// volume and spatial registration are free to be final from the stamp.
+        ///
+        /// <paramref name="velocity"/> is the WORLD-space muzzle velocity (units/s);
+        /// velocity·2·duration/π is the full flight vector. The world→object conversion
+        /// happens on the GPU inside PrismFlightClock (raw inverse-model multiply, NOT
+        /// the normalizing Direction-mode Transform node).
+        ///
+        /// Expand RenderBounds by the object-space MUZZLE offset after stamping, or the
+        /// prism frustum-culls against its anchor-point box while the visual is still
+        /// out at the barrel.
+        /// </summary>
+        public static bool StampFlight(in PrismRenderHandle handle, float startTime, float duration,
+            in float3 velocity)
+        {
+            if (!ClockAnimationEnabled || !IsUsable(in handle)) return false;
+            var em = _world.EntityManager;
+            if (!em.HasComponent<PrismFlightStartTimeOverride>(handle.Entity)) return false;
+            em.SetComponentData(handle.Entity, new PrismFlightStartTimeOverride { Value = startTime });
+            em.SetComponentData(handle.Entity, new PrismFlightDurationOverride { Value = duration });
+            em.SetComponentData(handle.Entity, new PrismFlightVelocityOverride { Value = velocity });
+            return true;
+        }
+
+        /// <summary>Settles the flight stamp — the visual snaps to the entity transform,
+        /// which is the anchor point. Call at the scheduled arrival, or early when a hit
+        /// cuts the flight short (after re-posing the transform to the impact point).</summary>
+        public static void ClearFlightStamp(in PrismRenderHandle handle)
+        {
+            if (!IsUsable(in handle)) return;
+            var em = _world.EntityManager;
+            if (!em.HasComponent<PrismFlightStartTimeOverride>(handle.Entity)) return;
+            em.SetComponentData(handle.Entity, new PrismFlightStartTimeOverride { Value = 0f });
+            em.SetComponentData(handle.Entity, new PrismFlightDurationOverride { Value = 0f });
+            em.SetComponentData(handle.Entity, new PrismFlightVelocityOverride { Value = float3.zero });
+        }
+
+        /// <summary>Shield-morph direction: faces bloom outward from their centroids.</summary>
+        public const float ShieldMorphBloom = 1f;
+
+        /// <summary>Shield-morph direction: faces shrink to their centroids while flying
+        /// out along their normals (the disengage overlay).</summary>
+        public const float ShieldMorphShatter = -1f;
+
+        /// <summary>
+        /// Stamps a SHIELD MORPH on a live prism (Docs/PRISM_ANIMATION.md §5 B4): the
+        /// engage bloom (<paramref name="direction"/> &gt;= 0) or the shatter
+        /// (&lt; 0, faces flying out <paramref name="offset"/> local units along their
+        /// normals). The entity must already hold the SETTLED shield mesh — the vertex
+        /// stage collapses/expands its faces about the per-face centroids baked into
+        /// TEXCOORD1, so gameplay state, collider, mass and render mesh are all final
+        /// from the stamp and the shield never leaves the instanced path.
+        /// </summary>
+        public static bool StampShieldMorph(in PrismRenderHandle handle, float startTime,
+            float duration, float direction, float offset)
+        {
+            if (!ClockAnimationEnabled || !IsUsable(in handle)) return false;
+            var em = _world.EntityManager;
+            if (!em.HasComponent<PrismShieldMorphStartTimeOverride>(handle.Entity)) return false;
+            em.SetComponentData(handle.Entity, new PrismShieldMorphStartTimeOverride { Value = startTime });
+            em.SetComponentData(handle.Entity, new PrismShieldMorphDurationOverride { Value = duration });
+            em.SetComponentData(handle.Entity, new PrismShieldMorphDirectionOverride { Value = direction });
+            em.SetComponentData(handle.Entity, new PrismShieldMorphOffsetOverride { Value = offset });
+            return true;
+        }
+
+        /// <summary>Settles the shield-morph stamp — the mesh renders exactly as authored.
+        /// REQUIRED on disengage and on pool reuse: a stale stamp left on an entity that has
+        /// gone back to the prism's own box mesh would morph that box against face centroids
+        /// it does not carry.</summary>
+        public static void ClearShieldMorphStamp(in PrismRenderHandle handle)
+        {
+            if (!IsUsable(in handle)) return;
+            var em = _world.EntityManager;
+            if (!em.HasComponent<PrismShieldMorphStartTimeOverride>(handle.Entity)) return;
+            em.SetComponentData(handle.Entity, new PrismShieldMorphStartTimeOverride { Value = 0f });
+            em.SetComponentData(handle.Entity, new PrismShieldMorphDurationOverride { Value = 0f });
+            em.SetComponentData(handle.Entity, new PrismShieldMorphDirectionOverride { Value = ShieldMorphBloom });
+            em.SetComponentData(handle.Entity, new PrismShieldMorphOffsetOverride { Value = 0f });
+        }
+
+        /// <summary>
+        /// Stamps a super-shield DEFLECTION: a super-shielded prism absorbed a hit without
+        /// being destroyed, and every face wobbles about the prism's object origin on a
+        /// precessing, nutating axis before settling (Docs/PRISM_ANIMATION.md §5 C14).
+        ///
+        /// params_ is (peak tilt RADIANS, precession rad/s, nutation rad/s). Nothing about
+        /// gameplay changes — super-shielded mass stays invulnerable; this is photons only.
+        ///
+        /// Re-stamping supersedes an in-flight wobble (interruption = re-stamp, §1): the
+        /// visual is analytic, so a second hit simply restarts the envelope.
+        ///
+        /// Expand RenderBounds by the rotation's envelope after stamping, or a wobbling
+        /// prism frustum-culls against its resting box.
+        /// </summary>
+        public static bool StampJiggle(in PrismRenderHandle handle, float startTime, float duration,
+            in float3 params_)
+        {
+            if (!ClockAnimationEnabled || !IsUsable(in handle)) return false;
+            var em = _world.EntityManager;
+            if (!em.HasComponent<PrismJiggleStartTimeOverride>(handle.Entity)) return false;
+            em.SetComponentData(handle.Entity, new PrismJiggleStartTimeOverride { Value = startTime });
+            em.SetComponentData(handle.Entity, new PrismJiggleDurationOverride { Value = duration });
+            em.SetComponentData(handle.Entity, new PrismJiggleParamsOverride { Value = params_ });
+            return true;
+        }
+
+        /// <summary>Settles the jiggle stamp. Invisible when called at the scheduled end —
+        /// the shader's envelope is already exactly zero there (verified against the shipped
+        /// HLSL), so this only stops the GPU evaluating a finished wobble and keeps a pooled
+        /// reuse from inheriting one.</summary>
+        public static void ClearJiggleStamp(in PrismRenderHandle handle)
+        {
+            if (!IsUsable(in handle)) return;
+            var em = _world.EntityManager;
+            if (!em.HasComponent<PrismJiggleStartTimeOverride>(handle.Entity)) return;
+            em.SetComponentData(handle.Entity, new PrismJiggleStartTimeOverride { Value = 0f });
+            em.SetComponentData(handle.Entity, new PrismJiggleDurationOverride { Value = 0f });
+            em.SetComponentData(handle.Entity, new PrismJiggleParamsOverride { Value = float3.zero });
+        }
+
         /// <summary>Clears a prism's animation stamps back to the settled state (pool
         /// reuse). Safe no-op when the clock components are absent.</summary>
         public static void ClearPrismStamps(in PrismRenderHandle handle)
         {
             ClearGrowStamp(in handle);
             ClearColorTransitionStamp(in handle);
+            ClearFlightStamp(in handle);
+            ClearShieldMorphStamp(in handle);
+            ClearJiggleStamp(in handle);
+            ClearSuctionClockStamp(in handle);
         }
 
         /// <summary>Stamps an explosion's flight: offset/amount/opacity become pure
@@ -826,6 +989,7 @@ namespace CosmicShore.ECS
             if (!ClockAnimationEnabled || !IsUsable(in handle)) return false;
             var em = _world.EntityManager;
             if (!em.HasComponent<PrismSuctionStartTimeOverride>(handle.Entity)) return false;
+            if (!em.HasComponent<PrismImplosionLocationOverride>(handle.Entity)) return false;
             em.SetComponentData(handle.Entity, new PrismSuctionStartTimeOverride { Value = startTime });
             em.SetComponentData(handle.Entity, new PrismSuctionDurationOverride { Value = duration });
             em.SetComponentData(handle.Entity, new PrismSuctionDirectionOverride { Value = direction });
@@ -863,7 +1027,10 @@ namespace CosmicShore.ECS
             if (!IsUsable(in handle)) return;
             var em = _world.EntityManager;
             if (!em.HasComponent<PrismSuctionDurationOverride>(handle.Entity)) return;
+            em.SetComponentData(handle.Entity, new PrismSuctionStartTimeOverride { Value = 0f });
             em.SetComponentData(handle.Entity, new PrismSuctionDurationOverride { Value = 0f });
+            if (em.HasComponent<PrismImplosionLocationOverride>(handle.Entity))
+                em.SetComponentData(handle.Entity, new PrismImplosionLocationOverride { Value = float3.zero });
         }
 
         // ------------------------------------------------------------------
@@ -910,6 +1077,11 @@ namespace CosmicShore.ECS
             /// <see cref="ExpandBoundsForClockAnimation"/>).</summary>
             public float3 ObjectDisplacement;
             public float BoundsPadding;
+            /// <summary>0 = spin each face about the pivot RotateFacesAlongAxis derives for
+            /// the prism CUBE; 1 = spin it about the per-face centroid this MESH bakes into
+            /// TEXCOORD1. Leave at 0 for any mesh without that channel — see
+            /// Docs/PRISM_ANIMATION.md §4.8.2 and PrismFacePivotFromCentroidOverride.</summary>
+            public float FacePivotFromCentroid;
         }
 
         /// <summary>
@@ -918,8 +1090,8 @@ namespace CosmicShore.ECS
         /// lands via non-structural SetComponentData. Spawned entities are appended
         /// to <paramref name="appendEntitiesTo"/> in spawn order (index-aligned with
         /// <paramref name="spawns"/>). Returns false — spawning nothing — when the
-        /// service is off or no world exists; the caller falls back to the pooled
-        /// GameObject path.
+        /// service is off or no world exists; the caller drops the visual (D4 —
+        /// no pooled death fallback).
         /// </summary>
         public static bool SpawnExplosionDebrisBatch(Mesh mesh, Material material, int layer,
             System.Collections.Generic.List<ExplosionDebrisSpawn> spawns, float startTime,
@@ -958,6 +1130,7 @@ namespace CosmicShore.ECS
                 em.SetComponentData(entity, new PrismExplodeSpeedOverride { Value = s.Speed });
                 em.SetComponentData(entity, new PrismExplodeDurationOverride { Value = s.Duration });
                 em.SetComponentData(entity, new PrismVelocityOverride { Value = s.Velocity });
+                em.SetComponentData(entity, new PrismFacePivotFromCentroidOverride { Value = s.FacePivotFromCentroid });
 
                 float3 half = s.ObjectDisplacement * 0.5f;
                 em.SetComponentData(entity, new RenderBounds
@@ -1040,7 +1213,8 @@ namespace CosmicShore.ECS
         /// <see cref="SpawnExplosionDebrisBatch"/>. Entities are appended to
         /// <paramref name="appendEntitiesTo"/> index-aligned with
         /// <paramref name="spawns"/>. Returns false — spawning nothing — when the
-        /// service is off, so the caller can fall back to the pooled path.
+        /// service is off; the caller drops the visual (D4 — no pooled death
+        /// fallback). Grow still uses pooled StartGrow, not this batch.
         /// </summary>
         public static bool SpawnImplosionDebrisBatch(Mesh mesh, Material material, int layer,
             System.Collections.Generic.List<ImplosionDebrisSpawn> spawns, float startTime,
@@ -1134,6 +1308,15 @@ namespace CosmicShore.ECS
                     em.SetComponentData(r.Entity, new RenderBounds { Value = r.Bounds });
             }
         }
+
+        // The former SHIELD SHATTER batch spawner lived here. It is GONE on purpose
+        // (Docs/PRISM_ANIMATION.md §4.8.1): a shield's shards are ordinary explosion
+        // debris now — PrismShieldShatter groups a frame's disengages per shield mesh and
+        // spawns them through SpawnExplosionDebrisBatch above, so the two death visuals
+        // cannot drift apart. Do not reintroduce a shield-specific spawner: any look
+        // difference between a shield coming apart and a prism coming apart is a MESH
+        // AUTHORING question (the shield generators bake the debris attribute set), never
+        // a pipeline fork.
 
         /// <summary>Destroys the companion entity (prism GameObject destruction / scene teardown).</summary>
         public static void Destroy(ref PrismRenderHandle handle)

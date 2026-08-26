@@ -263,27 +263,33 @@ namespace CosmicShore.Gameplay
             // nucleus spawns).
             if (cell != null && arena != null && arena.Boundary != null)
             {
-                if (shape == AstroLeagueBoundaryShape.Sphere)
+                // EVERY court shape gets the generated cage mesh, including the Sphere. It used to be
+                // the exception - resized via SetNucleusWorldRadius, keeping the prefab's plain sphere -
+                // which is why the faceted glowing arena cover the other intensities wear was missing
+                // on the sphere court. The cover IS this mesh rendered through the nucleus'
+                // CageMaterial. Only a degenerate shape that yields no mesh falls back to a radius.
+                Mesh cage = arena.Boundary.BuildVisualMesh();
+                if (cage != null)
                 {
-                    cell.SetNucleusWorldRadius(arena.BoundaryRadius);
+                    if (_generatedNucleusMesh != null) Destroy(_generatedNucleusMesh); // free a prior rebuild
+                    _generatedNucleusMesh = cage;
+                    cell.SetNucleusMesh(cage);
                 }
                 else
                 {
-                    // Polytope + cylinder courts get a generated cage mesh that matches their walls; a
-                    // degenerate shape with no mesh falls back to a sphere sized to the boundary.
-                    Mesh cage = arena.Boundary.BuildVisualMesh();
-                    if (cage != null)
-                    {
-                        if (_generatedNucleusMesh != null) Destroy(_generatedNucleusMesh); // free a prior rebuild
-                        _generatedNucleusMesh = cage;
-                        cell.SetNucleusMesh(cage);
-                    }
-                    else
-                    {
-                        cell.SetNucleusWorldRadius(arena.Boundary.MaxExtent);
-                    }
+                    cell.SetNucleusWorldRadius(shape == AstroLeagueBoundaryShape.Sphere
+                        ? arena.BoundaryRadius
+                        : arena.Boundary.MaxExtent);
                 }
             }
+
+            // The nucleus here is a WALL, not a claim. Astro League has no node-control scoring - it
+            // borrowed the nucleus mesh to be its ricochet court - and leaving the control zone on
+            // made the court's circumscribing radius a fauna SANCTUARY: every prism in the match
+            // read as "inside the nucleus", so Cell.IsPreyForHerbivore refused to feed anything on
+            // the pitch and the trail-grazing food web could not remove a single prism. Declared
+            // AFTER the nucleus is morphed, because the setter re-measures. See Cell.NucleusIsControlZone.
+            if (cell != null) cell.NucleusIsControlZone = false;
 
             Vector3 arenaCenter = arena != null ? arena.Center : transform.position;
 
@@ -292,6 +298,14 @@ namespace CosmicShore.Gameplay
             // the ball's authored center spawn.
             if (ball != null && centralGoal)
                 ball.SetSpawnPosition(arenaCenter + Vector3.right * (settings.centralBallSpawnOffset * _currentScale));
+
+            // Goal lines and kickoff lines are DERIVED from the court dimensions, not from authored
+            // scene positions: the goals belong on the flat caps at ±length/2 by construction, so
+            // reading them from the same asset that sizes the court is what lets the playfield be
+            // resized with one number and no scene edit. (_baseGoalLocalPos / _baseSpawnLocalPos
+            // remain the fallback for a scene with no settings asset wired.)
+            float halfLength = arena != null ? arena.ArenaLength * 0.5f : settings.arenaLength * _currentScale * 0.5f;
+            float kickoffLine = settings.kickoffLineDistance * _currentScale;
 
             if (goals != null)
                 for (int i = 0; i < goals.Count; i++)
@@ -306,24 +320,101 @@ namespace CosmicShore.Gameplay
                         // arena draws the matching Ruby(+Z)/Jade(-Z) cones.
                         goals[i].transform.position = arenaCenter;
                         Vector3 normal = i == 0 ? Vector3.forward : Vector3.back;
-                        goals[i].Configure(ball, arenaCenter, _currentScale, normal, passThrough: true);
+                        goals[i].Configure(ball, arenaCenter, _currentScale, normal, passThrough: true,
+                            baseMouthRadius: settings.goalMouthRadius);
                     }
                     else
                     {
-                        if (i < _baseGoalLocalPos.Count)
-                            goals[i].transform.localPosition = _baseGoalLocalPos[i] * _currentScale;
+                        // Index order matches GameDataSO.ActiveDomains: goals[0] = Jade, defending -Z.
+                        float sign = SignForDomainIndex(i);
+                        goals[i].transform.position = arenaCenter + Vector3.forward * (sign * halfLength);
                         // Wire the ball + arena center + scale AFTER repositioning so the goal's inward
                         // normal and mouth radius are computed from its final scaled world position.
-                        goals[i].Configure(ball, arenaCenter, _currentScale);
+                        goals[i].Configure(ball, arenaCenter, _currentScale,
+                            baseMouthRadius: settings.goalMouthRadius);
                     }
                 }
 
             if (teamSpawns != null)
                 for (int i = 0; i < teamSpawns.Count; i++)
                 {
-                    if (teamSpawns[i] == null || i >= _baseSpawnLocalPos.Count) continue;
-                    teamSpawns[i].localPosition = _baseSpawnLocalPos[i] * _currentScale;
+                    if (teamSpawns[i] == null) continue;
+                    teamSpawns[i].position = arenaCenter + Vector3.forward * (SignForDomainIndex(i) * kickoffLine);
                 }
+        }
+
+        // ── Fauna: the cleanup crew waits outside until the pitch silts up ───
+
+        // Live exclusion radius (the pen's INNER wall) and where it is heading. Swept rather than
+        // snapped so a swarm visibly pours over the wall instead of teleporting through it.
+        float _faunaExclusion;
+        float _faunaExclusionTarget;
+        bool _faunaExclusionSeeded;
+
+        /// <summary>
+        /// Per-peer, every frame: hold the cell's fauna outside the court while the pitch is clear
+        /// and open the wall once it silts up.
+        ///
+        /// The "crowded" signal is the cell's OWN volume phase ladder - Calm means the accumulated
+        /// trail mass is still under RestlessEnterVolume, Restless and above means it is not. No new
+        /// signal is invented for the mode: volume is the spine, and this reads it. The mechanism is
+        /// <see cref="Cell.FaunaExclusionRadius"/>, a spatial diet + steering rule (never a wall,
+        /// nothing teleported, nothing culled - Docs/ECOSYSTEM.md §22.2b).
+        ///
+        /// Runs on EVERY peer, not just the server, because fauna and trail prisms are per-peer
+        /// local objects (each peer runs its own cell over its own copies) - exactly like the
+        /// goal-reset prism sweep. No RPC, no sync.
+        /// </summary>
+        void UpdateFaunaExclusion()
+        {
+            if (cell == null || settings == null) return;
+
+            if (!settings.faunaWaitOutsideCourt)
+            {
+                if (_faunaExclusionSeeded) { cell.FaunaExclusionRadius = 0f; _faunaExclusionSeeded = false; }
+                return;
+            }
+
+            // Wait for the court before seeding: the exclusion is measured off the boundary, and
+            // seeding against a placeholder would sweep the wall outward across the first second.
+            // Nothing has hatched yet either way (InitialFaunaSpawnWaitTime).
+            if (arena == null || arena.Boundary == null) return;
+
+            float closed = arena.Boundary.MaxExtent * Mathf.Max(0f, settings.faunaExclusionCourtFraction);
+
+            // Calm = the pitch is still clear, keep them out. Restless/Frenzy = it is filling up,
+            // let them in. The ladder's own hysteresis (Enter/Exit volumes) debounces the edge for
+            // free, so the wall does not flutter around the threshold.
+            _faunaExclusionTarget = cell.Phase == CellPhase.Calm ? closed : 0f;
+
+            if (!_faunaExclusionSeeded)
+            {
+                _faunaExclusionSeeded = true;
+                _faunaExclusion = _faunaExclusionTarget;
+            }
+            else
+            {
+                float sweep = settings.faunaExclusionSweepSeconds > 0f
+                    ? closed / settings.faunaExclusionSweepSeconds * Time.deltaTime
+                    : Mathf.Infinity;
+                _faunaExclusion = Mathf.MoveTowards(_faunaExclusion, _faunaExclusionTarget, sweep);
+            }
+
+            cell.FaunaExclusionRadius = _faunaExclusion;
+        }
+
+        void Update() => UpdateFaunaExclusion();
+
+        /// <summary>
+        /// Which end of the goal axis a domain index owns. Derived from the AUTHORED scene layout
+        /// (goal 0 sits at -Z in the shipping scene) so re-deriving positions can never mirror the
+        /// pitch relative to the domain colors the arena paints; falls back to "index 0 defends -Z".
+        /// </summary>
+        float SignForDomainIndex(int index)
+        {
+            if (index < _baseGoalLocalPos.Count && Mathf.Abs(_baseGoalLocalPos[index].z) > 0.001f)
+                return Mathf.Sign(_baseGoalLocalPos[index].z);
+            return index == 0 ? -1f : 1f;
         }
 
         // ── Match start ──────────────────────────────────────────────────────
@@ -728,10 +819,68 @@ namespace CosmicShore.Gameplay
             }
         }
 
+        // Role assignment, recomputed at most once per frame and shared by every AI's provider
+        // callback (AIPilot samples its provider once per Update, so N AI on one domain would
+        // otherwise each redo the same sort).
+        readonly Dictionary<IPlayer, bool> _aiIsDefender = new();
+        readonly List<IPlayer> _roleScratch = new();
+        int _rolesFrame = -1;
+
         /// <summary>
-        /// Billiard thinking: approach the ball from the own-goal side so contact drives it
-        /// toward the enemy goal; swing wide to recover when caught on the wrong side of the
-        /// play. During kickoffs/celebrations, hold near the team's kickoff line.
+        /// Split each domain's AI into ATTACKERS and DEFENDERS by distance to the ball: the closest
+        /// go for it, the farthest drop back. Recomputed per frame from live positions, so the roles
+        /// swap naturally as play moves instead of being pinned at kickoff.
+        ///
+        /// This is the single biggest fix to the old AI: every AI chased the ball, so a domain was
+        /// never home and any shot that got past the pack was a goal. A domain with one AI always
+        /// attacks (a lone defender would simply never shoot).
+        /// </summary>
+        void RefreshStrikerRoles()
+        {
+            if (_rolesFrame == Time.frameCount) return;
+            _rolesFrame = Time.frameCount;
+            _aiIsDefender.Clear();
+            if (ball == null) return;
+
+            Vector3 ballPos = ball.transform.position;
+            int domainCount = Mathf.Clamp(gameData.RequestedDomainCount, 1, GameDataSO.ActiveDomains.Length);
+
+            for (int d = 0; d < domainCount; d++)
+            {
+                var domain = GameDataSO.ActiveDomains[d];
+                _roleScratch.Clear();
+                foreach (var p in gameData.Players)
+                    if (p != null && p.IsInitializedAsAI && p.Domain == domain && p.Vessel?.Transform != null)
+                        _roleScratch.Add(p);
+                if (_roleScratch.Count == 0) continue;
+
+                _roleScratch.Sort((a, b) =>
+                    (a.Vessel.Transform.position - ballPos).sqrMagnitude
+                    .CompareTo((b.Vessel.Transform.position - ballPos).sqrMagnitude));
+
+                int defenders = Mathf.Clamp(
+                    Mathf.FloorToInt(_roleScratch.Count * Mathf.Clamp01(settings.strikerDefenderFraction)),
+                    0, _roleScratch.Count - 1);
+
+                for (int i = 0; i < _roleScratch.Count; i++)
+                    _aiIsDefender[_roleScratch[i]] = i >= _roleScratch.Count - defenders;
+            }
+        }
+
+        /// <summary>
+        /// Billiard thinking with three additions over the original "run at the ball" striker:
+        ///
+        /// 1. INTERCEPT - it aims where the ball WILL be after its own travel time, so a moving ball
+        ///    is met instead of chased from behind forever.
+        /// 2. ROLES - the teammates farthest from the ball hold the line between the ball and their
+        ///    own goal (see <see cref="RefreshStrikerRoles"/>) rather than joining the pile-on, and
+        ///    a defender abandons the post to clear once the ball reaches its own area.
+        /// 3. OWN-GOAL REFUSAL - contact drives the ball roughly along the AI's own approach vector,
+        ///    so approaching from a heading that points at its OWN net is refused outright and the
+        ///    AI peels off to re-approach. The old striker only checked which side of the ball it
+        ///    was on, which let it shepherd the ball into its own goal from a wide angle.
+        ///
+        /// During kickoffs/celebrations, hold near the team's kickoff line.
         /// </summary>
         Vector3 ComputeStrikerTarget(IPlayer aiPlayer)
         {
@@ -749,6 +898,37 @@ namespace CosmicShore.Gameplay
             var targetGoal = GoalAttackedBy(aiPlayer.Domain);
             if (targetGoal == null) return ballPos;
 
+            // The central shared-goal layout puts BOTH detectors at the arena centre, so "our end"
+            // does not exist as a place: there is nothing to fall back and defend, and an own goal
+            // is a matter of pass DIRECTION (already handled by aiming past centre), not of
+            // approach angle. Roles and the own-goal guard are end-goal concepts only.
+            var ownGoal = _appliedCentralGoal ? null : GoalDefendedBy(aiPlayer.Domain);
+
+            Vector3 aiPos = aiPlayer.Vessel.Transform.position;
+
+            // ── 1. Intercept: extrapolate the ball over this AI's own travel time ──
+            Vector3 predicted = ballPos;
+            if (settings.strikerClosingSpeedEstimate > 0.01f)
+            {
+                float lead = Mathf.Min(
+                    Vector3.Distance(aiPos, ballPos) / settings.strikerClosingSpeedEstimate,
+                    Mathf.Max(0f, settings.strikerMaxLeadSeconds));
+                predicted = ballPos + ball.Velocity * lead;
+            }
+
+            // ── 2. Defenders hold the line, unless the ball is already on top of them ──
+            RefreshStrikerRoles();
+            bool defending = _aiIsDefender.TryGetValue(aiPlayer, out bool isDef) && isDef;
+            if (defending && ownGoal != null)
+            {
+                float clearRange = settings.defenderClearDistance * _currentScale;
+                if (Vector3.Distance(predicted, ownGoal.MouthCenter) > clearRange)
+                    return Vector3.Lerp(ownGoal.MouthCenter, predicted,
+                        Mathf.Clamp01(settings.defenderStandoffFraction));
+                // Ball is in our area - stop holding position and go clear it.
+            }
+
+            // ── 3. Attack line ──
             // End goals: aim at the goal mouth. Central shared goal: aim PAST the center along the
             // scoring direction (the goal's inward normal) so contact drives the ball THROUGH the
             // central disk in the team's scoring Z direction - aiming straight at center would own-goal
@@ -756,26 +936,49 @@ namespace CosmicShore.Gameplay
             Vector3 aimPoint = _appliedCentralGoal
                 ? targetGoal.MouthCenter + targetGoal.InwardNormal * (300f * _currentScale)
                 : targetGoal.MouthCenter;
-            Vector3 shotDir = (aimPoint - ballPos).normalized;
-            Vector3 approachPoint = ballPos - shotDir * settings.strikerApproachLead;
+            Vector3 shotDir = (aimPoint - predicted).normalized;
+            float approachLead = settings.strikerApproachLead * _currentScale;
+            float recover = settings.strikerRecoverDistance * _currentScale;
 
-            Vector3 aiPos = aiPlayer.Vessel.Transform.position;
-            bool onAttackSide = Vector3.Dot(ballPos - aiPos, shotDir) > 0f;
-            if (onAttackSide)
-                return approachPoint;
+            bool onAttackSide = Vector3.Dot(predicted - aiPos, shotDir) > 0f;
 
-            // Wrong side of the ball: swing wide around it back toward our half.
-            Vector3 side = Vector3.Cross(shotDir, Vector3.up).normalized;
-            float sideSign = Mathf.Sign(Vector3.Dot(aiPos - ballPos, side));
+            // Own-goal refusal: the ball leaves roughly along the direction this AI is travelling
+            // through it, so if that direction points at our own net, do NOT make contact.
+            bool wouldOwnGoal = false;
+            if (ownGoal != null)
+            {
+                Vector3 driveDir = predicted - aiPos;
+                Vector3 toOwnGoal = ownGoal.MouthCenter - predicted;
+                if (driveDir.sqrMagnitude > 1e-4f && toOwnGoal.sqrMagnitude > 1e-4f)
+                    wouldOwnGoal = Vector3.Angle(driveDir, toOwnGoal) < settings.strikerOwnGoalGuardDegrees;
+            }
+
+            if (onAttackSide && !wouldOwnGoal)
+                return predicted - shotDir * approachLead;
+
+            // Wrong side of the ball, or lined up on our own net: swing wide around it and come
+            // back onto the shot line. The lateral axis is taken off the shot direction, so the
+            // detour is always around the ball rather than through it.
+            Vector3 side = Vector3.Cross(shotDir, Vector3.up);
+            if (side.sqrMagnitude < 1e-4f) side = Vector3.Cross(shotDir, Vector3.forward);
+            side.Normalize();
+            float sideSign = Mathf.Sign(Vector3.Dot(aiPos - predicted, side));
             if (sideSign == 0f) sideSign = 1f;
-            return ballPos - shotDir * settings.strikerRecoverDistance
-                          + side * (sideSign * settings.strikerRecoverDistance * 0.6f);
+            return predicted - shotDir * recover + side * (sideSign * recover * 0.6f);
         }
 
         AstroLeagueGoal GoalAttackedBy(Domains attackingDomain)
         {
             foreach (var goal in goals)
                 if (goal != null && goal.DefendingDomain != attackingDomain)
+                    return goal;
+            return null;
+        }
+
+        AstroLeagueGoal GoalDefendedBy(Domains defendingDomain)
+        {
+            foreach (var goal in goals)
+                if (goal != null && goal.DefendingDomain == defendingDomain)
                     return goal;
             return null;
         }

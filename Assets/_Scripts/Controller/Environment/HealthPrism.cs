@@ -70,6 +70,48 @@ namespace CosmicShore.Gameplay
             if (spindle) spindle.CheckForLife();
         }
 
+        /// <summary>
+        /// Leaves this prism in the world as part of a dead lifeform's SKELETON: it stops
+        /// being body tissue and stays exactly where the creature died, as ordinary cell
+        /// mass (Docs/ECOSYSTEM.md §26). This is mass conservation taken at its word - the
+        /// body used to be destroyed along with the husk, so a creature's whole frame left
+        /// the world on death and only the heart survived it; now the frame stays and the
+        /// food web is what eventually removes it, exactly like any other prism.
+        ///
+        /// The body-part links are dropped FIRST because they are what classifies the prism:
+        /// <c>PrismSpatialIndex.ComputeEnvironmentMass</c> reads <see cref="OwnerFauna"/> to
+        /// keep a live swarm out of the targeting grids, so the re-file at the end is what
+        /// promotes the skeleton from volume-only body mass to grazeable, steerable, counted
+        /// environment mass.
+        /// </summary>
+        /// <param name="newParent">Where the freed prism is re-homed - the host cell. Null
+        /// detaches it to the scene root, which is still better than dying with the husk.</param>
+        public void LeaveAsSkeleton(Transform newParent)
+        {
+            if (destroyed) return;
+
+            spindle ??= transform.parent ? transform.parent.GetComponent<Spindle>() : null;
+            if (spindle)
+            {
+                spindle.RemoveHealthBlock(this);
+                spindle = null;
+            }
+
+            // Clear the back-reference before telling the LifeForm, so a re-entrant
+            // CheckIfDead can never walk back into a prism that has already left.
+            var owningLifeForm = LifeForm;
+            LifeForm = null;
+            if (owningLifeForm) owningLifeForm.RemoveHealthBlock(this);
+
+            OwnerFauna = null;
+
+            transform.SetParent(newParent, true);
+
+            NotifyPositionChanged();
+            if (SpatialIndexId >= 0)
+                PrismSpatialIndex.Instance?.NotifyOwnershipChanged(SpatialIndexId);
+        }
+
         protected override void Explode(Vector3 impactVector, Domains domain, string playerName, bool devastate = false,
                                         float debrisSpeedLimit = 0f)
         {

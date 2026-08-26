@@ -35,23 +35,37 @@ jobs:
     name: Tag bleeding-edge
     runs-on: ubuntu-latest
     steps:
-      - name: Check the Pacific clock
+      - name: Is this run due?
         id: gate
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
+
           if [ "${{ github.event_name }}" != "schedule" ]; then
-            echo "Triggered manually; skipping the clock guard."
+            echo "Triggered manually; running regardless of day and hour."
             echo "proceed=true" >> "$GITHUB_OUTPUT"
             exit 0
           fi
-          hour=$(TZ=America/Los_Angeles date +%H)
-          if [ "$hour" = "06" ]; then
-            echo "06:00 in America/Los_Angeles. Proceeding."
-            echo "proceed=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "It is ${hour}:00 in America/Los_Angeles, not 06:00. Skipping the DST twin."
-            echo "proceed=false" >> "$GITHUB_OUTPUT"
+
+          today=$(TZ=America/Los_Angeles date +%Y-%m-%d)
+          dow=$(TZ=America/Los_Angeles date +%u)                  # 5 = Friday
+          hour=$((10#$(TZ=America/Los_Angeles date +%H)))         # 10# so "08" is not read as octal
+
+          skip () { echo "$1 Skipping."; echo "proceed=false" >> "$GITHUB_OUTPUT"; exit 0; }
+
+          # Same shape as the promotion gate: the dated tag is the idempotency
+          # record, which is what lets the hour test be a window rather than an
+          # exact match. GitHub's scheduler is routinely more than an hour late.
+          if gh api "repos/$GITHUB_REPOSITORY/git/ref/tags/internal/$today" >/dev/null 2>&1; then
+            skip "Already tagged $today (tag internal/$today exists)."
           fi
+
+          [ "$dow" = "5" ] || skip "$today is not a Friday in America/Los_Angeles."
+          [ "$hour" -ge 6 ] || skip "It is ${hour}:00 in America/Los_Angeles; the 06:00 slot has not opened."
+
+          echo "$today is a Friday and the 06:00 slot has opened. Proceeding."
+          echo "proceed=true" >> "$GITHUB_OUTPUT"
 
       - name: Tag it
         if: steps.gate.outputs.proceed == 'true'

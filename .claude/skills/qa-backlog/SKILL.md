@@ -95,6 +95,25 @@ Every item is self-contained. A tester must never need to open a PR to run it.
 [Optional] **Judgement call / Known, do not fail on:** taste questions and already-logged gaps.
 ```
 
+**Write for the person who will actually run this.** The reader is a QA intern with
+little or no engineering background, reading the item inside the Unity window
+(`FrogletTools ▸ QA ▸ QA Session`), which renders each item's steps and PASS/FAIL
+verbatim. So the item text IS the UI copy — jargon in it is jargon on their screen.
+
+- Name the **action**, not the concept: "Open the project in Unity" beats "open the
+  project on the branch under test"; "wait until Unity finishes importing" beats
+  "wait for import to settle". A beginner who meets an unexplained term goes hunting
+  for a control that matches it.
+- Say **where** and **how** to do a thing the first time it appears — the exact menu
+  path, window name, key, or on-screen target. "Enter freestyle (click the centre of
+  the screen, or press **Y** on a gamepad)", not "tap the centre crystal" (there is
+  no such object — that name is an insider memory of an older build).
+- Insider shorthand that must always be expanded: *freestyle*, *the Console*,
+  *reimport*, *MPPM*, *the branch under test*, *the lava lamp*. Team nicknames for
+  systems are fine in `**Source:**` (engineering reads that line), never in a step.
+- Keep steps one instruction each, in the order performed, present tense, no
+  parenthetical asides about why — reasons belong in `**Source:**`.
+
 Rules that keep the list usable:
 - IDs are stable and kebab-case; reuse the existing ID when refreshing an item so
   history in `ARCHIVE.md` and `DEV_TASKS.md` still resolves.

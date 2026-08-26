@@ -40,5 +40,34 @@ namespace CosmicShore.Data
         RibcageQuarterPeeled = 50,   // leader is a quarter of the way to the target
         RibcageHalfPeeled = 51,      // leader is halfway
         RibcageLeaderChanged = 52,   // the lead changes hands after a milestone
+
+        // Wildlife Liberation. {0} = player name, {1} = kills, {2} = target.
+        WildlifeHuntQuarter = 53,    // the leading hunter is a quarter of the way to the target
+        WildlifeHuntHalf = 54,       // the leading hunter is halfway
+        WildlifeLeadChanged = 55,    // the lead changes hands after a milestone
+        WildlifeCoreBreached = 56,   // a hunter has reached the innermost room ({0} = player name)
+
+        // Dog Fight. {0} = leading domain, {1} = that domain's points, {2} = point target.
+        DogFightQuarterDown = 57,    // the leading domain is a quarter of the way to the target
+        DogFightHalfDown = 58,       // the leading domain is halfway
+        DogFightLeadChanged = 59,    // the lead changes hands after a milestone
+
+        // The Bends. {0} = leading domain, {1} = that domain's points, {2} = point target.
+        BendsQuarterBent = 60,       // the leading domain is a quarter of the way to the target
+        BendsHalfBent = 61,          // the leading domain is halfway
+        BendsLeadChanged = 62,       // the lead changes hands after a milestone
+        // Scarab Scramble. Goal/bank: {0} = scorer name, {1} = their domain's goals, {2} = target
+        // ({3} = wall bounces on the bank goal). Milestones/lead: {0} = leading domain,
+        // {1} = that domain's goals, {2} = target. Overload takes no args.
+        ScarabScrambleGoal = 63,          // a forged ball threaded a hoop
+        ScarabScrambleMatchPoint = 64,    // the leading domain is one goal from winning
+        ScarabScrambleLeadChanged = 65,   // the lead changes hands late in the match
+        ScarabScrambleForgeHint = 66,     // idle hint: follow the marker to the bright crystal
+        ScarabScrambleRollHint = 67,      // idle hint: roll your ball through any glowing ring
+        ScarabScrambleBankGoal = 68,      // a goal off 2+ wall caroms — the signature screamer
+        // A cell reached its ball limit, so EVERY loose ball in it detonated regardless of
+        // domain (AstroLeagueBall.OnCellOverload). Court-wide and player-agnostic - it is
+        // broadcast to every peer, so it names nobody and wears no domain colour.
+        ScarabScrambleBallCap = 69,
     }
 }

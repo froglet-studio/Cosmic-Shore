@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using CosmicShore.Data;
 using CosmicShore.Utility;
@@ -6,10 +7,28 @@ using UnityEngine;
 namespace CosmicShore.Gameplay
 {
     /// <summary>
-    /// TIME level-5 'Barrel Roll' (ElementalAbilityMapSO upgrade). One roll per BOOST press:
-    /// while boosting with the stick at FULL deflection the vessel rolls once — holding the
-    /// stick at the perimeter is fine (it never repeats; the next boost press grants the next
-    /// roll, and a stick already pinned at max when boost starts rolls immediately).
+    /// The Sparrow's strafing roll — a BASE part of the boost ability, available from level 0 with no
+    /// elemental unlock (it was the TIME level-5 upgrade until the boost redesign; TIME-5 is now the
+    /// elemental-debuff immunity held while boosting, see VesselElementalImmunity).
+    ///
+    /// One roll per BOOST press, inside a SHORT WINDOW after that press:
+    /// pressing boost arms a roll for <see cref="rollArmWindowSeconds"/> (0.3 s); while it is
+    /// armed, the stick at FULL deflection rolls the vessel once. Let the window lapse and the
+    /// charge is spent unfired — the boost keeps running, but another roll needs another press.
+    /// That window is what stops the spin firing unintentionally: without it a single press
+    /// armed the roll for the WHOLE boost hold, so any later moment the stick happened to reach
+    /// the perimeter — a hard turn seconds into an indefinite boost — spun the vessel. The roll
+    /// now only answers a deliberate press-then-slam. Holding the stick at the perimeter still
+    /// never repeats, and a stick already pinned at max when boost starts still rolls
+    /// immediately. That charge is what the boost ability icon displays
+    /// (<see cref="OnRollChargeChanged"/> → SparrowHUDView.SetRollCharge), and it now empties
+    /// when the window lapses, so the pip reads real availability rather than "boost is held".
+    ///
+    /// It works IDENTICALLY in the stationary/turret stance. Boost gives no speed there —
+    /// VesselTransformer skips throttle and course travel while IsTranslationRestricted — but
+    /// the roll is still armed by the press and still strafes: its ModifyVelocity displacement
+    /// opts out of the restriction (ShipVelocityModifier.ignoresTranslationRestriction), making
+    /// it the stopped Sparrow's dodge. The stance itself is unchanged by rolling.
     /// Clockwise on the right half of the stick circle, counterclockwise on the left —
     /// animating the model about its
     /// forward axis while a ModifyVelocity displacement orthogonal to travel (direction picked
@@ -21,12 +40,24 @@ namespace CosmicShore.Gameplay
     /// The 360° spin lives on the visual child only — the camera reads the root's
     /// rotation/up, Course stays untouched, and a 360° root roll cannot be expressed through
     /// the accumulatedRotation slerp target. A very small REAL root roll (rootRollDegrees,
-    /// same handedness as the animation) IS applied through VesselTransformer.ApplyRotation
-    /// so the flight orientation banks subtly with the roll.
+    /// same handedness as the animation) IS applied through VesselTransformer.ApplyRotation:
+    /// it rotates the vessel's UP about its own forward/z axis, which is exactly what the
+    /// two-stick Roll() does with a little YDiff, and — because the camera reads the root's
+    /// up — it is the horizon tilt the pilot actually feels during the spin. It follows the
+    /// animation's own smoothstep, so the tilt eases in and out WITH the spin instead of
+    /// drifting linearly across it, and the authored degrees land exactly.
+    ///
+    /// For the roll's duration the ability OWNS THE ROLL AXIS
+    /// (VesselTransformer.BankIntoTurnSuppressed). That is not decoration: the bank-into-turn
+    /// and this roll are the same rotation about the same axis, so they add — and the trigger
+    /// is a FULL stick deflection, i.e. precisely when the bank is at maximum and pointing the
+    /// other way. Un-suppressed, 15° of authored roll landed under ~20-25° of opposing bank and
+    /// the pilot saw the horizon tilt the WRONG way. Pitch and yaw are untouched, so the vessel
+    /// still turns exactly as hard while it rolls.
     ///
     /// Owner-driven: input polling only acts on the locally controlled vessel; the
     /// displacement replicates via the owner-authoritative NetworkTransform. Autopilot/AI
-    /// vessels never produce stick input, so the upgrade is inert for AI (trigger synthesis
+    /// vessels never produce stick input, so the roll is inert for AI (trigger synthesis
     /// is tracked in Docs/ElementalAbilitySystem/BACKLOG.md Phase 2.5).
     /// </summary>
     public class BarrelRollController : MonoBehaviour
@@ -38,16 +69,28 @@ namespace CosmicShore.Gameplay
                  "normalized (radially clamped) stick vector, never the eased one — the " +
                  "per-axis ease makes diagonal magnitudes direction-dependent.")]
         [SerializeField, Range(0.5f, 1f)] float perimeterThreshold = 1f;
+        [Tooltip("How long a boost press keeps a roll armed. The stick must reach the " +
+                 "perimeter inside this window or the charge is spent unfired and the boost " +
+                 "button must be pressed again to arm another. Stops a stick that drifts to " +
+                 "full deflection later in a long boost hold from spinning the vessel. " +
+                 "0 = no window (legacy: armed for the whole boost press).")]
+        [SerializeField, Min(0f)] float rollArmWindowSeconds = 0.3f;
         [Tooltip("Flip the CW/CCW mapping if the roll direction reads backwards in playtest.")]
         [SerializeField] bool invertRollDirection;
 
         [Header("Roll")]
         [SerializeField, Min(0.1f)] float rollDurationSeconds = 0.6f;
-        [Tooltip("Very small REAL roll applied to the vessel root over the roll duration, in " +
-                 "the same direction (handedness) as the visual animation. Routed through " +
-                 "VesselTransformer.ApplyRotation (accumulatedRotation), so the flight " +
-                 "orientation keeps the new bank after the roll. 0 = visual-only.")]
-        [SerializeField, Range(0f, 30f)] float rootRollDegrees = 15f;
+        [Tooltip("Very small REAL roll applied to the vessel ROOT over the roll duration — the " +
+                 "vessel's up vector rotated about its own forward/z axis, the same thing a " +
+                 "two-stick vessel does with a little YDiff, in the same direction as the visual " +
+                 "animation. The camera reads the root's up, so this IS the horizon tilt the " +
+                 "pilot feels. Routed through VesselTransformer.ApplyRotation " +
+                 "(accumulatedRotation), so the flight orientation keeps the new bank after the " +
+                 "roll, and shaped by the animation's own smoothstep so it eases in and out with " +
+                 "the spin. The transformer's bank-into-turn is suspended for the duration, so " +
+                 "this number is the whole roll the vessel gets rather than a correction on top " +
+                 "of a larger opposing bank. 0 = visual-only.")]
+        [SerializeField, Range(0f, 45f)] float rootRollDegrees = 15f;
         [Tooltip("Peak sideways displacement speed injected through ModifyVelocity (world " +
                  "units/second; the transformer clamps its channel at 100).")]
         [SerializeField, Min(0f)] float nudgeSpeed = 60f;
@@ -66,7 +109,23 @@ namespace CosmicShore.Gameplay
         bool _rolling;
         bool _wasBoosting;
         bool _rollArmed;
+        float _armExpiresAt;
         Quaternion _visualRestRotation;
+
+        /// <summary>
+        /// Raised when the once-per-press roll charge is armed (on a fresh boost press), spent (the
+        /// instant a roll triggers) or lapsed (the arm window ran out unfired). The Sparrow HUD binds
+        /// this to the boost ability icon's charge ring, which is why the roll is legible without a
+        /// heat gauge.
+        /// </summary>
+        public event Action<RollChargeState> OnRollChargeChanged;
+
+        /// <summary>
+        /// True while a strafing roll is available — i.e. inside the
+        /// <see cref="rollArmWindowSeconds"/> window opened by the current boost press, and not
+        /// yet spent.
+        /// </summary>
+        public bool IsRollArmed => _rollArmed;
 
         void Awake()
         {
@@ -77,21 +136,38 @@ namespace CosmicShore.Gameplay
         {
             if (_status == null) return;
 
-            // One roll per BOOST press: a fresh IsBoosting false→true transition arms a
-            // roll; triggering consumes it. The stick only needs to BE at the perimeter
-            // when the gates pass — a stick already pinned at max when boost starts
-            // rolls immediately, and holding it there never repeats (the next boost
-            // press grants the next roll).
+            // One roll per BOOST press, and only for a short window after it: a fresh
+            // IsBoosting false→true transition arms a roll and starts the clock;
+            // triggering consumes it, and the clock running out spends it unfired. The
+            // stick only needs to BE at the perimeter while the charge is live — a stick
+            // already pinned at max when boost starts rolls immediately, and holding it
+            // there never repeats (the next boost press grants the next roll).
+            //
+            // The window is the whole point: IsBoosting stays true for an indefinite hold,
+            // so an arm that lasted the hold fired on any later full-deflection stick — a
+            // hard turn mid-boost read as a spin nobody asked for.
             bool boosting = _status.IsBoosting;
-            if (boosting && !_wasBoosting) _rollArmed = true;
+            if (boosting && !_wasBoosting)
+            {
+                _armExpiresAt = Time.time + rollArmWindowSeconds;
+                SetRollCharge(RollChargeState.Armed);
+            }
             _wasBoosting = boosting;
+
+            // Expire before the _rolling gate, so a press landing mid-roll can't bank a
+            // spin that fires the instant the current one ends.
+            if (_rollArmed && rollArmWindowSeconds > 0f && Time.time >= _armExpiresAt)
+                SetRollCharge(RollChargeState.Lapsed);
 
             if (!_rollArmed || _rolling) return;
             if (!boosting) return;
             if (_status.AutoPilotEnabled) return;
-            if (_status.IsTranslationRestricted) return;
-            if (!_status.ElementalAbilityHandler.IsUpgradeActive(Element.Time)) return;
 
+            // NOTE: deliberately NOT gated on IsTranslationRestricted. Stopped, the boost
+            // gives no speed (VesselTransformer skips throttle/course travel) but the roll is
+            // still a roll — one per press, same as flying. It is the stationary Sparrow's only
+            // dodge, so the displacement is exempted from the restriction rather than dropped;
+            // see ShipVelocityModifier.ignoresTranslationRestriction.
             var input = _status.InputStatus;
             if (input == null) return;
 
@@ -112,18 +188,38 @@ namespace CosmicShore.Gameplay
             // The stick's deflection picks the orthogonal nudge direction (stick up =
             // nudge up), projected onto the plane orthogonal to travel so the
             // displacement never adds forward/backward speed.
+            //
+            // Stopped, Course is STALE — MoveShip is what refreshes it and it does not run
+            // while restricted, so it holds the heading from the moment the stance engaged
+            // while the turret has gone on rotating freely. Project on current facing there.
+            bool restricted = _status.IsTranslationRestricted;
             var ship = _status.ShipTransform ? _status.ShipTransform : transform;
             Vector3 nudge = ship.right * stick.x + ship.up * stick.y;
-            nudge = Vector3.ProjectOnPlane(nudge, _status.Course);
+            nudge = Vector3.ProjectOnPlane(nudge, restricted ? transform.forward : _status.Course);
             if (nudge.sqrMagnitude < 1e-4f)
                 nudge = ship.right * rollSign;
 
-            CSDebug.Log($"[BarrelRoll] Triggered: {(rollSign > 0f ? "CW" : "CCW")}, " +
-                        $"stick ({stick.x:F2}, {stick.y:F2}), nudge dir {nudge.normalized}");
+            // Channelled, not unconditional: a finished ability must not log once per input.
+            // IsVerbose first because the message interpolates (a [Conditional] method still
+            // evaluates its arguments in the Editor).
+            if (CSDebug.IsVerbose(CSLogChannel.SparrowStrafingRoll))
+                CSDebug.LogVerbose(CSLogChannel.SparrowStrafingRoll,
+                    $"[BarrelRoll] Triggered: {(rollSign > 0f ? "CW" : "CCW")}, " +
+                    $"stick ({stick.x:F2}, {stick.y:F2}), nudge dir {nudge.normalized}" +
+                    (restricted ? " (stopped — dodge)" : string.Empty));
 
-            _rollArmed = false;
-            transformer.ModifyVelocity(nudge.normalized * nudgeSpeed, rollDurationSeconds);
+            SetRollCharge(RollChargeState.Spent);
+            transformer.ModifyVelocity(nudge.normalized * nudgeSpeed, rollDurationSeconds,
+                                       ignoresTranslationRestriction: true);
             StartCoroutine(RollRoutine(rollSign, transformer));
+        }
+
+        void SetRollCharge(RollChargeState state)
+        {
+            bool armed = state == RollChargeState.Armed;
+            if (armed == _rollArmed) return;
+            _rollArmed = armed;
+            OnRollChargeChanged?.Invoke(state);
         }
 
         IEnumerator RollRoutine(float rollSign, VesselTransformer transformer)
@@ -144,37 +240,65 @@ namespace CosmicShore.Gameplay
                 localRollAxis = Vector3.forward;
 
             float elapsed = 0f;
+            float rootRollProgress = 0f;
+
+            // The ability owns the roll axis for the duration: the transformer's bank-into-turn
+            // is the same rotation about the same axis and would otherwise swamp (and reverse)
+            // the root roll below, because the trigger is a full stick deflection — peak bank.
+            // Pitch and yaw are untouched. Cleared in the tail AND in OnDisable.
+            transformer.BankIntoTurnSuppressed = true;
 
             while (elapsed < rollDurationSeconds)
             {
                 elapsed += Time.deltaTime;
                 float t = Mathf.Clamp01(elapsed / rollDurationSeconds);
-                float angle = rollSign * 360f * (t * t * (3f - 2f * t)); // smoothstep 0→360
+                float eased = t * t * (3f - 2f * t);                 // smoothstep 0→1
+                float angle = rollSign * 360f * eased;
 
                 if (visual)
                     visual.localRotation = visualStart * Quaternion.AngleAxis(angle, localRollAxis);
 
-                // Very small REAL roll on the root, same handedness as the visual spin —
-                // distributed linearly across the duration and routed through
-                // accumulatedRotation (which a small angle CAN express, unlike the 360°),
-                // so the flight orientation banks with the roll and keeps the tilt after.
+                // Very small REAL roll on the vessel ROOT, same handedness as the visual spin:
+                // the up vector rotated about the vessel's own forward, i.e. what the two-stick
+                // Roll() does with a little YDiff. Routed through accumulatedRotation (which a
+                // small angle CAN express, unlike the 360°), so the flight orientation keeps the
+                // tilt after the roll — and the camera reads the root's up, so this is the
+                // horizon tilt the pilot feels.
+                //
+                // Advanced by the DELTA of the same smoothstep the animation uses, so the tilt
+                // accelerates and settles WITH the spin rather than drifting across it at a
+                // constant rate, and the authored degrees land exactly (summing dt/duration
+                // overshoots on the frame that ends the loop).
                 if (rootRollDegrees > 0f)
+                {
                     transformer.ApplyRotation(
-                        rollSign * rootRollDegrees * (Time.deltaTime / rollDurationSeconds),
+                        rollSign * rootRollDegrees * (eased - rootRollProgress),
                         transform.forward);
+                    rootRollProgress = eased;
+                }
 
                 // Bridging prisms: orient along the actual travel direction each frame while
-                // the displacement is live.
-                var travel = _status.Speed * _status.Course + transformer.VelocityShift;
-                transformer.BlockRotationOverride = travel.sqrMagnitude > 1e-4f
-                    ? Quaternion.LookRotation(travel.normalized, transform.up)
-                    : null;
+                // the displacement is live. Skipped while stopped — the stance has already
+                // stopped the spawner, so there is no trail to bridge, and Speed/Course are
+                // both stale there (see the projection note above).
+                if (_status.IsTranslationRestricted)
+                {
+                    transformer.BlockRotationOverride = null;
+                }
+                else
+                {
+                    var travel = _status.Speed * _status.Course + transformer.VelocityShift;
+                    transformer.BlockRotationOverride = travel.sqrMagnitude > 1e-4f
+                        ? Quaternion.LookRotation(travel.normalized, transform.up)
+                        : null;
+                }
 
                 yield return null;
             }
 
             if (visual) visual.localRotation = visualStart;
             transformer.BlockRotationOverride = null;
+            transformer.BankIntoTurnSuppressed = false;
             _rolling = false;
         }
 
@@ -191,10 +315,19 @@ namespace CosmicShore.Gameplay
             // Never leave a half-applied roll behind (pooling / vessel swap safety).
             StopAllCoroutines();
             if (_status?.VesselTransformer)
+            {
                 _status.VesselTransformer.BlockRotationOverride = null;
+                _status.VesselTransformer.BankIntoTurnSuppressed = false;
+            }
             if (rollVisualTarget && _rolling)
                 rollVisualTarget.localRotation = _visualRestRotation;
             _rolling = false;
+
+            // A re-enabled vessel must not inherit a stale charge — the next boost PRESS arms it,
+            // and the HUD re-seeds from IsRollArmed at init.
+            _wasBoosting = false;
+            _armExpiresAt = 0f;
+            SetRollCharge(RollChargeState.Lapsed);
         }
     }
 }

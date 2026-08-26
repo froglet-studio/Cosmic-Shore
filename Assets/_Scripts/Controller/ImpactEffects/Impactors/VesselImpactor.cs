@@ -6,6 +6,7 @@ using UnityEngine;
 using UnityEngine.Serialization;
 using CosmicShore.Data;
 using CosmicShore.Gameplay;
+using CosmicShore.ScriptableObjects;
 using CosmicShore.Utility;
 namespace CosmicShore.Gameplay
 {
@@ -48,6 +49,17 @@ namespace CosmicShore.Gameplay
         // sets don't change at runtime; world poses are re-read every frame.
         Collider[] _probeColliders;
 
+        /// <summary>
+        /// The vessel's own HULL colliders — the same set the shell tier probes with, i.e. every
+        /// collider routed to this impactor by the root Rigidbody, with the skimmer (and any other
+        /// child that owns a Rigidbody) excluded. Exposed because a vessel's hull volume is a
+        /// gameplay quantity beyond collision: the Scarab sizes its cavitation blast off it
+        /// (<see cref="ScarabCavitationBlast"/>), so retuning the hull retunes the punch instead of
+        /// leaving a second number to drift. Do NOT mutate the returned array — it is the cached
+        /// probe set.
+        /// </summary>
+        public Collider[] HullColliders => _probeColliders ??= GatherHullColliders();
+
         void OnEnable()
         {
             _probeColliders ??= GatherHullColliders();
@@ -87,9 +99,25 @@ namespace CosmicShore.Gameplay
 
         protected override void AcceptImpactee(IImpactor impactee)
         {
+            // Same doctrine as SkimmerImpactor: an unwired container must fail loud ONCE, never
+            // throw per PhysX contact (that storm reads as an editor freeze).
+            if (IsEffectContainerMissing(vesselImpactorDataContainerSO, nameof(vesselImpactorDataContainerSO)))
+                return;
+
             switch (impactee)
             {
                 case PrismImpactor prismImpactee:
+                    // A pilot does not ram the ribbon still coming out of their own ship. Sits
+                    // above the SFX and the whole effect loop, because a self-ram used to cost
+                    // real gameplay: VesselDamagePrismEffect shreds your own fresh trail, and on
+                    // the Dolphin VesselChangeResourceByPrismEffect / ...ChangeBoostByPrismEffect
+                    // halve the skim energy and the charged boost you just banked — none of the
+                    // three carries a self-guard of its own (VesselChangeSpeedByPrismEffectSO's
+                    // is domain-scoped, which is a different, weaker rule). OWNER-scoped and
+                    // time-boxed, so another pilot's trail and this pilot's older trail still
+                    // hit exactly as before. See SelfTrailContactConfigSO.
+                    if (SelfTrailContactConfigSO.SuppressesHullContact(prismImpactee.Prism, Vessel?.VesselStatus))
+                        return;
                     // While a prism's engaged shell owns contact, the shell tier
                     // (PrismShellContactManager) dispatches this pair at the visible
                     // shell surface — suppress the box-trigger dispatch for the same
@@ -109,8 +137,15 @@ namespace CosmicShore.Gameplay
                     audioSystem?.PlayGameplaySFX(
                         isTrackImpact ? GameplaySFXCategory.TrackImpact : GameplaySFXCategory.VesselImpact,
                         transform.position);
-                    foreach (var effect in vesselImpactorDataContainerSO.VesselPrismEffects)
-                        effect.Execute(this, prismImpactee);
+                    var prismEffects = vesselImpactorDataContainerSO.VesselPrismEffects;
+                    for (int i = 0; i < prismEffects.Length; i++)
+                    {
+                        if (IsEffectSlotEmpty(prismEffects[i], vesselImpactorDataContainerSO,
+                                nameof(VesselImpactorDataContainerSO.VesselPrismEffects), i))
+                            continue;
+                        var pe = prismEffects[i];
+                        RunEffectIsolated(() => pe.Execute(this, prismImpactee), pe);
+                    }
                     break;
 
                 case OmniCrystalImpactor omniCrystalImpactee:
@@ -133,9 +168,16 @@ namespace CosmicShore.Gameplay
                     if (elementalCrystalImpactee.Crystal && elementalCrystalImpactee.Crystal.IsEmbedded)
                     {
                         if (!TryLatchCrystalImpact(elementalCrystalImpactee.Crystal)) break;
-                        if (!DoesEffectExist(vesselImpactorDataContainerSO.VesselLifeformCrystalEffects)) break;
-                        foreach (var effect in vesselImpactorDataContainerSO.VesselLifeformCrystalEffects)
-                            effect.Execute(this, elementalCrystalImpactee.Crystal);
+                        var lifeformEffects = vesselImpactorDataContainerSO.VesselLifeformCrystalEffects;
+                        if (!DoesEffectExist(lifeformEffects)) break;
+                        for (int i = 0; i < lifeformEffects.Length; i++)
+                        {
+                            if (IsEffectSlotEmpty(lifeformEffects[i], vesselImpactorDataContainerSO,
+                                    nameof(VesselImpactorDataContainerSO.VesselLifeformCrystalEffects), i))
+                                continue;
+                            var le = lifeformEffects[i];
+                            RunEffectIsolated(() => le.Execute(this, elementalCrystalImpactee.Crystal), le);
+                        }
                         break;
                     }
 
@@ -155,10 +197,17 @@ namespace CosmicShore.Gameplay
                     // SkimmerImpactor.AcceptImpactee.
                     if (skimmerImpactee.Skimmer
                         && ReferenceEquals(skimmerImpactee.Skimmer.VesselStatus, Vessel?.VesselStatus)) return;
-                    if (!DoesEffectExist(vesselImpactorDataContainerSO.VesselSkimmerEffects)) return;
+                    var skimmerEffects = vesselImpactorDataContainerSO.VesselSkimmerEffects;
+                    if (!DoesEffectExist(skimmerEffects)) return;
                     audioSystem?.PlayGameplaySFX(GameplaySFXCategory.VesselImpact, transform.position);
-                    foreach (var effect in vesselImpactorDataContainerSO.VesselSkimmerEffects)
-                        effect.Execute(this, skimmerImpactee);
+                    for (int i = 0; i < skimmerEffects.Length; i++)
+                    {
+                        if (IsEffectSlotEmpty(skimmerEffects[i], vesselImpactorDataContainerSO,
+                                nameof(VesselImpactorDataContainerSO.VesselSkimmerEffects), i))
+                            continue;
+                        var se = skimmerEffects[i];
+                        RunEffectIsolated(() => se.Execute(this, skimmerImpactee), se);
+                    }
                     break;
             }
         }
@@ -216,26 +265,55 @@ namespace CosmicShore.Gameplay
 
         public void ExecuteOmniCrystalImpact(CrystalImpactData data)
         {
-            if (!DoesEffectExist(vesselImpactorDataContainerSO.VesselCrystalEffects)) return;
-            foreach (var effect in vesselImpactorDataContainerSO.VesselCrystalEffects)
-                effect.Execute(this, data);
+            if (IsEffectContainerMissing(vesselImpactorDataContainerSO, nameof(vesselImpactorDataContainerSO)))
+                return;
+            var effects = vesselImpactorDataContainerSO.VesselCrystalEffects;
+            if (!DoesEffectExist(effects)) return;
+            RunCrystalEffects(effects, nameof(VesselImpactorDataContainerSO.VesselCrystalEffects), data);
         }
 
         public void ExecuteElementalCrystalImpact(CrystalImpactData data)
         {
-            VesselCrystalEffectSO[] effects = data.Element switch
+            if (IsEffectContainerMissing(vesselImpactorDataContainerSO, nameof(vesselImpactorDataContainerSO)))
+                return;
+            VesselCrystalEffectSO[] effects;
+            string field;
+            switch (data.Element)
             {
-                Element.Mass   => vesselImpactorDataContainerSO.VesselMassCrystalEffects,
-                Element.Charge => vesselImpactorDataContainerSO.VesselChargeCrystalEffects,
-                Element.Space  => vesselImpactorDataContainerSO.VesselSpaceCrystalEffects,
-                Element.Time   => vesselImpactorDataContainerSO.VesselTimeCrystalEffects,
-                _ => null
-            };
+                case Element.Mass:
+                    effects = vesselImpactorDataContainerSO.VesselMassCrystalEffects;
+                    field = nameof(VesselImpactorDataContainerSO.VesselMassCrystalEffects);
+                    break;
+                case Element.Charge:
+                    effects = vesselImpactorDataContainerSO.VesselChargeCrystalEffects;
+                    field = nameof(VesselImpactorDataContainerSO.VesselChargeCrystalEffects);
+                    break;
+                case Element.Space:
+                    effects = vesselImpactorDataContainerSO.VesselSpaceCrystalEffects;
+                    field = nameof(VesselImpactorDataContainerSO.VesselSpaceCrystalEffects);
+                    break;
+                case Element.Time:
+                    effects = vesselImpactorDataContainerSO.VesselTimeCrystalEffects;
+                    field = nameof(VesselImpactorDataContainerSO.VesselTimeCrystalEffects);
+                    break;
+                default:
+                    return;
+            }
 
             if (!DoesEffectExist(effects)) return;
 
-            foreach (var effect in effects)
-                effect.Execute(this, data);
+            RunCrystalEffects(effects, field, data);
+        }
+
+        void RunCrystalEffects(VesselCrystalEffectSO[] effects, string field, CrystalImpactData data)
+        {
+            for (int i = 0; i < effects.Length; i++)
+            {
+                if (IsEffectSlotEmpty(effects[i], vesselImpactorDataContainerSO, field, i))
+                    continue;
+                var ef = effects[i];
+                RunEffectIsolated(() => ef.Execute(this, data), ef);
+            }
         }
 
 

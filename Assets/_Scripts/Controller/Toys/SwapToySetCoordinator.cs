@@ -29,6 +29,14 @@ namespace CosmicShore.Gameplay
         [SerializeField, Tooltip("Angular gap (degrees) between adjacent toys in the set, around the membrane.")]
         float anglePerToyDeg = 14f;
 
+        /// <summary>
+        /// Whether this set's toys wear the shared SWITCH ring. True for a set of anonymous
+        /// stations; false for one whose bodies already carry the "fly through me" read on their
+        /// own - the domain changer's cones, whose apex points the way you go through, and which
+        /// are rebuilt on every flip.
+        /// </summary>
+        protected virtual bool SlotsWearSwitchRing => true;
+
         static readonly EqualityComparer<T> Eq = EqualityComparer<T>.Default;
 
         readonly List<Slot> _slots = new();
@@ -157,6 +165,7 @@ namespace CosmicShore.Gameplay
             var label = ToyFactory.AddLabel(root.transform, LabelFor(option), Color.white, BodyRadius * 1.9f);
 
             var toy = root.AddComponent<SwapToy>();
+            if (!SlotsWearSwitchRing) toy.ConfigureSwitchRing(0f);
             var slot = new Slot { Toy = toy, BodyHolder = bodyHolder, Label = label, Option = option };
 
             ConfigureVisual(slot);

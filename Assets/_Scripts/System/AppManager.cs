@@ -245,6 +245,14 @@ namespace CosmicShore.Core
                 OnBootstrapComplete?.Invoke();
                 applicationStateMachine?.TransitionTo(ApplicationState.Authenticating);
 
+                // First-run privacy flow. Created here rather than placed in a scene because a
+                // scene-placed consent screen is one that can be forgotten - and was: the previous
+                // one existed in code, sat in no scene, and left the consent gate permanently shut,
+                // silently dropping every analytics event in the game. The overlay is persistent
+                // and non-blocking: bootstrap continues to Authentication underneath it, and
+                // granting consent starts collection whenever the player answers.
+                PrivacyConsentOverlay.CreateIfNeeded(analyticsServiceFacade);
+
                 string targetScene = _sceneNames != null ? _sceneNames.AuthenticationScene : "Authentication";
                 Log($"Loading scene: {targetScene}");
 
@@ -612,8 +620,12 @@ namespace CosmicShore.Core
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
         static void EnsureBootstrapOnStartup()
         {
-            // Reset between domain reloads in the editor.
+            // Reset between domain reloads in the editor. The two static events are nulled too:
+            // with domain reload disabled they otherwise carry last session's subscribers (the
+            // edit-mode tests re-subscribe per [SetUp], so nulling costs them nothing).
             _hasBootstrapped = false;
+            OnBootstrapComplete = null;
+            OnBootstrapFailed = null;
         }
 
         /// <summary>

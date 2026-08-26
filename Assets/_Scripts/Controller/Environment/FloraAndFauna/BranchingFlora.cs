@@ -22,6 +22,10 @@ namespace CosmicShore.Gameplay
         [Tooltip("Maximum LIVE prisms this flora can hold. Consumption frees budget - a grazed " +
                  "flora regrows toward this cap instead of staying a permanent un-growing fragment.")]
         [SerializeField] int maxTotalSpawnedObjects = 1000;
+
+        /// <summary>The live-prism budget this individual resolved to - the base reads it for
+        /// the reproduction maturity gate (see <see cref="Flora.PrismBudget"/>).</summary>
+        protected override int PrismBudget => maxTotalSpawnedObjects;
         [SerializeField] float leafChance = 0.05f;
         [SerializeField] float leafChanceIncrement = 0.01f;
 
@@ -45,15 +49,43 @@ namespace CosmicShore.Gameplay
             public int depth;
         }
 
+        /// <summary>
+        /// Branching layer of the variant expression: the live-prism budget. Without this the
+        /// config's <see cref="FloraVariantTuning.MaxTotalSpawnedObjects"/> was silently inert on
+        /// every branching species (only <see cref="AssembledFlora"/> read it), so a cell could
+        /// author a per-plant budget, see nothing change, and get the prefab's own — 5000 for both
+        /// CactiFlora and PineFlora, i.e. a handful of plants able to eat a whole arena's phase
+        /// ladder on their own. A tuning field that appears on every flora config has to mean the
+        /// same thing on every flora.
+        /// </summary>
+        public override void ApplyVariantTuning(FloraVariantTuning tuning)
+        {
+            base.ApplyVariantTuning(tuning);
+            if (tuning == null) return;
+            if (tuning.MaxTotalSpawnedObjects >= 0) maxTotalSpawnedObjects = tuning.MaxTotalSpawnedObjects;
+            // Cell density scalar, applied AFTER the absolute so it scales whatever budget won.
+            // Round half UP explicitly: Mathf.RoundToInt is banker's rounding, which would turn
+            // an authored 150 x 0.9 into 134 on one species and 135 on the next.
+            if (tuning.MaxTotalSpawnedObjectsScale > 0f)
+                maxTotalSpawnedObjects = Mathf.Max(1, Mathf.FloorToInt(
+                    maxTotalSpawnedObjects * tuning.MaxTotalSpawnedObjectsScale + 0.5f));
+        }
+
         public override void Initialize(Cell cell)
         {
             base.Initialize(cell);
 
+            // CrystalTransform is null in a cell that holds no crystal (it logs and returns null),
+            // so resolve it ONCE and fall back to the plant's own growth axis - a crystal-less
+            // cell should grow an unaimed plant, not throw on the first one it seeds.
+            var crystalTransform = cellData ? cellData.CrystalTransform : null;
+            Vector3 aim = crystalTransform ? crystalTransform.position : transform.position + GrowthUp;
+
             if (isCrystaltropic)
-                goal = cellData.CrystalTransform.position;
+                goal = aim;
 
             SeedBranches();
-            SafeLookRotation.TrySet(transform, cellData.CrystalTransform.position, transform);
+            SafeLookRotation.TrySet(transform, aim, transform);
 
             if (guaranteeInitialLeaf)
                 SpawnOneLeafOnAnyTrunk();
@@ -69,14 +101,11 @@ namespace CosmicShore.Gameplay
             // pick any trunk
             var trunk = activeBranches.First();
 
-            var go = Instantiate(
+            var hp = EnvironmentPrismPool.Get(
                 healthPrism,
                 trunk.gameObject.transform.position + (branchingScaleFactor * trunk.gameObject.transform.forward),
                 trunk.gameObject.transform.rotation,
-                trunk.gameObject.transform
-            ).gameObject;
-
-            var hp = go.GetComponent<HealthPrism>();
+                trunk.gameObject.transform);
             if (!hp) return;
 
             hp.LifeForm = this;
@@ -145,11 +174,13 @@ namespace CosmicShore.Gameplay
                     Branch newBranch = new Branch();
                     if (Random.value < leafChance)
                     {
-                        newBranch.gameObject = Instantiate(healthPrism, branch.gameObject.transform.position + (branchingScaleFactor * branch.gameObject.transform.forward), branch.gameObject.transform.rotation).gameObject; // TODO: position and orient leaf
+                        newBranch.gameObject = EnvironmentPrismPool.Get(healthPrism, branch.gameObject.transform.position + (branchingScaleFactor * branch.gameObject.transform.forward), branch.gameObject.transform.rotation).gameObject; // TODO: position and orient leaf
                         ScaleAndPositionBranch(ref newBranch, branch);
                         var newHealthblock = newBranch.gameObject.GetComponent<HealthPrism>();
                         AddHealthBlock(newHealthblock);
                         newHealthblock.Initialize();
+                        // Growth is this plant's feeding - see Flora.NotifyGrew.
+                        NotifyGrew();
                         if (SecondarySpawn && !hasPlantedSecondary)
                         {
                             var distance = newHealthblock.transform.position - crystal.transform.position;
@@ -205,9 +236,11 @@ namespace CosmicShore.Gameplay
             if (plantAroundCrystal)
             {
                 // Disperse across the cell (fraction of membrane radius - see Flora base)
-                // instead of the legacy fixed plantRadius huddle around the crystal.
+                // instead of the legacy fixed plantRadius huddle around the crystal. The shell
+                // is measured from the CELL CENTRE (Flora.ResolvePlantCenter), so a mode whose
+                // crystal roams can't drag the planting shell outside the membrane with it.
                 float radius = ResolvePlantRadius(legacyRadius: plantRadius);
-                transform.position = cellData.CrystalTransform.position + (radius * Random.onUnitSphere);
+                transform.position = ResolvePlantCenter() + (radius * Random.onUnitSphere);
             }
         }
 

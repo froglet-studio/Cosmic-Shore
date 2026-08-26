@@ -26,19 +26,25 @@ namespace CosmicShore.Gameplay
     /// <summary>
     /// The whole game's haptic policy in one place.
     ///
-    /// Cosmic Shore ships exactly TWO feels, both local-human-pilot-only:
+    /// Cosmic Shore ships TWO everyday feels, both local-human-pilot-only:
     ///   • <see cref="PlaySkim"/>   — the reward: a bright, sharp, proximity-scaled pulse; many in
     ///     sequence read as a rapid, continuously rewarding pulse train (Squirrel skim).
     ///   • <see cref="PlayPunish"/> — the mistake: one heavy, low-frequency thud when the vessel
     ///     body slams a prism.
+    ///
+    /// …plus two fenced additions, each a deliberate exercise of the "adding a feel" clause:
+    ///   • <see cref="PlayAlert"/>  — a long rattle for RARE match-changing events.
+    ///   • <see cref="PlaySpray"/>  — a rising buzz while a full-auto trigger is held.
     ///
     /// Everything else is deliberately silent — the legacy <see cref="PlayHaptic"/> /
     /// <see cref="PlayConstant"/> entry points (UI, drift, boost, jousts, explosions, overtake,
     /// elemental debuffs …) are no-ops.
     ///
     /// NiceVibrations keeps only ONE loaded clip — every <c>Load()</c> evicts whatever is playing —
-    /// so a tiny priority/rate-limit gate arbitrates the two feels: punish outranks skim (punish
-    /// always interrupts the skim train; the skim train never interrupts a thud).
+    /// so a tiny priority/rate-limit gate arbitrates them. Priority, top to bottom:
+    /// <b>alert &gt; punish &gt; skim &gt; spray</b>. Punish always interrupts the skim train and
+    /// the skim train never interrupts a thud; the spray is a texture, so it yields to all three
+    /// and interrupts none of them.
     /// </summary>
     public class HapticController : MonoBehaviour
     {
@@ -73,11 +79,34 @@ namespace CosmicShore.Gameplay
         const float AlertMinIntervalSec = 1.500f;  // can't stack or retrigger into a drone
         const float AlertDurationSec = 1.200f;     // ~1.2 s of shaking
 
+        // The spray buzz is a TEXTURE, not an event: it repeats for as long as a trigger is
+        // held, so it sits at the BOTTOM of the priority order and never suppresses anything.
+        const float SprayMinIntervalSec = 0.035f;  // backstop floor; the caller sets the real cadence
+        const float SprayDurationSec = 0.050f;     // one short buzz per pulse
+        const float SkimDurationSec = 0.070f;      // the skim clip's length — read only by spray
+
         static float s_lastSkimTime = -999f;
+        static float s_skimBusyUntil = -999f;      // spray is suppressed until here (skim outranks it)
         static float s_lastPunishTime = -999f;
         static float s_punishBusyUntil = -999f;    // skim is suppressed until here (punish owns the motor)
         static float s_lastAlertTime = -999f;
         static float s_alertBusyUntil = -999f;     // skim AND punish are suppressed until here
+        static float s_lastSprayTime = -999f;
+
+        // These are compared against Time.unscaledTime, which restarts at 0 every play session —
+        // with domain reload disabled a leftover busy-until stamp from a long session would
+        // silently mute haptics for that many seconds of the next one.
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        static void ResetStatics()
+        {
+            s_lastSkimTime = -999f;
+            s_skimBusyUntil = -999f;
+            s_lastPunishTime = -999f;
+            s_punishBusyUntil = -999f;
+            s_lastAlertTime = -999f;
+            s_alertBusyUntil = -999f;
+            s_lastSprayTime = -999f;
+        }
 
         /// <summary>
         /// The reward pulse. <paramref name="strength01"/> (0..1) is how close the prism passed to
@@ -93,6 +122,7 @@ namespace CosmicShore.Gameplay
             if (now < s_punishBusyUntil) return;                 // punish outranks skim — don't interrupt it
             if (now - s_lastSkimTime < SkimMinIntervalSec) return;
             s_lastSkimTime = now;
+            s_skimBusyUntil = now + SkimDurationSec;   // spray must not cut the reward short
 
             EnsureClips();
             LofeltHaptics.Load(s_skimJson, s_skimRumble);
@@ -150,6 +180,44 @@ namespace CosmicShore.Gameplay
             LofeltHaptics.Play();
         }
 
+        /// <summary>
+        /// The SPRAY buzz — the fourth feel, added deliberately (Docs/HAPTICS.md ▸ "Adding /
+        /// changing a feel", which requires a dedicated method and an extended gate rather than
+        /// the silenced legacy API). A short mid-frequency buzz with no transient: neither the
+        /// bright skim, the dull thud, nor the long rattle.
+        ///
+        /// It is the game's only CONTINUOUS feel, and that is precisely why it sits at the
+        /// BOTTOM of the priority order — alert, punish and skim all suppress it, and it
+        /// suppresses nothing. A texture that could cut off an event would make the two feels
+        /// the policy is built around less legible, not more; being interruptible costs the
+        /// spray nothing because the very next pulse is milliseconds away.
+        ///
+        /// <paramref name="strength01"/> is how far the gun's accuracy has decayed. The CALLER
+        /// owns the cadence (it tightens with the same quantity, so the buzz climbs in rate as
+        /// well as strength); the interval floor here is only a backstop against a second caller.
+        ///
+        /// Fenced to a held full-auto trigger on the LOCAL HUMAN pilot's own vessel. Do not hang
+        /// it on anything else: a fourth feel is defensible only while it means exactly one thing.
+        /// </summary>
+        public static void PlaySpray(float strength01)
+        {
+            if (!TryBeginPlayback(out var level)) return;
+
+            float now = Time.unscaledTime;
+            if (now < s_alertBusyUntil) return;                  // alert outranks everything
+            if (now < s_punishBusyUntil) return;                 // a thud must land intact
+            if (now < s_skimBusyUntil) return;                   // so must the reward pulse
+            if (now - s_lastSprayTime < SprayMinIntervalSec) return;
+            s_lastSprayTime = now;
+            // Deliberately sets NO busy window: the spray never suppresses another feel.
+
+            EnsureClips();
+            LofeltHaptics.Load(s_sprayJson, s_sprayRumble);
+            LofeltHaptics.outputLevel = level;
+            LofeltHaptics.clipLevel = Mathf.Clamp01(strength01);
+            LofeltHaptics.Play();
+        }
+
         // Shared gate on the player's setting. Returns the output level (haptics "volume") to use.
         static bool TryBeginPlayback(out float level)
         {
@@ -170,9 +238,11 @@ namespace CosmicShore.Gameplay
         static byte[] s_skimJson;
         static byte[] s_punishJson;
         static byte[] s_alertJson;
+        static byte[] s_sprayJson;
         static GamepadRumble s_skimRumble;
         static GamepadRumble s_punishRumble;
         static GamepadRumble s_alertRumble;
+        static GamepadRumble s_sprayRumble;
         static bool s_clipsBuilt;
 
         static void EnsureClips()
@@ -225,6 +295,22 @@ namespace CosmicShore.Gameplay
                 new[] { 90, 70, 90, 70, 90, 70, 90, 70, 100, 90, 80, 60, 60, 30 },
                 low:  new[] { 1.0f, 0.2f, 1.0f, 0.25f, 1.0f, 0.3f, 1.0f, 0.3f, 0.9f, 0.35f, 0.8f, 0.3f, 0.6f, 0.0f },
                 high: new[] { 0.9f, 0.3f, 1.0f, 0.2f,  0.9f, 0.35f, 1.0f, 0.25f, 0.8f, 0.3f, 0.7f, 0.25f, 0.5f, 0.0f });
+
+            // Spray — a short mid-frequency BUZZ, ~50 ms. Deliberately NO transient (that is the
+            // skim's signature) and a mid frequency (punish is 0.0, skim 0.95), so a gun being
+            // held down is instantly separable from a reward or a mistake. Both motors run
+            // together rather than one-or-the-other, which is what reads as a buzz instead of a
+            // tick or a rumble. The clip is authored HOT and scaled down by clipLevel: the quiet
+            // end of the ramp is the caller's 0.15 floor, the loud end is this.
+            s_sprayJson = ClipJson(
+                "{\"time\":0.0,\"amplitude\":0.9}," +
+                "{\"time\":0.03,\"amplitude\":1.0}," +
+                "{\"time\":0.05,\"amplitude\":0.0}",
+                frequency: "0.45", durationSec: "0.05");
+            s_sprayRumble = Rumble(
+                new[] { 30, 20 },
+                low:  new[] { 0.85f, 0.55f },
+                high: new[] { 0.70f, 0.45f });
         }
 
         // Builds a continuous .haptic clip: the caller supplies the amplitude breakpoints; frequency

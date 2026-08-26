@@ -1,0 +1,39 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e8d8aa5d835249798a256e18f2f7d912, type: 3}
+  m_Name: Wildlife Spawn Profile 3
+  m_EditorClassIdentifier:
+  FloraExcludeLocalDomain: 0
+  FloraSpawnVolumeCeiling: 0
+  FloraInitialDelaySeconds: 0
+  FloraSpawnIntervalSeconds: 0
+  SupportedFloras: []
+  FaunaExcludeLocalDomain: 0
+  InitialFaunaSpawnWaitTime: 2
+  InitialFaunaReleaseTier: 0
+  FaunaSpawnVolumeThreshold: 1
+  BaseFaunaSpawnTime: 20
+  SeedFullWaveEveryTick: 0
+  FaunaFoodFloor: 0
+  FaunaInitialDelaySeconds: 0
+  FaunaSpawnIntervalSeconds: 0
+  HerbivoreSpawnPointCount: 0
+  HerbivoreSpawnRadius: 0
+  PredatorSpawnPointCount: 0
+  PredatorSpawnRadius: 0
+  SupportedFaunas:
+  - {fileID: 11400000, guid: 5c3e3b3a6d536277f9f2ed2c8a4172ae, type: 2}
+  - {fileID: 11400000, guid: 29b14f7ba93da476774e4fe2e89b8d77, type: 2}
+  - {fileID: 11400000, guid: 0bd6559f5c44275134e43e122b7754e7, type: 2}
+  - {fileID: 11400000, guid: acbb449af53b04bdf23f77f7c5255d5c, type: 2}
+  - {fileID: 11400000, guid: cca00126169a5a551b6a0d51f5d68052, type: 2}
+  - {fileID: 11400000, guid: fa3ba8bc438bfd80b22e5e0d1ee339e6, type: 2}

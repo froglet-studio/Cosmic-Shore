@@ -36,6 +36,18 @@ namespace CosmicShore.Gameplay
             Mathf.Max(0, TargetCount(gameData) - ScoringMetrics.SumByDomain(gameData, metric, domain));
 
         /// <summary>
+        /// What this mode pays for one landed vessel-vs-vessel hit. 0 - the default, and the
+        /// answer in every mode but Dog Fight - means this mode does not score gunnery; the raw
+        /// hit COUNTS still accumulate on <see cref="IRoundStats"/> either way, since they are
+        /// a platform fact rather than a scoring opinion.
+        ///
+        /// Read once per hit on the server (<c>CombatHitScoring.Credit</c>), so the weighting
+        /// lives in the mode's own asset instead of being baked into the metric reader - which
+        /// is what lets <c>ScoringMetric.CombatPoints</c> stay a plain cumulative int.
+        /// </summary>
+        public virtual int PointsForCombatHit(CombatHitClass hitClass) => 0;
+
+        /// <summary>
         /// Server-side END condition for the current turn. HexRace/Joust/CrystalCapture all end
         /// when an active domain's summed metric reaches the target; override for other shapes.
         /// </summary>

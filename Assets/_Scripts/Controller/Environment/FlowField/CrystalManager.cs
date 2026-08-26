@@ -19,6 +19,28 @@ namespace CosmicShore.Gameplay
     }
 
     /// <summary>
+    /// One intensity's crystal count, as a function of the roster:
+    /// <c>max(1, round(players x CrystalsPerPlayer) + ExtraCrystals)</c>.
+    ///
+    /// <para>Two numbers rather than one because the useful answers are not all the same shape:
+    /// "twice as many as players" is a multiplier, "exactly one, whatever the roster" is a flat
+    /// count, and "one fewer than players" is both. Rampage authors all three down its ladder
+    /// (2x / 1x / 1x-1 / 0x+1), so intensity there is how CONTESTED the Dolphin's only blast
+    /// trigger is rather than how much arena there is.</para>
+    /// </summary>
+    [Serializable]
+    public class IntensityCrystalCount
+    {
+        [Tooltip("Crystals per player in the roster. 0 = the count does not depend on the roster " +
+                 "at all (use ExtraCrystals alone for a flat count).")]
+        [Min(0f)] public float CrystalsPerPlayer = 1f;
+
+        [Tooltip("Added to (or subtracted from) the per-player result. -1 gives 'one fewer than " +
+                 "players'; the total is always floored at 1, so a solo player still gets a crystal.")]
+        public int ExtraCrystals = 0;
+    }
+
+    /// <summary>
     /// Base crystal manager:
     /// - Handles spawn + respawn logic for multiple crystals.
     /// - Provides anchor-based spawn positions (pre-authored anchor lists).
@@ -31,6 +53,7 @@ namespace CosmicShore.Gameplay
         {
             FixedCount = 0,
             PlayerCountPlusExtra = 1,
+            IntensityScaled = 2,
         }
 
         // IMPORTANT:
@@ -56,17 +79,22 @@ namespace CosmicShore.Gameplay
                  "Only used when listOfCrystalPositions has anchors for the current intensity.")]
         [SerializeField, Min(0f)] private float anchorJitterRadius = 35f;
 
-        [Tooltip("Overrides the radius of the ball around the cell centre that crystals spawn in " +
-                 "when NO anchors are authored (Scurry / Crystal Capture). Used by BOTH the initial " +
-                 "batch and every respawn, so the placement volume never changes over a match. " +
-                 "0 (default) = the cell's NUCLEUS radius, which is per-intensity - leave it at 0 " +
-                 "unless a mode genuinely needs to decouple crystals from its cell core.")]
-        [SerializeField, Min(0f)] private float anchorlessSpawnRadius;
+        [Tooltip("FALLBACK ONLY - the anchorless spawn ball's radius for a cell that has NO " +
+                 "NucleusPrefab (Dog Fight's Boneyard). A cell WITH a nucleus always spawns its " +
+                 "crystals inside that nucleus and ignores this field: the nucleus IS the crystal " +
+                 "volume, platform-wide. Leave it 0 unless the cell genuinely has no core.")]
+        [SerializeField, Min(0f)] private float noNucleusSpawnRadius;
 
         [Header("Crystal Count")]
         [SerializeField] private CrystalCountMode crystalCountMode = CrystalCountMode.PlayerCountPlusExtra;
         [SerializeField, Min(0)] private int fixedCrystalCount = 1;
         [SerializeField] private int extraCrystalsToSpawnBeyondPlayerCount = 0;
+
+        [Tooltip("IntensityScaled mode only: one entry per intensity, list order = intensity " +
+                 "(index 0 is intensity 1), exactly like Cell.CellConfigs under " +
+                 "CellTypeChoiceOptions.IntensityWise. An intensity past the end of the list " +
+                 "reuses the last entry.")]
+        [SerializeField] private List<IntensityCrystalCount> crystalCountByIntensity = new();
 
         [Header("Crystal Domain")]
         [SerializeField] protected bool spawnCrystalWithPlayerDomain;
@@ -100,6 +128,20 @@ namespace CosmicShore.Gameplay
             cellData.CellItems = new List<CellItem>();
             cellData.Crystals ??= new List<Crystal>();
         }
+
+        /// <summary>
+        /// Asks the machine that OWNS a collecting vessel to run that crystal's vessel-side
+        /// effects locally. No-op in a non-networked session (single player, the freestyle
+        /// conveyor's manager-less mints), where the collecting machine is the only machine;
+        /// <see cref="NetworkCrystalManager"/> overrides it with a targeted ClientRpc.
+        ///
+        /// Collection is resolved server-only, which is right - one machine must decide who got
+        /// the crystal and where it goes next. But the EFFECTS of a pickup are what the pilot
+        /// sees and feels, and they were landing only on the server: a remote client's Dolphin
+        /// collected the crystal, and the jaw blast, the spent energy meter and the elemental
+        /// level all happened on a machine that pilot was not looking at.
+        /// </summary>
+        public virtual void ReplayVesselCrystalEffects(int crystalId, ulong vesselNetworkObjectId, ulong ownerClientId) { }
 
         // ------------------------------------------------------------
         // CellItem management (unchanged conceptually)
@@ -276,7 +318,7 @@ namespace CosmicShore.Gameplay
             if (listOfCrystalPositions == null || listOfCrystalPositions.Count == 0)
                 return false;
 
-            int intensity = Mathf.Clamp(intensityLevelData ? intensityLevelData.Value : 1, 1, listOfCrystalPositions.Count);
+            int intensity = Mathf.Clamp(CurrentIntensity, 1, listOfCrystalPositions.Count);
             var set = listOfCrystalPositions[intensity - 1];
 
             if (set == null || set.positions == null || set.positions.Count == 0)
@@ -297,13 +339,82 @@ namespace CosmicShore.Gameplay
             return true;
         }
 
+        /// <summary>
+        /// The intensity this manager authors against: the serialized SOAP variable when a scene
+        /// wires one, otherwise <see cref="GameDataSO.SelectedIntensity"/> - which is the SAME
+        /// asset in every scene that wires it, so this is one source with a fallback rather than
+        /// two. Floored at 1.
+        ///
+        /// <para>No <c>GameConfigSynced</c> gate is needed here even though a client's
+        /// <c>SelectedIntensity</c> arrives late (see <see cref="GameDataSO.GameConfigSynced"/> for
+        /// the sticky-cell race this resembles): both intensity readers are SERVER-side. The count
+        /// is resolved only inside <see cref="NetworkCrystalManager"/>'s <c>IsServer</c> paths and
+        /// reaches clients as the replicated slot-list LENGTH, and the anchor list is likewise read
+        /// on the server. A client never derives either number for itself.</para>
+        /// </summary>
+        protected int CurrentIntensity
+        {
+            get
+            {
+                var source = intensityLevelData ? intensityLevelData
+                                                : (gameData ? gameData.SelectedIntensity : null);
+                return Mathf.Max(1, source ? source.Value : 1);
+            }
+        }
+
         protected int GetCrystalCountToSpawn()
         {
             return crystalCountMode switch
             {
                 CrystalCountMode.FixedCount => fixedCrystalCount,
+                CrystalCountMode.IntensityScaled => IntensityScaledCrystalCount(),
                 _ => Mathf.Max(1, gameData.Players.Count + extraCrystalsToSpawnBeyondPlayerCount),
             };
+        }
+
+        /// <summary>
+        /// The crystal count for the current intensity and roster. See
+        /// <see cref="IntensityCrystalCount"/> for the formula.
+        ///
+        /// <para>The roster is <c>gameData.Players.Count</c> - the same source
+        /// <see cref="CrystalCountMode.PlayerCountPlusExtra"/> uses, and the reason the count can
+        /// safely be taken before everyone has arrived: <c>NetworkCrystalManager</c> re-asks on
+        /// every <c>OnPlayerAdded</c> and again at turn start, growing the slot list as the roster
+        /// fills. AI backfill counts, because an AI is a player holding a Dolphin.</para>
+        /// </summary>
+        private int IntensityScaledCrystalCount()
+        {
+            int players = Mathf.Max(1, gameData.Players.Count);
+
+            if (crystalCountByIntensity is not { Count: > 0 })
+            {
+                CSDebug.LogError($"[CrystalManager] '{name}' is on IntensityScaled crystal count but " +
+                                 "authors no crystalCountByIntensity entries; falling back to one " +
+                                 "crystal per player.");
+                return players;
+            }
+
+            return ResolveIntensityCrystalCount(crystalCountByIntensity, CurrentIntensity, players);
+        }
+
+        /// <summary>
+        /// The pure <see cref="CrystalCountMode.IntensityScaled"/> formula, static so the
+        /// edit-mode tests can pin the ladder without a NetworkBehaviour or a live roster.
+        /// An intensity past the end of the table reuses the last entry; the result never
+        /// drops below 1.
+        /// </summary>
+        public static int ResolveIntensityCrystalCount(
+            IReadOnlyList<IntensityCrystalCount> table, int intensity, int players)
+        {
+            if (table is not { Count: > 0 }) return Mathf.Max(1, players);
+
+            var entry = table[Mathf.Clamp(intensity, 1, table.Count) - 1];
+            if (entry == null) return Mathf.Max(1, players);
+
+            // Round half UP explicitly - Mathf.RoundToInt is banker's rounding, which would send
+            // 3 players x 0.5 and 5 players x 0.5 in opposite directions for no stated reason.
+            int scaled = Mathf.FloorToInt(Mathf.Max(1, players) * Mathf.Max(0f, entry.CrystalsPerPlayer) + 0.5f);
+            return Mathf.Max(1, scaled + entry.ExtraCrystals);
         }
 
         /// <summary>
@@ -344,7 +455,7 @@ namespace CosmicShore.Gameplay
 
         /// <summary>
         /// The spawn point used when NO anchors are authored (Scurry / Crystal Capture):
-        /// a random point in a ball of <see cref="anchorlessSpawnRadius"/> around the cell centre.
+        /// a random point in a ball of <see cref="GetAnchorlessSpawnRadius"/> around the cell centre.
         /// This is the SINGLE definition of that volume - the initial batch and every respawn
         /// both draw from it, so the placement radius does not change over a match.
         /// </summary>
@@ -355,17 +466,25 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// The reference size for anchorless crystal placement: the CELL NUCLEUS radius, which is
-        /// per-intensity (an IntensityWise cell picks a different config, hence a different nucleus,
-        /// per level). Crystals therefore live inside the cell core at whatever scale that
-        /// intensity's core is, and the reference is identical for the initial batch and every
-        /// respawn. The serialized override wins when non-zero; the crystal's own SphereRadius is
-        /// the last-resort fallback for a cell with no nucleus at all.
+        /// The reference size for anchorless crystal placement: <b>the CELL NUCLEUS radius, and
+        /// nothing may override it.</b>
+        ///
+        /// <para><b>Platform coupling (LOCKED):</b> a standard respawning crystal always respawns
+        /// INSIDE the nucleus, in every mode. The nucleus is the visible marker of the cell's core
+        /// and the thing players read as "the middle"; a crystal that respawns anywhere else makes
+        /// that marker a lie, and every mode that contests a crystal then has to teach its own
+        /// answer to "where do I look". The radius is per-intensity for free (an IntensityWise cell
+        /// picks a different config, hence a different nucleus, per level), and it is identical for
+        /// the initial batch and every respawn, so the placement volume never changes over a match.
+        /// Do NOT reintroduce a per-scene override — a mode that wants crystals somewhere else
+        /// should resize its nucleus (author a `CellConfigDataSO` with a resized `NucleusPrefab`,
+        /// per CLAUDE.md), which moves BOTH together and keeps them coupled.</para>
+        ///
+        /// <see cref="noNucleusSpawnRadius"/> is the fallback for a cell that genuinely has no
+        /// nucleus at all (Dog Fight's Boneyard); the crystal's own SphereRadius is the last resort.
         /// </summary>
         protected float GetAnchorlessSpawnRadius()
         {
-            if (anchorlessSpawnRadius > 0f) return anchorlessSpawnRadius;
-
             // Resolved through the registry + ExpectedNucleusWorldRadius so placement never depends
             // on whether Cell.Initialize beat the first crystal spawn (see Cell.ExpectedNucleusWorldRadius).
             var cell = Cell.FindByRuntimeData(cellData);
@@ -374,6 +493,8 @@ namespace CosmicShore.Gameplay
                 float nucleusRadius = cell.ExpectedNucleusWorldRadius;
                 if (nucleusRadius > 0f) return nucleusRadius;
             }
+
+            if (noNucleusSpawnRadius > 0f) return noNucleusSpawnRadius;
 
             if (crystalPrefab != null) return crystalPrefab.SphereRadius;
             return cellData.TryGetLocalCrystal(out Crystal crystal) ? crystal.SphereRadius : 10f;

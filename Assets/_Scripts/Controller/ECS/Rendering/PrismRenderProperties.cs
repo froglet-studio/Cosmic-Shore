@@ -164,7 +164,28 @@ namespace CosmicShore.ECS
         public float Value;
     }
 
-    // -- Implosion set (SuctionGraph): suction/reverse-grow clock --
+    /// <summary>
+    /// Where each face of this debris spins: 0 = the pivot RotateFacesAlongAxis derives
+    /// (`dot(P,N)*N` plus a fixed tangent slide, a hardcoded measurement of the prism
+    /// CUBE's four-wedge face), 1 = the per-face CENTROID the mesh bakes into TEXCOORD1.
+    /// Docs/PRISM_ANIMATION.md §4.8.2.
+    ///
+    /// Per-INSTANCE and not per-material, because a dropped shield sheds through the same
+    /// ExplodingBlockMaterial a dying prism's pieces use (§4.8.1) — that shared material is
+    /// the thing keeping the two death visuals identical, so the mesh's face layout has to
+    /// travel with the entity instead. Costs one float per debris entity and one `mad` in
+    /// the vertex stage; a shader keyword or a second material would have split the batch
+    /// AND forked the pipeline.
+    /// </summary>
+    [MaterialProperty("_FacePivotFromCentroid")]
+    public struct PrismFacePivotFromCentroidOverride : IComponentData
+    {
+        public float Value;
+    }
+
+    // -- Implosion set (SuctionGraph): suction/reverse-grow clock; also the live
+    // Prism set (BlockGraph / ExplodingBlockGraph, Docs/PRISM_ANIMATION.md §5 C9
+    // cell-swap suction) --
 
     [MaterialProperty("_SuctionStartTime")]
     public struct PrismSuctionStartTimeOverride : IComponentData
@@ -188,5 +209,102 @@ namespace CosmicShore.ECS
     public struct PrismSuctionGrowDelayOverride : IComponentData
     {
         public float Value;
+    }
+
+    // -- Prism set: ballistic flight (Docs/PRISM_ANIMATION.md §5 C5) --
+    // A prism FIRED as a projectile (the Sparrow's Turret Stance). The entity
+    // transform is final at the flight's END POINT from the stamp; the vertex
+    // stage walks the visual in from the muzzle off these three, on the bullets'
+    // own cosine easing. Duration 0 = unstamped = "render where the transform is",
+    // which is every other prism in the game.
+
+    [MaterialProperty("_FlightStartTime")]
+    public struct PrismFlightStartTimeOverride : IComponentData
+    {
+        public float Value;
+    }
+
+    [MaterialProperty("_FlightDuration")]
+    public struct PrismFlightDurationOverride : IComponentData
+    {
+        public float Value;
+    }
+
+    /// WORLD-space muzzle velocity in units/second. Velocity * 2*Duration/pi is the
+    /// full flight vector; the shader does the world->object conversion with a raw
+    /// inverse-model multiply (never a normalizing Transform node).
+    [MaterialProperty("_FlightVelocity")]
+    public struct PrismFlightVelocityOverride : IComponentData
+    {
+        public float3 Value;
+    }
+
+    // -- Prism set: SHIELD MORPH (Docs/PRISM_ANIMATION.md §5 B4) --
+    // The octahedron shield's per-face engage bloom and its shatter overlay (and the
+    // stellated super-shield's twin pair). Both run in the vertex stage on the
+    // cache-SHARED settled shield mesh, off the per-face centroid the mesh generators
+    // bake into TEXCOORD1 — so a shielded prism never leaves the instanced path and
+    // same-size shields batch through the whole animation. Duration 0 = unstamped =
+    // "render the mesh as authored", which is every prism not mid-transition.
+
+    [MaterialProperty("_ShieldMorphStartTime")]
+    public struct PrismShieldMorphStartTimeOverride : IComponentData
+    {
+        public float Value;
+    }
+
+    [MaterialProperty("_ShieldMorphDuration")]
+    public struct PrismShieldMorphDurationOverride : IComponentData
+    {
+        public float Value;
+    }
+
+    /// &gt;= 0 engage (faces bloom out from their centroids); &lt; 0 shatter (faces
+    /// shrink to their centroids while flying out along their normals).
+    [MaterialProperty("_ShieldMorphDirection")]
+    public struct PrismShieldMorphDirectionOverride : IComponentData
+    {
+        public float Value;
+    }
+
+    /// Shatter fly-out distance in LOCAL units at t = 1 (unused by the bloom).
+    [MaterialProperty("_ShieldMorphOffset")]
+    public struct PrismShieldMorphOffsetOverride : IComponentData
+    {
+        public float Value;
+    }
+    // -- Prism set: super-shield deflection jiggle (Docs/PRISM_ANIMATION.md §5 C14) --
+    // A SUPER-SHIELDED prism that absorbed a hit without being destroyed
+    // (Prism.AbsorbSuperShieldHit). The vertex stage wobbles each face about the prism's
+    // object origin on a precessing, nutating axis and settles to exactly zero at
+    // Duration. Duration 0 = unstamped = identity, which is every prism that has never
+    // deflected anything. Composes with the shield morph above rather than replacing it:
+    // the morph runs first and the wobble rotates its result.
+    //
+    // Three properties, not four: the per-face and per-prism randomness is derived on the
+    // GPU from the face normal and the object-to-world translation, so no seed needs
+    // stamping and no mesh channel needs authoring.
+
+    [MaterialProperty("_JiggleStartTime")]
+    public struct PrismJiggleStartTimeOverride : IComponentData
+    {
+        public float Value;
+    }
+
+    [MaterialProperty("_JiggleDuration")]
+    public struct PrismJiggleDurationOverride : IComponentData
+    {
+        public float Value;
+    }
+
+    /// (peak tilt in RADIANS, precession rate rad/s, nutation rate rad/s). Packed into one
+    /// float3 because the prism graphs carry Vector1 and Vector3 property donors and no
+    /// Vector4 one — synthesising a property type neither graph contains is exactly the
+    /// hand-authored schema the asset-surgery protocol forbids (same ruling as
+    /// PrismDestructionSight's five globals).
+    [MaterialProperty("_JiggleParams")]
+    public struct PrismJiggleParamsOverride : IComponentData
+    {
+        public float3 Value;
     }
 }
