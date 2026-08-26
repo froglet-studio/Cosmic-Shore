@@ -98,6 +98,17 @@ namespace CosmicShore.UI
         UnityEngine.UI.Image vesselIcon;
 
         [Header("Copy")]
+        [Tooltip("How much of an ability's authored description a row shows.\n\n" +
+                 "ElementalAbilityMapSO.AbilityDescription is a DESIGN NOTE, not player copy - " +
+                 "the shipped ones run to several hundred characters of mechanism - so quoting it " +
+                 "whole buries the row it belongs to. FirstSentence is the default because that " +
+                 "sentence is reliably the summary and the rest is rationale.")]
+        [SerializeField] DescriptionStyle abilityDescriptionStyle = DescriptionStyle.FirstSentence;
+
+        [SerializeField, Tooltip("Hard character cap on a row's description, whatever the style. " +
+                                 "0 = no cap. A first sentence that runs long is still a wall.")]
+        [Min(0)] int descriptionCharacterCap = 120;
+
         [SerializeField, Tooltip("Headline for an ability the player fires with a control. " +
                                  "{0} = control name (RT, LT, A…), {1} = ability name.")]
         string abilityHeadlineFormat = "Press {0} to activate {1}";
@@ -118,6 +129,17 @@ namespace CosmicShore.UI
                                  "beats are press flash → veil sweeps off → ready flash, which is " +
                                  "the ability lockup's own grammar (Docs/ABILITY_LOCKUP.md).")]
         [Range(0.2f, 0.9f)] float cooldownFraction = 0.6f;
+
+        /// <summary>How much of an authored ability description a row quotes.</summary>
+        public enum DescriptionStyle
+        {
+            /// <summary>Headline only - the sentence naming the control and the ability.</summary>
+            None = 0,
+            /// <summary>The first sentence of the authored description. The default.</summary>
+            FirstSentence = 1,
+            /// <summary>All of it. For a vessel whose descriptions are genuinely player copy.</summary>
+            Full = 2,
+        }
 
         /// <summary>Charge → mass → space → time: the fleet's ability-row order.</summary>
         static readonly Element[] DisplayOrder =
@@ -262,7 +284,7 @@ namespace CosmicShore.UI
 
                 row.Bind(element,
                          headline,
-                         entry.AbilityDescription,
+                         TrimDescription(entry.AbilityDescription),
                          ResolveAbilityIcon(vessel, entry.AbilityLabel),
                          barsConfig ? barsConfig.GetPetalSprite(element) : null,
                          _keyboardWhenBound ? null : glyph?.padGlyph,
@@ -277,6 +299,44 @@ namespace CosmicShore.UI
                 used++;
             }
             return used;
+        }
+
+        /// <summary>
+        /// The part of an authored description a row should actually show.
+        ///
+        /// <para>"First sentence" means the first terminator followed by whitespace, so a decimal
+        /// or an abbreviation mid-sentence does not cut it short. Newlines end a sentence too -
+        /// these fields are written as prose blocks and the first line is routinely the summary.</para>
+        /// </summary>
+        string TrimDescription(string description)
+        {
+            if (string.IsNullOrWhiteSpace(description)) return string.Empty;
+            if (abilityDescriptionStyle == DescriptionStyle.None) return string.Empty;
+
+            var text = description.Trim();
+
+            if (abilityDescriptionStyle == DescriptionStyle.FirstSentence)
+            {
+                int cut = -1;
+                for (int i = 0; i < text.Length; i++)
+                {
+                    char c = text[i];
+                    if (c == '\n' || c == '\r') { cut = i; break; }
+                    if (c != '.' && c != '!' && c != '?') continue;
+                    if (i + 1 >= text.Length || char.IsWhiteSpace(text[i + 1])) { cut = i + 1; break; }
+                }
+                if (cut > 0) text = text[..cut].TrimEnd();
+            }
+
+            if (descriptionCharacterCap > 0 && text.Length > descriptionCharacterCap)
+            {
+                // Break on a word, not mid-word: an ellipsis after half a word reads as a bug.
+                int space = text.LastIndexOf(' ', Mathf.Min(descriptionCharacterCap, text.Length - 1));
+                text = (space > descriptionCharacterCap / 2 ? text[..space] : text[..descriptionCharacterCap])
+                       .TrimEnd(' ', ',', ';', ':', '-') + "…";
+            }
+
+            return text;
         }
 
         /// <summary>

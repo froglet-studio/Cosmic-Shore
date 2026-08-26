@@ -14,31 +14,52 @@ playtest were all fallback branches, and the fix was deleting the branches.
 
 ---
 
-## 1. The flow
+## 1. The flow — TWO phases, and that is the whole design
 
 ```
 card selected (SetSelectedGame)
- └─ session.SetDefinition(def, mode's hull)
-     ├─ no definition            → window: "LEVEL PREVIEW NOT AVAILABLE"   (~27 modes, honest)
+ └─ session.SetDefinition(def, mode's hull, intensity)
+     ├─ no definition            → window: "LEVEL PREVIEW NOT AVAILABLE"
      └─ definition               → window: "LOADING <MODE>…", then automatically:
-         ├─ ModePreviewArena.Stand()          satellite cell, 120k units out
-         ├─ RequestSwap(mode's hull)          pose / speed / domain preserved
-         ├─ vessel.SetPose(arena spawn)       the framing the real mode opens on
-         ├─ AIPilot.RetargetCell(arena data)  ← load-bearing, see §3
-         ├─ CameraManager.BeginWindowedPlayerCamera → window's RenderTexture
-         └─ window.GoLive()                   the AI is flying; "TAP TO PLAY"
+         ├─ ModePreviewArena.Stand()       satellite cell, 120k units out
+         ├─ arena.BeginArenaCamera()       the arena's OWN camera → the window's RenderTexture
+         └─ state = SHOWING                the WORLD, slowly orbiting. "TAP TO PLAY"
 
-tap the window     → AI off, input on, sendNavigationEvents off, AnyHasFocus = true
+tap the window     → state = LIVE:
+         ├─ RequestSwap(mode's hull)       pose / speed / domain preserved
+         ├─ vessel.SetPose(arena spawn)    the framing the real mode opens on
+         ├─ AIPilot.RetargetCell(arena)    ← load-bearing, see §3
+         ├─ CameraManager.BeginWindowedPlayerCamera → the same RenderTexture
+         └─ arena.EndArenaCamera()         AFTER the handover, never before
+
 tap outside /
-Escape / Start     → input paused, AI back ON — the preview keeps playing in the window
+Escape / Start     → back to SHOWING: vessel home, hull restored, arena camera resumes
 card change /
 modal close /
-launch             → Stop(): camera back, AI retarget restored, vessel home, arena struck (§4)
+launch             → Stop(): arena struck and drained (§4)
 ```
 
-The objective runner (the mode's own `ScoringMetric`, baselined) starts counting at the player's
-**first take-over** — the AI's flight is a demo, not their progress. Completing it tears nothing
-down; it just stops counting.
+**A card that has only been opened has touched nothing outside its arena.** Not the player's hull,
+not its pose, not the gameplay camera. That is what the two phases buy, and it is the fix for both
+of the first playtest's complaints:
+
+- **"It shows the vessel flying before I asked."** It doesn't any more. Opening a card shows the
+  *world* — a camera parented to the arena root, framing the membrane and orbiting slowly. The
+  vessel arrives on the tap, which is also when the player takes the stick: there is no AI demo
+  phase, because a demo is what the window was showing *instead of* the environment.
+- **"Backing out is a mess."** Everything that has to be UNDONE on the way out — a networked hull
+  swap, a teleport, the camera loan, the AI's retarget — is now only ever done by an explicit tap
+  IN. The common path (open a card, look, press back) has nothing to unwind, and the uncommon one
+  unwinds under a user action with the window still on screen instead of racing the next card at
+  modal-close.
+
+**The camera handover is ordered, both ways**: the incoming camera takes the texture *before* the
+outgoing one lets go, so the surface never has a frame with nobody drawing into it. That frame is
+the "white rectangle" the window exists to make impossible (`Apply` disables the RawImage in every
+non-live state precisely because a RawImage with a null texture renders its colour as a solid
+block).
+
+The objective runner starts on the tap, which is now also the arrival.
 
 ## 2. Focus — who holds the stick
 

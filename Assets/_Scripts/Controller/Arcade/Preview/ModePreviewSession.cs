@@ -41,7 +41,18 @@ namespace CosmicShore.Gameplay
     /// </summary>
     public class ModePreviewSession : MonoBehaviour
     {
-        enum State { Idle = 0, Standing = 1, Live = 2, Striking = 3 }
+        /// <summary>
+        /// <b>Showing</b> is the state a card opens in: the arena is up and its own camera is
+        /// drawing it, and NOTHING outside the arena has been touched - not the player's hull, not
+        /// its pose, not the gameplay camera. <b>Live</b> is after the tap, when the vessel is
+        /// actually in there and the player is flying it.
+        ///
+        /// <para>The split is what makes backing out seamless. Everything that has to be UNDONE on
+        /// the way out - a networked hull swap, a teleport, the camera loan, the AI's retarget - is
+        /// now only ever done by an explicit tap IN, so the common path (open a card, look at it,
+        /// press back) has nothing to unwind at all.</para>
+        /// </summary>
+        enum State { Idle = 0, Standing = 1, Showing = 2, Live = 3, Striking = 4 }
 
         [Header("Menu wiring")]
         [SerializeField, Tooltip("Cell prefab the satellite arena is instantiated from. Leave empty " +
@@ -103,6 +114,19 @@ namespace CosmicShore.Gameplay
         /// <summary>True from the moment an arena starts standing until its strike completes.</summary>
         public bool IsActive => _state != State.Idle;
 
+        /// <summary>True once the player has tapped in and is flying the arena themselves.</summary>
+        public bool IsFlying => _state == State.Live;
+
+        [Header("Arena view")]
+        [SerializeField, Tooltip("Degrees per second the arena camera orbits the cell while the " +
+                                 "card is just being LOOKED at. Slow: it is a world holding still " +
+                                 "to be read, not a showreel.")]
+        [Min(0f)] float arenaOrbitDegreesPerSecond = 4f;
+
+        // Guards the tap: entering flight is async (a networked hull swap), so a second tap while
+        // the first is still landing must not run the whole entry twice.
+        bool _enteringFlight;
+
         /// <summary>The mode being previewed, or <see cref="GameModes.Random"/> when idle.</summary>
         public GameModes ActiveMode { get; private set; } = GameModes.Random;
 
@@ -152,6 +176,11 @@ namespace CosmicShore.Gameplay
             // card change lands AFTER the previous arena's strike has fully completed (state
             // returns to Idle), and so a click that arrives before the local vessel exists just
             // waits instead of failing.
+            // The arena camera's slow orbit, driven from here so the arena itself owns no clock.
+            // Unscaled: the menu can hold timeScale at 0 while a card is open.
+            if (_state == State.Showing)
+                _arena.TickArenaCamera(Time.unscaledDeltaTime, arenaOrbitDegreesPerSecond);
+
             if (!_autoStartPending || _state != State.Idle) return;
             if (!_definition || !_definition.CanTestFlight) { _autoStartPending = false; return; }
 
@@ -209,7 +238,8 @@ namespace CosmicShore.Gameplay
             // an identical world would make the intensity row feel broken while changing nothing
             // on screen. A mode whose intensity is not an arena at all - Skim Race's track length,
             // the Maelstrom's pool - authors one cell and is never rebuilt.
-            bool sameCard = _definition == definition && _state is State.Standing or State.Live;
+            bool sameCard = _definition == definition &&
+                            _state is State.Standing or State.Showing or State.Live;
             bool sameArena = !definition || !definition.ArenaVariesByIntensity ||
                              definition.ResolveCell(intensity) == definition.ResolveCell(_intensity);
             if (sameCard && sameArena)
@@ -269,10 +299,6 @@ namespace CosmicShore.Gameplay
                 if (!_arena.Stand(definition, config, template, prefab, origin))
                     throw new InvalidOperationException("the arena could not be stood up");
 
-                // The mode's own hull. Flying Rampage as a Squirrel teaches nothing about
-                // Rampage, and RequestSwap already preserves pose, speed and domain.
-                await SwapVessel(ResolveVessel(definition), remember: true, ct);
-
                 // The satellite builds without a veil (it is beside the menu, not instead of
                 // it), so we wait on the cell rather than on a screen hold.
                 if (!await WaitWhile(() => _arena.Cell && _arena.Cell.IsSwappingConfig, ct))
@@ -283,19 +309,15 @@ namespace CosmicShore.Gameplay
                     await UniTask.Delay((int)(settleSeconds * 1000f),
                         ignoreTimeScale: true, cancellationToken: ct);
 
-                // Relocate the vessel and point its autopilot at the ARENA's runtime data -
-                // without this the AI keeps hunting the menu cell's crystals 120k units away
-                // and flies straight back out of the arena.
-                ParkVesselInArena(definition);
-                RetargetAIToArena();
+                // The ARENA's own camera, not the gameplay one: a card that has only been opened
+                // shows the world and nothing else. No hull swap, no teleport, no camera loan -
+                // see the State summary.
+                var texture = _window ? _window.LiveTexture : null;
+                if (!_arena.BeginArenaCamera(texture))
+                    throw new InvalidOperationException("the arena camera could not be started");
 
-                if (!HandCameraToWindow())
-                    throw new InvalidOperationException("no gameplay camera to lend");
-
-                _state = State.Live;
-                _window?.GoLive();
-                // No TakeFocus here: the AI flies. The window is a game already in progress;
-                // the tap is what makes it yours.
+                _state = State.Showing;
+                _window?.GoLive();      // the surface now has a camera drawing into it
             }
             catch (OperationCanceledException)
             {
@@ -304,22 +326,86 @@ namespace CosmicShore.Gameplay
             catch (Exception e)
             {
                 CSDebug.LogError($"[ModePreview] Preview of {definition.Mode} failed: {e.Message}.");
-                _state = State.Live;      // so Stop() has something to unwind
+
+                // Showing, not Live: Stop() unwinds either, and claiming the vessel is in there
+                // when the stand FAILED would send the teardown looking for a hull swap and a
+                // teleport that never happened.
+                _state = State.Showing;
                 Stop(ModePreviewOutcome.Abandoned);
+
+                // Last, so the strike's own window writes cannot overwrite it: an arena that
+                // could not be stood up has exactly one honest thing to say.
                 _window?.ShowUnavailable();
             }
         }
 
         // ── Focus (who holds the stick) ──────────────────────────────────────
 
+        /// <summary>
+        /// The tap. This is where the vessel ARRIVES - the hull swap, the teleport, the AI's
+        /// retarget and the camera loan all happen here rather than when the card opened, so a
+        /// player who only looked at a card never paid for any of them.
+        /// </summary>
         void HandleFocusRequested()
         {
-            if (_state != State.Live) return;
+            if (_state == State.Live) { GrantStick(); return; }
+            if (_state != State.Showing || _enteringFlight) return;
 
+            EnterFlightAsync(_cts?.Token ?? this.GetCancellationTokenOnDestroy()).Forget();
+        }
+
+        async UniTaskVoid EnterFlightAsync(CancellationToken ct)
+        {
+            _enteringFlight = true;
+            try
+            {
+                var definition = _definition;
+                if (!definition) return;
+
+                // The mode's own hull. Flying Rampage as a Squirrel teaches nothing about
+                // Rampage, and RequestSwap already preserves pose, speed and domain.
+                await SwapVessel(ResolveVessel(definition), remember: true, ct);
+
+                // Relocate the vessel and point its autopilot at the ARENA's runtime data -
+                // without this the AI keeps hunting the menu cell's crystals 120k units away and
+                // flies straight back out of the arena.
+                ParkVesselInArena(definition);
+                RetargetAIToArena();
+
+                // The gameplay camera takes the window from the arena camera. Order matters: the
+                // arena camera only stands down once the gameplay one has the texture, so the
+                // surface never has a frame with nobody drawing into it - which is the white
+                // rectangle this window is built to never show.
+                if (!HandCameraToWindow())
+                    throw new InvalidOperationException("no gameplay camera to lend");
+                _arena.EndArenaCamera();
+
+                _state = State.Live;
+                GrantStick();
+
+                // The objective counts from the take-over, which is now also the arrival.
+                if (!_runnerStarted) StartRunner(definition);
+            }
+            catch (OperationCanceledException)
+            {
+                // Superseded or destroyed - whoever cancelled owns the unwind.
+            }
+            catch (Exception e)
+            {
+                CSDebug.LogError($"[ModePreview] Could not enter flight: {e.Message}.");
+                ReturnToArenaView();
+            }
+            finally
+            {
+                _enteringFlight = false;
+            }
+        }
+
+        void GrantStick()
+        {
             var player = gameData?.LocalPlayer;
             if (player?.Vessel == null) return;
 
-            // Take the stick from the AI.
             player.Vessel.ToggleAIPilot(false);
             player.InputController?.SetPause(false);
 
@@ -333,25 +419,78 @@ namespace CosmicShore.Gameplay
             }
 
             _window?.GrantFocus();
-
-            // The objective starts counting from the player's first take-over - the AI's
-            // warm-up flight is a demo, not their progress.
-            if (!_runnerStarted) StartRunner(_definition);
         }
 
+        /// <summary>
+        /// Tapping out puts the vessel BACK, rather than leaving it flying under AI. The whole
+        /// point of the two phases is that a card is only ever in one of two states - a world you
+        /// are looking at, or a world you are in - so releasing returns to the first. It also puts
+        /// the unwind under an explicit user action with the window still on screen, instead of
+        /// deferring it to modal-close where it used to race the next card.
+        /// </summary>
         void HandleFocusReleased()
         {
-            var player = gameData?.LocalPlayer;
-            if (player?.Vessel != null)
-            {
-                // Hand the stick back to the AI - the preview keeps playing in the window,
-                // exactly as it did before the tap.
-                player.InputController?.SetPause(true);
-                player.Vessel.ToggleAIPilot(true);
-            }
-
             if (EventSystem.current)
                 EventSystem.current.sendNavigationEvents = _navigationWasEnabled;
+
+            if (_state != State.Live) return;
+
+            ExitFlightAsync(_cts?.Token ?? this.GetCancellationTokenOnDestroy()).Forget();
+        }
+
+        async UniTaskVoid ExitFlightAsync(CancellationToken ct)
+        {
+            try
+            {
+                var player = gameData?.LocalPlayer;
+                if (player?.Vessel != null)
+                {
+                    player.InputController?.SetPause(true);
+                    player.Vessel.ToggleAIPilot(true);
+                }
+
+                StopRunner();
+                if (hud) hud.Hide();
+
+                // Pen the local trail up across the teleport home: a spawner left live for even
+                // one frame after SetPose lays a prism bridging 120k units of empty space.
+                SetLocalTrailPaused(true);
+                RestoreAITarget();
+                ReturnVesselHome();
+                await RestoreVessel(ct);
+                SetLocalTrailPaused(false);
+
+                ReturnToArenaView();
+            }
+            catch (OperationCanceledException)
+            {
+                // Superseded - Stop() owns the rest.
+            }
+        }
+
+        /// <summary>
+        /// Back to "a world you are looking at": the gameplay camera goes home and the arena's own
+        /// camera takes the window again. Same order as the entry, for the same reason - the
+        /// surface never has a frame with nobody drawing into it.
+        /// </summary>
+        void ReturnToArenaView()
+        {
+            if (_state == State.Idle || _state == State.Striking) return;
+
+            var texture = _window ? _window.LiveTexture : null;
+            if (_arena.IsStanding && _arena.BeginArenaCamera(texture))
+            {
+                CameraManager.Instance?.EndWindowedPlayerCamera();
+                _state = State.Showing;
+                _window?.GoLive();
+                return;
+            }
+
+            // No arena left to look at. Say so rather than leaving a surface with nothing behind
+            // it - a blank frame reads as a broken card, and this window has exactly three honest
+            // states.
+            CameraManager.Instance?.EndWindowedPlayerCamera();
+            _window?.ShowUnavailable();
         }
 
         // ── Stopping ─────────────────────────────────────────────────────────

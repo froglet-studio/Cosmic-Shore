@@ -154,6 +154,21 @@ Ability ICONS are matched off the vessel asset by NAME (`SO_Vessel.Abilities` �
 `ElementalAbilityEntry.AbilityLabel`). No match is an ordinary answer: the row keeps its prefab
 sprite and the element petal still says which element owns the slot.
 
+### 4.3.1 An authored ability description is a DESIGN NOTE, not player copy
+
+`ElementalAbilityMapSO.AbilityDescription` runs to several hundred characters of mechanism — the
+Dolphin's four are essays about multipliers and cooldown curves. Quoting one whole buries the row
+it belongs to and every row under it, which is exactly what the first build did.
+
+Rows show the **first sentence**, hard-capped (`descriptionCharacterCap`, 120): that sentence is
+reliably the summary and the rest is rationale. `DescriptionStyle` can select `None` (headline
+only) or `Full` for a vessel whose descriptions are genuinely player copy. The cap breaks on a
+word — an ellipsis mid-word reads as a bug rather than as a trim.
+
+**Rows go under the scroll view's `content`, never the block root.** A row parented to the root
+sits outside the viewport's mask and draws over everything below it, which is the overlapping wall
+of text a scroll view gets added to fix. `ArcadeLaunchPanelWirer.RowHost` resolves this.
+
 ### 4.4 The briefing is ONE text field, cycling
 
 The description and the tips are the same voice answering the same question at different depths,

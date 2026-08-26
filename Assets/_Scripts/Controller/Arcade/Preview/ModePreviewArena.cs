@@ -150,6 +150,9 @@ namespace CosmicShore.Gameplay
         /// </summary>
         public GameObject BeginStrike()
         {
+            EndArenaCamera();
+            _arenaCamera = null;      // destroyed with the root in FinishStrike
+
             GameObject retiring = null;
             if (Cell) retiring = Cell.StrikeSatelliteWorld();
 
@@ -183,6 +186,91 @@ namespace CosmicShore.Gameplay
 
             Cell = null;
         }
+
+        /// <summary>
+        /// Show the arena on its own, with no vessel: a camera parented to the arena root, framing
+        /// the cell and orbiting it slowly.
+        ///
+        /// <para>This is what a card shows the moment it opens. The vessel arrives only when the
+        /// player taps in, and until then NOTHING outside this arena has been touched - not the
+        /// hull, not its pose, not the gameplay camera - which is what makes backing out of a card
+        /// you only looked at free, and what the messy teardown was paying for before.</para>
+        ///
+        /// <para>Settings are copied off the live camera rather than authored, so the preview is
+        /// lit and cleared the way the game is. Its own near/far are local: the arena is 120k units
+        /// out, but this camera is standing IN it.</para>
+        /// </summary>
+        public Camera BeginArenaCamera(RenderTexture texture)
+        {
+            if (!texture || !_root) return null;
+
+            if (!_arenaCamera)
+            {
+                var go = new GameObject("ModePreviewArenaCamera");
+                go.transform.SetParent(_root.transform, false);
+                _arenaCamera = go.AddComponent<Camera>();
+
+                var source = Camera.main;
+                if (source)
+                {
+                    _arenaCamera.clearFlags = source.clearFlags;
+                    _arenaCamera.backgroundColor = source.backgroundColor;
+                    _arenaCamera.fieldOfView = source.fieldOfView;
+                    _arenaCamera.cullingMask = source.cullingMask;
+                }
+                _arenaCamera.nearClipPlane = 1f;
+                _arenaCamera.farClipPlane = 20000f;
+            }
+
+            _arenaCamera.targetTexture = texture;
+            _arenaCamera.enabled = true;
+            _orbitAngle = 0f;
+            FrameCell(0f);
+            return _arenaCamera;
+        }
+
+        /// <summary>Advance the slow orbit. Driven by the session, so the arena owns no clock.</summary>
+        public void TickArenaCamera(float deltaSeconds, float degreesPerSecond)
+        {
+            if (!_arenaCamera || !_arenaCamera.enabled) return;
+            FrameCell(deltaSeconds * degreesPerSecond);
+        }
+
+        /// <summary>Stand the arena camera down - the gameplay camera is taking the window.</summary>
+        public void EndArenaCamera()
+        {
+            if (!_arenaCamera) return;
+            _arenaCamera.targetTexture = null;
+            _arenaCamera.enabled = false;
+        }
+
+        /// <summary>True while the arena camera is the one drawing into the window.</summary>
+        public bool ArenaCameraLive => _arenaCamera && _arenaCamera.enabled;
+
+        void FrameCell(float advanceDegrees)
+        {
+            if (!_arenaCamera) return;
+
+            _orbitAngle = Mathf.Repeat(_orbitAngle + advanceDegrees, 360f);
+
+            // Frame the MEMBRANE, not the nucleus: the membrane is the playfield boundary, so it
+            // is what "the arena" means to somebody looking at the card.
+            float radius = Cell ? Mathf.Max(1f, Cell.MembraneRadius) : 1000f;
+
+            var offset = Quaternion.Euler(0f, _orbitAngle, 0f) *
+                         new Vector3(0f, radius * 0.35f, -radius * ArenaCameraFramingFactor);
+
+            var t = _arenaCamera.transform;
+            t.position = Origin + offset;
+            t.rotation = Quaternion.LookRotation((Origin - t.position).normalized, Vector3.up);
+        }
+
+        /// <summary>
+        /// How far back the arena camera sits, as a multiple of the membrane radius. Just outside
+        /// the membrane: far enough that the whole arena is in frame, close enough that its
+        /// structure still reads at the size of a card's preview window.
+        /// </summary>
+        const float ArenaCameraFramingFactor = 1.25f;
 
         /// <summary>
         /// A pose looking into the arena from outside its nucleus - the framing the real mode

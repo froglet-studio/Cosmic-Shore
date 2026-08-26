@@ -151,6 +151,7 @@ namespace CosmicShore.Editor
             WirePanelList(arcadeModal, minigamePanel, maelstromPanel, dryRun);
             WireScreenSwitcher(maelstromPanel, dryRun);
 
+            ReportPreviewCoverage();
             AddStandingTodos();
 
             if (dryRun)
@@ -195,7 +196,11 @@ namespace CosmicShore.Editor
                 var controlsPanel = Ensure<VesselControlsPanel>(controls.gameObject, dryRun, _wrote);
                 SetRef(so, "controlsPanel", controlsPanel, dryRun);
 
-                var row = FindRowTemplate(controls, AbilityRowNames, needsIcon: true);
+                var rowHost = RowHost(controls);
+                if (rowHost != controls)
+                    _found.Add($"Rows go under the scroll content: '{Path(rowHost)}'");
+
+                var row = FindRowTemplate(rowHost, AbilityRowNames, needsIcon: true);
                 if (row)
                 {
                     _found.Add($"Ability row template: '{Path(row)}'");
@@ -203,7 +208,7 @@ namespace CosmicShore.Editor
                                                                  dryRun, written, WireControlRow);
                     var cso = Edit(controlsPanel);
                     SetRef(cso, "rowPrefab", prefab, dryRun);
-                    SetRef(cso, "rowContainer", controls, dryRun);
+                    SetRef(cso, "rowContainer", rowHost, dryRun);
                     Apply(cso, dryRun);
                 }
                 else
@@ -288,10 +293,11 @@ namespace CosmicShore.Editor
                 var listView = Ensure<MaelstromPoolListView>(list.gameObject, dryRun, _wrote);
                 SetRef(so, "poolList", listView, dryRun);
 
+                var listHost = RowHost(list);
                 var lso = Edit(listView);
-                SetRef(lso, "rowContainer", list, dryRun);
+                SetRef(lso, "rowContainer", listHost, dryRun);
 
-                var row = FindRowTemplate(list, PoolRowNames, needsIcon: false);
+                var row = FindRowTemplate(listHost, PoolRowNames, needsIcon: false);
                 if (row)
                 {
                     _found.Add($"Pool row template: '{Path(row)}'");
@@ -628,6 +634,51 @@ namespace CosmicShore.Editor
 
         // ── Standing instructions ────────────────────────────────────────────────
 
+        /// <summary>
+        /// Which playable cards have no preview definition, so "why does THAT one say preview not
+        /// available?" is answered in the report rather than by opening seventeen assets.
+        ///
+        /// <para>Only cards whose SCENE exists are listed: the arcade carries ~24 single-player
+        /// cards whose scenes were deleted, and those are correctly unpreviewable - naming them
+        /// here would bury the handful that are a real gap.</para>
+        /// </summary>
+        void ReportPreviewCoverage()
+        {
+            var library = Resources.Load<ModePreviewLibrarySO>(ModePreviewLibrarySO.ResourcePath);
+            if (!library)
+            {
+                _problems.Add("No ModePreviewLibrary in Resources - every card will say " +
+                              "'LEVEL PREVIEW NOT AVAILABLE'.");
+                return;
+            }
+
+            var scenes = new HashSet<string>(
+                AssetDatabase.FindAssets("t:Scene")
+                             .Select(g => System.IO.Path.GetFileNameWithoutExtension(
+                                 AssetDatabase.GUIDToAssetPath(g))));
+
+            var missing = AssetDatabase.FindAssets("t:SO_ArcadeGame")
+                .Select(g => AssetDatabase.LoadAssetAtPath<SO_ArcadeGame>(AssetDatabase.GUIDToAssetPath(g)))
+                .Where(c => c && c.Mode != CosmicShore.Data.GameModes.Tournament)
+                .Where(c => !string.IsNullOrEmpty(c.SceneName) && scenes.Contains(c.SceneName))
+                .Where(c => library.Resolve(c.Mode) == null)
+                .Select(c => c.DisplayName)
+                .OrderBy(n => n)
+                .ToList();
+
+            if (missing.Count == 0)
+            {
+                _found.Add("Preview coverage: every playable card has a definition.");
+                return;
+            }
+
+            _todo.Add($"{missing.Count} playable card(s) have NO ModePreviewDefinition and will " +
+                      $"say 'LEVEL PREVIEW NOT AVAILABLE': {string.Join(", ", missing)}. Author " +
+                      "one each (ScriptableObjects > Game > Mode Preview) pointing at the mode's " +
+                      "own CellConfigDataSO, and add it to the library. Cards whose scene no " +
+                      "longer exists are excluded - those are correctly unpreviewable.");
+        }
+
         void AddStandingTodos()
         {
             _todo.Add("DELETE from the arcade modal once this run looks right: GameDetailView, " +
@@ -763,6 +814,19 @@ namespace CosmicShore.Editor
                 if (child.GetComponent<LayoutGroup>()) return child;
             }
             return null;
+        }
+
+        /// <summary>
+        /// Where rows actually go. A block wrapped in a ScrollRect must build its rows under the
+        /// scroll's CONTENT, not under the block root - rows parented to the root sit outside the
+        /// viewport's mask and render on top of everything below them, which is exactly the
+        /// overlapping wall of text the scroll view was added to fix.
+        /// </summary>
+        static Transform RowHost(Transform container)
+        {
+            var scroll = container.GetComponentInChildren<ScrollRect>(true);
+            if (scroll && scroll.content) return scroll.content;
+            return container;
         }
 
         static Transform FindChildAny(Transform root, string[] names)
