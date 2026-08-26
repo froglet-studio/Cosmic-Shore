@@ -155,6 +155,66 @@ namespace CosmicShore.Gameplay
                                         lerpAmount * Time.deltaTime);
         }
 
+        // ---- rest POSITIONS -------------------------------------------------------------
+        //
+        // The rotation half above was added when the first rig landed; the POSITION half was not,
+        // and that omission is what broke the Dolphin's puppetry on its rig. An absolute
+        // `localPosition` write assumes a part is a direct child of the model root, so its local
+        // position is a place in MODEL space. That holds for part-per-mesh art placed by
+        // translation. On a rig it is false twice over: a bone's local position is relative to its
+        // PARENT BONE, and in Blender's convention it is (0, boneLength, 0) - so writing a bare
+        // (0, .15, -1.7) detaches every bone from its parent and flings it along that parent's own
+        // rotated axes, each of the six a different way.
+        //
+        // A part is therefore anchored to the rest pose it was authored in, UNDER THE PARENT it was
+        // authored under, and displaced from there by an offset. Both halves matter, because these
+        // parts are re-parented onto a drift handle mid-flight (RiptideAnimation) and `parent =`
+        // preserves the WORLD pose - so a part's localPosition means something different either
+        // side of that swap, and a lerp toward a rest captured under the other parent would
+        // teleport it.
+        //
+        //   anchor  - the rest pose resolved through the HOME parent, so a part stays attached
+        //             where it belongs no matter what it is currently parented to;
+        //   offset  - resolved through the CURRENT parent, so while the parts hang off a drift
+        //             handle aimed along the slide, a forward offset carries them INTO the slide.
+        //             That is the whole reason they are re-parented, so it must survive.
+
+        readonly Dictionary<Transform, (Transform Parent, Vector3 LocalPosition)> _restPositions = new();
+
+        /// <summary>Records each part's authored local position AND the parent it is relative to.
+        /// Call from ResolveParts, before anything re-parents the part.</summary>
+        protected void CaptureRestPositions(params Transform[] parts)
+        {
+            foreach (var part in parts)
+                if (part) _restPositions[part] = (part.parent, part.localPosition);
+        }
+
+        /// <summary>
+        /// Rest-relative move: drives the part toward its captured rest position, displaced by
+        /// <paramref name="offset"/> in the space of whatever it is currently parented to. A zero
+        /// offset holds the part exactly at rest. A part with no captured rest is left alone -
+        /// silently, because it is a part this animation simply does not position.
+        /// </summary>
+        protected void MovePartFromRest(Transform part, Vector3 offset)
+        {
+            if (!part || !_restPositions.TryGetValue(part, out var rest)) return;
+
+            Vector3 targetWorld = rest.Parent ? rest.Parent.TransformPoint(rest.LocalPosition)
+                                              : rest.LocalPosition;
+
+            if (offset != Vector3.zero)
+            {
+                Transform basis = part.parent ? part.parent : transform;
+                targetWorld += basis.TransformVector(offset);
+            }
+
+            Vector3 targetLocal = part.parent ? part.parent.InverseTransformPoint(targetWorld)
+                                              : targetWorld;
+
+            part.localPosition = Vector3.Lerp(part.localPosition, targetLocal,
+                                              lerpAmount * Time.deltaTime);
+        }
+
         // Vessel animations TODO: figure out how to leverage a single definition for pitch, etc. that captures the gyro in the animations.
         protected abstract void PerformShipPuppetry(float Pitch, float Yaw, float Roll, float Throttle);
         protected virtual void Idle()

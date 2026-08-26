@@ -1686,7 +1686,8 @@ MonoBehaviour:
   _shipGeometries:
   - {fileID: 4684773857044263412}
   _domainMaterialSlot: 1
-  _domainReplacesMaterials: []
+  _domainReplacesMaterials:
+  - {fileID: 2100000, guid: 539a8c65974bf0b48aae77d83884c13b, type: 2}
 --- !u!114 &5784366292517366828
 MonoBehaviour:
   m_ObjectHideFlags: 0

@@ -341,6 +341,20 @@ namespace CosmicShore.Editor
                 var rigSkin = rig.GetComponentsInChildren<SkinnedMeshRenderer>(true).FirstOrDefault();
                 if (!rigSkin) problems.Add("the rig has no SkinnedMeshRenderer");
 
+                // A rig ships its own Blender materials unless the model's importer REMAPS them
+                // onto the fleet's three roles. Skipping this is invisible to every structural
+                // check the tool makes - the bones are right, the colliders are right, the morph
+                // is right - and the ship still comes out wearing whatever the artist last set in
+                // Blender. The Dolphin's 'accent' material was emissive orange at 10x, so the
+                // vessel that should have worn its team colour blazed yellow instead, and the
+                // domain paint landed on the BODY submesh because the rig's material order is not
+                // the fleet's. Both are authoring, not geometry, so they are checked here rather
+                // than fixed here: the fix is the model importer's Remapped Materials list plus
+                // the prefab's VesselCustomization, and doing it silently would hide a decision
+                // about which material carries the domain.
+                foreach (var problem in MaterialRemapProblems(rigSkin, swap))
+                    problems.Add(problem);
+
                 var shapes = new List<VesselAnimation.ElementShapeTarget>();
                 VesselAnimation.CollectElementShapes(rig.transform, shapes);
                 int elements = shapes.Select(s => s.Element).Distinct().Count();
@@ -495,5 +509,47 @@ namespace CosmicShore.Editor
 
         static Transform Find(Transform root, string name) =>
             root.GetComponentsInChildren<Transform>(true).FirstOrDefault(t => t.name == name);
+
+        /// <summary>
+        /// Every reason this rig's materials would come out wrong, or empty when they are sound.
+        ///
+        /// Two independent failures, both silent:
+        ///   1. the model imports its own DCC materials because nothing is remapped onto the
+        ///      fleet's Body / Domain / Window assets;
+        ///   2. the prefab paints the domain colour by SLOT INDEX, and a rig's submesh order is
+        ///      whatever the exporter emitted - the Dolphin's puts its accent at 0 and its body at
+        ///      1, so the platform's default slot of 1 paints the hull one flat team colour and
+        ///      erases the two-tone read. The order-independent fix is VesselCustomization's
+        ///      Domain Replaces Materials list.
+        /// </summary>
+        static IEnumerable<string> MaterialRemapProblems(SkinnedMeshRenderer rigSkin, RigSwap swap)
+        {
+            if (!rigSkin) yield break;
+
+            // By GUID, not by path: the material has already moved once in this project's life
+            // and a hardcoded path is a check that silently stops checking.
+            var domainPath = AssetDatabase.GUIDToAssetPath(DomainMaterialGuid);
+            var domain = string.IsNullOrEmpty(domainPath)
+                ? null : AssetDatabase.LoadAssetAtPath<Material>(domainPath);
+            if (!domain)
+            {
+                yield return $"the fleet's domain material (guid {DomainMaterialGuid}) is missing";
+                yield break;
+            }
+
+            var shared = rigSkin.sharedMaterials;
+            bool wearsDomain = shared.Any(m => m == domain);
+            if (!wearsDomain)
+                yield return
+                    $"the rig's hull wears none of the fleet's materials — remap its DCC materials " +
+                    $"onto Body/Domain/Window in the model importer's Remapped Materials list " +
+                    $"(select {swap.RigFbx}.fbx, Materials tab) before swapping, or the ship " +
+                    $"ships in its authored DCC colours";
+        }
+
+        /// <summary>GreenAccentVesselMaterial - the fleet's DOMAIN role, the material the runtime
+        /// replaces with the team's colour.</summary>
+        const string DomainMaterialGuid = "539a8c65974bf0b48aae77d83884c13b";
+
     }
 }

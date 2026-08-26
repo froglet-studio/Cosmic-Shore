@@ -27,10 +27,20 @@ namespace CosmicShore.Gameplay
         const float animationScaler = 25f;
         const float exaggeratedAnimationScaler = 3 * animationScaler;
 
-        static Vector3 defaultThrusterPosition = new(0, .15f, -1.7f);
-        Vector3 backwardThrusterPosition = defaultThrusterPosition;
-        Vector3 defaultWingPosition = Vector3.zero;
-        Vector3 forwardWingPosition = new(0, 0, 2.3f);
+        // OFFSETS FROM REST, not absolute local positions. They used to be the latter, which only
+        // ever worked because the legacy part-per-mesh art hung every part off the model root at
+        // roughly these places - the engines actually rested at z -2.047 against a constant saying
+        // -1.7, so even there the animation was dragging them 0.35 forward. On a rig a bone's local
+        // position is relative to its PARENT BONE, so absolute writes tore the hull apart.
+        //
+        // Note what survives that translation: default and backward were the SAME vector, so the
+        // thrusters never had a positional animation at all - the constant only ever pinned them.
+        // The one real positional effect in this whole puppetry is the wings sliding forward on a
+        // drift, and it is the only non-zero offset here.
+        static readonly Vector3 defaultThrusterOffset = Vector3.zero;
+        static readonly Vector3 backwardThrusterOffset = Vector3.zero;
+        static readonly Vector3 defaultWingOffset = Vector3.zero;
+        static readonly Vector3 forwardWingOffset = new(0, 0, 2.3f);
 
         [Tooltip("Which ResourceSystem slot drives the jaw gape. 0 = Energy, the meter skimming " +
                  "fills and a crystal impact spends.")]
@@ -116,6 +126,13 @@ namespace CosmicShore.Gameplay
                                  ThrusterTopLeft, ThrusterTopRight, ThrusterLeft,
                                  ThrusterRight, ThrusterBottomLeft, ThrusterBottomRight);
 
+            // Only the parts this animation actually POSITIONS. Captured here, before
+            // CaptureHomeParents and before any drift re-parents them, so each part's anchor is
+            // the pose it was authored in under the parent it was authored under.
+            CaptureRestPositions(Chassis, LeftWing, RightWing,
+                                 ThrusterTopLeft, ThrusterTopRight, ThrusterLeft,
+                                 ThrusterRight, ThrusterBottomLeft, ThrusterBottomRight);
+
             ReportUnresolvedParts();
         }
 
@@ -163,8 +180,8 @@ namespace CosmicShore.Gameplay
 
         protected override void PerformShipPuppetry(float pitch, float yaw, float roll, float throttle)
         {
-            Vector3 wingPosition;
-            Vector3 thrusterPosition;
+            Vector3 wingOffset;
+            Vector3 thrusterOffset;
 
             AnimatePart(Chassis,
                         pitch * animationScaler,
@@ -176,27 +193,27 @@ namespace CosmicShore.Gameplay
             {
                 SafeLookRotation.TrySet(DriftHandle, VesselStatus.Course, transform.up, DriftHandle ? DriftHandle.gameObject : gameObject, logError: false);
                 ReparentToDrift(DriftHandle);
-                wingPosition = forwardWingPosition;
-                thrusterPosition = backwardThrusterPosition;
+                wingOffset = forwardWingOffset;
+                thrusterOffset = backwardThrusterOffset;
             }
             else
             {
                 ReparentHome();
-                wingPosition = defaultWingPosition;
-                thrusterPosition = defaultThrusterPosition;
+                wingOffset = defaultWingOffset;
+                thrusterOffset = defaultThrusterOffset;
             }
 
             AnimatePart(RightWing,
                         Brake(throttle) * animationScaler,
                         (yaw + throttle) * exaggeratedAnimationScaler,
                         (roll + pitch) * animationScaler,
-                        wingPosition);
+                        wingOffset);
 
             AnimatePart(LeftWing,
                         Brake(throttle) * animationScaler,
                         (yaw - throttle) * exaggeratedAnimationScaler,
                         (roll - pitch) * animationScaler,
-                        wingPosition);
+                        wingOffset);
 
             var pitchScalar = pitch * exaggeratedAnimationScaler;
             var yawScalar = yaw * exaggeratedAnimationScaler;
@@ -210,7 +227,7 @@ namespace CosmicShore.Gameplay
             // Dolphin's authored 26-169 degree engine cases and fatal on a rig.
             for (int partIndex = 0; partIndex < animationTransforms.Count; partIndex++)
             {
-                AnimatePart(animationTransforms[partIndex], pitchScalar, yawScalar, rollScalar, thrusterPosition);
+                AnimatePart(animationTransforms[partIndex], pitchScalar, yawScalar, rollScalar, thrusterOffset);
             }
 
         }
@@ -267,12 +284,11 @@ namespace CosmicShore.Gameplay
         // yaw/roll twice, netting Euler(pitch, yaw, roll) * rest) - it just reads the part's own
         // captured rest instead of one indexed out of a misaligned list. The chassis and wings
         // rest at identity on the legacy art, so they are unaffected there.
-        void AnimatePart(Transform part, float pitch, float yaw, float roll, Vector3 position)
+        void AnimatePart(Transform part, float pitch, float yaw, float roll, Vector3 offset)
         {
             if (!part) return;
             RotatePartFromRest(part, pitch, yaw, roll);
-
-            part.localPosition = Vector3.Lerp(part.localPosition, position, lerpAmount * Time.deltaTime);
+            MovePartFromRest(part, offset);
         }
 
         // The jaws open around their rest pose too - identity on the legacy nose halves, the rig's
