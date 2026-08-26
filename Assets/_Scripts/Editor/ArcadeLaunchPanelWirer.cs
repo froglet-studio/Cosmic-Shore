@@ -495,7 +495,7 @@ namespace CosmicShore.Editor
         /// would hand the player-count control to whatever unrelated switch happened to sort
         /// first, and a mis-bound toggle is worse than an unbound one - it does something.</para>
         /// </summary>
-        void WireFillWithAIToggle(ArcadeLaunchPanel panel, Transform detail, string where, bool dryRun)
+        void WireFillWithAIToggle(SerializedObject panel, Transform detail, string where, bool dryRun)
         {
             var toggles = detail.GetComponentsInChildren<Toggle>(true)
                                 .Where(t => !t.GetComponentInParent<LobbySlotRow>())
