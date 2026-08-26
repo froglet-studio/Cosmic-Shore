@@ -456,37 +456,19 @@ var sb = new StringBuilder();
 
             try
             {
+                var branch = FrogletGit.CurrentBranch();
+                if (FrogletGit.IsProtectedBranch(branch))
+                    return PublishFromProtectedBranch(stem, paths, manual);
+
                 EditorUtility.DisplayProgressBar("Sending your results", "Saving to git…", 0.3f);
                 var add = FrogletGit.Add(paths);
                 if (!add.Ok) return manual + "\n\n(git add failed: " + add.Text.Trim() + ")";
 
-                var commit = FrogletGit.Commit(
-                    "docs(qa): " + _state.tester + " session results, " + _state.date, paths);
+                var commit = FrogletGit.Commit(CommitMessage(), paths);
                 if (!commit.Ok && !FrogletGit.NothingToCommit(commit))
                     return manual + "\n\n(git commit failed: " + commit.Text.Trim() + ")";
 
                 EditorUtility.DisplayProgressBar("Sending your results", "Uploading…", 0.7f);
-                var branch = FrogletGit.CurrentBranch();
-                if (FrogletGit.IsProtectedBranch(branch))
-                {
-                    // Shared branch — publish to a QA branch of this session's own name.
-                    //
-                    // NO -u HERE. With a refspec, `-u` sets the upstream of the SOURCE
-                    // ref — which is the tester's current branch — so `push -u origin
-                    // HEAD:refs/heads/qa/results-x` re-points local bleeding-edge at
-                    // origin/qa/results-x ("branch 'bleeding-edge' set up to track
-                    // 'origin/qa/results-demo'", reproduced). Their next Pull in GitHub
-                    // Desktop would then pull a QA results branch into their build,
-                    // silently. Publishing the ref needs no upstream: nothing local
-                    // tracks it, and the tester never checks it out.
-                    var qa = "qa/results-" + stem;
-                    var push = FrogletGit.Run("push", "origin", "HEAD:refs/heads/" + qa);
-                    return push.Ok
-                        ? "Sent to the server on branch " + qa + ". Engineering picks it " +
-                          "up from there — nothing more for you to do."
-                        : manual + "\n\n(git push failed: " + push.Text.Trim() + ")";
-                }
-
                 var pushed = FrogletGit.PushWithRetry(branch);
                 return pushed.Ok
                     ? "Sent to the server on branch " + branch + " — nothing more for you to do."
@@ -499,6 +481,82 @@ var sb = new StringBuilder();
             finally
             {
                 EditorUtility.ClearProgressBar();
+            }
+        }
+
+        string CommitMessage() =>
+            "docs(qa): " + _state.tester + " session results, " + _state.date;
+
+        /// <summary>
+        /// Publish from a SHARED branch without moving anything the tester owns.
+        ///
+        /// The obvious implementation — commit locally, then push that commit to a QA
+        /// ref — leaves their `bleeding-edge` one commit ahead of origin forever, with
+        /// a Push button in GitHub Desktop that either errors or, if the branch is not
+        /// protected server-side, lands a QA commit straight on it. So no local commit
+        /// is made at all: the commit object is assembled with plumbing and pushed
+        /// directly, leaving HEAD, the branch, the index and the working tree untouched.
+        ///
+        ///     read-tree HEAD  →  add PATHS  →  write-tree  →  commit-tree  →  push
+        ///
+        /// all against a THROWAWAY index (GIT_INDEX_FILE), which is what keeps it scoped:
+        /// whatever else the tester has dirty or staged is invisible to it.
+        ///
+        /// `refs/qa-published/&lt;stem&gt;` records what was last published for this session
+        /// and parents the next publish, so repeated submits FAST-FORWARD the QA branch
+        /// rather than being rejected as unrelated histories. It also keeps that commit
+        /// reachable so git cannot garbage-collect it between sessions, and it sits
+        /// outside refs/heads so it never shows up as a branch.
+        /// </summary>
+        string PublishFromProtectedBranch(string stem, List<string> paths, string manual)
+        {
+            var qaRef = "refs/qa-published/" + stem;
+            var index = Path.Combine(Path.GetTempPath(),
+                                     "qa-index-" + System.Guid.NewGuid().ToString("N"));
+            var env = new List<KeyValuePair<string, string>>
+            {
+                new KeyValuePair<string, string>("GIT_INDEX_FILE", index),
+            };
+
+            try
+            {
+                EditorUtility.DisplayProgressBar("Sending your results", "Preparing…", 0.3f);
+
+                var prior = FrogletGit.Run("rev-parse", "--verify", "-q", qaRef);
+                var parent = prior.Ok ? prior.StdOut.Trim() : "HEAD";
+
+                var read = FrogletGit.RunWithEnv(env, "read-tree", "HEAD");
+                if (!read.Ok) return manual + "\n\n(git read-tree failed: " + read.Text.Trim() + ")";
+
+                var args = new List<string> { "add", "--" };
+                args.AddRange(paths);
+                var staged = FrogletGit.RunWithEnv(env, args.ToArray());
+                if (!staged.Ok) return manual + "\n\n(git add failed: " + staged.Text.Trim() + ")";
+
+                var tree = FrogletGit.RunWithEnv(env, "write-tree");
+                if (!tree.Ok) return manual + "\n\n(git write-tree failed: " + tree.Text.Trim() + ")";
+
+                var made = FrogletGit.Run("commit-tree", tree.StdOut.Trim(),
+                                          "-p", parent, "-m", CommitMessage());
+                if (!made.Ok) return manual + "\n\n(git commit-tree failed: " + made.Text.Trim() + ")";
+                var sha = made.StdOut.Trim();
+
+                EditorUtility.DisplayProgressBar("Sending your results", "Uploading…", 0.7f);
+                var qa = "qa/results-" + stem;
+                // No -u: with a refspec it sets the upstream of the SOURCE ref — the
+                // tester's own branch — re-pointing local bleeding-edge at the QA branch,
+                // so their next Pull would fetch it into the build under test.
+                var push = FrogletGit.Run("push", "origin", sha + ":refs/heads/" + qa);
+                if (!push.Ok) return manual + "\n\n(git push failed: " + push.Text.Trim() + ")";
+
+                FrogletGit.Run("update-ref", qaRef, sha);
+                return "Sent to the server on branch " + qa + ". Engineering picks it up " +
+                       "from there — nothing more for you to do.";
+            }
+            finally
+            {
+                try { if (File.Exists(index)) File.Delete(index); }
+                catch (System.Exception) { /* a temp file we could not delete is harmless */ }
             }
         }
 
