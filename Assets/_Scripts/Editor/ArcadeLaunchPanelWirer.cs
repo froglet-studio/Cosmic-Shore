@@ -606,9 +606,9 @@ namespace CosmicShore.Editor
                     var contents = PrefabUtility.LoadPrefabContents(path);
                     try
                     {
-                        var component = contents.GetComponent<T>();
-                        if (!component) component = contents.AddComponent<T>();
-                        wire?.Invoke(component);
+                        var onAsset = contents.GetComponent<T>();
+                        if (!onAsset) onAsset = contents.AddComponent<T>();
+                        wire?.Invoke(onAsset);
                         PrefabUtility.SaveAsPrefabAsset(contents, path);
                         _wrote.Add($"Re-wired {path} against the current wiring rules.");
                     }
