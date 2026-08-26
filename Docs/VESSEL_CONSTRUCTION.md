@@ -402,6 +402,23 @@ reverted; the puppetry passes roll through untouched and follows the flight mode
 Changing it is a flight-model decision across six vessels, deliberately left out of a
 vessel-construction pass.
 
+*The WINGS, separately, bank against the hull* — and this one is not derivable. The conjugation
+turns every part about the ship's `+Z`, so the wings' delta is provably identical in axis and sign
+to the chassis's (measured: both `25°/75° about (0,0,1)`), yet on screen they read opposite. The
+authored sign was chosen for legacy art where the wings hung off the model root at identity; on the
+rig they hang off `winghold` bones carrying a −180° roll. Rather than guess a fourth sign, the wings'
+roll contribution is now a **signed, authorable response** (`wingRollResponse`, default −1): +1 banks
+them with the hull, −1 against, 0 stops them responding to roll. It is legitimate authoring rather
+than a flag — how hard the wings bank relative to the hull is a feel parameter — and it makes the
+question answerable in the editor in seconds instead of a round-trip per guess.
+
+> **When the math and the screen disagree, and the math is verified, the answer is a parameter.**
+> Three sign guesses cost three flights. A number the pilot can turn costs none.
+
+*And while drifting the appendages go QUIET.* Holding Course is the whole of their job during a
+drift; only the fuselage and jaws respond to the stick. Leaving the wings and engines responsive
+reads as the ship still flying while it is supposed to be sliding.
+
 *A DRIFT SPLITS THE SHIP IN TWO — and getting that backwards cost a flight.* The fuselage and jaws
 turn to **aim** wherever the pilot points, while the wings and engines stay lined up with **Course**,
 the direction the ship is actually travelling, so the hull reads as slewing across its own path. The

@@ -51,6 +51,19 @@ namespace CosmicShore.Gameplay
                  "Zero here is what shipped, and it is why the jaws clipped the engines.")]
         [SerializeField] float driftJetBackward = 2.3f;
 
+        [Header("Bank")]
+        [Tooltip("How the wings bank relative to the HULL when you roll. +1 banks them with the " +
+                 "hull, -1 against it, and the magnitude exaggerates or damps the read; 0 stops " +
+                 "the wings responding to roll at all.\n\n" +
+                 "This is a signed scaler rather than a fixed sign because the authored value was " +
+                 "chosen against the legacy art, where the wings hung off the model root at " +
+                 "identity. On the rig they hang off 'winghold' bones carrying a -180 degree " +
+                 "roll, and the hull and wings read as banking opposite ways. The hull is the one " +
+                 "that is right (VesselTransformer.Roll, shared by six vessels), so the wings are " +
+                 "what moves - and it is exposed here so it can be judged in the editor instead " +
+                 "of guessed in code.")]
+        [SerializeField] float wingRollResponse = -1f;
+
         Vector3 ForwardWingOffset => new(0, 0, driftWingForward);
         Vector3 BackwardThrusterOffset => new(0, 0, -driftJetBackward);
         static readonly Vector3 defaultThrusterOffset = Vector3.zero;
@@ -239,23 +252,23 @@ namespace CosmicShore.Gameplay
                 thrusterOffset = defaultThrusterOffset;
             }
 
-            AnimatePart(RightWing,
-                        Brake(throttle) * animationScaler,
-                        (yaw + throttle) * exaggeratedAnimationScaler,
-                        (roll + pitch) * animationScaler,
-                        wingOffset,
-                        courseFrame);
+            // WHILE DRIFTING THE APPENDAGES GO QUIET. They are the course indicator: they hold
+            // Course and say nothing else, so the only thing moving in response to the stick is
+            // the half of the ship that is aiming - the fuselage and the jaws. Leaving them
+            // responsive reads as the whole ship still flying while it is supposed to be sliding.
+            bool aiming = VesselStatus.IsDrifting;
+            float wingPitch = aiming ? 0f : Brake(throttle) * animationScaler;
+            float wingYawR  = aiming ? 0f : (yaw + throttle) * exaggeratedAnimationScaler;
+            float wingYawL  = aiming ? 0f : (yaw - throttle) * exaggeratedAnimationScaler;
+            float wingRollR = aiming ? 0f : (roll * wingRollResponse + pitch) * animationScaler;
+            float wingRollL = aiming ? 0f : (roll * wingRollResponse - pitch) * animationScaler;
 
-            AnimatePart(LeftWing,
-                        Brake(throttle) * animationScaler,
-                        (yaw - throttle) * exaggeratedAnimationScaler,
-                        (roll - pitch) * animationScaler,
-                        wingOffset,
-                        courseFrame);
+            AnimatePart(RightWing, wingPitch, wingYawR, wingRollR, wingOffset, courseFrame);
+            AnimatePart(LeftWing,  wingPitch, wingYawL, wingRollL, wingOffset, courseFrame);
 
-            var pitchScalar = pitch * exaggeratedAnimationScaler;
-            var yawScalar = yaw * exaggeratedAnimationScaler;
-            var rollScalar = roll * exaggeratedAnimationScaler;
+            var pitchScalar = aiming ? 0f : pitch * exaggeratedAnimationScaler;
+            var yawScalar = aiming ? 0f : yaw * exaggeratedAnimationScaler;
+            var rollScalar = aiming ? 0f : roll * exaggeratedAnimationScaler;
 
 
             // Each thruster is driven around ITS OWN rest pose, looked up per part. The previous
