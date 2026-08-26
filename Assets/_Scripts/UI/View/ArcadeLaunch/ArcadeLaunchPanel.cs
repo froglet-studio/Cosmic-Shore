@@ -56,6 +56,17 @@ namespace CosmicShore.UI
         [SerializeField, Tooltip("'Waiting for others…' label, shown after this player confirms.")]
         protected GameObject waitingForOthersLabel;
 
+        [Header("Own window (optional)")]
+        [SerializeField, Tooltip("Set ONLY when this panel lives in its own modal window rather " +
+                                 "than inside ArcadeGameConfigureModal's. The panel then opens and " +
+                                 "closes that window with itself, and a close from the window's own " +
+                                 "controls (its X, gamepad B) is routed back to the modal so the " +
+                                 "network close and the preview teardown still run.\n\n" +
+                                 "LEAVE EMPTY for a panel that is a child of the arcade modal - " +
+                                 "pointing it at the modal that owns it would have that modal " +
+                                 "closing itself from inside its own close.")]
+        ModalWindowManager hostModal;
+
         [Header("Roster")]
         [SerializeField, Tooltip("Seats + the fill-with-AI toggle. Optional: a panel without one " +
                                  "simply shows no roster.")]
@@ -67,8 +78,18 @@ namespace CosmicShore.UI
         /// <summary>The fill-with-AI toggle moved.</summary>
         public event Action<bool> OnFillWithAIChanged;
 
+        /// <summary>
+        /// Raised when this panel's OWN window was closed by its own controls, so the modal can run
+        /// the real close (notify clients, tear the preview down) instead of a window simply
+        /// animating out with the session still live.
+        /// </summary>
+        public event Action OnHostModalClosed;
+
         /// <summary>The card currently drawn, or null.</summary>
         public SO_ArcadeGame Game { get; private set; }
+
+        /// <summary>The window this panel lives in, or null when it is inside the arcade modal's.</summary>
+        public ModalWindowManager HostModal => hostModal;
 
         public IReadOnlyList<IntensitySelectButton> IntensityButtons => intensityButtons;
         public IReadOnlyList<DomainInfoData> DomainTiles => domainTiles;
@@ -92,6 +113,8 @@ namespace CosmicShore.UI
                 lobbyRow.OnKickAIRequested += RaiseKickAI;
                 lobbyRow.OnFillWithAIChanged += RaiseFillWithAI;
             }
+
+            if (hostModal) hostModal.OnModalClosed += RaiseHostModalClosed;
         }
 
         protected virtual void OnDisable()
@@ -101,6 +124,8 @@ namespace CosmicShore.UI
                 lobbyRow.OnKickAIRequested -= RaiseKickAI;
                 lobbyRow.OnFillWithAIChanged -= RaiseFillWithAI;
             }
+
+            if (hostModal) hostModal.OnModalClosed -= RaiseHostModalClosed;
         }
 
         /// <summary>
@@ -172,13 +197,31 @@ namespace CosmicShore.UI
             }
         }
 
-        /// <summary>Bring this panel up.</summary>
-        public virtual void Show() => gameObject.SetActive(true);
+        /// <summary>Bring this panel up, opening its own window when it has one.</summary>
+        public virtual void Show()
+        {
+            gameObject.SetActive(true);
+            if (hostModal) hostModal.ModalWindowIn();
+        }
 
-        /// <summary>Take this panel down. Subclasses stop anything they were running.</summary>
-        public virtual void Hide() => gameObject.SetActive(false);
+        /// <summary>
+        /// Take this panel down. A panel in its own window closes the WINDOW and leaves its content
+        /// alone - the window animates out over half a second, and deactivating the content under it
+        /// would cut that animation off mid-frame. A panel inside the arcade modal has no window of
+        /// its own, so it simply switches off.
+        /// </summary>
+        public virtual void Hide()
+        {
+            if (hostModal)
+            {
+                hostModal.ModalWindowOut();
+                return;
+            }
+            gameObject.SetActive(false);
+        }
 
         void RaiseKickAI() => OnKickAIRequested?.Invoke();
         void RaiseFillWithAI(bool on) => OnFillWithAIChanged?.Invoke(on);
+        void RaiseHostModalClosed() => OnHostModalClosed?.Invoke();
     }
 }

@@ -177,6 +177,10 @@ namespace CosmicShore.UI
         ArcadeLaunchPanel _activePanel;
         bool _activePanelWired;
 
+        // A panel in its own window closes that window from inside CloseAndNotifyClients, and the
+        // window then reports the close back here. Without this the two would call each other.
+        bool _closing;
+
         // The local player's own ready state - known exactly here, unlike the replicated ready
         // COUNT, which says how many confirmed but not which (see LobbySlotRow).
         bool _localPlayerReady;
@@ -494,6 +498,24 @@ namespace CosmicShore.UI
         #region Public API
 
         /// <summary>
+        /// Open the launch surface for a card - the single entry point a card tile should call.
+        ///
+        /// <para>It exists because a panel may live in its OWN window (the Maelstrom's), and which
+        /// window opens has to be decided BEFORE anything is shown. Opening this modal first and
+        /// letting the panel selection close it again would flash the wrong window for a frame,
+        /// every time a player picks the Maelstrom.</para>
+        /// </summary>
+        public void OpenFor(SO_ArcadeGame selectedGame)
+        {
+            // A panel with a window of its own opens it in SelectLaunchPanel; anything else lives
+            // in this one.
+            var panel = ResolvePanelFor(selectedGame);
+            if (!panel || !panel.HostModal) ModalWindowIn();
+
+            SetSelectedGame(selectedGame);
+        }
+
+        /// <summary>
         /// Entry point from ArcadeExploreView when a game tile is selected (host path).
         /// </summary>
         public void SetSelectedGame(SO_ArcadeGame selectedGame)
@@ -564,17 +586,27 @@ namespace CosmicShore.UI
         /// so a third kind of card is a new subclass and one list entry, with nothing here to
         /// edit.</para>
         /// </summary>
+        /// <summary>
+        /// Which panel draws this card, with NO side effects - so the routing question can be asked
+        /// before anything is shown or hidden.
+        /// </summary>
+        ArcadeLaunchPanel ResolvePanelFor(SO_ArcadeGame game)
+        {
+            if (!UsesLaunchPanels) return null;
+
+            foreach (var panel in launchPanels)
+                if (panel && panel.Handles(game)) return panel;
+
+            return null;
+        }
+
         void SelectLaunchPanel(SO_ArcadeGame game)
         {
             if (!UsesLaunchPanels) return;
 
-            ArcadeLaunchPanel chosen = null;
+            var chosen = ResolvePanelFor(game);
             foreach (var panel in launchPanels)
-            {
-                if (!panel) continue;
-                if (chosen == null && panel.Handles(game)) chosen = panel;
-                else panel.Hide();
-            }
+                if (panel && panel != chosen) panel.Hide();
 
             if (chosen == null)
             {
@@ -603,6 +635,8 @@ namespace CosmicShore.UI
         {
             if (!_activePanel || _activePanelWired) return;
 
+            _activePanel.OnHostModalClosed += HandleHostModalClosed;
+
             foreach (var button in _activePanel.IntensityButtons)
             {
                 if (!button) continue;
@@ -629,6 +663,8 @@ namespace CosmicShore.UI
         void UnwireActivePanel()
         {
             if (!_activePanel || !_activePanelWired) return;
+
+            _activePanel.OnHostModalClosed -= HandleHostModalClosed;
 
             foreach (var button in _activePanel.IntensityButtons)
             {
@@ -700,6 +736,17 @@ namespace CosmicShore.UI
                 ? Mathf.Min(_selectedGame.MaxPlayersAllowed, MaxSupportedPlayers)
                 : MaxSupportedPlayers;
             _activePanel.SetFillWithAISilently(total >= max && max > humans);
+        }
+
+        /// <summary>
+        /// A panel's own window was closed by its own controls - its X, or gamepad B. That window
+        /// animating out is not the same event as the SESSION ending: the clients still have the
+        /// modal open, and a satellite arena is still standing. Route it through the real close.
+        /// </summary>
+        void HandleHostModalClosed()
+        {
+            if (_closing) return;      // this close IS the one we started
+            CloseAndNotifyClients();
         }
 
         void HandleReadyCountChanged(int readyCount, int totalExpected)
@@ -1624,6 +1671,9 @@ namespace CosmicShore.UI
 
         void CloseAndNotifyClients()
         {
+            if (_closing) return;
+            _closing = true;
+
             if (arcadeConfigSyncManager && !IsClientMode)
                 arcadeConfigSyncManager.NotifyConfigClosed();
 
@@ -1645,9 +1695,12 @@ namespace CosmicShore.UI
             // window somebody was looking at it through.
             ShutDownPreview();
 
+            // Hide() closes the panel's OWN window when it has one; ModalWindowOut below is a
+            // no-op on a modal that was never opened, so both routes end with everything shut.
             if (_activePanel) _activePanel.Hide();
 
             ModalWindowOut();
+            _closing = false;
         }
 
         /// <summary>

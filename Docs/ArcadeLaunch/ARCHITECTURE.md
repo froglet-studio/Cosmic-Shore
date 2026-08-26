@@ -245,6 +245,40 @@ Adding a mode to the roster is unchanged and still governed by
 range containing the Maelstrom card's. Dog Fight and Salvo are **not** in `GameQueue` yet — the
 ladder cannot admit a mode the roster does not hold.
 
+## 7.5 The Maelstrom lives in its OWN window — but not its own authority
+
+Its layout shares almost nothing with a minigame card's (a clip instead of the live preview, a
+pool list instead of the controls block), so it is a separate modal GameObject —
+`MaelstromGameConfigurationModal`, `ModalWindows.MAELSTROM_GAME_CONFIGURE`.
+
+**It carries a plain `ModalWindowManager`, never a second `ArcadeGameConfigureModal`.** Closed
+modals in this project stay ACTIVE — `ModalWindowManager` hides through the CanvasGroup precisely
+so `OnEnable`/`OnDisable` keep firing for children — so a second configure-modal instance would sit
+subscribed to `ArcadeConfigSyncManager` alongside the first, and a client's commit would open both.
+One window, one authority: `ArcadeLaunchPanel.hostModal` is how a panel says "I live in that
+window", and the one modal still owns every decision.
+
+Three consequences:
+
+- **`ArcadeGameConfigureModal.OpenFor` is the entry point a card tile calls**, replacing
+  `ModalWindowIn()` + `SetSelectedGame()`. Which window opens has to be decided *before* anything
+  is shown; opening the arcade window first and closing it a frame later would flash the wrong
+  window every time a player picks the Maelstrom.
+- **`Hide()` on a panel with a host modal closes the WINDOW and leaves the content alone.** The
+  window animates out over half a second and deactivating the content under it would cut that off
+  mid-frame.
+- **A close from the window's own controls is routed back through the modal.** Its X and gamepad B
+  call `ModalWindowOut` directly, which is a window animating out — not the session ending, with
+  clients still holding the modal open and a satellite arena still standing. `OnHostModalClosed`
+  turns it into a real `CloseAndNotifyClients`, behind a reentrancy guard because that close then
+  closes the window that reported it.
+
+**`launchPanels` is necessarily a scene-instance override.** The arcade modal is a prefab and the
+Maelstrom panel is a scene object, and a prefab cannot reference a scene object. It is legitimate
+here rather than the drift `Docs/GAMECANVAS.md` warns about, because Menu_Main is the only scene
+these modals appear in — but it is the reason the wirer writes the whole setup into the scene
+instead of splitting it across two files.
+
 ## 8. The pieces
 
 | Piece | Location | Job |
@@ -260,6 +294,7 @@ ladder cannot admit a mode the roster does not hold.
 | `TournamentDataSO.IntensityTiers` | `_Scripts/Utility/DataContainers/Tournament/` | The ladder + `GamesForIntensity` / `UnlockIntensityOf` |
 | `ModePreviewDefinitionSO.PreviewCellsByIntensity` | `_Scripts/ScriptableObjects/` | Per-intensity arenas + `ResolveCell` |
 | `author_preview_intensities.py` | `Tools/Build/` | Copies those lists from each mode's own scene (`--check`) |
+| `ArcadeLaunchPanelWirer` | `_Scripts/Editor/` | **One-off.** Builds the two row prefabs from the authored rows, adds and wires every component, registers the Maelstrom window. Scan reports what it cannot do; retire it through the ship panel once its output is pushed |
 
 Authored data: `SO_ArcadeGame.Tips` (per-card play tips) and `SO_ArcadeGame.PreviewVideo`
 (**Maelstrom only** — every other card previews live and must never fall back to a clip).

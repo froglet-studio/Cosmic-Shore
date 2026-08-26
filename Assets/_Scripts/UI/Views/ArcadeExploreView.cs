@@ -141,8 +141,12 @@ namespace CosmicShore.UI
         public void SelectGame(SO_ArcadeGame selectedGame)
         {
             SelectedGame = selectedGame;
-            ArcadeGameConfigureModal.ModalWindowIn();
-            ArcadeGameConfigureModal.SetSelectedGame(SelectedGame);
+
+            // OpenFor, not ModalWindowIn + SetSelectedGame: a card's panel may live in its OWN
+            // window (the Maelstrom's), and which window opens has to be decided before anything
+            // is shown. Opening this one first and closing it again a frame later would flash the
+            // wrong window every time a player picks that card.
+            ArcadeGameConfigureModal.OpenFor(SelectedGame);
             // TODO: is is throwing a key not found exception
             //UserActionSystem.Instance.CompleteAction(SelectedGame.ViewUserAction);
         }
