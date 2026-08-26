@@ -3,9 +3,9 @@
 
 Rampage is a demolition race in a cell whose prisms are nowhere near nominal size (a cactus
 leaf is 5x5x3 = 75 volume, 4.7x the 16 the platform's `count x 16` threshold derivation
-assumes), and the level spread multiplies that again. So its phase ladder CANNOT be inherited
-- every intensity has to author `*EnterVolume` / `*ExitVolume` from its own arithmetic
-(Docs/ECOSYSTEM.md 27.4). Doing that by hand four times is how the four ladders drift apart.
+assumes). So its phase ladder CANNOT be inherited - every intensity has to author
+`*EnterVolume` / `*ExitVolume` from its own arithmetic (Docs/ECOSYSTEM.md 27.4). Doing that by
+hand four times is how the four ladders drift apart.
 
 WHAT INTENSITY MEANS HERE (changed 2026-08-14). It used to thin the FOREST: intensity 1 grew
 half the plants of intensity 4. It no longer does - every intensity now grows intensity 4's
@@ -50,22 +50,20 @@ CELL_DIR = os.path.join(REPO, "Assets", "_SO_Assets", "Cell Configs", "Rampage C
 # The forest
 # ---------------------------------------------------------------------------------------
 
-# leaf_vol: volume of ONE live prism at level 1.
+# leaf_vol: volume of ONE live prism - which is its volume for the whole of that plant's
+# life, since lifeform LEVELS are retired and nothing scales a leaf after it is laid.
 #   Branching flora lay their authored leafSize directly, so theirs are exact products.
 #   Phyllotactic flora shape prisms BY ROLE (a stem spans its segment, a leaf spans its
 #   reach), so leafSize is NOT the prism volume - these are the effective averages the
 #   shipped ladder was built against. They are the one soft number here; see CALIBRATION.
 SPECIES = [
-    # name       plants budget  leaf_vol  leaf_scale_per_level  band(min,max)
-    ("Cacti",    26,    160,    75.0,     1.30,                 (0.10, 0.95)),
-    ("Spire",    10,    190,    15.0,     1.25,                 (0.30, 0.97)),
-    ("Pine",     10,    150,    16.0,     1.25,                 (0.14, 0.90)),
-    ("Rosette",   7,    170,    17.0,     1.25,                 (0.40, 0.96)),
-    ("Coral",     6,    180,    10.6,     1.25,                 (0.10, 0.80)),
+    # name       plants budget  leaf_vol  band(min,max)
+    ("Cacti",    26,    160,    75.0,     (0.10, 0.95)),
+    ("Spire",    10,    190,    15.0,     (0.30, 0.97)),
+    ("Pine",     10,    150,    16.0,     (0.14, 0.90)),
+    ("Rosette",   7,    170,    17.0,     (0.40, 0.96)),
+    ("Coral",     6,    180,    10.6,     (0.10, 0.80)),
 ]
-
-RARITY_FALLOFF = 1.6   # Levels {1..5} on every Rampage flora config
-MIN_LEVEL, MAX_LEVEL = 1, 5
 
 # (FloraPopulationScale, FloraPlantBudgetScale) per intensity, 1-indexed.
 #
@@ -113,44 +111,20 @@ def round_half_up(x: float) -> int:
     return math.floor(x + 0.5)
 
 
-def level_volume_multiplier(scale_per_level: float, falloff: float) -> float:
-    """Expected VOLUME multiplier of one prism across the level band.
-
-    Level L has weight falloff^-(L-1) and linear scale s^(L-1), hence volume s^(3(L-1)).
-
-    WHAT THIS MODELS CHANGED (Docs/ECOSYSTEM.md §33). It used to be the SPAWN-TIME
-    distribution: `LifeformLevelSpread` rolled each plant a level at seeding, so the arena
-    was born at this multiplier and stayed there. The spread is retired - every plant now
-    seeds at level 1 and earns a level per birth - so:
-
-      * the SEEDED arena is this multiplier = 1.0 (a fresh Rampage forest is ~4.3x lighter in
-        volume than the number below at s=1.30, f=1.6, which is the shipped Rampage cactus);
-      * this figure is now a MATURE-forest CEILING - where a breeding, grazed forest tends
-        once its plants have reproduced a few times, weighted the same way because a plant's
-        chance of having reached level L falls off similarly.
-
-    That is why the ladder below is left as play-tested rather than re-derived: it now
-    describes the arena's settled state instead of its opening state, and booting lighter
-    is the safe direction (Frenzy - which freezes planting - arrives later, not sooner).
-    It DOES need an in-editor re-measure: see the note printed at the bottom of this tool.
-    """
-    weights = [falloff ** -(l - MIN_LEVEL) for l in range(MIN_LEVEL, MAX_LEVEL + 1)]
-    vols = [scale_per_level ** (3 * (l - MIN_LEVEL)) for l in range(MIN_LEVEL, MAX_LEVEL + 1)]
-    return sum(w * v for w, v in zip(weights, vols)) / sum(weights)
-
-
 def forest(intensity: int):
     """(rows, total_plants, total_prisms, total_volume) for a 1-indexed intensity."""
     pop_scale, budget_scale = SCALES[intensity - 1]
     rows, plants_total, prisms_total, volume_total = [], 0, 0, 0.0
 
-    for name, plants, budget, leaf_vol, leaf_scale, _band in SPECIES:
+    for name, plants, budget, leaf_vol, _band in SPECIES:
         leaf_vol = CALIBRATION.get(name, leaf_vol)
         # Both scalars floor at 1 in C# (Mathf.Max(1, ...)), so a small species never vanishes.
         n = max(1, round_half_up(plants * pop_scale))
         b = max(1, round_half_up(budget * budget_scale))
         prisms = n * b
-        volume = prisms * leaf_vol * level_volume_multiplier(leaf_scale, RARITY_FALLOFF)
+        # A prism's volume is its authored leafSize and never anything else: lifeform LEVELS
+        # are retired, so nothing multiplies a leaf after it is laid (Docs/ECOSYSTEM.md 40).
+        volume = prisms * leaf_vol
         rows.append((name, n, b, prisms, volume))
         plants_total += n
         prisms_total += prisms
@@ -177,16 +151,39 @@ def fauna(intensity: int):
     return [(name, s(i), s(f), s(c)) for name, i, f, c in FAUNA_SPECIES]
 
 
-def thresholds(prisms: int, volume: float) -> dict[str, int]:
-    """The cell's phase ladder for a forest of this size.
+# The SHIPPED, play-tested volume ladder. AUTHORED, not derived - and that is a deliberate
+# change (2026-08-26), recorded here rather than in a commit message because the next person to
+# retune the forest needs it.
+#
+# It used to be derived: `derived_volume_ladder(volume)` below sat Frenzy just above the
+# full-grown forest, and the forest's volume was the seeded prism volume TIMES a level-spread
+# multiplier (4.31x on the cactus, 3.21x on the phyllotactics). Lifeform LEVELS are now retired
+# outright - a lifeform is its species and its element, and a prism's volume is its authored
+# leafSize forever - so that multiplier collapses to exactly 1.0 and the forest this script
+# models drops 1,615,853 -> 396,178 volume. Re-deriving would have taken FrenzyEnterVolume
+# 1,630,000 -> 400,000, i.e. frozen planting at a quarter of the mass the arena was play-tested
+# at. Frenzy arriving LATER is the safe direction, so the shipped numbers are held.
+#
+# What that costs, stated plainly: the flora alone can no longer reach Frenzy at all (a mature
+# forest tops out at 396,178 against a 1,630,000 gate), so in this cell Frenzy is now reachable
+# only with player trail mass on top. Restless is unaffected in kind - it still fires at ~28.5%
+# of the mature forest (113,000 of 396,178) - so fauna still hunt from early on.
+#
+# OPEN: re-measure in-editor (FrogletTools > Ecology > Measure Cell Environment Baselines) and
+# retune these four numbers against the real Cell.LiveVolume. Docs/ECOSYSTEM.md 27.4, 39.
+SHIPPED_VOLUME_LADDER = {
+    "RestlessEnterVolume":   113_000,
+    "RestlessExitVolume":     81_000,
+    "FrenzyEnterVolume":   1_630_000,
+    "FrenzyExitVolume":    1_260_000,
+}
 
-    VOLUME is the spine: Frenzy sits just above the full-grown forest so planting and growth
-    freeze exactly when the arena is full (a GROWTH gate - nothing is ever culled), and the
-    exit band reopens it once roughly a quarter has been destroyed. Restless sits low so fauna
-    hunt from early on, at the same proportion Blob uses.
 
-    The COUNT pair is only the perf backstop, and RestlessEnter/Exit stay at the platform's
-    700/500 at every intensity precisely because volume - not count - is what governs.
+def derived_volume_ladder(volume: float) -> dict[str, int]:
+    """What THIS forest's volume would ask for, by the original derivation.
+
+    Kept live (and printed, and asserted against) rather than deleted: it is the only thing
+    that can tell you the authored ladder above has drifted away from the arena it gates.
     """
     def r(x, unit):
         return int(round(x / unit) * unit)
@@ -195,6 +192,26 @@ def thresholds(prisms: int, volume: float) -> dict[str, int]:
     frenzy_exit_v = r(frenzy_enter_v * 0.773, 10_000)
     restless_enter_v = r(frenzy_enter_v * 0.0693, 1_000)
     restless_exit_v = r(restless_enter_v * 0.7168, 1_000)
+    return {
+        "RestlessEnterVolume": restless_enter_v,
+        "RestlessExitVolume": restless_exit_v,
+        "FrenzyEnterVolume": frenzy_enter_v,
+        "FrenzyExitVolume": frenzy_exit_v,
+    }
+
+
+def thresholds(prisms: int, volume: float) -> dict[str, int]:
+    """The cell's phase ladder for a forest of this size.
+
+    The COUNT pair is still DERIVED - it is the perf backstop and it never depended on a
+    prism's size, so retiring levels left it untouched. RestlessEnter/Exit stay at the
+    platform's 700/500 at every intensity precisely because volume - not count - is what
+    governs.
+
+    The VOLUME pair is AUTHORED (SHIPPED_VOLUME_LADDER) and `volume` is deliberately unused in
+    producing it; pass it anyway, because `derived_volume_ladder` is what the report and the
+    self-test compare the authored numbers against.
+    """
     frenzy_enter_c = int(math.ceil(prisms * 1.017 / 250.0) * 250)
 
     return {
@@ -202,10 +219,7 @@ def thresholds(prisms: int, volume: float) -> dict[str, int]:
         "RestlessExit": 500,
         "FrenzyEnter": frenzy_enter_c,
         "FrenzyExit": int(frenzy_enter_c * 0.8),
-        "RestlessEnterVolume": restless_enter_v,
-        "RestlessExitVolume": restless_exit_v,
-        "FrenzyEnterVolume": frenzy_enter_v,
-        "FrenzyExitVolume": frenzy_exit_v,
+        **SHIPPED_VOLUME_LADDER,
     }
 
 
@@ -268,12 +282,16 @@ def cell_config_yaml(i: int) -> str:
     desc = (
         f"Demolition arena cell, intensity {i} of 4 - {CROWD_WORDS[i - 1]}: {plants} seeded plants "
         f"totalling ~{prisms} prisms of cacti, spires, pines, rosettes and coral, filling the "
-        "volume from just outside the nucleus out to the membrane, across all three domains at "
-        "levels 1-5. The FOREST IS THE SAME AT EVERY INTENSITY (this is the shipped, play-tested "
-        f"arena); intensity carries {fauna_scale:g}x the authored wildlife and - authored in the "
-        f"scene, not here - {CRYSTAL_WORDS[i - 1]}. The nucleus stays clear; it is the crystals' "
-        f"contested ground. PhaseThresholds ride the forest's real volume (~{int(volume):,} at "
-        "full growth) - regenerate with Tools/Build/rampage_intensity.py rather than hand-editing."
+        "volume from just outside the nucleus out to the membrane, across all three domains, "
+        "each plant one of the four elemental variations. The FOREST IS THE SAME AT EVERY "
+        "INTENSITY (this is the shipped, play-tested arena); intensity carries "
+        f"{fauna_scale:g}x the authored wildlife and - authored in the scene, not here - "
+        f"{CRYSTAL_WORDS[i - 1]}. The nucleus stays clear; it is the crystals' contested "
+        f"ground. The mature forest is ~{int(volume):,} volume; the VOLUME thresholds are "
+        "held at their play-tested values rather than re-derived from that (lifeform levels "
+        "are retired, so the forest is 4.08x lighter than when they were set) and are pending "
+        "an in-editor re-measure - regenerate with Tools/Build/rampage_intensity.py rather "
+        "than hand-editing."
     )
     wrapped = _wrap_yaml_scalar(desc)
     return f"""%YAML 1.1
@@ -407,6 +425,14 @@ def main() -> int:
           f"restless {t['RestlessEnterVolume']:,} / {t['RestlessExitVolume']:,} vol, "
           f"{t['FrenzyEnter']:,} count backstop")
 
+    d = derived_volume_ladder(volume)
+    print(f"    (the volume pair is AUTHORED - this forest would DERIVE frenzy "
+          f"{d['FrenzyEnterVolume']:,} / {d['FrenzyExitVolume']:,}, restless "
+          f"{d['RestlessEnterVolume']:,} / {d['RestlessExitVolume']:,};")
+    print(f"     holding the shipped numbers puts Frenzy "
+          f"{t['FrenzyEnterVolume'] / volume:.2f}x above the mature forest, so flora alone "
+          f"never freezes planting)")
+
     print("\nWHAT INTENSITY ACTUALLY CHANGES")
     print(f"{'':10}{'fauna':>7}   wildlife (seed batch / floor / cap)"
           f"{'':17}crystals [authored in the scene]")
@@ -417,8 +443,9 @@ def main() -> int:
         print(f"intensity {i}{FAUNA_SCALES[i - 1]:>6.1f}x   {detail:<38} -> {cap_total:>2} at cap"
               f"   {CRYSTAL_WORDS[i - 1]}")
 
-    # Regression 1: the model must reproduce the SHIPPED intensity-4 ladder exactly. If this
-    # ever fails, the model drifted from the arena that was actually play-tested.
+    # Regression 1: the emitted intensity-4 ladder must still be the SHIPPED, play-tested one.
+    # The COUNT half is derived and never depended on a prism's size, so retiring lifeform
+    # levels left it alone; the VOLUME half is now authored, so this pins the authored values.
     _, _, prisms4, volume4 = forest(4)
     t4 = thresholds(prisms4, volume4)
     expected4 = {"RestlessEnter": 700, "RestlessExit": 500, "FrenzyEnter": 10000, "FrenzyExit": 8000,
@@ -426,6 +453,19 @@ def main() -> int:
                  "FrenzyEnterVolume": 1630000, "FrenzyExitVolume": 1260000}
     assert prisms4 == 9830, f"intensity 4 prism count drifted: {prisms4} != 9830"
     assert t4 == expected4, f"intensity 4 ladder drifted:\n  {t4}\n  {expected4}"
+
+    # Regression 1b: the invariant that REPLACED "the model reproduces the shipped ladder".
+    # It no longer does - levels are retired, so the forest is 4.08x lighter than the arena the
+    # ladder was play-tested against - and holding the shipped numbers is only safe while the
+    # forest fits UNDER them. A future forest retune that grows past the authored gate must
+    # fail here rather than silently freezing planting mid-match.
+    assert abs(volume4 - 396_178) < 1.0, \
+        f"the level-free forest volume drifted: {volume4:,.0f} != 396,178 - re-derive the " \
+        f"authored SHIPPED_VOLUME_LADDER against the new forest and re-measure in-editor"
+    assert derived_volume_ladder(volume4)["FrenzyEnterVolume"] \
+        <= t4["FrenzyEnterVolume"], \
+        "the forest now wants a HIGHER Frenzy gate than the authored one - holding the " \
+        "shipped ladder would freeze planting before the arena is full. Re-author it."
 
     # Regression 2: the forest is now FLAT, so all four intensities must land on that same
     # play-tested ladder. This is the assert that catches a half-finished edit - one that
@@ -445,14 +485,18 @@ def main() -> int:
     print("\nself-test OK: all four intensities reproduce the shipped, play-tested intensity-4 "
           "ladder, and the fauna ladder climbs from the authored population")
 
-    print("\nOPEN - RE-MEASURE THIS LADDER IN-EDITOR (Docs/ECOSYSTEM.md §33). The spawn-time "
-          "level spread\nis retired: every plant now seeds at level 1 and earns a level per "
-          "birth, so the volumes\nabove are the MATURE forest, and a freshly-seeded arena is "
-          "~4.3x lighter (the cactus runs\ns=1.30, f=1.6). Booting lighter is the safe "
-          "direction - Frenzy, which freezes planting,\narrives later, not sooner - so the "
-          "ladder is deliberately left as play-tested. Confirm with\nFrogletTools > Ecology > "
-          "Measure Cell Environment Baselines and retune Restless if the arena\nnow reads Calm "
-          "for too long after the whistle.")
+    print("\nOPEN - RE-MEASURE THIS LADDER IN-EDITOR (Docs/ECOSYSTEM.md §40). Lifeform LEVELS "
+          "are retired\noutright - a lifeform is its species and its ELEMENT - so a prism's "
+          "volume is its authored\nleafSize forever and the level-spread multiplier this model "
+          "used to apply (4.31x on the\ncactus, 3.21x on the phyllotactics) is gone. The forest "
+          "above is therefore the WHOLE arena,\nmature: 396,178 volume against a shipped "
+          "1,630,000 Frenzy gate.\n\nThe four volume thresholds are now AUTHORED, held at the "
+          "play-tested numbers rather than\nre-derived down to 400,000 / 310,000 / 28,000 / "
+          "20,000 - Frenzy arriving LATER is the safe\ndirection. The cost: flora alone can no "
+          "longer reach Frenzy in this cell (only player trail\nmass on top can), while "
+          "Restless still fires at ~28.5% of the mature forest, so fauna hunt\nas before. "
+          "Confirm with FrogletTools > Ecology > Measure Cell Environment Baselines and\n"
+          "re-author SHIPPED_VOLUME_LADDER against the real Cell.LiveVolume.")
 
     stale = emit(write=args.write)
     if args.write:

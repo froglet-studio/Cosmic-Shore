@@ -35,8 +35,6 @@ MonoBehaviour:
     MaxTotalSpawnedObjects: -1
     PlantRadiusCellFraction: -1
     PlantRadiusCellFractionMin: -1
-  InitialLevel: 1
-  LeafScalePerLevel: 1.25
   SpreadElements: 1
   ElementPalette:
   - {fileID: 11400000, guid: 33a38252d4dd18ab0a6c516cdd28bef3, type: 2}

@@ -112,7 +112,7 @@ them toward the next layer, never back through the last.
 | the toy | 1.5 | the **KINGDOM** row — Fauna, Flora, Vessels (station radius ×1.5, so the first row you meet is the biggest thing in the corridor) |
 | Fauna / Flora | 3.5 | that kingdom's **SPECIES** row, one station per registered species |
 | Vessels | 3.5 | the **HANGAR** row, one mini hull per class |
-| a species | 5.5 | its **VARIANT** matrix — 4 element columns × level rows {1, 3, 5} |
+| a species | 5.5 | its **VARIANT** row — one station per ELEMENT, four of them |
 | a variant | — | that exact lifeform spawns live into the cell |
 | a hull | — | an **AI-piloted vessel of that class, in your own domain**, is released |
 
@@ -128,7 +128,10 @@ never instantiated), the first flora species (simulated via `Flora.TryPreviewGro
 "Station icons"), and the first hull on the roster (`ToyVesselRoster` → `VesselModelBuilder`).
 Species and hangar stations are the same, one per entry; only a species that can offer neither a
 model nor a growth preview keeps the anonymous sphere. Variant stations wear the element's crystal
-model sized by level, so level 5 reads biggest before you touch it.
+model **drawn at that variant's own authored heart size**, as a ratio of the platform default, so
+the row shows the real size difference between the four hearts before you touch any of them (a
+shark row reads big, a SchwarzP row small). A lifeform is its species and its element and nothing
+else — there is no level, so there are no level rows (`Docs/ECOSYSTEM.md` §40).
 
 **Lifeform release.** A variant spawns a POPULATION (fauna `PopulationSize` / flora
 `InitialSpawnCount`) through the canonical cell spawn paths, on a runtime CLONE of its per-element
@@ -742,14 +745,19 @@ authored assets (`_SO_Assets/Toys/Toy_*.asset`), and asserts three things per si
 | Lifeform kingdom station | 28.8 | 26.5 | 27.8 ✓ | kingdom sample 18 | 52.9 ✓ |
 | Lifeform species station | 19.2 | 17.7 | 48.5 ✓ | creature 12 | 35.3 ✓ |
 | Lifeform hangar station | 19.2 | 17.7 | 48.5 ✓ | hull 12 | 35.3 ✓ |
-| Lifeform variant, level 5 | 40.5 *(clamped)* | 37.3 | 2.5 ✓ | crystal 28.8 | 78.6 ✓ |
+| Lifeform variant station | 19.2 | 17.7 | 48.5 ✓ | crystal 12 (drawn 0.35–1.53× the default heart) | 35.3 ✓ |
 | Painting gallery station | 63.4 *(clamped)* | 58.3 | 3.9 ✓ | miniature 44 | 121.7 ✓ |
 
 The Wanderway return station is not in the table because it is sized off its own
 `returnStationRadius` (22 authored → ring 48.4) rather than the toybox's placement, and it has no
-neighbours. The tightest margins — Vessel Changer 1.7, Lifeform L5 2.5, gallery 3.9 — come from
-station spacings that were already tight before rings existed, and are exactly what the clamp
-exists to hold; at 0.60 all three interpenetrate (the script's own negative control). Run the
+neighbours. The tightest margins — Vessel Changer 1.7 and gallery 3.9 — come from station
+spacings that were already tight before rings existed, and are exactly what the clamp exists to
+hold; at 0.60 both interpenetrate (the script's own negative control). *(A third used to sit
+between them: the level-5 lifeform variant station at 2.5, whose radius was
+`StationRadius × (1 + 0.35 × (L − 1))`. With levels retired every variant station is the plain
+`StationRadius`, so that row is now identical to the species row and its clamp is no longer
+exercised. `Tools/Build/toy_switch_ring_geometry.py` has dropped `LIFEFORM_LEVEL5_FACTOR` and
+prints the row above.)* Run the
 script rather than nudging the constant.
 
 **The Wanderway return station is the one ring with no fixed axis.** Every other toy faces the cell

@@ -16,8 +16,17 @@ namespace CosmicShore.Gameplay
     /// overtaken. A slower vessel bounces off harmlessly.
     ///
     /// SPACE level-5 upgrade ('Shepherd'): jousting an OWN-domain lifeform NOURISHES it -
-    /// LifeForm/Fauna.LevelUp() grows body + heart one level (max 5, the lifeform elemental
-    /// contract). Below the unlock an ally joust does nothing.
+    /// <see cref="ILifeFormEntity.Nourish"/> feeds it, so a creature's starvation clock resets
+    /// and its birth counter advances, and a plant's growth quota advances toward its next
+    /// seeding. Below the unlock an ally joust does nothing.
+    ///
+    /// <para>Shepherding used to LEVEL the ally instead - a bigger body and a bigger heart.
+    /// Lifeform levels are retired (Docs/ECOSYSTEM.md §40), and feeding is the better shape for
+    /// the same fantasy: the shepherd's reward is MORE OF THE THING THEY PROTECTED, paid out by
+    /// the food web through every gate an ordinary feed passes (reproduction quota, cooldown,
+    /// the cell's per-species cap, the Frenzy production freeze) rather than scripted onto one
+    /// individual. It also means the ability finally does something on a species that could
+    /// never level: a flora with no reproduction still declines, but every creature responds.</para>
     ///
     /// Per-impact live reads; the SO stays stateless.
     /// </summary>
@@ -25,9 +34,10 @@ namespace CosmicShore.Gameplay
         menuName = "ScriptableObjects/Impact Effects/Vessel - Lifeform Crystal/VesselWitherLifeformByCrystalEffectSO")]
     public class VesselWitherLifeformByCrystalEffectSO : VesselLifeformCrystalEffectSO
     {
-        [Tooltip("The element whose level-5 upgrade arms the ALLY branch - leveling up " +
-                 "own-domain lifeforms (Space for the Squirrel). The opposing-domain kill is " +
-                 "the BASE ability and is never gated.")]
+        [Tooltip("The element whose level-5 upgrade arms the ALLY branch - nourishing " +
+                 "own-domain lifeforms (Space for the Squirrel). This is a VESSEL element " +
+                 "level, which is untouched by the lifeform-level retirement. The " +
+                 "opposing-domain kill is the BASE ability and is never gated.")]
         [SerializeField] Element allyUpgradeElement = Element.Space;
 
         [Tooltip("The vessel must be moving at least this much faster than the lifeform " +
@@ -36,7 +46,8 @@ namespace CosmicShore.Gameplay
         [SerializeField] float speedMargin = 1f;
 
         [Tooltip("Optional: raised with the jouster's player name on a successful joust " +
-                 "(kill or ally level-up) - the Squirrel HUD listens on its impact icon channel.")]
+                 "(a kill, or an ally nourished) - the Squirrel HUD listens on its impact " +
+                 "icon channel.")]
         [SerializeField] ScriptableEventString onLifeformJousted;
 
         public override void Execute(VesselImpactor vesselImpactor, Crystal embeddedCrystal)
@@ -53,12 +64,9 @@ namespace CosmicShore.Gameplay
             if (lifeform.Domain == status.Domain)
             {
                 if (status.ElementalAbilityHandler?.IsUpgradeActive(allyUpgradeElement) != true) return;
-                if (lifeform.LevelUp())
-                {
-                    CosmicShore.Utility.CSDebug.Log(
-                        $"[CrystalJoust] Shepherd: {status.PlayerName} levelled an ally to L{lifeform.Level}.");
-                    onLifeformJousted?.Raise(status.PlayerName);
-                }
+                // No log here: this is a per-CONTACT path, and the HUD channel below is the
+                // feedback (CLAUDE.md - nothing per-frame or per-contact gets a log at all).
+                if (lifeform.Nourish()) onLifeformJousted?.Raise(status.PlayerName);
                 return;
             }
 

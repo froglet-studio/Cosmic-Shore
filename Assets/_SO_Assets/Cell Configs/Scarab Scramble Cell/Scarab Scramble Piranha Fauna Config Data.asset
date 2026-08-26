@@ -17,7 +17,6 @@ MonoBehaviour:
   PopulationSize: 8
   SpawnProbability: 1
   FeedsPerOffspring: 4
-  FeedsPerLevel: 8
   OffspringPerBirth: 1
   ReproductionCooldownSeconds: 4
   MaxLivePopulation: 22
@@ -26,11 +25,9 @@ MonoBehaviour:
   BandOuterRadius: 0
   CenterFocusBias: 0.35
   Element: 1
-  InitialLevel: 1
-  BodyScalePerLevel: 1.15
-  LevelGrowSeconds: 1
   Variant:
     Enabled: 1
+    HeartWorldScale: 1.159
     BaseBodyScale: 0.22
     BodyPrismScale: {x: 0.5, y: 0.5, z: 4}
     BodyMaterial: {fileID: 0}

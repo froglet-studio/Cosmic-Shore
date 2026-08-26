@@ -187,8 +187,9 @@ namespace CosmicShore.Gameplay
                 // that expresses that element. With spread off the roll returns the config's
                 // authored Element / Variant, so the legacy per-element-config path is
                 // unchanged. An OFFSPRING passes its parent's pick, which RollVariant returns
-                // verbatim - a lineage breeds true. The LEVEL is never rolled: every plant seeds
-                // at level 1 and earns the rest by reproducing (Docs/ECOSYSTEM.md §33).
+                // verbatim - a lineage breeds true. There is no level: a plant is its species
+                // and its element, and the element states everything - leaf, tempo, budget and
+                // the size of its heart (Docs/ECOSYSTEM.md §40).
                 var pick = config.RollVariant(inherit);
 
                 flora.ApplyElement(pick.Element);
@@ -206,8 +207,6 @@ namespace CosmicShore.Gameplay
 
                 if (config.TryBuildCellOverrideTuning(plantBudgetScale, out var cellOverrides))
                     flora.ApplyVariantTuning(cellOverrides);
-
-                flora.ApplyLevel(pick.Level, config.LeafScalePerLevel);
 
                 // Lineage BEFORE Initialize, so the plant is already counted in the cell's
                 // per-species population by the time its first growth tick can try to seed an
