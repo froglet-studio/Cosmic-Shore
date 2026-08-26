@@ -208,13 +208,20 @@ namespace CosmicShore.Gameplay
         public virtual void SetSkimmerMaterial(Material material) =>
                 VesselStatus.SkimmerMaterial = material;
 
-        VesselTrailCustomization _trailCustomization;
-        public virtual void SetTrailColors(Color highlightColor, Color coreColor)
-        {
-            if (_trailCustomization == null)
-                _trailCustomization = GetComponentInChildren<VesselTrailCustomization>(includeInactive: true);
-            _trailCustomization?.SetTrailColors(highlightColor, coreColor);
-        }
+        VesselTailAndJets _tailAndJets;
+
+        /// <summary>
+        /// This vessel's TAIL and JETS (Docs/VESSEL_TAIL_AND_JETS.md). Resolved lazily and cached:
+        /// the component is optional today because the fleet is still being migrated onto the
+        /// standard, so a vessel without one simply has no tail or jets to paint or hide.
+        /// </summary>
+        VesselTailAndJets TailAndJets =>
+            _tailAndJets != null
+                ? _tailAndJets
+                : _tailAndJets = GetComponentInChildren<VesselTailAndJets>(includeInactive: true);
+
+        public virtual void SetTailAndJetColors(Color highlightColor, Color coreColor) =>
+            TailAndJets?.SetColors(highlightColor, coreColor);
 
         public virtual void BindElementalFloat(string name, Element element) =>
             VesselStatus.ElementalStatsHandler.BindElementalFloat(name, element);

@@ -33,7 +33,9 @@ touching before editing; read all of it when creating or completing a vessel.
 | Abilities, actions, executors, input | §2 Actions | `R_VesselActions/*.md` for that ability |
 | Element scaling, map assets, L5 upgrades | §3 Map, §4 Elementals | `Docs/ElementalAbilitySystem/ARCHITECTURE.md` + `FLEET_MAPS.md` |
 | HUD icons, hints, gauges, HUD lifecycle | §5 Ability row, §8 HUD pair | ARCHITECTURE.md §7.1–7.4 |
-| Petal flowers / hull morphs / rig or FBX | §6 Bars, §7 Morphs | CLAUDE.md ▸ Elemental Bars / Hull Morphs |
+| Petal flowers / hull morphs / rig or FBX | §6 Bars, §7 Morphs | CLAUDE.md ▸ Elemental Bars / Hull Morphs; `Docs/VESSEL_CONSTRUCTION.md` |
+| Prefab construction, model swaps, deleting a model | — | **`Docs/VESSEL_CONSTRUCTION.md`** (guid ownership, nested-instance parenting, what the unreferenced rigs carry) |
+| Tails, jets, vessel FX mounts | — | `Docs/VESSEL_TAIL_AND_JETS.md` |
 | Collisions, crystals, skimmers, jousting | §9 Impact effects | CLAUDE.md ▸ Impact Effects; `RHINO_SHIELD_SWIPE.md` |
 | Docs, shipping, verification | §10 Paper trail | `GIT_RULES.md`, `Docs/UNITY_VERIFICATION_CHECKLIST.md` |
 
@@ -414,6 +416,20 @@ applies to new abilities, new resources on the meter list, and anything that add
     actually wrote against a stub harness before committing (`asset-surgery` §4); that is what
     caught this one.
     (Sparrow roll-charge state, 2026-08-25.)
+
+34. **A projectile's RANGE is not `speed × projectileTime` — it is `speed × 2T/π`, because the
+    flight decelerates.** `Projectile.MoveProjectileAsync` advances by `Velocity × Δt × cos(π·t /
+    2T)`, which integrates to `v·2T/π ≈ 0.6366·v·T`: a round covers **64%** of the distance the
+    obvious product predicts, and it arrives at rest rather than at speed. This is rules 4a/4b in
+    a third guise — the authored numbers (`speedValue 375`, `projectileTime 0.3`) are both real
+    and both correct, and the quantity a design doc cares about is neither of them. The trap is
+    unusually sharp because the *stale-looking* value is the right one: the Sparrow doc's "~72 u
+    at SPACE 0" reads as drift against an asset saying 375 × 0.3 = 112.5, and a ship-protocol
+    doc-drift sweep will try to "fix" it. **Before correcting any range, reach, or
+    time-to-target figure, read the movement loop for a shaping factor** — and when you write a
+    new one, write the derivation next to it so the next sweep can check it in one line rather
+    than re-deriving it from the integral.
+
 
 ### 4.x Placing prisms from a vessel ability — shield sizing
 

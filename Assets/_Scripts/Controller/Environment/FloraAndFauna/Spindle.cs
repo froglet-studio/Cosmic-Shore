@@ -1,4 +1,4 @@
-using System.Collections;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
@@ -10,22 +10,27 @@ namespace CosmicShore.Gameplay
     public class Spindle : MonoBehaviour
     {
         private static readonly int PhaseOffsetID = Shader.PropertyToID("_Phase");
-        private static readonly int DeathAnimationID = Shader.PropertyToID("_DeathAnimation");
+        private static readonly int DeathStartTimeID = Shader.PropertyToID("_DeathStartTime");
+        private static readonly int DeathDurationID = Shader.PropertyToID("_DeathDuration");
+        private static readonly int DeathDirectionID = Shader.PropertyToID("_DeathDirection");
 
-        // Condense/evaporate fades write _DeathAnimation through a shared scratch
-        // MaterialPropertyBlock (SetPropertyBlock copies it into the renderer, so one
-        // static scratch serves every spindle). The old path cloned a Material per
-        // animation (new Material + renderer.material — the banned clone pattern) and
-        // Destroyed it after; with dozens of spindles condensing at once that was
-        // constant material create/destroy churn. Trade-off, stated honestly: a clone
-        // kept the renderer SRP-Batcher-compatible (same shader), while an MPB
-        // excludes it for the fade's ~1s duration (see the header comment above) —
-        // the win is zero material churn, at the cost of unbatched draws during
-        // fades. If a capture shows the unbatched fade draws regressing, bucket the
-        // fade into a few shared quantized-fade materials like the phase variants.
-        // Clearing the block on completion (SetPropertyBlock(null)) returns the
-        // spindle to its shared phase-variant material and SRP batching.
+        // Condense/evaporate fades stamp _DeathStartTime / _DeathDuration /
+        // _DeathDirection ONCE through a shared scratch MaterialPropertyBlock.
+        // The GPU runs the course off _PrismClock (PrismDeathClock in SpindleGraph
+        // / AnimatedSpindleGraph). Trade-off, stated honestly: a renderer WITH an
+        // MPB is still excluded from the SRP Batcher for the fade's ~1s — this
+        // migration does NOT recover batching DURING the fade (unique staggered
+        // StartTimes cannot share quantized fade materials without collapsing the
+        // ecology-LOCKED wither order). What it recovers is (1) zero per-frame
+        // CPU and (2) SRP Batcher AFTER settle via SetPropertyBlock(null). If a
+        // capture shows the unbatched fade window regressing, bucket the fade
+        // into a few shared quantized-fade materials like the phase variants —
+        // that would be a look trade against ordered wither.
         static MaterialPropertyBlock s_fadeMpb;
+
+        const float DeathFadeDuration = 1f;
+        const float DeathDirectionEvaporate = 1f;
+        const float DeathDirectionCondense = -1f;
 
         // Spindle sway is desynced with a small set of SHARED phase-variant materials chosen
         // by world position, NOT a per-renderer MaterialPropertyBlock. A per-renderer MPB
@@ -67,8 +72,6 @@ namespace CosmicShore.Gameplay
         Renderer[] _renderers;
         Material[] _phaseBaseMaterials;
         Material[] _phaseVariants;
-
-        Coroutine condenseCoroutine;
 
         bool deregistered;
         bool dying = false;
@@ -140,18 +143,18 @@ namespace CosmicShore.Gameplay
             if (!isPermanentlyWithered) return;
 
             SetRenderersEnabled(false);
-            StopAllCoroutines();
+            CancelFadeSettle();
         }
 
-        IEnumerator Start()
+        void Start()
         {
             if (isPermanentlyWithered)
-                yield break;
+                return;
 
             if (RenderedObject == null || RenderedObject.sharedMaterial == null)
             {
                 CSDebug.LogError($"{gameObject.name}: RenderedObject does not have a valid material at Start.");
-                yield break;
+                return;
             }
 
             // Desync the sway via a shared phase-variant material (see PhaseVariants) so the
@@ -167,7 +170,8 @@ namespace CosmicShore.Gameplay
                 _phaseVariants[i] = GetPhaseVariant(_phaseBaseMaterials[i], transform.position);
                 if (_phaseVariants[i]) partRenderer.sharedMaterial = _phaseVariants[i];
             }
-            condenseCoroutine = StartCoroutine(CondenseCoroutine());
+            if (!dying)
+                StampCondense();
 
             if (LifeForm) LifeForm.AddSpindle(this);
             parentSpindle ??= transform.parent.GetComponentInParent<Spindle>();
@@ -239,8 +243,8 @@ namespace CosmicShore.Gameplay
         /// can be destroyed without taking anything else with it - and suspends
         /// <see cref="CheckForLife"/> so losing its prisms to the skeleton doesn't evaporate
         /// it before its turn. The caller then walks the isolated spindles in whatever order
-        /// the death dictates, calling <see cref="ForceWither"/> on each. Idempotent; a
-        /// spindle already dying or withered is left alone.
+        /// the death dictates, calling <see cref="ForceWither(float)"/> on each with a
+        /// start-time offset. Idempotent; a spindle already dying or withered is left alone.
         /// </summary>
         public void IsolateForOrderedWither(Transform detachedParent)
         {
@@ -274,11 +278,7 @@ namespace CosmicShore.Gameplay
             EvaporateSpindle();
         }
 
-        private void EvaporateSpindle()
-        {
-            if (gameObject && gameObject.activeInHierarchy)
-                StartCoroutine(EvaporateCoroutine());
-        }
+        void EvaporateSpindle() => StampEvaporate(0f);
 
         void RestoreOriginalMaterial()
         {
@@ -296,72 +296,66 @@ namespace CosmicShore.Gameplay
             }
         }
 
-        void SetFadeValue(float deathAnimation)
+        void CancelFadeSettle() => PrismTimerManager.Instance?.CancelScheduledActions(this);
+
+        void StampCondense()
         {
-            CacheRenderers();
-            if (_renderers.Length == 0) return;
-            s_fadeMpb ??= new MaterialPropertyBlock();
-            s_fadeMpb.SetFloat(DeathAnimationID, deathAnimation);
-            for (int i = 0; i < _renderers.Length; i++)
-                if (_renderers[i]) _renderers[i].SetPropertyBlock(s_fadeMpb);
+            StampDeathFade(PrismClock.Now, DeathFadeDuration, DeathDirectionCondense, OnCondenseSettled);
         }
 
-        IEnumerator EvaporateCoroutine()
+        void StampEvaporate(float delay)
         {
-            if (condenseCoroutine != null)
+            StampDeathFade(PrismClock.Now + delay, DeathFadeDuration, DeathDirectionEvaporate, OnEvaporateSettled);
+        }
+
+        void StampDeathFade(float startTime, float duration, float direction, Action onSettle)
+        {
+            CancelFadeSettle();
+            CacheRenderers();
+            s_fadeMpb ??= new MaterialPropertyBlock();
+            s_fadeMpb.Clear();
+            s_fadeMpb.SetFloat(DeathStartTimeID, startTime);
+            s_fadeMpb.SetFloat(DeathDurationID, duration);
+            s_fadeMpb.SetFloat(DeathDirectionID, direction);
+            for (int i = 0; i < _renderers.Length; i++)
             {
-                StopCoroutine(condenseCoroutine);
-                condenseCoroutine = null;
+                var partRenderer = _renderers[i];
+                if (!partRenderer) continue;
+                var mat = partRenderer.sharedMaterial;
+                if (mat && !mat.HasProperty(DeathStartTimeID))
+                    PrismClockDiagnostics.WarnUnwiredMaterial(mat, "_DeathStartTime", this);
+                partRenderer.SetPropertyBlock(s_fadeMpb);
             }
 
-            float deathAnimation = 0f;
-            float animationSpeed = 1f;
-            while (deathAnimation < 1f)
-            {
-                yield return null;
+            float delay = Mathf.Max(0f, startTime + duration - PrismClock.Now);
+            PrismTimerManager.EnsureInstance().ScheduleAction(this, delay, onSettle);
+        }
 
-                // No early-out when the renderer is gone: SetFadeValue and
-                // RestoreOriginalMaterial null-guard, and the loop MUST run to
-                // completion so DisableSpindle/Destroy below always finalize the
-                // lifecycle — bailing here leaves a dying=true spindle registered
-                // forever and stalls LifeForm.DieCoroutine's empty-tracker wait.
-                SetFadeValue(deathAnimation);
-                deathAnimation += Time.deltaTime * animationSpeed;
-            }
+        void OnCondenseSettled()
+        {
+            RestoreOriginalMaterial();
+        }
 
+        void OnEvaporateSettled()
+        {
+            // Must run even if the renderer is gone: bailing here leaves a dying=true
+            // spindle registered forever and stalls LifeForm.DieCoroutine's empty-tracker wait.
             RestoreOriginalMaterial();
             SetRenderersEnabled(false);
-
             DisableSpindle();
 
             if (retainSpindle)
-            {
                 gameObject.SetActive(false);
-            }
             else
-            {
                 Destroy(gameObject);
-            }
         }
 
-        IEnumerator CondenseCoroutine()
-        {
-            if (isPermanentlyWithered) yield break;
-
-            float deathAnimation = 1f;
-            float animationSpeed = 1f;
-            while (deathAnimation > 0f)
-            {
-                if (isPermanentlyWithered) yield break;
-                SetFadeValue(deathAnimation);
-                deathAnimation -= Time.deltaTime * animationSpeed;
-                yield return null;
-            }
-
-            RestoreOriginalMaterial();
-        }
-
-        public void ForceWither()
+        /// <param name="evaporateDelay">
+        /// Seconds until this spindle's fade STARTS. Ordered wither stamps every
+        /// spindle in one pass with <c>i * interval</c> so starvation stays
+        /// extremity-first and a joust stays heart-outward — never a per-frame cascade.
+        /// </param>
+        public void ForceWither(float evaporateDelay = 0f)
         {
             if (dying || isPermanentlyWithered) return;
 
@@ -370,10 +364,10 @@ namespace CosmicShore.Gameplay
 
             foreach (var child in spindles.ToArray())
             {
-                if (child) child.ForceWither();
+                if (child) child.ForceWither(evaporateDelay);
             }
 
-            EvaporateSpindle();
+            StampEvaporate(evaporateDelay);
         }
 
         void DisableSpindle()
@@ -424,6 +418,7 @@ namespace CosmicShore.Gameplay
 
         void OnDestroy()
         {
+            CancelFadeSettle();
             if (deregistered) return;
             deregistered = true;
             DisableSpindle();

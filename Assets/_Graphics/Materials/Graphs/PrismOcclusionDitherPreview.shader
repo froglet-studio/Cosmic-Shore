@@ -99,9 +99,10 @@ Shader "Hidden/CosmicShore/PrismOcclusionDitherPreview"
 
                 // polarValid = true: the preview synthesizes a valid corridor frame in
                 // every mode, so the spiral never takes its out-of-corridor IGN fallback here.
-                // The volumetric kernel gets positionWS = (pixel, 0) at angularScale 1, so
-                // preview pixels ARE world units and it renders its z = 0 slice at 1:1 —
-                // the honest scale, same as every screen kernel.
+                // Both volumetric kernels (SHATTER3D and SHARD3D) get positionWS =
+                // (pixel, 0) at angularScale 1, so preview pixels ARE world units and
+                // they render their z = 0 slice at 1:1 — the honest scale, same as
+                // every screen kernel. That slice cannot see a glancing-plane flash.
                 // viewDepth = 0: the preview is a flat slice with no depth, so SHATTER's
                 // depth band-phase contributes nothing here. Like the depth parallax before
                 // it, that dial can only be judged on real stacked mass in play mode.

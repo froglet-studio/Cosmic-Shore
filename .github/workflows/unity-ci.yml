@@ -183,6 +183,20 @@ jobs:
       - name: Check conditional compilation
         run: python3 Tools/Build/check_conditional_compilation.py --root Assets
 
+      - name: Check prism shader wiring
+        run: |
+          set -euo pipefail
+          python3 Tools/Shaders/wire_prism_backface_fade.py --check
+          python3 Tools/Shaders/wire_prism_destruction_sight.py --check
+          python3 Tools/Shaders/enable_prism_alpha_clip.py --check
+          python3 Tools/Shaders/wire_prism_occlusion_corridor.py --check
+          python3 Tools/Shaders/wire_prism_shield_morph.py --check
+          python3 Tools/Shaders/wire_prism_flight_clock.py --check
+          python3 Tools/Shaders/wire_prism_explosion_erosion.py --check
+          python3 Tools/Shaders/wire_prism_jiggle_clock.py --check
+          python3 Tools/Shaders/wire_prism_suction_clock.py --check
+          python3 Tools/Shaders/wire_prism_spindle_death_clock.py --check
+
   # ──────────────────────────────────────────────
   #  Run it
   # ──────────────────────────────────────────────

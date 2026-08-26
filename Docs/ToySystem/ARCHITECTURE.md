@@ -239,9 +239,11 @@ small fraction of the lay cost. A config with no environment has nothing to mode
 
 **What a selection does** is `Cell.RequestCellSwap` — suction the old world away over a visible
 transition, drain it in 500-prism-per-frame slices while it is invisible, then rebuild behind
-the standard veil. Full step table, ordering constraints (grids before the immediate build),
-and the invariant analysis (continuity upheld; this is active removal, not decay) live in
-**`Docs/ECOSYSTEM.md §19`**.
+the standard veil. Since C9 (2026-08-25) the prism half GPU-converges on the cell centre
+(`Cell.StampRetiredWorldSuction` → `Prism.StampSuctionToward`); the root `localScale` wait is
+for non-prism riders (membrane / nucleus / cytoplasm / spindles). Full step table, ordering
+constraints (grids before the immediate build), and the invariant analysis (continuity
+upheld; this is active removal, not decay) live in **`Docs/ECOSYSTEM.md §19`**.
 
 **Reset scope.** `clearLooseTrailMass` (default on) also retires the **pooled** prisms the cell
 tracks — the vessels' accumulated freestyle trail — which is what makes a selection a scene
@@ -664,8 +666,8 @@ How a run plays:
   runner tracks the *local* player; party members see the painted prisms replicate but not
   your gates/ghosts (same local-station model as every toy).
 
-(The full `ShapeDrawingManager` experience — preview cinematic, scoring, reveal — remains
-available for gameplay scenes; any existing `ShapeDefinition` can also become a painting via
+(`ShapeDrawingManager` — the scored preview/cinematic/reveal minigame — was **deleted
+2026-08-25**, C15. Any existing `ShapeDefinition` can still become a painting via
 `PaintingDefinitionSO.sourceShape`, which splits pen-up gaps into strokes.)
 
 #### Shape language — one vocabulary of interactables

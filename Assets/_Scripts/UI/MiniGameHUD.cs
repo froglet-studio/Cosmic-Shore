@@ -339,6 +339,11 @@ namespace CosmicShore.UI
                     return CreateProviderComponent<RampageObjectiveProvider>("ObjectiveProvider_Rampage");
                 case GameModes.ScarabScramble:
                     return CreateProviderComponent<ScarabScrambleObjectiveProvider>("ObjectiveProvider_ScarabScramble");
+                case GameModes.Salvo:
+                    // Same provider as Rampage on purpose: the arrow answers "where is the
+                    // nearest managed omni crystal", and in Salvo that crystal IS the missile
+                    // economy (the wingman reload), so it is the one thing worth pointing at.
+                    return CreateProviderComponent<RampageObjectiveProvider>("ObjectiveProvider_Salvo");
                 default:
                     return null;
             }
@@ -756,7 +761,7 @@ namespace CosmicShore.UI
         }
 
         /// <summary>
-        /// Resets UI state for re-entering the game flow after shape drawing.
+        /// Resets UI state for re-entering the game flow after a connecting sequence.
         /// </summary>
         public void ShowConnectingFlow() => ResetForReplay();
         public void UpdateTurnMonitorDisplay(string message) => view.UpdateCountdownTimer(message);

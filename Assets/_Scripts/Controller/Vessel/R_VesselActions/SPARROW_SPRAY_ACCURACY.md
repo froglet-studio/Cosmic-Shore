@@ -1,16 +1,18 @@
 # Sparrow — Spray Accuracy (the walking gun)
 
-> **The rule, in one line:** *hold the trigger and the cone opens — the danger zone grows and
-> your hands feel it; let go for an instant and you are pin-accurate again.*
+> **The rule, in one line:** *the first two seconds of every pull are perfect; hold past them and
+> the cone opens, levels off at a spread you can still fight in, and then — if you never let go —
+> blows out to five times that. Let go for an instant and you are pin-accurate again.*
 
 The Sparrow's cannons are a **saturation** weapon, not a marksman's rifle.
 
 | you do | you get |
 |---|---|
-| tap the trigger (≤ 0.12 s) | a perfectly accurate burst — a scalpel, at a fraction of the volume |
-| hold it down | a cone that opens over ~1.6 s to a 1.5° cap, filled at **180 rounds/s** — nothing along the path survives, and the buzz in your hands climbs the whole way |
-| release and re-pull | full accuracy back, instantly. This is the "3-shot burst" the design asks for |
-| collect Mass crystals | rounds swell **harder** as they fly — 3× over a flight at rest, **6× at Mass 10**. The tracer stays a thin pale-blue needle; a see-through blue charge shell, arcing with danger red, grows around it to exactly the hit radius. Huge projectiles, earned |
+| fire in disciplined bursts (≤ 2 s a pull) | **perfect** accuracy — a scalpel at 180 rounds/s, for as long as you keep letting go |
+| hold past 2 s | the cone opens over the next 2 s to a **1.5°** cap and then **holds there for 2 s** — a danger zone you can still fight in, and the buzz in your hands climbs the whole way |
+| hold past 6 s | it **blows out**: the cone widens again, twice as fast, to **7.5°** at 10 s. You are no longer aiming at anything — you are denying a volume |
+| release and re-pull | full accuracy back, instantly, at any point on that curve. This is the "3-shot burst" the design asks for, and the only counter to the blow-out |
+| collect Mass crystals | rounds swell **harder** as they fly — 3× over a flight at rest, **6× at Mass 10**. The tracer stays a thin pale-blue needle; a see-through charge shell grows around it to exactly the hit radius, drawing **one** blue-and-danger-red bolt across a randomly-oriented great circle — a burst's worth of them is what draws the sphere. Huge projectiles, earned |
 
 ---
 
@@ -118,9 +120,14 @@ they travel**, and MASS decides how much.
 
 ### The growth curve
 
-`FullAutoActionSO.ResolveGrowthFactor` → `GrowthFactorForLevel(massLevel, 3, 6)`: linear in
-LEVEL with the authored pair anchored at 0 and 10, **extrapolated** (not clamped) across the
-element system's full [-5, 15] band.
+`FullAutoActionSO.ResolveGrowthFactor` → `ElementalScaling.RoundGrowthFactorForLevel(massLevel,
+3, 6)`: linear in LEVEL with the authored pair anchored at 0 and 10, **extrapolated** (not
+clamped) across the element system's full [-5, 15] band.
+
+The curve itself moved off this asset in 2026-08-25 so it could have ONE home — the skyburst
+missile now swells in flight too, with its own authored pair and its own SHAPE (all of it in the
+first fifth of the flight, then held; see `SPARROW_SKYBURST_BAY.md`). The bullets' numbers and
+behaviour are unchanged.
 
 | Mass level | grows to | end-of-flight hit radius | swath vs. a non-growing round |
 |---|---|---|---|
@@ -337,6 +344,309 @@ remains the only thing that lets a round pass through a prism.
 
 ---
 
+## Round 5 (2026-08-25): one round is one STROKE — the volley is the sphere
+
+Playtest report: *"tone down the Sparrow's projectile effect so each projectile reads less like a
+sphere, but together they build a spherical effect over time. In other words, just a single arc on
+each projectile — after many projectiles those arcs will stochastically fill in the circle as an
+after-image in the mind of the player."*
+
+Round 4 gave growth an honest instrument and then let the instrument draw too much. Three seeds,
+each throwing five radiating filaments, over a lit centre and a standing fresnel rim, re-rolled
+~62 times a second: every one of those terms is somewhere else on the shell, and a shell that is
+lit *everywhere, faintly, all the time* is a glowing ball. Measured, one round painted **73% of
+its own shell** over a single 0.3 s flight — it was assembling the sphere by itself.
+
+> **The sphere is the PLAYER's to assemble, not the fragment's.** One round draws ONE bolt, lying
+> on ONE randomly-oriented great circle. A burst lays stroke after stroke at different
+> orientations and the shape accumulates as an after-image.
+
+A **great circle** rather than a squiggle, because it does two jobs at once: superimposed at random
+orientations, great circles are a sphere's wireframe — the most legible thing a stream of them can
+add up to — and a single one is still a curve of exactly the hit radius, so the shell stays an
+honest instrument for the volume it deletes even when only one stroke is showing.
+
+### What the shell draws now
+
+| | Round 4 | Round 5 |
+|---|---|---|
+| **planarity of the lit set** | 13.9° | **4.2°** |
+| lit at one instant (one round) | 3.72% | 6.24% |
+| a volley's two rounds, lit-set overlap | 100% | **1.3% median, 2.1% same stroke** |
+| the same shader with the seed disabled | — | **100% overlap** (negative control) |
+| union after 0.25 / 1 / 3 s of fire | 99.9% / 100% / 100% | **72.8% / 95.1% / 98.4%** |
+| **light emitted by one frame of full auto** | 8,031 | **333 (0.04×)** |
+| FBM evaluations per fragment | 3.93 (worst case 15) | **0.56 (worst case 1)** |
+
+**Planarity is the number that carries the claim.** Raw lit *area* is nearly useless here: the old
+shell lit *few* pixels *everywhere* and so measured a **smaller** lit fraction than a single fat
+stroke would, while reading as a ball. What separates a stroke from a scatter is whether the lit
+set lies in one plane through the centre — 4.2° of RMS deviation is a curve on a great circle;
+13.9° is sparks all over a sphere. The area number is now only bounded loosely: enforcing "must not
+exceed the baseline" is exactly what drove the stroke down to 2 px and made it invisible.
+
+> **General rule: when a visual is a claim about a DISTRIBUTION over many instances, the metric is
+> almost never the per-instance total. Measure the SHAPE of one instance and the UNION over many.**
+
+The union saturates inside a quarter second now, which is the goal rather than a stall: once every
+round is an independent stroke, a burst covers the sphere almost immediately while any *single*
+round is still one 6% curve. That is the whole proposition — the shape is assembled by the stream,
+never by the fragment.
+
+### Why every round looked the same — and the three wrong answers
+
+Second playtest note: *"the gun shoots a projectile out of two guns, so the randomness of the
+effect is spoiled by the simultaneity of two projectiles acting in phase with each other."* Then,
+after a fix: *"nope. they still read as identical."*
+
+The twin muzzles were the visible symptom of a much larger problem, and the number that settles it
+is this:
+
+> **Consecutive volleys differ in world radius by 0.0183 units** — and radius was the shell's only
+> signal that changes along the stream.
+
+At 90 volleys/s over a 0.3 s flight, turning that into half a discharge cycle needs
+`_PhaseByRadius × _CrackleRate ≈ 27`, which makes **one round discharge at ~159 Hz** — thirty
+bolts inside its own flight. The other two candidate signals are worse, not better: **time** is
+identical for every round alive at a given instant, and **lateral position** is identical for every
+round from one muzzle while the ship flies straight, which is most of the time it is firing. So to
+this shader, rounds fired 11 ms apart *were the same round* — the volley's pair merely made it
+obvious by putting two of them side by side.
+
+Three passes tried to derive identity from the geometry, each measured decorrelated, each still
+read as identical:
+
+| attempt | what it measured | what it missed |
+|---|---|---|
+| radius alone | — | the pair share it exactly |
+| lateral read → phase offset | median 0.309 cycles apart | inside one cycle `floor(cycle)` is unchanged, so it is the **same great circle** at two draw stages |
+| lateral read → circle spin | 0.0% median lit-set overlap | the lateral read is *also* identical for every round from one muzzle |
+
+> **When a periodic effect is keyed on `floor(x)`, a sub-unit offset in `x` changes WHEN, never
+> WHICH.** And more importantly: **a metric can only decorrelate a difference the signal actually
+> carries.** All three passes were arithmetic on quantities that do not distinguish the objects.
+
+### The answer: an explicit per-round seed
+
+`Projectile.StampChargeFieldSeed` writes one random float per **shot** into a
+`MaterialPropertyBlock` on the shell's renderer, and the shader reads it out of the GPU-instancing
+buffer. That seed picks the circle's angle and tilt, the bolt's jaggedness, and where the round
+sits in its own discharge cycle. Every round is now genuinely independent.
+
+The cost is **one `SetPropertyBlock` per shot — never per frame**, which is the thing the shell was
+designed to avoid, and the material moves from **SRP-batched to GPU-instanced**. That is the right
+trade for ~54 identical spheres that must all look different: they still batch into one instanced
+draw, and now they can differ. The earlier "no per-instance write" claim was defending a batching
+strategy that had made the effect impossible.
+
+### And the real reason it read as identical: most rounds were showing nothing
+
+The three failed passes share one root cause, and it was only found by **rendering the shader
+through a real perspective camera at true 1080p pixel density**
+(`Tools/Shaders/render_projectile_charge_field.py`):
+
+> `Cull Back` draws only the front hemisphere, so a great circle at a uniformly random pole spends
+> most of its length **behind** the round. Past ~40 units most rounds showed **no stroke at all**
+> and collapsed to a plain dark disc — and every plain dark disc looks exactly like every other
+> one.
+
+A round is **15–77 px** at combat range and the stroke was **2–6 px**. Holding lit area below the
+baseline (a well-intentioned tone-down guard in the verification harness) is what had driven it
+that thin. Two changes fix it:
+
+- **The circle is built around the VIEW AXIS**, not around object space: the pole is anchored near
+  the plane perpendicular to the view and the stroke's centre is biased toward the camera-facing
+  point, so a round always shows a slash across its visible face. `_ArcTiltRange` and
+  `_ArcStartSpread` are how far each may wander.
+- **The stroke is twice as wide and brighter** (`_ArcSharpness` 0.038 → 0.075, `_ArcIntensity`
+  1.6 → 2.4). A filament you cannot see is not an aesthetic.
+
+> **General rule, and this project already had it written down (`Docs/PALETTE.md` §4.3): judge a
+> candidate at the size it will be judged.** Three rounds of planarity, lit-set overlap and
+> per-round brightness measurements all passed while the effect was invisible on screen. The
+> renderer now exists so that never costs a fourth pass.
+
+### The tone pass: a burst is the tuning surface, not a round
+
+Third playtest note: *"no longer looking duplicated, but at this firing rate the effect is still
+overtuned. We need to tone it down far more, so that the cumulative effect of full auto isn't
+overwhelming."*
+
+Rendering the live stream and totalling the **linear light the frame emits** says why, and it is
+not a near miss:
+
+| | light emitted by one frame of full auto | vs the shell this pass replaced |
+|---|---|---|
+| baseline (the crackling ball) | 8,031 | 1.00× |
+| the one-stroke design, first cut | 16,933 | **2.11×** |
+| after the first tone pass | 623 | 0.08× |
+| **shipped** (second tone pass) | **333** | **0.04×** |
+
+> **The one-stroke design toned down a single round and made a burst nearly twice as bright.**
+
+Every per-round metric said it was restrained — 2.5% of one shell lit, one planar curve, a
+quarter of the light of a crackling ball *per round*. None of them can see the sum, and the sum is
+what the player is looking at: a Sparrow keeps **54 shells on screen at once** and their emission
+is additive by construction (`Blend One One`). A 4× per-round reduction against a 54× multiplier
+is not a reduction.
+
+> **General rule: when N instances of an effect are on screen simultaneously, the tuning surface
+> is the SUM over N, not the instance. A per-instance metric is structurally blind to it, and N
+> is usually set by a system that has nothing to do with the effect** — here, the fire rate.
+
+`verify_projectile_charge_field.py` test 6 now owns that budget: it renders the live stream
+through the real perspective camera, totals the emission, and **fails above 0.25× the baseline**.
+The knobs it constrains are labelled as a light budget in the shader.
+
+It took **two** passes to get there — the first landed at 0.08× and playtest still called it
+overtuned, so the budget was halved again. What bought the 51× reduction, in order of contribution:
+
+| | first pass | shipped | |
+|---|---|---|---|
+| `_HoldTime` | 0.5 → 0.06 | **0.042** | the envelope's bright plateau is gone; most rounds are dim at any instant |
+| `_FadeShape` | 1 → 3.2 | **3.9** | and what is left decays hard |
+| `_ArcSpan` | 5.0 → 1.8 | **1.45** | a short slash, not a 286° sweep |
+| `_ArcIntensity` | 2.4 → 1.5 | **1.25** | |
+| `_ArcSharpness` | 0.075 → **0.055** | 0.055 | |
+| `_FresnelRimIntensity` | 0.05 → 0.022 | **0.014** | the rim is on every round, always — it multiplies by 54 |
+
+**The second halving is spread across duty, brightness AND length on purpose.** Four routes to the
+same budget were rendered and compared; pushing any single one far enough to hit it alone changes
+what the effect *is* — a 1.0-radian span (the cheapest single route, 0.48×) stops reading as a
+curve on a sphere and becomes a dash. Taking a share from each keeps the stroke a stroke.
+
+> **A light budget is a constraint on the SUM, not a mandate for which knob pays it.** When one
+> knob can pay the whole bill, check what that knob also encodes before letting it.
+
+**Sparseness is the mechanism, so the duty-cycle criterion inverted.** A round now shows a stroke
+**31.3%** of the time rather than 88.8%, and the harness's old "must be lit at least 70% of the
+time" floor — added to stop a single round twinkling — became a **ceiling** (fail above 85%).
+"Most rounds are dark most of the time" is precisely how 54 simultaneous shells stay quiet, and
+individual twinkle stopped mattering the moment the rounds became individually unresolvable.
+Continuity of existence is unaffected: the requirement was only ever that a round is never *fully*
+dark, and the rim whisper still holds it at peak alpha **0.007**.
+
+The cost fell with it: **0.56 FBM evaluations per fragment**, down from 3.93 on the baseline.
+
+**Test 6's ceiling is 0.06×, and the odd number is the point:** it has to be tight enough to catch
+the value it replaced. 0.08× was itself a 26× cut and still read as overtuned in play, so a
+round-number 0.25× ceiling would have passed the very thing the playtest rejected. *A budget that
+the rejected version would pass is not a gate.*
+
+At this tone the union curve finally describes the original request rather than saturating: one
+round paints **4.9%** of its own shell across its whole flight, one frozen frame of a full-rate
+fight is **19.5%** of a sphere, and the accumulation reaches 72.8% / 95.1% / 98.4% over
+0.25 / 1 / 3 s of fire. The shape is assembled by the stream over about a second — the after-image
+the report asked for.
+
+### Things that would take it straight back
+
+- **`_ArcCount` above 1.** It exists as a knob for a future weapon, not as a tuning dial for this
+  one. Two strokes is two planes and the read collapses toward a ball immediately.
+- **Raising `_FresnelRimIntensity`.** The rim is a standing, view-aligned, always-on sphere — the
+  purest possible "this is a ball" term. If the shell needs to be louder, raise `_ArcIntensity`.
+- **Re-introducing a centre fill.** A lit blob at the seed point is a small sphere inside the big
+  one.
+- **Dropping the hold out of the envelope** to get "snappier" strokes. That is where the twinkle
+  came from.
+- **Trying to re-derive per-round identity from the geometry** to get back on the SRP Batcher.
+  Radius, time and lateral position are all near-identical for rounds fired 11 ms apart; the
+  harness keeps a `no seed` negative control that reproduces the failure exactly (100% lit-set
+  overlap) so this cannot be re-litigated by measurement alone.
+- **Thinning the stroke to hold lit area below the baseline.** That is what made it invisible.
+  Judge it in `render_projectile_charge_field.py`, not in a coverage number.
+- **Un-anchoring the circle from the view axis.** Most rounds go back to showing nothing.
+- **Raising any arc knob without re-running test 6.** They are a light budget: at 54 shells on
+  screen, a 4× per-round increase is a 4× increase in the thing the player complained about.
+- **Re-adding a duty-cycle FLOOR.** Sparseness is the mechanism now, not a defect.
+
+---
+
+## Round 6 (2026-08-25): the cone is a FOUR-part curve, and the third part is a punishment
+
+Design request: *"a nonlinear curve with three parts — accurate for 2 seconds, then ramp up a bit
+slower than before and hold at the previous maximum for another 2 seconds, then ramp up again to
+5× the current max."*
+
+The single ramp only ever said one thing: **hold and you get worse, up to a point.** It reached
+that point at 1.62 s and then stopped having an opinion, so "held for two seconds" and "held for
+two minutes" were the same weapon and the only thing the trigger could express was *how much* you
+had already lost. The curve now has three things to say, in order.
+
+### The three beats
+
+| | window | half-angle | what the pilot is being told |
+|---|---|---|---|
+| **1. free** | 0 → **2 s** | 0° | *this is a marksman's rifle.* 360 rounds of pin-accurate fire per pull — a whole engagement, not a tap |
+| **2. opening** | 2 → **4 s** | 0° → **1.5°** | *your accuracy is going.* The buzz climbs in strength and cadence the whole way |
+| **3. sustainable** | 4 → **6 s** | **1.5°** (held) | *this is the gun's floor.* Wide enough to saturate a danger zone, narrow enough to still kill what you point at |
+| **4. blow-out** | 6 → **10 s** | 1.5° → **7.5°** | *you are not aiming any more.* Area denial, and nothing else |
+
+Sampled, at the shipped `firingRate 90` (180 rounds/s across two muzzles):
+
+| held | half-angle | group radius @ SPACE 0 (~72 u) | @ SPACE 10 (~645 u) | rounds spent |
+|---|---|---|---|---|
+| 0 – 2.0 s | **0°** | 0 u | 0 u | 360 |
+| 3.0 s | 0.75° | 0.9 u | 8.4 u | 540 |
+| 4.0 s | **1.50°** | 1.9 u | 16.9 u | 720 |
+| 6.0 s | **1.50°** | 1.9 u | 16.9 u | 1,080 |
+| 8.0 s | 4.50° | 5.7 u | 50.8 u | 1,440 |
+| 10.0 s → ∞ | **7.50°** | 9.5 u | 84.9 u | 1,800+ |
+
+### Why a plateau at all, rather than one long ramp
+
+Because a curve that only ever rises has no **band** in it, and a band is the part a pilot can
+learn. Stage 3 is a promise: *there is a spread you can fight at, and holding a little longer will
+not cost you more.* It is also what makes stage 4 legible — the cone stopping and then starting
+again is an unmistakable event, where a single continuous ramp of the same total travel would
+just be a slope nobody can locate.
+
+### Why the second ramp is FASTER than the first
+
+The first ramp is authored **slower** than the one it replaced (0.75 °/s against 1.0 °/s) because
+it now has 2 s of grace in front of it and should not feel abrupt when it finally arrives. The
+second is authored at **1.5 °/s** — double the first — so the failure *accelerates*. A gun that
+degrades at a constant rate reads as a design parameter; a gun that degrades faster the longer you
+hold reads as a gun losing control, which is the thing being punished. It is the whole reason the
+word "nonlinear" is in the request: the curve's slope is 0, then 0.75, then 0, then 1.5.
+
+### What this grants, and it is a lot
+
+**Two seconds of perfect accuracy is 360 rounds.** That is not a tap — it is most of a real
+engagement, and it makes the Sparrow a genuinely accurate weapon for any pilot with the
+discipline to pulse the trigger. The old 0.12 s onset (~22 rounds) made accuracy a reflex; this
+makes it a habit. Expect Dog Fight's point target and Salvo's prism target to both need
+re-checking in play — both are authored (FrogletTools ▸ Game Modes ▸ End Game Conditions), so
+retuning either is one field and no code.
+
+The counterweight is stage 4: a pilot who simply welds the trigger down now ends up at **five
+times** the spread they used to cap out at, and at high SPACE that is an 85-unit-radius circle.
+The gun did not get more forgiving — the forgiveness moved to the front and the punishment moved
+to the back.
+
+### The haptic ramp deliberately does NOT measure the blow-out
+
+`GunSprayAccuracy.Saturation01` still reads against the **sustainable** cap and pins at 1 for the
+whole blow-out. That is not an oversight: both haptic channels are already at their ceiling when
+the plateau is reached (strength 1.0, and the 45 ms interval is the floor NiceVibrations can hold
+without pulses cutting each other off), so there is no headroom left to spend, and re-scaling
+against the far cap would only make the first six seconds — the part a pilot actually flies in —
+read weaker. The buzz going flat *is* the stage-3 signal; the widening tracers are the stage-4
+one.
+
+### Back-compatibility is a test, not a claim
+
+`GunSpreadStages` is the parameter object the curve consumes, and a profile with no blow-out
+authored (`blowoutGrowthDegreesPerSecond = 0`, or a `blowoutMaxMultiplier` of 1) produces
+**bit-identical** output to the single-ramp formula this replaced —
+`Staged_WithoutASecondRamp_IsExactlyTheSingleRampCurve` proves it over the whole domain, both
+opt-out halves independently,
+and the four-argument `HalfAngleDegrees` overload is kept as exactly that case. So the blow-out is
+opt-in for any future gun, and this pass changed no behaviour anywhere except through the
+Sparrow's own asset.
+
+---
+
 ## The three moving parts
 
 ### 1. Rate of fire — 30 → 60 → **90 volleys/s** (180 rounds/s across two muzzles)
@@ -367,12 +677,33 @@ the same rounds downrange. The cap sustains the full rate down to ~23 fps.
 
 ### 3. The cone
 
-`GunSpreadMath.HalfAngleDegrees` — flat zero through the onset window, then linear, then hard
-capped:
+`GunSpreadMath.HalfAngleDegrees` — a **four-part piecewise curve**: flat, ramp, plateau,
+blow-out (see Round 6 for why it is four and not two):
 
 ```
-half-angle(t) = clamp( (t − onset) × growth , 0 , max )
+                                                       7.5° ┤          ╭────────────
+                                                            │        ╭─╯
+half-angle(t) =                                             │      ╭─╯
+  1. hold     0                        t < onset            │    ╭─╯
+  2. ramp     (t−onset) × growth       → the cap        1.5°┤────╯
+  3. plateau  cap                      for plateauSecs      │  ╭─╯
+  4. blow-out cap + excess × blowGrow  → blowout cap      0°┼──╯
+                                                            0   2  4  6   8  10   t (s)
 ```
+
+The shipped curve is `2 s free → 2 s opening → 2 s held → 4 s blowing out`, and the second ramp
+is authored at **twice** the first one's rate: the failure *accelerates*, which is what makes a
+too-long hold read as a gun losing control rather than one degrading evenly. Both caps are
+`Mathf.Min`-hard, and the curve is continuous at all three joins and monotonic non-decreasing
+everywhere (both proven in `GunSpreadMathTests`) — the cone may only ever widen while the
+trigger is down. **Accuracy comes back on RELEASE, which is `GunSprayAccuracy`'s job, not the
+curve's.**
+
+The blow-out is **authored as a multiple** of the sustainable cap (`blowoutMaxMultiplier`, 5×),
+never as a second absolute angle, so retuning the cap carries the blow-out with it and the two
+can never drift apart — one authored number per displayed quantity. A profile that authors no
+blow-out (zero rate, or a 1× multiplier) holds at the cap forever, which is **bit-identical** to
+the single-ramp curve this replaced; that equality is a test, not a claim.
 
 `GunSpreadMath.Perturb` deflects each round to a point inside that cone, sampling the deflection
 as `max × u^bias`. At the shipped **bias 0.5** that is *uniform over the cone's disc*: the whole
@@ -392,9 +723,18 @@ prisms. The serial is **monotonic across the session** and deliberately *not* re
 resetting it would make every trigger pull replay the same deflection sequence, which is a
 learnable pattern rather than a stochastic cone.
 
-Note the cap is an **angle**, so miss distance scales with range. A Sparrow at SPACE 0 shoots
-~72 u and groups within ~5 u; at SPACE 10 it shoots ~645 u and groups within ~45 u. That is
-correct — you are shooting nine times further.
+Note the caps are **angles**, so miss distance scales with range. A Sparrow at SPACE 0 shoots
+~72 u and groups within **1.9 u** at the plateau / **9.5 u** blown out; at SPACE 10 it shoots
+~645 u and groups within **16.9 u** / **84.9 u**. That is correct — you are shooting nine times
+further. It is also why the blow-out bites hardest exactly where a Sparrow is strongest: a
+high-SPACE pilot who never lets go is spraying an 85-unit-radius circle.
+
+> **Where those ranges come from, because the obvious arithmetic is wrong.** A round does not
+> fly `speed × projectileTime`. `Projectile.MoveProjectileAsync` scales each step by
+> `cos(π·t / 2T)`, so the round *decelerates to a stop* and the flight integrates to
+> **`speed × 2T/π`** — at `375 u/s × 0.3 s` that is **71.6 u**, not 112.5. (SPACE 10 is ×9:
+> `3375 × 0.191 = 644.6 u`.) Re-derive with the `2/π` factor before "correcting" any range
+> figure in this doc; it is the reason 72 and 645 look wrong and are not.
 
 ---
 
@@ -451,26 +791,31 @@ dogfighters and the Menu_Main autopilot all fire and none of them may buzz your 
 
 | File | Role |
 |---|---|
-| `_Scripts/Utility/GunSpreadMath.cs` | The pure cone math — ramp, hash-sampled deflection, roll-preserving `DeflectionOf`. No Unity state, no global RNG. |
+| `_Scripts/Utility/GunSpreadMath.cs` | The pure cone math — the four-stage curve, hash-sampled deflection, roll-preserving `DeflectionOf`. No Unity state, no global RNG. Also declares `GunSpreadStages`, the parameter object the curve consumes (six loose floats at a call site are transposable, and a transposed pair produces a plausible wrong curve rather than an error). |
 | `R_VesselActions/Data Containers/GunSpreadProfile.cs` | The authored profile (cone + haptic ramp). Serialized on the bullet action. |
 | `R_VesselActions/Executors/GunSprayAccuracy.cs` | Per-vessel hold state, the spread clock, the haptic ramp, and the deferred reset. |
-| `R_VesselActions/Data Containers/FullAutoActionSO.cs` | Owns `Spread` and `ResolveGrowthFactor`/`GrowthFactorForLevel`; hands the accuracy component to its executor. |
+| `R_VesselActions/Data Containers/FullAutoActionSO.cs` | Owns `Spread` and the authored growth pair; `ResolveGrowthFactor` reads the shared curve. Hands the accuracy component to its executor. |
+| `Controller/Vessel/ElementalScaling.cs` | `RoundGrowthFactorForLevel` / `RoundGrowthFactor` — the ONE in-flight growth curve, shared with the skyburst missile so the two cannot drift apart. |
+| `Controller/Projectiles/RoundGrowthRamp.cs` | The growth SHAPE (swell across the whole flight, or swell early and hold). Bullets use the full-flight shape. |
 | `R_VesselActions/Data Containers/FullAutoBlockShootActionSO.cs` | Adopts `bulletAction.Spread` — the turret authors no cone. |
 | `R_VesselActions/Executors/FullAutoActionExecutor.cs` | Accumulator cadence + per-round deflection for the bullets. |
 | `R_VesselActions/Executors/FullAutoBlockShootActionExecutor.cs` | Same for the turret, plus the roll-preserving shot rotation. |
 | `Controller/Projectiles/Gun.cs` | `FireGun(..., aimDirection)` — the gun is *handed* a direction; it owns no spread policy and rolls no dice. |
 | `Controller/Managers/PrismSpatialIndex.cs` | `QuerySegment` — the swept counterpart of `QuerySphere`, plus the public `DistanceToSegmentSq` metric. |
-| `Controller/Projectiles/Projectile.cs` | `sweptPrismDetection`, `SweepPrismsAlong` (nearest-first dispatch, contact-point repositioning), `CacheSweepRadius`; `ApplyFlightGrowth` + `CacheTransformRole` + `ChargeFieldLocalScale` (round 4). |
+| `Controller/Projectiles/Projectile.cs` | `sweptPrismDetection`, `SweepPrismsAlong` (nearest-first dispatch, contact-point repositioning), `CacheSweepRadius`; `ApplyFlightGrowth` + `CacheTransformRole` + `ChargeFieldLocalScale` (round 4); `StampChargeFieldSeed` — one float per SHOT, the shell's only per-round signal (round 5). |
 | `Controller/ImpactEffects/Impactors/ImpactorBase.cs` | `AcceptImpacteeFromSweep` + `IsSweepDispatch` — the swept analogue of the shell tier's entry point. |
 | `Controller/ImpactEffects/Impactors/ProjectileImpactor.cs` | Suppresses the trigger's prism case when the sweep owns it. |
 | `Controller/IO/HapticController.cs` | `PlaySpray(strength01)` + the extended gate + the buzz clip. |
 | `_Scripts/Tests/Editor/GunSpreadMathTests.cs` | Ramp, cap, cone containment, pole safety, determinism, distribution, roll preservation. |
-| `_Scripts/Tests/Editor/SparrowRoundGrowthTests.cs` | The MASS growth curve: anchors, extrapolation, linearity, flight clamping, and that the charge shell IS the hit volume (round 4). |
+| `_Scripts/Tests/Editor/SparrowRoundGrowthTests.cs` | The MASS growth curve: anchors, extrapolation, linearity, flight clamping, that the charge shell IS the hit volume (round 4) — and the skyburst missile's own authored pair. |
+| `_Scripts/Tests/Editor/RoundGrowthRampTests.cs` | The growth SHAPE: the full-flight ramp the bullets use, the early-and-hold one the missile uses, and the settle latch. |
 | `_Scripts/Tests/Editor/PrismSweptQueryTests.cs` | The point-to-segment metric: endpoint clamping, degenerate steps, and the shipped mid-step geometry PhysX was missing. |
 | `_SO_Assets/VesselActions/Sparrow/FullAutoAction.asset` | The shipped numbers. |
 | `_Prefabs/Spacevessels/Sparrow.prefab` | `GunSprayAccuracy` executor + resized pools. |
-| `_Graphics/Materials/Graphs/ProjectileChargeField.shader` + `.hlsl` | The self-driven charge shell — the forcefield-crackle language with `_Time` + the model matrix as its driver instead of a per-frame property block. |
-| `_Graphics/Materials/ProjectileChargeFieldMaterial.mat` | The one material every round in the match batches through. Neutral blue + `EnvironmentColors.Danger` red. |
+| `_Graphics/Materials/Graphs/ProjectileChargeField.shader` + `.hlsl` | The charge shell — the forcefield-crackle language driven by `_Time`, the model matrix, and one per-SHOT `_RoundSeed` out of the GPU-instancing buffer. No per-frame CPU write (round 5). |
+| `_Graphics/Materials/ProjectileChargeFieldMaterial.mat` | The one material every round draws with — GPU-instanced, so 54 live shells collapse to one instanced draw and still differ. Neutral blue + `EnvironmentColors.Danger` red. Its arc knobs are a LIGHT BUDGET (round 5). |
+| `Tools/Shaders/verify_projectile_charge_field.py` | Compiles and RUNS the shipped HLSL against the revision it replaced: stroke planarity, a volley pair's lit-set overlap (with a `no seed` negative control), the burst union, continuity, and the full-auto light budget. CI-able, ~5 min, no Unity. |
+| `Tools/Shaders/render_projectile_charge_field.py` | Rasterizes the shipped HLSL through a real perspective camera at true 1080p density — isolated volley pairs, or the live stream. The tool that found what three rounds of measurement missed. |
 | `_Graphics/Materials/SparrowProjectileMaterial.mat` | The dart's own pale-blue material — a variant of `BlueSpreadFresnelMaterial`, split off `DangerProjectileMaterial` because that one is shared by five prefabs. |
 | `_Prefabs/Projectile/SparrowProjectile.prefab` | `sweptPrismDetection: 1`, the `ChargeField` child wired to `Projectile.chargeField`, the halved model scale `(0.75, 0.75, 20)` and its own material (round 4). |
 | `_Prefabs/Trails/Prisms With Pools/Sparrow Projectile Prism.prefab` | `sweptPrismDetection: 1`. Its carried `ProjectileCollider` has no renderer, so growth still scales its transform and it carries no shell. |
@@ -484,12 +829,15 @@ Everything that moves **both** fire modes lives on `FullAutoAction.asset`:
 | `firingRate` | **90** | Volleys/s for guns **and** turret. The single lever for volume of fire — and for the turret's permanent-mass rate. |
 | `growthFactorAtRestingMass` | **3** | How many times its launch cross-section a round swells to by the end of its flight at resting Mass. |
 | `growthFactorAtFullMass` | **6** | The same at Mass 10; the curve is linear in level and extrapolated to [-5, 15]. |
-| `spread.onsetSeconds` | **0.12** | Grace window of perfect accuracy at the start of every pull (~11 volleys / 22 rounds). Size it to the burst length that should stay surgical. |
-| `spread.growthDegreesPerSecond` | **1.0** | How fast the cone opens. Full at `onset + max/growth` ≈ **1.62 s**; only 0.88° after a full second. |
-| `spread.maxHalfAngleDegrees` | **1.5** | The cap (≈1.9 u radius at the SPACE-0 range of 72 u). Raise it and held fire starts missing what you aimed at; drop it to 0 to disable spread entirely (sanctioned opt-out). |
+| `spread.onsetSeconds` | **2.0** | **Stage 1.** Grace window of PERFECT accuracy at the start of every pull (~180 volleys / 360 rounds). Size it to the engagement length that should stay free. |
+| `spread.growthDegreesPerSecond` | **0.75** | **Stage 2.** How fast the cone opens. The first ramp takes `max/growth` = **2 s**, landing the cap at 4 s of unbroken fire. |
+| `spread.maxHalfAngleDegrees` | **1.5** | The SUSTAINABLE cap and the height of the plateau (≈1.9 u radius at the SPACE-0 range of 72 u). Raise it and held fire starts missing what you aimed at; drop it to 0 to disable spread entirely, blow-out included (sanctioned opt-out). |
+| `spread.plateauSeconds` | **2.0** | **Stage 3.** How long the cone HOLDS at the sustainable cap before blowing out. This is the band a pilot can fight in; 0 welds the two ramps into one kinked climb. |
+| `spread.blowoutGrowthDegreesPerSecond` | **1.5** | **Stage 4.** The second ramp's rate — deliberately 2× the first, so the failure accelerates. 0 is the opt-out: hold at the cap forever, exactly the single-ramp curve. |
+| `spread.blowoutMaxMultiplier` | **5** | The final cap, as a MULTIPLE of the sustainable one (→ 7.5°), so retuning the cap carries the blow-out with it. Full spread lands at **10 s**. 1 disables the blow-out. |
 | `spread.distributionBias` | **0.5** | 0.5 = uniform over the disc (even saturation). 1.0 = dense core + thin halo. |
 | `spread.hapticFloor01` | **0.15** | Buzz strength before any accuracy is lost — above zero so the gun is felt from round one. |
-| `spread.hapticIntervalAtRest` / `AtMaxSpread` | **0.10 / 0.045** | Pulse cadence at each end of the ramp. Keep the max-spread value above ~0.04 s: NiceVibrations holds one clip at a time, so pulses closer than the clip just cut each other off. |
+| `spread.hapticIntervalAtRest` / `AtMaxSpread` | **0.10 / 0.045** | Pulse cadence at each end of the ramp. Keep the max-spread value above ~0.04 s: NiceVibrations holds one clip at a time, so pulses closer than the clip just cut each other off. Both channels reach their ceiling at the **plateau**, not at the blow-out — see Round 6. |
 
 The charge shell's own dials are **not** here — they live on
 `_Graphics/Materials/ProjectileChargeFieldMaterial.mat`, because they are a look, not a weapon
@@ -543,11 +891,19 @@ Sparrow, fire on input 1.
 > (the `GamepadRumble` path drives Input System motors) or run on device. The **cone** is fully
 > visible on desktop — the tracers fan out — so the spread mechanic can be judged without one.
 
-1. **Tap accuracy.** Tap the trigger repeatedly. Every burst must be a tight line — no visible
-   fan at all. This is the onset window; if short taps spread, `onsetSeconds` is too small.
-2. **The cone opens.** Hold the trigger on a distant wall and watch the impacts: a point that
-   grows into a widening circle over ~1.4 s, then **stops growing**. If it never stops, the cap
-   is not being applied.
+1. **Burst accuracy.** Fire in pulls of under two seconds, repeatedly. Every burst must be a
+   tight line — no visible fan at all, ever. This is the onset window; if a sub-2 s pull spreads,
+   `onsetSeconds` is not being applied.
+2. **Stage 2 — the cone opens.** Hold the trigger on a distant wall and watch the impacts. A
+   point for **2 s**, then a circle that grows for the next **2 s**, then **stops growing**. If
+   it starts opening immediately, the onset window is not reaching the curve.
+2a. **Stage 3 — the plateau.** Keep holding. From 4 s to 6 s the circle must be visibly *static*
+   — this is the beat the whole shape rests on, and it is also the one most likely to be lost by
+   a mis-authored `plateauSeconds`.
+2b. **Stage 4 — the blow-out.** Keep holding past 6 s. The circle must start growing **again**,
+   noticeably faster than the first time, and stop for good at **10 s** roughly 5× wider. If it
+   never stops, `blowoutMaxMultiplier` is not being applied; if it never starts, the profile is
+   reading `blowoutGrowthDegreesPerSecond` as 0.
 3. **Release resets.** Hold until fully open, release for a fraction of a second, re-pull. The
    first rounds of the new pull must be dead-on again.
 4. **Stance flip does NOT reset.** Hold fire while flying, open the cone fully, then toggle
@@ -559,8 +915,10 @@ Sparrow, fire on input 1.
 6. **Rate.** 180 rounds/s should read as a solid stream. Then **cap the editor to 30 fps**
    (Game view ▸ or `Application.targetFrameRate = 30`) and confirm the stream looks the same
    density — that is the accumulator working. Before this pass it would have halved.
-7. **Haptic ramp** (gamepad/device). Hold the trigger: a light buzz from the first round that
-   climbs in strength *and* rate for ~1.6 s, then holds steady at the cap. Release → silence.
+7. **Haptic ramp** (gamepad/device). Hold the trigger: a light buzz from the first round, flat
+   through the 2 s grace, climbing in strength *and* rate from 2 s to 4 s, then **flat again for
+   the rest of the hold — blow-out included**. That flatness is correct and deliberate (Round 6);
+   it is the signal that the gun has nothing worse left to tell you. Release → silence.
 8. **Haptics stay legible.** While spraying, ram a prism with the hull — the punish **thud** must
    cut cleanly through the buzz. Confirm the buzz never plays for a remote player's Sparrow, an
    AI dogfighter, or the Menu_Main autopilot.
@@ -580,8 +938,8 @@ Sparrow, fire on input 1.
 
 - **Cross-peer turret prism placement.** The deflection is deterministic in the shot serial, so
   peers agree exactly as long as their shot counts agree — but the loops run on each peer's own
-  clock, so counts drift and the spread makes that drift *visible* (up to 4°) instead of
-  sub-degree. This is the same open item `SPARROW_TURRET_STANCE.md` already records ("the turret's
+  clock, so counts drift and the spread makes that drift *visible* (up to 7.5° once a hold blows
+  out) instead of sub-degree. This is the same open item `SPARROW_TURRET_STANCE.md` already records ("the turret's
   prism spawning is not networked at all today"); it settles when the stance becomes
   server-authoritative, not before.
 - **No HUD readout.** The cone is visible in the tracers and audible in the hands, but there is no

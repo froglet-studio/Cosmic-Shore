@@ -429,7 +429,7 @@ namespace CosmicShore.Gameplay
             newSpindle.transform.rotation = order.rotation;
             AddSpindle(newSpindle);
 
-            var leaf = Instantiate(healthPrism, order.position, order.rotation);
+            var leaf = EnvironmentPrismPool.Get(healthPrism, order.position, order.rotation);
             leaf.transform.SetParent(newSpindle.transform, false);
             leaf.transform.localPosition = Vector3.zero;
             leaf.transform.localRotation = Quaternion.identity;
@@ -501,7 +501,7 @@ namespace CosmicShore.Gameplay
                 var root = AddSpindle();
                 root.transform.position = root0;
 
-                var leaf = Instantiate(healthPrism, root0, transform.rotation);
+                var leaf = EnvironmentPrismPool.Get(healthPrism, root0, transform.rotation);
                 leaf.transform.SetParent(root.transform, false);
                 leaf.transform.localPosition = Vector3.zero;
                 leaf.LifeForm = this;

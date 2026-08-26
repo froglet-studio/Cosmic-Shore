@@ -256,6 +256,15 @@ namespace CosmicShore.Gameplay
         public FaunaConfigurationSO SourceConfig => sourceConfig;
 
         /// <summary>
+        /// This individual's rolled variant - element, tuning, and the level it hatched at -
+        /// or null before <see cref="AssignLineage"/> has run. Exposed so a subclass that
+        /// produces a NEW individual outside the reproduction path can pass it on: the worm
+        /// colony's split hands it to the severed half, because the two halves of a split
+        /// worm are the same animal and must not re-roll their identity.
+        /// </summary>
+        protected LifeformVariantPick<FaunaVariantTuning>? VariantPick => _variantPick;
+
+        /// <summary>
         /// Binds this fauna to its species lineage: the cell whose population it
         /// belongs to and the FaunaConfigurationSO that defines the species.
         /// Registers it in the cell's per-species live count (unregistered in
@@ -321,10 +330,10 @@ namespace CosmicShore.Gameplay
         /// <summary>
         /// Element-as-data landing point: gives this creature its heart of the config's
         /// picked element. Default = the standard embedded-crystal provisioning every
-        /// simple fauna uses. A COMPOSITE creature overrides to route the element where
-        /// its hearts actually live — the worm colony forwards it to its capital
-        /// segments (the colony root itself is deliberately heartless,
-        /// Docs/ECOSYSTEM.md §23).
+        /// simple fauna uses. A COLONY overrides to route the element to its MEMBERS —
+        /// the worm colony forwards it to every segment, each of which is its own fauna
+        /// carrying its own heart (the colony root is the population anchor and is
+        /// deliberately heartless, Docs/ECOSYSTEM.md §23.3).
         /// </summary>
         protected virtual void ProvisionHeart(Element element)
         {
@@ -603,6 +612,15 @@ namespace CosmicShore.Gameplay
                 LifeFormCrystal.SetWorldScale(crystal, worldTarget);
         }
 
+        /// <summary>
+        /// Creature-rig scale bloom over <paramref name="seconds"/>. Parent scale
+        /// is mover-contract (C6 (b), 2026-08-25): a per-prism grow stamp cannot
+        /// express a parent transform — the entity matrix is the composed world
+        /// matrix. Locomotion already re-syncs every body prism from Update
+        /// (<c>Boid</c> / <c>LightFauna</c> / <c>WormFauna</c>); do not call
+        /// <see cref="NotifyBodyPrismsMoved"/> here or the grow doubles the
+        /// per-frame prism write.
+        /// </summary>
         IEnumerator GrowToScale(Vector3 target, float seconds)
         {
             Vector3 start = transform.localScale;
@@ -611,7 +629,6 @@ namespace CosmicShore.Gameplay
             {
                 t += Time.deltaTime / Mathf.Max(0.05f, seconds);
                 transform.localScale = Vector3.Lerp(start, target, Mathf.Clamp01(t));
-                NotifyBodyPrismsMoved(); // keep the spatial index honest while the body grows
                 yield return null;
             }
             _levelGrowRoutine = null;
@@ -826,9 +843,10 @@ namespace CosmicShore.Gameplay
         /// <summary>
         /// The elemental crystal this fauna conserves its mass into on death. Set by
         /// concrete creature subclasses in Initialize via
-        /// <see cref="LifeFormCrystal.EnsureElementalCrystal"/>; null for manager /
-        /// composite-segment fauna that are not standalone lifeforms (their crystal is
-        /// owned at the whole-creature level).
+        /// <see cref="LifeFormCrystal.EnsureElementalCrystal"/>; null only for MANAGER
+        /// fauna and for a colony ROOT, which is a population anchor rather than an
+        /// organism — every actual member of a colony carries its own heart
+        /// (Docs/ECOSYSTEM.md §23.3).
         /// </summary>
         protected Crystal crystal;
 

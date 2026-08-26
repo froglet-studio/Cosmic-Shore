@@ -78,22 +78,18 @@ The two guarantees that make the skim deterministic:
 
 1. **Full-size collider from frame 0.** Every ring prism comes from the dedicated **Boost pool**
    (`PrismType.Boost` → `PrismFactory.SpawnBoostPrism` → `BoostPrismPool` in `PrismManagers.prefab`;
-   `waitTime = 0`, fast bloom via `Prism.SetGrowthRate`) and is placed under
-   **`Prism.HoldColliderAtFullSize`**: the BoxCollider is enabled the frame it spawns and its size is
-   inversely compensated against the animated transform scale, so the *world* footprint is the full
-   target size while the visual still blooms in (the continuity law is visual — the physics footprint
-   doesn't have to grow with it). Once grown, the authored collider size is restored; pool reuse
-   restores it defensively in `ResetState` too.
+   `waitTime = 0`, fast bloom via `Prism.SetGrowthRate`). Under the clock-material law the
+   transform is FINAL at stamp, so the authored BoxCollider is already a full-size world
+   footprint while the GPU blooms the visual — no per-frame collider compensation.
 2. **Speed-independent open geometry.** Prisms lie long-side ALONG the ring axis, "up" outward
    radially — the wide-open arrangement the old ring only reached when fast. The old
    `SpawnableRings` tilted each prism toward the ring centre by `speed * 0.3°` (speed arrived as the
    `intensity` argument from `AOEBlockSpawner`), so a slow vessel got a closed spoke-wheel it
    couldn't fly through. The tilt and the speed pass are gone.
 
-Kind handling: **Danger** repaints on the BoxCollider and applies immediately;
-**Shielded/SuperShielded** are deferred to bloom-complete (via `HoldColliderAtFullSize`'s `onGrown`)
-because shield engage swaps to the octahedron MeshCollider, which scales with the transform and
-would defeat the full-size hold during the bloom.
+Kind handling: **all kinds** (Danger, Shielded, SuperShielded) apply immediately in
+`BoostRingBuilder.LayOne` — with transform-at-final from stamp, shield shells are full-size at
+frame 0 and no longer need a deferred `onGrown` callback.
 
 Why the Boost pool is separate: `SpawnBoostPrism`'s `waitTime`/`GrowthRate` overrides aren't reset by
 the pool's `OnGet`/`OnRelease`, so on a *shared* pool they would leak into the next plain trail block.
@@ -122,7 +118,7 @@ on either a vessel hit (joust) or a crystal hit.
 | HUD view / controller | `UI/View/SquirrelVesselHUDView.cs`, `R_VesselActions/Data Containers/SquirrelVesselHUDController.cs` |
 | Drift analog toggle | `VesselTransformer.singleTriggerDrift`, `DriftActionSO.playDriftSfx` |
 | Input mapping | `Squirrel.prefab` R_VesselActionHandler (`OnlyLeft/OnlyRight` + gamepad `LeftStick/RightStick` overrides) |
-| Shared ring primitive | `BoostRingBuilder` (`Controller/Environment/Spawning/`), `Prism.HoldColliderAtFullSize` |
+| Shared ring primitive | `BoostRingBuilder` (`Controller/Environment/Spawning/`) |
 | Boost prism pool | `PrismFactory.SpawnBoostPrism` (`PrismType.Boost`), `BoostPrismPool` in `PrismManagers.prefab`, `Prism.SetGrowthRate` |
 | Omnicrystal + joust rings | `SpawnableRings` + `AOEBlockSpawner` on `AOERingSpawner.prefab` (variants `AOEShieldedRingSpawner`, `AOEDangerRingSpawner`) |
 
@@ -134,6 +130,6 @@ level 10), `minCooldownMultiplier`, `upgradeExtraRings` (Time-5 Twin Rings). Gro
 collider timing are pool-level, on
 `PrismFactory` (`boostPrismGrowthRate`, default 8 — `PrismScaleManager` clamps
 `growthRate * deltaTime` into [0.05, 0.1] lerp/frame, so ≥6 pins the max bloom speed) +
-`SpawnBoostPrism` (`waitTime = 0`); the collider never waits on either (full-size from frame 0 via
-`Prism.HoldColliderAtFullSize`). **`radius` needs in-editor tuning against the live level-0 skimmer
+`SpawnBoostPrism` (`waitTime = 0`); the collider never waits on either (full-size from frame 0 —
+transform final at stamp under the clock law). **`radius` needs in-editor tuning against the live level-0 skimmer
 size.**

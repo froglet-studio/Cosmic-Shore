@@ -1,5 +1,12 @@
 # Unity In-Editor Verification Checklist
 
+> **Superseded for new work — see `Docs/QA/`.** The untested-development backlog is now
+> generated and maintained by the `/qa-backlog` skill in `Docs/QA/QA_BACKLOG.md`, with a
+> submission/result loop (`Docs/QA/README.md`) that archives passes and turns failures
+> into dev tasks. The two entries below are kept until they are run; new unverified work
+> does **not** get a section here — record it in the PR body's *Verification status*
+> section and the scan will pick it up.
+
 **Purpose.** Some changes land on shared branches (`bleeding-edge` and the
 per-feature branches) without ever being opened in the Unity Editor —
 authored and committed by a session that **cannot run the editor**, so no
@@ -75,6 +82,272 @@ generated probe that compiles the auditor's new check verbatim, negative-control
 
 ---
 
+### 🔴 Prompt 16 — corridor dither 3D-SHARD kernel 6 (2026-08-25)
+
+Authored without a Unity compile. `/verify-unity` did not run. Clang harness (`Tools/Shaders/verify_prism_shard3d.py --check`) is green: LO=0.155 HI=0.915, compiled |coverage−alpha|=0.00783; glancing-plane proof passed. **Look on real mass at speed is unearned — do not Bake as CURRENT.**
+
+**What landed.** Kernel 6 (`PRISM_OCCLUSION_KERNEL_SHARD3D`) in `PrismOcclusionCorridor.hlsl` — Euclidean distance-to-owner fill, same world anchoring + octave ladder as SHATTER3D. Dispatch in both LIVE_TUNING chains. Occlusion Dither Lab popup + dials (cell, no wall) + bake confirm. CDF clang-baked. Shipped kernel remains SHATTER.
+
+**Verify in editor**
+1. FrogletTools > Ecology > Prism Animation > Occlusion Dither Lab. Enable design mode. Select **Shard3D (distance fill)**. Measure should PASS vs Worley (~≤1.35×). The preview is a z=0 slice and cannot see plate-flash — do not treat Measure as the look call.
+2. Drive the running game. Menu_Main freestyle, fly through Lattice/trail mass at speed. SHARD3D should read as volumetric roundish blobs / spherical shells, not cracked walls, and must not plate-flash face-sized plates around the vessel (that is still SHATTER3D).
+3. Shatter3D in the Lab still shows the REJECTED ON LOOK warning; baking either volumetric kernel as CURRENT requires a confirm dialog.
+4. Compile: no errors from `PrismOcclusionDitherLab.cs`. `PRISM_OCCLUSION_LIVE_TUNING` stays 0 in shipped source after you leave the Lab.
+
+**Do not tick this green on Measure alone.**
+
+---
+
+### 🔴 Prompt 15 — ShapeDrawingManager deletion / C15 (2026-08-25)
+
+Authored without a Unity compile. `/verify-unity` did not run. Human: Menu_Main has no missing-script for the deleted GUIDs. Compile is the remaining gate. **Do not claim a compile that did not run.** There is no clock path to playtest — the code is gone.
+
+**What landed.** `ShapeDrawingManager` + exclusive dependents deleted (`ShapeDrawingCrystalManager`, `EndShapeDetailHUD`, `ShapeScoreDisplay`, `ShapeScoreData`). GUID `d375b1129a0a4e29b505296c9e510bdc` was only on its own `.meta`. SOAP events `EventOnShapeGameModeStarted` / `EventOnShapePrismReturnToPool` **kept** on live prism prefabs (inert landmine — they dump every listener to `Prism.ReturnToPool`; **never Raise them**; do not strip the EventListeners). `ShapeDefinition`, spawnable shapes, `ShapeSign` / `ShapeCollisionTrigger`, `SegmentSpawner` kept. Tracker: `Docs/PRISM_ANIMATION.md` C15 / §3.8 #11.
+
+**Verify in editor**
+1. Compile clean. No missing-script on Menu_Main (or any other scene) for the five deleted GUIDs.
+2. Painting toy still paints from `ShapeDefinition` / `PaintingDefinitionSO.sourceShape`. HexRace still uses `SegmentSpawner`.
+3. Do **not** Raise `EventOnShapeGameModeStarted` or `EventOnShapePrismReturnToPool` as a "cleanup" — that would dump every listening prism to the pool.
+
+---
+
+### 🔴 Prompt 14 — C13b environment-lay pooling (2026-08-25)
+
+Authored without a Unity play-test. `/verify-unity` did not compile this change: `unity doctor` succeeds unsandboxed (~70s; CLI 1.0.0-beta.5 on PATH, Hub editors 6000.3.17f1 / 6000.5.9f1) but is not logged in, and pipeline commands against the open Editor have been timing out (`editor_status`, `recompile_status`, `list_tests`). A restricted shell reports `The required instruction sets are not supported by the current CPU`. Human look-verify is the remaining gate. **Do not claim a compile that did not run.**
+
+**What landed.** Dedicated unbounded prefab-keyed `EnvironmentPrismPool`. `PrismTrailBuilder.LayOne` / `CloneBatchAsync` pull from it. `PrepareForLay` **snaps Blue** materials (`ResetToNeutralForReuse` + `BindMaterialsImmediate`) so `ChangeTeam` is a real Blue→domain clock lerp — a raw Instantiate cloned the prefab already wearing the final domain material (Jade→Jade no-op). Flora HealthPrism Instantiates folded (`PhyllotacticFlora` / `BranchingFlora` / `AssembledFlora`). Cell drain: issued prisms `TryRelease`; remainder Destroy 500/frame. **Never** wires the prism pool-return delegate (Wanderway would be vacuumed). Named, not folded: `Boid.cs`, `SpawnableBase` non-prism `leafPrefab`, `SpawnableCord`. Structural gate: `EnvironmentPrismPoolTests`.
+
+**Verify in editor**
+1. Compile clean. Edit-mode: `EnvironmentPrismPoolTests`. Zero `[PrismClock]` regressions on an environment lay.
+2. **Freestyle cell environment.** Load a heavy authored world (Cell Selector). Prisms spawn `Domains.Blue` and **repaint to domain on the clock** (visible Blue→Jade/Ruby/Gold lerp). They must not appear already in the final domain material from frame 0.
+3. **Wanderway belt.** Fly the conveyor toy. Conserved stock is **unchanged** across a Cell Selector swap — the belt is not suctioned/TryReleased with the authored environment.
+4. **Profiler.** Environment-lay allocation churn drops vs a raw-Instantiate baseline (Get reuses inactive after the first cell-swap return; first populate of Atlantis / Wanderway still Instantiates the shortfall — that is expected).
+5. **Flora leaves.** A growing plant's new HealthPrisms also spawn Blue and clock-repaint. Plant death leaves the skeleton as cell mass (no TryRelease on wither).
+
+---
+
+### 🔴 Prompt 9b — D4 retire pooled death spawn (2026-08-25)
+
+Authored without a Unity play-test. `/verify-unity` did not compile this change: `unity doctor` succeeds unsandboxed (~70s; CLI 1.0.0-beta.5 on PATH, Hub editors 6000.3.17f1 / 6000.5.9f1) but is not logged in, and pipeline commands against the open Editor have been timing out (`editor_status`, `recompile_status`, `list_tests`). A restricted shell reports `The required instruction sets are not supported by the current CPU`. Human look-verify is the remaining gate. **Do not claim a compile that did not run.**
+
+**What landed.** Death pooling retired; Grow kept. Factory `SpawnExplosion` / `SpawnImplosion` are batch-only (`PrismDebris.TryRequest*`). A declined batch **warns once and returns null** — no pooled death GameObject. Authored config stays on the pool prefabs. Explosion pool is never Get()d and is not prewarmed. Implosion pool prewarm 64 → 12. `PrismType.Grow` / `StartGrow` / `OnGrowCompleted` stay on pooled `PrismImplosion` (Sparrow ReverseSuction). `GameLoadSampler`: explosions = `PrismDebris.LiveDebrisCount`; implosions = `LiveImplosionDebrisCount` + `PrismImplosion.EnabledInstances`.
+
+**Verify in editor**
+1. Compile clean. Zero `[PrismClock]` regressions on a blast. No pooled `PrismExplosion` GameObject appears in the Hierarchy on a detonation.
+2. **Death still draws.** AOE explosion debris and fauna-consumption suction still animate on the batched carrier. Failed batch: Console has one `[PrismFactory] Batched … declined` error, no pooled spawn.
+3. **Sparrow turret ReverseSuction.** Grow still Get()s `implosionPool`, runs `StartGrow`, and fires `OnGrowCompleted` (real prism appears after the reverse suction). Do **not** treat a missing Grow visual as a D4 success — that would be a regression.
+4. Explosion pool does not prewarm 64 at scene load. Implosion prewarm is ~12.
+5. GameLoadSampler / harness HUD: `exp` counts batched death only; `imp` includes batched suction **and** live Grow instances.
+
+---
+
+### 🔴 Prompt 3 — C6 parent-scale as mover-contract (2026-08-25)
+
+Authored without a Unity play-test (one-line delete + comments + docs). Human look-verify is the remaining gate. **Do not claim this play-test passed.**
+
+**What landed.** Ruling **(b)**: creature-root / worm-segment scale is mover-contract, same class as locomotion. `Fauna.GrowToScale` still lerps `localScale` (continuity). The redundant `NotifyBodyPrismsMoved()` inside that lerp is deleted — `Boid` / `LightFauna` / `WormFauna` already sync every `Update`. `WormFauna.GlideScales` was already on that path. (a) — snap root final + per-prism grow-clock stamps — was rejected. Colliders ride the live transform (zero new colliders).
+
+**Verify in editor**
+1. Compile clean. No new tests (one-line delete). Zero `[PrismClock]` errors on a live cell.
+2. **Squirrel Space-5 joust growth.** Body bloom is smooth (root lerp, not a pop). Profiler: locomotion's per-frame prism-entity writes remain; `GrowToScale` must **not** add a second `NotifyBodyPrismsMoved` / `SyncRenderTransform` storm on top of `Boid`/`LightFauna` Update.
+3. **Worm-colony glide.** Segment taper on growth/split/death is smooth. Same profiler read: `Update` → `GlideScales` then `SyncBodyPrismsToIndex` is the one sync, not two.
+
+---
+
+### 🔴 Prompt 13 — C11 spindle `_DeathAnimation` fade on the clock (2026-08-25)
+
+Authored without a Unity play-test (session wired graphs + C# + tests; `wire_prism_spindle_death_clock.py --check` green). Human look-verify is the remaining gate. **Do not claim this play-test passed.**
+
+**What landed.** Spindle evaporate / condense is a one-shot stamp. `PrismDeathClock_float` spliced into SpindleGraph + AnimatedSpindleGraph only (not BlockGraph). Stamp `_DeathStartTime` / `_DeathDuration` / `_DeathDirection` once via MPB; `PrismTimerManager` settle; `SetPropertyBlock(null)` at settle. Ordered wither is `ForceWither(i * interval)` StartTime offsets after a one-time distance sort. `LeaveSkeleton()` still runs **before** any spindle stamp. Heart release still waits until the wither has reached the core (`count × interval`). **SRP honesty:** a renderer WITH an MPB is still excluded from the SRP Batcher during the ~1s fade; this recovers zero per-frame CPU and the Batcher **after** settle.
+
+**Verify in editor**
+1. Compile clean. Edit-mode: `PrismSpindleDeathClockTests`. Validate Clock Wiring does **not** need to name spindle CFs — python `--check` owns them. Do not dump `PrismDeathClock` onto BlockGraph Specs.
+2. **Starve a creature.** Spindles evaporate extremity-first (farthest-from-heart before the core). Smooth; body prisms stay as a skeleton. Crystal becomes collectable when the wither reaches the core. Zero per-frame spindle writes in the profiler. Zero `[PrismClock]` `_DeathStartTime` errors.
+3. **Joust a creature.** Same geometry backwards (heart-outward). Crystal already freed at strike. Smooth; skeleton remains.
+
+---
+
+### 🔴 Prompt 4 — C9 cell-swap world suction on the clock (2026-08-25)
+
+Authored without a Unity play-test (session wired graphs + C# + tests; `wire_prism_suction_clock.py --check` green). Human look-verify is the remaining gate.
+
+**What landed.** True suction (whole-prism lerp toward the cell centre) on live prisms. `PrismSuctionConverge_float` spliced into BlockGraph + ExplodingBlockGraph; four `PrismSuction*Override` + `PrismImplosionLocationOverride` on the Prism entity prototype; `Cell.StampRetiredWorldSuction` → `Prism.StampSuctionToward`. Root `localScale` wait kept for membrane / nucleus / cytoplasm / lifeform spindles. Drain 500/frame unchanged. SuctionGraph still SequentialFaceConverger (fauna consumption) — no Converge there.
+
+**Auto-Wire property counts** will rise vs Prompt 8's snapshot: **BlockGraph 24 / ExplodingBlockGraph 27 / SuctionGraph 5** (live graphs gain the four `_Suction*` floats + `_Location`). Prompt 8's 19 / 22 / 5 is a historical snapshot of that day's verification, not a regression.
+
+**Verify in editor**
+1. Compile clean. Edit-mode: `PrismClockWiringTests` + `PrismCellSwapSuctionTests`.
+2. FrogletTools > Ecology > Prism Animation > **Validate Clock Wiring** — ALL PRESENT; live graphs name `PrismSuctionClock` + `PrismSuctionConverge`; SuctionGraph has Clock and must NOT have Converge.
+3. Auto-Wire Clock Properties — BlockGraph 24 / ExplodingBlockGraph 27 / SuctionGraph 5 already present. No unexpected graph writes.
+4. **Cell Selector** (Menu_Main freestyle): swap cells. Old world converges on the cell centre behind the veil (does not snap, does not collapse in place). Zero `[PrismClock]` errors. Membrane / nucleus / cytoplasm still suction with the root.
+
+---
+
+### 🟡 Prompt 8 — clock validator families + Auto-Wire `_ShieldMorph*` + SuctionGraph corridor ruling (2026-08-25)
+
+C# + tests + docs only (no `.shadergraph` edits). Human-verified in-editor 2026-08-25: Validate Clock Wiring + Auto-Wire. Edit-mode NUnit still unrun (Unity CLI pipeline was unresponsive in-session).
+
+**What landed.** (1) `PrismClockWiringValidator.Specs` names `PrismErosionFade` / `PrismBackFaceFade` / `PrismDestructionSight` + the five unexposed `_PrismSight*` globals + load-bearing edges; Validate Clock Wiring ANDs `PrismOcclusionWiringValidator.CheckGraphWiring` (corridor stays one SoT). (2) `PrismClockGraphWirer` stamps `_ShieldMorph*` on both live graphs and declares node splices python-owned. (3) SuctionGraph is a named **live** corridor exclusion (`KnownCorridorExcludedGraphs`), distinct from dead `KnownLegacyPrismPrefabs`.
+
+**Verify in editor**
+1. ✅ Compile clean (validator ran from the menu).
+2. Edit-mode: `PrismClockWiringTests` + `PrismOcclusionCoverageTests` (incl. `SuctionGraph_IsANamedCorridorExclusion_NotASilentOmission`).
+3. ✅ FrogletTools > Ecology > Prism Animation > **Validate Clock Wiring** — ALL PRESENT; corridor census ANDed; SuctionGraph named as live exclusion; 22 materials declare clock props; instanced rendering ON.
+4. ✅ Auto-Wire Clock Properties — BlockGraph 19 / ExplodingBlockGraph 22 / SuctionGraph 5 already present (incl. `_ShieldMorph*`); node splices declared python-owned. No graph writes.
+### 🔴 Sparrow — the spread cone becomes a four-stage curve with a blow-out (`claude/sparrows-gun-spread-curve-hacjka`, 2026-08-25)
+
+Authored without a Unity compile or play-test (remote session, no editor, no `unity` CLI binary in
+this environment). Every changed C# file **was** compiled for real, against a Unity/NUnit stub
+harness under Mono 6.8, and the whole `GunSpreadMathTests` suite was executed there — **27/27
+pass**, including the 16 pre-existing tests. What is unverified is Unity-side: the asset import,
+the inspector foldout, and the feel.
+
+**What landed.** `GunSpreadMath.HalfAngleDegrees` grew from a single ramp into a four-part
+piecewise curve — grace, ramp, plateau, blow-out — consumed through a new `GunSpreadStages`
+parameter object. `GunSpreadProfile` gained three authored fields (`plateauSeconds`,
+`blowoutGrowthDegreesPerSecond`, `blowoutMaxMultiplier`) and derives the blow-out cap from the
+sustainable one rather than authoring it twice. `GunSprayAccuracy` passes `_profile.Stages`.
+`FullAutoAction.asset` retuned: onset `0.12 → 2`, growth `1 → 0.75`, plus the three new keys.
+Files: `_Scripts/Utility/GunSpreadMath.cs`, `R_VesselActions/Data Containers/GunSpreadProfile.cs`,
+`R_VesselActions/Executors/GunSprayAccuracy.cs`,
+`_Scripts/Tests/Editor/GunSpreadMathTests.cs`, `_SO_Assets/VesselActions/Sparrow/FullAutoAction.asset`.
+
+**The shipped curve** (proven by running it, not by reading it):
+
+| held | half-angle |
+|---|---|
+| 0 – 2 s | 0° (perfect) |
+| 2 → 4 s | 0° → 1.5° at 0.75 °/s |
+| 4 → 6 s | 1.5° held |
+| 6 → 10 s | 1.5° → 7.5° at 1.5 °/s |
+| 10 s → ∞ | 7.5° (hard cap) |
+
+**Verify in editor**
+1. `FullAutoAction.asset` imports clean and the inspector shows a **Blow-out** foldout with
+   `plateauSeconds 2`, `blowoutGrowthDegreesPerSecond 1.5`, `blowoutMaxMultiplier 5`. A field
+   showing its C# default instead of the asset value means the YAML key did not bind.
+2. `MinigameDogFight`, Sparrow, hold fire on a distant wall and watch the impact circle through
+   all four stages: point → growing → **static from 4 s to 6 s** → growing again, faster → stops
+   at 10 s about 5× wider. The static beat is the one most likely to be lost.
+3. Release and re-pull anywhere on that curve — the next rounds must be dead-on.
+4. Toggle Turret Stance mid-hold without releasing: prisms must start laying at the *open* cone
+   (the deferred-reset hand-off), and the turret must reach the same blow-out.
+5. Gamepad: the buzz climbs from 2 s to 4 s and then goes **flat for the rest of the hold**,
+   blow-out included. That is deliberate — see `SPARROW_SPRAY_ACCURACY.md` Round 6.
+6. Console clean through a 15 s hold, both fire modes.
+
+**First-pass tuning (expect a balancing pass).** Two seconds of perfect accuracy is **360 rounds**
+per pull — much more forgiving than the 0.12 s / 22-round window it replaces. **Re-check Dog
+Fight's point target and Salvo's prism target in play** (FrogletTools ▸ Game Modes ▸ End Game
+Conditions; both authored, no code change to retune). If the free window reads as too generous,
+`onsetSeconds` is the one field; if the blow-out never gets met in practice, shorten
+`plateauSeconds` before touching the multiplier.
+
+---
+
+### 🔴 Skyburst — the missile grows 20× in the first fifth of its flight, on a subdivided mesh (`cece/gallant-noether-o4jugw`, 2026-08-25)
+
+Authored without a Unity compile or play-test (remote session, no editor, no `unity` CLI binary in
+this environment). Touches `Projectile.cs`, `ElementalScaling.cs`, `FireGunActionSO.cs`,
+`FireGunActionExecutor.cs`, `FullAutoActionSO.cs`, the new `RoundGrowthRamp.cs`, two test files,
+plus two hand-edited assets — `SkyBurstGunAction.asset` and `SkyBurstProjectile.prefab` — and a
+**machine-edited model**, `Assets/_Models/Sparrow Missile.fbx`.
+
+**What landed.** (Reconciled with PR #786, which merged mid-branch and made growth a HIT VOLUME
+rather than a size. The missile satisfies that law from the other end: its MODEL grows and its
+sphere collider is FITTED to the model every frame — so its reach changed, see step 5.)
+The Sparrow's skyburst missile now swells in flight the way its bullets do — the
+SAME curve, moved to one home (`ElementalScaling.RoundGrowthFactorForLevel`, off
+`FullAutoActionSO`) — but on the opposite *shape*: it reaches **20×** at resting Mass in the
+**first 20% of the flight** (0.6 s, ~70 u from the bay) and holds that size for the remaining 80%,
+where a bullet is still growing when it arrives. Mass still scales it (32× at level 10, 14×/38× at
+the band edges). `Projectile` gained three optional serialized fields, all defaulting to today's
+behaviour so every other round is untouched: `flightGrowthTarget` (empty = the root),
+`flightGrowthUniform`, `flightGrowthCompleteAt01` (1 = the whole flight). The missile points growth
+at its `MissileVisual` child, so **the model grows and the hit sphere does not** — its reach is
+byte-identical to before. Rationale, the size/geometry table, and what the 20× costs:
+`_Scripts/Controller/Vessel/R_VesselActions/SPARROW_SKYBURST_BAY.md` § "The missile grows as it
+travels (MASS)".
+
+**The mesh.** At 20× the model was an eight-sided barrel (312 quads) filling the screen, so
+`Tools/Build/subdivide_sparrow_missile.py` applies two Catmull-Clark steps **in place**: 624 →
+9,984 triangles, barrel 8- → 32-sided (silhouette deviation 7.61% → 0.48%), renormalized back onto
+the authored bounding box so the launch size the growth math is written against is unchanged. The
+geometry keeps its name, so it keeps its Unity fileID; the file keeps its guid; material layer,
+submesh order, UVs and unit scale are untouched — **the prefab and the .meta did not change**. The
+four element blend shapes were dropped (inert on this projectile — it renders through a
+`MeshFilter`; keeping them would leave a shape key that tears the subdivided mesh).
+
+**Verified offline** (more than inspection): .NET 8 installed in-session; the real shipped
+`ElementalScaling.cs`, `RoundGrowthRamp.cs`, `SparrowRoundGrowthTests.cs` and
+`RoundGrowthRampTests.cs` compiled and executed against a `Mathf`/NUnit shim — **21/21 tests
+pass**; all five edited/added C# files Roslyn-parse with 0 syntax errors;
+`check_conditional_compilation.py` OK (1740 files). The missile geometry was **measured, not
+assumed** — `Sparrow Missile.fbx` vertex bounds span 8.2951 × 1.9054 mesh units at
+`UnitScaleFactor 1`, which at the prefab's `MissileVisual` 2 × root `ProjectileScale` 10 is a
+1.659 u × 0.381 u launch size, independently reproducing the 1.7 u the bay doc measured a
+different way. **The rewritten FBX was checked with `assimp`, an independent FBX reader** — 2
+meshes in the same order (1,152 / 3,840 quads = exactly 16× the authored 72 / 240 material split),
+2 materials, 1 animation, closed genus-0 surface, bounds matching to 6 decimals. That check earned
+its keep: a first pass produced a byte-for-byte identical node tree that assimp nonetheless read as
+having **no animation**, because the writer dropped the empty-scope terminator that 7 childless
+nodes (one of them `AnimationLayer`) carry. Fixed and re-proved before the asset was touched.
+
+**Verify in editor**
+1. **Compile clean**, then run the edit-mode suite — `SparrowRoundGrowthTests` (11) +
+   `RoundGrowthRampTests` (10) should be 21/21 inside Unity as they are offline.
+2. **Prefab took.** Open `SkyBurstProjectile.prefab` → `Projectile`: *Flight Growth Target* =
+   `MissileVisual`, *Flight Growth Uniform* ticked, *Flight Growth Complete At 01* = 0.2. All
+   three were written into the YAML by hand. A field that did not deserialize is quiet and wrong:
+   a missed target puts growth on the root, which WOULD grow the hit sphere (see 5); a missed
+   window makes it swell across the whole flight instead of holding.
+3. **Dog Fight, fly the Sparrow, fire a skyburst.** The read to check is the *shape*: it should
+   leave the bay at bay-missile size, swell hard over ~0.6 s / ~70 u, and then cross the rest of
+   the arena as a fixed object. If it is still visibly growing at impact, the window is not
+   applying.
+4. **The handoff.** At the 0.2 s bay handoff the live projectile should still match the animated
+   bay missile's size — the swell starts *after* it clears the hull, so a pop there is a
+   launch-size problem, not a growth one.
+5. **The hit sphere DID change, deliberately — this is the balance-sensitive line.** The missile
+   used to hit with a fixed 8.5 u sphere (`0.85 × ProjectileScale 10` arithmetic, never authored,
+   dwarfing a 1.7 u model). It now hits with the model's own widest cross-section: **3.81 u at
+   resting Mass**, 45% of the old reach, and varying with Mass (2.67 u → 7.24 u). Expect missiles
+   to be meaningfully harder to land in Dog Fight and say whether that reads as fair. Two sub-checks:
+   the sphere's front surface should sit on the missile's nose (a hit should register the instant
+   the nose touches, never after it has passed through), and reach should be visibly small for the
+   first ~0.6 s while the model is still swelling.
+6. **The trailing tail.** The forward overhang is gone by construction, but the model now extends
+   up to ~48 u BEHIND its hit sphere (25.6 u at resting Mass). That is the permitted direction — a
+   tail that has already passed you cannot cause a false read — but it is worth one look in play to
+   confirm it reads as a missile with a long body rather than as a hit that landed early.
+7. **Pool reuse.** Fire many missiles in one turn (ammo cost 0.5, two per full bar — reload and
+   repeat a dozen times). Every one must launch at the SAME small size. Growing launches mean the
+   child-scale rebase in `LaunchProjectile` is not running.
+8. **Mass response.** Collect Mass crystals and fire again: 32× at Mass 10 vs 20× at rest should
+   be obvious. Author both endpoints equal on the asset if you want one fixed size regardless.
+9. **The exhaust.** The root `ParticleSystem` does not grow with the model, and against a 33 u
+   missile it will read as much too small — this is the pre-existing follow-up in the bay doc, and
+   the 20× size makes it the most likely thing to look wrong.
+10. **The model re-imported.** Highest-risk item of the three asset edits, because the FBX was
+    rewritten by a tool rather than by a modelling package. Check the Console for an import error,
+    then select `Sparrow Missile.fbx` — the preview should show ~9,984 tris and a smooth barrel.
+    The prefab reference is the thing to confirm: `SkyBurstProjectile.prefab` → `MissileVisual` →
+    `Mesh Filter` must still read `Cube.003` and not "Missing". (It resolves by fileID, which
+    `fileIdsGeneration: 2` derives from the mesh NAME — unchanged — but that is reasoning, not a
+    test.) In play, the two material zones must not have swapped colour.
+11. **The rounded nose.** Subdivision fillets sharp features: the shoulder at y ≈ -1.2 and the nose
+    tip (~17% blunter at its last ring) are rounder than the artist left them. Everywhere else the
+    radius profile tracks the original within 0.5%. If the nose reads as too soft, `--levels 1`
+    halves the rounding and quarters the triangles.
+
+**First-pass tuning** (starting points, expect a balancing pass): `growthFactorAtRestingMass: 20`,
+`growthFactorAtFullMass: 32` on `SkyBurstGunAction.asset`; `flightGrowthCompleteAt01: 0.2` on the
+prefab. There is no longer a size CEILING — the collider follows the model, so growing it further
+grows the reach with it. That makes the growth factors a **reach** dial as well as a size one:
+`SparrowRoundGrowthTests.TheMissileHitSphereShrankFromTheOldEmergentOne` pins 3.81 u at resting
+Mass so a retune has to argue with the number rather than drift past it. Mesh resolution is `subdivide_sparrow_missile.py --levels` (2 shipped);
+`--check` proves the shipped mesh's invariants without needing the original, which now lives only
+in git history.
 ### 🔴 Debris face pivot reads the mesh's baked centroid (2026-08-25)
 
 `Docs/PRISM_ANIMATION.md` §4.8.2. `RotateFacesAlongAxis` was spinning every face about a
@@ -2983,9 +3256,11 @@ arc cores.
    again. The shell must never persist after a round dies, never reappear at a stale size, and never
    show on a projectile that does not grow.
 8. **Perf at volume.** Hold full-auto (90 volleys/s ≈ 54 live rounds per Sparrow) with 2–4 Sparrows
-   and watch frame time + draw calls. The shell has no MaterialPropertyBlock by design, so every
-   round should SRP-batch through one material — if the batch count climbs with round count,
-   something is minting per-renderer state and that is a bug, not a tuning issue.
+   and watch frame time + draw calls. ⚠ **This item's original claim is now INVERTED — see the
+   round-5 entry below.** The shell deliberately carries a per-round `MaterialPropertyBlock` (one
+   float, stamped once per SHOT) and is GPU-INSTANCED rather than SRP-batched. Rounds must still
+   collapse into ONE instanced draw; what would be a bug is a draw count that climbs *linearly*
+   with live rounds, which would mean instancing is off on the material.
 9. **The four other users of `DangerProjectileMaterial` are untouched**: `ExplodableProjectile`,
    `ProjectileFX`, `BrightNucleus`, `TimeDandruff`. Confirm none of them changed colour.
 10. **Depth/sort sanity.** The dart (opaque, `ZWrite On`, queue 3000) and the shell (`ZWrite Off`,
@@ -3231,6 +3506,56 @@ ability → `InputEvents` → control → glyph. Expected, from the shipped asse
    point-anchored at the centre at 100×100. **Watch for anything else on those HUDs shifting** —
    nothing should, since the sweep retires everything else at root level, but that is the assumption
    worth checking on each vessel.
-4. **The switcher is ensured**, so every HUD has one even if it never authored glyphs. Confirm the
-   Squirrel and Serpent still show their own authored hints (they are still bound and placed) and
-   that they are not doubled by the new chips.
+4. **The switcher is ensured**, so every HUD has one even if it never authored glyphs.
+   *(Superseded 2026-08-26 — the switcher no longer draws anything and the authored hints are
+   deleted. The check is now the opposite: confirm the Squirrel and Serpent show ONLY the cards'
+   chips, with `XBOX_Icon_Root` / `PS_Icon_Root` inactive. See the newest section at the top.)*
+
+---
+
+## 🔴 Sparrow charge shell round 5 — one stroke per round, per-round seed, light budget (`claude/sparrow-projectile-effect-xuis0s`)
+
+**Supersedes items 3, 4 and 8 of the round-4 entry above** — the rim, the core threshold and
+especially the batching expectation all changed. Read this entry, not that one, where they differ.
+
+Machine-verified out of editor (no Unity available in that session): the shipped
+`ProjectileChargeField.hlsl` was compiled with `clang++` and executed, and additionally
+**rasterized through a real perspective camera at true 1080p density**
+(`Tools/Shaders/render_projectile_charge_field.py`). `verify_projectile_charge_field.py` passes all
+six gates. Shader Properties / `UnityPerMaterial` / instancing buffer / material values / harness
+constants were cross-checked programmatically and agree.
+
+**Never imported by Unity.** `Projectile.cs`, `ProjectileChargeField.shader` and
+`ProjectileChargeFieldMaterial.mat` have not been through an Editor compile. The shader gained
+GPU-instancing macros (`#pragma multi_compile_instancing`, `UNITY_INSTANCING_BUFFER`,
+`UNITY_SETUP_INSTANCE_ID`) — that is the highest-risk part of the change.
+
+1. **It compiles at all.** Enter play, fire full-auto. A **magenta** shell means the shader failed
+   to import — most likely the instancing macros. `git checkout` the two shader files and report;
+   do not patch it live.
+2. **Instancing is actually on.** `ProjectileChargeFieldMaterial` must show **Enable GPU Instancing
+   ticked** (`m_EnableInstancingVariants: 1` in the asset). With it off, every shell becomes its own
+   draw call — 54 per Sparrow.
+3. **Every round looks different.** Hold full-auto and watch the two streams. Each round should show
+   ONE short bolt at its own angle; the two muzzles must not draw mirror-image or identical strokes.
+   If they look identical, `_RoundSeed` is not reaching the shader — check that
+   `Projectile.StampChargeFieldSeed` runs (the `ChargeField` child must have a `Renderer`).
+4. **It is quiet.** The whole point of the last two commits. A sustained burst should read as
+   occasional sparks along two dark tubes, **not** a continuous lightning rope. Measured at 0.04× the
+   light of the pre-round-5 shell. If it reads bright, the knobs are a documented light budget —
+   `_ArcIntensity`, `_ArcSpan`, `_HoldTime`, `_FresnelRimIntensity` — and
+   `Tools/Shaders/verify_projectile_charge_field.py` test 6 is the gate to re-run after changing any
+   of them.
+5. **Nothing pops.** A round must never go fully dark and then re-light. Between strokes it keeps a
+   faint rim (peak alpha ≈ 0.007). Watch a single round's whole flight at low Mass.
+6. **Pool reuse.** Hold fire, release, hold again; swap vessels; change Mass level. The seed is
+   re-stamped per shot, so no round should ever inherit the previous one's stroke, and the shell must
+   not persist after a round dies.
+7. **Perf at volume.** 2–4 Sparrows on full auto. Draw calls for the shells should stay flat (one
+   instanced draw), not climb with live round count. Per-frame CPU is unchanged — one transform write
+   per live round, exactly as before; the seed is per-SHOT.
+8. **The mechanic is untouched.** Hit radius, growth curve, rate and range are all unchanged by this
+   branch. Any felt change in how much a round deletes is a regression.
+9. **The skyburst missile is unaffected.** It takes the `flightGrowthTarget` path added on
+   `bleeding-edge` and carries no charge shell (the material has exactly one user,
+   `SparrowProjectile.prefab`). Confirm missiles still swell and detonate normally.

@@ -15,9 +15,11 @@ freestyle game.
 A standalone arcade game called "Freestyle" (`GameModes.Freestyle = 7`,
 `MinigameFreestyle.unity`, `SinglePlayerFreestyleController`) used to exist. It was a
 vestige of the pre-lava-lamp era and has been removed — do not reintroduce it. Its
-shape-drawing flow (planned for lava-lamp Phase 2) can be recovered from git history;
-the supporting scripts (`ShapeDrawingManager`, `SegmentSpawner`, spawnable shapes)
-remain in the codebase. `MultiplayerFreestyle (28)` is a separate multiplayer sandbox
+scored shape-drawing flow was **deleted 2026-08-25** (`ShapeDrawingManager` C15 —
+unreachable after the scene went; migrating it would have shipped an untested clock
+path). Recover from git if a scored minigame is wanted. `SegmentSpawner` + spawnable
+shapes + `ShapeDefinition` remain (HexRace live; painting toy is the successor).
+`MultiplayerFreestyle (28)` is a separate multiplayer sandbox
 game scene and still exists.
 
 ---
@@ -58,6 +60,7 @@ game scene and still exists.
 | **MinigameDogFight** | `_Scenes/Multiplayer Scenes/` | `DogFight (41)` | `DogFightController` |
 | **MinigameBends** | `_Scenes/Multiplayer Scenes/` | `Bends (42)` | `BendsController` |
 | **MinigameScarabScramble** | `_Scenes/Multiplayer Scenes/` | `ScarabScramble (43)` | `ScarabScrambleController` |
+| **MinigameSalvo** | `_Scenes/Multiplayer Scenes/` | `Salvo (44)` | `SalvoController` |
 | **ArcadeGameMultiplayer2v2CoOpVsAI** | `_Scenes/Multiplayer Scenes/` | `Multiplayer2v2CoOpVsAI (30)` | Variant of domain games controller |
 | **MinigameTournamentMultuplayer** | `_Scenes/Multiplayer Scenes/` | Tournament variant | Multi-round tournament format |
 
@@ -271,6 +274,10 @@ MiniGameControllerBase (abstract, NetworkBehaviour)
 | 35 | `MultiplayerCrystalCapture` | MP | MinigameCrystalCaptureMultiplayer_Gameplay | `MultiplayerCrystalCaptureController` |
 | 37 | `AstroLeague` | MP | MinigameAstroLeague | `AstroLeagueController` |
 | 38 | `NucleusRush` | MP | MinigameNucleusRush | `NucleusRushController` |
+| 39 | `Ribcage` | MP | MinigameRibcage | `RibcageController` ("Peel the Cage" — see `RIBCAGE.md`) |
+| 40 | `WildlifeLiberation` | MP | MinigameWildlifeLiberation | `WildlifeLiberationController` (see `WILDLIFE_LIBERATION.md`) |
+| 41 | `DogFight` | MP | MinigameDogFight | `DogFightController` (Sparrow gun duel — see `DOGFIGHT.md`) |
+| 44 | `Salvo` | MP | MinigameSalvo | `SalvoController` (Sparrow demolition race — see `SALVO.md`) |
 
 Note: IDs 7 and 31 are skipped in the enum. 31 was never assigned; 7 was the retired standalone arcade Freestyle game (freestyle now lives in Menu_Main as the lava lamp — see the naming note at the top of this document). Many single-player arcade modes (1, 3-6, 9-25, 27) share scenes configured by `SO_ArcadeGame` assets rather than having dedicated scene files; they use the same underlying scene infrastructure with different turn monitors, scoring, and environment configurations. `Rampage(2)` left this set — it is now a multiplayer destruction race with its own `MinigameRampage` scene (see `_Scripts/Controller/Arcade/RAMPAGE.md`).
 
@@ -285,13 +292,14 @@ Freestyle is not a standalone game — it is the playable side of the Menu_Main 
 CLAUDE.md). Tap the crystal in Menu_Main to take control of your vessel; tap the center
 to return to autopilot/menu.
 
-The retired standalone game's shape-drawing flow (collision → freeze player → nuke
-environment → shape preview → countdown → draw shape → evaluate → restore environment)
-is planned to return as lava-lamp Phase 2. The supporting scripts still exist:
+The retired standalone game's scored shape-drawing flow (collision → freeze player →
+nuke environment → preview → countdown → draw → evaluate → restore) was **deleted
+2026-08-25** with `ShapeDrawingManager` (C15 / Prompt 15). It was unreachable after
+the scene went; the painting toy is the scoreless successor. Still in the tree:
 
-- `ShapeDrawingManager` — manages shape preview → draw → score flow
-- `SegmentSpawner.cs` — spawns trail segments with shape triggers
-- `SinglePlayerFreestyleController.cs` — removed; recover the flow from git history when porting
+- `SegmentSpawner.cs` — HexRace live; also lays trail segments that can carry `ShapeCollisionTrigger`
+- `ShapeDefinition` / spawnable shapes / `ShapeSign` — painting toy + HexRace
+- `SinglePlayerFreestyleController.cs` — removed; recover the scored flow from git history if a scored minigame is wanted
 
 ### Cellular Duel (Single-Player)
 
@@ -532,6 +540,11 @@ Turn monitors determine when a turn ends. They are scene-placed components manag
 | `AllLifeFormsDestroyedTurnMonitor` | `TurnMonitors/` | All enemies defeated |
 | `DistanceTurnMonitor` | `TurnMonitors/` | Player travels N units |
 | `ResourceAccumulationTurnMonitor` | `TurnMonitors/` | Player collects N resources |
+| `RampagePrismTurnMonitor` | `TurnMonitors/` | A domain's summed hostile-prism destruction reaches the Rampage target |
+| `RibcagePrismTurnMonitor` | `TurnMonitors/` | A domain's summed cage destruction reaches the Ribcage target |
+| `WildlifeKillTurnMonitor` | `TurnMonitors/` | A domain's summed creature kills reach the Wildlife Liberation target |
+| `DogFightPointTurnMonitor` | `TurnMonitors/` | A domain's summed gunnery points reach the Dog Fight target |
+| `SalvoPrismTurnMonitor` | `TurnMonitors/` | A domain's summed hostile-prism destruction reaches the Salvo target |
 
 All turn monitors live in `Assets/_Scripts/Controller/Arcade/TurnMonitors/`.
 

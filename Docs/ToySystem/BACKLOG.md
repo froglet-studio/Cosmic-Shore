@@ -132,8 +132,8 @@ reach on fine detail, bench/resume via the station, cross-session stroke progres
   replace `PaintingRunner.BenchOtherRunners`'s `FindObjectsByType` scan with a static
   registry (runs only on activation — rare); extract the ring fan-layout math shared with
   `SwapToySetCoordinator.Layout` into one helper; unify the LineRenderer config duplicated
-  by `ShapeDrawingManager.ConfigureLineRenderer` with `ToyFactory.CreateLine` (touches the
-  shape-drawing system, so it belongs in its own change).
+  by `ToyFactory.CreateLine` (`ShapeDrawingManager.ConfigureLineRenderer` was deleted
+  with C15; remaining LineRenderer config lives on the toy side).
 - **Reviewed and deliberately deferred (pre-PR review pass).** Verified findings fixed in that
   pass: closed-loop instant-complete, disengaged-milestone latch, milestone-trigger NRE during
   vessel swap (shared null-guarded `Toy.TryGetLocalVessel`), benched-gate forever-lerp, ridden
@@ -174,9 +174,9 @@ reach on fine detail, bench/resume via the station, cross-session stroke progres
   - *Phoenix preset fallback*: the flame fill's Ruby branch is dead (seed y-range never crosses
     the threshold) — all flames come out Gold; harmless (single recolour), fix with the next
     preset-content pass.
-- **Full experience (optional).** For a gameplay scene with ecology infra, the original
-  `ShapeDrawingManager` (preview cinematic, scoring, reveal, `EndShapeDetailHUD`) remains a
-  separate, score-bearing mode — the toy stays scoreless by design.
+- **Full experience (optional).** The scored `ShapeDrawingManager` minigame was
+  **deleted 2026-08-25** (C15). Recover from git if a scored gameplay scene is
+  wanted. The toy stays scoreless by design.
 
 ## Branch: conveyor ("Wanderway") polish
 
@@ -337,9 +337,9 @@ teardown). Everything below is remaining polish / not-yet-play-verified.
   crystal) — tune via the matrix, then bake into `Tadpole Fauna Charge.asset`.
 - **Not in the elemental contract yet**: Seaweed (`SpawnableCord`, not a `Flora`), drone
   populations (BoidManager path — now all spawn the base tadpole; needs its own config pass
-  for per-element identity). (Worms: the legacy trio was deleted; the rebuilt worm colony's
-  capital segments carry authored elemental hearts — Docs/ECOSYSTEM.md §23 — though the
-  colony doesn't yet roll the element × level spread.)
+  for per-element identity). (Worms: the legacy trio was deleted; every segment of the
+  rebuilt worm colony carries an authored elemental heart — Docs/ECOSYSTEM.md §23.8 — though
+  the colony doesn't yet roll the element × level spread.)
 - **Sparrow (and other vessels') HUD ability-icon bindings** for the shared upgrade-highlight
   system are unwired (Squirrel only); fill each view's `abilityIcons` in its prefab.
 - **Squirrel HUD tube/energy icons repaint colours per-frame**, so the upgrade highlight
