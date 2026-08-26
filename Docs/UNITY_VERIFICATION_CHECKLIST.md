@@ -30,6 +30,41 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Zero-icon vessels get their whole HUD root cleared (2026-08-26)
+
+`Docs/ABILITY_LOCKUP.md` § "A vessel with no bound icons has its slate cleared". Reported as "the
+Rhino is showing its old UI again". It was not a regression — the Rhino's cluster is genuinely
+**driven** (`RhinoVesselHUDView` writes `lineIcon`, `debuffIcon`, `crystalIcon`, `debuffTimerText`,
+`skimmerSizeIcon`, `slowedCountText` every frame) and the retire sweep was sparing it exactly as its
+third guard promises. It reads as the old UI because it is anchored at `(0.93..0.98, 0.04..0.13)` —
+the bottom-right corner the lockup row now occupies.
+
+`RetireLegacyHudContent` now skips the reference guard on any vessel that binds **no** ability icon
+(Rhino, Manta, Serpent — all `0/4`) and retires every drawing root-level child.
+
+**Accepted cost, by design call:** the Rhino stops showing its debuff timer, slowed count,
+skimmer-size ring, laser and crystal indicators. The view still writes to them — branches are
+switched off, not unwired — so restoring one is re-activating a branch. The rule reverses itself
+the day that vessel binds its first ability icon.
+
+**Verify in editor**
+
+- [ ] **Rhino**: four LOCKED cards bottom-right and nothing else on the HUD. `BoostContainer`,
+      `VesselImpactCooldown`, `TrailContainer`, `LaserTargeting`, `Crystal` and `ForceField` all
+      inactive in the hierarchy.
+- [ ] **Manta** and **Serpent**: same — locked row only.
+- [ ] **Squirrel / Sparrow / Dolphin / Scarab are UNAFFECTED.** They bind four icons, so the
+      reference guard still runs and their live readouts are still spared. This is the regression
+      to watch for: if a gauge or readout disappeared on one of these four, the icon-count split
+      is misfiring.
+- [ ] No `NullReferenceException` from `RhinoVesselHUDView` writing to a deactivated readout
+      (it null-guards every field, but confirm in the console).
+
+**Not verified:** nothing here was opened in Unity. Harness compiles;
+`check_conditional_compilation.py` passes.
+
+---
+
 ### 🔴 The icon-set switcher is a pure detector; the old glyph roots retire everywhere (2026-08-26)
 
 `Docs/ABILITY_LOCKUP.md` § "Retiring the old UI". The lockup already DREW each card's control

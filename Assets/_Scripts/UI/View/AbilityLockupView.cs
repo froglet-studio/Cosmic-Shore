@@ -210,7 +210,7 @@ namespace CosmicShore.UI
 
             DockElementFlowers();
 
-            RetireLegacyHudContent(row);
+            RetireLegacyHudContent(row, anyIconBound: icons.Count > 0);
 
             _built = true;
         }
@@ -537,10 +537,24 @@ namespace CosmicShore.UI
         /// drive this?" without hand-authoring the answer per vessel, which is the exact
         /// duplication this style exists to remove.</para>
         /// </summary>
-        void RetireLegacyHudContent(RectTransform row)
+        void RetireLegacyHudContent(RectTransform row, bool anyIconBound)
         {
             var self = NormaliseHudRoot();
-            var referenced = CollectReferencedObjects();
+
+            // A vessel that binds NO ability icon has no designed row: all four cards render LOCKED,
+            // and everything else at root level is, by definition, the HUD it had before the lockup.
+            // On those vessels the reference guard answers the wrong question - it asks "is this
+            // driven?" when what matters is "is this the old UI?", and on the Rhino the answer is
+            // BOTH. Its status cluster is genuinely driven (six readouts the view writes every
+            // frame) AND anchored in the bottom-right corner the row now occupies, so sparing it
+            // leaves two visual languages stacked in one seat. The slate is cleared instead.
+            //
+            // Stated cost, because it is a real one: the Rhino's debuff timer, slowed count,
+            // skimmer-size ring, laser and crystal indicators stop being shown until they are
+            // re-homed into the lockup or re-authored. Manta and Serpent are in the same position
+            // today. The view keeps writing to them - they are switched off, not unwired - so
+            // restoring one is re-activating a branch, not rebuilding a readout.
+            var referenced = anyIconBound ? CollectReferencedObjects() : null;
 
             for (int i = self.childCount - 1; i >= 0; i--)
             {
@@ -548,7 +562,7 @@ namespace CosmicShore.UI
                 if (!child || child == row) continue;
                 if (!child.gameObject.activeSelf) continue;
                 if (!child.GetComponentInChildren<Graphic>(true)) continue;   // logic, not UI
-                if (BranchIsReferenced(child, referenced)) continue;          // something drives it
+                if (referenced != null && BranchIsReferenced(child, referenced)) continue;
 
                 child.gameObject.SetActive(false);
             }

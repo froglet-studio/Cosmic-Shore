@@ -353,6 +353,32 @@ assertion about what a HUD contains has to be read from the **vessel**, not the 
 the Scarab's name-override misread: both were confident claims about assets, derived from the wrong
 file.
 
+### A vessel with no bound icons has its slate cleared
+
+The reference guard asks *"is this driven?"* as a proxy for *"is this still wanted?"*. On a vessel
+that has adopted the row, that proxy is right. On one that has not, it is answering the wrong
+question — and the Rhino is the case where the honest answer to both is **yes**: its status cluster
+is genuinely driven *and* it is the old UI, sitting in the row's own corner.
+
+So the sweep splits on one fact: **does this vessel bind any ability icon at all?**
+
+- **Any icon bound** (Squirrel, Sparrow, Dolphin, Scarab) — the reference guard applies unchanged. A
+  live readout is spared; a leftover is retired.
+- **No icon bound** (Rhino, Manta, Serpent — all `0/4`) — every drawing root-level child is retired.
+  All four cards render LOCKED, so there is no designed row for anything at root to belong to, and
+  whatever is there is the pre-lockup HUD by definition.
+
+**The cost is real and is accepted deliberately** (design call, 2026-08-26): the Rhino stops showing
+its debuff timer, slowed count, skimmer-size ring, laser and crystal indicators until they are
+re-homed into the lockup or re-authored. `RhinoVesselHUDView` still writes to all of them — the
+branches are switched *off*, not unwired — so restoring one is re-activating a branch, not
+rebuilding a readout. The rule reverses itself automatically: the day the Rhino binds its first
+ability icon, the reference guard takes over again.
+
+*The lockup never claimed status readouts* — it replaced ability icons, gauges, press glows, upgrade
+badges and device glyphs. Clearing them here is not the lockup extending its remit; it is a vessel
+with no designed row having nothing at root worth keeping in front of one.
+
 ### The switcher's own reference was the last thing propping the old glyphs up
 
 The sweep originally consulted the icon-set switcher too, so that a HUD with a live switcher kept
