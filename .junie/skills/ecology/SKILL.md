@@ -350,6 +350,45 @@ what the carve-out silently broke — see the traps below.
   the heaviest species can freeze the cell while the others are still building, and the ladder
   is describing one colony rather than the forest (`Docs/ECOSYSTEM.md` §37.11).
 
+- **A value written in WORLD scale is only correct while the parent chain it was divided
+  against is FINAL — so re-apply it after anything that rewrites that chain, and never
+  conditionally.** `LifeFormCrystal` writes a heart in world units by dividing out its parent's
+  `lossyScale`, and `Fauna.AssignLineage` runs `ProvisionHeart` (sizes the heart) BEFORE
+  `ApplyVariantTuning` (rewrites the root scale from `BaseBodyScale`). Until Aug 2026 the
+  corrective re-size was done by `Fauna.SetLevel`, as an incidental side-effect of seeding the
+  spawn level — so retiring levels silently gave every creature with an authored body scale a
+  heart of `authored × BaseBodyScale` (0.4 and 0.7 on the shipped tadpoles: a 2.5× and 1.43× cut
+  to BOTH the collect reward and the live domain fauna buff, with nothing reporting it). There is
+  a SECOND inversion one level up — the Boid/LightFauna path runs `Initialize` (heart sized)
+  before `SpawnFaunaBanded` calls `AssignLineage` (body scaled) — which is why the fix belongs at
+  the END of `AssignLineage` rather than inside `ApplyVariantTuning`. **A CONDITIONAL re-apply is
+  wrong**: the case that breaks is the variant that authors NO size of its own, which is exactly
+  the case a `if (authored > 0)` guard skips.
+- **When you delete a mechanism, ask what it was incidentally DOING for someone else.** The rule
+  above generalises past hearts: a call whose stated purpose is X ("seed the spawn level") can be
+  the only caller of Y ("re-establish the heart's world scale"), and deleting X takes Y with it
+  silently. Before removing a call, grep what it invokes and ask of each callee whether anything
+  else invokes it on that path. This is the mirror of §2's "find the PRODUCER" rule — here you are
+  looking for the CONSUMER you are about to strand.
+- **A heart authored into a DISABLED variant block is never read.** `CellLifeSpawnerBase` and
+  `Fauna.AssignLineage` apply a variant tuning block only when `Enabled` is true, so a per-element
+  value written into a block with `Enabled: 0` is invisible from every direction: the asset shows
+  a perfectly good number, the number is never wrong, and the lifeform silently renders the
+  platform default. Five flora species and every un-migrated fauna shipped with `Enabled: 0` on
+  three of their four elements, so this is the common case rather than the edge. Any tool that
+  authors into a `Variant` block must flip `Enabled` with it — and a zero-initialised block is
+  safe to enable, because every other field's initializer is a keep-the-prefab sentinel.
+- **A SIZE that gameplay reads is a REWARD, and the band needs a ceiling with a margin.** A
+  lifeform heart's world scale is read in five places (collect reward, live domain fauna buff,
+  pickup trigger radius, vacuum speed, capture flourish); the reward is
+  `min(scale × levelPerUnitScale, maxLevelGainPerCrystal)`, so it SATURATES. Past that point two
+  visibly different hearts pay the same — a size the player can see and a reward they cannot.
+  When a band is authored rather than uniform, solve its scale constant so the LARGEST member
+  lands on the ceiling: that makes clipping structurally impossible instead of merely unlikely,
+  and it uses the whole band. Do NOT answer an overshoot by retuning `levelPerUnitScale` — it is
+  shared with every non-lifeform elemental crystal (the Wanderway conveyor, Dog Fight's arena
+  scatter). Compress the mapping instead.
+
 ## 3. Implement (emergence first, surgically)
 - **Favor emergence:** never hard-code an outcome that should emerge from the fundamentals
   (Domain · Mass/prisms · Cells · Elementals · Flora & Fauna · Vessels) interacting. A scripted

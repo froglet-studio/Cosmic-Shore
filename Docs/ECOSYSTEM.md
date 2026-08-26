@@ -263,6 +263,18 @@ embedded heart is never a pickup — skim-collect and skimmer vacuum both gate o
 Collider cost: **+1 active SphereCollider per live lifeform heart** (fauna bounded by
 `MaxLivePopulation`; flora by the profile's spawn counts).
 
+> **⚠ Superseded by §40 (Aug 2026): there is no LEVEL.** Everything above and below about
+> `.Level`, `MaxLifeformLevel`, the 20-variant matrix, `InitialLevel`, `BodyScalePerLevel`,
+> `LevelGrowSeconds` and the level→crystal curve is the historical record. **A lifeform is its
+> species and its ELEMENT — four elemental variations, and nothing else** — and each element
+> states its own heart size (`FaunaVariantTuning`/`FloraVariantTuning.HeartWorldScale`), sized
+> from that lifeform's measured body. The ELEMENT half of the contract is untouched and is what
+> survives: one base prefab, four data-defined variants, provisioned at `AssignLineage`.
+>
+> *(The intermediate ruling, kept as the record: **§33 (Aug 2026)** made level EARNED rather than
+> rolled — born at level 1, a plant levelling per reproduction and a creature per `FeedsPerLevel`
+> feeds, with the heart on one curve keyed on level alone.)*
+
 **The lifeform elemental contract (element × level).** Mirroring the vessel contract,
 every lifeform answers `ILifeFormEntity.Element` and `.Level` (1..`Fauna.MaxLifeformLevel`
 = 5): **one base prefab, 20 data-defined variants** (4 elements × 5 levels) instead of a
@@ -277,18 +289,6 @@ re-syncs body prisms every `Update` (`NotifyBodyPrismsMoved` / `SyncBodyPrismsTo
 `GrowToScale` does **not** notify separately. The heart grows a step per
 level so a higher-level creature drops a **bigger** elemental powerup on death (mass
 rewarded, still conserved).
-
-> **⚠ Superseded by §40 (Aug 2026): there is no LEVEL.** Everything above and below about
-> `.Level`, `MaxLifeformLevel`, the 20-variant matrix, `InitialLevel`, `BodyScalePerLevel`,
-> `LevelGrowSeconds` and the level→crystal curve is the historical record. **A lifeform is its
-> species and its ELEMENT — four elemental variations, and nothing else** — and each element
-> states its own heart size (`FaunaVariantTuning`/`FloraVariantTuning.HeartWorldScale`), sized
-> from that lifeform's measured body. The ELEMENT half of the contract is untouched and is what
-> survives: one base prefab, four data-defined variants, provisioned at `AssignLineage`.
->
-> *(The intermediate ruling, kept as the record: **§33 (Aug 2026)** made level EARNED rather than
-> rolled — born at level 1, a plant levelling per reproduction and a creature per `FeedsPerLevel`
-> feeds, with the heart on one curve keyed on level alone.)*
 
 **Who actually spawns the four** *(historical: "the 20", before §40)*. A config authors ONE
 point of the matrix, so the live world only showed the whole set once cells were allowed to

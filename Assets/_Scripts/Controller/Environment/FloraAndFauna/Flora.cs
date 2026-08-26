@@ -426,6 +426,15 @@ namespace CosmicShore.Gameplay
         /// cooldown and the maturity fraction — so it can accelerate a population, never
         /// exceed the ceiling the cell authored for it. A species that does not reproduce
         /// (GrowthPerOffspring 0) declines, because there is nothing to nourish.</para>
+        ///
+        /// <para>Unlike the LEVEL-UP it replaced, this has no ceiling of its OWN — levelling
+        /// stopped at 5 and nourishing does not stop. What bounds the RATE is upstream and
+        /// downstream of here rather than in it, so it is worth naming: the jouster must
+        /// re-enter the heart's trigger and can only land one strike per crystal per 0.5 s
+        /// (<c>VesselImpactor</c>'s per-crystal latch), and a plant still cannot birth faster
+        /// than its own <c>ReproductionCooldownSeconds</c>. Banked credit above that is not
+        /// lost and not compounded — a birth spends the quota back to zero, so a shepherd
+        /// who parks on one plant gets that plant's cooldown, not a burst.</para>
         /// </summary>
         public override bool Nourish()
         {

@@ -844,6 +844,33 @@ per task; it is cheap.
   *fallback / fall back / legacy path / degrades to* and re-read each hit
   against what the code now does.
 
+### Technique: MEASURE a prefab's real size offline (transform tree + nested instances + FBX bounds)
+
+"How big is this thing?" is answerable without Unity, and the naive version is wrong by ~7x on
+exactly the prefabs you care about. Three things have to compose or the number is fiction:
+
+1. **The transform tree**, walked DOWN from the root composing
+   `world = parentPos + parentScale ⊗ localPos`. Walking UP and accumulating is the tempting
+   version and it multiplies in the wrong order. Rotation can be ignored deliberately — it cannot
+   change a node's ORIGIN distance from the root and can only redistribute an extent between axes,
+   so the estimate stays a bound and stays comparable across assets.
+2. **Nested prefab instances**, which are `!u!1001` blocks and NOT `!u!4` documents — their pose
+   lives as `m_LocalPosition.*` / `m_LocalScale.*` rows inside `m_Modifications` (walk the LINES;
+   the rows wrap, so a one-line regex matches zero of them). Their CONTENTS are not in the file at
+   all: recurse into `m_SourcePrefab`'s guid and measure that prefab too, scaled by the instance's
+   pose. Skip this and a prefab whose whole body is one nested instance measures as ZERO — which
+   is not a small error you would notice as an error, it is a plausible small number.
+3. **Model mesh bounds**, which no transform records. A rigged creature measures fine from
+   transforms alone (its bones ARE transforms); a creature drawn from one FBX mesh measures at a
+   seventh of its size. Resolve `MeshFilter`/`SkinnedMeshRenderer` → `m_Mesh`'s guid → the FBX,
+   read `Objects/Geometry/Vertices` (§4.8), and **normalize by `UnitScaleFactor`** — raw extents
+   from two FBX files are not comparable, and Unity's importer also applies the cm→m divide.
+
+A node's own extent is then `max(what it SCALES, what it DRAWS, what its nested source CONTAINS)`.
+Validate against something independent before trusting it: an authored collider, a documented
+figure, or simply the ORDERING (if your measurement says the tadpole is bigger than the shark, the
+walk is broken, and ordering catches that where absolute values do not).
+
 ### Technique: resolve a `.shadergraph` MERGE by re-running the wirers, never by hand
 
 Origin: the dither branch vs the Sparrow turret branch (2026-08-11). Both wired nodes
