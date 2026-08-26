@@ -135,8 +135,9 @@ namespace CosmicShore.ScriptableObjects
         [Header("Preview pose (drives the baked image)")]
         public float PreviewYaw = -28f;
         public float PreviewPitch = 16f;
-        [Tooltip("1 = the model exactly fills the frame. Above 1 pushes the camera back.")]
-        [Min(0.2f)] public float PreviewPadding = 1.25f;
+        [Tooltip("1 = the subject exactly fills the frame; above 1 pushes the camera back. The " +
+                 "fit is solved from the bounds' corners, so 1 really does mean edge to edge.")]
+        [Min(1f)] public float PreviewPadding = 1.05f;
 
         [Tooltip("Bake the image as a flat unlit silhouette instead of with the source's own " +
                  "materials. Gameplay prism and crystal shaders read globals that do not exist " +

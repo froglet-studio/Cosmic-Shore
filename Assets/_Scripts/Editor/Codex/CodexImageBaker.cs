@@ -230,17 +230,47 @@ namespace CosmicShore.Editor.Codex
             return result;
         }
 
+        /// <summary>
+        /// Frame the subject so it FILLS the square bake, then back off by the entry's padding.
+        ///
+        /// <para>Solved from the bounds' eight corners rather than from
+        /// <c>extents.magnitude</c>. That half-diagonal is the radius of the sphere the box fits
+        /// inside, which for anything that is not a sphere is far larger than the box — it left
+        /// every icon sitting small in a wide margin, worst for the long thin subjects (a plant, a
+        /// worm) this codex is mostly made of.</para>
+        /// </summary>
         static void FrameCamera(Camera camera, Bounds bounds, CodexEntry entry)
         {
             var rotation = Quaternion.Euler(entry.PreviewPitch, entry.PreviewYaw, 0f);
+            var toCamera = Quaternion.Inverse(rotation);
+
+            // The bake target is square by construction, and this runs before BeginPreview sets
+            // the camera's aspect, so the horizontal half-angle equals the vertical one.
+            float tangent = Mathf.Tan(Mathf.Deg2Rad * FieldOfView * 0.5f);
             float radius = Mathf.Max(0.001f, bounds.extents.magnitude);
-            float distance = radius * Mathf.Max(0.2f, entry.PreviewPadding) /
-                             Mathf.Sin(Mathf.Deg2Rad * FieldOfView * 0.5f);
+            float needed = 0.001f;
+
+            for (int corner = 0; corner < 8; corner++)
+            {
+                var offset = new Vector3(
+                    (corner & 1) == 0 ? -bounds.extents.x : bounds.extents.x,
+                    (corner & 2) == 0 ? -bounds.extents.y : bounds.extents.y,
+                    (corner & 4) == 0 ? -bounds.extents.z : bounds.extents.z);
+
+                // Camera-space offset from the point the camera aims at. A corner is inside the
+                // frustum when |x| and |y| are within (distance + z) * tangent, so each corner
+                // sets its own minimum distance.
+                var local = toCamera * offset;
+                needed = Mathf.Max(needed, Mathf.Abs(local.y) / tangent - local.z);
+                needed = Mathf.Max(needed, Mathf.Abs(local.x) / tangent - local.z);
+            }
+
+            float distance = needed * Mathf.Max(1f, entry.PreviewPadding);
 
             camera.transform.rotation = rotation;
             camera.transform.position = bounds.center - rotation * Vector3.forward * distance;
-            camera.nearClipPlane = Mathf.Max(0.01f, distance - radius * 4f);
-            camera.farClipPlane = distance + radius * 8f;
+            camera.nearClipPlane = Mathf.Max(0.01f, distance - radius * 2f);
+            camera.farClipPlane = distance + radius * 4f;
         }
 
         // ── Model harvest ────────────────────────────────────────────────────────
@@ -414,9 +444,11 @@ namespace CosmicShore.Editor.Codex
         const int FloraPreviewSeed = 12345;
 
         /// <summary>
-        /// Which domain a codex plant wears. Jade rather than the neutral <c>Domains.Blue</c>:
-        /// every prism in the game belongs to a domain, and the neutral sentinel resolves to grey,
-        /// which reads as unfinished rather than as impartial.
+        /// The domain a previewed plant's prisms are tagged with. It decides the mesh's submesh
+        /// split, NOT the colour: a codex plant is painted neutral, because in this project colour
+        /// means DOMAIN — who owns it — and an encyclopedia page is nobody's. The lava lamp paints
+        /// its bench icons in the player's domain for the opposite reason: there, you are about to
+        /// release one.
         /// </summary>
         const Domains FloraPreviewDomain = Domains.Jade;
 
@@ -444,13 +476,11 @@ namespace CosmicShore.Editor.Codex
             root.AddComponent<MeshFilter>().sharedMesh = miniature.Mesh;
             temporaries.Add(miniature.Mesh);   // BuildFromLays hands ownership to the caller
 
-            // The real prism material is a gameplay graph that reads per-frame globals and renders
-            // black here, so the icon takes the DOMAIN'S COLOUR on a lit material instead: the
-            // same read the lava lamp falls back to when no theme is loaded, and shaded, so the
-            // plant's form survives.
-            var material = flat
-                ? BuildFlatMaterial()
-                : BuildTintedMaterial(ToyFactory.DomainAccentColor(null, FloraPreviewDomain));
+            // Neutral and LIT. The real prism material is a gameplay graph that reads per-frame
+            // globals and renders black here, so it cannot be used; a flat unlit fill would throw
+            // away the branching that makes a plant legible; and a domain colour would say the
+            // page belongs to a team.
+            var material = BuildFlatMaterial();
             temporaries.Add(material);
 
             var materials = new Material[Mathf.Max(1, miniature.SubmeshDomains.Length)];

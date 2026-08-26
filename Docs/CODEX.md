@@ -81,7 +81,10 @@ Three subjects, picked in order:
    that rule in the abstract (no prism, no spindle, no GameObject, no cell) and reports where
    prisms would land; the poses become one mesh through `CellMiniatureBuilder.BuildFromLays`. This
    is the same answer the lava lamp's Lifeform bench already reached — see `FloraIconBuilder` —
-   reached through the same two calls rather than a second copy of it.
+   reached through the same two calls rather than a second copy of it. Painted **neutral and lit**:
+   in this project colour means DOMAIN, i.e. who owns it, and an encyclopedia page is nobody's.
+   (The bench paints its icons in the player's domain for the opposite reason — there, you are
+   about to release one.)
 2. **Fauna are harvested.** Unlike flora they *are* authored in place: a shark's wings, belly and
    danger rods sit at real offsets on the prefab, so its meshes are the creature. Branches named
    `trail` / `vfx` / `pip` / `explosion` / `particle` are skipped — the same filter the bench's
@@ -102,10 +105,16 @@ Two more things worth knowing:
   read global uniforms that only exist inside a running frame. The baker measures coverage and,
   when a render comes back essentially empty, retries as a shaded neutral silhouette and says so in
   the status line. Tick **Flat silhouette** on those entries to make the choice explicit rather
-  than relying on the fallback. Grown flora never hit this: they are painted with a lit material in
-  the domain's colour, which is the read the lava lamp falls back to when no theme is loaded.
+  than relying on the fallback. Grown flora never hit this — they are painted with a material the
+  baker owns.
+- **The subject fills the frame.** Framing is solved from the bounds' eight corners, not from
+  `extents.magnitude` — that half-diagonal is the radius of the sphere the box fits inside, which
+  for anything non-spherical is far larger than the box, and it left every icon small inside a wide
+  margin (worst for the long thin subjects this codex is mostly made of). `Padding` 1 therefore
+  really does mean edge to edge.
 
-Per-entry **Yaw / Pitch / Padding** re-pose the camera; re-bake to apply.
+Per-entry **Yaw / Pitch / Padding** re-pose the camera; **Reset pose** returns to the defaults.
+Re-bake to apply either.
 
 ## 5. Discovery
 

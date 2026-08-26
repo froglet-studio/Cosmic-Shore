@@ -16,17 +16,23 @@ namespace CosmicShore.Editor.Codex
     /// <para>It does three things. <b>Scan &amp; Merge</b> walks the project and folds every
     /// ethirion (crystal) and every ecology species (flora and fauna) into
     /// <c>Assets/Resources/Codex.asset</c>, harvesting the facts it can re-derive and leaving
-    /// authored prose alone. <b>Bake</b> renders each entry's hero image to a transparent PNG.
-    /// And the panel on the right edits any entry by hand — add, modify, delete — because a
-    /// generated encyclopedia with no room for a writer is a spreadsheet.</para>
+    /// authored prose alone. <b>Bake</b> renders each entry's hero image. And the panel on the
+    /// right edits any entry by hand — add, modify, delete — because a generated encyclopedia
+    /// with no room for a writer is a spreadsheet.</para>
     ///
     /// <para>The runtime UI reads the same asset through <c>CodexSO.Load()</c>; there is no second
-    /// data path and nothing to wire per scene.</para>
+    /// data path and nothing to wire per scene. Nothing here pushes: every file written is
+    /// recorded on the tool ledger, so <b>FrogletTools &gt; Build &gt; Pending Tool Changes</b>
+    /// lists it and it is committed by hand.</para>
     /// </summary>
     public partial class CodexWindow : EditorWindow
     {
         public const string ToolName = "Ethirion & Ecology Codex";
         const string AssetPath = "Assets/Resources/" + CodexSO.ResourcePath + ".asset";
+
+        const float SectionHeaderHeight = 24f;
+        const float ListWidth = 320f;
+        const float RowHeight = 46f;
 
         CodexSO _codex;
         string _selectedId;
@@ -39,6 +45,8 @@ namespace CosmicShore.Editor.Codex
         CodexHarvestReport _lastReport;
         string _status = string.Empty;
         bool _statusIsError;
+
+        readonly HashSet<CodexKingdom> _collapsed = new();
 
         /// <summary>
         /// Queued mutation. IMGUI is mid-layout while the buttons are drawn, so adding to or
@@ -56,11 +64,13 @@ namespace CosmicShore.Editor.Codex
         static void Open()
         {
             var window = GetWindow<CodexWindow>("Codex");
-            window.minSize = new Vector2(920f, 560f);
+            window.minSize = new Vector2(980f, 620f);
             window.Show();
         }
 
         void OnEnable() => _codex = LoadOrCreate();
+
+        static Color ToolAccent => FrogletEditorPalette.ColorFor(FrogletToolCategory.Interface);
 
         static CodexSO LoadOrCreate()
         {
@@ -92,9 +102,10 @@ namespace CosmicShore.Editor.Codex
             FrogletEditorPalette.Banner(
                 "Ethirion & Ecology Codex",
                 "Every crystal and every lifeform, as the in-game encyclopedia reads them.",
-                FrogletEditorPalette.ColorFor(FrogletToolCategory.Interface));
+                ToolAccent);
 
-            DrawToolbar();
+            DrawSearchBar();
+            DrawActionStrip();
             DrawStatus();
 
             using (new EditorGUILayout.HorizontalScope())
@@ -103,6 +114,8 @@ namespace CosmicShore.Editor.Codex
                 DrawDetail();
             }
 
+            DrawFooter();
+
             if (_deferred == null) return;
             var action = _deferred;
             _deferred = null;
@@ -110,64 +123,168 @@ namespace CosmicShore.Editor.Codex
             Repaint();
         }
 
-        void DrawToolbar()
+        // ── Chrome ───────────────────────────────────────────────────────────────
+
+        /// <summary>
+        /// A section bar in the house style: tinted ground, accent stripe, accent-coloured label
+        /// and an optional count pill. Returns true when it was clicked.
+        /// </summary>
+        static bool SectionBar(string label, Color accent, string pill = null, bool clickable = false)
+        {
+            var a = FrogletEditorPalette.Adapt(accent);
+            var bar = GUILayoutUtility.GetRect(0f, SectionHeaderHeight, GUILayout.ExpandWidth(true));
+
+            if (Event.current.type == EventType.Repaint)
+            {
+                FrogletEditorPalette.DrawRect(bar, a.WithAlpha(0.14f));
+                FrogletEditorPalette.DrawAccentStripe(bar, a, 4f);
+            }
+
+            GUI.Label(new Rect(bar.x + 13f, bar.y, bar.width - 70f, bar.height), label,
+                new GUIStyle(FrogletEditorPalette.SectionLabel) { normal = { textColor = a } });
+
+            if (!string.IsNullOrEmpty(pill))
+                FrogletEditorPalette.StatusPill(
+                    new Rect(bar.xMax - 54f, bar.y + 4f, 46f, bar.height - 8f), pill, accent);
+
+            if (!clickable) return false;
+
+            EditorGUIUtility.AddCursorRect(bar, MouseCursor.Link);
+            return GUI.Button(bar, GUIContent.none, GUIStyle.none);
+        }
+
+        void DrawSearchBar()
         {
             using (new EditorGUILayout.HorizontalScope(EditorStyles.toolbar))
             {
-                if (GUILayout.Button(new GUIContent("Scan & Merge",
-                        "Re-read the project. Adds new entries, refreshes harvested facts, and " +
-                        "never touches authored prose, ordering, discovery or the preview pose."),
-                        EditorStyles.toolbarButton, GUILayout.Width(110f)))
-                    _deferred = ScanAndMerge;
-
-                if (GUILayout.Button(new GUIContent("Bake Missing",
-                        "Render an image for every entry that has none."),
-                        EditorStyles.toolbarButton, GUILayout.Width(95f)))
-                    _deferred = () => BakeImages(onlyMissing: true);
-
-                if (GUILayout.Button(new GUIContent("Bake All",
-                        "Re-render every entry's image. Overwrites existing PNGs."),
-                        EditorStyles.toolbarButton, GUILayout.Width(75f)))
-                    _deferred = () => BakeImages(onlyMissing: false);
+                GUILayout.Label("Search", EditorStyles.miniLabel, GUILayout.Width(44f));
+                _search = GUILayout.TextField(_search, EditorStyles.toolbarSearchField,
+                    GUILayout.MinWidth(160f));
+                if (!string.IsNullOrEmpty(_search) &&
+                    GUILayout.Button("x", EditorStyles.toolbarButton, GUILayout.Width(20f)))
+                {
+                    _search = string.Empty;
+                    GUI.FocusControl(null);
+                }
 
                 GUILayout.Space(8f);
-                GUILayout.Label("Size", EditorStyles.miniLabel, GUILayout.Width(28f));
-                int sizeIndex = Mathf.Max(0, Array.IndexOf(BakeSizes, _bakeSize));
-                _bakeSize = BakeSizes[EditorGUILayout.Popup(sizeIndex,
-                    BakeSizes.Select(s => $"{s}px").ToArray(),
-                    EditorStyles.toolbarPopup, GUILayout.Width(70f))];
-
-                if (GUILayout.Button(new GUIContent("Validate",
-                        "Check ids, names and images. Reports only — nothing is committed."),
-                        EditorStyles.toolbarButton, GUILayout.Width(70f)))
-                    _deferred = RunValidation;
+                _kingdomFilter = EditorGUILayout.Popup(_kingdomFilter, KingdomFilters,
+                    EditorStyles.toolbarPopup, GUILayout.Width(90f));
 
                 GUILayout.FlexibleSpace();
 
-                _kingdomFilter = EditorGUILayout.Popup(_kingdomFilter, KingdomFilters,
-                    EditorStyles.toolbarPopup, GUILayout.Width(90f));
-                _search = GUILayout.TextField(_search, EditorStyles.toolbarSearchField, GUILayout.Width(180f));
+                if (GUILayout.Button("Expand all", EditorStyles.toolbarButton, GUILayout.Width(72f)))
+                    _collapsed.Clear();
+                if (GUILayout.Button("Collapse all", EditorStyles.toolbarButton, GUILayout.Width(80f)))
+                    foreach (CodexKingdom kingdom in Enum.GetValues(typeof(CodexKingdom)))
+                        _collapsed.Add(kingdom);
 
-                if (GUILayout.Button("Select Asset", EditorStyles.toolbarButton, GUILayout.Width(90f)))
+                if (GUILayout.Button("Select Asset", EditorStyles.toolbarButton, GUILayout.Width(88f)))
                     Selection.activeObject = _codex;
             }
+        }
+
+        /// <summary>The primary actions, as coloured buttons rather than toolbar text — these are
+        /// the four things anyone opens this window to do.</summary>
+        void DrawActionStrip()
+        {
+            GUILayout.Space(6f);
+            using (new EditorGUILayout.HorizontalScope())
+            {
+                GUILayout.Space(4f);
+
+                if (FrogletEditorPalette.ColorButton("Scan & Merge", FrogletEditorPalette.Info, 132f, 26f,
+                        "Re-read the project. Adds new entries and refreshes harvested facts; never " +
+                        "touches authored prose, ordering, discovery or the preview pose."))
+                    _deferred = ScanAndMerge;
+
+                if (FrogletEditorPalette.ColorButton("Bake Missing", FrogletEditorPalette.Cyan, 120f, 26f,
+                        "Render an image for every entry that has none."))
+                    _deferred = () => BakeImages(onlyMissing: true);
+
+                if (FrogletEditorPalette.ColorButton("Bake All", FrogletEditorPalette.Violet, 100f, 26f,
+                        "Re-render every entry's image. Overwrites existing PNGs.", outline: true))
+                    _deferred = () => BakeImages(onlyMissing: false);
+
+                if (FrogletEditorPalette.ColorButton("Validate", FrogletEditorPalette.Ok, 96f, 26f,
+                        "Check ids, names and images. Reports only — nothing is committed.",
+                        outline: true))
+                    _deferred = RunValidation;
+
+                GUILayout.Space(10f);
+                GUILayout.Label("Bake size", FrogletEditorPalette.CardBody, GUILayout.Width(60f));
+                int sizeIndex = Mathf.Max(0, Array.IndexOf(BakeSizes, _bakeSize));
+                _bakeSize = BakeSizes[EditorGUILayout.Popup(sizeIndex,
+                    BakeSizes.Select(s => $"{s} px").ToArray(), GUILayout.Width(78f))];
+
+                GUILayout.FlexibleSpace();
+            }
+            GUILayout.Space(4f);
         }
 
         void DrawStatus()
         {
             if (string.IsNullOrEmpty(_status)) return;
-            EditorGUILayout.HelpBox(_status, _statusIsError ? MessageType.Error : MessageType.Info);
 
-            if (_lastReport == null || _lastReport.Warnings.Count == 0) return;
-            EditorGUILayout.HelpBox(
-                "Warnings:\n• " + string.Join("\n• ", _lastReport.Warnings), MessageType.Warning);
+            var accent = _statusIsError ? FrogletEditorPalette.Error : FrogletEditorPalette.Ok;
+
+            var card = EditorGUILayout.BeginVertical(GUIStyle.none);
+            if (Event.current.type == EventType.Repaint && card.height > 1f)
+            {
+                FrogletEditorPalette.DrawCard(card, FrogletEditorPalette.Adapt(accent).WithAlpha(0.10f),
+                    FrogletEditorPalette.Adapt(accent).WithAlpha(0.55f));
+                FrogletEditorPalette.DrawAccentStripe(card, accent, 4f);
+            }
+
+            GUILayout.Space(5f);
+            using (new EditorGUILayout.HorizontalScope())
+            {
+                GUILayout.Space(13f);
+                var pill = GUILayoutUtility.GetRect(64f, 16f, GUILayout.Width(64f), GUILayout.Height(16f));
+                FrogletEditorPalette.StatusPill(pill, _statusIsError ? "ISSUES" : "DONE", accent);
+
+                GUILayout.Space(6f);
+                GUILayout.Label(_status, FrogletEditorPalette.CardBodyWrapped);
+
+                if (GUILayout.Button("✕", EditorStyles.miniLabel, GUILayout.Width(18f)))
+                    _deferred = () => { _status = string.Empty; _lastReport = null; };
+                GUILayout.Space(6f);
+            }
+            GUILayout.Space(5f);
+            EditorGUILayout.EndVertical();
+
+            if (_lastReport is { Warnings: { Count: > 0 } })
+                EditorGUILayout.HelpBox(
+                    "Warnings:\n• " + string.Join("\n• ", _lastReport.Warnings), MessageType.Warning);
+
+            GUILayout.Space(4f);
+        }
+
+        void DrawFooter()
+        {
+            var all = _codex.AllEntries().Where(e => e != null).ToList();
+            int illustrated = all.Count(e => e.Image);
+
+            using (new EditorGUILayout.HorizontalScope(EditorStyles.toolbar))
+            {
+                GUILayout.Label(
+                    $"{all.Count} entries  ·  {_codex.Ethirions.Count} ethirions  ·  " +
+                    $"{all.Count(e => e.Kingdom == CodexKingdom.Flora)} flora  ·  " +
+                    $"{all.Count(e => e.Kingdom == CodexKingdom.Fauna)} fauna  ·  " +
+                    $"{illustrated}/{all.Count} illustrated",
+                    EditorStyles.miniLabel);
+
+                GUILayout.FlexibleSpace();
+                GUILayout.Label("Written files are recorded for FrogletTools ▸ Build ▸ Pending Tool Changes",
+                    EditorStyles.miniLabel);
+            }
         }
 
         // ── List ─────────────────────────────────────────────────────────────────
 
         void DrawList()
         {
-            using (new EditorGUILayout.VerticalScope(GUILayout.Width(300f)))
+            using (new EditorGUILayout.VerticalScope(GUILayout.Width(ListWidth)))
             {
                 var entries = FilteredEntries();
 
@@ -176,16 +293,32 @@ namespace CosmicShore.Editor.Codex
                 {
                     _listScroll = scroll.scrollPosition;
 
-                    CodexKingdom? heading = null;
-                    foreach (var entry in entries)
+                    foreach (CodexKingdom kingdom in Enum.GetValues(typeof(CodexKingdom)))
                     {
-                        if (heading != entry.Kingdom)
+                        var section = entries.Where(e => e.Kingdom == kingdom).ToList();
+                        // An empty kingdom still shows its bar under "All" with no search — that
+                        // is information. Under a filter or a search it is just noise.
+                        if (section.Count == 0 &&
+                            (_kingdomFilter > 0 || !string.IsNullOrWhiteSpace(_search))) continue;
+
+                        bool collapsed = _collapsed.Contains(kingdom);
+                        var accent = AccentFor(kingdom);
+
+                        if (SectionBar($"{(collapsed ? "▸" : "▾")}  {HeadingFor(kingdom)}", accent,
+                                section.Count.ToString(), clickable: true))
                         {
-                            heading = entry.Kingdom;
-                            GUILayout.Space(4f);
-                            GUILayout.Label(HeadingFor(entry.Kingdom), FrogletEditorPalette.SectionLabel);
+                            var captured = kingdom;
+                            _deferred = () =>
+                            {
+                                if (!_collapsed.Remove(captured)) _collapsed.Add(captured);
+                            };
                         }
-                        DrawListRow(entry);
+
+                        if (collapsed) { GUILayout.Space(3f); continue; }
+
+                        GUILayout.Space(2f);
+                        foreach (var entry in section) DrawListRow(entry, accent);
+                        GUILayout.Space(6f);
                     }
 
                     if (entries.Count == 0)
@@ -200,63 +333,78 @@ namespace CosmicShore.Editor.Codex
             }
         }
 
-        void DrawListRow(CodexEntry entry)
+        void DrawListRow(CodexEntry entry, Color kingdomAccent)
         {
             bool selected = entry.Id == _selectedId;
-            var accent = entry.ResolveAccent(AccentFor(entry.Kingdom));
+            var accent = FrogletEditorPalette.Adapt(entry.ResolveAccent(kingdomAccent));
 
-            var row = GUILayoutUtility.GetRect(0f, 40f, GUILayout.ExpandWidth(true));
+            var row = GUILayoutUtility.GetRect(0f, RowHeight, GUILayout.ExpandWidth(true));
+            bool hover = row.Contains(Event.current.mousePosition);
+
             if (Event.current.type == EventType.Repaint)
             {
-                FrogletEditorPalette.DrawRect(row, selected
-                    ? accent.WithAlpha(0.22f)
-                    : FrogletEditorPalette.Surface.WithAlpha(0.35f));
-                FrogletEditorPalette.DrawAccentStripe(row, accent);
+                FrogletEditorPalette.DrawCard(row,
+                    selected ? accent.WithAlpha(0.24f)
+                             : hover ? FrogletEditorPalette.SurfaceRaised : FrogletEditorPalette.Surface,
+                    selected ? accent.WithAlpha(0.9f) : FrogletEditorPalette.Muted.WithAlpha(0.25f));
+                FrogletEditorPalette.DrawAccentStripe(row, accent, 3f);
             }
 
-            var thumb = new Rect(row.x + 8f, row.y + 4f, 32f, 32f);
+            var thumb = new Rect(row.x + 9f, row.y + 5f, RowHeight - 10f, RowHeight - 10f);
             if (entry.Image && entry.Image.texture)
                 GUI.DrawTexture(thumb, entry.Image.texture, ScaleMode.ScaleToFit);
             else if (Event.current.type == EventType.Repaint)
-                FrogletEditorPalette.DrawRect(thumb, FrogletEditorPalette.Muted.WithAlpha(0.18f));
+                FrogletEditorPalette.DrawRect(thumb, FrogletEditorPalette.Muted.WithAlpha(0.16f));
 
-            var text = new Rect(thumb.xMax + 8f, row.y + 3f, row.width - thumb.width - 26f, 18f);
+            var text = new Rect(thumb.xMax + 9f, row.y + 5f, row.width - thumb.width - 90f, 18f);
             GUI.Label(text, entry.DisplayName, FrogletEditorPalette.CardTitle);
+            GUI.Label(new Rect(text.x, text.yMax - 1f, text.width, 16f), Subtitle(entry),
+                FrogletEditorPalette.CardBody);
 
-            var sub = new Rect(text.x, text.yMax - 1f, text.width, 16f);
-            GUI.Label(sub, Subtitle(entry), FrogletEditorPalette.CardBody);
+            var flag = FlagFor(entry);
+            if (flag.label != null)
+                FrogletEditorPalette.StatusPill(
+                    new Rect(row.xMax - 78f, row.y + 14f, 68f, 17f), flag.label, flag.color);
 
+            EditorGUIUtility.AddCursorRect(row, MouseCursor.Link);
             if (GUI.Button(row, GUIContent.none, GUIStyle.none)) _selectedId = entry.Id;
         }
 
-        string Subtitle(CodexEntry entry)
+        /// <summary>The one thing about this entry worth saying at a glance, or nothing.</summary>
+        static (string label, Color color) FlagFor(CodexEntry entry)
         {
-            var parts = new List<string>();
-            if (entry.Variants.Count > 0) parts.Add($"{entry.Variants.Count} variants");
-            if (!entry.Image) parts.Add("no image");
-            if (entry.LockAutoHarvest) parts.Add("locked");
-            if (!entry.SourcePrefab) parts.Add("orphan");
-            return parts.Count == 0 ? entry.Id : string.Join(" · ", parts);
+            if (!entry.SourcePrefab && !entry.LockAutoHarvest)
+                return ("ORPHAN", FrogletEditorPalette.Error);
+            if (!entry.Image) return ("NO IMAGE", FrogletEditorPalette.Warn);
+            if (entry.LockAutoHarvest) return ("LOCKED", FrogletEditorPalette.Slate);
+            return (null, default);
+        }
+
+        static string Subtitle(CodexEntry entry)
+        {
+            int variants = entry.Variants.Count;
+            string prose = string.IsNullOrWhiteSpace(entry.Description) ? "no description" : "written";
+            return variants > 0 ? $"{variants} variants · {prose}" : prose;
         }
 
         void DrawListActions()
         {
+            GUILayout.Space(4f);
             using (new EditorGUILayout.HorizontalScope())
             {
-                // Shown immediately, not deferred: ShowAsContext reads the CURRENT mouse
-                // position, and by the end of the pass the event is a repaint. Its own callbacks
-                // fire after the menu closes, so the list mutation is still safely outside layout.
-                if (GUILayout.Button(new GUIContent("+ Entry", "Add a hand-authored entry."),
-                        GUILayout.Height(22f)))
+                if (FrogletEditorPalette.ColorButton("+ Entry", FrogletEditorPalette.Ok, 86f, 22f,
+                        "Add a hand-authored entry."))
                     AddEntryMenu();
 
-                using (new EditorGUI.DisabledScope(Selected == null))
-                {
-                    if (GUILayout.Button("Duplicate", GUILayout.Height(22f)))
-                        _deferred = DuplicateSelected;
-                    if (GUILayout.Button("Delete", GUILayout.Height(22f)))
-                        _deferred = DeleteSelected;
-                }
+                bool none = Selected == null;
+                if (FrogletEditorPalette.ColorButton("Duplicate", FrogletEditorPalette.Info, 84f, 22f,
+                        "Copy the selected entry.", enabled: !none, outline: true))
+                    _deferred = DuplicateSelected;
+
+                if (FrogletEditorPalette.ColorButton("Delete", FrogletEditorPalette.Error, 72f, 22f,
+                        "Remove the selected entry. The baked PNG stays on disk.",
+                        enabled: !none, outline: true))
+                    _deferred = DeleteSelected;
             }
 
             using (new EditorGUI.DisabledScope(Selected == null))
@@ -265,6 +413,7 @@ namespace CosmicShore.Editor.Codex
                 if (GUILayout.Button("▲ Move Up", GUILayout.Height(20f))) _deferred = () => Move(-1);
                 if (GUILayout.Button("▼ Move Down", GUILayout.Height(20f))) _deferred = () => Move(1);
             }
+            GUILayout.Space(2f);
         }
 
         // ── Selection helpers ────────────────────────────────────────────────────
@@ -424,24 +573,6 @@ namespace CosmicShore.Editor.Codex
                     "source prefab you want facts harvested from.");
         }
 
-        void DuplicateSelected()
-        {
-            var source = Selected;
-            if (source == null) return;
-
-            Undo.RecordObject(_codex, "Duplicate codex entry");
-
-            var copy = Clone(source);
-            copy.Id = UniqueId(source.Kingdom, source.Id);
-            copy.DisplayName = source.DisplayName + " (copy)";
-            copy.LockAutoHarvest = true;
-
-            var list = _codex.ListFor(copy.Kingdom);
-            list.Insert(Mathf.Clamp(list.IndexOf(source) + 1, 0, list.Count), copy);
-            _selectedId = copy.Id;
-            Persist($"Duplicated '{source.DisplayName}'. The copy is locked against Scan & Merge.");
-        }
-
         /// <summary>
         /// A deep copy. Written out rather than round-tripped through JsonUtility: that helper
         /// encodes UnityEngine.Object references as instance IDs, which happen to resolve inside
@@ -476,6 +607,24 @@ namespace CosmicShore.Editor.Codex
                 Stats = new List<CodexStat>(v.Stats),
             }).ToList(),
         };
+
+        void DuplicateSelected()
+        {
+            var source = Selected;
+            if (source == null) return;
+
+            Undo.RecordObject(_codex, "Duplicate codex entry");
+
+            var copy = Clone(source);
+            copy.Id = UniqueId(source.Kingdom, source.Id);
+            copy.DisplayName = source.DisplayName + " (copy)";
+            copy.LockAutoHarvest = true;
+
+            var list = _codex.ListFor(copy.Kingdom);
+            list.Insert(Mathf.Clamp(list.IndexOf(source) + 1, 0, list.Count), copy);
+            _selectedId = copy.Id;
+            Persist($"Duplicated '{source.DisplayName}'. The copy is locked against Scan & Merge.");
+        }
 
         void DeleteSelected()
         {
@@ -562,7 +711,7 @@ namespace CosmicShore.Editor.Codex
         /// <summary>
         /// Reports only. The codex asset and its PNGs are recorded on the tool ledger as they are
         /// written, so <b>FrogletTools &gt; Build &gt; Pending Tool Changes</b> lists them and they
-        /// are committed by hand like any other change — this window does not push.
+        /// are committed by hand — this window does not push.
         /// </summary>
         FrogletToolValidation Validate()
         {
