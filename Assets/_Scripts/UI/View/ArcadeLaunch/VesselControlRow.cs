@@ -182,8 +182,7 @@ namespace CosmicShore.UI
             {
                 nameText.gameObject.SetActive(true);
                 nameText.text = (title ?? string.Empty).ToUpperInvariant();
-                var style = ResolveStyle();
-                if (style) nameText.color = style.readyFlashColor;
+                nameText.color = ReadyFlashColor;   // the row's own accessor, fallback included
             }
 
             gameObject.SetActive(true);
