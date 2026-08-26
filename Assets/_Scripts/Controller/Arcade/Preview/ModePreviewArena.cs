@@ -260,9 +260,7 @@ namespace CosmicShore.Gameplay
 
             _orbitAngle = Mathf.Repeat(_orbitAngle + advanceDegrees, 360f);
 
-            // Frame the MEMBRANE, not the nucleus: the membrane is the playfield boundary, so it
-            // is what "the arena" means to somebody looking at the card.
-            float radius = Cell ? Mathf.Max(1f, Cell.MembraneRadius) : 1000f;
+            float radius = FramingRadius();
 
             var offset = Quaternion.Euler(0f, _orbitAngle, 0f) *
                          new Vector3(0f, radius * 0.35f, -radius * ArenaCameraFramingFactor);
@@ -271,6 +269,43 @@ namespace CosmicShore.Gameplay
             t.position = Origin + offset;
             t.rotation = Quaternion.LookRotation((Origin - t.position).normalized, Vector3.up);
         }
+
+        /// <summary>
+        /// How big the arena is, for framing. The membrane first - it is the playfield boundary, so
+        /// it is what "the arena" means to somebody looking at the card.
+        ///
+        /// <para><b>`Cell.MembraneRadius` returns 0 until the membrane has actually spawned</b>, and
+        /// the camera is placed the instant the cell reports its build finished - so a bare
+        /// <c>Max(1, radius)</c> parked it 1.25 UNITS from the arena centre, where every mode looked
+        /// identical because all any of them showed was the skybox and a few distant prisms. That is
+        /// one bug reading as two: "the environment is not shown" and "the intensities do not
+        /// change" were the same camera, in the same wrong place, whatever had been built around
+        /// it.</para>
+        ///
+        /// <para>So it falls back - nucleus, then a default the size of the menu's own membrane -
+        /// and it is re-read on every orbit tick rather than sampled once, so the framing corrects
+        /// itself the moment the membrane appears.</para>
+        /// </summary>
+        float FramingRadius()
+        {
+            if (Cell)
+            {
+                float membrane = Cell.MembraneRadius;
+                if (membrane > 1f) return membrane;
+
+                // A cell with no membrane authored (or not spawned yet) still has a core.
+                float nucleus = Cell.ExpectedNucleusWorldRadius;
+                if (nucleus > 1f) return nucleus * NucleusFramingMultiple;
+            }
+
+            return DefaultFramingRadius;
+        }
+
+        /// <summary>The menu cell's own membrane radius - a sane arena size when nothing reports one.</summary>
+        const float DefaultFramingRadius = 1200f;
+
+        /// <summary>How much of a nucleus-only cell to take in: the core plus the room around it.</summary>
+        const float NucleusFramingMultiple = 3f;
 
         /// <summary>
         /// How far back the arena camera sits, as a multiple of the membrane radius. Just outside

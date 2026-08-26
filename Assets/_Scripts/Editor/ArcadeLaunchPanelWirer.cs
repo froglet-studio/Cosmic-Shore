@@ -209,6 +209,15 @@ namespace CosmicShore.Editor
                     var cso = Edit(controlsPanel);
                     SetRef(cso, "rowPrefab", prefab, dryRun);
                     SetRef(cso, "rowContainer", rowHost, dryRun);
+
+                    // MUST be wired: unlike the glyph set and the bars config, the vessel-prefab
+                    // table does not live in Resources, so a row has no way to reach a vessel's
+                    // real HUD icons without it and falls back to the prefab's placeholder.
+                    var prefabs = LoadOne<VesselPrefabContainer>();
+                    if (prefabs) SetRef(cso, "vesselPrefabs", prefabs, dryRun);
+                    else _problems.Add("No VesselPrefabContainer asset found - ability rows will " +
+                                       "draw placeholder icons instead of each vessel's real ones.");
+
                     Apply(cso, dryRun);
                 }
                 else
@@ -492,6 +501,14 @@ namespace CosmicShore.Editor
                 return;
             }
 
+            // The Maelstrom is not one of the grid's cards any more, so the modal needs its own
+            // way to find that card when a button asks for it (OpenMaelstrom).
+            var tournament = LoadOne<TournamentDataSO>();
+            if (tournament) SetRef(so, "tournamentData", tournament, dryRun);
+
+            var roster = LoadOne<SO_GameList>();
+            if (roster) SetRef(so, "gameList", roster, dryRun);
+
             var panels = new List<ArcadeLaunchPanel>();
             if (minigame) panels.Add(minigame);
             if (maelstrom) panels.Add(maelstrom);
@@ -692,6 +709,11 @@ namespace CosmicShore.Editor
                       "description -> tip -> tip -> description in ONE text field; with no tips a " +
                       "card simply shows its description and never rotates, which is the correct " +
                       "resting state, not a broken one.");
+            _todo.Add("Wire a button to ArcadeGameConfigureModal.OpenMaelstrom(). The Maelstrom " +
+                      "is no longer one of the arcade grid's cards - it draws the OTHER modes, so " +
+                      "listing it beside them invites 'play this one' when it means 'play several " +
+                      "of these' - which leaves it needing an entry point of its own (the design's " +
+                      "big card above the grid).");
             _todo.Add("PLAY-TEST: open a minigame card (panel + live preview + controls sweep), " +
                       "change intensity (the preview rebuilds only for Ribcage / Dog Fight / The " +
                       "Bends / Wildlife Liberation), open the Maelstrom card (its own window, clip, " +

@@ -17,6 +17,12 @@ nothing left to ask and the first had no reason to be a separate step.
 | `MinigameLaunchPanel` | every card except the meta-mode | the live window | the hull's four abilities | — |
 | `MaelstromLaunchPanel` | `GameModes.Tournament` only | a clip | none | the pool list |
 
+**The Maelstrom is not one of the arcade grid's cards.** It draws the OTHER modes, so listing it
+beside them invites "play this one" when it means "play several of these"; `ArcadeExploreView`
+excludes it from the grid and it is opened by its own control through
+`ArcadeGameConfigureModal.OpenMaelstrom()`. It stays in `SO_GameList` — that list is also the
+roster the tournament pool and the client-side mode lookup read.
+
 Each difference follows from one sentence — *the Maelstrom draws OTHER modes*:
 
 - **A clip, not the live window.** A mode with no arena of its own has nothing to stand up,
@@ -153,6 +159,32 @@ because that is what a controls row actually is.
 Ability ICONS are matched off the vessel asset by NAME (`SO_Vessel.Abilities` ↔
 `ElementalAbilityEntry.AbilityLabel`). No match is an ordinary answer: the row keeps its prefab
 sprite and the element petal still says which element owns the slot.
+
+### 4.2.1 An ability's icon comes from that vessel's own HUD
+
+The HUD is the authority on what an ability looks like, and it is keyed by **element** — which is
+exactly the key a row already has (`VesselHUDView.TryGetAbilityIcon`). The vessel's HUD prefab is
+**read, never instantiated**: a prefab asset's components are inspectable as they are, so this
+costs one `GetComponentInChildren` per card.
+
+Matching the vessel's ability *assets* by name was the first attempt and it silently found
+nothing — `SO_VesselAbility.Name` and `ElementalAbilityEntry.AbilityLabel` are authored
+independently and do not agree — so every row fell back to the prefab's placeholder and the
+Sparrow's card showed four identical marks. **A name match between two lists nobody keeps in step
+is a lookup that reports success by showing the wrong thing.** It survives as the fallback for a
+vessel whose HUD binds no icon for that slot (three of the fleet bind none at all).
+
+`VesselPrefabContainer` **must be wired** — unlike the glyph set and the bars config it does not
+live in `Resources`, so there is no load to fall back on. The panel warns once rather than quietly
+drawing placeholders.
+
+### 4.2.2 The panel owns its row container, all of it
+
+`HideForeignRows` switches off anything in the container the panel did not build. The thing that
+is reliably *not* its own is the hand-authored row the wirer cloned into a prefab: it kept
+rendering its placeholder copy ("Press RT to active drift") above every real row, on every card,
+whatever hull was selected — so a Sparrow card advertised a Dolphin ability. A panel that owns a
+container has to own all of it; leaving one child to the scene is how that happens.
 
 ### 4.3.1 An authored ability description is a DESIGN NOTE, not player copy
 

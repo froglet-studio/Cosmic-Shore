@@ -84,6 +84,11 @@ namespace CosmicShore.UI
                                  "loads Resources/ElementalBarsConfig.")]
         ElementalBarsConfigSO barsConfig;
 
+        [SerializeField, Tooltip("The fleet's vessel-prefab table, so a row can read an ability's " +
+                                 "REAL icon off that vessel's own HUD. Empty loads the one asset " +
+                                 "in the project.")]
+        VesselPrefabContainer vesselPrefabs;
+
         [SerializeField, Tooltip("Optional: the device switcher whose current device decides " +
                                  "whether rows draw pad glyphs or keyboard labels. Empty finds one " +
                                  "in the scene; none at all falls back to pad artwork.")]
@@ -157,6 +162,10 @@ namespace CosmicShore.UI
         SO_Vessel _boundVesselAsset;
         bool _keyboardWhenBound;
 
+        // The HUD whose icons this card's rows are drawing, cached per card rather than per row.
+        VesselHUDView _hudView;
+        VesselClassType _hudVessel = VesselClassType.Any;
+
         /// <summary>The hull whose controls are on screen.</summary>
         public VesselClassType BoundVessel => _boundVessel;
 
@@ -207,6 +216,7 @@ namespace CosmicShore.UI
             for (int i = used; i < _rows.Count; i++)
                 if (_rows[i]) _rows[i].gameObject.SetActive(false);
 
+            HideForeignRows();
             _liveRows = used;
         }
 
@@ -215,8 +225,35 @@ namespace CosmicShore.UI
         {
             foreach (var row in _rows)
                 if (row) row.gameObject.SetActive(false);
+
+            HideForeignRows();
             _liveRows = 0;
             _lastBeatRow = -1;
+        }
+
+        /// <summary>
+        /// Switch off anything in the row container this panel did not build.
+        ///
+        /// <para>The container holds exactly what this panel put there, and the thing that is
+        /// reliably NOT that is the hand-authored row the wirer cloned into a prefab: it keeps
+        /// rendering its placeholder copy ("Press RT to active drift") above every real row, on
+        /// every card, whatever hull is selected. A panel that owns a container has to own all of
+        /// it - leaving one child to the scene is how a card ends up advertising another vessel's
+        /// ability.</para>
+        /// </summary>
+        void HideForeignRows()
+        {
+            if (!rowContainer) return;
+
+            foreach (Transform child in rowContainer)
+            {
+                if (!child.gameObject.activeSelf) continue;
+
+                var row = child.GetComponent<VesselControlRow>();
+                if (row && _rows.Contains(row)) continue;
+
+                child.gameObject.SetActive(false);
+            }
         }
 
         int BuildFlightRows(int used)
@@ -285,7 +322,7 @@ namespace CosmicShore.UI
                 row.Bind(element,
                          headline,
                          TrimDescription(entry.AbilityDescription),
-                         ResolveAbilityIcon(vessel, entry.AbilityLabel),
+                         ResolveAbilityIcon(vesselClass, vessel, element, entry.AbilityLabel),
                          barsConfig ? barsConfig.GetPetalSprite(element) : null,
                          _keyboardWhenBound ? null : glyph?.padGlyph,
                          _keyboardWhenBound ? glyph?.keyboardLabel : null,
@@ -373,14 +410,29 @@ namespace CosmicShore.UI
         }
 
         /// <summary>
-        /// The ability's own artwork, matched off the vessel asset by NAME. The elemental map is the
-        /// authority on which abilities exist and what they are called; the vessel's ability assets
-        /// are where the art lives, and they carry the same names. No match is an ordinary answer —
-        /// the row keeps its prefab sprite and the element petal still says which element owns the
-        /// slot.
+        /// The ability's REAL icon: the one that vessel's own HUD draws for that element.
+        ///
+        /// <para>The HUD is the authority, and it is keyed by ELEMENT - which is exactly the key
+        /// this row already has. Matching the vessel's ability ASSETS by name was the first
+        /// attempt and it silently found nothing: <c>SO_VesselAbility.Name</c> and
+        /// <c>ElementalAbilityEntry.AbilityLabel</c> are authored independently and do not agree,
+        /// so every row fell back to the prefab's placeholder and the Sparrow's card showed four
+        /// identical marks. A name match between two lists nobody keeps in step is a lookup that
+        /// reports success by showing the wrong thing.</para>
+        ///
+        /// <para>The HUD prefab is READ, never instantiated - a prefab asset's components are
+        /// inspectable as they are, so this costs one <c>GetComponentInChildren</c> per card.</para>
+        ///
+        /// <para>The name match survives as the fallback for a vessel whose HUD has no icon bound
+        /// for that slot (three of the fleet bind none at all yet).</para>
         /// </summary>
-        static Sprite ResolveAbilityIcon(SO_Vessel vessel, string abilityLabel)
+        Sprite ResolveAbilityIcon(VesselClassType vesselClass, SO_Vessel vessel, Element element,
+                                  string abilityLabel)
         {
+            var hud = ResolveHudView(vesselClass);
+            if (hud && hud.TryGetAbilityIcon(element, out var icon) && icon && icon.sprite)
+                return icon.sprite;
+
             if (!vessel || vessel.Abilities == null || string.IsNullOrWhiteSpace(abilityLabel))
                 return null;
 
@@ -393,6 +445,48 @@ namespace CosmicShore.UI
                 return ability.IconActive ? ability.IconActive : ability.IconInactive;
             }
             return null;
+        }
+
+        /// <summary>The vessel's HUD view, read off its prefab. Cached per card, not per row.</summary>
+        VesselHUDView ResolveHudView(VesselClassType vesselClass)
+        {
+            if (_hudVessel == vesselClass) return _hudView;
+
+            _hudVessel = vesselClass;
+            _hudView = null;
+
+            EnsureVesselPrefabs();
+            if (vesselPrefabs && vesselPrefabs.TryGetShipPrefab(vesselClass, out var prefab) && prefab)
+                _hudView = prefab.GetComponentInChildren<VesselHUDView>(true);
+
+            if (!_hudView)
+                CSDebug.LogVerbose(CSLogChannel.ArcadeLaunch,
+                    $"[ArcadeLaunch] No VesselHUDView on {vesselClass}'s prefab - ability icons " +
+                    "fall back to the vessel asset's own artwork.");
+
+            return _hudView;
+        }
+
+        bool _warnedNoVesselPrefabs;
+
+        /// <summary>
+        /// The vessel-prefab table has to be WIRED - unlike the glyph set and the bars config it
+        /// does not live in Resources ('Assets/_SO_Assets/Vessel Prefab Container.asset'), so
+        /// there is no load to fall back on. The Resources attempt stays for a project that later
+        /// moves it there; when it fails, say so ONCE rather than quietly drawing placeholder
+        /// icons on every card, which is the failure this replaced.
+        /// </summary>
+        void EnsureVesselPrefabs()
+        {
+            if (vesselPrefabs) return;
+
+            vesselPrefabs = Resources.Load<VesselPrefabContainer>("VesselPrefabContainer");
+            if (vesselPrefabs || _warnedNoVesselPrefabs) return;
+
+            _warnedNoVesselPrefabs = true;
+            CSDebug.LogWarning("[ArcadeLaunch] VesselControlsPanel has no VesselPrefabContainer, " +
+                               "so ability rows cannot read a vessel's real HUD icons. Wire " +
+                               "'Vessel Prefab Container.asset' on the panel.", this);
         }
 
         VesselControlRow RowAt(int index)

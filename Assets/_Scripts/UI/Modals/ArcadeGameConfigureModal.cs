@@ -113,6 +113,14 @@ namespace CosmicShore.UI
         [Tooltip("Owns the windowed preview. Leave empty to find the one in the scene.")]
         [SerializeField] private ModePreviewSession previewSession;
 
+        [Header("Maelstrom")]
+        [Tooltip("Names the Maelstrom's own arcade card, so OpenMaelstrom can find it. Optional - " +
+                 "without it the card is looked up in SO_GameList by mode.")]
+        [SerializeField] private TournamentDataSO tournamentData;
+
+        [Tooltip("Fallback roster for that lookup. Optional.")]
+        [SerializeField] private SO_GameList gameList;
+
         [Header("Launch Panels (the one-panel layout)")]
         [Tooltip("One panel per KIND of card - MinigameLaunchPanel for a mode with an arena of " +
                  "its own, MaelstromLaunchPanel for the meta-mode that draws other modes. The " +
@@ -513,6 +521,34 @@ namespace CosmicShore.UI
             if (!panel || !panel.HostModal) ModalWindowIn();
 
             SetSelectedGame(selectedGame);
+        }
+
+        /// <summary>
+        /// Open the Maelstrom's launch panel. Parameterless so a Button's onClick can call it: the
+        /// meta-mode is deliberately NOT one of the arcade grid's cards (it draws the others, so
+        /// listing it beside them invites "play this one" when it means "play several of these"),
+        /// which leaves it needing an entry point of its own.
+        ///
+        /// <para>The card is resolved from the tournament asset that names it, so there is nothing
+        /// to keep in step with the roster.</para>
+        /// </summary>
+        public void OpenMaelstrom()
+        {
+            var card = tournamentData ? tournamentData.ModeCard : null;
+            if (!card && gameList != null && gameList.Games != null)
+            {
+                foreach (var game in gameList.Games)
+                    if (game && game.Mode == GameModes.Tournament) { card = game; break; }
+            }
+
+            if (!card)
+            {
+                Debug.LogError("[ArcadeConfigModal] OpenMaelstrom found no Tournament card - wire " +
+                               "TournamentData on the modal, or keep the card in SO_GameList.");
+                return;
+            }
+
+            OpenFor(card);
         }
 
         /// <summary>
