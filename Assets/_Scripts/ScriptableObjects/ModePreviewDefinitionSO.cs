@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using CosmicShore.Gameplay;
 using CosmicShore.Utility;
 using CosmicShore.Data;
 using UnityEngine;
@@ -67,6 +68,17 @@ namespace CosmicShore.ScriptableObjects
                  "lands on everyone.")]
         public GameObject StructurePrefab;
 
+        [Tooltip("OPTIONAL scene-built environment, index 0 = intensity 1: the SpawnableBase " +
+                 "prefabs the mode's own scene SegmentSpawner stands at match start (Joust and " +
+                 "Scurry author one per intensity; Skim Race authors ONE intensity-aware waypoint " +
+                 "track that serves all four). The card's scale model samples these the same way " +
+                 "it samples an authored EnvironmentPrefab - generation is pure math, no prisms - " +
+                 "so a mode whose arena is a TRACK rather than a cell finally shows it.\n\n" +
+                 "A single entry serves every intensity (and is handed the intensity, which is " +
+                 "how the waypoint track varies); a list is clamped like PreviewCellsByIntensity. " +
+                 "Authored by Tools/Build/author_preview_tracks.py from the scenes' own spawners.")]
+        public List<SpawnableBase> TrackSpawnablesByIntensity = new();
+
         [Header("Vessel")]
         [Tooltip("Hull the preview flies. Leave as Any to inherit the mode's own vessel list " +
                  "from its SO_ArcadeGame (which is what a vessel-locked mode already declares), " +
@@ -128,11 +140,55 @@ namespace CosmicShore.ScriptableObjects
         }
 
         /// <summary>
+        /// The scene-built structure for an intensity - the same clamp rule as
+        /// <see cref="ResolveCell"/>, with one deliberate difference: a SINGLE entry is not a
+        /// fallback but the whole authoring, because an intensity-aware spawnable (Skim Race's
+        /// waypoint track) is one asset that draws four different tracks.
+        /// </summary>
+        public SpawnableBase ResolveTrackSpawnable(int intensity)
+        {
+            if (TrackSpawnablesByIntensity == null || TrackSpawnablesByIntensity.Count == 0)
+                return null;
+
+            int index = Mathf.Clamp(Mathf.Max(1, intensity) - 1, 0, TrackSpawnablesByIntensity.Count - 1);
+            return TrackSpawnablesByIntensity[index];
+        }
+
+        /// <summary>
         /// True when moving the intensity row actually changes the arena. The preview is only
         /// torn down and rebuilt when this says the world would differ - rebuilding an identical
         /// satellite cell costs a multi-second build and a networked hull swap for nothing.
         /// </summary>
         public bool ArenaVariesByIntensity =>
-            PreviewCellsByIntensity != null && PreviewCellsByIntensity.Count > 1;
+            (PreviewCellsByIntensity != null && PreviewCellsByIntensity.Count > 1) ||
+            TrackVariesByIntensity;
+
+        /// <summary>
+        /// A multi-entry track list varies by construction. A SINGLE waypoint track also varies -
+        /// intensity picks which authored waypoint set it draws - and that is exactly the case the
+        /// cell-only test was blind to: Skim Race runs the Barren cell at every intensity, so
+        /// "same cell" said "same arena" while the track changed completely.
+        /// </summary>
+        public bool TrackVariesByIntensity =>
+            TrackSpawnablesByIntensity != null &&
+            (TrackSpawnablesByIntensity.Count > 1 ||
+             (TrackSpawnablesByIntensity.Count == 1 &&
+              TrackSpawnablesByIntensity[0] is SpawnableWaypointTrack));
+
+        /// <summary>
+        /// Whether the preview CONTENT differs between two intensities - the one question the
+        /// session's rebuild-skip actually asks. Kept here so every axis the arena can vary on
+        /// (cell, track - and whatever comes next) is answered in one place instead of the
+        /// session growing a comparison per axis.
+        /// </summary>
+        public bool ArenaDiffers(int intensityA, int intensityB)
+        {
+            if (intensityA == intensityB) return false;
+            if (ResolveCell(intensityA) != ResolveCell(intensityB)) return true;
+            if (ResolveTrackSpawnable(intensityA) != ResolveTrackSpawnable(intensityB)) return true;
+
+            // One spawnable serving several intensities differs when it is intensity-aware.
+            return ResolveTrackSpawnable(intensityA) is SpawnableWaypointTrack;
+        }
     }
 }

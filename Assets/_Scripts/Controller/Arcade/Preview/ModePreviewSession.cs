@@ -250,8 +250,7 @@ namespace CosmicShore.Gameplay
             // the Maelstrom's pool - authors one cell and is never rebuilt.
             bool sameCard = _definition == definition &&
                             _state is State.Standing or State.Showing or State.Live;
-            bool sameArena = !definition || !definition.ArenaVariesByIntensity ||
-                             definition.ResolveCell(intensity) == definition.ResolveCell(_intensity);
+            bool sameArena = !definition || !definition.ArenaDiffers(intensity, _intensity);
             if (sameCard && sameArena)
             {
                 _intensity = intensity;
@@ -310,7 +309,8 @@ namespace CosmicShore.Gameplay
                 var origin = Vector3.right * arenaDistance;
                 var config = definition.ResolveCell(_intensity);
 
-                if (!_arena.StandModel(config, gameData, origin, modelRadius, modelPointBudget))
+                if (!_arena.StandModel(definition, _intensity, config, gameData, origin,
+                                       modelRadius, modelPointBudget))
                 {
                     // A grown world or a barren cell authors no environment prefab, so there is no
                     // structure to model. Honest label, not an empty frame.

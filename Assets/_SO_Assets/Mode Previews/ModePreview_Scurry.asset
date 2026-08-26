@@ -16,6 +16,11 @@ MonoBehaviour:
   Notes: 'Scurry = MultiplayerCrystalCapture(35). Its cell GROWS its world from the spawn profile (no EnvironmentPrefab), which the satellite bootstrap runs. OPEN-ENDED: the crystals it races for are CrystalManager''s, which is scene-level - wiring a satellite crystal source is the noted follow-up.'
   PreviewCell: {fileID: 11400000, guid: 0b031d10988049df95ddeea50ab5beed, type: 2}
   StructurePrefab: {fileID: 0}
+  TrackSpawnablesByIntensity:
+  - {fileID: 7606682149800798904, guid: 218f41c09395b8e49a959f865e943d93, type: 3}
+  - {fileID: 8565176333109452482, guid: d8f13f0bb0fb307489536590772e6795, type: 3}
+  - {fileID: 934516435980311962, guid: 207a992b551491b4cb209b0779c34323, type: 3}
+  - {fileID: 4711172930391493203, guid: 022b1ce17e20488aa81fb9badb462563, type: 3}
   Vessel: -1
   ObjectiveText: 'Graze the reef. Everything you skim feeds your speed.'
   ObjectiveMetric: 0

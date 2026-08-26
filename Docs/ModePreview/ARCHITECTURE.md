@@ -111,18 +111,57 @@ here", never for its shape. Fauna are excluded for the same reason from the othe
 move *through* an arena rather than being part of it, and a still model of where they happened to
 start says nothing true.
 
+### 1.1.3 A SCENE-BUILT environment shows its track
+
+"Shell alone" was still wrong for three cards, and the reason is a third place an arena can come
+from: **the scene**. Joust, Scurry and Skim Race all run cells that author no environment and
+plant no flora — and none of those arenas is open water, because each mode's scene carries a
+`SegmentSpawner` that stands the structure at match start. No `CellConfigDataSO` can say that, so
+the cell-only model path was structurally blind to it.
+
+`ModePreviewDefinitionSO.TrackSpawnablesByIntensity` closes it: the definition names the
+`SpawnableBase` prefabs the mode's own spawner stands, and the model samples them exactly the way
+it samples an authored `EnvironmentPrefab` — pure generation math, no prisms. Authored by
+`Tools/Build/author_preview_tracks.py`, which reads the SHAPE straight out of the scene files
+(`--check` verifies the assets still agree with the scenes):
+
+- **Joust** and **Scurry** author `spawnableByIntensity` — four prefabs, one per intensity
+  (Torus Knot / Hopf / Schwarz P / Gyroid; Clifford Torus / Concentric Spheres / Helicoid /
+  Atlantis) — which maps 1:1 onto the list. Note Scurry's intensity 4 is `SpawnableAtlantis`,
+  a ~34k-lay generation pass: it runs once on that card+intensity and the lays are released,
+  but it is the most expensive model any card stands.
+- **Skim Race**'s track is a scene-local `SpawnableWaypointTrack` — an object, not a prefab —
+  so it was baked verbatim into `_Prefabs/Environment/Spawners/HexRaceWaypointTrack.prefab`
+  (the component body copied byte-for-byte, four authored waypoint sets included) and the
+  definition holds that ONE intensity-aware entry. The model walks
+  `SpawnableWaypointTrack.GetPreviewBlocks(intensity)` — the mirror of `Spawn` that already
+  existed for editor preview — via `ModePreviewTrackModel.BuildWaypointLays`, with domains
+  cycling the playable triad per waypoint segment (matching `SegmentSpawner`'s live painting).
+  **If the scene's track is retuned, re-bake the prefab and re-run the author script.**
+
+Two knock-on rules the track added:
+
+- **"Same cell" is not "same arena".** Skim Race runs the Barren cell at every intensity while
+  its track changes completely, so the session's rebuild-skip now asks
+  `ModePreviewDefinitionSO.ArenaDiffers(a, b)` — one method answering for every axis the arena
+  can vary on (cell, track, whatever comes next) — instead of comparing cells at the call site.
+- The track model is **additive** to shell/planting/environment: nothing today authors both, but
+  a mode that did would genuinely have both in its arena.
+
 Measured coverage after this (per preview definition, at every authored intensity):
 
 | What the card shows | Modes |
 |---|---|
 | Full scale model of an authored environment | Dog Fight, Peel the Cage, Wildlife Liberation |
+| Track model + shell (per-intensity) | Joust, Scurry, Skim Race |
 | Planting model + shell | Rampage, The Bends (59 markers / 5 species), Wildlife Blitz ×2 (4 / 1) |
-| Shell alone | Joust, Skim Race, Scurry, Astro League, Brood Rush, Scarab Scramble, Freestyle, Cellular Duel ×2, 2v2 Co-Op |
+| Shell alone | Astro League, Brood Rush, Scarab Scramble, Freestyle, Cellular Duel ×2, 2v2 Co-Op |
 
-The eleven shell-only cells are **correct**: they author no environment *and* their spawn profiles
-carry fauna only. Those arenas genuinely are open water at t=0 — what fills them is the players'
-own trails plus the mode's `StructurePrefab` (Astro League's goals, Scarab's hoops), which the
-model does not yet draw. That is the honest remaining gap; see §7.
+The remaining shell-only cards split two ways: Brood Rush / Freestyle / Cellular Duel / 2v2
+genuinely are open water at t=0 (no environment, fauna-only profiles, inert scene spawners) —
+what fills them is the players' own trails. **Astro League and Scarab Scramble are the honest
+remaining gap**: their arenas are built by their CONTROLLERS (goals, hoops, the ricochet court),
+which is the `StructurePrefab` extraction §7 already records.
 
 ### 1.2 Two camera rules, both learned the hard way
 
@@ -243,6 +282,8 @@ table, but it cannot be the shipped shape.
 | `ModePreviewSession` | `_Scripts/Controller/Arcade/Preview/` | Auto-start driver, vessel + AI bookkeeping, the camera loan, the strike |
 | `ModePreviewArena` | `_Scripts/Controller/Arcade/Preview/` | Stand / StandModel / BeginStrike / FinishStrike |
 | `ModePreviewPlantingModel` | `_Scripts/Controller/Arcade/Preview/` | A grown world's PLANTING as lays — one marker per plant, band resolved cell-override-first |
+| `ModePreviewTrackModel` | `_Scripts/Controller/Arcade/Preview/` | A waypoint track's blocks as lays, per intensity, triad-cycled per segment |
+| `Tools/Build/author_preview_tracks.py` | `Tools/Build/` | Writes `TrackSpawnablesByIntensity` from the scenes' own spawners; `--check` in CI style |
 | `ModePreviewRunner` / `ModePreviewHUD` | preview dir / `UI/View/` | Objective counting from first take-over; readout beside the window |
 | `Cell.InitializeSatellite` / `StrikeSatelliteWorld` | `Controller/Environment/` | The platform capability pair |
 | `CameraManager.BeginWindowedPlayerCamera` | `Controller/Managers/` | The real gameplay rig → a RenderTexture, additively (never `SetActiveCamera`) |

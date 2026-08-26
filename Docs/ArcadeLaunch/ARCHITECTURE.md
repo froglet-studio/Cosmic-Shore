@@ -83,14 +83,19 @@ Two consequences worth knowing:
 *also* carry an inspector `onClick` to it, and a player can double-click — the second call is a
 no-op rather than a second sting and a second `ConfirmLocalPlayerReady`.
 
-## 4. The controls block: flight first, then abilities — and the icon animates like the game
+## 4. The controls block: the mode's abilities — and the icon animates like the game
 
-`VesselControlsPanel` draws two kinds of row, in the order a player needs them.
+`VesselControlsPanel` draws two kinds of row.
 
-**Flight rows come first and are AUTHORED**, because a flight axis is a property of the input
-scheme rather than of a vessel: the same two sticks fly every hull, so deriving them per vessel
-would be deriving a constant, and no asset in the project maps "yaw" to a sprite. They are a
-list of `FlightControl` (headline, description, icon, optional control) on the panel.
+**Authored rows come from ONE asset, and the default is none.** `ModeControlsLibrarySO`
+(`Resources/ModeControlsLibrary`) says, per MODE, what the section shows besides the abilities —
+a list of `FlightControl` rows (headline, description, icon, optional control), plus a per-mode
+switch for the derived rows. It ships with an empty default: **a card's designated abilities and
+their controls ARE the section.** The stick primer ("Left stick — steer") used to be authored on
+the panel itself, which put it on every card whether or not it earned the space and left nowhere
+to say "this mode's section opens with THIS" — editing what a mode shows is now editing that one
+asset, never a panel, a scene, or a prefab. The panel's own serialized list survives only as the
+fallback for a project state with no library asset.
 
 **Ability rows are DERIVED, all the way down.** The hull's own `ElementalAbilityMapSO` names the
 ability and the `InputEvents` it rides, `InputHintBindingMap.BindingFor` turns that into a
@@ -112,8 +117,9 @@ Three states are drawn honestly rather than papered over:
 
 Rows run **charge → mass → space → time**, the fleet's ability-row order, so the block reads
 left-to-right the way the in-game HUD row does. A mode listing several hulls (`VesselClassType.Any`)
-still draws the **flight** rows — how you steer is true whatever you end up flying — and no
-ability rows, because naming one of several hulls arbitrarily would be worse than none.
+still draws the mode's **authored** rows — whatever the library says is true whatever you end up
+flying — and no ability rows, because naming one of several hulls arbitrarily would be worse than
+none.
 
 ### 4.1 The icon animates the way it animates in the game
 
@@ -352,6 +358,7 @@ instead of splitting it across two files.
 | `ArcadeLaunchPanel` | `_Scripts/UI/View/ArcadeLaunch/` | The contract: which controls a panel exposes, what the modal may ask of it |
 | `MinigameLaunchPanel` / `MaelstromLaunchPanel` | same | The two concrete panels |
 | `VesselControlsPanel` / `VesselControlRow` | same | The hull's abilities and their controls, derived |
+| `ModeControlsLibrarySO` | `_Scripts/UI/View/ArcadeLaunch/` | Per-mode authored rows for the controls block; `Resources/ModeControlsLibrary`, default empty |
 | `LobbySlotRow` / `LobbySlotView` | same | Seats, ready lights, the AI kick, the fill toggle |
 | `GameBriefingView` | same | Description + rotating tips |
 | `MaelstromPoolListView` / `MaelstromPoolEntry` | same | What this intensity can draw |
@@ -379,9 +386,10 @@ Authored data: `SO_ArcadeGame.Tips` (per-card play tips) and `SO_ArcadeGame.Prev
   player sees Xbox `A`/`B` on the Sparrow's rows — and now reads them in the sentence too
   ("Press RT to…"), since `ControlDisplayName` uses the same one-family vocabulary. Closing it is
   one field on `ControlGlyphSetSO` and would fix both surfaces at once (`Docs/ABILITY_LOCKUP.md`).
-- **Flight rows are authored copy**, so they ship with two placeholder entries (left stick / right
-  stick) and no icons. They say something true out of the box and want a real pass — per-axis art
-  and wording — before they teach anything a player could not have guessed.
+- **The controls library ships EMPTY** (`Resources/ModeControlsLibrary.asset`: no default rows,
+  no mode entries), so every card shows abilities alone until somebody authors a mode's rows.
+  That is the intended default, not a stub — but per-mode teaching copy (a Joust card explaining
+  the joust, a Scramble card explaining the juke steal) is authored content waiting on a pass.
 - **Browsing cards stands and strikes a satellite arena per selection**, plus a networked hull
   swap for a vessel-locked mode — the pre-existing cost recorded in
   `Docs/ModePreview/ARCHITECTURE.md §7`, now paid on intensity changes too for the four modes

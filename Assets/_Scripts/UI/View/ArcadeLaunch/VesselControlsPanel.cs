@@ -12,11 +12,12 @@ namespace CosmicShore.UI
     /// The launch panel's controls block: how you FLY this mode's hull, and what its four abilities
     /// do — the thing a player needs before the match, in the order they need it.
     ///
-    /// <para><b>Flight first, then abilities.</b> A player who cannot yaw cannot use an ability, so
-    /// the authored flight rows (yaw, pitch, throttle, roll) come first and the derived ability rows
-    /// follow. Flight axes are authored because they are a property of the INPUT SCHEME rather than
-    /// of any vessel — the same four sticks fly every hull, so deriving them per vessel would be
-    /// deriving a constant.</para>
+    /// <para><b>Authored rows come from ONE asset, and the default is none.</b>
+    /// <see cref="ModeControlsLibrarySO"/> (<c>Resources/ModeControlsLibrary</c>) says what a
+    /// mode's section shows besides the abilities - the stick primer that used to open every card
+    /// lives there now, per mode, and ships switched off: a card's designated abilities and their
+    /// controls ARE the section unless that mode's entry says otherwise. Editing what a mode's
+    /// section opens with is editing that asset, never this panel or a scene.</para>
     ///
     /// <para><b>Every ability row is DERIVED, exactly as the ability lockup derives its control
     /// chip</b> (<c>Docs/ABILITY_LOCKUP.md</c>): the vessel's <see cref="ElementalAbilityMapSO"/>
@@ -67,14 +68,16 @@ namespace CosmicShore.UI
         [SerializeField, Tooltip("Row prefab, one per control.")]
         VesselControlRow rowPrefab;
 
-        [Header("Flight controls (authored - the same sticks fly every hull)")]
-        [SerializeField, Tooltip("Shown ABOVE the ability rows, in this order. Empty draws " +
-                                 "abilities only, which is a reasonable panel - just a quieter one.")]
-        List<FlightControl> flightControls = new()
-        {
-            new FlightControl { Headline = "Left stick", Description = "Steer - yaw and pitch." },
-            new FlightControl { Headline = "Right stick", Description = "Throttle and roll." },
-        };
+        [Header("Authored rows")]
+        [SerializeField, Tooltip("LEGACY FALLBACK, used only when no Resources/ModeControlsLibrary " +
+                                 "asset exists. With the library present - which is the shipped " +
+                                 "state - the authored rows come from it PER MODE and this list is " +
+                                 "never read. Kept so an older scene without the asset still draws.")]
+        List<FlightControl> flightControls = new();
+
+        [SerializeField, Tooltip("Per-mode section content. Empty loads " +
+                                 "Resources/ModeControlsLibrary.")]
+        ModeControlsLibrarySO controlsLibrary;
 
         [Header("Sources")]
         [SerializeField, Tooltip("Fleet control-glyph table. Empty loads Resources/ControlGlyphSet.")]
@@ -155,6 +158,7 @@ namespace CosmicShore.UI
         float _phase;
         int _lastBeatRow = -1;
         VesselClassType _boundVessel = VesselClassType.Any;
+        GameModes _boundMode = GameModes.Random;
 
         // Held so a device change can re-derive the rows without losing the ability ARTWORK, which
         // only the vessel asset carries. Re-showing with the class alone would silently drop every
@@ -185,9 +189,11 @@ namespace CosmicShore.UI
         /// lock a vessel — still draws the FLIGHT rows: how you steer is true whatever you end up
         /// flying. Only the ability rows need a definite hull.
         /// </summary>
-        public void Show(VesselClassType vesselClass, SO_Vessel vessel = null)
+        public void Show(VesselClassType vesselClass, SO_Vessel vessel = null,
+                         GameModes mode = GameModes.Random)
         {
             _boundVessel = vesselClass;
+            _boundMode = mode;
             _boundVesselAsset = vessel;
             _phase = 0f;
             _lastBeatRow = -1;
@@ -217,8 +223,10 @@ namespace CosmicShore.UI
             foreach (var row in _rows)
                 if (row) row.gameObject.SetActive(false);
 
-            int used = BuildFlightRows(0);
-            used = BuildAbilityRows(vesselClass, vessel, used);
+            EnsureControlsLibrary();
+            int used = BuildAuthoredRows(mode, 0);
+            if (!controlsLibrary || controlsLibrary.AbilityRowsFor(mode))
+                used = BuildAbilityRows(vesselClass, vessel, used);
 
             for (int i = used; i < _rows.Count; i++)
                 if (_rows[i]) _rows[i].gameObject.SetActive(false);
@@ -263,11 +271,17 @@ namespace CosmicShore.UI
             }
         }
 
-        int BuildFlightRows(int used)
+        /// <summary>
+        /// The mode's authored rows, resolved library-first: the mode's own entry, else the
+        /// library defaults, else - only when no library asset exists at all - this panel's
+        /// legacy serialized list.
+        /// </summary>
+        int BuildAuthoredRows(GameModes mode, int used)
         {
-            if (flightControls == null) return used;
+            var rows = controlsLibrary ? controlsLibrary.RowsFor(mode) : flightControls;
+            if (rows == null) return used;
 
-            foreach (var control in flightControls)
+            foreach (var control in rows)
             {
                 if (control == null || string.IsNullOrWhiteSpace(control.Headline)) continue;
 
@@ -589,7 +603,7 @@ namespace CosmicShore.UI
             // The chip and the sentence are the point of the row, so a device change re-derives
             // every one of them rather than leaving pad art in front of a keyboard player.
             if (UsingKeyboard() == _keyboardWhenBound) return;
-            Show(_boundVessel, _boundVesselAsset);
+            Show(_boundVessel, _boundVesselAsset, _boundMode);
         }
 
         bool UsingKeyboard()
@@ -603,6 +617,12 @@ namespace CosmicShore.UI
             if (deviceSwitcher) return deviceSwitcher;
             deviceSwitcher = FindFirstObjectByType<InputDeviceIconSetSwitcher>(FindObjectsInactive.Include);
             return deviceSwitcher;
+        }
+
+        void EnsureControlsLibrary()
+        {
+            if (!controlsLibrary)
+                controlsLibrary = Resources.Load<ModeControlsLibrarySO>(ModeControlsLibrarySO.ResourcePath);
         }
 
         void EnsureGlyphSet()

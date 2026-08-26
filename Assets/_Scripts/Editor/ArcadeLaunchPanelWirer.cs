@@ -595,10 +595,36 @@ namespace CosmicShore.Editor
             {
                 _found.Add($"Row prefab already exists: {path}");
 
-                // Still deactivate the scene copy. Returning early because the PREFAB exists left
-                // the authored template rendering its placeholder ("Press RT to active drift") on
-                // top of every real row - the second run of a wirer has to reach the same end
-                // state as the first, not just skip the work the first one did.
+                // RE-WIRE the existing prefab rather than skipping it. The first run of this tool
+                // wired the pool row's `icon` at the row's background Image, and a later, corrected
+                // wire function could never reach the asset because "prefab exists" returned here -
+                // so every rerun kept the poisoned reference and the rows kept repainting
+                // themselves with card sprites. A wirer's second run has to reach the end state
+                // its CURRENT wiring rules describe, not the state its first run happened to leave.
+                if (!dryRun)
+                {
+                    var contents = PrefabUtility.LoadPrefabContents(path);
+                    try
+                    {
+                        var component = contents.GetComponent<T>();
+                        if (!component) component = contents.AddComponent<T>();
+                        wire?.Invoke(component);
+                        PrefabUtility.SaveAsPrefabAsset(contents, path);
+                        _wrote.Add($"Re-wired {path} against the current wiring rules.");
+                    }
+                    finally
+                    {
+                        PrefabUtility.UnloadPrefabContents(contents);
+                    }
+                }
+                else
+                {
+                    _wrote.Add($"WOULD re-wire {path} against the current wiring rules.");
+                }
+
+                // And still deactivate the scene copy - the second run must reach the same end
+                // state as the first ("Press RT to active drift" rendering over every real row was
+                // this exact miss).
                 if (source.activeSelf && !dryRun)
                 {
                     Undo.RecordObject(source, "Deactivate row template");
@@ -665,10 +691,30 @@ namespace CosmicShore.Editor
         {
             var so = new SerializedObject(entry);
             var t = entry.transform;
-            SetRefStatic(so, "nameText", FindComponentInChildren<TMP_Text>(t, "GameTitle")
-                                         ?? FindComponentInChildren<TMP_Text>(t, "Game Description Text")
-                                         ?? t.GetComponentInChildren<TMP_Text>(true));
+
+            // CLEAR the icon, explicitly. The first wiring pass pointed it at the row's
+            // background Image, and Bind then repainted the whole row with the mode's card sprite
+            // (the cyan slabs). Leaving the property alone would preserve that mistake on every
+            // re-run; an icon slot is wired BY HAND when a row genuinely authors one.
+            ClearRefStatic(so, "icon");
+
+            var nameText = FindComponentInChildren<TMP_Text>(t, "GameTitle")
+                           ?? FindComponentInChildren<TMP_Text>(t, "Game Description Text")
+                           ?? t.GetComponentInChildren<TMP_Text>(true);
+            SetRefStatic(so, "nameText", nameText);
             so.ApplyModifiedPropertiesWithoutUndo();
+
+            // The row template was cloned from an authored card, and a card carries labels of its
+            // own - which kept rendering their baked placeholder copy ("SLIP N' STRIDE") straight
+            // through the real name. The entry writes exactly two texts (name + locked line);
+            // every other text in the row is display the row cannot fill, so it goes dark.
+            var lockedText = new SerializedObject(entry).FindProperty("lockedText")
+                ?.objectReferenceValue as TMP_Text;
+            foreach (var text in t.GetComponentsInChildren<TMP_Text>(true))
+            {
+                if (text == nameText || text == lockedText) continue;
+                if (text.gameObject.activeSelf) text.gameObject.SetActive(false);
+            }
         }
 
         // ── Standing instructions ────────────────────────────────────────────────
@@ -902,6 +948,19 @@ namespace CosmicShore.Editor
 
             if (!dryRun) prop.objectReferenceValue = value;
             _wrote.Add($"{so.targetObject.GetType().Name}.{field} = {value.name}");
+        }
+
+        /// <summary>
+        /// Null a reference outright. <see cref="SetRefStatic"/> deliberately refuses to touch a
+        /// slot that already holds something (an authored wiring outranks a guessed one) - which
+        /// also means it can never UNDO a wiring this tool itself got wrong. That is what this is
+        /// for, and it is only ever called on fields the current rules say must be empty.
+        /// </summary>
+        static void ClearRefStatic(SerializedObject so, string field)
+        {
+            var prop = so?.FindProperty(field);
+            if (prop == null) return;
+            prop.objectReferenceValue = null;
         }
 
         static void SetRefStatic(SerializedObject so, string field, UnityEngine.Object value)

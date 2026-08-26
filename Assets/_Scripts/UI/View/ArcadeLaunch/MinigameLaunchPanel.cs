@@ -46,7 +46,8 @@ namespace CosmicShore.UI
 
             var vessel = ResolveModeVessel(game);
             if (controlsPanel)
-                controlsPanel.Show(vessel ? vessel.Class : VesselClassType.Any, vessel);
+                controlsPanel.Show(vessel ? vessel.Class : VesselClassType.Any, vessel,
+                                   game != null ? game.Mode : GameModes.Random);
         }
 
         public override void Hide()

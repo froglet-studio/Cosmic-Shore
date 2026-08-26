@@ -284,7 +284,8 @@ namespace CosmicShore.Gameplay
         /// describes; a cell that plants nothing (the Barren cell Joust, Scurry and Skim Race run
         /// on) correctly shows its shell alone, because that arena IS open water.</para>
         /// </summary>
-        public bool StandModel(CellConfigDataSO config, GameDataSO gameData, Vector3 origin,
+        public bool StandModel(ModePreviewDefinitionSO definition, int intensity,
+                               CellConfigDataSO config, GameDataSO gameData, Vector3 origin,
                                float radius, int pointBudget)
         {
             StrikeModel();
@@ -302,10 +303,16 @@ namespace CosmicShore.Gameplay
             // when the model path only understood authored environments.
             bool shell = AddCellShell(config);
 
+            // A mode whose environment is stood by its SCENE rather than by its cell (Joust,
+            // Scurry and Skim Race each carry a SegmentSpawner) shows that structure here. It is
+            // additive on purpose: nothing today authors both a track and an EnvironmentPrefab,
+            // but a mode that did would genuinely have both in its arena.
+            bool track = AddTrackModel(definition, intensity, gameData, pointBudget);
+
             if (!config.EnvironmentPrefab)
             {
                 bool planted = AddPlantingModel(config, gameData, pointBudget);
-                if (shell || planted) return true;
+                if (shell || planted || track) return true;
                 StrikeModel();
                 return false;
             }
@@ -323,7 +330,7 @@ namespace CosmicShore.Gameplay
                 CSDebug.LogVerbose(CSLogChannel.ArcadeLaunch,
                     $"[ModePreview] '{config.CellName}' produced no scale model - its generator " +
                     "emitted nothing.");
-                if (shell) return true;
+                if (shell || track) return true;
                 StrikeModel();
                 return false;
             }
@@ -333,7 +340,7 @@ namespace CosmicShore.Gameplay
                                                    "ScaleModel");
             if (!body)
             {
-                if (shell) return true;
+                if (shell || track) return true;
                 StrikeModel();
                 return false;
             }
@@ -343,6 +350,63 @@ namespace CosmicShore.Gameplay
             CSDebug.LogVerbose(CSLogChannel.ArcadeLaunch,
                 $"[ModePreview] Scale model of '{config.CellName}' up at {origin} " +
                 $"(radius {_modelRadius}, {miniature.SubmeshDomains.Length} domain submeshes).");
+            return true;
+        }
+
+        /// <summary>
+        /// The mode's SCENE-BUILT environment as a model - the track its own scene's
+        /// <c>SegmentSpawner</c> stands at match start. The cell-only model path was structurally
+        /// blind to these: Joust, Scurry and Skim Race all run cells that author no environment,
+        /// yet none of those arenas is open water - the environment is simply built by the SCENE,
+        /// which no <see cref="CellConfigDataSO"/> can say.
+        ///
+        /// <para>The spawnable is sampled exactly the way an authored environment is - generation
+        /// is pure math and no prisms spawn. An intensity-aware spawnable (Skim Race's waypoint
+        /// track) is walked through its own <see cref="SpawnableWaypointTrack.GetPreviewBlocks"/>,
+        /// which mirrors what <c>Spawn</c> would lay at that intensity; everything else goes
+        /// through <see cref="CellMiniatureBuilder.Build"/> like an
+        /// <c>EnvironmentPrefab</c> does.</para>
+        /// </summary>
+        bool AddTrackModel(ModePreviewDefinitionSO definition, int intensity, GameDataSO gameData,
+                           int pointBudget)
+        {
+            var spawnable = definition ? definition.ResolveTrackSpawnable(intensity) : null;
+            if (!spawnable) return false;
+
+            CellMiniatureBuilder.Miniature miniature;
+            if (spawnable is SpawnableWaypointTrack waypointTrack)
+            {
+                var lays = ModePreviewTrackModel.BuildWaypointLays(waypointTrack, intensity);
+                miniature = CellMiniatureBuilder.BuildFromLays(lays, _modelRadius,
+                                                              Mathf.Max(64, pointBudget), 1f,
+                                                              $"{spawnable.name} track");
+            }
+            else
+            {
+                miniature = CellMiniatureBuilder.Build(spawnable, _modelRadius,
+                                                       Mathf.Max(64, pointBudget));
+
+                // Same discipline as the environment path: the generated lay list is the
+                // expensive thing to keep (Scurry's intensity-4 track is Atlantis, ~34k lays).
+                if (spawnable is CellEnvironmentSpawnableBase cellEnvironment)
+                    cellEnvironment.ReleaseGeneratedData();
+            }
+
+            if (!miniature.IsValid) return false;
+
+            var body = ToyFactory.AddMiniatureBody(_modelRoot.transform, miniature,
+                                                   new ToyContext { GameData = gameData },
+                                                   "TrackModel");
+            if (!body)
+            {
+                Object.Destroy(miniature.Mesh);
+                return false;
+            }
+
+            _generatedMeshes.Add(miniature.Mesh);
+
+            CSDebug.LogVerbose(CSLogChannel.ArcadeLaunch,
+                $"[ModePreview] Track model '{spawnable.name}' up at intensity {intensity}.");
             return true;
         }
 
