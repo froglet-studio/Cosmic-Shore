@@ -89,12 +89,24 @@ lockup's control chips already speak.
 | Mouse move | `EasedLeftJoystickPosition`, `LeftNormalizedJoystickPosition`, `XSum`/`YSum` | — | pitch / yaw / bank | pitch / yaw / bank |
 | **LMB** *or* Right Shift | `RightTriggerAnalog` | `RightStickAction`, `OnlyRight…`, `BothSticks…` | guns | throttle |
 | **RMB** *or* Left Shift | `LeftTriggerAnalog` | `LeftStickAction`, `OnlyLeft…`, `BothSticks…` | skybursts | drift |
-| Space | — | `Button1Action` (pad A) | Mass ability | place switch |
-| B | — | `Button2Action` (pad B) | Time ability | — |
-| N *or* MMB | — | `Button3Action` (pad X) | — | — |
+| **Space** | — | `Button1Action` (pad A) | Mass ability | place switch |
+| **R** | — | `Button2Action` (pad B) | Time ability | — |
+| Q *or* MMB | — | `Button3Action` (pad X) | — | — |
 | E | `Throttle` | `FlipAction` | — | — |
 
-Three things about that table are load-bearing:
+**The keys live in the QWER + Space cluster**, so one resting left hand reaches every one of them
+without the right hand leaving the mouse. They are assigned in **reverse priority order**: the two
+mouse buttons carry the highest-priority abilities, so only two more keys are needed — Space takes
+the next, R the one after. Q is last and no one-thumb vessel binds it today.
+
+`KeyboardInputStrategy` was moved onto the same three keys (it used B / N) rather than left where
+it was. That is not tidying: `ControlGlyphSetSO` authors **one `keyboardLabel` per control**, so two
+desktop schemes binding different keys would make the ability chip confidently wrong for whichever
+one is live — the exact failure the derived-chip design exists to prevent. R and Q also sit
+directly above that scheme's own WASD left stick, so the move suits both hands.
+`ControlChipBindingTests.KeyboardActionKeysStayInTheQwerSpaceCluster` holds the line.
+
+Four things about that table are load-bearing:
 
 - **Both sources per side are OR'd into ONE boolean before edge detection.** Two independent edge
   detectors on one logical trigger raise a release the moment *either* source lets go while the
@@ -224,9 +236,10 @@ reasons:
    trigger sides, so every ability bound to a pad face button — the Sparrow's Mass and Time —
    returned `None` and was honestly, permanently blank. `KeySpace` / `KeyB` / `KeyN` are now mapped
    to `Button1/2/3Action`, matching what both desktop strategies actually raise, and the two face-
-   button rows in the asset gained their `SPACE` and `B` labels.
+   button rows in the asset gained their `SPACE` and `R` labels. (`KeyB` / `KeyN` existed for one
+   commit and are gone; `KeyR` replaces them and `KeyQ` was already declared.)
 
-The Sparrow's four chips now read **LSHIFT · RSHIFT · SPACE · B**. Those labels stay truthful under
+The Sparrow's four chips now read **LSHIFT · RSHIFT · SPACE · R**. Those labels stay truthful under
 mouse flight because this scheme honours the shift keys alongside LMB/RMB — see §3.
 
 `ControlChipBindingTests` asserts the whole chain against the **shipped** asset, which is where the

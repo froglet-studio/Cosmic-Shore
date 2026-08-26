@@ -100,7 +100,7 @@ namespace CosmicShore.Tests
             HintBinding[] keyboardControls =
             {
                 HintBinding.KeyLeftShift, HintBinding.KeyRightShift,
-                HintBinding.KeySpace, HintBinding.KeyB, HintBinding.KeyN,
+                HintBinding.KeySpace, HintBinding.KeyR, HintBinding.KeyQ,
             };
 
             foreach (var control in keyboardControls)
@@ -123,6 +123,31 @@ namespace CosmicShore.Tests
                                         HintBinding.PadButtonSouth, HintBinding.PadButtonEast,
                                         HintBinding.PadButtonWest, HintBinding.None })
                 Assert.AreEqual(pad, InputHintBindingMap.Canonical(pad));
+        }
+
+        [Test]
+        public void KeyboardActionKeysStayInTheQwerSpaceCluster()
+        {
+            // The one-thumb scheme's whole point is a left hand that never leaves QWER + Space
+            // while the right hand flies on the mouse. A control that drifts out of the cluster
+            // (B and N were the historical bindings) is unreachable from that hand position, and
+            // because there is ONE keyboardLabel per control it would also drag the dual-WASD
+            // scheme with it or make the chip wrong for one of the two.
+            var cluster = new[]
+            {
+                HintBinding.KeyQ, HintBinding.KeyE, HintBinding.KeyR, HintBinding.KeySpace,
+                HintBinding.KeyLeftShift, HintBinding.KeyRightShift,
+            };
+
+            foreach (var input in new[] { InputEvents.Button1Action, InputEvents.Button2Action,
+                                          InputEvents.Button3Action, InputEvents.LeftStickAction,
+                                          InputEvents.RightStickAction })
+            {
+                var binding = InputHintBindingMap.BindingFor(input, keyboard: true);
+                Assert.Contains(binding, cluster,
+                    $"{input} is bound to {binding}, outside the QWER + Space cluster the " +
+                    "desktop schemes are built around.");
+            }
         }
 
         [Test]

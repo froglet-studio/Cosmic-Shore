@@ -39,10 +39,17 @@ namespace CosmicShore.Gameplay
     /// <item><term>RMB <i>or</i> Left Shift</term><description>the LEFT trigger side — the
     /// Sparrow's skybursts, the Scarab's drift</description></item>
     /// <item><term>Space</term><description><c>Button1Action</c> (pad A)</description></item>
-    /// <item><term>B</term><description><c>Button2Action</c> (pad B)</description></item>
-    /// <item><term>N <i>or</i> MMB</term><description><c>Button3Action</c> (pad X)</description></item>
+    /// <item><term>R</term><description><c>Button2Action</c> (pad B)</description></item>
+    /// <item><term>Q <i>or</i> MMB</term><description><c>Button3Action</c> (pad X)</description></item>
     /// <item><term>E</term><description><c>FlipAction</c> + the manual-throttle channel</description></item>
     /// </list>
+    /// The keys sit in the <b>QWER + Space</b> cluster so one resting left hand reaches every one
+    /// of them without leaving the mouse, and they are assigned in REVERSE priority order: the two
+    /// mouse buttons carry the highest-priority abilities, Space the next, R the one after. Q is
+    /// last and no one-thumb vessel binds it today. <c>KeyboardInputStrategy</c> was moved to the
+    /// same three keys rather than left on B/N — there is ONE <c>keyboardLabel</c> per control, so
+    /// two desktop schemes binding different keys would make the chip confidently wrong for one of
+    /// them, which is the failure the derived-chip design exists to prevent.
     /// The shift keys are kept alongside the mouse buttons on purpose. They cost nothing (this
     /// scheme frees the whole right hand), they preserve the muscle memory of the keyboard
     /// scheme, and — the load-bearing reason — <c>InputHintBindingMap</c> maps the trigger sides
@@ -223,13 +230,13 @@ namespace CosmicShore.Gameplay
         void ProcessButtons(Mouse mouse, Keyboard keyboard)
         {
             bool space = keyboard != null && keyboard.spaceKey.isPressed;
-            bool bKey = keyboard != null && keyboard.bKey.isPressed;
-            bool nKey = keyboard != null && keyboard.nKey.isPressed;
+            bool rKey = keyboard != null && keyboard.rKey.isPressed;
+            bool qKey = keyboard != null && keyboard.qKey.isPressed;
             bool eKey = keyboard != null && keyboard.eKey.isPressed;
 
             EdgeFire(space, ref prevButton1, InputEvents.Button1Action);
-            EdgeFire(bKey, ref prevButton2, InputEvents.Button2Action);
-            EdgeFire(nKey || mouse.middleButton.isPressed, ref prevButton3, InputEvents.Button3Action);
+            EdgeFire(rKey, ref prevButton2, InputEvents.Button2Action);
+            EdgeFire(qKey || mouse.middleButton.isPressed, ref prevButton3, InputEvents.Button3Action);
 
             // FlipAction has no held state to track beyond the key itself, and the manual-throttle
             // channel rides the same key, exactly as KeyboardInputStrategy wires it.
@@ -428,8 +435,8 @@ namespace CosmicShore.Gameplay
             prevRightActive = (mouse != null && mouse.leftButton.isPressed)
                               || (keyboard != null && keyboard.rightShiftKey.isPressed);
             prevButton1 = keyboard != null && keyboard.spaceKey.isPressed;
-            prevButton2 = keyboard != null && keyboard.bKey.isPressed;
-            prevButton3 = (keyboard != null && keyboard.nKey.isPressed)
+            prevButton2 = keyboard != null && keyboard.rKey.isPressed;
+            prevButton3 = (keyboard != null && keyboard.qKey.isPressed)
                           || (mouse != null && mouse.middleButton.isPressed);
         }
 

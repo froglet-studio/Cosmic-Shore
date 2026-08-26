@@ -48,9 +48,16 @@ namespace CosmicShore.UI
             // and without them BindingFor(..., keyboard: true) returned None for every ability
             // bound to a pad face button — which is half the Sparrow's row, drawn blank on the
             // one device most people play on.
+            //
+            // They live in the QWER + Space cluster so one resting left hand reaches all of them,
+            // assigned in REVERSE priority order: the mouse buttons carry the two highest-priority
+            // abilities, so Space takes the next and R the one after. Q is last and is bound by no
+            // vessel today. There is ONE keyboardLabel per control, so these must match whatever
+            // the strategies actually raise or the chip is confidently wrong — which is the
+            // failure this whole table exists to prevent.
             [HintBinding.KeySpace] = new[] { InputEvents.Button1Action },
-            [HintBinding.KeyB]     = new[] { InputEvents.Button2Action },
-            [HintBinding.KeyN]     = new[] { InputEvents.Button3Action },
+            [HintBinding.KeyR]     = new[] { InputEvents.Button2Action },
+            [HintBinding.KeyQ]     = new[] { InputEvents.Button3Action },
         };
 
         /// <summary>
@@ -73,8 +80,8 @@ namespace CosmicShore.UI
             HintBinding.KeyLeftShift  => HintBinding.PadLeftTrigger,
             HintBinding.KeyRightShift => HintBinding.PadRightTrigger,
             HintBinding.KeySpace      => HintBinding.PadButtonSouth,
-            HintBinding.KeyB          => HintBinding.PadButtonEast,
-            HintBinding.KeyN          => HintBinding.PadButtonWest,
+            HintBinding.KeyR          => HintBinding.PadButtonEast,
+            HintBinding.KeyQ          => HintBinding.PadButtonWest,
             _                         => binding,
         };
 
