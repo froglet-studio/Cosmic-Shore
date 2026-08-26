@@ -81,6 +81,7 @@ namespace CosmicShore.UI
         Image _flash;
         AbilityLockupStyleSO _style;
         Vector3 _iconRestScale = Vector3.one;
+        Sprite _iconRestSprite;
         bool _capturedRestScale;
 
         /// <summary>The element this row was bound to, or <see cref="Element.None"/> for a flight axis.</summary>
@@ -102,8 +103,18 @@ namespace CosmicShore.UI
                 _capturedNameColor = true;
             }
 
+            if (!_capturedDescColor && descriptionText)
+            {
+                _descRestColor = descriptionText.color;
+                _capturedDescColor = true;
+            }
+
             if (_capturedRestScale) return;
-            if (icon) _iconRestScale = icon.rectTransform.localScale;
+            if (icon)
+            {
+                _iconRestScale = icon.rectTransform.localScale;
+                _iconRestSprite = icon.sprite;
+            }
             _capturedRestScale = true;
         }
 
@@ -123,7 +134,10 @@ namespace CosmicShore.UI
             demonstrateCooldown = showsCooldown;
             RestoreSectionChrome();
 
-            if (icon && iconSprite) icon.sprite = iconSprite;
+            // Restore the prefab's own art when this row gets none: rows are REUSED across
+            // cards, so "leave the sprite alone" actually means "keep whichever ability's icon
+            // happened to be here last" - an objective row wearing the previous card's gun.
+            if (icon) icon.sprite = iconSprite ? iconSprite : _iconRestSprite;
 
             if (elementPetal)
             {
@@ -176,13 +190,20 @@ namespace CosmicShore.UI
             if (elementPetal) elementPetal.gameObject.SetActive(false);
             if (chipGlyph) chipGlyph.gameObject.SetActive(false);
             if (chipLabel) chipLabel.gameObject.SetActive(false);
-            if (descriptionText) descriptionText.gameObject.SetActive(false);
 
-            if (nameText)
+            // Whichever text the row HAS. The shipped row prefab wires only descriptionText -
+            // nameText is a nicety - and a heading that only knows how to draw through the nicety
+            // is a heading that silently does not exist on the very prefab everyone authors.
+            var headingText = nameText ? nameText : descriptionText;
+            if (nameText) nameText.gameObject.SetActive(nameText == headingText);
+            if (descriptionText) descriptionText.gameObject.SetActive(descriptionText == headingText);
+
+            if (headingText)
             {
-                nameText.gameObject.SetActive(true);
-                nameText.text = (title ?? string.Empty).ToUpperInvariant();
-                nameText.color = ReadyFlashColor;   // the row's own accessor, fallback included
+                headingText.text = (title ?? string.Empty).ToUpperInvariant();
+                var c = ReadyFlashColor;
+                c.a = 1f;                        // a heading is structure, never a half-faded flash
+                headingText.color = c;
             }
 
             gameObject.SetActive(true);
@@ -205,10 +226,13 @@ namespace CosmicShore.UI
                 nameText.gameObject.SetActive(true);
                 if (_capturedNameColor) nameText.color = _nameRestColor;
             }
+            if (descriptionText && _capturedDescColor) descriptionText.color = _descRestColor;
         }
 
         Color _nameRestColor = Color.white;
         bool _capturedNameColor;
+        Color _descRestColor = Color.white;
+        bool _capturedDescColor;
 
         /// <summary>
         /// A row with one text field says everything in it: the headline first, the detail on the

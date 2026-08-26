@@ -314,6 +314,36 @@ flashes — and only the RECHARGE stays conditional, because only an ability has
   field names a better one. "Nothing" is not more honest than "one of the hulls you may fly", it is
   just less useful.
 
+### 5.4 The chip is the row's reason to exist — and its wiring is checked, not assumed
+
+The first wirer pass bound only `icon` and `descriptionText`, so every card drew ability icons with
+**no button beside them** — the exact thing the row template authored its `GlyphIcon` child for —
+and section headings drew nothing at all, because `BindSection` wrote only through `nameText`,
+which was also unwired. Two symptoms, one wiring function.
+
+- `WireControlRow` now binds `chipGlyph` by NAME (`GlyphIcon`/`Glyph`/`ControlChip`/`Chip`, never
+  "the first Image" — that is the row background), and CREATES a `GlyphLabel` TMP under the chip
+  when the template authored none, styled off the description text. Without the label a keyboard
+  player sees nothing where a pad player sees a button — not the honest blank (that is for a
+  control with no keyboard equivalent) but a missing widget.
+- `BindSection` draws through whichever text the row HAS (`nameText`, else `descriptionText`) —
+  a heading that only knows the nicety field does not exist on the one prefab everyone authors.
+- `Bind` restores the prefab's own icon sprite when a row gets none: rows are reused across
+  cards, so "leave the sprite alone" meant "keep whichever ability's icon was here last".
+
+The glyph chain itself needed nothing: `InputDeviceIconSetSwitcher.Current` defaults to a pad set,
+the Squirrel's `OnlyLeft/RightStickAction` map to the triggers, and `ControlGlyphSet` carries
+sprites plus LSHIFT/RSHIFT labels.
+
+### 5.5 Every mode opens its CONTROLS section with its objective
+
+`Tools/Build/author_mode_controls_library.py` writes one `ModeControlsLibrary` entry per
+previewable mode whose first row is the mode's own `ObjectiveText` (from its `ModePreview_*.asset`)
+— so a card says what you are supposed to DO before it lists the buttons, and a mode with no locked
+vessel (the duel cards) still has a section to show. The script is idempotent, re-runnable after
+any ObjectiveText edit, and replaces only the one row it owns — hand-authored rows, `Abilities`
+filters and `Vessel` picks pass through untouched.
+
 ## 6. The preview follows the intensity row
 
 `ModePreviewDefinitionSO.PreviewCellsByIntensity` is the same shape the mode's own scene uses

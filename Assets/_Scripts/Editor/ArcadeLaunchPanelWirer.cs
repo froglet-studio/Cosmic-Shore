@@ -731,8 +731,64 @@ namespace CosmicShore.Editor
         {
             var so = new SerializedObject(row);
             var t = row.transform;
-            SetRefStatic(so, "icon", FindComponentInChildren<Image>(t, "Icon")
-                                     ?? t.GetComponentInChildren<Image>(true));
+
+            var icon = FindComponentInChildren<Image>(t, "Icon")
+                       ?? t.GetComponentInChildren<Image>(true);
+            SetRefStatic(so, "icon", icon);
+
+            // The CONTROL CHIP - the pad button the ability is fired with. This was the whole
+            // reason the row template authored a second Image, and the first wiring pass left it
+            // unbound, so every card drew ability icons with no button beside them. Name-only, no
+            // first-Image fallback: "some other Image" here is the row background or the ability
+            // icon itself, and a glyph written into either repaints the row.
+            var chip = FindComponentInChildren<Image>(t, "GlyphIcon")
+                       ?? FindComponentInChildren<Image>(t, "Glyph")
+                       ?? FindComponentInChildren<Image>(t, "ControlChip")
+                       ?? FindComponentInChildren<Image>(t, "Chip");
+            if (chip == icon) chip = null;
+            SetRefStatic(so, "chipGlyph", chip);
+
+            // The keyboard face of the same chip: a label under the glyph object, created if the
+            // template authored none. Without it a keyboard player sees NOTHING where a pad player
+            // sees a button - not the honest blank (that is for a control with no keyboard
+            // equivalent) but a missing widget.
+            if (chip)
+            {
+                var label = FindComponentInChildren<TMP_Text>(chip.transform, "GlyphLabel");
+                if (!label)
+                {
+                    var go = new GameObject("GlyphLabel", typeof(RectTransform));
+                    go.transform.SetParent(chip.transform, false);
+                    var rect = (RectTransform)go.transform;
+                    rect.anchorMin = Vector2.zero;
+                    rect.anchorMax = Vector2.one;
+                    rect.offsetMin = Vector2.zero;
+                    rect.offsetMax = Vector2.zero;
+
+                    label = go.AddComponent<TextMeshProUGUI>();
+                    label.alignment = TextAlignmentOptions.Center;
+                    label.enableAutoSizing = true;
+                    label.fontSizeMin = 8f;
+                    label.raycastTarget = false;
+
+                    var reference = FindComponentInChildren<TMP_Text>(t, "Game Description");
+                    if (reference)
+                    {
+                        label.font = reference.font;
+                        label.color = reference.color;
+                        label.fontSizeMax = reference.fontSize;
+                    }
+                }
+                SetRefStatic(so, "chipLabel", label);
+            }
+
+            // Optional slots, by name only - absent on the shipped template and that is fine.
+            SetRefStatic(so, "nameText", FindComponentInChildren<TMP_Text>(t, "AbilityName")
+                                         ?? FindComponentInChildren<TMP_Text>(t, "Name")
+                                         ?? FindComponentInChildren<TMP_Text>(t, "Title"));
+            SetRefStatic(so, "elementPetal", FindComponentInChildren<Image>(t, "ElementPetal")
+                                             ?? FindComponentInChildren<Image>(t, "Petal"));
+
             SetRefStatic(so, "descriptionText",
                          FindComponentInChildren<TMP_Text>(t, "Game Description")
                          ?? t.GetComponentInChildren<TMP_Text>(true));

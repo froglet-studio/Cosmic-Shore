@@ -13,4 +13,157 @@ MonoBehaviour:
   m_Name: ModeControlsLibrary
   m_EditorClassIdentifier: 
   DefaultRows: []
-  Entries: []
+  Entries:
+  - Mode: 2
+    Rows:
+    - Headline: 'Skim to charge, grab a crystal, then aim the cone at the thickest forest.'
+      Description: 
+      Icon: {fileID: 0}
+      Control: 0
+    ShowAbilityRows: 1
+    Abilities: []
+    Vessel: -1
+  - Mode: 8
+    Rows:
+    - Headline: 'Your trail is your weapon and your wall.'
+      Description: 
+      Icon: {fileID: 0}
+      Control: 0
+    ShowAbilityRows: 1
+    Abilities: []
+    Vessel: -1
+  - Mode: 26
+    Rows:
+    - Headline: 'Clear the swarm.'
+      Description: 
+      Icon: {fileID: 0}
+      Control: 0
+    ShowAbilityRows: 1
+    Abilities: []
+    Vessel: -1
+  - Mode: 28
+    Rows:
+    - Headline: 'No score. No clock. Just fly.'
+      Description: 
+      Icon: {fileID: 0}
+      Control: 0
+    ShowAbilityRows: 1
+    Abilities: []
+    Vessel: -1
+  - Mode: 29
+    Rows:
+    - Headline: 'Your trail is your weapon and your wall.'
+      Description: 
+      Icon: {fileID: 0}
+      Control: 0
+    ShowAbilityRows: 1
+    Abilities: []
+    Vessel: -1
+  - Mode: 30
+    Rows:
+    - Headline: 'Hold the cell together.'
+      Description: 
+      Icon: {fileID: 0}
+      Control: 0
+    ShowAbilityRows: 1
+    Abilities: []
+    Vessel: -1
+  - Mode: 32
+    Rows:
+    - Headline: 'Clear the swarm.'
+      Description: 
+      Icon: {fileID: 0}
+      Control: 0
+    ShowAbilityRows: 1
+    Abilities: []
+    Vessel: -1
+  - Mode: 33
+    Rows:
+    - Headline: 'Skim everything. Speed is the whole game.'
+      Description: 
+      Icon: {fileID: 0}
+      Control: 0
+    ShowAbilityRows: 1
+    Abilities: []
+    Vessel: -1
+  - Mode: 34
+    Rows:
+    - Headline: 'Lay trail. Bank off it. Build your own speed.'
+      Description: 
+      Icon: {fileID: 0}
+      Control: 0
+    ShowAbilityRows: 1
+    Abilities: []
+    Vessel: -1
+  - Mode: 35
+    Rows:
+    - Headline: 'Graze the reef. Everything you skim feeds your speed.'
+      Description: 
+      Icon: {fileID: 0}
+      Control: 0
+    ShowAbilityRows: 1
+    Abilities: []
+    Vessel: -1
+  - Mode: 37
+    Rows:
+    - Headline: 'Swing the sword. The tip hits hardest.'
+      Description: 
+      Icon: {fileID: 0}
+      Control: 0
+    ShowAbilityRows: 1
+    Abilities: []
+    Vessel: -1
+  - Mode: 38
+    Rows:
+    - Headline: 'Claim the nucleus. Lay your colour inside it and watch the broods hatch.'
+      Description: 
+      Icon: {fileID: 0}
+      Control: 0
+    ShowAbilityRows: 1
+    Abilities: []
+    Vessel: -1
+  - Mode: 39
+    Rows:
+    - Headline: 'Break in. Shatter every bar you can reach.'
+      Description: 
+      Icon: {fileID: 0}
+      Control: 0
+    ShowAbilityRows: 1
+    Abilities: []
+    Vessel: -1
+  - Mode: 40
+    Rows:
+    - Headline: 'Hunt. Five creatures, any tier.'
+      Description: 
+      Icon: {fileID: 0}
+      Control: 0
+    ShowAbilityRows: 1
+    Abilities: []
+    Vessel: -1
+  - Mode: 41
+    Rows:
+    - Headline: 'Learn the Boneyard. Find the lines through the wrecks.'
+      Description: 
+      Icon: {fileID: 0}
+      Control: 0
+    ShowAbilityRows: 1
+    Abilities: []
+    Vessel: -1
+  - Mode: 42
+    Rows:
+    - Headline: 'Skim the cacti to bank energy. A crystal fires the cone.'
+      Description: 
+      Icon: {fileID: 0}
+      Control: 0
+    ShowAbilityRows: 1
+    Abilities: []
+    Vessel: -1
+  - Mode: 43
+    Rows:
+    - Headline: 'Fly your skimmer through a white crystal - it becomes your ball. Knock it around.'
+      Description: 
+      Icon: {fileID: 0}
+      Control: 0
+    ShowAbilityRows: 1
+    Abilities: []
+    Vessel: -1
