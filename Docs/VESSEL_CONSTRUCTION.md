@@ -80,7 +80,10 @@ body a fifth the Rhino's height — so the jets sat in empty space above a ship 
 there, and the *first*, correct measurement was discarded as the mistake.
 
 **Why the false positive is so convincing here.** An FBX's `.meta` can carry an `externalObjects`
-material remap pointing into *another* FBX. `Vessel_Placeholder_1.fbx.meta` remaps its materials
+material remap pointing into *another* FBX. (Both placeholders were retired in Phase 5; the
+mechanism is what matters and it is unchanged, so the example is kept as written. `git show
+HEAD~1 -- 'Assets/_Models/Vessel Models/Placeholder/'` if you want to look at them.)
+`Vessel_Placeholder_1.fbx.meta` remaps its materials
 into `Rhino_Test.fbx` (`4a58…`) and `RhinoModel.fbx` (`d342…`) — the placeholder borrows the
 Rhino's materials. So a model file's `.meta` containing a model guid is completely ordinary and
 looks exactly like ownership.
@@ -146,7 +149,8 @@ side.
 ## 4. Discrepancy class 3 — model vestiges, and what is actually inside them
 
 Eight vessel models are referenced by **nothing** in `Assets` (no prefab, scene, asset or animator
-controller). They are not all the same kind of dead, and the difference is the whole point of this
+controller). **Six of them, plus a duplicate Manta controller, were retired in Phase 5** — the rows
+are kept because what each one was measured to contain is the evidence for that decision. They are not all the same kind of dead, and the difference is the whole point of this
 section: **two of them are the missing rigs for vessels that cannot morph, and one of those rigs
 carries a real morph while the other two carry empty placeholders.**
 
