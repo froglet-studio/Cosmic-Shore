@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Reflection;
 using CosmicShore.Data;
 using CosmicShore.ScriptableObjects;
 using DG.Tweening;
@@ -200,9 +201,7 @@ namespace CosmicShore.UI
 
             DockElementFlowers();
 
-            // A vessel with no bound icons keeps whatever HUD it had before the lockup, and that old
-            // UI then draws alongside the new row instead of being replaced by it.
-            if (!hudView.HasAbilityIconRow) RetireLegacyHudContent(row);
+            RetireLegacyHudContent(row);
 
             _built = true;
         }
@@ -477,58 +476,142 @@ namespace CosmicShore.UI
                                                         new Vector2(0.5f, 0.5f));
 
         /// <summary>
-        /// Switches off the HUD's own legacy content on a vessel that binds NO ability icons.
+        /// Switches off the HUD's own root-level legacy content: <b>anything no component on this
+        /// HUD still references.</b>
         ///
-        /// <para><see cref="RetireLegacyChrome"/> works per ability HOST, so it reaches nothing on a
-        /// HUD that has no hosts - which left exactly the vessels whose row is all LOCKED cards
-        /// (Rhino, Manta, Serpent) drawing their old boost meters and buttons *next to* the new row.
-        /// The two competed, and the older one looked like the real UI.</para>
+        /// <para><see cref="RetireLegacyChrome"/> works per ability HOST, so it only ever reached
+        /// what sat around an icon. Everything else a vessel drew before the lockup kept drawing
+        /// beside the new row - old boost rings on the Rhino and Sparrow, an ammo readout nothing
+        /// writes to, and worst of all the device-glyph roots on the three HUDs that carry them
+        /// with no <c>InputDeviceIconSetSwitcher</c> to drive them. Those glyphs are never lit,
+        /// never switched for the player's actual device, and never placed - so when the lockup
+        /// moved the row they were left behind wherever the old row used to be.</para>
         ///
-        /// <para>Two guards keep the sweep honest. It retires only children that actually DRAW - a
-        /// subtree with no <see cref="Graphic"/> in it is logic, not UI, and switching it off would
-        /// stop behaviour rather than hide a picture. And it EXEMPTS the device-hint roots, which
-        /// are direct children of the HUD root: sweeping those away would take every control hint
-        /// with them, on the one un-populated vessel that has any.</para>
+        /// <para>By the time this runs the lockup has moved everything it owns into the row, so a
+        /// root-level child that still draws is either something the vessel actively drives or
+        /// something nothing drives. Asking which is a REFERENCE question, and it is asked rather
+        /// than guessed: a branch survives if any component on the HUD root - the view, its
+        /// controller - or the icon-set switcher still points into it. A live readout is spared
+        /// automatically on any vessel that wires one; a leftover is retired on every vessel that
+        /// does not, with no per-vessel list to maintain and no name to match.</para>
+        ///
+        /// <para>Reflection, once, at build. It is the only way to answer "does anything still
+        /// drive this?" without hand-authoring the answer per vessel, which is the exact
+        /// duplication this style exists to remove.</para>
         /// </summary>
         void RetireLegacyHudContent(RectTransform row)
         {
             var self = (RectTransform)transform;
-            var exempt = CollectHintRoots(self);
+            var referenced = CollectReferencedObjects();
 
             for (int i = self.childCount - 1; i >= 0; i--)
             {
                 var child = self.GetChild(i);
-                if (!child || child == row || exempt.Contains(child)) continue;
+                if (!child || child == row) continue;
                 if (!child.gameObject.activeSelf) continue;
                 if (!child.GetComponentInChildren<Graphic>(true)) continue;   // logic, not UI
+                if (BranchIsReferenced(child, referenced)) continue;          // something drives it
 
                 child.gameObject.SetActive(false);
             }
         }
 
         /// <summary>
-        /// The direct children of the HUD root that lead to a device-glyph root, so the sweep above
-        /// can step over them. Returns an empty set on a HUD with no switcher.
+        /// Everything the HUD's own drivers point at. Sources are deliberately limited to components
+        /// on the HUD ROOT plus the icon-set switcher: a component sitting INSIDE a leftover branch
+        /// would otherwise reference its own children and spare the branch it belongs to.
         /// </summary>
-        HashSet<Transform> CollectHintRoots(RectTransform self)
+        HashSet<Object> CollectReferencedObjects()
         {
-            var exempt = new HashSet<Transform>();
-            var switcher = GetComponentInChildren<InputDeviceIconSetSwitcher>(true);
-            if (!switcher) return exempt;
+            var referenced = new HashSet<Object>();
 
-            AddBranch(switcher.transform);
-            foreach (var root in switcher.IconSetRoots)
-                if (root) AddBranch(root.transform);
-            return exempt;
+            foreach (var component in GetComponents<MonoBehaviour>())
+                if (component && component != this) CollectSerializedReferences(component, referenced);
 
-            void AddBranch(Transform t)
+            // The switcher is not always on the HUD - the Squirrel keeps it on the vessel root, with
+            // its glyph roots alongside it - so it is found rather than assumed.
+            var switcher = GetComponentInChildren<InputDeviceIconSetSwitcher>(true)
+                        ?? GetComponentInParent<InputDeviceIconSetSwitcher>();
+            if (switcher) CollectSerializedReferences(switcher, referenced);
+
+            return referenced;
+        }
+
+        static bool BranchIsReferenced(Transform branch, HashSet<Object> referenced)
+        {
+            if (referenced.Count == 0) return false;
+
+            foreach (var component in branch.GetComponentsInChildren<Component>(true))
+                if (component && referenced.Contains(component)) return true;
+
+            foreach (var t in branch.GetComponentsInChildren<Transform>(true))
+                if (t && referenced.Contains(t.gameObject)) return true;
+
+            return false;
+        }
+
+        static void CollectSerializedReferences(Component source, HashSet<Object> into)
+        {
+            const BindingFlags Fields = BindingFlags.Instance | BindingFlags.Public |
+                                        BindingFlags.NonPublic | BindingFlags.DeclaredOnly;
+
+            for (var type = source.GetType();
+                 type != null && type != typeof(MonoBehaviour) && type != typeof(Component);
+                 type = type.BaseType)
             {
-                // Walk up to the direct child of the HUD root - that is the granularity the sweep
-                // works at, so that is what has to be spared.
-                while (t && t.parent != self) t = t.parent;
-                if (t) exempt.Add(t);
+                foreach (var field in type.GetFields(Fields))
+                {
+                    if (field.Name == RetiredHighlightsField) continue;
+                    AddReference(field.GetValue(source), into, 0);
+                }
             }
         }
+
+        /// <summary>
+        /// Records a field's Unity references, stepping one level into lists and into the small
+        /// [Serializable] payloads this codebase uses to group a binding (an ability icon and its
+        /// gauge, a hint and its sprites). Depth is capped because a HUD field graph is shallow and
+        /// an uncapped walk would wander into engine types.
+        /// </summary>
+        static void AddReference(object value, HashSet<Object> into, int depth)
+        {
+            switch (value)
+            {
+                case null: return;
+                case Object unityObject:
+                    if (unityObject) into.Add(unityObject);
+                    return;
+                case string: return;
+            }
+
+            if (depth >= MaxReferenceDepth) return;
+
+            if (value is System.Collections.IEnumerable sequence)
+            {
+                foreach (var element in sequence) AddReference(element, into, depth + 1);
+                return;
+            }
+
+            // Only the project's own [Serializable] payloads - never engine structs, which are
+            // numbers all the way down.
+            var type = value.GetType();
+            if (type.IsPrimitive || type.IsEnum) return;
+            if (type.Namespace == null || type.Namespace.StartsWith("Unity")) return;
+
+            foreach (var field in type.GetFields(BindingFlags.Instance | BindingFlags.Public |
+                                                 BindingFlags.NonPublic))
+                AddReference(field.GetValue(value), into, depth + 1);
+        }
+
+        const int MaxReferenceDepth = 3;
+
+        /// <summary>
+        /// The one field a reference from does NOT count as "still driven". <c>highlights</c> is the
+        /// legacy per-vessel press glow, which the card superseded - the Rhino's entry points inside
+        /// its old boost container, so honouring it would spare exactly the chrome the row replaced.
+        /// A reference from something the lockup retired is not evidence that anything still uses it.
+        /// </summary>
+        const string RetiredHighlightsField = "highlights";
 
         /// <summary>
         /// Switches off everything the host drew that the card now replaces - the decagon

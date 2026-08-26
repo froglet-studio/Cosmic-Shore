@@ -3133,10 +3133,23 @@ slant are both non-zero, the icon clears the narrow edge, the plates face each o
    switching** — it took them out from under the roots the switcher activates. That is reverted; if
    switching ever stops working again, that is the first thing to check.
 
-**Update — retiring the old UI on un-populated vessels. NOT EDITOR-VERIFIED.**
-A HUD that binds no ability icons kept its previous UI, which then drew *alongside* the new locked
-row. **Verify on Rhino, Manta and Serpent:** the old boost meters/buttons are gone and only the
-four-card row remains — and on the **Serpent specifically**, that its control hints still appear
-(its device-glyph roots are direct children of the HUD root and are explicitly exempt from the
-sweep; if the hints vanished, that exemption is not working). Run **Audit Ability Lockups** for the
-list of what each HUD loses.
+**Update — retiring the old UI on EVERY vessel. NOT EDITOR-VERIFIED.**
+The lockup now retires root-level content that no component on the HUD still references. Predicted
+from the assets, per vessel:
+
+| vessel | retired | kept |
+|---|---|---|
+| Sparrow · Scarab | `Boost Button/display`, `Ammo Count`, `ActionIconHolder`, `XBOX_Icon_Root`, `PS_Icon_Root` | the four cards |
+| Dolphin | a stray root `Image`, `XBOX_Icon_Root`, `PS_Icon_Root` | its four ability buttons (already moved into the row) |
+| Rhino | `BoostContainer` | — |
+| Serpent · Squirrel | — | their glyph roots, because their switcher references them |
+
+**Verify:** only the four-card row remains on each vessel; the Squirrel and Serpent still show
+control hints (their switcher spares the roots — if those vanished, the reference test is not
+finding the switcher); and the **Sparrow's stranded glyphs are gone** rather than sitting where the
+old row used to be. `Ammo Count` going is intended — nothing writes to it, ammo is shown by
+sprite-swapping the missile icon — but confirm no ammo readout was actually in use.
+
+⚠ Sparrow, Dolphin and Scarab now show **no control hints at all**, because their HUDs have no
+`InputDeviceIconSetSwitcher` (they are standalone prefabs, not variants of `VesselHUDPrefab`).
+Authoring one on each is the real fix and is the open follow-up.

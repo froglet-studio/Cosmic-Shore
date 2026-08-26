@@ -252,21 +252,40 @@ divergent press glow.
 
 ## Retiring the old UI
 
-`RetireLegacyChrome` works per ability **host**, so on a HUD with no bound icons it reaches nothing
-— which left exactly the vessels whose row is all locked cards (Rhino, Manta, Serpent) drawing their
-old boost meters and buttons *next to* the new row. The two competed, and the older one looked like
-the real UI.
+`RetireLegacyChrome` works per ability **host**, so it only ever reached what sat *around* an icon.
+Everything else a vessel drew before the lockup kept drawing beside the new row. The worst case was
+the **device-glyph roots**: `SparrowHUDVariant`, `DolphinHUDVariant` and `ScarabHUDVariant` each
+carry an `XBOX_Icon_Root` and a `PS_Icon_Root` with **no `InputDeviceIconSetSwitcher` to drive
+them** (they are standalone prefabs, not variants of `VesselHUDPrefab`, which is where the switcher
+lives). Those glyphs are never lit, never switched for the player's actual device, and never
+placed — so when the lockup moved the row, they stayed where the old row used to be.
 
-So a HUD that binds no icons has its root-level content retired as well, under two guards:
+So the lockup also retires **root-level content that no component on this HUD still references.** By
+the time it runs, everything the lockup owns has been moved into the row, so a root-level child that
+still draws is either something the vessel actively drives or something nothing drives — and which
+one is a *reference* question, asked rather than guessed. Sources are the components on the HUD root
+plus the icon-set switcher (found wherever it lives — the Squirrel keeps its on the vessel root).
 
-- **Only children that DRAW.** A subtree with no `Graphic` in it is logic, not UI; switching it off
-  would stop behaviour rather than hide a picture.
-- **The device-hint roots are exempt.** They are direct children of the HUD root, so a positional
-  sweep would take every control hint with them — on the Serpent, the one un-populated vessel that
-  has any.
+Three guards make it safe:
 
-The auditor lists what each such HUD will lose, because it happens at runtime and the prefab still
-shows it.
+- **Only children that DRAW.** A subtree with no `Graphic` is logic, not UI; switching it off would
+  stop behaviour rather than hide a picture.
+- **Sources are limited to the HUD root.** A component sitting *inside* a leftover branch would
+  reference its own children and spare the branch it belongs to.
+- **A reference from `highlights` does not count.** That is the legacy per-vessel press glow the
+  card superseded, and the Rhino's entry points inside its old boost container — honouring it would
+  spare exactly the chrome the row replaced. *A reference from something the lockup retired is not
+  evidence that anything still uses it.*
+
+What that clears, measured from the assets: Sparrow and Scarab lose `Boost Button/display`,
+`Ammo Count` (nothing writes to it — ammo is shown by sprite-swapping the missile icon),
+the emptied `ActionIconHolder` and both glyph roots; the Dolphin loses a stray `Image` and both
+glyph roots; the Rhino loses `BoostContainer`. The Serpent and Squirrel keep their glyph roots,
+because their switcher references them. The auditor lists the candidates per vessel.
+
+**The real fix for those three HUDs is a switcher**, so their hints work like the Squirrel's rather
+than being retired. Until then they show no control hints, which is honest: static pad glyphs shown
+to a keyboard player were misinformation before they were also misplaced.
 
 ## Locked slots — the row is always four cards
 

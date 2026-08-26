@@ -327,6 +327,7 @@ namespace CosmicShore.Editor
             report.AppendLine($"  {vessel,-10} ✓ {sizes.Count} slot(s); {normalising}. " +
                               "Row position, pitch, cell size and host scale are taken over by the lockup.");
             ReportGauges(vessel, view, report);
+            ReportLegacyContent(view, report);
             return problems;
         }
 
@@ -368,9 +369,14 @@ namespace CosmicShore.Editor
         }
 
         /// <summary>
-        /// What the lockup will switch off on an un-populated HUD. Not a problem - it is the point,
-        /// since the old UI would otherwise draw alongside the new row - but it happens at runtime,
-        /// so the prefab still shows it and anyone reading the asset would believe it.
+        /// The HUD's root-level drawing content. At runtime the lockup retires whichever of these
+        /// nothing on the HUD still references - the point, since the old UI would otherwise draw
+        /// alongside the new row - but it happens in play mode, so the prefab still shows all of it
+        /// and anyone reading the asset would believe it.
+        ///
+        /// <para>Deliberately does NOT re-implement the reference test: two copies of that rule
+        /// would eventually disagree, and the report is more useful listing candidates honestly
+        /// than asserting an outcome it derived separately.</para>
         /// </summary>
         static void ReportLegacyContent(VesselHUDView view, StringBuilder report)
         {
@@ -386,8 +392,8 @@ namespace CosmicShore.Editor
             }
 
             if (names.Count == 0) return;
-            report.AppendLine($"             legacy HUD content retired at runtime: {string.Join(", ", names)} " +
-                              "(device-hint roots are exempt)");
+            report.AppendLine($"             root-level content, retired at runtime unless something " +
+                              $"still references it: {string.Join(", ", names)}");
         }
 
         static IEnumerable<string> VesselPrefabPaths() =>
