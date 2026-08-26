@@ -1,5 +1,7 @@
 using System.Collections.Generic;
 using System.IO;
+using CosmicShore.Data;
+using CosmicShore.Gameplay;
 using CosmicShore.ScriptableObjects;
 using UnityEditor;
 using UnityEngine;
@@ -112,7 +114,7 @@ namespace CosmicShore.Editor.Codex
             coverage = 0f;
             error = null;
 
-            var model = HarvestModel(entry.SourcePrefab, flat, out var bounds, out var temporaries);
+            var model = BuildSubject(entry.SourcePrefab, flat, out var bounds, out var temporaries);
             if (!model)
             {
                 error = $"'{entry.DisplayName}': the prefab has no visible meshes.";
@@ -244,15 +246,238 @@ namespace CosmicShore.Editor.Codex
         // ── Model harvest ────────────────────────────────────────────────────────
 
         /// <summary>
+        /// The thing to photograph, normalised so its largest dimension is 2 units.
+        ///
+        /// <para><b>A flora is asked to draw itself.</b> Every flora prefab in the project carries
+        /// exactly ONE prism — the seed — because a plant is not a model, it is a growth rule, so
+        /// harvesting its meshes photographs a single box. <see cref="Flora.TryPreviewGrowth"/>
+        /// runs that rule in the abstract (no prism, no spindle, no GameObject, no cell) and
+        /// reports where prisms would land; the poses become one mesh through
+        /// <see cref="CellMiniatureBuilder"/>. This is the same answer the lava lamp's Lifeform
+        /// bench already reached — see <c>FloraIconBuilder</c> — reached here through the same
+        /// two calls rather than a second copy of it.</para>
+        ///
+        /// <para>Fauna are harvested normally: unlike flora they ARE authored in place (a shark's
+        /// wings, belly and danger rods sit at real offsets on the prefab), so their meshes are
+        /// the creature.</para>
+        /// </summary>
+        static GameObject BuildSubject(GameObject prefab, bool flat, out Bounds bounds,
+            out List<Object> temporaries)
+        {
+            temporaries = new List<Object>();
+
+            if (prefab.TryGetComponent(out Flora flora))
+            {
+                var grown = BuildGrownFlora(flora, flat, temporaries, out bounds);
+                if (grown) return grown;
+                // No preview for this species: fall through to the mesh path, then to flat —
+                // never to an invented shape.
+            }
+
+            var harvested = HarvestModel(prefab, flat, temporaries, out bounds);
+            if (harvested) return harvested;
+
+            // Nothing to photograph. One shape reaches here: a COLONY, whose root is a brain with
+            // no body at all - the geometry belongs to its member prefabs.
+            return BuildColonyChain(prefab, flat, temporaries, out bounds);
+        }
+
+        /// <summary>
+        /// A colony's body is its MEMBERS. The worm colony's root prefab carries no mesh and no
+        /// nested instance — it grows a head, body segments and a tail at runtime — so harvesting
+        /// it photographs nothing. This lays a short chain of those member prefabs at the colony's
+        /// own authored spacing and taper.
+        ///
+        /// <para>Found by serialized-property NAME (<c>headPrefab</c> / <c>bodyPrefab</c> /
+        /// <c>tailPrefab</c>) rather than by referencing the species' type, for the same reason
+        /// the harvester probes by name: an editor illustration should degrade to "no icon" when a
+        /// field is renamed, not become a compile error in a tool.</para>
+        /// </summary>
+        static GameObject BuildColonyChain(GameObject prefab, bool flat, List<Object> temporaries,
+            out Bounds bounds)
+        {
+            bounds = new Bounds(Vector3.zero, Vector3.zero);
+
+            GameObject head = null, body = null, tail = null;
+            SerializedObject config = null;
+
+            foreach (var component in prefab.GetComponents<Component>())
+            {
+                if (!component) continue;
+                var so = new SerializedObject(component);
+                head = PrefabProperty(so, "headPrefab");
+                body = PrefabProperty(so, "bodyPrefab");
+                tail = PrefabProperty(so, "tailPrefab");
+                if (!head && !body && !tail) continue;
+
+                var cfg = so.FindProperty("config")?.objectReferenceValue;
+                if (cfg) config = new SerializedObject(cfg);
+                break;
+            }
+
+            if (!head && !body && !tail) return null;
+
+            float spacing = ConfigFloat(config, "SegmentSpacing", 8.4f);
+            float headGap = ConfigFloat(config, "HeadGapMultiplier", 2.56f);
+            float tailGap = ConfigFloat(config, "TailGapMultiplier", 1.79f);
+            float taper = ConfigFloat(config, "TaperPerSegment", 0.9f);
+            int segments = Mathf.Clamp(ConfigInt(config, "SpawnSegmentCount", 8), 3, 12);
+
+            var root = new GameObject("CodexColonyModel") { hideFlags = HideFlags.HideAndDontSave };
+            Material shared = flat ? BuildFlatMaterial() : null;
+            if (shared) temporaries.Add(shared);
+
+            float z = 0f;
+            bool any = false;
+
+            any |= AppendMember(root.transform, head, ref z, spacing * headGap, 1f, temporaries, ref shared);
+            for (int i = 0; i < segments - 2; i++)
+                any |= AppendMember(root.transform, body, ref z, spacing, Mathf.Pow(taper, i + 1),
+                    temporaries, ref shared);
+            any |= AppendMember(root.transform, tail, ref z, spacing * tailGap,
+                Mathf.Pow(taper, segments - 1), temporaries, ref shared);
+
+            if (!any)
+            {
+                Object.DestroyImmediate(root);
+                return null;
+            }
+
+            Normalize(root.transform, out bounds);
+            return root;
+        }
+
+        /// <summary>Lay one member behind the last, and step the cursor. False when it has no mesh.</summary>
+        static bool AppendMember(Transform parent, GameObject member, ref float z, float step,
+            float scale, List<Object> temporaries, ref Material shared)
+        {
+            if (!member) return false;
+
+            var holder = new GameObject(member.name) { hideFlags = HideFlags.HideAndDontSave };
+            holder.transform.SetParent(parent, false);
+            holder.transform.localPosition = new Vector3(0f, 0f, z);
+            holder.transform.localScale = Vector3.one * Mathf.Max(0.05f, scale);
+
+            bool any = false;
+            foreach (var filter in member.GetComponentsInChildren<MeshFilter>(true))
+            {
+                if (!filter || !filter.sharedMesh) continue;
+                var renderer = filter.GetComponent<MeshRenderer>();
+                if (!renderer || !renderer.enabled) continue;
+                if (ToyModelBuilder.AnyAncestorNameContains(filter.transform, member.transform,
+                        NonBodyNameHints)) continue;
+                AddMesh(holder.transform, member.transform, filter.transform, filter.sharedMesh,
+                        renderer.sharedMaterials, ref shared, temporaries);
+                any = true;
+            }
+
+            if (!any)
+            {
+                Object.DestroyImmediate(holder);
+                return false;
+            }
+
+            z -= step;
+            return true;
+        }
+
+        static GameObject PrefabProperty(SerializedObject so, string field)
+        {
+            var value = so.FindProperty(field)?.objectReferenceValue;
+            return value switch
+            {
+                GameObject go => go,
+                Component component => component.gameObject,
+                _ => null,
+            };
+        }
+
+        static float ConfigFloat(SerializedObject config, string field, float fallback)
+        {
+            var prop = config?.FindProperty(field);
+            return prop != null && prop.propertyType == SerializedPropertyType.Float
+                ? prop.floatValue : fallback;
+        }
+
+        static int ConfigInt(SerializedObject config, string field, int fallback)
+        {
+            var prop = config?.FindProperty(field);
+            return prop != null && prop.propertyType == SerializedPropertyType.Integer
+                ? prop.intValue : fallback;
+        }
+
+        /// <summary>Prisms simulated per flora icon. The silhouette is what reads at icon size,
+        /// but a 512px hero can carry more structure than the bench's 220-prism station.</summary>
+        const int FloraPreviewPrismBudget = 700;
+
+        /// <summary>Fixed, so re-baking a species produces the same plant every time.</summary>
+        const int FloraPreviewSeed = 12345;
+
+        /// <summary>
+        /// Which domain a codex plant wears. Jade rather than the neutral <c>Domains.Blue</c>:
+        /// every prism in the game belongs to a domain, and the neutral sentinel resolves to grey,
+        /// which reads as unfinished rather than as impartial.
+        /// </summary>
+        const Domains FloraPreviewDomain = Domains.Jade;
+
+        static GameObject BuildGrownFlora(Flora prefab, bool flat, List<Object> temporaries,
+            out Bounds bounds)
+        {
+            bounds = new Bounds(Vector3.zero, Vector3.zero);
+
+            var poses = new List<SpawnPoint>(FloraPreviewPrismBudget);
+            if (!prefab.TryPreviewGrowth(FloraPreviewPrismBudget, FloraPreviewSeed, poses) ||
+                poses.Count == 0)
+                return null;
+
+            var lays = new List<PrismLay>(poses.Count);
+            foreach (var pose in poses) lays.Add(new PrismLay(pose, FloraPreviewDomain));
+
+            // Coverage 1: a flora IS its branching, and the signature filter that helps a
+            // 34k-prism world read at thumbnail size would eat the thin structure that makes a
+            // plant legible.
+            var miniature = CellMiniatureBuilder.BuildFromLays(lays, 1f, FloraPreviewPrismBudget,
+                1f, $"CodexFlora_{prefab.name}");
+            if (!miniature.IsValid) return null;
+
+            var root = new GameObject("CodexFloraModel") { hideFlags = HideFlags.HideAndDontSave };
+            root.AddComponent<MeshFilter>().sharedMesh = miniature.Mesh;
+            temporaries.Add(miniature.Mesh);   // BuildFromLays hands ownership to the caller
+
+            // The real prism material is a gameplay graph that reads per-frame globals and renders
+            // black here, so the icon takes the DOMAIN'S COLOUR on a lit material instead: the
+            // same read the lava lamp falls back to when no theme is loaded, and shaded, so the
+            // plant's form survives.
+            var material = flat
+                ? BuildFlatMaterial()
+                : BuildTintedMaterial(ToyFactory.DomainAccentColor(null, FloraPreviewDomain));
+            temporaries.Add(material);
+
+            var materials = new Material[Mathf.Max(1, miniature.SubmeshDomains.Length)];
+            for (int i = 0; i < materials.Length; i++) materials[i] = material;
+
+            var renderer = root.AddComponent<MeshRenderer>();
+            renderer.sharedMaterials = materials;
+
+            Normalize(root.transform, out bounds);
+            return root;
+        }
+
+        /// <summary>
+        /// Renderers whose branch is not the body — the same hints the lava lamp's species
+        /// stations filter on, so a codex icon and a bench station frame the same thing.
+        /// </summary>
+        static readonly string[] NonBodyNameHints = { "trail", "vfx", "pip", "explosion", "particle" };
+
+        /// <summary>
         /// Copy the prefab's meshes into a plain GameObject hierarchy, normalised so its largest
         /// dimension is 2 units. Reads the prefab ASSET — nothing is instantiated, so no gameplay
         /// component ever wakes up.
         /// </summary>
-        static GameObject HarvestModel(GameObject prefab, bool flat, out Bounds bounds,
-            out List<Object> temporaries)
+        static GameObject HarvestModel(GameObject prefab, bool flat, List<Object> temporaries,
+            out Bounds bounds)
         {
             bounds = new Bounds(Vector3.zero, Vector3.zero);
-            temporaries = new List<Object>();
 
             var root = new GameObject("CodexPreviewModel") { hideFlags = HideFlags.HideAndDontSave };
             var flatMaterial = flat ? BuildFlatMaterial() : null;
@@ -264,6 +489,8 @@ namespace CosmicShore.Editor.Codex
                 if (!filter || !filter.sharedMesh) continue;
                 var renderer = filter.GetComponent<MeshRenderer>();
                 if (!renderer || !renderer.enabled) continue;
+                if (ToyModelBuilder.AnyAncestorNameContains(filter.transform, prefab.transform,
+                        NonBodyNameHints)) continue;
                 AddMesh(root.transform, prefab.transform, filter.transform, filter.sharedMesh,
                         renderer.sharedMaterials, ref flatMaterial, temporaries);
                 any = true;
@@ -272,6 +499,8 @@ namespace CosmicShore.Editor.Codex
             foreach (var skinned in prefab.GetComponentsInChildren<SkinnedMeshRenderer>(true))
             {
                 if (!skinned || !skinned.sharedMesh || !skinned.enabled) continue;
+                if (ToyModelBuilder.AnyAncestorNameContains(skinned.transform, prefab.transform,
+                        NonBodyNameHints)) continue;
                 AddMesh(root.transform, prefab.transform, skinned.transform, skinned.sharedMesh,
                         skinned.sharedMaterials, ref flatMaterial, temporaries);
                 any = true;
@@ -351,15 +580,17 @@ namespace CosmicShore.Editor.Codex
         /// read as a shape, and an unlit fill of one colour throws away every bit of form the model
         /// has.
         /// </summary>
-        static Material BuildFlatMaterial()
+        static Material BuildFlatMaterial() => BuildTintedMaterial(new Color(0.82f, 0.84f, 0.88f));
+
+        static Material BuildTintedMaterial(Color tint)
         {
             var shader = Shader.Find("Universal Render Pipeline/Lit") ??
                          Shader.Find("Standard") ??
                          Shader.Find("Universal Render Pipeline/Unlit");
 
             var material = new Material(shader) { hideFlags = HideFlags.HideAndDontSave };
-            if (material.HasProperty("_BaseColor")) material.SetColor("_BaseColor", new Color(0.82f, 0.84f, 0.88f));
-            if (material.HasProperty("_Color")) material.SetColor("_Color", new Color(0.82f, 0.84f, 0.88f));
+            if (material.HasProperty("_BaseColor")) material.SetColor("_BaseColor", tint);
+            if (material.HasProperty("_Color")) material.SetColor("_Color", tint);
             if (material.HasProperty("_Smoothness")) material.SetFloat("_Smoothness", 0.28f);
             if (material.HasProperty("_Metallic")) material.SetFloat("_Metallic", 0f);
             return material;

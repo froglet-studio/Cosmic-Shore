@@ -46,8 +46,6 @@ namespace CosmicShore.Editor.Codex
         /// </summary>
         Action _deferred;
 
-        FrogletToolShipContext _ship;
-
         static readonly string[] KingdomFilters = { "All", "Ethirions", "Flora", "Fauna" };
         static readonly int[] BakeSizes = { 256, 512, 1024 };
 
@@ -62,17 +60,7 @@ namespace CosmicShore.Editor.Codex
             window.Show();
         }
 
-        void OnEnable()
-        {
-            _codex = LoadOrCreate();
-            _ship = new FrogletToolShipContext(ToolName)
-            {
-                CommitType = "feat",
-                CommitScope = "codex",
-                CommitSubject = count => $"author ethirion & ecology codex ({count} file(s))",
-                Validate = Validate,
-            };
-        }
+        void OnEnable() => _codex = LoadOrCreate();
 
         static CodexSO LoadOrCreate()
         {
@@ -115,8 +103,6 @@ namespace CosmicShore.Editor.Codex
                 DrawDetail();
             }
 
-            FrogletToolShipPanel.Draw(_ship, this);
-
             if (_deferred == null) return;
             var action = _deferred;
             _deferred = null;
@@ -150,6 +136,11 @@ namespace CosmicShore.Editor.Codex
                 _bakeSize = BakeSizes[EditorGUILayout.Popup(sizeIndex,
                     BakeSizes.Select(s => $"{s}px").ToArray(),
                     EditorStyles.toolbarPopup, GUILayout.Width(70f))];
+
+                if (GUILayout.Button(new GUIContent("Validate",
+                        "Check ids, names and images. Reports only — nothing is committed."),
+                        EditorStyles.toolbarButton, GUILayout.Width(70f)))
+                    _deferred = RunValidation;
 
                 GUILayout.FlexibleSpace();
 
@@ -558,6 +549,21 @@ namespace CosmicShore.Editor.Codex
 
         // ── Validation ───────────────────────────────────────────────────────────
 
+        void RunValidation()
+        {
+            AssetDatabase.SaveAssets();
+            var result = Validate();
+            SetStatus(result.Passed
+                    ? "Validation passed — " + result.Summary
+                    : result.Summary + "\n• " + string.Join("\n• ", result.Problems),
+                !result.Passed);
+        }
+
+        /// <summary>
+        /// Reports only. The codex asset and its PNGs are recorded on the tool ledger as they are
+        /// written, so <b>FrogletTools &gt; Build &gt; Pending Tool Changes</b> lists them and they
+        /// are committed by hand like any other change — this window does not push.
+        /// </summary>
         FrogletToolValidation Validate()
         {
             var problems = new List<string>();

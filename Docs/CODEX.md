@@ -69,11 +69,30 @@ Baked to `Assets/_Graphics/Codex/<id>.png` and imported as Sprites. The entry al
 `SourcePrefab`, so a detail panel can build a live, spinnable model through `ToyModelBuilder` —
 the same path the toybox's stations use.
 
-Three things worth knowing:
+**Nothing is ever instantiated.** Instantiating a crystal or a creature runs its `Awake` —
+registries, network objects, spawn coroutines — in the editor, outside a game. Everything below
+reads prefab ASSETS.
 
-- **Meshes are harvested off the prefab ASSET, never instantiated.** Instantiating a crystal or a
-  creature runs its `Awake` — registries, network objects, spawn coroutines — in the editor,
-  outside a game.
+Three subjects, picked in order:
+
+1. **A flora is asked to draw itself.** Every flora prefab in the project carries exactly **one**
+   prism — the seed — because a plant is not a model, it is a growth rule. Harvesting its meshes
+   photographs a single box, which is what the first pass shipped. `Flora.TryPreviewGrowth` runs
+   that rule in the abstract (no prism, no spindle, no GameObject, no cell) and reports where
+   prisms would land; the poses become one mesh through `CellMiniatureBuilder.BuildFromLays`. This
+   is the same answer the lava lamp's Lifeform bench already reached — see `FloraIconBuilder` —
+   reached through the same two calls rather than a second copy of it.
+2. **Fauna are harvested.** Unlike flora they *are* authored in place: a shark's wings, belly and
+   danger rods sit at real offsets on the prefab, so its meshes are the creature. Branches named
+   `trail` / `vfx` / `pip` / `explosion` / `particle` are skipped — the same filter the bench's
+   species stations use, so a codex icon and a station frame the same thing.
+3. **A colony's body is its members.** The worm colony's root carries no mesh and no nested
+   instance at all; it grows a head, body segments and a tail at runtime. When a prefab yields
+   nothing, the baker lays a short chain of its `headPrefab` / `bodyPrefab` / `tailPrefab` at the
+   colony's own authored spacing and taper.
+
+Two more things worth knowing:
+
 - **Alpha comes from rendering twice**, once on black and once on white, solving
   `a = 1 − (white − black)` per pixel. Whether a render target carries usable alpha depends on the
   pipeline, the URP asset and the shaders involved, so a bake that trusts the alpha channel works
@@ -83,7 +102,8 @@ Three things worth knowing:
   read global uniforms that only exist inside a running frame. The baker measures coverage and,
   when a render comes back essentially empty, retries as a shaded neutral silhouette and says so in
   the status line. Tick **Flat silhouette** on those entries to make the choice explicit rather
-  than relying on the fallback.
+  than relying on the fallback. Grown flora never hit this: they are painted with a lit material in
+  the domain's colour, which is the read the lava lamp falls back to when no theme is loaded.
 
 Per-entry **Yaw / Pitch / Padding** re-pose the camera; re-bake to apply.
 
@@ -122,9 +142,12 @@ unauthored default.
 ## 7. Shipping the output
 
 The tool's real deliverable is the **asset change**, and that lands in the working tree, not the
-branch. Use **Validate & Push** at the bottom of the window: it saves, validates (ids present and
-unique, every entry named and illustrated), then stages *only* the codex asset and the PNGs it
-wrote. Everything else dirty in the tree is listed and left alone. See `Docs/TOOLING.md`.
+branch. This window does **not** push: every file it writes — the codex asset and each PNG — is
+recorded on the tool ledger as it is written, so **FrogletTools ▸ Build ▸ Pending Tool Changes**
+lists them and they are committed and pushed by hand like any other change.
+
+**Validate** in the toolbar is report-only: ids present and unique, every entry named and
+illustrated.
 
 This tool is **permanent**, not a one-off wirer — do not retire it. The codex needs re-scanning
 every time a species or crystal is added.
@@ -133,6 +156,8 @@ every time a species or crystal is added.
 
 - **No `Docs/ECOSYSTEM.md` prose is imported.** Taglines and descriptions are blank until someone
   writes them. That is deliberate — the harvester states facts, a writer states character.
+- **A grown flora icon is one plant at one seed.** The seed is fixed (12345) so a re-bake is
+  reproducible, which also means a species with heavy `wander` always draws the same individual.
 - **Level variants exist only for elemental ethirions.** Omni has no level band because it is not
   a lifeform heart.
 - **"Found in" is derived from cell configs**, so a species released only by a toy or a mode's own
@@ -140,3 +165,7 @@ every time a species or crystal is added.
 - **Fauna speed** is probed by serialized-field name one level deep (through a species' data SO).
   A rename drops the row rather than failing the build — the right trade for an encyclopedia, but
   it means a missing row can mean "renamed" as well as "not authored".
+- **Four `Wildlife Cell N Fauna Config Data` assets warn on every scan.** They are empty stubs
+  (`FaunaPrefab` unset, `InitialSpawnCount` 0, `SpawnProbability` 0) sitting in the Wildlife Blitz
+  cell configs. The warning is correct and there is nothing to harvest; deleting the stubs is the
+  only thing that would silence it.
