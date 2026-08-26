@@ -23,6 +23,46 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Offline / single-player fallback: local host + local data cache (`claude/single-player-offline-fallback-jksga5`, 2026-08-26)
+
+**What landed.** The Steam-offline fallback (`Docs/OFFLINE_MODE.md` §6): when UGS auth/Relay is
+unreachable at boot, `AuthenticationSceneController` falls into `OfflineModeService`, which
+restores the player's last-known-good data (`LocalCloudDataCache` snapshots under every
+`CloudDataRepository`), wires the Netcode callbacks (`MultiplayerSetup.EnsureNetcodeCallbacksWired`,
+newly public), resets the transport to loopback, and starts NetworkManager as a plain
+`127.0.0.1` host — the first `StartHost()` call in the project. `GameDataSO.IsOfflineSession`
+gates matchmaking (`MultiplayerSetup`) and party creation (`HostConnectionService`) off.
+`ApplicationStateMachine` now also subscribes `OnNetworkFound` and resumes the state
+`Disconnected` interrupted.
+
+**Verified without the editor:** Roslyn syntax pass on all 11 files; `OfflineModeService`
+semantic-compiled against NGO/UniTask stubs; cache+repository layer compiled against real
+Newtonsoft and exercised (12 runtime assertions incl. Dictionary round-trip, cloud-wins,
+reset overwrite, corrupt-file degradation); `check_conditional_compilation.py` clean.
+
+**Verify in editor:**
+1. Compile — the touched set crosses `System/`, `Controller/Multiplayer/`, `Controller/Party/`.
+2. **Offline cold boot:** Play from Bootstrap with networking disabled (airplane mode /
+   firewall the editor). Expect: offline notice on the auth splash → "Starting offline…" →
+   Menu_Main loads, the autopilot vessel spawns, freestyle + toys work. Console shows
+   `[OfflineModeService] Offline local host running`.
+3. **Offline data restore:** run once online (so `{persistentDataPath}/CloudCache/*.json`
+   exists), then boot offline — display name, unlocked vessels, episode/mode progression must
+   match the online session, not `Pilot####` defaults.
+4. **Offline game launch:** from the offline menu, launch an AI-backfilled mode (HexRace or
+   Rampage). Expect a normal solo+AI match; no matchmaking attempt, no host shutdown
+   (`[MultiplayerSetup]` offline log line instead), scoreboard + replay + return-to-menu work.
+5. **Online regression:** boot with network — everything must be byte-identical to before
+   (Relay session, party, invites). The only behavioural delta online is snapshot writes to
+   `CloudCache/`.
+6. **ConnectionApproval check:** confirm the offline host's own client passes approval (vessel
+   spawns). If the vessel never appears, the approval callback didn't reach the NM before
+   `StartHost` — check `EnsureNetcodeCallbacksWired` ran (FLOW-1 log).
+7. **Wi-Fi drop/restore in menu:** toggle network off/on mid-session; app state must go
+   `Disconnected` → back to the prior state (new `OnNetworkFound` path), no permanent park.
+
+---
+
 ### 🔴 Bends AI aim: wavefront intercept lead + human focus (`claude/pensive-hopper-35d6h4`, 2026-08-21)
 
 Authored without a Unity compile or play-test (remote session, no editor). Touches

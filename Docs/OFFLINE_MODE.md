@@ -1,8 +1,9 @@
 # Offline / Single-Player Fallback
 
-**Status: DESIGN — not implemented.** This document records why the game cannot currently be
-played without a network connection, what the fallback should be, and every surface the change
-touches. Read it before writing any offline code.
+**Status: CORE IMPLEMENTED (2026-08-26).** The boot fallback, the offline local host, and the
+local last-known-good data cache are in. §6 records exactly what shipped and what remains.
+§§0–3 are kept as the diagnosis of the world before the fix — the "today" they describe is the
+pre-implementation state. Read this before touching any offline code.
 
 ---
 
@@ -281,3 +282,45 @@ Steps 1–2 are a few hours and remove the brick. Steps 4–6 are the real work.
 4. **Anonymous auth without network.** UGS anonymous sign-in needs one online round-trip *ever* to
    mint a session token. A player whose **first ever launch** is offline has no cached token and no
    `PlayerId`. Confirm the local-identity path is acceptable for that case (§3.2).
+
+---
+
+## 6. What shipped (2026-08-26) — and what remains
+
+### 6.1 Implemented
+
+| Piece | Where | What it does |
+|---|---|---|
+| **Offline local host** | `OfflineModeService` (`_Scripts/System/`, pure C# lazy DI singleton, registered in `AppManager.InstallBindings`) | Restores local data first, wires the Netcode callbacks via `MultiplayerSetup.EnsureNetcodeCallbacksWired()` (with a minimal approval-callback fallback), re-asserts the loopback transport (`SetConnectionData("127.0.0.1", 7777)`), `StartHost()`, waits for `IsListening`. Single writer of `GameDataSO.IsOfflineSession`. |
+| **Boot unblock** | `AuthenticationSceneController.LoadMainMenuNetworkedAsync` | Device unreachable → skips the 3×15 s Relay attempts entirely; otherwise attempts them, then falls into `EnterOfflineSessionAsync` instead of the old unbounded wait. `Menu_Main` then loads through Netcode scene management on the local host — the whole spawn chain runs unchanged. The manual retry surface survives only as the last resort when even `StartHost` fails. The per-attempt `EnsurePartySessionAsync` retry is also exception-hardened: an unauthenticated create used to throw out of the `UniTaskVoid` and strand the flow before any fallback could run. |
+| **Session flag** | `GameDataSO.IsOfflineSession` (`[NonSerialized]`) | Read by the gates below. Deliberately not cleared by `ResetRuntimeData`/`ResetAllData` — the offline session lasts until app restart. |
+| **Local last-known-good data** | `LocalCloudDataCache` (`_Scripts/System/CloudData/Providers/`) + `CloudDataRepository.LoadAsync/SaveAsync` | Every cloud key is mirrored to `{persistentDataPath}/CloudCache/{key}.json` on successful load and on every save attempt; when the cloud answers nothing, the snapshot restores. Covers **all ten repositories** — profile (display name, avatar, crystals), hangar (vessel unlocks), episodes, game progression, mode stats, settings, daily challenge, training, squad, loadout. Newtonsoft serialization (same as the UGS SDK), root path captured on the main thread at startup, all IO fail-soft. Cloud wins whenever it answers; `ResetAsync` overwrites the snapshot so a reset cannot resurrect data. |
+| **Offline data init** | `UGSDataService.InitializeOfflineAsync` | Runs the ordinary `InitializeAsync` pipeline with the provider unavailable — every repo answers from its snapshot, `IsInitialized` flips true, `SyncHangarToVessels` restores unlocks, `OnInitialized` lets `PlayerDataService` merge the cached profile through its normal path. Called by `OfflineModeService` *before* `StartHost`, so the host's Player object resolves the cached display name instead of minting `Pilot####`. A late sign-in reconciles: clean repos re-load from cloud, dirty repos keep offline progress and flush through the existing debounce loop. |
+| **Matchmaking stand-down** | `MultiplayerSetup.OnAuthenticationSignedIn` (+ `Start`) | Offline session → wires callbacks + raises `SessionStarted` in game scenes, never shuts the local host down for UGS matchmaking. `EnsureNetcodeCallbacksWired()` extracted public so both paths share one callback set. Stale `EnsureHostStartedAsync` comment fixed. |
+| **Party stand-down** | `HostConnectionService.EnsurePartySessionAsync` | No-ops for the whole offline session, so a late Relay success can never `ShutdownAsync` the local host out from under a running offline game. |
+| **Network recovery** | `ApplicationStateMachine` | Subscribes `OnNetworkFound` (the §3.5 bug): `Disconnected` now captures the state it interrupted and resumes it when reachability returns — including `InGame`, mirroring the Paused restore. |
+
+Verified in this pass (no Unity Editor available in the implementation environment — see
+`Docs/UNITY_VERIFICATION_CHECKLIST.md`): Roslyn syntax pass over all 11 touched files;
+`OfflineModeService` compiled against API-accurate NGO/UniTask/UnityEngine stubs; the
+cache + repository layer compiled against the **real** Newtonsoft and exercised end-to-end
+(12 assertions: offline restore of name/vessels/episodes incl. `Dictionary` round-trip,
+offline progress surviving a quit, cloud-wins on reconnect, reset overwrite, corrupt-file
+degradation); `check_conditional_compilation.py` clean.
+
+### 6.2 Still open
+
+- **UI gating (§3.3)** — party/friends/leaderboards/store/daily-challenge surfaces are not yet
+  hidden or empty-stated when `GameDataSO.IsOfflineSession` is true; their actions fail
+  guarded-but-visibly.
+- **Offline → online promotion (§5.1)** — the session stays offline until restart, by design in
+  this pass. A "Reconnect" flow is future work and must re-boot the party layer, never promote
+  in place.
+- **Mid-session network loss on a solo game (§3.5)** — `OnTransportFailure` still ends a solo
+  game. Rare on a live Relay solo session; revisit with the reconnect flow.
+- **First-ever launch offline (§5.4)** — no cached UGS token and no snapshots yet: the player
+  gets a fresh local default profile (random `Pilot####`) whose progress lands in the snapshot
+  store, but is superseded when the first real cloud profile loads. Offline-earned progress on a
+  *never-signed-in* install does not merge into the account created later.
+- **Snapshot scope** — the cache is per-device last-known-good, not per-account. One anonymous
+  UGS account per device makes this safe today; revisit if account switching ever ships.

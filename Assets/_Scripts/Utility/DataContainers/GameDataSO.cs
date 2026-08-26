@@ -122,6 +122,22 @@ namespace CosmicShore.Utility
         public bool IsTournamentMode;
 
         /// <summary>
+        /// True while this session is running as an OFFLINE LOCAL HOST - NetworkManager started
+        /// on 127.0.0.1 by <see cref="CosmicShore.Core.OfflineModeService"/> because UGS
+        /// auth / Relay could not be reached (Steam offline mode). Everything downstream runs
+        /// byte-identically to a solo online session; this flag exists so the online-only
+        /// plumbing (matchmaking, party Relay creation) stands down instead of tearing the
+        /// local host out from under a running game.
+        ///
+        /// Single writer: <see cref="CosmicShore.Core.OfflineModeService"/>. Deliberately NOT
+        /// cleared by <see cref="ResetRuntimeData"/> or <see cref="ResetAllData"/> - the offline
+        /// session lasts until the app restarts (re-entering online mid-session requires a full
+        /// re-boot of the party layer; see Docs/OFFLINE_MODE.md §5.1).
+        /// [NonSerialized] so a play-mode session can never bake the flag into the asset.
+        /// </summary>
+        [NonSerialized] public bool IsOfflineSession;
+
+        /// <summary>
         /// Number of AI players to backfill in multiplayer when not enough
         /// human players are present.
         /// A value of 0 means no AI backfill (all human or solo-mode AI logic applies).

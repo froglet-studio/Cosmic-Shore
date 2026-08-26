@@ -509,6 +509,15 @@ namespace CosmicShore.Core
                 lifetime: Lifetime.Singleton,
                 resolution: Resolution.Lazy
             );
+
+            // Offline / single-player fallback (Docs/OFFLINE_MODE.md): starts the loopback
+            // local host when UGS auth / Relay is unreachable, and is the single writer of
+            // GameDataSO.IsOfflineSession. Pure C# lazy singleton like the services above.
+            builder.RegisterFactory(
+                c => new OfflineModeService(c.Resolve<GameDataSO>()),
+                lifetime: Lifetime.Singleton,
+                resolution: Resolution.Lazy
+            );
         }
 
         /// <summary>

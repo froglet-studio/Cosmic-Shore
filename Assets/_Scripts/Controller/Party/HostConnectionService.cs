@@ -952,6 +952,18 @@ namespace CosmicShore.Gameplay
         /// </summary>
         public async UniTask EnsurePartySessionAsync()
         {
+            // OFFLINE session (OfflineModeService, Docs/OFFLINE_MODE.md): the loopback host
+            // IS the session. A late Relay success here would ShutdownAsync that host out
+            // from under a live offline game (auth can succeed while Relay keeps failing,
+            // and this method retries with backoff long after the boot flow has already
+            // fallen back). Re-entering online is a deliberate re-boot, never an in-place
+            // promotion - so party session creation stands down for the whole session.
+            if (_gameData != null && _gameData.IsOfflineSession)
+            {
+                CSDebug.Log("[HostConnectionService] Offline session active - skipping party session creation.");
+                return;
+            }
+
             // Fast path - already hosting, no work to do.
             if (IsHostingParty) return;
 
