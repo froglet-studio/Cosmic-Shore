@@ -194,6 +194,37 @@ namespace CosmicShore.Gameplay
             animationTransforms = new List<Transform>() { ThrusterTopRight, ThrusterRight, ThrusterBottomRight, ThrusterBottomLeft, ThrusterLeft, ThrusterTopLeft };
         }
 
+        // POSITIONS MUST SETTLE WHEN THE STICK IS IDLE TOO.
+        //
+        // `VesselAnimation.Update` takes one of two paths: `Idle()` when the pilot is not touching
+        // the stick, `PerformShipPuppetry(...)` otherwise. `Idle()` relaxes ROTATIONS only -
+        // `ResetAnimation` writes `localRotation` and nothing else - which is complete for every
+        // other vessel, because this is the only animation in the fleet that POSITIONS its parts.
+        //
+        // So the whole positional layer lived on a path an idle vessel does not take: the engines'
+        // resting setback was applied only while the stick was off centre and then froze wherever
+        // it had reached the moment the pilot let go. A field that places a part cannot be written
+        // only when the part is being animated.
+        protected override void Idle()
+        {
+            base.Idle();
+            ApplyRestingLayout();
+        }
+
+        /// <summary>Where the positioned parts live when nothing is asking them to move: the wings
+        /// at rest, the engines at their resting setback. Shared by the idle path and by
+        /// PerformShipPuppetry, so the two can never describe a different ship.</summary>
+        void ApplyRestingLayout()
+        {
+            Quaternion frame = transform.rotation;
+            MovePartFromRest(Chassis, Vector3.zero, frame);
+            MovePartFromRest(RightWing, defaultWingOffset, frame);
+            MovePartFromRest(LeftWing, defaultWingOffset, frame);
+            if (animationTransforms == null) return;
+            for (int i = 0; i < animationTransforms.Count; i++)
+                MovePartFromRest(animationTransforms[i], RestThrusterOffset, frame);
+        }
+
         protected override void PerformShipPuppetry(float pitch, float yaw, float roll, float throttle)
         {
             // NOTE ON ROLL DIRECTION. A previous pass negated roll here, on the theory that the

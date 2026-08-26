@@ -607,6 +607,41 @@ against the hull; reading them in the Course frame would make the parts *transla
 which is motion the manoeuvre does not want. `RotatePartFromRestInFrame` and `MovePartFromRest` take
 their frames separately, so this costs nothing structurally.
 
+### 4.6.3 A positional layer that only runs on the puppetry path never applies at rest
+
+`VesselAnimation.Update` takes one of two branches — `Idle()` when the pilot is not touching the
+stick, `PerformShipPuppetry(...)` otherwise — and `Idle()` relaxes **rotations only**
+(`ResetAnimation` writes `localRotation` and nothing else). That is complete for every other vessel
+in the fleet, because `RiptideAnimation` is the only animation that *positions* its parts.
+
+So the entire positional layer lived on a path an idle vessel does not take: the engines' resting
+setback was applied only while the stick was off centre, and froze wherever it had reached the
+moment the pilot let go. It reads as the field doing nothing, which is exactly how it was reported
+— *"the jet and wing positions look like their z value in the vessel frame remained near zero."*
+
+`RiptideAnimation` now overrides `Idle()` to settle positions as well, through the same
+`ApplyRestingLayout()` the puppetry path uses, so the two cannot describe a different ship.
+
+**The general rule: a value that PLACES something must not be written only on the path that
+ANIMATES it.** Placement is a property of the object at rest; animation is what happens to it
+afterwards. If the only writer is the animation branch, the resting pose is whatever the last
+animated frame happened to leave behind.
+
+Three things were ruled out first, and each is worth recording because each was plausible:
+
+| suspected | measured | verdict |
+|---|---|---|
+| an Animator stomping the write in the animation update (as it does blend shapes — §CLAUDE.md) | no Animator component on the prefab; no controller assigned by any vessel script | not it |
+| soft skin weights smearing the mesh instead of sliding the part | **every** bone owns its verts at weight `1.000`, zero shared — `wing.l` 294 verts, `jetT.l` 538, all rigid | not it |
+| the offsets being too small to see | hull collider (`Dolphin_Test`, under `OrientationHandle` at scale 1) is **3.448 units long**, so `driftWingForward 2.3` is **67%** of the hull | not it |
+
+That last row also corrects a scare from the same investigation: the rig FBX's root node carries
+`Lcl Scaling (100,100,100)`, which looks like a 100× discrepancy against the legacy art. It is
+normalised away on import — the mesh's raw vertex extent (5.287 wide) equals the wingspan the
+shipped colliders describe (wings centred at x ±1.68 with a 1.927-long box → 5.29), and the camera
+sits 20 units back. Both independent measurements agree the ship is ~3.45 units long, so the bone
+positions measured off the FBX **are** world units.
+
 A separate finding from the same pass, and a reminder of §4.4: **the rig's engines rest 0.15 units
 forward of the ship they replaced.** The legacy art authored its engine cases at `z −2.047`; the rig's
 jet bones rest at `z −1.90`. Both models are unit-1 (`UnitScaleFactor 1.0`, `useFileScale: 1`,
