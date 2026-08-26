@@ -265,16 +265,9 @@ namespace CosmicShore.Editor
             Bind(so, "jawUpper", jawUpper);
             Bind(so, "jawLower", jawLower);
 
-            // Every Dolphin icon is a live gauge, so colour is already spoken for, and these four
-            // are busy enough (generated profile, recharge wipe, jaw pair + tally, stepped ring)
-            // that a corner badge just clutters them - the upgrade signal rides the persistent scale
-            // bump alone here. Deliberately NOT set by the generic pass: a vessel whose icons are
-            // static art SHOULD tint and badge, so this is a per-vessel decision.
-            var tint = so.FindProperty("tintIconOnUpgrade");
-            if (tint != null) tint.boolValue = false;
-            var badge = so.FindProperty("showUpgradeBadge");
-            if (badge != null) badge.boolValue = false;
-
+            // The icon tint and the corner badge that used to be configured here are RETIRED: the
+            // ability lockup's card carries the upgrade for every vessel now (Docs/ABILITY_LOCKUP.md),
+            // so there is no longer a per-vessel decision to make and no second signal to suppress.
             so.ApplyModifiedPropertiesWithoutUndo();
         }
 

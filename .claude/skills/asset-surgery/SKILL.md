@@ -506,6 +506,88 @@ consumer voids it: `VesselTail.prefab`'s six disabled `ParticleSystem`s were fre
 vessels and would have been ~480 live components across a 20-deep projectile pool per Sparrow.
 A cost claim about an asset is scoped to its current consumers; pooling a new one re-opens it.
 
+### Trap: a PREFAB ASSET does not tell you what its INSTANCE wires
+
+Reading a prefab asset to answer "what does this thing contain / reference / bind?" is fast,
+feels authoritative, and is the wrong source whenever something *instances* it. A prefab instance
+can do two things the asset cannot show you:
+
+- **Add GameObjects the asset has never heard of** — they live in the INSTANCING file, parented to
+  a *stripped* transform whose `m_CorrespondingSourceObject` points back at the asset.
+- **Populate serialized fields the asset leaves empty**, as `m_Modifications` entries.
+- **Override serialized fields the asset DOES author** — the same `m_Modifications` mechanism, but
+  this one is worse, because the asset shows a plausible value that is simply never used.
+
+So a component that looks unwired in the asset can be fully wired in every real use of it. This
+shipped a wrong claim twice on one branch: a HUD asset whose view wired one field was documented
+as having three dead root branches, while the *vessel* prefab instancing it added three more
+branches and populated six live readout fields. Resolve an instance's added children by walking
+`m_Father` until you hit a stripped transform, then map that transform's
+`m_CorrespondingSourceObject` back into the asset to learn its name:
+
+```python
+# in the INSTANCING file: parent chain ends at a stripped rect
+src = re.search(r'm_CorrespondingSourceObject: \{fileID: (\d+), guid: (\w+)', stripped_body)
+# then look up src.group(1) in the ASSET to get the real parent's name
+```
+
+**The override direction has its own tell: the edit you make has NO effect and NOTHING errors.**
+A vessel prefab overrode `m_Sprite` on one HUD icon; editing that sprite in the HUD variant changed
+nothing on screen, and there is no warning anywhere because both values are valid. Two habits close
+it: when an asset edit does not show up in play, dump the INSTANCING file's `m_Modifications`
+filtered to the component's fileID *before* re-examining the asset — and note that a lone override
+among otherwise-unoverridden siblings (one of four icons) is the signature of a stray edit made on
+the instance, so **delete it** rather than repointing it, or you keep two authorities for one value.
+
+**Parse `m_Modifications` as RAW LINES, never with a one-line regex.** The entry wraps:
+
+```yaml
+    - target: {fileID: 8778855275387912087, guid: c1572db06ad4244469ad3f25d86940b8,
+        type: 3}
+      propertyPath: m_Sprite
+      value: 
+      objectReference: {fileID: 21300000, guid: 0cc6e2a2018ce2d43a02078b739adf9b,
+        type: 3}
+```
+
+`- target: {...}` and `objectReference: {...}` each break across two lines, so
+`r'- target: \{fileID: (\d+), guid: (\w+), type: \d\}\s*\n\s*propertyPath: ...'` matches **zero**
+entries and a 166-override instance reads as clean. Walk the lines instead — index every
+`propertyPath:` line, then scan backwards to the nearest `- target:` and forwards for the value and
+`objectReference` — and sanity-check the parse by asserting your count equals
+`body.count('propertyPath:')` before you trust a negative result. *A zero-match result from a
+hand-written Unity-YAML regex is a claim about your regex, not about the file.*
+
+Same family as the `m_Name`-override trap below and the "field initializer is not the shipped
+value" rule: **an assertion about what an asset contains has to be read from whoever USES it.**
+
+### Trap: a multi-document regex silently spans documents and returns a plausible wrong answer
+
+Unity YAML is a stream of `--- !u!<type> &<id>` documents. A regex like
+
+```python
+re.search(r'--- !u!224 &\d+\n(.*?m_Father: \{fileID: 0\}.*?)', text, re.S)   # WRONG
+```
+
+does not "find the root transform" — with `re.S` the `.*?` crosses document boundaries, so it
+happily pairs the FIRST `224` header with some LATER document's `m_Father: 0`. It does not throw;
+it returns a well-formed match with the wrong body, and every number you read out of it is wrong.
+On the run this was written for it reported a HUD root as centre-anchored 100×100 when it is
+actually a full-canvas stretch — and the wrong number nearly went into a doc as a correction to a
+claim that had been right all along.
+
+**Always split into documents first, then query WITHIN one:**
+
+```python
+docs = {m.group(2): (m.group(1), m.group(3)) for m in
+        re.finditer(r'--- !u!(\d+) &(\d+)(?: stripped)?\n(.*?)(?=\n--- !u!|\Z)', text, re.S)}
+roots = [k for k,(t,b) in docs.items() if t=='224' and re.search(r'^  m_Father: \{fileID: 0\}', b, re.M)]
+```
+
+Note the `^  ` and `re.M` on the inner query too — without them a nested `m_Father` inside a
+modification block matches. **The tell that you have this bug is disagreement between two of your
+own measurements**; when that happens, do not pick the one you like, rebuild the parse.
+
 ### Trap: a `TrailRenderer` on a POOLED object draws a streak across the arena
 
 Two failures that do not exist on a scene-level object and both look like a rendering bug:
@@ -901,6 +983,36 @@ Two things this buys beyond a compile:
 Use it for the pure/static core of a change (a predicate, a mask, a formula). It still cannot see
 name resolution or whole-class consistency — see the two traps below.
 
+**Slice by METHOD SIGNATURE + brace matching, not by markers, when the change is a handful of
+methods inside a huge file.** `START_MARKER`/`END_MARKER` needs stable text you are not editing,
+which is exactly what a working session keeps moving. A ~30-line extractor that takes a LIST of
+signature regexes and walks braces from each match to its closing one is immune to that: the
+harness re-derives itself from the shipped file after every edit, so `extract → generate → compile`
+becomes one command you re-run between patch rounds. One session type-checked five edited bodies
+out of a 2,400-line `NetworkBehaviour` this way across six rounds of edits, in seconds each.
+
+```python
+def extract(sig_regex):                      # find the signature, then brace-match to the end
+    for i, l in enumerate(lines):
+        if re.search(sig_regex, l):
+            depth, started, out = 0, False, []
+            for j in range(i, len(lines)):
+                out.append(lines[j])
+                depth += lines[j].count('{') - lines[j].count('}')
+                started |= '{' in lines[j]
+                if started and depth == 0: return "\n".join(out)
+    sys.exit("not found: " + sig_regex)      # HARD FAIL — see below
+```
+
+**The extractor must HARD-FAIL on a signature it cannot find, and that line is the whole gate.**
+A signature list silently stops covering a method the moment you rename or delete one — and the
+harness then compiles clean, reports `errors: 0`, and is proving nothing. This is gate erosion by
+your own refactor: the failure looks exactly like success. `sys.exit` on a miss makes the harness
+break loudly the moment its subject moves, which is the only way you find out you renamed
+something. Pair it with the §4 rule (inject a defect, confirm it fires, restore, `cmp`) **after
+every restructuring pass**, not once at the start — the run that matters is the one against the
+code you are about to commit.
+
 **For an `#if UNITY_EDITOR` TEST file, skip the extraction — compile the WHOLE file, unmodified,
 and drive it by reflection.** A test file's Unity surface is usually small and entirely stubbable
 (`Vector3`, `Mathf`, `Mesh`'s vertex/UV accessors, `Object.DestroyImmediate`), and NUnit is ~40
@@ -921,6 +1033,25 @@ everything inside every method the suite covers. Two mechanics that cost a cycle
 And prove the harness the way the table above was produced — inject each defect class you care
 about, confirm it fires, restore, `cmp`. A run that only ever passes is indistinguishable from a
 run that cannot fail.
+
+**The most common way that goes wrong is not a weak assertion — it is a file the build never
+compiled.** A harness `.csproj` that enumerates its inputs explicitly
+(`<EnableDefaultCompileItems>false</EnableDefaultCompileItems>` plus a literal
+`<Compile Include="..."/>` list — which is the right shape, because it keeps the harness pinned to
+the files you meant) will silently ignore a new `.cs` you drop into its directory. You add a probe,
+run the build, read **`Build succeeded`**, and conclude the code is good; nothing was checked. The
+negative control is what separates those two states, and it takes one command:
+
+```sh
+sed -i 's/<the call you probe>/&; obj.NoSuchMember();/' Probe.cs
+dotnet build -v q --nologo | grep -E 'error|Build'      # MUST report CS1061
+git checkout -- Probe.cs || mv Probe.bak Probe.cs       # restore, rebuild, expect success
+```
+
+If the deliberate error does not fire, the file is not in the build — add it to the `<Compile>`
+list and start over. Treat "I added a file to the harness" as requiring this check every time; the
+failure mode is a green build that proves nothing, which is the exact thing a harness exists to
+rule out.
 ### Technique: when you WIDEN a pure function, pin the old behaviour as a whole-domain test
 
 Extending a formula — a two-stage curve becoming four, a flag gaining a mode, a cap gaining a
