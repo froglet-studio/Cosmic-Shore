@@ -37,6 +37,10 @@ namespace CosmicShore.Gameplay
         private bool dualMouseEngaged;
         private bool prevBothLeftButtonsHeld;
 
+        // Which device the player is actually USING, not merely which are plugged in. Sticky:
+        // InputDeviceActuation only answers on a real actuation, so nothing thrashes.
+        private InputDeviceFamily activeDeviceFamily = InputDeviceFamily.None;
+
         private bool isInitialized;
 
         private void Awake()
@@ -71,12 +75,15 @@ namespace CosmicShore.Gameplay
             if (!isInitialized)
                 return;
             
-            // Toggle the fullscreen state if the Escape key was pressed this frame on windows
 #if UNITY_STANDALONE_WIN || UNITY_EDITOR_WIN
             if (!Application.isFocused) return;
 
+            // F11, not Escape. Escape is the OVERVIEW gesture (OverviewGesture — it presses the
+            // HUD's own Volume/Pause button), which is what a mouse pilot reaches for instead of
+            // being handed a cursor mid-flight. Fullscreen keeps a key of its own so a windowed
+            // build is not a trap; F11 is the convention everywhere else.
             var kb = Keyboard.current;
-            if (kb != null && kb.escapeKey.wasPressedThisFrame)
+            if (kb != null && kb.f11Key.wasPressedThisFrame)
                 Screen.fullScreen = !Screen.fullScreen;
 #endif
             
@@ -96,6 +103,7 @@ namespace CosmicShore.Gameplay
             // strategy itself read the same per-frame snapshot.
             multiMouseService?.Tick();
             UpdateDualMouseEngagement();
+            UpdateActiveDeviceFamily();
 
             UpdateInputStrategy();
             currentStrategy?.ProcessInput();
@@ -135,6 +143,11 @@ namespace CosmicShore.Gameplay
             RegisterToEvents();
             
             InitializeStrategies();
+
+            // BEFORE SetInitialStrategy: selection now keys on the family the player is USING, and
+            // an unset family reads as "not the pad" - so a controller connected at boot would
+            // have handed the first frame to the keyboard until the player actuated something.
+            activeDeviceFamily = InputDeviceActuation.DetectInitial();
             SetInitialStrategy();
             
             // CRITICAL FIX: Initialize the invert settings from GameSetting's current state
@@ -195,9 +208,28 @@ namespace CosmicShore.Gameplay
             orientationHandler.Initialize(InputStatus, this);
         }
 
+        /// <summary>
+        /// Track the device family the player is actually using. Shared with the ability chips'
+        /// <c>InputDeviceIconSetSwitcher</c> through <see cref="InputDeviceActuation"/> so the
+        /// glyphs and the live strategy can never disagree about who is flying.
+        /// </summary>
+        private void UpdateActiveDeviceFamily()
+        {
+            if (activeDeviceFamily == InputDeviceFamily.None)
+                activeDeviceFamily = InputDeviceActuation.DetectInitial();
+
+            var actuated = InputDeviceActuation.DetectActuatedThisFrame();
+            if (actuated != InputDeviceFamily.None)
+                activeDeviceFamily = actuated;
+        }
+
         private IInputStrategy SelectStrategy()
         {
-            if (Gamepad.current != null)
+            // A pad that is CONNECTED but IDLE must not lock out the keyboard and mouse. This used
+            // to test Gamepad.current != null, which meant a controller left plugged in took every
+            // frame forever - the ability chips correctly followed the player's keyboard while the
+            // ship ignored it, and unplugging the pad was the only way back. Presence is not use.
+            if (activeDeviceFamily == InputDeviceFamily.Gamepad && Gamepad.current != null)
                 return gamepadStrategy;
             if (SystemInfo.deviceType == DeviceType.Handheld)
                 return touchStrategy;

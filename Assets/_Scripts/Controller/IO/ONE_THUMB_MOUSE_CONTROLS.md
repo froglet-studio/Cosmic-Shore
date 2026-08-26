@@ -142,9 +142,9 @@ consumer agree about which way the player just pushed.
 
 ## 4. Selection, and why it is silent when it fails
 
-`InputController.SelectStrategy` picks this scheme when there is **no gamepad**, the device is not
-handheld, dual-mouse is not engaged, a mouse exists, and the local pilot's current vessel reports
-`IsSingleStickControls`. The vessel is asked **live** rather than latched: `IsSingleStickControls`
+`InputController.SelectStrategy` picks this scheme when the player is **not currently using a
+gamepad**, the device is not handheld, dual-mouse is not engaged, a mouse exists, and the local
+pilot's current vessel reports `IsSingleStickControls`. The vessel is asked **live** rather than latched: `IsSingleStickControls`
 is written by the transformer in `Initialize`, long after the `InputController` exists, and a
 vessel swap can change the answer mid-session — `UpdateInputStrategy` already re-asks every frame,
 so the hull arriving (or changing) hands flight over on its own.
@@ -153,6 +153,25 @@ so the hull arriving (or changing) hands flight over on its own.
 the strategy switch for those, but `SetInitialStrategy()` runs from `Initialize()` with no such
 guard — and this strategy **locks the cursor** when it activates, so selecting it for a bot would
 take the pointer away from a player who is not flying anything.
+
+### 4.0 "Not using a pad", never "no pad connected"
+
+The pad gate keys on the device family the player is **actually using**
+(`InputDeviceActuation`), not on `Gamepad.current != null`. It used to key on presence, and the
+consequence was reported from the first Sparrow playtest: a controller left plugged in took every
+frame forever, so the ability chips correctly followed the player's keyboard and mouse while the
+ship ignored both, and **unplugging the pad was the only way to fly**.
+
+Neither system was wrong on its own. `InputDeviceIconSetSwitcher` had always detected by last
+meaningful actuation; `SelectStrategy` had always detected by presence. *The defect was that one
+question had two implementations* — and no test can catch a second detector by calling the first.
+Both now read `InputDeviceActuation`, and `InputDeviceUnificationTests` asserts as a source law
+that only that one file polls raw pad controls.
+
+Two properties of the detector are deliberate: it counts **buttons, keys and clicks — never mouse
+movement** (a bumped desk must not take the ship from a pad player, and stick noise must not take
+it back), and it is **sticky** — it only answers on a real actuation, so nothing thrashes frame to
+frame. Picking either device back up switches within one input.
 
 ### 4.1 There is no opt-out gesture (there was; it was removed)
 
@@ -163,6 +182,26 @@ turned the whole scheme off for the rest of the session with nothing on screen t
 undiscoverable way back — and it was redundant, because the cursor is released on pause
 (`OnPaused`) and on every strategy hand-over, which covers every moment a player actually needs the
 pointer.
+
+### 4.1.1 Escape is the OVERVIEW, and the cursor is never handed back early
+
+A mouse pilot needs the pointer for exactly one thing — the on-screen **Volume / Pause** button —
+so rather than releasing the cursor and hoping they find it, that button has a key.
+`OverviewGesture` (**Escape**, or the pad's **Start**) is asked by both HUDs, and each answers by
+invoking *its own* volume/pause button: the key does not reimplement the overview, it presses the
+button, so whatever the button is authored to do in that scene is exactly what the key does and
+the two cannot drift. In `MiniGameHUD` that opens the pause panel; in `MenuMiniGameHUD` it exits
+freestyle. The menu loop is therefore **click the screen to fly, Escape to come back**, and it
+reads the same in a game scene.
+
+The cursor follows from that with no special casing: it is locked while the strategy is live and
+released when the overview actually opens, because both paths pause the input controller
+(`PauseMenu.TogglePlayerPauseWithDelay` in a game scene, `ToggleTransition` in the menu) and
+`OnPaused` unlocks it. Nothing releases it speculatively.
+
+**Escape no longer toggles fullscreen** — that was `InputController`'s previous binding and it both
+took the key and left keyboard players with no way to reach the overview. Fullscreen moved to
+**F11** rather than being dropped, so a windowed build is not a trap.
 
 ### 4.2 The failure mode is SILENCE, so it reports itself
 
@@ -261,5 +300,9 @@ break lived: neither the code nor the asset was wrong on its own.
   claimed.
 - `ControlChipBindingTests` (edit mode) covers §6's chain against the shipped
   `Resources/ControlGlyphSet`.
-- **Not verified in the editor**: strategy selection, cursor lock/release, the diagnostics' own
-  wording, and how any of it actually feels. Every number in §2 is a starting point.
+- `InputDeviceUnificationTests` (edit mode) holds §4.0 and §4.1.1 as source laws: one detector,
+  both consumers routed through it, no pad-presence gate, and one shared overview gesture. They
+  were also executed against the real sources outside the editor.
+- **Not verified in the editor**: cursor lock/release across the pause and freestyle transitions,
+  the device hand-over itself, the diagnostics' own wording, and how any of it actually feels.
+  Every number in §2 is a starting point.
