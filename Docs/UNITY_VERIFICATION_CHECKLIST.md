@@ -30,6 +30,120 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Ability lockup branch — verification matrix (2026-08-26)
+
+One row per changed system. This is the whole branch's honest verification state; a blank cell
+would be the problem, "compiles by inspection" is a legitimate value.
+
+| system | verified how | still needs a human |
+|---|---|---|
+| `TrapezoidGraphic` (generated plates, slant band, AA) | Roslyn stub-harness compile; geometry reasoned, not rendered | **yes** — look at the plates and the band at real size |
+| `AbilityLockupStyleSO` + `AbilityLockupStyle.asset` | compile; asset keys diffed against the class **both directions** (no unknown keys, no omitted fields); every referenced GUID resolves | tuning only |
+| `AbilityLockupView` (row, gauge, cooldown, press, chip, sweep) | compile; retire sweep **simulated offline** over all 8 HUD prefabs | **yes** — this is the bulk of the play-test |
+| `ControlGlyphSetSO` + `ControlGlyphSet.asset` | compile; all 6 sprite GUIDs resolve to real files; derived chip table computed per vessel | **yes** — pad → keyboard → pad, both directions |
+| `InputDeviceIconSetSwitcher` (627 → 138, pure detector) | compile in the InputSystem harness; every deleted public member grepped project-wide, **zero remaining callers** | **yes** — device switching still detects |
+| `VesselHUDController` / `VesselHUDView` | compile | via the vessels |
+| `SquirrelVesselHUDView` (bespoke reload retired) | compile | **yes** — boost-ring cooldown reads correctly |
+| `DolphinVesselHUDView`, `ScarabHUDView`, `ElementalBarsView/Controller` | compile | via the vessels |
+| `VesselAbilityRowAuditor` §5 retarget | **compiled verbatim** via a generated probe, negative-controlled | run the auditor once |
+| `AbilityLockupAuditor` (new, READER) | compile | run it once |
+| HUD prefab YAML edits (5 files + `Scarab.prefab`) | structural validator: no dangling component ids, no duplicate anchors, no empty `m_Script` guids; metas + GUID uniqueness clean | import without warnings |
+| `AbilityLockupStyleTests` (edit-mode) | **NOT RUN** — no Unity in this container | **yes — run the edit-mode suite** |
+| Anything on screen | **NOT VERIFIED** | everything |
+
+**Nothing on this branch has been opened in Unity.** Both stub harnesses compile,
+`check_conditional_compilation.py` passes 1771 files, and the offline checks above are the whole
+of the evidence.
+
+---
+
+### 🔴 Zero-icon vessels get their whole HUD root cleared (2026-08-26)
+
+`Docs/ABILITY_LOCKUP.md` § "A vessel with no bound icons has its slate cleared". Reported as "the
+Rhino is showing its old UI again". It was not a regression — the Rhino's cluster is genuinely
+**driven** (`RhinoVesselHUDView` writes `lineIcon`, `debuffIcon`, `crystalIcon`, `debuffTimerText`,
+`skimmerSizeIcon`, `slowedCountText` every frame) and the retire sweep was sparing it exactly as its
+third guard promises. It reads as the old UI because it is anchored at `(0.93..0.98, 0.04..0.13)` —
+the bottom-right corner the lockup row now occupies.
+
+`RetireLegacyHudContent` now skips the reference guard on any vessel that binds **no** ability icon
+(Rhino, Manta, Serpent — all `0/4`) and retires every drawing root-level child.
+
+**Accepted cost, by design call:** the Rhino stops showing its debuff timer, slowed count,
+skimmer-size ring, laser and crystal indicators. The view still writes to them — branches are
+switched off, not unwired — so restoring one is re-activating a branch. The rule reverses itself
+the day that vessel binds its first ability icon.
+
+**Verify in editor**
+
+- [ ] **Rhino**: four LOCKED cards bottom-right and nothing else on the HUD. `BoostContainer`,
+      `VesselImpactCooldown`, `TrailContainer`, `LaserTargeting`, `Crystal` and `ForceField` all
+      inactive in the hierarchy.
+- [ ] **Manta** and **Serpent**: same — locked row only.
+- [ ] **Squirrel / Sparrow / Dolphin / Scarab are UNAFFECTED.** They bind four icons, so the
+      reference guard still runs and their live readouts are still spared. This is the regression
+      to watch for: if a gauge or readout disappeared on one of these four, the icon-count split
+      is misfiring.
+- [ ] No `NullReferenceException` from `RhinoVesselHUDView` writing to a deactivated readout
+      (it null-guards every field, but confirm in the console).
+
+**Not verified:** nothing here was opened in Unity. Harness compiles;
+`check_conditional_compilation.py` passes.
+
+---
+
+### 🔴 The icon-set switcher is a pure detector; the old glyph roots retire everywhere (2026-08-26)
+
+`Docs/ABILITY_LOCKUP.md` § "Retiring the old UI". The lockup already DREW each card's control
+chip, but `InputDeviceIconSetSwitcher` was still toggling three authored glyph roots on the
+`VesselHUDPrefab` variants — a second glyph display beside the card's chip. It survived the
+lockup's retire sweep only because the sweep consulted the switcher's own references, and
+`ApplySet` re-activated the roots on every device change, so switching them off could not have
+held. The switcher gave up the display entirely (**627 lines → 138**): the three root fields, the
+per-set `HintVisual` list, the ability-placement pass, `SetHintActive`, `DriveHintVisuals` and
+`BindHintsToAbilities` are deleted; `Current`, `IsKeyboard` and `OnSetChanged` remain.
+
+**Three bugs it surfaced, all previously masked by the authored glyphs:**
+
+1. `OnSetChanged` was declared and subscribed but **never raised** — chips could not follow a
+   device change at all. `ApplySet` now raises it.
+2. `KeyboardSet()` fell back to `Xbox` whenever `keyboardTextRoot` was null, and **no vessel wires
+   one** — so `IsKeyboard` was never true and the LSHIFT/RSHIFT labels could never appear on any
+   vessel. The fallback and its flag are deleted; keyboard input reports `KeyboardText`.
+3. `padGlyphHeld` / `heldColor` were authored (`L1 Active` / `R1 Active`) and read by nothing. The
+   chip now takes the held art off the card's existing press path.
+
+Also: `VesselAbilityRowAuditor`'s section 5 was retargeted. It used to read the switcher's
+`setVisuals` by name, which now resolves to nothing — it would have reported "no control hint
+labels it" for every pressable ability on every vessel. It now checks the thing that can still
+leave a card blank: an ability whose control has no pad sprite or no keyboard label in
+`Resources/ControlGlyphSet`.
+
+**Verify in editor**
+
+- [ ] Enter freestyle on the **Squirrel** (and Serpent/Manta — same `VesselHUDPrefab`): only ONE
+      set of control glyphs is on screen, in the cards' chip sockets. `XBOX_Icon_Root` and
+      `PS_Icon_Root` should be inactive in the hierarchy after `Initialize`.
+- [ ] **pad → keyboard → pad.** The chips must swap between the `L1`/`R1` sprites and the
+      `LSHIFT`/`RSHIFT` labels **in place**, both directions, repeatedly. This is the reported bug
+      — check it on the Squirrel and the Sparrow.
+- [ ] **Hold an ability** with a pad: its chip should swap to the held sprite and take `heldColor`,
+      then return on release. A tap must not leave it stuck held.
+- [ ] Sparrow's `A`/`B` cards are expected to be **blank on keyboard** — `InputHintBindingMap` maps
+      no keyboard control to `Button1/2/3`. That is the honest state, not a regression; the
+      auditor now reports it as a glyph-table gap.
+- [ ] Run **FrogletTools > Vessels > Audit Ability Rows**. Expect the Sparrow keyboard gap above
+      and no "no control hint labels it" findings at all.
+- [ ] `VesselHUDPrefab.prefab` was edited as YAML to drop the switcher's four dead serialized keys.
+      Confirm the component still shows `Stick Actuation Threshold` = 0.25 and no missing-script
+      or missing-reference warnings on import.
+
+**Not verified:** nothing here was opened in Unity. Both stub harnesses compile (including a
+generated probe that compiles the auditor's new check verbatim, negative-controlled), and
+`check_conditional_compilation.py` passes 1756 files.
+
+---
+
 ### 🔴 Prompt 16 — corridor dither 3D-SHARD kernel 6 (2026-08-25)
 
 Authored without a Unity compile. `/verify-unity` did not run. Clang harness (`Tools/Shaders/verify_prism_shard3d.py --check`) is green: LO=0.155 HI=0.915, compiled |coverage−alpha|=0.00783; glancing-plane proof passed. **Look on real mass at speed is unearned — do not Bake as CURRENT.**
@@ -3216,6 +3330,248 @@ arc cores.
     irrelevant — watch for any flicker between tracer and shell at close range, which would be the
     one symptom this reasoning missed.
 
+---
+
+## 🔴 Ability Lockup (TOTEM) — Dolphin — NOT EDITOR-VERIFIED
+
+Landed on `claude/ability-icon-design-system-whstrh`. Written and **compile-checked outside Unity**
+(Roslyn against a stub harness: `AbilityLockupStyleSO`, `AbilityLockupView`, plus the edited
+`VesselHUDView`, `ElementalBarsView`, `ElementalBarsController` all build clean). Prefab/asset
+reference integrity verified statically (every guid resolves; no duplicate fileIDs).
+**Nothing has been seen running.**
+
+**What landed:** the four Dolphin ability icons each gain a lockup card — a flat corner-slivered
+plate with the element flower docked above the icon, a hairline divider, and an upgrade signal
+carried by the card's rim + bloom instead of by icon colour. The Dolphin's icons are untouched.
+
+**Verify:** follow `Docs/ABILITY_LOCKUP.md` § "In-editor verification" (7 steps).
+
+**Highest-risk items, in order:**
+1. **Card geometry on screen.** `plateWidth 104 × 166` was derived from the prefab's anchor bands,
+   not seen. If cards read too tall/short or collide with the `BlastCount` / `PilotCount` labels,
+   tune `petalCellHeight` / `abilityCellHeight` in `Resources/AbilityLockupStyle` — no code change.
+2. **Two flower rows.** If a fleet-standard row ALSO appears bottom-centre-right, the controller's
+   adoption did not find the lockup — check `ElementalBarsController.InitializeElementBars`.
+3. **9-slice corners.** The plate/rim sprites are generated (64px, sliver 12, border 16). If the
+   sliver corners look stretched or the rim thickens unevenly, the importer border needs adjusting.
+4. **Draw order.** The card is inserted at the icon's sibling index so it draws behind. If any card
+   covers its icon, that insertion is wrong for that slot's nesting.
+
+**First-pass tuning table:** all knobs are in `Assets/Resources/AbilityLockupStyle.asset` — see the
+tuning table in `Docs/ABILITY_LOCKUP.md`. Nothing in this feature requires a recompile to retune.
+
+**Update — icon kerning pass.** `iconContentScale 0.75` (icon 80 → 60) and `petalFlowerSize 50 → 44`
+so neither mark touches the card's 12px corner sliver. This also fixed a latent scale-squaring bug:
+`blastProfile` and the jaws are CHILDREN of their ability icons and were being rested at the icon's
+scale as well (1.15² = 1.32 when upgraded; would have been 0.56 with kerning). Verify the Charge
+profile and the Space jaws still fill their icons correctly, and that an upgraded card's icon rests
+noticeably — but not doubly — larger.
+
+**Update — fleet rollout.** The lockup is now ensured for every vessel with an ability row via
+`VesselHUDController.Initialize`; no prefabs were edited beyond the Dolphin's explicit component.
+Verify in play mode, per vessel: **Squirrel** (its AUTHORED flowers must be re-homed into the cards
+— check there is no leftover flower row at the old bottom-right position, and NO
+`[ElementalBarsView] Created N petal(s) at RUNTIME` warning, which would mean the authored petals
+were abandoned), **Sparrow**, **Scarab** (hide/show the HUD, e.g. between turns, and confirm the
+Charge/Space icons keep their kerned size — this is the `OnDisable` fix), and **Dolphin** again.
+Then run **FrogletTools > Vessels > Audit Ability Lockups** and expect OK with four vessels listed.
+
+**Update — the lockup now owns the ROW.** Position, pitch, cell size, host scale and icon size are
+written from `Resources/AbilityLockupStyle` onto every vessel; per-prefab layout is no longer read.
+This MOVES the Sparrow's and Scarab's rows (they anchored in a different container) and rescales the
+Squirrel's buttons (0.7 → 1). Verify per vessel: four evenly-spaced totems flush to the bottom-right,
+identical size on all four vessels, **no decagon behind any icon**, and touch/click still works on
+Sparrow · Squirrel · Scarab (the card's plate is the button's target graphic now). Watch for
+anything that used to sit at the Sparrow's old row position and may now be uncovered or collided
+with. Also retired: the upgrade corner badge and the icon tint — the card is the only upgrade signal.
+
+**Update — chips, gauges, press state, locked slots (this round). NOT EDITOR-VERIFIED.**
+Four defects reported from play, four fixes, all still unverified in the Editor:
+
+1. **Control chips lock to the totem.** A hint now lands on its card's `ControlChip` socket at ZERO
+   offset (`VesselHUDView.TryGetAbilityChipSocket` → `AbilityLockupView.TryGetChipSocket`); the
+   per-vessel `attachOffset` is a legacy fallback used only on a HUD with no lockup. **Verify:** on
+   Dolphin · Sparrow · Squirrel · Scarab every (LT)/(RT)/button glyph sits centred directly under
+   its own card, moves with the row, and none is clipped off the bottom of the screen. Switch input
+   device (pad → keyboard → pad) and confirm each set lands in the same place.
+2. **Gauges are linear, and on the right card.** `AbilityIconBinding.gauge` was wired on three
+   prefabs: **Squirrel** `boostFill` → **Time** (it was authored under the *skimming* button),
+   **Sparrow** `rollChargeIndicator` → Time, **Scarab** `energyRing` → **Space** (authored under the
+   *throttle* button). **Verify:** boost/roll/ball-energy each fill a straight vertical bar inside
+   their own card's icon cell over a dim track — no ring anywhere — and each is on the ability it
+   reports on. The Squirrel's boost must still tint to the pilot's domain colour (the vessel keeps
+   driving colour; the lockup only sets a default).
+3. **The press glow is the card.** `VesselHUDController.Toggle` resolves the input to an element
+   through the vessel's own `ElementalAbilityMapSO` and lights that card, held while down and decayed
+   on release. **Verify:** hold each bound control on each vessel — the whole card lights, and NO
+   circular glow appears behind any icon. The Squirrel's undriven `overheatHighlight` halo should be
+   gone entirely.
+4. **Locked slots / the Rhino.** The row is always four cards; an unbound slot draws locked.
+   **Verify:** fly a **Rhino** — four cards, Mass live (Trail Slabs), three drawn locked, element
+   flowers docked above all four, and no old ability-icon UI left in the corner. Same for **Manta**
+   and **Serpent**. Confirm the locked cards are clearly quieter than a live one and are not
+   clickable.
+
+Also verify **touch** on a device or the simulator: retiring the host's chrome deliberately makes a
+button's `targetGraphic` invisible rather than disabling it, because an absent graphic does not
+raycast. Every on-screen ability button must still respond.
+
+Then run **FrogletTools > Vessels > Audit Ability Lockups** (expect OK, with a `gauge on <element>`
+line per bound meter naming where it was authored) and the **`AbilityLockupStyleTests`** edit-mode
+suite (four new tests: gauge readability, locked-slot quietness, chip clearance, press-flash decay).
+
+**Asset cleanup in the same pass:** `Scarab.prefab` carried a stale prefab-instance name override
+renaming its HUD instance to `SparrowHUDVariant`. It references `ScarabHUDVariant` and always did;
+the override is deleted. **Verify** the Scarab's HUD still appears and its Space gauge moves.
+
+**Update — the card became TWO BORDERLESS TRAPEZOIDS (this round). NOT EDITOR-VERIFIED.**
+Design feedback: split the one plate into two trapezoids, one per mark, borderless, bloom on
+upgrade. Both plates are now generated by `TrapezoidGraphic`; `LockupPlate.png` and
+`LockupPlateRim.png` are deleted and the divider, rim, `hairlineColor` and `upgradedRimColor` are
+retired from the style. **Verify, per vessel:**
+
+1. **Shape.** Each totem is two trapezoids with a visible gap — the upper one narrowing UPWARD
+   around the element flower, the lower one narrowing DOWNWARD around the ability icon, meeting at
+   their wide edges. **No outline on either plate and no hairline between them.** If the pair reads
+   as two stacked rectangles, `trapezoidInset` is being ignored; if they look fused, `cellGap` is.
+2. **Nothing else moved.** The ability icon must sit exactly where it did — the lower plate is
+   built around it and both `CardCenterOffsetY` and `PlateHeight` grew by the same `cellGap`, so
+   the control chip should also be unmoved. Confirm against the previous build if you have it.
+3. **Upgrade.** BOTH plates lift in fill and bloom over ~0.2s, no border at any point. This is the
+   read most worth judging: the rim used to carry it. If it is hard to spot, raise
+   `upgradedPlateColor` / `bloomColor` rather than putting a border back.
+4. **Gauge inside the taper.** On Squirrel / Sparrow / Scarab, the fill must be clipped to the
+   trapezoid — it should never overhang the plate's slanted sides at any fill level. It is drawn
+   through a `Mask`, so also confirm the icon still draws ON TOP of it and the mask has not
+   swallowed anything else on the card.
+5. **Press.** Only the ABILITY plate lights (the upgrade lights both) — deliberate, so the two
+   states are distinguishable.
+6. **Touch.** The button's `targetGraphic` is now the ability plate (a `TrapezoidGraphic`). Every
+   on-screen ability button must still respond on a device or the simulator; raycasting uses the
+   RECT, not the drawn trapezoid, so the corners are live by design.
+7. **Locked slots.** On Rhino / Manta / Serpent both plates read quieter, with the placeholder bar
+   centred in the lower one.
+
+Then re-run **Audit Ability Lockups** (it now reports the slant and checks the icon against the
+ability plate's NARROW edge) and `AbilityLockupStyleTests` (three new/reworked tests: the gap and
+slant are both non-zero, the icon clears the narrow edge, the plates face each other across exactly
+`cellGap`).
+
+**Update — balance, slant edge, cooldown, Squirrel re-slot (this round). NOT EDITOR-VERIFIED.**
+
+1. **Balanced plates.** Both plates are now 88 tall (were 62 / 104), so the totem is a true mirror
+   about the gap — no coffin. The row's chip and bottom edge are unmoved by construction (chip
+   bottom stays at 21px); **verify that against the previous build**, since the host height changed
+   from 104 to 88.
+2. **Slant edge.** A thin bright line down each SLOPED side of both plates, solid in the middle and
+   dissolved before the corners, with **no line across the top or bottom of either plate**. It
+   should brighten with the upgrade. If it reads as a chamfer rather than a hairline,
+   `slantEdgeThickness` has passed `trapezoidInset`.
+3. **Cooldown.** Fire the Squirrel's Boost Ring (Time): a dark veil sweeps radially off the card,
+   **over the icon**, clearing with a bright flash when it returns. Confirm the veil covers the
+   plate's corners at every angle (the sweep is sized to the diagonal). The icon itself must NOT
+   sink, rise, breathe, tint or wipe any more — if it does, the old per-vessel animation is still
+   wired somewhere.
+4. **Squirrel re-slot.** The skim-energy fill is on the **Charge** card (Skimming), not Time. Skim
+   to charge and confirm the linear fill rises on Charge while Time shows the radial cooldown —
+   they must read as clearly different things, which is the reason the cooldown is radial.
+5. **Draw order.** The cooldown clip is parented to the HOST and pushed last, so it is the one
+   lockup element in front of the icon. Confirm nothing else on the card got pushed in front of the
+   icon by mistake, and that the mask has not clipped anything it should not.
+
+**Update — clockwise cooldown, wrapped + antialiased band, equal marks. NOT EDITOR-VERIFIED.**
+
+1. **Cooldown direction.** The veil must sweep **clockwise** off the card. This required
+   `fillClockwise = FALSE`, which looks like a bug until you remember the veil depletes — if
+   someone "fixes" it back to true it will unwind anticlockwise again.
+2. **The band.** Thicker (3px + 1px feather each side), **solid the whole length of each slant
+   including the corners**, wrapping 14px onto the top and bottom edges before dissolving. Check
+   three things at 100%: no band across the middle of a horizontal edge; the corners are lit rather
+   than being where the accent died; and the diagonals are smooth, not stair-stepped — that AA is
+   baked as vertex alpha, so if it stair-steps the feather is not reaching the mesh.
+3. **Plate core stays transparent.** The thicker band must not have been compensated for by making
+   the plate opaque — the arena still reads through the middle of every card.
+4. **Equal marks.** Flower and icon are both 60 now. Neither plate should look under-filled, and
+   the flower must not be larger than the icon.
+5. **Perf note, not a defect:** the plates are generated geometry, ~800 verts for the row. That is
+   deliberate while the numbers are being tuned; the PNG bake path is in
+   `Docs/ABILITY_LOCKUP.md` § "Finalizing: the PNG bake" and should be taken once the look is
+   signed off.
+
+**Update — gauge inset, tighter row, chip placement (this round). NOT EDITOR-VERIFIED.**
+
+1. **Every card has its band, including the one with a meter.** The gauge track exactly covered the
+   ability plate at `gaugeCellFraction 1`, so it painted over the band — visible only on a card
+   that binds a meter, which is why it showed on the Squirrel's **Charge** slot alone. The gauge is
+   now inset 4px inside the band. **Verify on Squirrel Charge, Sparrow Time and Scarab Space**: the
+   band is present, and the meter reads as sitting inside it rather than replacing it.
+2. **Tighter row.** Pitch 137.7 → 116 (12px between cards, exactly 2× the 6px gap inside a totem),
+   right margin 65.1 → 40, bottom margin 53 → 44 (chip bottom 21px → 14px). Check the row does not
+   crowd the screen edge on a 16:9 and that four cards still read as four objects, not one strip.
+3. **Control chips.** `chipGap` 8 → 6, matching `cellGap`, so the glyph clears the ability plate by
+   the same distance the element plate does.
+
+   **The device-switch symptom was a SIZE mismatch, not a drift** — measured off `Squirrel.prefab`,
+   the pad glyphs are 50×50 and the PC text hints 106×22, so centring both on one 24px socket left
+   the pad ones overhanging the card by 7px and the keyboard ones 7px clear. The lockup now supplies
+   the SIZE too (from the socket's `sizeDelta`, plus `preserveAspect`), while the hints stay under
+   their icon-set roots. **Verify:** go pad → keyboard → pad and confirm the glyphs sit in the same
+   place at the same size on every set, 6px below the card, and that the pad glyphs are not squashed.
+
+   ⚠ **An intermediate version re-homed the hints into the socket as children and BROKE device
+   switching** — it took them out from under the roots the switcher activates. That is reverted; if
+   switching ever stops working again, that is the first thing to check.
+
+**Update — retiring the old UI on EVERY vessel. NOT EDITOR-VERIFIED.**
+The lockup now retires root-level content that no component on the HUD still references. Predicted
+from the assets, per vessel:
+
+| vessel | retired | kept |
+|---|---|---|
+| Sparrow · Scarab | `Boost Button/display`, `Ammo Count`, `ActionIconHolder`, `XBOX_Icon_Root`, `PS_Icon_Root` | the four cards |
+| Dolphin | a stray root `Image`, `XBOX_Icon_Root`, `PS_Icon_Root` | its four ability buttons (already moved into the row) |
+| Rhino | `BoostContainer` | — |
+| Serpent · Squirrel | — | their glyph roots, because their switcher references them |
+
+**Verify:** only the four-card row remains on each vessel; the Squirrel and Serpent still show
+control hints (their switcher spares the roots — if those vanished, the reference test is not
+finding the switcher); and the **Sparrow's stranded glyphs are gone** rather than sitting where the
+old row used to be. `Ammo Count` going is intended — nothing writes to it, ammo is shown by
+sprite-swapping the missile icon — but confirm no ammo readout was actually in use.
+
+⚠ Sparrow, Dolphin and Scarab now show **no control hints at all**, because their HUDs have no
+`InputDeviceIconSetSwitcher` (they are standalone prefabs, not variants of `VesselHUDPrefab`).
+Authoring one on each is the real fix and is the open follow-up.
+
+
+## 🔴 Ability Lockup — fleet control chips + row frame — NOT EDITOR-VERIFIED
+
+**Chips are DRAWN by the lockup now**, from `Resources/ControlGlyphSet`, derived per card as
+ability → `InputEvents` → control → glyph. Expected, from the shipped assets:
+
+| vessel | Charge | Mass | Space | Time |
+|---|---|---|---|---|
+| Squirrel | — | `L1` / LSHIFT | — | `R1` / RSHIFT |
+| Sparrow | `L1` / LSHIFT | `A` | `R1` / RSHIFT | `B` |
+| Scarab | — | `A` | — | `R1` / RSHIFT |
+| Dolphin | `R1` / RSHIFT | — | — | `L1` / LSHIFT |
+| Rhino · Manta · Serpent | — | — | — | — |
+
+1. **Sparrow has chips again** — four of them, matching the table, under the right cards.
+2. **Device switch** — pad → keyboard → pad: the trigger chips swap between the `L1`/`R1` sprite and
+   the LSHIFT/RSHIFT label, in place. The Sparrow's `A`/`B` cards go **blank** on keyboard; that is
+   intended (no keyboard equivalent is authored for `Button1/2/3` in `InputHintBindingMap`) and the
+   open item is that keyboard map, not the lockup.
+3. **Row frame.** Every vessel's row must now sit in the SAME screen position with the same pitch —
+   this is the "different spacing" fix. `NormaliseHudRoot` stretches the HUD root to fill its
+   parent, because Rhino/Scarab/Sparrow stretched theirs while Dolphin/Squirrel/Serpent/Manta
+   point-anchored at the centre at 100×100. **Watch for anything else on those HUDs shifting** —
+   nothing should, since the sweep retires everything else at root level, but that is the assumption
+   worth checking on each vessel.
+4. **The switcher is ensured**, so every HUD has one even if it never authored glyphs.
+   *(Superseded 2026-08-26 — the switcher no longer draws anything and the authored hints are
+   deleted. The check is now the opposite: confirm the Squirrel and Serpent show ONLY the cards'
+   chips, with `XBOX_Icon_Root` / `PS_Icon_Root` inactive. See the newest section at the top.)*
 
 ---
 

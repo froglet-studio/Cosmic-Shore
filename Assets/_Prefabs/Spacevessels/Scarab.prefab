@@ -1782,11 +1782,6 @@ PrefabInstance:
       propertyPath: m_IsActive
       value: 0
       objectReference: {fileID: 0}
-    - target: {fileID: 2707401190942586943, guid: 4f3ce7d760a1e0c76f3bc8c6a6842a92,
-        type: 3}
-      propertyPath: m_Name
-      value: SparrowHUDVariant
-      objectReference: {fileID: 0}
     - target: {fileID: 2750227247854647760, guid: 4f3ce7d760a1e0c76f3bc8c6a6842a92,
         type: 3}
       propertyPath: m_Enabled
