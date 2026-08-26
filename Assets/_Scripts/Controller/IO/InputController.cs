@@ -37,14 +37,6 @@ namespace CosmicShore.Gameplay
         private bool dualMouseEngaged;
         private bool prevBothLeftButtonsHeld;
 
-        // One-thumb mouse flight is the desktop DEFAULT for a single-stick vessel rather than an
-        // opt-in gesture: the mouse IS the thumb those hulls fly on, so a scheme that needed a
-        // secret handshake would be off for everyone who never learned it. Escape is the way out
-        // - it already means "give me my cursor back" here (it disengages dual mouse) - and a
-        // full left click flies again. Nothing is lost while disengaged: KeyboardInputStrategy's
-        // WASD still drives the one stick a single-stick vessel reads.
-        private bool mouseFlightDisengaged;
-
         private bool isInitialized;
 
         private void Awake()
@@ -104,7 +96,6 @@ namespace CosmicShore.Gameplay
             // strategy itself read the same per-frame snapshot.
             multiMouseService?.Tick();
             UpdateDualMouseEngagement();
-            UpdateMouseFlightEngagement();
 
             UpdateInputStrategy();
             currentStrategy?.ProcessInput();
@@ -247,50 +238,49 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// Escape drops out of mouse flight (releasing the cursor with it) and a full left click
-        /// flies again. The re-engage is deliberately the RELEASE rather than the press: the
-        /// strategy snapshots live button state on activation so a held control cannot raise a
-        /// phantom press, and snapshotting a HELD left button would instead arm a release with no
-        /// matching press. Clicking rather than pressing means there is no held button to
-        /// snapshot at hand-over at all.
-        /// </summary>
-        private void UpdateMouseFlightEngagement()
-        {
-            var kb = Keyboard.current;
-            if (!mouseFlightDisengaged && kb != null && kb.escapeKey.wasPressedThisFrame)
-            {
-                mouseFlightDisengaged = true;
-                return;
-            }
-
-            var mouse = Mouse.current;
-            if (mouseFlightDisengaged && mouse != null && mouse.leftButton.wasReleasedThisFrame)
-                mouseFlightDisengaged = false;
-        }
-
-        /// <summary>
         /// Mouse flight applies to the vessel this player is actually flying, so it is asked
         /// live rather than latched: IsSingleStickControls is written by the vessel's transformer
         /// in Initialize, long after this InputController exists, and a vessel swap can change
         /// the answer mid-session. UpdateInputStrategy already re-asks every frame, so the hull
         /// arriving (or changing) hands flight over on its own.
+        ///
+        /// <para>There is deliberately NO opt-out gesture. The first version disengaged on Escape
+        /// and re-engaged on a left click, mirroring dual-mouse - but Escape is already the
+        /// fullscreen toggle a few lines above, and in the Editor it is the reflexive "give me my
+        /// cursor back" key, so one press turned the whole scheme off for the rest of the session
+        /// with nothing on screen to say so and an undiscoverable way back. It was also
+        /// redundant: the cursor is released on pause (OnPaused) and on every strategy hand-over,
+        /// which covers every moment a player actually needs the pointer.</para>
+        ///
+        /// <para>Every reason this can decline is reported once by
+        /// <see cref="MouseFlightDiagnostics"/> - the scheme's failure mode is silence, which is
+        /// exactly the bug report it produced the first time out.</para>
         /// </summary>
         private bool UseSingleStickMouse()
         {
-            if (mouseFlightDisengaged) return false;
-            if (Mouse.current == null) return false;
+            if (Mouse.current == null)
+                return MouseFlightDiagnostics.Decline(MouseFlightDiagnostics.Reason.NoMouse);
 
             // Never for an AI or a remote replica. Update() already returns before the strategy
             // switch for those, but SetInitialStrategy() runs from Initialize() with no such
             // guard - and this strategy LOCKS THE CURSOR when it activates, so selecting it for
             // a bot would take the pointer away from a player who is not flying anything.
-            if (ownerPlayer != null && !ownerPlayer.IsLocalPilot) return false;
+            if (ownerPlayer != null && !ownerPlayer.IsLocalPilot)
+                return MouseFlightDiagnostics.Decline(MouseFlightDiagnostics.Reason.NotLocalPilot);
 
             var vessel = ownerPlayer != null ? ownerPlayer.Vessel : null;
-            if (vessel == null || vessel.VesselStatus == null) return false;
-            if (vessel.VesselStatus.AutoPilotEnabled) return false;
+            if (vessel == null || vessel.VesselStatus == null)
+                return MouseFlightDiagnostics.Decline(MouseFlightDiagnostics.Reason.NoVessel);
 
-            return vessel.VesselStatus.IsSingleStickControls;
+            if (vessel.VesselStatus.AutoPilotEnabled)
+                return MouseFlightDiagnostics.Decline(MouseFlightDiagnostics.Reason.Autopilot);
+
+            if (!vessel.VesselStatus.IsSingleStickControls)
+                return MouseFlightDiagnostics.Decline(
+                    MouseFlightDiagnostics.Reason.NotSingleStick, vessel.VesselStatus.Name);
+
+            MouseFlightDiagnostics.Engaged();
+            return true;
         }
 
         public void OnToggleGyro(bool status)

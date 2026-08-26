@@ -1,5 +1,6 @@
 using CosmicShore.Data;
 using CosmicShore.ScriptableObjects;
+using CosmicShore.Utility;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -55,9 +56,15 @@ namespace CosmicShore.Gameplay
     /// lets go while the other is still held, which reads as the ability dropping out under your
     /// finger.</para>
     ///
-    /// <para><b>Nothing is taken away.</b> Escape releases the cursor and hands flight back to
-    /// <see cref="KeyboardInputStrategy"/> (WASD still steers a one-thumb hull); a left click
-    /// flies again. See <c>InputController.UpdateMouseFlightEngagement</c>.</para>
+    /// <para><b>There is no opt-out gesture</b>, and the first version's Escape-to-disengage was
+    /// removed rather than kept: Escape is already the fullscreen toggle in
+    /// <c>InputController.Update</c> and the reflexive "give me my cursor back" key in the
+    /// Editor, so one press turned the scheme off for the whole session with nothing on screen to
+    /// say so. It was redundant anyway — the cursor is released on pause and on every strategy
+    /// hand-over. Every reason the scheme declines to engage is reported by
+    /// <see cref="MouseFlightDiagnostics"/>, because its failure mode is silence: a one-thumb
+    /// vessel still flies on WASD and still fires every ability off the same keys, so "not
+    /// engaged" and "broken" look the same to a playtester.</para>
     /// </summary>
     public sealed class SingleStickMouseInputStrategy : BaseInputStrategy
     {
@@ -88,6 +95,10 @@ namespace CosmicShore.Gameplay
         bool fullSpeedStraightEffectsStarted;
         bool minimumSpeedStraightEffectsStarted;
 
+        // Engaged-but-deaf detection - see ReportIfMouseIsSilent.
+        float activeSince;
+        bool sawMouseMovement;
+
         static MouseFlightConfigSO Config => MouseFlightConfigSO.Instance;
 
         public override void Initialize(IInputStatus inputStatus)
@@ -104,6 +115,8 @@ namespace CosmicShore.Gameplay
             ResetInput();
             ResetStrategyState();
             LockCursor(true);
+            activeSince = Time.unscaledTime;
+            sawMouseMovement = false;
 
             // No delta to drain here, unlike DualMouseInputStrategy: Mouse.delta is reset by the
             // Input System every update, so it only ever holds THIS frame's movement. The stick
@@ -149,11 +162,45 @@ namespace CosmicShore.Gameplay
             var keyboard = Keyboard.current;
             if (mouse == null) return;
 
-            UpdateStick(mouse.delta.ReadValue());
+            var pixelDelta = mouse.delta.ReadValue();
+            ReportIfMouseIsSilent(pixelDelta);
+
+            UpdateStick(pixelDelta);
             ProcessButtons(mouse, keyboard);
             Publish();
             PerformSpeedAndDirectionalEffects();
         }
+
+        /// <summary>
+        /// The scheme can fail in two ways that look identical on screen — never selected, or
+        /// selected and reading nothing — and the first playtest could not tell them apart.
+        /// <see cref="MouseFlightDiagnostics"/> reports the first; this reports the second, once,
+        /// if the strategy has owned the input for a few seconds without a single non-zero mouse
+        /// delta. A player who is flying necessarily moves the mouse, so silence that long means
+        /// the device is not reaching us rather than that they sat still.
+        /// </summary>
+        void ReportIfMouseIsSilent(Vector2 pixelDelta)
+        {
+            if (sawMouseMovement) return;
+
+            if (pixelDelta.sqrMagnitude > 0f)
+            {
+                sawMouseMovement = true;
+                return;
+            }
+
+            if (Time.unscaledTime - activeSince < SilentMouseWarningSeconds) return;
+
+            sawMouseMovement = true;   // report once, then stop asking
+            CSDebug.LogWarning(
+                "[MouseFlight] Engaged, but Mouse.current.delta has read exactly zero for " +
+                $"{SilentMouseWarningSeconds:F0}s. The stick cannot deflect, so the vessel will " +
+                "not turn. Check the Input System's Update Mode (a project set to " +
+                "'Process Events In Fixed Update' delivers no delta to Update), and that the " +
+                "Game view has focus with the cursor captured.");
+        }
+
+        const float SilentMouseWarningSeconds = 4f;
 
         // ------------------------------------------------------------------
         // The stick

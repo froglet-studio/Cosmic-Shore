@@ -6,7 +6,9 @@ namespace CosmicShore.UI
 {
     /// <summary>
     /// The physical-control → <see cref="InputEvents"/> table, mirroring what the input strategies
-    /// actually raise (<c>GamepadInputStrategy</c>, <c>KeyboardMouseInputStrategy</c>).
+    /// actually raise (<c>GamepadInputStrategy</c>, <c>KeyboardInputStrategy</c>,
+    /// <c>SingleStickMouseInputStrategy</c> — NOT the unreferenced <c>KeyboardMouseInputStrategy</c>,
+    /// which this doc used to name and which no selector instantiates).
     ///
     /// This is the missing link that lets a control hint find the ability it labels. A hint knows its
     /// physical control (LT, RT, A, …); this maps that to the input events a vessel can bind; the
@@ -40,6 +42,40 @@ namespace CosmicShore.UI
             [HintBinding.PadButtonEast]    = new[] { InputEvents.Button2Action },
             [HintBinding.PadButtonWest]    = new[] { InputEvents.Button3Action },
             [HintBinding.PadRightShoulder] = new[] { InputEvents.FlipAction },
+
+            // The keyboard's three action keys. Both desktop schemes raise these
+            // (KeyboardInputStrategy and SingleStickMouseInputStrategy share their button half),
+            // and without them BindingFor(..., keyboard: true) returned None for every ability
+            // bound to a pad face button — which is half the Sparrow's row, drawn blank on the
+            // one device most people play on.
+            [HintBinding.KeySpace] = new[] { InputEvents.Button1Action },
+            [HintBinding.KeyB]     = new[] { InputEvents.Button2Action },
+            [HintBinding.KeyN]     = new[] { InputEvents.Button3Action },
+        };
+
+        /// <summary>
+        /// A keyboard control's PAD twin — the same logical control at its other address.
+        ///
+        /// <para><see cref="ControlGlyphSetSO"/> keys one entry per logical control and that entry
+        /// carries BOTH representations (<c>padGlyph</c> and <c>keyboardLabel</c>), but
+        /// <see cref="BindingFor"/> answers with a different <see cref="HintBinding"/> per device —
+        /// so a keyboard lookup asked the glyph set for <c>KeyLeftShift</c> while the label was
+        /// authored on <c>PadLeftTrigger</c>, found nothing, and drew a blank chip. Every keyboard
+        /// label in the project was dead on arrival for that reason.</para>
+        ///
+        /// <para>Resolving through here rather than duplicating rows keeps one authored row per
+        /// control, so a label and its glyph cannot drift apart. An asset may still author a
+        /// keyboard-specific row: <c>ControlGlyphSetSO.For</c> tries the exact binding first and
+        /// only then the canonical one.</para>
+        /// </summary>
+        public static HintBinding Canonical(HintBinding binding) => binding switch
+        {
+            HintBinding.KeyLeftShift  => HintBinding.PadLeftTrigger,
+            HintBinding.KeyRightShift => HintBinding.PadRightTrigger,
+            HintBinding.KeySpace      => HintBinding.PadButtonSouth,
+            HintBinding.KeyB          => HintBinding.PadButtonEast,
+            HintBinding.KeyN          => HintBinding.PadButtonWest,
+            _                         => binding,
         };
 
         /// <summary>

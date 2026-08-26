@@ -45,7 +45,7 @@ namespace CosmicShore.UI
             PadDpadUp = 9, PadDpadDown = 10, PadDpadLeft = 11, PadDpadRight = 12,
             // Keyboard / mouse (PC text set)
             KeyLeftShift = 20, KeyRightShift = 21, KeySpace = 22, KeyTab = 23,
-            KeyQ = 24, KeyE = 25, KeyF = 26,
+            KeyQ = 24, KeyE = 25, KeyF = 26, KeyB = 27, KeyN = 28,
             MouseLeft = 40, MouseRight = 41,
         }
 

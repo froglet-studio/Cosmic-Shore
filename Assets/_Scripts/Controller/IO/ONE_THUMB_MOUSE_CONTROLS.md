@@ -128,7 +128,7 @@ consumer agree about which way the player just pushed.
 > whenever its owner happened to have the option on. Left out of this branch as a distinct defect
 > rather than folded into a controls change.
 
-## 4. Selection and engagement
+## 4. Selection, and why it is silent when it fails
 
 `InputController.SelectStrategy` picks this scheme when there is **no gamepad**, the device is not
 handheld, dual-mouse is not engaged, a mouse exists, and the local pilot's current vessel reports
@@ -137,20 +137,56 @@ is written by the transformer in `Initialize`, long after the `InputController` 
 vessel swap can change the answer mid-session — `UpdateInputStrategy` already re-asks every frame,
 so the hull arriving (or changing) hands flight over on its own.
 
-It is the **default** for those vessels rather than an opt-in gesture: the mouse is the thumb they
-fly on, so a scheme behind a secret handshake would be off for everyone who never learned it.
-
-- **Escape** disengages (and releases the cursor). Flight falls back to `KeyboardInputStrategy`,
-  where WASD still drives the one stick a single-stick vessel reads — nothing is taken away.
-- **A full left click** re-engages. It is the click *release*, not the press: the strategy
-  snapshots live button state on activation so a held control cannot raise a phantom press, and
-  snapshotting a HELD left button would instead arm a release with no matching press. Clicking
-  rather than pressing means there is no held button to snapshot at hand-over at all.
-
 `UseSingleStickMouse` also refuses for an AI or a remote replica. `Update()` already returns before
 the strategy switch for those, but `SetInitialStrategy()` runs from `Initialize()` with no such
 guard — and this strategy **locks the cursor** when it activates, so selecting it for a bot would
 take the pointer away from a player who is not flying anything.
+
+### 4.1 There is no opt-out gesture (there was; it was removed)
+
+The first version disengaged on **Escape** and re-engaged on a left click, mirroring dual-mouse.
+That was wrong twice over: Escape is already the fullscreen toggle a few lines up in
+`InputController.Update` and the reflexive *give me my cursor back* key in the Editor, so one press
+turned the whole scheme off for the rest of the session with nothing on screen to say so and an
+undiscoverable way back — and it was redundant, because the cursor is released on pause
+(`OnPaused`) and on every strategy hand-over, which covers every moment a player actually needs the
+pointer.
+
+### 4.2 The failure mode is SILENCE, so it reports itself
+
+This is the finding worth carrying. When the scheme does not engage, the player is left on
+`KeyboardInputStrategy` — which **still steers a one-thumb hull off WASD and still fires every
+ability off the same keys**, because the two schemes share their button half. So "not engaged" and
+"broken" are indistinguishable on screen, and the first playtest report was exactly that: *"I found
+keys that used my abilities, but the mouse did not fly the vessel"*, with nothing in the console to
+say which of five things had happened.
+
+Two warn-once diagnostics close that, in the shape `PrismOcclusionDiagnostics` and
+`VesselVisionDiagnostics` already use for a platform system that can silently fail to engage:
+
+- **`MouseFlightDiagnostics`** names the reason `UseSingleStickMouse` declined — no mouse, not the
+  local pilot, no vessel, autopilot, or a two-stick hull — once per reason, and logs the first
+  frame the scheme *does* take over. Legitimate states never reach it: a connected pad, a handheld
+  device and engaged dual-mouse all return earlier in `SelectStrategy`.
+- **`SingleStickMouseInputStrategy.ReportIfMouseIsSilent`** covers the other half — engaged, but
+  `Mouse.current.delta` reading exactly zero for four seconds, which is what a project set to
+  *Process Events In Fixed Update* would produce. A player who is flying necessarily moves the
+  mouse, so silence that long is the device not reaching us rather than them sitting still.
+
+*General shape: when a system's failure mode is that another system quietly covers for it, the
+system has to say so itself — nobody downstream can tell the difference.*
+
+### 4.3 Known: Falcon and Shrike carry TWO transformers
+
+`Falcon.prefab` and `Shrike.prefab` each have **both** a base `VesselTransformer` and a
+`SingleStickVesselTransformer` component. `VesselStatus.VesselTransformer` resolves through
+`GetOrAdd<VesselTransformer>()` → `TryGetComponent`, which returns whichever comes first in the
+component list — so if it is the base one, those vessels fly the dual-stick model and never set
+`IsSingleStickControls`, and mouse flight will refuse them (with `NotSingleStick` in the console).
+Sparrow, Serpent, Grizzly and Termite are clean; the Scarab has its own transformer. Not fixed
+here: both are unplayable *Planned* vessels, and removing a component from a prefab means editing
+the component block **and** the GameObject's `m_Component` list, which is not worth the risk on a
+controls branch.
 
 ## 5. What else had to know
 
@@ -169,7 +205,40 @@ which wants a true analog trigger and is a Rhino ability — not a one-thumb ves
 drives to 0 or 1 — the same thing Right Shift already did on the keyboard scheme. A vessel whose
 throttle depth is the whole ability wants a pad; this makes it flyable, not equivalent.
 
-## 6. Verification
+## 6. The control chips were blank, and that was a separate, older bug
+
+The same playtest reported *"no glyphs to label the abilities"*. That is not this scheme's doing —
+**no vessel has ever shown a keyboard control chip**, on any input device, for two independent
+reasons:
+
+1. **The lookup asked for an address the asset does not use.** `InputHintBindingMap.BindingFor`
+   answers a keyboard query with `KeyLeftShift` / `KeyRightShift`, while `Resources/ControlGlyphSet`
+   authors the `keyboardLabel` on the **pad** rows (`PadLeftTrigger` / `PadRightTrigger`) — because
+   one `Glyph` entry deliberately carries *both* representations of one logical control. `For()`
+   found nothing and drew nothing. Fixed with `InputHintBindingMap.Canonical`, a one-way keyboard →
+   pad alias that `ControlGlyphSetSO.For` falls back to *after* an exact match. One authored row
+   per control stays the rule, so a label and its glyph cannot drift apart. Returning a pad-keyed
+   entry to a keyboard player is safe: `AbilityLockupView.RefreshChip` picks `padGlyph` or
+   `keyboardLabel` from the **device**, never from which binding matched.
+2. **Half the row had no keyboard control at all.** The map had keyboard entries only for the two
+   trigger sides, so every ability bound to a pad face button — the Sparrow's Mass and Time —
+   returned `None` and was honestly, permanently blank. `KeySpace` / `KeyB` / `KeyN` are now mapped
+   to `Button1/2/3Action`, matching what both desktop strategies actually raise, and the two face-
+   button rows in the asset gained their `SPACE` and `B` labels.
+
+The Sparrow's four chips now read **LSHIFT · RSHIFT · SPACE · B**. Those labels stay truthful under
+mouse flight because this scheme honours the shift keys alongside LMB/RMB — see §3.
+
+`ControlChipBindingTests` asserts the whole chain against the **shipped** asset, which is where the
+break lived: neither the code nor the asset was wrong on its own.
+
+> **Follow-up, not done here:** a mouse player's most natural controls are LMB/RMB, and the chip
+> still says LSHIFT/RSHIFT. Labelling the mouse needs `AbilityLockupView.SetControlDevice`'s
+> boolean to become three-valued (pad / keyboard / mouse) and `InputHintBindingMap` to answer
+> "which of two controls do I label" — a real design question, not a wiring gap. Truthful now beats
+> ambiguous later.
+
+## 7. Verification
 
 - `MouseVirtualStickTests` (edit mode) covers the control curve at four frame rates, the perimeter
   contract `BarrelRollController` and `ScarabJukeController` depend on, the release, the no-spring
@@ -177,5 +246,7 @@ throttle depth is the whole ability wants a pad; this makes it flyable, not equi
 - The same assertions were run against the **shipped** `MouseVirtualStick.cs` compiled off-editor
   against a minimal `UnityEngine` stub, so the math in this document is measured rather than
   claimed.
-- **Not verified in the editor**: strategy selection, cursor lock/release, the engagement gesture,
-  and how any of it actually feels. Every number in §2 is a starting point.
+- `ControlChipBindingTests` (edit mode) covers §6's chain against the shipped
+  `Resources/ControlGlyphSet`.
+- **Not verified in the editor**: strategy selection, cursor lock/release, the diagnostics' own
+  wording, and how any of it actually feels. Every number in §2 is a starting point.
