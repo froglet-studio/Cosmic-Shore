@@ -6,17 +6,22 @@ using UnityEngine.UI;
 namespace CosmicShore.UI
 {
     /// <summary>
-    /// The Manta's HUD view — the bomb bay and the fuse board (the overcharge readouts this
-    /// class used to draw died with the overcharge kit; the same authored UI objects were
-    /// repurposed via <see cref="FormerlySerializedAsAttribute"/>, which is why the fields
-    /// keep their old serialized names: a radial fill is a radial fill, whatever it meters).
+    /// The Manta's HUD view — the bomb bay and the fuse board, drawn entirely INSIDE the
+    /// ability row (playtest 2026-08-26: the readouts' old floating homes read as a second
+    /// UI and as messages outside the toast feed, so they were re-homed onto the cards).
     ///
-    /// Three readouts:
-    ///  • the BAY — radial fill (armed / capacity) + the armed count, highlighted when a bomb
-    ///    is ready to plant;
-    ///  • the BOARD — how many silent bombs are riding targets right now;
-    ///  • the FUSE — the soonest-burning fuse, counting down: the number the whole
-    ///    "one more tag, or cash in now" decision is read off.
+    /// Three readouts, three seats:
+    ///  • the BAY charge — <see cref="bombChargeFill"/> is bound as the CHARGE card's lockup
+    ///    gauge (<c>AbilityIconBinding.gauge</c>), so the lockup re-homes and restyles it and
+    ///    this class only ever writes <c>fillAmount</c>. Never write its colour here — the
+    ///    lockup owns gauge styling, and a per-event colour write would stomp it;
+    ///  • the ARMED count — a corner badge on the Charge icon, and the "can I plant?" answer:
+    ///    highlighted whenever at least one bomb is ready;
+    ///  • the FUSE board — a compact line above the Space (Kabloom) card: how many bombs are
+    ///    riding targets and the soonest fuse. Hidden while nothing is planted.
+    ///
+    /// The serialized names keep their overcharge-era spellings via
+    /// <see cref="FormerlySerializedAsAttribute"/> — same authored objects, new seats.
     /// </summary>
     public class MantaVesselHUDView : VesselHUDView
     {
@@ -49,12 +54,13 @@ namespace CosmicShore.UI
         public void SetBombBay(int armed, int capacity, float charge)
         {
             if (armedCountText)
+            {
                 armedCountText.text = armed.ToString();
+                armedCountText.color = armed >= 1 ? highlightColor : normalColor;
+            }
 
             if (!bombChargeFill || capacity <= 0) return;
-
             bombChargeFill.fillAmount = Mathf.Clamp01(charge / capacity);
-            bombChargeFill.color = armed >= 1 ? highlightColor : normalColor;
         }
 
         /// <summary>
@@ -69,7 +75,7 @@ namespace CosmicShore.UI
 
             if (!fuseText) return;
             fuseText.text = show
-                ? $"{planted} armed - {Mathf.CeilToInt(Mathf.Max(0f, shortestFuseSeconds))}s"
+                ? $"{planted}x {Mathf.CeilToInt(Mathf.Max(0f, shortestFuseSeconds))}s"
                 : string.Empty;
         }
     }

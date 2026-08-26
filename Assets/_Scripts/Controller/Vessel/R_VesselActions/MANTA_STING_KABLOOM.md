@@ -171,17 +171,36 @@ Squirrel Heavy Trail condition, one more OR term).
 
 `MantaVesselHUDController` / `MantaVesselHUDView` were rewritten around the bomb bay. The old
 overcharge fields carry over by `[FormerlySerializedAs]` so the prefab wiring survived the
-rename: `bombChargeFill` (was `fillImage`) — the bay's charge gauge; `armedCountText` (was
-`overchargePrismCount`) — armed bombs / capacity; `fuseContainer`/`fuseText` (were the
-overcharge countdown pair) — the PLANTED board: how many bombs are out, and the shortest fuse
-remaining (the controller polls `ShortestFuseRemaining`; a number that only ever counts down
-needs no event channel). The controller binds the executor by serialized reference on the
-vessel's own prefab (never `GetComponentInChildren` of another vessel's type — rule 14), with
-the symmetric Rebind/Unbind pair, detach-first, pilot gate after the detach.
+rename — and since the 2026-08-26 playtest pass every readout lives INSIDE the ability row
+(the readouts' old floating homes read as a second UI, and the fuse panel popping mid-screen
+read as messages outside the toast feed):
+
+- `bombChargeFill` (was `fillImage`) is bound as the **Charge card's lockup gauge**
+  (`AbilityIconBinding.gauge`), so `AdoptGauge` re-homes and restyles it and the view only
+  writes `fillAmount`. The view never writes its colour — the lockup owns gauge styling.
+- `armedCountText` (was `overchargePrismCount`) is a **corner badge on the Charge icon** and
+  the "can I plant?" answer: highlighted whenever ≥1 bomb is armed.
+- `fuseText` (was the overcharge countdown) is the compact **fuse board above the Space
+  (Kabloom) card** — `"{planted}x {seconds}s"`, hidden while nothing is planted
+  (`fuseContainer` now points at that text's own GO). The controller polls
+  `ShortestFuseRemaining`; a number that only ever counts down needs no event channel.
+
+The controller binds the executor by serialized reference on the vessel's own prefab (never
+`GetComponentInChildren` of another vessel's type — rule 14), with the symmetric
+Rebind/Unbind pair, detach-first, pilot gate after the detach.
+
+The old overcharge cluster (`OuterContainer`/`InnerRing`/`OverchargeText`), a duplicate added
+`TrailContainer` carrying a Missing script, and the Manta-local **`ToastHolder` nested
+instance are DELETED from Manta.prefab** — the readout re-homes above spared those branches
+from the lockup's retire sweep (a referenced branch survives it by design), and a per-vessel
+toast surface competes with the game's one dedicated toast feed in the upper right. Messages
+go through `GameToastAPI` or not at all.
 
 The four-icon row is authored in Manta.prefab at the fleet-standard wirer bands
-(charge → mass → space → time), bound in `AbilityDisplayOrder`. **Icon sprites are empty** —
-art is the polish pass (see Follow-ups); the ability lockup renders the four cards regardless.
+(charge → mass → space → time), bound in `AbilityDisplayOrder`, with **generated placeholder
+silhouettes** (bomb / turn arrow / bloom / chevrons —
+`Tools/Build/author_manta_icon_placeholders.py`, 128 px white-on-transparent at
+`_Graphics/Icons/AbilityIcons/Manta/`) so the cards read before the art pass replaces them 1:1.
 
 ## 7. Files
 
@@ -239,8 +258,9 @@ art is the polish pass (see Follow-ups); the ability lockup renders the four car
 
 ## 10. Follow-ups
 
-- **Icon art**: the four ability icons ship with empty sprites (structure only). Art polish
-  pass owns the sprites per the spec's ownership note.
+- **Icon art**: the four ability icons ship with GENERATED placeholder silhouettes
+  (`author_manta_icon_placeholders.py`). The art polish pass owns the real sprites per the
+  spec's ownership note — replace the four PNGs 1:1 (same guids) or rewire the icon Images.
 - **AI Manta lays no wake rings** — `AIPilot` never drives the analog boost, so `IsBoosting`
   never latches for a bot. Harmless (rings are additive), but an AI teammate contributes no
   highway. Needs an AI boost policy before Wake Highway matters in solo play.
