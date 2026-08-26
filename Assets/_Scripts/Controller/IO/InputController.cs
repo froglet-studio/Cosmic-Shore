@@ -27,6 +27,7 @@ namespace CosmicShore.Gameplay
         private KeyboardInputStrategy keyboardStrategy;
         private TouchInputStrategy touchStrategy;
         private DualMouseInputStrategy dualMouseStrategy;
+        private SingleStickMouseInputStrategy singleStickMouseStrategy;
         private MultiMouseService multiMouseService;
         private DeviceOrientationHandler orientationHandler;
 
@@ -35,6 +36,14 @@ namespace CosmicShore.Gameplay
         // LMB press across both physical mice; disengages on escape.
         private bool dualMouseEngaged;
         private bool prevBothLeftButtonsHeld;
+
+        // One-thumb mouse flight is the desktop DEFAULT for a single-stick vessel rather than an
+        // opt-in gesture: the mouse IS the thumb those hulls fly on, so a scheme that needed a
+        // secret handshake would be off for everyone who never learned it. Escape is the way out
+        // - it already means "give me my cursor back" here (it disengages dual mouse) - and a
+        // full left click flies again. Nothing is lost while disengaged: KeyboardInputStrategy's
+        // WASD still drives the one stick a single-stick vessel reads.
+        private bool mouseFlightDisengaged;
 
         private bool isInitialized;
 
@@ -95,6 +104,7 @@ namespace CosmicShore.Gameplay
             // strategy itself read the same per-frame snapshot.
             multiMouseService?.Tick();
             UpdateDualMouseEngagement();
+            UpdateMouseFlightEngagement();
 
             UpdateInputStrategy();
             currentStrategy?.ProcessInput();
@@ -183,12 +193,14 @@ namespace CosmicShore.Gameplay
             gamepadStrategy = new GamepadInputStrategy();
             keyboardStrategy = new KeyboardInputStrategy();
             dualMouseStrategy = new DualMouseInputStrategy(multiMouseService);
+            singleStickMouseStrategy = new SingleStickMouseInputStrategy();
             orientationHandler = new DeviceOrientationHandler();
 
             touchStrategy.Initialize(InputStatus);
             gamepadStrategy.Initialize(InputStatus);
             keyboardStrategy.Initialize(InputStatus);
             dualMouseStrategy.Initialize(InputStatus);
+            singleStickMouseStrategy.Initialize(InputStatus);
             orientationHandler.Initialize(InputStatus, this);
         }
 
@@ -200,6 +212,8 @@ namespace CosmicShore.Gameplay
                 return touchStrategy;
             if (dualMouseEngaged && multiMouseService != null && multiMouseService.HasTwoMice)
                 return dualMouseStrategy;
+            if (UseSingleStickMouse())
+                return singleStickMouseStrategy;
             // Desktop default is dual-WASD KeyboardInputStrategy, not the legacy
             // KeyboardMouseInputStrategy (that class remains in the project unused).
             return keyboardStrategy;
@@ -230,6 +244,53 @@ namespace CosmicShore.Gameplay
                 // Re-sync settings when switching strategies
                 SyncInvertSettings();
             }
+        }
+
+        /// <summary>
+        /// Escape drops out of mouse flight (releasing the cursor with it) and a full left click
+        /// flies again. The re-engage is deliberately the RELEASE rather than the press: the
+        /// strategy snapshots live button state on activation so a held control cannot raise a
+        /// phantom press, and snapshotting a HELD left button would instead arm a release with no
+        /// matching press. Clicking rather than pressing means there is no held button to
+        /// snapshot at hand-over at all.
+        /// </summary>
+        private void UpdateMouseFlightEngagement()
+        {
+            var kb = Keyboard.current;
+            if (!mouseFlightDisengaged && kb != null && kb.escapeKey.wasPressedThisFrame)
+            {
+                mouseFlightDisengaged = true;
+                return;
+            }
+
+            var mouse = Mouse.current;
+            if (mouseFlightDisengaged && mouse != null && mouse.leftButton.wasReleasedThisFrame)
+                mouseFlightDisengaged = false;
+        }
+
+        /// <summary>
+        /// Mouse flight applies to the vessel this player is actually flying, so it is asked
+        /// live rather than latched: IsSingleStickControls is written by the vessel's transformer
+        /// in Initialize, long after this InputController exists, and a vessel swap can change
+        /// the answer mid-session. UpdateInputStrategy already re-asks every frame, so the hull
+        /// arriving (or changing) hands flight over on its own.
+        /// </summary>
+        private bool UseSingleStickMouse()
+        {
+            if (mouseFlightDisengaged) return false;
+            if (Mouse.current == null) return false;
+
+            // Never for an AI or a remote replica. Update() already returns before the strategy
+            // switch for those, but SetInitialStrategy() runs from Initialize() with no such
+            // guard - and this strategy LOCKS THE CURSOR when it activates, so selecting it for
+            // a bot would take the pointer away from a player who is not flying anything.
+            if (ownerPlayer != null && !ownerPlayer.IsLocalPilot) return false;
+
+            var vessel = ownerPlayer != null ? ownerPlayer.Vessel : null;
+            if (vessel == null || vessel.VesselStatus == null) return false;
+            if (vessel.VesselStatus.AutoPilotEnabled) return false;
+
+            return vessel.VesselStatus.IsSingleStickControls;
         }
 
         public void OnToggleGyro(bool status)
