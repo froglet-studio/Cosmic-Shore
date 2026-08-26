@@ -87,6 +87,7 @@ FMOD, Soap, Quick Scene Pro, …) are never picked up — the board shows only t
 | `Services` | Services & Data | magenta |
 | `Misc` | Misc | slate |
 | `Diagnostics` | Diagnostics & Health | indigo |
+| `Qa` | QA | cyan |
 
 ---
 
@@ -353,6 +354,7 @@ their paths do not start with `FrogletTools/`.
 | Misc | Toolbox | Scene shortcuts, runtime switches, quest/crystal/UGS debug tabs. |
 | Diagnostics | **Crash Detector** | Always-on editor crash watchdog. A background thread journals every error/exception to `Logs/CrashDetector/` and heartbeats a session sentinel; when the editor dies abnormally (Unity crash, PC fault, force-kill — even with the main thread hung), the next launch writes a `Crash-*.log` report from the stale sentinel + captured errors + the tail of Unity's own `Editor-prev.log`. Reader only — writes machine-local logs and `UserSettings/`, never assets, so no ship panel. Shares the Diagnostics window with the Bug Ledger; a crash report can be filed into the ledger with one button. |
 | Diagnostics | **Bug Ledger** | The team's live bug list, INSIDE the editor. Every distinct error/exception/assert signature auto-files one issue into the GITIGNORED live store (`BugLedger/local/`) — `git status` never sees the ledger working. Publishing is explicit: the **Stage & Push** tab diffs local vs the tracked `BugLedger/shared/`, the human stages changes (+/− per issue), comments, and the tool commits & pushes ONLY ledger paths with a step progress bar (fetch → publish → add → commit → push; `BugLedgerPublisher` over `FrogletGit`). One small JSON file per issue, merge-friendly (same signature = same file on every machine, via the runtime-safe `BugSignature` core). Custom bugs are filed by hand; editor TOOLS file findings through `BugLedger.ReportFromTool`/`ReportToolFindings` (deduped, and auto-resolved by the tool's next full clean run — `VesselSkimmerAudit` is the reference integration). A fix is not believed until the game proves it: *Mark Fixed* → VALIDATING, and only after the issue's clean-session quota (play runs for play-mode bugs, editor sessions for edit-mode ones) does it close — archived to `BugLedger/local/resolved/` (also the tombstone that stops a shared copy from re-importing), removed from the live ledger; a recurrence reopens it as a regression, loudly. Per-issue: severity (blocker/major/minor), pause validation, ignore (parks it and suppresses re-filing), resolve now, delete. Full doc: `Docs/DIAGNOSTICS.md`; store contract: `BugLedger/README.md`. Writes no Assets/ — no ship panel; the store is ordinary committable project data. |
+| QA | **QA Session** | The untested-development backlog, run from inside the editor. Creates the tester's session file, lists the backlog, and for each item renders its numbered steps, its PASS/FAIL definitions and its known do-not-fail-on exceptions verbatim — so a first-time tester never opens `QA_BACKLOG.md`. Reads as five numbered steps (session → right build → set up Unity → run tests → submit); each step's reasoning hides behind a `?`. Evidence attaches per item, including a one-click copy of the Editor log. Every rule lives in `Tools/QA/*.py` (self-tested, 59 checks) and the window only draws — it never parses or writes a results file, so a layout bug can never become a lost verdict. Writes no Assets/ — no ship panel; its output is the tester's own `Docs/QA/RESULTS/` file, ordinary committable project data. Needs python3 on PATH. Full doc: `Docs/QA/README.md`. |
 
 ---
 
@@ -387,3 +389,8 @@ their paths do not start with `FrogletTools/`.
 | Signature determinism tests | `Assets/_Scripts/Tests/Editor/BugSignatureTests.cs` |
 | Doc-link resolver (DOCS chips → GitHub) | `Assets/_Scripts/Editor/FrogletTools/FrogletDocLinks.cs` |
 | Diagnostics documentation | `Docs/DIAGNOSTICS.md` |
+| QA session window (draws only; all rules live in python) | `Assets/_Scripts/Editor/QA/QASessionWindow.cs` |
+| QA session CLI the window drives (`state`/`new`/`set`/`attach`/`submit`) | `Tools/QA/session.py` |
+| QA submit validator + publisher | `Tools/QA/submit.py` |
+| QA results applier (backlog/archive/dev-tasks, content-hash ledger) | `Tools/QA/apply_results.py` |
+| QA loop documentation | `Docs/QA/README.md` |
