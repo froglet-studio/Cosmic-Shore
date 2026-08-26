@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using CosmicShore.Utility;
 using CosmicShore.Data;
 using UnityEngine;
@@ -47,6 +48,18 @@ namespace CosmicShore.ScriptableObjects
                  "inheriting a big world's volume ladder pins at Frenzy immediately.")]
         public CellConfigDataSO PreviewCell;
 
+        [Tooltip("OPTIONAL per-intensity arenas, index 0 = intensity 1. This is the same shape " +
+                 "the mode's own scene uses (Cell.CellTypeChoiceOptions.IntensityWise over a " +
+                 "CellConfigs list), so a mode that already ships four configs is authored here " +
+                 "by dropping the same four in the same order - and the preview then CHANGES when " +
+                 "the player moves the intensity row, which is the whole reason the row sits next " +
+                 "to the window.\n\n" +
+                 "Empty means the mode previews the same arena at every intensity, which is " +
+                 "correct for the modes whose intensity is not an arena at all (Skim Race's track " +
+                 "length, the Maelstrom's pool). PreviewCell is then the one arena; when this " +
+                 "list IS authored, PreviewCell is the fallback for an intensity past its end.")]
+        public List<CellConfigDataSO> PreviewCellsByIntensity = new();
+
         [Tooltip("OPTIONAL local-only prop for a mode whose gameplay structure is built by its " +
                  "controller instead of by its cell (hoops, goals, a track). Instantiated at the " +
                  "cell centre after the world has bloomed in, and destroyed on exit. It MUST NOT " +
@@ -92,7 +105,34 @@ namespace CosmicShore.ScriptableObjects
         /// rather than entering a preview that lands the player in the menu world with the
         /// chrome gone.
         /// </summary>
-        public bool CanTestFlight => PreviewCell != null;
+        public bool CanTestFlight => PreviewCell != null || ResolveCell(1) != null;
 
+        /// <summary>
+        /// The arena for an intensity: the <see cref="PreviewCellsByIntensity"/> entry when one is
+        /// authored, else <see cref="PreviewCell"/>.
+        ///
+        /// <para>An intensity past the end of the list CLAMPS to the last entry, matching
+        /// <c>Cell.IntensityIndex</c> exactly - a mode offering four intensities against two
+        /// authored arenas serves the same arena for 3 and 4 in the real scene, and a preview that
+        /// disagreed with that would be lying about the game.</para>
+        /// </summary>
+        public CellConfigDataSO ResolveCell(int intensity)
+        {
+            if (PreviewCellsByIntensity != null && PreviewCellsByIntensity.Count > 0)
+            {
+                int index = Mathf.Clamp(Mathf.Max(1, intensity) - 1, 0, PreviewCellsByIntensity.Count - 1);
+                var config = PreviewCellsByIntensity[index];
+                if (config) return config;
+            }
+            return PreviewCell;
+        }
+
+        /// <summary>
+        /// True when moving the intensity row actually changes the arena. The preview is only
+        /// torn down and rebuilt when this says the world would differ - rebuilding an identical
+        /// satellite cell costs a multi-second build and a networked hull swap for nothing.
+        /// </summary>
+        public bool ArenaVariesByIntensity =>
+            PreviewCellsByIntensity != null && PreviewCellsByIntensity.Count > 1;
     }
 }

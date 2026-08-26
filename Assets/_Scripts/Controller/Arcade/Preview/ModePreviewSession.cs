@@ -79,6 +79,11 @@ namespace CosmicShore.Gameplay
         State _state = State.Idle;
         ModePreviewWindow _window;
         ModePreviewDefinitionSO _definition;
+
+        // The intensity the standing arena was built for. Held here rather than read live so a
+        // rebuild is decided by comparing what IS standing against what was asked for, never by
+        // whatever the config asset happens to say at the moment the check runs.
+        int _intensity = 1;
         ModePreviewRunner _runner;
         bool _runnerStarted;
         bool _autoStartPending;
@@ -192,15 +197,30 @@ namespace CosmicShore.Gameplay
         /// strikes the standing arena first; a satellite cell is the expensive half of this
         /// feature and must never outlive the card it belongs to.
         /// </summary>
-        public void SetDefinition(ModePreviewDefinitionSO definition, VesselClassType modeVessel)
+        public void SetDefinition(ModePreviewDefinitionSO definition, VesselClassType modeVessel,
+                                  int intensity = 1)
         {
             _modeVessel = modeVessel;
+            intensity = Mathf.Max(1, intensity);
 
-            bool sameAndRunning = _definition == definition && _state is State.Standing or State.Live;
-            if (sameAndRunning) return;
+            // A re-arm on the SAME card is the common case (the player nudged the intensity row),
+            // and it must only pay for a rebuild when the arena would actually differ: standing a
+            // satellite costs a multi-second cell build plus a networked hull swap, so rebuilding
+            // an identical world would make the intensity row feel broken while changing nothing
+            // on screen. A mode whose intensity is not an arena at all - Skim Race's track length,
+            // the Maelstrom's pool - authors one cell and is never rebuilt.
+            bool sameCard = _definition == definition && _state is State.Standing or State.Live;
+            bool sameArena = !definition || !definition.ArenaVariesByIntensity ||
+                             definition.ResolveCell(intensity) == definition.ResolveCell(_intensity);
+            if (sameCard && sameArena)
+            {
+                _intensity = intensity;
+                return;
+            }
 
             if (IsActive) Stop(ModePreviewOutcome.Abandoned);
             _definition = definition;
+            _intensity = intensity;
 
             if (definition && definition.CanTestFlight)
             {
@@ -245,7 +265,8 @@ namespace CosmicShore.Gameplay
                 var prefab = cellPrefab ? cellPrefab : template.gameObject;
                 var origin = Vector3.right * arenaDistance;
 
-                if (!_arena.Stand(definition, template, prefab, origin))
+                var config = definition.ResolveCell(_intensity);
+                if (!_arena.Stand(definition, config, template, prefab, origin))
                     throw new InvalidOperationException("the arena could not be stood up");
 
                 // The mode's own hull. Flying Rampage as a Squirrel teaches nothing about
@@ -255,7 +276,8 @@ namespace CosmicShore.Gameplay
                 // The satellite builds without a veil (it is beside the menu, not instead of
                 // it), so we wait on the cell rather than on a screen hold.
                 if (!await WaitWhile(() => _arena.Cell && _arena.Cell.IsSwappingConfig, ct))
-                    throw new TimeoutException($"{definition.PreviewCell.CellName} never finished building");
+                    throw new TimeoutException(
+                        $"{(config ? config.CellName : definition.Mode.ToString())} never finished building");
 
                 if (settleSeconds > 0f)
                     await UniTask.Delay((int)(settleSeconds * 1000f),

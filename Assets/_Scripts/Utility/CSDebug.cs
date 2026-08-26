@@ -95,6 +95,12 @@ namespace CosmicShore.Utility
         /// and is unaffected by this flag.
         /// </summary>
         SparrowStrafingRoll = 1 << 7,
+        /// <summary>
+        /// <c>[ArcadeLaunch]</c> — the arcade launch panel: which panel a card routed to, how the
+        /// controls rows resolved their icons and chips, and the Maelstrom pool a chosen intensity
+        /// unlocks. Off by default like every channel; a real fault here is still a warning.
+        /// </summary>
+        ArcadeLaunch = 1 << 8,
         All = ~0
     }
 

@@ -113,6 +113,17 @@ namespace CosmicShore.UI
         [Tooltip("Owns the windowed preview. Leave empty to find the one in the scene.")]
         [SerializeField] private ModePreviewSession previewSession;
 
+        [Header("Launch Panels (the one-panel layout)")]
+        [Tooltip("One panel per KIND of card - MinigameLaunchPanel for a mode with an arena of " +
+                 "its own, MaelstromLaunchPanel for the meta-mode that draws other modes. The " +
+                 "first whose Handles() accepts the card is used and the rest are hidden.\n\n" +
+                 "Wiring ANY panel here switches the modal to the one-panel layout: the " +
+                 "configure-then-pick-a-vessel pair of screens is skipped entirely and the " +
+                 "config is committed the moment the card opens, because there is no longer a " +
+                 "separate Confirm step for the host to press. Leave EMPTY to keep the legacy " +
+                 "two-screen layout running off the Screen 1 / Screen 2 fields above.")]
+        [SerializeField] private List<ArcadeLaunchPanel> launchPanels = new();
+
         [Header("Network Sync")]
         [SerializeField] private ArcadeConfigSyncManager arcadeConfigSyncManager;
 
@@ -162,6 +173,53 @@ namespace CosmicShore.UI
         SO_ArcadeGame _selectedGame;
         bool _isClientMode;
 
+        // The launch panel currently drawing the selected card, or null on the legacy layout.
+        ArcadeLaunchPanel _activePanel;
+        bool _activePanelWired;
+
+        // The local player's own ready state - known exactly here, unlike the replicated ready
+        // COUNT, which says how many confirmed but not which (see LobbySlotRow).
+        bool _localPlayerReady;
+        int _readyCount;
+
+        /// <summary>
+        /// True when the one-panel layout is in use. Wiring any panel switches the modal over
+        /// wholesale - there is no half-way state where some controls come from a panel and some
+        /// from the legacy screens, because two sources for one control is how a stale widget ends
+        /// up driving live config.
+        /// </summary>
+        bool UsesLaunchPanels => launchPanels != null && launchPanels.Count > 0;
+
+        // Every control the modal drives resolves through ONE of these, and each answers from the
+        // ACTIVE PANEL on the one-panel layout and from the legacy serialized field otherwise -
+        // never a mix. A per-control fallback would look harmless and be the bug: the Maelstrom
+        // panel deliberately has no preview window, so falling back would arm a live arena into a
+        // leftover Screen-1 frame the player cannot see, and a panel that simply forgot to wire its
+        // Start button would silently drive the legacy one instead of reporting the hole.
+        static readonly IntensitySelectButton[] NoIntensityButtons = new IntensitySelectButton[0];
+        static readonly DomainInfoData[] NoDomainTiles = new DomainInfoData[0];
+
+        IReadOnlyList<IntensitySelectButton> ActiveIntensityButtons =>
+            UsesLaunchPanels
+                ? (_activePanel ? _activePanel.IntensityButtons : NoIntensityButtons)
+                : intensityButtons;
+
+        IReadOnlyList<DomainInfoData> ActiveDomainTiles =>
+            UsesLaunchPanels
+                ? (_activePanel ? _activePanel.DomainTiles : NoDomainTiles)
+                : (IReadOnlyList<DomainInfoData>)domainInfoItems;
+
+        Button ActiveStartButton =>
+            UsesLaunchPanels ? (_activePanel ? _activePanel.StartButton : null) : startGameButton;
+
+        GameObject ActiveWaitingLabel =>
+            UsesLaunchPanels
+                ? (_activePanel ? _activePanel.WaitingForOthersLabel : null)
+                : waitingForOthersLabel;
+
+        ModePreviewWindow ActivePreviewWindow =>
+            UsesLaunchPanels ? (_activePanel ? _activePanel.PreviewWindow : null) : previewWindow;
+
         ModePreviewSession _resolvedPreviewSession;
         bool _previewSessionSubscribed;
 
@@ -205,10 +263,24 @@ namespace CosmicShore.UI
 
         void OnEnable()
         {
-            foreach (var intensityButton in intensityButtons)
+            // On the one-panel layout the intensity row and the domain tiles live INSIDE whichever
+            // panel the card selects, so they are wired when that panel becomes active (see
+            // WireActivePanel) rather than here. Wiring both would double-subscribe every handler.
+            if (!UsesLaunchPanels)
             {
-                intensityButton.OnSelect += HandleIntensitySelected;
-                intensityButton.OnLockedSelect += HandleLockedIntensitySelected;
+                foreach (var intensityButton in intensityButtons)
+                {
+                    intensityButton.OnSelect += HandleIntensitySelected;
+                    intensityButton.OnLockedSelect += HandleLockedIntensitySelected;
+                }
+
+                // Domain info buttons
+                foreach (var item in domainInfoItems)
+                {
+                    if (!item || !item.Button) continue;
+                    var captured = item.Domain;
+                    item.Button.onClick.AddListener(() => HandleDomainSelected(captured));
+                }
             }
 
             if (pcStepper)
@@ -216,14 +288,6 @@ namespace CosmicShore.UI
 
             if (dcStepper)
                 dcStepper.OnValueChanged += HandleDomainCountChanged;
-
-            // Domain info buttons
-            foreach (var item in domainInfoItems)
-            {
-                if (!item || !item.Button) continue;
-                var captured = item.Domain;
-                item.Button.onClick.AddListener(() => HandleDomainSelected(captured));
-            }
 
             if (configChangedEvent != null)
                 configChangedEvent.OnRaised += HandleConfigChangedExternal;
@@ -234,6 +298,7 @@ namespace CosmicShore.UI
                 arcadeConfigSyncManager.OnConfigClosedOnClient += HandleConfigClosedOnClient;
                 arcadeConfigSyncManager.OnScreenChangedOnClient += HandleScreenChangedOnClient;
                 arcadeConfigSyncManager.OnAllPlayersReady += HandleAllPlayersReady;
+                arcadeConfigSyncManager.OnPlayerReadyCountChanged += HandleReadyCountChanged;
                 Debug.Log($"[ArcadeConfigModal] OnEnable - subscribed to ArcadeConfigSyncManager events (instance={GetInstanceID()})");
             }
             else
@@ -246,10 +311,21 @@ namespace CosmicShore.UI
         {
             base.OnDisable();
 
-            foreach (var intensityButton in intensityButtons)
+            UnwireActivePanel();
+
+            if (!UsesLaunchPanels)
             {
-                intensityButton.OnSelect -= HandleIntensitySelected;
-                intensityButton.OnLockedSelect -= HandleLockedIntensitySelected;
+                foreach (var intensityButton in intensityButtons)
+                {
+                    intensityButton.OnSelect -= HandleIntensitySelected;
+                    intensityButton.OnLockedSelect -= HandleLockedIntensitySelected;
+                }
+
+                foreach (var item in domainInfoItems)
+                {
+                    if (item && item.Button)
+                        item.Button.onClick.RemoveAllListeners();
+                }
             }
 
             if (pcStepper)
@@ -257,12 +333,6 @@ namespace CosmicShore.UI
 
             if (dcStepper)
                 dcStepper.OnValueChanged -= HandleDomainCountChanged;
-
-            foreach (var item in domainInfoItems)
-            {
-                if (item && item.Button)
-                    item.Button.onClick.RemoveAllListeners();
-            }
 
             ShutDownPreview();
 
@@ -275,6 +345,7 @@ namespace CosmicShore.UI
                 arcadeConfigSyncManager.OnConfigClosedOnClient -= HandleConfigClosedOnClient;
                 arcadeConfigSyncManager.OnScreenChangedOnClient -= HandleScreenChangedOnClient;
                 arcadeConfigSyncManager.OnAllPlayersReady -= HandleAllPlayersReady;
+                arcadeConfigSyncManager.OnPlayerReadyCountChanged -= HandleReadyCountChanged;
             }
 
             // Drop NetDomain / NetAvatarId subscriptions if the modal is being
@@ -294,7 +365,14 @@ namespace CosmicShore.UI
             // and A button must not silently drive the intensity rows behind the game the
             // player is flying. Same gate the base applies to its B-to-close.
             if (ModePreviewWindow.AnyHasFocus) return;
-            if (!configurationDetailView || !configurationDetailView.activeSelf) return;
+
+            // On the one-panel layout the panel IS the config surface; on the legacy one it is
+            // Screen 1. Either way the d-pad only drives the rows the player can actually see.
+            if (UsesLaunchPanels)
+            {
+                if (!_activePanel || !_activePanel.gameObject.activeInHierarchy) return;
+            }
+            else if (!configurationDetailView || !configurationDetailView.activeSelf) return;
 
             if (pad.dpad.up.wasPressedThisFrame)
             {
@@ -383,10 +461,12 @@ namespace CosmicShore.UI
         {
             if (config == null) return;
 
+            var row = ActiveIntensityButtons;
+
             int currentIdx = -1;
-            for (int i = 0; i < intensityButtons.Count; i++)
+            for (int i = 0; i < row.Count; i++)
             {
-                if (intensityButtons[i] && intensityButtons[i].Intensity == config.Intensity)
+                if (row[i] && row[i].Intensity == config.Intensity)
                 {
                     currentIdx = i;
                     break;
@@ -397,8 +477,8 @@ namespace CosmicShore.UI
             while (true)
             {
                 nextIdx += direction;
-                if (nextIdx < 0 || nextIdx >= intensityButtons.Count) return;
-                var btn = intensityButtons[nextIdx];
+                if (nextIdx < 0 || nextIdx >= row.Count) return;
+                var btn = row[nextIdx];
                 if (!btn) continue;
                 var uiBtn = btn.GetComponent<Button>();
                 if (uiBtn && uiBtn.enabled)
@@ -429,6 +509,13 @@ namespace CosmicShore.UI
             config.ResetState();
             config.SelectedGame = selectedGame;
 
+            _localPlayerReady = false;
+            _readyCount = 0;
+
+            // Before anything reads a control: the panel decides WHICH intensity row, domain tiles
+            // and Start button the rest of this method is talking about.
+            SelectLaunchPanel(selectedGame);
+
             BuildAvailableShips(selectedGame);
             InitializeConfigFromGameDefaults(selectedGame);
             // Compute the default domain count AFTER player count is set: the DC bound
@@ -445,10 +532,180 @@ namespace CosmicShore.UI
             _dpadFocusRow = DpadRowIntensity;
             ClearDpadRowHighlights();
 
-            // Host configures privately on Screen 1. No client involvement until
-            // the host clicks Confirm Configuration → CommitConfiguration RPC fires.
-            ShowConfigurationScreen();
+            if (UsesLaunchPanels)
+            {
+                // ONE panel means there is no separate Confirm step for the host to press, so the
+                // config is committed here instead: that is the call that publishes the domain
+                // count, resets every human to Jade, spawns the chips and opens the same panel on
+                // the clients. Deferring it would leave the domain tiles inert on a panel that is
+                // already showing them.
+                CommitConfiguration(playSound: false);
+                RefreshRoster();
+            }
+            else
+            {
+                // Legacy two-screen layout: the host configures privately on Screen 1 and no
+                // client is involved until Confirm Configuration fires the commit RPC.
+                ShowConfigurationScreen();
+            }
+
             RaiseConfigChanged();
+        }
+
+        #endregion
+
+        #region Launch panels (the one-panel layout)
+
+        /// <summary>
+        /// Bring up the panel that draws this card and take the others down.
+        ///
+        /// <para>Selection is by <see cref="ArcadeLaunchPanel.Handles"/>, first match wins - a card
+        /// asks the panels which of them draws it rather than the modal switching on a mode enum,
+        /// so a third kind of card is a new subclass and one list entry, with nothing here to
+        /// edit.</para>
+        /// </summary>
+        void SelectLaunchPanel(SO_ArcadeGame game)
+        {
+            if (!UsesLaunchPanels) return;
+
+            ArcadeLaunchPanel chosen = null;
+            foreach (var panel in launchPanels)
+            {
+                if (!panel) continue;
+                if (chosen == null && panel.Handles(game)) chosen = panel;
+                else panel.Hide();
+            }
+
+            if (chosen == null)
+            {
+                // Not a fault we can paper over: with no panel there is no intensity row, no
+                // domain tiles and no Start button, so the modal would open blank. Say which card
+                // and stop, rather than showing an empty frame the player cannot act on.
+                CSDebug.LogWarning($"[ArcadeLaunch] No launch panel accepts " +
+                                   $"'{(game ? game.DisplayName : "null")}' " +
+                                   $"({(game ? game.Mode.ToString() : "-")}). The modal has nothing to draw.", this);
+                UnwireActivePanel();
+                _activePanel = null;
+                return;
+            }
+
+            if (_activePanel != chosen)
+            {
+                UnwireActivePanel();
+                _activePanel = chosen;
+                WireActivePanel();
+            }
+
+            _activePanel.Show();
+        }
+
+        void WireActivePanel()
+        {
+            if (!_activePanel || _activePanelWired) return;
+
+            foreach (var button in _activePanel.IntensityButtons)
+            {
+                if (!button) continue;
+                button.OnSelect += HandleIntensitySelected;
+                button.OnLockedSelect += HandleLockedIntensitySelected;
+            }
+
+            foreach (var tile in _activePanel.DomainTiles)
+            {
+                if (!tile || !tile.Button) continue;
+                var captured = tile.Domain;
+                tile.Button.onClick.AddListener(() => HandleDomainSelected(captured));
+            }
+
+            if (_activePanel.StartButton)
+                _activePanel.StartButton.onClick.AddListener(OnStartGameClicked);
+
+            _activePanel.OnKickAIRequested += HandleKickAIRequested;
+            _activePanel.OnFillWithAIChanged += HandleFillWithAIChanged;
+
+            _activePanelWired = true;
+        }
+
+        void UnwireActivePanel()
+        {
+            if (!_activePanel || !_activePanelWired) return;
+
+            foreach (var button in _activePanel.IntensityButtons)
+            {
+                if (!button) continue;
+                button.OnSelect -= HandleIntensitySelected;
+                button.OnLockedSelect -= HandleLockedIntensitySelected;
+            }
+
+            foreach (var tile in _activePanel.DomainTiles)
+            {
+                if (tile && tile.Button) tile.Button.onClick.RemoveAllListeners();
+            }
+
+            if (_activePanel.StartButton)
+                _activePanel.StartButton.onClick.RemoveListener(OnStartGameClicked);
+
+            _activePanel.OnKickAIRequested -= HandleKickAIRequested;
+            _activePanel.OnFillWithAIChanged -= HandleFillWithAIChanged;
+
+            _activePanelWired = false;
+        }
+
+        /// <summary>
+        /// The ✕ on an AI seat. There is no AI object to remove yet - the bots are spawned in the
+        /// game scene from <c>GameDataSO.RequestedAIBackfillCount</c> - so kicking one is seating
+        /// one fewer, which is both what the player means and the only representation that cannot
+        /// go out of step with what actually spawns.
+        /// </summary>
+        void HandleKickAIRequested()
+        {
+            if (IsClientMode || config == null || _selectedGame == null) return;
+
+            // Never below the humans present: a seat a human is already in is not the host's to
+            // take away from here.
+            int floor = Mathf.Max(_selectedGame.MinPlayersAllowed, CurrentPartyHumanCount);
+            if (config.PlayerCount <= floor) return;
+
+            HandlePlayerCountSelected(config.PlayerCount - 1);
+        }
+
+        /// <summary>
+        /// The fill-with-AI toggle. On seats every remaining slot the card allows; off drops back
+        /// to the humans present. This is the one-panel layout's replacement for the player-count
+        /// stepper - the ✕ on a seat covers the in-between cases.
+        /// </summary>
+        void HandleFillWithAIChanged(bool fill)
+        {
+            if (IsClientMode || config == null || _selectedGame == null) return;
+
+            int humans = Mathf.Max(_selectedGame.MinPlayersAllowed, CurrentPartyHumanCount);
+            int max = Mathf.Min(_selectedGame.MaxPlayersAllowed, MaxSupportedPlayers);
+
+            HandlePlayerCountSelected(fill ? max : humans);
+        }
+
+        /// <summary>Redraw the roster from the live config. Cheap; call it whenever either moves.</summary>
+        void RefreshRoster()
+        {
+            if (!_activePanel || config == null) return;
+
+            int humans = CurrentPartyHumanCount;
+            int total = Mathf.Max(humans, config.PlayerCount);
+
+            _activePanel.RefreshRoster(gameData, total, humans, _readyCount, _localPlayerReady, !IsClientMode);
+
+            // The toggle FOLLOWS the count rather than driving it, so a ✕ that drops the roster off
+            // the ceiling turns the toggle off by itself instead of leaving it claiming a full house.
+            int max = _selectedGame
+                ? Mathf.Min(_selectedGame.MaxPlayersAllowed, MaxSupportedPlayers)
+                : MaxSupportedPlayers;
+            _activePanel.SetFillWithAISilently(total >= max && max > humans);
+        }
+
+        void HandleReadyCountChanged(int readyCount, int totalExpected)
+        {
+            _readyCount = readyCount;
+            RefreshRoster();
         }
 
         #endregion
@@ -476,18 +733,30 @@ namespace CosmicShore.UI
         /// </summary>
         void ArmPreviewForGame(SO_ArcadeGame game, ModePreviewDefinitionSO definition)
         {
+            var window = ActivePreviewWindow;
+
+            // A panel with no preview window is a designed state, not a fault: Maelstrom draws
+            // OTHER modes, so it has no arena of its own to stand up and shows a clip instead.
+            if (!window)
+            {
+                var idle = previewSession ? previewSession : _resolvedPreviewSession;
+                if (idle) { idle.Stop(); idle.Detach(); }
+                return;
+            }
+
             var session = PreviewSession;
             if (!session)
             {
                 // No session in the scene: the window still owes the player an answer, and the
                 // honest one is the label - never a stale image or an empty frame.
-                if (previewWindow) previewWindow.ShowUnavailable();
+                window.ShowUnavailable();
                 return;
             }
 
-            session.Attach(previewWindow);
+            session.Attach(window);
             session.SetDefinition(definition && definition.CanTestFlight ? definition : null,
-                                  ResolveModeVessel(game));
+                                  ResolveModeVessel(game),
+                                  config != null ? config.Intensity : 1);
         }
 
         /// <summary>
@@ -505,7 +774,8 @@ namespace CosmicShore.UI
                 session.Detach();
             }
 
-            if (previewWindow) previewWindow.Hide();
+            var window = ActivePreviewWindow;
+            if (window) window.Hide();
         }
 
         /// <summary>The scene's preview session, resolved once and cached.</summary>
@@ -609,6 +879,12 @@ namespace CosmicShore.UI
             if (selectedGameFavoriteIcon)
                 selectedGameFavoriteIcon.Favorited = FavoriteSystem.IsFavorited(game.Mode);
 
+            if (_activePanel)
+            {
+                _activePanel.Bind(game, config != null ? config.Intensity : game.MinIntensity);
+                _activePanel.RefreshFavorite(FavoriteSystem.IsFavorited(game.Mode));
+            }
+
             // The session drives the window through its three states - 'LEVEL PREVIEW NOT
             // AVAILABLE' (no definition, or the build failed), 'LOADING' (the arena standing
             // up), and live (the mode already playing under AI until the player taps in).
@@ -621,9 +897,10 @@ namespace CosmicShore.UI
         {
             var progressionService = GameModeProgressionService.Instance;
 
-            for (int i = 0; i < intensityButtons.Count; i++)
+            var intensityRow = ActiveIntensityButtons;
+            for (int i = 0; i < intensityRow.Count; i++)
             {
-                var button = intensityButtons[i];
+                var button = intensityRow[i];
                 if (!button) continue;
 
                 int level = i + 1;
@@ -778,13 +1055,21 @@ namespace CosmicShore.UI
             if (IsClientMode) return; // Clients cannot change intensity
 
             intensity        = Mathf.Clamp(intensity, _selectedGame.MinIntensity, _selectedGame.MaxIntensity);
+            bool changed     = config.Intensity != intensity;
             config.Intensity = intensity;
 
-            foreach (var button in intensityButtons)
+            foreach (var button in ActiveIntensityButtons)
             {
                 if (!button) continue;
                 button.SetSelected(button.Intensity == intensity);
             }
+
+            if (_activePanel) _activePanel.HandleIntensityChanged(intensity);
+
+            // The preview IS the mode's real cell at this intensity, so a changed number has to
+            // rebuild the arena - leaving the old world under the new label would be the stale
+            // frame the whole preview design exists to make impossible.
+            if (changed) ArmPreviewForGame(_selectedGame, ResolvePreviewDefinition(_selectedGame.Mode));
 
             SyncGameDataConfig();
             RaiseConfigChanged();
@@ -812,6 +1097,7 @@ namespace CosmicShore.UI
                 dcStepper.Initialize(MinDomainsForGame, newDcMax, config.DomainCount);
 
             RefreshTileVisibility();
+            RefreshRoster();
             SyncGameDataConfig();
             RaiseConfigChanged();
         }
@@ -1024,7 +1310,7 @@ namespace CosmicShore.UI
 
         DomainInfoData FindTileForDomain(Domains d)
         {
-            foreach (var item in domainInfoItems)
+            foreach (var item in ActiveDomainTiles)
                 if (item && item.Domain == d) return item;
             return null;
         }
@@ -1036,7 +1322,7 @@ namespace CosmicShore.UI
         /// </summary>
         void ClearStaleChipsFromAllStrips()
         {
-            foreach (var item in domainInfoItems)
+            foreach (var item in ActiveDomainTiles)
             {
                 if (!item || item.AvatarStripTransform == null) continue;
                 for (int i = item.AvatarStripTransform.childCount - 1; i >= 0; i--)
@@ -1061,7 +1347,7 @@ namespace CosmicShore.UI
             var selected = config.SelectedDomain;
             int dc = config.DomainCount;
 
-            foreach (var item in domainInfoItems)
+            foreach (var item in ActiveDomainTiles)
             {
                 if (!item) continue;
 
@@ -1230,13 +1516,22 @@ namespace CosmicShore.UI
         // Idempotent - repeated clicks (button mash, repeated input) short-circuit
         // at the _isConfigurationCommitted gate. The Confirm button is also
         // disabled visually for snappy feedback.
-        public void OnConfirmConfiguration()
+        public void OnConfirmConfiguration() => CommitConfiguration(playSound: true);
+
+        /// <summary>
+        /// The commit itself. <paramref name="playSound"/> is false on the one-panel layout's
+        /// automatic commit: the sting acknowledges a BUTTON PRESS, and there is no press there -
+        /// the player opened a card, and a confirmation sound for that reads as having agreed to
+        /// something.
+        /// </summary>
+        void CommitConfiguration(bool playSound)
         {
             if (_isConfigurationCommitted) return;
             _isConfigurationCommitted = true;
             SetConfirmButtonInteractable(false);
 
-            AudioSystem.Instance.PlayMenuAudio(MenuAudioCategory.Confirmed);
+            if (playSound)
+                AudioSystem.Instance.PlayMenuAudio(MenuAudioCategory.Confirmed);
 
             if (!IsClientMode && arcadeConfigSyncManager && _selectedGame != null)
             {
@@ -1256,7 +1551,12 @@ namespace CosmicShore.UI
             ClearDpadRowHighlights();
             SpawnChipsForAllPlayers();
             RefreshTileVisibility();
-            ShowGameDetailScreen();
+
+            // The one-panel layout has nowhere to go: the panel showing the domain tiles is
+            // already up, and the chips just spawned into it.
+            if (!UsesLaunchPanels)
+                ShowGameDetailScreen();
+
             HideBackFromGameSelectButton();
         }
 
@@ -1338,9 +1638,14 @@ namespace CosmicShore.UI
             // OnConfirmConfiguration is allowed to fire.
             ResetCommitGuard();
 
+            _localPlayerReady = false;
+            _readyCount = 0;
+
             // A satellite arena is the expensive half of the preview - it must never outlive the
             // window somebody was looking at it through.
             ShutDownPreview();
+
+            if (_activePanel) _activePanel.Hide();
 
             ModalWindowOut();
         }
@@ -1352,14 +1657,22 @@ namespace CosmicShore.UI
         /// </summary>
         public void OnStartGameClicked()
         {
+            // The one-panel layout subscribes this to the panel's Start button, and a prefab may
+            // ALSO carry an inspector onClick to it - plus a player can simply double-click. Ready
+            // is a latch, so the second call is a no-op rather than a second sting and a second
+            // ConfirmLocalPlayerReady.
+            if (_localPlayerReady) return;
+
             CSDebug.LogVerbose(CSLogChannel.NetworkFlow, "<color=#FFD700>[FLOW-2] [ArcadeConfigModal] OnStartGameClicked (confirming ready)</color>");
             audioSystem.PlayMenuAudio(MenuAudioCategory.Confirmed);
 
             // Show "Waiting for others..." and hide the Start button
-            if (startGameButton)
-                startGameButton.gameObject.SetActive(false);
-            if (waitingForOthersLabel)
-                waitingForOthersLabel.SetActive(true);
+            _localPlayerReady = true;
+            if (ActiveStartButton)
+                ActiveStartButton.gameObject.SetActive(false);
+            if (ActiveWaitingLabel)
+                ActiveWaitingLabel.SetActive(true);
+            RefreshRoster();
 
             // Tell the server this player is ready
             if (arcadeConfigSyncManager)
@@ -1476,8 +1789,10 @@ namespace CosmicShore.UI
             if (arcadeExploreView != null)
                 arcadeExploreView.ToggleFavorite();
 
+            bool favorited = FavoriteSystem.IsFavorited(_selectedGame.Mode);
             if (selectedGameFavoriteIcon != null)
-                selectedGameFavoriteIcon.Favorited = FavoriteSystem.IsFavorited(_selectedGame.Mode);
+                selectedGameFavoriteIcon.Favorited = favorited;
+            if (_activePanel) _activePanel.RefreshFavorite(favorited);
         }
 
         #endregion
@@ -1569,6 +1884,8 @@ namespace CosmicShore.UI
             config.Intensity    = intensity;
             config.PlayerCount  = playerCount;
 
+            SelectLaunchPanel(game);
+
             BuildAvailableShips(game);
             InitializeGameMetaView(game);
             InitializeScreen1Controls(game);
@@ -1582,7 +1899,11 @@ namespace CosmicShore.UI
 
             // Clients skip Screen 1 entirely - modal opens straight at GameDetailView
             // with the back button hidden. Host has already committed PC + DC + intensity.
-            ShowGameDetailScreen();
+            // The one-panel layout has no second screen to move to - the panel SelectLaunchPanel
+            // brought up is the whole surface, and it is already showing.
+            if (!UsesLaunchPanels)
+                ShowGameDetailScreen();
+
             HideBackFromGameSelectButton();
 
             // Same chip-spawn pattern as the host path so clients see live
@@ -1591,6 +1912,7 @@ namespace CosmicShore.UI
             // on the Jade tile.
             SpawnChipsForAllPlayers();
             RefreshTileVisibility();
+            RefreshRoster();
         }
 
         /// <summary>
@@ -1609,6 +1931,10 @@ namespace CosmicShore.UI
         /// </summary>
         void HandleScreenChangedOnClient(int screenIndex)
         {
+            // There are no screens to follow on the one-panel layout, and the host never sends
+            // these there - it has no navigation left to broadcast.
+            if (UsesLaunchPanels) return;
+
             switch (screenIndex)
             {
                 case 0: ShowConfigurationScreen(); break;
@@ -1629,12 +1955,14 @@ namespace CosmicShore.UI
             bool isHost = !IsClientMode;
 
             // Intensity buttons - read-only for clients
-            foreach (var button in intensityButtons)
+            foreach (var button in ActiveIntensityButtons)
             {
                 if (!button) continue;
                 var uiButton = button.GetComponent<Button>();
                 if (uiButton) uiButton.interactable = isHost;
             }
+
+            if (_activePanel) _activePanel.SetHostControlsInteractable(isHost);
 
             // Steppers - visible for all, but only host can change them
             if (pcStepper) pcStepper.SetInteractable(isHost);
@@ -1647,10 +1975,12 @@ namespace CosmicShore.UI
         /// </summary>
         void ResetReadyUpUI()
         {
-            if (startGameButton)
-                startGameButton.gameObject.SetActive(true);
-            if (waitingForOthersLabel)
-                waitingForOthersLabel.SetActive(false);
+            _localPlayerReady = false;
+            _readyCount = 0;
+            if (ActiveStartButton)
+                ActiveStartButton.gameObject.SetActive(true);
+            if (ActiveWaitingLabel)
+                ActiveWaitingLabel.SetActive(false);
         }
 
         #endregion

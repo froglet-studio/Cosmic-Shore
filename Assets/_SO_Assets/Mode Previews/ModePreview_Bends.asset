@@ -15,6 +15,11 @@ MonoBehaviour:
   Mode: 42
   Notes: 'Reuses Rampage''s arena outright - referenced, not forked, exactly as the mode itself does. OPEN-ENDED: it scores on debuffing rival pilots, and a solo preview has none; what it teaches is the Dolphin economy the whole mode is built on. Vessel pinned to Dolphin(2).'
   PreviewCell: {fileID: 11400000, guid: fc20698b2b983f9e1e9c20733ea92760, type: 2}
+  PreviewCellsByIntensity:
+  - {fileID: 11400000, guid: fc20698b2b983f9e1e9c20733ea92760, type: 2}
+  - {fileID: 11400000, guid: 398abbfc433510307e154b76aa4191b4, type: 2}
+  - {fileID: 11400000, guid: 789e13b3381f614d997ba4b7a830ff22, type: 2}
+  - {fileID: 11400000, guid: c6959b0e548d4f26bdde820ca48ac26e, type: 2}
   StructurePrefab: {fileID: 0}
   Vessel: 2
   ObjectiveText: 'Skim the cacti to bank energy. A crystal fires the cone.'

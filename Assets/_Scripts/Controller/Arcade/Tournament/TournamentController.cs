@@ -347,15 +347,29 @@ namespace CosmicShore.Gameplay
         {
             if (_tournament == null || _tournament.GameCount == 0) return;
 
-            // CurrentGameIndex holds the last loaded pool mode (set on scene load); avoid repeating it,
-            // except for the very first game of the session.
-            int avoid = _tournament.GamesPlayed > 0 ? _tournament.CurrentGameIndex : -1;
-            int pick = PickRandomModeIndex(avoid);
+            int ceiling = Mathf.Clamp(_tournament.IntensityCeiling <= 0 ? 1 : _tournament.IntensityCeiling, 1, 4);
 
-            var game = _tournament.GameQueue[pick];
+            // The lobby's intensity does TWO things: it caps each game's own intensity, and it
+            // decides how wide the pool is (TournamentDataSO.IntensityTiers). An un-authored
+            // ladder returns the whole queue, so this is the legacy draw until tiers are written.
+            var drawable = _tournament.GamesForIntensity(ceiling);
+            if (drawable.Count == 0) return;
+
+            // CurrentGameIndex holds the last loaded pool mode as a GameQueue index (set on scene
+            // load); avoid repeating it, except for the very first game of the session. It has to
+            // be mapped INTO the drawable list, because that list is a subset at low intensity and
+            // the two index spaces are not the same.
+            int avoid = -1;
+            if (_tournament.GamesPlayed > 0 &&
+                _tournament.CurrentGameIndex >= 0 &&
+                _tournament.CurrentGameIndex < _tournament.GameCount)
+            {
+                avoid = drawable.IndexOf(_tournament.GameQueue[_tournament.CurrentGameIndex]);
+            }
+
+            var game = drawable[PickRandomIndex(drawable.Count, avoid)];
             if (game == null) return;
 
-            int ceiling = Mathf.Clamp(_tournament.IntensityCeiling <= 0 ? 1 : _tournament.IntensityCeiling, 1, 4);
             int intensity = Random.Range(1, ceiling + 1);   // inclusive [1..ceiling]
 
             // Per-game intensity: set BEFORE SyncFromArcadeGame (which doesn't touch intensity) and
@@ -373,10 +387,10 @@ namespace CosmicShore.Gameplay
             _gameData.InvokeGameLaunch();              // → SceneLoader.LaunchGame (host loads; clients follow)
         }
 
-        // Uniform random pool index, optionally excluding `avoid` (-1 = no exclusion).
-        int PickRandomModeIndex(int avoid)
+        // Uniform random index into a list of `count`, optionally excluding `avoid`
+        // (-1 or out of range = no exclusion).
+        static int PickRandomIndex(int count, int avoid)
         {
-            int count = _tournament.GameCount;
             if (count <= 1) return 0;
             if (avoid < 0 || avoid >= count) return Random.Range(0, count);
 

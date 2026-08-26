@@ -50,12 +50,15 @@ namespace CosmicShore.Gameplay
         /// <paramref name="template"/> is any live cell to clone the prefab and runtime shape from
         /// - normally the scene's own cell.
         /// </summary>
-        public bool Stand(ModePreviewDefinitionSO definition, Cell template, GameObject cellPrefab,
-                          Vector3 origin)
+        public bool Stand(ModePreviewDefinitionSO definition, CellConfigDataSO config, Cell template,
+                          GameObject cellPrefab, Vector3 origin)
         {
             if (IsStanding) return false;
 
-            if (!definition || !definition.PreviewCell)
+            // The CONFIG is passed in rather than read off the definition, because which arena a
+            // mode previews is a function of the chosen INTENSITY (ModePreviewDefinitionSO.
+            // ResolveCell) and the arena has no business knowing where that number comes from.
+            if (!definition || !config)
             {
                 CSDebug.LogWarning("[ModePreview] Arena asked to stand with no preview cell - ignored.");
                 return false;
@@ -98,7 +101,7 @@ namespace CosmicShore.Gameplay
 
             _root.SetActive(true);
 
-            if (!Cell.InitializeSatellite(definition.PreviewCell))
+            if (!Cell.InitializeSatellite(config))
             {
                 FinishStrike();
                 return false;
@@ -107,7 +110,7 @@ namespace CosmicShore.Gameplay
             SpawnStructure(definition);
 
             CSDebug.Log($"[ModePreview] Arena standing for {definition.Mode} " +
-                        $"({definition.PreviewCell.CellName}) at {origin}.");
+                        $"({config.CellName}) at {origin}.");
             return true;
         }
 

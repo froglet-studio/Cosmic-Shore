@@ -1,0 +1,184 @@
+using System;
+using System.Collections.Generic;
+using CosmicShore.ScriptableObjects;
+using CosmicShore.Utility;
+using UnityEngine;
+using UnityEngine.UI;
+
+namespace CosmicShore.UI
+{
+    /// <summary>
+    /// One card's whole launch surface — everything the player configures before the match, in one
+    /// panel.
+    ///
+    /// <para><b>The two-screen flow is gone.</b> Configure-then-pick-a-vessel existed because a
+    /// card could be flown in several hulls; every arcade mode now locks to one, so the second
+    /// screen had nothing left to ask and the first had no reason to be a separate step. What
+    /// remains is a single panel per card, and this is its contract with
+    /// <see cref="ArcadeGameConfigureModal"/>.</para>
+    ///
+    /// <para><b>The panel owns its widgets; the modal owns the decisions.</b> A panel exposes the
+    /// controls it contains (intensity row, domain tiles, start button) and the modal subscribes to
+    /// them, so config validation, the network commit, ready-up and launch stay in exactly one
+    /// place no matter which panel is on screen. A panel never writes
+    /// <c>ArcadeGameConfigSO</c>, never talks to <c>ArcadeConfigSyncManager</c>, and never
+    /// launches anything — the moment a panel starts making those calls there are two authorities
+    /// on the same state, which is the failure the single-writer rule exists to prevent.</para>
+    ///
+    /// <para>Two panels ship: <see cref="MinigameLaunchPanel"/> for a mode with an arena of its
+    /// own, and <see cref="MaelstromLaunchPanel"/> for the meta-mode that draws other modes.
+    /// <see cref="Handles"/> is how a card finds its panel, so a third is a new subclass and one
+    /// entry in the modal's list.</para>
+    /// </summary>
+    public abstract class ArcadeLaunchPanel : MonoBehaviour
+    {
+        [Header("Shared header")]
+        [SerializeField, Tooltip("The card's DisplayName.")]
+        protected TMPro.TMP_Text gameNameText;
+
+        [SerializeField, Tooltip("Description + rotating tips.")]
+        protected GameBriefingView briefing;
+
+        [SerializeField, Tooltip("Optional favourite star for this card.")]
+        protected FavoriteIcon favoriteIcon;
+
+        [Header("Shared controls the modal drives")]
+        [SerializeField, Tooltip("This panel's intensity row, in ascending order (1..4). The modal " +
+                                 "subscribes to these while the panel is the active one.")]
+        protected List<IntensitySelectButton> intensityButtons = new(4);
+
+        [SerializeField, Tooltip("This panel's domain tiles (Jade, Ruby, Gold).")]
+        protected List<DomainInfoData> domainTiles = new(3);
+
+        [SerializeField, Tooltip("Start / ready-up button.")]
+        protected Button startButton;
+
+        [SerializeField, Tooltip("'Waiting for others…' label, shown after this player confirms.")]
+        protected GameObject waitingForOthersLabel;
+
+        [Header("Roster")]
+        [SerializeField, Tooltip("Seats + the fill-with-AI toggle. Optional: a panel without one " +
+                                 "simply shows no roster.")]
+        protected LobbySlotRow lobbyRow;
+
+        /// <summary>The player asked to seat one fewer (✕ on an AI seat).</summary>
+        public event Action OnKickAIRequested;
+
+        /// <summary>The fill-with-AI toggle moved.</summary>
+        public event Action<bool> OnFillWithAIChanged;
+
+        /// <summary>The card currently drawn, or null.</summary>
+        public SO_ArcadeGame Game { get; private set; }
+
+        public IReadOnlyList<IntensitySelectButton> IntensityButtons => intensityButtons;
+        public IReadOnlyList<DomainInfoData> DomainTiles => domainTiles;
+        public Button StartButton => startButton;
+        public GameObject WaitingForOthersLabel => waitingForOthersLabel;
+        public FavoriteIcon Favorite => favoriteIcon;
+
+        /// <summary>
+        /// The live preview window this panel contains, or null when it has none (Maelstrom shows
+        /// a clip instead — it draws OTHER modes, so it has no arena of its own to stand up).
+        /// </summary>
+        public virtual ModePreviewWindow PreviewWindow => null;
+
+        /// <summary>Whether this panel is the one that draws <paramref name="game"/>.</summary>
+        public abstract bool Handles(SO_ArcadeGame game);
+
+        protected virtual void OnEnable()
+        {
+            if (lobbyRow)
+            {
+                lobbyRow.OnKickAIRequested += RaiseKickAI;
+                lobbyRow.OnFillWithAIChanged += RaiseFillWithAI;
+            }
+        }
+
+        protected virtual void OnDisable()
+        {
+            if (lobbyRow)
+            {
+                lobbyRow.OnKickAIRequested -= RaiseKickAI;
+                lobbyRow.OnFillWithAIChanged -= RaiseFillWithAI;
+            }
+        }
+
+        /// <summary>
+        /// Fill the panel for a card. Subclasses override to add their own half (a live preview, a
+        /// clip and a pool list) and must call base to get the shared header.
+        /// </summary>
+        public virtual void Bind(SO_ArcadeGame game, int intensity)
+        {
+            Game = game;
+
+            if (gameNameText)
+                gameNameText.text = game ? game.DisplayName : string.Empty;
+
+            if (briefing)
+                briefing.Show(game);
+
+            CSDebug.LogVerbose(CSLogChannel.ArcadeLaunch,
+                $"[ArcadeLaunch] {GetType().Name} bound to '{(game ? game.DisplayName : "none")}' " +
+                $"at intensity {intensity}.");
+        }
+
+        /// <summary>The intensity changed while this panel is up.</summary>
+        public virtual void HandleIntensityChanged(int intensity) { }
+
+        /// <summary>Redraw the roster. A panel with no <see cref="lobbyRow"/> ignores this.</summary>
+        public virtual void RefreshRoster(GameDataSO gameData, int totalPlayers, int humanCount,
+                                          int readyCount, bool localReady, bool isHost)
+        {
+            if (lobbyRow)
+                lobbyRow.Refresh(gameData, totalPlayers, humanCount, readyCount, localReady, isHost);
+        }
+
+        /// <summary>
+        /// Reflect the fill toggle without raising its event — the modal derives it from the
+        /// player count, so the toggle follows the count rather than racing it.
+        /// </summary>
+        public virtual void SetFillWithAISilently(bool on)
+        {
+            if (lobbyRow) lobbyRow.SetFillWithAISilently(on);
+        }
+
+        /// <summary>Show the star's state for this card.</summary>
+        public virtual void RefreshFavorite(bool favorited)
+        {
+            if (favoriteIcon) favoriteIcon.Favorited = favorited;
+        }
+
+        /// <summary>Ready-up state: the Start button and the waiting label are mutually exclusive.</summary>
+        public virtual void SetReadyUpState(bool confirmed)
+        {
+            if (startButton) startButton.gameObject.SetActive(!confirmed);
+            if (waitingForOthersLabel) waitingForOthersLabel.SetActive(confirmed);
+        }
+
+        /// <summary>
+        /// Grey out the controls only the host owns (intensity, the fill toggle). Domain and Start
+        /// stay live for every player — those are each player's own choices.
+        /// </summary>
+        public virtual void SetHostControlsInteractable(bool interactable)
+        {
+            foreach (var button in intensityButtons)
+            {
+                if (!button) continue;
+                // IntensitySelectButton keeps its own SELECTED/ACTIVE/LOCKED visuals; whether a
+                // click is even accepted is the UGUI Button's, which is the one the modal has
+                // always gated on for clients.
+                var uiButton = button.GetComponent<Button>();
+                if (uiButton) uiButton.interactable = interactable;
+            }
+        }
+
+        /// <summary>Bring this panel up.</summary>
+        public virtual void Show() => gameObject.SetActive(true);
+
+        /// <summary>Take this panel down. Subclasses stop anything they were running.</summary>
+        public virtual void Hide() => gameObject.SetActive(false);
+
+        void RaiseKickAI() => OnKickAIRequested?.Invoke();
+        void RaiseFillWithAI(bool on) => OnFillWithAIChanged?.Invoke(on);
+    }
+}
