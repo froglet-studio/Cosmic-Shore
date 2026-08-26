@@ -126,6 +126,10 @@ namespace CosmicShore.Gameplay
                 case GameModes.Rampage: // Score lands only at game end - destruction is the live stat
                 case GameModes.Ribcage: // same: the race metric is hostile prisms destroyed
                 case GameModes.Salvo:   // same: the Sparrow demolition race
+                case GameModes.Bloomrush: // scored on VOLUME, but the comeback deficit reads the
+                                          // prism COUNT deliberately: the two move together and
+                                          // count keeps the card's rate at a human scale instead
+                                          // of a 1e-4 volume rate nobody can sanity-check.
                     return ScoreDifferenceSource.PrismsDestroyed;
                 case GameModes.WildlifeLiberation: // Score lands only at game end - kills are the live stat
                     return ScoreDifferenceSource.LifeformsKilled;

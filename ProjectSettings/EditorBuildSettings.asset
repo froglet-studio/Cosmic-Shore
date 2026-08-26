@@ -69,6 +69,9 @@ EditorBuildSettings:
     path: Assets/_Scenes/Multiplayer Scenes/MinigameSalvo.unity
     guid: 313d5cf05253dc4d163a58dc415a07da
   - enabled: 1
+    path: Assets/_Scenes/Multiplayer Scenes/MinigameBloomrush.unity
+    guid: d16482a3e8e8a790d562a7ab13718d82
+  - enabled: 1
     path: Assets/_Scenes/Multiplayer Scenes/MinigameWildlifeLiberation.unity
     guid: 11228dcc85a39689b45c12e88617a976
   - enabled: 1

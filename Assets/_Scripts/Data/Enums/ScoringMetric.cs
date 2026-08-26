@@ -47,5 +47,13 @@ namespace CosmicShore.Data
         // The one metric whose source is vessel-vs-vessel combat rather than prisms, crystals,
         // or the ecology.
         CombatPoints = 8,
+        // Bloomrush: hostile prism VOLUME destroyed (reads IRoundStats.HostileVolumeDestroyed,
+        // truncated to int at the read - volumes are large, the fraction is noise). The volume
+        // stats were tracked and replicated long before anything scored on them; this member
+        // is what finally makes one scoreable. Volume, not count, because the Manta's whole
+        // kit is ABOUT volume: it lays the biggest prisms in the game and its blooms are paid
+        // by how much mass they engulf - a crystal-cashed bloom is bigger than a fuse fizzle,
+        // so "beat the fuse" pays through the metric itself with no scoring special case.
+        VolumeDestroyed = 9,
     }
 }

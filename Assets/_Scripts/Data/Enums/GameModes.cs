@@ -97,5 +97,14 @@ namespace CosmicShore.Data
         // keeps the strikers firing. First DOMAIN to the prism target wins. See
         // _Scripts/Controller/Arcade/SALVO.md.
         Salvo = 44,
+        // Bloomrush (45): the Manta-only party game — the delayed-detonation race, and the
+        // vessel's accessibility thesis as a mode: nobody has to learn a button. Skim the reef
+        // to arm bombs, graze wildlife and rival Mantas to plant them (silently — one bomb per
+        // target, tagging is denial), then reach a crystal before the fuses burn down and set
+        // the whole board off at once. 120-second round; score = hostile VOLUME destroyed
+        // (crystal blooms are bigger than fuse fizzles, so beating the fuse pays by
+        // construction); tiebreaker = fuses beaten. First DOMAIN sum wins. See
+        // _Scripts/Controller/Arcade/BLOOMRUSH.md.
+        Bloomrush = 45,
     }
 }

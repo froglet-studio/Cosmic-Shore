@@ -24,6 +24,9 @@ namespace CosmicShore.Gameplay
             ScoringMetric.PrismsRemaining   => stats.PrismsRemaining,
             ScoringMetric.LifeformsKilled   => stats.LifeformsKilled,
             ScoringMetric.CombatPoints      => stats.CombatPoints,
+            // Volume is a float stat; the truncation is deliberate (sub-unit volume is noise
+            // at the scale a match accumulates) and keeps every consumer of Read an int.
+            ScoringMetric.VolumeDestroyed   => (int)stats.HostileVolumeDestroyed,
             _                               => 0,
         };
 

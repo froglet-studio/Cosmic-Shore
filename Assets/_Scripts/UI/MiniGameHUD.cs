@@ -344,6 +344,11 @@ namespace CosmicShore.UI
                     // nearest managed omni crystal", and in Salvo that crystal IS the missile
                     // economy (the wingman reload), so it is the one thing worth pointing at.
                     return CreateProviderComponent<RampageObjectiveProvider>("ObjectiveProvider_Salvo");
+                case GameModes.Bloomrush:
+                    // Rampage's provider again, and again on purpose: the nearest managed omni
+                    // crystal is the Kabloom trigger — the "cash in now?" half of the mode's
+                    // one decision, and exactly what the arrow should point at.
+                    return CreateProviderComponent<RampageObjectiveProvider>("ObjectiveProvider_Bloomrush");
                 default:
                     return null;
             }
