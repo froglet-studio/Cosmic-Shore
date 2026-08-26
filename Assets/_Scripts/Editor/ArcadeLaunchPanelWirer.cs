@@ -50,12 +50,20 @@ namespace CosmicShore.Editor
         const string ArcadeModalName = "ArcadeGameConfigureModal";
         const string MaelstromModalName = "MaelstromGameConfigurationModal";
         const string ConfigContentName = "ConfigurationContent";
-        const string ControlsDescName = "ControlsDescription";
-        const string AbilityRowName = "AbilityContent";
         const string GameViewName = "GameView";
         const string ConfigDetailName = "ConfigurationDetailView";
-        const string PoolListName = "GameListDescriptionDescription";
-        const string PoolRowName = "GameCard";
+
+        // CANDIDATES, not names. A hand-authored container gets renamed as the layout settles
+        // ("GameListDescriptionDescription" became "GameListDescription" between two runs of this
+        // tool), and a wirer that only matches the name it was written against reports "not found"
+        // for an object sitting in plain sight. Every lookup tries these, then falls back to what
+        // the object IS - see FindListContainer.
+        static readonly string[] ControlsNames = { "ControlsDescription", "Controls", "ControlsPanel" };
+        static readonly string[] AbilityRowNames = { "AbilityControlRow", "AbilityContent", "AbiiltyContent" };
+        static readonly string[] PoolListNames =
+            { "GameListDescription", "GameListDescriptionDescription", "GameList", "PoolList" };
+        static readonly string[] PoolRowNames =
+            { "MaelstromPoolRow", "GameCard", "Game DescriptionBG", "GameListRow" };
 
         readonly List<string> _found = new();
         readonly List<string> _wrote = new();
@@ -172,6 +180,7 @@ namespace CosmicShore.Editor
                 return null;
             }
             _found.Add($"Minigame panel root: '{Path(content)}'");
+            ReportChildren(content);
 
             // No early-out on a null panel: during a dry run nothing is created, and the rest of
             // this method is exactly the part the human is scanning FOR.
@@ -179,13 +188,14 @@ namespace CosmicShore.Editor
             var so = Edit(panel);
 
             // ── Controls block ──
-            var controls = FindChild(content, ControlsDescName);
+            var controls = FindListContainer(content, ControlsNames);
             if (controls)
             {
+                _found.Add($"Controls block: '{Path(controls)}'");
                 var controlsPanel = Ensure<VesselControlsPanel>(controls.gameObject, dryRun, _wrote);
                 SetRef(so, "controlsPanel", controlsPanel, dryRun);
 
-                var row = FindRowTemplate(controls, AbilityRowName, needsIcon: true);
+                var row = FindRowTemplate(controls, AbilityRowNames, needsIcon: true);
                 if (row)
                 {
                     _found.Add($"Ability row template: '{Path(row)}'");
@@ -198,17 +208,17 @@ namespace CosmicShore.Editor
                 }
                 else
                 {
-                    _todo.Add($"No row template under '{ControlsDescName}'. Author ONE row - an " +
+                    _todo.Add($"No row template under '{Path(controls)}'. Author ONE row - an " +
                               "Image and a TMP_Text - and re-run; the tool turns it into the row " +
-                              "prefab the block instantiates. (It looks for a child called " +
-                              $"'{AbilityRowName}' first, then for the first child that simply " +
-                              "LOOKS like a row, so the name does not have to be exact.)");
+                              "prefab the block instantiates. It matches by name first and then " +
+                              "by what the object IS, so the name does not have to be exact.");
                 }
             }
             else
             {
-                _todo.Add($"No '{ControlsDescName}' under '{ConfigContentName}' - the controls " +
-                          "block will not be drawn.");
+                _todo.Add($"No controls container under '{ConfigContentName}' - the controls block " +
+                          "will not be drawn. It is the child that is neither GameView nor " +
+                          "ConfigurationDetailView and carries a layout group.");
             }
 
             // ── Briefing + preview, from GameView ──
@@ -263,22 +273,25 @@ namespace CosmicShore.Editor
                 _problems.Add($"'{ConfigContentName}' not found under {MaelstromModalName}.");
                 return null;
             }
+            ReportChildren(content);
 
             var panel = Ensure<MaelstromLaunchPanel>(content.gameObject, dryRun, _wrote);
             var so = Edit(panel);
             SetRef(so, "hostModal", window, dryRun);
 
             // ── Pool list ──
-            var list = FindChild(content, PoolListName);
+            var list = FindListContainer(content, PoolListNames);
             if (list)
             {
+                _found.Add($"Pool list container: '{Path(list)}'" +
+                           (list.GetComponent<LayoutGroup>() ? " (has a layout group)" : ""));
                 var listView = Ensure<MaelstromPoolListView>(list.gameObject, dryRun, _wrote);
                 SetRef(so, "poolList", listView, dryRun);
 
                 var lso = Edit(listView);
                 SetRef(lso, "rowContainer", list, dryRun);
 
-                var row = FindRowTemplate(list, PoolRowName, needsIcon: false);
+                var row = FindRowTemplate(list, PoolRowNames, needsIcon: false);
                 if (row)
                 {
                     _found.Add($"Pool row template: '{Path(row)}'");
@@ -288,7 +301,7 @@ namespace CosmicShore.Editor
                 }
                 else
                 {
-                    _todo.Add($"No row template under '{PoolListName}'. Author ONE row (a " +
+                    _todo.Add($"No row template under '{Path(list)}'. Author ONE row (a " +
                               "TMP_Text, optionally an Image) and re-run.");
                 }
 
@@ -300,7 +313,9 @@ namespace CosmicShore.Editor
             }
             else
             {
-                _todo.Add($"No '{PoolListName}' under the Maelstrom's '{ConfigContentName}'.");
+                _todo.Add($"No pool-list container under the Maelstrom's '{ConfigContentName}' - " +
+                          "the child that is neither GameView nor ConfigurationDetailView and " +
+                          "carries a layout group.");
             }
 
             WireGameView(so, FindChild(content, GameViewName), dryRun, wantVideo: true);
@@ -378,9 +393,16 @@ namespace CosmicShore.Editor
                     _todo.Add($"'{Path(preview)}' has no RawImage - the clip has no surface to " +
                               "render into. Add one and re-run.");
 
-                _todo.Add("Assign the Maelstrom card's clip: ArcadeGameTournament.asset → " +
-                          "Preview Video. It is the ONLY card that gets one - every other mode " +
-                          "previews live and must never fall back to a video.");
+                // Ask the ASSET rather than telling the human to check: a standing instruction
+                // they have already carried out is noise, and noise is what makes a TODO list
+                // stop being read.
+                var card = LoadTournamentCard();
+                if (card && !card.PreviewVideo)
+                    _todo.Add($"'{card.name}' has no Preview Video. It is the ONLY card that gets " +
+                              "one - every other mode previews live and must never fall back to " +
+                              "a video.");
+                else if (!card)
+                    _todo.Add("Could not find the Tournament card to check its Preview Video.");
                 return;
             }
 
@@ -525,9 +547,16 @@ namespace CosmicShore.Editor
         // ── Row prefabs ──────────────────────────────────────────────────────────
 
         /// <summary>
-        /// Turn a hand-authored row into the prefab its list instantiates, wire the component on it,
-        /// and remove the scene copy - the panel builds its own rows from the prefab, so leaving the
-        /// original behind would draw one row nothing drives.
+        /// Turn a hand-authored row into the prefab its list instantiates, wire the component on
+        /// it, and DEACTIVATE the scene copy.
+        ///
+        /// <para>Deactivate, never delete. Which child is "the row" is the one judgement in this
+        /// tool that can be wrong - it is matched by name and then by shape, and a description
+        /// block sitting where a row template would sit looks the same to both. A layout group
+        /// ignores an inactive child, so a correct guess costs nothing and reads as the ordinary
+        /// disabled-template idiom; a wrong one costs the human a click to undo instead of their
+        /// authoring. Deletion was the only irreversible thing here, and it was guarding against a
+        /// stray row.</para>
         /// </summary>
         GameObject MakeRowPrefab<T>(GameObject source, string prefabName, bool dryRun,
                                     List<string> written, Action<T> wire) where T : Component
@@ -543,8 +572,9 @@ namespace CosmicShore.Editor
 
             if (dryRun)
             {
-                _wrote.Add($"WOULD create {path} from '{Path(source.transform)}' and delete the " +
-                           "scene copy.");
+                _wrote.Add($"WOULD create {path} from '{Path(source.transform)}' and deactivate " +
+                           "the scene copy. CHECK THAT OBJECT IS REALLY THE ROW TEMPLATE - it is " +
+                           "the one thing here the tool can get wrong.");
                 return null;
             }
 
@@ -564,9 +594,13 @@ namespace CosmicShore.Editor
                 return null;
             }
 
-            Undo.DestroyObjectImmediate(source);
+            Undo.RecordObject(source, "Deactivate row template");
+            source.SetActive(false);
+
             written.Add(path);
-            _wrote.Add($"{path} (and removed the scene copy - the panel instantiates rows itself)");
+            _wrote.Add($"{path} - built from '{Path(source.transform)}', which is now DEACTIVATED " +
+                       "(the panel instantiates its own rows). If that was the wrong object, " +
+                       "re-enable it and delete the prefab.");
             return prefab;
         }
 
@@ -629,6 +663,20 @@ namespace CosmicShore.Editor
         static void Apply(SerializedObject so, bool dryRun)
         {
             if (so != null && !dryRun) so.ApplyModifiedPropertiesWithoutUndo();
+        }
+
+        /// <summary>
+        /// List what the tool can SEE under a panel root. When a lookup misses, the next question
+        /// is always "what is actually there?" - printing it turns a rename into something the
+        /// human diagnoses at a glance instead of by re-reading this file.
+        /// </summary>
+        void ReportChildren(Transform content)
+        {
+            var names = new List<string>();
+            foreach (Transform child in content)
+                names.Add(child.name + (child.GetComponent<LayoutGroup>() ? " [layout]" : ""));
+
+            _found.Add($"'{content.name}' children: {string.Join(", ", names)}");
         }
 
         static T Ensure<T>(GameObject go, bool dryRun, List<string> log) where T : Component
@@ -696,22 +744,56 @@ namespace CosmicShore.Editor
                                              !EditorUtility.IsPersistent(g));
 
         /// <summary>
-        /// The row a list should clone: the child with that name if it exists, else the first child
-        /// that simply LOOKS like a row.
+        /// The container a list of rows is built under: one of <paramref name="names"/> if present,
+        /// else the child of <paramref name="content"/> that is neither the GameView nor the
+        /// ConfigurationDetailView and carries a LAYOUT GROUP.
+        ///
+        /// <para>A layout group is what a row container IS - it exists to arrange children the
+        /// panel creates - so it identifies one even after a rename, which names have already
+        /// failed to survive twice on this panel.</para>
+        /// </summary>
+        static Transform FindListContainer(Transform content, string[] names)
+        {
+            var named = FindChildAny(content, names);
+            if (named) return named;
+
+            foreach (Transform child in content)
+            {
+                if (child.name == GameViewName || child.name == ConfigDetailName) continue;
+                if (child.GetComponent<LayoutGroup>()) return child;
+            }
+            return null;
+        }
+
+        static Transform FindChildAny(Transform root, string[] names)
+        {
+            foreach (var name in names)
+            {
+                var hit = FindChild(root, name);
+                if (hit) return hit;
+            }
+            return null;
+        }
+
+        /// <summary>
+        /// The row a list should clone: a child matching one of <paramref name="names"/> if one
+        /// exists, else the first child that simply LOOKS like a row.
         ///
         /// <para>Structure, not spelling. A hand-authored row is named by a human and the first run
         /// of this tool found nothing because the object was called "AbiiltyContent" - which is
         /// obviously the right object to anyone looking at it and invisible to an exact match. What
         /// a row IS is "a direct child carrying the graphics the row draws", and that is checkable.</para>
         /// </summary>
-        static Transform FindRowTemplate(Transform container, string preferredName, bool needsIcon)
+        static Transform FindRowTemplate(Transform container, string[] names, bool needsIcon)
         {
-            var named = FindChild(container, preferredName);
+            var named = FindChildAny(container, names);
             if (named) return named;
 
             foreach (Transform child in container)
             {
-                if (!child.gameObject.activeSelf && !child.gameObject.activeInHierarchy) continue;
+                // Inactive children are NOT skipped: a template this tool already turned into a
+                // prefab is left disabled, and a re-run has to recognise it rather than pick the
+                // next child and make a second prefab out of it.
                 if (child.GetComponentInChildren<TMP_Text>(true) == null) continue;
                 if (needsIcon && child.GetComponentInChildren<Image>(true) == null) continue;
                 return child;
@@ -730,6 +812,17 @@ namespace CosmicShore.Editor
         {
             var child = root && root.name == name ? root : FindChild(root, name);
             return child ? child.GetComponent<T>() : null;
+        }
+
+        /// <summary>The Maelstrom's own arcade card, via the tournament asset that names it.</summary>
+        static SO_ArcadeGame LoadTournamentCard()
+        {
+            var data = LoadOne<TournamentDataSO>();
+            if (data && data.ModeCard) return data.ModeCard;
+
+            return AssetDatabase.FindAssets("t:SO_ArcadeGame")
+                .Select(g => AssetDatabase.LoadAssetAtPath<SO_ArcadeGame>(AssetDatabase.GUIDToAssetPath(g)))
+                .FirstOrDefault(c => c && c.Mode == CosmicShore.Data.GameModes.Tournament);
         }
 
         static T LoadOne<T>() where T : ScriptableObject
