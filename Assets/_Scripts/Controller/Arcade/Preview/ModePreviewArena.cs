@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using CosmicShore.ScriptableObjects;
 using CosmicShore.Utility;
 using UnityEngine;
+using UnityEngine.Rendering.Universal;
 
 namespace CosmicShore.Gameplay
 {
@@ -243,14 +244,7 @@ namespace CosmicShore.Gameplay
                 go.transform.SetParent(host.transform, false);
                 _arenaCamera = go.AddComponent<Camera>();
 
-                var source = Camera.main;
-                if (source)
-                {
-                    _arenaCamera.clearFlags = source.clearFlags;
-                    _arenaCamera.backgroundColor = source.backgroundColor;
-                    _arenaCamera.fieldOfView = source.fieldOfView;
-                    _arenaCamera.cullingMask = source.cullingMask;
-                }
+                AdoptGameCameraSettings(_arenaCamera);
                 _arenaCamera.nearClipPlane = 1f;
                 _arenaCamera.farClipPlane = 20000f;
             }
@@ -260,6 +254,51 @@ namespace CosmicShore.Gameplay
             _orbitAngle = 0f;
             FrameCell(0f);
             return _arenaCamera;
+        }
+
+        /// <summary>
+        /// Make the arena camera draw the way the game's camera draws.
+        ///
+        /// <para>A bare <c>AddComponent&lt;Camera&gt;</c> comes up with URP's DEFAULTS, not the
+        /// project's: no post-processing, no anti-aliasing, SDR. So the looking phase rendered a
+        /// flat, aliased, bloom-free version of a world the tap-in phase then showed correctly -
+        /// which reads as the preview being low quality rather than as two different cameras.
+        /// The tap-in phase was always right because it borrows the real gameplay camera
+        /// (<c>CameraManager.BeginWindowedPlayerCamera</c>); this makes the browsing phase borrow
+        /// its SETTINGS.</para>
+        ///
+        /// <para>Copying the <see cref="UniversalAdditionalCameraData"/> is the load-bearing half -
+        /// post-processing, anti-aliasing and the renderer index all live there, not on
+        /// <see cref="Camera"/>. Copying the base Camera fields alone (which is what this did) gets
+        /// the framing and the clear right and none of the image quality.</para>
+        /// </summary>
+        static void AdoptGameCameraSettings(Camera target)
+        {
+            var source = Camera.main;
+            if (!source) return;
+
+            target.clearFlags = source.clearFlags;
+            target.backgroundColor = source.backgroundColor;
+            target.fieldOfView = source.fieldOfView;
+            target.cullingMask = source.cullingMask;
+            target.allowHDR = source.allowHDR;
+            target.allowMSAA = source.allowMSAA;
+
+            if (!source.TryGetComponent(out UniversalAdditionalCameraData from)) return;
+
+            var to = target.GetUniversalAdditionalCameraData();
+            if (!to) return;
+
+            to.renderPostProcessing = from.renderPostProcessing;
+            to.antialiasing = from.antialiasing;
+            to.antialiasingQuality = from.antialiasingQuality;
+            to.renderShadows = from.renderShadows;
+            to.volumeLayerMask = from.volumeLayerMask;
+
+            // The scriptable RENDERER index is deliberately not copied: URP exposes SetRenderer
+            // but no public getter for the index in this version, so there is nothing to copy it
+            // FROM without reaching into internals. A camera in the same scene gets the pipeline's
+            // default renderer, which is the one the game uses anyway.
         }
 
         /// <summary>
@@ -598,22 +637,23 @@ namespace CosmicShore.Gameplay
         const float NucleusFramingMultiple = 3f;
 
         /// <summary>
-        /// How far back the arena camera sits, as a multiple of the membrane radius. Just outside
-        /// the membrane: far enough that the whole arena is in frame, close enough that its
-        /// structure still reads at the size of a card's preview window.
+        /// How far back the arena camera sits, as a multiple of the membrane radius.
+        ///
+        /// <para>At 1.25 the camera sat close enough to the membrane that a card showed the inside
+        /// of a wall rather than an arena. Well outside it, so the whole place is in frame with
+        /// air around it - which is what makes two cards look like different worlds rather than
+        /// two blue surfaces.</para>
         /// </summary>
-        const float ArenaCameraFramingFactor = 1.25f;
+        const float ArenaCameraFramingFactor = 1.95f;
 
         /// <summary>
-        /// A pose looking into the arena from outside its nucleus - the framing the real mode
-        /// opens on. A cell with no nucleus reports radius 0, which is why the definition's
-        /// standoff carries the whole distance for those.
+        /// Where the vessel arrives on the tap: <b>the seat the real mode would give it</b>.
+        ///
+        /// <para>The resolution lives on the definition, which carries the mode's own scene data -
+        /// the ring flag, radius, floor and formation for a mode that computes its ring, and the
+        /// scene's hand-placed poses for a mode that does not.</para>
         /// </summary>
         public Pose SpawnPose(ModePreviewDefinitionSO definition)
-        {
-            float nucleus = Cell ? Cell.ExpectedNucleusWorldRadius : 0f;
-            float radius = nucleus + Mathf.Max(0f, definition.SpawnDistanceOutsideNucleus);
-            return CellSpawnFormation.Build(1, Origin, radius)[0];
-        }
+            => definition.ResolveSpawnPose(Origin, Cell ? Cell.ExpectedNucleusWorldRadius : 0f);
     }
 }

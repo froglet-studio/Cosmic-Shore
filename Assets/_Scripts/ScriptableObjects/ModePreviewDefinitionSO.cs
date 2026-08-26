@@ -105,11 +105,58 @@ namespace CosmicShore.ScriptableObjects
                  "cannot get stranded in it. 0 means no limit (they leave when they leave).")]
         [Min(0f)] public float DurationSeconds = 90f;
 
-        [Header("Spawn")]
+        [Header("Spawn - MIRRORED FROM THE MODE'S OWN SCENE, authored by Tools/Build/author_preview_spawns.py")]
+        [Tooltip("The mode's scene computes its spawn ring around the cell " +
+                 "(ServerPlayerVesselInitializer.arrangeSpawnPointsAroundCell). When true the " +
+                 "three ring fields below are used and SpawnPoints is ignored; when false the " +
+                 "scene hand-places its spawn transforms and SpawnPoints carries them.")]
+        public bool SpawnFromCellRing = true;
+
         [Tooltip("How far outside the cell's nucleus the vessel is placed, facing the core. " +
                  "Mirrors ServerPlayerVesselInitializer.spawnDistanceOutsideNucleus so a preview " +
                  "opens on the same framing the real mode does.")]
         [Min(0f)] public float SpawnDistanceOutsideNucleus = 70f;
+
+        [Tooltip("Mirrors ServerPlayerVesselInitializer.spawnRingRadiusFloor - the minimum ring " +
+                 "radius, for a cell whose nucleus is small or absent.")]
+        [Min(0f)] public float SpawnRingRadiusFloor;
+
+        [Tooltip("Mirrors ServerPlayerVesselInitializer.spawnFormation. Symmetric spreads over a " +
+                 "sphere; EquatorialRing puts everyone on one great circle, which is what an " +
+                 "arena with a meaningful 'up' or a pole feature authors.")]
+        public CellSpawnFormation.Formation SpawnFormation = CellSpawnFormation.Formation.Symmetric;
+
+        [Tooltip("The scene's hand-placed spawn poses, RELATIVE TO ITS CELL, used when " +
+                 "SpawnFromCellRing is off. Slot 0 is where the preview puts you - the seat the " +
+                 "first player takes in the real mode.\n\n" +
+                 "Relative to the cell rather than absolute because a preview arena is parked " +
+                 "120k units from the menu world: an absolute scene coordinate would put the " +
+                 "vessel back at the menu's origin, in the middle of the lava lamp.")]
+        public List<Pose> SpawnPoints = new();
+
+        /// <summary>
+        /// Where the preview puts the vessel, given the arena's centre and its nucleus radius.
+        ///
+        /// <para>This is the mode's OWN spawn resolution, not an approximation of it: the ring
+        /// modes run <see cref="CellSpawnFormation"/> with the scene's authored radius and
+        /// formation, and the hand-placed modes use the scene's own transforms. Before this the
+        /// preview always built a one-player Symmetric ring at an independently-authored standoff,
+        /// so Skim Race - which starts you 728u out on a track, facing down it - opened 70u from
+        /// a core, pointing at nothing.</para>
+        /// </summary>
+        public Pose ResolveSpawnPose(Vector3 cellCentre, float nucleusRadius)
+        {
+            if (!SpawnFromCellRing && SpawnPoints is { Count: > 0 })
+            {
+                var authored = SpawnPoints[0];
+                return new Pose(cellCentre + authored.position,
+                                authored.rotation == default ? Quaternion.identity : authored.rotation);
+            }
+
+            float radius = Mathf.Max(nucleusRadius + Mathf.Max(0f, SpawnDistanceOutsideNucleus),
+                                     SpawnRingRadiusFloor);
+            return CellSpawnFormation.Build(1, cellCentre, radius, SpawnFormation)[0];
+        }
 
         /// <summary>
         /// True when this definition can actually be flown. A definition with no cell has

@@ -163,6 +163,68 @@ what fills them is the players' own trails. **Astro League and Scarab Scramble a
 remaining gap**: their arenas are built by their CONTROLLERS (goals, hoops, the ricochet court),
 which is the `StructurePrefab` extraction §7 already records.
 
+### 1.1.3 The vessel arrives where the MODE would put it
+
+`SpawnPose` used to build a one-player `Symmetric` ring at a standoff the preview definition
+authored for itself. That is an independent guess at a number the mode's own scene already states,
+and the two disagreed badly — measured against the scenes:
+
+| Mode | Scene says | Preview said |
+|---|---|---|
+| Skim Race | hand-placed at `(700, 20, −200)`, facing down the track | ring at 70 u |
+| Rampage / The Bends | ring, +500 u outside the nucleus | 70 u |
+| Wildlife Liberation | ring floor **1150**, EquatorialRing | 70 u, Symmetric |
+| Scarab Scramble | ring floor **760** | 70 u |
+| Dog Fight | ring floor **700** | 70 u |
+| Peel the Cage | ring floor **576**, EquatorialRing | 70 u, Symmetric |
+| Joust / Astro League / Brood Rush | hand-placed on a 70.7 u ring, each facing the core | 70 u ring |
+
+So a card opened you inside the arena the mode starts you outside of, and the two modes whose scenes
+ask for `EquatorialRing` — the ones whose arenas have a meaningful pole — got a spherical spread.
+
+The definition now carries the scene's own spawn block (`SpawnFromCellRing`,
+`SpawnDistanceOutsideNucleus`, `SpawnRingRadiusFloor`, `SpawnFormation`, `SpawnPoints`) and
+`ResolveSpawnPose` runs the mode's own resolution: `CellSpawnFormation` with the scene's radius and
+formation for a ring mode, the scene's own transforms for a hand-placed one. It is authored by
+`Tools/Build/author_preview_spawns.py --check`, which reads the scenes rather than trusting anybody
+to keep two numbers in step.
+
+**Hand-placed poses are stored relative to the scene's CELL, not absolute.** A preview arena is
+parked 120k units from the menu world, so an absolute scene coordinate would put the vessel back at
+the menu's origin, in the middle of the lava lamp.
+
+### 1.1.4 The window renders at the size it is DRAWN at
+
+`renderHeight` was a fixed authored **360**, which is not a resolution — it is a resolution the
+window happens to be correct at. The card's surface is ~625 px tall on a 1080p display, so every
+preview was upscaled ~1.7× and read as soft; on a 4K display it would have been 3.5×. The height is
+now measured from the surface's own rect **through the canvas scale factor** (a `RectTransform`'s
+rect is in canvas units, and a `CanvasScaler` is the entire point of this project's UI), clamped to
+an authored ceiling. Anti-aliasing follows `QualitySettings.antiAliasing` instead of being pinned
+off.
+
+**A live texture is never swapped.** A camera is bound to it and is not told, so a resize mid-flight
+would leave a camera drawing into a destroyed surface — the white rectangle §1.2's ordered handover
+exists to make impossible. Resizes therefore wait for the window to be idle, which is when a card is
+opened anyway.
+
+### 1.1.5 The arena camera borrows the game camera's SETTINGS
+
+The tap-in phase always looked right because it borrows the real gameplay camera
+(`CameraManager.BeginWindowedPlayerCamera`). The browsing phase built a bare
+`AddComponent<Camera>()`, which comes up with **URP's defaults, not the project's** — no
+post-processing, no anti-aliasing, SDR — so the two phases rendered the same world at visibly
+different quality, which reads as "the preview is low quality" rather than as two cameras.
+
+`AdoptGameCameraSettings` copies the base camera fields *and* the `UniversalAdditionalCameraData`,
+which is the load-bearing half: post-processing, anti-aliasing and shadows all live there, not on
+`Camera`. The scriptable **renderer index** is deliberately not copied — URP exposes `SetRenderer`
+but no public getter for it in this version, so there is nothing to copy it from without reaching
+into internals, and a camera in the same scene gets the pipeline's default renderer anyway.
+
+The framing factor also moved 1.25 → **1.95**: at 1.25 the camera sat close enough to the membrane
+that a card showed the inside of a wall rather than an arena.
+
 ### 1.2 Two camera rules, both learned the hard way
 
 - **The handover is ORDERED, both ways.** The incoming camera takes the texture *before* the
@@ -282,6 +344,7 @@ table, but it cannot be the shipped shape.
 | `ModePreviewSession` | `_Scripts/Controller/Arcade/Preview/` | Auto-start driver, vessel + AI bookkeeping, the camera loan, the strike |
 | `ModePreviewArena` | `_Scripts/Controller/Arcade/Preview/` | Stand / StandModel / BeginStrike / FinishStrike |
 | `ModePreviewPlantingModel` | `_Scripts/Controller/Arcade/Preview/` | A grown world's PLANTING as lays — one marker per plant, band resolved cell-override-first |
+| `Tools/Build/author_preview_spawns.py` | `Tools/Build/` | Authors every definition's spawn block from the mode's own scene (`--check` verifies) |
 | `ModePreviewTrackModel` | `_Scripts/Controller/Arcade/Preview/` | A waypoint track's blocks as lays, per intensity, triad-cycled per segment |
 | `Tools/Build/author_preview_tracks.py` | `Tools/Build/` | Writes `TrackSpawnablesByIntensity` from the scenes' own spawners; `--check` in CI style |
 | `ModePreviewRunner` / `ModePreviewHUD` | preview dir / `UI/View/` | Objective counting from first take-over; readout beside the window |

@@ -48,12 +48,18 @@ namespace CosmicShore.UI
         GameObject focusHint;
 
         [Header("Render texture")]
-        [SerializeField, Tooltip("Render texture height in pixels. Width follows the window's own " +
-                                 "aspect, so the live view is never letterboxed or stretched.")]
+        [SerializeField, Tooltip("FALLBACK render height, used only when the window's own on-screen " +
+                                 "size cannot be measured. The live view normally renders at the " +
+                                 "exact pixel size it is drawn at - see EnsureRenderTexture.")]
         int renderHeight = 360;
+
+        [SerializeField, Tooltip("Ceiling on the measured render height, so a 4K display does not " +
+                                 "hand a card's small window a needlessly large surface.")]
+        [Min(64)] int maxRenderHeight = 1080;
 
         RenderTexture _renderTexture;
         RectTransform _surfaceRect;
+        int _textureHeight;
 
         enum State { Hidden = 0, Unavailable = 1, Loading = 2, Live = 3 }
         State _state = State.Hidden;
@@ -246,21 +252,63 @@ namespace CosmicShore.UI
 
         // ── Render texture ───────────────────────────────────────────────────
 
+        /// <summary>
+        /// The surface renders at <b>the pixel size it is actually drawn at</b>.
+        ///
+        /// <para>The height used to be a fixed authored 360, which is not a resolution — it is a
+        /// resolution the window is only correct at by coincidence. The card's surface is ~625 px
+        /// tall on a 1080p display, so every preview was being upscaled ~1.7x and read as soft;
+        /// on a 4K display it would have been 3.5x. Measuring instead means the view is sharp at
+        /// every resolution and never renders more pixels than it shows.</para>
+        ///
+        /// <para>Measured through the canvas scale factor, because a <c>RectTransform</c>'s rect
+        /// is in CANVAS units and a <c>CanvasScaler</c> is the whole point of this project's UI —
+        /// reading <c>rect.height</c> alone reports reference-resolution units, which is a
+        /// different number from pixels on every display but the reference one.</para>
+        ///
+        /// <para>Anti-aliasing follows the pipeline's own MSAA rather than being pinned off, so
+        /// the window matches what the game does with the same geometry.</para>
+        /// </summary>
         void EnsureRenderTexture()
         {
-            if (_renderTexture) return;
+            int height = MeasuredRenderHeight();
+            if (_renderTexture && _textureHeight == height) return;
 
-            int height = Mathf.Max(64, renderHeight);
+            // A LIVE texture is never swapped. Something is bound to it - the arena camera or the
+            // borrowed gameplay camera - and neither is told, so replacing it here would leave a
+            // camera drawing into a destroyed surface, which is the white rectangle the ordered
+            // handover exists to make impossible. A resize therefore waits for the window to be
+            // idle, which is exactly when a card is opened.
+            if (_renderTexture)
+            {
+                if (_state is State.Loading or State.Live) return;
+                ReleaseRenderTexture();
+            }
+
             float aspect = 16f / 9f;
             if (_surfaceRect && _surfaceRect.rect.height > 1f)
                 aspect = Mathf.Clamp(_surfaceRect.rect.width / _surfaceRect.rect.height, 0.25f, 4f);
 
+            _textureHeight = height;
             _renderTexture = new RenderTexture(Mathf.Max(64, Mathf.RoundToInt(height * aspect)), height, 24)
             {
                 name = "ModePreviewRT",
-                antiAliasing = 1,
+                antiAliasing = Mathf.Max(1, QualitySettings.antiAliasing),
+                filterMode = FilterMode.Bilinear,
                 useMipMap = false,
             };
+        }
+
+        /// <summary>The surface's height in real screen pixels, clamped to the authored ceiling.</summary>
+        int MeasuredRenderHeight()
+        {
+            if (!_surfaceRect || _surfaceRect.rect.height <= 1f)
+                return Mathf.Clamp(renderHeight, 64, maxRenderHeight);
+
+            var canvas = _surfaceRect.GetComponentInParent<Canvas>();
+            float scale = canvas ? canvas.scaleFactor : 1f;
+            int measured = Mathf.RoundToInt(_surfaceRect.rect.height * Mathf.Max(0.01f, scale));
+            return Mathf.Clamp(measured, 64, maxRenderHeight);
         }
 
         void ReleaseRenderTexture()
@@ -270,6 +318,7 @@ namespace CosmicShore.UI
             _renderTexture.Release();
             Destroy(_renderTexture);
             _renderTexture = null;
+            _textureHeight = 0;
         }
     }
 }

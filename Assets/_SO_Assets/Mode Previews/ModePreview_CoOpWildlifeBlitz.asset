@@ -21,4 +21,8 @@ MonoBehaviour:
   ObjectiveMetric: 7
   ObjectiveTarget: 5
   DurationSeconds: 90
-  SpawnDistanceOutsideNucleus: 70
+  SpawnFromCellRing: 0
+  SpawnDistanceOutsideNucleus: 40
+  SpawnRingRadiusFloor: 0
+  SpawnFormation: 0
+  SpawnPoints: []

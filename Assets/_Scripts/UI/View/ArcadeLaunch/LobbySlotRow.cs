@@ -132,6 +132,9 @@ namespace CosmicShore.UI
                 $"+ {aiCount} AI = {totalPlayers}.");
         }
 
+        /// <summary>Whether the fill toggle is on. False when this row has no toggle wired.</summary>
+        public bool FillWithAI => fillWithAIToggle && fillWithAIToggle.isOn;
+
         /// <summary>
         /// Set the toggle without raising <see cref="OnFillWithAIChanged"/> — used when the panel
         /// derives the toggle's state from the player count rather than the other way round.

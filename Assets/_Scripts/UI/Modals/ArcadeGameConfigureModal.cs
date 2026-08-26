@@ -751,10 +751,24 @@ namespace CosmicShore.UI
             if (IsClientMode || config == null || _selectedGame == null) return;
 
             int humans = Mathf.Max(_selectedGame.MinPlayersAllowed, CurrentPartyHumanCount);
-            int max = Mathf.Min(_selectedGame.MaxPlayersAllowed, MaxSupportedPlayers);
-
-            HandlePlayerCountSelected(fill ? max : humans);
+            HandlePlayerCountSelected(fill ? FillTarget : humans);
         }
+
+        /// <summary>
+        /// How many seats "fill with AI" fills: everything the card allows, up to
+        /// <see cref="MaxFilledPlayers"/>.
+        ///
+        /// <para>The card's own ceiling is not the answer on its own — several cards allow six or
+        /// twelve, and a party game filled to twelve bots is not what the toggle means. Four is the
+        /// house match size.</para>
+        /// </summary>
+        int FillTarget => _selectedGame
+            ? Mathf.Clamp(Mathf.Min(_selectedGame.MaxPlayersAllowed, MaxFilledPlayers),
+                          _selectedGame.MinPlayersAllowed, MaxSupportedPlayers)
+            : MaxFilledPlayers;
+
+        /// <summary>The most seats the fill toggle will ever take, however many the card allows.</summary>
+        const int MaxFilledPlayers = 4;
 
         /// <summary>Redraw the roster from the live config. Cheap; call it whenever either moves.</summary>
         void RefreshRoster()
@@ -768,10 +782,10 @@ namespace CosmicShore.UI
 
             // The toggle FOLLOWS the count rather than driving it, so a ✕ that drops the roster off
             // the ceiling turns the toggle off by itself instead of leaving it claiming a full house.
-            int max = _selectedGame
-                ? Mathf.Min(_selectedGame.MaxPlayersAllowed, MaxSupportedPlayers)
-                : MaxSupportedPlayers;
-            _activePanel.SetFillWithAISilently(total >= max && max > humans);
+            int target = FillTarget;
+            _activePanel.SetFillWithAISilently(total >= target && target > humans);
+
+            RefreshAIPreviewChips(total - humans);
         }
 
         /// <summary>
@@ -1320,6 +1334,12 @@ namespace CosmicShore.UI
                 gameData.OnPlayerNetworkSpawnedUlong.OnRaised += HandlePlayerSpawnedDuringModal;
                 _watchingPlayerSpawnEvent = true;
             }
+
+            // ClearStaleChipsFromAllStrips above removes EVERY chip under a strip, AI included -
+            // it cannot tell one apart from a hand-placed leftover, and should not have to. So the
+            // AI chips are rebuilt here rather than left to whichever call happened to run last.
+            if (config != null)
+                RefreshAIPreviewChips(Mathf.Max(0, config.PlayerCount - CurrentPartyHumanCount));
         }
 
         void SpawnChipForPlayer(Player p, ulong localId, PlayerDataService dataService)
@@ -1346,6 +1366,55 @@ namespace CosmicShore.UI
             _domainHandlers[p] = handler;
         }
 
+        readonly List<DomainAvatarChip> _aiChips = new();
+
+        /// <summary>
+        /// Show the AI the match will seat, as chips under the domain each will actually join.
+        ///
+        /// <para>The bots do not exist yet - <c>ServerPlayerVesselInitializerWithAI</c> spawns them
+        /// in the game scene from <c>GameDataSO.RequestedAIBackfillCount</c> - so these are a
+        /// PREVIEW of a roster, not a view of one. That is exactly why the placement runs the
+        /// spawner's own <c>GetBalancedDomain</c> over the same counts it will use: a preview that
+        /// distributed them its own way would be a promise the match then breaks.</para>
+        ///
+        /// <para>The avatar is random per chip because a bot has no profile to read one from, and
+        /// four seats showing icon 0 read as one player repeated.</para>
+        /// </summary>
+        void RefreshAIPreviewChips(int aiCount)
+        {
+            foreach (var chip in _aiChips)
+                if (chip) Destroy(chip.gameObject);
+            _aiChips.Clear();
+
+            if (aiCount <= 0 || chipPrefab == null || gameData == null) return;
+
+            var activeDomains = ServerPlayerVesselInitializerWithAI
+                .BuildActiveDomains(gameData.RequestedDomainCount);
+            if (activeDomains == null || activeDomains.Count == 0) return;
+
+            var humans = new List<Player>();
+            foreach (var ip in gameData.Players)
+                if (ip is Player p && !p.NetIsAI.Value) humans.Add(p);
+
+            var humanCounts = GameDataSO.BuildHumanCounts(humans, activeDomains);
+            var totalCounts = new Dictionary<Domains, int>(humanCounts);
+
+            var dataService = PlayerDataService.Instance;
+
+            for (int i = 0; i < aiCount; i++)
+            {
+                var domain = ServerPlayerVesselInitializerWithAI.GetBalancedDomain(totalCounts, humanCounts);
+                totalCounts[domain] = totalCounts.TryGetValue(domain, out var t) ? t + 1 : 1;
+
+                var tile = FindTileForDomain(domain);
+                if (tile == null || tile.AvatarStripTransform == null) continue;
+
+                var seat = Instantiate(chipPrefab, tile.AvatarStripTransform);
+                seat.Set(dataService != null ? dataService.GetRandomAvatarSprite() : null, false);
+                _aiChips.Add(seat);
+            }
+        }
+
         void HandlePlayerDomainChanged(Player p, Domains newDomain)
         {
             if (!_playerChips.TryGetValue(p, out var chip) || chip == null) return;
@@ -1366,6 +1435,10 @@ namespace CosmicShore.UI
             foreach (var chip in _playerChips.Values)
                 if (chip) Destroy(chip.gameObject);
             _playerChips.Clear();
+
+            foreach (var chip in _aiChips)
+                if (chip) Destroy(chip.gameObject);
+            _aiChips.Clear();
 
             if (_watchingPlayerSpawnEvent && gameData != null
                 && gameData.OnPlayerNetworkSpawnedUlong != null)
@@ -1428,7 +1501,6 @@ namespace CosmicShore.UI
             if (config == null) return;
 
             var selected = config.SelectedDomain;
-            int dc = config.DomainCount;
 
             foreach (var item in ActiveDomainTiles)
             {
@@ -1442,8 +1514,12 @@ namespace CosmicShore.UI
                 }
 
                 item.gameObject.SetActive(true);
-                bool active = GameDataSO.IsActiveDomain(item.Domain, dc);
-                item.SetInteractable(active);
+
+                // EVERY domain is pickable, always. The domain count is a property of how the
+                // MATCH is scored, not a gate on which colour a player may fly: dimming Gold
+                // because this card was configured for two domains reads as "Gold is locked",
+                // which is a progression claim the game does not make anywhere else.
+                item.SetInteractable(true);
                 item.SetSelected(item.Domain == selected);
             }
         }

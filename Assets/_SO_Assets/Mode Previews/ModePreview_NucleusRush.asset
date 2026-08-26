@@ -21,4 +21,16 @@ MonoBehaviour:
   ObjectiveMetric: 0
   ObjectiveTarget: 0
   DurationSeconds: 60
-  SpawnDistanceOutsideNucleus: 70
+  SpawnFromCellRing: 0
+  SpawnDistanceOutsideNucleus: 40
+  SpawnRingRadiusFloor: 0
+  SpawnFormation: 0
+  SpawnPoints:
+  - position: {x: 50, y: 0, z: 50}
+    rotation: {x: 0, y: 0.9239, z: 0, w: -0.3827}
+  - position: {x: 50, y: 0, z: -50}
+    rotation: {x: 0, y: 0.9239, z: 0, w: 0.3827}
+  - position: {x: -50, y: 0, z: -50}
+    rotation: {x: 0, y: 0.3827, z: 0, w: 0.9239}
+  - position: {x: -50, y: 0, z: 50}
+    rotation: {x: 0, y: -0.3827, z: 0, w: 0.9239}

@@ -72,6 +72,15 @@ namespace CosmicShore.UI
                                  "simply shows no roster.")]
         protected LobbySlotRow lobbyRow;
 
+        [SerializeField, Tooltip("The fill-with-AI toggle when it lives on the PANEL rather than " +
+                                 "inside a LobbySlotRow - the one-panel layout puts it beside the " +
+                                 "domain tiles, where the AI it seats are actually shown.\n\n" +
+                                 "Optional and independent of lobbyRow: whichever is wired raises " +
+                                 "the same event, and both may be wired at once.")]
+        protected UnityEngine.UI.Toggle fillWithAIToggle;
+
+        bool _suppressFillToggleCallback;
+
         /// <summary>The player asked to seat one fewer (✕ on an AI seat).</summary>
         public event Action OnKickAIRequested;
 
@@ -114,6 +123,8 @@ namespace CosmicShore.UI
                 lobbyRow.OnFillWithAIChanged += RaiseFillWithAI;
             }
 
+            if (fillWithAIToggle) fillWithAIToggle.onValueChanged.AddListener(HandleFillToggle);
+
             if (hostModal) hostModal.OnModalClosed += RaiseHostModalClosed;
         }
 
@@ -124,6 +135,8 @@ namespace CosmicShore.UI
                 lobbyRow.OnKickAIRequested -= RaiseKickAI;
                 lobbyRow.OnFillWithAIChanged -= RaiseFillWithAI;
             }
+
+            if (fillWithAIToggle) fillWithAIToggle.onValueChanged.RemoveListener(HandleFillToggle);
 
             if (hostModal) hostModal.OnModalClosed -= RaiseHostModalClosed;
         }
@@ -165,6 +178,13 @@ namespace CosmicShore.UI
         public virtual void SetFillWithAISilently(bool on)
         {
             if (lobbyRow) lobbyRow.SetFillWithAISilently(on);
+
+            if (fillWithAIToggle && fillWithAIToggle.isOn != on)
+            {
+                _suppressFillToggleCallback = true;
+                fillWithAIToggle.isOn = on;
+                _suppressFillToggleCallback = false;
+            }
         }
 
         /// <summary>Show the star's state for this card.</summary>
@@ -222,6 +242,16 @@ namespace CosmicShore.UI
 
         void RaiseKickAI() => OnKickAIRequested?.Invoke();
         void RaiseFillWithAI(bool on) => OnFillWithAIChanged?.Invoke(on);
+
+        void HandleFillToggle(bool on)
+        {
+            if (_suppressFillToggleCallback) return;
+            RaiseFillWithAI(on);
+        }
+
+        /// <summary>Whether the fill-with-AI toggle is currently on.</summary>
+        public virtual bool FillWithAI =>
+            fillWithAIToggle ? fillWithAIToggle.isOn : lobbyRow && lobbyRow.FillWithAI;
         void RaiseHostModalClosed() => OnHostModalClosed?.Invoke();
     }
 }

@@ -470,6 +470,21 @@ namespace CosmicShore.UI
             }
         }
 
+        /// <summary>
+        /// Any avatar from the shipped set, chosen at random.
+        ///
+        /// <para>For the AI seats an arcade card previews: a bot has no profile to read an avatar
+        /// from, and giving them all icon 0 makes four seats read as one player repeated.</para>
+        /// </summary>
+        public Sprite GetRandomAvatarSprite()
+        {
+            if (profileIcons == null || profileIcons.profileIcons == null ||
+                profileIcons.profileIcons.Count == 0)
+                return null;
+
+            return profileIcons.profileIcons[UnityEngine.Random.Range(0, profileIcons.profileIcons.Count)].IconSprite;
+        }
+
         public Sprite GetAvatarSprite(int avatarId)
         {
             if (profileIcons == null || profileIcons.profileIcons == null || profileIcons.profileIcons.Count == 0)

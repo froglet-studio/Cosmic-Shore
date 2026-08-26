@@ -250,6 +250,36 @@ players join, so it keeps its place and simply reads true.
 Per-seat identity needs the sync manager to replicate the ready SET. Until it does this is the
 honest reading, and it is right in the case players actually watch (their own).
 
+### 5.2 Every domain is unlocked, and the fill toggle fills to four
+
+**Every domain is always pickable.** Tiles used to be dimmed and made non-interactable outside
+`ActiveDomains[0..DomainCount-1]`, which reads as "Gold is locked" — a progression claim the game
+makes nowhere else. The domain count is a property of how the MATCH is scored, not a gate on which
+colour a player may fly.
+
+**The fill toggle fills to four, not to the card's ceiling.** Several cards allow six or twelve, and
+a party game filled to twelve bots is not what the switch means; `MaxFilledPlayers` is the house
+match size. Off, the roster drops back to the humans present.
+
+**The toggle may live on the PANEL or inside a `LobbySlotRow`.** The one-panel layout puts it beside
+the domain tiles — where the AI it seats actually appear — so `ArcadeLaunchPanel` takes an optional
+`fillWithAIToggle` of its own. Whichever is wired raises the same event and both may be wired at
+once.
+
+**AI seats are previewed under the domain each bot will really join.** The bots do not exist yet —
+`ServerPlayerVesselInitializerWithAI` spawns them in the game scene from
+`GameDataSO.RequestedAIBackfillCount` — so these chips preview a roster rather than showing one.
+That is exactly why the placement runs the spawner's own `BuildActiveDomains` /
+`BuildHumanCounts` / `GetBalancedDomain` over the same counts it will use: a preview that
+distributed them its own way would be a promise the match then breaks. The avatar is random per
+chip because a bot has no profile to read one from, and four seats showing icon 0 read as one
+player repeated.
+
+One ordering rule: `ClearStaleChipsFromAllStrips` removes **every** chip under a strip, AI included
+— it cannot tell one from a hand-placed leftover and should not have to — so `SpawnChipsForAllPlayers`
+rebuilds the AI chips itself rather than leaving it to whichever call happened to run last.
+
+
 ## 6. The preview follows the intensity row
 
 `ModePreviewDefinitionSO.PreviewCellsByIntensity` is the same shape the mode's own scene uses

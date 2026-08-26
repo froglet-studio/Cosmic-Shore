@@ -481,6 +481,52 @@ namespace CosmicShore.Editor
 
             var lobby = detail.GetComponentInChildren<LobbySlotRow>(true);
             if (lobby) SetRef(panel, "lobbyRow", lobby, dryRun);
+
+            WireFillWithAIToggle(panel, detail, where, dryRun);
+        }
+
+        /// <summary>
+        /// The fill-with-AI toggle, when it sits on the PANEL rather than inside a LobbySlotRow -
+        /// which is where the one-panel layout puts it, beside the domain tiles the AI it seats
+        /// appear under.
+        ///
+        /// <para>A panel usually holds exactly one Toggle, so a lone one is taken without argument.
+        /// With several, only a name/label match is accepted: silently binding "the first Toggle"
+        /// would hand the player-count control to whatever unrelated switch happened to sort
+        /// first, and a mis-bound toggle is worse than an unbound one - it does something.</para>
+        /// </summary>
+        void WireFillWithAIToggle(ArcadeLaunchPanel panel, Transform detail, string where, bool dryRun)
+        {
+            var toggles = detail.GetComponentsInChildren<Toggle>(true)
+                                .Where(t => !t.GetComponentInParent<LobbySlotRow>())
+                                .ToArray();
+            if (toggles.Length == 0) return;
+
+            Toggle pick = toggles.Length == 1
+                ? toggles[0]
+                : toggles.FirstOrDefault(LooksLikeFillWithAI);
+
+            if (!pick)
+            {
+                _todo.Add($"{where} has {toggles.Length} Toggles and none of them names itself as " +
+                          "the fill-with-AI switch. Assign 'fillWithAIToggle' on the panel by hand.");
+                return;
+            }
+
+            SetRef(panel, "fillWithAIToggle", pick, dryRun);
+            _found.Add($"{where}: fill-with-AI toggle -> '{pick.name}'.");
+        }
+
+        static bool LooksLikeFillWithAI(Toggle t)
+        {
+            if (Mentions(t.name)) return true;
+            var label = t.GetComponentInChildren<TMP_Text>(true);
+            return label && Mentions(label.text);
+
+            static bool Mentions(string text)
+                => !string.IsNullOrEmpty(text) &&
+                   (text.IndexOf("ai", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                    text.IndexOf("fill", StringComparison.OrdinalIgnoreCase) >= 0);
         }
 
         static bool LooksLikeStart(Button b)
