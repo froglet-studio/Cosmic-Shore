@@ -21,7 +21,7 @@ it.
 
 | Kingdom | Entries | Variants inside each |
 |---|---|---|
-| `Ethirion` | 5 — Charge, Mass, Space, Time, Omni | the 5 heart **levels** (elemental only) |
+| `Ethirion` | 5 — Charge, Mass, Space, Time, Omni | none — a heart is sized by the **lifeform** carrying it |
 | `Flora` | 16 species — Arbor, Branching, Cacti, Coral, Frond, Gyroid, Lantern, Nerve, Pine, Quasicrystal, Reed, Rosette, SchwarzP, Spire, Tendril, Wall | the 4 **elements** |
 | `Fauna` | 6 species — Brittlestar, Clawfish, QuadFish, Shark, Tadpole, Worm Colony | the 4 **elements** |
 
@@ -167,7 +167,10 @@ every time a species or crystal is added.
   writes them. That is deliberate — the harvester states facts, a writer states character.
 - **A grown flora icon is one plant at one seed.** The seed is fixed (12345) so a re-bake is
   reproducible, which also means a species with heavy `wander` always draws the same individual.
-- **Level variants exist only for elemental ethirions.** Omni has no level band because it is not
+- **Ethirions have no variants.** A heart's size is a property of the LIFEFORM, authored per
+  element in that species' own variant tuning (`Docs/ECOSYSTEM.md` §39.2), so the number belongs
+  on the flora and fauna entries where a reader can see whose heart it is. The ethirion entry
+  states only the BAND the whole roster spans, measured from the shipped assets. Omni is not
   a lifeform heart.
 - **"Found in" is derived from cell configs**, so a species released only by a toy or a mode's own
   spawner reads as "Released by hand — no cell seeds it". That is accurate, not a gap.
