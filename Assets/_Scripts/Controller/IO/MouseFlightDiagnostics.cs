@@ -69,13 +69,19 @@ namespace CosmicShore.Gameplay
             return false;
         }
 
-        /// <summary>Report the first frame mouse flight takes over.</summary>
+        /// <summary>
+        /// Report the first frame mouse flight takes over — on a CHANNEL, off by default, because
+        /// this is bring-up telemetry for a finished system rather than a fault. The refusals
+        /// above stay unconditional warnings: a system whose failure mode is silence has to be
+        /// loud when it fails, and quiet when it works.
+        /// </summary>
         public static void Engaged()
         {
             if (_engagedReported) return;
             _engagedReported = true;
-            CSDebug.Log("[MouseFlight] One-thumb mouse controls engaged — the mouse is now the " +
-                        "vessel's single stick and the cursor is locked.");
+            CSDebug.LogVerbose(CSLogChannel.MouseFlight,
+                "[MouseFlight] One-thumb mouse controls engaged — the mouse is now the vessel's " +
+                "single stick and the cursor is locked.");
         }
 
         static string Explain(Reason reason, string detail) => reason switch

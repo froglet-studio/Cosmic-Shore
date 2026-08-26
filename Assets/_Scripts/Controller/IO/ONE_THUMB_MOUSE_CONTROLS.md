@@ -216,9 +216,13 @@ Two warn-once diagnostics close that, in the shape `PrismOcclusionDiagnostics` a
 `VesselVisionDiagnostics` already use for a platform system that can silently fail to engage:
 
 - **`MouseFlightDiagnostics`** names the reason `UseSingleStickMouse` declined — no mouse, not the
-  local pilot, no vessel, autopilot, or a two-stick hull — once per reason, and logs the first
-  frame the scheme *does* take over. Legitimate states never reach it: a connected pad, a handheld
-  device and engaged dual-mouse all return earlier in `SelectStrategy`.
+  local pilot, no vessel, autopilot, or a two-stick hull — once per reason, as an unconditional
+  **warning**. Legitimate states never reach it: a connected pad, a handheld device and engaged
+  dual-mouse all return earlier in `SelectStrategy`. It also reports the first frame the scheme
+  *does* take over, but that one is bring-up telemetry rather than a fault, so it sits on the
+  `CSLogChannel.MouseFlight` channel (off by default, toggled in FrogletTools ▸ Toolbox ▸
+  Logging). Turn it on when you need to tell "engaged" from "a pad is in use" — both are silent
+  otherwise. *Loud when it fails, quiet when it works.*
 - **`SingleStickMouseInputStrategy.ReportIfMouseIsSilent`** covers the other half — engaged, but
   `Mouse.current.delta` reading exactly zero for four seconds, which is what a project set to
   *Process Events In Fixed Update* would produce. A player who is flying necessarily moves the
