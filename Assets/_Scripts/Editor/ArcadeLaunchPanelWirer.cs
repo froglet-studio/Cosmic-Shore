@@ -523,10 +523,23 @@ namespace CosmicShore.Editor
             var label = t.GetComponentInChildren<TMP_Text>(true);
             return label && Mentions(label.text);
 
+            // "AI" as CAPITALS not preceded by another capital - a bare IndexOf("ai") matches
+            // "Waiting" and "Maintain", and this match decides which switch drives the player
+            // count. The prev-capital test rejects "MAIN"/"RAID" (their A rides an uppercase
+            // run); "Air"/"waiting" never match because their AI is not both-caps. "fill" stays
+            // a case-insensitive substring on purpose (FillWithAI, AIFillTMP carry it mid-word).
             static bool Mentions(string text)
-                => !string.IsNullOrEmpty(text) &&
-                   (text.IndexOf("ai", StringComparison.OrdinalIgnoreCase) >= 0 ||
-                    text.IndexOf("fill", StringComparison.OrdinalIgnoreCase) >= 0);
+            {
+                if (string.IsNullOrEmpty(text)) return false;
+                if (text.IndexOf("fill", StringComparison.OrdinalIgnoreCase) >= 0) return true;
+
+                for (int i = text.IndexOf("AI", StringComparison.Ordinal); i >= 0;
+                     i = text.IndexOf("AI", i + 1, StringComparison.Ordinal))
+                {
+                    if (i == 0 || !char.IsUpper(text[i - 1])) return true;
+                }
+                return false;
+            }
         }
 
         static bool LooksLikeStart(Button b)

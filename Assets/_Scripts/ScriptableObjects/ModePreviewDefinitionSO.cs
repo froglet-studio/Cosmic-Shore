@@ -149,8 +149,16 @@ namespace CosmicShore.ScriptableObjects
             if (!SpawnFromCellRing && SpawnPoints is { Count: > 0 })
             {
                 var authored = SpawnPoints[0];
+
+                // The zero quaternion (an unset serialized rotation) must fall back to identity -
+                // and `rotation == default` CANNOT detect it: Unity's Quaternion == is
+                // `Dot(a,b) > 0.999999f`, and the dot of anything with (0,0,0,0) is 0, so that
+                // comparison is always false, including for the zero quaternion itself. Test the
+                // magnitude instead; a valid rotation's is exactly 1.
+                var rot = authored.rotation;
+                bool degenerate = rot.x * rot.x + rot.y * rot.y + rot.z * rot.z + rot.w * rot.w < 0.5f;
                 return new Pose(cellCentre + authored.position,
-                                authored.rotation == default ? Quaternion.identity : authored.rotation);
+                                degenerate ? Quaternion.identity : rot);
             }
 
             float radius = Mathf.Max(nucleusRadius + Mathf.Max(0f, SpawnDistanceOutsideNucleus),
