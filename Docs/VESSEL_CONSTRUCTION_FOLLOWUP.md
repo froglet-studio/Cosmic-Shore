@@ -72,9 +72,15 @@ Each was checked for shapes, bones, takes, referrers, and for geometry not prese
 | `Vessel_Placeholder_2.fbx` | another third-party download — nodes `Sketchfab_model`, `nitro blade.obj.cleaner.materialmerger.gles`, 68,995 verts | no armature, no takes, no shapes, no referrer. Also remaps materials into `RhinoModel`. |
 | `Assets/_Animations/MantaAnimatorController.controller` | a duplicate of the live `_Models/Animations/` controller | referenced by **nothing**; the live one is `_Models/Animations/MantaAnimatorController.controller` (5 vessels). Not a model, but it surfaced from the same sweep and is in the same class. |
 
-⚠ The two placeholders are **third-party Sketchfab assets** sitting in a shipping game's tree.
-That is a licensing question as well as a size one (12.2 MB between them), and it is Garrett's call,
-not a cleanup decision — flagged, not acted on.
+✏ **Correction, made in Phase 5.** This section originally flagged the two placeholders as an
+open licensing question "for Garrett, not a cleanup decision". The answer was sitting in their own
+folder: `CC_Attribution_For_Placeholder_Models.txt` names both as **CC-BY 4.0** Sketchfab models by
+VertaScan ("Supermatic Sky Cruiser", "Nitro Blade"), properly attributed. There was never a
+liability — only an attribution obligation, and it was being met. *Look in the folder before
+escalating a licensing question about its contents.* They were retired in Phase 5 on the ordinary
+grounds (referenced by nothing, carrying nothing unique, 11.7 MB), and the attribution file went
+with them because an attribution naming assets the project no longer contains is a stale artifact;
+restoring them from git means restoring both.
 
 ---
 
@@ -250,12 +256,53 @@ Offline mirrors of all four live in `Tools/Build/measure_vessel_models.py` and
 
 ---
 
-## Phase 5 — retire the vestiges
+## Phase 5 — retire the vestiges  ✅ DONE
 
-Only now, and only what Phase 1 cleared. Retire in its own commit, separate from any swap, so a
-revert of one is not a revert of the other. Re-run every vessel audit afterwards
-(`Audit Vessel Skimmers`, `Audit Vessel Ability Rows`, `Audit Vessel Elemental Morphs`,
-`Audit Vessel Tails and Jets`, `Audit Corridor Vessel Radii`) and record the before/after.
+Only what Phase 1 cleared, in its own commit, with a fresh reference check immediately before each
+deletion rather than trusting the Phase 1 table.
+
+| retired | why it was clear |
+|---|---|
+| `Riptide.fbx` | the Dolphin's low-poly ancestor (1,326 verts vs 12,583); no armature, no takes, no shapes. Where the class name `RiptideAnimation` comes from — recorded in §4 so the name still has an explanation. |
+| `Dolphin_split.fbx` · `Hammerhead_split.fbx` | 137- and 116-vert fauna blockouts filed under Vessel Models; nothing unique |
+| `Vessel_Placeholder_1.fbx` · `Vessel_Placeholder_2.fbx` | third-party CC-BY downloads; 288 "takes" that are one-node-per-take import residue, no vessel geometry, no armature |
+| `CC_Attribution_For_Placeholder_Models.txt` | attributes exactly those two models; with them gone it names nothing |
+| `Assets/_Animations/MantaAnimatorController.controller` | a duplicate of the live `_Models/Animations/` controller, referenced by nothing |
+| `Placeholder/` folder + `.meta` | empty afterwards |
+
+**Freed 11.7 MB** (60.0 → 48.2 MB of vessel models; 20 → 15 FBX). **Zero dangling references
+created** — each retired guid was swept across `Assets` afterwards and appears nowhere.
+
+### HELD deliberately
+
+- **`RhinoModel.fbx`** — Phase 1 said "keep until the placeholders go; then it goes with them", and
+  it *is* unreferenced now that both remapping `.meta`s are gone. It is held anyway, because it is
+  the only copy of the Rhino's **pre-subdivision front wings** (245 verts against the shipped 476;
+  every other mesh in it is vertex-identical to `Rhino_Test`). That is thin, but "referenced by
+  nothing" is not "contains nothing", and its removal is now a one-line decision with no
+  dependencies rather than something buried in a cleanup commit.
+- **`urchan_shapekey_with_animations.fbx`** and **`SparrowModel4.fbx`** — not vestiges at all; both
+  supply live animation clips (§7.1). Retiring either would have emptied animation states on nine
+  and two vessels respectively.
+
+### Audits, before → after
+
+`Tools/Build/measure_vessel_prefabs.py` and `measure_vessel_models.py` are the offline mirrors; the
+in-editor set is **Audit Vessel Construction** (new), **Audit Vessel Elemental Morphs**, **Audit
+Vessel Skimmers**, **Audit Vessel Ability Rows**, **Audit Vessel Tails and Jets**, **Audit Corridor
+Vessel Radii**.
+
+| check | before | after |
+|---|---|---|
+| per-vessel renderer table | 12 vessels, unchanged wiring | **identical** |
+| nested-instance reachability | 0 unreachable | **0 unreachable** |
+| duplicate coincident hull renderers | Manta/Falcon/Shrike/Termite | **unchanged** (§3.4 still open) |
+| element shapes that MOVE the hull | 8/12 | **8/12** |
+| guid ownership | every model owned by its own `.meta` | **unchanged** |
+| `check_conditional_compilation.py` | OK | **OK** (1,765 files) |
+
+Nothing retired here was wired into anything, so every audit reads the same on both sides — which
+is the result a subtractive commit should produce.
 
 ---
 
