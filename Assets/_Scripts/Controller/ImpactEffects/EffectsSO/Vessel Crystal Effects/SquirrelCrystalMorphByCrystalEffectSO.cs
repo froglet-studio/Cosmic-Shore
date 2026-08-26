@@ -1,3 +1,4 @@
+using CosmicShore.Utility;
 using UnityEngine;
 
 namespace CosmicShore.Gameplay
@@ -34,11 +35,20 @@ namespace CosmicShore.Gameplay
         [Range(0f, 0.9f)]
         [SerializeField] float stagger = 0.35f;
 
-        [Tooltip("Fraction of the window at which the real ring is revealed and the morph starts " +
-                 "dissolving out over it. By then the morph IS the octahedra, so the only thing " +
-                 "the cross-dissolve reveals is the change from crystal to shielded prism.")]
-        [Range(0.4f, 1f)]
-        [SerializeField] float handoffFraction = 0.72f;
+        [Tooltip("Fraction of the window at which the real ring is revealed. Leave at 1: the " +
+                 "transition is meant to be between EQUIVALENT states, and only at t=1 is the " +
+                 "morph's geometry the prisms' octahedra and its colour their palette. Anything " +
+                 "below 1 swaps while the panels are still arriving, which is the seam this " +
+                 "design exists to remove — useful only for seeing where the hand-off lands.")]
+        [Range(0.1f, 1f)]
+        [SerializeField] float handoffFraction = 1f;
+
+        [Tooltip("How much of the window is spent carrying the crystal's colour onto the " +
+                 "shielded prism's, read off the material the laid prisms actually bound. " +
+                 "1 blends across the whole flight; lower arrives at the prism palette early " +
+                 "and holds it.")]
+        [Range(0.1f, 1f)]
+        [SerializeField] float colourBlendFraction = 1f;
 
         [Header("Choreography")]
         [Tooltip("Phase of the crystal's LEFTOVER faces — its struts and panel rims, which have " +
@@ -61,7 +71,7 @@ namespace CosmicShore.Gameplay
         [Tooltip("How long to wait for the boost ring before giving up. The ring is laid by a " +
                  "sibling effect through the AOE spawner, which takes a frame or two; if it " +
                  "never comes the crystal's body fades out instead of hanging there.")]
-        [SerializeField] float ringGraceSeconds = 0.5f;
+        [SerializeField] float ringGraceSeconds = 1.5f;
 
         public override void Execute(VesselImpactor vesselImpactor, CrystalImpactData data)
         {
@@ -75,7 +85,18 @@ namespace CosmicShore.Gameplay
             // (rather than re-authoring a look-alike mesh and material set on this asset) is
             // what keeps the morph's first frame identical to the crystal's last, tint and all.
             var crystal = FindCrystal(data.CrystalId);
-            if (crystal == null) return;
+            if (crystal == null)
+            {
+                CSDebug.LogWarning($"[SquirrelCrystalMorph] no live crystal with id {data.CrystalId} " +
+                                   $"among {Crystal.Active.Count} active — it was collected and moved " +
+                                   "on before this effect ran, so there is nothing to copy. The " +
+                                   "pickup retires with no animation.");
+                return;
+            }
+
+            CSDebug.LogVerbose(CSLogChannel.CrystalMorph,
+                $"[CrystalMorph] retirement fired for '{status.PlayerName}' on crystal " +
+                $"{data.CrystalId} at {data.Position}.");
 
             SquirrelCrystalMorph.Begin(crystal, data.Position, status.Domain,
                 new SquirrelCrystalMorph.Settings
@@ -87,6 +108,7 @@ namespace CosmicShore.Gameplay
                 PanelPhaseStart = panelPhaseStart,
                 PanelPhaseEnd = Mathf.Max(panelPhaseStart, panelPhaseEnd),
                 RingGraceSeconds = ringGraceSeconds,
+                ColourBlendFraction = colourBlendFraction,
             });
         }
 

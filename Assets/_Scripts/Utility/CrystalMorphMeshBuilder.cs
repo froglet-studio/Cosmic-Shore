@@ -103,8 +103,22 @@ namespace CosmicShore.Utility
             if (source == null) { diagnosis = "source mesh is null"; return null; }
             if (targets == null || targets.Count == 0) { diagnosis = "no octahedron targets"; return null; }
 
+            // Read/Write is the FIRST thing checked, because without it `Mesh.vertices` does not
+            // return empty — it THROWS, and the throw escapes through whatever raised the event
+            // that got us here. That is how this shipped broken the first time: the omni
+            // crystal's FBX had `isReadable: 0`, the exception left the morph mid-build, and the
+            // only symptom was the ring appearing normally while the crystal faded out. Asking
+            // the question that names the fix beats a stack trace three frames away.
+            if (!source.isReadable)
+            {
+                diagnosis = $"'{source.name}' is not readable — enable Read/Write on its model " +
+                            "importer (the morph has to read the cage's vertices on the CPU to " +
+                            "bake each face's target).";
+                return null;
+            }
+
             var a = Analyse(source);
-            if (a == null) { diagnosis = $"'{source.name}' has no readable geometry (is Read/Write enabled?)"; return null; }
+            if (a == null) { diagnosis = $"'{source.name}' has no geometry (no vertices or no triangles)"; return null; }
 
             int targetFaces = 0;
             for (int i = 0; i < targets.Count; i++) targetFaces += targets[i].FaceCount;

@@ -109,8 +109,25 @@ namespace CosmicShore.Gameplay
                 if (prism) laid.Add(prism);
             }
 
+            // ISOLATED: a listener here is a VISUAL, and a visual must never be able to damage
+            // conserved mass. Without this a throwing listener unwinds out of the lay — past the
+            // rest of this method and into whatever spawner called it — leaving the ring
+            // half-built and the exception reported three frames from its cause. (That is
+            // exactly how the Squirrel's morph first failed: an unreadable source mesh threw
+            // inside the listener, after the prisms were already laid, and the only visible
+            // symptom was the crystal fading out.)
             if (laid.Count > 0)
-                RingLaid?.Invoke(new BoostRingLay(pose, spec, domain, ownerPrefix, laid));
+            {
+                try
+                {
+                    RingLaid?.Invoke(new BoostRingLay(pose, spec, domain, ownerPrefix, laid));
+                }
+                catch (System.Exception e)
+                {
+                    CSDebug.LogError($"[BoostRingBuilder] a RingLaid listener threw; the ring is " +
+                                     $"laid and unaffected. {e}");
+                }
+            }
         }
 
         /// <summary>

@@ -63,6 +63,16 @@ from frame 0 while the morph is still in flight* — and `Prism.SetVisualStandIn
 their rendering. That is the clock-material law's own division (`Docs/PRISM_ANIMATION.md` §4)
 applied to a hand-off: gameplay final at the start, only photons animate.
 
+**4. The swap happens ONLY between equivalent states.** The prisms are revealed at `t = 1` — not
+before — when the morph's geometry *is* their octahedra (same corners, same orientation) and its
+colour has been carried onto their shielded palette. There is no cross-fade between two
+different-looking things, because there is no moment at which they look different. The colour
+target is read off the material the laid prisms actually bound (`_DarkColor`/`_BrightColor`, the
+prism's base face and fresnel rim), lerped from what each crystal shell is drawing
+(`_DullCrystalColor`/`_BrightCrystalColor` — the same two roles). `handoffFraction` can reveal
+them earlier, but only as a debugging aid: below 1 it swaps while panels are still arriving,
+which is the seam this design exists to remove.
+
 ---
 
 ## 3. How it runs
@@ -177,10 +187,9 @@ indistinguishable from one that cannot fail.
 > reads the same length whichever vessel took it. Every other timing is a FRACTION of `duration`,
 > so this one field slows the whole animation and nothing else needs touching. Two things to
 > expect while it is slow, both of which are the design running at 1/20 speed rather than faults:
-> the ring is **solid and skimmable but invisible** for `handoffFraction × duration` = 6.5 s, so
-> flying through it gives boost off prisms you cannot see; and the last panels land at 9.0 s while
-> the real ring appeared at 6.5 s, so for 2.5 s you watch the tail of the flight cross-dissolve
-> over a ring that is already there (0.13 s at the shipping duration).
+> the ring is **solid and skimmable but invisible for the whole 9 s**, so flying through it gives
+> boost off prisms you cannot see; and the morph holds the crystal static for up to 1.5 s first
+> while it waits for the ring to be laid.
 
 ---
 
@@ -210,7 +219,39 @@ per-vessel flourishes belong in `vesselCrystalEffects` alongside it.
 
 ---
 
-## 9. Known limitations
+## 9. The failure that shipped first, and what now catches it
+
+**`isReadable: 0` on the omni crystal's FBX.** `CrystalMorphMeshBuilder` reads the cage's
+vertices on the CPU to bake each face's target, and an IMPORTED mesh without Read/Write does not
+return empty vertices — it **throws**. The throw escaped through `BoostRingBuilder.RingLaid`
+*after* the eight prisms were already laid, so the visible result was: the ring appears normally,
+and the crystal fades out. Which is indistinguishable from "the retirement never ran", "the ring
+never arrived", and "the ring was rejected".
+
+Three things came out of it, and the third is the general one:
+
+1. **The fix** — `isReadable: 1` on `OmniCrystalExport1_8-21-25.fbx`, matching
+   `ChargeCrystalExport1_7-11-25.fbx`, which this project already reads at runtime for the same
+   class of reason. Cost is a CPU copy of a 2,880-vertex mesh.
+2. **The guard** — `TryBuild` checks `Mesh.isReadable` before touching a vertex and refuses with
+   a diagnosis naming the importer setting. `AnUnreadableSourceMeshIsRefusedByName` pins it.
+3. **A listener must never be able to damage conserved mass.** `RingLaid` is now invoked inside a
+   try/catch: a *visual* listener that throws must not unwind out of the lay it is watching. The
+   exception is reported where it happened rather than three frames away.
+
+And because that animation's one hard dependency (a ring laid by a SIBLING effect) is invisible
+to it, **every rejection is now a warning that names what mismatched** — wrong domain, wrong
+prism kind, a prism whose shield had not engaged, an unreadable mesh, no ring at all — and the
+whole path traces under `CSLogChannel.CrystalMorph` (FrogletTools ▸ Toolbox ▸ Logging). While it
+waits for the ring the crystal now holds **static**, not fading, and a ring that arrives during
+the give-up fade still takes over.
+
+*A silent fallback is worse than no fallback: it converts every distinct cause into the same
+symptom.*
+
+---
+
+## 10. Known limitations
 
 - **`FadeIn` cannot reach a ShepardGraph crystal.** `FadeIn` drives `_opacity` (lowercase) while
   ShepardGraph's property is `_Opacity`, so the bloom-in every crystal is supposed to play is a

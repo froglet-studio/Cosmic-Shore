@@ -144,6 +144,25 @@ namespace CosmicShore.Tests
         }
 
         [Test]
+        public void AnUnreadableSourceMeshIsRefusedByName()
+        {
+            // The failure this guards is the one that shipped: an IMPORTED mesh without
+            // Read/Write does not return empty vertices, it THROWS — and the throw escapes
+            // through whatever raised the event, so the only symptom is the animation silently
+            // not happening. The guard has to run before any vertex is touched.
+            var mesh = BuildCage(prisms: 4, boxes: 2);
+            mesh.UploadMeshData(markNoLongerReadable: true);
+            var targets = new List<CrystalMorphMeshBuilder.OctahedronTarget> { Octahedron(Vector3.zero) };
+
+            var built = CrystalMorphMeshBuilder.TryBuild(mesh, targets, 0f, 0.55f, 1f, out var why);
+            Assert.IsNull(built, "an unreadable mesh must be refused, not read");
+            Assert.IsNotNull(why);
+            StringAssert.Contains("Read/Write", why, "the diagnosis must name the fix");
+
+            Object.DestroyImmediate(mesh);
+        }
+
+        [Test]
         public void PentagonalPanelsAreSupported()
         {
             // The omni crystal's 12 pentagonal prisms contribute 24 of its 64 panels, and a

@@ -95,6 +95,19 @@ namespace CosmicShore.Utility
         /// and is unaffected by this flag.
         /// </summary>
         SparrowStrafingRoll = 1 << 7,
+        /// <summary>
+        /// <c>[CrystalMorph]</c> — the Squirrel's omni-crystal morph, step by step: the
+        /// retirement firing, the shells it adopted, every boost ring it saw and why it was
+        /// taken or rejected, the targets resolved, the stamp, and the hand-off.
+        ///
+        /// It exists because that animation has ONE hard dependency it cannot see — the ring a
+        /// SIBLING effect lays — and every way that dependency can fail produces the same
+        /// symptom on screen: the prisms appear normally and the crystal fades. This channel is
+        /// what separates "the retirement never ran" from "the ring never arrived" from "the
+        /// ring arrived and was rejected". Rejections are WARNINGS and fire whether or not this
+        /// flag is on.
+        /// </summary>
+        CrystalMorph = 1 << 8,
         All = ~0
     }
 

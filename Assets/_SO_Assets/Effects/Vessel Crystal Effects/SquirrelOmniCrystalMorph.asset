@@ -14,8 +14,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   duration: 9
   stagger: 0.35
-  handoffFraction: 0.72
+  handoffFraction: 1
   fillerPhase: 0
   panelPhaseStart: 0.55
   panelPhaseEnd: 1
-  ringGraceSeconds: 0.5
+  ringGraceSeconds: 1.5
+  colourBlendFraction: 1

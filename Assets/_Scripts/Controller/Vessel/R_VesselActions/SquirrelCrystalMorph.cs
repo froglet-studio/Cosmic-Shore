@@ -13,27 +13,43 @@ namespace CosmicShore.Gameplay
     /// The crystal's cage has 40 triangular and 24 pentagonal faces — 64 — and eight octahedron
     /// shields show 8 × 8 = 64. So every panel of the crystal becomes exactly one face of a
     /// prism, 1:1, and the 660 leftover quads (the cage's struts and the panels' rims) collapse
-    /// into whichever octahedron their own solid was assigned to and are absorbed. Nothing is
-    /// invented and nothing is spare.
+    /// into whichever octahedron their own solid was assigned to and are absorbed.
     ///
-    /// ── The three things that make it seamless ────────────────────────────────────────────
+    /// ── The transition is between EQUIVALENT STATES ───────────────────────────────────────
+    /// The real prisms are revealed only at t = 1, when the morph's geometry IS their octahedra
+    /// — same corners, same orientation — and its colour has been carried onto their shielded
+    /// palette. Until that instant the prisms are held invisible; after it the morph is gone.
+    /// There is no cross-fade between two different-looking things, because there is no moment
+    /// at which they look different. (`HandoffFraction` can reveal them earlier for debugging;
+    /// at anything below 1 the swap happens while the panels are still arriving, which is
+    /// exactly the seam this design exists to remove.)
+    ///
+    /// ── What makes each half seamless ─────────────────────────────────────────────────────
     /// 1. **It draws the crystal's own renderers.** Mesh, materials and MaterialPropertyBlock
     ///    are copied off the live crystal, so frame 0 of the morph is the crystal, including
     ///    the Shepard shells' band animation. A rebuilt look-alike would pop.
     /// 2. **It ends ON the real prisms.** The targets are read from the prisms the ring builder
-    ///    actually laid — their own shield semi-axes, their own final pose — so the last frame
-    ///    of the morph and the first frame of the ring are the same geometry. There is no
-    ///    second authority to drift: retune `SpawnableRings` and the animation follows.
+    ///    actually laid — their own shield semi-axes, their own final pose — and the colour it
+    ///    converges to is read off the very material those prisms bound. There is no second
+    ///    authority to drift: retune `SpawnableRings` and the animation follows.
     /// 3. **The prisms are laid at once and only their PHOTONS wait.** Colliders, mass, shield
     ///    state and spatial index all go final the instant the ring is laid — the ring is
     ///    skimmable from frame 0 while the morph is still in flight — and
     ///    <see cref="Prism.SetVisualStandIn"/> holds nothing but their rendering. That is the
     ///    clock-material law's own division (Docs/PRISM_ANIMATION.md §4) applied to a hand-off.
     ///
-    /// Cost: one Mesh build per collect (~4.3k vertices; the face partition itself is cached
-    /// per source mesh), and ONE stamp. The animation runs entirely in the vertex stage off
-    /// `_PrismClock` — no per-frame, per-vertex or per-prism CPU work. The only per-frame write
-    /// is the tail cross-dissolve's `_Opacity`, one uniform per shell renderer.
+    /// ── It reports on itself, because its one dependency is invisible ─────────────────────
+    /// The ring is laid by a SIBLING effect, and every way that can fail — the retirement never
+    /// running, the ring never arriving, the ring arriving and being rejected — looks identical
+    /// on screen: the prisms appear normally and the crystal fades out. So every rejection is a
+    /// WARNING naming exactly what mismatched, and the whole path traces under
+    /// <see cref="CSLogChannel.CrystalMorph"/> (FrogletTools ▸ Toolbox ▸ Logging). A silent
+    /// fallback here is worse than no fallback.
+    ///
+    /// Cost: one Mesh build per collect (~4.3k vertices; the face partition is cached per source
+    /// mesh) and ONE stamp. The geometry runs entirely in the vertex stage off `_PrismClock`.
+    /// The per-frame writes are uniforms only — the colour convergence and the tail opacity,
+    /// a handful of MaterialPropertyBlock values per shell.
     /// </summary>
     [DisallowMultipleComponent]
     public sealed class SquirrelCrystalMorph : MonoBehaviour
@@ -43,29 +59,44 @@ namespace CosmicShore.Gameplay
         {
             public float Duration;
             public float Stagger;
-            /// <summary>Fraction of the duration at which the real ring is revealed and the
-            /// morph starts dissolving out over it.</summary>
+            /// <summary>Fraction of the window at which the real ring is revealed. 1 = only at
+            /// equivalence, which is the design; below 1 is a debugging aid.</summary>
             public float HandoffFraction;
             public float FillerPhase;
             public float PanelPhaseStart;
             public float PanelPhaseEnd;
             /// <summary>How long to wait for the ring before giving up and fading out.</summary>
             public float RingGraceSeconds;
+            /// <summary>How much of the window is spent carrying the crystal's colour onto the
+            /// shielded prism's. 1 = the whole flight.</summary>
+            public float ColourBlendFraction;
         }
 
         static readonly int MorphId = Shader.PropertyToID("_CrystalMorph");
         static readonly int OpacityId = Shader.PropertyToID("_Opacity");
+        // ShepardGraph's pair — the crystal's base body and its fresnel rim.
+        static readonly int DullCrystalId = Shader.PropertyToID("_DullCrystalColor");
+        static readonly int BrightCrystalId = Shader.PropertyToID("_BrightCrystalColor");
+        // BlockGraph's pair on the shielded prism — the same two roles (Docs/PALETTE.md).
+        static readonly int DarkId = Shader.PropertyToID("_DarkColor");
+        static readonly int BrightId = Shader.PropertyToID("_BrightColor");
 
         Settings _settings;
         Domains _domain;
         readonly List<Renderer> _shells = new();
         readonly List<MaterialPropertyBlock> _blocks = new();
+        readonly List<Color> _startDull = new();
+        readonly List<Color> _startBright = new();
         readonly List<Prism> _held = new();
+        Color _targetDull, _targetBright;
+        bool _haveTargetColour;
         Mesh _mesh;
         float _startTime;
         float _giveUpAt;
+        int _ringsSeen;
         bool _stamped;
         bool _handedOff;
+        bool _fading;
         bool _subscribed;
 
         /// <summary>
@@ -81,7 +112,13 @@ namespace CosmicShore.Gameplay
         public static SquirrelCrystalMorph Begin(Crystal crystal, Vector3 collectedAt, Domains domain,
                                                  in Settings settings)
         {
-            if (crystal == null) return null;
+            if (crystal == null)
+            {
+                CSDebug.LogWarning("[SquirrelCrystalMorph] no crystal to morph — the retirement " +
+                                   "could not resolve the collected crystal by id, so this pickup " +
+                                   "retires with no animation at all.");
+                return null;
+            }
 
             var go = new GameObject($"CrystalMorph_{crystal.name}");
             go.transform.SetPositionAndRotation(collectedAt, crystal.transform.rotation);
@@ -90,6 +127,9 @@ namespace CosmicShore.Gameplay
             var morph = go.AddComponent<SquirrelCrystalMorph>();
             if (!morph.AdoptShells(crystal))
             {
+                CSDebug.LogWarning($"[SquirrelCrystalMorph] '{crystal.name}' exposed no drawable " +
+                                   "shell (a model with a MeshFilter AND a MeshRenderer) — nothing " +
+                                   "to morph, so this pickup retires with no animation.");
                 Destroy(go);
                 return null;
             }
@@ -99,6 +139,11 @@ namespace CosmicShore.Gameplay
             morph._giveUpAt = Time.time + Mathf.Max(0.05f, settings.RingGraceSeconds);
             BoostRingBuilder.RingLaid += morph.OnRingLaid;
             morph._subscribed = true;
+
+            CSDebug.LogVerbose(CSLogChannel.CrystalMorph,
+                $"[CrystalMorph] began on '{crystal.name}' at {collectedAt}, domain {domain}, " +
+                $"{morph._shells.Count} shells, waiting up to {settings.RingGraceSeconds:F2}s for a " +
+                $"{PrismKind.Shielded} ring.");
             return morph;
         }
 
@@ -156,6 +201,14 @@ namespace CosmicShore.Gameplay
                 source.GetPropertyBlock(block);
                 renderer.SetPropertyBlock(block);
 
+                // The colour this shell STARTS at, so the convergence below is a lerp from what
+                // it is actually drawing rather than from the shader's default.
+                var mat = source.sharedMaterial;
+                _startDull.Add(mat != null && mat.HasProperty(DullCrystalId)
+                    ? mat.GetColor(DullCrystalId) : Color.white);
+                _startBright.Add(mat != null && mat.HasProperty(BrightCrystalId)
+                    ? mat.GetColor(BrightCrystalId) : Color.white);
+
                 _shells.Add(renderer);
                 _blocks.Add(block);
             }
@@ -164,22 +217,44 @@ namespace CosmicShore.Gameplay
 
         void OnRingLaid(BoostRingLay lay)
         {
-            if (_stamped || lay.Prisms == null || lay.Prisms.Count == 0) return;
-            if (lay.Domain != _domain) return;
-            if (lay.Spec.Kind != PrismKind.Shielded) return;   // the morph ends on SHIELD octahedra
+            if (_stamped) return;
+            _ringsSeen++;
 
-            Unsubscribe();
+            if (lay.Prisms == null || lay.Prisms.Count == 0)
+            {
+                CSDebug.LogVerbose(CSLogChannel.CrystalMorph, "[CrystalMorph] saw an empty ring.");
+                return;
+            }
+            if (lay.Domain != _domain)
+            {
+                CSDebug.LogWarning($"[SquirrelCrystalMorph] ignoring a ring of domain {lay.Domain} " +
+                                   $"— this morph belongs to {_domain}. If that is the ring this " +
+                                   "pickup laid, the vessel's domain and the AOE's disagree.");
+                return;
+            }
+            if (lay.Spec.Kind != PrismKind.Shielded)
+            {
+                CSDebug.LogWarning($"[SquirrelCrystalMorph] ignoring a {lay.Spec.Kind} ring — the " +
+                                   "morph ends on SHIELD octahedra, so it can only take a " +
+                                   $"{PrismKind.Shielded} one. Check isShielded on the ring spawner.");
+                return;
+            }
 
             // Resolved in WORLD space off each prism, then brought into this object's frame —
             // the mesh's targets have to be in the same space as its vertices.
             var targets = new List<CrystalMorphMeshBuilder.OctahedronTarget>(lay.Prisms.Count);
+            string firstRefusal = null;
             for (int i = 0; i < lay.Prisms.Count; i++)
-                if (TryResolveShield(lay.Prisms[i], out var world)) targets.Add(ToLocal(world));
+            {
+                if (TryResolveShield(lay.Prisms[i], out var world, out var refusal)) targets.Add(ToLocal(world));
+                else firstRefusal ??= $"prism {i}: {refusal}";
+            }
 
             if (targets.Count != lay.Prisms.Count)
             {
                 CSDebug.LogWarning($"[SquirrelCrystalMorph] {targets.Count}/{lay.Prisms.Count} ring " +
-                                   "prisms exposed a shield octahedron — falling back to a fade.");
+                                   $"prisms exposed a shield octahedron ({firstRefusal}) — the morph " +
+                                   "cannot land on a ring it cannot measure, so it will fade instead.");
                 return;
             }
 
@@ -195,6 +270,9 @@ namespace CosmicShore.Gameplay
                 return;
             }
 
+            Unsubscribe();
+            CaptureTargetColour(lay.Prisms);
+
             for (int i = 0; i < _shells.Count; i++)
                 _shells[i].GetComponent<MeshFilter>().sharedMesh = _mesh;
 
@@ -209,17 +287,48 @@ namespace CosmicShore.Gameplay
 
             _startTime = PrismClock.Now;
             _stamped = true;
+            _fading = false;
             var morph = new Vector3(_startTime, _settings.Duration, _settings.Stagger);
             for (int i = 0; i < _shells.Count; i++)
             {
                 _shells[i].GetPropertyBlock(_blocks[i]);
                 _blocks[i].SetVector(MorphId, morph);
+                _blocks[i].SetFloat(OpacityId, 1f);   // a late ring cancels a fade already begun
                 _shells[i].SetPropertyBlock(_blocks[i]);
             }
+
+            CSDebug.LogVerbose(CSLogChannel.CrystalMorph,
+                $"[CrystalMorph] took ring #{_ringsSeen}: {lay.Prisms.Count} prisms held, " +
+                $"{_mesh.vertexCount} morph vertices, stamped at {_startTime:F2} for " +
+                $"{_settings.Duration:F2}s (colour target {(_haveTargetColour ? "read" : "NOT FOUND")}).");
         }
 
         /// <summary>
-        /// The eight faces of one laid prism's shield, in this morph's local space.
+        /// The palette the morph has to arrive wearing, read off the material the laid prisms
+        /// actually bound rather than from a ThemeManager lookup — the same "read the thing that
+        /// shipped, never re-derive it" rule the geometry targets follow. `_DarkColor` and
+        /// `_BrightColor` are the prism's base face and its fresnel rim (Docs/PALETTE.md), which
+        /// are the same two roles ShepardGraph calls Dull and Bright.
+        /// </summary>
+        void CaptureTargetColour(IReadOnlyList<Prism> prisms)
+        {
+            for (int i = 0; i < prisms.Count; i++)
+            {
+                if (!prisms[i] || !prisms[i].TryGetComponent<MeshRenderer>(out var r)) continue;
+                var mat = r.sharedMaterial;
+                if (mat == null || !mat.HasProperty(DarkId) || !mat.HasProperty(BrightId)) continue;
+                _targetDull = mat.GetColor(DarkId);
+                _targetBright = mat.GetColor(BrightId);
+                _haveTargetColour = true;
+                return;
+            }
+            CSDebug.LogWarning("[SquirrelCrystalMorph] no ring prism exposed _DarkColor/_BrightColor " +
+                               "— the morph will land in the CRYSTAL's colours, so the hand-off to " +
+                               "the shielded prisms will show a colour change.");
+        }
+
+        /// <summary>
+        /// The eight faces of one laid prism's shield, in world space.
         ///
         /// Built from the shield's OWN semi-axes (<see cref="PrismOctahedronShield"/> derives
         /// them from the authored BoxCollider and the circumscribing scale) and the prism's
@@ -229,11 +338,23 @@ namespace CosmicShore.Gameplay
         /// set <see cref="OctahedronMeshGenerator"/> builds; only the winding differs, and a
         /// target is a set of three corner POSITIONS, so winding does not reach it.
         /// </summary>
-        static bool TryResolveShield(Prism prism, out CrystalMorphMeshBuilder.OctahedronTarget target)
+        static bool TryResolveShield(Prism prism, out CrystalMorphMeshBuilder.OctahedronTarget target,
+                                     out string refusal)
         {
             target = default;
-            if (!prism || !prism.TryGetComponent<PrismOctahedronShield>(out var shield)) return false;
-            if (prism.prismProperties == null || !prism.prismProperties.IsShielded) return false;
+            refusal = null;
+            if (!prism) { refusal = "the prism is gone"; return false; }
+            if (!prism.TryGetComponent<PrismOctahedronShield>(out var shield))
+            {
+                refusal = "no PrismOctahedronShield component";
+                return false;
+            }
+            if (prism.prismProperties == null) { refusal = "no prismProperties"; return false; }
+            if (!prism.prismProperties.IsShielded)
+            {
+                refusal = "IsShielded is false — the shield had not engaged when the ring was announced";
+                return false;
+            }
 
             Vector3 semi = shield.ShellSemiAxesLocal;
             Vector3 centre = shield.ShellCenterLocal;
@@ -265,11 +386,8 @@ namespace CosmicShore.Gameplay
             return true;
         }
 
-        /// <summary>
-        /// Converts a target built in WORLD space into this morph's local space. Called once per
-        /// target, right after <see cref="TryResolveShield"/> — kept separate so the shield
-        /// resolution stays a pure statement about the prism.
-        /// </summary>
+        /// <summary>Brings a world-space target into this morph's local space — the mesh's
+        /// targets have to live in the same frame as its vertices.</summary>
         CrystalMorphMeshBuilder.OctahedronTarget ToLocal(in CrystalMorphMeshBuilder.OctahedronTarget world)
         {
             var corners = new Vector3[world.FaceCorners.Length];
@@ -281,34 +399,68 @@ namespace CosmicShore.Gameplay
 
         void LateUpdate()
         {
-            if (!_stamped)
-            {
-                // The ring never arrived (a mode that wires no ring, or a spawner that declined).
-                // Fade the crystal's body out rather than leaving it hanging or popping it —
-                // continuity of existence holds whether or not the morph found its target.
-                if (Time.time < _giveUpAt) return;
-                float fade = Mathf.InverseLerp(_giveUpAt, _giveUpAt + _settings.Duration, Time.time);
-                SetOpacity(1f - fade);
-                if (fade >= 1f) Destroy(gameObject);
-                return;
-            }
+            if (!_stamped) { TickWaiting(); return; }
 
             float t = Mathf.Clamp01((PrismClock.Now - _startTime) / Mathf.Max(1e-4f, _settings.Duration));
-            float handoff = Mathf.Clamp01(_settings.HandoffFraction);
 
-            if (!_handedOff && t >= handoff)
+            // Colour convergence: by the time the geometry IS the octahedra, the morph is already
+            // wearing the palette they are about to be handed over in — so the swap changes
+            // nothing the eye can catch.
+            if (_haveTargetColour)
             {
-                // The morph is on the octahedra by now, so the ring appears UNDER a body that is
-                // already its own shape — the cross-dissolve below has nothing to reveal but the
-                // change of material.
-                Release();
-                _handedOff = true;
+                float c = Mathf.Clamp01(t / Mathf.Max(1e-4f, _settings.ColourBlendFraction));
+                c = c * c * (3f - 2f * c);
+                for (int i = 0; i < _shells.Count; i++)
+                {
+                    if (!_shells[i]) continue;
+                    _shells[i].GetPropertyBlock(_blocks[i]);
+                    _blocks[i].SetColor(DullCrystalId, Color.Lerp(_startDull[i], _targetDull, c));
+                    _blocks[i].SetColor(BrightCrystalId, Color.Lerp(_startBright[i], _targetBright, c));
+                    _shells[i].SetPropertyBlock(_blocks[i]);
+                }
             }
 
-            if (t >= handoff)
-                SetOpacity(1f - Mathf.InverseLerp(handoff, 1f, t));
+            float handoff = Mathf.Clamp01(_settings.HandoffFraction);
+            if (!_handedOff && t >= handoff)
+            {
+                Release();
+                _handedOff = true;
+                CSDebug.LogVerbose(CSLogChannel.CrystalMorph,
+                    $"[CrystalMorph] handed off at t={t:F2} — the ring is now drawing itself.");
+            }
 
-            if (t >= 1f) Destroy(gameObject);
+            if (t >= 1f)
+            {
+                Release();          // idempotent; guarantees the ring is visible before we vanish
+                Destroy(gameObject);
+            }
+        }
+
+        /// <summary>
+        /// Still waiting for the ring. Holds the crystal's body EXACTLY as it was — no shrink, no
+        /// drift — because until the ring exists there is nothing to move toward, and a morph
+        /// that starts guessing is worse than one that waits. Past the grace it fades out, loudly.
+        /// A ring that arrives during the fade still wins.
+        /// </summary>
+        void TickWaiting()
+        {
+            if (Time.time < _giveUpAt) return;
+
+            if (!_fading)
+            {
+                _fading = true;
+                CSDebug.LogWarning(
+                    $"[SquirrelCrystalMorph] no usable {PrismKind.Shielded} boost ring arrived within " +
+                    $"{_settings.RingGraceSeconds:F2}s ({_ringsSeen} ring(s) seen), so the crystal is " +
+                    "fading out instead of morphing. The ring is laid by a SIBLING effect " +
+                    "(VesselExplosionByCrystalEffectSO → AOEShieldedRingSpawner) — check it is still " +
+                    "in this vessel's VesselCrystalEffects. Trace with FrogletTools ▸ Toolbox ▸ " +
+                    "Logging ▸ CrystalMorph.");
+            }
+
+            float fade = Mathf.InverseLerp(_giveUpAt, _giveUpAt + _settings.Duration, Time.time);
+            SetOpacity(1f - fade);
+            if (fade >= 1f) Destroy(gameObject);
         }
 
         void SetOpacity(float opacity)
