@@ -6,42 +6,51 @@ using UnityEngine;
 namespace CosmicShore.UI
 {
     /// <summary>
-    /// The launch panel's text block: the card's description, and — underneath it — one play tip
-    /// at a time, cycled on a timer.
+    /// The launch panel's text block: what the mode IS, and — cycling through the same line — what
+    /// to DO about it.
     ///
-    /// <para>Tips are authored per card (<see cref="SO_ArcadeGame.Tips"/>) and are advice, not
-    /// lore: the description says what the mode IS, a tip says what to DO about it. A card with no
-    /// tips shows the description alone — the tip line is switched off rather than left showing an
-    /// empty "Tip:" prefix, because an empty label reads as a missing string.</para>
+    /// <para><b>One text field, not two.</b> The description and the tips are the same voice
+    /// answering the same question at different depths, so they take turns in one place rather than
+    /// stacking into a wall of copy beside a preview window. A second line held permanently would
+    /// also mean authoring for the worst case: a card with four tips would need four lines of space
+    /// that a card with none leaves empty.</para>
     ///
-    /// <para>Shared by both launch panels (minigame and Maelstrom) — the briefing is the one part
-    /// of the two layouts that is genuinely identical, so it is one component rather than two.</para>
+    /// <para>The rotation is the description first — a player who has just opened the card is asking
+    /// "what is this?" before "how do I play it?" — then each tip, then back to the description.
+    /// A card with no tips never rotates and simply shows its description, which is the correct
+    /// resting state rather than a degraded one.</para>
+    ///
+    /// <para>Shared by both launch panels. The briefing is the one part of the two layouts that is
+    /// genuinely identical, so it is one component rather than two.</para>
     /// </summary>
     public class GameBriefingView : MonoBehaviour
     {
         [Header("Text")]
-        [SerializeField, Tooltip("The card's Description. Left alone when the card has none.")]
-        TMP_Text descriptionText;
+        [SerializeField, Tooltip("The ONE line the block cycles through: the card's description, " +
+                                 "then each of its tips, then back. There is deliberately no " +
+                                 "second field - see the class summary.")]
+        TMP_Text bodyText;
 
-        [SerializeField, Tooltip("The rotating tip line. Its whole GameObject is switched off " +
-                                 "when the card authors no tips.")]
-        TMP_Text tipText;
-
-        [Header("Tip rotation")]
-        [SerializeField, Tooltip("Prefix written in front of every tip. Set empty for none.")]
+        [Header("Rotation")]
+        [SerializeField, Tooltip("Prefix written in front of a TIP (never in front of the " +
+                                 "description). Empty for none.")]
         string tipPrefix = "Tip: ";
 
-        [SerializeField, Tooltip("Seconds each tip holds before the next one. A single-tip card " +
+        [SerializeField, Tooltip("Seconds each entry holds before the next. A card with no tips " +
                                  "never rotates, whatever this says.")]
-        [Min(1f)] float tipDwellSeconds = 6f;
+        [Min(1f)] float dwellSeconds = 6f;
 
-        [SerializeField, Tooltip("Seconds the tip takes to fade out and back in between tips. " +
-                                 "0 swaps instantly.")]
-        [Min(0f)] float tipFadeSeconds = 0.35f;
+        [SerializeField, Tooltip("Seconds of crossfade between entries. 0 swaps instantly.")]
+        [Min(0f)] float fadeSeconds = 0.4f;
 
-        readonly List<string> _tips = new();
-        int _tipIndex;
-        float _tipTimer;
+        [SerializeField, Tooltip("Extra seconds the DESCRIPTION holds over a tip, so the card's " +
+                                 "own words are what a player mostly sees. 0 treats it as one " +
+                                 "entry among the tips.")]
+        [Min(0f)] float descriptionExtraDwell = 3f;
+
+        readonly List<string> _entries = new();
+        int _index;
+        float _dwellTimer;
         float _fadeTimer;
         bool _fadingOut;
 
@@ -54,31 +63,21 @@ namespace CosmicShore.UI
         /// <summary>The general form, so a caller with its own copy can use the same block.</summary>
         public void Show(string description, IReadOnlyList<string> tips)
         {
-            if (descriptionText)
-                descriptionText.text = description ?? string.Empty;
+            _entries.Clear();
 
-            _tips.Clear();
+            // Index 0 is always the description when there is one - it is what the player is
+            // asking for at the moment the card opens.
+            if (!string.IsNullOrWhiteSpace(description))
+                _entries.Add(description.Trim());
+
             if (tips != null)
             {
                 foreach (var tip in tips)
                     if (!string.IsNullOrWhiteSpace(tip))
-                        _tips.Add(tip.Trim());
+                        _entries.Add(tipPrefix + tip.Trim());
             }
 
-            _tipIndex = 0;
-            _tipTimer = 0f;
-            _fadeTimer = 0f;
-            _fadingOut = false;
-
-            if (!tipText) return;
-
-            bool hasTips = _tips.Count > 0;
-            tipText.gameObject.SetActive(hasTips);
-            if (hasTips)
-            {
-                SetTipAlpha(1f);
-                WriteCurrentTip();
-            }
+            ResetRotation();
         }
 
         /// <summary>Clear the block — used when no card is selected.</summary>
@@ -86,22 +85,28 @@ namespace CosmicShore.UI
 
         void OnDisable()
         {
-            // A panel that comes back should start on the first tip at full alpha, not resume
-            // mid-fade on whatever tip happened to be up when it was hidden.
-            _tipIndex = 0;
-            _tipTimer = 0f;
+            // A panel that comes back starts on the description at full alpha, not resumed
+            // mid-fade on whatever entry happened to be up when it was hidden.
+            ResetRotation();
+        }
+
+        void ResetRotation()
+        {
+            _index = 0;
+            _dwellTimer = 0f;
             _fadeTimer = 0f;
             _fadingOut = false;
-            if (tipText && tipText.gameObject.activeSelf)
-            {
-                SetTipAlpha(1f);
-                WriteCurrentTip();
-            }
+
+            if (!bodyText) return;
+
+            bodyText.gameObject.SetActive(_entries.Count > 0);
+            SetAlpha(1f);
+            WriteCurrent();
         }
 
         void Update()
         {
-            if (_tips.Count <= 1 || !tipText || !tipText.gameObject.activeInHierarchy) return;
+            if (_entries.Count <= 1 || !bodyText || !bodyText.gameObject.activeInHierarchy) return;
 
             // Unscaled: the launch panel can be open while the menu holds timeScale at 0.
             float dt = Time.unscaledDeltaTime;
@@ -109,46 +114,49 @@ namespace CosmicShore.UI
             if (_fadeTimer > 0f)
             {
                 _fadeTimer -= dt;
-                float remaining01 = tipFadeSeconds > 0f ? Mathf.Clamp01(_fadeTimer / tipFadeSeconds) : 0f;
-                SetTipAlpha(_fadingOut ? remaining01 : 1f - remaining01);
+                float remaining01 = fadeSeconds > 0f ? Mathf.Clamp01(_fadeTimer / fadeSeconds) : 0f;
+                SetAlpha(_fadingOut ? remaining01 : 1f - remaining01);
 
                 if (_fadeTimer <= 0f && _fadingOut)
                 {
-                    // Halfway: the old tip is gone, so swap the string and fade the new one in.
+                    // Halfway: the old entry is gone, so swap the string and fade the new one in.
                     _fadingOut = false;
-                    _tipIndex = (_tipIndex + 1) % _tips.Count;
-                    WriteCurrentTip();
-                    _fadeTimer = tipFadeSeconds;
+                    Advance();
+                    _fadeTimer = fadeSeconds;
                 }
                 return;
             }
 
-            _tipTimer += dt;
-            if (_tipTimer < tipDwellSeconds) return;
+            _dwellTimer += dt;
+            if (_dwellTimer < CurrentDwell) return;
 
-            _tipTimer = 0f;
-            if (tipFadeSeconds <= 0f)
+            _dwellTimer = 0f;
+            if (fadeSeconds <= 0f)
             {
-                _tipIndex = (_tipIndex + 1) % _tips.Count;
-                WriteCurrentTip();
+                Advance();
                 return;
             }
 
             _fadingOut = true;
-            _fadeTimer = tipFadeSeconds;
+            _fadeTimer = fadeSeconds;
         }
 
-        void WriteCurrentTip()
+        /// <summary>The description earns longer than a tip: it is the card's own answer.</summary>
+        float CurrentDwell => _index == 0 ? dwellSeconds + descriptionExtraDwell : dwellSeconds;
+
+        void Advance() { _index = (_index + 1) % _entries.Count; WriteCurrent(); }
+
+        void WriteCurrent()
         {
-            if (!tipText || _tips.Count == 0) return;
-            tipText.text = tipPrefix + _tips[Mathf.Clamp(_tipIndex, 0, _tips.Count - 1)];
+            if (!bodyText || _entries.Count == 0) return;
+            bodyText.text = _entries[Mathf.Clamp(_index, 0, _entries.Count - 1)];
         }
 
-        void SetTipAlpha(float alpha)
+        void SetAlpha(float alpha)
         {
-            if (!tipText) return;
-            var c = tipText.color;
-            tipText.color = new Color(c.r, c.g, c.b, Mathf.Clamp01(alpha));
+            if (!bodyText) return;
+            var c = bodyText.color;
+            bodyText.color = new Color(c.r, c.g, c.b, Mathf.Clamp01(alpha));
         }
     }
 }

@@ -185,9 +185,10 @@ namespace CosmicShore.Editor
                 var controlsPanel = Ensure<VesselControlsPanel>(controls.gameObject, dryRun, _wrote);
                 SetRef(so, "controlsPanel", controlsPanel, dryRun);
 
-                var row = FindChild(controls, AbilityRowName);
+                var row = FindRowTemplate(controls, AbilityRowName, needsIcon: true);
                 if (row)
                 {
+                    _found.Add($"Ability row template: '{Path(row)}'");
                     var prefab = MakeRowPrefab<VesselControlRow>(row.gameObject, "AbilityControlRow",
                                                                  dryRun, written, WireControlRow);
                     var cso = new SerializedObject(controlsPanel);
@@ -197,9 +198,11 @@ namespace CosmicShore.Editor
                 }
                 else
                 {
-                    _todo.Add($"No '{AbilityRowName}' under '{ControlsDescName}'. Author ONE row " +
-                              "(an icon Image plus a TMP_Text) and re-run - the tool turns it into " +
-                              "the row prefab the block instantiates.");
+                    _todo.Add($"No row template under '{ControlsDescName}'. Author ONE row - an " +
+                              "Image and a TMP_Text - and re-run; the tool turns it into the row " +
+                              "prefab the block instantiates. (It looks for a child called " +
+                              $"'{AbilityRowName}' first, then for the first child that simply " +
+                              "LOOKS like a row, so the name does not have to be exact.)");
                 }
             }
             else
@@ -279,17 +282,18 @@ namespace CosmicShore.Editor
                 var lso = new SerializedObject(listView);
                 SetRef(lso, "rowContainer", list, dryRun);
 
-                var row = FindChild(list, PoolRowName);
+                var row = FindRowTemplate(list, PoolRowName, needsIcon: false);
                 if (row)
                 {
+                    _found.Add($"Pool row template: '{Path(row)}'");
                     var prefab = MakeRowPrefab<MaelstromPoolEntry>(row.gameObject, "MaelstromPoolRow",
                                                                     dryRun, written, WirePoolEntry);
                     SetRef(lso, "rowPrefab", prefab, dryRun);
                 }
                 else
                 {
-                    _todo.Add($"No '{PoolRowName}' under '{PoolListName}'. Author ONE row and " +
-                              "re-run.");
+                    _todo.Add($"No row template under '{PoolListName}'. Author ONE row (a " +
+                              "TMP_Text, optionally an Image) and re-run.");
                 }
 
                 var tournament = LoadOne<TournamentDataSO>();
@@ -333,16 +337,22 @@ namespace CosmicShore.Editor
             var briefing = Ensure<GameBriefingView>(gameView.gameObject, dryRun, _wrote);
             SetRef(panel, "briefing", briefing, dryRun);
 
+            // ONE text field: the description and the tips take turns in it. There is no
+            // separate 'Tip' object to find - see GameBriefingView.
+            var body = FindComponentInChildren<TMP_Text>(gameView, "Game Description");
+            if (!body)
+            {
+                var texts = gameView.GetComponentsInChildren<TMP_Text>(true);
+                // The title is the other text in this block; the body is the OTHER one.
+                body = texts.FirstOrDefault(t => t.name != "Game Name") ?? texts.FirstOrDefault();
+            }
+
             var bso = new SerializedObject(briefing);
-            SetRef(bso, "descriptionText",
-                   FindComponentInChildren<TMP_Text>(gameView, "Game Description"), dryRun);
-            SetRef(bso, "tipText", FindComponentInChildren<TMP_Text>(gameView, "Tip"), dryRun);
+            SetRef(bso, "bodyText", body, dryRun);
             if (!dryRun) bso.ApplyModifiedPropertiesWithoutUndo();
 
-            if (FindComponentInChildren<TMP_Text>(gameView, "Tip") == null)
-                _todo.Add($"'{Path(gameView)}' has no child named 'Tip' - the rotating play tip " +
-                          "has nowhere to draw. Add a TMP_Text called 'Tip' and re-run. (Cards " +
-                          "also need SO_ArcadeGame.Tips written; every one is empty today.)");
+            if (!body)
+                _todo.Add($"'{Path(gameView)}' has no TMP_Text for the briefing to write into.");
 
             var preview = gameView.Find("Preview");
             if (!preview)
@@ -396,12 +406,26 @@ namespace CosmicShore.Editor
                 return;
             }
 
-            SetList(panel, "intensityButtons",
-                    detail.GetComponentsInChildren<IntensitySelectButton>(true)
-                          .OrderBy(b => b.transform.GetSiblingIndex()).ToArray(), dryRun);
+            var intensity = detail.GetComponentsInChildren<IntensitySelectButton>(true)
+                                  .OrderBy(b => b.transform.GetSiblingIndex()).ToArray();
+            SetList(panel, "intensityButtons", intensity, dryRun);
 
-            SetList(panel, "domainTiles",
-                    detail.GetComponentsInChildren<DomainInfoData>(true).ToArray(), dryRun);
+            // Four is the whole ladder. Anything else is almost always a duplicated group left
+            // over from the old two-screen layout, and it matters: InitializeScreen1Controls
+            // walks this list by INDEX to decide which level each button stands for, so a fifth
+            // entry silently mislabels the row.
+            if (intensity.Length != 0 && intensity.Length != 4)
+                _problems.Add($"{where} has {intensity.Length} IntensitySelectButtons, not 4. " +
+                              "Delete the duplicates (the old screens each carried a group) - the " +
+                              "row is read BY INDEX, so extras mislabel the intensities.");
+
+            var tiles = detail.GetComponentsInChildren<DomainInfoData>(true).ToArray();
+            SetList(panel, "domainTiles", tiles, dryRun);
+
+            if (tiles.Length > 3)
+                _found.Add($"{where}: {tiles.Length} domain tiles. If one of them is BLUE that is " +
+                           "fine - Blue is the 'no team' sentinel and the modal hides it at " +
+                           "runtime. More than one extra means duplicates.");
 
             // The Start button by name, then by label, then give up and say so - guessing which
             // Button in a panel launches the game is exactly the wrong thing to be confident about.
@@ -571,6 +595,10 @@ namespace CosmicShore.Editor
                       "placeholders ship (left stick / right stick) with no icons. They are the " +
                       "one part of the controls block that cannot be derived - an axis belongs to " +
                       "the input scheme, not to a vessel.");
+            _todo.Add("Write SO_ArcadeGame.Tips on the cards you care about. The briefing cycles " +
+                      "description -> tip -> tip -> description in ONE text field; with no tips a " +
+                      "card simply shows its description and never rotates, which is the correct " +
+                      "resting state, not a broken one.");
             _todo.Add("PLAY-TEST: open a minigame card (panel + live preview + controls sweep), " +
                       "change intensity (the preview rebuilds only for Ribcage / Dog Fight / The " +
                       "Bends / Wildlife Liberation), open the Maelstrom card (its own window, clip, " +
@@ -641,6 +669,30 @@ namespace CosmicShore.Editor
             => Resources.FindObjectsOfTypeAll<GameObject>()
                         .FirstOrDefault(g => g.name == name && g.scene.IsValid() &&
                                              !EditorUtility.IsPersistent(g));
+
+        /// <summary>
+        /// The row a list should clone: the child with that name if it exists, else the first child
+        /// that simply LOOKS like a row.
+        ///
+        /// <para>Structure, not spelling. A hand-authored row is named by a human and the first run
+        /// of this tool found nothing because the object was called "AbiiltyContent" - which is
+        /// obviously the right object to anyone looking at it and invisible to an exact match. What
+        /// a row IS is "a direct child carrying the graphics the row draws", and that is checkable.</para>
+        /// </summary>
+        static Transform FindRowTemplate(Transform container, string preferredName, bool needsIcon)
+        {
+            var named = FindChild(container, preferredName);
+            if (named) return named;
+
+            foreach (Transform child in container)
+            {
+                if (!child.gameObject.activeSelf && !child.gameObject.activeInHierarchy) continue;
+                if (child.GetComponentInChildren<TMP_Text>(true) == null) continue;
+                if (needsIcon && child.GetComponentInChildren<Image>(true) == null) continue;
+                return child;
+            }
+            return null;
+        }
 
         static Transform FindChild(Transform root, string name)
         {

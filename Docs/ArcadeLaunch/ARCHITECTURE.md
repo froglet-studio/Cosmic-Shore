@@ -154,6 +154,18 @@ Ability ICONS are matched off the vessel asset by NAME (`SO_Vessel.Abilities` �
 `ElementalAbilityEntry.AbilityLabel`). No match is an ordinary answer: the row keeps its prefab
 sprite and the element petal still says which element owns the slot.
 
+### 4.4 The briefing is ONE text field, cycling
+
+The description and the tips are the same voice answering the same question at different depths,
+so they take turns in one place rather than stacking into a wall of copy beside a preview window.
+A permanently-held second line would also mean authoring for the worst case: a card with four tips
+needs four lines of space that a card with none leaves empty.
+
+The order is **description first** — a player who has just opened the card is asking "what is
+this?" before "how do I play it?" — then each tip, then back. The description holds longer than a
+tip (`descriptionExtraDwell`), because it is the card's own answer. A card with no tips never
+rotates.
+
 ## 5. Kicking an AI is lowering the player count
 
 There is no AI object to remove yet — the bots are spawned by
@@ -306,9 +318,9 @@ Authored data: `SO_ArcadeGame.Tips` (per-card play tips) and `SO_ArcadeGame.Prev
   code it sits on, not observed.
 - **Ready lights are a count** (§5.1). Per-seat identity needs the sync manager to replicate the
   ready set.
-- **`SO_ArcadeGame.Tips` is empty on every card.** The briefing degrades to the description
-  alone — the tip line switches off rather than showing an empty `Tip:` prefix — so the panel is
-  correct but says less than it could until tips are written.
+- **`SO_ArcadeGame.Tips` is empty on every card.** The briefing then shows the description and
+  never rotates — the correct resting state, not a degraded one — so the panel is right but says
+  less than it could until tips are written.
 - **One glyph set serves both pad families**, inherited from the ability lockup: a PlayStation
   player sees Xbox `A`/`B` on the Sparrow's rows — and now reads them in the sentence too
   ("Press RT to…"), since `ControlDisplayName` uses the same one-family vocabulary. Closing it is
