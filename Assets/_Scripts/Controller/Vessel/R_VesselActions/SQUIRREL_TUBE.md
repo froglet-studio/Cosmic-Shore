@@ -141,6 +141,30 @@ The icon's `RectTransform` carries a legacy 90° Z rotation. It is a **no-op** f
 turn maps prism *i* onto prism *i+2*, whose square orientation is identical, so the cross-section is
 exactly invariant under it. Left as-is deliberately — nothing in the row moves.
 
+### The trap: the vessel prefab was overriding this icon
+
+`SquirrelHUDVariant.prefab` was **not** the last word on the Time icon. `Squirrel.prefab`'s nested
+HUD instance carried a prefab-instance override —
+
+```
+- target: {fileID: 8778855275387912087, guid: <SquirrelHUDVariant>}
+  propertyPath: m_Sprite
+  objectReference: {guid: <GyroIcon-PLACEHOLDER>}
+```
+
+— and **an instance override always beats the prefab asset**, so the variant's sprite had been dead
+for as long as that override existed: the HUD drew `GyroIcon-PLACEHOLDER` no matter what the variant
+said. It was the *only* `m_Sprite` override on the instance — the other three ability icons resolve
+from the variant — which is the tell that it was a stray edit made on the vessel instance rather than
+a deliberate per-vessel pattern.
+
+It is **deleted** rather than repointed, so the variant is the single source of truth for all four
+icons. General rule, and the reason this cost a round trip: **a HUD prefab asset does not tell you
+what a vessel WIRES** (CLAUDE.md ▸ *Shared prefabs are single sources of truth*). When a HUD change
+does not show up in play, dump the vessel prefab's `m_Modifications` for the component's fileID
+**before** re-checking the HUD — and dump it as raw lines: the entry wraps `target:` across two
+lines, so a naive one-line regex silently reports zero overrides.
+
 ## Files
 
 | Role | File |
