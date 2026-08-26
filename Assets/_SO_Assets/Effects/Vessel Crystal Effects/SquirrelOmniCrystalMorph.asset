@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 98e51275682c49e79c742e5ae808d250, type: 3}
   m_Name: SquirrelOmniCrystalMorph
   m_EditorClassIdentifier: 
-  duration: 0.45
+  duration: 9
   stagger: 0.35
   handoffFraction: 0.72
   fillerPhase: 0

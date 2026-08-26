@@ -169,8 +169,18 @@ injected, the gate was confirmed to fire, the file restored) — a gate that has
 indistinguishable from one that cannot fail.
 
 **Not verified: how it looks.** Nothing here has been seen in the editor. Timings
-(`duration 0.45`, `stagger 0.35`, `handoffFraction 0.72`, panel phases 0.55–1.0) are authored on
+(`stagger 0.35`, `handoffFraction 0.72`, panel phases 0.55–1.0) are authored on
 `SquirrelOmniCrystalMorph.asset` and are a starting point for a playtest, not a tuned result.
+
+> ⚠ **`duration` is currently `9` — a 20× INSPECTION value, not a shipping one.** The intended
+> figure is `0.45`, the platform's crystal-capture beat (`CrystalCaptureConfigSO`), so a pickup
+> reads the same length whichever vessel took it. Every other timing is a FRACTION of `duration`,
+> so this one field slows the whole animation and nothing else needs touching. Two things to
+> expect while it is slow, both of which are the design running at 1/20 speed rather than faults:
+> the ring is **solid and skimmable but invisible** for `handoffFraction × duration` = 6.5 s, so
+> flying through it gives boost off prisms you cannot see; and the last panels land at 9.0 s while
+> the real ring appeared at 6.5 s, so for 2.5 s you watch the tail of the flight cross-dissolve
+> over a ring that is already there (0.13 s at the shipping duration).
 
 ---
 
