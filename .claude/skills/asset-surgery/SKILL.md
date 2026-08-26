@@ -515,6 +515,8 @@ can do two things the asset cannot show you:
 - **Add GameObjects the asset has never heard of** — they live in the INSTANCING file, parented to
   a *stripped* transform whose `m_CorrespondingSourceObject` points back at the asset.
 - **Populate serialized fields the asset leaves empty**, as `m_Modifications` entries.
+- **Override serialized fields the asset DOES author** — the same `m_Modifications` mechanism, but
+  this one is worse, because the asset shows a plausible value that is simply never used.
 
 So a component that looks unwired in the asset can be fully wired in every real use of it. This
 shipped a wrong claim twice on one branch: a HUD asset whose view wired one field was documented
@@ -528,6 +530,33 @@ branches and populated six live readout fields. Resolve an instance's added chil
 src = re.search(r'm_CorrespondingSourceObject: \{fileID: (\d+), guid: (\w+)', stripped_body)
 # then look up src.group(1) in the ASSET to get the real parent's name
 ```
+
+**The override direction has its own tell: the edit you make has NO effect and NOTHING errors.**
+A vessel prefab overrode `m_Sprite` on one HUD icon; editing that sprite in the HUD variant changed
+nothing on screen, and there is no warning anywhere because both values are valid. Two habits close
+it: when an asset edit does not show up in play, dump the INSTANCING file's `m_Modifications`
+filtered to the component's fileID *before* re-examining the asset — and note that a lone override
+among otherwise-unoverridden siblings (one of four icons) is the signature of a stray edit made on
+the instance, so **delete it** rather than repointing it, or you keep two authorities for one value.
+
+**Parse `m_Modifications` as RAW LINES, never with a one-line regex.** The entry wraps:
+
+```yaml
+    - target: {fileID: 8778855275387912087, guid: c1572db06ad4244469ad3f25d86940b8,
+        type: 3}
+      propertyPath: m_Sprite
+      value: 
+      objectReference: {fileID: 21300000, guid: 0cc6e2a2018ce2d43a02078b739adf9b,
+        type: 3}
+```
+
+`- target: {...}` and `objectReference: {...}` each break across two lines, so
+`r'- target: \{fileID: (\d+), guid: (\w+), type: \d\}\s*\n\s*propertyPath: ...'` matches **zero**
+entries and a 166-override instance reads as clean. Walk the lines instead — index every
+`propertyPath:` line, then scan backwards to the nearest `- target:` and forwards for the value and
+`objectReference` — and sanity-check the parse by asserting your count equals
+`body.count('propertyPath:')` before you trust a negative result. *A zero-match result from a
+hand-written Unity-YAML regex is a claim about your regex, not about the file.*
 
 Same family as the `m_Name`-override trap below and the "field initializer is not the shipped
 value" rule: **an assertion about what an asset contains has to be read from whoever USES it.**
