@@ -446,6 +446,86 @@ a `view: {fileID: 257326519381942953}` pointing at nothing since before this ses
 a checker run only on your output reports that as damage you caused. The signal you want is
 "document count fell by exactly the N I removed, and the dangling set is **unchanged**".
 
+### Technique: ADDING a nested prefab instance (and referencing a component inside it)
+
+The read side of nested instances is covered above (§3's two-ways rule, §4.9). Writing one is
+**three documents plus one list edit**, and the third is the one nobody expects:
+
+1. `--- !u!1001 &<newId>` **`PrefabInstance`** — `m_Modification.m_TransformParent` pointing at
+   the host Transform that will own it, an `m_Modifications` list (each entry a `target:
+   {fileID: <SOURCE object id>, guid: <source prefab guid>, type: 3}` + `propertyPath` + `value`
+   + `objectReference`), the four empty `m_Removed*`/`m_Added*` lists, and
+   `m_SourcePrefab: {fileID: 100100000, guid: <source prefab guid>, type: 3}`.
+   Always author `m_Name` plus the full local TRS (`m_LocalPosition.x/y/z`,
+   `m_LocalRotation.x/y/z/w`, `m_LocalEulerAnglesHint.x/y/z`) — Unity writes all of them and a
+   partial set reads as an instance that only half-overrides its pose.
+2. `--- !u!4 &<newId2> stripped` **Transform** stub —
+   `m_CorrespondingSourceObject: {fileID: <source transform id>, guid: <G>, type: 3}` +
+   `m_PrefabInstance: {fileID: <newId>}` + `m_PrefabAsset: {fileID: 0}`.
+3. **One `stripped` stub PER COMPONENT you need to reference.** This is the step that is easy to
+   miss, because nothing fails until a serialized field silently reads `None`. A
+   `[SerializeField] TrailRenderer tail;` on the HOST cannot point into the nested instance
+   without a `--- !u!96 &<newId3> stripped` / `TrailRenderer:` document of exactly the same
+   shape as (2). The class id must match the component (`!u!4` Transform, `!u!96` TrailRenderer,
+   `!u!114` MonoBehaviour, `!u!137` SkinnedMeshRenderer, …).
+4. The host Transform's `m_Children:` gains an entry for (2) — see §3's two-ways rule.
+
+Mint the new fileIDs **deterministically and collision-checked** against the ids already in the
+file (hash a stable key, reject on collision, re-salt) so re-running your script is idempotent and
+a second nested instance in the same file cannot land on the first one's id.
+
+Prefer this over hand-authoring a copy of the source prefab's contents: a copy severs
+propagation, which is the mistake `Docs/GAMECANVAS.md` exists to record.
+
+### Technique: deleting objects from a SHARED prefab — prove it project-wide first
+
+Stripping dead objects out of a prefab that a dozen other prefabs instance is safe **iff no
+instance anywhere references one of the objects you are removing** — an instance can carry a
+`m_Modifications` entry, an `m_RemovedComponents`/`m_RemovedGameObjects` entry, or a plain
+serialized reference targeting any source object by id.
+
+The query is not a name grep. Sweep every `.prefab`/`.unity` for references INTO the source
+prefab by guid and check each target id against the set you are keeping:
+
+```python
+# NOTE the \s*\n?\s* — Unity wraps the guid onto the NEXT line at ~80 columns, so a
+# single-line grep for 'fileID: N, guid: G' misses roughly half the real references.
+re.finditer(r'fileID: (-?\d+),\s*\n?\s*guid: ' + SOURCE_GUID, text)
+```
+
+A clean result is stronger than "I grepped the names": it enumerates every object the project
+actually depends on, so the survivors are proven rather than assumed. On the run this was written
+for, 13 files referenced exactly FOUR of the source prefab's 28 objects (plus the
+`100100000` prefab-asset id, which is not an object) — the other 24 were provably unused and
+went.
+
+**And re-open the "it costs nothing" claim.** Dead-but-inactive objects in a shared prefab are
+genuinely free while their only consumers are a handful of scene-level instances, and that is
+usually how the "leave them, deleting is a separate change" note got written. Adding a **POOLED**
+consumer voids it: `VesselTail.prefab`'s six disabled `ParticleSystem`s were free across 12
+vessels and would have been ~480 live components across a 20-deep projectile pool per Sparrow.
+A cost claim about an asset is scoped to its current consumers; pooling a new one re-opens it.
+
+### Trap: a `TrailRenderer` on a POOLED object draws a streak across the arena
+
+Two failures that do not exist on a scene-level object and both look like a rendering bug:
+
+- **Reuse.** A `TrailRenderer` records points in WORLD space, so a pooled object reissued
+  somewhere else draws one straight ribbon from wherever it died to wherever it respawned.
+  `Clear()` at the point the object is positioned for its new life — not in `OnEnable`, which
+  can run before the spawner has placed it.
+- **Retirement.** Returning the object to the pool deactivates it and the whole live ribbon
+  vanishes in one frame. A `TrailRenderer`'s points age out on their own, so the fix is not an
+  animation: detach it to world space, set `emitting = false`, and reclaim it either when its
+  own `time` elapses or on the next launch, whichever comes first — a pool cycles faster than a
+  multi-second ribbon, so both paths are real.
+
+Third, cheaper trap: **`TrailRenderer` IS a `Renderer`**, so any `GetComponentsInChildren<Renderer>()`
+used as a semantic test ("does this transform draw a model?") silently changes answer the day
+somebody adds a trail. Exclude it explicitly, the same way such sweeps already exclude a
+shell/overlay child.
+
+
 ## 4. Technique: C# verification — get a real compiler first
 
 **Reach for ROSLYN, not `mcs`.** `mcs` is a C# 7.x compiler and this codebase is
