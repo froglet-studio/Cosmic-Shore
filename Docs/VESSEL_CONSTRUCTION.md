@@ -393,7 +393,22 @@ call site, because the wings' roll term is `(roll ± pitch)` and flipping the wh
 invert the pitch DIFFERENTIAL — the aileron read — along with it. Only visible once the axes were
 right: while every part turned about its own bone, there was no consistent roll to be wrong about.
 
-*And the drift had lost half its purpose.* A drifting Dolphin swings its hull to aim while it keeps
+*A DRIFT SPLITS THE SHIP IN TWO — and getting that backwards cost a flight.* The fuselage and jaws
+turn to **aim** wherever the pilot points, while the wings and engines stay lined up with **Course**,
+the direction the ship is actually travelling, so the hull reads as slewing across its own path. The
+appendages are the instrument that tells everyone which way the Dolphin is really going. Read
+"the wings move forward and the jets backward so the fuselage and jaws can aim without clipping" as
+*only* a clearance statement and you delete the signalling — which is what happened here: the
+re-parenting onto a Course-aligned handle looked like dead machinery and was removed, when it was
+the feature. It is now expressed as a **frame** rather than a re-parent
+(`RotatePartFromRestInFrame` carries the part's vessel-relative rest pose onto whatever frame it is
+handed), so nothing moves in the hierarchy and a rig's bone rest poses survive it.
+
+> **Machinery that looks inert may be the feature, seen through a bug.** The re-parenting did
+> nothing observable only because the frames were already wrong; "it has no effect, delete it" was
+> a conclusion drawn from a broken build.
+
+*And the drift had also lost half its purpose.* A drifting Dolphin swings its hull to aim while it keeps
 sliding, so **the wings slide forward and the engines slide back** to open a gap the fuselage and
 jaws can turn through without clipping. The engines' "backward" and "default" offsets were the
 **same vector**, so they never moved — the hull shipped with half its clearance missing, and

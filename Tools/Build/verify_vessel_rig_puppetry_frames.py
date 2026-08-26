@@ -119,7 +119,30 @@ def main():
         print("   %-12s difference %.9f deg%s" % (name, d, "" if same else "  (expected: its parent is a bone)"))
 
     print()
-    print("4. ROLL sign: a positive roll input must bank the ship RIGHT")
+    print("4. a COURSE-aligned frame must carry the part onto Course, not onto the hull")
+    # A drifting Dolphin aims its fuselage away from its direction of travel; the wings and
+    # engines are handed a frame aimed along Course so they keep signalling where the ship is
+    # really going. With no pilot input, a part in that frame must sit exactly on Course.
+    hull  = euler(0, 40, 0)      # nose slewed 40 deg off the direction of travel
+    course = euler(0, 0, 0)      # Course = world forward
+    still = euler(0, 0, 0)
+    for name in ("wing.l", "jetT.l"):
+        bone = euler(*BONES[name])
+        rest_world = qmul(hull, bone)                    # where the part rests on the slewed hull
+        rest_in_vessel = qmul(qinv(hull), rest_world)    # ... expressed in the hull's own frame
+        on_course = qmul(course, qmul(still, rest_in_vessel))
+        on_hull   = qmul(hull,   qmul(still, rest_in_vessel))
+        # the part must differ from the hull-framed pose by exactly the hull's slew
+        slew = angle_between(on_course, on_hull)
+        ok = abs(slew - 40.0) < 1e-6
+        if not ok:
+            failures.append("%s does not follow Course (%.2f deg of 40)" % (name, slew))
+        print("   %-8s course-framed pose sits %6.2f deg off the hull-framed one%s"
+              % (name, slew, "" if ok else "   <-- FAIL"))
+    print("   (40.00 = the hull's slew: the appendages stay on Course while the fuselage aims)")
+
+    print()
+    print("5. ROLL sign: a positive roll input must bank the ship RIGHT")
     # Unity: +Z rotation is counter-clockwise seen from IN FRONT (looking down -Z at the nose),
     # so a right-hand bank - the right wing dropping - is NEGATIVE z. The animation negates the
     # incoming YDiff for exactly this reason; check the sign that reaches the wings.
@@ -141,7 +164,7 @@ def main():
           % rotate(euler(0, 0, roll_in * 10), (1.0, 0.0, 0.0))[1])
 
     print()
-    print("5. a DRIFT must move parts without re-aiming them")
+    print("6. a DRIFT must also open the clearance gap")
     # wings forward, engines back, both along the ship's +z, rotation unchanged by the drift.
     wing_fwd, jet_back = 2.3, 2.3
     print("   wings  offset +%.1f z (forward)   engines offset %.1f z (backward)"

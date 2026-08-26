@@ -194,8 +194,14 @@ namespace CosmicShore.Gameplay
             Quaternion turn = Quaternion.Euler(pitch, yaw, roll);
             Quaternion frameRot = frame ? frame.rotation : transform.rotation;
 
-            // Turn about the FRAME's axes, applied to where the part rests in the world.
-            Quaternion targetWorld = frameRot * turn * Quaternion.Inverse(frameRot) * restWorld;
+            // The rest pose expressed in the VESSEL's frame, then CARRIED ONTO the reference
+            // frame. That second step is what lets a part signal something other than where the
+            // hull is pointing: hand it a frame aimed along Course and the part sits along
+            // Course, holding its own shape, while the hull turns away underneath it. Hand it the
+            // vessel - the default - and the two frames are the same, so this reduces exactly to
+            // "turn about the ship's axes, from where the part rests".
+            Quaternion restInVessel = Quaternion.Inverse(transform.rotation) * restWorld;
+            Quaternion targetWorld = frameRot * turn * restInVessel;
 
             Quaternion targetLocal = part.parent
                 ? Quaternion.Inverse(part.parent.rotation) * targetWorld

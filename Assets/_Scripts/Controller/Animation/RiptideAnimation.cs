@@ -1,5 +1,6 @@
 using CosmicShore.Gameplay;
 using System.Collections.Generic;
+using CosmicShore.Utility;
 using UnityEngine;
 namespace CosmicShore.Gameplay
 {
@@ -204,16 +205,28 @@ namespace CosmicShore.Gameplay
                         pitch * animationScaler,
                         yaw * animationScaler,
                         roll * animationScaler,
-                        Vector3.zero);
+                        Vector3.zero,
+                        transform);
 
-            // A drift MOVES these parts; it does not re-aim them. They used to be re-parented onto
-            // a handle pointed along Course, which made them swing with the aim - engines chasing
-            // the nose instead of clearing it, and wings doing something stranger still, since a
-            // rest pose captured under a bone means nothing under that handle. The frame is always
-            // the vessel: pitch is pitch whatever the ship is doing, and the drift shows up as the
-            // gap opening instead.
+            // A DRIFT SPLITS THE SHIP IN TWO, and this is the whole point of the manoeuvre's look:
+            // the fuselage and jaws turn to AIM wherever the pilot is pointing, while the wings and
+            // engines stay lined up with COURSE - the direction the ship is actually travelling -
+            // so the hull reads as slewing across its own path. The appendages are the instrument
+            // that tells everyone which way the Dolphin is really going. They also slide apart
+            // (wings forward, engines back) to open a gap the aiming fuselage can turn through
+            // without clipping them.
+            //
+            // So they are puppeteered in the DRIFT HANDLE's frame, which is aimed along Course,
+            // and the chassis and jaws stay in the vessel's. No re-parenting is involved: the frame
+            // carries the part's rest pose (VesselAnimation.RotatePartFromRestInFrame), which does
+            // the same job without moving anything in the hierarchy.
+            Transform courseFrame = transform;
             if (VesselStatus.IsDrifting)
             {
+                SafeLookRotation.TrySet(DriftHandle, VesselStatus.Course, transform.up,
+                                        DriftHandle ? DriftHandle.gameObject : gameObject,
+                                        logError: false);
+                if (DriftHandle) courseFrame = DriftHandle;
                 wingOffset = ForwardWingOffset;
                 thrusterOffset = BackwardThrusterOffset;
             }
@@ -227,13 +240,15 @@ namespace CosmicShore.Gameplay
                         Brake(throttle) * animationScaler,
                         (yaw + throttle) * exaggeratedAnimationScaler,
                         (roll + pitch) * animationScaler,
-                        wingOffset);
+                        wingOffset,
+                        courseFrame);
 
             AnimatePart(LeftWing,
                         Brake(throttle) * animationScaler,
                         (yaw - throttle) * exaggeratedAnimationScaler,
                         (roll - pitch) * animationScaler,
-                        wingOffset);
+                        wingOffset,
+                        courseFrame);
 
             var pitchScalar = pitch * exaggeratedAnimationScaler;
             var yawScalar = yaw * exaggeratedAnimationScaler;
@@ -247,7 +262,7 @@ namespace CosmicShore.Gameplay
             // Dolphin's authored 26-169 degree engine cases and fatal on a rig.
             for (int partIndex = 0; partIndex < animationTransforms.Count; partIndex++)
             {
-                AnimatePart(animationTransforms[partIndex], pitchScalar, yawScalar, rollScalar, thrusterOffset);
+                AnimatePart(animationTransforms[partIndex], pitchScalar, yawScalar, rollScalar, thrusterOffset, courseFrame);
             }
 
         }
@@ -268,15 +283,16 @@ namespace CosmicShore.Gameplay
         // (no children, nothing reads it) in case a course-aligned frame is wanted again; git
         // carries the removed methods.
 
-        // Every part is puppeteered in the VESSEL's frame - never its own parent, which on this
-        // rig is a bone whose axes are nothing like the ship's. That is what made pitch read as
-        // roll and inverted it. One frame for the whole hull is also what makes a drift read as
-        // parts sliding out of the way rather than swinging around.
-        void AnimatePart(Transform part, float pitch, float yaw, float roll, Vector3 offset)
+        // 'frame' is the space this part is puppeteered in - the vessel for anything that belongs
+        // to the hull, the Course-aligned drift handle for the parts that signal where the ship is
+        // really going. Never the part's OWN parent, which on this rig is a bone whose axes are
+        // nothing like the ship's; that is what made pitch read as roll and inverted it.
+        void AnimatePart(Transform part, float pitch, float yaw, float roll, Vector3 offset,
+                         Transform frame)
         {
             if (!part) return;
-            RotatePartFromRestInFrame(part, pitch, yaw, roll, transform);
-            MovePartFromRest(part, offset, transform);
+            RotatePartFromRestInFrame(part, pitch, yaw, roll, frame);
+            MovePartFromRest(part, offset, frame);
         }
 
         // The jaws open around their rest pose too - identity on the legacy nose halves, the rig's
