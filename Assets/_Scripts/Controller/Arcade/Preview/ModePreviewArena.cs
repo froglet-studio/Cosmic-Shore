@@ -75,7 +75,8 @@ namespace CosmicShore.Gameplay
         /// - normally the scene's own cell.
         /// </summary>
         public bool Stand(ModePreviewDefinitionSO definition, CellConfigDataSO config, Cell template,
-                          GameObject cellPrefab, Vector3 origin, Container container = null)
+                          GameObject cellPrefab, Vector3 origin, Container container = null,
+                          int intensity = 1)
         {
             if (IsStanding) return false;
 
@@ -145,6 +146,7 @@ namespace CosmicShore.Gameplay
             }
 
             SpawnStructure(definition);
+            SpawnTrackStructure(definition, intensity);
 
             CSDebug.Log($"[ModePreview] Arena standing for {definition.Mode} " +
                         $"({config.CellName}) at {origin}.");
@@ -171,6 +173,63 @@ namespace CosmicShore.Gameplay
             _structure = Object.Instantiate(definition.StructurePrefab, Origin, Quaternion.identity);
             _structure.name = $"ModePreviewStructure ({definition.Mode})";
             _structure.transform.SetParent(_root.transform, true);
+        }
+
+        // The mode's REAL track/structure, built for the flight phase, and its spawnable instance.
+        GameObject _trackStructure;
+        GameObject _trackSource;
+
+        /// <summary>
+        /// Build the mode's scene-built structure FOR REAL - the thing you actually fly through.
+        ///
+        /// <para>Scurry's torus and shells, Skim Race's track, are built by their scene's
+        /// <c>SegmentSpawner</c>, not by their cell - so a flight arena that stands only the cell
+        /// is open water: the spawn seat is correct and there is nothing recognisable near it.
+        /// The looking phase already MODELS these spawnables
+        /// (<c>ModePreviewDefinitionSO.TrackSpawnablesByIntensity</c>, baked from the scenes);
+        /// this builds the same asset the scene builds, at the same place the scene builds it
+        /// (the spawners sit at the scene origin = the cell centre).</para>
+        ///
+        /// <para><b>Spawn-then-parent in the same frame is the Cell's own environment idiom</b>
+        /// and is safe for STREAMED spawnables (prisms lay on later frames, after the container is
+        /// placed). A synchronous lay would register every prism's spatial-index pose at the
+        /// world origin and then move 120k - the stale-registration class SPATIAL_INDEX.md exists
+        /// to prevent - which is why the torus was opted into <c>layAcrossFrames</c> alongside
+        /// this change rather than moved after the fact.</para>
+        ///
+        /// <para>These prisms are INSTANTIATED, never pooled (<c>SpawnPrismTrail</c>), so the
+        /// teardown may destroy them - gradually, via the strike's retiring root.</para>
+        /// </summary>
+        void SpawnTrackStructure(ModePreviewDefinitionSO definition, int intensity)
+        {
+            var spawnable = definition ? definition.ResolveTrackSpawnable(intensity) : null;
+            if (!spawnable) return;
+
+            if (spawnable.GetComponentInChildren<Unity.Netcode.NetworkObject>(true))
+            {
+                CSDebug.LogError($"[ModePreview] Track spawnable '{spawnable.name}' carries a " +
+                                 "NetworkObject. A preview is strictly local - skipped.");
+                return;
+            }
+
+            // An INSTANCE, so the generator's cached state never mutates the project asset.
+            var source = Object.Instantiate(spawnable, _root.transform);
+            source.transform.localPosition = Vector3.zero;
+            source.transform.localRotation = Quaternion.identity;
+            _trackSource = source.gameObject;
+
+            var built = source.Spawn(Mathf.Max(1, intensity));
+            if (!built) return;
+
+            built.transform.SetParent(_root.transform, false);
+            built.transform.localPosition = Vector3.zero;
+            built.transform.localRotation = Quaternion.identity;
+            built.name = $"ModePreviewTrack ({definition.Mode})";
+            _trackStructure = built;
+
+            CSDebug.LogVerbose(CSLogChannel.ArcadeLaunch,
+                $"[ModePreview] Track structure '{spawnable.name}' built for flight " +
+                $"(intensity {intensity}).");
         }
 
         /// <summary>
@@ -200,6 +259,23 @@ namespace CosmicShore.Gameplay
                 _structure = null;
             }
 
+            if (_trackSource)
+            {
+                Object.Destroy(_trackSource);
+                _trackSource = null;
+            }
+
+            // The track's prisms ride the SAME gradual drain as the cell's world - destroying a
+            // few thousand of them in one frame is the freeze the retiring root exists to avoid.
+            // No retiring root (the cell never stood) means there is nothing big to drain and an
+            // immediate destroy is fine.
+            if (_trackStructure)
+            {
+                if (retiring) _trackStructure.transform.SetParent(retiring.transform, true);
+                else Object.Destroy(_trackStructure);
+                _trackStructure = null;
+            }
+
             return retiring;
         }
 
@@ -211,6 +287,12 @@ namespace CosmicShore.Gameplay
         public void FinishStrike()
         {
             StrikeModel();
+
+            // Normally handed to the retiring root by BeginStrike; on the abort path (an arena
+            // that never finished standing) they are still under _root and die with it - these
+            // just keep the fields honest.
+            _trackStructure = null;
+            _trackSource = null;
 
             if (_root)
             {

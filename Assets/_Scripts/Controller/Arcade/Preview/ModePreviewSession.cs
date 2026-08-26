@@ -389,7 +389,7 @@ namespace CosmicShore.Gameplay
                 var config = definition.ResolveCell(_intensity);
                 var prefab = cellPrefab ? cellPrefab : template.gameObject;
 
-                if (!_arena.Stand(definition, config, template, prefab, origin, _container))
+                if (!_arena.Stand(definition, config, template, prefab, origin, _container, _intensity))
                     throw new InvalidOperationException("the arena could not be stood up");
 
                 // The satellite builds without a veil (it is beside the menu, not instead of it),

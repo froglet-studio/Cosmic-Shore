@@ -374,13 +374,17 @@ yet (§7). Maelstrom (Tournament) stays excluded in code.
   cards stands/strikes an arena per selection (plus a networked hull swap for vessel-locked
   modes). This is the cost of "a game already playing in the window". If browsing thrash shows up
   in profiling, debounce the auto-start by a second or two.
-- **Controller-built structures (hoops, goals, tracks) don't exist in previews** —
-  `StructurePrefab` is the hook; nothing authors one yet. The real fix is extracting those arena
-  builders so mode and preview call the same code. This is now the *whole* remaining gap for the
-  eleven shell-only cards (§1.1.2): those arenas have no environment and no flora, so their
-  structure is the only thing left to draw. Note `CellMiniatureBuilder` samples a `SpawnableBase`
-  generator, and a `StructurePrefab` is an ordinary gameplay prefab — modelling one needs either
-  that extraction or a renderer-bounds sampler, not a call to the existing path.
+- **`SpawnableBase`-built arenas now exist in the FLIGHT phase too.** The tap-in arena builds the
+  mode's `TrackSpawnablesByIntensity` entry for real (`ModePreviewArena.SpawnTrackStructure`) — the
+  same asset the scene's `SegmentSpawner` builds, at the cell centre where the scenes build it — so
+  Scurry's torus/shells/helicoid and Skim Race's track are flyable, and the spawn seat visibly sits
+  next to the structure the way it does in the game. Spawn-then-parent-same-frame is the Cell's own
+  environment idiom, safe because these spawnables STREAM their prisms (the torus was opted into
+  `layAcrossFrames` with this change — a synchronous lay would register its spatial-index poses at
+  the world origin and then move 120k). The prisms are instantiated, never pooled, and ride the
+  strike's retiring-root drain. What still doesn't exist in previews: CONTROLLER-built structures
+  (Astro League's goals, Scarab's hoops) — `StructurePrefab` is the hook; nothing authors one yet,
+  and modelling one needs the arena-builder extraction or a renderer-bounds sampler.
 - **The planting model shows SEEDS, not the mature forest.** Rampage plants 59 and matures to 88
   (`MaxLivePopulation`); the card shows 59, which is what a match actually opens with. If the
   mature figure ever reads better, it is one field in `ModePreviewPlantingModel.ResolveCount`.
