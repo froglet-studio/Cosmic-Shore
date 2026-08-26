@@ -280,6 +280,22 @@ One ordering rule: `ClearStaleChipsFromAllStrips` removes **every** chip under a
 rebuilds the AI chips itself rather than leaving it to whichever call happened to run last.
 
 
+#### 5.2.1 Chip placement bugs, both structural
+
+- **Every AI chip landed under one domain** because placement read
+  `gameData.RequestedDomainCount` — written only at COMMIT, defaulting to 1 — so the active set
+  was `[Jade]` alone and "balanced" meant "all on Jade". Placement now reads the LIVE
+  `config.DomainCount`, and with every tile unlocked the default domain count is **3**, so both
+  the chips and the real match's backfill spread across the triad. Chips also rebuild only when
+  what they SAY changes (count / domain count / human placement) — reshuffling avatars on every
+  ready-count tick read as the roster changing when it had not.
+- **A player's second domain pick vanished their avatar** whenever the chip had been destroyed
+  (modal close, panel switch) while the NetDomain subscription survived — the move handler hit a
+  missing chip and silently returned. It now SELF-HEALS: the event that exposes a missing chip is
+  the one moment we know it is missing, so it respawns under the player's current tile. And since
+  each panel carries its own tile strips, a panel switch re-homes every chip onto the new panel's
+  strips instead of leaving them stranded under hidden ones.
+
 ### 5.3 The controls block: three marks per row, in two sections
 
 **An ability row is a GLYPH, an ICON and a NAME.** No sentence. "Press RT to activate Boost Ring"

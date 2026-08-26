@@ -166,7 +166,11 @@ namespace CosmicShore.UI
         const int MaxSupportedPlayers = 12;
         const int MaxSupportedDomains = 3;
         const int MinDomains = 1;
-        const int DefaultDomainCount = 1;
+        // Every domain tile is always pickable now, so the default MATCH spreads across all
+        // three - a default of 1 made GetBalancedDomain's active set [Jade] alone, which seated
+        // every backfilled AI on one team (and the preview chips honestly showed it). A card
+        // whose rules need fewer still clamps through ComputeMaxDomainCount.
+        const int DefaultDomainCount = 3;
 
         // Per-game minimum domain (team) count, from SO_ArcadeGame.MinDomainsAllowed.
         // Modes that need opposing teams (e.g. Joust) set it to 2 so the domain stepper
@@ -657,7 +661,8 @@ namespace CosmicShore.UI
                 return;
             }
 
-            if (_activePanel != chosen)
+            bool panelChanged = _activePanel != chosen;
+            if (panelChanged)
             {
                 UnwireActivePanel();
                 _activePanel = chosen;
@@ -665,6 +670,17 @@ namespace CosmicShore.UI
             }
 
             _activePanel.Show();
+
+            // Each panel carries its OWN domain tiles, and every chip is parented under a tile
+            // strip - so chips spawned while the other panel was active are stranded under
+            // strips nobody can see. Re-home them the moment the panel changes; harmless when
+            // no chips exist yet (SpawnChipsForAllPlayers despawns first and spawns from the
+            // live player list).
+            if (panelChanged && _playerChips.Count > 0)
+            {
+                SpawnChipsForAllPlayers();
+                RefreshTileVisibility();
+            }
         }
 
         void WireActivePanel()
@@ -1368,6 +1384,11 @@ namespace CosmicShore.UI
 
         readonly List<DomainAvatarChip> _aiChips = new();
 
+        // What the AI chips currently show, so a RefreshRoster that changes nothing does not
+        // destroy and re-roll them - chips that reshuffle their avatars on every refresh read
+        // as the roster changing when it has not. Cleared with the chips.
+        string _aiChipSignature;
+
         /// <summary>
         /// Show the AI the match will seat, as chips under the domain each will actually join.
         ///
@@ -1382,14 +1403,13 @@ namespace CosmicShore.UI
         /// </summary>
         void RefreshAIPreviewChips(int aiCount)
         {
-            foreach (var chip in _aiChips)
-                if (chip) Destroy(chip.gameObject);
-            _aiChips.Clear();
+            if (chipPrefab == null || gameData == null) return;
 
-            if (aiCount <= 0 || chipPrefab == null || gameData == null) return;
-
-            var activeDomains = ServerPlayerVesselInitializerWithAI
-                .BuildActiveDomains(gameData.RequestedDomainCount);
+            // The LIVE domain count off the config, never gameData.RequestedDomainCount - that
+            // is only written at commit, so reading it here placed every chip against a stale
+            // count (its default of 1 made the active set [Jade] alone: every AI under one tile).
+            int domainCount = config != null ? config.DomainCount : DefaultDomainCount;
+            var activeDomains = ServerPlayerVesselInitializerWithAI.BuildActiveDomains(domainCount);
             if (activeDomains == null || activeDomains.Count == 0) return;
 
             var humans = new List<Player>();
@@ -1397,8 +1417,26 @@ namespace CosmicShore.UI
                 if (ip is Player p && !p.NetIsAI.Value) humans.Add(p);
 
             var humanCounts = GameDataSO.BuildHumanCounts(humans, activeDomains);
-            var totalCounts = new Dictionary<Domains, int>(humanCounts);
 
+            // Rebuild only when what the chips SAY changes. A refresh that changes nothing must
+            // not destroy and re-roll them - reshuffling avatars on every ready-count tick reads
+            // as the roster changing when it has not.
+            var signature = new System.Text.StringBuilder();
+            signature.Append(aiCount).Append('/').Append(domainCount);
+            foreach (var d in activeDomains)
+                signature.Append('/').Append(d).Append(':')
+                         .Append(humanCounts.TryGetValue(d, out var hc) ? hc : 0);
+            string sig = signature.ToString();
+            if (sig == _aiChipSignature && _aiChips.Count == Mathf.Max(0, aiCount)) return;
+            _aiChipSignature = sig;
+
+            foreach (var chip in _aiChips)
+                if (chip) Destroy(chip.gameObject);
+            _aiChips.Clear();
+
+            if (aiCount <= 0) return;
+
+            var totalCounts = new Dictionary<Domains, int>(humanCounts);
             var dataService = PlayerDataService.Instance;
 
             for (int i = 0; i < aiCount; i++)
@@ -1417,7 +1455,20 @@ namespace CosmicShore.UI
 
         void HandlePlayerDomainChanged(Player p, Domains newDomain)
         {
-            if (!_playerChips.TryGetValue(p, out var chip) || chip == null) return;
+            if (!_playerChips.TryGetValue(p, out var chip) || chip == null)
+            {
+                // The chip is GONE - destroyed by a modal close, a panel switch, or a strip
+                // sweep - while the NetDomain subscription survived. Returning here is how a
+                // player's second domain pick "vanished" their avatar: the event that should
+                // move the chip is the one moment we know a chip is missing, so respawn it
+                // (SpawnChipForPlayer parents it under the player's current-domain tile).
+                _playerChips.Remove(p);
+                SpawnChipForPlayer(p,
+                    NetworkManager.Singleton ? NetworkManager.Singleton.LocalClientId : 0UL,
+                    PlayerDataService.Instance);
+                return;
+            }
+
             var tile = FindTileForDomain(newDomain) ?? FindTileForDomain(Domains.Jade);
             if (tile == null || tile.AvatarStripTransform == null) return;
             chip.transform.SetParent(tile.AvatarStripTransform, worldPositionStays: false);
@@ -1439,6 +1490,7 @@ namespace CosmicShore.UI
             foreach (var chip in _aiChips)
                 if (chip) Destroy(chip.gameObject);
             _aiChips.Clear();
+            _aiChipSignature = null;
 
             if (_watchingPlayerSpawnEvent && gameData != null
                 && gameData.OnPlayerNetworkSpawnedUlong != null)
