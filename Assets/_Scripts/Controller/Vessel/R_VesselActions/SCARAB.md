@@ -949,6 +949,60 @@ bails on frozen — a kickoff ball must ignore the ships stacked on it — and a
 purpose is to *be* struck. So `n_Embedded` skips physics integration like frozen while leaving
 contact live. Getting this wrong yields a ball nobody can hit, with no error anywhere.
 
+**AN EMBEDDED BALL IS A BALL STOPPED AT THAT POINT.** That sentence is the whole specification of
+the state, and it has exactly two consequences — one about what may *move* it, one about what may
+*write* it. Both were violated in the shipping build, and neither failure said a word.
+
+*Every force that reaches a resting ball reaches an embedded one, on the same terms.* The pin is
+implemented as `isKinematic`, so anything that answers a contact by writing `rb.linearVelocity`
+writes into a body that does not integrate, and the force simply evaporates. `ApplyBlastServer` did
+exactly that: **every AOE blast in the game passed straight through a seeded ball.** The most
+visible casualty was **the Scarab's own dash**, whose entire reach onto a ball it does not
+physically touch is its cavitation blast (`ScarabJukeController.OnJukeFired` →
+`ScarabCavitationBlast` → `ExplosionImpactor` → `ApplyBlastServer`) — so dashing at a seeded ball
+did nothing at all. The fix is structural rather than per-caller: `ReleaseFromNucleusServer` splits
+into **`UnpinFromNucleusServer`** (the ball becomes an ordinary body *at rest* where it was pinned)
+and **`AnnounceNucleusRelease`** (report which side of the embed normal it left on, once the final
+velocity is known). A force un-pins FIRST and then runs its normal free-body maths.
+
+That also retires a second impulse model nobody meant to author. The strike path used to
+short-circuit on `n_Embedded` into its own release — the striker's speed along the striker's
+heading, floored at `ballRestSpeed`, with no arcade pop, no off-centre torque and no strike RPC —
+so a seeded ball answered a hit *differently from every other ball in the cell*. It now falls
+through to the same elastic moving-paddle bounce as any resting ball, and the inward/outward
+routing is read off the velocity the strike actually produced instead of off a synthesised push.
+**Two models for one contact is one model too many.**
+
+*Nothing may write a pinned ball's position, because the pin writes it back.* `VesselContact`
+depenetrates the ball out of the hull on **every** contact frame (`EjectBallFromPoint`, ~one
+`vesselClearRadius` of push), while `ServerFixedUpdate` re-asserts `_embedAnchor` on every physics
+step. Against a free ball the push sticks and reads as the ball being shoved aside; against the pin
+the two alternate, and the ball visibly **jumps out of the nucleus surface and snaps back** for as
+long as a hull overlaps it — the positional jank that made an embedded ball read as anything but a
+stopped one. The depenetration is now *captured* (origin + clearance) and applied **after** the
+strike has un-pinned the ball; the anchor write is guarded on real drift, so in the steady state a
+pinned ball's transform is not written at all. General rule: **a pin that has to keep re-asserting
+itself is a pin something else is fighting** — find the other writer rather than raising the
+correction rate.
+
+*One place where "stopped" is deliberately NOT the answer, and it is the authored one.* An embedded
+ball resolves **no prism mass**: it is "scenery with a hitbox until somebody knocks it loose", and
+`ServerFixedUpdate` has always run `ProcessPrismInteractions` only on the free branch.
+`ClientFixedUpdate` did not know that and ran the scan for every non-frozen, non-hidden ball, so
+every peer but the host was popping shields and eating the prisms a seeded ball happened to be
+sitting in — and, for a ball authored `destroyedBySuperShielded`, stripping super-shielded structure
+the host never touched. The gate now lives inside `ProcessPrismInteractions` beside `n_Frozen` and
+`n_Hidden`, so there is one answer on every peer. Keeping the server's behaviour rather than the
+client's is deliberate: the server's was the *authored* one, and the alternative would have let a
+seeded ball detonate itself the instant a cell's structure came within its scan radius.
+
+**Announce the release LAST.** `OnNucleusReleasedServer` can **detonate this ball** — banking one
+too many overloads the nucleus, and the shipped `detonateAllLiveBalls` default takes every live ball
+with it — so nothing may touch the instance after the announcement. The old short-circuit got this
+right by accident (it returned immediately); a fall-through has to say it out loud, which is why
+both `VesselStrike` and `ApplyBlastServer` fire their strike RPC and their bookkeeping first and
+announce on the closing line.
+
 **The nucleus surface is ONE surface serving both sides, and riding it is a property of the
 BALL — not of any mode.** The court ball rides it from within (`Sphere` outer containment); the
 cytoplasm ball rides it from without (`AstroLeagueBoundary(coreObstacleRadius:)`, a central sphere

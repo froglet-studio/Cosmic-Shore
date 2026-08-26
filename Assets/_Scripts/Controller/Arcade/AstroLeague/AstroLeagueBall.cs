@@ -117,6 +117,11 @@ namespace CosmicShore.Gameplay
         Vector3 _embedOutward = Vector3.up;
         Vector3 _embedAnchor;
 
+        // Squared world distance an embedded ball may sit off its anchor before the pin corrects
+        // it. Sub-millimetre: this exists so the steady state writes NO transform at all (see
+        // ServerFixedUpdate), not to tolerate real displacement.
+        const float EmbedDriftEpsilonSqr = 1e-6f;
+
         // While Time.time is below this, ContainWithinBoundary is skipped — see
         // AstroLeagueSettingsSO.nucleusReleaseGraceSeconds. Server-side; containment is server-only.
         float _containmentGraceUntil;
@@ -668,9 +673,19 @@ namespace CosmicShore.Gameplay
 
             if (n_Embedded.Value)
             {
-                // Pinned: hold the anchor exactly. No integration, no containment, no drag — an
-                // embedded ball is scenery with a hitbox until somebody knocks it loose.
-                transform.position = _embedAnchor;
+                // Pinned: hold the anchor. No integration, no containment, no drag — an embedded
+                // ball is scenery with a hitbox until somebody knocks it loose.
+                //
+                // The write is GUARDED on real drift rather than unconditional, and that is the
+                // whole of the old positional jank: nothing should be able to displace a pinned
+                // ball, so in the steady state this now writes nothing at all. It used to re-assert
+                // the anchor every physics step against a vessel depenetration that ran on the
+                // contact frame (VesselContact), so a hull resting on a seeded ball made it jump
+                // ~one clearance radius clear and snap back, over and over — a ball stopped at the
+                // same point simply gets pushed and stays pushed. A pin that has to keep
+                // re-asserting itself is a pin something else is fighting.
+                if ((transform.position - _embedAnchor).sqrMagnitude > EmbedDriftEpsilonSqr)
+                    transform.position = _embedAnchor;
             }
             else if (!n_Frozen.Value)
             {
@@ -902,7 +917,14 @@ namespace CosmicShore.Gameplay
         void ProcessPrismInteractions()
         {
             var index = PrismSpatialIndex.Instance;
-            if (index == null || n_Frozen.Value || n_Hidden.Value)
+            // EMBEDDED joins frozen and hidden here, and it is a FIX rather than a new rule: the
+            // server already skipped the scan for a pinned ball (ServerFixedUpdate resolves prisms
+            // only on the free branch — "scenery with a hitbox until somebody knocks it loose"),
+            // while ClientFixedUpdate ran it for every non-frozen, non-hidden ball. So every peer
+            // but the host was popping shields and destroying the prisms an embedded ball happened
+            // to be sitting in, and — for a ball authored `destroyedBySuperShielded` — stripping
+            // super-shielded structure the host never touched. One gate, one answer, on every peer.
+            if (index == null || n_Frozen.Value || n_Hidden.Value || n_Embedded.Value)
             {
                 _shieldPoppedThisVisit.Clear();
                 _lastPrismScanPos = transform.position;
@@ -1308,9 +1330,11 @@ namespace CosmicShore.Gameplay
         /// <summary>
         /// Server: unified vessel↔ball contact (from both collider paths, Enter AND Stay), layered so
         /// the ball can NEVER clip a vessel and ALWAYS bounces off one:
-        ///   1. Anti-clip - ALWAYS depenetrate the ball out of the hull (EjectBallFromVessel only acts
-        ///      while overlapping), every contact frame. The hull can't pass through the ball even if
-        ///      the pilot keeps driving in, and even for trigger-only ships with no physics depenetration.
+        ///   1. Anti-clip - depenetrate the ball out of the hull (EjectBallFromPoint only acts while
+        ///      overlapping), every contact frame. The hull can't pass through the ball even if the
+        ///      pilot keeps driving in, and even for trigger-only ships with no physics depenetration.
+        ///      The ONE exception is an EMBEDDED ball, which is pinned: it is depenetrated after the
+        ///      strike that frees it, never against the pin (see the note on the eject itself).
         ///   2. Elastic bounce - on every frame the ball is moving INTO the vessel (approach &lt; 0), it
         ///      bounces off (momentum-conserving moving-paddle reflection) + re-colors + spins. This is
         ///      self-limiting (once it bounces away it stops approaching) and self-deduping (a second
@@ -1335,6 +1359,16 @@ namespace CosmicShore.Gameplay
             var blade = ResolveBlade(hitCollider);
             float bladeT = 0f;
             Vector3 strikerVelocity;
+
+            // Where the anti-clip depenetration pushes off, and with what clearance. CAPTURED
+            // rather than applied inline, because a PINNED ball must not be depenetrated: the
+            // server re-asserts its embed anchor every physics step, so an eject against the pin is
+            // undone on the next tick and the ball visibly jumps out of the nucleus surface and
+            // snaps back for as long as a hull overlaps it. It is applied after the strike instead,
+            // by which point the strike has un-pinned the ball and the push sticks — which is
+            // exactly the push a ball stopped at that point would have taken.
+            Vector3 ejectOrigin;
+            float ejectClear;
 
             // ── A plain SKIM FIELD never strikes the ball ──────────────────────────────────
             // The blade branch below already refuses the Rhino's skim SPHERE for this exact
@@ -1374,13 +1408,19 @@ namespace CosmicShore.Gameplay
 
                 bladeT = blade.NormalizedAlongBlade(ballCenter);
                 strikerVelocity = Vector3.ClampMagnitude(blade.VelocityAt(contactPoint), settings.maxSpeed);
-                EjectBallFromPoint(contactPoint, settings.bladeClearRadius);
+                ejectOrigin = contactPoint;
+                ejectClear = settings.bladeClearRadius;
             }
             else
             {
-                EjectBallFromVessel(root); // anti-clip every frame - independent of the bounce/strike gating
+                ejectOrigin = root.position;
+                ejectClear = settings.vesselClearRadius;
                 strikerVelocity = ResolveStrikerVelocity(vessel);
             }
+
+            bool embedded = n_Embedded.Value;
+            if (!embedded)
+                EjectBallFromPoint(ejectOrigin, ejectClear); // anti-clip every frame - independent of the bounce/strike gating
 
             // Only respond when the ball is actually moving INTO the vessel - avoids re-launching a ball
             // that has already bounced away (self-limiting) and double-bouncing on the second collider path.
@@ -1395,6 +1435,12 @@ namespace CosmicShore.Gameplay
 
             VesselStrike(vessel, contactPoint, strikerVelocity, strikerSpeed, n, deliberate,
                 blade != null, bladeT);
+
+            // The strike un-pinned it, so NOW the anti-clip push is meaningful and permanent. A
+            // release can also detonate the ball (a nucleus overload takes every live ball with
+            // it), so this only ever runs on a ball that is still here to be pushed.
+            if (embedded && this != null && !n_Embedded.Value)
+                EjectBallFromPoint(ejectOrigin, ejectClear);
         }
 
         /// <summary>The ball's world-space radius (collider radius × max lossy scale) - tracks intensity scaling.</summary>
@@ -1408,22 +1454,23 @@ namespace CosmicShore.Gameplay
         public float MaxSpeed => settings != null ? settings.maxSpeed : 220f;
 
         /// <summary>
-        /// Guarantees the ball never overlaps the striking vessel's hull: if the ball center is
-        /// closer than (ball radius + vesselClearRadius) to the vessel root, push it straight out
-        /// to that distance. With the ≥1x launch speed this keeps the ball ahead of the vessel,
-        /// so the vessel mesh can't clip through it - including the trigger-only ships that have
-        /// no physical depenetration barrier. Server position is republished immediately so peers
-        /// see the ejected position without waiting for the next tick.
-        /// </summary>
-        void EjectBallFromVessel(Transform vesselRoot) =>
-            EjectBallFromPoint(vesselRoot.position, settings.vesselClearRadius);
-
-        /// <summary>
-        /// The depenetration above, generalized to any contact origin. A BLADE hit passes the point
-        /// on the sword's centreline nearest the ball with the blade's own (much smaller) clearance:
-        /// pushing off the vessel ROOT cannot protect a 30-120 unit sword, because at a tip strike
-        /// the ball is already far outside the hull's clear radius and the check would no-op while
-        /// the blade sweeps straight through it.
+        /// Guarantees the ball never overlaps what struck it: if the ball centre is closer than
+        /// (ball radius + <paramref name="clearRadius"/>) to <paramref name="origin"/>, push it
+        /// straight out to that distance. With the ≥1x launch speed this keeps the ball ahead of
+        /// the vessel, so the vessel mesh can't clip through it - including the trigger-only ships
+        /// that have no physical depenetration barrier. Server position is republished immediately
+        /// so peers see the ejected position without waiting for the next tick.
+        ///
+        /// A HULL hit passes the vessel root with <c>vesselClearRadius</c>; a BLADE hit passes the
+        /// point on the sword's centreline nearest the ball with the blade's own (much smaller)
+        /// clearance, because pushing off the vessel ROOT cannot protect a 30-120 unit sword: at a
+        /// tip strike the ball is already far outside the hull's clear radius and the check would
+        /// no-op while the blade sweeps straight through it.
+        ///
+        /// NEVER call it on a ball that is still EMBEDDED. The server re-asserts a pinned ball's
+        /// anchor every physics step, so the push is undone on the next tick and the ball reads as
+        /// jumping out of the nucleus surface and snapping back for as long as a hull overlaps it.
+        /// <see cref="VesselContact"/> defers it until the strike has un-pinned the ball.
         /// </summary>
         void EjectBallFromPoint(Vector3 origin, float clearRadius)
         {
@@ -1469,21 +1516,23 @@ namespace CosmicShore.Gameplay
             RecordTouchServer(strikerDomain,
                 vessel.VesselStatus != null ? vessel.VesselStatus.PlayerName : string.Empty);
 
-            // EMBEDDED: this strike knocks the ball out of the nucleus surface rather than batting a
-            // ball already in flight, so it resolves here and returns — the impulse maths below assume
-            // a free body. The push is the striker's own velocity, so how hard you hit it is how fast
-            // it leaves, and WHICH SIDE of the embed normal you hit it from decides where it goes:
-            // outward into the cytoplasm, inward into the nucleus. The steal above already ran, so a
-            // dash can take an enemy's seeded ball and knock it loose in the same contact.
-            if (n_Embedded.Value)
-            {
-                float releaseSpeed = Mathf.Clamp(strikerSpeed, settings.ballRestSpeed, settings.maxSpeed);
-                Vector3 push = strikerVelocity.sqrMagnitude > 1e-4f
-                    ? strikerVelocity.normalized
-                    : -_embedOutward;                       // a dead-stop contact nudges it inward
-                ReleaseFromNucleusServer(push * releaseSpeed);
-                return;
-            }
+            // EMBEDDED: UN-PIN FIRST, then fall through to the ordinary strike below. An embedded
+            // ball is a ball stopped at that point in the nucleus surface, so a hit has to resolve
+            // through the same maths any resting ball's would — the elastic moving-paddle bounce,
+            // the arcade pop, the off-centre torque, the feedback beat.
+            //
+            // It used to short-circuit into a SECOND impulse model of its own (the striker's speed
+            // along the striker's heading, floored at ballRestSpeed, no pop, no spin, no strike
+            // RPC), which is precisely why a seeded ball answered a hit differently from every
+            // other ball in the cell. Two models for one contact is one model too many.
+            //
+            // WHICH SIDE of the embed normal it left on is then read off the velocity the strike
+            // actually produced (AnnounceNucleusRelease, at the very end) rather than off a
+            // synthesised push, so the cytoplasm/nucleus routing describes where the ball is really
+            // going. The steal above already ran, so a dash can take an enemy's seeded ball and
+            // knock it loose in the same contact.
+            bool wasEmbedded = n_Embedded.Value;
+            if (wasEmbedded) UnpinFromNucleusServer();
 
             Vector3 ballVel = rb.linearVelocity;
 
@@ -1526,26 +1575,33 @@ namespace CosmicShore.Gameplay
             // Prisms near the strike are handled by the per-tick ProcessPrismInteractions scan, which
             // already sees the freshly-set domain - no separate strike-time prism pass needed.
 
-            if (!deliberate) return;
-
-            if (finalSpeed > settings.hitstopSpeedThreshold && IsSoloSession())
-                RunHitstopAsync().Forget();
-
-            // THE feedback beat. Before this existed a vessel connecting with the ball produced
-            // nothing at all - no flash, no burst, no shake, no sound - which is the single largest
-            // reason the mode read as unresponsive: the only evidence you had hit the payload was
-            // that it changed direction. Broadcast so every peer sees the hit, and carry the
-            // striking vessel so the pilot who actually connected gets the emphasised shake.
-            if (settings.strikeFeedbackEnabled)
+            if (deliberate)
             {
-                var strikerNo = vessel.Transform != null
-                    ? vessel.Transform.GetComponentInParent<NetworkObject>()
-                    : null;
-                ulong strikerNetId = strikerNo != null ? strikerNo.NetworkObjectId : 0UL;
-                Strike_ClientRpc(contactPoint, n, intensity, strikerNetId, bladeHit && bladeT > 0.66f);
+                if (finalSpeed > settings.hitstopSpeedThreshold && IsSoloSession())
+                    RunHitstopAsync().Forget();
+
+                // THE feedback beat. Before this existed a vessel connecting with the ball produced
+                // nothing at all - no flash, no burst, no shake, no sound - which is the single largest
+                // reason the mode read as unresponsive: the only evidence you had hit the payload was
+                // that it changed direction. Broadcast so every peer sees the hit, and carry the
+                // striking vessel so the pilot who actually connected gets the emphasised shake.
+                if (settings.strikeFeedbackEnabled)
+                {
+                    var strikerNo = vessel.Transform != null
+                        ? vessel.Transform.GetComponentInParent<NetworkObject>()
+                        : null;
+                    ulong strikerNetId = strikerNo != null ? strikerNo.NetworkObjectId : 0UL;
+                    Strike_ClientRpc(contactPoint, n, intensity, strikerNetId, bladeHit && bladeT > 0.66f);
+                }
+
+                OnStruckServer?.Invoke(vessel, intensity); // controller recoils the vessel (it bounces off too)
             }
 
-            OnStruckServer?.Invoke(vessel, intensity); // controller recoils the vessel (it bounces off too)
+            // LAST, and the ordering is load-bearing: announcing a release can DETONATE this ball
+            // (banking one too many overloads the nucleus, and the shipped default takes every live
+            // ball with it), so nothing may touch this instance afterwards. The old short-circuit
+            // got this right by returning immediately; a fall-through has to say it.
+            if (wasEmbedded) AnnounceNucleusRelease(rb.linearVelocity);
         }
 
         /// <summary>
@@ -1604,6 +1660,18 @@ namespace CosmicShore.Gameplay
             Vector3 kick = impactVector * settings.explosionKickMultiplier;
             if (kick.sqrMagnitude < 1e-6f) return;
 
+            // EMBEDDED: un-pin first, exactly as a vessel strike does — then the maths below is the
+            // maths a ball stopped at that point would get.
+            //
+            // THIS IS WHY THE SCARAB'S DASH DID NOTHING TO A SEEDED BALL. A pinned ball is
+            // KINEMATIC, so every line below wrote velocity into a body that does not integrate and
+            // the blast passed straight through it. The dash's whole reach onto a ball it does not
+            // physically touch is its cavitation blast (ScarabJukeController.OnJukeFired →
+            // ScarabCavitationBlast → ExplosionImpactor → here), so dashing at an embedded ball was
+            // a no-op with nothing reporting it. Every other blast in the game had the same hole.
+            bool wasEmbedded = n_Embedded.Value;
+            if (wasEmbedded) UnpinFromNucleusServer();
+
             Vector3 desired = rb.linearVelocity + kick;
             if (desired.sqrMagnitude > settings.maxSpeed * settings.maxSpeed)
                 desired = desired.normalized * settings.maxSpeed;
@@ -1651,6 +1719,9 @@ namespace CosmicShore.Gameplay
                 Strike_ClientRpc(transform.position - normal * BallWorldRadius(), normal,
                                  intensity, 0UL, tipHit: false);
             }
+
+            // LAST: announcing a release can detonate this ball (see VesselStrike's note).
+            if (wasEmbedded) AnnounceNucleusRelease(rb.linearVelocity);
         }
 
         /// <summary>
@@ -2090,17 +2161,7 @@ namespace CosmicShore.Gameplay
         /// </summary>
         public bool ReleaseFromNucleusServer(Vector3 velocity)
         {
-            if (!IsServer || !n_Embedded.Value) return false;
-
-            bool inward = Vector3.Dot(velocity, _embedOutward) < 0f;
-
-            n_Embedded.Value = false;
-            ApplyEmbeddedPhysics(false);
-
-            // Let the strike itself carry the ball out of the shell before the walls start
-            // correcting it, so leaving the nucleus reads as a hit in either direction.
-            _containmentGraceUntil = Time.time
-                + (settings != null ? Mathf.Max(0f, settings.nucleusReleaseGraceSeconds) : 1f);
+            if (!UnpinFromNucleusServer()) return false;
 
             rb.linearVelocity = velocity;
             rb.angularVelocity = Vector3.zero;
@@ -2109,8 +2170,58 @@ namespace CosmicShore.Gameplay
                 n_Velocity.Value = velocity;
                 n_AngularVelocity.Value = Vector3.zero;
             }
-            _lastPrismScanPos = transform.position;
 
+            return AnnounceNucleusRelease(velocity);
+        }
+
+        /// <summary>
+        /// Server: the first half of a release — the ball stops being pinned and becomes an ORDINARY
+        /// BALL AT REST at the point it was embedded, carrying no launch of its own.
+        ///
+        /// It is split out of <see cref="ReleaseFromNucleusServer"/> because of the rule this whole
+        /// state answers to: AN EMBEDDED BALL IS A BALL STOPPED AT THAT LOCATION. A force that
+        /// reaches a resting ball must therefore reach an embedded one on the SAME terms — so the
+        /// strike path and the blast path un-pin first and then run their normal free-body maths,
+        /// rather than each carrying a second, weaker impulse model for the pinned case. Whoever
+        /// un-pins owes the ball an <see cref="AnnounceNucleusRelease"/> once its final velocity is
+        /// known, and owes it LAST, because the announcement can detonate the ball.
+        ///
+        /// Returns false when there was nothing to un-pin.
+        /// </summary>
+        bool UnpinFromNucleusServer()
+        {
+            if (!IsServer || !n_Embedded.Value) return false;
+
+            n_Embedded.Value = false;
+            ApplyEmbeddedPhysics(false);
+
+            // A kinematic body KEEPS its velocity fields, so "at rest" has to be said out loud —
+            // the strike and blast maths both read rb.linearVelocity as the ball's incoming
+            // velocity, and a stale value there would be a launch nobody asked for.
+            rb.linearVelocity = Vector3.zero;
+            rb.angularVelocity = Vector3.zero;
+
+            // Let the force itself carry the ball out of the shell before the walls start
+            // correcting it, so leaving the nucleus reads as a hit in either direction.
+            _containmentGraceUntil = Time.time
+                + (settings != null ? Mathf.Max(0f, settings.nucleusReleaseGraceSeconds) : 1f);
+
+            _lastPrismScanPos = transform.position;
+            return true;
+        }
+
+        /// <summary>
+        /// Server: the second half of a release — report which side of its own embed normal the ball
+        /// actually left on, once the force that freed it has written the ball's final velocity.
+        /// Returns true for INWARD (into the nucleus). See <see cref="OnNucleusReleasedServer"/>.
+        ///
+        /// CALL IT LAST. A subscriber may detonate this ball outright — banking one too many
+        /// overloads the nucleus, and the shipped default takes every live ball with it — so this
+        /// instance may not survive the invoke.
+        /// </summary>
+        bool AnnounceNucleusRelease(Vector3 velocity)
+        {
+            bool inward = Vector3.Dot(velocity, _embedOutward) < 0f;
             OnNucleusReleasedServer?.Invoke(this, inward);
             return inward;
         }
@@ -2126,6 +2237,12 @@ namespace CosmicShore.Gameplay
             {
                 rb.collisionDetectionMode = CollisionDetectionMode.ContinuousSpeculative;
                 rb.isKinematic = true;
+                // Say "at rest" out loud: a kinematic body KEEPS its velocity fields, and the
+                // contact gate in VesselContact reads rb.linearVelocity to decide whether the ball
+                // is moving into the striker. A stale value there makes a pinned ball answer a
+                // contact as though it were still travelling.
+                rb.linearVelocity = Vector3.zero;
+                rb.angularVelocity = Vector3.zero;
                 transform.position = _embedAnchor;
             }
             else if (!n_Frozen.Value)

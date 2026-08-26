@@ -230,7 +230,7 @@ namespace CosmicShore.Gameplay
         [Header("Vessel Recoil (juice)")]
         [Tooltip("Backward velocity (units/sec) added to a vessel when it strikes the ball, a subtle " +
                  "'bounce off' juice. DEFAULT 0 (OFF): anti-clip is already guaranteed by the ball's own " +
-                 "depenetration (EjectBallFromVessel), so any recoil only fights player control - a " +
+                 "depenetration (EjectBallFromPoint), so any recoil only fights player control - a " +
                  "frictionless ball that keeps bouncing back into a vessel re-fires it every cooldown, " +
                  "stacking toward VesselTransformer.velocityModifierMax (100) and throwing the vessel " +
                  "back 'like crazy'. Dial up only for a deliberate subtle bounce; scaled by hit strength.")]
