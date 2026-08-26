@@ -55,8 +55,8 @@ per card somebody browsed past is the trade this path exists to refuse.
 
 **The real cell is built on the tap** — the only moment anybody has asked for it.
 
-A config with no authored `EnvironmentPrefab` (a grown world, a barren cell) has no structure to
-model and says so, rather than showing an empty frame.
+A config with no authored `EnvironmentPrefab` has no structure to *sample* — see §1.1.1 and
+§1.1.2 for what those cells show instead.
 
 ### 1.1.1 A cell with no authored environment still has a SHAPE
 
@@ -72,6 +72,57 @@ against one that does not exist.
 
 (This is not the "never hand-place a membrane" rule being broken — that rule protects a live
 `Cell`'s own tracked instance from being shadowed by a scene copy. There is no `Cell` here.)
+
+### 1.1.2 A GROWN world shows its PLANTING
+
+Only **three** of the seventeen preview cells author an `EnvironmentPrefab` — the Boneyard, the
+Ribcage and the Wildlife cages. The other fourteen have no generator at all: their arenas are
+**planted by the spawn profile once a match starts**, so at the instant a card is opened there is
+literally nothing built to sample. That is data, not a defect, and it is why "the environment does
+not show up" was true of almost every card while the model path was working perfectly.
+
+What *does* exist before anything grows is the **planting**: how many of each species, and which
+band of the cell each occupies. `ModePreviewPlantingModel` emits one marker per plant at a position
+drawn the same way the spawner draws it, and hands the result to the ordinary
+`CellMiniatureBuilder.BuildFromLays` — so it costs the same nothing as an authored model (no
+prisms, one mesh, a submesh per domain).
+
+Three things it gets right on purpose:
+
+- **The band is a CELL fact, not a species fact.** The prefab's own
+  `plantRadiusCellFraction`/`…Min` are only the species' default; a cell states its own layout with
+  `FloraConfigurationSO.PlantRadiusCellFractionMaxOverride`/`MinOverride`, applied at spawn through
+  `Flora.ApplyVariantTuning` and winning over both the prefab and the rolled element variant.
+  **Rampage's entire cactus belt lives there** (0.1–0.95, 0.1–0.8, 0.14–0.9, 0.4–0.96, 0.3–0.97
+  across its five species) — read the prefab alone and every species comes back at the default
+  shell, so the model would draw a belt the mode does not plant.
+- **The draw is volume-uniform** (`cbrt` between the cubed walls), matching
+  `CellLifeSpawnerBase.RandomBandRadius`. A uniform-in-radius draw puts 63% of a population inside
+  the innermost quarter-volume, so a model using one would show a band the cell does not plant.
+- **The RNG is borrowed, not spent.** `Random.state` is saved and restored around the build: this
+  runs while the menu's own ecology is live, and an ecology is exactly the kind of system whose
+  behaviour depends on its RNG sequence. The seed is a stable hash of the cell name, so a card
+  shows the same arena every time it is opened — a preview that reshuffled would read as
+  instability in the arena rather than in the seed.
+
+**It models the planting, not the plants.** A grown plant's geometry is emergent — it depends on
+how long it has lived and what has eaten it — so a marker stands for "a plant of this species is
+here", never for its shape. Fauna are excluded for the same reason from the other direction: they
+move *through* an arena rather than being part of it, and a still model of where they happened to
+start says nothing true.
+
+Measured coverage after this (per preview definition, at every authored intensity):
+
+| What the card shows | Modes |
+|---|---|
+| Full scale model of an authored environment | Dog Fight, Peel the Cage, Wildlife Liberation |
+| Planting model + shell | Rampage, The Bends (59 markers / 5 species), Wildlife Blitz ×2 (4 / 1) |
+| Shell alone | Joust, Skim Race, Scurry, Astro League, Brood Rush, Scarab Scramble, Freestyle, Cellular Duel ×2, 2v2 Co-Op |
+
+The eleven shell-only cells are **correct**: they author no environment *and* their spawn profiles
+carry fauna only. Those arenas genuinely are open water at t=0 — what fills them is the players'
+own trails plus the mode's `StructurePrefab` (Astro League's goals, Scarab's hoops), which the
+model does not yet draw. That is the honest remaining gap; see §7.
 
 ### 1.2 Two camera rules, both learned the hard way
 
@@ -190,7 +241,8 @@ table, but it cannot be the shipped shape.
 | `ModePreviewLibrarySO` | `_Scripts/ScriptableObjects/` | Mode → definition. `Resources/ModePreviewLibrary`. Tournament excluded in code |
 | `ModePreviewWindow` | `_Scripts/UI/View/` | Three states (unavailable / loading / live), the focus interaction, the RenderTexture, static `AnyHasFocus` |
 | `ModePreviewSession` | `_Scripts/Controller/Arcade/Preview/` | Auto-start driver, vessel + AI bookkeeping, the camera loan, the strike |
-| `ModePreviewArena` | `_Scripts/Controller/Arcade/Preview/` | Stand / BeginStrike / FinishStrike |
+| `ModePreviewArena` | `_Scripts/Controller/Arcade/Preview/` | Stand / StandModel / BeginStrike / FinishStrike |
+| `ModePreviewPlantingModel` | `_Scripts/Controller/Arcade/Preview/` | A grown world's PLANTING as lays — one marker per plant, band resolved cell-override-first |
 | `ModePreviewRunner` / `ModePreviewHUD` | preview dir / `UI/View/` | Objective counting from first take-over; readout beside the window |
 | `Cell.InitializeSatellite` / `StrikeSatelliteWorld` | `Controller/Environment/` | The platform capability pair |
 | `CameraManager.BeginWindowedPlayerCamera` | `Controller/Managers/` | The real gameplay rig → a RenderTexture, additively (never `SetActiveCamera`) |
@@ -220,7 +272,14 @@ yet (§7). Maelstrom (Tournament) stays excluded in code.
   in profiling, debounce the auto-start by a second or two.
 - **Controller-built structures (hoops, goals, tracks) don't exist in previews** —
   `StructurePrefab` is the hook; nothing authors one yet. The real fix is extracting those arena
-  builders so mode and preview call the same code.
+  builders so mode and preview call the same code. This is now the *whole* remaining gap for the
+  eleven shell-only cards (§1.1.2): those arenas have no environment and no flora, so their
+  structure is the only thing left to draw. Note `CellMiniatureBuilder` samples a `SpawnableBase`
+  generator, and a `StructurePrefab` is an ordinary gameplay prefab — modelling one needs either
+  that extraction or a renderer-bounds sampler, not a call to the existing path.
+- **The planting model shows SEEDS, not the mature forest.** Rampage plants 59 and matures to 88
+  (`MaxLivePopulation`); the card shows 59, which is what a match actually opens with. If the
+  mature figure ever reads better, it is one field in `ModePreviewPlantingModel.ResolveCount`.
 - **The satellite has no crystals** (`CrystalManager` is scene-level), so the AI seeks the cell
   centre when the arena offers no items, and crystal-driven modes preview without their pickups.
   Wiring a satellite-local crystal source is the single highest-value follow-up.

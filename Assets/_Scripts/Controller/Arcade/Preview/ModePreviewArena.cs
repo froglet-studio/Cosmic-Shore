@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using CosmicShore.ScriptableObjects;
 using CosmicShore.Utility;
 using UnityEngine;
@@ -41,12 +42,12 @@ namespace CosmicShore.Gameplay
         GameObject _modelRoot;
         float _modelRadius;
 
-        // The one mesh this class generated. Tracked explicitly because the model root also holds
+        // The meshes this class GENERATED. Tracked explicitly because the model root also holds
         // membrane/nucleus display copies, whose MeshFilters point at PROJECT ASSETS - sweeping
         // every MeshFilter under the root and destroying its sharedMesh asks Unity to delete those
         // assets, which it refuses with "Destroying assets is not permitted". Owning a mesh is a
         // fact about where it came from, never something to infer from where it is parented.
-        Mesh _generatedMesh;
+        readonly List<Mesh> _generatedMeshes = new();
 
         /// <summary>
         /// The arena's own runtime data instance — what the previewing vessel's
@@ -276,9 +277,12 @@ namespace CosmicShore.Gameplay
         /// <para>The lays are RELEASED immediately after sampling. Retaining a 34k-entry list per
         /// card the player merely browsed past is the trade this whole path exists to refuse.</para>
         ///
-        /// <para>A config with no authored <c>EnvironmentPrefab</c> - a grown world, a barren cell -
-        /// has no structure to model, and says so by returning false rather than showing an empty
-        /// frame.</para>
+        /// <para>A config with no authored <c>EnvironmentPrefab</c> has no structure to sample -
+        /// fourteen of the arcade's seventeen preview cells are in that state, because their
+        /// arenas are PLANTED once a match starts rather than laid. Those fall through to
+        /// <see cref="ModePreviewPlantingModel"/>, which models the planting the profile
+        /// describes; a cell that plants nothing (the Barren cell Joust, Scurry and Skim Race run
+        /// on) correctly shows its shell alone, because that arena IS open water.</para>
         /// </summary>
         public bool StandModel(CellConfigDataSO config, GameDataSO gameData, Vector3 origin,
                                float radius, int pointBudget)
@@ -300,7 +304,8 @@ namespace CosmicShore.Gameplay
 
             if (!config.EnvironmentPrefab)
             {
-                if (shell) return true;
+                bool planted = AddPlantingModel(config, gameData, pointBudget);
+                if (shell || planted) return true;
                 StrikeModel();
                 return false;
             }
@@ -333,11 +338,55 @@ namespace CosmicShore.Gameplay
                 return false;
             }
 
-            _generatedMesh = miniature.Mesh;
+            _generatedMeshes.Add(miniature.Mesh);
 
             CSDebug.LogVerbose(CSLogChannel.ArcadeLaunch,
                 $"[ModePreview] Scale model of '{config.CellName}' up at {origin} " +
                 $"(radius {_modelRadius}, {miniature.SubmeshDomains.Length} domain submeshes).");
+            return true;
+        }
+
+        /// <summary>
+        /// The cell's PLANTING as a model, for a world that is grown rather than laid.
+        ///
+        /// <para>Fourteen of the arcade's preview cells author no environment at all, so at the
+        /// instant a card is opened there is nothing built to sample - which is why those cards
+        /// showed a bare shell. What does exist is the spawn profile: how many of each species,
+        /// and which band of the cell each occupies. That is the memorable thing about several of
+        /// these arenas (Rampage's cactus belt really is a ring at 0.76-0.94 of the membrane with
+        /// the core left open), and it is true before a single prism grows.</para>
+        ///
+        /// <para>The markers are ordinary lays, so they go through the same
+        /// <see cref="CellMiniatureBuilder"/> tail as an authored environment and cost the same
+        /// nothing - no prisms, one mesh, a submesh per domain.</para>
+        /// </summary>
+        bool AddPlantingModel(CellConfigDataSO config, GameDataSO gameData, int pointBudget)
+        {
+            // Bands are FRACTIONS of the membrane and the builder normalises to its own bounds, so
+            // the model is scale-free: handing it the framing radius produces exactly the shape the
+            // real membrane radius would.
+            var lays = ModePreviewPlantingModel.Build(config, _modelRadius,
+                                                      ModePreviewPlantingModel.StableSeed(config.CellName));
+            if (lays.Count == 0) return false;
+
+            var miniature = CellMiniatureBuilder.BuildFromLays(lays, _modelRadius,
+                                                               Mathf.Max(64, pointBudget),
+                                                               1f, $"{config.CellName} planting");
+            if (!miniature.IsValid) return false;
+
+            var body = ToyFactory.AddMiniatureBody(_modelRoot.transform, miniature,
+                                                   new ToyContext { GameData = gameData },
+                                                   "PlantingModel");
+            if (!body)
+            {
+                Object.Destroy(miniature.Mesh);
+                return false;
+            }
+
+            _generatedMeshes.Add(miniature.Mesh);
+
+            CSDebug.LogVerbose(CSLogChannel.ArcadeLaunch,
+                $"[ModePreview] Planting model of '{config.CellName}' up ({lays.Count} plants).");
             return true;
         }
 
@@ -400,11 +449,9 @@ namespace CosmicShore.Gameplay
         /// <summary>Take the scale model down. Safe when none is up.</summary>
         public void StrikeModel()
         {
-            if (_generatedMesh)
-            {
-                Object.Destroy(_generatedMesh);
-                _generatedMesh = null;
-            }
+            foreach (var mesh in _generatedMeshes)
+                if (mesh) Object.Destroy(mesh);
+            _generatedMeshes.Clear();
 
             if (!_modelRoot) return;
 
