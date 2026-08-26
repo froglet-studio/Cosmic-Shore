@@ -24,11 +24,11 @@ MonoBehaviour:
   - binding: 1
     padGlyph: {fileID: 21300000, guid: d3455f0a03e57f0429707897e7e0b49d, type: 3}
     padGlyphHeld: {fileID: 0}
-    keyboardLabel: 
+    keyboardLabel: SPACE
   - binding: 3
     padGlyph: {fileID: 21300000, guid: b611b9e51b8b5f14b9d9dc8dd392fc60, type: 3}
     padGlyphHeld: {fileID: 0}
-    keyboardLabel: 
+    keyboardLabel: R
   restColor: {r: 0.65, g: 0.65, b: 0.7, a: 1}
   heldColor: {r: 1, g: 1, b: 1, a: 1}
   keyboardLabelSize: 14
