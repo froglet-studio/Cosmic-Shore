@@ -104,9 +104,42 @@ the tracked prisms are **returned to the pool** — `PrismKinds.Clear` first, th
 ## Cooldown HUD
 
 `SquirrelVesselHUDController` polls `SquirrelTubeActionExecutor.CooldownRemaining01` each frame and
-drives a radial fill in the freed HUD slot (empties on deploy, refills as it recharges). That slot
-was freed by **merging the joust and crystal icons into one impact icon** — a single icon now flashes
-on either a vessel hit (joust) or a crystal hit.
+pushes it to the **ability lockup's** standard cooldown veil — the fleet-wide clockwise radial swept
+over the Time card (`VesselHUDView.SetAbilityCooldown`). The Squirrel's own bespoke reload animation
+(sink-and-rise, breathing pulse, radial fill on the icon itself, slam-home flash) is **retired** with
+its tuning fields: one recharge readout for the fleet beats four per hull, and `SquirrelVesselHUDView`
+now only guarantees the icon is drawn whole so it can never read as a second meter. The Time slot
+itself was freed by **merging the joust and crystal icons into one impact icon** — a single icon now
+flashes on either a vessel hit (joust) or a crystal hit.
+
+## Ability icon — a true cross-section of the ring
+
+The Time card's icon **is the thing the ability makes**: the ring seen endwise, cut perpendicular to
+the tube axis. It is not a drawing of a ring — it is the exact orthographic cross-section, generated
+from the authored asset by `Tools/Build/author_squirrel_boost_ring_icon.py`, which reads `segments`,
+`radius` and `prismScale` straight out of `SquirrelTubeAction.asset` and reproduces
+`BoostRingBuilder.LayRing`'s own placement maths. So the icon **cannot drift from the ability**: retune
+the ring and `--check` fails until the icon is regenerated (CLAUDE.md ▸ *one authored number per
+displayed quantity*).
+
+At the shipped `segments: 8`, `radius: 8`, `prismScale: 4` that is eight 4×4 cube faces on a radius-8
+circle. Because each prism is posed with its local **+y along the radial** and **+x along the
+tangential**, the squares are rotated by their own 45° step — so the ring alternates four
+square-reading prisms (N/S/E/W) with four diamond-reading ones (the diagonals). **That alternation is
+not styling; it is what the ability actually builds.** The hollow centre is the flyable bore.
+
+Two properties the generator asserts rather than assumes:
+
+- **The prisms must not overlap**, or the ring reads as a solid annulus instead of as *N prisms*.
+  Measured gap at the shipped numbers: **0.897 world units** (5.76 px at 148²). This is a real
+  constraint on the ability too — at `segments: 12` on the same radius the prisms interpenetrate
+  (gap −0.526), which the generator refuses outright.
+- **Pure white, alpha-only.** The HUD tints ability icons at runtime, so any colour baked into the
+  sprite would fight the domain tint (same rule as the element petals).
+
+The icon's `RectTransform` carries a legacy 90° Z rotation. It is a **no-op** for this figure: a 90°
+turn maps prism *i* onto prism *i+2*, whose square orientation is identical, so the cross-section is
+exactly invariant under it. Left as-is deliberately — nothing in the row moves.
 
 ## Files
 
@@ -115,6 +148,8 @@ on either a vessel hit (joust) or a crystal hit.
 | Ability config (SO) | `R_VesselActions/Data Containers/SquirrelTubeActionSO.cs` |
 | Runtime executor | `R_VesselActions/Executors/SquirrelTubeActionExecutor.cs` |
 | SO asset | `_SO_Assets/VesselActions/Squirrel/SquirrelTubeAction.asset` |
+| Time ability icon (art) | `_Graphics/Design Assests/HUD UI/Squirrel/BoostRingCrossSectionIcon.png` |
+| Icon generator (`--check`) | `Tools/Build/author_squirrel_boost_ring_icon.py` |
 | HUD view / controller | `UI/View/SquirrelVesselHUDView.cs`, `R_VesselActions/Data Containers/SquirrelVesselHUDController.cs` |
 | Drift analog toggle | `VesselTransformer.singleTriggerDrift`, `DriftActionSO.playDriftSfx` |
 | Input mapping | `Squirrel.prefab` R_VesselActionHandler (`OnlyLeft/OnlyRight` + gamepad `LeftStick/RightStick` overrides) |
