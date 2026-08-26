@@ -331,7 +331,27 @@ Three guards make it safe:
 What that clears, measured from the assets: Sparrow and Scarab lose `Boost Button/display`,
 `Ammo Count` (nothing writes to it — ammo is shown by sprite-swapping the missile icon),
 the emptied `ActionIconHolder` and both glyph roots; the Dolphin loses a stray `Image` and both
-glyph roots; the Rhino loses `BoostContainer`. The auditor lists the candidates per vessel.
+glyph roots. The auditor lists the candidates per vessel.
+
+**The Rhino does NOT lose `BoostContainer`, and that correction matters more than the row it fixes.**
+This doc claimed it did, read off `RhinoHUDVariant.prefab` — where the view wires only `highlights`
+and `BoostContainer` therefore looks unreferenced. **`Rhino.prefab`'s instance says otherwise.** It
+overrides `RhinoVesselHUDView` with six live readouts — `lineIcon`, `debuffIcon`, `crystalIcon`,
+`debuffTimerText`, `skimmerSizeIcon`, `slowedCountText` — and adds three root-level branches the HUD
+asset does not contain at all (`LaserTargeting`, `Crystal`, `ForceField`). Four of the Rhino's six
+root branches are therefore genuinely driven (verified: `RhinoVesselHUDView` writes every one of
+those fields), and the sweep spares them exactly as its third guard promises.
+
+So the Rhino keeps a live status cluster beside its four locked cards — and that cluster is anchored
+at `(0.93..0.98, 0.04..0.13)`, which is the bottom-right corner the lockup row now occupies. It
+reads as "the old UI is back" because it is *in the row's seat*, not because anything failed to
+retire.
+
+*A HUD prefab asset does not tell you what a vessel wires.* The vessel's prefab instance can add
+GameObjects the asset has never heard of and populate fields the asset leaves empty — so an
+assertion about what a HUD contains has to be read from the **vessel**, not the HUD. Same family as
+the Scarab's name-override misread: both were confident claims about assets, derived from the wrong
+file.
 
 ### The switcher's own reference was the last thing propping the old glyphs up
 
