@@ -14,52 +14,62 @@ playtest were all fallback branches, and the fix was deleting the branches.
 
 ---
 
-## 1. The flow — TWO phases, and that is the whole design
+## 1. The flow — a MODEL to look at, the real cell to fly
 
 ```
 card selected (SetSelectedGame)
  └─ session.SetDefinition(def, mode's hull, intensity)
-     ├─ no definition            → window: "LEVEL PREVIEW NOT AVAILABLE"
-     └─ definition               → window: "LOADING <MODE>…", then automatically:
-         ├─ ModePreviewArena.Stand()       satellite cell, 120k units out
-         ├─ arena.BeginArenaCamera()       the arena's OWN camera → the window's RenderTexture
-         └─ state = SHOWING                the WORLD, slowly orbiting. "TAP TO PLAY"
+     ├─ no definition / no authored environment → "LEVEL PREVIEW NOT AVAILABLE"
+     └─ otherwise → "LOADING <MODE>…", then automatically:
+         ├─ arena.StandModel()             a SCALE MODEL - no prisms, no cell, no ecology
+         ├─ arena.BeginArenaCamera()       its own camera → the window's RenderTexture
+         └─ state = SHOWING                the world, slowly orbiting. "TAP TO PLAY"
 
 tap the window     → state = LIVE:
+         ├─ arena.Stand()                  NOW the real satellite cell is built
          ├─ RequestSwap(mode's hull)       pose / speed / domain preserved
-         ├─ vessel.SetPose(arena spawn)    the framing the real mode opens on
+         ├─ vessel.SetPose(arena spawn)
          ├─ AIPilot.RetargetCell(arena)    ← load-bearing, see §3
          ├─ CameraManager.BeginWindowedPlayerCamera → the same RenderTexture
-         └─ arena.EndArenaCamera()         AFTER the handover, never before
+         └─ arena.EndArenaCamera() + StrikeModel()   AFTER the handover, never before
 
 tap outside /
-Escape / Start     → back to SHOWING: vessel home, hull restored, arena camera resumes
+Escape / Start     → back to SHOWING
 card change /
-modal close /
-launch             → Stop(): arena struck and drained (§4)
+modal close        → Stop(): model struck, arena struck and drained (§4)
 ```
 
-**A card that has only been opened has touched nothing outside its arena.** Not the player's hull,
-not its pose, not the gameplay camera. That is what the two phases buy, and it is the fix for both
-of the first playtest's complaints:
+### 1.1 A card you are LOOKING at must not build a cell
 
-- **"It shows the vessel flying before I asked."** It doesn't any more. Opening a card shows the
-  *world* — a camera parented to the arena root, framing the membrane and orbiting slowly. The
-  vessel arrives on the tap, which is also when the player takes the stick: there is no AI demo
-  phase, because a demo is what the window was showing *instead of* the environment.
-- **"Backing out is a mess."** Everything that has to be UNDONE on the way out — a networked hull
-  swap, a teleport, the camera loan, the AI's retarget — is now only ever done by an explicit tap
-  IN. The common path (open a card, look, press back) has nothing to unwind, and the uncommon one
-  unwinds under a user action with the window still on screen instead of racing the next card at
-  modal-close.
+The first build stood the real satellite the moment a card was selected. That is a full per-prism
+build — the Boneyard alone is **~69k prisms**, on top of the menu world that is already live — so
+browsing cards meant a multi-second freeze each and a frame-rate collapse for as long as one was
+up. Measured in the Editor at **1 FPS**.
 
-**The camera handover is ordered, both ways**: the incoming camera takes the texture *before* the
-outgoing one lets go, so the surface never has a frame with nobody drawing into it. That frame is
-the "white rectangle" the window exists to make impossible (`Apply` disables the RawImage in every
-non-live state precisely because a RawImage with a null texture renders its colour as a solid
-block).
+Selecting a card now builds a **scale model** instead, through `CellMiniatureBuilder` — the same
+path the Cell Selector toy already uses to show a world you have not chosen yet. It reads the
+generator's point data and spawns **no prisms**: generation is pure math, and the per-prism
+`Instantiate` that is ~97% of a real build never happens. One mesh, a submesh per domain, a few
+draw calls. The lays are released immediately after sampling, because retaining a 34k-entry list
+per card somebody browsed past is the trade this path exists to refuse.
 
-The objective runner starts on the tap, which is now also the arrival.
+**The real cell is built on the tap** — the only moment anybody has asked for it.
+
+A config with no authored `EnvironmentPrefab` (a grown world, a barren cell) has no structure to
+model and says so, rather than showing an empty frame.
+
+### 1.2 Two camera rules, both learned the hard way
+
+- **The handover is ORDERED, both ways.** The incoming camera takes the texture *before* the
+  outgoing one lets go, so the surface never has a frame with nobody drawing into it — that frame
+  is the white rectangle the window exists to make impossible.
+- **Framing must not be sampled once.** `Cell.MembraneRadius` returns **0** until the membrane has
+  spawned, so a `Max(1, radius)` fallback parked the camera 1.25 units from the arena centre, where
+  every mode looked identical (skybox and a few distant prisms) and changing intensity rebuilt a
+  world the camera was still standing inside. One camera in one wrong place, reading as two bugs.
+  The radius is re-read on every orbit tick.
+
+The objective runner starts on the tap, which is also the arrival.
 
 ## 2. Focus — who holds the stick
 

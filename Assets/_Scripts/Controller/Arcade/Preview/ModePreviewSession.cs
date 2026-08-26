@@ -118,6 +118,16 @@ namespace CosmicShore.Gameplay
         public bool IsFlying => _state == State.Live;
 
         [Header("Arena view")]
+        [SerializeField, Tooltip("Radius the scale model is fitted to. Arbitrary units - the camera " +
+                                 "frames this same number, so it only decides the model's own " +
+                                 "resolution against the far clip, never how big it looks.")]
+        [Min(1f)] float modelRadius = 500f;
+
+        [SerializeField, Tooltip("Samples taken across the whole structure to build the model. The " +
+                                 "silhouette is what reads at this size, so ~1-2k carries it; " +
+                                 "higher just costs vertices (24 each).")]
+        [Min(64)] int modelPointBudget = 1500;
+
         [SerializeField, Tooltip("Degrees per second the arena camera orbits the cell while the " +
                                  "card is just being LOOKED at. Slow: it is a world holding still " +
                                  "to be read, not a showreel.")]
@@ -268,50 +278,48 @@ namespace CosmicShore.Gameplay
 
         void StartArena(IPlayer player)
         {
-            var template = ResolveTemplateCell(player);
-            if (!template)
-            {
-                CSDebug.LogWarning("[ModePreview] No active Cell to clone a satellite from - " +
-                                   "preview unavailable.");
-                _window?.ShowUnavailable();
-                return;
-            }
-
             _state = State.Standing;
             ActiveMode = _definition.Mode;
 
             _cts?.Cancel();
             _cts?.Dispose();
             _cts = CancellationTokenSource.CreateLinkedTokenSource(this.GetCancellationTokenOnDestroy());
-            StandAsync(template, _cts.Token).Forget();
+            StandAsync(_cts.Token).Forget();
         }
 
-        async UniTaskVoid StandAsync(Cell template, CancellationToken ct)
+        /// <summary>
+        /// What a card OPENS on: a scale model of the mode's world, and nothing else.
+        ///
+        /// <para>It does not stand the real cell. Standing one to look at costs a full per-prism
+        /// build - the Boneyard alone is ~69k prisms, on top of the menu world that is already live
+        /// - which is a multi-second freeze per card and a frame-rate collapse for as long as it is
+        /// up. The model spawns NO PRISMS and no ecology (<see cref="CellMiniatureBuilder"/>, the
+        /// same path the Cell Selector toy already uses to show a world you have not chosen yet),
+        /// so browsing cards costs a mesh each.</para>
+        /// </summary>
+        async UniTaskVoid StandAsync(CancellationToken ct)
         {
             var definition = _definition;
 
             try
             {
-                var prefab = cellPrefab ? cellPrefab : template.gameObject;
+                // One frame first, so the modal has painted before the generation pass - a card
+                // that freezes on the click reads as the click having failed.
+                await UniTask.Yield(PlayerLoopTiming.Update, ct);
+
                 var origin = Vector3.right * arenaDistance;
-
                 var config = definition.ResolveCell(_intensity);
-                if (!_arena.Stand(definition, config, template, prefab, origin))
-                    throw new InvalidOperationException("the arena could not be stood up");
 
-                // The satellite builds without a veil (it is beside the menu, not instead of
-                // it), so we wait on the cell rather than on a screen hold.
-                if (!await WaitWhile(() => _arena.Cell && _arena.Cell.IsSwappingConfig, ct))
-                    throw new TimeoutException(
-                        $"{(config ? config.CellName : definition.Mode.ToString())} never finished building");
+                if (!_arena.StandModel(config, gameData, origin, modelRadius, modelPointBudget))
+                {
+                    // A grown world or a barren cell authors no environment prefab, so there is no
+                    // structure to model. Honest label, not an empty frame.
+                    _state = State.Showing;
+                    Stop(ModePreviewOutcome.Abandoned);
+                    _window?.ShowUnavailable();
+                    return;
+                }
 
-                if (settleSeconds > 0f)
-                    await UniTask.Delay((int)(settleSeconds * 1000f),
-                        ignoreTimeScale: true, cancellationToken: ct);
-
-                // The ARENA's own camera, not the gameplay one: a card that has only been opened
-                // shows the world and nothing else. No hull swap, no teleport, no camera loan -
-                // see the State summary.
                 var texture = _window ? _window.LiveTexture : null;
                 if (!_arena.BeginArenaCamera(texture))
                     throw new InvalidOperationException("the arena camera could not be started");
@@ -362,6 +370,33 @@ namespace CosmicShore.Gameplay
                 var definition = _definition;
                 if (!definition) return;
 
+                // THE REAL CELL, built here rather than when the card opened. This is the
+                // multi-second, tens-of-thousands-of-prisms build, and the tap is the only moment
+                // anybody has asked for it - browsing cards must never pay it.
+                var player = gameData?.LocalPlayer;
+                var template = ResolveTemplateCell(player);
+                if (!template)
+                    throw new InvalidOperationException("no active Cell to clone a satellite from");
+
+                _window?.ShowLoading(definition.Mode.ToString());
+
+                var origin = Vector3.right * arenaDistance;
+                var config = definition.ResolveCell(_intensity);
+                var prefab = cellPrefab ? cellPrefab : template.gameObject;
+
+                if (!_arena.Stand(definition, config, template, prefab, origin))
+                    throw new InvalidOperationException("the arena could not be stood up");
+
+                // The satellite builds without a veil (it is beside the menu, not instead of it),
+                // so we wait on the cell rather than on a screen hold.
+                if (!await WaitWhile(() => _arena.Cell && _arena.Cell.IsSwappingConfig, ct))
+                    throw new TimeoutException(
+                        $"{(config ? config.CellName : definition.Mode.ToString())} never finished building");
+
+                if (settleSeconds > 0f)
+                    await UniTask.Delay((int)(settleSeconds * 1000f),
+                        ignoreTimeScale: true, cancellationToken: ct);
+
                 // The mode's own hull. Flying Rampage as a Squirrel teaches nothing about
                 // Rampage, and RequestSwap already preserves pose, speed and domain.
                 await SwapVessel(ResolveVessel(definition), remember: true, ct);
@@ -379,8 +414,10 @@ namespace CosmicShore.Gameplay
                 if (!HandCameraToWindow())
                     throw new InvalidOperationException("no gameplay camera to lend");
                 _arena.EndArenaCamera();
+                _arena.StrikeModel();     // the real world is up; the model has nothing left to say
 
                 _state = State.Live;
+                _window?.GoLive();
                 GrantStick();
 
                 // The objective counts from the take-over, which is now also the arrival.
@@ -393,7 +430,11 @@ namespace CosmicShore.Gameplay
             catch (Exception e)
             {
                 CSDebug.LogError($"[ModePreview] Could not enter flight: {e.Message}.");
-                ReturnToArenaView();
+
+                // The real cell may be half-standing; take it down and go back to the model, which
+                // is the state the card was in and can be in again for free.
+                Stop(ModePreviewOutcome.Abandoned);
+                _window?.ShowUnavailable();
             }
             finally
             {
@@ -478,7 +519,7 @@ namespace CosmicShore.Gameplay
             if (_state == State.Idle || _state == State.Striking) return;
 
             var texture = _window ? _window.LiveTexture : null;
-            if (_arena.IsStanding && _arena.BeginArenaCamera(texture))
+            if ((_arena.ModelStanding || _arena.IsStanding) && _arena.BeginArenaCamera(texture))
             {
                 CameraManager.Instance?.EndWindowedPlayerCamera();
                 _state = State.Showing;

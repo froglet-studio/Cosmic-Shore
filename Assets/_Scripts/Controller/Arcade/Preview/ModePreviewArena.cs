@@ -35,6 +35,12 @@ namespace CosmicShore.Gameplay
         Camera _arenaCamera;
         float _orbitAngle;
 
+        // The SCALE MODEL shown while a card is only being looked at, and the root it lives under.
+        // Separate from _root on purpose: the model is struck the instant the real arena stands, and
+        // one root holding both would take the arena down with it.
+        GameObject _modelRoot;
+        float _modelRadius;
+
         /// <summary>
         /// The arena's own runtime data instance — what the previewing vessel's
         /// <see cref="AIPilot"/> is retargeted onto so it hunts THIS cell's contents instead of
@@ -158,7 +164,8 @@ namespace CosmicShore.Gameplay
         public GameObject BeginStrike()
         {
             EndArenaCamera();
-            _arenaCamera = null;      // destroyed with the root in FinishStrike
+            _arenaCamera = null;      // destroyed with its host root below
+            StrikeModel();
 
             GameObject retiring = null;
             if (Cell) retiring = Cell.StrikeSatelliteWorld();
@@ -179,6 +186,8 @@ namespace CosmicShore.Gameplay
         /// </summary>
         public void FinishStrike()
         {
+            StrikeModel();
+
             if (_root)
             {
                 Object.Destroy(_root);
@@ -209,12 +218,21 @@ namespace CosmicShore.Gameplay
         /// </summary>
         public Camera BeginArenaCamera(RenderTexture texture)
         {
-            if (!texture || !_root) return null;
+            // Either subject will do - the scale model a card opens on, or the real cell once the
+            // player has tapped in.
+            var host = _modelRoot ? _modelRoot : _root;
+            if (!texture || !host) return null;
+
+            if (_arenaCamera && _arenaCamera.transform.parent != host.transform)
+            {
+                Object.Destroy(_arenaCamera.gameObject);
+                _arenaCamera = null;
+            }
 
             if (!_arenaCamera)
             {
                 var go = new GameObject("ModePreviewArenaCamera");
-                go.transform.SetParent(_root.transform, false);
+                go.transform.SetParent(host.transform, false);
                 _arenaCamera = go.AddComponent<Camera>();
 
                 var source = Camera.main;
@@ -235,6 +253,84 @@ namespace CosmicShore.Gameplay
             FrameCell(0f);
             return _arenaCamera;
         }
+
+        /// <summary>
+        /// Show the mode's world as a <b>SCALE MODEL</b> - the same thing the Cell Selector toy
+        /// shows for a cell you have not chosen yet (<see cref="CellMiniatureBuilder"/>).
+        ///
+        /// <para><b>This is what a card opens on, and it is why browsing is cheap.</b> Standing the
+        /// REAL cell to look at costs a full per-prism build - the Boneyard alone is ~69k prisms,
+        /// on top of the menu world that is already live - which is a multi-second freeze per card
+        /// and a permanent frame-rate collapse while it is up. The model reads the generator's
+        /// point data and spawns NO PRISMS: generation is pure math, and the per-prism Instantiate
+        /// that is ~97% of a real build simply never happens. One mesh, a submesh per domain, a
+        /// few draw calls.</para>
+        ///
+        /// <para>The lays are RELEASED immediately after sampling. Retaining a 34k-entry list per
+        /// card the player merely browsed past is the trade this whole path exists to refuse.</para>
+        ///
+        /// <para>A config with no authored <c>EnvironmentPrefab</c> - a grown world, a barren cell -
+        /// has no structure to model, and says so by returning false rather than showing an empty
+        /// frame.</para>
+        /// </summary>
+        public bool StandModel(CellConfigDataSO config, GameDataSO gameData, Vector3 origin,
+                               float radius, int pointBudget)
+        {
+            StrikeModel();
+            if (!config || !config.EnvironmentPrefab) return false;
+
+            Origin = origin;
+            _modelRadius = Mathf.Max(1f, radius);
+
+            var miniature = CellMiniatureBuilder.Build(config.EnvironmentPrefab, _modelRadius,
+                                                      Mathf.Max(64, pointBudget));
+
+            // Whatever the outcome: a generated lay list is the expensive thing to keep, and the
+            // mesh is the only part worth holding on to.
+            if (config.EnvironmentPrefab is CellEnvironmentSpawnableBase cellEnvironment)
+                cellEnvironment.ReleaseGeneratedData();
+
+            if (!miniature.IsValid)
+            {
+                CSDebug.LogVerbose(CSLogChannel.ArcadeLaunch,
+                    $"[ModePreview] '{config.CellName}' produced no scale model - its generator " +
+                    "emitted nothing.");
+                return false;
+            }
+
+            _modelRoot = new GameObject($"ModePreviewModel ({config.CellName})");
+            _modelRoot.transform.position = origin;
+
+            var body = ToyFactory.AddMiniatureBody(_modelRoot.transform, miniature,
+                                                   new ToyContext { GameData = gameData },
+                                                   "ScaleModel");
+            if (!body)
+            {
+                StrikeModel();
+                return false;
+            }
+
+            CSDebug.LogVerbose(CSLogChannel.ArcadeLaunch,
+                $"[ModePreview] Scale model of '{config.CellName}' up at {origin} " +
+                $"(radius {_modelRadius}, {miniature.SubmeshDomains.Length} domain submeshes).");
+            return true;
+        }
+
+        /// <summary>Take the scale model down. Safe when none is up.</summary>
+        public void StrikeModel()
+        {
+            if (!_modelRoot) return;
+
+            // The mesh is built for this model alone and nothing else references it.
+            foreach (var filter in _modelRoot.GetComponentsInChildren<MeshFilter>(true))
+                if (filter && filter.sharedMesh) Object.Destroy(filter.sharedMesh);
+
+            Object.Destroy(_modelRoot);
+            _modelRoot = null;
+        }
+
+        /// <summary>True while a scale model - rather than a live cell - is what the camera sees.</summary>
+        public bool ModelStanding => _modelRoot;
 
         /// <summary>Advance the slow orbit. Driven by the session, so the arena owns no clock.</summary>
         public void TickArenaCamera(float deltaSeconds, float degreesPerSecond)
@@ -260,7 +356,7 @@ namespace CosmicShore.Gameplay
 
             _orbitAngle = Mathf.Repeat(_orbitAngle + advanceDegrees, 360f);
 
-            float radius = FramingRadius();
+            float radius = _modelRoot ? _modelRadius : FramingRadius();
 
             var offset = Quaternion.Euler(0f, _orbitAngle, 0f) *
                          new Vector3(0f, radius * 0.35f, -radius * ArenaCameraFramingFactor);
