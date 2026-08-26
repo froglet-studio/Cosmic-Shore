@@ -184,7 +184,26 @@ def main():
     print("   (LookRotation, what shipped before, accumulated 19.77 deg over the same sweep)")
 
     print()
-    print("6. a DRIFT must also open the clearance gap")
+    print("6. the two wings must stay COPLANAR - no fold")
+    # The wings differ only by a cross-coupling: pitch into their roll, throttle into their yaw,
+    # one plus and one minus. That antisymmetry is what takes them out of a common plane. A bank
+    # is BOTH wings turning by the same angle (the plane tilts); unequal angles is the fold the
+    # sixth playtest photographed.
+    S = 25.0
+    for diff, label in ((1.0, "cross-coupling 1"), (0.0, "cross-coupling 0 (shipped)")):
+        worst = 0.0
+        for roll in (0.0, 0.5, 1.0):
+            for pitch in (0.0, 0.3, 0.6):
+                r_r = (roll * -1 + diff * pitch) * S
+                r_l = (roll * -1 - diff * pitch) * S
+                worst = max(worst, abs(r_r - r_l))
+        print("   %-28s worst wing-to-wing roll split: %5.1f deg%s"
+              % (label, worst, "" if diff == 0 else "   <- the fold"))
+        if diff == 0.0 and worst > 1e-9:
+            failures.append("wings are not coplanar with the cross-coupling off")
+
+    print()
+    print("7. a DRIFT must also open the clearance gap")
     # wings forward, engines back, both along the ship's +z, rotation unchanged by the drift.
     wing_fwd, jet_back = 2.3, 2.3
     print("   wings  offset +%.1f z (forward)   engines offset %.1f z (backward)"

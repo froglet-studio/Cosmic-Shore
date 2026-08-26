@@ -439,6 +439,27 @@ so it adds no twist by construction.
 > usually moving. When something should hold still while the world turns around it, carry the frame
 > forward from its own last orientation instead of rebuilding it from a reference that moves.
 
+*THE WINGS FOLD BECAUSE OF A CROSS-COUPLING, not because of a sign.* Three sign guesses across
+three flights never touched the real cause. The two wings' arguments differ in exactly two places —
+`pitch` bleeds into their **roll** and `throttle` into their **yaw**, one wing plus and the other
+minus — and that antisymmetry is what takes them out of a common plane:
+
+| roll, pitch | right wing | left wing | split | reads as |
+|---|---|---|---|---|
+| 1.0, 0.0 | −25.0° | −25.0° | 0° | coplanar **bank** — correct |
+| 1.0, 0.3 | −17.5° | −32.5° | **15°** | folded out of plane |
+| 0.5, 0.6 | +2.5° | −27.5° | **30°** | folded, one up one down |
+
+A bank is both wings turning by the *same* angle — the wing plane tilts and stays a plane. Unequal
+angles is the fold. On the legacy art this read as wing sweep; on the rig, with the wings resting
+under `winghold` bones at 77°/−102.9°, it reads as the wings coming apart. The coupling is now
+`wingDifferential`, **default 0**, so the wings bank together and the authored sweep is opt-in.
+
+> **A symptom that survives every sign you can flip is not a sign.** Signs are cheap to try and
+> that makes them a trap: three flights went into flipping roll, then yaw, then roll again, while
+> the thing actually breaking the silhouette was a coupling nobody had looked at. When flipping
+> stops paying, enumerate what makes the two sides *differ* instead of what makes them wrong.
+
 *And while drifting the appendages go QUIET.* Holding Course is the whole of their job during a
 drift; only the fuselage and jaws respond to the stick. Leaving the wings and engines responsive
 reads as the ship still flying while it is supposed to be sliding.

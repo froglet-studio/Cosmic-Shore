@@ -72,9 +72,18 @@ namespace CosmicShore.Gameplay
                  "backwards on the rig.")]
         [SerializeField] float wingYawResponse = -1f;
 
-        [Tooltip("Wing ROLL response. +1 - the hull's own bank is correct " +
-                 "(VesselTransformer.Roll, shared by six vessels) and the wings follow it.")]
-        [SerializeField] float wingRollResponse = 1f;
+        [Tooltip("Wing ROLL response. -1: playtest reports the wings' bank reading backwards " +
+                 "against the hull, whose own bank is correct (VesselTransformer.Roll, shared by " +
+                 "six vessels).")]
+        [SerializeField] float wingRollResponse = -1f;
+
+        [Tooltip("CROSS-COUPLING between the two wings: pitch bleeding into their roll and " +
+                 "throttle into their yaw, one wing plus and the other minus. That antisymmetry " +
+                 "is what makes them leave a common plane - at 1 a little pitch while rolling " +
+                 "turns a coplanar bank into one wing folding up and the other down, which is " +
+                 "what the rig was doing on screen. 0 keeps both wings rotating together (they " +
+                 "still bank, the plane just tilts); 1 restores the authored sweep.")]
+        [SerializeField] float wingDifferential;
 
         Vector3 ForwardWingOffset => new(0, 0, driftWingForward);
         Vector3 BackwardThrusterOffset => new(0, 0, -driftJetBackward);
@@ -293,10 +302,12 @@ namespace CosmicShore.Gameplay
             // responsive reads as the whole ship still flying while it is supposed to be sliding.
             bool aiming = VesselStatus.IsDrifting;
             float wingPitch = aiming ? 0f : Brake(throttle) * wingPitchResponse * animationScaler;
-            float wingYawR  = aiming ? 0f : (yaw + throttle) * wingYawResponse * exaggeratedAnimationScaler;
-            float wingYawL  = aiming ? 0f : (yaw - throttle) * wingYawResponse * exaggeratedAnimationScaler;
-            float wingRollR = aiming ? 0f : (roll * wingRollResponse + pitch) * animationScaler;
-            float wingRollL = aiming ? 0f : (roll * wingRollResponse - pitch) * animationScaler;
+            float yawCross  = throttle * wingDifferential;
+            float rollCross = pitch * wingDifferential;
+            float wingYawR  = aiming ? 0f : (yaw + yawCross) * wingYawResponse * exaggeratedAnimationScaler;
+            float wingYawL  = aiming ? 0f : (yaw - yawCross) * wingYawResponse * exaggeratedAnimationScaler;
+            float wingRollR = aiming ? 0f : (roll * wingRollResponse + rollCross) * animationScaler;
+            float wingRollL = aiming ? 0f : (roll * wingRollResponse - rollCross) * animationScaler;
 
             AnimatePart(RightWing, wingPitch, wingYawR, wingRollR, wingOffset, courseFrame);
             AnimatePart(LeftWing,  wingPitch, wingYawL, wingRollL, wingOffset, courseFrame);
