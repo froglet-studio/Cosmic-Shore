@@ -218,7 +218,6 @@ GameObject:
   m_Component:
   - component: {fileID: 5628569816686872434}
   - component: {fileID: 7878827982810303965}
-  - component: {fileID: 8577413920164471033}
   m_Layer: 0
   m_Name: DolphinHUDVariant
   m_TagString: Untagged
@@ -1644,19 +1643,3 @@ MonoBehaviour:
   m_hasFontAssetChanged: 0
   m_baseMaterial: {fileID: 0}
   m_maskOffset: {x: 0, y: 0, z: 0, w: 0}
---- !u!114 &8577413920164471033
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 4250806807686435711}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 8e8787c907d74c959dfd264cad3bf11f, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  style: {fileID: 11400000, guid: e37e3e9bfd384670a91498f17950618e, type: 2}
-  styleResourcePath: AbilityLockupStyle
-  hudView: {fileID: 7878827982810303965}
-  elementBars: {fileID: 0}

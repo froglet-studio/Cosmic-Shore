@@ -180,10 +180,28 @@ pad buttons have no keyboard equivalent and draw nothing there. **Blank is the h
 pad glyph shown to a keyboard player is misinformation, and that is precisely what the old
 per-vessel roots did.
 
-Pad families deliberately share one sprite. The only working hint set in the project — the
-Squirrel's — already used the same `L1`/`R1` art for Xbox and PlayStation, and the one HUD that
-tried to differ authored a set that did not correspond (Xbox `A`/`B`/`R1`/`R2` against PS
-`circle`/`triangle`/`L2`/`square`). Device *detection* still comes from
+**Pad families share one sprite — a deliberate regression from what shipped, not a continuation of
+it.** An earlier draft of this section claimed the project's only working hint set already shared
+art across families. That is false, and the measurement is easy: at the merge base, *every* HUD that
+authored glyph art authored **family-specific** art — Sparrow and Scarab each carried PS
+`L2`/`o`/`square`/`triangle` against Xbox `A`/`B`/`R1`/`R2`, and `SquirrelHUDVariant` authored none
+of its own, inheriting `VesselHUDPrefab`'s two roots. Family-specific glyphs are what a device
+switcher is *for*.
+
+Two things make the simplification acceptable anyway, and both are narrow:
+
+- **The shoulder pair cannot be authored per-family today at all.** The project ships `PS/L1` and
+  `XBOX/R1` and has no `XBOX/L1` and no `PS/R1` — so the asset's mixed sourcing is not a mistake to
+  correct, it is the only art that exists. Anyone "fixing" it will go looking for files that were
+  never drawn.
+- **The face buttons, where both families do exist, are used by exactly one vessel** — the
+  Sparrow's `A`/`B`.
+
+So the cost is real and small: **a PlayStation player sees Xbox `A`/`B` letters on the Sparrow**,
+and correct `L1`/`R1` everywhere else. Closing it is a `psGlyph` field on `ControlGlyphSetSO.Glyph`
+plus a family argument to `For()` — a follow-up, not done here.
+
+Device *detection* still comes from
 `InputDeviceIconSetSwitcher`, which `VesselHUDController` now **ensures** the same way it ensures
 the lockup — three HUDs never had one, which is exactly why their glyphs were never lit, never
 device-matched and never placed.
@@ -368,9 +386,23 @@ So the sweep splits on one fact: **does this vessel bind any ability icon at all
   All four cards render LOCKED, so there is no designed row for anything at root to belong to, and
   whatever is there is the pre-lockup HUD by definition.
 
-**The cost is real and is accepted deliberately** (design call, 2026-08-26): the Rhino stops showing
-its debuff timer, slowed count, skimmer-size ring, laser and crystal indicators until they are
-re-homed into the lockup or re-authored. `RhinoVesselHUDView` still writes to all of them — the
+**The cost is real and is accepted deliberately** (design call, 2026-08-26), and it is not only the
+Rhino's. Measured per vessel:
+
+| vessel | bound icons | what the clear-slate rule switches off |
+|---|---|---|
+| Rhino | 0/4 | `BoostContainer`, `VesselImpactCooldown`, `TrailContainer`, and the instance-added `LaserTargeting`, `Crystal`, `ForceField` — i.e. the debuff timer, slowed count, skimmer-size ring, laser and crystal indicators |
+| Manta | 0/4 | inherited from `VesselHUDPrefab`: `Boost Button/display`, `Exhause Barrage`, `ShootBullets`, `ShootMissiles` — **each carrying a live `ResourceDisplay`** — plus both glyph roots |
+| Serpent | 0/4 | the same four inherited buttons and their `ResourceDisplay`s |
+| Squirrel / Sparrow / Dolphin / Scarab | 4/4 | **nothing** — the reference guard still runs on these |
+
+The four inherited buttons are safe to switch off for a *specific* reason, not by assumption: their
+`Button` components have **no `onClick` wiring at all** (zero persistent targets), and both vessels'
+`ElementalAbilityMapSO` entries are open design slots with `Input = 0`, so nothing routes a press
+through them. They are resource *readouts* wearing button clothing. Were that not true, clearing
+them would delete the on-screen ability control on every touch device — which is exactly the trap
+`RetireLegacyChrome` guards with its touch-target exception, and why this was checked rather than
+assumed. `RhinoVesselHUDView` still writes to all of them — the
 branches are switched *off*, not unwired — so restoring one is re-activating a branch, not
 rebuilding a readout. The rule reverses itself automatically: the day the Rhino binds its first
 ability icon, the reference guard takes over again.
