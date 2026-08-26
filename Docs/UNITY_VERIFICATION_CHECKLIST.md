@@ -1,5 +1,12 @@
 # Unity In-Editor Verification Checklist
 
+> **Superseded for new work — see `Docs/QA/`.** The untested-development backlog is now
+> generated and maintained by the `/qa-backlog` skill in `Docs/QA/QA_BACKLOG.md`, with a
+> submission/result loop (`Docs/QA/README.md`) that archives passes and turns failures
+> into dev tasks. The two entries below are kept until they are run; new unverified work
+> does **not** get a section here — record it in the PR body's *Verification status*
+> section and the scan will pick it up.
+
 **Purpose.** Some changes land on shared branches (`bleeding-edge` and the
 per-feature branches) without ever being opened in the Unity Editor —
 authored and committed by a session that **cannot run the editor**, so no
