@@ -3258,3 +3258,51 @@ GPU-instancing macros (`#pragma multi_compile_instancing`, `UNITY_INSTANCING_BUF
 9. **The skyburst missile is unaffected.** It takes the `flightGrowthTarget` path added on
    `bleeding-edge` and carries no charge shell (the material has exactly one user,
    `SparrowProjectile.prefab`). Confirm missiles still swell and detonate normally.
+
+---
+
+## 🔴 Dolphin rig swap — the swapper has never been RUN (2026-08-26)
+
+`FrogletTools ▸ Vessels ▸ Swap Vessel Rig` is new and, like every writer tool, **its output is
+the deliverable and it lands in your working tree, not on the branch**. The branch carries the tool
+and the measurements; it does not carry a swapped `Dolphin.prefab`. Nothing was verified in an
+editor — this session had no Unity CLI (`unity` is not on PATH in the remote container), so the
+tool is type-checked against transcribed stubs and nothing more.
+
+**What the numbers rest on** (all measured, reproducible with
+`python3 Tools/Build/measure_vessel_models.py` and the derivations in
+`Docs/VESSEL_CONSTRUCTION.md` §4.3):
+
+- the rig IS the shipped hull, same place, no offset — so **no collider is re-fitted**, they are
+  re-homed onto bones with the world pose preserved;
+- the six jets mount on `jetint/jetinm/jetinb`, the **nozzle** bones (712 skinned verts each — the
+  restored exhaust bells), not on `jetT/jetm/jetB`, which skin the engine CASES (538 each);
+- the six mouth centres are the rearmost lip band of each nozzle bone's own skinned geometry.
+
+### Steps
+
+1. **Dry run first.** Open the window, leave the vessel on Dolphin, press **Dry run**. Every mapped
+   bone and legacy object must resolve and it must report **4 element shapes**. A refusal lists what
+   is missing and writes nothing.
+2. **Perform the swap.** Then open `Dolphin.prefab` and look at it: one skinned hull, no doubled
+   geometry, the six engine pods showing open exhaust bells (the shipped hull's are sealed cones —
+   that visible difference is the confirmation the rig is in).
+3. **`FrogletTools ▸ Vessels ▸ Audit Vessel Elemental Morphs`** — the Dolphin must now report four
+   element shapes **with non-zero magnitude**. Magnitude is the point: a rig can carry four
+   correctly-named shapes that move nothing (Rhino's and Urchin's do), and before this branch the
+   audit could not tell the difference.
+4. **`Audit Vessel Tails and Jets`** — six jets, still resolving, now on the nozzle bones.
+5. **`Audit Corridor Vessel Radii`** — the occlusion corridor measures the hull at bind. The rig's
+   bounds match the shipped hull's to three decimals, so this number should NOT move. If it does,
+   something else changed.
+6. **`Audit Vessel Skimmers`** — unaffected by the swap (the skimmer is under `OrientationHandle`,
+   not under the model), so it must still pass exactly as before.
+7. **Fly it.** Element level 0 → 10 on each of the four elements and watch the hull morph; check the
+   jaws, wings and six thrusters still animate (`RiptideAnimation` re-binds by bone name, so its
+   inspector fields are deliberately left EMPTY); check the trail, the skim and the crystal blast
+   are unchanged.
+8. **Ship the output.** Use the window's **Validate & Push** button, which stages only the prefab
+   the tool recorded. Do not `git add -A`.
+
+If step 3 does not go green, **do not hand-fix the prefab** — say what it reported. The mapping is
+measured and a mismatch means the measurement is wrong, which is a thing to correct at the source.

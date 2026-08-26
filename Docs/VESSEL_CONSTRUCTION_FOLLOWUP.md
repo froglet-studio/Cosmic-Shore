@@ -78,31 +78,55 @@ not a cleanup decision — flagged, not acted on.
 
 ---
 
-## Phase 2 — the Dolphin rig swap (the one that actually buys a morph)
+## Phase 2 — the Dolphin rig swap  ✅ TOOL SHIPPED · ⚠ NOT YET RUN
 
-This is the highest-value item and the only one where the rig carries a real morph. Follow the
-procedure `FrogletTools ▸ Vessels ▸ Plan Vessel Rig Swap` prints (report-only, never writes), and
-note what the plan tool already flags: gameplay objects that map to no bone go dark when the old
-model is disabled, and every legacy part carries its `MeshRenderer` alongside its collider — moving
-one onto a bone without retiring its renderer welds the old hull to the new skeleton.
+The highest-value item, and the only rig carrying a real morph. Phase 0 changed two of this
+phase's own premises (`VESSEL_CONSTRUCTION.md` §4.3), both in the easier direction:
 
-Constraints that are already handled in code and must not be re-solved:
+- **The rig is the shipped hull, in the same place.** World bounds agree on all six faces to three
+  decimals; 8,311 of 12,583 shipped vertices sit within 5.5e-5 of a rig vertex. So **no collider is
+  re-fitted** — each gameplay volume is re-homed onto its bone with the world pose preserved. (Do
+  not carry that to the Rhino or the Urchin; §4.4.)
+- **The rig restores six exhaust nozzles.** 4,284 rig vertices have no counterpart in the shipped
+  hull: the six `Engine Left/Right.N` inner meshes, which `Dolphin_Test` ships at `localScale 0.01`
+  — 0.00095 units in a 5.3-unit ship, i.e. never drawn. Rendered and confirmed by eye: the shipped
+  pods are sealed cones, the rig's have open bells.
 
-- `VesselAnimation` resolves parts by name, preferring an authored inspector reference. **Leave the
-  animation's part fields empty** so they bind to bones.
+**The jets move to different bones than this brief assumed.** The rig's skin weights settle it:
+`jetT/jetm/jetB` skin 538 verts each (an engine CASE), `jetint/jetinm/jetinb` skin 712 each (the
+restored nozzle). A plume comes out of the nozzle, so `VesselJet.mountBone` is set to the `jetin*`
+bone and the jet is parked at the mouth centre measured off that bone's own rearmost lip band.
+
+| bone | mouth centre (vessel space) | current jet sits |
+|---|---|---|
+| `jetint.l` | (−0.4153, 0.5418, −2.2867) | 0.047 forward |
+| `jetinm.l` | (−0.5752, 0.2409, −2.2824) | 0.039 forward |
+| `jetinb.l` | (−0.5408, −0.0975, −2.2777) | 0.031 forward |
+| `jetint.r` | (0.4152, 0.5420, −2.2867) | 0.055 forward |
+| `jetinm.r` | (0.5751, 0.2411, −2.2824) | 0.052 forward |
+| `jetinb.r` | (0.5409, −0.0973, −2.2777) | 0.046 forward |
+
+**The tool:** `FrogletTools ▸ Vessels ▸ Swap Vessel Rig` (`VesselRigSwapper`) — dry-run first, then
+write; idempotent; refuses and writes nothing if a single mapped bone or object is missing; records
+its output to the ledger and draws the ship panel. `VesselRigSwapPlanner` stays as the report-only
+sibling and now points at it.
+
+⚠ **The tool has never been run.** This session had no Unity CLI, so the swapper is type-checked
+against transcribed stubs and nothing more, and **the branch carries the tool, not a swapped
+prefab**. The run-and-verify steps are in `Docs/UNITY_VERIFICATION_CHECKLIST.md`; use the window's
+**Validate & Push** so the prefab lands as its own commit.
+
+Constraints already handled in code, which must not be re-solved:
+
+- `VesselAnimation` resolves parts by name, preferring an authored reference — so the swapper
+  **clears** the animation's Transform fields, letting them bind to bones.
 - Rest poses are captured (`CaptureRestRotations` / `RotatePartFromRest`), so rigged art holds its
-  shape. Identity-rest art is unaffected.
-- Morph weights are written in `LateUpdate` so the element level stays authoritative over any stray
+  shape.
+- Morph weights are written in `LateUpdate`, keeping the element level authoritative over any stray
   animation curve.
 
-What must be re-derived, not carried:
-
-- **Every FX mount on the Dolphin.** Its six jets currently parent to `Engine case *` nodes at a
-  mount measured in mesh space. On the rig those become the bones `jetT/jetm/jetB × .l/.r`.
-- **Colliders**, which were fitted to the 17 split part meshes by eye.
-
-Acceptance: `FrogletTools ▸ Vessels ▸ Audit Vessel Elemental Morphs` reports the Dolphin, **and**
-the hull visibly changes between element level 0 and 10 in play. Both, because of Phase 4.
+Acceptance: `Audit Vessel Elemental Morphs` reports the Dolphin **with non-zero shape magnitude**
+(Phase 4), **and** the hull visibly changes between element level 0 and 10 in play. Both.
 
 ---
 
