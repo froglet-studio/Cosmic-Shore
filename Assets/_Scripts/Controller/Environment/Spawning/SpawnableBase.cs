@@ -38,6 +38,14 @@ namespace CosmicShore.Gameplay
                  "When empty, this node is a leaf (instantiates leafPrefab).")]
         [SerializeField] protected List<SpawnableBase> children = new();
 
+        /// <summary>
+        /// The nested child generators, read-only. A COMPOSITE spawnable's own points are
+        /// placements, not geometry - anything modelling one (CellMiniatureBuilder) has to recurse
+        /// exactly as <see cref="SpawnChildren"/> builds, or the model shows the anchors and none
+        /// of the structure (three shards at the origin, for the concentric-spheres arena).
+        /// </summary>
+        public IReadOnlyList<SpawnableBase> NestedChildren => children;
+
         [Header("Leaf Spawning")]
         [Tooltip("Prefab to instantiate at each generated point when this is a leaf node. " +
                  "Can be a Prism (gets trail management), Crystal, Flora, Fauna, Vessel, or any prefab.")]

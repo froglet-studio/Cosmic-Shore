@@ -163,8 +163,16 @@ namespace CosmicShore.ScriptableObjects
 
             float radius = Mathf.Max(nucleusRadius + Mathf.Max(0f, SpawnDistanceOutsideNucleus),
                                      SpawnRingRadiusFloor);
-            return CellSpawnFormation.Build(1, cellCentre, radius, SpawnFormation)[0];
+
+            // Seat 0 of the HOUSE MATCH SIZE, not of a one-player formation. Symmetric changes
+            // shape with the count (1 player = +Z, 4 = a tetrahedron vertex), so Build(1) computed
+            // a seat the real full-lobby match never contains. EquatorialRing's seat 0 is +Z at
+            // every count, so this is a no-op there.
+            return CellSpawnFormation.Build(MatchSeats, cellCentre, radius, SpawnFormation)[0];
         }
+
+        /// <summary>The house match size - what the fill-with-AI toggle seats a lobby to.</summary>
+        const int MatchSeats = 4;
 
         /// <summary>
         /// True when this definition can actually be flown. A definition with no cell has

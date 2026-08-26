@@ -204,6 +204,7 @@ namespace CosmicShore.UI
                 var c = ReadyFlashColor;
                 c.a = 1f;                        // a heading is structure, never a half-faded flash
                 headingText.color = c;
+                AlignHeadingWithRowStart(headingText.rectTransform);
             }
 
             gameObject.SetActive(true);
@@ -220,6 +221,12 @@ namespace CosmicShore.UI
         /// </summary>
         void RestoreSectionChrome()
         {
+            if (_headingMovedRect)
+            {
+                _headingMovedRect.offsetMin = _headingRestOffsetMin;
+                _headingMovedRect = null;
+            }
+
             if (icon) icon.gameObject.SetActive(true);
             if (nameText)
             {
@@ -233,6 +240,49 @@ namespace CosmicShore.UI
         bool _capturedNameColor;
         Color _descRestColor = Color.white;
         bool _capturedDescColor;
+        RectTransform _headingMovedRect;
+        Vector2 _headingRestOffsetMin;
+
+        /// <summary>
+        /// Pull the heading's LEFT edge back to the row's first content column - where the glyph
+        /// and the icon sit - instead of leaving it indented at the text column.
+        ///
+        /// <para>The row's children are anchored rects, not a layout group, so hiding the icon does
+        /// not slide the text left; a heading drawn through the description field therefore floats
+        /// at the description's indent, which reads as belonging to the row above it. Done by
+        /// MEASURING the siblings rather than authoring an offset - a template with different
+        /// spacing needs nothing re-tuned - and undone on the next Bind, because the same rect is
+        /// an ordinary description again on the next card.</para>
+        /// </summary>
+        void AlignHeadingWithRowStart(RectTransform heading)
+        {
+            float? target = null;
+            if (chipGlyph) target = LeftEdgeInRow(chipGlyph.rectTransform);
+            if (icon)
+            {
+                float left = LeftEdgeInRow(icon.rectTransform);
+                target = target == null ? left : Mathf.Min(target.Value, left);
+            }
+            if (target == null) return;
+
+            float current = LeftEdgeInRow(heading);
+            float delta = target.Value - current;
+            if (Mathf.Abs(delta) < 0.5f) return;
+
+            if (_headingMovedRect != heading)
+            {
+                _headingMovedRect = heading;
+                _headingRestOffsetMin = heading.offsetMin;
+            }
+            heading.offsetMin = new Vector2(heading.offsetMin.x + delta, heading.offsetMin.y);
+        }
+
+        /// <summary>A rect's left edge in this row's local space, whatever its anchors.</summary>
+        float LeftEdgeInRow(RectTransform rect)
+        {
+            var world = rect.TransformPoint(new Vector3(rect.rect.xMin, 0f, 0f));
+            return transform.InverseTransformPoint(world).x;
+        }
 
         /// <summary>
         /// A row with one text field says everything in it: the headline first, the detail on the

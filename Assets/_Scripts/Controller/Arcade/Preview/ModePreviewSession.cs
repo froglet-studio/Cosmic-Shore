@@ -669,7 +669,15 @@ namespace CosmicShore.Gameplay
                 _hasVesselHome = true;
             }
 
-            vessel.SetPose(_arena.SpawnPose(definition));
+            var pose = _arena.SpawnPose(definition);
+            vessel.SetPose(pose);
+
+            CSDebug.LogVerbose(CSLogChannel.ArcadeLaunch,
+                $"[ModePreview] Spawn for {definition.Mode}: pos {pose.position - _arena.Origin} " +
+                $"(cell-relative), ring={definition.SpawnFromCellRing}, " +
+                $"nucleus={( _arena.Cell ? _arena.Cell.ExpectedNucleusWorldRadius : -1f):0.#}, " +
+                $"dist={definition.SpawnDistanceOutsideNucleus:0.#}, " +
+                $"floor={definition.SpawnRingRadiusFloor:0.#}, formation={definition.SpawnFormation}.");
         }
 
         void ReturnVesselHome()
