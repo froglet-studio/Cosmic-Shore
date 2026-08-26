@@ -137,6 +137,14 @@ namespace CosmicShore.UI
         protected virtual void Update()
         {
             if (!isOn || !closeOnGamepadB) return;
+
+            // While a mode-preview window holds input focus, the pad belongs to the VESSEL -
+            // every face button is a flight control, so B closing the modal here would yank the
+            // player out of the game they are flying. sendNavigationEvents being off does not
+            // cover this path: it silences EventSystem-driven UI, and this is a direct device
+            // poll that sails straight past it.
+            if (ModePreviewWindow.AnyHasFocus) return;
+
             if (Gamepad.current != null && Gamepad.current.buttonEast.wasPressedThisFrame)
             {
                 if (screenSwitcher != null && !screenSwitcher.ModalIsActive(ModalType))

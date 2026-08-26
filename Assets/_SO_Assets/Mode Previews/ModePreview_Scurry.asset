@@ -1,0 +1,24 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9f1780f039eb88d45a9cd7a4a75f9e13, type: 3}
+  m_Name: ModePreview_Scurry
+  m_EditorClassIdentifier: 
+  Mode: 35
+  Notes: 'Scurry = MultiplayerCrystalCapture(35). Its cell GROWS its world from the spawn profile (no EnvironmentPrefab), which the satellite bootstrap runs. OPEN-ENDED: the crystals it races for are CrystalManager''s, which is scene-level - wiring a satellite crystal source is the noted follow-up.'
+  PreviewCell: {fileID: 11400000, guid: 0b031d10988049df95ddeea50ab5beed, type: 2}
+  StructurePrefab: {fileID: 0}
+  Vessel: -1
+  ObjectiveText: 'Graze the reef. Everything you skim feeds your speed.'
+  ObjectiveMetric: 0
+  ObjectiveTarget: 0
+  DurationSeconds: 60
+  SpawnDistanceOutsideNucleus: 70

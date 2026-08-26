@@ -15,7 +15,6 @@ using UnityEngine;
 using UnityEngine.Serialization;
 using UnityEngine.UI;
 using UnityEngine.InputSystem;
-using UnityEngine.Video;
 
 namespace CosmicShore.UI
 {
@@ -100,6 +99,20 @@ namespace CosmicShore.UI
         [Tooltip("'Waiting for others...' label - shown after a player confirms, hidden when choosing.")]
         [SerializeField] private GameObject waitingForOthersLabel;
 
+        [Header("Mode Preview")]
+        [Tooltip("Which modes have a playable preview. Leave empty to load " +
+                 "Resources/ModePreviewLibrary. A mode with no entry shows 'LEVEL PREVIEW NOT " +
+                 "AVAILABLE' in the window - there is no video fallback any more.")]
+        [SerializeField] private ModePreviewLibrarySO previewLibrary;
+
+        [Tooltip("The preview window itself: an idle scale model of the mode's arena, and - once " +
+                 "clicked - the live game playing in the same frame at the same size. Optional; " +
+                 "without it the legacy video path still runs.")]
+        [SerializeField] private ModePreviewWindow previewWindow;
+
+        [Tooltip("Owns the windowed preview. Leave empty to find the one in the scene.")]
+        [SerializeField] private ModePreviewSession previewSession;
+
         [Header("Network Sync")]
         [SerializeField] private ArcadeConfigSyncManager arcadeConfigSyncManager;
 
@@ -147,8 +160,10 @@ namespace CosmicShore.UI
 
         // Runtime state
         SO_ArcadeGame _selectedGame;
-        VideoPlayer   _previewVideo;
         bool _isClientMode;
+
+        ModePreviewSession _resolvedPreviewSession;
+        bool _previewSessionSubscribed;
 
         // Modal-side single-shot guard for the host's "Confirm Configuration"
         // button. Set true on first click; gates re-entry into OnConfirmConfiguration
@@ -249,6 +264,8 @@ namespace CosmicShore.UI
                     item.Button.onClick.RemoveAllListeners();
             }
 
+            ShutDownPreview();
+
             if (configChangedEvent != null)
                 configChangedEvent.OnRaised -= HandleConfigChangedExternal;
 
@@ -272,6 +289,11 @@ namespace CosmicShore.UI
             var pad = Gamepad.current;
             if (pad == null) return;
             if (IsClientMode) return;
+
+            // While the preview window holds focus the pad belongs to the VESSEL - the d-pad
+            // and A button must not silently drive the intensity rows behind the game the
+            // player is flying. Same gate the base applies to its B-to-close.
+            if (ModePreviewWindow.AnyHasFocus) return;
             if (!configurationDetailView || !configurationDetailView.activeSelf) return;
 
             if (pad.dpad.up.wasPressedThisFrame)
@@ -431,6 +453,119 @@ namespace CosmicShore.UI
 
         #endregion
 
+        #region Mode preview (diorama + Test Flight)
+
+        /// <summary>
+        /// The preview definition for <paramref name="mode"/>, or null when the mode has none.
+        /// Null is the ordinary answer: the arcade lists 42 games while only ~15 have a scene,
+        /// and Maelstrom is excluded on principle (it draws OTHER modes, so it has no arena of
+        /// its own to shrink).
+        /// </summary>
+        ModePreviewDefinitionSO ResolvePreviewDefinition(GameModes mode)
+        {
+            if (!previewLibrary)
+                previewLibrary = Resources.Load<ModePreviewLibrarySO>(ModePreviewLibrarySO.ResourcePath);
+
+            return previewLibrary ? previewLibrary.Resolve(mode) : null;
+        }
+
+        /// <summary>
+        /// Arm the session for this card: bind it to the window, hand it the definition, and give
+        /// it the hull the mode locks to. The window is the affordance - there is no separate
+        /// button, because the thing you click to play is the thing the game plays in.
+        /// </summary>
+        void ArmPreviewForGame(SO_ArcadeGame game, ModePreviewDefinitionSO definition)
+        {
+            var session = PreviewSession;
+            if (!session)
+            {
+                // No session in the scene: the window still owes the player an answer, and the
+                // honest one is the label - never a stale image or an empty frame.
+                if (previewWindow) previewWindow.ShowUnavailable();
+                return;
+            }
+
+            session.Attach(previewWindow);
+            session.SetDefinition(definition && definition.CanTestFlight ? definition : null,
+                                  ResolveModeVessel(game));
+        }
+
+        /// <summary>
+        /// Stop anything running in the window and let go of it. Called from every route that
+        /// takes the window off screen - the modal closing, the modal being disabled, a launch.
+        /// </summary>
+        void ShutDownPreview()
+        {
+            UnsubscribeFromPreviewSession();
+
+            var session = previewSession ? previewSession : _resolvedPreviewSession;
+            if (session)
+            {
+                session.Stop();
+                session.Detach();
+            }
+
+            if (previewWindow) previewWindow.Hide();
+        }
+
+        /// <summary>The scene's preview session, resolved once and cached.</summary>
+        ModePreviewSession PreviewSession
+        {
+            get
+            {
+                if (previewSession)
+                {
+                    SubscribeToPreviewSession(previewSession);
+                    return previewSession;
+                }
+                if (_resolvedPreviewSession) return _resolvedPreviewSession;
+
+                // One lookup per modal lifetime, not per frame - this is the sanctioned shape
+                // for a scene-singleton the inspector forgot, not a hot path.
+                _resolvedPreviewSession = FindFirstObjectByType<ModePreviewSession>(FindObjectsInactive.Exclude);
+                if (_resolvedPreviewSession) SubscribeToPreviewSession(_resolvedPreviewSession);
+                return _resolvedPreviewSession;
+            }
+        }
+
+        void SubscribeToPreviewSession(ModePreviewSession session)
+        {
+            if (!session || _previewSessionSubscribed) return;
+
+            session.OnPreviewEnded += HandlePreviewEnded;
+            _previewSessionSubscribed = true;
+        }
+
+        void UnsubscribeFromPreviewSession()
+        {
+            if (!_previewSessionSubscribed) return;
+
+            var session = previewSession ? previewSession : _resolvedPreviewSession;
+            if (session) session.OnPreviewEnded -= HandlePreviewEnded;
+            _previewSessionSubscribed = false;
+        }
+
+        /// <summary>
+        /// The hull a mode locks to, or <see cref="VesselClassType.Any"/> when it allows several
+        /// (in which case the preview keeps whatever the player is already flying). Four of the
+        /// live modes are single-vessel, and this is the list they already declare.
+        /// </summary>
+        static VesselClassType ResolveModeVessel(SO_ArcadeGame game)
+        {
+            if (game == null || game.Vessels == null || game.Vessels.Count != 1 || !game.Vessels[0])
+                return VesselClassType.Any;
+
+            return game.Vessels[0].Class;
+        }
+
+        /// <summary>
+        /// A preview stopped - by the player clicking away, by the card changing, or by the modal
+        /// closing. Nothing to restore: the modal never went anywhere.
+        /// </summary>
+        void HandlePreviewEnded(GameModes mode, ModePreviewOutcome outcome) { }
+
+        #endregion
+
         #region Initialization helpers
 
         int CurrentPartyHumanCount
@@ -474,28 +609,12 @@ namespace CosmicShore.UI
             if (selectedGameFavoriteIcon)
                 selectedGameFavoriteIcon.Favorited = FavoriteSystem.IsFavorited(game.Mode);
 
-            if (!game.PreviewClip || !selectedGamePreviewWindow)
-                return;
-
-            if (!_previewVideo)
-            {
-                _previewVideo = Instantiate(game.PreviewClip, selectedGamePreviewWindow.transform, false);
-                var rt = _previewVideo.GetComponent<RectTransform>();
-                if (rt)
-                {
-                    // Stretch to fill the preview window. The prefab's authored fixed
-                    // size predates the canvas resolution upgrade and no longer matches
-                    // the parent, leaving the video floating small in its frame.
-                    rt.anchorMin = Vector2.zero;
-                    rt.anchorMax = Vector2.one;
-                    rt.offsetMin = Vector2.zero;
-                    rt.offsetMax = Vector2.zero;
-                }
-            }
-            else
-            {
-                _previewVideo.clip = game.PreviewClip.clip;
-            }
+            // The session drives the window through its three states - 'LEVEL PREVIEW NOT
+            // AVAILABLE' (no definition, or the build failed), 'LOADING' (the arena standing
+            // up), and live (the mode already playing under AI until the player taps in).
+            // Every card lands in exactly one of those; the video path is gone, so nothing
+            // stale, white, or leaked-through can ever draw in the frame.
+            ArmPreviewForGame(game, ResolvePreviewDefinition(game.Mode));
         }
 
         void InitializeScreen1Controls(SO_ArcadeGame game)
@@ -1218,6 +1337,10 @@ namespace CosmicShore.UI
             // Re-arm the modal-side commit guard so the next session's
             // OnConfirmConfiguration is allowed to fire.
             ResetCommitGuard();
+
+            // A satellite arena is the expensive half of the preview - it must never outlive the
+            // window somebody was looking at it through.
+            ShutDownPreview();
 
             ModalWindowOut();
         }

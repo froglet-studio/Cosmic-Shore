@@ -1,0 +1,24 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9f1780f039eb88d45a9cd7a4a75f9e13, type: 3}
+  m_Name: ModePreview_Rampage
+  m_EditorClassIdentifier: 
+  Mode: 2
+  Notes: 'Rampage''s whole arena IS its cell config - the cactus forest is GROWN by the spawner (no EnvironmentPrefab), which the satellite bootstrap runs, so the forest grows in on camera. Intensity 1 of four: the forest is identical at every intensity, only crystal count changes.'
+  PreviewCell: {fileID: 11400000, guid: fc20698b2b983f9e1e9c20733ea92760, type: 2}
+  StructurePrefab: {fileID: 0}
+  Vessel: -1
+  ObjectiveText: 'Skim to charge, grab a crystal, then aim the cone at the thickest forest.'
+  ObjectiveMetric: 5
+  ObjectiveTarget: 150
+  DurationSeconds: 90
+  SpawnDistanceOutsideNucleus: 70
