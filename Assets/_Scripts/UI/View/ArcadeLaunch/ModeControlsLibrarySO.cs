@@ -45,6 +45,21 @@ namespace CosmicShore.UI
                      "whose vessel abilities genuinely do not apply. Leave on everywhere else; " +
                      "the abilities are the point of the section.")]
             public bool ShowAbilityRows = true;
+
+            [Tooltip("Show ONLY these elements' abilities on this card. Empty = all four, which " +
+                     "is the right default: they are the vessel's abilities and the vessel is " +
+                     "what you fly.\n\n" +
+                     "This exists because a hull is shared across modes - Skim Race and Joust are " +
+                     "both the Squirrel, so without a filter the two cards say exactly the same " +
+                     "thing about two very different games.")]
+            public List<Element> Abilities = new();
+
+            [Tooltip("Describe THIS hull's abilities, whatever the card lists. Any = use the " +
+                     "card's own vessel.\n\n" +
+                     "For a card that lists SEVERAL vessels (Scurry, Brood Rush, Freestyle): with " +
+                     "no single hull to describe those cards showed no abilities at all, which is " +
+                     "worse than describing one of them. Name the hull the mode is really about.")]
+            public VesselClassType Vessel = VesselClassType.Any;
         }
 
         [Tooltip("Rows for a mode that has NO entry below. Ships EMPTY on purpose: the section " +
@@ -71,5 +86,12 @@ namespace CosmicShore.UI
         /// <summary>Whether the derived ability rows draw for this mode. Default yes.</summary>
         public bool AbilityRowsFor(GameModes mode)
             => EntryFor(mode)?.ShowAbilityRows ?? true;
+
+        /// <summary>Which elements' abilities this mode shows. Null or empty means all four.</summary>
+        public List<Element> AbilitiesFor(GameModes mode) => EntryFor(mode)?.Abilities;
+
+        /// <summary>The hull this mode describes, or <see cref="VesselClassType.Any"/> to use the card's.</summary>
+        public VesselClassType VesselFor(GameModes mode)
+            => EntryFor(mode)?.Vessel ?? VesselClassType.Any;
     }
 }

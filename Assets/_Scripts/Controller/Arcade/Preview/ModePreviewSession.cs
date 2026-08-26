@@ -6,6 +6,7 @@ using CosmicShore.UI;
 using CosmicShore.Utility;
 using Cysharp.Threading.Tasks;
 using Reflex.Attributes;
+using Reflex.Core;
 using UnityEngine;
 using UnityEngine.EventSystems;
 
@@ -84,6 +85,10 @@ namespace CosmicShore.Gameplay
 
         [Inject] GameDataSO gameData;
         [Inject] MenuFreestyleEventsContainerSO freestyleEvents;
+
+        // Handed to the satellite arena: a runtime Instantiate gets no injection of its own, and
+        // Cell.gameData (and every spawner it starts) is [Inject].
+        [Inject] Container _container;
 
         readonly ModePreviewArena _arena = new();
 
@@ -384,7 +389,7 @@ namespace CosmicShore.Gameplay
                 var config = definition.ResolveCell(_intensity);
                 var prefab = cellPrefab ? cellPrefab : template.gameObject;
 
-                if (!_arena.Stand(definition, config, template, prefab, origin))
+                if (!_arena.Stand(definition, config, template, prefab, origin, _container))
                     throw new InvalidOperationException("the arena could not be stood up");
 
                 // The satellite builds without a veil (it is beside the menu, not instead of it),

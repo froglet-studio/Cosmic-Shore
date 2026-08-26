@@ -280,6 +280,40 @@ One ordering rule: `ClearStaleChipsFromAllStrips` removes **every** chip under a
 rebuilds the AI chips itself rather than leaving it to whichever call happened to run last.
 
 
+### 5.3 The controls block: three marks per row, in two sections
+
+**An ability row is a GLYPH, an ICON and a NAME.** No sentence. "Press RT to activate Boost Ring"
+spends a line restating the glyph beside it, and the authored `AbilityDescription` is a *design
+note* — several hundred characters of mechanism, written for engineers — which buried the row it
+belonged to and dragged in prose about other modes entirely. That prose is where "Skim Race talks
+about jousting" came from: the Squirrel's four abilities are Skimming / Trail Volume / Skimmer Reach
+/ Boost Ring, none of which mentions a joust.
+
+**The block is sectioned**, the way the Froglet Master Tool groups its own categories: a heading,
+then the things under it. `VesselControlRow.BindSection` draws a heading using the SAME prefab with
+its control parts switched off — a separate header prefab is one more asset to author and keep in
+visual step, for a row that is a piece of text. A heading whose section turned out empty is taken
+back, so a vessel with no authored rows never shows a bare "CONTROLS" label.
+
+**Every row animates, headings never do.** The sweep runs over an index list of control rows
+(`_sweepRows`), not over every row: leaving headings in it would spend a beat of each cycle
+highlighting a word and make the travel visibly stall twice a pass. A flight row now flashes on its
+turn like an ability does — a row that only dims and brightens reads as *disabled* next to one that
+flashes — and only the RECHARGE stays conditional, because only an ability has one.
+
+**A hull is shared across modes, so a mode may narrow what its card says.**
+`ModeControlsLibrarySO.ModeEntry` gained two fields:
+
+- `Abilities` — show only these elements. Empty means all four, which is the right default: they
+  are the vessel's abilities and the vessel is what you fly. It exists because Skim Race and Joust
+  are *both* the Squirrel, so without it the two cards say exactly the same thing about two very
+  different games.
+- `Vessel` — describe this hull whatever the card lists. For a card listing several (Scurry 3,
+  Brood Rush 6, Freestyle 6) the panel previously required *exactly one* and drew no ability rows at
+  all, so those cards showed an empty block. It now falls back to the card's FIRST vessel, and this
+  field names a better one. "Nothing" is not more honest than "one of the hulls you may fly", it is
+  just less useful.
+
 ## 6. The preview follows the intensity row
 
 `ModePreviewDefinitionSO.PreviewCellsByIntensity` is the same shape the mode's own scene uses

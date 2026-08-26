@@ -62,13 +62,19 @@ namespace CosmicShore.UI
         }
 
         /// <summary>
-        /// The one hull this mode is flown in, or null when the card lists none or several. A card
-        /// with several is not an error — the controls block simply has nothing definite to show
-        /// and draws no rows, which is better than naming one of them arbitrarily.
+        /// The hull this mode's controls block describes: the card's vessel when it locks one, and
+        /// otherwise the FIRST it lists.
+        ///
+        /// <para>Taking the first is a compromise and it replaces a worse one. Requiring exactly
+        /// one meant Scurry (3), Brood Rush (6) and Freestyle (6) drew no ability rows at all, so
+        /// those cards showed an empty controls block — and "nothing" is not more honest than "one
+        /// of the hulls you may fly", it is just less useful. A mode that wants a different hull
+        /// named says so in <c>ModeControlsLibrarySO.Vessel</c>, which the panel applies over
+        /// this.</para>
         /// </summary>
         static SO_Vessel ResolveModeVessel(SO_ArcadeGame game)
         {
-            if (game == null || game.Vessels == null || game.Vessels.Count != 1) return null;
+            if (game == null || game.Vessels == null || game.Vessels.Count == 0) return null;
             return game.Vessels[0];
         }
     }

@@ -106,24 +106,11 @@ namespace CosmicShore.UI
         UnityEngine.UI.Image vesselIcon;
 
         [Header("Copy")]
-        [Tooltip("How much of an ability's authored description a row shows.\n\n" +
-                 "ElementalAbilityMapSO.AbilityDescription is a DESIGN NOTE, not player copy - " +
-                 "the shipped ones run to several hundred characters of mechanism - so quoting it " +
-                 "whole buries the row it belongs to. FirstSentence is the default because that " +
-                 "sentence is reliably the summary and the rest is rationale.")]
-        [SerializeField] DescriptionStyle abilityDescriptionStyle = DescriptionStyle.FirstSentence;
+        [SerializeField, Tooltip("Heading above the mode's authored rows. Empty draws no heading.")]
+        string flightSectionTitle = "Controls";
 
-        [SerializeField, Tooltip("Hard character cap on a row's description, whatever the style. " +
-                                 "0 = no cap. A first sentence that runs long is still a wall.")]
-        [Min(0)] int descriptionCharacterCap = 120;
-
-        [SerializeField, Tooltip("Headline for an ability the player fires with a control. " +
-                                 "{0} = control name (RT, LT, A…), {1} = ability name.")]
-        string abilityHeadlineFormat = "Press {0} to activate {1}";
-
-        [SerializeField, Tooltip("Headline for an ability with no control at all - a passive. " +
-                                 "{0} = ability name.")]
-        string passiveHeadlineFormat = "{0} (passive)";
+        [SerializeField, Tooltip("Heading above the derived ability rows. Empty draws no heading.")]
+        string abilitySectionTitle = "Abilities";
 
         [Header("Demonstration")]
         [SerializeField, Tooltip("Seconds each row holds the demonstration before it travels on.")]
@@ -138,22 +125,12 @@ namespace CosmicShore.UI
                                  "the ability lockup's own grammar (Docs/ABILITY_LOCKUP.md).")]
         [Range(0.2f, 0.9f)] float cooldownFraction = 0.6f;
 
-        /// <summary>How much of an authored ability description a row quotes.</summary>
-        public enum DescriptionStyle
-        {
-            /// <summary>Headline only - the sentence naming the control and the ability.</summary>
-            None = 0,
-            /// <summary>The first sentence of the authored description. The default.</summary>
-            FirstSentence = 1,
-            /// <summary>All of it. For a vessel whose descriptions are genuinely player copy.</summary>
-            Full = 2,
-        }
-
         /// <summary>Charge → mass → space → time: the fleet's ability-row order.</summary>
         static readonly Element[] DisplayOrder =
             { Element.Charge, Element.Mass, Element.Space, Element.Time };
 
         readonly List<VesselControlRow> _rows = new();
+        readonly List<int> _sweepRows = new();
         int _liveRows;
         float _phase;
         int _lastBeatRow = -1;
@@ -224,15 +201,69 @@ namespace CosmicShore.UI
                 if (row) row.gameObject.SetActive(false);
 
             EnsureControlsLibrary();
-            int used = BuildAuthoredRows(mode, 0);
+
+            // A mode may name the hull its card describes, which is the answer for a card listing
+            // several (Scurry, Brood Rush, Freestyle) where the panel would otherwise describe
+            // whichever happens to be first.
+            if (controlsLibrary)
+            {
+                var named = controlsLibrary.VesselFor(mode);
+                if (named is not (VesselClassType.Any or VesselClassType.Random))
+                {
+                    vesselClass = named;
+                    if (vessel && vessel.Class != named) vessel = null;   // its icon is another hull's
+                }
+            }
+
+            int used = BuildSection(flightSectionTitle, 0, at => BuildAuthoredRows(mode, at));
             if (!controlsLibrary || controlsLibrary.AbilityRowsFor(mode))
-                used = BuildAbilityRows(vesselClass, vessel, used);
+                used = BuildSection(abilitySectionTitle, used,
+                                    at => BuildAbilityRows(mode, vesselClass, vessel, at));
 
             for (int i = used; i < _rows.Count; i++)
                 if (_rows[i]) _rows[i].gameObject.SetActive(false);
 
             HideForeignRows();
+
             _liveRows = used;
+            RebuildSweepOrder();
+        }
+
+        /// <summary>
+        /// A heading, then whatever <paramref name="build"/> puts under it — and the heading is
+        /// TAKEN BACK when the builder produced nothing, so a mode with no authored rows does not
+        /// show an empty "CONTROLS" label. That is why the heading cannot be written until the rows
+        /// beneath it have been counted.
+        /// </summary>
+        int BuildSection(string title, int used, Func<int, int> build)
+        {
+            int headerIndex = used;
+            bool wantsHeader = !string.IsNullOrWhiteSpace(title);
+            if (wantsHeader) used++;                    // reserve the slot, fill it below
+
+            int after = build(used);
+            if (after == used) return wantsHeader ? used - 1 : used;
+
+            if (wantsHeader)
+            {
+                var header = RowAt(headerIndex);
+                if (header) header.BindSection(title);
+            }
+            return after;
+        }
+
+        /// <summary>
+        /// The rows the demonstration travels through: every CONTROL row, never a heading.
+        ///
+        /// <para>Held as an index list rather than skipped inside the sweep, because the sweep is a
+        /// POSITION along a list — leaving headings in it would spend a beat of every cycle
+        /// highlighting a word, and the travel would visibly stall twice per pass.</para>
+        /// </summary>
+        void RebuildSweepOrder()
+        {
+            _sweepRows.Clear();
+            for (int i = 0; i < _liveRows && i < _rows.Count; i++)
+                if (_rows[i] && !_rows[i].IsSection) _sweepRows.Add(i);
         }
 
         /// <summary>Take every row down — no card selected.</summary>
@@ -242,6 +273,7 @@ namespace CosmicShore.UI
                 if (row) row.gameObject.SetActive(false);
 
             HideForeignRows();
+            _sweepRows.Clear();
             _liveRows = 0;
             _lastBeatRow = -1;
         }
@@ -303,7 +335,7 @@ namespace CosmicShore.UI
             return used;
         }
 
-        int BuildAbilityRows(VesselClassType vesselClass, SO_Vessel vessel, int used)
+        int BuildAbilityRows(GameModes mode, VesselClassType vesselClass, SO_Vessel vessel, int used)
         {
             if (vesselClass is VesselClassType.Any or VesselClassType.Random) return used;
 
@@ -317,8 +349,16 @@ namespace CosmicShore.UI
                 return used;
             }
 
+            var shown = controlsLibrary ? controlsLibrary.AbilitiesFor(mode) : null;
+
             foreach (var element in DisplayOrder)
             {
+                // A mode may narrow the hull's four to the ones that matter in IT - Skim Race and
+                // Joust are the same vessel, so without this both cards say exactly the same thing.
+                // An empty (or absent) filter means all four, which is the right default: they are
+                // the vessel's abilities and the vessel is what you fly.
+                if (shown is { Count: > 0 } && !shown.Contains(element)) continue;
+
                 var entry = map.GetEntry(element);
                 if (entry == null) continue;
 
@@ -334,15 +374,15 @@ namespace CosmicShore.UI
 
                 var binding = InputHintBindingMap.BindingFor(entry.Input, _keyboardWhenBound);
                 var glyph = glyphSet ? glyphSet.For(binding) : null;
-                string controlName = ControlDisplayName(binding, glyph, _keyboardWhenBound);
 
-                string headline = string.IsNullOrEmpty(controlName)
-                    ? string.Format(passiveHeadlineFormat, entry.AbilityLabel)
-                    : string.Format(abilityHeadlineFormat, controlName, entry.AbilityLabel);
-
+                // The GLYPH says which button, the ICON says which ability, the NAME names it.
+                // Three marks and no sentence: "Press RT to activate Boost Ring" spends a line
+                // restating the glyph beside it, and the authored AbilityDescription is a DESIGN
+                // NOTE - several hundred characters of mechanism, written for engineers - which
+                // buried the row it belonged to and dragged in prose about other modes entirely.
                 row.Bind(element,
-                         headline,
-                         TrimDescription(entry.AbilityDescription),
+                         entry.AbilityLabel,
+                         string.Empty,
                          ResolveAbilityIcon(vesselClass, vessel, element, entry.AbilityLabel),
                          barsConfig ? barsConfig.GetPetalSprite(element) : null,
                          _keyboardWhenBound ? null : glyph?.padGlyph,
@@ -357,77 +397,6 @@ namespace CosmicShore.UI
                 used++;
             }
             return used;
-        }
-
-        /// <summary>
-        /// The part of an authored description a row should actually show.
-        ///
-        /// <para>"First sentence" means the first terminator followed by whitespace, so a decimal
-        /// or an abbreviation mid-sentence does not cut it short. Newlines end a sentence too -
-        /// these fields are written as prose blocks and the first line is routinely the summary.</para>
-        /// </summary>
-        string TrimDescription(string description)
-        {
-            if (string.IsNullOrWhiteSpace(description)) return string.Empty;
-            if (abilityDescriptionStyle == DescriptionStyle.None) return string.Empty;
-
-            var text = description.Trim();
-
-            if (abilityDescriptionStyle == DescriptionStyle.FirstSentence)
-            {
-                int cut = -1;
-                for (int i = 0; i < text.Length; i++)
-                {
-                    char c = text[i];
-                    if (c == '\n' || c == '\r') { cut = i; break; }
-                    if (c != '.' && c != '!' && c != '?') continue;
-                    if (i + 1 >= text.Length || char.IsWhiteSpace(text[i + 1])) { cut = i + 1; break; }
-                }
-                if (cut > 0) text = text[..cut].TrimEnd();
-            }
-
-            if (descriptionCharacterCap > 0 && text.Length > descriptionCharacterCap)
-            {
-                // Break on a word, not mid-word: an ellipsis after half a word reads as a bug.
-                int space = text.LastIndexOf(' ', Mathf.Min(descriptionCharacterCap, text.Length - 1));
-                text = (space > descriptionCharacterCap / 2 ? text[..space] : text[..descriptionCharacterCap])
-                       .TrimEnd(' ', ',', ';', ':', '-') + "…";
-            }
-
-            return text;
-        }
-
-        /// <summary>
-        /// What to CALL a control in a sentence. The keyboard's own label when the player is on a
-        /// keyboard (that is exactly what the fleet authored it for); the pad's short name
-        /// otherwise.
-        ///
-        /// <para>The pad names are one family's vocabulary — "RT", "A" — which is the same
-        /// single-family simplification the shipped glyph set already makes, and the same recorded
-        /// cost: a PlayStation player reads Xbox names (<c>Docs/ABILITY_LOCKUP.md</c>). Fixing it is
-        /// one field on <c>ControlGlyphSetSO</c> and would fix both surfaces at once.</para>
-        /// </summary>
-        static string ControlDisplayName(HintBinding binding, ControlGlyphSetSO.Glyph glyph, bool keyboard)
-        {
-            if (binding == HintBinding.None) return string.Empty;
-
-            if (keyboard)
-                return glyph != null && !string.IsNullOrWhiteSpace(glyph.keyboardLabel)
-                    ? glyph.keyboardLabel
-                    : string.Empty;      // no keyboard equivalent - blank is the honest answer
-
-            return binding switch
-            {
-                HintBinding.PadLeftTrigger => "LT",
-                HintBinding.PadRightTrigger => "RT",
-                HintBinding.PadLeftShoulder => "LB",
-                HintBinding.PadRightShoulder => "RB",
-                HintBinding.PadButtonSouth => "A",
-                HintBinding.PadButtonEast => "B",
-                HintBinding.PadButtonWest => "X",
-                HintBinding.PadButtonNorth => "Y",
-                _ => string.Empty,
-            };
         }
 
         /// <summary>
@@ -527,19 +496,22 @@ namespace CosmicShore.UI
 
         void Update()
         {
-            if (_liveRows <= 0) return;
+            if (_sweepRows.Count == 0) return;
 
             // Unscaled: the menu can hold timeScale at 0 while this panel is open.
             _phase += Time.unscaledDeltaTime / Mathf.Max(0.5f, rowDwellSeconds);
-            if (_phase >= _liveRows) _phase -= _liveRows;
+            if (_phase >= _sweepRows.Count) _phase -= _sweepRows.Count;
 
-            int beatRow = Mathf.Clamp((int)_phase, 0, _liveRows - 1);
-            float within = _phase - beatRow;               // 0..1 through this row's turn
+            int slot = Mathf.Clamp((int)_phase, 0, _sweepRows.Count - 1);
+            float within = _phase - slot;                  // 0..1 through this row's turn
 
-            for (int i = 0; i < _liveRows; i++)
-                if (_rows[i]) _rows[i].SetSweep(SweepWeight(i));
+            for (int i = 0; i < _sweepRows.Count; i++)
+            {
+                var row = _rows[_sweepRows[i]];
+                if (row) row.SetSweep(SweepWeight(i));
+            }
 
-            DriveBeat(beatRow, within);
+            DriveBeat(slot, within);
         }
 
         /// <summary>
@@ -548,25 +520,37 @@ namespace CosmicShore.UI
         /// clears. Exactly the three beats <c>AbilityLockupView</c> plays on a real ability, with
         /// the same colours out of the same style asset.
         /// </summary>
-        void DriveBeat(int beatRow, float within)
+        void DriveBeat(int slot, float within)
         {
-            var row = _rows[beatRow];
+            var row = _rows[_sweepRows[slot]];
             if (!row) return;
 
-            if (beatRow != _lastBeatRow)
+            if (slot != _lastBeatRow)
             {
                 // Entering a row: clear the previous one so a turn cut short never leaves a veil
                 // parked over an icon.
-                if (_lastBeatRow >= 0 && _lastBeatRow < _rows.Count && _rows[_lastBeatRow])
+                if (_lastBeatRow >= 0 && _lastBeatRow < _sweepRows.Count)
                 {
-                    _rows[_lastBeatRow].SetCooldown(0f);
-                    _rows[_lastBeatRow].SetFlash(Color.clear);
+                    var previous = _rows[_sweepRows[_lastBeatRow]];
+                    if (previous)
+                    {
+                        previous.SetCooldown(0f);
+                        previous.SetFlash(Color.clear);
+                    }
                 }
-                _lastBeatRow = beatRow;
-                if (row.DemonstratesCooldown) row.SetFlash(row.PressFlashColor);
+                _lastBeatRow = slot;
+
+                // EVERY row flashes on its turn - a flight row is a control you press too, and a
+                // row that only dims and brightens reads as disabled next to one that flashes.
+                // Only the RECHARGE is conditional, because only an ability has one.
+                row.SetFlash(row.PressFlashColor);
             }
 
-            if (!row.DemonstratesCooldown) return;
+            if (!row.DemonstratesCooldown)
+            {
+                row.SetFlash(FadeToClear(row.PressFlashColor, within * 2f));
+                return;
+            }
 
             float span = Mathf.Max(0.01f, cooldownFraction);
             if (within <= span)
@@ -593,7 +577,7 @@ namespace CosmicShore.UI
         float SweepWeight(int index)
         {
             float distance = Mathf.Abs(_phase - index);
-            distance = Mathf.Min(distance, _liveRows - distance);   // wrap
+            distance = Mathf.Min(distance, _sweepRows.Count - distance);   // wrap
             float ramp = Mathf.Max(0.01f, sweepRampFraction * 2f);
             return Mathf.SmoothStep(1f, 0f, Mathf.Clamp01(distance / ramp));
         }

@@ -89,10 +89,19 @@ namespace CosmicShore.UI
         /// <summary>Whether this row plays the recharge demonstration.</summary>
         public bool DemonstratesCooldown => demonstrateCooldown;
 
+        /// <summary>True when this row is a SECTION HEADING rather than a control.</summary>
+        public bool IsSection { get; private set; }
+
         void Awake() => CaptureRestScale();
 
         void CaptureRestScale()
         {
+            if (!_capturedNameColor && nameText)
+            {
+                _nameRestColor = nameText.color;
+                _capturedNameColor = true;
+            }
+
             if (_capturedRestScale) return;
             if (icon) _iconRestScale = icon.rectTransform.localScale;
             _capturedRestScale = true;
@@ -110,7 +119,9 @@ namespace CosmicShore.UI
         {
             CaptureRestScale();
             Element = element;
+            IsSection = false;
             demonstrateCooldown = showsCooldown;
+            RestoreSectionChrome();
 
             if (icon && iconSprite) icon.sprite = iconSprite;
 
@@ -140,6 +151,65 @@ namespace CosmicShore.UI
             SetCooldown(0f);
             SetFlash(Color.clear);
         }
+
+        /// <summary>
+        /// Draw this row as a SECTION HEADING - "CONTROLS", "ABILITIES" - rather than a control.
+        ///
+        /// <para>The block is a list of two different KINDS of thing (how you fly, and what you can
+        /// do), and a flat list of eight rows makes the reader work that out for themselves. This
+        /// is the same shape the Froglet Master Tool uses for its own categories: a heading, then
+        /// the things under it.</para>
+        ///
+        /// <para>It is the SAME prefab with its control parts switched off, deliberately - a
+        /// separate header prefab is one more asset to author and keep in visual step, for a row
+        /// that is a piece of text. Nothing here is animated: a heading that pulses competes with
+        /// the demonstration travelling through the rows beneath it.</para>
+        /// </summary>
+        public void BindSection(string title)
+        {
+            CaptureRestScale();
+            Element = Element.None;
+            IsSection = true;
+            demonstrateCooldown = false;
+
+            if (icon) icon.gameObject.SetActive(false);
+            if (elementPetal) elementPetal.gameObject.SetActive(false);
+            if (chipGlyph) chipGlyph.gameObject.SetActive(false);
+            if (chipLabel) chipLabel.gameObject.SetActive(false);
+            if (descriptionText) descriptionText.gameObject.SetActive(false);
+
+            if (nameText)
+            {
+                nameText.gameObject.SetActive(true);
+                nameText.text = (title ?? string.Empty).ToUpperInvariant();
+                var style = ResolveStyle();
+                if (style) nameText.color = style.readyFlashColor;
+            }
+
+            gameObject.SetActive(true);
+            SetCooldown(0f);
+            SetFlash(Color.clear);
+            ResolveGroup().alpha = 1f;      // a heading is never dimmed by the sweep
+        }
+
+        /// <summary>
+        /// Undo what <see cref="BindSection"/> switched off, so a pooled row can go back to being a
+        /// control. A row is REUSED across cards - the panel grows the list and rebinds - so a row
+        /// that was a heading on the Sparrow's card and is an ability on the Dolphin's would
+        /// otherwise draw no icon, no chip and a heading-coloured name.
+        /// </summary>
+        void RestoreSectionChrome()
+        {
+            if (icon) icon.gameObject.SetActive(true);
+            if (nameText)
+            {
+                nameText.gameObject.SetActive(true);
+                if (_capturedNameColor) nameText.color = _nameRestColor;
+            }
+        }
+
+        Color _nameRestColor = Color.white;
+        bool _capturedNameColor;
 
         /// <summary>
         /// A row with one text field says everything in it: the headline first, the detail on the

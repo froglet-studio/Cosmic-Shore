@@ -1,6 +1,8 @@
 using System.Collections.Generic;
 using CosmicShore.ScriptableObjects;
 using CosmicShore.Utility;
+using Reflex.Core;
+using Reflex.Injectors;
 using UnityEngine;
 using UnityEngine.Rendering.Universal;
 
@@ -73,7 +75,7 @@ namespace CosmicShore.Gameplay
         /// - normally the scene's own cell.
         /// </summary>
         public bool Stand(ModePreviewDefinitionSO definition, CellConfigDataSO config, Cell template,
-                          GameObject cellPrefab, Vector3 origin)
+                          GameObject cellPrefab, Vector3 origin, Container container = null)
         {
             if (IsStanding) return false;
 
@@ -107,6 +109,19 @@ namespace CosmicShore.Gameplay
             var cellGo = Object.Instantiate(cellPrefab, _root.transform);
             cellGo.transform.localPosition = Vector3.zero;
             cellGo.transform.localRotation = Quaternion.identity;
+
+            // A runtime Instantiate gets NO dependency injection: Reflex populates [Inject] for
+            // objects present at scene load, and for whatever a call site explicitly injects.
+            // Cell.gameData is [Inject], and so is every spawner it starts - so without this the
+            // satellite came up with null GameData and its life spawners refused to run
+            // ("[CellLifeSpawner] GameData is null for host 'Cell(Clone)'"). This is the same
+            // InjectRecursive the vessel spawner does for exactly the same reason; the whole of
+            // Controller/Environment relies on being present at load, and a satellite is not.
+            if (container != null)
+                GameObjectInjector.InjectRecursive(cellGo, container);
+            else
+                CSDebug.LogWarning("[ModePreview] Arena stood with no DI container - the satellite " +
+                                   "cell's injected dependencies will be null.");
 
             Cell = cellGo.GetComponentInChildren<Cell>(true);
             if (!Cell)
