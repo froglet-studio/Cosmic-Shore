@@ -30,59 +30,6 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
-### 🔴 Prompt 17 — the skyburst missile's TAIL (2026-08-26)
-
-Authored without a Unity compile — `/verify-unity` could not run (no editor in this session).
-Roslyn parsed every changed `.cs` clean, the shipped numbers were re-derived in Python and match
-the prefab's collider bytes exactly, both edited prefabs pass a YAML integrity pass (unique
-fileIDs, no dangling local refs, GameObject↔component and parent↔child agreement), and
-`check_conditional_compilation.py` is green. **The look is entirely unearned — nothing here has
-been seen on screen.**
-
-**What landed.**
-- `SkyBurstProjectile.prefab` nests the shared `Components/VesselTail.prefab` (never a copy) and
-  wires it to the new `Projectile.tail`. `tailWidthPerBodyDiameter: 0.4`.
-- `Projectile` owns that tail per flight: paint from the firing pilot's live domain, mount on the
-  model's measured rear face, width = 0.4 × the round's own body diameter, `Clear()` at launch,
-  detach-and-fade at retirement. `TailMount` / `TailWidth` are pure statics, covered by five new
-  cases in `SparrowRoundGrowthTests`.
-- `TailGradient` (new) is now the ONE composition of a tail's colour gradient; `VesselTailAndJets`
-  routes through it.
-- `VesselTail.prefab` lost six dead disabled particle systems (~690 KB → ~4 KB). Nothing in the
-  project referenced them; this is what makes nesting the tail into a 20-deep projectile pool
-  affordable.
-
-**Verify in editor**
-1. **Compile clean**, and open `SkyBurstProjectile.prefab`: it should show a `VesselTail` child
-   (nested prefab instance, blue icon) at local (0,0,0), and `Projectile ▸ Tail` should point at
-   that child's `TrailRenderer` — **not** be "Missing".
-2. **Every vessel still has its tail.** This is the risk of the strip: open two or three of
-   Dolphin / Sparrow / Rhino / Squirrel and confirm the `VesselTail` instance is intact, still
-   overriding its own `widthScale` and local z, with no "removed component" or broken-instance
-   warning. Fly one in Menu_Main freestyle and confirm the tail still streaks in the domain
-   colour, and that changing domain (domain-changer toy) re-tints it.
-3. **Fire the missile** (Dog Fight or Salvo, Sparrow). The tail should stream from the missile's
-   rear in the FIRING pilot's domain colour, ~3 u wide at resting Mass, and follow the body back
-   as the round swells over the first fifth of the flight.
-4. **Fire several in a row.** The bug this is most exposed to is the pooled-trail streak: if any
-   reissued missile draws a straight ribbon from where the previous one detonated to the launch
-   bay, `ReclaimTail`'s `Clear()` is not running.
-5. **Watch one detonate.** The ribbon must fade out over ~4 s where it was laid, not vanish in the
-   frame the round is pooled. Then fire again immediately (pool is 20 deep) and confirm the
-   re-fired round's tail is clean and the fading one is unaffected.
-6. **Look at the stern.** The root `ParticleSystem` exhaust is untouched and was tuned against the
-   retired 15 u wedge; if the missile reads as two unrelated effects, that is the thing to fix (or
-   delete), not the tail. See `SPARROW_SKYBURST_BAY.md` § Follow-ups.
-
-**First-pass tuning (starting points, not settled).**
-`tailWidthPerBodyDiameter` 0.4 → 2.13 / **3.05** / 3.96 / 4.88 / 5.79 u of ribbon at Mass
-−5 / 0 / 5 / 10 / 15. Derived from the Sparrow's own `widthScale` 2.5 against a ~6.4 u hull, not
-play-tested. Lifetime is the shared prefab's 4 s against a 3 s flight, so the ribbon is the whole
-flight path — deliberate, but if it reads as clutter the lever is an `m_Time` override on that
-instance, never a width change (shortening it far enough turns it into a jet).
-
----
-
 ### 🔴 Prompt 16 — corridor dither 3D-SHARD kernel 6 (2026-08-25)
 
 Authored without a Unity compile. `/verify-unity` did not run. Clang harness (`Tools/Shaders/verify_prism_shard3d.py --check`) is green: LO=0.155 HI=0.915, compiled |coverage−alpha|=0.00783; glancing-plane proof passed. **Look on real mass at speed is unearned — do not Bake as CURRENT.**

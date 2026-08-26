@@ -204,8 +204,17 @@ Two things a pooled round needs that a vessel does not, both in `Projectile`:
 
 ## In-editor verification
 
-See the 🔴 entry in `Docs/UNITY_VERIFICATION_CHECKLIST.md` (authored without a Unity
-compile/play-test — the donor-clip path binding and the visual seam both need eyes).
+**The bay + growth pass:** see the 🔴 entries in `Docs/UNITY_VERIFICATION_CHECKLIST.md`
+(authored without a Unity compile/play-test — the donor-clip path binding and the visual seam
+both need eyes).
+
+**The tail:** also authored without a Unity compile. It is recorded through the current loop
+rather than that checklist — its PR body's *Verification status* section, which `/qa-backlog`
+scans into `Docs/QA/QA_BACKLOG.md`. The two things most worth an eye are the pooled-round cases:
+a reissued missile must not draw a straight ribbon from the last detonation to its launch bay
+(`ReclaimTail`'s `Clear()`), and a detonating one's ribbon must fade over ~4 s where it was laid
+rather than vanish with the round (`ReleaseTailToFade`). Everything else is a look call on the
+0.4 width fraction.
 
 ## Follow-ups
 

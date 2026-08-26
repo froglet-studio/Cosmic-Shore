@@ -299,8 +299,8 @@ namespace CosmicShore.Gameplay
         ///
         /// Derived rather than authored so it cannot be mis-set: a projectile that grows a
         /// visible body is a bug in any prefab, present or future, and this answers it from the
-        /// prefab's own contents. The charge shell is excluded — it draws the hit volume, not
-        /// the round.
+        /// prefab's own contents. Two renderers are excluded because neither draws the ROUND:
+        /// the charge shell (it draws the hit volume) and the TAIL (it draws the round's path).
         /// </summary>
         void CacheTransformRole()
         {
