@@ -227,17 +227,43 @@ Two warn-once diagnostics close that, in the shape `PrismOcclusionDiagnostics` a
 *General shape: when a system's failure mode is that another system quietly covers for it, the
 system has to say so itself — nobody downstream can tell the difference.*
 
-### 4.3 Known: Falcon and Shrike carry TWO transformers
+### 4.3 Every one-thumb hull qualifies STRUCTURALLY, not by luck
 
-`Falcon.prefab` and `Shrike.prefab` each have **both** a base `VesselTransformer` and a
-`SingleStickVesselTransformer` component. `VesselStatus.VesselTransformer` resolves through
-`GetOrAdd<VesselTransformer>()` → `TryGetComponent`, which returns whichever comes first in the
-component list — so if it is the base one, those vessels fly the dual-stick model and never set
-`IsSingleStickControls`, and mouse flight will refuse them (with `NotSingleStick` in the console).
-Sparrow, Serpent, Grizzly and Termite are clean; the Scarab has its own transformer. Not fixed
-here: both are unplayable *Planned* vessels, and removing a component from a prefab means editing
-the component block **and** the GameObject's `m_Component` list, which is not worth the risk on a
-controls branch.
+A vessel gets this scheme because `IsSingleStickControls` is true, and that flag is written by
+whichever `VesselTransformer` the vessel resolves — through
+`VesselStatus.VesselTransformer` → `GetOrAdd<VesselTransformer>()` → `TryGetComponent`, i.e. **by
+component order**. So a prefab carrying two transformers has its flight model, and therefore its
+whole control scheme, decided by a list nobody maintains deliberately.
+
+`Falcon.prefab` and `Shrike.prefab` carried exactly that: a `SingleStickVesselTransformer` at
+index 2 and a base `VesselTransformer` at index 3. **They were not broken** — the single-stick one
+won on order, and the base was inert anyway (`m_Enabled: 0`, and `Update` early-outs on
+`!isActive`, which only the resolved transformer ever clears). An earlier revision of this document
+claimed they might be flying the dual-stick model; that was wrong, and the correction matters,
+because "correct because of the order two components happen to sit in" is a different claim from
+"correct". A re-serialize or an inspector reorder would have silently handed those hulls the
+dual-stick model with `IsSingleStickControls` never set — and the symptom would have been this
+scheme quietly refusing them, which §4.2 exists because nobody can see.
+
+Both duplicates are excised. The roster now reads:
+
+| Vessel | Transformer | One-thumb |
+|---|---|---|
+| Sparrow, Serpent, Grizzly, Termite, Falcon, Shrike | `SingleStickVesselTransformer` | ✅ |
+| Scarab | `ScarabVesselTransformer` | ✅ |
+| Dolphin, Manta, Rhino, Squirrel | `VesselTransformer` | — |
+| Urchin | `GunVesselTransformer` | — |
+
+`OneThumbVesselCoverageTests` holds all three halves of that as source laws — exactly one
+transformer per vessel, every rostered hull carrying a single-stick one, and no two-stick hull
+quietly gaining one (which would start locking a player's cursor with nobody having decided it).
+It reads the prefab TEXT rather than going through the asset database on purpose: the question is
+about the serialized component list itself, and a `GetComponents` sweep reports the resolved
+winner while saying nothing about the duplicate behind it.
+
+> Unity fileIDs are **signed**, and a `&(\d+)` census regex silently skips every document with a
+> negative anchor — which is how the first pass of this audit lost the Grizzly entirely and
+> reported six hulls instead of seven. Match `&(-?\d+)`.
 
 ## 5. What else had to know
 
@@ -300,9 +326,11 @@ break lived: neither the code nor the asset was wrong on its own.
   claimed.
 - `ControlChipBindingTests` (edit mode) covers §6's chain against the shipped
   `Resources/ControlGlyphSet`.
-- `InputDeviceUnificationTests` (edit mode) holds §4.0 and §4.1.1 as source laws: one detector,
-  both consumers routed through it, no pad-presence gate, and one shared overview gesture. They
-  were also executed against the real sources outside the editor.
+- `InputDeviceUnificationTests` and `OneThumbVesselCoverageTests` (edit mode) hold §4.0, §4.1.1
+  and §4.3 as source laws. Both suites were **executed** against the real files outside the editor
+  (compiled against NUnit stubs, driven by reflection from the project root) — 9 passed — and each
+  gate was proven to FAIL by injecting its defect: the duplicate transformer restored, the
+  Sparrow's single-stick transformer swapped for the base, and the pad-PRESENCE gate reinstated.
 - **Not verified in the editor**: cursor lock/release across the pause and freestyle transitions,
   the device hand-over itself, the diagnostics' own wording, and how any of it actually feels.
   Every number in §2 is a starting point.
