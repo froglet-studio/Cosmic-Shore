@@ -308,7 +308,7 @@ MonoBehaviour:
   elementPetal: {fileID: 0}
   nameText: {fileID: 0}
   descriptionText: {fileID: 7062400961030872363}
-  chipGlyph: {fileID: 0}
+  chipGlyph: {fileID: 6937605281655823248}
   chipLabel: {fileID: 0}
   highlightScale: 1.1
   restAlpha: 0.55
