@@ -199,6 +199,11 @@ namespace CosmicShore.UI
             }
 
             DockElementFlowers();
+
+            // A vessel with no bound icons keeps whatever HUD it had before the lockup, and that old
+            // UI then draws alongside the new row instead of being replaced by it.
+            if (!hudView.HasAbilityIconRow) RetireLegacyHudContent(row);
+
             _built = true;
         }
 
@@ -470,6 +475,60 @@ namespace CosmicShore.UI
                                                         new Rect(0f, 0f, Texture2D.whiteTexture.width,
                                                                  Texture2D.whiteTexture.height),
                                                         new Vector2(0.5f, 0.5f));
+
+        /// <summary>
+        /// Switches off the HUD's own legacy content on a vessel that binds NO ability icons.
+        ///
+        /// <para><see cref="RetireLegacyChrome"/> works per ability HOST, so it reaches nothing on a
+        /// HUD that has no hosts - which left exactly the vessels whose row is all LOCKED cards
+        /// (Rhino, Manta, Serpent) drawing their old boost meters and buttons *next to* the new row.
+        /// The two competed, and the older one looked like the real UI.</para>
+        ///
+        /// <para>Two guards keep the sweep honest. It retires only children that actually DRAW - a
+        /// subtree with no <see cref="Graphic"/> in it is logic, not UI, and switching it off would
+        /// stop behaviour rather than hide a picture. And it EXEMPTS the device-hint roots, which
+        /// are direct children of the HUD root: sweeping those away would take every control hint
+        /// with them, on the one un-populated vessel that has any.</para>
+        /// </summary>
+        void RetireLegacyHudContent(RectTransform row)
+        {
+            var self = (RectTransform)transform;
+            var exempt = CollectHintRoots(self);
+
+            for (int i = self.childCount - 1; i >= 0; i--)
+            {
+                var child = self.GetChild(i);
+                if (!child || child == row || exempt.Contains(child)) continue;
+                if (!child.gameObject.activeSelf) continue;
+                if (!child.GetComponentInChildren<Graphic>(true)) continue;   // logic, not UI
+
+                child.gameObject.SetActive(false);
+            }
+        }
+
+        /// <summary>
+        /// The direct children of the HUD root that lead to a device-glyph root, so the sweep above
+        /// can step over them. Returns an empty set on a HUD with no switcher.
+        /// </summary>
+        HashSet<Transform> CollectHintRoots(RectTransform self)
+        {
+            var exempt = new HashSet<Transform>();
+            var switcher = GetComponentInChildren<InputDeviceIconSetSwitcher>(true);
+            if (!switcher) return exempt;
+
+            AddBranch(switcher.transform);
+            foreach (var root in switcher.IconSetRoots)
+                if (root) AddBranch(root.transform);
+            return exempt;
+
+            void AddBranch(Transform t)
+            {
+                // Walk up to the direct child of the HUD root - that is the granularity the sweep
+                // works at, so that is what has to be spared.
+                while (t && t.parent != self) t = t.parent;
+                if (t) exempt.Add(t);
+            }
+        }
 
         /// <summary>
         /// Switches off everything the host drew that the card now replaces - the decagon

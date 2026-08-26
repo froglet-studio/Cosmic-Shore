@@ -91,10 +91,11 @@ namespace CosmicShore.UI
             [NonSerialized] public RectTransform AbilityTarget;
             /// <summary>Offset actually used - zero when the target is a lockup chip socket.</summary>
             [NonSerialized] public Vector2 ResolvedOffset;
-            /// <summary>The lockup chip socket this hint was re-homed into; null on a HUD with no lockup.</summary>
-            [NonSerialized] public RectTransform Socket;
-            /// <summary>True once this hint is a CHILD of its socket and can no longer drift.</summary>
-            [NonSerialized] public bool Adopted;
+            /// <summary>
+            /// Size the lockup wants this glyph drawn at, from its card's chip socket. Zero on a
+            /// HUD with no lockup, where the hint keeps whatever size its own set root gives it.
+            /// </summary>
+            [NonSerialized] public Vector2 ChipSize;
             /// <summary>Latches the off-screen warning so it is reported once, not every frame.</summary>
             [NonSerialized] public bool OffScreenReported;
         }
@@ -127,6 +128,22 @@ namespace CosmicShore.UI
         [SerializeField, Range(0.05f, 0.9f)] private float stickActuationThreshold = 0.25f;
 
         public IconSet Current { get; private set; } = IconSet.None;
+
+        /// <summary>
+        /// The three device-glyph roots this switcher shows and hides. Exposed so the ability lockup
+        /// can EXEMPT them when it retires a HUD's legacy content: they are direct children of the
+        /// HUD root and would otherwise be swept away with the old UI, taking every control hint
+        /// with them.
+        /// </summary>
+        public IEnumerable<GameObject> IconSetRoots
+        {
+            get
+            {
+                if (xboxIconRoot) yield return xboxIconRoot;
+                if (psIconRoot) yield return psIconRoot;
+                if (keyboardTextRoot) yield return keyboardTextRoot;
+            }
+        }
 
         // The requested lookup: set -> its hint visuals. Built once from the serialized list.
         private readonly Dictionary<IconSet, IconSetVisuals> _visualsBySet = new();
@@ -200,9 +217,14 @@ namespace CosmicShore.UI
                     if (view.TryGetAbilityChipSocket(element, out var chipSocket))
                     {
                         hint.AbilityTarget = chipSocket;
-                        hint.Socket = chipSocket;
                         hint.ResolvedOffset = Vector2.zero;
-                        AdoptIntoSocket(hint);
+
+                        // The socket is point-anchored, so its sizeDelta IS its size and can be read
+                        // without a layout pass. Taking the size from the LOCKUP is the whole fix:
+                        // the device sets author glyphs at wildly different sizes and the chip has
+                        // to render them all the same.
+                        hint.ChipSize = chipSocket.sizeDelta;
+                        if (hint.icon) hint.icon.preserveAspect = true;
                     }
                     else if (view.TryGetAbilityIcon(element, out var abilityIcon))
                     {
@@ -221,9 +243,6 @@ namespace CosmicShore.UI
                 }
             }
 
-            // Adopted hints left their icon-set root, so the root can no longer show or hide them.
-            ApplyAdoptedVisibility();
-
             _placementPending = true;
             _placementAttempts = 0;
             TryApplyAbilityPlacement();
@@ -232,58 +251,6 @@ namespace CosmicShore.UI
         }
 
         readonly HashSet<Element> _labelledElements = new();
-
-        /// <summary>
-        /// Re-homes a hint INTO its lockup chip socket, as a child, stretched to fill it.
-        ///
-        /// <para>This replaces re-anchoring, and it fixes a defect re-anchoring could not: the
-        /// device sets author glyphs at wildly different sizes - the pad strip's are 50x50, the PC
-        /// text hints 106x22 - and centring both on one 24px socket gave them different clearances.
-        /// The pad glyphs overhung the card by 7px while the keyboard ones sat 7px clear, so
-        /// switching pad -> keyboard -> pad looked like the label had moved. It had not; the two
-        /// sets were never the same size.</para>
-        ///
-        /// <para>So the lockup owns the chip's SIZE as well as its position, exactly as it owns the
-        /// ability icon's, and a hint supplies only artwork. <c>preserveAspect</c> keeps a glyph's
-        /// shape inside the socket. Being a CHILD also makes the position structurally undriftable -
-        /// no rect fractions, no retry, no dependence on when a set was last laid out.</para>
-        /// </summary>
-        static void AdoptIntoSocket(HintVisual hint)
-        {
-            var rt = HintRect(hint);
-            if (!rt || !hint.Socket) return;
-
-            rt.SetParent(hint.Socket, worldPositionStays: false);
-            rt.anchorMin = Vector2.zero;
-            rt.anchorMax = Vector2.one;
-            rt.pivot = new Vector2(0.5f, 0.5f);
-            rt.offsetMin = Vector2.zero;
-            rt.offsetMax = Vector2.zero;
-            rt.localScale = Vector3.one;
-            rt.localRotation = Quaternion.identity;
-
-            if (hint.icon) hint.icon.preserveAspect = true;
-            hint.Adopted = true;
-        }
-
-        /// <summary>
-        /// Shows exactly the current set's adopted hints. They are no longer under their icon-set
-        /// root, so activating that root cannot reach them - this is the other half of adoption,
-        /// and forgetting it would leave every device's glyphs on screen at once.
-        /// </summary>
-        void ApplyAdoptedVisibility()
-        {
-            foreach (var visuals in setVisuals)
-            {
-                if (visuals?.hints == null) continue;
-                foreach (var hint in visuals.hints)
-                {
-                    if (hint == null || !hint.Adopted) continue;
-                    var rt = HintRect(hint);
-                    if (rt) rt.gameObject.SetActive(visuals.set == Current);
-                }
-            }
-        }
 
         /// <summary>
         /// The other half of the contract: an ability the player can actually press should have a
@@ -327,10 +294,10 @@ namespace CosmicShore.UI
                 if (visuals?.hints == null) continue;
                 foreach (var hint in visuals.hints)
                 {
-                    if (hint?.AbilityTarget == null || hint.Adopted) continue;   // a child cannot drift
+                    if (hint?.AbilityTarget == null) continue;
                     var rt = HintRect(hint);
                     if (!rt || !rt.gameObject.activeInHierarchy) continue;   // placed when shown
-                    if (!PlaceOnAbilityIcon(rt, hint.AbilityTarget, hint.ResolvedOffset))
+                    if (!PlaceOnAbilityIcon(rt, hint.AbilityTarget, hint.ResolvedOffset, hint.ChipSize))
                         allPlaced = false;
                     else
                         WarnIfPlacedOffScreen(hint, rt);
@@ -382,21 +349,33 @@ namespace CosmicShore.UI
 
         /// <summary>
         /// Re-anchors a hint onto an ability icon WITHOUT reparenting it - it has to stay under its
-        /// icon-set root so the set switcher can keep showing/hiding it.
+        /// icon-set root so the set switcher can keep showing and hiding it. (Reparenting into the
+        /// chip socket was tried and reverted: it took the glyphs out from under the roots the
+        /// switcher toggles, and switching device sets stopped working.)
         ///
-        /// Only the anchor CENTRE moves: the authored anchor SPAN and <c>sizeDelta</c> are preserved
-        /// exactly. That is not a style choice - these glyphs are authored as pure stretch rects with
-        /// a sizeDelta of zero, so their whole size comes from the span. Collapsing the anchors to a
-        /// point and re-supplying the size from <c>rect.size</c> renders them at ZERO SIZE whenever
-        /// that read happens before a layout pass or while the set root is inactive (Unity does not
-        /// update rects on inactive hierarchies) - which is every hint on vessel spawn. Never read
-        /// <c>rect.size</c> here, and never write size.
+        /// <para><b>Size comes from the lockup, position from the target.</b> The device sets author
+        /// their glyphs at wildly different sizes - measured off Squirrel.prefab, the pad strips are
+        /// 269x11 with 50x50 glyphs while the PC strip is 366x22 with 106x22 text - so centring them
+        /// all on one 24px chip socket gave them DIFFERENT clearances: the pad glyph overhung the
+        /// card by 7px while the keyboard one sat 7px clear. Switching pad → keyboard → pad looked
+        /// like the label had moved; it never moved, the two sets were never the same size. Passing
+        /// a <paramref name="size"/> collapses the anchors to a point and states the size outright,
+        /// so every set renders identically.</para>
         ///
-        /// The centre is written as a fraction of the hint's own parent, so the placement survives
-        /// resolution and aspect changes the same way the ability row does. Returns false while the
-        /// parent has no usable rect yet, so the caller can retry.
+        /// <para>Note this is safe where READING the size is not. The authored glyphs are pure
+        /// stretch rects with a sizeDelta of zero, so their size comes entirely from their anchor
+        /// span; collapsing the anchors and re-supplying the size from <c>rect.size</c> renders them
+        /// at ZERO whenever that read happens before a layout pass or while the set root is
+        /// inactive - which is every hint on vessel spawn. Supplying the size from the STYLE never
+        /// reads a rect at all. With <paramref name="size"/> zero (a HUD with no lockup) the old
+        /// span-preserving behaviour is kept exactly.</para>
+        ///
+        /// <para>The centre is written as a fraction of the hint's own parent, so the placement
+        /// survives resolution and aspect changes the same way the ability row does. Returns false
+        /// while the parent has no usable rect yet, so the caller can retry.</para>
         /// </summary>
-        static bool PlaceOnAbilityIcon(RectTransform hint, RectTransform abilityIcon, Vector2 offset)
+        static bool PlaceOnAbilityIcon(RectTransform hint, RectTransform abilityIcon, Vector2 offset,
+                                       Vector2 size)
         {
             if (hint.parent is not RectTransform parent) return false;
 
@@ -407,19 +386,29 @@ namespace CosmicShore.UI
             Vector2 local = parent.InverseTransformPoint(targetWorld);
 
             // MUST be unclamped. The hint roots are thin strips (XBOXRoot is ~11 px tall) and the
-            // ability row sits well above them, so the honest fraction is far outside 0..1 - the
-            // Xbox glyphs need y ≈ 7.3. Mathf.InverseLerp Clamp01s, which collapsed that to 1.0 and,
-            // with the negative attachOffset on top, put every glyph below the bottom of the screen.
+            // ability row sits well above them, so the honest fraction is far outside 0..1.
+            // Mathf.InverseLerp Clamp01s, which collapsed that to 1.0 and, with the negative
+            // attachOffset on top, put every glyph below the bottom of the screen.
             var centre = new Vector2(
                 InverseLerpUnclamped(parentRect.xMin, parentRect.xMax, local.x),
                 InverseLerpUnclamped(parentRect.yMin, parentRect.yMax, local.y));
             if (!IsUsable(centre.x) || !IsUsable(centre.y)) return false;
 
-            Vector2 span = hint.anchorMax - hint.anchorMin;   // preserved - it IS the glyph's size
-            hint.pivot     = new Vector2(0.5f, 0.5f);
-            hint.anchorMin = centre - span * 0.5f;
-            hint.anchorMax = centre + span * 0.5f;
-            hint.anchoredPosition = offset;                    // sizeDelta deliberately untouched
+            hint.pivot = new Vector2(0.5f, 0.5f);
+
+            if (size.x > 0.5f && size.y > 0.5f)
+            {
+                hint.anchorMin = hint.anchorMax = centre;   // a point anchor: size is now absolute
+                hint.sizeDelta = size;
+            }
+            else
+            {
+                Vector2 span = hint.anchorMax - hint.anchorMin;   // legacy: the span IS the size
+                hint.anchorMin = centre - span * 0.5f;
+                hint.anchorMax = centre + span * 0.5f;
+            }
+
+            hint.anchoredPosition = offset;
             return true;
         }
 

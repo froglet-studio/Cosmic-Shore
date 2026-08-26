@@ -3124,10 +3124,19 @@ slant are both non-zero, the icon clears the narrow edge, the plates face each o
 
    **The device-switch symptom was a SIZE mismatch, not a drift** — measured off `Squirrel.prefab`,
    the pad glyphs are 50×50 and the PC text hints 106×22, so centring both on one 24px socket left
-   the pad ones overhanging the card by 7px and the keyboard ones 7px clear. Hints are now re-homed
-   into the socket **as children**, stretched to it with `preserveAspect`, so the lockup owns the
-   chip's size as well as its position. **Verify:** go pad → keyboard → pad and confirm the glyphs
-   sit in exactly the same place at exactly the same size on every set, 6px below the card; confirm
-   only ONE device's glyphs are visible at a time (adopted hints left their icon-set root, so the
-   switcher toggles them directly — if all three sets show at once, `ApplyAdoptedVisibility` is not
-   running); and check the pad glyphs are not squashed (that is what `preserveAspect` is for).
+   the pad ones overhanging the card by 7px and the keyboard ones 7px clear. The lockup now supplies
+   the SIZE too (from the socket's `sizeDelta`, plus `preserveAspect`), while the hints stay under
+   their icon-set roots. **Verify:** go pad → keyboard → pad and confirm the glyphs sit in the same
+   place at the same size on every set, 6px below the card, and that the pad glyphs are not squashed.
+
+   ⚠ **An intermediate version re-homed the hints into the socket as children and BROKE device
+   switching** — it took them out from under the roots the switcher activates. That is reverted; if
+   switching ever stops working again, that is the first thing to check.
+
+**Update — retiring the old UI on un-populated vessels. NOT EDITOR-VERIFIED.**
+A HUD that binds no ability icons kept its previous UI, which then drew *alongside* the new locked
+row. **Verify on Rhino, Manta and Serpent:** the old boost meters/buttons are gone and only the
+four-card row remains — and on the **Serpent specifically**, that its control hints still appear
+(its device-glyph roots are direct children of the HUD root and are explicitly exempt from the
+sweep; if the hints vanished, that exemption is not working). Run **Audit Ability Lockups** for the
+list of what each HUD loses.

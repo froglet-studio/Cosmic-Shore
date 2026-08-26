@@ -87,6 +87,7 @@ namespace CosmicShore.Editor
                     report.AppendLine($"  {vessel,-10} —  binds no ability icons; the lockup still builds " +
                                       "four LOCKED cards so the row exists and the element flowers have " +
                                       "somewhere to dock. Blocked on ability DESIGN, not on this style.");
+                    ReportLegacyContent(view, report);
                     continue;
                 }
 
@@ -364,6 +365,29 @@ namespace CosmicShore.Editor
             if (size.sqrMagnitude < 1f) size = rt.sizeDelta;
             readable = size.sqrMagnitude > 1f;
             return Mathf.Max(size.x, size.y);
+        }
+
+        /// <summary>
+        /// What the lockup will switch off on an un-populated HUD. Not a problem - it is the point,
+        /// since the old UI would otherwise draw alongside the new row - but it happens at runtime,
+        /// so the prefab still shows it and anyone reading the asset would believe it.
+        /// </summary>
+        static void ReportLegacyContent(VesselHUDView view, StringBuilder report)
+        {
+            var root = view.transform;
+            var names = new List<string>();
+
+            for (int i = 0; i < root.childCount; i++)
+            {
+                var child = root.GetChild(i);
+                if (!child || !child.gameObject.activeSelf) continue;
+                if (!child.GetComponentInChildren<UnityEngine.UI.Graphic>(true)) continue;
+                names.Add(child.name);
+            }
+
+            if (names.Count == 0) return;
+            report.AppendLine($"             legacy HUD content retired at runtime: {string.Join(", ", names)} " +
+                              "(device-hint roots are exempt)");
         }
 
         static IEnumerable<string> VesselPrefabPaths() =>

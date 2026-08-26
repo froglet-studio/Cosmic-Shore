@@ -168,23 +168,28 @@ carry one today. The track's own taper is **derived from the plate at the track'
 to be the full width — identical at `gaugeCellFraction 1`, which is why that seam would have stayed
 invisible until someone lowered the fraction.
 
-**The hint is RE-HOMED into the socket as a child, and the lockup owns its size.** Re-anchoring a
-hint over the socket without reparenting looked equivalent and was not, for a reason that took two
-attempts to find: **the device sets author their glyphs at wildly different sizes.** Measured off
-`Squirrel.prefab` — the pad strips are 269 × 11 px with glyphs spanning 50 × 50, the PC strip is
-366 × 22 with glyphs at 106 × 22. Centring both on one 24px socket therefore gave them *different
-clearances*: the pad glyph overhung the card by 7px while the keyboard one sat 7px clear. Switching
-pad → keyboard → pad looked like the label had moved; it never moved, the two sets were never the
-same size.
+**The lockup owns the chip's SIZE, not just its position.** The device sets author their glyphs at
+wildly different sizes — measured off `Squirrel.prefab`, the pad strips are 269 × 11 px with glyphs
+spanning 50 × 50, the PC strip is 366 × 22 with glyphs at 106 × 22. Centring all of them on one 24px
+socket therefore gave them *different clearances*: the pad glyph overhung the card by 7px while the
+keyboard one sat 7px clear. Switching pad → keyboard → pad looked like the label had moved; it never
+moved, the two sets were never the same size.
 
-So `AdoptIntoSocket` reparents each hint into its card's `ControlChip`, stretched to fill it, with
-`preserveAspect` on the image. The lockup owns the chip's **size** as well as its position, exactly
-as it owns the ability icon's, and a hint supplies only artwork. Being a child also makes the
-position structurally undriftable — no rect fractions, no retry, no dependence on when a set was
-last laid out. Its other half is `ApplyAdoptedVisibility`: an adopted hint has left its icon-set
-root, so activating that root can no longer reach it and the switcher must toggle the hints
-themselves — forget that and every device's glyphs show at once. `PlaceOnAbilityIcon` survives as
-the legacy path for a HUD with no lockup.
+So `PlaceOnAbilityIcon` takes a **size** as well as a target. With one supplied it collapses the
+anchors to a point and states the size outright (plus `preserveAspect` on the image), so every set
+renders identically; with none it keeps the old span-preserving behaviour for a HUD with no lockup.
+
+**Supplying the size is safe where reading it is not.** The authored glyphs are pure stretch rects
+with `sizeDelta` zero, so their size comes entirely from their anchor span — collapsing the anchors
+and re-supplying the size from `rect.size` renders them at ZERO whenever that read happens before a
+layout pass or while the set root is inactive, which is every hint on vessel spawn. The size comes
+from the chip socket's own `sizeDelta`, which is point-anchored and needs no layout at all.
+
+**Reparenting the hints into the socket was tried and reverted.** It made the position structurally
+undriftable, which was appealing — but it took the glyphs out from under the icon-set roots the
+switcher activates, and switching device sets stopped working. *A component that shows and hides
+things by toggling a parent owns that parenting; anything that re-homes its children has to take
+over the showing and hiding too, and that trade was not worth it here.*
 
 *The general trap: two things that look interchangeable at one size are only interchangeable at that
 size. Anything centred on a fixed socket inherits the content's height as a variable.*
@@ -244,6 +249,24 @@ down and **decays** on release — nothing pops out of existence.
 The legacy `highlights` list is still written, for a HUD the lockup could not claim. On a lockup
 vessel those images are retired chrome, so the write is a deliberate no-op rather than a second,
 divergent press glow.
+
+## Retiring the old UI
+
+`RetireLegacyChrome` works per ability **host**, so on a HUD with no bound icons it reaches nothing
+— which left exactly the vessels whose row is all locked cards (Rhino, Manta, Serpent) drawing their
+old boost meters and buttons *next to* the new row. The two competed, and the older one looked like
+the real UI.
+
+So a HUD that binds no icons has its root-level content retired as well, under two guards:
+
+- **Only children that DRAW.** A subtree with no `Graphic` in it is logic, not UI; switching it off
+  would stop behaviour rather than hide a picture.
+- **The device-hint roots are exempt.** They are direct children of the HUD root, so a positional
+  sweep would take every control hint with them — on the Serpent, the one un-populated vessel that
+  has any.
+
+The auditor lists what each such HUD will lose, because it happens at runtime and the prefab still
+shows it.
 
 ## Locked slots — the row is always four cards
 
