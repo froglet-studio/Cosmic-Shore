@@ -147,7 +147,10 @@ def render(segments, radius, prism_scale, size=SIZE):
     return px_buf, prisms
 
 
-def write_png(path, size, px):
+def build_png(size, px):
+    """Encode the RGBA buffer as PNG bytes. Never touches disk - --check compares in
+    memory, because writing a scratch file into Assets/ churns Unity's asset database
+    and strands a stray file if the run dies before cleaning up."""
     raw = bytearray()
     stride = size * 4
     for y in range(size):
@@ -163,10 +166,13 @@ def write_png(path, size, px):
     blob += chunk(b"IHDR", struct.pack(">IIBBBBB", size, size, 8, 6, 0, 0, 0))
     blob += chunk(b"IDAT", comp)
     blob += chunk(b"IEND", b"")
+    return blob
+
+
+def write_png(path, blob):
     os.makedirs(os.path.dirname(path), exist_ok=True)
     with open(path, "wb") as fh:
         fh.write(blob)
-    return blob
 
 
 def main():
@@ -201,19 +207,15 @@ def main():
     if args.check:
         if not os.path.exists(ICON_PNG):
             raise SystemExit("[boost-ring-icon] FAIL: %s missing." % ICON_PNG)
-        # rebuild and compare bytes
-        tmp = ICON_PNG + ".check"
-        blob = write_png(tmp, SIZE, px)
         with open(ICON_PNG, "rb") as fh:
             have = fh.read()
-        os.remove(tmp)
-        if have != blob:
+        if have != build_png(SIZE, px):
             raise SystemExit("[boost-ring-icon] FAIL: %s is stale - the ability was retuned. "
                              "Re-run without --check." % os.path.relpath(ICON_PNG, REPO))
         print("[boost-ring-icon] OK: icon matches the authored ability.")
         return
 
-    write_png(ICON_PNG, SIZE, px)
+    write_png(ICON_PNG, build_png(SIZE, px))
     print("[boost-ring-icon] wrote %s" % os.path.relpath(ICON_PNG, REPO))
 
 
