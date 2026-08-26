@@ -189,6 +189,31 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
+        /// A Manta cashed <paramref name="count"/> planted bombs with a crystal BEFORE their
+        /// fuses ran out — "fuses beaten", Bloomrush's tiebreaker. Same machine model as
+        /// <see cref="LifeformKilled"/> and for the same reason: bombs are LOCAL objects on
+        /// the planter's simulation machine (like projectiles and fauna), so a client's
+        /// Kabloom does not exist on the server at all and must ride the owner-detects →
+        /// server-records round trip (<see cref="Player.ReportFusesBeaten_ServerRpc"/>).
+        /// Timed-out bombs are deliberately never credited — beating the fuse is the stat.
+        /// </summary>
+        public void FusesBeaten(string playerName, int count)
+        {
+            if (string.IsNullOrEmpty(playerName) || count <= 0) return;
+
+            if (_allowRecord)
+            {
+                if (gameData.TryGetRoundStats(playerName, out IRoundStats playerStats))
+                    playerStats.FusesBeaten += count;
+                return;
+            }
+
+            var local = gameData.LocalPlayer;
+            if (local is Player netPlayer && local.IsLocalUser && local.Name == playerName)
+                netPlayer.ReportFusesBeaten_ServerRpc(count);
+        }
+
+        /// <summary>
         /// A vessel landed a shot on an opposing vessel - credit the SHOOTER. Raised on
         /// <see cref="GameDataSO.OnCombatHitLanded"/> by the two combat-hit impact effects,
         /// already deduplicated per (shooter, victim, class) by <c>VesselCombatHitLatch</c>.

@@ -1,25 +1,29 @@
-using CosmicShore.UI;
-using UnityEngine;
 using CosmicShore.Gameplay;
-using System.Linq;
+using UnityEngine;
+
 namespace CosmicShore.UI
 {
+    /// <summary>
+    /// Drives the Manta's bomb-bay HUD off <see cref="MantaStingActionExecutor"/>'s instance
+    /// events (the overcharge kit this controller used to speak for is deleted). One
+    /// symmetric Rebind/Unbind pair, detach-first — a vessel swap re-runs Initialize on live
+    /// components — gated for the local human pilot only AFTER the detach, so a re-init that
+    /// hands this vessel to an AI or a remote owner can never strand the old handlers.
+    ///
+    /// The fuse countdown is the one per-frame poll (a burning number has no event to ride);
+    /// it early-outs while nothing is planted.
+    /// </summary>
     public class MantaVesselHUDController : VesselHUDController
     {
         [Header("View")]
         [SerializeField] private MantaVesselHUDView view;
 
-        [Header("Effect Source (SO)")]
-        [SerializeField] private SkimmerOverchargeCollectPrismEffectSO overchargeSO;
+        [Header("Bomb bay binding")]
+        [Tooltip("The Sting executor on this vessel's ShipActions child. Empty resolves at " +
+                 "Initialize.")]
+        [SerializeField] private MantaStingActionExecutor stingExecutor;
 
-        [Header("Skimmer binding")]
-        [SerializeField] private SkimmerImpactor skimmer;
-
-        [Header("UI Toasts")]
-        [SerializeField] private ToastChannel toastChannel;
-
-        int _max = 1;
-        readonly Color _overchargeTextColor = Color.red;
+        bool _bound;
 
         public override void Initialize(IVesselStatus vesselStatus)
         {
@@ -27,70 +31,55 @@ namespace CosmicShore.UI
 
             if (!view)
                 view = View as MantaVesselHUDView;
+            if (!stingExecutor)
+                stingExecutor = GetComponentInChildren<MantaStingActionExecutor>(true);
 
-            if (_statusIsNotLocal(vesselStatus)) return; 
-
-            _max = Mathf.Max(1, overchargeSO.MaxBlockHits);
-            overchargeSO.OnCountChanged      += HandleCountChanged;
-            overchargeSO.OnReadyToOvercharge += HandleReadyToOvercharge;
-            overchargeSO.OnOvercharge        += HandleOvercharge;
-            overchargeSO.OnCooldownStarted   += HandleCooldownStarted;
+            Unbind();
+            if (vesselStatus.IsInitializedAsAI || !vesselStatus.IsLocalUser) return;
+            Rebind();
         }
 
-        static bool _statusIsNotLocal(IVesselStatus s) => s.IsInitializedAsAI || !s.IsLocalUser;
-
-
-        void OnDisable()
+        void Rebind()
         {
-            if (overchargeSO == null) return;
-            overchargeSO.OnCountChanged      -= HandleCountChanged;
-            overchargeSO.OnReadyToOvercharge -= HandleReadyToOvercharge;
-            overchargeSO.OnOvercharge        -= HandleOvercharge;
-            overchargeSO.OnCooldownStarted   -= HandleCooldownStarted;
+            if (_bound || !stingExecutor) return;
+            stingExecutor.OnBayChanged += HandleBayChanged;
+            stingExecutor.OnPlantedChanged += HandlePlantedChanged;
+            _bound = true;
+            HandleBayChanged();
+            HandlePlantedChanged();
         }
 
-        void HandleCountChanged(SkimmerImpactor who, int count, int max)
+        void Unbind()
         {
-            if (who != skimmer || view == null) 
-                return;
-
-            _max = Mathf.Max(1, max);
-            view.SetOverchargeCount(count, _max);
+            if (!_bound || !stingExecutor) { _bound = false; return; }
+            stingExecutor.OnBayChanged -= HandleBayChanged;
+            stingExecutor.OnPlantedChanged -= HandlePlantedChanged;
+            _bound = false;
         }
 
-        void HandleReadyToOvercharge(SkimmerImpactor who)
-        {
-            if (who != skimmer || view == null) 
-                return;
+        void OnDisable() => Unbind();
 
-            toastChannel?.ShowCountdown(
-                prefix: "Overcharging in",
-                from: 3,
-                postfixFormat: "{0}",
-                anim: ToastAnimation.Pop,
-                onDone: () => overchargeSO.ConfirmOvercharge(who),
-                accent: view.HighLightColor
-            );
+        void Update()
+        {
+            // The burning-fuse number. Event-driven everywhere else; a countdown has to tick.
+            if (!_bound || !view || !stingExecutor) return;
+            int planted = stingExecutor.PlantedBombs.Count;
+            if (planted > 0)
+                view.SetPlantedBoard(planted, stingExecutor.ShortestFuseRemaining);
         }
 
-        void HandleOvercharge(SkimmerImpactor who)
+        void HandleBayChanged()
         {
-            if (who != skimmer) 
-                return;
-
-            toastChannel?.ShowPrefix(
-                prefix: "OVERCHARGED!",
-                duration: 4.5f,
-                accent: _overchargeTextColor
-            );
+            if (view && stingExecutor)
+                view.SetBombBay(stingExecutor.ArmedBombs, stingExecutor.Capacity,
+                                stingExecutor.Charge);
         }
 
-        void HandleCooldownStarted(SkimmerImpactor who, float seconds)
+        void HandlePlantedChanged()
         {
-            if (who != skimmer || view == null) 
-                return;
-
-            view.ResetOvercharge(_max);
+            if (view && stingExecutor)
+                view.SetPlantedBoard(stingExecutor.PlantedBombs.Count,
+                                     stingExecutor.ShortestFuseRemaining);
         }
     }
 }

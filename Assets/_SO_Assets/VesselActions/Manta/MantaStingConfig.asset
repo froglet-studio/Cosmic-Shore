@@ -1,0 +1,35 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 74a5f56c62b268ee03e09ae3a9e8811b, type: 3}
+  m_Name: MantaStingConfig
+  m_EditorClassIdentifier:
+  baseCapacity: 3
+  capacityPerChargeLevel: 0.2
+  minCapacity: 1
+  maxCapacity: 5
+  chargePerSkim: 0.34
+  chargeRateAtFullCharge: 2
+  minChargeRateMultiplier: 0.25
+  perPrismChargeCooldown: 1.5
+  fuseSeconds: 25
+  plantSpeedMargin: 0
+  knockOffGraceSeconds: 1
+  ownFreshTrailGraceSeconds: 6
+  aoePrefabs:
+  - {fileID: 3479271500403630839, guid: 457e8bc651da151132eb1c90adb8b3bb, type: 3}
+  bloomMaterial: {fileID: 0}
+  fuseBlastScale: 70
+  kabloomBlastScale: 140
+  kabloomSelfBlastScale: 140
+  blastScaleAtFullSpace: 1.6
+  minBlastScaleMultiplier: 0.5
+  contagionRadiusFraction: 1

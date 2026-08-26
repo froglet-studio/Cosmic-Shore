@@ -171,6 +171,27 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
+        /// Owner-side report that THIS player's Kabloom cashed <paramref name="count"/> planted
+        /// Manta bombs before their fuses ran out — "fuses beaten", Bloomrush's tiebreaker.
+        /// Bombs are LOCAL objects on the planter's simulation machine (the projectile model),
+        /// so a client's Kabloom does not exist on the server at all and rides the same
+        /// owner-detects → server-records round trip as <see cref="ReportFaunaKill_ServerRpc"/>.
+        ///
+        /// IDENTITY COMES FROM OWNERSHIP: the server credits the RoundStats of the Player the
+        /// RPC arrived on, and the count is clamped rather than trusted — the bay caps at 5
+        /// and Contagion can stack a board somewhat higher, but no honest Kabloom cashes 32.
+        /// </summary>
+        [ServerRpc]
+        public void ReportFusesBeaten_ServerRpc(int count)
+        {
+            using var _ = CosmicShore.Utility.PerformanceBenchmark.NetMarkers.RpcDispatch.Auto();
+            CosmicShore.Utility.PerformanceBenchmark.NetMarkers.CountRpc();
+
+            if (RoundStats == null) return;
+            RoundStats.FusesBeaten += Mathf.Clamp(count, 0, 32);
+        }
+
+        /// <summary>
         /// Owner-side report that THIS player destroyed a prism of ENVIRONMENT mass - flora, a
         /// fauna body, laid cell structure. The third instance of the same round-trip as
         /// <see cref="ReportFaunaKill_ServerRpc"/> / <see cref="ReportCombatHit_ServerRpc"/>, and

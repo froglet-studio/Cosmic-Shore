@@ -52,7 +52,11 @@ namespace CosmicShore.Gameplay
         {
             if (_status == null || vesselTransformer == null) return;
             if (_status.InputStatus == null) return;
-            if (_status.InputStatus.ActiveInputDevice != InputDeviceType.Gamepad) return;
+            // Keyboard rides the same path: KeyboardInputStrategy writes the trigger analogs
+            // from the two Shifts (digital 0/1), and keyboard resolves through the gamepad
+            // override map — without this the desktop Manta had no turn or boost at all.
+            var device = _status.InputStatus.ActiveInputDevice;
+            if (device != InputDeviceType.Gamepad && device != InputDeviceType.Keyboard) return;
             if (_status.IsStationary) return;
 
             float lt = _status.InputStatus.LeftTriggerAnalog;
@@ -73,6 +77,13 @@ namespace CosmicShore.Gameplay
                 float yawDeg = rawTurn * maxYawDegPerSec * Time.deltaTime;
                 vesselTransformer.ApplyRotation(yawDeg, _status.Transform.up);
             }
+
+            // Yastri: the held single-trigger turn shapes the trail — outer-lane flare plus
+            // the Mass-5 Shielded Turn Trails window. Driven every frame (0 clears it), so a
+            // released trigger immediately hands the trail back its straight-line shape.
+            var prismController = _status.VesselPrismController;
+            if (prismController)
+                prismController.SetTurnTrail(Mathf.Abs(rawTurn), rawTurn >= 0f ? 1 : -1);
 
             // Apply analog boost
             if (boostIntensity > 0.01f)
@@ -100,6 +111,12 @@ namespace CosmicShore.Gameplay
                 _status.IsBoosting = false;
                 _status.BoostMultiplier = _baseBoostMultiplier;
                 _wasBoosting = false;
+            }
+
+            if (_status != null)
+            {
+                var prismController = _status.VesselPrismController;
+                if (prismController) prismController.SetTurnTrail(0f, 0);
             }
         }
     }

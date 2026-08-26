@@ -1,11 +1,12 @@
 # Fleet Elemental Ability Maps — status + level-5 upgrade proposals
 
 **Status of this doc:** the quantitative layer and the flower display are LIVE fleet-wide
-(see §1). Four vessels have an **APPROVED + SHIPPED** map with all four level-5 upgrades
-implemented — **Sparrow, Dolphin, Squirrel, Urchin**; their rows below are the record, not a
-proposal, and are not to be re-litigated from the superseded tables kept beside them. The level-5
-upgrades for **Manta, Rhino and Serpent** are still **PROPOSALS for Garrett to mark up** — none
-are implemented. Approve/edit per row; implementation follows the Sparrow pattern (per-shot/per-use
+(see §1). Five vessels have an **APPROVED + SHIPPED** map with all four level-5 upgrades
+implemented — **Sparrow, Dolphin, Squirrel, Urchin, Manta** (the Manta via the 2026-08 spec
+remake; its superseded "Reaper Ray" table is kept below as history); their rows below are the
+record, not a proposal, and are not to be re-litigated from the superseded tables kept beside
+them. The level-5 upgrades for **Rhino and Serpent** are still **PROPOSALS for Garrett to mark
+up** — none are implemented. Approve/edit per row; implementation follows the Sparrow pattern (per-shot/per-use
 snapshot, gated on `IsUpgradeActive(element)` in the executor, replicated unlock bits, no new
 fundamentals).
 
@@ -35,7 +36,7 @@ fundamentals).
 | Vessel | Live quantitative entries (map value) |
 |---|---|
 | Sparrow | Space→gun range (9.0) · Time→boost speed (1.5, now on an **indefinite** boost — see §2 Sparrow) · Mass→turret prism stretch (2.5) **+ in-flight round growth (3× at rest → 6× at Mass 10, authored on `FullAutoAction.asset`)** · Charge→skyburst blast (asset range 100→170) |
-| Manta | Charge→overcharge detonation blast (1.75) · Mass→overcharge harvest capacity (1.75) · Space→Yawstery turn rate (1.6) |
+| Manta | **All four LIVE (approved + shipped 2026-08-26 spec remake, see §2 Manta)**: Charge→bomb-bay capacity + skim-charge rate (authored on `MantaStingConfig.asset`; map pinned 1) · Mass→trail prism VOLUME (authored `trailVolume` ElementalFloat 1→2.5 on `VesselPrismController`; the Yastri turn rate is deliberately unscaled, `turnRateElement: None`; map pinned 1) · Space→bomb bloom scale (authored `blastScaleAtFullSpace` 1.6 on `MantaStingConfig.asset`; map pinned 1) · Time→max soaring speed (map 1.3 IS the authoring home, read by `VesselTransformer.CurrentBoostAmount`) |
 | Dolphin | Charge→blast capsule THICKNESS (0.75× at rest → 1.5× at level 10) + the Echo Sight on RT · Mass→crystal-seeding recharge (0.5) · Space→blast reach (2.0) · Time→charge fill rate (1.5) |
 | Rhino | Mass→trail slab max size (1.5) |
 | Serpent | Time→boost duration (1.6) |
@@ -140,14 +141,30 @@ the colliding. MASS itself is untouched: quantitative stretch on the prism's lon
 birth rather than a morph on arrival. Budget note: the cadence fix roughly doubles anchored mass to
 ~60 prisms/s while held. Detail: `R_VesselActions/SPARROW_TURRET_STANCE.md`.
 
-### Manta — "Reaper Ray" (skim + harvest)
+### Manta — Sting / Kabloom (the bomb ray) — APPROVED + SHIPPED (2026-08-26)
 
-| Element | Quantitative (live) | Proposed L5 upgrade |
+The spec remake replaced the "Reaper Ray" overcharge kit outright (the proposal table below is
+kept as history — superseded, do not re-litigate). The shipped map is
+`Assets/Resources/ElementalAbilityMaps/Manta.asset`; mechanics detail lives beside the code in
+`_Scripts/Controller/Vessel/R_VesselActions/MANTA_STING_KABLOOM.md`, and the mode built on it in
+`_Scripts/Controller/Arcade/BLOOMRUSH.md`.
+
+| Element | Ability | Quantitative (authoring home) | L5 upgrade (shipped) |
+|---|---|---|---|
+| Charge | Sting (passive) | bomb-bay capacity 3→5 at Charge 15 + skim-charge rate (`MantaStingConfig.asset`; map pinned 1) | **Contagion** — anything caught in a bloom is itself bombed, free |
+| Mass | Yastri (Input 12) | trail prism VOLUME (`trailVolume` 1→2.5 on the prism controller); turn rate deliberately unscaled | **Shielded Turn Trails** — hard-turn prisms come out shielded |
+| Space | Kabloom (passive) | every bloom's scale (`blastScaleAtFullSpace` 1.6; map pinned 1) | **No Friendly Fire** — blooms spare allies and allied prisms |
+| Time | Soar (Input 13) | max soaring speed (map 1.3 — the authoring home) | **Wake Highway** — rings twice as often, allies can ride them |
+
+Sting and Kabloom are PASSIVE (Input 0 by design, not unset): planting is grazing, detonation is
+a crystal pickup. Superseded history:
+
+| Element | Quantitative (old kit) | Old proposed L5 (never implemented) |
 |---|---|---|
-| Charge | overcharge detonation blast | **Domain-Safe Detonation** — the overcharge blast spares own-domain prisms (direct reuse of the Sparrow CHARGE-5 shape) |
-| Mass | harvest capacity | **Deep Harvest** — overcharge collection also pops+collects *shielded* prisms (today the shield blocks collection) |
-| Space | Yawstery turn rate | **Wide Wake** — near-field skimmer size class up while overcharged (reach/presence) |
-| Time | *(open)* → propose: overcharge decay rate | **Held Charge** — overcharge no longer bleeds between skims (still spent on detonation) |
+| Charge | overcharge detonation blast | Domain-Safe Detonation |
+| Mass | harvest capacity | Deep Harvest |
+| Space | Yawstery turn rate | Wide Wake |
+| Time | *(open)* | Held Charge |
 
 ### Dolphin — "Darts" (charge and release) — APPROVED + SHIPPED
 
@@ -372,7 +389,8 @@ the record; do not re-litigate from a superseded pass.**
 - Domain-sparing: explosion/collection layer only — never `Prism.Damage`, never danger effects.
 - Fill in each map's `UpgradeLabel`/`UpgradeDescription` when a row is approved; the HUD reads
   the map.
-- The `Input` fields are filled on Sparrow (4/4), Dolphin (3/4), Squirrel (2/4) and Urchin (3/4 —
-  Trail Rider is deliberately 0 because it is **passive**, not because it is unset). Manta, Rhino
+- The `Input` fields are filled on Sparrow (4/4), Dolphin (3/4), Squirrel (2/4), Urchin (3/4 —
+  Trail Rider is deliberately 0 because it is **passive**, not because it is unset) and Manta
+  (2/4 — Sting and Kabloom are deliberately 0: passive). Rhino
   and Serpent are 0 across the board — fill during HUD icon work. A genuine 0 and a passive
   ability are indistinguishable in the asset, so say which it is in the row.

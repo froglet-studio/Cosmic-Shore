@@ -37,14 +37,18 @@ namespace CosmicShore.Gameplay
         [Tooltip("Seconds over which the temporary debuff decays back to baseline.")]
         [SerializeField] private float debuffDuration = 4f;
 
+        [Tooltip("Which elements the blast drains. The initializer is ALL FOUR — every asset " +
+                 "authored before this field existed (the Dolphin/Scarab blasts) deserializes " +
+                 "to exactly its old behaviour. The Manta's bomb debuff authors Mass and " +
+                 "Space only: the 04/20/2026 rule bars overtakers from touching Time, and " +
+                 "Charge stays the victim's own weapon economy.")]
+        [SerializeField] private Element[] elements = { Element.Charge, Element.Mass, Element.Space, Element.Time };
+
         [Header("Anti-Spam")]
         [Tooltip("Minimum seconds between explosion debuffs on the same vessel. Blasts grow " +
                  "through a victim over several frames, so without this one detonation would " +
                  "stack its debuff every trigger re-entry.")]
         [SerializeField] private float cooldown = 1f;
-
-        static readonly Element[] AllElements =
-            { Element.Charge, Element.Mass, Element.Space, Element.Time };
 
         // Per-vessel anti-spam, keyed on the victim's ResourceSystem — the same shape the danger
         // prism debuff uses, so the two share a mental model even though the tables are separate.
@@ -68,8 +72,9 @@ namespace CosmicShore.Gameplay
 
             // Classed Explosion, NOT DangerPrism: a blast is a weapon another pilot aimed, and a
             // ward earned against the arena must not cancel one (ElementalDebuffSources).
-            for (int i = 0; i < AllElements.Length; i++)
-                rs.ApplyElementalEffect(AllElements[i], debuffMagnitude, debuffDuration,
+            if (elements == null) return;
+            for (int i = 0; i < elements.Length; i++)
+                rs.ApplyElementalEffect(elements[i], debuffMagnitude, debuffDuration,
                                         ElementalDebuffSources.Explosion);
         }
     }

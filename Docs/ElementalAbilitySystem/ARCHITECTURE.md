@@ -325,13 +325,16 @@ oversights:
 Mechanics for what those four icons will label: `_Scripts/Controller/Vessel/R_VesselActions/`
 `URCHIN_CHAIN_SPIKES.md` and `URCHIN_TRAIL_RIDER.md`.
 
-Manta, Rhino and Serpent are blocked on **design**: their maps are still `(open design slot)`
-with `Input = 0` and no `UpgradeLabel`, and their HUDs carry 0–2 lower-right icons. Run
+Rhino and Serpent are blocked on **design**: their maps are still `(open design slot)`
+with `Input = 0` and no `UpgradeLabel`, and their HUDs carry 0–2 lower-right icons. (The Manta
+left this set 2026-08-26 — its spec remake shipped a full map, four bound icons at the wirer
+bands, and all four L5 upgrades; see FLEET_MAPS.md §2 Manta and
+`_Scripts/Controller/Vessel/R_VesselActions/MANTA_STING_KABLOOM.md`.) Run
 **FrogletTools > Vessels > Audit Vessel Ability Rows** (`VesselAbilityRowAuditor`) for the live table — it
 checks map completeness, icon count and order, pitch/size uniformity and hint coverage across the whole
 fleet from assets alone. At runtime a vessel with no row now warns once per class instead of failing
 silently. The
-remaining flyable HUDs (Manta, Rhino, Serpent, and the Urchin until its row is authored) have no
+remaining flyable HUDs (Rhino, Serpent, and the Urchin until its row is authored) have no
 `abilityIcons` bindings and varied lower-right layouts; wiring them is per-vessel HUD work — the
 framework above needs no further changes.
 

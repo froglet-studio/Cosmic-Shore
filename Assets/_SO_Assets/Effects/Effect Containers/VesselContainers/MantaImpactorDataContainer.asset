@@ -11,14 +11,14 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: fde7d8c2dacf45f99e46799ffeea15e6, type: 3}
   m_Name: MantaImpactorDataContainer
-  m_EditorClassIdentifier: 
+  m_EditorClassIdentifier:
   vesselPrismEffects:
   - {fileID: 11400000, guid: 78b37cebc40f2b7458b5958004216de5, type: 2}
   - {fileID: 11400000, guid: ca2d1be3880b82941a0465a1f7e45280, type: 2}
   - {fileID: 11400000, guid: 4da62d4eefe03594ba35027dd537aff0, type: 2}
   - {fileID: 11400000, guid: c7ccaca885824b24b716b12148d77ce1, type: 2}
   vesselCrystalEffects:
-  - {fileID: 11400000, guid: 9b358aeb5b64e324c944c6bb77bb7fa8, type: 2}
+  - {fileID: 11400000, guid: e35a5f7f9f7d594b8d6564eb20a73eb5, type: 2}
   vesselMassCrystalEffects: []
   vesselChargeCrystalEffects: []
   vesselSpaceCrystalEffects: []
