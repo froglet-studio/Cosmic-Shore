@@ -190,20 +190,63 @@ Grizzly is not in this phase: no `grizzly_shapekey_*` rig exists. It is blocked 
 
 ---
 
-## Phase 4 — make the audits measure the thing, not its label
+## Phase 4 — make the audits measure the thing, not its label  ✅ SHIPPED
 
-These are the checks whose absence let each discrepancy through. All are asset-only, no play mode.
+All four checks land, all asset-only, no play mode. They are what stop Phase 3 from reporting a
+false green.
 
-1. **Morph audit measures shape MAGNITUDE.** `Audit Vessel Elemental Morphs` currently reports
-   discovered, name-matched shapes. Rhino's and Urchin's rigs would pass it while morphing nothing.
-   Report the summed/max vertex delta per shape and fail a shape that moves nothing.
-2. **Guid ownership check.** A helper that answers "which file owns this guid" by `^guid:` on the
-   candidate's own `.meta`, so the `head -1` trap cannot be re-entered by hand.
-3. **Nested-instance reachability check.** For every prefab-instance child of a **plain** Transform,
-   assert the instance's stripped Transform appears in that parent's `m_Children` (§3). The
-   stripped-parent case is the documented exception.
-4. **Duplicate coincident renderer check.** Two `SkinnedMeshRenderer`s drawing the same hull from
-   two files (§3.4) should be reported, not discovered by reading YAML by hand.
+**1. `Audit Vessel Elemental Morphs` measures shape MAGNITUDE.**
+`VesselElementalMorphAuditor.Travel` reads each shape's authored extreme frame
+(`Mesh.GetBlendShapeFrameVertices`) and reports its farthest vertex travel as a fraction of that
+mesh's own bounding-box diagonal. A shape below `MinShapeTravelFraction` is reported **INERT**, a
+vessel with only inert shapes reads *"LABELLED BUT INERT — the hull morphs by NOTHING"*, and the
+summary line counts vessels whose shapes **move the hull** rather than vessels that carry labels.
+
+*The threshold is RELATIVE, and that is not fussiness.* There is a third state between "empty" and
+"real": a historical `Sparrow Missile.fbx` carried Charge and Time shapes indexing 243 and 309
+vertices and moving them **4e-6 units** — non-zero, and 0.00004% of the model, so an absolute
+epsilon calls them live. Measured over every shipped vessel model the two populations separate with
+nothing in between:
+
+| | range |
+|---|---|
+| **real** element shapes (29 of them) | **2.46% – 17.94%** of the mesh's diagonal |
+| **inert** ones (8: the Rhino's four and the Urchin's four) | **0.0000%** |
+
+`0.001` is picked from inside that measured gap — 24× below the smallest real shape.
+
+**The gate was watched failing before being trusted.** On the same data:
+
+```
+--- Rhino    LABELLED BUT INERT — the hull morphs by NOTHING
+      mass   — INERT (0.0000% of the hull)     … ×4
+--- Urchin   LABELLED BUT INERT — the hull morphs by NOTHING
+      mass   — INERT (0.0000% of the hull)     … ×4
+--- Dolphin  all four elements
+      mass   — moves 15.471% of the hull
+      time   — moves 17.372% of the hull
+```
+
+The previous audit reported *"all four elements"* for all three, because it counted labels.
+
+**2–4. `FrogletTools ▸ Vessels ▸ Audit Vessel Construction`** (new, `VesselConstructionAuditor`):
+
+- **guid ownership** — resolves each vessel model's guid by the `^guid:` line of each candidate's
+  OWN `.meta` and fails on anything but exactly one owner. Current: every vessel model is owned by
+  exactly its own `.meta`.
+- **nested-instance reachability** — for every `PrefabInstance` whose `m_TransformParent` is a
+  **plain** (non-stripped) Transform, asserts its stripped Transform appears in that parent's
+  `m_Children`. The stripped-parent case is exempt, and counted separately so the exemption stays
+  visible. Current: **zero unreachable**, which is the invariant. This one reads the YAML on
+  purpose — a *loaded* prefab presents the merged hierarchy, so a missing instance looks perfectly
+  attached once Unity has resolved it; the defect exists only in the file.
+- **duplicate coincident hull renderers** — reports active `SkinnedMeshRenderer`s drawing meshes of
+  the same vertex count from **different model files**. Current: **Manta, Falcon, Shrike, Termite**,
+  each drawing one 3,351-vertex hull from two files. Reported, not deleted — §3.4 is still an open
+  question, and this is what stops it being re-discovered by reading YAML by hand.
+
+Offline mirrors of all four live in `Tools/Build/measure_vessel_models.py` and
+`measure_vessel_prefabs.py`, so the numbers can be reproduced without an editor.
 
 ---
 
