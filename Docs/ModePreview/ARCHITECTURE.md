@@ -388,9 +388,18 @@ yet (§7). Maelstrom (Tournament) stays excluded in code.
 - **The planting model shows SEEDS, not the mature forest.** Rampage plants 59 and matures to 88
   (`MaxLivePopulation`); the card shows 59, which is what a match actually opens with. If the
   mature figure ever reads better, it is one field in `ModePreviewPlantingModel.ResolveCount`.
-- **The satellite has no crystals** (`CrystalManager` is scene-level), so the AI seeks the cell
-  centre when the arena offers no items, and crystal-driven modes preview without their pickups.
-  Wiring a satellite-local crystal source is the single highest-value follow-up.
+- **Crystal-scored modes now preview WITH crystals** (`ModePreviewArena.SpawnPreviewCrystals`):
+  the omni prefab is minted the way the Wanderway conveyor mints it — the prefab carries its own
+  impactor + collider and `Crystal`'s manager-less guards make a local mint collectible with no
+  `CrystalManager`. A waypoint-track mode (Skim Race) gets one per sampled waypoint; any other
+  crystal-scored mode (Scurry) gets a volume-uniform scatter inside the nucleus, per §27's "the
+  omni respawn volume IS the nucleus". Registered on the satellite's runtime data so the AI hunts
+  them. **Nothing respawns** — a preview is a taste; collected means gone. The prefab reference
+  lives on `ModePreviewLibrarySO.OmniCrystalPrefab` (Resources), authored to
+  `_Prefabs/Environment/Crystal.prefab`.
+- **Tap-in no longer walls the window with "LOADING <MODE>"** — the orbiting scale model stays on
+  camera while the real cell builds beside it, and the gameplay camera takes over when ready. The
+  label survives only for a tap-in with nothing standing to show.
 - **In a party, your vessel visibly teleports** to the arena and flies there; party members keep
   flying the menu world.
 - **Not verified in the Editor this round** — same verification debt as before: play-mode over

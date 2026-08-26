@@ -383,7 +383,14 @@ namespace CosmicShore.Gameplay
                 if (!template)
                     throw new InvalidOperationException("no active Cell to clone a satellite from");
 
-                _window?.ShowLoading(definition.Mode.ToString());
+                // Keep the MODEL on screen while the real cell builds beside it. The window
+                // used to flip to "LOADING <MODE>" for the whole multi-second build, replacing a
+                // perfectly good live view with a wall of text - which also read as the panel
+                // being stuck whenever anything else (a domain pick) happened during it. The
+                // orbiting model IS the loading feedback; the label is kept only for the rare
+                // tap-in with nothing standing to show.
+                if (!(_arena.ModelStanding && _arena.ArenaCameraLive))
+                    _window?.ShowLoading(definition.Mode.ToString());
 
                 var origin = Vector3.right * arenaDistance;
                 var config = definition.ResolveCell(_intensity);

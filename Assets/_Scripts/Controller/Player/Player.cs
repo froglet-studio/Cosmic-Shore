@@ -696,7 +696,16 @@ namespace CosmicShore.Gameplay
 
             // (b) Repaint the vessel materials. Skipped pre-spawn (no themeManagerData
             // stashed yet) and on Players whose vessel is null between scene transitions.
-            if (Vessel != null && _vesselThemeManagerData != null)
+            //
+            // Vessel is an IVessel - an INTERFACE reference - so `Vessel != null` cannot see a
+            // DESTROYED vessel: Unity's fake-null operator only runs through UnityEngine.Object-
+            // typed references. A domain pick landing mid-vessel-swap (the modal's tiles are
+            // interactive while a preview swaps hulls) therefore repainted a destroyed
+            // VesselController from inside the NetworkVariable callback - the
+            // MissingReferenceException with no obvious owner. Route the aliveness test through
+            // the object type explicitly.
+            if (Vessel is UnityEngine.Object vesselObject && vesselObject &&
+                _vesselThemeManagerData != null)
                 ShipHelper.SetShipProperties(_vesselThemeManagerData, Vessel);
         }
         

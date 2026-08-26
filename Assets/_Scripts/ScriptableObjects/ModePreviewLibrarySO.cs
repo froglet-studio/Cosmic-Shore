@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using CosmicShore.Data;
+using CosmicShore.Gameplay;
 using UnityEngine;
 
 namespace CosmicShore.ScriptableObjects
@@ -26,6 +27,16 @@ namespace CosmicShore.ScriptableObjects
     {
         /// <summary>Resources path the arcade UI falls back to when nothing is wired.</summary>
         public const string ResourcePath = "ModePreviewLibrary";
+
+        [Tooltip("The omni crystal a preview arena mints for its crystal-scored modes " +
+                 "(Assets/_Prefabs/Environment/Crystal.prefab). The prefab already carries " +
+                 "OmniCrystalImpactor + ImpactCollider, and the manager-less guards on Crystal " +
+                 "make a local mint collectible without a CrystalManager - the same contract the " +
+                 "Wanderway conveyor relies on. Unwired = previews simply have no pickups.")]
+        [SerializeField] Crystal omniCrystalPrefab;
+
+        /// <summary>The pickup a preview arena mints, or null when none is wired.</summary>
+        public Crystal OmniCrystalPrefab => omniCrystalPrefab;
 
         [Tooltip("One definition per previewable mode. Duplicates are reported and the first " +
                  "entry wins.")]

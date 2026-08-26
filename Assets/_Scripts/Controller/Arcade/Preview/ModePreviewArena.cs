@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using CosmicShore.Data;
 using CosmicShore.ScriptableObjects;
 using CosmicShore.Utility;
 using Reflex.Core;
@@ -147,6 +148,7 @@ namespace CosmicShore.Gameplay
 
             SpawnStructure(definition);
             SpawnTrackStructure(definition, intensity);
+            SpawnPreviewCrystals(definition, intensity);
 
             CSDebug.Log($"[ModePreview] Arena standing for {definition.Mode} " +
                         $"({config.CellName}) at {origin}.");
@@ -231,6 +233,87 @@ namespace CosmicShore.Gameplay
                 $"[ModePreview] Track structure '{spawnable.name}' built for flight " +
                 $"(intensity {intensity}).");
         }
+
+        /// <summary>
+        /// Collectable crystals for the flight phase of a crystal-scored mode.
+        ///
+        /// <para>Scurry races for crystals and Skim Race skims a crystal line down its track, and
+        /// both previewed with NONE - the real modes' crystals belong to CrystalManager, which is
+        /// scene-level. The preview mints them the way the Wanderway conveyor does: the omni
+        /// prefab already carries its impactor + collider, and Crystal's manager-less guards make
+        /// a local mint collectible with no manager. Nothing respawns - a preview is a taste, and
+        /// its crystals are gone when they are gone.</para>
+        ///
+        /// <para>Placement mirrors the mode: a waypoint-track mode gets one crystal per sampled
+        /// waypoint (the track IS the crystal line); any other crystal-scored mode gets a scatter
+        /// drawn volume-uniformly inside the nucleus - the platform's own rule that the omni
+        /// respawn volume IS the nucleus (Docs/ECOSYSTEM.md §27). Registered with the satellite's
+        /// runtime data so the AI hunts them before the player takes over.</para>
+        /// </summary>
+        void SpawnPreviewCrystals(ModePreviewDefinitionSO definition, int intensity)
+        {
+            if (!definition || !CrystalScored(definition.ObjectiveMetric)) return;
+
+            var library = Resources.Load<ModePreviewLibrarySO>(ModePreviewLibrarySO.ResourcePath);
+            var prefab = library ? library.OmniCrystalPrefab : null;
+            if (!prefab)
+            {
+                CSDebug.LogVerbose(CSLogChannel.ArcadeLaunch,
+                    "[ModePreview] No omni crystal wired on the preview library - no pickups.");
+                return;
+            }
+
+            var positions = new List<Vector3>();
+
+            if (definition.ResolveTrackSpawnable(intensity) is SpawnableWaypointTrack track)
+            {
+                var lays = ModePreviewTrackModel.BuildWaypointLays(track, intensity);
+                int stride = Mathf.Max(1, lays.Count / MaxPreviewCrystals);
+                for (int i = 0; i < lays.Count; i += stride)
+                    positions.Add(lays[i].Point.Position);
+            }
+            else
+            {
+                float radius = Mathf.Max(Cell ? Cell.ExpectedNucleusWorldRadius : 0f, 60f);
+                var rng = new System.Random(
+                    ModePreviewPlantingModel.StableSeed(definition.Mode.ToString()));
+                for (int i = 0; i < ScatterPreviewCrystals; i++)
+                {
+                    // Volume-uniform: cbrt of a uniform draw, the same reasoning as planting.
+                    float r = radius * Mathf.Pow((float)rng.NextDouble(), 1f / 3f);
+                    var dir = new Vector3((float)rng.NextDouble() * 2f - 1f,
+                                          (float)rng.NextDouble() * 2f - 1f,
+                                          (float)rng.NextDouble() * 2f - 1f);
+                    positions.Add(dir.sqrMagnitude > 0.001f ? dir.normalized * r : Vector3.up * r);
+                }
+            }
+
+            foreach (var local in positions)
+            {
+                var crystal = Object.Instantiate(prefab, _root.transform);
+                crystal.transform.localPosition = local;
+                crystal.enabled = true;
+                crystal.gameObject.SetActive(true);
+
+                // The AI's hunting list. The crystal's own serialized cellData still points at
+                // the prefab's shared asset, so its self-removal on destroy may miss this list -
+                // CellRuntimeDataSO.PruneDestroyed makes that self-healing.
+                if (_runtimeInstance) _runtimeInstance.AddCrystalToList(crystal);
+            }
+
+            CSDebug.LogVerbose(CSLogChannel.ArcadeLaunch,
+                $"[ModePreview] {positions.Count} preview crystal(s) minted for {definition.Mode}.");
+        }
+
+        static bool CrystalScored(ScoringMetric metric) =>
+            metric is ScoringMetric.Crystals or ScoringMetric.OmniCrystals
+                   or ScoringMetric.ElementalCrystals;
+
+        /// <summary>Crystal cap along a waypoint track - one per sampled waypoint.</summary>
+        const int MaxPreviewCrystals = 24;
+
+        /// <summary>How many crystals a non-track crystal mode scatters in its nucleus.</summary>
+        const int ScatterPreviewCrystals = 6;
 
         /// <summary>
         /// Phase one of the teardown: retire the world POOL-SAFELY through
