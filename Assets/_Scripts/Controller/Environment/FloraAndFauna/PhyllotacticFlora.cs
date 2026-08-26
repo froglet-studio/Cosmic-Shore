@@ -364,7 +364,24 @@ namespace CosmicShore.Gameplay
                 reach * leafScale.z * j));
         }
 
-        float Jitter() => prismJitter > 0f ? 1f + Random.Range(-prismJitter, prismJitter) : 1f;
+        /// <summary>
+        /// Per-prism size jitter. Deliberately ONE implementation shared with
+        /// <see cref="TryPreviewGrowth"/>: the preview draws the prism shapes this plant really
+        /// grows, and a second copy of the taper/jitter maths is a second thing to keep in step.
+        /// The preview swaps the SOURCE of randomness (it must never touch
+        /// <c>UnityEngine.Random</c> - that would perturb a shared deterministic sequence), never
+        /// the shape.
+        /// </summary>
+        float Jitter()
+        {
+            if (prismJitter <= 0f) return 1f;
+            return _previewRng != null
+                ? 1f + (float)(_previewRng.NextDouble() * 2.0 - 1.0) * prismJitter
+                : 1f + Random.Range(-prismJitter, prismJitter);
+        }
+
+        /// <summary>Non-null ONLY for the duration of <see cref="TryPreviewGrowth"/>.</summary>
+        System.Random _previewRng;
 
         /// <summary>Floored at the prism scale animator's 0.5 minimum so nothing silently clamps.</summary>
         static Vector3 Floor(Vector3 s) =>
@@ -551,6 +568,213 @@ namespace CosmicShore.Gameplay
                     roll = Random.value * Mathf.PI * 2f,
                 });
             }
+        }
+
+        // ── Preview ───────────────────────────────────────────────────────────
+
+        /// <summary>
+        /// Pure preview of the phyllotactic walk - see <see cref="Flora.TryPreviewGrowth"/>.
+        /// Mirrors <see cref="SeedTips"/> then <see cref="DecideStep"/> / <see cref="DecideWhorl"/>
+        /// / the tip half of <see cref="Execute"/>, in LOCAL space around the plant's own origin,
+        /// and spawns nothing at all: no prism, no spindle, no GameObject, no cell, no spatial
+        /// index reservation.
+        ///
+        /// <para>Three substitutions, and only three. Randomness comes from a caller-seeded
+        /// <see cref="System.Random"/> so the same seed always draws the same plant (and so the
+        /// shared <c>UnityEngine.Random</c> sequence is never perturbed). Site claims go to a
+        /// local list instead of <see cref="PrismSpatialIndex"/>, since there is no world to
+        /// contend with. And a decided node becomes a tip immediately rather than at the drain,
+        /// because there are no frames here - which reorders growth slightly and cannot change the
+        /// silhouette, the one thing a thumbnail shows.</para>
+        ///
+        /// <para>Prism SHAPES are not re-derived: <see cref="StemPrismScale"/> and
+        /// <see cref="LeafPrismScale"/> are the live ones, so a preview cannot drift from the
+        /// plant on taper, cross-section or jitter.</para>
+        /// </summary>
+        public override bool TryPreviewGrowth(int budget, int seed, List<SpawnPoint> into)
+        {
+            if (into == null || budget <= 0) return false;
+
+            // A plant is bounded by its own live-prism budget; showing more would draw a species
+            // denser than the one the cell actually holds.
+            int cap = Mathf.Min(budget, Mathf.Max(1, maxTotalSpawnedObjects));
+
+            _previewRng = new System.Random(seed);
+            try
+            {
+                // Local frame: the plant stands on its own origin and grows up its own axis. The
+                // live _axis is the planting site's normal, which does not exist without a cell.
+                Vector3 axis = Vector3.up;
+                var claims = new List<Vector4>(cap);
+                var tips = new List<PreviewTip>();
+
+                SeedPreviewTips(axis, tips, claims, into, cap);
+
+                while (into.Count < cap && tips.Count > 0)
+                {
+                    var tip = tips[0];
+                    tips.RemoveAt(0);
+                    if (tip.Depth >= maxDepth) continue;
+                    StepPreview(tip, axis, tips, claims, into, cap);
+                }
+
+                return into.Count > 0;
+            }
+            finally
+            {
+                _previewRng = null;
+            }
+        }
+
+        struct PreviewTip
+        {
+            public Vector3 Position;
+            public Vector3 Heading;
+            public int Depth;
+            public float Roll;
+        }
+
+        void SeedPreviewTips(Vector3 axis, List<PreviewTip> tips, List<Vector4> claims,
+            List<SpawnPoint> into, int cap)
+        {
+            Vector3 basis = Vector3.Cross(axis, Mathf.Abs(axis.y) > 0.95f ? Vector3.right : Vector3.up)
+                .normalized;
+
+            for (int i = 0; i < initialTips && into.Count < cap; i++)
+            {
+                float roll = i * GoldenAngle;
+                Vector3 tilt = Quaternion.AngleAxis(roll * Mathf.Rad2Deg, axis) * basis;
+                Vector3 heading = Quaternion.AngleAxis(spreadDegrees, tilt) * axis;
+
+                Vector3 root = initialTips > 1 ? tilt * (segmentLength * 0.28f) : Vector3.zero;
+
+                var collar = StemPrismScale(0, segmentLength * 0.55f, 1f);
+                into.Add(new SpawnPoint(root, Quaternion.identity,
+                    new Vector3(collar.x * 1.5f, collar.y * 1.5f, collar.z)));
+                ClaimPreview(claims, root, segmentLength);
+
+                if (tips.Count < maxTips)
+                    tips.Add(new PreviewTip
+                    {
+                        Position = root,
+                        Heading = heading.normalized,
+                        Depth = 0,
+                        Roll = roll,
+                    });
+            }
+        }
+
+        void StepPreview(PreviewTip tip, Vector3 axis, List<PreviewTip> tips, List<Vector4> claims,
+            List<SpawnPoint> into, int cap)
+        {
+            float len = segmentLength * Mathf.Pow(segmentTaper, tip.Depth);
+
+            Vector3 heading = Vector3.Slerp(tip.Heading, axis, tropism * 0.3f);
+            if (wander > 0f) heading += PreviewOnUnitSphere() * wander;
+            if (gravityDroop > 0f) heading += Vector3.down * gravityDroop;
+            if (heading.sqrMagnitude < 0.0001f) heading = axis;
+            heading.Normalize();
+
+            Vector3 pos = tip.Position + heading * len;
+            if (!ClaimPreview(claims, pos, len))
+            {
+                tip.Heading = (heading + PreviewOnUnitSphere() * 0.6f).normalized;
+                if (tips.Count < maxTips) tips.Add(tip);
+                return;
+            }
+
+            int nodeDepth = tip.Depth + 1;
+            into.Add(new SpawnPoint(pos, SpawnPoint.LookRotation(heading, axis),
+                StemPrismScale(nodeDepth, len, 1f)));
+
+            bool atTip = nodeDepth >= maxDepth;
+            if (whorlLeaves > 0 && nodeDepth >= whorlStartDepth &&
+                (nodeDepth - whorlStartDepth) % whorlEvery == 0)
+                WhorlPreview(tip.Roll, pos, heading, axis, nodeDepth, 1f, claims, into, cap);
+            else if (whorlLeaves > 0 && atTip && terminalWhorlScale > 0f)
+                WhorlPreview(tip.Roll, pos, heading, axis, nodeDepth, terminalWhorlScale, claims, into, cap);
+
+            // The tip half of Execute. Immediate here - there is no drain without frames.
+            if (tips.Count < maxTips)
+                tips.Add(new PreviewTip
+                {
+                    Position = pos,
+                    Heading = heading,
+                    Depth = nodeDepth,
+                    Roll = tip.Roll + GoldenAngle + spiralTwist * Mathf.Deg2Rad,
+                });
+
+            if (nodeDepth >= branchStartDepth && tips.Count < maxTips &&
+                _previewRng.NextDouble() < branchChance)
+            {
+                Vector3 forkAxis = Vector3.Cross(heading, axis);
+                if (forkAxis.sqrMagnitude < 0.0001f) forkAxis = Vector3.Cross(heading, Vector3.right);
+                Vector3 forked = Quaternion.AngleAxis(branchAngle, forkAxis.normalized) *
+                                 (Quaternion.AngleAxis((float)(_previewRng.NextDouble() * 360.0), heading) * heading);
+                tips.Add(new PreviewTip
+                {
+                    Position = pos,
+                    Heading = forked.normalized,
+                    Depth = nodeDepth,
+                    Roll = tip.Roll + GoldenAngle * 0.5f,
+                });
+            }
+        }
+
+        void WhorlPreview(float tipRoll, Vector3 node, Vector3 heading, Vector3 axis, int depth,
+            float sizeScale, List<Vector4> claims, List<SpawnPoint> into, int cap)
+        {
+            float t = maxDepth > 0 ? Mathf.Clamp01(depth / (float)maxDepth) : 0f;
+            float radius = whorlRadius * (1f + whorlFlare * t) * sizeScale;
+            Vector3 basis = Vector3.Cross(heading, Mathf.Abs(Vector3.Dot(heading, axis)) > 0.95f
+                ? Vector3.right : axis);
+            if (basis.sqrMagnitude < 0.0001f) basis = Vector3.Cross(heading, Vector3.forward);
+            basis.Normalize();
+
+            for (int i = 0; i < whorlLeaves && into.Count < cap; i++)
+            {
+                float angle = tipRoll + i * GoldenAngle;
+                Vector3 outward = Quaternion.AngleAxis(angle * Mathf.Rad2Deg, heading) * basis;
+
+                Vector3 hinge = Vector3.Cross(outward, heading);
+                if (hinge.sqrMagnitude > 0.0001f)
+                    outward = Quaternion.AngleAxis(-leafPitchDegrees, hinge.normalized) * outward;
+                outward.Normalize();
+
+                float reach = radius * ((i % 2 == 0) ? 1f : whorlAlternateScale);
+                var scale = LeafPrismScale(depth, reach);
+
+                Vector3 pos = node + outward * (scale.z * 0.5f);
+                if (!ClaimPreview(claims, pos, scale.x)) continue;
+
+                into.Add(new SpawnPoint(pos, SpawnPoint.LookRotation(outward, heading), scale));
+            }
+        }
+
+        /// <summary>
+        /// The local stand-in for <see cref="Claim"/>. Same radius rule; a plain list because a
+        /// preview has no world to contend with and at most a few hundred points to test.
+        /// </summary>
+        static bool ClaimPreview(List<Vector4> claims, Vector3 position, float spacing)
+        {
+            float radius = Mathf.Max(1.5f, ClaimRadiusFraction * spacing);
+            for (int i = 0; i < claims.Count; i++)
+            {
+                var c = claims[i];
+                float reach = Mathf.Max(radius, c.w);
+                if ((new Vector3(c.x, c.y, c.z) - position).sqrMagnitude < reach * reach) return false;
+            }
+            claims.Add(new Vector4(position.x, position.y, position.z, radius));
+            return true;
+        }
+
+        Vector3 PreviewOnUnitSphere()
+        {
+            double y = _previewRng.NextDouble() * 2.0 - 1.0;
+            double theta = _previewRng.NextDouble() * System.Math.PI * 2.0;
+            double r = System.Math.Sqrt(System.Math.Max(0.0, 1.0 - y * y));
+            return new Vector3((float)(r * System.Math.Cos(theta)), (float)y,
+                               (float)(r * System.Math.Sin(theta)));
         }
 
         protected override void Die(string killerName = "")
