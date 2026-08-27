@@ -199,13 +199,32 @@ track structure, tens of thousands of prisms with colliders and spatial-index en
 scene that was still running. The preview now lays every dense trail at a STRIDE
 (`PrismLayDecimation` — a scoped every-Nth subsample applied in `SpawnableBase.SpawnPrismTrail`
 *before* the builder, so streamed lays that outlive the scope were already thinned): a torus is
-still a torus, at half the prisms. The knob is
-`ModePreviewLibrarySO.FlightPrismStride` (authored 2; 1 = full density), trails under 25 prisms
-always lay complete (thinning small furniture changes what it IS), and the stride rides ON THE
-CELL (`Cell.SatellitePrismStride`, honoured only while `IsSatellite`) because the environment
-build can be DEFERRED past `InitializeSatellite` — a caller-side scope would never reach it. A
-real scene cell is pinned to stride 1 in code. Laying fewer prisms is "not creating mass",
-which the conserved-mass law permits.
+still a torus, at a fraction of the prisms. The knob is
+`ModePreviewLibrarySO.FlightPrismStride` (authored 4 — every 4th prism; 1 = full density), trails
+under 25 prisms always lay complete (thinning small furniture changes what it IS), and the stride
+rides ON THE CELL (`Cell.SatellitePrismStride`, honoured only while `IsSatellite`) because the
+environment build can be DEFERRED past `InitializeSatellite` — a caller-side scope would never
+reach it. A real scene cell is pinned to stride 1 in code. Laying fewer prisms is "not creating
+mass", which the conserved-mass law permits.
+
+**The satellite is STRUCTURE, not ecology — its life spawner never starts.** The first playtest
+showed previews seeding the mode's full living world beside the running menu — flora colonies
+growing thousands of lattice prisms, Wildlife Liberation's ~519 fauna, and one always-on heart
+collider (an elemental crystal) per lifeform — which was most of the lag, and none of it is what a
+preview is for. `Cell.StartSpawnerForMode` now returns before picking a spawner class when
+`IsSatellite`, which covers `RandomLifeSpawner` and `IntensityWiseLifeSpawner` alike and every
+start site (satellite bootstrap, swap completion, `RestartSpawnerForMode`) by construction — and
+with no seeds, every downstream producer (fauna/flora reproduction, lattice colony frontiers,
+heart drops) never begins. This is production GATING, permitted by `Docs/ECOSYSTEM.md §0`; nothing
+is culled and nothing decays. The minted omni crystals are untouched (they are the arena's own, not
+the spawner's). Stated cost: a GROWN world — Rampage's cactus belt IS its spawner's planting —
+previews as its authored structure alone; the looking-phase miniature still models the planting as
+markers (`ModePreviewPlantingModel`).
+
+**The tap-out drain is paced for the menu, not for speed.** The retiring root sits far outside
+every camera, so the drain has no reason to hurry — but each frame's `Destroy` slice is paid IN the
+menu the player just returned to. 500 prisms/frame read as a hitch train on the way back to the
+lava lamp; the slice is 150/frame, trading invisible drain duration for visible frame cost.
 
 **A minimum-two-player mode previews with a SPARRING PARTNER.** Joust and its siblings are
 meaningless alone, so when the card's `MinPlayersAllowed >= 2` the modal arms the session with

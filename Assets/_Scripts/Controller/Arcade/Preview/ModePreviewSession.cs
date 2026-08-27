@@ -632,7 +632,12 @@ namespace CosmicShore.Gameplay
                 var retiring = _arena.BeginStrike();
                 if (retiring)
                 {
-                    const int PrismsPerFrame = 500;
+                    // The retiring root sits far outside every camera's far clip, so nothing
+                    // rewards finishing the drain fast - but every Destroy in a slice is paid ON
+                    // that frame, in the menu the player just returned to. 500/frame read as a
+                    // hitch train on the way back to the lava lamp; smaller slices trade drain
+                    // DURATION (invisible) for frame cost (visible).
+                    const int PrismsPerFrame = 150;
                     var prisms = retiring.GetComponentsInChildren<Prism>(true);
                     for (int i = 0; i < prisms.Length; i++)
                     {

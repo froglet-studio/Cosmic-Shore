@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: ModePreviewLibrary
   m_EditorClassIdentifier: 
   omniCrystalPrefab: {fileID: 5535990081244205891, guid: 54802b89e00a0ed4281025fa5e770811, type: 3}
-  flightPrismStride: 2
+  flightPrismStride: 4
   Definitions:
   - {fileID: 11400000, guid: c433d159ced3931d77dce8586a3bf6e6, type: 2}
   - {fileID: 11400000, guid: c5bb5b794d504f4a525ea0b494f6935f, type: 2}

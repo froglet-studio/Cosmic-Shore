@@ -2137,12 +2137,13 @@ namespace CosmicShore.Gameplay
 
             Initialize();
 
-            // A scene cell finishes its bootstrap (cytoplasm, modifiers, SPAWNER) on the first
+            // A scene cell finishes its bootstrap (cytoplasm, modifiers, spawner) on the first
             // crystal event - see OnCellItemUpdated. A satellite has its own runtime instance
             // and no CrystalManager feeding it, so that event never comes: run the completion
-            // here or the satellite builds its environment and then stands lifeless, with no
-            // flora, no fauna, and - for a GROWN world like Rampage's cactus forest, whose whole
-            // arena IS its spawner's planting - nothing at all.
+            // here. The life-SPAWNER half is deliberately a no-op for satellites
+            // (StartSpawnerForMode gates on IsSatellite): a preview is the mode's structure, and
+            // the ecology - flora, fauna, their element hearts - is the bulk of a second world's
+            // frame cost beside a menu that is still running.
             InitilizePostFirstCellItem();
             return true;
         }
@@ -2667,6 +2668,24 @@ namespace CosmicShore.Gameplay
         void StartSpawnerForMode()
         {
             StopSpawner();
+
+            // A SATELLITE runs no life spawner. The flight preview is the mode's STRUCTURE at a
+            // fraction of the cost, and a seeded ecology is most of a second world's frame cost
+            // while the menu is still running (Wildlife Liberation alone seeds ~519 fauna; a
+            // lattice world grows tens of thousands of colony prisms plus one always-on heart
+            // collider per plant). This is production GATING, which Docs/ECOSYSTEM.md §0 permits:
+            // no seeds means reproduction, colony growth and heart drops never begin, and nothing
+            // is ever culled. The gate sits ABOVE the spawner-class pick so it covers
+            // RandomLifeSpawner and IntensityWiseLifeSpawner alike, and every start site
+            // (satellite bootstrap, swap completion, RestartSpawnerForMode) by construction.
+            // Stated cost: a GROWN world (Rampage's cactus belt IS its spawner's planting)
+            // previews as its authored structure alone; the looking-phase miniature still models
+            // the planting as markers (ModePreviewPlantingModel).
+            if (IsSatellite)
+            {
+                CSDebug.Log($"[Cell {ID}] Satellite: life spawner suppressed - structure-only preview.");
+                return;
+            }
 
             activeSpawner = cellTypeChoiceOptions == CellTypeChoiceOptions.IntensityWise
                 ? intensitySpawner

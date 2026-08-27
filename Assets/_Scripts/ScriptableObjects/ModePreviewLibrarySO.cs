@@ -38,11 +38,12 @@ namespace CosmicShore.ScriptableObjects
         /// <summary>The pickup a preview arena mints, or null when none is wired.</summary>
         public Crystal OmniCrystalPrefab => omniCrystalPrefab;
 
-        [Tooltip("Prism-lay stride for the FLIGHT arena: at 2, every dense environment/track " +
-                 "trail lays every 2nd prism - the same shape at half the prisms, colliders and " +
-                 "spatial-index load, so tapping into a preview does not hitch the menu. 1 = " +
-                 "build the world in full. Short trails (under 25 prisms) always lay complete.")]
-        [SerializeField, Range(1, 6)] int flightPrismStride = 2;
+        [Tooltip("Prism-lay stride for the FLIGHT arena: at N, every dense environment/track " +
+                 "trail lays every Nth prism - the same shape at 1/N of the prisms, colliders " +
+                 "and spatial-index load, so tapping into (and back out of) a preview does not " +
+                 "hitch the menu. 1 = build the world in full. Short trails (under 25 prisms) " +
+                 "always lay complete.")]
+        [SerializeField, Range(1, 6)] int flightPrismStride = 4;
 
         /// <summary>Every-Nth-prism thinning for preview flight arenas (1 = full density).</summary>
         public int FlightPrismStride => Mathf.Max(1, flightPrismStride);
