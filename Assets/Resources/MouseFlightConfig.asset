@@ -17,6 +17,7 @@ MonoBehaviour:
   deadZone: 0.02
   holdInnerRadius: 0.88
   holdOuterRadius: 0.97
+  holdEngageSeconds: 0.25
   showWidget: 1
   widgetScreenFraction: 0.1
   widgetColor: {r: 1, g: 1, b: 1, a: 1}

@@ -39,7 +39,7 @@ rate**. `MouseVirtualStick.Step` is the bridge, and it has **two regimes**:
 | Where the stick is | What it is | Why |
 |---|---|---|
 | inside `holdInner` (0.88) | a **rate** stick: spring live, deflection = `v · k / spring` | mouse speed is turn rate, and letting go straightens the vessel — the regime aiming and every ordinary flick live in |
-| beyond `holdOuter` (0.97) — the **annulus** | a **position** stick: spring exactly **0** | a push that gets it there parks it, and the vessel keeps turning **with the mouse still** |
+| beyond `holdOuter` (0.97), **held there for `holdEngageSeconds` (0.25 s)** — the **annulus** | a **position** stick: spring exactly **0** | a *sustained* push parks it, and the vessel keeps turning **with the mouse still** |
 | between them | the spring smoothsteps away | no step in feel, and no oscillation: the spring only ever gets *stronger* as the stick falls inward, so drift is monotone and the only stable places are centred and the annulus |
 
 ### Why the annulus exists
@@ -78,11 +78,22 @@ committing, because it does not last long enough to climb past `holdOuter` again
 What commits is **saturating the stick** — about 120 px of travel — after which the turn holds
 until you pull back.
 
-> **The trade, stated plainly:** at this gain, *hard over* and *committed* are the same place, so a
-> hard flick locks the turn until you correct it. That is inherent to a bounded cursor at a gain
-> this responsive, and it is the direction the playtest asked for (less movement, not more). If it
-> reads badly, raise `holdOuterRadius` toward 1 — at exactly 1 the annulus is gone and the pure
-> spring is back, bit for bit.
+**Committing takes TIME, not just distance**, and that gate is load-bearing rather than polish.
+Hard over is only ~91 px at this gain, so *every* brisk aiming flick saturates the stick — an
+annulus that engaged on contact latched on the first one and locked the vessel into a spin the
+player never asked for. Position cannot tell a flick from a hold; only time can. The spring stays
+at **full strength** for the whole dwell window, so staying out past `holdInner` means the player is
+still pushing:
+
+| gesture | result |
+|---|---|
+| any flick (0.15 s), 60–600 px | returns to centre — **identical to the pre-annulus scheme** |
+| 500 px/s for 0.3 s | returns to centre |
+| 500 px/s for 0.8 s | **parks in the annulus** |
+
+Measured against the pre-branch code over 20,000 frames of a simulated hand, the worst divergence
+is **0.035 of a stick unit**, and every bit of it is above `holdInner`. Without the dwell gate that
+figure was **0.9995**, first diverging at frame 37 — the two schemes were simply different controls.
 
 Shipped numbers (`Resources/MouseFlightConfig`, `MouseFlightConfigSO`) — **playtest dials, not
 measurements**, and they are not independent:
@@ -94,6 +105,7 @@ measurements**, and they are not independent:
 | `deadZone` | 0.02 | what actually lands the exponential on centre |
 | `holdInnerRadius` | 0.88 | where the spring starts fading — everything below is exactly the old scheme |
 | `holdOuterRadius` | 0.97 | the annulus. **1 disables it** and restores the pure spring bit for bit |
+| `holdEngageSeconds` | 0.25 | dwell before the spring lets go — what separates a flick from a hold. 0 engages on contact, which is the defect in §2.1 #4 |
 
 No vessel turn rate changed: the Sparrow still turns at its authored 80 °/s scaler and still
 triples it while stopped. Only the desk cost of *holding* that turn changed.
@@ -103,7 +115,7 @@ per-frame approximation, which is what makes the near-centre curve exact at any 
 spring *rate* is sampled from the radius at the start of the frame — the one approximation left,
 and worth nothing a player could feel.
 
-### 2.1 Four defects the model had, and how they were found
+### 2.1 Six defects the model had, and how they were found
 
 All four were caught by **running the shipped math** (`MouseVirtualStickTests` are the surviving
 record), and none is visible to the obvious "does it centre, does it clamp" checks:
@@ -127,7 +139,21 @@ record), and none is visible to the obvious "does it centre, does it clamp" chec
    `AFlickMustTurnTheVesselHard` is the guard.
    Its corollary: the fix for "holding costs too much travel" was **never** to reduce the gain —
    the complaint was *too much movement*, so the gain could only ever go up or stay.
-4. **The widget could take flight input down with it.** `MouseFlightWidget.Report` was called from
+4. **The annulus latched on ordinary flicks.** With the gain restored, hard over is ~91 px, so
+   every brisk aiming flick saturates the stick — and an annulus keyed on POSITION alone engaged on
+   the first one, leaving the vessel in a spin. Reported as *"the mouse movement does not fly the
+   vessel"*, which is what an uncommanded permanent turn looks like from the cockpit. It was found
+   by **measuring the shipped code against the pre-branch code** over a simulated hand rather than
+   by reading either: worst divergence 0.9995 of a stick unit, first at frame 37. *When a change is
+   meant to be additive, diff it against what it replaced under a realistic input stream — "it only
+   affects the top of the range" is a claim, and the range is where the player spends their time.*
+   The fix is the dwell gate; `NoFlickOfAnySizeMayCommitToAHeldTurn` is the guard.
+5. **The widget vanished for a reason a desktop player could not connect to it.** It honoured
+   `GameSetting.JoystickVisualsEnabled` — the setting that governs the TOUCH thumb rings — so a
+   control the player had never touched, on a device they were not using, silently removed the
+   mouse reticle. It now reads only its own `showWidget`. *A setting's SCOPE is part of its
+   meaning, and inheriting one because it is nearby is how a UI acquires spooky action.*
+6. **The widget could take flight input down with it.** `MouseFlightWidget.Report` was called from
    the middle of `Publish()`, above every `inputStatus` write, so any throw inside a **display**
    would have silently skipped every remaining input write and left the vessel dead with the
    reticle still on screen. It is now dispatched dead last and isolated, one fault retiring it for
@@ -160,7 +186,7 @@ when the reports stop, so pause, alt-tab, a vessel swap onto a two-stick hull an
 put it away with nothing to remember to call (the `VesselSpeedTunnel` / `PrismOcclusionCorridor`
 driver precedent). It draws in the config's `widgetColor`, neutral by default: **domain colour
 means TEAM everywhere else in the game** (`Docs/PALETTE.md`), so an instrument wearing one is
-making a claim it does not mean. It respects the existing **joystick-visuals** setting, since that
+making a claim it does not mean. `showWidget` is its **only** switch — see §2.1 #5. It respects the existing **joystick-visuals** setting, since that
 is exactly the setting this is, and `showWidget` on the config turns it off for capture.
 
 ## 3. The mapping
@@ -407,16 +433,26 @@ break lived: neither the code nor the asset was wrong on its own.
 
 ## 7. Verification
 
-- `MouseVirtualStickTests` (edit mode, 21 tests) covers both regimes: the near-centre control
+- `MouseVirtualStickTests` (edit mode, 23 tests) covers both regimes: the near-centre control
   curve at four frame rates, the annulus holding with zero input for ten seconds, `EscapeSpeed`
   separating a stable partial turn from a committed one, the perimeter contract
   `BarrelRollController` and `ScarabJukeController` depend on, that a long sweep banks no
   deflection the player must unwind, that `holdOuter = 1` reproduces the pure spring **bit for
-  bit**, the flick response (§2.1 #3), and every regression in §2.1.
+  bit**, the flick response (§2.1 #3), the dwell gate in both directions (§2.1 #4), and every
+  regression in §2.1.
 - Every one of those assertions was **executed** against the **shipped** `MouseVirtualStick.cs`,
   `MouseFlightConfigSO.cs` and `MouseFlightWidget.cs`, compiled off-editor (dotnet 8 / Roslyn)
-  against a minimal `UnityEngine` stub and driven by reflection — 21 passed. Every number in §2 is
+  against a minimal `UnityEngine` stub and driven by reflection — 23 passed. Every number in §2 is
   measured from that run, not claimed.
+- The shipped integrator was **diffed against the pre-branch one** over 20,000 frames of a
+  simulated hand at the shipped config: worst divergence 0.035 of a stick unit, all of it above
+  `holdInner`. That measurement is what found §2.1 #4, and it is the check to repeat before any
+  future change claims to be additive.
+- The scheme also now reports a dead flight path itself, unconditionally and once
+  (`WatchForDeadFlight`): after 3 s active with nothing published it names which link is dead — no
+  delta arriving, delta under the dead zone, or delta arriving that the integrator will not
+  accumulate. A diagnostic behind a channel you must enable first is one nobody has when the fault
+  happens.
 - `MouseFlightWidget`'s mesh was **rasterised** from the shipped `OnPopulateMesh` at three stick
   positions to confirm the rings land on the radii the config asks for (dead zone, annulus inner
   edge at 0.9, rim at 1.0) and that the held state is unmistakable.

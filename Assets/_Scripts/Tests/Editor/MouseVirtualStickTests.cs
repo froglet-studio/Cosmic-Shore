@@ -39,6 +39,7 @@ namespace CosmicShore.Tests
         const float DeadZone = 0.02f;
         const float HoldInner = 0.88f;
         const float HoldOuter = 0.97f;
+        const float HoldEngage = 0.25f;
         const float Frame = 1f / 60f;
 
         /// <summary>The sustained drag that would hold the stick at the perimeter if the spring
@@ -66,19 +67,40 @@ namespace CosmicShore.Tests
         }
 
         // ------------------------------------------------------------------
-        // The shipped model — spring near centre, dead in the annulus.
+        // The shipped model - spring near centre, dead in the annulus, and the annulus gated on
+        // DWELL. The dwell is per-stick state, so it has to travel with the stick through a whole
+        // gesture: a parked stick that reset its dwell would bring the spring straight back.
 
-        static Vector2 StepHeld(Vector2 stick, Vector2 delta, float dt = Frame)
-            => MouseVirtualStick.Step(stick, delta, UnitsPerPixel, Spring,
-                                      HoldInner, HoldOuter, dt);
+        struct Sim
+        {
+            public Vector2 Stick;
+            public float Dwell;
+
+            public void Push(Vector2 pixels, float dt = Frame)
+                => Stick = MouseVirtualStick.Step(Stick, ref Dwell, pixels, UnitsPerPixel, Spring,
+                                                  HoldInner, HoldOuter, HoldEngage, dt);
+
+            public void Drag(float pixelsPerSecond, float seconds, float dt = Frame)
+            {
+                int frames = Mathf.RoundToInt(seconds / dt);
+                for (int i = 0; i < frames; i++) Push(new Vector2(pixelsPerSecond * dt, 0f), dt);
+            }
+
+            public void Coast(float seconds, float dt = Frame)
+            {
+                int frames = Mathf.RoundToInt(seconds / dt);
+                for (int i = 0; i < frames; i++) Push(Vector2.zero, dt);
+            }
+
+            public float Radius => Stick.magnitude;
+            public bool Held => Radius >= HoldOuter;
+        }
 
         static Vector2 DragHeld(float pixelsPerSecond, float seconds = 6f, float dt = Frame)
         {
-            var stick = Vector2.zero;
-            int frames = Mathf.RoundToInt(seconds / dt);
-            for (int i = 0; i < frames; i++)
-                stick = StepHeld(stick, new Vector2(pixelsPerSecond * dt, 0f), dt);
-            return stick;
+            var sim = new Sim();
+            sim.Drag(pixelsPerSecond, seconds, dt);
+            return sim.Stick;
         }
 
         /// <summary>A flick: <paramref name="pixels"/> of travel spread over
@@ -87,20 +109,20 @@ namespace CosmicShore.Tests
         /// state - see <see cref="AFlickMustTurnTheVesselHard"/>.</summary>
         static Vector2 Flick(float pixels, float seconds)
         {
-            var stick = Vector2.zero;
+            var sim = new Sim();
             int frames = Mathf.Max(1, Mathf.RoundToInt(seconds / Frame));
-            float perFrame = pixels / frames;
-            for (int i = 0; i < frames; i++)
-                stick = StepHeld(stick, new Vector2(perFrame, 0f));
-            return stick;
+            for (int i = 0; i < frames; i++) sim.Push(new Vector2(pixels / frames, 0f));
+            return sim.Stick;
         }
 
-        static Vector2 CoastHeld(Vector2 stick, float seconds, float dt = Frame)
+        /// <summary>Flick, then take the hand off - what the stick settles at.</summary>
+        static Vector2 FlickThenRelease(float pixels, float seconds, float coast = 4f)
         {
-            int frames = Mathf.RoundToInt(seconds / dt);
-            for (int i = 0; i < frames; i++)
-                stick = StepHeld(stick, Vector2.zero, dt);
-            return stick;
+            var sim = new Sim();
+            int frames = Mathf.Max(1, Mathf.RoundToInt(seconds / Frame));
+            for (int i = 0; i < frames; i++) sim.Push(new Vector2(pixels / frames, 0f));
+            sim.Coast(coast);
+            return sim.Stick;
         }
 
         // ==================================================================
@@ -116,14 +138,16 @@ namespace CosmicShore.Tests
         static float TravelToHoldHardOver(float seconds, float holdOuter)
         {
             var stick = Vector2.zero;
+            float dwell = 0f;
             float travel = 0f;
             int frames = Mathf.RoundToInt(seconds / Frame);
             for (int i = 0; i < frames; i++)
             {
                 float push = stick.magnitude < HoldOuter ? FullDeflectionSpeed * Frame : 0f;
                 travel += push;
-                stick = MouseVirtualStick.Step(stick, new Vector2(push, 0f), UnitsPerPixel,
-                                               Spring, HoldInner, holdOuter, Frame);
+                stick = MouseVirtualStick.Step(stick, ref dwell, new Vector2(push, 0f),
+                                               UnitsPerPixel, Spring, HoldInner, holdOuter,
+                                               HoldEngage, Frame);
             }
             return travel;
         }
@@ -187,21 +211,56 @@ namespace CosmicShore.Tests
             Assert.Less(small.magnitude, HoldInner,
                 "...and a small correction is nowhere near the hold band.");
 
-            Assert.AreEqual(Vector2.zero, Published(CoastHeld(Flick(100f, 0.15f), 4f)),
-                "A flick that does not saturate the stick must settle back to centre. Only a " +
-                "push that reaches the annulus holds.");
+            Assert.AreEqual(Vector2.zero, Published(FlickThenRelease(100f, 0.15f)),
+                "A flick must settle back to centre.");
+        }
+
+        [Test]
+        public void NoFlickOfAnySizeMayCommitToAHeldTurn()
+        {
+            // The defect this dwell gate exists for. Hard over is only ~91 px at the shipped
+            // gain, so EVERY brisk aiming flick saturates the stick - and an annulus that
+            // engaged on contact latched on the first one and locked the vessel into a spin the
+            // player never asked for. Position cannot tell a flick from a hold; only time can.
+            foreach (float pixels in new[] { 60f, 100f, 150f, 250f, 600f })
+                Assert.AreEqual(Vector2.zero, Published(FlickThenRelease(pixels, 0.15f)),
+                    $"A {pixels:F0} px flick must return to centre. Committing on a flick is " +
+                    "how the annulus made the scheme read as unflyable.");
+        }
+
+        [Test]
+        public void OnlyASustainedSweepCommits()
+        {
+            // ...and the other side of the gate: keep pushing and it does park. The spring is at
+            // full strength for the whole dwell window, so staying out past the inner radius
+            // means the player is still pushing - "push and keep pushing" is the gesture.
+            var brief = new Sim();
+            brief.Drag(500f, 0.3f);
+            brief.Coast(4f);
+            Assert.Less(brief.Radius, HoldOuter,
+                "A third of a second is still a flick.");
+
+            var sustained = new Sim();
+            sustained.Drag(500f, 0.8f);
+            sustained.Coast(4f);
+            Assert.GreaterOrEqual(sustained.Radius, HoldOuter,
+                "A sustained sweep must park in the annulus and stay there.");
         }
 
         [Test]
         public void HoldAnnulus_KeepsTurningWithTheMouseStill()
         {
-            var parked = DragHeld(FullDeflectionSpeed, 2f);
-            Assert.GreaterOrEqual(parked.magnitude, HoldOuter,
-                "A brisk sweep must reach the annulus.");
+            // Sustained, not a flick: the annulus is gated on dwell, so committing means
+            // pushing and continuing to push.
+            var sim = new Sim();
+            sim.Drag(FullDeflectionSpeed, 2f);
+            Assert.GreaterOrEqual(sim.Radius, HoldOuter,
+                "A sustained sweep must reach the annulus.");
 
-            var coasted = CoastHeld(parked, 10f);
+            float parkedRadius = sim.Radius;
+            sim.Coast(10f);
 
-            Assert.AreEqual(parked.magnitude, coasted.magnitude, 0.0005f,
+            Assert.AreEqual(parkedRadius, sim.Radius, 0.0005f,
                 "Inside the annulus the spring is exactly zero, so ten seconds of stillness must " +
                 "change nothing at all. This is the property the whole scheme is built on.");
         }
@@ -230,11 +289,12 @@ namespace CosmicShore.Tests
             // The other half of the deal: everything inside the hold band is still a rate stick,
             // so an aiming correction undoes itself and the vessel does not accumulate heading
             // from every twitch.
-            var stick = DragHeld(150f, 2f);
-            Assert.Less(stick.magnitude, HoldInner, "A steady 150 px/s drag is a mid-range turn.");
+            var sim = new Sim();
+            sim.Drag(150f, 2f);
+            Assert.Less(sim.Radius, HoldInner, "A steady 150 px/s drag is a mid-range turn.");
 
-            var settled = CoastHeld(stick, 2f);
-            Assert.AreEqual(Vector2.zero, Published(settled),
+            sim.Coast(2f);
+            Assert.AreEqual(Vector2.zero, Published(sim.Stick),
                 "Two seconds after the player stops, a mid-range turn must be fully out.");
         }
 
@@ -284,14 +344,13 @@ namespace CosmicShore.Tests
             // accumulate STATE past the perimeter the player would have to give every one of
             // those pixels back before the vessel responded. Clamping the state (not just the
             // report) is what stops that, and it matters far more here than under the spring.
-            var stick = Vector2.zero;
-            for (int i = 0; i < 120; i++)
-                stick = StepHeld(stick, new Vector2(2000f * Frame, 0f));   // a hard flick right
+            var sim = new Sim();
+            sim.Drag(2000f, 2f);            // sustained, so the annulus is genuinely engaged
 
-            Assert.AreEqual(1f, stick.magnitude, 0.001f);
+            Assert.AreEqual(1f, sim.Radius, 0.001f);
 
-            stick = StepHeld(stick, new Vector2(-1f / UnitsPerPixel * 0.2f, 0f));
-            Assert.Less(stick.x, 0.85f,
+            sim.Push(new Vector2(-1f / UnitsPerPixel * 0.2f, 0f));
+            Assert.Less(sim.Stick.x, 0.85f,
                 "One fifth of the stick's travel back must move the stick one fifth, not undo a " +
                 "banked sweep.");
         }
@@ -355,9 +414,10 @@ namespace CosmicShore.Tests
         [Test]
         public void DeflectionReachesExactlyOne_SoTheStrafingRollCanArm()
         {
-            var stick = StepHeld(Vector2.zero, new Vector2(10000f, 0f));
+            var sim = new Sim();
+            sim.Push(new Vector2(10000f, 0f));
 
-            Assert.AreEqual(1f, stick.magnitude, 0.0001f,
+            Assert.AreEqual(1f, sim.Radius, 0.0001f,
                 "BarrelRollController arms on |stick| >= perimeterThreshold (1 by default), so " +
                 "the mouse must be able to reach the perimeter exactly.");
         }
@@ -365,9 +425,10 @@ namespace CosmicShore.Tests
         [Test]
         public void DeflectionNeverExceedsOne_OnAnyDiagonal()
         {
-            var stick = StepHeld(Vector2.zero, new Vector2(10000f, 7000f));
+            var sim = new Sim();
+            sim.Push(new Vector2(10000f, 7000f));
 
-            Assert.LessOrEqual(stick.magnitude, 1.0001f,
+            Assert.LessOrEqual(sim.Radius, 1.0001f,
                 "Clamping is to the unit CIRCLE, not per axis - a diagonal sweep must not " +
                 "produce a radius of sqrt(2).");
         }
@@ -389,11 +450,10 @@ namespace CosmicShore.Tests
         public void ReturnIsPromptEnoughToAimWith()
         {
             // Measured from inside the hold band, which is where every aiming correction lives.
-            var stick = new Vector2(HoldInner, 0f);
-            for (int i = 0; i < Mathf.RoundToInt(1f / Frame); i++)
-                stick = StepHeld(stick, Vector2.zero);
+            var sim = new Sim { Stick = new Vector2(HoldInner, 0f) };
+            sim.Coast(1f);
 
-            Assert.Less(stick.magnitude, 0.2f,
+            Assert.Less(sim.Radius, 0.2f,
                 "A second after the player stops, an aiming turn must be mostly out - a slow " +
                 "return reads as the vessel ignoring you.");
         }
@@ -401,13 +461,13 @@ namespace CosmicShore.Tests
         [Test]
         public void ReleaseIsFrameRateIndependent()
         {
-            var slow = new Vector2(HoldInner, 0f);
-            for (int i = 0; i < 30; i++) slow = StepHeld(slow, Vector2.zero, 1f / 30f);
+            var slow = new Sim { Stick = new Vector2(HoldInner, 0f) };
+            slow.Coast(1f, 1f / 30f);
 
-            var fast = new Vector2(HoldInner, 0f);
-            for (int i = 0; i < 240; i++) fast = StepHeld(fast, Vector2.zero, 1f / 240f);
+            var fast = new Sim { Stick = new Vector2(HoldInner, 0f) };
+            fast.Coast(1f, 1f / 240f);
 
-            Assert.AreEqual(slow.magnitude, fast.magnitude, 0.002f);
+            Assert.AreEqual(slow.Radius, fast.Radius, 0.002f);
         }
 
         [Test]

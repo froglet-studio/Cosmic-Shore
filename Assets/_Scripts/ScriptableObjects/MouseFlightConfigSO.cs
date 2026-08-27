@@ -89,6 +89,18 @@ namespace CosmicShore.ScriptableObjects
         [Range(0f, 1f)]
         [SerializeField] float holdOuterRadius = 0.97f;
 
+        [Tooltip("How long the stick must STAY out past the inner radius before the spring starts " +
+                 "letting go. This is what separates a flick from a hold, and it is not optional " +
+                 "polish: hard over is only ~91 px at the shipped gain, so every ordinary aiming " +
+                 "flick saturates the stick, and an annulus that engaged on contact latched on the " +
+                 "first one and locked the vessel into a spin. The spring is at FULL strength for " +
+                 "this whole window, so staying out means the player is still pushing - the " +
+                 "gesture is 'push and keep pushing'.\n\n" +
+                 "At the shipped 0.25 s no flick of any size commits, and a sustained ~0.5 s / " +
+                 "250 px sweep does. 0 engages on contact.")]
+        [Range(0f, 1.5f)]
+        [SerializeField] float holdEngageSeconds = 0.25f;
+
         [Header("Widget")]
         [Tooltip("Draw the virtual stick on screen while the scheme is flying. A bounded-cursor " +
                  "scheme without one is unflyable in a specific way: you cannot tell whether you " +
@@ -115,6 +127,8 @@ namespace CosmicShore.ScriptableObjects
         /// <summary>Clamped to the outer radius, so a band authored inside-out cannot make the
         /// spring falloff disagree with itself.</summary>
         public float HoldInnerRadius => Mathf.Min(Mathf.Clamp01(holdInnerRadius), HoldOuterRadius);
+
+        public float HoldEngageSeconds => Mathf.Clamp(holdEngageSeconds, 0f, 1.5f);
 
         public bool ShowWidget => showWidget;
         public float WidgetScreenFraction => Mathf.Clamp(widgetScreenFraction, 0.03f, 0.35f);

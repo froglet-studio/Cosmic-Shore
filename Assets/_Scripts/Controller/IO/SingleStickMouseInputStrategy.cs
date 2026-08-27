@@ -104,6 +104,11 @@ namespace CosmicShore.Gameplay
 
         Vector2 stick;
 
+        /// <summary>Seconds the stick has been continuously out past the hold band's inner edge —
+        /// the dwell that separates a flick from a committed hold. Owned here, advanced by
+        /// <see cref="MouseVirtualStick.Step"/>.</summary>
+        float holdDwell;
+
         bool prevLeftActive;
         bool prevRightActive;
         bool prevButton1;
@@ -164,6 +169,7 @@ namespace CosmicShore.Gameplay
             ReleaseHeldControls();
             LockCursor(false);
             stick = Vector2.zero;
+            holdDwell = 0f;
             MouseFlightWidget.Hide();
             inputStatus.LeftTriggerAnalog = 0f;
             inputStatus.RightTriggerAnalog = 0f;
@@ -197,8 +203,83 @@ namespace CosmicShore.Gameplay
             // would have silently skipped every remaining input write and left the vessel dead
             // with the widget still on screen.
             DrawWidget();
+            WatchForDeadFlight(pixelDelta);
             ReportFlightState(pixelDelta);
         }
+
+        /// <summary>
+        /// The scheme has three ways to read as "the mouse does nothing" and they are
+        /// indistinguishable from the cockpit - no delta arriving, a stick that will not
+        /// accumulate, or a deflection too small to leave the dead zone. This walks the chain and
+        /// says which link is dead, ONCE, as a WARNING with no channel to enable first.
+        ///
+        /// <para>Channel-gating it was the mistake: a diagnostic that has to be switched on
+        /// before it will describe a fault is a diagnostic nobody has when the fault happens. The
+        /// scheme's refusals (<see cref="MouseFlightDiagnostics"/>) are warnings for the same
+        /// reason. It reports at most once per activation and goes permanently quiet the moment
+        /// the vessel receives a non-zero stick, so a working scheme is silent.</para>
+        ///
+        /// <para>The mouse BUTTONS are read from a different control than the delta, so "the
+        /// buttons work but the ship will not turn" is a real and specific state rather than a
+        /// contradiction - and it is the one this exists to name.</para>
+        /// </summary>
+        void WatchForDeadFlight(Vector2 pixelDelta)
+        {
+            if (deadFlightReported) return;
+
+            deltaPixelsSinceActive += pixelDelta.magnitude;
+
+            if (publishedDeflection.sqrMagnitude > 0f)
+            {
+                deadFlightReported = true;      // it is steering - say nothing, ever
+                return;
+            }
+
+            if (Time.unscaledTime - activeSince < DeadFlightWatchSeconds) return;
+            deadFlightReported = true;
+
+            var config = Config;
+            float deadZonePixels = config.DeadZone / config.StickUnitsPerPixel;
+
+            if (deltaPixelsSinceActive <= 0f)
+            {
+                CSDebug.LogWarning(
+                    $"[MouseFlight] Active for {DeadFlightWatchSeconds:F0}s and " +
+                    "Mouse.current.delta has read EXACTLY ZERO the whole time, so the virtual " +
+                    "stick cannot deflect and the vessel cannot turn. Mouse BUTTONS come from " +
+                    "different controls and are unaffected, which is why this reads as the mouse " +
+                    "half-working. Check the Input System's Update Mode (a project set to " +
+                    "'Process Events In Fixed Update' delivers no delta to Update - this project " +
+                    "ships NO InputSystem settings asset, so it is on the package default) and " +
+                    "that the Game view has focus with the cursor captured.");
+            }
+            else if (deltaPixelsSinceActive < deadZonePixels)
+            {
+                CSDebug.LogWarning(
+                    $"[MouseFlight] Only {deltaPixelsSinceActive:F1} px of mouse movement reached " +
+                    $"the scheme in {DeadFlightWatchSeconds:F0}s, under the {deadZonePixels:F1} px " +
+                    "dead zone, so the published stick is still exactly centred. The delta is " +
+                    "arriving but at a tiny fraction of the real movement - suspect a pointer " +
+                    "scale/DPI issue rather than the flight model.");
+            }
+            else
+            {
+                CSDebug.LogWarning(
+                    $"[MouseFlight] {deltaPixelsSinceActive:F0} px of mouse movement reached the " +
+                    $"scheme in {DeadFlightWatchSeconds:F0}s - far past the {deadZonePixels:F1} px " +
+                    "dead zone - and the published stick is STILL exactly centred, so the " +
+                    "integrator is not accumulating. Live config: gain " +
+                    $"{config.StickUnitsPerPixel}, spring {config.SpringPerSecond}, dead zone " +
+                    $"{config.DeadZone}, annulus [{config.HoldInnerRadius}, " +
+                    $"{config.HoldOuterRadius}]. A holdOuterRadius of 0 kills the spring " +
+                    "everywhere and a gain of 0.0001 is the clamp floor - either means " +
+                    "Resources/MouseFlightConfig did not deserialize.");
+            }
+        }
+
+        const float DeadFlightWatchSeconds = 3f;
+        bool deadFlightReported;
+        float deltaPixelsSinceActive;
 
         /// <summary>The deflection <see cref="Publish"/> last handed the vessel — what the widget
         /// draws and what the diagnostic reports, so all three can never disagree.</summary>
@@ -306,11 +387,12 @@ namespace CosmicShore.Gameplay
             // The STATE is kept un-snapped and the dead zone is applied at publish time - see
             // MouseVirtualStick's class doc on why zeroing the accumulator is a ratchet that
             // blocks slow mouse movement outright.
-            stick = MouseVirtualStick.Step(stick, pixelDelta,
+            stick = MouseVirtualStick.Step(stick, ref holdDwell, pixelDelta,
                                            config.StickUnitsPerPixel,
                                            config.SpringPerSecond,
                                            config.HoldInnerRadius,
                                            config.HoldOuterRadius,
+                                           config.HoldEngageSeconds,
                                            Time.deltaTime);
         }
 
@@ -541,6 +623,7 @@ namespace CosmicShore.Gameplay
         void ResetStrategyState()
         {
             stick = Vector2.zero;
+            holdDwell = 0f;
             prevLeftActive = false;
             prevRightActive = false;
             prevButton1 = false;
@@ -549,6 +632,8 @@ namespace CosmicShore.Gameplay
             fullSpeedStraightEffectsStarted = false;
             minimumSpeedStraightEffectsStarted = false;
             publishedDeflection = Vector2.zero;
+            deadFlightReported = false;
+            deltaPixelsSinceActive = 0f;
         }
 
         public override void SetPortrait(bool portrait) { }

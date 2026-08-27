@@ -124,8 +124,54 @@ namespace CosmicShore.Gameplay
                                    float springPerSecond, float holdInner, float holdOuter,
                                    float deltaTime)
         {
-            float spring = springPerSecond
-                         * SpringScaleAtRadius(stick.magnitude, holdInner, holdOuter);
+            float dwell = float.MaxValue;   // no dwell requirement: the annulus engages on contact
+            return Step(stick, ref dwell, pixelDelta, unitsPerPixel, springPerSecond,
+                        holdInner, holdOuter, 0f, deltaTime);
+        }
+
+        /// <summary>
+        /// Advance the virtual stick, with the annulus gated on DWELL as well as position.
+        ///
+        /// <para><b>Position alone cannot tell a flick from a hold, and at a responsive gain that
+        /// is fatal.</b> Hard over is ~91 px at the shipped gain, so every brisk aiming flick
+        /// saturates the stick — and an annulus that engages on contact latches on the first one,
+        /// locking the vessel into a spin the player never asked for. Measured against the
+        /// pre-annulus code over a simulated hand, the two diverged by frame 37.</para>
+        ///
+        /// <para>Time is the dimension position does not have. The spring only fades once the
+        /// stick has STAYED at or beyond <paramref name="holdInner"/> for
+        /// <paramref name="holdEngageSeconds"/> — and because the spring is at full strength for
+        /// the whole of that window, staying there means the player is still pushing. So the
+        /// gesture is "push and keep pushing", a flick of any size returns to centre exactly as it
+        /// did before the annulus existed, and nothing latches by accident.</para>
+        ///
+        /// <param name="holdDwell">Seconds the stick has been continuously at or beyond
+        /// <paramref name="holdInner"/>. Owned by the caller, advanced here, and reset the moment
+        /// the stick falls back inside.</param>
+        /// <param name="holdEngageSeconds">Dwell required before the spring starts fading.
+        /// 0 engages on contact.</param>
+        /// </summary>
+        public static Vector2 Step(Vector2 stick, ref float holdDwell, Vector2 pixelDelta,
+                                   float unitsPerPixel, float springPerSecond,
+                                   float holdInner, float holdOuter, float holdEngageSeconds,
+                                   float deltaTime)
+        {
+            float radius = stick.magnitude;
+
+            // Sampled at the START of the frame, like the spring rate below and for the same
+            // reason: one consistent view of where the stick was when this frame's forces were
+            // decided.
+            holdDwell = radius >= Mathf.Min(holdInner, holdOuter) ? holdDwell + deltaTime : 0f;
+
+            float engaged = holdEngageSeconds <= 0f
+                ? 1f
+                : Mathf.Clamp01(holdDwell / holdEngageSeconds);
+
+            // The radial falloff is what the annulus IS; the dwell decides how much of it is
+            // allowed to act yet. At engaged = 0 this is exactly springPerSecond everywhere,
+            // which is the pre-annulus scheme bit for bit.
+            float radial = SpringScaleAtRadius(radius, holdInner, holdOuter);
+            float spring = springPerSecond * (1f - (1f - radial) * engaged);
             float springStep = spring * deltaTime;
 
             if (springStep > MinSpringStep)

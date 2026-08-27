@@ -82,10 +82,12 @@ namespace CosmicShore.UI
         /// </summary>
         public static void Report(Vector2 stick, MouseFlightConfigSO config)
         {
+            // showWidget is this widget's ONLY switch. It deliberately does NOT read
+            // GameSetting.JoystickVisualsEnabled: that setting governs the TOUCH thumb rings
+            // (ThumbPerimeter), and honouring it here made the mouse reticle disappear for a
+            // reason a desktop player has no way to connect to it - a control they never touched,
+            // on a device they are not using. A setting's SCOPE is part of its meaning.
             if (config == null || !config.ShowWidget) { Hide(); return; }
-
-            var setting = CosmicShore.Core.GameSetting.Instance;
-            if (setting != null && !setting.JoystickVisualsEnabled) { Hide(); return; }
 
             var widget = Ensure();
             if (widget == null) return;
