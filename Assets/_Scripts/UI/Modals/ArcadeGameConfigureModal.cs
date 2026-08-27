@@ -775,25 +775,48 @@ namespace CosmicShore.UI
 
         /// <summary>
         /// Place one AI on <paramref name="domain"/> - the armed Add AI mode's answer to a domain
-        /// tile tap. Capacity is the card's ceiling; a full house refuses quietly (the roster
-        /// already shows every seat taken).
+        /// tile tap. Capacity is the HOUSE match size (4 seats total, humans included) further
+        /// clamped by the card; a full house refuses quietly (the roster already shows every seat
+        /// taken).
         /// </summary>
         void AddAiToDomain(Domains domain)
         {
             if (IsClientMode || config == null || _selectedGame == null) return;
 
             int humans = CurrentPartyHumanCount;
-            int ceiling = Mathf.Min(_selectedGame.MaxPlayersAllowed, MaxSupportedPlayers);
+            int ceiling = Mathf.Min(Mathf.Min(_selectedGame.MaxPlayersAllowed, MaxSupportedPlayers),
+                                    MaxMatchSeats);
             if (humans + config.AIDomains.Count >= ceiling)
             {
                 CSDebug.LogVerbose(CSLogChannel.ArcadeLaunch,
                     $"[ArcadeLaunch] Add AI refused - {humans} humans + " +
-                    $"{config.AIDomains.Count} AI already fill the card's {ceiling} seats.");
+                    $"{config.AIDomains.Count} AI already fill the {ceiling} seats.");
                 return;
             }
 
             config.AIDomains.Add(domain);
+
+            // A placement is the host declaring that domain IS in the match, so the domain count
+            // rises to cover it where the DC<=PC clamp allows (HandlePlayerCountSelected re-clamps
+            // against the grown seat count). The spawner and the tile chips honour an explicit
+            // placement even when the prefix cannot stretch that far.
+            config.DomainCount = Mathf.Max(config.DomainCount, DomainPrefixCount(config.AIDomains));
+
             HandlePlayerCountSelected(humans + config.AIDomains.Count);
+        }
+
+        /// <summary>Total seats a match holds, humans included - the house party size. The old
+        /// fill toggle used the same four; a lobby of twelve bots is not what Add AI means.</summary>
+        const int MaxMatchSeats = 4;
+
+        /// <summary>How many of the Jade→Ruby→Gold prefix the placed list needs (a Gold placement
+        /// needs all three). Blue never occurs here - the tiles only offer real domains.</summary>
+        static int DomainPrefixCount(List<Domains> placed)
+        {
+            int needed = 1;
+            foreach (var d in placed)
+                needed = Mathf.Max(needed, d == Domains.Gold ? 3 : d == Domains.Ruby ? 2 : 1);
+            return needed;
         }
 
         /// <summary>Redraw the roster from the live config. Cheap; call it whenever either moves.</summary>
@@ -1503,20 +1526,38 @@ namespace CosmicShore.UI
 
             for (int i = 0; i < aiCount; i++)
             {
-                // A PLACED bot sits exactly where the host put it (the same rule the spawner
-                // applies); only the top-up seats past the placement list draw balanced. A placed
-                // domain outside the active set falls back too, mirroring the spawner's guard.
-                var domain = config != null && i < config.AIDomains.Count &&
-                             totalCounts.ContainsKey(config.AIDomains[i])
-                    ? config.AIDomains[i]
-                    : ServerPlayerVesselInitializerWithAI.GetBalancedDomain(totalCounts, humanCounts);
-                totalCounts[domain] = totalCounts.TryGetValue(domain, out var t) ? t + 1 : 1;
+                // A PLACED bot sits exactly where the host put it - ALWAYS, even when the domain
+                // sits past the current DomainCount prefix (placing on Gold in a two-domain lobby
+                // is the host widening the match, and the spawner honours it the same way). Only
+                // the top-up seats past the placement list draw balanced - and a placed domain is
+                // never written into a count dict that lacks its key, because GetBalancedDomain
+                // requires a domain in BOTH dicts and a half-known key starves its tie-break.
+                bool placedChip = config != null && i < config.AIDomains.Count &&
+                                  config.AIDomains[i] != Domains.Blue;
+                Domains domain;
+                if (placedChip)
+                {
+                    domain = config.AIDomains[i];
+                    if (totalCounts.ContainsKey(domain)) totalCounts[domain]++;
+                }
+                else
+                {
+                    domain = ServerPlayerVesselInitializerWithAI.GetBalancedDomain(totalCounts, humanCounts);
+                    totalCounts[domain] = totalCounts.TryGetValue(domain, out var t) ? t + 1 : 1;
+                }
 
                 var tile = FindTileForDomain(domain);
                 if (tile == null || tile.AvatarStripTransform == null) continue;
 
                 var seat = Instantiate(chipPrefab, tile.AvatarStripTransform);
                 seat.Set(dataService != null ? dataService.GetRandomAvatarSprite() : null, false);
+
+                // The ✕ lives ON the chip - this strip IS the roster the player looks at. Only a
+                // placed bot is kickable (a balanced top-up seat has no placement to remove), and
+                // only for the host. The ordinal names the placement, not the seat.
+                int ordinal = i;
+                seat.SetKickable(placedChip && !IsClientMode,
+                                 () => HandleKickAIRequested(ordinal));
                 _aiChips.Add(seat);
             }
         }

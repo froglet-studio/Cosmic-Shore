@@ -203,15 +203,27 @@ namespace CosmicShore.Gameplay
                         ? profiles[i].Name
                         : hasTemplate ? aiInitializeDatas[i].PlayerName : $"AI {i + 1}";
 
-                // A domain the host PLACED (the launch panel's Add AI mode) wins; past the end of
-                // the placed list - or for a placed domain that is not in this match's active set
-                // (a stale config, or Blue) - fall back to the balanced pick. Placed seats still
-                // count into totalCounts so the balanced remainder distributes around them.
-                var aiDomain = i < gameData.RequestedAIDomains.Count &&
-                               totalCounts.ContainsKey(gameData.RequestedAIDomains[i])
+                // A domain the host PLACED (the launch panel's Add AI mode) wins - ALWAYS, even
+                // past the DomainCount prefix: placing on Gold in a two-domain lobby is the host
+                // widening the match, and re-balancing it away silently is exactly the "cannot
+                // add to gold" playtest defect. Only Blue (unset) falls back to the balanced pick.
+                // A placed domain is never written into a count dict that lacks its key:
+                // GetBalancedDomain requires a domain in BOTH dicts, and a half-known key sets a
+                // minTotal no listed domain can then match, starving the pick to its error path.
+                Domains aiDomain;
+                var placed = i < gameData.RequestedAIDomains.Count
                     ? gameData.RequestedAIDomains[i]
-                    : GetBalancedDomain(totalCounts, humanCounts);
-                totalCounts[aiDomain]++;
+                    : Domains.Blue;
+                if (placed != Domains.Blue)
+                {
+                    aiDomain = placed;
+                    if (totalCounts.ContainsKey(aiDomain)) totalCounts[aiDomain]++;
+                }
+                else
+                {
+                    aiDomain = GetBalancedDomain(totalCounts, humanCounts);
+                    totalCounts[aiDomain]++;
+                }
 
                 aiPlayer.NetDefaultVesselType.Value = aiVesselType;
                 aiPlayer.NetName.Value = aiName;

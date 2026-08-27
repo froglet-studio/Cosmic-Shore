@@ -239,9 +239,29 @@ exactly the old auto-balanced behaviour.
 **The Add AI toggle** (the control formerly labelled FILL AI — same scene wiring, new meaning;
 relabel the TMP text to "ADD AI" in the editor) arms placement: while it is on, tapping a
 domain tile seats an AI **on that domain** instead of picking your own, one bot per tap, up to
-the card's ceiling; toggle off to stop placing. The ✕ on an AI seat removes THAT placement
-(`OnKickAIRequested` now carries the AI's ordinal). Host only — the toggle hides for clients
-and every handler double-guards on `IsClientMode`.
+**the house four seats total** (`MaxMatchSeats`, humans included — the same four the old fill
+toggle used; a lobby of twelve bots is not what Add AI means), further clamped by the card.
+Toggle off to stop placing. Host only — the toggle hides for clients and every handler
+double-guards on `IsClientMode`.
+
+**The ✕ lives ON the tile chip, because the chip strip IS the roster the player looks at.**
+`DomainAvatarChip.SetKickable` shows it on placed-AI chips (host only); clicking removes THAT
+placement (`HandleKickAIRequested(ordinal)`). The prefab takes an authored `kickButton`; until
+that art lands, an unwired chip builds a plain functional ✕ from primitives (a small disc with
+two crossed bars) and steps aside the moment the field is wired. Balanced top-up chips get no ✕
+— there is no placement to remove. The `LobbySlotRow` seats keep their own ✕ for layouts that
+use a roster row.
+
+**An explicit placement OVERRIDES the DomainCount prefix.** `DomainCount` is a Jade→Ruby→Gold
+prefix and it is clamped to the seat count — so with one human, a fresh card sits at two
+domains and the old "placed domain must be in the active set" guard silently re-balanced every
+Gold placement (the "cannot add to gold" playtest defect). Placing is the host widening the
+match: `AddAiToDomain` raises `DomainCount` as far as the clamp allows, and the spawner and the
+tile chips honour the placed domain even when the prefix cannot stretch that far (only
+`Domains.Blue` falls back to balanced). One trap they both respect: a placed domain is never
+written into a count dict that lacks its key — `GetBalancedDomain` requires a domain in BOTH
+dicts, and a half-known key sets a `minTotal` no listed domain can match, starving the pick to
+its error path.
 
 **A card opens HUMANS ONLY** (design call, 2026-08-27): no AI pre-filled, the old fill-to-four
 retired (`FillTarget`/`MaxFilledPlayers` deleted). Seats the card's MINIMUM still owes beyond
