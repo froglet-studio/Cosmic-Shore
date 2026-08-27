@@ -66,6 +66,22 @@ run the `/reorient` skill first and act on its verdict before shipping.
   call silently gaining a third parameter). Compile after every keep-both resolution — and treat
   any conflict hunk whose last non-blank character is `&&`, `+`, `,` or `?` as one needing a
   hand-joined merge, not a concatenation.
+  **The same trap exists in hand-authored YAML, and it is invisible to a compiler.** A Unity
+  `EditorBuildSettings.asset`-style list item is multiple lines wide (`- enabled: 1` /
+  `path: ...` / `guid: ...`), so when two branches both append a new scene entry after the SAME
+  anchor entry, the diff's shared anchor line is the leading `- enabled: 1` of the LAST entry
+  before the split — additive "keep both" can concatenate the second entry's `path`/`guid` lines
+  directly onto the first's body, without ever inserting the second entry's own `- enabled: 1`
+  marker. The result parses as ONE list item with duplicate `path`/`guid` keys, not two — no
+  syntax error, no build failure, just a scene silently missing from `m_Scenes` while its name
+  string is still technically present in the file (which also defeats an idempotency guard that
+  checks `"SceneName.unity" in text` rather than well-formedness). It reads at runtime as "Scene
+  'X' couldn't be loaded because it has not been added to the build settings scenes list" with no
+  compile error anywhere to point at it. There is no compiler to catch this for a `.asset`/`.unity`
+  file — after resolving ANY multi-line-list-item YAML conflict, mechanically count entries
+  (`grep -c '^  - enabled:'` for `EditorBuildSettings.asset`, or the equivalent leading marker for
+  the list in question) against what both sides should sum to, and verify every entry has exactly
+  its expected key set with no stray duplicate keys — do not eyeball it.
 - **A parallel branch may have fixed the SAME root cause while you worked.** Read the base
   branch's new commits by subject before you resolve anything — this is not a merge
   conflict, it is a design collision, and git will happily interleave two fixes for one
@@ -114,6 +130,19 @@ Walk every changed file against these gates:
   `vesselSlowedByRhinoDangerPrismEvent` under a `"Slow Viewer Integration"` header belonged to
   an effect that only muted an input. Treat "the docs say so" and "the identifier says so" as
   hypotheses to check, never as the check.
+- **A number read off a ScriptableObject's FIELD INITIALIZER is not the number the game runs
+  on.** The SO declares `public float dynamicMaxDistance = 40f;` and the ASSETS say 250. Reading
+  the class is fast, feels authoritative, and is the wrong source — the assets are the game. One
+  session built a platform law's central premise ("a pilot's own hull is always 10-40 units from
+  its camera, so the near cutoff excludes it for free") on exactly that, and the shipped fleet
+  spanned 6.7 to 250, so two of eight vessels marked their own ship. The premise then propagated
+  into an `IsSane` branch, an edit-mode test and three documents, **all self-consistent**, because
+  every one of them traced back to the same default rather than to any asset. Self-consistency
+  across artifacts is not corroboration when they share one upstream source. So: whenever a claim
+  turns on an authored value, enumerate the ASSETS (`AssetDatabase.FindAssets("t:Foo")`, or grep
+  the `.asset` YAML) and tabulate the real spread — and where the claim must keep holding, make the
+  gate re-measure from the assets rather than restating the number, so it fails loudly when an
+  artist re-authors one.
 - **The mirror of that rule: a "dead surface" claim decays into a live path, and nothing
   announces it.** "Unreferenced", "no producer anywhere", "provably dead" are true *as of a
   date* — the next feature branch is free to wire the thing up, and it will not think to go
@@ -124,6 +153,18 @@ Walk every changed file against these gates:
   survived in a follow-up prompt that a fresh session would have executed. Deadness claims
   are the most dangerous kind of stale doc, because acting on one is irreversible and the
   code that proves them wrong is somewhere you were told not to look.
+
+- **A comment asserting an ABSENCE rots exactly as silently as one asserting a presence.**
+  §2's producer rule and its dead-surface mirror both cover claims about what the code DOES.
+  The third shape is a comment that argues why something is NOT there — "no property block",
+  "nothing here is per-instance", "no per-frame write" — written as justification for a design
+  the branch then changed. It reads as doctrine, it sits next to the code that now contradicts
+  it, and a future reader takes it as forbidding what the code already does. One session left
+  five such sites across an HLSL header, a shader cbuffer note and a C# docstring, the worst of
+  which argued against the method directly above it. When a branch adds the very mechanism an
+  old comment rules out, grep the touched files for the old justification — the missing
+  distinction is usually a qualifier the original never needed (here: per-FRAME is ruinous,
+  per-SHOT is not).
 
 ## 2.5 Tool-output gate — NEVER SKIPPED, IN EVERY MODE
 

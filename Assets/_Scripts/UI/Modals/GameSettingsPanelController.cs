@@ -432,7 +432,7 @@ namespace CosmicShore.UI
         public int ResolutionIndex => CurrentResolutionIndex();
         public int FrameCapIndex => FrameCapToIndex(S != null ? S.Current.TargetFrameRate : 60);
         public bool VSyncOn => S != null && S.Current.VSync != VSyncSetting.Off;
-        public float FieldOfView => S != null ? S.Current.FieldOfView : 60f;
+        public float FieldOfView => S != null ? S.Current.FieldOfView : GraphicsSettingsData.DefaultFieldOfView;
         public int QualityIndex => S != null ? (int)S.Current.QualityPreset : 0;
         public int AntiAliasingIndex => S != null ? (int)S.Current.AntiAliasing : 0;
         public int TextureQualityIndex => S != null ? S.Current.TextureQuality : 0;

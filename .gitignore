@@ -103,3 +103,10 @@ __pycache__/
 # offers to copy scene backups here — never commit them.
 Assets/_Recovery/
 Assets/_Recovery.meta
+
+# OS / crash / editor scratch (added by ship pass)
+.DS_Store
+**/.DS_Store
+mono_crash.*
+unity-editmode-*.log
+Tools/tmp_*.cs

@@ -212,6 +212,10 @@ namespace CosmicShore.Gameplay
                 // the shared mapping exactly as before.
                 InputDeviceType.DualMouse => _gamepadOverrideActions,
                 InputDeviceType.Keyboard => _gamepadOverrideActions,
+                // Same reason again for the one-thumb mouse scheme: SingleStickMouseInputStrategy
+                // raises the pad's LeftStick/RightStick trigger events (LMB / RMB, and the shift
+                // keys alongside them), so it wants the pad's per-trigger overrides.
+                InputDeviceType.MouseKeyboard => _gamepadOverrideActions,
                 _                       => null
             };
         }

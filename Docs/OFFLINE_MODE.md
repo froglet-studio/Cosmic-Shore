@@ -28,7 +28,7 @@ play is impossible: the game has no way to be a host on its own machine.
 One of those four hits is worse than a missing feature — it is a **claim that the feature exists**:
 
 ```csharp
-// MultiplayerSetup.cs:164-167
+// MultiplayerSetup.EnsureHostStarted - the comment as it stood BEFORE this branch
 // Host startup is delegated to HostConnectionService which creates a
 // Relay-backed party session (via CreateSessionAsync + WithRelayNetwork).
 // AuthenticationSceneController.EnsureHostStartedAsync provides a local
@@ -173,7 +173,7 @@ implementing.
 | **Boot navigation** | `AuthenticationSceneController.LoadMainMenuNetworkedAsync` | Unbounded `await WaitForRelayReadyAsync(ct)` after retries exhaust — the player never leaves the splash | Fall into offline mode: start local host, then `NetworkManager.SceneManager.LoadScene(menuScene)` on it |
 | **Host startup** | *(does not exist)* | Nothing can start a host without Relay | New `INetworkTransitionService.StartLocalHostAsync` + transport reset (§2.2) |
 | **Netcode callbacks** | `MultiplayerSetup.OnAuthenticationSignedIn` | Gated on `OnSignedIn`, which never fires offline → approval/disconnect/transport-failure callbacks unwired | Also wire on offline-mode entry |
-| **Stale comment** | `MultiplayerSetup.cs:164-167` | Claims a fallback that does not exist | Delete or make true |
+| **Stale comment** | `MultiplayerSetup.EnsureHostStarted` (tail comment) | Claims a fallback that does not exist | Delete or make true |
 
 ### 3.2 Degraded (playable, but the session is throwaway)
 

@@ -151,8 +151,10 @@ namespace CosmicShore.Gameplay
             }
 
             // PLATFORM LAWS — bound HERE, not per vessel and not per game mode: the prism
-            // occlusion corridor (Docs/PRISM_ANIMATION.md §4.7) and the speed tunnel
-            // (Docs/SPEED_TUNNEL.md). Initialize is the one method every vessel must call to
+            // occlusion corridor (Docs/PRISM_ANIMATION.md §4.7), the speed tunnel
+            // (Docs/SPEED_TUNNEL.md), and the vessel vision band's local-pilot exclusion
+            // (Docs/VESSEL_VISION.md — the band marks every OTHER ship, never the one you are
+            // flying). Initialize is the one method every vessel must call to
             // become a player's vessel: single-player spawn, multiplayer spawn, the menu
             // autopilot, and every runtime vessel swap all route through it. Binding here is
             // what makes it impossible to author a vessel or a minigame in which either is
@@ -162,6 +164,7 @@ namespace CosmicShore.Gameplay
             {
                 PrismOcclusionCorridor.SetTarget(transform);
                 VesselSpeedTunnel.SetTarget(VesselStatus, transform);
+                VesselVisionShading.SetLocalVessel(transform);
             }
 
             if (gameData != null)
@@ -205,13 +208,20 @@ namespace CosmicShore.Gameplay
         public virtual void SetSkimmerMaterial(Material material) =>
                 VesselStatus.SkimmerMaterial = material;
 
-        VesselTrailCustomization _trailCustomization;
-        public virtual void SetTrailColors(Color highlightColor, Color coreColor)
-        {
-            if (_trailCustomization == null)
-                _trailCustomization = GetComponentInChildren<VesselTrailCustomization>(includeInactive: true);
-            _trailCustomization?.SetTrailColors(highlightColor, coreColor);
-        }
+        VesselTailAndJets _tailAndJets;
+
+        /// <summary>
+        /// This vessel's TAIL and JETS (Docs/VESSEL_TAIL_AND_JETS.md). Resolved lazily and cached:
+        /// the component is optional today because the fleet is still being migrated onto the
+        /// standard, so a vessel without one simply has no tail or jets to paint or hide.
+        /// </summary>
+        VesselTailAndJets TailAndJets =>
+            _tailAndJets != null
+                ? _tailAndJets
+                : _tailAndJets = GetComponentInChildren<VesselTailAndJets>(includeInactive: true);
+
+        public virtual void SetTailAndJetColors(Color highlightColor, Color coreColor) =>
+            TailAndJets?.SetColors(highlightColor, coreColor);
 
         public virtual void BindElementalFloat(string name, Element element) =>
             VesselStatus.ElementalStatsHandler.BindElementalFloat(name, element);
@@ -282,11 +292,13 @@ namespace CosmicShore.Gameplay
             {
                 PrismOcclusionCorridor.SetTarget(transform);
                 VesselSpeedTunnel.SetTarget(VesselStatus, transform);
+                VesselVisionShading.SetLocalVessel(transform);
             }
             else
             {
                 PrismOcclusionCorridor.ClearTarget(transform);
                 VesselSpeedTunnel.ClearTarget(transform);
+                VesselVisionShading.ClearLocalVessel(transform);
             }
 
             // If the player is AI in general, or if it is a network client

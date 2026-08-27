@@ -33,7 +33,9 @@ touching before editing; read all of it when creating or completing a vessel.
 | Abilities, actions, executors, input | §2 Actions | `R_VesselActions/*.md` for that ability |
 | Element scaling, map assets, L5 upgrades | §3 Map, §4 Elementals | `Docs/ElementalAbilitySystem/ARCHITECTURE.md` + `FLEET_MAPS.md` |
 | HUD icons, hints, gauges, HUD lifecycle | §5 Ability row, §8 HUD pair | ARCHITECTURE.md §7.1–7.4 |
-| Petal flowers / hull morphs / rig or FBX | §6 Bars, §7 Morphs | CLAUDE.md ▸ Elemental Bars / Hull Morphs |
+| Petal flowers / hull morphs / rig or FBX | §6 Bars, §7 Morphs | CLAUDE.md ▸ Elemental Bars / Hull Morphs; `Docs/VESSEL_CONSTRUCTION.md` |
+| Prefab construction, model swaps, deleting a model | — | **`Docs/VESSEL_CONSTRUCTION.md`** (guid ownership, nested-instance parenting, what the unreferenced rigs carry) |
+| Tails, jets, vessel FX mounts | — | `Docs/VESSEL_TAIL_AND_JETS.md` |
 | Collisions, crystals, skimmers, jousting | §9 Impact effects | CLAUDE.md ▸ Impact Effects; `RHINO_SHIELD_SWIPE.md` |
 | Docs, shipping, verification | §10 Paper trail | `GIT_RULES.md`, `Docs/UNITY_VERIFICATION_CHECKLIST.md` |
 
@@ -372,6 +374,63 @@ applies to new abilities, new resources on the meter list, and anything that add
     neither adding a class nor forgetting to classify one can silently widen a narrow grant.
     (Dolphin Drift Ward scoping, 2026-08-19.)
 
+32. **An ability that ROTATES the vessel shares an axis with the flight model, and the two ADD —
+    check whether the ability's TRIGGER correlates with the flight model's peak output on that
+    axis.** This is rules 4a/4b's third face: there the authored number was not the effective one
+    because a *consumer* multiplied it or because nothing ever *chose* it; here the number is
+    applied exactly as authored and still describes nothing on screen, because a **sibling writer**
+    adds a bigger term of the same kind. The Sparrow's strafing roll applied its authored 15° root
+    bank through `ApplyRotation(angle, transform.forward)` — correct call, correct sign, correct
+    axis — while `SingleStickVesselTransformer.Roll()` applied `-stick.x × (speed ×
+    RotationThrottleScaler + RollScaler)` about the *same* axis. The roll's trigger is a **full
+    stick deflection**, i.e. exactly the input that maximises the bank: `33.5 °/s` at cruise
+    (20.1° over the 0.6 s roll) and `41.0 °/s` boosting (24.6°), against 15° the other way. Net
+    was a few degrees of bank INTO the turn, so the pilot's horizon tilted AGAINST the spin and
+    the whole feature read as absent for as long as it shipped. **Do not answer this by raising
+    the number** — the sum depends on speed and on whether the pilot keeps holding the stick, so
+    a bigger number is a bigger lie. Hand the axis over for the ability's duration
+    (`VesselTransformer.BankIntoTurnSuppressed`, the same "an ability owns one transformer
+    property while it runs" shape as `BlockRotationOverride`), suppress only the axis you are
+    writing, and honour the flag in **every** `Roll()` body — the overrides do not call base, so a
+    base-only gate reaches neither the Sparrow nor the Serpent (rule 16's trap, in the roll axis
+    this time). Three companions worth carrying: **the camera reads the ROOT's rotation**, so a
+    root-level roll is the horizon tilt the pilot actually feels and a visual-child spin is not;
+    **advance a cosmetic rotation by the DELTA of the animation's own easing curve** rather than a
+    flat `dt / duration`, or the tilt drifts across a spin that is easing and the total overshoots
+    on the frame that ends the loop; and **grep for the structural twin before you close the
+    branch** — `ScarabJukeController` is a near-copy of `BarrelRollController` and carries the
+    identical defect (recorded in `Docs/ElementalAbilitySystem/BACKLOG.md`, deliberately not fixed
+    in the Sparrow's branch because it is another vessel's play-tested feel).
+    (Sparrow strafing roll, 2026-08-25.)
+
+33. **A type that crosses the gameplay→UI boundary belongs in the `CosmicShore.Data` leaf, and the
+    COMPILER is the only thing that will tell you.** A per-vessel HUD view does not necessarily
+    import `CosmicShore.Gameplay` — `SparrowHUDView` imports `CosmicShore.Data`, `DG.Tweening`,
+    `UnityEngine*` and nothing else — so an enum declared beside its gameplay owner (the ordinary,
+    correct home for a single-owner enum: `DriftThrottlePolicy`, `MenuCameraRigKind`,
+    `FloraSiteKind`) is invisible to the view that has to switch on it. Put a cross-layer enum in
+    `_Scripts/Data/Enums/` (namespace `CosmicShore.Data`): every UI view already imports it,
+    `Assembly-CSharp` auto-references the asmdef so gameplay needs one `using`, and the direction
+    stays legal for the assembly split. **Nothing static catches the wrong home** — it is a plain
+    `CS0246` at compile time, which a session with no editor never sees. Type-check the files you
+    actually wrote against a stub harness before committing (`asset-surgery` §4); that is what
+    caught this one.
+    (Sparrow roll-charge state, 2026-08-25.)
+
+34. **A projectile's RANGE is not `speed × projectileTime` — it is `speed × 2T/π`, because the
+    flight decelerates.** `Projectile.MoveProjectileAsync` advances by `Velocity × Δt × cos(π·t /
+    2T)`, which integrates to `v·2T/π ≈ 0.6366·v·T`: a round covers **64%** of the distance the
+    obvious product predicts, and it arrives at rest rather than at speed. This is rules 4a/4b in
+    a third guise — the authored numbers (`speedValue 375`, `projectileTime 0.3`) are both real
+    and both correct, and the quantity a design doc cares about is neither of them. The trap is
+    unusually sharp because the *stale-looking* value is the right one: the Sparrow doc's "~72 u
+    at SPACE 0" reads as drift against an asset saying 375 × 0.3 = 112.5, and a ship-protocol
+    doc-drift sweep will try to "fix" it. **Before correcting any range, reach, or
+    time-to-target figure, read the movement loop for a shaping factor** — and when you write a
+    new one, write the derivation next to it so the next sweep can check it in one line rather
+    than re-deriving it from the integral.
+
+
 ### 4.x Placing prisms from a vessel ability — shield sizing
 
 An ability that BUILDS with prisms (the Scarab's switch dais, the Urchin's track, a boost ring)
@@ -404,6 +463,36 @@ inherits two traps that have each cost a round-trip:
   free, with nothing to warn you. Re-derive the clearance whenever you re-pose one, and compute
   its silhouette as the projected hull of its eight spike tips rather than a hard-coded octagon,
   which is only the outline of an AXIS-ALIGNED sun.
+
+### 4.y Spawning a vessel outside the turn flow (a toy, a rig, a mid-match release)
+
+Anything that spawns a vessel somewhere other than the standard spawn-then-turn-start chain
+inherits four traps. All four presented as "the ship is there but does nothing / has no trail",
+which is the least diagnostic symptom in the fleet.
+
+- **A vessel released at speed 0 lays NO TRAIL, and the reason is a threshold you cannot see
+  from the vessel.** `VesselPrismController`'s spawn loop only lays a prism above **3 u/s**, and
+  the pair-init hands every vessel a dead stop (`GameDataSO.AddPlayer` -> `Player.ResetForPlay`
+  -> `VesselController.ResetForPlay` zeroes `Speed`). The menu vessel SWAP already solves this -
+  `SetPose` then `SetInitialSpeed`, in that order - so copy both halves, not just the pose.
+- **The AI's own drift PINS the cruise speed at the value the vessel carried in**
+  (`VesselTransformer.StepTowardTarget`, `_driftSpeedHeld`; the vector model's equivalent is
+  `DriftThrottlePolicy.Locked`). A bot that drifts before it has accelerated stays pinned near
+  zero *indefinitely* - so the trail never comes on at all rather than coming on late. Whichever
+  hull's authored `AIPilot.abilities` entry is a drift exposes this first (today: the Dolphin).
+- **`Player.StartPlayer` ALREADY runs the autopilot branch for a player whose `NetIsAI` is set** -
+  `ToggleAIPilot(true)` + `ToggleInputPause(true)`. Calling a second `ToggleAIPilot(true)` on top
+  (e.g. the menu's `ActivateAutopilot`, which exists for the HUMAN menu vessel, where StartPlayer
+  deliberately does not touch autopilot) used to duplicate every `UseAbilityCoroutine` forever.
+  `AIPilot.StartAIPilot` now sweeps its own coroutines first, so it is idempotent - **by clearing,
+  not by an `if (AutoPilotEnabled) return`**, because `OnDisable` leaves that flag true while Unity
+  kills the coroutines, and an early-out would refuse to restart them on the next enable.
+- **A SERVER-OWNED `Player` carries the HOST's `OwnerClientId`**, so its spawn event is
+  indistinguishable from the host's own and the human spawn path will try to give it a second
+  vessel. Call `ServerPlayerVesselInitializer.ClaimExternallySpawnedPlayer` in the SAME frame as
+  `NetworkObject.Spawn()` - `Player.OnNetworkSpawn` raises the event from inside that call. And
+  the AI Player prefab needs no scene reference: `NetworkManager.NetworkConfig.PlayerPrefab` IS
+  the prefab every game scene wires by hand into `aiPlayerPrefab`.
 
 ## 5. Audit, then hand back verification (you cannot run Unity; the human is the gate)
 

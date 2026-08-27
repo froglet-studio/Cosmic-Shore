@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 using UnityEngine;
 using CosmicShore.Gameplay;
 using CosmicShore.ScriptableObjects;
@@ -30,28 +29,24 @@ namespace CosmicShore.Gameplay
         private static readonly int DarkColorID = Shader.PropertyToID("_DarkColor");
         private static readonly int BrightColorID = Shader.PropertyToID("_BrightColor");
 
-        // Per-frame VFX spawn caps to prevent pool exhaustion when AOE hits many prisms
-        private const int MaxExplosionVFXPerFrame = 64;
-        private const int MaxImplosionVFXPerFrame = 64;
-
         /// <summary>
-        /// Benchmark/diagnostic override of the per-frame VFX spawn caps (0 = the
-        /// authored defaults above). The caps were sized for the CPU-per-effect era;
-        /// the stress rig lifts them to measure the clock-material system UNWEAKENED
-        /// (a death's effect costs one stamp + one entity, not a per-frame update).
-        /// Gameplay never sets this.
+        /// Benchmark/diagnostic override of the retired per-frame pooled-death VFX
+        /// caps. Death visuals are batched (D4) and no longer consult a spawn
+        /// budget; the explosion harness still writes this so lift/restore stays
+        /// a no-op rather than a missing-field compile break. Gameplay never sets it.
         /// </summary>
         public static int VFXBudgetPerFrameOverride = 0;
 
         /// <summary>
         /// Benchmark/diagnostic switch: disables the pressure-shortening of effect
         /// durations (every death animates at full length regardless of how many
-        /// effects are live). Shared home so both the clock branch
-        /// (PrismExplosion.PressuredDuration) and legacy branches
-        /// (PrismEffectsManager.PressuredDuration) can gate on one flag.
+        /// effects are live). Shared home so <see cref="PrismExplosion.PressuredDuration"/>
+        /// (still used if a pooled explosion is ever Get()d) can gate on one flag.
         /// Gameplay never sets this.
         /// </summary>
         public static bool EffectPressureScalingDisabled = false;
+
+        static bool _loggedDeathVisualRefuse;
 
         // Benchmark-harness overrides; a play exit mid-run must not leave them lifted.
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
@@ -59,45 +54,8 @@ namespace CosmicShore.Gameplay
         {
             VFXBudgetPerFrameOverride = 0;
             EffectPressureScalingDisabled = false;
+            _loggedDeathVisualRefuse = false;
         }
-
-        static int EffectiveExplosionVFXBudget =>
-            VFXBudgetPerFrameOverride > 0 ? VFXBudgetPerFrameOverride : MaxExplosionVFXPerFrame;
-        static int EffectiveImplosionVFXBudget =>
-            VFXBudgetPerFrameOverride > 0 ? VFXBudgetPerFrameOverride : MaxImplosionVFXPerFrame;
-        // Deferred-queue bound scales with the lifted budget so a burst the operator
-        // deliberately unthrottled is not silently truncated by the queue instead.
-        static int EffectiveDeferredCap
-        {
-            get
-            {
-                long scaled = (long)EffectiveExplosionVFXBudget * 3;
-                return scaled > int.MaxValue ? int.MaxValue
-                    : (int)System.Math.Max(MaxDeferredVFX, scaled);
-            }
-        }
-        private int _explosionVFXCount;
-        private int _implosionVFXCount;
-        private int _lastExplosionFrame;
-        private int _lastImplosionFrame;
-
-        // A destruction whose visual does not fit in this frame's cap is DEFERRED, not
-        // dropped. Prism.SetupDestruction has already hidden the prism, so the pooled
-        // VFX is the only thing standing in for it - skipping the spawn makes the prism
-        // vanish mid-air, which the continuity law forbids ("deaths animate out"; see
-        // CLAUDE.md). Deferred effects are spawned within a later frame's cap, so the
-        // per-frame ceiling this budget exists to enforce is unchanged.
-        //
-        // The queue is bounded at a few frames' worth: past that the visual would play
-        // so long after the death that it reads as a random pop somewhere the fight has
-        // already left. When full we discard the STALEST, matching PrismEffectsManager's
-        // recycle-the-oldest policy for the concurrent-effect ceiling.
-        private const int MaxDeferredVFX = 192;
-        private readonly Queue<PrismEventData> _deferredExplosions = new(64);
-        private readonly Queue<PrismEventData> _deferredImplosions = new(64);
-
-        /// <summary>Destruction visuals waiting on a later frame's spawn budget.</summary>
-        public int DeferredExplosionCount => _deferredExplosions.Count;
 
         [Header("Pool Managers")]
         [SerializeField] private InteractivePrismPoolManager dolphinPrismPool;
@@ -113,7 +71,13 @@ namespace CosmicShore.Gameplay
                  "overrides can't leak into normal trail/AOE prisms.")]
         [SerializeField] private InteractivePrismPoolManager boostPrismPool;
 
+        [Tooltip("Prefab on this pool is the authored death-explosion CONFIG " +
+                 "(mesh / material / layer / clamp / duration) PrismDebris reads. " +
+                 "Gameplay never Get()s this pool (D4); do not delete the reference.")]
         [SerializeField] private PrismExplosionPoolManager explosionPool;
+        [Tooltip("Prefab is the authored suction CONFIG PrismDebris reads AND the " +
+                 "live Grow pool (Sparrow ReverseSuction via PrismType.Grow). Death " +
+                 "implosions never Get() this pool (D4); Grow still does.")]
         [SerializeField] private PrismImplosionPoolManager implosionPool;
         // Add more later: PrismShockwavePoolManager, PrismDisintegrationPoolManager, etc.
 
@@ -122,8 +86,8 @@ namespace CosmicShore.Gameplay
                  "clamps the derived rate (PrismScaleAnimator.ClockRateK: growthRate * 0.04 " +
                  "into [0.05, 0.1]), so values below ~6 are indistinguishable from the " +
                  "default; 8 pins the bloom at the max speed across framerates. The collider " +
-                 "never waits on this - boost prisms hold a full-size collider from frame 0 " +
-                 "(Prism.HoldColliderAtFullSize).")]
+                 "never waits on this — under the clock law the transform is final at stamp, " +
+                 "so boost prisms have a full-size world footprint from frame 0.")]
         [SerializeField] private float boostPrismGrowthRate = 8f;
 
         [Header("Data Containers")]
@@ -147,11 +111,6 @@ namespace CosmicShore.Gameplay
         {
             if (_onPrismSpawnedEventChannel)
                 _onPrismSpawnedEventChannel.OnEventReturn -= OnPrismSpawnedEventRaised;
-
-            // Queued visuals belong to deaths in the scene being torn down - replaying
-            // them after a reload would pop effects at coordinates nothing occupies.
-            _deferredExplosions.Clear();
-            _deferredImplosions.Clear();
         }
         #endregion
 
@@ -296,158 +255,69 @@ namespace CosmicShore.Gameplay
         
         GameObject SpawnExplosion(PrismEventData data)
         {
-            // Batched pure-entity debris path (Docs/PRISM_ANIMATION.md B3): no
-            // GameObject, no pool, no per-frame budget — a whole burst spawns as
-            // one prototype-instantiate batch at LateUpdate and the GPU animates
-            // every piece at full length. The pooled path below is a ROUTE, not a
-            // working visual fallback — see the note on SpawnImplosion.
+            // Batched pure-entity debris is the ONLY death-explosion carrier (D4).
+            // The pool prefab stays the authored CONFIG source (mesh / material /
+            // layer / clamp / duration). The factory never Get()s explosionPool
+            // for this type. Callers treat a null spawn as fire-and-forget.
             if (CosmicShore.Utility.PrismDebris.Configure(explosionPool != null ? explosionPool.Prefab : null) &&
                 TryGetTeamColors(data.ownDomain, data.Kind, out var bright, out var dark) &&
                 CosmicShore.Utility.PrismDebris.TryRequestExplosion(
                     data.SpawnPosition, data.Rotation, data.Scale,
                     bright, dark, data.Velocity, data.DebrisSpeedLimit, data.Kind))
             {
-                // Callers treat a null spawn as fire-and-forget (the deferral
-                // branch below has always returned null).
                 return null;
             }
 
-            RollExplosionFrameBudget();
-
-            // Over budget: queue the visual for a later frame rather than dropping it.
-            // The prism is already hidden, so a dropped visual IS a disappearing prism.
-            if (_explosionVFXCount >= EffectiveExplosionVFXBudget)
-            {
-                Defer(_deferredExplosions, data);
-                return null;
-            }
-
-            return SpawnExplosionNow(data);
+            LogDeathVisualRefused("explosion");
+            return null;
         }
 
         GameObject SpawnImplosion(PrismEventData data)
         {
-            // Batched pure-entity suction path (Docs/PRISM_ANIMATION.md B3) — the
-            // implosion half of the explosion batch above. No GameObject, no pool,
-            // no per-frame budget, and no per-instance MonoBehaviour Update (the
-            // pooled carrier's watchdog): a swarm-eat frame's consumptions spawn as
-            // ONE prototype-instantiate batch and the GPU runs every suction off the
-            // shader clock. The moving convergence target keeps working — PrismDebris
-            // retains the target Transform per record and refreshes _Location while
-            // it lives (the §1 exception).
-            //
-            // The pooled path below is a ROUTE, not a working visual fallback: under
-            // strict clock mode PrismImplosion with no render entity draws a static,
-            // un-animated block and logs, and PrismExplosion draws nothing at all
-            // (TriggerExplosion disables the renderer unconditionally). It is reached
-            // only if the effect prefab is misconfigured or PrismRenderService is off —
-            // and being loud there is the intended forcing function, not a degradation.
-            // See Docs/PRISM_ANIMATION.md §4.6 for what retiring it actually requires.
+            // Batched suction is the ONLY death-implosion carrier (D4). Grow
+            // (PrismType.Grow / SpawnGrow) still Get()s implosionPool because the
+            // batched carrier has no completion callback — ReverseSuction needs
+            // OnGrowCompleted to spawn the real prism.
             if (CosmicShore.Utility.PrismDebris.ConfigureImplosion(implosionPool != null ? implosionPool.Prefab : null) &&
                 TryGetTeamColors(data.ownDomain, data.Kind, out var bright, out var dark) &&
                 CosmicShore.Utility.PrismDebris.TryRequestImplosion(
                     data.SpawnPosition, data.Rotation, data.Scale,
                     bright, dark, data.TargetTransform))
             {
-                // Callers treat a null spawn as fire-and-forget (the deferral
-                // branch below has always returned null).
                 return null;
             }
 
-            RollImplosionFrameBudget();
-
-            // Same reasoning as explosions - defer, never drop.
-            if (_implosionVFXCount >= EffectiveImplosionVFXBudget)
-            {
-                Defer(_deferredImplosions, data);
-                return null;
-            }
-
-            return SpawnImplosionNow(data);
+            LogDeathVisualRefused("implosion");
+            return null;
         }
 
-        private void RollExplosionFrameBudget()
+        static void LogDeathVisualRefused(string family)
         {
-            if (Time.frameCount == _lastExplosionFrame) return;
-            _lastExplosionFrame = Time.frameCount;
-            _explosionVFXCount = 0;
+            if (_loggedDeathVisualRefuse) return;
+            _loggedDeathVisualRefuse = true;
+            CSDebug.LogError(
+                $"[PrismFactory] Batched {family} debris declined (unconfigured prefab, " +
+                "missing theme colours, PrismRenderService off, or a 5s drain-fail hold). " +
+                "Pooled death spawn is retired (Docs/PRISM_ANIMATION.md D4) — this death " +
+                "has no visual. Grow (Sparrow ReverseSuction) is unaffected.");
         }
 
-        private void RollImplosionFrameBudget()
-        {
-            if (Time.frameCount == _lastImplosionFrame) return;
-            _lastImplosionFrame = Time.frameCount;
-            _implosionVFXCount = 0;
-        }
-
-        /// <summary>
-        /// Spawns the effect without consulting the frame budget - callers have already
-        /// reserved a slot. Keeping this separate from <see cref="SpawnExplosion"/> means
-        /// the drain can never re-enter the defer branch and cycle the queue.
-        /// </summary>
-        private GameObject SpawnExplosionNow(PrismEventData data)
-        {
-            _explosionVFXCount++;
-
-            var obj = explosionPool?.Get(data.SpawnPosition, data.Rotation, explosionPool.transform);
-            if (obj == null) return null;
-            obj.transform.localScale = data.Scale;
-            ConfigureForTeam(obj.gameObject, data.ownDomain, data.Kind);
-            obj.TriggerExplosion(data.Velocity, data.DebrisSpeedLimit, data.Kind);
-            return obj.gameObject;
-        }
-
-        private GameObject SpawnImplosionNow(PrismEventData data)
-        {
-            _implosionVFXCount++;
-
-            var obj = implosionPool?.Get(data.SpawnPosition, data.Rotation, implosionPool.transform);
-            if (obj == null) return null;
-            obj.transform.localScale = data.Scale;
-            ConfigureForTeam(obj.gameObject, data.ownDomain, data.Kind);
-            obj.StartImplosion(data.TargetTransform);
-            return obj.gameObject;
-        }
-
-        private static void Defer(Queue<PrismEventData> queue, PrismEventData data)
-        {
-            while (queue.Count >= EffectiveDeferredCap)
-                queue.Dequeue(); // stalest first - see MaxDeferredVFX
-            queue.Enqueue(data);
-        }
-
-        /// <summary>
-        /// Spends whatever is left of this frame's VFX budget on deaths whose visual an
-        /// earlier frame could not afford, oldest first. Runs in LateUpdate so every
-        /// destruction the frame produced has already had first claim on the budget - a
-        /// burst therefore animates out over the next frame or two instead of vanishing.
-        /// </summary>
-        private void LateUpdate()
-        {
-            if (_deferredExplosions.Count > 0)
-            {
-                RollExplosionFrameBudget();
-                while (_deferredExplosions.Count > 0 && _explosionVFXCount < EffectiveExplosionVFXBudget)
-                    SpawnExplosionNow(_deferredExplosions.Dequeue());
-            }
-
-            if (_deferredImplosions.Count > 0)
-            {
-                RollImplosionFrameBudget();
-                while (_deferredImplosions.Count > 0 && _implosionVFXCount < EffectiveImplosionVFXBudget)
-                {
-                    var data = _deferredImplosions.Dequeue();
-                    // An implosion converges on a target; if the consumer died while the
-                    // visual was queued there is nothing to converge on.
-                    if (data.TargetTransform == null) continue;
-                    SpawnImplosionNow(data);
-                }
-            }
-        }
-        
         GameObject SpawnGrow(PrismEventData data)
         {
-            var obj = implosionPool?.Get(data.SpawnPosition, data.Rotation, implosionPool.transform);
+            // LIVE gameplay carrier (Sparrow ReverseSuction). D4 retired pooled
+            // death spawn; Grow stays on this pool because batched implosion is
+            // fire-and-forget and has no OnGrowCompleted machinery.
+            if (implosionPool == null)
+            {
+                CSDebug.LogError("[PrismFactory] SpawnGrow: implosionPool is unassigned — ReverseSuction visual dropped.");
+                return null;
+            }
+            var obj = implosionPool.Get(data.SpawnPosition, data.Rotation, implosionPool.transform);
+            if (obj == null)
+            {
+                CSDebug.LogError("[PrismFactory] SpawnGrow: implosionPool.Get returned null — ReverseSuction visual dropped.");
+                return null;
+            }
             obj.transform.localScale = data.Scale;
             ConfigureForTeam(obj.gameObject, data.ownDomain, data.Kind);
 
@@ -472,8 +342,8 @@ namespace CosmicShore.Gameplay
         /// <c>ThemeManager</c> paints the live prism with — so a death visual always wears
         /// the colours of the mass it came from. A danger prism therefore shatters into the
         /// hot danger rim over its domain's shielded base, not into plain-domain debris.
-        /// False when the theme is not populated yet — the caller falls back to the pooled
-        /// path, whose own warning covers the misconfiguration.
+        /// False when the theme is not populated yet — the death visual is skipped
+        /// (pooled death spawn is retired; Grow still tints via <see cref="ConfigureForTeam"/>).
         /// </summary>
         private bool TryGetTeamColors(Domains domain, PrismKind kind, out Color bright, out Color dark)
         {

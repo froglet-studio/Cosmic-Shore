@@ -12,7 +12,7 @@ explosion reads as noise. Keep it this way — see "Adding/changing a feel" befo
 | **Skim pulse** (reward) | Short (~70 ms), bright, sharp transient at high haptic frequency. Strength scales with how close the prism passed to the skimmer centre. Many in sequence read as a rapid, continuously rewarding pulse train. | Each prism entering a skimmer (Squirrel etc.) |
 | **Punish thud** (mistake) | Short (~200 ms), heavy, **low**-frequency thud — the deliberate opposite of the bright skim. | The vessel **body** slamming a prism |
 | **Alert shake** (event) | Long (~1.2 s) hard **rattle** — full-amplitude sawtooth at mid frequency, both gamepad motors out of phase. Unmistakably neither of the above, and long enough to read as "something happened" rather than "you hit something". | Ribcage's progress-milestone rungs (25% / 50% of the win target) — **nothing else** |
-| **Spray buzz** (state) | Short (~50 ms) **mid**-frequency buzz with no transient (skim's signature) and both motors together (which is what reads as a buzz rather than a tick or a rumble). Repeats while the trigger is down, climbing in **both** strength (0.15 → 1.0) and cadence (100 ms → 45 ms) as the gun's accuracy decays. | Holding the Sparrow's full-auto trigger — bullets **or** turret stance. **Nothing else** |
+| **Spray buzz** (state) | Short (~50 ms) **mid**-frequency buzz with no transient (skim's signature) and both motors together (which is what reads as a buzz rather than a tick or a rumble). Repeats while the trigger is down, climbing in **both** strength (0.15 → 1.0) and cadence (100 ms → 45 ms) as the gun's accuracy decays, and holding flat once the cone reaches its sustainable cap — both channels are at their ceiling there, so a longer hold has nothing worse left to say. | Holding the Sparrow's full-auto trigger — bullets **or** turret stance. **Nothing else** |
 
 **Priority, top to bottom: alert > punish > skim > spray.** The spray is the game's only
 *continuous* feel and therefore the only one that sits below skim: everything suppresses it and
@@ -130,8 +130,11 @@ its call site — it's already silent.
    through / interrupts the skim train, and no machine-gunning (≥250 ms apart).
 4. **Spray ramp** (device or connected gamepad — a bare desktop editor has no motors, so it can
    only be judged with one): fly a Sparrow and hold the fire trigger. Expect a light buzz from the
-   first round that climbs in **both** strength and rate over ~1.4 s and then holds steady; release
-   → silence; re-pull → back to the light end. It must be immediately distinguishable from the
+   first round, flat through the gun's ~2 s grace window, climbing in **both** strength and rate
+   over the ~2 s the cone takes to open, then holding steady for the rest of the hold — including
+   the accuracy blow-out past 6 s, which is deliberately not on this channel
+   (`R_VesselActions/SPARROW_SPRAY_ACCURACY.md` Round 6). Release → silence; re-pull → back to the
+   light end. It must be immediately distinguishable from the
    skim's bright ticks and the punish's heavy thud.
 5. **Spray yields, never suppresses**: while holding fire, ram a prism with the hull — the punish
    thud must cut cleanly through the buzz rather than being drowned by it.

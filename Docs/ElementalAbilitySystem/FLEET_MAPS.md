@@ -90,7 +90,12 @@ beside the code: `_Scripts/Controller/Vessel/R_VesselActions/SPARROW_AFTERBURNER
   the legacy `OverheatingAction`, and `VesselStatus.IsOverheating` are all deleted; input 7 binds
   straight to the shared `BoostAction.asset`. The boost is now unlimited in duration.
 - **The strafing roll dropped to BASE kit** (was the TIME-5 upgrade). `BarrelRollController` lost
-  its `IsUpgradeActive(Element.Time)` gate. Still one roll per boost press.
+  its `IsUpgradeActive(Element.Time)` gate. Still one roll per boost press — and since the boost is
+  indefinite, that press only arms the roll for a **0.3 s window** (`rollArmWindowSeconds`), so a
+  stick that reaches full deflection later in a long hold no longer spins the vessel. The roll also
+  owns the **roll axis** for its duration (`VesselTransformer.BankIntoTurnSuppressed`) so its
+  authored `rootRollDegrees` bank is the tilt the pilot actually sees — un-suppressed it landed
+  under ~20-25° of opposing bank-into-turn and read backwards.
 - **The roll also works in the stationary stance** (2026-08, a later branch). It lost its
   `IsTranslationRestricted` gate too: stopped, the boost gives no speed but the roll still arms on
   the press and still strafes — the stopped Sparrow's dodge. The displacement survives the
@@ -256,7 +261,7 @@ The original proposal table below was superseded by Garrett's markup; the shippe
 |---|---|---|
 | Charge | skim energy per prism-skimmer collision (map 2.0, `SkimmerBoostPrismEffectSO`) | **Live Wire** — danger prisms grant the 10× energy bonus (the bonus was always-on before; it is now EARNED — below Charge 5 danger prisms pay base energy) |
 | Mass | trail prism VOLUME (`trailVolume` ElementalFloat 1→2.5, cube-root per axis) | **Heavy Trail** — trail prisms arrive shielded ONLY while drifting (`massUpgradeShieldsTrail` + `IsDrifting` gate on `VesselPrismController`) |
-| Space | skimmer reach (skimmer `Scale` ElementalFloat 15→30 — this mapping predates the doc and was restored to the record). BASE joust (ungated): jousting any lifeform's embedded crystal while moving FASTER than it withers opposing-domain lifeforms (`ILifeFormEntity.Jousted`; rooted flora sit at speed 0 so they're trivially joustable) | **Shepherd** — jousting an OWN-domain lifeform's crystal levels it up (`ILifeFormEntity.LevelUp`, the lifeform elemental contract — see `Docs/ECOSYSTEM.md §3`) |
+| Space | skimmer reach (skimmer `Scale` ElementalFloat 15→30 — this mapping predates the doc and was restored to the record). BASE joust (ungated): jousting any lifeform's embedded crystal while moving FASTER than it withers opposing-domain lifeforms (`ILifeFormEntity.Jousted`; rooted flora sit at speed 0 so they're trivially joustable) | **Shepherd** — jousting an OWN-domain lifeform's crystal NOURISHES it (`ILifeFormEntity.Nourish`): a creature's starvation clock resets and its birth counter advances, a plant's growth quota moves toward its next seeding. It pays out as a POPULATION — more of the thing you protected — through every gate an ordinary feed passes, rather than as a bigger individual (it levelled the lifeform up until `Docs/ECOSYSTEM.md §40` retired lifeform levels; see §40.4) |
 | Time | boost-ring cooldown ×0.5 at level 10 (`SquirrelTubeActionSO.cooldownMultiplierAtFullTime`) | **Twin Rings** — the tube deploys a second ring (baseline reduced 2→1 ring; `upgradeExtraRings`) |
 
 Removed: Time→top speed (prefab `ThrottleScalerMultiplier` disabled — one parameter per element).

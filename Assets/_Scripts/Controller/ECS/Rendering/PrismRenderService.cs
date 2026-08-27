@@ -23,8 +23,8 @@ namespace CosmicShore.ECS
 
     /// <summary>
     /// Which per-instance override components a companion entity carries.
-    /// Prism: the color trio. Explosion/Implosion: color trio + the effect
-    /// shader's animated parameters.
+    /// Prism: color trio + grow / color / flight / shieldMorph / jiggle / suction clocks.
+    /// Explosion/Implosion: color trio + the effect shader's animated parameters.
     /// </summary>
     public enum PrismRenderOverrideSet
     {
@@ -455,11 +455,23 @@ namespace CosmicShore.ECS
                         em.AddComponentData(prototype, new PrismJiggleStartTimeOverride { Value = 0f });
                         em.AddComponentData(prototype, new PrismJiggleDurationOverride { Value = 0f });
                         em.AddComponentData(prototype, new PrismJiggleParamsOverride { Value = float3.zero });
+                        // Cell-swap world suction (Docs/PRISM_ANIMATION.md §5 C9). Duration 0
+                        // = unstamped identity on live graphs (LegacyState default 0). Location
+                        // is the same override the Implosion set already carries — added here
+                        // too so StampSuctionClock's SetComponentData is non-structural.
+                        em.AddComponentData(prototype, new PrismSuctionStartTimeOverride { Value = 0f });
+                        em.AddComponentData(prototype, new PrismSuctionDurationOverride { Value = 0f });
+                        em.AddComponentData(prototype, new PrismSuctionDirectionOverride { Value = 1f });
+                        em.AddComponentData(prototype, new PrismSuctionGrowDelayOverride { Value = 0f });
+                        em.AddComponentData(prototype, new PrismImplosionLocationOverride { Value = float3.zero });
                         break;
                     case PrismRenderOverrideSet.Explosion:
                         em.AddComponentData(prototype, new PrismExplodeStartTimeOverride { Value = 0f });
                         em.AddComponentData(prototype, new PrismExplodeSpeedOverride { Value = 0f });
                         em.AddComponentData(prototype, new PrismExplodeDurationOverride { Value = 0f });
+                        // Default 0 = the cube's derived face pivot, so a producer that
+                        // never sets it renders exactly as it did (§4.8.2).
+                        em.AddComponentData(prototype, new PrismFacePivotFromCentroidOverride { Value = 0f });
                         break;
                     case PrismRenderOverrideSet.Implosion:
                         em.AddComponentData(prototype, new PrismSuctionStartTimeOverride { Value = 0f });
@@ -885,6 +897,7 @@ namespace CosmicShore.ECS
             ClearFlightStamp(in handle);
             ClearShieldMorphStamp(in handle);
             ClearJiggleStamp(in handle);
+            ClearSuctionClockStamp(in handle);
         }
 
         /// <summary>Stamps an explosion's flight: offset/amount/opacity become pure
@@ -976,6 +989,7 @@ namespace CosmicShore.ECS
             if (!ClockAnimationEnabled || !IsUsable(in handle)) return false;
             var em = _world.EntityManager;
             if (!em.HasComponent<PrismSuctionStartTimeOverride>(handle.Entity)) return false;
+            if (!em.HasComponent<PrismImplosionLocationOverride>(handle.Entity)) return false;
             em.SetComponentData(handle.Entity, new PrismSuctionStartTimeOverride { Value = startTime });
             em.SetComponentData(handle.Entity, new PrismSuctionDurationOverride { Value = duration });
             em.SetComponentData(handle.Entity, new PrismSuctionDirectionOverride { Value = direction });
@@ -1013,7 +1027,10 @@ namespace CosmicShore.ECS
             if (!IsUsable(in handle)) return;
             var em = _world.EntityManager;
             if (!em.HasComponent<PrismSuctionDurationOverride>(handle.Entity)) return;
+            em.SetComponentData(handle.Entity, new PrismSuctionStartTimeOverride { Value = 0f });
             em.SetComponentData(handle.Entity, new PrismSuctionDurationOverride { Value = 0f });
+            if (em.HasComponent<PrismImplosionLocationOverride>(handle.Entity))
+                em.SetComponentData(handle.Entity, new PrismImplosionLocationOverride { Value = float3.zero });
         }
 
         // ------------------------------------------------------------------
@@ -1060,6 +1077,11 @@ namespace CosmicShore.ECS
             /// <see cref="ExpandBoundsForClockAnimation"/>).</summary>
             public float3 ObjectDisplacement;
             public float BoundsPadding;
+            /// <summary>0 = spin each face about the pivot RotateFacesAlongAxis derives for
+            /// the prism CUBE; 1 = spin it about the per-face centroid this MESH bakes into
+            /// TEXCOORD1. Leave at 0 for any mesh without that channel — see
+            /// Docs/PRISM_ANIMATION.md §4.8.2 and PrismFacePivotFromCentroidOverride.</summary>
+            public float FacePivotFromCentroid;
         }
 
         /// <summary>
@@ -1068,8 +1090,8 @@ namespace CosmicShore.ECS
         /// lands via non-structural SetComponentData. Spawned entities are appended
         /// to <paramref name="appendEntitiesTo"/> in spawn order (index-aligned with
         /// <paramref name="spawns"/>). Returns false — spawning nothing — when the
-        /// service is off or no world exists; the caller falls back to the pooled
-        /// GameObject path.
+        /// service is off or no world exists; the caller drops the visual (D4 —
+        /// no pooled death fallback).
         /// </summary>
         public static bool SpawnExplosionDebrisBatch(Mesh mesh, Material material, int layer,
             System.Collections.Generic.List<ExplosionDebrisSpawn> spawns, float startTime,
@@ -1108,6 +1130,7 @@ namespace CosmicShore.ECS
                 em.SetComponentData(entity, new PrismExplodeSpeedOverride { Value = s.Speed });
                 em.SetComponentData(entity, new PrismExplodeDurationOverride { Value = s.Duration });
                 em.SetComponentData(entity, new PrismVelocityOverride { Value = s.Velocity });
+                em.SetComponentData(entity, new PrismFacePivotFromCentroidOverride { Value = s.FacePivotFromCentroid });
 
                 float3 half = s.ObjectDisplacement * 0.5f;
                 em.SetComponentData(entity, new RenderBounds
@@ -1190,7 +1213,8 @@ namespace CosmicShore.ECS
         /// <see cref="SpawnExplosionDebrisBatch"/>. Entities are appended to
         /// <paramref name="appendEntitiesTo"/> index-aligned with
         /// <paramref name="spawns"/>. Returns false — spawning nothing — when the
-        /// service is off, so the caller can fall back to the pooled path.
+        /// service is off; the caller drops the visual (D4 — no pooled death
+        /// fallback). Grow still uses pooled StartGrow, not this batch.
         /// </summary>
         public static bool SpawnImplosionDebrisBatch(Mesh mesh, Material material, int layer,
             System.Collections.Generic.List<ImplosionDebrisSpawn> spawns, float startTime,

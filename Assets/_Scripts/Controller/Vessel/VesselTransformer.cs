@@ -155,6 +155,30 @@ public class VesselTransformer : MonoBehaviour
             VesselStatus != null && VesselStatus.IsTranslationRestricted ? restrictedTurnMultiplier : 1f;
 
         /// <summary>
+        /// While true the transformer applies NO bank-into-turn — an ability owns the roll axis
+        /// for its duration and is the only thing rolling the vessel. Default false; cleared by
+        /// <see cref="ResetTransformer"/>, and every setter is responsible for clearing it (the
+        /// same contract as <see cref="BlockRotationOverride"/>, which the strafing roll already
+        /// borrows for its duration).
+        ///
+        /// It exists because the bank and an ability's roll are the SAME rotation about the SAME
+        /// axis, so they simply add — and the bank is the bigger term. The Sparrow's strafing roll
+        /// triggers on a FULL stick deflection, which is exactly when the bank is at maximum: its
+        /// authored 15° landed on top of ~20-25° of opposing bank, so the vessel visibly rolled
+        /// the WRONG way (the camera reads the root's up, so that is the horizon tilt the pilot
+        /// actually sees) and the authored number described nothing that happened on screen.
+        ///
+        /// Pitch and yaw are untouched — the vessel still turns exactly as hard while the ability
+        /// holds the roll.
+        ///
+        /// Applied by this class's <see cref="Roll"/> AND by every override — see
+        /// <see cref="SingleStickVesselTransformer"/> (what the Sparrow and Serpent actually run)
+        /// and ScarabVesselTransformer. A base-only gate would reach neither of the two vessels
+        /// that have an ability wanting it, the same trap <see cref="TurnScalar"/> documents.
+        /// </summary>
+        public bool BankIntoTurnSuppressed { get; set; }
+
+        /// <summary>
         /// The fastest this vessel can swing its nose right now, in degrees per second — the exact
         /// quantity <see cref="Pitch"/> and <see cref="Yaw"/> apply at full stick, including the
         /// throttle-derived term and the translation-restricted multiplier.
@@ -342,6 +366,7 @@ public class VesselTransformer : MonoBehaviour
             transform.rotation = Quaternion.identity;
 
             // Movement
+            BankIntoTurnSuppressed = false;   // an interrupted ability must not strand the roll axis
             velocityShift = Vector3.zero;
             _bodyFlaring = true;   // force one rest-state material write on the next pass
 
@@ -627,7 +652,7 @@ public class VesselTransformer : MonoBehaviour
 
         protected virtual void Roll()
         {
-            if (InputStatus == null) return;
+            if (InputStatus == null || BankIntoTurnSuppressed) return;
             accumulatedRotation = Quaternion.AngleAxis(
                 InputStatus.YDiff * (speed * RotationThrottleScaler + RollScaler) * Time.deltaTime,
                 transform.forward) * accumulatedRotation;

@@ -164,7 +164,28 @@ namespace CosmicShore.ECS
         public float Value;
     }
 
-    // -- Implosion set (SuctionGraph): suction/reverse-grow clock --
+    /// <summary>
+    /// Where each face of this debris spins: 0 = the pivot RotateFacesAlongAxis derives
+    /// (`dot(P,N)*N` plus a fixed tangent slide, a hardcoded measurement of the prism
+    /// CUBE's four-wedge face), 1 = the per-face CENTROID the mesh bakes into TEXCOORD1.
+    /// Docs/PRISM_ANIMATION.md §4.8.2.
+    ///
+    /// Per-INSTANCE and not per-material, because a dropped shield sheds through the same
+    /// ExplodingBlockMaterial a dying prism's pieces use (§4.8.1) — that shared material is
+    /// the thing keeping the two death visuals identical, so the mesh's face layout has to
+    /// travel with the entity instead. Costs one float per debris entity and one `mad` in
+    /// the vertex stage; a shader keyword or a second material would have split the batch
+    /// AND forked the pipeline.
+    /// </summary>
+    [MaterialProperty("_FacePivotFromCentroid")]
+    public struct PrismFacePivotFromCentroidOverride : IComponentData
+    {
+        public float Value;
+    }
+
+    // -- Implosion set (SuctionGraph): suction/reverse-grow clock; also the live
+    // Prism set (BlockGraph / ExplodingBlockGraph, Docs/PRISM_ANIMATION.md §5 C9
+    // cell-swap suction) --
 
     [MaterialProperty("_SuctionStartTime")]
     public struct PrismSuctionStartTimeOverride : IComponentData

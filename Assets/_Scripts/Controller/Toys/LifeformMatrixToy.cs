@@ -8,26 +8,62 @@ using UnityEngine;
 namespace CosmicShore.Gameplay
 {
     /// <summary>
-    /// Runtime for the <see cref="LifeformMatrixToyDefinitionSO"/> - the ecology tuning bench.
+    /// Runtime for the <see cref="LifeformMatrixToyDefinitionSO"/> - the bench for everything you
+    /// can RELEASE into the cell. Four passes deep at most, each one a layer further OUT:
     ///
-    /// Pass 1 (the toy itself): builds/tears down the SPECIES matrix - one station per
-    /// registered flora/fauna species. Pass 2 (a species station): blooms the VARIANT matrix -
-    /// 4 element columns x level rows {1, 3, 5}, station spheres tinted the element's accent
-    /// and sized by level (level 5 reads biggest). Pass 3 (a variant station): spawns that
-    /// exact lifeform live into the containing cell through the canonical spawn paths
-    /// (SpawnFlora / SpawnFaunaWithDomain + AssignLineage), on a runtime CLONE of the config
-    /// with the station's level - the authored assets are never mutated.
+    /// <list type="number">
+    /// <item>the toy itself blooms the <b>KINGDOM</b> row - Fauna, Flora, Vessels;</item>
+    /// <item>Fauna/Flora bloom that kingdom's <b>SPECIES</b> row (one station per registered
+    /// species); Vessels blooms the <b>HANGAR</b> row instead (one mini hull per class);</item>
+    /// <item>a species blooms its <b>VARIANT</b> row - one station per ELEMENT, and that is the
+    /// whole matrix: a lifeform is its species and its element, and nothing else
+    /// (Docs/ECOSYSTEM.md §40). Each station wears that element's crystal, and its sphere is
+    /// sized from the variant's own authored heart, so the row shows the real size difference
+    /// between the four before you touch any of them;</item>
+    /// <item>a variant spawns that exact lifeform live into the containing cell through the
+    /// canonical spawn paths (SpawnFlora / SpawnFaunaWithDomain + AssignLineage), on a runtime
+    /// CLONE of the config - the authored assets are never mutated.</item>
+    /// </list>
     ///
-    /// Collider note: stations are transient trigger spheres (species count + up to 12),
-    /// Menu_Main freestyle only, torn down with the matrix - no per-cell budget impact.
+    /// A hangar station releases an <b>AI-piloted vessel of that class in the player's own
+    /// domain</b>, through <see cref="MenuServerPlayerVesselInitializer.RequestSpawnAiCompanion"/>
+    /// - the menu's ordinary networked spawn pipeline, so the bot exists once on the server and
+    /// replicates to the whole party. The mini hulls and the roster are shared with the vessel
+    /// changer (<see cref="ToyVesselRoster"/>): one curated list, one hull builder.
+    ///
+    /// The KINGDOM layer exists because the flat menagerie had outgrown one wall - 14 species on
+    /// two rows, with nowhere to put a third kind of thing. Splitting by kingdom first gives each
+    /// branch its own row AND makes "what else can I release?" a question the toy answers by shape.
+    ///
+    /// Collider note: stations are transient trigger spheres (3 kingdoms + at most one species row
+    /// + up to 4 variants), Menu_Main freestyle only, torn down with the matrix - no per-cell
+    /// budget impact. A released COMPANION is a real vessel and does count, exactly like the
+    /// player's own; it is despawned with every other AI on the way out of the menu
+    /// (SceneLoader.ClearPlayerVesselReferences).
     /// </summary>
     public sealed class LifeformMatrixToy : Toy
     {
-        static readonly int[] TestLevels = { 1, 3, 5 };
+        /// <summary>The three things this toy can release. Order is the kingdom row, left to right.</summary>
+        enum Kingdom { Fauna = 0, Flora = 1, Vessels = 2 }
+
+        static readonly Kingdom[] Kingdoms = { Kingdom.Fauna, Kingdom.Flora, Kingdom.Vessels };
 
         LifeformMatrixToyDefinitionSO _def;
-        GameObject _speciesGrid;
+
+        // One grid per layer. Opening a layer clears every layer BELOW it, so the matrix is always
+        // a single path from the toy outward rather than an accumulating pile of walls.
+        GameObject _kingdomGrid;
+        GameObject _branchGrid;     // a kingdom's species row, or the hangar row
         GameObject _variantGrid;
+
+        // The hangar's offer, resolved from the definition (or the shared curated default).
+        readonly List<VesselClassType> _offeredVessels = new();
+
+        // Every mini HULL currently on screen (the Vessels kingdom station and the hangar row).
+        // They wear the player's domain colour, so a domain change has to reach them - see Update.
+        readonly List<Transform> _hullBodies = new();
+        Domains _lastHullDomain;
+        bool _hasHullDomain;
 
         public void Configure(LifeformMatrixToyDefinitionSO definition) => _def = definition;
 
@@ -37,30 +73,25 @@ namespace CosmicShore.Gameplay
         {
             AttachEmblem(new EmblemSource(this), 8f);
             CSDebug.Log($"[LifeformMatrix] Toy placed at {transform.position} " +
-                        "(the four element crystals, orbited by its menagerie).");
+                        "(the four element crystals, orbited by its three kingdoms).");
         }
 
         /// <summary>
-        /// The menagerie in one glyph: the CORE is the four element crystal MODELS clustered on a
+        /// The bench in one glyph: the CORE is the four element crystal MODELS clustered on a
         /// sub-ring (elements are told apart by SHAPE - all four share the emblem's one material,
         /// so nothing here can accidentally encode an element as a colour), and the SATELLITES are
-        /// four real species from the bench's own lists.
-        ///
-        /// This replaces the four "moons" that used to hang off the root: at a 2.2-unit offset
-        /// inside a 44-unit sphere they were invisible, and they were built by Instantiating a
-        /// gameplay crystal prefab - dragging a live fade-in coroutine and a transparent gameplay
-        /// material into an icon. The crystals keep their load-bearing home at the VARIANT
-        /// stations, where element identity IS the choice.
+        /// its three KINGDOMS - a real creature, a real plant, a real hull, in the same order as
+        /// the row a pass opens. "You are the elements; these are the three things you can let go."
         /// </summary>
         sealed class EmblemSource : ToyEmblem.IEmblemSource
         {
             readonly LifeformMatrixToy _toy;
             public EmblemSource(LifeformMatrixToy toy) => _toy = toy;
 
-            public int SatelliteCount => 4;
+            public int SatelliteCount => Kingdoms.Length;
 
-            // One material for all four crystals AND the species: that is what makes "elements
-            // have SHAPE signatures, never colour signatures" true by construction here.
+            // One material for all four crystals AND the kingdom samples: that is what makes
+            // "elements have SHAPE signatures, never colour signatures" true by construction here.
             public bool UsesSharedMaterial => true;
 
             public bool TryBuildSlot(int slot, Transform holder, float radius, Material shared, out bool heavy)
@@ -68,7 +99,7 @@ namespace CosmicShore.Gameplay
                 heavy = false;
                 return slot == 0
                     ? BuildCrystalCore(holder, radius, shared)
-                    : _toy.TryBuildSpeciesSatellite(slot - 1, holder, radius, shared);
+                    : _toy.TryBuildKingdomSatellite(Kingdoms[slot - 1], holder, radius, shared);
             }
 
             static bool BuildCrystalCore(Transform holder, float radius, Material shared)
@@ -91,57 +122,86 @@ namespace CosmicShore.Gameplay
             public bool TryGetLiveKey(out object key)
             {
                 key = null;
-                return false; // the menagerie's roster is authored, not live
+                return false; // the three kingdoms never change - nothing to rebuild against
             }
 
             public bool TryGetLiveTint(out Color tint)
             {
                 tint = default;
+                // Deliberately dead, even though the hangar's STATIONS re-tint on a domain change:
+                // one shared material paints the four element crystals too, and tinting it would
+                // make an element read as a colour. The emblem stays the toy's own accent.
                 return false;
             }
         }
 
         /// <summary>
-        /// Satellite <paramref name="index"/> of the emblem: first and middle fauna, then first and
-        /// middle flora, so the ring samples both halves of the menagerie. A short list skips its
-        /// slot rather than showing the same creature twice.
+        /// One emblem satellite per kingdom, each built from that kingdom's OWN content: the first
+        /// fauna species, the first flora species, the first hull on the hangar's roster. A kingdom
+        /// with nothing registered leaves its slot empty rather than borrowing another's shape.
         /// </summary>
-        bool TryBuildSpeciesSatellite(int index, Transform holder, float radius, Material shared)
+        bool TryBuildKingdomSatellite(Kingdom kingdom, Transform holder, float radius, Material shared)
         {
-            var fauna = _def ? _def.Fauna : null;
-            var flora = _def ? _def.Flora : null;
-
-            FaunaConfigurationSO[] faunaConfigs = null;
-            FloraConfigurationSO[] floraConfigs = null;
-
-            switch (index)
+            GameObject model = null;
+            switch (kingdom)
             {
-                case 0: faunaConfigs = SpeciesConfigs(fauna, 0); break;
-                case 1: faunaConfigs = SpeciesConfigs(fauna, fauna?.Length / 2 ?? 0); break;
-                case 2: floraConfigs = SpeciesConfigs(flora, 0); break;
-                default: floraConfigs = SpeciesConfigs(flora, flora?.Length / 2 ?? 0); break;
+                case Kingdom.Fauna:
+                {
+                    var fauna = ValidFauna();
+                    if (fauna.Count == 0) return false;
+                    if (!AddSpeciesModel(fauna[0].ElementConfigs, null, radius, out model, shared))
+                        return false;
+                    break;
+                }
+                case Kingdom.Flora:
+                {
+                    var flora = ValidFlora();
+                    if (flora.Count == 0) return false;
+                    if (!AddSpeciesModel(null, flora[0].ElementConfigs, radius, out model, shared))
+                        return false;
+                    break;
+                }
+                default:
+                    ResolveVesselOffer();
+                    if (_offeredVessels.Count == 0) return false;
+                    // Built UNPARENTED first: the model builder fits by world bounds and assumes an
+                    // origin-anchored, unrotated, unit-scale root.
+                    if (!ToyVesselRoster.TryBuildHull(Context, _offeredVessels[0], radius, shared, out model))
+                        return false;
+                    break;
             }
 
-            if (faunaConfigs == null && floraConfigs == null) return false;
-            if (!AddSpeciesModel(faunaConfigs, floraConfigs, radius, out var model, shared)) return false;
-
+            if (!model) return false;
             model.transform.SetParent(holder, false);
             return true;
         }
 
-        static FaunaConfigurationSO[] SpeciesConfigs(LifeformMatrixToyDefinitionSO.FaunaSpecies[] list, int index)
+        // ── What the bench can actually show ─────────────────────────────────
+        //
+        // A species entry with no element configs has nothing to build a station from, so it is
+        // dropped ONCE here rather than tested at each of the three places that ask (does this
+        // kingdom have anything? what does its icon look like? what goes in its row?). Filtering
+        // before laying out is also what keeps a row dense - a skipped entry must not leave a hole
+        // the player flies through and nothing happens.
+
+        List<LifeformMatrixToyDefinitionSO.FaunaSpecies> ValidFauna()
         {
-            if (list == null || index < 0 || index >= list.Length) return null;
-            var species = list[index];
-            return species?.ElementConfigs is { Length: > 0 } ? species.ElementConfigs : null;
+            var valid = new List<LifeformMatrixToyDefinitionSO.FaunaSpecies>();
+            if (_def && _def.Fauna != null)
+                foreach (var entry in _def.Fauna)
+                    if (entry?.ElementConfigs is { Length: > 0 }) valid.Add(entry);
+            return valid;
         }
 
-        static FloraConfigurationSO[] SpeciesConfigs(LifeformMatrixToyDefinitionSO.FloraSpecies[] list, int index)
+        List<LifeformMatrixToyDefinitionSO.FloraSpecies> ValidFlora()
         {
-            if (list == null || index < 0 || index >= list.Length) return null;
-            var species = list[index];
-            return species?.ElementConfigs is { Length: > 0 } ? species.ElementConfigs : null;
+            var valid = new List<LifeformMatrixToyDefinitionSO.FloraSpecies>();
+            if (_def && _def.Flora != null)
+                foreach (var entry in _def.Flora)
+                    if (entry?.ElementConfigs is { Length: > 0 }) valid.Add(entry);
+            return valid;
         }
+
 
         /// <summary>
         /// Pure-visual clone of an element's crystal MODEL (the element's canonical in-world
@@ -163,23 +223,46 @@ namespace CosmicShore.Gameplay
             return visual;
         }
 
+        // ── Layering ─────────────────────────────────────────────────────────
+
         // The player flies AT the matrix and keeps flying: each successive matrix sits at a
         // FURTHER radius from the cell centre, so a pass through one layer carries you toward
         // the next instead of back through the previous one. The toy faces the cell centre,
         // so outward is -forward.
         Vector3 Outward => -transform.forward;
 
+        /// <summary>
+        /// Where layer <paramref name="layer"/> sits, in spacings out from the toy: 1.5, 3.5,
+        /// 5.5 … The rhythm (one clear gap of two spacings per layer) is what the player learns,
+        /// so a new layer extends it rather than re-tuning the ones before it.
+        /// </summary>
+        Vector3 LayerOrigin(int layer) =>
+            transform.position + Outward * (_def.StationSpacing * (1.5f + 2f * layer));
+
+        /// <summary>Station <paramref name="index"/> of a <paramref name="cols"/>x<paramref name="rows"/>
+        /// grid centred on <paramref name="origin"/>, laid out in the toy's own right x up plane.</summary>
+        Vector3 GridPosition(Vector3 origin, int index, int cols, int rows)
+        {
+            float spacing = _def.StationSpacing;
+            int col = index % cols;
+            int row = index / cols;
+            return origin
+                   + transform.right * (spacing * (col - (cols - 1) * 0.5f))
+                   + transform.up * (spacing * ((rows - 1) * 0.5f - row));
+        }
+
         protected override void OnActivated(IVesselStatus localVessel)
         {
-            // Toggle: a pass builds the menagerie; another pass clears everything.
-            if (_speciesGrid)
+            // Toggle: a pass builds the kingdom row; another pass clears the whole path.
+            if (_kingdomGrid)
             {
                 ClearGrid(ref _variantGrid);
-                ClearGrid(ref _speciesGrid);
+                ClearGrid(ref _branchGrid);
+                ClearGrid(ref _kingdomGrid);
                 return;
             }
 
-            BuildSpeciesGrid();
+            BuildKingdomGrid();
         }
 
         // Meshes this toy generated for its flora icons. Instance-scoped and freed here, so they
@@ -187,16 +270,17 @@ namespace CosmicShore.Gameplay
         readonly List<Mesh> _iconMeshes = new();
 
         /// <summary>
-        /// The domain a species icon wears. The local player's, matching what a station would
-        /// actually spawn (see SpawnFaunaVariant), with Jade as the neutral fallback.
+        /// The domain a station's icon wears. The local player's, matching what a pass would
+        /// actually release (fauna in your colour, a companion on your side), Jade as the
+        /// neutral fallback.
         /// </summary>
-        Domains IconDomain =>
-            Context?.GameData?.LocalPlayer?.Vessel?.VesselStatus?.Domain ?? Domains.Jade;
+        Domains IconDomain => ToyVesselRoster.PlayerDomain(Context);
 
         void OnDestroy() // teardown with the toybox
         {
             if (_variantGrid) Destroy(_variantGrid);
-            if (_speciesGrid) Destroy(_speciesGrid);
+            if (_branchGrid) Destroy(_branchGrid);
+            if (_kingdomGrid) Destroy(_kingdomGrid);
 
             foreach (var mesh in _iconMeshes)
                 if (mesh) Destroy(mesh);
@@ -210,106 +294,276 @@ namespace CosmicShore.Gameplay
             grid = null;
         }
 
-        // ── Pass 1: species matrix ───────────────────────────────────────────
-
-        void BuildSpeciesGrid()
+        GameObject NewGrid(string label)
         {
-            _speciesGrid = new GameObject("LifeformMatrix_Species");
-            _speciesGrid.transform.SetParent(transform.parent, true);
+            // Any hull that belonged to a grid we just released is gone; drop the dead references
+            // here rather than letting them accumulate until the next domain change sweeps them.
+            for (int i = _hullBodies.Count - 1; i >= 0; i--)
+                if (!_hullBodies[i]) _hullBodies.RemoveAt(i);
 
-            float spacing = _def.StationSpacing;
-            // One layer OUTWARD from the toy (away from the cell centre): fly through the toy,
-            // keep flying, and the species matrix is directly ahead - FAUNA on the lower row,
-            // FLORA on the upper row (a full menagerie in one wall).
-            Vector3 origin = transform.position + Outward * (spacing * 1.5f);
-            Vector3 right = transform.right;
-            Vector3 up = transform.up;
-
-            int faunaCount = 0;
-            if (_def.Fauna != null)
-                foreach (var species in _def.Fauna)
-                {
-                    if (species?.ElementConfigs is not { Length: > 0 }) continue;
-                    var pos = origin - up * (spacing * 0.5f)
-                              + right * (spacing * (faunaCount - (_def.Fauna.Length - 1) * 0.5f));
-                    // The station IS its creature: a mini model of the species, anonymous sphere
-                    // only when the prefab carries no visible geometry.
-                    bool builtFauna = AddSpeciesModel(species.ElementConfigs, null,
-                        _def.StationRadius, out var faunaModel);
-                    var station = CreateStation(_speciesGrid.transform, pos, species.Name,
-                        _def.StationRadius, Definition.AccentColor,
-                        bodySphere: !builtFauna, model: faunaModel);
-                    var captured = species;
-                    station.OnVesselPassed = () => BuildVariantGrid(captured.Name, captured.ElementConfigs, null);
-                    faunaCount++;
-                }
-
-            int floraCount = 0;
-            if (_def.Flora != null)
-                foreach (var species in _def.Flora)
-                {
-                    if (species?.ElementConfigs is not { Length: > 0 }) continue;
-                    var pos = origin + up * (spacing * 0.5f)
-                              + right * (spacing * (floraCount - (_def.Flora.Length - 1) * 0.5f));
-                    bool builtFlora = AddSpeciesModel(null, species.ElementConfigs,
-                        _def.StationRadius, out var floraModel);
-                    var station = CreateStation(_speciesGrid.transform, pos, species.Name,
-                        _def.StationRadius, Definition.AccentColor,
-                        bodySphere: !builtFlora, model: floraModel);
-                    var captured = species;
-                    station.OnVesselPassed = () => BuildVariantGrid(captured.Name, null, captured.ElementConfigs);
-                    floraCount++;
-                }
+            var go = new GameObject($"LifeformMatrix_{label}");
+            // Sibling of the toy (the toybox root), not a child: a grid must not inherit the toy's
+            // own bloom scaling, and it is released independently.
+            go.transform.SetParent(transform.parent, true);
+            return go;
         }
 
-        // ── Pass 2: variant matrix (element columns x level rows {1,3,5}) ───
+        /// <summary>
+        /// Re-tint every mini hull the instant the player's domain changes (through the
+        /// domain-changer toy or anywhere else). They are built once when their grid opens, so
+        /// without this a hull keeps the colour it was born with - and here that colour is a
+        /// CLAIM: it says which side the companion you release will fly for.
+        /// </summary>
+        protected override void Update()
+        {
+            base.Update();
+            if (_hullBodies.Count == 0) return;
+
+            Domains domain = IconDomain;
+            if (_hasHullDomain && domain == _lastHullDomain) return;
+            _hasHullDomain = true;
+            _lastHullDomain = domain;
+
+            Color color = ToyVesselRoster.PreviewColor(Context, Definition.AccentColor);
+            for (int i = _hullBodies.Count - 1; i >= 0; i--)
+            {
+                if (!_hullBodies[i]) { _hullBodies.RemoveAt(i); continue; }
+                // Dispatches: the kingdom GLYPH in this list is flat and gets repainted, the hangar
+                // STATIONS are live hulls drawing with shared project materials and get their
+                // domain material swapped plus their vision mark re-stamped. Repainting a live one
+                // would recolour every ship in the game.
+                ToyVesselRoster.ApplyDomain(Context, _hullBodies[i], color);
+            }
+        }
+
+        // ── Pass 1: the kingdom row ──────────────────────────────────────────
+
+        void BuildKingdomGrid()
+        {
+            // Only kingdoms that have something to offer take a slot, and the row is laid out
+            // over the survivors - an empty roster leaves no hole for the player to fly through.
+            var offered = new List<Kingdom>(Kingdoms.Length);
+            foreach (var kingdom in Kingdoms)
+                if (HasContent(kingdom)) offered.Add(kingdom);
+
+            if (offered.Count == 0)
+            {
+                CSDebug.LogWarning("[LifeformMatrix] Nothing registered in any kingdom - matrix not opened.");
+                return;
+            }
+
+            _kingdomGrid = NewGrid("Kingdoms");
+
+            Vector3 origin = LayerOrigin(0);
+            // A kingdom station reads as a top-level choice: half again the radius of the species
+            // stations behind it, so the row you meet first is the biggest thing in the corridor.
+            float radius = _def.StationRadius * 1.5f;
+
+            for (int i = 0; i < offered.Count; i++)
+                BuildKingdomStation(offered[i], GridPosition(origin, i, offered.Count, 1), radius);
+        }
+
+        bool HasContent(Kingdom kingdom)
+        {
+            switch (kingdom)
+            {
+                case Kingdom.Fauna: return ValidFauna().Count > 0;
+                case Kingdom.Flora: return ValidFlora().Count > 0;
+                default:
+                    ResolveVesselOffer();
+                    return _offeredVessels.Count > 0;
+            }
+        }
+
+        void BuildKingdomStation(Kingdom kingdom, Vector3 position, float radius)
+        {
+            GameObject icon;
+            Color accent = Definition.AccentColor;
+            System.Action onPassed;
+
+            switch (kingdom)
+            {
+                case Kingdom.Fauna:
+                    // AddSpeciesModel gives its own model the turntable; only the hull below needs one.
+                    AddSpeciesModel(ValidFauna()[0].ElementConfigs, null, radius, out icon);
+                    onPassed = BuildFaunaSpeciesGrid;
+                    break;
+
+                case Kingdom.Flora:
+                    AddSpeciesModel(null, ValidFlora()[0].ElementConfigs, radius, out icon);
+                    onPassed = BuildFloraSpeciesGrid;
+                    break;
+
+                default:
+                    // The hangar wears YOUR domain colour, because that is what a pass means here:
+                    // a pilot on your side. Domain is the one thing this toy is allowed to say
+                    // with colour.
+                    accent = ToyVesselRoster.PreviewColor(Context, Definition.AccentColor);
+                    if (ToyVesselRoster.TryBuildHull(Context, _offeredVessels[0], radius, accent, out icon))
+                    {
+                        icon.AddComponent<ToyIdleSpin>().Configure(Vector3.up, 16f);
+                        _hullBodies.Add(icon.transform);
+                    }
+                    onPassed = BuildHangarGrid;
+                    break;
+            }
+
+            var station = CreateStation(_kingdomGrid.transform, position, kingdom.ToString(),
+                radius, accent, bodySphere: !icon, model: icon);
+            station.OnVesselPassed = onPassed;
+        }
+
+        // ── Pass 2a: a kingdom's species row ─────────────────────────────────
+
+        void BuildFaunaSpeciesGrid()
+        {
+            ClearGrid(ref _variantGrid);
+            ClearGrid(ref _branchGrid);
+            _branchGrid = NewGrid("Fauna");
+
+            var species = ValidFauna();
+            Vector3 origin = LayerOrigin(1);
+            for (int i = 0; i < species.Count; i++)
+            {
+                var entry = species[i];
+                Vector3 pos = GridPosition(origin, i, species.Count, 1);
+                // The station IS its creature: a mini model of the species, anonymous sphere
+                // only when the prefab carries no visible geometry.
+                bool built = AddSpeciesModel(entry.ElementConfigs, null, _def.StationRadius, out var model);
+                var station = CreateStation(_branchGrid.transform, pos, entry.Name,
+                    _def.StationRadius, Definition.AccentColor, bodySphere: !built, model: model);
+                var captured = entry;
+                station.OnVesselPassed = () => BuildVariantGrid(captured.Name, captured.ElementConfigs, null);
+            }
+        }
+
+        void BuildFloraSpeciesGrid()
+        {
+            ClearGrid(ref _variantGrid);
+            ClearGrid(ref _branchGrid);
+            _branchGrid = NewGrid("Flora");
+
+            var species = ValidFlora();
+            Vector3 origin = LayerOrigin(1);
+            for (int i = 0; i < species.Count; i++)
+            {
+                var entry = species[i];
+                Vector3 pos = GridPosition(origin, i, species.Count, 1);
+                bool built = AddSpeciesModel(null, entry.ElementConfigs, _def.StationRadius, out var model);
+                var station = CreateStation(_branchGrid.transform, pos, entry.Name,
+                    _def.StationRadius, Definition.AccentColor, bodySphere: !built, model: model);
+                var captured = entry;
+                station.OnVesselPassed = () => BuildVariantGrid(captured.Name, null, captured.ElementConfigs);
+            }
+        }
+
+        // ── Pass 2b: the hangar row ──────────────────────────────────────────
+
+        void ResolveVesselOffer() =>
+            ToyVesselRoster.Resolve(_def ? _def.VesselRoster : null, _offeredVessels);
+
+        /// <summary>
+        /// The hangar: one mini hull per class, in the player's own domain colour. Unlike the
+        /// vessel changer's matrix this excludes NOTHING - you release a companion, you do not
+        /// become it, so "the one you are flying" is a perfectly good thing to ask for a wingman in.
+        /// </summary>
+        void BuildHangarGrid()
+        {
+            ClearGrid(ref _variantGrid);
+            ClearGrid(ref _branchGrid);
+            ResolveVesselOffer();
+
+            if (_offeredVessels.Count == 0)
+            {
+                CSDebug.LogWarning("[LifeformMatrix] Vessel roster is empty - hangar not opened.");
+                return;
+            }
+
+            _branchGrid = NewGrid("Hangar");
+
+            Vector3 origin = LayerOrigin(1);
+            float radius = _def.StationRadius;
+            Color color = ToyVesselRoster.PreviewColor(Context, Definition.AccentColor);
+
+            for (int i = 0; i < _offeredVessels.Count; i++)
+            {
+                var vessel = _offeredVessels[i];
+                Vector3 pos = GridPosition(origin, i, _offeredVessels.Count, 1);
+
+                // The ACTUAL ship, wearing its own materials and marked by the vessel vision band -
+                // same reasoning as the vessel changer's stations: you choose at range, where the
+                // band is at full mark, and arrive at a real hull.
+                bool built = ToyVesselRoster.TryBuildLiveHull(Context, vessel, radius, out var model);
+                if (built)
+                {
+                    model.AddComponent<ToyIdleSpin>().Configure(Vector3.up, 16f);
+                    _hullBodies.Add(model.transform);
+                }
+
+                var station = CreateStation(_branchGrid.transform, pos, vessel.ToString(),
+                    radius, color, bodySphere: !built, model: model);
+                var captured = vessel;
+                station.OnVesselPassed = () => ReleaseCompanion(captured, pos);
+            }
+        }
+
+        // ── Pass 3: variant row (one station per ELEMENT — that is the whole matrix) ─────
 
         void BuildVariantGrid(string speciesName,
             FaunaConfigurationSO[] faunaConfigs, FloraConfigurationSO[] floraConfigs)
         {
             ClearGrid(ref _variantGrid);
-            _variantGrid = new GameObject($"LifeformMatrix_{speciesName}");
-            _variantGrid.transform.SetParent(transform.parent, true);
+            _variantGrid = NewGrid(speciesName);
 
             float spacing = _def.StationSpacing;
-            // A further layer OUTWARD than the species row: fly through a species, keep
-            // flying, and its variant matrix is directly ahead at a larger radius from the
-            // cell centre - each pass carries you toward the next layer, never back through
-            // the previous one.
-            Vector3 origin = transform.position + Outward * (spacing * 3.5f);
+            Vector3 origin = LayerOrigin(2);
             Vector3 right = transform.right;
-            Vector3 up = transform.up;
 
-            var elements = new[] { Element.Charge, Element.Mass, Element.Space, Element.Time };
-            for (int col = 0; col < elements.Length; col++)
+            for (int col = 0; col < Elements.Length; col++)
             {
-                var element = elements[col];
+                var element = Elements[col];
                 var faunaCfg = FindByElement(faunaConfigs, element);
                 var floraCfg = FindByElement(floraConfigs, element);
                 if (!faunaCfg && !floraCfg) continue; // species doesn't express this element yet
 
-                for (int row = 0; row < TestLevels.Length; row++)
-                {
-                    int level = TestLevels[row];
-                    Vector3 pos = origin
-                                  + right * (spacing * (col - (elements.Length - 1) * 0.5f))
-                                  + up * (spacing * (row - (TestLevels.Length - 1) * 0.5f));
+                Vector3 pos = origin + right * (spacing * (col - (Elements.Length - 1) * 0.5f));
 
-                    // Element identity = the crystal's SHAPE; level telegraph = its SIZE
-                    // (level 5 reads biggest before you touch it).
-                    float radius = _def.StationRadius * (1f + 0.35f * (level - 1));
-                    var station = CreateStation(_variantGrid.transform, pos,
-                        $"{speciesName} · {element} {level}", radius, Definition.AccentColor,
-                        bodySphere: false);
-                    AddElementCrystalVisual(station.transform, element, 0.6f + 0.4f * (level - 1) * 0.5f);
+                // The station SHOWS the variant it releases: the element is the crystal's
+                // SHAPE, and the crystal is drawn at that variant's own authored heart size, so
+                // the four stations differ by exactly what the four lifeforms differ by. The
+                // station sphere holds the shared radius — it is a switch, and every switch in
+                // the toybox is drawn at its own trigger radius (Docs/ToySystem § "The switch").
+                float heartScale = HeartVisualScale(faunaCfg, floraCfg);
+                var station = CreateStation(_variantGrid.transform, pos,
+                    $"{speciesName} · {element}", _def.StationRadius, Definition.AccentColor,
+                    bodySphere: false);
+                AddElementCrystalVisual(station.transform, element, heartScale);
 
-                    int capturedLevel = level;
-                    if (faunaCfg)
-                        station.OnVesselPassed = () => SpawnFaunaVariant(faunaCfg, capturedLevel, pos);
-                    else
-                        station.OnVesselPassed = () => SpawnFloraVariant(floraCfg, capturedLevel, pos);
-                }
+                if (faunaCfg)
+                    station.OnVesselPassed = () => SpawnFaunaVariant(faunaCfg, pos);
+                else
+                    station.OnVesselPassed = () => SpawnFloraVariant(floraCfg, pos);
             }
+        }
+
+        /// <summary>
+        /// How big to draw this variant's crystal on its station, as a RATIO of the platform
+        /// default heart — so a station shows the real relative size of the heart it releases
+        /// (a piranha's reads small, a shark's reads large) and the default reads as 1.
+        ///
+        /// <para>Read off whichever config the station is for, through the same resolution a
+        /// live lifeform does, so the bench cannot show a size the world will not. The 0.35
+        /// floor is legibility only: the smallest authored heart would otherwise draw at ~0.27
+        /// of the icon and read as a dot rather than as a small crystal.</para>
+        /// </summary>
+        static float HeartVisualScale(FaunaConfigurationSO faunaCfg, FloraConfigurationSO floraCfg)
+        {
+            float authored = 0f;
+            if (faunaCfg && faunaCfg.Variant != null) authored = faunaCfg.Variant.HeartWorldScale;
+            else if (floraCfg && floraCfg.Variant != null) authored = floraCfg.Variant.HeartWorldScale;
+
+            float reference = Mathf.Max(0.01f, LifeFormCrystal.DefaultHeartWorldScale);
+            return Mathf.Max(0.35f, LifeFormCrystal.ResolveHeartWorldScale(authored) / reference);
         }
 
         static T FindByElement<T>(T[] configs, Element element) where T : ScriptableObject
@@ -327,9 +581,9 @@ namespace CosmicShore.Gameplay
             return null;
         }
 
-        // ── Pass 3: spawn the exact variant ──────────────────────────────────
+        // ── Pass 4: release ──────────────────────────────────────────────────
 
-        void SpawnFaunaVariant(FaunaConfigurationSO config, int level, Vector3 position)
+        void SpawnFaunaVariant(FaunaConfigurationSO config, Vector3 position)
         {
             // Outward-layered stations can sit beyond the membrane - resolve the cell from the
             // TOY's position (always inside) and spawn the creature at the station.
@@ -340,13 +594,12 @@ namespace CosmicShore.Gameplay
                 return;
             }
 
-            // Runtime clone so the authored asset keeps its level; the clone IS the lineage
+            // Runtime clone so the authored asset is never mutated; the clone IS the lineage
             // config, so reproduction inherits the variant identity too.
             var clone = Instantiate(config);
-            clone.name = $"{config.name} (L{level})";
-            clone.InitialLevel = level;
+            clone.name = config.name;
             // The matrix is the tuning BENCH: a station spawns the EXACT variant it shows, so
-            // the cell's element/level spread must not re-roll it here.
+            // the cell's element spread must not re-roll it here.
             clone.SpreadElements = false;
 
             // Spawn INTO THE FOOD, not at the station. The variant stations are layered
@@ -377,7 +630,7 @@ namespace CosmicShore.Gameplay
                         $"on the cell's densest mass at {anchor} (station was at {position})");
         }
 
-        void SpawnFloraVariant(FloraConfigurationSO config, int level, Vector3 position)
+        void SpawnFloraVariant(FloraConfigurationSO config, Vector3 position)
         {
             var cell = Cell.FindCellContaining(transform.position);
             if (!cell)
@@ -387,8 +640,7 @@ namespace CosmicShore.Gameplay
             }
 
             var clone = Instantiate(config);
-            clone.name = $"{config.name} (L{level})";
-            clone.InitialLevel = level;
+            clone.name = config.name;
             // Bench semantics - see SpawnFaunaVariant.
             clone.SpreadElements = false;
 
@@ -410,6 +662,40 @@ namespace CosmicShore.Gameplay
                 ? "growing (from seed prisms - watch them build)"
                 : "FROZEN - cell is at Frenzy; clear prism mass (graze/joust/ability) and growth resumes";
             CSDebug.Log($"[LifeformMatrix] Spawned {spawned}/{count} x {clone.name} at {position}; growth: {growth}");
+        }
+
+        /// <summary>
+        /// Release an AI-piloted vessel of <paramref name="vessel"/> in the LOCAL PLAYER'S domain.
+        /// Routed through the menu's networked spawn pipeline, so the companion is an ordinary
+        /// server-owned AI player: it replicates to the whole party, it flies the lava lamp on
+        /// autopilot, and it is despawned with every other AI when the menu is left.
+        ///
+        /// It lands one spacing back toward the cell CENTRE from the station, facing in. The player
+        /// is still flying OUTWARD through the matrix when it appears, so the two are moving apart
+        /// - a bot materialising on the nose would be a vessel-vs-vessel impact, not a release.
+        /// </summary>
+        void ReleaseCompanion(VesselClassType vessel, Vector3 stationPosition)
+        {
+            var init = Context?.VesselInitializer;
+            if (!init)
+            {
+                CSDebug.LogWarning("[LifeformMatrix] No menu vessel initializer - cannot release a companion.");
+                return;
+            }
+
+            // The toy faces the cell centre, so +forward is "inward" for both the offset and the
+            // heading. No cell lookup needed, and it stays correct if the toy is ever re-placed.
+            Vector3 inward = transform.forward;
+            Vector3 position = stationPosition + inward * _def.StationSpacing;
+            var pose = new Pose(position, Quaternion.LookRotation(inward, transform.up));
+
+            Domains domain = ToyVesselRoster.PlayerDomain(Context);
+            // "Requested", not "released": on a party CLIENT this is a ServerRpc going out, and
+            // the server is the only thing that can say whether a companion actually appeared
+            // (it logs that end itself). Claiming completion here would be a lie on every
+            // machine that is not the host.
+            init.RequestSpawnAiCompanion(vessel, domain, pose);
+            CSDebug.Log($"[LifeformMatrix] Requested a {vessel} companion ({domain}) at {position}.");
         }
 
         // ── Stations ─────────────────────────────────────────────────────────
@@ -476,9 +762,11 @@ namespace CosmicShore.Gameplay
             float radius, Color accent, bool bodySphere = true, GameObject model = null)
         {
             var go = ToyFactory.CreateBareRoot(label, parent, position, transform.position, radius * 1.6f);
-            // Clamped against the bench's spacing: a level-5 variant station is 2.4x the base
-            // radius, so its trigger overruns half the gap to its neighbour and an un-clamped ring
-            // would interpenetrate the one beside it.
+            // Clamped against the bench's spacing: a KINGDOM station is 1.5x the base radius,
+            // so its trigger can overrun half the gap to its neighbour and an un-clamped ring
+            // would interpenetrate the one beside it. (Variant stations are all one radius now
+            // that levels are gone — the size difference between the four moved onto the
+            // CRYSTAL each station draws, which is inside the ring rather than being it.)
             float ringRadius = ToyFactory.StationRingRadius(radius * 1.6f, _def.StationSpacing);
             ToyFactory.AddSwitchRing(go.transform, ringRadius, accent);
             if (bodySphere)
