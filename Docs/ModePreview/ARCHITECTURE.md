@@ -221,6 +221,19 @@ player — at all three places the AI retarget is restored (exit-flight, stop, a
 whole feature is server-side only: a party client previews without one rather than asking the
 host to spawn into its menu.
 
+**A fire-and-forget spawn cannot be cancelled, so the teardown has to be able to reach an AI
+that does not exist yet.** Tapping out during the ~5 s poll runs the despawn while
+`_sparringPlayer` is still null — it removes nothing, and the AI then arrives into a struck
+arena and flies on in the menu forever. Two things close it, and neither is "cancel the
+watcher": the watcher deliberately does **not** take the session's `CancellationToken` (a
+cancelled watcher orphans the very AI it was sent to collect, so it runs to its own deadline
+instead), and the teardown bumps a **generation counter** which the watcher compares against
+the one it captured — a partner nobody is waiting for any more despawns itself on arrival
+through the same `DespawnAiPlayer` path. The watcher also re-checks each frame that a server
+still exists, so a menu torn down under it exits rather than yielding forever. *General shape:
+when a request is already away, the question is not how to stop it but how the result gets
+cleaned up if nobody wants it.*
+
 ### 1.1.4 The window renders at the size it is DRAWN at
 
 `renderHeight` was a fixed authored **360**, which is not a resolution — it is a resolution the

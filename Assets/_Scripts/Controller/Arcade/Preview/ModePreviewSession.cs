@@ -450,7 +450,7 @@ namespace CosmicShore.Gameplay
 
                 // A duel needs somebody to duel: modes that seat two or more get a sparring
                 // partner - a dummy in the mode's own hull, nothing clever.
-                SpawnSparringPartnerAsync(definition, ct).Forget();
+                SpawnSparringPartnerAsync(definition).Forget();
             }
             catch (OperationCanceledException)
             {
@@ -788,6 +788,14 @@ namespace CosmicShore.Gameplay
         Player _sparringPlayer;
 
         /// <summary>
+        /// Bumped every time the preview stands its partner down. The spawn request is
+        /// FIRE-AND-FORGET, so a preview that ends while the AI is still spawning cannot despawn
+        /// something that does not exist yet - the arrival watcher compares this against the
+        /// generation it captured and despawns a partner nobody is waiting for any more.
+        /// </summary>
+        int _sparringGeneration;
+
+        /// <summary>
         /// A DUMMY OPPONENT for a mode that needs one - Joust previews as a joust, not a solo lap.
         ///
         /// <para>Reuses <see cref="MenuServerPlayerVesselInitializer.RequestSpawnAiCompanion"/> -
@@ -797,13 +805,14 @@ namespace CosmicShore.Gameplay
         /// the AI set is snapshotted first and the arrival is whoever appears that was not there
         /// before.</para>
         /// </summary>
-        async UniTaskVoid SpawnSparringPartnerAsync(ModePreviewDefinitionSO definition,
-                                                    CancellationToken ct)
+        async UniTaskVoid SpawnSparringPartnerAsync(ModePreviewDefinitionSO definition)
         {
             if (!_wantsSparringPartner || _sparringPlayer != null) return;
             if (!vesselInitializer) return;
             var nm = Unity.Netcode.NetworkManager.Singleton;
             if (!nm || !nm.IsServer) return;      // a party client cannot spawn networked bots
+
+            int generation = _sparringGeneration;
 
             var before = new HashSet<Player>();
             foreach (var ip in gameData.Players)
@@ -818,24 +827,42 @@ namespace CosmicShore.Gameplay
             vesselInitializer.RequestSpawnAiCompanion(ResolveVessel(definition), domain,
                                                       _arena.SpawnPose(definition, seat: 1));
 
-            // Find the arrival (the spawn chain is async and hands nothing back).
+            // Find the arrival. Deliberately NOT cancelled by `ct`: the request is already
+            // away, so a cancelled watcher would orphan the AI it was sent to collect. The loop
+            // is bounded by its own deadline instead, and a partner nobody wants any more is
+            // despawned on arrival (the generation check below).
+            Player arrival = null;
             float deadline = Time.unscaledTime + 5f;
-            while (Time.unscaledTime < deadline && _sparringPlayer == null)
+            while (Time.unscaledTime < deadline && arrival == null)
             {
-                await UniTask.Yield(PlayerLoopTiming.Update, ct);
+                await UniTask.Yield(PlayerLoopTiming.Update);
+                nm = Unity.Netcode.NetworkManager.Singleton;
+                if (!nm || !nm.IsServer || gameData == null) return;   // menu torn down under us
                 foreach (var ip in gameData.Players)
                 {
                     if (ip is not Player p || !p.NetIsAI.Value || before.Contains(p)) continue;
-                    _sparringPlayer = p;
+                    arrival = p;
                     break;
                 }
             }
 
-            if (_sparringPlayer == null)
+            if (arrival == null)
             {
                 CSDebug.LogWarning("[ModePreview] Sparring partner never arrived - previewing solo.");
                 return;
             }
+
+            if (generation != _sparringGeneration)
+            {
+                // The preview ended while this one was spawning. Nobody could have despawned it -
+                // it did not exist when the teardown ran - so it cleans itself up here.
+                DespawnAiPlayer(arrival);
+                CSDebug.LogVerbose(CSLogChannel.ArcadeLaunch,
+                    "[ModePreview] Sparring partner arrived after the preview ended - despawned.");
+                return;
+            }
+
+            _sparringPlayer = arrival;
 
             // Hunt THIS arena, not the menu 120k units away.
             var pilot = Alive(_sparringPlayer.Vessel) ? _sparringPlayer.Vessel.VesselStatus?.AIPilot : null;
@@ -851,8 +878,21 @@ namespace CosmicShore.Gameplay
         /// </summary>
         void DespawnSparringPartner()
         {
+            // Bumped FIRST: it orphans any request still in flight, so an AI that arrives after
+            // this point despawns itself rather than flying on in a struck arena.
+            _sparringGeneration++;
+
             var partner = _sparringPlayer;
             _sparringPlayer = null;
+            DespawnAiPlayer(partner);
+        }
+
+        /// <summary>
+        /// Take an AI companion down the way the platform spawns it: vessel NetworkObject first,
+        /// then the player's. Server-only, mirroring the spawn.
+        /// </summary>
+        static void DespawnAiPlayer(Player partner)
+        {
             if (partner == null) return;
 
             var nm = Unity.Netcode.NetworkManager.Singleton;
