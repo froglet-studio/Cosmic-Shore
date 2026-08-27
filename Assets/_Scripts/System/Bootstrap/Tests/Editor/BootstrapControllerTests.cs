@@ -1,8 +1,10 @@
 #if UNITY_EDITOR
 using System.Linq;
 using System.Reflection;
+using System.Text.RegularExpressions;
 using NUnit.Framework;
 using UnityEngine;
+using UnityEngine.TestTools;
 
 namespace CosmicShore.Core
 {
@@ -124,12 +126,14 @@ namespace CosmicShore.Core
             // could replace the sentinel. Written immediately before the invoke, nothing can.
             Application.targetFrameRate = FrameRateSentinel;
 
-            // The guard path calls Destroy(gameObject), which throws in Edit Mode and surfaces
-            // through reflection as TargetInvocationException. Swallowed rather than asserted so
-            // the test still holds if a future Unity makes edit-mode Destroy a no-op — either
-            // way, execution never reaches the work below the guard.
-            try { EditModeLifecycle.InvokePrivate(manager, "Awake"); }
-            catch (TargetInvocationException) { }
+            // The guard path calls Destroy(gameObject). In Edit Mode that does NOT throw — Unity
+            // logs an error and declines to destroy — and the Test Framework fails a test on any
+            // unhandled error log, so the expectation has to be declared up front. Matched by
+            // regex because the real message runs to a second line ("Destroying an object in edit
+            // mode destroys it permanently.").
+            LogAssert.Expect(LogType.Error, new Regex("Destroy may not be called from edit mode"));
+
+            EditModeLifecycle.InvokePrivate(manager, "Awake");
 
             // ConfigurePlatform is the first observable thing after the guard returns. If it had
             // run with a null config it would have written 60.

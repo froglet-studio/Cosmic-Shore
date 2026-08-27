@@ -146,6 +146,7 @@ Two riders:
 
 - **A test that writes real editor settings must restore them.** `Application.targetFrameRate`, `QualitySettings.vSyncCount` and `Screen.sleepTimeout` are global; snapshot in `SetUp`, restore in `TearDown`, and start from a sentinel value distinct from anything asserted.
 - **`MainThreadDispatcher` is uninitialised in Edit Mode.** Its `Init` is `[RuntimeInitializeOnLoadMethod(BeforeSceneLoad)]`, so `IsOnMainThread` reports `false` and anything guarding on it (`SceneTransitionManager.SetFadeImmediate`) bails with a `Debug.LogError` — which the Test Framework counts as a failure on top of the assert. Call `EditModeLifecycle.EnsureMainThreadDispatcherInitialized()` in `SetUp`.
+- **`Object.Destroy` in Edit Mode logs an error; it does not throw and it does not destroy.** So a `try`/`catch` around it catches nothing and the unhandled error log fails the test on its own. Declare it up front with `LogAssert.Expect(LogType.Error, new Regex("Destroy may not be called from edit mode"))` — a regex, because the real message runs to a second line. This applies to any code path a test drives into a `Destroy`, not just `AppManager`'s duplicate guard.
 
 ### Pattern: Mock Implementation of Interfaces
 `TestRoundStats` implements `IRoundStats` without Netcode dependency. Allows testing `Cleanup()` logic in pure C#.
