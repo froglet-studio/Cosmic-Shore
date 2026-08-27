@@ -1,3 +1,4 @@
+using CosmicShore.Data;
 using CosmicShore.Gameplay;
 using UnityEngine;
 
@@ -45,6 +46,19 @@ namespace CosmicShore.ScriptableObjects
         [Header("Look")]
         [SerializeField, Tooltip("Accent colour for the toy's world body + label.")]
         Color accentColor = Color.white;
+
+        /// <summary>
+        /// What KIND of toy this is, keyed on the fundamental it composes with. Declared per
+        /// subclass in code rather than serialized on the asset, because a toy's category is a
+        /// property of what the toy DOES and an authored field is a field that can disagree with
+        /// the behaviour underneath it.
+        ///
+        /// <para>Abstract on purpose: a new toy cannot be added without saying which fundamental
+        /// it reaches for, and a toy that fits none of them is the signal to have the
+        /// fundamentals conversation (CLAUDE.md, "Process for curating fundamentals") rather than
+        /// to widen the enum.</para>
+        /// </summary>
+        public abstract ToyCategory Category { get; }
 
         public string Id => string.IsNullOrEmpty(id) ? name : id;
         public string DisplayName => displayName;
