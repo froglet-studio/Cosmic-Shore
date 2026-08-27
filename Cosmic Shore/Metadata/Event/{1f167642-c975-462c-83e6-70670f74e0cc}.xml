@@ -53,10 +53,13 @@
 			<destination>{29b21f43-faee-47e0-942f-ef0f6c99c149}</destination>
 		</relationship>
 		<relationship name="output">
-			<destination>{1cb7eac1-59ec-4e22-850e-31ed48adf13e}</destination>
+			<destination>{c95e9b13-3e1c-44c7-afa5-c09d8cb1d20c}</destination>
 		</relationship>
 	</object>
 	<object class="EventAutomatableProperties" id="{399f558a-40c4-4c7c-9d30-df8b11f6d9c2}">
+		<property name="maxVoices">
+			<value>11</value>
+		</property>
 		<property name="minimumDistance">
 			<value>0</value>
 		</property>

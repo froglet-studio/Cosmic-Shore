@@ -34,6 +34,23 @@ namespace CosmicShore.Gameplay
     {
         public static TournamentController Instance { get; private set; }
 
+        // Pure C# Reflex singleton: a new one is constructed per play session, but the old one's
+        // SceneManager.sceneLoaded subscription (a Unity static event that also fires in edit
+        // mode) survives a domain-reload-free play exit — session N would have N controllers
+        // folding standings. Tear the stale instance down before the next session constructs.
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        static void ResetStatics()
+        {
+            Instance?.Teardown();
+            Instance = null;
+        }
+
+        void Teardown()
+        {
+            _gameData.OnMiniGameEnd.OnRaised -= HandleMiniGameEnd;
+            SceneManager.sceneLoaded -= HandleSceneLoaded;
+        }
+
         readonly GameDataSO _gameData;
         readonly TournamentDataSO _tournament;
         readonly SceneNameListSO _sceneNames;

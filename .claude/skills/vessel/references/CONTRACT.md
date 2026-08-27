@@ -220,13 +220,29 @@ juice through `ElementBars` when a vessel wants it.
   than NRE). Rigged art must use `CaptureRestRotations`/`RotatePartFromRest`/rest-aware
   `ResetAnimation` — driving bones toward absolute rotations assumes identity rest and flattens
   a rig (two shipped Dolphin bugs came from this root).
+- **A LABELLED shape is not a SHAPE — measure its MAGNITUDE before trusting a rig.** Of the
+  three unwired `*_shapekey_with_animations` rigs, only the **Dolphin's carries a real morph**
+  (mass moves 10,909 verts, time 9,272). The **Rhino's and Urchin's four element shapes each
+  move ONE vertex by ZERO** — name-only placeholders. Swapping either rig in turns the morph
+  audit GREEN while the hull morphs by nothing, which is worse than the current honest zero.
+  Read the FBX `Geometry` sub-records of subtype `Shape` and sum the deltas. Evidence + the
+  per-file table: `Docs/VESSEL_CONSTRUCTION.md` §4.
 - **Rig swaps** (Dolphin/Urchin/Rhino placeholders → their `*_shapekey_with_animations` rigs)
-  are a hands-on editor pass: run `FrogletTools > Vessels > Plan Vessel Rig Swap` (report-only)
-  and follow its printed procedure — migrate gameplay objects to mapped bones, retire legacy
-  MeshRenderers, re-fit colliders by eye, re-point ship geometry, **clear the animation's part
-  fields** so they re-resolve to bones, re-run the morph audit.
+  are a hands-on editor pass: run `FrogletTools > Vessels > Plan Vessel Rig Swap`
+  (report-only) and follow its printed procedure — migrate gameplay objects to mapped bones,
+  retire legacy MeshRenderers, re-fit colliders by eye, re-point ship geometry, **clear the
+  animation's part fields** so they re-resolve to bones, re-run the morph audit. Order of work
+  + the salvage-before-delete gate: `Docs/VESSEL_CONSTRUCTION_FOLLOWUP.md`.
+- **A rig swap moves every measured mount on the vessel.** The Rhino rig is provably the
+  shipped hull merged with its wings and offset **+1.5545 in z** (every lathe ring matches at
+  identical radius and vertex count), so FX mounts, colliders and any hand-placed transform
+  must be RE-MEASURED against the rig, never translated by hand. Its wings also stop being
+  separate GameObjects, so anything parented to them re-parents to bones.
 - Audit: `FrogletTools > Vessels > Audit Vessel Elemental Morphs` (asset-only, exact runtime
   discovery). Mislabeled shapes fail **silently** in game — the audit is the only detector.
+  But it reports shapes it DISCOVERS by name, i.e. presence, not magnitude, so an empty
+  labelled shape passes it. Treat a green audit as necessary, not sufficient, until it
+  measures deltas.
   Edit-mode tests: `VesselElementalMorphTests`, `VesselRigPartResolutionTests`.
 
 ## 8. The HUD controller/view pair

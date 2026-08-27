@@ -46,7 +46,14 @@ namespace CosmicShore.Utility
                  "Set it at (or near) the plant's own live-prism budget and the species reads as " +
                  "a colonizer: a plant completes itself, seeds one neighbour, and only funds " +
                  "another after grazing forces it to regrow. Lower converts growth to population " +
-                 "faster.")]
+                 "faster.\n\n" +
+                 "This is the SPECIES baseline, not the final number: THE TIME LAW scales it by " +
+                 "the plant's own ELEMENT at spawn (Time x1.25 rate, so a smaller quota; the " +
+                 "other three x0.8). It has to be code rather than data because this field is " +
+                 "authored per CONFIG while the element is ROLLED per plant - see " +
+                 "Flora.ResolveGrowthPerOffspring and Docs/ECOSYSTEM.md \u00a738. A LATTICE " +
+                 "species ignores this field entirely: its births are a population event on the " +
+                 "cell's fauna-wave clock (\u00a732.7).")]
         [Min(0)] public int GrowthPerOffspring = 0;
 
         [Tooltip("Offspring seeded per birth.")]
@@ -89,21 +96,7 @@ namespace CosmicShore.Utility
                  "prefabs. Leave Enabled off to keep the prefab as authored.")]
         public FloraVariantTuning Variant = new();
 
-        [Tooltip("Level (1..5) this flora SEEDS at. Default 1, and level is otherwise EARNED " +
-                 "by reproducing - it is never ROLLED at spawn (Docs/ECOSYSTEM.md §33). " +
-                 "Authoring it above 1 is a deliberate MODE surface; no shipped flora does, and " +
-                 "the Lifeform Matrix bench is its only current caller.\n\n" +
-                 "NOTE: a species with GrowthPerOffspring = 0 does not reproduce, so it can " +
-                 "never level - it is a level-1 forest forever. Author reproduction if that " +
-                 "species is meant to show a size range.")]
-        [Range(1, 5)] public int InitialLevel = 1;
-
-        [Tooltip("Leaf prism scale multiplier per level above 1. Leaves only - the heart's size " +
-                 "is the ONE shared curve on ElementalCrystalSet, so it is the same for every " +
-                 "species and element at a given level.")]
-        [Min(1f)] public float LeafScalePerLevel = 1.15f;
-
-        [Header("Variant spread - one config spans the element x level matrix")]
+        [Header("Variant spread - one config spans all four of a species' elements")]
         [Tooltip("Roll the ELEMENT per spawn instead of planting this config's single element. " +
                  "The element's identity (leaf prism shape, growth tempo, shield cadence, prism " +
                  "budget) comes from the palette below, so a rolled element is expressed as " +
@@ -117,11 +110,15 @@ namespace CosmicShore.Utility
                  "on THIS config, so the cell keeps its own density tuning.")]
         public List<FloraConfigurationSO> ElementPalette = new();
 
-        // A LEVEL spread used to sit here too (LifeformLevelSpread: min/max/rarity-falloff),
-        // rolling each seeding somewhere in 1..5. It is retired: level is now earned by
-        // reproducing, so a rolled seed level would hand a plant the record of a life it has
-        // not lived (Docs/ECOSYSTEM.md §33, superseding §17's level half). Element spread above
-        // is untouched - an element is an identity, not an achievement.
+        // THERE IS NO LEVEL, and there is no field here for one. A plant is its species and
+        // its element; the four elemental variations ARE its whole variation, and each states
+        // its own leaf shape, growth tempo, shield cadence, prism budget and HEART SIZE exactly
+        // once (Docs/ECOSYSTEM.md §40, which retires §33 and §17's level half). A rolled seed
+        // level (the retired LifeformLevelSpread) and an earned one (LeafScalePerLevel, spent
+        // per reproduction) are BOTH gone: the first handed a plant a life it had not lived,
+        // and the second made a species' leaf a hidden per-individual history — which the three
+        // LATTICE species could never honour anyway, because two prism sizes cannot tile one
+        // lattice. Element spread above is untouched - an element is an identity.
 
         [Header("Cell-level overrides - applied AFTER the rolled variant, so they survive SpreadElements")]
         [Tooltip("OUTER edge of the planting band this cell wants for this species, as a fraction " +
@@ -168,6 +165,7 @@ namespace CosmicShore.Utility
                 GrowPeriod = -1f,                 // sentinel: keep
                 ShieldPeriod = -1f,               // sentinel: keep
                 WitherRingInterval = -1f,         // sentinel: keep
+                HeartWorldScale = 0f,             // sentinel: keep (heart size is the ELEMENT's)
                 MaxTotalSpawnedObjects = MaxTotalSpawnedObjectsOverride,
                 MaxTotalSpawnedObjectsScale = -1f,   // sentinel: keep (the SpawnProfile writes it)
                 PlantRadiusCellFraction = PlantRadiusCellFractionMaxOverride,
@@ -200,6 +198,7 @@ namespace CosmicShore.Utility
                 GrowPeriod = -1f,
                 ShieldPeriod = -1f,
                 WitherRingInterval = -1f,
+                HeartWorldScale = 0f,
                 MaxTotalSpawnedObjects = -1,
                 PlantRadiusCellFraction = -1f,
                 PlantRadiusCellFractionMin = -1f,
@@ -209,9 +208,9 @@ namespace CosmicShore.Utility
         }
 
         /// <summary>
-        /// What a single plant of this species is: element + the variant block expressing it +
-        /// the level it seeds at. Pass <paramref name="inherit"/> to keep an existing lineage's
-        /// identity (a re-plant of the same flora) instead of rolling a fresh one.
+        /// What a single plant of this species is: which element it carries and the variant
+        /// block expressing that element. Pass <paramref name="inherit"/> to keep an existing
+        /// lineage's identity (a re-plant of the same flora) instead of rolling a fresh one.
         /// </summary>
         public LifeformVariantPick<FloraVariantTuning> RollVariant(
             LifeformVariantPick<FloraVariantTuning>? inherit = null)
@@ -237,10 +236,7 @@ namespace CosmicShore.Utility
                 }
             }
 
-            // Level is NOT rolled - every plant seeds at this config's InitialLevel (1 in every
-            // shipped asset) and earns the rest by reproducing. Inherited picks return above, so
-            // an offspring likewise starts at 1: acquired growth is not heritable.
-            return new LifeformVariantPick<FloraVariantTuning>(element, tuning, InitialLevel);
+            return new LifeformVariantPick<FloraVariantTuning>(element, tuning);
         }
 
         FloraConfigurationSO RollPaletteSibling()
@@ -334,6 +330,21 @@ namespace CosmicShore.Utility
                  "maxSpawnsPerFrame) - the frame-cost throttle on the decided-order drain. " +
                  "-1 = keep prefab.")]
         public int MaxSpawnsPerFrame = -1;
+
+        [Tooltip("WORLD scale this variant's heart (its elemental crystal) renders at - sized " +
+                 "to suit THIS plant, so a rosette's heart is a rosette's and a gyroid " +
+                 "octagon's is an octagon's. 0 = keep the platform default on " +
+                 "ElementalCrystalSet.\n\n" +
+                 "This is a GAMEPLAY number as well as a visual one: the collect reward and the " +
+                 "live domain fauna buff both read the heart's world scale, so a bigger plant's " +
+                 "heart is worth more to whoever takes it. The whole authored band must " +
+                 "therefore stay under ElementalCrystalSetSO.MaxSafeHeartWorldScale - past it " +
+                 "two visibly different hearts pay the same. Authored by " +
+                 "Tools/Build/author_lifeform_heart_sizes.py, which measures the plant and " +
+                 "fails the build on an overshoot; do not hand-edit one in isolation. A " +
+                 "LATTICE species is additionally bounded by its own authored heart alcove " +
+                 "(QuasicrystalAssembler.heartSeatInset).")]
+        [Min(0f)] public float HeartWorldScale = 0f;
 
         [Tooltip("OUTER edge of the planting band, as a fraction of the cell membrane radius. " +
                  "-1 = keep prefab.")]

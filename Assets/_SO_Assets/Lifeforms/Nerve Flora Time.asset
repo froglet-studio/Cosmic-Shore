@@ -19,6 +19,5 @@ MonoBehaviour:
   NewPlantPeriod: 9999999
   Element: 4
   Variant:
-    Enabled: 0
-  InitialLevel: 1
-  LeafScalePerLevel: 1.15
+    Enabled: 1
+    HeartWorldScale: 4.14

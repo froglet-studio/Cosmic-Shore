@@ -30,8 +30,14 @@ namespace CosmicShore.UI
 
             [Tooltip("Optional authored art for the UPGRADED ability. Swapped in when this element " +
                      "reaches its unlock level and restored on re-lock. Leave empty to keep the base " +
-                     "sprite - the elemental badge still marks the upgrade either way.")]
+                     "sprite - the lockup card still marks the upgrade either way.")]
             public Sprite upgradedSprite;
+
+            [Tooltip("Optional meter for this ability - energy, heat, charge, cooldown. The lockup " +
+                     "re-homes it into the card and restyles it as the fleet's one gauge: a linear " +
+                     "fill rising through the icon's cell. The vessel keeps writing fillAmount, so " +
+                     "no gameplay wiring changes; only where and how it draws does.")]
+            public Image gauge;
         }
 
         /// <summary>
@@ -51,38 +57,22 @@ namespace CosmicShore.UI
                  "Shared system - every vessel HUD wires its own four icons.")]
         public List<AbilityIconBinding> abilityIcons = new();
 
-        [Tooltip("Tint applied to an ability icon while its elemental upgrade is active. Turn OFF on " +
-                 "vessels whose icon colour is a live gameplay gauge (cooldown/heat/drift state) - the " +
-                 "elemental badge and the scale bump still carry the signal there.")]
-        [SerializeField] private bool tintIconOnUpgrade = true;
-        [SerializeField] private Color upgradeHighlightColor = new(1f, 0.85f, 0.3f, 1f);
         [Tooltip("Persistent scale an upgraded ability icon rests at while the upgrade is active.")]
         [SerializeField] private float upgradeHighlightScale = 1.15f;
         [Tooltip("Scale punch played when an ability upgrade unlocks.")]
         [SerializeField] private float upgradePunchScale = 1.35f;
         [SerializeField] private float upgradePunchDuration = 0.35f;
 
-        [Header("Ability upgrade badge")]
-        [Tooltip("Marks an upgraded ability with that element's petal, in the level-5 white - the same " +
-                 "visual language as the element flowers (all-petals-white IS level 5). Survives views " +
-                 "that repaint the icon colour every frame, because it is a separate child image.")]
-        [SerializeField] private bool showUpgradeBadge = true;
-        [Tooltip("Petal sprites + the level-5 white. Loaded from Resources/ElementalBarsConfig when empty.")]
-        [SerializeField] private ElementalBarsConfigSO elementalBarsConfig;
-        [SerializeField] private string elementalBarsConfigResourcePath = "ElementalBarsConfig";
-        [Tooltip("Badge size as a fraction of the icon's own size.")]
-        [SerializeField, Range(0.1f, 1f)] private float badgeSizeFraction = 0.45f;
-        [Tooltip("Where on the icon the badge sits (0,0 = bottom-left, 1,1 = top-right).")]
-        [SerializeField] private Vector2 badgeAnchor = new(1f, 1f);
-        [Tooltip("Seconds the badge takes to bloom in / wither out. Nothing pops in or out.")]
-        [SerializeField, Min(0.01f)] private float badgeTransitionDuration = 0.3f;
-
-        readonly Dictionary<Element, Color>   _abilityIconRestColors  = new();
         readonly Dictionary<Element, Sprite>  _abilityIconRestSprites = new();
         readonly Dictionary<Element, Tween>   _abilityIconTweens      = new();
-        readonly Dictionary<Element, Image>   _abilityBadges          = new();
-        readonly Dictionary<Element, Tween>   _abilityBadgeTweens     = new();
         readonly HashSet<Element>             _upgraded               = new();
+
+        [Header("Ability lockup")]
+        [Tooltip("Composes the totem card - plate, element flower, gauge, rim and bloom - around " +
+                 "each ability icon, and owns the whole row's position, pitch and icon size. " +
+                 "STRUCTURAL, not optional: VesselHUDController.Initialize adds one if a prefab " +
+                 "lacks it, so leaving this empty is fine. See Docs/ABILITY_LOCKUP.md.")]
+        [SerializeField] private AbilityLockupView abilityLockups;
 
         [Header("Animation (optional)")]
         [SerializeField] private HUDAnimationSettingsSO animSettings;
@@ -103,6 +93,19 @@ namespace CosmicShore.UI
         /// binder so an (LT)/(RT) label can find the ability it belongs to instead of being pinned to
         /// a hand-authored position.
         /// </summary>
+        /// <summary>The meter this ability drives, if the vessel wired one.</summary>
+        public bool TryGetAbilityGauge(Element element, out Image gauge)
+        {
+            foreach (var binding in abilityIcons)
+            {
+                if (binding.element != element || !binding.gauge) continue;
+                gauge = binding.gauge;
+                return true;
+            }
+            gauge = null;
+            return false;
+        }
+
         public bool TryGetAbilityIcon(Element element, out Image icon)
         {
             foreach (var binding in abilityIcons)
@@ -119,12 +122,86 @@ namespace CosmicShore.UI
         public bool HasAbilityIconRow => abilityIcons is { Count: > 0 };
 
         /// <summary>
-        /// The scale an ability icon should rest at right now - one, or the upgrade bump. Per-vessel
-        /// views that run their own scale tweens capture THIS as their icon's rest scale so the
-        /// persistent upgrade bump survives every tween they play.
+        /// The fleet's one "this ability is firing" signal: the lockup card lights while the
+        /// control is held and decays on release. Replaces the per-vessel circular glow that used
+        /// to be switched on behind the icon - that chrome is retired by the lockup, and drawing a
+        /// second shape for a state the card can carry itself is exactly the divergence the totem
+        /// exists to remove.
+        /// </summary>
+        public void SetAbilityPressed(Element element, bool pressed)
+        {
+            var lockups = ResolveAbilityLockups();
+            if (lockups) lockups.SetAbilityPressed(element, pressed);
+        }
+
+        /// <summary>
+        /// Which physical control fires this ability, so the lockup can draw the control chip from
+        /// the fleet's one glyph set instead of from per-vessel authored artwork.
+        /// </summary>
+        public void SetAbilityControl(Element element, InputEvents input)
+        {
+            var lockups = ResolveAbilityLockups();
+            if (lockups) lockups.SetAbilityControl(element, input);
+        }
+
+        /// <summary>Which device the control chips should speak for.</summary>
+        public void SetControlDevice(bool keyboard)
+        {
+            var lockups = ResolveAbilityLockups();
+            if (lockups) lockups.SetControlDevice(keyboard);
+        }
+
+        /// <summary>
+        /// The fleet's ONE recharge readout: a radial veil swept over the ability plate while the
+        /// ability recovers, ending in a flash when it comes back. <paramref name="remaining01"/>
+        /// is 1 the instant it fires and 0 when it is ready.
+        ///
+        /// <para>A VALUE, not an <c>Image</c> binding like the gauge - a cooldown has no per-vessel
+        /// artwork worth preserving, so the lockup owns the whole presentation and a vessel supplies
+        /// one float. Deliberately radial where the gauge is linear, and OVER the icon where the
+        /// gauge is behind it: a card can then show both without the two reading as one meter.</para>
+        /// </summary>
+        public void SetAbilityCooldown(Element element, float remaining01)
+        {
+            var lockups = ResolveAbilityLockups();
+            if (lockups) lockups.SetAbilityCooldown(element, remaining01);
+        }
+
+        /// <summary>
+        /// Where this element's control chip belongs on the lockup card. The control-hint binder
+        /// places its (LT)/(RT) glyph HERE at zero offset rather than at a per-vessel offset from
+        /// the icon - which is what locks the label TO the totem instead of leaving it floating
+        /// near one. Returns false only on a HUD that has no lockup at all.
+        /// </summary>
+        public bool TryGetAbilityChipSocket(Element element, out RectTransform socket)
+        {
+            var lockups = ResolveAbilityLockups();
+            if (lockups) return lockups.TryGetChipSocket(element, out socket);
+            socket = null;
+            return false;
+        }
+
+        /// <summary>
+        /// The lockup's icon KERNING - how much of the ability cell the icon fills. 1 when this HUD
+        /// has no lockup, so an unstyled vessel is unaffected.
+        /// </summary>
+        protected float AbilityIconContentScale(Element element)
+        {
+            var lockups = ResolveAbilityLockups();
+            return lockups ? lockups.IconContentScale(element) : 1f;
+        }
+
+        /// <summary>
+        /// The scale an ability icon should rest at right now - the lockup's content scale, times
+        /// the upgrade bump when the upgrade is live. Per-vessel views that run their own scale
+        /// tweens capture THIS as their icon's rest scale, so both the kerning and the persistent
+        /// upgrade bump survive every tween they play.
+        ///
+        /// <para><b>For the ICON itself only.</b> Graphics NESTED inside an ability icon already
+        /// inherit its scale by being children; resting them here too multiplies the two.</para>
         /// </summary>
         protected Vector3 AbilityIconRestScale(Element element)
-            => Vector3.one * (IsAbilityUpgraded(element) ? upgradeHighlightScale : 1f);
+            => Vector3.one * (AbilityIconContentScale(element) * (IsAbilityUpgraded(element) ? upgradeHighlightScale : 1f));
 
         public void Show()
         {
@@ -161,10 +238,14 @@ namespace CosmicShore.UI
         /// VesselHUDController from the ElementalAbilityHandler's OnUpgradeStateChanged event
         /// and once at init to seed already-active upgrades. Safe no-op for unbound elements.
         ///
-        /// Three layers, so the signal survives any per-vessel presentation:
-        ///   1. sprite swap to the authored upgraded art (when authored),
-        ///   2. the element's petal badge, blooming in / withering out,
-        ///   3. an optional tint plus a persistent scale bump with a one-shot punch.
+        /// The signal lives on the CARD - its rim crosses to the level-5 white and a bloom comes up
+        /// behind the plate (<see cref="AbilityLockupView"/>). Here we only add the two things that
+        /// belong to the icon itself: the authored upgraded art, when a vessel supplies any, and a
+        /// persistent scale bump with a one-shot punch.
+        ///
+        /// <para>Deliberately NOT an icon tint or a corner badge. Both existed before the lockup and
+        /// are now a second and third way to say the same thing - and the tint could never be used
+        /// by a vessel whose icons are live gauges, which is most of them.</para>
         /// </summary>
         public virtual void SetAbilityUpgraded(Element element, bool upgraded)
         {
@@ -175,8 +256,6 @@ namespace CosmicShore.UI
             {
                 if (binding.element != element || !binding.icon) continue;
 
-                if (!_abilityIconRestColors.ContainsKey(element))
-                    _abilityIconRestColors[element] = binding.icon.color;
                 if (!_abilityIconRestSprites.ContainsKey(element))
                     _abilityIconRestSprites[element] = binding.icon.sprite;
 
@@ -189,14 +268,12 @@ namespace CosmicShore.UI
                     if (binding.upgradedSprite)
                         binding.icon.sprite = binding.upgradedSprite;
 
-                    if (tintIconOnUpgrade)
-                        binding.icon.color = upgradeHighlightColor;
-
                     // Rest at the highlight scale (survives views that repaint colors per-frame),
-                    // with a one-shot punch around it to telegraph the unlock.
-                    binding.icon.rectTransform.localScale = Vector3.one * upgradeHighlightScale;
+                    // with a one-shot punch around it to telegraph the unlock. Both go through
+                    // AbilityIconRestScale so the lockup's kerning is never re-derived here.
+                    binding.icon.rectTransform.localScale = AbilityIconRestScale(element);
                     _abilityIconTweens[element] = binding.icon.rectTransform
-                        .DOPunchScale(Vector3.one * (upgradePunchScale - upgradeHighlightScale),
+                        .DOPunchScale(Vector3.one * ((upgradePunchScale - upgradeHighlightScale) * AbilityIconContentScale(element)),
                             upgradePunchDuration, 1, 0.5f)
                         .SetUpdate(true)
                         .SetLink(binding.icon.gameObject);
@@ -206,119 +283,54 @@ namespace CosmicShore.UI
                     if (binding.upgradedSprite && _abilityIconRestSprites[element])
                         binding.icon.sprite = _abilityIconRestSprites[element];
 
-                    if (tintIconOnUpgrade)
-                        binding.icon.color = _abilityIconRestColors[element];
-
-                    binding.icon.rectTransform.localScale = Vector3.one;
+                    binding.icon.rectTransform.localScale = AbilityIconRestScale(element);
                 }
-
-                SetBadgeVisible(element, binding.icon, upgraded);
             }
+
+            // The lockup carries the same signal on the CARD - rim to the level-5 white plus the
+            // bloom behind the plate - which is what lets a vessel whose icons are all live gauges
+            // (the Dolphin) show an upgrade without overloading a gauge colour.
+            var lockups = ResolveAbilityLockups();
+            if (lockups) lockups.SetUpgraded(element, upgraded);
         }
 
-        // ---------------------------------------------------------------
-        // Upgrade badge - the element's own petal, in the level-5 white, pinned to a corner of the
-        // ability icon. It is a child of the icon, so per-frame icon repaints can never stomp it,
-        // and it rides along with whatever scale/position juice the vessel's view plays.
-        // ---------------------------------------------------------------
-
-        void SetBadgeVisible(Element element, Image icon, bool visible)
+        AbilityLockupView ResolveAbilityLockups()
         {
-            if (!showUpgradeBadge) return;
+            if (!abilityLockups) abilityLockups = GetComponent<AbilityLockupView>();
+            return abilityLockups;
+        }
 
-            // Lazy: a locked ability has nothing to hide, so no badge object is built until the
-            // first unlock. Vessels that never reach level 5 never pay for one.
-            if (!visible && !_abilityBadges.ContainsKey(element)) return;
-
-            var badge = ResolveBadge(element, icon);
-            if (!badge) return;
-
-            if (_abilityBadgeTweens.TryGetValue(element, out var running))
-                running?.Kill();
-
-            var rt = badge.rectTransform;
-
-            // Nothing pops in or out: the badge blooms open and withers closed.
-            if (visible)
+        /// <summary>
+        /// Guarantees this HUD wears the ability lockup. Called from
+        /// <see cref="VesselHUDController.Initialize"/> - the one method every vessel HUD routes
+        /// through on every spawn path - so the style is STRUCTURAL rather than something a prefab
+        /// can be authored without.
+        ///
+        /// <para>The row is built even when the vessel binds NO icons: it is always four cards, and a
+        /// slot whose ability does not exist yet renders LOCKED rather than being absent. That is
+        /// what stops a vessel like the Rhino - one named ability, three open design slots - from
+        /// simply keeping the old UI while it waits for design.</para>
+        ///
+        /// <para>Idempotent. The component is added rather than warned about because the lockup is
+        /// pure composition over icons that are already authored - there is no per-vessel art or
+        /// wiring for a human to supply, so a warning would only ever be noise telling someone to
+        /// click Add Component.</para>
+        /// </summary>
+        public void EnsureAbilityLockup()
+        {
+            var lockups = ResolveAbilityLockups();
+            if (!lockups)
             {
-                ApplyBadgeRect(badge, icon); // re-measure: the icon's rect may not have laid out at bind time
-                badge.gameObject.SetActive(true);
-                rt.localScale = Vector3.zero;
-                badge.color = WithAlpha(badge.color, 0f);
-
-                var seq = DOTween.Sequence().SetUpdate(true).SetLink(badge.gameObject);
-                seq.Join(rt.DOScale(Vector3.one, badgeTransitionDuration).SetEase(Ease.OutBack));
-                seq.Join(badge.DOFade(1f, badgeTransitionDuration * 0.6f).SetEase(Ease.OutQuad));
-                _abilityBadgeTweens[element] = seq;
-            }
-            else if (badge.gameObject.activeSelf)
-            {
-                var seq = DOTween.Sequence().SetUpdate(true).SetLink(badge.gameObject);
-                seq.Join(rt.DOScale(Vector3.zero, badgeTransitionDuration).SetEase(Ease.InBack));
-                seq.Join(badge.DOFade(0f, badgeTransitionDuration).SetEase(Ease.InQuad));
-                seq.OnComplete(() => badge.gameObject.SetActive(false));
-                _abilityBadgeTweens[element] = seq;
-            }
-        }
-
-        Image ResolveBadge(Element element, Image icon)
-        {
-            if (_abilityBadges.TryGetValue(element, out var cached) && cached) return cached;
-
-            var config = ResolveElementalBarsConfig();
-            var sprite = config ? config.GetPetalSprite(element) : null;
-            if (!sprite)
-                sprite = Resources.Load<Sprite>($"ElementPetals/{element.ToString().ToLowerInvariant()}_petal");
-            if (!sprite) return null;
-
-            string badgeName = $"UpgradeBadge_{element}";
-            var existing = icon.rectTransform.Find(badgeName);
-            var badge = existing ? existing.GetComponent<Image>() : null;
-            if (!badge)
-            {
-                var go = new GameObject(badgeName, typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
-                go.transform.SetParent(icon.rectTransform, false);
-                badge = go.GetComponent<Image>();
+                lockups = gameObject.AddComponent<AbilityLockupView>();
+                abilityLockups = lockups;
             }
 
-            ApplyBadgeRect(badge, icon);
-
-            badge.sprite = sprite;
-            // Level 5 is the all-petals-WHITE state of the flower - the badge is that same white.
-            badge.color = config ? config.whiteColor : Color.white;
-            badge.raycastTarget = false;
-            badge.preserveAspect = true;
-            badge.gameObject.SetActive(false);
-
-            _abilityBadges[element] = badge;
-            return badge;
+            // Build now rather than waiting on Awake: a component added this frame has not Awoken,
+            // and a HUD that starts inactive would not Awake until it is first shown - which is
+            // after the controller seeds the upgrade state through SetAbilityUpgraded.
+            lockups.Build();
         }
 
-        void ApplyBadgeRect(Image badge, Image icon)
-        {
-            var rt = badge.rectTransform;
-            rt.anchorMin = rt.anchorMax = rt.pivot = badgeAnchor;
-            rt.anchoredPosition = Vector2.zero;
-            rt.localRotation = Quaternion.identity;
-
-            // Icons authored with stretch anchors have a zero rect until the layout pass runs; keep a
-            // sane badge instead of an invisible zero-sized one.
-            var iconSize = icon.rectTransform.rect.size;
-            float side = Mathf.Max(iconSize.x, iconSize.y) * badgeSizeFraction;
-            if (side <= 1f) side = DefaultBadgeSize;
-            rt.sizeDelta = new Vector2(side, side);
-        }
-
-        const float DefaultBadgeSize = 32f;
-
-        ElementalBarsConfigSO ResolveElementalBarsConfig()
-        {
-            if (!elementalBarsConfig)
-                elementalBarsConfig = Resources.Load<ElementalBarsConfigSO>(elementalBarsConfigResourcePath);
-            return elementalBarsConfig;
-        }
-
-        static Color WithAlpha(Color c, float a) => new(c.r, c.g, c.b, a);
 
         /// <summary>
         /// Editor-time structural check: four ability icons, one per element, bound in the canonical
@@ -405,9 +417,6 @@ namespace CosmicShore.UI
             foreach (var tween in _abilityIconTweens.Values)
                 tween?.Kill();
             _abilityIconTweens.Clear();
-            foreach (var tween in _abilityBadgeTweens.Values)
-                tween?.Kill();
-            _abilityBadgeTweens.Clear();
         }
     }
 }

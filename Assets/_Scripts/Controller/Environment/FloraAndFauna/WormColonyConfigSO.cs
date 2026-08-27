@@ -1,4 +1,3 @@
-using CosmicShore.Data;
 using UnityEngine;
 
 namespace CosmicShore.Gameplay
@@ -8,13 +7,16 @@ namespace CosmicShore.Gameplay
     /// connected population of Head / Body / Tail segment fauna. One shared asset per
     /// deployment; per CLAUDE.md Config Separation no numbers live on the prefabs.
     ///
-    /// The three clocks that are LEGAL here, and why (invariant review):
-    ///  • Growth (new segments) is funded by FEEDING only — feedsPerSegment, never a
-    ///    wall-clock (the old WormManager's 10s growth tick was the banned oscillator).
-    ///  • End differentiation (a wound hardening into a new danger head/tail) is a
-    ///    STATE CHANGE of existing mass, not mass creation — same legal class as
-    ///    LifeForm's shield-regen cadence — and it is gated on the colony being fed
-    ///    (a starving worm cannot harden its wounds).
+    /// The two clocks that are LEGAL here, and why (invariant review):
+    ///  • Colony PRODUCTION rides the host cell's fauna production cycle
+    ///    (<see cref="Cell.CurrentFaunaSpawnPeriod"/>) — one member per cycle: a head if
+    ///    the colony has none, else a tail if it has none, else a body segment. That is
+    ///    the same population heartbeat the lattice flora colonies breed on
+    ///    (Docs/ECOSYSTEM.md §32.7), and it is PRODUCTION gating, which §0 permits — not
+    ///    the banned oscillator, which was the old WormManager's timed growth PLUS decay.
+    ///    Body growth is gated on the colony being fed, so length still only accrues
+    ///    while the kaiju is eating; head/tail regrowth deliberately is not, because a
+    ///    headless colony cannot feed and would otherwise be unable to recover at all.
     ///  • Starvation shedding imposes death only through the standard starvation
     ///    channel (population bounded by consumption, never a lifespan).
     /// </summary>
@@ -77,15 +79,21 @@ namespace CosmicShore.Gameplay
         [Tooltip("Behavior-tick cadence multipliers indexed by CellAggressionLevel.")]
         public float[] CadenceByAggression = { 1f, 0.7f, 0.45f };
 
-        [Header("Colony separation (boid repulsion between worms)")]
-        [Tooltip("Another colony's body within this distance of this worm's HEAD pushes " +
-                 "it away — the standard boid separation term, measured to the nearest " +
-                 "SEGMENT of the other worm (a worm is long; head-to-head distance is the " +
-                 "wrong read). Size it around a body length so two kaiju share a cell " +
-                 "without interpenetrating. 0 = off.")]
+        [Header("Colony separation (boid repulsion between worm POPULATIONS)")]
+        [Tooltip("Another colony whose body comes within this distance of THIS colony's " +
+                 "body pushes it away — the standard boid separation term, measured along " +
+                 "the two worms' closest approach (both are long, so neither head-to-head " +
+                 "nor head-to-their-nearest-segment describes how crowded they are). Size " +
+                 "it around a body length so two kaiju share a cell without " +
+                 "interpenetrating, and so a split's two halves peel apart. 0 = off.")]
         [Min(0f)] public float ColonySeparationRadius = 160f;
         [Tooltip("Weight of the separation term against the goal pull (goal weight is 1). " +
-                 "Higher = worms give each other a wider berth and commit less to food.")]
+                 "The term is a unit direction scaled by a falloff that is 1 where the two " +
+                 "bodies touch and 0 at the radius above, so this is a TRUE ratio: above 1 " +
+                 "the repulsion beats the pull toward food at close range, which is what " +
+                 "keeps a freshly split population from swimming home in convoy with the " +
+                 "half it was cut from. Higher = worms give each other a wider berth and " +
+                 "commit less to food.")]
         [Min(0f)] public float ColonySeparationWeight = 2.5f;
 
         [Header("Feeding — an APEX OMNIVORE (the head is the colony's mouth)")]
@@ -102,27 +110,18 @@ namespace CosmicShore.Gameplay
         [Min(0f)] public float FaunaBiteRange = 34f;
         [Tooltip("Cap on prisms suctioned per tick — bounds the implosion-VFX burst.")]
         [Min(1)] public int MaxBitesPerTick = 6;
-        [Tooltip("Feeds (consumed prisms) that fund ONE new body segment blooming in " +
-                 "behind the head. This is the only source of new worm mass — length is a " +
-                 "readable record of how much the colony has eaten.")]
-        [Min(1)] public int FeedsPerSegment = 24;
         [Tooltip("Scale-glide time constant (~95% settled in this many seconds): a grown " +
-                 "segment blooms from zero, and every segment glides to its taper target " +
-                 "when the chain re-proportions (growth, splits, differentiation) — " +
+                 "member blooms from zero, and every segment glides to its taper target " +
+                 "when the chain re-proportions (growth, splits, end kills) — " +
                  "continuity, nothing pops or snaps.")]
         [Min(0.05f)] public float SegmentBloomSeconds = 2f;
-
-        [Header("Wound differentiation (head/tail regrow)")]
-        [Tooltip("Seconds after losing an end before the adjacent body segment hardens " +
-                 "into the missing head/tail (danger prisms engage + a heart is " +
-                 "provisioned). THE souls-like window: chain end-kills faster than this " +
-                 "and you always face soft tissue; slower and every kill is armored. " +
-                 "Gated on the colony being fed — a starving worm cannot differentiate.")]
-        [Min(0f)] public float EndRegrowSeconds = 18f;
-        [Tooltip("Element of hearts provisioned for DIFFERENTIATED ends (authored, per " +
-                 "the elemental contract — random is only the misconfig fallback). The " +
-                 "spawn prefabs' authored crystals are unaffected.")]
-        public Element RegrownEndElement = Element.Mass;
+        [Tooltip("Fallback production period (seconds) for a colony whose host cell " +
+                 "authors no SpawnProfile. Normally the colony grows on the CELL's own " +
+                 "fauna production cycle (Cell.CurrentFaunaSpawnPeriod = " +
+                 "SpawnProfile.BaseFaunaSpawnTime), which is the same heartbeat the " +
+                 "lattice flora colonies breed on — so a worm's growth rate is a property " +
+                 "of the biome it lives in, not of the species. See Docs/ECOSYSTEM.md §23.9.")]
+        [Min(0.5f)] public float FallbackProductionPeriodSeconds = 30f;
 
         [Header("Starvation (population bounded by consumption)")]
         [Tooltip("While the colony is starving (no feed for the prefab-authored " +

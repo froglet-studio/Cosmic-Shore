@@ -37,7 +37,7 @@ namespace CosmicShore.Editor
     /// shipped Worley baseline in the same pass, so the verdict is a RATIO and cannot be
     /// fooled by anything about this harness. Sliders that let you silently break a platform
     /// law would be a worse tool than no sliders.</item>
-    /// <item><b>Bake closes the loop.</b> Design mode is not free — it compiles all five
+    /// <item><b>Bake closes the loop.</b> Design mode is not free — it compiles all seven
     /// kernels into every prism shader and allocates registers for the largest. Bake writes
     /// the chosen values into the constants and flips <c>PRISM_OCCLUSION_LIVE_TUNING</c> to
     /// 0, so the cost lasts exactly as long as the design session and nobody has to
@@ -57,9 +57,9 @@ namespace CosmicShore.Editor
         const string PreviewShader = "Hidden/CosmicShore/PrismOcclusionDitherPreview";
 
         // ── The kernels, mirrored from the HLSL's #defines ────────────────────────
-        static readonly string[] KernelNames = { "IGN (dissolve)", "Spiral (iris)", "Worley (round flecks)", "Shard (triangles)", "Shatter (cracked lattice)", "Shatter3D (volumetric lattice)" };
-        static readonly string[] KernelTokens = { "PRISM_OCCLUSION_KERNEL_IGN", "PRISM_OCCLUSION_KERNEL_SPIRAL", "PRISM_OCCLUSION_KERNEL_WORLEY", "PRISM_OCCLUSION_KERNEL_SHARD", "PRISM_OCCLUSION_KERNEL_SHATTER", "PRISM_OCCLUSION_KERNEL_SHATTER3D" };
-        const int KernelIgn = 0, KernelSpiral = 1, KernelWorley = 2, KernelShard = 3, KernelShatter = 4, KernelShatter3D = 5;
+        static readonly string[] KernelNames = { "IGN (dissolve)", "Spiral (iris)", "Worley (round flecks)", "Shard (triangles)", "Shatter (cracked lattice)", "Shatter3D (volumetric lattice)", "Shard3D (distance fill)" };
+        static readonly string[] KernelTokens = { "PRISM_OCCLUSION_KERNEL_IGN", "PRISM_OCCLUSION_KERNEL_SPIRAL", "PRISM_OCCLUSION_KERNEL_WORLEY", "PRISM_OCCLUSION_KERNEL_SHARD", "PRISM_OCCLUSION_KERNEL_SHATTER", "PRISM_OCCLUSION_KERNEL_SHATTER3D", "PRISM_OCCLUSION_KERNEL_SHARD3D" };
+        const int KernelIgn = 0, KernelSpiral = 1, KernelWorley = 2, KernelShard = 3, KernelShatter = 4, KernelShatter3D = 5, KernelShard3D = 6;
 
         static readonly string[] OrientNames = { "Fixed (one heading)", "Flip (up + down)", "Spin (free rotation)" };
         static readonly string[] OrientTokens = { "PRISM_OCCLUSION_SHARD_FIXED", "PRISM_OCCLUSION_SHARD_FLIP", "PRISM_OCCLUSION_SHARD_SPIN" };
@@ -335,7 +335,7 @@ namespace CosmicShore.Editor
             }
 
             EditorGUILayout.HelpBox(
-                "Design mode is ON: all five kernels are compiled into every prism shader and the dials " +
+                "Design mode is ON: all seven kernels are compiled into every prism shader and the dials " +
                 "below drive the game live. That costs GPU occupancy — bake and turn it off before shipping.",
                 MessageType.Info);
 
@@ -396,8 +396,9 @@ namespace CosmicShore.Editor
                 case KernelShatter3D:
                     EditorGUILayout.HelpBox("REJECTED ON LOOK (2026-08-10, the day it shipped): a volumetric " +
                         "crack plane lying near-parallel to a viewed surface makes a face-sized plate share one " +
-                        "threshold — plate-flashes that read as glitchy clipping around the vessel. Carried for " +
-                        "a possible 3D-SHARD successor; do not re-ship as-is.", MessageType.Warning);
+                        "threshold — plate-flashes that read as glitchy clipping around the vessel. Kernel 6 " +
+                        "(Shard3D) is the successor in this Lab — Euclidean distance-to-owner fill. Do not " +
+                        "re-ship Shatter3D as-is.", MessageType.Warning);
                     DialSlider("Cell size (angular)", ref _shatter3dCell, ShatterCellMin, ShatterCellMax,
                         ShatterCellGoodLo, ShatterCellGoodHi, "px", null,
                         "The IDEAL on-screen size of a volumetric cell. The lattice lives on a power-of-two " +
@@ -419,6 +420,22 @@ namespace CosmicShore.Editor
                         EditorStyles.miniLabel);
                     break;
 
+                case KernelShard3D:
+                    EditorGUILayout.HelpBox(
+                        "Lab candidate. Coverage proven offline (LO=0.155 HI=0.915, compiled |coverage − alpha| = 0.00783). " +
+                        "Look on real mass at speed is unearned — do not Bake as CURRENT until that look is earned. " +
+                        "Level sets are spheres (cannot plate-flash a crack plane). Wall is meaningless — the fill is radial.",
+                        MessageType.Info);
+                    DialSlider("Cell size (angular)", ref _shatter3dCell, ShatterCellMin, ShatterCellMax,
+                        ShatterCellGoodLo, ShatterCellGoodHi, "px", null,
+                        "Shared with Shatter3D. The IDEAL on-screen size of a volumetric cell. The lattice lives on a " +
+                        "power-of-two ladder of WORLD sizes and each fragment picks the rung nearest this angular " +
+                        "target. Coverage is exact by construction at any scale; the window is about legibility.");
+                    EditorGUILayout.LabelField(" ",
+                        "world-anchored Euclidean fill: no strobe at speed, true parallax; wall dial is unused",
+                        EditorStyles.miniLabel);
+                    break;
+
                 case KernelSpiral:
                     _spiralRings = EditorGUILayout.Slider(new GUIContent("Bands across radius"), _spiralRings, 2f, 24f);
                     _spiralArms = EditorGUILayout.IntSlider(new GUIContent("Arms (turns/rev)",
@@ -433,6 +450,12 @@ namespace CosmicShore.Editor
                                             "moving it, which is full-amplitude shimmer.", MessageType.None);
                     break;
             }
+
+            if (_kernel == KernelShatter3D || _kernel == KernelShard3D)
+                EditorGUILayout.HelpBox(
+                    "Lab Measure and the preview pass positionWS = (pixel, 0) — a z=0 slice. That harness " +
+                    "cannot see a glancing-plane flash. Judge volumetric kernels on real mass at speed, " +
+                    "not by Measure alone.", MessageType.Info);
 
             EditorGUILayout.Space(4f);
             EditorGUILayout.LabelField("Motion", FrogletEditorPalette.SectionHeader);
@@ -574,6 +597,21 @@ namespace CosmicShore.Editor
             }
         }
 
+        bool ConfirmBakeKernel()
+        {
+            if (_kernel == KernelShatter3D)
+                return EditorUtility.DisplayDialog(
+                    "Bake SHATTER3D as CURRENT?",
+                    "SHATTER3D was REJECTED ON LOOK (2026-08-10). A crack plane near-parallel to a viewed surface plate-flashes. Do not re-ship as-is. Bake anyway?",
+                    "Bake anyway", "Cancel");
+            if (_kernel == KernelShard3D)
+                return EditorUtility.DisplayDialog(
+                    "Bake SHARD3D as CURRENT?",
+                    "SHARD3D is a Lab candidate. Coverage is proven offline; look on real mass at speed is unearned. Do not ship until that look is earned. Bake anyway?",
+                    "Bake anyway", "Cancel");
+            return true;
+        }
+
         void DrawBake()
         {
             EditorGUILayout.LabelField("Bake", FrogletEditorPalette.SectionHeader);
@@ -584,9 +622,11 @@ namespace CosmicShore.Editor
 
             using (new EditorGUILayout.HorizontalScope())
             {
-                if (FrogletEditorPalette.ColorButton("Bake to source + ship mode", FrogletEditorPalette.Ok, 210f, 26f))
+                if (FrogletEditorPalette.ColorButton("Bake to source + ship mode", FrogletEditorPalette.Ok, 210f, 26f)
+                    && ConfirmBakeKernel())
                     Bake(disableTuning: true);
-                if (FrogletEditorPalette.ColorButton("Bake, stay in design mode", FrogletEditorPalette.Info, 190f, 26f))
+                if (FrogletEditorPalette.ColorButton("Bake, stay in design mode", FrogletEditorPalette.Info, 190f, 26f)
+                    && ConfirmBakeKernel())
                     Bake(disableTuning: false);
             }
             if (GUILayout.Button("Copy the constants to the clipboard"))

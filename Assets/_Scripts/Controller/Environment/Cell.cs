@@ -319,6 +319,16 @@ namespace CosmicShore.Gameplay
         // ---------------------------------------------------------------------
         static readonly List<Cell> ActiveCells = new();
 
+        // OnEnable/OnDisable keep the registry balanced across a clean play exit; the reset
+        // covers the unclean one (a crash mid-play) and restarts the id counter so the short
+        // can never wrap into PrismSpatialIndex's 0/-1 sentinels across many sessions.
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        static void ResetStatics()
+        {
+            ActiveCells.Clear();
+            s_nextVolumeCellId = 1;
+        }
+
         /// <summary>
         /// Read-only view of the enabled cells in the scene. Exposed for read-only
         /// diagnostics (e.g. <see cref="EcosystemPerfProbe"/> summing prisms + live
@@ -1253,7 +1263,7 @@ namespace CosmicShore.Gameplay
 
         /// <summary>
         /// Toggles visibility of all spawned lifeforms (flora/fauna).
-        /// Used to hide flora during shape drawing mode and restore after.
+        /// The scored shape-drawing caller was deleted (C15); the API remains.
         /// </summary>
         public void SetLifeFormsActive(bool active)
         {
@@ -2087,11 +2097,16 @@ namespace CosmicShore.Gameplay
             // ── Suction (continuity law) ──────────────────────────────────────
             float elapsed = 0f;
             float duration = retireSuctionSeconds > 0.01f ? retireSuctionSeconds : DefaultRetireSuctionSeconds;
+            StampRetiredWorldSuction(retiring, duration);
             while (elapsed < duration && retiring)
             {
                 elapsed += Time.unscaledDeltaTime;
                 float t = Mathf.Clamp01(elapsed / duration);
                 // Smoothstep out, so the world eases away rather than snapping small.
+                // Instanced prism companions ignore parent scale (Docs/PRISM_ANIMATION.md
+                // §3.8 #1 / §5 C9) — those converge on the GPU stamp above. This remaining
+                // write is for the NON-PRISM riders on the same root (membrane / nucleus /
+                // cytoplasm / lifeform spindles).
                 float eased = 1f - (t * t * (3f - 2f * t));
                 retiring.transform.localScale = Vector3.one * Mathf.Max(SuctionFloorScale, eased);
                 yield return null;
@@ -2099,11 +2114,14 @@ namespace CosmicShore.Gameplay
 
             // Pooled prisms go back to their pool (destroying one corrupts the pool's
             // accounting). Detach with worldPositionStays:FALSE so the suction factor is not
-            // baked into their localScale on the way out.
+            // baked into their localScale on the way out. Clear the GPU stamp first —
+            // ClearPrismStamps on the next Initialize also covers it, but a prism that sits
+            // in the pool with a live suction Duration would replay on the next pull.
             for (int i = 0; i < pooledRetiring.Count; i++)
             {
                 var block = pooledRetiring[i];
                 if (!block) continue;
+                block.ClearSuctionClockStamp();
                 block.transform.SetParent(null, false);
                 block.ReturnToPool();
             }
@@ -2186,7 +2204,10 @@ namespace CosmicShore.Gameplay
             var prisms = retiring.GetComponentsInChildren<Prism>(true);
             for (int i = 0; i < prisms.Length; i++)
             {
-                if (prisms[i]) Destroy(prisms[i].gameObject);
+                var p = prisms[i];
+                if (!p) continue;
+                if (!EnvironmentPrismPool.TryRelease(p))
+                    Destroy(p.gameObject);
                 if ((i + 1) % PrismsPerFrame == 0) yield return null;
             }
 
@@ -2200,10 +2221,31 @@ namespace CosmicShore.Gameplay
         const float SuctionFloorScale = 0.002f;
 
         /// <summary>
-        /// Gather everything this cell owns under one root so a SINGLE transform write can
-        /// suction all of it. The authored environment is one container of tens of thousands
-        /// of prisms, so the expensive case costs one re-parent; lifeforms and (optionally)
-        /// pooled trail prisms are re-parented individually.
+        /// GPU-stamp every prism under the retiring root toward this cell's world centre
+        /// (Docs/PRISM_ANIMATION.md §5 C9). Companion entities ignore parent scale, so the
+        /// root write that still runs for membrane / nucleus / cytoplasm / spindles cannot
+        /// move instanced mass — the stamp is the visual.
+        /// </summary>
+        void StampRetiredWorldSuction(GameObject retiring, float duration)
+        {
+            if (!retiring || duration <= 0.01f) return;
+            Vector3 centre = transform.position;
+            var prisms = retiring.GetComponentsInChildren<Prism>(true);
+            for (int i = 0; i < prisms.Length; i++)
+            {
+                var prism = prisms[i];
+                if (!prism) continue;
+                prism.StampSuctionToward(centre, duration);
+            }
+        }
+
+        /// <summary>
+        /// Gather everything this cell owns under one root. Instanced prisms are GPU-stamped
+        /// toward the cell centre (<see cref="StampRetiredWorldSuction"/>); this root's
+        /// remaining scale write suctions membrane / nucleus / cytoplasm / lifeform non-prism
+        /// parts that still ride the GameObject transform. The authored environment is one
+        /// container of tens of thousands of prisms, so the expensive case costs one re-parent;
+        /// lifeforms and (optionally) pooled trail prisms are re-parented individually.
         /// </summary>
         GameObject RetireWorldIntoSuctionRoot(bool clearLooseTrailMass, out List<Prism> pooledRetiring)
         {

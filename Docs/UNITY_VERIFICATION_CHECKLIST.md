@@ -1,5 +1,12 @@
 # Unity In-Editor Verification Checklist
 
+> **Superseded for new work — see `Docs/QA/`.** The untested-development backlog is now
+> generated and maintained by the `/qa-backlog` skill in `Docs/QA/QA_BACKLOG.md`, with a
+> submission/result loop (`Docs/QA/README.md`) that archives passes and turns failures
+> into dev tasks. The two entries below are kept until they are run; new unverified work
+> does **not** get a section here — record it in the PR body's *Verification status*
+> section and the scan will pick it up.
+
 **Purpose.** Some changes land on shared branches (`bleeding-edge` and the
 per-feature branches) without ever being opened in the Unity Editor —
 authored and committed by a session that **cannot run the editor**, so no
@@ -20,6 +27,751 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
   **first-pass tuning** numbers (these are starting points, expect a balancing
   pass once the thing is observable in context — they are *not* settled).
 - Status markers: 🔴 unverified · 🟡 partially confirmed · 🟢 verified in editor.
+
+---
+
+### 🔴 Ability lockup branch — verification matrix (2026-08-26)
+
+One row per changed system. This is the whole branch's honest verification state; a blank cell
+would be the problem, "compiles by inspection" is a legitimate value.
+
+| system | verified how | still needs a human |
+|---|---|---|
+| `TrapezoidGraphic` (generated plates, slant band, AA) | Roslyn stub-harness compile; geometry reasoned, not rendered | **yes** — look at the plates and the band at real size |
+| `AbilityLockupStyleSO` + `AbilityLockupStyle.asset` | compile; asset keys diffed against the class **both directions** (no unknown keys, no omitted fields); every referenced GUID resolves | tuning only |
+| `AbilityLockupView` (row, gauge, cooldown, press, chip, sweep) | compile; retire sweep **simulated offline** over all 8 HUD prefabs | **yes** — this is the bulk of the play-test |
+| `ControlGlyphSetSO` + `ControlGlyphSet.asset` | compile; all 6 sprite GUIDs resolve to real files; derived chip table computed per vessel | **yes** — pad → keyboard → pad, both directions |
+| `InputDeviceIconSetSwitcher` (627 → 138, pure detector) | compile in the InputSystem harness; every deleted public member grepped project-wide, **zero remaining callers** | **yes** — device switching still detects |
+| `VesselHUDController` / `VesselHUDView` | compile | via the vessels |
+| `SquirrelVesselHUDView` (bespoke reload retired) | compile | **yes** — boost-ring cooldown reads correctly |
+| `DolphinVesselHUDView`, `ScarabHUDView`, `ElementalBarsView/Controller` | compile | via the vessels |
+| `VesselAbilityRowAuditor` §5 retarget | **compiled verbatim** via a generated probe, negative-controlled | run the auditor once |
+| `AbilityLockupAuditor` (new, READER) | compile | run it once |
+| HUD prefab YAML edits (5 files + `Scarab.prefab`) | structural validator: no dangling component ids, no duplicate anchors, no empty `m_Script` guids; metas + GUID uniqueness clean | import without warnings |
+| `AbilityLockupStyleTests` (edit-mode) | **NOT RUN** — no Unity in this container | **yes — run the edit-mode suite** |
+| Anything on screen | **NOT VERIFIED** | everything |
+
+**Nothing on this branch has been opened in Unity.** Both stub harnesses compile,
+`check_conditional_compilation.py` passes 1771 files, and the offline checks above are the whole
+of the evidence.
+
+---
+
+### 🔴 Zero-icon vessels get their whole HUD root cleared (2026-08-26)
+
+`Docs/ABILITY_LOCKUP.md` § "A vessel with no bound icons has its slate cleared". Reported as "the
+Rhino is showing its old UI again". It was not a regression — the Rhino's cluster is genuinely
+**driven** (`RhinoVesselHUDView` writes `lineIcon`, `debuffIcon`, `crystalIcon`, `debuffTimerText`,
+`skimmerSizeIcon`, `slowedCountText` every frame) and the retire sweep was sparing it exactly as its
+third guard promises. It reads as the old UI because it is anchored at `(0.93..0.98, 0.04..0.13)` —
+the bottom-right corner the lockup row now occupies.
+
+`RetireLegacyHudContent` now skips the reference guard on any vessel that binds **no** ability icon
+(Rhino, Manta, Serpent — all `0/4`) and retires every drawing root-level child.
+
+**Accepted cost, by design call:** the Rhino stops showing its debuff timer, slowed count,
+skimmer-size ring, laser and crystal indicators. The view still writes to them — branches are
+switched off, not unwired — so restoring one is re-activating a branch. The rule reverses itself
+the day that vessel binds its first ability icon.
+
+**Verify in editor**
+
+- [ ] **Rhino**: four LOCKED cards bottom-right and nothing else on the HUD. `BoostContainer`,
+      `VesselImpactCooldown`, `TrailContainer`, `LaserTargeting`, `Crystal` and `ForceField` all
+      inactive in the hierarchy.
+- [ ] **Manta** and **Serpent**: same — locked row only.
+- [ ] **Squirrel / Sparrow / Dolphin / Scarab are UNAFFECTED.** They bind four icons, so the
+      reference guard still runs and their live readouts are still spared. This is the regression
+      to watch for: if a gauge or readout disappeared on one of these four, the icon-count split
+      is misfiring.
+- [ ] No `NullReferenceException` from `RhinoVesselHUDView` writing to a deactivated readout
+      (it null-guards every field, but confirm in the console).
+
+**Not verified:** nothing here was opened in Unity. Harness compiles;
+`check_conditional_compilation.py` passes.
+
+---
+
+### 🔴 The icon-set switcher is a pure detector; the old glyph roots retire everywhere (2026-08-26)
+
+`Docs/ABILITY_LOCKUP.md` § "Retiring the old UI". The lockup already DREW each card's control
+chip, but `InputDeviceIconSetSwitcher` was still toggling three authored glyph roots on the
+`VesselHUDPrefab` variants — a second glyph display beside the card's chip. It survived the
+lockup's retire sweep only because the sweep consulted the switcher's own references, and
+`ApplySet` re-activated the roots on every device change, so switching them off could not have
+held. The switcher gave up the display entirely (**627 lines → 138**): the three root fields, the
+per-set `HintVisual` list, the ability-placement pass, `SetHintActive`, `DriveHintVisuals` and
+`BindHintsToAbilities` are deleted; `Current`, `IsKeyboard` and `OnSetChanged` remain.
+
+**Three bugs it surfaced, all previously masked by the authored glyphs:**
+
+1. `OnSetChanged` was declared and subscribed but **never raised** — chips could not follow a
+   device change at all. `ApplySet` now raises it.
+2. `KeyboardSet()` fell back to `Xbox` whenever `keyboardTextRoot` was null, and **no vessel wires
+   one** — so `IsKeyboard` was never true and the LSHIFT/RSHIFT labels could never appear on any
+   vessel. The fallback and its flag are deleted; keyboard input reports `KeyboardText`.
+3. `padGlyphHeld` / `heldColor` were authored (`L1 Active` / `R1 Active`) and read by nothing. The
+   chip now takes the held art off the card's existing press path.
+
+Also: `VesselAbilityRowAuditor`'s section 5 was retargeted. It used to read the switcher's
+`setVisuals` by name, which now resolves to nothing — it would have reported "no control hint
+labels it" for every pressable ability on every vessel. It now checks the thing that can still
+leave a card blank: an ability whose control has no pad sprite or no keyboard label in
+`Resources/ControlGlyphSet`.
+
+**Verify in editor**
+
+- [ ] Enter freestyle on the **Squirrel** (and Serpent/Manta — same `VesselHUDPrefab`): only ONE
+      set of control glyphs is on screen, in the cards' chip sockets. `XBOX_Icon_Root` and
+      `PS_Icon_Root` should be inactive in the hierarchy after `Initialize`.
+- [ ] **pad → keyboard → pad.** The chips must swap between the `L1`/`R1` sprites and the
+      `LSHIFT`/`RSHIFT` labels **in place**, both directions, repeatedly. This is the reported bug
+      — check it on the Squirrel and the Sparrow.
+- [ ] **Hold an ability** with a pad: its chip should swap to the held sprite and take `heldColor`,
+      then return on release. A tap must not leave it stuck held.
+- [ ] Sparrow's `A`/`B` cards are expected to be **blank on keyboard** — `InputHintBindingMap` maps
+      no keyboard control to `Button1/2/3`. That is the honest state, not a regression; the
+      auditor now reports it as a glyph-table gap.
+- [ ] Run **FrogletTools > Vessels > Audit Ability Rows**. Expect the Sparrow keyboard gap above
+      and no "no control hint labels it" findings at all.
+- [ ] `VesselHUDPrefab.prefab` was edited as YAML to drop the switcher's four dead serialized keys.
+      Confirm the component still shows `Stick Actuation Threshold` = 0.25 and no missing-script
+      or missing-reference warnings on import.
+
+**Not verified:** nothing here was opened in Unity. Both stub harnesses compile (including a
+generated probe that compiles the auditor's new check verbatim, negative-controlled), and
+`check_conditional_compilation.py` passes 1756 files.
+
+---
+
+### 🔴 Prompt 16 — corridor dither 3D-SHARD kernel 6 (2026-08-25)
+
+Authored without a Unity compile. `/verify-unity` did not run. Clang harness (`Tools/Shaders/verify_prism_shard3d.py --check`) is green: LO=0.155 HI=0.915, compiled |coverage−alpha|=0.00783; glancing-plane proof passed. **Look on real mass at speed is unearned — do not Bake as CURRENT.**
+
+**What landed.** Kernel 6 (`PRISM_OCCLUSION_KERNEL_SHARD3D`) in `PrismOcclusionCorridor.hlsl` — Euclidean distance-to-owner fill, same world anchoring + octave ladder as SHATTER3D. Dispatch in both LIVE_TUNING chains. Occlusion Dither Lab popup + dials (cell, no wall) + bake confirm. CDF clang-baked. Shipped kernel remains SHATTER.
+
+**Verify in editor**
+1. FrogletTools > Ecology > Prism Animation > Occlusion Dither Lab. Enable design mode. Select **Shard3D (distance fill)**. Measure should PASS vs Worley (~≤1.35×). The preview is a z=0 slice and cannot see plate-flash — do not treat Measure as the look call.
+2. Drive the running game. Menu_Main freestyle, fly through Lattice/trail mass at speed. SHARD3D should read as volumetric roundish blobs / spherical shells, not cracked walls, and must not plate-flash face-sized plates around the vessel (that is still SHATTER3D).
+3. Shatter3D in the Lab still shows the REJECTED ON LOOK warning; baking either volumetric kernel as CURRENT requires a confirm dialog.
+4. Compile: no errors from `PrismOcclusionDitherLab.cs`. `PRISM_OCCLUSION_LIVE_TUNING` stays 0 in shipped source after you leave the Lab.
+
+**Do not tick this green on Measure alone.**
+
+---
+
+### 🔴 Prompt 15 — ShapeDrawingManager deletion / C15 (2026-08-25)
+
+Authored without a Unity compile. `/verify-unity` did not run. Human: Menu_Main has no missing-script for the deleted GUIDs. Compile is the remaining gate. **Do not claim a compile that did not run.** There is no clock path to playtest — the code is gone.
+
+**What landed.** `ShapeDrawingManager` + exclusive dependents deleted (`ShapeDrawingCrystalManager`, `EndShapeDetailHUD`, `ShapeScoreDisplay`, `ShapeScoreData`). GUID `d375b1129a0a4e29b505296c9e510bdc` was only on its own `.meta`. SOAP events `EventOnShapeGameModeStarted` / `EventOnShapePrismReturnToPool` **kept** on live prism prefabs (inert landmine — they dump every listener to `Prism.ReturnToPool`; **never Raise them**; do not strip the EventListeners). `ShapeDefinition`, spawnable shapes, `ShapeSign` / `ShapeCollisionTrigger`, `SegmentSpawner` kept. Tracker: `Docs/PRISM_ANIMATION.md` C15 / §3.8 #11.
+
+**Verify in editor**
+1. Compile clean. No missing-script on Menu_Main (or any other scene) for the five deleted GUIDs.
+2. Painting toy still paints from `ShapeDefinition` / `PaintingDefinitionSO.sourceShape`. HexRace still uses `SegmentSpawner`.
+3. Do **not** Raise `EventOnShapeGameModeStarted` or `EventOnShapePrismReturnToPool` as a "cleanup" — that would dump every listening prism to the pool.
+
+---
+
+### 🔴 Prompt 14 — C13b environment-lay pooling (2026-08-25)
+
+Authored without a Unity play-test. `/verify-unity` did not compile this change: `unity doctor` succeeds unsandboxed (~70s; CLI 1.0.0-beta.5 on PATH, Hub editors 6000.3.17f1 / 6000.5.9f1) but is not logged in, and pipeline commands against the open Editor have been timing out (`editor_status`, `recompile_status`, `list_tests`). A restricted shell reports `The required instruction sets are not supported by the current CPU`. Human look-verify is the remaining gate. **Do not claim a compile that did not run.**
+
+**What landed.** Dedicated unbounded prefab-keyed `EnvironmentPrismPool`. `PrismTrailBuilder.LayOne` / `CloneBatchAsync` pull from it. `PrepareForLay` **snaps Blue** materials (`ResetToNeutralForReuse` + `BindMaterialsImmediate`) so `ChangeTeam` is a real Blue→domain clock lerp — a raw Instantiate cloned the prefab already wearing the final domain material (Jade→Jade no-op). Flora HealthPrism Instantiates folded (`PhyllotacticFlora` / `BranchingFlora` / `AssembledFlora`). Cell drain: issued prisms `TryRelease`; remainder Destroy 500/frame. **Never** wires the prism pool-return delegate (Wanderway would be vacuumed). Named, not folded: `Boid.cs`, `SpawnableBase` non-prism `leafPrefab`, `SpawnableCord`. Structural gate: `EnvironmentPrismPoolTests`.
+
+**Verify in editor**
+1. Compile clean. Edit-mode: `EnvironmentPrismPoolTests`. Zero `[PrismClock]` regressions on an environment lay.
+2. **Freestyle cell environment.** Load a heavy authored world (Cell Selector). Prisms spawn `Domains.Blue` and **repaint to domain on the clock** (visible Blue→Jade/Ruby/Gold lerp). They must not appear already in the final domain material from frame 0.
+3. **Wanderway belt.** Fly the conveyor toy. Conserved stock is **unchanged** across a Cell Selector swap — the belt is not suctioned/TryReleased with the authored environment.
+4. **Profiler.** Environment-lay allocation churn drops vs a raw-Instantiate baseline (Get reuses inactive after the first cell-swap return; first populate of Atlantis / Wanderway still Instantiates the shortfall — that is expected).
+5. **Flora leaves.** A growing plant's new HealthPrisms also spawn Blue and clock-repaint. Plant death leaves the skeleton as cell mass (no TryRelease on wither).
+
+---
+
+### 🔴 Prompt 9b — D4 retire pooled death spawn (2026-08-25)
+
+Authored without a Unity play-test. `/verify-unity` did not compile this change: `unity doctor` succeeds unsandboxed (~70s; CLI 1.0.0-beta.5 on PATH, Hub editors 6000.3.17f1 / 6000.5.9f1) but is not logged in, and pipeline commands against the open Editor have been timing out (`editor_status`, `recompile_status`, `list_tests`). A restricted shell reports `The required instruction sets are not supported by the current CPU`. Human look-verify is the remaining gate. **Do not claim a compile that did not run.**
+
+**What landed.** Death pooling retired; Grow kept. Factory `SpawnExplosion` / `SpawnImplosion` are batch-only (`PrismDebris.TryRequest*`). A declined batch **warns once and returns null** — no pooled death GameObject. Authored config stays on the pool prefabs. Explosion pool is never Get()d and is not prewarmed. Implosion pool prewarm 64 → 12. `PrismType.Grow` / `StartGrow` / `OnGrowCompleted` stay on pooled `PrismImplosion` (Sparrow ReverseSuction). `GameLoadSampler`: explosions = `PrismDebris.LiveDebrisCount`; implosions = `LiveImplosionDebrisCount` + `PrismImplosion.EnabledInstances`.
+
+**Verify in editor**
+1. Compile clean. Zero `[PrismClock]` regressions on a blast. No pooled `PrismExplosion` GameObject appears in the Hierarchy on a detonation.
+2. **Death still draws.** AOE explosion debris and fauna-consumption suction still animate on the batched carrier. Failed batch: Console has one `[PrismFactory] Batched … declined` error, no pooled spawn.
+3. **Sparrow turret ReverseSuction.** Grow still Get()s `implosionPool`, runs `StartGrow`, and fires `OnGrowCompleted` (real prism appears after the reverse suction). Do **not** treat a missing Grow visual as a D4 success — that would be a regression.
+4. Explosion pool does not prewarm 64 at scene load. Implosion prewarm is ~12.
+5. GameLoadSampler / harness HUD: `exp` counts batched death only; `imp` includes batched suction **and** live Grow instances.
+
+---
+
+### 🔴 Prompt 3 — C6 parent-scale as mover-contract (2026-08-25)
+
+Authored without a Unity play-test (one-line delete + comments + docs). Human look-verify is the remaining gate. **Do not claim this play-test passed.**
+
+**What landed.** Ruling **(b)**: creature-root / worm-segment scale is mover-contract, same class as locomotion. `Fauna.GrowToScale` still lerps `localScale` (continuity). The redundant `NotifyBodyPrismsMoved()` inside that lerp is deleted — `Boid` / `LightFauna` / `WormFauna` already sync every `Update`. `WormFauna.GlideScales` was already on that path. (a) — snap root final + per-prism grow-clock stamps — was rejected. Colliders ride the live transform (zero new colliders).
+
+⚠ **SCOPE REDUCED 2026-08-26.** `Docs/ECOSYSTEM.md` §40 retired lifeform LEVELS, deleting `Fauna.GrowToScale` and `GrowCrystalWithPop` — a lifeform is sized at spawn and never re-sized mid-life. `WormFauna.GlideScales` is the only parent-scale animation left and the (b) ruling still governs it. **Step 2 below is VOID** (the Space-5 joust now `Nourish()`es — it breeds the ally rather than growing it); step 3 is the whole remaining gate.
+
+**Verify in editor**
+1. Compile clean. No new tests (one-line delete). Zero `[PrismClock]` errors on a live cell.
+2. ~~**Squirrel Space-5 joust growth.**~~ **VOID** — nothing grows on a joust any more (§40.4). If you want to look at the ability, that is `QA-ECOLOGY-ELEMENTAL-VARIATIONS` step 9: the ally must **not** grow, its brood must arrive sooner.
+3. **Worm-colony glide.** Segment taper on growth/split/death is smooth. Same profiler read: `Update` → `GlideScales` then `SyncBodyPrismsToIndex` is the one sync, not two.
+
+---
+
+### 🔴 Prompt 13 — C11 spindle `_DeathAnimation` fade on the clock (2026-08-25)
+
+Authored without a Unity play-test (session wired graphs + C# + tests; `wire_prism_spindle_death_clock.py --check` green). Human look-verify is the remaining gate. **Do not claim this play-test passed.**
+
+**What landed.** Spindle evaporate / condense is a one-shot stamp. `PrismDeathClock_float` spliced into SpindleGraph + AnimatedSpindleGraph only (not BlockGraph). Stamp `_DeathStartTime` / `_DeathDuration` / `_DeathDirection` once via MPB; `PrismTimerManager` settle; `SetPropertyBlock(null)` at settle. Ordered wither is `ForceWither(i * interval)` StartTime offsets after a one-time distance sort. `LeaveSkeleton()` still runs **before** any spindle stamp. Heart release still waits until the wither has reached the core (`count × interval`). **SRP honesty:** a renderer WITH an MPB is still excluded from the SRP Batcher during the ~1s fade; this recovers zero per-frame CPU and the Batcher **after** settle.
+
+**Verify in editor**
+1. Compile clean. Edit-mode: `PrismSpindleDeathClockTests`. Validate Clock Wiring does **not** need to name spindle CFs — python `--check` owns them. Do not dump `PrismDeathClock` onto BlockGraph Specs.
+2. **Starve a creature.** Spindles evaporate extremity-first (farthest-from-heart before the core). Smooth; body prisms stay as a skeleton. Crystal becomes collectable when the wither reaches the core. Zero per-frame spindle writes in the profiler. Zero `[PrismClock]` `_DeathStartTime` errors.
+3. **Joust a creature.** Same geometry backwards (heart-outward). Crystal already freed at strike. Smooth; skeleton remains.
+
+---
+
+### 🔴 Prompt 4 — C9 cell-swap world suction on the clock (2026-08-25)
+
+Authored without a Unity play-test (session wired graphs + C# + tests; `wire_prism_suction_clock.py --check` green). Human look-verify is the remaining gate.
+
+**What landed.** True suction (whole-prism lerp toward the cell centre) on live prisms. `PrismSuctionConverge_float` spliced into BlockGraph + ExplodingBlockGraph; four `PrismSuction*Override` + `PrismImplosionLocationOverride` on the Prism entity prototype; `Cell.StampRetiredWorldSuction` → `Prism.StampSuctionToward`. Root `localScale` wait kept for membrane / nucleus / cytoplasm / lifeform spindles. Drain 500/frame unchanged. SuctionGraph still SequentialFaceConverger (fauna consumption) — no Converge there.
+
+**Auto-Wire property counts** will rise vs Prompt 8's snapshot: **BlockGraph 24 / ExplodingBlockGraph 27 / SuctionGraph 5** (live graphs gain the four `_Suction*` floats + `_Location`). Prompt 8's 19 / 22 / 5 is a historical snapshot of that day's verification, not a regression.
+
+**Verify in editor**
+1. Compile clean. Edit-mode: `PrismClockWiringTests` + `PrismCellSwapSuctionTests`.
+2. FrogletTools > Ecology > Prism Animation > **Validate Clock Wiring** — ALL PRESENT; live graphs name `PrismSuctionClock` + `PrismSuctionConverge`; SuctionGraph has Clock and must NOT have Converge.
+3. Auto-Wire Clock Properties — BlockGraph 24 / ExplodingBlockGraph 27 / SuctionGraph 5 already present. No unexpected graph writes.
+4. **Cell Selector** (Menu_Main freestyle): swap cells. Old world converges on the cell centre behind the veil (does not snap, does not collapse in place). Zero `[PrismClock]` errors. Membrane / nucleus / cytoplasm still suction with the root.
+
+---
+
+### 🟡 Prompt 8 — clock validator families + Auto-Wire `_ShieldMorph*` + SuctionGraph corridor ruling (2026-08-25)
+
+C# + tests + docs only (no `.shadergraph` edits). Human-verified in-editor 2026-08-25: Validate Clock Wiring + Auto-Wire. Edit-mode NUnit still unrun (Unity CLI pipeline was unresponsive in-session).
+
+**What landed.** (1) `PrismClockWiringValidator.Specs` names `PrismErosionFade` / `PrismBackFaceFade` / `PrismDestructionSight` + the five unexposed `_PrismSight*` globals + load-bearing edges; Validate Clock Wiring ANDs `PrismOcclusionWiringValidator.CheckGraphWiring` (corridor stays one SoT). (2) `PrismClockGraphWirer` stamps `_ShieldMorph*` on both live graphs and declares node splices python-owned. (3) SuctionGraph is a named **live** corridor exclusion (`KnownCorridorExcludedGraphs`), distinct from dead `KnownLegacyPrismPrefabs`.
+
+**Verify in editor**
+1. ✅ Compile clean (validator ran from the menu).
+2. Edit-mode: `PrismClockWiringTests` + `PrismOcclusionCoverageTests` (incl. `SuctionGraph_IsANamedCorridorExclusion_NotASilentOmission`).
+3. ✅ FrogletTools > Ecology > Prism Animation > **Validate Clock Wiring** — ALL PRESENT; corridor census ANDed; SuctionGraph named as live exclusion; 22 materials declare clock props; instanced rendering ON.
+4. ✅ Auto-Wire Clock Properties — BlockGraph 19 / ExplodingBlockGraph 22 / SuctionGraph 5 already present (incl. `_ShieldMorph*`); node splices declared python-owned. No graph writes.
+### 🔴 Sparrow — the spread cone becomes a four-stage curve with a blow-out (`claude/sparrows-gun-spread-curve-hacjka`, 2026-08-25)
+
+Authored without a Unity compile or play-test (remote session, no editor, no `unity` CLI binary in
+this environment). Every changed C# file **was** compiled for real, against a Unity/NUnit stub
+harness under Mono 6.8, and the whole `GunSpreadMathTests` suite was executed there — **27/27
+pass**, including the 16 pre-existing tests. What is unverified is Unity-side: the asset import,
+the inspector foldout, and the feel.
+
+**What landed.** `GunSpreadMath.HalfAngleDegrees` grew from a single ramp into a four-part
+piecewise curve — grace, ramp, plateau, blow-out — consumed through a new `GunSpreadStages`
+parameter object. `GunSpreadProfile` gained three authored fields (`plateauSeconds`,
+`blowoutGrowthDegreesPerSecond`, `blowoutMaxMultiplier`) and derives the blow-out cap from the
+sustainable one rather than authoring it twice. `GunSprayAccuracy` passes `_profile.Stages`.
+`FullAutoAction.asset` retuned: onset `0.12 → 2`, growth `1 → 0.75`, plus the three new keys.
+Files: `_Scripts/Utility/GunSpreadMath.cs`, `R_VesselActions/Data Containers/GunSpreadProfile.cs`,
+`R_VesselActions/Executors/GunSprayAccuracy.cs`,
+`_Scripts/Tests/Editor/GunSpreadMathTests.cs`, `_SO_Assets/VesselActions/Sparrow/FullAutoAction.asset`.
+
+**The shipped curve** (proven by running it, not by reading it):
+
+| held | half-angle |
+|---|---|
+| 0 – 2 s | 0° (perfect) |
+| 2 → 4 s | 0° → 1.5° at 0.75 °/s |
+| 4 → 6 s | 1.5° held |
+| 6 → 10 s | 1.5° → 7.5° at 1.5 °/s |
+| 10 s → ∞ | 7.5° (hard cap) |
+
+**Verify in editor**
+1. `FullAutoAction.asset` imports clean and the inspector shows a **Blow-out** foldout with
+   `plateauSeconds 2`, `blowoutGrowthDegreesPerSecond 1.5`, `blowoutMaxMultiplier 5`. A field
+   showing its C# default instead of the asset value means the YAML key did not bind.
+2. `MinigameDogFight`, Sparrow, hold fire on a distant wall and watch the impact circle through
+   all four stages: point → growing → **static from 4 s to 6 s** → growing again, faster → stops
+   at 10 s about 5× wider. The static beat is the one most likely to be lost.
+3. Release and re-pull anywhere on that curve — the next rounds must be dead-on.
+4. Toggle Turret Stance mid-hold without releasing: prisms must start laying at the *open* cone
+   (the deferred-reset hand-off), and the turret must reach the same blow-out.
+5. Gamepad: the buzz climbs from 2 s to 4 s and then goes **flat for the rest of the hold**,
+   blow-out included. That is deliberate — see `SPARROW_SPRAY_ACCURACY.md` Round 6.
+6. Console clean through a 15 s hold, both fire modes.
+
+**First-pass tuning (expect a balancing pass).** Two seconds of perfect accuracy is **360 rounds**
+per pull — much more forgiving than the 0.12 s / 22-round window it replaces. **Re-check Dog
+Fight's point target and Salvo's prism target in play** (FrogletTools ▸ Game Modes ▸ End Game
+Conditions; both authored, no code change to retune). If the free window reads as too generous,
+`onsetSeconds` is the one field; if the blow-out never gets met in practice, shorten
+`plateauSeconds` before touching the multiplier.
+
+---
+
+### 🔴 Skyburst — the missile grows 20× in the first fifth of its flight, on a subdivided mesh (`cece/gallant-noether-o4jugw`, 2026-08-25)
+
+Authored without a Unity compile or play-test (remote session, no editor, no `unity` CLI binary in
+this environment). Touches `Projectile.cs`, `ElementalScaling.cs`, `FireGunActionSO.cs`,
+`FireGunActionExecutor.cs`, `FullAutoActionSO.cs`, the new `RoundGrowthRamp.cs`, two test files,
+plus two hand-edited assets — `SkyBurstGunAction.asset` and `SkyBurstProjectile.prefab` — and a
+**machine-edited model**, `Assets/_Models/Sparrow Missile.fbx`.
+
+**What landed.** (Reconciled with PR #786, which merged mid-branch and made growth a HIT VOLUME
+rather than a size. The missile satisfies that law from the other end: its MODEL grows and its
+sphere collider is FITTED to the model every frame — so its reach changed, see step 5.)
+The Sparrow's skyburst missile now swells in flight the way its bullets do — the
+SAME curve, moved to one home (`ElementalScaling.RoundGrowthFactorForLevel`, off
+`FullAutoActionSO`) — but on the opposite *shape*: it reaches **20×** at resting Mass in the
+**first 20% of the flight** (0.6 s, ~70 u from the bay) and holds that size for the remaining 80%,
+where a bullet is still growing when it arrives. Mass still scales it (32× at level 10, 14×/38× at
+the band edges). `Projectile` gained three optional serialized fields, all defaulting to today's
+behaviour so every other round is untouched: `flightGrowthTarget` (empty = the root),
+`flightGrowthUniform`, `flightGrowthCompleteAt01` (1 = the whole flight). The missile points growth
+at its `MissileVisual` child, so **the model grows and the hit sphere does not** — its reach is
+byte-identical to before. Rationale, the size/geometry table, and what the 20× costs:
+`_Scripts/Controller/Vessel/R_VesselActions/SPARROW_SKYBURST_BAY.md` § "The missile grows as it
+travels (MASS)".
+
+**The mesh.** At 20× the model was an eight-sided barrel (312 quads) filling the screen, so
+`Tools/Build/subdivide_sparrow_missile.py` applies two Catmull-Clark steps **in place**: 624 →
+9,984 triangles, barrel 8- → 32-sided (silhouette deviation 7.61% → 0.48%), renormalized back onto
+the authored bounding box so the launch size the growth math is written against is unchanged. The
+geometry keeps its name, so it keeps its Unity fileID; the file keeps its guid; material layer,
+submesh order, UVs and unit scale are untouched — **the prefab and the .meta did not change**. The
+four element blend shapes were dropped (inert on this projectile — it renders through a
+`MeshFilter`; keeping them would leave a shape key that tears the subdivided mesh).
+
+**Verified offline** (more than inspection): .NET 8 installed in-session; the real shipped
+`ElementalScaling.cs`, `RoundGrowthRamp.cs`, `SparrowRoundGrowthTests.cs` and
+`RoundGrowthRampTests.cs` compiled and executed against a `Mathf`/NUnit shim — **21/21 tests
+pass**; all five edited/added C# files Roslyn-parse with 0 syntax errors;
+`check_conditional_compilation.py` OK (1740 files). The missile geometry was **measured, not
+assumed** — `Sparrow Missile.fbx` vertex bounds span 8.2951 × 1.9054 mesh units at
+`UnitScaleFactor 1`, which at the prefab's `MissileVisual` 2 × root `ProjectileScale` 10 is a
+1.659 u × 0.381 u launch size, independently reproducing the 1.7 u the bay doc measured a
+different way. **The rewritten FBX was checked with `assimp`, an independent FBX reader** — 2
+meshes in the same order (1,152 / 3,840 quads = exactly 16× the authored 72 / 240 material split),
+2 materials, 1 animation, closed genus-0 surface, bounds matching to 6 decimals. That check earned
+its keep: a first pass produced a byte-for-byte identical node tree that assimp nonetheless read as
+having **no animation**, because the writer dropped the empty-scope terminator that 7 childless
+nodes (one of them `AnimationLayer`) carry. Fixed and re-proved before the asset was touched.
+
+**Verify in editor**
+1. **Compile clean**, then run the edit-mode suite — `SparrowRoundGrowthTests` (11) +
+   `RoundGrowthRampTests` (10) should be 21/21 inside Unity as they are offline.
+2. **Prefab took.** Open `SkyBurstProjectile.prefab` → `Projectile`: *Flight Growth Target* =
+   `MissileVisual`, *Flight Growth Uniform* ticked, *Flight Growth Complete At 01* = 0.2. All
+   three were written into the YAML by hand. A field that did not deserialize is quiet and wrong:
+   a missed target puts growth on the root, which WOULD grow the hit sphere (see 5); a missed
+   window makes it swell across the whole flight instead of holding.
+3. **Dog Fight, fly the Sparrow, fire a skyburst.** The read to check is the *shape*: it should
+   leave the bay at bay-missile size, swell hard over ~0.6 s / ~70 u, and then cross the rest of
+   the arena as a fixed object. If it is still visibly growing at impact, the window is not
+   applying.
+4. **The handoff.** At the 0.2 s bay handoff the live projectile should still match the animated
+   bay missile's size — the swell starts *after* it clears the hull, so a pop there is a
+   launch-size problem, not a growth one.
+5. **The hit sphere DID change, deliberately — this is the balance-sensitive line.** The missile
+   used to hit with a fixed 8.5 u sphere (`0.85 × ProjectileScale 10` arithmetic, never authored,
+   dwarfing a 1.7 u model). It now hits with the model's own widest cross-section: **3.81 u at
+   resting Mass**, 45% of the old reach, and varying with Mass (2.67 u → 7.24 u). Expect missiles
+   to be meaningfully harder to land in Dog Fight and say whether that reads as fair. Two sub-checks:
+   the sphere's front surface should sit on the missile's nose (a hit should register the instant
+   the nose touches, never after it has passed through), and reach should be visibly small for the
+   first ~0.6 s while the model is still swelling.
+6. **The trailing tail.** The forward overhang is gone by construction, but the model now extends
+   up to ~48 u BEHIND its hit sphere (25.6 u at resting Mass). That is the permitted direction — a
+   tail that has already passed you cannot cause a false read — but it is worth one look in play to
+   confirm it reads as a missile with a long body rather than as a hit that landed early.
+7. **Pool reuse.** Fire many missiles in one turn (ammo cost 0.5, two per full bar — reload and
+   repeat a dozen times). Every one must launch at the SAME small size. Growing launches mean the
+   child-scale rebase in `LaunchProjectile` is not running.
+8. **Mass response.** Collect Mass crystals and fire again: 32× at Mass 10 vs 20× at rest should
+   be obvious. Author both endpoints equal on the asset if you want one fixed size regardless.
+9. **The exhaust.** The root `ParticleSystem` does not grow with the model, and against a 33 u
+   missile it will read as much too small — this is the pre-existing follow-up in the bay doc, and
+   the 20× size makes it the most likely thing to look wrong.
+10. **The model re-imported.** Highest-risk item of the three asset edits, because the FBX was
+    rewritten by a tool rather than by a modelling package. Check the Console for an import error,
+    then select `Sparrow Missile.fbx` — the preview should show ~9,984 tris and a smooth barrel.
+    The prefab reference is the thing to confirm: `SkyBurstProjectile.prefab` → `MissileVisual` →
+    `Mesh Filter` must still read `Cube.003` and not "Missing". (It resolves by fileID, which
+    `fileIdsGeneration: 2` derives from the mesh NAME — unchanged — but that is reasoning, not a
+    test.) In play, the two material zones must not have swapped colour.
+11. **The rounded nose.** Subdivision fillets sharp features: the shoulder at y ≈ -1.2 and the nose
+    tip (~17% blunter at its last ring) are rounder than the artist left them. Everywhere else the
+    radius profile tracks the original within 0.5%. If the nose reads as too soft, `--levels 1`
+    halves the rounding and quarters the triangles.
+
+**First-pass tuning** (starting points, expect a balancing pass): `growthFactorAtRestingMass: 20`,
+`growthFactorAtFullMass: 32` on `SkyBurstGunAction.asset`; `flightGrowthCompleteAt01: 0.2` on the
+prefab. There is no longer a size CEILING — the collider follows the model, so growing it further
+grows the reach with it. That makes the growth factors a **reach** dial as well as a size one:
+`SparrowRoundGrowthTests.TheMissileHitSphereShrankFromTheOldEmergentOne` pins 3.81 u at resting
+Mass so a retune has to argue with the number rather than drift past it. Mesh resolution is `subdivide_sparrow_missile.py --levels` (2 shipped);
+`--check` proves the shipped mesh's invariants without needing the original, which now lives only
+in git history.
+### 🔴 Debris face pivot reads the mesh's baked centroid (2026-08-25)
+
+`Docs/PRISM_ANIMATION.md` §4.8.2. `RotateFacesAlongAxis` was spinning every face about a
+pivot derived for the prism CUBE's four-wedge faces; on a shield shard (one triangle per
+face) that lands off centre on the octahedron and **outside the triangle on all 24
+stellation faces**. The graphs now lerp the pivot onto the per-face centroid the shield
+generators already bake into TEXCOORD1, under a new Hybrid-Per-Instance float
+`_FacePivotFromCentroid` (0 = legacy derived pivot, 1 = mesh centroid).
+
+**Authored out-of-editor — no Unity available in the authoring session** (no editor, no
+`unity` CLI), so `/verify-unity` did not run. What DID run, and what each pass is worth:
+
+| pass | proves |
+|---|---|
+| Roslyn, no stubs, all 19 changed `.cs` | syntax + declaration shape only. **Blind to method bodies** once a base class is unresolved — confirmed by injecting a `CS0103` into this branch's own test file and watching it go unreported (`asset-surgery` §4, corrected 2026-08-24) |
+| Roslyn + a stub harness, **executing** `PrismFacePivotTests` against the real mesh generators and the real shipped graph files | **7/7 pass.** Body-level compile errors and the assertions themselves. Gate proven to fail on three injected defects: an undeclared identifier in a body, the stella geometry claim inverted, and the producer constant flipped |
+| `Tools/Shaders/wire_prism_face_pivot.py --check` | graph topology: registries resolve, one feeder per input, acyclic, property-node slot types |
+| `Tools/Shaders/verify_prism_face_pivot.py` | the SHIPPED subgraph's arithmetic, evaluated as a dataflow graph |
+| `Tools/Build/check_conditional_compilation.py` | the `#if` guard rules |
+
+**Still unproven offline, and the reason the steps below exist:** that Unity IMPORTS both
+graphs without rejecting them (a rejected graph is magenta, and no offline pass can see it),
+and how any of it looks in motion.
+
+**Import first.** Two shader graphs were edited out-of-editor
+(`ExplodingBlockGraph.shadergraph` + `PrismGraphs/Subgraphs/RotateFacesAlongAxis.shadersubgraph`).
+They need a Unity import pass to regenerate their shaders. If anything looks wrong, first
+check for magenta (a rejected graph) and re-import both.
+
+1. **Compile clean**, then run the edit-mode suite → `PrismFacePivotTests` all green. Its
+   `TheRotateNodeSlotIds_MatchWhatUnityWillRecompute` is the important one: it asserts the
+   offline `Guid.GetHashCode()` derivation the wiring rests on against the real runtime.
+2. FrogletTools > Ecology > Prism Animation > **Validate Clock Wiring** →
+   `_FacePivotFromCentroid` reported ✅ (Hybrid Per Instance) on ExplodingBlockGraph.
+3. **Nothing is magenta.** Any prism material rendering magenta means a graph was rejected on
+   import — `git checkout` both graph files and re-run the wirer.
+4. **A dying PRISM looks exactly as it did.** This is the no-regression check and it should be
+   indistinguishable; the change is bit-identical at weight 0. Blow up a trail with the
+   Dolphin's crystal blast and compare against `bleeding-edge` if in any doubt.
+5. **Drop a SHIELD** (shoot shielded mass until the shield sheds, or a shield timer expires) →
+   the octahedron's eight triangles tumble about their own centres instead of being flung on a
+   lever. Then a **SUPER-shielded** prism (Skim Race track, or the Rhino's energy sword, which
+   breaks the tier) → the stella's 24 spike faces should read the same way; that tier is where
+   the defect was worst.
+6. **Both at once** — a blast that kills plain and shielded mass in one volume → shards of both
+   kinds fly in the same batch, same speed, same erosion wipe. A visible difference in anything
+   OTHER than the spin centre means something beyond this change moved.
+
+**Known limitation, deliberate.** The weight is per debris entity, not per mesh: a future
+generated mesh that bakes TEXCOORD1 centroids must pass `FacePivotFromCentroid = 1` at its own
+spawn site. `PrismFacePivotTests.TheTwoDebrisProducers_DeclareTheirOwnFaceLayout` gates the two
+that exist today.
+
+---
+
+### 🔴 Sparrow — the strafing roll's arm is a 0.3 s WINDOW, not the whole boost hold (`claude/sparrow-spin-cooldown-p8agtv`, 2026-08-25)
+
+Authored without a Unity compile or play-test (remote session, no editor, no `unity` CLI binary in
+this environment). Touches `BarrelRollController.cs`, `SparrowHUDController.cs`,
+`SparrowHUDView.cs`, the new `Data/Enums/RollChargeState.cs`, `Sparrow.prefab` (one added
+serialized field), plus `SPARROW_AFTERBURNER.md` and `FLEET_MAPS.md`.
+
+**What landed.** A boost press arms the strafing roll for `rollArmWindowSeconds` (**0.3 s**) instead
+of for the whole press. Reach full stick deflection inside the window and you roll; let it lapse and
+the charge is spent unfired — the boost keeps running, another roll needs another press. The reported
+bug is the direct consequence of the boost being indefinite: `IsBoosting` stays true for the whole
+hold, so an arm that lived for the press fired on the first later moment the stick touched the
+perimeter — an ordinary hard turn — and the vessel spun for no reason the pilot could name.
+
+Unchanged by design: a stick already pinned at max when boost starts still rolls immediately;
+holding at the perimeter still never repeats; the roll still works identically in the turret stance;
+the AI is still inert (no stick input). `rollArmWindowSeconds = 0` restores the old
+armed-for-the-whole-press behaviour.
+
+The charge now carries **why** it changed (`CosmicShore.Data.RollChargeState`: `Spent` / `Armed` /
+`Lapsed`) because every boost press now ends in a charge change. The pip empties for both `Spent`
+and `Lapsed`; only `Spent` gets the consume punch, so the HUD can't announce a roll the pilot never
+got. The enum is in the `CosmicShore.Data` leaf assembly (read by UI, written by gameplay);
+`SparrowHUDView` already imported that namespace and `Assembly-CSharp` auto-references the asmdef,
+so no wiring changed.
+
+**Verified offline** (more than inspection): .NET 8 installed in-session, and all four **real
+shipped files** (`RollChargeState.cs`, `BarrelRollController.cs`, `SparrowHUDController.cs`,
+`SparrowHUDView.cs`, plus the real `InputEvents.cs`) **type-check clean under Roslyn** at
+`-langversion:9.0` against a transcribed stub harness — 0 errors, 0 warnings; every error the
+harness ever surfaced was a stub gap (`Mathf.Clamp`, `Vector3.one`, `InputEvents`), which is what a
+working harness looks like. It caught one real defect before it shipped: `SparrowHUDView.cs` has no
+`using CosmicShore.Gameplay`, so the enum's first home would not have compiled — which is what moved
+it to `CosmicShore.Data`. Blast radius grepped: `OnRollChargeChanged` / `SetRollCharge` have exactly
+one subscriber and one caller each (`SparrowHUDController`), no scene overrides any
+`BarrelRollController` field, and no name in the new `using CosmicShore.Data` collides with anything
+`SparrowHUDController` references.
+
+**Verify in editor**
+1. **Compile clean.** Confirm `Sparrow.prefab` shows **Roll Arm Window Seconds = 0.3** on
+   `BarrelRollController` (the field was added to the prefab YAML as well as the C# initializer —
+   check it did not import as 0, which would restore the old behaviour silently).
+2. **The bug is gone.** Fly the Sparrow, hold boost through a long hard turn with the stick pinned
+   at the perimeter — it should **not** roll. This is the whole point of the change.
+3. **The move still works.** Tap boost and slam the stick to full deflection in the same beat — it
+   should roll exactly as before (same 0.6 s, same strafe distance, same direction mapping).
+4. **Stick already pinned.** With the stick at max, press boost — should roll immediately.
+5. **Turret stance.** Stop (`ToggleStationaryModeAction`), then press-and-slam — the dodge should
+   still strafe.
+6. **The pip.** On every boost press the boost icon's ring fills, then wipes empty ~0.3 s later
+   with **no scale punch**; a press that actually rolls wipes empty **with** the punch. If the
+   fill/wipe on every press reads as busy at speed, that is the tuning to report — the honest
+   alternatives are a shorter `rollChargeTweenDuration` (0.15 s today) or leaving the ring full
+   while boosting, which would be a lie about availability.
+
+**First-pass tuning (NOT settled).** `rollArmWindowSeconds = 0.3` is the number asked for. If a
+deliberate press-then-slam misses on a gamepad it is too tight (try 0.4–0.5); if accidental spins
+survive it is too loose. Serialized per-vessel, so it is one inspector field either way.
+
+**Second commit on this branch — the root roll now reads.** The vessel's small REAL roll
+(`rootRollDegrees`, 15°: the up vector rotated about its own forward, the two-stick `YDiff` roll,
+signed to match the animation) was landing and reading **backwards**. The bank-into-turn is the same
+rotation about the same axis so they add, and the roll triggers on a FULL stick deflection — peak
+bank: `35 × 0.1 + 30 = 33.5 °/s` at cruise (**20.1°** over the roll) and `41.0 °/s` boosting
+(**24.6°**), against the roll's 15° the other way. Since the camera reads the ROOT's up, that is the
+horizon tilt the pilot feels, and it tilted the wrong way.
+
+Fixed by a handover rather than a bigger number: `VesselTransformer.BankIntoTurnSuppressed` (new,
+default false, cleared by `ResetTransformer`, set/cleared by the roll routine and `OnDisable`)
+suspends the bank for the roll's 0.6 s, so 15° is the whole roll the vessel gets at any speed. Pitch
+and yaw untouched. Honoured in **all three** `Roll()` bodies — base, `SingleStickVesselTransformer`,
+`ScarabVesselTransformer` — because the overrides do not call base and a base-only gate would reach
+neither the Sparrow nor the Serpent (`TurnScalar`'s recorded trap). `GunVesselTransformer` inherits
+the base body. The roll is also advanced by the delta of the animation's own smoothstep, so the tilt
+eases in and out with the spin and the authored degrees land exactly.
+
+**Verify in editor (root roll)**
+1. **Direction.** Boost + slam the stick right, then left. The horizon should tilt the **same way
+   the model spins**, both times. If it tilts against the spin, flip `invertRollDirection` — that
+   one toggle now moves the animation and the root roll together, since both read `rollSign`.
+2. **Magnitude.** 15° is deliberately slight; the vessel should end the roll a touch off level and
+   **stay there** (there is no auto-level, and a two-stick `YDiff` application is permanent too).
+   `rootRollDegrees` is the knob, `Range(0, 45)` now.
+3. **The turn is unaffected.** Mid-roll the vessel must still pitch and yaw at full rate — only the
+   cosmetic bank stands down. If the ship feels like it stops turning, that is a bug, not tuning.
+4. **The bank comes back.** Hold the stick through the end of the roll: the bank-into-turn should
+   resume normally the frame the roll ends.
+5. **Nothing else banks differently.** Scarab and Serpent share the touched `Roll()` bodies but
+   nothing sets the flag on them — confirm their banking is unchanged.
+6. **Interrupt safety.** Trigger a roll and immediately swap vessels / disable the ship; the next
+   vessel must bank normally (the flag is cleared in `OnDisable` and `ResetTransformer`).
+7. **Console is quiet.** The per-roll `[BarrelRoll] Triggered:` line moved onto the new
+   `CSLogChannel.SparrowStrafingRoll` (off by default) — it was logging unconditionally on every
+   input for a finished ability, the same spam `ScarabDash` records for the sibling. Turn it on in
+   **FrogletTools > Toolbox > Logging** while verifying steps 1-5; it prints direction, the stick
+   vector and the nudge, which is the cheapest way to confirm the 0.3 s window is gating.
+
+---
+
+### 🔴 UI — `SafeAreaFitter` component + test scene (`claude/safe-area-fitter-component-wrmdva`, 2026-08-24)
+
+Authored without a Unity compile or play-test (remote session, no editor, no `unity` CLI binary in
+this environment). **Not applied to any prefab** — this branch ships the component, an edit-mode
+suite, and a standalone test scene only. `ProjectSettings` is untouched:
+`androidRenderOutsideSafeArea: 1` was already enabled and stays enabled, which is the contract this
+component serves — background art bleeds under the notch while a separate content layer is pulled in.
+
+**What landed.**
+- `Assets/_Scripts/UI/SafeAreaFitter.cs` — drives its RectTransform's `anchorMin`/`anchorMax` from
+  `Screen.safeArea`, recomputing only when the safe area, resolution, or orientation changes
+  (cached; the steady-state per-frame cost is one `Screen.safeArea` read plus a `Rect`/int compare).
+  A full-screen safe area (desktop) is a true no-op — nothing is written, and if insets *had* been
+  applied earlier (a device rotating a cutout off-axis) the authored anchors are restored. Only
+  anchors are written; authored `offsetMin`/`offsetMax` are preserved, so padding survives.
+  A rect that is point-anchored on both axes gets one `CSDebug.LogWarning` at enable, since driving
+  its anchors would slide it rather than resize it.
+- `Assets/_Scripts/Tests/Editor/SafeAreaFitterTests.cs` — the pure halves
+  (`IsFullScreenSafeArea`, `ComputeAnchors`) against real iPhone-class landscape/portrait safe
+  areas, an Android single-edge cutout mirrored across landscape-left/landscape-right, sub-pixel
+  rounding, out-of-range clamping, and a degenerate mid-rotation screen.
+- `Assets/_Scenes/Game_TestDesign/SafeAreaFitterTestScene.unity` (+ `SafeAreaTestReadout.cs`
+  beside it) — hand-authored scene YAML: a magenta full-bleed background under a translucent
+  content layer carrying the fitter and four corner markers, plus an IMGUI readout of the live
+  safe area / resolution / orientation / applied anchors. The content layer is authored with the
+  24 px minimum edge inset from `Docs/STYLE_FOUNDATION.md` §8 (`sizeDelta -48,-48`), which the
+  fitter preserves — so the scene demonstrates the full §8 contract, inset included, and the inset
+  still reads on desktop where the fit itself is a no-op. Not in Build Settings; open it by hand.
+
+**Verified out of editor** (what was actually run here, so nobody re-does it): all three sources
+compile under Roslyn against a faithful `UnityEngine` stub, and the shipped NUnit suite was executed
+for real — 8/8 pass. The scene YAML parses and has zero dangling local `fileID` references.
+
+**Verify in editor**
+1. **Compile clean**, then Test Runner ▸ EditMode → `SafeAreaFitterTests` 8/8 green.
+2. Open `SafeAreaFitterTestScene`, press Play on a normal Game view → readout says
+   `full screen True`, `insets none`, and the content-layer anchors are still `0,0 – 1,1`
+   (the desktop no-op: the teal layer sits at its authored 24 px inset and is otherwise unmoved).
+3. Window ▸ General ▸ **Device Simulator**, pick a device with a cutout (e.g. iPhone X/14 Pro),
+   press Play → the magenta background still fills the whole panel *including under the notch*,
+   the teal content layer and its four corner markers pull in to the safe rect, and the readout's
+   anchors match `safeArea / resolution`.
+4. Rotate the simulated device **landscape-left ↔ landscape-right** while in Play → the content
+   layer re-fits on the same frame and the cutout inset moves to the other edge. This is the only
+   rotation the game allows (`allowedAutorotateToPortrait: 0`), and the resolution is IDENTICAL
+   across it, so it is the case a width/height-only change check would sleep through.
+5. Resize the Game view / toggle fullscreen with no simulator → nothing moves and nothing is
+   logged (the change check runs, the apply does not).
+6. Per §8's test aspects, repeat step 3 at **16:9 · 16:10 · 21:9** → the content layer stays inside
+   the safe rect at each, and the background still fills the panel.
+   *(Style Foundation v0.3 moved safe area §9 → §8 and changed this list; it read
+   16:9 · 20:9 · 4:3 under v0.2, which is what the scene was originally authored against.
+   Running the two retired aspects as well costs nothing and is worth doing once.)*
+
+**Not done on purpose:** no prefab or shipping canvas has the component attached yet. Wiring it
+(most likely onto the content layer under `GameCanvas.prefab`, applied to the prefab rather than
+per-scene — see `Docs/GAMECANVAS.md`) is a separate pass.
+
+---
+
+### 🔴 Flora — TIME breeds faster, the second elemental law (`claude/flora-reproduction-balance-y9gaij`, 2026-08-24)
+
+Authored without a Unity compile or play-test (remote session, no editor, no `unity` CLI binary in
+this environment). Touches `FloraReproductionRules.cs`, `Flora.cs`, `AssembledFlora.cs`,
+`FloraConfigurationSO.cs` (tooltip only), `FloraReproductionRulesTests.cs`, plus docs and the
+`author_flora_populations.py` docstring. **No assets changed** — the law is code, and
+`author_flora_populations.py --check` is clean.
+
+**What landed.** A Time plant reproduces at 1.25× the fleet rate, Charge/Mass/Space at 0.8×. One
+rate constant divides both reproduction paths, because both measure *cost per child*: the
+per-plant growth quota (prisms/child, `Flora.ResolveGrowthPerOffspring`) and the lattice colonies'
+cycle period (seconds/child, `AssembledFlora.ColonyCyclePeriod`). Caps are untouched, so the
+always-on heart-collider ceiling is exactly unchanged — only how fast a species reaches it.
+
+**Verified offline** (more than inspection): .NET 8 installed in-session, the real shipped
+`FloraReproductionRules.cs` + `FloraReproductionRulesTests.cs` compiled and executed against a
+`Mathf`/NUnit shim — **20/20 tests pass, 50 assertions**; all five edited C# files parse with 0
+Roslyn syntax errors; the `Element`-is-both-a-property-and-a-type resolution (used in
+`ColonyCyclePeriod`) compiled as a standalone case; `check_conditional_compilation.py` OK;
+`author_flora_populations.py --check` clean. Blast radius grepped: all three `TryBeginCycle` sites
+take the shared period, the one remaining raw `cfg.GrowthPerOffspring` read is the
+does-this-species-reproduce gate (correctly keyed on the authored value), and
+`Cell.CurrentFaunaSpawnPeriod` itself is **not** modified — the fauna wave clock and Brood Rush's
+scoring heartbeat are untouched.
+
+**Verify in editor**
+1. **Compile clean**, then run the edit-mode suite — `FloraReproductionRulesTests` should be 20/20
+   inside Unity as it is offline.
+2. **Menu_Main** (the Lattice cell is the boot world: twelve colonies, one per element, sharing one
+   cell clock and one cap — the cleanest read there is). Over ~10 minutes the four **Time** colonies
+   should visibly out-grow their eight neighbours. Colony cycle at the 30 s heartbeat is
+   **Time 24 s / others 37.5 s**.
+3. **Rampage** or **Hesperides** for the per-plant quota path: those species roll all four elements
+   from one config, so a mature cell should show noticeably more Time plants than
+   Charge/Mass/Space. (Quota 56 → Time 45, others 70.)
+4. **No cell should reach Frenzy earlier than before.** The volume ladder is untouched, but Time
+   colonies now arrive at their share of the volume sooner — if a cell freezes early, that is the
+   thing to report.
+5. Confirm nothing is culled and no plant pops out: this change alters only the *price* of a child,
+   never the removal path.
+
+**First-pass tuning (NOT settled).** `FloraReproductionRules.TimeReproductionRate = 1.25f` and
+`OtherReproductionRate = 0.8f` — two constants at the top of the file, deliberately symmetric.
+"A bit" was interpreted as ±20–25%; expect a balancing pass once it is observable.
+
+---
+
+### 🔴 Scarab switch — interior fill removed, ring 20% larger (`claude/scarab-switch-prism-cleanup-bxhsm0`, 2026-08-24)
+
+Authored without a Unity compile or play-test (remote session, no editor, no `unity` CLI binary
+in this environment). Touches `ScarabSwitch.cs`, `PlaceSwitchActionSO.cs`,
+`PlaceSwitchActionExecutor.cs`, `PlaceSwitchAction.asset`, and `SCARAB.md`. Verified offline by
+manual read-through: the only call site of `ScarabSwitch.Build` is
+`PlaceSwitchActionExecutor.PlaceSwitch`, updated to the new (shorter) argument list in the same
+change; grepped the whole `_Scripts` tree for `InteriorPrismCount`/`BrickScale`/`interiorPrismCount`/
+`brickScale` and for any other `ScarabSwitch.Build(`/`AddComponent<ScarabSwitch>` call site —
+none remain outside the two edited files; grepped `_Scripts/Editor` and `_Scripts/Tests` for
+`ScarabSwitch`/`PlaceSwitchActionSO` — no editor tooling or tests reference the removed fields by
+name (reflection-based drift risk is nil). `PlaceSwitchAction.asset` YAML hand-edited to match the
+new field set exactly (Unity will happily read a MonoBehaviour asset missing a field it no longer
+declares; no leftover `interiorPrismCount`/`brickScale` keys remain in the file).
+
+**What landed.** Requested directly: "the switch fills with prisms when placed — remove those,
+keep the payout dais, make the ring 20% bigger in diameter."
+- `ScarabSwitch.Build` no longer lays a Vogel-spiral disc of body prisms across the ring's mouth
+  at placement. The ring now blooms in **empty** and stays that way until a ball threads it; the
+  scarab-wing dais payout (255 prisms) is completely unchanged.
+- `PlaceSwitchActionSO.ringRadius` raised **20 → 24** (20%), both the C# default and the shipped
+  `PlaceSwitchAction.asset` value. `switchScale` (the MASS element multiplier) still scales from
+  the new base, so a Mass-10 switch is now 24×2.5=60 instead of 20×2.5=50.
+- `interiorPrismCount` and `brickScale` fields deleted from `PlaceSwitchActionSO` (not just
+  zeroed) along with their public accessors; `ScarabSwitch.BlowOutInterior`, `SpiralPoint`,
+  `InteriorRotation`, and the `_interior`/`_shieldPrisms`/`_brickScale`/`_interiorCount` fields
+  are all deleted from `ScarabSwitch`.
+- **Known consequence, flagged rather than silently absorbed**: the MASS-5 "Armored Switch"
+  upgrade (built the interior fill from shielded prisms) has nothing left to apply to and is
+  currently a no-op. `SCARAB.md` §7's table and the playtest checklist are marked accordingly.
+  This was not asked for and is not fixed here — it needs a design call on where (if anywhere)
+  Armored Switch's effect should live now.
+- The Astro-League-integration volume-ladder math in `SCARAB.md` §8 (already authored onto
+  `Astro League Cell Config.asset`'s `PhaseThresholds`) is unaffected — it is derived from the
+  dais's 50,773 volume per spent switch, not the retired ~840-volume interior fill, which was
+  only ever a transient pre-strike blip on top of it. No asset in that path was touched.
+
+**Verify in editor**
+1. Open `Assets/_SO_Assets/VesselActions/Scarab/PlaceSwitchAction.asset` — confirm it inspects
+   cleanly (no missing-field warnings), `Ring Radius` reads `24`, and there is no leftover
+   `Interior Prism Count` / `Brick Scale` field drawn (they should simply not exist any more).
+2. Fly the Scarab, place a switch (Mass ability button) in Freestyle or Scarab Scramble — confirm
+   the ring blooms in with a visibly **empty** mouth (no disc of prisms), and that the ring reads
+   noticeably larger than before (20% diameter).
+3. Thread it with a ball — confirm the scarab-wing dais still raises exactly as before (255
+   prisms, sun cores igniting last) with nothing left over to "blow out" first.
+4. With the Mass-5 upgrade active, place and thread a switch — confirm (per the flagged
+   consequence above) that it behaves identically to an unupgraded switch, i.e. Armored Switch
+   currently does nothing observable. This is expected until a follow-up decides its new home.
+
+---
+
+### 🔴 Bends AI aim: wavefront intercept lead + human focus (`claude/pensive-hopper-35d6h4`, 2026-08-21)
+
+Authored without a Unity compile or play-test (remote session, no editor). Touches
+`BendsController.cs`, docs, `author_bends_assets.py`, and `MinigameBends.unity` — the scene
+edit is three new name-keyed float fields on the existing BendsController block, emitted by the
+re-synced generator (no structural YAML, minimal import risk). Verified offline: Roslyn compile
+of the file is clean of every syntax/scope/duplicate error class,
+`check_conditional_compilation.py` passes, `author_bends_assets.py --check` passes again (it
+had been failing — the generator still emitted the old `aiAimMaxRange: 900`, so a re-run would
+have reverted the shipped 2400), and the intercept math was simulated (old flat lead missed a
+60 u/s crossing rival by 99 u at range 1500; the new lead holds a constant ~21 u overlead,
+which is the safe side of the beam).
+
+**What landed.** The Bends AI Dolphin now (1) leads its drift aim by the blast wavefront's REAL
+travel time — `WavefrontLeadTime` inverts the cone's sin-eased growth against the new
+`aiAimBlastReach` (2400) / `aiAimBlastDuration` (2.7) mirrors of `AOEConicExplosion.prefab` —
+with a two-pass intercept; and (2) prefers aiming at HUMAN pilots (`aiAimHumanFocus` 3: an AI
+rival must be 3× closer to steal the aim).
+
+**2026-08-22 follow-up (same branch).** The first playtest (5 matches) showed the AI still
+never landing a bend — "roams around the player, tries to aim, always fails". Root cause found
+and fixed in `AIPilot.StartAIPilot`, not in the aim math: the AI's blind 2s/2s ability cycler
+was stopping the SHARED drift executor mid-commit (and its own random drifts were locking the
+AI's course for half of every cycle — the roaming). A pilot with `drift` enabled no longer
+blind-cycles abilities bound to the commit control (`LeftStickAction`); the commit loop drives
+that trio itself. Affects only the Dolphin AI (the one vessel with `drift: 1`), in every mode
+it flies — Bends, Rampage, menu autopilot. Full analysis: `BENDS.md` § 2026-08-22.
+
+**Verify in editor.**
+0. **The headline retest (the 2026-08-22 fix):** a Bends match vs 1 AI — the AI should now fly
+   visibly straighter between crystals (no more 2-second locked-course wanders), hold its drift
+   all the way onto the crystal with its nose tracking you, and actually land bends. If it
+   still never scores, the next suspect is the vessel-hit dispatch itself, not the AI — test
+   whether a HUMAN blast bends the AI (checklist item 2 of the mode's own doc).
+1. Open `MinigameBends.unity`; confirm `BendsController` shows the three new inspector fields at
+   their defaults (Blast Reach 2400, Blast Duration 2.7, Human Focus 3) with no missing-script
+   or serialization warnings.
+2. Solo match vs 1 AI (2 players, 2 domains): fly a straight line at mid-range while the AI
+   collects a crystal — its announced cone (Echo Sight) should point visibly AHEAD of you, and
+   the blast should actually land. This is the headline: before this pass the AI's shot trailed
+   any moving target at range.
+3. 3–4 player match with AI backfill: confirm the AIs' cones come for the human rather than for
+   each other, unless an AI rival is much closer.
+4. **First-pass tuning:** `aiAimHumanFocus` 3 is a starting point — drop toward 1 if being
+   hunted by every bot reads as unfair at intensity 1, where the platform skill floor is low.
+   `aiAimLeadSeconds` 0.35 is now pure padding on top of the computed intercept; if the AI
+   reads as over-leading a slow target up close, this is the dial, not the wavefront numbers.
 
 ---
 
@@ -2487,3 +3239,387 @@ error**, so check this before concluding the sight is broken.
 (`TeamCrystal.prefab` has no NetworkObject, matching the previous hold-to-plant scope), and the
 sight ignores Space L5 "Clean Blast" friendly fire — it highlights everything geometrically inside
 the volume.
+
+---
+
+## Timed shield pop sheds isotropically (`claude/prism-shield-explosion-vector-3s36o0`)
+
+**Not verified in-editor.** No Unity Editor and no `unity` CLI were reachable in the session that
+wrote this (the container carries no editor and no C# compiler), so the change below has NOT been
+compiled or play-tested. It is one method plus one helper in
+`PrismStateManager` (`ExecuteTimerDeactivation` / `TimedPopBreakVelocity`).
+
+What changed: the end of a TEMPORARY shield — `ActivateShield(duration)` and
+`DeactivateShields(delay)`, the one shield teardown with no breaking force behind it, and the path
+every own-domain explosion takes when it shields a prism rather than clipping through it — now
+hands the shatter a random direction on the unit sphere at **half the magnitude of the impact
+vector that caused the shield** (carried from both explosion call sites, with the blast's own
+`DebrisSpeedLimit` so the halving survives the clamp), instead of a zero vector (which
+`GeometryUtils.ClampMagnitude` resolves to `Vector3.up * minSpeed`). A shield with no blow behind
+it — an ability, a skim, a spawner — still pops at the debris band's authored `minSpeed`.
+
+The shed itself is unchanged and already on the clock path: ONE batched clock-stamped debris entity
+per disengage (`PrismShieldMorph.RequestShatter` → `PrismShieldShatter` → `PrismRenderService`),
+zero per-frame CPU, and `PrismTimerManager`'s single scheduled swap for the timer.
+
+1. **Compile clean.**
+2. Fire an AOE blast into your OWN domain's mass (Rampage/Bends Dolphin cone, or any explosion with
+   `shielding` on). The prisms shield rather than taking damage, and ~2 s later each pops: its
+   shards should fly off in **its own random direction**, not straight up in lockstep with every
+   other prism in the blast.
+3. Two blasts over the same mass → the second pop's direction differs from the first's (the vector
+   is drawn per pop, not per prism).
+4. A weak blast vs. a strong one: the pop should read HALF as hard as the blast that caused it, so
+   a Dolphin cone at full charge should throw its shed armour visibly further than a small blast
+   does. (A blast with no `DebrisSpeedLimit` of its own still saturates at the prefab clamp — that
+   is the pre-existing legacy band, not this change.)
+5. A shield with no blow behind it (skim overcharge, `SeedAssembler`, a spawner) still pops with the
+   quiet minimum puff, now in a random direction.
+6. A shield broken by a real force (Rhino sword, `Prism.Damage` shedding a shield) is unchanged —
+   it still throws along the breaking vector, not a random one.
+7. Prism count is unchanged by the pop (this is photons only: no mass is created or destroyed).
+
+## 🔴 Sparrow round growth — model fixed + charge shell, halved dart, blue/danger palette (`claude/sparrow-bullet-growth-visuals-mglwak`)
+
+**Nothing here was opened in Unity** — no editor, no `unity` CLI in the container. What WAS
+machine-verified, out of editor: the shipped `ProjectileChargeField.hlsl` compiled with clang and
+censused over a sphere of fragments (see-through numbers, arc share, hue split, per-fragment cost);
+the 12 edit-mode tests in `SparrowRoundGrowthTests` compiled and **executed** against code sliced
+verbatim from the shipped `Projectile.cs` / `FullAutoActionSO.cs` (167 assertions, all green);
+Roslyn on `Projectile.cs`; `validate_project.py`; `check_conditional_compilation.py`; prefab
+field-parity; shader↔HLSL↔material property sets 19/19/19; every hand-authored guid owned by exactly
+one `.meta`. **None of that is an import, a compile of the whole assembly, or a play test.**
+
+What changed: MASS in-flight growth no longer scales the tracer MODEL — it scales the hit volume
+only, and a new see-through additive shell (`ChargeField`, a child of `SparrowProjectile.prefab`)
+draws that volume at exactly the swept hit radius. The dart's cross-section was then halved
+(`1.5 → 0.75`; the collider is provably unchanged at 0.825 because `z = 20` still wins the
+`SphereCollider` max) and recoloured pale blue via a new `SparrowProjectileMaterial`, split off the
+5-prefab-shared `DangerProjectileMaterial`. The shell is neutral blue with `EnvironmentColors.Danger`
+arc cores.
+
+1. **Compile clean**, and **no magenta**: open `SparrowProjectile.prefab` and confirm both the dart
+   and its `ChargeField` child render. A magenta shell means `ProjectileChargeField.shader` failed
+   to import — `git checkout` the two shader files and report, do not try to patch it live.
+2. **The dart is a thin pale-blue needle** and **stays that size for the whole flight** at every
+   Mass level. This is the whole point: at Mass 10 it must NOT swell into a lozenge.
+3. **The shell grows and is see-through.** Fire at a wall of prisms and watch a round travel: the
+   shell should start hugging the tracer and end roughly 6× wider at Mass 10, and you must be able
+   to see the arena (and the tracer) *through* it the whole way. If it reads solid, lower
+   `_FresnelRimIntensity` (0.18) on `ProjectileChargeFieldMaterial` — that is the see-through dial.
+4. **Blue arcs, red cores** — not magenta. Measured 78/7/15 blue/magenta/red at the shipped
+   `_CoreThreshold` 0.75; if it reads magenta in motion, RAISE that value (a separation dial), do
+   not change the colours.
+5. **The mechanic must be unchanged.** Clear a patch of trail at resting Mass and at high Mass and
+   compare against `bleeding-edge`: destruction footprint, range and rate should feel identical.
+   Any felt change in how much a round deletes is a regression — the hit radius was not touched.
+6. **Turret Stance is unaffected.** Right-trigger prism rounds: the fired prism is unchanged and its
+   carried collider still grows (it has no renderer, so it keeps the old transform-scaling path and
+   carries no shell). Confirm turret shots still clear a widening tunnel.
+7. **Pool reuse.** Hold fire, release, hold again; then swap vessels / change Mass level and fire
+   again. The shell must never persist after a round dies, never reappear at a stale size, and never
+   show on a projectile that does not grow.
+8. **Perf at volume.** Hold full-auto (90 volleys/s ≈ 54 live rounds per Sparrow) with 2–4 Sparrows
+   and watch frame time + draw calls. ⚠ **This item's original claim is now INVERTED — see the
+   round-5 entry below.** The shell deliberately carries a per-round `MaterialPropertyBlock` (one
+   float, stamped once per SHOT) and is GPU-INSTANCED rather than SRP-batched. Rounds must still
+   collapse into ONE instanced draw; what would be a bug is a draw count that climbs *linearly*
+   with live rounds, which would mean instancing is off on the material.
+9. **The four other users of `DangerProjectileMaterial` are untouched**: `ExplodableProjectile`,
+   `ProjectileFX`, `BrightNucleus`, `TimeDandruff`. Confirm none of them changed colour.
+10. **Depth/sort sanity.** The dart (opaque, `ZWrite On`, queue 3000) and the shell (`ZWrite Off`,
+    `Cull Back`, additive, queue 3000) sit in the same queue. `Cull Back` should make draw order
+    irrelevant — watch for any flicker between tracer and shell at close range, which would be the
+    one symptom this reasoning missed.
+
+---
+
+## 🔴 Ability Lockup (TOTEM) — Dolphin — NOT EDITOR-VERIFIED
+
+Landed on `claude/ability-icon-design-system-whstrh`. Written and **compile-checked outside Unity**
+(Roslyn against a stub harness: `AbilityLockupStyleSO`, `AbilityLockupView`, plus the edited
+`VesselHUDView`, `ElementalBarsView`, `ElementalBarsController` all build clean). Prefab/asset
+reference integrity verified statically (every guid resolves; no duplicate fileIDs).
+**Nothing has been seen running.**
+
+**What landed:** the four Dolphin ability icons each gain a lockup card — a flat corner-slivered
+plate with the element flower docked above the icon, a hairline divider, and an upgrade signal
+carried by the card's rim + bloom instead of by icon colour. The Dolphin's icons are untouched.
+
+**Verify:** follow `Docs/ABILITY_LOCKUP.md` § "In-editor verification" (7 steps).
+
+**Highest-risk items, in order:**
+1. **Card geometry on screen.** `plateWidth 104 × 166` was derived from the prefab's anchor bands,
+   not seen. If cards read too tall/short or collide with the `BlastCount` / `PilotCount` labels,
+   tune `petalCellHeight` / `abilityCellHeight` in `Resources/AbilityLockupStyle` — no code change.
+2. **Two flower rows.** If a fleet-standard row ALSO appears bottom-centre-right, the controller's
+   adoption did not find the lockup — check `ElementalBarsController.InitializeElementBars`.
+3. **9-slice corners.** The plate/rim sprites are generated (64px, sliver 12, border 16). If the
+   sliver corners look stretched or the rim thickens unevenly, the importer border needs adjusting.
+4. **Draw order.** The card is inserted at the icon's sibling index so it draws behind. If any card
+   covers its icon, that insertion is wrong for that slot's nesting.
+
+**First-pass tuning table:** all knobs are in `Assets/Resources/AbilityLockupStyle.asset` — see the
+tuning table in `Docs/ABILITY_LOCKUP.md`. Nothing in this feature requires a recompile to retune.
+
+**Update — icon kerning pass.** `iconContentScale 0.75` (icon 80 → 60) and `petalFlowerSize 50 → 44`
+so neither mark touches the card's 12px corner sliver. This also fixed a latent scale-squaring bug:
+`blastProfile` and the jaws are CHILDREN of their ability icons and were being rested at the icon's
+scale as well (1.15² = 1.32 when upgraded; would have been 0.56 with kerning). Verify the Charge
+profile and the Space jaws still fill their icons correctly, and that an upgraded card's icon rests
+noticeably — but not doubly — larger.
+
+**Update — fleet rollout.** The lockup is now ensured for every vessel with an ability row via
+`VesselHUDController.Initialize`; no prefabs were edited beyond the Dolphin's explicit component.
+Verify in play mode, per vessel: **Squirrel** (its AUTHORED flowers must be re-homed into the cards
+— check there is no leftover flower row at the old bottom-right position, and NO
+`[ElementalBarsView] Created N petal(s) at RUNTIME` warning, which would mean the authored petals
+were abandoned), **Sparrow**, **Scarab** (hide/show the HUD, e.g. between turns, and confirm the
+Charge/Space icons keep their kerned size — this is the `OnDisable` fix), and **Dolphin** again.
+Then run **FrogletTools > Vessels > Audit Ability Lockups** and expect OK with four vessels listed.
+
+**Update — the lockup now owns the ROW.** Position, pitch, cell size, host scale and icon size are
+written from `Resources/AbilityLockupStyle` onto every vessel; per-prefab layout is no longer read.
+This MOVES the Sparrow's and Scarab's rows (they anchored in a different container) and rescales the
+Squirrel's buttons (0.7 → 1). Verify per vessel: four evenly-spaced totems flush to the bottom-right,
+identical size on all four vessels, **no decagon behind any icon**, and touch/click still works on
+Sparrow · Squirrel · Scarab (the card's plate is the button's target graphic now). Watch for
+anything that used to sit at the Sparrow's old row position and may now be uncovered or collided
+with. Also retired: the upgrade corner badge and the icon tint — the card is the only upgrade signal.
+
+**Update — chips, gauges, press state, locked slots (this round). NOT EDITOR-VERIFIED.**
+Four defects reported from play, four fixes, all still unverified in the Editor:
+
+1. **Control chips lock to the totem.** A hint now lands on its card's `ControlChip` socket at ZERO
+   offset (`VesselHUDView.TryGetAbilityChipSocket` → `AbilityLockupView.TryGetChipSocket`); the
+   per-vessel `attachOffset` is a legacy fallback used only on a HUD with no lockup. **Verify:** on
+   Dolphin · Sparrow · Squirrel · Scarab every (LT)/(RT)/button glyph sits centred directly under
+   its own card, moves with the row, and none is clipped off the bottom of the screen. Switch input
+   device (pad → keyboard → pad) and confirm each set lands in the same place.
+2. **Gauges are linear, and on the right card.** `AbilityIconBinding.gauge` was wired on three
+   prefabs: **Squirrel** `boostFill` → **Time** (it was authored under the *skimming* button),
+   **Sparrow** `rollChargeIndicator` → Time, **Scarab** `energyRing` → **Space** (authored under the
+   *throttle* button). **Verify:** boost/roll/ball-energy each fill a straight vertical bar inside
+   their own card's icon cell over a dim track — no ring anywhere — and each is on the ability it
+   reports on. The Squirrel's boost must still tint to the pilot's domain colour (the vessel keeps
+   driving colour; the lockup only sets a default).
+3. **The press glow is the card.** `VesselHUDController.Toggle` resolves the input to an element
+   through the vessel's own `ElementalAbilityMapSO` and lights that card, held while down and decayed
+   on release. **Verify:** hold each bound control on each vessel — the whole card lights, and NO
+   circular glow appears behind any icon. The Squirrel's undriven `overheatHighlight` halo should be
+   gone entirely.
+4. **Locked slots / the Rhino.** The row is always four cards; an unbound slot draws locked.
+   **Verify:** fly a **Rhino** — four cards, Mass live (Trail Slabs), three drawn locked, element
+   flowers docked above all four, and no old ability-icon UI left in the corner. Same for **Manta**
+   and **Serpent**. Confirm the locked cards are clearly quieter than a live one and are not
+   clickable.
+
+Also verify **touch** on a device or the simulator: retiring the host's chrome deliberately makes a
+button's `targetGraphic` invisible rather than disabling it, because an absent graphic does not
+raycast. Every on-screen ability button must still respond.
+
+Then run **FrogletTools > Vessels > Audit Ability Lockups** (expect OK, with a `gauge on <element>`
+line per bound meter naming where it was authored) and the **`AbilityLockupStyleTests`** edit-mode
+suite (four new tests: gauge readability, locked-slot quietness, chip clearance, press-flash decay).
+
+**Asset cleanup in the same pass:** `Scarab.prefab` carried a stale prefab-instance name override
+renaming its HUD instance to `SparrowHUDVariant`. It references `ScarabHUDVariant` and always did;
+the override is deleted. **Verify** the Scarab's HUD still appears and its Space gauge moves.
+
+**Update — the card became TWO BORDERLESS TRAPEZOIDS (this round). NOT EDITOR-VERIFIED.**
+Design feedback: split the one plate into two trapezoids, one per mark, borderless, bloom on
+upgrade. Both plates are now generated by `TrapezoidGraphic`; `LockupPlate.png` and
+`LockupPlateRim.png` are deleted and the divider, rim, `hairlineColor` and `upgradedRimColor` are
+retired from the style. **Verify, per vessel:**
+
+1. **Shape.** Each totem is two trapezoids with a visible gap — the upper one narrowing UPWARD
+   around the element flower, the lower one narrowing DOWNWARD around the ability icon, meeting at
+   their wide edges. **No outline on either plate and no hairline between them.** If the pair reads
+   as two stacked rectangles, `trapezoidInset` is being ignored; if they look fused, `cellGap` is.
+2. **Nothing else moved.** The ability icon must sit exactly where it did — the lower plate is
+   built around it and both `CardCenterOffsetY` and `PlateHeight` grew by the same `cellGap`, so
+   the control chip should also be unmoved. Confirm against the previous build if you have it.
+3. **Upgrade.** BOTH plates lift in fill and bloom over ~0.2s, no border at any point. This is the
+   read most worth judging: the rim used to carry it. If it is hard to spot, raise
+   `upgradedPlateColor` / `bloomColor` rather than putting a border back.
+4. **Gauge inside the taper.** On Squirrel / Sparrow / Scarab, the fill must be clipped to the
+   trapezoid — it should never overhang the plate's slanted sides at any fill level. It is drawn
+   through a `Mask`, so also confirm the icon still draws ON TOP of it and the mask has not
+   swallowed anything else on the card.
+5. **Press.** Only the ABILITY plate lights (the upgrade lights both) — deliberate, so the two
+   states are distinguishable.
+6. **Touch.** The button's `targetGraphic` is now the ability plate (a `TrapezoidGraphic`). Every
+   on-screen ability button must still respond on a device or the simulator; raycasting uses the
+   RECT, not the drawn trapezoid, so the corners are live by design.
+7. **Locked slots.** On Rhino / Manta / Serpent both plates read quieter, with the placeholder bar
+   centred in the lower one.
+
+Then re-run **Audit Ability Lockups** (it now reports the slant and checks the icon against the
+ability plate's NARROW edge) and `AbilityLockupStyleTests` (three new/reworked tests: the gap and
+slant are both non-zero, the icon clears the narrow edge, the plates face each other across exactly
+`cellGap`).
+
+**Update — balance, slant edge, cooldown, Squirrel re-slot (this round). NOT EDITOR-VERIFIED.**
+
+1. **Balanced plates.** Both plates are now 88 tall (were 62 / 104), so the totem is a true mirror
+   about the gap — no coffin. The row's chip and bottom edge are unmoved by construction (chip
+   bottom stays at 21px); **verify that against the previous build**, since the host height changed
+   from 104 to 88.
+2. **Slant edge.** A thin bright line down each SLOPED side of both plates, solid in the middle and
+   dissolved before the corners, with **no line across the top or bottom of either plate**. It
+   should brighten with the upgrade. If it reads as a chamfer rather than a hairline,
+   `slantEdgeThickness` has passed `trapezoidInset`.
+3. **Cooldown.** Fire the Squirrel's Boost Ring (Time): a dark veil sweeps radially off the card,
+   **over the icon**, clearing with a bright flash when it returns. Confirm the veil covers the
+   plate's corners at every angle (the sweep is sized to the diagonal). The icon itself must NOT
+   sink, rise, breathe, tint or wipe any more — if it does, the old per-vessel animation is still
+   wired somewhere.
+4. **Squirrel re-slot.** The skim-energy fill is on the **Charge** card (Skimming), not Time. Skim
+   to charge and confirm the linear fill rises on Charge while Time shows the radial cooldown —
+   they must read as clearly different things, which is the reason the cooldown is radial.
+5. **Draw order.** The cooldown clip is parented to the HOST and pushed last, so it is the one
+   lockup element in front of the icon. Confirm nothing else on the card got pushed in front of the
+   icon by mistake, and that the mask has not clipped anything it should not.
+
+**Update — clockwise cooldown, wrapped + antialiased band, equal marks. NOT EDITOR-VERIFIED.**
+
+1. **Cooldown direction.** The veil must sweep **clockwise** off the card. This required
+   `fillClockwise = FALSE`, which looks like a bug until you remember the veil depletes — if
+   someone "fixes" it back to true it will unwind anticlockwise again.
+2. **The band.** Thicker (3px + 1px feather each side), **solid the whole length of each slant
+   including the corners**, wrapping 14px onto the top and bottom edges before dissolving. Check
+   three things at 100%: no band across the middle of a horizontal edge; the corners are lit rather
+   than being where the accent died; and the diagonals are smooth, not stair-stepped — that AA is
+   baked as vertex alpha, so if it stair-steps the feather is not reaching the mesh.
+3. **Plate core stays transparent.** The thicker band must not have been compensated for by making
+   the plate opaque — the arena still reads through the middle of every card.
+4. **Equal marks.** Flower and icon are both 60 now. Neither plate should look under-filled, and
+   the flower must not be larger than the icon.
+5. **Perf note, not a defect:** the plates are generated geometry, ~800 verts for the row. That is
+   deliberate while the numbers are being tuned; the PNG bake path is in
+   `Docs/ABILITY_LOCKUP.md` § "Finalizing: the PNG bake" and should be taken once the look is
+   signed off.
+
+**Update — gauge inset, tighter row, chip placement (this round). NOT EDITOR-VERIFIED.**
+
+1. **Every card has its band, including the one with a meter.** The gauge track exactly covered the
+   ability plate at `gaugeCellFraction 1`, so it painted over the band — visible only on a card
+   that binds a meter, which is why it showed on the Squirrel's **Charge** slot alone. The gauge is
+   now inset 4px inside the band. **Verify on Squirrel Charge, Sparrow Time and Scarab Space**: the
+   band is present, and the meter reads as sitting inside it rather than replacing it.
+2. **Tighter row.** Pitch 137.7 → 116 (12px between cards, exactly 2× the 6px gap inside a totem),
+   right margin 65.1 → 40, bottom margin 53 → 44 (chip bottom 21px → 14px). Check the row does not
+   crowd the screen edge on a 16:9 and that four cards still read as four objects, not one strip.
+3. **Control chips.** `chipGap` 8 → 6, matching `cellGap`, so the glyph clears the ability plate by
+   the same distance the element plate does.
+
+   **The device-switch symptom was a SIZE mismatch, not a drift** — measured off `Squirrel.prefab`,
+   the pad glyphs are 50×50 and the PC text hints 106×22, so centring both on one 24px socket left
+   the pad ones overhanging the card by 7px and the keyboard ones 7px clear. The lockup now supplies
+   the SIZE too (from the socket's `sizeDelta`, plus `preserveAspect`), while the hints stay under
+   their icon-set roots. **Verify:** go pad → keyboard → pad and confirm the glyphs sit in the same
+   place at the same size on every set, 6px below the card, and that the pad glyphs are not squashed.
+
+   ⚠ **An intermediate version re-homed the hints into the socket as children and BROKE device
+   switching** — it took them out from under the roots the switcher activates. That is reverted; if
+   switching ever stops working again, that is the first thing to check.
+
+**Update — retiring the old UI on EVERY vessel. NOT EDITOR-VERIFIED.**
+The lockup now retires root-level content that no component on the HUD still references. Predicted
+from the assets, per vessel:
+
+| vessel | retired | kept |
+|---|---|---|
+| Sparrow · Scarab | `Boost Button/display`, `Ammo Count`, `ActionIconHolder`, `XBOX_Icon_Root`, `PS_Icon_Root` | the four cards |
+| Dolphin | a stray root `Image`, `XBOX_Icon_Root`, `PS_Icon_Root` | its four ability buttons (already moved into the row) |
+| Rhino | `BoostContainer` | — |
+| Serpent · Squirrel | — | their glyph roots, because their switcher references them |
+
+**Verify:** only the four-card row remains on each vessel; the Squirrel and Serpent still show
+control hints (their switcher spares the roots — if those vanished, the reference test is not
+finding the switcher); and the **Sparrow's stranded glyphs are gone** rather than sitting where the
+old row used to be. `Ammo Count` going is intended — nothing writes to it, ammo is shown by
+sprite-swapping the missile icon — but confirm no ammo readout was actually in use.
+
+⚠ Sparrow, Dolphin and Scarab now show **no control hints at all**, because their HUDs have no
+`InputDeviceIconSetSwitcher` (they are standalone prefabs, not variants of `VesselHUDPrefab`).
+Authoring one on each is the real fix and is the open follow-up.
+
+
+## 🔴 Ability Lockup — fleet control chips + row frame — NOT EDITOR-VERIFIED
+
+**Chips are DRAWN by the lockup now**, from `Resources/ControlGlyphSet`, derived per card as
+ability → `InputEvents` → control → glyph. Expected, from the shipped assets:
+
+| vessel | Charge | Mass | Space | Time |
+|---|---|---|---|---|
+| Squirrel | — | `L1` / LSHIFT | — | `R1` / RSHIFT |
+| Sparrow | `L1` / LSHIFT | `A` | `R1` / RSHIFT | `B` |
+| Scarab | — | `A` | — | `R1` / RSHIFT |
+| Dolphin | `R1` / RSHIFT | — | — | `L1` / LSHIFT |
+| Rhino · Manta · Serpent | — | — | — | — |
+
+1. **Sparrow has chips again** — four of them, matching the table, under the right cards.
+2. **Device switch** — pad → keyboard → pad: the trigger chips swap between the `L1`/`R1` sprite and
+   the LSHIFT/RSHIFT label, in place. The Sparrow's `A`/`B` cards go **blank** on keyboard; that is
+   intended (no keyboard equivalent is authored for `Button1/2/3` in `InputHintBindingMap`) and the
+   open item is that keyboard map, not the lockup.
+3. **Row frame.** Every vessel's row must now sit in the SAME screen position with the same pitch —
+   this is the "different spacing" fix. `NormaliseHudRoot` stretches the HUD root to fill its
+   parent, because Rhino/Scarab/Sparrow stretched theirs while Dolphin/Squirrel/Serpent/Manta
+   point-anchored at the centre at 100×100. **Watch for anything else on those HUDs shifting** —
+   nothing should, since the sweep retires everything else at root level, but that is the assumption
+   worth checking on each vessel.
+4. **The switcher is ensured**, so every HUD has one even if it never authored glyphs.
+   *(Superseded 2026-08-26 — the switcher no longer draws anything and the authored hints are
+   deleted. The check is now the opposite: confirm the Squirrel and Serpent show ONLY the cards'
+   chips, with `XBOX_Icon_Root` / `PS_Icon_Root` inactive. See the newest section at the top.)*
+
+---
+
+## 🔴 Sparrow charge shell round 5 — one stroke per round, per-round seed, light budget (`claude/sparrow-projectile-effect-xuis0s`)
+
+**Supersedes items 3, 4 and 8 of the round-4 entry above** — the rim, the core threshold and
+especially the batching expectation all changed. Read this entry, not that one, where they differ.
+
+Machine-verified out of editor (no Unity available in that session): the shipped
+`ProjectileChargeField.hlsl` was compiled with `clang++` and executed, and additionally
+**rasterized through a real perspective camera at true 1080p density**
+(`Tools/Shaders/render_projectile_charge_field.py`). `verify_projectile_charge_field.py` passes all
+six gates. Shader Properties / `UnityPerMaterial` / instancing buffer / material values / harness
+constants were cross-checked programmatically and agree.
+
+**Never imported by Unity.** `Projectile.cs`, `ProjectileChargeField.shader` and
+`ProjectileChargeFieldMaterial.mat` have not been through an Editor compile. The shader gained
+GPU-instancing macros (`#pragma multi_compile_instancing`, `UNITY_INSTANCING_BUFFER`,
+`UNITY_SETUP_INSTANCE_ID`) — that is the highest-risk part of the change.
+
+1. **It compiles at all.** Enter play, fire full-auto. A **magenta** shell means the shader failed
+   to import — most likely the instancing macros. `git checkout` the two shader files and report;
+   do not patch it live.
+2. **Instancing is actually on.** `ProjectileChargeFieldMaterial` must show **Enable GPU Instancing
+   ticked** (`m_EnableInstancingVariants: 1` in the asset). With it off, every shell becomes its own
+   draw call — 54 per Sparrow.
+3. **Every round looks different.** Hold full-auto and watch the two streams. Each round should show
+   ONE short bolt at its own angle; the two muzzles must not draw mirror-image or identical strokes.
+   If they look identical, `_RoundSeed` is not reaching the shader — check that
+   `Projectile.StampChargeFieldSeed` runs (the `ChargeField` child must have a `Renderer`).
+4. **It is quiet.** The whole point of the last two commits. A sustained burst should read as
+   occasional sparks along two dark tubes, **not** a continuous lightning rope. Measured at 0.04× the
+   light of the pre-round-5 shell. If it reads bright, the knobs are a documented light budget —
+   `_ArcIntensity`, `_ArcSpan`, `_HoldTime`, `_FresnelRimIntensity` — and
+   `Tools/Shaders/verify_projectile_charge_field.py` test 6 is the gate to re-run after changing any
+   of them.
+5. **Nothing pops.** A round must never go fully dark and then re-light. Between strokes it keeps a
+   faint rim (peak alpha ≈ 0.007). Watch a single round's whole flight at low Mass.
+6. **Pool reuse.** Hold fire, release, hold again; swap vessels; change Mass level. The seed is
+   re-stamped per shot, so no round should ever inherit the previous one's stroke, and the shell must
+   not persist after a round dies.
+7. **Perf at volume.** 2–4 Sparrows on full auto. Draw calls for the shells should stay flat (one
+   instanced draw), not climb with live round count. Per-frame CPU is unchanged — one transform write
+   per live round, exactly as before; the seed is per-SHOT.
+8. **The mechanic is untouched.** Hit radius, growth curve, rate and range are all unchanged by this
+   branch. Any felt change in how much a round deletes is a regression.
+9. **The skyburst missile is unaffected.** It takes the `flightGrowthTarget` path added on
+   `bleeding-edge` and carries no charge shell (the material has exactly one user,
+   `SparrowProjectile.prefab`). Confirm missiles still swell and detonate normally.

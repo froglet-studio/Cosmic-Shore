@@ -1,4 +1,5 @@
 using System.Collections;
+using CosmicShore.Data;
 using Obvious.Soap;
 using UnityEngine;
 using CosmicShore.Gameplay;
@@ -59,7 +60,9 @@ namespace CosmicShore.UI
             if (barrelRollController)
             {
                 barrelRollController.OnRollChargeChanged += HandleRollChargeChanged;
-                view.SetRollCharge(barrelRollController.IsRollArmed);
+                view.SetRollCharge(barrelRollController.IsRollArmed
+                    ? RollChargeState.Armed
+                    : RollChargeState.Lapsed);
             }
 
             if (fireGunExecutor == null) return;
@@ -114,10 +117,10 @@ namespace CosmicShore.UI
             view.SetWeaponMode(isStationary);
         }
 
-        private void HandleRollChargeChanged(bool armed)
+        private void HandleRollChargeChanged(RollChargeState state)
         {
             if (!view) return;
-            view.SetRollCharge(armed);
+            view.SetRollCharge(state);
         }
 
         private void HandleAmmoChanged(float ammo01)

@@ -29,6 +29,11 @@ namespace CosmicShore.Editor.Froglet
         Services = 8,
         /// <summary>Everything else / uncategorised.</summary>
         Misc = 9,
+        /// <summary>Editor health: crash watchdog, bug ledger, triage.</summary>
+        Diagnostics = 10,
+
+        /// <summary>QA sessions, test results, the untested-development backlog.</summary>
+        Qa = 11,
     }
 
     /// <summary>
@@ -71,5 +76,14 @@ namespace CosmicShore.Editor.Froglet
         /// Overrides the display name (defaults to the last segment of the menu path).
         /// </summary>
         public string DisplayName { get; set; }
+
+        /// <summary>
+        /// Repo-relative path of the tool's documentation, optionally with a heading anchor —
+        /// e.g. <c>"Docs/DIAGNOSTICS.md#bug-ledger"</c>. When set, the tool's card on the board
+        /// grows a DOCS chip and a context-menu entry that open the page on GitHub
+        /// (<see cref="FrogletDocLinks"/>; falls back to the local file when no remote resolves).
+        /// The authoring contract (Docs/TOOLING.md) requires this on every new documented tool.
+        /// </summary>
+        public string DocPath { get; set; }
     }
 }

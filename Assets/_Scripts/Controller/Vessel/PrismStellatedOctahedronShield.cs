@@ -22,9 +22,9 @@ namespace CosmicShore.Gameplay
     ///
     /// Engage: per-face bloom morph - 24 outer faces grow outward from their
     /// centroids.
-    /// Disengage: box mesh snaps back immediately, then a shatter overlay plays
-    ///   where each of the 24 faces simultaneously shrinks and flies outward
-    ///   along its face normal, mirroring the prism destruction VFX.
+    /// Disengage: box mesh snaps back immediately, and the stellation's 24 faces are shed
+    ///   as ORDINARY PRISM EXPLOSION DEBRIS on this shield's own mesh — the same effect a
+    ///   dying prism's pieces get. Docs/PRISM_ANIMATION.md §4.8.1.
     ///
     /// BOTH MORPHS RUN ON THE GPU — one stamp per transition, no ticker, no per-frame
     /// mesh rebuild, everything final at t = 0, and the shield never leaves the
@@ -74,13 +74,6 @@ namespace CosmicShore.Gameplay
         [Header("Engage Transition")]
         [Tooltip("Duration of the face-bloom engage morph. 0 snaps instantly. Easing is smoothstep on the GPU, which IS AnimationCurve.EaseInOut(0,0,1,1) — the curve every runtime-added shield used. The retired curve FIELD is gone: the GPU cannot evaluate an arbitrary AnimationCurve.")]
         [SerializeField] private float engageDuration = 0.45f;
-
-        [Header("Shatter (Disengage)")]
-        [Tooltip("Duration of the shatter VFX overlay after disengaging. 0 snaps instantly.")]
-        [SerializeField] private float shatterDuration = 0.7f;
-
-        [Tooltip("How far each face flies outward (in local-space units) at the end of the shatter.")]
-        [SerializeField] private float shatterMaxOffset = 4f;
 
         [Header("Shield Geometry")]
         [Tooltip("Circumscribing scale factor for the inscribed octahedron / cube of spike tips. 3 is the minimum that guarantees all box corners are inside the stellation and matches the octahedron shield.")]
@@ -253,7 +246,15 @@ namespace CosmicShore.Gameplay
         /// shatter overlay plays where each of the 24 faces flies outward
         /// along its normal while shrinking to a point.
         /// </summary>
-        public void Disengage(bool instant = false)
+        /// <param name="breakVelocity">
+        /// RAW impact vector of the force that broke the shield, when the caller has one.
+        /// The shards are ordinary prism-explosion debris and clamp it with the debris
+        /// pipeline's own band; zero degrades to the same up-drifting minimum-speed puff
+        /// an impactless prism death gets (Docs/PRISM_ANIMATION.md §4.8.1).
+        /// </param>
+        /// <param name="debrisSpeedLimit">True-velocity impact ceiling, as on Prism.Damage; 0 = authored band.</param>
+        public void Disengage(bool instant = false, Vector3 breakVelocity = default, float debrisSpeedLimit = 0f,
+            Color? shedBright = null, Color? shedDark = null)
         {
             if (!_isShielded) return;
 
@@ -264,9 +265,9 @@ namespace CosmicShore.Gameplay
             // right now, both of which ApplyUnshieldedPose is about to change. (See the
             // octahedron tier for why "right now" is already the post-transition domain
             // material on the shipped prefabs.)
-            if (!instant && shatterDuration > 0f)
+            if (!instant)
                 PrismShieldMorph.RequestShatter(gameObject, _meshRenderer, _stellatedMesh,
-                    shatterDuration, shatterMaxOffset);
+                    breakVelocity, debrisSpeedLimit, shedBright, shedDark);
 
             // Immediately restore box mesh + colliders so gameplay is unaffected.
             ApplyUnshieldedPose();

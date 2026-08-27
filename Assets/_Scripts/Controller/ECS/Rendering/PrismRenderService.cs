@@ -23,8 +23,8 @@ namespace CosmicShore.ECS
 
     /// <summary>
     /// Which per-instance override components a companion entity carries.
-    /// Prism: the color trio. Explosion/Implosion: color trio + the effect
-    /// shader's animated parameters.
+    /// Prism: color trio + grow / color / flight / shieldMorph / jiggle / suction clocks.
+    /// Explosion/Implosion: color trio + the effect shader's animated parameters.
     /// </summary>
     public enum PrismRenderOverrideSet
     {
@@ -84,6 +84,15 @@ namespace CosmicShore.ECS
         // ------------------------------------------------------------------
 
         static bool? _runtimeOverride;
+
+        // Diagnostic overrides with no restore path of their own (the rest of this class's
+        // statics self-heal through TryEnsure's dead-world branch).
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        static void ResetOverrides()
+        {
+            _runtimeOverride = null;
+            _linearizeOverride = null;
+        }
         static bool _configLoaded;
         // OPT-IN: defaults OFF. The instanced path only renders correctly once the
         // prism ShaderGraphs expose their animated properties as Hybrid Per Instance
@@ -446,11 +455,23 @@ namespace CosmicShore.ECS
                         em.AddComponentData(prototype, new PrismJiggleStartTimeOverride { Value = 0f });
                         em.AddComponentData(prototype, new PrismJiggleDurationOverride { Value = 0f });
                         em.AddComponentData(prototype, new PrismJiggleParamsOverride { Value = float3.zero });
+                        // Cell-swap world suction (Docs/PRISM_ANIMATION.md §5 C9). Duration 0
+                        // = unstamped identity on live graphs (LegacyState default 0). Location
+                        // is the same override the Implosion set already carries — added here
+                        // too so StampSuctionClock's SetComponentData is non-structural.
+                        em.AddComponentData(prototype, new PrismSuctionStartTimeOverride { Value = 0f });
+                        em.AddComponentData(prototype, new PrismSuctionDurationOverride { Value = 0f });
+                        em.AddComponentData(prototype, new PrismSuctionDirectionOverride { Value = 1f });
+                        em.AddComponentData(prototype, new PrismSuctionGrowDelayOverride { Value = 0f });
+                        em.AddComponentData(prototype, new PrismImplosionLocationOverride { Value = float3.zero });
                         break;
                     case PrismRenderOverrideSet.Explosion:
                         em.AddComponentData(prototype, new PrismExplodeStartTimeOverride { Value = 0f });
                         em.AddComponentData(prototype, new PrismExplodeSpeedOverride { Value = 0f });
                         em.AddComponentData(prototype, new PrismExplodeDurationOverride { Value = 0f });
+                        // Default 0 = the cube's derived face pivot, so a producer that
+                        // never sets it renders exactly as it did (§4.8.2).
+                        em.AddComponentData(prototype, new PrismFacePivotFromCentroidOverride { Value = 0f });
                         break;
                     case PrismRenderOverrideSet.Implosion:
                         em.AddComponentData(prototype, new PrismSuctionStartTimeOverride { Value = 0f });
@@ -876,6 +897,7 @@ namespace CosmicShore.ECS
             ClearFlightStamp(in handle);
             ClearShieldMorphStamp(in handle);
             ClearJiggleStamp(in handle);
+            ClearSuctionClockStamp(in handle);
         }
 
         /// <summary>Stamps an explosion's flight: offset/amount/opacity become pure
@@ -967,6 +989,7 @@ namespace CosmicShore.ECS
             if (!ClockAnimationEnabled || !IsUsable(in handle)) return false;
             var em = _world.EntityManager;
             if (!em.HasComponent<PrismSuctionStartTimeOverride>(handle.Entity)) return false;
+            if (!em.HasComponent<PrismImplosionLocationOverride>(handle.Entity)) return false;
             em.SetComponentData(handle.Entity, new PrismSuctionStartTimeOverride { Value = startTime });
             em.SetComponentData(handle.Entity, new PrismSuctionDurationOverride { Value = duration });
             em.SetComponentData(handle.Entity, new PrismSuctionDirectionOverride { Value = direction });
@@ -1004,7 +1027,10 @@ namespace CosmicShore.ECS
             if (!IsUsable(in handle)) return;
             var em = _world.EntityManager;
             if (!em.HasComponent<PrismSuctionDurationOverride>(handle.Entity)) return;
+            em.SetComponentData(handle.Entity, new PrismSuctionStartTimeOverride { Value = 0f });
             em.SetComponentData(handle.Entity, new PrismSuctionDurationOverride { Value = 0f });
+            if (em.HasComponent<PrismImplosionLocationOverride>(handle.Entity))
+                em.SetComponentData(handle.Entity, new PrismImplosionLocationOverride { Value = float3.zero });
         }
 
         // ------------------------------------------------------------------
@@ -1051,6 +1077,11 @@ namespace CosmicShore.ECS
             /// <see cref="ExpandBoundsForClockAnimation"/>).</summary>
             public float3 ObjectDisplacement;
             public float BoundsPadding;
+            /// <summary>0 = spin each face about the pivot RotateFacesAlongAxis derives for
+            /// the prism CUBE; 1 = spin it about the per-face centroid this MESH bakes into
+            /// TEXCOORD1. Leave at 0 for any mesh without that channel — see
+            /// Docs/PRISM_ANIMATION.md §4.8.2 and PrismFacePivotFromCentroidOverride.</summary>
+            public float FacePivotFromCentroid;
         }
 
         /// <summary>
@@ -1059,8 +1090,8 @@ namespace CosmicShore.ECS
         /// lands via non-structural SetComponentData. Spawned entities are appended
         /// to <paramref name="appendEntitiesTo"/> in spawn order (index-aligned with
         /// <paramref name="spawns"/>). Returns false — spawning nothing — when the
-        /// service is off or no world exists; the caller falls back to the pooled
-        /// GameObject path.
+        /// service is off or no world exists; the caller drops the visual (D4 —
+        /// no pooled death fallback).
         /// </summary>
         public static bool SpawnExplosionDebrisBatch(Mesh mesh, Material material, int layer,
             System.Collections.Generic.List<ExplosionDebrisSpawn> spawns, float startTime,
@@ -1099,6 +1130,7 @@ namespace CosmicShore.ECS
                 em.SetComponentData(entity, new PrismExplodeSpeedOverride { Value = s.Speed });
                 em.SetComponentData(entity, new PrismExplodeDurationOverride { Value = s.Duration });
                 em.SetComponentData(entity, new PrismVelocityOverride { Value = s.Velocity });
+                em.SetComponentData(entity, new PrismFacePivotFromCentroidOverride { Value = s.FacePivotFromCentroid });
 
                 float3 half = s.ObjectDisplacement * 0.5f;
                 em.SetComponentData(entity, new RenderBounds
@@ -1181,7 +1213,8 @@ namespace CosmicShore.ECS
         /// <see cref="SpawnExplosionDebrisBatch"/>. Entities are appended to
         /// <paramref name="appendEntitiesTo"/> index-aligned with
         /// <paramref name="spawns"/>. Returns false — spawning nothing — when the
-        /// service is off, so the caller can fall back to the pooled path.
+        /// service is off; the caller drops the visual (D4 — no pooled death
+        /// fallback). Grow still uses pooled StartGrow, not this batch.
         /// </summary>
         public static bool SpawnImplosionDebrisBatch(Mesh mesh, Material material, int layer,
             System.Collections.Generic.List<ImplosionDebrisSpawn> spawns, float startTime,
@@ -1276,104 +1309,14 @@ namespace CosmicShore.ECS
             }
         }
 
-        // ------------------------------------------------------------------
-        // Batched pure-entity SHIELD SHATTER — the disengage overlay
-        // (Docs/PRISM_ANIMATION.md §5 B4). The prism itself snaps back to its box
-        // and its own entity the instant the shield drops, so the shards flying
-        // away are a separate, short-lived visual with exactly the shape an entity
-        // serves for free: one pose, one clock stamp, one retirement. It replaces
-        // a lazily-created child GameObject per prism whose mesh was rebuilt every
-        // frame. Shards ride the PRISM override set because they render with the
-        // prism's own BlockGraph material on the shared shield mesh — so a batch of
-        // shattering shields of one size and domain is ONE draw, and it shares its
-        // (mesh × material) pair with every settled shield like it.
-        // ------------------------------------------------------------------
-
-        /// <summary>One shield-shatter entity's complete initial conditions. Everything
-        /// is stamped once at spawn and never written again — there is no moving target
-        /// here (unlike the suction), so the whole effect is write-once.</summary>
-        public struct ShieldShatterSpawn
-        {
-            /// <summary>Initial pose — the prism's transform at the moment the shield
-            /// dropped. The entity matrix never moves; the GPU flies the faces.</summary>
-            public Matrix4x4 LocalToWorld;
-            /// <summary>Seconds of shatter.</summary>
-            public float Duration;
-            /// <summary>Fly-out distance in LOCAL units at t = 1.</summary>
-            public float Offset;
-        }
-
-        /// <summary>
-        /// Spawns every entry as a shatter entity in ONE prototype-instantiate + ONE
-        /// batched visibility strip, exactly like <see cref="SpawnExplosionDebrisBatch"/>.
-        /// Colors come from the MATERIAL's authored values — matching the child-renderer
-        /// overlay this replaced, which carried no MaterialPropertyBlock and therefore
-        /// always drew the material as authored. Entities are appended to
-        /// <paramref name="appendEntitiesTo"/> index-aligned with <paramref name="spawns"/>.
-        /// Returns false — spawning nothing — when the service is off or no world exists.
-        /// </summary>
-        public static bool SpawnShieldShatterBatch(Mesh mesh, Material material, int layer,
-            System.Collections.Generic.List<ShieldShatterSpawn> spawns, float startTime,
-            System.Collections.Generic.List<Entity> appendEntitiesTo)
-        {
-            if (!Enabled || mesh == null || material == null ||
-                spawns == null || spawns.Count == 0 || !TryEnsure())
-                return false;
-
-            var em = _world.EntityManager;
-            var prototype = GetPrototype(layer, PrismRenderOverrideSet.Prism, mesh, material);
-
-            var entities = new Unity.Collections.NativeArray<Entity>(
-                spawns.Count, Unity.Collections.Allocator.Temp);
-            em.Instantiate(prototype, entities);
-            // Clones are born hidden (the prototype ships DisableRendering); strip the
-            // whole batch in one structural op. The stamp below IS the correct initial
-            // state — at t = 0 the shards are the whole, un-shattered shield.
-            em.RemoveComponent(entities, ComponentType.ReadWrite<DisableRendering>());
-
-            var mmi = new MaterialMeshInfo(GetMaterialID(material), GetMeshID(mesh));
-            float4 bright = ReadColor(material, BrightColorId);
-            float4 dark = ReadColor(material, DarkColorId);
-            float3 spread = ReadVector3(material, SpreadId);
-            float3 meshCenter = mesh.bounds.center;
-            float3 meshExtents = mesh.bounds.extents;
-
-            for (int i = 0; i < spawns.Count; i++)
-            {
-                var s = spawns[i];
-                var entity = entities[i];
-                em.SetComponentData(entity, mmi);
-                em.SetComponentData(entity, new LocalToWorld { Value = ToFloat4x4(in s.LocalToWorld) });
-                // ReadColor already applied the color-space transform.
-                em.SetComponentData(entity, new PrismBrightColorOverride { Value = bright });
-                em.SetComponentData(entity, new PrismDarkColorOverride { Value = dark });
-                em.SetComponentData(entity, new PrismSpreadOverride { Value = spread });
-                em.SetComponentData(entity, new PrismShieldMorphStartTimeOverride { Value = startTime });
-                em.SetComponentData(entity, new PrismShieldMorphDurationOverride { Value = s.Duration });
-                em.SetComponentData(entity, new PrismShieldMorphDirectionOverride { Value = ShieldMorphShatter });
-                em.SetComponentData(entity, new PrismShieldMorphOffsetOverride { Value = s.Offset });
-
-                // Culling envelope: faces travel `Offset` LOCAL units along their own
-                // normals, so the mesh AABB grown by Offset on every axis covers the
-                // whole deterministic flight. Without it the shards cull against the
-                // un-shattered shield box and pop out at the edge of the frustum.
-                float pad = math.max(0f, s.Offset);
-                em.SetComponentData(entity, new RenderBounds
-                {
-                    Value = new AABB
-                    {
-                        Center = meshCenter,
-                        Extents = meshExtents + new float3(pad),
-                    }
-                });
-
-                appendEntitiesTo.Add(entity);
-            }
-
-            LiveEntityCount += spawns.Count;
-            entities.Dispose();
-            return true;
-        }
+        // The former SHIELD SHATTER batch spawner lived here. It is GONE on purpose
+        // (Docs/PRISM_ANIMATION.md §4.8.1): a shield's shards are ordinary explosion
+        // debris now — PrismShieldShatter groups a frame's disengages per shield mesh and
+        // spawns them through SpawnExplosionDebrisBatch above, so the two death visuals
+        // cannot drift apart. Do not reintroduce a shield-specific spawner: any look
+        // difference between a shield coming apart and a prism coming apart is a MESH
+        // AUTHORING question (the shield generators bake the debris attribute set), never
+        // a pipeline fork.
 
         /// <summary>Destroys the companion entity (prism GameObject destruction / scene teardown).</summary>
         public static void Destroy(ref PrismRenderHandle handle)

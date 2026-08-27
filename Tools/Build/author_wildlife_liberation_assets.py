@@ -8,8 +8,20 @@ produces byte-identical output and re-tuning is one edit here plus a re-run rath
 hand-edits that drift. Validates the whole result in memory and only then writes.
 
 Run from the repo root:  python3 Tools/Build/author_wildlife_liberation_assets.py [--check]
+                         python3 Tools/Build/author_wildlife_liberation_assets.py --population
 
 --check validates without writing (CI / pre-commit use).
+
+--population re-authors ONLY the layer that gets retuned - the fauna configs, the spawn
+profiles, the cell configs and the kill target - and skips the one-shot BRING-UP sections that
+clone the donor Rampage scene and register the arcade card. Use it for every roster, band or
+target change.
+
+  Why it exists: sections 7-10 rebuild MinigameWildlifeLiberation.unity from the CURRENT
+  MinigameRampage.unity. That donor has moved on since bring-up (its controller field block no
+  longer matches, so a full run asserts out), and even if it did match, re-cloning would
+  overwrite this mode's scene with a fresh copy of somebody else's. A generator that authors
+  both a one-time scene and a re-tunable data layer has to be able to run just the second half.
 
 The arena geometry, the fauna bands and the wildlife roster are IMPORTED from
 wildlife_cage_budget.py - which mirrors the C# generator's loops exactly - so the cage walls,
@@ -25,6 +37,8 @@ import sys
 
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 CHECK_ONLY = "--check" in sys.argv
+# Re-tunable data layer only: fauna configs, spawn profiles, cell configs, kill target.
+POPULATION_ONLY = "--population" in sys.argv
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import wildlife_cage_budget as budget  # noqa: E402
@@ -57,11 +71,16 @@ for _i in INTENSITIES:
     G_ASSET[f"WildlifeCellConfig{_i}"] = guid(f"asset/WildlifeCellConfig{_i}")
     G_ASSET[f"WildlifeSpawnProfile{_i}"] = guid(f"asset/WildlifeSpawnProfile{_i}")
 
-# One FaunaConfigurationSO per (species, room, intensity) - the spawner runs one loop per
-# config, and each carries its room's band plus that intensity's population.
+# One FaunaConfigurationSO per (species, intensity) - the spawner runs one loop per config.
+# Every one carries the SAME arena-wide roam band.
+#
+# It used to be per (species, LEVEL, intensity). Lifeform levels are retired (Docs/ECOSYSTEM.md
+# 39), so the two rows of one species that a level used to separate are one row now - see
+# wildlife_cage_budget.ROSTER, where they were merged by summing their populations. The
+# per-species population, and therefore the collider budget, is unchanged.
 for _i in INTENSITIES:
-    for _species, _room, *_ in budget.ROSTER:
-        G_ASSET[f"Fauna/{_species}/{_room}/{_i}"] = guid(f"asset/WildlifeFauna_{_species}_{_room}_{_i}")
+    for _species, _seed, _cap, _prisms in budget.ROSTER:
+        G_ASSET[f"Fauna/{_species}/{_i}"] = guid(f"asset/WildlifeFauna_{_species}_{_i}")
 
 # ── Existing GUIDs we reference (read from the repo, never invented) ──────────
 EXISTING = {
@@ -137,16 +156,31 @@ MEMBRANE_FILEID = 346633111830028674
 CYTOPLASM_FILEID = 639495419069806261
 PREVIEW_FILEID = 241334157148977051
 
-ROOM_NAMES = ("Outer", "Middle", "Core", "OpenWater")
-
 # The kill target - the race metric, summed PER DOMAIN. The 25%/50% milestone rungs are
-# fractions of this (so 63 and 125), and moving it moves the whole progress ladder.
-WILDLIFE_KILL_TARGET = 250
+# fractions of this (so 8 and 15), and moving it moves the whole progress ladder.
+#
+# 30, down from the 250 this mode shipped with (requested 2026-08). That is a ~8x shorter match,
+# which is worth naming beside the roam band below: the cage is grazeable now, and how far it
+# erodes is a function of how long a match lasts.
+WILDLIFE_KILL_TARGET = 30
+
+# `ElementalComebackSystem`: bonusLevels = deficit x rate, so THE RATE IS A FUNCTION OF THE
+# TARGET and re-targeting a mode silently kills it. That trap is recorded twice already (Dog
+# Fight, then The Bends 20x harder) and this is its third outing: the card inherited Rampage's
+# 0.01 against a target 8x smaller, so a quarter-of-target deficit only ever bought 0.625 of a
+# level, and 250 -> 30 would have taken that to 0.075 - a comeback system that does nothing.
+#
+# 0.35 puts a quarter-of-target deficit (7.5 kills) at 2.6 levels, which is Dog Fight's curve
+# (90 x 0.12 = 2.7) - the nearest sibling by structure: same vessel, same "many small
+# increments" race. The shipped family spans 1.25 (Scarab Scramble) to 5.0 (Rampage/Ribcage).
+# The assert at the bottom FAILS the build if this ever drops back under one whole level.
+COMEBACK_RATE = 0.35
 
 SPAWN_RING_RADIUS = budget.SPAWN_RING_RADIUS
-# The cell must SENSE mass out to the outer room (~990) so penned creatures can find a player's
-# trail there; the membrane visual is 1200, so sensing the whole arena is free of any visual
-# change. Without this the density grids would only cover the membrane's own radius.
+# The cell must SENSE mass across the whole roam band (0..1180) so a creature anywhere in the
+# arena can find a player's trail; the membrane visual is 1200, so sensing the whole arena is
+# free of any visual change. Without this the density grids would only cover the membrane's own
+# radius.
 SENSE_RADIUS = 1200
 
 _HEADER_TMPL = """%YAML 1.1
@@ -331,10 +365,10 @@ emit("Assets/_SO_Assets/Games/ArcadeGameWildlifeLiberation.asset",
      HEADER_FOR(EXISTING["SO_ArcadeGame"], "ArcadeGameWildlifeLiberation") + f"""  Mode: 40
   IsMultiplayer: 1
   DisplayName: Wildlife Liberation
-  Description: Three cages, three kinds of prisoner, and open water full of the big
-    ones before you even reach the bars. Shoot your way in and thin the swarm - the
-    outer ring teems, the middle room is bigger and meaner, and whatever is in the
-    core did not get there by being easy. First domain to the kill count takes it.
+  Description: Three cages, and wildlife everywhere - swarms, big ones and worse,
+    scattered from the open water you spawn in all the way to the core. Shoot what
+    swims past, break in after what does not. You never know what the next one is.
+    First domain to the kill count takes it.
   IconActive: {{fileID: 21300000, guid: {EXISTING['IconActive']}, type: 3}}
   IconInactive: {{fileID: 21300000, guid: {EXISTING['IconInactive']}, type: 3}}
   CardBackground: {{fileID: 21300000, guid: {EXISTING['CardBackground']}, type: 3}}
@@ -352,7 +386,7 @@ emit("Assets/_SO_Assets/Games/ArcadeGameWildlifeLiberation.asset",
   CallToActionTargetType: 427
   ViewUserAction: 0
   PlayUserAction: 0
-  ComebackRatePerScoreDeficit: 0.01
+  ComebackRatePerScoreDeficit: {COMEBACK_RATE}
 """)
 emit("Assets/_SO_Assets/Games/ArcadeGameWildlifeLiberation.asset.meta",
      asset_meta(G_ASSET["ArcadeGameWildlifeLiberation"]))
@@ -372,12 +406,12 @@ FOLDER = "Assets/_SO_Assets/Cell Configs/Wildlife Liberation Cell"
 emit(FOLDER + ".meta", meta(guid("folder/WildlifeLiberationCell"), folder=True))
 
 
-def fauna_asset_name(species, room, intensity):
-    return f"Wildlife {ROOM_NAMES[room]} {species} {intensity}"
+def fauna_asset_name(species, intensity):
+    return f"Wildlife {species} {intensity}"
 
 
-def fauna_asset_path(species, room, intensity):
-    return f"{FOLDER}/{fauna_asset_name(species, room, intensity)}.asset"
+def fauna_asset_path(species, intensity):
+    return f"{FOLDER}/{fauna_asset_name(species, intensity)}.asset"
 
 
 # The tadpole swarm keeps the authored Blob expression (small body, long tail prisms, 90s
@@ -411,8 +445,10 @@ PLAIN_VARIANT = """  Variant:
 """
 
 for i in INTENSITIES:
-    for species, room, seed, cap, level, _prisms in budget.roster_for(i):
-        inner, outer = budget.room_band(room)
+    for species, seed, cap, _prisms in budget.roster_for(i):
+        # ONE band for every species: the whole arena. See wildlife_cage_budget.ROAM_INNER for
+        # what replaced the per-room pens and what that costs the cage.
+        inner, outer = budget.ROAM_INNER, budget.ROAM_OUTER
         palette = "".join(
             f"  - {{fileID: 11400000, guid: {g}, type: 2}}\n" for g in PALETTE[species])
 
@@ -421,14 +457,13 @@ for i in INTENSITIES:
         feeds = {"Tadpole": 24, "QuadFish": 20, "Brittlestar": 16, "Shark": 8, "WormColony": 0}[species]
         cooldown = {"Tadpole": 10, "QuadFish": 12, "Brittlestar": 14, "Shark": 30, "WormColony": 60}[species]
 
-        emit(fauna_asset_path(species, room, i),
-             HEADER_FOR(EXISTING["FaunaConfigurationSO"], fauna_asset_name(species, room, i)) +
+        emit(fauna_asset_path(species, i),
+             HEADER_FOR(EXISTING["FaunaConfigurationSO"], fauna_asset_name(species, i)) +
              f"""  FaunaPrefab: {{fileID: {FAUNA_FILEID[species]}, guid: {FAUNA_PREFAB[species]}, type: 3}}
   InitialSpawnCount: {seed}
   PopulationSize: {seed}
   SpawnProbability: 1
   FeedsPerOffspring: {feeds}
-  FeedsPerLevel: {feeds * 2}
   OffspringPerBirth: 1
   ReproductionCooldownSeconds: {cooldown}
   MaxLivePopulation: {cap}
@@ -437,18 +472,15 @@ for i in INTENSITIES:
   BandOuterRadius: {outer:.0f}
   CenterFocusBias: 0
   Element: 0
-  InitialLevel: {level}
-  BodyScalePerLevel: 1.15
-  LevelGrowSeconds: 1
 """ + (TADPOLE_VARIANT if species == "Tadpole" else PLAIN_VARIANT) + f"""  SpreadElements: 1
   ElementPalette:
 {palette}""")
-        emit(fauna_asset_path(species, room, i) + ".meta",
-             asset_meta(G_ASSET[f"Fauna/{species}/{room}/{i}"]))
+        emit(fauna_asset_path(species, i) + ".meta",
+             asset_meta(G_ASSET[f"Fauna/{species}/{i}"]))
 
     supported = "".join(
-        f"  - {{fileID: 11400000, guid: {G_ASSET[f'Fauna/{species}/{room}/{i}']}, type: 2}}\n"
-        for species, room, *_ in budget.ROSTER)
+        f"  - {{fileID: 11400000, guid: {G_ASSET[f'Fauna/{species}/{i}']}, type: 2}}\n"
+        for species, _s, _c, _p in budget.ROSTER)
 
     seed_total, cap_total, prism_total = budget.fauna_totals(i)
     emit(f"{FOLDER}/Wildlife Spawn Profile {i}.asset",
@@ -483,7 +515,8 @@ for i in INTENSITIES:
          f"""  CellName: Wildlife Liberation
   Description: The three-layer jail at intensity {i} - cages at 1050 / 600 / 200 ({forms}),
     {n} prisms of bar and {danger} danger traps in the core. Holds {seed_total} creatures at
-    seed and up to {cap_total} ({prism_total} body prisms), banded one tier per room. NO NUCLEUS
+    seed and up to {cap_total} ({prism_total} body prisms), every species roaming the whole
+    arena on one shared band ({budget.ROAM_INNER:.0f}..{budget.ROAM_OUTER:.0f}). NO NUCLEUS
     by design. PhaseThresholds ride THIS intensity's own baseline; regenerate with
     Tools/Build/author_wildlife_liberation_assets.py after any change rather than hand-editing.
   Icon: {{fileID: 21300000, guid: {EXISTING['CellIcon']}, type: 3}}
@@ -511,135 +544,149 @@ for i in INTENSITIES:
          asset_meta(G_ASSET[f"WildlifeCellConfig{i}"]))
 
 
-# ── 7. Scene: clone MinigameRampage, swap the mode-specific wiring ───────────
-DONOR_SCENE = os.path.join(ROOT, "Assets/_Scenes/Multiplayer Scenes/MinigameRampage.unity")
-with open(DONOR_SCENE, encoding="utf-8") as fh:
-    scene = fh.read()
+# ── 7-10. BRING-UP ONLY: the scene clone, the arcade card's registrations ────
+# Skipped by --population. These rebuild the scene from the donor and register the card;
+# both are one-time acts, and re-running the clone would overwrite this mode's scene with
+# a fresh copy of whatever MinigameRampage.unity has since become.
+if not POPULATION_ONLY:
+    # ── 7. Scene: clone MinigameRampage, swap the mode-specific wiring ───────────
+    DONOR_SCENE = os.path.join(ROOT, "Assets/_Scenes/Multiplayer Scenes/MinigameRampage.unity")
+    with open(DONOR_SCENE, encoding="utf-8") as fh:
+        scene = fh.read()
 
-# 7a. turn monitor script swap (field set is identical - base TurnMonitor fields only)
-scene, n = re.subn(EXISTING["RampagePrismTurnMonitor"], G_SCRIPT["WildlifeKillTurnMonitor"], scene)
-assert n == 1, f"turn monitor guid appeared {n} times"
+    # 7a. turn monitor script swap (field set is identical - base TurnMonitor fields only)
+    scene, n = re.subn(EXISTING["RampagePrismTurnMonitor"], G_SCRIPT["WildlifeKillTurnMonitor"], scene)
+    assert n == 1, f"turn monitor guid appeared {n} times"
 
-# 7b. controller script swap + its serialized field block
-scene, n = re.subn(EXISTING["RampageController"], G_SCRIPT["WildlifeLiberationController"], scene)
-assert n == 1, f"controller guid appeared {n} times"
+    # 7b. controller script swap + its serialized field block
+    scene, n = re.subn(EXISTING["RampageController"], G_SCRIPT["WildlifeLiberationController"], scene)
+    assert n == 1, f"controller guid appeared {n} times"
 
-OLD_FIELDS = f"""  rule: {{fileID: 11400000, guid: {EXISTING['RampageScoringRule']}, type: 2}}
-  arenaCell: {{fileID: 1700000065}}
-  aiRetargetSeconds: 1.5
-"""
-NEW_FIELDS = f"""  rule: {{fileID: 11400000, guid: {G_ASSET['WildlifeLiberationScoringRule']}, type: 2}}
-  arenaCell: {{fileID: 1700000065}}
-  firstMilestoneFraction: 0.25
-  secondMilestoneFraction: 0.5
-  progressSampleSeconds: 0.5
-  aiRetargetSeconds: 2.5
-"""
-assert OLD_FIELDS in scene, "controller field block not found in donor scene"
-scene = scene.replace(OLD_FIELDS, NEW_FIELDS)
+    OLD_FIELDS = f"""  rule: {{fileID: 11400000, guid: {EXISTING['RampageScoringRule']}, type: 2}}
+      arenaCell: {{fileID: 1700000065}}
+      aiRetargetSeconds: 1.5
+    """
+    NEW_FIELDS = f"""  rule: {{fileID: 11400000, guid: {G_ASSET['WildlifeLiberationScoringRule']}, type: 2}}
+      arenaCell: {{fileID: 1700000065}}
+      firstMilestoneFraction: 0.25
+      secondMilestoneFraction: 0.5
+      progressSampleSeconds: 0.5
+      aiRetargetSeconds: 2.5
+    """
+    assert OLD_FIELDS in scene, "controller field block not found in donor scene"
+    scene = scene.replace(OLD_FIELDS, NEW_FIELDS)
 
-# 7c. Cell: swap the donor's single config for the FOUR per-intensity configs and flip the
-# choice mode to IntensityWise - the platform's own way to vary a cell by intensity.
-OLD_CELL = f"""  CellConfigs:
-  - {{fileID: 11400000, guid: {EXISTING['RampageCellConfig']}, type: 2}}
-  cellTypeChoiceOptions: 0
-"""
-NEW_CELL = "  CellConfigs:\n" + "".join(
-    f"  - {{fileID: 11400000, guid: {G_ASSET[f'WildlifeCellConfig{i}']}, type: 2}}\n"
-    for i in INTENSITIES) + "  cellTypeChoiceOptions: 1\n"
-assert OLD_CELL in scene, "donor Cell config block not found"
-scene = scene.replace(OLD_CELL, NEW_CELL)
+    # 7c. Cell: swap the donor's single config for the FOUR per-intensity configs and flip the
+    # choice mode to IntensityWise - the platform's own way to vary a cell by intensity.
+    OLD_CELL = f"""  CellConfigs:
+      - {{fileID: 11400000, guid: {EXISTING['RampageCellConfig']}, type: 2}}
+      cellTypeChoiceOptions: 0
+    """
+    NEW_CELL = "  CellConfigs:\n" + "".join(
+        f"  - {{fileID: 11400000, guid: {G_ASSET[f'WildlifeCellConfig{i}']}, type: 2}}\n"
+        for i in INTENSITIES) + "  cellTypeChoiceOptions: 1\n"
+    assert OLD_CELL in scene, "donor Cell config block not found"
+    scene = scene.replace(OLD_CELL, NEW_CELL)
 
-# 7d. Spawn OUTSIDE the jail, on the equator. The donor's four authored transforms sit at +/-50
-# - dead centre of the core cage, so everyone would start locked in the maximum-security room
-# with the kaiju. Switch to the computed cell spawn ring (CellSpawnFormation, all facing the
-# cell) with a radius FLOOR, because this cell has no nucleus for the ring to measure off.
-# spawnFormation 1 = EquatorialRing: everyone on ONE horizontal circle, so nobody is dropped on
-# a boxed cage's corner while someone else gets a flat face.
-OLD_SPAWN = """  playerSpawnPoints:
-  - {fileID: 1468661147}
-  - {fileID: 1074736317}
-  - {fileID: 1323644424}
-  - {fileID: 1564881929}
-  preSpawnDelayMs: 200
-"""
-NEW_SPAWN = f"""  playerSpawnPoints:
-  - {{fileID: 1468661147}}
-  - {{fileID: 1074736317}}
-  - {{fileID: 1323644424}}
-  - {{fileID: 1564881929}}
-  arrangeSpawnPointsAroundCell: 1
-  spawnDistanceOutsideNucleus: 40
-  spawnFormation: 1
-  spawnRingRadiusFloor: {SPAWN_RING_RADIUS}
-  cellData: {{fileID: 11400000, guid: {EXISTING['RuntimeCellData']}, type: 2}}
-  preSpawnDelayMs: 200
-"""
-assert OLD_SPAWN in scene, "donor spawn-point block not found"
-scene = scene.replace(OLD_SPAWN, NEW_SPAWN)
+    # 7d. Spawn OUTSIDE the jail, on the equator. The donor's four authored transforms sit at +/-50
+    # - dead centre of the core cage, so everyone would start locked in the maximum-security room
+    # with the kaiju. Switch to the computed cell spawn ring (CellSpawnFormation, all facing the
+    # cell) with a radius FLOOR, because this cell has no nucleus for the ring to measure off.
+    # spawnFormation 1 = EquatorialRing: everyone on ONE horizontal circle, so nobody is dropped on
+    # a boxed cage's corner while someone else gets a flat face.
+    OLD_SPAWN = """  playerSpawnPoints:
+      - {fileID: 1468661147}
+      - {fileID: 1074736317}
+      - {fileID: 1323644424}
+      - {fileID: 1564881929}
+      preSpawnDelayMs: 200
+    """
+    NEW_SPAWN = f"""  playerSpawnPoints:
+      - {{fileID: 1468661147}}
+      - {{fileID: 1074736317}}
+      - {{fileID: 1323644424}}
+      - {{fileID: 1564881929}}
+      arrangeSpawnPointsAroundCell: 1
+      spawnDistanceOutsideNucleus: 40
+      spawnFormation: 1
+      spawnRingRadiusFloor: {SPAWN_RING_RADIUS}
+      cellData: {{fileID: 11400000, guid: {EXISTING['RuntimeCellData']}, type: 2}}
+      preSpawnDelayMs: 200
+    """
+    assert OLD_SPAWN in scene, "donor spawn-point block not found"
+    scene = scene.replace(OLD_SPAWN, NEW_SPAWN)
 
-# 7e. SPARROW-ONLY, third layer: the AI templates. ServerPlayerVesselInitializerWithAI clamps
-# these through GameDataSO.ClampVesselToGame anyway, but authoring the right class here means
-# the scene is honest on its own and the clamp never has to fire. 3 = Rhino (Rampage's donor
-# value), 11 = Sparrow.
-scene, n = re.subn(r"^  - vesselClass: 3$", "  - vesselClass: 11", scene, flags=re.M)
-assert n == 4, f"expected 4 AI vessel templates, patched {n}"
+    # 7e. SPARROW-ONLY, third layer: the AI templates. ServerPlayerVesselInitializerWithAI clamps
+    # these through GameDataSO.ClampVesselToGame anyway, but authoring the right class here means
+    # the scene is honest on its own and the clamp never has to fire. 3 = Rhino (Rampage's donor
+    # value), 11 = Sparrow.
+    scene, n = re.subn(r"^  - vesselClass: 3$", "  - vesselClass: 11", scene, flags=re.M)
+    assert n == 4, f"expected 4 AI vessel templates, patched {n}"
 
-emit("Assets/_Scenes/Multiplayer Scenes/MinigameWildlifeLiberation.unity", scene)
-emit("Assets/_Scenes/Multiplayer Scenes/MinigameWildlifeLiberation.unity.meta",
-     scene_meta(G_ASSET["MinigameWildlifeLiberation.unity"]))
-
-
-# ── 8. Register the card in the party-games list ─────────────────────────────
-LIST_PATH = "Assets/_SO_Assets/Games/GameLists/OrganicRematchGames.asset"
-with open(os.path.join(ROOT, LIST_PATH), encoding="utf-8") as fh:
-    games = fh.read()
-entry = f"  - {{fileID: 11400000, guid: {G_ASSET['ArcadeGameWildlifeLiberation']}, type: 2}}\n"
-if entry not in games:
-    assert games.endswith("\n")
-    games = games + entry
-emit(LIST_PATH, games)
+    emit("Assets/_Scenes/Multiplayer Scenes/MinigameWildlifeLiberation.unity", scene)
+    emit("Assets/_Scenes/Multiplayer Scenes/MinigameWildlifeLiberation.unity.meta",
+         scene_meta(G_ASSET["MinigameWildlifeLiberation.unity"]))
 
 
-# ── 9. Always-unlocked so the card is clickable on a fresh account ───────────
-PROG_PATH = "Assets/_SO_Assets/GameModeQuest/ProgressionConfig.asset"
-with open(os.path.join(ROOT, PROG_PATH), encoding="utf-8") as fh:
-    prog = fh.read()
-if re.search(r"^  alwaysUnlockedModes:\n(  - \d+\n)*  - 40\n", prog, re.M) is None:
-    prog, n = re.subn(r"(  alwaysUnlockedModes:\n(?:  - \d+\n)*)", r"\g<1>  - 40\n", prog, count=1)
-    assert n == 1, "alwaysUnlockedModes block not found"
-emit(PROG_PATH, prog)
+    # ── 8. Register the card in the party-games list ─────────────────────────────
+    LIST_PATH = "Assets/_SO_Assets/Games/GameLists/OrganicRematchGames.asset"
+    with open(os.path.join(ROOT, LIST_PATH), encoding="utf-8") as fh:
+        games = fh.read()
+    entry = f"  - {{fileID: 11400000, guid: {G_ASSET['ArcadeGameWildlifeLiberation']}, type: 2}}\n"
+    if entry not in games:
+        assert games.endswith("\n")
+        games = games + entry
+    emit(LIST_PATH, games)
 
 
-# ── 10. Build settings ───────────────────────────────────────────────────────
-BUILD_PATH = "ProjectSettings/EditorBuildSettings.asset"
-with open(os.path.join(ROOT, BUILD_PATH), encoding="utf-8") as fh:
-    build = fh.read()
-if "MinigameWildlifeLiberation.unity" not in build:
-    anchor = re.search(
-        r"(  - enabled: 1\n    path: Assets/_Scenes/Multiplayer Scenes/MinigameRampage\.unity\n"
-        r"    guid: [0-9a-f]{32}\n)", build)
-    assert anchor, "Rampage scene entry not found in EditorBuildSettings"
-    build = build.replace(anchor.group(1), anchor.group(1) +
-                          "  - enabled: 1\n    path: Assets/_Scenes/Multiplayer Scenes/MinigameWildlifeLiberation.unity\n"
-                          f"    guid: {G_ASSET['MinigameWildlifeLiberation.unity']}\n")
-emit(BUILD_PATH, build)
+    # ── 9. Always-unlocked so the card is clickable on a fresh account ───────────
+    PROG_PATH = "Assets/_SO_Assets/GameModeQuest/ProgressionConfig.asset"
+    with open(os.path.join(ROOT, PROG_PATH), encoding="utf-8") as fh:
+        prog = fh.read()
+    if re.search(r"^  alwaysUnlockedModes:\n(  - \d+\n)*  - 40\n", prog, re.M) is None:
+        prog, n = re.subn(r"(  alwaysUnlockedModes:\n(?:  - \d+\n)*)", r"\g<1>  - 40\n", prog, count=1)
+        assert n == 1, "alwaysUnlockedModes block not found"
+    emit(PROG_PATH, prog)
+
+
+    # ── 10. Build settings ───────────────────────────────────────────────────────
+    BUILD_PATH = "ProjectSettings/EditorBuildSettings.asset"
+    with open(os.path.join(ROOT, BUILD_PATH), encoding="utf-8") as fh:
+        build = fh.read()
+    if "MinigameWildlifeLiberation.unity" not in build:
+        anchor = re.search(
+            r"(  - enabled: 1\n    path: Assets/_Scenes/Multiplayer Scenes/MinigameRampage\.unity\n"
+            r"    guid: [0-9a-f]{32}\n)", build)
+        assert anchor, "Rampage scene entry not found in EditorBuildSettings"
+        build = build.replace(anchor.group(1), anchor.group(1) +
+                              "  - enabled: 1\n    path: Assets/_Scenes/Multiplayer Scenes/MinigameWildlifeLiberation.unity\n"
+                              f"    guid: {G_ASSET['MinigameWildlifeLiberation.unity']}\n")
+    emit(BUILD_PATH, build)
 
 
 # ── 11. End-game condition target ────────────────────────────────────────────
 # The shared overrides asset is what FrogletTools > Game Modes > End Game Conditions edits. A
 # missing key would silently fall back to the C# field initializer, so author both the live and
 # the build-baseline value explicitly.
+#
+# SET the value, never merely insert it. The first version only inserted a missing key, so once
+# the key existed this script could no longer move the target - and WILDLIFE_KILL_TARGET above
+# would have quietly become a comment rather than the source of truth. Live and Build are held
+# equal so a clean checkout is already in sync (the skill's rule; the build-time auto-restore
+# copies Build onto Live).
 END_PATH = "Assets/Resources/EndConditionOverrides.asset"
 with open(os.path.join(ROOT, END_PATH), encoding="utf-8") as fh:
     endcond = fh.read()
-for live_key, new_key in (("ribcagePrismTarget", "wildlifeKillTarget"),
-                          ("ribcagePrismTargetBuild", "wildlifeKillTargetBuild")):
-    if f"\n  {new_key}: " in endcond:
+for after_key, new_key in (("ribcagePrismTarget", "wildlifeKillTarget"),
+                           ("ribcagePrismTargetBuild", "wildlifeKillTargetBuild")):
+    line = f"  {new_key}: {WILDLIFE_KILL_TARGET}\n"
+    m = re.search(rf"^  {new_key}: (\d+)\n", endcond, re.M)
+    if m:
+        endcond = endcond.replace(m.group(0), line, 1)
         continue
-    m = re.search(rf"^  {live_key}: (\d+)\n", endcond, re.M)
-    assert m, f"{live_key} not found in {END_PATH} - run author_ribcage_assets.py first"
-    endcond = endcond.replace(m.group(0), m.group(0) + f"  {new_key}: {WILDLIFE_KILL_TARGET}\n", 1)
+    m = re.search(rf"^  {after_key}: (\d+)\n", endcond, re.M)
+    assert m, f"{after_key} not found in {END_PATH} - run author_ribcage_assets.py first"
+    endcond = endcond.replace(m.group(0), m.group(0) + line, 1)
 emit(END_PATH, endcond)
 
 
@@ -652,7 +699,12 @@ if len(set(all_new)) != len(all_new):
 
 # .meta files THIS script owns are excluded from the collision sweep - otherwise a second run
 # flags its own (byte-identical) output as a collision and the script stops being idempotent.
+# Ownership is by PATH, not by "did this run emit it": under --population the bring-up sections
+# are skipped, and their metas are still this generator's own output sitting on disk.
 owned_metas = {os.path.normpath(os.path.join(ROOT, rel)) for rel in files if rel.endswith(".meta")}
+owned_metas |= {os.path.normpath(os.path.join(ROOT, rel)) for rel in (
+    "Assets/_Scenes/Multiplayer Scenes/MinigameWildlifeLiberation.unity.meta",
+)}
 
 existing_guids = set()
 for dirpath, _, filenames in os.walk(os.path.join(ROOT, "Assets")):
@@ -681,8 +733,14 @@ for species, pal in PALETTE.items():
         if g not in existing_guids:
             errors.append(f"{species} element-palette GUID {g} does not resolve to any asset")
 
-# the scene must no longer mention the donor's mode-specific guids
-sc = files["Assets/_Scenes/Multiplayer Scenes/MinigameWildlifeLiberation.unity"]
+# the scene must no longer mention the donor's mode-specific guids. Read from disk under
+# --population (this run did not re-clone it) so the assertions still hold against what SHIPS.
+_scene_rel = "Assets/_Scenes/Multiplayer Scenes/MinigameWildlifeLiberation.unity"
+if _scene_rel in files:
+    sc = files[_scene_rel]
+else:
+    with open(os.path.join(ROOT, _scene_rel), encoding="utf-8") as _fh:
+        sc = _fh.read()
 for name in ("RampageController", "RampagePrismTurnMonitor", "RampageCellConfig", "RampageScoringRule"):
     if EXISTING[name] in sc:
         errors.append(f"cloned scene still references {name}")
@@ -742,9 +800,9 @@ CHECKS = [
     (f"{FOLDER}/Wildlife Spawn Profile {i}.asset",
      "Assets/_Scripts/Utility/DataContainers/SpawnProfileSO.cs") for i in INTENSITIES
 ] + [
-    (fauna_asset_path(species, room, i),
+    (fauna_asset_path(species, i),
      "Assets/_Scripts/Utility/DataContainers/FaunaConfigurationSO.cs")
-    for i in INTENSITIES for species, room, *_ in budget.ROSTER
+    for i in INTENSITIES for species, _s, _c, _p in budget.ROSTER
 ] + [
     ("Assets/_SO_Assets/Games/ArcadeGameWildlifeLiberation.asset",
      "Assets/_Scripts/ScriptableObjects/SO_ArcadeGame.cs"),
@@ -754,17 +812,48 @@ if "intensityTier" not in cs_fields(
         "Assets/_Scripts/Controller/Environment/MiniGameObjects/SpawnableWildlifeCage.cs"):
     errors.append("SpawnableWildlifeCage.cs has no 'intensityTier' field - the per-intensity "
                   "prefab variants would all build the same cage")
+CAGE_CS = "Assets/_Scripts/Controller/Environment/MiniGameObjects/SpawnableWildlifeCage.cs"
+with open(os.path.join(ROOT, CAGE_CS), encoding="utf-8") as _fh:
+    _cage_src = _fh.read()
+
 for cage_const in ("OpenWaterInner", "OpenWaterOuter", "RoomCount"):
-    if cage_const not in cs_fields(
-            "Assets/_Scripts/Controller/Environment/MiniGameObjects/SpawnableWildlifeCage.cs"):
+    if cage_const not in cs_fields(CAGE_CS):
         errors.append(f"SpawnableWildlifeCage.cs has no '{cage_const}' - the open water outside "
-                      f"the cages would not exist as a room and the AI would never patrol it")
+                      f"the cages would not exist and the AI would never patrol it")
+# RoomInner/RoomOuter are METHODS, which cs_fields (a FIELD scanner) cannot see - match the
+# source. They are the cage's room geometry, and the AI hunters' patrol is their only consumer.
+for room_fn in ("RoomInner", "RoomOuter"):
+    if not re.search(rf"public static float {room_fn}\(int shell\)", _cage_src):
+        errors.append(f"SpawnableWildlifeCage.cs has no '{room_fn}(int shell)' - the rooms would "
+                      f"not exist as geometry and the AI hunters would never patrol them")
+# The C# side of the roam band, so the two cannot drift: the asset numbers below are only
+# meaningful if the cage still declares the same band.
+for const, want in (("RoamInner", budget.ROAM_INNER), ("RoamOuter", budget.ROAM_OUTER)):
+    m = re.search(rf"public const float {const} = ([\d.]+)f;", _cage_src)
+    if not m:
+        errors.append(f"SpawnableWildlifeCage.cs has no 'RoamInner/RoamOuter' const - the one "
+                      f"band every species roams would have no single source")
+    elif float(m.group(1)) != want:
+        errors.append(f"SpawnableWildlifeCage.{const} is {m.group(1)} but "
+                      f"wildlife_cage_budget says {want} - the band and the arena have drifted")
 for band_field in ("BandInnerRadius", "BandOuterRadius"):
     if band_field not in cs_fields("Assets/_Scripts/Utility/DataContainers/FaunaConfigurationSO.cs"):
-        errors.append(f"FaunaConfigurationSO.cs has no '{band_field}' - the wildlife would not "
-                      f"be penned in their rooms")
+        errors.append(f"FaunaConfigurationSO.cs has no '{band_field}' - the wildlife would have "
+                      f"no band at all and would spawn on the cell centre")
 if "OnFaunaKilled" not in cs_fields("Assets/_Scripts/Utility/DataContainers/CellRuntimeDataSO.cs"):
     errors.append("CellRuntimeDataSO.cs has no 'OnFaunaKilled' channel - no kill would score")
+
+# A comeback rate is a function of the TARGET (bonusLevels = deficit x rate), so re-targeting a
+# mode silently disarms it. Dog Fight recorded the trap, The Bends hit it 20x harder and added
+# this assert; this mode is its third outing. A quarter-of-target deficit must buy at least one
+# WHOLE element level, or the trailing domain gets a rounding error instead of a comeback.
+_quarter_deficit_levels = (WILDLIFE_KILL_TARGET / 4.0) * COMEBACK_RATE
+if _quarter_deficit_levels < 1.0:
+    errors.append(
+        f"ComebackRatePerScoreDeficit {COMEBACK_RATE} against a kill target of "
+        f"{WILDLIFE_KILL_TARGET} buys only {_quarter_deficit_levels:.2f} element levels at a "
+        f"quarter-of-target deficit - under one whole level the comeback does nothing. Rescale "
+        f"COMEBACK_RATE with the target (>= {4.0 / WILDLIFE_KILL_TARGET:.3f}).")
 
 SO_BASE = {"CellName", "Description", "Icon", "Difficulty", "CellEndGameScore", "Mode",
            "IsMultiplayer", "DisplayName", "IconActive", "IconInactive", "CardBackground",
@@ -783,26 +872,32 @@ for asset_path, cs_path in CHECKS:
         errors.append(f"{os.path.basename(asset_path)}: keys not found on "
                       f"{os.path.basename(cs_path)}: {sorted(unknown)}")
 
-# every fauna config must be penned INSIDE its room's walls, or the tiers would mix
+# Every fauna config must carry the SAME band, and it must be the whole arena. This replaced a
+# check that each species sat strictly inside its own room's walls; the property worth asserting
+# now is the opposite one - that no species has quietly been given a narrower band than its
+# neighbours, which is how a "tier" would creep back in.
+_bands = set()
 for i in INTENSITIES:
-    for species, room, *_ in budget.ROSTER:
-        body = files[fauna_asset_path(species, room, i)]
+    for species, _s, _c, _p in budget.ROSTER:
+        body = files[fauna_asset_path(species, i)]
         inner = float(re.search(r"^  BandInnerRadius: ([\d.]+)", body, re.M).group(1))
         outer = float(re.search(r"^  BandOuterRadius: ([\d.]+)", body, re.M).group(1))
-        if room == budget.ROOM_OPEN_WATER:
-            # The open water is OUTSIDE the outer cage and inside the membrane. Both ends
-            # matter: creatures inside the cage would mix with the outer room's tier, and
-            # creatures past the membrane would be unreachable.
-            if not (budget.SHELL_RADII[0] < inner < outer < 1200.0):
-                errors.append(f"{fauna_asset_name(species, room, i)}: open-water band "
-                              f"{inner}..{outer} is not between the outer cage "
-                              f"({budget.SHELL_RADII[0]}) and the membrane (1200)")
-            continue
-        wall_in = budget.SHELL_RADII[room + 1] if room + 1 < budget.SHELL_COUNT else 0.0
-        wall_out = budget.SHELL_RADII[room]
-        if not (wall_in < inner < outer < wall_out) and not (room == budget.SHELL_COUNT - 1 and inner == 0):
-            errors.append(f"{fauna_asset_name(species, room, i)}: band {inner}..{outer} is not "
-                          f"strictly inside its room's walls {wall_in}..{wall_out}")
+        _bands.add((inner, outer))
+        # Outside the membrane is unreachable mass and unreachable prey; a band that does not
+        # reach past the outer cage would put the players' own spawn ring out of bounds.
+        if not (0.0 <= inner < outer <= 1200.0):
+            errors.append(f"{fauna_asset_name(species, i)}: band {inner}..{outer} is not "
+                          f"inside the membrane (1200)")
+        if outer <= budget.SHELL_RADII[0]:
+            errors.append(f"{fauna_asset_name(species, i)}: band outer {outer} does not "
+                          f"reach past the outer cage ({budget.SHELL_RADII[0]}), so nothing "
+                          f"would live in the open water the players spawn in")
+if len(_bands) != 1:
+    errors.append(f"the wildlife carries {len(_bands)} different bands {sorted(_bands)} - every "
+                  f"species must share the one roam band, or the tiers re-form by radius")
+elif _bands != {(budget.ROAM_INNER, budget.ROAM_OUTER)}:
+    errors.append(f"the roam band on the assets {sorted(_bands)} is not "
+                  f"{(budget.ROAM_INNER, budget.ROAM_OUTER)} from wildlife_cage_budget")
 
 # ── PRUNE: assets this generator used to emit and no longer does ────────────
 # The roster changes shape between passes (a species is dropped, a room is added), and a

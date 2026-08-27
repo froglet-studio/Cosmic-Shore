@@ -33,6 +33,15 @@ quota funded by GROWTH. Two rules decide the numbers:
    - Everyone else: 35% of the per-plant budget, so a plant colonises several times over its
      life rather than once.
 
+   NOTE: what this file writes is the SPECIES baseline. THE TIME LAW (Docs/ECOSYSTEM.md 38)
+   scales it by the plant's ELEMENT at spawn - Time breeds at 1.25x the fleet rate, the other
+   three at 0.8x. That lives in code (Flora.ResolveGrowthPerOffspring) and NOT here, because
+   this field is authored per CONFIG while the element is ROLLED per plant, and every species
+   that actually spends this quota sets SpreadElements with a four-element palette - so a
+   per-element fork in this script would reach none of them. Do not add one; the same law
+   reaches the lattice species through their colony CYCLE PERIOD instead
+   (AssembledFlora.ColonyCyclePeriod), since the quota below is inert for them.
+
 Nothing here removes anything. A lowered cap stops PRODUCTION; it never culls a live plant
 (Docs/ECOSYSTEM.md §0).
 
@@ -85,9 +94,10 @@ MATURITY = 0.5
 # ELEMENT), exactly as a fauna lineage does - so a species seeded from ONE plant would grow a
 # whole cell of one element and quietly waste the config's authored element spread. Four
 # independent founders keep several elements in the cell, and double as the extinction floor.
-# (The pick used to carry a rolled spawn LEVEL too; that is retired - every plant seeds at
-# level 1 and earns the rest by reproducing, Docs/ECOSYSTEM.md §34 - so size variety inside a
-# colony now comes from which plants have bred, not from which founder they descend from.)
+# (The pick used to carry a spawn LEVEL too. Lifeform levels are retired outright - a lifeform
+# is its species and its ELEMENT, nothing else, Docs/ECOSYSTEM.md §40 - and a lattice plant's
+# leaf never changes size anyway (Flora.PrismSizeFixedByGrowthRule). So the founders are now
+# the ONLY thing that varies inside a colony, which is precisely why the floor below matters.)
 LATTICE_MIN_FOUNDERS = 4
 
 # Species whose growth rule is a LATTICE: an offspring is handed a real bond site off the

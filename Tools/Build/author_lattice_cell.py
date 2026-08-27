@@ -173,6 +173,25 @@ def source_asset(family, element):
     return os.path.join(LIFEFORMS, f"{family} Flora {element}.asset")
 
 
+def heart_world_scale(species, kind, element):
+    """A lifeform's HEART SIZE, read back off the canonical species asset.
+
+    Tools/Build/author_lifeform_heart_sizes.py OWNS this number (it is fitted to the
+    body, and its band must stay under ElementalCrystalSetSO.MaxSafeHeartWorldScale).
+    That script ALSO writes every asset under _SO_Assets/Cell Configs, so a value
+    hardcoded here would be a second owner for one field - and the loser would be
+    whichever script ran last. Reading it is the same rule the leaf sizes already
+    follow: never fork an authored identity, quote it.
+    """
+    text = read(os.path.join(LIFEFORMS, f"{species} {kind} {element}.asset"))
+    m = re.search(r"^    HeartWorldScale: ([-\d.eE+]+)$", text, flags=re.M)
+    if not m:
+        raise SystemExit(
+            f"{species} {kind} {element}: no HeartWorldScale in the source asset - "
+            f"run Tools/Build/author_lifeform_heart_sizes.py --write first")
+    return m.group(1)
+
+
 def variant_block(family, element):
     """The element's IDENTITY, read verbatim off the shipped per-element species asset."""
     text = read(source_asset(family, element))
@@ -350,8 +369,6 @@ def flora_asset(family, element):
     body += f"  OffspringSpread: {SPREAD}\n"
     body += f"  Element: {ELEMENT_ID[element]}\n"
     body += "  Variant:\n" + variant_block(family, element)
-    body += "  InitialLevel: 1\n"
-    body += "  LeafScalePerLevel: 1.15\n"
     return name, body
 
 
@@ -360,22 +377,21 @@ def fauna_asset():
     file_id, prefab_guid = TADPOLE_PREFAB
     body = HEADER.format(script=SCRIPT["fauna"], name=name)
     body += f"  FaunaPrefab: {{fileID: {file_id}, guid: {prefab_guid}, type: 3}}\n"
+    heart = heart_world_scale("Tadpole", "Fauna", "Mass")   # Element: 2 below
     body += """  InitialSpawnCount: 4
   PopulationSize: 4
   SpawnProbability: 1
   FeedsPerOffspring: 20
-  FeedsPerLevel: 40
   OffspringPerBirth: 1
   ReproductionCooldownSeconds: 10
   MaxLivePopulation: 8
   CenterFocusBias: 0.35
   Element: 2
-  InitialLevel: 1
-  BodyScalePerLevel: 1.15
-  LevelGrowSeconds: 1
   Variant:
     Enabled: 1
-    BaseBodyScale: 0.4
+"""
+    body += f"    HeartWorldScale: {heart}\n"
+    body += """    BaseBodyScale: 0.4
     BodyPrismScale: {x: 0.8, y: 0.8, z: 7}
     StarvationSeconds: 90
     Forager: 1

@@ -63,8 +63,9 @@ debris and read as a plain prism dying. Shielded and super-shielded mass had the
 defect (visible whenever a devastating hit explodes shielded mass rather than shedding
 its shield). The dying prism's tier now travels on the event
 (`PrismEventData.Kind`, stamped in `Prism.Explode` / `Prism.Implode` from
-`PrismKinds.Of` **before** the destruction pass), and both routes — the batched
-pure-entity debris and the pooled fallback — tint from it.
+`PrismKinds.Of` **before** the destruction pass), and the batched pure-entity
+debris path tints from it. Grow (Sparrow ReverseSuction) still uses pooled
+`PrismImplosion.ConfigureForTeam` and is not a death tint.
 
 This costs nothing at runtime: debris colour is already a **per-entity** override
 (`PrismBrightColorOverride` / `PrismDarkColorOverride`) inside the one
@@ -453,6 +454,46 @@ That lands ΔL\* at 31.99 against Jade's 32.16, restores 7.41 points of headroom
 shielded rim (again matching Jade exactly), and drops the peak from 1.50 to 1.00, in family
 with Jade's 1.14. Plain Gold prisms are correspondingly less blazing at the rim — the
 intended change, since that heat was the defect.
+
+### 4.3 Two saturated OPPOSITE hues cannot be blended — they have to be separated (2026-08-24)
+
+Found on the Sparrow's projectile charge shell (`R_VesselActions/SPARROW_SPRAY_ACCURACY.md`
+§ Round 4), but it is a composition law, not a projectile fact.
+
+The shell wanted **neutral blue** arcs with a **danger red** hot core, composed the obvious
+way: `lerp(blue, red, arcHeat²)`. It rendered magenta. **Any lerp between two saturated hues
+on opposite sides of the wheel spends most of its range in a third hue that belongs to
+neither** — and on an ADDITIVE surface it also *sums* with whatever is already behind it, so
+the third hue appears even where the lerp did not put it.
+
+The fix is a **threshold, not a different pair of colours**: `smoothstep(t, 1, heat)` confines
+the second colour to the hot core, so the arc reads blue with a red filament in it. Measured
+by hue-bucketing every lit fragment of the shipped shader after tonemapping:
+
+| `_CoreThreshold` | blue | magenta | red |
+|---|---|---|---|
+| 0 (a plain `heat²` lerp) | 54.5% | **12.6%** | 32.9% |
+| 0.75 (shipped) | 77.7% | **7.4%** | 14.9% |
+
+> If a two-colour effect is reading as one muddy colour, reach for a separation dial before
+> you reach for new colours. Changing the pair cannot fix a blend that is *supposed* to
+> traverse the space between them.
+
+**Two corollaries about how you judge this.**
+
+**§4.1's rule reaches past prism tiers, and ACES is what enforces it.** The same shell's model
+wanted a "desaturated whitish blue". Every candidate authored *as* a pale blue — including
+this file's own `BlueColors.SpikeLightColor` — rendered at screen saturation **0.03–0.06**,
+i.e. white, because ACES compresses highlights and a bright colour desaturates on the way to
+the screen. The shipped value was chosen by computing post-tonemap sRGB and hunting for the
+0.20–0.30 band. §4.1 says measure screen saturation for the shielded tier; it is true of
+**anything** whose linear value is bright, and the inspector swatch will not tell you.
+
+**Judge a candidate at the size it will be judged, and count the pixels.** A 300 px contact
+sheet of that shell read as uniformly magenta; the hue census over the same shader said 7%,
+and a single large panel proved the census right — at thumbnail scale a blue arc and its red
+filament simply average together. A census of the rendered population is evidence; a
+downsampled thumbnail is not.
 
 ## 5. Re-deriving after a change
 

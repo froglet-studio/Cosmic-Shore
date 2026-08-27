@@ -77,6 +77,32 @@ namespace CosmicShore.Utility
         /// unaffected by this flag.
         /// </summary>
         ScarabDash = 1 << 5,
+        /// <summary>
+        /// <c>[ShieldShatter]</c> — one line per shield disengage: whether the batched
+        /// overlay was accepted at all, and the breaking impulse it carries before and
+        /// after the shield's own speed clamp. The velocity terms are the identity at
+        /// zero (Docs/PRISM_ANIMATION.md §4.8.1), so "the shatter looks unchanged" has
+        /// two very different causes — no overlay, or an overlay with no impulse — and
+        /// this is what tells them apart. Off by default like every channel.
+        /// </summary>
+        PrismShieldShatter = 1 << 6,
+        /// <summary>
+        /// <c>[BarrelRoll]</c> — the Sparrow's strafing roll: direction, the stick vector that
+        /// triggered it, and the nudge direction (plus whether it fired stopped, as the turret
+        /// stance's dodge). Logged unconditionally on every roll until 2026-08-25, which is the
+        /// same per-input console spam <see cref="ScarabDash"/> records for the sibling ability.
+        /// Off by default like every channel; a real fault here is still a warning or an error
+        /// and is unaffected by this flag.
+        /// </summary>
+        SparrowStrafingRoll = 1 << 7,
+        /// <summary>
+        /// <c>[MouseFlight]</c> — one line the first time the desktop one-thumb mouse scheme
+        /// takes over the input. Off by default like every channel; it exists so a playtest can
+        /// tell "engaged" from "a pad is in use" (both are silent otherwise). The scheme's
+        /// REFUSALS are warnings on <c>MouseFlightDiagnostics</c> and are unaffected by this flag —
+        /// a system whose failure mode is silence has to stay loud when it fails.
+        /// </summary>
+        MouseFlight = 1 << 8,
         All = ~0
     }
 

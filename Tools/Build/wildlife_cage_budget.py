@@ -2,8 +2,9 @@
 """Analytic budget for SpawnableWildlifeCage. Keep in sync with the C# generator.
 
 The arena is a THREE-LAYER JAIL: three concentric cages at a fixed 1050 / 600 / 200, with a
-very wide empty room between each pair, and one tier of wildlife locked in each room. Unlike
-Ribcage, intensity never changes the SHELL COUNT (each shell walls in a tier of creature) -
+very wide empty room between each pair. The wildlife is NOT locked one tier per room - every
+species roams the whole arena on ONE shared band (see ROAM_INNER/ROAM_OUTER). Unlike
+Ribcage, intensity never changes the SHELL COUNT (each shell is a room a hunter breaks into) -
 it changes how tightly each cage is woven and, from intensity 3, its SHAPE: the cages become
 BOXES (square rail grids with corner posts, "the boxing ring") - one at intensity 3, all three
 at intensity 4. The WILDLIFE ROSTER is identical at every intensity, so this table carries the
@@ -14,8 +15,8 @@ per-segment prism walk are all simulated the same way the C# does, not estimated
 E[k^3] ~ 1.04 for Jit(s, 0.2) (one uniform factor on all three axes).
 
 Emits the per-intensity baselines that Tools/Build/author_wildlife_liberation_assets.py turns
-into the four CellConfigDataSO PhaseThresholds blocks, and the fauna band radii that its
-FaunaConfigurationSO assets are authored from - so the pens and the walls cannot drift.
+into the four CellConfigDataSO PhaseThresholds blocks, and the one roam band its
+FaunaConfigurationSO assets are authored from - so the band and the membrane cannot drift.
 """
 import math
 
@@ -23,7 +24,7 @@ import math
 SHELL_RADII = [1050.0, 600.0, 200.0]     # outer / middle / core
 SHELL_COUNT = 3
 OUTER_R = SHELL_RADII[0]
-BAND_WALL_CLEARANCE = 60.0
+ROOM_WALL_CLEARANCE = 60.0
 
 BAR_STEP = 34.0
 BAR_LEN = 26.0
@@ -58,31 +59,50 @@ BAR_VOL = BAR_THICK * BAR_THICK * BAR_LEN
 POST_VOL = POST ** 3
 
 
-# ── Fauna bands (the pens) ───────────────────────────────────────────────────
-def band_inner(shell):
+# ── Room geometry + the fauna roam band ─────────────────────────────────────
+def room_inner(shell):
     """Inner radius of the room belonging to `shell` - the shell below it, plus clearance."""
-    return SHELL_RADII[shell + 1] + BAND_WALL_CLEARANCE if shell + 1 < SHELL_COUNT else 0.0
+    return SHELL_RADII[shell + 1] + ROOM_WALL_CLEARANCE if shell + 1 < SHELL_COUNT else 0.0
 
 
-def band_outer(shell):
+def room_outer(shell):
     """Outer radius of that room - just inside `shell`'s own wall."""
-    return SHELL_RADII[shell] - BAND_WALL_CLEARANCE
+    return SHELL_RADII[shell] - ROOM_WALL_CLEARANCE
 
 
-# The OPEN WATER outside the outer cage, between it and the 1200u membrane. A fourth room, and
-# the reason it exists: with wildlife only inside the cages, every fight converged on the middle
-# of the arena. Stocking the open water means there is something to shoot from the moment you
-# spawn (the player ring is at 1150, inside this band) and the action starts spread out.
+# The OPEN WATER outside the outer cage, between it and the 1200u membrane. The player ring sits
+# at 1150, inside it, which is why the outermost room is stocked at all: there is something to
+# shoot from the moment you spawn and breaking into a cage is a choice rather than the only way
+# to score. OPEN_WATER_OUTER is what ROAM_OUTER is measured from.
 OPEN_WATER_INNER = 1090.0
 OPEN_WATER_OUTER = 1180.0
 ROOM_OPEN_WATER = 3
 
 
 def room_band(room):
-    """(inner, outer) for any room index, including the open water."""
+    """(inner, outer) for any room index, including the open water. ARCHITECTURE, not a pen -
+    the AI hunters' patrol steps through these to sweep the arena radially."""
     if room == ROOM_OPEN_WATER:
         return OPEN_WATER_INNER, OPEN_WATER_OUTER
-    return band_inner(room), band_outer(room)
+    return room_inner(room), room_outer(room)
+
+
+# THE fauna band, and there is exactly one: every species roams the WHOLE arena, core to
+# membrane. Mirrors SpawnableWildlifeCage.RoamInner/RoamOuter.
+#
+# It replaces a three-tier pen (each species banded to one room), which read as three stacked
+# aquariums around a boss room - the fight converged wherever a player broke in and the apex
+# creatures were only ever findable at one radius. Mixing every tier through one volume is what
+# makes the mode a hunt: what you meet next is a roll, not a radius.
+#
+# THE COST, stated because the pens were what paid for it: a room-banded creature could not
+# reach its own cage, so the bars sat outside the food web. One arena-wide band puts all three
+# cages inside it and this cell has no nucleus, so herbivores eat opposing-domain mass and the
+# triad-painted bars are now grazeable - the cage erodes as a match runs. Shielding the bars is
+# NOT the answer (a shield reaches 1.5x leafSize, which at a 34u bar step fuses the lattice and
+# costs the one-hit break-in); raise ROAM_INNER off 0 or cut POPULATION_SCALE instead.
+ROAM_INNER = 0.0
+ROAM_OUTER = OPEN_WATER_OUTER
 
 
 ROOM_COUNT = SHELL_COUNT + 1
@@ -256,11 +276,26 @@ def phase_thresholds(n, v):
 
 # ── The wildlife roster (the real objective, and the real collider budget) ───
 #
-# One entry per SPECIES PER ROOM - the spawner runs one loop per FaunaConfigurationSO, so each
-# of these becomes its own asset, banded to its room. Populations are the seed FLOOR and the
-# hard CAP: the spawner only tops a species back up to the floor, and everything above it comes
-# from reproduction and is bounded by starvation (Docs/ECOSYSTEM.md §6). So `cap` is the honest
-# number to size the collider budget against, not `seed`.
+# One entry per SPECIES - the spawner runs one loop per FaunaConfigurationSO, so each of these
+# becomes its own asset. Every one of them carries the SAME band (ROAM_INNER..ROAM_OUTER).
+#
+# It used to be one entry per SPECIES x LEVEL. Lifeform LEVELS are retired (a lifeform is its
+# species and its ELEMENT, nothing else - Docs/ECOSYSTEM.md 40), which removed the last thing
+# separating two entries of one species: the room dimension had already gone, so a "level-5
+# shark" row and a "level-2 shark" row became two configs that differed in nothing at all.
+# They are merged by SUMMING their populations, which is arithmetic and not a retune - the
+# authored roster is still 610 creatures at seed and 1409 at cap, and after POPULATION_SCALE
+# still 519 / 1198 / 4155 body prisms, each identical to the six-row table row for row in
+# total. `prisms` was already equal across a species' rows, so nothing is lost in the merge.
+#
+# What the mode gives up with it: the deliberate "a level-5 shark among level-2 ones" size mix
+# inside one species. Variety within a species is now the ELEMENT (SpreadElements over the
+# four-element palette), not a starting tier.
+#
+# Populations are the seed FLOOR and the hard CAP: the spawner only tops a species back up to
+# the floor, and everything above it comes from reproduction and is bounded by starvation
+# (Docs/ECOSYSTEM.md §6). So `cap` is the honest number to size the collider budget against,
+# not `seed`.
 #
 # `prisms` is body prisms per creature, measured from the prefabs - that IS the collider count
 # each creature contributes, and every one of them is a MOVER (it re-buckets in the spatial
@@ -270,59 +305,60 @@ def phase_thresholds(n, v):
 # NOTE the Clawfish is deliberately absent: its prefab carries no HealthPrism at all, so it has
 # no body to shoot and cannot be killed by a Sparrow. Adding it would put un-scoreable creatures
 # in a hunt. See WILDLIFE_LIBERATION.md "Known limitations".
-ROOM_OUTER, ROOM_MIDDLE, ROOM_CORE = 0, 1, 2
 
-#          species        room             seed   cap  level  prisms
+#          species        seed   cap  prisms
 ROSTER = [
-    # OPEN WATER - outside the outer cage, where the players spawn. Big creatures here on
-    # purpose ("the big ones can spawn outside as well"): the hunt starts before you break in.
-    ("Brittlestar",  ROOM_OPEN_WATER,       28,   65,   1,    10),
-    ("QuadFish",     ROOM_OPEN_WATER,      130,  300,   1,     1),
-    # OUTER ROOM - the heavy swarm. QuadFish is the small-fauna species now that the tadpole
-    # is out of this mode, mixed with the big ones as before.
-    ("QuadFish",     ROOM_OUTER,           320,  750,   1,     1),
-    ("Brittlestar",  ROOM_OUTER,            38,   88,   1,    10),
-    # MIDDLE ROOM - noticeably bigger creatures, and the first predators.
-    ("Brittlestar",  ROOM_MIDDLE,           50,  115,   2,    10),
-    ("Shark",        ROOM_MIDDLE,           24,   52,   2,    11),
-    # CORE - the biggest and hardest, fewest in number.
-    ("Shark",        ROOM_CORE,             14,   28,   5,    11),
-    ("WormColony",   ROOM_CORE,              6,   11,   3,    26),
+    # The swarm - what you meet constantly, anywhere in the arena.
+    ("QuadFish",          450, 1050,    1),
+    # 66+50: the two level-1/level-2 rows of the six-row table, summed.
+    ("Brittlestar",       116,  268,   10),
+    # 24+14: the mid row plus the apex row. These used to be locked in the 200u core - the
+    # "big ones concentrated in the centre" the roam-band pass exists to end. Whole arena now.
+    ("Shark",              38,   80,   11),
+    ("WormColony",          6,   11,   26),
 ]
 
-# ~610 creatures at seed rising to ~1409 at the caps, and DELIBERATELY THE SAME AT EVERY
-# INTENSITY (requested 2026-08: "keep around 600 rising to 1400 at all intensities - the later
-# levels can have more complexity"). The seed/cap gap is wide on purpose: the spawner only tops
-# each species back up to its floor, so everything between the two is REPRODUCTION - the swarm
-# visibly thickens as a match runs and thins where hunters have been working, which is the food
-# web doing the shaping rather than a spawner curve.
+# Before POPULATION_SCALE the roster is 610 creatures at seed rising to 1409 at cap - the
+# already-play-tested population, preserved exactly through BOTH merges: the room merge (the
+# two QuadFish rows and the two level-1 Brittlestar rows were per-room splits of one
+# population) and the level merge above. Both are arithmetic, not a retune.
 #
-# NO TADPOLES (removed on request, 2026-08). QuadFish inherits the swarm role. This costs
-# collider budget - a tadpole is 1 body prism and so is a QuadFish, but the tadpoles were the
-# cheapest way to reach a big headcount and their share had to be spread across species that
-# are not all 1-prism. See the collider table in WILDLIFE_LIBERATION.md.
+# POPULATION_SCALE then takes 15% off the whole roster (requested 2026-08): 519 at seed, 1198 at
+# cap, 4155 body prisms at cap against 4896. It is deliberately the dial rather than 12 edited
+# numbers, so the cut is one line to revisit and the authored roster above still reads as the
+# play-tested one. Do not confuse a uniform scale with "unused".
+#
+# The seed/cap gap is wide on purpose: the spawner only tops each species back up to its floor,
+# so everything between the two is REPRODUCTION - the swarm visibly thickens as a match runs and
+# thins where hunters have been working, which is the food web doing the shaping rather than a
+# spawner curve.
 #
 # The intensity ramp lives entirely in SHELL_PLANS - tighter weaves and boxier cages - not in
-# the population. Left as a per-intensity array rather than a scalar so re-introducing a
-# population ramp is one edit; do not confuse "all 1.0" with "unused".
-POPULATION_SCALE = [1.0, 1.0, 1.0, 1.0]
+# the population, which is why every row here is the same scalar.
+POPULATION_SCALE = [0.85, 0.85, 0.85, 0.85]
+
+
+def _round_half_up(x):
+    """Explicit half-up rounding. Python's round() is BANKER'S rounding, which lands 10*0.85 on
+    8 for one species and 9 for the next and nobody can explain why (the ecology skill's own
+    warning). An authoring-facing scalar must round predictably."""
+    return math.floor(x + 0.5)
 
 
 def roster_for(intensity):
-    """The roster at an intensity: (species, room, seed, cap, level, prisms_per_creature)."""
+    """The roster at an intensity: (species, seed, cap, prisms_per_creature)."""
     k = POPULATION_SCALE[max(1, min(intensity, 4)) - 1]
-    out = []
-    for species, room, seed, cap, level, prisms in ROSTER:
-        out.append((species, room, max(1, round(seed * k)), max(1, round(cap * k)), level, prisms))
-    return out
+    return [(species, max(1, _round_half_up(seed * k)), max(1, _round_half_up(cap * k)),
+             prisms)
+            for species, seed, cap, prisms in ROSTER]
 
 
 def fauna_totals(intensity):
     """(creatures at seed, creatures at cap, body prisms at cap) for an intensity."""
     r = roster_for(intensity)
-    return (sum(s for _, _, s, _, _, _ in r),
-            sum(c for _, _, _, c, _, _ in r),
-            sum(c * p for _, _, _, c, _, p in r))
+    return (sum(s for _, s, _, _ in r),
+            sum(c for _, _, c, _ in r),
+            sum(c * p for _, _, c, p in r))
 
 
 if __name__ == "__main__":
@@ -343,23 +379,26 @@ if __name__ == "__main__":
         print(f"                   volume {th['RestlessEnterVolume']}/{th['RestlessExitVolume']}"
               f"  {th['FrenzyEnterVolume']}/{th['FrenzyExitVolume']}")
 
-    print("\n== fauna bands (the rooms) " + "=" * 53)
+    print("\n== rooms (cage architecture; the AI patrol sweeps these) " + "=" * 20)
     for room in range(ROOM_COUNT):
         name = ("outer", "middle", "core", "open water")[room]
         lo, hi = room_band(room)
         wall = f"(wall at {SHELL_RADII[room]:.0f})" if room < SHELL_COUNT else "(outside the outer cage)"
         print(f"  {name:<11} {lo:>6.0f} .. {hi:>6.0f}   {wall}")
-    print(f"\nplayer spawn ring {SPAWN_RING_RADIUS}  (outer cage {OUTER_R:.0f}, membrane 1200)")
+    print(f"\n  fauna ROAM BAND {ROAM_INNER:.0f} .. {ROAM_OUTER:.0f}  "
+          f"- ONE band, every species, the whole arena")
+    print(f"  player spawn ring {SPAWN_RING_RADIUS}  (outer cage {OUTER_R:.0f}, membrane 1200)")
 
     print("\n== the wildlife (per intensity) " + "=" * 48)
-    room_names = ("outer", "middle", "core", "open water")
     for i in range(1, 5):
         seed, cap, prisms = fauna_totals(i)
         cage, _, _ = cumulative(i)
         print(f"\nintensity {i}: {seed} creatures at seed, {cap} at cap, "
-              f"{prisms} body prisms at cap")
-        print(f"{'species':<14}{'room':>11}{'seed':>7}{'cap':>6}{'lvl':>5}{'prisms/ea':>11}{'prisms':>9}")
-        for species, room, s, c, lvl, p in roster_for(i):
-            print(f"{species:<14}{room_names[room]:>11}{s:>7}{c:>6}{lvl:>5}{p:>11}{c * p:>9}")
+              f"{prisms} body prisms at cap  (scale {POPULATION_SCALE[i - 1]})")
+        print(f"{'species':<14}{'seed':>7}{'cap':>6}{'prisms/ea':>11}{'prisms':>9}"
+              f"{'band':>16}")
+        for species, s_, c, p in roster_for(i):
+            band = f"{ROAM_INNER:.0f}..{ROAM_OUTER:.0f}"
+            print(f"{species:<14}{s_:>7}{c:>6}{p:>11}{c * p:>9}{band:>16}")
         print(f"  COLLIDER BUDGET  cage {cage} + fauna {prisms} = {cage + prisms} "
               f"(fauna are MOVERS - see WILDLIFE_LIBERATION.md)")

@@ -702,6 +702,10 @@ namespace CosmicShore.Gameplay
         /// </summary>
         public static int DamageBudgetPerFrameOverride = 0;
 
+        // Benchmark-harness override; a play exit mid-run must not leave gameplay unthrottled.
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        static void ResetBudgetOverride() => DamageBudgetPerFrameOverride = 0;
+
         static int EffectiveDamageBudget =>
             DamageBudgetPerFrameOverride > 0 ? DamageBudgetPerFrameOverride : MAX_NEW_HITS_PER_FRAME;
 
@@ -2367,10 +2371,16 @@ namespace CosmicShore.Gameplay
             // Same team (and not affectSelf) or non-destructive: shield the prism
             if ((prismDomain == expDomain && !affectSelf) || !destructive)
             {
+                // The blast is ACCEPTED, not ignored: the prism armours up instead of the
+                // explosion visibly passing through it. The blow's magnitude (Speed x
+                // Inertia - no vector built, no root taken) and its ceiling ride along so
+                // the timed pop sheds at half of it (PrismStateManager.
+                // ExecuteTimerDeactivation). Mirrors ExecuteCommonPrismCommands.
+                float impactSpeed = impulse.Speed * impulse.Inertia;
                 if (shielding && prismDomain == expDomain)
-                    prism.ActivateShield();
+                    prism.ActivateShieldFromImpact(impactSpeed, impulse.DebrisSpeedLimit);
                 else
-                    prism.ActivateShield(2f);
+                    prism.ActivateShield(2f, impactSpeed, impulse.DebrisSpeedLimit);
                 UpdateShieldState(idx, true, false);
                 return true;
             }

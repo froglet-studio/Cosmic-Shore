@@ -10,6 +10,7 @@ using UnityEngine.Serialization;
 using CosmicShore.Data;
 using CosmicShore.ECS;
 using System.Linq;
+using Unity.Mathematics;
 namespace CosmicShore.Gameplay
 {
     [RequireComponent(typeof(MaterialPropertyAnimator))]
@@ -28,6 +29,9 @@ namespace CosmicShore.Gameplay
         [Header("Prism Growth")]
         public Vector3 GrowthVector = new Vector3(0, 2, 0);
         public float growthRate = 0.01f;
+        // DO NOT shorten without claim-before-spawn on trail/env lays:
+        // PrismSpatialIndex.TryReserve is growth/assembler-only today — PrismTrailBuilder.LayOne
+        // and PrismFactory still rely on this disable window as the sole spawn-site protection.
         public float waitTime = 0.6f;
 
         // One yield token per prism life, reused across pool reuses — a fresh
@@ -67,8 +71,8 @@ namespace CosmicShore.Gameplay
         public Action<Prism> OnReturnToPool;
         private Vector3 _lastDestructionScale = Vector3.one;
 
-        // Authored BoxCollider size, cached in Awake so HoldColliderAtFullSize can compensate the
-        // collider against the animated transform scale and ResetState can restore it on pool reuse.
+        // Authored BoxCollider size, cached in Awake so ResetState can restore it on
+        // pool reuse (a prior life must not leak an inflated size into the next).
         Vector3 _authoredColliderSize = Vector3.one;
         bool _authoredColliderSizeCached;
 
@@ -96,7 +100,7 @@ namespace CosmicShore.Gameplay
         /// (shieldScale × authored half-extents), in the prism's LOCAL frame —
         /// the index applies the live world transform. Reads the shield
         /// components' Awake-cached geometry (never the live BoxCollider.size,
-        /// which HoldColliderAtFullSize mutates during the bloom).
+        /// which must stay at the authored size for shell geometry).
         /// </summary>
         internal bool TryGetShellGeometry(out Vector3 centerLocal, out Vector3 semiAxesLocal)
         {
@@ -166,6 +170,9 @@ namespace CosmicShore.Gameplay
         private MeshFilter meshFilter;
         private BoxCollider blockCollider;
 
+        static readonly int SuctionStartTimeId = Shader.PropertyToID("_SuctionStartTime");
+        const float ConvergenceBoundsPadding = 2f;
+
         // --- Instanced rendering (Entities Graphics companion entity) -----------
         // While the instanced path is active the MeshRenderer stays disabled and a
         // companion entity draws in its place (PrismRenderService — see
@@ -229,15 +236,24 @@ namespace CosmicShore.Gameplay
             (IsCreationComplete && scaleAnimator.IsVisuallySettled);
 
         /// <summary>
-        /// Snap this prism's grow-in to its final scale NOW (loading-screen use only — the world
-        /// must be covered). No-op until creation completes: CreateBlockCoroutine owns the
-        /// pre-visibility state and must not be raced.
+        /// Snap this prism's grow-in to its final scale NOW (loading-screen / emergency use —
+        /// the world must be covered). The arena-ready gate no longer force-snaps; it waits on
+        /// <see cref="IsSettledForReveal"/> / <see cref="AnalyticGrowSettleTime"/>. No-op until
+        /// creation completes: CreateBlockCoroutine owns the pre-visibility state and must not
+        /// be raced.
         /// </summary>
         public void CompleteGrowthImmediately()
         {
             if (destroyed || !IsCreationComplete) return;
             scaleAnimator?.CompleteImmediately();
         }
+
+        /// <summary>
+        /// Analytic <see cref="PrismClock"/> time when the GPU grow bloom settles, or 0 when no
+        /// clock stamp is active. Used by the arena-ready gate to wait without force-snapping.
+        /// </summary>
+        public float AnalyticGrowSettleTime =>
+            scaleAnimator != null ? scaleAnimator.AnalyticSettleTime : 0f;
 
         public Vector3 MaxScale
         {
@@ -274,74 +290,6 @@ namespace CosmicShore.Gameplay
         {
             growthRate = rate;
             if (scaleAnimator is not null) scaleAnimator.GrowthRate = rate;
-        }
-
-        /// <summary>
-        /// Guarantees this prism's collider covers its FULL target world size from the frame of the
-        /// call, while the visual still blooms in from (near) zero - the continuity law is visual;
-        /// the physics footprint doesn't have to grow with it. The collider is enabled immediately
-        /// and its BoxCollider.size is compensated inversely against the animated transform scale
-        /// each frame, then restored to the authored size once growth completes. Call AFTER
-        /// <see cref="Initialize"/> (ResetState would stop the coroutine).
-        ///
-        /// Used by <c>BoostRingBuilder</c> (omnicrystal ring / joust ring / Squirrel tube) so a
-        /// skimmer collides with a just-spawned ring deterministically no matter how fast the
-        /// vessel arrives.
-        /// </summary>
-        /// <param name="onGrown">Invoked once the visual reaches its target scale (skipped if the
-        /// prism is destroyed or recycled first). Lets callers defer state that swaps colliders -
-        /// e.g. shield engage, whose octahedron MeshCollider scales with the transform and would
-        /// defeat the full-size hold during the bloom.</param>
-        public void HoldColliderAtFullSize(Action onGrown = null)
-        {
-            if (!blockCollider || !_authoredColliderSizeCached)
-            {
-                onGrown?.Invoke();
-                return;
-            }
-            StartCoroutine(HoldColliderAtFullSizeCoroutine(onGrown));
-        }
-
-        private IEnumerator HoldColliderAtFullSizeCoroutine(Action onGrown)
-        {
-            blockCollider.enabled = true;
-
-            while (!destroyed && blockCollider)
-            {
-                Vector3 target = TargetScale;
-                if (target.x <= 0f || target.y <= 0f || target.z <= 0f)
-                {
-                    // Target not set yet - wait, a zero target has no meaningful footprint.
-                    yield return null;
-                    continue;
-                }
-
-                Vector3 current = transform.localScale;
-                if ((current - target).sqrMagnitude <= 1e-4f)
-                    break;
-
-                // A zero transform scale zeroes the collider's world footprint no matter how large
-                // its size is - floor the bloom at 1% of target so the compensation below can
-                // always reconstruct the full-size world box (world = size * scale = target).
-                current = new Vector3(
-                    Mathf.Max(current.x, target.x * 0.01f),
-                    Mathf.Max(current.y, target.y * 0.01f),
-                    Mathf.Max(current.z, target.z * 0.01f));
-                transform.localScale = current;
-
-                blockCollider.size = new Vector3(
-                    _authoredColliderSize.x * target.x / current.x,
-                    _authoredColliderSize.y * target.y / current.y,
-                    _authoredColliderSize.z * target.z / current.z);
-
-                yield return null;
-            }
-
-            if (blockCollider)
-                blockCollider.size = _authoredColliderSize;
-
-            if (!destroyed)
-                onGrown?.Invoke();
         }
 
         private void Awake()
@@ -683,6 +631,46 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
+        /// Whole-prism GPU suction toward a world-space point (Docs/PRISM_ANIMATION.md §5 C9).
+        /// Collider off at stamp — gameplay state is FINAL; only photons animate. Pair with
+        /// <see cref="ClearSuctionClockStamp"/> on pool return.
+        /// </summary>
+        public void StampSuctionToward(Vector3 worldLocation, float duration)
+        {
+            if (duration <= 0.01f) return;
+            if (blockCollider) blockCollider.enabled = false;
+
+            var handle = RenderHandle;
+            if (!PrismRenderService.IsHandleUsable(in handle))
+            {
+                PrismClockDiagnostics.WarnNoRenderEntity("cellSwapSuction", this,
+                    PrismRenderService.StatusLine());
+                return;
+            }
+
+            var mat = meshRenderer != null ? meshRenderer.sharedMaterial : null;
+            if (mat == null || !mat.HasProperty(SuctionStartTimeId))
+                PrismClockDiagnostics.WarnUnwiredMaterial(mat, "_SuctionStartTime", this);
+
+            var loc = new float3(worldLocation.x, worldLocation.y, worldLocation.z);
+            if (!PrismRenderService.StampSuctionClock(in handle, PrismClock.Now, duration, 1f, 0f, loc))
+                return;
+
+            if (meshFilter != null)
+                PrismRenderService.ResetBoundsToMesh(in handle, meshFilter.sharedMesh);
+            var objectPoint = transform.InverseTransformPoint(worldLocation);
+            PrismRenderService.EncapsulateBoundsPoint(in handle,
+                new float3(objectPoint.x, objectPoint.y, objectPoint.z), ConvergenceBoundsPadding);
+        }
+
+        /// <summary>Pool hygiene: Duration 0 is identity on live graphs. Initialize also
+        /// routes through <see cref="PrismRenderService.ClearPrismStamps"/>.</summary>
+        public void ClearSuctionClockStamp()
+        {
+            PrismRenderService.ClearSuctionClockStamp(in RenderHandle);
+        }
+
+        /// <summary>
         /// Called when spawning from pool. Resets state and starts growth.
         /// </summary>
         public virtual void Initialize(string playerName = DEFAULT_PLAYER_NAME)
@@ -783,9 +771,8 @@ namespace CosmicShore.Gameplay
             if (blockCollider) blockCollider.enabled = false;
             SetRenderVisible(false);
 
-            // Pool-reuse safety: a HoldColliderAtFullSize bloom interrupted by recycle (deactivate
-            // stops its coroutine before the restore step) must not leak an inflated collider size
-            // into the next use of this instance.
+            // Pool-reuse safety: restore authored BoxCollider.size so a prior life cannot leak
+            // an inflated size into the next instance.
             if (blockCollider && _authoredColliderSizeCached) blockCollider.size = _authoredColliderSize;
 
             StopAllCoroutines();
@@ -842,6 +829,11 @@ namespace CosmicShore.Gameplay
         // (ConveyorConfig.MinPlacementDistance) so the faster drain is invisible either way.
         const int BulkTransportCreationCompletionsPerFrame = 64;
         static int s_bulkTransportsInFlight;
+
+        // A play exit mid-transport skips the caller's finally, pinning the raised budget on
+        // forever once domain reload no longer clears it.
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        static void ResetBulkTransportStatics() => s_bulkTransportsInFlight = 0;
 
         /// <summary>Open a bulk-transport bracket (raises the per-frame creation-completion
         /// budget). ALWAYS pair with <see cref="EndBulkTransport"/> in a finally.</summary>
@@ -1279,8 +1271,13 @@ namespace CosmicShore.Gameplay
             // That sequence clears the flag before it gets here, so a BREAKING hit never
             // reaches this gate; only an unbreaking one does, and it now deflects (below).
             if (AbsorbSuperShieldHit(impactVector.magnitude)) return;
+            // The shield pops instead of the prism, AS the prism explosion: the shed shards
+            // are ordinary explosion debris on the shield's own mesh, handed the same impact
+            // vector and ceiling Explode would have received — so the armour being knocked
+            // off looks exactly like mass coming apart, because it is the same effect
+            // (Docs/PRISM_ANIMATION.md §4.8.1).
             if (prismProperties.IsShielded && !devastate)
-                DeactivateShields();
+                DeactivateShields(impactVector, debrisSpeedLimit);
             else
             {
                 _destroyedByCreature = byCreature;
@@ -1295,6 +1292,10 @@ namespace CosmicShore.Gameplay
             // describes where the mass was being pulled, not how hard it was struck.
             if (destroyed) return;
             if (AbsorbSuperShieldHit(0f)) return;
+            // Impact-less on purpose, for the same reason the deflection above is stamped
+            // at the floor: a consume carries no impact vector, only a suction sink, and
+            // grazing armour off is not a blow. The debris path degrades a zero vector to
+            // the same quiet minimum-speed puff an impactless prism death gets.
             if (prismProperties.IsShielded && !devastate)
                 DeactivateShields();
             else
@@ -1350,8 +1351,36 @@ namespace CosmicShore.Gameplay
         // State Management Methods
         public void MakeDangerous() => stateManager?.MakeDangerous();
         public void DeactivateShields() => stateManager?.DeactivateShields();
+
+        /// <summary>
+        /// Drops every shield tier and hands the disengage overlay the WORLD-space impact
+        /// vector of the force that BROKE it. The overlay is ordinary prism-explosion
+        /// debris (Docs/PRISM_ANIMATION.md §4.8.1), so the vector and the optional
+        /// true-velocity ceiling carry EXACTLY the semantics of <see cref="Damage"/>'s own
+        /// parameters — the shards fly, rotate away per face, erode and fade the way the
+        /// prism's own pieces would have. Zero degrades to the impactless-death puff.
+        /// </summary>
+        public void DeactivateShields(Vector3 breakVelocity, float debrisSpeedLimit = 0f) =>
+            stateManager?.DeactivateShields(null, breakVelocity, debrisSpeedLimit);
         public void ActivateShield() => stateManager?.ActivateShield();
         public void ActivateShield(float duration) => stateManager?.ActivateShield(duration);
+
+        /// <summary>
+        /// Shield this prism because something HIT it — an explosion accepting its own
+        /// domain's mass rather than clipping through it. <paramref name="impactSpeed"/>
+        /// is the magnitude of that impact vector (a blast's <c>Speed x Inertia</c>) and
+        /// <paramref name="debrisSpeedLimit"/> its true-velocity ceiling, as on
+        /// <see cref="Damage"/>. The timed pop that ends the shield sheds along HALF that
+        /// magnitude in a random direction, so an absorbed blow still reads as one when
+        /// the armour comes off (PrismStateManager.ExecuteTimerDeactivation).
+        /// </summary>
+        public void ActivateShield(float duration, float impactSpeed, float debrisSpeedLimit = 0f) =>
+            stateManager?.ActivateShield(duration, impactSpeed, debrisSpeedLimit);
+
+        /// <summary>Untimed <see cref="ActivateShield(float,float,float)"/> — records the
+        /// blow for a later <c>DeactivateShields(delay)</c> without scheduling one.</summary>
+        public void ActivateShieldFromImpact(float impactSpeed, float debrisSpeedLimit = 0f) =>
+            stateManager?.ActivateShield(null, impactSpeed, debrisSpeedLimit);
         public void ActivateSuperShield() => stateManager?.ActivateSuperShield();
         public void SetTransparency(bool transparent) => materialAnimator?.SetTransparency(transparent);
 
@@ -1499,6 +1528,8 @@ namespace CosmicShore.Gameplay
 
         private void OnDestroy()
         {
+            EnvironmentPrismPool.ForgetDestroyed(this);
+
             // No material cleanup needed - we use sharedMaterial exclusively,
             // so no per-instance material clones are created.
 

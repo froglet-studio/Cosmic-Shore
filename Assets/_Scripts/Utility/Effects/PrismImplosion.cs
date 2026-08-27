@@ -52,8 +52,10 @@ namespace CosmicShore.Utility
         /// <summary>Authored suction length — PrismDebris reads it off the pool prefab
         /// so the batched entity path animates for exactly as long as the pooled one
         /// (same reasoning as PrismExplosion.MinDebrisSpeed/MaxDebrisSpeed). growDelay
-        /// is deliberately not exposed: it belongs to StartGrow, whose producer
-        /// (PrismType.Grow) does not exist, so no batched effect ever delays.</summary>
+        /// is deliberately not exposed on the pooled component: it belongs to StartGrow
+        /// (reverse suction), which Sparrow turret ReverseSuction uses via PrismType.Grow
+        /// (2026-08-09). Batched implosion debris never delays; the pooled StartGrow
+        /// gameplay consumer can.</summary>
         public float ImplosionDuration => implosionDuration;
 
         internal bool IsActive { get; private set; }
@@ -157,6 +159,9 @@ namespace CosmicShore.Utility
         // PrismExplosion.EnabledInstances (List.Remove's O(n) scan was 1.9s of one frame
         // under a mass-death burst); order is not part of the registry's contract.
         internal static readonly List<PrismImplosion> EnabledInstances = new();
+
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        static void ResetStatics() => EnabledInstances.Clear();
         int _enabledIndex = -1;
 
         private void OnEnable()
@@ -164,12 +169,13 @@ namespace CosmicShore.Utility
             _enabledIndex = EnabledInstances.Count;
             EnabledInstances.Add(this);
 
-            // Backstop the watchdog timer for the case where the pool re-activates
-            // a GameObject but the consumer never gets to call StartImplosion (e.g.,
-            // an exception in PrismFactory between pool.Get and StartImplosion).
-            // StartImplosion / StartGrow overwrite this with their own timestamps so
-            // the legitimate path still uses the activation moment of the effect itself.
+            // Backstop the watchdog for the case where the pool re-activates a
+            // GameObject but the consumer never calls StartImplosion (e.g., an
+            // exception in PrismFactory between pool.Get and StartImplosion).
+            // StartImplosion / StartGrow refresh the timestamp and re-arm after
+            // StampClockStrict (which CancelScheduledActions would otherwise clear).
             _activatedAtTime = Time.time;
+            ArmWatchdog();
         }
 
         private void OnDisable()
@@ -332,6 +338,33 @@ namespace CosmicShore.Utility
             var timers = PrismTimerManager.EnsureInstance();
             timers.CancelScheduledActions(this);
             timers.ScheduleAction(this, delay + EffectiveDuration, OnEffectComplete);
+            // Re-arm after Cancel — OnEnable's watchdog was cleared above. Must not
+            // Cancel again here or the completion schedule above is lost.
+            ArmWatchdog();
+        }
+
+        /// <summary>
+        /// Wall-clock safety net (replaces the retired <c>Update</c> poll). Deliberately
+        /// does NOT gate on <see cref="IsActive"/> — the failure mode is a pooled GO
+        /// re-enabled without <see cref="StartImplosion"/> / <see cref="StartGrow"/>,
+        /// where IsActive stays false. Armed from OnEnable; re-armed after every
+        /// StampClockStrict cancel+reschedule; cancelled with everything else in
+        /// CompleteEffect / OnDisable.
+        /// </summary>
+        void ArmWatchdog()
+        {
+            float window = Mathf.Max(0.01f, EffectiveDuration * WatchdogDurationMultiplier);
+            PrismTimerManager.EnsureInstance()
+                .ScheduleAction(this, window, OnWatchdogFired);
+        }
+
+        void OnWatchdogFired()
+        {
+            CSDebug.LogWarning($"[PrismImplosion] Watchdog force-completed '{name}' " +
+                               $"at world {transform.position} after {Time.time - _activatedAtTime:F2}s " +
+                               $"(duration={EffectiveDuration}, IsActive={IsActive}, target={TargetPosition}). " +
+                               "Likely cause: OnReturnToPool subscription was lost or duplicated.");
+            OnEffectComplete();
         }
 
         /// <summary>
@@ -412,8 +445,8 @@ namespace CosmicShore.Utility
         /// Cleans up, notifies pool, and force-deactivates the GameObject as a
         /// safety net so the implosion VFX can never visually loop even if the
         /// pool callback chain is broken (e.g., OnReturnToPool was nulled by an
-        /// external owner like ShapeDrawingManager, or a duplicate Get/Release
-        /// cycle left subscriptions in an inconsistent state).
+        /// external owner, or a duplicate Get/Release cycle left subscriptions
+        /// in an inconsistent state).
         /// </summary>
         internal void OnEffectComplete()
         {
@@ -435,23 +468,5 @@ namespace CosmicShore.Utility
                 gameObject.SetActive(false);
         }
 
-        void Update()
-        {
-            // Wall-clock watchdog: fires for ANY active GameObject that's been alive
-            // longer than 2x the configured duration. We deliberately do NOT gate on
-            // IsActive because the dominant failure mode is an instance whose IsActive
-            // was cleared by OnDisable but whose GameObject was reactivated through
-            // the pool without StartImplosion ever running again - those leak past
-            // an IsActive-only check. Tracking via Time.time (set in OnEnable as a
-            // backstop, refreshed in StartImplosion / StartGrow) is the only signal
-            // that survives all the state-reset failure modes.
-            if (Time.time - _activatedAtTime <= EffectiveDuration * WatchdogDurationMultiplier) return;
-
-            CSDebug.LogWarning($"[PrismImplosion] Watchdog force-completed '{name}' " +
-                               $"at world {transform.position} after {Time.time - _activatedAtTime:F2}s " +
-                               $"(duration={EffectiveDuration}, IsActive={IsActive}, target={TargetPosition}). " +
-                               "Likely cause: OnReturnToPool subscription was lost or duplicated.");
-            OnEffectComplete();
-        }
     }
 }

@@ -28,7 +28,7 @@ namespace CosmicShore.Gameplay
     /// THE canonical "lay a prism into a trail" primitive, shared by every environment builder - the
     /// static/procedural spawnables (<see cref="SpawnableBase"/>, <c>SpawnableShapeBase</c>) and the
     /// freestyle microscene conveyor (<c>Microscene</c>). Consolidates the previously-triplicated
-    /// sequence - Instantiate → ChangeTeam → ownerID → pose → TargetScale → Trail → Initialize →
+    /// sequence - pool Get → ChangeTeam → ownerID → pose → TargetScale → Trail → Initialize →
     /// kind → trail.Add - into one place, so a change to the prism spawn contract lands once, not
     /// three times (the drift surface the environment audit flagged).
     ///
@@ -49,8 +49,8 @@ namespace CosmicShore.Gameplay
             long t = LoadInsights.AccumulateStart();
             if (t != 0L) LoadInsights.Count("Prisms laid during load");
 
-            var block = UnityEngine.Object.Instantiate(prefab, parent);
-            t = LoadInsights.AccumulateSample("Prism lay: Instantiate + component Awakes", t);
+            var block = EnvironmentPrismPool.Get(prefab, parent);
+            t = LoadInsights.AccumulateSample("Prism lay: pool Get + component Awakes", t);
 
             ConfigureLaid(block, e, trail, ownerId, t);
             return block;
@@ -156,6 +156,32 @@ namespace CosmicShore.Gameplay
 
         // ── Budgeted (UniTask, N milliseconds per frame, budget shared globally) ──
 
+        // A play-mode exit can kill the UniTask lays mid-flight, skipping every finally that
+        // balances these latches — with domain reload disabled the next session then starts with
+        // IsLayingInProgress stuck true, a wedged arena-ready gate, and Time.unscaledTime stamps
+        // from a clock that has since restarted. Restore the whole group to its declared state.
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        static void ResetStatics()
+        {
+            s_budgetFrame = -1;
+            s_budgetSpentMs = 0.0;
+            s_activeBudgetedLays = 0;
+            s_layQueuedTotal = 0;
+            s_layDoneTotal = 0;
+            s_growWatch.Clear();
+            GrowRemainingCount = 0;
+            s_pendingArenaBuilds = 0;
+            s_loadGateHolding = false;
+            s_loadGateStartTime = 0f;
+            s_allClearSince = -1f;
+            s_settleSpan = -1;
+            s_lastLayDone = -1;
+            s_lastGrowRemaining = -1;
+            s_lastProgressTime = 0f;
+            UseBatchedInstantiate = true;
+            LoadGateLayBudgetOverrideMs = 0f;
+        }
+
         // All budgeted lays draw from ONE per-frame time pool, so three concurrently-streaming
         // shells cost max(budget) per frame, not 3 × budget.
         static readonly double s_msPerTick = 1000.0 / System.Diagnostics.Stopwatch.Frequency;
@@ -211,10 +237,6 @@ namespace CosmicShore.Gameplay
         /// is still about to schedule its own) so a momentary zero can't slip the screen open.</summary>
         const float ReadyStableSeconds = 0.5f;
 
-        /// <summary>Grow-in snaps applied per gate poll — bounds the per-frame cost of
-        /// force-settling a 25k cohort (each snap runs full completion bookkeeping).</summary>
-        const int SettleSnapsPerPoll = 2000;
-
         /// <summary>
         /// Announce an arena build whose SegmentSpawner.Initialize happens LATER than scene
         /// start (e.g. HexRace initializes only after the netcode track seed arrives). While
@@ -260,9 +282,11 @@ namespace CosmicShore.Gameplay
         /// THE arena-complete predicate the connecting screen holds on: every announced build
         /// has executed, every streamed lay has drained, and every laid prism is settled for
         /// reveal — creation complete (renderer ON — creation completions are frame-budgeted,
-        /// so scale alone proves nothing) AND at final scale. Stragglers are force-settled
-        /// behind the covered screen, and the all-clear must hold ReadyStableSeconds before the
-        /// gate releases. Nothing lays, materializes, or blooms after this returns true.
+        /// so scale alone proves nothing) AND visual bloom settled
+        /// (<see cref="Prism.IsSettledForReveal"/> / <see cref="Prism.AnalyticGrowSettleTime"/>).
+        /// Grow-ins finish naturally behind the covered screen (no force-snap); the all-clear
+        /// must hold ReadyStableSeconds before the gate releases. Nothing lays, materializes,
+        /// or blooms after this returns true.
         /// </summary>
         public static bool PollArenaReady()
         {
@@ -292,7 +316,7 @@ namespace CosmicShore.Gameplay
                 return false;
             }
 
-            if (SettleGrowWatch(SettleSnapsPerPoll) > 0)
+            if (SettleGrowWatch() > 0)
             {
                 s_allClearSince = -1f;
                 // Everything is laid; the cohort is materializing/settling behind the covered
@@ -322,31 +346,20 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// Gate-only pass: force-settle watched prisms that are created but still growing (the
-        /// screen is covered — snapping is invisible and saves the multi-second grow-in tail),
-        /// drop everything settled or dead, keep prisms whose creation the frame-budgeted
-        /// queue hasn't reached yet. Returns (and caches) how many are still not reveal-ready.
+        /// Gate-only pass: drop watched prisms that are settled for reveal or dead; keep those
+        /// still in the creation queue or whose GPU grow bloom has not yet reached
+        /// <see cref="Prism.AnalyticGrowSettleTime"/>. Does NOT force-snap
+        /// (<see cref="Prism.CompleteGrowthImmediately"/>) — continuity of existence holds
+        /// behind the veil; the gate simply waits. Returns (and caches) how many are still
+        /// not reveal-ready.
         /// </summary>
-        static int SettleGrowWatch(int snapBudget)
+        static int SettleGrowWatch()
         {
             var list = s_growWatch;
             for (int i = list.Count - 1; i >= 0; i--)
             {
                 var p = list[i];
-                bool drop;
-                if (p == null || !p.isActiveAndEnabled)
-                {
-                    drop = true; // destroyed / pooled away — can never pop in later
-                }
-                else
-                {
-                    if (snapBudget > 0 && p.IsCreationComplete && !p.IsSettledForReveal)
-                    {
-                        p.CompleteGrowthImmediately();
-                        snapBudget--;
-                    }
-                    drop = p.IsSettledForReveal;
-                }
+                bool drop = p == null || !p.isActiveAndEnabled || p.IsSettledForReveal;
 
                 if (drop)
                 {
@@ -399,10 +412,10 @@ namespace CosmicShore.Gameplay
             return s_budgetSpentMs >= budgetMs;
         }
 
-        // ── Batched clone (Unity 6 multithreaded InstantiateAsync) ───────────
+        // ── Batched clone (pool GetBatchAsync; stall watchdog lives on the pool) ─
 
         /// <summary>
-        /// Prisms cloned per InstantiateAsync call. The engine spreads the clone/deserialize work
+        /// Prisms cloned per async batch. The engine spreads the clone/deserialize work
         /// for one call across worker threads, so bigger batches parallelize better — but the
         /// whole batch integrates before we can configure any of it, so an oversized batch stalls
         /// the progress readout. A few hundred keeps both.
@@ -421,57 +434,16 @@ namespace CosmicShore.Gameplay
         public static bool UseBatchedInstantiate = true;
 
         /// <summary>
-        /// Clone <paramref name="count"/> prisms as children of <paramref name="parent"/> using
-        /// Unity 6's multithreaded batched instantiate. Raw per-item Instantiate was ~97% of a
-        /// mass environment lay and is the one part the engine can parallelize; everything after
-        /// the clone (Awake integration, our spawn contract) still runs on the main thread.
-        /// Falls back to per-item cloning if the batched path is unavailable or returns short.
+        /// Clone <paramref name="count"/> prisms as children of <paramref name="parent"/>
+        /// through <see cref="EnvironmentPrismPool.GetBatchAsync"/>. The builder keeps
+        /// <see cref="UseBatchedInstantiate"/> as the demotion flag; the pool owns the
+        /// clone work and the stall watchdog.
         /// </summary>
         static async UniTask<Prism[]> CloneBatchAsync(Prism prefab, int count, Transform parent)
         {
-            if (UseBatchedInstantiate)
-            {
-                try
-                {
-                    var op = UnityEngine.Object.InstantiateAsync(prefab, count, parent);
-                    float waitStart = Time.unscaledTime;
-                    while (!op.isDone)
-                    {
-                        await UniTask.Yield(PlayerLoopTiming.Update);
-                        if (!parent) return null; // container destroyed mid-flight
-
-                        // Watchdog: batched instantiate integration shares the engine's async
-                        // loading budget, and a busy scene (Menu_Main boot: Netcode spawn chain,
-                        // Relay/session setup, audio banks) can starve it indefinitely - observed
-                        // as a build frozen at an exact 256-batch boundary. Force the batch to
-                        // integrate synchronously rather than wedging the whole lay.
-                        if (Time.unscaledTime - waitStart > CloneStallSeconds)
-                        {
-                            Debug.LogWarning($"[PrismTrailBuilder] Async clone batch ({count} prisms) not " +
-                                             $"integrated after {CloneStallSeconds:F0}s — forcing WaitForCompletion. " +
-                                             "The engine's async-instantiate budget is being starved by other loading.");
-                            op.WaitForCompletion();
-                            break;
-                        }
-                    }
-
-                    var result = op.Result;
-                    if (result != null && result.Length == count) return result;
-                }
-                catch (Exception ex)
-                {
-                    // Any failure demotes the whole session to the per-item path — the sync
-                    // clone below is the behavioural baseline, so a level still builds.
-                    UseBatchedInstantiate = false;
-                    Debug.LogWarning($"[PrismTrailBuilder] Batched InstantiateAsync failed " +
-                                     $"({ex.GetType().Name}: {ex.Message}) — falling back to per-item cloning.");
-                }
-            }
-
-            if (!parent) return null;
-            var clones = new Prism[count];
-            for (int i = 0; i < count; i++)
-                clones[i] = UnityEngine.Object.Instantiate(prefab, parent);
+            var (clones, batchedFailed) = await EnvironmentPrismPool.GetBatchAsync(
+                prefab, count, parent, UseBatchedInstantiate, CloneStallSeconds);
+            if (batchedFailed) UseBatchedInstantiate = false;
             return clones;
         }
 

@@ -14,8 +14,9 @@ MonoBehaviour:
   m_EditorClassIdentifier:
   id: lifeform-matrix
   displayName: Lifeform Matrix
-  description: The ecology tuning bench. Fly through for the menagerie; fly a species
-    for its 4-element x {1,3,5}-level variant matrix; fly a variant to spawn it live.
+  description: The release bench. Fly through for the three kingdoms - Fauna, Flora,
+    Vessels. A kingdom opens its species row; a species opens its 4-element x {1,3,5}-level
+    variant matrix; a variant spawns it live. A vessel releases an AI companion in your domain.
   unlockedByDefault: 1
   placementAngleDegrees: 180
   accentColor: {r: 0.75, g: 1, b: 0.85, a: 1}
@@ -105,5 +106,6 @@ MonoBehaviour:
     - {fileID: 11400000, guid: 0abdfac5a80d40789934b73f4e838046, type: 2}
     - {fileID: 11400000, guid: 951335f3d27448a3a496ab8ec29279a0, type: 2}
     - {fileID: 11400000, guid: 801c826e68b0477e89de35fae8ff128e, type: 2}
+  vesselRoster: []
   stationSpacing: 90
   stationRadius: 12

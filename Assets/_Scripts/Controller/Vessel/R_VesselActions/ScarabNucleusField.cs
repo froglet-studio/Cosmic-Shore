@@ -15,14 +15,25 @@ namespace CosmicShore.Gameplay
     ///   • Each Scarab passively plants a ball of its own domain in the nucleus surface
     ///     (<see cref="TrySeed"/>). It is already ownership-locked by the forge, so it is that
     ///     pilot's ball and an enemy must dash-STEAL it like any other.
-    ///   • Struck OUTWARD it flies into the CYTOPLASM and lives there, bouncing off the nucleus
-    ///     from the outside and the membrane from the inside — the same nucleus surface the court
-    ///     ball bounces off from within. Deliberately inconsequential: a toy, not a scoring path.
-    ///   • Struck INWARD it enters the NUCLEUS, which in Scarab Scramble is the court — so it
+    ///   • Dislodged OUTWARD it flies into the CYTOPLASM and lives there, bouncing off the nucleus
+    ///     from the outside and the membrane from the inside. Deliberately inconsequential: a toy,
+    ///     not a scoring path.
+    ///   • Dislodged INWARD it enters the NUCLEUS, which in Scarab Scramble is the court — so it
     ///     becomes a ball of consequence, a second source of them alongside the crystal forge.
+    ///   • "Dislodged" means BY ANYTHING — a hull, a blade, or any blast, the Scarab's own dash
+    ///     punch included. A seeded ball is an ordinary live body, and the ball itself notices it
+    ///     has left (AstroLeagueBall.TickNucleusDepartureServer) rather than each force announcing
+    ///     it. Once dislodged it can never be seeded again: it is a ball, permanently.
     ///   • Bank one too many and the nucleus OVERLOADS: every ball detonates with an explosion
     ///     twice its own radius. Feeding the core is the greedy line, and the greedy line has a
     ///     cliff.
+    ///
+    /// THE CONTAINMENT FOR BOTH DIRECTIONS IS THE BALL'S OWN — one nucleus surface ridden from
+    /// whichever side the ball ends up on (<c>AstroLeagueBall.ResolveNucleusBoundary</c>) — and this
+    /// field installs none. It used to build and push both boundaries at release, which meant a ball
+    /// that reached the cytoplasm any OTHER way (forged off a crystal out there, drifted in from a
+    /// neighbouring cell) was contained by nothing at all. Same lesson as the forge-time ball cap
+    /// below: a rule installed at one PRODUCER can only ever see that producer.
     ///
     /// One instance per Cell, created on demand by <see cref="ForCell"/> and living on the Cell's
     /// own GameObject — not a singleton, because "the nucleus" is a property of a cell and a
@@ -36,6 +47,16 @@ namespace CosmicShore.Gameplay
     public class ScarabNucleusField : MonoBehaviour
     {
         static readonly Dictionary<Cell, ScarabNucleusField> s_byCell = new();
+
+        // OnDestroy cannot remove this entry on play exit (the Cell key is already destroyed and
+        // reads fake-null), so dead keys accumulate. s_hooked clears in lockstep with
+        // AstroLeagueBall.ResetStaticEvents nulling the event — see the note there.
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        static void ResetStatics()
+        {
+            s_byCell.Clear();
+            s_hooked = false;
+        }
 
         Cell _cell;
         ScarabNucleusFieldConfigSO _config;
@@ -118,6 +139,7 @@ namespace CosmicShore.Gameplay
             if (ball == null) return null;
 
             // Sink it into the surface so it reads as EMBEDDED rather than resting on the shell.
+            // It is PLACED there, not pinned — the ball stays a fully live body (SCARAB.md §4.6).
             float sink = ball.BallWorldRadius() * Mathf.Clamp01(_config.embedSinkFraction);
             ball.EmbedOnNucleusServer(Centre + outward * (radius - sink), outward);
 
@@ -168,14 +190,10 @@ namespace CosmicShore.Gameplay
             _embedded.Remove(ball);
             if (_config == null || _cell == null) return;   // cell torn down mid-flight — just let it fly
 
-            if (!inward)
-            {
-                // OUTWARD → the cytoplasm. Held inside the membrane, bounced off the nucleus from
-                // the outside: the core-obstacle boundary is the same nucleus sphere the court ball
-                // rides from within, so one surface serves both sides.
-                ball.SetBoundary(BuildCytoplasmBoundary());
-                return;
-            }
+            // Neither direction installs containment: the ball rides the nucleus from whichever
+            // side it ends up on, all by itself. Only what the direction MEANS is this field's
+            // business — outward is a toy in the cytoplasm, inward is an entry that can overload.
+            if (!inward) return;
 
             // INWARD → into the nucleus. One too many overloads it, and the check runs BEFORE the
             // ball is banked so the limit counts what may rest inside, not what may enter.
@@ -186,7 +204,6 @@ namespace CosmicShore.Gameplay
                 return;
             }
 
-            ball.SetBoundary(BuildCourtBoundary());
             _inNucleus.Add(ball);
         }
 
@@ -194,30 +211,6 @@ namespace CosmicShore.Gameplay
         {
             for (int i = _inNucleus.Count - 1; i >= 0; i--)
                 if (_inNucleus[i] == null || _inNucleus[i].IsHidden) _inNucleus.RemoveAt(i);
-        }
-
-        // ── Boundaries ───────────────────────────────────────────────────────────────────
-
-        /// <summary>Inside the nucleus: the court. A plain sphere, the shape Scramble already plays in.</summary>
-        AstroLeagueBoundary BuildCourtBoundary()
-        {
-            float r = NucleusRadius;
-            return new AstroLeagueBoundary(AstroLeagueBoundaryShape.Sphere, Centre,
-                                           new Vector3(r, r, r), r);
-        }
-
-        /// <summary>
-        /// Outside the nucleus: the cytoplasm. Outer sphere = the membrane (scaled in a little so a
-        /// ball never rides the literal skin), core obstacle = the nucleus.
-        /// </summary>
-        AstroLeagueBoundary BuildCytoplasmBoundary()
-        {
-            float outer = Mathf.Max(NucleusRadius * 1.2f,
-                                    (_cell != null ? _cell.MembraneRadius : 0f)
-                                    * Mathf.Clamp01(_config.cytoplasmOuterFraction));
-            return new AstroLeagueBoundary(AstroLeagueBoundaryShape.Sphere, Centre,
-                                           new Vector3(outer, outer, outer), outer,
-                                           coreObstacleRadius: NucleusRadius);
         }
 
         // ── Overload ─────────────────────────────────────────────────────────────────────
