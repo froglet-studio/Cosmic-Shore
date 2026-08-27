@@ -9,7 +9,7 @@
 | File | Subject Under Test | Why It Exists |
 |---|---|---|
 | `EnumIntegrityTests` | `VesselClassType`, `Domains`, `GameModes`, `Element`, `ShipActions`, `ResourceType` | Unity serializes enums by int value. If someone reorders members, every SO/prefab/save silently points to the wrong value. |
-| `EnumIntegrityExtendedTests` | `CaptainLevel`, `CSLogLevel`, `InputEvents`, `ImpactEffects`, `ShipCameraOverrides`, `CrystalImpactEffects`, `TrailBlockImpactEffects`, `SkimmerStayEffects`, `ShipImpactEffects`, `UserActionType`, `CallToActionTargetType` | `CaptainLevel` maps to PlayFab IAP product IDs. A shift = wrong purchase applied. |
+| `EnumIntegrityExtendedTests` | `CaptainLevel`, `CSLogLevel`, `InputEvents`, `ShipCameraOverrides`, `CrystalImpactEffects`, `TrailBlockImpactEffects`, `SkimmerStayEffects`, `ShipImpactEffects`, `UserActionType`, `CallToActionTargetType` | `CaptainLevel` maps to PlayFab IAP product IDs. A shift = wrong purchase applied. |
 | `ResourceCollectionTests` | `ResourceCollection` struct (Mass/Charge/Space/Time) | Flows through damage, scoring, ability costs. Constructor order bug = silent data corruption. |
 | `XpDataTests` | `XpData` struct | Serialized to JSON for PlayFab. Field reorder = XP assigned to wrong element. |
 | `PartyPlayerDataTests` | `PartyPlayerData` struct | SOAP event payload + HashSet/Dictionary key. Equality by PlayerId only. Break = party removal fails. |
