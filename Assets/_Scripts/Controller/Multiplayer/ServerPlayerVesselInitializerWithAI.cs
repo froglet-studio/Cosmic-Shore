@@ -203,7 +203,14 @@ namespace CosmicShore.Gameplay
                         ? profiles[i].Name
                         : hasTemplate ? aiInitializeDatas[i].PlayerName : $"AI {i + 1}";
 
-                var aiDomain = GetBalancedDomain(totalCounts, humanCounts);
+                // A domain the host PLACED (the launch panel's Add AI mode) wins; past the end of
+                // the placed list - or for a placed domain that is not in this match's active set
+                // (a stale config, or Blue) - fall back to the balanced pick. Placed seats still
+                // count into totalCounts so the balanced remainder distributes around them.
+                var aiDomain = i < gameData.RequestedAIDomains.Count &&
+                               totalCounts.ContainsKey(gameData.RequestedAIDomains[i])
+                    ? gameData.RequestedAIDomains[i]
+                    : GetBalancedDomain(totalCounts, humanCounts);
                 totalCounts[aiDomain]++;
 
                 aiPlayer.NetDefaultVesselType.Value = aiVesselType;

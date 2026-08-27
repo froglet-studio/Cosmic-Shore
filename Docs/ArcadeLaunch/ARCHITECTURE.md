@@ -227,19 +227,33 @@ this?" before "how do I play it?" — then each tip, then back. The description 
 tip (`descriptionExtraDwell`), because it is the card's own answer. A card with no tips never
 rotates.
 
-## 5. Kicking an AI is lowering the player count
+## 5. AI are PLACED on domains, and kicking one removes its placement
 
 There is no AI object to remove yet — the bots are spawned by
-`ServerPlayerVesselInitializerWithAI` from `GameDataSO.RequestedAIBackfillCount` once the scene
-loads. A kick is therefore a request to seat one fewer, which is both what the player means by
-it and **the only representation that cannot go out of step with what actually spawns**. It is
-floored at the humans present: a seat a human is already in is not the host's to take from here.
+`ServerPlayerVesselInitializerWithAI` once the scene loads — so the roster works on the
+**placement list**, `ArcadeGameConfigSO.AIDomains` (one entry per bot, in placement order),
+which the launch pipeline hands to `GameDataSO.RequestedAIDomains`. The spawner seats bot *i*
+in entry *i* and falls back to its balanced pick past the end of the list, so an empty list is
+exactly the old auto-balanced behaviour.
 
-The **fill-with-AI toggle** is the one-panel layout's replacement for the player-count stepper —
-on seats every slot the card allows, off drops back to the humans present — and the ✕ on a seat
-covers the in-between. The toggle *follows* the count rather than driving it
-(`SetFillWithAISilently`), so a ✕ that drops the roster off the ceiling turns the toggle off by
-itself instead of leaving it claiming a full house.
+**The Add AI toggle** (the control formerly labelled FILL AI — same scene wiring, new meaning;
+relabel the TMP text to "ADD AI" in the editor) arms placement: while it is on, tapping a
+domain tile seats an AI **on that domain** instead of picking your own, one bot per tap, up to
+the card's ceiling; toggle off to stop placing. The ✕ on an AI seat removes THAT placement
+(`OnKickAIRequested` now carries the AI's ordinal). Host only — the toggle hides for clients
+and every handler double-guards on `IsClientMode`.
+
+**A card opens HUMANS ONLY** (design call, 2026-08-27): no AI pre-filled, the old fill-to-four
+retired (`FillTarget`/`MaxFilledPlayers` deleted). Seats the card's MINIMUM still owes beyond
+the humans draw **EMPTY** and are topped up domain-balanced at launch
+(`config.PlayerCount` keeps its `[max(min, humans), max]` clamp), so an un-configured lobby
+still starts legally and the roster honestly shows which seats the player chose versus which
+the minimum will fill. Placed AI seats wear their domain's **live signal colour**
+(`GetDomainSignalColor`, resolved per draw — never snapshotted).
+
+**Client view is counts-only.** Placed domains are host-side state (the sync layer replicates
+the seat count at commit, not the placement list), so a client's roster draws the AI seats
+empty. Same class of limitation as the ready-count identity below.
 
 ### 5.1 Ready lights are a COUNT, not an identity
 
@@ -251,30 +265,26 @@ players join, so it keeps its place and simply reads true.
 Per-seat identity needs the sync manager to replicate the ready SET. Until it does this is the
 honest reading, and it is right in the case players actually watch (their own).
 
-### 5.2 Every domain is unlocked, and the fill toggle fills to four
+### 5.2 Every domain is unlocked
 
 **Every domain is always pickable.** Tiles used to be dimmed and made non-interactable outside
 `ActiveDomains[0..DomainCount-1]`, which reads as "Gold is locked" — a progression claim the game
 makes nowhere else. The domain count is a property of how the MATCH is scored, not a gate on which
 colour a player may fly.
 
-**The fill toggle fills to four, not to the card's ceiling.** Several cards allow six or twelve, and
-a party game filled to twelve bots is not what the switch means; `MaxFilledPlayers` is the house
-match size. Off, the roster drops back to the humans present.
-
 **The toggle may live on the PANEL or inside a `LobbySlotRow`.** The one-panel layout puts it beside
-the domain tiles — where the AI it seats actually appear — so `ArcadeLaunchPanel` takes an optional
+the domain tiles — where the AI it places actually land — so `ArcadeLaunchPanel` takes an optional
 `fillWithAIToggle` of its own. Whichever is wired raises the same event and both may be wired at
 once.
 
 **AI seats are previewed under the domain each bot will really join.** The bots do not exist yet —
-`ServerPlayerVesselInitializerWithAI` spawns them in the game scene from
-`GameDataSO.RequestedAIBackfillCount` — so these chips preview a roster rather than showing one.
-That is exactly why the placement runs the spawner's own `BuildActiveDomains` /
-`BuildHumanCounts` / `GetBalancedDomain` over the same counts it will use: a preview that
-distributed them its own way would be a promise the match then breaks. The avatar is random per
-chip because a bot has no profile to read one from, and four seats showing icon 0 read as one
-player repeated.
+`ServerPlayerVesselInitializerWithAI` spawns them in the game scene — so these chips preview a
+roster rather than showing one. A PLACED bot's chip sits exactly on the tile the host chose (the
+same first-N rule the spawner applies); only the top-up seats run the spawner's own
+`BuildActiveDomains` / `BuildHumanCounts` / `GetBalancedDomain` over the same counts it will use,
+because a preview that distributed them its own way would be a promise the match then breaks. The
+avatar is random per chip because a bot has no profile to read one from, and four seats showing
+icon 0 read as one player repeated.
 
 One ordering rule: `ClearStaleChipsFromAllStrips` removes **every** chip under a strip, AI included
 — it cannot tell one from a hand-placed leftover and should not have to — so `SpawnChipsForAllPlayers`

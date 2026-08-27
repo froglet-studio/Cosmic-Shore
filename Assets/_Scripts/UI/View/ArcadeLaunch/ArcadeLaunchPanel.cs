@@ -72,20 +72,20 @@ namespace CosmicShore.UI
                                  "simply shows no roster.")]
         protected LobbySlotRow lobbyRow;
 
-        [SerializeField, Tooltip("The fill-with-AI toggle when it lives on the PANEL rather than " +
+        [SerializeField, Tooltip("The Add AI mode toggle when it lives on the PANEL rather than " +
                                  "inside a LobbySlotRow - the one-panel layout puts it beside the " +
-                                 "domain tiles, where the AI it seats are actually shown.\n\n" +
+                                 "domain tiles, where the AI it places actually land.\n\n" +
                                  "Optional and independent of lobbyRow: whichever is wired raises " +
                                  "the same event, and both may be wired at once.")]
         protected UnityEngine.UI.Toggle fillWithAIToggle;
 
         bool _suppressFillToggleCallback;
 
-        /// <summary>The player asked to seat one fewer (✕ on an AI seat).</summary>
-        public event Action OnKickAIRequested;
+        /// <summary>The ✕ on an AI seat: remove the placed AI with this ordinal.</summary>
+        public event Action<int> OnKickAIRequested;
 
-        /// <summary>The fill-with-AI toggle moved.</summary>
-        public event Action<bool> OnFillWithAIChanged;
+        /// <summary>The Add AI mode toggle moved. True = domain taps now place AI.</summary>
+        public event Action<bool> OnAddAIModeChanged;
 
         /// <summary>
         /// Raised when this panel's OWN window was closed by its own controls, so the modal can run
@@ -120,7 +120,7 @@ namespace CosmicShore.UI
             if (lobbyRow)
             {
                 lobbyRow.OnKickAIRequested += RaiseKickAI;
-                lobbyRow.OnFillWithAIChanged += RaiseFillWithAI;
+                lobbyRow.OnAddAIModeChanged += RaiseAddAIMode;
             }
 
             if (fillWithAIToggle) fillWithAIToggle.onValueChanged.AddListener(HandleFillToggle);
@@ -133,7 +133,7 @@ namespace CosmicShore.UI
             if (lobbyRow)
             {
                 lobbyRow.OnKickAIRequested -= RaiseKickAI;
-                lobbyRow.OnFillWithAIChanged -= RaiseFillWithAI;
+                lobbyRow.OnAddAIModeChanged -= RaiseAddAIMode;
             }
 
             if (fillWithAIToggle) fillWithAIToggle.onValueChanged.RemoveListener(HandleFillToggle);
@@ -165,19 +165,21 @@ namespace CosmicShore.UI
 
         /// <summary>Redraw the roster. A panel with no <see cref="lobbyRow"/> ignores this.</summary>
         public virtual void RefreshRoster(GameDataSO gameData, int totalPlayers, int humanCount,
-                                          int readyCount, bool localReady, bool isHost)
+                                          System.Collections.Generic.IReadOnlyList<CosmicShore.Data.Domains> aiDomains,
+                                          int readyCount, bool localReady, bool isHost, bool addAiArmed)
         {
             if (lobbyRow)
-                lobbyRow.Refresh(gameData, totalPlayers, humanCount, readyCount, localReady, isHost);
+                lobbyRow.Refresh(gameData, totalPlayers, humanCount, aiDomains,
+                                 readyCount, localReady, isHost, addAiArmed);
         }
 
         /// <summary>
-        /// Reflect the fill toggle without raising its event — the modal derives it from the
-        /// player count, so the toggle follows the count rather than racing it.
+        /// Reflect the Add AI toggle without raising its event — the modal owns the armed state,
+        /// so the toggle follows it rather than racing it.
         /// </summary>
-        public virtual void SetFillWithAISilently(bool on)
+        public virtual void SetAddAIModeSilently(bool on)
         {
-            if (lobbyRow) lobbyRow.SetFillWithAISilently(on);
+            if (lobbyRow) lobbyRow.SetAddAIModeSilently(on);
 
             if (fillWithAIToggle && fillWithAIToggle.isOn != on)
             {
@@ -240,18 +242,18 @@ namespace CosmicShore.UI
             gameObject.SetActive(false);
         }
 
-        void RaiseKickAI() => OnKickAIRequested?.Invoke();
-        void RaiseFillWithAI(bool on) => OnFillWithAIChanged?.Invoke(on);
+        void RaiseKickAI(int aiOrdinal) => OnKickAIRequested?.Invoke(aiOrdinal);
+        void RaiseAddAIMode(bool on) => OnAddAIModeChanged?.Invoke(on);
 
         void HandleFillToggle(bool on)
         {
             if (_suppressFillToggleCallback) return;
-            RaiseFillWithAI(on);
+            RaiseAddAIMode(on);
         }
 
-        /// <summary>Whether the fill-with-AI toggle is currently on.</summary>
-        public virtual bool FillWithAI =>
-            fillWithAIToggle ? fillWithAIToggle.isOn : lobbyRow && lobbyRow.FillWithAI;
+        /// <summary>Whether Add AI placement mode is currently armed.</summary>
+        public virtual bool AddAIModeArmed =>
+            fillWithAIToggle ? fillWithAIToggle.isOn : lobbyRow && lobbyRow.AddAIModeArmed;
         void RaiseHostModalClosed() => OnHostModalClosed?.Invoke();
     }
 }

@@ -85,8 +85,10 @@ namespace CosmicShore.UI
                   ready, showAiBadge: false, kickable: false);
         }
 
-        /// <summary>An AI seat. <paramref name="kickable"/> is the host's answer, not this view's.</summary>
-        public void ShowAI(int slotIndex, string aiName, bool kickable, System.Action<LobbySlotView> onKick)
+        /// <summary>An AI seat. <paramref name="kickable"/> is the host's answer, not this view's.
+        /// <paramref name="tint"/> is the placed AI's domain signal colour (null = untinted).</summary>
+        public void ShowAI(int slotIndex, string aiName, bool kickable,
+                           System.Action<LobbySlotView> onKick, Color? tint = null)
         {
             SlotIndex = slotIndex;
             Kind = SlotKind.AI;
@@ -95,15 +97,16 @@ namespace CosmicShore.UI
             Apply(aiSprite, string.IsNullOrWhiteSpace(aiName) ? "AI" : aiName,
                   // An AI has nothing to confirm, so it is drawn at full strength rather than
                   // dimmed as "not ready" — dimming it would read as a player who has not clicked.
-                  ready: true, showAiBadge: true, kickable: kickable);
+                  ready: true, showAiBadge: true, kickable: kickable, tint: tint);
         }
 
-        void Apply(Sprite sprite, string label, bool ready, bool showAiBadge, bool kickable)
+        void Apply(Sprite sprite, string label, bool ready, bool showAiBadge, bool kickable,
+                   Color? tint = null)
         {
             if (avatarImage)
             {
                 if (sprite) avatarImage.sprite = sprite;
-                avatarImage.color = ready ? Color.white : notReadyTint;
+                avatarImage.color = tint ?? (ready ? Color.white : notReadyTint);
                 avatarImage.enabled = true;
             }
 

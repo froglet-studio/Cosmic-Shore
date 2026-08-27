@@ -707,7 +707,7 @@ namespace CosmicShore.UI
                 _activePanel.StartButton.onClick.AddListener(OnStartGameClicked);
 
             _activePanel.OnKickAIRequested += HandleKickAIRequested;
-            _activePanel.OnFillWithAIChanged += HandleFillWithAIChanged;
+            _activePanel.OnAddAIModeChanged += HandleAddAIModeChanged;
 
             _activePanelWired = true;
         }
@@ -734,57 +734,67 @@ namespace CosmicShore.UI
                 _activePanel.StartButton.onClick.RemoveListener(OnStartGameClicked);
 
             _activePanel.OnKickAIRequested -= HandleKickAIRequested;
-            _activePanel.OnFillWithAIChanged -= HandleFillWithAIChanged;
+            _activePanel.OnAddAIModeChanged -= HandleAddAIModeChanged;
 
             _activePanelWired = false;
         }
 
         /// <summary>
         /// The ✕ on an AI seat. There is no AI object to remove yet - the bots are spawned in the
-        /// game scene from <c>GameDataSO.RequestedAIBackfillCount</c> - so kicking one is seating
-        /// one fewer, which is both what the player means and the only representation that cannot
-        /// go out of step with what actually spawns.
+        /// game scene from <c>GameDataSO.RequestedAIDomains</c> (+ balanced top-up) - so kicking
+        /// one is removing its entry from the placement list, which is both what the player means
+        /// and the only representation that cannot go out of step with what actually spawns. The
+        /// seat count then re-derives (never below the card's minimum: a kicked seat the match
+        /// still needs simply turns EMPTY, to be topped up balanced at launch).
         /// </summary>
-        void HandleKickAIRequested()
+        void HandleKickAIRequested(int aiOrdinal)
         {
             if (IsClientMode || config == null || _selectedGame == null) return;
+            if (aiOrdinal < 0 || aiOrdinal >= config.AIDomains.Count) return;
 
-            // Never below the humans present: a seat a human is already in is not the host's to
-            // take away from here.
-            int floor = Mathf.Max(_selectedGame.MinPlayersAllowed, CurrentPartyHumanCount);
-            if (config.PlayerCount <= floor) return;
-
-            HandlePlayerCountSelected(config.PlayerCount - 1);
+            config.AIDomains.RemoveAt(aiOrdinal);
+            HandlePlayerCountSelected(CurrentPartyHumanCount + config.AIDomains.Count);
         }
 
         /// <summary>
-        /// The fill-with-AI toggle. On seats every remaining slot the card allows; off drops back
-        /// to the humans present. This is the one-panel layout's replacement for the player-count
-        /// stepper - the ✕ on a seat covers the in-between cases.
+        /// The Add AI toggle. While armed, tapping a domain tile PLACES an AI on that domain
+        /// (see <see cref="HandleDomainSelected"/>) instead of picking the local player's own;
+        /// toggling off ends placement. Host only - a client's toggle is hidden by the roster row
+        /// and this guard makes the rule structural.
         /// </summary>
-        void HandleFillWithAIChanged(bool fill)
+        void HandleAddAIModeChanged(bool armed)
         {
             if (IsClientMode || config == null || _selectedGame == null) return;
 
-            int humans = Mathf.Max(_selectedGame.MinPlayersAllowed, CurrentPartyHumanCount);
-            HandlePlayerCountSelected(fill ? FillTarget : humans);
+            _addAiArmed = armed;
+            RefreshRoster();
         }
 
-        /// <summary>
-        /// How many seats "fill with AI" fills: everything the card allows, up to
-        /// <see cref="MaxFilledPlayers"/>.
-        ///
-        /// <para>The card's own ceiling is not the answer on its own — several cards allow six or
-        /// twelve, and a party game filled to twelve bots is not what the toggle means. Four is the
-        /// house match size.</para>
-        /// </summary>
-        int FillTarget => _selectedGame
-            ? Mathf.Clamp(Mathf.Min(_selectedGame.MaxPlayersAllowed, MaxFilledPlayers),
-                          _selectedGame.MinPlayersAllowed, MaxSupportedPlayers)
-            : MaxFilledPlayers;
+        /// <summary>Add AI placement mode (the repurposed fill toggle). Host-only, reset per card.</summary>
+        bool _addAiArmed;
 
-        /// <summary>The most seats the fill toggle will ever take, however many the card allows.</summary>
-        const int MaxFilledPlayers = 4;
+        /// <summary>
+        /// Place one AI on <paramref name="domain"/> - the armed Add AI mode's answer to a domain
+        /// tile tap. Capacity is the card's ceiling; a full house refuses quietly (the roster
+        /// already shows every seat taken).
+        /// </summary>
+        void AddAiToDomain(Domains domain)
+        {
+            if (IsClientMode || config == null || _selectedGame == null) return;
+
+            int humans = CurrentPartyHumanCount;
+            int ceiling = Mathf.Min(_selectedGame.MaxPlayersAllowed, MaxSupportedPlayers);
+            if (humans + config.AIDomains.Count >= ceiling)
+            {
+                CSDebug.LogVerbose(CSLogChannel.ArcadeLaunch,
+                    $"[ArcadeLaunch] Add AI refused - {humans} humans + " +
+                    $"{config.AIDomains.Count} AI already fill the card's {ceiling} seats.");
+                return;
+            }
+
+            config.AIDomains.Add(domain);
+            HandlePlayerCountSelected(humans + config.AIDomains.Count);
+        }
 
         /// <summary>Redraw the roster from the live config. Cheap; call it whenever either moves.</summary>
         void RefreshRoster()
@@ -794,12 +804,12 @@ namespace CosmicShore.UI
             int humans = CurrentPartyHumanCount;
             int total = Mathf.Max(humans, config.PlayerCount);
 
-            _activePanel.RefreshRoster(gameData, total, humans, _readyCount, _localPlayerReady, !IsClientMode);
-
-            // The toggle FOLLOWS the count rather than driving it, so a ✕ that drops the roster off
-            // the ceiling turns the toggle off by itself instead of leaving it claiming a full house.
-            int target = FillTarget;
-            _activePanel.SetFillWithAISilently(total >= target && target > humans);
+            // Clients pass their (empty) placement list: placed AI are host-side state, so a
+            // client's roster shows the synced seat count with the AI seats drawn EMPTY - honest,
+            // since the client cannot see who the host placed where.
+            _activePanel.RefreshRoster(gameData, total, humans, config.AIDomains,
+                                       _readyCount, _localPlayerReady, !IsClientMode,
+                                       _addAiArmed && !IsClientMode);
 
             RefreshAIPreviewChips(total - humans);
         }
@@ -1008,6 +1018,13 @@ namespace CosmicShore.UI
                 : game.MaxIntensity;
 
             config.Intensity   = Mathf.Clamp(game.MinIntensity, game.MinIntensity, maxUnlocked);
+
+            // Humans only: the card opens with no AI placed (by design call, 2026-08-27) - the
+            // host seats every bot by hand through Add AI. Seats the card's MINIMUM still owes
+            // beyond the humans draw EMPTY and are topped up domain-balanced at launch, so an
+            // un-configured lobby still starts legally.
+            config.AIDomains.Clear();
+            _addAiArmed = false;
             config.PlayerCount = Mathf.Max(game.MinPlayersAllowed, CurrentPartyHumanCount);
 
             SyncGameDataConfig();
@@ -1318,6 +1335,16 @@ namespace CosmicShore.UI
 
         void HandleDomainSelected(Domains domain)
         {
+            // Armed Add AI mode captures the tap: the tile names WHERE the bot goes, not where
+            // the local player goes. Host-only by construction (_addAiArmed can only arm on the
+            // host), and the mode stays armed so several taps place several bots - the toggle
+            // is the off switch.
+            if (_addAiArmed && !IsClientMode)
+            {
+                AddAiToDomain(domain);
+                return;
+            }
+
             // Resolve BEFORE touching any UI state: if the pick cannot reach the server,
             // the tile must not highlight - the UI shown to the player always matches the
             // server's truth (chip movement is already NetDomain-event-driven).
@@ -1458,6 +1485,9 @@ namespace CosmicShore.UI
             foreach (var d in activeDomains)
                 signature.Append('/').Append(d).Append(':')
                          .Append(humanCounts.TryGetValue(d, out var hc) ? hc : 0);
+            if (config != null)
+                foreach (var placed in config.AIDomains)
+                    signature.Append('#').Append(placed);
             string sig = signature.ToString();
             if (sig == _aiChipSignature && _aiChips.Count == Mathf.Max(0, aiCount)) return;
             _aiChipSignature = sig;
@@ -1473,7 +1503,13 @@ namespace CosmicShore.UI
 
             for (int i = 0; i < aiCount; i++)
             {
-                var domain = ServerPlayerVesselInitializerWithAI.GetBalancedDomain(totalCounts, humanCounts);
+                // A PLACED bot sits exactly where the host put it (the same rule the spawner
+                // applies); only the top-up seats past the placement list draw balanced. A placed
+                // domain outside the active set falls back too, mirroring the spawner's guard.
+                var domain = config != null && i < config.AIDomains.Count &&
+                             totalCounts.ContainsKey(config.AIDomains[i])
+                    ? config.AIDomains[i]
+                    : ServerPlayerVesselInitializerWithAI.GetBalancedDomain(totalCounts, humanCounts);
                 totalCounts[domain] = totalCounts.TryGetValue(domain, out var t) ? t + 1 : 1;
 
                 var tile = FindTileForDomain(domain);
@@ -2026,6 +2062,11 @@ namespace CosmicShore.UI
 
             // Single source of truth - GameDataSO owns the player count computation
             gameData.ConfigurePlayerCounts(config.PlayerCount, humanCount);
+
+            // The host's hand-placed AI domains (Add AI mode). The spawner seats bot i in entry i
+            // and falls back to its balanced pick past the end - covering the empty seats the
+            // card's minimum topped up.
+            gameData.SetRequestedAIDomains(config.AIDomains);
 
             // Domain count - controls how many domains AI can be assigned to
             gameData.RequestedDomainCount = config.DomainCount;
