@@ -391,7 +391,7 @@ table, but it cannot be the shipped shape.
 | `ModePreviewRunner` / `ModePreviewHUD` | preview dir / `UI/View/` | Objective counting from first take-over. The beside-the-window readout is RETIRED: `StartRunner` hides the HUD and re-raises progress as `ModePreviewSession.OnObjectiveProgress(delta, total)`, which the modal routes into the launch panel's objective box + micro toast (`Docs/ArcadeLaunch/ARCHITECTURE.md` §5.5) — one counting source, one visible readout |
 | `Cell.InitializeSatellite` / `StrikeSatelliteWorld` | `Controller/Environment/` | The platform capability pair |
 | `CameraManager.BeginWindowedPlayerCamera` | `Controller/Managers/` | The real gameplay rig → a RenderTexture, additively (never `SetActiveCamera`) |
-| `ModePreviewSetupTool` | `_Scripts/Editor/` | `FrogletTools > Scene Setup > Setup Mode Preview` — also the MIGRATION off earlier revisions (deletes TestFlightButton / FocusFrame / ExitButton / legacy video instances) |
+| ~~`ModePreviewSetupTool`~~ | *retired* | **Gone — scaffolding, its job done.** It stood the preview window up in `Menu_Main` and migrated the scene off earlier revisions (deleting TestFlightButton / FocusFrame / ExitButton / legacy video instances). The migrated scene is on the branch; recover the tool from git history if a scene ever needs the migration again. |
 
 ## 6. Shipped definitions (17) — every playable card
 

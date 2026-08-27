@@ -212,7 +212,8 @@ word — an ellipsis mid-word reads as a bug rather than as a trim.
 
 **Rows go under the scroll view's `content`, never the block root.** A row parented to the root
 sits outside the viewport's mask and draws over everything below it, which is the overlapping wall
-of text a scroll view gets added to fix. `ArcadeLaunchPanelWirer.RowHost` resolves this.
+of text a scroll view gets added to fix. The shipped prefabs parent their rows correctly; a
+hand-built panel must too (`VesselControlsPanel`'s row container is the scroll `content`).
 
 ### 4.4 The briefing is ONE text field, cycling
 
@@ -511,7 +512,7 @@ instead of splitting it across two files.
 | `TournamentDataSO.IntensityTiers` | `_Scripts/Utility/DataContainers/Tournament/` | The ladder + `GamesForIntensity` / `UnlockIntensityOf` |
 | `ModePreviewDefinitionSO.PreviewCellsByIntensity` | `_Scripts/ScriptableObjects/` | Per-intensity arenas + `ResolveCell` |
 | `author_preview_intensities.py` | `Tools/Build/` | Copies those lists from each mode's own scene (`--check`) |
-| `ArcadeLaunchPanelWirer` | `_Scripts/Editor/` | **One-off.** Builds the two row prefabs from the authored rows, adds and wires every component, registers the Maelstrom window. Scan reports what it cannot do; retire it through the ship panel once its output is pushed |
+| ~~`ArcadeLaunchPanelWirer`~~ | *retired* | **Gone — scaffolding, its job done.** It built `AbilityControlRow.prefab` and `MaelstromPoolRow.prefab`, added and wired every panel component, and registered the Maelstrom window; that output is on the branch and the prefabs are now hand-maintained. Recover it from git history if the panels ever need rebuilding from nothing. |
 | `ObjectiveBoxView` / `PreviewMicroToast` | `_Scripts/UI/View/ArcadeLaunch/` | The objective box (metric icon + count-up counter, no target) and the "+N" toast — §5.5 |
 | `ModeControlsLibrarySO.ObjectiveIcons` | same asset | The ONE metric→sprite table both objective surfaces read; ships with generated white-silhouette placeholders (`_Graphics/ObjectiveIcons/`) meant to be swapped for real art in the same table |
 | `ModeMapWindow` | `_Scripts/Editor/` | **Permanent.** FrogletTools > Game Modes > Mode Map — a master–detail view shaped like the arcade page itself: pick a game on the left, and the right half is that card's page in sections. OBJECTIVE (the metric icon at 72 px, metric + text editable), VESSELS (one picture-button per hull the card lists; clicking opens that hull's detailed section — its four abilities with their pad · keyboard controls and L5 upgrades, read live from its `ElementalAbilityMapSO`. The ability and upgrade NAMES are **editable in place** — they write into the map asset through a SerializedObject, so the HUD and every card follow; each line wears its element's petal SHAPE (`ElementalBarsConfigSO` — element identity is shape, never colour) and carries a per-line "this card" toggle that writes the mode's element filter. Plus "Describe THIS hull on the card" to set the library's hull override, and a scanned every-vessel-in-the-project list with Add-to-card for new hulls), CONTROLS BLOCK (ability-rows toggle + the element filter as four plain toggles; all-four-on stores as no filter), SEATS & INTENSITY, and ping buttons to every asset behind the page. **Scan** re-reads the whole project so a newly added vessel/card/rule appears. Drift is stated in plain sentences at the top of the page (metric vs the mode's own `ScoringRuleSO`, metric with no icon, no card); every edit goes through SerializedObjects, lands in the change ledger, and Validate & Push FAILS while any metric drifts from its rule. Spawn block, ability CONTROLS and unlock levels stay read-only (script-authored / gameplay wiring) |
