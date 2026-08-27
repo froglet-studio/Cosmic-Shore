@@ -16,6 +16,14 @@ namespace CosmicShore.Tests
     /// maintained-mechanism law: no held layer may SUSTAIN an element above level 10 — the
     /// 10..15 overcharge band belongs to transients only, so pool increases above the ceiling
     /// arrive as temporary spikes that drain back, keeping headroom for the next reward.
+    ///
+    /// <para>The heart scales used below are the SHIPPED authored band (Docs/ECOSYSTEM.md §40:
+    /// 1.04 SchwarzP Charge … 4.60 Shark, cap 0.5 at world scale 5.0). There is no level curve
+    /// any more — the retired one sized every heart 3.5 world at level 1, ×1.05 per level — so
+    /// a heart's value is a property of its LIFEFORM. That makes promise (1) sharper, not
+    /// looser: a shark's heart is worth 4.4× a SchwarzP Charge's on BOTH sides of the swap, and
+    /// the symmetry has to survive the whole band. The math here is pure floats; the band
+    /// itself is pinned against the assets by <c>LifeformHeartSizeTests</c>.</para>
     /// </summary>
     [TestFixture]
     public class DomainFaunaBuffTests
@@ -27,7 +35,8 @@ namespace CosmicShore.Tests
         [Test]
         public void FaunaBuff_LiftsEffectiveLevel()
         {
-            // One level-1 tadpole heart (scale 1 → 0.1 normalized) = one integer level.
+            // One heart at world scale 1 (→ 0.1 normalized) = one integer level. That sits
+            // just under the smallest authored heart in the game (SchwarzP Charge, 1.041).
             float effective = ResourceSystem.CompositeEffectiveLevel(0f, 0f, 0.1f, 0f);
             Assert.AreEqual(0.1f, effective, Tolerance,
                 "A living fauna heart must lift its domain's effective element level.");
@@ -142,7 +151,10 @@ namespace CosmicShore.Tests
             //   after:  base + gain (crystal collected), buff = 0 (fauna dead)
             // must produce the identical effective level. (Values below the sustained
             // ceiling, where both sides are fully expressed.)
-            foreach (float crystalScale in new[] { 1f, 1.3f, 2.0736f, 4f })
+            // Across the whole authored band: smallest (SchwarzP Charge), a Mass tadpole,
+            // a brittlestar, and the largest (Shark). All pay under the 0.5 cap, so both
+            // sides of the swap are fully expressed.
+            foreach (float crystalScale in new[] { 1.041f, 1.563f, 2.666f, 4.6f })
             {
                 float gain = SkimmerAdjustElementLevelByCrystalEffectSO.ComputeLevelGain(
                     crystalScale, 0.1f, 0.5f);
@@ -173,7 +185,7 @@ namespace CosmicShore.Tests
         public void AllyWithoutTheCrystal_LosesTheBuffOutright()
         {
             // Teammates who don't collect the drop just lose the heart's value.
-            float gain = SkimmerAdjustElementLevelByCrystalEffectSO.ComputeLevelGain(1.3f, 0.1f, 0.5f);
+            float gain = SkimmerAdjustElementLevelByCrystalEffectSO.ComputeLevelGain(1.563f, 0.1f, 0.5f);
             float whileAlive = ResourceSystem.CompositeEffectiveLevel(0.2f, 0f, gain, 0f);
             float afterAllyKilledIt = ResourceSystem.CompositeEffectiveLevel(0.2f, 0f, 0f, 0f);
 

@@ -30,6 +30,216 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🟢 Icon renderer upgrade + authored lamp art (`claude/single-player-offline-fallback-jksga5`, 2026-08-27)
+
+**Landed and verified.** The icon renderer was rebuilt (analytic 0/1 shape + 4×4 supersampling at
+256px, mipmaps on, RGB white through transparent pixels — 14.4× more accurate edges, measured
+like-for-like) and the check/cross were regenerated through it in the editor (2,080 → 4,007 and
+1,651 → 4,187 bytes, committed).
+
+The status lamp uses **authored** art — `_Graphics/Port/OnlineIndicator.png` /
+`OfflineIndicator.png` — wired on `onlineSprite` / `offlineSprite`. My procedurally generated lamp
+pair was removed in favour of it. The wirer deliberately does not assign or overwrite the lamp's
+sprite or rect, so re-running it can never clobber that art or the 60×60 layout.
+
+Verified from the committed scene: `lamp`, `questionBar`, `onlineSprite`, `offlineSprite` all
+resolve; the branch adds exactly 3 script GUIDs to Menu_Main (OnlineStatusIndicator, OfflineUIGate,
+ConfirmQuestionBar), all resolving, none removed.
+
+**No action outstanding.** Play-test only: toggling online↔offline should swap the artwork
+mid-crossfade as one motion, with no hitch.
+
+---
+
+### 🔴 Reconnect round 2: leave the party layer, two state-machine fixes (`claude/single-player-offline-fallback-jksga5`, 2026-08-27)
+
+**What landed** (`Docs/OFFLINE_MODE.md` §10):
+1. `HostConnectionService.ResetPartyLayerAsync()` — leaves the Relay session AND the presence
+   lobby and resets the party state machine. Called by `ReconnectService` (BEFORE the Netcode
+   shutdown — the leave needs a live transport) and by `OfflineModeService` when going offline.
+   Fixes `player is already a member of the lobby`.
+2. `(Reconnecting → InPresenceLobby)` added to `PartyStateMachine.LegalTransitions` — the refresh
+   watchdog enters `Reconnecting`, and HCS re-init could never get back out.
+3. `ApplicationStateMachine` clears a stale persisted state at construction — the SO asset kept
+   `ShuttingDown` from the previous play session and refused every transition for the whole run.
+
+**Verified without the editor:** both state machines transcribed and EXECUTED — 9/9 assertions
+incl. negative controls reproducing the `ShuttingDown` deadlock; Roslyn + semantic compile;
+`check_conditional_compilation.py` clean.
+
+**Verify in editor:**
+1. **Fresh play after a quit:** no `Invalid transition: ShuttingDown → …` at boot. (This one
+   appears on EVERY play session, offline or not — good first signal.)
+2. **Offline → online:** tap lamp → GO ONLINE → accept. Expect `Resetting party layer…` →
+   `Party layer reset` → sign-in → `Solo party session ready` → menu, lamp lime. **No** "already
+   a member of the lobby", **no** "Illegal transition: Reconnecting → InPresenceLobby", **no**
+   three Relay timeouts.
+3. **Online → offline:** expect the same party-layer reset, then the local host, and then a
+   QUIET console — no PresenceLobbyService converge/query errors during the offline session.
+   (That silence is the point of calling the reset from the offline path.)
+4. **Repeat the round trip 3× without restarting.** This is the case that kept failing: each
+   switch must behave like the first.
+5. **Cold offline boot** (airplane mode) still falls back cleanly, and the party reset is a
+   harmless no-op (nothing was ever joined).
+6. Regression: a normal ONLINE boot must be unchanged — one lobby join, one session create.
+
+---
+
+### 🔴 Reconnect fixes: sign-in re-announce + main-thread marshal (`claude/single-player-offline-fallback-jksga5`, 2026-08-27)
+
+**What landed.** Two defects found going offline→online in play.
+(1) `AuthenticationSceneController`'s already-signed-in fast path never re-raised `OnSignedIn`,
+so on a reconnect no party session was ever created and the Relay wait timed out 3×15s against an
+event nobody would fire. It now re-announces via `EnsureSignedInAnonymouslyAsync` (fast-path, no
+round-trip), and `ResetForReconnect` no longer resets `State` (which forced a needless UGS re-init
+and defeated that fast path).
+(2) `.AsMainThread()` marshals the SUCCESS path only, so the timeout `catch` resumed on the
+timer's thread → `get_internetReachability can only be called from the main thread`. Explicit
+`MainThreadDispatcher.SwitchToMainThreadAsync()` at the top of the catch and after the loop.
+See `Docs/OFFLINE_MODE.md` §9 and the new `Docs/THREADING.md` section.
+
+**Verified without the editor:** Roslyn syntax pass; the facade's latch logic transcribed and
+EXECUTED — 7/7 assertions incl. a negative control reproducing the silent-trunk bug;
+`check_conditional_compilation.py` clean.
+
+**Also landed:** `ConfirmQuestionBar` is now immune to the first-activation race — authored
+active or inactive, it behaves the same (`Docs/OFFLINE_MODE.md` §9.3). The shipped scene has it
+active, so this is insurance, not a fix to re-test.
+
+**Verify in editor — this is the exact case that failed:**
+1. Boot offline (lamp grey). Restore the network. Tap the lamp → GO ONLINE? → accept.
+2. Expect: **no 45s stall**, no `get_internetReachability` exception, and the console shows
+   `[AuthScene] Already signed in. Auto-skipping sign-in.` followed by HCS creating a session
+   (`Solo party session ready`) — NOT three "Relay session not ready" warnings.
+3. Lamp turns lime; party/friends UI ungates; `IsOfflineSession` false.
+4. Regression: a cold ONLINE boot must still raise `OnSignedIn` exactly once (watch for a
+   duplicated lobby join or a double session create).
+5. Regression: a cold OFFLINE boot (airplane mode) must still fall back cleanly with the offline
+   notice and no threading exception.
+
+---
+
+### 🔴 Online/offline toggle + Menu_Main wiring (`claude/single-player-offline-fallback-jksga5`, 2026-08-27)
+
+**What landed.** Fixed the CS0103 in `ReconnectService` (missing `using CosmicShore.Data;` for
+`ApplicationState`). Added the player-facing toggle: `OnlineStatusIndicator` (lamp: lime online /
+grey offline, tap to switch), `ConfirmQuestionBar` (reusable animated yes/no bar),
+`ReconnectService.GoOfflineAsync`, and the persisted `OfflineModeService.OfflinePreferred` that
+the auth scene honours at boot. `OfflineMenuWirer` wires it all into Menu_Main. See
+`Docs/OFFLINE_MODE.md` §8.
+
+**Verified without the editor:** Roslyn syntax pass on all 7 touched files; the UI + services
+semantic-compiled against stubs whose DOTween signatures were made faithful (generic
+`SetUpdate`/`SetLink`/`SetEase` that preserve `Sequence`) after the first pass exposed the
+difference; the icon generator's stroke math ported and rendered to ASCII to prove the glyphs
+read as a check and a cross before any PNG is written; `check_conditional_compilation.py` clean.
+
+**▶ RUN THIS FIRST:** open `Menu_Main`, then
+**FrogletTools > Interface > Wire Offline Menu Surfaces**, then **SAVE THE SCENE**.
+It adopts the existing `OnlineIndicator` / `QuestionBar` objects rather than replacing them, and
+reports anything it could not find. Commit its output via
+**FrogletTools > Build > Pending Tool Changes**.
+
+**Verify in editor:**
+1. **Compile clean** — the CS0103 is fixed; confirm no other errors.
+2. **Wirer report:** it must find `OnlineIndicator` and `QuestionBar`, and must NOT warn about a
+   missing `ContainerScope`. If it warns, add the ContainerScope prefab — every offline surface
+   is inert without it.
+3. **Lamp colour:** boot online → lamp is lime and reads ONLINE. Boot offline → grey, OFFLINE.
+4. **Confirm bar:** tap the lamp → the bar wipes open with "GO OFFLINE?" (or "GO ONLINE?" when
+   already offline). Cancel closes it and does nothing. The icons punch on press.
+5. **Go offline:** accept → boot chain re-runs → menu returns with a grey lamp, party/friends/
+   store gated, and no UGS calls. Confirm no 45s stall (the preference must skip the Relay
+   attempts).
+6. **Preference persists:** quit and relaunch → still offline, lamp grey, and boot is FAST.
+7. **Go online:** tap → accept → signs in, Relay host, gates lift, lamp lime. Relaunch → still
+   online.
+8. **Go online while genuinely offline:** must fall back to a working offline menu (not a hang),
+   lamp back to grey.
+9. **Double-tap / spam:** the lamp disables and pulses while a switch is in flight; a second tap
+   must be ignored.
+10. **Icons:** check `Assets/_Graphics/UI/Offline/` — two crisp sprites, correctly centred in the
+    buttons. Replace with authored art if preferred (the tool never overwrites).
+
+---
+
+### 🔴 Offline UI gating + in-place reconnect (`claude/single-player-offline-fallback-jksga5`, 2026-08-26)
+
+**What landed.** `OfflineUIGate` (reusable, inspector-wired: online-only objects hidden or
+dimmed, offline-only notice/button revealed) and `ReconnectButton` + `ReconnectService` — one
+tap re-runs the boot chain in place (tear down host → clear `IsOfflineSession` → 
+`AuthenticationServiceFacade.ResetForReconnect()` → load the Authentication scene), no app
+restart. Service-level guards added for invites (`HostConnectionService.SendInviteAsync`),
+leaderboard writes (`UGSStatsManager.SubmitScoreInternal`) and purchases
+(`IAPManager.OpenCheckout`). See `Docs/OFFLINE_MODE.md` §7.
+
+**Verified without the editor:** Roslyn syntax pass on all 8 touched files; `OfflineUIGate`,
+`ReconnectButton` and `ReconnectService` semantic-compiled against UnityEngine/UI/TMP/Reflex/
+UniTask stubs.
+
+**⚠ SCENE WIRING REQUIRED — the gating is inert until this is done:**
+1. In `Menu_Main`, add an `OfflineUIGate` to the party/lobby panel, friends panel, leaderboards
+   screen and store screen. Wire each panel's online-only objects/controls.
+2. Add an "Offline — online play unavailable" notice + a `ReconnectButton` to each gate's
+   `offlineOnlyObjects` list (or once, somewhere always visible in the menu).
+3. Confirm `Menu_Main` has a Reflex `ContainerScope` (both components use `[Inject]`).
+
+**Verify in editor:**
+1. **Offline gating:** boot offline → party/friends/store/leaderboard surfaces hidden or dimmed,
+   offline notice + Retry button visible.
+2. **Guards without wiring:** with the gate NOT wired, invoking an invite / purchase must log the
+   offline message and no-op rather than throwing or opening a dead browser tab.
+3. **Reconnect success:** boot offline, restore the network, tap Retry → splash → sign-in →
+   Relay host → `Menu_Main` with a live online session. Confirm the party/friends UI comes back
+   and `IsOfflineSession` is false.
+4. **Reconnect failure:** tap Retry while STILL offline → must land back in a working offline
+   menu (not a hang, not a black screen), Retry available again.
+5. **Reconnect from a game scene** (if the button is reachable there): must not leave orphaned
+   AI/vessel NetworkObjects — `ClearStaleReferences` runs before the scene load.
+6. **Double-tap Retry:** the second tap must be ignored (`IsReconnecting` collapses it).
+7. **Online regression:** boot online — the gate must show everything and `ReconnectButton` must
+   hide itself (`CanReconnect` false).
+
+---
+
+### 🔴 Offline / single-player fallback: local host + local data cache (`claude/single-player-offline-fallback-jksga5`, 2026-08-26)
+
+**What landed.** The Steam-offline fallback (`Docs/OFFLINE_MODE.md` §6): when UGS auth/Relay is
+unreachable at boot, `AuthenticationSceneController` falls into `OfflineModeService`, which
+restores the player's last-known-good data (`LocalCloudDataCache` snapshots under every
+`CloudDataRepository`), wires the Netcode callbacks (`MultiplayerSetup.EnsureNetcodeCallbacksWired`,
+newly public), resets the transport to loopback, and starts NetworkManager as a plain
+`127.0.0.1` host — the first `StartHost()` call in the project. `GameDataSO.IsOfflineSession`
+gates matchmaking (`MultiplayerSetup`) and party creation (`HostConnectionService`) off.
+`ApplicationStateMachine` now also subscribes `OnNetworkFound` and resumes the state
+`Disconnected` interrupted.
+
+**Verified without the editor:** Roslyn syntax pass on all 11 files; `OfflineModeService`
+semantic-compiled against NGO/UniTask stubs; cache+repository layer compiled against real
+Newtonsoft and exercised (12 runtime assertions incl. Dictionary round-trip, cloud-wins,
+reset overwrite, corrupt-file degradation); `check_conditional_compilation.py` clean.
+
+**Verify in editor:**
+1. Compile — the touched set crosses `System/`, `Controller/Multiplayer/`, `Controller/Party/`.
+2. **Offline cold boot:** Play from Bootstrap with networking disabled (airplane mode /
+   firewall the editor). Expect: offline notice on the auth splash → "Starting offline…" →
+   Menu_Main loads, the autopilot vessel spawns, freestyle + toys work. Console shows
+   `[OfflineModeService] Offline local host running`.
+3. **Offline data restore:** run once online (so `{persistentDataPath}/CloudCache/*.json`
+   exists), then boot offline — display name, unlocked vessels, episode/mode progression must
+   match the online session, not `Pilot####` defaults.
+4. **Offline game launch:** from the offline menu, launch an AI-backfilled mode (HexRace or
+   Rampage). Expect a normal solo+AI match; no matchmaking attempt, no host shutdown
+   (`[MultiplayerSetup]` offline log line instead), scoreboard + replay + return-to-menu work.
+5. **Online regression:** boot with network — everything must be byte-identical to before
+   (Relay session, party, invites). The only behavioural delta online is snapshot writes to
+   `CloudCache/`.
+6. **ConnectionApproval check:** confirm the offline host's own client passes approval (vessel
+   spawns). If the vessel never appears, the approval callback didn't reach the NM before
+   `StartHost` — check `EnsureNetcodeCallbacksWired` ran (FLOW-1 log).
+7. **Wi-Fi drop/restore in menu:** toggle network off/on mid-session; app state must go
+   `Disconnected` → back to the prior state (new `OnNetworkFound` path), no permanent park.
+
 ### 🔴 Ability lockup branch — verification matrix (2026-08-26)
 
 One row per changed system. This is the whole branch's honest verification state; a blank cell
@@ -209,9 +419,11 @@ Authored without a Unity play-test (one-line delete + comments + docs). Human lo
 
 **What landed.** Ruling **(b)**: creature-root / worm-segment scale is mover-contract, same class as locomotion. `Fauna.GrowToScale` still lerps `localScale` (continuity). The redundant `NotifyBodyPrismsMoved()` inside that lerp is deleted — `Boid` / `LightFauna` / `WormFauna` already sync every `Update`. `WormFauna.GlideScales` was already on that path. (a) — snap root final + per-prism grow-clock stamps — was rejected. Colliders ride the live transform (zero new colliders).
 
+⚠ **SCOPE REDUCED 2026-08-26.** `Docs/ECOSYSTEM.md` §40 retired lifeform LEVELS, deleting `Fauna.GrowToScale` and `GrowCrystalWithPop` — a lifeform is sized at spawn and never re-sized mid-life. `WormFauna.GlideScales` is the only parent-scale animation left and the (b) ruling still governs it. **Step 2 below is VOID** (the Space-5 joust now `Nourish()`es — it breeds the ally rather than growing it); step 3 is the whole remaining gate.
+
 **Verify in editor**
 1. Compile clean. No new tests (one-line delete). Zero `[PrismClock]` errors on a live cell.
-2. **Squirrel Space-5 joust growth.** Body bloom is smooth (root lerp, not a pop). Profiler: locomotion's per-frame prism-entity writes remain; `GrowToScale` must **not** add a second `NotifyBodyPrismsMoved` / `SyncRenderTransform` storm on top of `Boid`/`LightFauna` Update.
+2. ~~**Squirrel Space-5 joust growth.**~~ **VOID** — nothing grows on a joust any more (§40.4). If you want to look at the ability, that is `QA-ECOLOGY-ELEMENTAL-VARIATIONS` step 9: the ally must **not** grow, its brood must arrive sooner.
 3. **Worm-colony glide.** Segment taper on growth/split/death is smooth. Same profiler read: `Update` → `GlideScales` then `SyncBodyPrismsToIndex` is the one sync, not two.
 
 ---

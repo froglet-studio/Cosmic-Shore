@@ -844,6 +844,33 @@ per task; it is cheap.
   *fallback / fall back / legacy path / degrades to* and re-read each hit
   against what the code now does.
 
+### Technique: MEASURE a prefab's real size offline (transform tree + nested instances + FBX bounds)
+
+"How big is this thing?" is answerable without Unity, and the naive version is wrong by ~7x on
+exactly the prefabs you care about. Three things have to compose or the number is fiction:
+
+1. **The transform tree**, walked DOWN from the root composing
+   `world = parentPos + parentScale ⊗ localPos`. Walking UP and accumulating is the tempting
+   version and it multiplies in the wrong order. Rotation can be ignored deliberately — it cannot
+   change a node's ORIGIN distance from the root and can only redistribute an extent between axes,
+   so the estimate stays a bound and stays comparable across assets.
+2. **Nested prefab instances**, which are `!u!1001` blocks and NOT `!u!4` documents — their pose
+   lives as `m_LocalPosition.*` / `m_LocalScale.*` rows inside `m_Modifications` (walk the LINES;
+   the rows wrap, so a one-line regex matches zero of them). Their CONTENTS are not in the file at
+   all: recurse into `m_SourcePrefab`'s guid and measure that prefab too, scaled by the instance's
+   pose. Skip this and a prefab whose whole body is one nested instance measures as ZERO — which
+   is not a small error you would notice as an error, it is a plausible small number.
+3. **Model mesh bounds**, which no transform records. A rigged creature measures fine from
+   transforms alone (its bones ARE transforms); a creature drawn from one FBX mesh measures at a
+   seventh of its size. Resolve `MeshFilter`/`SkinnedMeshRenderer` → `m_Mesh`'s guid → the FBX,
+   read `Objects/Geometry/Vertices` (§4.8), and **normalize by `UnitScaleFactor`** — raw extents
+   from two FBX files are not comparable, and Unity's importer also applies the cm→m divide.
+
+A node's own extent is then `max(what it SCALES, what it DRAWS, what its nested source CONTAINS)`.
+Validate against something independent before trusting it: an authored collider, a documented
+figure, or simply the ORDERING (if your measurement says the tadpole is bigger than the shark, the
+walk is broken, and ordering catches that where absolute values do not).
+
 ### Technique: resolve a `.shadergraph` MERGE by re-running the wirers, never by hand
 
 Origin: the dither branch vs the Sparrow turret branch (2026-08-11). Both wired nodes
@@ -982,6 +1009,36 @@ Two things this buys beyond a compile:
 
 Use it for the pure/static core of a change (a predicate, a mask, a formula). It still cannot see
 name resolution or whole-class consistency — see the two traps below.
+
+**Slice by METHOD SIGNATURE + brace matching, not by markers, when the change is a handful of
+methods inside a huge file.** `START_MARKER`/`END_MARKER` needs stable text you are not editing,
+which is exactly what a working session keeps moving. A ~30-line extractor that takes a LIST of
+signature regexes and walks braces from each match to its closing one is immune to that: the
+harness re-derives itself from the shipped file after every edit, so `extract → generate → compile`
+becomes one command you re-run between patch rounds. One session type-checked five edited bodies
+out of a 2,400-line `NetworkBehaviour` this way across six rounds of edits, in seconds each.
+
+```python
+def extract(sig_regex):                      # find the signature, then brace-match to the end
+    for i, l in enumerate(lines):
+        if re.search(sig_regex, l):
+            depth, started, out = 0, False, []
+            for j in range(i, len(lines)):
+                out.append(lines[j])
+                depth += lines[j].count('{') - lines[j].count('}')
+                started |= '{' in lines[j]
+                if started and depth == 0: return "\n".join(out)
+    sys.exit("not found: " + sig_regex)      # HARD FAIL — see below
+```
+
+**The extractor must HARD-FAIL on a signature it cannot find, and that line is the whole gate.**
+A signature list silently stops covering a method the moment you rename or delete one — and the
+harness then compiles clean, reports `errors: 0`, and is proving nothing. This is gate erosion by
+your own refactor: the failure looks exactly like success. `sys.exit` on a miss makes the harness
+break loudly the moment its subject moves, which is the only way you find out you renamed
+something. Pair it with the §4 rule (inject a defect, confirm it fires, restore, `cmp`) **after
+every restructuring pass**, not once at the start — the run that matters is the one against the
+code you are about to commit.
 
 **For an `#if UNITY_EDITOR` TEST file, skip the extraction — compile the WHOLE file, unmodified,
 and drive it by reflection.** A test file's Unity surface is usually small and entirely stubbable
@@ -1538,6 +1595,27 @@ Two things the harness catches that reading cannot: a **ratcheting accumulator**
 running-minimum "best distance so far" silently degrades a progress gate to "constant range
 only"; visible instantly as a detector that never fires on an approach), and a **wrong
 comparison of derived quantities** — see the squared-vs-linear trap in §5.
+
+**Two more, both learned shipping a mouse-flight control law (2026-08-26), and both invisible to
+the obvious tests:**
+
+- **A control curve is a claim about the STEADY STATE under continuous input, so a test that only
+  pokes the law with an impulse is structurally blind to it.** The first cut of a mouse→stick
+  integrator sprang back to centre only on frames where the mouse was STILL. Every plausible
+  assertion passed — it integrates, it clamps, it returns to zero, it is frame-rate independent —
+  and it was unflyable, because the spring was off *whenever the player was actually steering*, so
+  any drag at all wound up pinned at full deflection and no stable partial turn existed anywhere.
+  The test that finds it is one line and nothing like the others: hold a constant input for
+  several time constants and assert the settled output, at several input magnitudes. Write the
+  closed form too (`v·k/spring`) and assert the integrator MATCHES it — then the number a tuner
+  reasons about is the number the code produces, which is a second bug class closed for free.
+- **A dead zone applied to an integrator's STATE is a RATCHET, not a filter.** Snapping the
+  accumulator to zero below a threshold means any input whose per-frame contribution is smaller
+  than the threshold is erased every frame and can never accumulate — so slow, careful input does
+  literally nothing, and the speed needed to escape scales with FRAME RATE. Measured here: at
+  60 fps the law ignored every drag under ~110 px/s, which is precisely the aiming range. The
+  state must stay honest; apply the dead zone to the reported OUTPUT. Same shape as the
+  running-minimum ratchet above — an accumulator that is allowed to forget cannot integrate.
 
 Limits, state them: the plant is not the engine, so the simulation bounds *behaviour of the
 law*, never feel. Frame timing, replication, and the vessel's real thrust/grip model are out
@@ -2245,6 +2323,16 @@ signature of one prefab instanced in all of them, and it is the evidence.
   For a deletion-only change that number must be **0**. Corollary: if two scripts each rewrote
   the same file, the artifact COMPOUNDS — a repair regex matching `header\n\n` strips only one
   of two blank lines and looks like it worked. Collapse with `\n\n+` and re-count.
+- **A Unity fileID is SIGNED, so `&(\d+)` silently skips every document with a negative anchor.**
+  The §3 add-a-component bullet already warns that a fileID is a signed int64 on the WRITE side
+  (a 19-digit random overflows it); the READ side has the mirror hazard and it is quieter. A
+  census regex of the shape `^--- !u!(\d+) &(\d+)$` parses most of a file perfectly and drops
+  the handful of documents Unity happened to number negatively — so an audit reports a clean
+  subset and you conclude the thing you were looking for is not there. Cost here: a
+  "which vessels carry which transformer" sweep lost the Grizzly entirely and reported six
+  one-thumb hulls instead of seven, with every other row correct. Match `&(-?\d+)`, and
+  sanity-check any census against a total you already know (`ls *.prefab | wc -l`) rather than
+  against how plausible the output looks.
 - **A bare `{fileID: N}` is ALWAYS same-file; only `{fileID: N, guid: G}` crosses assets.** A
   sweep for "who else references this id" that ignores the guid is worthless in a Unity repo,
   because sibling **flat-copy** prefabs (Manta/Falcon/Shrike/Termite here) share identical

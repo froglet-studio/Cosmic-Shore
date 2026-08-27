@@ -27,6 +27,7 @@ namespace CosmicShore.Gameplay
         private KeyboardInputStrategy keyboardStrategy;
         private TouchInputStrategy touchStrategy;
         private DualMouseInputStrategy dualMouseStrategy;
+        private SingleStickMouseInputStrategy singleStickMouseStrategy;
         private MultiMouseService multiMouseService;
         private DeviceOrientationHandler orientationHandler;
 
@@ -35,6 +36,10 @@ namespace CosmicShore.Gameplay
         // LMB press across both physical mice; disengages on escape.
         private bool dualMouseEngaged;
         private bool prevBothLeftButtonsHeld;
+
+        // Which device the player is actually USING, not merely which are plugged in. Sticky:
+        // InputDeviceActuation only answers on a real actuation, so nothing thrashes.
+        private InputDeviceFamily activeDeviceFamily = InputDeviceFamily.None;
 
         private bool isInitialized;
 
@@ -70,12 +75,15 @@ namespace CosmicShore.Gameplay
             if (!isInitialized)
                 return;
             
-            // Toggle the fullscreen state if the Escape key was pressed this frame on windows
 #if UNITY_STANDALONE_WIN || UNITY_EDITOR_WIN
             if (!Application.isFocused) return;
 
+            // F11, not Escape. Escape is the OVERVIEW gesture (OverviewGesture — it presses the
+            // HUD's own Volume/Pause button), which is what a mouse pilot reaches for instead of
+            // being handed a cursor mid-flight. Fullscreen keeps a key of its own so a windowed
+            // build is not a trap; F11 is the convention everywhere else.
             var kb = Keyboard.current;
-            if (kb != null && kb.escapeKey.wasPressedThisFrame)
+            if (kb != null && kb.f11Key.wasPressedThisFrame)
                 Screen.fullScreen = !Screen.fullScreen;
 #endif
             
@@ -95,6 +103,7 @@ namespace CosmicShore.Gameplay
             // strategy itself read the same per-frame snapshot.
             multiMouseService?.Tick();
             UpdateDualMouseEngagement();
+            UpdateActiveDeviceFamily();
 
             UpdateInputStrategy();
             currentStrategy?.ProcessInput();
@@ -134,6 +143,11 @@ namespace CosmicShore.Gameplay
             RegisterToEvents();
             
             InitializeStrategies();
+
+            // BEFORE SetInitialStrategy: selection now keys on the family the player is USING, and
+            // an unset family reads as "not the pad" - so a controller connected at boot would
+            // have handed the first frame to the keyboard until the player actuated something.
+            activeDeviceFamily = InputDeviceActuation.DetectInitial();
             SetInitialStrategy();
             
             // CRITICAL FIX: Initialize the invert settings from GameSetting's current state
@@ -183,23 +197,46 @@ namespace CosmicShore.Gameplay
             gamepadStrategy = new GamepadInputStrategy();
             keyboardStrategy = new KeyboardInputStrategy();
             dualMouseStrategy = new DualMouseInputStrategy(multiMouseService);
+            singleStickMouseStrategy = new SingleStickMouseInputStrategy();
             orientationHandler = new DeviceOrientationHandler();
 
             touchStrategy.Initialize(InputStatus);
             gamepadStrategy.Initialize(InputStatus);
             keyboardStrategy.Initialize(InputStatus);
             dualMouseStrategy.Initialize(InputStatus);
+            singleStickMouseStrategy.Initialize(InputStatus);
             orientationHandler.Initialize(InputStatus, this);
+        }
+
+        /// <summary>
+        /// Track the device family the player is actually using. Shared with the ability chips'
+        /// <c>InputDeviceIconSetSwitcher</c> through <see cref="InputDeviceActuation"/> so the
+        /// glyphs and the live strategy can never disagree about who is flying.
+        /// </summary>
+        private void UpdateActiveDeviceFamily()
+        {
+            if (activeDeviceFamily == InputDeviceFamily.None)
+                activeDeviceFamily = InputDeviceActuation.DetectInitial();
+
+            var actuated = InputDeviceActuation.DetectActuatedThisFrame();
+            if (actuated != InputDeviceFamily.None)
+                activeDeviceFamily = actuated;
         }
 
         private IInputStrategy SelectStrategy()
         {
-            if (Gamepad.current != null)
+            // A pad that is CONNECTED but IDLE must not lock out the keyboard and mouse. This used
+            // to test Gamepad.current != null, which meant a controller left plugged in took every
+            // frame forever - the ability chips correctly followed the player's keyboard while the
+            // ship ignored it, and unplugging the pad was the only way back. Presence is not use.
+            if (activeDeviceFamily == InputDeviceFamily.Gamepad && Gamepad.current != null)
                 return gamepadStrategy;
             if (SystemInfo.deviceType == DeviceType.Handheld)
                 return touchStrategy;
             if (dualMouseEngaged && multiMouseService != null && multiMouseService.HasTwoMice)
                 return dualMouseStrategy;
+            if (UseSingleStickMouse())
+                return singleStickMouseStrategy;
             // Desktop default is dual-WASD KeyboardInputStrategy, not the legacy
             // KeyboardMouseInputStrategy (that class remains in the project unused).
             return keyboardStrategy;
@@ -230,6 +267,52 @@ namespace CosmicShore.Gameplay
                 // Re-sync settings when switching strategies
                 SyncInvertSettings();
             }
+        }
+
+        /// <summary>
+        /// Mouse flight applies to the vessel this player is actually flying, so it is asked
+        /// live rather than latched: IsSingleStickControls is written by the vessel's transformer
+        /// in Initialize, long after this InputController exists, and a vessel swap can change
+        /// the answer mid-session. UpdateInputStrategy already re-asks every frame, so the hull
+        /// arriving (or changing) hands flight over on its own.
+        ///
+        /// <para>There is deliberately NO opt-out gesture. The first version disengaged on Escape
+        /// and re-engaged on a left click, mirroring dual-mouse - but Escape is already the
+        /// fullscreen toggle a few lines above, and in the Editor it is the reflexive "give me my
+        /// cursor back" key, so one press turned the whole scheme off for the rest of the session
+        /// with nothing on screen to say so and an undiscoverable way back. It was also
+        /// redundant: the cursor is released on pause (OnPaused) and on every strategy hand-over,
+        /// which covers every moment a player actually needs the pointer.</para>
+        ///
+        /// <para>Every reason this can decline is reported once by
+        /// <see cref="MouseFlightDiagnostics"/> - the scheme's failure mode is silence, which is
+        /// exactly the bug report it produced the first time out.</para>
+        /// </summary>
+        private bool UseSingleStickMouse()
+        {
+            if (Mouse.current == null)
+                return MouseFlightDiagnostics.Decline(MouseFlightDiagnostics.Reason.NoMouse);
+
+            // Never for an AI or a remote replica. Update() already returns before the strategy
+            // switch for those, but SetInitialStrategy() runs from Initialize() with no such
+            // guard - and this strategy LOCKS THE CURSOR when it activates, so selecting it for
+            // a bot would take the pointer away from a player who is not flying anything.
+            if (ownerPlayer != null && !ownerPlayer.IsLocalPilot)
+                return MouseFlightDiagnostics.Decline(MouseFlightDiagnostics.Reason.NotLocalPilot);
+
+            var vessel = ownerPlayer != null ? ownerPlayer.Vessel : null;
+            if (vessel == null || vessel.VesselStatus == null)
+                return MouseFlightDiagnostics.Decline(MouseFlightDiagnostics.Reason.NoVessel);
+
+            if (vessel.VesselStatus.AutoPilotEnabled)
+                return MouseFlightDiagnostics.Decline(MouseFlightDiagnostics.Reason.Autopilot);
+
+            if (!vessel.VesselStatus.IsSingleStickControls)
+                return MouseFlightDiagnostics.Decline(
+                    MouseFlightDiagnostics.Reason.NotSingleStick, vessel.VesselStatus.Name);
+
+            MouseFlightDiagnostics.Engaged();
+            return true;
         }
 
         public void OnToggleGyro(bool status)

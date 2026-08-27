@@ -281,6 +281,41 @@ namespace CosmicShore.UI
         }
 
         /// <summary>
+        /// ESCAPE — or the pad's START — presses this scene's Volume / Pause button. That is the
+        /// whole implementation on purpose: the key does not open the overview itself, it invokes
+        /// the BUTTON, so whatever that button is authored to do in this scene is exactly what the
+        /// key does and the two can never say different things. The same one gesture
+        /// (<see cref="OverviewGesture"/>) exits freestyle in Menu_Main, so the loop reads the
+        /// same everywhere.
+        ///
+        /// <para>It is also what lets a mouse pilot keep flying: the only control they would
+        /// otherwise need a cursor for is this button, so the mouse scheme never hands the cursor
+        /// back mid-flight. It is released when the overview actually opens — the pause path
+        /// pauses the input controller, and the strategy unlocks it there.</para>
+        ///
+        /// <para>Guarded on <c>PauseSystem.Paused</c> because the button OPENS the overview rather
+        /// than toggling it: re-invoking it while the menu is already up would just re-show an
+        /// open panel. Closing is the panel's own Resume button, which the released cursor can
+        /// reach.</para>
+        /// </summary>
+        protected virtual void Update()
+        {
+            // Two paused-ness tests, because the multiplayer overview never freezes time:
+            // OnClickMultiplayerPauseButton pauses only the local player's input, so PauseSystem
+            // alone would let a second Escape re-invoke the button on an already-open panel.
+            if (CosmicShore.Core.PauseSystem.Paused) return;
+            if (gameData?.LocalPlayer?.InputStatus?.Paused == true) return;
+            if (!OverviewGesture.RequestedThisFrame()) return;
+
+            // The cached field, never ResolveVolumePauseButton(): that falls back to a
+            // GetComponentsInChildren sweep of the whole canvas, and a scene with no such button
+            // would pay for it every frame. Start already resolved it.
+            if (volumePauseButton && volumePauseButton.isActiveAndEnabled
+                                  && volumePauseButton.interactable)
+                volumePauseButton.onClick.Invoke();
+        }
+
+        /// <summary>
         /// Attaches the universal domain-volume hex gauge to this scene's "Volume /
         /// Pause Button" so the same gauge trains players as the in-game pause button
         /// everywhere (it mirrors MenuMiniGameHUD.EnsureDomainVolumeIndicator for the
