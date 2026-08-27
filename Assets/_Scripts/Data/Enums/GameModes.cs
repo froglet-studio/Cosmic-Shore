@@ -97,5 +97,10 @@ namespace CosmicShore.Data
         // keeps the strikers firing. First DOMAIN to the prism target wins. See
         // _Scripts/Controller/Arcade/SALVO.md.
         Salvo = 44,
+
+        // ADDING A MODE? Bump EnumIntegrityTests.GameModes_HasExpectedMemberCount (currently
+        // 43) in the same commit, and take the next free ID -- 7 and 31 stay reserved forever.
+        // That test is a deliberate tripwire, not an obstacle: it exists so a new member can
+        // never land without someone confirming the ID is safe for saved selections.
     }
 }
