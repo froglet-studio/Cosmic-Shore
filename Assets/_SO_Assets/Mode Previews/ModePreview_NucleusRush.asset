@@ -13,11 +13,15 @@ MonoBehaviour:
   m_Name: ModePreview_NucleusRush
   m_EditorClassIdentifier: 
   Mode: 38
-  Notes: 'OPEN-ENDED: brood scoring is the controller''s, but the cell itself carries the whole loop - the nucleus claim, the 30s fauna wave clock, the tadpole broods - so the preview shows the mode''s actual heartbeat with nothing added.'
+  Notes: 'OPEN-ENDED: brood scoring is the controller''s, but the cell itself carries
+    the whole loop - the nucleus claim, the 30s fauna wave clock, the tadpole broods
+    - so the preview shows the mode''s actual heartbeat with nothing added.'
   PreviewCell: {fileID: 11400000, guid: 6d6a9a4d9989498780367424e85848a4, type: 2}
+  PreviewCellsByIntensity: []
   StructurePrefab: {fileID: 0}
+  TrackSpawnablesByIntensity: []
   Vessel: -1
-  ObjectiveText: 'Claim the nucleus. Lay your colour inside it and watch the broods hatch.'
+  ObjectiveText: Claim the nucleus. Hatch the Broods.
   ObjectiveMetric: 4
   ObjectiveTarget: 0
   DurationSeconds: 60

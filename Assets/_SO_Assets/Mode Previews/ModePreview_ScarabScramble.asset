@@ -13,11 +13,16 @@ MonoBehaviour:
   m_Name: ModePreview_ScarabScramble
   m_EditorClassIdentifier: 
   Mode: 43
-  Notes: 'OPEN-ENDED: the hoops are built by ScarabScrambleController from its settings asset, not by the cell, so there is nothing to score through yet. The court sphere, the ball forge and the juke dash all work. Give this a StructurePrefab (local, NetworkObject-free hoops) and switch the metric to Goals to finish it.'
+  Notes: 'OPEN-ENDED: the hoops are built by ScarabScrambleController from its settings
+    asset, not by the cell, so there is nothing to score through yet. The court sphere,
+    the ball forge and the juke dash all work. Give this a StructurePrefab (local,
+    NetworkObject-free hoops) and switch the metric to Goals to finish it.'
   PreviewCell: {fileID: 11400000, guid: 4c79db5a1791ff3060644ec7d2aee0db, type: 2}
+  PreviewCellsByIntensity: []
   StructurePrefab: {fileID: 0}
+  TrackSpawnablesByIntensity: []
   Vessel: -1
-  ObjectiveText: 'Fly your skimmer through a white crystal - it becomes your ball. Knock it around.'
+  ObjectiveText: Knock the ball around
   ObjectiveMetric: 4
   ObjectiveTarget: 0
   DurationSeconds: 60

@@ -13,7 +13,9 @@ MonoBehaviour:
   m_Name: ModePreview_Ribcage
   m_EditorClassIdentifier: 
   Mode: 39
-  Notes: 'Intensity 1 = two rinds, the lightest cage (10,620 prisms). SpawnDistance 500 because this cell has NO NUCLEUS (radius reads 0) - the default 70 would open INSIDE the cage. 500 clears the 360u outer shell.'
+  Notes: Intensity 1 = two rinds, the lightest cage (10,620 prisms). SpawnDistance
+    500 because this cell has NO NUCLEUS (radius reads 0) - the default 70 would
+    open INSIDE the cage. 500 clears the 360u outer shell.
   PreviewCell: {fileID: 11400000, guid: 919fc3cbaa210b46ebacd865c8688b44, type: 2}
   PreviewCellsByIntensity:
   - {fileID: 11400000, guid: 919fc3cbaa210b46ebacd865c8688b44, type: 2}
@@ -22,8 +24,9 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 02bfa044b1857c9bba123e6dba4804fe, type: 2}
   - {fileID: 11400000, guid: 625646f6d4907cb6faccc7ba32f37605, type: 2}
   StructurePrefab: {fileID: 0}
+  TrackSpawnablesByIntensity: []
   Vessel: -1
-  ObjectiveText: 'Break in. Shatter every bar you can reach.'
+  ObjectiveText: Break in. Shatter every bar.
   ObjectiveMetric: 5
   ObjectiveTarget: 200
   DurationSeconds: 90

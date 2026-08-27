@@ -13,7 +13,9 @@ MonoBehaviour:
   m_Name: ModePreview_DogFight
   m_EditorClassIdentifier: 
   Mode: 41
-  Notes: 'OPEN-ENDED: the mode scores on vessel-vs-vessel gunnery and a solo preview has nobody to shoot. What it honestly teaches is the arena and the Sparrow''s guns. No nucleus, so SpawnDistance carries the whole standoff.'
+  Notes: 'OPEN-ENDED: the mode scores on vessel-vs-vessel gunnery and a solo preview
+    has nobody to shoot. What it honestly teaches is the arena and the Sparrow''s
+    guns. No nucleus, so SpawnDistance carries the whole standoff.'
   PreviewCell: {fileID: 11400000, guid: cc21823da49bd38535c54796c4a1c168, type: 2}
   PreviewCellsByIntensity:
   - {fileID: 11400000, guid: cc21823da49bd38535c54796c4a1c168, type: 2}
@@ -21,8 +23,9 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 7dc0173b8f31a743221e8f0bd3ec2d40, type: 2}
   - {fileID: 11400000, guid: 5511269da8da60affaf693e51b8a60a1, type: 2}
   StructurePrefab: {fileID: 0}
+  TrackSpawnablesByIntensity: []
   Vessel: -1
-  ObjectiveText: 'Learn the Boneyard. Find the lines through the wrecks.'
+  ObjectiveText: Classic Dogfight
   ObjectiveMetric: 8
   ObjectiveTarget: 0
   DurationSeconds: 60

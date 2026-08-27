@@ -13,8 +13,13 @@ MonoBehaviour:
   m_Name: ModePreview_Joust
   m_EditorClassIdentifier: 
   Mode: 34
-  Notes: 'Joust = MultiplayerJoust(34). This mode''s own scene runs on the BARREN cell - its arena is nothing but the vessels, their trails and the crystals the mode''s controller places, none of which a solo satellite can stand up. The preview honestly shows the mode''s cell: open water, a nucleus, and the vessel to fly. Sparse by construction, not by omission.'
+  Notes: 'Joust = MultiplayerJoust(34). This mode''s own scene runs on the BARREN
+    cell - its arena is nothing but the vessels, their trails and the crystals the
+    mode''s controller places, none of which a solo satellite can stand up. The preview
+    honestly shows the mode''s cell: open water, a nucleus, and the vessel to fly.
+    Sparse by construction, not by omission.'
   PreviewCell: {fileID: 11400000, guid: 8f83a19d70465a747861017897c08403, type: 2}
+  PreviewCellsByIntensity: []
   StructurePrefab: {fileID: 0}
   TrackSpawnablesByIntensity:
   - {fileID: 6514606624884080306, guid: 46b326171d45253459e6b8f75d1cdb25, type: 3}
@@ -22,7 +27,7 @@ MonoBehaviour:
   - {fileID: 1670082815129230080, guid: e8174c106727c824199fdd482cdf093d, type: 3}
   - {fileID: 4959367395204161429, guid: 7f105562de1ca3f41832337facd6e3d9, type: 3}
   Vessel: -1
-  ObjectiveText: 'Lay trail. Bank off it. Build your own speed.'
+  ObjectiveText: Classic Joust
   ObjectiveMetric: 3
   ObjectiveTarget: 0
   DurationSeconds: 60

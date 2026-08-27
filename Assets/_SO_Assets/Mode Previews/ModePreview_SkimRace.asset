@@ -13,13 +13,17 @@ MonoBehaviour:
   m_Name: ModePreview_SkimRace
   m_EditorClassIdentifier: 
   Mode: 33
-  Notes: 'Skim Race = HexRace(33). Its TRACK is controller-built (SegmentSpawner from a replicated seed), so the preview shows the Skim Race cell - nucleus, spawn profile wildlife - and the Squirrel to fly in it. OPEN-ENDED: the satellite has no crystals to race for.'
+  Notes: 'Skim Race = HexRace(33). Its TRACK is controller-built (SegmentSpawner
+    from a replicated seed), so the preview shows the Skim Race cell - nucleus, spawn
+    profile wildlife - and the Squirrel to fly in it. OPEN-ENDED: the satellite has
+    no crystals to race for.'
   PreviewCell: {fileID: 11400000, guid: 52de45c2fab54ea0a35bc37a311d80e6, type: 2}
+  PreviewCellsByIntensity: []
   StructurePrefab: {fileID: 0}
   TrackSpawnablesByIntensity:
   - {fileID: 919132148000000003, guid: aff5d951bc8541f99b3364ab41350897, type: 3}
   Vessel: -1
-  ObjectiveText: 'Skim everything. Speed is the whole game.'
+  ObjectiveText: Skim the tracks.
   ObjectiveMetric: 0
   ObjectiveTarget: 0
   DurationSeconds: 60

@@ -13,7 +13,9 @@ MonoBehaviour:
   m_Name: ModePreview_WildlifeLiberation
   m_EditorClassIdentifier: 
   Mode: 40
-  Notes: 'Spawns outside the 1050u outer cage, where the real mode spawns players. LifeformsKilled is credited locally through CellRuntimeDataSO.OnFaunaKilled, so it counts in a solo preview.'
+  Notes: Spawns outside the 1050u outer cage, where the real mode spawns players.
+    LifeformsKilled is credited locally through CellRuntimeDataSO.OnFaunaKilled,
+    so it counts in a solo preview.
   PreviewCell: {fileID: 11400000, guid: 2a3473b06ae520a967e964789f574d2a, type: 2}
   PreviewCellsByIntensity:
   - {fileID: 11400000, guid: 2a3473b06ae520a967e964789f574d2a, type: 2}
@@ -21,8 +23,9 @@ MonoBehaviour:
   - {fileID: 11400000, guid: e6ae32678416e7c6390d5b0078ba2893, type: 2}
   - {fileID: 11400000, guid: e7542f2a8779d1328f8d3d88545eae03, type: 2}
   StructurePrefab: {fileID: 0}
+  TrackSpawnablesByIntensity: []
   Vessel: -1
-  ObjectiveText: 'Hunt. Five creatures, any tier.'
+  ObjectiveText: Clear the swarm
   ObjectiveMetric: 7
   ObjectiveTarget: 5
   DurationSeconds: 90
