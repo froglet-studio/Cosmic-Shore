@@ -23,6 +23,34 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Status lamp icon set (`claude/single-player-offline-fallback-jksga5`, 2026-08-27)
+
+**What landed** (`Docs/OFFLINE_MODE.md` §11): a purpose-built online/offline lamp pair — filled
+vs hollow inside a shared ring border, so shape carries the state as well as colour. Renderer
+rewritten to analytic-shape + 4×4 supersampling at 256px (14.4× more accurate edges than the
+feather approximation, measured like-for-like), mipmaps on, RGB white through transparent pixels.
+`OnlineStatusIndicator` gained `onlineSprite`/`offlineSprite` and swaps at the midpoint of the
+colour crossfade. The wirer squares the lamp's rect (it was stretch-anchored, which would have
+drawn the circle as an ellipse).
+
+**Verified without the editor:** both lamps rendered from the shipped math and inspected;
+edge-quality measured against a 16×16 reference; Roslyn + semantic compile (incl. the new
+`InsertCallback` sequence and sprite swap) clean.
+
+**▶ RUN:** **FrogletTools > Interface > Wire Offline Menu Surfaces (Regenerate Icons)** with
+Menu_Main open, then SAVE. (Plain "Wire Offline Menu Surfaces" will generate the two NEW lamp
+sprites but leave the existing check/cross at the old sampling — use the Regenerate entry to
+bring those up to the same quality.)
+
+**Verify in editor:**
+1. Lamp is a circle, not an ellipse — confirm its RectTransform came out square.
+2. Online: bright lime ring with a softer filled centre. Offline: grey ring, hollow centre.
+3. Toggle: the fill appears/disappears mid-crossfade as one motion, no hitch.
+4. Zoom the Game view / try a high-DPI resolution — edges stay smooth, no stair-stepping.
+5. The check/cross in the confirm bar should look crisper after the Regenerate run.
+
+---
+
 ### 🔴 Reconnect round 2: leave the party layer, two state-machine fixes (`claude/single-player-offline-fallback-jksga5`, 2026-08-27)
 
 **What landed** (`Docs/OFFLINE_MODE.md` §10):

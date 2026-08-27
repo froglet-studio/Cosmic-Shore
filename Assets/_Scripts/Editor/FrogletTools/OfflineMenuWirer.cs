@@ -34,7 +34,25 @@ namespace CosmicShore.Editor.Froglet
         const string IconFolder = "Assets/_Graphics/UI/Offline";
         const string CheckIconPath = IconFolder + "/icon_check.png";
         const string CrossIconPath = IconFolder + "/icon_cross.png";
-        const int IconSize = 128;
+        const string OnlineIconPath = IconFolder + "/icon_status_online.png";
+        const string OfflineIconPath = IconFolder + "/icon_status_offline.png";
+
+        /// <summary>
+        /// Source resolution. Generous because these are UI sprites that can be scaled up by a
+        /// CanvasScaler on a high-DPI display, and downscaling is free while upscaling is not.
+        /// </summary>
+        const int IconSize = 256;
+
+        /// <summary>
+        /// Samples per pixel per axis (so <c>Supersample²</c> total). The first pass used a
+        /// single centre sample with a 1.5px linear feather, which is a coarse approximation of
+        /// coverage and shows as slightly ragged curves. Analytic distance + 4×4 supersampling
+        /// resolves a circle's edge properly at any radius.
+        /// </summary>
+        const int Supersample = 4;
+
+        /// <summary>Display size of the lamp when the tool has to square up a stretched rect.</summary>
+        const float LampPixelSize = 28f;
 
         /// <summary>
         /// What to gate, found by COMPONENT TYPE rather than by GameObject name - the panels live
@@ -70,7 +88,14 @@ namespace CosmicShore.Editor.Froglet
         [MenuItem("FrogletTools/Interface/Wire Offline Menu Surfaces")]
         [FrogletTool(FrogletToolCategory.Interface, Importance = 4,
             Description = "Wire the online/offline lamp, its confirm bar, and the online-only UI gates into Menu_Main.")]
-        static void Wire()
+        static void Wire() => Run(regenerateIcons: false);
+
+        [MenuItem("FrogletTools/Interface/Wire Offline Menu Surfaces (Regenerate Icons)")]
+        [FrogletTool(FrogletToolCategory.Interface, Importance = 2,
+            Description = "Same, but re-renders the offline icon set from scratch - use after changing the icon geometry.")]
+        static void WireAndRegenerate() => Run(regenerateIcons: true);
+
+        static void Run(bool regenerateIcons)
         {
             var scene = EditorSceneManager.GetActiveScene();
             if (!scene.IsValid() || !scene.name.Contains("Menu_Main"))
@@ -82,16 +107,20 @@ namespace CosmicShore.Editor.Froglet
             }
 
             var report = new List<string>();
-            var checkSprite = EnsureIcon(CheckIconPath, DrawCheck, report);
-            var crossSprite = EnsureIcon(CrossIconPath, DrawCross, report);
+            var checkSprite   = EnsureIcon(CheckIconPath,   DrawCheck,       report, regenerateIcons);
+            var crossSprite   = EnsureIcon(CrossIconPath,   DrawCross,       report, regenerateIcons);
+            var onlineSprite  = EnsureIcon(OnlineIconPath,  DrawOnlineLamp,  report, regenerateIcons);
+            var offlineSprite = EnsureIcon(OfflineIconPath, DrawOfflineLamp, report, regenerateIcons);
 
             int gates = WireGates(scene, report);
-            bool lamp = WireLampAndBar(scene, checkSprite, crossSprite, report);
+            bool lamp = WireLampAndBar(scene, checkSprite, crossSprite, onlineSprite, offlineSprite, report);
 
             EditorSceneManager.MarkSceneDirty(scene);
             FrogletToolChangeLedger.RecordOpenScenes(ToolName);
-            if (checkSprite != null) FrogletToolChangeLedger.Record(ToolName, CheckIconPath);
-            if (crossSprite != null) FrogletToolChangeLedger.Record(ToolName, CrossIconPath);
+            if (checkSprite   != null) FrogletToolChangeLedger.Record(ToolName, CheckIconPath);
+            if (crossSprite   != null) FrogletToolChangeLedger.Record(ToolName, CrossIconPath);
+            if (onlineSprite  != null) FrogletToolChangeLedger.Record(ToolName, OnlineIconPath);
+            if (offlineSprite != null) FrogletToolChangeLedger.Record(ToolName, OfflineIconPath);
 
             report.Insert(0, lamp
                 ? "Lamp + confirm bar wired."
@@ -180,7 +209,9 @@ namespace CosmicShore.Editor.Froglet
         // ── Lamp + bar ───────────────────────────────────────────────────────
 
         static bool WireLampAndBar(UnityEngine.SceneManagement.Scene scene,
-                                   Sprite check, Sprite cross, List<string> report)
+                                   Sprite check, Sprite cross,
+                                   Sprite onlineLamp, Sprite offlineLamp,
+                                   List<string> report)
         {
             var indicatorGo = FindInScene(scene, "OnlineIndicator");
             if (indicatorGo == null)
@@ -232,10 +263,40 @@ namespace CosmicShore.Editor.Froglet
             var indicator = indicatorGo.GetComponent<OnlineStatusIndicator>()
                             ?? Undo.AddComponent<OnlineStatusIndicator>(indicatorGo);
 
+            var lampImage = indicatorGo.GetComponent<Image>();
+
+            // The lamp is a round sprite, so its box must be square or the circle renders as an
+            // ellipse. Authored stretch anchors (sizeDelta 0,-120 on the shipped object) inherit
+            // the parent's aspect, which is not square.
+            if (lampImage.TryGetComponent<RectTransform>(out var lampRect))
+            {
+                lampRect.anchorMin = new Vector2(0.5f, 0.5f);
+                lampRect.anchorMax = new Vector2(0.5f, 0.5f);
+                lampRect.pivot     = new Vector2(0.5f, 0.5f);
+                if (Mathf.Abs(lampRect.sizeDelta.x - lampRect.sizeDelta.y) > 0.5f ||
+                    lampRect.sizeDelta.x <= 0f)
+                {
+                    lampRect.sizeDelta = new Vector2(LampPixelSize, LampPixelSize);
+                    report.Add($"• squared the lamp's rect to {LampPixelSize}x{LampPixelSize} " +
+                               "(a round sprite in a non-square box renders as an ellipse).");
+                }
+            }
+
+            lampImage.preserveAspect = true;
+            lampImage.type = Image.Type.Simple;
+
             var indSo = new SerializedObject(indicator);
-            indSo.FindProperty("lamp").objectReferenceValue = indicatorGo.GetComponent<Image>();
+            indSo.FindProperty("lamp").objectReferenceValue = lampImage;
             indSo.FindProperty("questionBar").objectReferenceValue = bar;
+            if (onlineLamp  != null) indSo.FindProperty("onlineSprite").objectReferenceValue  = onlineLamp;
+            if (offlineLamp != null) indSo.FindProperty("offlineSprite").objectReferenceValue = offlineLamp;
             indSo.ApplyModifiedProperties();
+
+            // Seed the visible sprite so the lamp looks right in the editor without entering
+            // play mode. Runtime Apply() overwrites this on the first frame anyway.
+            if (onlineLamp != null) lampImage.sprite = onlineLamp;
+
+            report.Add("• lamp sprites bound (filled = online, hollow = offline).");
 
             EnsureContainerScope(scene, report);
             return true;
@@ -302,10 +363,14 @@ namespace CosmicShore.Editor.Froglet
 
         // ── Icon generation ──────────────────────────────────────────────────
 
-        static Sprite EnsureIcon(string path, System.Func<Texture2D> draw, List<string> report)
+        static Sprite EnsureIcon(string path, System.Func<Texture2D> draw, List<string> report,
+                                 bool force = false)
         {
-            var existing = AssetDatabase.LoadAssetAtPath<Sprite>(path);
-            if (existing != null) return existing;
+            if (!force)
+            {
+                var existing = AssetDatabase.LoadAssetAtPath<Sprite>(path);
+                if (existing != null) return existing;
+            }
 
             Directory.CreateDirectory(IconFolder);
 
@@ -320,19 +385,59 @@ namespace CosmicShore.Editor.Froglet
                 importer.textureType = TextureImporterType.Sprite;
                 importer.spriteImportMode = SpriteImportMode.Single;
                 importer.alphaIsTransparency = true;
-                importer.mipmapEnabled = false;
+                importer.mipmapEnabled = true;          // these scale DOWN in UI; mips kill shimmer
                 importer.filterMode = FilterMode.Bilinear;
                 importer.textureCompression = TextureImporterCompression.Uncompressed;
+                importer.wrapMode = TextureWrapMode.Clamp;
                 importer.SaveAndReimport();
             }
 
-            report.Add($"• generated '{Path.GetFileName(path)}'.");
+            report.Add($"• generated '{Path.GetFileName(path)}' ({IconSize}px, {Supersample}x{Supersample} supersampled).");
             return AssetDatabase.LoadAssetAtPath<Sprite>(path);
         }
 
+        // ── Status lamps ─────────────────────────────────────────────────────
+        //
+        // One tint colour is applied at runtime (lime online / grey offline), so DEPTH has to
+        // come from alpha rather than from a second hue: a fully opaque ring around a softer
+        // fill reads as a bordered lamp in whatever colour it is handed.
+        //
+        // Online and offline differ in SHAPE as well as colour - filled versus hollow - so the
+        // state survives being seen small, in peripheral vision, or by a player who cannot
+        // separate lime from grey.
+
+        const float LampOuterRadius = 0.44f;   // to the outside of the border
+        const float LampBorderWidth = 0.058f;
+        const float LampCoreGap     = 0.052f;  // clear space between border and fill
+
+        static Texture2D DrawOnlineLamp() => DrawLamp(coreAlpha: 0.60f, ringAlpha: 1.00f);
+        static Texture2D DrawOfflineLamp() => DrawLamp(coreAlpha: 0.00f, ringAlpha: 0.85f);
+
+        static Texture2D DrawLamp(float coreAlpha, float ringAlpha)
+        {
+            float ringOuter = LampOuterRadius;
+            float ringInner = LampOuterRadius - LampBorderWidth;
+            float coreRadius = ringInner - LampCoreGap;
+
+            return Render((x, y) =>
+            {
+                float d = Mathf.Sqrt((x - 0.5f) * (x - 0.5f) + (y - 0.5f) * (y - 0.5f));
+
+                // Ring: inside the outer edge AND outside the inner edge.
+                if (d <= ringOuter && d >= ringInner) return ringAlpha;
+
+                // Core fill.
+                if (coreAlpha > 0f && d <= coreRadius) return coreAlpha;
+
+                return 0f;
+            });
+        }
+
+        // ── Answer glyphs ────────────────────────────────────────────────────
+
         static Texture2D DrawCheck()
         {
-            // Two strokes of a check, as distance-to-segment so the edges anti-alias.
+            // Two strokes of a check, as distance-to-segment so the edges resolve analytically.
             var a = new Vector2(0.22f, 0.52f);
             var b = new Vector2(0.43f, 0.31f);
             var c = new Vector2(0.80f, 0.70f);
@@ -350,24 +455,49 @@ namespace CosmicShore.Editor.Froglet
 
         static Texture2D DrawStrokes((Vector2 a, Vector2 b)[] strokes, float halfWidth = 0.055f)
         {
-            var tex = new Texture2D(IconSize, IconSize, TextureFormat.RGBA32, false);
-            var pixels = new Color32[IconSize * IconSize];
-
-            // One pixel of feather either side of the stroke edge - enough to read smooth at the
-            // 22px the buttons display, without blurring the glyph.
-            float feather = 1.5f / IconSize;
-
-            for (int y = 0; y < IconSize; y++)
-            for (int x = 0; x < IconSize; x++)
+            return Render((x, y) =>
             {
-                var p = new Vector2((x + 0.5f) / IconSize, (y + 0.5f) / IconSize);
-
+                var p = new Vector2(x, y);
                 float d = float.MaxValue;
                 foreach (var (a, b) in strokes)
                     d = Mathf.Min(d, DistanceToSegment(p, a, b));
+                return d <= halfWidth ? 1f : 0f;
+            });
+        }
 
-                float alpha = Mathf.Clamp01((halfWidth - d) / feather);
-                pixels[y * IconSize + x] = new Color32(255, 255, 255, (byte)(alpha * 255f));
+        // ── Renderer ─────────────────────────────────────────────────────────
+
+        /// <summary>
+        /// Renders a white sprite whose alpha is <paramref name="coverage"/>, averaged over a
+        /// <see cref="Supersample"/>² grid inside each pixel. The shape function returns hard
+        /// 0/1 values - all smoothing comes from supersampling, so an edge is antialiased
+        /// correctly at any curvature instead of being approximated by a fixed-width feather.
+        ///
+        /// RGB is left at white everywhere, including fully transparent pixels: a sprite whose
+        /// transparent pixels carry black RGB fringes dark when the UI filters it.
+        /// </summary>
+        static Texture2D Render(System.Func<float, float, float> coverage)
+        {
+            var tex = new Texture2D(IconSize, IconSize, TextureFormat.RGBA32, false);
+            var pixels = new Color32[IconSize * IconSize];
+
+            float step = 1f / (IconSize * Supersample);
+            float half = step * 0.5f;
+            float weight = 1f / (Supersample * Supersample);
+
+            for (int py = 0; py < IconSize; py++)
+            for (int px = 0; px < IconSize; px++)
+            {
+                float sum = 0f;
+                for (int sy = 0; sy < Supersample; sy++)
+                for (int sx = 0; sx < Supersample; sx++)
+                {
+                    float x = (px * Supersample + sx) * step + half;
+                    float y = (py * Supersample + sy) * step + half;
+                    sum += coverage(x, y) * weight;
+                }
+
+                pixels[py * IconSize + px] = new Color32(255, 255, 255, (byte)Mathf.Round(Mathf.Clamp01(sum) * 255f));
             }
 
             tex.SetPixels32(pixels);

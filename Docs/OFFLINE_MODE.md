@@ -620,3 +620,57 @@ state in its constructor.
 
 Proven by transcribing both state machines and executing them: 9/9 assertions, including negative
 controls that reproduce the pre-fix `ShuttingDown` deadlock and confirm the watchdog path.
+
+---
+
+## 11. The status lamp icon set (2026-08-27)
+
+The lamp originally borrowed whatever sprite the scene object already carried and conveyed state
+by tint alone. It now has a purpose-built pair.
+
+### 11.1 Shape carries the state, not just colour
+
+**Online is filled, offline is hollow** — both inside the same ring border. The state therefore
+survives being seen small, in peripheral vision, or by a player who cannot separate lime from
+grey. Colour is the fast read; shape is the one that always works.
+
+Because a single tint colour is applied at runtime, **depth comes from alpha rather than a second
+hue**: the ring is fully opaque and the fill sits at 0.60, so the lamp reads as a bordered lamp in
+whatever colour it is handed. Offline drops the ring to 0.85 and the fill to zero.
+
+The sprite swaps at the **midpoint** of the colour crossfade (`InsertCallback` at 50%), not at
+either end: filled↔hollow is a shape change, and a shape that changes while the colour is still
+travelling reads as one motion — changed at an end it reads as two, with a visible hitch.
+
+### 11.2 Rendering: analytic shape, supersampled coverage
+
+The first icon pass used one centre sample per pixel plus a fixed 1.5px linear feather on the
+distance field — a coarse approximation of coverage that shows as slightly ragged curves. The
+renderer now evaluates a **hard** 0/1 shape function over a 4×4 grid per pixel at 256px, so all
+smoothing is real coverage and an edge resolves correctly at any curvature.
+
+Measured on an identical shape against a 16×16 reference:
+
+| | edge error | edge pixels |
+|---|---|---|
+| old — 128px, 1 sample + feather | 0.3978 | 404 |
+| new — 256px, 4×4 supersampled | **0.0277** | 828 |
+
+**14.4× more accurate per edge pixel, at 2× the edge resolution.**
+
+Two details that matter for UI sprites specifically: **mipmaps are on** (these scale *down* in a
+CanvasScaler, and without mips a thin ring shimmers), and **RGB stays white even where alpha is
+zero** — a sprite carrying black RGB in its transparent pixels fringes dark when filtered.
+
+### 11.3 A round sprite needs a square box
+
+The shipped `OnlineIndicator` used stretch anchors (`sizeDelta 0, -120`), so it inherited its
+parent's aspect and would have drawn the circle as an ellipse. The wirer now centres the rect and
+squares it when it is not already square. General point: **a generated round sprite is only round
+if its RectTransform is** — check the rect whenever a tool starts supplying circular art.
+
+### 11.4 Regenerating
+
+`EnsureIcon` never overwrites, so authored art always wins. To re-render after changing the
+geometry, use **FrogletTools > Interface > Wire Offline Menu Surfaces (Regenerate Icons)** — the
+same wiring pass with `force`, which also refreshes the check/cross at the new sampling quality.

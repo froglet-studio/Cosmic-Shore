@@ -36,6 +36,14 @@ namespace CosmicShore.UI
         [SerializeField, Tooltip("Optional label reading ONLINE / OFFLINE.")]
         TMPro.TMP_Text statusLabel;
 
+        [Header("State sprites")]
+        [SerializeField, Tooltip("Lamp sprite while ONLINE (filled). Optional - the lamp falls " +
+                                 "back to tint-only when both sprites are empty.")]
+        Sprite onlineSprite;
+
+        [SerializeField, Tooltip("Lamp sprite while OFFLINE (hollow). Optional.")]
+        Sprite offlineSprite;
+
         [SerializeField] string onlineText = "ONLINE";
         [SerializeField] string offlineText = "OFFLINE";
 
@@ -160,18 +168,26 @@ namespace CosmicShore.UI
             _hasAppliedOnce = true;
 
             var target = offline ? OfflineColor : OnlineColor;
+            var sprite = offline ? offlineSprite : onlineSprite;
 
             if (lamp != null)
             {
                 _colorTween?.Kill();
+
                 if (instant || colorFadeSeconds <= 0f)
                 {
                     lamp.color = target;
+                    ApplySprite(sprite);
                 }
                 else
                 {
-                    _colorTween = lamp
-                        .DOColor(target, colorFadeSeconds)
+                    // Swap the sprite at the MIDPOINT of the colour crossfade rather than at
+                    // either end. Filled↔hollow is a shape change, and a shape that changes
+                    // while the colour is still travelling reads as one motion; changed at an
+                    // end it reads as two, with a visible hitch.
+                    _colorTween = DOTween.Sequence()
+                        .Append(lamp.DOColor(target, colorFadeSeconds).SetEase(Ease.InOutQuad))
+                        .InsertCallback(colorFadeSeconds * 0.5f, () => ApplySprite(sprite))
                         .SetUpdate(true)
                         .SetLink(gameObject);
                 }
@@ -179,6 +195,17 @@ namespace CosmicShore.UI
 
             if (statusLabel != null)
                 statusLabel.text = offline ? offlineText : onlineText;
+        }
+
+        /// <summary>
+        /// Assigns a state sprite, tolerating an unwired pair. With neither sprite authored the
+        /// lamp keeps whatever it was given in the scene and conveys state by tint alone - still
+        /// correct, just without the filled/hollow shape cue.
+        /// </summary>
+        void ApplySprite(Sprite sprite)
+        {
+            if (lamp == null || sprite == null) return;
+            lamp.sprite = sprite;
         }
 
         void HandleClick()
