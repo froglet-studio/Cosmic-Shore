@@ -100,7 +100,14 @@ namespace CosmicShore.UI
         {
             _surfaceRect = surface ? surface.rectTransform : null;
             if (focusButton) focusButton.onClick.AddListener(HandleFocusButton);
-            Apply(State.Hidden);
+
+            // Re-assert the CURRENT state, never force Hidden. On a party client the modal opens
+            // in one burst (a ClientRpc arms the preview and then animates the modal in), so the
+            // session can drive this window to Loading or Live BEFORE its first activation runs
+            // Awake - and an unconditional Hidden here wiped that state after the fact, leaving
+            // the client a blank frame while a live arena camera drew into a texture nobody
+            // showed. A fresh window's _state is already Hidden, so the cold path is unchanged.
+            Apply(_state);
         }
 
         void OnDestroy()

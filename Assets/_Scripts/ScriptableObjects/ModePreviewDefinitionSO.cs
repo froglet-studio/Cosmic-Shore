@@ -79,6 +79,21 @@ namespace CosmicShore.ScriptableObjects
                  "Authored by Tools/Build/author_preview_tracks.py from the scenes' own spawners.")]
         public List<SpawnableBase> TrackSpawnablesByIntensity = new();
 
+        [Header("Preview wildlife - kill-objective modes only")]
+        [Tooltip("OPTIONAL species released into the FLIGHT arena so a kill-scored objective has " +
+                 "something to hunt. A preview satellite's own life spawner is deliberately " +
+                 "suppressed (a preview is structure, not ecology - the full seeded population " +
+                 "was most of the preview lag), so a card whose ObjectiveMetric is " +
+                 "LifeformsKilled authors a SMALL species here and a tiny count of it. Leave " +
+                 "empty on every other card. Released in Domains.Blue - neutral, hostile to " +
+                 "all - so every pilot's rounds land on it.")]
+        public FaunaConfigurationSO PreviewFauna;
+
+        [Tooltip("How many to release. Keep TINY - a taste, not a population: each creature is " +
+                 "a live body plus an always-on heart collider. Ignored when no species is " +
+                 "authored.")]
+        [Min(1)] public int PreviewFaunaCount = 4;
+
         [Header("Vessel")]
         [Tooltip("Hull the preview flies. Leave as Any to inherit the mode's own vessel list " +
                  "from its SO_ArcadeGame (which is what a vessel-locked mode already declares), " +

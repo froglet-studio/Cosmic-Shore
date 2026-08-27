@@ -2140,10 +2140,11 @@ namespace CosmicShore.Gameplay
             // A scene cell finishes its bootstrap (cytoplasm, modifiers, spawner) on the first
             // crystal event - see OnCellItemUpdated. A satellite has its own runtime instance
             // and no CrystalManager feeding it, so that event never comes: run the completion
-            // here. The life-SPAWNER half is deliberately a no-op for satellites
-            // (StartSpawnerForMode gates on IsSatellite): a preview is the mode's structure, and
-            // the ecology - flora, fauna, their element hearts - is the bulk of a second world's
-            // frame cost beside a menu that is still running.
+            // here. The life-SPAWNER and CYTOPLASM halves are deliberately no-ops for satellites
+            // (each gates on IsSatellite): a preview is the mode's structure, and the ecology -
+            // flora, fauna, their element hearts - plus the SnowChanger's ~4k drifting shard
+            // motes are the bulk of a second world's frame cost beside a menu that is still
+            // running.
             InitilizePostFirstCellItem();
             return true;
         }
@@ -2648,6 +2649,14 @@ namespace CosmicShore.Gameplay
         void SpawnCytoplasm()
         {
             if (!cellConfigData || cellConfigData.CytoplasmPrefab == null) return;
+
+            // A SATELLITE gets no cytoplasm. The SnowChanger literally spawns ~4k individual
+            // "shard" GameObjects (its own field names) drifting through the cell - the spiky
+            // star motes playtest reported as "shards in a lot of levels" - and a preview arena
+            // paying a second cell's worth of them beside the running menu is atmosphere nobody
+            // asked for at a frame cost everybody feels. Structure only; the scene cell's own
+            // cytoplasm is untouched.
+            if (IsSatellite) return;
 
             // Guarded for repeat passes, exactly like the environment spawn: the field holds ONE
             // cytoplasm and every cleanup path (ResetCell, the swap retire, the toy re-parent) reads

@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 
 namespace CosmicShore.Gameplay
 {
@@ -57,6 +58,29 @@ namespace CosmicShore.Gameplay
             var strided = new SpawnPoint[count];
             for (int i = 0; i < count; i++)
                 strided[i] = points[i * _stride];
+            return strided;
+        }
+
+        /// <summary>
+        /// The lays to actually build under the current stride — the
+        /// <see cref="CellEnvironmentSpawnableBase"/> twin of the array overload, because that
+        /// family lays through <c>PrismTrailBuilder</c> with a <see cref="PrismLay"/> list and
+        /// never touches <c>SpawnPrismTrail</c> (which is how every authored world — the Ribcage
+        /// cage, Atlantis, the freestyle seven — silently built at FULL density in previews while
+        /// the stride only reached track structures). Returns the INPUT list untouched when no
+        /// thinning applies; when it does, returns a strided COPY — the cached list is also
+        /// sampled by the miniature builder and the planting model, which must see the full
+        /// authored shape.
+        /// </summary>
+        public static List<PrismLay> Apply(List<PrismLay> lays)
+        {
+            if (_stride <= 1 || lays == null || lays.Count < MinPointsToDecimate)
+                return lays;
+
+            int count = (lays.Count + _stride - 1) / _stride;
+            var strided = new List<PrismLay>(count);
+            for (int i = 0; i < count; i++)
+                strided.Add(lays[i * _stride]);
             return strided;
         }
     }

@@ -207,19 +207,54 @@ environment build can be DEFERRED past `InitializeSatellite` — a caller-side s
 reach it. A real scene cell is pinned to stride 1 in code. Laying fewer prisms is "not creating
 mass", which the conserved-mass law permits.
 
-**The satellite is STRUCTURE, not ecology — its life spawner never starts.** The first playtest
-showed previews seeding the mode's full living world beside the running menu — flora colonies
-growing thousands of lattice prisms, Wildlife Liberation's ~519 fauna, and one always-on heart
-collider (an elemental crystal) per lifeform — which was most of the lag, and none of it is what a
-preview is for. `Cell.StartSpawnerForMode` now returns before picking a spawner class when
-`IsSatellite`, which covers `RandomLifeSpawner` and `IntensityWiseLifeSpawner` alike and every
-start site (satellite bootstrap, swap completion, `RestartSpawnerForMode`) by construction — and
-with no seeds, every downstream producer (fauna/flora reproduction, lattice colony frontiers,
-heart drops) never begins. This is production GATING, permitted by `Docs/ECOSYSTEM.md §0`; nothing
-is culled and nothing decays. The minted omni crystals are untouched (they are the arena's own, not
-the spawner's). Stated cost: a GROWN world — Rampage's cactus belt IS its spawner's planting —
-previews as its authored structure alone; the looking-phase miniature still models the planting as
-markers (`ModePreviewPlantingModel`).
+**The satellite is STRUCTURE, not ecology — its life spawner never starts, and it gets no
+cytoplasm.** The first playtest showed previews seeding the mode's full living world beside the
+running menu — flora colonies growing thousands of lattice prisms, Wildlife Liberation's ~519
+fauna, and one always-on heart collider (an elemental crystal) per lifeform — which was most of
+the lag, and none of it is what a preview is for. `Cell.StartSpawnerForMode` now returns before
+picking a spawner class when `IsSatellite`, which covers `RandomLifeSpawner` and
+`IntensityWiseLifeSpawner` alike and every start site (satellite bootstrap, swap completion,
+`RestartSpawnerForMode`) by construction — and with no seeds, every downstream producer
+(fauna/flora reproduction, lattice colony frontiers, heart drops) never begins. This is production
+GATING, permitted by `Docs/ECOSYSTEM.md §0`; nothing is culled and nothing decays. The minted omni
+crystals are untouched (they are the arena's own, not the spawner's). Stated cost: a GROWN world —
+Rampage's cactus belt IS its spawner's planting — previews as its authored structure alone; the
+looking-phase miniature still models the planting as markers (`ModePreviewPlantingModel`).
+`Cell.SpawnCytoplasm` is likewise a no-op for satellites: the `SnowChanger` spawns ~4k individual
+"shard" GameObjects (its own field names — the spiky star motes the second playtest reported as
+"shards in a lot of levels"), and a preview paying a second cell's worth of them beside the menu
+is atmosphere nobody asked for at a frame cost everybody feels.
+
+**A kill-scored card releases a HANDFUL of authored creatures** — the one deliberate exception to
+structure-only, because a `LifeformsKilled` objective with nothing to shoot is not a taste of the
+mode. `ModePreviewDefinitionSO.PreviewFauna` + `PreviewFaunaCount` (the three wildlife cards
+author 4 × QuadFish, the game's smallest species) are released by `ModePreviewArena` through the
+canonical `CellLifeSpawnerBase.SpawnFaunaWithDomain` + `AssignLineage` path on a runtime clone —
+the Lifeform Matrix bench's idiom — so each creature registers in the cell's lifeform book and the
+strike retires it with the world. They spawn in **`Domains.Blue`** (the neutral sentinel, hostile
+to every pilot) so anyone's rounds land; a kill still drops the heart (the lifeform-crystal
+invariant is untouched), and `SpawnPreviewFauna` warns-and-skips on any card that authors a
+species without being kill-scored.
+
+**PrismLayDecimation applies at BOTH lay paths.** `SpawnableBase.SpawnPrismTrail` covers track
+structures — but every `CellEnvironmentSpawnableBase` world (the Ribcage cage, Atlantis, the
+freestyle seven) lays through `PrismTrailBuilder` with its own `_cachedLays` list and never calls
+`SpawnPrismTrail`, so authored-environment previews silently built at FULL density while the
+stride only thinned tracks. `SpawnLeafObjects` now hands the builder
+`PrismLayDecimation.Apply(_cachedLays)` — a strided COPY inside a scope, the cached list left
+whole for the miniature builder and the planting model, and byte-identical behaviour outside any
+scope.
+
+**A party CLIENT previews locally, and the window must survive waking up mid-session.** The
+preview is deliberately unsynced — each machine stands its own local satellite (the client's hull
+swap already routes through `RequestVesselSwap_ServerRpc`; only the sparring partner stays
+host-only, so a client previews without one). What broke the client was ORDER, not authority: the
+host's modal has been open for ages when a card is armed, but a client opens everything in one
+ClientRpc burst — arm, then `ModalWindowIn` — so `ModePreviewWindow.Awake` could run AFTER the
+session had already driven the window to Loading/Live, and its unconditional `Apply(State.Hidden)`
+wiped that state with nothing ever re-applying it: a blank frame with a live arena camera drawing
+into a texture nobody showed. `Awake` now re-asserts the CURRENT state (`Apply(_state)`); a fresh
+window's state is already Hidden, so the cold path is unchanged.
 
 **The tap-out drain is paced for the menu, not for speed.** The retiring root sits far outside
 every camera, so the drain has no reason to hurry — but each frame's `Destroy` slice is paid IN the

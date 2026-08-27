@@ -163,6 +163,7 @@ namespace CosmicShore.Gameplay
                 SpawnTrackStructure(definition, intensity);
             }
             SpawnPreviewCrystals(definition, intensity);
+            SpawnPreviewFauna(definition);
 
             CSDebug.Log($"[ModePreview] Arena standing for {definition.Mode} " +
                         $"({config.CellName}) at {origin}.");
@@ -317,6 +318,64 @@ namespace CosmicShore.Gameplay
 
             CSDebug.LogVerbose(CSLogChannel.ArcadeLaunch,
                 $"[ModePreview] {positions.Count} preview crystal(s) minted for {definition.Mode}.");
+        }
+
+        /// <summary>
+        /// A HANDFUL of creatures for the flight phase of a kill-scored mode.
+        ///
+        /// <para>The satellite's own life spawner is deliberately suppressed (a preview is
+        /// structure, not ecology - the full seeded population was most of the preview lag),
+        /// which left LifeformsKilled cards with nothing to hunt. The card authors a SMALL
+        /// species and a tiny count (<see cref="ModePreviewDefinitionSO.PreviewFauna"/>),
+        /// released through the canonical <see cref="CellLifeSpawnerBase"/> path on a runtime
+        /// clone - the Lifeform Matrix bench's idiom - so each creature registers in the cell's
+        /// lifeform book and the strike retires it with the world. Released in
+        /// <see cref="Domains.Blue"/>: the neutral sentinel is hostile to every pilot, so
+        /// anyone's rounds land. Ecology protocol: a bounded explicit release (production, which
+        /// §0 permits), nothing culled, and a kill still drops the heart - the lifeform-crystal
+        /// invariant is untouched.</para>
+        /// </summary>
+        void SpawnPreviewFauna(ModePreviewDefinitionSO definition)
+        {
+            if (!definition || !definition.PreviewFauna || !Cell) return;
+
+            if (definition.ObjectiveMetric != ScoringMetric.LifeformsKilled)
+            {
+                CSDebug.LogWarning($"[ModePreview] {definition.Mode} authors PreviewFauna but " +
+                                   "is not kill-scored - skipped (a preview is structure, not " +
+                                   "ecology).");
+                return;
+            }
+
+            // Runtime clone so the authored asset is never mutated; the clone IS the lineage
+            // config. The card releases the exact species it authored - no element re-roll.
+            var clone = Object.Instantiate(definition.PreviewFauna);
+            clone.name = definition.PreviewFauna.name;
+            clone.SpreadElements = false;
+
+            float radius = Mathf.Max(Cell.ExpectedNucleusWorldRadius, 60f);
+            var rng = new System.Random(
+                ModePreviewPlantingModel.StableSeed(definition.Mode + ":fauna"));
+            int count = Mathf.Max(1, definition.PreviewFaunaCount);
+            int spawned = 0;
+            for (int i = 0; i < count; i++)
+            {
+                var dir = new Vector3((float)rng.NextDouble() * 2f - 1f,
+                                      (float)rng.NextDouble() * 2f - 1f,
+                                      (float)rng.NextDouble() * 2f - 1f);
+                Vector3 local = (dir.sqrMagnitude > 0.001f ? dir.normalized : Vector3.up)
+                                * (radius * (0.6f + 0.6f * (float)rng.NextDouble()));
+
+                var fauna = CellLifeSpawnerBase.SpawnFaunaWithDomain(
+                    Cell, clone.FaunaPrefab, Origin, Domains.Blue, Origin + local);
+                if (!fauna) continue;
+                fauna.AssignLineage(Cell, clone);
+                spawned++;
+            }
+
+            CSDebug.LogVerbose(CSLogChannel.ArcadeLaunch,
+                $"[ModePreview] {spawned}/{count} preview {clone.name} released for " +
+                $"{definition.Mode} (Blue - prey for every pilot).");
         }
 
         static bool CrystalScored(ScoringMetric metric) =>
