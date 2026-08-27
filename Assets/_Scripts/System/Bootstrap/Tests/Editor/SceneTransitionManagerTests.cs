@@ -140,7 +140,16 @@ namespace CosmicShore.Core
 
             Assert.AreEqual(1f, canvasGroup.alpha);
             Assert.IsTrue(canvasGroup.blocksRaycasts);
-            Assert.IsFalse(canvasGroup.interactable);
+
+            // interactable MIRRORS blocksRaycasts at every site that drives this group
+            // (SetFadeImmediate, FadeAsync, AdoptSplashOverlay). An opaque overlay must stay
+            // interactable because the adopted splash hosts BootStatusPanel's retry button, which
+            // has to be tappable while the overlay is visible - see the comment on
+            // SceneTransitionManager.AdoptSplashOverlay. This assertion read IsFalse until the
+            // retry button landed.
+            Assert.IsTrue(canvasGroup.interactable,
+                "interactable must mirror blocksRaycasts - an opaque overlay that blocks raycasts " +
+                "but is not interactable makes the boot retry button untappable.");
         }
 
         [Test]
@@ -156,6 +165,11 @@ namespace CosmicShore.Core
 
             Assert.AreEqual(0f, canvasGroup.alpha);
             Assert.IsFalse(canvasGroup.blocksRaycasts);
+
+            // The other half of the mirror, and the half that actually hurts if it breaks: a
+            // cleared overlay left interactable is an invisible sheet swallowing every click.
+            Assert.IsFalse(canvasGroup.interactable,
+                "A fully faded overlay must not stay interactable - it would silently eat input.");
         }
 
         [Test]
