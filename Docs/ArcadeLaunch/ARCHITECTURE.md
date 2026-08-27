@@ -504,6 +504,9 @@ instead of splitting it across two files.
 | `ModePreviewDefinitionSO.PreviewCellsByIntensity` | `_Scripts/ScriptableObjects/` | Per-intensity arenas + `ResolveCell` |
 | `author_preview_intensities.py` | `Tools/Build/` | Copies those lists from each mode's own scene (`--check`) |
 | `ArcadeLaunchPanelWirer` | `_Scripts/Editor/` | **One-off.** Builds the two row prefabs from the authored rows, adds and wires every component, registers the Maelstrom window. Scan reports what it cannot do; retire it through the ship panel once its output is pushed |
+| `ObjectiveBoxView` / `PreviewMicroToast` | `_Scripts/UI/View/ArcadeLaunch/` | The objective box (metric icon + count-up counter, no target) and the "+N" toast — §5.5 |
+| `ModeControlsLibrarySO.ObjectiveIcons` | same asset | The ONE metric→sprite table both objective surfaces read; ships with generated white-silhouette placeholders (`_Graphics/ObjectiveIcons/`) meant to be swapped for real art in the same table |
+| `ModeMapWindow` | `_Scripts/Editor/` | **Permanent.** FrogletTools > Game Modes > Mode Map — every card's objective, icon, controls filters and seat counts on one editable screen. Flags drift (an `ObjectiveMetric` its mode's own `ScoringRuleSO` disagrees with, a metric with no icon, a definition with no card), edits through SerializedObjects, records every write in the change ledger, and its Validate & Push FAILS while any metric drifts from its rule. The spawn block and ability rows are deliberately read-only there (authored by script / derived) |
 
 Authored data: `SO_ArcadeGame.Tips` (per-card play tips) and `SO_ArcadeGame.PreviewVideo`
 (**Maelstrom only** — every other card previews live and must never fall back to a clip).

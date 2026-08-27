@@ -18,7 +18,7 @@ MonoBehaviour:
   StructurePrefab: {fileID: 0}
   Vessel: -1
   ObjectiveText: 'Claim the nucleus. Lay your colour inside it and watch the broods hatch.'
-  ObjectiveMetric: 0
+  ObjectiveMetric: 4
   ObjectiveTarget: 0
   DurationSeconds: 60
   SpawnFromCellRing: 0

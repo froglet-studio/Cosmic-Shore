@@ -18,7 +18,7 @@ MonoBehaviour:
   StructurePrefab: {fileID: 0}
   Vessel: -1
   ObjectiveText: 'Fly your skimmer through a white crystal - it becomes your ball. Knock it around.'
-  ObjectiveMetric: 0
+  ObjectiveMetric: 4
   ObjectiveTarget: 0
   DurationSeconds: 60
   SpawnFromCellRing: 1

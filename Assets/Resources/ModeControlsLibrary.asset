@@ -12,6 +12,23 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ac0078faced0425d81fe4931311c63a7, type: 3}
   m_Name: ModeControlsLibrary
   m_EditorClassIdentifier: 
+  ObjectiveIcons:
+  - Metric: 0
+    Icon: {fileID: 21300000, guid: dd7e3885442542ecbf8614dd6f1039b9, type: 3}
+  - Metric: 1
+    Icon: {fileID: 21300000, guid: dd7e3885442542ecbf8614dd6f1039b9, type: 3}
+  - Metric: 2
+    Icon: {fileID: 21300000, guid: dd7e3885442542ecbf8614dd6f1039b9, type: 3}
+  - Metric: 3
+    Icon: {fileID: 21300000, guid: cacfb7621bd845fea384570be5f8b4ce, type: 3}
+  - Metric: 4
+    Icon: {fileID: 21300000, guid: cf43926360e44648b4bdb3671c00c1e8, type: 3}
+  - Metric: 5
+    Icon: {fileID: 21300000, guid: 867af69bf95f4e19bda99bbfde6fcde5, type: 3}
+  - Metric: 7
+    Icon: {fileID: 21300000, guid: b87b23a9f5534a648755b36ecb1e64ed, type: 3}
+  - Metric: 8
+    Icon: {fileID: 21300000, guid: 3cbd20e72bed4905b5a48d24393ea4d2, type: 3}
   DefaultRows: []
   Entries:
   - Mode: 2
