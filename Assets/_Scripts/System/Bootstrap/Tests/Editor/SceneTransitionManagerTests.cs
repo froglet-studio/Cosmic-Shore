@@ -4,6 +4,15 @@ using UnityEngine;
 
 namespace CosmicShore.Core
 {
+    /// <summary>
+    /// Edit-Mode coverage for <see cref="SceneTransitionManager"/>.
+    ///
+    /// Unity does not call <c>Awake</c> outside Play Mode, so the overlay it builds has to be
+    /// driven explicitly — see <see cref="EditModeLifecycle"/>. This <c>Awake</c> is safe to
+    /// invoke: with no <c>_splashOverlay</c> wired it takes the <c>CreateFadeOverlay</c> branch,
+    /// which only builds child GameObjects and UI components (no DontDestroyOnLoad, no Destroy,
+    /// nothing that touches the open scene).
+    /// </summary>
     [TestFixture]
     public class SceneTransitionManagerTests
     {
@@ -13,9 +22,16 @@ namespace CosmicShore.Core
         [SetUp]
         public void SetUp()
         {
+            // SetFadeImmediate refuses to run off the main thread, and MainThreadDispatcher's own
+            // Init is [RuntimeInitializeOnLoadMethod], which never runs in Edit Mode - leaving it
+            // reporting FALSE for every test here and logging an error instead of fading.
+            EditModeLifecycle.EnsureMainThreadDispatcherInitialized();
+
             _go = new GameObject("TestSceneTransition");
-            // AddComponent calls Awake(), which creates the overlay.
             _manager = _go.AddComponent<SceneTransitionManager>();
+
+            // Builds the overlay every test below inspects.
+            EditModeLifecycle.InvokeAwake(_manager);
         }
 
         [TearDown]
