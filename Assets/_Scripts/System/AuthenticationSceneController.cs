@@ -507,12 +507,21 @@ namespace CosmicShore.Core
             string menuScene = _sceneNames != null ? _sceneNames.MainMenuScene : "Menu_Main";
             float timeout = Mathf.Max(networkHostTimeout, 15f);
 
-            // Device says no network at all → don't burn 3 x 15s on Relay attempts that
-            // cannot succeed. Go straight to the offline local host (Steam offline mode).
-            // A REACHABLE device whose UGS calls fail still walks the retry loop below,
-            // because "the player has no network" and "UGS is having a bad day" deserve
-            // the attempts.
-            bool attemptRelay = !IsOffline && !(_offlineMode?.IsOfflineSession ?? false);
+            // Three reasons to skip the Relay attempts outright:
+            //   • the player CHOSE offline (the menu toggle) - a deliberate choice must not
+            //     cost them 45s of attempts they asked not to make;
+            //   • the device reports no network at all - the attempts cannot succeed;
+            //   • an offline session is already live.
+            // A REACHABLE device whose UGS calls merely fail still walks the retry loop,
+            // because "the player has no network" and "UGS is having a bad day" deserve the
+            // attempts.
+            bool offlinePreferred = _offlineMode != null && _offlineMode.OfflinePreferred;
+            bool attemptRelay = !offlinePreferred
+                                && !IsOffline
+                                && !(_offlineMode?.IsOfflineSession ?? false);
+
+            if (offlinePreferred)
+                CSDebug.Log("[AuthScene] Offline preferred by the player - going straight to the local host.");
 
             for (int attempt = 1; attempt <= maxAttempts && !networkReady && attemptRelay; attempt++)
             {
@@ -564,7 +573,11 @@ namespace CosmicShore.Core
                 // Netcode spawn chain and every AI-backfilled mode runs unchanged, and the
                 // player's last-known-good profile / unlocks load from the local
                 // cloud-cache. The session stays offline until the app restarts.
-                await ShowOfflineNoticeAsync(ct);
+                if (offlinePreferred)
+                    ShowLoading("Starting offline…");
+                else
+                    await ShowOfflineNoticeAsync(ct);   // explains an UNWANTED offline start
+
                 ShowLoading("Starting offline…");
 
                 bool offlineReady;

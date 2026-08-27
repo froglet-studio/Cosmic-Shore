@@ -530,7 +530,8 @@ namespace CosmicShore.Core
                     c.Resolve<AuthenticationServiceFacade>(),
                     c.Resolve<INetworkTransitionService>(),
                     c.Resolve<ApplicationStateMachine>(),
-                    sceneTransitionManager),
+                    sceneTransitionManager,
+                    c.Resolve<OfflineModeService>()),
                 lifetime: Lifetime.Singleton,
                 resolution: Resolution.Lazy
             );

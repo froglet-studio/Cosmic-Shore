@@ -393,3 +393,74 @@ leaderboards screen and the store screen, wiring each panel's online-only object
 `ReconnectButton` (plus an "Offline" notice) in each gate's offline-only list — or once,
 somewhere always visible in the menu. Until then the gating is inert and the service-level
 guards above are the only thing standing.
+
+---
+
+## 8. The player-facing online/offline toggle (2026-08-27)
+
+Offline stopped being only a fallback: the player can now **choose** it, Steam-style.
+
+### 8.1 The lamp is the toggle
+
+`OnlineStatusIndicator` (`_Scripts/UI/Elements/`) is one control doing both jobs — it reads
+green (lime) online, grey offline, and tapping it asks whether to switch. One control rather
+than two buttons because the question is always the same one ("which mode am I in, and do I want
+the other?") and the answer is the colour.
+
+Colours come from the shared `ElementalBarsConfigSO` ladder (lime / grey), not local literals, so
+the lamp speaks the palette's existing language — grey already means *not in use* on every
+element flower.
+
+Confirmation runs through **`ConfirmQuestionBar`**, a reusable inline yes/no bar that carries no
+knowledge of what it is confirming: `Ask(question, onAccept)`. It wipes open horizontally with
+its content fading in and closes the same way (the continuity law — nothing pops), the answer
+buttons punch on press, and every tween is on **unscaled** time and `SetLink`ed, so a paused
+timescale or a destroyed panel cannot strand one. One pending question at a time: a second `Ask`
+replaces the first rather than queueing, and the replaced callback is dropped, never invoked — a
+stale question the player has moved past is worse than no question.
+
+Two ordering details are load-bearing there: the accept callback is **captured before `Close()`**
+(which clears the field via `CloseImmediate`), and the bar stops taking input the instant an
+answer lands rather than when the close animation finishes — a flourish must never be able to
+absorb a second answer.
+
+### 8.2 Both directions run the same boot chain
+
+`ReconnectService` grew `GoOfflineAsync()` beside `ReconnectAsync()`; both funnel into one
+private `RunBootChainAsync`. Going offline does **not** swap the host underneath a live
+`Menu_Main`: the player object and its vessel belong to the host being torn down, so the spawn
+chain has to run again on the new one, and the boot chain is the proven path that does it.
+
+### 8.3 Preference vs. session state — deliberately two things
+
+| | Meaning | Lifetime |
+|---|---|---|
+| `GameDataSO.IsOfflineSession` | what the session **is right now** | this session |
+| `OfflineModeService.OfflinePreferred` | what the player **asked for** | persisted (`PlayerPrefs`) |
+
+A deliberate choice that silently reverts next launch is not a choice, so the preference
+persists and `AuthenticationSceneController` reads it at boot — skipping the Relay attempts
+entirely, and skipping the "could not reach the servers" apology, because neither applies when
+offline was *chosen*. A player who never touched the toggle can still be in an offline session
+with the preference false; going online then costs them one tap.
+
+`ReconnectAsync` clears the preference *before* the boot chain reads it; `RunBootChainAsync`
+clears only `IsOfflineSession`, never the preference.
+
+### 8.4 Wiring it: `FrogletTools > Interface > Wire Offline Menu Surfaces`
+
+`OfflineMenuWirer` wires Menu_Main: the lamp, the confirm bar, and an `OfflineUIGate` on each
+online-only panel. It works on the **open scene, never the YAML**, so unsaved authoring is
+preserved and adopted; it finds every object **by name** and only creates what is missing, so it
+is idempotent and safe to re-run after hand-tuning. It warns rather than proceeding when the
+scene has no `ContainerScope` (without one `[Inject]` never resolves and every offline surface is
+inert), and it reports any panel it could not find by name instead of silently doing nothing.
+
+It also generates the accept/cancel icons into `Assets/_Graphics/UI/Offline/` — a check and a
+cross drawn as anti-aliased distance-to-segment strokes. Generated because they are pure
+geometry and it keeps the tool self-contained; it will never overwrite an existing file, so
+replacing them with authored art is just dropping the PNGs in.
+
+Output is tracked through `FrogletToolChangeLedger`, so the scene and icons ship via
+**FrogletTools > Build > Pending Tool Changes**. The tool is permanent (idempotent, re-runnable
+whenever a panel is added), not a one-off to retire.

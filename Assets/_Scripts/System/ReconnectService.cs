@@ -1,5 +1,6 @@
 using System;
 using System.Threading;
+using CosmicShore.Data;
 using CosmicShore.Gameplay;
 using CosmicShore.ScriptableObjects;
 using CosmicShore.Utility;
@@ -45,6 +46,7 @@ namespace CosmicShore.Core
         readonly INetworkTransitionService _networkTransition;
         readonly ApplicationStateMachine _appStateMachine;
         readonly SceneTransitionManager _sceneTransition;
+        readonly OfflineModeService _offlineMode;
 
         /// <summary>
         /// Raised when a reconnect attempt starts and again when it resolves (true = in
@@ -61,7 +63,8 @@ namespace CosmicShore.Core
             AuthenticationServiceFacade authFacade,
             INetworkTransitionService networkTransition,
             ApplicationStateMachine appStateMachine,
-            SceneTransitionManager sceneTransition)
+            SceneTransitionManager sceneTransition,
+            OfflineModeService offlineMode)
         {
             _gameData = gameData;
             _sceneNames = sceneNames;
@@ -69,6 +72,7 @@ namespace CosmicShore.Core
             _networkTransition = networkTransition;
             _appStateMachine = appStateMachine;
             _sceneTransition = sceneTransition;
+            _offlineMode = offlineMode;
         }
 
         /// <summary>
@@ -90,11 +94,42 @@ namespace CosmicShore.Core
         }
 
         /// <summary>
+        /// Switches the session to OFFLINE at the player's request (the menu's online/offline
+        /// toggle), as opposed to the automatic fallback. Records the preference so it survives
+        /// the app, then re-runs the boot chain - the Authentication scene reads the preference
+        /// and goes straight to the local host without touching UGS.
+        ///
+        /// <para>
+        /// It routes through the same boot chain as <see cref="ReconnectAsync"/> rather than
+        /// swapping the host underneath a live Menu_Main, because the player object and its
+        /// vessel belong to the host being torn down: the spawn chain has to run again on the
+        /// new host, and the boot chain is the proven path that does it.
+        /// </para>
+        /// </summary>
+        public UniTask<bool> GoOfflineAsync(CancellationToken ct = default)
+        {
+            if (_offlineMode != null)
+                _offlineMode.OfflinePreferred = true;
+
+            return RunBootChainAsync("Go offline requested", ct);
+        }
+
+        /// <summary>
         /// Runs the reconnect. Safe to call repeatedly - concurrent calls collapse to one.
         /// Never throws at the caller: a failure leaves the offline session intact and the
         /// player in the menu, with the retry control live again.
         /// </summary>
-        public async UniTask<bool> ReconnectAsync(CancellationToken ct = default)
+        public UniTask<bool> ReconnectAsync(CancellationToken ct = default)
+        {
+            // The player asked to come back online, so a previously recorded "stay offline"
+            // choice no longer applies - clear it BEFORE the boot chain reads it.
+            if (_offlineMode != null)
+                _offlineMode.OfflinePreferred = false;
+
+            return RunBootChainAsync("Reconnect requested", ct);
+        }
+
+        async UniTask<bool> RunBootChainAsync(string reason, CancellationToken ct)
         {
             if (IsReconnecting) return false;
 
@@ -103,7 +138,7 @@ namespace CosmicShore.Core
 
             try
             {
-                CSDebug.Log("[ReconnectService] Reconnect requested - re-running the boot chain.");
+                CSDebug.Log($"[ReconnectService] {reason} - re-running the boot chain.");
 
                 // Cover the screen for the whole transition. The overlay is released on the
                 // far side by SceneLoader.FadeFromSplashOnReady when the menu vessel spawns,
@@ -120,9 +155,12 @@ namespace CosmicShore.Core
                 await _networkTransition.ShutdownAsync(SHUTDOWN_TIMEOUT_SECONDS, ct);
                 _networkTransition.ClearStaleReferences();
 
-                // 2. Drop the offline latch so every offline stand-down (matchmaking, party
-                //    session creation) re-arms. Done AFTER shutdown so nothing races to
-                //    create a Relay session against the host still going down.
+                // 2. Drop the SESSION latch so the boot chain starts from a clean slate and
+                //    every offline stand-down (matchmaking, party session creation) re-arms.
+                //    Done AFTER shutdown so nothing races to create a Relay session against
+                //    the host still going down. This clears what the session IS, never the
+                //    player's recorded PREFERENCE - the auth scene reads that next and will
+                //    put us straight back offline when it is set.
                 _gameData.IsOfflineSession = false;
 
                 // 3. Re-arm auth. Without clearing the success latch a successful sign-in

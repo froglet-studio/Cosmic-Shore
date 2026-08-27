@@ -42,14 +42,15 @@ offline branches in gameplay code.
 | **Online plumbing** | `GameDataSO.IsOfflineSession` stands matchmaking (`MultiplayerSetup`) and party/Relay creation (`HostConnectionService`) down, so a late Relay success can't yank the local host out from under a live game. |
 | **Online-only UI** | `OfflineUIGate` — one reusable inspector-wired component that hides/disables online-only UI and reveals an offline notice. Backed by hard service-level guards (invites, leaderboard writes, purchases) so an un-wired screen still can't fire a doomed request. |
 | **Reconnect** | `ReconnectService` + `ReconnectButton` — one tap in the menu re-runs the boot chain in place (tear down host → clear the flag → re-arm auth → Authentication scene). **No app restart.** A failed retry falls back to offline again rather than stranding the player. |
+| **Player toggle** | `OnlineStatusIndicator` — a lamp in the menu that reads green online / grey offline, and tapping it asks (via the animated `ConfirmQuestionBar`) whether to switch. The choice **persists**, so "go offline" survives a restart like Steam's does. Wire it with `FrogletTools > Interface > Wire Offline Menu Surfaces`. |
 | **Bug fixed on the way** | `ApplicationStateMachine` never subscribed `OnNetworkFound`, so a Wi-Fi blip parked the app in `Disconnected` permanently. It now resumes the state it interrupted. |
 
 ---
 
 ## Still open
 
-- Scene wiring: `OfflineUIGate` / `ReconnectButton` are built but must be placed on the
-  party, friends, leaderboard and store panels in `Menu_Main`.
+- Scene wiring: run `FrogletTools > Interface > Wire Offline Menu Surfaces` with `Menu_Main`
+  open, then save. (It adopts your existing `OnlineIndicator` / `QuestionBar` objects.)
 - A mid-game transport failure still ends a *solo* game (rare on a live Relay solo session).
 - A first-*ever* launch with no internet has no cached identity yet, so it plays on a fresh
   local profile that does not merge into an account created later.

@@ -23,6 +23,50 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Online/offline toggle + Menu_Main wiring (`claude/single-player-offline-fallback-jksga5`, 2026-08-27)
+
+**What landed.** Fixed the CS0103 in `ReconnectService` (missing `using CosmicShore.Data;` for
+`ApplicationState`). Added the player-facing toggle: `OnlineStatusIndicator` (lamp: lime online /
+grey offline, tap to switch), `ConfirmQuestionBar` (reusable animated yes/no bar),
+`ReconnectService.GoOfflineAsync`, and the persisted `OfflineModeService.OfflinePreferred` that
+the auth scene honours at boot. `OfflineMenuWirer` wires it all into Menu_Main. See
+`Docs/OFFLINE_MODE.md` §8.
+
+**Verified without the editor:** Roslyn syntax pass on all 7 touched files; the UI + services
+semantic-compiled against stubs whose DOTween signatures were made faithful (generic
+`SetUpdate`/`SetLink`/`SetEase` that preserve `Sequence`) after the first pass exposed the
+difference; the icon generator's stroke math ported and rendered to ASCII to prove the glyphs
+read as a check and a cross before any PNG is written; `check_conditional_compilation.py` clean.
+
+**▶ RUN THIS FIRST:** open `Menu_Main`, then
+**FrogletTools > Interface > Wire Offline Menu Surfaces**, then **SAVE THE SCENE**.
+It adopts the existing `OnlineIndicator` / `QuestionBar` objects rather than replacing them, and
+reports anything it could not find. Commit its output via
+**FrogletTools > Build > Pending Tool Changes**.
+
+**Verify in editor:**
+1. **Compile clean** — the CS0103 is fixed; confirm no other errors.
+2. **Wirer report:** it must find `OnlineIndicator` and `QuestionBar`, and must NOT warn about a
+   missing `ContainerScope`. If it warns, add the ContainerScope prefab — every offline surface
+   is inert without it.
+3. **Lamp colour:** boot online → lamp is lime and reads ONLINE. Boot offline → grey, OFFLINE.
+4. **Confirm bar:** tap the lamp → the bar wipes open with "GO OFFLINE?" (or "GO ONLINE?" when
+   already offline). Cancel closes it and does nothing. The icons punch on press.
+5. **Go offline:** accept → boot chain re-runs → menu returns with a grey lamp, party/friends/
+   store gated, and no UGS calls. Confirm no 45s stall (the preference must skip the Relay
+   attempts).
+6. **Preference persists:** quit and relaunch → still offline, lamp grey, and boot is FAST.
+7. **Go online:** tap → accept → signs in, Relay host, gates lift, lamp lime. Relaunch → still
+   online.
+8. **Go online while genuinely offline:** must fall back to a working offline menu (not a hang),
+   lamp back to grey.
+9. **Double-tap / spam:** the lamp disables and pulses while a switch is in flight; a second tap
+   must be ignored.
+10. **Icons:** check `Assets/_Graphics/UI/Offline/` — two crisp sprites, correctly centred in the
+    buttons. Replace with authored art if preferred (the tool never overwrites).
+
+---
+
 ### 🔴 Offline UI gating + in-place reconnect (`claude/single-player-offline-fallback-jksga5`, 2026-08-26)
 
 **What landed.** `OfflineUIGate` (reusable, inspector-wired: online-only objects hidden or

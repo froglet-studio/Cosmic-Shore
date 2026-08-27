@@ -34,6 +34,8 @@ namespace CosmicShore.Core
         const float HOST_START_TIMEOUT_SECONDS = 10f;
         const float DATA_INIT_TIMEOUT_SECONDS = 5f;
 
+        const string OFFLINE_PREFERENCE_KEY = "CosmicShore.OfflinePreferred";
+
         readonly GameDataSO _gameData;
 
         public OfflineModeService(GameDataSO gameData)
@@ -43,6 +45,36 @@ namespace CosmicShore.Core
 
         /// <summary>True once this session is running on the offline local host.</summary>
         public bool IsOfflineSession => _gameData != null && _gameData.IsOfflineSession;
+
+        /// <summary>
+        /// The player's DELIBERATE choice to stay offline (the menu's online/offline toggle), as
+        /// opposed to the automatic fallback that fires when UGS is simply unreachable.
+        ///
+        /// <para>
+        /// Persisted, because a deliberate choice that silently reverts on the next launch is not
+        /// a choice - this is the Steam "go offline" contract. It is read at boot by
+        /// <see cref="AuthenticationSceneController"/>, which skips the Relay attempts entirely
+        /// when it is set, and cleared by <c>ReconnectService.ReconnectAsync</c> when the player
+        /// asks to come back online.
+        /// </para>
+        ///
+        /// <para>
+        /// Distinct from <see cref="IsOfflineSession"/>: that is what the session IS RIGHT NOW,
+        /// this is what the player ASKED FOR. A player who never touched the toggle can be in an
+        /// offline session (no network) with this false - and going online then costs them
+        /// nothing but a tap.
+        /// </para>
+        /// </summary>
+        public bool OfflinePreferred
+        {
+            get => PlayerPrefs.GetInt(OFFLINE_PREFERENCE_KEY, 0) == 1;
+            set
+            {
+                PlayerPrefs.SetInt(OFFLINE_PREFERENCE_KEY, value ? 1 : 0);
+                PlayerPrefs.Save();
+                CSDebug.Log($"[OfflineModeService] Offline preference set to {value}.");
+            }
+        }
 
         /// <summary>
         /// Brings up the offline session: restores the player's last-known-good data from the
